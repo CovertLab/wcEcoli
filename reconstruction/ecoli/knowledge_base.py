@@ -136,6 +136,7 @@ class KnowledgeBaseEcoli(object):
 		self._parameterData['terCCenter'] = 1607192*units.nt
 		self._parameterData['gtpPerTranslation'] = 4.2 # TODO: find a real number
 		self._parameterData["fractionChargedTrna"] = 0.8
+		self._parameterData["rnaPolymeraseElongationRateFast"] = 80 * units.nt / units.s
 
 
 		# Assumed reaction for producing L-selenocysteine without a tRNA
