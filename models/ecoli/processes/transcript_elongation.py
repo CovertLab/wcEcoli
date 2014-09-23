@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-TranscriptElongation
+TranscriptElongationFast
 
 Transcription elongation sub-model.
 
@@ -23,10 +23,10 @@ import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease, PAD_VALUE
 from wholecell.utils import units
 
-class TranscriptElongation(wholecell.processes.process.Process):
-	""" TranscriptElongation """
+class TranscriptElongationFast(wholecell.processes.process.Process):
+	""" TranscriptElongationFast """
 
-	_name = "TranscriptElongation"
+	_name = "TranscriptElongationFast"
 
 	# Constructor
 	def __init__(self):
@@ -47,12 +47,12 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.proton = None
 		self.rnapSubunits = None
 
-		super(TranscriptElongation, self).__init__()
+		super(TranscriptElongationFast, self).__init__()
 
 
 	# Construct object graph
 	def initialize(self, sim, kb):
-		super(TranscriptElongation, self).initialize(sim, kb)
+		super(TranscriptElongationFast, self).initialize(sim, kb)
 
 		# Load parameters
 
