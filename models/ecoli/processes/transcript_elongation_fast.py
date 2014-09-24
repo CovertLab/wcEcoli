@@ -56,7 +56,7 @@ class TranscriptElongationFast(wholecell.processes.process.Process):
 
 		# Load parameters
 
-		self.elngRate = kb.rnaPolymeraseElongationRate.asNumber(units.nt / units.s) * self.timeStepSec
+		self.elngRate = kb.rnaPolymeraseElongationRateFast.asNumber(units.nt / units.s) * self.timeStepSec
 
 		self.rnaIds = kb.rnaData['id']
 
