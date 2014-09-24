@@ -65,7 +65,9 @@ class UniqueMolecules(wholecell.states.state.State):
 		self.container = UniqueObjectsContainer(molDefs)
 
 		self._moleculeIds = kb.uniqueMoleculeMasses["moleculeId"]
-		self._moleculeMasses = kb.uniqueMoleculeMasses["mass"].asNumber(units.fg/ units.mol) / kb.nAvogadro.asNumber()
+		self._moleculeMasses = (
+			kb.uniqueMoleculeMasses["mass"] / kb.nAvogadro
+			).asNumber(units.fg)
 
 		self._unassignedPartitionedValue = self._nProcesses
 
@@ -212,11 +214,15 @@ class UniqueMoleculesView(wholecell.views.view.View):
 
 		self._queryResult = None # TODO: store query results with the state
 
+		if isinstance(self._query[0], basestring):
+			self._query = list(self._query)
+			self._query[0] = [self._query[0]]
+
 
 	def _updateQuery(self):
 		# TODO: generalize this logic (both here and in the state)
 
-		self._queryResult = self._state.container.objectsInCollection(
+		self._queryResult = self._state.container.objectsInCollections(
 			self._query[0],
 			**self._query[1]
 			)
@@ -227,7 +233,7 @@ class UniqueMoleculesView(wholecell.views.view.View):
 		return self._queryResult
 
 	def molecules(self):
-		return self._state.container.objectsInCollection(
+		return self._state.container.objectsInCollections(
 			self._query[0],
 			_partitionedProcess = ("==", self._processIndex),
 			**self._query[1]
