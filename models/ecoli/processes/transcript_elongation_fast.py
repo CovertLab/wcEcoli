@@ -58,11 +58,15 @@ class TranscriptElongationFast(wholecell.processes.process.Process):
 
 		self.elngRate = kb.rnaPolymeraseElongationRateFast.asNumber(units.nt / units.s) * self.timeStepSec
 
+		self.fastRnaBool = kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"]
+
+		#self.rnaIds = kb.rnaData['id'][self.fastRnaBool]
 		self.rnaIds = kb.rnaData['id']
 
 		self.rnaLengths = kb.rnaData["length"].asNumber()
 
 		self.rnaSequences = kb.transcriptionSequences
+		#self.rnaSequences = kb.transcriptionSequences[self.fastRnaBool]
 
 		self.ntWeights = kb.transcriptionMonomerWeights
 
@@ -70,7 +74,10 @@ class TranscriptElongationFast(wholecell.processes.process.Process):
 
 		# Views
 
-		self.activeRnaPolys = self.uniqueMoleculesView('activeRnaPoly')
+		self.activeRnaPolys = self.uniqueMoleculesView(
+			'activeRnaPoly',
+			rnaIndex = ("in", np.where(self.fastRnaBool)[0])
+			)
 		self.bulkRnas = self.bulkMoleculesView(self.rnaIds)
 
 		self.ntps = self.bulkMoleculesView(["ATP[c]", "CTP[c]", "GTP[c]", "UTP[c]"])
