@@ -299,8 +299,8 @@ def setRibosomeCountsConstrainedByPhysiology(kb, bulkContainer):
 
 def setRNAPCountsConstrainedByPhysiology(kb, bulkContainer):
 	# -- CONSTRAINT 1: Expected RNA distribution doubling -- #
-	slowRnaBool = ~(kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"])
-	fastRnaBool = (kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"])
+	slowRnaBool = ~(kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"] | kb.rnaData["isTRna"])
+	fastRnaBool = (kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"] | kb.rnaData["isTRna"])
 
 	rnaLengths = units.sum(kb.rnaData['countsACGU'], axis = 1)
 	rnaLossRate = netLossRateFromDilutionAndDegradation(kb.cellCycleLen, kb.rnaData["degRate"])
@@ -399,8 +399,8 @@ def fitExpression(kb, bulkContainer):
 
 def fitRNAPolyTransitionRates(kb):
 	## Transcription activation rate
-	slowRnaBool = ~(kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"])
-	fastRnaBool = (kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"])
+	slowRnaBool = ~(kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"] | kb.rnaData["isTRna"])
+	fastRnaBool = (kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"] | kb.rnaData["isTRna"])
 
 	synthProb = kb.rnaData["synthProb"]
 	rnaLengths = kb.rnaData["length"]

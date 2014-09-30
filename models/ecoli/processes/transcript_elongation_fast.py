@@ -58,7 +58,7 @@ class TranscriptElongationFast(wholecell.processes.process.Process):
 
 		self.elngRate = kb.rnaPolymeraseElongationRateFast.asNumber(units.nt / units.s) * self.timeStepSec
 
-		self.fastRnaBool = kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"]
+		self.fastRnaBool = kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"] | kb.rnaData["isTRna"]
 
 		#self.rnaIds = kb.rnaData['id'][self.fastRnaBool]
 		self.rnaIds = kb.rnaData['id']
