@@ -299,15 +299,20 @@ def setRibosomeCountsConstrainedByPhysiology(kb, bulkContainer):
 
 def setRNAPCountsConstrainedByPhysiology(kb, bulkContainer):
 	# -- CONSTRAINT 1: Expected RNA distribution doubling -- #
+	slowRnaBool = ~(kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"])
+	fastRnaBool = (kb.rnaData["isRRna5S"] | kb.rnaData["isRRna16S"] | kb.rnaData["isRRna23S"])
+
 	rnaLengths = units.sum(kb.rnaData['countsACGU'], axis = 1)
 	rnaLossRate = netLossRateFromDilutionAndDegradation(kb.cellCycleLen, kb.rnaData["degRate"])
 	rnaCounts = bulkContainer.counts(kb.rnaData['id'])
 
 	nActiveRnapNeededforFast = calculateMinPolymerizingEnzymeByProductDistribution(
-		rnaLengths, kb.rnaPolymeraseElongationRateFast, rnaLossRate, rnaCounts)
+		rnaLengths[fastRnaBool], kb.rnaPolymeraseElongationRateFast, rnaLossRate[fastRnaBool], 
+		rnaCounts[fastRnaBool])
 
 	nActiveRnapNeededforSlow = calculateMinPolymerizingEnzymeByProductDistribution(
-		rnaLengths, kb.rnaPolymeraseElongationRate, rnaLossRate, rnaCounts)
+		rnaLengths[slowRnaBool], kb.rnaPolymeraseElongationRate, rnaLossRate[slowRnaBool], 
+		rnaCounts[slowRnaBool])
 
 	nActiveRnapNeeded=nActiveRnapNeededforFast + nActiveRnapNeededforSlow
 	nActiveRnapNeeded.checkNoUnit()
@@ -400,9 +405,7 @@ def fitRNAPolyTransitionRates(kb):
 	synthProb = kb.rnaData["synthProb"]
 	rnaLengths = kb.rnaData["length"]
 
-#	elngRate = kb.rnaPolymeraseElongationRate
-	elngRateSlow = kb.rnaPolymeraseElongationRate
-	elngRateFast = kb.rnaPolymeraseElongationRateFast
+	elngRateVector = slowRnaBool*kb.rnaPolymeraseElongationRate+fastRnaBool*kb.rnaPolymeraseElongationRateFast
 
 	# In our simplified model of RNA polymerase state transition, RNAp can be
 	# active (transcribing) or inactive (free-floating).  To solve for the
@@ -411,16 +414,13 @@ def fitRNAPolyTransitionRates(kb):
 	# transcription rate.
 
 #	averageTranscriptLength = units.dot(synthProb, rnaLengths)
-	averageTranscriptLengthforSlow = units.dot(synthProb[slowRnaBool], rnaLengths[slowRnaBool])
-	averageTranscriptLengthforFast = units.dot(synthProb[fastRnaBool], rnaLengths[fastRnaBool])
+	expectedTranscriptionTime = rnaLengths/elngRateVector
+	weightedExpectedTranscriptionTime = units.dot(expectedTranscriptionTime, synthProb)
+	expectedTerminationRate = 1/weightedExpectedTranscriptionTime
 
 #	expectedTerminationRateold = elngRate / averageTranscriptLength
-	expectedTerminationRate = (elngRateSlow / averageTranscriptLengthforSlow)*sum(synthProb[slowRnaBool])+(elngRateFast / averageTranscriptLengthforFast)*sum(synthProb[fastRnaBool])
-#	import ipdb; ipdb.set_trace()
 
 	kb.transcriptionActivationRate = expectedTerminationRate * FRACTION_ACTIVE_RNAP / (1 - FRACTION_ACTIVE_RNAP)
-#	kb.transcriptionActivationRateold = expectedTerminationRateold * FRACTION_ACTIVE_RNAP / (1 - FRACTION_ACTIVE_RNAP)
-
 	kb.fracActiveRnap = FRACTION_ACTIVE_RNAP
 
 
