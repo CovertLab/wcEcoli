@@ -38,7 +38,8 @@ def calcProteinCounts(kb, monomerMass):
 def calcProteinTotalCounts(kb, monomerMass, monomerExpression):
 	return countsFromMassAndExpression(
 		monomerMass.asNumber(units.g),
-		kb.monomerData["mw"].asNumber(units.g / units.mol),
+#		kb.monomerData["mw"].asNumber(units.g / units.mol),
+		kb.monomerData["mw"][kb.monomerData["isMature"]].asNumber(units.g / units.mol),
 		monomerExpression,
 		kb.nAvogadro.asNumber(1 / units.mol)
 		)
@@ -46,5 +47,6 @@ def calcProteinTotalCounts(kb, monomerMass, monomerExpression):
 def calcProteinDistribution(kb):
 	return normalize(
 		kb.rnaExpression['expression'][kb.rnaIndexToMonomerMapping] /
-		(np.log(2) / kb.cellCycleLen.asNumber(units.s) + kb.monomerData["degRate"].asNumber(1 / units.s))
+		(np.log(2) / kb.cellCycleLen.asNumber(units.s) + kb.monomerData["degRate"][kb.monomerData["isMature"]].asNumber(1 / units.s))
+		#(np.log(2) / kb.cellCycleLen.asNumber(units.s) + kb.monomerData["degRate"].asNumber(1 / units.s))
 		)

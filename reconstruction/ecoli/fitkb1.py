@@ -101,7 +101,8 @@ def createBulkContainer(kb):
 	individualMasses_rRNA5S = kb.getMass(ids_rRNA5S) / kb.nAvogadro
 	individualMasses_tRNA = kb.rnaData["mw"][kb.rnaData["isTRna"]] / kb.nAvogadro
 	individualMasses_mRNA = kb.rnaData["mw"][kb.rnaData["isMRna"]] / kb.nAvogadro
-	individualMasses_protein = kb.monomerData["mw"] / kb.nAvogadro
+	#individualMasses_protein = kb.monomerData["mw"] / kb.nAvogadro
+	individualMasses_protein = kb.monomerData["mw"][~kb.monomerData["isMature"]] / kb.nAvogadro
 
 	## Molecule distributions
 
@@ -114,7 +115,8 @@ def createBulkContainer(kb):
 
 	## Rates/times
 
-	degradationRates = kb.monomerData["degRate"]
+	degradationRates = kb.monomerData["degRate"][kb.monomerData["isMature"]]
+	#degradationRates = kb.monomerData["degRate"]
 	doublingTime = kb.cellCycleLen
 
 	# Construct bulk container
@@ -322,14 +324,16 @@ def setRNAPCountsConstrainedByPhysiology(kb, bulkContainer):
 def fitExpression(kb, bulkContainer):
 
 	view_RNA = bulkContainer.countsView(kb.rnaData["id"])
-	counts_protein = bulkContainer.counts(kb.monomerData["id"])
+	counts_protein = bulkContainer.counts(kb.monomerData["id"][~kb.monomerData["isMature"]])
+	#counts_protein = bulkContainer.counts(kb.monomerData["id"])
 
 	g = growth_data.GrowthData(kb)
 	massFractions60 = g.massFractions(60)
 	totalMass_RNA = massFractions60["rnaMass"]
 
 	doublingTime = kb.cellCycleLen
-	degradationRates_protein = kb.monomerData["degRate"]
+	degradationRates_protein = kb.monomerData["degRate"][~kb.monomerData["isMature"]]
+	#degradationRates_protein = kb.monomerData["degRate"]
 
 	netLossRate_protein = netLossRateFromDilutionAndDegradation(doublingTime, degradationRates_protein)
 
@@ -420,7 +424,8 @@ def fitMaintenanceCosts(kb, bulkContainer):
 	# GTPs used for translation (recycled, not incorporated into biomass)
 	aaMmolPerGDCW = (
 			units.sum(
-				aaCounts * np.tile(proteinCounts.reshape(-1, 1), (1, 21)),
+				aaCounts * np.tile(proteinCounts.reshape(-1, 1), (1, 22)),
+				#aaCounts * np.tile(proteinCounts.reshape(-1, 1), (1, 21)),
 				axis = 0
 			) * (
 				(1 / (units.aa * nAvogadro)) *

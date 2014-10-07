@@ -95,6 +95,7 @@ class KnowledgeBaseEcoli(object):
 
 		self._buildSequence()
 		self._buildCompartments()
+		self._buildMonomerData()
 		self._buildBulkMolecules()
 		self._buildBulkChromosome()
 		self._buildGeneData()
@@ -102,7 +103,7 @@ class KnowledgeBaseEcoli(object):
 		self._buildUniqueMolecules()
 		self._buildBiomass()
 		self._buildRnaData()
-		self._buildMonomerData()
+		#self._buildMonomerData()
 		self._buildRnaIndexToMonomerMapping()
 		self._buildMonomerIndexToRnaMapping()
 		self._buildRnaIndexToGeneMapping()
@@ -1633,10 +1634,17 @@ class KnowledgeBaseEcoli(object):
 	def _buildBulkMolecules(self):
 		# TODO: modularize this logic
 
+#		size = (
+#			len(self._metabolites)*len(self._compartmentList)
+#			+ len(self._rnas)
+#			+ len(self._proteins)
+#			+ len(self._proteinComplexes)
+#			+ len(self._polymerized)*len(self._compartmentList)
+#			)
 		size = (
 			len(self._metabolites)*len(self._compartmentList)
 			+ len(self._rnas)
-			+ len(self._proteins)
+			+ len(self.monomerData)
 			+ len(self._proteinComplexes)
 			+ len(self._polymerized)*len(self._compartmentList)
 			)
@@ -1688,17 +1696,21 @@ class KnowledgeBaseEcoli(object):
 			]
 		
 		# Set proteins
-		lastProteinMonomerIdx = len(self._proteins) + lastRnaIdx
+		lastProteinMonomerIdx = len(self.monomerData) + lastRnaIdx
+		#lastProteinMonomerIdx = len(self._proteins) + lastRnaIdx
 
 		bulkMolecules['moleculeId'][lastRnaIdx:lastProteinMonomerIdx] = [
-			'{}[{}]'.format(protein['id'], protein['location'])
-			for protein in self._proteins
+			'{}'.format(protein['id'])
+			for protein in self.monomerData
 			]
+			#'{}[{}]'.format(protein['id'], protein['location'])
+			#for protein in self._proteins
+			#]
 
 		bulkMolecules['mass'][lastRnaIdx:lastProteinMonomerIdx, MOLECULAR_WEIGHT_ORDER["protein"]] = [
-			protein['mw'] for protein in self._proteins
+			protein['mw'] for protein in self.monomerData
+			#protein['mw'] for protein in self._proteins
 			]
-		
 		# Set complexes
 		lastComplexIdx = len(self._proteinComplexes) + lastProteinMonomerIdx
 
@@ -2091,6 +2103,11 @@ class KnowledgeBaseEcoli(object):
 	def _buildMonomerData(self):
 		ids = ['{}[{}]'.format(protein['id'], protein['location'])
 			for protein in self._proteins]
+		idsnascent = ['{}:n[{}]'.format(protein['id'], protein['location'])
+			for protein in self._proteins]
+		idsAll = ids+idsnascent
+
+		matureBool = np.append(np.ones(len(ids),dtype=bool),np.zeros(len(ids),dtype=bool))
 
 		rnaIds = []
 
@@ -2103,34 +2120,60 @@ class KnowledgeBaseEcoli(object):
 					rnaLocation = rna['location']
 					break
 
+			#rnaIdsMature.append('None')
 			rnaIds.append('{}[{}]'.format(
 				rnaId,
 				rnaLocation
 				))
+		rnaIdsAll = rnaIds+rnaIds
+		#rnaIdsAll = rnaIds+rnaIdsMature
 
 		lengths = []
+		lengthsnascent = []
 		aaCounts = []
+		aaCountsnascent = []
 		sequences = []
+		sequencesnascent = []
+		
+		cleaveMaas = ['G', 'A', 'S', 'T', 'P', 'V']
 
 		for protein in self._proteins:
-			sequence = protein['seq']
-
+			sequencefromcode = protein['seq']
+			if sequencefromcode[1] in cleaveMaas:
+				sequence = sequencefromcode[1:-1]
+			else: sequence = 'M'+sequencefromcode[1:-1]
+			sequencenascent = 'Z'+sequencefromcode[1:-1]
 			counts = []
+			countsnascent = []
 
 			for aa in self._aaWeights.viewkeys(): # TODO: better way to get AA ids?
 				counts.append(
 					sequence.count(aa)
 					)
+				countsnascent.append(sequencenascent.count(aa))
 
+		#	import ipdb; ipdb.set_trace()
 			lengths.append(len(sequence))
+			lengthsnascent.append(len(sequencenascent))
 			aaCounts.append(counts)
+			aaCountsnascent.append(countsnascent)
 			sequences.append(sequence)
+			sequencesnascent.append(sequencenascent)
 
-		maxSequenceLength = max(len(seq) for seq in sequences)
+		sequencesAll = sequences+sequencesnascent
+		lengthsAll = lengths+lengthsnascent
+		aaCountsAll=aaCounts+aaCountsnascent
+		maxSequenceLength = max(len(seq) for seq in sequencesAll)
 
-		mws = np.array([protein['mw'] for protein in self._proteins])
 
-		size = len(rnaIds)
+		mws=[]
+		for seq in sequencesAll:
+			mw=self._polypeptideEndWeight
+			for aa in seq: mw += self._aaWeights[aa]
+			mws.append(mw)
+
+		#size = len(rnaIds)
+		size = len(rnaIdsAll)
 
 		nAAs = len(aaCounts[0])
 
@@ -2160,10 +2203,13 @@ class KnowledgeBaseEcoli(object):
 		ribosomalProteins.extend([x[:-3] for x in S30_ALL_PROTEINS])
 		ribosomalProteins.extend([x[:-3] for x in S50_ALL_PROTEINS])
 
-		degRate = np.zeros(len(self._proteins))
+		#The degradation rates for the nascent proteins will be meaningless
+		#so they are all just set to zero
+
+		degRate = np.zeros(len(idsAll))
 		for i,m in enumerate(self._proteins):
 			if m['id'] not in ribosomalProteins:
-				degRate[i] = NruleDegRate[m['seq'][0]].asNumber()
+				degRate[i] = NruleDegRate[sequences[i][0]].asNumber()
 			else:
 				degRate[i] = slowRate.asNumber()
 
@@ -2177,16 +2223,19 @@ class KnowledgeBaseEcoli(object):
 				('aaCounts', '{}i8'.format(nAAs)),
 				('mw', 'f8'),
 				('sequence', 'a{}'.format(maxSequenceLength)),
+				('isMature', 'bool')
 				]
 			)
 
-		self.monomerData['id'] = ids
-		self.monomerData['rnaId'] = rnaIds
+		#import ipdb; ipdb.set_trace()
+		self.monomerData['id'] = idsAll
+		self.monomerData['rnaId'] = rnaIdsAll
 		self.monomerData['degRate'] = degRate
-		self.monomerData['length'] = lengths
-		self.monomerData['aaCounts'] = aaCounts
+		self.monomerData['length'] = lengthsAll
+		self.monomerData['aaCounts'] = aaCountsAll
 		self.monomerData['mw'] = mws
-		self.monomerData['sequence'] = sequences
+		self.monomerData['sequence'] = sequencesAll
+		self.monomerData['isMature'] = matureBool
 
 		self.aaIDs = AMINO_ACID_1_TO_3_ORDERED.values()
 		self.aaIDs_singleLetter = AMINO_ACID_1_TO_3_ORDERED.keys()
@@ -2198,14 +2247,14 @@ class KnowledgeBaseEcoli(object):
 			'length'	:	units.aa,
 			'aaCounts'	:	units.aa,
 			'mw'		:	units.g / units.mol,
-			'sequence'  :   None
+			'sequence'  :   None,
+			'isMature'	:	None
 			}
-
 		self.monomerData = UnitStructArray(self.monomerData, field_units)
 
 
 	def _buildRnaIndexToMonomerMapping(self):
-		self.rnaIndexToMonomerMapping = np.array([np.where(x == self.rnaData["id"])[0][0] for x in self.monomerData["rnaId"]])
+		self.rnaIndexToMonomerMapping = np.array([np.where(x == self.rnaData["id"])[0][0] for x in self.monomerData["rnaId"][self.monomerData["isMature"]]])
 
 
 	def _buildMonomerIndexToRnaMapping(self):
@@ -2841,7 +2890,7 @@ class KnowledgeBaseEcoli(object):
 		for i, sequence in enumerate(sequences):
 			for j, letter in enumerate(sequence):
 				self.translationSequences[i, j] = aaMapping[letter]
-
+		#import ipdb; ipdb.set_trace()
 		self.translationMonomerWeights = (
 			(
 				self.getMass(self.aaIDs)
@@ -2877,6 +2926,7 @@ class KnowledgeBaseEcoli(object):
 
 	def _buildAllMasses(self):
 		size = len(self._rnas) + len(self._proteins) + len(self._proteinComplexes) + len(self._metabolites) + len(self._polymerized)
+		size = len(self._rnas) + len(self._proteins) + len(self._proteinComplexes) + len(self._metabolites) + len(self._polymerized)+1
 		allMass = np.empty(size,
 			dtype = [
 					('id',		'a50'),
@@ -2889,6 +2939,7 @@ class KnowledgeBaseEcoli(object):
 		listMass.extend([(x['id'],np.sum(x['mw'])) for x in self._proteins])
 		listMass.extend([(x['id'],np.sum(x['mw'])) for x in self._proteinComplexes])
 		listMass.extend([(x['id'],np.sum(x['mw7.2'])) for x in self._metabolites])
+		listMass.extend([('FME-L',177.2169)])
 		listMass.extend([(x['id'],np.sum(x['mw'])) for x in self._polymerized])
 
 		allMass[:] = listMass

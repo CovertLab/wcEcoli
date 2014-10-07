@@ -14,7 +14,7 @@ AMINO_ACID_1_TO_3_ORDERED = collections.OrderedDict(( # TOKB
 	("H", "HIS-L[c]"), ("I", "ILE-L[c]"), ("L", "LEU-L[c]"), ("K", "LYS-L[c]"),
 	("M", "MET-L[c]"), ("F", "PHE-L[c]"), ("P", "PRO-L[c]"), ("S", "SER-L[c]"),
 	("T", "THR-L[c]"), ("W", "TRP-L[c]"), ("Y", "TYR-L[c]"), ("U", "SEC-L[c]"),
-	("V", "VAL-L[c]")
+	("V", "VAL-L[c]"), ("Z", "FME-L[c]")
 	))
 
 MOLECULAR_WEIGHT_KEYS = [
@@ -1894,6 +1894,7 @@ POLYMERIZED_AMINO_ACID_WEIGHTS = [
 	{"base molecule":"TYR-L",	"frame id":"Polymerized TYR-L",	"mw":163.1751},
 	{"base molecule":"SEC-L",	"frame id":"Polymerized SEC-L",	"mw":149.0252},
 	{"base molecule":"VAL-L",	"frame id":"Polymerized VAL-L",	"mw":99.1321},
+	{"base molecule":"FME-L",	"frame id":"Polymerized FME-L", "mw":159.2021}
 	]
 
 POLYPEPTIDE_END_WEIGHT = {"base molecule":"H2O",	"frame id":"Polypeptide terminal hydroxyl",	"mw":18.0148}
