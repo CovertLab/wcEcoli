@@ -102,7 +102,7 @@ def createBulkContainer(kb):
 	individualMasses_tRNA = kb.rnaData["mw"][kb.rnaData["isTRna"]] / kb.nAvogadro
 	individualMasses_mRNA = kb.rnaData["mw"][kb.rnaData["isMRna"]] / kb.nAvogadro
 	#individualMasses_protein = kb.proteinData["mw"] / kb.nAvogadro
-	individualMasses_protein = kb.proteinData["mw"][~kb.proteinData["isMature"]] / kb.nAvogadro
+	individualMasses_protein = kb.proteinData["mw"] / kb.nAvogadro
 
 	## Molecule distributions
 
@@ -115,8 +115,7 @@ def createBulkContainer(kb):
 
 	## Rates/times
 
-	degradationRates = kb.proteinData["degRate"][kb.proteinData["isMature"]]
-	#degradationRates = kb.proteinData["degRate"]
+	degradationRates = kb.proteinData["degRate"]
 	doublingTime = kb.cellCycleLen
 
 	# Construct bulk container
@@ -324,7 +323,7 @@ def setRNAPCountsConstrainedByPhysiology(kb, bulkContainer):
 def fitExpression(kb, bulkContainer):
 
 	view_RNA = bulkContainer.countsView(kb.rnaData["id"])
-	counts_protein = bulkContainer.counts(kb.proteinData["id"][~kb.proteinData["isMature"]])
+	counts_protein = bulkContainer.counts(kb.proteinData["id"])
 	#counts_protein = bulkContainer.counts(kb.proteinData["id"])
 
 	g = growth_data.GrowthData(kb)
@@ -332,7 +331,7 @@ def fitExpression(kb, bulkContainer):
 	totalMass_RNA = massFractions60["rnaMass"]
 
 	doublingTime = kb.cellCycleLen
-	degradationRates_protein = kb.proteinData["degRate"][~kb.proteinData["isMature"]]
+	degradationRates_protein = kb.proteinData["degRate"]
 	#degradationRates_protein = kb.proteinData["degRate"]
 
 	netLossRate_protein = netLossRateFromDilutionAndDegradation(doublingTime, degradationRates_protein)

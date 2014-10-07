@@ -2051,7 +2051,8 @@ AA_TRNA_GROUPS = collections.OrderedDict([
 		('W', ['trpT-tRNA[c]']),
 		('Y', ['tyrT-tRNA[c]', 'tyrU-tRNA[c]', 'tyrV-tRNA[c]',]),
 		('U', ['selC-tRNA[c]']),
-		('V', ['valT-tRNA[c]', 'valU-tRNA[c]', 'valV-tRNA[c]', 'valW-tRNA[c]', 'valX-tRNA[c]', 'valY-tRNA[c]'])
+		('V', ['valT-tRNA[c]', 'valU-tRNA[c]', 'valV-tRNA[c]', 'valW-tRNA[c]', 'valX-tRNA[c]', 'valY-tRNA[c]']),
+		('Z', [])
 		])
 
 AA_SYNTHETASE_GROUPS = collections.OrderedDict([
@@ -2075,7 +2076,8 @@ AA_SYNTHETASE_GROUPS = collections.OrderedDict([
 		('W', ['TRPS-CPLX[c]']),
 		('Y', ['TYRS-CPLX[c]']),
 		('U', ['CPLX0-1141[c]']), # NOTE: Approximate enzyme here...
-		('V', ['VALS-MONOMER[c]'])
+		('V', ['VALS-MONOMER[c]']),
+		('Z', [])
 		])
 
 # Curated from Jakubowski 1984
@@ -2100,7 +2102,8 @@ SYNTHETASE_RATE = collections.OrderedDict([ # Units 1/s
 		('W', None),
 		('Y', None),
 		('U', None),
-		('V', 26.6)
+		('V', 26.6),
+		('Z', None)
 	])
 
 
