@@ -95,7 +95,8 @@ class KnowledgeBaseEcoli(object):
 
 		self._buildSequence()
 		self._buildCompartments()
-		self._buildMonomerData()
+		self._buildProteinData()
+		self._buildNascentProteinData()
 		self._buildBulkMolecules()
 		self._buildBulkChromosome()
 		self._buildGeneData()
@@ -103,7 +104,6 @@ class KnowledgeBaseEcoli(object):
 		self._buildUniqueMolecules()
 		self._buildBiomass()
 		self._buildRnaData()
-		#self._buildMonomerData()
 		self._buildRnaIndexToMonomerMapping()
 		self._buildMonomerIndexToRnaMapping()
 		self._buildRnaIndexToGeneMapping()
@@ -138,6 +138,22 @@ class KnowledgeBaseEcoli(object):
 		self._parameterData['gtpPerTranslation'] = 4.2 # TODO: find a real number
 		self._parameterData["fractionChargedTrna"] = 0.8
 
+		fMet = {
+			"id": 'FME-L',
+			"name": 'Formyl-L-methionine',
+			"feistFormula": 'C6H10NO3S',
+			"formula7.2": 'C6H10NO3S',
+			"charge7.2": 0,
+			"mw7.2": float(177.2169),
+			"mediaConc": 0.,
+			"biomassInfo": {'core' : [], 'wildtype' : []},
+			"maxExchange": 0.,
+			"fakeMet": False,
+			"equivEnzIds": [],
+			"comments": ''
+			}
+
+		self._metabolites.append(fMet)
 
 		# Assumed reaction for producing L-selenocysteine without a tRNA
 		# [c]: SER-L + SELNP --> SEC-L + PI + (2)H
@@ -1633,18 +1649,11 @@ class KnowledgeBaseEcoli(object):
 
 	def _buildBulkMolecules(self):
 		# TODO: modularize this logic
-
-#		size = (
-#			len(self._metabolites)*len(self._compartmentList)
-#			+ len(self._rnas)
-#			+ len(self._proteins)
-#			+ len(self._proteinComplexes)
-#			+ len(self._polymerized)*len(self._compartmentList)
-#			)
 		size = (
 			len(self._metabolites)*len(self._compartmentList)
 			+ len(self._rnas)
-			+ len(self.monomerData)
+			+ len(self.proteinData)
+			+ len(self.proteinNascentData)
 			+ len(self._proteinComplexes)
 			+ len(self._polymerized)*len(self._compartmentList)
 			)
@@ -1696,29 +1705,36 @@ class KnowledgeBaseEcoli(object):
 			]
 		
 		# Set proteins
-		lastProteinMonomerIdx = len(self.monomerData) + lastRnaIdx
-		#lastProteinMonomerIdx = len(self._proteins) + lastRnaIdx
-
+		lastProteinMonomerIdx = len(self.proteinData) + lastRnaIdx
 		bulkMolecules['moleculeId'][lastRnaIdx:lastProteinMonomerIdx] = [
 			'{}'.format(protein['id'])
-			for protein in self.monomerData
+			for protein in self.proteinData
 			]
-			#'{}[{}]'.format(protein['id'], protein['location'])
-			#for protein in self._proteins
-			#]
 
 		bulkMolecules['mass'][lastRnaIdx:lastProteinMonomerIdx, MOLECULAR_WEIGHT_ORDER["protein"]] = [
-			protein['mw'] for protein in self.monomerData
+			protein['mw'] for protein in self.proteinData
 			#protein['mw'] for protein in self._proteins
 			]
-		# Set complexes
-		lastComplexIdx = len(self._proteinComplexes) + lastProteinMonomerIdx
 
-		bulkMolecules['moleculeId'][lastProteinMonomerIdx:lastComplexIdx] = [
+		# Set nascent proteins
+		lastNascentProteinMonomerIdx = len(self.proteinNascentData) + lastProteinMonomerIdx
+		bulkMolecules['moleculeId'][lastProteinMonomerIdx:lastNascentProteinMonomerIdx] = [
+			'{}'.format(protein['id'])
+			for protein in self.proteinNascentData
+			]
+
+		bulkMolecules['mass'][lastProteinMonomerIdx:lastNascentProteinMonomerIdx, MOLECULAR_WEIGHT_ORDER["protein"]] = [
+			protein['mw'] for protein in self.proteinNascentData
+			]
+
+		# Set complexes
+		lastComplexIdx = len(self._proteinComplexes) + lastNascentProteinMonomerIdx
+
+		bulkMolecules['moleculeId'][lastNascentProteinMonomerIdx:lastComplexIdx] = [
 			'{}[{}]'.format(complex_['id'],complex_['location']) for complex_ in self._proteinComplexes
 			]
 
-		bulkMolecules['mass'][lastProteinMonomerIdx:lastComplexIdx, :] = [
+		bulkMolecules['mass'][lastNascentProteinMonomerIdx:lastComplexIdx, :] = [
 			complex_['mw'] for complex_ in self._proteinComplexes
 			]
 
@@ -2100,14 +2116,9 @@ class KnowledgeBaseEcoli(object):
 		self.rnaData = UnitStructArray(self.rnaData, field_units)
 		self.getTrnaAbundanceData = getTrnaAbundanceAtGrowthRate
 
-	def _buildMonomerData(self):
+	def _buildProteinData(self):
 		ids = ['{}[{}]'.format(protein['id'], protein['location'])
 			for protein in self._proteins]
-		idsnascent = ['{}:n[{}]'.format(protein['id'], protein['location'])
-			for protein in self._proteins]
-		idsAll = ids+idsnascent
-
-		matureBool = np.append(np.ones(len(ids),dtype=bool),np.zeros(len(ids),dtype=bool))
 
 		rnaIds = []
 
@@ -2120,65 +2131,51 @@ class KnowledgeBaseEcoli(object):
 					rnaLocation = rna['location']
 					break
 
-			#rnaIdsMature.append('None')
 			rnaIds.append('{}[{}]'.format(
 				rnaId,
 				rnaLocation
 				))
-		rnaIdsAll = rnaIds+rnaIds
-		#rnaIdsAll = rnaIds+rnaIdsMature
 
 		lengths = []
-		lengthsnascent = []
 		aaCounts = []
-		aaCountsnascent = []
 		sequences = []
-		sequencesnascent = []
 		
-		cleaveMaas = ['G', 'A', 'S', 'T', 'P', 'V']
+		cleaveMethionineIfNextAminoAcid = ['G', 'A', 'S', 'T', 'P', 'V'] # TODO: Kalli. Move to HARD CODED.
 
 		for protein in self._proteins:
 			sequencefromcode = protein['seq']
-			if sequencefromcode[1] in cleaveMaas:
+			if sequencefromcode[1] in cleaveMethionineIfNextAminoAcid:
 				sequence = sequencefromcode[1:-1]
-			else: sequence = 'M'+sequencefromcode[1:-1]
-			sequencenascent = 'Z'+sequencefromcode[1:-1]
+			else:
+				sequence = 'M'+sequencefromcode[1:-1]
+			
 			counts = []
-			countsnascent = []
 
 			for aa in self._aaWeights.viewkeys(): # TODO: better way to get AA ids?
 				counts.append(
 					sequence.count(aa)
 					)
-				countsnascent.append(sequencenascent.count(aa))
 
-		#	import ipdb; ipdb.set_trace()
 			lengths.append(len(sequence))
-			lengthsnascent.append(len(sequencenascent))
 			aaCounts.append(counts)
-			aaCountsnascent.append(countsnascent)
 			sequences.append(sequence)
-			sequencesnascent.append(sequencenascent)
 
-		sequencesAll = sequences+sequencesnascent
-		lengthsAll = lengths+lengthsnascent
-		aaCountsAll=aaCounts+aaCountsnascent
-		maxSequenceLength = max(len(seq) for seq in sequencesAll)
+		maxSequenceLength = max(len(seq) for seq in sequences)
 
-
+		# Recalculate MW because we are cleaving different
+		# parts of fMet
 		mws=[]
-		for seq in sequencesAll:
+		for seq in sequences:
 			mw=self._polypeptideEndWeight
 			for aa in seq: mw += self._aaWeights[aa]
 			mws.append(mw)
 
-		#size = len(rnaIds)
-		size = len(rnaIdsAll)
+		size = len(rnaIds)
 
 		nAAs = len(aaCounts[0])
 
 		# Calculate degradation rates based on N-rule
-		# TODO: citation
+		# TODO: John. citation
 		fastRate = (np.log(2) / (2*units.min)).asUnit(1 / units.s)
 		slowRate = (np.log(2) / (10*60*units.min)).asUnit(1 / units.s)
 
@@ -2203,17 +2200,14 @@ class KnowledgeBaseEcoli(object):
 		ribosomalProteins.extend([x[:-3] for x in S30_ALL_PROTEINS])
 		ribosomalProteins.extend([x[:-3] for x in S50_ALL_PROTEINS])
 
-		#The degradation rates for the nascent proteins will be meaningless
-		#so they are all just set to zero
-
-		degRate = np.zeros(len(idsAll))
+		degRate = np.zeros(len(ids))
 		for i,m in enumerate(self._proteins):
 			if m['id'] not in ribosomalProteins:
 				degRate[i] = NruleDegRate[sequences[i][0]].asNumber()
 			else:
 				degRate[i] = slowRate.asNumber()
 
-		self.monomerData = np.zeros(
+		self.proteinData = np.zeros(
 			size,
 			dtype = [
 				('id', 'a50'),
@@ -2223,19 +2217,16 @@ class KnowledgeBaseEcoli(object):
 				('aaCounts', '{}i8'.format(nAAs)),
 				('mw', 'f8'),
 				('sequence', 'a{}'.format(maxSequenceLength)),
-				('isMature', 'bool')
 				]
 			)
 
-		#import ipdb; ipdb.set_trace()
-		self.monomerData['id'] = idsAll
-		self.monomerData['rnaId'] = rnaIdsAll
-		self.monomerData['degRate'] = degRate
-		self.monomerData['length'] = lengthsAll
-		self.monomerData['aaCounts'] = aaCountsAll
-		self.monomerData['mw'] = mws
-		self.monomerData['sequence'] = sequencesAll
-		self.monomerData['isMature'] = matureBool
+		self.proteinData['id'] = ids
+		self.proteinData['rnaId'] = rnaIds
+		self.proteinData['degRate'] = degRate
+		self.proteinData['length'] = lengths
+		self.proteinData['aaCounts'] = aaCounts
+		self.proteinData['mw'] = mws
+		self.proteinData['sequence'] = sequences
 
 		self.aaIDs = AMINO_ACID_1_TO_3_ORDERED.values()
 		self.aaIDs_singleLetter = AMINO_ACID_1_TO_3_ORDERED.keys()
@@ -2248,17 +2239,132 @@ class KnowledgeBaseEcoli(object):
 			'aaCounts'	:	units.aa,
 			'mw'		:	units.g / units.mol,
 			'sequence'  :   None,
-			'isMature'	:	None
 			}
-		self.monomerData = UnitStructArray(self.monomerData, field_units)
+		self.proteinData = UnitStructArray(self.proteinData, field_units)
 
+
+	def _buildNascentProteinData(self):
+		ids = ['{}:n[{}]'.format(protein['id'], protein['location'])
+			for protein in self._proteins]
+
+		rnaIds = []
+
+		for protein in self._proteins:
+			rnaId = protein['rnaId']
+
+			rnaLocation = None
+			for rna in self._rnas:
+				if rna['id'] == rnaId:
+					rnaLocation = rna['location']
+					break
+
+			rnaIds.append('{}[{}]'.format(
+				rnaId,
+				rnaLocation
+				))
+
+		lengths = []
+		aaCounts = []
+		sequences = []
+
+		for protein in self._proteins:
+			sequencefromcode = protein['seq']
+			sequence = 'Z'+sequencefromcode[1:-1]
+			counts = []
+
+			for aa in self._aaWeights.viewkeys(): # TODO: better way to get AA ids?
+				counts.append(sequence.count(aa))
+
+			lengths.append(len(sequence))
+			aaCounts.append(counts)
+			sequences.append(sequence)
+
+		maxSequenceLength = max(len(seq) for seq in sequences)
+
+		mws=[]
+		for seq in sequences:
+			mw=self._polypeptideEndWeight
+			for aa in seq: mw += self._aaWeights[aa]
+			mws.append(mw)
+
+		size = len(rnaIds)
+
+		nAAs = len(aaCounts[0])
+
+		# Calculate degradation rates based on N-rule
+		# TODO: John again. citation
+		fastRate = (np.log(2) / (2*units.min)).asUnit(1 / units.s)
+		slowRate = (np.log(2) / (10*60*units.min)).asUnit(1 / units.s)
+
+		fastAAs = ["R", "K", "F", "L", "W", "Y"]
+		slowAAs = ["H", "I", "D", "E", "N", "Q", "C", "A", "S", "T", "G", "V", "M"]
+		noDataAAs = ["P", "U", "Z"]
+
+		NruleDegRate = {}
+		NruleDegRate.update(
+			(fastAA, fastRate) for fastAA in fastAAs
+			)
+		NruleDegRate.update(
+			(slowAA, slowRate) for slowAA in slowAAs
+			)
+		NruleDegRate.update(
+			(noDataAA, slowRate) for noDataAA in noDataAAs
+			) # Assumed slow rate because of no data
+
+		# Build list of ribosomal proteins
+		# Give all ribosomal proteins the slowAA rule
+		ribosomalProteins = []
+		ribosomalProteins.extend([x[:-3] for x in S30_ALL_PROTEINS])
+		ribosomalProteins.extend([x[:-3] for x in S50_ALL_PROTEINS])
+
+		degRate = np.zeros(len(ids))
+		for i,m in enumerate(self._proteins):
+			if m['id'] not in ribosomalProteins:
+				degRate[i] = NruleDegRate[sequences[i][0]].asNumber()
+			else:
+				degRate[i] = slowRate.asNumber()
+
+		self.proteinNascentData = np.zeros(
+			size,
+			dtype = [
+				('id', 'a50'),
+				('rnaId', 'a50'),
+				('degRate', 'f8'),
+				('length', 'i8'),
+				('aaCounts', '{}i8'.format(nAAs)),
+				('mw', 'f8'),
+				('sequence', 'a{}'.format(maxSequenceLength)),
+				]
+			)
+
+		self.proteinNascentData['id'] = ids
+		self.proteinNascentData['rnaId'] = rnaIds
+		self.proteinNascentData['degRate'] = degRate
+		self.proteinNascentData['length'] = lengths
+		self.proteinNascentData['aaCounts'] = aaCounts
+		self.proteinNascentData['mw'] = mws
+		self.proteinNascentData['sequence'] = sequences
+
+		self.aaIDs = AMINO_ACID_1_TO_3_ORDERED.values()
+		self.aaIDs_singleLetter = AMINO_ACID_1_TO_3_ORDERED.keys()
+
+		field_units = {
+			'id'		:	None,
+			'rnaId'		:	None,
+			'degRate'	:	1 / units.s,
+			'length'	:	units.aa,
+			'aaCounts'	:	units.aa,
+			'mw'		:	units.g / units.mol,
+			'sequence'  :   None,
+			}
+		self.proteinNascentData = UnitStructArray(self.proteinNascentData, field_units)
 
 	def _buildRnaIndexToMonomerMapping(self):
-		self.rnaIndexToMonomerMapping = np.array([np.where(x == self.rnaData["id"])[0][0] for x in self.monomerData["rnaId"][self.monomerData["isMature"]]])
+		self.rnaIndexToMonomerMapping = np.array([np.where(x == self.rnaData["id"])[0][0] for x in self.proteinData["rnaId"]])
 
 
 	def _buildMonomerIndexToRnaMapping(self):
-		self.monomerIndexToRnaMapping = np.array([np.where(x == self.monomerData["rnaId"])[0][0] for x in self.rnaData["id"] if len(np.where(x == self.monomerData["rnaId"])[0])])
+		self.monomerIndexToRnaMapping = np.array([np.where(x == self.proteinData["rnaId"])[0][0] for x in self.rnaData["id"] if len(np.where(x == self.proteinData["rnaId"])[0])])
 
 
 	def _buildRnaIndexToGeneMapping(self):
@@ -2732,7 +2838,7 @@ class KnowledgeBaseEcoli(object):
 
 		# ILE/LEU: split reported concentration according to their relative abundances
 
-		aaAbundances = self.monomerData["aaCounts"].asNumber().sum(axis = 0)
+		aaAbundances = self.proteinData["aaCounts"].asNumber().sum(axis = 0)
 		# TODO: more thorough estimate of abundance or some external data point (neidhardt?)
 
 		ileAbundance = aaAbundances[self.aaIDs.index("ILE-L[c]")]
@@ -2873,10 +2979,10 @@ class KnowledgeBaseEcoli(object):
 	def _buildTranslation(self):
 		from wholecell.utils.polymerize import PAD_VALUE
 
-		sequences = self.monomerData["sequence"] # TODO: consider removing sequences
+		sequences = self.proteinData["sequence"] # TODO: consider removing sequences
 
 		maxLen = np.int64(
-			self.monomerData["length"].asNumber().max()
+			self.proteinData["length"].asNumber().max()
 			+ self.ribosomeElongationRate.asNumber(units.aa / units.s)
 			)
 
@@ -2926,7 +3032,7 @@ class KnowledgeBaseEcoli(object):
 
 	def _buildAllMasses(self):
 		size = len(self._rnas) + len(self._proteins) + len(self._proteinComplexes) + len(self._metabolites) + len(self._polymerized)
-		size = len(self._rnas) + len(self._proteins) + len(self._proteinComplexes) + len(self._metabolites) + len(self._polymerized)+1
+		size = len(self._rnas) + len(self._proteins) + len(self._proteinComplexes) + len(self._metabolites) + len(self._polymerized)
 		allMass = np.empty(size,
 			dtype = [
 					('id',		'a50'),
@@ -2939,7 +3045,6 @@ class KnowledgeBaseEcoli(object):
 		listMass.extend([(x['id'],np.sum(x['mw'])) for x in self._proteins])
 		listMass.extend([(x['id'],np.sum(x['mw'])) for x in self._proteinComplexes])
 		listMass.extend([(x['id'],np.sum(x['mw7.2'])) for x in self._metabolites])
-		listMass.extend([('FME-L',177.2169)])
 		listMass.extend([(x['id'],np.sum(x['mw'])) for x in self._polymerized])
 
 		allMass[:] = listMass
