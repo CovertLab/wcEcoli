@@ -79,7 +79,7 @@ def createBulkContainer(kb):
 	ids_rRNA5S = kb.rnaData["id"][kb.rnaData["isRRna5S"]]
 	ids_tRNA = kb.rnaData["id"][kb.rnaData["isTRna"]]
 	ids_mRNA = kb.rnaData["id"][kb.rnaData["isMRna"]]
-	ids_protein = kb.monomerData["id"]
+	ids_protein = kb.proteinData["id"]
 
 	## Mass fractions
 	
@@ -101,8 +101,8 @@ def createBulkContainer(kb):
 	individualMasses_rRNA5S = kb.getMass(ids_rRNA5S) / kb.nAvogadro
 	individualMasses_tRNA = kb.rnaData["mw"][kb.rnaData["isTRna"]] / kb.nAvogadro
 	individualMasses_mRNA = kb.rnaData["mw"][kb.rnaData["isMRna"]] / kb.nAvogadro
-	#individualMasses_protein = kb.monomerData["mw"] / kb.nAvogadro
-	individualMasses_protein = kb.monomerData["mw"][~kb.monomerData["isMature"]] / kb.nAvogadro
+	#individualMasses_protein = kb.proteinData["mw"] / kb.nAvogadro
+	individualMasses_protein = kb.proteinData["mw"][~kb.proteinData["isMature"]] / kb.nAvogadro
 
 	## Molecule distributions
 
@@ -115,8 +115,8 @@ def createBulkContainer(kb):
 
 	## Rates/times
 
-	degradationRates = kb.monomerData["degRate"][kb.monomerData["isMature"]]
-	#degradationRates = kb.monomerData["degRate"]
+	degradationRates = kb.proteinData["degRate"][kb.proteinData["isMature"]]
+	#degradationRates = kb.proteinData["degRate"]
 	doublingTime = kb.cellCycleLen
 
 	# Construct bulk container
@@ -237,9 +237,9 @@ def setRibosomeCountsConstrainedByPhysiology(kb, bulkContainer):
 	# -- CONSTRAINT 1: Expected protien distribution doubling -- #
 	## Calculate minimium number of 30S and 50S subunits required in order to double our expected
 	## protein distribution in one cell cycle
-	proteinLengths = units.sum(kb.monomerData['aaCounts'], axis = 1)
-	proteinDegradationRates =  kb.monomerData["degRate"]
-	proteinCounts =  bulkContainer.counts(kb.monomerData["id"])
+	proteinLengths = units.sum(kb.proteinData['aaCounts'], axis = 1)
+	proteinDegradationRates =  kb.proteinData["degRate"]
+	proteinCounts =  bulkContainer.counts(kb.proteinData["id"])
 
 	netLossRate_protein = netLossRateFromDilutionAndDegradation(
 		kb.cellCycleLen,
@@ -324,16 +324,16 @@ def setRNAPCountsConstrainedByPhysiology(kb, bulkContainer):
 def fitExpression(kb, bulkContainer):
 
 	view_RNA = bulkContainer.countsView(kb.rnaData["id"])
-	counts_protein = bulkContainer.counts(kb.monomerData["id"][~kb.monomerData["isMature"]])
-	#counts_protein = bulkContainer.counts(kb.monomerData["id"])
+	counts_protein = bulkContainer.counts(kb.proteinData["id"][~kb.proteinData["isMature"]])
+	#counts_protein = bulkContainer.counts(kb.proteinData["id"])
 
 	g = growth_data.GrowthData(kb)
 	massFractions60 = g.massFractions(60)
 	totalMass_RNA = massFractions60["rnaMass"]
 
 	doublingTime = kb.cellCycleLen
-	degradationRates_protein = kb.monomerData["degRate"][~kb.monomerData["isMature"]]
-	#degradationRates_protein = kb.monomerData["degRate"]
+	degradationRates_protein = kb.proteinData["degRate"][~kb.proteinData["isMature"]]
+	#degradationRates_protein = kb.proteinData["degRate"]
 
 	netLossRate_protein = netLossRateFromDilutionAndDegradation(doublingTime, degradationRates_protein)
 
@@ -348,7 +348,7 @@ def fitExpression(kb, bulkContainer):
 
 	# Update mRNA expression to reflect monomer counts
 	assert np.all(
-		kb.monomerData["rnaId"][kb.monomerIndexToRnaMapping] == kb.rnaData["id"][kb.rnaData["isMRna"]]
+		kb.proteinData["rnaId"][kb.monomerIndexToRnaMapping] == kb.rnaData["id"][kb.rnaData["isMRna"]]
 		), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests
 
 	mRnaExpressionView = rnaExpressionContainer.countsView(kb.rnaData["id"][kb.rnaData["isMRna"]])
@@ -415,8 +415,8 @@ def fitRNAPolyTransitionRates(kb):
 
 
 def fitMaintenanceCosts(kb, bulkContainer):
-	aaCounts = kb.monomerData["aaCounts"]
-	proteinCounts = bulkContainer.counts(kb.monomerData["id"])
+	aaCounts = kb.proteinData["aaCounts"]
+	proteinCounts = bulkContainer.counts(kb.proteinData["id"])
 	nAvogadro = kb.nAvogadro
 	avgCellDryMassInit = kb.avgCellDryMassInit
 	gtpPerTranslation = kb.gtpPerTranslation

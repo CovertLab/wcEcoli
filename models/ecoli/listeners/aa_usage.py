@@ -62,7 +62,7 @@ class AAUsage(wholecell.listeners.listener.Listener):
 			)
 
 		self.relativeAaUsage = normalize(np.dot(
-			kb.monomerData["aaCounts"].asNumber().T,
+			kb.proteinData["aaCounts"].asNumber().T,
 			kb.rnaExpression["expression"][kb.rnaIndexToMonomerMapping]
 			))
 

@@ -53,7 +53,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	# Load data from KB
 	kb = cPickle.load(open(kbFile, "rb"))
 	proteinIds = kb.s50_proteins
-	rnaIds = [kb.monomerData['rnaId'][np.where(kb.monomerData['id'] == pid)[0][0]] for pid in proteinIds]
+	rnaIds = [kb.proteinData['rnaId'][np.where(kb.proteinData['id'] == pid)[0][0]] for pid in proteinIds]
 	rRnaIds = kb.s50_20sRRNA
 	rRnaIds.extend(kb.s50_5sRRNA)
 	complexIds = kb.s50_proteinComplexes

@@ -30,10 +30,10 @@ def fitKb_2(kb, simOutDir):
 
 	bulkContainer = BulkObjectsContainer(kb.bulkMolecules['moleculeId'])
 	rnaView = bulkContainer.countsView(kb.rnaData["id"])
-	proteinView = bulkContainer.countsView(kb.monomerData["id"])
+	proteinView = bulkContainer.countsView(kb.proteinData["id"])
 	complexationMoleculesView = bulkContainer.countsView(kb.complexationMoleculeNames)
 	allMoleculesIDs = list(
-		set(kb.rnaData["id"]) | set(kb.monomerData["id"]) | set(kb.complexationMoleculeNames)
+		set(kb.rnaData["id"]) | set(kb.proteinData["id"]) | set(kb.complexationMoleculeNames)
 		)
 	allMoleculesView = bulkContainer.countsView(allMoleculesIDs)
 
@@ -102,7 +102,7 @@ def fitKb_2(kb, simOutDir):
 	# compute values at initial time point
 
 	## Compute rate of AA incorperation
-	proteinComposition = kb.monomerData["aaCounts"]
+	proteinComposition = kb.proteinData["aaCounts"]
 	initialDryMass = kb.avgCellDryMassInit
 
 	proteinMassFraction = kb.cellDryMassComposition[
@@ -114,7 +114,7 @@ def fitKb_2(kb, simOutDir):
 	initialProteinCounts = calcProteinCounts(kb, initialProteinMass)
 
 	initialProteinTranslationRate = (
-		(np.log(2) / kb.cellCycleLen + kb.monomerData["degRate"]) * initialProteinCounts
+		(np.log(2) / kb.cellCycleLen + kb.proteinData["degRate"]) * initialProteinCounts
 		).asUnit(1 / units.s)
 
 	initialAAPolymerizationRate = units.dot(

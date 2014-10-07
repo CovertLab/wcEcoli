@@ -36,7 +36,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.cellCycleLen = kb.cellCycleLen.asNumber(units.s)
 
-		proteinComposition = kb.monomerData["aaCounts"].asNumber()
+		proteinComposition = kb.proteinData["aaCounts"].asNumber()
 
 		initialDryMass = kb.avgCellDryMassInit
 
@@ -49,7 +49,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		initialProteinCounts = calcProteinCounts(kb, initialProteinMass)
 
 		initialProteinTranslationRate = initialProteinCounts * (
-			np.log(2) / kb.cellCycleLen + kb.monomerData["degRate"]
+			np.log(2) / kb.cellCycleLen + kb.proteinData["degRate"]
 			).asNumber(1 / units.s)
 
 		initialPolymerizing = np.dot(proteinComposition.T, initialProteinTranslationRate)

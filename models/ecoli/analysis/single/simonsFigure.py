@@ -225,7 +225,7 @@ def plotRnaAndProtein(grids, simOutDir, kbFile):
 
 	rnaIds = kb.rnaData["id"][kb.rnaIndexToMonomerMapping]
 
-	proteinIds = kb.monomerData["id"]
+	proteinIds = kb.proteinData["id"]
 
 	with tables.open_file(os.path.join(simOutDir, "BulkMolecules.hdf")) as bulkMoleculesFile:
 

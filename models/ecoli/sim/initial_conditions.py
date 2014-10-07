@@ -62,7 +62,7 @@ def initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, kb, randomStat
 
 def initializeProteinMonomers(bulkMolCntr, kb, randomState, timeStep):
 
-	monomersView = bulkMolCntr.countsView(kb.monomerData["id"])
+	monomersView = bulkMolCntr.countsView(kb.proteinData["id"])
 	g = growth_data.GrowthData(kb)
 	monomerMass = g.massFractions(60)["proteinMass"]
 
@@ -71,12 +71,12 @@ def initializeProteinMonomers(bulkMolCntr, kb, randomState, timeStep):
 
 	monomerExpression = normalize(
 		kb.rnaExpression['expression'][kb.rnaIndexToMonomerMapping] /
-		(np.log(2) / kb.cellCycleLen.asNumber(units.s) + kb.monomerData["degRate"].asNumber(1 / units.s))
+		(np.log(2) / kb.cellCycleLen.asNumber(units.s) + kb.proteinData["degRate"].asNumber(1 / units.s))
 		)
 
 	nMonomers = countsFromMassAndExpression(
 		monomerMass.asNumber(units.g),
-		kb.monomerData["mw"].asNumber(units.g/units.mol),
+		kb.proteinData["mw"].asNumber(units.g/units.mol),
 		monomerExpression,
 		kb.nAvogadro.asNumber(1/units.mol)
 		)
@@ -363,10 +363,10 @@ def initializeTranslation(bulkMolCntr, uniqueMolCntr, kb, randomState, timeStep)
 
 	elngRate = kb.ribosomeElongationRate.asNumber(units.aa / units.s)
 
-	monomerIds = kb.monomerData["id"]
+	monomerIds = kb.proteinData["id"]
 	monomers = bulkMolCntr.countsView(monomerIds)
 	monomerCounts = monomers.counts()
-	monomerLengths = kb.monomerData["length"].asNumber(units.count)
+	monomerLengths = kb.proteinData["length"].asNumber(units.count)
 
 	monomerLengthAverage = np.dot(monomerCounts, monomerLengths) / monomerCounts.sum()
 
@@ -382,7 +382,7 @@ def initializeTranslation(bulkMolCntr, uniqueMolCntr, kb, randomState, timeStep)
 
 	# Compute the current protein mass
 
-	monomerMasses = (kb.monomerData["mw"].asNumber(units.fg / units.mol) /
+	monomerMasses = (kb.proteinData["mw"].asNumber(units.fg / units.mol) /
 		kb.nAvogadro.asNumber(1 / units.mol))
 	monomerMassTotal = np.dot(monomerCounts, monomerMasses)
 

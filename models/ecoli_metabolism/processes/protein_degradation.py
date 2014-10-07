@@ -34,7 +34,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 		self.cellCycleLen = kb.cellCycleLen.asNumber(units.s)
 
-		proteinComposition = kb.monomerData["aaCounts"].asNumber()
+		proteinComposition = kb.proteinData["aaCounts"].asNumber()
 
 		initialDryMass = kb.avgCellDryMassInit
 
@@ -47,7 +47,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		initialProteinCounts = calcProteinCounts(kb, initialProteinMass)
 
 		initialProteinDegradationRate = initialProteinCounts * (
-			kb.monomerData["degRate"] # NOTE: constrast this with the translation submodel, which accounts for degradation AND dilution
+			kb.proteinData["degRate"] # NOTE: constrast this with the translation submodel, which accounts for degradation AND dilution
 			).asNumber(1 / units.s)
 
 		initialDegrading = np.dot(proteinComposition.T, initialProteinDegradationRate)

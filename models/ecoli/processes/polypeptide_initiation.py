@@ -52,9 +52,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Load parameters
 
-		mrnaIds = kb.monomerData["rnaId"]
+		mrnaIds = kb.proteinData["rnaId"]
 		
-		self.proteinLens = kb.monomerData["length"].asNumber()
+		self.proteinLens = kb.proteinData["length"].asNumber()
 
 		# Views
 

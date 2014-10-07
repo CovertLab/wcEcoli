@@ -39,7 +39,7 @@ def initializeBulkMolecules(bulkMolCntr, kb, randomState, timeStep):
 def initializeProtein(bulkMolCntr, kb, randomState, timeStep):
 	polymerizedIDs = [id_ + "[c]" for id_ in kb.polymerizedAA_IDs]
 
-	proteinComposition = kb.monomerData["aaCounts"].asNumber()
+	proteinComposition = kb.proteinData["aaCounts"].asNumber()
 
 	g = growth_data.GrowthData(kb)
 	initialProteinMass = g.massFractions(60)["proteinMass"]

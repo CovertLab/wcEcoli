@@ -67,9 +67,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		enzIds = ["RRLA-RRNA[c]", "RRSA-RRNA[c]", "RRFA-RRNA[c]"]
 
-		proteinIds = kb.monomerData['id']
+		proteinIds = kb.proteinData['id']
 
-		self.proteinLengths = kb.monomerData["length"].asNumber()
+		self.proteinLengths = kb.proteinData["length"].asNumber()
 
 		self.proteinSequences = kb.translationSequences
 
