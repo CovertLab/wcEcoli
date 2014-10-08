@@ -2835,7 +2835,6 @@ class KnowledgeBaseEcoli(object):
 				metaboliteIDs.append(metaboliteID)
 				metaboliteConcentrations.append(concentration)
 
-
 		# ILE/LEU: split reported concentration according to their relative abundances
 
 		aaAbundances = self.proteinData["aaCounts"].asNumber().sum(axis = 0)
@@ -2935,6 +2934,9 @@ class KnowledgeBaseEcoli(object):
 		# Add byproducts with no annotated concentration to force recycling
 
 		metaboliteIDs.append("UMP[c]")
+		metaboliteConcentrations.append(2.40e-5)
+
+		metaboliteIDs.append("FOR[c]")
 		metaboliteConcentrations.append(2.40e-5)
 
 		# Other quantities to consider:
