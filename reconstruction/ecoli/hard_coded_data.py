@@ -2043,7 +2043,7 @@ AA_TRNA_GROUPS = collections.OrderedDict([
 		('I', ['ileT-tRNA[c]', 'ileU-tRNA[c]', 'ileV-tRNA[c]', 'ileX-tRNA[c]', 'RNA0-305[c]']),
 		('L', ['leuP-tRNA[c]', 'leuQ-tRNA[c]', 'leuT-tRNA[c]', 'leuU-tRNA[c]', 'leuV-tRNA[c]', 'leuW-tRNA[c]', 'leuX-tRNA[c]', 'leuZ-tRNA[c]']),
 		('K', ['RNA0-303[c]', 'lysT-tRNA[c]', 'lysV-tRNA[c]', 'lysW-tRNA[c]', 'RNA0-301[c]', 'RNA0-302[c]']),
-		('M', ['metT-tRNA[c]', 'metU-tRNA[c]', 'RNA0-306[c]', 'metW-tRNA[c]', 'metY-tRNA[c]', 'metZ-tRNA[c]']),
+		('M', ['metT-tRNA[c]', 'metU-tRNA[c]']),
 		('F', ['pheU-tRNA[c]', 'pheV-tRNA[c]']),
 		('P', ['proK-tRNA[c]', 'proL-tRNA[c]', 'proM-tRNA[c]']),
 		('S', ['serT-tRNA[c]', 'serU-tRNA[c]', 'serV-tRNA[c]', 'serW-tRNA[c]', 'serX-tRNA[c]']),
@@ -2052,8 +2052,10 @@ AA_TRNA_GROUPS = collections.OrderedDict([
 		('Y', ['tyrT-tRNA[c]', 'tyrU-tRNA[c]', 'tyrV-tRNA[c]',]),
 		('U', ['selC-tRNA[c]']),
 		('V', ['valT-tRNA[c]', 'valU-tRNA[c]', 'valV-tRNA[c]', 'valW-tRNA[c]', 'valX-tRNA[c]', 'valY-tRNA[c]']),
-		('Z', [])
+		('Z', ['RNA0-306[c]', 'metW-tRNA[c]', 'metY-tRNA[c]', 'metZ-tRNA[c]'])
 		])
+
+# Methionine and Formyl-methionine use the same synthetase (Methionyl-tRNA Synthetase)!!!
 
 AA_SYNTHETASE_GROUPS = collections.OrderedDict([
 		('A', ['ALAS-CPLX[c]']),
@@ -2077,7 +2079,7 @@ AA_SYNTHETASE_GROUPS = collections.OrderedDict([
 		('Y', ['TYRS-CPLX[c]']),
 		('U', ['CPLX0-1141[c]']), # NOTE: Approximate enzyme here...
 		('V', ['VALS-MONOMER[c]']),
-		('Z', [])
+		('Z', ['METG-CPLX[o]'])
 		])
 
 # Curated from Jakubowski 1984
@@ -2159,3 +2161,13 @@ S50_5S_RRNAS = ['RRFA-RRNA[c]','RRFB-RRNA[c]','RRFC-RRNA[c]','RRFD-RRNA[c]','RRF
 S50_20S_RRNAS = ['RRLA-RRNA[c]','RRLB-RRNA[c]','RRLC-RRNA[c]','RRLD-RRNA[c]','RRLE-RRNA[c]','RRLG-RRNA[c]','RRLH-RRNA[c]']
 
 S50_FULLCOMPLEX = 'CPLX0-3962[c]'
+
+# Methionyl-tRNAfmet formyltransferase kcat value
+# and Methionine aminopeptidase kcat value
+# taken from Meinnel et al. 1993
+MTF_KCAT = 16.0
+MAP_KCAT = 6.0
+
+# Peptide deformylase kcat value
+# taken from Smith et al. 2002
+PDF_KCAT = 113.0

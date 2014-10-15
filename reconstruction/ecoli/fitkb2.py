@@ -102,7 +102,8 @@ def fitKb_2(kb, simOutDir):
 	# compute values at initial time point
 
 	## Compute rate of AA incorperation
-	proteinComposition = kb.proteinData["aaCounts"]
+	#proteinComposition = kb.proteinData["aaCounts"]
+	proteinComposition = kb.proteinNascentData["aaCounts"]
 	initialDryMass = kb.avgCellDryMassInit
 
 	proteinMassFraction = kb.cellDryMassComposition[
@@ -148,7 +149,7 @@ def fitKb_2(kb, simOutDir):
 	## to accomodate stochastic behavior in the model without translation stalling.
 	# scaled_synthetase_counts = synthetase_counts_by_group - (2 * synthetase_variance_by_group)
 	scaled_synthetase_counts = synthetase_counts_by_group
-	# assert all(scaled_synthetase_counts > 0) # TODO: Kalli. Reassert!
+	assert all(scaled_synthetase_counts > 0) # TODO: Kalli. Reassert!
 
 	predicted_trna_synthetase_rates = initialAAPolymerizationRate / scaled_synthetase_counts
 	kb.trna_synthetase_rates = 2 * predicted_trna_synthetase_rates

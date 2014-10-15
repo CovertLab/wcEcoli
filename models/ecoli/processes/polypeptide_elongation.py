@@ -35,6 +35,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.elngRate = None
 		self.proteinLengths = None
 		self.proteinSequences = None
+		self.proteinSequencesNascent = None
 		self.h2oWeight = None
 		self.aaWeightsIncorporated = None
 		self.gtpPerElongation = None
@@ -43,6 +44,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Views
 		self.activeRibosomes = None
 		self.bulkMonomers = None
+		self.bulkMonomersNascent = None
 		self.aas = None
 		self.h2o = None
 		self.trna_groups = None
@@ -68,10 +70,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		enzIds = ["RRLA-RRNA[c]", "RRSA-RRNA[c]", "RRFA-RRNA[c]"]
 
 		proteinIds = kb.proteinData['id']
+		proteinNascentIds = kb.proteinNascentData['id']
 
 		self.proteinLengths = kb.proteinData["length"].asNumber()
+		self.proteinLengthsNascent = kb.proteinNascentData["length"].asNumber()
 
-		self.proteinSequences = kb.translationSequences
+		#self.proteinSequences = kb.translationSequences
+		self.proteinSequencesNascent = kb.translationSequencesNascent
 
 		self.aaWeightsIncorporated = kb.translationMonomerWeights
 
@@ -83,6 +88,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.activeRibosomes = self.uniqueMoleculesView('activeRibosome')
 		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
+		self.bulkMonomersNascent = self.bulkMoleculesView(proteinNascentIds)
 
 		self.aas = self.bulkMoleculesView(kb.aaIDs)
 		self.trna_groups = [self.bulkMoleculesView(x) for x in self.aa_trna_groups.itervalues()]
@@ -97,6 +103,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome30S = self.bulkMoleculeView(kb.s30_fullComplex)
 		self.ribosome50S = self.bulkMoleculeView(kb.s50_fullComplex)
 
+		self.mtf = self.bulkMoleculeView("EG11268-MONOMER[c]")
+		self.mtfKcat = kb.mtfKcat
+		self.fthf = self.bulkMoleculeView("10FTHF[c]")
+		self.numberAAs = len(kb.aaIDs)
+		self.pdf = self.bulkMoleculeView("EG11440-MONOMER[c]")
+		self.pdfKcat = kb.pdfKcat
+		self.map = self.bulkMoleculeView("EG10570-MONOMER[c]")
+		self.mapKcat = kb.mapKcat
+		self.formate = self.bulkMoleculeView("FOR[c]")
 
 	def calculateRequest(self):
 		self.activeRibosomes.requestAll()
@@ -108,7 +123,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			)
 
 		sequences = buildSequences(
-			self.proteinSequences,
+			self.proteinSequencesNascent,
 			proteinIndexes,
 			peptideLengths,
 			self.elngRate
@@ -116,7 +131,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		sequenceHasAA = (sequences != PAD_VALUE)
 
-		aasRequested = np.bincount(sequences[sequenceHasAA])
+		aasRequested = np.bincount(sequences[sequenceHasAA],minlength=self.numberAAs)
 
 		self.aas.requestIs(
 			aasRequested
@@ -142,6 +157,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.h2o.requestIs(gtpsHydrolyzed) # note: this is roughly a 2x overestimate
 
+		self.mtf.requestAll()
+		self.fthf.requestAll()
 
 	# Calculate temporal evolution
 	def evolveState(self):
@@ -157,19 +174,41 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Build sequence array
 
 		sequences = buildSequences(
-			self.proteinSequences,
+			self.proteinSequencesNascent,
 			proteinIndexes,
 			peptideLengths,
 			self.elngRate
 			)
 
 		# Calculate elongation resource capacity
+		aaCountInSequence = np.bincount(sequences[(sequences != PAD_VALUE)],minlength=self.numberAAs)
 
-		aaCountInSequence = np.bincount(sequences[(sequences != PAD_VALUE)])
+		metIndex=12
+		fmetIndex=21
+		Nmet=aaCountInSequence[metIndex]
+		Nfmet=aaCountInSequence[fmetIndex]
 		aaCounts = self.aas.counts()
+		metCount = aaCounts[metIndex]
+		metCountAllocated = metCount * (Nmet/(Nmet+Nfmet))
+		fmetCountAllocated = metCount * (Nfmet/(Nmet+Nfmet))
+		aaCountsUpdated = aaCounts
+		aaCountsUpdated[metIndex]=metCountAllocated
+		aaCountsUpdated[fmetIndex]=fmetCountAllocated
+		synthetaseCounts = np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
+		metSynthetaseCount = synthetaseCounts[metIndex]
+		metSynthetaseCountAllocated = metSynthetaseCount * (Nmet/(Nmet+Nfmet))
+		fmetSynthetaseCountAllocated = metSynthetaseCount * (Nfmet/(Nmet+Nfmet))
+		synthetaseCountsUpdated = synthetaseCounts
+		synthetaseCountsUpdated[metIndex] = metSynthetaseCountAllocated
+		synthetaseCountsUpdated[fmetIndex] = fmetSynthetaseCountAllocated
+		mtfCapacity = self.mtfKcat * self.mtf.count()
 		trnasCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.trna_groups],dtype = np.int64)
-		synthetaseCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
-		elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity)
+		#synthetaseCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
+		synthetaseCapacity = self.synthetase_turnover * synthetaseCountsUpdated
+		#elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity) #np.minimum does not take the min of 3 arrays!
+		elongationResourceCapacity = np.min([aaCountsUpdated, synthetaseCapacity, trnasCapacity],axis=0)
+		elongationResourceCapacity[fmetIndex] = np.min([aaCountsUpdated[fmetIndex], synthetaseCapacity[fmetIndex], 
+							trnasCapacity[fmetIndex], mtfCapacity, self.fthf.count()])
 
 		# Calculate update
 
@@ -177,10 +216,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		sequenceElongations, aasUsed, nElongations = polymerize(
 			sequences,
-			aaCounts, # elongationResourceCapacity,
+#			aaCounts, # elongationResourceCapacity,
+			elongationResourceCapacity,
 			reactionLimit,
 			self.randomState
 			)
+
+		#FMet aasUsed are actually Met aasUsed
+		aasUsed[metIndex]=aasUsed[metIndex]+aasUsed[fmetIndex]
+		aasUsed[fmetIndex]=0
 
 		massIncreaseProtein = computeMassIncrease(
 			sequences,
@@ -206,13 +250,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			massDiff_protein = updatedMass
 			)
 
-		terminalLengths = self.proteinLengths[proteinIndexes]
+		terminalLengths = self.proteinLengthsNascent[proteinIndexes]
 
 		didTerminate = (updatedLengths == terminalLengths)
 
 		terminatedProteins = np.bincount(
 			proteinIndexes[didTerminate],
-			minlength = self.proteinSequences.shape[0]
+			minlength = self.proteinSequencesNascent.shape[0]
 			)
 
 		activeRibosomes.delByIndexes(np.where(didTerminate)[0])
@@ -224,7 +268,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.aas.countsDec(aasUsed)
 
-		self.bulkMonomers.countsInc(terminatedProteins)
+		self.bulkMonomersNascent.countsInc(terminatedProteins)
 
 		self.ribosome30S.countInc(nTerminated)
 		self.ribosome50S.countInc(nTerminated)
@@ -240,6 +284,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gdp.countInc(gtpUsed)
 		self.pi.countInc(gtpUsed)
 		self.h.countInc(gtpUsed)
+		self.fthf.countDec(nInitialized)
+		self.formate.countInc(nInitialized)
 
 		self.h2o.countDec(gtpUsed)
 

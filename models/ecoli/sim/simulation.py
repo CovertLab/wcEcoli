@@ -15,6 +15,7 @@ from models.ecoli.processes.rna_degradation import RnaDegradation
 from models.ecoli.processes.replication import Replication
 from models.ecoli.processes.polypeptide_initiation import PolypeptideInitiation
 from models.ecoli.processes.polypeptide_elongation import PolypeptideElongation
+from models.ecoli.processes.polypeptide_processing import PolypeptideProcessing
 from models.ecoli.processes.transcript_initiation import TranscriptInitiation
 from models.ecoli.processes.transcript_elongation import TranscriptElongation
 from models.ecoli.processes.protein_degradation import ProteinDegradation
@@ -50,6 +51,7 @@ class EcoliSimulation(Simulation):
 		TranscriptElongation,
 		PolypeptideInitiation,
 		PolypeptideElongation,
+		PolypeptideProcessing,
 		Replication,
 		ProteinDegradation,
 		Complexation,

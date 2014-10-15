@@ -40,7 +40,8 @@ class AAUsage(wholecell.listeners.listener.Listener):
 
 		self.sim = sim
 
-		self.metaboliteIds = kb.aaIDs[:]
+		#self.metaboliteIds = kb.aaIDs[:]
+		self.metaboliteIds = kb.aaIDs[0:21]
 		self.metaboliteIdxs = [ # TODO: use a bulk container view?
 			np.where(
 				x == self.bulkMolecules._moleculeIDs

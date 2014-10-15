@@ -137,6 +137,9 @@ class KnowledgeBaseEcoli(object):
 		self._parameterData['terCCenter'] = 1607192*units.nt
 		self._parameterData['gtpPerTranslation'] = 4.2 # TODO: find a real number
 		self._parameterData["fractionChargedTrna"] = 0.8
+		self._parameterData["mtfKcat"] = MTF_KCAT
+		self._parameterData["pdfKcat"] = PDF_KCAT
+		self._parameterData["mapKcat"] = MAP_KCAT
 
 		fMet = {
 			"id": 'FME-L',
@@ -154,6 +157,7 @@ class KnowledgeBaseEcoli(object):
 			}
 
 		self._metabolites.append(fMet)
+
 
 		# Assumed reaction for producing L-selenocysteine without a tRNA
 		# [c]: SER-L + SELNP --> SEC-L + PI + (2)H
@@ -2982,14 +2986,22 @@ class KnowledgeBaseEcoli(object):
 		from wholecell.utils.polymerize import PAD_VALUE
 
 		sequences = self.proteinData["sequence"] # TODO: consider removing sequences
+		sequencesNascent = self.proteinNascentData["sequence"] # TODO: consider removing sequences
 
 		maxLen = np.int64(
 			self.proteinData["length"].asNumber().max()
 			+ self.ribosomeElongationRate.asNumber(units.aa / units.s)
 			)
 
+		maxLenNascent = np.int64(
+			self.proteinNascentData["length"].asNumber().max()
+			+ self.ribosomeElongationRate.asNumber(units.aa / units.s)
+			)
+
 		self.translationSequences = np.empty((sequences.shape[0], maxLen), np.int8)
+		self.translationSequencesNascent = np.empty((sequencesNascent.shape[0], maxLenNascent), np.int8)
 		self.translationSequences.fill(PAD_VALUE)
+		self.translationSequencesNascent.fill(PAD_VALUE)
 
 		aaIDs_singleLetter = self.aaIDs_singleLetter[:]
 
@@ -2998,6 +3010,9 @@ class KnowledgeBaseEcoli(object):
 		for i, sequence in enumerate(sequences):
 			for j, letter in enumerate(sequence):
 				self.translationSequences[i, j] = aaMapping[letter]
+		for i, sequence in enumerate(sequencesNascent):
+			for j, letter in enumerate(sequence):
+				self.translationSequencesNascent[i, j] = aaMapping[letter]
 		#import ipdb; ipdb.set_trace()
 		self.translationMonomerWeights = (
 			(
