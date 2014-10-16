@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
-Plot RNA polymerase counts and counts of mRNA precursors
+Plot counts of enzymes needed for methionine formylation, deformylation, and cleavage
 
-@author: Derek Macklin
+@author: Kalli Kappel
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/8/2014
+@date: Created 10/15/2014
 """
 
 import argparse
@@ -16,9 +16,9 @@ import matplotlib
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 
-#import wholecell.utils.constants
+import wholecell.utils.constants
 
-#from wholecell.containers.unique_molecules_data import UniqueMoleculesData
+from wholecell.containers.unique_molecules_data import UniqueMoleculesData
 
 def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 
@@ -61,17 +61,16 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	plt.savefig(os.path.join(plotOutDir, plotOutFileName))
 
 if __name__ == "__main__":
-	#defaultKBFile = os.path.join(
-	#		wholecell.utils.constants.SERIALIZED_KB_DIR,
-	#		wholecell.utils.constants.SERIALIZED_KB_MOST_FIT_FILENAME
-	#		)
+	defaultKBFile = os.path.join(
+			wholecell.utils.constants.SERIALIZED_KB_DIR,
+			wholecell.utils.constants.SERIALIZED_KB_MOST_FIT_FILENAME
+			)
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument("simOutDir", help = "Directory containing simulation output", type = str)
 	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
 	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
-	parser.add_argument("--kbFile", help = "KB file name", type = str)
-	#parser.add_argument("--kbFile", help = "KB file name", type = str, default = defaultKBFile)
+	parser.add_argument("--kbFile", help = "KB file name", type = str, default = defaultKBFile)
 
 	args = parser.parse_args().__dict__
 

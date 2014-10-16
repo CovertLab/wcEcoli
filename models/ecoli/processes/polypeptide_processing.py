@@ -81,6 +81,11 @@ class PolypeptideProcessing(wholecell.processes.process.Process):
 
 	def calculateRequest(self):
 
+		if sum(self.bulkMonomersNascent.counts()) > 0:
+			countToBeDeformylated = sum(self.bulkMonomersNascent.counts()[np.where(self.bulkMonomersNascent.counts())])
+			metCleavedIndices = np.where(self.proteinLengthsNascent-self.proteinLengths)[0]
+			countMetCleaved = sum(self.bulkMonomersNascent.counts()[metCleavedIndices])
+			self.h2o.requestIs(countToBeDeformylated+countMetCleaved)
 		self.pdf.requestAll()
 		self.map.requestAll()
 		self.bulkMonomersNascent.requestAll()
@@ -99,7 +104,6 @@ class PolypeptideProcessing(wholecell.processes.process.Process):
 
 		if len(metCleavedIndices) > 0:
 			countMetCleaved = sum(self.bulkMonomersNascent.counts()[metCleavedIndices])
-			import ipdb; ipdb.set_trace()
 			aasVector = np.zeros(self.numberAAs)
 			aasVector[12] = countMetCleaved
 			self.aas.countsInc(aasVector)
@@ -113,3 +117,4 @@ class PolypeptideProcessing(wholecell.processes.process.Process):
 
 		self.bulkMonomers.countsInc(self.bulkMonomersNascent.counts())
 		self.bulkMonomersNascent.countsDec(self.bulkMonomersNascent.counts())
+		#self.h2o.countDec(countToBeDeformylated+countMetCleaved)

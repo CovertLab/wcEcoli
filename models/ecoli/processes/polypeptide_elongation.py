@@ -107,10 +107,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.mtfKcat = kb.mtfKcat
 		self.fthf = self.bulkMoleculeView("10FTHF[c]")
 		self.numberAAs = len(kb.aaIDs)
-		self.pdf = self.bulkMoleculeView("EG11440-MONOMER[c]")
-		self.pdfKcat = kb.pdfKcat
-		self.map = self.bulkMoleculeView("EG10570-MONOMER[c]")
-		self.mapKcat = kb.mapKcat
 		self.formate = self.bulkMoleculeView("FOR[c]")
 
 	def calculateRequest(self):
