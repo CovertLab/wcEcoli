@@ -169,7 +169,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		aaCounts = self.aas.counts()
 		trnasCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.trna_groups],dtype = np.int64)
 		synthetaseCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
-		elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity)
+		elongationResourceCapacity = np.min([aaCounts, synthetaseCapacity, trnasCapacity], axis=0)
 
 		# Calculate update
 
@@ -177,7 +177,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		sequenceElongations, aasUsed, nElongations = polymerize(
 			sequences,
-			aaCounts, # elongationResourceCapacity,
+			#aaCounts, # elongationResourceCapacity,
+			elongationResourceCapacity,
 			reactionLimit,
 			self.randomState
 			)
