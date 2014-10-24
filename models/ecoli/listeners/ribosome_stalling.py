@@ -45,6 +45,8 @@ class RibosomeStalling(wholecell.listeners.listener.Listener):
 		self.aaCounts = None
 		self.trnasCapacity = None
 		self.synthetaseCapacity = None
+		self.stalledOnFMet = None
+		self.fractionStalledOnMet = None
 
 		# Logged quantities
 		self.registerLoggedQuantity(
@@ -70,6 +72,8 @@ class RibosomeStalling(wholecell.listeners.listener.Listener):
 		self.aaCounts = np.zeros(22, np.int64)
 		self.trnasCapacity = np.zeros(22, np.int64)
 		self.synthetaseCapacity = np.zeros(22, np.int64)
+		self.stalledOnFMet = np.zeros(0, np.int64)
+		self.fractionStalledOnMet = np.nan
 
 	def update(self):
 		if self.ribosomeStalls.size:
@@ -78,12 +82,14 @@ class RibosomeStalling(wholecell.listeners.listener.Listener):
 			self.stallingRateMean = self.ribosomeStalls.mean()
 			self.stallingRateStd = self.ribosomeStalls.std()
 			self.fractionStalled = (self.ribosomeStalls > 0).mean()
+			self.fractionStalledOnFMet = self.stalledOnFMet.mean()
 
 		else:
 			self.stallingRateTotal = np.nan
 			self.stallingRateMean = np.nan
 			self.stallingRateStd = np.nan
 			self.fractionStalled = np.nan
+			self.fractionStalledOnFMet = np.nan
 
 
 	def pytablesCreate(self, h5file, expectedRows):
@@ -94,6 +100,8 @@ class RibosomeStalling(wholecell.listeners.listener.Listener):
 			"stallingRateMean": tables.Float64Col(),
 			"stallingRateStd": tables.Float64Col(),
 			"fractionStalled": tables.Float64Col(),
+			"fractionStalledOnFMet": tables.Float64Col(),
+			"fractionStalledOnMet": tables.Float64Col(),
 			"aaCountInSequence": tables.Float64Col(self.aaCountInSequence.size),
 			"aaCounts": tables.Float64Col(self.aaCounts.size),
 			"trnasCapacity": tables.Float64Col(self.trnasCapacity.size),
@@ -120,6 +128,8 @@ class RibosomeStalling(wholecell.listeners.listener.Listener):
 		entry["stallingRateMean"] = self.stallingRateMean
 		entry["stallingRateStd"] = self.stallingRateStd
 		entry["fractionStalled"] = self.fractionStalled
+		entry["fractionStalledOnFMet"] = self.fractionStalledOnFMet
+		entry["fractionStalledOnMet"] = self.fractionStalledOnMet
 		entry["aaCountInSequence"] = self.aaCountInSequence
 		entry["aaCounts"] = self.aaCounts
 		entry["trnasCapacity"] = self.trnasCapacity

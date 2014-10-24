@@ -36,6 +36,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 		# stallingRateMean = h5file.root.RibosomeStalling.col("stallingRateMean")
 		# stallingRateStd = h5file.root.RibosomeStalling.col("stallingRateStd")
 		fractionStalled = h5file.root.RibosomeStalling.col("fractionStalled")
+		fractionStalledOnFMet = h5file.root.RibosomeStalling.col("fractionStalledOnFMet")
+		fractionStalledOnMet = h5file.root.RibosomeStalling.col("fractionStalledOnMet")
 		aaCountInSequence = h5file.root.RibosomeStalling.col("aaCountInSequence")
 		aaCounts = h5file.root.RibosomeStalling.col("aaCounts")
 		trnaCapacity = h5file.root.RibosomeStalling.col("trnasCapacity")
@@ -52,6 +54,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	plt.figure(figsize = (8.5, 11))
 	plt.subplot(2,1,1)
 	plt.plot(timeStep / 60, fractionStalled)
+	plt.plot(timeStep / 60, fractionStalledOnFMet)
+	plt.plot(timeStep / 60, fractionStalledOnMet)
 
 	plt.xlabel("Time (min)")
 	plt.ylabel("Fraction of ribosomes stalled")

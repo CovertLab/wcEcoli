@@ -122,6 +122,11 @@ def fitKb_2(kb, simOutDir):
 		units.transpose(proteinComposition), initialProteinTranslationRate
 		).asUnit(units.aa / units.s)
 
+	#Modify for Met and FMet
+	sumMetandfMetPolymerizationRate = initialAAPolymerizationRate[12] + initialAAPolymerizationRate[21]
+	initialAAPolymerizationRate[12] = sumMetandfMetPolymerizationRate 
+	initialAAPolymerizationRate[21] = sumMetandfMetPolymerizationRate 
+
 	## Compute expression of tRNA synthetases
 	## Assuming independence in variance
 	synthetase_counts_by_group = np.zeros(len(kb.aa_synthetase_groups), dtype = np.float64)
@@ -149,7 +154,7 @@ def fitKb_2(kb, simOutDir):
 	## to accomodate stochastic behavior in the model without translation stalling.
 	# scaled_synthetase_counts = synthetase_counts_by_group - (2 * synthetase_variance_by_group)
 	scaled_synthetase_counts = synthetase_counts_by_group
-	assert all(scaled_synthetase_counts > 0) # TODO: Kalli. Reassert!
+	assert all(scaled_synthetase_counts > 0) 
 
 	predicted_trna_synthetase_rates = initialAAPolymerizationRate / scaled_synthetase_counts
 	kb.trna_synthetase_rates = 2 * predicted_trna_synthetase_rates

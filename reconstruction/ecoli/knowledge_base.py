@@ -147,7 +147,7 @@ class KnowledgeBaseEcoli(object):
 			"feistFormula": 'C6H10NO3S',
 			"formula7.2": 'C6H10NO3S',
 			"charge7.2": 0,
-			"mw7.2": float(177.2169),
+			"mw7.2": float(176.2090),
 			"mediaConc": 0.,
 			"biomassInfo": {'core' : [], 'wildtype' : []},
 			"maxExchange": 0.,
@@ -1223,7 +1223,10 @@ class KnowledgeBaseEcoli(object):
 							])
 
 			p["mw"] = self._polypeptideEndWeight
-			for aa in p["seq"]: p["mw"] += self._aaWeights[aa]
+			#for aa in p["seq"]: p["mw"] += self._aaWeights[aa]
+			#The molecular weights are calculated for the processed polypeptides
+			for aa in p["seq"][1:-1]: p["mw"] += self._aaWeights[aa]
+			if p["seq"][1] not in cleaveMethionineIfNextAminoAcid: p["mw"] +=self._aaWeights['M']
 
 			self._proteins.append(p)
 
@@ -1591,7 +1594,6 @@ class KnowledgeBaseEcoli(object):
 		
 		for i in self._proteinComplexes:
 			i['mw'] = mw[i['id']]	
-	
 				
 	def _calcKCat(self, enzId, vMax, units):
 		if enzId == None or vMax == None:
@@ -2144,8 +2146,6 @@ class KnowledgeBaseEcoli(object):
 		aaCounts = []
 		sequences = []
 		
-		cleaveMethionineIfNextAminoAcid = ['G', 'A', 'S', 'T', 'P', 'V'] # TODO: Kalli. Move to HARD CODED.
-
 		for protein in self._proteins:
 			sequencefromcode = protein['seq']
 			if sequencefromcode[1] in cleaveMethionineIfNextAminoAcid:
@@ -2163,7 +2163,6 @@ class KnowledgeBaseEcoli(object):
 			lengths.append(len(sequence))
 			aaCounts.append(counts)
 			sequences.append(sequence)
-
 		maxSequenceLength = max(len(seq) for seq in sequences)
 
 		# Recalculate MW because we are cleaving different

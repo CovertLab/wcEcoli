@@ -78,13 +78,14 @@ class PolypeptideProcessing(wholecell.processes.process.Process):
 		self.pdfKcat = kb.pdfKcat
 		self.map = self.bulkMoleculeView("EG10570-MONOMER[c]")
 		self.mapKcat = kb.mapKcat
+		self.formate = self.bulkMoleculeView("FOR[c]")
 
 	def calculateRequest(self):
 
-		if sum(self.bulkMonomersNascent.counts()) > 0:
-			countToBeDeformylated = sum(self.bulkMonomersNascent.counts()[np.where(self.bulkMonomersNascent.counts())])
+		if sum(self.bulkMonomersNascent.total()) > 0:
+			countToBeDeformylated = sum(self.bulkMonomersNascent.total()[np.where(self.bulkMonomersNascent.total())])
 			metCleavedIndices = np.where(self.proteinLengthsNascent-self.proteinLengths)[0]
-			countMetCleaved = sum(self.bulkMonomersNascent.counts()[metCleavedIndices])
+			countMetCleaved = sum(self.bulkMonomersNascent.total()[metCleavedIndices])
 			self.h2o.requestIs(countToBeDeformylated+countMetCleaved)
 		self.pdf.requestAll()
 		self.map.requestAll()
@@ -117,4 +118,5 @@ class PolypeptideProcessing(wholecell.processes.process.Process):
 
 		self.bulkMonomers.countsInc(self.bulkMonomersNascent.counts())
 		self.bulkMonomersNascent.countsDec(self.bulkMonomersNascent.counts())
-		#self.h2o.countDec(countToBeDeformylated+countMetCleaved)
+		self.h2o.countDec(countToBeDeformylated+countMetCleaved) 
+		self.formate.countInc(countToBeDeformylated)

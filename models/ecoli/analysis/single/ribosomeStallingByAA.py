@@ -48,12 +48,12 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 		"HIS", "ILE", "LEU", "LYS",
 		"MET", "PHE", "PRO", "SER",
 		"THR", "TRP", "TYR", "SEC",
-		"VAL"
+		"VAL", "FME"
 		]
 
 	plt.figure(figsize = (8.5, 11))
 
-	for idx in xrange(21):
+	for idx in xrange(22):
 		plt.subplot(6, 4, idx + 1)
 
 		plt.plot(timeStep / 60., aaCapacity[:,idx], linewidth = 2,label = 'aa limit')
@@ -78,6 +78,7 @@ if __name__ == "__main__":
 	parser.add_argument("simOutDir", help = "Directory containing simulation output", type = str)
 	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
 	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
+	#parser.add_argument("--kbFile", help = "KB file name", type = str)
 	parser.add_argument("--kbFile", help = "KB file name", type = str, default = defaultKBFile)
 
 	args = parser.parse_args().__dict__

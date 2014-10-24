@@ -1894,7 +1894,7 @@ POLYMERIZED_AMINO_ACID_WEIGHTS = [
 	{"base molecule":"TYR-L",	"frame id":"Polymerized TYR-L",	"mw":163.1751},
 	{"base molecule":"SEC-L",	"frame id":"Polymerized SEC-L",	"mw":149.0252},
 	{"base molecule":"VAL-L",	"frame id":"Polymerized VAL-L",	"mw":99.1321},
-	{"base molecule":"FME-L",	"frame id":"Polymerized FME-L", "mw":159.2021}
+	{"base molecule":"FME-L",	"frame id":"Polymerized FME-L", "mw":158.1942}
 	]
 
 POLYPEPTIDE_END_WEIGHT = {"base molecule":"H2O",	"frame id":"Polypeptide terminal hydroxyl",	"mw":18.0148}
@@ -2171,3 +2171,4 @@ MAP_KCAT = 6.0
 # Peptide deformylase kcat value
 # taken from Smith et al. 2002
 PDF_KCAT = 113.0
+cleaveMethionineIfNextAminoAcid = ['G', 'A', 'S', 'T', 'P', 'V'] # TODO: Kalli. Move to HARD CODED.

@@ -108,6 +108,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.fthf = self.bulkMoleculeView("10FTHF[c]")
 		self.numberAAs = len(kb.aaIDs)
 		self.formate = self.bulkMoleculeView("FOR[c]")
+		self.thf = self.bulkMoleculeView("THF[c]")
 
 	def calculateRequest(self):
 		self.activeRibosomes.requestAll()
@@ -128,6 +129,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		sequenceHasAA = (sequences != PAD_VALUE)
 
 		aasRequested = np.bincount(sequences[sequenceHasAA],minlength=self.numberAAs)
+		trnasRequested = np.copy(aasRequested)
+		aasRequested[12] += aasRequested[21]
+		aasRequested[21] = 0
 
 		self.aas.requestIs(
 			aasRequested
@@ -135,7 +139,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Should essentially request all tRNAs
 		# and all synthetases
-		trnasRequested = aasRequested
+		#trnasRequested = aasRequested
 		for i,group in enumerate(self.trna_groups):
 			group.requestIs(trnasRequested[i])
 		synthetaseRequested = aasRequested
@@ -187,14 +191,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		metCount = aaCounts[metIndex]
 		metCountAllocated = metCount * (Nmet/(Nmet+Nfmet))
 		fmetCountAllocated = metCount * (Nfmet/(Nmet+Nfmet))
-		aaCountsUpdated = aaCounts
+		aaCountsUpdated = np.copy(aaCounts)
 		aaCountsUpdated[metIndex]=metCountAllocated
 		aaCountsUpdated[fmetIndex]=fmetCountAllocated
 		synthetaseCounts = np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
 		metSynthetaseCount = synthetaseCounts[metIndex]
 		metSynthetaseCountAllocated = metSynthetaseCount * (Nmet/(Nmet+Nfmet))
 		fmetSynthetaseCountAllocated = metSynthetaseCount * (Nfmet/(Nmet+Nfmet))
-		synthetaseCountsUpdated = synthetaseCounts
+		synthetaseCountsUpdated = np.copy(synthetaseCounts)
 		synthetaseCountsUpdated[metIndex] = metSynthetaseCountAllocated
 		synthetaseCountsUpdated[fmetIndex] = fmetSynthetaseCountAllocated
 		mtfCapacity = self.mtfKcat * self.mtf.count()
@@ -202,9 +206,12 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		#synthetaseCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
 		synthetaseCapacity = self.synthetase_turnover * synthetaseCountsUpdated
 		#elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity) #np.minimum does not take the min of 3 arrays!
-		elongationResourceCapacity = np.min([aaCountsUpdated, synthetaseCapacity, trnasCapacity],axis=0)
+		#elongationResourceCapacity = np.min([aaCountsUpdated, synthetaseCapacity, trnasCapacity],axis=0)
+		elongationResourceCapacity = np.min([aaCountsUpdated, trnasCapacity],axis=0)
 		elongationResourceCapacity[fmetIndex] = np.min([aaCountsUpdated[fmetIndex], synthetaseCapacity[fmetIndex], 
 							trnasCapacity[fmetIndex], mtfCapacity, self.fthf.count()])
+		#elongationResourceCapacity[fmetIndex] = np.min([aaCountsUpdated[fmetIndex], 
+		#					trnasCapacity[fmetIndex], mtfCapacity, self.fthf.count()])
 
 		# Calculate update
 
@@ -265,7 +272,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.aas.countsDec(aasUsed)
 
 		self.bulkMonomersNascent.countsInc(terminatedProteins)
-
+		
 		self.ribosome30S.countInc(nTerminated)
 		self.ribosome50S.countInc(nTerminated)
 
@@ -280,10 +287,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gdp.countInc(gtpUsed)
 		self.pi.countInc(gtpUsed)
 		self.h.countInc(gtpUsed)
-		self.fthf.countDec(nInitialized)
-		self.formate.countInc(nInitialized)
-
 		self.h2o.countDec(gtpUsed)
+
+		# Account for stuff used up in trna fmet charging 
+		self.fthf.countDec(nInitialized)
+		self.thf.countInc(nInitialized)
+		self.h.countInc(nInitialized) #added this after writing mass balancing equations out
+		#also should account for ATP use for methionyl-tRNA synthetase rxn (for fmet), but this isn't accounted
+		#for for any of the other AAs
+
 
 		# Report stalling information
 
@@ -294,8 +306,20 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		ribosomeStalls = expectedElongations - sequenceElongations
 
+		stalledOnFMet = (
+			(sequenceElongations == 0) &
+			(peptideLengths == 0)
+			)
+
+		stalledOnMet = []
+		for x in range(0,len(np.where(sequenceElongations!=16)[0])): 
+			stalledOnMet.append(sequences[np.where(sequenceElongations!=16)[0]][x][sequenceElongations[np.where(sequenceElongations!=16)[0]][x]]==12)
+		fractionStalledOnMet = sum(stalledOnMet)/len(sequences)
+
 		self.writeToListener("RibosomeStalling", "ribosomeStalls", ribosomeStalls)
 		self.writeToListener("RibosomeStalling", "aaCountInSequence", aaCountInSequence)
-		self.writeToListener("RibosomeStalling", "aaCounts", aaCounts)
+		self.writeToListener("RibosomeStalling", "aaCounts", aaCountsUpdated)
 		self.writeToListener("RibosomeStalling", "trnasCapacity", trnasCapacity)
 		self.writeToListener("RibosomeStalling", "synthetaseCapacity", synthetaseCapacity)
+		self.writeToListener("RibosomeStalling", "stalledOnFMet", stalledOnFMet)
+		self.writeToListener("RibosomeStalling", "fractionStalledOnMet", fractionStalledOnMet)
