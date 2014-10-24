@@ -60,6 +60,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Load parameters
 
 		self.elngRate = float(kb.ribosomeElongationRate.asNumber(units.aa / units.s)) * self.timeStepSec
+		self.nAvogadro = kb.nAvogadro
+		self.cellDensity = kb.cellDensity
 
 		self.aa_trna_groups = kb.aa_trna_groups
 		self.aa_synthetase_groups = kb.aa_synthetase_groups
@@ -171,8 +173,17 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		synthetaseCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
 		elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity)
 
-		# Calculate update
+		# Calculate expected stalls huristic
+		synthetaseVmax = synthetaseCapacity
+		km = 0.001 * units.mmol / units.L
+		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
+		cellVolume = cellMass / self.cellDensity
+		aaTotalConc = (1 / self.nAvogadro) * (1 / cellVolume) * self.aas.total()
+		aaTotalConc = aaTotalConc * 0.01
+		stallsPerAA = np.fmax(aaCountInSequence - synthetaseVmax * (aaTotalConc / (km + aaTotalConc)).asNumber(),0)
+		totalStalls = stochasticRound(self.randomState, stallsPerAA.sum())[0]
 
+		# Calculate update
 		reactionLimit = self.gtp.count() // self.gtpPerElongation
 
 		sequenceElongations, aasUsed, nElongations = polymerize(
