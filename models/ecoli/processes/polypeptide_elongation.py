@@ -24,6 +24,8 @@ from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIn
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 
+SYNTHETASE_KM = 0.001 * units.mmol / units.L
+
 class PolypeptideElongation(wholecell.processes.process.Process):
 	""" PolypeptideElongation """
 
@@ -58,31 +60,21 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		super(PolypeptideElongation, self).initialize(sim, kb)
 
 		# Load parameters
-
 		self.elngRate = float(kb.ribosomeElongationRate.asNumber(units.aa / units.s)) * self.timeStepSec
 		self.nAvogadro = kb.nAvogadro
 		self.cellDensity = kb.cellDensity
-
 		self.aa_trna_groups = kb.aa_trna_groups
 		self.aa_synthetase_groups = kb.aa_synthetase_groups
 		self.synthetase_turnover = kb.trna_synthetase_rates.asNumber(units.aa/units.s)
 
-		enzIds = ["RRLA-RRNA[c]", "RRSA-RRNA[c]", "RRFA-RRNA[c]"]
-
 		proteinIds = kb.monomerData['id']
-
 		self.proteinLengths = kb.monomerData["length"].asNumber()
-
 		self.proteinSequences = kb.translationSequences
-
 		self.aaWeightsIncorporated = kb.translationMonomerWeights
-
 		self.endWeight = kb.translationEndWeight
-
 		self.gtpPerElongation = kb.gtpPerTranslation
 
 		# Views
-
 		self.activeRibosomes = self.uniqueMoleculesView('activeRibosome')
 		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
 
@@ -95,6 +87,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gdp = self.bulkMoleculeView("GDP[c]")
 		self.pi = self.bulkMoleculeView("PI[c]")
 		self.h   = self.bulkMoleculeView("H[c]")
+
+		self.ppgpp = self.bulkMoleculeView("PPGPP[c]")
+		self.atp = self.bulkMoleculeView("ATP[c]")
+		self.amp = self.bulkMoleculeView("AMP[c]")
 
 		self.ribosome30S = self.bulkMoleculeView(kb.s30_fullComplex)
 		self.ribosome50S = self.bulkMoleculeView(kb.s50_fullComplex)
@@ -140,7 +136,17 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				)
 			))
 
-		self.gtp.requestIs(gtpsHydrolyzed)
+		# Calculate potential stalls with heuristic
+		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
+		cellVolume = cellMass / self.cellDensity
+		aaTotalConc = (1 / self.nAvogadro) * (1 / cellVolume) * self.aas.total()
+		aaTotalConc = aaTotalConc * 0.01 # TODO: Delete. Just here to induce stalls.
+		synthetaseCapacity = self.synthetase_turnover * np.array([x.total().sum() for x in self.synthetase_groups],dtype = np.int64)
+		stallsPerAA = np.fmax(aasRequested - synthetaseCapacity * (aaTotalConc / (SYNTHETASE_KM + aaTotalConc)).asNumber(),0)
+		totalStalls = np.ceil(stallsPerAA.sum())
+		self.atp.requestIs(totalStalls)
+
+		self.gtp.requestIs(gtpsHydrolyzed + totalStalls)
 
 		self.h2o.requestIs(gtpsHydrolyzed) # note: this is roughly a 2x overestimate
 
@@ -174,14 +180,12 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity)
 
 		# Calculate expected stalls huristic
-		synthetaseVmax = synthetaseCapacity
-		km = 0.001 * units.mmol / units.L
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
 		cellVolume = cellMass / self.cellDensity
 		aaTotalConc = (1 / self.nAvogadro) * (1 / cellVolume) * self.aas.total()
-		aaTotalConc = aaTotalConc * 0.01
-		stallsPerAA = np.fmax(aaCountInSequence - synthetaseVmax * (aaTotalConc / (km + aaTotalConc)).asNumber(),0)
-		totalStalls = stochasticRound(self.randomState, stallsPerAA.sum())[0]
+		aaTotalConc = aaTotalConc * 0.01 # TODO: Delete. Just here to induce stalls.
+		stallsPerAA = np.fmax(aaCountInSequence - synthetaseCapacity * (aaTotalConc / (SYNTHETASE_KM + aaTotalConc)).asNumber(),0)
+		totalStalls = np.ceil(stallsPerAA.sum())
 
 		# Calculate update
 		reactionLimit = self.gtp.count() // self.gtpPerElongation
@@ -253,6 +257,12 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.h.countInc(gtpUsed)
 
 		self.h2o.countDec(gtpUsed)
+
+		self.atp.countDec(totalStalls)
+		self.gtp.countDec(totalStalls)
+		self.amp.countInc(totalStalls)
+		self.ppgpp.countInc(totalStalls)
+		self.h.countInc(totalStalls)
 
 		# Report stalling information
 
