@@ -29,6 +29,7 @@ from models.ecoli.listeners.ribosome_stalling import RibosomeStalling
 from models.ecoli.listeners.gene_copy_number import GeneCopyNumber
 from models.ecoli.listeners.unique_molecule_counts import UniqueMoleculeCounts
 from models.ecoli.listeners.fba_results import FBAResults
+from models.ecoli.listeners.initiated_transcripts import InitiatedTranscripts
 
 # Analysis
 import models.ecoli.analysis.single
@@ -64,7 +65,8 @@ class EcoliSimulation(Simulation):
 		RibosomeStalling,
 		GeneCopyNumber,
 		UniqueMoleculeCounts,
-		FBAResults
+		FBAResults,
+		InitiatedTranscripts
 		)
 
 	_hookClasses = ()
