@@ -258,6 +258,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.h2o.countDec(gtpUsed)
 
+		usedCounts = np.array([self.atp.count(), self.gtp.count()])
+		if (totalStalls > usedCounts).any():
+			print 'Actual stalls greater than computed during request! Off by {}.'.format((usedCounts - totalStalls)[(usedCounts - totalStalls) < 0])
+			totalStalls = usedCounts.min()
+		
 		self.atp.countDec(totalStalls)
 		self.gtp.countDec(totalStalls)
 		self.amp.countInc(totalStalls)
