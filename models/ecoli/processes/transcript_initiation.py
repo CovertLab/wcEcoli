@@ -51,6 +51,11 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.rnaSynthProb = kb.rnaData['synthProb']
 
+		self.rRNAIdx = kb.rnaData['isRRna']
+		self.tRNAIdx = kb.rnaData['isTRna']
+		self.mRNAIdx = kb.rnaData['isMRna']
+		self.rnaLengths = kb.rnaData['length'].asNumber(units.nt)
+
 		self.activationProb = kb.transcriptionActivationRate.asNumber(1/units.s) * self.timeStepSec # TODO: consider the validity of this math
 
 		# Views
@@ -97,7 +102,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 			startIndex += counts
 
-		# Create the active RNA polymerases
 
 		activeRnaPolys = self.activeRnaPolys.moleculesNew(
 			"activeRnaPoly",
@@ -109,3 +113,12 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			)
 
 		self.inactiveRnaPolys.countDec(nNewRnas.sum())
+		
+		mRnaInitalized = (self.mRNAIdx * nNewRnas * self.rnaLengths).sum()
+		tRnaInitalized = (self.tRNAIdx * nNewRnas * self.rnaLengths).sum()
+		rRnaInitalized = (self.rRNAIdx * nNewRnas * self.rnaLengths).sum()
+
+		# Write initiation information to listner
+		self.writeToListener("InitiatedTranscripts", "mRnaInitalized", mRnaInitalized)
+		self.writeToListener("InitiatedTranscripts", "tRnaInitalized", tRnaInitalized)
+		self.writeToListener("InitiatedTranscripts", "rRnaInitalized", rRnaInitalized)
