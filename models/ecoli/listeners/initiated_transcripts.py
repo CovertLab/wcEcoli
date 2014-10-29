@@ -54,7 +54,10 @@ class InitiatedTranscripts(wholecell.listeners.listener.Listener):
 	def update(self):
 		totalRna = self.tRnaInitalized + self.rRnaInitalized + self.mRnaInitalized
 		stableRna = self.tRnaInitalized + self.rRnaInitalized
-		self.ratioStableToToalInitalized = stableRna / totalRna
+		if totalRna > 0:
+			self.ratioStableToToalInitalized = stableRna / totalRna
+		else:
+			self.ratioStableToToalInitalized = np.nan
 
 	def pytablesCreate(self, h5file, expectedRows):
 		dtype = {
