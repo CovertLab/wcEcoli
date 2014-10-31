@@ -96,3 +96,10 @@ class GrowthData(object):
 		D["mRnaMass"] = D["rnaMass"] * self.MRNA_MASS_SUB_FRACTION
 
 		return D
+
+	def dryMass(self, tau_d):
+		"""
+		Given an input doubling time in minutes, output mass fractions in fg
+		"""
+		tau_d = self._clipTau_d(tau_d)
+		return units.fg * exp2(tau_d, *self.dryMassParams)
