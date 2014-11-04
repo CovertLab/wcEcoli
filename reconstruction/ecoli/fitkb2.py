@@ -97,6 +97,37 @@ def fitKb_2(kb, simOutDir):
 	del allMoleculeCounts
 	del bulkContainer
 	
+	# ----- Calculate ppGpp concentration ----- #
+	aminoAcidsInProtein = (bulkAverageContainer.counts(kb.monomerData['id']) * kb.monomerData['length'].asNumber()).sum()
+	aminoAcidsInComplex = 0.
+	for cplx in list(kb.complexationComplexNames):
+		cplx_data = kb.getComplexMonomers(cplx)
+		cplx_subunit = cplx_data['subunitIds']
+		cplx_stoich = cplx_data['subunitStoich']
+
+		subunit_idxs = []
+		subunit_idxs_to_delete = []
+		for idx, subunit in enumerate(cplx_subunit):
+			try:
+				subunit_idxs.append(np.where(kb.monomerData['id'] == subunit)[0][0])
+			except IndexError:
+				subunit_idxs_to_delete.append(idx)
+		cplx_stoich = np.delete(cplx_stoich, subunit_idxs_to_delete)
+
+		subunit_length = kb.monomerData['length'][subunit_idxs].asNumber()
+		aminoAcidsInComplex += (bulkAverageContainer.count(cplx) * subunit_length * cplx_stoich).sum()
+
+	totalAminoAcidsInMacromolecules = (aminoAcidsInComplex + aminoAcidsInProtein)
+	totalAAInSolublePool = totalAminoAcidsInMacromolecules * 0.08 # Approximatly correct for one time calculature.
+	# TODO: Calculate soluble pools here too!
+	totalAminoAcidsInCell = totalAminoAcidsInMacromolecules + totalAAInSolublePool
+
+	ppGpp_per_cell = (totalAminoAcidsInCell * kb.ppGpp_base_concentration).asUnit(units.count)
+	cellVolume = growthData.dryMass(60) / kb.cellDensity
+	ppGpp_concentration = (ppGpp_per_cell.asUnit(units.mol) / cellVolume).asUnit(units.mol / units.L)
+	# Finally set ppGpp concentration to maintain
+	kb.metabolitePoolConcentrations[kb.metabolitePoolIDs.index('PPGPP[c]')] = ppGpp_concentration
+
 	# ----- tRNA synthetase turnover rates ------
 	# Fit tRNA synthetase kcat values based on expected rates of translation
 	# compute values at initial time point
