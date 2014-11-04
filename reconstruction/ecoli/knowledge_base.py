@@ -2768,6 +2768,8 @@ class KnowledgeBaseEcoli(object):
 		# compartments according to those given in the biomass objective.  Or,
 		# if there is no compartment, assign it to the cytoplasm.
 
+		self.ppGpp_base_concentration = PPGPP_BASE_CONC_PMOL_PER_AA
+
 		metaboliteIDs = []
 		metaboliteConcentrations = []
 
@@ -2996,6 +2998,9 @@ class KnowledgeBaseEcoli(object):
 
 		metaboliteIDs.append("PPI[c]")
 		metaboliteConcentrations.append(PPI_CONCENTRATION)
+
+		metaboliteIDs.append("PPGPP[c]")
+		metaboliteConcentrations.append(1e-10) # Arbitrary number chosen here, re-set in fitter
 
 		unaccounted = set(wildtypeIDs) - set(metaboliteIDs)
 
