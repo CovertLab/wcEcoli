@@ -1872,6 +1872,11 @@ METABOLITE_CONCENTRATIONS = { # mol / L # TODO: move to SQL # TODO: Add units!
 	"adn": 1.30e-7,
 	}
 
+PPGPP_BASE_CONC_PMOL_PER_AA = 2. / 10e17 * units.pmol # pmol / aa
+# Chosen from Bremmer 1996 as the ppGpp amount at the fastest doubling time 
+# recorded as 2.5 doublings per hour (24 min doubling time). This is presumably
+# close to E. coli's physiological limit.
+
 POLYMERIZED_AMINO_ACID_WEIGHTS = [
 	{"base molecule":"ALA-L",	"frame id":"Polymerized ALA-L",	"mw":71.0785},
 	{"base molecule":"ARG-L",	"frame id":"Polymerized ARG-L",	"mw":157.1957},
