@@ -401,6 +401,14 @@ class KnowledgeBaseEcoli(object):
 
 			self._complexationReactions.append(newComplexationReaction)
 
+		# Delete ppGpp processing reactions
+		reactions_to_delete = [u'FEIST_GDPDPK_0', u'FEIST_GDPDPK_1', u'FEIST_GTPDPK', u'FEIST_PPGPPDP']
+		newRxnList = []
+		for rxn in self._reactions:
+			if rxn['id'] not in reactions_to_delete:
+				newRxnList.append(rxn)
+		self._reactions = newRxnList
+		
 	def _defineConstants(self):
 		self._aaWeights = collections.OrderedDict()
 
