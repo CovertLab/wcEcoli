@@ -26,6 +26,8 @@ from wholecell.utils import units
 
 import itertools
 
+PPGPP_POWER = 0.25
+
 class TranscriptInitiation(wholecell.processes.process.Process):
 	""" TranscriptInitiation """
 
@@ -55,6 +57,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.tRNAIdx = kb.rnaData['isTRna']
 		self.mRNAIdx = kb.rnaData['isMRna']
 		self.rnaLengths = kb.rnaData['length'].asNumber(units.nt)
+		self.nAvogadro = kb.nAvogadro
+		self.cellDensity = kb.cellDensity
 
 		# self.activationProb = kb.transcriptionActivationRate.asNumber(1/units.s) * self.timeStepSec # TODO: consider the validity of this math
 
@@ -85,7 +89,10 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
 
-
+		self.ppGpp = self.bulkMoleculeView("PPGPP[c]")
+		self.ppGpp_base_conc = kb.metabolitePoolConcentrations[kb.metabolitePoolIDs.index("PPGPP[c]")]
+		self.ppGpp_scaling_factor = 1 / (self.ppGpp_base_conc ** PPGPP_POWER)
+		
 	def calculateRequest(self):
 		self.inactiveRnaPolys.requestAll()
 
@@ -101,6 +108,19 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		if rnaPolyToActivate == 0:
 			return
+
+		# Scale synthesis probabilities of stable and unstable RNA by ppGpp concentration
+		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
+		cellVolume = cellMass / self.cellDensity
+		ppGpp_conc = (1 / self.nAvogadro) * (1 / cellVolume) * self.ppGpp.total()[0]
+
+		stable_rna_scale = (1/(self.ppGpp_scaling_factor * (ppGpp_conc ** PPGPP_POWER))).normalize()
+		stable_rna_scale.checkNoUnit()
+		stable_rna_scale = np.fmin(1, stable_rna_scale.asNumber())
+
+		self.rnaSynthProb[self.tRNAIdx] = self.rnaSynthProb[self.tRNAIdx] * stable_rna_scale
+		self.rnaSynthProb[self.rRNAIdx] = self.rnaSynthProb[self.rRNAIdx] * stable_rna_scale
+		self.rnaSynthProb = self.rnaSynthProb / self.rnaSynthProb.sum()
 
 		nNewRnas = self.randomState.multinomial(rnaPolyToActivate,
 			self.rnaSynthProb)
