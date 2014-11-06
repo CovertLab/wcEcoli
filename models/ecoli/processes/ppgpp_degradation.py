@@ -34,15 +34,18 @@ class ppGppDegradation(wholecell.processes.process.Process):
 	def initialize(self, sim, kb):
 		super(ppGppDegradation, self).initialize(sim, kb)
 
-		self.k_m = 800. * units.mmol / units.L
+		self.k_m = 800. * units.umol / units.L
 		self.k_cat = 3. * 1 / units.s
-		self.v_max = self.k_cat * 58
+		self.v_max = self.k_cat * 10000
 
 		self.nAvogadro = kb.nAvogadro
 		self.cellDensity = kb.cellDensity
 
 		# Views
 		self.ppGpp = self.bulkMoleculeView("PPGPP[c]")
+		self.gdp = self.bulkMoleculeView("GDP[c]")
+		self.h2o = self.bulkMoleculeView("H2O[c]")
+		self.ppi = self.bulkMoleculeView("PPI[c]")
 
 	def calculateRequest(self):
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
@@ -51,9 +54,11 @@ class ppGppDegradation(wholecell.processes.process.Process):
 		maxTurnover = (self.v_max * (ppGpp_conc / (ppGpp_conc + self.k_m))).asNumber(1 / units.s)  * self.timeStepSec
 		maxTurnover = np.floor(maxTurnover)
 		
-		print 'ppGpp requested for degradation: {}'.format(maxTurnover)
+		#print 'ppGpp requested for degradation: {}'.format(maxTurnover)
+		#print 'spoT enzyme is {} saturated'.format((ppGpp_conc / (ppGpp_conc + self.k_m)).asNumber())
 		#import ipdb; ipdb.set_trace()
 		self.ppGpp.requestIs(maxTurnover)
+		self.h2o.requestId(maxTurnover)
 
 	# Calculate temporal evolution
 	def evolveState(self):
@@ -67,3 +72,7 @@ class ppGppDegradation(wholecell.processes.process.Process):
 			print 'Allocated less ppGpp than requested to degradation process!'
 
 		self.ppGpp.countDec(maxTurnover)
+		self.h2o.countDec(maxTurnover)
+
+		self.gdp.countInc(maxTurnover)
+		self.ppi.countInc(maxTurnover)

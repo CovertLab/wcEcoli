@@ -136,6 +136,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				)
 			))
 
+		self.gtp.requestIs(gtpsHydrolyzed)
+		self.h2o.requestIs(gtpsHydrolyzed) # note: this is roughly a 2x overestimate
+
 		# Calculate potential stalls with heuristic
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
 		cellVolume = cellMass / self.cellDensity
@@ -144,12 +147,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		synthetaseCapacity = self.synthetase_turnover * np.array([x.total().sum() for x in self.synthetase_groups],dtype = np.int64)
 		stallsPerAA = np.fmax(aasRequested - synthetaseCapacity * (aaTotalConc / (SYNTHETASE_KM + aaTotalConc)).asNumber(),0)
 		totalStalls = np.ceil(stallsPerAA.sum())
+
 		self.atp.requestIs(totalStalls)
-
-		self.gtp.requestIs(gtpsHydrolyzed + totalStalls)
-
-		self.h2o.requestIs(gtpsHydrolyzed) # note: this is roughly a 2x overestimate
-
+		self.gdp.requestIs(totalStalls)
 
 	# Calculate temporal evolution
 	def evolveState(self):
@@ -264,7 +264,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			totalStalls = usedCounts.min()
 		
 		self.atp.countDec(totalStalls)
-		self.gtp.countDec(totalStalls)
+		self.gdp.countDec(totalStalls)
 		self.amp.countInc(totalStalls)
 		self.ppgpp.countInc(totalStalls)
 		self.h.countInc(totalStalls)
