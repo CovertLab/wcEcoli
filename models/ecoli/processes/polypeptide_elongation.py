@@ -183,7 +183,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
 		cellVolume = cellMass / self.cellDensity
 		aaTotalConc = (1 / self.nAvogadro) * (1 / cellVolume) * self.aas.total()
-		aaTotalConc = aaTotalConc * 0.01 # TODO: Delete. Just here to induce stalls.
+		#aaTotalConc = aaTotalConc * 0.09 # TODO: Delete. Just here to induce stalls.
 		stallsPerAA = np.fmax(aaCountInSequence - synthetaseCapacity * (aaTotalConc / (SYNTHETASE_KM + aaTotalConc)).asNumber(),0)
 		totalStalls = np.ceil(stallsPerAA.sum())
 
