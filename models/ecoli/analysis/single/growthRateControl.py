@@ -104,7 +104,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	# Calculate ppGpp concentration
 	cellMass = units.fg * cellMass
 	cellVolume = cellMass / cellDensity
-	ppGppConc = ((1 / nAvogadro) * (1 / cellVolume) * bulkCounts[:, PPGPP_IDX]).asNumber(units.mmol / units.L)
+	ppGppConc = ((1 / nAvogadro) * (1 / cellVolume) * bulkCounts[:, PPGPP_IDX]).asNumber(units.umol / units.L)
 
 	## Start plotting ##
 	plt.figure(figsize = (8.5, 11))
@@ -124,7 +124,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	ppGppConc_axis = plt.subplot(5, 1, 2)
 
 	sparklineAxis(ppGppConc_axis, initTime / 60., ppGppConc, 'left', '-', 'b')
-	ppGppConc_axis.set_xlabel('[ppGpp] mM')
+	ppGppConc_axis.set_xlabel('[ppGpp] uM')
 
 	# Plot ratio of stable to total rna synthesis
 	fractionStable_axis = plt.subplot(5, 1, 3)
