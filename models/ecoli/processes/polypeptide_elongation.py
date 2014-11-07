@@ -114,6 +114,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.activeRibosomes.requestAll()
 
 		activeRibosomes = self.activeRibosomes.allMolecules()
+		if len(activeRibosomes) == 0:
+			return
 
 		proteinIndexes, peptideLengths = activeRibosomes.attrs(
 			'proteinIndex', 'peptideLength'
@@ -130,6 +132,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		aasRequested = np.bincount(sequences[sequenceHasAA],minlength=self.numberAAs)
 		trnasRequested = np.copy(aasRequested)
+		fMetRequested = aasRequested[21]
 		aasRequested[12] += aasRequested[21]
 		aasRequested[21] = 0
 
@@ -158,7 +161,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.h2o.requestIs(gtpsHydrolyzed) # note: this is roughly a 2x overestimate
 
 		self.mtf.requestAll()
-		self.fthf.requestAll()
+		self.fthf.requestIs(fMetRequested)
 
 	# Calculate temporal evolution
 	def evolveState(self):
@@ -238,7 +241,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		updatedLengths = peptideLengths + sequenceElongations
 
 		didInitialize = (
-			(sequenceElongations > 1) &
+			(sequenceElongations > 0) &
 			(peptideLengths == 0)
 			)
 
@@ -293,8 +296,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.fthf.countDec(nInitialized)
 		self.thf.countInc(nInitialized)
 		self.h.countInc(nInitialized) #added this after writing mass balancing equations out
-		#also should account for ATP use for methionyl-tRNA synthetase rxn (for fmet), but this isn't accounted
-		#for for any of the other AAs
+		#also should account for ATP use for methionyl-tRNA synthetase rxn (for fmet), but this isn't accounted for
+		#for any of the other AAs
 
 
 		# Report stalling information

@@ -366,7 +366,7 @@ def initializeTranslation(bulkMolCntr, uniqueMolCntr, kb, randomState, timeStep)
 	monomerIds = kb.proteinData["id"]
 	monomers = bulkMolCntr.countsView(monomerIds)
 	monomerCounts = monomers.counts()
-	monomerLengths = kb.proteinData["length"].asNumber(units.count)
+	monomerLengths = kb.proteinNascentData["length"].asNumber(units.count)
 
 	monomerLengthAverage = np.dot(monomerCounts, monomerLengths) / monomerCounts.sum()
 
@@ -382,7 +382,7 @@ def initializeTranslation(bulkMolCntr, uniqueMolCntr, kb, randomState, timeStep)
 
 	# Compute the current protein mass
 
-	monomerMasses = (kb.proteinData["mw"].asNumber(units.fg / units.mol) /
+	monomerMasses = (kb.proteinNascentData["mw"].asNumber(units.fg / units.mol) /
 		kb.nAvogadro.asNumber(1 / units.mol))
 	monomerMassTotal = np.dot(monomerCounts, monomerMasses)
 
@@ -407,7 +407,7 @@ def initializeTranslation(bulkMolCntr, uniqueMolCntr, kb, randomState, timeStep)
 	peptideLengths = (randomState.rand(activeRibosomeCount) * maxPeptideLengths).astype(np.int64)
 
 	# Compute peptide masses
-	monomerSequences = kb.translationSequences
+	monomerSequences = kb.translationSequencesNascent
 
 	aaWeightsIncorporated = kb.translationMonomerWeights
 

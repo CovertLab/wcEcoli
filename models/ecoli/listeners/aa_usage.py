@@ -51,6 +51,9 @@ class AAUsage(wholecell.listeners.listener.Listener):
 		self.translationProcessIdx = sim.processes.keys().index(
 			"PolypeptideElongation"
 			)
+		self.metabolismProcessIdx = sim.processes.keys().index(
+			"Metabolism"
+			)
 
 		biomassMetIdxs = [
 		np.where(
@@ -74,6 +77,9 @@ class AAUsage(wholecell.listeners.listener.Listener):
 		self.translationAAUsageCurrent = np.zeros(
 			len(self.metaboliteIds), dtype = np.int64
 			)
+		self.metabolismAAUsageCurrent = np.zeros(
+			len(self.metaboliteIds), dtype = np.int64
+			)
 		self.translationAAUsageCumulative = np.zeros_like(
 			self.translationAAUsageCurrent
 			)
@@ -85,6 +91,15 @@ class AAUsage(wholecell.listeners.listener.Listener):
 				]
 			- self.bulkMolecules._countsAllocatedFinal[
 				self.metaboliteIdxs, self.translationProcessIdx
+				]
+			)
+
+		self.metabolismAAUsageCurrent = (
+			self.bulkMolecules._countsAllocatedInitial[
+				self.metaboliteIdxs, self.metabolismProcessIdx
+				]
+			- self.bulkMolecules._countsAllocatedFinal[
+				self.metaboliteIdxs, self.metabolismProcessIdx
 				]
 			)
 
@@ -100,6 +115,7 @@ class AAUsage(wholecell.listeners.listener.Listener):
 			"time": tables.Float64Col(),
 			"timeStep": tables.Int64Col(),
 			"translationAAUsageCurrent": tables.UInt64Col(shape),
+			"metabolismAAUsageCurrent": tables.UInt64Col(shape),
 			"translationAAUsageCumulative": tables.UInt64Col(shape),
 			}
 
@@ -130,6 +146,7 @@ class AAUsage(wholecell.listeners.listener.Listener):
 		entry["time"] = self.time()
 		entry["timeStep"] = self.timeStep()
 		entry["translationAAUsageCurrent"] = self.translationAAUsageCurrent
+		entry["metabolismAAUsageCurrent"] = self.metabolismAAUsageCurrent
 		entry["translationAAUsageCumulative"] = self.translationAAUsageCumulative
 
 		entry.append()
