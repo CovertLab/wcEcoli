@@ -67,9 +67,13 @@ class KnowledgeBaseEcoli(object):
 		self._loadPolymerized()
 		self._loadGenome()
 		self._loadGenes()
+		self._loadPromoters() 
+		self._loadTerminators()
+		self._loadTranscriptionUnits() 
 		self._loadRelationStoichiometry() #  Need to be called before any reaction loading
 		self._loadModificationReactions() # Need to be called before rna/protein/complexes modified forms
 		self._loadRnas()
+		self._loadTURnas()
 		self._loadProteinMonomers()
 		self._loadComplexes() 
 		self._loadReactions()
@@ -87,9 +91,6 @@ class KnowledgeBaseEcoli(object):
 
 		loadedAttrs = set(dir(self)) - defaultAttrs
 		
-		self._loadPromoters() 
-		self._loadTerminators()
-		self._loadTranscriptionUnits() 
 		#self._countATinPromoters()
 		
 		# Create data structures for simulation
@@ -778,6 +779,93 @@ class KnowledgeBaseEcoli(object):
 			}
 				
 			self._transcriptionUnits.append(t)
+
+	def _loadTURnas(self):
+		self._tURnas = []
+
+
+		for tu in self._transcriptionUnits:
+
+			geneLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._genes)])
+			rnaLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._rnas)])
+			
+			rnas = []
+			for i in tu['gene_id']: rnas.append(self._genes[geneLookup[i]]['rnaId'])
+			'''
+				if self._genes[gl[i]]['direction'] == '+':
+					temp.append({'start':self._genes[gl[i]]['coordinate'],'stop':self._genes[gl[i]]['coordinate']+self._genes[gl[i]]['length']-1})
+				else:
+					temp.append({'start':self._genes[gl[i]]['coordinate']-self._genes[gl[i]]['length']+2,'stop':self._genes[gl[i]]['coordinate']+1})
+			init = self._rnas[rnaLookup[rnas[0]]]['type']
+			rType = []
+			flag = 0
+			for r in rnas:
+				if init != self._rnas[rnaLookup[r]]['type']: flag = 1 #print tu, rnas
+				rType.append(self._rnas[rnaLookup[r]]['type'])
+
+
+			x = 0
+			if flag:
+				x = 0
+				for i in range(0,len(temp)):
+					for j in range(i+1,len(temp)):
+						if (temp[i]['start'] <= temp[j]['start'] and temp[j]['start'] <= temp[i]['stop']) or (temp[j]['start'] <= temp[i]['start'] and temp[i]['start'] <= temp[j]['stop']):
+								print tu['id'], rnas[i],rType[i],temp[i]['start'],temp[i]['stop'],rnas[j],rType[j],temp[j]['start'],temp[j]['stop']
+								x = 1
+								#break
+					#if x: break
+
+				if x: print #tu, rnas,rType
+			'''
+			direction = tu['direction']
+			seq = ''
+			if direction == "f":
+				direction = '+'
+				seq = self._genomeSeq[(tu["left"]): (tu["right"] + 1)]
+			else:
+				direction = '-'
+				seq = Bio.Seq.Seq(self._genomeSeq[(tu["left"]): (tu["right"] + 1)]).reverse_complement().tostring()
+
+			rSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
+
+			ntCount = np.array([rSeq.count("A"), rSeq.count("C"), rSeq.count("G"), rSeq.count("U")])
+				
+			mw = np.zeros(len(MOLECULAR_WEIGHT_ORDER))
+			
+			positions = []
+			for r in rnas:
+				rna = self._rnas[] 
+				positions.append({'type':,'start':,'stop':})
+				
+
+			weight = (
+				self._ntWeights["A"] * ntCount[0]
+				+ self._ntWeights["C"] * ntCount[1]
+				+ self._ntWeights["G"] * ntCount[2]
+				+ self._ntWeights["U"] * ntCount[3]
+				) + self._rnaEndWeight
+
+			#index = self._whichRna(r['id'], r['type'])
+			#r["mw"][index] = weight 
+
+
+			tur = {
+					"tUId": tu['id'],
+					'left': tu['left'],
+					'right': tu['right'],
+					'direction': tu['direction'],
+
+					'rnas': rnas,
+					'location':self._rnas[rnaLookup[rnas[0]]]['location'], #consider same location of all rnas in a TU
+
+					'rnaType': rType,
+
+					"seq": rSeq,
+					"ntCount": ntCount,
+					"mw": np.zeros(len(MOLECULAR_WEIGHT_ORDER))
+			}
+			
+			self._tURnas.append(tur)
 
 
 
