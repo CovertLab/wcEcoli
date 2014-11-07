@@ -20,6 +20,7 @@ import os
 import sys
 import itertools
 import re
+import copy
 
 # Set Django environmental variable
 os.environ['DJANGO_SETTINGS_MODULE'] = 'ecoliwholecellkb_project.ecoliwholecellkb.settings'
@@ -81,13 +82,15 @@ class KnowledgeBaseEcoli(object):
 		self._loadConstants()
 		self._loadParameters()
 		self._loadHacked() 		# Build hacked constants - need to add these to the SQL database still
+		#self._calcMolecularWeightFromRxn() # Have to call again to calculate MWs of hacked complexes
 		self._loadComputeParameters()
 
 		loadedAttrs = set(dir(self)) - defaultAttrs
 		
-		self._loadPromoters() # Need the attributes; will not be deleted
-		self._loadTranscriptionUnits() # Need the attributes; will not be deleted
-		self._countATinPromoters()
+		self._loadPromoters() 
+		self._loadTerminators()
+		self._loadTranscriptionUnits() 
+		#self._countATinPromoters()
 		
 		# Create data structures for simulation
 		self._buildAllMasses() # called early because useful for other builders
@@ -276,6 +279,148 @@ class KnowledgeBaseEcoli(object):
 					molecule['location'] = u'c'
 				elif molecule['molecule'] == 'EG10876-MONOMER':
 					molecule['location'] = u'c'
+
+		# Changing ids of 30S and 50S ribosomal complexes
+		for comp in self._proteinComplexes:
+			if comp['id'] == 'CPLX0-3953':
+				comp['id'] = 'CPLX-30SA'
+			elif comp['id'] == 'CPLX0-3962':
+				comp['id'] = 'CPLX-50SA'
+
+		for rxn in self._complexationReactions:
+			for molecule in rxn['stoichiometry']:
+				if molecule['molecule'] == 'CPLX0-3953':
+					molecule['molecule'] = 'CPLX-30SA'
+					molecule['name'] = '30S ribosomal subunit rrnA'
+				elif molecule['molecule'] == 'CPLX0-3962':
+					molecule['molecule'] = 'CPLX-50SA'
+					molecule['name'] = '50S ribosomal subunit rrnA'
+
+		for rxn in self._complexationReactions:
+			if rxn['id'] == 'CPLX0-3953_RXN':
+				rxn['id'] = 'CPLX-30SA_RXN'
+			elif rxn['id'] == 'CPLX0-3962_RXN':
+				rxn['id'] = 'CPLX-50SA_RXN'
+
+		# Add other rrn operons and their formation reactions
+		# Ignoring extra 5S rRNA
+		remaining16SrRNA = S30_16S_RRNAS[1:]
+		letters = [x[3] for x in remaining16SrRNA]
+		for idx,rRNA in enumerate(remaining16SrRNA):
+			newComplex = {
+				'comments': u'',
+				'id': u'CPLX-30S{}'.format(letters[idx]),
+				'location': u'c',
+				'mw': np.zeros(len(MOLECULAR_WEIGHT_ORDER)),
+				#'name': u'30S ribosomal subunit rrn{}'.format(letters[idx]),
+				'reactionId': u'CPLX-30S{}_RXN'.format(letters[idx])}
+
+			self._proteinComplexes.append(newComplex)
+
+			newStoichiometry = []
+			for protein_idx,protein in enumerate(S30_PROTEINS):
+				newSubunit = {
+					'coeff': -1.*S30_PROTEINS_STOICHIOMETRY[protein_idx],
+					'form': 'mature',
+					'location': u'c',
+					'molecule': protein[:-3],
+					'type': 'proteinmonomers'
+					}
+				newStoichiometry.append(newSubunit)
+
+			newStoichiometry.append({
+					'coeff': -1.*S30_16S_RRNAS_STOICHIOMETRY[idx],
+					'form': 'mature',
+					'location': u'c',
+					'molecule': rRNA[:-3],
+					'type': 'rna'
+					})
+
+			newStoichiometry.append({
+					'coeff': 1.,
+					'form': 'mature',
+					'location': u'c',
+					'molecule': 'CPLX-30S{}'.format(letters[idx]),
+					'type': 'proteincomplex'
+					})
+
+			newComplexationReaction = {
+				'dir' : 1,
+				'id': u'CPLX-30S{}_RXN'.format(letters[idx]),
+				'process' : 'complexation',
+				'stoichiometry' : newStoichiometry
+				}
+
+			self._complexationReactions.append(newComplexationReaction)
+
+		remaining5SrRNA = S50_5S_RRNAS[1:]
+		remaining23SrRNA = S50_23S_RRNAS[1:]
+		letters = [x[3] for x in remaining23SrRNA]
+		for idx in range(len(remaining23SrRNA)):
+			newComplex = {
+				'comments': u'',
+				'id': u'CPLX-50S{}'.format(letters[idx]),
+				'location': u'c',
+				'mw': np.zeros(len(MOLECULAR_WEIGHT_ORDER)),
+				#'name': u'50S ribosomal subunit rrn{}'.format(letters[idx]),
+				'reactionId': u'CPLX-50S{}_RXN'.format(letters[idx])}
+
+			self._proteinComplexes.append(newComplex)
+
+			newStoichiometry = []
+			for protein_idx,protein in enumerate(S50_PROTEINS):
+				newSubunit = {
+					'coeff': -1.*S50_PROTEINS_STOICHIOMETRY[protein_idx],
+					'form': 'mature',
+					'location': u'c',
+					'molecule': protein[:-3],
+					'type': 'proteinmonomers'
+					}
+				newStoichiometry.append(newSubunit)
+
+
+			for cplx_idx,cplx in enumerate(S50_PROTEIN_COMPLEXES):
+				newSubunit = {
+					'coeff': -1.*S50_PROTEIN_COMPLEXES_STOICHIOMETRY[cplx_idx],
+					'form': 'mature',
+					'location': u'c',
+					'molecule': cplx[:-3],
+					'type': 'proteincomplex'
+					}
+				newStoichiometry.append(newSubunit)
+
+			newStoichiometry.append({
+					'coeff': -1.*S50_23S_RRNAS_STOICHIOMETRY[idx],
+					'form': 'mature',
+					'location': u'c',
+					'molecule': remaining23SrRNA[idx][:-3],
+					'type': 'rna'
+					})
+
+			newStoichiometry.append({
+					'coeff': -1.*S50_5S_RRNAS_STOICHIOMETRY[idx],
+					'form': 'mature',
+					'location': u'c',
+					'molecule': remaining5SrRNA[idx][:-3],
+					'type': 'rna'
+					})
+
+			newStoichiometry.append({
+					'coeff': 1.,
+					'form': 'mature',
+					'location': u'c',
+					'molecule': 'CPLX-50S{}'.format(letters[idx]),
+					'type': 'proteincomplex'
+					})
+
+			newComplexationReaction = {
+				'dir' : 1,
+				'id': u'CPLX-30S{}_RXN'.format(letters[idx]),
+				'process' : 'complexation',
+				'stoichiometry' : newStoichiometry
+				}
+
+			self._complexationReactions.append(newComplexationReaction)
 
 	def _defineConstants(self):
 		self._aaWeights = collections.OrderedDict()
@@ -568,6 +713,94 @@ class KnowledgeBaseEcoli(object):
 								"form": "mature", 
 								"type":  thisType
 								}
+
+	def _loadPromoters(self):
+		self._promoters = []
+		self._promoterDbId = {}
+
+		self._checkDatabaseAccess(Promoter)		
+		all_pr = Promoter.objects.all()
+		for i in all_pr:
+			self._promoterDbId[i.id] = i.promoter_id
+			p = {
+				"id":i.promoter_id,
+				"name":str(i.name),
+				"position":int(i.position),
+				"direction":str(i.direction)
+			}
+			if p["direction"] == "f":
+				p["direction"] = '+'
+			else:
+				p["direction"] = '-'
+	
+			self._promoters.append(p)
+
+	def _loadTerminators(self):
+		self._terminators = []
+		self._terminatorDbId = {}
+
+		self._checkDatabaseAccess(Terminator)		
+		all_tr = Terminator.objects.all()
+		for i in all_tr:
+			self._terminatorDbId[i.id] = i.terminator_id
+			t = {
+				"id":i.terminator_id,
+				"name":str(i.name),
+				"left":int(i.left),
+				"right":int(i.right),
+				"rho":str(i.rho_dependent)
+			}
+			
+			self._terminators.append(t)
+
+	def _loadTranscriptionUnits(self):
+		
+		self._transcriptionUnits = []
+				
+		#gene
+		tu_gene = {}
+		self._checkDatabaseAccess(TranscriptionUnitGene)		
+		all_tg = TranscriptionUnitGene.objects.all()
+		for i in all_tg:
+			tu = i.transcriptionunit_id_fk_id
+			gene = self._geneDbIds[i.gene_id_fk_id]
+			if tu in tu_gene:
+				tu_gene[tu].append(gene)
+			else:
+				tu_gene[tu] = [gene]
+	
+		#terminator 
+		tu_tr = {}
+		self._checkDatabaseAccess(TranscriptionUnitTerminator)		
+		all_tt = TranscriptionUnitTerminator.objects.all()
+		for i in all_tt:
+			tu = i.transcription_unit_id_fk_id
+			tr = self._terminatorDbId[i.terminator_id_fk_id]
+			if tu in tu_tr:
+				tu_tr[tu].append(tr)
+			else:
+				tu_tr[tu] = [tr]
+	
+
+		self._checkDatabaseAccess(TranscriptionUnit)		
+		all_tu = TranscriptionUnit.objects.all()
+		for i in all_tu:
+			t = {
+				"id":i.transcription_unit_id,
+				"name":str(i.name),
+				"left":int(i.left),
+				"right":int(i.right),
+				"direction":str(i.direction),
+				"degradation_rate": float(i.degradation_rate), 
+				"expression_rate": float(i.expression_rate),
+				"promoter_id": self._promoterDbId[i.promoter_id_fk_id],
+				"gene_id": tu_gene[i.id],
+				"terminator_id": tu_tr[i.id],
+			}
+				
+			self._transcriptionUnits.append(t)
+
+
 
 	def _loadBiomassFractions(self):
 
@@ -1393,30 +1626,7 @@ class KnowledgeBaseEcoli(object):
 
 			self._reactions.append(r)
 					
-
-	def _loadPromoters(self):
-		self._promoters = []
-		self._promoterDbId = {}
-
-		self._checkDatabaseAccess(Promoter)		
-		all_pr = Promoter.objects.all()
-		for i in all_pr:
-			self._promoterDbId[i.id] = i.promoter_id
-			p = {
-				"id":i.promoter_id,
-				"name":str(i.name),
-				"position":int(i.position),
-				"direction":str(i.direction)
-			}
-			if p["direction"] == "f":
-				p["direction"] = '+'
-				p["seq"] = self._genomeSeq[(p["position"]-100): (p["position"] + 100)]
-			else:
-				p["direction"] = '-'
-				p["seq"] = Bio.Seq.Seq(self._genomeSeq[(p["position"]-100): (p["position"] + 100)]).reverse_complement().tostring()
-	
-			self._promoters.append(p)
-
+	'''
 	def _loadTranscriptionUnits(self):
 		
 		self._transcriptionUnits = []
@@ -1461,16 +1671,6 @@ class KnowledgeBaseEcoli(object):
 		for p in self._promoters:
 			p['TU'] = tu_pr[p['id']]
 
-
-	def _loadMetaboliteConcentrations(self):
-		# TODO: move data to SQL and load here
-
-		self._metaboliteConcentrations = [
-			(metaboliteID.upper(), concentration)
-			for metaboliteID, concentration in METABOLITE_CONCENTRATIONS.viewitems()
-			]
-
-
 	def _countATinPromoters(self):
 		
 		geneLookUp = dict([(x[1]["id"], x[0]) for x in enumerate(self._genes)])
@@ -1501,7 +1701,17 @@ class KnowledgeBaseEcoli(object):
 			x = sum(genes_pr[g['id']])/float(len(genes_pr[g['id']]))
 			#print g['id'],'\t',g['name'],'\t',g['symbol'],'\t',x ,'\t', len(genes_pr[g['id']])
 		#print total
+	'''
 
+	def _loadMetaboliteConcentrations(self):
+		# TODO: move data to SQL and load here
+
+		self._metaboliteConcentrations = [
+			(metaboliteID.upper(), concentration)
+			for metaboliteID, concentration in METABOLITE_CONCENTRATIONS.viewitems()
+			]
+	
+	
 	def _calcMolecularWeightFromRxn(self):
 		
 		complexReactionLookUp = dict([(x[1]["id"], x[0]) for x in enumerate(self._complexationReactions)])
@@ -1881,6 +2091,7 @@ class KnowledgeBaseEcoli(object):
 				'proteinIndex' : 'i8',
 				'peptideLength': 'i8'
 				}),
+
 			("dnaPolymerase", {
 				'chromosomeLocation' : 'i8',
 				'directionIsPositive' : 'bool',
@@ -2044,6 +2255,8 @@ class KnowledgeBaseEcoli(object):
 
 		mws = np.array([rna['mw'] for rna in self._rnas])
 
+		geneIds = np.array([rna['geneId'] for rna in self._rnas])
+
 		size = len(rnaIds)
 
 		is23S = np.zeros(size, dtype = np.bool)
@@ -2082,7 +2295,8 @@ class KnowledgeBaseEcoli(object):
 				('isRRna23S', 'bool'),
 				('isRRna16S', 'bool'),
 				('isRRna5S', 'bool'),
-				('sequence', 'a{}'.format(maxSequenceLength))
+				('sequence', 'a{}'.format(maxSequenceLength)),
+				('geneId', 'a50')
 				]
 			)
 
@@ -2100,6 +2314,7 @@ class KnowledgeBaseEcoli(object):
 		self.rnaData['isRRna16S'] = is16S
 		self.rnaData['isRRna5S'] = is5S
 		self.rnaData['sequence'] = sequences
+		self.rnaData['geneId'] = geneIds
 
 		field_units = {
 			'id'		:	None,
@@ -2116,6 +2331,7 @@ class KnowledgeBaseEcoli(object):
 			'isRRna16S'	:	None,
 			'isRRna5S'	:	None,
 			'sequence'  :   None,
+			'geneId'	:	None,
 			}
 
 
@@ -2460,12 +2676,12 @@ class KnowledgeBaseEcoli(object):
 
 	def _buildRibosomeData(self):
 		self.s30_proteins = S30_PROTEINS
-		self.s30_16sRRNA = [S30_16S_RRNAS[0]] # Only using A operon
+		self.s30_16sRRNA = S30_16S_RRNAS
 		self.s30_fullComplex = S30_FULLCOMPLEX
 		self.s50_proteins = S50_PROTEINS
 		self.s50_proteinComplexes = S50_PROTEIN_COMPLEXES
-		self.s50_20sRRNA = [S50_20S_RRNAS[0]] # Only using A operon
-		self.s50_5sRRNA = [S50_5S_RRNAS[0]] # Only using A operon
+		self.s50_23sRRNA = S50_23S_RRNAS
+		self.s50_5sRRNA = S50_5S_RRNAS
 		self.s50_fullComplex = S50_FULLCOMPLEX
 
 	def _buildMetabolism(self):
