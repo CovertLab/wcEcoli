@@ -31,6 +31,7 @@ from models.ecoli.listeners.gene_copy_number import GeneCopyNumber
 from models.ecoli.listeners.unique_molecule_counts import UniqueMoleculeCounts
 from models.ecoli.listeners.fba_results import FBAResults
 from models.ecoli.listeners.initiated_transcripts import InitiatedTranscripts
+from models.ecoli.listeners.growth_rate_control import GrowthRateControl
 
 # Analysis
 import models.ecoli.analysis.single
@@ -68,7 +69,8 @@ class EcoliSimulation(Simulation):
 		GeneCopyNumber,
 		UniqueMoleculeCounts,
 		FBAResults,
-		InitiatedTranscripts
+		InitiatedTranscripts,
+		GrowthRateControl
 		)
 
 	_hookClasses = ()
