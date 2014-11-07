@@ -26,7 +26,7 @@ from wholecell.utils import units
 
 import itertools
 
-PPGPP_POWER = 0.25
+PPGPP_POWER = 1
 
 class TranscriptInitiation(wholecell.processes.process.Process):
 	""" TranscriptInitiation """
@@ -50,7 +50,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		super(TranscriptInitiation, self).initialize(sim, kb)
 
 		# Load parameters
-
 		self.rnaSynthProb = kb.rnaData['synthProb']
 
 		self.rRNAIdx = kb.rnaData['isRRna']
@@ -118,12 +117,13 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		stable_rna_scale.checkNoUnit()
 		stable_rna_scale = np.fmin(1, stable_rna_scale.asNumber())
 
-		self.rnaSynthProb[self.tRNAIdx] = self.rnaSynthProb[self.tRNAIdx] * stable_rna_scale
-		self.rnaSynthProb[self.rRNAIdx] = self.rnaSynthProb[self.rRNAIdx] * stable_rna_scale
-		self.rnaSynthProb = self.rnaSynthProb / self.rnaSynthProb.sum()
+		scaledRnaSynthProb = self.rnaSynthProb.copy()
+		scaledRnaSynthProb[self.tRNAIdx] = scaledRnaSynthProb[self.tRNAIdx] * stable_rna_scale
+		scaledRnaSynthProb[self.rRNAIdx] = scaledRnaSynthProb[self.rRNAIdx] * stable_rna_scale
+		scaledRnaSynthProb = scaledRnaSynthProb / scaledRnaSynthProb.sum()
 
 		nNewRnas = self.randomState.multinomial(rnaPolyToActivate,
-			self.rnaSynthProb)
+			scaledRnaSynthProb)
 
 		nonzeroCount = (nNewRnas > 0)
 

@@ -41,6 +41,8 @@ class ppGppDegradation(wholecell.processes.process.Process):
 		self.nAvogadro = kb.nAvogadro
 		self.cellDensity = kb.cellDensity
 
+		self.ppGpp_base_conc = kb.metabolitePoolConcentrations[kb.metabolitePoolIDs.index("PPGPP[c]")]
+
 		# Views
 		self.ppGpp = self.bulkMoleculeView("PPGPP[c]")
 		self.gdp = self.bulkMoleculeView("GDP[c]")
@@ -51,22 +53,29 @@ class ppGppDegradation(wholecell.processes.process.Process):
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
 		cellVolume = cellMass / self.cellDensity
 		ppGpp_conc = (1 / self.nAvogadro) * (1 / cellVolume) * self.ppGpp.total()[0]
-		maxTurnover = (self.v_max * (ppGpp_conc / (ppGpp_conc + self.k_m))).asNumber(1 / units.s)  * self.timeStepSec
-		maxTurnover = np.floor(maxTurnover)
+		if ppGpp_conc.asNumber(units.mol / units.L) > self.ppGpp_base_conc.asNumber(units.mol / units.L):
+			spoT_saturation = (ppGpp_conc / (ppGpp_conc + self.k_m))
+			spoT_saturation.checkNoUnit()
+			maxTurnover = (self.v_max * spoT_saturation).asNumber(1 / units.s)  * self.timeStepSec
+			maxTurnover = np.floor(maxTurnover)
+		else:
+			maxTurnover = 0.
+			spoT_saturation = (ppGpp_conc / (ppGpp_conc + self.k_m))
+			spoT_saturation.checkNoUnit()
 		
-		#print 'ppGpp requested for degradation: {}'.format(maxTurnover)
-		#print 'spoT enzyme is {} saturated'.format((ppGpp_conc / (ppGpp_conc + self.k_m)).asNumber())
-		#import ipdb; ipdb.set_trace()
 		self.ppGpp.requestIs(maxTurnover)
-		self.h2o.requestId(maxTurnover)
+		self.h2o.requestIs(maxTurnover)
 
 	# Calculate temporal evolution
 	def evolveState(self):
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
 		cellVolume = cellMass / self.cellDensity
 		ppGpp_conc = (1 / self.nAvogadro) * (1 / cellVolume) * self.ppGpp.total()[0]
-		maxTurnover = (self.v_max * (ppGpp_conc / (ppGpp_conc + self.k_m))).asNumber(1 / units.s)  * self.timeStepSec
-		maxTurnover = np.floor(maxTurnover)
+		if ppGpp_conc.asNumber(units.mol / units.L) > self.ppGpp_base_conc.asNumber(units.mol / units.L):
+			maxTurnover = (self.v_max * (ppGpp_conc / (ppGpp_conc + self.k_m))).asNumber(1 / units.s)  * self.timeStepSec
+			maxTurnover = np.floor(maxTurnover)
+		else:
+			maxTurnover = 0.
 
 		if maxTurnover > self.ppGpp.count():
 			print 'Allocated less ppGpp than requested to degradation process!'
@@ -76,3 +85,5 @@ class ppGppDegradation(wholecell.processes.process.Process):
 
 		self.gdp.countInc(maxTurnover)
 		self.ppi.countInc(maxTurnover)
+
+		self.writeToListener("GrowthRateControl", "spoT_saturation", spoT_saturation)
