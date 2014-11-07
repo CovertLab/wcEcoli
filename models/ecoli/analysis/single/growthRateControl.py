@@ -23,13 +23,21 @@ from wholecell.utils import units
 FONT = {'size'	:	8}
 PPGPP_IDX = 2
 
-def setAxisMaxMin(axis, data):
+def setAxisMaxMinY(axis, data):
 	ymax = np.nanmax(data)
 	ymin = 0
 	if ymin == ymax:
 		axis.set_yticks([ymin])
 	else:
 		axis.set_yticks([ymin, ymax])
+
+def setAxisMaxMinX(axis, data):
+	xmax = np.nanmax(data)
+	xmin = 0
+	if xmin == xmax:
+		axis.set_xticks([xmin])
+	else:
+		axis.set_xticks([xmin, xmax])
 
 def sparklineAxis(axis, x, y, tickPos, lineType, color):
 	axis.plot(x, y, linestyle = 'steps' + lineType, color = color, linewidth = 2)
@@ -38,7 +46,7 @@ def sparklineAxis(axis, x, y, tickPos, lineType, color):
 	axis.yaxis.set_ticks_position(tickPos)
 	axis.xaxis.set_ticks_position('none')
 	axis.tick_params(which = 'both', direction = 'out')
-	axis.tick_params(labelbottom = 'off')
+	#axis.tick_params(labelbottom = 'off')
 	for tl in axis.get_yticklabels():
 		tl.set_color(color)
 
@@ -67,6 +75,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	# Protein mass fraction
 	# How much stable vs total RNA transcription is happening
 
+	## LOAD DATA ##
 	# Load counts of bulk molecules
 	with tables.open_file(os.path.join(simOutDir, "BulkMolecules.hdf")) as bulkMoleculesFile:
 		# Get indexes
@@ -82,6 +91,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	with tables.open_file(os.path.join(simOutDir, "Mass.hdf")) as massFile:
 		table = massFile.root.Mass
 		cellMass = table.col("cellMass")
+		growth = table.col("growth")
 		cellDry = table.col("dryMass")
 		protein = table.col("proteinMass")
 		rna = table.col("rnaMass")
@@ -93,59 +103,96 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	tRnaMassFraction = tRna / cellDry
 	rnaMassFraction = rna / cellDry
 	rRnaFractionOfRna = rRna / rna
+	growthRate = growth * 60
+	dryMass = cellDry
+	doubledDryMass = dryMass[0]*2 * np.ones(dryMass.size)
 
 	# Load ratio of stable to total RNA synthesis
 	with tables.open_file(os.path.join(simOutDir, "InitiatedTranscripts.hdf")) as massFile:
 		table = massFile.root.InitiatedTranscripts
 		ratioStableToToalInitalized = table.col("ratioStableToToalInitalized")
 		initTime = table.col("time")
-	meanRatio = np.nanmean(ratioStableToToalInitalized) * np.ones(ratioStableToToalInitalized.size)
+	N = 20
+	runningMeanRatio = np.zeros(ratioStableToToalInitalized.size)
+	for i in range(ratioStableToToalInitalized.size):
+		runningMeanRatio[i] = np.mean(ratioStableToToalInitalized[i:i+N])
 
+	# Load other growth rate control data
+	# with tables.open_file(os.path.join(simOutDir, "GrowthRateControl.hdf")) as massFile:
+	# 	table = massFile.root.GrowthRateControl
+	# 	totalStalls = table.col("totalStalls")
+	# 	synthetaseSaturation = table.col.("synthetaseSaturation")
+	# 	spoTSaturation = table.col("spoT_saturation")
+	# 	gcTime = table.col("time")
+	# import ipdb; ipdb.set_trace()
+	#synthetaseSaturationMean = synthetaseSaturation.mean(axis = 0)
+
+	## CALCULATE DATA ##
 	# Calculate ppGpp concentration
 	cellMass = units.fg * cellMass
 	cellVolume = cellMass / cellDensity
 	ppGppConc = ((1 / nAvogadro) * (1 / cellVolume) * bulkCounts[:, PPGPP_IDX]).asNumber(units.umol / units.L)
 
-	## Start plotting ##
+	## START PLOTTING ##
 	plt.figure(figsize = (8.5, 11))
 	matplotlib.rc('font', **FONT)
-
-	# Plot proteins if interest
-	for idx in xrange(len(bulkIds)):
-		bulkObject_axis = plt.subplot(5, 3, idx + 1)
-
-		sparklineAxis(bulkObject_axis, bulkTime / 60., bulkCounts[:, idx], 'left', '-', 'b')
-		setAxisMaxMin(bulkObject_axis, bulkCounts[:, idx])
-
-		# Component label
-		bulkObject_axis.set_xlabel(bulkIds[idx])
+	NUMBER_ROWS = 7
 
 	# Plot ppGpp concentration
-	ppGppConc_axis = plt.subplot(5, 1, 2)
+	ppGppConc_axis = plt.subplot(NUMBER_ROWS, 1, 1)
 
 	sparklineAxis(ppGppConc_axis, initTime / 60., ppGppConc, 'left', '-', 'b')
-	ppGppConc_axis.set_xlabel('[ppGpp] uM')
+	setAxisMaxMinX(ppGppConc_axis, initTime / 60.)
+	ppGppConc_axis.set_ylabel('[ppGpp] uM')
 
 	# Plot ratio of stable to total rna synthesis
-	fractionStable_axis = plt.subplot(5, 1, 3)
+	fractionStable_axis = plt.subplot(NUMBER_ROWS, 1, 2)
 
 	sparklineAxis(fractionStable_axis, initTime / 60., ratioStableToToalInitalized, 'left', '-', 'b')
-	fractionStable_axis.set_xlabel('$r_s / r_t$')
-	fractionStable_axis.plot(initTime / 60, meanRatio, linestyle = '--', color = 'k', linewidth = 2)
+	setAxisMaxMinX(fractionStable_axis, initTime / 60.)
+	fractionStable_axis.set_ylabel('$r_s / r_t$')
+	fractionStable_axis.plot(initTime / 60, runningMeanRatio, linestyle = '--', color = 'k', linewidth = 2)
+
+	# Plot instantanious growth rate and dry mass
+	growthRate_axis = plt.subplot(NUMBER_ROWS, 1, 3)
+	sparklineAxis(growthRate_axis, massTime / 60., growthRate, 'left', '-', 'b')
+	setAxisMaxMinX(growthRate_axis, massTime / 60.)
+	growthRate_axis.set_ylabel('Growth rate gDCW/gDCW-hr')
+
+	dryMass_axis = growthRate_axis.twinx()
+	sparklineAxis(dryMass_axis, massTime / 60., dryMass, 'right', '-', 'r')
+	setAxisMaxMinX(dryMass_axis, massTime / 60.)
+	dryMass_axis.set_ylabel('Dry mass (g)')
+	dryMass_axis.plot(massTime / 60, doubledDryMass, linestyle = '--', color = 'k', linewidth = 2)
+
+	# Plot proteins if interest
+	bulkIds.pop(bulkIds.index("PPGPP[c]"))
+	ROW = 5
+	for idx in xrange(len(bulkIds)):
+		bulkObject_axis = plt.subplot(NUMBER_ROWS, 3, idx + 3*ROW+1)
+
+		sparklineAxis(bulkObject_axis, bulkTime / 60., bulkCounts[:, idx], 'left', '-', 'b')
+		setAxisMaxMinY(bulkObject_axis, bulkCounts[:, idx])
+		setAxisMaxMinX(bulkObject_axis, bulkTime / 60.)
+
+		# Component label
+		bulkObject_axis.set_title(bulkIds[idx])
 
 	# Plot mass fractions of RNA and protein
-
-	RNA_axis = plt.subplot(5, 2, 7)
+	ROW = 6
+	RNA_axis = plt.subplot(NUMBER_ROWS, 2, ROW*2+1)
 	sparklineAxis(RNA_axis, massTime / 60., rRnaFractionOfRna, 'left', '-', 'b')
+	setAxisMaxMinX(RNA_axis, massTime / 60.)
 	RNA_axis.set_yticks([0., 1.])
-	RNA_axis.set_xlabel('rRNA fraction of total RNA')
+	RNA_axis.set_ylabel('rRNA fraction of total RNA')
 
-	protein_axis = plt.subplot(5, 2, 8)
+	protein_axis = plt.subplot(NUMBER_ROWS, 2, ROW*2+2)
 	sparklineAxis(protein_axis, massTime / 60., proteinMassFraction, 'left', '-', 'b')
+	setAxisMaxMinX(protein_axis, massTime / 60.)
 	protein_axis.set_yticks([0., 1.])
-	protein_axis.set_xlabel('Protein mass fraction')
+	protein_axis.set_ylabel('Protein mass fraction')
 
-	## Formatting and saving ##
+	## FORMATTING AND SAVING ##
 	plt.subplots_adjust(hspace = 0.5, wspace = 0.5)
 
 	plt.savefig(os.path.join(plotOutDir, plotOutFileName))
