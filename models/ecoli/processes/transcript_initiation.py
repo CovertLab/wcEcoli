@@ -49,7 +49,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		# Load parameters
 
-		self.rnaSynthProb = kb.rnaData['synthProb']
+		rnaSynthProbPopAvg = kb.rnaData['synthProb']
 		self.rnaIds = kb.rnaData['geneId']
 		self.bulkChromosome = sim.states['BulkChromosome']
 		self.geneIds = kb.geneData['name']
@@ -84,6 +84,18 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.activeRnaPolys = self.uniqueMoleculesView('activeRnaPoly')
 
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
+		
+		# Calculate rna synth probabilities
+		geneEndCoordinates = kb.geneData['endCoordinate']
+
+		minDistFromOriC = np.minimum(np.abs(kb.oriCCenter.asNumber()-geneEndCoordinates-kb.genomeLength),
+						np.abs(geneEndCoordinates-kb.oriCCenter.asNumber()))
+
+		ageReplicated = minDistFromOriC / kb.dnaPolymeraseElongationRate.asNumber()
+
+		self.rnaSynthProb = rnaSynthProbPopAvg / (2 * np.exp(-np.log(2)*ageReplicated/kb.cellCycleLen.asNumber()))
+
+		self.rnaSynthProb /= self.rnaSynthProb.sum()
 
 
 	def calculateRequest(self):
@@ -145,4 +157,5 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			)
 
 		self.inactiveRnaPolys.countDec(nNewRnas.sum())
+
 		self.writeToListener("rnaCounts", "rnaSynthProb", synthProbRenormalized)
