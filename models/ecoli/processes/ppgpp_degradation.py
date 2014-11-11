@@ -54,13 +54,13 @@ class ppGppDegradation(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		ppGpp_conc = (1 / self.nAvogadro) * (1 / cellVolume) * self.ppGpp.total()[0]
 		if ppGpp_conc.asNumber(units.mol / units.L) > self.ppGpp_base_conc.asNumber(units.mol / units.L):
-			spoT_saturation = (ppGpp_conc / (ppGpp_conc + self.k_m))
+			spoT_saturation = (ppGpp_conc / (ppGpp_conc + self.k_m)).normalize()
 			spoT_saturation.checkNoUnit()
 			maxTurnover = (self.v_max * spoT_saturation).asNumber(1 / units.s)  * self.timeStepSec
 			maxTurnover = np.floor(maxTurnover)
 		else:
 			maxTurnover = 0.
-			spoT_saturation = (ppGpp_conc / (ppGpp_conc + self.k_m))
+			spoT_saturation = (ppGpp_conc / (ppGpp_conc + self.k_m)).normalize()
 			spoT_saturation.checkNoUnit()
 		
 		self.ppGpp.requestIs(maxTurnover)
@@ -72,10 +72,14 @@ class ppGppDegradation(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		ppGpp_conc = (1 / self.nAvogadro) * (1 / cellVolume) * self.ppGpp.total()[0]
 		if ppGpp_conc.asNumber(units.mol / units.L) > self.ppGpp_base_conc.asNumber(units.mol / units.L):
-			maxTurnover = (self.v_max * (ppGpp_conc / (ppGpp_conc + self.k_m))).asNumber(1 / units.s)  * self.timeStepSec
+			spoT_saturation = (ppGpp_conc / (ppGpp_conc + self.k_m)).normalize()
+			spoT_saturation.checkNoUnit()
+			maxTurnover = (self.v_max * spoT_saturation).asNumber(1 / units.s)  * self.timeStepSec
 			maxTurnover = np.floor(maxTurnover)
 		else:
 			maxTurnover = 0.
+			spoT_saturation = (ppGpp_conc / (ppGpp_conc + self.k_m)).normalize()
+			spoT_saturation.checkNoUnit()
 
 		if maxTurnover > self.ppGpp.count():
 			print 'Allocated less ppGpp than requested to degradation process!'

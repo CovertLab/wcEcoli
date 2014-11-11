@@ -32,12 +32,12 @@ class GrowthRateControl(wholecell.listeners.listener.Listener):
 		super(GrowthRateControl, self).initialize(sim, kb)
 
 		# Computed, saved attributes
-		self.ratioStableToToalInitalized = None
+		#self.ratioStableToToalInitalized = None
 
 		# Attributes broadcast by the TranscriptInitation process
 		self.totalStalls = None
 		self.synthetaseSaturation = None
-		#self.rRnaInitalized = None
+		self.spoT_saturation = None
 
 	# Allocate memory
 	def allocate(self):
@@ -49,7 +49,7 @@ class GrowthRateControl(wholecell.listeners.listener.Listener):
 		# Attributes broadcast by the PolypeptideElongation process
 		self.totalStalls = np.nan
 		self.synthetaseSaturation = np.zeros(21, np.int64)
-		#self.rRnaInitalized = np.nan
+		self.spoT_saturation = np.nan
 
 	def update(self):
 		# totalRna = self.tRnaInitalized + self.rRnaInitalized + self.mRnaInitalized
@@ -65,7 +65,8 @@ class GrowthRateControl(wholecell.listeners.listener.Listener):
 			"time": tables.Float64Col(),
 			"timeStep": tables.Int64Col(),
 			"totalStalls": tables.Float64Col(),
-			"synthetaseSaturation": tables.Float64Col(self.synthetaseSaturation.size)
+			"synthetaseSaturation": tables.Float64Col(self.synthetaseSaturation.size),
+			"spoT_saturation": tables.Float64Col(),
 			}
 
 		table = h5file.create_table(
@@ -84,8 +85,9 @@ class GrowthRateControl(wholecell.listeners.listener.Listener):
 
 		entry["time"] = self.time()
 		entry["timeStep"] = self.timeStep()
-		entry["totalStalls"] = self.ratioStableToToalInitalized
+		entry["totalStalls"] = self.totalStalls
 		entry["synthetaseSaturation"] = self.synthetaseSaturation
+		entry["spoT_saturation"] = self.spoT_saturation
 
 		entry.append()
 

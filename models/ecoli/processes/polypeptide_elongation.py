@@ -145,7 +145,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		aaTotalConc = (1 / self.nAvogadro) * (1 / cellVolume) * self.aas.total()
 		aaTotalConc = aaTotalConc * 0.01 # TODO: Delete. Just here to induce stalls.
 		synthetaseCapacity = self.synthetase_turnover * np.array([x.total().sum() for x in self.synthetase_groups],dtype = np.int64)
-		synthetaseSaturation = (aaTotalConc / (SYNTHETASE_KM + aaTotalConc))
+		synthetaseSaturation = (aaTotalConc / (SYNTHETASE_KM + aaTotalConc)).normalize()
 		synthetaseSaturation.checkNoUnit()
 		stallsPerAA = np.fmax(aasRequested - synthetaseCapacity * synthetaseSaturation.asNumber(),0)
 		totalStalls = np.ceil(stallsPerAA.sum())
@@ -186,9 +186,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		aaTotalConc = (1 / self.nAvogadro) * (1 / cellVolume) * self.aas.total()
 		#aaTotalConc = aaTotalConc * 0.09 # TODO: Delete. Just here to induce stalls.
-		synthetaseSaturation = (aaTotalConc / (SYNTHETASE_KM + aaTotalConc))
+		synthetaseSaturation = (aaTotalConc / (SYNTHETASE_KM + aaTotalConc)).normalize()
 		synthetaseSaturation.checkNoUnit()
-		stallsPerAA = np.fmax(aasRequested - synthetaseCapacity * synthetaseSaturation.asNumber(),0)
+		stallsPerAA = np.fmax(aaCountInSequence - synthetaseCapacity * synthetaseSaturation.asNumber(),0)
 		totalStalls = np.ceil(stallsPerAA.sum())
 
 		# Calculate update

@@ -118,14 +118,16 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 		runningMeanRatio[i] = np.mean(ratioStableToToalInitalized[i:i+N])
 
 	# Load other growth rate control data
-	# with tables.open_file(os.path.join(simOutDir, "GrowthRateControl.hdf")) as massFile:
-	# 	table = massFile.root.GrowthRateControl
-	# 	totalStalls = table.col("totalStalls")
-	# 	synthetaseSaturation = table.col.("synthetaseSaturation")
-	# 	spoTSaturation = table.col("spoT_saturation")
-	# 	gcTime = table.col("time")
-	# import ipdb; ipdb.set_trace()
-	#synthetaseSaturationMean = synthetaseSaturation.mean(axis = 0)
+	with tables.open_file(os.path.join(simOutDir, "GrowthRateControl.hdf")) as massFile:
+		table = massFile.root.GrowthRateControl
+		totalStalls = table.col("totalStalls")
+		synthetaseSaturation = table.col("synthetaseSaturation")
+		spoTSaturation = table.col("spoT_saturation")
+		gcTime = table.col("time")
+	
+	synthetaseSaturationMean = synthetaseSaturation.mean(axis = 1)
+	synthetaseSaturationMax = synthetaseSaturation.max(axis = 1)
+	synthetaseSaturationMin = synthetaseSaturation.min(axis = 1)
 
 	## CALCULATE DATA ##
 	# Calculate ppGpp concentration
@@ -164,6 +166,25 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	setAxisMaxMinX(dryMass_axis, massTime / 60.)
 	dryMass_axis.set_ylabel('Dry mass (g)')
 	dryMass_axis.plot(massTime / 60, doubledDryMass, linestyle = '--', color = 'k', linewidth = 2)
+
+	# Plot total stalls and saturation of synthetases
+	stall_axis = plt.subplot(NUMBER_ROWS, 1, 4)
+	sparklineAxis(stall_axis, gcTime / 60., totalStalls, 'left', '-', 'b')
+	setAxisMaxMinY(stall_axis, totalStalls)
+	setAxisMaxMinX(stall_axis, gcTime / 60.)
+	stall_axis.set_ylabel('Total stalls')
+
+	synthetaseSat_axis = stall_axis.twinx()
+	sparklineAxis(synthetaseSat_axis, gcTime / 60., synthetaseSaturationMin, 'right', '-', 'r')
+	setAxisMaxMinY(synthetaseSat_axis, np.around(synthetaseSaturationMin, decimals=2))
+	synthetaseSat_axis.set_ylabel('Synthetase saturation min')
+
+	# Plot spoT saturation
+	spotSat_axis = plt.subplot(NUMBER_ROWS, 1, 5)
+	sparklineAxis(spotSat_axis, gcTime / 60., spoTSaturation, 'left', '-', 'b')
+	setAxisMaxMinY(spotSat_axis, np.around(spoTSaturation, decimals = 2))
+	setAxisMaxMinX(spotSat_axis, gcTime / 60.)
+	spotSat_axis.set_ylabel('spoT saturation')
 
 	# Plot proteins if interest
 	bulkIds.pop(bulkIds.index("PPGPP[c]"))
