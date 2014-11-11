@@ -1216,6 +1216,7 @@ class KnowledgeBaseEcoli(object):
 				"type": self._genes[geneLookup[gene_frame_id]]["type"],
 				"expression": posData[self._expression[gene_frame_id]], #TODO
 				"halfLife": posData[self._half_life[gene_frame_id]],	#TODO
+				"coordinate": self._genes[geneLookup[gene_frame_id]]["coordinate"],
 								
 				#need to calculate				
 				"seq": "",
@@ -1273,6 +1274,7 @@ class KnowledgeBaseEcoli(object):
 					"type": g["type"],
 					"expression": posData[self._expression[g["id"]]], #TODO
 					"halfLife": posData[self._half_life[g["id"]]],	#TODO
+					"coordinate": g["coordinate"],
 								
 					#need to calculate				
 					"seq": "",
@@ -2212,11 +2214,19 @@ class KnowledgeBaseEcoli(object):
 
 		expression = np.array([rna['expression'] for rna in self._rnas])
 
-		synthProb = expression * (
+		synthProbPopAvg = expression * (
 			np.log(2) / self._parameterData['cellCycleLen'].asNumber(units.s)
 			+ rnaDegRates
 			)
 
+		synthProbPopAvg /= synthProbPopAvg.sum()
+
+		geneCoordinates = np.array([rna['coordinate'] for rna in self._rnas])
+		geneEndCoordinates = self.geneData['endCoordinate']
+		minDistFromOriC = np.minimum(np.abs(self._parameterData['oriCCenter'].asNumber()-geneEndCoordinates-self.genomeLength),
+						np.abs(geneEndCoordinates-self._parameterData['oriCCenter'].asNumber()))
+		ageReplicated = minDistFromOriC / self._parameterData['dnaPolymeraseElongationRate'].asNumber()
+		synthProb = synthProbPopAvg / (2 * np.exp(-np.log(2)*ageReplicated/self._parameterData['cellCycleLen'].asNumber()))
 		synthProb /= synthProb.sum()
 
 		mws = np.array([rna['mw'] for rna in self._rnas])

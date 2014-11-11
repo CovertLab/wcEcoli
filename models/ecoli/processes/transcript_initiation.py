@@ -50,6 +50,11 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# Load parameters
 
 		self.rnaSynthProb = kb.rnaData['synthProb']
+		self.rnaIds = kb.rnaData['geneId']
+		self.bulkChromosome = sim.states['BulkChromosome']
+		self.geneIds = kb.geneData['name']
+		self.geneView = self.bulkChromosome.container.countsView(self.geneIds)
+		self.mapGeneRna = [np.where(self.geneIds==x)[0][0] for x in self.rnaIds]
 
 		# self.activationProb = kb.transcriptionActivationRate.asNumber(1/units.s) * self.timeStepSec # TODO: consider the validity of this math
 
@@ -87,6 +92,16 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 	# Calculate temporal evolution
 	def evolveState(self):
+		#Recalculate the synthesis probabilities, taking gene copy number into account
+		#p=copy number * synthprob
+		#then renormalize
+		copyNumber = self.geneView.counts()[self.mapGeneRna]
+		#copyNumber = [self.geneView.counts()[i] for i in [np.where(self.geneIds==x)[0][0] for x in self.rnaIds]]
+
+		synthProbWeightedByCopyNumber = self.rnaSynthProb * copyNumber
+
+		synthProbRenormalized = synthProbWeightedByCopyNumber/np.sum(synthProbWeightedByCopyNumber)
+
 		# Sample a multinomial distribution of synthesis probabilities to 
 		# determine what molecules are initialized
 
@@ -98,7 +113,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			return
 
 		nNewRnas = self.randomState.multinomial(rnaPolyToActivate,
-			self.rnaSynthProb)
+			synthProbRenormalized)
 
 		nonzeroCount = (nNewRnas > 0)
 
@@ -130,3 +145,4 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			)
 
 		self.inactiveRnaPolys.countDec(nNewRnas.sum())
+		self.writeToListener("rnaCounts", "rnaSynthProb", synthProbRenormalized)
