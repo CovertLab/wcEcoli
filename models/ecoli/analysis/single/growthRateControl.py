@@ -103,7 +103,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	tRnaMassFraction = tRna / cellDry
 	rnaMassFraction = rna / cellDry
 	rRnaFractionOfRna = rRna / rna
-	growthRate = growth * 60
+	growthRate = growth / cellDry * 3600
 	dryMass = cellDry
 	doubledDryMass = dryMass[0]*2 * np.ones(dryMass.size)
 
