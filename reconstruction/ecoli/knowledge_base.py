@@ -2562,8 +2562,8 @@ class KnowledgeBaseEcoli(object):
 
 		constrainedExchangeMolecules = {
 			"CBL1[e]": exchangeUnits * 0.01, # TODO: try removing this constraint
-			#"GLC-D[e]": exchangeUnits * 8,
-			"GLC-D[e]": exchangeUnits * 8*0.6,
+			"GLC-D[e]": exchangeUnits * 8,
+			#"GLC-D[e]": exchangeUnits * 8*0.8,
 			"O2[e]": exchangeUnits * 18.5
 			}
 
