@@ -28,7 +28,8 @@ MOLECULAR_WEIGHT_KEYS = [
 	'metabolite',
 	'water',
 	'DNA',
-	'RNA' # nonspecific RNA
+	'RNA', # nonspecific RNA
+	'nonCoding'
 	]
 
 MOLECULAR_WEIGHT_ORDER = collections.OrderedDict([

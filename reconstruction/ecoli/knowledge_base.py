@@ -705,7 +705,7 @@ class KnowledgeBaseEcoli(object):
 			p = {
 				"id":i.promoter_id,
 				"name":str(i.name),
-				"position":int(i.position),
+				"position":int(i.position)-1,
 				"direction":str(i.direction)
 			}
 			if p["direction"] == "f":
@@ -726,8 +726,8 @@ class KnowledgeBaseEcoli(object):
 			t = {
 				"id":i.terminator_id,
 				"name":str(i.name),
-				"left":int(i.left),
-				"right":int(i.right),
+				"left":int(i.left)-1,
+				"right":int(i.right)-1,
 				"rho":str(i.rho_dependent)
 			}
 			
@@ -768,8 +768,8 @@ class KnowledgeBaseEcoli(object):
 			t = {
 				"id":i.transcription_unit_id,
 				"name":str(i.name),
-				"left":int(i.left),
-				"right":int(i.right),
+				"left":int(i.left)-1,
+				"right":int(i.right)-1,
 				"direction":str(i.direction),
 				"degradation_rate": float(i.degradation_rate), 
 				"expression_rate": float(i.expression_rate),
@@ -780,9 +780,25 @@ class KnowledgeBaseEcoli(object):
 				
 			self._transcriptionUnits.append(t)
 
+
+	def _calcWeight(self, direction, seq):
+
+		if direction == '-':
+			seq = Bio.Seq.Seq(seq).reverse_complement().tostring()
+
+        	newSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
+        	nt = np.array([newSeq.count("A"), newSeq.count("C"), newSeq.count("G"), newSeq.count("U")])
+        	weight = (
+                 self._ntWeights["A"] * nt[0]
+            	+ self._ntWeights["C"] * nt[1]
+            	+ self._ntWeights["G"] * nt[2]
+            	+ self._ntWeights["U"] * nt[3]
+            	) 
+        	#print nt, weight
+        	return weight
+
 	def _loadTURnas(self):
 		self._tURnas = []
-
 
 		for tu in self._transcriptionUnits:
 
@@ -790,40 +806,43 @@ class KnowledgeBaseEcoli(object):
 			rnaLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._rnas)])
 			
 			rnas = []
-			for i in tu['gene_id']: rnas.append(self._genes[geneLookup[i]]['rnaId'])
-			'''
-				if self._genes[gl[i]]['direction'] == '+':
-					temp.append({'start':self._genes[gl[i]]['coordinate'],'stop':self._genes[gl[i]]['coordinate']+self._genes[gl[i]]['length']-1})
-				else:
-					temp.append({'start':self._genes[gl[i]]['coordinate']-self._genes[gl[i]]['length']+2,'stop':self._genes[gl[i]]['coordinate']+1})
-			init = self._rnas[rnaLookup[rnas[0]]]['type']
 			rType = []
-			flag = 0
-			for r in rnas:
-				if init != self._rnas[rnaLookup[r]]['type']: flag = 1 #print tu, rnas
-				rType.append(self._rnas[rnaLookup[r]]['type'])
+			position = []
+			for i in tu['gene_id']: 
+				g = self._genes[geneLookup[i]]
+				r = self._rnas[rnaLookup[self._genes[geneLookup[i]]['rnaId']]]
+				
+				rnas.append(g['rnaId'])
+				rType.append(r['type'])
+
+				start = g['coordinate']
+				stop = g['coordinate'] + g['length'] - 1
+
+				if g['direction'] == '-':
+					start = g['coordinate']- g['length'] + 1
+					stop = g['coordinate'] 
+				
+				position.append({'type':r['type'],'start':start, 'stop': stop, 'id':r['id']})
 
 
-			x = 0
-			if flag:
-				x = 0
-				for i in range(0,len(temp)):
-					for j in range(i+1,len(temp)):
-						if (temp[i]['start'] <= temp[j]['start'] and temp[j]['start'] <= temp[i]['stop']) or (temp[j]['start'] <= temp[i]['start'] and temp[i]['start'] <= temp[j]['stop']):
-								print tu['id'], rnas[i],rType[i],temp[i]['start'],temp[i]['stop'],rnas[j],rType[j],temp[j]['start'],temp[j]['stop']
-								x = 1
-								#break
-					#if x: break
-
-				if x: print #tu, rnas,rType
-			'''
+			#sort position for MW 
+			newPos = sorted(position, key=lambda k: k['start'])
+		
+			actualTURight = tu["right"]
+			actualTULeft = tu["left"]
 			direction = tu['direction']
 			seq = ''
+
 			if direction == "f":
 				direction = '+'
+				if newPos[len(newPos)-1]['stop'] > tu['right']: tu['right'] = newPos[len(newPos)-1]['stop'] # for TU terminated before the gene
+				if newPos[0]['start'] < tu['left']: newPos[0]['start'] = tu['left'] # for TU started after the gene
 				seq = self._genomeSeq[(tu["left"]): (tu["right"] + 1)]
 			else:
 				direction = '-'
+				if newPos[0]['start'] < tu['left']: tu['left'] = newPos[0]['start'] # for TU terminated before the gene
+				if newPos[len(newPos)-1]['stop'] > tu['right']: newPos[len(newPos)-1]['stop'] = tu['right'] # for TU started after the gene
+			
 				seq = Bio.Seq.Seq(self._genomeSeq[(tu["left"]): (tu["right"] + 1)]).reverse_complement().tostring()
 
 			rSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
@@ -831,42 +850,59 @@ class KnowledgeBaseEcoli(object):
 			ntCount = np.array([rSeq.count("A"), rSeq.count("C"), rSeq.count("G"), rSeq.count("U")])
 				
 			mw = np.zeros(len(MOLECULAR_WEIGHT_ORDER))
+
+
+			#calculate weight
+			check_weight = self._calcWeight(direction, self._genomeSeq[tu["left"]: tu["right"]+1]) + self._rnaEndWeight
+
+			nonCoding = self._genomeSeq[(tu["left"]):newPos[0]['start']]
 			
-			positions = []
-			for r in rnas:
-				rna = self._rnas[] 
-				positions.append({'type':,'start':,'stop':})
-				
+			for i in range(0, len(newPos)):
+				if (i<len(newPos)-1):
+					if newPos[i]['stop'] >= newPos[i+1]['start']:
+						if newPos[i]['type']== newPos[i+1]['type']:
+							newPos[i]['stop'] = newPos[i+1]['start'] - 1
+						else:
+							if newPos[i]['type']== 'miscRNA': 
+								newPos[i]['stop'] = newPos[i+1]['start'] - 1
+							else:
+								if newPos[i+1]['type'] == 'miscRNA': 
+									newPos[i+1]['start'] = newPos[i]['stop'] + 1
+								else:
+									print 'Overlapping RNAs are',newPos[i]['type'], 'and',newPos[i+1]['type']	# none of them are miscRNA
+									print newPos, tu
+					nonCoding = nonCoding + self._genomeSeq[(newPos[i]['stop'] + 1): newPos[i+1]['start']]
 
-			weight = (
-				self._ntWeights["A"] * ntCount[0]
-				+ self._ntWeights["C"] * ntCount[1]
-				+ self._ntWeights["G"] * ntCount[2]
-				+ self._ntWeights["U"] * ntCount[3]
-				) + self._rnaEndWeight
+				weight = self._calcWeight(direction, self._genomeSeq[newPos[i]['start'] : newPos[i]['stop']+1] )
+				index = self._whichRna(newPos[i]['id'], newPos[i]['type'])
+				mw[index] = mw[index] + weight 
 
-			#index = self._whichRna(r['id'], r['type'])
-			#r["mw"][index] = weight 
+			#add nonCoding weight
+			nonCoding = nonCoding + self._genomeSeq[(newPos[len(newPos)-1]['stop']+1): tu["right"]+1]
+			weight = self._calcWeight(direction, nonCoding) + self._rnaEndWeight
+			index = MOLECULAR_WEIGHT_ORDER['nonCoding'] 
+			mw[index] = weight 
 
+			
+			if round(check_weight,4) != round(sum(mw),4): 
+				print mw, check_weight, tu
+				exit(0)			
 
 			tur = {
 					"tUId": tu['id'],
-					'left': tu['left'],
-					'right': tu['right'],
+					'left': actualTULeft,
+					'right': actualTURight,
 					'direction': tu['direction'],
 
 					'rnas': rnas,
 					'location':self._rnas[rnaLookup[rnas[0]]]['location'], #consider same location of all rnas in a TU
-
 					'rnaType': rType,
-
 					"seq": rSeq,
 					"ntCount": ntCount,
-					"mw": np.zeros(len(MOLECULAR_WEIGHT_ORDER))
+					"mw": mw
 			}
 			
 			self._tURnas.append(tur)
-
 
 
 	def _loadBiomassFractions(self):
@@ -1441,17 +1477,17 @@ class KnowledgeBaseEcoli(object):
 		all_genesplices = GeneSplices.objects.all()
 		for i in all_genesplices:
 			genesplices[self._geneDbIds[i.gene_id]] = {
-									'start1':int(i.start1),
-									'stop1':int(i.stop1), 									
-									'start2':int(i.start2),
-									'stop2':int(i.stop2)
+									'start1':int(i.start1)-1,
+									'stop1':int(i.stop1)-1, 									
+									'start2':int(i.start2)-1,
+									'stop2':int(i.stop2)-1
 								}		
 		#GeneAbsolutentPosition
 		genePos = {}
 		self._checkDatabaseAccess(GeneAbsolutentPosition)		
 		all_genePos = GeneAbsolutentPosition.objects.all()	
 		for i in all_genePos:
-			genePos[self._geneDbIds[i.gene_id]] = {'pos':int(i.abs_nt_pos),'old':i.old,'new':i.new}
+			genePos[self._geneDbIds[i.gene_id]] = {'pos':int(i.abs_nt_pos)-1,'old':i.old,'new':i.new}
 
 		#ProteinMonomers
 		self._checkDatabaseAccess(ProteinMonomers)		
@@ -1487,7 +1523,7 @@ class KnowledgeBaseEcoli(object):
 			
 			if gene_frame_id in genesplices:
 				baseSequence = Bio.Seq.Seq("", Bio.Alphabet.IUPAC.IUPACUnambiguousDNA())
-				baseSequence = baseSequence + self._genomeSeq[genesplices[gene_frame_id]['start1']-1:genesplices[gene_frame_id]['stop1']] + self._genomeSeq[genesplices[gene_frame_id]['start2']-1:genesplices[gene_frame_id]['stop2']]
+				baseSequence = baseSequence + self._genomeSeq[genesplices[gene_frame_id]['start1']:genesplices[gene_frame_id]['stop1']+1] + self._genomeSeq[genesplices[gene_frame_id]['start2']:genesplices[gene_frame_id]['stop2']+1]
 
 				if self._genes[geneLookup[gene_frame_id]]["direction"] == "-":
 					baseSequence = baseSequence.reverse_complement()
@@ -1505,10 +1541,10 @@ class KnowledgeBaseEcoli(object):
 				after = genePos[gene_frame_id]['new']
 				seqList = list(p["seq"])
 
-				if seqList[pos - 1] != before:
+				if seqList[pos] != before:
 					raise Exception, "Amino acid substitution appears to be incorrect."
 				else:
-					seqList[pos - 1] = after
+					seqList[pos] = after
 				p["seq"] = "".join(seqList)
 			
 			p["seq"] = p["seq"][:p["seq"].find('*')]
