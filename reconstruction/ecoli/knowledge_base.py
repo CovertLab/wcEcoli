@@ -99,14 +99,14 @@ class KnowledgeBaseEcoli(object):
 
 		self._buildSequence()
 		self._buildCompartments()
-		self._buildBulkMolecules()
+		self._buildBulkMolecules() #
 		self._buildBulkChromosome()
 		self._buildGeneData()
 		self._buildRibosomeData()
 		self._buildUniqueMolecules()
 		self._buildBiomass()
-		self._buildRnaData()
-		self._buildMonomerData()
+		self._buildRnaData()#
+		self._buildMonomerData()#
 		self._buildRnaIndexToMonomerMapping()
 		self._buildMonomerIndexToRnaMapping()
 		self._buildRnaIndexToGeneMapping()
@@ -800,11 +800,13 @@ class KnowledgeBaseEcoli(object):
 	def _loadTURnas(self):
 		self._tURnas = []
 
+		geneLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._genes)])
+		rnaLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._rnas)])
+		terminatorLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._terminators)])
+		tuLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._transcriptionUnits)])
+
 		for tu in self._transcriptionUnits:
 
-			geneLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._genes)])
-			rnaLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._rnas)])
-			
 			rnas = []
 			rType = []
 			position = []
@@ -828,20 +830,41 @@ class KnowledgeBaseEcoli(object):
 			#sort position for MW 
 			newPos = sorted(position, key=lambda k: k['start'])
 		
-			actualTURight = tu["right"]
-			actualTULeft = tu["left"]
 			direction = tu['direction']
 			seq = ''
 
 			if direction == "f":
 				direction = '+'
-				if newPos[len(newPos)-1]['stop'] > tu['right']: tu['right'] = newPos[len(newPos)-1]['stop'] # for TU terminated before the gene
-				if newPos[0]['start'] < tu['left']: newPos[0]['start'] = tu['left'] # for TU started after the gene
+				if newPos[len(newPos)-1]['stop'] > tu['right']: # for TU terminated before the gene
+					tu['right'] = newPos[len(newPos)-1]['stop'] + 1
+					#add new terminator information
+					self._terminators.append({
+				                                 "id": 'New_Terminator_'+ tu['id'],
+				                                 "name":'New_Terminator_'+ tu['id'],
+				                                 "left":tu['right'],
+				                                 "right":tu['right'],
+				                                 "rho":self._terminators[terminatorLookup[tu['terminator_id'][0]]]['rho'] #consider the original terminator
+                                 			})
+					self._transcriptionUnits[tuLookup[tu['id']]]['terminator_id'].append('New_Terminator_'+ tu['id'])
+					
+				if newPos[0]['start'] < tu['left']: del newPos[0] # for TU started after the gene
+
 				seq = self._genomeSeq[(tu["left"]): (tu["right"] + 1)]
 			else:
 				direction = '-'
-				if newPos[0]['start'] < tu['left']: tu['left'] = newPos[0]['start'] # for TU terminated before the gene
-				if newPos[len(newPos)-1]['stop'] > tu['right']: newPos[len(newPos)-1]['stop'] = tu['right'] # for TU started after the gene
+				if newPos[0]['start'] < tu['left']: # for TU terminated before the gene
+					tu['left'] = newPos[0]['start'] -1
+					#add new terminator information
+					self._terminators.append({
+				                                 "id": 'New_Terminator_'+ tu['id'],
+				                                 "name":'New_Terminator_'+ tu['id'],
+				                                 "left":tu['left'],
+				                                 "right":tu['left'],
+				                                 "rho":self._terminators[terminatorLookup[tu['terminator_id'][0]]]['rho'] #consider the original terminator
+                                 			})
+					self._transcriptionUnits[tuLookup[tu['id']]]['terminator_id'].append('New_Terminator_'+ tu['id'])
+
+				if newPos[len(newPos)-1]['stop'] > tu['right']: del newPos[len(newPos)-1] # for TU started after the gene
 			
 				seq = Bio.Seq.Seq(self._genomeSeq[(tu["left"]): (tu["right"] + 1)]).reverse_complement().tostring()
 
@@ -855,7 +878,8 @@ class KnowledgeBaseEcoli(object):
 			#calculate weight
 			check_weight = self._calcWeight(direction, self._genomeSeq[tu["left"]: tu["right"]+1]) + self._rnaEndWeight
 
-			nonCoding = self._genomeSeq[(tu["left"]):newPos[0]['start']]
+			if len(newPos): nonCoding = self._genomeSeq[(tu["left"]):newPos[0]['start']]
+			else: nonCoding = self._genomeSeq[(tu["left"]):tu["right"]+1]
 			
 			for i in range(0, len(newPos)):
 				if (i<len(newPos)-1):
@@ -878,20 +902,20 @@ class KnowledgeBaseEcoli(object):
 				mw[index] = mw[index] + weight 
 
 			#add nonCoding weight
-			nonCoding = nonCoding + self._genomeSeq[(newPos[len(newPos)-1]['stop']+1): tu["right"]+1]
+			if len(newPos): nonCoding = nonCoding + self._genomeSeq[(newPos[len(newPos)-1]['stop']+1): tu["right"]+1]
 			weight = self._calcWeight(direction, nonCoding) + self._rnaEndWeight
 			index = MOLECULAR_WEIGHT_ORDER['nonCoding'] 
 			mw[index] = weight 
-
 			
 			if round(check_weight,4) != round(sum(mw),4): 
 				print mw, check_weight, tu
 				exit(0)			
 
+
 			tur = {
 					"tUId": tu['id'],
-					'left': actualTULeft,
-					'right': actualTURight,
+					'left': tu['left'],
+					'right': tu['right'],
 					'direction': tu['direction'],
 
 					'rnas': rnas,
