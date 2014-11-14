@@ -156,3 +156,9 @@ def fitKb_2(kb, simOutDir):
 	kb.trna_synthetase_rates = 2 * predicted_trna_synthetase_rates
 
 	fitKb_2_metabolism(kb, simOutDir, bulkAverageContainer, bulkDeviationContainer)
+
+	# KB perturbations should go here to avoid perturbing fitting
+	# Eventually this will be part of our pipeline
+
+	# Example: half glucose
+	# kb._metabolismConstrainedExchangeMolecules["GLC-D[e]"] = 4.0 * units.mmol/units.g/units.h
