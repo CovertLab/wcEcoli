@@ -105,7 +105,7 @@ class KnowledgeBaseEcoli(object):
 		self._buildRibosomeData()
 		self._buildUniqueMolecules()
 		self._buildBiomass()
-		self._buildRnaData()#
+		self._buildRnaData()# ?type 
 		self._buildMonomerData()#
 		self._buildRnaIndexToMonomerMapping()
 		self._buildMonomerIndexToRnaMapping()
@@ -809,6 +809,9 @@ class KnowledgeBaseEcoli(object):
 
 			rnas = []
 			rType = []
+			rHalfLife = []
+			rExp = []
+			rGeneId = []
 			position = []
 			for i in tu['gene_id']: 
 				g = self._genes[geneLookup[i]]
@@ -816,7 +819,9 @@ class KnowledgeBaseEcoli(object):
 				
 				rnas.append(g['rnaId'])
 				rType.append(r['type'])
-
+				rHalfLife.append(r['halfLife'])
+				rExp.append(r['expression'])
+				rGeneId.append(r['geneId'])
 				start = g['coordinate']
 				stop = g['coordinate'] + g['length'] - 1
 
@@ -913,7 +918,7 @@ class KnowledgeBaseEcoli(object):
 
 
 			tur = {
-					"tUId": tu['id'],
+					"id": tu['id'],
 					'left': tu['left'],
 					'right': tu['right'],
 					'direction': tu['direction'],
@@ -923,7 +928,11 @@ class KnowledgeBaseEcoli(object):
 					'rnaType': rType,
 					"seq": rSeq,
 					"ntCount": ntCount,
-					"mw": mw
+					"mw": mw,
+
+					'geneId': rGeneId['geneId'],
+					'expression': sum(rExp)/float(len(rExp)),
+					'halfLife': sum(rHalfLife)/float(len(rHalfLife))
 			}
 			
 			self._tURnas.append(tur)
@@ -2034,6 +2043,17 @@ class KnowledgeBaseEcoli(object):
 			for metabolite in self._metabolites
 			]
 
+		# Set TU_RNA
+		lastRnaIdx = len(self._tURnas) + lastMetaboliteIdx
+
+		bulkMolecules['moleculeId'][lastMetaboliteIdx:lastRnaIdx] = [
+			'{}[{}]'.format(rna['id'], rna['location']) for rna in self._tURnas
+			]
+
+		bulkMolecules['mass'][lastMetaboliteIdx:lastRnaIdx, :] = [
+			rna['mw'] for rna in self._tURnas
+			]
+		'''
 		# Set RNA
 		lastRnaIdx = len(self._rnas) + lastMetaboliteIdx
 
@@ -2044,7 +2064,7 @@ class KnowledgeBaseEcoli(object):
 		bulkMolecules['mass'][lastMetaboliteIdx:lastRnaIdx, :] = [
 			rna['mw'] for rna in self._rnas
 			]
-		
+		'''
 		# Set proteins
 		lastProteinMonomerIdx = len(self._proteins) + lastRnaIdx
 
@@ -2346,19 +2366,19 @@ class KnowledgeBaseEcoli(object):
 		self.cellInorganicIonFractionData = self._cellInorganicIonFractionData
 
 	def _buildRnaData(self):
-		rnaIds = ['{}[{}]'.format(rna['id'], rna['location']) for rna in self._rnas]
+		rnaIds = ['{}[{}]'.format(rna['id'], rna['location']) for rna in self._tURnas]
 
-		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in self._rnas]) # TODO: units
+		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in self._tURnas]) # TODO: units
 
-		rnaLens = np.array([len(rna['seq']) for rna in self._rnas])
+		rnaLens = np.array([len(rna['seq']) for rna in self._tURnas])
 
 		ntCounts = np.array([
 			(rna['seq'].count('A'), rna['seq'].count('C'),
 				rna['seq'].count('G'), rna['seq'].count('U'))
-			for rna in self._rnas
+			for rna in self._tURnas
 			])
 
-		expression = np.array([rna['expression'] for rna in self._rnas])
+		expression = np.array([rna['expression'] for rna in self._tURnas])
 
 		synthProb = expression * (
 			np.log(2) / self._parameterData['cellCycleLen'].asNumber(units.s)
@@ -2367,9 +2387,9 @@ class KnowledgeBaseEcoli(object):
 
 		synthProb /= synthProb.sum()
 
-		mws = np.array([rna['mw'] for rna in self._rnas])
+		mws = np.array([rna['mw'] for rna in self._tURnas])
 
-		geneIds = np.array([rna['geneId'] for rna in self._rnas])
+		geneIds = np.array([rna['geneId'] for rna in self._tURnas])
 
 		size = len(rnaIds)
 
@@ -2387,7 +2407,7 @@ class KnowledgeBaseEcoli(object):
 			if rna["type"] == "rRNA" and rna["id"].startswith("RRF"):
 				is5S[rnaIndex] = True
 
-		sequences = [rna['seq'] for rna in self._rnas]
+		sequences = [rna['seq'] for rna in self._tURnas]
 
 		maxSequenceLength = max(len(sequence) for sequence in sequences)
 
