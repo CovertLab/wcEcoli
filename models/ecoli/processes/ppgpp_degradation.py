@@ -50,6 +50,7 @@ class ppGppDegradation(wholecell.processes.process.Process):
 		self.ppi = self.bulkMoleculeView("PPI[c]")
 
 	def calculateRequest(self):
+		return
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
 		cellVolume = cellMass / self.cellDensity
 		ppGpp_conc = (1 / self.nAvogadro) * (1 / cellVolume) * self.ppGpp.total()[0]
@@ -68,6 +69,7 @@ class ppGppDegradation(wholecell.processes.process.Process):
 
 	# Calculate temporal evolution
 	def evolveState(self):
+		return
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
 		cellVolume = cellMass / self.cellDensity
 		ppGpp_conc = (1 / self.nAvogadro) * (1 / cellVolume) * self.ppGpp.total()[0]
