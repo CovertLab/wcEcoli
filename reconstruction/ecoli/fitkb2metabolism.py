@@ -46,7 +46,7 @@ def fitKb_2_metabolism(kb, simOutDir, bulkAverageContainer, bulkDeviationContain
 	effectiveBiomassReaction[negativeIsMostExtreme] = concentrationChangeMostNegative[negativeIsMostExtreme]
 
 	biomassReaction = dict(zip(biomassMoleculeIDs, effectiveBiomassReaction*1000)) # conversion to mM/s
-
+	biomassReaction.pop('PPGPP[c]')# TODO: Make this work with metabolism
 	reactionRates = {reactionID:1 for reactionID in kb.metabolismReactionEnzymes.viewkeys()}
 
 	fba = FluxBalanceAnalysis(
