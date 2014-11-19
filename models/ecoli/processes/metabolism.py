@@ -110,7 +110,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_METABOLISM)
 
-
 	def calculateRequest(self):
 		self.metabolites.requestAll()
 
@@ -119,10 +118,10 @@ class Metabolism(wholecell.processes.process.Process):
 		# Solve for metabolic fluxes
 
 		# APPLY METABOLIC LIMITATION AT TIME POINT
-		# if self.time() == 10*60: # 10 min in
-		# 	glc_idx = self.fba.externalMoleculeIDs().index('GLC-D[e]')
-		# 	self.externalMoleculeLevels[glc_idx] = self.externalMoleculeLevels[glc_idx] * 0.5
-		# 	self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
+		if self.time() == 10*60: # 10 min in
+			glc_idx = self.fba.externalMoleculeIDs().index('GLC-D[e]')
+			self.externalMoleculeLevels[glc_idx] = self.externalMoleculeLevels[glc_idx] * 0.5
+			self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
 
 		metaboliteCountsInit = self.metabolites.counts()
 		poolCounts = self.poolMetabolites.counts()

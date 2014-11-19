@@ -274,7 +274,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.h.countInc(totalStalls)
 
 		# Report stalling information
-
 		expectedElongations = np.fmin(
 			self.elngRate,
 			terminalLengths - peptideLengths
@@ -290,3 +289,4 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("GrowthRateControl", "totalStalls", totalStalls)
 		self.writeToListener("GrowthRateControl", "synthetaseSaturation", synthetaseSaturation)
+		self.writeToListener("polypeptideSequenceElongations", "polypeptideSequenceElongations", sequenceElongations)

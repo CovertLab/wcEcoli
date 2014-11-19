@@ -114,8 +114,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		ppGpp_conc = (1 / self.nAvogadro) * (1 / cellVolume) * self.ppGpp.total()[0]
 
 		# if self.time() == 10*60: # 10 min in
-		# 	ppGpp_conc = ppGpp_conc * 3
-
+		# 	ppGpp_conc = ppGpp_conc * 5
 
 		stable_rna_scale = (1/(self.ppGpp_scaling_factor * (ppGpp_conc ** PPGPP_POWER))).normalize()
 		stable_rna_scale.checkNoUnit()
