@@ -190,6 +190,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		synthetaseSaturation.checkNoUnit()
 		stallsPerAA = np.fmax(aaCountInSequence - synthetaseCapacity * synthetaseSaturation.asNumber(),0)
 		totalStalls = np.ceil(stallsPerAA.sum())
+		#totalStalls = 0
 
 		# Calculate update
 		reactionLimit = self.gtp.count() // self.gtpPerElongation
