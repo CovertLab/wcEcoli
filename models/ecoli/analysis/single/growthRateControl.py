@@ -24,6 +24,9 @@ FONT = {'size'	:	8}
 PPGPP_IDX = 2
 
 def setAxisMaxMinY(axis, data):
+	if np.isnan(data).all():
+		return
+
 	ymax = np.nanmax(data)
 	ymin = 0
 	if ymin == ymax:
@@ -32,6 +35,9 @@ def setAxisMaxMinY(axis, data):
 		axis.set_yticks([ymin, ymax])
 
 def setAxisMaxMinX(axis, data):
+	if np.isnan(data).all():
+		return
+
 	xmax = np.nanmax(data)
 	xmin = 0
 	if xmin == xmax:
@@ -144,7 +150,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	matplotlib.rc('font', **FONT)
 	NUMBER_ROWS = 9
 
-	# Plot ppGpp concentration
+	# # Plot ppGpp concentration
 	ppGppConc_axis = plt.subplot(NUMBER_ROWS, 1, 1)
 
 	sparklineAxis(ppGppConc_axis, initTime / 60., ppGppConc, 'left', '-', 'b')
