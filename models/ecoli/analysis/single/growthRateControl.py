@@ -104,6 +104,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	rnaMassFraction = rna / cellDry
 	rRnaFractionOfRna = rRna / rna
 	growthRate = growth / cellDry * 3600
+	N = 20
+	growthRateRunningMean = np.zeros(growthRate.size)
+	for i in range(growthRate.size):
+		growthRateRunningMean[i] = np.mean(growthRate[i:i+N])
 	dryMass = cellDry
 	doubledDryMass = dryMass[0]*2 * np.ones(dryMass.size)
 
@@ -138,7 +142,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	## START PLOTTING ##
 	plt.figure(figsize = (8.5, 11))
 	matplotlib.rc('font', **FONT)
-	NUMBER_ROWS = 7
+	NUMBER_ROWS = 9
 
 	# Plot ppGpp concentration
 	ppGppConc_axis = plt.subplot(NUMBER_ROWS, 1, 1)
@@ -159,28 +163,31 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	growthRate_axis = plt.subplot(NUMBER_ROWS, 1, 3)
 	sparklineAxis(growthRate_axis, massTime / 60., growthRate, 'left', '-', 'b')
 	setAxisMaxMinX(growthRate_axis, massTime / 60.)
-	growthRate_axis.set_ylabel('Growth rate gDCW/gDCW-hr')
+	growthRate_axis.set_ylabel('Growth rate\ngDCW/gDCW-hr')
+	growthRate_axis.plot(massTime / 60, growthRateRunningMean, linestyle = '--', color = 'k', linewidth = 2)
 
-	dryMass_axis = growthRate_axis.twinx()
-	sparklineAxis(dryMass_axis, massTime / 60., dryMass, 'right', '-', 'r')
+	# Plot dry mass
+	dryMass_axis = plt.subplot(NUMBER_ROWS, 1, 4)
+	sparklineAxis(dryMass_axis, massTime / 60., dryMass, 'left', '-', 'b')
 	setAxisMaxMinX(dryMass_axis, massTime / 60.)
 	dryMass_axis.set_ylabel('Dry mass (g)')
 	dryMass_axis.plot(massTime / 60, doubledDryMass, linestyle = '--', color = 'k', linewidth = 2)
 
-	# Plot total stalls and saturation of synthetases
-	stall_axis = plt.subplot(NUMBER_ROWS, 1, 4)
+	# Plot total stalls
+	stall_axis = plt.subplot(NUMBER_ROWS, 1, 5)
 	sparklineAxis(stall_axis, gcTime / 60., totalStalls, 'left', '-', 'b')
 	setAxisMaxMinY(stall_axis, totalStalls)
 	setAxisMaxMinX(stall_axis, gcTime / 60.)
 	stall_axis.set_ylabel('Total stalls')
 
-	synthetaseSat_axis = stall_axis.twinx()
-	sparklineAxis(synthetaseSat_axis, gcTime / 60., synthetaseSaturationMin, 'right', '-', 'r')
+	# Saturation of synthetases
+	synthetaseSat_axis = plt.subplot(NUMBER_ROWS, 1, 6)
+	sparklineAxis(synthetaseSat_axis, gcTime / 60., synthetaseSaturationMin, 'left', '-', 'b')
 	setAxisMaxMinY(synthetaseSat_axis, np.around(synthetaseSaturationMin, decimals=2))
-	synthetaseSat_axis.set_ylabel('Synthetase saturation min')
+	synthetaseSat_axis.set_ylabel('Synthetase\nsaturation\nminimum')
 
 	# Plot spoT saturation
-	spotSat_axis = plt.subplot(NUMBER_ROWS, 1, 5)
+	spotSat_axis = plt.subplot(NUMBER_ROWS, 1, 7)
 	sparklineAxis(spotSat_axis, gcTime / 60., spoTSaturation, 'left', '-', 'b')
 	setAxisMaxMinY(spotSat_axis, np.around(spoTSaturation, decimals = 2))
 	setAxisMaxMinX(spotSat_axis, gcTime / 60.)
@@ -188,7 +195,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 
 	# Plot proteins if interest
 	bulkIds.pop(bulkIds.index("PPGPP[c]"))
-	ROW = 5
+	ROW = 7
 	for idx in xrange(len(bulkIds)):
 		bulkObject_axis = plt.subplot(NUMBER_ROWS, 3, idx + 3*ROW+1)
 
@@ -200,7 +207,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 		bulkObject_axis.set_title(bulkIds[idx])
 
 	# Plot mass fractions of RNA and protein
-	ROW = 6
+	ROW = 8
 	RNA_axis = plt.subplot(NUMBER_ROWS, 2, ROW*2+1)
 	sparklineAxis(RNA_axis, massTime / 60., rRnaFractionOfRna, 'left', '-', 'b')
 	setAxisMaxMinX(RNA_axis, massTime / 60.)
