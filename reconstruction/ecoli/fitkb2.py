@@ -192,4 +192,4 @@ def fitKb_2(kb, simOutDir):
 	# Eventually this will be part of our pipeline
 
 	# Example: half glucose
-	# kb._metabolismConstrainedExchangeMolecules["GLC-D[e]"] = 4.0 * units.mmol/units.g/units.h
+	# kb._metabolismConstrainedExchangeMolecules["GLC-D[e]"] = 0.8*8.0 * units.mmol/units.g/units.h
