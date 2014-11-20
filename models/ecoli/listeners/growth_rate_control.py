@@ -38,7 +38,6 @@ class GrowthRateControl(wholecell.listeners.listener.Listener):
 		self.totalStalls = None
 		self.synthetaseSaturation = None
 		self.spoT_saturation = None
-		self.polypeptideSequenceElongations = None
 
 	# Allocate memory
 	def allocate(self):
@@ -51,7 +50,6 @@ class GrowthRateControl(wholecell.listeners.listener.Listener):
 		self.totalStalls = np.nan
 		self.synthetaseSaturation = np.zeros(21, np.int64)
 		self.spoT_saturation = np.nan
-		self.polypeptideSequenceElongations = np.nan
 
 	def update(self):
 		# totalRna = self.tRnaInitalized + self.rRnaInitalized + self.mRnaInitalized
@@ -69,7 +67,6 @@ class GrowthRateControl(wholecell.listeners.listener.Listener):
 			"totalStalls": tables.Float64Col(),
 			"synthetaseSaturation": tables.Float64Col(self.synthetaseSaturation.size),
 			"spoT_saturation": tables.Float64Col(),
-			"polypeptideSequenceElongations": tables.Float64Col(),
 			}
 
 		table = h5file.create_table(
@@ -91,7 +88,6 @@ class GrowthRateControl(wholecell.listeners.listener.Listener):
 		entry["totalStalls"] = self.totalStalls
 		entry["synthetaseSaturation"] = self.synthetaseSaturation
 		entry["spoT_saturation"] = self.spoT_saturation
-		entry["polypeptideSequenceElongations"] = self.spoT_saturation
 
 		entry.append()
 
