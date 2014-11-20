@@ -290,3 +290,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("GrowthRateControl", "totalStalls", totalStalls)
 		self.writeToListener("GrowthRateControl", "synthetaseSaturation", synthetaseSaturation)
+
+		self.writeToListener("RibosomeData", "expectedElongations", expectedElongations.sum())
+		self.writeToListener("RibosomeData", "actualElongations", sequenceElongations.sum())
