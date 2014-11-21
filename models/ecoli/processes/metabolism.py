@@ -87,13 +87,13 @@ class Metabolism(wholecell.processes.process.Process):
 
 		coefficient = initDryMass / initCellMass * kb.cellDensity * (self.timeStepSec * units.s)
 
-		externalMoleculeLevels = kb.metabolismExchangeConstraints(
+		self.externalMoleculeLevels = kb.metabolismExchangeConstraints(
 			externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS
 			)
 
-		self.fba.externalMoleculeLevelsIs(externalMoleculeLevels)
+		self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
 
 		## Set enzymes to 1, since the input kCat's are actually vMax's
 		self.fba.enzymeLevelsIs(1)
@@ -128,6 +128,12 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# if self.time() < 2:
 		# 	print poolCounts / self.nAvogadro / cellVolume
+
+		# # APPLY METABOLIC LIMITATION AT TIME POINT
+		# if self.time() == 10*60: # 10 min in
+		# 	glc_idx = self.fba.externalMoleculeIDs().index('GLC-D[e]')
+		# 	self.externalMoleculeLevels[glc_idx] = self.externalMoleculeLevels[glc_idx] * 0.5
+		# 	self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
 
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
