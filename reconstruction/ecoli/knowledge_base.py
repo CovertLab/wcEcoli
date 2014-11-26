@@ -918,13 +918,13 @@ class KnowledgeBaseEcoli(object):
 
 
 			tur = {
-					"id": tu['id'],
+					"id": tu['id']+'_RNA',
 					'left': tu['left'],
 					'right': tu['right'],
 					'direction': tu['direction'],
 
 					'rnas': rnas,
-					'location':self._rnas[rnaLookup[rnas[0]]]['location'], #consider same location of all rnas in a TU
+					'location':str(self._rnas[rnaLookup[rnas[0]]]['location']), #consider same location of all rnas in a TU
 					'rnaType': rType,
 					"seq": rSeq,
 					"ntCount": ntCount,
@@ -2368,6 +2368,13 @@ class KnowledgeBaseEcoli(object):
 	def _buildRnaData(self):
 		rnaIds = ['{}[{}]'.format(rna['id'], rna['location']) for rna in self._tURnas]
 
+		tempRnaList = []
+		for rnaIndex, rna in enumerate(self._tURnas):
+			tempRnaList[rnaIndex] = rna['rnas'][0]
+			for i in range(1, len(rna['rnas'])):
+				tempRnaList[rnaIndex] = tempRnaList[rnaIndex] + '#' + rna['rnas'][i]	
+		rnaList = np.array(tempRnaList)
+
 		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in self._tURnas]) # TODO: units
 
 		rnaLens = np.array([len(rna['seq']) for rna in self._tURnas])
@@ -2393,19 +2400,33 @@ class KnowledgeBaseEcoli(object):
 
 		size = len(rnaIds)
 
-		is23S = np.zeros(size, dtype = np.bool)
-		is16S = np.zeros(size, dtype = np.bool)
-		is5S = np.zeros(size, dtype = np.bool)
+		has23S = np.zeros(size, dtype = np.bool)
+		has16S = np.zeros(size, dtype = np.bool)
+		has5S = np.zeros(size, dtype = np.bool)
+		hasMRna = np.zeros(size, dtype = np.bool)
+		hasMiscRna = np.zeros(size, dtype = np.bool)
+		hasRRna = np.zeros(size, dtype = np.bool)
+		hasTRna = np.zeros(size, dtype = np.bool)
+		
+		for rnaIndex, rna in enumerate(self._tURnas):
+			for t in rna["rnaType"]:
+				if t == "rRNA":
+					hasRRna[rnaIndex] = True
+				 	if rna["id"].startswith("RRL"):
+						has23S[rnaIndex] = True
+					elif rna["id"].startswith("RRS"):
+						has16S[rnaIndex] = True
+					elif rna["id"].startswith("RRF"):
+						has5S[rnaIndex] = True
+				elif t == "mRNA":
+					hasMRna[rnaIndex] = True
+				elif t == "miscRNA":
+					hasMiscRna[rnaIndex] = True
+				elif t == "rRNA":
+					hasRRna[rnaIndex] = True
+				elif t == "tRNA":
+					hastRna[rnaIndex] = True
 
-		for rnaIndex, rna in enumerate(self._rnas):
-			if rna["type"] == "rRNA" and rna["id"].startswith("RRL"):
-				is23S[rnaIndex] = True
-
-			if rna["type"] == "rRNA" and rna["id"].startswith("RRS"):
-				is16S[rnaIndex] = True
-
-			if rna["type"] == "rRNA" and rna["id"].startswith("RRF"):
-				is5S[rnaIndex] = True
 
 		sequences = [rna['seq'] for rna in self._tURnas]
 
@@ -2422,15 +2443,16 @@ class KnowledgeBaseEcoli(object):
 				('length', 'i8'),
 				('countsACGU', '4i8'),
 				('mw', 'f8'),
-				('isMRna', 'bool'),
-				('isMiscRna', 'bool'),
-				('isRRna', 'bool'),
-				('isTRna', 'bool'),
-				('isRRna23S', 'bool'),
-				('isRRna16S', 'bool'),
-				('isRRna5S', 'bool'),
+				('hasMRna', 'bool'),
+				('hasMiscRna', 'bool'),
+				('hasRRna', 'bool'),
+				('hasTRna', 'bool'),
+				('hasRRna23S', 'bool'),
+				('hasRRna16S', 'bool'),
+				('hasRRna5S', 'bool'),
 				('sequence', 'a{}'.format(maxSequenceLength)),
-				('geneId', 'a50')
+				('geneId', 'a50'),
+				('rnaList','a50')
 				]
 			)
 
@@ -2440,15 +2462,17 @@ class KnowledgeBaseEcoli(object):
 		self.rnaData['length'] = rnaLens
 		self.rnaData['countsACGU'] = ntCounts
 		self.rnaData['mw'] = mws.sum(axis = 1)
-		self.rnaData['isMRna'] = [rna["type"] == "mRNA" for rna in self._rnas]
-		self.rnaData['isMiscRna'] = [rna["type"] == "miscRNA" for rna in self._rnas]
-		self.rnaData['isRRna'] = [rna["type"] == "rRNA" for rna in self._rnas]
-		self.rnaData['isTRna'] = [rna["type"] == "tRNA" for rna in self._rnas]
-		self.rnaData['isRRna23S'] = is23S
-		self.rnaData['isRRna16S'] = is16S
-		self.rnaData['isRRna5S'] = is5S
+		self.rnaData['hasMRna'] = hasMRna
+		self.rnaData['hasMiscRna'] = hasMiscRna
+		self.rnaData['hasRRna'] = hasRRna
+		self.rnaData['hasTRna'] = hastRna
+		self.rnaData['hasRRna23S'] = has23S
+		self.rnaData['hasRRna16S'] = has16S
+		self.rnaData['hasRRna5S'] = has5S
 		self.rnaData['sequence'] = sequences
 		self.rnaData['geneId'] = geneIds
+		self.rnaData['rnaList'] = rnaList
+
 
 		field_units = {
 			'id'		:	None,
@@ -2466,6 +2490,7 @@ class KnowledgeBaseEcoli(object):
 			'isRRna5S'	:	None,
 			'sequence'  :   None,
 			'geneId'	:	None,
+			'rnaList'	:	None,
 			}
 
 
