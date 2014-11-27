@@ -105,14 +105,14 @@ class KnowledgeBaseEcoli(object):
 		self._buildRibosomeData()
 		self._buildUniqueMolecules()
 		self._buildBiomass()
-		self._buildRnaData()# ?type 
-		self._buildMonomerData()#
+		self._buildRnaData() # 
+		self._buildMonomerData() #
 		self._buildRnaIndexToMonomerMapping()
 		self._buildMonomerIndexToRnaMapping()
 		self._buildRnaIndexToGeneMapping()
 		self._buildConstants()
 		self._buildParameters()
-		self._buildRnaExpression()
+		self._buildRnaExpression() #
 		self._buildBiomassFractions()
 		self._buildTranscription()
 		self._buildTranslation()
@@ -930,11 +930,14 @@ class KnowledgeBaseEcoli(object):
 					"ntCount": ntCount,
 					"mw": mw,
 
-					'geneId': rGeneId['geneId'],
+					'geneId': rGeneId,
 					'expression': sum(rExp)/float(len(rExp)),
-					'halfLife': sum(rHalfLife)/float(len(rHalfLife))
+					'halfLife': sum(rHalfLife)/float(len(rHalfLife)),
+					'tUId': tu['id']
 			}
 			
+			#update 
+
 			self._tURnas.append(tur)
 
 
@@ -2002,7 +2005,8 @@ class KnowledgeBaseEcoli(object):
 
 		size = (
 			len(self._metabolites)*len(self._compartmentList)
-			+ len(self._rnas)
+			#+ len(self._rnas)
+			+ len(self._tURnas)
 			+ len(self._proteins)
 			+ len(self._proteinComplexes)
 			+ len(self._polymerized)*len(self._compartmentList)
@@ -2272,28 +2276,57 @@ class KnowledgeBaseEcoli(object):
 
 
 	def _buildRnaExpression(self):
-		normalizedRnaExpression = np.zeros(sum(1 for x in self._rnas),
-			dtype = [('rnaId',		'a50'),
+		normalizedRnaExpression = np.zeros(sum(1 for x in self._tURnas),
+			dtype = [('id',		'a50'),
 					('expression',	'float64'),
-					('isMRna',		'bool'),
-					('isMiscRna',	'bool'),
-					('isRRna',		'bool'),
-					('isTRna',		'bool'),
-					('isRRna23S',	'bool'),
-					('isRRna16S',	'bool'),
-					('isRRna5S',	'bool')])
+					('hasMRna',		'bool'),
+					('hasMiscRna',	'bool'),
+					('hasRRna',		'bool'),
+					('hasTRna',		'bool'),
+					('hasRRna23S',	'bool'),
+					('hasRRna16S',	'bool'),
+					('hasRRna5S',	'bool')])
 
-		normalizedRnaExpression['rnaId'] 		= ['{}[{}]'.format(x['id'], x['location']) for x in self._rnas]
-		normalizedRnaExpression['expression']	= [x['expression'] for x in self._rnas]
+		size = len(self._tURnas)
+		has23S = np.zeros(size, dtype = np.bool)
+		has16S = np.zeros(size, dtype = np.bool)
+		has5S = np.zeros(size, dtype = np.bool)
+		hasMRna = np.zeros(size, dtype = np.bool)
+		hasMiscRna = np.zeros(size, dtype = np.bool)
+		hasRRna = np.zeros(size, dtype = np.bool)
+		hasTRna = np.zeros(size, dtype = np.bool)
+		
+		for rnaIndex, rna in enumerate(self._tURnas):
+			for t in rna["rnaType"]:
+				if t == "rRNA":
+					hasRRna[rnaIndex] = True
+				 	if rna["id"].startswith("RRL"):
+						has23S[rnaIndex] = True
+					elif rna["id"].startswith("RRS"):
+						has16S[rnaIndex] = True
+					elif rna["id"].startswith("RRF"):
+						has5S[rnaIndex] = True
+				elif t == "mRNA":
+					hasMRna[rnaIndex] = True
+				elif t == "miscRNA":
+					hasMiscRna[rnaIndex] = True
+				elif t == "tRNA":
+					hasTRna[rnaIndex] = True
+
+		normalizedRnaExpression['id'] 		= ['{}[{}]'.format(x['id'], x['location']) for x in self._tURnas]
+		normalizedRnaExpression['expression']	= [x['expression'] for x in self._tURnas]
 		normalizedRnaExpression['expression']	= normalizedRnaExpression['expression'] / np.sum(normalizedRnaExpression['expression'])
-		normalizedRnaExpression['isMRna'] = [rna["type"] == "mRNA" for rna in self._rnas]
-		normalizedRnaExpression['isMiscRna'] = [rna["type"] == "miscRNA" for rna in self._rnas]
-		normalizedRnaExpression['isRRna'] = [rna["type"] == "rRNA" for rna in self._rnas]
-		normalizedRnaExpression['isTRna'] = [rna["type"] == "tRNA" for rna in self._rnas]
+		normalizedRnaExpression['hasMRna'] = hasMRna
+		normalizedRnaExpression['hasMiscRna'] = hasMiscRna
+		normalizedRnaExpression['hasRRna'] = hasRRna
+		normalizedRnaExpression['hasTRna'] = hasTRna
+		normalizedRnaExpression['hasRRna23S'] = has23S
+		normalizedRnaExpression['hasRRna16S'] = has16S
+		normalizedRnaExpression['hasRRna5S'] = has5S
 
 		self.rnaExpression = UnitStructArray(normalizedRnaExpression,
 			{
-			'rnaId'		:	None,
+			'id'		:	None,
 			'expression':	None,
 			'isMRna'	:	None,
 			'isMiscRna'	:	None,
@@ -2368,13 +2401,6 @@ class KnowledgeBaseEcoli(object):
 	def _buildRnaData(self):
 		rnaIds = ['{}[{}]'.format(rna['id'], rna['location']) for rna in self._tURnas]
 
-		tempRnaList = []
-		for rnaIndex, rna in enumerate(self._tURnas):
-			tempRnaList[rnaIndex] = rna['rnas'][0]
-			for i in range(1, len(rna['rnas'])):
-				tempRnaList[rnaIndex] = tempRnaList[rnaIndex] + '#' + rna['rnas'][i]	
-		rnaList = np.array(tempRnaList)
-
 		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in self._tURnas]) # TODO: units
 
 		rnaLens = np.array([len(rna['seq']) for rna in self._tURnas])
@@ -2396,9 +2422,16 @@ class KnowledgeBaseEcoli(object):
 
 		mws = np.array([rna['mw'] for rna in self._tURnas])
 
-		geneIds = np.array([rna['geneId'] for rna in self._tURnas])
+		tUIds = np.array([rna['tUId'] for rna in self._tURnas])
 
 		size = len(rnaIds)
+
+		tempRnaList = np.zeros(size, dtype = np.str)
+		for rnaIndex, rna in enumerate(self._tURnas):
+			tempRnaList[rnaIndex] = rna['rnas'][0]
+			for i in range(1, len(rna['rnas'])):
+				tempRnaList[rnaIndex] = tempRnaList[rnaIndex] + '#' + rna['rnas'][i]	
+		rnaList = np.array(tempRnaList)
 
 		has23S = np.zeros(size, dtype = np.bool)
 		has16S = np.zeros(size, dtype = np.bool)
@@ -2422,10 +2455,8 @@ class KnowledgeBaseEcoli(object):
 					hasMRna[rnaIndex] = True
 				elif t == "miscRNA":
 					hasMiscRna[rnaIndex] = True
-				elif t == "rRNA":
-					hasRRna[rnaIndex] = True
 				elif t == "tRNA":
-					hastRna[rnaIndex] = True
+					hasTRna[rnaIndex] = True
 
 
 		sequences = [rna['seq'] for rna in self._tURnas]
@@ -2451,8 +2482,10 @@ class KnowledgeBaseEcoli(object):
 				('hasRRna16S', 'bool'),
 				('hasRRna5S', 'bool'),
 				('sequence', 'a{}'.format(maxSequenceLength)),
-				('geneId', 'a50'),
-				('rnaList','a50')
+				('tUId', 'a50'),
+				('rnaList','a50'),
+				('positiveDirection'	,	'bool'),
+				('leftCoordinate'		,	'int64')
 				]
 			)
 
@@ -2465,32 +2498,37 @@ class KnowledgeBaseEcoli(object):
 		self.rnaData['hasMRna'] = hasMRna
 		self.rnaData['hasMiscRna'] = hasMiscRna
 		self.rnaData['hasRRna'] = hasRRna
-		self.rnaData['hasTRna'] = hastRna
+		self.rnaData['hasTRna'] = hasTRna
 		self.rnaData['hasRRna23S'] = has23S
 		self.rnaData['hasRRna16S'] = has16S
 		self.rnaData['hasRRna5S'] = has5S
 		self.rnaData['sequence'] = sequences
-		self.rnaData['geneId'] = geneIds
+		self.rnaData['tUId'] = tUIds
 		self.rnaData['rnaList'] = rnaList
+		self.rnaData['positiveDirection'] = [True if x['direction'] == 'f' else False for x in self._tURnas]
+		self.rnaData['leftCoordinate'] = [x['left'] for x in self._tURnas]
+
 
 
 		field_units = {
-			'id'		:	None,
-			'synthProb' :	None,
-			'degRate'	:	1 / units.s,
-			'length'	:	units.nt,
-			'countsACGU':	units.nt,
-			'mw'		:	units.g / units.mol,
-			'isMRna'	:	None,
-			'isMiscRna'	:	None,
-			'isRRna'	:	None,
-			'isTRna'	:	None,
-			'isRRna23S'	:	None,
-			'isRRna16S'	:	None,
-			'isRRna5S'	:	None,
-			'sequence'  :   None,
-			'geneId'	:	None,
-			'rnaList'	:	None,
+			'id'			:	None,
+			'synthProb' 	:	None,
+			'degRate'		:	1 / units.s,
+			'length'		:	units.nt,
+			'countsACGU'	:	units.nt,
+			'mw'			:	units.g / units.mol,
+			'hasMRna'		:	None,
+			'hasMiscRna'	:	None,
+			'hasRRna'		:	None,
+			'hasTRna'		:	None,
+			'hasRRna23S'	:	None,
+			'hasRRna16S'	:	None,
+			'hasRRna5S'		:	None,
+			'sequence'  	:   None,
+			'tUId'			:	None,
+			'rnaList'		:	None,
+			'positiveDirection' : None,
+			'leftCoordinate': None
 			}
 
 
@@ -2504,12 +2542,12 @@ class KnowledgeBaseEcoli(object):
 		rnaIds = []
 
 		for protein in self._proteins:
-			rnaId = protein['rnaId']
-
+			rnaId = None
 			rnaLocation = None
-			for rna in self._rnas:
-				if rna['id'] == rnaId:
+			for rna in self._tURnas:
+				if protein['rnaId'] in rna['rnas']:
 					rnaLocation = rna['location']
+					rnaId = rna['id']
 					break
 
 			rnaIds.append('{}[{}]'.format(
@@ -3285,7 +3323,7 @@ class KnowledgeBaseEcoli(object):
 		self.__dict__.update(moleculeGroups)
 
 	def _buildAllMasses(self):
-		size = len(self._rnas) + len(self._proteins) + len(self._proteinComplexes) + len(self._metabolites) + len(self._polymerized)
+		size = len(self._tURnas) + len(self._proteins) + len(self._proteinComplexes) + len(self._metabolites) + len(self._polymerized)
 		allMass = np.empty(size,
 			dtype = [
 					('id',		'a50'),
@@ -3294,7 +3332,7 @@ class KnowledgeBaseEcoli(object):
 			)
 
 		listMass = []
-		listMass.extend([(x['id'],np.sum(x['mw'])) for x in self._rnas])
+		listMass.extend([(x['id'],np.sum(x['mw'])) for x in self._tURnas])
 		listMass.extend([(x['id'],np.sum(x['mw'])) for x in self._proteins])
 		listMass.extend([(x['id'],np.sum(x['mw'])) for x in self._proteinComplexes])
 		listMass.extend([(x['id'],np.sum(x['mw7.2'])) for x in self._metabolites])
