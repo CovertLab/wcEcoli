@@ -2175,3 +2175,8 @@ S50_23S_RRNAS = ['RRLA-RRNA[c]','RRLB-RRNA[c]','RRLC-RRNA[c]','RRLD-RRNA[c]','RR
 S50_23S_RRNAS_STOICHIOMETRY = [1.]*len(S50_23S_RRNAS)
 
 S50_FULLCOMPLEX = 'CPLX-50SA[c]'
+
+
+def timeAvgProbAsFuncofCopyAge(ageReplicatedInSeconds):
+	ageReplicatedInMinutes = ageReplicatedInSeconds/60
+	return -8.022e-7*ageReplicatedInMinutes**3+1.179e-4*ageReplicatedInMinutes**2-1.434e-2*ageReplicatedInMinutes+1.215

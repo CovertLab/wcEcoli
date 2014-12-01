@@ -67,7 +67,7 @@ class rnaCounts(wholecell.listeners.listener.Listener):
 			"time": tables.Float64Col(),
 			"timeStep": tables.Int64Col(),
 			"rnaCounts": tables.UInt64Col(shape),
-			"rnaSynthProb": tables.UInt64Col(shape),
+			"rnaSynthProb": tables.Float64Col(shape),
 			}
 
 		# Create table

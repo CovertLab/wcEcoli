@@ -10,6 +10,7 @@ from reconstruction.ecoli.compendium import growth_data
 
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize
+from hard_coded_data import timeAvgProbAsFuncofCopyAge
 
 # Constants (should be moved to KB)
 RRNA23S_MASS_SUB_FRACTION = 0.525 # This is the fraction of RNA that is 23S rRNA
@@ -53,6 +54,18 @@ def fitKb_1(kb):
 
 	# Fit synthesis probabilities for RNA
 
+	# Fit expression calculated from time averaged synthesis probabilites taking into account gene copy number
+	# Calculate this expression and set it
+
+	#This is like population average of time averaged single cells
+	#expressionToFit = kb.rnaData["synthProbTimeAvg"] * 
+	#		(2*np.exp(-np.log(2)*kb.rnaData["ageReplicated"]/kb.cellCycleLen)/(kb.rnaData["degRate"]+np.log(2)/kb.cellCycleLen))
+
+	#This is like single cell time average expression -- I think it makes more sense to fit this
+	expressionToFit = kb.rnaData["synthProbTimeAvg"] / (kb.rnaData["degRate"].asNumber()+np.log(2)/kb.cellCycleLen.asNumber())
+	expressionToFit /= expressionToFit.sum()
+	kb.rnaExpression["expression"] = expressionToFit
+	
 	for iteration in xrange(MAX_FITTING_ITERATIONS):
 
 		initialExpression = kb.rnaExpression["expression"].copy()
@@ -93,6 +106,12 @@ def fitKb_1(kb):
 	# ----- Growth associated maintenance -----
 
 	fitMaintenanceCosts(kb, bulkContainer)
+	
+	# Set the initial synthesis probabilities from the fit time averaged synthesis probabilites
+	synthProbFromFitTimeAvgs = kb.rnaData["synthProbTimeAvg"]/timeAvgProbAsFuncofCopyAge(kb.rnaData["ageReplicated"].asNumber())
+	synthProbFromFitTimeAvgs /= synthProbFromFitTimeAvgs.sum()
+	kb.rnaData["synthProb"] = synthProbFromFitTimeAvgs
+	kb.rnaExpression["expressionInitial"] = kb.rnaData["synthProb"]/(kb.rnaData["degRate"].asNumber()+np.log(2)/kb.cellCycleLen.asNumber())
 
 # Sub-fitting functions
 
@@ -406,7 +425,7 @@ def fitExpression(kb, bulkContainer):
 		kb.rnaData["degRate"]
 		)
 
-	synthProb = normalize(
+	synthProbTimeAvg = normalize(
 			(
 			units.s
 				* netLossRate_RNA
@@ -414,13 +433,13 @@ def fitExpression(kb, bulkContainer):
 			).asNumber()
 		)
 
-	kb.rnaData["synthProb"][:] = synthProb
+	kb.rnaData["synthProbTimeAvg"][:] = synthProbTimeAvg
 
 
 def fitRNAPolyTransitionRates(kb):
 	## Transcription activation rate
 
-	synthProb = kb.rnaData["synthProb"]
+	synthProb = kb.rnaData["synthProbTimeAvg"]
 	rnaLengths = kb.rnaData["length"]
 
 	elngRate = kb.rnaPolymeraseElongationRate

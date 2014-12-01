@@ -47,9 +47,16 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 	def initialize(self, sim, kb):
 		super(TranscriptInitiation, self).initialize(sim, kb)
 
-		# Load parameters
+		# Quick hack to check expression before and after fitting
+		#f=open('data_initEqualSynthProbs', 'w')
+		#for i in range(0,len(kb.unfitSynthProb)): 
+		#	f.write(str(kb.unfitSynthProb[i])+' ')
+		#	f.write(str(kb.rnaData['synthProb'][i])+ '\n')
+		#f.close()
 
-		rnaSynthProbPopAvg = kb.rnaData['synthProb']
+		# Load parameters
+		#rnaSynthProbPopAvg = kb.rnaData['synthProb']
+		self.rnaSynthProb = kb.rnaData['synthProb']
 		self.rnaIds = kb.rnaData['geneId']
 		self.bulkChromosome = sim.states['BulkChromosome']
 		self.geneIds = kb.geneData['name']
@@ -66,13 +73,13 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			(1/(self.timeStepSec * units.s) * expectedTranscriptionTime).asNumber()
 			)
 
-		averageTranscriptionTimesteps = np.dot(kb.rnaData["synthProb"], expectedTranscriptionTimesteps)
+		averageTranscriptionTimesteps = np.dot(kb.rnaData["synthProbTimeAvg"], expectedTranscriptionTimesteps)
 
 		expectedTerminationRate = 1./averageTranscriptionTimesteps
 
 		expectedFractionTimeInactive = np.dot(
 			1 - (1/(self.timeStepSec * units.s) * expectedTranscriptionTime).asNumber() / expectedTranscriptionTimesteps,
-			kb.rnaData["synthProb"]
+			kb.rnaData["synthProbTimeAvg"]
 			)
 
 		effectiveFractionActive = kb.fracActiveRnap * 1 / (1 - expectedFractionTimeInactive)
@@ -85,17 +92,29 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
 		
-		# Calculate rna synth probabilities
-		geneEndCoordinates = kb.geneData['endCoordinate']
+		# Do this in the knowledge base prior to fitting
+		#### Calculate rna synth probabilities
+		##geneEndCoordinates = kb.geneData['endCoordinate']
 
-		minDistFromOriC = np.minimum(np.abs(kb.oriCCenter.asNumber()-geneEndCoordinates-kb.genomeLength),
-						np.abs(geneEndCoordinates-kb.oriCCenter.asNumber()))
+		##minDistFromOriC = np.minimum(np.abs(kb.oriCCenter.asNumber()-geneEndCoordinates-kb.genomeLength),
+		##				np.abs(geneEndCoordinates-kb.oriCCenter.asNumber()))
 
-		ageReplicated = minDistFromOriC / kb.dnaPolymeraseElongationRate.asNumber()
+		##ageReplicated = minDistFromOriC / kb.dnaPolymeraseElongationRate.asNumber()
 
-		self.rnaSynthProb = rnaSynthProbPopAvg / (2 * np.exp(-np.log(2)*ageReplicated/kb.cellCycleLen.asNumber()))
+		##self.rnaSynthProb = rnaSynthProbPopAvg / (2 * np.exp(-np.log(2)*ageReplicated/kb.cellCycleLen.asNumber()))
 
-		self.rnaSynthProb /= self.rnaSynthProb.sum()
+		##self.rnaSynthProb /= self.rnaSynthProb.sum()
+
+		### Instead try account for exponential increase in number of RNAP molecules (assuming concentration increases exponentially too)
+		##geneEndCoordinates = kb.geneData['endCoordinate']
+
+		##minDistFromOriC = np.minimum(np.abs(kb.oriCCenter.asNumber()-geneEndCoordinates-kb.genomeLength),
+		##				np.abs(geneEndCoordinates-kb.oriCCenter.asNumber()))
+
+		##ageReplicated = minDistFromOriC / kb.dnaPolymeraseElongationRate.asNumber()
+		##RNAP0=1800.
+
+		##self.rnaSynthProb = rnaSynthProbPopAvg / (2*RNAP0*2*np.log(2)-ageReplicated*RNAP0*2*np.log(2)/kb.cellCycleLen.asNumber())
 
 
 	def calculateRequest(self):

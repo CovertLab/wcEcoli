@@ -2109,6 +2109,7 @@ class KnowledgeBaseEcoli(object):
 		normalizedRnaExpression = np.zeros(sum(1 for x in self._rnas),
 			dtype = [('rnaId',		'a50'),
 					('expression',	'float64'),
+					('expressionInitial',	'float64'),
 					('isMRna',		'bool'),
 					('isMiscRna',	'bool'),
 					('isRRna',		'bool'),
@@ -2120,6 +2121,7 @@ class KnowledgeBaseEcoli(object):
 		normalizedRnaExpression['rnaId'] 		= ['{}[{}]'.format(x['id'], x['location']) for x in self._rnas]
 		normalizedRnaExpression['expression']	= [x['expression'] for x in self._rnas]
 		normalizedRnaExpression['expression']	= normalizedRnaExpression['expression'] / np.sum(normalizedRnaExpression['expression'])
+		normalizedRnaExpression['expressionInitial']	= np.ones(len(normalizedRnaExpression['rnaId'])) #This will be set after fitting
 		normalizedRnaExpression['isMRna'] = [rna["type"] == "mRNA" for rna in self._rnas]
 		normalizedRnaExpression['isMiscRna'] = [rna["type"] == "miscRNA" for rna in self._rnas]
 		normalizedRnaExpression['isRRna'] = [rna["type"] == "rRNA" for rna in self._rnas]
@@ -2129,6 +2131,7 @@ class KnowledgeBaseEcoli(object):
 			{
 			'rnaId'		:	None,
 			'expression':	None,
+			'expressionInitial':	None,
 			'isMRna'	:	None,
 			'isMiscRna'	:	None,
 			'isRRna'	:	None,
@@ -2137,6 +2140,7 @@ class KnowledgeBaseEcoli(object):
 			'isRRna16S'	:	None,
 			'isRRna5S'	:	None
 			})
+		self._parameterData['unfitExpression'] = self.rnaExpression['expression'].copy()
 
 
 	def _buildBiomass(self):
@@ -2214,20 +2218,23 @@ class KnowledgeBaseEcoli(object):
 
 		expression = np.array([rna['expression'] for rna in self._rnas])
 
-		synthProb = expression * (
+		synthProbPopAvg = expression * (
 			np.log(2) / self._parameterData['cellCycleLen'].asNumber(units.s)
 			+ rnaDegRates
 			)
 
-		synthProb /= synthProb.sum()
+		synthProbPopAvg /= synthProbPopAvg.sum()
 
-	#	geneCoordinates = np.array([rna['coordinate'] for rna in self._rnas])
-	#	geneEndCoordinates = self.geneData['endCoordinate']
-	#	minDistFromOriC = np.minimum(np.abs(self._parameterData['oriCCenter'].asNumber()-geneEndCoordinates-self.genomeLength),
-	#					np.abs(geneEndCoordinates-self._parameterData['oriCCenter'].asNumber()))
-	#	ageReplicated = minDistFromOriC / self._parameterData['dnaPolymeraseElongationRate'].asNumber()
-	#	synthProb = synthProbPopAvg / (2 * np.exp(-np.log(2)*ageReplicated/self._parameterData['cellCycleLen'].asNumber()))
-	#	synthProb /= synthProb.sum()
+		geneCoordinates = np.array([rna['coordinate'] for rna in self._rnas])
+		geneEndCoordinates = self.geneData['endCoordinate']
+		minDistFromOriC = np.minimum(np.abs(self._parameterData['oriCCenter'].asNumber()-geneEndCoordinates-self.genomeLength),
+						np.abs(geneEndCoordinates-self._parameterData['oriCCenter'].asNumber()))
+		ageReplicated = minDistFromOriC / self._parameterData['dnaPolymeraseElongationRate'].asNumber()
+		synthProb = synthProbPopAvg / (2 * np.exp(-np.log(2)*ageReplicated/self._parameterData['cellCycleLen'].asNumber()))
+		synthProb /= synthProb.sum()
+		
+		synthProbTimeAvg = synthProb * timeAvgProbAsFuncofCopyAge(ageReplicated)
+		synthProbTimeAvg /= synthProbTimeAvg.sum()
 
 		mws = np.array([rna['mw'] for rna in self._rnas])
 
@@ -2260,6 +2267,8 @@ class KnowledgeBaseEcoli(object):
 				('id', 'a50'),
 				# TODO: add expression to this table
 				('synthProb', 'f8'),
+				('synthProbTimeAvg', 'f8'),
+				('ageReplicated', 'f8'),
 				('degRate', 'f8'),
 				('length', 'i8'),
 				('countsACGU', '4i8'),
@@ -2278,6 +2287,8 @@ class KnowledgeBaseEcoli(object):
 
 		self.rnaData['id'] = rnaIds
 		self.rnaData['synthProb'] = synthProb
+		self.rnaData['synthProbTimeAvg'] = synthProbTimeAvg
+		self.rnaData['ageReplicated'] = ageReplicated
 		self.rnaData['degRate'] = rnaDegRates
 		self.rnaData['length'] = rnaLens
 		self.rnaData['countsACGU'] = ntCounts
@@ -2295,6 +2306,8 @@ class KnowledgeBaseEcoli(object):
 		field_units = {
 			'id'		:	None,
 			'synthProb' :	None,
+			'synthProbTimeAvg' :	None,
+			'ageReplicated' :	units.s,
 			'degRate'	:	1 / units.s,
 			'length'	:	units.nt,
 			'countsACGU':	units.nt,
@@ -2313,7 +2326,8 @@ class KnowledgeBaseEcoli(object):
 
 		self.rnaData = UnitStructArray(self.rnaData, field_units)
 		self.getTrnaAbundanceData = getTrnaAbundanceAtGrowthRate
-
+		self._parameterData['unfitSynthProb'] = self.rnaData['synthProb'].copy()
+	
 	def _buildMonomerData(self):
 		ids = ['{}[{}]'.format(protein['id'], protein['location'])
 			for protein in self._proteins]
