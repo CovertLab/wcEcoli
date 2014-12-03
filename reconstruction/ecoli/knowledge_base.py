@@ -736,7 +736,7 @@ class KnowledgeBaseEcoli(object):
 	def _loadTranscriptionUnits(self):
 		
 		self._transcriptionUnits = []
-				
+		genesPresentInTU = []
 		#gene
 		tu_gene = {}
 		self._checkDatabaseAccess(TranscriptionUnitGene)		
@@ -748,6 +748,8 @@ class KnowledgeBaseEcoli(object):
 				tu_gene[tu].append(gene)
 			else:
 				tu_gene[tu] = [gene]
+
+			if gene not in genesPresentInTU: genesPresentInTU.append(gene)
 	
 		#terminator 
 		tu_tr = {}
@@ -780,24 +782,81 @@ class KnowledgeBaseEcoli(object):
 				
 			self._transcriptionUnits.append(t)
 
+		#adding new TU for the genes not listed in TU
+		genesAbsentInTU = []
+		for g in self._genes:
+			if g['id'] not in genesPresentInTU: genesAbsentInTU.append(g['id'])
+		self._addWCTU(genesAbsentInTU)
+
 
 	def _calcWeight(self, direction, seq):
 
 		if direction == '-':
 			seq = Bio.Seq.Seq(seq).reverse_complement().tostring()
 
-        	newSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
-        	nt = np.array([newSeq.count("A"), newSeq.count("C"), newSeq.count("G"), newSeq.count("U")])
-        	weight = (
+		newSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
+		nt = np.array([newSeq.count("A"), newSeq.count("C"), newSeq.count("G"), newSeq.count("U")])
+		weight = (
                  self._ntWeights["A"] * nt[0]
-            	+ self._ntWeights["C"] * nt[1]
-            	+ self._ntWeights["G"] * nt[2]
-            	+ self._ntWeights["U"] * nt[3]
-            	) 
-        	#print nt, weight
-        	return weight
+                 + self._ntWeights["C"] * nt[1]
+                 + self._ntWeights["G"] * nt[2]
+                 + self._ntWeights["U"] * nt[3]
+                 ) 
+		return weight
+
+
+	def _addWCTU(self, genesAbsentInTU):
+
+		geneLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._genes)])
+
+		for gene in genesAbsentInTU:
+			g =  self._genes[geneLookup[gene]]
+
+			if g["direction"] == "-":
+				promoterPos = g['coordinate']+1
+				terminatorPos = g['coordinate']- g['length']
+				leftTU = terminatorPos
+				rightTU = promoterPos
+			else:
+				promoterPos = g['coordinate'] - 1
+				terminatorPos = g['coordinate'] + g['length']
+				leftTU = promoterPos
+				rightTU = terminatorPos
+
+    		#adding promoter
+			self._promoters.append({
+				"id":'PM_WC_'+g['id'],
+				"name": 'PM_WC_'+g['id'],
+				"position": promoterPos,
+				"direction": g['direction']
+			})
+   			
+			#adding new terminator information
+			self._terminators.append({
+                                     "id": 'TERM_WC_'+ g['id'],
+                                     "name":'TERM_WC_'+ g['id'],
+                                     "left":terminatorPos,
+                                     "right":terminatorPos,
+                                     "rho": False #consider False
+                                     })
+
+			#adding new TU
+			self._transcriptionUnits.append({
+                                     "id":'TU_WC_'+g['id'],
+                                     "name":'TU_WC_'+g['id'],
+                                     "left":leftTU,
+                                     "right":rightTU,
+                                     "direction":g['direction'],
+                                     "degradation_rate": 0, 
+                                     "expression_rate": 0,
+                                     "promoter_id": 'PM_WC_'+g['id'],
+                                     "gene_id": [g['id']],
+                                     "terminator_id": ['TERM_WC_'+ g['id']],
+                                   })
+
 
 	def _loadTURnas(self):
+
 		self._tURnas = []
 
 		geneLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._genes)])
@@ -813,7 +872,7 @@ class KnowledgeBaseEcoli(object):
 			rExp = []
 			rGeneId = []
 			position = []
-			for i in tu['gene_id']: 
+			for i in tu['gene_id']:
 				g = self._genes[geneLookup[i]]
 				r = self._rnas[rnaLookup[self._genes[geneLookup[i]]['rnaId']]]
 				
@@ -844,8 +903,8 @@ class KnowledgeBaseEcoli(object):
 					tu['right'] = newPos[len(newPos)-1]['stop'] + 1
 					#add new terminator information
 					self._terminators.append({
-				                                 "id": 'New_Terminator_'+ tu['id'],
-				                                 "name":'New_Terminator_'+ tu['id'],
+				                                 "id": 'TERM_WC_'+ tu['id'],
+				                                 "name":'TERM_WC_'+ tu['id'],
 				                                 "left":tu['right'],
 				                                 "right":tu['right'],
 				                                 "rho":self._terminators[terminatorLookup[tu['terminator_id'][0]]]['rho'] #consider the original terminator
@@ -861,8 +920,8 @@ class KnowledgeBaseEcoli(object):
 					tu['left'] = newPos[0]['start'] -1
 					#add new terminator information
 					self._terminators.append({
-				                                 "id": 'New_Terminator_'+ tu['id'],
-				                                 "name":'New_Terminator_'+ tu['id'],
+				                                 "id": 'TERM_WC_'+ tu['id'],
+				                                 "name":'TERM_WC_'+ tu['id'],
 				                                 "left":tu['left'],
 				                                 "right":tu['left'],
 				                                 "rho":self._terminators[terminatorLookup[tu['terminator_id'][0]]]['rho'] #consider the original terminator
@@ -2135,11 +2194,16 @@ class KnowledgeBaseEcoli(object):
 					#('coordinate'			,	'int64'),
 					#('length'				,	'int64'),
 					#('positiveDirection'	,	'bool'),
-					('rnaId'                ,   'a50'),
+					('tURnaId'              ,   'a50'),
 					('endCoordinate'		,	'int64')])
 
+		tURnaIdForGenes = {}
+		for tu in self._transcriptionUnits:
+			for g in tu['gene_id']:
+				tURnaIdForGenes[g] = tu['id']
+
 		self.geneData['name'] = [x['id'] for x in self._genes]
-		self.geneData['rnaId'] = [x['rnaId'] for x in self._genes]
+		self.geneData['tURnaId'] = [tURnaIdForGenes[x['id']] for x in self._genes]
 		#self.geneData['coordinate'] = [x['coordinate'] for x in self._genes]
 		#self.geneData['length'] = [x['length'] for x in self._genes]
 		#self.geneData['positiveDirection'] = [True if x['direction'] == '+' else False for x in self._genes]
@@ -2328,13 +2392,13 @@ class KnowledgeBaseEcoli(object):
 			{
 			'id'		:	None,
 			'expression':	None,
-			'isMRna'	:	None,
-			'isMiscRna'	:	None,
-			'isRRna'	:	None,
-			'isTRna'	:	None,
-			'isRRna23S'	:	None,
-			'isRRna16S'	:	None,
-			'isRRna5S'	:	None
+			'hasMRna'	:	None,
+			'hasMiscRna'	:	None,
+			'hasRRna'	:	None,
+			'hasTRna'	:	None,
+			'hasRRna23S'	:	None,
+			'hasRRna16S'	:	None,
+			'hasRRna5S'	:	None
 			})
 
 
@@ -2489,7 +2553,7 @@ class KnowledgeBaseEcoli(object):
 				]
 			)
 
-		self.rnaData['id'] = rnaIds
+		self.rnaData['id'] = np.array(rnaIds)
 		self.rnaData['synthProb'] = synthProb
 		self.rnaData['degRate'] = rnaDegRates
 		self.rnaData['length'] = rnaLens
@@ -2554,6 +2618,7 @@ class KnowledgeBaseEcoli(object):
 				rnaId,
 				rnaLocation
 				))
+		rnaIds = np.array(rnaIds)
 
 		lengths = []
 		aaCounts = []
@@ -2651,7 +2716,7 @@ class KnowledgeBaseEcoli(object):
 		self.monomerData = UnitStructArray(self.monomerData, field_units)
 
 
-	def _buildRnaIndexToMonomerMapping(self):
+	def _buildRnaIndexToMonomerMapping(self):		
 		self.rnaIndexToMonomerMapping = np.array([np.where(x == self.rnaData["id"])[0][0] for x in self.monomerData["rnaId"]])
 
 
@@ -2660,7 +2725,7 @@ class KnowledgeBaseEcoli(object):
 
 
 	def _buildRnaIndexToGeneMapping(self):
-		self.rnaIndexToGeneMapping = np.array([np.where(x + "[c]" == self.rnaData["id"])[0][0] for x in self.geneData["rnaId"]])
+		self.rnaIndexToGeneMapping = np.array([np.where(x + "_RNA[c]" == self.rnaData["id"])[0][0] for x in self.geneData["tURnaId"]])
 
 
 	def _buildComplexation(self):
