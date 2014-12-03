@@ -2490,12 +2490,14 @@ class KnowledgeBaseEcoli(object):
 
 		size = len(rnaIds)
 
+		'''
 		tempRnaList = np.zeros(size, dtype = np.str)
 		for rnaIndex, rna in enumerate(self._tURnas):
 			tempRnaList[rnaIndex] = rna['rnas'][0]
 			for i in range(1, len(rna['rnas'])):
 				tempRnaList[rnaIndex] = tempRnaList[rnaIndex] + '#' + rna['rnas'][i]	
 		rnaList = np.array(tempRnaList)
+		'''
 
 		has23S = np.zeros(size, dtype = np.bool)
 		has16S = np.zeros(size, dtype = np.bool)
@@ -2547,7 +2549,7 @@ class KnowledgeBaseEcoli(object):
 				('hasRRna5S', 'bool'),
 				('sequence', 'a{}'.format(maxSequenceLength)),
 				('tUId', 'a50'),
-				('rnaList','a50'),
+				#('rnaList','a50'),
 				('positiveDirection'	,	'bool'),
 				('leftCoordinate'		,	'int64')
 				]
@@ -2568,7 +2570,7 @@ class KnowledgeBaseEcoli(object):
 		self.rnaData['hasRRna5S'] = has5S
 		self.rnaData['sequence'] = sequences
 		self.rnaData['tUId'] = tUIds
-		self.rnaData['rnaList'] = rnaList
+		#self.rnaData['rnaList'] = rnaList
 		self.rnaData['positiveDirection'] = [True if x['direction'] == 'f' else False for x in self._tURnas]
 		self.rnaData['leftCoordinate'] = [x['left'] for x in self._tURnas]
 
@@ -2590,7 +2592,7 @@ class KnowledgeBaseEcoli(object):
 			'hasRRna5S'		:	None,
 			'sequence'  	:   None,
 			'tUId'			:	None,
-			'rnaList'		:	None,
+			#'rnaList'		:	None,
 			'positiveDirection' : None,
 			'leftCoordinate': None
 			}
