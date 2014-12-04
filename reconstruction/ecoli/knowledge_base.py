@@ -2361,14 +2361,17 @@ class KnowledgeBaseEcoli(object):
 		hasTRna = np.zeros(size, dtype = np.bool)
 		
 		for rnaIndex, rna in enumerate(self._tURnas):
-			for t in rna["rnaType"]:
+			for i in range(0, len(rna["rnaType"])):
+				t = rna["rnaType"][i]
+				r = rna["rnas"][i]
+		
 				if t == "rRNA":
 					hasRRna[rnaIndex] = True
-				 	if rna["id"].startswith("RRL"):
+				 	if r.startswith("RRL"):
 						has23S[rnaIndex] = True
-					elif rna["id"].startswith("RRS"):
+					elif r.startswith("RRS"):
 						has16S[rnaIndex] = True
-					elif rna["id"].startswith("RRF"):
+					elif r.startswith("RRF"):
 						has5S[rnaIndex] = True
 				elif t == "mRNA":
 					hasMRna[rnaIndex] = True
@@ -2508,14 +2511,16 @@ class KnowledgeBaseEcoli(object):
 		hasTRna = np.zeros(size, dtype = np.bool)
 		
 		for rnaIndex, rna in enumerate(self._tURnas):
-			for t in rna["rnaType"]:
+			for i in range(0, len(rna["rnaType"])):
+				t = rna["rnaType"][i]
+				r = rna["rnas"][i]
 				if t == "rRNA":
 					hasRRna[rnaIndex] = True
-				 	if rna["id"].startswith("RRL"):
+				 	if r.startswith("RRL"):
 						has23S[rnaIndex] = True
-					elif rna["id"].startswith("RRS"):
+					elif r.startswith("RRS"):
 						has16S[rnaIndex] = True
-					elif rna["id"].startswith("RRF"):
+					elif r.startswith("RRF"):
 						has5S[rnaIndex] = True
 				elif t == "mRNA":
 					hasMRna[rnaIndex] = True
@@ -2523,7 +2528,6 @@ class KnowledgeBaseEcoli(object):
 					hasMiscRna[rnaIndex] = True
 				elif t == "tRNA":
 					hasTRna[rnaIndex] = True
-
 
 		sequences = [rna['seq'] for rna in self._tURnas]
 
