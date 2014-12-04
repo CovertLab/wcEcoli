@@ -104,8 +104,11 @@ class KnowledgeBaseEcoli(object):
 		self._buildRibosomeData()
 		self._buildUniqueMolecules()
 		self._buildBiomass()
-		self._buildRnaData()
+		#
+		self._buildComplexation()
 		self._buildMonomerData()
+		self._buildRnaData()
+		#self._buildMonomerData()
 		self._buildRnaIndexToMonomerMapping()
 		self._buildMonomerIndexToRnaMapping()
 		self._buildRnaIndexToGeneMapping()
@@ -119,7 +122,7 @@ class KnowledgeBaseEcoli(object):
 		self._buildTrnaData()
 
 		# TODO: enable these and rewrite them as sparse matrix definitions (coordinate:value pairs)
-		self._buildComplexation()
+		#self._buildComplexation()
 		self._buildMetabolism()
 		
 		# Build dependent calculations
@@ -2204,7 +2207,7 @@ class KnowledgeBaseEcoli(object):
 		self.cellInorganicIonFractionData = self._cellInorganicIonFractionData
 
 	def _buildRnaData(self):
-		rnaIds = ['{}[{}]'.format(rna['id'], rna['location']) for rna in self._rnas]
+		rnaIds = np.array(['{}[{}]'.format(rna['id'], rna['location']) for rna in self._rnas])
 
 		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in self._rnas]) # TODO: units
 
@@ -2225,16 +2228,42 @@ class KnowledgeBaseEcoli(object):
 
 		synthProbPopAvg /= synthProbPopAvg.sum()
 
+		isRRna = np.array([rna["type"] == "rRNA" for rna in self._rnas])
+		rProteins50 = self.monomerData['rnaId'][np.array([np.where(self.monomerData['id']==x)[0][0] for x in self.getComplexMonomers(S50_FULLCOMPLEX)['subunitIds'] if len(np.where(self.monomerData['id']==x)[0])])]
+		rProteins30 = self.monomerData['rnaId'][np.array([np.where(self.monomerData['id']==x)[0][0] for x in self.getComplexMonomers(S30_FULLCOMPLEX)['subunitIds'] if len(np.where(self.monomerData['id']==x)[0])])]
+		#rProteinsIdxs = np.array([np.where(rnaIds==k)[0][0] for k in rProteins if len(np.where(rnaIds==k)[0])])
+		#rProteinsBool = np.zeros(len(rnaIds),dtype=bool)
+		#rProteinsBool[rProteinsIdxs]=np.ones(len(rProteinsIdxs),dtype=bool)
+		rProteins50Bool = np.in1d(rnaIds,rProteins50)
+		rProteins30Bool = np.in1d(rnaIds,rProteins30)
+
+		#Ribosome associated RNAs (rRNAs and mRNAs for rProteins)
+		highlyRegulated = (isRRna | rProteins50Bool | rProteins30Bool)
+
+		fractionSynthProbHighlyRegulated = np.sum(synthProbPopAvg[highlyRegulated])
+		fractionSynthProbNotHighlyRegulated = 1 - fractionSynthProbHighlyRegulated
+
 		geneCoordinates = np.array([rna['coordinate'] for rna in self._rnas])
 		geneEndCoordinates = self.geneData['endCoordinate']
 		minDistFromOriC = np.minimum(np.abs(self._parameterData['oriCCenter'].asNumber()-geneEndCoordinates-self.genomeLength),
 						np.abs(geneEndCoordinates-self._parameterData['oriCCenter'].asNumber()))
 		ageReplicated = minDistFromOriC / self._parameterData['dnaPolymeraseElongationRate'].asNumber()
-		synthProb = synthProbPopAvg / (2 * np.exp(-np.log(2)*ageReplicated/self._parameterData['cellCycleLen'].asNumber()))
-		synthProb /= synthProb.sum()
+
+		synthProb = np.zeros(len(synthProbPopAvg))
+		synthProb[highlyRegulated] = synthProbPopAvg[highlyRegulated]
+		synthProb[~highlyRegulated] = synthProbPopAvg[~highlyRegulated] / (2 * np.exp(-np.log(2)*ageReplicated[~highlyRegulated]/self._parameterData['cellCycleLen'].asNumber()))
+		synthProb[~highlyRegulated] = synthProb[~highlyRegulated] / np.sum(synthProb[~highlyRegulated]) * fractionSynthProbNotHighlyRegulated
+
+		#synthProb = synthProbPopAvg / (2 * np.exp(-np.log(2)*ageReplicated/self._parameterData['cellCycleLen'].asNumber()))
+		#synthProb /= synthProb.sum()
 		
-		synthProbTimeAvg = synthProb * timeAvgProbAsFuncofCopyAge(ageReplicated)
-		synthProbTimeAvg /= synthProbTimeAvg.sum()
+		synthProbTimeAvg = np.zeros(len(synthProbPopAvg))
+		synthProbTimeAvg[highlyRegulated] = synthProb[highlyRegulated]
+		synthProbTimeAvg[~highlyRegulated] = synthProb[~highlyRegulated] * timeAvgProbAsFuncofCopyAge(ageReplicated[~highlyRegulated])
+		synthProbTimeAvg[~highlyRegulated] = synthProbPopAvg[~highlyRegulated] / np.sum(synthProbPopAvg[~highlyRegulated]) * fractionSynthProbNotHighlyRegulated
+
+		#synthProbTimeAvg = synthProb * timeAvgProbAsFuncofCopyAge(ageReplicated)
+		#synthProbTimeAvg /= synthProbTimeAvg.sum()
 
 		mws = np.array([rna['mw'] for rna in self._rnas])
 
@@ -2280,6 +2309,7 @@ class KnowledgeBaseEcoli(object):
 				('isRRna23S', 'bool'),
 				('isRRna16S', 'bool'),
 				('isRRna5S', 'bool'),
+				('isHighlyRegulated', 'bool'),
 				('sequence', 'a{}'.format(maxSequenceLength)),
 				('geneId', 'a50')
 				]
@@ -2295,11 +2325,12 @@ class KnowledgeBaseEcoli(object):
 		self.rnaData['mw'] = mws.sum(axis = 1)
 		self.rnaData['isMRna'] = [rna["type"] == "mRNA" for rna in self._rnas]
 		self.rnaData['isMiscRna'] = [rna["type"] == "miscRNA" for rna in self._rnas]
-		self.rnaData['isRRna'] = [rna["type"] == "rRNA" for rna in self._rnas]
+		self.rnaData['isRRna'] = isRRna
 		self.rnaData['isTRna'] = [rna["type"] == "tRNA" for rna in self._rnas]
 		self.rnaData['isRRna23S'] = is23S
 		self.rnaData['isRRna16S'] = is16S
 		self.rnaData['isRRna5S'] = is5S
+		self.rnaData['isHighlyRegulated'] = highlyRegulated
 		self.rnaData['sequence'] = sequences
 		self.rnaData['geneId'] = geneIds
 
@@ -2319,6 +2350,7 @@ class KnowledgeBaseEcoli(object):
 			'isRRna23S'	:	None,
 			'isRRna16S'	:	None,
 			'isRRna5S'	:	None,
+			'isHighlyRegulated'	:	None,
 			'sequence'  :   None,
 			'geneId'	:	None,
 			}

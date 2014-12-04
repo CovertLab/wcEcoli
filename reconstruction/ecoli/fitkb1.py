@@ -108,10 +108,16 @@ def fitKb_1(kb):
 	fitMaintenanceCosts(kb, bulkContainer)
 	
 	# Set the initial synthesis probabilities from the fit time averaged synthesis probabilites
-	synthProbFromFitTimeAvgs = kb.rnaData["synthProbTimeAvg"]/timeAvgProbAsFuncofCopyAge(kb.rnaData["ageReplicated"].asNumber())
-	synthProbFromFitTimeAvgs /= synthProbFromFitTimeAvgs.sum()
+	synthProbFromFitTimeAvgs = np.zeros(len(kb.rnaData["synthProbTimeAvg"]))
+	synthProbFromFitTimeAvgs[kb.rnaData["isHighlyRegulated"]] = kb.rnaData["synthProbTimeAvg"][kb.rnaData["isHighlyRegulated"]]
+	fractionSynthProbNotHighlyRegulated = 1 - np.sum(synthProbFromFitTimeAvgs[kb.rnaData["isHighlyRegulated"]])
+	synthProbFromFitTimeAvgs[~kb.rnaData["isHighlyRegulated"]] = kb.rnaData["synthProbTimeAvg"][~kb.rnaData["isHighlyRegulated"]]/timeAvgProbAsFuncofCopyAge(kb.rnaData["ageReplicated"][~kb.rnaData["isHighlyRegulated"]].asNumber())
+	#synthProbFromFitTimeAvgs = kb.rnaData["synthProbTimeAvg"]/timeAvgProbAsFuncofCopyAge(kb.rnaData["ageReplicated"].asNumber())
+	synthProbFromFitTimeAvgs[~kb.rnaData["isHighlyRegulated"]] = synthProbFromFitTimeAvgs[~kb.rnaData["isHighlyRegulated"]]/np.sum(synthProbFromFitTimeAvgs[~kb.rnaData["isHighlyRegulated"]]) * (1-np.sum(synthProbFromFitTimeAvgs[kb.rnaData["isHighlyRegulated"]]))
+	#synthProbFromFitTimeAvgs /= synthProbFromFitTimeAvgs.sum()
 	kb.rnaData["synthProb"] = synthProbFromFitTimeAvgs
 	kb.rnaExpression["expressionInitial"] = kb.rnaData["synthProb"]/(kb.rnaData["degRate"].asNumber()+np.log(2)/kb.cellCycleLen.asNumber())
+	kb.rnaExpression["expressionInitial"] /= np.sum(kb.rnaExpression["expressionInitial"])
 
 # Sub-fitting functions
 

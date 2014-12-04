@@ -91,6 +91,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.activeRnaPolys = self.uniqueMoleculesView('activeRnaPoly')
 
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
+		self.highlyRegulated = kb.rnaData['isHighlyRegulated']
 		
 		# Do this in the knowledge base prior to fitting
 		#### Calculate rna synth probabilities
@@ -124,14 +125,17 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 	# Calculate temporal evolution
 	def evolveState(self):
 		#Recalculate the synthesis probabilities, taking gene copy number into account
+		#But only for the genes that aren't highly regulated: do this by always setting copy number for highly regulated genes to 1
 		#p=copy number * synthprob
-		#then renormalize
+		#then renormalize (only for not highly regulated)
 		copyNumber = self.geneView.counts()[self.mapGeneRna]
+		copyNumber[self.highlyRegulated] = np.ones(len(copyNumber[self.highlyRegulated]))
 		#copyNumber = [self.geneView.counts()[i] for i in [np.where(self.geneIds==x)[0][0] for x in self.rnaIds]]
 
 		synthProbWeightedByCopyNumber = self.rnaSynthProb * copyNumber
+		synthProbWeightedByCopyNumber[~self.highlyRegulated] = (1-np.sum(synthProbWeightedByCopyNumber[self.highlyRegulated])) * synthProbWeightedByCopyNumber[~self.highlyRegulated]/np.sum(synthProbWeightedByCopyNumber[~self.highlyRegulated])
 
-		synthProbRenormalized = synthProbWeightedByCopyNumber/np.sum(synthProbWeightedByCopyNumber)
+		#synthProbRenormalized = synthProbWeightedByCopyNumber/np.sum(synthProbWeightedByCopyNumber)
 
 		# Sample a multinomial distribution of synthesis probabilities to 
 		# determine what molecules are initialized
@@ -144,7 +148,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			return
 
 		nNewRnas = self.randomState.multinomial(rnaPolyToActivate,
-			synthProbRenormalized)
+			synthProbWeightedByCopyNumber)
 
 		nonzeroCount = (nNewRnas > 0)
 
@@ -177,4 +181,4 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.inactiveRnaPolys.countDec(nNewRnas.sum())
 
-		self.writeToListener("rnaCounts", "rnaSynthProb", synthProbRenormalized)
+		self.writeToListener("rnaCounts", "rnaSynthProb", synthProbWeightedByCopyNumber)
