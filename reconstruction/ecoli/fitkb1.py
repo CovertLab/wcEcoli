@@ -103,11 +103,11 @@ def createBulkContainer(kb):
 	## IDs
 
 	ids_molecules = kb.bulkMolecules['moleculeId']
-	ids_rRNA23S = kb.rnaData["id"][kb.rnaData["isRRna23S"]]
-	ids_rRNA16S = kb.rnaData["id"][kb.rnaData["isRRna16S"]]
-	ids_rRNA5S = kb.rnaData["id"][kb.rnaData["isRRna5S"]]
-	ids_tRNA = kb.rnaData["id"][kb.rnaData["isTRna"]]
-	ids_mRNA = kb.rnaData["id"][kb.rnaData["isMRna"]]
+	ids_rRNA23S = kb.rnaData["id"][kb.rnaData["hasRRna23S"]]
+	ids_rRNA16S = kb.rnaData["id"][kb.rnaData["hasRRna16S"]]
+	ids_rRNA5S = kb.rnaData["id"][kb.rnaData["hasRRna5S"]]
+	ids_tRNA = kb.rnaData["id"][kb.rnaData["hasTRna"]]
+	ids_mRNA = kb.rnaData["id"][kb.rnaData["hasMRna"]]
 	ids_protein = kb.monomerData["id"]
 
 	## Mass fractions
@@ -128,8 +128,8 @@ def createBulkContainer(kb):
 	individualMasses_rRNA23S = kb.getMass(ids_rRNA23S) / kb.nAvogadro
 	individualMasses_rRNA16S = kb.getMass(ids_rRNA16S) / kb.nAvogadro
 	individualMasses_rRNA5S = kb.getMass(ids_rRNA5S) / kb.nAvogadro
-	individualMasses_tRNA = kb.rnaData["mw"][kb.rnaData["isTRna"]] / kb.nAvogadro
-	individualMasses_mRNA = kb.rnaData["mw"][kb.rnaData["isMRna"]] / kb.nAvogadro
+	individualMasses_tRNA = kb.rnaData["mw"][kb.rnaData["hasTRna"]] / kb.nAvogadro
+	individualMasses_mRNA = kb.rnaData["mw"][kb.rnaData["hasMRna"]] / kb.nAvogadro
 	individualMasses_protein = kb.monomerData["mw"] / kb.nAvogadro
 
 	## Molecule distributions
@@ -138,7 +138,7 @@ def createBulkContainer(kb):
 	distribution_rRNA16S = np.array([1.] + [0.] * (ids_rRNA16S.size-1)) # currently only expressing first rRNA operon
 	distribution_rRNA5S = np.array([1.] + [0.] * (ids_rRNA5S.size-1)) # currently only expressing first rRNA operon
 	distribution_tRNA = normalize(kb.getTrnaAbundanceData(1 / units.h)['molar_ratio_to_16SrRNA'])
-	distribution_mRNA = normalize(kb.rnaExpression['expression'][kb.rnaExpression['isMRna']])
+	distribution_mRNA = normalize(kb.rnaExpression['expression'][kb.rnaExpression['hasMRna']])
 	distribution_transcriptsByProtein = normalize(kb.rnaExpression['expression'][kb.rnaIndexToMonomerMapping])
 
 	## Rates/times
@@ -190,7 +190,11 @@ def createBulkContainer(kb):
 	bulkContainer.countsIs(counts_rRNA5S, ids_rRNA5S)
 
 	## Assign tRNA counts based on mass and relative abundances (see Dong 1996)
-
+	#print distribution_tRNA
+	#print totalMass_tRNA
+	#print individualMasses_tRNA
+	#import ipdb
+	#ipdb.set_trace()
 	totalCount_tRNA = totalCountFromMassesAndRatios(
 		totalMass_tRNA,
 		individualMasses_tRNA,
@@ -290,9 +294,9 @@ def setRibosomeCountsConstrainedByPhysiology(kb, bulkContainer):
 	# -- CONSTRAINT 2: Measured rRNA mass fraction -- #
 	## Calculate exact number of 30S and 50S subunits based on measured mass fractions of
 	## 16S, 23S, and 5S rRNA.
-	rRna23SCounts = bulkContainer.counts(kb.rnaData["id"][kb.rnaData["isRRna23S"]])
-	rRna16SCounts = bulkContainer.counts(kb.rnaData["id"][kb.rnaData["isRRna16S"]])
-	rRna5SCounts = bulkContainer.counts(kb.rnaData["id"][kb.rnaData["isRRna5S"]])
+	rRna23SCounts = bulkContainer.counts(kb.rnaData["id"][kb.rnaData["hasRRna23S"]])
+	rRna16SCounts = bulkContainer.counts(kb.rnaData["id"][kb.rnaData["hasRRna16S"]])
+	rRna5SCounts = bulkContainer.counts(kb.rnaData["id"][kb.rnaData["hasRRna5S"]])
 
 	## 16S rRNA is in the 30S subunit
 	massFracPredicted_30SCount = rRna16SCounts.sum()
@@ -374,10 +378,10 @@ def fitExpression(kb, bulkContainer):
 
 	# Update mRNA expression to reflect monomer counts
 	assert np.all(
-		kb.monomerData["rnaId"][kb.monomerIndexToRnaMapping] == kb.rnaData["id"][kb.rnaData["isMRna"]]
+		kb.monomerData["rnaId"][kb.monomerIndexToRnaMapping] == kb.rnaData["id"][kb.rnaData["hasMRna"]]
 		), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests
 
-	mRnaExpressionView = rnaExpressionContainer.countsView(kb.rnaData["id"][kb.rnaData["isMRna"]])
+	mRnaExpressionView = rnaExpressionContainer.countsView(kb.rnaData["id"][kb.rnaData["hasMRna"]])
 	mRnaExpressionFrac = np.sum(mRnaExpressionView.counts())
 
 	mRnaExpressionView.countsIs(
