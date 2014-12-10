@@ -24,7 +24,7 @@ from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIn
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 
-SYNTHETASE_KM = 0.001 * units.mmol / units.L
+SYNTHETASE_KM_SCALE = 0.1
 
 class PolypeptideElongation(wholecell.processes.process.Process):
 	""" PolypeptideElongation """
@@ -74,6 +74,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.endWeight = kb.translationEndWeight
 		self.gtpPerElongation = kb.gtpPerTranslation
 
+		##########
+		# Setting synthetase Km's to be fraction of steady state amino acid concentrations
+		aaIdxs = [kb.metabolitePoolIDs.index(aaID) for aaID in kb.aaIDs]
+		aaConcentrations = kb.metabolitePoolConcentrations[aaIdxs]
+		self.synthetase_km = SYNTHETASE_KM_SCALE * aaConcentrations
+		##########
+
 		# Views
 		self.activeRibosomes = self.uniqueMoleculesView('activeRibosome')
 		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
@@ -114,18 +121,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		sequenceHasAA = (sequences != PAD_VALUE)
 
-		aasRequested = np.bincount(sequences[sequenceHasAA])
-
-		self.aas.requestIs(
-			aasRequested
-			)
+		aasInSequences = np.bincount(sequences[sequenceHasAA])
 
 		# Should essentially request all tRNAs
 		# and all synthetases
-		trnasRequested = aasRequested
+		trnasRequested = aasInSequences
 		for i,group in enumerate(self.trna_groups):
 			group.requestIs(trnasRequested[i])
-		synthetaseRequested = aasRequested
+		synthetaseRequested = aasInSequences
 		for i,group in enumerate(self.synthetase_groups):
 			group.requestIs(synthetaseRequested[i])
 
@@ -144,14 +147,20 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		aaTotalConc = (1 / self.nAvogadro) * (1 / cellVolume) * self.aas.total()
 		synthetaseCapacity = self.synthetase_turnover * np.array([x.total().sum() for x in self.synthetase_groups],dtype = np.int64)
-		synthetaseSaturation = (aaTotalConc / (SYNTHETASE_KM + aaTotalConc)).normalize()
+		synthetaseSaturation = (aaTotalConc / (self.synthetase_km + aaTotalConc)).normalize()
 		synthetaseSaturation.checkNoUnit()
-		stallsPerAA = np.fmax(aasRequested - synthetaseCapacity * synthetaseSaturation.asNumber(),0)
+		stallsPerAA = np.fmax(aasInSequences - synthetaseCapacity * synthetaseSaturation.asNumber(),0)
 		totalStalls = np.ceil(stallsPerAA.sum())
-		#totalStalls = 0
 
 		self.atp.requestIs(totalStalls)
 		self.gdp.requestIs(totalStalls)
+
+		#########	
+		# Limiting request by synthetase capacity * saturation	
+		self.aas.requestIs(
+			np.floor(np.fmin(aasInSequences, synthetaseCapacity * synthetaseSaturation.asNumber()))
+			)
+		########
 
 	# Calculate temporal evolution
 	def evolveState(self):
@@ -185,11 +194,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
 		cellVolume = cellMass / self.cellDensity
 		aaTotalConc = (1 / self.nAvogadro) * (1 / cellVolume) * self.aas.total()
-		synthetaseSaturation = (aaTotalConc / (SYNTHETASE_KM + aaTotalConc)).normalize()
+		synthetaseSaturation = (aaTotalConc / (self.synthetase_km + aaTotalConc)).normalize()
 		synthetaseSaturation.checkNoUnit()
 		stallsPerAA = np.fmax(aaCountInSequence - synthetaseCapacity * synthetaseSaturation.asNumber(),0)
 		totalStalls = np.ceil(stallsPerAA.sum())
-		#totalStalls = 0
 
 		# Calculate update
 		reactionLimit = self.gtp.count() // self.gtpPerElongation
