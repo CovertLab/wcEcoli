@@ -26,7 +26,7 @@ from wholecell.utils import units
 
 import itertools
 
-PPGPP_POWER = 1
+PPGPP_POWER = 1.5
 
 class TranscriptInitiation(wholecell.processes.process.Process):
 	""" TranscriptInitiation """
@@ -113,10 +113,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		ppGpp_conc = (1 / self.nAvogadro) * (1 / cellVolume) * self.ppGpp.total()[0]
 
-		# stable_rna_scale = (1/(self.ppGpp_scaling_factor * (ppGpp_conc ** PPGPP_POWER))).normalize()
-		# stable_rna_scale.checkNoUnit()
-		# stable_rna_scale = np.fmin(1, stable_rna_scale.asNumber())
-		stable_rna_scale = 1
+		stable_rna_scale = (1/(self.ppGpp_scaling_factor * (ppGpp_conc ** PPGPP_POWER))).normalize()
+		stable_rna_scale.checkNoUnit()
+		stable_rna_scale = np.fmin(1, stable_rna_scale.asNumber())
 
 		scaledRnaSynthProb = self.rnaSynthProb.copy()
 		scaledRnaSynthProb[self.tRNAIdx] = scaledRnaSynthProb[self.tRNAIdx] * stable_rna_scale
