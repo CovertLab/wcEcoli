@@ -67,14 +67,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		self.mRnas = self.bulkMoleculesView(mrnaIds)
 
-		#######
-		self.ppGpp = self.bulkMoleculeView("PPGPP[c]")
-		self.nAvogadro = kb.nAvogadro
-		self.cellDensity = kb.cellDensity
-		self.ppGpp_base_conc = kb.metabolitePoolConcentrations[kb.metabolitePoolIDs.index("PPGPP[c]")]
-		self.ppGpp_scaling_factor = 1 / (self.ppGpp_base_conc ** PPGPP_POWER)
-		#######
-
 	def calculateRequest(self):
 		self.ribosome30S.requestAll()
 		self.ribosome50S.requestAll()
@@ -98,17 +90,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			self.mRnas.counts() /
 			self.mRnas.counts().sum()
 			).flatten()	# TODO: Is this .flatten() necessary?
-
-		########
-		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
-		cellVolume = cellMass / self.cellDensity
-		ppGpp_conc = (1 / self.nAvogadro) * (1 / cellVolume) * self.ppGpp.total()[0]
-
-		initiation_scale = (1/(self.ppGpp_scaling_factor * (ppGpp_conc ** PPGPP_POWER))).normalize()
-		initiation_scale.checkNoUnit()
-		initiation_scale = np.fmin(1, initiation_scale.asNumber())
-		inactiveRibosomeCount = np.floor(inactiveRibosomeCount * initiation_scale)
-		########
 
 		nNewProteins = self.randomState.multinomial(
 			inactiveRibosomeCount,
