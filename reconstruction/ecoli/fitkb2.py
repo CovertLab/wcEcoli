@@ -10,6 +10,8 @@ from wholecell.utils.fitting import countsFromMassAndExpression, calcProteinCoun
 
 from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWithPrebuiltMatrices
 
+from reconstruction.ecoli.fitkb2metabolism import fitKb_2_metabolism
+
 N_SEEDS = 20
 
 def fitKb_2(kb, simOutDir):
@@ -20,12 +22,12 @@ def fitKb_2(kb, simOutDir):
 	rnaMass = massFractions60["rnaMass"].asUnit(units.g)
 
 	# Construct bulk container
-	
-	# We want to know something about the distribution of the copy numbers of 
+
+	# We want to know something about the distribution of the copy numbers of
 	# macromolecules in the cell.  While RNA and protein expression can be
 	# approximated using well-described statistical distributions, we need
 	# absolute copy numbers to form complexes.  To get a distribution, we must
-	# instantiate many cells, form complexes, and finally compute the 
+	# instantiate many cells, form complexes, and finally compute the
 	# statistics we will use in the fitting operations.
 
 	bulkContainer = BulkObjectsContainer(kb.bulkMolecules['moleculeId'])
@@ -57,7 +59,7 @@ def fitKb_2(kb, simOutDir):
 	proteinDistribution = calcProteinDistribution(kb)
 
 	proteinTotalCounts = calcProteinTotalCounts(kb, proteinMass, proteinDistribution)
-	
+
 	for seed in xrange(N_SEEDS):
 		randomState = np.random.RandomState(seed)
 
@@ -96,7 +98,7 @@ def fitKb_2(kb, simOutDir):
 	# TODO: make this more functional; one function for returning average & distribution
 	del allMoleculeCounts
 	del bulkContainer
-	
+
 	# ----- tRNA synthetase turnover rates ------
 	# Fit tRNA synthetase kcat values based on expected rates of translation
 	# compute values at initial time point
@@ -135,7 +137,7 @@ def fitKb_2(kb, simOutDir):
 			group_variance += variance
 		synthetase_counts_by_group[idx] = group_count
 		synthetase_variance_by_group[idx] = group_variance
-	
+
 	## Saved for plotting
 	kb.synthetase_counts = synthetase_counts_by_group
 	kb.synthetase_variance = synthetase_variance_by_group
@@ -153,4 +155,10 @@ def fitKb_2(kb, simOutDir):
 	predicted_trna_synthetase_rates = initialAAPolymerizationRate / scaled_synthetase_counts
 	kb.trna_synthetase_rates = 2 * predicted_trna_synthetase_rates
 
-	# fitKb2_metabolism(kb, simOutDir, bulkAverageContainer, bulkDeviationContainer)
+	fitKb_2_metabolism(kb, simOutDir, bulkAverageContainer, bulkDeviationContainer)
+
+	# KB perturbations should go here to avoid perturbing fitting
+	# Eventually this will be part of our pipeline
+
+	# Example: half glucose
+	# kb._metabolismConstrainedExchangeMolecules["GLC-D[e]"] = 4.0 * units.mmol/units.g/units.h

@@ -51,7 +51,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# Load constants
 		self.nAvogadro = kb.nAvogadro.asNumber(1 / COUNTS_UNITS)
 		self.cellDensity = kb.cellDensity.asNumber(MASS_UNITS/VOLUME_UNITS)
-		
+
 		self.metabolitePoolIDs = kb.metabolitePoolIDs
 		self.targetConcentrations = kb.metabolitePoolConcentrations.asNumber(COUNTS_UNITS/VOLUME_UNITS)
 
@@ -59,7 +59,7 @@ class Metabolism(wholecell.processes.process.Process):
 			moleculeID:coeff for moleculeID, coeff in
 			izip(self.metabolitePoolIDs, self.targetConcentrations)
 			}
-		
+
 		# Set up FBA solver
 
 		self.fba = FluxBalanceAnalysis(
@@ -68,8 +68,8 @@ class Metabolism(wholecell.processes.process.Process):
 			objective,
 			objectiveType = "pools",
 			reversibleReactions = kb.metabolismReversibleReactions,
-			# reactionEnzymes = kb.metabolismReactionEnzymes.copy(), # TODO: copy in class
-			# reactionRates = kb.metabolismReactionRates(self.timeStepSec * units.s),
+			reactionEnzymes = kb.metabolismReactionEnzymes.copy(), # TODO: copy in class
+			reactionRates = kb.metabolismReactionMaxRates, # these are actually vMax's
 			# moleculeMasses = kb.metabolismExchangeMasses(MASS_UNITS / COUNTS_UNITS)
 			)
 
@@ -87,16 +87,16 @@ class Metabolism(wholecell.processes.process.Process):
 
 		coefficient = initDryMass / initCellMass * kb.cellDensity * (self.timeStepSec * units.s)
 
-		externalMoleculeLevels = kb.metabolismExchangeConstraints(
+		self.externalMoleculeLevels = kb.metabolismExchangeConstraints(
 			externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS
 			)
 
-		self.fba.externalMoleculeLevelsIs(externalMoleculeLevels)
+		self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
 
-		## Set enzymes unlimited
-		self.fba.enzymeLevelsIs(np.inf)
+		## Set enzymes to 1, since the input kCat's are actually vMax's
+		self.fba.enzymeLevelsIs(1)
 
 		# Views
 		self.metabolites = self.bulkMoleculesView(self.fba.outputMoleculeIDs())
@@ -129,12 +129,18 @@ class Metabolism(wholecell.processes.process.Process):
 		# if self.time() < 2:
 		# 	print poolCounts / self.nAvogadro / cellVolume
 
+		# # APPLY METABOLIC LIMITATION AT TIME POINT
+		# if self.time() == 10*60: # 10 min in
+		# 	glc_idx = self.fba.externalMoleculeIDs().index('GLC-D[e]')
+		# 	self.externalMoleculeLevels[glc_idx] = self.externalMoleculeLevels[glc_idx] * 0.5
+		# 	self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
+
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
 		self.fba.internalMoleculeLevelsIs(
 			metaboliteCountsInit * countsToMolar
 			)
-			
+
 		self.fba.run()
 
 		deltaMetabolites = self.fba.outputMoleculeLevelsChange() / countsToMolar

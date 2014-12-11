@@ -1,5 +1,19 @@
+
+from __future__ import division
+import os
+import collections
+
+import numpy as np
 import tables
+import cvxopt
+
+from wholecell.utils import units
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
+
+COUNTS_UNITS = units.mmol
+VOLUME_UNITS = units.L
+MASS_UNITS = units.g
+
 def fitKb_2_metabolism(kb, simOutDir, bulkAverageContainer, bulkDeviationContainer):
 
 	# Load the simulation output
@@ -31,6 +45,69 @@ def fitKb_2_metabolism(kb, simOutDir, bulkAverageContainer, bulkDeviationContain
 
 	effectiveBiomassReaction[negativeIsMostExtreme] = concentrationChangeMostNegative[negativeIsMostExtreme]
 
+	biomassReaction = dict(zip(biomassMoleculeIDs, effectiveBiomassReaction*1000)) # conversion to mM/s
+
+	reactionRates = {reactionID:1 for reactionID in kb.metabolismReactionEnzymes.viewkeys()}
+
+	fba = FluxBalanceAnalysis(
+		kb.metabolismReactionStoich,
+		kb.metabolismExternalExchangeMolecules,
+		biomassReaction,
+		reversibleReactions = kb.metabolismReversibleReactions,
+		reactionEnzymes = kb.metabolismReactionEnzymes.copy(), # TODO: copy in class
+		reactionRates = reactionRates,
+		)
+
+	# Set constraints
+	## External molecules
+	externalMoleculeIDs = fba.externalMoleculeIDs()
+
+	initWaterMass = kb.avgCellWaterMassInit
+	initDryMass = kb.avgCellDryMassInit
+
+	initCellMass = (
+		initWaterMass
+		+ initDryMass
+		)
+
+	coefficient = initDryMass / initCellMass * kb.cellDensity * (1 * units.s)
+
+	externalMoleculeLevels = kb.metabolismExchangeConstraints(
+		externalMoleculeIDs,
+		coefficient,
+		COUNTS_UNITS / VOLUME_UNITS
+		)
+
+	fba.externalMoleculeLevelsIs(externalMoleculeLevels)
+
+	## Set enzymes unlimited
+	fba.enzymeLevelsIs(np.inf)
+
+	## Constrain FBA to 100% efficacy
+	fba.maxReactionFluxIs(fba._standardObjectiveReactionName, 1)
+
+	## Solve and assert feasibility
+	fba.run()
+
+	assert abs(fba.objectiveReactionFlux() - 1) < 1e-10, "vMax fitting is infeasible"
+
+	enzymeUsage = fba.enzymeUsage()
+
+	TOLERANCE = 2
+
+	min_vMax = enzymeUsage[enzymeUsage > 1e-16].min()
+
+	enzyme_vMax = dict(zip(
+		fba.enzymeIDs(), np.fmax(enzymeUsage, min_vMax) * TOLERANCE
+		))
+
+	kb.metabolismReactionMaxRates = { # NOTE: adding attribute to KB
+		reactionID:enzyme_vMax[enzymeID]
+		for reactionID, enzymeID in kb.metabolismReactionEnzymes.viewitems()
+		}
+
+
+def _expressionFitting():
 	## Build the enzyme-fitting problem
 
 	# TODO: write a class for setting up LP problems
@@ -87,7 +164,7 @@ def fitKb_2_metabolism(kb, simOutDir, bulkAverageContainer, bulkDeviationContain
 			except ValueError:
 				moleculeIndex = len(rowNames)
 				rowNames.append(moleculeID)
-			
+
 			rowIndexes.append(moleculeIndex)
 			colIndexes.append(reactionIndex)
 			values.append(coeff)
@@ -257,3 +334,5 @@ def fitKb_2_metabolism(kb, simOutDir, bulkAverageContainer, bulkDeviationContain
 	solution = cvxopt.solvers.lp(f, G, h, A, b, solver = "glpk")
 
 	cvxopt.solvers.options.update(oldOptions)
+
+	import ipdb; ipdb.set_trace()
