@@ -133,6 +133,12 @@ class Metabolism(wholecell.processes.process.Process):
 		# if self.time() < 2:
 		# 	print poolCounts / self.nAvogadro / cellVolume
 
+		# # APPLY METABOLIC LIMITATION AT TIME POINT
+		# if self.time() == 10*60: # 10 min in
+		# 	glc_idx = self.fba.externalMoleculeIDs().index('GLC-D[e]')
+		# 	self.externalMoleculeLevels[glc_idx] = self.externalMoleculeLevels[glc_idx] * 0.5
+		# 	self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
+
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
 		self.fba.internalMoleculeLevelsIs(
