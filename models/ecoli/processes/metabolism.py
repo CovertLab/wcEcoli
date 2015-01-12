@@ -87,13 +87,13 @@ class Metabolism(wholecell.processes.process.Process):
 
 		coefficient = initDryMass / initCellMass * kb.cellDensity * (self.timeStepSec * units.s)
 
-		externalMoleculeLevels = kb.metabolismExchangeConstraints(
+		self.externalMoleculeLevels = kb.metabolismExchangeConstraints(
 			externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS
 			)
 
-		self.fba.externalMoleculeLevelsIs(externalMoleculeLevels)
+		self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
 
 		## Set enzymes unlimited
 		self.fba.enzymeLevelsIs(np.inf)
@@ -121,6 +121,14 @@ class Metabolism(wholecell.processes.process.Process):
 
 		metaboliteCountsInit = self.metabolites.counts()
 		poolCounts = self.poolMetabolites.counts()
+
+		if kb.turnOnGlucoseLimitation:
+			# APPLY METABOLIC LIMITATION AT TIME POINT
+			if self.time() == 10*60: # 10 min in
+				glc_idx = self.fba.externalMoleculeIDs().index('GLC-D[e]')
+				self.externalMoleculeLevels[glc_idx] = self.externalMoleculeLevels[glc_idx] * 0.5
+				self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
+
 
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg).asNumber(MASS_UNITS)
 

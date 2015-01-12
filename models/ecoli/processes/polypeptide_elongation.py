@@ -171,13 +171,20 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		synthetaseCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
 		elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity)
 
+		###### VARIANT CODE #######
+		if kb.turnOnSynthetaseContraints:
+			elongationResourceCapacity = elongationResourceCapacity
+		else:
+			elongationResourceCapacity = aaCounts
+		###### VARIANT CODE #######
+
 		# Calculate update
 
 		reactionLimit = self.gtp.count() // self.gtpPerElongation
 
 		sequenceElongations, aasUsed, nElongations = polymerize(
 			sequences,
-			aaCounts, # elongationResourceCapacity,
+			elongationResourceCapacity,
 			reactionLimit,
 			self.randomState
 			)
@@ -256,7 +263,4 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("RibosomeData", "aaCountInSequence", aaCountInSequence)
 		self.writeToListener("RibosomeData", "aaCounts", aaCounts)
 		self.writeToListener("RibosomeData", "trnasCapacity", trnasCapacity)
-		self.writeToListener("RibosomeData", "synthetaseCapacity", synthetaseCapacity)
-
-		self.writeToListener("RibosomeData", "expectedElongations", expectedElongations.sum())
-		self.writeToListener("RibosomeData", "actualElongations", sequenceElongations.sum())
+		self.writeToListener("RibosomeData", "synthetaseCap
