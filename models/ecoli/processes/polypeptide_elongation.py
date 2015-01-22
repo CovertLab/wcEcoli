@@ -102,7 +102,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome30S = self.bulkMoleculeView(kb.s30_fullComplex)
 		self.ribosome50S = self.bulkMoleculeView(kb.s50_fullComplex)
 
-
 	def calculateRequest(self):
 		self.activeRibosomes.requestAll()
 
