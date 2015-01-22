@@ -97,7 +97,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome30S = self.bulkMoleculeView(kb.s30_fullComplex)
 		self.ribosome50S = self.bulkMoleculeView(kb.s50_fullComplex)
 
-
 	def calculateRequest(self):
 		self.activeRibosomes.requestAll()
 
@@ -142,7 +141,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.h2o.requestIs(gtpsHydrolyzed) # note: this is roughly a 2x overestimate
 
-
 	# Calculate temporal evolution
 	def evolveState(self):
 		activeRibosomes = self.activeRibosomes.molecules()
@@ -170,13 +168,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		trnasCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.trna_groups],dtype = np.int64)
 		synthetaseCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
 		elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity)
-
-		###### VARIANT CODE #######
-		if kb.turnOnSynthetaseContraints:
-			elongationResourceCapacity = elongationResourceCapacity
-		else:
-			elongationResourceCapacity = aaCounts
-		###### VARIANT CODE #######
 
 		# Calculate update
 
@@ -263,4 +254,4 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("RibosomeData", "aaCountInSequence", aaCountInSequence)
 		self.writeToListener("RibosomeData", "aaCounts", aaCounts)
 		self.writeToListener("RibosomeData", "trnasCapacity", trnasCapacity)
-		self.writeToListener("RibosomeData", "synthetaseCap
+		self.writeToListener("RibosomeData", "synthetaseCapacity", synthetaseCapacity)

@@ -5,38 +5,40 @@ CONTROL_OUTPUT = dict(
 	)
 
 def toggleVariantTotalIndices(kb):
-	nVariants = 1
+	nVariants = 3
 	nConditions = nVariants + 1
 	return nConditions
 
 
-def geneKnockout(kb, index):
+def toggleVariant(kb, index):
 	# Toggles variants you specify here
 
 	nConditions = toggleVariantTotalIndices(kb)
 
+	kb.ppGppFeedback = False
+	kb.turnOnGlucoseLimitation = False
+
 	if index % nConditions == 0:
 		return CONTROL_OUTPUT
 
-	kb.turnOnSynthetaseContraints = False
-	kb.turnOnGlucoseLimitation = False
-
 	if index == 1:
-		# Turn on synthetase constraints
-		kb.turnOnSynthetaseContraints = True
+		# Turn on transcription initiation feedback
+		kb.ppGppFeedback = True
 
 		return dict(
-			shortName = "machineryLimitNoGlucoseLimit",
-			desc = "Elongation limited by machinery or AA. No glucose limitation."
+			shortName = "growthRateControl",
+			desc = "Transcription initiation feedback by ppGpp. 1/2 glucose at 10 min."
 			)
+
 	elif index == 2:
-		# Turn on synthetase constraints and glucose limit
-		kb.turnOnSynthetaseContraints = True
+		# Turn on glucose limit
+		# Turn on transcription initiation feedback
 		kb.turnOnGlucoseLimitation = True
+		kb.ppGppFeedback = True
 
 		return dict(
-			shortName = "machineryLimitGlucoseLimit",
-			desc = "Elongation limited by machinery or AA. 1/2 Glucose limitation at 10 min."
+			shortName = "growthRateControl_glucoseLimit",
+			desc = "Transcription initiation feedback by ppGpp. 1/2 glucose at 10 min."
 			)
 
 	elif index == 3:
@@ -44,6 +46,6 @@ def geneKnockout(kb, index):
 		kb.turnOnGlucoseLimitation = True
 
 		return dict(
-			shortName = "noMachineryLimitGlucoseLimit",
-			desc = "Elongation limited by AA. 1/2 Glucose limitation at 10 min."
+			shortName = "glucoseLimit",
+			desc = "1/2 glucose at 10 min."
 			)
