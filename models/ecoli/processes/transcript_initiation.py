@@ -92,6 +92,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.ppGpp_base_conc = kb.metabolitePoolConcentrations[kb.metabolitePoolIDs.index("PPGPP[c]")]
 		self.ppGpp_scaling_factor = 1 / (self.ppGpp_base_conc ** PPGPP_POWER)
 		
+		self.ppGppFeedback = kb.ppGppFeedback
+
 	def calculateRequest(self):
 		self.inactiveRnaPolys.requestAll()
 
@@ -113,9 +115,12 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		ppGpp_conc = (1 / self.nAvogadro) * (1 / cellVolume) * self.ppGpp.total()[0]
 
-		stable_rna_scale = (1/(self.ppGpp_scaling_factor * (ppGpp_conc ** PPGPP_POWER))).normalize()
-		stable_rna_scale.checkNoUnit()
-		stable_rna_scale = np.fmin(1, stable_rna_scale.asNumber())
+		if self.ppGppFeedback:
+			stable_rna_scale = (1/(self.ppGpp_scaling_factor * (ppGpp_conc ** PPGPP_POWER))).normalize()
+			stable_rna_scale.checkNoUnit()
+			stable_rna_scale = np.fmin(1, stable_rna_scale.asNumber())
+		else:
+			stable_rna_scale = 1.
 
 		scaledRnaSynthProb = self.rnaSynthProb.copy()
 		scaledRnaSynthProb[self.tRNAIdx] = scaledRnaSynthProb[self.tRNAIdx] * stable_rna_scale
