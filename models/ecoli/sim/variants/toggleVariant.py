@@ -27,7 +27,7 @@ def toggleVariant(kb, index):
 
 		return dict(
 			shortName = "growthRateControl",
-			desc = "Transcription initiation feedback by ppGpp. 1/2 glucose at 10 min."
+			desc = "Transcription initiation feedback by ppGpp."
 			)
 
 	elif index == 2:
