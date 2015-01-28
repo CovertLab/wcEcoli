@@ -855,6 +855,152 @@ class KnowledgeBaseEcoli(object):
                                    })
 
 
+	def _findProcessedRNA(self, newPos, tu, idIndex, location):
+
+		if len(newPos) == 0: return []
+
+		direction = tu['direction']
+		#add component in a trascribe
+		componentRnas = []
+		start = tu['left']	
+		newMw = np.zeros(len(MOLECULAR_WEIGHT_ORDER))
+		nonCoding = self._genomeSeq[tu['left']: newPos[0]['start']]
+		rnas = []
+		rtypes = []
+		exps = []
+		hls = []
+
+		for i in range(0, len(newPos)):
+			
+
+			if newPos[i]['type'] == 'rRNA' or newPos[i]['type'] == 'tRNA': 
+				stop = newPos[i]['start']-1
+				
+				seq = self._genomeSeq[(start): (stop + 1)]
+				if direction == '-': seq = Bio.Seq.Seq(self._genomeSeq[(start): (stop + 1)]).reverse_complement().tostring()
+				newSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
+				newNtCount = np.array([newSeq.count("A"), newSeq.count("C"), newSeq.count("G"), newSeq.count("U")])		
+
+				w = self._calcWeight(direction, nonCoding) + self._rnaEndWeight
+				index = MOLECULAR_WEIGHT_ORDER['nonCoding'] 
+				newMw[index] = newMw[index] + w
+
+				exp_avg = None
+				if (len(exps)): exp_avg = sum(exps)/float(len(exps))
+				hl_avg = None
+				if (len(hls)): exp_avg = sum(hls)/float(len(hls))
+
+				newComponent = {'id' : 'processedRNA_'+str(idIndex), 
+								'left': start,
+								'right': stop,
+								'direction': tu['direction'],
+
+								'rnas': rnas,
+								'rnaType': rtypes,
+								'location':location, #consider same location of all rnas in a tUId
+								"seq": newSeq,
+								"ntCount": newNtCount,
+								"mw": newMw,
+
+								'expression': exp_avg,
+								'halfLife': hl_avg,
+								'tUId': tu['id']
+							 }
+				idIndex = idIndex + 1
+				componentRnas.append(newComponent)
+
+				##add the RNA
+				seq = self._genomeSeq[(newPos[i]['start']): (newPos[i]['stop'] + 1)]
+				if direction == '-': seq = Bio.Seq.Seq(self._genomeSeq[(start): (stop + 1)]).reverse_complement().tostring()
+				newSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
+				newNtCount = np.array([newSeq.count("A"), newSeq.count("C"), newSeq.count("G"), newSeq.count("U")])		
+				newMw = np.zeros(len(MOLECULAR_WEIGHT_ORDER))
+				w = newPos[i]['weight'] + self._rnaEndWeight
+				index = self._whichRna(newPos[i]['id'], newPos[i]['type'])
+				newMw[index] = w
+
+				newComponent = {'id' : 'processedRNA_'+str(idIndex), 
+								'left': newPos[i]['start'],
+								'right': newPos[i]['stop'],
+								'direction': tu['direction'],
+
+								'rnas' : [newPos[i]['id']],
+								'location':location, #consider same location of all rnas in a TU
+								'rnaType': newPos[i]['type'],
+								"seq": newSeq,
+								"ntCount": newNtCount,
+								"mw": newMw,
+
+								'expression': newPos[i]['exp'],
+								'halfLife': newPos[i]['hl'],
+							 }
+				componentRnas.append(newComponent)
+				idIndex = idIndex + 1
+
+				##reinitialize
+				start = newPos[i]['stop']+1
+				newMw = np.zeros(len(MOLECULAR_WEIGHT_ORDER))
+				rnas = []
+				rtypes = []
+				exps = []
+				hls = []
+				if i+1 < len(newPos):
+					nonCoding = self._genomeSeq[newPos[i]['stop']+1: newPos[i+1]['start']]
+				else:
+					nonCoding = ''
+
+			else:
+				w = newPos[i]['weight']
+				index = self._whichRna(newPos[i]['id'], newPos[i]['type'])
+				newMw[index] = newMw[index] + w
+				rnas.append(newPos[i]['id'])
+				rtypes.append(newPos[i]['type'])
+				exps.append(newPos[i]['exp'])
+				hls.append(newPos[i]['hl'])
+
+				if i+1 < len(newPos):
+					nonCoding = nonCoding + self._genomeSeq[newPos[i]['stop']: newPos[i+1]['start']]
+
+		##for the last component
+		stop = tu["right"]
+		nonCoding = nonCoding + self._genomeSeq[(newPos[len(newPos)-1]['stop']+1): stop+1]
+		
+		w = self._calcWeight(direction, nonCoding) + self._rnaEndWeight
+		index = MOLECULAR_WEIGHT_ORDER['nonCoding'] 
+		newMw[index] = w
+
+		seq = self._genomeSeq[(start): stop+1]
+		if direction == '-': seq = Bio.Seq.Seq(self._genomeSeq[(start): (stop + 1)]).reverse_complement().tostring()
+		newSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
+		newNtCount = np.array([newSeq.count("A"), newSeq.count("C"), newSeq.count("G"), newSeq.count("U")])		
+
+		exp_avg = None
+		if (len(exps)): exp_avg = sum(exps)/float(len(exps))
+		hl_avg = None
+		if (len(hls)): exp_avg = sum(hls)/float(len(hls))
+
+		newComponent = {'id' : 'processedRNA_'+str(idIndex), 
+						'left': start,
+						'right': stop,
+						'direction': tu['direction'],
+
+						'rnas': rnas,
+						'rnaType': rtypes,
+						'location':location, #consider same location of all rnas in a tUId
+						"seq": newSeq,
+						"ntCount": newNtCount,
+						"mw": newMw,
+
+						'expression': exp_avg,
+						'halfLife': hl_avg,
+						'tUId': tu['id']
+					 }
+
+
+		componentRnas.append(newComponent)
+
+		return componentRnas
+
 	def _loadTURnas(self):
 
 		self._tURnas = []
@@ -864,6 +1010,8 @@ class KnowledgeBaseEcoli(object):
 		terminatorLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._terminators)])
 		tuLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._transcriptionUnits)])
 
+		idProcessedRNA = 0
+
 		for tu in self._transcriptionUnits:
 
 			rnas = []
@@ -872,6 +1020,7 @@ class KnowledgeBaseEcoli(object):
 			rExp = []
 			rGeneId = []
 			position = []
+
 			for i in tu['gene_id']:
 				g = self._genes[geneLookup[i]]
 				r = self._rnas[rnaLookup[self._genes[geneLookup[i]]['rnaId']]]
@@ -973,128 +1122,10 @@ class KnowledgeBaseEcoli(object):
 			if round(check_weight,4) != round(sum(mw),4): 
 				print 'MW not match', mw, check_weight, tu
 				exit(0)			
+			
 
-
-			#add component in a trascribe
-			componentRnas = []
-			start = tu['left']	
-			indexComp = 0
-			newMw = np.zeros(len(MOLECULAR_WEIGHT_ORDER))
-			nonCoding = self._genomeSeq[tu['left']: newPos[0]['start']]
-
-			for i in range(0, len(newPos)):
-				
-	
-				if newPos[i]['type'] == 'rRNA' or newPos[i]['type'] == 'tRNA': 
-					stop = newPos[i]['start']-1
-					
-					seq = self._genomeSeq[(start): (stop + 1)]
-					if direction == '-': seq = Bio.Seq.Seq(self._genomeSeq[(start): (stop + 1)]).reverse_complement().tostring()
-					newSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
-					newNtCount = np.array([rSeq.count("A"), rSeq.count("C"), rSeq.count("G"), rSeq.count("U")])		
-
-					region = 'coding'
-					if indexComp == i: region = 'nonCoding'
-
-					w = self._calcWeight(direction, nonCoding) + self._rnaEndWeight
-					index = MOLECULAR_WEIGHT_ORDER['nonCoding'] 
-					newMw[index] = w
-
-					newComponent = {id : '', 
-									'left': start,
-									'right': stop,
-									'direction': tu['direction'],
-
-									'location':str(self._rnas[rnaLookup[rnas[0]]]['location']), #consider same location of all rnas in a tUId
-									'rnaType': region,
-									"seq": newSeq,
-									"ntCount": newNtCount,
-									"mw": newMw,
-
-									'expression': None,
-									'halfLife': None,
-								 }
-					componentRnas.append(newComponent)
-
-					##add the RNA
-					seq = self._genomeSeq[(newPos[i]['start']): (newPos[i]['stop'] + 1)]
-					if direction == '-': seq = Bio.Seq.Seq(self._genomeSeq[(start): (stop + 1)]).reverse_complement().tostring()
-					newSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
-					newNtCount = np.array([rSeq.count("A"), rSeq.count("C"), rSeq.count("G"), rSeq.count("U")])		
-					newMw = np.zeros(len(MOLECULAR_WEIGHT_ORDER))
-					w = self._calcWeight(direction, newSeq) + self._rnaEndWeight
-					index = self._whichRna(newPos[i]['id'], newPos[i]['type'])
-					newMw[index] = w
-
-					newComponent = {id : newPos[i]['id'], 
-									'left': newPos[i]['start'],
-									'right': newPos[i]['stop'],
-									'direction': tu['direction'],
-
-									'location':str(self._rnas[rnaLookup[rnas[0]]]['location']), #consider same location of all rnas in a TU
-									'rnaType': newPos[i]['type'],
-									"seq": newSeq,
-									"ntCount": newNtCount,
-									"mw": newMw,
-
-									'expression': newPos[i]['exp'],
-									'halfLife': newPos[i]['hl'],
-								 }
-					componentRnas.append(newComponent)
-
-					##reinitialize
-					start = newPos[i]['stop']+1
-					indexComp = i+1
-					newMw = np.zeros(len(MOLECULAR_WEIGHT_ORDER))
-					if i+1 < len(newPos):
-						nonCoding = self._genomeSeq[newPos[i]['stop']+1: newPos[i+1]['start']]
-
-				else:
-					w = newPos[i]['weight']
-					index = self._whichRna(newPos[i]['id'], newPos[i]['type'])
-					newMw[index] = mw[index] + w
-					if i+1 < len(newPos):
-						nonCoding = nonCoding + self._genomeSeq[newPos[i]['stop']: newPos[i+1]['start']]
-
-			##for the last component
-			if len(newPos): nonCoding = nonCoding + self._genomeSeq[(newPos[len(newPos)-1]['stop']+1): tu["right"]+1]
-			w = self._calcWeight(direction, nonCoding) + self._rnaEndWeight
-			index = MOLECULAR_WEIGHT_ORDER['nonCoding'] 
-			mw[index] = weight 
-
-			stop = newPos[i]['start']-1
-					
-			seq = self._genomeSeq[(start): (stop + 1)]
-			if direction == '-': seq = Bio.Seq.Seq(self._genomeSeq[(start): (stop + 1)]).reverse_complement().tostring()
-			newSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
-			newNtCount = np.array([rSeq.count("A"), rSeq.count("C"), rSeq.count("G"), rSeq.count("U")])		
-
-			region = 'coding'
-			if indexComp == len(newPos): region = 'nonCoding'
-
-			w = self._calcWeight(direction, nonCoding) + self._rnaEndWeight
-			index = MOLECULAR_WEIGHT_ORDER['nonCoding'] 
-			newMw[index] = w
-
-			newComponent = {id : '', 
-							'left': start,
-							'right': stop,
-							'direction': tu['direction'],
-
-							'location':str(self._rnas[rnaLookup[rnas[0]]]['location']), #consider same location of all rnas in a TU	
-							'rnaType': region,
-							"seq": newSeq,
-							"ntCount": newNtCount,
-							"mw": newMw,
-
-							'expression': None,
-							'halfLife': None,
-						 }
-			componentRnas.append(newComponent)
-
-			##
 			tur = {
-					"id": tu['id']+'_RNA',
+					"id": 'RNA_' + tu['id'],
 					'left': tu['left'],
 					'right': tu['right'],
 					'direction': tu['direction'],
@@ -1112,11 +1143,16 @@ class KnowledgeBaseEcoli(object):
 					'tUId': tu['id']
 			}
 			
-			#update 
-
 			self._tURnas.append(tur)
 
+			##add processed RNAs
+			processedRNAs = self._findProcessedRNA(newPos, tu, idProcessedRNA,str(self._rnas[rnaLookup[rnas[0]]]['location']))
 
+			if (len(processedRNAs)>1):
+				idProcessedRNA = idProcessedRNA + len(processedRNAs)
+				for i in processedRNAs: self._tURnas.append(i)
+
+		
 	def _loadBiomassFractions(self):
 
 		doublingTime = [100, 60, 40, 30, 24]
