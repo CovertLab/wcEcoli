@@ -106,6 +106,7 @@ class KnowledgeBaseEcoli(object):
 		self._buildUniqueMolecules()
 		self._buildBiomass()
 		self._buildRnaData() # 
+		self._buildRnaRxnData()
 		self._buildMonomerData() #
 		self._buildRnaIndexToMonomerMapping()
 		self._buildMonomerIndexToRnaMapping()
@@ -1156,8 +1157,8 @@ class KnowledgeBaseEcoli(object):
 				for i in processedRNAs: self._tURnas.append(i)
 
 				pr = []
-				for i in processedRNAs:	pr.append(i['id'])			 
-				self._allProcessedRNA[tur['id']]=pr
+				for i in processedRNAs:	pr.append('{}[{}]'.format(i['id'], tur['location']))			 
+				self._allProcessedRNA['{}[{}]'.format(tur['id'], tur['location'])]=pr
 
 			self._tURnas.append(tur)
 
@@ -2353,22 +2354,15 @@ class KnowledgeBaseEcoli(object):
 
 	def _buildGeneData(self):
 		self.geneData = np.zeros(len(self._genes),
-			dtype = [('name'				,	'a50'),
+			dtype = [('id'				,	'a50'),
 					#('coordinate'			,	'int64'),
 					#('length'				,	'int64'),
 					#('positiveDirection'	,	'bool'),
-					('tURnaId'              ,   'a50'),
+					#('rnaId'              ,   'a50'),
 					('endCoordinate'		,	'int64')])
 
-		tURnaIdForGenes = {}
-		for tu in self._tURnas:
-			for g in tu['geneId']:
-				#if g in tURnaIdForGenes: tURnaIdForGenes[g].append(tu['id'])
-				#else: 
-				tURnaIdForGenes[g] = tu['id']
-
-		self.geneData['name'] = [x['id'] for x in self._genes]
-		self.geneData['tURnaId'] = [tURnaIdForGenes[x['id']] for x in self._genes]
+		self.geneData['id'] = [x['id'] for x in self._genes]
+		#self.geneData['rnaId'] = [x['rnaId'] for x in self._genes]
 		#self.geneData['coordinate'] = [x['coordinate'] for x in self._genes]
 		#self.geneData['length'] = [x['length'] for x in self._genes]
 		#self.geneData['positiveDirection'] = [True if x['direction'] == '+' else False for x in self._genes]
@@ -2659,11 +2653,11 @@ class KnowledgeBaseEcoli(object):
 		size = len(rnaIds)
 
 		'''
-		tempRnaList = np.zeros(size, dtype = np.str)
+		tempRnaList = []
 		for rnaIndex, rna in enumerate(self._tURnas):
-			tempRnaList[rnaIndex] = rna['rnas'][0]
-			for i in range(1, len(rna['rnas'])):
-				tempRnaList[rnaIndex] = tempRnaList[rnaIndex] + '#' + rna['rnas'][i]	
+			temp = []
+			for i in range(0, len(rna['rnas'])): temp.append(rna['rnas'][i])
+			tempRnaList.append(np.array(temp))	
 		rnaList = np.array(tempRnaList)
 		'''
 
@@ -2718,9 +2712,11 @@ class KnowledgeBaseEcoli(object):
 				('hasRRna5S', 'bool'),
 				('sequence', 'a{}'.format(maxSequenceLength)),
 				('tUId', 'a50'),
-				#('rnaList','a50'),
+				#('rnaList',''),
 				('positiveDirection'	,	'bool'),
-				('leftCoordinate'		,	'int64')
+				('leftCoordinate'		,	'int64'),
+				('processed',	'bool'),
+				('canBeProcessed', 'bool')
 				]
 			)
 
@@ -2742,7 +2738,8 @@ class KnowledgeBaseEcoli(object):
 		#self.rnaData['rnaList'] = rnaList
 		self.rnaData['positiveDirection'] = [True if x['direction'] == 'f' else False for x in self._tURnas]
 		self.rnaData['leftCoordinate'] = [x['left'] for x in self._tURnas]
-
+		self.rnaData['processed'] = [x['processed'] for x in self._tURnas]
+		self.rnaData['canBeProcessed'] = [x['canBeProcessed'] for x in self._tURnas]
 
 
 		field_units = {
@@ -2763,33 +2760,66 @@ class KnowledgeBaseEcoli(object):
 			'tUId'			:	None,
 			#'rnaList'		:	None,
 			'positiveDirection' : None,
-			'leftCoordinate': None
+			'leftCoordinate': None,
+			'processed' : None,
+			'canBeProcessed' : None
 			}
 
 
 		self.rnaData = UnitStructArray(self.rnaData, field_units)
 		self.getTrnaAbundanceData = getTrnaAbundanceAtGrowthRate
 
+	def _buildRnaRxnData(self):
+
+		self._allProcessedRNA
+
+		onlyCanBeProcessedRna = self.rnaData['id'][self.rnaData['canBeProcessed']]
+		onlyProcessedRna = self.rnaData['id'][self.rnaData['processed']]
+		onlyCanBeProcessedAndProcessedRNA = self.rnaData['id'][np.logical_or(self.rnaData['canBeProcessed'],self.rnaData['processed'])]
+
+		m = len(onlyCanBeProcessedAndProcessedRNA)
+		n = len(onlyCanBeProcessedRna)
+
+		self.rnaRxnData = np.zeros((m, n))
+
+		row = 0
+		for i in onlyCanBeProcessedAndProcessedRNA: 
+			col  = 0
+			for j in onlyCanBeProcessedRna:
+				if i == j: 
+					self.rnaRxnData[row][col] = -1
+					break
+				else:
+					if i in self._allProcessedRNA[j]:
+						self.rnaRxnData[row][col] = 1
+						break
+				col = col + 1				
+			row = row + 1
+
+
 	def _buildMonomerData(self):
 		ids = ['{}[{}]'.format(protein['id'], protein['location'])
 			for protein in self._proteins]
 
+		'''
 		rnaIds = []
 
 		for protein in self._proteins:
-			rnaId = None
-			rnaLocation = None
+			rnaIdList = []
+			
 			for rna in self._tURnas:
 				if protein['rnaId'] in rna['rnas']:
 					rnaLocation = rna['location']
 					rnaId = rna['id']
-					break
+		
+					rnaIdList.append('{}[{}]'.format(
+								rnaId,
+								rnaLocation
+								))
+			rnaIds.append(np.array(rnaIdList))
 
-			rnaIds.append('{}[{}]'.format(
-				rnaId,
-				rnaLocation
-				))
 		rnaIds = np.array(rnaIds)
+		'''
 
 		lengths = []
 		aaCounts = []
@@ -2813,7 +2843,7 @@ class KnowledgeBaseEcoli(object):
 
 		mws = np.array([protein['mw'] for protein in self._proteins])
 
-		size = len(rnaIds)
+		size = len(ids)
 
 		nAAs = len(aaCounts[0])
 
@@ -2854,7 +2884,7 @@ class KnowledgeBaseEcoli(object):
 			size,
 			dtype = [
 				('id', 'a50'),
-				('rnaId', 'a50'),
+				#('rnaId', 'a50'),
 				('degRate', 'f8'),
 				('length', 'i8'),
 				('aaCounts', '{}i8'.format(nAAs)),
@@ -2864,7 +2894,7 @@ class KnowledgeBaseEcoli(object):
 			)
 
 		self.monomerData['id'] = ids
-		self.monomerData['rnaId'] = rnaIds
+		#self.monomerData['rnaId'] = rnaIds
 		self.monomerData['degRate'] = degRate
 		self.monomerData['length'] = lengths
 		self.monomerData['aaCounts'] = aaCounts
@@ -2876,7 +2906,7 @@ class KnowledgeBaseEcoli(object):
 
 		field_units = {
 			'id'		:	None,
-			'rnaId'		:	None,
+			#'rnaId'		:	None,
 			'degRate'	:	1 / units.s,
 			'length'	:	units.aa,
 			'aaCounts'	:	units.aa,
@@ -2888,16 +2918,51 @@ class KnowledgeBaseEcoli(object):
 
 
 	def _buildRnaIndexToMonomerMapping(self):		
-		self.rnaIndexToMonomerMapping = np.array([np.where(x == self.rnaData["id"])[0][0] for x in self.monomerData["rnaId"]])
+
+		rnaDataLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self.rnaData)])
+		rnaIds = {}
+
+		for protein in self._proteins:
+			rnaIdList = []
+			for rna in self._tURnas:
+				if protein['rnaId'] in rna['rnas']: rnaIdList.append(rnaDataLookup['{}[{}]'.format(rna['id'], rna['location'])])
+			rnaIds['{}[{}]'.format(protein['id'], protein['location'])] = rnaIdList
+
+		self.rnaIndexToMonomerMapping = []
+		for x in self.monomerData['id']: self.rnaIndexToMonomerMapping.append(rnaIds[x])
+		self.rnaIndexToMonomerMapping = np.array(self.rnaIndexToMonomerMapping)
 
 
 	def _buildMonomerIndexToRnaMapping(self):
-		self.monomerIndexToRnaMapping = np.array([np.where(x == self.monomerData["rnaId"])[0][0] for x in self.rnaData["id"] if len(np.where(x == self.monomerData["rnaId"])[0])])
+		monomerDataLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self.monomerData)])
+		monomerIds = {}
+
+		for rna in self._tURnas:
+			pl = []
+			for protein in self._proteins:
+				if protein['rnaId'] in rna['rnas']: pl.append(monomerDataLookup['{}[{}]'.format(protein['id'], protein['location'])])
+			monomerIds['{}[{}]'.format(rna['id'], rna['location'])] = pl
+
+		self.monomerIndexToRnaMapping = []
+		for x in self.rnaData['id']: self.monomerIndexToRnaMapping.append(monomerIds[x])
+		self.monomerIndexToRnaMapping = np.array(self.monomerIndexToRnaMapping)
 
 
 	def _buildRnaIndexToGeneMapping(self):
-		#self.rnaIndexToGeneMapping = np.array([np.where(x == self.rnaData["id"])[0][0] for x in self.geneData["tURnaId"]])
-		return
+
+		rnaDataLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self.rnaData)])
+		rnaIds = {}
+
+		for g in self._genes:
+			rnaIdList = []
+			for rna in self._tURnas:
+				if g['rnaId'] in rna['rnas']: rnaIdList.append(rnaDataLookup['{}[{}]'.format(rna['id'], rna['location'])])
+			rnaIds[g['id']] = rnaIdList
+
+		self.rnaIndexToGeneMapping = []
+		for x in self.geneData['id']: self.rnaIndexToGeneMapping.append(rnaIds[x])
+		self.rnaIndexToGeneMapping = np.array(self.rnaIndexToGeneMapping)
+
 
 	def _buildComplexation(self):
 		# Build the abstractions needed for complexation
