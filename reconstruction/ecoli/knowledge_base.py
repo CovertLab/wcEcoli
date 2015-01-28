@@ -855,7 +855,7 @@ class KnowledgeBaseEcoli(object):
                                    })
 
 
-	def _findProcessedRNA(self, newPos, tu, idIndex, location):
+	def _findProcessedRNA(self, newPos, tu, idIndex, location, exp_avg, hl_avg):
 
 		if len(newPos) == 0: return []
 
@@ -867,8 +867,7 @@ class KnowledgeBaseEcoli(object):
 		nonCoding = self._genomeSeq[tu['left']: newPos[0]['start']]
 		rnas = []
 		rtypes = []
-		exps = []
-		hls = []
+		geneid = []
 
 		for i in range(0, len(newPos)):
 			
@@ -885,11 +884,6 @@ class KnowledgeBaseEcoli(object):
 				index = MOLECULAR_WEIGHT_ORDER['nonCoding'] 
 				newMw[index] = newMw[index] + w
 
-				exp_avg = None
-				if (len(exps)): exp_avg = sum(exps)/float(len(exps))
-				hl_avg = None
-				if (len(hls)): exp_avg = sum(hls)/float(len(hls))
-
 				newComponent = {'id' : 'processedRNA_'+str(idIndex), 
 								'left': start,
 								'right': stop,
@@ -902,9 +896,13 @@ class KnowledgeBaseEcoli(object):
 								"ntCount": newNtCount,
 								"mw": newMw,
 
+								'geneId': geneid,
 								'expression': exp_avg,
 								'halfLife': hl_avg,
-								'tUId': tu['id']
+								'tUId': tu['id'],
+
+								'processed': True,
+								'canBeProcessed': False
 							 }
 				idIndex = idIndex + 1
 				componentRnas.append(newComponent)
@@ -926,13 +924,18 @@ class KnowledgeBaseEcoli(object):
 
 								'rnas' : [newPos[i]['id']],
 								'location':location, #consider same location of all rnas in a TU
-								'rnaType': newPos[i]['type'],
+								'rnaType': [newPos[i]['type']],
 								"seq": newSeq,
 								"ntCount": newNtCount,
 								"mw": newMw,
 
-								'expression': newPos[i]['exp'],
-								'halfLife': newPos[i]['hl'],
+								'geneId': [newPos[i]['gene']],
+								'expression': exp_avg,
+								'halfLife': hl_avg,
+								'tUId': tu['id'],
+
+								'processed': True,
+								'canBeProcessed': False
 							 }
 				componentRnas.append(newComponent)
 				idIndex = idIndex + 1
@@ -942,8 +945,8 @@ class KnowledgeBaseEcoli(object):
 				newMw = np.zeros(len(MOLECULAR_WEIGHT_ORDER))
 				rnas = []
 				rtypes = []
-				exps = []
-				hls = []
+				geneid = []
+
 				if i+1 < len(newPos):
 					nonCoding = self._genomeSeq[newPos[i]['stop']+1: newPos[i+1]['start']]
 				else:
@@ -955,9 +958,8 @@ class KnowledgeBaseEcoli(object):
 				newMw[index] = newMw[index] + w
 				rnas.append(newPos[i]['id'])
 				rtypes.append(newPos[i]['type'])
-				exps.append(newPos[i]['exp'])
-				hls.append(newPos[i]['hl'])
-
+				geneid.append(newPos[i]['gene'])
+	
 				if i+1 < len(newPos):
 					nonCoding = nonCoding + self._genomeSeq[newPos[i]['stop']: newPos[i+1]['start']]
 
@@ -974,11 +976,6 @@ class KnowledgeBaseEcoli(object):
 		newSeq = Bio.Seq.Seq(seq, Bio.Alphabet.IUPAC.IUPACUnambiguousDNA()).transcribe().tostring()
 		newNtCount = np.array([newSeq.count("A"), newSeq.count("C"), newSeq.count("G"), newSeq.count("U")])		
 
-		exp_avg = None
-		if (len(exps)): exp_avg = sum(exps)/float(len(exps))
-		hl_avg = None
-		if (len(hls)): exp_avg = sum(hls)/float(len(hls))
-
 		newComponent = {'id' : 'processedRNA_'+str(idIndex), 
 						'left': start,
 						'right': stop,
@@ -991,9 +988,13 @@ class KnowledgeBaseEcoli(object):
 						"ntCount": newNtCount,
 						"mw": newMw,
 
+						'geneId': geneid,
 						'expression': exp_avg,
 						'halfLife': hl_avg,
-						'tUId': tu['id']
+						'tUId': tu['id'],
+
+						'processed': True,
+						'canBeProcessed': False
 					 }
 
 
@@ -1004,6 +1005,7 @@ class KnowledgeBaseEcoli(object):
 	def _loadTURnas(self):
 
 		self._tURnas = []
+		self._allProcessedRNA = {}
 
 		geneLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._genes)])
 		rnaLookup = dict([(x[1]["id"], x[0]) for x in enumerate(self._rnas)])
@@ -1037,7 +1039,7 @@ class KnowledgeBaseEcoli(object):
 					start = g['coordinate']- g['length'] + 1
 					stop = g['coordinate'] 
 				
-				position.append({'type':r['type'],'start':start, 'stop': stop, 'id':r['id'],'hl':r['halfLife'],'exp':r['expression']})
+				position.append({'type':r['type'],'start':start, 'stop': stop, 'id':r['id'],'gene':r['geneId']})
 
 			#sort position for MW 
 			newPos = sorted(position, key=lambda k: k['start'])
@@ -1140,17 +1142,25 @@ class KnowledgeBaseEcoli(object):
 					'geneId': rGeneId,
 					'expression': sum(rExp)/float(len(rExp)),
 					'halfLife': sum(rHalfLife)/float(len(rHalfLife)),
-					'tUId': tu['id']
-			}
-			
-			self._tURnas.append(tur)
+					'tUId': tu['id'],
 
+					'processed': False,
+					'canBeProcessed': False
+			}			
 			##add processed RNAs
-			processedRNAs = self._findProcessedRNA(newPos, tu, idProcessedRNA,str(self._rnas[rnaLookup[rnas[0]]]['location']))
+			processedRNAs = self._findProcessedRNA(newPos, tu, idProcessedRNA,tur['location'],tur['expression'],tur['halfLife'])
 
 			if (len(processedRNAs)>1):
+				tur['canBeProcessed'] = True
 				idProcessedRNA = idProcessedRNA + len(processedRNAs)
 				for i in processedRNAs: self._tURnas.append(i)
+
+				pr = []
+				for i in processedRNAs:	pr.append(i['id'])			 
+				self._allProcessedRNA[tur['id']]=pr
+
+			self._tURnas.append(tur)
+
 
 		
 	def _loadBiomassFractions(self):
@@ -2351,8 +2361,10 @@ class KnowledgeBaseEcoli(object):
 					('endCoordinate'		,	'int64')])
 
 		tURnaIdForGenes = {}
-		for tu in self._transcriptionUnits:
-			for g in tu['gene_id']:
+		for tu in self._tURnas:
+			for g in tu['geneId']:
+				#if g in tURnaIdForGenes: tURnaIdForGenes[g].append(tu['id'])
+				#else: 
 				tURnaIdForGenes[g] = tu['id']
 
 		self.geneData['name'] = [x['id'] for x in self._genes]
@@ -2884,8 +2896,8 @@ class KnowledgeBaseEcoli(object):
 
 
 	def _buildRnaIndexToGeneMapping(self):
-		self.rnaIndexToGeneMapping = np.array([np.where(x + "_RNA[c]" == self.rnaData["id"])[0][0] for x in self.geneData["tURnaId"]])
-
+		#self.rnaIndexToGeneMapping = np.array([np.where(x == self.rnaData["id"])[0][0] for x in self.geneData["tURnaId"]])
+		return
 
 	def _buildComplexation(self):
 		# Build the abstractions needed for complexation
