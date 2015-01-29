@@ -56,6 +56,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		
 		self.proteinLens = kb.monomerData["length"].asNumber()
 
+		self.rnaIndexToMonomerMapping = kb.rnaIndexToMonomerMapping
+
 		# Views
 
 		self.activeRibosomes = self.uniqueMoleculesView('activeRibosome')
@@ -85,9 +87,15 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		if inactiveRibosomeCount == 0:
 			return
 
+		# TODO: Perhaps make faster using numpy. This is a sparse dot product.
+		mRnaCounts = self.mRnas.counts()
+		geneCounts = np.zeros(self.rnaIndexToMonomerMapping.shape)
+		for monomerIdx, monomerToRnaIdx in enumerate(self.rnaIndexToMonomerMapping):
+			geneCounts[monomerIdx] = mRnaCounts[monomerToRnaIdx].sum()
+
 		proteinInitProb = (
-			self.mRnas.counts() /
-			self.mRnas.counts().sum()
+			self.geneCounts.counts() /
+			self.geneCounts.counts().sum()
 			).flatten()	# TODO: Is this .flatten() necessary?
 
 		nNewProteins = self.randomState.multinomial(
