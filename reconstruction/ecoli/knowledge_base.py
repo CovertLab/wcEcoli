@@ -2928,9 +2928,9 @@ class KnowledgeBaseEcoli(object):
 				if protein['rnaId'] in rna['rnas']: rnaIdList.append(rnaDataLookup['{}[{}]'.format(rna['id'], rna['location'])])
 			rnaIds['{}[{}]'.format(protein['id'], protein['location'])] = rnaIdList
 
-		self.rnaIndexToMonomerMapping = []
-		for x in self.monomerData['id']: self.rnaIndexToMonomerMapping.append(rnaIds[x])
-		self.rnaIndexToMonomerMapping = np.array(self.rnaIndexToMonomerMapping)
+		rnaIndexToMonomerMapping = []
+		for x in self.monomerData['id']: rnaIndexToMonomerMapping.append(np.array(rnaIds[x]))
+		self.rnaIndexToMonomerMapping = rnaIndexToMonomerMapping
 
 
 	def _buildMonomerIndexToRnaMapping(self):
@@ -2943,9 +2943,9 @@ class KnowledgeBaseEcoli(object):
 				if protein['rnaId'] in rna['rnas']: pl.append(monomerDataLookup['{}[{}]'.format(protein['id'], protein['location'])])
 			monomerIds['{}[{}]'.format(rna['id'], rna['location'])] = pl
 
-		self.monomerIndexToRnaMapping = []
-		for x in self.rnaData['id']: self.monomerIndexToRnaMapping.append(monomerIds[x])
-		self.monomerIndexToRnaMapping = np.array(self.monomerIndexToRnaMapping)
+		monomerIndexToRnaMapping = []
+		for x in self.rnaData['id']: monomerIndexToRnaMapping.append(np.array(monomerIds[x]))
+		self.monomerIndexToRnaMapping = monomerIndexToRnaMapping
 
 
 	def _buildRnaIndexToGeneMapping(self):
