@@ -12,13 +12,13 @@ from __future__ import division
 import argparse
 import os
 
-import tables
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import cPickle
 
+from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
 def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
@@ -29,12 +29,15 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
 
-	with tables.open_file(os.path.join(simOutDir, "RibosomeStalling.hdf")) as h5file:
-		timeStep = h5file.root.RibosomeStalling.col("timeStep")
-		aaCountInSequence = h5file.root.RibosomeStalling.col("aaCountInSequence")
-		aaCounts = h5file.root.RibosomeStalling.col("aaCounts")
-		trnaCapacity = h5file.root.RibosomeStalling.col("trnasCapacity")
-		synthetaseCapacity = h5file.root.RibosomeStalling.col("synthetaseCapacity")
+	ribosomeData = TableReader(os.path.join(simOutDir, "RibosomeData"))
+
+	timeStep = ribosomeData.readColumn("timeStep")
+	aaCountInSequence = ribosomeData.readColumn("aaCountInSequence")
+	aaCounts = ribosomeData.readColumn("aaCounts")
+	trnaCapacity = ribosomeData.readColumn("trnasCapacity")
+	synthetaseCapacity = ribosomeData.readColumn("synthetaseCapacity")
+
+	ribosomeData.close()
 
 	aaCapacity = -1 * (aaCountInSequence - aaCounts)
 	trnaCapacity = -1 * (aaCountInSequence - trnaCapacity)
@@ -65,7 +68,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 
 	plt.subplots_adjust(hspace = 0.5, wspace = 0.5)
 	plt.tight_layout()
-	plt.savefig(os.path.join(plotOutDir, plotOutFileName))
+	from wholecell.analysis.analysis_tools import exportFigure
+	exportFigure(plt, plotOutDir, plotOutFileName)
 
 
 if __name__ == "__main__":

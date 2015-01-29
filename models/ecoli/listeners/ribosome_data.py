@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-RibosomeStalling
+RibosomeData
 
 @author: John Mason
 @organization: Covert Lab, Department of Bioengineering, Stanford University
@@ -11,7 +11,6 @@ RibosomeStalling
 from __future__ import division
 
 import numpy as np
-import tables
 
 import wholecell.listeners.listener
 
@@ -19,19 +18,19 @@ import wholecell.listeners.listener
 
 VERBOSE = False
 
-class RibosomeStalling(wholecell.listeners.listener.Listener):
-	""" RibosomeStalling """
+class RibosomeData(wholecell.listeners.listener.Listener):
+	""" RibosomeData """
 
-	_name = 'RibosomeStalling'
+	_name = 'RibosomeData'
 
 	# Constructor
 	def __init__(self, *args, **kwargs):
-		super(RibosomeStalling, self).__init__(*args, **kwargs)
+		super(RibosomeData, self).__init__(*args, **kwargs)
 
 
 	# Construct object graph
 	def initialize(self, sim, kb):
-		super(RibosomeStalling, self).initialize(sim, kb)
+		super(RibosomeData, self).initialize(sim, kb)
 
 		# Computed, saved attributes
 		self.stallingRateTotal = None
@@ -45,6 +44,9 @@ class RibosomeStalling(wholecell.listeners.listener.Listener):
 		self.aaCounts = None
 		self.trnasCapacity = None
 		self.synthetaseCapacity = None
+		self.actualElongations = None
+		self.expectedElongations = None
+
 
 		# Logged quantities
 		self.registerLoggedQuantity(
@@ -56,7 +58,7 @@ class RibosomeStalling(wholecell.listeners.listener.Listener):
 
 	# Allocate memory
 	def allocate(self):
-		super(RibosomeStalling, self).allocate()
+		super(RibosomeData, self).allocate()
 
 		# Computed, saved attributes
 		self.stallingRateTotal = np.nan
@@ -70,6 +72,8 @@ class RibosomeStalling(wholecell.listeners.listener.Listener):
 		self.aaCounts = np.zeros(21, np.int64)
 		self.trnasCapacity = np.zeros(21, np.int64)
 		self.synthetaseCapacity = np.zeros(21, np.int64)
+		self.actualElongations = np.nan
+		self.expectedElongations = np.nan
 
 	def update(self):
 		if self.ribosomeStalls.size:
@@ -86,47 +90,24 @@ class RibosomeStalling(wholecell.listeners.listener.Listener):
 			self.fractionStalled = np.nan
 
 
-	def pytablesCreate(self, h5file, expectedRows):
-		dtype = {
-			"time": tables.Float64Col(),
-			"timeStep": tables.Int64Col(),
-			"stallingRateTotal": tables.Float64Col(),
-			"stallingRateMean": tables.Float64Col(),
-			"stallingRateStd": tables.Float64Col(),
-			"fractionStalled": tables.Float64Col(),
-			"aaCountInSequence": tables.Float64Col(self.aaCountInSequence.size),
-			"aaCounts": tables.Float64Col(self.aaCounts.size),
-			"trnasCapacity": tables.Float64Col(self.trnasCapacity.size),
-			"synthetaseCapacity": tables.Float64Col(self.synthetaseCapacity.size),
-			}
+	def tableCreate(self, tableWriter):
+		pass
 
-		table = h5file.create_table(
-			h5file.root,
-			self._name,
-			dtype,
-			title = self._name,
-			filters = tables.Filters(complevel = 9, complib="zlib"),
+
+	def tableAppend(self, tableWriter):
+		tableWriter.append(
+			time = self.time(),
+			timeStep = self.timeStep(),
+			stallingRateTotal = self.stallingRateTotal,
+			stallingRateMean = self.stallingRateMean,
+			stallingRateStd = self.stallingRateStd,
+			fractionStalled = self.fractionStalled,
+			aaCountInSequence = self.aaCountInSequence,
+			aaCounts = self.aaCounts,
+			trnasCapacity = self.trnasCapacity,
+			synthetaseCapacity = self.synthetaseCapacity,
+			actualElongations = self.actualElongations,
+			expectedElongations = self.expectedElongations,
 			)
-
-
-	def pytablesAppend(self, h5file):
-		table = h5file.get_node("/", self._name)
-
-		entry = table.row
-
-		entry["time"] = self.time()
-		entry["timeStep"] = self.timeStep()
-		entry["stallingRateTotal"] = self.stallingRateTotal
-		entry["stallingRateMean"] = self.stallingRateMean
-		entry["stallingRateStd"] = self.stallingRateStd
-		entry["fractionStalled"] = self.fractionStalled
-		entry["aaCountInSequence"] = self.aaCountInSequence
-		entry["aaCounts"] = self.aaCounts
-		entry["trnasCapacity"] = self.trnasCapacity
-		entry["synthetaseCapacity"] = self.synthetaseCapacity
-
-		entry.append()
-
-		table.flush()
 
 	# TODO: load method

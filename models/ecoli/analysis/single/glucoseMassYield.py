@@ -11,18 +11,18 @@ import argparse
 import os
 import cPickle
 
-import tables
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 
+from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 
 GLUCOSE_ID = "GLC-D[e]"
 
-FLUX_UNITS = units.mol / units.L / units.s
+FLUX_UNITS = units.mmol / units.L / units.s
 MASS_UNITS = units.fg
 GROWTH_UNITS = units.fg / units.s
 
@@ -36,22 +36,24 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 
 	kb = cPickle.load(open(kbFile, "rb"))
 
-	with tables.open_file(os.path.join(simOutDir, "FBAResults.hdf")) as h5file:
-		time = h5file.root.FBAResults.col("time")
-		timeStep = h5file.root.FBAResults.col("timeStep")
-		externalExchangeFluxes = h5file.root.FBAResults.col("externalExchangeFluxes")
+	fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
+	time = fbaResults.readColumn("time")
+	timeStep = fbaResults.readColumn("timeStep")
+	externalExchangeFluxes = fbaResults.readColumn("externalExchangeFluxes")
 
-		names = h5file.root.names
-		externalMoleculeIDs = np.array(names.externalMoleculeIDs.read())
+	externalMoleculeIDs = np.array(fbaResults.readAttribute("externalMoleculeIDs"))
+
+	fbaResults.close()
 
 	glucoseIdx = np.where(externalMoleculeIDs == GLUCOSE_ID)[0][0]
 	glucoseFlux = FLUX_UNITS * externalExchangeFluxes[:, glucoseIdx]
 
-	with tables.open_file(os.path.join(simOutDir, "Mass.hdf")) as h5file:
-		table = h5file.root.Mass
-		cellMass = MASS_UNITS * table.read(0, None, 1, "cellMass")
-		cellDryMass = MASS_UNITS * table.read(0, None, 1, "dryMass")
-		growth = GROWTH_UNITS * table.read(0, None, 1, "growth")
+	mass = TableReader(os.path.join(simOutDir, "Mass"))
+	cellMass = MASS_UNITS * mass.readColumn("cellMass")
+	cellDryMass = MASS_UNITS * mass.readColumn("dryMass")
+	growth = GROWTH_UNITS * mass.readColumn("growth")
+
+	mass.close()
 
 	cellDensity = kb.cellDensity
 	glucoseMW = kb.getMass([GLUCOSE_ID])[0]
@@ -65,7 +67,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	plt.xlabel("Time (s)")
 	plt.ylabel("g cell / g glucose")
 
-	plt.savefig(os.path.join(plotOutDir, plotOutFileName))
+	from wholecell.analysis.analysis_tools import exportFigure
+	exportFigure(plt, plotOutDir, plotOutFileName)
 
 
 if __name__ == "__main__":

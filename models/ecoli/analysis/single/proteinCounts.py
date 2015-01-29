@@ -12,7 +12,6 @@ from __future__ import division
 import argparse
 import os
 
-import tables
 import numpy as np
 from scipy import stats
 import matplotlib
@@ -20,6 +19,7 @@ matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import cPickle
 
+from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 
@@ -39,16 +39,15 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 
 	proteinIds = kb.monomerData["id"]
 
-	with tables.open_file(os.path.join(simOutDir, "BulkMolecules.hdf")) as bulkMoleculesFile:
+	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 
-		names = bulkMoleculesFile.root.names
-		bulkMolecules = bulkMoleculesFile.root.BulkMolecules
+	moleculeIds = bulkMolecules.readAttribute("moleculeIDs")
 
-		moleculeIds = names.moleculeIDs.read()
+	proteinIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in proteinIds], np.int)
 
-		proteinIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in proteinIds], np.int)
+	proteinCountsBulk = bulkMolecules.readColumn("counts")[:, proteinIndexes]
 
-		proteinCountsBulk = bulkMolecules.read(0, None, 1, "counts")[:, proteinIndexes]
+	bulkMolecules.close()
 
 	# avgCounts = proteinCountsBulk.mean(0)
 
@@ -82,7 +81,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	# plt.ylabel("Counts")
 	# plt.title("Active Ribosomes Final:Initial = %0.2f" % (nActive[-1] / float(nActive[0])))
 
-	plt.savefig(os.path.join(plotOutDir, plotOutFileName))
+	from wholecell.analysis.analysis_tools import exportFigure
+	exportFigure(plt, plotOutDir, plotOutFileName)
 
 
 if __name__ == "__main__":
