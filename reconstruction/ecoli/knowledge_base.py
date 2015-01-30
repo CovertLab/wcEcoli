@@ -3379,3 +3379,11 @@ class KnowledgeBaseEcoli(object):
 		assert isinstance(ids, list) or isinstance(ids, np.ndarray)
 		idx = [np.where(self._allMass['id'] == re.sub("\[[a-z]\]","", i))[0][0] for i in ids]
 		return self._allMass['mass'][idx]
+
+## -- Mapping functions for utility -- ##
+def mapMonomerIndexToRnaIndex(monomerIndices):
+	return np.unique(np.concatenate(self.monomerIndexToRnaMapping(monomerIndexes)))
+
+def mapRnaIndexToMonomerIndex(rnaIndices):
+	return np.unique(np.concatenate(self.rnaIndexToMonomerMapping(rnaIndices)))
+
