@@ -101,7 +101,7 @@ def createBulkContainer(kb):
 	ids_rRNA16S = kb.rnaData["id"][kb.rnaData["hasRRna16S"]]
 	ids_rRNA5S = kb.rnaData["id"][kb.rnaData["hasRRna5S"]]
 	ids_tRNA = kb.rnaData["id"][kb.rnaData["hasTRna"]]
-	ids_mRNA = kb.rnaData["id"][kb.rnaData["hasMRna"]]
+	ids_mRNA = kb.rnaData["id"][kb.rnaData["hasCodingRna"]]
 	ids_protein = kb.monomerData["id"]
 
 	## Mass fractions
@@ -123,7 +123,7 @@ def createBulkContainer(kb):
 	individualMasses_rRNA16S = kb.getMass(ids_rRNA16S) / kb.nAvogadro
 	individualMasses_rRNA5S = kb.getMass(ids_rRNA5S) / kb.nAvogadro
 	individualMasses_tRNA = kb.rnaData["mw"][kb.rnaData["hasTRna"]] / kb.nAvogadro
-	individualMasses_mRNA = kb.rnaData["mw"][kb.rnaData["hasMRna"]] / kb.nAvogadro
+	individualMasses_mRNA = kb.rnaData["mw"][kb.rnaData["hasCodingRna"]] / kb.nAvogadro
 	individualMasses_protein = kb.monomerData["mw"] / kb.nAvogadro
 
 	## Molecule distributions
@@ -132,7 +132,7 @@ def createBulkContainer(kb):
 	distribution_rRNA16S = np.array([1.] + [0.] * (ids_rRNA16S.size-1)) # currently only expressing first rRNA operon
 	distribution_rRNA5S = np.array([1.] + [0.] * (ids_rRNA5S.size-1)) # currently only expressing first rRNA operon
 	distribution_tRNA = normalize(kb.getTrnaAbundanceData(1 / units.h)['molar_ratio_to_16SrRNA'])
-	distribution_mRNA = normalize(kb.rnaExpression['expression'][kb.rnaExpression['hasMRna']])
+	distribution_mRNA = normalize(kb.rnaExpression['expression'][kb.rnaExpression['hasCodingRna']])
 	distribution_transcriptsByProtein = normalize(kb.rnaExpression['expression'][kb.rnaIndexToMonomerMapping])
 
 	## Rates/times
@@ -372,10 +372,10 @@ def fitExpression(kb, bulkContainer):
 
 	# Update mRNA expression to reflect monomer counts
 	assert np.all(
-		kb.monomerData["rnaId"][kb.monomerIndexToRnaMapping] == kb.rnaData["id"][kb.rnaData["hasMRna"]]
+		kb.monomerData["rnaId"][kb.monomerIndexToRnaMapping] == kb.rnaData["id"][kb.rnaData["hasCodingRna"]]
 		), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests
 
-	mRnaExpressionView = rnaExpressionContainer.countsView(kb.rnaData["id"][kb.rnaData["hasMRna"]])
+	mRnaExpressionView = rnaExpressionContainer.countsView(kb.rnaData["id"][kb.rnaData["hasCodingRna"]])
 	mRnaExpressionFrac = np.sum(mRnaExpressionView.counts())
 
 	mRnaExpressionView.countsIs(

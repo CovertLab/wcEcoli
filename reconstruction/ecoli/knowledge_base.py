@@ -2505,7 +2505,7 @@ class KnowledgeBaseEcoli(object):
 		normalizedRnaExpression = np.zeros(sum(1 for x in self._tURnas),
 			dtype = [('id',		'a50'),
 					('expression',	'float64'),
-					('hasMRna',		'bool'),
+					('hasCodingRna',		'bool'),
 					('hasMiscRna',	'bool'),
 					('hasRRna',		'bool'),
 					('hasTRna',		'bool'),
@@ -2517,7 +2517,7 @@ class KnowledgeBaseEcoli(object):
 		has23S = np.zeros(size, dtype = np.bool)
 		has16S = np.zeros(size, dtype = np.bool)
 		has5S = np.zeros(size, dtype = np.bool)
-		hasMRna = np.zeros(size, dtype = np.bool)
+		hasCodingRna = np.zeros(size, dtype = np.bool)
 		hasMiscRna = np.zeros(size, dtype = np.bool)
 		hasRRna = np.zeros(size, dtype = np.bool)
 		hasTRna = np.zeros(size, dtype = np.bool)
@@ -2536,7 +2536,7 @@ class KnowledgeBaseEcoli(object):
 					elif r.startswith("RRF"):
 						has5S[rnaIndex] = True
 				elif t == "mRNA":
-					hasMRna[rnaIndex] = True
+					hasCodingRna[rnaIndex] = True
 				elif t == "miscRNA":
 					hasMiscRna[rnaIndex] = True
 				elif t == "tRNA":
@@ -2545,7 +2545,7 @@ class KnowledgeBaseEcoli(object):
 		normalizedRnaExpression['id'] 		= ['{}[{}]'.format(x['id'], x['location']) for x in self._tURnas]
 		normalizedRnaExpression['expression']	= [x['expression'] for x in self._tURnas]
 		normalizedRnaExpression['expression']	= normalizedRnaExpression['expression'] / np.sum(normalizedRnaExpression['expression'])
-		normalizedRnaExpression['hasMRna'] = hasMRna
+		normalizedRnaExpression['hasCodingRna'] = hasCodingRna
 		normalizedRnaExpression['hasMiscRna'] = hasMiscRna
 		normalizedRnaExpression['hasRRna'] = hasRRna
 		normalizedRnaExpression['hasTRna'] = hasTRna
@@ -2557,7 +2557,7 @@ class KnowledgeBaseEcoli(object):
 			{
 			'id'		:	None,
 			'expression':	None,
-			'hasMRna'	:	None,
+			'hasCodingRna'	:	None,
 			'hasMiscRna'	:	None,
 			'hasRRna'	:	None,
 			'hasTRna'	:	None,
@@ -2667,7 +2667,7 @@ class KnowledgeBaseEcoli(object):
 		has23S = np.zeros(size, dtype = np.bool)
 		has16S = np.zeros(size, dtype = np.bool)
 		has5S = np.zeros(size, dtype = np.bool)
-		hasMRna = np.zeros(size, dtype = np.bool)
+		hasCodingRna = np.zeros(size, dtype = np.bool)
 		hasMiscRna = np.zeros(size, dtype = np.bool)
 		hasRRna = np.zeros(size, dtype = np.bool)
 		hasTRna = np.zeros(size, dtype = np.bool)
@@ -2685,7 +2685,7 @@ class KnowledgeBaseEcoli(object):
 					elif r.startswith("RRF"):
 						has5S[rnaIndex] = True
 				elif t == "mRNA":
-					hasMRna[rnaIndex] = True
+					hasCodingRna[rnaIndex] = True
 				elif t == "miscRNA":
 					hasMiscRna[rnaIndex] = True
 				elif t == "tRNA":
@@ -2706,7 +2706,7 @@ class KnowledgeBaseEcoli(object):
 				('length', 'i8'),
 				('countsACGU', '4i8'),
 				('mw', 'f8'),
-				('hasMRna', 'bool'),
+				('hasCodingRna', 'bool'),
 				('hasMiscRna', 'bool'),
 				('hasRRna', 'bool'),
 				('hasTRna', 'bool'),
@@ -2729,7 +2729,7 @@ class KnowledgeBaseEcoli(object):
 		self.rnaData['length'] = rnaLens
 		self.rnaData['countsACGU'] = ntCounts
 		self.rnaData['mw'] = mws.sum(axis = 1)
-		self.rnaData['hasMRna'] = hasMRna
+		self.rnaData['hasCodingRna'] = hasCodingRna
 		self.rnaData['hasMiscRna'] = hasMiscRna
 		self.rnaData['hasRRna'] = hasRRna
 		self.rnaData['hasTRna'] = hasTRna
@@ -2752,7 +2752,7 @@ class KnowledgeBaseEcoli(object):
 			'length'		:	units.nt,
 			'countsACGU'	:	units.nt,
 			'mw'			:	units.g / units.mol,
-			'hasMRna'		:	None,
+			'hasCodingRna'		:	None,
 			'hasMiscRna'	:	None,
 			'hasRRna'		:	None,
 			'hasTRna'		:	None,
