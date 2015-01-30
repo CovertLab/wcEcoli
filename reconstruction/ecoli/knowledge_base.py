@@ -2933,7 +2933,7 @@ class KnowledgeBaseEcoli(object):
 
 		rnaIndexToMonomerMapping = []
 		for x in self.monomerData['id']: rnaIndexToMonomerMapping.append(np.array(rnaIds[x], dtype = np.int16))
-		self.rnaIndexToMonomerMapping = rnaIndexToMonomerMapping
+		self.rnaIndexToMonomerMapping = np.array(rnaIndexToMonomerMapping)
 
 
 	def _buildMonomerIndexToRnaMapping(self):
@@ -2948,7 +2948,7 @@ class KnowledgeBaseEcoli(object):
 
 		monomerIndexToRnaMapping = []
 		for x in self.rnaData['id']: monomerIndexToRnaMapping.append(np.array(monomerIds[x], dtype = np.int16))
-		self.monomerIndexToRnaMapping = monomerIndexToRnaMapping
+		self.monomerIndexToRnaMapping = np.array(monomerIndexToRnaMapping)
 
 
 	def _buildRnaIndexToGeneMapping(self):
@@ -3381,9 +3381,9 @@ class KnowledgeBaseEcoli(object):
 		return self._allMass['mass'][idx]
 
 ## -- Mapping functions for utility -- ##
-def mapMonomerIndexToRnaIndex(monomerIndices):
-	return np.unique(np.concatenate(self.monomerIndexToRnaMapping(monomerIndexes)))
+	def mapMonomerIndexToRnaIndex(self, monomerIndices):
+		return np.unique(np.concatenate(self.monomerIndexToRnaMapping[monomerIndices]))
 
-def mapRnaIndexToMonomerIndex(rnaIndices):
-	return np.unique(np.concatenate(self.rnaIndexToMonomerMapping(rnaIndices)))
+	def mapRnaIndexToMonomerIndex(self, rnaIndices):
+		return np.unique(np.concatenate(self.rnaIndexToMonomerMapping[rnaIndices]))
 
