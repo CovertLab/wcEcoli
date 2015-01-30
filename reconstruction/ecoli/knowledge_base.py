@@ -2718,7 +2718,7 @@ class KnowledgeBaseEcoli(object):
 				#('rnaList',''),
 				('positiveDirection'	,	'bool'),
 				('leftCoordinate'		,	'int64'),
-				('processed',	'bool'),
+				('isProcessed',	'bool'),
 				('canBeProcessed', 'bool')
 				]
 			)
@@ -2741,7 +2741,7 @@ class KnowledgeBaseEcoli(object):
 		#self.rnaData['rnaList'] = rnaList
 		self.rnaData['positiveDirection'] = [True if x['direction'] == 'f' else False for x in self._tURnas]
 		self.rnaData['leftCoordinate'] = [x['left'] for x in self._tURnas]
-		self.rnaData['processed'] = [x['processed'] for x in self._tURnas]
+		self.rnaData['isProcessed'] = [x['processed'] for x in self._tURnas]
 		self.rnaData['canBeProcessed'] = [x['canBeProcessed'] for x in self._tURnas]
 
 
@@ -2764,7 +2764,7 @@ class KnowledgeBaseEcoli(object):
 			#'rnaList'		:	None,
 			'positiveDirection' : None,
 			'leftCoordinate': None,
-			'processed' : None,
+			'isProcessed' : None,
 			'canBeProcessed' : None
 			}
 
@@ -2777,8 +2777,8 @@ class KnowledgeBaseEcoli(object):
 		self._allProcessedRNA
 
 		onlyCanBeProcessedRna = self.rnaData['id'][self.rnaData['canBeProcessed']]
-		onlyProcessedRna = self.rnaData['id'][self.rnaData['processed']]
-		onlyCanBeProcessedAndProcessedRNA = self.rnaData['id'][np.logical_or(self.rnaData['canBeProcessed'],self.rnaData['processed'])]
+		onlyProcessedRna = self.rnaData['id'][self.rnaData['isProcessed']]
+		onlyCanBeProcessedAndProcessedRNA = self.rnaData['id'][np.logical_or(self.rnaData['canBeProcessed'],self.rnaData['isProcessed'])]
 
 		m = len(onlyCanBeProcessedAndProcessedRNA)
 		n = len(onlyCanBeProcessedRna)

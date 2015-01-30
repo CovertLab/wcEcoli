@@ -97,10 +97,10 @@ def createBulkContainer(kb):
 	## IDs
 
 	ids_molecules = kb.bulkMolecules['moleculeId']
-	ids_rRNA23S = kb.rnaData["id"][kb.rnaData["hasRRna23S"]]
-	ids_rRNA16S = kb.rnaData["id"][kb.rnaData["hasRRna16S"]]
-	ids_rRNA5S = kb.rnaData["id"][kb.rnaData["hasRRna5S"]]
-	ids_tRNA = kb.rnaData["id"][kb.rnaData["hasTRna"]]
+	ids_rRNA23S = kb.rnaData["id"][np.logical_and(kb.rnaData["hasRRna23S"], kb.rnaData['isProcessed'])]
+	ids_rRNA16S = kb.rnaData["id"][np.logical_and(kb.rnaData["hasRRna16S"], kb.rnaData['isProcessed'])]
+	ids_rRNA5S = kb.rnaData["id"][np.logical_and(kb.rnaData["hasRRna5S"], kb.rnaData['isProcessed'])]
+	ids_tRNA = kb.rnaData["id"][np.logical_and(kb.rnaData["hasTRna"], kb.rnaData['isProcessed'])]
 	ids_mRNA = kb.rnaData["id"][kb.rnaData["hasCodingRna"]]
 	ids_protein = kb.monomerData["id"]
 
@@ -127,13 +127,12 @@ def createBulkContainer(kb):
 	individualMasses_protein = kb.monomerData["mw"] / kb.nAvogadro
 
 	## Molecule distributions
-
 	distribution_rRNA23S = np.array([1.] + [0.] * (ids_rRNA23S.size-1)) # currently only expressing first rRNA operon
 	distribution_rRNA16S = np.array([1.] + [0.] * (ids_rRNA16S.size-1)) # currently only expressing first rRNA operon
 	distribution_rRNA5S = np.array([1.] + [0.] * (ids_rRNA5S.size-1)) # currently only expressing first rRNA operon
 	distribution_tRNA = normalize(kb.getTrnaAbundanceData(1 / units.h)['molar_ratio_to_16SrRNA'])
 	distribution_mRNA = normalize(kb.rnaExpression['expression'][kb.rnaExpression['hasCodingRna']])
-	distribution_transcriptsByProtein = normalize(kb.rnaExpression['expression'][kb.rnaIndexToMonomerMapping])
+	#distribution_transcriptsByProtein = normalize(kb.rnaExpression['expression'][kb.rnaIndexToMonomerMapping])
 
 	## Rates/times
 
@@ -145,7 +144,6 @@ def createBulkContainer(kb):
 	bulkContainer = BulkObjectsContainer(ids_molecules, dtype = np.float64)
 
 	## Assign rRNA counts based on mass
-
 	totalCount_rRNA23S = totalCountFromMassesAndRatios(
 		totalMass_rRNA23S,
 		individualMasses_rRNA23S,
