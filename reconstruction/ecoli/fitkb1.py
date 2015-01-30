@@ -39,17 +39,11 @@ def fitKb_1(kb):
 
 	rnaPolySubunits = kb.complexation.getMonomers("APORNAP-CPLX[c]")["subunitIds"]
 
-	subunitIndexes = np.array([np.where(kb.monomerData["id"] == id_)[0].item() for id_ in rnaPolySubunits]) # there has to be a better way...
+	rnaPolymeraseSubunitIdx = np.array([np.where(kb.monomerData["id"] == id_)[0].item() for id_ in rnaPolySubunits]) # there has to be a better way...
 
-	mRNA_indexes = kb.rnaIndexToMonomerMapping[subunitIndexes]
+	rnaPolymeraseSubunitTranscripts = kb.mapMonomerIndexToRnaIndex(rnaPolymeraseSubunitIdx)
 
-	kb.rnaData.struct_array["degRate"][mRNA_indexes] = RNA_POLY_MRNA_DEG_RATE_PER_S
-
-	# nRNAs = kb.rnaExpression["expression"].size
-	# kb.rnaExpression["expression"] = np.ones(nRNAs) / nRNAs
-	# # WARNING - this doesn't update synthesis probabilities; for the moment, it doesn't need to
-
-	# e = kb.rnaExpression["expression"].copy()
+	kb.rnaData.struct_array["degRate"][rnaPolymeraseSubunitTranscripts] = RNA_POLY_MRNA_DEG_RATE_PER_S
 
 	# Fit synthesis probabilities for RNA
 
