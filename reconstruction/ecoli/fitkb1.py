@@ -134,6 +134,12 @@ def createBulkContainer(kb):
 	distribution_mRNA = normalize(kb.rnaExpression['expression'][kb.rnaExpression['hasCodingRna']])
 	#distribution_transcriptsByProtein = normalize(kb.rnaExpression['expression'][kb.rnaIndexToMonomerMapping])
 
+	assert(distribution_rRNA23S.shape == ids_rRNA23S.shape)
+	assert(distribution_rRNA16S.shape == ids_rRNA16S.shape)
+	assert(distribution_rRNA16S.shape == ids_rRNA16S.shape)
+	assert(distribution_tRNA.shape == ids_tRNA.shape)
+	assert(distribution_mRNA.shape == ids_mRNA)
+
 	## Rates/times
 
 	degradationRates = kb.monomerData["degRate"]
