@@ -2362,6 +2362,12 @@ class KnowledgeBaseEcoli(object):
 					#('length'				,	'int64'),
 					#('positiveDirection'	,	'bool'),
 					#('rnaId'              ,   'a50'),
+					('isRRna',					'bool'),
+					('isRRna23S',				'bool'),
+					('isRRna16S',				'bool'),
+					('isRRna5S',				'bool'),
+					('isTRna',					'bool'),
+					('isCoding',				'bool'),
 					('endCoordinate'		,	'int64')])
 
 		self.geneData['id'] = [x['id'] for x in self._genes]
@@ -2369,8 +2375,13 @@ class KnowledgeBaseEcoli(object):
 		#self.geneData['coordinate'] = [x['coordinate'] for x in self._genes]
 		#self.geneData['length'] = [x['length'] for x in self._genes]
 		#self.geneData['positiveDirection'] = [True if x['direction'] == '+' else False for x in self._genes]
+		self.geneData['isRRna'] = [(x['type'] == 'rRNA') for x in self._genes]
+		self.geneData['isRRna23S'] = [(x['type'] == 'rRNA' and x['rnaId'].startswith("RRL")) for x in self._genes]
+		self.geneData['isRRna16S'] = [(x['type'] == 'rRNA' and x['rnaId'].startswith("RRS")) for x in self._genes]
+		self.geneData['isRRna5S'] = [(x['type'] == 'rRNA' and x['rnaId'].startswith("RRF")) for x in self._genes]
+		self.geneData['isTRna'] = [(x['type'] == 'tRNA') for x in self._genes]
+		self.geneData['isCoding'] = [(x['type'] == 'mRNA') for x in self._genes]
 		self.geneData['endCoordinate'] = [(x['coordinate'] + x['length']) % self.genomeLength if x['direction'] == '+' else (x['coordinate'] - x['length']) % self.genomeLength for x in self._genes]
-
 
 	def _buildBulkChromosome(self):
 		count_dnaAbox_at_oriC = 5
@@ -2963,7 +2974,7 @@ class KnowledgeBaseEcoli(object):
 			rnaIds[g['id']] = rnaIdList
 
 		self.rnaIndexToGeneMapping = []
-		for x in self.geneData['id']: self.rnaIndexToGeneMapping.append(rnaIds[x])
+		for x in self.geneData['id']: self.rnaIndexToGeneMapping.append(np.array(rnaIds[x], dtype = np.int16))
 		self.rnaIndexToGeneMapping = np.array(self.rnaIndexToGeneMapping)
 
 
@@ -3387,3 +3398,5 @@ class KnowledgeBaseEcoli(object):
 	def mapRnaIndexToMonomerIndex(self, rnaIndices):
 		return np.unique(np.concatenate(self.rnaIndexToMonomerMapping[rnaIndices]))
 
+	def mapRnaIndexToGeneIndex(self, rnaIndices):
+		return np.unique(np.concatenate(self.rnaIndexToGeneMapping[rnaIndices]))
