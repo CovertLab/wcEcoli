@@ -101,7 +101,7 @@ def createBulkContainer(kb):
 	ids_rRNA16S = kb.rnaData["id"][np.logical_and(kb.rnaData["hasRRna16S"], kb.rnaData['isProcessed'])]
 	ids_rRNA5S = kb.rnaData["id"][np.logical_and(kb.rnaData["hasRRna5S"], kb.rnaData['isProcessed'])]
 	ids_tRNA = kb.rnaData["id"][np.logical_and(kb.rnaData["hasTRna"], kb.rnaData['isProcessed'])]
-	ids_mRNA = kb.rnaData["id"][kb.rnaData["hasCodingRna"]]
+	ids_mRNA = kb.rnaData["id"][np.logical_and(kb.rnaData["hasCodingRna"], kb.rnaData['isProcessed'])]
 	ids_protein = kb.monomerData["id"]
 
 	## Mass fractions
