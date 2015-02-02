@@ -1154,14 +1154,30 @@ class KnowledgeBaseEcoli(object):
 
 			if (len(processedRNAs)>1):
 				tur['canBeProcessed'] = True
-				idProcessedRNA = idProcessedRNA + len(processedRNAs)
-				for i in processedRNAs: self._tURnas.append(i)
-
+				
 				pr = []
-				for i in processedRNAs:	pr.append('{}[{}]'.format(i['id'], tur['location']))			 
+				newIndex = 0
+				for i in processedRNAs: 
+					check_status = self.check_duplicateProcessedRna(i)
+					if check_status == None:
+						self._tURnas.append(i)
+						newIndex = newIndex + 1
+						pr.append('{}[{}]'.format(i['id'], tur['location']))
+					else:
+						pr.append('{}[{}]'.format(check_status, tur['location']))
+
+				idProcessedRNA = idProcessedRNA + newIndex #len(processedRNAs)
 				self._allProcessedRNA['{}[{}]'.format(tur['id'], tur['location'])]=pr
 
 			self._tURnas.append(tur)
+
+	def check_duplicateProcessedRna(self, newProcessedRna):
+
+		for pr in self._tURnas:
+			if pr['processed']:
+				if (pr['left'] == newProcessedRna['left']) and (pr['right'] == newProcessedRna['right']) and (pr['direction'] == newProcessedRna['direction']):
+					return pr['id']
+		return None
 
 
 		
