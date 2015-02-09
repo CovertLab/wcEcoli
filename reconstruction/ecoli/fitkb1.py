@@ -101,7 +101,7 @@ def createBulkContainer(kb):
 	ids_rRNA16S = kb.rnaData["id"][np.logical_and(kb.rnaData["hasRRna16S"], kb.rnaData['isProcessed'])]
 	ids_rRNA5S = kb.rnaData["id"][np.logical_and(kb.rnaData["hasRRna5S"], kb.rnaData['isProcessed'])]
 	ids_tRNA = kb.rnaData["id"][np.logical_and(kb.rnaData["hasTRna"], kb.rnaData['isProcessed'])]
-	ids_mRNA = kb.rnaData["id"][np.logical_and(kb.rnaData["hasCodingRna"], kb.rnaData['isProcessed'])]
+	ids_mRNA = kb.rnaData["id"][np.logical_and(kb.rnaData["hasCodingRna"], np.logical_not(kb.rnaData['canBeProcessed']))]
 	ids_protein = kb.monomerData["id"]
 
 	## Mass fractions
@@ -122,23 +122,24 @@ def createBulkContainer(kb):
 	individualMasses_rRNA23S = kb.getMass(ids_rRNA23S) / kb.nAvogadro
 	individualMasses_rRNA16S = kb.getMass(ids_rRNA16S) / kb.nAvogadro
 	individualMasses_rRNA5S = kb.getMass(ids_rRNA5S) / kb.nAvogadro
-	individualMasses_tRNA = kb.rnaData["mw"][kb.rnaData["hasTRna"]] / kb.nAvogadro
-	individualMasses_mRNA = kb.rnaData["mw"][kb.rnaData["hasCodingRna"]] / kb.nAvogadro
+	individualMasses_tRNA = kb.rnaData["mw"][np.logical_and(kb.rnaData["hasTRna"], kb.rnaData['isProcessed'])] / kb.nAvogadro
+	individualMasses_mRNA = kb.rnaData["mw"][np.logical_and(kb.rnaData["hasCodingRna"], np.logical_not(kb.rnaData['canBeProcessed']))] / kb.nAvogadro
 	individualMasses_protein = kb.monomerData["mw"] / kb.nAvogadro
 
 	## Molecule distributions
 	distribution_rRNA23S = np.array([1.] + [0.] * (ids_rRNA23S.size-1)) # currently only expressing first rRNA operon
 	distribution_rRNA16S = np.array([1.] + [0.] * (ids_rRNA16S.size-1)) # currently only expressing first rRNA operon
 	distribution_rRNA5S = np.array([1.] + [0.] * (ids_rRNA5S.size-1)) # currently only expressing first rRNA operon
-	distribution_tRNA = normalize(kb.getTrnaAbundanceData(1 / units.h)['molar_ratio_to_16SrRNA'])
-	distribution_mRNA = normalize(kb.rnaExpression['expression'][kb.rnaExpression['hasCodingRna']])
-	#distribution_transcriptsByProtein = normalize(kb.rnaExpression['expression'][kb.rnaIndexToMonomerMapping])
+	distribution_tRNA = normalize(kb.getTrnaAbundanceData(1 / units.h)['molar_ratio_to_16SrRNA']) # TODO: Check new boolean indexing works with the ordering in the KB
+	distribution_mRNA = normalize(kb.rnaExpression['expression'][np.logical_and(kb.rnaData["hasCodingRna"], np.logical_not(kb.rnaData['canBeProcessed']))])
+	import ipdb; ipdb.set_trace()
+	distribution_transcriptsByProtein = normalize(kb.rnaExpression['expression'][kb.rnaIndexToMonomerMapping])
 
 	assert(distribution_rRNA23S.shape == ids_rRNA23S.shape)
 	assert(distribution_rRNA16S.shape == ids_rRNA16S.shape)
 	assert(distribution_rRNA16S.shape == ids_rRNA16S.shape)
 	assert(distribution_tRNA.shape == ids_tRNA.shape)
-	assert(distribution_mRNA.shape == ids_mRNA)
+	assert(distribution_mRNA.shape == ids_mRNA.shape)
 
 	## Rates/times
 
@@ -188,11 +189,6 @@ def createBulkContainer(kb):
 	bulkContainer.countsIs(counts_rRNA5S, ids_rRNA5S)
 
 	## Assign tRNA counts based on mass and relative abundances (see Dong 1996)
-	#print distribution_tRNA
-	#print totalMass_tRNA
-	#print individualMasses_tRNA
-	#import ipdb
-	#ipdb.set_trace()
 	totalCount_tRNA = totalCountFromMassesAndRatios(
 		totalMass_tRNA,
 		individualMasses_tRNA,
@@ -205,7 +201,7 @@ def createBulkContainer(kb):
 	counts_tRNA = totalCount_tRNA * distribution_tRNA
 
 	bulkContainer.countsIs(counts_tRNA, ids_tRNA)
-
+	
 	## Assign mRNA counts based on mass and relative abundances (microarrays)
 
 	totalCount_mRNA = totalCountFromMassesAndRatios(
