@@ -2538,7 +2538,9 @@ class KnowledgeBaseEcoli(object):
 					('hasTRna',		'bool'),
 					('hasRRna23S',	'bool'),
 					('hasRRna16S',	'bool'),
-					('hasRRna5S',	'bool')])
+					('hasRRna5S',	'bool'),
+					('isProcessed',	'bool'),
+					('canBeProcessed',	'bool')])
 
 		size = len(self._tURnas)
 		has23S = np.zeros(size, dtype = np.bool)
@@ -2548,7 +2550,9 @@ class KnowledgeBaseEcoli(object):
 		hasMiscRna = np.zeros(size, dtype = np.bool)
 		hasRRna = np.zeros(size, dtype = np.bool)
 		hasTRna = np.zeros(size, dtype = np.bool)
-		
+		isProcessed = np.array([x['processed'] for x in self._tURnas], dtype = np.bool)
+		canBeProcessed = np.array([x['canBeProcessed'] for x in self._tURnas], dtype = np.bool)
+
 		for rnaIndex, rna in enumerate(self._tURnas):
 			for i in range(0, len(rna["rnaType"])):
 				t = rna["rnaType"][i]
@@ -2579,6 +2583,8 @@ class KnowledgeBaseEcoli(object):
 		normalizedRnaExpression['hasRRna23S'] = has23S
 		normalizedRnaExpression['hasRRna16S'] = has16S
 		normalizedRnaExpression['hasRRna5S'] = has5S
+		normalizedRnaExpression['isProcessed'] = isProcessed
+		normalizedRnaExpression['canBeProcessed'] = canBeProcessed
 
 		self.rnaExpression = UnitStructArray(normalizedRnaExpression,
 			{
@@ -2590,7 +2596,9 @@ class KnowledgeBaseEcoli(object):
 			'hasTRna'	:	None,
 			'hasRRna23S'	:	None,
 			'hasRRna16S'	:	None,
-			'hasRRna5S'	:	None
+			'hasRRna5S'	:	None,
+			'isProcessed' :	None,
+			'canBeProcessed' :	None,
 			})
 
 
