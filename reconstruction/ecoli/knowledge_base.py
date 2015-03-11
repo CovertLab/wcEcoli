@@ -2694,7 +2694,7 @@ class KnowledgeBaseEcoli(object):
 		PPI_CONCENTRATION = 0.5e-3 # M, multiple sources
 
 		# NOTE: Nick says that the physiological levels of PPI are very low - investigate this
-
+		self.ppGpp_base_concentration = PPGPP_BASE_CONC_PMOL_PER_AA
 		metaboliteIDs.append("PPI[c]")
 		metaboliteConcentrations.append(PPI_CONCENTRATION)
 
@@ -2709,12 +2709,6 @@ class KnowledgeBaseEcoli(object):
 
 		metaboliteIDs.append("UMP[c]")
 		metaboliteConcentrations.append(2.40e-5)
-
-
-		# Add ppGpp
-		self.ppGpp_base_concentration = PPGPP_BASE_CONC_PMOL_PER_AA
-		metaboliteIDs.append("PPGPP[c]")
-		metaboliteConcentrations.append(PPI_CONCENTRATION) # Small number will be re-set in fitter
 
 		# Other quantities to consider:
 		# - (d)NTP byproducts not currently included

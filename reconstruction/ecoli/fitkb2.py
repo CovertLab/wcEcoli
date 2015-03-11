@@ -102,8 +102,8 @@ def fitKb_2(kb, simOutDir):
 	# ----- Calculate ppGpp concentration ----- #
 	aminoAcidsInProtein = (bulkAverageContainer.counts(kb.monomerData['id']) * kb.monomerData['length'].asNumber()).sum()
 	aminoAcidsInComplex = 0.
-	for cplx in list(kb.complexationComplexNames):
-		cplx_data = kb.getComplexMonomers(cplx)
+	for cplx in list(kb.complexation.complexNames):
+		cplx_data = kb.complexation.getMonomers(cplx)
 		cplx_subunit = cplx_data['subunitIds']
 		cplx_stoich = cplx_data['subunitStoich']
 
@@ -186,7 +186,7 @@ def fitKb_2(kb, simOutDir):
 	predicted_trna_synthetase_rates = initialAAPolymerizationRate / scaled_synthetase_counts
 	kb.trna_synthetase_rates = 2 * predicted_trna_synthetase_rates
 
-	fitKb_2_metabolism(kb, simOutDir, bulkAverageContainer, bulkDeviationContainer)
+	# fitKb_2_metabolism(kb, simOutDir, bulkAverageContainer, bulkDeviationContainer)
 
 	# KB perturbations should go here to avoid perturbing fitting
 	# Eventually this will be part of our pipeline

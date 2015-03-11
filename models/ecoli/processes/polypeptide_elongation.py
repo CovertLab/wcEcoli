@@ -33,25 +33,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 	# Constructor
 	def __init__(self):
-		# Parameters
-		self.elngRate = None
-		self.proteinLengths = None
-		self.proteinSequences = None
-		self.h2oWeight = None
-		self.aaWeightsIncorporated = None
-		self.gtpPerElongation = None
-		self.synthetase_turnover = None
-
-		# Views
-		self.activeRibosomes = None
-		self.bulkMonomers = None
-		self.aas = None
-		self.h2o = None
-		self.trna_groups = None
-		self.synthetase_groups = None
-		self.ribosome30S = None
-		self.ribosome50S = None
-
 		super(PolypeptideElongation, self).__init__()
 
 
@@ -86,8 +67,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
 
 		self.aas = self.bulkMoleculesView(kb.aaIDs)
-		# self.trna_groups = [self.bulkMoleculesView(x) for x in self.aa_trna_groups.itervalues()]
-		# self.synthetase_groups = [self.bulkMoleculesView(x) for x in self.aa_synthetase_groups.itervalues()]
+		self.trna_groups = [self.bulkMoleculesView(x) for x in self.aa_trna_groups.itervalues()]
+		self.synthetase_groups = [self.bulkMoleculesView(x) for x in self.aa_synthetase_groups.itervalues()]
 		self.h2o = self.bulkMoleculeView('H2O[c]')
 
 		self.gtp = self.bulkMoleculeView("GTP[c]")
@@ -185,9 +166,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		aaCountInSequence = np.bincount(sequences[(sequences != PAD_VALUE)])
 		aaCounts = self.aas.counts()
-		# trnasCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.trna_groups],dtype = np.int64)
-		# synthetaseCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
-		# elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity)
+		trnasCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.trna_groups],dtype = np.int64)
+		synthetaseCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
+		elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity)
 
 		# Calculate expected stalls huristic
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
