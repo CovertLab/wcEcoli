@@ -63,14 +63,14 @@ class Metabolism(wholecell.processes.process.Process):
 		# Set up FBA solver
 
 		self.fba = FluxBalanceAnalysis(
-			kb.metabolismReactionStoich.copy(), # TODO: copy in class
-			kb.metabolismExternalExchangeMolecules,
+			kb.metabolism.reactionStoich.copy(), # TODO: copy in class
+			kb.metabolism.externalExchangeMolecules,
 			objective,
 			objectiveType = "pools",
-			reversibleReactions = kb.metabolismReversibleReactions,
-			reactionEnzymes = kb.metabolismReactionEnzymes.copy(), # TODO: copy in class
-			reactionRates = kb.metabolismReactionMaxRates, # these are actually vMax's
-			# moleculeMasses = kb.metabolismExchangeMasses(MASS_UNITS / COUNTS_UNITS)
+			reversibleReactions = kb.metabolism.reversibleReactions,
+			# reactionEnzymes = kb.metabolism.reactionEnzymes.copy(), # TODO: copy in class
+			# reactionRates = kb.metabolism.reactionRates(self.timeStepSec * units.s),
+			# moleculeMasses = kb.metabolism.exchangeMasses(MASS_UNITS / COUNTS_UNITS)
 			)
 
 		# Set constraints
@@ -87,7 +87,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		coefficient = initDryMass / initCellMass * kb.cellDensity * (self.timeStepSec * units.s)
 
-		self.externalMoleculeLevels = kb.metabolismExchangeConstraints(
+		self.externalMoleculeLevels = kb.metabolism.exchangeConstraints(
 			externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS
@@ -111,7 +111,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_METABOLISM)
 
 		###### VARIANT CODE #######
-		self.turnOnGlucoseLimitation = kb.turnOnGlucoseLimitation
+		# self.turnOnGlucoseLimitation = kb.turnOnGlucoseLimitation
+		self.turnOnGlucoseLimitation = True
 		###### VARIANT CODE #######
 
 	def calculateRequest(self):
@@ -146,7 +147,7 @@ class Metabolism(wholecell.processes.process.Process):
 			metaboliteCountsInit * countsToMolar
 			)
 
-		self.fba.run()
+		# self.fba.run()
 
 		deltaMetabolites = self.fba.outputMoleculeLevelsChange() / countsToMolar
 
@@ -162,21 +163,22 @@ class Metabolism(wholecell.processes.process.Process):
 			self.fba.reactionFluxes() / self.timeStepSec)
 		self.writeToListener("FBAResults", "externalExchangeFluxes",
 			self.fba.externalExchangeFluxes() / self.timeStepSec)
-		self.writeToListener("FBAResults", "objectiveValue",
-			self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
+		# self.writeToListener("FBAResults", "objectiveValue", # TODO
+		# 	self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
 		self.writeToListener("FBAResults", "outputFluxes",
 			self.fba.outputMoleculeLevelsChange() / self.timeStepSec)
 
+		# TODO
 		# NOTE: the calculation for the objective components doesn't yet have
 		# an interface, since it will vary in calculation and shape for every
 		# objective type
 
-		objectiveComponents_raw = (np.array(self.fba._f).flatten() * self.fba._solutionFluxes)[self.fba._objIndexes]
-		objectiveComponents = objectiveComponents_raw[::2] + objectiveComponents_raw[1::2]
+		# objectiveComponents_raw = (np.array(self.fba._f).flatten() * self.fba._solutionFluxes)[self.fba._objIndexes]
+		# objectiveComponents = objectiveComponents_raw[::2] + objectiveComponents_raw[1::2]
 
-		self.writeToListener("FBAResults", "objectiveComponents",
-			objectiveComponents
-			)
+		# self.writeToListener("FBAResults", "objectiveComponents",
+		# 	objectiveComponents
+		# 	)
 
 		# TODO:
 		# - which media exchanges/reactions are limiting, if any

@@ -37,7 +37,7 @@ def fitKb_1(kb):
 	# TODO: set this based on transcription unit structure
 	# i.e. same synthesis prob. but different deg rates
 
-	rnaPolySubunits = kb.getComplexMonomers("APORNAP-CPLX[c]")["subunitIds"]
+	rnaPolySubunits = kb.complexation.getMonomers("APORNAP-CPLX[c]")["subunitIds"]
 
 	subunitIndexes = np.array([np.where(kb.monomerData["id"] == id_)[0].item() for id_ in rnaPolySubunits]) # there has to be a better way...
 
@@ -111,7 +111,7 @@ def createBulkContainer(kb):
 	ids_protein = kb.monomerData["id"]
 
 	## Mass fractions
-	
+
 	g = growth_data.GrowthData(kb)
 	massFractions60 = g.massFractions(60)
 	totalMass_RNA = massFractions60["rnaMass"]
@@ -239,7 +239,7 @@ def createBulkContainer(kb):
 
 	totalCount_protein.normalize()
 	totalCount_protein.checkNoUnit()
-	
+
 	counts_protein = totalCount_protein * distribution_protein
 
 	bulkContainer.countsIs(counts_protein, ids_protein)
@@ -256,10 +256,10 @@ def setRibosomeCountsConstrainedByPhysiology(kb, bulkContainer):
 	(2) Measured rRNA mass fractions
 	(3) Expected ribosomal subunit counts based on expression
 	'''
-	ribosome30SSubunits = kb.getComplexMonomers(kb.s30_fullComplex)['subunitIds']
-	ribosome50SSubunits = kb.getComplexMonomers(kb.s50_fullComplex)['subunitIds']
-	ribosome30SStoich = kb.getComplexMonomers(kb.s30_fullComplex)['subunitStoich']
-	ribosome50SStoich = kb.getComplexMonomers(kb.s50_fullComplex)['subunitStoich']
+	ribosome30SSubunits = kb.complexation.getMonomers(kb.s30_fullComplex)['subunitIds']
+	ribosome50SSubunits = kb.complexation.getMonomers(kb.s50_fullComplex)['subunitIds']
+	ribosome30SStoich = kb.complexation.getMonomers(kb.s30_fullComplex)['subunitStoich']
+	ribosome50SStoich = kb.complexation.getMonomers(kb.s50_fullComplex)['subunitStoich']
 
 	# -- CONSTRAINT 1: Expected protien distribution doubling -- #
 	## Calculate minimium number of 30S and 50S subunits required in order to double our expected
@@ -428,7 +428,7 @@ def fitRNAPolyTransitionRates(kb):
 	# In our simplified model of RNA polymerase state transition, RNAp can be
 	# active (transcribing) or inactive (free-floating).  To solve for the
 	# rate of activation, we need to calculate the average rate of termination,
-	# which is a function of the average transcript length and the 
+	# which is a function of the average transcript length and the
 	# transcription rate.
 
 	averageTranscriptLength = units.dot(synthProb, rnaLengths)
@@ -474,11 +474,39 @@ def fitMaintenanceCosts(kb, bulkContainer):
 # Math functions
 
 def totalCountFromMassesAndRatios(totalMass, individualMasses, distribution):
+	"""
+	Total mass = dot(mass, count)
+
+	Fraction of i:
+	f = count / Total counts
+
+	Substituting:
+	Total mass = dot(mass, f * Total counts)
+	Total mass = Total counts * dot(mass, f)
+
+	Total counts = Total mass / dot(mass, f)
+	"""
 	assert np.allclose(np.sum(distribution), 1)
 	return 1 / units.dot(individualMasses, distribution) * totalMass
 
 
 def proteinDistributionFrommRNA(distribution_mRNA, netLossRate):
+	"""
+	dP_i / dt = k * M_i - P_i * Loss_i
+
+	At steady state:
+	P_i = k * M_i / Loss_i
+
+	Fraction of mRNA for ith gene is defined as:
+	f_i = M_i / M_total
+
+	Substituting in:
+	P_i = k * f_i * M_total / Loss_i
+
+	Normalizing P_i by summing over all i cancels out k and M_total
+	assuming constant translation rate.
+	"""
+
 	assert np.allclose(np.sum(distribution_mRNA), 1)
 	distributionUnnormed = 1 / netLossRate * distribution_mRNA
 
@@ -486,6 +514,22 @@ def proteinDistributionFrommRNA(distribution_mRNA, netLossRate):
 
 
 def mRNADistributionFromProtein(distribution_protein, netLossRate):
+	"""
+	dP_i / dt = k * M_i - P_i * Loss_i
+
+	At steady state:
+	M_i = Loss_i * P_i / k
+
+	Fraction of protein for ith gene is defined as:
+	f_i = P_i / P_total
+
+	Substituting in:
+	M_i = Loss_i * f_i * P_total / k
+
+	Normalizing M_i by summing over all i cancles out k and P_total
+	assuming a constant translation rate.
+
+	"""
 	assert np.allclose(np.sum(distribution_protein), 1)
 	distributionUnnormed = netLossRate * distribution_protein
 

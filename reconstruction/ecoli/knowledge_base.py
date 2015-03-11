@@ -13,14 +13,21 @@ Whole-cell knowledge base ecoli
 @date: Created 03/14/2014
 """
 from __future__ import division
-import numpy as np
+
 import collections
-from operator import add
 import os
 import sys
 import itertools
 import re
-import copy
+
+# Import Biopython for sequence handling
+import Bio
+import Bio.Seq
+import warnings
+warnings.simplefilter("ignore", Bio.BiopythonWarning)
+
+import numpy as np
+import scipy.constants
 
 # Set Django environmental variable
 os.environ['DJANGO_SETTINGS_MODULE'] = 'ecoliwholecellkb_project.ecoliwholecellkb.settings'
@@ -31,17 +38,10 @@ import ecoliwholecellkb_project.ecoliwholecellkb.settings
 
 from ecoliwholecellkb_project.public.models import *
 
-# Import Biopython for sequence handling
-import Bio
-import Bio.Seq
-
-import warnings
-warnings.simplefilter("ignore", Bio.BiopythonWarning)
 
 # Load units data
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils import units
-import scipy.constants
 
 # NOTE: most hard coded constants have been moved to another .py file
 #		to keep this file length managable.
@@ -93,34 +93,36 @@ class KnowledgeBaseEcoli(object):
 		#self._countATinPromoters()
 
 		# Create data structures for simulation
-		self._buildAllMasses() # called early because useful for other builders
-		self._buildMoleculeGroups() # called early because useful for other builders
+		self._buildAllMasses() # called early because useful for other builders # Mass # DONE
+		self._buildMoleculeGroups() # called early because useful for other builders # State (?) # DONE
 
-		self._buildSequence()
-		self._buildCompartments()
-		self._buildBulkMolecules()
-		self._buildBulkChromosome()
-		self._buildGeneData()
-		self._buildRibosomeData()
-		self._buildUniqueMolecules()
-		self._buildBiomass()
-		self._buildRnaData()
-		self._buildMonomerData()
-		self._buildRnaIndexToMonomerMapping()
-		self._buildMonomerIndexToRnaMapping()
-		self._buildRnaIndexToGeneMapping()
-		self._buildConstants()
-		self._buildParameters()
-		self._buildRnaExpression()
-		self._buildBiomassFractions()
-		self._buildTranscription()
-		self._buildTranslation()
-		self._buildMetabolitePools()
-		self._buildTrnaData()
+		self._buildSequence() # Replication # DONE
+		self._buildCompartments() # State (?) # DONE
+		self._buildBulkMolecules() # State (?) # DONE
+		self._buildBulkChromosome() # State (?) # DONE
+		self._buildGeneData() # Replication # DONE
+		self._buildRibosomeData() # Translation # SKIP
+		self._buildUniqueMolecules() # State (?) # DONE
+		self._buildBiomass() # Metabolism (?) # DONE
+		self._buildRnaData() # Transcription # DONE
+		self._buildMonomerData() # Translation # DONE
+		self._buildRnaIndexToMonomerMapping() # Translation (?) # DONE
+		self._buildMonomerIndexToRnaMapping() # Translation (?) # DONE
+		self._buildRnaIndexToGeneMapping() # Transcription (?) # DONE
+		self._buildConstants() # Constants # DONE
+		self._buildParameters() # Constants # DONE
+		self._buildRnaExpression() # Transcription (*actually goes to raw data)# DONE
+		self._buildBiomassFractions() # Metabolism (?)# TODO: move to new KB
+		self._buildTranscription() # Transcription # DONE
+		self._buildTranslation() # Translation # DONE
+		self._buildMetabolitePools() # Metabolism (?)# TODO: move to new KB
+		self._buildTrnaData() # Translation (?) # SKIP
 
-		# TODO: enable these and rewrite them as sparse matrix definitions (coordinate:value pairs)
-		self._buildComplexation()
-		self._buildMetabolism()
+		from .complexation import Complexation
+		self.complexation = Complexation(self)
+
+		from .metabolism import Metabolism
+		self.metabolism = Metabolism(self)
 
 		# Build dependent calculations
 		#self._calculateDependentCompartments()
@@ -2440,90 +2442,6 @@ class KnowledgeBaseEcoli(object):
 		self.rnaIndexToGeneMapping = np.array([np.where(x + "[c]" == self.rnaData["id"])[0][0] for x in self.geneData["rnaId"]])
 
 
-	def _buildComplexation(self):
-		# Build the abstractions needed for complexation
-
-		molecules = []
-
-		subunits = []
-		complexes = []
-
-		stoichMatrixI = []
-		stoichMatrixJ = []
-		stoichMatrixV = []
-
-		# Remove complexes that are currently not simulated
-		FORBIDDEN_MOLECULES = {
-			"modified-charged-selC-tRNA", # molecule does not exist
-			}
-
-		deleteReactions = []
-		for reactionIndex, reaction in enumerate(self._complexationReactions):
-			for molecule in reaction["stoichiometry"]:
-				if molecule["molecule"] in FORBIDDEN_MOLECULES:
-					deleteReactions.append(reactionIndex)
-					break
-
-		for reactionIndex in deleteReactions[::-1]:
-			del self._complexationReactions[reactionIndex]
-
-		for reactionIndex, reaction in enumerate(self._complexationReactions):
-			assert reaction["process"] == "complexation"
-			assert reaction["dir"] == 1
-
-			for molecule in reaction["stoichiometry"]:
-				if molecule["type"] == "metabolite":
-					moleculeName = "{}[{}]".format(
-						molecule["molecule"].upper(), # this is stupid # agreed
-						molecule["location"]
-						)
-
-				else:
-					moleculeName = "{}[{}]".format(
-						molecule["molecule"],
-						molecule["location"]
-						)
-
-				if moleculeName not in molecules:
-					molecules.append(moleculeName)
-					moleculeIndex = len(molecules) - 1
-
-				else:
-					moleculeIndex = molecules.index(moleculeName)
-
-				coefficient = molecule["coeff"]
-
-				assert coefficient % 1 == 0
-
-				stoichMatrixI.append(moleculeIndex)
-				stoichMatrixJ.append(reactionIndex)
-				stoichMatrixV.append(coefficient)
-
-				if coefficient < 0:
-					subunits.append(moleculeName)
-
-				else:
-					assert molecule["type"] == "proteincomplex"
-					complexes.append(moleculeName)
-
-		self._complexStoichMatrixI = np.array(stoichMatrixI)
-		self._complexStoichMatrixJ = np.array(stoichMatrixJ)
-		self._complexStoichMatrixV = np.array(stoichMatrixV)
-
-		self.complexationMoleculeNames = molecules
-		self.complexationSubunitNames = set(subunits)
-		self.complexationComplexNames = set(complexes)
-
-
-	def complexationStoichMatrix(self):
-		shape = (self._complexStoichMatrixI.max()+1, self._complexStoichMatrixJ.max()+1)
-
-		out = np.zeros(shape, np.float64)
-
-		out[self._complexStoichMatrixI, self._complexStoichMatrixJ] = self._complexStoichMatrixV
-
-		return out
-
 	def _buildRibosomeData(self):
 		self.s30_proteins = S30_PROTEINS
 		self.s30_16sRRNA = S30_16S_RRNAS
@@ -2533,224 +2451,6 @@ class KnowledgeBaseEcoli(object):
 		self.s50_23sRRNA = S50_23S_RRNAS
 		self.s50_5sRRNA = S50_5S_RRNAS
 		self.s50_fullComplex = S50_FULLCOMPLEX
-
-	def _buildMetabolism(self):
-		# Build the matrices/vectors for metabolism (FBA)
-
-		# These may be modified/extended later, but should provide the basic
-		# data structures
-
-		exchangeReactions = [x["id"] for x in self._reactions if x["id"].startswith("FEIST_EX") or x["id"].startswith("FEIST_DM_")]
-		exchangeReactions += ["SELNP_MEDIA_EXCHANGE_HACKED"]
-
-		disabledReactions = ("FEIST_CAT_0", "FEIST_SPODM_0", "FEIST_SPODMpp",
-			"FEIST_FHL_0_0", "FEIST_FHL_1_0", "FEIST_ATPM")
-		# NOTE: the first five were disabled by Feist, the last is NGAM which model explictly elsewhere
-
-		reactionStoich = {}
-		externalExchangeMolecules = []
-		reversibleReactions = []
-		reactionEnzymes = {}
-		reactionRates = {}
-
-		unconstrainedExchangeMolecules = ("CA2[e]", "CL[e]", "CO2[e]", "COBALT2[e]",
-			"CU2[e]", "FE2[e]", "FE3[e]", "H[e]", "H2O[e]", "K[e]", "MG2[e]",
-			"MN2[e]", "MOBD[e]", "NA1[e]", "NH4[e]", "PI[e]", "SO4[e]", "TUNGS[e]",
-			"ZN2[e]", "SELNP[e]",)
-
-		exchangeUnits = units.mmol / units.g / units.h
-
-		constrainedExchangeMolecules = {
-			"CBL1[e]": exchangeUnits * 0.01, # TODO: try removing this constraint
-			"GLC-D[e]": exchangeUnits * 8,
-			#"GLC-D[e]": exchangeUnits * 8*0.8,
-			"O2[e]": exchangeUnits * 18.5
-			}
-
-		catalysisUnits = 1 / units.s
-
-		validEnzymeIDs = set(self.bulkMolecules["moleculeId"])
-		validEnzymeCompartments = collections.defaultdict(set)
-
-		for enzymeID in validEnzymeIDs:
-			enzyme = enzymeID[:enzymeID.index("[")]
-			location = enzymeID[enzymeID.index("[")+1:enzymeID.index("[")+2]
-
-			validEnzymeCompartments[enzyme].add(location)
-
-		for reaction in self._reactions:
-			reactionID = reaction["id"]
-			stoich = reaction["stoichiometry"]
-
-			if reactionID in disabledReactions:
-				continue
-
-			elif reactionID in exchangeReactions:
-				if len(stoich) != 1:
-					raise Exception("Invalid exchange reaction")
-
-				externalExchangeMolecules.append("{}[{}]".format(
-					stoich[0]["molecule"], stoich[0]["location"]
-					))
-
-			else:
-				if len(stoich) <= 1:
-					raise Exception("Invalid biochemical reaction")
-
-				reducedStoich = {
-					"{}[{}]".format(
-						entry["molecule"], entry["location"]
-						): entry["coeff"]
-					for entry in stoich
-					}
-
-				reactionStoich[reactionID] = reducedStoich
-
-				# Assign reversibilty
-
-				if reaction["dir"] == 0:
-					reversibleReactions.append(reactionID)
-
-				# Assign k_cat, if known
-
-				kcat = reaction["kcat"]
-
-				if kcat is not None:
-					reactionRates[reactionID] = kcat * catalysisUnits
-
-				# Assign enzyme, if any
-
-				if reactionID in REACTION_ENZYME_ASSOCIATIONS.viewkeys():
-					enzymes = REACTION_ENZYME_ASSOCIATIONS[reactionID]
-
-				else:
-					enzymes = reaction['catBy']
-
-				reactantLocations = {reactant["location"]
-					for reactant in reaction["stoichiometry"]}
-
-				if enzymes is not None and len(enzymes) > 0:
-					if len(enzymes) > 1:
-						raise Exception("Reaction {} has multiple associated enzymes: {}".format(
-							reactionID, enzymes))
-
-					(enzyme,) = enzymes
-
-					validLocations = validEnzymeCompartments[enzyme]
-
-					if len(validLocations) == 0:
-						raise Exception("Reaction {} uses enzyme {} but this enzyme does not exist.".format(
-							reactionID,
-							enzyme
-							))
-
-					if len(validLocations) == 1:
-						(location,) = validLocations
-
-					elif len(reactantLocations) == 1:
-						(location,) = reactantLocations
-
-					elif reactantLocations == {"p", "e"}: # if reaction is periplasm <-> extracellular
-						(location,) = {"o"} # assume enzyme is in outer membrane
-
-					elif reactantLocations == {"c", "p"}: # if reaction is cytoplasm <-> periplasm
-						(location,) = {"i"} # assume enzyme is in inner membrane
-
-					else:
-						raise Exception("Reaction {} has multiple associated locations: {}".format(
-							reactionID,
-							reactantLocations
-							))
-
-					assert location in validLocations
-
-					enzymeID = "{}[{}]".format(enzyme, location)
-
-					reactionEnzymes[reactionID] = enzymeID
-
-		mws = self.getMass(externalExchangeMolecules)
-
-		exchangeMasses = {moleculeID:mws[index]
-			for index, moleculeID in enumerate(externalExchangeMolecules)}
-
-		# # Filter out reaction-enzyme associations that lack rates
-
-		# reactionEnzymes = {
-		# 	reactionID:enzymeID
-		# 	for reactionID, enzymeID in reactionEnzymes.viewitems()
-		# 	if reactionRates.has_key(reactionID)
-		# 	}
-
-		self.metabolismReactionStoich = reactionStoich
-		self.metabolismExternalExchangeMolecules = externalExchangeMolecules
-		self._metabolismExchangeMasses = exchangeMasses
-		self.metabolismReversibleReactions = reversibleReactions
-		self.metabolismReactionEnzymes = reactionEnzymes
-		self._metabolismReactionRates = reactionRates
-		self._metabolismUnconstrainedExchangeMolecules = unconstrainedExchangeMolecules
-		self._metabolismConstrainedExchangeMolecules = constrainedExchangeMolecules
-
-		# subunitComplexes = collections.defaultdict(set)
-
-		# for complexID in self.complexationComplexNames:
-		# 	for subunitID in self.getComplexMonomers(complexID)['subunitIds']:
-		# 		subunitComplexes[subunitID].add(complexID)
-
-		# ids = set()
-
-		# for reactionID, enzymeID in reactionEnzymes.viewitems():
-		# 	if enzymeID in self.complexationSubunitNames:
-		# 		ids.add(enzymeID)
-
-		# homopolymer = []
-		# heteropolymer = []
-
-		# for enzID in ids:
-		# 	if len(subunitComplexes[enzID]) == 1:
-		# 		homopolymer.append(enzID)
-
-		# 	else:
-		# 		heteropolymer.append(enzID)
-
-		# hpReactions = {
-		# 	reactionID:None
-		# 	for reactionID, subunitID in reactionEnzymes.viewitems()
-		# 	if subunitID in heteropolymer
-		# 	}
-
-		# print "\n".join('"{}":None, # {}'.format(reactionID, enzymeID) for reactionID, enzymeID in reactionEnzymes.viewitems() if enzymeID in heteropolymer)
-
-		# import ipdb; ipdb.set_trace()
-
-
-	def metabolismReactionRates(self, timeStep):
-		return {
-			reactionID:(reactionRate * timeStep).asNumber()
-			for reactionID, reactionRate in self._metabolismReactionRates.viewitems()
-			}
-
-
-	def metabolismExchangeMasses(self, targetUnits):
-		return {
-			moleculeID:mass.asNumber(targetUnits)
-			for moleculeID, mass in self._metabolismExchangeMasses.viewitems()
-			}
-
-
-	def metabolismExchangeConstraints(self, exchangeIDs, coefficient, targetUnits):
-		externalMoleculeLevels = np.zeros(len(exchangeIDs), np.float64)
-
-		for index, moleculeID in enumerate(exchangeIDs):
-			if moleculeID in self._metabolismUnconstrainedExchangeMolecules:
-				externalMoleculeLevels[index] = np.inf
-
-			elif moleculeID in self._metabolismConstrainedExchangeMolecules.viewkeys():
-				externalMoleculeLevels[index] = (
-					self._metabolismConstrainedExchangeMolecules[moleculeID] * coefficient
-					).asNumber(targetUnits)
-
-		return externalMoleculeLevels
-
 
 	def _buildMetabolitePools(self):
 		CELL_DENSITY = 1.1e3 # g/L
@@ -2768,8 +2468,6 @@ class KnowledgeBaseEcoli(object):
 		# First, load in metabolites that do have concentrations, then assign
 		# compartments according to those given in the biomass objective.  Or,
 		# if there is no compartment, assign it to the cytoplasm.
-
-		self.ppGpp_base_concentration = PPGPP_BASE_CONC_PMOL_PER_AA
 
 		metaboliteIDs = []
 		metaboliteConcentrations = []
@@ -3012,6 +2710,12 @@ class KnowledgeBaseEcoli(object):
 		metaboliteIDs.append("UMP[c]")
 		metaboliteConcentrations.append(2.40e-5)
 
+
+		# Add ppGpp
+		self.ppGpp_base_concentration = PPGPP_BASE_CONC_PMOL_PER_AA
+		metaboliteIDs.append("PPGPP[c]")
+		metaboliteConcentrations.append(PPI_CONCENTRATION) # Small number will be re-set in fitter
+
 		# Other quantities to consider:
 		# - (d)NTP byproducts not currently included
 
@@ -3158,49 +2862,3 @@ class KnowledgeBaseEcoli(object):
 		assert isinstance(ids, list) or isinstance(ids, np.ndarray)
 		idx = [np.where(self._allMass['id'] == re.sub("\[[a-z]\]","", i))[0][0] for i in ids]
 		return self._allMass['mass'][idx]
-
-	def getComplexMonomers(self, cplxId):
-		'''
-		Returns subunits for a complex (or any ID passed).
-		If the ID passed is already a monomer returns the
-		monomer ID again with a stoichiometric coefficient
-		of zero.
-		'''
-
-		info = self._moleculeRecursiveSearch(cplxId, self.complexationStoichMatrix(), np.array(self.complexationMoleculeNames))
-
-		return {'subunitIds' : np.array(info.keys()), 'subunitStoich' : -1 * np.array(info.values())}
-
-	def _findRow(self, product,speciesList):
-
-		for sp in range(0, len(speciesList)):
-			if speciesList[sp] == product: return sp
-		return -1
-
-	def _findColumn(self, stoichMatrixRow, row):
-
-		for i in range(0,len(stoichMatrixRow)):
-			if int(stoichMatrixRow[i]) == 1: return i
-		return -1
-
-	def _moleculeRecursiveSearch(self, product, stoichMatrix, speciesList, flag = 0):
-		row = self._findRow(product,speciesList)
-		if row == -1: return []
-
-		col = self._findColumn(stoichMatrix[row,:], row)
-		if col == -1:
-			if flag == 0: return []
-			else: return {product: -1}
-
-		total = {}
-		for i in range(0, len(speciesList)):
-			if i == row: continue
-			val = stoichMatrix[i][col]
-			sp = speciesList[i]
-
-			if val:
-				x = self._moleculeRecursiveSearch(sp, stoichMatrix, speciesList, 1)
-				for j in x:
-					if j in total: total[j] += x[j]*(abs(val))
-					else: total[j] = x[j]*(abs(val))
-		return total

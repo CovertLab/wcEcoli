@@ -33,15 +33,15 @@ def fitKb_2(kb, simOutDir):
 	bulkContainer = BulkObjectsContainer(kb.bulkMolecules['moleculeId'])
 	rnaView = bulkContainer.countsView(kb.rnaData["id"])
 	proteinView = bulkContainer.countsView(kb.monomerData["id"])
-	complexationMoleculesView = bulkContainer.countsView(kb.complexationMoleculeNames)
+	complexationMoleculesView = bulkContainer.countsView(kb.complexation.moleculeNames)
 	allMoleculesIDs = list(
-		set(kb.rnaData["id"]) | set(kb.monomerData["id"]) | set(kb.complexationMoleculeNames)
+		set(kb.rnaData["id"]) | set(kb.monomerData["id"]) | set(kb.complexation.moleculeNames)
 		)
 	allMoleculesView = bulkContainer.countsView(allMoleculesIDs)
 
 	allMoleculeCounts = np.empty((N_SEEDS, allMoleculesView.counts().size), np.int64)
 
-	complexationStoichMatrix = kb.complexationStoichMatrix().astype(np.int64, order = "F")
+	complexationStoichMatrix = kb.complexation.stoichMatrix().astype(np.int64, order = "F")
 
 	complexationPrebuiltMatrices = mccBuildMatrices(
 		complexationStoichMatrix

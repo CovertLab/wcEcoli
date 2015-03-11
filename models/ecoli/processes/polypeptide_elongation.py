@@ -86,8 +86,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
 
 		self.aas = self.bulkMoleculesView(kb.aaIDs)
-		self.trna_groups = [self.bulkMoleculesView(x) for x in self.aa_trna_groups.itervalues()]
-		self.synthetase_groups = [self.bulkMoleculesView(x) for x in self.aa_synthetase_groups.itervalues()]
+		# self.trna_groups = [self.bulkMoleculesView(x) for x in self.aa_trna_groups.itervalues()]
+		# self.synthetase_groups = [self.bulkMoleculesView(x) for x in self.aa_synthetase_groups.itervalues()]
 		self.h2o = self.bulkMoleculeView('H2O[c]')
 
 		self.gtp = self.bulkMoleculeView("GTP[c]")
@@ -185,9 +185,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		aaCountInSequence = np.bincount(sequences[(sequences != PAD_VALUE)])
 		aaCounts = self.aas.counts()
-		trnasCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.trna_groups],dtype = np.int64)
-		synthetaseCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
-		elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity)
+		# trnasCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.trna_groups],dtype = np.int64)
+		# synthetaseCapacity = self.synthetase_turnover * np.array([x.counts().sum() for x in self.synthetase_groups],dtype = np.int64)
+		# elongationResourceCapacity = np.minimum(aaCounts, synthetaseCapacity, trnasCapacity)
 
 		# Calculate expected stalls huristic
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
@@ -291,8 +291,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("RibosomeData", "ribosomeStalls", ribosomeStalls)
 		self.writeToListener("RibosomeData", "aaCountInSequence", aaCountInSequence)
 		self.writeToListener("RibosomeData", "aaCounts", aaCounts)
-		self.writeToListener("RibosomeData", "trnasCapacity", trnasCapacity)
-		self.writeToListener("RibosomeData", "synthetaseCapacity", synthetaseCapacity)
+		# self.writeToListener("RibosomeData", "trnasCapacity", trnasCapacity)
+		# self.writeToListener("RibosomeData", "synthetaseCapacity", synthetaseCapacity)
 
 		self.writeToListener("GrowthRateControl", "totalStalls", totalStalls)
 		self.writeToListener("GrowthRateControl", "synthetaseSaturation", synthetaseSaturation)

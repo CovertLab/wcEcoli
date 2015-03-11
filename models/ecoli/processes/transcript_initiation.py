@@ -89,11 +89,13 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
 
 		self.ppGpp = self.bulkMoleculeView("PPGPP[c]")
+		import ipdb; ipdb.set_trace()
 		self.ppGpp_base_conc = kb.metabolitePoolConcentrations[kb.metabolitePoolIDs.index("PPGPP[c]")]
 		self.ppGpp_scaling_factor = 1 / (self.ppGpp_base_conc ** PPGPP_POWER)
 		
 		###### VARIANT CODE #######
-		self.ppGppFeedback = kb.ppGppFeedback
+		# self.ppGppFeedback = kb.ppGppFeedback
+		self.ppGppFeedback = True
 		###### VARIANT CODE #######
 
 	def calculateRequest(self):
