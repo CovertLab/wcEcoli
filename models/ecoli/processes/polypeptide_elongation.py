@@ -41,19 +41,19 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		super(PolypeptideElongation, self).initialize(sim, kb)
 
 		# Load parameters
-		self.elngRate = float(kb.ribosomeElongationRate.asNumber(units.aa / units.s)) * self.timeStepSec
+		self.elngRate = float(kb.constants.ribosomeElongationRate.asNumber(units.aa / units.s)) * self.timeStepSec
 		self.nAvogadro = kb.nAvogadro
 		self.cellDensity = kb.cellDensity
 		self.aa_trna_groups = kb.aa_trna_groups
 		self.aa_synthetase_groups = kb.aa_synthetase_groups
 		self.synthetase_turnover = kb.trna_synthetase_rates.asNumber(units.aa/units.s)
 
-		proteinIds = kb.monomerData['id']
-		self.proteinLengths = kb.monomerData["length"].asNumber()
-		self.proteinSequences = kb.translationSequences
-		self.aaWeightsIncorporated = kb.translationMonomerWeights
-		self.endWeight = kb.translationEndWeight
-		self.gtpPerElongation = kb.gtpPerTranslation
+		proteinIds = kb.process.translation.monomerData['id']
+		self.proteinLengths = kb.process.translation.monomerData["length"].asNumber()
+		self.proteinSequences = kb.process.translation.translationSequences
+		self.aaWeightsIncorporated = kb.process.translation.translationMonomerWeights
+		self.endWeight = kb.process.translation.translationEndWeight
+		self.gtpPerElongation = kb.constants.gtpPerTranslation
 
 		##########
 		# Setting synthetase Km's to be fraction of steady state amino acid concentrations
@@ -66,9 +66,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.activeRibosomes = self.uniqueMoleculesView('activeRibosome')
 		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
 
-		self.aas = self.bulkMoleculesView(kb.aaIDs)
+		self.aas = self.bulkMoleculesView(kb.moleculeGroups.aaIDs)
 		self.trna_groups = [self.bulkMoleculesView(x) for x in self.aa_trna_groups.itervalues()]
 		self.synthetase_groups = [self.bulkMoleculesView(x) for x in self.aa_synthetase_groups.itervalues()]
+
 		self.h2o = self.bulkMoleculeView('H2O[c]')
 
 		self.gtp = self.bulkMoleculeView("GTP[c]")
@@ -80,8 +81,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.atp = self.bulkMoleculeView("ATP[c]")
 		self.amp = self.bulkMoleculeView("AMP[c]")
 
-		self.ribosome30S = self.bulkMoleculeView(kb.s30_fullComplex)
-		self.ribosome50S = self.bulkMoleculeView(kb.s50_fullComplex)
+		self.ribosome30S = self.bulkMoleculeView(kb.moleculeGroups.s30_fullComplex[0])
+		self.ribosome50S = self.bulkMoleculeView(kb.moleculeGroups.s50_fullComplex[0])
 
 	def calculateRequest(self):
 		self.activeRibosomes.requestAll()
