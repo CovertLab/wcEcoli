@@ -4,7 +4,6 @@ import os
 import collections
 
 import numpy as np
-import tables
 import cvxopt
 
 from wholecell.utils import units
@@ -15,96 +14,96 @@ VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 
 def fitKb_2_metabolism(kb, simOutDir, bulkAverageContainer, bulkDeviationContainer):
+	pass
+	# # Load the simulation output
 
-	# Load the simulation output
+	# ## Effective biomass reaction
+	# with tables.open_file(os.path.join(simOutDir, "ConcentrationChange.hdf")) as h5file:
+	# 	time = h5file.root.ConcentrationChange.col("time")
+	# 	timeStep = h5file.root.ConcentrationChange.col("timeStep")
 
-	## Effective biomass reaction
-	with tables.open_file(os.path.join(simOutDir, "ConcentrationChange.hdf")) as h5file:
-		time = h5file.root.ConcentrationChange.col("time")
-		timeStep = h5file.root.ConcentrationChange.col("timeStep")
+	# 	# NOTE: units are M/s
+	# 	concentrationChange = h5file.root.ConcentrationChange.col("concentrationChange")
 
-		# NOTE: units are M/s
-		concentrationChange = h5file.root.ConcentrationChange.col("concentrationChange")
+	# 	names = h5file.root.names
+	# 	biomassMoleculeIDs = np.array(names.moleculeIDs.read())
 
-		names = h5file.root.names
-		biomassMoleculeIDs = np.array(names.moleculeIDs.read())
+	# ## Find the most extreme concentration flux, after removing the first few time steps
 
-	## Find the most extreme concentration flux, after removing the first few time steps
+	# # TODO: intelligent filtering - use the correlation coefficient?
 
-	# TODO: intelligent filtering - use the correlation coefficient?
+	# concentrationChange = concentrationChange[3:, :] # NOTE: magic number
 
-	concentrationChange = concentrationChange[3:, :] # NOTE: magic number
+	# concentrationChangeMostPositive = concentrationChange.max(0)
+	# concentrationChangeMostNegative = concentrationChange.min(0)
 
-	concentrationChangeMostPositive = concentrationChange.max(0)
-	concentrationChangeMostNegative = concentrationChange.min(0)
+	# effectiveBiomassReaction = concentrationChangeMostPositive.copy()
 
-	effectiveBiomassReaction = concentrationChangeMostPositive.copy()
+	# negativeIsMostExtreme = (np.abs(concentrationChangeMostNegative)
+	# 	> concentrationChangeMostPositive)
 
-	negativeIsMostExtreme = (np.abs(concentrationChangeMostNegative)
-		> concentrationChangeMostPositive)
+	# effectiveBiomassReaction[negativeIsMostExtreme] = concentrationChangeMostNegative[negativeIsMostExtreme]
 
-	effectiveBiomassReaction[negativeIsMostExtreme] = concentrationChangeMostNegative[negativeIsMostExtreme]
+	# biomassReaction = dict(zip(biomassMoleculeIDs, effectiveBiomassReaction*1000)) # conversion to mM/s
+	# biomassReaction.pop('PPGPP[c]')# TODO: Make this work with metabolism
+	# reactionRates = {reactionID:1 for reactionID in kb.metabolismReactionEnzymes.viewkeys()}
 
-	biomassReaction = dict(zip(biomassMoleculeIDs, effectiveBiomassReaction*1000)) # conversion to mM/s
-	biomassReaction.pop('PPGPP[c]')# TODO: Make this work with metabolism
-	reactionRates = {reactionID:1 for reactionID in kb.metabolismReactionEnzymes.viewkeys()}
+	# fba = FluxBalanceAnalysis(
+	# 	kb.metabolismReactionStoich,
+	# 	kb.metabolismExternalExchangeMolecules,
+	# 	biomassReaction,
+	# 	reversibleReactions = kb.metabolismReversibleReactions,
+	# 	reactionEnzymes = kb.metabolismReactionEnzymes.copy(), # TODO: copy in class
+	# 	reactionRates = reactionRates,
+	# 	)
 
-	fba = FluxBalanceAnalysis(
-		kb.metabolismReactionStoich,
-		kb.metabolismExternalExchangeMolecules,
-		biomassReaction,
-		reversibleReactions = kb.metabolismReversibleReactions,
-		reactionEnzymes = kb.metabolismReactionEnzymes.copy(), # TODO: copy in class
-		reactionRates = reactionRates,
-		)
+	# # Set constraints
+	# ## External molecules
+	# externalMoleculeIDs = fba.externalMoleculeIDs()
 
-	# Set constraints
-	## External molecules
-	externalMoleculeIDs = fba.externalMoleculeIDs()
+	# initWaterMass = kb.avgCellWaterMassInit
+	# initDryMass = kb.avgCellDryMassInit
 
-	initWaterMass = kb.avgCellWaterMassInit
-	initDryMass = kb.avgCellDryMassInit
+	# initCellMass = (
+	# 	initWaterMass
+	# 	+ initDryMass
+	# 	)
 
-	initCellMass = (
-		initWaterMass
-		+ initDryMass
-		)
+	# coefficient = initDryMass / initCellMass * kb.constants.cellDensity * (1 * units.s)
 
-	coefficient = initDryMass / initCellMass * kb.cellDensity * (1 * units.s)
+	# externalMoleculeLevels = kb.metabolismExchangeConstraints(
+	# 	externalMoleculeIDs,
+	# 	coefficient,
+	# 	COUNTS_UNITS / VOLUME_UNITS
+	# 	)
 
-	externalMoleculeLevels = kb.metabolismExchangeConstraints(
-		externalMoleculeIDs,
-		coefficient,
-		COUNTS_UNITS / VOLUME_UNITS
-		)
+	# fba.externalMoleculeLevelsIs(externalMoleculeLevels)
 
-	fba.externalMoleculeLevelsIs(externalMoleculeLevels)
+	# ## Set enzymes unlimited
+	# fba.enzymeLevelsIs(np.inf)
 
-	## Set enzymes unlimited
-	fba.enzymeLevelsIs(np.inf)
+	# ## Constrain FBA to 100% efficacy
+	# fba.maxReactionFluxIs(fba._standardObjectiveReactionName, 1)
 
-	## Constrain FBA to 100% efficacy
-	fba.maxReactionFluxIs(fba._standardObjectiveReactionName, 1)
+	# ## Solve and assert feasibility
+	# fba.run()
 
-	## Solve and assert feasibility
-	fba.run()
+	# assert abs(fba.objectiveReactionFlux() - 1) < 1e-10, "vMax fitting is infeasible"
 
-	assert abs(fba.objectiveReactionFlux() - 1) < 1e-10, "vMax fitting is infeasible"
+	# enzymeUsage = fba.enzymeUsage()
 
-	enzymeUsage = fba.enzymeUsage()
+	# TOLERANCE = 2
 
-	TOLERANCE = 2
+	# min_vMax = enzymeUsage[enzymeUsage > 1e-16].min()
 
-	min_vMax = enzymeUsage[enzymeUsage > 1e-16].min()
+	# enzyme_vMax = dict(zip(
+	# 	fba.enzymeIDs(), np.fmax(enzymeUsage, min_vMax) * TOLERANCE
+	# 	))
 
-	enzyme_vMax = dict(zip(
-		fba.enzymeIDs(), np.fmax(enzymeUsage, min_vMax) * TOLERANCE
-		))
-
-	kb.metabolismReactionMaxRates = { # NOTE: adding attribute to KB
-		reactionID:enzyme_vMax[enzymeID]
-		for reactionID, enzymeID in kb.metabolismReactionEnzymes.viewitems()
-		}
+	# kb.metabolismReactionMaxRates = { # NOTE: adding attribute to KB
+	# 	reactionID:enzyme_vMax[enzymeID]
+	# 	for reactionID, enzymeID in kb.metabolismReactionEnzymes.viewitems()
+	# 	}
 
 
 def _expressionFitting():

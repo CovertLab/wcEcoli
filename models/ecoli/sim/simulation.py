@@ -32,7 +32,6 @@ from models.ecoli.listeners.unique_molecule_counts import UniqueMoleculeCounts
 from models.ecoli.listeners.fba_results import FBAResults
 from models.ecoli.listeners.initiated_transcripts import InitiatedTranscripts
 from models.ecoli.listeners.growth_rate_control import GrowthRateControl
-from models.ecoli.listeners.initiated_polypeptides import InitiatedPolypeptides
 
 # Analysis
 import models.ecoli.analysis.single
@@ -71,7 +70,6 @@ class EcoliSimulation(Simulation):
 		UniqueMoleculeCounts,
 		FBAResults,
 		InitiatedTranscripts,
-		InitiatedPolypeptides,
 		GrowthRateControl
 		)
 

@@ -38,10 +38,10 @@ class ppGppDegradation(wholecell.processes.process.Process):
 		self.k_cat = 3. * 1 / units.s
 		self.v_max = self.k_cat * 10000
 
-		self.nAvogadro = kb.nAvogadro
-		self.cellDensity = kb.cellDensity
+		self.nAvogadro = kb.constants.nAvogadro
+		self.cellDensity = kb.constants.cellDensity
 
-		self.ppGpp_base_conc = kb.metabolitePoolConcentrations[kb.metabolitePoolIDs.index("PPGPP[c]")]
+		self.ppGpp_base_conc = kb.process.metabolism.metabolitePoolConcentrations[kb.process.metabolism.metabolitePoolIDs.index("PPGPP[c]")]
 
 		# Views
 		self.ppGpp = self.bulkMoleculeView("PPGPP[c]")

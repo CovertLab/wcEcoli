@@ -2119,6 +2119,11 @@ class Metabolism(object):
 
 		assert len(unaccounted) == 0
 
+		# Add ppGpp
+
+		metaboliteIDs.append("PPGPP[c]")
+		metaboliteConcentrations.append(PPI_CONCENTRATION) # TODO: Reset in fitter for now!
+
 		# Add byproducts with no annotated concentration to force recycling
 
 		metaboliteIDs.append("UMP[c]")

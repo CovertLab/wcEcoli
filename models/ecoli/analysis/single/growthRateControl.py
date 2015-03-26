@@ -35,7 +35,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	## Load Data ##
 	# Load data from KB
 	kb = cPickle.load(open(kbFile, "rb"))
-	cellDensity = kb.cellDensity
+	cellDensity = kb.constants.cellDensity
 	nAvogadro = kb.nAvogadro
 
 	# List of IDs we are interested in

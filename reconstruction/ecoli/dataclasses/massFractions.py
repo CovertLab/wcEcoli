@@ -136,7 +136,12 @@ class MassFractions(object):
 		abundance['molar_ratio_to_16SrRNA'] = [x(growth_rate) for x in trna_abundance_interpolation_functions]
 		return abundance
 
-
+	def dryMass(self, tau_d):
+		"""
+		Given an input doubling time in minutes, output mass fractions in fg
+		"""
+		tau_d = self._clipTau_d(tau_d)
+		return units.fg * self._exp2(tau_d.asNumber(units.min), *self._dryMassParams)
 
 
 

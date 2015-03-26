@@ -87,7 +87,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		coefficient = initDryMass / initCellMass * kb.constants.cellDensity * (self.timeStepSec * units.s)
 
-		self.externalMoleculeLevels = kb.metabolism.exchangeConstraints(
+		self.externalMoleculeLevels = kb.process.metabolism.exchangeConstraints(
 			externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS

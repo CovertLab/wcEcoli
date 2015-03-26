@@ -42,10 +42,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Load parameters
 		self.elngRate = float(kb.constants.ribosomeElongationRate.asNumber(units.aa / units.s)) * self.timeStepSec
-		self.nAvogadro = kb.nAvogadro
-		self.cellDensity = kb.cellDensity
-		self.aa_trna_groups = kb.aa_trna_groups
-		self.aa_synthetase_groups = kb.aa_synthetase_groups
+		self.nAvogadro = kb.constants.nAvogadro
+		self.cellDensity = kb.constants.cellDensity
+		self.aa_trna_groups = kb.process.translation.AA_TRNA_GROUPS
+		self.aa_synthetase_groups = kb.process.translation.AA_SYNTHETASE_GROUPS
 		self.synthetase_turnover = kb.trna_synthetase_rates.asNumber(units.aa/units.s)
 
 		proteinIds = kb.process.translation.monomerData['id']
@@ -57,8 +57,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		##########
 		# Setting synthetase Km's to be fraction of steady state amino acid concentrations
-		aaIdxs = [kb.metabolitePoolIDs.index(aaID) for aaID in kb.aaIDs]
-		aaConcentrations = kb.metabolitePoolConcentrations[aaIdxs]
+		aaIdxs = [kb.process.metabolism.metabolitePoolIDs.index(aaID) for aaID in kb.moleculeGroups.aaIDs]
+		aaConcentrations = kb.process.metabolism.metabolitePoolConcentrations[aaIdxs]
 		self.synthetase_km = SYNTHETASE_KM_SCALE * aaConcentrations
 		##########
 

@@ -52,12 +52,12 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# Load parameters
 		self.rnaSynthProb = kb.process.transcription.rnaData['synthProb']
 
-		self.rRNAIdx = kb.rnaData['isRRna']
-		self.tRNAIdx = kb.rnaData['isTRna']
-		self.mRNAIdx = kb.rnaData['isMRna']
-		self.rnaLengths = kb.rnaData['length'].asNumber(units.nt)
-		self.nAvogadro = kb.nAvogadro
-		self.cellDensity = kb.cellDensity
+		self.rRNAIdx = kb.process.transcription.rnaData['isRRna']
+		self.tRNAIdx = kb.process.transcription.rnaData['isTRna']
+		self.mRNAIdx = kb.process.transcription.rnaData['isMRna']
+		self.rnaLengths = kb.process.transcription.rnaData['length'].asNumber(units.nt)
+		self.nAvogadro = kb.constants.nAvogadro
+		self.cellDensity = kb.constants.cellDensity
 
 		# self.activationProb = kb.transcriptionActivationRate.asNumber(1/units.s) * self.timeStepSec # TODO: consider the validity of this math
 
@@ -89,7 +89,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
 
 		self.ppGpp = self.bulkMoleculeView("PPGPP[c]")
-		self.ppGpp_base_conc = kb.metabolitePoolConcentrations[kb.metabolitePoolIDs.index("PPGPP[c]")]
+		self.ppGpp_base_conc = kb.process.metabolism.metabolitePoolConcentrations[kb.process.metabolism.metabolitePoolIDs.index("PPGPP[c]")]
 		self.ppGpp_scaling_factor = 1 / (self.ppGpp_base_conc ** PPGPP_POWER)
 		
 		###### VARIANT CODE #######
