@@ -177,7 +177,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		aaTotalConc = (1 / self.nAvogadro) * (1 / cellVolume) * self.aas.total()
 		synthetaseSaturation = (aaTotalConc / (self.synthetase_km + aaTotalConc)).normalize()
 		synthetaseSaturation.checkNoUnit()
-		stallsPerAA = np.fmax(aaCountInSequence - synthetaseCapacity * synthetaseSaturation.asNumber(),0)
+		synthetaseSaturation = synthetaseSaturation.asNumber()
+		stallsPerAA = np.fmax(aaCountInSequence - synthetaseCapacity * synthetaseSaturation,0)
 		totalStalls = np.ceil(stallsPerAA.sum())
 
 		# Calculate update

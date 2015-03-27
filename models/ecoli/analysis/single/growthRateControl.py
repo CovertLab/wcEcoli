@@ -10,7 +10,6 @@ Plots counts of things assosciated with growth rate control via ppGpp
 import argparse
 import os
 
-import tables
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -20,6 +19,7 @@ import cPickle
 import wholecell.utils.constants
 from wholecell.utils import units
 from wholecell.utils.sparkline import sparklineAxis, setAxisMaxMinY, setAxisMaxMinX
+from wholecell.io.tablereader import TableReader
 
 FONT = {'size'	:	8}
 PPGPP_IDX = 2
@@ -36,7 +36,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	# Load data from KB
 	kb = cPickle.load(open(kbFile, "rb"))
 	cellDensity = kb.constants.cellDensity
-	nAvogadro = kb.nAvogadro
+	nAvogadro = kb.constants.nAvogadro
 
 	# List of IDs we are interested in
 	relA = "RELA-MONOMER[c]"
@@ -50,27 +50,26 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 
 	## LOAD DATA ##
 	# Load counts of bulk molecules
-	with tables.open_file(os.path.join(simOutDir, "BulkMolecules.hdf")) as bulkMoleculesFile:
-		# Get indexes
-		moleculeIds = bulkMoleculesFile.root.names.moleculeIDs.read()
-		bulkIndexes = [moleculeIds.index(idx) for idx in bulkIds]
+	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 
-		# Load data
-		bulkMolecules = bulkMoleculesFile.root.BulkMolecules
-		bulkTime = bulkMolecules.col("time")
-		bulkCounts = bulkMolecules.read(0, None, 1, "counts")[:, bulkIndexes]
+	# Load ids and find indexes
+	moleculeIds = bulkMolecules.readAttribute("moleculeIDs")
+	bulkIndexes = [moleculeIds.index(idx) for idx in bulkIds]
+
+	bulkTime = bulkMolecules.readColumn("time")
+	bulkCounts = bulkMolecules.readColumn("counts")[:, bulkIndexes]
 
 	# Load mass fractions
-	with tables.open_file(os.path.join(simOutDir, "Mass.hdf")) as massFile:
-		table = massFile.root.Mass
-		cellMass = table.col("cellMass")
-		growth = table.col("growth")
-		cellDry = table.col("dryMass")
-		protein = table.col("proteinMass")
-		rna = table.col("rnaMass")
-		tRna = table.col("tRnaMass")
-		rRna = table.col("rRnaMass")
-		massTime = table.col("time")
+	mass = TableReader(os.path.join(simOutDir, "Mass"))
+	cellMass = mass.readColumn("cellMass")
+	growth = mass.readColumn("growth")
+	cellDry = mass.readColumn("dryMass")
+	protein = mass.readColumn("proteinMass")
+	rna = mass.readColumn("rnaMass")
+	tRna = mass.readColumn("tRnaMass")
+	rRna = mass.readColumn("rRnaMass")
+	massTime = mass.readColumn("time")
+
 	proteinMassFraction = protein / cellDry
 	rRnaMassFraction = rRna / cellDry
 	tRnaMassFraction = tRna / cellDry
@@ -85,22 +84,20 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	doubledDryMass = dryMass[0]*2 * np.ones(dryMass.size)
 
 	# Load ratio of stable to total RNA synthesis
-	with tables.open_file(os.path.join(simOutDir, "InitiatedTranscripts.hdf")) as massFile:
-		table = massFile.root.InitiatedTranscripts
-		ratioStableToToalInitalized = table.col("ratioStableToToalInitalized")
-		initTime = table.col("time")
+	initiatedTranscripts = TableReader(os.path.join(simOutDir, "InitiatedTranscripts"))
+	ratioStableToToalInitalized = initiatedTranscripts.readColumn("ratioStableToToalInitalized")
+	initTime = initiatedTranscripts.readColumn("time")
 	N = 20
 	runningMeanRatio = np.zeros(ratioStableToToalInitalized.size)
 	for i in range(ratioStableToToalInitalized.size):
 		runningMeanRatio[i] = np.mean(ratioStableToToalInitalized[i:i+N])
 
 	# Load other growth rate control data
-	with tables.open_file(os.path.join(simOutDir, "GrowthRateControl.hdf")) as massFile:
-		table = massFile.root.GrowthRateControl
-		totalStalls = table.col("totalStalls")
-		synthetaseSaturation = table.col("synthetaseSaturation")
-		spoTSaturation = table.col("spoT_saturation")
-		gcTime = table.col("time")
+	growthRateControl = TableReader(os.path.join(simOutDir, "GrowthRateControl"))
+	totalStalls = growthRateControl.readColumn("totalStalls")
+	synthetaseSaturation = growthRateControl.readColumn("synthetaseSaturation")
+	spoTSaturation = growthRateControl.readColumn("spoT_saturation")
+	gcTime = growthRateControl.readColumn("time")
 	
 	synthetaseSaturationMean = synthetaseSaturation.mean(axis = 1)
 	synthetaseSaturationMax = synthetaseSaturation.max(axis = 1)
