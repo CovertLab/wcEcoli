@@ -49,45 +49,45 @@ class Metabolism(wholecell.processes.process.Process):
 		super(Metabolism, self).initialize(sim, kb)
 
 		# Load constants
-		self.nAvogadro = kb.nAvogadro.asNumber(1 / COUNTS_UNITS)
-		self.cellDensity = kb.cellDensity.asNumber(MASS_UNITS/VOLUME_UNITS)
-		
-		self.metabolitePoolIDs = kb.metabolitePoolIDs
-		self.targetConcentrations = kb.metabolitePoolConcentrations.asNumber(COUNTS_UNITS/VOLUME_UNITS)
+		self.nAvogadro = kb.constants.nAvogadro.asNumber(1 / COUNTS_UNITS)
+		self.cellDensity = kb.constants.cellDensity.asNumber(MASS_UNITS/VOLUME_UNITS)
+
+		self.metabolitePoolIDs = kb.process.metabolism.metabolitePoolIDs
+		self.targetConcentrations = kb.process.metabolism.metabolitePoolConcentrations.asNumber(COUNTS_UNITS/VOLUME_UNITS)
 
 		objective = {
 			moleculeID:coeff for moleculeID, coeff in
 			izip(self.metabolitePoolIDs, self.targetConcentrations)
 			}
-		
+
 		# Set up FBA solver
 
 		self.fba = FluxBalanceAnalysis(
-			kb.metabolismReactionStoich.copy(), # TODO: copy in class
-			kb.metabolismExternalExchangeMolecules,
+			kb.process.metabolism.reactionStoich.copy(), # TODO: copy in class
+			kb.process.metabolism.externalExchangeMolecules,
 			objective,
 			objectiveType = "pools",
-			reversibleReactions = kb.metabolismReversibleReactions,
-			# reactionEnzymes = kb.metabolismReactionEnzymes.copy(), # TODO: copy in class
-			# reactionRates = kb.metabolismReactionRates(self.timeStepSec * units.s),
-			# moleculeMasses = kb.metabolismExchangeMasses(MASS_UNITS / COUNTS_UNITS)
+			reversibleReactions = kb.process.metabolism.reversibleReactions,
+			# reactionEnzymes = kb.process.metabolism.reactionEnzymes.copy(), # TODO: copy in class
+			# reactionRates = kb.process.metabolism.reactionRates(self.timeStepSec * units.s),
+			# moleculeMasses = kb.process.metabolism.exchangeMasses(MASS_UNITS / COUNTS_UNITS)
 			)
 
 		# Set constraints
 		## External molecules
 		externalMoleculeIDs = self.fba.externalMoleculeIDs()
 
-		initWaterMass = kb.avgCellWaterMassInit
-		initDryMass = kb.avgCellDryMassInit
+		initWaterMass = kb.constants.avgCellWaterMassInit
+		initDryMass = kb.constants.avgCellDryMassInit
 
 		initCellMass = (
 			initWaterMass
 			+ initDryMass
 			)
 
-		coefficient = initDryMass / initCellMass * kb.cellDensity * (self.timeStepSec * units.s)
+		coefficient = initDryMass / initCellMass * kb.constants.cellDensity * (self.timeStepSec * units.s)
 
-		externalMoleculeLevels = kb.metabolismExchangeConstraints(
+		externalMoleculeLevels = kb.process.metabolism.exchangeConstraints(
 			externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS
@@ -134,8 +134,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.fba.internalMoleculeLevelsIs(
 			metaboliteCountsInit * countsToMolar
 			)
-			
-		self.fba.run()
+
+		# self.fba.run()
 
 		deltaMetabolites = self.fba.outputMoleculeLevelsChange() / countsToMolar
 
@@ -151,21 +151,22 @@ class Metabolism(wholecell.processes.process.Process):
 			self.fba.reactionFluxes() / self.timeStepSec)
 		self.writeToListener("FBAResults", "externalExchangeFluxes",
 			self.fba.externalExchangeFluxes() / self.timeStepSec)
-		self.writeToListener("FBAResults", "objectiveValue",
-			self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
+		# self.writeToListener("FBAResults", "objectiveValue", # TODO
+		# 	self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
 		self.writeToListener("FBAResults", "outputFluxes",
 			self.fba.outputMoleculeLevelsChange() / self.timeStepSec)
 
+		# TODO
 		# NOTE: the calculation for the objective components doesn't yet have
 		# an interface, since it will vary in calculation and shape for every
 		# objective type
 
-		objectiveComponents_raw = (np.array(self.fba._f).flatten() * self.fba._solutionFluxes)[self.fba._objIndexes]
-		objectiveComponents = objectiveComponents_raw[::2] + objectiveComponents_raw[1::2]
+		# objectiveComponents_raw = (np.array(self.fba._f).flatten() * self.fba._solutionFluxes)[self.fba._objIndexes]
+		# objectiveComponents = objectiveComponents_raw[::2] + objectiveComponents_raw[1::2]
 
-		self.writeToListener("FBAResults", "objectiveComponents",
-			objectiveComponents
-			)
+		# self.writeToListener("FBAResults", "objectiveComponents",
+		# 	objectiveComponents
+		# 	)
 
 		# TODO:
 		# - which media exchanges/reactions are limiting, if any

@@ -13,7 +13,6 @@ AAUsage listener. Tracks amino acid usages.
 from __future__ import division
 
 import numpy as np
-import tables
 
 import wholecell.listeners.listener
 from wholecell.utils.fitting import normalize
@@ -40,7 +39,7 @@ class AAUsage(wholecell.listeners.listener.Listener):
 
 		self.sim = sim
 
-		self.metaboliteIds = kb.aaIDs[:]
+		self.metaboliteIds = kb.moleculeGroups.aaIDs[:]
 		self.metaboliteIdxs = [ # TODO: use a bulk container view?
 			np.where(
 				x == self.bulkMolecules._moleculeIDs
@@ -53,17 +52,17 @@ class AAUsage(wholecell.listeners.listener.Listener):
 
 		biomassMetIdxs = [
 		np.where(
-			kb.wildtypeBiomass["metaboliteId"] == x
+			kb.process.metabolism.wildtypeBiomass["id"] == x
 			)[0][0] for x in self.metaboliteIds
 		]
 
 		self.relativeAAProductionBiomass = normalize(
-			kb.wildtypeBiomass["biomassFlux"][biomassMetIdxs].asNumber()
+			kb.process.metabolism.wildtypeBiomass["biomassFlux"][biomassMetIdxs].asNumber()
 			)
 
 		self.relativeAaUsage = normalize(np.dot(
-			kb.monomerData["aaCounts"].asNumber().T,
-			kb.rnaExpression["expression"][kb.rnaIndexToMonomerMapping]
+			kb.process.translation.monomerData["aaCounts"].asNumber().T,
+			kb.process.transcription.rnaData["expression"][kb.relation.rnaIndexToMonomerMapping]
 			))
 
 	# Allocate memory
@@ -91,46 +90,20 @@ class AAUsage(wholecell.listeners.listener.Listener):
 			self.translationAAUsageCurrent
 			)
 
-	def pytablesCreate(self, h5file, expectedRows):
-
-		shape = self.translationAAUsageCurrent.shape
-		# Columns
-		d = {
-			"time": tables.Float64Col(),
-			"timeStep": tables.Int64Col(),
-			"translationAAUsageCurrent": tables.UInt64Col(shape),
-			"translationAAUsageCumulative": tables.UInt64Col(shape),
-			}
-
-		# Create table
-		# TODO: Add compression options (using filters)
-		t = h5file.create_table(
-			h5file.root,
-			self._name,
-			d,
-			title = self._name,
-			filters = tables.Filters(complevel = 9, complib="zlib"),
-			expectedrows = expectedRows
+	def tableCreate(self, tableWriter):
+		tableWriter.writeAttributes(
+			translationAAUsageCurrent_units = self.usageUnits,
+			translationAAUsageCumulative_units = self.usageUnits,
+			metaboliteIds = self.metaboliteIds,
+			relativeAAProductionBiomass = self.relativeAAProductionBiomass.tolist(),
+			relativeAaUsage = self.relativeAaUsage.tolist()
 			)
 
-		# Store units as metadata
-		t.attrs.translationAAUsageCurrent_units = self.usageUnits
-		t.attrs.translationAAUsageCumulative_units = self.usageUnits
-		t.attrs.metaboliteIds = self.metaboliteIds
-		t.attrs.relativeAAProductionBiomass = self.relativeAAProductionBiomass
-		t.attrs.relativeAaUsage = self.relativeAaUsage
 
-
-	def pytablesAppend(self, h5file):
-
-		t = h5file.get_node("/", self._name)
-		entry = t.row
-
-		entry["time"] = self.time()
-		entry["timeStep"] = self.timeStep()
-		entry["translationAAUsageCurrent"] = self.translationAAUsageCurrent
-		entry["translationAAUsageCumulative"] = self.translationAAUsageCumulative
-
-		entry.append()
-
-		t.flush()
+	def tableAppend(self, tableWriter):
+		tableWriter.append(
+			time = self.time(),
+			timeStep = self.timeStep(),
+			translationAAUsageCurrent = self.translationAAUsageCurrent,
+			translationAAUsageCumulative = self.translationAAUsageCumulative,
+			)

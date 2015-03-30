@@ -13,7 +13,6 @@ Rna counts listener. Tracks rna counts.
 from __future__ import division
 
 import numpy as np
-import tables
 
 import wholecell.listeners.listener
 from wholecell.utils.fitting import normalize
@@ -28,7 +27,8 @@ class rnaCounts(wholecell.listeners.listener.Listener):
 	def __init__(self, *args, **kwargs):
 		super(rnaCounts, self).__init__(*args, **kwargs)
 
-		self.usageUnits = "counts"
+		self.countUnits = "counts"
+		self.probUnits = "dimensionless"
 
 	# Construct object graph
 	def initialize(self, sim, kb):
@@ -40,7 +40,7 @@ class rnaCounts(wholecell.listeners.listener.Listener):
 
 		self.sim = sim
 
-		self.rnaIds = kb.rnaData['id']
+		self.rnaIds = kb.process.transcription.rnaData['id']
 		self.rnaIdxs = [ # TODO: use a bulk container view?
 			np.where(
 				x == self.bulkMolecules._moleculeIDs
@@ -59,43 +59,17 @@ class rnaCounts(wholecell.listeners.listener.Listener):
 	def update(self):
 		self.rnaCounts = self.rnaView.counts()
 
-	def pytablesCreate(self, h5file, expectedRows):
-
-		shape = self.rnaCounts.shape
-		# Columns
-		d = {
-			"time": tables.Float64Col(),
-			"timeStep": tables.Int64Col(),
-			"rnaCounts": tables.UInt64Col(shape),
-			"rnaSynthProb": tables.Float64Col(shape),
-			}
-
-		# Create table
-		# TODO: Add compression options (using filters)
-		t = h5file.create_table(
-			h5file.root,
-			self._name,
-			d,
-			title = self._name,
-			filters = tables.Filters(complevel = 9, complib="zlib"),
-			expectedrows = expectedRows
+	def tableCreate(self, tableWriter):
+		# Store units as metadata
+		tableWriter.writeAttributes( # TODO: reconsider attribute names
+			rnaCounts = self.countUnits,
+			rnaSynthProb = self.probUnits
 			)
 
-		# Store units as metadata
-		t.attrs.rnaCounts_units = self.usageUnits
-		#t.attrs.rnaIds = self.rnaIds
-
-
-	def pytablesAppend(self, h5file):
-
-		t = h5file.get_node("/", self._name)
-		entry = t.row
-
-		entry["time"] = self.time()
-		entry["timeStep"] = self.timeStep()
-		entry["rnaCounts"] = self.rnaCounts
-		entry["rnaSynthProb"] = self.rnaSynthProb
-
-		entry.append()
-
-		t.flush()
+	def tableAppend(self, tableWriter):
+		tableWriter.append(
+			time = self.time(),
+			timeStep = self.timeStep(),
+			rnaCounts = self.rnaCounts,
+			rnaSynthProb = self.rnaSynthProb,
+			)

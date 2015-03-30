@@ -51,35 +51,34 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		#f=open('data_initEqualSynthProbs', 'w')
 		#for i in range(0,len(kb.unfitSynthProb)): 
 		#	f.write(str(kb.unfitSynthProb[i])+' ')
-		#	f.write(str(kb.rnaData['synthProb'][i])+ '\n')
+		#	f.write(str(kb.process.transcription.rnaData['synthProb'][i])+ '\n')
 		#f.close()
 
 		# Load parameters
-		#rnaSynthProbPopAvg = kb.rnaData['synthProb']
-		self.rnaSynthProb = kb.rnaData['synthProb']
-		self.rnaIds = kb.rnaData['geneId']
+		#rnaSynthProbPopAvg = kb.process.transcription.rnaData['synthProb']
+		self.rnaSynthProb = kb.process.transcription.rnaData['synthProb']
+		self.rnaIds = kb.process.transcription.rnaData['geneId']
 		self.bulkChromosome = sim.states['BulkChromosome']
-		self.geneIds = kb.geneData['name']
+		self.geneIds = kb.state.bulkChromosome.bulkData['id']
 		self.geneView = self.bulkChromosome.container.countsView(self.geneIds)
 		self.mapGeneRna = [np.where(self.geneIds==x)[0][0] for x in self.rnaIds]
 
 		# self.activationProb = kb.transcriptionActivationRate.asNumber(1/units.s) * self.timeStepSec # TODO: consider the validity of this math
 
-		rnaLengths = kb.rnaData["length"]
+		rnaLengths = kb.process.transcription.rnaData["length"]
 
-		expectedTranscriptionTime = 1./kb.rnaPolymeraseElongationRate * rnaLengths
+		expectedTranscriptionTime = 1./kb.constants.rnaPolymeraseElongationRate * rnaLengths
 
 		expectedTranscriptionTimesteps = np.ceil(
 			(1/(self.timeStepSec * units.s) * expectedTranscriptionTime).asNumber()
 			)
 
-		averageTranscriptionTimesteps = np.dot(kb.rnaData["synthProbTimeAvg"], expectedTranscriptionTimesteps)
-
+		averageTranscriptionTimesteps = np.dot(kb.process.transcription.rnaData["synthProbTimeAvg"], expectedTranscriptionTimesteps)
 		expectedTerminationRate = 1./averageTranscriptionTimesteps
 
 		expectedFractionTimeInactive = np.dot(
 			1 - (1/(self.timeStepSec * units.s) * expectedTranscriptionTime).asNumber() / expectedTranscriptionTimesteps,
-			kb.rnaData["synthProbTimeAvg"]
+			kb.process.transcription.rnaData["synthProbTimeAvg"]
 			)
 
 		effectiveFractionActive = kb.fracActiveRnap * 1 / (1 - expectedFractionTimeInactive)
@@ -91,7 +90,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.activeRnaPolys = self.uniqueMoleculesView('activeRnaPoly')
 
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
-		self.highlyRegulated = kb.rnaData['isHighlyRegulated']
+		self.highlyRegulated = kb.process.transcription.rnaData['isHighlyRegulated']
 		
 		# Do this in the knowledge base prior to fitting
 		#### Calculate rna synth probabilities

@@ -12,7 +12,6 @@ from __future__ import division
 import argparse
 import os
 
-import tables
 import numpy as np
 from scipy import stats
 import matplotlib
@@ -20,6 +19,7 @@ matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import cPickle
 
+from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
 # TODO: account for complexation
@@ -36,20 +36,17 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 
 	kb = cPickle.load(open(kbFile, "rb"))
 
-	isMRna = kb.rnaData["isMRna"]
+	isMRna = kb.process.transcription.rnaData["isMRna"]
 
-	rnaIds = kb.rnaData["id"][isMRna]
+	rnaIds = kb.process.transcription.rnaData["id"][isMRna]
 
-	with tables.open_file(os.path.join(simOutDir, "BulkMolecules.hdf")) as bulkMoleculesFile:
+	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 
-		names = bulkMoleculesFile.root.names
-		bulkMolecules = bulkMoleculesFile.root.BulkMolecules
+	moleculeIds = bulkMolecules.readAttribute("moleculeIDs")
 
-		moleculeIds = names.moleculeIDs.read()
+	rnaIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in rnaIds], np.int)
 
-		rnaIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in rnaIds], np.int)
-
-		rnaCountsBulk = bulkMolecules.read(0, None, 1, "counts")[:, rnaIndexes]
+	rnaCountsBulk = bulkMolecules.readColumn("counts")[:, rnaIndexes]
 
 	# avgCounts = rnaCountsBulk.mean(0)
 
@@ -57,16 +54,18 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 
 	# relativeCounts = rnaCountsBulk[-1, :] / rnaCountsBulk[-1, :].sum()
 
+	bulkMolecules.close()
+
 	plt.figure(figsize = (8.5, 11))
 
 	counts = rnaCountsBulk[-1, :]
 
-	expectedCountsArbitrary = kb.rnaExpression['expression'][isMRna]
+	expectedCountsArbitrary = kb.process.transcription.rnaData['expression'][isMRna]
 
 	expectedCounts = expectedCountsArbitrary/expectedCountsArbitrary.sum() * counts.sum()
 
 	maxLine = 1.1 * max(expectedCounts.max(), counts.max())
-	plt.plot([0, maxLine], [0, maxLine], '--r')	
+	plt.plot([0, maxLine], [0, maxLine], '--r')
 	plt.plot(expectedCounts, counts, 'o', markeredgecolor = 'k', markerfacecolor = 'none')
 
 	plt.xlabel("Expected RNA count (scaled to total)")
@@ -74,7 +73,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 
 	# plt.show()
 
-	plt.savefig(os.path.join(plotOutDir, plotOutFileName))
+	from wholecell.analysis.analysis_tools import exportFigure
+	exportFigure(plt, plotOutDir, plotOutFileName)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ The UniqueMolecules State handles the identity and dynamic properties of unique
 molecules in the simulation.  The attribute names and data types are imported
 from the knowledge base.
 
-The UniqueMolecules State instantiates a UniqueObjectsContainer object, which 
+The UniqueMolecules State instantiates a UniqueObjectsContainer object, which
 creates and manages the structured arrays in memory.
 """
 
@@ -15,7 +15,6 @@ from itertools import izip
 import collections
 
 import numpy as np
-import tables
 
 import wholecell.states.state
 import wholecell.views.view
@@ -30,7 +29,7 @@ class UniqueMolecules(wholecell.states.state.State):
 	"""
 	UniqueMolecules
 
-	State that tracks unique instances of molecules in the simulation, which 
+	State that tracks unique instances of molecules in the simulation, which
 	can have special dynamic attributes.
 	"""
 
@@ -47,7 +46,7 @@ class UniqueMolecules(wholecell.states.state.State):
 	def initialize(self, sim, kb):
 		super(UniqueMolecules, self).initialize(sim, kb)
 
-		molDefs = kb.uniqueMoleculeDefinitions.copy()
+		molDefs = kb.state.uniqueMolecules.uniqueMoleculeDefinitions.copy()
 
 		defaultAttributes = DEFAULT_ATTRIBUTES.copy()
 
@@ -64,23 +63,20 @@ class UniqueMolecules(wholecell.states.state.State):
 
 		self.container = UniqueObjectsContainer(molDefs)
 
-		self._moleculeIds = kb.uniqueMoleculeMasses["moleculeId"]
+		self._moleculeIds = kb.state.uniqueMolecules.uniqueMoleculeMasses["id"]
 		self._moleculeMasses = (
-			kb.uniqueMoleculeMasses["mass"] / kb.nAvogadro
+			kb.state.uniqueMolecules.uniqueMoleculeMasses["mass"] / kb.constants.nAvogadro
 			).asNumber(units.fg)
 
 		self._unassignedPartitionedValue = self._nProcesses
 
 
 	def partition(self):
-		# Set the correct time for saving purposes
-		self.container.timeStepIs(self.timeStep())
-
 		# Remove any prior partition assignments
 		objects = self.container.objects()
 		if len(objects) > 0:
 			objects.attrIs(_partitionedProcess = self._unassignedPartitionedValue)
-		
+
 		# Gather requests
 		nMolecules = self.container._globalReference.size
 		nViews = len(self._views)
@@ -191,19 +187,16 @@ class UniqueMolecules(wholecell.states.state.State):
 		return masses
 
 
-	def pytablesCreate(self, h5file, expectedRows):
-		# self.container.pytablesCreate(h5file)
-		pass
+	def tableCreate(self, tableWriter):
+		self.container.tableCreate(tableWriter)
 
 
-	def pytablesAppend(self, h5file):
-		# self.container.pytablesAppend(h5file)
-		pass
+	def tableAppend(self, tableWriter):
+		self.container.tableAppend(tableWriter)
 
 
-	def pytablesLoad(self, h5file, timePoint):
-		# self.container.pytablesLoad(h5file, timePoint)
-		raise Exception("Unique molecules saving disabled for now")
+	def tableLoad(self, tableReader, tableIndex):
+		self.container.tableLoad(tableReader, tableIndex)
 
 
 class UniqueMoleculesView(wholecell.views.view.View):
