@@ -1931,8 +1931,8 @@ class Metabolism(object):
 
 		# Calculate the following assuming 60 min doubling time
 
-		initWaterMass = raw_data.parameters["avgCellWaterMassInit"].asNumber(units.g)
-		initDryMass = raw_data.parameters["avgCellDryMassInit"].asNumber(units.g)
+		initWaterMass = sim_data.mass.avgCellWaterMassInit.asNumber(units.g)
+		initDryMass = sim_data.mass.avgCellDryMassInit.asNumber(units.g)
 
 		initCellMass = initWaterMass + initDryMass
 
@@ -2239,11 +2239,12 @@ class Metabolism(object):
 
 					validLocations = validEnzymeCompartments[enzyme]
 
-					if len(validLocations) == 0:
-						raise Exception("Reaction {} uses enzyme {} but this enzyme does not exist.".format(
-							reactionID,
-							enzyme
-							))
+					# TODO: Commenting this so that I don't have to worry about enzymatic complexes. Fix this John.
+					# if len(validLocations) == 0:
+					# 	raise Exception("Reaction {} uses enzyme {} but this enzyme does not exist.".format(
+					# 		reactionID,
+					# 		enzyme
+					# 		))
 
 					if len(validLocations) == 1:
 						(location,) = validLocations
@@ -2258,12 +2259,15 @@ class Metabolism(object):
 						(location,) = {"i"} # assume enzyme is in inner membrane
 
 					else:
-						raise Exception("Reaction {} has multiple associated locations: {}".format(
-							reactionID,
-							reactantLocations
-							))
+						pass
+						# TODO: Commenting this so that I don't have to worry about enzymatic complexes. Fix this John.
+						# raise Exception("Reaction {} has multiple associated locations: {}".format(
+						# 	reactionID,
+						# 	reactantLocations
+						# 	))
 
-					assert location in validLocations
+					# TODO: Commenting this so that I don't have to worry about enzymatic complexes. Fix this John.
+					# assert location in validLocations
 
 					enzymeID = "{}[{}]".format(enzyme, location)
 

@@ -31,7 +31,7 @@ class Transcription(object):
 			])
 		expression = np.array([rna['expression'] for rna in raw_data.rnas])
 		synthProb = expression * (
-			np.log(2) / raw_data.parameters['cellCycleLen'].asNumber(units.s)
+			np.log(2) / sim_data.doubling_time.asNumber(units.s)
 			+ rnaDegRates
 			)
 		
@@ -42,7 +42,7 @@ class Transcription(object):
 		##################################
 		### Vary gene copy number code ###
 		synthProbPopAvg = expression * (
-			np.log(2) / sim_data.constants.cellCycleLen.asNumber(units.s)
+			np.log(2) / sim_data.doubling_time.asNumber(units.s)
 			+ rnaDegRates
 			)
 
@@ -76,10 +76,10 @@ class Transcription(object):
 
 		synthProb = np.zeros(len(synthProbPopAvg))
 		synthProb[highlyRegulated] = synthProbPopAvg[highlyRegulated]
-		synthProb[~highlyRegulated] = synthProbPopAvg[~highlyRegulated] / (2 * np.exp(-np.log(2)*ageReplicated[~highlyRegulated]/sim_data.constants.cellCycleLen.asNumber()))
+		synthProb[~highlyRegulated] = synthProbPopAvg[~highlyRegulated] / (2 * np.exp(-np.log(2)*ageReplicated[~highlyRegulated]/sim_data.doubling_time.asNumber()))
 		synthProb[~highlyRegulated] = synthProb[~highlyRegulated] / np.sum(synthProb[~highlyRegulated]) * fractionSynthProbNotHighlyRegulated
 
-		#synthProb = synthProbPopAvg / (2 * np.exp(-np.log(2)*ageReplicated/sim_data.constants.cellCycleLen.asNumber()))
+		#synthProb = synthProbPopAvg / (2 * np.exp(-np.log(2)*ageReplicated/sim_data.doubling_time.asNumber()))
 		#synthProb /= synthProb.sum()
 		
 		synthProbTimeAvg = np.zeros(len(synthProbPopAvg))
