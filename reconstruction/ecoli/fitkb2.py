@@ -15,7 +15,7 @@ N_SEEDS = 20
 
 def fitKb_2(kb, simOutDir):
 
-	massFractions60 = kb.massFractions.massFractions(60 * units.min)
+	massFractions60 = kb.mass.massFractions
 	proteinMass = massFractions60["proteinMass"].asUnit(units.g)
 	rnaMass = massFractions60["rnaMass"].asUnit(units.g)
 
@@ -123,7 +123,7 @@ def fitKb_2(kb, simOutDir):
 	totalAminoAcidsInCell = totalAminoAcidsInMacromolecules + totalAAInSolublePool
 
 	ppGpp_per_cell = (totalAminoAcidsInCell * kb.constants.ppGpp_base_concentration).asUnit(units.count)
-	cellVolume = kb.massFractions.dryMass(60 * units.min) / kb.constants.cellDensity
+	cellVolume = kb.mass.avgCellDryMassInit / kb.constants.cellDensity
 	ppGpp_concentration = (ppGpp_per_cell.asUnit(units.mol) / cellVolume).asUnit(units.mol / units.L)
 	# Finally set ppGpp concentration to maintain
 	kb.process.metabolism.metabolitePoolConcentrations[kb.process.metabolism.metabolitePoolIDs.index('PPGPP[c]')] = ppGpp_concentration
@@ -134,11 +134,13 @@ def fitKb_2(kb, simOutDir):
 
 	## Compute rate of AA incorperation
 	proteinComposition = kb.process.translation.monomerData["aaCounts"]
-	initialProteinMass = kb.massFractions.massFractions(60*units.min)['proteinMass']
+
+	initialProteinMass = kb.mass.massFractions['proteinMass']
+
 	initialProteinCounts = calcProteinCounts(kb, initialProteinMass)
 
 	initialProteinTranslationRate = (
-		(np.log(2) / kb.constants.cellCycleLen + kb.process.translation.monomerData["degRate"]) * initialProteinCounts
+		(np.log(2) / kb.doubling_time + kb.process.translation.monomerData["degRate"]) * initialProteinCounts
 		).asUnit(1 / units.s)
 
 	initialAAPolymerizationRate = units.dot(

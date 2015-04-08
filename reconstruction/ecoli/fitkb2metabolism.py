@@ -170,8 +170,8 @@ def _expressionFitting():
 
 	### Set up exchange reactions
 
-	initWaterMass = kb.constants.avgCellWaterMassInit
-	initDryMass = kb.constants.avgCellDryMassInit
+	initWaterMass = kb.mass.avgCellWaterMassInit
+	initDryMass = kb.mass.avgCellDryMassInit
 
 	initCellMass = initWaterMass + initDryMass
 
