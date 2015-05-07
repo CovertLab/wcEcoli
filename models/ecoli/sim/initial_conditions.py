@@ -14,12 +14,16 @@ from __future__ import division
 from itertools import izip
 
 import numpy as np
+import os
 
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils.fitting import normalize, countsFromMassAndExpression, calcProteinCounts
 from wholecell.utils import units
 
+from wholecell.io.tablereader import TableReader
+
 def calcInitialConditions(sim, kb):
+	assert sim._inheritedStatePath == None
 	randomState = sim.randomState
 
 	timeStep = sim.timeStepSec() # This is a poor solution but will suffice for now
@@ -475,3 +479,24 @@ def initializeReplication(uniqueMolCntr, kb):
 		directionIsPositive = np.array([True, True, False, False]),
 		isLeading = np.array([True, False, True, False])
 		)
+
+def setDaughterInitialConditions(sim, kb):
+	assert sim._inheritedStatePath != None
+
+	bulk_table_reader = TableReader(os.path.join(sim._inheritedStatePath, "BulkMolecules"))
+	sim.states["BulkMolecules"].tableLoad(bulk_table_reader, 0)
+
+	bulk_table_reader = TableReader(os.path.join(sim._inheritedStatePath, "BulkChromosome"))
+	sim.states["BulkChromosome"].tableLoad(bulk_table_reader, 0)
+
+	unique_table_reader = TableReader(os.path.join(sim._inheritedStatePath, "UniqueMolecules"))
+	sim.states["UniqueMolecules"].tableLoad(unique_table_reader, 0)
+
+	time_table_reader = TableReader(os.path.join(sim._inheritedStatePath, "Time"))
+	initialTime = TableReader(os.path.join(sim._inheritedStatePath, "Time")).readAttribute("initialTime")
+	sim._initialTime = initialTime
+
+	# TODO: This is a hack until we actually get a replication initialization process working
+	if len(sim.states['UniqueMolecules'].container.objectsInCollection('dnaPolymerase')) == 0:
+		initializeReplication(sim.states["UniqueMolecules"].container, kb)
+
