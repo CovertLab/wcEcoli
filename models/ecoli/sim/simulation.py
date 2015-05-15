@@ -36,6 +36,8 @@ import models.ecoli.analysis.single
 import models.ecoli.analysis.cohort
 
 from models.ecoli.sim.initial_conditions import calcInitialConditions
+from wholecell.sim.divide_cell import divide_cell
+from models.ecoli.sim.initial_conditions import setDaughterInitialConditions
 
 class EcoliSimulation(Simulation):
 	_stateClasses = (
@@ -73,6 +75,8 @@ class EcoliSimulation(Simulation):
 
 	_initialConditionsFunction = calcInitialConditions
 
+	_divideCellFunction = divide_cell
+
 	_lengthSec = 3600 * 4
 	_timeStepSec = 1
 
@@ -88,36 +92,5 @@ class EcoliSimulation(Simulation):
 
 	_logToDisk = False
 
-	@classmethod
-	def printAnalysisSingleFiles(cls, fileName = None):
-		directory = os.path.dirname(models.ecoli.analysis.single.__file__)
-		fileList = sorted(os.listdir(directory))
-		if fileName == None:
-			for f in fileList:
-				if f.endswith(".pyc") or f == "__init__.py":
-					continue
-				print os.path.join(directory, f)
-		else:
-			h = open(fileName, "w")
-			for f in fileList:
-				if f.endswith(".pyc") or f == "__init__.py":
-					continue
-				h.write(os.path.join(directory, f) + "\n")
-			h.close()
-
-	@classmethod
-	def printAnalysisCohortFiles(cls, fileName = None):
-		directory = os.path.dirname(models.ecoli.analysis.cohort.__file__)
-		fileList = sorted(os.listdir(directory))
-		if fileName == None:
-			for f in fileList:
-				if f.endswith(".pyc") or f == "__init__.py":
-					continue
-				print os.path.join(directory, f)
-		else:
-			h = open(fileName, "w")
-			for f in fileList:
-				if f.endswith(".pyc") or f == "__init__.py":
-					continue
-				h.write(os.path.join(directory, f) + "\n")
-			h.close()
+class EcoliDaughterSimulation(EcoliSimulation):
+	_initialConditionsFunction = setDaughterInitialConditions
