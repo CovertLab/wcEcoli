@@ -89,6 +89,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		activeRibosomes = self.activeRibosomes.allMolecules()
 
+		if len(activeRibosomes) == 0:
+			return
+
 		proteinIndexes, peptideLengths = activeRibosomes.attrs(
 			'proteinIndex', 'peptideLength'
 			)
@@ -241,7 +244,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.h2o.countInc(nElongations - nInitialized)
 
 		gtpUsed = np.int64(stochasticRound(
-			self.randomState, 
+			self.randomState,
 			nElongations * self.gtpPerElongation
 			))
 
