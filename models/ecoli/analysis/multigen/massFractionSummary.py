@@ -56,10 +56,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, kbFile):
 
 		for idx, massType in enumerate(massNames):
 			massToPlot = mass.readColumn(massNames[idx])
-			# massToPlot = massToPlot / massToPlot[0]
 
 			axesList[idx].plot(time / 60. / 60., massToPlot, linewidth = 2)
-			axesList[idx].set_xlim(0, 5.1)
+			#axesList[idx].set_xlim(0, 8.1)
 			axesList[idx].set_ylabel(cleanNames[idx] + " (fg)")
 
 	for axes in axesList:

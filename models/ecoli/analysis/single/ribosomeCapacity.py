@@ -80,7 +80,12 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	ribosomeCapacity_axis.set_ylabel("amino acids polymerized")
 	ribosomeCapacity_axis.legend(ncol=2)
 
-
+	ribosomeCapacity_axis = plt.subplot(2,1,2)
+	ribosomeCapacity_axis.plot(time / 60., actualElongations / totalRibosomeCapacity, label="Fraction of ribosome capacity used", linewidth=2, color='k')
+	ribosomeCapacity_axis.set_ylabel("Fraction of ribosome capacity used")
+	ribosomeCapacity_axis.set_yticks(np.arange(0., 1.05, 0.05))
+	#ribosomeCapacity_axis.get_yaxis().grid(b=True, which='major', color='b', linestyle='--')
+	ribosomeCapacity_axis.grid(b=True, which='major', color='b', linestyle='--')
 
 	# Save
 	plt.subplots_adjust(hspace = 0.5, wspace = 0.5)
