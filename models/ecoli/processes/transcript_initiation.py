@@ -26,7 +26,8 @@ from wholecell.utils import units
 
 import itertools
 
-PPGPP_POWER = 1.5
+#PPGPP_POWER = 1.5
+PPGPP_POWER = 4.5
 
 class TranscriptInitiation(wholecell.processes.process.Process):
 	""" TranscriptInitiation """
