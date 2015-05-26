@@ -60,6 +60,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	glucoseMW = kb.getter.getMass([GLUCOSE_ID])[0]
 
 	glucoseMassFlux = glucoseFlux * glucoseMW * cellMass / cellDensity
+	if any(glucoseMassFlux.asNumber() == 0.):
+		print "Glucose mass yield stopped. Glucose mass flux was zero!"
+		return
 
 	glucoseMassYield = growth / glucoseMassFlux
 
