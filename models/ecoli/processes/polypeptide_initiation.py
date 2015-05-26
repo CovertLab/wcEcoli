@@ -86,6 +86,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		if inactiveRibosomeCount == 0:
 			return
 
+		if self.mRnas.counts().sum() == 0:
+			return
+
 		proteinInitProb = (
 			self.mRnas.counts() /
 			self.mRnas.counts().sum()
