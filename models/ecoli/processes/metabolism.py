@@ -113,6 +113,8 @@ class Metabolism(wholecell.processes.process.Process):
 		###### VARIANT CODE #######
 		# self.turnOnGlucoseLimitation = kb.turnOnGlucoseLimitation
 		self.turnOnGlucoseLimitation = True
+
+		self.performLimitCheck = True
 		###### VARIANT CODE #######
 
 	def calculateRequest(self):
@@ -128,10 +130,12 @@ class Metabolism(wholecell.processes.process.Process):
 		###### VARIANT CODE #######
 		if self.turnOnGlucoseLimitation:
 			# APPLY METABOLIC LIMITATION AT TIME POINT
-			if self.time() == 10*60: # 10 min in
-				glc_idx = self.fba.externalMoleculeIDs().index('GLC-D[e]')
-				self.externalMoleculeLevels[glc_idx] = self.externalMoleculeLevels[glc_idx] * 0.5
-				self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
+			if self.performLimitCheck:
+				if self.time() >= 10*60 + 3600: # ~10 min into second simulation
+					glc_idx = self.fba.externalMoleculeIDs().index('GLC-D[e]')
+					self.externalMoleculeLevels[glc_idx] = self.externalMoleculeLevels[glc_idx] * 0.5
+					self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
+					self.performLimitCheck = False
 		###### VARIANT CODE #######
 
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg).asNumber(MASS_UNITS)
