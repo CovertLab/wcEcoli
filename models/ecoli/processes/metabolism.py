@@ -87,13 +87,13 @@ class Metabolism(wholecell.processes.process.Process):
 
 		coefficient = initDryMass / initCellMass * kb.constants.cellDensity * (self.timeStepSec * units.s)
 
-		self.externalMoleculeLevels = kb.process.metabolism.exchangeConstraints(
+		externalMoleculeLevels = kb.process.metabolism.exchangeConstraints(
 			externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS
 			)
 
-		self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
+		self.fba.externalMoleculeLevelsIs(externalMoleculeLevels)
 
 		## Set enzymes to 1, since the input kCat's are actually vMax's
 		self.fba.enzymeLevelsIs(1)
@@ -114,7 +114,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# self.turnOnGlucoseLimitation = kb.turnOnGlucoseLimitation
 		self.turnOnGlucoseLimitation = True
 
-		self.performLimitCheck = True
+		self.externalMoleculeLevelsSave = externalMoleculeLevels.copy()
 		###### VARIANT CODE #######
 
 	def calculateRequest(self):
@@ -130,12 +130,12 @@ class Metabolism(wholecell.processes.process.Process):
 		###### VARIANT CODE #######
 		if self.turnOnGlucoseLimitation:
 			# APPLY METABOLIC LIMITATION AT TIME POINT
-			if self.performLimitCheck:
-				if self.time() >= 10*60 + 3600: # ~10 min into second simulation
-					glc_idx = self.fba.externalMoleculeIDs().index('GLC-D[e]')
-					self.externalMoleculeLevels[glc_idx] = self.externalMoleculeLevels[glc_idx] * 0.5
-					self.fba.externalMoleculeLevelsIs(self.externalMoleculeLevels)
-					self.performLimitCheck = False
+			if self.time() >= 10*60 + 3600 and self.time() <= 3*3600 + 30*60:
+				glc_idx = self.fba.externalMoleculeIDs().index('GLC-D[e]')
+				tempExternalMoleculeLevels = self.externalMoleculeLevelsSave.copy()
+				tempExternalMoleculeLevels[glc_idx] = tempExternalMoleculeLevels[glc_idx] * 0.5
+				#tempExternalMoleculeLevels[glc_idx] = tempExternalMoleculeLevels[glc_idx] * 1.3
+				self.fba.externalMoleculeLevelsIs(tempExternalMoleculeLevels)
 		###### VARIANT CODE #######
 
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg).asNumber(MASS_UNITS)
