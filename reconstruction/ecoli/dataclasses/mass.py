@@ -47,6 +47,13 @@ class Mass(object):
 		self._rnaMass = self._dryMass * np.array([float(x['rnaMassFraction']) for x in raw_data.dryMassComposition])
 		self._dnaMass = self._dryMass * np.array([float(x['dnaMassFraction']) for x in raw_data.dryMassComposition])
 		
+		self._glycogenMass = self._dryMass * np.array([float(x['glycogenMassFraction']) for x in raw_data.dryMassComposition])
+		self._mureinMass = self._dryMass * np.array([float(x['mureinMassFraction']) for x in raw_data.dryMassComposition])
+		self._lpsMass = self._dryMass * np.array([float(x['lpsMassFraction']) for x in raw_data.dryMassComposition])
+		self._lipidMass = self._dryMass * np.array([float(x['lipidMassFraction']) for x in raw_data.dryMassComposition])
+		self._inorganicIonMass = self._dryMass * np.array([float(x['inorganicIonMassFraction']) for x in raw_data.dryMassComposition])
+		self._solublePoolMass = self._dryMass * np.array([float(x['solublePoolMassFraction']) for x in raw_data.dryMassComposition])
+
 		# We are assuming these are constant over all growth rates
 		# (probably not be true...)
 		self._RRNA23S_MASS_SUB_FRACTION = self.rrna23s_mass_sub_fraction
@@ -59,6 +66,14 @@ class Mass(object):
 		self._proteinMassParams, _ = curve_fit(self._exp2, self._tau_d_vector.asNumber(units.min), self._proteinMass, p0 = (0, 0, 0, 0))
 		self._rnaMassParams, _ = curve_fit(self._exp2, self._tau_d_vector.asNumber(units.min), self._rnaMass, p0 = (0, 0, 0, 0))
 		self._dnaMassParams, _ = curve_fit(self._exp2, self._tau_d_vector.asNumber(units.min), self._dnaMass, p0 = (0, 0, 0, 0))
+		
+		self._glycogenMassParams, _ = curve_fit(self._exp2, self._tau_d_vector.asNumber(units.min), self._glycogenMass, p0 = (0, 0, 0, 0))
+		self._mureinMassParams, _ = curve_fit(self._exp2, self._tau_d_vector.asNumber(units.min), self._mureinMass, p0 = (0, 0, 0, 0))
+		self._lpsMassParams, _ = curve_fit(self._exp2, self._tau_d_vector.asNumber(units.min), self._lpsMass, p0 = (0, 0, 0, 0))
+		# NOTE: Had to change initial guesses so that it converges correctly for lipid
+		self._lipidMassParams, _ = curve_fit(self._exp2, self._tau_d_vector.asNumber(units.min), self._lipidMass, p0 = (77, -0.003, -0.2, -0.003))
+		self._inorganicIonMassParams, _ = curve_fit(self._exp2, self._tau_d_vector.asNumber(units.min), self._inorganicIonMass, p0 = (0, 0, 0, 0))
+		self._solublePoolMassParams, _ = curve_fit(self._exp2, self._tau_d_vector.asNumber(units.min), self._solublePoolMass, p0 = (0, 0, 0, 0))
 
 		self.chromMass = self._chromMass(raw_data, sim_data)
 
@@ -89,6 +104,13 @@ class Mass(object):
 		D["rRna5SMass"] = D["rnaMass"] * self._RRNA5S_MASS_SUB_FRACTION
 		D["tRnaMass"] = D["rnaMass"] * self._TRNA_MASS_SUB_FRACTION
 		D["mRnaMass"] = D["rnaMass"] * self._MRNA_MASS_SUB_FRACTION
+
+		D["glycogenMass"] = units.fg * self._exp2(tau_d.asNumber(units.min), *self._glycogenMassParams)
+		D["mureinMass"] = units.fg * self._exp2(tau_d.asNumber(units.min), *self._mureinMassParams)
+		D["lpsMass"] = units.fg * self._exp2(tau_d.asNumber(units.min), *self._lpsMassParams)
+		D["lipidMass"] = units.fg * self._exp2(tau_d.asNumber(units.min), *self._lipidMassParams)
+		D["inorganicIonMass"] = units.fg * self._exp2(tau_d.asNumber(units.min), *self._inorganicIonMassParams)
+		D["solublePoolMass"] = units.fg * self._exp2(tau_d.asNumber(units.min), *self._solublePoolMassParams)
 
 		return D
 
