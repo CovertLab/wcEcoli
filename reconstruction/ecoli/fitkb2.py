@@ -15,9 +15,9 @@ N_SEEDS = 20
 
 def fitKb_2(kb, simOutDir):
 
-	massFractions60 = kb.mass.massFractions
-	proteinMass = massFractions60["proteinMass"].asUnit(units.g)
-	rnaMass = massFractions60["rnaMass"].asUnit(units.g)
+	massFractions = kb.mass.massFractions
+	proteinMass = massFractions["proteinMass"].asUnit(units.g)
+	rnaMass = massFractions["rnaMass"].asUnit(units.g)
 
 	# Construct bulk container
 

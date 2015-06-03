@@ -29,22 +29,24 @@ FITNESS_THRESHOLD = 1e-9
 MAX_FITTING_ITERATIONS = 100
 N_SEEDS=20
 
+DOUBLING_TIME = 60. * units.min
+
 def fitKb_1(kb):
 	# Initalize simulation data with growth rate
 	raw_data = KnowledgeBaseEcoli()
-	kb.initalize(doubling_time = 60. * units.min, raw_data = raw_data)
+	kb.initalize(doubling_time = DOUBLING_TIME, raw_data = raw_data)
 
 	# Increase RNA poly mRNA deg rates
 	setRnaPolymeraseCodingRnaDegradationRates(kb)
 
 	# Fit synthesis probabilities for RNA
 	for iteration in xrange(MAX_FITTING_ITERATIONS):
-
 		initialExpression = kb.process.transcription.rnaData["expression"].copy()
 
 		bulkContainer = createBulkContainer(kb)
 
-		rescaleMassForSoluableMetabolites(kb, bulkContainer)
+		# NOTE: TODO: TURNED OFF
+		#rescaleMassForSoluableMetabolites(kb, bulkContainer)
 
 		setRibosomeCountsConstrainedByPhysiology(kb, bulkContainer)
 
@@ -97,9 +99,9 @@ def setRnaPolymeraseCodingRnaDegradationRates(kb):
 
 
 def rescaleMassForSoluableMetabolites(kb, bulkMolCntr):
-	massFractions60 = kb.mass.massFractions
+	massFractions = kb.mass.massFractions
 
-	mass = massFractions60["proteinMass"] + massFractions60["rnaMass"] + massFractions60["dnaMass"]
+	mass = massFractions["proteinMass"] + massFractions["rnaMass"] + massFractions["dnaMass"]
 
 	# We have to remove things with zero concentration because taking the inverse of zero isn't so nice.
 	poolIds = [x for idx, x in enumerate(kb.process.metabolism.metabolitePoolIDs) if kb.process.metabolism.metabolitePoolConcentrations.asNumber()[idx] > 0]
@@ -129,33 +131,33 @@ def rescaleMassForSoluableMetabolites(kb, bulkMolCntr):
 		poolIds
 		)
 
-	# GDP POOL
-	ribosomeSubunits = bulkMolCntr.countsView(
-		np.hstack(
-			(kb.process.complexation.getMonomers(kb.moleculeGroups.s30_fullComplex[0])['subunitIds'], kb.process.complexation.getMonomers(kb.moleculeGroups.s50_fullComplex[0])['subunitIds'])
-			)
-		)
-	ribosomeSubunitStoich = np.hstack(
-			(kb.process.complexation.getMonomers(kb.moleculeGroups.s30_fullComplex[0])['subunitStoich'], kb.process.complexation.getMonomers(kb.moleculeGroups.s50_fullComplex[0])['subunitStoich'])
-			)
+	# # GDP POOL
+	# ribosomeSubunits = bulkMolCntr.countsView(
+	# 	np.hstack(
+	# 		(kb.process.complexation.getMonomers(kb.moleculeGroups.s30_fullComplex[0])['subunitIds'], kb.process.complexation.getMonomers(kb.moleculeGroups.s50_fullComplex[0])['subunitIds'])
+	# 		)
+	# 	)
+	# ribosomeSubunitStoich = np.hstack(
+	# 		(kb.process.complexation.getMonomers(kb.moleculeGroups.s30_fullComplex[0])['subunitStoich'], kb.process.complexation.getMonomers(kb.moleculeGroups.s50_fullComplex[0])['subunitStoich'])
+	# 		)
 
-	activeRibosomeMax = (ribosomeSubunits.counts() // ribosomeSubunitStoich).min()
-	elngRate = kb.constants.ribosomeElongationRate.asNumber(units.aa / units.s)
-	T_d = kb.doubling_time.asNumber(units.s)
-	dt = kb.constants.timeStep.asNumber(units.s)
+	# activeRibosomeMax = (ribosomeSubunits.counts() // ribosomeSubunitStoich).min()
+	# elngRate = kb.constants.ribosomeElongationRate.asNumber(units.aa / units.s)
+	# T_d = kb.doubling_time.asNumber(units.s)
+	# dt = kb.constants.timeStep.asNumber(units.s)
 
-	activeRibosomesLastTimeStep = activeRibosomeMax * np.exp( np.log(2) / T_d * (T_d - dt)) / 2
-	gtpsHydrolyzedLastTimeStep = activeRibosomesLastTimeStep * elngRate * kb.constants.gtpPerTranslation
+	# activeRibosomesLastTimeStep = activeRibosomeMax * np.exp( np.log(2) / T_d * (T_d - dt)) / 2
+	# gtpsHydrolyzedLastTimeStep = activeRibosomesLastTimeStep * elngRate * kb.constants.gtpPerTranslation
 
-	bulkMolCntr.countsInc(
-		gtpsHydrolyzedLastTimeStep,
-		["GDP[c]"]
-		)
+	# bulkMolCntr.countsInc(
+	# 	gtpsHydrolyzedLastTimeStep,
+	# 	["GDP[c]"]
+	# 	)
 
 	# Increase avgCellDryMassInit to match these numbers & rescale mass fractions
 	smallMoleculePoolsDryMass = units.hstack((massesToAdd[:poolIds.index('H2O[c]')], massesToAdd[poolIds.index('H2O[c]') + 1:]))
-	gtpPoolDryMass = gtpsHydrolyzedLastTimeStep * kb.getter.getMass(['GTP'])[0] / kb.constants.nAvogadro
-	newAvgCellDryMassInit = units.sum(mass) + units.sum(smallMoleculePoolsDryMass) + units.sum(gtpPoolDryMass)
+	#gtpPoolDryMass = gtpsHydrolyzedLastTimeStep * kb.getter.getMass(['GTP'])[0] / kb.constants.nAvogadro
+	newAvgCellDryMassInit = units.sum(mass) + units.sum(smallMoleculePoolsDryMass)# + units.sum(gtpPoolDryMass)
 	kb.mass.avgCellDryMassInit = newAvgCellDryMassInit
 	kb.mass.mrna_mass_sub_fraction = kb.mass.massFractions['mRnaMass'] / newAvgCellDryMassInit
 	kb.mass.rrna16s_mass_sub_fraction = kb.mass.massFractions['rRna16SMass'] / newAvgCellDryMassInit
@@ -178,10 +180,10 @@ def createBulkContainer(kb):
 	ids_protein = kb.process.translation.monomerData["id"]
 
 	## Mass fractions
-	massFractions60 = kb.mass.massFractions
+	massFractions = kb.mass.massFractions
 
-	totalMass_RNA = massFractions60["rnaMass"]
-	totalMass_protein = massFractions60["proteinMass"]
+	totalMass_RNA = massFractions["rnaMass"]
+	totalMass_protein = massFractions["proteinMass"]
 
 	totalMass_rRNA23S = totalMass_RNA * kb.mass.rrna23s_mass_sub_fraction
 	totalMass_rRNA16S = totalMass_RNA * kb.mass.rrna16s_mass_sub_fraction
@@ -203,7 +205,7 @@ def createBulkContainer(kb):
 	distribution_rRNA23S = np.array([1.] + [0.] * (ids_rRNA23S.size-1)) # currently only expressing first rRNA operon
 	distribution_rRNA16S = np.array([1.] + [0.] * (ids_rRNA16S.size-1)) # currently only expressing first rRNA operon
 	distribution_rRNA5S = np.array([1.] + [0.] * (ids_rRNA5S.size-1)) # currently only expressing first rRNA operon
-	distribution_tRNA = normalize(kb.mass.getTrnaAbundanceAtGrowthRate(60. * units.min)['molar_ratio_to_16SrRNA'])
+	distribution_tRNA = normalize(kb.mass.getTrnaAbundanceAtGrowthRate(DOUBLING_TIME)['molar_ratio_to_16SrRNA'])
 	distribution_mRNA = normalize(kb.process.transcription.rnaData['expression'][kb.process.transcription.rnaData['isMRna']])
 	distribution_transcriptsByProtein = normalize(kb.process.transcription.rnaData['expression'][kb.relation.rnaIndexToMonomerMapping])
 
@@ -417,10 +419,11 @@ def setRNAPCountsConstrainedByPhysiology(kb, bulkContainer):
 def fitExpression(kb, bulkContainer):
 
 	view_RNA = bulkContainer.countsView(kb.process.transcription.rnaData["id"])
+
 	counts_protein = bulkContainer.counts(kb.process.translation.monomerData["id"])
 
-	massFractions60 = kb.mass.massFractions
-	totalMass_RNA = massFractions60["rnaMass"]
+	massFractions = kb.mass.massFractions
+	totalMass_RNA = massFractions["rnaMass"]
 
 	doublingTime = kb.doubling_time
 	degradationRates_protein = kb.process.translation.monomerData["degRate"]
@@ -535,9 +538,9 @@ def fitMaintenanceCosts(kb, bulkContainer):
 	kb.constants.gtpPerTranslation += darkATP / aasUsedOverCellCycle
 
 def calculateBulkDistribitions(kb):
-	massFractions60 = kb.mass.massFractions
-	proteinMass = massFractions60["proteinMass"].asUnit(units.g)
-	rnaMass = massFractions60["rnaMass"].asUnit(units.g)
+	massFractions = kb.mass.massFractions
+	proteinMass = massFractions["proteinMass"].asUnit(units.g)
+	rnaMass = massFractions["rnaMass"].asUnit(units.g)
 
 	# Construct bulk container
 
