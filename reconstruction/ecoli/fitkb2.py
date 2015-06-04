@@ -15,9 +15,9 @@ N_SEEDS = 20
 
 def fitKb_2(kb, simOutDir):
 
-	massFractions = kb.mass.massFractions
-	proteinMass = massFractions["proteinMass"].asUnit(units.g)
-	rnaMass = massFractions["rnaMass"].asUnit(units.g)
+	subMass = kb.mass.subMass
+	proteinMass = subMass["proteinMass"].asUnit(units.g)
+	rnaMass = subMass["rnaMass"].asUnit(units.g)
 
 	# Construct bulk container
 
@@ -135,7 +135,7 @@ def fitKb_2(kb, simOutDir):
 	## Compute rate of AA incorperation
 	proteinComposition = kb.process.translation.monomerData["aaCounts"]
 
-	initialProteinMass = kb.mass.massFractions['proteinMass']
+	initialProteinMass = kb.mass.subMass['proteinMass']
 
 	initialProteinCounts = calcProteinCounts(kb, initialProteinMass)
 
@@ -149,7 +149,7 @@ def fitKb_2(kb, simOutDir):
 
 	## Compute expression of tRNA synthetases
 	## Assuming independence in variance
-	synthetase_counts_by_group = np.zeros(len(kb.process.translation.AA_SYNTHETASE_GROUPS), dtype = np.float64)
+	synthetase_counts_by_group = np.zeros(len(kb.process.translation.AA_SYNT`TASE_GROUPS), dtype = np.float64)
 	synthetase_variance_by_group = np.zeros(len(kb.process.translation.AA_SYNTHETASE_GROUPS), dtype = np.float)
 	for idx, synthetase_group in enumerate(kb.process.translation.AA_SYNTHETASE_GROUPS.itervalues()):
 		group_count = 0.
