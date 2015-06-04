@@ -31,8 +31,6 @@ N_SEEDS=20
 
 DOUBLING_TIME = 60. * units.min
 
-DOUBLING_TIME = 60. * units.min
-
 def fitKb_1(kb):
 	# Initalize simulation data with growth rate
 	raw_data = KnowledgeBaseEcoli()
