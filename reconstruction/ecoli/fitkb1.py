@@ -540,9 +540,9 @@ def fitMaintenanceCosts(kb, bulkContainer):
 	kb.constants.gtpPerTranslation += darkATP / aasUsedOverCellCycle
 
 def calculateBulkDistribitions(kb):
-	massFractions = kb.mass.massFractions
-	proteinMass = massFractions["proteinMass"].asUnit(units.g)
-	rnaMass = massFractions["rnaMass"].asUnit(units.g)
+	subMass = kb.mass.subMass
+	proteinMass = subMass["proteinMass"].asUnit(units.g)
+	rnaMass = subMass["rnaMass"].asUnit(units.g)
 
 	# Construct bulk container
 
@@ -659,7 +659,7 @@ def fitTrnaSynthetaseRates(kb, bulkAverageContainer, bulkDeviationContainer):
 	## Compute rate of AA incorperation
 	proteinComposition = kb.process.translation.monomerData["aaCounts"]
 
-	initialProteinMass = kb.mass.massFractions['proteinMass']
+	initialProteinMass = kb.mass.subMass['proteinMass']
 
 	initialProteinCounts = calcProteinCounts(kb, initialProteinMass)
 
