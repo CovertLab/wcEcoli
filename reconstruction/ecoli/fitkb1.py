@@ -45,8 +45,7 @@ def fitKb_1(kb):
 
 		bulkContainer = createBulkContainer(kb)
 
-		# NOTE: TODO: TURNED OFF
-		#rescaleMassForSoluableMetabolites(kb, bulkContainer)
+		rescaleMassForSoluableMetabolites(kb, bulkContainer)
 
 		setRibosomeCountsConstrainedByPhysiology(kb, bulkContainer)
 
