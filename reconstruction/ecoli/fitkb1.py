@@ -15,9 +15,8 @@ from wholecell.utils import units
 from wholecell.utils.fitting import normalize
 
 # Constants (should be moved to KB)
-GROWTH_ASSOCIATED_MAINTENANCE = 59.81 # mmol/gDCW (from Feist)
-NON_GROWTH_ASSOCIATED_MAINTENANCE = 8.39 # mmol/gDCW/hr (from Feist)
-FRACTION_ACTIVE_RNAP = 0.20 # from Dennis&Bremer; figure ranges from almost 100% to 20% depending on the growth rate # TODO: Throw this into growth data
+#kb.constants.growthAssociatedMaintenence = 59.81 # mmol/gDCW (from Feist)
+#kb.constants.nonGrowthAssociatedMaintenence = 8.39 # mmol/gDCW/hr (from Feist)
 
 # Hacks
 RNA_POLY_MRNA_DEG_RATE_PER_S = np.log(2) / 30. # half-life of 30 seconds
@@ -78,7 +77,7 @@ def fitKb_1(kb):
 	## Calculate and set maintenance values
 
 	# ----- Non growth associated maintenance -----
-	kb.NGAM = NON_GROWTH_ASSOCIATED_MAINTENANCE * units.mmol / units.g / units.h
+	kb.NGAM = kb.constants.nonGrowthAssociatedMaintenence
 
 	# ----- Growth associated maintenance -----
 
@@ -402,7 +401,7 @@ def setRNAPCountsConstrainedByPhysiology(kb, bulkContainer):
 	nActiveRnapNeeded.normalize()
 
 	nActiveRnapNeeded.checkNoUnit()
-	nRnapsNeeded = nActiveRnapNeeded / FRACTION_ACTIVE_RNAP
+	nRnapsNeeded = nActiveRnapNeeded / kb.constants.fractionActiveRnap
 
 	minRnapSubunitCounts = (
 		nRnapsNeeded * np.array([2, 1, 1, 1]) # Subunit stoichiometry # TODO: obtain automatically
@@ -501,9 +500,9 @@ def fitRNAPolyTransitionRates(kb):
 
 	expectedTerminationRate = elngRate / averageTranscriptLength
 
-	kb.transcriptionActivationRate = expectedTerminationRate * FRACTION_ACTIVE_RNAP / (1 - FRACTION_ACTIVE_RNAP)
+	kb.transcriptionActivationRate = expectedTerminationRate * kb.constants.fractionActiveRnap / (1 - kb.constants.fractionActiveRnap)
 
-	kb.fracActiveRnap = FRACTION_ACTIVE_RNAP
+	kb.fracActiveRnap = kb.constants.fractionActiveRnap
 
 
 def fitMaintenanceCosts(kb, bulkContainer):
@@ -524,17 +523,20 @@ def fitMaintenanceCosts(kb, bulkContainer):
 			)
 		)
 
-	aasUsedOverCellCycle = aaMmolPerGDCW.asNumber(units.mmol/units.g).sum()
+	aasUsedOverCellCycle = units.sum(aaMmolPerGDCW) / kb.doubling_time
 	gtpUsedOverCellCycleMmolPerGDCW = gtpPerTranslation * aasUsedOverCellCycle
 
 	darkATP = ( # This has everything we can't account for
-		GROWTH_ASSOCIATED_MAINTENANCE -
+		kb.constants.growthAssociatedMaintenence -
 		gtpUsedOverCellCycleMmolPerGDCW
 		)
 
 	# Assign the growth associated "dark energy" to translation
 	# TODO: Distribute it amongst growth-related processes
-	kb.constants.gtpPerTranslation += darkATP / aasUsedOverCellCycle
+	gtpPerTranslation = darkATP / aasUsedOverCellCycle
+	gtpPerTranslation.normalize()
+	gtpPerTranslation.checkNoUnit()
+	kb.constants.gtpPerTranslation += gtpPerTranslation.asNumber()
 
 def calculateBulkDistribitions(kb):
 	subMass = kb.mass.subMass
