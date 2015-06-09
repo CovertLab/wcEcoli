@@ -49,6 +49,7 @@ class Mass(object):
 	def _buildSubMasses(self, raw_data, sim_data):
 		self._doubling_time_vector = units.min * np.array([float(x['doublingTime'].asNumber(units.min)) for x in raw_data.dryMassComposition])
 
+		# TODO: Use helper functions written for growthRateDependent parameters to make this better!
 		dryMass = np.array([float(x['averageDryMass'].asNumber(units.fg)) for x in raw_data.dryMassComposition]) / self.avgCellToInitalCellConvFactor
 		self._dryMassParams = interpolate.splrep(self._doubling_time_vector.asNumber(units.min)[::-1], dryMass[::-1])
 
@@ -194,3 +195,68 @@ class Mass(object):
 		abundance['id'] = self._trna_ids
 		abundance['molar_ratio_to_16SrRNA'] = [x(growth_rate) for x in trna_abundance_interpolation_functions]
 		return abundance
+
+class GrowthRateParameters(object):
+	"""
+	GrowthRateParameters
+	"""
+
+	def __init__(self, raw_data, sim_data):
+		self._doubling_time = sim_data.doubling_time
+		_loadTableIntoObjectGivenDoublingTime(self, raw_data.growthRateDependentParameters)
+
+def _getFitParameters(list_of_dicts, key):
+	# Load rows of data
+	x = _loadRow('doublingTime', list_of_dicts)
+	y = _loadRow(key, list_of_dicts)
+
+	# Save and strip units
+	y_units = 1.
+	x_units = 1.
+	if units.hasUnit(y):
+		y_units = units.getUnit(y)
+		y = y.asNumber(y_units)
+	if units.hasUnit(x):
+		x_units = units.getUnit(x)
+		x = x.asNumber(x_units)
+
+	# Sort data for spine fitting (must be ascending order)
+	idx_order = x.argsort()
+	x = x[idx_order]
+	y = y[idx_order]
+
+	# Generate fit
+	parameters = interpolate.splrep(x, y)
+	if np.sum(np.absolute(interpolate.splev(x, parameters) - y)) / y.size > 1.:
+		raise Exception("Fitting {} with 3d spline, residuals are huge!".format(key))
+
+	return {'parameters' : parameters, 'x_units' : x_units, 'y_units' : y_units}
+
+def _useFitParameters(x_new, parameters, x_units, y_units):
+	# Convert to same unit base
+	if units.hasUnit(x_units):
+		x_new = x_new.asNumber(x_units)
+	elif units.hasUnit(x_new):
+		raise Exception("New x value has units but fit does not!")
+
+	return y_units * float(interpolate.splev(x_new, parameters))
+
+def _loadRow(key, list_of_dicts):
+	if units.hasUnit(list_of_dicts[0][key]):
+		row_units = units.getUnit(list_of_dicts[0][key])
+		return row_units * np.array([float(x[key].asNumber(row_units)) for x in list_of_dicts])
+	else:
+		return np.array([float(x[key]) for x in list_of_dicts])
+def _loadTableIntoObjectGivenDoublingTime(obj, list_of_dicts):
+	table_keys = list_of_dicts[0].keys()
+
+	if 'doublingTime' not in table_keys:
+		raise Exception, 'This data has no doubling time column but it is supposed to be growth rate dependent!'
+	else:
+		table_keys.pop(table_keys.index('doublingTime'))
+
+	for key in table_keys:
+		fitParameters = _getFitParameters(list_of_dicts, key)
+		# setattr(obj, "_{}Params".format(key), fitParameters)
+		attrValue = _useFitParameters(obj._doubling_time, **fitParameters)
+		setattr(obj, key, attrValue)
