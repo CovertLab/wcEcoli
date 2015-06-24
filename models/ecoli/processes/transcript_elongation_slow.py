@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-TranscriptElongation
+TranscriptElongationSlow
 
 Transcription elongation sub-model.
 
@@ -23,10 +23,10 @@ import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease, PAD_VALUE
 from wholecell.utils import units
 
-class TranscriptElongation(wholecell.processes.process.Process):
-	""" TranscriptElongation """
+class TranscriptElongationSlow(wholecell.processes.process.Process):
+	""" TranscriptElongationSlow """
 
-	_name = "TranscriptElongation"
+	_name = "TranscriptElongationSlow"
 
 	# Constructor
 	def __init__(self):
@@ -47,12 +47,12 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.proton = None
 		self.rnapSubunits = None
 
-		super(TranscriptElongation, self).__init__()
+		super(TranscriptElongationSlow, self).__init__()
 
 
 	# Construct object graph
 	def initialize(self, sim, kb):
-		super(TranscriptElongation, self).initialize(sim, kb)
+		super(TranscriptElongationSlow, self).initialize(sim, kb)
 
 		# Load parameters
 
@@ -68,9 +68,15 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		self.endWeight = kb.process.transcription.transcriptionEndWeight
 
+		self.slowRnaBool = ~(kb.process.transcription.rnaData["isRRna5S"] | kb.process.transcription.rnaData["isRRna16S"] | kb.process.transcription.rnaData["isRRna23S"] | kb.process.transcription.rnaData["isTRna"])
+
 		# Views
 
-		self.activeRnaPolys = self.uniqueMoleculesView('activeRnaPoly')
+		self.activeRnaPolys = self.uniqueMoleculesView(
+			'activeRnaPoly',
+			rnaIndex = ("in", np.where(self.slowRnaBool)[0])
+			)
+		
 		self.bulkRnas = self.bulkMoleculesView(self.rnaIds)
 
 		self.ntps = self.bulkMoleculesView(["ATP[c]", "CTP[c]", "GTP[c]", "UTP[c]"])

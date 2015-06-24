@@ -16,7 +16,8 @@ from models.ecoli.processes.replication import Replication
 from models.ecoli.processes.polypeptide_initiation import PolypeptideInitiation
 from models.ecoli.processes.polypeptide_elongation import PolypeptideElongation
 from models.ecoli.processes.transcript_initiation import TranscriptInitiation
-from models.ecoli.processes.transcript_elongation import TranscriptElongation
+from models.ecoli.processes.transcript_elongation_slow import TranscriptElongationSlow
+from models.ecoli.processes.transcript_elongation_fast import TranscriptElongationFast
 from models.ecoli.processes.protein_degradation import ProteinDegradation
 from models.ecoli.processes.atp_usage import AtpUsage
 
@@ -50,7 +51,8 @@ class EcoliSimulation(Simulation):
 		Metabolism,
 		RnaDegradation,
 		TranscriptInitiation,
-		TranscriptElongation,
+		TranscriptElongationSlow,
+		TranscriptElongationFast,
 		PolypeptideInitiation,
 		PolypeptideElongation,
 		Replication,
@@ -92,5 +94,36 @@ class EcoliSimulation(Simulation):
 
 	_logToDisk = False
 
-class EcoliDaughterSimulation(EcoliSimulation):
-	_initialConditionsFunction = setDaughterInitialConditions
+	@classmethod
+	def printAnalysisSingleFiles(cls, fileName = None):
+		directory = os.path.dirname(models.ecoli.analysis.single.__file__)
+		fileList = sorted(os.listdir(directory))
+		if fileName == None:
+			for f in fileList:
+				if f.endswith(".pyc") or f == "__init__.py":
+					continue
+				print os.path.join(directory, f)
+		else:
+			h = open(fileName, "w")
+			for f in fileList:
+				if f.endswith(".pyc") or f == "__init__.py":
+					continue
+				h.write(os.path.join(directory, f) + "\n")
+			h.close()
+
+	@classmethod
+	def printAnalysisCohortFiles(cls, fileName = None):
+		directory = os.path.dirname(models.ecoli.analysis.cohort.__file__)
+		fileList = sorted(os.listdir(directory))
+		if fileName == None:
+			for f in fileList:
+				if f.endswith(".pyc") or f == "__init__.py":
+					continue
+				print os.path.join(directory, f)
+		else:
+			h = open(fileName, "w")
+			for f in fileList:
+				if f.endswith(".pyc") or f == "__init__.py":
+					continue
+				h.write(os.path.join(directory, f) + "\n")
+			h.close()
