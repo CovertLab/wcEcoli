@@ -55,7 +55,6 @@ class Simplification(wholecell.processes.process.Process):
 
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_SIMPLIFICATION)
 
-		import ipdb; ipdb.set_trace()
 
 	def calculateRequest(self):
 
@@ -63,9 +62,6 @@ class Simplification(wholecell.processes.process.Process):
 
 
 	def evolveState(self):
-		print self.molecules.total()[-3], self.molecules.total()[-1]
-		if self.time() > 3000:
-			import ipdb; ipdb.set_trace()
 
 		complexesToDissociate = self.randomState.binomial(
 			self.complexes.counts(),
