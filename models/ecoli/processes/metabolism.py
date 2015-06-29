@@ -6,8 +6,6 @@ Metabolism
 Metabolism sub-model. Encodes molecular simulation of microbial metabolism using flux-balance analysis.
 
 TODO:
-- move over to flexFBA
-- implement metabolite pools
 - enzyme-limited reactions (& fit enzyme expression)
 - option to call a reduced form of metabolism (assume optimal)
 
@@ -68,9 +66,6 @@ class Metabolism(wholecell.processes.process.Process):
 			objective,
 			objectiveType = "pools",
 			reversibleReactions = kb.process.metabolism.reversibleReactions,
-			# reactionEnzymes = kb.process.metabolism.reactionEnzymes.copy(), # TODO: copy in class
-			# reactionRates = kb.process.metabolism.reactionRates(self.timeStepSec * units.s),
-			# moleculeMasses = kb.process.metabolism.exchangeMasses(MASS_UNITS / COUNTS_UNITS)
 			)
 
 		# Set constraints
@@ -120,22 +115,16 @@ class Metabolism(wholecell.processes.process.Process):
 		# Solve for metabolic fluxes
 
 		metaboliteCountsInit = self.metabolites.counts()
-		poolCounts = self.poolMetabolites.counts()
 
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg).asNumber(MASS_UNITS)
 
 		cellVolume = cellMass / self.cellDensity
-
-		# if self.time() < 2:
-		# 	print poolCounts / self.nAvogadro / cellVolume
 
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
 		self.fba.internalMoleculeLevelsIs(
 			metaboliteCountsInit * countsToMolar
 			)
-
-		# self.fba.run()
 
 		deltaMetabolites = self.fba.outputMoleculeLevelsChange() / countsToMolar
 
