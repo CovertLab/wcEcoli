@@ -80,9 +80,6 @@ class EcoliSimulation(Simulation):
 
 	_divideCellFunction = divide_cell
 
-	_lengthSec = 3600 * 4
-	_timeStepSec = 1
-
 	_logToShell = True
 	_shellColumnHeaders = [
 		"Time (s)",
