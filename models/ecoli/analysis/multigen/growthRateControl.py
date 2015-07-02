@@ -14,7 +14,7 @@ from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 
-def main(seedOutDir, plotOutDir, plotOutFileName, kbFile):
+def main(seedOutDir, plotOutDir, plotOutFileName, kbFile, metadata=None):
 
 	if not os.path.isdir(seedOutDir):
 		raise Exception, "seedOutDir does not currently exist as a directory"
@@ -74,7 +74,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, kbFile):
 
 		# Plot ppGpp
 		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-		id_idx = bulkMolecules.readAttribute("objectNames").index("PPGPP[c]")
+		id_idx = bulkMolecules.readAttribute("objectNames").index("GUANOSINE-5DP-3DP[c]")
 		ppGppCounts = bulkMolecules.readColumn("counts")[:, id_idx]
 
 		cellMass = units.fg * cellMass

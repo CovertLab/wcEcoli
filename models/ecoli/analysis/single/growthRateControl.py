@@ -24,7 +24,7 @@ from wholecell.io.tablereader import TableReader
 FONT = {'size'	:	8}
 PPGPP_IDX = 2
 
-def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
+def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata=None):
 
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
@@ -41,7 +41,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	# List of IDs we are interested in
 	relA = "RELA-MONOMER[c]"
 	spoT = "SPOT-MONOMER[c]"
-	ppGpp = "PPGPP[c]"
+	ppGpp = "GUANOSINE-5DP-3DP[c]"
 	bulkIds = [relA, spoT, ppGpp]
 	# Other things we are intersted in
 	# Ribosome mass fraction
@@ -163,7 +163,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	spotSat_axis.set_ylabel('spoT saturation')
 
 	# Plot proteins if interest
-	bulkIds.pop(bulkIds.index("PPGPP[c]"))
+	bulkIds.pop(bulkIds.index("GUANOSINE-5DP-3DP[c]"))
 	ROW = 7
 	for idx in xrange(len(bulkIds)):
 		bulkObject_axis = plt.subplot(NUMBER_ROWS, 3, idx + 3*ROW+1)

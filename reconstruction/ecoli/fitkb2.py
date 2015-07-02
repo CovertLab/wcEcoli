@@ -45,7 +45,7 @@ def fitKb_2(kb, simOutDir):
 		complexationStoichMatrix
 		)
 
-	rnaDistribution = kb.process.transcription.rnaData['expression']
+	rnaDistribution = kb.process.transcription.rnaData["expression"]
 
 	rnaTotalCounts = countsFromMassAndExpression(
 		rnaMass.asNumber(units.g),
@@ -126,7 +126,7 @@ def fitKb_2(kb, simOutDir):
 	cellVolume = kb.mass.avgCellDryMassInit / kb.constants.cellDensity
 	ppGpp_concentration = (ppGpp_per_cell.asUnit(units.mol) / cellVolume).asUnit(units.mol / units.L)
 	# Finally set ppGpp concentration to maintain
-	kb.process.metabolism.metabolitePoolConcentrations[kb.process.metabolism.metabolitePoolIDs.index('PPGPP[c]')] = ppGpp_concentration
+	kb.process.metabolism.metabolitePoolConcentrations[kb.process.metabolism.metabolitePoolIDs.index('GUANOSINE-5DP-3DP[c]')] = ppGpp_concentration
 
 	# ----- tRNA synthetase turnover rates ------
 	# Fit tRNA synthetase kcat values based on expected rates of translation

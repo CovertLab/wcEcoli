@@ -51,7 +51,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		super(TranscriptInitiation, self).initialize(sim, kb)
 
 		# Load parameters
-		self.rnaSynthProb = kb.process.transcription.rnaData['synthProb']
+		self.rnaSynthProb = kb.process.transcription.rnaData["synthProb"]
 
 		self.rRNAIdx = kb.process.transcription.rnaData['isRRna']
 		self.tRNAIdx = kb.process.transcription.rnaData['isTRna']
@@ -89,8 +89,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
 
-		self.ppGpp = self.bulkMoleculeView("PPGPP[c]")
-		self.ppGpp_base_conc = kb.process.metabolism.metabolitePoolConcentrations[kb.process.metabolism.metabolitePoolIDs.index("PPGPP[c]")]
+		self.ppGpp = self.bulkMoleculeView("GUANOSINE-5DP-3DP[c]")
+		self.ppGpp_base_conc = kb.process.metabolism.metabolitePoolConcentrations[kb.process.metabolism.metabolitePoolIDs.index("GUANOSINE-5DP-3DP[c]")]
 		self.ppGpp_scaling_factor = 1 / (self.ppGpp_base_conc ** PPGPP_POWER)
 		
 		###### VARIANT CODE #######
@@ -174,3 +174,5 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.writeToListener("InitiatedTranscripts", "mRnaInitalized", mRnaInitalized)
 		self.writeToListener("InitiatedTranscripts", "tRnaInitalized", tRnaInitalized)
 		self.writeToListener("InitiatedTranscripts", "rRnaInitalized", rRnaInitalized)
+
+		self.writeToListener("RnapData", "didInitalize", nNewRnas.sum())

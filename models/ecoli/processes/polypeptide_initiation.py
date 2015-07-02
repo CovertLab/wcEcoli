@@ -134,3 +134,4 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		polypeptide_initiated = nNewProteins * self.proteinLens
 
 		self.writeToListener("InitiatedPolypeptides", "polypeptide_initiated", polypeptide_initiated.sum())
+		self.writeToListener("RibosomeData", "didInitalize", nNewProteins.sum())

@@ -116,11 +116,11 @@ class Mass(object):
 		for key, value in self.massFraction.iteritems():
 			D[key + "Mass"] = value * self.avgCellDryMass
 
-		D["rRna23SMass"] = D['rnaMass'] * self.rrna23s_mass_sub_fraction
-		D["rRna16SMass"] = D['rnaMass'] * self.rrna16s_mass_sub_fraction
-		D["rRna5SMass"] = D['rnaMass'] * self.rrna5s_mass_sub_fraction
-		D["tRnaMass"] = D['rnaMass'] * self.trna_mass_sub_fraction
-		D["mRnaMass"] = D['rnaMass'] * self.mrna_mass_sub_fraction
+		D["rRna23SMass"] = D['rnaMass'] * self._rrna23s_mass_sub_fraction
+		D["rRna16SMass"] = D['rnaMass'] * self._rrna16s_mass_sub_fraction
+		D["rRna5SMass"] = D['rnaMass'] * self._rrna5s_mass_sub_fraction
+		D["tRnaMass"] = D['rnaMass'] * self._trna_mass_sub_fraction
+		D["mRnaMass"] = D['rnaMass'] * self._mrna_mass_sub_fraction
 
 		return D
 
@@ -204,6 +204,9 @@ class GrowthRateParameters(object):
 	def __init__(self, raw_data, sim_data):
 		self._doubling_time = sim_data.doubling_time
 		_loadTableIntoObjectGivenDoublingTime(self, raw_data.growthRateDependentParameters)
+		thingsToSet = [x for x in dir(self) if x[0] != '_']
+		for x in thingsToSet:
+			setattr(sim_data.constants, x, getattr(self, x))
 
 def _getFitParameters(list_of_dicts, key):
 	# Load rows of data
@@ -211,8 +214,8 @@ def _getFitParameters(list_of_dicts, key):
 	y = _loadRow(key, list_of_dicts)
 
 	# Save and strip units
-	y_units = 1.
-	x_units = 1.
+	y_units = 1
+	x_units = 1
 	if units.hasUnit(y):
 		y_units = units.getUnit(y)
 		y = y.asNumber(y_units)
@@ -230,23 +233,32 @@ def _getFitParameters(list_of_dicts, key):
 	if np.sum(np.absolute(interpolate.splev(x, parameters) - y)) / y.size > 1.:
 		raise Exception("Fitting {} with 3d spline, residuals are huge!".format(key))
 
-	return {'parameters' : parameters, 'x_units' : x_units, 'y_units' : y_units}
+	return {'parameters' : parameters, 'x_units' : x_units, 'y_units' : y_units, 'dtype' : y.dtype}
 
-def _useFitParameters(x_new, parameters, x_units, y_units):
+def _useFitParameters(x_new, parameters, x_units, y_units, dtype):
 	# Convert to same unit base
 	if units.hasUnit(x_units):
 		x_new = x_new.asNumber(x_units)
 	elif units.hasUnit(x_new):
 		raise Exception("New x value has units but fit does not!")
 
-	return y_units * float(interpolate.splev(x_new, parameters))
+	# Calculate new interpolated y value
+	y_new = interpolate.splev(x_new, parameters)
+
+	# If value should be an integer (i.e. an elongation rate)
+	# round to the nearest integer
+	if dtype == np.int:
+		y_new = int(np.round(y_new))
+
+	return y_units * y_new
 
 def _loadRow(key, list_of_dicts):
 	if units.hasUnit(list_of_dicts[0][key]):
 		row_units = units.getUnit(list_of_dicts[0][key])
-		return row_units * np.array([float(x[key].asNumber(row_units)) for x in list_of_dicts])
+		return row_units * np.array([x[key].asNumber(row_units) for x in list_of_dicts])
 	else:
-		return np.array([float(x[key]) for x in list_of_dicts])
+		return np.array([x[key] for x in list_of_dicts])
+
 def _loadTableIntoObjectGivenDoublingTime(obj, list_of_dicts):
 	table_keys = list_of_dicts[0].keys()
 
@@ -257,6 +269,5 @@ def _loadTableIntoObjectGivenDoublingTime(obj, list_of_dicts):
 
 	for key in table_keys:
 		fitParameters = _getFitParameters(list_of_dicts, key)
-		# setattr(obj, "_{}Params".format(key), fitParameters)
 		attrValue = _useFitParameters(obj._doubling_time, **fitParameters)
 		setattr(obj, key, attrValue)

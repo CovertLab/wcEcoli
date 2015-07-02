@@ -27,7 +27,7 @@ COLORS = [
 	for color in COLORS_256
 	]
 
-def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
+def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
@@ -69,7 +69,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	plt.xlabel("Time (min)")
 	plt.ylabel("Mass (normalized by t = 0 min)")
 	plt.title("Biomass components")
-	plt.axis([0, 60, 0.5, 2.5])
+	#plt.axis([0, 60, 0.5, 2.5])
 
 	plt.legend(massLabels, loc = "best")
 

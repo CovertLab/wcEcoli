@@ -24,7 +24,7 @@ import wholecell.utils.constants
 
 # TODO: account for complexation
 
-def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
+def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
@@ -60,7 +60,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 
 	counts = rnaCountsBulk[-1, :]
 
-	expectedCountsArbitrary = kb.process.transcription.rnaData['expression'][isTRna]
+	expectedCountsArbitrary = kb.process.transcription.rnaData["expression"][isTRna]
 
 	expectedCounts = expectedCountsArbitrary/expectedCountsArbitrary.sum() * counts.sum()
 

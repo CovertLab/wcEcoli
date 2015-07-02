@@ -25,7 +25,7 @@ from wholecell.utils import units
 
 # TODO: account for complexation
 
-def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
+def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
@@ -56,7 +56,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
 	counts = proteinCountsBulk[-1, :]
 
 	expectedCountsArbitrary = (
-		kb.process.transcription.rnaData['expression'][kb.relation.rnaIndexToMonomerMapping] /
+		kb.process.transcription.rnaData["expression"][kb.relation.rnaIndexToMonomerMapping] /
 		(np.log(2) / kb.doubling_time.asNumber(units.s) + kb.process.translation.monomerData["degRate"].asNumber(1/units.s))
 		) * counts.sum()
 

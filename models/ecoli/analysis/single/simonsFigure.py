@@ -60,7 +60,7 @@ FIGURE_DIMENSIONS = (1.5*3, 1.5)
 TICK_PAD = 2
 LABEL_PAD = 2
 
-def main(simOutDir, plotOutDir, plotOutFileName, kbFile):
+def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
@@ -152,7 +152,7 @@ def plotRnaDistribution(grids, simOutDir, kbFile):
 
 	bulkMolecules.close()
 
-	expectedCountsArbitrary = kb.process.transcription.rnaData['expression'][isMRna]
+	expectedCountsArbitrary = kb.process.transcription.rnaData["expression"][isMRna]
 
 	expectedFrequency = expectedCountsArbitrary/expectedCountsArbitrary.sum()
 

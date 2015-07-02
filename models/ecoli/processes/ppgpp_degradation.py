@@ -41,12 +41,12 @@ class ppGppDegradation(wholecell.processes.process.Process):
 		self.nAvogadro = kb.constants.nAvogadro
 		self.cellDensity = kb.constants.cellDensity
 
-		self.ppGpp_base_conc = kb.process.metabolism.metabolitePoolConcentrations[kb.process.metabolism.metabolitePoolIDs.index("PPGPP[c]")]
+		self.ppGpp_base_conc = kb.process.metabolism.metabolitePoolConcentrations[kb.process.metabolism.metabolitePoolIDs.index("GUANOSINE-5DP-3DP[c]")]
 
 		# Views
-		self.ppGpp = self.bulkMoleculeView("PPGPP[c]")
+		self.ppGpp = self.bulkMoleculeView("GUANOSINE-5DP-3DP[c]")
 		self.gdp = self.bulkMoleculeView("GDP[c]")
-		self.h2o = self.bulkMoleculeView("H2O[c]")
+		self.h2o = self.bulkMoleculeView("WATER[c]")
 		self.ppi = self.bulkMoleculeView("PPI[c]")
 
 	def calculateRequest(self):

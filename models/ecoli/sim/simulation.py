@@ -24,14 +24,14 @@ from models.ecoli.processes.ppgpp_degradation import ppGppDegradation
 # Listeners
 from models.ecoli.listeners.mass import Mass
 from models.ecoli.listeners.replication_fork import ReplicationForkPosition
-from models.ecoli.listeners.ntp_usage import NtpUsage
-from models.ecoli.listeners.aa_usage import AAUsage
 from models.ecoli.listeners.ribosome_data import RibosomeData
 from models.ecoli.listeners.gene_copy_number import GeneCopyNumber
 from models.ecoli.listeners.unique_molecule_counts import UniqueMoleculeCounts
 from models.ecoli.listeners.fba_results import FBAResults
 from models.ecoli.listeners.initiated_transcripts import InitiatedTranscripts
 from models.ecoli.listeners.growth_rate_control import GrowthRateControl
+from models.ecoli.listeners.rnap_data import RnapData
+from models.ecoli.listeners.growth_limits import GrowthLimits
 
 # Analysis
 import models.ecoli.analysis.single
@@ -40,6 +40,9 @@ import models.ecoli.analysis.cohort
 from models.ecoli.sim.initial_conditions import calcInitialConditions
 from wholecell.sim.divide_cell import divide_cell
 from models.ecoli.sim.initial_conditions import setDaughterInitialConditions
+
+def hack(*args, **kwargs):
+	import ipdb; ipdb.set_trace()
 
 class EcoliSimulation(Simulation):
 	_stateClasses = (
@@ -65,14 +68,14 @@ class EcoliSimulation(Simulation):
 	_listenerClasses = (
 		Mass,
 		ReplicationForkPosition,
-		NtpUsage,
-		AAUsage,
 		RibosomeData,
 		GeneCopyNumber,
 		UniqueMoleculeCounts,
 		FBAResults,
 		InitiatedTranscripts,
-		GrowthRateControl
+		GrowthRateControl,
+		RnapData,
+		GrowthLimits,
 		)
 
 	_hookClasses = ()
@@ -80,9 +83,6 @@ class EcoliSimulation(Simulation):
 	_initialConditionsFunction = calcInitialConditions
 
 	_divideCellFunction = divide_cell
-
-	_lengthSec = 3600 * 4
-	_timeStepSec = 1
 
 	_logToShell = True
 	_shellColumnHeaders = [
