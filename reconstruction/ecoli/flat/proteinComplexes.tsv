@@ -1,8 +1,8 @@
-"name"	"comments"	"mw"	"location"	"reactionId"	"id"
-"RNA polymerase, core enzyme"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 378697.58290000027, -0.0, -0.0, -0.0, -0.0]	["c"]	"APORNAP-CPLX_RXN"	"APORNAP-CPLX"
-"30S ribosomal subunit"	""	[-0.0, 498319.3582000001, -0.0, -0.0, -0.0, -0.0, 355144.3519000002, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX-30SA_RXN"	"CPLX-30SA"
-"50S ribosomal subunit"	""	[939203.3228, -0.0, 38914.132000000005, -0.0, -0.0, -0.0, 476229.6955999999, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX-50SA_RXN"	"CPLX-50SA"
-"50S ribosomal protein complex L8"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 66862.80119999996, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX0-3956_RXN"	"CPLX0-3956"
-"50S ribosomal subunit protein L7/L12 dimer"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 24574.134199999982, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX0-3955_RXN"	"CPLX0-3955"
-"ArgR transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 101936.38800000004, -0.0, -0.0, -0.0, -0.0]	["c"]	"PC00005_RXN"	"PC00005"
-"ArgR-L-arginine DNA-binding transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 101936.38800000004, 175.2105, -0.0, -0.0, -0.0]	["c"]	"CPLX0-228_RXN"	"CPLX0-228"
+"name"	"comments"	"mw"	"location"	"reactionId"	"id"	"p_dissoc"
+"RNA polymerase, core enzyme"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 378697.58290000027, -0.0, -0.0, -0.0, -0.0]	["c"]	"APORNAP-CPLX_RXN"	"APORNAP-CPLX"	0
+"30S ribosomal subunit"	""	[-0.0, 498319.3582000001, -0.0, -0.0, -0.0, -0.0, 355144.3519000002, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX-30SA_RXN"	"CPLX-30SA"	0
+"50S ribosomal subunit"	""	[939203.3228, -0.0, 38914.132000000005, -0.0, -0.0, -0.0, 476229.6955999999, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX-50SA_RXN"	"CPLX-50SA"	0
+"50S ribosomal protein complex L8"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 66862.80119999996, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX0-3956_RXN"	"CPLX0-3956"	0
+"50S ribosomal subunit protein L7/L12 dimer"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 24574.134199999982, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX0-3955_RXN"	"CPLX0-3955"	0
+"ArgR transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 101936.38800000004, -0.0, -0.0, -0.0, -0.0]	["c"]	"PC00005_RXN"	"PC00005"	0.5
+"ArgR-L-arginine DNA-binding transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 101936.38800000004, 175.2105, -0.0, -0.0, -0.0]	["c"]	"CPLX0-228_RXN"	"CPLX0-228"	0.5
