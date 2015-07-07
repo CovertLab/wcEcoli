@@ -37,16 +37,15 @@ class Simplification(wholecell.processes.process.Process):
 		# Create stoichiometric matrix
 		# (it's the opposite of complexation)
 
-		self.stoichMatrix = -1 * kb.process.complexation.stoichMatrix().astype(np.int64, order = "F")
+		self.stoichMatrix = kb.process.simplification.stoichMatrix
 
 		# Get probabilities of dissociation
-		self.pRevs = kb.process.simplification.pRevs.astype(np.double)
+		self.pDissoc = kb.process.simplification.pDissoc.astype(np.double)
 
 		# Build views
 
-		moleculeNames = kb.process.complexation.moleculeNames
-		complexNames = [moleculeNames[x] for x in np.where(self.stoichMatrix < 0)[0]]
-		# Can't just use kb.process.complexation.complexNames because we want ordering to match the stoichiometric matrix
+		moleculeNames = kb.process.simplification.moleculeIds
+		complexNames = kb.process.simplification.complexIds
 
 		self.molecules = self.bulkMoleculesView(moleculeNames)
 		self.complexes = self.bulkMoleculesView(complexNames)
@@ -65,8 +64,9 @@ class Simplification(wholecell.processes.process.Process):
 
 		complexesToDissociate = self.randomState.binomial(
 			self.complexes.counts(),
-			self.pRevs
+			self.pDissoc
 			)
+
 		self.molecules.countsInc(
 			np.dot(self.stoichMatrix, complexesToDissociate)
 			)
