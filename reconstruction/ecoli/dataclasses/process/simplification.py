@@ -3,32 +3,62 @@ from __future__ import division
 
 import numpy as np
 
+from reconstruction.ecoli.dataclasses.process.complexation import Complexation
+
 class Simplification(object):
 	def __init__(self, raw_data, sim_data):
 		# Build the abstractions needed for simplification
 
-		pRevs = []
+		complexation = Complexation(raw_data, sim_data)
+
+		pDissoc = []
+
+		moleculeIds = []
+
+		stoichMatrixI = []
+		stoichMatrixJ = []
+		stoichMatrixV = []
 
 		# Remove complexes that are currently not simulated
 		FORBIDDEN_MOLECULES = {
 			"modified-charged-selC-tRNA", # molecule does not exist
 			}
 
-		deleteReactions = []
-		for reactionIndex, reaction in enumerate(raw_data.complexationReactions):
-			for molecule in reaction["stoichiometry"]:
-				if molecule["molecule"] in FORBIDDEN_MOLECULES:
-					deleteReactions.append(reactionIndex)
-					break
+		complexIds = []
+		for proteinComplex in raw_data.proteinComplexes:
+			if proteinComplex["id"] in FORBIDDEN_MOLECULES:
+				continue
+			for loc in proteinComplex["location"]:
+				complexIds.append(
+					"%s[%s]" % (proteinComplex["id"].encode("utf8"), loc.encode("utf8"))
+					)
+			pDissoc.append(proteinComplex["p_dissoc"])
 
-		for reactionIndex in deleteReactions[::-1]:
-			del raw_data.complexationReactions[reactionIndex]
+		for complexIdx, complexId in enumerate(complexIds):
+			composition = complexation.getMonomers(complexId)
+			subunitIds = composition["subunitIds"].tolist()
+			stoichiometry = composition["subunitStoich"]
 
-		for reaction in raw_data.complexationReactions:
-			assert reaction["process"] == "complexation"
-			assert reaction["dir"] == 1
+			for subunitId in subunitIds:
+				if subunitId not in moleculeIds:
+					moleculeIds.append(subunitId)
+			if complexId in moleculeIds:
+				raise Exception, "Duplicate complex entered: %s" % complexId
+			moleculeIds.append(complexId)
 
-			pRevs.append(reaction["p_rev"])
+			for coeff, subunitId in zip(stoichiometry, subunitIds):
+				stoichMatrixI.append(moleculeIds.index(subunitId))
+				stoichMatrixJ.append(complexIdx)
+				stoichMatrixV.append(coeff)
+			stoichMatrixI.append(moleculeIds.index(complexId))
+			stoichMatrixJ.append(complexIdx)
+			stoichMatrixV.append(-1)
 
+		self.moleculeIds = moleculeIds
+		self.complexIds = complexIds
 
-		self.pRevs = np.array(pRevs)
+		shape = (np.array(stoichMatrixI).max() + 1, np.array(stoichMatrixJ).max() + 1)
+		self.stoichMatrix = np.zeros(shape, np.float64)
+		self.stoichMatrix[stoichMatrixI, stoichMatrixJ] = stoichMatrixV
+
+		self.pDissoc = np.array(pDissoc)
