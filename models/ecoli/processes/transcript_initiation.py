@@ -175,4 +175,4 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.writeToListener("InitiatedTranscripts", "tRnaInitalized", tRnaInitalized)
 		self.writeToListener("InitiatedTranscripts", "rRnaInitalized", rRnaInitalized)
 
-		self.writeToListener("RnapData", "didInitalize", nNewRnas.sum())
+		self.writeToListener("RnapData", "didInitialize", nNewRnas.sum())
