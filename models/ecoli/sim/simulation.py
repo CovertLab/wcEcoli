@@ -10,6 +10,7 @@ from wholecell.states.bulk_chromosome import BulkChromosome
 
 # Processes
 from models.ecoli.processes.complexation import Complexation
+from models.ecoli.processes.simplification import Simplification
 from models.ecoli.processes.metabolism import Metabolism
 from models.ecoli.processes.rna_degradation import RnaDegradation
 from models.ecoli.processes.replication import Replication
@@ -55,6 +56,7 @@ class EcoliSimulation(Simulation):
 		Replication,
 		ProteinDegradation,
 		Complexation,
+		Simplification,
 		AtpUsage
 		)
 
