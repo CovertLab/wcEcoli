@@ -68,4 +68,6 @@ class moleculeGroups(object):
 		moleculeGroups['bulkMoleculesEqualDivision'] = createIdsWithCompartments([x for x in raw_data.polymerized if x['is_dntp'] and not x['is_end']])
 		moleculeGroups['bulkMoleculesWithChromosomeDivision'] = createIdsWithCompartments([x for x in raw_data.polymerized if x['is_dntp'] and not x['is_end']])
 
+		moleculeGroups['tfComplexCounts'] = [{"id": x["id"].encode("utf8"), "name": x["name"].encode("utf8")} for x in raw_data.tfComplexCounts]
+
 		self.__dict__.update(moleculeGroups)
