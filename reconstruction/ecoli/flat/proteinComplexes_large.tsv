@@ -487,7 +487,7 @@
 "ArgP DNA-binding transcriptional activator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 66939.05539999997, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7669_RXN"	"CPLX0-7669"
 "ArgP-lysine"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 66939.05539999997, 147.1965, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7670_RXN"	"CPLX0-7670"
 "ArgP-arginine  DNA binding transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 66939.05539999997, 175.2105, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7671_RXN"	"CPLX0-7671"
-"MntR-Mn2+ DNA-binding transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 35276.32440000002, 48.61, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7672_RXN"	"CPLX0-7672"
+"MntR-Mn2+ DNA-binding transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 35276.32440000002, 109.876, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7672_RXN"	"CPLX0-7672"
 "K+ channel Kch"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 184101.1648000001, -0.0, -0.0, -0.0, -0.0]	["i"]	"CPLX0-7674_RXN"	"CPLX0-7674"
 "2Fe-2S cluster-containing protein"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 127636.54560000001, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7675_RXN"	"CPLX0-7675"
 "ZntR-Zn2+ transcriptional activator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 16176.300999999996, 65.38, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7677_RXN"	"CPLX0-7677"
