@@ -18,7 +18,7 @@ python runscripts/reconstruction/unify_protein_complexes_large_from_small.py
 """
 
 
-with open('/home/mpaull/wcEcoli/reconstruction/ecoli/flat/proteinComplexes.tsv', 'r') as infile_small:
+with open('reconstruction/ecoli/flat/proteinComplexes.tsv', 'r') as infile_small:
 
 	# Read the proteinComplexes.tsv file (the smaller file)	
 	num_modified = 0
@@ -33,8 +33,8 @@ with open('/home/mpaull/wcEcoli/reconstruction/ecoli/flat/proteinComplexes.tsv',
 		nameMap[name] = row
 
 
-with open('/home/mpaull/wcEcoli/reconstruction/ecoli/flat/proteinComplexes_large_new.tsv', 'w') as output:
-	with open('/home/mpaull/wcEcoli/reconstruction/ecoli/flat/proteinComplexes_large.tsv', 'r') as infile_large:
+with open('reconstruction/ecoli/flat/proteinComplexes_large_new.tsv', 'w') as output:
+	with open('reconstruction/ecoli/flat/proteinComplexes_large.tsv', 'r') as infile_large:
 		num_modified = 0
 
 		# Read proteinComplexes_large

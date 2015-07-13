@@ -113,9 +113,9 @@ else:
 
 	# Attempt to correct the metabolite massses in proteinComplexes.tsv, 
 	#  writing into proteinComplexes_new.tsv
-	with open('/home/mpaull/wcEcoli/reconstruction/ecoli/flat/proteinComplexes_new.tsv', 'w') as output:
+	with open('reconstruction/ecoli/flat/proteinComplexes_new.tsv', 'w') as output:
 
-		with open('/home/mpaull/wcEcoli/reconstruction/ecoli/flat/proteinComplexes.tsv', 'rw') as f:
+		with open('reconstruction/ecoli/flat/proteinComplexes.tsv', 'rw') as f:
 				num_modified = 0
 
 				# Loop through every row in the file
