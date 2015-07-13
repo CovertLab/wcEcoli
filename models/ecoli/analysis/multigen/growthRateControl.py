@@ -14,6 +14,8 @@ from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 
+COLORS = ['b','g','r','c','m','y','b']
+
 def main(seedOutDir, plotOutDir, plotOutFileName, kbFile, metadata=None):
 
 	if not os.path.isdir(seedOutDir):
@@ -48,11 +50,12 @@ def main(seedOutDir, plotOutDir, plotOutFileName, kbFile, metadata=None):
 				#"DNA\nmass"
 				]
 
-	#plt.figure(figsize = (8.5, 11))
-	nAxes = len(massNames) + 3
+	nAxes = len(massNames) + 5
 	fig, axesList = plt.subplots(nAxes, sharex = True)
+	fig.set_figwidth(10)
+	fig.set_figheight(10)
 
-	for simDir in allDir:
+	for sim_idx, simDir in enumerate(allDir):
 		simOutDir = os.path.join(simDir, "simOut")
 		time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
 		mass = TableReader(os.path.join(simOutDir, "Mass"))
@@ -62,15 +65,15 @@ def main(seedOutDir, plotOutDir, plotOutFileName, kbFile, metadata=None):
 		for idx, massType in enumerate(massNames):
 			massToPlot = mass.readColumn(massNames[idx])
 
-			axesList[idx].plot(time / 60. / 60., massToPlot, linewidth = 2)
+			axesList[idx].plot(time / 60. / 60., massToPlot, linewidth = 2, color=COLORS[sim_idx])
 			axesList[idx].set_ylabel(cleanNames[idx] + " (fg)")
 
 
 		# Plot doubling time of each cell
 		initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 		doublingTime = np.ones(time.shape) * (time.max() - initialTime) / 60.
-		axesList[-3].plot(time / 60. / 60., doublingTime, linewidth = 2)
-		axesList[-3].set_ylabel("Doubling\ntime\n(min)")
+		axesList[-5].plot(time / 60. / 60., doublingTime, linewidth = 2, color=COLORS[sim_idx])
+		axesList[-5].set_ylabel("Doubling\ntime\n(min)")
 
 		# Plot ppGpp
 		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
@@ -81,8 +84,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, kbFile, metadata=None):
 		cellVolume = cellMass / cellDensity
 		ppGppConc = ((1 / nAvogadro) * (1 / cellVolume) * ppGppCounts).asNumber(units.umol / units.L)
 
-		axesList[-2].plot(time / 60. / 60., ppGppConc, linewidth = 2)
-		axesList[-2].set_ylabel("[ppGpp]\n(uM)")
+		axesList[-4].plot(time / 60. / 60., ppGppConc, linewidth = 2, color=COLORS[sim_idx])
+		axesList[-4].set_ylabel("[ppGpp]\n(uM)")
 
 		# Plot ratio of initiated transcripts
 		initiatedTranscripts = TableReader(os.path.join(simOutDir, "InitiatedTranscripts"))
@@ -92,13 +95,56 @@ def main(seedOutDir, plotOutDir, plotOutFileName, kbFile, metadata=None):
 		for i in range(ratioStableToToalInitalized.size):
 			runningMeanRatio[i] = np.mean(ratioStableToToalInitalized[i:i+N])
 
-		axesList[-1].plot(time / 60. / 60., ratioStableToToalInitalized)
-		axesList[-1].plot(time / 60. / 60., runningMeanRatio, linestyle = '--', color = 'k')
-		axesList[-1].set_ylabel('$r_s / r_t$')
+		axesList[-3].plot(time / 60. / 60., ratioStableToToalInitalized, color=COLORS[sim_idx])
+		axesList[-3].plot(time / 60. / 60., runningMeanRatio, linestyle = '--', color = 'k')
+		axesList[-3].set_ylabel('$r_s / r_t$')
 
-	for axes in axesList[:-1]:
-		axes.get_ylim()
-		axes.set_yticks(list(axes.get_ylim()))
+		# Plot ribosome capacity
+		ribosomeSubunitIds = []
+		ribosomeSubunitIds.extend(kb.moleculeGroups.s50_fullComplex)
+		ribosomeSubunitIds.extend(kb.moleculeGroups.s30_fullComplex)
+		ribosomeSubunitIds.extend(kb.moleculeGroups.s50_proteinComplexes)
+		ribosomeSubunitIds.extend(kb.process.complexation.getMonomers(kb.moleculeGroups.s50_fullComplex[0])['subunitIds'])
+		ribosomeSubunitIds.extend(kb.process.complexation.getMonomers(kb.moleculeGroups.s30_fullComplex[0])['subunitIds'])
+
+		moleculeIds = bulkMolecules.readAttribute("objectNames")
+		ribosomeSubunitIndexes = np.array([moleculeIds.index(comp) for comp in ribosomeSubunitIds], np.int)
+		ribosomeSubunitCounts = bulkMolecules.readColumn("counts")[:, ribosomeSubunitIndexes]
+		bulkMolecules.close()
+
+		uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
+		ribosomeIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRibosome")
+		activeRibosome = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, ribosomeIndex]
+		uniqueMoleculeCounts.close()
+
+		massFile = TableReader(os.path.join(simOutDir, "RibosomeData"))
+		actualElongations = massFile.readColumn("actualElongations")
+		massFile.close()
+
+		elongationRate = float(kb.constants.ribosomeElongationRate.asNumber(units.aa / units.s))
+		totalRibosome = (activeRibosome + np.min(ribosomeSubunitCounts))
+		totalRibosomeCapacity = totalRibosome * elongationRate
+
+		axesList[-2].plot(time / 60. / 60., totalRibosomeCapacity, label="Theoretical total ribosome capacity", color=COLORS[sim_idx])
+		axesList[-2].plot(time / 60. / 60., actualElongations, label="Actual elongations", color='k')
+		axesList[-2].set_ylabel("AA\npoly-\nmerized")
+		#axesList[-1].legend(ncol=2)
+
+		# Plot glucose exchange flux
+		fba_results = TableReader(os.path.join(simOutDir, "FBAResults"))
+		exFlux = fba_results.readColumn("externalExchangeFluxes")
+		exMolec = fba_results.readAttribute("externalMoleculeIDs")
+		glcFlux = exFlux[:,exMolec.index("GLC[p]")]
+
+		axesList[-1].plot(time / 60. / 60., -1. * glcFlux, label="Glucose exchange flux coefficient", color=COLORS[sim_idx])
+		axesList[-1].set_ylabel("External\nglucose\n(mmol/L/s)")
+
+	for axes in axesList:
+		possibleTicks = np.hstack((np.array(axes.get_ylim()), 0))
+		possibleTicks = possibleTicks[possibleTicks.argsort()]
+		if possibleTicks[0] == 0.:
+			np.delete(possibleTicks, 0)
+		axes.set_yticks(possibleTicks.tolist())
 
 	axesList[0].set_title("Cell mass fractions")
 	axesList[-1].set_xlabel("Time (hr)")
