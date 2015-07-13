@@ -91,11 +91,12 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.ppGpp = self.bulkMoleculeView("GUANOSINE-5DP-3DP[c]")
 		self.ppGpp_base_conc = kb.process.metabolism.metabolitePoolConcentrations[kb.process.metabolism.metabolitePoolIDs.index("GUANOSINE-5DP-3DP[c]")]
-		self.ppGpp_scaling_factor = 1 / (self.ppGpp_base_conc ** PPGPP_POWER)
+		self.ppGpp_scaling_factor = 1 / (self.ppGpp_base_conc ** kb.ppGpp_power)
 		
 		###### VARIANT CODE #######
 		# self.ppGppFeedback = kb.ppGppFeedback
 		self.ppGppFeedback = True
+		self.ppGpp_power = kb.ppGpp_power
 		###### VARIANT CODE #######
 
 	def calculateRequest(self):
@@ -121,7 +122,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		###### VARIANT CODE #######
 		if self.ppGppFeedback:
-			stable_rna_scale = (1/(self.ppGpp_scaling_factor * (ppGpp_conc ** PPGPP_POWER))).normalize()
+			stable_rna_scale = (1/(self.ppGpp_scaling_factor * (ppGpp_conc ** self.ppGpp_power))).normalize()
 			stable_rna_scale.checkNoUnit()
 			stable_rna_scale = np.fmin(1, stable_rna_scale.asNumber())
 		else:

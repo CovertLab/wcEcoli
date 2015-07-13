@@ -11,15 +11,20 @@ from models.ecoli.sim.variants.wildtype import wildtypeTotalIndices
 from models.ecoli.sim.variants.time_step import timeStep
 from models.ecoli.sim.variants.time_step import timeStepTotalIndices
 
+from models.ecoli.sim.variants.ppgpp_power import ppGppPower
+from models.ecoli.sim.variants.ppgpp_power import ppGppPowerTotalIndices
+
 
 nameToFunctionMapping = {
 	"geneKnockout": geneKnockout,
 	"wildtype": wildtype,
 	"timeStep": timeStep,
+	"ppGppPower": ppGppPower,
 }
 
 nameToNumIndicesMapping = {
 	"geneKnockout": geneKnockoutTotalIndices,
 	"wildtype": wildtypeTotalIndices,
 	"timeStep": timeStepTotalIndices,
+	"ppGppPower": ppGppPowerTotalIndices,
 }

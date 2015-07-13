@@ -32,7 +32,7 @@ def fitKb_1(kb):
 	# Initialize simulation data with growth rate
 	raw_data = KnowledgeBaseEcoli()
 	kb.initialize(doubling_time = DOUBLING_TIME, raw_data = raw_data, time_step_sec = TIME_STEP_SEC, media_conditions = MEDIA_CONDITIONS)
-
+	kb.ppGpp_power = 1.
 	# Increase RNA poly mRNA deg rates
 	setRnaPolymeraseCodingRnaDegradationRates(kb)
 
