@@ -1,3 +1,23 @@
+"""
+Util function to copy any rows from proteinComplexes.tsv into
+proteinComplexes_large.tsv where they differ.
+
+Description:
+
+Copies any rows in proteinComplexes.tsv into proteinComplexes_large.tsv if
+they differ, joining on the "name" column. Only touches these two files.
+
+Usage: 
+
+python runscripts/reconstruction/unify_protein_complexes_large_from_small.py
+
+
+@author: Morgan Paull
+@organization: Covert Lab, Department of Bioengineering, Stanford University
+@date: Created 07/13/2015
+"""
+
+
 with open('/home/mpaull/wcEcoli/reconstruction/ecoli/flat/proteinComplexes.tsv', 'r') as infile_small:
 
 	# Read the proteinComplexes.tsv file (the smaller file)	
