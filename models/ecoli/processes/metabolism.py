@@ -139,7 +139,7 @@ class Metabolism(wholecell.processes.process.Process):
 		###### VARIANT CODE #######
 		if self.turnOnGlucoseLimitation:
 			# APPLY METABOLIC LIMITATION AT TIME POINT
-			if self.time() >= 10*60 + 3600 and self.time() <= 3*3600 + 30*60:
+			if self.time() >= 10*60 + 3600:# and self.time() <= 3*3600 + 30*60:
 				glc_idx = self.fba.externalMoleculeIDs().index('GLC[p]')
 				tempExternalMoleculeLevels = self.externalMoleculeLevelsSave.copy()
 				tempExternalMoleculeLevels[glc_idx] = tempExternalMoleculeLevels[glc_idx] * 0.5
