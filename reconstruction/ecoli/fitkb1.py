@@ -505,6 +505,8 @@ def fitMaintenanceCosts(kb, bulkContainer):
 	# TODO: Distribute it amongst growth-related processes
 	kb.constants.gtpPerTranslation += additionalGtpPerTranslation
 
+	kb.constants.darkATP = darkATP
+
 def calculateBulkDistribitions(kb):
 	subMass = kb.mass.subMass
 	proteinMass = subMass["proteinMass"].asUnit(units.g)
