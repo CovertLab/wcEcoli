@@ -103,7 +103,7 @@
 "GutR-sorbitol"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 28225.934399999987, 182.173, -0.0, -0.0, -0.0]	["c"]	"MONOMER-56_RXN"	"MONOMER-56"	0.5
 "IclR-pyruvate DNA-binding transcriptional repressor"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 29740.167399999973, 87.055, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7605_RXN"	"CPLX0-7605"	0.5
 "PdhR-pyruvate"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 29420.30669999997, 87.055, -0.0, -0.0, -0.0]	["c"]	"MONOMER-59_RXN"	"MONOMER-59"	0.5
-"IdnR-5-ketogluconate DNA-binding transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 37563.000600000014, -0.0, -0.0, -0.0, -0.0]	["c"]	"MONOMER0-1301_RXN"	"MONOMER0-1301"	0.5
+"IdnR-5-ketogluconate DNA-binding transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 37563.000600000014, 193.133, -0.0, -0.0, -0.0]	["c"]	"MONOMER0-1301_RXN"	"MONOMER0-1301"	0.5
 "LacI-allolactose"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 38555.91199999998, 342.299, -0.0, -0.0, -0.0]	["i"]	"MONOMER0-159_RXN"	"MONOMER0-159"	0.5
 "LsrR-DHPD"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 33794.670999999966, 132.116, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7749_RXN"	"CPLX0-7749"	0.5
 "MalT-Maltotriose-ATP DNA-binding transcriptional activator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 103097.8773, 1007.593, -0.0, -0.0, -0.0]	["c"]	"MONOMER0-158_RXN"	"MONOMER0-158"	0.5
