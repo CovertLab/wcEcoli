@@ -33,7 +33,7 @@ LIST_OF_DICT_FILENAMES = (
 	"reactions.tsv",
 	"rnas.tsv",
 	"terminators.tsv",
-	"tfComplexCounts.tsv",
+	"tfSingleComponent.tsv",
 	"transcriptionUnits.tsv",
 	"dryMassComposition.tsv",
 	"biomass.tsv",
