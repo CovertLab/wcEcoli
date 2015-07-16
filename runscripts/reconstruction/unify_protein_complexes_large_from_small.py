@@ -25,12 +25,23 @@ with open('reconstruction/ecoli/flat/proteinComplexes.tsv', 'r') as infile_small
 	nameMap = {}
 
 	# Make a dict mapping reaction name to the row in proteinComplexes.tsv
-	for row in infile_small:
+	for row_num, row in enumerate(infile_small):
 		columns = row.split('\"')
 
 		name = columns[1]
 
-		nameMap[name] = row
+		columns[-1] = '\n'
+
+		# For the header row, make sure not to include the 'p_dissoc' header
+		if row_num == 0:
+			columns[-3] = columns[-1]
+			columns = columns[0:-2]
+
+		new_row = '\"'.join(columns)
+
+		# import ipdb; ipdb.set_trace()
+
+		nameMap[name] = new_row
 
 
 with open('reconstruction/ecoli/flat/proteinComplexes_large_new.tsv', 'w') as output:
