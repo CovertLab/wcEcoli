@@ -9,6 +9,7 @@
 "FNR DNA-binding transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 55938.202599999946, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7797_RXN"	"CPLX0-7797"	0.5
 "GlpR-glycerol"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 28039.652199999982, 92.094, -0.0, -0.0, -0.0]	["c"]	"CPLX0-8057_RXN"	"CPLX0-8057"	0.5
 "GlpR-glycerol-3-phosphate"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 28039.652199999982, 170.058, -0.0, -0.0, -0.0]	["c"]	"MONOMER-54_RXN"	"MONOMER-54"	0.5
+"fused PutA DNA-binding transcriptional repressor / proline dehydrogenase / 1-pyrroline-5-carboxylate dehydrogenase"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 287584.7026000006, -0.0, -0.0, -0.0, -0.0]	["c"]	"PUTA-CPLX_RXN"	"PUTA-CPLX"	0.5
 "NsrR-nitric oxide"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 15561.950400000003, 30.006, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7751_RXN"	"CPLX0-7751"	0.5
 "NsrR DNA-binding transcriptional repressor"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 31123.900800000007, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7756_RXN"	"CPLX0-7756"	0.5
 "NsrR-nitric oxide"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 31123.900800000007, 30.006, -0.0, -0.0, -0.0]	["c"]	"CPLX0-8047_RXN"	"CPLX0-8047"	0.5
@@ -105,6 +106,7 @@
 "PdhR-pyruvate"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 29420.30669999997, 87.055, -0.0, -0.0, -0.0]	["c"]	"MONOMER-59_RXN"	"MONOMER-59"	0.5
 "IdnR-5-ketogluconate DNA-binding transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 37563.000600000014, 193.133, -0.0, -0.0, -0.0]	["c"]	"MONOMER0-1301_RXN"	"MONOMER0-1301"	0.5
 "LacI-allolactose"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 38555.91199999998, 342.299, -0.0, -0.0, -0.0]	["i"]	"MONOMER0-159_RXN"	"MONOMER0-159"	0.5
+"LsrR DNA-binding transcriptional repressor"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 135178.684, 0.0, 0.0, 0.0, 0.0]	["c"]	"CPLX0-8043_RXN"	"CPLX0-8043"	0.5
 "LsrR-DHPD"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 33794.670999999966, 132.116, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7749_RXN"	"CPLX0-7749"	0.5
 "MalT-Maltotriose-ATP DNA-binding transcriptional activator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 103097.8773, 1007.593, -0.0, -0.0, -0.0]	["c"]	"MONOMER0-158_RXN"	"MONOMER0-158"	0.5
 "MarR DNA-binding transcriptional repressor"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 32071.8074, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7710_RXN"	"CPLX0-7710"	0.5
@@ -131,6 +133,8 @@
 "Zur transcriptional repressor"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 38498.0902, -0.0, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7679_RXN"	"CPLX0-7679"	0.5
 "Zur-Zn2+ DNA-binding transcriptional repressor"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 38498.0902, 261.52, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7680_RXN"	"CPLX0-7680"	0.5
 "PrpR-2-methylcitrate DNA-binding transcriptional dual regulator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 58651.19100000004, 203.128, -0.0, -0.0, -0.0]	["c"]	"MONOMER0-2421_RXN"	"MONOMER0-2421"	0.5
+"PurR transcriptional repressor"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 76343.24879999996, -0.0, -0.0, -0.0, -0.0]	["c"]	"PC00033_RXN"	"PC00033"	0.5
+"PurR-Hypoxanthine DNA-binding transcriptional repressor"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 76343.24879999996, 136.113, -0.0, -0.0, -0.0]	["c"]	"CPLX-123_RXN"	"CPLX-123"	0.5
 "RcnR-nickel"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 10135.847800000001, 58.7, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7618_RXN"	"CPLX0-7618"	0.5
 "RcnR-Co2+"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 10135.847800000001, 58.93, -0.0, -0.0, -0.0]	["c"]	"CPLX0-7619_RXN"	"CPLX0-7619"	0.5
 "RhaR-L-rhamnose DNA-binding transcriptional activator"	""	[-0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 32335.39689999996, 164.158, -0.0, -0.0, -0.0]	["c"]	"MONOMER-47_RXN"	"MONOMER-47"	0.5
