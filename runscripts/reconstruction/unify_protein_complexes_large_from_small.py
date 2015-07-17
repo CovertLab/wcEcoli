@@ -9,6 +9,7 @@ they differ, joining on the "name" column. Only touches these two files.
 
 Usage: 
 
+from within wcEcoli/ directory:
 python runscripts/reconstruction/unify_protein_complexes_large_from_small.py
 
 
@@ -38,8 +39,6 @@ with open('reconstruction/ecoli/flat/proteinComplexes.tsv', 'r') as infile_small
 			columns = columns[0:-2]
 
 		new_row = '\"'.join(columns)
-
-		# import ipdb; ipdb.set_trace()
 
 		nameMap[name] = new_row
 
