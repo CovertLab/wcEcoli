@@ -68,6 +68,37 @@ class moleculeGroups(object):
 		moleculeGroups['bulkMoleculesEqualDivision'] = createIdsWithCompartments([x for x in raw_data.polymerized if x['is_dntp'] and not x['is_end']])
 		moleculeGroups['bulkMoleculesWithChromosomeDivision'] = createIdsWithCompartments([x for x in raw_data.polymerized if x['is_dntp'] and not x['is_end']])
 
-		moleculeGroups['tfComplexCounts'] = [{"id": x["id"].encode("utf8"), "name": x["name"].encode("utf8")} for x in raw_data.tfComplexCounts]
+		moleculeGroups['tfSingleComponentBound'] = {}
+		moleculeGroups['tfSingleComponentUnbound'] = {}
+		moleculeGroups['tfSingleComponent'] = {}
+		for item in raw_data.tfSingleComponent:
+			key = item["TF"].encode("utf-8")
+			dnaBound = []
+			for protein in item["DNA-binding frame ids"]:
+				if protein == "":
+					continue
+				protein = protein.encode("utf-8")
+				locations = sim_data.getter.getLocation([protein])[0]
+				if len(locations) > 1:
+					raise Exception, "Can't handle multiple locations for protein (%s)" % protein
+				dnaBound.append(protein + "[" + locations[0] + "]")
+
+			dnaUnbound = []
+			for protein in item["Non-DNA-binding frame ids"]:
+				if protein == "":
+					continue
+				protein = protein.encode("utf-8")
+				locations = sim_data.getter.getLocation([protein])[0]
+				if len(locations) > 1:
+					raise Exception, "Can't handle multiple locations for protein (%s)" % protein
+				dnaUnbound.append(protein + "[" + locations[0] + "]")
+
+			combined = dnaBound + dnaUnbound
+			if len(dnaBound):
+				moleculeGroups['tfSingleComponentBound'][key] = dnaBound
+			if len(dnaUnbound):
+				moleculeGroups['tfSingleComponentUnbound'][key] = dnaUnbound
+			if len(combined):
+				moleculeGroups['tfSingleComponent'][key] = combined
 
 		self.__dict__.update(moleculeGroups)
