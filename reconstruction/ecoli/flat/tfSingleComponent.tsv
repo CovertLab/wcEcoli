@@ -2,7 +2,7 @@
 "crp"	["CPLX0-226"]	["PC00004"]	""
 "fnr"	["CPLX0-7797"]	[""]	"Make boolean rule so that it binds only under anaerobic conditions"
 "soxR"	["PD04132"]	[""]	"Make boolean rule so that it binds only under aerobic conditions"
-"glpR"	["CPLX0-8057", "MONOMER-54"]	["PD03576"]	""
+"glpR"	["PD03576"]	["CPLX0-8057", "MONOMER-54"]	""
 "putA"	["PUTA-CPLX"]	[""]	"Make boolean rule so that it binds only if proline is absent"
 "nsrR"	["CPLX0-7756"]	["CPLX0-7751", "CPLX0-8047"]	""
 "lldR"	["CPLX0-7689"]	["EG11962-MONOMER"]	""
