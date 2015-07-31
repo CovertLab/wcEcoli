@@ -37,8 +37,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 
 	# Load data from KB
 	kb = cPickle.load(open(kbFile, "rb"))
-	complexIds = [x["id"] for x in kb.moleculeGroups.tfComplexCounts]
-	complexNames = [x["name"] for x in kb.moleculeGroups.tfComplexCounts]
+	tfNames = sorted(kb.moleculeGroups.tfSingleComponent)
 
 	# Load time
 	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
@@ -47,28 +46,25 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 	# Calculate concentration data
 	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 	bulkMoleculeIds = bulkMolecules.readAttribute("objectNames")
-
-	complexIdxs = np.array([bulkMoleculeIds.index(x) for x in complexIds])
-	complexCounts = bulkMolecules.readColumn("counts")[:, complexIdxs]
-
-	bulkMolecules.close()
 	
 	fig = plt.figure(figsize = (11, 11))
-	rows = 13
-	cols = 12
+	rows = 9
+	cols = 9
 	idx = 0
-	for idx in range(len(complexIds)):
+	for idx, tf in enumerate(tfNames):
+
+		complexIdxs = np.array([bulkMoleculeIds.index(x) for x in kb.moleculeGroups.tfSingleComponentBound[tf]])
+		complexCounts = bulkMolecules.readColumn("counts")[:, complexIdxs]
 		ax = plt.subplot(rows, cols, idx+1)
 
-		# deviation = 1-poolConc[:,idx]/concSetpoint[:,idx]
-		counts = complexCounts[1:, idx]
-		ax.plot(time[1:] / 60., counts, linewidth=1, label="counts", color='k')
+		counts = complexCounts[1:, :]
+		ax.plot(time[1:] / 60., counts, linewidth=1, label="counts")
 
 		# Highlights low counts
 		bbox = None
 		if np.mean(counts) < 10:
 			bbox = {'facecolor':'red', 'alpha':0.5, 'pad':1}
-		ax.set_title('{} - {}\navg: {}'.format(complexIds[idx][:-3], complexNames[idx], int(np.mean(counts))), fontsize=6, bbox=bbox)
+		ax.set_title("%s" % tf, fontsize = 6, bbox = bbox)
 
 		# Sets ticks so that they look pretty
 		ax.spines['top'].set_visible(False)
@@ -83,7 +79,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 		ax.set_yticklabels([str(counts.min()), str(counts.max())])
 
 	# Create legend
-	ax = plt.subplot(rows, cols,len(complexIds) + 2)
+	ax = plt.subplot(rows, cols,len(tfNames) + 2)
 	ax.plot(0, 0, linewidth=2, label="count", color='k')
 	ax.legend(loc = 10,prop={'size':10})
 	ax.spines['top'].set_visible(False)
@@ -102,6 +98,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName)
 	plt.close("all")
+
+	bulkMolecules.close()
 
 if __name__ == "__main__":
 	defaultKBFile = os.path.join(
