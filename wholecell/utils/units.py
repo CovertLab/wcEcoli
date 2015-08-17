@@ -42,6 +42,13 @@ def dot(a, b, out=None):
 	
 	return a_units * b_units * np.dot(a,b,out)
 
+def floor(x):
+	if not hasUnit(x):
+		raise Exception('Only works on Unum!')
+	x_unit = getUnit(x)
+	x = x.asNumber()
+	return x_unit * np.floor(x)
+
 def transpose(array,axis=None):
 	if not isinstance(a,Unum):
 		raise Exception('Only works on Unum!')
@@ -78,3 +85,11 @@ def hasUnit(value):
 		return True
 	else:
 		return False
+
+def convertNoUnitToNumber(value):
+	if not hasUnit(value):
+		raise Exception("Only works on Unum!")
+
+	value.normalize()
+	value.checkNoUnit()
+	return value.asNumber()
