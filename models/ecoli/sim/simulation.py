@@ -60,7 +60,7 @@ class EcoliSimulation(Simulation):
 		ProteinDegradation,
 		Complexation,
 		AtpUsage,
-		ppGppDegradation
+		ppGppDegradation,
 		ChromosomeFormation
 		)
 
