@@ -28,6 +28,8 @@ from models.ecoli.listeners.ribosome_data import RibosomeData
 from models.ecoli.listeners.gene_copy_number import GeneCopyNumber
 from models.ecoli.listeners.unique_molecule_counts import UniqueMoleculeCounts
 from models.ecoli.listeners.fba_results import FBAResults
+from models.ecoli.listeners.rna_degradation_listener import RnaDegradationListener
+from models.ecoli.listeners.transcript_elongation_listener import TranscriptElongationListener
 from models.ecoli.listeners.rnap_data import RnapData
 from models.ecoli.listeners.growth_limits import GrowthLimits
 
@@ -67,6 +69,8 @@ class EcoliSimulation(Simulation):
 		GeneCopyNumber,
 		UniqueMoleculeCounts,
 		FBAResults,
+		RnaDegradationListener,
+		TranscriptElongationListener,
 		RnapData,
 		GrowthLimits
 		)

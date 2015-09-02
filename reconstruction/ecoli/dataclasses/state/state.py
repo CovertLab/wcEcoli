@@ -74,6 +74,20 @@ class State(object):
 		self.bulkMolecules.addToBulkState(chromosomeIds, chromosomeMasses)
 
 
+		# Set fragments
+		test = []
+		for x in raw_data.polymerized:
+			if x['is_ntp']:
+				if not x['is_end']:
+					temp = x
+					temp['id'] = x['id'].replace('Polymerized','Fragment')
+					test.append(temp)
+		fragmentsIds = sf.createIdsWithCompartments(test)
+		fragmentsMasses = units.g / units.mol * sf.createMassesByCompartments(test)
+
+		self.bulkMolecules.addToBulkState(fragmentsIds, fragmentsMasses)
+
+
 	def _buildBulkChromosome(self, raw_data, sim_data):
 		# Set genes
 		geneIds = [x['id'] for x in raw_data.genes]

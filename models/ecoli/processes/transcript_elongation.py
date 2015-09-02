@@ -79,6 +79,10 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
 
+		self.isMRna = kb.process.transcription.rnaData["isMRna"]
+		self.isRRna = kb.process.transcription.rnaData["isRRna"]
+		self.isTRna = kb.process.transcription.rnaData["isTRna"]
+
 
 	def calculateRequest(self):
 		activeRnaPolys = self.activeRnaPolys.allMolecules()
@@ -174,6 +178,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			rnaIndexes[didTerminate],
 			minlength = self.rnaSequences.shape[0]
 			)
+
+		self.writeToListener("TranscriptElongationListener", "countRnaSynthesized", terminatedRnas)
 
 		activeRnaPolys.delByIndexes(np.where(didTerminate)[0])
 
