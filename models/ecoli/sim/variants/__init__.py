@@ -11,15 +11,20 @@ from models.ecoli.sim.variants.wildtype import wildtypeTotalIndices
 from models.ecoli.sim.variants.time_step import timeStep
 from models.ecoli.sim.variants.time_step import timeStepTotalIndices
 
+from models.ecoli.sim.variants.growth_rate import growthRate
+from models.ecoli.sim.variants.growth_rate import growthRateTotalIndices
+
 
 nameToFunctionMapping = {
 	"geneKnockout": geneKnockout,
 	"wildtype": wildtype,
 	"timeStep": timeStep,
+	"growthRate": growthRate,
 }
 
 nameToNumIndicesMapping = {
 	"geneKnockout": geneKnockoutTotalIndices,
 	"wildtype": wildtypeTotalIndices,
 	"timeStep": timeStepTotalIndices,
+	"growthRate": growthRateTotalIndices,
 }

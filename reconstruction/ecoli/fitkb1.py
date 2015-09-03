@@ -21,13 +21,12 @@ FRACTION_INCREASE_RIBOSOMAL_PROTEINS = 0.2  # reduce stochasticity from protein 
 FITNESS_THRESHOLD = 1e-9
 MAX_FITTING_ITERATIONS = 100
 
-DOUBLING_TIME = 60. * units.min
 MEDIA_CONDITIONS = "M9 Glucose minus AAs"
 TIME_STEP_SEC = None # If this is None the time step will be fit for the simulation in fitTimeStep
 
 VERBOSE = False
 
-def fitKb_1(kb):
+def fitKb_1(kb, DOUBLING_TIME = 60. * units.min):
 	# Initialize simulation data with growth rate
 	raw_data = KnowledgeBaseEcoli()
 	kb.initialize(doubling_time = DOUBLING_TIME, raw_data = raw_data, time_step_sec = TIME_STEP_SEC, media_conditions = MEDIA_CONDITIONS)
