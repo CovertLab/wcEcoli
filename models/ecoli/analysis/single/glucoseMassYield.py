@@ -47,26 +47,41 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 	fbaResults.close()
 
 	glucoseIdx = np.where(externalMoleculeIDs == GLUCOSE_ID)[0][0]
-	glucoseFlux = FLUX_UNITS * externalExchangeFluxes[:, glucoseIdx]
+	glucoseFlux = -1. * FLUX_UNITS * externalExchangeFluxes[:, glucoseIdx] * kb.timeStepSec
 
 	mass = TableReader(os.path.join(simOutDir, "Mass"))
 	cellMass = MASS_UNITS * mass.readColumn("cellMass")
 	cellDryMass = MASS_UNITS * mass.readColumn("dryMass")
-	growth = GROWTH_UNITS * mass.readColumn("growth")
+	growth = GROWTH_UNITS * mass.readColumn("growth") * kb.timeStepSec
 
 	mass.close()
 
 	cellDensity = kb.constants.cellDensity
 	glucoseMW = kb.getter.getMass([GLUCOSE_ID])[0]
 
-	glucoseMassFlux = glucoseFlux * glucoseMW * cellMass / cellDensity
+	glucoseMassFlux = glucoseFlux * glucoseMW * cellDryMass / cellDensity
 
 	glucoseMassYield = growth / glucoseMassFlux
+	glucoseMassYield = units.convertNoUnitToNumber(glucoseMassYield)
 
-	fig = plt.figure(figsize = (8.5, 11))
-	plt.plot(time, glucoseMassYield)
-	plt.xlabel("Time (s)")
-	plt.ylabel("g cell / g glucose")
+	fig, axesList = plt.subplots(3, sharex = True)
+	fig.set_size_inches(8, 8)
+
+	# Plot glucoes mas yield
+	axesList[0].plot(time, glucoseMassYield)
+	axesList[0].set_xlabel("Time (s)")
+	axesList[0].set_ylabel("gDCW / g glucose")
+	axesList[0].set_ylim([0., 1.])
+
+
+	# Plot glucose exchange flux
+	# fba_results = TableReader(os.path.join(simOutDir, "FBAResults"))
+	# exFlux = fba_results.readColumn("externalExchangeFluxes")
+	# exMolec = fba_results.readAttribute("externalMoleculeIDs")
+	# glcFlux = exFlux[:,exMolec.index("GLC[p]")]
+
+	# axesList[-1].plot(time / 60. / 60., -1. * glcFlux, label="Glucose exchange flux coefficient", color=COLORS[sim_idx])
+	# axesList[-1].set_ylabel("External\nglucose\n(mmol/L/s)")
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName)
