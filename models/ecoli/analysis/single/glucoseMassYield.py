@@ -64,6 +64,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 
 	cellDensity = kb.constants.cellDensity
 	glucoseMW = kb.getter.getMass([GLUCOSE_ID])[0]
+	o2MW = kb.getter.getMass([O2_ID])[0]
 	cellVolume = cellMass / cellDensity
 
 	glucoseMassFlux = glucoseFlux * glucoseMW * cellVolume
@@ -74,8 +75,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 	Co2GlucoseYield = (co2Flux / glucoseFlux) * (kb.getter.getMass(["CARBON-DIOXIDE"]) / kb.getter.getMass(["GLC"]))
 	Co2GlucoseYield = units.convertNoUnitToNumber(Co2GlucoseYield)
 
-	O2PerGlucose = o2Flux / glucoseFlux
-	O2PerGlucose = units.convertNoUnitToNumber(O2PerGlucose)
+	atomicOxygenMassFlux = 2. * o2Flux * (o2MW / 2.) * cellVolume
+	oxygenMolarFluxPerMass = (o2Flux / cellDensity / kb.mass.cellDryMassFraction).asNumber(units.mmol / units.g / units.h)
+	massOxygenAtomicYield = dryMassGrowth / atomicOxygenMassFlux
 
 	# Calculate constraints
 	initWaterMass = kb.mass.avgCellWaterMassInit
@@ -94,13 +96,13 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 		COUNTS_UNITS / VOLUME_UNITS
 		)
 
-	fig, axesList = plt.subplots(5, sharex = True)
+	fig, axesList = plt.subplots(6, sharex = True)
 	fig.set_size_inches(8, 10)
 
 	# Plot glucoes mas yield
 	axesList[0].plot(time, glucoseMassYield)
 	axesList[0].set_xlabel("Time (s)")
-	axesList[0].set_ylabel("gDCW / g glucose")
+	axesList[0].set_ylabel("gDCW /\ng glucose")
 	axesList[0].set_ylim([0., 1.])
 
 	# Plot glucose exchange flux
@@ -108,23 +110,26 @@ def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 	axesList[1].plot(time, externalMoleculeLevels[glucoseIdx] * np.ones(time.shape), '--')
 	axesList[1].set_ylabel("Glucose\nimport\n(mmol/L/s)")
 
+	axesList[2].plot(time, Co2GlucoseYield)
+	axesList[2].set_ylabel("g CO2 /\ng glucose")
+	axesList[2].set_ylim([0., 1.])
+
+	axesList[3].plot(time, massOxygenAtomicYield)
+	axesList[3].set_ylabel("gDCW /\ng atomic oxygen")
+	axesList[3].set_ylim([0., 4.])
+
+	axesList[4].plot(time, oxygenMolarFluxPerMass)
+	axesList[4].set_ylabel('OUR mmol /\ngDCW-hr')
+	axesList[4].set_ylim([0., 20.])
+
 	fluxesToPlot = np.where(np.abs(externalExchangeFluxes).max(axis=0) >= glucoseFlux.asNumber(FLUX_UNITS).max())[0]
 	for idx in fluxesToPlot:
 		moleculeId = externalMoleculeIDs[idx]
 		flux = externalExchangeFluxes[:,idx]
-		axesList[2].plot(time, flux, label=moleculeId)
-	axesList[2].set_ylim([-6, 3])
-	axesList[2].legend()
-	axesList[2].set_ylabel('Exchange fluxes\n(mmol/L/s)')
-
-
-	axesList[3].plot(time, Co2GlucoseYield)
-	axesList[3].set_ylabel("g CO2 / g glucose")
-	axesList[3].set_ylim([0., 1.])
-
-	axesList[4].plot(time, O2PerGlucose)
-	axesList[4].set_ylim([0., 5.])
-	axesList[4].set_ylabel("mol O2 / mol glucose")
+		axesList[5].plot(time, flux, label=moleculeId)
+	axesList[5].set_ylim([-6, 3])
+	axesList[5].legend()
+	axesList[5].set_ylabel('Exchange fluxes\n(mmol/L/s)')
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName)
