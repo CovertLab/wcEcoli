@@ -48,6 +48,9 @@ def sparklineAxis(axis, x, y, tickPos, lineType, color):
 
 def main(simOutDir, plotOutDir, plotOutFileName, kbFile, metadata = None):
 
+	print "Disabled because not using endoRnases, etc."
+	return None
+
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
 
