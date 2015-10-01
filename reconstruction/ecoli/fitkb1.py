@@ -424,27 +424,13 @@ def setRNAPCountsConstrainedByPhysiology(kb, bulkContainer):
 	rnaCounts = bulkContainer.counts(kb.process.transcription.rnaData['id'])
 	
 
-	# Compute counts of endoRNases
-	endoRnaseIds = kb.moleculeGroups.endoRnaseIds
-	proteinCounts = bulkContainer.counts(kb.process.translation.monomerData["id"])
-	endoRnaseCounts = np.zeros(len(endoRnaseIds))
-	proteinIds = kb.process.translation.monomerData["id"]
-	count_endoRN = 0
-	for p in range (len(proteinIds)):
-		if proteinIds[p] in endoRnaseIds:
-			endoRnaseCounts[count_endoRN] = proteinCounts[p]
-			count_endoRN += 1
-
-	rnaLossRate_RNA = netLossRateFromDilutionAndDegradationRNA(
+	rnaLossRate_RNA = netLossRateFromDilutionAndDegradationProtein(
 		kb.doubling_time,
 		kb.process.transcription.rnaData["degRate"],
-		kb.constants.KcatEndoRNasesFullRNA, 
-		rnaCounts, 
-		endoRnaseCounts
 		)
 	
-	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
-		rnaLengths, kb.growthRateParameters.rnaPolymeraseElongationRate, rnaLossRate_RNA)
+	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistribution(
+		rnaLengths, kb.growthRateParameters.rnaPolymeraseElongationRate, rnaLossRate_RNA, rnaCounts)
 
 	nActiveRnapNeeded = units.convertNoUnitToNumber(nActiveRnapNeeded)
 	nRnapsNeeded = nActiveRnapNeeded / kb.growthRateParameters.fractionActiveRnap
@@ -520,26 +506,26 @@ def fitExpression(kb, bulkContainer):
 	view_RNA.countsIs(nRnas * kb.process.transcription.rnaData["expression"])
 
 	# Compute counts of endoRNases
-	endoRnaseIds = kb.moleculeGroups.endoRnaseIds
-	proteinCounts = counts_protein 
-	endoRnaseCounts = np.zeros(len(endoRnaseIds))
-	proteinIds = kb.process.translation.monomerData["id"]
-	count_endoRN = 0
-	for p in range (len(proteinIds)):
-		if proteinIds[p] in endoRnaseIds:
-			endoRnaseCounts[count_endoRN] = proteinCounts[p]
-			count_endoRN += 1
+	# endoRnaseIds = kb.moleculeGroups.endoRnaseIds
+	# proteinCounts = counts_protein
+	# endoRnaseCounts = np.zeros(len(endoRnaseIds))
+	# proteinIds = kb.process.translation.monomerData["id"]
+	# count_endoRN = 0
+	# for p in range (len(proteinIds)):
+	# 	if proteinIds[p] in endoRnaseIds:
+	# 		endoRnaseCounts[count_endoRN] = proteinCounts[p]
+	# 		count_endoRN += 1
 
 
-	netLossRate_RNA = netLossRateFromDilutionAndDegradationRNA(
+	netLossRate_RNA = netLossRateFromDilutionAndDegradationProtein(
 		(doublingTime / units.s).asNumber(),
 		(kb.process.transcription.rnaData["degRate"] * units.s).asNumber(),
-		(kb.constants.KcatEndoRNasesFullRNA * units.s).asNumber(),
-		view_RNA.counts(), 
-		endoRnaseCounts
+		# (kb.constants.KcatEndoRNasesFullRNA * units.s).asNumber(),
+		# view_RNA.counts(),
+		# endoRnaseCounts
 		)
 
-	synthProb = normalize(netLossRate_RNA)
+	synthProb = normalize(netLossRate_RNA * view_RNA.counts())
 
 	kb.process.transcription.rnaData["synthProb"][:] = synthProb
 
