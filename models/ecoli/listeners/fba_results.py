@@ -34,38 +34,38 @@ class FBAResults(wholecell.listeners.listener.Listener):
 
 		self.objectiveValue = 0.0
 
+	# TODO
 
-	# Allocate memory
-	def allocate(self):
-		super(FBAResults, self).allocate()
+	# def allocate(self):
+	# 	super(FBAResults, self).allocate()
 
-		fba = self.metabolism.fba
+	# 	fba = self.metabolism.fba
 
-		self.reactionIDs = fba.reactionIDs()
-		self.externalMoleculeIDs = fba.externalMoleculeIDs()
-		self.outputMoleculeIDs = fba.outputMoleculeIDs()
+	# 	self.reactionIDs = fba.reactionIDs()
+	# 	self.externalMoleculeIDs = fba.externalMoleculeIDs()
+	# 	self.outputMoleculeIDs = fba.outputMoleculeIDs()
 
-		self.reactionFluxes = np.zeros(len(self.reactionIDs), np.float64)
-		self.externalExchangeFluxes = np.zeros(len(self.externalMoleculeIDs), np.float64)
-		self.outputFluxes = np.zeros(len(self.outputMoleculeIDs), np.float64)
-		self.objectiveComponents = np.zeros_like(self.outputFluxes)
-
-
-	def tableCreate(self, tableWriter):
-		tableWriter.writeAttributes(
-			reactionIDs = self.reactionIDs,
-			externalMoleculeIDs = self.externalMoleculeIDs,
-			outputMoleculeIDs = self.outputMoleculeIDs
-			)
+	# 	self.reactionFluxes = np.zeros(len(self.reactionIDs), np.float64)
+	# 	self.externalExchangeFluxes = np.zeros(len(self.externalMoleculeIDs), np.float64)
+	# 	self.outputFluxes = np.zeros(len(self.outputMoleculeIDs), np.float64)
+	# 	self.objectiveComponents = np.zeros_like(self.outputFluxes)
 
 
-	def tableAppend(self, tableWriter):
-		tableWriter.append(
-			time = self.time(),
-			timeStep = self.timeStep(),
-			reactionFluxes = self.reactionFluxes,
-			externalExchangeFluxes = self.externalExchangeFluxes,
-			outputFluxes = self.outputFluxes,
-			objectiveValue = self.objectiveValue,
-			objectiveComponents = self.objectiveComponents,
-			)
+	# def tableCreate(self, tableWriter):
+	# 	tableWriter.writeAttributes(
+	# 		reactionIDs = self.reactionIDs,
+	# 		externalMoleculeIDs = self.externalMoleculeIDs,
+	# 		outputMoleculeIDs = self.outputMoleculeIDs
+	# 		)
+
+
+	# def tableAppend(self, tableWriter):
+	# 	tableWriter.append(
+	# 		time = self.time(),
+	# 		timeStep = self.timeStep(),
+	# 		reactionFluxes = self.reactionFluxes,
+	# 		externalExchangeFluxes = self.externalExchangeFluxes,
+	# 		outputFluxes = self.outputFluxes,
+	# 		objectiveValue = self.objectiveValue,
+	# 		objectiveComponents = self.objectiveComponents,
+	# 		)

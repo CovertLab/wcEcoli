@@ -26,7 +26,7 @@ from wholecell.utils import units
 from wholecell.utils.random import stochasticRound
 from wholecell.utils.constants import REQUEST_PRIORITY_METABOLISM
 
-from wholecell.utils.modular_fba import FluxBalanceAnalysis
+from wholecell.utils.fba import FluxBalanceAnalysis
 
 COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
@@ -82,18 +82,12 @@ class Metabolism(wholecell.processes.process.Process):
 			kb.process.metabolism.reactionStoich.copy(), # TODO: copy in class
 			kb.process.metabolism.externalExchangeMolecules,
 			objective,
-			objectiveType = "pools",
-			reversibleReactions = kb.process.metabolism.reversibleReactions,
-			moleculeMasses = moleculeMasses,
-			# maintenanceCost = energyCostPerWetMass.asNumber(COUNTS_UNITS/MASS_UNITS), # mmol/gDCW TODO: get real number
-			# maintenanceReaction = {
-			# 	"ATP[c]":-1, "WATER[c]":-1, "ADP[c]":+1, "Pi[c]":+1
-			# 	} # TODO: move to KB TODO: check reaction stoich
+			kb.process.metabolism.reversibleReactions,
 			)
 
 		# Set constraints
 		## External molecules
-		externalMoleculeIDs = self.fba.externalMoleculeIDs()
+		externalMoleculeIDs = list(kb.process.metabolism.externalExchangeMolecules)
 
 		coefficient = initDryMass / initCellMass * kb.constants.cellDensity * (self.timeStepSec * units.s)
 
@@ -103,18 +97,23 @@ class Metabolism(wholecell.processes.process.Process):
 			COUNTS_UNITS / VOLUME_UNITS
 			)
 
-		self.fba.externalMoleculeLevelsIs(externalMoleculeLevels)
+		# self.fba.externalMoleculeLevelsIs(externalMoleculeLevels)
+
+		for met_id, level in izip(externalMoleculeIDs, externalMoleculeLevels):
+			self.fba.external_limit_is(met_id, level)
 
 		## Set enzymes unlimited
-		self.fba.enzymeLevelsIs(np.inf)
+		# self.fba.enzymeLevelsIs(np.inf)
 
 		# Views
-		self.metabolites = self.bulkMoleculesView(self.fba.outputMoleculeIDs())
+		self.output_molecule_ids = objective.keys()
+		# self.metabolites = self.bulkMoleculesView(self.fba.outputMoleculeIDs())
+		self.metabolites = self.bulkMoleculesView(self.output_molecule_ids)
 		self.poolMetabolites = self.bulkMoleculesView(self.metabolitePoolIDs)
 
-		outputMoleculeIDs = self.fba.outputMoleculeIDs()
+		# outputMoleculeIDs = self.fba.outputMoleculeIDs()
 
-		assert outputMoleculeIDs == self.fba.internalMoleculeIDs()
+		# assert outputMoleculeIDs == self.fba.internalMoleculeIDs()
 
 		# Set the priority to a low value
 
@@ -137,28 +136,36 @@ class Metabolism(wholecell.processes.process.Process):
 
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
-		self.fba.internalMoleculeLevelsIs(
-			metaboliteCountsInit * countsToMolar
-			)
+		# self.fba.internalMoleculeLevelsIs(
+		# 	metaboliteCountsInit * countsToMolar
+		# 	)
 
-		deltaMetabolites = self.fba.outputMoleculeLevelsChange() / countsToMolar
+		for met_id, counts in izip(self.output_molecule_ids, metaboliteCountsInit):
+			self.fba.internal_limit_is(met_id, counts * countsToMolar)
+
+		# deltaMetabolites = self.fba.outputMoleculeLevelsChange() / countsToMolar
+
+		output_conc = np.zeros(metaboliteCountsInit.size, np.float64)
+
+		for i, met_id in enumerate(self.output_molecule_ids):
+			output_conc[i] = self.fba.output(met_id)
 
 		metaboliteCountsFinal = np.fmax(stochasticRound(
 			self.randomState,
-			metaboliteCountsInit + deltaMetabolites
+			output_conc / countsToMolar
 			), 0).astype(np.int64)
 
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
-		# TODO: report as reactions (#) per second & store volume elsewhere
-		self.writeToListener("FBAResults", "reactionFluxes",
-			self.fba.reactionFluxes() / self.timeStepSec)
-		self.writeToListener("FBAResults", "externalExchangeFluxes",
-			self.fba.externalExchangeFluxes() / self.timeStepSec)
-		# self.writeToListener("FBAResults", "objectiveValue", # TODO
-		# 	self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
-		self.writeToListener("FBAResults", "outputFluxes",
-			self.fba.outputMoleculeLevelsChange() / self.timeStepSec)
+		# # TODO: report as reactions (#) per second & store volume elsewhere
+		# self.writeToListener("FBAResults", "reactionFluxes",
+		# 	self.fba.reactionFluxes() / self.timeStepSec)
+		# self.writeToListener("FBAResults", "externalExchangeFluxes",
+		# 	self.fba.externalExchangeFluxes() / self.timeStepSec)
+		# # self.writeToListener("FBAResults", "objectiveValue", # TODO
+		# # 	self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
+		# self.writeToListener("FBAResults", "outputFluxes",
+		# 	self.fba.outputMoleculeLevelsChange() / self.timeStepSec)
 
 		# TODO
 		# NOTE: the calculation for the objective components doesn't yet have
