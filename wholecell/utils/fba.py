@@ -139,7 +139,7 @@ class FluxBalanceAnalysis(object):
 			return
 
 
-		self._problem.solve(solver = cvx.GUROBI, verbose = True)
+		self._problem.solve(solver = cvx.GUROBI, verbose = False, warm_start = True)
 
 
 		if self._problem.status == cvx.OPTIMAL:
