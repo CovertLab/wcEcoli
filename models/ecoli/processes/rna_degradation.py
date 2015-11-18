@@ -94,8 +94,6 @@ class RnaDegradation(wholecell.processes.process.Process):
 
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
-		self.Km = kb.process.transcription.rnaData["KmEndoRNase"]
-
 
 	# Calculate temporal evolution
 
@@ -129,5 +127,8 @@ class RnaDegradation(wholecell.processes.process.Process):
 			self.rnaDegSMat,
 			self.rnas.counts()
 			))
+
+		self.writeToListener("RnaDegradationListener", "countRnaDegraded", self.rnas.counts())
+		self.writeToListener("RnaDegradationListener", "nucleotidesFromDegradation", (self.rnas.counts() * self.rnaLens).sum())
 
 		self.rnas.countsIs(0)
