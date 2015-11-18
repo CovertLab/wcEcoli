@@ -2,6 +2,7 @@
 
 """
 RnaDegradation
+<<<<<<< HEAD
 
 RNA degradation sub-model. Encodes molecular simulation of RNA degradation as a Poisson process
 
@@ -9,6 +10,25 @@ TODO:
 - handle complexes
 
 @author: Derek Macklin
+=======
+RNA degradation sub-model. 
+Mathematical formulation:
+dr/dt = kb - kcatEndoRNase * EndoRNase * r / (Km + r) = r * ln(2)/tau
+	where	r = RNA counts
+			kb = RNAP synthesis rate 
+			tau = doubling time
+			kcatEndoRNase = enzymatic activity for EndoRNases
+			kd = RNA degradation rates 
+			Km = Michaelis-Menten constants fitted to recapitulate first-order RNA decay ( kd * r = kcatEndoRNase * EndoRNase * r / (Km + r) )
+This sub-model encodes molecular simulation of RNA degradation as two main steps guided by RNases, "endonucleolytic cleavage" and "exonucleolytic digestion":
+1. Compute total counts of RNA to be degraded (D) and total capacity for endo-cleavage (C) at each time point
+2. Evaluate C and D. If C > D, then define a fraction of active endoRNases 
+3. Dissect RNA degraded into different species (mRNA, tRNA, and rRNA) by accounting endoRNases specificity
+4. Update RNA fragments (assumption: fragments are represented as a pull of nucleotides) because of endonucleolytic cleavage
+5. Compute total capacity of exoRNases and determine fraction of nucleotides that can be diggested
+6. Update pull of metabolites (H and H2O) because of exonucleolytic digestion
+@author: Javier Carrera
+>>>>>>> master
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 4/2/2013
 """
@@ -73,6 +93,8 @@ class RnaDegradation(wholecell.processes.process.Process):
 		self.rnase = self.bulkMoleculeView('EG11259-MONOMER[c]')
 
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
+
+		self.Km = kb.process.transcription.rnaData["KmEndoRNase"]
 
 
 	# Calculate temporal evolution

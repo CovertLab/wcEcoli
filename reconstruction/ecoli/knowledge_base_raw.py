@@ -22,6 +22,7 @@ FLAT_DIR = os.path.join(os.path.dirname(__file__), "flat")
 LIST_OF_DICT_FILENAMES = (
 	"compartments.tsv",
 	"complexationReactions.tsv",
+	"enzymeKinetics.tsv",
 	"genes.tsv",
 	"metabolites.tsv",
 	"modificationReactions.tsv",
@@ -44,6 +45,7 @@ LIST_OF_DICT_FILENAMES = (
 	"equilibriumReactions.tsv",
 	"foldChanges.tsv",
 	"tfIds.tsv",
+	"endoRnases.tsv",
 	os.path.join("massFractions", "glycogenFractions.tsv"),
 	os.path.join("massFractions", "ionFractions.tsv"),
 	os.path.join("massFractions", "LPSFractions.tsv"),
