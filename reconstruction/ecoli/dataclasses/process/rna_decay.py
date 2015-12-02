@@ -11,6 +11,8 @@ from __future__ import division
 from wholecell.utils import units
 from wholecell.utils.unit_struct_array import UnitStructArray
 import numpy as np
+import theano.tensor as T
+import theano
 
 class RnaDecay(object):
 	""" RnaDecay """
@@ -60,3 +62,34 @@ class RnaDecay(object):
 		self.TargetEndoRNasesFullRRNA[self.endoRnaseIds.index("EG10861-MONOMER[c]")] = self.rrna_index
 		self.TargetEndoRNasesFullRRNA[self.endoRnaseIds.index("G7365-MONOMER[c]")] = self.rrna_index
 		self.TargetEndoRNasesFullRRNA[self.endoRnaseIds.index("EG10862-MONOMER[c]")] = self.rrna_index
+
+	def km1(self, km, vMax, rnaConc, kDeg):
+		factor = 1e6
+		rnaConc *= factor
+		vMax *= factor
+		return  vMax * rnaConc / km / (1 + (rnaConc / km)) - kDeg * rnaConc
+
+	def km2(self, km, vMax, rnaConc, kDeg):
+		return  vMax * rnaConc / km / (1 + (rnaConc / km).sum()) - kDeg * rnaConc
+
+
+	def kmFunctions(self, vMax, rnaConc, kDeg):
+		assert rnaConc.size == kDeg.size
+		N = rnaConc.size
+		km = T.dvector()
+		denominator = 1 + (rnaConc / km).sum()
+		residual = []
+		print "start"
+		for i in xrange(N):
+			numerator = vMax * rnaConc[i] / km[i]
+			denominator = 1 + rnaConc[i] / km[i]
+			residual.append(
+				numerator / denominator - (kDeg[i] * rnaConc[i])
+				)
+		print "end"
+		#J = [T.grad(residual[i], km) for i in xrange(N)]
+		f = theano.function([km], T.stack(*residual))
+		print "done"
+	#	fp = theano.function([km], T.stack(*J))
+
+		return f
