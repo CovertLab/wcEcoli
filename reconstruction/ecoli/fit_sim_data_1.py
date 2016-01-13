@@ -427,6 +427,13 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer):
 
 
 def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer):
+	fastRnaBool = (
+			sim_data.process.transcription.rnaData["isRRna5S"] |
+			sim_data.process.transcription.rnaData["isRRna16S"] |
+			sim_data.process.transcription.rnaData["isRRna23S"] |
+			sim_data.process.transcription.rnaData["isTRna"])
+	slowRnaBool = ~fastRnaBool
+
 	# -- CONSTRAINT 1: Expected RNA distribution doubling -- #
 	rnaLengths = units.sum(sim_data.process.transcription.rnaData['countsACGU'], axis = 1)
 
@@ -454,8 +461,15 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer):
 		countsToMolar,
 		)
 	
-	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
-		rnaLengths, sim_data.growthRateParameters.rnaPolymeraseElongationRate, rnaLossRate)
+	nActiveRnapNeededSlow = calculateMinPolymerizingEnzymeByProductDistributionRNA(
+		rnaLengths[slowRnaBool], 
+		sim_data.growthRateParameters.rnaPolymeraseElongationRate, 
+		rnaLossRate[slowRnaBool])
+	nActiveRnapNeededFast = calculateMinPolymerizingEnzymeByProductDistributionRNA(
+		rnaLengths[fastRnaBool], 
+		sim_data.growthRateParameters.rnaPolymeraseElongationRateFast, 
+		rnaLossRate[fastRnaBool])
+	nActiveRnapNeeded = nActiveRnapNeededSlow + nActiveRnapNeededFast
 
 	nActiveRnapNeeded = units.convertNoUnitToNumber(nActiveRnapNeeded)
 	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.fractionActiveRnap
@@ -557,23 +571,34 @@ def fitExpression(sim_data, bulkContainer):
 
 
 def fitRNAPolyTransitionRates(sim_data, bulkContainer):
+	fastRnaBool = (
+			sim_data.process.transcription.rnaData["isRRna5S"] |
+			sim_data.process.transcription.rnaData["isRRna16S"] |
+			sim_data.process.transcription.rnaData["isRRna23S"] |
+			sim_data.process.transcription.rnaData["isTRna"])
+	slowRnaBool = ~fastRnaBool
+
 	## Transcription activation rate
 
 	synthProb = sim_data.process.transcription.rnaData["synthProb"]
 
 	rnaLengths = sim_data.process.transcription.rnaData["length"]
 
-	elngRate = sim_data.growthRateParameters.rnaPolymeraseElongationRate
+	elngRateVector = slowRnaBool * sim_data.growthRateParameters.rnaPolymeraseElongationRate + fastRnaBool * sim_data.growthRateParameters.rnaPolymeraseElongationRateFast
 
 	# In our simplified model of RNA polymerase state transition, RNAp can be
 	# active (transcribing) or inactive (free-floating).  To solve for the
 	# rate of activation, we need to calculate the average rate of termination,
 	# which is a function of the average transcript length and the
 	# transcription rate.
+	expectedTranscriptionTime = rnaLengths / elngRateVector
 
-	averageTranscriptLength = units.dot(synthProb, rnaLengths)
+	# XXX: Not sure about this
+	# Tutorial has units.dot(...) called the other way around (synthProb as first param)
+	weightedExpectedTranscriptionTime = units.dot(synthProb, expectedTranscriptionTime)
+	#averageTranscriptLength = units.dot(synthProb, rnaLengths)
 
-	expectedTerminationRate = elngRate / averageTranscriptLength
+	expectedTerminationRate = 1 / weightedExpectedTranscriptionTime
 
 	sim_data.transcriptionActivationRate = expectedTerminationRate * sim_data.growthRateParameters.fractionActiveRnap / (1 - sim_data.growthRateParameters.fractionActiveRnap)
 
