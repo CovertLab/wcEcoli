@@ -41,3 +41,7 @@ class TranscriptElongationListener(wholecell.listeners.listener.Listener):
 			timeStep = self.timeStep(),
 			countRnaSynthesized = self.countRnaSynthesized,
 			)
+
+		# Reset count
+		# This attributed is incremented by multiple submodels each timestep
+		self.countRnaSynthesized = np.zeros(self.countRnaSynthesized.shape, self.countRnaSynthesized.dtype)

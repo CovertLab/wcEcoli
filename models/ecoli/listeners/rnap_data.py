@@ -11,8 +11,9 @@ RnapData
 from __future__ import division
 
 import numpy as np
-
 import wholecell.listeners.listener
+
+import ipdb
 
 # from numpy.lib.recfunctions import merge_arrays
 
@@ -115,3 +116,15 @@ class RnapData(wholecell.listeners.listener.Listener):
 			didInitialize = self.didInitialize,
 			terminationLoss = self.terminationLoss
 			)
+
+		# Collect new data every timestep
+		# These attributes are incremented by multiple submodels
+		# TODO: Could probably put these in a method and use them
+		# in allocate too.
+		self.rnapStalls = np.zeros(0, np.int64)
+		self.ntpCountInSequence = np.zeros(21, np.int64)
+		self.ntpCounts = np.zeros(21, np.int64)
+		self.expectedElongations = 0
+		self.actualElongations = 0
+		self.didTerminate = 0
+		self.terminationLoss = 0

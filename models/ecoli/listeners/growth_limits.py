@@ -97,3 +97,10 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			ntpAllocated = self.ntpAllocated,
 			ntpUsed = self.ntpUsed,
 			)
+
+		# Collect new data every timestep
+		# These attributes are incremented by multiple submodels
+		# TODO: Split out and use logic from allocate()
+		self.ntpRequestSize = np.zeros(len(self.ntpIds), np.float64)
+		self.ntpAllocated = np.zeros(len(self.ntpIds), np.float64)
+		self.ntpUsed = np.zeros(len(self.ntpIds), np.float64)
