@@ -37,7 +37,6 @@ LIST_OF_DICT_FILENAMES = (
 	"transcriptionUnits.tsv",
 	"dryMassComposition.tsv",
 	"biomass.tsv",
-	"nutrients.tsv",
 	"secretions.tsv",
 	"water.tsv",
 	"chromosome.tsv",
@@ -64,10 +63,17 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("rna_seq_data","rnaseq_rsem_tpm_std.tsv"),
 	os.path.join("rna_seq_data","rnaseq_seal_rpkm_mean.tsv"),
 	os.path.join("rna_seq_data","rnaseq_seal_rpkm_std.tsv"),
+	os.path.join("environment", "wildtype", "nutrients_000000.tsv"),
+	os.path.join("environment", "cut_glucose", "nutrients_000000.tsv"),
+	os.path.join("environment", "cut_glucose", "nutrients_001200.tsv"),
 	)
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = ("parameters.tsv", "mass_parameters.tsv")
 CONSTANTS_FILENAME = "constants.tsv"
+
+class DataStore(object):
+	def __init__(self):
+		pass
 
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
@@ -83,14 +89,18 @@ class KnowledgeBaseEcoli(object):
 
 		self.genome_sequence = self._load_sequence(os.path.join(FLAT_DIR, SEQUENCE_FILE))
 
-
 	def _load_tsv(self, file_name):
+		path = self
+		for subPath in file_name[len(FLAT_DIR) + 1 : ].split(os.path.sep)[:-1]:
+			if not hasattr(path, subPath):
+				setattr(path, subPath, DataStore())
+			path = getattr(path, subPath)
 		attrName = file_name.split(os.path.sep)[-1].split(".")[0]
-		setattr(self, attrName, [])
+		setattr(path, attrName, [])
 
 		with open(file_name, 'rU') as csvfile:
 			reader = JsonReader(csvfile, dialect = CSV_DIALECT)
-			setattr(self, attrName, [row for row in reader])
+			setattr(path, attrName, [row for row in reader])
 
 	def _load_sequence(self, file_path):
 		from Bio import SeqIO

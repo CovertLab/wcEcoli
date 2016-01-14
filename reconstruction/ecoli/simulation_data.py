@@ -29,22 +29,19 @@ class SimulationDataEcoli(object):
 	""" SimulationDataEcoli """
 
 	def __init__(self):
-		# Simulation time step
-		self.timeStepSec = None
 
 		# Doubling time (used in fitting)
 		self.doubling_time = None
 
-	def initialize(self, doubling_time, raw_data, time_step_sec = None, media_conditions="M9 Glucose minus AAs"):
-		assert type(time_step_sec) == float or time_step_sec == None
-		self.timeStepSec = time_step_sec
+	def initialize(self, doubling_time, raw_data, expression_condition = "M9 Glucose minus AAs", environment = "wildtype"):
 
 		if type(doubling_time) != Unum:
 			raise Exception("Doubling time is not a Unum object!")
 		self.doubling_time = doubling_time
 
 		# TODO: Check that media condition is valid
-		self.media_conditions = media_conditions
+		self.expression_condition = expression_condition
+		self.environment = environment
 
 		self._addHardCodedAttributes()
 

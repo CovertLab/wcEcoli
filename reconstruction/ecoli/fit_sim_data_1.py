@@ -24,8 +24,8 @@ MAX_FITTING_ITERATIONS = 100
 N_SEEDS = 20
 
 DOUBLING_TIME = 60. * units.min
-MEDIA_CONDITIONS = "M9 Glucose minus AAs"
-TIME_STEP_SEC = None # If this is None the time step will be fit for the simulation in fitTimeStep
+EXPRESSION_CONDITION = "M9 Glucose minus AAs"
+ENVIRONMENT = "wildtype"
 
 VERBOSE = False
 
@@ -33,10 +33,18 @@ COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 
-def fitSimData_1(raw_data):
+def fitSimData_1(raw_data, doubling_time = None):
 	# Initialize simulation data with growth rate
+	if not isinstance(doubling_time, units.Unum):
+		doubling_time = DOUBLING_TIME
+
 	sim_data = SimulationDataEcoli()
-	sim_data.initialize(doubling_time = DOUBLING_TIME, raw_data = raw_data, time_step_sec = TIME_STEP_SEC, media_conditions = MEDIA_CONDITIONS)
+	sim_data.initialize(
+		doubling_time = doubling_time,
+		raw_data = raw_data,
+		expression_condition = EXPRESSION_CONDITION,
+		environment = ENVIRONMENT
+		)
 
 	# Increase RNA poly mRNA deg rates
 	setRnaPolymeraseCodingRnaDegradationRates(sim_data)
@@ -56,7 +64,7 @@ def fitSimData_1(raw_data):
 
 		bulkContainer = createBulkContainer(sim_data)
 
-		rescaleMassForSoluableMetabolites(sim_data, bulkContainer)
+		rescaleMassForSolubleMetabolites(sim_data, bulkContainer)
 
 		setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer)
 
@@ -87,9 +95,6 @@ def fitSimData_1(raw_data):
 
 	fitMaintenanceCosts(sim_data, bulkContainer)
 
-	fitTimeStep(sim_data, bulkContainer)
-
-
 	calculateBulkDistributions(sim_data)
 
 	return sim_data
@@ -109,7 +114,7 @@ def setRnaPolymeraseCodingRnaDegradationRates(sim_data):
 def setCPeriod(sim_data):
 	sim_data.growthRateParameters.c_period = sim_data.process.replication.genome_length * units.nt / sim_data.growthRateParameters.dnaPolymeraseElongationRate / 2
 
-def rescaleMassForSoluableMetabolites(sim_data, bulkMolCntr):
+def rescaleMassForSolubleMetabolites(sim_data, bulkMolCntr):
 	avgCellSubMass = sim_data.mass.avgCellSubMass
 
 	mass = (avgCellSubMass["proteinMass"] + avgCellSubMass["rnaMass"] + avgCellSubMass["dnaMass"]) / sim_data.mass.avgCellToInitialCellConvFactor
@@ -149,6 +154,7 @@ def rescaleMassForSoluableMetabolites(sim_data, bulkMolCntr):
 	sim_data.mass.avgCellDryMassInit = newAvgCellDryMassInit
 	sim_data.mass.avgCellDryMass = sim_data.mass.avgCellDryMassInit * sim_data.mass.avgCellToInitialCellConvFactor
 	sim_data.mass.avgCellWaterMassInit = sim_data.mass.avgCellDryMassInit / sim_data.mass.cellDryMassFraction * sim_data.mass.cellWaterMassFraction
+	sim_data.mass.fitAvgSolublePoolMass = units.sum(units.hstack((massesToAdd[:poolIds.index('WATER[c]')], massesToAdd[poolIds.index('WATER[c]') + 1:]))) * sim_data.mass.avgCellToInitialCellConvFactor
 
 def setInitialRnaExpression(sim_data):
 	# Set expression for all of the noncoding RNAs
@@ -643,43 +649,6 @@ def fitMaintenanceCosts(sim_data, bulkContainer):
 	sim_data.constants.gtpPerTranslation += additionalGtpPerTranslation
 
 	sim_data.constants.darkATP = darkATP
-
-def fitTimeStep(sim_data, bulkContainer):
-	'''
-	Assumes that major limitor of growth will be translation associated
-	resources, specifically AAs or GTP.
-
-	Basic idea is that the rate of usage scales at the same rate as the size of the
-	pool of resources.
-
-	[Polymerized resource] * ln(2) * dt / doubling_time < [Pool of resource]
-
-	'''
-	aaCounts = sim_data.process.translation.monomerData["aaCounts"]
-	proteinCounts = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-	aasInProteins = units.sum(aaCounts * np.tile(proteinCounts.reshape(-1, 1), (1, 21)), axis = 0)
-
-	# USE IF AA LIMITING - When metabolism is implementing GAM
-	# aaPools = units.aa * bulkContainer.counts(sim_data.moleculeGroups.aaIDs)
-	# avgCellDryMassInit = sim_data.mass.avgCellDryMassInit
-	# cellDensity = sim_data.constants.cellDensity
-	# cellVolume = avgCellDryMassInit / cellDensity
-
-	# aaPoolConcentration = aaPools / cellVolume
-	# aaPolymerizedConcentration = aasInProteins / cellVolume
-
-	# time_step = (aaPoolConcentration / aaPolymerizedConcentration) * sim_data.doubling_time / np.log(2)
-
-	# USE IF GTP LIMITING - When GAM is incorperated into GTP/aa polymerized
-	gtpPool = bulkContainer.counts(['GTP[c]'])
-	gtpPolymerizedPool = (aasInProteins.asNumber(units.aa) * sim_data.constants.gtpPerTranslation).sum()
-	timeStep = ((gtpPool / gtpPolymerizedPool) * sim_data.doubling_time.asNumber(units.s) / np.log(2))[0]
-	timeStep = np.floor(timeStep * 100) / 100.0 # Round down to 2nd decimal
-
-	if sim_data.timeStepSec != None:
-		raise Exception("timeStepSec was set to a specific value!")
-	else:
-		sim_data.timeStepSec = timeStep * 0.7
 
 def calculateBulkDistributions(sim_data):
 

@@ -36,11 +36,10 @@ class Transcription(object):
 		# Load expression from RNA-seq data
 		expression = []
 		for rna in raw_data.rnas:
-			arb_exp = [x[sim_data.media_conditions] for x in eval("raw_data.rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS)) if x['Gene'] == rna['geneId']]
+			arb_exp = [x[sim_data.expression_condition] for x in eval("raw_data.rna_seq_data.rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS)) if x['Gene'] == rna['geneId']]
 			if len(arb_exp):
 				expression.append(arb_exp[0])
 			elif rna['type'] == 'mRNA' or rna['type'] == 'miscRNA':
-				#import ipdb; ipdb.set_trace()
 				raise Exception('No RNA-seq data found for {}'.format(rna['id']))
 			elif rna['type'] == 'rRNA' or rna['type'] == 'tRNA':
 				expression.append(0.)
