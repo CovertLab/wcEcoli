@@ -213,9 +213,9 @@ class TranscriptElongationFast(wholecell.processes.process.Process):
 
 		self.writeToListener("GrowthLimits", "ntpUsed", ntpsUsed, WriteMethod.increment)
 
-		self.writeToListener("RnapData", "rnapStalls", rnapStalls, WriteMethod.increment)
-		self.writeToListener("RnapData", "ntpCountInSequence", ntpCountInSequence, WriteMethod.increment)
-		self.writeToListener("RnapData", "ntpCounts", ntpCounts, WriteMethod.increment)
+		self.writeToListener("RnapData", "rnapStalls", rnapStalls, WriteMethod.append)
+		self.writeToListener("RnapData", "ntpCountInSequence", ntpCountInSequence, WriteMethod.append)
+		self.writeToListener("RnapData", "ntpCounts", ntpCounts, WriteMethod.append)
 
 		self.writeToListener("RnapData", "expectedElongations", expectedElongations.sum(), WriteMethod.increment)
 		self.writeToListener("RnapData", "actualElongations", sequenceElongations.sum(), WriteMethod.increment)
