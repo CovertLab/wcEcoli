@@ -120,12 +120,15 @@ class RnaDegradation(wholecell.processes.process.Process):
 
 		# fraction saturated based on Michaelis-Menten kinetics
 		fracEndoRnaseSaturated = countsToMolar * self.rnas.total() / (self.Km + (countsToMolar * self.rnas.total()))
+		#import ipdb; ipdb.set_trace();
+
 		Kd = self.rnaDegRates
 		Kcat = self.KcatEndoRNases
 		EndoR = sum(self.endoRnases.total())
 		KM = self.Km
 		RNA = self.rnas.total()
-		FractDiffRNAdecay = ( (  Kd - (units.sum(self.KcatEndoRNases * self.endoRnases.total()) / ((KM / countsToMolar) - RNA))  ) / Kd * self.isMRna ).asNumber().mean()
+		#FractDiffRNAdecay = ( (  Kd - (units.sum(self.KcatEndoRNases * self.endoRnases.total()) / ((KM / countsToMolar) - RNA))  ) / Kd * self.isMRna ).asNumber().mean()
+		FractDiffRNAdecay = sum(fracEndoRnaseSaturated)
 
 		# Calculate total counts of RNAs to degrade according to
 		# the total counts of "active" endoRNases and their cleavage activity
