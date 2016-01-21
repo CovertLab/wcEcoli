@@ -25,12 +25,18 @@ import itertools
 
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
 
+from kineticFBA.reactionRates import ReactionRates
+from kineticFBA.proteinConcentrations import ProteinConcentrations
+from kineticFBA.metaboliteConcentrations import MetaboliteConcentrations
+from kineticFBA.kineticInfo import KineticInfo
+from kineticFBA.analysisTools import *
+
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
 NUMERICAL_ZERO = 1e-8
 
-DISABLED = True
+DISABLED = False
 
 COLORS_LARGE = ["#000000", "#FFFF00", "#1CE6FF", "#FF34FF", "#FF4A46", "#008941", "#006FA6", "#A30059",
         "#FFDBE5", "#7A4900", "#0000A6", "#63FFAC", "#B79762", "#004D43", "#8FB0FF", "#997D87",
@@ -70,6 +76,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		print "Currently disabled because it's slow."
 	else:
 
+		kineticInfo = KineticInfo('reconstruction/ecoli/flat', 'enzymeKinetics.tsv', proteinConcentrations.proteinName2proteinConcentrations, metaboliteConcentrations.metabolites_concentrations_combined)
+
+
+
 		# Control which analyses to run
 		findSingleConstraints = False
 		findDoubleConstraints = False
@@ -102,7 +112,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		# Read time info from the listener
 		initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 		time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
-		timeStepSec = enzymeKineticsdata.readColumn("timeStepSec")[1] - enzymeKineticsdata.readColumn("timeStepSec")[0]
+
+		simulationStep = enzymeKineticsdata.readColumn("simulationStep")[1] - enzymeKineticsdata.readColumn("simulationStep")[0]
+
+		import ipdb; ipdb.set_trace()
 
 		enzymeKineticsdata.close()
 
@@ -168,7 +181,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		# Find external molecules levels
 		externalMoleculeIDs = fba.externalMoleculeIDs()
 
-		coefficient = initDryMass / initCellMass * sim_data.constants.cellDensity * (timeStepSec * units.s)
+		coefficient = initDryMass / initCellMass * sim_data.constants.cellDensity * (simulationStep * units.s)
 
 		externalMoleculeLevels = sim_data.process.metabolism.exchangeConstraints(
 			externalMoleculeIDs,
@@ -826,12 +839,12 @@ def plotSingleConditionTimeCourse(plotOutDir, plotOutFileName, metadata, fba, mi
 	plt.title("jFBA Error Time Course, %i constraints" % (alreadyConstrained.sum()))
 	plt.scatter(timepoints, np.transpose(errorsTimeCourse)[0], c='b')
 	plt.ylabel("jFBA Total Error")
-	plt.xlabel("Time (timeStepSec)")
+	plt.xlabel("Time (simulationStep)")
 
 	ax1 = plt.subplot(4,1,2)
 	plt.scatter(timepoints, np.transpose(errorsTimeCourse)[0], c='b')
 	plt.ylabel("jFBA Total Error")
-	plt.xlabel("Time (timeStepSec)")
+	plt.xlabel("Time (simulationStep)")
 	ax1.set_ylim([0,1000])
 
 	lineLabelsTop = []
@@ -843,7 +856,7 @@ def plotSingleConditionTimeCourse(plotOutDir, plotOutFileName, metadata, fba, mi
 			lineLabelsTop.append(metaboliteNames[index])
 	plt.hold(False)
 	plt.ylabel("jFBA individual Errors")
-	plt.xlabel("Time (timeStepSec)")
+	plt.xlabel("Time (simulationStep)")
 	plt.legend(lineLabelsTop, bbox_to_anchor=(1.05, 3.66), loc=2, borderaxespad=0.)	
 
 	ax = plt.subplot(4,1,4)
@@ -853,7 +866,7 @@ def plotSingleConditionTimeCourse(plotOutDir, plotOutFileName, metadata, fba, mi
 			plt.plot(timeCourse, label=metaboliteNames[index], color=colorMap[metaboliteNames[index]], linestyle=linestyleMap[metaboliteNames[index]])
 	plt.hold(False)
 	plt.ylabel("jFBA individual Errors")
-	plt.xlabel("Time (timeStepSec)")
+	plt.xlabel("Time (simulationStep)")
 	ax.set_ylim([-.1,.02])
 
 	plt.subplots_adjust(left=.12, right=.65, top=0.9, bottom=0.1)
