@@ -25,18 +25,12 @@ import itertools
 
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
 
-from kineticFBA.reactionRates import ReactionRates
-from kineticFBA.proteinConcentrations import ProteinConcentrations
-from kineticFBA.metaboliteConcentrations import MetaboliteConcentrations
-from kineticFBA.kineticInfo import KineticInfo
-from kineticFBA.analysisTools import *
-
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
 NUMERICAL_ZERO = 1e-8
 
-DISABLED = False
+DISABLED = True
 
 COLORS_LARGE = ["#000000", "#FFFF00", "#1CE6FF", "#FF34FF", "#FF4A46", "#008941", "#006FA6", "#A30059",
         "#FFDBE5", "#7A4900", "#0000A6", "#63FFAC", "#B79762", "#004D43", "#8FB0FF", "#997D87",
@@ -75,6 +69,11 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	if DISABLED:
 		print "Currently disabled because it's slow."
 	else:
+		from kineticFBA.reactionRates import ReactionRates
+		from kineticFBA.proteinConcentrations import ProteinConcentrations
+		from kineticFBA.metaboliteConcentrations import MetaboliteConcentrations
+		from kineticFBA.kineticInfo import KineticInfo
+		from kineticFBA.analysisTools import *
 
 		kineticInfo = KineticInfo('reconstruction/ecoli/flat', 'enzymeKinetics.tsv', proteinConcentrations.proteinName2proteinConcentrations, metaboliteConcentrations.metabolites_concentrations_combined)
 

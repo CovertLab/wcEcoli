@@ -46,6 +46,7 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 
 		self.reactionRates = np.zeros(len(self.metabolism.fba.reactionIDs()), np.float64)
 		self.allConstraintsLimits = np.zeros(len(self.reactionRateInfo), np.float64)
+		self.zeroedReactions = np.zeros(len(self.reactionRateInfo), np.float64)
 		self.reactionIDs = self.metabolism.fba.reactionIDs()
 		self.constraintIDs = self.metabolism.constraintIDs
 		self.metaboliteCountsInit = np.zeros(len(self.metaboliteIDs), np.float64)
@@ -76,6 +77,7 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			reactionRates = self.reactionRates,
 			allConstraintsLimits = self.allConstraintsLimits,
+			zeroedReactions = self.zeroedReactions,
 			metaboliteCountsInit = self.metaboliteCountsInit,
 			metaboliteCountsFinal = self.metaboliteCountsFinal,
 			metaboliteConcentrations = self.metaboliteConcentrations,

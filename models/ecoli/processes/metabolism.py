@@ -29,10 +29,10 @@ from wholecell.utils.constants import REQUEST_PRIORITY_METABOLISM
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
 from wholecell.utils.enzymeKinetics import EnzymeKinetics
 
-COUNTS_UNITS = units.mmol
+COUNTS_UNITS = units.umol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
-USE_RATELIMITS = False # Enable/disable kinetic rate limits in the model
+USE_RATELIMITS = True # Enable/disable kinetic rate limits in the model
 
 USE_MANUAL_FLUX_COEFF = False # enable to overrid flux coefficients in the knowledgebase and use these local values instead
 MAX_FLUX_COEFF = 2 # Multiple of predicted rate at which to set the max fluxes
@@ -123,7 +123,7 @@ class Metabolism(wholecell.processes.process.Process):
 			constraintIDs = sim_data.process.metabolism.constraintIDs,
 			reactionIDs = self.fba.reactionIDs(),
 			metaboliteIDs = self.fba.outputMoleculeIDs(),
-			kcatOnly=False
+			kcatOnly=True
 			)
 
 		# Determine which kinetic limits to use
@@ -209,10 +209,12 @@ class Metabolism(wholecell.processes.process.Process):
 		# Find rate limits for all constraints
 		self.allConstraintsLimits = self.enzymeKinetics.allRatesFunction(*inputConcentrations)[0]
 
+		zeroedReactions = set()
+
 		# Set the rate limits only if the option flag is enabled
 		if USE_RATELIMITS:
 			currentRateLimits = {}
-			# Set reaction fluxes to be between  MAX_FLUX_COEFF and MIN_FLUX_COEFF of the predicted rate
+			# Set reaction fluxes to be between  self.max_flux_coefficient and self.min_flux_coefficient of the predicted rate
 			for index, constraintID in enumerate(self.constraintIDs):
 				# Only use this kinetic limit if it's enabled
 				if self.activeConstraints[index]:
@@ -220,8 +222,13 @@ class Metabolism(wholecell.processes.process.Process):
 					assert (self.allConstraintsLimits[index] >= 0 and self.allConstraintsLimits[index] != np.nan)
 
 					# Ensure that this reaction hasn't already been constrained more than this yet
-					if self.constraintToReactionDict[constraintID] in currentRateLimits and currentRateLimits[self.constraintToReactionDict[constraintID]] < self.allConstraintsLimits[index]*MAX_FLUX_COEFF:
+					if self.constraintToReactionDict[constraintID] in currentRateLimits and currentRateLimits[self.constraintToReactionDict[constraintID]] < self.allConstraintsLimits[index]*self.max_flux_coefficient:
 						# This rate has already been constrained more than this constraint, so skip it
+						continue
+
+					# Don't set any reactions to zero
+					if self.allConstraintsLimits[index]*self.max_flux_coefficient < 1:
+						zeroedReactions.add(self.constraintToReactionDict[constraintID])
 						continue
 
 					# Set the max reaction rate for this reaction
@@ -229,9 +236,14 @@ class Metabolism(wholecell.processes.process.Process):
 					# Set the minimum reaction rate for this reaction
 					self.fba.minReactionFluxIs(self.constraintToReactionDict[constraintID], self.allConstraintsLimits[index]*self.min_flux_coefficient, raiseForReversible = False)
 					
-					# Record what constraint was just applied to this reaction
-					currentRateLimits[self.constraintToReactionDict[constraintID]] = self.allConstraintsLimits[index]*MAX_FLUX_COEFF
+					# if self.allConstraintsLimits[index]*self.max_flux_coefficient < 10:
+					# 	import ipdb; ipdb.set_trace()
+						# print "Set %s max to %f, min to %f" % (self.constraintToReactionDict[constraintID],
+						# 	self.allConstraintsLimits[index]*self.max_flux_coefficient,
+						# 	self.allConstraintsLimits[index]*self.min_flux_coefficient)
 
+					# Record what constraint was just applied to this reaction
+					currentRateLimits[self.constraintToReactionDict[constraintID]] = self.allConstraintsLimits[index]*self.max_flux_coefficient
 				else:
 					self.fba.maxReactionFluxIs(self.constraintToReactionDict[constraintID], defaultRate, raiseForReversible = False)
 					
@@ -264,6 +276,9 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.writeToListener("EnzymeKinetics", "allConstraintsLimits",
 			self.allConstraintsLimits)
+
+		self.writeToListener("EnzymeKinetics", "zeroedReactions",
+			list(zeroedReactions))
 
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsInit",
 			metaboliteCountsInit)

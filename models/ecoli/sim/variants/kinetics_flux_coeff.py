@@ -1,3 +1,6 @@
+N_COEFFICIENTS = 9
+HIGHEST = 100000
+LOWEST = 100
 
 CONTROL_OUTPUT = dict(
 	shortName = "control",
@@ -5,8 +8,8 @@ CONTROL_OUTPUT = dict(
 	)
 
 def kineticsFluxCoeffTotalIndices(sim_data):
-	nGenes = sim_data.process.transcription.rnaData.fullArray().size
-	nConditions = nGenes + 1
+	nTimeSteps = N_COEFFICIENTS
+	nConditions = nTimeSteps + 1
 	return nConditions
 
 
@@ -18,9 +21,7 @@ def kineticsFluxCoeff(sim_data, index):
 	if index % nConditions == 0:
 		return CONTROL_OUTPUT
 
-	coeffIndex = (index - 1) % nConditions
-
-	fluxLimit = 100000000. * 2**(-index)
+	fluxLimit = float(LOWEST) + ((index - 1) * float(HIGHEST - LOWEST) / N_COEFFICIENTS)
 
 	sim_data.constants.kineticRateLimitFactorUpper = fluxLimit
 
