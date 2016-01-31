@@ -141,10 +141,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	plt.suptitle(name)
 
-	# plt.show()
-
-	# import ipdb; ipdb.set_trace()
-
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")

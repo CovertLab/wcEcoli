@@ -822,6 +822,9 @@ class FluxBalanceAnalysis(object):
 		if maxFlux < 0:
 			raise InvalidBoundaryError("Maximum reaction flux must be at least 0")
 
+		if reactionID not in self.reactionIDs():
+			raise InvalidBoundaryError("Unable to set max reaction flux: reaction '%s' not recognized." % (reactionID))
+
 		# if maxFlux < self._lowerBound[colIndex]:
 		# 	raise InvalidBoundaryError("Maximum reaction flux must be greater than or equal to the minimum flux")
 
@@ -844,6 +847,9 @@ class FluxBalanceAnalysis(object):
 	def minReactionFluxIs(self, reactionID, minFlux, raiseForReversible = True):
 		if minFlux < 0:
 			raise InvalidBoundaryError("Minimum reaction flux must be at least 0")
+
+		if reactionID not in self.reactionIDs():
+			raise InvalidBoundaryError("Unable to set min reaction flux: reaction '%s' not recognized." % (reactionID))
 
 		# if minFlux > self._upperBound[colIndex]:
 		# 	raise InvalidBoundaryError("Minimum reaction flux must be less than or equal to the maximum flux")

@@ -106,8 +106,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 		# Plot all reactant concentrations for this reaction
 		for reactantIndex in xrange(0,np.amin([reactantConcentrations.shape[1]]+[2])):
-			
-			# import ipdb; ipdb.set_trace()
 
 			ax = plt.subplot(rows*(num_subentries + 2), cols, grid_loc+((cols)*(reactantIndex+1)))
 

@@ -30,6 +30,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	enzymeKineticsdata = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
 	
 	enzymeKineticsArray = enzymeKineticsdata.readColumn("reactionConstraints")
+	overconstraintMultiples = enzymeKineticsdata.readColumn("overconstraintMultiples")
 
 	reactionIDs = enzymeKineticsdata.readAttribute("reactionIDs")
 	
@@ -38,21 +39,52 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	
 	enzymeKineticsdata.close()
 
-	reactionRateArray = np.transpose(enzymeKineticsArray)
 
-	plt.figure(figsize = (8.5, 11))
-	plt.title("Enzyme Kinetics")
+	fbaData = TableReader(os.path.join(simOutDir, "FBAResults"))
 
-	for idx, timeCourse in enumerate(reactionRateArray):
-		if (np.amax(timeCourse) < np.inf) and (idx < len(reactionIDs)):
-			plt.plot(time / 60, timeCourse, label=reactionIDs[idx][:15])
+	reactionRatesUnconstrained = fbaData.readColumn('reactionFluxes')
 
+	rateEstimatesArray = enzymeKineticsArray
+
+	unconstrainedFluxes = fbaData.readColumn('reactionFluxes')
+	fluxNames = fbaData.readAttribute('reactionIDs')
+	simulationSteps = fbaData.readColumn('simulationStep')
+
+	fbaData.close()
+
+
+	testPoint = 100
+
+	fluxNamesEstimates = np.array(fluxNames)[np.where(rateEstimatesArray[testPoint] < np.inf)]
+
+	fluxesWithEstimates = unconstrainedFluxes[testPoint][np.where(rateEstimatesArray[testPoint] < np.inf)]
+	rateEstimates = rateEstimatesArray[testPoint][np.where(rateEstimatesArray[testPoint] < np.inf)]
+
+	amountOverconstrained = fluxesWithEstimates - rateEstimates
+	amountOverconstrained[np.where(amountOverconstrained < 0)] = 0
+	overconstrainedFluxes = fluxNamesEstimates[np.where(amountOverconstrained > 0)]
+	overconstrainedFluxesDict = dict(zip(overconstrainedFluxes, amountOverconstrained[np.where(amountOverconstrained > 0)]))
+
+	print "fluxNamesEstimates: "
+	print fluxNamesEstimates
+
+	print "overconstrainedFluxes: "
+	print overconstrainedFluxes
+
+
+	plt.figure(figsize=(8.5,11))
+
+
+	for idx, overconstraintMultipleTimeCourse in enumerate(np.transpose(overconstraintMultiples)):
+		if overconstraintMultipleTimeCourse.any():
+			plt.plot(time[5:] / 60., overconstraintMultipleTimeCourse[5:], label=reactionIDs[idx][:30])
+	plt.title("Enzyme Kinetics Constraint to Reaction Flux Ratio")
 	plt.xlabel("Time (min)")
-	plt.ylabel("Reaction Rate (reactions/second)")
-	plt.legend(framealpha=.5, fontsize=6)
+	plt.ylabel("Flux divided by Kinetic Constraint")
+	plt.legend(fontsize=6, framealpha=.5)
 
 	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName)
+	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
 if __name__ == "__main__":

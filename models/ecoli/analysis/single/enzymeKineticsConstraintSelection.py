@@ -114,8 +114,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 		simulationStep = enzymeKineticsdata.readColumn("simulationStep")[1] - enzymeKineticsdata.readColumn("simulationStep")[0]
 
-		import ipdb; ipdb.set_trace()
-
 		enzymeKineticsdata.close()
 
 		# This script asssumes certain units - throw an error if they are not the same as in the metabolism.py process
