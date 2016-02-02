@@ -31,7 +31,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	enzymeKineticsdata = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
 	
-	rateEstimatesArray = enzymeKineticsdata.readColumn("reactionConstraints")
+	enzymeKineticsArray = enzymeKineticsdata.readColumn("reactionConstraints")
 	overconstraintMultiples = enzymeKineticsdata.readColumn("overconstraintMultiples")
 
 	reactionIDs = enzymeKineticsdata.readAttribute("reactionIDs")
@@ -44,56 +44,84 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	fbaData = TableReader(os.path.join(simOutDir, "FBAResults"))
 
+	reactionRatesUnconstrained = fbaData.readColumn('reactionFluxes')
+
+	rateEstimatesArray = enzymeKineticsArray.copy()
+
 	unconstrainedFluxes = fbaData.readColumn('reactionFluxes')
 	fluxNames = fbaData.readAttribute('reactionIDs')
 	simulationSteps = fbaData.readColumn('simulationStep')
 	fbaData.close()
 
-	testPoint = 100
 
-	fluxNamesEstimates = np.array(fluxNames)[np.where(rateEstimatesArray[testPoint] < np.inf)]
 
-	fluxesWithEstimates = unconstrainedFluxes[testPoint][np.where(rateEstimatesArray[testPoint] < np.inf)]
-	rateEstimates = rateEstimatesArray[testPoint][np.where(rateEstimatesArray[testPoint] < np.inf)]
+	# Only look at fluxes which had a noninfinite estimate at at least one point
+	rateEstimates =  rateEstimatesArray[1:]
+	rateEstimates += 1.0
+	rateEstimates[np.where(rateEstimates == np.inf)] = 0
 
-	amountOverconstrained = fluxesWithEstimates - rateEstimates
-	amountOverconstrained[np.where(amountOverconstrained < 0)] = 0
-	overconstrainedFluxes = fluxNamesEstimates[np.where(amountOverconstrained > 0)]
-	overconstrainedFluxesDict = dict(zip(overconstrainedFluxes, amountOverconstrained[np.where(amountOverconstrained > 0)]))
+	fluxesWithEstimates = unconstrainedFluxes[:,np.where(np.sum(rateEstimates, axis=0) > 0)[0]]
+	fluxNamesEstimates = np.array([fluxNames[x] for x in np.where(np.sum(rateEstimates, axis=0) > 0)[0]])
+
+	rateEstimates = rateEstimates[:,np.where(np.sum(rateEstimates, axis=0) > 0)[0]]
+	rateEstimates -= 1.0
+	rateEstimates = np.vstack((np.zeros(rateEstimates.shape[1]),rateEstimates))
+
+
+
 	
 	relativeRates = fluxesWithEstimates / rateEstimates
+	# Remove NaNs from the arrays
+	# relativeRates[np.where(np.isnan(relativeRates))] = 0
 	# Only plot rates which are overconstrained
 	relativeRates[np.where(relativeRates < 1)] = 0
+	relativeRates[np.isnan(relativeRates)] = 0
 
-	plt.figure(figsize=(10,15))
+	num_x = relativeRates.shape[1]
 
-	plt.subplot(3,1,1)
-	plt.title("Reaction Fluxes and Kinetic Rates")
-	plt.bar(xrange(len(fluxesWithEstimates)),fluxesWithEstimates, color="b", alpha=.7, label="Fluxes")
-	plt.bar(xrange(len(rateEstimates)), rateEstimates, .5, color="r", alpha=.5, label="Kinetic Rates")
-	plt.xlabel("Reaction")
-	plt.ylabel("Reaction Rate (microM/second)")
-	plt.legend(framealpha=.5)
+	# First set up the figure, the axis, and the plot element we want to animate
+	fig, ax = plt.subplots(1)
 
-	plt.subplot(3,1,2)
-	plt.title("Log Normalized Reaction Fluxes and Kinetic Rates")
-	plt.bar(xrange(len(fluxesWithEstimates)),np.log10(fluxesWithEstimates + 1), color="b", alpha=.7, label="Fluxes")
-	plt.bar(xrange(len(rateEstimates)), np.log10(rateEstimates + 1), .5, color="r", alpha=.5, label="Kinetic Rates")
-	plt.xlabel("Reaction")
-	plt.ylabel("Normalized Log10 Reaction Rate (microM/second)")
-	plt.legend(framealpha=.5)
+	# import ipdb; ipdb.set_trace()
 
-	plt.subplot(3,1,3)
+	ax.set_xlim(0, num_x)
+	ax.set_ylim(0, 100)
 	plt.title("Kinetic Rates Divided By Reaction Fluxes")
-
-	plt.bar(xrange(len(rateEstimates)),fluxesWithEstimates / rateEstimates, color='purple', alpha=.7, label="Fold Difference")
 	plt.xlabel("Reaction")
 	plt.ylabel("Fold Difference")
-	plt.legend(framealpha=.5)
 
-	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-	plt.close("all")
+
+	rects = ax.bar(range(1, num_x+1), relativeRates[0,:],  align='center', color='purple', alpha=.7, label="Fold Difference")
+	plt.legend(framealpha=.5)
+	plt.xticks(range(1, num_x+1), fluxNamesEstimates, rotation='vertical', fontsize=5)
+
+	# initialization function: plot the background of each frame
+	def init():
+		for idx, patch in enumerate(rects.patches):
+			patch.set_height(relativeRates[0,idx])
+		return rects,
+
+	# animation function.  This is called sequentially
+	def animate(i):
+		for idx, patch in enumerate(rects.patches):
+			# print "relativeRates[%i, %i] is: " % (idx, i)
+			# print relativeRates[idx, i]
+			patch.set_height(relativeRates[i, idx])
+		return rects,
+
+	# call the animator.  blit=True means only re-draw the parts that have changed.
+	anim = animation.FuncAnimation(fig, animate, init_func=init,
+		frames=relativeRates.shape[0], interval=20, blit=True)
+
+	# save the animation as an mp4.  This requires ffmpeg or mencoder to be
+	# installed.  The extra_args ensure that the x264 codec is used, so that
+	# the video can be embedded in html5.  You may need to adjust this for
+	# your system: for more information, see
+	# http://matplotlib.sourceforge.net/api/animation_api.html
+	anim.save(os.path.join(plotOutDir, plotOutFileName) + '.mp4', fps=15, extra_args=['-vcodec', 'libx264'])
+
+
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
