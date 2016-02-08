@@ -46,6 +46,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.outputMoleculeIDs = fba.outputMoleculeIDs()
 
 		self.reactionFluxes = np.zeros(len(self.reactionIDs), np.float64)
+		self.diagnosticReactionFluxes = np.zeros(len(self.reactionIDs), np.float64)
 		self.externalExchangeFluxes = np.zeros(len(self.externalMoleculeIDs), np.float64)
 		self.outputFluxes = np.zeros(len(self.outputMoleculeIDs), np.float64)
 		self.objectiveComponents = np.zeros_like(self.outputFluxes)
@@ -64,6 +65,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			time = self.time(),
 			simulationStep = self.simulationStep(),
 			reactionFluxes = self.reactionFluxes,
+			diagnosticReactionFluxes = self.diagnosticReactionFluxes,
 			externalExchangeFluxes = self.externalExchangeFluxes,
 			outputFluxes = self.outputFluxes,
 			objectiveValue = self.objectiveValue,

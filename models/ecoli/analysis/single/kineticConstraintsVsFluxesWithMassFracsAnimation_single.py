@@ -121,42 +121,28 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	num_x = relativeRates.shape[1]
 
 	# First set up the figure, the axis, and the plot element we want to animate
-	fig, axarr = plt.subplots(3, figsize=(8.5,11))
+	fig, axarr = plt.subplots(2, figsize=(8.5,11))
 
 	# ax2 = plt.subplot2grid((2,2), (1,0), colspan=2)
 	# ax4 = plt.subplot2grid((2,2), (2, 0))
 	# ax5 = plt.subplot2grid((2,2), (2, 1))
 
-	massCompAx = axarr[0]
-	massCompAx.set_color_cycle(COLORS)
+	axarr[0].set_color_cycle(COLORS)
 	lines = []
 	for idx, mass in enumerate(np.transpose(masses)):
-		line = massCompAx.plot(t / 60., mass, linewidth = 2, label=massLabels[idx])
+		line = axarr[0].plot(t / 60., mass, linewidth = 2, label=massLabels[idx])
 		lines.append(line[0])
-	massCompAx.set_xlim(0, 1.05*(t[-1] / 60.))
+	axarr[0].set_xlim(0, 1.05*(t[-1] / 60.))
 	plt.xlabel("Time (min)")
 	plt.ylabel("Mass (normalized by t = 0 min)")
 	plt.title("Biomass components")
 
-	massCompAx.legend(loc = "best", framealpha=.5, fontsize=8)
+	# import ipdb; ipdb.set_trace()
+	axarr[0].legend(loc = "best", framealpha=.5, fontsize=8)
 
 
-	ratesAx =  axarr[1]
-	plt.title("Log Normalized Reaction Fluxes and Kinetic Rates")
-
-	rects1_fluxes = ratesAx.bar(range(1, num_x+1), np.log10(fluxesWithEstimates[0,:] + 1), .7, color="b", alpha=.7, label="Fluxes")
-	rects1_rates = ratesAx.bar(range(1, num_x+1), np.log10(rateEstimates[0,:] + 1), .5, color="r", alpha=.5, label="Kinetic Rates")
-
-	ratesAx.set_xlim(0, num_x)
-	ratesAx.set_ylim(0, 5)
-	
-	ratesAx.set_title("Log Normalized Reaction Fluxes and Kinetic Rates")
-	ratesAx.set_ylabel("Normalized Log10 Reaction Rate (microM/second)")
-
-	ratesAx.legend(["Fluxes", "Kinetic Rates"],framealpha=.5, fontsize=12)
-
-
-	barax = axarr[2]
+	barax = axarr[1]
+	# import ipdb; ipdb.set_trace()
 
 	barax.set_xlim(0, num_x)
 	barax.set_ylim(0, 100)
@@ -164,7 +150,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.xlabel("Reaction")
 	plt.ylabel("Fold Difference")
 
-	rects2 = barax.bar(range(1, num_x+1), relativeRates[0,:],  align='center', color="#800000", alpha=.7, label="Fold Difference")
+	rects = barax.bar(range(1, num_x+1), relativeRates[0,:],  align='center', color="#800000", alpha=.7, label="Fold Difference")
 
 	# Trim the flux names to fit on the plot
 	fluxNamesEstimatesTrimmed = [x[:15] for x in fluxNamesEstimates]
@@ -172,44 +158,28 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	# initialization function: plot the background of each frame
 	def init():
-		for idx, patch in enumerate(rects2.patches):
+		for idx, patch in enumerate(rects.patches):
 			patch.set_height(relativeRates[0,idx])
-
-		for idx, patch in enumerate(rects1_fluxes.patches):
-			patch.set_height(np.log10(fluxesWithEstimates[0,idx] + 1))
-		for idx, patch in enumerate(rects1_rates.patches):
-			patch.set_height(np.log10(rateEstimates[0,idx] + 1))
-		return rects2, rects1_fluxes, rects1_rates
+		return rects, lines
 
 	# animation function.  This is called sequentially
 	def animate(i):
 		if i % 10 == 0:
 			print "Frame %i" % (i)
-
-		# Animate lines
+		for idx, patch in enumerate(rects.patches):
+			patch.set_height(relativeRates[i, idx])
 		for idx, line in enumerate(lines):
 			x = np.array(range(i)) / 60.
 			y = masses[:i,idx]
 			line.set_data(x,y)
-
-		# Fluxes and limits
-		for idx, patch in enumerate(rects1_fluxes.patches):
-			patch.set_height(np.log10(fluxesWithEstimates[i,idx] + 1))
-		for idx, patch in enumerate(rects1_rates.patches):
-			patch.set_height(np.log10(rateEstimates[i,idx] + 1))
-		
-		# Ratios
-		for idx, patch in enumerate(rects2.patches):
-			patch.set_height(relativeRates[i, idx])
-
-		return lines, rects1_fluxes, rects1_rates, rects2
+		return rects,
 
 	# call the animator.  blit=True means only re-draw the parts that have changed.
-	anim = animation.FuncAnimation(fig, animate, init_func=init,
-		frames=20, interval=20, blit=True)
-
 	# anim = animation.FuncAnimation(fig, animate, init_func=init,
-	# 	frames=relativeRates.shape[0], interval=20, blit=True)
+	# 	frames=20, interval=20, blit=True)
+
+	anim = animation.FuncAnimation(fig, animate, init_func=init,
+		frames=relativeRates.shape[0], interval=20, blit=True)
 
 	# save the animation as an mp4.  This requires ffmpeg or mencoder to be
 	# installed.  The extra_args ensure that the x264 codec is used, so that

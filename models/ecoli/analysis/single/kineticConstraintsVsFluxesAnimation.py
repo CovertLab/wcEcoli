@@ -22,7 +22,14 @@ import matplotlib.animation as animation
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
+DISABLED = True
+
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
+	
+	if DISABLED:
+		print "Currently disabled."
+		return
+
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
 
@@ -103,6 +110,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	# animation function.  This is called sequentially
 	def animate(i):
+		if i % 10 == 0:
+			print "Frame %i" % (i)
 		for idx, patch in enumerate(rects.patches):
 			# print "relativeRates[%i, %i] is: " % (idx, i)
 			# print relativeRates[idx, i]

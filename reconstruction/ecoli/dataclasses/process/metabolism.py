@@ -435,7 +435,7 @@ class Metabolism(object):
 		reactionRateInfo = {}
 		constraintIDs = []
 		constraintToReactionDict = {}
-		activeConstraintsDict = {}
+		constraintMultiplesDict = {}
 		enzymesWithKineticInfo = set()
 		enzymesWithKineticInfoDict = {}
 
@@ -445,7 +445,7 @@ class Metabolism(object):
 			constraintIDs.append(constraintID)
 
 			constraintToReactionDict[constraintID] = reaction["reactionID"]
-			activeConstraintsDict[constraintID] = reaction["constraintActive"]
+			constraintMultiplesDict[constraintID] = reaction["constraintMultiple"]
 
 			# If the enzymes don't already have a compartment tag, add one from the valid compartment list or [c] (cytosol) as a default
 			new_reaction_enzymes = []
@@ -491,7 +491,7 @@ class Metabolism(object):
 		self.enzymesWithKineticInfo = enzymesWithKineticInfoDict
 		self.constraintIDs = constraintIDs
 		self.constraintToReactionDict = constraintToReactionDict
-		self.activeConstraintsDict = activeConstraintsDict
+		self.constraintMultiplesDict = constraintMultiplesDict
 
 	def exchangeConstraints(self, exchangeIDs, coefficient, targetUnits):
 		externalMoleculeLevels = np.zeros(len(exchangeIDs), np.float64)

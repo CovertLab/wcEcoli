@@ -33,10 +33,13 @@ COUNTS_UNITS = units.umol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 
-USE_RATELIMITS = True # Enable/disable kinetic rate limits in the model
+# Runs a second FBA at each step, which is constrained even if the main one is not
+KINETIC_DIAGNOSTIC = True
+
+USE_RATELIMITS = False # Enable/disable kinetic rate limits in the model
 
 USE_MANUAL_FLUX_COEFF = True # enable to overrid flux coefficients in the knowledgebase and use these local values instead
-MAX_FLUX_COEFF = 2 # Multiple of predicted rate at which to set the max fluxes
+MAX_FLUX_COEFF = 1 # Multiple of predicted rate at which to set the max fluxes
 MIN_FLUX_COEFF = 0 # Multiple of predicted rate at which to set the min fluxes
 
 
@@ -69,7 +72,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.reactionRateInfo = sim_data.process.metabolism.reactionRateInfo
 		self.enzymesWithKineticInfo = sim_data.process.metabolism.enzymesWithKineticInfo["enzymes"]
 		self.constraintIDs = sim_data.process.metabolism.constraintIDs
-		self.activeConstraintsDict = sim_data.process.metabolism.activeConstraintsDict
+		self.constraintMultiplesDict = sim_data.process.metabolism.constraintMultiplesDict
 		self.constraintToReactionDict = sim_data.process.metabolism.constraintToReactionDict
 
 		if USE_MANUAL_FLUX_COEFF:
@@ -117,6 +120,17 @@ class Metabolism(wholecell.processes.process.Process):
 			# 	} # TODO: move to KB TODO: check reaction stoich
 			)
 
+		# In diagnostic mode, prepare a second FBA object which will be constrained
+		if KINETIC_DIAGNOSTIC:
+			self.fba_with_limits = FluxBalanceAnalysis(
+				sim_data.process.metabolism.reactionStoich.copy(), # TODO: copy in class
+				sim_data.process.metabolism.externalExchangeMolecules,
+				objective,
+				objectiveType = "pools",
+				reversibleReactions = sim_data.process.metabolism.reversibleReactions,
+				moleculeMasses = moleculeMasses,
+				)
+
 		# Set up enzyme kinetics object
 		self.enzymeKinetics = EnzymeKinetics(
 			enzymesWithKineticInfo = sim_data.process.metabolism.enzymesWithKineticInfo["enzymes"],
@@ -124,7 +138,7 @@ class Metabolism(wholecell.processes.process.Process):
 			constraintIDs = sim_data.process.metabolism.constraintIDs,
 			reactionIDs = self.fba.reactionIDs(),
 			metaboliteIDs = self.fba.outputMoleculeIDs(),
-			kcatOnly=True
+			kcatOnly=False
 			)
 
 		# Build dictionary from reaction name to index in the reaction array
@@ -134,7 +148,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Determine which kinetic limits to use
 		self.reactionsWithKineticLimits = [True]*len(self.fba.reactionIDs())
-		self.activeConstraints = [self.activeConstraintsDict[x] for x in self.constraintIDs]
+		self.constraintMultiplesDict = [self.constraintMultiplesDict[x] for x in self.constraintIDs]
 
 		# Set constraints
 		## External molecules
@@ -142,6 +156,9 @@ class Metabolism(wholecell.processes.process.Process):
 
 		## Set enzymes unlimited
 		self.fba.enzymeLevelsIs(np.inf)
+		
+		if KINETIC_DIAGNOSTIC:
+			self.fba_with_limits.enzymeLevelsIs(np.inf)
 
 		# Views
 		self.metaboliteNames = self.fba.outputMoleculeIDs()
@@ -189,12 +206,21 @@ class Metabolism(wholecell.processes.process.Process):
 		# Set external molecule levels
 		self.fba.externalMoleculeLevelsIs(externalMoleculeLevels)
 
+
 		#  Find metabolite concentrations from metabolite counts
 		metaboliteConcentrations =  countsToMolar * metaboliteCountsInit
 
 		self.fba.internalMoleculeLevelsIs(
 			metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS)
 			)
+
+		if KINETIC_DIAGNOSTIC:
+			# Set external molecule levels
+			self.fba_with_limits.externalMoleculeLevelsIs(externalMoleculeLevels)
+
+			self.fba_with_limits.internalMoleculeLevelsIs(
+				metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS)
+				)
 
 		#  Find enzyme concentrations from enzyme counts
 		enzymeCountsInit = self.enzymes.counts()
@@ -238,50 +264,63 @@ class Metabolism(wholecell.processes.process.Process):
 		# Find rate limits for all constraints
 		self.allConstraintsLimits = self.enzymeKinetics.allRatesFunction(*inputConcentrations)[0] * self.timeStepSec()
 
-		# Set the rate limits only if the option flag is enabled
-		if USE_RATELIMITS:
-			currentRateLimits = {}
-			# Set reaction fluxes to be between  self.max_flux_coefficient and self.min_flux_coefficient of the predicted rate
-			for index, constraintID in enumerate(self.constraintIDs):
-				# Only use this kinetic limit if it's enabled
-				if self.activeConstraints[index]:
-					
-					reactionID = self.constraintToReactionDict[constraintID]
-					# Skip any reactions not known to the network
-					if reactionID in self.reactionNameToReactionIndexDict:
-						reactionIndex = self.reactionNameToReactionIndexDict[reactionID]
-					else:
-						continue
-
-					constraintEstimate = self.allConstraintsLimits[index]
-					
-					# Determine the min and max fluxes to set for this reaction
-					maxFlux = constraintEstimate*self.max_flux_coefficient
-					minFlux = constraintEstimate*self.min_flux_coefficient
-					
-					# Make sure to never set negative maximum rates
-					assert (constraintEstimate >= 0 and constraintEstimate != np.nan)
-					
-					# Ensure that this reaction hasn't already been constrained more than this yet
-					if reactionID in currentRateLimits and currentRateLimits[reactionID] > maxFlux and currentRateLimits[reactionID] < np.inf:
-						# This rate has already been constrained more than this constraint, so skip it
-						continue
-
-					# # Set the max reaction rate for this reaction
-					# self.fba.maxReactionFluxIs(reactionID, maxFlux, raiseForReversible = False)
-					# # Set the minimum reaction rate for this reaction
-					# self.fba.minReactionFluxIs(reactionID, minFlux, raiseForReversible = False)
-					
-					# Record what constraint was just applied to this reaction
-					currentRateLimits[reactionID] = maxFlux
-					self.reactionConstraints[reactionIndex] = maxFlux
+		currentRateLimits = {}
+		# Set reaction fluxes to be between  self.max_flux_coefficient and self.min_flux_coefficient of the predicted rate
+		for index, constraintID in enumerate(self.constraintIDs):
+			# Only use this kinetic limit if it's enabled
+			if self.constraintMultiplesDict[index]:
+				
+				reactionID = self.constraintToReactionDict[constraintID]
+				# Skip any reactions not known to the network
+				if reactionID in self.reactionNameToReactionIndexDict:
+					reactionIndex = self.reactionNameToReactionIndexDict[reactionID]
 				else:
+					continue
 
-					# Set the reaction max to the default rate (usually infinity)
-					self.fba.maxReactionFluxIs(reactionID, defaultRate, raiseForReversible = False)
-					
-					# Record that this reaction is at default
-					self.reactionConstraints[reactionIndex] = defaultRate
+				constraintEstimate = self.allConstraintsLimits[index]
+				
+				# Determine the min and max fluxes to set for this reaction
+				maxFlux = constraintEstimate*self.max_flux_coefficient*self.constraintMultiplesDict[index]
+				minFlux = constraintEstimate*self.min_flux_coefficient
+				
+				# Make sure to never set negative maximum rates
+				assert (constraintEstimate >= 0 and constraintEstimate != np.nan)
+				
+				# Ensure that this reaction hasn't already been constrained more than this yet
+				if reactionID in currentRateLimits and currentRateLimits[reactionID] > maxFlux and currentRateLimits[reactionID] < np.inf:
+					# This rate has already been constrained more than this constraint, so skip it
+					continue
+
+				# Set the rate limits only if the option flag is enabled
+				if USE_RATELIMITS:
+					# Set the max reaction rate for this reaction
+					self.fba.maxReactionFluxIs(reactionID, maxFlux, raiseForReversible = False)
+					# Set the minimum reaction rate for this reaction
+					self.fba.minReactionFluxIs(reactionID, minFlux, raiseForReversible = False)
+
+				if KINETIC_DIAGNOSTIC:
+					# Set the max reaction rate for this reaction
+					self.fba_with_limits.maxReactionFluxIs(reactionID, maxFlux, raiseForReversible = False)
+					# Set the minimum reaction rate for this reaction
+					self.fba_with_limits.minReactionFluxIs(reactionID, minFlux, raiseForReversible = False)
+				
+				# Record what constraint was just applied to this reaction
+				currentRateLimits[reactionID] = maxFlux
+				self.reactionConstraints[reactionIndex] = maxFlux
+			else:
+
+				# Set the reaction max to the default rate (usually infinity)
+				self.fba.maxReactionFluxIs(reactionID, defaultRate, raiseForReversible = False)
+				self.fba.minReactionFluxIs(reactionID, 0, raiseForReversible = False)
+
+				if KINETIC_DIAGNOSTIC:
+					# Set the max reaction rate for this reaction
+					self.fba_with_limits.maxReactionFluxIs(reactionID, defaultRate, raiseForReversible = False)
+					# Set the minimum reaction rate for this reaction
+					self.fba_with_limits.minReactionFluxIs(reactionID, 0, raiseForReversible = False)
+				
+				# Record that this reaction is at default
+				self.reactionConstraints[reactionIndex] = defaultRate
 
 		deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.outputMoleculeLevelsChange())
 
@@ -292,10 +331,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
-
 		self.overconstraintMultiples = self.fba.reactionFluxes() / self.reactionConstraints
 
-		print np.amax(self.overconstraintMultiples)
 
 		# TODO: report as reactions (#) per second & store volume elsewhere
 		# self.writeToListener("FBAResults", "reactionFluxes",
@@ -303,6 +340,9 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.writeToListener("FBAResults", "reactionFluxes",
 			self.fba.reactionFluxes())
+
+		self.writeToListener("FBAResults", "diagnosticReactionFluxes",
+			self.fba_with_limits.reactionFluxes())
 
 		self.writeToListener("FBAResults", "externalExchangeFluxes",
 			self.fba.externalExchangeFluxes() / self.timeStepSec())

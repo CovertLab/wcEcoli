@@ -52,7 +52,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	fbaData.close()
 
-
 	testPoint = 100
 
 	fluxNamesEstimates = np.array(fluxNames)[np.where(rateEstimatesArray[testPoint] < np.inf)]
@@ -64,13 +63,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	amountOverconstrained[np.where(amountOverconstrained < 0)] = 0
 	overconstrainedFluxes = fluxNamesEstimates[np.where(amountOverconstrained > 0)]
 	overconstrainedFluxesDict = dict(zip(overconstrainedFluxes, amountOverconstrained[np.where(amountOverconstrained > 0)]))
-
-	print "fluxNamesEstimates: "
-	print fluxNamesEstimates
-
-	print "overconstrainedFluxes: "
-	print overconstrainedFluxes
-
 
 	plt.figure(figsize=(8.5,11))
 
