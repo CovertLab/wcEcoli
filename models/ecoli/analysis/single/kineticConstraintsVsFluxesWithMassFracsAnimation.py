@@ -205,11 +205,11 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		return lines, rects1_fluxes, rects1_rates, rects2
 
 	# call the animator.  blit=True means only re-draw the parts that have changed.
-	anim = animation.FuncAnimation(fig, animate, init_func=init,
-		frames=20, interval=20, blit=True)
-
 	# anim = animation.FuncAnimation(fig, animate, init_func=init,
-	# 	frames=relativeRates.shape[0], interval=20, blit=True)
+	# 	frames=20, interval=20, blit=True)
+
+	anim = animation.FuncAnimation(fig, animate, init_func=init,
+		frames=relativeRates.shape[0], interval=20, blit=True)
 
 	# save the animation as an mp4.  This requires ffmpeg or mencoder to be
 	# installed.  The extra_args ensure that the x264 codec is used, so that
