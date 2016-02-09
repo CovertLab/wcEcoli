@@ -188,7 +188,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 		# Animate lines
 		for idx, line in enumerate(lines):
-			x = np.array(range(i)) / 60.
+			x = t[:i] / 60.
 			y = masses[:i,idx]
 			line.set_data(x,y)
 
