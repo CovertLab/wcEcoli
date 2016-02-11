@@ -436,8 +436,6 @@ class Metabolism(object):
 		constraintIDs = []
 		constraintToReactionDict = {}
 		constraintMultiplesDict = {}
-		enzymesWithKineticInfo = set()
-		enzymesWithKineticInfoDict = {}
 
 		# Enzyme kinetics data
 		for reaction in raw_data.enzymeKinetics:
@@ -476,11 +474,6 @@ class Metabolism(object):
 
 
 			reactionRateInfo[constraintID] = reaction
-			for enzymeID in reaction["enzymeIDs"]:
-				enzymesWithKineticInfo.add(enzymeID)
-
-
-		enzymesWithKineticInfoDict["enzymes"] = list(enzymesWithKineticInfo)
 
 		self.reactionStoich = reactionStoich
 		self.externalExchangeMolecules = sorted(externalExchangeMolecules)
@@ -488,7 +481,7 @@ class Metabolism(object):
 		self._unconstrainedExchangeMolecules = unconstrainedExchangeMolecules
 		self._constrainedExchangeMolecules = constrainedExchangeMolecules
 		self.reactionRateInfo = reactionRateInfo
-		self.enzymesWithKineticInfo = enzymesWithKineticInfoDict
+		self.enzymeNames = list(validEnzymeIDs)
 		self.constraintIDs = constraintIDs
 		self.constraintToReactionDict = constraintToReactionDict
 		self.constraintMultiplesDict = constraintMultiplesDict

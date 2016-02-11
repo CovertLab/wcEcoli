@@ -277,6 +277,7 @@ class FluxBalanceAnalysis(object):
 			reactionIDs.append(reactionID)
 
 		self._reactionIDs = tuple(reactionIDs)
+		self._reactionIDsSet = set(reactionIDs)
 
 
 	def _initExternalExchange(self, externalExchangedMolecules):
@@ -822,7 +823,7 @@ class FluxBalanceAnalysis(object):
 		if maxFlux < 0:
 			raise InvalidBoundaryError("Maximum reaction flux must be at least 0")
 
-		if reactionID not in self.reactionIDs():
+		if reactionID not in self._reactionIDsSet:
 			raise InvalidBoundaryError("Unable to set max reaction flux: reaction '%s' not recognized." % (reactionID))
 
 		# if maxFlux < self._lowerBound[colIndex]:
@@ -848,7 +849,7 @@ class FluxBalanceAnalysis(object):
 		if minFlux < 0:
 			raise InvalidBoundaryError("Minimum reaction flux must be at least 0")
 
-		if reactionID not in self.reactionIDs():
+		if reactionID not in self._reactionIDsSet:
 			raise InvalidBoundaryError("Unable to set min reaction flux: reaction '%s' not recognized." % (reactionID))
 
 		# if minFlux > self._upperBound[colIndex]:
