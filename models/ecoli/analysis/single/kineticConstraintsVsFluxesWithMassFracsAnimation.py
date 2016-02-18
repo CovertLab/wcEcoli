@@ -219,8 +219,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	anim.save(os.path.join(plotOutDir, plotOutFileName) + '.mp4', fps=50, extra_args=['-vcodec', 'libx264'])
 
 
-
-
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
 			wholecell.utils.constants.SERIALIZED_KB_DIR,
