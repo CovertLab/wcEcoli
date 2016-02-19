@@ -242,6 +242,16 @@ class FluxBalanceAnalysis(object):
 
 			internalExchangedMolecules = objective.keys()
 
+		elif objectiveType == "pools_one_sided":
+			self._initObjectivePools(objective, oneSided=True)
+
+			if internalExchangedMolecules is not None:
+				raise FBAError(
+					"Internal exchange molecules are automatically defined when using objectiveType = \"pools\""
+					)
+
+			internalExchangedMolecules = objective.keys()
+
 		else:
 			raise FBAError("Unrecognized objectiveType: {}".format(objectiveType))
 
@@ -485,7 +495,7 @@ class FluxBalanceAnalysis(object):
 				)
 
 
-	def _initObjectivePools(self, objective):
+	def _initObjectivePools(self, objective, oneSided=False):
 		"""Create the abstractions needed for FBA with pools.  The objective is
 		to minimize the distance between the current metabolite level and some
 		target level, as defined in the objective."""
@@ -538,20 +548,21 @@ class FluxBalanceAnalysis(object):
 				+1
 				)
 
-			# Add the term for when the flux out is above the expected value
+			if not oneSided:
+				# Add the term for when the flux out is above the expected value
 
-			aboveUnityID = self._generatedID_fractionAboveUnityOut.format(moleculeID)
+				aboveUnityID = self._generatedID_fractionAboveUnityOut.format(moleculeID)
 
-			self._solver.flowMaterialCoeffIs(
-				aboveUnityID,
-				objectiveEquivID,
-				-1
-				)
+				self._solver.flowMaterialCoeffIs(
+					aboveUnityID,
+					objectiveEquivID,
+					-1
+					)
 
-			self._solver.flowObjectiveCoeffIs(
-				aboveUnityID,
-				+1
-				)
+				self._solver.flowObjectiveCoeffIs(
+					aboveUnityID,
+					+1
+					)
 
 
 	def _initInternalExchange(self, internalExchangedMolecules):

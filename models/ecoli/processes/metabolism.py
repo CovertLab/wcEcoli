@@ -112,7 +112,7 @@ class Metabolism(wholecell.processes.process.Process):
 			sim_data.process.metabolism.reactionStoich.copy(), # TODO: copy in class
 			sim_data.process.metabolism.externalExchangeMolecules,
 			objective,
-			objectiveType = "pools",
+			objectiveType = "pools_one_sided",
 			reversibleReactions = sim_data.process.metabolism.reversibleReactions,
 			moleculeMasses = moleculeMasses,
 			# maintenanceCost = energyCostPerWetMass.asNumber(COUNTS_UNITS/MASS_UNITS), # mmol/gDCW TODO: get real number
@@ -127,7 +127,7 @@ class Metabolism(wholecell.processes.process.Process):
 				sim_data.process.metabolism.reactionStoich.copy(), # TODO: copy in class
 				sim_data.process.metabolism.externalExchangeMolecules,
 				objective,
-				objectiveType = "pools",
+				objectiveType = "pools_one_sided",
 				reversibleReactions = sim_data.process.metabolism.reversibleReactions,
 				moleculeMasses = moleculeMasses,
 				)

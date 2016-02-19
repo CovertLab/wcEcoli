@@ -39,6 +39,7 @@ COLORS = [
 	for color in COLORS_256
 	]
 
+DISABLED = False
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
@@ -46,6 +47,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
+
+	if DISABLED:
+		print "Currently disabled because it is slow."
+		return
 
 	enzymeKineticsdata = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
 	
