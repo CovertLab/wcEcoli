@@ -73,7 +73,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		from kineticFBA.proteinConcentrations import ProteinConcentrations
 		from kineticFBA.metaboliteConcentrations import MetaboliteConcentrations
 		from kineticFBA.kineticInfo import KineticInfo
-		from kineticFBA.analysisTools import *
+		# from kineticFBA.analysisTools import *
 
 		kineticInfo = KineticInfo('reconstruction/ecoli/flat', 'enzymeKinetics.tsv', proteinConcentrations.proteinName2proteinConcentrations, metaboliteConcentrations.metabolites_concentrations_combined)
 
