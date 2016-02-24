@@ -48,7 +48,7 @@ class BulkObjectsContainer(object):
 			self._counts[:] += values
 
 		else:
-			self._counts[self._namesToIndexes(names)] += values
+			self._counts[self._namesToIndexes(names)] += values.astype(np.int64)
 
 
 	def countsDec(self, values, names = None): # TODO: raise exception if > max?
@@ -56,7 +56,7 @@ class BulkObjectsContainer(object):
 			self._counts[:] -= values
 
 		else:
-			self._counts[self._namesToIndexes(names)] -= values
+			self._counts[self._namesToIndexes(names)] -= values.astype(np.int64)
 
 
 	def countsView(self, names = None):
@@ -141,11 +141,10 @@ class _BulkObjectsView(object):
 
 
 	def countsInc(self, values):
-		self._container._counts[self._indexes] += values
-
+		self._container._counts[self._indexes] += values.astype(np.int64)
 
 	def countsDec(self, values):
-		self._container._counts[self._indexes] -= values
+		self._container._counts[self._indexes] -= values.astype(np.int64)
 
 
 class _BulkObjectView(object):
@@ -169,8 +168,8 @@ class _BulkObjectView(object):
 
 
 	def countInc(self, values):
-		self._container._counts[self._index] += values
+		self._container._counts[self._index] += values.astype(np.int64)
 
 
 	def countDec(self, values):
-		self._container._counts[self._index] -= values
+		self._container._counts[self._index] -= values.astype(np.int64)

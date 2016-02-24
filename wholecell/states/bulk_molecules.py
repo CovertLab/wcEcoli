@@ -263,20 +263,28 @@ class BulkMoleculesViewBase(wholecell.views.view.View):
 	def _countsIs(self, values):
 		assert (np.size(values) == np.size(self._containerIndexes)) or np.size(values) == 1, 'Inappropriately sized values'
 
-		self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] = values
+		if np.size(values) == 1:
+			self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] = values
+		else:
+			self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] = values.astype(np.int64)
 
 
 	def _countsInc(self, values):
 		assert (np.size(values) == np.size(self._containerIndexes)) or np.size(values) == 1, 'Inappropriately sized values'
 
-		self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] += values
-
+		if np.size(values) == 1:
+			self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] += values
+		else:
+			self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] += values.astype(np.int64)
 
 	def _countsDec(self, values):
 		assert (np.size(values) == np.size(self._containerIndexes)) or np.size(values) == 1, 'Inappropriately sized values'
 
-		self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] -= values
-
+		if np.size(values) == 1:
+			self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] -= values
+		else:
+			self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] -= values.astype(np.int64)
+			
 
 class BulkMoleculesView(BulkMoleculesViewBase):
 	def __init__(self, *args, **kwargs):

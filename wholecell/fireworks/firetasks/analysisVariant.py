@@ -17,6 +17,8 @@ import models.ecoli.analysis.variant
 import importlib
 import multiprocessing as mp
 
+from wholecell.analysis.analysis_firetask_utils import run_specific_order, run_function
+
 @explicit_serialize
 class AnalysisVariantTask(FireTaskBase):
 
@@ -38,6 +40,14 @@ class AnalysisVariantTask(FireTaskBase):
 		# Run analysis scripts in order of modification, most recently edited first
 		fileList = os.listdir(directory)
 		fileList.sort(key=lambda x: os.stat(os.path.join(directory, x)).st_mtime, reverse=True)
+
+		# Run files in runlast.txt after others
+		if "runlast.txt" in fileList:
+			fileList = run_specific_order(directory, fileList, "runlast.txt", position=-1, verbose=False)
+		# Run files in runfirst.txt before others
+		if "runfirst.txt" in fileList:
+			fileList = run_specific_order(directory, fileList, "runfirst.txt", position=0, verbose=False)
+
 
 		if "WC_ANALYZE_FAST" in os.environ:
 			pool = mp.Pool(processes = 8)
@@ -66,10 +76,3 @@ class AnalysisVariantTask(FireTaskBase):
 			pool.join()
 		timeTotal = time.time() - startTime
 		print "Completed variant analysis in %s" % (time.strftime("%H:%M:%S", time.gmtime(timeTotal)))
-
-def run_function(f, args, name):
-	try:
-		print "%s: Running %s" % (time.ctime(), name)
-		f(*args)
-	except KeyboardInterrupt:
-		import sys; sys.exit(1)

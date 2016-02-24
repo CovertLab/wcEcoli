@@ -3,6 +3,8 @@ import time
 import os
 
 from fireworks import FireTaskBase, explicit_serialize
+from wholecell.analysis.analysis_firetask_utils import run_specific_order, run_function
+
 import models.ecoli.analysis.single
 import importlib
 import multiprocessing as mp
@@ -75,26 +77,3 @@ def run_function(f, args, name):
 		f(*args)
 	except KeyboardInterrupt:
 		import sys; sys.exit(1)
-
-def run_specific_order(directory, fileList, fileName, position=-1, verbose=False):
-	"""
-	Moves files mentioned in fileName to end of fileList.
-	"""
-	# Need to access last index directly, instead of with -1
-	if position == -1:
-		position = len(fileList)
-
-	with open(os.path.join(directory, fileName), 'r') as f:
-		runlast = []
-		for line in f:
-			line = line.strip("\n")
-			if line in fileList:
-				runlast.append(line)
-				idx = fileList.index(line)
-				fileList.insert(position, fileList.pop(idx))
-			else:
-				if verbose:
-					print "\nUnknown file in %s: %s" % (fileName, line)
-	if verbose:
-		print "Running files in %s after others: \n%s\n" % (fileName, ", ".join(runlast))
-	return fileList

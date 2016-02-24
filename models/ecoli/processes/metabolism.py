@@ -38,7 +38,7 @@ MASS_UNITS = units.g
 KINETIC_DIAGNOSTIC = False
 NONZERO_ENZYMES = True
 
-USE_RATELIMITS = True # Enable/disable kinetic rate limits in the model
+USE_RATELIMITS = False # Enable/disable kinetic rate limits in the model
 
 USE_MANUAL_FLUX_COEFF = True # enable to overrid flux coefficients in the knowledgebase and use these local values instead
 MAX_FLUX_COEFF = 1 # Multiple of predicted rate at which to set the max fluxes
