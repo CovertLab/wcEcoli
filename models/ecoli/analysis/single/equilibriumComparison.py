@@ -94,9 +94,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		# if np.any(np.isnan(empiricalKd[empiricalKd.shape[0] * IGNORE_FIRST_PERCENTAGE:])):
 		ymin = expectedKd / 2.
 		ymax = expectedKd * 2.
-		ax.set_ylim([ymin, ymax])
-		ax.set_yticks([ymin, ymax])
-		ax.set_yticklabels(["%0.2e" % ymin, "%0.2e" % ymax])
+		if ymin != ymax:
+			ax.set_ylim([ymin, ymax])
+			ax.set_yticks([ymin, ymax])
+			ax.set_yticklabels(["%0.2e" % ymin, "%0.2e" % ymax])
 		ax.spines['top'].set_visible(False)
 		ax.spines['bottom'].set_visible(False)
 		ax.xaxis.set_ticks_position('none')
@@ -122,9 +123,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			# if np.any(np.isnan(empiricalKd[empiricalKd.shape[0] * IGNORE_FIRST_PERCENTAGE:])):
 			ymin = np.amin(reactantConcentrations[1:,reactantIndex]*.9)
 			ymax = np.amax(reactantConcentrations[1:,reactantIndex]*1.1)
-			ax.set_ylim([ymin, ymax])
-			ax.set_yticks([ymin, ymax])
-			ax.set_yticklabels(["%0.2e" % ymin, "%0.2e" % ymax])
+			if ymin != ymax:
+				ax.set_ylim([ymin, ymax])
+				ax.set_yticks([ymin, ymax])
+				ax.set_yticklabels(["%0.2e" % ymin, "%0.2e" % ymax])
 			ax.spines['top'].set_visible(False)
 			ax.spines['bottom'].set_visible(False)
 			ax.xaxis.set_ticks_position('none')
