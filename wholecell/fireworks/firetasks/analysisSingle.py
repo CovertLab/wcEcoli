@@ -32,12 +32,14 @@ class AnalysisSingleTask(FireTaskBase):
 
 		# Run files in runlast.txt after others
 		if "runlast.txt" in fileList:
-			fileList = run_last(directory, fileList, "runlast.txt", verbose=False)
-		
+			fileList = run_specific_order(directory, fileList, "runlast.txt", position=-1, verbose=False)
+		# Run files in runfirst.txt before others
+		if "runfirst.txt" in fileList:
+			fileList = run_specific_order(directory, fileList, "runfirst.txt", position=0, verbose=False)
+
 		self.analyze_fast = "WC_ANALYZE_FAST" in os.environ
 
 		if self.analyze_fast:
-			self.analyse_fast = True
 			pool = mp.Pool(processes = 8)
 
 		for f in fileList:
@@ -74,21 +76,25 @@ def run_function(f, args, name):
 	except KeyboardInterrupt:
 		import sys; sys.exit(1)
 
-def run_last(directory, fileList, fileName, verbose=False):
+def run_specific_order(directory, fileList, fileName, position=-1, verbose=False):
 	"""
 	Moves files mentioned in fileName to end of fileList.
 	"""
-	with open(os.path.join(directory, "runlast.txt"), 'r') as f:
+	# Need to access last index directly, instead of with -1
+	if position == -1:
+		position = len(fileList)
+
+	with open(os.path.join(directory, fileName), 'r') as f:
 		runlast = []
 		for line in f:
 			line = line.strip("\n")
 			if line in fileList:
 				runlast.append(line)
 				idx = fileList.index(line)
-				fileList.append(fileList.pop(idx))
+				fileList.insert(position, fileList.pop(idx))
 			else:
 				if verbose:
-					print "\nUnknown file in runlast.txt: %s" % (line)
+					print "\nUnknown file in %s: %s" % (fileName, line)
 	if verbose:
-		print "Running files in runlast.txt after others: \n%s\n" % (", ".join(runlast))
+		print "Running files in %s after others: \n%s\n" % (fileName, ", ".join(runlast))
 	return fileList
