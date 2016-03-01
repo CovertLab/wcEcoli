@@ -35,7 +35,6 @@ VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 
 # Runs a second FBA at each step, which is constrained even if the main one is not
-KINETIC_DIAGNOSTIC = False
 NONZERO_ENZYMES = True
 
 USE_RATELIMITS = False # Enable/disable kinetic rate limits in the model
@@ -90,7 +89,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# TODO: make sim_data method?
 		extIDs = sim_data.externalExchangeMolecules
-		self.extMoleculeMasses = sim_data.getter.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS) # TODO: delete this line?
+		self.extMoleculeMasses = sima_data.getter.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS) # TODO: delete this line?
 
 		self.getMass = sim_data.getter.getMass
 		self.massReconstruction = sim_data.mass
@@ -130,17 +129,6 @@ class Metabolism(wholecell.processes.process.Process):
 			# 	} # TODO: move to KB TODO: check reaction stoich
 			)
 
-		# In diagnostic mode, prepare a second FBA object which will be constrained
-		if KINETIC_DIAGNOSTIC:
-			self.fba_with_limits = FluxBalanceAnalysis(
-				sim_data.process.metabolism.reactionStoich.copy(), # TODO: copy in class
-				sim_data.process.metabolism.externalExchangeMolecules,
-				objective,
-				objectiveType = "pools_one_sided",
-				reversibleReactions = sim_data.process.metabolism.reversibleReactions,
-				moleculeMasses = moleculeMasses,
-				)
-
 		# Set up enzyme kinetics object
 		self.enzymeKinetics = EnzymeKinetics(
 			reactionRateInfo = sim_data.process.metabolism.reactionRateInfo,
@@ -162,9 +150,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		## Set enzymes unlimited
 		self.fba.enzymeLevelsIs(np.inf)
-		
-		if KINETIC_DIAGNOSTIC:
-			self.fba_with_limits.enzymeLevelsIs(np.inf)
 
 		# Views
 		self.metaboliteNames = self.fba.outputMoleculeIDs()
@@ -251,14 +236,6 @@ class Metabolism(wholecell.processes.process.Process):
 			metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS)
 			)
 
-		if KINETIC_DIAGNOSTIC:
-			# Set external molecule levels
-			self.fba_with_limits.externalMoleculeLevelsIs(externalMoleculeLevels)
-
-			self.fba_with_limits.internalMoleculeLevelsIs(
-				metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS)
-				)
-
 		#  Find enzyme concentrations from enzyme counts
 		enzymeCountsInit = self.enzymes.counts()
 
@@ -333,12 +310,6 @@ class Metabolism(wholecell.processes.process.Process):
 					self.fba.maxReactionFluxIs(reactionID, maxFlux, raiseForReversible = False)
 					# Set the minimum reaction rate for this reaction
 					# self.fba.minReactionFluxIs(reactionID, minFlux, raiseForReversible = False)
-
-				if KINETIC_DIAGNOSTIC:
-					# Set the max reaction rate for this reaction
-					self.fba_with_limits.maxReactionFluxIs(reactionID, maxFlux, raiseForReversible = False)
-					# Set the minimum reaction rate for this reaction
-					self.fba_with_limits.minReactionFluxIs(reactionID, minFlux, raiseForReversible = False)
 				
 				# Record what constraint was just applied to this reaction
 				currentRateLimits[reactionID] = maxFlux
@@ -348,12 +319,6 @@ class Metabolism(wholecell.processes.process.Process):
 				# Set the reaction max to the default rate (usually infinity)
 				self.fba.maxReactionFluxIs(reactionID, defaultRate, raiseForReversible = False)
 				# self.fba.minReactionFluxIs(reactionID, 0, raiseForReversible = False)
-
-				if KINETIC_DIAGNOSTIC:
-					# Set the max reaction rate for this reaction
-					self.fba_with_limits.maxReactionFluxIs(reactionID, defaultRate, raiseForReversible = False)
-					# Set the minimum reaction rate for this reaction
-					self.fba_with_limits.minReactionFluxIs(reactionID, 0, raiseForReversible = False)
 				
 				# Record that this reaction is at default
 				self.reactionConstraints[reactionIndex] = defaultRate
@@ -378,11 +343,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.writeToListener("FBAResults", "reactionFluxes",
 			self.fba.reactionFluxes())
-
-
-		if KINETIC_DIAGNOSTIC:
-			self.writeToListener("FBAResults", "diagnosticReactionFluxes",
-				self.fba_with_limits.reactionFluxes())
 
 		self.writeToListener("FBAResults", "externalExchangeFluxes",
 			self.fba.externalExchangeFluxes() / self.timeStepSec())
