@@ -37,7 +37,7 @@ MASS_UNITS = units.g
 # Runs a second FBA at each step, which is constrained even if the main one is not
 NONZERO_ENZYMES = True
 
-USE_RATELIMITS = False # Enable/disable kinetic rate limits in the model
+USE_RATELIMITS = True # Enable/disable kinetic rate limits in the model
 
 USE_MANUAL_FLUX_COEFF = True # enable to overrid flux coefficients in the knowledgebase and use these local values instead
 MAX_FLUX_COEFF = 1 # Multiple of predicted rate at which to set the max fluxes
@@ -89,7 +89,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# TODO: make sim_data method?
 		extIDs = sim_data.externalExchangeMolecules
-		self.extMoleculeMasses = sima_data.getter.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS) # TODO: delete this line?
+		self.extMoleculeMasses = sim_data.getter.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS) # TODO: delete this line?
 
 		self.getMass = sim_data.getter.getMass
 		self.massReconstruction = sim_data.mass
@@ -112,22 +112,20 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.reactionStoich = sim_data.process.metabolism.reactionStoich
 		self.externalExchangeMolecules = sim_data.externalExchangeMolecules
-		self.reversibleReactions = sim_data.process.metabolism.reversibleReactions
+		# self.reversibleReactions = sim_data.process.metabolism.reversibleReactions
 
 		# Set up FBA solver
-		self.fba = FluxBalanceAnalysis(
-			self.reactionStoich.copy(), # TODO: copy in class
-			self.externalExchangeMolecules,
-			self.objective,
-			objectiveType = "pools",
-			reversibleReactions = self.reversibleReactions,
-			moleculeMasses = self.moleculeMasses,
-			solver = "glpk",
-			# maintenanceCost = energyCostPerWetMass.asNumber(COUNTS_UNITS/MASS_UNITS), # mmol/gDCW TODO: get real number
-			# maintenanceReaction = {
-			# 	"ATP[c]":-1, "WATER[c]":-1, "ADP[c]":+1, "Pi[c]":+1
-			# 	} # TODO: move to KB TODO: check reaction stoich
-			)
+		self.fba_object_options = {
+			"reactionStoich" : self.reactionStoich.copy(), # TODO: copy in class
+			"externalExchangedMolecules" : self.externalExchangeMolecules,
+			"objective" : self.objective,
+			"objectiveType" : "pools",
+			"reversibleReactions" : None,
+			"moleculeMasses" : self.moleculeMasses,
+			"solver" : "glpk",
+		}
+		self.fba = FluxBalanceAnalysis(**self.fba_object_options)
+
 
 		# Set up enzyme kinetics object
 		self.enzymeKinetics = EnzymeKinetics(
@@ -186,7 +184,6 @@ class Metabolism(wholecell.processes.process.Process):
 		# Set external molecule levels
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
 
-
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
 			self.externalMoleculeIDs,
 			coefficient,
@@ -198,19 +195,8 @@ class Metabolism(wholecell.processes.process.Process):
 		if newObjective != None and newObjective != self.objective:
 			# Build new fba instance with new objective
 			self.objective = newObjective
-			self.fba = FluxBalanceAnalysis(
-				self.reactionStoich.copy(), # TODO: copy in class
-				self.externalExchangeMolecules,
-				self.objective,
-				objectiveType = "pools",
-				reversibleReactions = self.reversibleReactions,
-				moleculeMasses = self.moleculeMasses,
-				solver = "glpk",
-				# maintenanceCost = energyCostPerWetMass.asNumber(COUNTS_UNITS/MASS_UNITS), # mmol/gDCW TODO: get real number
-				# maintenanceReaction = {
-				# 	"ATP[c]":-1, "WATER[c]":-1, "ADP[c]":+1, "Pi[c]":+1
-				# 	} # TODO: move to KB TODO: check reaction stoich
-				)
+			self.fba_object_options["objective"] = self.objective
+			self.fba = FluxBalanceAnalysis(**self.fba_object_options)
 
 			massComposition = self.massReconstruction.getFractionMass(self.doublingTime)
 			massInitial = (massComposition["proteinMass"] + massComposition["rnaMass"] + massComposition["dnaMass"]) / self.avgCellToInitialCellConvFactor
@@ -253,15 +239,9 @@ class Metabolism(wholecell.processes.process.Process):
 		if not self.enzymeKinetics.inputsChecked:
 			knownConstraints, unusableConstraints, unknownVals = self.enzymeKinetics.checkKnownSubstratesAndEnzymes(metaboliteConcentrationsDict, enzymeConcentrationsDict, removeUnknowns=True)
 
+		# Calculation the constraints in the current conditions
 		constraintsDict = self.enzymeKinetics.allConstraintsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
 		reactionsDict = self.enzymeKinetics.allReactionsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
-
-		# self.allConstraintsLimits = np.ones(len(self.fba.reactionIDs())) * defaultRate
-		# for idx, constraintID in enumerate(self.constraintIDs):
-		# 	if constraintID in constraintsDict:
-		# 		self.allConstraintsLimits[idx] = constraintsDict[constraintID] * self.timeStepSec()
-		# 	else:
-		# 		self.allConstraintsLimits[idx] == defaultRate
 
 		self.allConstraintsLimits = np.ones(len(self.fba.reactionIDs())) * defaultRate
 		for idx, constraintID in enumerate(self.constraintIDs):
@@ -271,6 +251,7 @@ class Metabolism(wholecell.processes.process.Process):
 			else:
 				self.allConstraintsLimits[idx] == defaultRate
 
+		# Record the currently applied rate limits
 		self.reactionConstraints = np.ones(len(self.fba.reactionIDs())) * np.inf
 
 		currentRateLimits = {}
@@ -307,9 +288,9 @@ class Metabolism(wholecell.processes.process.Process):
 				# Set the rate limits only if the option flag is enabled
 				if USE_RATELIMITS:
 					# Set the max reaction rate for this reaction
-					self.fba.maxReactionFluxIs(reactionID, maxFlux, raiseForReversible = False)
+					self.fba.maxReactionFluxIs(reactionID, maxFlux, raiseForReversible = True)
 					# Set the minimum reaction rate for this reaction
-					# self.fba.minReactionFluxIs(reactionID, minFlux, raiseForReversible = False)
+					# self.fba.minReactionFluxIs(reactionID, minFlux, raiseForReversible = True)
 				
 				# Record what constraint was just applied to this reaction
 				currentRateLimits[reactionID] = maxFlux
@@ -317,7 +298,7 @@ class Metabolism(wholecell.processes.process.Process):
 			else:
 
 				# Set the reaction max to the default rate (usually infinity)
-				self.fba.maxReactionFluxIs(reactionID, defaultRate, raiseForReversible = False)
+				self.fba.maxReactionFluxIs(reactionID, defaultRate, raiseForReversible = True)
 				# self.fba.minReactionFluxIs(reactionID, 0, raiseForReversible = False)
 				
 				# Record that this reaction is at default

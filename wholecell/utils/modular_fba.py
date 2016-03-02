@@ -204,22 +204,6 @@ class FluxBalanceAnalysis(object):
 		self._outputMoleculeIDs = []
 		self._outputMoleculeCoeffs = []
 
-		# Set up reversible reactions
-		if reversibleReactions is not None:
-			for reactionID in reversibleReactions:
-				reverseReactionID = self._generatedID_reverseReaction.format(reactionID)
-
-				reactionStoich[reverseReactionID] = {
-					moleculeID:-stoichCoeff
-					for moleculeID, stoichCoeff in reactionStoich[reactionID].viewitems()
-					}
-
-				if reactionEnzymes is not None and reactionEnzymes.has_key(reactionID):
-					reactionEnzymes[reverseReactionID] = reactionEnzymes[reactionID]
-
-				if reactionRates is not None and reactionRates.has_key(reactionID):
-					reactionRates[reverseReactionID] = reactionRates[reactionID]
-
 		# Call indivdual initialization methods
 		self._initReactionNetwork(reactionStoich)
 		self._initExternalExchange(externalExchangedMolecules)

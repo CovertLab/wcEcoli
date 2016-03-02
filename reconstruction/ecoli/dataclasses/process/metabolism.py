@@ -23,6 +23,9 @@ PPI_CONCENTRATION = 0.5e-3 # M, multiple sources
 
 EXCHANGE_UNITS = units.mmol / units.g / units.h
 
+reverseReactionString = " (reverse)"
+
+
 class Metabolism(object):
 	""" Metabolism """
 
@@ -36,7 +39,7 @@ class Metabolism(object):
 		# TODO: unjank this
 
 		# Load the biomass function flat file as a dict
-		biomassFunction = {entry['molecule id']:entry['coefficient'] for entry in raw_data.biomass}
+		self.biomassFunction = {entry['molecule id']:entry['coefficient'] for entry in raw_data.biomass}
 
 		# Create vector of metabolite pools (concentrations)
 
@@ -158,7 +161,6 @@ class Metabolism(object):
 			metaboliteIDs.append(key)
 			metaboliteConcentrations.append(value.asNumber(units.mol / units.L))
 
-		self.biomassFunction = biomassFunction
 		self._concentrationUpdates = ConcentrationUpdates(dict(zip(
 			metaboliteIDs,
 			(units.mol / units.L) * np.array(metaboliteConcentrations)
@@ -193,15 +195,23 @@ class Metabolism(object):
 		for reaction in raw_data.reactions:
 			reactionID = reaction["reaction id"]
 			stoich = reaction["stoichiometry"]
+			reversible = reaction["is reversible"]
 
 			if len(stoich) <= 1:
 				raise Exception("Invalid biochemical reaction: {}, {}".format(reactionID, stoich))
 
 			reactionStoich[reactionID] = stoich
 
-			# Assign reversibilty
-			if reaction["is reversible"]:
+			# Add the reverse reaction
+			if reversible:
+				reverseReactionID = reactionID + reverseReactionString
+				reactionStoich[reverseReactionID] = {
+					moleculeID:-stoichCoeff
+					for moleculeID, stoichCoeff in reactionStoich[reactionID].viewitems()
+					}
+
 				reversibleReactions.append(reactionID)
+
 
 		reactionRateInfo = {}
 		constraintIDs = []
