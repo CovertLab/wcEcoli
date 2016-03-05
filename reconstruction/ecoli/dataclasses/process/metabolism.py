@@ -218,13 +218,12 @@ class Metabolism(object):
 		constraintToReactionDict = {}
 		constraintMultiplesDict = {}
 
+		ambiguousRxns = set()
+
 		# Enzyme kinetics data
 		for reaction in raw_data.enzymeKinetics:
-			constraintID = reaction["constraintID"]
-			constraintIDs.append(constraintID)
+			reactionID = reaction["reactionID"]
 
-			constraintToReactionDict[constraintID] = reaction["reactionID"]
-			constraintMultiplesDict[constraintID] = reaction["constraintMultiple"]
 
 			# If the enzymes don't already have a compartment tag, add one from the valid compartment list or [c] (cytosol) as a default
 			new_reaction_enzymes = []
@@ -253,8 +252,40 @@ class Metabolism(object):
 						parametersDict[key] = value + '[c]'
 				reaction["customParameterVariables"] = parametersDict
 
+			# Check if this constraint is for a reverse reaction
+			if reactionID in reversibleReactions:
+				thisRxnStoichiometry = reactionStoich[reactionID]
+				reverseCounter = 0.
+				allCounter = 0.
+				# How many substrates are products, how many are reactants?
+				for substrate in reaction["substrateIDs"]:
+					if substrate in thisRxnStoichiometry.keys():
+						if thisRxnStoichiometry[substrate] > 0:
+							reverseCounter += 1.
+					allCounter += 1.
+				# If more are products than reactants, treat this as a reverse reaction constraint
+				# In case of ties, assume reaction is forward
+				if allCounter < 1.0:
+					continue
+
+				if reverseCounter != allCounter:
+					ambiguousRxns.add(reaction["reactionID"])
+
+				if (reverseCounter / allCounter) == 1:
+					reaction["reactionID"] = reactionID + " (reverse)"
+					reaction["constraintID"] = reaction["constraintID"] + " (reverse)" 
+
+			constraintID = reaction["constraintID"]
+			constraintIDs.append(constraintID)
+			constraintToReactionDict[constraintID] = reactionID
+			constraintMultiplesDict[constraintID] = reaction["constraintMultiple"]
 
 			reactionRateInfo[constraintID] = reaction
+
+
+		if len(ambiguousRxns) > 0:
+			raise Exception("The following enzyme kinetics entries have ambiguous direction. Split them into multiple lines in the flat file to increase clarity. {}".format(ambiguousRxns))
+
 
 		self.reactionStoich = reactionStoich
 		self.envDict = sim_data.envDict
