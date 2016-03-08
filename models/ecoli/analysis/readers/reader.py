@@ -33,12 +33,17 @@ class Reader:
 
 		self._loaded = toLoad
 
-	def reload(self):
-		if self._loaded is None:
-			self._load_data
+	def reload(self, load=None):
+		self.load_main()
+
+		if load is not None:
+			self._load_data(load)
 		else:
-			for l in self._loaded:
-				l(self)
+			if self._loaded is None:
+				self._load_data()
+			else:
+				for l in self._loaded:
+					l(self)
 
 	def load_main(self):
 		tr = TableReader(os.path.join(self._sim_out_path, "Main"))
@@ -62,7 +67,11 @@ class Reader:
 		reactionIDs = tr.readAttribute('reactionIDs')
 		constraintToReaction = tr.readAttribute('constraintToReactionDict')
 		constraintIDs = tr.readAttribute('constraintIDs')
-		metaboliteIDs = self._sim_data.process.metabolism.metabolitePoolIDs
+
+		# XXX: This behaviour depends on the sim using this to get its list of metabolite IDs
+		# a metabolitePoolIDs attribute appears magically in simData for completed sims, but
+		# is not accessible for a running sim :/
+		metaboliteIDs = sorted(self._sim_data.process.metabolism.concDict) 
 
 		ek.constraintsLimits = pd.DataFrame(tr.readColumn('allConstraintsLimits'), index=self.time, columns=constraintIDs)
 		ek.countsToMolar = pd.DataFrame(tr.readColumn('countsToMolar'), index=self.time)
