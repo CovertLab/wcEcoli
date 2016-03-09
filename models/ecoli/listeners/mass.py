@@ -74,6 +74,8 @@ class Mass(wholecell.listeners.listener.Listener):
 		# Set total mass that should be added to cell
 		# This is an approximation for length
 		self.expectedDryMassIncrease = sim_data.mass.avgCellDryMassInit
+		self.avgCellToInitialCellConvFactor = sim_data.mass.avgCellToInitialCellConvFactor
+		#import ipdb; ipdb.set_trace()
 
 		# Set initial values
 
@@ -193,7 +195,9 @@ class Mass(wholecell.listeners.listener.Listener):
 
 		# End simulation once the mass of an average cell is
 		# added to current cell.
+
 		if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncrease.asNumber(units.fg):
+		#if self.proteinMass - self.proteinMassInitial >= self.expectedDryMassIncrease.asNumber(units.fg) * 0.604651163 / self.avgCellToInitialCellConvFactor:
 			self._sim.cellCycleComplete()
 
 

@@ -80,6 +80,8 @@ class AtpUsage(wholecell.processes.process.Process):
 			self.atp.count(),
 			self.h2o.count()
 			)
+		print "ATP hydrolyzed = %f" % atpsHydrolyzed
+		self.writeToListener("ATPhydrolyzedUsageListener", "atpsHydrolyzed", atpsHydrolyzed)
 
 		self.reactants.countsDec(atpsHydrolyzed)
 		self.products.countsInc(atpsHydrolyzed)

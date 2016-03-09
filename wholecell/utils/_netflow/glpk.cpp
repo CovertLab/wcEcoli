@@ -43,6 +43,10 @@ class glpk
 		{
 			if(lower == upper)
 				glp_set_col_bnds(this->lp, index, GLP_FX, lower, upper);
+			else if(isinf(upper))
+				glp_set_col_bnds(this->lp, index, GLP_LO, lower, upper);
+			else if(isinf(lower))
+				glp_set_col_bnds(this->lp, index, GLP_UP, lower, upper);
 			else
 				glp_set_col_bnds(this->lp, index, GLP_DB, lower, upper);
 		}

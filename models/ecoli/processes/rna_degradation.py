@@ -128,6 +128,8 @@ class RnaDegradation(wholecell.processes.process.Process):
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
 		cellVolume = cellMass / self.cellDensity
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
+		#import ipdb; ipdb.set_trace(); 
+		#x = np.array((self.Km * self.isMRna).asNumber()); CV = np.std(x[x > 0.0]) / np.mean(x[x > 0.0])
 
 		# fraction saturated based on Michaelis-Menten kinetics
 		if not self.EndoRNaseCoop:
@@ -285,6 +287,8 @@ class RnaDegradation(wholecell.processes.process.Process):
 		nExoRNases = self.exoRnases.counts()
 		exoCapacity = nExoRNases.sum() * self.KcatExoRNase * (units.s * self.timeStepSec())
 
+		#import ipdb; ipdb.set_trace(); 
+		NucleotideRecycling = self.fragmentBases.counts().sum()
 		if exoCapacity >= self.fragmentBases.counts().sum():
 			self.nmps.countsInc(self.fragmentBases.counts())
 			self.h2o.countsDec(self.fragmentBases.counts().sum())
@@ -298,3 +302,6 @@ class RnaDegradation(wholecell.processes.process.Process):
 			self.h2o.countsDec(fragmentBasesDigested.sum())
 			self.h.countsInc(fragmentBasesDigested.sum())
 			self.fragmentBases.countsDec(fragmentBasesDigested)
+			NucleotideRecycling = fragmentBasesDigested.sum()
+		
+		self.writeToListener("RnaDegradationListener", "fragmentBasesDigested", NucleotideRecycling)

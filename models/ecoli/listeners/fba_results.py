@@ -49,13 +49,14 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.externalExchangeFluxes = np.zeros(len(self.externalMoleculeIDs), np.float64)
 		self.outputFluxes = np.zeros(len(self.outputMoleculeIDs), np.float64)
 		self.objectiveComponents = np.zeros_like(self.outputFluxes)
+		self.deltaMetabolites = np.zeros(len(self.outputMoleculeIDs), np.float64)
 
 
 	def tableCreate(self, tableWriter):
 		tableWriter.writeAttributes(
 			reactionIDs = list(self.reactionIDs),
 			externalMoleculeIDs = self.externalMoleculeIDs,
-			outputMoleculeIDs = self.outputMoleculeIDs
+			outputMoleculeIDs = self.outputMoleculeIDs,
 			)
 
 
@@ -68,4 +69,5 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			outputFluxes = self.outputFluxes,
 			objectiveValue = self.objectiveValue,
 			objectiveComponents = self.objectiveComponents,
+			deltaMetabolites = self.deltaMetabolites,
 			)

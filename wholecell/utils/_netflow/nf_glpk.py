@@ -68,6 +68,11 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		self._solved = False
 
 
+	def flowLowerBound(self, flow):
+		idx = self._getVar(flow)
+		return self._lb[flow]
+
+
 	def flowUpperBoundIs(self, flow, upperBound):
 		idx = self._getVar(flow)
 		self._ub[flow] = upperBound
@@ -78,6 +83,11 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 			)
 
 		self._solved = False
+
+
+	def flowUpperBound(self, flow):
+		idx = self._getVar(flow)
+		return self._ub[flow]
 
 
 	def flowObjectiveCoeffIs(self, flow, coefficient):

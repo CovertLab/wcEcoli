@@ -240,7 +240,7 @@ class FluxBalanceAnalysis(object):
 					"Internal exchange molecules are automatically defined when using objectiveType = \"pools\""
 					)
 
-			internalExchangedMolecules = objective.keys()
+			internalExchangedMolecules = sorted(objective.keys())
 
 		else:
 			raise FBAError("Unrecognized objectiveType: {}".format(objectiveType))
@@ -277,6 +277,7 @@ class FluxBalanceAnalysis(object):
 			reactionIDs.append(reactionID)
 
 		self._reactionIDs = tuple(reactionIDs)
+		self._reactionIDsSet = set(reactionIDs)
 
 
 	def _initExternalExchange(self, externalExchangedMolecules):
@@ -311,7 +312,8 @@ class FluxBalanceAnalysis(object):
 		objective equivalents.  The objectiveType determines how these
 		fractions are used."""
 
-		for moleculeID, coeff in objective.viewitems():
+		for moleculeID in sorted(objective):
+			coeff = objective[moleculeID]
 			if coeff == 0:
 				raise FBAError("Invalid objective coefficient - must be non-zero")
 
@@ -511,7 +513,7 @@ class FluxBalanceAnalysis(object):
 		# Minimizing an absolute value requires splitting the term into two,
 		# one for the positive values and one for the negative.
 
-		for moleculeID in objective.viewkeys():
+		for moleculeID in sorted(objective.viewkeys()):
 			objectiveEquivID = self._generatedID_moleculeEquivalents.format(moleculeID)
 
 			# Add the forced -1 term so that we can define x_i = f_i - 1
@@ -822,6 +824,9 @@ class FluxBalanceAnalysis(object):
 		if maxFlux < 0:
 			raise InvalidBoundaryError("Maximum reaction flux must be at least 0")
 
+		if reactionID not in self._reactionIDsSet:
+			raise InvalidBoundaryError("Unable to set max reaction flux: reaction '%s' not recognized." % (reactionID))
+
 		# if maxFlux < self._lowerBound[colIndex]:
 		# 	raise InvalidBoundaryError("Maximum reaction flux must be greater than or equal to the minimum flux")
 
@@ -841,9 +846,32 @@ class FluxBalanceAnalysis(object):
 			)
 
 
+	def maxReactionFlux(self, reactionID, raiseForReversible = True):
+		if reactionID not in self._reactionIDsSet:
+			raise InvalidBoundaryError("Unable to set max reaction flux: reaction '%s' not recognized." % (reactionID))
+
+		# if maxFlux < self._lowerBound[colIndex]:
+		# 	raise InvalidBoundaryError("Maximum reaction flux must be greater than or equal to the minimum flux")
+
+		reverseReactionID = self._generatedID_reverseReaction.format(reactionID)
+
+		if raiseForReversible and reverseReactionID in self._reactionIDs:
+			raise FBAError((
+				"Setting the maximum reaction flux is ambiguous since " +
+				"reaction {} has both a forward [{}] and reverse [{}] " +
+				"component.  Call this method with argument " +
+				"raiseForReversible = False if this is intended behavior."
+				).format(reactionID, reactionID, reverseReactionID))
+
+		return self._solver.flowUpperBound(reactionID)
+
+
 	def minReactionFluxIs(self, reactionID, minFlux, raiseForReversible = True):
 		if minFlux < 0:
 			raise InvalidBoundaryError("Minimum reaction flux must be at least 0")
+
+		if reactionID not in self._reactionIDsSet:
+			raise InvalidBoundaryError("Unable to set min reaction flux: reaction '%s' not recognized." % (reactionID))
 
 		# if minFlux > self._upperBound[colIndex]:
 		# 	raise InvalidBoundaryError("Minimum reaction flux must be less than or equal to the maximum flux")
@@ -862,6 +890,26 @@ class FluxBalanceAnalysis(object):
 			reactionID,
 			minFlux
 			)
+
+
+	def minReactionFlux(self, reactionID, raiseForReversible = True):
+		if reactionID not in self._reactionIDsSet:
+			raise InvalidBoundaryError("Unable to set min reaction flux: reaction '%s' not recognized." % (reactionID))
+
+		# if minFlux > self._upperBound[colIndex]:
+		# 	raise InvalidBoundaryError("Minimum reaction flux must be less than or equal to the maximum flux")
+
+		reverseReactionID = self._generatedID_reverseReaction.format(reactionID)
+
+		if raiseForReversible and reverseReactionID in self._reactionIDs:
+			raise FBAError((
+				"Setting the minimum reaction flux is ambiguous since " +
+				"reaction {} has both a forward [{}] and reverse [{}] " +
+				"component.  Call this method with argument " +
+				"raiseForReversible = False if this is intended behavior."
+				).format(reactionID, reactionID, reverseReactionID))
+
+		return self._solver.flowLowerBound(reactionID)
 
 	# TODO: determine if this is needed
 

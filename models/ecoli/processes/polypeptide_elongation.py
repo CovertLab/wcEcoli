@@ -251,6 +251,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.randomState,
 			nElongations * self.gtpPerElongation
 			))
+		print "GTP used (polipetide elongation) = %f" % self.gtpUsed
 
 		self.gtp.countDec(self.gtpUsed)
 		self.gdp.countInc(self.gtpUsed)
