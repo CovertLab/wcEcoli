@@ -86,7 +86,7 @@ class Metabolism(wholecell.processes.process.Process):
 			)
 
 		# TODO: make sim_data method?
-		extIDs = sim_data.externalExchangeMolecules
+		extIDs = sim_data.externalExchangeMolecules[sim_data.environment]
 		self.extMoleculeMasses = sim_data.getter.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS) # TODO: delete this line?
 
 		self.getMass = sim_data.getter.getMass
@@ -109,7 +109,7 @@ class Metabolism(wholecell.processes.process.Process):
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
 		self.reactionStoich = sim_data.process.metabolism.reactionStoich
-		self.externalExchangeMolecules = sim_data.externalExchangeMolecules
+		self.externalExchangeMolecules = sim_data.externalExchangeMolecules[sim_data.environment]
 		self.reversibleReactions = sim_data.process.metabolism.reversibleReactions
 
 		# Set up FBA solver
@@ -361,6 +361,7 @@ class Metabolism(wholecell.processes.process.Process):
 			), 0).astype(np.int64)
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
+<<<<<<< HEAD
 		# Show NTP production
 		if VERBOSE:
 
@@ -377,14 +378,21 @@ class Metabolism(wholecell.processes.process.Process):
 			print "UTP produced (nt) = %f" % deltaMetabolites[IdxUtp]
 
 		#import ipdb; ipdb.set_trace()
+=======
+		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
+>>>>>>> master
 
 		# TODO: report as reactions (#) per second & store volume elsewhere
 		self.writeToListener("FBAResults", "reactionFluxes",
 			self.fba.reactionFluxes() / self.timeStepSec())
 
 		self.writeToListener("FBAResults", "externalExchangeFluxes",
+<<<<<<< HEAD
 			self.fba.externalExchangeFluxes() / self.timeStepSec())
 
+=======
+			exFluxes)
+>>>>>>> master
 		# self.writeToListener("FBAResults", "objectiveValue", # TODO
 		# 	self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
 
