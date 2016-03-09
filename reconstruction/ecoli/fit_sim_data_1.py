@@ -6,7 +6,9 @@ import numpy as np
 import os
 import scipy.optimize
 import time
+import cPickle
 
+import wholecell
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from reconstruction.ecoli.compendium import growth_data
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
@@ -60,7 +62,7 @@ def fitSimData_1(raw_data, doubling_time = None):
 
 	# Re-compute Km's 
 	if sim_data.constants.EndoRNaseCooperation:
-		setKmCooperativeEndoRNonLinearRNAdecay(sim_data, cellSpecs["wildtype_60_min"]["bulkContainer"])
+		sim_data.process.transcription.rnaData["KmEndoRNase"] = setKmCooperativeEndoRNonLinearRNAdecay(sim_data, cellSpecs["wildtype_60_min"]["bulkContainer"])
 
 	## Calculate and set maintenance values
 
@@ -848,7 +850,7 @@ def netLossRateFromDilutionAndDegradationRNA(doublingTime, totalEndoRnaseCountsC
 
 def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	cellDensity = sim_data.constants.cellDensity
-	cellVolume = sim_data.mass.avgCellDryMassInit / cellDensity / 0.3
+	cellVolume = sim_data.mass.avgCellDryMassInit / cellDensity / sim_data.mass.cellDryMassFraction
 	countsToMolar = 1 / (sim_data.constants.nAvogadro * cellVolume)
 
 	degradationRates = sim_data.process.transcription.rnaData["degRate"]
@@ -865,9 +867,6 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	rnaCounts = bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
 	endoCounts = bulkContainer.counts(sim_data.process.rna_decay.endoRnaseIds)
 
-	# Loading Km's from non-linear RNA decay without EndoR cooperation
-	Kmcounts = (sim_data.process.transcription.rnaData['KmEndoRNase']).asNumber()
-
 	# Loss function, and derivative 
 	LossFunction, Rneg, R, LossFunctionP, R_aux, L_aux, Lp_aux = sim_data.process.rna_decay.kmLossFunction(
 				(totalEndoRnaseCapacity).asNumber(units.mol / units.L / units.s),
@@ -876,8 +875,37 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 				isEndoRnase
 			)
 
-	# Non-linear optimization
-	KmCooperativeModel = scipy.optimize.fsolve(LossFunction, Kmcounts, fprime = LossFunctionP)
+	needToUpdate = False
+	fixturesDir = os.path.join(
+			os.path.dirname(os.path.dirname(wholecell.__file__)),
+			"fixtures",
+			"endo_km"
+			)
+
+	if not os.path.exists(fixturesDir):
+		needToUpdate = True
+		os.makedirs(fixturesDir)
+
+	if os.path.exists(os.path.join(fixturesDir, "km.cPickle")):
+		Kmcounts = cPickle.load(open(os.path.join(fixturesDir, "km.cPickle"), "rb"))
+		if np.sum(np.abs(R_aux(Kmcounts))) > 1e-15:
+			needToUpdate = True
+	else:
+		rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
+		degradationRates = sim_data.process.transcription.rnaData["degRate"]
+		endoRNaseConc = countsToMolar * bulkContainer.counts(sim_data.process.rna_decay.endoRnaseIds)
+		kcatEndoRNase = sim_data.process.rna_decay.kcats
+		totalEndoRnaseCapacity = units.sum(endoRNaseConc * kcatEndoRNase)
+		Kmcounts = (( 1 / degradationRates * totalEndoRnaseCapacity ) - rnaConc).asNumber()
+		needToUpdate = True
+
+	if needToUpdate:
+		if VERBOSE: print "Running non-linear optimization"
+		KmCooperativeModel = scipy.optimize.fsolve(LossFunction, Kmcounts, fprime = LossFunctionP)
+		cPickle.dump(KmCooperativeModel, open(os.path.join(fixturesDir, "km.cPickle"), "w"))
+	else:
+		if VERBOSE: print "Not running non-linear optimization--using cached result"
+		KmCooperativeModel = Kmcounts
 
 	if VERBOSE:
 		print "Loss function (Km inital) = %f" % np.sum(np.abs(LossFunction(Kmcounts)))
@@ -894,5 +922,4 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		print "Residuals (scaled by RNAcounts) Km initial = %f" % np.sum(np.abs(R_aux(Kmcounts)))
 		print "Residuals (scaled by RNAcounts) optimized = %f" % np.sum(np.abs(R_aux(KmCooperativeModel)))
 
-	# Set Km's
-	sim_data.process.transcription.rnaData["KmEndoRNase"] = units.mol / units.L * KmCooperativeModel
+	return units.mol / units.L * KmCooperativeModel
