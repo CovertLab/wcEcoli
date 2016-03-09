@@ -361,7 +361,6 @@ class Metabolism(wholecell.processes.process.Process):
 			), 0).astype(np.int64)
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
-<<<<<<< HEAD
 		# Show NTP production
 		if VERBOSE:
 
@@ -378,21 +377,15 @@ class Metabolism(wholecell.processes.process.Process):
 			print "UTP produced (nt) = %f" % deltaMetabolites[IdxUtp]
 
 		#import ipdb; ipdb.set_trace()
-=======
+
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
->>>>>>> master
 
 		# TODO: report as reactions (#) per second & store volume elsewhere
 		self.writeToListener("FBAResults", "reactionFluxes",
 			self.fba.reactionFluxes() / self.timeStepSec())
-
 		self.writeToListener("FBAResults", "externalExchangeFluxes",
-<<<<<<< HEAD
-			self.fba.externalExchangeFluxes() / self.timeStepSec())
-
-=======
 			exFluxes)
->>>>>>> master
+
 		# self.writeToListener("FBAResults", "objectiveValue", # TODO
 		# 	self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
 
