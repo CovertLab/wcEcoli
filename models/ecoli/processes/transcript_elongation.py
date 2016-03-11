@@ -60,6 +60,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.rnapElngRate = sim_data.growthRateParameters.rnaPolymeraseElongationRate.asNumber(units.nt / units.s)
 		self.rnapElngRate = int(round(self.rnapElngRate)) # TODO: Make this less of a hack by implementing in the KB
 
+		self.elngRate = None
+
 		self.rnaIds = sim_data.process.transcription.rnaData['id']
 
 		self.rnaLengths = sim_data.process.transcription.rnaData["length"].asNumber()
@@ -86,6 +88,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 
 	def calculateRequest(self):
+		self.elngRate = self._elngRate()
+
 		activeRnaPolys = self.activeRnaPolys.allMolecules()
 
 		if len(activeRnaPolys) == 0:
@@ -101,7 +105,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			self.rnaSequences,
 			rnaIndexes,
 			transcriptLengths,
-			self._elngRate()
+			self.elngRate
+			# self._elngRate()
 			)
 
 		sequenceComposition = np.bincount(sequences[sequences != PAD_VALUE], minlength = 4)
@@ -138,7 +143,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			self.rnaSequences,
 			rnaIndexes,
 			transcriptLengths,
-			self._elngRate()
+			self.elngRate
+			# self._elngRate()
 			)
 
 		ntpCountInSequence = np.bincount(sequences[sequences != PAD_VALUE], minlength = 4)
@@ -197,7 +203,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.ppi.countInc(nElongations - nInitialized)
 
 		expectedElongations = np.fmin(
-			self._elngRate(),
+			self.elngRate,
+			# self._elngRate(),
 			terminalLengths - transcriptLengths
 			)
 
@@ -218,3 +225,4 @@ class TranscriptElongation(wholecell.processes.process.Process):
 	def _elngRate(self):
 		# return int(self.rnapElngRate * self.timeStepSec())
 		return int(stochasticRound(self.randomState, self.rnapElngRate * self.timeStepSec()))
+		# return int(np.floor(self.rnapElngRate * self.timeStepSec()))

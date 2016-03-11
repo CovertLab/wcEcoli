@@ -154,7 +154,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.enzymeNames = self.enzymesWithKineticInfo
 		self.enzymes = self.bulkMoleculesView(self.enzymeNames)
 
-			
+		self.metaboliteMasses = self.getMass(list(self.metaboliteNames)).asNumber(MASS_UNITS / COUNTS_UNITS)
 		outputMoleculeIDs = self.fba.outputMoleculeIDs()
 
 		assert outputMoleculeIDs == self.fba.internalMoleculeIDs()
@@ -228,6 +228,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.fba.internalMoleculeLevelsIs(
 			metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS)
 			)
+		
+		print [self.metaboliteNames[x] for x in np.where(np.array([self.objective[x] for x in self.metaboliteNames]) - metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS) < 0)[0]]
 
 		#  Find enzyme concentrations from enzyme counts
 		enzymeCountsInit = self.enzymes.counts()
@@ -285,6 +287,14 @@ class Metabolism(wholecell.processes.process.Process):
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
+		extDict = dict(zip(self.externalMoleculeIDs, exFluxes * self.extMoleculeMasses))
+		if np.dot(metaboliteCountsInit / 6.02e20, self.metaboliteMasses) > np.dot(metaboliteCountsFinal / 6.02e20, self.metaboliteMasses):
+			print "LOST MASS"
+			import ipdb; ipdb.set_trace()
+		import operator
+		# print sorted(extDict.items(), key=operator.itemgetter(1))
+		print "BEGIN MASS: %e" % np.dot(metaboliteCountsInit, self.metaboliteMasses)
+		print "END MASS: %e" % np.dot(metaboliteCountsFinal, self.metaboliteMasses)
 
 		# TODO: report as reactions (#) per second & store volume elsewhere
 		self.writeToListener("FBAResults", "reactionFluxes",

@@ -76,6 +76,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.ribosomeElngRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 
+		self.elngRate = None
+
 		# Views
 
 		self.activeRibosomes = self.uniqueMoleculesView('activeRibosome')
@@ -99,6 +101,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 
 	def calculateRequest(self):
+		self.elngRate = self._elngRate()
+		print self.elngRate
 		self.activeRibosomes.requestAll()
 
 		activeRibosomes = self.activeRibosomes.allMolecules()
@@ -114,7 +118,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.proteinSequences,
 			proteinIndexes,
 			peptideLengths,
-			self._elngRate()
+			# self._elngRate()
+			self.elngRate
 			)
 
 		sequenceHasAA = (sequences != PAD_VALUE)
@@ -152,6 +157,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.h2o.requestIs(gtpsHydrolyzed) # note: this is roughly a 2x overestimate
 
 
+
+
 	# Calculate temporal evolution
 	def evolveState(self):
 		self.writeToListener("GrowthLimits", "gtpAllocated", self.gtp.count())
@@ -172,7 +179,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.proteinSequences,
 			proteinIndexes,
 			peptideLengths,
-			self._elngRate()
+			# self._elngRate()
+			self.elngRate
 			)
 
 		# Calculate elongation resource capacity
@@ -262,7 +270,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Report stalling information
 
 		expectedElongations = np.fmin(
-			self._elngRate(),
+			# self._elngRate(),
+			self.elngRate,
 			terminalLengths - peptideLengths
 			)
 
@@ -321,3 +330,4 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 	def _elngRate(self):
 		# return int(round(self.ribosomeElngRate * self.timeStepSec()))
 		return int(stochasticRound(self.randomState, self.ribosomeElngRate * self.timeStepSec()))
+		# return int(np.floor(self.ribosomeElngRate * self.timeStepSec()))

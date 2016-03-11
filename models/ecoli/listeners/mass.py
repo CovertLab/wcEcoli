@@ -173,6 +173,9 @@ class Mass(wholecell.listeners.listener.Listener):
 		else:
 			self.growth = np.nan
 
+		if self.growth < 0.:
+			import ipdb; ipdb.set_trace()
+
 		self.instantaniousGrowthRate = self.growth / self.timeStepSec() / self.dryMass
 
 		self.proteinMassFraction = self.proteinMass / self.dryMass
@@ -195,6 +198,9 @@ class Mass(wholecell.listeners.listener.Listener):
 		# added to current cell.
 		if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncrease.asNumber(units.fg):
 			self._sim.cellCycleComplete()
+
+		self.preEvolveMasses = preEvolveMasses
+		self.postEvolveMasses = postEvolveMasses
 
 
 	def tableCreate(self, tableWriter):
