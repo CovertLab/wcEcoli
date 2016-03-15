@@ -173,9 +173,6 @@ class Mass(wholecell.listeners.listener.Listener):
 		else:
 			self.growth = np.nan
 
-		if self.growth < 0.:
-			import ipdb; ipdb.set_trace()
-
 		self.instantaniousGrowthRate = self.growth / self.timeStepSec() / self.dryMass
 
 		self.proteinMassFraction = self.proteinMass / self.dryMass
