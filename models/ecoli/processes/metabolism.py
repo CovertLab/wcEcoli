@@ -229,8 +229,9 @@ class Metabolism(wholecell.processes.process.Process):
 			metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS)
 			)
 		
-		print [self.metaboliteNames[x] for x in np.where(np.array([self.objective[x] for x in self.metaboliteNames]) - metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS) < 0)[0]]
+		# print [self.metaboliteNames[x] for x in np.where(np.array([self.objective[x] for x in self.metaboliteNames]) - metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS) < 0)[0]]
 
+		print "%f\t%f" % (metaboliteConcentrations[67].asNumber(units.mmol/units.L), self.objective["WATER[c]"])
 		#  Find enzyme concentrations from enzyme counts
 		enzymeCountsInit = self.enzymes.counts()
 
@@ -288,11 +289,17 @@ class Metabolism(wholecell.processes.process.Process):
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
 		extDict = dict(zip(self.externalMoleculeIDs, exFluxes * self.extMoleculeMasses))
-		if np.dot(metaboliteCountsInit / 6.02e20, self.metaboliteMasses) > np.dot(metaboliteCountsFinal / 6.02e20, self.metaboliteMasses):
-			print "LOST MASS"
-			import ipdb; ipdb.set_trace()
+		# import ipdb; ipdb.set_trace()
+		waterMassInit = metaboliteCountsInit[67] * self.metaboliteMasses[67] / 6.02e20
+		waterMassFinal = metaboliteCountsFinal[67] * self.metaboliteMasses[67] / 6.02e20
 		import operator
-		# print sorted(extDict.items(), key=operator.itemgetter(1))
+		if np.dot(metaboliteCountsInit / 6.02e20, self.metaboliteMasses) - waterMassInit > np.dot(metaboliteCountsFinal / 6.02e20, self.metaboliteMasses) - waterMassFinal:
+			import ipdb; ipdb.set_trace()
+			print "LOST DRY MASS"
+			print exFluxes
+			print sorted(extDict.items(), key=operator.itemgetter(1))
+
+
 		print "BEGIN MASS: %e" % np.dot(metaboliteCountsInit, self.metaboliteMasses)
 		print "END MASS: %e" % np.dot(metaboliteCountsFinal, self.metaboliteMasses)
 
