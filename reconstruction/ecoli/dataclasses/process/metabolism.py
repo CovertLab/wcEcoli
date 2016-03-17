@@ -221,7 +221,7 @@ class Metabolism(object):
 		ambiguousRxns = set()
 
 		# Enzyme kinetics data
-		for reaction in raw_data.enzymeKinetics:
+		for idx, reaction in enumerate(raw_data.enzymeKinetics):
 			reactionID = reaction["reactionID"]
 
 
@@ -254,26 +254,41 @@ class Metabolism(object):
 
 			# Check if this constraint is for a reverse reaction
 			if reactionID in reversibleReactions:
-				thisRxnStoichiometry = reactionStoich[reactionID]
-				reverseCounter = 0.
-				allCounter = 0.
-				# How many substrates are products, how many are reactants?
-				for substrate in reaction["substrateIDs"]:
-					if substrate in thisRxnStoichiometry.keys():
-						if thisRxnStoichiometry[substrate] > 0:
-							reverseCounter += 1.
-					allCounter += 1.
-				# If more are products than reactants, treat this as a reverse reaction constraint
-				# In case of ties, assume reaction is forward
-				if allCounter < 1.0:
+				if reaction["direction"] == "forward":
 					continue
-
-				if reverseCounter != allCounter:
-					ambiguousRxns.add(reaction["reactionID"])
-
-				if (reverseCounter / allCounter) == 1:
+				elif reaction["direction"] == "reverse":
 					reaction["reactionID"] = reactionID + " (reverse)"
 					reaction["constraintID"] = reaction["constraintID"] + " (reverse)" 
+				else:
+					# Infer directionality from substrates
+					thisRxnStoichiometry = reactionStoich[reactionID]
+					
+					if reaction["rateEquationType"] == "standard":
+						reverseCounter = 0.
+						allCounter = 0.
+						# How many substrates are products, how many are reactants?
+						for substrate in reaction["substrateIDs"]:
+							if substrate in thisRxnStoichiometry.keys():
+								if thisRxnStoichiometry[substrate] > 0:
+									reverseCounter += 1.
+							allCounter += 1.
+						# If more are products than reactants, treat this as a reverse reaction constraint
+						# Record any ambiguous reactions and throw an exception once all are gathered
+						if allCounter < 1.0:
+							continue
+
+						if reverseCounter == allCounter:
+							reaction["reactionID"] = reactionID + " (reverse)"
+							reaction["constraintID"] = reaction["constraintID"] + " (reverse)" 
+						elif reverseCounter > 0:
+							if len(reaction["kI"]) == reverseCounter:
+								continue
+							else:
+								ambiguousRxns.add(reaction["reactionID"])
+					elif reaction["rateEquationType"] == "custom":
+						raise Exception("Custom equations for reversible reactions must specify direction. Reaction {} on enzymeKinetics line {} does not.".format(reactionID, idx))
+					else:
+						raise Exception("Reaction {} with rateEquationType ({}) not recognized on enzymeKinetics line {}.".format(reactionID, reaction["rateEquationType"], idx))
 
 			constraintID = reaction["constraintID"]
 			constraintIDs.append(constraintID)

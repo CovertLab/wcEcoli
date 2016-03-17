@@ -288,9 +288,9 @@ class Metabolism(wholecell.processes.process.Process):
 				# Set the rate limits only if the option flag is enabled
 				if USE_RATELIMITS:
 					# Set the max reaction rate for this reaction
-					self.fba.maxReactionFluxIs(reactionID, maxFlux, raiseForReversible = True)
+					self.fba.maxReactionFluxIs(reactionID, maxFlux, raiseForReversible = False)
 					# Set the minimum reaction rate for this reaction
-					# self.fba.minReactionFluxIs(reactionID, minFlux, raiseForReversible = True)
+					# self.fba.minReactionFluxIs(reactionID, minFlux, raiseForReversible = False)
 				
 				# Record what constraint was just applied to this reaction
 				currentRateLimits[reactionID] = maxFlux
@@ -298,7 +298,7 @@ class Metabolism(wholecell.processes.process.Process):
 			else:
 
 				# Set the reaction max to the default rate (usually infinity)
-				self.fba.maxReactionFluxIs(reactionID, defaultRate, raiseForReversible = True)
+				self.fba.maxReactionFluxIs(reactionID, defaultRate, raiseForReversible = False)
 				# self.fba.minReactionFluxIs(reactionID, 0, raiseForReversible = False)
 				
 				# Record that this reaction is at default
