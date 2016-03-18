@@ -96,6 +96,14 @@ class Metabolism(wholecell.processes.process.Process):
 			extIDs,
 			self.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS)
 			))
+		self.objectiveMasses = dict(zip(
+			sorted(self.objective),
+			self.getMass(sorted(self.objective)).asNumber(MASS_UNITS / COUNTS_UNITS)
+			))
+		self.objectiveMassesZero = dict(zip(
+			sorted(self.objective),
+			np.zeros(len(self.objective))
+			))
 
 		initWaterMass = sim_data.mass.avgCellWaterMassInit
 		initDryMass = sim_data.mass.avgCellDryMassInit
@@ -119,11 +127,19 @@ class Metabolism(wholecell.processes.process.Process):
 			objectiveType = "pools",
 			reversibleReactions = self.reversibleReactions,
 			moleculeMasses = self.moleculeMasses,
+			objectiveMasses = self.objectiveMassesZero,
 			solver = "glpk",
-			# maintenanceCost = energyCostPerWetMass.asNumber(COUNTS_UNITS/MASS_UNITS), # mmol/gDCW TODO: get real number
-			# maintenanceReaction = {
-			# 	"ATP[c]":-1, "WATER[c]":-1, "ADP[c]":+1, "Pi[c]":+1
-			# 	} # TODO: move to KB TODO: check reaction stoich
+			)
+
+		self.fba2 = FluxBalanceAnalysis(
+			self.reactionStoich.copy(), # TODO: copy in class
+			self.externalExchangeMolecules,
+			self.objective,
+			objectiveType = "pools",
+			reversibleReactions = self.reversibleReactions,
+			moleculeMasses = self.moleculeMasses,
+			objectiveMasses = self.objectiveMasses,
+			solver = "glpk",
 			)
 
 		# Set up enzyme kinetics object
@@ -146,6 +162,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		## Set enzymes unlimited
 		self.fba.enzymeLevelsIs(np.inf)
+		self.fba2.enzymeLevelsIs(np.inf)
 
 		# Views
 		self.metaboliteNames = self.fba.outputMoleculeIDs()
@@ -182,7 +199,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Set external molecule levels
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
-
 
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
 			self.externalMoleculeIDs,
@@ -221,6 +237,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Set external molecule levels
 		self.fba.externalMoleculeLevelsIs(externalMoleculeLevels)
+		self.fba2.externalMoleculeLevelsIs(externalMoleculeLevels)
 
 		#  Find metabolite concentrations from metabolite counts
 		metaboliteConcentrations =  countsToMolar * metaboliteCountsInit
@@ -228,10 +245,13 @@ class Metabolism(wholecell.processes.process.Process):
 		self.fba.internalMoleculeLevelsIs(
 			metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS)
 			)
+		self.fba2.internalMoleculeLevelsIs(
+			metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS)
+			)
 		
 		# print [self.metaboliteNames[x] for x in np.where(np.array([self.objective[x] for x in self.metaboliteNames]) - metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS) < 0)[0]]
 
-		print "%f\t%f" % (metaboliteConcentrations[67].asNumber(units.mmol/units.L), self.objective["WATER[c]"])
+		# print "%f\t%f" % (metaboliteConcentrations[67].asNumber(units.mmol/units.L), self.objective["WATER[c]"])
 		#  Find enzyme concentrations from enzyme counts
 		enzymeCountsInit = self.enzymes.counts()
 
@@ -285,6 +305,14 @@ class Metabolism(wholecell.processes.process.Process):
 			metaboliteCountsInit + deltaMetabolites.asNumber()
 			), 0).astype(np.int64)
 
+		# TODO: FIX THIS HACK
+		metaboliteCountsFinal[self.metaboliteNames.index("CPD-12819[c]")] = np.int(np.round(((COUNTS_UNITS / VOLUME_UNITS) * self.objective["CPD-12819[c]"] / countsToMolar).asNumber()))
+
+		# obj = np.array([self.objective[x] for x in self.metaboliteNames])
+		# metaboliteCountsFinal = stochasticRound(
+		# 	self.randomState,
+		# 	((COUNTS_UNITS / VOLUME_UNITS) * obj / countsToMolar).asNumber()
+		# 	)
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
@@ -293,15 +321,20 @@ class Metabolism(wholecell.processes.process.Process):
 		waterMassInit = metaboliteCountsInit[67] * self.metaboliteMasses[67] / 6.02e20
 		waterMassFinal = metaboliteCountsFinal[67] * self.metaboliteMasses[67] / 6.02e20
 		import operator
-		if np.dot(metaboliteCountsInit / 6.02e20, self.metaboliteMasses) - waterMassInit > np.dot(metaboliteCountsFinal / 6.02e20, self.metaboliteMasses) - waterMassFinal:
-			import ipdb; ipdb.set_trace()
-			print "LOST DRY MASS"
-			print exFluxes
-			print sorted(extDict.items(), key=operator.itemgetter(1))
+		# if self.time() > 1000:
+		# 	import ipdb; ipdb.set_trace()
+		# if np.dot(metaboliteCountsInit / 6.02e20, self.metaboliteMasses) - waterMassInit > np.dot(metaboliteCountsFinal / 6.02e20, self.metaboliteMasses) - waterMassFinal:
+		# 	import ipdb; ipdb.set_trace()
+		# 	print "LOST DRY MASS"
+		# 	print exFluxes
+		# 	print sorted(extDict.items(), key=operator.itemgetter(1))
+		f1 = self.fba.outputMoleculeLevelsChange()
+		f2 = self.fba2.outputMoleculeLevelsChange()
+		# print "POS OVERPRODUCED: " + str([self.metaboliteNames[x] for x in np.where(f2 - f1)[0]])
 
-
-		print "BEGIN MASS: %e" % np.dot(metaboliteCountsInit, self.metaboliteMasses)
-		print "END MASS: %e" % np.dot(metaboliteCountsFinal, self.metaboliteMasses)
+		# print "BEGIN MASS: %e" % np.dot(metaboliteCountsInit, self.metaboliteMasses)
+		# print "END MASS: %e" % np.dot(metaboliteCountsFinal, self.metaboliteMasses)
+		# print "EXPECTED NUMBER OF H2O:\t%f" % ((units.mmol / units.L) * self.objective["WATER[c]"] / countsToMolar).asNumber()
 
 		# TODO: report as reactions (#) per second & store volume elsewhere
 		self.writeToListener("FBAResults", "reactionFluxes",
