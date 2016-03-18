@@ -178,6 +178,8 @@ class FluxBalanceAnalysis(object):
 	_standardObjectiveReactionName = "Standard biomass objective reaction"
 	_massID = "Mass"
 	_massOutName = "Mass out"
+	_dryMassMoleculeName = "Dry Mass (pseudo molecule)"
+	_dryMassFluxName = "Dry Mass (flux)"
 
 	_forcedUnityColName = "Column forced at unity"
 
@@ -187,8 +189,8 @@ class FluxBalanceAnalysis(object):
 			objectiveType = None, objectiveParameters = None,
 			internalExchangedMolecules = None, reversibleReactions = None,
 			reactionEnzymes = None, reactionRates = None,
-			moleculeMasses = None, maintenanceCost = None,
-			maintenanceReaction = None,
+			moleculeMasses = None, objectiveMasses = None,
+			maintenanceCost = None, maintenanceReaction = None,
 			solver = DEFAULT_SOLVER):
 
 		if solver not in SOLVERS:
@@ -248,6 +250,8 @@ class FluxBalanceAnalysis(object):
 		self._initInternalExchange(internalExchangedMolecules)
 
 		self._initEnzymeConstraints(reactionEnzymes, reactionRates)
+
+		self._initDryMass(objective, objectiveMasses)
 
 		self._initMass(externalExchangedMolecules, moleculeMasses)
 
@@ -653,6 +657,51 @@ class FluxBalanceAnalysis(object):
 						)
 
 
+	def _initDryMass(self, objective, objectiveMasses):
+		dryMassMolecule = self._dryMassMoleculeName
+		dryMassFlux = self._dryMassFluxName
+		# import ipdb; ipdb.set_trace()
+		for moleculeID, coeff in objective.viewitems():
+			if moleculeID == "WATER[c]":
+				continue
+			if coeff == 0:
+				raise FBAError("Invalid objective coefficient - must be non-zero")
+
+			thisMass = objectiveMasses[moleculeID]
+
+			pseudoFluxID = self._generatedID_moleculesToEquivalents.format(moleculeID)
+
+			internalExchangeFluxID = self._generatedID_internalExchange.format(moleculeID)
+
+			self._solver.flowMaterialCoeffIs(
+				pseudoFluxID,
+				dryMassMolecule,
+				coeff * thisMass
+				)
+
+			self._solver.flowMaterialCoeffIs(
+				internalExchangeFluxID,
+				dryMassMolecule,
+				thisMass
+				)
+
+
+		self._solver.flowMaterialCoeffIs(
+			dryMassFlux,
+			dryMassMolecule,
+			-1
+		)
+
+		self._solver.flowLowerBoundIs(
+			dryMassFlux,
+			0
+			)
+
+		self._solver.flowUpperBoundIs(
+			dryMassFlux,
+			np.inf
+			)
+
 	def _initMass(self, externalExchangedMolecules, moleculeMasses):
 		"""Create mass accumulation abstractions.
 
@@ -899,6 +948,8 @@ class FluxBalanceAnalysis(object):
 
 		return -change
 
+	def dryMassFlux(self):
+		return self._solver.flowRates(self._dryMassFluxName)
 
 	# def externalExchangeFlux(self, moleculeID):
 	# 	return -self._solver.flowRates(
