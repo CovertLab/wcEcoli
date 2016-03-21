@@ -166,7 +166,6 @@ class Metabolism(object):
 			metaboliteIDs.append(key)
 			metaboliteConcentrations.append(value.asNumber(units.mol / units.L))
 
-		self.biomassFunction = biomassFunction
 		self.concentrationUpdates = ConcentrationUpdates(dict(zip(
 			metaboliteIDs,
 			(units.mol / units.L) * np.array(metaboliteConcentrations)
@@ -264,12 +263,14 @@ class Metabolism(object):
 				thisRxnStoichiometry = reactionStoich[reactionID]
 			else:
 				unknownRxns.add(reaction["reactionID"])
+				continue
 
 			substrateIDs = reaction["substrateIDs"]
 			if reaction["rateEquationType"] == "standard":
-				for substrate in substrateIDs[:len(reaction["kI"])]:
-					if substrate not in thisRxnStoichiometry.keys():
-						nonCannonicalRxns.add(reaction["constraintID"])
+				if len(reaction["kI"]) > 0:
+					for substrate in substrateIDs[:-len(reaction["kI"])]:
+						if substrate not in thisRxnStoichiometry.keys():
+							nonCannonicalRxns.add(reaction["constraintID"])
 			elif reaction["rateEquationType"] == "custom":
 				continue
 			else:
@@ -328,8 +329,9 @@ class Metabolism(object):
 				raise Exception(message)
 			else:
 				warnings.warn(message)
+
 		if len(nonCannonicalRxns) > 0:
-			raise Exception("The following {} enzyme kinetics entries reference non-KI substrates which don't appear in their corresponding reaction - they should be corrected or removed. {}".format(len(nonCannonicalRxns), nonCannonicalRxns))
+			raise Exception("The following {} enzyme kinetics entries reference substrates which don't appear in their corresponding reaction, and aren't paired with an inhibitory constant (kI). They should be corrected or removed. {}".format(len(nonCannonicalRxns), nonCannonicalRxns))
 
 
 
