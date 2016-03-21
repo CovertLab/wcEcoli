@@ -14,6 +14,7 @@ from wholecell.utils import units
 from wholecell.utils.unit_struct_array import UnitStructArray
 import numpy as np
 import collections
+import warnings
 
 ILE_LEU_CONCENTRATION = 3.0e-4 # mmol/L
 ILE_FRACTION = 0.360 # the fraction of iso/leucine that is isoleucine; computed from our monomer data
@@ -22,6 +23,10 @@ ECOLI_PH = 7.2
 PPI_CONCENTRATION = 0.5e-3 # M, multiple sources
 
 EXCHANGE_UNITS = units.mmol / units.g / units.h
+
+# If true, enzyme kinetics entries which reference unknown reactions are ignored
+# If false, raises an exception in such a case
+raiseForUnknownRxns = False
 
 reverseReactionString = " (reverse)"
 
@@ -218,12 +223,13 @@ class Metabolism(object):
 		constraintToReactionDict = {}
 		constraintMultiplesDict = {}
 
-		ambiguousRxns = set()
+		directionAmbiguousRxns = set()
+		nonCannonicalRxns = set()
+		unknownRxns = set()
 
 		# Enzyme kinetics data
 		for idx, reaction in enumerate(raw_data.enzymeKinetics):
 			reactionID = reaction["reactionID"]
-
 
 			# If the enzymes don't already have a compartment tag, add one from the valid compartment list or [c] (cytosol) as a default
 			new_reaction_enzymes = []
@@ -252,6 +258,22 @@ class Metabolism(object):
 						parametersDict[key] = value + '[c]'
 				reaction["customParameterVariables"] = parametersDict
 
+			# Ensure all reactions in enzymeKinetics refer to tha actual corresponding reaction in reactions.tsv, rather than a non-canonical alternative substrate
+			if reactionID in reactionStoich:
+				thisRxnStoichiometry = reactionStoich[reactionID]
+			else:
+				unknownRxns.add(reaction["reactionID"])
+
+			substrateIDs = reaction["substrateIDs"]
+			if reaction["rateEquationType"] == "standard":
+				for substrate in substrateIDs[:len(reaction["kI"])]:
+					if substrate not in thisRxnStoichiometry.keys():
+						nonCannonicalRxns.add(reaction["constraintID"])
+			elif reaction["rateEquationType"] == "custom":
+				continue
+			else:
+				raise Exception("rateEquationType {} not understood in reaction {} on enzymeKinetics line {}".format(reaction["reactionID"], reaction["reactionID"], idx))
+
 			# Check if this constraint is for a reverse reaction
 			if reactionID in reversibleReactions:
 				if reaction["direction"] == "forward":
@@ -261,8 +283,6 @@ class Metabolism(object):
 					reaction["constraintID"] = reaction["constraintID"] + " (reverse)" 
 				else:
 					# Infer directionality from substrates
-					thisRxnStoichiometry = reactionStoich[reactionID]
-					
 					if reaction["rateEquationType"] == "standard":
 						reverseCounter = 0.
 						allCounter = 0.
@@ -284,7 +304,7 @@ class Metabolism(object):
 							if len(reaction["kI"]) == reverseCounter:
 								continue
 							else:
-								ambiguousRxns.add(reaction["reactionID"])
+								directionAmbiguousRxns.add(reaction["reactionID"])
 					elif reaction["rateEquationType"] == "custom":
 						raise Exception("Custom equations for reversible reactions must specify direction. Reaction {} on enzymeKinetics line {} does not.".format(reactionID, idx))
 					else:
@@ -298,8 +318,18 @@ class Metabolism(object):
 			reactionRateInfo[constraintID] = reaction
 
 
-		if len(ambiguousRxns) > 0:
-			raise Exception("The following enzyme kinetics entries have ambiguous direction. Split them into multiple lines in the flat file to increase clarity. {}".format(ambiguousRxns))
+		if len(directionAmbiguousRxns) > 0:
+			raise Exception("The following enzyme kinetics entries have ambiguous direction. Split them into multiple lines in the flat file to increase clarity. {}".format(directionAmbiguousRxns))
+
+		if len(unknownRxns) > 0:
+			message = "The following {} enzyme kinetics reactions appear to be for reactions which don't exist in the model - they should be corrected or removed. {}".format(len(unknownRxns), unknownRxns)
+			if raiseForUnknownRxns:
+				raise Exception(message)
+			else:
+				warnings.warn(message)
+		if len(nonCannonicalRxns) > 0:
+			raise Exception("The following {} enzyme kinetics entries reference non-KI substrates which don't appear in their corresponding reaction - they should be corrected or removed. {}".format(len(nonCannonicalRxns), nonCannonicalRxns))
+
 
 
 		self.reactionStoich = reactionStoich
