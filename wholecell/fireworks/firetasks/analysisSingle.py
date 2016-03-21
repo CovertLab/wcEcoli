@@ -1,3 +1,4 @@
+
 import cPickle
 import time
 import os
@@ -69,7 +70,6 @@ class AnalysisSingleTask(FireTaskBase):
 			pool.join()
 		timeTotal = time.time() - startTime
 		print "Completed single simulation analysis in %s" % (time.strftime("%H:%M:%S", time.gmtime(timeTotal)))
-
 
 def run_function(f, args, name):
 	try:

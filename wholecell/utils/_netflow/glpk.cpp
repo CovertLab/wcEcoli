@@ -1,9 +1,3 @@
-//  Copyright Joel de Guzman 2002-2004. Distributed under the Boost
-//  Software License, Version 1.0. (See accompanying file LICENSE_1_0.txt
-//  or copy at http://www.boost.org/LICENSE_1_0.txt)
-//  Hello World Example from the tutorial
-//  [Joel de Guzman 10/9/2002]
-
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python.hpp>
@@ -41,10 +35,26 @@ class glpk
 		}
 		void set_col_bounds(int index, double lower, double upper)
 		{
-			if(lower == upper)
+			if(lower == upper){
 				glp_set_col_bnds(this->lp, index, GLP_FX, lower, upper);
-			else
+				return;
+			}
+			if(!isinf(lower) && !isinf(upper)){
 				glp_set_col_bnds(this->lp, index, GLP_DB, lower, upper);
+				return;
+			}
+			if(isinf(lower) && isinf(upper)){
+				glp_set_col_bnds(this->lp, index, GLP_FR, lower, upper);
+				return;
+			}
+			if(isinf(upper)){
+				glp_set_col_bnds(this->lp, index, GLP_LO, lower, upper);
+				return;
+			}
+			if(isinf(lower)){
+				glp_set_col_bnds(this->lp, index, GLP_UP, lower, upper);
+				return;
+			}
 		}
 		void set_obj_coef(int index, double value)
 		{
