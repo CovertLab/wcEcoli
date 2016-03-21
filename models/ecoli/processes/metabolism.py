@@ -89,7 +89,7 @@ class Metabolism(wholecell.processes.process.Process):
 			)
 
 		# TODO: make sim_data method?
-		extIDs = sim_data.externalExchangeMolecules
+		extIDs = sim_data.externalExchangeMolecules[sim_data.environment]
 		self.extMoleculeMasses = sim_data.getter.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS) # TODO: delete this line?
 
 		self.getMass = sim_data.getter.getMass
@@ -112,7 +112,7 @@ class Metabolism(wholecell.processes.process.Process):
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
 		self.reactionStoich = sim_data.process.metabolism.reactionStoich
-		self.externalExchangeMolecules = sim_data.externalExchangeMolecules
+		self.externalExchangeMolecules = sim_data.externalExchangeMolecules[sim_data.environment]
 		self.reversibleReactions = sim_data.process.metabolism.reversibleReactions
 
 		# Set up FBA solver
@@ -371,6 +371,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.overconstraintMultiples = self.fba.reactionFluxes() / self.reactionConstraints
 
+		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
+
 
 		# TODO: report as reactions (#) per second & store volume elsewhere
 		# self.writeToListener("FBAResults", "reactionFluxes",
@@ -385,7 +387,11 @@ class Metabolism(wholecell.processes.process.Process):
 				self.fba_with_limits.reactionFluxes())
 
 		self.writeToListener("FBAResults", "externalExchangeFluxes",
-			self.fba.externalExchangeFluxes() / self.timeStepSec())
+			exFluxes)
+		# self.writeToListener("FBAResults", "objectiveValue", # TODO
+		# 	self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
+		self.writeToListener("FBAResults", "outputFluxes",
+			self.fba.outputMoleculeLevelsChange() / self.timeStepSec())
 
 		self.writeToListener("FBAResults", "outputFluxes",
 			self.fba.outputMoleculeLevelsChange() / self.timeStepSec())
