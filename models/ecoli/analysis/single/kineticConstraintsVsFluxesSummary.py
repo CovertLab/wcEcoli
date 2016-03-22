@@ -22,7 +22,7 @@ import matplotlib.animation as animation
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
-VERBOSE = False
+VERBOSE = True
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
@@ -85,12 +85,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	threshold = 10
 
 	if VERBOSE:
-		idx = 0
 		for reaction, overconstraintMultipleAverage in overconstraintDict.iteritems():
 			if overconstraintMultipleAverage > 1:
-				if (variances[idx] / means[idx]) > threshold:
-					print reaction, overconstraintMultipleAverage
-			idx+=1
+				print reaction, overconstraintMultipleAverage
 
 
 
