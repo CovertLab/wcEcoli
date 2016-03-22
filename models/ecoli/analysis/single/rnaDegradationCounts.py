@@ -22,7 +22,7 @@ import wholecell.utils.constants
 from wholecell.io.tablereader import TableReader
 
 FONT = {
-		'size'	:	8
+		'size'	:	10
 		}
 
 
@@ -99,86 +99,130 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	totalexoRnaseCounts = exoRnaseCounts.sum(axis = 1)
 	totalendoRnaseCounts = endoRnaseCounts.sum(axis = 1)
-	kcatExoRnase = nucleotidesFromDegradation / exoRnaseCounts.sum(axis = 1)
-	kcatEndoRnase = countRnaDegraded.sum(axis = 1) / endoRnaseCounts.sum(axis = 1)
+
+	# Load data
+	growthLimitsDataFile = TableReader(os.path.join(simOutDir, "GrowthLimits"))
+	# Translation
+	gtpUsed = growthLimitsDataFile.readColumn("gtpUsed")
+	growthLimitsDataFile.close()
+
+	# Load ATP usage
+	ATPusageListenerFile = TableReader(os.path.join(simOutDir, "ATPhydrolyzedUsageListener"))
+	atpsHydrolyzed = ATPusageListenerFile.readColumn('atpsHydrolyzed')
+	ATPusageListenerFile.close()
+
+	# loading metabolism production
+	fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
+	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
+	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
+	outputFluxes = fbaResults.readColumn("outputFluxes")
+	deltaMetabolites = fbaResults.readColumn("deltaMetabolites")
+	outputMoleculeIDs = np.array(fbaResults.readAttribute("outputMoleculeIDs"))
+	fbaResults.close()
+
+	# load ntps required for cell doubling
+	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
+	moleculeIds = bulkMolecules.readAttribute("objectNames")
+	NTP_IDS = ['ATP[c]', 'CTP[c]', 'GTP[c]', 'UTP[c]']
+	ntpIndexes = np.array([moleculeIds.index(ntpId) for ntpId in NTP_IDS], np.int)
+	ntpCounts = bulkMolecules.readColumn("counts")[:, ntpIndexes]
+	bulkMolecules.close()
+	
 
 	# Plotting
 	plt.figure(figsize = (8.5, 11))
 	matplotlib.rc('font', **FONT)
+	max_yticks = 5
 
-	countRnaDegraded_axis = plt.subplot(14,1,1)
-	countRnaDegraded_axis.plot(time / 60., countRnaDegraded.sum(axis = 1))
-	plt.ylabel("Counts of RNA degraded", fontsize = 7)
+	ax = plt.subplot(7,2,1)
+	plt.plot(time / 60., countRnaSynthesized.sum(axis = 1))
+	plt.ylabel("RNAs synthesized", fontsize = 9)	
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+
+	ax = plt.subplot(7,2,2)
+	plt.plot(time / 60., gtpUsed / 1e6)
+	plt.ylabel("Translation ($10^{%d}$nt)" % 6, fontsize = 9)	
+	plt.title("GTPs needed (x$10^{%d}$) = %.2f" % (6, (gtpUsed.sum() / 1e6)), fontsize = 9) 
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+	#print "GTP consumption by polypeptide elongation = %d" % np.sum(gtpUsed)
+
+	ax = plt.subplot(7,2,3)
+	plt.plot(time / 60., countRnaDegraded.sum(axis = 1))
+	plt.ylabel("RNAs degraded", fontsize = 9)
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+
+	ax = plt.subplot(7,2,4)
+	plt.plot(time / 60., atpsHydrolyzed / 1e6)
+	plt.ylabel("ATP usage ($10^{%d}$nt)" % 6, fontsize = 9)
+	plt.title("ATPs needed (x$10^{%d}$) = %.2f" % (6, (atpsHydrolyzed.sum() / 1e6)), fontsize = 9) 
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+	#print "ATP hydrolyzed for non-growth associated maintenance = %d" % np.sum(atpsHydrolyzed)
+
+	ax = plt.subplot(7,2,5)
+	plt.plot(time / 60., totalendoRnaseCounts)
+	plt.ylabel("EndoRNase counts", fontsize = 9)
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+
+	ax = plt.subplot(7,2,6)
+	plt.plot(time / 60., countNTPsUSed / 1e6)
+	plt.ylabel("Transcription ($10^{%d}$nt)" % 6, fontsize = 9)
+	plt.title("NTPs needed(x$10^{%d}$) = %.2f" % (6, (countNTPsUSed.sum() / 1e6)), fontsize = 9) 
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+	#print "Elongation events (nt/cell-cycle) = %d" % np.sum(countNTPsUSed)
+
+	ax = plt.subplot(7,2,7)
+	plt.plot(time / 60., totalexoRnaseCounts)
+	plt.ylabel("ExoRNase counts", fontsize = 9)	
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+
+	IdxAtp = (np.where("ATP[c]" == outputMoleculeIDs))[0][0]; ATP = np.sum(deltaMetabolites[:, IdxAtp])
+	IdxGtp = (np.where("GTP[c]" == outputMoleculeIDs))[0][0]; GTP = np.sum(deltaMetabolites[:, IdxGtp])
+	IdxCtp = (np.where("CTP[c]" == outputMoleculeIDs))[0][0]; CTP = np.sum(deltaMetabolites[:, IdxCtp])
+	IdxUtp = (np.where("UTP[c]" == outputMoleculeIDs))[0][0]; UTP = np.sum(deltaMetabolites[:, IdxUtp])
+	NtpsProduced = ATP + GTP + CTP + UTP
+	#print "nTPs produced by metabolism (nt/cell-cycle) = %d" % NtpsProduced
+	ax = plt.subplot(7,2,8)
+	plt.plot(time / 60., (deltaMetabolites[:, IdxAtp] + deltaMetabolites[:, IdxGtp] + deltaMetabolites[:, IdxCtp] + deltaMetabolites[:, IdxUtp]) / 1e6)
+	plt.ylabel("Metabolism ($10^{%d}$nt)" % 6, fontsize = 9)
+	plt.title("NTPs produced (x$10^{%d}$) = %.2f" % (6, (sum(deltaMetabolites[:, IdxAtp] + deltaMetabolites[:, IdxGtp] + deltaMetabolites[:, IdxCtp] + deltaMetabolites[:, IdxUtp])  / 1e6)), fontsize = 9) 
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+
+	ax = plt.subplot(7,2,9)
+	plt.plot(time / 60., FractionActiveEndoRNases * 100)
+	plt.ylabel("EndoRN capacity (%)", fontsize = 9)	
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+
+	ax = plt.subplot(7,2,10)
+	plt.plot(time / 60., fragmentBasesDigested / 1e6)
+	plt.ylabel("Exo-digestion ($10^{%d}$nt)" % 6, fontsize = 9)
+	plt.title("NTPs recycled (x$10^{%d}$) = %.2f" % (6, (fragmentBasesDigested.sum() / 1e6)), fontsize = 9) 
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+	#print "Fragment bases digested by ExoRNases (nt/cell-cycle) = %d" % np.sum(fragmentBasesDigested)
+
+	ax = plt.subplot(7,2,11)
+	plt.plot(time / 60., DiffRelativeFirstOrderDecay)
+	plt.ylabel("sum(Residuals)", fontsize = 9)
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+
+	ax = plt.subplot(7,2,12)
+	plt.plot(time / 60., (ntpCounts[:, 0] + ntpCounts[:, 1] + ntpCounts[:, 2] + ntpCounts[:, 3]) / 1e6)
 	plt.xlabel("Time (min)")
+	plt.ylabel("Net production ($10^{%d}$nt)" % 6, fontsize = 9)
+	plt.title("NTPs required for cell division (x$10^{%d}$) = %.2f" % (6, ((ntpCounts[0, 0] + ntpCounts[0, 1] + ntpCounts[0, 2] + ntpCounts[0, 3]) / 1e6)), fontsize = 9) 
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+	#print "NTPs required for cell division (nt/cell-cycle) = %d" % sum(ntpCounts[0, :])
 
-	nucleotidesFromDegradation_axis = plt.subplot(14,1,2)
-	nucleotidesFromDegradation_axis.plot(time / 60., nucleotidesFromDegradation)
-	plt.ylabel("Nucleotides from RNA degraded", fontsize = 7)
+	# compute active ExoRNase capacity (%)
+	ActiveExoRNcapacity = fragmentBasesDigested.astype(float) / (totalexoRnaseCounts * sim_data.constants.KcatExoRNase.asNumber()) * 100
+
+	ax = plt.subplot(7,2,13)
+	plt.plot(time / 60., ActiveExoRNcapacity)
 	plt.xlabel("Time (min)")
+	plt.ylabel("ExoRN capacity (%)", fontsize = 9)
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
-	totalRnaseCounts_axis = plt.subplot(14,1,3)
-	totalRnaseCounts_axis.plot(time / 60., totalRnaseCounts)
-	plt.ylabel("Total RNAse counts", fontsize = 7)
-	plt.xlabel("Time (min)")
 
-	requiredRnaseTurnover_axis = plt.subplot(14,1,4)
-	requiredRnaseTurnover_axis.plot(time / 60., requiredRnaseTurnover)
-	plt.ylabel("RNase turnover required (nt/s)", fontsize = 7)
-	plt.xlabel("Time (min)")
-
-	totalexoRnaseCounts_axis = plt.subplot(14,1,5)
-	totalexoRnaseCounts_axis.plot(time / 60., totalexoRnaseCounts)
-	plt.ylabel("Counts of exoRNase", fontsize = 7)
-	plt.xlabel("Time (min)")
-
-	totalendoRnaseCounts_axis = plt.subplot(14,1,6)
-	totalendoRnaseCounts_axis.plot(time / 60., totalendoRnaseCounts)
-	plt.ylabel("Counts of endoRNase", fontsize = 7)
-	plt.xlabel("Time (min)")
-
-	kcatExoRnase_axis = plt.subplot(14,1,7)
-	kcatExoRnase_axis.plot(time / 60., kcatExoRnase)
-	plt.ylabel("ExoRNase turnover required", fontsize = 7)
-	plt.xlabel("Time (min)")
-
-	kcatEndoRnase_axis = plt.subplot(14,1,8)
-	kcatEndoRnase_axis.plot(time / 60., kcatEndoRnase)
-	plt.ylabel("EndoRNase turnover required", fontsize = 7)
-	plt.xlabel("Time (min)")
-
-	FractionActiveEndoRNases_axis = plt.subplot(14,1,9)
-	FractionActiveEndoRNases_axis.plot(time / 60., FractionActiveEndoRNases)
-	plt.ylabel("Actual decay relative to EndoR capacity", fontsize = 7)
-	plt.xlabel("Time (min)")
-
-	DiffRelativeFirstOrderDecay_axis = plt.subplot(14,1,10)
-	DiffRelativeFirstOrderDecay_axis.plot(time / 60., DiffRelativeFirstOrderDecay)
-	plt.ylabel("Residuals (actual and first-order decay)", fontsize = 7)
-	plt.xlabel("Time (min)")
-
-	FractEndoRRnaCounts_axis = plt.subplot(14,1,11)
-	FractEndoRRnaCounts_axis.plot(time / 60., FractEndoRRnaCounts)
-	plt.ylabel("EndoR / RNA total counts", fontsize = 7)
-	plt.xlabel("Time (min)")
-
-	fragmentBasesDigested_axis = plt.subplot(14,1,12)
-	fragmentBasesDigested_axis.plot(time / 60., fragmentBasesDigested)
-	plt.ylabel("Fragment bases digested", fontsize = 7)
-	plt.xlabel("Time (min)")
-	print "Fragment bases digested by ExoRNases (nt/cell-cycle) = %d" % np.sum(fragmentBasesDigested)
-
-	countNTPsUSed_axis = plt.subplot(14,1,13)
-	countNTPsUSed_axis.plot(time / 60., countNTPsUSed)
-	plt.ylabel("Elongation events (nt)", fontsize = 7)
-	plt.xlabel("Time (min)")
-	print "Elongation events (nt/cell-cycle) = %d" % np.sum(countNTPsUSed)
-
-	countRnaSynthesized_axis = plt.subplot(14,1,14)
-	countRnaSynthesized_axis.plot(time / 60., countRnaSynthesized)
-	plt.ylabel("RNA synthesized", fontsize = 7)
-	plt.xlabel("Time (min)")
-
-	plt.subplots_adjust(hspace = 0.9, wspace = 0.5)
+	plt.subplots_adjust(hspace = 0.6, wspace = 0.35)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
@@ -194,7 +238,8 @@ if __name__ == "__main__":
 	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
 	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
 	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
+	parser.add_argument("--validationDataFile", help = "KB file name", type = str, default = "None")
 
 	args = parser.parse_args().__dict__
 
-	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"])
+	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"], args["validationDataFile"])

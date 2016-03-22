@@ -24,6 +24,8 @@ from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIn
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 
+VERBOSE = False
+
 class PolypeptideElongation(wholecell.processes.process.Process):
 	""" PolypeptideElongation """
 
@@ -251,7 +253,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.randomState,
 			nElongations * self.gtpPerElongation
 			))
-		print "GTP used (polipetide elongation) = %f" % self.gtpUsed
+		if VERBOSE: print "GTP used (polipetide elongation) = %f" % self.gtpUsed
 
 		self.gtp.countDec(self.gtpUsed)
 		self.gdp.countInc(self.gtpUsed)

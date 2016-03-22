@@ -276,7 +276,6 @@ class Metabolism(wholecell.processes.process.Process):
 					self.fba.maxReactionFluxIs(self.constraintToReactionDict[constraintID], defaultRate, raiseForReversible = False)
 					
 		# Set rate limits for NTPs production
-		# Notice that _generatedID_reverseReaction.format('reactionIdForward') provides reverse ID reactions where NTP is product
 		ReactionIdsATPs = [	"SUCCCOASYN-RXN", 
 							"CARBAMATE-KINASE-RXN", 
 							"RXN0-7115", 
@@ -333,26 +332,22 @@ class Metabolism(wholecell.processes.process.Process):
 		for IdNtp in ReactionIdsNTPs:
 			IndexNTP = (np.where(IdNtp == self.fba.reactionIDs()))[0][0]
 			maxReactionFluxNTPs += [self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)]
-			#print IdNtp
-			#print "store upper bound = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
+			if VERBOSE: print "store upper bound = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
 
 		# Change upper bounds for NTP reactions
 		for IdNtp in ReactionIdsNTPs:
 			IndexNTP = (np.where(IdNtp == self.fba.reactionIDs()))[0][0]
 			
 			FluxNonLimited = FluxesAux[IndexNTP]
-			if FluxNonLimited < 0: FluxNonLimited = 0; print "Warning: flux < 0."
-			#print IdNtp
-			#print "compute actual flux = %f" % FluxNonLimited
+			if FluxNonLimited < 0: 
+				FluxNonLimited = 0; 
+				if VERBOSE: print "Warning: flux < 0."
+			if VERBOSE: print "compute actual flux = %f" % FluxNonLimited
 
 			# Set rate limits
 			FractionFLux = 1.0
 			self.fba.maxReactionFluxIs(IdNtp, FluxNonLimited * FractionFLux, raiseForReversible = False)
-			#print "compute upper bound limited = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
-			# self.fba.minReactionFluxIs(IdNtp, 0., raiseForReversible = False)
-
-		if not np.allclose(FluxesAux, self.fba.reactionFluxes()) and VERBOSE: print "Found difference in fluxes"
-
+			if VERBOSE: print "compute upper bound limited = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
 
 		deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.outputMoleculeLevelsChange())
 		metaboliteCountsFinal = np.fmax(stochasticRound(
@@ -363,20 +358,15 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Show NTP production
 		if VERBOSE:
-
 			outputMoleculeIDs = np.array(self.fba.outputMoleculeIDs())
-		
 			IdxAtp = (np.where("ATP[c]" == outputMoleculeIDs))[0][0]
 			IdxCtp = (np.where("CTP[c]" == outputMoleculeIDs))[0][0]
 			IdxGtp = (np.where("GTP[c]" == outputMoleculeIDs))[0][0]
 			IdxUtp = (np.where("UTP[c]" == outputMoleculeIDs))[0][0]
-		
 			print "ATP produced (nt) = %f" % deltaMetabolites[IdxAtp] 
 			print "CTP produced (nt) = %f" % deltaMetabolites[IdxCtp]
 			print "GTP produced (nt) = %f" % deltaMetabolites[IdxGtp]
 			print "UTP produced (nt) = %f" % deltaMetabolites[IdxUtp]
-
-		#import ipdb; ipdb.set_trace()
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
 
@@ -387,7 +377,7 @@ class Metabolism(wholecell.processes.process.Process):
 			exFluxes)
 
 		# self.writeToListener("FBAResults", "objectiveValue", # TODO
-		# 	self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
+		# self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
 
 		self.writeToListener("FBAResults", "outputFluxes",
 			self.fba.outputMoleculeLevelsChange() / self.timeStepSec())
@@ -429,14 +419,13 @@ class Metabolism(wholecell.processes.process.Process):
 		# reset upper bounds
 		for IdxNtp in xrange(len(ReactionIdsNTPs)):
 			IdNtp = ReactionIdsNTPs[IdxNtp]
-			#print IdNtp
-			#print "upper bound before reset = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
+			if VERBOSE: print "upper bound before reset = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
 			self.fba.maxReactionFluxIs(IdNtp, maxReactionFluxNTPs[IdxNtp], raiseForReversible = False)
-			# print "upper bound after reset = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
-			#self.fba.minReactionFluxIs(IdNtp, 0., raiseForReversible = False)
+			if VERBOSE: print "upper bound after reset = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
 
-		print "Sum(Abs(fluxes) = %f" % np.sum(np.abs(self.fba.reactionFluxes()))
-		#import ipdb; ipdb.set_trace()
+		if VERBOSE: print "Sum(Abs(fluxes) = %f" % np.sum(np.abs(self.fba.reactionFluxes()))
+
+
 
 
 

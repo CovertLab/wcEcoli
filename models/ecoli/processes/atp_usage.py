@@ -21,6 +21,8 @@ from wholecell.utils.constants import REQUEST_PRIORITY_ATP_USAGE
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 
+VERBOSE = False
+
 class AtpUsage(wholecell.processes.process.Process):
 	""" AtpUsage """
 
@@ -80,7 +82,7 @@ class AtpUsage(wholecell.processes.process.Process):
 			self.atp.count(),
 			self.h2o.count()
 			)
-		print "ATP hydrolyzed = %f" % atpsHydrolyzed
+		if VERBOSE: print "ATP hydrolyzed = %f" % atpsHydrolyzed
 		self.writeToListener("ATPhydrolyzedUsageListener", "atpsHydrolyzed", atpsHydrolyzed)
 
 		self.reactants.countsDec(atpsHydrolyzed)
