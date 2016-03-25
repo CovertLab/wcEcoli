@@ -129,6 +129,10 @@ class Metabolism(wholecell.processes.process.Process):
 			moleculeMasses = self.moleculeMasses,
 			objectiveMasses = self.objectiveMassesZero,
 			solver = "glpk",
+			maintenanceCost = energyCostPerWetMass.asNumber(COUNTS_UNITS/MASS_UNITS), # mmol/gDCW TODO: get real number
+			maintenanceReaction = {
+				"ATP[c]":-1, "WATER[c]":-1, "ADP[c]":+1, "Pi[c]":+1, "PROTON[c]":+1
+				} # TODO: move to KB TODO: check reaction stoich
 			)
 
 		self.fba2 = FluxBalanceAnalysis(
@@ -219,10 +223,10 @@ class Metabolism(wholecell.processes.process.Process):
 				reversibleReactions = self.reversibleReactions,
 				moleculeMasses = self.moleculeMasses,
 				solver = "glpk",
-				# maintenanceCost = energyCostPerWetMass.asNumber(COUNTS_UNITS/MASS_UNITS), # mmol/gDCW TODO: get real number
-				# maintenanceReaction = {
-				# 	"ATP[c]":-1, "WATER[c]":-1, "ADP[c]":+1, "Pi[c]":+1
-				# 	} # TODO: move to KB TODO: check reaction stoich
+				maintenanceCost = energyCostPerWetMass.asNumber(COUNTS_UNITS/MASS_UNITS), # mmol/gDCW TODO: get real number
+				maintenanceReaction = {
+					"ATP[c]":-1, "WATER[c]":-1, "ADP[c]":+1, "Pi[c]":+1
+					} # TODO: move to KB TODO: check reaction stoich
 				)
 
 			massComposition = self.massReconstruction.getFractionMass(self.doublingTime)
@@ -251,6 +255,11 @@ class Metabolism(wholecell.processes.process.Process):
 		
 		# print [self.metaboliteNames[x] for x in np.where(np.array([self.objective[x] for x in self.metaboliteNames]) - metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS) < 0)[0]]
 
+		# import ipdb; ipdb.set_trace()
+		# self.fba.setpointIs("GDP[c]", 0.0001)
+		# self.fba2.setpointIs("GDP[c]", 0.0001)
+		# self.fba.setpointIs("Pi[c]", 0.0001)
+		# self.fba2.setpointIs("Pi[c]", 0.0001)
 		# print "%f\t%f" % (metaboliteConcentrations[67].asNumber(units.mmol/units.L), self.objective["WATER[c]"])
 		#  Find enzyme concentrations from enzyme counts
 		enzymeCountsInit = self.enzymes.counts()
@@ -306,7 +315,7 @@ class Metabolism(wholecell.processes.process.Process):
 			), 0).astype(np.int64)
 
 		# TODO: FIX THIS HACK
-		metaboliteCountsFinal[self.metaboliteNames.index("CPD-12819[c]")] = np.int(np.round(((COUNTS_UNITS / VOLUME_UNITS) * self.objective["CPD-12819[c]"] / countsToMolar).asNumber()))
+		# metaboliteCountsFinal[self.metaboliteNames.index("CPD-12819[c]")] = np.int(np.round(((COUNTS_UNITS / VOLUME_UNITS) * self.objective["CPD-12819[c]"] / countsToMolar).asNumber()))
 
 		# obj = np.array([self.objective[x] for x in self.metaboliteNames])
 		# metaboliteCountsFinal = stochasticRound(
