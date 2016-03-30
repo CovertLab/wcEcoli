@@ -17,6 +17,11 @@ from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWi
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize, massesAndCountsToAddForPools
 
+# import cobra
+from cvxpy import *
+from wholecell.utils.modular_fba import FluxBalanceAnalysis
+from wholecell.utils.enzymeKinetics import EnzymeKinetics
+
 # Hacks
 RNA_POLY_MRNA_DEG_RATE_PER_S = np.log(2) / 30. # half-life of 30 seconds
 FRACTION_INCREASE_RIBOSOMAL_PROTEINS = 0  # reduce stochasticity from protein expression
@@ -52,6 +57,8 @@ def fitSimData_1(raw_data, doubling_time = None):
 
 	# Increase RNA poly mRNA deg rates
 	setRnaPolymeraseCodingRnaDegradationRates(sim_data)
+
+	findKineticCoeffs(sim_data)
 
 	# Set C-period
 	setCPeriod(sim_data)
@@ -923,3 +930,72 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		print "Residuals (scaled by RNAcounts) optimized = %f" % np.sum(np.abs(R_aux(KmCooperativeModel)))
 
 	return units.mol / units.L * KmCooperativeModel
+
+def findKineticCoeffs(sim_data):
+	
+	objective = dict((key, sim_data.process.metabolism.concDict[key].asNumber(COUNTS_UNITS / VOLUME_UNITS)) for key in sim_data.process.metabolism.concDict)
+	extIDs = sim_data.externalExchangeMolecules[sim_data.environment]
+	reactionStoich = sim_data.process.metabolism.reactionStoich
+	externalExchangeMolecules = sim_data.externalExchangeMolecules[sim_data.environment]
+	reversibleReactions = sim_data.process.metabolism.reversibleReactions
+	moleculeMasses = dict(zip(extIDs,sim_data.getter.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS)))
+
+	fba_object_options = {
+			"reactionStoich" : reactionStoich.copy(), # TODO: copy in class
+			"externalExchangedMolecules" : externalExchangeMolecules,
+			"objective" : objective,
+			"objectiveType" : "pools",
+			"reversibleReactions" : reversibleReactions,
+			"moleculeMasses" : moleculeMasses,
+			"solver" : "glpk",
+	}
+	fba_object = FluxBalanceAnalysis(**fba_object_options)
+
+	# Just observed from a wildtype simulation...
+	dryMassPerCellMass = .3
+
+	# Implicit one second time-step
+	coefficient = dryMassPerCellMass * sim_data.constants.cellDensity * (1. * units.s)
+
+	_unconstrainedExchangeMolecules = sim_data.envDict[sim_data.environment][0][1]["unconstrainedExchangeMolecules"]
+
+	# sim_data.process.metabolism.exchangeConstraints(
+	# 	fba_object.externalMoleculeIDs(),
+	# 	coefficient,
+	# 	COUNTS_UNITS / VOLUME_UNITS,
+	# 	sim_data.environment,
+	# 	0. # time only affects altering environments code, let it = 0
+	# 		)
+
+
+
+	
+	# # Load the EcoCyc-19.5-GEM model in JSON format
+	# model_json_file = "/home/mpaull/wcEcoli/reconstruction/ecoli/flat/ecocyc_19_6_gem.json"
+	# eco_json = cobra.io.load_json_model(model_json_file)
+	# array_model = eco_json.to_array_based_model()
+
+	# S_matrix = array_model.S.toarray()
+	# b_vector = np.array(array_model.b.tolist())
+	# upper_bounds = np.array(array_model.upper_bounds)
+	# lower_bounds = np.array(array_model.lower_bounds)
+
+	# x = Variable(S_matrix.shape[1])
+
+	# # The metaflux biomass reaction is in S_matrix[:,-2]
+	# v_biomass = x[-2]
+
+	# # Construct the problem.
+	# objective = Maximize(v_biomass)
+	# constraints = [lower_bounds <= x,
+	# 	x <= upper_bounds,
+	# 	S_matrix*x - b_vector == 0
+	# 	]
+	# prob = Problem(objective, constraints)
+	# expected_flux = prob.solve()
+
+	# flux_names = np.array([rxn.id for rxn in array_model.reactions])
+
+	# fluxes = x.value
+
+	import ipdb; ipdb.set_trace()
