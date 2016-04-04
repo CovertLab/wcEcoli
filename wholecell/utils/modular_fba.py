@@ -259,6 +259,7 @@ class FluxBalanceAnalysis(object):
 		self.internalMoleculeLevelsIs(0)
 		self.enzymeLevelsIs(0)
 
+		self._buildEqConst()
 
 	def _initReactionNetwork(self, reactionStoich):
 		""" Create the reaction network, initializing molecules and biochemical
@@ -728,6 +729,12 @@ class FluxBalanceAnalysis(object):
 				stoichCoeff
 				)
 
+	def _buildEqConst(self):
+		try:
+			self._solver.buildEqConst()
+		except AttributeError:
+			return
+
 
 	# Constraint setup
 
@@ -891,7 +898,6 @@ class FluxBalanceAnalysis(object):
 			minFlux
 			)
 
-
 	def minReactionFlux(self, reactionID, raiseForReversible = True):
 		if reactionID not in self._reactionIDsSet:
 			raise InvalidBoundaryError("Unable to set min reaction flux: reaction '%s' not recognized." % (reactionID))
@@ -910,6 +916,28 @@ class FluxBalanceAnalysis(object):
 				).format(reactionID, reactionID, reverseReactionID))
 
 		return self._solver.flowLowerBound(reactionID)
+
+
+	def setpointIs(self, moleculeID, coeff):
+		if moleculeID not in self._outputMoleculeIDs:
+			raise FBAError(
+				"setpointIs() only allows for modification of setpoint values, " +
+				"not adding new ones. %s is an unrecognized molecule" % moleculeID
+				)
+
+		pseudoFluxID = self._generatedID_moleculesToEquivalents.format(moleculeID)
+
+		objectiveEquivID = self._generatedID_moleculeEquivalents.format(moleculeID)
+
+		self._solver.flowMaterialCoeffIs(
+			pseudoFluxID,
+			moleculeID,
+			-coeff
+			)
+
+		i = self._outputMoleculeIDs.index(moleculeID)
+		self._outputMoleculeCoeffs[i][pseudoFluxID] = -coeff
+
 
 	# TODO: determine if this is needed
 
@@ -978,8 +1006,8 @@ class FluxBalanceAnalysis(object):
 		return self._solver.flowRates(self._standardObjectiveReactionName)
 
 
-	# def objectiveValue(self):
-	# 	return self._rawSolution["primal objective"]
+	def objectiveValue(self):
+		return self._solver.objectiveValue()
 
 
 	# def enzymeUsage(self):
