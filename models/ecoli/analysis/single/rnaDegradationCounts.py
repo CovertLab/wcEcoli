@@ -93,7 +93,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	countRnaSynthesized = TranscriptElongationListenerFile.readColumn('countRnaSynthesized')
 	TranscriptElongationListenerFile.close()
 
-	# Computation
 	totalRnaseCounts = RnaseCounts.sum(axis = 1)
 	requiredRnaseTurnover = nucleotidesFromDegradation / RnaseCounts.sum(axis = 1)
 
@@ -206,7 +205,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	ax = plt.subplot(7,2,12)
 	plt.plot(time / 60., (ntpCounts[:, 0] + ntpCounts[:, 1] + ntpCounts[:, 2] + ntpCounts[:, 3]) / 1e6)
-	plt.xlabel("Time (min)")
 	plt.ylabel("Net production ($10^{%d}$nt)" % 6, fontsize = 9)
 	plt.title("NTPs required for cell division (x$10^{%d}$) = %.2f" % (6, ((ntpCounts[0, 0] + ntpCounts[0, 1] + ntpCounts[0, 2] + ntpCounts[0, 3]) / 1e6)), fontsize = 9) 
 	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
@@ -219,6 +217,16 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.plot(time / 60., ActiveExoRNcapacity)
 	plt.xlabel("Time (min)")
 	plt.ylabel("ExoRN capacity (%)", fontsize = 9)
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+
+	# compute instantaneous balance of nTPs
+	InstantaneousNTPs = - gtpUsed - atpsHydrolyzed - countNTPsUSed + (deltaMetabolites[:, IdxAtp] + deltaMetabolites[:, IdxGtp] + deltaMetabolites[:, IdxCtp] + deltaMetabolites[:, IdxUtp]) + fragmentBasesDigested
+
+	ax = plt.subplot(7,2,14)
+	plt.plot(time / 60., InstantaneousNTPs / 1e6)
+	plt.xlabel("Time (min)")
+	plt.ylabel("Balance ($10^{%d}$nt)" % 6, fontsize = 9)
+	plt.title("Average instantaneous balance (x$10^{%d}$) = %.4f" % (6, (np.mean(InstantaneousNTPs) / 1e6)), fontsize = 9) 
 	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
 

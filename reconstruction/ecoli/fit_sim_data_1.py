@@ -893,6 +893,9 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		Alphas = [0.0001, 0.001, 0.01, 0.1, 1, 10]
 
 	for alpha in Alphas:
+		
+		if VERBOSE: print 'Alpha = %f' % alpha
+		
 		LossFunction, Rneg, R, LossFunctionP, R_aux, L_aux, Lp_aux, Jacob, Jacob_aux = sim_data.process.rna_decay.kmLossFunction(
 				(totalEndoRnaseCapacity).asNumber(units.mol / units.L / units.s),
 				(countsToMolar * rnaCounts).asNumber(units.mol / units.L),
@@ -904,9 +907,33 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		sim_data.process.rna_decay.SensitivityAnalysisAlphaResidual[alpha] = np.sum(np.abs(R_aux(KmCooperativeModel)))
 		sim_data.process.rna_decay.SensitivityAnalysisAlphaRegulariNeg[alpha] = np.sum(np.abs(Rneg(KmCooperativeModel)))
 
+	alpha = 0.5
+
+	# Sensitivity analysis: kcatEndoRNase
+	kcatEndo = []
+	if sim_data.constants.SensitivityAnalysisKcatEndo:
+		kcatEndo = [0.0001, 0.001, 0.01, 0.1, 1, 10]
+
+	for kcat in kcatEndo:
+		
+		if VERBOSE: print 'Kcat = %f' % kcat
+
+		totalEndoRNcap = units.sum(endoRNaseConc * kcat)
+		LossFunction, Rneg, R, LossFunctionP, R_aux, L_aux, Lp_aux, Jacob, Jacob_aux = sim_data.process.rna_decay.kmLossFunction(
+				(totalEndoRNcap).asNumber(units.mol / units.L),
+				(countsToMolar * rnaCounts).asNumber(units.mol / units.L),
+				degradationRates.asNumber(1 / units.s),
+				isEndoRnase,
+				alpha
+			)
+		KmcountsIni = (( totalEndoRNcap / degradationRates.asNumber() ) - rnaConc).asNumber()
+		KmCooperativeModel = scipy.optimize.fsolve(LossFunction, KmcountsIni, fprime = LossFunctionP)
+		sim_data.process.rna_decay.SensitivityAnalysisKcat[kcat] = KmCooperativeModel
+		sim_data.process.rna_decay.SensitivityAnalysisKcat_ResIni[kcat] = np.sum(np.abs(R_aux(Kmcounts)))
+		sim_data.process.rna_decay.SensitivityAnalysisKcat_ResOpt[kcat] = np.sum(np.abs(R_aux(KmCooperativeModel)))
+
 
 	# Loss function, and derivative 
-	alpha = 0.5
 	LossFunction, Rneg, R, LossFunctionP, R_aux, L_aux, Lp_aux, Jacob, Jacob_aux = sim_data.process.rna_decay.kmLossFunction(
 				(totalEndoRnaseCapacity).asNumber(units.mol / units.L / units.s),
 				(countsToMolar * rnaCounts).asNumber(units.mol / units.L),

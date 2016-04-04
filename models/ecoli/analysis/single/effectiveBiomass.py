@@ -62,9 +62,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	outputMoleculeIDs = np.array(fbaResults.readAttribute("outputMoleculeIDs"))
 
+	PCC = fbaResults.readColumn("PCC")
+
 	fbaResults.close()
 
-	#import ipdb; ipdb.set_trace();
 	IdxAtp = (np.where("ATP[c]" == outputMoleculeIDs))[0][0]; ATP = np.sum(deltaMetabolites[:, IdxAtp])
 	IdxGtp = (np.where("GTP[c]" == outputMoleculeIDs))[0][0]; GTP = np.sum(deltaMetabolites[:, IdxGtp])
 	IdxCtp = (np.where("CTP[c]" == outputMoleculeIDs))[0][0]; CTP = np.sum(deltaMetabolites[:, IdxCtp])

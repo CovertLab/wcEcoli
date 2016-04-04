@@ -426,8 +426,65 @@ class Metabolism(wholecell.processes.process.Process):
 		if VERBOSE: print "Sum(Abs(fluxes) = %f" % np.sum(np.abs(self.fba.reactionFluxes()))
 
 
+		# metabolic fluxes measured (mmol/g/h) in Toya et al. Biotech Prog 2010
+		ReactionIDsCarbonCentral = [	["TRANS-RXN-157", 10.17],
+										["PGLUCISOM-RXN", 6.04],
+										["6PFRUCTPHOS-RXN", 8.06],
+										["F16ALDOLASE-RXN", 8.06],
+										["TRIOSEPISOMERIZATION-RXN", 8.06],
+										["GAPOXNPHOSPHN-RXN", 16.89],
+										["PHOSGLYPHOS-RXN", 16.89],
+										["RXN-15513", 15.85],
+										["3PGAREARR-RXN", 15.85],
+										["PEPDEPHOS-RXN", 1.97],
+										["PYRUVDEH-RXN", 11.12],
+										["GLU6PDEHYDROG-RXN", 3.98],
+										["RXN-9952", 3.98],
+										["RIBULPEPIM-RXN", 2.09],
+										["RIB5PISOM-RXN", 1.88],
+										["1TRANSKETO-RXN", 1.20],
+										["TRANSALDOL-RXN", 1.20],
+										["2TRANSKETO-RXN", 0.89],
+										["CITSYN-RXN", 5.46],
+										["ISOCITDEH-RXN", 5.46],
+										["2OXOGLUTARATEDEH-RXN", 4.62],
+										["SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.", 4.62],
+										["FUMHYDR-RXN", 4.62],
+										["MALATE-DEH-RXN", 3.50],
+										["PEPCARBOX-RXN", 3.34],
+										["MALIC-NADP-RXN", 1.12],
+									]
 
+		# comparing observed and predicted metabolic fluxes
+		fluxPredicted = []
+		fluxObserved = []
+		for IdReacMeas in ReactionIDsCarbonCentral: 
+			Index = (np.where(IdReacMeas[0] == self.fba.reactionIDs()))[0][0]; 
+			if FluxesAux[Index]:
+				fluxPredicted = np.append(fluxPredicted, FluxesAux[Index])
+				fluxObserved = np.append(fluxObserved, IdReacMeas[1])
+		fluxPredicted = ((COUNTS_UNITS / VOLUME_UNITS) * fluxPredicted / coefficient).asNumber(units.mmol / units.g / units.h)
+		PCC = 0
+		PCClog = 0
+		slope = 0
+		slopelog = 0
+		if len(fluxPredicted) > 0:
+			PCC = np.corrcoef(fluxObserved, fluxPredicted)[0,1]
+			PCClog = np.corrcoef(np.log10(fluxObserved), np.log10(fluxPredicted))[0,1]
+			z = np.polyfit(fluxObserved, fluxPredicted, 1)
+			slope = z[0]
+			zlog = np.polyfit(np.log10(fluxObserved), np.log10(fluxPredicted), 1)
+			slopelog = zlog[0]
 
+		#import ipdb; ipdb.set_trace()
+		#print [fluxPredicted, fluxObserved]
+		#print [np.log10(fluxPredicted), np.log10(fluxObserved)]
+		#print "PCC (observed and predicted fluxes) = %.2f" % PCC
+
+		self.writeToListener("FBAResults", "PCC", PCC) 
+		self.writeToListener("FBAResults", "PCClog", PCClog)
+		self.writeToListener("FBAResults", "slope", slope) 
+		self.writeToListener("FBAResults", "slopelog", slopelog)
 
 		# TODO
 		# NOTE: the calculation for the objective components doesn't yet have

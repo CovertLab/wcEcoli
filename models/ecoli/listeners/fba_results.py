@@ -25,6 +25,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 	def __init__(self, *args, **kwargs):
 		super(FBAResults, self).__init__(*args, **kwargs)
 
+		self.countUnits = "counts"
 
 	# Construct object graph
 	def initialize(self, sim, sim_data):
@@ -50,6 +51,10 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.outputFluxes = np.zeros(len(self.outputMoleculeIDs), np.float64)
 		self.objectiveComponents = np.zeros_like(self.outputFluxes)
 		self.deltaMetabolites = np.zeros(len(self.outputMoleculeIDs), np.float64)
+		self.PCC = 0.0
+		self.PCClog = 0.0
+		self.slope = 0.0
+		self.slopelog = 0.0
 
 
 	def tableCreate(self, tableWriter):
@@ -57,6 +62,10 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			reactionIDs = list(self.reactionIDs),
 			externalMoleculeIDs = self.externalMoleculeIDs,
 			outputMoleculeIDs = self.outputMoleculeIDs,
+			PCC = self.countUnits,
+			PCClog = self.countUnits,
+			slope = self.countUnits,
+			slopelog = self.countUnits,
 			)
 
 
@@ -70,4 +79,8 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			objectiveValue = self.objectiveValue,
 			objectiveComponents = self.objectiveComponents,
 			deltaMetabolites = self.deltaMetabolites,
+			PCC = self.PCC,
+			PCClog = self.PCClog,
+			slope = self.slope,
+			slopelog = self.slopelog,
 			)

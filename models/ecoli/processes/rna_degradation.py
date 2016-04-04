@@ -149,7 +149,7 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# Calculate total counts of RNAs to degrade according to
 		# the total counts of "active" endoRNases and their cleavage activity
 		nRNAsTotalToDegrade = np.round((units.sum(self.KcatEndoRNases * self.endoRnases.total()) * fracEndoRnaseSaturated * (units.s * self.timeStepSec())).asNumber().sum())
-		
+
 		# Dissect RNA specificity into mRNA, tRNA, and rRNA as well as specific RNases
 		MrnaSpec = units.sum(fracEndoRnaseSaturated * self.isMRna)
 		TrnaSpec = units.sum(fracEndoRnaseSaturated * self.isTRna)
@@ -229,10 +229,22 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# First order decay with non-functional EndoRNase activity 
 		# Determine mRNAs to be degraded according to Poisson distribution (Kdeg * RNA)
 		if not self.EndoRNaseFunc:
+			# high noise
 			nRNAsToDegrade = np.fmin(
 				self.randomState.poisson( (self.rnaDegRates * self.rnas.total()).asNumber() ),
 				self.rnas.total()
 				)
+
+			# alternative -> first-order RNA decay with low noise:
+			# nRNAsToDegrade = np.zeros(len(RNAspecificity))
+			# nRNAsTotalToDegrade = np.round(np.sum((self.rnaDegRates * self.rnas.total()).asNumber()) + (8 * (random.random() - 0.5)))
+			# #import ipdb; ipdb.set_trace()
+			# RNAspecificity = (self.rnaDegRates * self.rnas.total()).asNumber() 
+			# while nRNAsToDegrade.sum() < nRNAsTotalToDegrade and (self.rnas.total()).sum() != 0:
+			# 	nRNAsToDegrade += np.fmin(
+			# 			self.randomState.multinomial(nRNAsTotalToDegrade - nRNAsToDegrade.sum(), 1. / sum(RNAspecificity * nRNAs) * RNAspecificity * nRNAs),
+			# 			self.rnas.total()
+			# 		)
 
 
 		self.rnas.requestIs(nRNAsToDegrade)

@@ -39,10 +39,22 @@ class RnaDecay(object):
 				'ResScaledKm': 0.,
 				'ResScaledKmOpt': 0.,
 			}
+
+		# store Residuals re-scaled (sensitivity analysis "alpha")
 		self.SensitivityAnalysisAlphaResidual = {}
 		self.SensitivityAnalysisAlphaRegulariNeg = {}
+
+		# store Km's and Residuals re-scaled (sensitivity analysis "kcat EndoRNases")
+		self.SensitivityAnalysisKcat = {}
+		self.SensitivityAnalysisKcat_ResIni = {}
+		self.SensitivityAnalysisKcat_ResOpt = {}
+
+		# store Km's from first-order RNA decay
 		self.KmFirstOrderDecay = []
+
+		# store convergence of non-linear Km's (G(km))
 		self.KmConvergence = []
+
 
 		self.TargetEndoRNasesFullMRNA = np.zeros(len(self.endoRnaseIds))
 		self.TargetEndoRNasesFullTRNA = np.zeros(len(self.endoRnaseIds))
