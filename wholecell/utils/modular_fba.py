@@ -171,15 +171,20 @@ class FluxBalanceAnalysis(object):
 	_generatedID_fractionBelowUnityOut = "fraction {} below unity, out"
 	_generatedID_fractionAboveUnityOut = "fraction {} above unity, out"
 
-	# Default values, for clarity
-	_lowerBoundDefault = 0
-	_upperBoundDefault = np.inf
-
 	_standardObjectiveReactionName = "Standard biomass objective reaction"
 	_massID = "Mass"
 	_massOutName = "Mass out"
 
 	_forcedUnityColName = "Column forced at unity"
+
+	_pseudometaboliteGAM = "GAM reaction pseudometabolite"
+	_reactionID_GAM = "Growth-associated maintenance reaction"
+	_reactionID_NGAM = "Non-growth-associated maintenance reaction"
+	_reactionID_polypeptideElongationEnergy = "PolypeptideElongation energy reaction"
+
+	# Default values, for clarity
+	_lowerBoundDefault = 0
+	_upperBoundDefault = np.inf
 
 	# Initialization
 
@@ -187,7 +192,7 @@ class FluxBalanceAnalysis(object):
 			objectiveType = None, objectiveParameters = None,
 			internalExchangedMolecules = None, reversibleReactions = None,
 			reactionEnzymes = None, reactionRates = None,
-			moleculeMasses = None, maintenanceCost = None,
+			moleculeMasses = None, maintenanceCostGAM = None,
 			maintenanceReaction = None,
 			solver = DEFAULT_SOLVER):
 
@@ -251,7 +256,7 @@ class FluxBalanceAnalysis(object):
 
 		self._initMass(externalExchangedMolecules, moleculeMasses)
 
-		self._initMaintenance(maintenanceCost, maintenanceReaction)
+		self._initMaintenance(maintenanceCostGAM, maintenanceReaction)
 
 		# Set up values that will change between runs
 
@@ -686,7 +691,7 @@ class FluxBalanceAnalysis(object):
 					)
 
 
-	def _initMaintenance(self, maintenanceCost, maintenanceReaction):
+	def _initMaintenance(self, maintenanceCostGAM, maintenanceReaction):
 		"""Create growth-associated maintenance abstractions.
 
 		Two maintenance costs are typically associated with FBA; growth-
@@ -695,36 +700,46 @@ class FluxBalanceAnalysis(object):
 		is a fixed energetic cost regardless of mass accumulation.)
 		"""
 
-		if (maintenanceCost is None) and (maintenanceReaction is None):
+		if (maintenanceCostGAM is None) and (maintenanceReaction is None):
 			return
 
-		if (maintenanceCost is None) ^ (maintenanceReaction is None):
-			raise FBAError("Must pass all or none of maintenanceCost, maintenanceReaction")
+		if (maintenanceCostGAM is None) ^ (maintenanceReaction is None):
+			raise FBAError("Must pass all or none of maintenanceCostGAM, maintenanceReaction")
 
 
 		# TODO: check that the mass flux stuff exists
 
 		# computed mass output produces "GAM reactions"...
-		reactionsNeededID = "GAM reactions" # TODO: move to class def
 
 		self._solver.flowMaterialCoeffIs(
 			self._massOutName,
-			reactionsNeededID,
-			maintenanceCost
+			self._pseudometaboliteGAM,
+			maintenanceCostGAM
 			)
 
 		# ... which are consumed in a seperate flux
-		maintenanceReactionID = "Growth-associated maintenance" # TODO: move to class def
 
 		self._solver.flowMaterialCoeffIs(
-			maintenanceReactionID,
-			reactionsNeededID,
+			self._reactionID_GAM,
+			self._pseudometaboliteGAM,
 			-1
 			)
 
 		for moleculeID, stoichCoeff in maintenanceReaction.viewitems():
 			self._solver.flowMaterialCoeffIs(
-				maintenanceReactionID,
+				self._reactionID_GAM,
+				moleculeID,
+				stoichCoeff
+				)
+
+			self._solver.flowMaterialCoeffIs(
+				self._reactionID_NGAM,
+				moleculeID,
+				stoichCoeff
+				)
+
+			self._solver.flowMaterialCoeffIs(
+				self._reactionID_polypeptideElongationEnergy,
 				moleculeID,
 				stoichCoeff
 				)
@@ -1009,6 +1024,15 @@ class FluxBalanceAnalysis(object):
 	def objectiveValue(self):
 		return self._solver.objectiveValue()
 
+
+	def getArrayBasedModel(self):
+		return {
+		"S_matrix":self._solver.getSMatrix(),
+		"Reactions":self._solver.getFlowNames(),
+		"Metabolites":self._solver.getMaterialNames(),
+		"Upper bounds":self._solver.getUpperBounds(),
+		"Lower bounds":self._solver.getLowerBounds(),
+		}
 
 	# def enzymeUsage(self):
 	# 	return self._solutionFluxes[self._enzymeUsageRateConstrainedIndexes]
