@@ -33,8 +33,6 @@ class FBAResults(wholecell.listeners.listener.Listener):
 
 		self.metabolism = sim.processes["Metabolism"]
 
-		self.objectiveValue = 0.0
-
 
 	# Allocate memory
 	def allocate(self):
@@ -55,6 +53,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.PCClog = 0.0
 		self.slope = 0.0
 		self.slopelog = 0.0
+		self.objectiveValue = 0.0
 
 
 	def tableCreate(self, tableWriter):
@@ -66,6 +65,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			PCClog = self.countUnits,
 			slope = self.countUnits,
 			slopelog = self.countUnits,
+			objectiveValue = self.countUnits,
 			)
 
 

@@ -376,8 +376,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("FBAResults", "externalExchangeFluxes",
 			exFluxes)
 
-		# self.writeToListener("FBAResults", "objectiveValue", # TODO
-		# self.fba.objectiveValue() / deltaMetabolites.size) # divide to normalize by number of metabolites
+		self.writeToListener("FBAResults", "objectiveValue", # TODO
+		self.fba.objectiveValue()) # / len(deltaMetabolites)) # divide to normalize by number of metabolites
 
 		self.writeToListener("FBAResults", "outputFluxes",
 			self.fba.outputMoleculeLevelsChange() / self.timeStepSec())

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-@author: John Mason
+@author: Javier Carrera
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/24/2014
+@date: Created 4/04/2016
 """
 
 from __future__ import division
@@ -23,17 +23,6 @@ from scipy.spatial import distance
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
-CMAP_COLORS_255 = [
-	[247,247,247],
-	[209,229,240],
-	[146,197,222],
-	[67,147,195],
-	[33,102,172],
-	[5,48,97],
-	]
-
-CMAP_COLORS = [[shade/255. for shade in color] for color in CMAP_COLORS_255]
-CMAP_OVER = [0, 1, 0.75]
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -49,93 +38,18 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
 
 	objectiveValue = fbaResults.readColumn("objectiveValue")
-	objectiveComponents = np.append(
-		fbaResults.readColumn("objectiveComponents").T,
-		np.array(objectiveValue, ndmin=2),
-		0)
-
-	outputMoleculeIDs = np.append(
-		np.array(fbaResults.readAttribute("outputMoleculeIDs")),
-		"Full objective"
-		)
 
 	fbaResults.close()
 
-	fig = plt.figure(figsize = (30, 15))
+	#import ipdb; ipdb.set_trace()
 
-	grid = gridspec.GridSpec(
-		1, 3,
-		wspace = 0.0, hspace = 0.0,
-		width_ratios = [0.25, 1, 0.05]
-		)
+	fig = plt.figure(figsize = (8.5, 8))
 
-	ax_dendro = fig.add_subplot(grid[0])
+	plt.plot(time, objectiveValue, 'o', markeredgecolor = 'k', markerfacecolor = 'none')
+	plt.xlabel("time", fontsize = 14)
+	plt.ylabel("Error jFBA", fontsize = 14)	
+	plt.title("Average error = %.2f and SD = %.2f" % (np.average(objectiveValue), np.std(objectiveValue)), fontsize = 16) 
 
-	linkage = sch.linkage(objectiveComponents, metric = "correlation")
-	linkage[:, 2] = np.fmax(linkage[:, 2], 0) # fixes rounding issues leading to negative distances
-
-	sch.set_link_color_palette(['black'])
-
-	dendro = sch.dendrogram(linkage, orientation="right", color_threshold = np.inf)
-	index = dendro["leaves"]
-
-	ax_dendro.set_xticks([])
-	ax_dendro.set_yticks([])
-	ax_dendro.set_axis_off()
-
-	ax_mat = fig.add_subplot(grid[1])
-
-	cmap = colors.LinearSegmentedColormap.from_list(
-		"white to blue with upper extreme",
-		CMAP_COLORS
-		)
-
-	cmap.set_over(CMAP_OVER)
-
-	norm = colors.Normalize(vmin = 0, vmax = +1)
-
-	ax_mat.imshow(
-		objectiveComponents[index, :],
-		aspect = "auto",
-		interpolation='nearest',
-		origin = "lower",
-		cmap = cmap,
-		norm = norm
-		)
-
-	ax_mat.set_yticks(np.arange(len(index)))
-	ax_mat.set_yticklabels(outputMoleculeIDs[np.array(index)], size = 5)
-
-	delta_t = time[1] - time[0]
-
-	step_size = np.int64(5*60 / delta_t)
-
-	xticks = np.arange(1, time.size, step_size)
-
-	ax_mat.set_xticks(xticks)
-	ax_mat.set_xticklabels(time[xticks-1]/60)
-
-	ax_mat.set_xlabel("Time (min)")
-
-	plt.title("FBA objective components")
-
-	ax_cmap = fig.add_subplot(grid[2])
-
-	gradient = np.array((np.arange(0, 100)/100).tolist() + [+2,]*5, ndmin=2).transpose()
-
-	ax_cmap.imshow(
-		gradient,
-		aspect = "auto",
-		interpolation = "nearest",
-		origin = "lower",
-		cmap = cmap,
-		norm = norm
-		)
-
-	ax_cmap.set_xticks([])
-	ax_cmap.set_yticks([])
-
-	grid.tight_layout(fig)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
@@ -153,8 +67,9 @@ if __name__ == "__main__":
 	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
 	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
 	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
+	parser.add_argument("--validationDataFile", help = "KB file name", type = str, default = "None")
 
 	args = parser.parse_args().__dict__
 
-	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"])
-	
+	#main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"])
+	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"], args["validationDataFile"])
