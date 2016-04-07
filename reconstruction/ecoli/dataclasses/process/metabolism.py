@@ -334,7 +334,6 @@ class Metabolism(object):
 			raise Exception("The following {} enzyme kinetics entries reference substrates which don't appear in their corresponding reaction, and aren't paired with an inhibitory constant (kI). They should be corrected or removed. {}".format(len(nonCannonicalRxns), nonCannonicalRxns))
 
 
-
 		self.reactionStoich = reactionStoich
 		self.envDict = sim_data.envDict
 		self.reversibleReactions = reversibleReactions

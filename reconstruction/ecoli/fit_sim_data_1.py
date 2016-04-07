@@ -998,4 +998,4 @@ def findKineticCoeffs(sim_data):
 
 	# fluxes = x.value
 
-	import ipdb; ipdb.set_trace()
+	# import ipdb; ipdb.set_trace()
