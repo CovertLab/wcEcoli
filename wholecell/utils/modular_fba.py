@@ -305,11 +305,10 @@ class FluxBalanceAnalysis(object):
 
 			externalMoleculeIDs.append(moleculeID)
 			externalExchangeIDs.append(exchangeID)
+			self._specialFluxIDsSet.add(exchangeID)
 
 		self._externalMoleculeIDs = tuple(externalMoleculeIDs)
 		self._externalExchangeIDs = tuple(externalExchangeIDs)
-
-		self._specialFluxIDsSet.add(self._externalExchangeIDs)
 
 
 	def _initObjectiveEquivalents(self, objective):
@@ -575,6 +574,8 @@ class FluxBalanceAnalysis(object):
 					)
 
 				internalMoleculeIDs.append(moleculeID)
+				self._specialFluxIDsSet.add(exchangeID)
+
 
 				# TODO: functionalize
 				try:
@@ -588,7 +589,6 @@ class FluxBalanceAnalysis(object):
 				self._outputMoleculeCoeffs[i][exchangeID] = -1
 
 		self._internalMoleculeIDs = tuple(internalMoleculeIDs)
-		self._specialFluxIDsSet.add(self._internalMoleculeIDs)
 
 
 	def _initEnzymeConstraints(self, reactionEnzymes, reactionRates):
@@ -743,9 +743,9 @@ class FluxBalanceAnalysis(object):
 				stoichCoeff
 				)
 
-		self._specialFluxIDsSet.add(self._reactionID_GAM,
-			self._reactionID_NGAM,
-			self._reactionID_polypeptideElongationEnergy)
+		self._specialFluxIDsSet.add(self._reactionID_GAM)
+		self._specialFluxIDsSet.add(self._reactionID_NGAM)
+		self._specialFluxIDsSet.add(self._reactionID_polypeptideElongationEnergy)
 
 	def _buildEqConst(self):
 		try:
@@ -849,7 +849,8 @@ class FluxBalanceAnalysis(object):
 		if maxFlux < 0:
 			raise InvalidBoundaryError("Maximum reaction flux must be at least 0")
 
-		if reactionID not in (self._reactionIDsSet, self._specialFluxIDsSet):
+		if reactionID not in self._reactionIDsSet and reactionID not in self._specialFluxIDsSet:
+			import ipdb; ipdb.set_trace()
 			raise InvalidBoundaryError("Unable to set max reaction flux: reaction '%s' not recognized." % (reactionID))
 
 		# if maxFlux < self._lowerBound[colIndex]:
@@ -875,7 +876,7 @@ class FluxBalanceAnalysis(object):
 		if minFlux < 0:
 			raise InvalidBoundaryError("Minimum reaction flux must be at least 0")
 
-		if reactionID not in (self._reactionIDsSet, self._specialFluxIDsSet):
+		if reactionID not in self._reactionIDsSet and reactionID not in self._specialFluxIDsSet:
 			raise InvalidBoundaryError("Unable to set min reaction flux: reaction '%s' not recognized." % (reactionID))
 
 		# if minFlux > self._upperBound[colIndex]:
