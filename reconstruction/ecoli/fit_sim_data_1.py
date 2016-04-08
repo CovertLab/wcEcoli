@@ -471,6 +471,12 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 
 
 def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time):
+	fastRnaBool = (sim_data.process.transcription.rnaData["isRRna5S"] |
+			sim_data.process.transcription.rnaData["isRRna16S"] |
+			sim_data.process.transcription.rnaData["isRRna23S"] |
+			sim_data.process.transcription.rnaData["isTRna"])
+	slowRnaBool = ~fastRnaBool
+
 	# -- CONSTRAINT 1: Expected RNA distribution doubling -- #
 	rnaLengths = units.sum(sim_data.process.transcription.rnaData['countsACGU'], axis = 1)
 
@@ -498,9 +504,11 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time)
 		countsToMolar,
 		)
 	
-	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
-		rnaLengths, sim_data.growthRateParameters.rnaPolymeraseElongationRate, rnaLossRate)
-
+	nActiveRnapNeededforSlow = calculateMinPolymerizingEnzymeByProductDistributionRNA(
+		rnaLengths[slowRnaBool], sim_data.growthRateParameters.rnaPolymeraseElongationRate, rnaLossRate[slowRnaBool])
+	nActiveRnapNeededforFast = calculateMinPolymerizingEnzymeByProductDistributionRNA(
+		rnaLengths[fastRnaBool], sim_data.growthRateParameters.rnaPolymeraseElongationRateFast, rnaLossRate[fastRnaBool])
+	nActiveRnapNeeded = nActiveRnapNeededforFast + nActiveRnapNeededforSlow
 	nActiveRnapNeeded = units.convertNoUnitToNumber(nActiveRnapNeeded)
 	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.fractionActiveRnap
 

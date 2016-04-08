@@ -41,3 +41,4 @@ class TranscriptElongationListener(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			countRnaSynthesized = self.countRnaSynthesized,
 			)
+		self.countRnaSynthesized = np.zeros(self.countRnaSynthesized.shape, self.countRnaSynthesized.dtype)

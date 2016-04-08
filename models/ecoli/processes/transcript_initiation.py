@@ -54,6 +54,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.rnaLengths = sim_data.process.transcription.rnaData["length"]
 
 		self.rnaPolymeraseElongationRate = sim_data.growthRateParameters.rnaPolymeraseElongationRate
+		self.rnaPolymeraseElongationRateFast = sim_data.growthRateParameters.rnaPolymeraseElongationRateFast
 
 		self.rnaSynthProb = sim_data.process.transcription.rnaData["synthProb"]
 
@@ -66,6 +67,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.is_16SrRNA = sim_data.process.transcription.rnaData['isRRna16S']
 		self.is_23SrRNA = sim_data.process.transcription.rnaData['isRRna23S']
 		self.is_5SrRNA = sim_data.process.transcription.rnaData['isRRna5S']
+		self.is_tRNA = sim_data.process.transcription.rnaData['isTRna']
 
 
 	def calculateRequest(self):
@@ -79,6 +81,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			self.fracActiveRnap,
 			self.rnaLengths,
 			self.rnaPolymeraseElongationRate,
+			self.rnaPolymeraseElongationRateFast,
 			self.rnaSynthProb,
 			)
 
@@ -139,8 +142,13 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.writeToListener("RnapData", "didInitialize", nNewRnas.sum())
 
 
-	def _calculateActivationProb(self, fracActiveRnap, rnaLengths, rnaPolymeraseElongationRate, synthProb):
-		expectedTranscriptionTime = 1. / rnaPolymeraseElongationRate * rnaLengths
+	def _calculateActivationProb(self, fracActiveRnap, rnaLengths, rnaPolymeraseElongationRate, rnaPolymeraseElongationRateFast, synthProb):
+		fastRnaBool = (self.is_5SrRNA | self.is_16SrRNA | self.is_23SrRNA | self.is_tRNA)
+		slowRnaBool = ~fastRnaBool
+
+		elngRateVector = rnaPolymeraseElongationRate * slowRnaBool + rnaPolymeraseElongationRateFast * fastRnaBool
+
+		expectedTranscriptionTime = 1. / elngRateVector * rnaLengths
 
 		expectedTranscriptionTimesteps = np.ceil(
 			(1. / (self.timeStepSec() * units.s) * expectedTranscriptionTime).asNumber()

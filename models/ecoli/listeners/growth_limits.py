@@ -97,3 +97,6 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			ntpAllocated = self.ntpAllocated,
 			ntpUsed = self.ntpUsed,
 			)
+		self.ntpRequestSize = np.zeros(len(self.ntpIds), np.float64)
+		self.ntpAllocated = np.zeros(len(self.ntpIds), np.float64)
+		self.ntpUsed = np.zeros(len(self.ntpIds), np.float64)

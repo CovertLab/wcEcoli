@@ -70,8 +70,8 @@ class RnapData(wholecell.listeners.listener.Listener):
 
 		# Attributes broadcast by the PolypeptideElongation process
 		self.rnapStalls = np.zeros(0, np.int64)
-		self.ntpCountInSequence = np.zeros(21, np.int64)
-		self.ntpCounts = np.zeros(21, np.int64)
+		self.ntpCountInSequence = np.zeros(0, np.int64)
+		self.ntpCounts = np.zeros(0, np.int64)
 		self.actualElongations = 0
 		self.expectedElongations = 0
 		self.nTerminated = 0
@@ -115,3 +115,10 @@ class RnapData(wholecell.listeners.listener.Listener):
 			didInitialize = self.didInitialize,
 			terminationLoss = self.terminationLoss
 			)
+		self.rnapStalls = np.zeros(0, np.int64)
+		self.ntpCountInSequence = np.zeros(0, np.int64)
+		self.ntpCounts = np.zeros(0, np.int64)
+		self.expectedElongations = 0
+		self.actualElongations = 0
+		self.didTerminate = 0
+		self.terminationLoss = 0
