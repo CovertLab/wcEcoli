@@ -10,6 +10,7 @@ from __future__ import division
 import argparse
 import os
 import cPickle
+import json
 
 import numpy as np
 import matplotlib
@@ -61,6 +62,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	outputMoleculeIDs = np.array(fbaResults.readAttribute("outputMoleculeIDs"))
 
 	fbaResults.close()
+
+	# Write the average jfba objective fluxes to a file
+	with open(os.path.join(plotOutDir, "objectiveFluxes.txt"),"w") as output:
+		output.write(json.dumps(dict(zip(outputMoleculeIDs, np.mean(outputFluxes, axis=0)))))
 
 	fig = plt.figure(figsize = (30, 15))
 

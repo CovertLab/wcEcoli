@@ -34,12 +34,11 @@ COUNTS_UNITS = units.umol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 
-# Runs a second FBA at each step, which is constrained even if the main one is not
 NONZERO_ENZYMES = True
 
-USE_RATELIMITS = False # Enable/disable kinetic rate limits in the model
+USE_RATELIMITS = True # Enable/disable kinetic rate limits in the model
 
-USE_MANUAL_FLUX_COEFF = True # enable to overrid flux coefficients in the knowledgebase and use these local values instead
+USE_MANUAL_FLUX_COEFF = False # enable to overrid flux coefficients in the knowledgebase and use these local values instead
 MAX_FLUX_COEFF = 1 # Multiple of predicted rate at which to set the max fluxes
 MIN_FLUX_COEFF = 0 # Multiple of predicted rate at which to set the min fluxes
 
@@ -255,7 +254,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Remove any enzyme kinetics paramters for which the needed enzyme and substrate information is not available
 		if not self.enzymeKinetics.inputsChecked:
-			knownConstraints, unusableConstraints, unknownVals = self.enzymeKinetics.checkKnownSubstratesAndEnzymes(metaboliteConcentrationsDict, enzymeConcentrationsDict, removeUnknowns=True)
+			self.enzymeKinetics.checkKnownSubstratesAndEnzymes(metaboliteConcentrationsDict, enzymeConcentrationsDict, removeUnknowns=True)
 
 		# Calculation the constraints in the current conditions
 		constraintsDict = self.enzymeKinetics.allConstraintsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)

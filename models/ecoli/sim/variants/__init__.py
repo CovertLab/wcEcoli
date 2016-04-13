@@ -14,6 +14,9 @@ from models.ecoli.sim.variants.time_step import timeStepTotalIndices
 from models.ecoli.sim.variants.kinetics_flux_coeff import kineticsFluxCoeff
 from models.ecoli.sim.variants.kinetics_flux_coeff import kineticsFluxCoeffTotalIndices
 
+from models.ecoli.sim.variants.kinetics_individual_reaction_coeffs import kineticsIndivCoeff
+from models.ecoli.sim.variants.kinetics_individual_reaction_coeffs import kineticsIndivCoeffTotalIndices
+
 from models.ecoli.sim.variants.growth_rate import growthRate
 from models.ecoli.sim.variants.growth_rate import growthRateTotalIndices
 
@@ -26,6 +29,7 @@ nameToFunctionMapping = {
 	"wildtype": wildtype,
 	"timeStep": timeStep,
 	"kineticsFluxCoeff": kineticsFluxCoeff,
+	"kineticsIndivCoeff": kineticsIndivCoeff,
 	"growthRate": growthRate,
 	"environment": environment,
 }
@@ -35,6 +39,7 @@ nameToNumIndicesMapping = {
 	"wildtype": wildtypeTotalIndices,
 	"timeStep": timeStepTotalIndices,
 	"kineticsFluxCoeff": kineticsFluxCoeffTotalIndices,
+	"kineticsIndivCoeff": kineticsIndivCoeffTotalIndices,
 	"growthRate": growthRateTotalIndices,
 	"environment": environmentTotalIndices,
 }
