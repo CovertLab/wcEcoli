@@ -942,7 +942,7 @@ def findKineticCoeffs(sim_data, bulkContainer):
 
 	# Load the empirical jFBA biomass reaction stoichiometry
 	jfbaBiomassReactionStoich = {}
-	with open("/home/mpaull/wcEcoli/user/model_output_fluxes.tsv") as f:
+	with open("/home/mpaull/wcEcoli/user/model_output_fluxes_5_to_35.tsv") as f:
 		for idx, line in enumerate(f):
 			# Skip the header
 			if idx < 1:

@@ -17,16 +17,23 @@ def kineticsIndivCoeff(sim_data, index):
 
 	nConditions = kineticsIndivCoeffTotalIndices(sim_data)
 
-	if index % nConditions == 0:
-		return CONTROL_OUTPUT, sim_data
-
 	reactionID = sorted(list(set([x["reactionID"] for x in sim_data.process.metabolism.reactionRateInfo.values()])))[index]
 
+	relaxAll = False
+	shortName = "Removed constraint on %s" % (reactionID),
+	desc = "Rate limit on constraint %s set to %f." % (reactionID, RELAXATION_VALUE)
+
+	# Relax all constraints in the control simulation
+	if index % nConditions == 0:
+		relaxAll = True
+		shortName = "Control simulation"
+		desc = "Control simulation"
+
 	for reactionInfo in sim_data.process.metabolism.reactionRateInfo.values():
-		if reactionInfo["reactionID"] == reactionID:
+		if reactionInfo["reactionID"] == reactionID or relaxAll:
 			reactionInfo["constraintMultiple"] = RELAXATION_VALUE
 
 	return dict(
-		shortName = "Removed constraint on %s" % (reactionID),
-		desc = "Rate limit on constraint %s set to %f." % (reactionID, RELAXATION_VALUE)
+		shortName = shortName,
+		desc = desc
 		), sim_data

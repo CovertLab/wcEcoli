@@ -64,8 +64,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	fbaResults.close()
 
 	# Write the average jfba objective fluxes to a file
-	with open(os.path.join(plotOutDir, "objectiveFluxes.txt"),"w") as output:
+	with open(os.path.join(plotOutDir, "objectiveFluxes_full.txt"),"w") as output:
 		output.write(json.dumps(dict(zip(outputMoleculeIDs, np.mean(outputFluxes, axis=0)))))
+	with open(os.path.join(plotOutDir, "objectiveFluxes_5_to_35.txt"),"w") as output:
+		output.write(json.dumps(dict(zip(outputMoleculeIDs, np.mean(outputFluxes[(5*60):(35*60)], axis=0)))))
 
 	fig = plt.figure(figsize = (30, 15))
 
