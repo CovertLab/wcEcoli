@@ -23,7 +23,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	fig, axes = plt.subplots(1, sharex = True)
 
-	# Plot glucose exchange flux
+	# Plot nutrient exchange flux
 	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
 
@@ -31,8 +31,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	exFlux = fba_results.readColumn("externalExchangeFluxes")
 	exMolec = fba_results.readAttribute("externalMoleculeIDs")
 
-	# is there a better way to get all nutrient IDs here?
-	nutrientIDs = []
 	sim_data = cPickle.load(open(simDataFile,'rb'))
 	for nutrient in sim_data.nutrientExchangeMolecules[sim_data.environment]:
 		flux = exFlux[:,exMolec.index(nutrient)]
