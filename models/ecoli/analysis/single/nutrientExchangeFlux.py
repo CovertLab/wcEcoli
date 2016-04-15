@@ -33,18 +33,19 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	# is there a better way to get all nutrient IDs here?
 	nutrientIDs = []
-	glcFlux = exFlux[:,exMolec.index("GLC[p]")]
-	oxygenFlux = exFlux[:,exMolec.index("OXYGEN-MOLECULE[p]")]
-
-
-	axes.plot(time / 60. / 60., -1. * glcFlux, label="Glucose exchange flux coefficient")
-	axes.plot(time / 60. / 60., -1. * oxygenFlux, label="Oxygen exchange flux coefficient")
+	sim_data = cPickle.load(open(simDataFile,'rb'))
+	for nutrient in sim_data.nutrientExchangeMolecules[sim_data.environment]:
+		flux = exFlux[:,exMolec.index(nutrient)]
+		axes.plot(time / 60. / 60., -1. * flux, label=nutrient)
+	plt.legend(prop={'size':4})
+	
 	axes.set_ylabel("External\nnutrient\n(mmol/gDCW/hr)")
 	axes.set_xlabel("Time(hr)")
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 
 if __name__ == "__main__":
