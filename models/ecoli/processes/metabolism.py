@@ -33,6 +33,7 @@ from wholecell.utils.fitting import massesAndCountsToAddForPools
 COUNTS_UNITS = units.umol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
+TIME_UNITS = units.s
 
 NONZERO_ENZYMES = True
 
@@ -264,9 +265,9 @@ class Metabolism(wholecell.processes.process.Process):
 		for idx, constraintID in enumerate(self.constraintIDs):
 			reactionID = self.constraintToReactionDict[constraintID]
 			if reactionID in reactionsDict:
-				self.allConstraintsLimits[idx] = np.amax(reactionsDict[reactionID].values()) * self.timeStepSec()
+				self.allConstraintsLimits[idx] = np.amax(reactionsDict[reactionID].values()).asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * self.timeStepSec()
 			else:
-				self.allConstraintsLimits[idx] == defaultRate
+				self.allConstraintsLimits[idx] = defaultRate.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)
 
 		# Record the currently applied rate limits
 		self.reactionConstraints = np.ones(len(self.fba.reactionIDs())) * np.inf

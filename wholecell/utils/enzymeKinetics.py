@@ -17,6 +17,9 @@ from wholecell.utils import units
 import re
 from Equation import Expression
 
+COUNTS_UNITS = units.umol
+TIME_UNITS = units.s
+VOLUME_UNITS = units.L
 
 class EnzymeKinetics(object):
 	"""
@@ -28,7 +31,7 @@ class EnzymeKinetics(object):
 	def __init__(self, reactionRateInfo, kcatsOnly=False, noCustoms=False, moreThanKcat=False):
 
 		# Set default reaction rate limit, to which reactions are set absent other information
-		self.defaultRate = np.inf
+		self.defaultRate = (COUNTS_UNITS / TIME_UNITS / VOLUME_UNITS) * np.inf
 
 		# Load rate functions from enzymeKinetics.tsv flat file
 		self.reactionRateInfo = reactionRateInfo
@@ -154,7 +157,7 @@ class EnzymeKinetics(object):
 			except:
 				import ipdb; ipdb.set_trace()
 
-		return rate
+		return (COUNTS_UNITS / TIME_UNITS / VOLUME_UNITS) * rate
 
 	def reactionCustom(self, reactionInfo, metaboliteConcentrationsDict, enzymeConcentrationsDict):
 		enzymeConcArray = [enzymeConcentrationsDict[reactionInfo["enzymeIDs"][0]]]
@@ -177,7 +180,7 @@ class EnzymeKinetics(object):
 
 		customRateLaw = Expression(equationString, parameterDefinitionArray)
 
-		return customRateLaw(*parametersArray)
+		return (COUNTS_UNITS / TIME_UNITS / VOLUME_UNITS) * customRateLaw(*parametersArray)
 
 
 	def allConstraintsDict(self, metaboliteConcentrationsDict, enzymeConcentrationsDict):

@@ -40,6 +40,7 @@ VERBOSE = False
 COUNTS_UNITS = units.umol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
+TIME_UNITS = units.s
 
 def fitSimData_1(raw_data, doubling_time = None):
 	# Initialize simulation data with growth rate
@@ -1069,7 +1070,7 @@ def findKineticCoeffs(sim_data, bulkContainer):
 	reactionConstraintsDict = enzymeKinetics.allReactionsDict(metaboliteConcentrationsDict, proteinConcDict)
 	constraintsDict = enzymeKinetics.allConstraintsDict(metaboliteConcentrationsDict, proteinConcDict)
 
-	highestConstraintReactionDict = {reaction:np.amax(reactionConstraintsDict[reaction].values()) for reaction in reactionConstraintsDict}
+	highestConstraintReactionDict = {reaction:np.amax(reactionConstraintsDict[reaction].values()).asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) for reaction in reactionConstraintsDict}
 
 	overconstraintRatio = {}
 	for fluxName, flux in fluxesDict.iteritems():
