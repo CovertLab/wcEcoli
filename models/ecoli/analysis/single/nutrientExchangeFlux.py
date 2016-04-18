@@ -34,7 +34,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	sim_data = cPickle.load(open(simDataFile,'rb'))
 	for nutrient in sim_data.nutrientExchangeMolecules[sim_data.environment]:
 		flux = exFlux[:,exMolec.index(nutrient)]
-		axes.plot(time / 60. / 60., -1. * flux, label=nutrient)
+		axes.plot(time / 60. / 60., -1. * flux, label='%s avg:%5.2f' % (nutrient,np.mean(flux)))
 	plt.legend(prop={'size':4})
 	
 	axes.set_ylabel("External\nnutrient\n(mmol/gDCW/hr)")
