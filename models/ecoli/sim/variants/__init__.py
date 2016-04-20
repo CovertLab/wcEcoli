@@ -23,6 +23,8 @@ from models.ecoli.sim.variants.environment import environmentTotalIndices
 from models.ecoli.sim.variants.gam import gam
 from models.ecoli.sim.variants.gam import gamTotalIndices
 
+from models.ecoli.sim.variants.uptake_rate import uptakeRate
+from models.ecoli.sim.variants.uptake_rate import uptakeRateTotalIndices
 
 nameToFunctionMapping = {
 	"geneKnockout": geneKnockout,
@@ -32,6 +34,7 @@ nameToFunctionMapping = {
 	"growthRate": growthRate,
 	"environment": environment,
 	"gam": gam,
+	"uptakeRate": uptakeRate,
 }
 
 nameToNumIndicesMapping = {
@@ -42,4 +45,5 @@ nameToNumIndicesMapping = {
 	"growthRate": growthRateTotalIndices,
 	"environment": environmentTotalIndices,
 	"gam": gamTotalIndices,
+	"uptakeRate": uptakeRateTotalIndices,
 }
