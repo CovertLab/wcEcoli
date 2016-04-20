@@ -37,8 +37,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		axes.plot(time / 60. / 60., -1. * flux, label='%s avg:%5.2f' % (nutrient,np.mean(flux)))
 	plt.legend(prop={'size':4})
 	
-	axes.set_ylabel("External\nnutrient\n(mmol/gDCW/hr)")
-	axes.set_xlabel("Time(hr)")
+	axes.set_ylabel("External nutrient\n(mmol/gDCW/hr)", fontsize=10)
+	axes.set_xlabel("Time(hr)", fontsize=10)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
