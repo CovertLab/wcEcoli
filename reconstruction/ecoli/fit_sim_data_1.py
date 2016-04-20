@@ -37,7 +37,7 @@ COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 
-def fitSimData_1(raw_data, doubling_time = None):
+def fitSimData_1(raw_data, doubling_time = None, GAM = None):
 	# Initialize simulation data with growth rate
 	if not isinstance(doubling_time, units.Unum):
 		doubling_time = DOUBLING_TIME
@@ -67,7 +67,8 @@ def fitSimData_1(raw_data, doubling_time = None):
 	## Calculate and set maintenance values
 
 	# ----- Growth associated maintenance -----
-
+	if GAM != None:
+		sim_data.constants.growthAssociatedMaintenance = sim_data.constants.growthAssociatedMaintenance * GAM
 	fitMaintenanceCosts(sim_data, cellSpecs["wildtype_60_min"]["bulkContainer"])
 
 	for label, spec in cellSpecs.iteritems():
