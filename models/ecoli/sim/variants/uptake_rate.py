@@ -1,4 +1,4 @@
-# from wholecell.utils import units
+from wholecell.utils import units
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
 
@@ -13,8 +13,8 @@ def uptakeRateTotalIndices(sim_data):
 
 
 def uptakeRate(sim_data, index):
-	# if index == 0:
-	# 	return CONTROL_OUTPUT, sim_data
+	if index == 0:
+		return CONTROL_OUTPUT, sim_data
 
 	environments = {
 		1: "000004_unbound_glucose", 
@@ -25,7 +25,7 @@ def uptakeRate(sim_data, index):
 		6: "000009_unbound_succinate_aa",
 	}
 
-	growthRates = {
+	growthRates = units.min * {
 		1: 44.,
 		2: 25.,
 		3: 59.,
