@@ -261,6 +261,8 @@ class Metabolism(wholecell.processes.process.Process):
 		constraintsDict = self.enzymeKinetics.allConstraintsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
 		reactionsDict = self.enzymeKinetics.allReactionsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
 
+		rates = self.enzymeKinetics.ratesView(self.constraintIDs, metaboliteConcentrationsDict, enzymeConcentrationsDict)
+
 		self.allConstraintsLimits = np.ones(len(self.fba.reactionIDs())) * defaultRate.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)
 		for idx, constraintID in enumerate(self.constraintIDs):
 			reactionID = self.constraintToReactionDict[constraintID]

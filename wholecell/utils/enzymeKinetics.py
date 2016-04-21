@@ -202,3 +202,29 @@ class EnzymeKinetics(object):
 			reactionsDict[reactionID][constraintID] = self.reactionRate(reactionInfo, metaboliteConcentrationsDict, enzymeConcentrationsDict)
 
 		return reactionsDict
+
+	def ratesView(self, constraintIDs, metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=False):
+		"""
+		Returns an array of rates with units, in the same order as the constraintIDs iterable.
+		"""
+		# Check if all needed metabolite and enzyme concentrations are given
+		if not self.inputsChecked:
+			knownConstraints, unusableConstraints, unknownVals = self.checkKnownSubstratesAndEnzymes(metaboliteConcentrationsDict, enzymeConcentrationsDict, removeUnknowns=False)
+			if len(unusableConstraints) > 0:
+				raise Exception("Unable to compute kinetic rate for these reactions: {}\n. Missing values for: {}".format(unusableConstraints.keys(), unknownVals))
+
+		unknownConstraints = set()
+
+		# Build an estimate for rates of constraints passed in
+		rates = self.defaultRate * np.ones(len(constraintIDs))
+		for idx, constraintID in enumerate(constraintIDs):
+			if constraintID in self.reactionRateInfo:
+				rates[idx] = self.reactionRate(self.reactionRateInfo[constraintID], metaboliteConcentrationsDict, enzymeConcentrationsDict)
+			else:
+				if raiseIfNotFound:
+					unknownConstraints.add(constraintID)
+
+		if len(unknownConstraints) > 0:
+			raise Exception("No rate estimate found for constraintIDs {}.".format(unknownConstraints))
+
+		return rates
