@@ -13,8 +13,8 @@ def uptakeRateTotalIndices(sim_data):
 
 
 def uptakeRate(sim_data, index):
-	if index == 0:
-		return CONTROL_OUTPUT, sim_data
+	# if index == 0:
+	# 	return CONTROL_OUTPUT, sim_data
 
 	environments = {
 		1: "000004_unbound_glucose", 
@@ -25,17 +25,10 @@ def uptakeRate(sim_data, index):
 		6: "000009_unbound_succinate_aa",
 	}
 
-	growthRates = units.min * {
-		1: 44.,
-		2: 25.,
-		3: 59.,
-		4: 33.,
-		5: 80.,
-		6: 37.,
-	}
+	growthRates = units.min * [44., 25., 59., 33., 80., 37.] # changed from dictionary
 
 	raw_data = KnowledgeBaseEcoli()
-	sim_data = fitSimData_1(raw_data, doubling_time = growthRates[int(index)])
+	sim_data = fitSimData_1(raw_data, doubling_time = growthRates[index-1])
 	sim_data.environment = environments[index]
 
 	return dict(
