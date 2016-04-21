@@ -1,4 +1,4 @@
-# from wholecell.utils import units
+from wholecell.utils import units
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
 
@@ -25,17 +25,10 @@ def uptakeRate(sim_data, index):
 		6: "000009_unbound_succinate_aa",
 	}
 
-	growthRates = {
-		1: 44.,
-		2: 25.,
-		3: 59.,
-		4: 33.,
-		5: 80.,
-		6: 37.,
-	}
+	growthRates = units.min * [44., 25., 59., 33., 80., 37.]
 
 	raw_data = KnowledgeBaseEcoli()
-	sim_data = fitSimData_1(raw_data, doubling_time = growthRates[int(index)])
+	sim_data = fitSimData_1(raw_data, doubling_time = growthRates[index-1])
 	sim_data.environment = environments[index]
 
 	return dict(
