@@ -20,6 +20,9 @@ from models.ecoli.sim.variants.growth_rate import growthRateTotalIndices
 from models.ecoli.sim.variants.environment import environment
 from models.ecoli.sim.variants.environment import environmentTotalIndices
 
+from models.ecoli.sim.variants.gam import gam
+from models.ecoli.sim.variants.gam import gamTotalIndices
+
 from models.ecoli.sim.variants.uptake_rate import uptakeRate
 from models.ecoli.sim.variants.uptake_rate import uptakeRateTotalIndices
 
@@ -30,6 +33,7 @@ nameToFunctionMapping = {
 	"kineticsFluxCoeff": kineticsFluxCoeff,
 	"growthRate": growthRate,
 	"environment": environment,
+	"gam": gam,
 	"uptakeRate": uptakeRate,
 }
 
@@ -40,5 +44,6 @@ nameToNumIndicesMapping = {
 	"kineticsFluxCoeff": kineticsFluxCoeffTotalIndices,
 	"growthRate": growthRateTotalIndices,
 	"environment": environmentTotalIndices,
+	"gam": gamTotalIndices,
 	"uptakeRate": uptakeRateTotalIndices,
 }
