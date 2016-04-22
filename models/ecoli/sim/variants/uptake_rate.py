@@ -25,11 +25,10 @@ def uptakeRate(sim_data, index):
 		6: "000009_unbound_succinate_aa",
 	}
 
-	growthRates = units.min * [44., 25., 59., 33., 80., 37.] # changed from dictionary
+	growthRates = units.min * [44., 25., 59., 33., 80., 37.] # changed from dictionary (making a change here to fix merge conflict)
 
 	raw_data = KnowledgeBaseEcoli()
-	sim_data = fitSimData_1(raw_data, doubling_time = growthRates[index-1])
-	sim_data.environment = environments[index]
+	sim_data = fitSimData_1(raw_data, doubling_time = growthRates[index-1], env = environments[index])
 
 	return dict(
 		shortName = "{}_uptake".format(environments[index]),
