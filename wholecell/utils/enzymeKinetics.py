@@ -228,3 +228,46 @@ class EnzymeKinetics(object):
 			raise Exception("No rate estimate found for constraintIDs {}.".format(unknownConstraints))
 
 		return rates
+
+
+	def ratesViewReactions(self, reactionIDs, metaboliteConcentrationsDict, enzymeConcentrationsDict, sortFunction, raiseIfNotFound=False):
+		"""
+		Returns an array of rates with units, in the same order as the reactionIDs.
+		Uses sortFunction to decide which constraint to use if a reaction has multiple choices.
+		"""
+		# Check if all needed metabolite and enzyme concentrations are given
+		if not self.inputsChecked:
+			knownConstraints, unusableConstraints, unknownVals = self.checkKnownSubstratesAndEnzymes(metaboliteConcentrationsDict, enzymeConcentrationsDict, removeUnknowns=False)
+			if len(unusableConstraints) > 0:
+				raise Exception("Unable to compute kinetic rate for these reactions: {}\n. Missing values for: {}".format(unusableConstraints.keys(), unknownVals))
+
+		unknownReactions = set()
+
+		rates = self.defaultRate * np.ones(len(reactionIDs))
+
+		constraintsDict = self.allConstraintsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
+		for idx, reactionID in enumerate(reactionIDs):
+			if reactionID in constraintsDict:
+				rates[idx] = sortFunction(constraintsDict[reactionID])
+			else:
+				if raiseIfNotFound:
+					unknownReactions.add(reactionID)
+
+		if len(unknownReactions) > 0:
+			raise Exception("No rate estimate found for reactionIDs {}.".format(unknownReactions))
+
+
+		return rates
+
+	def ratesViewLowest(self, reactionIDs, metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=False):
+		"""
+		Returns an array of rates with units, in the same order as the reactionIDs, chosing the minimum estimate when a reactionID has multiple constraintIDs.
+		"""
+		return self.ratesViewReactions(reactionIDs, metaboliteConcentrationsDict, enzymeConcentrationsDict, np.amin, raiseIfNotFound)
+
+
+	def ratesViewHighest(self, reactionIDs, metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=False):
+		"""
+		Returns an array of rates with units, in the same order as the reactionIDs, chosing the minimum estimate when a reactionID has multiple constraintIDs.
+		"""
+		return self.ratesViewReactions(reactionIDs, metaboliteConcentrationsDict, enzymeConcentrationsDict, np.amax, raiseIfNotFound)

@@ -30,6 +30,7 @@ from wholecell.utils.modular_fba import FluxBalanceAnalysis
 from wholecell.utils.enzymeKinetics import EnzymeKinetics
 from wholecell.utils.fitting import massesAndCountsToAddForPools
 
+
 COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
@@ -261,8 +262,6 @@ class Metabolism(wholecell.processes.process.Process):
 		constraintsDict = self.enzymeKinetics.allConstraintsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
 		reactionsDict = self.enzymeKinetics.allReactionsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
 
-		rates = self.enzymeKinetics.ratesView(self.constraintIDs, metaboliteConcentrationsDict, enzymeConcentrationsDict)
-
 		self.allConstraintsLimits = np.ones(len(self.fba.reactionIDs())) * defaultRate.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)
 		for idx, constraintID in enumerate(self.constraintIDs):
 			reactionID = self.constraintToReactionDict[constraintID]
@@ -273,12 +272,14 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.allConstraintsLimits = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * self.allConstraintsLimits
 
+		self.allReactionsRates = self.enzymeKinetics.ratesViewHighest(self.fba.reactionIDs(), metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=False)
+
 		# Record the currently applied rate limits
 		self.reactionConstraints = defaultRate * np.ones(len(self.fba.reactionIDs()))
 
 		currentRateLimits = {}
 		# Set reaction fluxes to be between  self.max_flux_coefficient and self.min_flux_coefficient of the predicted rate
-		for index, constraintID in enumerate(self.constraintIDs[:(len(self.constraintIDs) // 1)]):
+		for index, constraintID in enumerate(self.constraintIDs):
 			reactionID = self.constraintToReactionDict[constraintID]
 
 			# Only use this kinetic limit if it's enabled
@@ -297,7 +298,7 @@ class Metabolism(wholecell.processes.process.Process):
 				assert (constraintEstimate.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) != np.nan)
 
 				# Determine the min and max fluxes to set for this reaction
-				maxFlux = constraintEstimate*self.max_flux_coefficient*self.constraintMultiplesDict[index]
+				maxFlux = constraintEstimate.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)*self.max_flux_coefficient*self.constraintMultiplesDict[index]
 				if self.min_flux_coefficient:
 					minFlux = constraintEstimate*self.min_flux_coefficient
 				else:
@@ -311,13 +312,13 @@ class Metabolism(wholecell.processes.process.Process):
 				# Set the rate limits only if the option flag is enabled
 				if USE_RATELIMITS:
 					# Set the max reaction rate for this reaction
-					self.fba.maxReactionFluxIs(reactionID, maxFlux.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS), raiseForReversible = False)
+					self.fba.maxReactionFluxIs(reactionID, maxFlux, raiseForReversible = False)
 					# Set the minimum reaction rate for this reaction
 					# self.fba.minReactionFluxIs(reactionID, minFlux.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS), raiseForReversible = False)
 				
 				# Record what constraint was just applied to this reaction
 				currentRateLimits[reactionID] = maxFlux
-				self.reactionConstraints[reactionIndex] = maxFlux
+				self.reactionConstraints[reactionIndex] = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * maxFlux
 			else:
 
 				# Set the reaction max to the default rate (usually infinity)
@@ -327,9 +328,7 @@ class Metabolism(wholecell.processes.process.Process):
 				# Record that this reaction is at default
 				self.reactionConstraints[reactionIndex] = defaultRate
 
-
 		deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.outputMoleculeLevelsChange())
-
 
 		metaboliteCountsFinal = np.fmax(stochasticRound(
 			self.randomState,
