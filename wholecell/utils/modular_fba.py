@@ -838,7 +838,6 @@ class FluxBalanceAnalysis(object):
 			raise InvalidBoundaryError("Maximum reaction flux must be at least 0")
 
 		if reactionID not in self._reactionIDsSet and reactionID not in self._specialFluxIDsSet:
-			import ipdb; ipdb.set_trace()
 			raise InvalidBoundaryError("Unable to set max reaction flux: reaction '%s' not recognized." % (reactionID))
 
 		# if maxFlux < self._lowerBound[colIndex]:
@@ -885,6 +884,20 @@ class FluxBalanceAnalysis(object):
 			minFlux
 			)
 
+	def setMaxReactionFluxes(self, reactionIDs, reactionRates, raiseForReversible=True):
+		if len(reactionIDs) != len(reactionRates):
+			raise Exception("There must be equal numbers of reactionIDs and rates to set limits.")
+
+		for idx, reactionID in enumerate(reactionIDs):
+			self.maxReactionFluxIs(reactionID, reactionRates[idx], raiseForReversible)
+
+
+	def setMinReactionFluxes(self, reactionIDs, reactionRates, raiseForReversible=True):
+		if len(reactionIDs) != len(reactionRates):
+			raise Exception("There must be equal numbers of reactionIDs and rates to set limits.")
+
+		for idx, reactionID in enumerate(reactionIDs):
+			self.minReactionFluxIs(reactionID, reactionRates[idx], raiseForReversible)
 
 	def setpointIs(self, moleculeID, coeff):
 		if moleculeID not in self._outputMoleculeIDs:
