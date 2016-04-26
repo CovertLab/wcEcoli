@@ -35,6 +35,7 @@ LIST_OF_DICT_FILENAMES = (
 	"metabolites.tsv",
 	"metaboliteConcentrations.tsv",
 	"modificationReactions.tsv",
+	"modifiedForms.tsv",
 	"modifiedRnas.tsv",
 	"polymerized.tsv",
 	"previousBiomassFluxes.tsv",
