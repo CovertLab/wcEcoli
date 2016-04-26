@@ -28,7 +28,7 @@ class EnzymeKinetics(object):
 	Returns rate estimates from kinetic equation information stored in reactionRateInfo.
 	"""
 
-	def __init__(self, reactionRateInfo, kcatsOnly=False, noCustoms=False, moreThanKcat=False):
+	def __init__(self, reactionRateInfo, kcatsOnly=False, useCustoms=True, moreThanKcat=False):
 
 		# Set default reaction rate limit, to which reactions are set absent other information
 		self.defaultRate = (COUNTS_UNITS / TIME_UNITS / VOLUME_UNITS) * np.inf
@@ -48,7 +48,7 @@ class EnzymeKinetics(object):
 			self.reactionRateInfo = reactionRateInfoNew
 
 		# Exclude any custom equation rows
-		if noCustoms:
+		if not useCustoms:
 			reactionRateInfoNew = {}
 			for constraintID, reactionInfo in self.reactionRateInfo.iteritems():
 				if reactionInfo["customRateEquation"] == None:
@@ -217,9 +217,10 @@ class EnzymeKinetics(object):
 		rates = self.defaultRate * np.ones(len(reactionIDs))
 		for idx, reactionID in enumerate(reactionIDs):
 			if reactionID in reactionsToConstraintsDict:
-				constraintID = reactionsToConstraintsDict[reactionID]
+				constraintID = reactionsToConstraintsDict[reactionID]["constraintID"]
+				coefficient = reactionsToConstraintsDict[reactionID]["coefficient"] if "coefficient" in reactionsToConstraintsDict[reactionID] else 1
 				if constraintID in self.reactionRateInfo:
-					rates[idx] = self.reactionRate(self.reactionRateInfo[constraintID], metaboliteConcentrationsDict, enzymeConcentrationsDict)
+					rates[idx] = coefficient * self.reactionRate(self.reactionRateInfo[constraintID], metaboliteConcentrationsDict, enzymeConcentrationsDict)
 				else:
 					if raiseIfNotFound:
 						unknownConstraints.add(constraintID)

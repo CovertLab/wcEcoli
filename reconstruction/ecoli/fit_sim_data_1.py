@@ -1062,7 +1062,7 @@ def findKineticCoeffs(sim_data, bulkContainer):
 
 	enzymeKinetics = EnzymeKinetics(
 	reactionRateInfo = sim_data.process.metabolism.reactionRateInfo,
-	noCustoms=False
+	useCustoms=True
 	)
 
 	enzymeKinetics.checkKnownSubstratesAndEnzymes(metaboliteConcentrationsDict, proteinConcDict, removeUnknowns=True)
