@@ -14,7 +14,6 @@ import wholecell.utils.constants
 from wholecell.utils import units
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata=None):
-
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
 
@@ -30,14 +29,16 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	fba_results = TableReader(os.path.join(simOutDir, "FBAResults"))
 	exFlux = fba_results.readColumn("externalExchangeFluxes")
 	exMolec = fba_results.readAttribute("externalMoleculeIDs")
-	glcFlux = exFlux[:,exMolec.index("GLC[p]")]
+	
+	if ("GLC[p]" in exMolec):
+		glcFlux = exFlux[:,exMolec.index("GLC[p]")]
 
-	axes.plot(time / 60. / 60., -1. * glcFlux, label="Glucose exchange flux coefficient")
-	axes.set_ylabel("External\nglucose\n(mmol/gDCW/hr)")
+		axes.plot(time / 60. / 60., -1. * glcFlux, label="Glucose exchange flux coefficient")
+		axes.set_ylabel("External\nglucose\n(mmol/gDCW/hr)")
 
-	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-	plt.close("all")
+		from wholecell.analysis.analysis_tools import exportFigure
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		plt.close("all")
 
 
 if __name__ == "__main__":
