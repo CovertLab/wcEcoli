@@ -1166,7 +1166,7 @@
 "xylose isomerase"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 198912.412, 0.0, 0.0, 0.0, 0.0]	["c"]	"XYLISOM-CPLX_RXN"	"XYLISOM-CPLX"
 "spermidine efflux transporter"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 24842.177, 0.0, 0.0, 0.0, 0.0]	["i"]	"YDGEF-CPLX_RXN"	"YDGEF-CPLX"
 "phosphate-bound ABC transporter"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 161528.064, 95.97800000000001, 0.0, 0.0, 0.0]	["i"]	"PHOSPHO-ABC-27-CPLX_RXN"	"PHOSPHO-ABC-27-CPLX"
-"oxygen-bound ARCB" ""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 87949.988, 31.998, 0.0, 0.0, 0.0]	["i"]	"ARCB-OXYGEN-CPLX_RXN"	"RCB-OXYGEN-CPLX"
+"oxygen-bound ARCB"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 87949.988, 31.998, 0.0, 0.0, 0.0]	["i"]	"ARCB-OXYGEN-CPLX_RXN"	"ARCB-OXYGEN-CPLX"
 "indole-bound BAES"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 51991.528999999995, 117.151, 0.0, 0.0, 0.0]	["i"]	"BAES-INDOLE-CPLX_RXN"	"BAES-INDOLE-CPLX"
 "tungstate-bound BAES"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 51991.528999999995, 248.84400000000002, 0.0, 0.0, 0.0]	["i"]	"BAES-TUNGSTATE-CPLX_RXN"	"BAES-TUNGSTATE-CPLX"
 "quercetin-bound BAES"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 51991.528999999995, 301.23, 0.0, 0.0, 0.0]	["i"]	"BAES-CPD-520-CPLX_RXN"	"BAES-CPD-520-CPLX"
