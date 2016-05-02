@@ -13,8 +13,6 @@ import wholecell.utils.constants
 from wholecell.utils import units
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 
-SECRETED = ["ACET[p]", "ETOH[p]", "D-LACTATE[p]", "CARBON-DIOXIDE[p]"]
-
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata=None):
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
@@ -38,7 +36,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		if nutrient in exMolec:
 			flux = exFlux[:,exMolec.index(nutrient)]
 			if np.max(np.abs(flux)) > 0.01:
-				axes.plot(time / 60. / 60., -1. * flux, label='%s avg:%5.2f' % (nutrient,np.mean(flux)))
+				axes.plot(time / 60. / 60., flux, label='%s avg:%5.2f' % (nutrient,np.mean(flux)))
 	
 	plt.legend(prop={'size':4})
 	
