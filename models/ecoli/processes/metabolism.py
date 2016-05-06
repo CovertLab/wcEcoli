@@ -31,7 +31,8 @@ from wholecell.utils.enzymeKinetics import EnzymeKinetics
 
 from wholecell.utils.fitting import massesAndCountsToAddForPools
 
-COUNTS_UNITS = units.mmol
+COUNTS_UNITS = units.dmol
+COUNTS2_UNITS = units.dmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 USE_RATELIMITS = False # Enable/disable kinetic rate limits in the model
@@ -84,9 +85,14 @@ class Metabolism(wholecell.processes.process.Process):
 			(key, sim_data.process.metabolism.concDict[key].asNumber(COUNTS_UNITS / VOLUME_UNITS)) for key in sim_data.process.metabolism.concDict
 			)
 
+		self.objective2 = dict(
+			(key, sim_data.process.metabolism.concDict[key].asNumber(COUNTS2_UNITS / VOLUME_UNITS)) for key in sim_data.process.metabolism.concDict
+			)
+
 		# TODO: make sim_data method?
 		extIDs = sim_data.externalExchangeMolecules[sim_data.environment]
 		self.extMoleculeMasses = sim_data.getter.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS) # TODO: delete this line?
+		self.extMoleculeMasses2 = sim_data.getter.getMass(extIDs).asNumber(MASS_UNITS/COUNTS2_UNITS) # TODO: delete this line?
 
 		self.getMass = sim_data.getter.getMass
 		self.massReconstruction = sim_data.mass
@@ -95,6 +101,11 @@ class Metabolism(wholecell.processes.process.Process):
 		self.moleculeMasses = dict(zip(
 			extIDs,
 			self.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS)
+			))
+
+		self.moleculeMasses2 = dict(zip(
+			extIDs,
+			self.getMass(extIDs).asNumber(MASS_UNITS/COUNTS2_UNITS)
 			))
 
 		self.ngam = sim_data.constants.nonGrowthAssociatedMaintenance
@@ -123,6 +134,20 @@ class Metabolism(wholecell.processes.process.Process):
 			moleculeMasses = self.moleculeMasses,
 			solver = "glpk",
 			maintenanceCostGAM = energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
+			maintenanceReaction = {
+				"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "Pi[c]": +1, "PROTON[c]": +1,
+				} # TODO: move to KB TODO: check reaction stoich
+			)
+
+		self.fba2 = FluxBalanceAnalysis(
+			self.reactionStoich.copy(), # TODO: copy in class
+			self.externalExchangeMolecules,
+			self.objective2,
+			objectiveType = "pools",
+			reversibleReactions = self.reversibleReactions,
+			moleculeMasses = self.moleculeMasses2,
+			solver = "glpk",
+			maintenanceCostGAM = energyCostPerWetMass.asNumber(COUNTS2_UNITS / MASS_UNITS),
 			maintenanceReaction = {
 				"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "Pi[c]": +1, "PROTON[c]": +1,
 				} # TODO: move to KB TODO: check reaction stoich
@@ -198,6 +223,14 @@ class Metabolism(wholecell.processes.process.Process):
 			self.time()
 			)
 
+		externalMoleculeLevels2, newObjective2 = self.exchangeConstraints(
+			self.externalMoleculeIDs,
+			coefficient,
+			COUNTS2_UNITS / VOLUME_UNITS,
+			self.environment,
+			self.time()
+			)
+
 		if newObjective != None and newObjective != self.objective:
 			# Build new fba instance with new objective
 			self.objective = newObjective
@@ -234,12 +267,26 @@ class Metabolism(wholecell.processes.process.Process):
 		self.fba.maxReactionFluxIs(self.fba._reactionID_polypeptideElongationEnergy, polypeptideElongationEnergy.asNumber(COUNTS_UNITS / VOLUME_UNITS))
 		self.fba.minReactionFluxIs(self.fba._reactionID_polypeptideElongationEnergy, polypeptideElongationEnergy.asNumber(COUNTS_UNITS / VOLUME_UNITS))
 
+
+		self.fba2.externalMoleculeLevelsIs(externalMoleculeLevels2)
+
+		self.fba2.maxReactionFluxIs(self.fba._reactionID_NGAM, (self.ngam * coefficient).asNumber(COUNTS2_UNITS / VOLUME_UNITS))
+		self.fba2.minReactionFluxIs(self.fba._reactionID_NGAM, (self.ngam * coefficient).asNumber(COUNTS2_UNITS / VOLUME_UNITS))
+
+		self.fba2.maxReactionFluxIs(self.fba._reactionID_polypeptideElongationEnergy, polypeptideElongationEnergy.asNumber(COUNTS2_UNITS / VOLUME_UNITS))
+		self.fba2.minReactionFluxIs(self.fba._reactionID_polypeptideElongationEnergy, polypeptideElongationEnergy.asNumber(COUNTS2_UNITS / VOLUME_UNITS))
+
 		#  Find metabolite concentrations from metabolite counts
 		metaboliteConcentrations =  countsToMolar * metaboliteCountsInit
 
 		self.fba.internalMoleculeLevelsIs(
 			metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS)
 			)
+
+		self.fba2.internalMoleculeLevelsIs(
+			metaboliteConcentrations.asNumber(COUNTS2_UNITS / VOLUME_UNITS)
+			)
+
 
 		#  Find enzyme concentrations from enzyme counts
 		enzymeCountsInit = self.enzymes.counts()
@@ -289,6 +336,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.outputMoleculeLevelsChange())
 
+		deltaMetabolites2 = (1 / countsToMolar) * (COUNTS2_UNITS / VOLUME_UNITS * self.fba2.outputMoleculeLevelsChange())
+
 		metaboliteCountsFinal = np.fmax(stochasticRound(
 			self.randomState,
 			metaboliteCountsInit + deltaMetabolites.asNumber()
@@ -297,6 +346,18 @@ class Metabolism(wholecell.processes.process.Process):
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
+		exFluxes2 = ((COUNTS2_UNITS / VOLUME_UNITS) * self.fba2.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
+
+		# print self.fba2.objectiveValue() - self.fba.objectiveValue()
+
+		# fbacond = np.log10(np.max(np.abs(self.fba.getArrayBasedModel()["S_matrix"])[np.abs(self.fba.getArrayBasedModel()["S_matrix"]) > 0]) / np.min(np.abs(self.fba.getArrayBasedModel()["S_matrix"])[np.abs(self.fba.getArrayBasedModel()["S_matrix"]) > 0]))
+		# fba2cond = np.log10(np.max(np.abs(self.fba2.getArrayBasedModel()["S_matrix"])[np.abs(self.fba2.getArrayBasedModel()["S_matrix"]) > 0]) / np.min(np.abs(self.fba2.getArrayBasedModel()["S_matrix"])[np.abs(self.fba2.getArrayBasedModel()["S_matrix"]) > 0]))
+
+		# print "fbacond: %0.2f %0.2g" % (fbacond, np.linalg.cond(self.fba.getArrayBasedModel()["S_matrix"]))
+		# print "fba2cond: %0.2f %0.2g" % (fba2cond, np.linalg.cond(self.fba2.getArrayBasedModel()["S_matrix"]))
+
+		# if self.time() > 2:
+		# 	import ipdb; ipdb.set_trace()
 
 		# TODO: report as reactions (#) per second & store volume elsewhere
 		self.writeToListener("FBAResults", "reactionFluxes",
