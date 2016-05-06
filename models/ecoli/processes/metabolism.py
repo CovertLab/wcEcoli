@@ -301,9 +301,6 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("FBAResults", "outputFluxes",
 			self.fba.outputMoleculeLevelsChange() / self.timeStepSec())
 
-		self.writeToListener("FBAResults", "outputFluxes",
-			self.fba.outputMoleculeLevelsChange() / self.timeStepSec())
-
 		self.writeToListener("EnzymeKinetics", "reactionConstraints",
 			self.reactionMaxes.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS))
 
