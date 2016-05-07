@@ -19,6 +19,9 @@ from matplotlib import colors
 from matplotlib import gridspec
 from scipy.stats import pearsonr
 
+import mpld3
+from mpld3 import plugins, utils
+
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
@@ -73,36 +76,29 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	toya_reactions = validation_data.reactionFlux.toya2010fluxes["reactionID"]
 	toya_fluxes = FLUX_UNITS * np.array([(dryMassFracAverage * cellDensity * x).asNumber(FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes["reactionFlux"]])
-	toya_fluxes_dict = dict(zip(toya_reactions, toya_fluxes))
 
-	toyaVsReactionAve = []
-	for toyaReactionID, toyaFlux in toya_fluxes_dict.iteritems():
-		if toyaReactionID in reactionIDs:
-			fluxTimeCourse = reactionFluxes[:,np.where(reactionIDs == toyaReactionID)]
-			fluxAve = np.mean(fluxTimeCourse)
-			toyaVsReactionAve.append((fluxAve.asNumber(FLUX_UNITS), toyaFlux.asNumber(FLUX_UNITS)))
-	
-	toyaVsReactionAve = FLUX_UNITS * np.array(toyaVsReactionAve)
-	correlationCoefficient = np.corrcoef(toyaVsReactionAve[:,0].asNumber(FLUX_UNITS), toyaVsReactionAve[:,1].asNumber(FLUX_UNITS))[0,1]
+	# Time courses of only reactions for which we have toya fluxes
+	trimmedReactions = reactionFluxes[:,np.array([np.nonzero(reactionIDs == toya_reaction)[0][0] for toya_reaction in toya_reactions])]
 
-	fig = plt.figure(figsize = (30, 15))
+	corrCoefTimecourse = []
+	for fluxes in trimmedReactions:
+		correlationCoefficient = np.corrcoef(fluxes.asNumber(FLUX_UNITS), toya_fluxes.asNumber(FLUX_UNITS))[0,1]
+		corrCoefTimecourse.append(correlationCoefficient)
 
-	plt.suptitle("Central Carbon Metabolism Reaction Flux vs. Toya 2010 Measured Fluxes", fontsize=22)
+	meanCorr = np.mean(np.array(corrCoefTimecourse)[~np.isnan(corrCoefTimecourse)])
 
-	for idx, fluxName in enumerate(toya_reactions):
-		ax = plt.subplot(8,4,idx+1)
-		ax.plot(time / 60., reactionFluxes[:,np.where(reactionIDs == fluxName)].asNumber(FLUX_UNITS).squeeze(), linewidth=2, label=fluxName)
-		plt.axhline(y=toya_fluxes.asNumber(FLUX_UNITS)[idx], color='r')
-		plt.legend()
-		plt.xlabel("Time (min)")
-		plt.ylabel("Flux ({})".format(FLUX_UNITS.strUnit()))
-
-
-	plt.subplots_adjust()
+	fig = plt.figure()
+	plt.plot(time / 60., corrCoefTimecourse)
+	plt.axhline(y=meanCorr, color='r')
+	plt.title("Measured vs. Simulated Central Carbon Fluxes")
+	plt.text(.5*np.max(time / 60.),1.05*meanCorr, "Mean = {:.2}".format(meanCorr), horizontalalignment="center")
+	plt.xlabel("Time (min)")
+	plt.ylabel("Pearson R")
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

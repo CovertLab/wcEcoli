@@ -19,6 +19,9 @@ from matplotlib import colors
 from matplotlib import gridspec
 from scipy.stats import pearsonr
 
+import mpld3
+from mpld3 import plugins, utils
+
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
@@ -85,23 +88,20 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	toyaVsReactionAve = FLUX_UNITS * np.array(toyaVsReactionAve)
 	correlationCoefficient = np.corrcoef(toyaVsReactionAve[:,0].asNumber(FLUX_UNITS), toyaVsReactionAve[:,1].asNumber(FLUX_UNITS))[0,1]
 
-	fig = plt.figure(figsize = (30, 15))
+	fig = plt.figure()
 
-	plt.suptitle("Central Carbon Metabolism Reaction Flux vs. Toya 2010 Measured Fluxes", fontsize=22)
+	plt.title("Central Carbon Metabolism Flux, Pearson R = {:.2}".format(correlationCoefficient))
+	points = plt.scatter(toyaVsReactionAve[:,0].asNumber(FLUX_UNITS), toyaVsReactionAve[:,1].asNumber(FLUX_UNITS))
+	plt.xlabel("Mean WCM Reaction Flux {}".format(FLUX_UNITS.strUnit()))
+	plt.ylabel("Toya 2010 Reaction Flux {}".format(FLUX_UNITS.strUnit()))
 
-	for idx, fluxName in enumerate(toya_reactions):
-		ax = plt.subplot(8,4,idx+1)
-		ax.plot(time / 60., reactionFluxes[:,np.where(reactionIDs == fluxName)].asNumber(FLUX_UNITS).squeeze(), linewidth=2, label=fluxName)
-		plt.axhline(y=toya_fluxes.asNumber(FLUX_UNITS)[idx], color='r')
-		plt.legend()
-		plt.xlabel("Time (min)")
-		plt.ylabel("Flux ({})".format(FLUX_UNITS.strUnit()))
+	labels = list(toya_reactions)
+	tooltip = plugins.PointLabelTooltip(points, labels)
+	plugins.connect(fig, tooltip)
 
-
-	plt.subplots_adjust()
-
-	from wholecell.analysis.analysis_tools import exportFigure
+	from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+	exportHtmlFigure(fig, plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
 if __name__ == "__main__":
