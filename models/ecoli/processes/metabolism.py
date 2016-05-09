@@ -30,7 +30,7 @@ from wholecell.utils.modular_fba import FluxBalanceAnalysis
 from wholecell.utils.enzymeKinetics import EnzymeKinetics
 from wholecell.utils.fitting import massesAndCountsToAddForPools
 
-COUNTS_UNITS = units.umol
+COUNTS_UNITS = units.dmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 
