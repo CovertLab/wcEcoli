@@ -91,9 +91,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	for idx, fluxName in enumerate(toya_reactions):
 		ax = plt.subplot(8,4,idx+1)
-		ax.plot(time / 60., reactionFluxes[:,np.where(reactionIDs == fluxName)].asNumber(FLUX_UNITS).squeeze(), linewidth=2, label=fluxName)
+		ax.plot(time / 60., reactionFluxes[:,np.where(reactionIDs == fluxName)].asNumber(FLUX_UNITS).squeeze(), linewidth=2, label=fluxName[:32])
 		plt.axhline(y=toya_fluxes.asNumber(FLUX_UNITS)[idx], color='r')
-		plt.legend()
+		plt.legend(loc=0)
 		plt.xlabel("Time (min)")
 		plt.ylabel("Flux ({})".format(FLUX_UNITS.strUnit()))
 
