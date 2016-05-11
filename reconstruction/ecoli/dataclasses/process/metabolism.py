@@ -201,11 +201,13 @@ class Metabolism(object):
 			reactionID = reaction["reaction id"]
 			stoich = reaction["stoichiometry"]
 			reversible = reaction["is reversible"]
+			enzyme_list = self.addEnzymeCompartmentTags(reaction["catalyzed by"], validEnzymeCompartments)
 
 			if len(stoich) <= 1:
 				raise Exception("Invalid biochemical reaction: {}, {}".format(reactionID, stoich))
 
 			reactionStoich[reactionID] = stoich
+			reactionEnzymes[reactionID] = enzyme_list
 
 			# Add the reverse reaction
 			if reversible:
@@ -215,8 +217,8 @@ class Metabolism(object):
 					for moleculeID, stoichCoeff in reactionStoich[reactionID].viewitems()
 					}
 
+				reactionEnzymes[reverseReactionID] = enzyme_list
 				reversibleReactions.append(reactionID)
-
 
 		reactionRateInfo = {}
 		constraintIDs = []
@@ -231,18 +233,8 @@ class Metabolism(object):
 		for idx, reaction in enumerate(raw_data.enzymeKinetics):
 			reactionID = reaction["reactionID"]
 
-			# If the enzymes don't already have a compartment tag, add one from the valid compartment list or [c] (cytosol) as a default
-			new_reaction_enzymes = []
-			for reactionEnzyme in reaction["enzymeIDs"]:
-				if reactionEnzyme[-3:-2] !='[':
-					if len(validEnzymeCompartments[reactionEnzyme]) > 0:
-						new_reaction_enzymes.append(reactionEnzyme +'['+str(validEnzymeCompartments[reactionEnzyme].pop())+']')
-					else:
-						new_reaction_enzymes.append(reactionEnzyme + '[c]')
-				else:
-					new_reaction_enzymes.append(reactionEnzyme)
-
-			reaction["enzymeIDs"] = new_reaction_enzymes
+			# Add compartment tags to enzymes
+			reaction["enzymeIDs"] = self.addEnzymeCompartmentTags(reaction["enzymeIDs"], validEnzymeCompartments)
 
 			# If the substrates don't already have a compartment tag, add [c] (cytosol) as a default
 			reaction["substrateIDs"] = [x + '[c]' if x[-3:-2] != '[' else x for x in reaction["substrateIDs"]]
@@ -338,6 +330,7 @@ class Metabolism(object):
 		self.envDict = sim_data.envDict
 		self.reversibleReactions = reversibleReactions
 		self.reactionRateInfo = reactionRateInfo
+		self.reactionEnzymes = reactionEnzymes
 		self.enzymeNames = list(validEnzymeIDs)
 		self.constraintIDs = constraintIDs
 		self.constraintToReactionDict = constraintToReactionDict
@@ -366,6 +359,22 @@ class Metabolism(object):
 				externalMoleculeLevels[index] = 0.
 
 		return externalMoleculeLevels, newObjective
+
+	def addEnzymeCompartmentTags(self, enzymeIDs, validEnzymeCompartmentsDict):
+		"""
+		If the enzymes don't already have a compartment tag, add one from the valid compartment list or [c] (cytosol) as a default
+		"""
+		new_reaction_enzymes = []
+		for reactionEnzyme in enzymeIDs:
+			if reactionEnzyme[-3:-2] !='[':
+				if len(validEnzymeCompartmentsDict[reactionEnzyme]) > 0:
+					new_reaction_enzymes.append(reactionEnzyme +'['+str(validEnzymeCompartmentsDict[reactionEnzyme].pop())+']')
+				else:
+					new_reaction_enzymes.append(reactionEnzyme + '[c]')
+			else:
+				new_reaction_enzymes.append(reactionEnzyme)
+
+		return new_reaction_enzymes
 
 class ConcentrationUpdates(object):
 	def __init__(self, concDict):

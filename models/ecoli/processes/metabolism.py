@@ -35,10 +35,11 @@ VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 TIME_UNITS = units.s
 
-NONZERO_ENZYMES = False
+NONZERO_ENZYMES = True
 
-USE_RATELIMITS = False # Enable/disable kinetic rate limits in the model
+USE_KINETIC_RATES = False # Enable/disable kinetic rate limits in the model
 SET_MIN_FLUXES = False
+USE_BASE_RATES = False
 
 USE_MANUAL_FLUX_COEFF = False # enable to overrid flux coefficients in the knowledgebase and use these local values instead
 MAX_FLUX_COEFF = 1 # Multiple of predicted rate at which to set the max fluxes
@@ -63,6 +64,9 @@ class Metabolism(wholecell.processes.process.Process):
 		self.nAvogadro = sim_data.constants.nAvogadro
 		self.cellDensity = sim_data.constants.cellDensity
 
+		# Use carbonic anhydrase as the upper limit of all reaction rates
+		self.kcat_max = sim_data.constants.carbonicAnhydraseKcat
+
 		self.metabolitePoolIDs = sorted(sim_data.process.metabolism.concDict)
 
 		self.environment = sim_data.environment
@@ -73,6 +77,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# Load enzyme kinetic rate information
 		self.reactionRateInfo = sim_data.process.metabolism.reactionRateInfo
 		self.enzymeNames = sim_data.process.metabolism.enzymeNames
+		self.reactionEnzymes = sim_data.process.metabolism.reactionEnzymes
 		self.constraintIDs = sim_data.process.metabolism.constraintIDs
 		self.constraintMultiplesDict = sim_data.process.metabolism.constraintMultiplesDict
 		self.constraintToReactionDict = sim_data.process.metabolism.constraintToReactionDict
@@ -145,12 +150,10 @@ class Metabolism(wholecell.processes.process.Process):
 		for idx, reactionID in enumerate(self.fba.reactionIDs()):
 			self.reactionNameToReactionIndexDict[reactionID] = idx
 
+
 		# Set constraints
 		## External molecules
 		self.externalMoleculeIDs = self.fba.externalMoleculeIDs()
-
-		## Set enzymes unlimited
-		self.fba.enzymeLevelsIs(np.inf)
 
 		# Views
 		self.metaboliteNames = self.fba.outputMoleculeIDs()
@@ -158,7 +161,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.poolMetabolites = self.bulkMoleculesView(self.metabolitePoolIDs)
 		self.enzymes = self.bulkMoleculesView(self.enzymeNames)
 
-			
+		self.base_rates = np.inf*np.ones(len(self.fba.reactionIDs()))
+
 		outputMoleculeIDs = self.fba.outputMoleculeIDs()
 
 		assert outputMoleculeIDs == self.fba.internalMoleculeIDs()
@@ -246,6 +250,24 @@ class Metabolism(wholecell.processes.process.Process):
 		# Make a dictionary of enzyme names to enzyme concentrations
 		enzymeConcentrationsDict = dict(zip(self.enzymeNames, enzymeConcentrations.asNumber(COUNTS_UNITS/VOLUME_UNITS)))
 
+		# Apply the basal kinetic rate limit to all enzyme-catalyzed reactions
+		if USE_BASE_RATES:
+			for idx, reactionID in enumerate(self.fba.reactionIDs()):
+				if reactionID in self.reactionEnzymes:
+					enzymeUnrecognized = False
+					spontaneousReaction = True
+					base_rate = 0.
+					for enzymeID in self.reactionEnzymes[reactionID]:
+						spontaneousReaction = False
+						if enzymeID in enzymeConcentrationsDict:
+							base_rate += self.kcat_max.asNumber(1/TIME_UNITS) * enzymeConcentrationsDict[enzymeID]
+						else:
+							enzymeUnrecognized = True
+					if spontaneousReaction or (base_rate == 0. and enzymeUnrecognized):
+						continue
+					self.base_rates[idx] = base_rate
+			self.fba.setMaxReactionFluxes(self.fba.reactionIDs(), self.base_rates, raiseForReversible = False)
+
 		# Remove any enzyme kinetics paramters for which the needed enzyme and substrate information is not available
 		if not self.enzymeKinetics.inputsChecked:
 			self.enzymeKinetics.checkKnownSubstratesAndEnzymes(metaboliteConcentrationsDict, enzymeConcentrationsDict, removeUnknowns=True)
@@ -259,6 +281,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.minConstraints = {}
 			for reactionID, reactionInfo in reactionsDict.iteritems():
 				constraintID = sorted(reactionInfo.keys(), key=reactionInfo.__getitem__, reverse=True)[0]
+				import ipdb; ipdb.set_trace()
 				self.maxConstraints[reactionID] = {
 					"constraintID":constraintID,
 					"coefficient":self.constraintMultiplesDict[constraintID] * self.max_flux_coefficient,}
@@ -266,9 +289,9 @@ class Metabolism(wholecell.processes.process.Process):
 					"constraintID":constraintID,
 					"coefficient":self.constraintMultiplesDict[constraintID] * self.min_flux_coefficient,}
 
-		self.reactionMaxes = self.enzymeKinetics.ratesView(self.fba.reactionIDs(), self.maxConstraints, metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=False)
-		if USE_RATELIMITS:
-			self.fba.setMaxReactionFluxes(self.fba.reactionIDs(), self.reactionMaxes.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS), raiseForReversible = False)
+		self.reactionRateEstimates = self.enzymeKinetics.ratesView(self.fba.reactionIDs(), self.maxConstraints, metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=False)
+		if USE_KINETIC_RATES:
+			self.fba.setMaxReactionFluxes(self.fba.reactionIDs(), self.reactionRateEstimates.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS), raiseForReversible = False)
 			if SET_MIN_FLUXES:
 				self.reactionMins = self.enzymeKinetics.ratesView(self.fba.reactionIDs(), self.minConstraints, metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=False)
 				self.reactionMins[np.isnan(self.reactionMins)] = 0.
@@ -283,7 +306,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
-		self.overconstraintMultiples = (self.fba.reactionFluxes() / self.timeStepSec()) / self.reactionMaxes.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)
+		self.overconstraintMultiples = (self.fba.reactionFluxes() / self.timeStepSec()) / self.reactionRateEstimates.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
 		outFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.outputMoleculeLevelsChange() / coefficient).asNumber(units.mmol / units.g / units.h)
 
@@ -299,7 +322,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.fba.outputMoleculeLevelsChange() / self.timeStepSec())
 
 		self.writeToListener("EnzymeKinetics", "reactionConstraints",
-			self.reactionMaxes.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS))
+			self.reactionRateEstimates.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS))
 
 		# self.writeToListener("EnzymeKinetics", "allConstraintsLimits",
 		# 	self.allConstraintsLimits.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS))
