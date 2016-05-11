@@ -26,6 +26,8 @@ from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 
+from models.ecoli.analysis.single.centralCarbonMetabolism import net_flux, _generatedID_reverseReaction
+
 from models.ecoli.processes.metabolism import COUNTS_UNITS, MASS_UNITS, VOLUME_UNITS, TIME_UNITS
 
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
@@ -77,12 +79,17 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	toya_reactions = validation_data.reactionFlux.toya2010fluxes["reactionID"]
 	toya_fluxes = FLUX_UNITS * np.array([(dryMassFracAverage * cellDensity * x).asNumber(FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes["reactionFlux"]])
 
-	# Time courses of only reactions for which we have toya fluxes
-	trimmedReactions = reactionFluxes[:,np.array([np.nonzero(reactionIDs == toya_reaction)[0][0] for toya_reaction in toya_reactions])]
+	netFluxes = []
+	for toyaReactionID in toya_reactions:
+		if toyaReactionID in reactionIDs:
+			fluxTimeCourse = net_flux(toyaReactionID, reactionIDs, reactionFluxes, reverseRxnFormat=_generatedID_reverseReaction).asNumber(FLUX_UNITS).squeeze()
+			netFluxes.append(fluxTimeCourse)
+
+	trimmedReactions = FLUX_UNITS * np.array(netFluxes)
 
 	corrCoefTimecourse = []
-	for fluxes in trimmedReactions:
-		correlationCoefficient = np.corrcoef(fluxes.asNumber(FLUX_UNITS), toya_fluxes.asNumber(FLUX_UNITS))[0,1]
+	for fluxes in trimmedReactions.asNumber(FLUX_UNITS).T:
+		correlationCoefficient = np.corrcoef(fluxes, toya_fluxes.asNumber(FLUX_UNITS))[0,1]
 		corrCoefTimecourse.append(correlationCoefficient)
 
 	meanCorr = np.mean(np.array(corrCoefTimecourse)[~np.isnan(corrCoefTimecourse)])
@@ -91,7 +98,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.plot(time / 60., corrCoefTimecourse)
 	plt.axhline(y=meanCorr, color='r')
 	plt.title("Measured vs. Simulated Central Carbon Fluxes")
-	plt.text(.5*np.max(time / 60.),1.05*meanCorr, "Mean = {:.2}".format(meanCorr), horizontalalignment="center")
+	plt.text(.5*np.max(time / 60.),.95*meanCorr, "Mean = {:.2}".format(meanCorr), horizontalalignment="center")
 	plt.xlabel("Time (min)")
 	plt.ylabel("Pearson R")
 

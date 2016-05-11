@@ -232,7 +232,7 @@ class FluxBalanceAnalysis(object):
 					"Internal exchange molecules are automatically defined when using objectiveType = \"pools\""
 					)
 
-			internalExchangedMolecules = objective.keys()
+			internalExchangedMolecules = sorted(objective.keys())
 
 		else:
 			raise FBAError("Unrecognized objectiveType: {}".format(objectiveType))
@@ -241,7 +241,7 @@ class FluxBalanceAnalysis(object):
 
 		self._initEnzymeConstraints(reactionEnzymes, reactionRates)
 
-		self._initMass(externalExchangedMolecules, moleculeMasses)
+		self._initExchangeMass(externalExchangedMolecules, moleculeMasses)
 
 		self._initMaintenance(maintenanceCostGAM, maintenanceReaction)
 
@@ -258,7 +258,8 @@ class FluxBalanceAnalysis(object):
 
 		reactionIDs = []
 
-		for reactionID, stoichiometry in reactionStoich.viewitems():
+		for reactionID in sorted(reactionStoich):
+			stoichiometry = reactionStoich[reactionID]
 			for moleculeID, stoichCoeff in stoichiometry.viewitems():
 				self._solver.flowMaterialCoeffIs(
 					reactionID,
@@ -305,7 +306,8 @@ class FluxBalanceAnalysis(object):
 		objective equivalents.  The objectiveType determines how these
 		fractions are used."""
 
-		for moleculeID, coeff in objective.viewitems():
+		for moleculeID in sorted(objective):
+			coeff = objective[moleculeID]
 			if coeff == 0:
 				raise FBAError("Invalid objective coefficient - must be non-zero")
 
@@ -504,7 +506,7 @@ class FluxBalanceAnalysis(object):
 		# Minimizing an absolute value requires splitting the term into two,
 		# one for the positive values and one for the negative.
 
-		for moleculeID in objective.viewkeys():
+		for moleculeID in sorted(objective):
 			objectiveEquivID = self._generatedID_moleculeEquivalents.format(moleculeID)
 
 			# Add the forced -1 term so that we can define x_i = f_i - 1
@@ -648,7 +650,7 @@ class FluxBalanceAnalysis(object):
 						)
 
 
-	def _initMass(self, externalExchangedMolecules, moleculeMasses):
+	def _initExchangeMass(self, externalExchangedMolecules, moleculeMasses):
 		"""Create mass accumulation abstractions.
 
 		Tracking the mass entering the system through metabolism is crucial for

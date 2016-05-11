@@ -26,6 +26,8 @@ from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 
+from models.ecoli.analysis.single.centralCarbonMetabolism import net_flux, _generatedID_reverseReaction
+
 from models.ecoli.processes.metabolism import COUNTS_UNITS, MASS_UNITS, VOLUME_UNITS, TIME_UNITS
 
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
@@ -41,6 +43,7 @@ CMAP_COLORS_255 = [
 
 CMAP_COLORS = [[shade/255. for shade in color] for color in CMAP_COLORS_255]
 CMAP_OVER = [0, 1, 0.75]
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -79,11 +82,14 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	toya_fluxes_dict = dict(zip(toya_reactions, toya_fluxes))
 
 	toyaVsReactionAve = []
+	toya_order = []
 	for toyaReactionID, toyaFlux in toya_fluxes_dict.iteritems():
 		if toyaReactionID in reactionIDs:
-			fluxTimeCourse = reactionFluxes[:,np.where(reactionIDs == toyaReactionID)]
+			fluxTimeCourse = net_flux(toyaReactionID, reactionIDs, reactionFluxes, reverseRxnFormat=_generatedID_reverseReaction)
 			fluxAve = np.mean(fluxTimeCourse)
 			toyaVsReactionAve.append((fluxAve.asNumber(FLUX_UNITS), toyaFlux.asNumber(FLUX_UNITS)))
+			toya_order.append(toyaReactionID)
+
 	
 	toyaVsReactionAve = FLUX_UNITS * np.array(toyaVsReactionAve)
 	correlationCoefficient = np.corrcoef(toyaVsReactionAve[:,0].asNumber(FLUX_UNITS), toyaVsReactionAve[:,1].asNumber(FLUX_UNITS))[0,1]
@@ -95,7 +101,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.xlabel("Mean WCM Reaction Flux {}".format(FLUX_UNITS.strUnit()))
 	plt.ylabel("Toya 2010 Reaction Flux {}".format(FLUX_UNITS.strUnit()))
 
-	labels = list(toya_reactions)
+	labels = list(toya_order)
 	tooltip = plugins.PointLabelTooltip(points, labels)
 	plugins.connect(fig, tooltip)
 

@@ -30,8 +30,7 @@ from wholecell.utils.modular_fba import FluxBalanceAnalysis
 from wholecell.utils.enzymeKinetics import EnzymeKinetics
 from wholecell.utils.fitting import massesAndCountsToAddForPools
 
-
-COUNTS_UNITS = units.mmol
+COUNTS_UNITS = units.dmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 TIME_UNITS = units.s
@@ -284,15 +283,13 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
-		self.overconstraintMultiples = self.fba.reactionFluxes() / self.reactionMaxes.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)
+		self.overconstraintMultiples = (self.fba.reactionFluxes() / self.timeStepSec()) / self.reactionMaxes.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
+		outFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.outputMoleculeLevelsChange() / coefficient).asNumber(units.mmol / units.g / units.h)
 
 		# TODO: report as reactions (#) per second & store volume elsewhere
-		# self.writeToListener("FBAResults", "reactionFluxes",
-		# 	self.fba.reactionFluxes() / self.timeStepSec())
-
 		self.writeToListener("FBAResults", "reactionFluxes",
-			self.fba.reactionFluxes())
+			self.fba.reactionFluxes() / self.timeStepSec())
 
 		self.writeToListener("FBAResults", "externalExchangeFluxes",
 			exFluxes)
@@ -354,3 +351,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# TODO:
 		# - which media exchanges/reactions are limiting, if any
 		# - objective details (value, component values)
+
+
+		self.writeToListener("FBAResults", "outputFluxes",
+			outFluxes)
