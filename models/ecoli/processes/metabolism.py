@@ -281,7 +281,6 @@ class Metabolism(wholecell.processes.process.Process):
 			self.minConstraints = {}
 			for reactionID, reactionInfo in reactionsDict.iteritems():
 				constraintID = sorted(reactionInfo.keys(), key=reactionInfo.__getitem__, reverse=True)[0]
-				import ipdb; ipdb.set_trace()
 				self.maxConstraints[reactionID] = {
 					"constraintID":constraintID,
 					"coefficient":self.constraintMultiplesDict[constraintID] * self.max_flux_coefficient,}
