@@ -369,19 +369,18 @@ class TwoComponentSystem(object):
 	# TODO: Should this method be here?
 	# It could be useful in both the fitter and in the simulations
 	# But it isn't just data
-	def fluxesAndMoleculesToSS(self, moleculeCounts, cellVolume, nAvogadro):
+	def fluxesAndMoleculesToNextTimeStep(self, moleculeCounts, cellVolume, nAvogadro, timeStepSec):
 		moleculeTracerCounts = np.array([moleculeCounts[x] for x in self.tracerMolecules])
 
 		# y_init = moleculeCounts / (cellVolume * nAvogadro)
 
 		y_init = moleculeTracerCounts / (cellVolume * nAvogadro)
 
-		y = scipy.integrate.odeint(self.derivatives, y_init, t = [0, 1e4], Dfun = self.derivativesJacobian)
+		y = scipy.integrate.odeint(self.derivatives, y_init, t = [0, timeStepSec], Dfun = self.derivativesJacobian)
 
 		if np.any(y[-1, :] * (cellVolume * nAvogadro) <= -1):
 			raise Exception, "Have negative values -- probably due to numerical instability"
-		if np.linalg.norm(self.derivatives(y[-1, :], 0), np.inf) * (cellVolume * nAvogadro) > 1:
-			raise Exception, "Didn't reach steady state"
+
 		y[y < 0] = 0
 		yMolecules = y * (cellVolume * nAvogadro)
 

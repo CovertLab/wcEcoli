@@ -48,7 +48,7 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		self.derivativesJacobian = sim_data.process.two_component_system.derivativesJacobian
 		self.metsToRxnFluxes = sim_data.process.two_component_system.metsToRxnFluxes
 
-		self.fluxesAndMoleculesToSS = sim_data.process.two_component_system.fluxesAndMoleculesToSS
+		self.fluxesAndMoleculesToNextTimeStep = sim_data.process.two_component_system.fluxesAndMoleculesToNextTimeStep
 
 		# Build views
 
@@ -62,7 +62,7 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg).asNumber(units.g)
 		cellVolume = cellMass / self.cellDensity
 
-		self.rxnFluxes, self.req = self.fluxesAndMoleculesToSS(moleculeCounts, cellVolume, self.nAvogadro)
+		self.rxnFluxes, self.req = self.fluxesAndMoleculesToNextTimeStep(moleculeCounts, cellVolume, self.nAvogadro, self.timeStepSec())
 
 		self.molecules.requestIs(self.req)
 
