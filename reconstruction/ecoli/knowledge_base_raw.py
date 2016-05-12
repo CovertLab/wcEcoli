@@ -50,6 +50,8 @@ LIST_OF_DICT_FILENAMES = (
 	"tfOneComponentBound.tsv",
 	"transcriptionUnits.tsv",
 	"translationEfficiency.tsv",
+	"twoComponentSystemReactions.tsv",
+	"twoComponentSystems.tsv",
 	"unconstrainedReactionEnzymes.tsv",
 	"water.tsv",
 	os.path.join("massFractions", "glycogenFractions.tsv"),
