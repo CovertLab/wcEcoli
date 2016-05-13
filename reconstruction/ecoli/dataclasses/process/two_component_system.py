@@ -46,24 +46,21 @@ class TwoComponentSystem(object):
 		# Remove complexes that are currently not simulated
 		FORBIDDEN_MOLECULES = {
 			"modified-charged-selC-tRNA", # molecule does not exist
-			"FUM",
-			"MAL",
 			}
 
 		# Remove reactions that we know won't occur (e.g., don't do computations on metabolites that have zero counts)
-		MOLECULES_THAT_WILL_EXIST_IN_SIMULATION = [m["Metabolite"] for m in raw_data.metaboliteConcentrations]
+		MOLECULES_THAT_WILL_EXIST_IN_SIMULATION = [m["Metabolite"] for m in raw_data.metaboliteConcentrations] + [l["molecules"]["LIGAND"] for l in raw_data.twoComponentSystems]
 
 		deleteReactions = []
+		
 		for reactionIndex, reaction in enumerate(raw_data.twoComponentSystems):
 			for molecule in reaction["molecules"]:
 				if reaction["molecules"][str(molecule)] in FORBIDDEN_MOLECULES or (molecule == "LIGAND" and reaction["molecules"][str(molecule)] not in MOLECULES_THAT_WILL_EXIST_IN_SIMULATION):
 					deleteReactions.append(reactionIndex)
-					break # is this break necessary...?
+					break				
 
 		for reactionIndex in deleteReactions[::-1]:
 			del raw_data.twoComponentSystems[reactionIndex]
-
-		## check: that the above correctly cleans out TCSs
 
 		## building template reactions:
 		signalingTemplate = {1: ["HK-PHOSPHORYLATION_RXN", 
@@ -193,8 +190,6 @@ class TwoComponentSystem(object):
 
 		out[self._linearlyIndependentMatrixI, self._linearlyIndependentMatrixJ] = self._linearlyIndependentMatrixV
 
-		# TODO: trim matrix here rather than downstream
-
 		return out
 
 	def massBalance(self):
@@ -312,6 +307,7 @@ class TwoComponentSystem(object):
 		# metsToRxnFluxes = self.stoichMatrix().copy()
 
 		M = self.linearlyIndependentMatrix().copy()
+
 		self.redundantMolecules = [x for x in xrange(M.shape[0] -1, -1, -1) if np.sum(np.abs(M[x])) == 0]
 		self.tracerMolecules = [x for x in xrange(M.shape[0] -1, -1, -1) if x not in self.redundantMolecules]
 
