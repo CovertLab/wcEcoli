@@ -233,7 +233,7 @@ class Metabolism(wholecell.processes.process.Process):
 		metaboliteConcentrations =  countsToMolar * metaboliteCountsInit
 
 		# Make a dictionary of metabolite names to metabolite concentrations
-		metaboliteConcentrationsDict = dict(zip(self.metaboliteNames, metaboliteConcentrations.asNumber(COUNTS_UNITS/VOLUME_UNITS)))
+		metaboliteConcentrationsDict = dict(zip(self.metaboliteNames, metaboliteConcentrations))
 
 		self.fba.internalMoleculeLevelsIs(
 			metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS)
@@ -248,7 +248,7 @@ class Metabolism(wholecell.processes.process.Process):
 			enzymeConcentrations = countsToMolar * (enzymeCountsInit + 1)
 
 		# Make a dictionary of enzyme names to enzyme concentrations
-		enzymeConcentrationsDict = dict(zip(self.enzymeNames, enzymeConcentrations.asNumber(COUNTS_UNITS/VOLUME_UNITS)))
+		enzymeConcentrationsDict = dict(zip(self.enzymeNames, enzymeConcentrations))
 
 		# Apply the basal kinetic rate limit to all enzyme-catalyzed reactions
 		if USE_BASE_RATES:
@@ -260,7 +260,7 @@ class Metabolism(wholecell.processes.process.Process):
 					for enzymeID in self.reactionEnzymes[reactionID]:
 						spontaneousReaction = False
 						if enzymeID in enzymeConcentrationsDict:
-							base_rate += self.kcat_max.asNumber(1/TIME_UNITS) * enzymeConcentrationsDict[enzymeID]
+							base_rate += self.kcat_max.asNumber(1/TIME_UNITS) * enzymeConcentrationsDict[enzymeID].asNumber(COUNTS_UNITS/VOLUME_UNITS)
 						else:
 							enzymeUnrecognized = True
 					if spontaneousReaction or (base_rate == 0. and enzymeUnrecognized):
@@ -274,7 +274,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		if not hasattr(self, "maxConstraints"):
 			# Calculate the constraints in the current conditions
-			# constraintsDict = self.enzymeKinetics.allConstraintsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
 			reactionsDict = self.enzymeKinetics.allReactionsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
 
 			self.maxConstraints = {}
@@ -287,7 +286,6 @@ class Metabolism(wholecell.processes.process.Process):
 				self.minConstraints[reactionID] = {
 					"constraintID":constraintID,
 					"coefficient":self.constraintMultiplesDict[constraintID] * self.min_flux_coefficient,}
-
 		self.reactionRateEstimates = self.enzymeKinetics.ratesView(self.fba.reactionIDs(), self.maxConstraints, metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=False)
 		if USE_KINETIC_RATES:
 			self.fba.setMaxReactionFluxes(self.fba.reactionIDs(), self.reactionRateEstimates.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS), raiseForReversible = False)
@@ -308,6 +306,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.overconstraintMultiples = (self.fba.reactionFluxes() / self.timeStepSec()) / self.reactionRateEstimates.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
 		outFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.outputMoleculeLevelsChange() / coefficient).asNumber(units.mmol / units.g / units.h)
+
 
 		# TODO: report as reactions (#) per second & store volume elsewhere
 		self.writeToListener("FBAResults", "reactionFluxes",

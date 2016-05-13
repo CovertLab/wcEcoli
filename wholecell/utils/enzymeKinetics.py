@@ -137,7 +137,7 @@ class EnzymeKinetics(object):
 
 	def reactionStandard(self, reactionInfo, metaboliteConcentrationsDict, enzymeConcentrationsDict):
 		# Find the enzymes needed for this rate
-		enzymeConc = enzymeConcentrationsDict[reactionInfo["enzymeIDs"][0]]
+		enzymeConc = enzymeConcentrationsDict[reactionInfo["enzymeIDs"][0]].asNumber(COUNTS_UNITS/VOLUME_UNITS)
 		kMs = reactionInfo["kM"]
 		kIs = reactionInfo["kI"]
 
@@ -145,13 +145,13 @@ class EnzymeKinetics(object):
 
 		idx = 0
 		for kM in reactionInfo["kM"]:
-			substrateConc = metaboliteConcentrationsDict[reactionInfo["substrateIDs"][idx]]
+			substrateConc = metaboliteConcentrationsDict[reactionInfo["substrateIDs"][idx]].asNumber(COUNTS_UNITS/VOLUME_UNITS)
 			rate *= (substrateConc / (float(substrateConc) + kM))
 			idx+=1
 
 		for kI in reactionInfo["kI"]:
 			try:
-				substrateConc = metaboliteConcentrationsDict[reactionInfo["substrateIDs"][idx]]
+				substrateConc = metaboliteConcentrationsDict[reactionInfo["substrateIDs"][idx]].asNumber(COUNTS_UNITS/VOLUME_UNITS)
 				rate *= 1.0 / (1.0 + (substrateConc / kI))
 				idx+=1
 			except:
@@ -160,7 +160,7 @@ class EnzymeKinetics(object):
 		return (COUNTS_UNITS / TIME_UNITS / VOLUME_UNITS) * rate
 
 	def reactionCustom(self, reactionInfo, metaboliteConcentrationsDict, enzymeConcentrationsDict):
-		enzymeConcArray = [enzymeConcentrationsDict[reactionInfo["enzymeIDs"][0]]]
+		enzymeConcArray = [enzymeConcentrationsDict[reactionInfo["enzymeIDs"][0]]].asNumber(COUNTS_UNITS/VOLUME_UNITS)
 
 		customParameters = reactionInfo["customParameters"]
 		customParameterVariables = reactionInfo["customParameterVariables"]
@@ -172,9 +172,9 @@ class EnzymeKinetics(object):
 		for customParameter in customParameters[len(customParameterConstants):]:
 			variable = customParameterVariables[customParameter]
 			if variable in enzymeConcentrationsDict:
-				parametersArray.append(enzymeConcentrationsDict[variable])
+				parametersArray.append(enzymeConcentrationsDict[variable].asNumber(COUNTS_UNITS/VOLUME_UNITS))
 			elif variable in metaboliteConcentrationsDict:
-				parametersArray.append(metaboliteConcentrationsDict[variable])
+				parametersArray.append(metaboliteConcentrationsDict[variable].asNumber(COUNTS_UNITS/VOLUME_UNITS))
 
 		assert (len(parametersArray) == len(parameterDefinitionArray))
 

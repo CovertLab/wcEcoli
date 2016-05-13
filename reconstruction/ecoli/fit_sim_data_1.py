@@ -1025,7 +1025,7 @@ def findKineticCoeffs(sim_data, bulkContainer):
 	fluxesDict = dict(zip([fluxName[0] for fluxName in fluxNames], [flux[0] for flux in fluxes]))
 
 	# Use rabinowitz metabolite concentrations as the estimate
-	metaboliteConcentrationsDict = {key:value.asNumber(COUNTS_UNITS/VOLUME_UNITS) for key, value in sim_data.process.metabolism.concDict.iteritems()}
+	metaboliteConcentrationsDict = sim_data.process.metabolism.concDict
 
 	# Use fit estimates for protein counts
 	proteinIds = sim_data.process.translation.monomerData["id"]
@@ -1056,7 +1056,7 @@ def findKineticCoeffs(sim_data, bulkContainer):
 
 	proteinConcDict = {}
 	for proteinId, count in proteinCountsDict.iteritems():
-		proteinConcDict[proteinId] = ((1. / sim_data.constants.nAvogadro / cellVolumeInit) * count).asNumber(COUNTS_UNITS/VOLUME_UNITS)
+		proteinConcDict[proteinId] = ((1. / sim_data.constants.nAvogadro / cellVolumeInit) * count)
 
 	# proteinConcDict = dict(zip(proteinIds, proteinConcentrations.asNumber(COUNTS_UNITS/VOLUME_UNITS)))
 
