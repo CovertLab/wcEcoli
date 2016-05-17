@@ -1078,9 +1078,12 @@ def findKineticCoeffs(sim_data, bulkContainer):
 			ratio = 0 if flux == 0 else highestConstraintReactionDict[fluxName] / flux
 			overconstraintRatio[fluxName] = ratio
 
-
+	coefficientsSet = set()
 	for constraintID, reactionInfo in sim_data.process.metabolism.reactionRateInfo.iteritems():
 		reactionID = reactionInfo["reactionID"]
 		if reactionID in overconstraintRatio:
-			if overconstraintRatio[reactionID] > 0:
+			if overconstraintRatio[reactionID] > 1:
+				coefficientsSet.add((reactionInfo["reactionID"], overconstraintRatio[reactionID]))
 				reactionInfo["constraintMultiple"] = np.ceil(overconstraintRatio[reactionID])
+
+	if VERBOSE: print coefficientsSet

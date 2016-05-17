@@ -32,25 +32,14 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		os.mkdir(plotOutDir)
 
 	enzymeKineticsdata = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
-	
-	rateEstimatesArray = enzymeKineticsdata.readColumn("reactionConstraints")
 	overconstraintMultiples = enzymeKineticsdata.readColumn("overconstraintMultiples")
-
-	reactionIDs = enzymeKineticsdata.readAttribute("reactionIDs")
-	
-	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
-	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
-	
+	rateEstimatesArray = enzymeKineticsdata.readColumn("reactionConstraints")
 	enzymeKineticsdata.close()
 
-
 	fbaData = TableReader(os.path.join(simOutDir, "FBAResults"))
-
 	unconstrainedFluxes = fbaData.readColumn('reactionFluxes')
 	fluxNames = fbaData.readAttribute('reactionIDs')
-	simulationSteps = fbaData.readColumn('simulationStep')
 	fbaData.close()
-
 
 	# Only look at fluxes which had a noninfinite estimate at at least one point
 	rateEstimates =  rateEstimatesArray[1:]
@@ -65,29 +54,18 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	rateEstimates = np.vstack((np.zeros(rateEstimates.shape[1]),rateEstimates))
 
 	relativeRates = fluxesWithEstimates / rateEstimates
-
-	# relativeRates[np.where(relativeRates < 1)] = 0
 	relativeRates[np.isnan(relativeRates)] = 0
 	
 	means = np.mean(relativeRates, axis=0)
 	medians = np.median(relativeRates, axis=0)
 	variances = np.var(relativeRates, axis=0)
 
-
 	overconstraintDict = dict(zip(fluxNamesEstimates, np.mean(relativeRates, axis=0)))
-	means = np.mean(relativeRates, axis=0)
-	medians = np.median(relativeRates, axis=0)
-	variances = np.var(relativeRates, axis=0)
-
-	overconstraintMediansDict = dict(zip(fluxNamesEstimates[np.where(medians > 0)], medians[np.where(medians > 0)]))
-	overconstraintMeansDict = dict(zip(fluxNamesEstimates[np.where(means > 0)], means[np.where(means > 0)]))
 
 	if VERBOSE:
 		for reaction, overconstraintMultipleAverage in overconstraintDict.iteritems():
 			if overconstraintMultipleAverage > 1:
 				print reaction, overconstraintMultipleAverage
-
-	# import ipdb; ipdb.set_trace()
 
 	plt.figure(figsize=(10,15))
 
@@ -110,8 +88,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
-
-
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

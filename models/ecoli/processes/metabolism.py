@@ -37,11 +37,11 @@ TIME_UNITS = units.s
 
 NONZERO_ENZYMES = True
 
-USE_KINETIC_RATES = False # Enable/disable kinetic rate limits in the model
+USE_KINETIC_RATES = True # Enable/disable kinetic rate limits in the model
 SET_MIN_FLUXES = False
-USE_BASE_RATES = False
+USE_BASE_RATES = True
 
-USE_MANUAL_FLUX_COEFF = False # enable to overrid flux coefficients in the knowledgebase and use these local values instead
+USE_MANUAL_FLUX_COEFF = True # enable to overrid flux coefficients in the knowledgebase and use these local values instead
 MAX_FLUX_COEFF = 1 # Multiple of predicted rate at which to set the max fluxes
 MIN_FLUX_COEFF = 0 # Multiple of predicted rate at which to set the min fluxes
 
@@ -79,7 +79,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.enzymeNames = sim_data.process.metabolism.enzymeNames
 		self.reactionEnzymes = sim_data.process.metabolism.reactionEnzymes
 		self.constraintIDs = sim_data.process.metabolism.constraintIDs
-		self.constraintMultiplesDict = sim_data.process.metabolism.constraintMultiplesDict
+		self.constraintMultiplesDict = {constraintID:rateInfo["constraintMultiple"] for constraintID, rateInfo in self.reactionRateInfo.iteritems()}
 		self.constraintToReactionDict = sim_data.process.metabolism.constraintToReactionDict
 
 		if USE_MANUAL_FLUX_COEFF:
