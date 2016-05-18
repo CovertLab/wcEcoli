@@ -38,7 +38,7 @@ ENVIRONMENT = "000000_wildtype"
 
 VERBOSE = False
 
-COUNTS_UNITS = units.umol
+COUNTS_UNITS = units.dmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 TIME_UNITS = units.s

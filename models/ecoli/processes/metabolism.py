@@ -37,7 +37,7 @@ TIME_UNITS = units.s
 
 NONZERO_ENZYMES = True
 
-USE_KINETIC_RATES = True # Enable/disable kinetic rate limits in the model
+USE_KINETIC_RATES = False # Enable/disable kinetic rate limits in the model
 SET_MIN_FLUXES = False
 USE_BASE_RATES = True
 
@@ -251,23 +251,21 @@ class Metabolism(wholecell.processes.process.Process):
 		# Make a dictionary of enzyme names to enzyme concentrations
 		enzymeConcentrationsDict = dict(zip(self.enzymeNames, enzymeConcentrations))
 
-		# Apply the basal kinetic rate limit to all enzyme-catalyzed reactions
-		if USE_BASE_RATES:
-			for idx, reactionID in enumerate(self.fba.reactionIDs()):
+		# TODO: move this to sim_data
+		if not hasattr(self, "enzymeReactionMatrix"):
+			self.enzymeReactionMatrix = np.zeros((len(self.fba.reactionIDs()),len(self.enzymeNames)))
+			for rxnIdx, reactionID in enumerate(self.fba.reactionIDs()):
 				if reactionID in self.reactionEnzymes:
-					enzymeUnrecognized = False
-					spontaneousReaction = True
-					base_rate = 0.
-					for enzymeID in self.reactionEnzymes[reactionID]:
-						spontaneousReaction = False
-						if enzymeID in enzymeConcentrationsDict:
-							base_rate += self.kcat_max.asNumber(1/TIME_UNITS) * enzymeConcentrationsDict[enzymeID].asNumber(COUNTS_UNITS/VOLUME_UNITS)
-						else:
-							enzymeUnrecognized = True
-					if spontaneousReaction or (base_rate == 0. and enzymeUnrecognized):
-						continue
-					self.base_rates[idx] = base_rate
-			self.fba.setMaxReactionFluxes(self.fba.reactionIDs(), self.base_rates, raiseForReversible = False)
+					for enzymeName in self.reactionEnzymes[reactionID]:
+						if enzymeName in self.enzymeNames:
+							enzymeIdx = self.enzymeNames.index(enzymeName)
+							self.enzymeReactionMatrix[rxnIdx, enzymeIdx] = 1
+
+		if USE_BASE_RATES:
+			self.enzymeMaxRates = self.kcat_max * enzymeConcentrations
+			self.base_rates = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * self.enzymeReactionMatrix.dot(self.enzymeMaxRates.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS))
+			self.base_rates[np.where(self.base_rates.asNumber() == 0)] = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * np.inf
+			self.fba.setMaxReactionFluxes(self.fba.reactionIDs(), self.base_rates.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS), raiseForReversible = False)
 
 		# Remove any enzyme kinetics paramters for which the needed enzyme and substrate information is not available
 		if not self.enzymeKinetics.inputsChecked:
@@ -307,7 +305,6 @@ class Metabolism(wholecell.processes.process.Process):
 		self.overconstraintMultiples = (self.fba.reactionFluxes() / self.timeStepSec()) / self.reactionRateEstimates.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
 		outFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.outputMoleculeLevelsChange() / coefficient).asNumber(units.mmol / units.g / units.h)
-
 
 		# TODO: report as reactions (#) per second & store volume elsewhere
 		self.writeToListener("FBAResults", "reactionFluxes",
