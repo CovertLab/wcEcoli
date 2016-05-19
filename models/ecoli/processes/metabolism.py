@@ -78,6 +78,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.reactionRateInfo = sim_data.process.metabolism.reactionRateInfo
 		self.enzymeNames = sim_data.process.metabolism.enzymeNames
 		self.reactionEnzymes = sim_data.process.metabolism.reactionEnzymes
+		self.catalyticEnzymes = [enzymeName for enzymeList in self.reactionEnzymes.values() for enzymeName in enzymeList]
 		self.constraintIDs = sim_data.process.metabolism.constraintIDs
 		self.constraintMultiplesDict = {constraintID:rateInfo["constraintMultiple"] for constraintID, rateInfo in self.reactionRateInfo.iteritems()}
 		self.constraintToReactionDict = sim_data.process.metabolism.constraintToReactionDict
@@ -242,29 +243,31 @@ class Metabolism(wholecell.processes.process.Process):
 
 		#  Find enzyme concentrations from enzyme counts
 		enzymeCountsInit = self.enzymes.counts()
-
 		enzymeConcentrations = countsToMolar * enzymeCountsInit
 
 		if NONZERO_ENZYMES:
+			# Add one of every enzyme to ensure at least one copy of each
 			enzymeConcentrations = countsToMolar * (enzymeCountsInit + 1)
 
 		# Make a dictionary of enzyme names to enzyme concentrations
 		enzymeConcentrationsDict = dict(zip(self.enzymeNames, enzymeConcentrations))
 
-		# TODO: move this to sim_data
-		if not hasattr(self, "enzymeReactionMatrix"):
-			self.enzymeReactionMatrix = np.zeros((len(self.fba.reactionIDs()),len(self.enzymeNames)))
-			for rxnIdx, reactionID in enumerate(self.fba.reactionIDs()):
-				if reactionID in self.reactionEnzymes:
-					for enzymeName in self.reactionEnzymes[reactionID]:
-						if enzymeName in self.enzymeNames:
-							enzymeIdx = self.enzymeNames.index(enzymeName)
-							self.enzymeReactionMatrix[rxnIdx, enzymeIdx] = 1
-
 		if USE_BASE_RATES:
+			# Matrix mapping enzymes to the reactions they catalyze - remains constant
+			if not hasattr(self, "enzymeReactionMatrix"):
+				self.enzymeReactionMatrix = np.zeros((len(self.fba.reactionIDs()),len(self.enzymeNames)))
+				for rxnIdx, reactionID in enumerate(self.fba.reactionIDs()):
+					if reactionID in self.reactionEnzymes:
+						for enzymeName in self.reactionEnzymes[reactionID]:
+							if enzymeName in self.enzymeNames:
+								enzymeIdx = self.enzymeNames.index(enzymeName)
+								self.enzymeReactionMatrix[rxnIdx, enzymeIdx] = 1
+				# Any reaction without an associated enzyme should be treated as spontaneous
+				self.enzymeReactionMatrix[np.where(np.sum(self.enzymeReactionMatrix, axis=1) == 0)] = np.inf
+
 			self.enzymeMaxRates = self.kcat_max * enzymeConcentrations
 			self.base_rates = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * self.enzymeReactionMatrix.dot(self.enzymeMaxRates.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS))
-			self.base_rates[np.where(self.base_rates.asNumber() == 0)] = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * np.inf
+			self.base_rates[np.isnan(self.base_rates.asNumber())] = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * np.inf
 			self.fba.setMaxReactionFluxes(self.fba.reactionIDs(), self.base_rates.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS), raiseForReversible = False)
 
 		# Remove any enzyme kinetics paramters for which the needed enzyme and substrate information is not available
@@ -274,7 +277,6 @@ class Metabolism(wholecell.processes.process.Process):
 		if not hasattr(self, "maxConstraints"):
 			# Calculate the constraints in the current conditions
 			reactionsDict = self.enzymeKinetics.allReactionsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
-
 			self.maxConstraints = {}
 			self.minConstraints = {}
 			for reactionID, reactionInfo in reactionsDict.iteritems():
@@ -285,6 +287,7 @@ class Metabolism(wholecell.processes.process.Process):
 				self.minConstraints[reactionID] = {
 					"constraintID":constraintID,
 					"coefficient":self.constraintMultiplesDict[constraintID] * self.min_flux_coefficient,}
+
 		self.reactionRateEstimates = self.enzymeKinetics.ratesView(self.fba.reactionIDs(), self.maxConstraints, metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=False)
 		if USE_KINETIC_RATES:
 			self.fba.setMaxReactionFluxes(self.fba.reactionIDs(), self.reactionRateEstimates.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS), raiseForReversible = False)
