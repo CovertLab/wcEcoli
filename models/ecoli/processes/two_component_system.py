@@ -62,21 +62,17 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg).asNumber(units.g)
 		cellVolume = cellMass / self.cellDensity
 
-		self.rxnFluxes, self.req = self.fluxesAndMoleculesToNextTimeStep(moleculeCounts, cellVolume, self.nAvogadro, self.timeStepSec())
+		self.req = self.fluxesAndMoleculesToNextTimeStep(moleculeCounts, cellVolume, self.nAvogadro, self.timeStepSec())
 
 		self.molecules.requestIs(self.req)
 
 	def evolveState(self):
 		moleculeCounts = self.molecules.counts()
 
-		rxnFluxes = self.rxnFluxes.copy()
-
-		# Kill "bad" reactions where we have insufficient metabolites
-		for badMetIdx in np.where(self.req > moleculeCounts)[0]:
-			rxnFluxes[self.stoichMatrix[badMetIdx, :]!= 0] = 0
-
-		assert(np.all(moleculeCounts + np.dot(self.stoichMatrix, rxnFluxes) >= 0))
-
-		self.molecules.countsInc(
-			np.dot(self.stoichMatrix, rxnFluxes)
-			)
+		if (self.req > moleculeCounts).any():
+			print "Process: Two component system - recalculating molecules to next time step"
+			self.req = self.fluxesAndMoleculesToNextTimeStep(moleculeCounts, cellVolume, self.nAvogadro, self.timeStepSec())
+			self.molecules.countsInc(self.req)
+		else:
+			self.molecules.countsInc(moleculeCounts)
+		
