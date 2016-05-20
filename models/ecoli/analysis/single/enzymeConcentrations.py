@@ -89,21 +89,23 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	alwaysZero = enzymeNames[np.where(np.sum(catalyticEnzymeCounts, axis=0) == 0)]
 
+	catalyticEnzymeConcentrations = catalyticEnzymeCounts * countsToMolarArray.reshape(-1,1)
+
 	if VERBOSE: print "{} catalytic enzymes never produced: {}".format(len(alwaysZero), alwaysZero)
 
 
-	fig = plt.figure(figsize = (30, 15))
+	fig = plt.figure(figsize = (120, 60))
 
 	grid = gridspec.GridSpec(1,3,wspace=0.0,hspace=0.0,width_ratios=[0.25,1,0.1])
 
 	ax_dendro = fig.add_subplot(grid[0])
 
 	normalized = (
-		catalyticEnzymeCounts
-		/ (np.mean(np.abs(catalyticEnzymeCounts), 0) + 2 * np.std(np.abs(catalyticEnzymeCounts), 0))
+		catalyticEnzymeConcentrations
+		/ (np.mean(np.abs(catalyticEnzymeConcentrations), 0) + 2 * np.std(np.abs(catalyticEnzymeConcentrations), 0))
 		).transpose()
 
-	linkage = sch.linkage(catalyticEnzymeCounts.T, metric = "correlation")
+	linkage = sch.linkage(catalyticEnzymeConcentrations.T, metric = "correlation")
 	linkage[:, 2] = np.fmax(linkage[:, 2], 0) # fixes rounding issues leading to negative distances
 
 	sch.set_link_color_palette(['black'])

@@ -35,7 +35,7 @@ VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 TIME_UNITS = units.s
 
-NONZERO_ENZYMES = True
+NONZERO_ENZYMES = False
 
 USE_KINETIC_RATES = False # Enable/disable kinetic rate limits in the model
 SET_MIN_FLUXES = False
@@ -44,7 +44,6 @@ USE_BASE_RATES = True
 USE_MANUAL_FLUX_COEFF = True # enable to overrid flux coefficients in the knowledgebase and use these local values instead
 MAX_FLUX_COEFF = 1 # Multiple of predicted rate at which to set the max fluxes
 MIN_FLUX_COEFF = 0 # Multiple of predicted rate at which to set the min fluxes
-
 
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
@@ -123,6 +122,13 @@ class Metabolism(wholecell.processes.process.Process):
 		self.externalExchangeMolecules = sim_data.externalExchangeMolecules[sim_data.environment]
 		self.reversibleReactions = sim_data.process.metabolism.reversibleReactions
 
+		self.rescue_enzymes = set([
+			'THIG-MONOMER[c]',
+			'CDPDIGLYSYN-MONOMER[i]',
+			'ANTHRANSYNCOMPII-MONOMER[c]',
+			'CPLX0-237[c]'
+			])
+
 		# Set up FBA solver
 		self.fba_object_options = {
 			"reactionStoich" : self.reactionStoich.copy(), # TODO: copy in class
@@ -151,7 +157,6 @@ class Metabolism(wholecell.processes.process.Process):
 		self.reactionNameToReactionIndexDict = {}
 		for idx, reactionID in enumerate(self.fba.reactionIDs()):
 			self.reactionNameToReactionIndexDict[reactionID] = idx
-
 
 		# Set constraints
 		## External molecules
@@ -187,6 +192,7 @@ class Metabolism(wholecell.processes.process.Process):
 		dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
 
 		cellVolume = cellMass / self.cellDensity
+		cellVolume.normalize()
 
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
@@ -243,6 +249,10 @@ class Metabolism(wholecell.processes.process.Process):
 
 		#  Find enzyme concentrations from enzyme counts
 		enzymeCountsInit = self.enzymes.counts()
+
+		for enzymeName in self.rescue_enzymes:
+			enzymeCountsInit[self.enzymeNames.index(enzymeName)] = 1
+
 		enzymeConcentrations = countsToMolar * enzymeCountsInit
 
 		if NONZERO_ENZYMES:
