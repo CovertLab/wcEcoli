@@ -60,9 +60,9 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		moleculeCounts = self.molecules.total()
 
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg).asNumber(units.g)
-		cellVolume = cellMass / self.cellDensity
+		self.cellVolume = cellMass / self.cellDensity
 
-		self.req = self.fluxesAndMoleculesToNextTimeStep(moleculeCounts, cellVolume, self.nAvogadro, self.timeStepSec())
+		self.req = self.fluxesAndMoleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
 
 		self.molecules.requestIs(self.req)
 
@@ -71,7 +71,7 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 
 		if (self.req > moleculeCounts).any():
 			print "Process: Two component system - recalculating molecules to next time step"
-			self.req = self.fluxesAndMoleculesToNextTimeStep(moleculeCounts, cellVolume, self.nAvogadro, self.timeStepSec())
+			self.req = self.fluxesAndMoleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
 			self.molecules.countsInc(self.req)
 		else:
 			self.molecules.countsInc(moleculeCounts)
