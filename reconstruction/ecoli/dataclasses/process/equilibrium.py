@@ -195,6 +195,7 @@ class Equilibrium(object):
 	def _populateDerivativeAndJacobian(self):
 		# TODO: Decide if this caching is worthwhile
 		# TODO: Unhack this--this assumes a directory structure
+
 		fixturesDir = os.path.join(
 			os.path.dirname(os.path.dirname(wholecell.__file__)),
 			"fixtures",
@@ -235,6 +236,7 @@ class Equilibrium(object):
 			needToCreate = True
 
 		if needToCreate:
+			import sys; sys.setrecursionlimit(4000) # limit found manually
 			self._makeMatrices()
 			self._makeDerivative()
 			writeOdeFileWithRates(odeFile, self.derivativesSymbolic, self.derivativesJacobianSymbolic)
