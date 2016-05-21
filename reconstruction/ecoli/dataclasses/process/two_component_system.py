@@ -21,6 +21,7 @@ class TwoComponentSystem(object):
 		# Build the abstractions needed for two component systems
 
 		molecules = []
+		moleculeTypes = []
 
 		ratesFwd = []
 		ratesRev = []
@@ -32,35 +33,10 @@ class TwoComponentSystem(object):
 
 		stoichMatrixMass = []
 
-		linearlyIndependentMatrixI = []
-		linearlyIndependentMatrixJ = []
-		linearlyIndependentMatrixV = []
-
-		# # Make sure reactions aren't duplicated in complexationReactions and equilibriumReactions
-		# equilibriumReactionIds = set([x["id"] for x in raw_data.equilibriumReactions])
-		# complexationReactionIds = set([x["id"] for x in raw_data.complexationReactions])
-		#
-		# if equilibriumReactionIds.intersection(complexationReactionIds) != set():
-		# 	raise Exception, "The following reaction ids are specified in equilibriumReactions and complexationReactions: %s" % (equilibriumReactionIds.intersection(complexationReactionIds))
-
-		# Remove complexes that are currently not simulated
-		FORBIDDEN_MOLECULES = {
-			"modified-charged-selC-tRNA", # molecule does not exist
-			}
-
-		# Remove reactions that we know won't occur (e.g., don't do computations on metabolites that have zero counts)
-		MOLECULES_THAT_WILL_EXIST_IN_SIMULATION = [m["Metabolite"] for m in raw_data.metaboliteConcentrations] + [l["molecules"]["LIGAND"] for l in raw_data.twoComponentSystems]
-
-		deleteReactions = []
+		independentMolecules = []
+		independentMoleculeIds = []
+		independentToDependentMolecules = {}
 		
-		for reactionIndex, reaction in enumerate(raw_data.twoComponentSystems):
-			for molecule in reaction["molecules"]:
-				if reaction["molecules"][str(molecule)] in FORBIDDEN_MOLECULES or (molecule == "LIGAND" and reaction["molecules"][str(molecule)] not in MOLECULES_THAT_WILL_EXIST_IN_SIMULATION):
-					deleteReactions.append(reactionIndex)
-					break				
-
-		for reactionIndex in deleteReactions[::-1]:
-			del raw_data.twoComponentSystems[reactionIndex]
 
 		## building template reactions:
 		signalingTemplate = {1: ["HK-PHOSPHORYLATION_RXN", 
@@ -76,14 +52,11 @@ class TwoComponentSystem(object):
 							}
 
 		reactionTemplate = {}
-		for reactionIndex, reaction in enumerate(raw_data.twoComponentSystemReactions):
+		for reactionIndex, reaction in enumerate(raw_data.twoComponentSystemTemplates):
 			reactionTemplate[str(reaction["id"])] = reaction
 
 		# Building stoichiometry matrix
 		for systemIndex, system in enumerate(raw_data.twoComponentSystems):
-			# assert reaction["process"] == "equilibrium"
-			# assert reaction["dir"] == 1
-
 			for reaction in signalingTemplate[system["orientation"]]:
 				reactionName = self.getReactionName(reaction, system["molecules"])
 
@@ -97,13 +70,14 @@ class TwoComponentSystem(object):
 					reactionIndex = rxnIds.index(reactionName)
 
 				for molecule in reactionTemplate[reaction]["stoichiometry"]:
-
+					# moleculeName for per system molecules
 					if molecule["molecule"] in system["molecules"]:
 						moleculeName = "{}[{}]".format(
 							system["molecules"][molecule["molecule"]],
 							molecule["location"]
 							)
 
+					# moleculeName for common molecules (ATP, ADP, Pi, WATER)
 					else:
 						moleculeName = "{}[{}]".format(
 							molecule["molecule"],
@@ -119,20 +93,22 @@ class TwoComponentSystem(object):
 
 					coefficient = molecule["coeff"]
 
-					# assert coeffcient % 1 == 0
-
 					stoichMatrixI.append(moleculeIndex)
 					stoichMatrixJ.append(reactionIndex)
 					stoichMatrixV.append(coefficient)
 
-					# Building matrix with linearly independent rows
-					if str(molecule["molecule"]) in ["HK", "HK-LIGAND", "RR", "ATP"]:
-						linearlyIndependentMatrixI.append(moleculeIndex)
-						linearlyIndependentMatrixJ.append(reactionIndex)
-						linearlyIndependentMatrixV.append(coefficient)
+					moleculeTypes.append(str(molecule["molecule"]))
 
-					# if coefficient > 0:
-					# 	assert molecule["type"] == "proteincomplex"
+					# Building matrix with linearly independent rows
+					if str(molecule["molecule"]) in ["HK", "HK-LIGAND", "RR", "ATP"] and moleculeName not in independentMolecules:
+						independentMolecules.append(moleculeName)
+						independentMoleculeIds.append(moleculeIndex)
+
+						if str(molecule["molecule"]) != "ATP":
+							independentToDependentMolecules[moleculeName] = "{}[{}]".format(
+								system["molecules"]["PHOSPHO-" + str(molecule["molecule"])],
+								molecule["location"]
+								)
 
 					# Find molecular mass
 					molecularMass = sim_data.getter.getMass([moleculeName]).asNumber(units.g / units.mol)[0]
@@ -142,10 +118,16 @@ class TwoComponentSystem(object):
 		self._stoichMatrixJ = np.array(stoichMatrixJ)
 		self._stoichMatrixV = np.array(stoichMatrixV)
 
-		self.moleculeNames = molecules
+		self.moleculeNames = np.array(molecules)
+		self.moleculeTypes = np.array(moleculeTypes)
 		self.rxnIds = rxnIds
 		self.ratesFwd = np.array(ratesFwd)
 		self.ratesRev = np.array(ratesRev)
+
+
+		self.independentMolecules = np.array(independentMolecules)
+		self.independentMoleculeIds = np.array(independentMoleculeIds)
+		self.independentToDependentMolecules = independentToDependentMolecules
 
 		# Mass balance matrix
 		self._stoichMatrixMass = np.array(stoichMatrixMass)
@@ -156,10 +138,6 @@ class TwoComponentSystem(object):
 
 		# The stoichometric matrix should balance out to numerical zero.
 		assert np.max([abs(x) for x in massBalanceArray]) < 1e-9
-
-		self._linearlyIndependentMatrixI = np.array(linearlyIndependentMatrixI)
-		self._linearlyIndependentMatrixJ = np.array(linearlyIndependentMatrixJ)
-		self._linearlyIndependentMatrixV = np.array(linearlyIndependentMatrixV)
 
 		self._makeMatrices()
 
@@ -183,14 +161,12 @@ class TwoComponentSystem(object):
 
 		return out
 
-	def linearlyIndependentMatrix(self):
-		shape = (self._linearlyIndependentMatrixI.max()+1, self._linearlyIndependentMatrixJ.max()+1)
+	def independentToAllMolecules(self):
+		shape = (len(self.moleculeNames), len(self.independentMolecules))
 
 		out = np.zeros(shape, np.float64)
 
-		out[self._linearlyIndependentMatrixI, self._linearlyIndependentMatrixJ] = self._linearlyIndependentMatrixV
 
-		return out
 
 	def massBalance(self):
 		'''
@@ -242,7 +218,7 @@ class TwoComponentSystem(object):
 		fixturesDir = os.path.join(
 			os.path.dirname(os.path.dirname(wholecell.__file__)),
 			"fixtures",
-			"equilibrium"
+			"twoComponentSystem"
 			)
 
 		needToCreate = False
@@ -304,33 +280,11 @@ class TwoComponentSystem(object):
 		self.Rp = Rp
 		self.Pp = Pp
 
-		# metsToRxnFluxes = self.stoichMatrix().copy()
+		self.metsToRxnFluxes = S
 
-		M = self.linearlyIndependentMatrix().copy()
-
-		self.redundantMolecules = [x for x in xrange(M.shape[0] -1, -1, -1) if np.sum(np.abs(M[x])) == 0]
-		self.tracerMolecules = [x for x in xrange(M.shape[0] -1, -1, -1) if x not in self.redundantMolecules]
-
-		metsToRxnFluxes = np.delete(M, self.redundantMolecules, 0)
-		self.metsToRxnFluxes = metsToRxnFluxes.T
-
-		# metsToRxnFluxes[(np.abs(metsToRxnFluxes) > EPS).sum(axis = 1) > 1, : ] = 0
-
-		# for colIdx in xrange(metsToRxnFluxes.shape[1]):
-		# 	try:
-		# 		firstNonZeroIdx = np.where(np.abs(metsToRxnFluxes[:, colIdx]) > EPS)[0][0]
-		# 	except IndexError:
-		# 		raise Exception, "Column %d of S matrix not linearly independent!" % colIdx
-		# 	metsToRxnFluxes[:firstNonZeroIdx, colIdx] = 0
-		# 	metsToRxnFluxes[(firstNonZeroIdx + 1):, colIdx] = 0
-
-		# self.metsToRxnFluxes = metsToRxnFluxes.T
 
 	def _makeDerivative(self):
-
-		# S = self.stoichMatrix()
-
-		S = self.metsToRxnFluxes.T;
+		S = self.stoichMatrix()
 
 		y = T.dvector()
 		dy = [0 * y[0] for _ in xrange(S.shape[0])]
@@ -366,11 +320,8 @@ class TwoComponentSystem(object):
 	# It could be useful in both the fitter and in the simulations
 	# But it isn't just data
 	def fluxesAndMoleculesToNextTimeStep(self, moleculeCounts, cellVolume, nAvogadro, timeStepSec):
-		moleculeTracerCounts = np.array([moleculeCounts[x] for x in self.tracerMolecules])
 
-		# y_init = moleculeCounts / (cellVolume * nAvogadro)
-
-		y_init = moleculeTracerCounts / (cellVolume * nAvogadro)
+		y_init = moleculeCounts / (cellVolume * nAvogadro)
 
 		y = scipy.integrate.odeint(self.derivatives, y_init, t = [0, timeStepSec], Dfun = self.derivativesJacobian)
 
@@ -379,14 +330,17 @@ class TwoComponentSystem(object):
 
 		y[y < 0] = 0
 		yMolecules = y * (cellVolume * nAvogadro)
-
 		dYMolecules = yMolecules[-1, :] - yMolecules[0, :]
-		rxnFluxes = np.round(np.dot(self.metsToRxnFluxes, dYMolecules))
-		rxnFluxesN = -1. * (rxnFluxes < 0) * rxnFluxes
-		rxnFluxesP =  1. * (rxnFluxes > 0) * rxnFluxes
-		moleculesNeeded = np.dot(self.Rp, rxnFluxesP) + np.dot(self.Pp, rxnFluxesN)
 
-		return rxnFluxes, moleculesNeeded
+		dependencyMatrix = self.makeDependencyMatrix()
+
+		independentMolecules = np.array([np.round(dYMolecules[x]) for x in self.independentMoleculeIds])
+
+		moleculesNeeded = np.dot(dependencyMatrix, independentMolecules)
+
+		moleculesNeeded[moleculesNeeded <= 0] = 0
+
+		return moleculesNeeded
 
 
 	# TODO: These methods might not be necessary, consider deleting if that's the case
@@ -446,3 +400,52 @@ class TwoComponentSystem(object):
 			startIndex = endIndex + 1
 
 		return reactionName
+
+	def makeDependencyMatrix(self):
+		moleculeTypes = self.moleculeTypes
+		dependencyMatrixI = []
+		dependencyMatrixJ = []
+		dependencyMatrixV = []
+
+		for independentMoleculeIndex, independentMoleculeId in enumerate(self.independentMoleculeIds):
+			dependencyMatrixI.append(independentMoleculeId)
+			dependencyMatrixJ.append(independentMoleculeIndex)
+			dependencyMatrixV.append(1)
+
+			if self.moleculeNames[independentMoleculeId] == "ATP[c]":
+				dependencyMatrixATPJ = independentMoleculeIndex
+			else:
+				moleculeType = moleculeTypes[independentMoleculeId]
+				dependentMoleculeId = int(np.where(self.moleculeNames == self.independentToDependentMolecules[self.moleculeNames[independentMoleculeId]])[0])
+				dependencyMatrixI.append(dependentMoleculeId)
+				dependencyMatrixJ.append(independentMoleculeIndex)
+				dependencyMatrixV.append(-1)
+
+		# ATP dependents: ADP, Pi, WATER, PROTON)
+		for ATPdependent in ["ADP[c]", "Pi[c]", "WATER[c]", "PROTON[c]"]:
+			dependencyMatrixI.append(int(np.where(self.moleculeNames == ATPdependent)[0]))
+			dependencyMatrixJ.append(dependencyMatrixATPJ)
+			if ATPdependent == "WATER[c]":
+				dependencyMatrixV.append(1)
+			else:
+				dependencyMatrixV.append(-1)
+
+		for col in np.arange(self.independentMoleculeIds.size):
+			if col == dependencyMatrixATPJ:
+				continue
+			else:
+				dependencyMatrixI.append(int(np.where(self.moleculeNames == "Pi[c]")[0]))
+				dependencyMatrixJ.append(col)
+				dependencyMatrixV.append(1)
+
+				dependencyMatrixI.append(int(np.where(self.moleculeNames == "WATER[c]")[0]))
+				dependencyMatrixJ.append(col)
+				dependencyMatrixV.append(-1)
+
+		shape = (np.max(dependencyMatrixI) +1, np.max(dependencyMatrixJ) +1)
+
+		out = np.zeros(shape, np.float64)
+
+		out[dependencyMatrixI, dependencyMatrixJ] = dependencyMatrixV
+
+		return out
