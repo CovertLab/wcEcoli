@@ -44,7 +44,7 @@ class Equilibrium(object):
 			}
 
 		# Remove reactions that we know won't occur (e.g., don't do computations on metabolites that have zero counts)
-		MOLECULES_THAT_WILL_EXIST_IN_SIMULATION = [m["Metabolite"] for m in raw_data.metaboliteConcentrations] + ["LEU", "S-ADENOSYLMETHIONINE", "ARABINOSE"] + [l["molecules"]["LIGAND"] for l in raw_data.twoComponentSystems]
+		MOLECULES_THAT_WILL_EXIST_IN_SIMULATION = [m["Metabolite"] for m in raw_data.metaboliteConcentrations] + ["LEU", "S-ADENOSYLMETHIONINE", "ARABINOSE"] + [l["molecules"]["LIGAND"] for l in raw_data.twoComponentSystems] + ["Pi"]
 
 		deleteReactions = []
 		for reactionIndex, reaction in enumerate(raw_data.equilibriumReactions):
@@ -67,7 +67,7 @@ class Equilibrium(object):
 			for molecule in reaction["stoichiometry"]:
 				if molecule["type"] == "metabolite":
 					moleculeName = "{}[{}]".format(
-						molecule["molecule"].upper(),
+						molecule["molecule"],
 						molecule["location"]
 						)
 					self.metaboliteSet.add(moleculeName)
