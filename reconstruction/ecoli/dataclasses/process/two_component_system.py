@@ -319,7 +319,7 @@ class TwoComponentSystem(object):
 	# TODO: Should this method be here?
 	# It could be useful in both the fitter and in the simulations
 	# But it isn't just data
-	def fluxesAndMoleculesToNextTimeStep(self, moleculeCounts, cellVolume, nAvogadro, timeStepSec):
+	def moleculesToNextTimeStep(self, moleculeCounts, cellVolume, nAvogadro, timeStepSec):
 
 		y_init = moleculeCounts / (cellVolume * nAvogadro)
 
