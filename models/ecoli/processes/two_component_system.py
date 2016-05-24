@@ -5,7 +5,7 @@ Two component system
 
 Two component system sub-model
 
-@author: Heejo Choi
+@author: Derek Macklin, Heejo Choi
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 5/3/2016
 """
@@ -36,7 +36,7 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(TwoComponentSystem, self).initialize(sim, sim_data)
 
-		self.nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		self.nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / units.mmol)
 		self.cellDensity = sim_data.constants.cellDensity.asNumber(units.g / units.L)
 
 		# Create matrices and vectors
@@ -48,7 +48,7 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		self.derivativesJacobian = sim_data.process.two_component_system.derivativesJacobian
 		self.metsToRxnFluxes = sim_data.process.two_component_system.metsToRxnFluxes
 
-		self.fluxesAndMoleculesToNextTimeStep = sim_data.process.two_component_system.fluxesAndMoleculesToNextTimeStep
+		self.moleculesToNextTimeStep = sim_data.process.two_component_system.moleculesToNextTimeStep
 
 		# Build views
 
@@ -62,7 +62,7 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg).asNumber(units.g)
 		self.cellVolume = cellMass / self.cellDensity
 
-		self.req = self.fluxesAndMoleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
+		self.req = self.moleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
 
 		self.molecules.requestIs(self.req)
 
@@ -71,7 +71,7 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 
 		if (self.req > moleculeCounts).any():
 			print "Process: Two component system - recalculating molecules to next time step"
-			self.req = self.fluxesAndMoleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
+			self.req = self.moleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
 			self.molecules.countsInc(self.req)
 		else:
 			self.molecules.countsInc(moleculeCounts)
