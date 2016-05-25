@@ -223,7 +223,6 @@ class Metabolism(object):
 		reactionRateInfo = {}
 		constraintIDs = []
 		constraintToReactionDict = {}
-		constraintMultiplesDict = {}
 
 		directionAmbiguousRxns = set()
 		nonCannonicalRxns = set()
@@ -307,7 +306,6 @@ class Metabolism(object):
 			constraintID = reaction["constraintID"]
 			constraintIDs.append(constraintID)
 			constraintToReactionDict[constraintID] = reactionID
-			constraintMultiplesDict[constraintID] = reaction["constraintMultiple"]
 
 			reactionRateInfo[constraintID] = reaction
 
@@ -334,7 +332,6 @@ class Metabolism(object):
 		self.enzymeNames = list(validEnzymeIDs)
 		self.constraintIDs = constraintIDs
 		self.constraintToReactionDict = constraintToReactionDict
-		self.constraintMultiplesDict = constraintMultiplesDict
 
 	def exchangeConstraints(self, exchangeIDs, coefficient, targetUnits, environment, time):
 		newObjective = None

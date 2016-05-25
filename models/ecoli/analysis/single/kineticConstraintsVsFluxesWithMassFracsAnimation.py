@@ -164,7 +164,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	barax = axarr[2]
 
 	barax.set_xlim(0, num_x)
-	# barax.set_ylim(0, 10000)
+	barax.set_ylim(0, 1000)
 	plt.title("Kinetic Rates Divided By Reaction Fluxes")
 	plt.xlabel("Reaction")
 	plt.ylabel("Fold Difference")

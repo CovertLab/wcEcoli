@@ -23,7 +23,8 @@ from wholecell.utils.enzymeKinetics import EnzymeKinetics
 
 # Hacks
 RNA_POLY_MRNA_DEG_RATE_PER_S = np.log(2) / 30. # half-life of 30 seconds
-FRACTION_INCREASE_RIBOSOMAL_PROTEINS = 0  # reduce stochasticity from protein expression
+FRACTION_INCREASE_RIBOSOMAL_PROTEINS = 0.2  # reduce stochasticity from protein expression
+FRACTION_INCREASE_RNAP_PROTEINS = 0.05
 
 # TODO: establish a controlled language for function behaviors (i.e. create* set* fit*)
 
@@ -37,7 +38,7 @@ ENVIRONMENT = "000000_wildtype"
 
 VERBOSE = False
 
-COUNTS_UNITS = units.umol
+COUNTS_UNITS = units.dmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 TIME_UNITS = units.s
@@ -517,7 +518,7 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time)
 
 	minRnapSubunitCounts = (
 		nRnapsNeeded * rnapStoich # Subunit stoichiometry
-		)
+		) * (1 + FRACTION_INCREASE_RNAP_PROTEINS)
 
 	# -- CONSTRAINT 2: Expected RNAP subunit counts based on distribution -- #
 	rnapCounts = bulkContainer.counts(rnapIds)
@@ -1025,7 +1026,7 @@ def findKineticCoeffs(sim_data, bulkContainer):
 	fluxesDict = dict(zip([fluxName[0] for fluxName in fluxNames], [flux[0] for flux in fluxes]))
 
 	# Use rabinowitz metabolite concentrations as the estimate
-	metaboliteConcentrationsDict = {key:value.asNumber(COUNTS_UNITS/VOLUME_UNITS) for key, value in sim_data.process.metabolism.concDict.iteritems()}
+	metaboliteConcentrationsDict = sim_data.process.metabolism.concDict
 
 	# Use fit estimates for protein counts
 	proteinIds = sim_data.process.translation.monomerData["id"]
@@ -1056,7 +1057,7 @@ def findKineticCoeffs(sim_data, bulkContainer):
 
 	proteinConcDict = {}
 	for proteinId, count in proteinCountsDict.iteritems():
-		proteinConcDict[proteinId] = ((1. / sim_data.constants.nAvogadro / cellVolumeInit) * count).asNumber(COUNTS_UNITS/VOLUME_UNITS)
+		proteinConcDict[proteinId] = ((1. / sim_data.constants.nAvogadro / cellVolumeInit) * count)
 
 	# proteinConcDict = dict(zip(proteinIds, proteinConcentrations.asNumber(COUNTS_UNITS/VOLUME_UNITS)))
 
@@ -1078,9 +1079,12 @@ def findKineticCoeffs(sim_data, bulkContainer):
 			ratio = 0 if flux == 0 else highestConstraintReactionDict[fluxName] / flux
 			overconstraintRatio[fluxName] = ratio
 
-
+	coefficientsSet = set()
 	for constraintID, reactionInfo in sim_data.process.metabolism.reactionRateInfo.iteritems():
 		reactionID = reactionInfo["reactionID"]
 		if reactionID in overconstraintRatio:
-			if overconstraintRatio[reactionID] > 0:
+			if overconstraintRatio[reactionID] > 1:
+				coefficientsSet.add((reactionInfo["reactionID"], overconstraintRatio[reactionID]))
 				reactionInfo["constraintMultiple"] = np.ceil(overconstraintRatio[reactionID])
+
+	if VERBOSE: print coefficientsSet
