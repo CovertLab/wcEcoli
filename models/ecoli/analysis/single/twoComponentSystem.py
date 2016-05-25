@@ -8,6 +8,7 @@ Plot two component system counts
 
 import argparse
 import os
+import cPickle
 
 import numpy as np
 import matplotlib
@@ -25,17 +26,21 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
 
+	sim_data = cPickle.load(open(simDataFile, "rb"))
+	TCS_IDS = []
+	moleculeTypeOrder = ["HK", "PHOSPHO-HK", "LIGAND", "HK-LIGAND", "PHOSPHO-HK-LIGAND", "RR", "PHOSPHO-RR"]
+	moleculeTypeLocation = ["[i]", "[i]", "[p]", "[i]", "[i]", "[c]", "[c]"]
+	moleculeTypeColor = ["b", "b", "orange", "g", "g", "r", "r"]
+	for system in sim_data.moleculeGroups.twoComponentSystems:
+		for idx, moleculeType in enumerate(moleculeTypeOrder):
+			if moleculeType == "LIGAND" and system["molecules"][moleculeType] == "PHOSPHO-ABC-27-CPLX":
+				TCS_IDS.append(str(system["molecules"][moleculeType]) + "[i]")
+			else:
+				TCS_IDS.append(str(system["molecules"][moleculeType]) + moleculeTypeLocation[idx])
+
 	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 
 	moleculeIds = bulkMolecules.readAttribute("objectNames")
-
-	TCS_IDS = [	'ARCB-MONOMER[i]', 'PHOSPHO-ARCB717[i]', 'ARCA-MONOMER[c]', 'PHOSPHO-ARCA[c]',
-				'BAES-MONOMER[i]', 'PHOSPHO-BAES[i]', 'BAER-MONOMER[c]', 'PHOSPHO-BAER[c]',
-				'DCUS-MONOMER[i]', 'PHOSPHO-DCUS[i]', 'DCUR-MONOMER[c]', 'PHOSPHO-DCUR[c]',
-				'NARX-MONOMER[i]', 'PHOSPHO-NARX[i]', 'NARL-MONOMER[c]', 'PHOSPHO-NARL[c]',
-				'PHOQ-MONOMER[i]', 'PHOSPHO-PHOQ[i]', 'PHOP-MONOMER[c]', 'PHOSPHO-PHOP[c]',
-				'PHOR-MONOMER[i]', 'PHOSPHO-PHOR[i]', 'PHOB-MONOMER[c]', 'PHOSPHO-PHOB[c]',
-				]
 
 	moleculeIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in TCS_IDS], np.int)
 
@@ -45,27 +50,33 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	bulkMolecules.close()
 
+	rows = 4
+	cols = 4
+	num_subentries = 7
+
 	plt.figure(figsize = (8.5, 11))
-	subplotIdx = 0;
-	subplotTitles = [	'ArcB/ArcA', 
-						'BaeS/BaeR',
-						'DcuS/DcuR',
-						'NarX/NarL',
-						'PhoQ/PhoP (-)',
-						'PhoR/PhoB (-)',
-						]
 
-	for idx in xrange(len(TCS_IDS)):
-		if (idx % 4 == 0):
-			subplotIdx += 1
-			plt.subplot(2, 3, subplotIdx)
-			plt.xlabel("Time (min)")
-			plt.ylabel("Counts")
-			plt.title(subplotTitles[subplotIdx -1])
+	for idx in xrange(len(sim_data.moleculeGroups.twoComponentSystems)):
+		grid_loc = idx + 1 + (cols*(num_subentries + 1))*( idx / cols)
 
-		plt.plot(time / 60., moleculeCounts[:, idx], linewidth = 2)
+		for subentryIdx in xrange(len(moleculeTypeOrder)):
+			ax = plt.subplot(rows*(num_subentries + 2), cols, grid_loc+((cols)*(subentryIdx)))
+			ax.plot(time / 60., moleculeCounts[:, (idx * num_subentries) + subentryIdx], linewidth = 1, color = moleculeTypeColor[subentryIdx])
+			ax.set_title(TCS_IDS[(idx * num_subentries) + subentryIdx], fontsize = 6)
+
+			ymin = np.min(moleculeCounts[:, (idx * num_subentries) + subentryIdx])
+			ymax = np.max(moleculeCounts[:, (idx * num_subentries) + subentryIdx])
+			ax.set_ylim([ymin, ymax])
+			ax.set_yticks([ymin, ymax])
+			ax.set_yticklabels(["%0.2e" % ymin, "%0.2e" % ymax])
+			ax.spines['top'].set_visible(False)
+			ax.spines['bottom'].set_visible(False)
+			ax.xaxis.set_ticks_position('none')
+			ax.tick_params(which = 'both', direction = 'out', labelsize=6)
+			ax.set_xticks([])
+
 		
-	plt.subplots_adjust(hspace = 0.5, wspace = 0.5)
+	plt.subplots_adjust(hspace = 1.5, wspace = 1)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
