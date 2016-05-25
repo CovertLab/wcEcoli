@@ -18,6 +18,9 @@ import re
 
 class TwoComponentSystem(object):
 	def __init__(self, raw_data, sim_data):
+		# Store two component system raw data for use in analysis
+		sim_data.moleculeGroups.twoComponentSystems = raw_data.twoComponentSystems
+
 		# Build the abstractions needed for two component systems
 
 		molecules = []
