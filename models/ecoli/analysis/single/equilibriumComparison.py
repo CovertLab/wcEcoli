@@ -104,7 +104,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		ax.tick_params(which = 'both', direction = 'out', labelsize=6)
 		ax.set_xticks([])
 
-
 		# Plot all reactant concentrations for this reaction
 		for reactantIndex in xrange(0,np.amin([reactantConcentrations.shape[1]]+[2])):
 
@@ -131,7 +130,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			ax.tick_params(which = 'both', direction = 'out', labelsize=6)
 			ax.set_xticks([])
 
-
 		# Plot all product concentrations for this reaction
 		for productIndex in xrange(0,np.amin([productConcentrations.shape[1]]+[2])):
 			ax = plt.subplot(rows*(num_subentries + 2), cols, grid_loc+((cols)*(productIndex+reactantIndex+2)))
@@ -156,21 +154,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			ax.xaxis.set_ticks_position('none')
 			ax.tick_params(which = 'both', direction = 'out', labelsize=6)
 			ax.set_xticks([])
-
-
-	# Create legend
-	# ax = plt.subplot(rows, cols, stoichMatrix.shape[1] + 2)
-	# ax.plot(0, 0, linewidth=2, label="count", color='k')
-	# ax.legend(loc = 10,prop={'size':10})
-	# ax.spines['top'].set_visible(False)
-	# ax.spines['bottom'].set_visible(False)
-	# ax.spines['left'].set_visible(False)
-	# ax.spines['right'].set_visible(False)
-	# ax.xaxis.set_ticks_position('none')
-	# ax.yaxis.set_ticks_position('none')
-	# ax.set_xticks([])
-	# ax.set_yticks([])
-	# ax.set_title("Highlights low empiricalKd", fontsize=12, bbox={'facecolor':'red', 'alpha':0.5, 'pad':1})
 
 	# Save
 	plt.subplots_adjust(hspace = 1, wspace = 1)

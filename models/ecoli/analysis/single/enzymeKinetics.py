@@ -20,6 +20,8 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
+from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
+
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
@@ -35,20 +37,18 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	
 	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
-	
-	enzymeKineticsdata.close()
 
-	reactionRateArray = np.transpose(enzymeKineticsArray)
+	enzymeKineticsdata.close()
 
 	plt.figure(figsize = (8.5, 11))
 	plt.title("Enzyme Kinetics")
 
-	for idx, timeCourse in enumerate(reactionRateArray):
+	for idx, timeCourse in enumerate(enzymeKineticsArray.T):
 		if (np.amax(timeCourse) < np.inf) and (idx < len(reactionIDs)):
 			plt.plot(time / 60, timeCourse, label=reactionIDs[idx][:15])
 
 	plt.xlabel("Time (min)")
-	plt.ylabel("Reaction Rate (reactions/second)")
+	plt.ylabel("Reaction Rate ({counts_units}/{volume_units}.{time_units})".format(counts_units=COUNTS_UNITS.strUnit(), volume_units=VOLUME_UNITS.strUnit(), time_units=TIME_UNITS.strUnit()))
 	plt.legend(framealpha=.5, fontsize=6)
 
 	from wholecell.analysis.analysis_tools import exportFigure

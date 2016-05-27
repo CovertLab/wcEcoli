@@ -82,19 +82,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	overconstraintMediansDict = dict(zip(fluxNamesEstimates[np.where(medians > 0)], medians[np.where(medians > 0)]))
 	overconstraintMeansDict = dict(zip(fluxNamesEstimates[np.where(means > 0)], means[np.where(means > 0)]))
 
-	threshold = 10
-
 	if VERBOSE:
-		idx = 0
 		for reaction, overconstraintMultipleAverage in overconstraintDict.iteritems():
 			if overconstraintMultipleAverage > 1:
-				if (variances[idx] / means[idx]) > threshold:
-					print reaction, overconstraintMultipleAverage
-			idx+=1
-
-
-
-	# import ipdb; ipdb.set_trace()
+				print reaction, overconstraintMultipleAverage
 
 	plt.figure(figsize=(10,15))
 

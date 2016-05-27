@@ -33,9 +33,11 @@ from wholecell.utils.fitting import massesAndCountsToAddForPools
 COUNTS_UNITS = units.dmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
+TIME_UNITS = units.s
 
-# Runs a second FBA at each step, which is constrained even if the main one is not
 NONZERO_ENZYMES = True
+
+SECRETION_PENALTY_COEFF = 1e-5
 
 USE_RATELIMITS = False # Enable/disable kinetic rate limits in the model
 
@@ -110,7 +112,7 @@ class Metabolism(wholecell.processes.process.Process):
 			+ initDryMass
 			)
 
-		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
+		self.energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
 		self.reactionStoich = sim_data.process.metabolism.reactionStoich
 		self.externalExchangeMolecules = sim_data.externalExchangeMolecules[sim_data.environment]
@@ -219,7 +221,7 @@ class Metabolism(wholecell.processes.process.Process):
 			massesToAdd, _ = massesAndCountsToAddForPools(massInitial, objIds, objConc, mws, self.cellDensity, self.nAvogadro)
 			smallMoleculePoolsDryMass = units.hstack((massesToAdd[:objIds.index('WATER[c]')], massesToAdd[objIds.index('WATER[c]') + 1:]))
 			totalDryMass = units.sum(smallMoleculePoolsDryMass) + massInitial
-			self.writeToListener("Mass", "expectedDryMassIncrease", totalDryMass)
+			self.writeToListener("CellDivision", "expectedDryMassIncrease", totalDryMass)
 
 		# Set external molecule levels
 		self.fba.externalMoleculeLevelsIs(externalMoleculeLevels)
@@ -385,8 +387,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.writeToListener("EnzymeKinetics", "volume_units",
 			str(VOLUME_UNITS))
-
-
 
 
 

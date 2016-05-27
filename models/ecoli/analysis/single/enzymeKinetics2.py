@@ -66,7 +66,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	plt.figure(figsize=(8.5,11))
 
-
 	for idx, overconstraintMultipleTimeCourse in enumerate(np.transpose(overconstraintMultiples)):
 		if overconstraintMultipleTimeCourse.any():
 			plt.plot(time[5:] / 60., overconstraintMultipleTimeCourse[5:], label=reactionIDs[idx][:30])
