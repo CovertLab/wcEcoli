@@ -128,7 +128,7 @@ class Metabolism(wholecell.processes.process.Process):
 			"moleculeMasses" : self.moleculeMasses,
 			"secretionPenaltyCoeff" : 0., # The "inconvenient constant"--limit secretion (e.g., of CO2); a value of 1e-5 seems to work
 			"solver" : "glpk",
-			"maintenanceCostGAM" : energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
+			"maintenanceCostGAM" : self.energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
 			"maintenanceReaction" : {
 				"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "Pi[c]": +1, "PROTON[c]": +1,
 				} # TODO: move to KB TODO: check reaction stoich
