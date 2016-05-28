@@ -62,17 +62,17 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg).asNumber(units.g)
 		self.cellVolume = cellMass / self.cellDensity
 
-		self.req = self.moleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
+		self.req, self.allMoleculeChanges = self.moleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
 
 		self.molecules.requestIs(self.req)
+
 
 	def evolveState(self):
 		moleculeCounts = self.molecules.counts()
 
 		if (self.req > moleculeCounts).any():
 			print "Process: Two component system - recalculating molecules to next time step"
-			self.req = self.moleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
-			self.molecules.countsInc(self.req)
+			self.req, self.allMoleculeChanges = self.moleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
+			self.molecules.countsInc(self.allMoleculeChanges)
 		else:
-			self.molecules.countsInc(moleculeCounts)
-		
+			self.molecules.countsInc(self.allMoleculeChanges)
