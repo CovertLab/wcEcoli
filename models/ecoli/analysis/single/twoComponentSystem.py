@@ -17,6 +17,7 @@ from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.utils import units
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -39,19 +40,23 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 				TCS_IDS.append(str(system["molecules"][moleculeType]) + moleculeTypeLocation[idx])
 
 	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-
 	moleculeIds = bulkMolecules.readAttribute("objectNames")
-
 	moleculeIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in TCS_IDS], np.int)
-
 	moleculeCounts = bulkMolecules.readColumn("counts")[:, moleculeIndexes]
 	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
 
 	bulkMolecules.close()
 
-	rows = 4
-	cols = 4
+	# Convert molecule counts to concentrations
+	nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+	cellDensity = sim_data.constants.cellDensity.asNumber(units.g / units.L)
+	mass = TableReader(os.path.join(simOutDir, "Mass"))
+	cellMass = (units.fg * mass.readColumn("cellMass")).asNumber(units.g)
+	cellVolume = cellMass / cellDensity
+
+	rows = 3
+	cols = 5
 	num_subentries = 7
 
 	plt.figure(figsize = (8.5, 11))
@@ -61,22 +66,22 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 		for subentryIdx in xrange(len(moleculeTypeOrder)):
 			ax = plt.subplot(rows*(num_subentries + 2), cols, grid_loc+((cols)*(subentryIdx)))
-			ax.plot(time / 60., moleculeCounts[:, (idx * num_subentries) + subentryIdx], linewidth = 1, color = moleculeTypeColor[subentryIdx])
-			ax.set_title(TCS_IDS[(idx * num_subentries) + subentryIdx], fontsize = 6)
+			ax.plot(time / 60., moleculeCounts[:, (idx * num_subentries) + subentryIdx] / (cellVolume * nAvogadro), linewidth = 1, color = moleculeTypeColor[subentryIdx])
+			ax.set_title(TCS_IDS[(idx * num_subentries) + subentryIdx], fontsize = 4)
 
-			ymin = np.min(moleculeCounts[:, (idx * num_subentries) + subentryIdx])
-			ymax = np.max(moleculeCounts[:, (idx * num_subentries) + subentryIdx])
+			ymin = np.amin(moleculeCounts[:, (idx * num_subentries) + subentryIdx] / (cellVolume * nAvogadro))
+			ymax = np.amax(moleculeCounts[:, (idx * num_subentries) + subentryIdx] / (cellVolume * nAvogadro))
 			ax.set_ylim([ymin, ymax])
 			ax.set_yticks([ymin, ymax])
 			ax.set_yticklabels(["%0.2e" % ymin, "%0.2e" % ymax])
 			ax.spines['top'].set_visible(False)
 			ax.spines['bottom'].set_visible(False)
 			ax.xaxis.set_ticks_position('none')
-			ax.tick_params(which = 'both', direction = 'out', labelsize=6)
+			ax.tick_params(which = 'both', direction = 'out', labelsize = 4)
 			ax.set_xticks([])
 
 		
-	plt.subplots_adjust(hspace = 1.5, wspace = 1)
+	plt.subplots_adjust(hspace = 1, wspace = 1)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
