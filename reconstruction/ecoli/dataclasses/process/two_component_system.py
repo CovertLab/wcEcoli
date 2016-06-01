@@ -342,9 +342,9 @@ class TwoComponentSystem(object):
 		allMoleculesChanges = np.dot(dependencyMatrix, independentMolecules)
 
 		moleculesNeeded = allMoleculesChanges.copy()
-		moleculesNeeded[moleculesNeeded <= 0] = 0
+		moleculesNeeded[moleculesNeeded >= 0] = 0
 
-		return moleculesNeeded, (-1 * allMoleculesChanges)
+		return (-1* moleculesNeeded), allMoleculesChanges
 
 
 	# TODO: These methods might not be necessary, consider deleting if that's the case
