@@ -20,7 +20,6 @@ import wholecell.utils.constants
 from wholecell.utils import units
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
-
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
 
@@ -78,6 +77,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			ax.spines['bottom'].set_visible(False)
 			ax.xaxis.set_ticks_position('none')
 			ax.tick_params(which = 'both', direction = 'out', labelsize = 4)
+			ax.set_xlim(left=-10)
 			ax.set_xticks([])
 
 		
