@@ -52,9 +52,9 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 
 		# Build views
 
-		moleculeNames = sim_data.process.two_component_system.moleculeNames
+		self.moleculeNames = sim_data.process.two_component_system.moleculeNames
 
-		self.molecules = self.bulkMoleculesView(moleculeNames)
+		self.molecules = self.bulkMoleculesView(self.moleculeNames)
 
 	def calculateRequest(self):
 		moleculeCounts = self.molecules.total()
@@ -76,3 +76,4 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 			self.molecules.countsInc(self.allMoleculeChanges)
 		else:
 			self.molecules.countsInc(self.allMoleculeChanges)
+
