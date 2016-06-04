@@ -24,6 +24,8 @@ from mpld3 import plugins, utils
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
+from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
+
 class HighlightLines(plugins.PluginBase):
     """A plugin to highlight lines on hover"""
 
@@ -71,12 +73,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
 
-
-
-
 	enzymeKineticsdata = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
 	
-	enzymeKineticsArray = enzymeKineticsdata.readColumn("reactionRates")
+	enzymeKineticsArray = enzymeKineticsdata.readColumn("reactionConstraints")
 
 	reactionIDs = enzymeKineticsdata.readAttribute("reactionIDs")
 	
@@ -101,7 +100,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	fig, ax = plt.subplots(subplot_kw={'xticks': [], 'yticks': []})
 	lines = ax.plot(time/60, timeCourses.T, label= lineLabels, color='blue', lw=4, alpha=0.4)
 	plt.xlabel("Time (min)")
-	plt.ylabel("Reaction Rate (reactions/second)")
+	plt.ylabel("Reaction Rate ({counts_units}/{volume_units}.{time_units})".format(counts_units=COUNTS_UNITS.strUnit(), volume_units=VOLUME_UNITS.strUnit(), time_units=TIME_UNITS.strUnit()))
 	plt.legend(lineLabels, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 	plugins.connect(fig, HighlightLines(lines, lineLabels))
 
