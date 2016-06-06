@@ -22,9 +22,7 @@ import wholecell.utils.constants
 
 import bokeh
 from bokeh.plotting import figure
-from bokeh.resources import CDN
-from bokeh.embed import file_html
-from bokeh.io import output_file
+from bokeh.models import *
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
 
@@ -35,20 +33,29 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
 
-	plot = figure()
-	plot.circle([1,2], [3,4])
+	enzymeKineticsdata = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
+	enzymeKineticsArray = enzymeKineticsdata.readColumn("reactionConstraints")
+	reactionIDs = enzymeKineticsdata.readAttribute("reactionIDs")
+	
+	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
+	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
 
-	html = file_html(plot, CDN, "my plot")
+	enzymeKineticsdata.close()
 
-	output_file(os.path.join(plotOutDir, plotOutFileName + ".html"), title=plotOutFileName, autosave=True)
-	bokeh.io.save(plot)
+	fig = plt.figure(figsize = (8.5, 11))
+	plt.title("Enzyme Kinetics")
 
-	# with open(os.path.join(plotOutDir, plotOutFileName + ".html"), 'w') as f:
-	# 	f.write(html)
+	for idx, timeCourse in enumerate(enzymeKineticsArray.T):
+		if (np.amax(timeCourse) < np.inf) and (idx < len(reactionIDs)):
+			plt.plot(time / 60, timeCourse, label=reactionIDs[idx][:15])
 
-	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName)
-	plt.close("all")
+	plt.xlabel("Time (min)")
+	plt.ylabel("Reaction Rate ({counts_units}/{volume_units}.{time_units})".format(counts_units=COUNTS_UNITS.strUnit(), volume_units=VOLUME_UNITS.strUnit(), time_units=TIME_UNITS.strUnit()))
+	plt.legend(framealpha=.5, fontsize=6)
+
+	from wholecell.analysis.analysis_tools import exportBokehFigure, exportMatplotlibAsBokeh
+	# exportBokehFigure(plot, plotOutDir, plotOutFileName)
+	exportMatplotlibAsBokeh(plt, plotOutDir, plotOutFileName)
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

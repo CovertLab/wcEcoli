@@ -76,6 +76,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+	from wholecell.analysis.analysis_tools import exportMatplotlibAsBokeh
+	exportMatplotlibAsBokeh(plt, plotOutDir, plotOutFileName)
 	plt.close("all")
 
 if __name__ == "__main__":

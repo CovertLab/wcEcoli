@@ -136,3 +136,43 @@ def exportHtmlFigure(fig, plt, plotOutDir, plotOutFileName, metadata=None):
 		os.mkdir(os.path.join(plotOutDir, HTML_DIR))
 
 	mpld3.save_html(fig, str(os.path.join(plotOutDir, HTML_DIR, plotOutFileName) + '.html'))
+
+
+import bokeh.io
+from bokeh.models import *
+import bokeh.mpl
+
+def exportBokehFigure(plot, plotOutDir, plotOutFileName, toolbars=None):
+	"""
+	Save a bokeh figure to html.
+	"""
+	if not os.path.exists(os.path.join(plotOutDir, HTML_DIR)):
+		os.mkdir(os.path.join(plotOutDir, HTML_DIR))
+
+	if toolbars is None:
+		toolbars = [BoxZoomTool(),
+			LassoSelectTool(),
+			PanTool(),
+			WheelZoomTool(),
+			ResizeTool(),
+			UndoTool(),
+			RedoTool(),
+			ResetTool(),
+			PreviewSaveTool(),
+			HoverTool()]
+
+	if hasattr(plot, "tools"):
+		plot.tools = []
+		plot.add_tools(*toolbars)
+
+	bokeh.io.output_file(os.path.join(plotOutDir, HTML_DIR, plotOutFileName + ".html"), title=plotOutFileName, autosave=False)
+	bokeh.io.save(plot)
+
+
+import bokeh.mpl
+
+def exportMatplotlibAsBokeh(plt, plotOutDir, plotOutFileName, toolbars=None):
+	"""
+	Convert a matplotlib figure into a bokeh figure and export it.
+	"""
+	exportBokehFigure(bokeh.mpl.to_bokeh(plt.gcf()), plotOutDir, plotOutFileName, toolbars=toolbars)
