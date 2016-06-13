@@ -26,6 +26,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
 
+
 	sim_data = cPickle.load(open(simDataFile, "rb"))
 	TCS_IDS = []
 	moleculeTypeOrder = ["HK", "PHOSPHO-HK", "LIGAND", "HK-LIGAND", "PHOSPHO-HK-LIGAND", "RR", "PHOSPHO-RR"]
@@ -57,6 +58,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	rows = 3
 	cols = 5
 	num_subentries = 7
+	# lastTime = time[-1]
+	# axisBumper = lastTime * 0.1
 
 	plt.figure(figsize = (8.5, 11))
 
@@ -77,7 +80,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			ax.spines['bottom'].set_visible(False)
 			ax.xaxis.set_ticks_position('none')
 			ax.tick_params(which = 'both', direction = 'out', labelsize = 4)
-			ax.set_xlim(left=-10)
+			ax.set_xlim(left = -2)
 			ax.set_xticks([])
 
 		
