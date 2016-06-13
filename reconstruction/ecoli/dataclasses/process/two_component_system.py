@@ -46,12 +46,14 @@ class TwoComponentSystem(object):
 								"LIGAND-BOUND-HK-PHOSPHORYLATION_RXN", 
 								"HK-PHOSPHOTRANSFER_RXN", 
 								"LIGAND-BOUND-HK-PHOSPHOTRANSFER_RXN", 
-								"RR-DEPHOSPHORYLATION_RXN"], 
+								"RR-DEPHOSPHORYLATION_RXN",
+								], 
 							-1: ["HK-PHOSPHORYLATION_RXN",
 								"LIGAND-BOUND-HK-PHOSPHORYLATION_RXN",
 								"HK-PHOSPHOTRANSFER_RXN",
 								"LIGAND-BOUND-HK-DEPHOSPHORYLATION_RXN",
-								"RR-DEPHOSPHORYLATION_RXN"]
+								"RR-DEPHOSPHORYLATION_RXN",
+								],
 							}
 
 		reactionTemplate = {}
@@ -73,7 +75,8 @@ class TwoComponentSystem(object):
 					reactionIndex = rxnIds.index(reactionName)
 
 				for molecule in reactionTemplate[reaction]["stoichiometry"]:
-					# moleculeName for per system molecules
+
+					# moleculeName for system molecules
 					if molecule["molecule"] in system["molecules"]:
 						moleculeName = "{}[{}]".format(
 							system["molecules"][molecule["molecule"]],
@@ -218,6 +221,7 @@ class TwoComponentSystem(object):
 	def _populateDerivativeAndJacobian(self):
 		# TODO: Decide if this caching is worthwhile
 		# TODO: Unhack this--this assumes a directory structure
+		import sys; sys.setrecursionlimit(4000)
 		fixturesDir = os.path.join(
 			os.path.dirname(os.path.dirname(wholecell.__file__)),
 			"fixtures",
@@ -323,9 +327,7 @@ class TwoComponentSystem(object):
 	# It could be useful in both the fitter and in the simulations
 	# But it isn't just data
 	def moleculesToNextTimeStep(self, moleculeCounts, cellVolume, nAvogadro, timeStepSec):
-
 		y_init = moleculeCounts / (cellVolume * nAvogadro)
-
 		y = scipy.integrate.odeint(self.derivatives, y_init, t = [0, timeStepSec], Dfun = self.derivativesJacobian)
 
 		if np.any(y[-1, :] * (cellVolume * nAvogadro) <= -1):
