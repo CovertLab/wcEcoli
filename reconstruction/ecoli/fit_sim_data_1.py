@@ -399,6 +399,8 @@ def expressionConverge(sim_data, expression, concDict, doubling_time, Km = None,
 
 		setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
 
+		setProteinCounts(bulkContainer)
+
 		# Normalize expression and write out changes
 
 		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
@@ -799,6 +801,9 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
 
+def setProteinCounts(bulkContainer):
+	# set PHOR-MONOMER[i] to have 1e2 counts
+	bulkContainer.countsIs([2e2], ["PHOR-MONOMER[i]"])
 
 def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km = None):
 
