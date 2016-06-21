@@ -217,10 +217,9 @@ class BulkMolecules(wholecell.states.state.State):
 		# self.container.tableAppend(tableWriter)
 		tableWriter.append(
 			counts = self.container._counts,
+			atpAllocatedInitial = self._countsAllocatedInitial[self.container._objectNames.index("ATP[c]"), :],
 			atpAllocatedFinal = self._countsAllocatedFinal[self.container._objectNames.index("ATP[c]"), :],
-			waterAllocatedFinal = self._countsAllocatedFinal[self.container._objectNames.index("WATER[c]"), :],
 			atpRequested = self._countsRequested[self.container._objectNames.index("ATP[c]"), :],
-			waterRequested = self._countsRequested[self.container._objectNames.index("WATER[c]"), :],
 			)
 
 	def tableLoad(self, tableReader, tableIndex):
