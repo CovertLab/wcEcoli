@@ -58,8 +58,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	rows = 3
 	cols = 5
 	num_subentries = 7
-	# lastTime = time[-1]
-	# axisBumper = lastTime * 0.1
 
 	plt.figure(figsize = (8.5, 11))
 
