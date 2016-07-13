@@ -25,6 +25,7 @@ import cvxpy
 # Tweaks
 RNA_POLY_MRNA_DEG_RATE_PER_S = np.log(2) / 30. # half-life of 30 seconds
 FRACTION_INCREASE_RIBOSOMAL_PROTEINS = 0.5  # reduce stochasticity from protein expression
+FRACTION_INCREASE_RNAP_PROTEINS = 0.05
 
 NUMERICAL_ZERO = 1e-10
 
@@ -55,6 +56,9 @@ def fitSimData_1(raw_data):
 
 	# Increase RNA poly mRNA deg rates
 	setRnaPolymeraseCodingRnaDegradationRates(sim_data)
+
+	# Increase two-component system histidine kinase mRNA deg rates
+	setTcsHistidineKinaseDegradationRates(sim_data)
 
 	# Set C-period
 	setCPeriod(sim_data)
@@ -433,6 +437,12 @@ def setRnaPolymeraseCodingRnaDegradationRates(sim_data):
 	subunitIndexes = np.array([np.where(sim_data.process.translation.monomerData["id"] == id_)[0].item() for id_ in rnaPolySubunits]) # there has to be a better way...
 	mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[subunitIndexes]
 	sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = RNA_POLY_MRNA_DEG_RATE_PER_S
+
+def setTcsHistidineKinaseDegradationRates(sim_data):
+	# Increase DCUR-MONOMER[c] deg rate
+	monomerIndexes = np.where([x == "DCUR-MONOMER[c]" for x in sim_data.process.translation.monomerData["id"]])[0]
+	mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[monomerIndexes]
+	sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = TCS_HISTIDINE_KINASE_DEG_RATE_PER_S
 
 def setCPeriod(sim_data):
 	sim_data.growthRateParameters.c_period = sim_data.process.replication.genome_length * units.nt / sim_data.growthRateParameters.dnaPolymeraseElongationRate / 2
