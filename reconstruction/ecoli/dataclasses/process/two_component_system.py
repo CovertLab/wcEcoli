@@ -22,7 +22,6 @@ class TwoComponentSystem(object):
 		sim_data.moleculeGroups.twoComponentSystems = raw_data.twoComponentSystems
 
 		# Build the abstractions needed for two component systems
-
 		molecules = []
 		moleculeTypes = []
 
@@ -39,20 +38,17 @@ class TwoComponentSystem(object):
 		independentMolecules = []
 		independentMoleculeIds = []
 		independentToDependentMolecules = {}
-		
 
 		## building template reactions:
-		signalingTemplate = {1: ["HK-PHOSPHORYLATION_RXN", 
-								"LIGAND-BOUND-HK-PHOSPHORYLATION_RXN", 
-								"HK-PHOSPHOTRANSFER_RXN", 
-								"LIGAND-BOUND-HK-PHOSPHOTRANSFER_RXN", 
-								"RR-DEPHOSPHORYLATION_RXN",
+		signalingTemplate = {1: ["POS-LIGAND-BOUND-HK-PHOSPHORYLATION_RXN", 
+								"POS-LIGAND-BOUND-HK-PHOSPHOTRANSFER_RXN", 
+								"POS-RR-DEPHOSPHORYLATION_RXN",
+								"POS-HK-PHOSPHORYLATION_RXN",
+								"POS-HK-PHOSPHOTRANSFER_RXN",
 								], 
-							-1: ["HK-PHOSPHORYLATION_RXN",
-								"LIGAND-BOUND-HK-PHOSPHORYLATION_RXN",
-								"HK-PHOSPHOTRANSFER_RXN",
-								"LIGAND-BOUND-HK-DEPHOSPHORYLATION_RXN",
-								"RR-DEPHOSPHORYLATION_RXN",
+							-1: ["NEG-HK-PHOSPHORYLATION_RXN",
+								"NEG-HK-PHOSPHOTRANSFER_RXN",
+								"NEG-RR-DEPHOSPHORYLATION_RXN",
 								],
 							}
 
@@ -89,7 +85,7 @@ class TwoComponentSystem(object):
 								molecule["location"]
 								)
 
-					# moleculeName for common molecules (ATP, ADP, Pi, WATER)
+					# moleculeName for common molecules (ATP, ADP, Pi, WATER, PROTON)
 					else:
 						moleculeName = "{}[{}]".format(
 							molecule["molecule"],
@@ -99,6 +95,7 @@ class TwoComponentSystem(object):
 					if moleculeName not in molecules:
 						molecules.append(moleculeName)
 						moleculeIndex = len(molecules) - 1
+						moleculeTypes.append(str(molecule["molecule"]))
 
 					else:
 						moleculeIndex = molecules.index(moleculeName)
@@ -109,14 +106,23 @@ class TwoComponentSystem(object):
 					stoichMatrixJ.append(reactionIndex)
 					stoichMatrixV.append(coefficient)
 
-					moleculeTypes.append(str(molecule["molecule"]))
 
-					# Building matrix with linearly independent rows
-					if str(molecule["molecule"]) in ["HK", "HK-LIGAND", "RR", "ATP"] and moleculeName not in independentMolecules:
+					# Build matrix with linearly independent rows based on network orientation
+					if str(molecule["molecule"]) in ["HK", "RR", "ATP"] and moleculeName not in independentMolecules:
 						independentMolecules.append(moleculeName)
 						independentMoleculeIds.append(moleculeIndex)
 
 						if str(molecule["molecule"]) != "ATP":
+							independentToDependentMolecules[moleculeName] = "{}[{}]".format(
+								system["molecules"]["PHOSPHO-" + str(molecule["molecule"])],
+								molecule["location"]
+								)
+
+					if system["orientation"] == 1:
+						if str(molecule["molecule"]) == "HK-LIGAND" and moleculeName not in independentMolecules:
+							independentMolecules.append(moleculeName)
+							independentMoleculeIds.append(moleculeIndex)
+
 							independentToDependentMolecules[moleculeName] = "{}[{}]".format(
 								system["molecules"]["PHOSPHO-" + str(molecule["molecule"])],
 								molecule["location"]
@@ -136,10 +142,11 @@ class TwoComponentSystem(object):
 		self.ratesFwd = np.array(ratesFwd)
 		self.ratesRev = np.array(ratesRev)
 
-
 		self.independentMolecules = np.array(independentMolecules)
 		self.independentMoleculeIds = np.array(independentMoleculeIds)
 		self.independentToDependentMolecules = independentToDependentMolecules
+
+		self.independentMoleculesAtpIndex = np.where(self.independentMolecules == "ATP[c]")
 
 		# Mass balance matrix
 		self._stoichMatrixMass = np.array(stoichMatrixMass)
@@ -154,6 +161,10 @@ class TwoComponentSystem(object):
 		self._makeMatrices()
 
 		self._populateDerivativeAndJacobian()
+
+		# Make dependency matrix
+		self.dependencyMatrix = self.makeDependencyMatrix()
+
 
 	def stoichMatrix(self):
 		shape = (self._stoichMatrixI.max()+1, self._stoichMatrixJ.max()+1)
@@ -343,14 +354,23 @@ class TwoComponentSystem(object):
 		yMolecules = y * (cellVolume * nAvogadro)
 		dYMolecules = yMolecules[-1, :] - yMolecules[0, :]
 
-		dependencyMatrix = self.makeDependencyMatrix()
+		dependencyMatrix = self.dependencyMatrix
 
-		independentMolecules = np.array([np.round(dYMolecules[x]) for x in self.independentMoleculeIds])
+		independentMoleculesCounts = np.array([np.round(dYMolecules[x]) for x in self.independentMoleculeIds])
 
-		allMoleculesChanges = np.dot(dependencyMatrix, independentMolecules)
+		# replace ATP count as the sum of other independent molecules requested
+		## could place this inside an if statement to avoid extra computations
+		# sumOfTrueIndependentMolecules = np.sum(independentMoleculesCounts) - independentMoleculesCounts[self.independentMoleculesAtpIndex]
+		# independentMoleculesCounts[self.independentMoleculesAtpIndex] = sumOfTrueIndependentMolecules
+
+		# calculate changes in molecule counts for all molecules
+		allMoleculesChanges = np.dot(dependencyMatrix, independentMoleculesCounts)
 
 		moleculesNeeded = allMoleculesChanges.copy()
 		moleculesNeeded[moleculesNeeded >= 0] = 0
+
+		if moleculesNeeded[7] < 0:
+			import ipdb; ipdb.set_trace()
 		
 		return (-1* moleculesNeeded), allMoleculesChanges
 
@@ -459,5 +479,4 @@ class TwoComponentSystem(object):
 		out = np.zeros(shape, np.float64)
 
 		out[dependencyMatrixI, dependencyMatrixJ] = dependencyMatrixV
-
 		return out
