@@ -79,8 +79,10 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 
 			print "Recalculating two component system - not enough: " + str(out)
 
-			self.req, self.allMoleculeChanges = self.moleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
+			_, self.allMoleculeChanges = self.moleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
 			self.molecules.countsInc(self.allMoleculeChanges)
 		else:
 			self.molecules.countsInc(self.allMoleculeChanges)
 
+		if (self.molecules.counts() < 0).any():
+			import ipdb; ipdb.set_trace()
