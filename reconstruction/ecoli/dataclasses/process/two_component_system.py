@@ -146,7 +146,7 @@ class TwoComponentSystem(object):
 		self.independentMoleculeIds = np.array(independentMoleculeIds)
 		self.independentToDependentMolecules = independentToDependentMolecules
 
-		self.independentMoleculesAtpIndex = np.where(self.independentMolecules == "ATP[c]")
+		self.independentMoleculesAtpIndex = np.where(self.independentMolecules == "ATP[c]")[0][0]
 
 		# Mass balance matrix
 		self._stoichMatrixMass = np.array(stoichMatrixMass)
@@ -358,12 +358,10 @@ class TwoComponentSystem(object):
 
 		independentMoleculesCounts = np.array([np.round(dYMolecules[x]) for x in self.independentMoleculeIds])
 
-		# replace ATP count as the sum of other independent molecules requested
-		## could place this inside an if statement to avoid extra computations
-		# sumOfTrueIndependentMolecules = np.sum(independentMoleculesCounts) - independentMoleculesCounts[self.independentMoleculesAtpIndex]
-		# independentMoleculesCounts[self.independentMoleculesAtpIndex] = sumOfTrueIndependentMolecules
+		# To ensure that we have non-negative counts of phosphate, we must have the following (which can be seen from the dependency matrix)
+		independentMoleculesCounts[self.independentMoleculesAtpIndex] = independentMoleculesCounts[:self.independentMoleculesAtpIndex].sum() + independentMoleculesCounts[(self.independentMoleculesAtpIndex + 1):].sum()
 
-		# calculate changes in molecule counts for all molecules
+		# Calculate changes in molecule counts for all molecules
 		allMoleculesChanges = np.dot(dependencyMatrix, independentMoleculesCounts)
 
 		moleculesNeeded = allMoleculesChanges.copy()
