@@ -5,20 +5,24 @@ Two component system
 
 Two component system sub-model
 
-@author: Derek Macklin, Heejo Choi
+@author: Derek Macklin
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 5/3/2016
+
+@author: Heejo Choi
 """
 
 from __future__ import division
 
 import numpy as np
 import scipy.integrate
+
+import wholecell.processes.process
 from wholecell.utils import units
+
 import theano.tensor as T
 import theano
 
-import wholecell.processes.process
 
 
 class TwoComponentSystem(wholecell.processes.process.Process):
@@ -53,7 +57,6 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		# Build views
 
 		self.moleculeNames = sim_data.process.two_component_system.moleculeNames
-
 		self.molecules = self.bulkMoleculesView(self.moleculeNames)
 
 	def calculateRequest(self):
@@ -77,12 +80,7 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 				if B[x]:
 					out.append(str(self.moleculeNames[x]) + "  | Req: " + str(self.req[x]) + "  Got: " + str(moleculeCounts[x]))
 
-			print "Recalculating two component system - not enough: " + str(out)
-
 			_, self.allMoleculeChanges = self.moleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
 			self.molecules.countsInc(self.allMoleculeChanges)
 		else:
 			self.molecules.countsInc(self.allMoleculeChanges)
-
-		if (self.molecules.counts() < 0).any():
-			import ipdb; ipdb.set_trace()
