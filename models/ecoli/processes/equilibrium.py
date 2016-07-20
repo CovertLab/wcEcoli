@@ -17,6 +17,7 @@ import scipy.integrate
 from wholecell.utils import units
 import theano.tensor as T
 import theano
+from wholecell.utils.constants import REQUEST_PRIORITY_EQUILIBRIUM
 
 import wholecell.processes.process
 
@@ -56,6 +57,7 @@ class Equilibrium(wholecell.processes.process.Process):
 
 		self.molecules = self.bulkMoleculesView(self.moleculeNames)
 
+		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_EQUILIBRIUM)
 
 	def calculateRequest(self):
 		moleculeCounts = self.molecules.total()
@@ -70,7 +72,6 @@ class Equilibrium(wholecell.processes.process.Process):
 
 	def evolveState(self):
 		moleculeCounts = self.molecules.counts()
-
 		rxnFluxes = self.rxnFluxes.copy()
 
 		# If we didn't get allocated all the molecules we need, make do with what we have
@@ -90,5 +91,3 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.molecules.countsInc(
 			np.dot(self.stoichMatrix, rxnFluxes)
 			)
-
-
