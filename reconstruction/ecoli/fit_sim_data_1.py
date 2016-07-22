@@ -58,12 +58,16 @@ def fitSimData_1(raw_data):
 	setRnaPolymeraseCodingRnaDegradationRates(sim_data)
 
 	# Increase two-component system histidine kinase mRNA deg rates
-	setTcsHistidineKinaseDegradationRates(sim_data)
+	setTcsMoleculesDegradationRates(sim_data)
+
 
 	# Set C-period
 	setCPeriod(sim_data)
 
 	cellSpecs = buildBasalCellSpecifications(sim_data)
+
+	# Set two-component system ligand complex's monomers' basal expressions
+	setTcsLigandComplexBasalExpressions(sim_data)
 
 	# Modify other properties
 
@@ -438,11 +442,20 @@ def setRnaPolymeraseCodingRnaDegradationRates(sim_data):
 	mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[subunitIndexes]
 	sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = RNA_POLY_MRNA_DEG_RATE_PER_S
 
-def setTcsHistidineKinaseDegradationRates(sim_data):
-	# Increase DCUR-MONOMER[c] deg rate
+def setTcsMoleculesDegradationRates(sim_data):
+	# Set DCUR-MONOMER[c] deg rate
 	monomerIndexes = np.where([x == "DCUR-MONOMER[c]" for x in sim_data.process.translation.monomerData["id"]])[0]
 	mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[monomerIndexes]
 	sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = TCS_HISTIDINE_KINASE_DEG_RATE_PER_S
+
+def setTcsLigandComplexBasalExpressions(sim_data):
+	# Set PSTA-MONOMER[i] and PSTC-MONOMER[i]
+	abcMonomerNames = ["PSTA-MONOMER[i]", "PSTB-MONOMER[i]", "PSTC-MONOMER[i]", "PSTS-MONOMER[i]"]
+	abcMonomerIndexes = np.where([sim_data.process.translation.monomerData["id"] == x for x in abcMonomerNames])[1] ## get index order from rna (not protein)
+	abc_mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[abcMonomerIndexes]
+	sim_data.process.transcription.rnaExpression["basal"][abc_mRNA_indexes] *= 10
+	sim_data.process.transcription.rnaExpression["basal"] /= sim_data.process.transcription.rnaExpression["basal"].sum()
+
 
 def setCPeriod(sim_data):
 	sim_data.growthRateParameters.c_period = sim_data.process.replication.genome_length * units.nt / sim_data.growthRateParameters.dnaPolymeraseElongationRate / 2
@@ -812,7 +825,7 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
 
 def setProteinCounts(bulkContainer):
-	# set PHOR-MONOMER[i] to have 1e2 counts
+	# set PHOR-MONOMER[i] to have 2e2 counts
 	bulkContainer.countsIs([2e2], ["PHOR-MONOMER[i]"])
 
 def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km = None):
