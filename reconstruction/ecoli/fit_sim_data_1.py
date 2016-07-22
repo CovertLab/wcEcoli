@@ -67,7 +67,7 @@ def fitSimData_1(raw_data):
 	cellSpecs = buildBasalCellSpecifications(sim_data)
 
 	# Set two-component system ligand complex's monomers' basal expressions
-	setTcsLigandComplexBasalExpressions(sim_data)
+	# setTcsLigandComplexBasalExpressions(sim_data)
 
 	# Modify other properties
 
@@ -451,7 +451,7 @@ def setTcsMoleculesDegradationRates(sim_data):
 def setTcsLigandComplexBasalExpressions(sim_data):
 	# Set PSTA-MONOMER[i] and PSTC-MONOMER[i]
 	abcMonomerNames = ["PSTA-MONOMER[i]", "PSTB-MONOMER[i]", "PSTC-MONOMER[i]", "PSTS-MONOMER[i]"]
-	abcMonomerIndexes = np.where([sim_data.process.translation.monomerData["id"] == x for x in abcMonomerNames])[1] ## get index order from rna (not protein)
+	abcMonomerIndexes = np.where([sim_data.process.translation.monomerData["id"] == x for x in abcMonomerNames])[1]
 	abc_mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[abcMonomerIndexes]
 	sim_data.process.transcription.rnaExpression["basal"][abc_mRNA_indexes] *= 10
 	sim_data.process.transcription.rnaExpression["basal"] /= sim_data.process.transcription.rnaExpression["basal"].sum()
