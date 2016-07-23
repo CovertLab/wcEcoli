@@ -74,16 +74,10 @@ class TwoComponentSystem(object):
 
 					# moleculeName for system molecules
 					if molecule["molecule"] in system["molecules"]:
-						if molecule["molecule"] == "PHOSPHO-ABC-27-CPLX": # special case: ligand is located in inner membrane
-							moleculeName = "{}[{}]".format(
-								system["molecules"][molecule["molecule"]],
-								"i"
-								)
-						else:
-							moleculeName = "{}[{}]".format(
-								system["molecules"][molecule["molecule"]],
-								molecule["location"]
-								)
+						moleculeName = "{}[{}]".format(
+							system["molecules"][molecule["molecule"]],
+							molecule["location"]
+							)
 
 					# moleculeName for common molecules (ATP, ADP, Pi, WATER, PROTON)
 					else:
