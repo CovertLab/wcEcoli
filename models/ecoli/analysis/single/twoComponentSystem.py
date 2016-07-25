@@ -34,11 +34,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	moleculeTypeColor = ["b", "b", "orange", "g", "g", "r", "r"]
 	for system in sim_data.moleculeGroups.twoComponentSystems:
 		for idx, moleculeType in enumerate(moleculeTypeOrder):
-			if moleculeType == "LIGAND" and system["molecules"][moleculeType] == "PHOSPHO-ABC-27-CPLX":
-				TCS_IDS.append(str(system["molecules"][moleculeType]) + "[i]")
-			else:
-				TCS_IDS.append(str(system["molecules"][moleculeType]) + moleculeTypeLocation[idx])
-
+			TCS_IDS.append(str(system["molecules"][moleculeType]) + moleculeTypeLocation[idx])
+			
 	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 	moleculeIds = bulkMolecules.readAttribute("objectNames")
 	moleculeIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in TCS_IDS], np.int)
