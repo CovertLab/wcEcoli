@@ -448,6 +448,14 @@ def setTcsMoleculesDegradationRates(sim_data):
 	mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[monomerIndexes]
 	sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = TCS_HISTIDINE_KINASE_DEG_RATE_PER_S
 
+	baerMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "BAER-MONOMER[c]")[0]
+	baerMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[baerMonomerIndex]
+	sim_data.process.transcription.rnaData.struct_array["degRate"][baerMRnaIndex] *= 10
+
+	baesMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "BAES-MONOMER[i]")[0]
+	baesMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[baesMonomerIndex]
+	sim_data.process.transcription.rnaData.struct_array["degRate"][baesMRnaIndex] *= 100
+
 def setTcsLigandComplexBasalExpressions(sim_data):
 	# Set PSTA-MONOMER[i] and PSTC-MONOMER[i]
 	abcMonomerNames = ["PSTA-MONOMER[i]", "PSTB-MONOMER[i]", "PSTC-MONOMER[i]", "PSTS-MONOMER[i]"]
