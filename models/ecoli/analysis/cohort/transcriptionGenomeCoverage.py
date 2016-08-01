@@ -36,10 +36,21 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	mRnaBasalExpression = np.array([basalExpression[x] for x in mRnaIds])
 	mRnaNames = np.array([rnaIds[x] for x in mRnaIds])
 
+	# Get synthProb and degRates
+	synthProb = sim_data.process.transcription.rnaSynthProb["basal"]
+	degRate = sim_data.process.transcription.rnaData["degRate"]
+
+	mRnaSynthProb = np.array([synthProb[x] for x in mRnaIds])
+	mRnaDegRate = np.array([degRate[x] for x in mRnaIds])
+
 	# Sort in order of decreasing basal expression
 	descendingOrderIndexing = np.argsort(mRnaBasalExpression)[::-1]
 	mRnaBasalExpressionSorted = mRnaBasalExpression[descendingOrderIndexing]
 	mRnaNamesSorted = mRnaNames[descendingOrderIndexing]
+
+	mRnaSynthProbSorted = mRnaSynthProb[descendingOrderIndexing]
+	mRnaDegRateSortedUnits = mRnaDegRate[descendingOrderIndexing]
+	mRnaDegRateSorted = np.array([x.asNumber(1 / units.s) for x in mRnaDegRateSortedUnits])
 
 	# Get all cells in each seed
 	ap = AnalysisPaths(variantDir, cohort_plot = True)
@@ -85,10 +96,58 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
+	# Bokeh plot
+	from bokeh.plotting import figure, output_file, ColumnDataSource
+	from bokeh.models import HoverTool, BoxZoomTool
+
+	source = ColumnDataSource(
+		data = dict(
+			x = np.arange(numMRnas),
+			y = transcribedFreqSumOverSeeds / float(numCells),
+			mRnaId = mRnaNamesSorted,
+			expression = mRnaBasalExpressionSorted,
+			degRate = mRnaDegRateSorted,
+			synthProb = mRnaSynthProbSorted,
+			)
+		)
+
+	hover = HoverTool(
+		tooltips = [
+			("ID", "@mRnaId"),
+			("expression", "@expression"),
+			("degRate", "@degRate"),
+			("synthProb", "@synthProb"),
+		]
+	)
+
+	TOOLS = [hover, BoxZoomTool(), "reset"]
+
+	p = figure(
+		title = "Frequency of observing at least 1 transcript during a simluated cell's life (n = %s)" % numCells,
+		title_text_font_size = "8pt",
+		x_axis_label = "mRNA ID (ordered from greatest to least basal expression)",
+		width = 800,
+		height = 500,
+		tools = TOOLS,
+	)
+	
+	p.xaxis.axis_label_text_font_size = "6pt"
+	p.scatter("x", "y", size = 10, fill_color = "navy", fill_alpha = 0.5, line_color = None, source = source)
+	show(p)
+
 	# Save data
 	freq = transcribedFreqSumOverSeeds / float(numCells)
 	mRnaId = mRnaNamesSorted
-	np.savez(open("OUTFILE", "w"), freq, mRnaId)
+	expression = mRnaBasalExpressionSorted
+	np.savez(open("OUTFILE", "w"), 
+		freq = freq, 
+		mRnaId = mRnaId, 
+		expression = expression, 
+		synthProb = mRnaSynthProbSorted, 
+		degRate = mRnaDegRateSorted,
+		)
+
+	import ipdb; ipdb.set_trace()
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
