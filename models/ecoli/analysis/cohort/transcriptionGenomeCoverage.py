@@ -85,6 +85,11 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
+	# Save data
+	freq = transcribedFreqSumOverSeeds / float(numCells)
+	mRnaId = mRnaNamesSorted
+	np.savez(open("OUTFILE", "w"), freq, mRnaId)
+
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
 			wholecell.utils.constants.SERIALIZED_KB_DIR,
