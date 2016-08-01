@@ -118,6 +118,11 @@ def divideBulkMolecules(bulkMolecules, randomState, chromosome_counts):
 	d1_bulk_molecules_container.countIs(d1_chromosome_count, bulkMolecules.divisionIds['fullChromosome'][0])
 	d2_bulk_molecules_container.countIs(d2_chromosome_count, bulkMolecules.divisionIds['fullChromosome'][0])
 
+	## Set basal transcription values to 1
+	# TODO: Add assertion that these elements have zero mass
+	d1_bulk_molecules_container.countsIs(1, bulkMolecules.divisionIds['setTo1'])
+	d2_bulk_molecules_container.countsIs(1, bulkMolecules.divisionIds['setTo1'])
+
 	return d1_bulk_molecules_container, d2_bulk_molecules_container
 
 def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
@@ -247,7 +252,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
 			if replicationForks >= 2:
 				for index in [0,1,2,3]:
 					# if not possible to have uneven number of partial chromosomes
-					num_index = d1_dividedAttributesDict['sequenceIdx'][replicationRoundIndexes] == index
+					num_index = d2_dividedAttributesDict['sequenceIdx'][replicationRoundIndexes] == index
 					new_value = np.zeros(num_index.sum())
 					for fork in range(replicationForks):
 						new_value[fork * new_value.size / replicationForks:(fork + 1) * new_value.size / replicationForks] = fork
