@@ -133,7 +133,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	
 	p.xaxis.axis_label_text_font_size = "6pt"
 	p.scatter("x", "y", size = 10, fill_color = "navy", fill_alpha = 0.5, line_color = None, source = source)
-	show(p)
+	
+	from wholecell.analysis.analysis_tools import exportBokehFigure
+	exportBokehFigure(p, plotOutDir, plotOutFileName, TOOLS)
 
 	# Save data
 	freq = transcribedFreqSumOverSeeds / float(numCells)
@@ -145,9 +147,10 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		expression = expression, 
 		synthProb = mRnaSynthProbSorted, 
 		degRate = mRnaDegRateSorted,
+		numCells = numCells,
 		)
 
-	import ipdb; ipdb.set_trace()
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
