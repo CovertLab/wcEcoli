@@ -31,15 +31,22 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	rnaIds = sim_data.process.transcription.rnaData["id"]
 	isMRna = sim_data.process.transcription.rnaData["isMRna"]
 	basalExpression = sim_data.process.transcription.rnaExpression["basal"]
+	synthProb = sim_data.process.transcription.rnaSynthProb["basal"]
+	degRate = sim_data.process.transcription.rnaData["degRate"]
 	mRnaIds = np.where(isMRna)[0]
 
 	mRnaBasalExpression = np.array([basalExpression[x] for x in mRnaIds])
+	mRnaSynthProb = np.array([synthProb[x] for x in mRnaIds])
+	mRnaDegRate = np.array([degRate[x].asNumber(1 / units.s) for x in mRnaIds])
 	mRnaNames = np.array([rnaIds[x] for x in mRnaIds])
 
-	# Sort in order of decreasing basal expression
+	# Sort in order
+	# descendingOrderIndexing = np.argsort(mRnaSynthProb)[::-1]
 	descendingOrderIndexing = np.argsort(mRnaBasalExpression)[::-1]
-	mRnaBasalExpressionSorted = mRnaBasalExpression[descendingOrderIndexing]
 	mRnaNamesSorted = mRnaNames[descendingOrderIndexing]
+	mRnaBasalExpressionSorted = mRnaBasalExpression[descendingOrderIndexing]
+	mRnaSynthProbSorted = mRnaSynthProb[descendingOrderIndexing]
+	mRnaDegRateSorted = mRnaDegRate[descendingOrderIndexing]
 
 	# Get all cells in each seed
 	ap = AnalysisPaths(variantDir, cohort_plot = True)
@@ -47,7 +54,8 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	# Get number of mRNAs transcribed
 	transcribedFreq = []
-	for simDir in all_cells:
+	for n, simDir in enumerate(all_cells):
+		print n
 		simOutDir = os.path.join(simDir, "simOut")
 
 		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
@@ -67,23 +75,49 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# Plot
 	numMRnas = mRnaNamesSorted.shape[0]
 	numCells = all_cells.shape[0]
+
+	freq = transcribedFreqSumOverSeeds / float(numCells)
+	import ipdb; ipdb.set_trace()
+	np.savez(open("OUTFILE_50gen_exp", "w"), 
+		freq = freq, 
+		mRnaId = mRnaNames, 
+		expression = mRnaBasalExpressionSorted, 
+		synthProb = mRnaSynthProbSorted, 
+		degRate = mRnaDegRateSorted,
+		numCells = numCells,
+	)
+
+
+
 	fig = plt.figure(figsize = (14, 10))
 
 	ax = plt.subplot(1, 1, 1)
+	# minSynthProb = np.min(mRnaSynthProb)
+	# maxSynthProb = np.max(mRnaSynthProb)
 	ax.scatter(np.arange(numMRnas), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
 
-	heightOffset = 0.01
-
 	ax.set_title("Frequency of producing at least 1 transcript\n(n = %s cells)" % numCells, fontsize = 12)
-	ax.set_xlabel("mRNA transcripts\n(in order of decreasing expected basal expression)", fontsize = 10)
+	ax.set_xlabel("mRNA transcripts\n(in order of decreasing synthesis probability)", fontsize = 10)
 	ax.set_xlim([0, numMRnas])
 	ax.set_ylim([-.05, 1.05])
 	ax.tick_params(which = "both", direction = "out", top = "off")
 	ax.spines["top"].set_visible(False)
 
+	# ax.set_title("Correlation of synthesis probability and frequency of observing at least 1 transcript")
+	# ax.set_xlabel("Synthesis probability")
+	# ax.set_ylabel("Frequency of observing at least 1 transcript")
+	# ax.tick_params(which = "both", direction = "out", top = "off")
+	# ax.spines["top"].set_visible(False)
+
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
+	import ipdb; ipdb.set_trace()
+	
+
+
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
@@ -96,7 +130,8 @@ if __name__ == "__main__":
 	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
 	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
 	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
+	parser.add_argument("--validationDataFile", help = "KB file name", type = str, default = "None")
 
 	args = parser.parse_args().__dict__
 
-	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"])
+	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"], args["validationDataFile"])
