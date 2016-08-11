@@ -450,15 +450,17 @@ def setTcsMoleculesDegradationRates(sim_data):
 
 	baerMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "BAER-MONOMER[c]")[0]
 	baerMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[baerMonomerIndex]
-	sim_data.process.transcription.rnaData.struct_array["degRate"][baerMRnaIndex] *= 10
+	sim_data.process.transcription.rnaData.struct_array["degRate"][baerMRnaIndex] = np.log(2) / 60.
 
 	baesMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "BAES-MONOMER[i]")[0]
 	baesMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[baesMonomerIndex]
-	sim_data.process.transcription.rnaData.struct_array["degRate"][baesMRnaIndex] *= 100
+	sim_data.process.transcription.rnaData.struct_array["degRate"][baesMRnaIndex] = 0.009 #np.log(2) / 60.
 
 	narxMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "NARX-MONOMER[i]")[0]
 	narxMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[narxMonomerIndex]
-	sim_data.process.transcription.rnaData.struct_array["degRate"][narxMRnaIndex] *= 10
+	sim_data.process.transcription.rnaData.struct_array["degRate"][narxMRnaIndex] = np.log(2) / 60.
+
+	# import ipdb; ipdb.set_trace()
 
 def setTcsLigandComplexBasalExpressions(sim_data):
 	# Set PSTA-MONOMER[i] and PSTC-MONOMER[i]
