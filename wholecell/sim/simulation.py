@@ -288,7 +288,7 @@ class Simulation(object):
 			logger.append(self)
 
 	def _seedFromName(self, name):
-		return np.unit32((self._seed + hash(name)) % np.iinfo(np.uint64).max)
+		return np.uint32((self._seed + hash(name)) % np.iinfo(np.uint64).max)
 		# return np.uint32((self._seed + self.simulationStep() + hash(name)) % np.iinfo(np.uint64).max)
 
 
