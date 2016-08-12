@@ -443,24 +443,25 @@ def setRnaPolymeraseCodingRnaDegradationRates(sim_data):
 	sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = RNA_POLY_MRNA_DEG_RATE_PER_S
 
 def setTcsMoleculesDegradationRates(sim_data):
-	# Set DCUR-MONOMER[c] deg rate
-	monomerIndexes = np.where([x == "DCUR-MONOMER[c]" for x in sim_data.process.translation.monomerData["id"]])[0]
-	mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[monomerIndexes]
-	sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = TCS_HISTIDINE_KINASE_DEG_RATE_PER_S
+	# monomerIndexes = np.where([x == "DCUR-MONOMER[c]" for x in sim_data.process.translation.monomerData["id"]])[0]
+	# mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[monomerIndexes]
+	# sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = TCS_HISTIDINE_KINASE_DEG_RATE_PER_S
 
-	baerMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "BAER-MONOMER[c]")[0]
-	baerMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[baerMonomerIndex]
-	sim_data.process.transcription.rnaData.struct_array["degRate"][baerMRnaIndex] = np.log(2) / 60.
+	# baerMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "BAER-MONOMER[c]")[0]
+	# baerMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[baerMonomerIndex]
+	# sim_data.process.transcription.rnaData.struct_array["degRate"][baerMRnaIndex] = np.log(2) / 60.
 
 	baesMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "BAES-MONOMER[i]")[0]
 	baesMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[baesMonomerIndex]
-	sim_data.process.transcription.rnaData.struct_array["degRate"][baesMRnaIndex] = 0.009 #np.log(2) / 60.
+	# sim_data.process.transcription.rnaData.struct_array["degRate"][baesMRnaIndex] = 0.009 #np.log(2) / 60.
 
-	narxMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "NARX-MONOMER[i]")[0]
-	narxMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[narxMonomerIndex]
-	sim_data.process.transcription.rnaData.struct_array["degRate"][narxMRnaIndex] = np.log(2) / 60.
+	sim_data.process.transcription.rnaExpression["basal"][baesMRnaIndex] = 3.26e-05
+	sim_data.process.transcription.rnaExpression["basal"][baesMRnaIndex] /= np.sum(sim_data.process.transcription.rnaExpression["basal"])
 
-	# import ipdb; ipdb.set_trace()
+	# narxMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "NARX-MONOMER[i]")[0]
+	# narxMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[narxMonomerIndex]
+	# sim_data.process.transcription.rnaData.struct_array["degRate"][narxMRnaIndex] = np.log(2) / 60.
+
 
 def setTcsLigandComplexBasalExpressions(sim_data):
 	# Set PSTA-MONOMER[i] and PSTC-MONOMER[i]
