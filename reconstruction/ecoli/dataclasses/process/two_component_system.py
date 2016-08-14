@@ -7,8 +7,6 @@ from __future__ import division
 
 import numpy as np
 import os
-import theano.tensor as T
-import theano
 import cPickle
 import wholecell
 from wholecell.utils import units
@@ -277,21 +275,17 @@ class TwoComponentSystem(object):
 		if needToCreate:
 			self._makeMatrices()
 			self._makeDerivative()
-			writeOdeFile(odeFile, self.derivativesSympySymbolic, self.derivativesJacobianSympySymbolic)
+			writeOdeFile(odeFile, self.derivativesSymbolic, self.derivativesJacobianSymbolic)
 			import reconstruction.ecoli.dataclasses.process.two_component_system_odes
-			self.derivativesSympy = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivatives
-			self.derivativesJacobianSympy = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivativesJacobian
+			self.derivatives = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivatives
+			self.derivativesJacobian = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivativesJacobian
 			cPickle.dump(self.stoichMatrix(), open(os.path.join(fixturesDir, "S.cPickle"), "wb"), protocol = cPickle.HIGHEST_PROTOCOL)
 			cPickle.dump(self.ratesFwd, open(os.path.join(fixturesDir, "ratesFwd.cPickle"), "wb"), protocol = cPickle.HIGHEST_PROTOCOL)
 			cPickle.dump(self.ratesRev, open(os.path.join(fixturesDir, "ratesRev.cPickle"), "wb"), protocol = cPickle.HIGHEST_PROTOCOL)
-			cPickle.dump(self.derivatives, open(os.path.join(fixturesDir, "derivatives.cPickle"), "wb"), protocol = cPickle.HIGHEST_PROTOCOL)
-			cPickle.dump(self.derivativesJacobian, open(os.path.join(fixturesDir, "jacobian.cPickle"), "wb"), protocol = cPickle.HIGHEST_PROTOCOL)
 		else:
-			self.derivatives = cPickle.load(open(os.path.join(fixturesDir, "derivatives.cPickle"), "rb"))
-			self.derivativesJacobian = cPickle.load(open(os.path.join(fixturesDir, "jacobian.cPickle"), "rb"))
 			import reconstruction.ecoli.dataclasses.process.two_component_system_odes
-			self.derivativesSympy = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivatives
-			self.derivativesJacobianSympy = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivativesJacobian
+			self.derivatives = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivatives
+			self.derivativesJacobian = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivativesJacobian
 
 	def _makeMatrices(self):
 		EPS = 1e-9
@@ -320,49 +314,35 @@ class TwoComponentSystem(object):
 	def _makeDerivative(self):
 		S = self.stoichMatrix()
 
-		y = T.dvector()
-		dy = [0 * y[0] for _ in xrange(S.shape[0])]
 		yStrings = ["y[%d]" % x for x in xrange(S.shape[0])]
-		ySympy = sp.symbols(yStrings)
-		dySympy = [sp.symbol.S.Zero] * S.shape[0]
+		y = sp.symbols(yStrings)
+		dy = [sp.symbol.S.Zero] * S.shape[0]
+
 		for colIdx in xrange(S.shape[1]):
 			negIdxs = np.where(S[:, colIdx] < 0)[0]
 			posIdxs = np.where(S[:, colIdx] > 0)[0]
 
 			reactantFlux = self.ratesFwd[colIdx]
-			reactantFluxSympy = self.ratesFwd[colIdx]
 			for negIdx in negIdxs:
 				reactantFlux *= (y[negIdx] ** (-1 * S[negIdx, colIdx]))
-				reactantFluxSympy *= (ySympy[negIdx] ** (-1 * S[negIdx, colIdx]))
 
 			productFlux = self.ratesRev[colIdx]
-			productFluxSympy = self.ratesRev[colIdx]
 			for posIdx in posIdxs:
 				productFlux *=  (y[posIdx] ** ( 1 * S[posIdx, colIdx]))
-				productFluxSympy *=  (ySympy[posIdx] ** ( 1 * S[posIdx, colIdx]))
 
 			fluxForNegIdxs = (-1. * reactantFlux) + (1. * productFlux)
 			fluxForPosIdxs = ( 1. * reactantFlux) - (1. * productFlux)
-			fluxForNegIdxsSympy = (-1. * reactantFluxSympy) + (1. * productFluxSympy)
-			fluxForPosIdxsSympy = ( 1. * reactantFluxSympy) - (1. * productFluxSympy)
 
 			for thisIdx in negIdxs:
 				dy[thisIdx] += fluxForNegIdxs
-				dySympy[thisIdx] += fluxForNegIdxsSympy
 			for thisIdx in posIdxs:
 				dy[thisIdx] += fluxForPosIdxs
-				dySympy[thisIdx] += fluxForPosIdxsSympy
 
-		t = T.dscalar()
-		dySympy = sp.Matrix(dySympy)
-		JSympy = dySympy.jacobian(ySympy)
+		dy = sp.Matrix(dy)
+		J = dy.jacobian(y)
 
-		J = [T.grad(dy[i], y) for i in xrange(len(dy))]
-
-		self.derivativesJacobian = theano.function([y, t], T.stack(*J), on_unused_input = "ignore")
-		self.derivatives = theano.function([y, t], T.stack(*dy), on_unused_input = "ignore")
-		self.derivativesJacobianSympySymbolic = JSympy
-		self.derivativesSympySymbolic = dySympy
+		self.derivativesJacobianSymbolic = J
+		self.derivativesSymbolic = dy
 
 
 	# TODO: Should this method be here?
@@ -371,8 +351,6 @@ class TwoComponentSystem(object):
 	def moleculesToNextTimeStep(self, moleculeCounts, cellVolume, nAvogadro, timeStepSec):
 		y_init = moleculeCounts / (cellVolume * nAvogadro)
 		y = scipy.integrate.odeint(self.derivatives, y_init, t = [0, timeStepSec], Dfun = self.derivativesJacobian)
-		ySympy = scipy.integrate.odeint(self.derivativesSympy, y_init, t = [0, timeStepSec], Dfun = self.derivativesJacobianSympy)
-		import ipdb; ipdb.set_trace()
 
 		if np.any(y[-1, :] * (cellVolume * nAvogadro) <= -1):
 			raise Exception, "Have negative values -- probably due to numerical instability"
