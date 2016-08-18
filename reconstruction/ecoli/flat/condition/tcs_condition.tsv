@@ -1,7 +1,0 @@
-"TCS"	"active TCS"	"active nutrients"	"active genotype perturbations"	"inactive nutrients"	"inactive genotype perturbations"
-"arcAB_oxygen"	"PHOSPHO-ARCA"	"minimal"	{}	"minimal_minux_oxygen"	{}
-"baeRS_indole"	"PHOSPHO-BAER"	"minimal_plus_indole"	{}	"minimal"	{}
-"dcuRS_succinate"	"PHOSPHO-DCUR"	"minimal_succinate"	{}	"minimal"	{}
-"narLX_nitrate"	"PHOSPHO-NARL"	"minimal_plus_nitrate"	{}	"minimal"	{}
-"phoPQ_calcium"	"PHOSPHO-PHOP"	"minimal"	{}	"minimal_minus_calcium"
-"phoBR_phosphate"	"PHOSPHO-PHOB"	"minimal"	{}	"minimal_minus_phosphate"	{}
