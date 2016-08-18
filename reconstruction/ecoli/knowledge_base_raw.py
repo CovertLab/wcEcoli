@@ -110,6 +110,8 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("condition", "timeseries", "000015_calcium_absent.tsv"),
 	os.path.join("condition", "timeseries", "000016_magnesium_absent.tsv"),
 	os.path.join("condition", "timeseries", "000017_phosphate_absent.tsv"),
+	os.path.join("condition", "timeseries", "000018_add_oxygen.tsv"),
+	os.path.join("condition", "timeseries", "000019_cut_oxygen.tsv"),
 
 
 	)
