@@ -63,6 +63,10 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		moleculeCounts = bulkMolecules.readColumn("counts")[:, mRnaIndexes]
 		bulkMolecules.close()
 
+		rnaDegradationListenerFile = TableReader(os.path.join(simOutDir, "RnaDegradationListener"))
+	 	countRnaDegraded = rnaDegradationListenerFile.readColumn('countRnaDegraded')
+	 	countMRnaDegraded = countRnaDegraded[:, mRnaIds]
+
 		moleculeCountsSumOverTime = moleculeCounts.sum(axis = 0)
 		mRnasTranscribed = np.array([x != 0 for x in moleculeCountsSumOverTime])
 
