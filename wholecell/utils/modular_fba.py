@@ -744,6 +744,9 @@ class FluxBalanceAnalysis(object):
 				stoichCoeff
 				)
 
+		self._reactionIDsSet.add(self._reactionID_NGAM)
+		self._reactionIDsSet.add(self._reactionID_polypeptideElongationEnergy)
+
 	def _buildEqConst(self):
 		try:
 			self._solver.buildEqConst()

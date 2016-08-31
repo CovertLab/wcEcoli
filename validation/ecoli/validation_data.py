@@ -33,6 +33,34 @@ class ValidationDataEcoli(object):
 
 	def initialize(self, validation_data_raw, knowledge_base_raw):
 		self.protein = Protein(validation_data_raw, knowledge_base_raw)
+		self.metabolicFluxes = MetabolicFluxes(validation_data_raw, knowledge_base_raw)
+
+
+class MetabolicFluxes(object):
+	""" MetabolicFluxes """
+
+	def __init__(self, validation_data_raw, knowledge_base_raw):
+		self._loadToya2009Counts(validation_data_raw)
+
+	def _loadToya2009Counts(self, validation_data_raw):
+		# Load Toya et al. 2009 dataset
+		toya_dataset = validation_data_raw.Toya2009_CCMfluxes
+		flux = np.array([x["flux"] for x in toya_dataset])
+		reactionIds = [x["EcoCycID"].encode("utf-8") for x in toya_dataset]
+
+		nEntries = len(reactionIds)
+		toya2009Data = np.zeros(
+			nEntries,
+			dtype = [
+				('reactionId', 'a50'),
+				('flux', 'f8'),
+				]
+			)
+
+		toya2009Data["reactionId"] = reactionIds
+		toya2009Data["flux"] = flux
+
+		self.toya2009Data = toya2009Data
 
 
 class Protein(object):

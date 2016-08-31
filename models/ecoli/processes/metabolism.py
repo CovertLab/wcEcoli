@@ -497,6 +497,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("FBAResults", "PCClog", PCClog)
 		self.writeToListener("FBAResults", "slope", slope) 
 		self.writeToListener("FBAResults", "slopelog", slopelog)
+		
 
 		# TODO
 		# NOTE: the calculation for the objective components doesn't yet have
