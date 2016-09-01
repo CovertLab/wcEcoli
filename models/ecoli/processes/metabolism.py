@@ -386,7 +386,7 @@ class Metabolism(wholecell.processes.process.Process):
 		metaboliteCountsFinal = metaboliteCountsInit.copy()
 		metaboliteCountsFinal[self.internalExchangeIdxs] = np.fmax(stochasticRound(
 			self.randomState,
-			metaboliteCountsInit + deltaMetabolites.asNumber()
+			metaboliteCountsInit[self.internalExchangeIdxs] + deltaMetabolites.asNumber()
 			), 0).astype(np.int64)
 
 		self.metabolites.countsIs(metaboliteCountsFinal)
