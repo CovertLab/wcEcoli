@@ -42,11 +42,11 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	# Sort in order
 	# descendingOrderIndexing = np.argsort(mRnaSynthProb)[::-1]
-	descendingOrderIndexing = np.argsort(mRnaBasalExpression)[::-1]
-	mRnaNamesSorted = mRnaNames[descendingOrderIndexing]
-	mRnaBasalExpressionSorted = mRnaBasalExpression[descendingOrderIndexing]
-	mRnaSynthProbSorted = mRnaSynthProb[descendingOrderIndexing]
-	mRnaDegRateSorted = mRnaDegRate[descendingOrderIndexing]
+	# descendingOrderIndexing = np.argsort(mRnaBasalExpression)[::-1]
+	# mRnaNamesSorted = mRnaNames[descendingOrderIndexing]
+	# mRnaBasalExpressionSorted = mRnaBasalExpression[descendingOrderIndexing]
+	# mRnaSynthProbSorted = mRnaSynthProb[descendingOrderIndexing]
+	# mRnaDegRateSorted = mRnaDegRate[descendingOrderIndexing]
 
 	# Get all cells in each seed
 	ap = AnalysisPaths(variantDir, cohort_plot = True)
@@ -54,13 +54,18 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	# Get number of mRNAs transcribed
 	transcribedFreq = []
+	
 	for n, simDir in enumerate(all_cells):
 		print n
 		simOutDir = os.path.join(simDir, "simOut")
 
 		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 		moleculeIds = bulkMolecules.readAttribute("objectNames")
-		mRnaIndexes = np.array([moleculeIds.index(x) for x in mRnaNamesSorted])
+
+		# Ignore any order based on SynthProb
+		mRnaIndexes = np.array([moleculeIds.index(x) for x in mRnaNames])
+		# mRnaIndexes = np.array([moleculeIds.index(x) for x in mRnaNamesSorted])
+
 		moleculeCounts = bulkMolecules.readColumn("counts")[:, mRnaIndexes]
 		bulkMolecules.close()
 
@@ -73,47 +78,66 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	transcribedFreqSumOverSeeds = transcribedFreq.sum(axis = 0)
 
 	# Plot
-	numMRnas = mRnaNamesSorted.shape[0]
+	numMRnas = mRnaNames.shape[0]
 	numCells = all_cells.shape[0]
 
 	freq = transcribedFreqSumOverSeeds / float(numCells)
-	import ipdb; ipdb.set_trace()
-	np.savez(open("OUTFILE_50gen_exp", "w"), 
-		freq = freq, 
-		mRnaId = mRnaNames, 
-		expression = mRnaBasalExpressionSorted, 
-		synthProb = mRnaSynthProbSorted, 
-		degRate = mRnaDegRateSorted,
-		numCells = numCells,
-	)
-
-
+	
+	# np.savez(open("OUTFILE_50gen_exp", "w"), 
+	# 	freq = freq, 
+	# 	mRnaId = mRnaNames, 
+	# 	expression = mRnaBasalExpressionSorted, 
+	# 	synthProb = mRnaSynthProbSorted, 
+	# 	degRate = mRnaDegRateSorted,
+	# 	numCells = numCells,
+	# )
 
 	fig = plt.figure(figsize = (14, 10))
 
 	ax = plt.subplot(1, 1, 1)
-	# minSynthProb = np.min(mRnaSynthProb)
-	# maxSynthProb = np.max(mRnaSynthProb)
-	ax.scatter(np.arange(numMRnas), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
 
-	ax.set_title("Frequency of producing at least 1 transcript\n(n = %s cells)" % numCells, fontsize = 12)
-	ax.set_xlabel("mRNA transcripts\n(in order of decreasing synthesis probability)", fontsize = 10)
-	ax.set_xlim([0, numMRnas])
-	ax.set_ylim([-.05, 1.05])
-	ax.tick_params(which = "both", direction = "out", top = "off")
-	ax.spines["top"].set_visible(False)
-
-	# ax.set_title("Correlation of synthesis probability and frequency of observing at least 1 transcript")
-	# ax.set_xlabel("Synthesis probability")
-	# ax.set_ylabel("Frequency of observing at least 1 transcript")
+	#import ipdb; ipdb.set_trace()
+	# ax.scatter(np.arange(numMRnas), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
+	# ax.set_title("Frequency of producing at least 1 transcript\n(n = %s cells)" % numCells, fontsize = 12)
+	# ax.set_xlabel("mRNA transcripts\n(in order of decreasing synthesis probability)", fontsize = 10)
+	# ax.set_xlim([0, numMRnas])
+	# ax.set_ylim([-.05, 1.05])
 	# ax.tick_params(which = "both", direction = "out", top = "off")
 	# ax.spines["top"].set_visible(False)
+
+
+
+
+	print 'Number of mRNAs with null SynthProb: %d' % sum(mRnaSynthProb == 0) 
+
+	NonZeroSynthProbmRNA = []
+	NonZerosFreqTranscription = []
+	for i in enumerate(mRnaSynthProb):
+
+		IdsAux = i[0]
+		SynthProbAux = i[1] 
+
+		if not i[1] == 0:
+
+			NonZeroSynthProbmRNA.append(np.log10(SynthProbAux))
+			NonZerosFreqTranscription.append(transcribedFreqSumOverSeeds[IdsAux] / float(numCells))
+
+	# # ax.scatter(np.log10(mRnaSynthProb), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
+	ax.scatter(NonZeroSynthProbmRNA, NonZerosFreqTranscription, facecolors = "none", edgecolors = "b")
+
+
+
+	# ax.scatter(np.log(mRnaSynthProb), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
+	ax.set_title("Correlation of synthesis probability and frequency of observing at least 1 transcript")
+	ax.set_xlabel("Synthesis probability")
+	ax.set_ylabel("Frequency of observing at least 1 transcript")
+	ax.tick_params(which = "both", direction = "out", top = "off")
+	ax.spines["top"].set_visible(False)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
-	import ipdb; ipdb.set_trace()
 	
 
 
