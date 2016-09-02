@@ -105,7 +105,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	ax.scatter(np.log(mRnaSynthProb), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
 	ax.set_title("Correlation of synthesis probability and frequency of observing at least 1 transcript\nn = %s cells" % numCells, fontsize = 12)
-	ax.set_xlabel("Synthesis probability")
+	ax.set_xlabel("log(synthesis probability)")
 	ax.set_ylabel("Frequency of observing at least 1 transcript")
 	ax.tick_params(which = "both", direction = "out", top = "off")
 	ax.spines["top"].set_visible(False)
@@ -114,7 +114,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
-	import ipdb; ipdb.set_trace()
+
 	
 
 
