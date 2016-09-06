@@ -114,7 +114,8 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("condition", "timeseries", "000019_cut_oxygen.tsv"),
 	os.path.join("condition", "timeseries", "000020_add_indole.tsv"),
 	os.path.join("condition", "timeseries", "000021_cut_indole.tsv"),
-
+	os.path.join("condition", "timeseries", "000022_add_calcium.tsv"),
+	os.path.join("condition", "timeseries", "000023_cut_calcium.tsv"),
 
 	)
 SEQUENCE_FILE = 'sequence.fasta'
