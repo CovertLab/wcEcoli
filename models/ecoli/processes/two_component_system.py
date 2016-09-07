@@ -72,14 +72,8 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 
 	def evolveState(self):
 		moleculeCounts = self.molecules.counts()
-		B = np.array([self.req > moleculeCounts])[0]
 
 		if (self.req > moleculeCounts).any():
-			out = []
-			for x in np.arange(len(self.moleculeNames)):
-				if B[x]:
-					out.append(str(self.moleculeNames[x]) + "  | Req: " + str(self.req[x]) + "  Got: " + str(moleculeCounts[x]))
-
 			_, self.allMoleculeChanges = self.moleculesToNextTimeStep(moleculeCounts, self.cellVolume, self.nAvogadro, self.timeStepSec())
 			self.molecules.countsInc(self.allMoleculeChanges)
 		else:
