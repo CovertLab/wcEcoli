@@ -54,7 +54,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# Get number of mRNAs transcribed
 	transcribedFreq = []
 	for n, simDir in enumerate(all_cells):
-		print n
+
 		simOutDir = os.path.join(simDir, "simOut")
 
 		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
@@ -79,22 +79,11 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# numMRnas = mRnaNamesSorted.shape[0]
 	numMRnas = mRnaNames.shape[0]
 	numCells = all_cells.shape[0]
-
 	freq = transcribedFreqSumOverSeeds / float(numCells)
-
-	# np.savez(open("OUTFILE_50gen_exp", "w"), 
-	# 	freq = freq, 
-	# 	mRnaId = mRnaNames, 
-	# 	expression = mRnaBasalExpressionSorted, 
-	# 	synthProb = mRnaSynthProbSorted, 
-	# 	degRate = mRnaDegRateSorted,
-	# 	numCells = numCells,
-	# )
-
 	fig = plt.figure(figsize = (14, 10))
-
 	ax = plt.subplot(1, 1, 1)
 
+	## For plotting transcription freq in order of mRNA
 	# ax.scatter(np.arange(numMRnas), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
 	# ax.set_title("Frequency of producing at least 1 transcript\n(n = %s cells)" % numCells, fontsize = 12)
 	# ax.set_xlabel("mRNA transcripts\n(in order of decreasing synthesis probability)", fontsize = 10)
@@ -103,9 +92,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# ax.tick_params(which = "both", direction = "out", top = "off")
 	# ax.spines["top"].set_visible(False)
 
-	ax.scatter(np.log(mRnaSynthProb), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
+	ax.scatter(np.log10(mRnaSynthProb), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
 	ax.set_title("Correlation of synthesis probability and frequency of observing at least 1 transcript\nn = %s cells" % numCells, fontsize = 12)
-	ax.set_xlabel("log(synthesis probability)")
+	ax.set_xlabel("log_10(synthesis probability)")
 	ax.set_ylabel("Frequency of observing at least 1 transcript")
 	ax.tick_params(which = "both", direction = "out", top = "off")
 	ax.spines["top"].set_visible(False)
@@ -113,10 +102,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
-
-
-	
-
 
 
 
