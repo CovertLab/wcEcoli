@@ -49,7 +49,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# Get number of mRNA transcripts produced
 	transcribedBoolean = []
 	for n, simDir in enumerate(all_cells):
-		print n
 
 		simOutDir = os.path.join(simDir, "simOut")
 
