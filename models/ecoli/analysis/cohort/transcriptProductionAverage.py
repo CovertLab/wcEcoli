@@ -77,8 +77,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		transcribedCounts.append(mRnaProducedCountsSumOverTime)
 
 	transcribedCounts = np.array(transcribedCounts)
-	transcribedCountsSumOverCells = transcribedCounts.sum(axis = 0)
-	transcribedFreq = transcribedCountsSumOverCells / float(numCells)
+	transcribedFreq = np.median(transcribedCounts, axis = 0)
+	# transcribedCountsSumOverCells = transcribedCounts.sum(axis = 0)
+	# transcribedFreq = transcribedCountsSumOverCells / float(numCells)
 
 
 	# Plot
@@ -101,21 +102,23 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	plt.close("all")
 
 
+	## Bokeh plot - in progress
+
 	# from bokeh.plotting import figure, output_file, show, ColumnDataSource, save
 	# from bokeh.models import HoverTool
 
-	# import ipdb; ipdb.set_trace()
 	# # Output to html file
-	# output_file(str(plotOutFileName) + ".html")
+	# output_file(str(plotOutFileName) + ".html", mode = "relative", root_dir = plotOutDir)
 
 	# # Hover
-	# source = ColumnDataSource(data = dict(
-	# 	x = np.log10(mRnaSynthProb),
-	# 	y = np.log10(transcribedFreq),
-	# 	mRnaId = mRnaNames,
-	# 	synthProb = mRnaSynthProb,
-	# 	degRate = mRnaDegRate,
-	# 	expression = mRnaExpression,
+	# source = ColumnDataSource(
+	# 	data = dict(
+	# 		x = np.log10(mRnaSynthProb),
+	# 		y = log10_transcribedFreq,
+	# 		mRnaId = mRnaNames,
+	# 		synthProb = mRnaSynthProb,
+	# 		degRate = mRnaDegRate,
+	# 		expression = mRnaExpression,
 	# 	)
 	# )
 
@@ -131,7 +134,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# # Create a plot with title and axis labels
 	# plot = figure(
 	# 	title = "Correlation of synthesis probability and number of transcripts produced\nn = %s cells" % numCells,
-	# 	title_text_font_size = ["8pt"], 
+	# 	# title_text_font_size = ["8pt"], 
 	# 	x_axis_label = "log_10(synthesis probability)", 
 	# 	y_axis_label = "log_10(Average number of transcripts produced per generation)",
 	# 	width = 800,
@@ -139,15 +142,13 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# 	tools = [hover, "reset", "wheel_zoom", "box_zoom", "pan", "resize", "lasso_select", "tap", "save"],
 	# 	)
 
-	# plot.scatter("x", "y", source = source,
+	# plot.scatter("x", "y", 
+	# 	source = source,
 	# 	size = 5,	 
 	# 	fill_color = "navy", 
 	# 	fill_alpha = 0.5, 
-	# 	line_color = None, )
-
-
-	# plot.xaxis.axis_label_text_font_size = ["6pt"]
-	# plot.yaxis.axis_label_text_font_size = ["6pt"]
+	# 	line_color = None,
+	# 	)
 
 	# save(plot)
 
