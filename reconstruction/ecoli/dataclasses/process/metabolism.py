@@ -196,7 +196,10 @@ class Metabolism(object):
 		reactionEnzymes = {}
 		reactionRates = {}
 
-		enzymeExceptions = set()
+		catalyticEnzymes = set()
+
+		rescueEnzymes = set()
+		knockoutEnzymes = set()
 
 		validEnzymeIDs = set([])
 		validProteinIDs = ['{}[{}]'.format(x['id'],location) for x in raw_data.proteins for location in x['location']]
@@ -207,15 +210,18 @@ class Metabolism(object):
 
 		self.default_kcat = raw_data.parameters["carbonicAnhydraseKcat"]
 
+		for enzymeInfo in raw_data.rescueEnzymes:
+			enzymeID = enzymeInfo["enzymeID"]
+			if enzymeID in validEnzymeIDs:
+				rescueEnzymes.add(enzymeID)
+			else:
+				raise Exception("Unrecognized enzyme in rescueEnzymes: {}".format(enzymeID))
+
 		for enzymeID in validEnzymeIDs:
 			enzyme = enzymeID[:enzymeID.index("[")]
 			location = enzymeID[enzymeID.index("[")+1:enzymeID.index("[")+2]
 
 			validEnzymeCompartments[enzyme].add(location)
-
-		# Enzymes which should not be used for enzyme-reaction pairs
-		for rxnEnzymePair in raw_data.unconstrainedReactionEnzymes:
-			enzymeExceptions.add(rxnEnzymePair["enzymeID"])
 
 		for reaction in raw_data.reactions:
 			reactionID = reaction["reaction id"]
@@ -228,10 +234,10 @@ class Metabolism(object):
 
 			reactionStoich[reactionID] = stoich
 
-			# Remove enzyme-reaction links for any enzyme in enzymeExceptions
 			for enzymeID in enzyme_list:
-				if enzymeID in enzymeExceptions:
-					enzyme_list.remove(enzymeID)
+				if enzymeID in validEnzymeIDs:
+					catalyticEnzymes.add(enzymeID)
+
 			enzymeKcatLink = {enzymeID:self.default_kcat.asNumber(1 / units.s) for enzymeIDs in enzyme_list}
 			reactionEnzymes[reactionID] = enzymeKcatLink
 
@@ -428,6 +434,9 @@ class Metabolism(object):
 			raise Exception("The following {} enzyme kinetics entries reference substrates which don't appear in their corresponding reaction, and aren't paired with an inhibitory constant (kI). They should be corrected or removed. {}".format(len(nonCannonicalRxns), nonCannonicalRxns))
 
 		self.reactionEnzymes = self.buildEnzymeReactionKcatLinks(reactionRateInfo, reactionEnzymes)
+		self.catalyticEnzymes = sorted(catalyticEnzymes)
+		self.rescueEnzymes = rescueEnzymes
+		self.knockoutEnzymes = knockoutEnzymes
 
 		self.reactionStoich = reactionStoich
 		self.nutrientsTimeSeries = sim_data.nutrientsTimeSeries

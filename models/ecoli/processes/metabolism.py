@@ -77,7 +77,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Load enzyme kinetic rate information
 		self.reactionRateInfo = sim_data.process.metabolism.reactionRateInfo
-		self.enzymeNames = sim_data.process.metabolism.enzymeNames
+		self.enzymeNames = sim_data.process.metabolism.catalyticEnzymes
 		self.constraintIDs = sim_data.process.metabolism.constraintIDs
 		self.constraintToReactionDict = sim_data.process.metabolism.constraintToReactionDict
 		self.reactionEnzymes  = sim_data.process.metabolism.reactionEnzymes
@@ -139,7 +139,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.objective,
 			objectiveType = "pools_kinetics_mixed",
 			objectiveParameters = {
-					"kineticObjectiveWeight":self.metabolismKineticObjectiveWeight,
+					"kineticObjectiveWeight":0,
 					"reactionRateTargets":{reaction:0 for reaction in self.kineticReactions},
 					},
 			moleculeMasses = self.moleculeMasses,
@@ -160,7 +160,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.spontaneousIndices = np.where(np.sum(self.enzymeReactionMatrix, axis=1) == 0)
 		self.enzymeReactionMatrix = csr_matrix(self.enzymeReactionMatrix)
 		self.kcat_max = sim_data.constants.carbonicAnhydraseKcat
-		self.base_rates_current = FLUX_UNITS * np.inf * np.ones(len(self.fba.reactionIDs()))
+		self.base_rates_current = FLUX_UNITS * np.inf * np.ones(self.enzymeReactionMatrix.shape[0])
 
 		# # Set up enzyme kinetics object
 		# self.enzymeKinetics = EnzymeKinetics(
@@ -199,6 +199,15 @@ class Metabolism(wholecell.processes.process.Process):
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_METABOLISM)
 
 		self.fitterPredictedFluxesDict = sim_data.process.metabolism.predictedFluxesDict
+
+		rescueEnzymes = sim_data.process.metabolism.rescueEnzymes
+
+		knockoutEnzymes = sim_data.process.metabolism.knockoutEnzymes
+
+		self.rescueLocations = np.where([True if x in rescueEnzymes else False for x in self.enzymeNames])
+
+		self.knockoutLocations = np.where([True if x in knockoutEnzymes else False for x in self.enzymeNames])
+
 
 	def calculateRequest(self):
 		self.metabolites.requestAll()
@@ -292,11 +301,16 @@ class Metabolism(wholecell.processes.process.Process):
 		#  Find enzyme concentrations from enzyme counts
 		enzymeCountsInit = self.enzymes.counts()
 
+		enzymeCountsInit[self.rescueLocations] += 1
+
+		enzymeCountsInit[self.knockoutLocations] = 0
+
 		enzymeConcentrations = countsToMolar * enzymeCountsInit
 
 		if NONZERO_ENZYMES:
 			# Add one of every enzyme to ensure none are zero
 			enzymeConcentrations = countsToMolar * (enzymeCountsInit + 1)
+
 
 		if USE_BASE_RATES:
 			# Calculate new rates
@@ -304,7 +318,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.base_rates_new = FLUX_UNITS * self.enzymeReactionMatrix.dot(self.enzymeMaxRates.asNumber(FLUX_UNITS))
 			self.base_rates_new[self.spontaneousIndices] = (FLUX_UNITS) * np.inf
 			# Update base_rates_current
-			updateLocations = np.where(self.base_rates_new.asNumber(FLUX_UNITS) != self.base_rates_current.asNumber(FLUX_UNITS))
+			updateLocations = np.where(np.not_equal(self.base_rates_new.asNumber(FLUX_UNITS), self.base_rates_current.asNumber(FLUX_UNITS)))
 			updateReactions = self.fba.reactionIDs()[updateLocations]
 			updateValues = self.base_rates_new[updateLocations]
 			self.base_rates_current[updateLocations] = updateValues

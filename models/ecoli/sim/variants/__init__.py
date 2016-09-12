@@ -5,6 +5,9 @@ from __future__ import division
 from models.ecoli.sim.variants.gene_knockout import geneKnockout
 from models.ecoli.sim.variants.gene_knockout import geneKnockoutTotalIndices
 
+from models.ecoli.sim.variants.enzyme_essentiality import enzymeEssentiality
+from models.ecoli.sim.variants.enzyme_essentiality import enzymeEssentialityTotalIndices
+
 from models.ecoli.sim.variants.wildtype import wildtype
 from models.ecoli.sim.variants.wildtype import wildtypeTotalIndices
 
@@ -34,6 +37,7 @@ from models.ecoli.sim.variants.condition import conditionIndices
 
 nameToFunctionMapping = {
 	"geneKnockout": geneKnockout,
+	"enzymeEssentiality": enzymeEssentiality,
 	"wildtype": wildtype,
 	"timeStep": timeStep,
 	"kineticsFluxCoeff": kineticsFluxCoeff,
@@ -47,6 +51,7 @@ nameToFunctionMapping = {
 
 nameToNumIndicesMapping = {
 	"geneKnockout": geneKnockoutTotalIndices,
+	"enzymeEssentiality": enzymeEssentialityTotalIndices,
 	"wildtype": wildtypeTotalIndices,
 	"timeStep": timeStepTotalIndices,
 	"kineticsFluxCoeff": kineticsFluxCoeffTotalIndices,
@@ -57,3 +62,4 @@ nameToNumIndicesMapping = {
 	"condition": conditionIndices,
 	"metabolismKineticHomeostaticRatio": metabolismKineticHomeostaticRatioTotalIndices,
 }
+enzymeEssentiality

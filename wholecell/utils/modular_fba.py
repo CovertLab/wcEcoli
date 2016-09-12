@@ -238,6 +238,7 @@ class FluxBalanceAnalysis(object):
 
 		# Keep track of non-standard reactions
 		self._specialFluxIDsSet = set()
+		self._kineticTargetFluxes = set()
 
 		# Call indivdual initialization methods
 		self._initReactionNetwork(self.reactionStoich)
@@ -732,8 +733,6 @@ class FluxBalanceAnalysis(object):
 		if isinstance(fixedReactionNames, str):
 			fixedReactionNames = [fixedReactionNames]
 
-		self._kineticTargetFluxes = set()
-
 		# This is a minimization objective problem
 		self._solver.maximizeObjective(False)
 
@@ -829,7 +828,6 @@ class FluxBalanceAnalysis(object):
 
 		# Unless given, assume no reactions are one-sided targets (ie kcat only targets)
 		self._oneSidedReactions = set(objectiveParameters["oneSidedReactionTargets"]) if "oneSidedReactionTargets" in objectiveParameters else set()
-		self._kineticTargetFluxes = set()
 
 		# This is a minimization objective problem
 		self._solver.maximizeObjective(False)

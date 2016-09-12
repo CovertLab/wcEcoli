@@ -48,7 +48,7 @@ LIST_OF_DICT_FILENAMES = (
 	"tfIds.tsv",
 	"transcriptionUnits.tsv",
 	"translationEfficiency.tsv",
-	"unconstrainedReactionEnzymes.tsv",
+	"rescueEnzymes.tsv",
 	"water.tsv",
 	os.path.join("massFractions", "glycogenFractions.tsv"),
 	os.path.join("massFractions", "ionFractions.tsv"),
