@@ -4,7 +4,7 @@ Plots fraction of mRNAs transcribed (out of all genes to be transcribed) for all
 
 @author: Heejo Choi
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/29/2016
+@date: Created 9/8/2016
 """
 
 import argparse
@@ -30,93 +30,70 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	sim_data = cPickle.load(open(simDataFile, "rb"))
 	rnaIds = sim_data.process.transcription.rnaData["id"]
 	isMRna = sim_data.process.transcription.rnaData["isMRna"]
-	basalExpression = sim_data.process.transcription.rnaExpression["basal"]
-	synthProb = sim_data.process.transcription.rnaSynthProb["basal"]
-	degRate = sim_data.process.transcription.rnaData["degRate"]
 	mRnaIds = np.where(isMRna)[0]
-
-	mRnaBasalExpression = np.array([basalExpression[x] for x in mRnaIds])
-	mRnaSynthProb = np.array([synthProb[x] for x in mRnaIds])
-	mRnaDegRate = np.array([degRate[x].asNumber(1 / units.s) for x in mRnaIds])
 	mRnaNames = np.array([rnaIds[x] for x in mRnaIds])
 
-	# Sort in order
-	# descendingOrderIndexing = np.argsort(mRnaBasalExpression)[::-1]
-	# mRnaNamesSorted = mRnaNames[descendingOrderIndexing]
-	# mRnaBasalExpressionSorted = mRnaBasalExpression[descendingOrderIndexing]
-	# mRnaSynthProbSorted = mRnaSynthProb[descendingOrderIndexing]
-	# mRnaDegRateSorted = mRnaDegRate[descendingOrderIndexing]
+	synthProb = sim_data.process.transcription.rnaSynthProb["basal"]
+	mRnaSynthProb = np.array([synthProb[x] for x in mRnaIds])
+
+	expression = sim_data.process.transcription.rnaExpression["basal"]
+	mRnaExpression = np.array([expression[x] for x in mRnaIds])
+
+	degRate = sim_data.process.transcription.rnaData["degRate"]
+	mRnaDegRate = np.array([degRate[x].asNumber(1 / units.s) for x in mRnaIds])
 
 	# Get all cells in each seed
 	ap = AnalysisPaths(variantDir, cohort_plot = True)
 	all_cells = ap.get_cells()
+	numMRnas = mRnaNames.shape[0]
+	numCells = all_cells.shape[0]
+	numerical_zero = 0.1
+	
 
-	# Get number of mRNAs transcribed
-	transcribedFreq = []
+	# Get number of mRNA transcripts produced
+	fig = plt.figure(figsize = (14, 10))
+	ax = plt.subplot(1, 1, 1)
 	
 	for n, simDir in enumerate(all_cells):
-		print n
 		simOutDir = os.path.join(simDir, "simOut")
 
 		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 		moleculeIds = bulkMolecules.readAttribute("objectNames")
 		mRnaIndexes = np.array([moleculeIds.index(x) for x in mRnaNames])
-		moleculeCounts = bulkMolecules.readColumn("counts")[:, mRnaIndexes]
+		mRnaCounts = bulkMolecules.readColumn("counts")[:, mRnaIndexes]
 		bulkMolecules.close()
 
 		rnaDegradationListenerFile = TableReader(os.path.join(simOutDir, "RnaDegradationListener"))
 	 	countRnaDegraded = rnaDegradationListenerFile.readColumn('countRnaDegraded')
 	 	countMRnaDegraded = countRnaDegraded[:, mRnaIds]
+		
+		# Calculate number of transcripts produced
+		mRnaDegraded_skip0 = countMRnaDegraded[1:, :] # remove first timestep
+		mRnaCounts_skip0 = mRnaCounts[1:, :]
+		mRnaCounts_skiplast = mRnaCounts[:-1, :]
 
-		moleculeCountsSumOverTime = moleculeCounts.sum(axis = 0)
-		mRnasTranscribed = np.array([x != 0 for x in moleculeCountsSumOverTime])
+		mRnaProduced = mRnaCounts_skip0 - (mRnaCounts_skiplast - mRnaDegraded_skip0)
+		mRnaProducedSumOverTime = mRnaProduced.sum(axis = 0)
 
-		transcribedFreq.append(mRnasTranscribed)
+		# Replace true zero with numerical zero
+		zerosIndex = np.where(mRnaProducedSumOverTime == 0)[0]
+		mRnaProducedSumOverTime[zerosIndex] = numerical_zero
+		log10_mRnasProduceSumOverTime = np.log10(mRnaProducedSumOverTime)
+		log10_mRnasProduceSumOverTime[zerosIndex] = np.log10(numerical_zero)
 
-	transcribedFreq = np.array(transcribedFreq)
-	transcribedFreqSumOverSeeds = transcribedFreq.sum(axis = 0)
+		ax.scatter(np.log10(mRnaSynthProb), log10_mRnasProduceSumOverTime, facecolors = "none", edgecolors = "b")
+
 
 	# Plot
-	numMRnas = mRnaNames.shape[0]
-	numCells = all_cells.shape[0]
-
-	freq = transcribedFreqSumOverSeeds / float(numCells)
-
-	# np.savez(open("OUTFILE_50gen_exp", "w"), 
-	# 	freq = freq, 
-	# 	mRnaId = mRnaNames, 
-	# 	expression = mRnaBasalExpressionSorted, 
-	# 	synthProb = mRnaSynthProbSorted, 
-	# 	degRate = mRnaDegRateSorted,
-	# 	numCells = numCells,
-	# )
-
-	fig = plt.figure(figsize = (14, 10))
-
-	ax = plt.subplot(1, 1, 1)
-
-
-	# ax.scatter(np.arange(numMRnas), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
-	# ax.set_title("Frequency of producing at least 1 transcript\n(n = %s cells)" % numCells, fontsize = 12)
-	# ax.set_xlabel("mRNA transcripts\n(in order of decreasing synthesis probability)", fontsize = 10)
-	# ax.set_xlim([0, numMRnas])
-	# ax.set_ylim([-.05, 1.05])
-	# ax.tick_params(which = "both", direction = "out", top = "off")
-	# ax.spines["top"].set_visible(False)
-
-	ax.scatter(np.log(mRnaSynthProb), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
-	ax.set_title("Correlation of synthesis probability and frequency of observing at least 1 transcript\nn = %s cells" % numCells, fontsize = 12)
-	ax.set_xlabel("log(synthesis probability)")
-	ax.set_ylabel("Frequency of observing at least 1 transcript")
+	ax.set_title("Correlation of synthesis probability and number of transcripts produced\nn = %s cells" % numCells, fontsize = 12)
+	ax.set_xlabel("log_10(synthesis probability)")
+	ax.set_ylabel("log_10(Transcripts produced)")
 	ax.tick_params(which = "both", direction = "out", top = "off")
 	ax.spines["top"].set_visible(False)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
-
-
-
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
