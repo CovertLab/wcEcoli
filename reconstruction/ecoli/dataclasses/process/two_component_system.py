@@ -371,9 +371,6 @@ class TwoComponentSystem(object):
 
 		moleculesNeeded = allMoleculesChanges.copy()
 		moleculesNeeded[moleculesNeeded >= 0] = 0
-
-		if moleculesNeeded[7] < 0:
-			import ipdb; ipdb.set_trace()
 		
 		return (-1* moleculesNeeded), allMoleculesChanges
 
