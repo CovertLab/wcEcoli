@@ -969,10 +969,11 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 	totalCount_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time)
 	ids_complex = sim_data.process.complexation.moleculeNames
 	ids_equilibrium = sim_data.process.equilibrium.moleculeNames
+	ids_twoComponentSystem = sim_data.process.two_component_system.moleculeNames
 	ids_metabolites = sorted(concDict)
 	conc_metabolites = (units.mol / units.L) * np.array([concDict[key].asNumber(units.mol / units.L) for key in ids_metabolites])
 	allMoleculesIDs = sorted(
-		set(ids_rnas) | set(ids_protein) | set(ids_complex) | set(ids_equilibrium) | set(ids_metabolites)
+		set(ids_rnas) | set(ids_protein) | set(ids_complex) | set(ids_equilibrium) | set(ids_twoComponentSystem) | set(ids_metabolites)
 		)
 
 	# Data for complexation
@@ -1004,6 +1005,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 	proteinView = bulkContainer.countsView(ids_protein)
 	complexationMoleculesView = bulkContainer.countsView(ids_complex)
 	equilibriumMoleculesView = bulkContainer.countsView(ids_equilibrium)
+	twoComponentSystemMoleculesView = bulkContainer.countsView(ids_twoComponentSystem)
 	metabolitesView = bulkContainer.countsView(ids_metabolites)
 	allMoleculesView = bulkContainer.countsView(allMoleculesIDs)
 
@@ -1070,11 +1072,21 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 				)
 
 			assert np.all(equilibriumMoleculesView.counts() >= 0)
+
+			_, moleculeCountChanges = sim_data.process.two_component_system.moleculesToSS(
+				twoComponentSystemMoleculesView.counts(),
+				cellVolume.asNumber(units.L),
+				sim_data.constants.nAvogadro.asNumber(1 / units.mol),
+				1e6,
+				)
+			twoComponentSystemMoleculesView.countsInc(moleculeCountChanges)
+
 			metDiffs = metabolitesView.counts() - metCounts.asNumber().round()
 
 			nIters += 1
 			if nIters > 100:
 				raise Exception, "Equilibrium reactions are not converging!"
+
 
 		allMoleculeCounts[seed, :] = allMoleculesView.counts()
 
@@ -1827,8 +1839,8 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		os.makedirs(fixturesDir)
 
 	if os.path.exists(os.path.join(fixturesDir, "km.cPickle")):
-		KmcountsCached = cPickle.load(open(os.path.join(fixturesDir, "km.cPickle"), "rb"))
-		if np.sum(np.abs(R_aux(KmcountsCached))) > 1e-15:
+		Kmcounts = cPickle.load(open(os.path.join(fixturesDir, "km.cPickle"), "rb"))
+		if np.sum(np.abs(R_aux(Kmcounts))) > 1e-15:
 			needToUpdate = True
 	else:
 		needToUpdate = True
