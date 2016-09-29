@@ -242,10 +242,17 @@ class TwoComponentSystem(object):
 			os.path.dirname(os.path.dirname(wholecell.__file__)),
 			"reconstruction", "ecoli", "dataclasses", "process", "two_component_system_odes.py"
 			)
+		odeFitterFile = os.path.join(
+			os.path.dirname(os.path.dirname(wholecell.__file__)),
+			"reconstruction", "ecoli", "dataclasses", "process", "two_component_system_odes_fitter.py"
+			)
 
 		needToCreate = False
 
 		if not os.path.exists(odeFile):
+			needToCreate = True
+
+		if not os.path.exists(odeFitterFile):
 			needToCreate = True
 
 		if not os.path.exists(fixturesDir):
@@ -275,17 +282,25 @@ class TwoComponentSystem(object):
 		if needToCreate:
 			self._makeMatrices()
 			self._makeDerivative()
+			self._makeDerivativeFitter()
 			writeOdeFile(odeFile, self.derivativesSymbolic, self.derivativesJacobianSymbolic)
+			writeOdeFile(odeFitterFile, self.derivativesFitterSymbolic, self.derivativesFitterJacobianSymbolic)
 			import reconstruction.ecoli.dataclasses.process.two_component_system_odes
+			import reconstruction.ecoli.dataclasses.process.two_component_system_odes_fitter
 			self.derivatives = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivatives
 			self.derivativesJacobian = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivativesJacobian
+			self.derivativesFitter = reconstruction.ecoli.dataclasses.process.two_component_system_odes_fitter.derivatives
+			self.derivativesFitterJacobian = reconstruction.ecoli.dataclasses.process.two_component_system_odes_fitter.derivativesJacobian
 			cPickle.dump(self.stoichMatrix(), open(os.path.join(fixturesDir, "S.cPickle"), "wb"), protocol = cPickle.HIGHEST_PROTOCOL)
 			cPickle.dump(self.ratesFwd, open(os.path.join(fixturesDir, "ratesFwd.cPickle"), "wb"), protocol = cPickle.HIGHEST_PROTOCOL)
 			cPickle.dump(self.ratesRev, open(os.path.join(fixturesDir, "ratesRev.cPickle"), "wb"), protocol = cPickle.HIGHEST_PROTOCOL)
 		else:
 			import reconstruction.ecoli.dataclasses.process.two_component_system_odes
+			import reconstruction.ecoli.dataclasses.process.two_component_system_odes_fitter
 			self.derivatives = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivatives
 			self.derivativesJacobian = reconstruction.ecoli.dataclasses.process.two_component_system_odes.derivativesJacobian
+			self.derivativesFitter = reconstruction.ecoli.dataclasses.process.two_component_system_odes_fitter.derivatives
+			self.derivativesFitterJacobian = reconstruction.ecoli.dataclasses.process.two_component_system_odes_fitter.derivativesJacobian
 
 	def _makeMatrices(self):
 		EPS = 1e-9
@@ -344,6 +359,44 @@ class TwoComponentSystem(object):
 		self.derivativesJacobianSymbolic = J
 		self.derivativesSymbolic = dy
 
+	def _makeDerivativeFitter(self):
+		S = self.stoichMatrix()
+
+		yStrings = ["y[%d]" % x for x in xrange(S.shape[0])]
+		y = sp.symbols(yStrings)
+		dy = [sp.symbol.S.Zero] * S.shape[0]
+
+		for colIdx in xrange(S.shape[1]):
+			negIdxs = np.where(S[:, colIdx] < 0)[0]
+			posIdxs = np.where(S[:, colIdx] > 0)[0]
+
+			reactantFlux = self.ratesFwd[colIdx]
+			for negIdx in negIdxs:
+				reactantFlux *= (y[negIdx] ** (-1 * S[negIdx, colIdx]))
+
+			productFlux = self.ratesRev[colIdx]
+			for posIdx in posIdxs:
+				productFlux *=  (y[posIdx] ** ( 1 * S[posIdx, colIdx]))
+
+			fluxForNegIdxs = (-1. * reactantFlux) + (1. * productFlux)
+			fluxForPosIdxs = ( 1. * reactantFlux) - (1. * productFlux)
+
+			for thisIdx in negIdxs:
+				dy[thisIdx] += fluxForNegIdxs
+			for thisIdx in posIdxs:
+				dy[thisIdx] += fluxForPosIdxs
+
+		# Metabolism will keep these molecules at steady state
+		constantMolecules = ["ATP[c]", "ADP[c]", "Pi[c]", "WATER[c]", "PROTON[c]"]
+		for molecule in constantMolecules:
+			moleculeIdx = np.where(self.moleculeNames == molecule)[0][0]
+			dy[moleculeIdx] = sp.symbol.S.Zero
+
+		dy = sp.Matrix(dy)
+		J = dy.jacobian(y)
+
+		self.derivativesFitterJacobianSymbolic = J
+		self.derivativesFitterSymbolic = dy
 
 	# TODO: Should this method be here?
 	# It could be useful in both the fitter and in the simulations
@@ -351,6 +404,33 @@ class TwoComponentSystem(object):
 	def moleculesToNextTimeStep(self, moleculeCounts, cellVolume, nAvogadro, timeStepSec):
 		y_init = moleculeCounts / (cellVolume * nAvogadro)
 		y = scipy.integrate.odeint(self.derivatives, y_init, t = [0, timeStepSec], Dfun = self.derivativesJacobian)
+
+		if np.any(y[-1, :] * (cellVolume * nAvogadro) <= -1):
+			raise Exception, "Have negative values -- probably due to numerical instability"
+
+		y[y < 0] = 0
+		yMolecules = y * (cellVolume * nAvogadro)
+		dYMolecules = yMolecules[-1, :] - yMolecules[0, :]
+
+		dependencyMatrix = self.dependencyMatrix
+
+		independentMoleculesCounts = np.array([np.round(dYMolecules[x]) for x in self.independentMoleculeIds])
+
+		# To ensure that we have non-negative counts of phosphate, we must have the following (which can be seen from the dependency matrix)
+		independentMoleculesCounts[self.independentMoleculesAtpIndex] = independentMoleculesCounts[:self.independentMoleculesAtpIndex].sum() + independentMoleculesCounts[(self.independentMoleculesAtpIndex + 1):].sum()
+
+		# Calculate changes in molecule counts for all molecules
+		allMoleculesChanges = np.dot(dependencyMatrix, independentMoleculesCounts)
+
+		moleculesNeeded = allMoleculesChanges.copy()
+		moleculesNeeded[moleculesNeeded >= 0] = 0
+		
+		return (-1* moleculesNeeded), allMoleculesChanges
+
+
+	def moleculesToSS(self, moleculeCounts, cellVolume, nAvogadro, timeStepSec):
+		y_init = moleculeCounts / (cellVolume * nAvogadro)
+		y = scipy.integrate.odeint(self.derivativesFitter, y_init, t = [0, timeStepSec], Dfun = self.derivativesFitterJacobian)
 
 		if np.any(y[-1, :] * (cellVolume * nAvogadro) <= -1):
 			raise Exception, "Have negative values -- probably due to numerical instability"
