@@ -20,7 +20,7 @@ from wholecell.utils.modular_fba import FluxBalanceAnalysis
 
 import cvxpy
 
-# Hacks
+# Tweaks
 RNA_POLY_MRNA_DEG_RATE_PER_S = np.log(2) / 30. # half-life of 30 seconds
 FRACTION_INCREASE_RIBOSOMAL_PROTEINS = 0.7  # reduce stochasticity from protein expression
 FRACTION_INCREASE_RNAP_PROTEINS = 0.05
@@ -74,10 +74,10 @@ def fitSimData_1(raw_data):
 	buildTfConditionCellSpecifications(sim_data, cellSpecs)
 	buildCombinedConditionCellSpecifications(sim_data, cellSpecs)
 
-	sim_data.conditionToAvgCellDryMassInit = dict([(cellSpec, cellSpecs[cellSpec]["avgCellDryMassInit"]) for cellSpec in cellSpecs])
 	sim_data.process.transcription.rnaSynthProbFraction = {}
 	sim_data.process.transcription.rnapFractionActiveDict = {}
 	sim_data.process.transcription.rnaPolymeraseElongationRateDict = {}
+	sim_data.expectedDryMassIncreaseDict = {}
 
 	# Fit kinetic parameters
 	findKineticCoeffs(sim_data, cellSpecs["basal"]["bulkContainer"])
@@ -126,6 +126,9 @@ def fitSimData_1(raw_data):
 
 		if sim_data.conditions[condition]["nutrients"] not in sim_data.process.transcription.rnaPolymeraseElongationRateDict and len(sim_data.conditions[condition]["perturbations"]) == 0:
 			sim_data.process.transcription.rnaPolymeraseElongationRateDict[sim_data.conditions[condition]["nutrients"]] = sim_data.growthRateParameters.getRnapElongationRate(spec["doubling_time"])
+
+		if sim_data.conditions[condition]["nutrients"] not in sim_data.expectedDryMassIncreaseDict and len(sim_data.conditions[condition]["perturbations"]) == 0:
+			sim_data.expectedDryMassIncreaseDict[sim_data.conditions[condition]["nutrients"]] = spec["avgCellDryMassInit"]
 
 
 	fitTfPromoterKd(sim_data, cellSpecs)
@@ -238,8 +241,12 @@ def buildTfConditionCellSpecifications(sim_data, cellSpecs):
 			conditionValue = sim_data.conditions[conditionKey]
 
 			fcData = {}
-			if choice == "__active":
+			if choice == "__active" and conditionValue != sim_data.conditions["basal"]:
 				fcData = sim_data.tfToFC[tf]
+			if choice == "__inactive" and conditionValue != sim_data.conditions["basal"]:
+				fcDataTmp = sim_data.tfToFC[tf].copy()
+				for key, value in fcDataTmp.iteritems():
+					fcData[key] = 1. / value
 			expression = expressionFromConditionAndFoldChange(
 				sim_data.process.transcription.rnaData["id"],
 				sim_data.process.transcription.rnaExpression["basal"],
@@ -1145,18 +1152,24 @@ def fitTfPromoterKd(sim_data, cellSpecs):
 	cellDensity = sim_data.constants.cellDensity
 	rnaIdList = sim_data.process.transcription.rnaData["id"].tolist()
 
-	def alphaGtZero(kdLog10, activeSignalConc, inactiveSignalConc, signalCoeff, activeKSynth, inactiveKSynth):
+	def alphaGtZero(kdLog10, activeSignalConc, inactiveSignalConc, signalCoeff, activeKSynth, inactiveKSynth, negativeSignal):
 		kd = 10**kdLog10
 		pPromBoundActive = sim_data.process.transcription_regulation.pPromoterBoundSKd(activeSignalConc, kd, signalCoeff)
 		pPromBoundInactive = sim_data.process.transcription_regulation.pPromoterBoundSKd(inactiveSignalConc, kd, signalCoeff)
+		if negativeSignal:
+			pPromBoundActive = 1. - pPromBoundActive
+			pPromBoundInactive = 1. - pPromBoundInactive
 
 		# To have alpha > 0, the following expression must be non-negative
 		return -1. * (activeKSynth * pPromBoundInactive - inactiveKSynth * pPromBoundActive)
 
-	def alphaPlusDeltaRGtZero(kdLog10, activeSignalConc, inactiveSignalConc, signalCoeff, activeKSynth, inactiveKSynth):
+	def alphaPlusDeltaRGtZero(kdLog10, activeSignalConc, inactiveSignalConc, signalCoeff, activeKSynth, inactiveKSynth, negativeSignal):
 		kd = 10**kdLog10
 		pPromBoundActive = sim_data.process.transcription_regulation.pPromoterBoundSKd(activeSignalConc, kd, signalCoeff)
 		pPromBoundInactive = sim_data.process.transcription_regulation.pPromoterBoundSKd(inactiveSignalConc, kd, signalCoeff)
+		if negativeSignal:
+			pPromBoundActive = 1. - pPromBoundActive
+			pPromBoundInactive = 1. - pPromBoundInactive
 
 		# To have alpha + \delta r > 0, the following expression must be non-negative
 		return -1. * (activeKSynth * pPromBoundInactive - inactiveKSynth * pPromBoundActive - (activeKSynth - inactiveKSynth))
@@ -1169,12 +1182,16 @@ def fitTfPromoterKd(sim_data, cellSpecs):
 		activeKey = tf + "__active"
 		inactiveKey = tf + "__inactive"
 
-		kd = sim_data.process.equilibrium.getRevRate(tf + "[c]") / sim_data.process.equilibrium.getFwdRate(tf + "[c]")
+		boundId = sim_data.process.transcription_regulation.activeToBound[tf]
+		negativeSignal = False
+		if tf != boundId:
+			negativeSignal = True
+		kd = sim_data.process.equilibrium.getRevRate(boundId + "[c]") / sim_data.process.equilibrium.getFwdRate(boundId + "[c]")
 		tfTargets = sorted(sim_data.tfToFC[tf])
 		tfTargetsIdxs = [rnaIdList.index(x + "[c]") for x in tfTargets]
 
-		metabolite = sim_data.process.equilibrium.getMetabolite(tf + "[c]")
-		metaboliteCoeff = sim_data.process.equilibrium.getMetaboliteCoeff(tf + "[c]")
+		metabolite = sim_data.process.equilibrium.getMetabolite(boundId + "[c]")
+		metaboliteCoeff = sim_data.process.equilibrium.getMetaboliteCoeff(boundId + "[c]")
 
 		activeCellVolume = cellSpecs[activeKey]["avgCellDryMassInit"] / cellDensity / sim_data.mass.cellDryMassFraction
 		activeCountsToMolar = 1 / (sim_data.constants.nAvogadro * activeCellVolume)
@@ -1194,14 +1211,14 @@ def fitTfPromoterKd(sim_data, cellSpecs):
 			{"type": "ineq", "fun": lambda logKd, power: -(logKd / power), "args": (metaboliteCoeff,)},
 		]
 		for activeKSynth, inactiveKSynth in zip(activeSynthProbTargets, inactiveSynthProbTargets):
-			args = (activeSignalConc, inactiveSignalConc, metaboliteCoeff, activeKSynth, inactiveKSynth)
+			args = (activeSignalConc, inactiveSignalConc, metaboliteCoeff, activeKSynth, inactiveKSynth, negativeSignal)
 			constraints.append({"type": "ineq", "fun": alphaGtZero, "args": args})
 			constraints.append({"type": "ineq", "fun": alphaPlusDeltaRGtZero, "args": args})
 
-		ret = scipy.optimize.minimize(l1Distance, kdLog10Init, args = kdLog10Init, method = "COBYLA", constraints = constraints, options = {"catol": 1e-9})
+		ret = scipy.optimize.minimize(l1Distance, kdLog10Init, args = kdLog10Init, method = "COBYLA", constraints = constraints, options = {"catol": 1e-10})
 		if ret.status == 1:
 			kdNew = 10**ret.x
-			sim_data.process.equilibrium.setRevRate(tf + "[c]", kdNew * sim_data.process.equilibrium.getFwdRate(tf + "[c]"))
+			sim_data.process.equilibrium.setRevRate(boundId + "[c]", kdNew * sim_data.process.equilibrium.getFwdRate(boundId + "[c]"))
 		else:
 			raise Exception, "Can't get positive RNA Polymerase recruitment rate for %s" % tf
 
@@ -1216,12 +1233,15 @@ def calculatePromoterBoundProbability(sim_data, cellSpecs):
 		countsToMolar = 1 / (sim_data.constants.nAvogadro * cellVolume)
 
 		for tf in sorted(sim_data.tfToActiveInactiveConds):
-			kd = sim_data.process.equilibrium.getRevRate(tf + "[c]") / sim_data.process.equilibrium.getFwdRate(tf + "[c]")
-			signal = sim_data.process.equilibrium.getMetabolite(tf + "[c]")
-			signalCoeff = sim_data.process.equilibrium.getMetaboliteCoeff(tf + "[c]")
+			boundId = sim_data.process.transcription_regulation.activeToBound[tf]
+			kd = sim_data.process.equilibrium.getRevRate(boundId + "[c]") / sim_data.process.equilibrium.getFwdRate(boundId + "[c]")
+			signal = sim_data.process.equilibrium.getMetabolite(boundId + "[c]")
+			signalCoeff = sim_data.process.equilibrium.getMetaboliteCoeff(boundId + "[c]")
 			signalConc = (countsToMolar * cellSpecs[conditionKey]["bulkAverageContainer"].count(signal)).asNumber(units.mol / units.L)
 
 			D[conditionKey][tf] = sim_data.process.transcription_regulation.pPromoterBoundSKd(signalConc, kd, signalCoeff)
+			if tf != boundId:
+				D[conditionKey][tf] = 1. - D[conditionKey][tf]
 	return D
 
 
