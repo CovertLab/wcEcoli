@@ -21,19 +21,45 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
 
-	fig, axes = plt.subplots(1, sharex = True)
-
-	# Plot glucose exchange flux
+	# Exchange flux
 	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
 
 	fba_results = TableReader(os.path.join(simOutDir, "FBAResults"))
 	exFlux = fba_results.readColumn("externalExchangeFluxes")
 	exMolec = fba_results.readAttribute("externalMoleculeIDs")
-	glcFlux = exFlux[:,exMolec.index("GLC[p]")]
+	moleculeIDs = ["GLC[p]", "OXYGEN-MOLECULE[p]"]
+	
+	# Plot
+	fig = plt.figure(figsize = (8, 11.5))
+	rows = len(moleculeIDs)
+	cols = 1
 
-	axes.plot(time / 60. / 60., -1. * glcFlux, label="Glucose exchange flux coefficient")
-	axes.set_ylabel("External\nglucose\n(mmol/gDCW/hr)")
+	for index, molecule in enumerate(["GLC[p]", "OXYGEN-MOLECULE[p]"]):
+		
+		moleculeFlux = -1. * exFlux[:, exMolec.index(molecule)]
+		ax = plt.subplot(rows, cols, index + 1)
+		ax.plot(time / 60. / 60., moleculeFlux)
+
+		averageFlux = np.average(moleculeFlux)
+		yRange = np.min([np.abs(np.max(moleculeFlux) - averageFlux), np.abs(np.min(moleculeFlux) - averageFlux)])
+		ymin = np.round(averageFlux - yRange)
+		ymax = np.round(averageFlux + yRange)
+		ax.set_ylim([ymin, ymax])
+
+		abs_max = np.max(moleculeFlux)
+		abs_min = np.min(moleculeFlux)
+
+		plt.figtext(0.7, 1. / float(rows) * 0.7 + (rows - 1 - index) / float(rows), 
+			"Max: %s\nMin: %s" % (abs_max, abs_min), fontsize = 8)
+
+		ax.set_ylabel("External %s\n(mmol/gDCW/hr)" % molecule, fontsize = 8)
+		ax.set_xlabel("Time (hr)", fontsize = 8)
+		ax.set_title("%s" % molecule, fontsize = 10, y = 1.1)
+		ax.tick_params(labelsize = 8, which = "both", direction = "out")
+
+
+	plt.subplots_adjust(hspace = 0.5, wspace = 1)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
@@ -51,7 +77,8 @@ if __name__ == "__main__":
 	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
 	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
 	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
+	parser.add_argument("--validationDataFile")
 
 	args = parser.parse_args().__dict__
 
-	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"])
+	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"], args["validationDataFile"])
