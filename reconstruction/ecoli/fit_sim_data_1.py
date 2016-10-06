@@ -106,7 +106,6 @@ def fitSimData_1(raw_data):
 			spec["avgCellDryMassInit"],
 			spec["doubling_time"],
 			)
-
 		spec["bulkAverageContainer"] = bulkAverageContainer
 		spec["bulkDeviationContainer"] = bulkDeviationContainer
 		spec["proteinMonomerAverageContainer"] = proteinMonomerAverageContainer
@@ -1076,7 +1075,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 			_, moleculeCountChanges = sim_data.process.two_component_system.moleculesToSS(
 				twoComponentSystemMoleculesView.counts(),
 				cellVolume.asNumber(units.L),
-				sim_data.constants.nAvogadro.asNumber(1 / units.mol),
+				sim_data.constants.nAvogadro.asNumber(1 / units.mmol),
 				1e6,
 				)
 			twoComponentSystemMoleculesView.countsInc(moleculeCountChanges)
