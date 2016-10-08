@@ -19,6 +19,7 @@ import scipy.integrate
 
 import wholecell.processes.process
 from wholecell.utils import units
+from wholecell.utils.constants import REQUEST_PRIORITY_TWO_COMPONENT_SYSTEM
 
 import theano.tensor as T
 import theano
@@ -51,13 +52,15 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		self.derivatives = sim_data.process.two_component_system.derivatives
 		self.derivativesJacobian = sim_data.process.two_component_system.derivativesJacobian
 		self.metsToRxnFluxes = sim_data.process.two_component_system.metsToRxnFluxes
-
 		self.moleculesToNextTimeStep = sim_data.process.two_component_system.moleculesToNextTimeStep
 
 		# Build views
 
 		self.moleculeNames = sim_data.process.two_component_system.moleculeNames
 		self.molecules = self.bulkMoleculesView(self.moleculeNames)
+
+		# Set priority to a lower value (but greater priority than metabolism)
+		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_TWO_COMPONENT_SYSTEM)
 
 	def calculateRequest(self):
 		moleculeCounts = self.molecules.total()
