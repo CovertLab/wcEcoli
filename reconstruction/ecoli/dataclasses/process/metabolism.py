@@ -54,7 +54,7 @@ class Metabolism(object):
 		self.previousBiomassLog10Means = {entry['molecule id']:entry['mean log10 flux'] for entry in raw_data.previousBiomassFluxes}
 		self.previousBiomassStds = {entry['molecule id']:entry['standard deviation'] for entry in raw_data.previousBiomassFluxes}
 
-		# Create vector of metabolite pools (concentrations)
+		# Create vector of metabolite target concentrations
 
 		# Since the data only covers certain metabolites, we need to rationally
 		# expand the dataset to include the other molecules in the biomass
@@ -198,6 +198,7 @@ class Metabolism(object):
 		reactionEnzymes = {}
 		reactionRates = {}
 
+		metabolicEnzymes = set()
 		enzymeExceptions = set()
 
 		validEnzymeIDs = set([])
@@ -229,6 +230,8 @@ class Metabolism(object):
 				raise Exception("Invalid biochemical reaction: {}, {}".format(reactionID, stoich))
 
 			reactionStoich[reactionID] = stoich
+
+			metabolicEnzymes.update([x for x in enzyme_list if x in validEnzymeIDs])
 
 			# Remove enzyme-reaction links for any enzyme in enzymeExceptions
 			for enzymeID in enzyme_list:
@@ -433,6 +436,8 @@ class Metabolism(object):
 
 		self.reactionEnzymes = self.buildEnzymeReactionKcatLinks(reactionRateInfo, reactionEnzymes)
 
+		self.metabolicEnzymes = sorted(list(metabolicEnzymes))
+
 		self.reactionStoich = reactionStoich
 		self.nutrientsTimeSeries = sim_data.nutrientsTimeSeries
 		self.maintenanceReaction = {"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "Pi[c]": +1, "PROTON[c]": +1,}
@@ -562,11 +567,11 @@ class ConcentrationUpdates(object):
 	def concentrationsBasedOnNutrients(self, nutrientsLabel = None, nutrientsToInternalConc = None):
 		concentrationsDict = self.defaultConcentrationsDict.copy()
 
-		poolIds = sorted(concentrationsDict.keys())
-		concentrations = self.units * np.array([concentrationsDict[k] for k in poolIds])
+		metaboliteTargetIds = sorted(concentrationsDict.keys())
+		concentrations = self.units * np.array([concentrationsDict[k] for k in metaboliteTargetIds])
 
 		if nutrientsLabel == None:
-			return dict(zip(poolIds, concentrations))
+			return dict(zip(metaboliteTargetIds, concentrations))
 
 		nutrientFluxes = {
 			"importConstrainedExchangeMolecules": self.nutrientData["importConstrainedExchangeMolecules"][nutrientsLabel],
@@ -576,13 +581,13 @@ class ConcentrationUpdates(object):
 		concUpdates = None
 		if nutrientsToInternalConc and nutrientsLabel in nutrientsToInternalConc:
 			concUpdates = nutrientsToInternalConc[nutrientsLabel]
-			concDict = dict(zip(poolIds, concentrations))
+			concDict = dict(zip(metaboliteTargetIds, concentrations))
 			concDict.update(concUpdates)
 		else:
 			for molecule, scaleFactor in self.moleculeScaleFactors.iteritems():
 				if self._isNutrientExchangePresent(nutrientFluxes, molecule):
-					concentrations[poolIds.index(molecule)] *= scaleFactor
-			concDict = dict(zip(poolIds, concentrations))
+					concentrations[metaboliteTargetIds.index(molecule)] *= scaleFactor
+			concDict = dict(zip(metaboliteTargetIds, concentrations))
 
 		for moleculeName, setAmount in self.moleculeSetAmounts.iteritems():
 			if concUpdates != None and moleculeName in concUpdates:

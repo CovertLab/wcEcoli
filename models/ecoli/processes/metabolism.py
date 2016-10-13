@@ -29,7 +29,7 @@ from wholecell.utils.constants import REQUEST_PRIORITY_METABOLISM
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
 from wholecell.utils.enzymeKinetics import EnzymeKinetics
 
-from wholecell.utils.fitting import massesAndCountsToAddForPools
+from wholecell.utils.fitting import massesAndCountsToAddForHomeostaticTargets
 
 COUNTS_UNITS = units.dmol
 VOLUME_UNITS = units.L
@@ -74,7 +74,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Load enzyme kinetic rate information
 		self.reactionRateInfo = sim_data.process.metabolism.reactionRateInfo
-		self.enzymeNames = sim_data.process.metabolism.enzymeNames
+		self.enzymeNames = sim_data.process.metabolism.metabolicEnzymes
 		self.constraintIDs = sim_data.process.metabolism.constraintIDs
 		self.constraintMultiplesDict = {constraintID:rateInfo["constraintMultiple"] for constraintID, rateInfo in self.reactionRateInfo.iteritems()}
 		self.constraintToReactionDict = sim_data.process.metabolism.constraintToReactionDict
@@ -143,7 +143,7 @@ class Metabolism(wholecell.processes.process.Process):
 			"reactionStoich" : self.reactionStoich,
 			"externalExchangedMolecules" : self.externalExchangeMolecules,
 			"objective" : self.objective,
-			"objectiveType" : "pools_kinetics_mixed",
+			"objectiveType" : "homeostatic_kinetics_mixed",
 			"objectiveParameters" : {
 					"kineticObjectiveWeight":self.metabolismKineticObjectiveWeight,
 					"reactionRateTargets":{reaction:1e-5 for reaction in self.allRateReactions}, #This target is arbitrary, it gets reset each timestep during evolveState
@@ -157,7 +157,7 @@ class Metabolism(wholecell.processes.process.Process):
 		}
 
 		if USE_KINETIC_RATES==False:
-			self.fbaObjectOptions["objectiveType"] = "pools"
+			self.fbaObjectOptions["objectiveType"] = "homeostatic"
 
 		self.fba = FluxBalanceAnalysis(**self.fbaObjectOptions)
 
@@ -244,9 +244,9 @@ class Metabolism(wholecell.processes.process.Process):
 			objIds = sorted(self.objective)
 			objConc = (COUNTS_UNITS / VOLUME_UNITS) * np.array([self.objective[x] for x in objIds])
 			mws = self.getMass(objIds)
-			massesToAdd, _ = massesAndCountsToAddForPools(massInitial, objIds, objConc, mws, self.cellDensity, self.nAvogadro)
-			smallMoleculePoolsDryMass = units.hstack((massesToAdd[:objIds.index('WATER[c]')], massesToAdd[objIds.index('WATER[c]') + 1:]))
-			totalDryMass = units.sum(smallMoleculePoolsDryMass) + massInitial
+			massesToAdd, _ = massesAndCountsToAddForHomeostaticTargets(massInitial, objIds, objConc, mws, self.cellDensity, self.nAvogadro)
+			smallMoleculeHomeostaticTargetsDryMass = units.hstack((massesToAdd[:objIds.index('WATER[c]')], massesToAdd[objIds.index('WATER[c]') + 1:]))
+			totalDryMass = units.sum(smallMoleculeHomeostaticTargetsDryMass) + massInitial
 			self.writeToListener("CellDivision", "expectedDryMassIncrease", totalDryMass)
 
 		# After completing the burn-in, enable kinetic rates
@@ -2538,18 +2538,26 @@ class Metabolism(wholecell.processes.process.Process):
 		enzymeConcentrationsDict = dict(zip(self.enzymeNames, enzymeConcentrations))
 
 		# When many estimates exist for a reaction, choose the largest
-		if not hasattr(self, "maxConstraints"):
+		if not hasattr(self, "chosenConstraints"):
 			# Calculate the constraints in the current conditions
 			reactionsDict = self.enzymeKinetics.allReactionsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
-			self.maxConstraints = {}
+			oneSidedReactions =  set(self.fba.kineticOneSidedTargetFluxNames())
+			self.chosenConstraints = {}
 			for reactionID, reactionRate in reactionsDict.iteritems():
-				constraintID = sorted(reactionRate.keys(), key=reactionRate.__getitem__, reverse=True)[0]
-				self.maxConstraints[reactionID] = {
+				rateOrderedConstraints = sorted(reactionRate.keys(), key=reactionRate.__getitem__, reverse=False)
+				kMreactions = [x for x in rateOrderedConstraints if 'kcat' not in x]
+				if len(kMreactions) > 0:
+					# Take the highest valued constraint with a kM
+					constraintID = kMreactions[-1]
+				elif len(kMreactions) == 0:
+					# Take the higest valued constraint overall
+					constraintID = rateOrderedConstraints[-1]
+				self.chosenConstraints[reactionID] = {
 					"constraintID":constraintID,
 					"coefficient":self.constraintMultiplesDict[constraintID],}
 
 		if USE_KINETIC_RATES and self._sim.time() > KINETICS_BURN_IN_PERIOD:
-			self.allRateEstimates = self.enzymeKinetics.ratesView(self.allRateReactions, self.maxConstraints, metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=True)
+			self.allRateEstimates = self.enzymeKinetics.ratesView(self.allRateReactions, self.chosenConstraints, metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=True)
 			
 			# Make kinetic targets numerical zero instead of actually zero for solver stability
 			self.allRateEstimates[self.allRateEstimates.asNumber() == 0] = FLUX_UNITS * 1e-20

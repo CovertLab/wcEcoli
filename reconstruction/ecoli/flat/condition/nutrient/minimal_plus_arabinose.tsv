@@ -2,9 +2,10 @@
 "ADP[c]"	3.15	3.15
 "Pi[c]"	3.15	3.15
 "PROTON[c]"	3.15	3.15
-"GLC[p]"	NaN	10
+"GLC[p]"	NaN	20
 "OXYGEN-MOLECULE[p]"	NaN	NaN
 "AMMONIUM[c]"	NaN	NaN
+"Pi[p]"	NaN	NaN
 "K+[p]"	NaN	NaN
 "SULFATE[p]"	NaN	NaN
 "FE+2[p]"	NaN	NaN
@@ -21,3 +22,4 @@
 "L-SELENOCYSTEINE[c]"	NaN	NaN
 "GLC-D-LACTONE[c]"	NaN	NaN
 "CYTOSINE[c]"	NaN	NaN
+"ARABINOSE"	NaN	NaN
