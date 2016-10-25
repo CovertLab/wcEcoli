@@ -39,6 +39,8 @@ class TwoComponentSystem(object):
 		independentMoleculeIds = []
 		independentToDependentMolecules = {}
 
+		activeToInactiveTF = {} #convention: active TF is the DNA-binding form
+
 		## building template reactions:
 		signalingTemplate = {1: ["POS-LIGAND-BOUND-HK-PHOSPHORYLATION_RXN", 
 								"POS-LIGAND-BOUND-HK-PHOSPHOTRANSFER_RXN", 
@@ -112,6 +114,13 @@ class TwoComponentSystem(object):
 								molecule["location"]
 								)
 
+						if str(molecule["molecule"]) == "RR":
+							activeTF = "{}[{}]".format(
+								system["molecules"]["PHOSPHO-RR"],
+								molecule["location"]
+								)
+							activeToInactiveTF[activeTF] = moleculeName
+
 					if system["orientation"] == 1:
 						if str(molecule["molecule"]) == "HK-LIGAND" and moleculeName not in independentMolecules:
 							independentMolecules.append(moleculeName)
@@ -158,6 +167,9 @@ class TwoComponentSystem(object):
 
 		# Make dependency matrix
 		self.dependencyMatrix = self.makeDependencyMatrix()
+
+		# Map active TF to inactive TF
+		self.activeToInactiveTF = activeToInactiveTF
 
 
 	def stoichMatrix(self):
