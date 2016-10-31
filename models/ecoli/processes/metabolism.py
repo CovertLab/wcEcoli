@@ -115,13 +115,13 @@ class Metabolism(wholecell.processes.process.Process):
 			self.externalExchangeMolecules += sim_data.nutrientData["importExchangeMolecules"][nutrientsLabel]
 		self.maintenanceReaction = sim_data.process.metabolism.maintenanceReaction
 
-			# Sorry
-			self.metaboliteNames.update(
-				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					nutrientsLabel, sim_data.process.metabolism.nutrientsToInternalConc
-					)
-				)
-		self.metaboliteNames = sorted(self.metaboliteNames)
+		# 	# Sorry
+		# 	self.metaboliteNames.update(
+		# 		sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
+		# 			nutrientsLabel, sim_data.process.metabolism.nutrientsToInternalConc
+		# 			)
+		# 		)
+		# self.metaboliteNames = sorted(self.metaboliteNames)
 
 		self.externalExchangeMolecules = sorted(self.externalExchangeMolecules)
 		self.extMoleculeMasses = self.getMass(self.externalExchangeMolecules)
@@ -151,7 +151,6 @@ class Metabolism(wholecell.processes.process.Process):
 		self.metabolismKineticObjectiveWeight = sim_data.constants.metabolismKineticObjectiveWeight
 
 		# Set up FBA solver
-<<<<<<< HEAD
 		self.fbaObjectOptions = {
 			"reactionStoich" : self.reactionStoich,
 			"externalExchangedMolecules" : self.externalExchangeMolecules,
@@ -185,22 +184,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.allRateIndices = np.where([True if reactionID in self.allRateReactions else False for reactionID in self.fba.reactionIDs()])
 
 		self.allRateEstimates = FLUX_UNITS * np.zeros_like(self.allRateIndices)
-=======
-		self.fba = FluxBalanceAnalysis(
-			self.reactionStoich,
-			self.externalExchangeMolecules,
-			self.objective,
-			objectiveType = "pools",
-			moleculeMasses = self.moleculeMasses,
-			secretionPenaltyCoeff = SECRETION_PENALTY_COEFF, # The "inconvenient constant"--limit secretion (e.g., of CO2)
-			solver = "glpk",
-			maintenanceCostGAM = self.energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
-			maintenanceReaction = {
-				"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "Pi[c]": +1, "PROTON[c]": +1,
-				} # TODO: move to KB TODO: check reaction stoich
-			)
+		
 		self.internalExchangeIdxs = np.array([self.metaboliteNames.index(x) for x in self.fba.outputMoleculeIDs()])
->>>>>>> Using and updating only the internal metabolites that also exist as external metabolites.
 
 		# Matrix mapping enzymes to the reactions they catalyze
 		self.enzymeReactionMatrix = sim_data.process.metabolism.enzymeReactionMatrix(
@@ -266,27 +251,10 @@ class Metabolism(wholecell.processes.process.Process):
 
 		if newObjective != None and newObjective != self.objective:
 			# Build new fba instance with new objective
-<<<<<<< HEAD
 			self.fbaObjectOptions["objective"] = newObjective
 			self.fba = FluxBalanceAnalysis(**self.fbaObjectOptions)
-=======
-			self.objective = newObjective
-			self.fba = FluxBalanceAnalysis(
-				self.reactionStoich,
-				self.externalExchangeMolecules,
-				self.objective,
-				objectiveType = "pools",
-				moleculeMasses = self.moleculeMasses,
-				secretionPenaltyCoeff = SECRETION_PENALTY_COEFF,
-				solver = "glpk",
-				maintenanceCostGAM = self.energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
-				maintenanceReaction = {
-					"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "Pi[c]": +1, "PROTON[c]": +1,
-					} # TODO: move to KB TODO: check reaction stoich
-				)
 			self.internalExchangeIdxs = np.array([self.metaboliteNames.index(x) for x in self.fba.outputMoleculeIDs()])
 
->>>>>>> Using and updating only the internal metabolites that also exist as external metabolites.
 			massComposition = self.massReconstruction.getFractionMass(self.doublingTime)
 			massInitial = (massComposition["proteinMass"] + massComposition["rnaMass"] + massComposition["dnaMass"]) / self.avgCellToInitialCellConvFactor
 			objIds = sorted(self.objective)
