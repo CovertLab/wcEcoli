@@ -1843,8 +1843,8 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		os.makedirs(fixturesDir)
 
 	if os.path.exists(os.path.join(fixturesDir, "km.cPickle")):
-		Kmcounts = cPickle.load(open(os.path.join(fixturesDir, "km.cPickle"), "rb"))
-		if np.sum(np.abs(R_aux(Kmcounts))) > 1e-15:
+		KmcountsCached = cPickle.load(open(os.path.join(fixturesDir, "km.cPickle"), "rb"))
+		if np.sum(np.abs(R_aux(KmcountsCached))) > 1e-15:
 			needToUpdate = True
 	else:
 		needToUpdate = True
