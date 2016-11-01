@@ -97,15 +97,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 # 	from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
 # 	exportHtmlFigure(fig, plt, plotOutDir, plotOutFileName, metadata)
 
-<<<<<<< HEAD
-	# Error bars don't work for the HTML plot, so save it with just points, then add error bars.
-	plt.subplot(2,1,1)
-	points = plt.errorbar(scatterArrayPredicted, scatterArrayActual, yerr=scatterArrayActualStd, fmt='o')
-=======
 # 	# Error bars don't work for the HTML plot, so save it with just points, then add error bars.
 # 	plt.subplot(2,1,1)
 # 	points = plt.errorbar(scatterArrayPredicted, scatterArrayActual, yerr=scatterArrayPredictedStd, fmt='o')
->>>>>>> Temporarily commenting out references to the fitter's predicted fluxes for running nutrientTimeSeries variant.
 
 # 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 # 	plt.close("all")
