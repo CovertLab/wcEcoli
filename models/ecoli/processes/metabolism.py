@@ -83,11 +83,6 @@ class Metabolism(wholecell.processes.process.Process):
 		self.concModificationsBasedOnCondition = sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.condition])
 		concDict.update(self.concModificationsBasedOnCondition)
 
-		initialNutrientsLabel = sim_data.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel][0][1]
-		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			initialNutrientsLabel,
-			sim_data.process.metabolism.nutrientsToInternalConc
-			)
 		self.objective = dict(
 			(key, concDict[key].asNumber(COUNTS_UNITS / VOLUME_UNITS)) for key in concDict
 			)
@@ -110,19 +105,20 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.reactionStoich = sim_data.process.metabolism.reactionStoich
 		self.externalExchangeMolecules = sim_data.nutrientData["secretionExchangeMolecules"]
-		self.metaboliteNames = set()
+		
+		self.metaboliteNamesFromNutrients = set()
 		for time, nutrientsLabel in sim_data.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel]:
 			self.externalExchangeMolecules += sim_data.nutrientData["importExchangeMolecules"][nutrientsLabel]
-		self.maintenanceReaction = sim_data.process.metabolism.maintenanceReaction
+		
+			# Sorry
+			self.metaboliteNamesFromNutrients.update(
+				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
+					nutrientsLabel, sim_data.process.metabolism.nutrientsToInternalConc
+					)
+				)
+		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
-		# 	# Sorry
-		# 	self.metaboliteNames.update(
-		# 		sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-		# 			nutrientsLabel, sim_data.process.metabolism.nutrientsToInternalConc
-		# 			)
-		# 		)
-		# self.metaboliteNames = sorted(self.metaboliteNames)
-
+		self.maintenanceReaction = sim_data.process.metabolism.maintenanceReaction		
 		self.externalExchangeMolecules = sorted(self.externalExchangeMolecules)
 		self.extMoleculeMasses = self.getMass(self.externalExchangeMolecules)
 
@@ -184,8 +180,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.allRateIndices = np.where([True if reactionID in self.allRateReactions else False for reactionID in self.fba.reactionIDs()])
 
 		self.allRateEstimates = FLUX_UNITS * np.zeros_like(self.allRateIndices)
-		
-		self.internalExchangeIdxs = np.array([self.metaboliteNames.index(x) for x in self.fba.outputMoleculeIDs()])
+
+		self.internalExchangeIdxs = np.array([self.metaboliteNamesFromNutrients.index(x) for x in self.fba.outputMoleculeIDs()])
 
 		# Matrix mapping enzymes to the reactions they catalyze
 		self.enzymeReactionMatrix = sim_data.process.metabolism.enzymeReactionMatrix(
@@ -205,7 +201,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.externalMoleculeIDs = self.fba.externalMoleculeIDs()
 
 		# Views
-		# self.metaboliteNames = self.fba.outputMoleculeIDs()
+		self.metaboliteNames = self.fba.outputMoleculeIDs()
 		self.metabolites = self.bulkMoleculesView(self.metaboliteNames)
 		self.enzymes = self.bulkMoleculesView(self.enzymeNames)
 			
@@ -253,7 +249,7 @@ class Metabolism(wholecell.processes.process.Process):
 			# Build new fba instance with new objective
 			self.fbaObjectOptions["objective"] = newObjective
 			self.fba = FluxBalanceAnalysis(**self.fbaObjectOptions)
-			self.internalExchangeIdxs = np.array([self.metaboliteNames.index(x) for x in self.fba.outputMoleculeIDs()])
+			self.internalExchangeIdxs = np.array([self.metaboliteNamesFromNutrients.index(x) for x in self.fba.outputMoleculeIDs()])
 
 			massComposition = self.massReconstruction.getFractionMass(self.doublingTime)
 			massInitial = (massComposition["proteinMass"] + massComposition["rnaMass"] + massComposition["dnaMass"]) / self.avgCellToInitialCellConvFactor
@@ -351,10 +347,9 @@ class Metabolism(wholecell.processes.process.Process):
 
 		deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.outputMoleculeLevelsChange())
 
-		metaboliteCountsFinal = metaboliteCountsInit.copy()
-		metaboliteCountsFinal[self.internalExchangeIdxs] = np.fmax(stochasticRound(
+		metaboliteCountsFinal = np.fmax(stochasticRound(
 			self.randomState,
-			metaboliteCountsInit[self.internalExchangeIdxs] + deltaMetabolites.asNumber()
+			metaboliteCountsInit + deltaMetabolites.asNumber()
 			), 0).astype(np.int64)
 
 		self.metabolites.countsIs(metaboliteCountsFinal)
