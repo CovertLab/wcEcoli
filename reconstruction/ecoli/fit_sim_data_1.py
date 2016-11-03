@@ -57,17 +57,10 @@ def fitSimData_1(raw_data):
 	# Increase RNA poly mRNA deg rates
 	setRnaPolymeraseCodingRnaDegradationRates(sim_data)
 
-	# Increase two-component system histidine kinase mRNA deg rates
-	# setTcsMoleculesDegradationRates(sim_data)
-
-
 	# Set C-period
 	setCPeriod(sim_data)
 
 	cellSpecs = buildBasalCellSpecifications(sim_data)
-
-	# Set two-component system ligand complex's monomers' basal expressions
-	# setTcsLigandComplexBasalExpressions(sim_data)
 
 	# Modify other properties
 
@@ -406,8 +399,6 @@ def expressionConverge(sim_data, expression, concDict, doubling_time, Km = None,
 
 		setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
 
-		setProteinCounts(bulkContainer)
-
 		# Normalize expression and write out changes
 
 		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
@@ -440,36 +431,6 @@ def setRnaPolymeraseCodingRnaDegradationRates(sim_data):
 	subunitIndexes = np.array([np.where(sim_data.process.translation.monomerData["id"] == id_)[0].item() for id_ in rnaPolySubunits]) # there has to be a better way...
 	mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[subunitIndexes]
 	sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = RNA_POLY_MRNA_DEG_RATE_PER_S
-
-def setTcsMoleculesDegradationRates(sim_data):
-	# monomerIndexes = np.where([x == "DCUR-MONOMER[c]" for x in sim_data.process.translation.monomerData["id"]])[0]
-	# mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[monomerIndexes]
-	# sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = TCS_HISTIDINE_KINASE_DEG_RATE_PER_S
-
-	# baerMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "BAER-MONOMER[c]")[0]
-	# baerMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[baerMonomerIndex]
-	# sim_data.process.transcription.rnaData.struct_array["degRate"][baerMRnaIndex] = np.log(2) / 60.
-
-	baesMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "BAES-MONOMER[i]")[0]
-	baesMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[baesMonomerIndex]
-	# sim_data.process.transcription.rnaData.struct_array["degRate"][baesMRnaIndex] = 0.009 #np.log(2) / 60.
-
-	sim_data.process.transcription.rnaExpression["basal"][baesMRnaIndex] = 3.26e-05
-	sim_data.process.transcription.rnaExpression["basal"][baesMRnaIndex] /= np.sum(sim_data.process.transcription.rnaExpression["basal"])
-
-	# narxMonomerIndex = np.where(sim_data.process.translation.monomerData["id"] == "NARX-MONOMER[i]")[0]
-	# narxMRnaIndex = sim_data.relation.rnaIndexToMonomerMapping[narxMonomerIndex]
-	# sim_data.process.transcription.rnaData.struct_array["degRate"][narxMRnaIndex] = np.log(2) / 60.
-
-
-def setTcsLigandComplexBasalExpressions(sim_data):
-	# Set PSTA-MONOMER[i] and PSTC-MONOMER[i]
-	abcMonomerNames = ["PSTA-MONOMER[i]", "PSTB-MONOMER[i]", "PSTC-MONOMER[i]", "PSTS-MONOMER[i]"]
-	abcMonomerIndexes = np.where([sim_data.process.translation.monomerData["id"] == x for x in abcMonomerNames])[1]
-	abc_mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[abcMonomerIndexes]
-	sim_data.process.transcription.rnaExpression["basal"][abc_mRNA_indexes] *= 10
-	sim_data.process.transcription.rnaExpression["basal"] /= sim_data.process.transcription.rnaExpression["basal"].sum()
-
 
 def setCPeriod(sim_data):
 	sim_data.growthRateParameters.c_period = sim_data.process.replication.genome_length * units.nt / sim_data.growthRateParameters.dnaPolymeraseElongationRate / 2
@@ -837,10 +798,6 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 	if VERBOSE > 1: print 'rnap counts set to: {}'.format(rnapLims[np.where(rnapLims.max() == rnapLims)[0]][0])
 
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
-
-def setProteinCounts(bulkContainer):
-	# set PHOR-MONOMER[i] to have 2e2 counts
-	bulkContainer.countsIs([2e2], ["PHOR-MONOMER[i]"])
 
 def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km = None):
 
