@@ -1613,7 +1613,6 @@ def calculatePromoterBoundProbability(sim_data, cellSpecs):
 						D[conditionKey][tf] = 0.
 
 			elif tfType == "2CS":
-				raise Exception, "2CS not implemented yet"
 				activeTfConc = (countsToMolar * cellSpecs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")).asNumber(units.mol / units.L)
 				inactiveTf = sim_data.process.two_component_system.activeToInactiveTF[tf + "[c]"]
 				inactiveTfConc = (countsToMolar * cellSpecs[conditionKey]["bulkAverageContainer"].count(inactiveTf)).asNumber(units.mol / units.L)
