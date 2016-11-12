@@ -15,3 +15,4 @@
 "lexA"	"PC00010"	"minimal"	{}	"minimal"	{"EG10533_RNA[c]": 0}	"0CS"
 "baeR"	"PHOSPHO-BAER"	"minimal_plus_indole"	{}	"minimal"	{}	"2CS"
 "dcuR"	"PHOSPHO-DCUR"	"minimal_succinate"	{}	"minimal"	{}	"2CS"
+"narL"	"PHOSPHO-NARL"	"minimal_plus_nitrate"	{}	"minimal"	{}	"2CS"
