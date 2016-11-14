@@ -269,9 +269,6 @@ class FluxBalanceAnalysis(object):
 					)
 			internalExchangedMolecules = sorted(objective.keys())
 
-<<<<<<< HEAD
-			internalExchangedMolecules = sorted(objective.keys())
-=======
 		elif self.objectiveType == "kinetic_only":
 			if "reactionRateTargets" in objectiveParameters:
 				rateObjective = objectiveParameters["reactionRateTargets"]
@@ -298,7 +295,7 @@ class FluxBalanceAnalysis(object):
 				raise FBAError("When using homeostatic_kinetics_mixed objective, a reactionRateTargets dict of reactionName:target rate must be provided in objectiveParameters.")
 
 			self._initObjectiveKinetic(rateObjective, objectiveParameters)
->>>>>>> master
+
 
 		else:
 			raise FBAError("Unrecognized self.objectiveType: {}".format(self.objectiveType))
@@ -373,15 +370,13 @@ class FluxBalanceAnalysis(object):
 		objective equivalents.  The objectiveType determines how these
 		fractions are used."""
 
-<<<<<<< HEAD
-=======
 		# Use default format strings if none provided
 		if pseudoFluxFormat is None:
 			pseudoFluxFormat=self._generatedID_moleculesToEquivalents
 		if objectiveEquivFormat is None:
 			objectiveEquivFormat=self._generatedID_moleculeEquivalents
 
->>>>>>> master
+
 		for moleculeID in sorted(objective):
 			coeff = objective[moleculeID]
 			if coeff == 0:
@@ -581,11 +576,8 @@ class FluxBalanceAnalysis(object):
 		# Minimizing an absolute value requires splitting the term into two,
 		# one for the positive values and one for the negative.
 
-<<<<<<< HEAD
-		for moleculeID in sorted(objective.viewkeys()):
-=======
+
 		for moleculeID in sorted(objective):
->>>>>>> master
 			objectiveEquivID = self._generatedID_moleculeEquivalents.format(moleculeID)
 
 			# Add the forced -1 term so that we can define x_i = f_i - 1
@@ -966,15 +958,10 @@ class FluxBalanceAnalysis(object):
 				stoichCoeff
 				)
 
-<<<<<<< HEAD
-		self._reactionIDsSet.add(self._reactionID_NGAM)
-		self._reactionIDsSet.add(self._reactionID_polypeptideElongationEnergy)
-=======
 		self._specialFluxIDsSet.add(self._reactionID_GAM)
 		self._specialFluxIDsSet.add(self._reactionID_NGAM)
 		self._specialFluxIDsSet.add(self._reactionID_polypeptideElongationEnergy)
 
->>>>>>> master
 
 	def _buildEqConst(self):
 		try:
@@ -1049,11 +1036,7 @@ class FluxBalanceAnalysis(object):
 		if maxFlux < 0:
 			raise InvalidBoundaryError("Maximum reaction flux must be at least 0")
 
-<<<<<<< HEAD
-		if reactionID not in self._reactionIDsSet:
-=======
 		if reactionID not in self._reactionIDsSet and reactionID not in self._specialFluxIDsSet:
->>>>>>> master
 			raise InvalidBoundaryError("Unable to set max reaction flux: reaction '%s' not recognized." % (reactionID))
 
 		# if maxFlux < self._lowerBound[colIndex]:
@@ -1099,11 +1082,8 @@ class FluxBalanceAnalysis(object):
 		if minFlux < 0:
 			raise InvalidBoundaryError("Minimum reaction flux must be at least 0")
 
-<<<<<<< HEAD
-		if reactionID not in self._reactionIDsSet:
-=======
+
 		if reactionID not in self._reactionIDsSet and reactionID not in self._specialFluxIDsSet:
->>>>>>> master
 			raise InvalidBoundaryError("Unable to set min reaction flux: reaction '%s' not recognized." % (reactionID))
 
 		# if minFlux > self._upperBound[colIndex]:
@@ -1124,27 +1104,7 @@ class FluxBalanceAnalysis(object):
 			minFlux
 			)
 
-<<<<<<< HEAD
-	def minReactionFlux(self, reactionID, raiseForReversible = True):
-		if reactionID not in self._reactionIDsSet:
-			raise InvalidBoundaryError("Unable to set min reaction flux: reaction '%s' not recognized." % (reactionID))
 
-		# if minFlux > self._upperBound[colIndex]:
-		# 	raise InvalidBoundaryError("Minimum reaction flux must be less than or equal to the maximum flux")
-
-		reverseReactionID = self._generatedID_reverseReaction.format(reactionID)
-
-		if raiseForReversible and reverseReactionID in self._reactionIDs:
-			raise FBAError((
-				"Setting the minimum reaction flux is ambiguous since " +
-				"reaction {} has both a forward [{}] and reverse [{}] " +
-				"component.  Call this method with argument " +
-				"raiseForReversible = False if this is intended behavior."
-				).format(reactionID, reactionID, reverseReactionID))
-
-		return self._solver.flowLowerBound(reactionID)
-
-=======
 	def setMaxReactionFluxes(self, reactionIDs, reactionRates, raiseForReversible=True):
 		if len(reactionIDs) != len(reactionRates):
 			raise Exception("There must be equal numbers of reactionIDs and rates to set limits.")
@@ -1158,7 +1118,7 @@ class FluxBalanceAnalysis(object):
 
 		for idx, reactionID in enumerate(reactionIDs):
 			self.minReactionFluxIs(reactionID, reactionRates[idx], raiseForReversible)
->>>>>>> master
+
 
 	def setpointIs(self, moleculeID, coeff):
 		if moleculeID not in self._outputMoleculeIDs:
@@ -1180,22 +1140,7 @@ class FluxBalanceAnalysis(object):
 		i = self._outputMoleculeIDs.index(moleculeID)
 		self._outputMoleculeCoeffs[i][pseudoFluxID] = -coeff
 
-<<<<<<< HEAD
 
-	# TODO: determine if this is needed
-
-	# def objectiveIs(self, objective):
-	# 	for moleculeID, coeff in objective.viewitems():
-	# 		molecule_materialIndex = self._materialIndex(moleculeID)
-
-	# 		pseudoFluxID = self._generatedID_moleculesToEquivalents.format(moleculeID)
-	# 		colIndex = self._fluxIndex(pseudoFluxID)
-
-	# 		self._A[molecule_materialIndex, colIndex] = -coeff
-
-
-=======
->>>>>>> master
 	def maxMassAccumulatedIs(self, maxAccumulation):
 		self._solver.flowUpperBoundIs(
 			self._massExchangeOutName,
