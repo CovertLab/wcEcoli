@@ -65,13 +65,14 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	translatedFreq = []
 	PresentFreqAvg = []
 	ProteinAvg = []
+	ProteinSD = []
 
 	# import ipdb; ipdb.set_trace()
 
 	# post-processing NPZ file
 	# outfile = os.path.join(plotOutDir) + 'FrequenciesRNAandProtein.npz'
 	# npzfile = np.load(outfile)
-	# DATA =  np.column_stack((npzfile['ProteinId'], npzfile['mRnaId'], npzfile['degRate'], npzfile['synthProb'], npzfile['ProteinFreq'], npzfile['mRnaFreq'], npzfile['PresentProteinFreq'], npzfile['ProteinAvg'], npzfile['expression']))
+	# DATA =  np.column_stack((npzfile['ProteinId'], npzfile['mRnaId'], npzfile['degRate'], npzfile['synthProb'], npzfile['ProteinFreq'], npzfile['mRnaFreq'], npzfile['PresentProteinFreq'], npzfile['ProteinAvg'], npzfile['ProteinSD'], npzfile['expression']))
 	# np.savetxt(os.path.join(plotOutDir) + 'FrequenciesRNAandProtein.txt', DATA, delimiter = "\t", fmt = "%s")
 
 	for n, simDir in enumerate(all_cells):
@@ -103,6 +104,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 		PresentFreq = []
 		ProteinAvgOverSim = []
+		ProteinStdOverSim = []
 
 		for idx in xrange(0, len(ProteinMoleculeCountsSumOverTime)):
 			# print ProteinMoleculeCounts[:,idx]
@@ -111,10 +113,13 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			ProteinMoleculeCountsGene = ProteinMoleculeCounts[:,idx]
 			
 			ProteinAvgGene = np.mean(ProteinMoleculeCountsGene[ProteinMoleculeCountsGene > 0])
+			ProteinSdGene = np.std(ProteinMoleculeCountsGene[ProteinMoleculeCountsGene > 0])
 			if len(ProteinMoleculeCountsGene[ProteinMoleculeCountsGene > 0]) == 0:
 				ProteinAvgGene = 0
+				ProteinSdGene = 0
 				
 			ProteinAvgOverSim.append(ProteinAvgGene)
+			ProteinStdOverSim.append(ProteinSdGene)
 
 			# import ipdb; ipdb.set_trace()
 
@@ -123,6 +128,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 		PresentFreqAvg = PresentFreqAvg + PresentFreq
 		ProteinAvg = ProteinAvg + ProteinAvgOverSim
+		ProteinSD = ProteinSD + ProteinStdOverSim
 
 		# import ipdb; ipdb.set_trace()
 
@@ -153,6 +159,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ProteinAvg = np.array(ProteinAvg)
 	ProteinAvg = ProteinAvg / float(numCells)
 
+	ProteinSD = np.array(ProteinSD)
+	ProteinSD = ProteinSD / float(numCells)
+
 
 	# import ipdb; ipdb.set_trace()
 	np.savez(os.path.join(plotOutDir) + 'FrequenciesRNAandProtein.npz', 
@@ -166,6 +175,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		degRate = mRnaDegRate,
 		numCells = numCells,
 		ProteinAvg = ProteinAvg,
+		ProteinSD = ProteinSD,
 	)
 
 	# Plot

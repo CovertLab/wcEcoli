@@ -208,6 +208,10 @@ class Metabolism(object):
 		validEnzymeIDs.update(validProteinComplexIDs)
 		validEnzymeCompartments = collections.defaultdict(set)
 
+
+		self.allProteinAndComplexIds = validProteinIDs + validProteinComplexIDs
+
+
 		self.default_kcat = raw_data.parameters["carbonicAnhydraseKcat"]
 
 		for enzymeID in validEnzymeIDs:
