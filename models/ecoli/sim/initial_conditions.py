@@ -3,8 +3,8 @@
 
 TODO:
 - document math
-- replace fake metabolite pools with measured metabolite pools
-- raise/warn if physiological metabolite pools appear to be smaller than what
+- replace fake metabolite concentration targets with measured metabolite concentration targets
+- raise/warn if physiological metabolite concentration targets appear to be smaller than what
  is needed at this time step size
 
 """
@@ -17,7 +17,7 @@ import numpy as np
 import os
 
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
-from wholecell.utils.fitting import normalize, countsFromMassAndExpression, calcProteinCounts, massesAndCountsToAddForPools
+from wholecell.utils.fitting import normalize, countsFromMassAndExpression, calcProteinCounts, massesAndCountsToAddForHomeostaticTargets
 from wholecell.utils.polymerize import buildSequences, computeMassIncrease
 from wholecell.utils import units
 
@@ -50,20 +50,23 @@ def initializeBulkMolecules(bulkMolCntr, sim_data, randomState):
 	## Set other biomass components
 	initializeSmallMolecules(bulkMolCntr, sim_data, randomState)
 
+	## Set constitutive expression
+	initializeConstitutiveExpression(bulkMolCntr, sim_data, randomState)
+
 def initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
-	initializeReplication(uniqueMolCntr, sim_data)
+	initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data)
 
 def initializeProteinMonomers(bulkMolCntr, sim_data, randomState):
 
 	monomersView = bulkMolCntr.countsView(sim_data.process.translation.monomerData["id"])
-	monomerMass = sim_data.mass.getFractionMass(sim_data.doubling_time)["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	monomerMass = sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 	# TODO: unify this logic with the fitter so it doesn't fall out of step
 	# again (look at the calcProteinCounts function)
 
 	monomerExpression = normalize(
-		sim_data.process.transcription.rnaData["expression"][sim_data.relation.rnaIndexToMonomerMapping] *
+		sim_data.process.transcription.rnaExpression[sim_data.condition][sim_data.relation.rnaIndexToMonomerMapping] *
 		sim_data.process.translation.translationEfficienciesByMonomer /
-		(np.log(2) / sim_data.doubling_time.asNumber(units.s) + sim_data.process.translation.monomerData["degRate"].asNumber(1 / units.s))
+		(np.log(2) / sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.s) + sim_data.process.translation.monomerData["degRate"].asNumber(1 / units.s))
 		)
 
 	nMonomers = countsFromMassAndExpression(
@@ -80,9 +83,9 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState):
 def initializeRNA(bulkMolCntr, sim_data, randomState):
 
 	rnaView = bulkMolCntr.countsView(sim_data.process.transcription.rnaData["id"])
-	rnaMass = sim_data.mass.getFractionMass(sim_data.doubling_time)["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	rnaMass = sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 
-	rnaExpression = normalize(sim_data.process.transcription.rnaData["expression"])
+	rnaExpression = normalize(sim_data.process.transcription.rnaExpression[sim_data.condition])
 
 	nRnas = countsFromMassAndExpression(
 		rnaMass.asNumber(units.g),
@@ -100,32 +103,49 @@ def initializeDNA(bulkMolCntr, sim_data, randomState):
 	chromosomeView = bulkMolCntr.countsView(sim_data.moleculeGroups.fullChromosome)
 	chromosomeView.countsIs([1])
 
+	# Initalize gene counts on full chromosome (right now this is just for rrn operons, could be generalized)
+	forward_coords = sim_data.process.replication.forward_strand_rrn_coordinate
+	reverse_coords = sim_data.process.replication.reverse_strand_rrn_coordinate
+	counts_on_full_chromosome = chromosomeView.counts() * (forward_coords.size + reverse_coords.size)
+
+	rrn_view = bulkMolCntr.countView('rrn_operon')
+	rrn_view.countInc(counts_on_full_chromosome)
+
 # TODO: remove checks for zero concentrations (change to assertion)
 # TODO: move any rescaling logic to KB/fitting
 def initializeSmallMolecules(bulkMolCntr, sim_data, randomState):
-	avgCellFractionMass = sim_data.mass.getFractionMass(sim_data.doubling_time)
+	avgCellFractionMass = sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])
 
 	mass = (avgCellFractionMass["proteinMass"] + avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"]) / sim_data.mass.avgCellToInitialCellConvFactor
 
-	# We have to remove things with zero concentration because taking the inverse of zero isn't so nice.
-	poolIds = sorted(sim_data.process.metabolism.concDict)
-	poolConcentrations = (units.mol / units.L) * np.array([sim_data.process.metabolism.concDict[key].asNumber(units.mol / units.L) for key in poolIds])
+	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
+		sim_data.nutrientsTimeSeries[sim_data.nutrientsTimeSeriesLabel][0][1]
+		)
+	concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.condition]))
+	moleculeIds = sorted(concDict)
+	moleculeConcentrations = (units.mol / units.L) * np.array([concDict[key].asNumber(units.mol / units.L) for key in moleculeIds])
 
-	massesToAdd, countsToAdd = massesAndCountsToAddForPools(
+	massesToAdd, countsToAdd = massesAndCountsToAddForHomeostaticTargets(
 		mass,
-		poolIds,
-		poolConcentrations,
-		sim_data.getter.getMass(poolIds),
+		moleculeIds,
+		moleculeConcentrations,
+		sim_data.getter.getMass(moleculeIds),
 		sim_data.constants.cellDensity,
 		sim_data.constants.nAvogadro
 		)
 
 	bulkMolCntr.countsIs(
 		countsToAdd,
-		poolIds
+		moleculeIds
 		)
 
-def initializeReplication(uniqueMolCntr, sim_data):
+def initializeConstitutiveExpression(bulkMolCntr, sim_data, randomState):
+	recruitmentColNames = sim_data.process.transcription_regulation.recruitmentColNames
+	alphaNames = [x for x in recruitmentColNames if x.endswith("__alpha")]
+	alphaView = bulkMolCntr.countsView(alphaNames)
+	alphaView.countsIs(1)
+
+def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 	"""
 	initializeReplication
 
@@ -136,7 +156,7 @@ def initializeReplication(uniqueMolCntr, sim_data):
 	# Find growth rate constants
 	C = sim_data.growthRateParameters.c_period.asUnit(units.min)
 	D = sim_data.growthRateParameters.d_period.asUnit(units.min)
-	tau = sim_data.doubling_time.asUnit(units.min)
+	tau = sim_data.conditionToDoublingTime[sim_data.condition].asUnit(units.min)
 	genome_length = sim_data.process.replication.genome_length
 	replication_length = np.ceil(.5*genome_length) * units.nt
 
@@ -176,6 +196,21 @@ def initializeReplication(uniqueMolCntr, sim_data):
 		chromosomeIndex = np.array(chromosomeIndex),
 		massDiff_DNA = massIncreaseDna,
 		)
+
+	# Initalize gene counts on partial strands (right now this is just for rrn operons, could be generalized)
+	forward_coords = sim_data.process.replication.forward_strand_rrn_coordinate
+	reverse_coords = sim_data.process.replication.reverse_strand_rrn_coordinate
+	sequenceLength = np.array(sequenceLength)
+	forward_lengths = sequenceLength[np.array(sequenceIdx) == 0]
+	reverse_lengths = sequenceLength[np.array(sequenceIdx) == 1]
+
+	rrn_counts_forward = (np.tile(forward_coords, (forward_lengths.size,1)) < forward_lengths.reshape(forward_lengths.size,1)).sum()
+	rrn_counts_reverse = (np.tile(reverse_coords, (reverse_lengths.size,1)) < reverse_lengths.reshape(reverse_lengths.size,1)).sum()
+
+	rrn_counts_on_partial_chromosomes = rrn_counts_forward + rrn_counts_reverse
+
+	rrn_view = bulkMolCntr.countView('rrn_operon')
+	rrn_view.countInc(rrn_counts_on_partial_chromosomes)
 
 def setDaughterInitialConditions(sim, sim_data):
 	assert sim._inheritedStatePath != None

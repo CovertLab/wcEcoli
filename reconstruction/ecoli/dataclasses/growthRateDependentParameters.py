@@ -24,7 +24,7 @@ class Mass(object):
 		self._buildCDPeriod(raw_data, sim_data)
 
 		self.avgCellDryMass = self.getAvgCellDryMass(self._doubling_time)
-		self.avgCell60MinDoublingTimeTotalMassInit = 813.854708188 * units.fg
+		self.avgCell60MinDoublingTimeTotalMassInit = 1.2 * 813.854708188 * units.fg
 		self.massFraction = self.getMassFraction(self._doubling_time)
 		self.avgCellSubMass = self.getFractionMass(self._doubling_time)
 
@@ -61,7 +61,7 @@ class Mass(object):
 		mws = sim_data.getter.getMass(metIds)
 		self._mws = dict(zip(metIds, mws))
 
-		self._metPoolIds = [x["Metabolite"] + "[c]" for x in raw_data.metaboliteConcentrations]
+		self._metTargetIds = [x["Metabolite"] + "[c]" for x in raw_data.metaboliteConcentrations]
 
 	def _buildDependentConstants(self):
 		self.avgCellDryMassInit = self.avgCellDryMass / self.avgCellToInitialCellConvFactor
@@ -169,7 +169,7 @@ class Mass(object):
 		for entry in self._glycogenFractions:
 			metaboliteID = entry["metaboliteId"]
 
-			assert metaboliteID not in metaboliteIDs + self._metPoolIds
+			assert metaboliteID not in metaboliteIDs + self._metTargetIds
 
 			massFrac = entry["massFraction"] * massFraction["glycogen"]
 			molWeight = self._mws[metaboliteID].asNumber(units.g / units.mol)
@@ -185,7 +185,7 @@ class Mass(object):
 		for entry in self._mureinFractions:
 			metaboliteID = entry["metaboliteId"]
 
-			assert metaboliteID not in metaboliteIDs + self._metPoolIds
+			assert metaboliteID not in metaboliteIDs + self._metTargetIds
 
 			massFrac = entry["massFraction"] * massFraction["murein"]
 			molWeight = self._mws[metaboliteID].asNumber(units.g / units.mol)
@@ -201,7 +201,7 @@ class Mass(object):
 		for entry in self._LPSFractions:
 			metaboliteID = entry["metaboliteId"]
 
-			assert metaboliteID not in metaboliteIDs + self._metPoolIds
+			assert metaboliteID not in metaboliteIDs + self._metTargetIds
 
 			massFrac = entry["massFraction"] * massFraction["lps"]
 			molWeight = self._mws[metaboliteID].asNumber(units.g / units.mol)
@@ -217,7 +217,7 @@ class Mass(object):
 		for entry in self._lipidFractions:
 			metaboliteID = entry["metaboliteId"]
 
-			assert metaboliteID not in metaboliteIDs + self._metPoolIds
+			assert metaboliteID not in metaboliteIDs + self._metTargetIds
 
 			massFrac = entry["massFraction"] * massFraction["lipid"]
 			molWeight = self._mws[metaboliteID].asNumber(units.g / units.mol)
@@ -233,7 +233,7 @@ class Mass(object):
 		for entry in self._ionFractions:
 			metaboliteID = entry["metaboliteId"]
 
-			assert metaboliteID not in metaboliteIDs + self._metPoolIds
+			assert metaboliteID not in metaboliteIDs + self._metTargetIds
 
 			massFrac = entry["massFraction"] * massFraction["inorganicIon"]
 			molWeight = self._mws[metaboliteID].asNumber(units.g / units.mol)
@@ -249,7 +249,7 @@ class Mass(object):
 		for entry in self._solubleFractions:
 			metaboliteID = entry["metaboliteId"]
 
-			if metaboliteID not in self._metPoolIds:
+			if metaboliteID not in self._metTargetIds:
 				massFrac = entry["massFraction"] * massFraction["solublePool"]
 				molWeight = self._mws[metaboliteID].asNumber(units.g / units.mol)
 
@@ -357,12 +357,24 @@ class GrowthRateParameters(object):
 	def __init__(self, raw_data, sim_data):
 		self._doubling_time = sim_data.doubling_time
 		_loadTableIntoObjectGivenDoublingTime(self, raw_data.growthRateDependentParameters)
+		self.ribosomeElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "ribosomeElongationRate")
+		self.rnaPolymeraseElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "rnaPolymeraseElongationRate")
+		self.fractionActiveRnapParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRnap")
 		# thingsToSet = [x for x in dir(self) if x[0] != '_']
 		# for x in thingsToSet:
 		# 	setattr(sim_data.constants, x, getattr(self, x))
 		self.c_period = units.min * 40.
 		self.d_period = units.min * 20.
 		self.dnaPolymeraseElongationRate = units.nt / units.s * 967.
+
+	def getRibosomeElongationRate(self, doubling_time):
+		return _useFitParameters(doubling_time, **self.ribosomeElongationRateParams)
+
+	def getRnapElongationRate(self, doubling_time):
+		return _useFitParameters(doubling_time, **self.rnaPolymeraseElongationRateParams)
+
+	def getFractionActiveRnap(self, doubling_time):
+		return _useFitParameters(doubling_time, **self.fractionActiveRnapParams)
 
 def _getFitParameters(list_of_dicts, key):
 	# Load rows of data

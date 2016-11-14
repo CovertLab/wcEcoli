@@ -43,17 +43,17 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.reactionIDs = fba.reactionIDs()
 		self.externalMoleculeIDs = fba.externalMoleculeIDs()
 		self.outputMoleculeIDs = fba.outputMoleculeIDs()
+		self.kineticTargetFluxNames = fba.kineticTargetFluxNames()
+		self.homeostaticTargetMolecules = fba.homeostaticTargetMolecules()
 
 		self.reactionFluxes = np.zeros(len(self.reactionIDs), np.float64)
 		self.externalExchangeFluxes = np.zeros(len(self.externalMoleculeIDs), np.float64)
 		self.outputFluxes = np.zeros(len(self.outputMoleculeIDs), np.float64)
-		self.objectiveComponents = np.zeros_like(self.outputFluxes)
-		self.deltaMetabolites = np.zeros(len(self.outputMoleculeIDs), np.float64)
-		self.PCC = 0.0
-		self.PCClog = 0.0
-		self.slope = 0.0
-		self.slopelog = 0.0
-		self.objectiveValue = 0.0
+		self.rowDualValues = np.zeros(len(self.outputMoleculeIDs), np.float64)
+		self.columnDualValues = np.zeros(len(self.reactionIDs), np.float64)
+		self.kineticObjectiveValues = np.zeros(len(self.kineticTargetFluxNames))
+		self.homeostaticObjectiveValues = np.zeros(len(self.homeostaticTargetMolecules))
+		self.homeostaticObjectiveWeight = np.ones(1, np.float64)
 
 
 	def tableCreate(self, tableWriter):
@@ -61,11 +61,8 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			reactionIDs = list(self.reactionIDs),
 			externalMoleculeIDs = self.externalMoleculeIDs,
 			outputMoleculeIDs = self.outputMoleculeIDs,
-			PCC = self.countUnits,
-			PCClog = self.countUnits,
-			slope = self.countUnits,
-			slopelog = self.countUnits,
-			objectiveValue = self.countUnits,
+			homeostaticTargetMolecules = self.homeostaticTargetMolecules,
+			kineticTargetFluxNames = self.kineticTargetFluxNames,
 			)
 
 
@@ -76,11 +73,10 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			reactionFluxes = self.reactionFluxes,
 			externalExchangeFluxes = self.externalExchangeFluxes,
 			outputFluxes = self.outputFluxes,
+			rowDualValues = self.rowDualValues,
+			columnDualValues = self.columnDualValues,
 			objectiveValue = self.objectiveValue,
-			objectiveComponents = self.objectiveComponents,
-			deltaMetabolites = self.deltaMetabolites,
-			PCC = self.PCC,
-			PCClog = self.PCClog,
-			slope = self.slope,
-			slopelog = self.slopelog,
+			kineticObjectiveValues = self.kineticObjectiveValues,
+			homeostaticObjectiveValues = self.homeostaticObjectiveValues,
+			homeostaticObjectiveWeight = self.homeostaticObjectiveWeight,
 			)

@@ -67,16 +67,18 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		grid_loc = idx + 1 + (cols*(num_subentries + 1))*( idx / cols)
 
 		reactantIds = [moleculeNames[x] for x in np.where(stoichMatrix[:, idx] < 0)[0]]
+		reactantCoeffs = np.abs(stoichMatrix[stoichMatrix[:, idx] < 0, idx])
 		reactantIdxs = np.array([bulkMoleculeIds.index(x) for x in reactantIds], dtype = np.int64)
 		reactantCounts = bulkMolecules.readColumn("counts")[:, reactantIdxs]
 		reactantConcentrations = reactantCounts / (cellVolume[:, np.newaxis] * nAvogadro)
 
 		productIds = [moleculeNames[x] for x in np.where(stoichMatrix[:, idx] > 0)[0]]
+		productCoeffs = np.abs(stoichMatrix[stoichMatrix[:, idx] > 0, idx])
 		productIdxs = np.array([bulkMoleculeIds.index(x) for x in productIds], dtype = np.int64)
 		productCounts = bulkMolecules.readColumn("counts")[:, productIdxs]
 		productConcentrations = productCounts / (cellVolume[:, np.newaxis] * nAvogadro)
 
-		empiricalKd = reactantConcentrations.prod(axis = 1) / productConcentrations.prod(axis = 1)
+		empiricalKd = 10**(np.sum(reactantCoeffs * np.log10(reactantConcentrations), axis = 1) - np.sum(productCoeffs * np.log10(productConcentrations), axis = 1))
 		empiricalKd[np.isinf(empiricalKd)] = np.nan
 		expectedKd = ratesRev[idx] / ratesFwd[idx]
 
@@ -94,15 +96,15 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		# if np.any(np.isnan(empiricalKd[empiricalKd.shape[0] * IGNORE_FIRST_PERCENTAGE:])):
 		ymin = expectedKd / 2.
 		ymax = expectedKd * 2.
-		ax.set_ylim([ymin, ymax])
-		ax.set_yticks([ymin, ymax])
-		ax.set_yticklabels(["%0.2e" % ymin, "%0.2e" % ymax])
+		if ymin != ymax:
+			ax.set_ylim([ymin, ymax])
+			ax.set_yticks([ymin, ymax])
+			ax.set_yticklabels(["%0.2e" % ymin, "%0.2e" % ymax])
 		ax.spines['top'].set_visible(False)
 		ax.spines['bottom'].set_visible(False)
 		ax.xaxis.set_ticks_position('none')
 		ax.tick_params(which = 'both', direction = 'out', labelsize=6)
 		ax.set_xticks([])
-
 
 		# Plot all reactant concentrations for this reaction
 		for reactantIndex in xrange(0,np.amin([reactantConcentrations.shape[1]]+[2])):
@@ -122,15 +124,15 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			# if np.any(np.isnan(empiricalKd[empiricalKd.shape[0] * IGNORE_FIRST_PERCENTAGE:])):
 			ymin = np.amin(reactantConcentrations[1:,reactantIndex]*.9)
 			ymax = np.amax(reactantConcentrations[1:,reactantIndex]*1.1)
-			ax.set_ylim([ymin, ymax])
-			ax.set_yticks([ymin, ymax])
-			ax.set_yticklabels(["%0.2e" % ymin, "%0.2e" % ymax])
+			if ymin != ymax:
+				ax.set_ylim([ymin, ymax])
+				ax.set_yticks([ymin, ymax])
+				ax.set_yticklabels(["%0.2e" % ymin, "%0.2e" % ymax])
 			ax.spines['top'].set_visible(False)
 			ax.spines['bottom'].set_visible(False)
 			ax.xaxis.set_ticks_position('none')
 			ax.tick_params(which = 'both', direction = 'out', labelsize=6)
 			ax.set_xticks([])
-
 
 		# Plot all product concentrations for this reaction
 		for productIndex in xrange(0,np.amin([productConcentrations.shape[1]]+[2])):
@@ -156,21 +158,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			ax.xaxis.set_ticks_position('none')
 			ax.tick_params(which = 'both', direction = 'out', labelsize=6)
 			ax.set_xticks([])
-
-
-	# Create legend
-	# ax = plt.subplot(rows, cols, stoichMatrix.shape[1] + 2)
-	# ax.plot(0, 0, linewidth=2, label="count", color='k')
-	# ax.legend(loc = 10,prop={'size':10})
-	# ax.spines['top'].set_visible(False)
-	# ax.spines['bottom'].set_visible(False)
-	# ax.spines['left'].set_visible(False)
-	# ax.spines['right'].set_visible(False)
-	# ax.xaxis.set_ticks_position('none')
-	# ax.yaxis.set_ticks_position('none')
-	# ax.set_xticks([])
-	# ax.set_yticks([])
-	# ax.set_title("Highlights low empiricalKd", fontsize=12, bbox={'facecolor':'red', 'alpha':0.5, 'pad':1})
 
 	# Save
 	plt.subplots_adjust(hspace = 1, wspace = 1)

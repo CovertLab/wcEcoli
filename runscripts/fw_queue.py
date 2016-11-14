@@ -39,19 +39,6 @@ def write_file(filename, content):
 
 #### Initial setup ###
 
-### Set path variables
-
-dirname = os.path.dirname
-WC_ECOLI_DIRECTORY = dirname(dirname(os.path.abspath(__file__)))
-OUT_DIRECTORY = os.path.join(WC_ECOLI_DIRECTORY, "out")
-
-now = datetime.datetime.now()
-SUBMISSION_TIME = "%04d%02d%02d.%02d%02d%02d.%06d" % (
-	now.year, now.month, now.day,
-	now.hour, now.minute, now.second,
-	now.microsecond)
-KB_DIRECTORY = os.path.join(OUT_DIRECTORY, SUBMISSION_TIME, "kb")
-METADATA_DIRECTORY = os.path.join(OUT_DIRECTORY, SUBMISSION_TIME, "metadata")
 
 ### Set variant variables
 
@@ -78,11 +65,31 @@ N_GENS = int(os.environ.get("N_GENS", "1"))
 SINGLE_DAUGHTERS = bool(int(os.environ.get("SINGLE_DAUGHTERS", "0")))
 LAUNCHPAD_FILE = str(os.environ.get("LAUNCHPAD_FILE", "my_launchpad.yaml"))
 COMPRESS_OUTPUT = str(os.environ.get("COMPRESS_OUTPUT", "1"))
+SIM_DESCRIPTION = os.environ.get("DESC", "").replace(" ", "_")
+VERBOSE_QUEUE = bool(int(os.environ.get("VERBOSE_QUEUE", "1")))
+
+### Set path variables
+
+dirname = os.path.dirname
+WC_ECOLI_DIRECTORY = dirname(dirname(os.path.abspath(__file__)))
+OUT_DIRECTORY = os.path.join(WC_ECOLI_DIRECTORY, "out")
+
+now = datetime.datetime.now()
+SUBMISSION_TIME = "%04d%02d%02d.%02d%02d%02d.%06d" % (
+	now.year, now.month, now.day,
+	now.hour, now.minute, now.second,
+	now.microsecond)
+INDIV_OUT_DIRECTORY = os.path.join(OUT_DIRECTORY, SUBMISSION_TIME + "__" + SIM_DESCRIPTION)
+KB_DIRECTORY = os.path.join(INDIV_OUT_DIRECTORY, "kb")
+METADATA_DIRECTORY = os.path.join(INDIV_OUT_DIRECTORY, "metadata")
 
 ### Create directories
 
 if not os.path.exists(OUT_DIRECTORY):
 	os.makedirs(OUT_DIRECTORY)
+
+if not os.path.exists(INDIV_OUT_DIRECTORY):
+	os.makedirs(INDIV_OUT_DIRECTORY)
 
 if not os.path.exists(KB_DIRECTORY):
 	os.makedirs(KB_DIRECTORY)
@@ -90,8 +97,11 @@ if not os.path.exists(KB_DIRECTORY):
 if not os.path.exists(METADATA_DIRECTORY):
 	os.makedirs(METADATA_DIRECTORY)
 
+if VERBOSE_QUEUE:
+	print "Building filestructure."
+
 for i in VARIANTS_TO_RUN:
-	VARIANT_DIRECTORY = os.path.join(OUT_DIRECTORY, SUBMISSION_TIME, VARIANT + "_%06d" % i)
+	VARIANT_DIRECTORY = os.path.join(INDIV_OUT_DIRECTORY, VARIANT + "_%06d" % i)
 	VARIANT_SIM_DATA_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "kb")
 	VARIANT_METADATA_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "metadata")
 	VARIANT_COHORT_PLOT_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "plotOut")
@@ -138,8 +148,6 @@ for i in VARIANTS_TO_RUN:
 				if not os.path.exists(CELL_PLOT_OUT_DIRECTORY):
 					os.makedirs(CELL_PLOT_OUT_DIRECTORY)
 
-
-
 ### Write metadata
 metadata = {
 	"git_hash": run_cmd(["git", "rev-parse", "HEAD"]),
@@ -149,6 +157,7 @@ metadata = {
 	"time": SUBMISSION_TIME,
 	"total_gens": str(N_GENS),
 	"analysis_type": None,
+	"variant": VARIANT,
 	}
 
 for key, value in metadata.iteritems():
@@ -173,6 +182,10 @@ wf_links = collections.defaultdict(list)
 filename_raw_data = wholecell.utils.constants.SERIALIZED_RAW_DATA
 
 fw_name = "InitRawData"
+
+if VERBOSE_QUEUE:
+	print "Queuing {}".format(fw_name)
+
 fw_init_raw_data = Firework(
 	InitRawDataTask(
 		output = os.path.join(KB_DIRECTORY, filename_raw_data)
@@ -186,6 +199,10 @@ wf_fws.append(fw_init_raw_data)
 # Unfit KB compression
 if COMPRESS_OUTPUT:
 	fw_name = "ScriptTask_compression_raw_data"
+
+	if VERBOSE_QUEUE:
+		print "Queuing {}".format(fw_name)
+
 	fw_raw_data_compression = Firework(
 		ScriptTask(
 			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_raw_data)
@@ -205,6 +222,10 @@ filename_sim_data_fit_1 = (
 			)
 
 fw_name = "FitSimDataTask_Level_1"
+
+if VERBOSE_QUEUE:
+	print "Queuing {}".format(fw_name)
+
 fw_fit_level_1 = Firework(
 	FitSimDataTask(
 		fit_level = 1,
@@ -222,6 +243,10 @@ wf_links[fw_init_raw_data].append(fw_fit_level_1)
 
 if COMPRESS_OUTPUT:
 	fw_name = "ScriptTask_compression_sim_data_1"
+
+	if VERBOSE_QUEUE:
+		print "Queuing {}".format(fw_name)
+
 	fw_sim_data_1_compression = Firework(
 		ScriptTask(
 			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_sim_data_fit_1)
@@ -236,6 +261,10 @@ if COMPRESS_OUTPUT:
 # (when more fitting stages are implemented, move this down)
 
 fw_name = "SymlinkTask_KB_Most_Fit"
+
+if VERBOSE_QUEUE:
+	print "Queuing {}".format(fw_name)
+
 fw_symlink_most_fit = Firework(
 	SymlinkTask(
 		to = filename_sim_data_fit_1,
@@ -257,6 +286,10 @@ wf_links[fw_fit_level_1].append(fw_symlink_most_fit)
 filename_raw_validation_data = wholecell.utils.constants.SERIALIZED_RAW_VALIDATION_DATA
 
 fw_name = "InitValidationDataRaw"
+
+if VERBOSE_QUEUE:
+	print "Queuing {}".format(fw_name)
+
 fw_raw_validation_data = Firework(
 	InitRawValidationDataTask(
 		output = os.path.join(KB_DIRECTORY, filename_raw_validation_data)
@@ -287,6 +320,10 @@ filename_validation_data = (
 			)
 
 fw_name = "InitValidationData"
+
+if VERBOSE_QUEUE:
+	print "Queuing {}".format(fw_name)
+
 fw_validation_data = Firework(
 	InitValidationDataTask(
 		validation_data_input = os.path.join(KB_DIRECTORY, filename_raw_validation_data),
@@ -304,6 +341,10 @@ wf_links[fw_init_raw_data].append(fw_validation_data)
 # Full validation data compression
 if COMPRESS_OUTPUT:
 	fw_name = "ScriptTask_compression_validation_data"
+
+	if VERBOSE_QUEUE:
+		print "Queuing {}".format(fw_name)
+
 	fw_validation_data_compression = Firework(
 		ScriptTask(
 			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_validation_data)
@@ -318,7 +359,7 @@ if COMPRESS_OUTPUT:
 	wf_links[fw_validation_data].append(fw_raw_data_compression)
 
 # Variant analysis
-VARIANT_PLOT_DIRECTORY = os.path.join(OUT_DIRECTORY, SUBMISSION_TIME, "plotOut")
+VARIANT_PLOT_DIRECTORY = os.path.join(INDIV_OUT_DIRECTORY, "plotOut")
 
 metadata["analysis_type"] = "variant"
 metadata["total_variants"] = str(len(VARIANTS_TO_RUN))
@@ -326,7 +367,7 @@ metadata["total_variants"] = str(len(VARIANTS_TO_RUN))
 fw_name = "AnalysisVariantTask"
 fw_variant_analysis = Firework(
 	AnalysisVariantTask(
-		input_directory = os.path.join(OUT_DIRECTORY, SUBMISSION_TIME),
+		input_directory = os.path.join(INDIV_OUT_DIRECTORY),
 		input_validation_data = os.path.join(KB_DIRECTORY, filename_validation_data),
 		output_plots_directory = VARIANT_PLOT_DIRECTORY,
 		metadata = metadata,
@@ -338,14 +379,16 @@ wf_fws.append(fw_variant_analysis)
 
 ### Create variants and simulations
 for i in VARIANTS_TO_RUN:
-	VARIANT_DIRECTORY = os.path.join(OUT_DIRECTORY, SUBMISSION_TIME, VARIANT + "_%06d" % i)
+	if VERBOSE_QUEUE:
+		print "Queuing Variant {}".format(i)
+	VARIANT_DIRECTORY = os.path.join(INDIV_OUT_DIRECTORY, VARIANT + "_%06d" % i)
 	VARIANT_SIM_DATA_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "kb")
 	VARIANT_METADATA_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "metadata")
 	metadata["variant_function"] = VARIANT
 	metadata["variant_index"] = i
 
 	# Variant simData creation task
-	fw_name = "VariantSimDataTask"
+	fw_name = "VariantSimDataTask_%06d" % (i)
 	fw_this_variant_sim_data = Firework(
 		VariantSimDataTask(
 			variant_function = VARIANT,
@@ -381,7 +424,7 @@ for i in VARIANTS_TO_RUN:
 
 	metadata["analysis_type"] = "cohort"
 
-	fw_name = "AnalysisCohortTask"
+	fw_name = "AnalysisCohortTask__Var_%02d" % (i)
 	fw_this_variant_cohort_analysis = Firework(
 		AnalysisCohortTask(
 			input_variant_directory = VARIANT_DIRECTORY,
@@ -396,12 +439,14 @@ for i in VARIANTS_TO_RUN:
 	wf_fws.append(fw_this_variant_cohort_analysis)
 
 	for j in xrange(N_INIT_SIMS):
+		if VERBOSE_QUEUE:
+			print "\tQueuing Seed {}".format(j)
 		SEED_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "%06d" % j)
 		SEED_PLOT_DIRECTORY = os.path.join(SEED_DIRECTORY, "plotOut")
 		metadata["seed"] = j
 		metadata["analysis_type"] = 'multigen'
 
-		fw_name = "AnalysisMultiGenTask__Seed_%06d" % (j)
+		fw_name = "AnalysisMultiGenTask__Var_%02d__Seed_%06d" % (i, j)
 		fw_this_variant_this_seed_this_analysis = Firework(
 			AnalysisMultiGenTask(
 				input_seed_directory = SEED_DIRECTORY,
@@ -421,17 +466,22 @@ for i in VARIANTS_TO_RUN:
 		sims_this_seed = collections.defaultdict(list)
 
 		for k in xrange(N_GENS):
+			if VERBOSE_QUEUE:
+				print "\t\tQueuing Gen %02d." % (k)
 			GEN_DIRECTORY = os.path.join(SEED_DIRECTORY, "generation_%06d" % k)
 			metadata["gen"] = k
 
 			for l in (xrange(2**k) if not SINGLE_DAUGHTERS else [0]):
+
+				if VERBOSE_QUEUE:
+					print "\t\t\tQueuing Cell {}".format(l)
 				CELL_DIRECTORY = os.path.join(GEN_DIRECTORY, "%06d" % l)
 				CELL_SIM_OUT_DIRECTORY = os.path.join(CELL_DIRECTORY, "simOut")
 				CELL_PLOT_OUT_DIRECTORY = os.path.join(CELL_DIRECTORY, "plotOut")
 
 				# TODO: Add conditional logic here for mother vs daughter cells
 				# Simulation task
-				fw_name = "SimulationTask__Seed_%d__Gen_%d__Cell_%d" % (j, k, l)
+				fw_name = "SimulationTask__Var_%02d__Seed_%d__Gen_%d__Cell_%d" % (i, j, k, l)
 
 				if k == 0:
 					fw_this_variant_this_gen_this_sim = Firework(
@@ -487,7 +537,7 @@ for i in VARIANTS_TO_RUN:
 					fw_name = "ScriptTask_compression_simulation__Seed_%d__Gen_%d__Cell_%d" % (j, k, l)
 					fw_this_variant_this_gen_this_sim_compression = Firework(
 						ScriptTask(
-							script = "find %s -type f | xargs bzip2 -v " % CELL_SIM_OUT_DIRECTORY
+							script = 'for dir in %s; do echo "Compressing $dir"; find "$dir" -type f | xargs bzip2; done' % os.path.join(CELL_SIM_OUT_DIRECTORY, "*")
 							),
 						name = fw_name,
 						spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
@@ -498,7 +548,7 @@ for i in VARIANTS_TO_RUN:
 				metadata["analysis_type"] = "single"
 
 				# AnalysisSingle task
-				fw_name = "AnalysisSingleTask__Seed_%d__Gen_%d__Cell_%d" % (j, k, l)
+				fw_name = "AnalysisSingleTask__Var_%d__Seed_%d__Gen_%d__Cell_%d" % (i, j, k, l)
 				fw_this_variant_this_gen_this_sim_analysis = Firework(
 					AnalysisSingleTask(
 						input_results_directory = CELL_SIM_OUT_DIRECTORY,
@@ -532,6 +582,10 @@ for i in VARIANTS_TO_RUN:
 					wf_links[fw_variant_analysis].append(fw_this_variant_this_gen_this_sim_compression)
 
 ## Create workflow
+
+
+if VERBOSE_QUEUE:
+	print "Creating workflow."
 
 workflow = Workflow(wf_fws, links_dict = wf_links)
 

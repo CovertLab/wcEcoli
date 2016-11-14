@@ -36,7 +36,7 @@ class Transcription(object):
 		# Load expression from RNA-seq data
 		expression = []
 		for rna in raw_data.rnas:
-			arb_exp = [x[sim_data.expression_condition] for x in eval("raw_data.rna_seq_data.rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS)) if x['Gene'] == rna['geneId']]
+			arb_exp = [x[sim_data.basal_expression_condition] for x in eval("raw_data.rna_seq_data.rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS)) if x['Gene'] == rna['geneId']]
 			if len(arb_exp):
 				expression.append(arb_exp[0])
 			elif rna['type'] == 'mRNA' or rna['type'] == 'miscRNA':
@@ -83,14 +83,15 @@ class Transcription(object):
 
 		maxSequenceLength = max(len(sequence) for sequence in sequences)
 
+		monomerIds = [x['monomerId'] for x in raw_data.rnas]
+
 		# TODO: Add units
 		rnaData = np.zeros(
 			size,
 			dtype = [
 				('id', 'a50'),
-				# TODO: add expression to this table
-				('synthProb', 'f8'),
-				('expression', 'float64'),
+				# ('synthProb', 'f8'),
+				# ('expression', 'float64'),
 				('degRate', 'f8'),
 				('length', 'i8'),
 				('countsACGU', '4i8'),
@@ -102,6 +103,8 @@ class Transcription(object):
 				('isRRna23S', 'bool'),
 				('isRRna16S', 'bool'),
 				('isRRna5S', 'bool'),
+				('isRProtein', 'bool'),
+				('isRnap',	'bool'),
 				('sequence', 'a{}'.format(maxSequenceLength)),
 				('geneId', 'a50'),
 				('KmEndoRNase', 'f8'),
@@ -109,8 +112,8 @@ class Transcription(object):
 			)
 
 		rnaData['id'] = rnaIds
-		rnaData["synthProb"] = synthProb
-		rnaData["expression"] = expression
+		# rnaData["synthProb"] = synthProb
+		# rnaData["expression"] = expression
 		rnaData['degRate'] = rnaDegRates
 		rnaData['length'] = rnaLens
 		rnaData['countsACGU'] = ntCounts
@@ -119,6 +122,8 @@ class Transcription(object):
 		rnaData['isMiscRna'] = [rna["type"] == "miscRNA" for rna in raw_data.rnas]
 		rnaData['isRRna'] = [rna["type"] == "rRNA" for rna in raw_data.rnas]
 		rnaData['isTRna'] = [rna["type"] == "tRNA" for rna in raw_data.rnas]
+		rnaData['isRProtein'] = ["{}[c]".format(x) in sim_data.moleculeGroups.rProteins for x in monomerIds]
+		rnaData['isRnap'] = ["{}[c]".format(x) in sim_data.moleculeGroups.rnapIds for x in monomerIds]
 		rnaData['isRRna23S'] = is23S
 		rnaData['isRRna16S'] = is16S
 		rnaData['isRRna5S'] = is5S
@@ -128,8 +133,8 @@ class Transcription(object):
 
 		field_units = {
 			'id'			:	None,
-			'synthProb' 	:	None,
-			'expression'	:	None,
+			# 'synthProb' 	:	None,
+			# 'expression'	:	None,
 			'degRate'		:	1 / units.s,
 			'length'		:	units.nt,
 			'countsACGU'	:	units.nt,
@@ -141,10 +146,18 @@ class Transcription(object):
 			'isRRna23S'		:	None,
 			'isRRna16S'		:	None,
 			'isRRna5S'		:	None,
+			'isRProtein'	:	None,
+			'isRnap'		:	None,
 			'sequence'		:   None,
 			'geneId'		:	None,
 			'KmEndoRNase'	:	units.mol / units.L,
 			}
+
+		self.rnaExpression = {}
+		self.rnaSynthProb = {}
+
+		self.rnaExpression["basal"] = expression
+		self.rnaSynthProb["basal"] = synthProb
 
 
 		self.rnaData = UnitStructArray(rnaData, field_units)

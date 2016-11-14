@@ -6,7 +6,6 @@ Metabolism
 Metabolism sub-model. Encodes molecular simulation of microbial metabolism using flux-balance analysis.
 
 TODO:
-- enzyme-limited reactions (& fit enzyme expression)
 - option to call a reduced form of metabolism (assume optimal)
 
 @author: Derek Macklin
@@ -19,6 +18,7 @@ from __future__ import division
 from itertools import izip
 
 import numpy as np
+from scipy.sparse import csr_matrix
 
 import wholecell.processes.process
 from wholecell.utils import units
@@ -29,18 +29,24 @@ from wholecell.utils.constants import REQUEST_PRIORITY_METABOLISM
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
 from wholecell.utils.enzymeKinetics import EnzymeKinetics
 
-from wholecell.utils.fitting import massesAndCountsToAddForPools
+from wholecell.utils.fitting import massesAndCountsToAddForHomeostaticTargets
 
-COUNTS_UNITS = units.mmol
+COUNTS_UNITS = units.dmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
-USE_RATELIMITS = False # Enable/disable kinetic rate limits in the model
+TIME_UNITS = units.s
 
-USE_MANUAL_FLUX_COEFF = False # enable to overrid flux coefficients in the knowledgebase and use these local values instead
-MAX_FLUX_COEFF = 2 # Multiple of predicted rate at which to set the max fluxes
-MIN_FLUX_COEFF = 0 # Multiple of predicted rate at which to set the min fluxes
+FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 
-VERBOSE = False
+
+SECRETION_PENALTY_COEFF = 1e-5
+
+NONZERO_ENZYMES = False
+
+USE_KINETIC_RATES = True
+USE_BASE_RATES = True
+KINETICS_BURN_IN_PERIOD = 1
+
 
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
@@ -60,43 +66,32 @@ class Metabolism(wholecell.processes.process.Process):
 		self.nAvogadro = sim_data.constants.nAvogadro
 		self.cellDensity = sim_data.constants.cellDensity
 
-		self.metabolitePoolIDs = sorted(sim_data.process.metabolism.concDict)
-
-		self.environment = sim_data.environment
 		self.exchangeConstraints = sim_data.process.metabolism.exchangeConstraints
 
 		self.doublingTime = sim_data.doubling_time
+		self.nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
 
 		# Load enzyme kinetic rate information
 		self.reactionRateInfo = sim_data.process.metabolism.reactionRateInfo
-		self.enzymesWithKineticInfo = sim_data.process.metabolism.enzymesWithKineticInfo["enzymes"]
+		self.enzymeNames = sim_data.process.metabolism.metabolicEnzymes
 		self.constraintIDs = sim_data.process.metabolism.constraintIDs
-		self.activeConstraintsDict = sim_data.process.metabolism.activeConstraintsDict
+		self.constraintMultiplesDict = {constraintID:rateInfo["constraintMultiple"] for constraintID, rateInfo in self.reactionRateInfo.iteritems()}
 		self.constraintToReactionDict = sim_data.process.metabolism.constraintToReactionDict
+		self.reactionEnzymes  = sim_data.process.metabolism.reactionEnzymes
 
-		if USE_MANUAL_FLUX_COEFF:
-			self.max_flux_coefficient = MAX_FLUX_COEFF
-			self.min_flux_coefficient = MIN_FLUX_COEFF
-		else:
-			self.max_flux_coefficient = sim_data.constants.kineticRateLimitFactorUpper
-			self.min_flux_coefficient = sim_data.constants.kineticRateLimitFactorLower
+		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
+			sim_data.nutrientsTimeSeries[sim_data.nutrientsTimeSeriesLabel][0][1]
+			)
+		self.concModificationsBasedOnCondition = sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.condition])
+		concDict.update(self.concModificationsBasedOnCondition)
 
 		self.objective = dict(
-			(key, sim_data.process.metabolism.concDict[key].asNumber(COUNTS_UNITS / VOLUME_UNITS)) for key in sim_data.process.metabolism.concDict
+			(key, concDict[key].asNumber(COUNTS_UNITS / VOLUME_UNITS)) for key in concDict
 			)
-
-		# TODO: make sim_data method?
-		extIDs = sim_data.externalExchangeMolecules[sim_data.environment]
-		self.extMoleculeMasses = sim_data.getter.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS) # TODO: delete this line?
 
 		self.getMass = sim_data.getter.getMass
 		self.massReconstruction = sim_data.mass
 		self.avgCellToInitialCellConvFactor = sim_data.mass.avgCellToInitialCellConvFactor
-
-		self.moleculeMasses = dict(zip(
-			extIDs,
-			self.getMass(extIDs).asNumber(MASS_UNITS/COUNTS_UNITS)
-			))
 
 		self.ngam = sim_data.constants.nonGrowthAssociatedMaintenance
 
@@ -108,55 +103,96 @@ class Metabolism(wholecell.processes.process.Process):
 			+ initDryMass
 			)
 
-		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
+		self.energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
 		self.reactionStoich = sim_data.process.metabolism.reactionStoich
-		self.externalExchangeMolecules = sim_data.externalExchangeMolecules[sim_data.environment]
-		self.reversibleReactions = sim_data.process.metabolism.reversibleReactions
+		self.externalExchangeMolecules = sim_data.nutrientData["secretionExchangeMolecules"]
+		for time, nutrientsLabel in sim_data.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel]:
+			self.externalExchangeMolecules += sim_data.nutrientData["importExchangeMolecules"][nutrientsLabel]
+		self.maintenanceReaction = sim_data.process.metabolism.maintenanceReaction
+		self.externalExchangeMolecules = sorted(self.externalExchangeMolecules)
+		self.extMoleculeMasses = self.getMass(self.externalExchangeMolecules)
 
-		# Set up FBA solver
-		self.fba = FluxBalanceAnalysis(
-			self.reactionStoich.copy(), # TODO: copy in class
+		self.moleculeMasses = dict(zip(
 			self.externalExchangeMolecules,
-			self.objective,
-			objectiveType = "pools",
-			reversibleReactions = self.reversibleReactions,
-			moleculeMasses = self.moleculeMasses,
-			solver = "glpk",
-			maintenanceCostGAM = energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
-			maintenanceReaction = {
-				"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "Pi[c]": +1, "PROTON[c]": +1,
-				} # TODO: move to KB TODO: check reaction stoich
-			)
+			self.getMass(self.externalExchangeMolecules).asNumber(MASS_UNITS / COUNTS_UNITS)
+			))
 
 		# Set up enzyme kinetics object
 		self.enzymeKinetics = EnzymeKinetics(
-			enzymesWithKineticInfo = sim_data.process.metabolism.enzymesWithKineticInfo["enzymes"],
 			reactionRateInfo = sim_data.process.metabolism.reactionRateInfo,
-			constraintIDs = sim_data.process.metabolism.constraintIDs,
-			reactionIDs = self.fba.reactionIDs(),
-			metaboliteIDs = self.fba.outputMoleculeIDs(),
-			kcatOnly=False
-			)
+			useCustoms=True,
+			moreThanKcat=False, # Only compute rates for reactions with more than a kcat
+		)
 
-		# Determine which kinetic limits to use
-		self.reactionsWithKineticLimits = [True]*len(self.fba.reactionIDs())
-		self.activeConstraints = [self.activeConstraintsDict[x] for x in self.constraintIDs]
-	
+		# Remove kinetics for reactions for which we don't have needed metabolites or enzymes
+		self.enzymeKinetics.checkKnownSubstratesAndEnzymes(sim_data.process.metabolism.concDict, self.enzymeNames, removeUnknowns=True)
+
+		# Add reactions with a kinetic estimate
+		self.allRateReactions = sorted(set([reactionInfo["reactionID"] for constraintID, reactionInfo in self.enzymeKinetics.reactionRateInfo.iteritems() if reactionInfo["reactionID"] in self.reactionStoich]))
+		# Reactions with full kinetic estimates (more than just kcat)
+		self.fullRateReactions = sorted(set([reactionInfo["reactionID"] for constraintID, reactionInfo in self.enzymeKinetics.reactionRateInfo.iteritems() if (len(reactionInfo["kM"]) > 0 or reactionInfo["rateEquationType"] == "custom") and reactionInfo["reactionID"] in self.reactionStoich]))
+		# Reactions with a kcat-based kinetic estimate only (no customs, no kMs, no kIs)
+		self.kcatRateReactions = sorted(set([reactionInfo["reactionID"] for constraintID, reactionInfo in self.enzymeKinetics.reactionRateInfo.iteritems() if reactionInfo["reactionID"] not in self.fullRateReactions and reactionInfo["reactionID"] in self.reactionStoich]))
+
+		self.metabolismKineticObjectiveWeight = sim_data.constants.metabolismKineticObjectiveWeight
+
+		# Set up FBA solver
+		self.fbaObjectOptions = {
+			"reactionStoich" : self.reactionStoich,
+			"externalExchangedMolecules" : self.externalExchangeMolecules,
+			"objective" : self.objective,
+			"objectiveType" : "homeostatic_kinetics_mixed",
+			"objectiveParameters" : {
+					"kineticObjectiveWeight":self.metabolismKineticObjectiveWeight,
+					"reactionRateTargets":{reaction:1e-5 for reaction in self.allRateReactions}, #This target is arbitrary, it gets reset each timestep during evolveState
+					"oneSidedReactionTargets":self.kcatRateReactions,
+					},
+			"moleculeMasses" : self.moleculeMasses,
+			"secretionPenaltyCoeff" : SECRETION_PENALTY_COEFF, # The "inconvenient constant"--limit secretion (e.g., of CO2)
+			"solver" : "glpk",
+			"maintenanceCostGAM" : self.energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
+			"maintenanceReaction" : self.maintenanceReaction,
+		}
+
+		if USE_KINETIC_RATES==False:
+			self.fbaObjectOptions["objectiveType"] = "homeostatic"
+
+		self.fba = FluxBalanceAnalysis(**self.fbaObjectOptions)
+
+		# Disable all rates during burn-in
+		if KINETICS_BURN_IN_PERIOD > 0 and USE_KINETIC_RATES:
+			self.fba.disableKineticTargets()
+			self.burnInComplete = False
+		else:
+			self.burnInComplete = True
+
+		# Indices for reactions with full kinetic esimates
+		self.allRateIndices = np.where([True if reactionID in self.allRateReactions else False for reactionID in self.fba.reactionIDs()])
+
+		self.allRateEstimates = FLUX_UNITS * np.zeros_like(self.allRateIndices)
+
+		# Matrix mapping enzymes to the reactions they catalyze
+		self.enzymeReactionMatrix = sim_data.process.metabolism.enzymeReactionMatrix(
+			self.fba.reactionIDs(),
+			self.enzymeNames,
+			self.reactionEnzymes,
+			)
+		self.spontaneousIndices = np.where(np.sum(self.enzymeReactionMatrix, axis=1) == 0)
+		self.enzymeReactionMatrix = csr_matrix(self.enzymeReactionMatrix)
+		self.baseRates = FLUX_UNITS * np.inf * np.ones(len(self.fba.reactionIDs()))
+
+		self.currentNgam = 1 * (COUNTS_UNITS / VOLUME_UNITS)
+		self.currentPolypeptideElongationEnergy = 1 * (COUNTS_UNITS / VOLUME_UNITS)
+
 		# Set constraints
 		## External molecules
 		self.externalMoleculeIDs = self.fba.externalMoleculeIDs()
 
-		## Set enzymes unlimited
-		self.fba.enzymeLevelsIs(np.inf)
-
 		# Views
 		self.metaboliteNames = self.fba.outputMoleculeIDs()
 		self.metabolites = self.bulkMoleculesView(self.metaboliteNames)
-		self.poolMetabolites = self.bulkMoleculesView(self.metabolitePoolIDs)
-		self.enzymeNames = self.enzymesWithKineticInfo
 		self.enzymes = self.bulkMoleculesView(self.enzymeNames)
-
 			
 		outputMoleculeIDs = self.fba.outputMoleculeIDs()
 
@@ -165,14 +201,13 @@ class Metabolism(wholecell.processes.process.Process):
 		# Set the priority to a low value
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_METABOLISM)
 
+		self.fitterPredictedFluxesDict = sim_data.process.metabolism.predictedFluxesDict
 
 	def calculateRequest(self):
 		self.metabolites.requestAll()
 		self.enzymes.requestAll()
 
-	# Calculate temporal evolution
 	def evolveState(self):
-
 		# Solve for metabolic fluxes
 		metaboliteCountsInit = self.metabolites.counts()
 
@@ -183,60 +218,65 @@ class Metabolism(wholecell.processes.process.Process):
 
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
-		polypeptideElongationEnergy = countsToMolar * 0
+		self.newPolypeptideElongationEnergy = countsToMolar * 0
 		if hasattr(self._sim.processes["PolypeptideElongation"], "gtpRequest"):
-			polypeptideElongationEnergy = countsToMolar * self._sim.processes["PolypeptideElongation"].gtpRequest
+			self.newPolypeptideElongationEnergy = countsToMolar * self._sim.processes["PolypeptideElongation"].gtpRequest
 
 		# Set external molecule levels
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
-
 
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
 			self.externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS,
-			self.environment,
-			self.time()
+			self.nutrientsTimeSeriesLabel,
+			self.time(),
+			self.concModificationsBasedOnCondition,
 			)
 
 		if newObjective != None and newObjective != self.objective:
 			# Build new fba instance with new objective
-			self.objective = newObjective
-			self.fba = FluxBalanceAnalysis(
-				self.reactionStoich.copy(), # TODO: copy in class
-				self.externalExchangeMolecules,
-				self.objective,
-				objectiveType = "pools",
-				reversibleReactions = self.reversibleReactions,
-				moleculeMasses = self.moleculeMasses,
-				solver = "glpk",
-				# maintenanceCost = energyCostPerWetMass.asNumber(COUNTS_UNITS/MASS_UNITS), # mmol/gDCW TODO: get real number
-				# maintenanceReaction = {
-				# 	"ATP[c]":-1, "WATER[c]":-1, "ADP[c]":+1, "Pi[c]":+1
-				# 	} # TODO: move to KB TODO: check reaction stoich
-				)
-
+			self.fbaObjectOptions["objective"] = newObjective
+			self.fba = FluxBalanceAnalysis(**self.fbaObjectOptions)
 			massComposition = self.massReconstruction.getFractionMass(self.doublingTime)
 			massInitial = (massComposition["proteinMass"] + massComposition["rnaMass"] + massComposition["dnaMass"]) / self.avgCellToInitialCellConvFactor
 			objIds = sorted(self.objective)
 			objConc = (COUNTS_UNITS / VOLUME_UNITS) * np.array([self.objective[x] for x in objIds])
 			mws = self.getMass(objIds)
-			massesToAdd, _ = massesAndCountsToAddForPools(massInitial, objIds, objConc, mws, self.cellDensity, self.nAvogadro)
-			smallMoleculePoolsDryMass = units.hstack((massesToAdd[:objIds.index('WATER[c]')], massesToAdd[objIds.index('WATER[c]') + 1:]))
-			totalDryMass = units.sum(smallMoleculePoolsDryMass) + massInitial
-			self.writeToListener("Mass", "expectedDryMassIncrease", totalDryMass)
+			massesToAdd, _ = massesAndCountsToAddForHomeostaticTargets(massInitial, objIds, objConc, mws, self.cellDensity, self.nAvogadro)
+			smallMoleculeHomeostaticTargetsDryMass = units.hstack((massesToAdd[:objIds.index('WATER[c]')], massesToAdd[objIds.index('WATER[c]') + 1:]))
+			totalDryMass = units.sum(smallMoleculeHomeostaticTargetsDryMass) + massInitial
+			self.writeToListener("CellDivision", "expectedDryMassIncrease", totalDryMass)
+
+		# After completing the burn-in, enable kinetic rates
+		if self._sim.time() > KINETICS_BURN_IN_PERIOD and USE_KINETIC_RATES and not self.burnInComplete:
+			self.burnInComplete = True
+			self.fba.enableKineticTargets()
 
 		# Set external molecule levels
 		self.fba.externalMoleculeLevelsIs(externalMoleculeLevels)
 
-		self.fba.maxReactionFluxIs(self.fba._reactionID_NGAM, (self.ngam * coefficient).asNumber(COUNTS_UNITS / VOLUME_UNITS))
-		self.fba.minReactionFluxIs(self.fba._reactionID_NGAM, (self.ngam * coefficient).asNumber(COUNTS_UNITS / VOLUME_UNITS))
+		self.newNgam = self.ngam * coefficient
 
-		self.fba.maxReactionFluxIs(self.fba._reactionID_polypeptideElongationEnergy, polypeptideElongationEnergy.asNumber(COUNTS_UNITS / VOLUME_UNITS))
-		self.fba.minReactionFluxIs(self.fba._reactionID_polypeptideElongationEnergy, polypeptideElongationEnergy.asNumber(COUNTS_UNITS / VOLUME_UNITS))
+		# Change the ngam and polypeptide elongation energy penalty only if they are noticably different from the current value
+		ADJUSTMENT_RATIO = .01
+		ngam_diff = np.abs(self.currentNgam.asNumber() - self.newNgam.asNumber()) / (self.currentNgam.asNumber() + 1e-20)
+		if ngam_diff > ADJUSTMENT_RATIO:
+			self.currentNgam = self.newNgam
+			self.fba.maxReactionFluxIs(self.fba._reactionID_NGAM, (self.ngam * coefficient).asNumber(COUNTS_UNITS / VOLUME_UNITS))
+			self.fba.minReactionFluxIs(self.fba._reactionID_NGAM, (self.ngam * coefficient).asNumber(COUNTS_UNITS / VOLUME_UNITS))
+
+		poly_diff = np.abs((self.currentPolypeptideElongationEnergy.asNumber() - self.newPolypeptideElongationEnergy.asNumber())) / (self.currentPolypeptideElongationEnergy.asNumber() + 1e-20)
+		if poly_diff > ADJUSTMENT_RATIO:
+			self.currentPolypeptideElongationEnergy = self.newPolypeptideElongationEnergy
+			self.fba.maxReactionFluxIs(self.fba._reactionID_polypeptideElongationEnergy, self.currentPolypeptideElongationEnergy.asNumber(COUNTS_UNITS / VOLUME_UNITS))
+			self.fba.minReactionFluxIs(self.fba._reactionID_polypeptideElongationEnergy, self.currentPolypeptideElongationEnergy.asNumber(COUNTS_UNITS / VOLUME_UNITS))
 
 		#  Find metabolite concentrations from metabolite counts
 		metaboliteConcentrations =  countsToMolar * metaboliteCountsInit
+
+		# Make a dictionary of metabolite names to metabolite concentrations
+		metaboliteConcentrationsDict = dict(zip(self.metaboliteNames, metaboliteConcentrations))
 
 		self.fba.internalMoleculeLevelsIs(
 			metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS)
@@ -247,114 +287,51 @@ class Metabolism(wholecell.processes.process.Process):
 
 		enzymeConcentrations = countsToMolar * enzymeCountsInit
 
-		defaultRate = self.enzymeKinetics.defaultRate
+		if NONZERO_ENZYMES:
+			# Add one of every enzyme to ensure none are zero
+			enzymeConcentrations = countsToMolar * (enzymeCountsInit + 1)
 
-		# Combine the enzyme concentrations, substrate concentrations, and the default rate into one vector
-		inputConcentrations = np.concatenate((
-			enzymeConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS),
-			metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS),
-			[defaultRate]), axis=1)
+		# Make a dictionary of enzyme names to enzyme concentrations
+		enzymeConcentrationsDict = dict(zip(self.enzymeNames, enzymeConcentrations))
 
-		# Find reaction rate limits
-		self.reactionRates = self.enzymeKinetics.rateFunction(*inputConcentrations) * self.timeStepSec()
+		# When many estimates exist for a reaction, choose the largest
+		if not hasattr(self, "chosenConstraints"):
+			# Calculate the constraints in the current conditions
+			reactionsDict = self.enzymeKinetics.allReactionsDict(metaboliteConcentrationsDict, enzymeConcentrationsDict)
+			oneSidedReactions =  set(self.fba.kineticOneSidedTargetFluxNames())
+			self.chosenConstraints = {}
+			for reactionID, reactionRate in reactionsDict.iteritems():
+				rateOrderedConstraints = sorted(reactionRate.keys(), key=reactionRate.__getitem__, reverse=False)
+				kMreactions = [x for x in rateOrderedConstraints if 'kcat' not in x]
+				if len(kMreactions) > 0:
+					# Take the highest valued constraint with a kM
+					constraintID = kMreactions[-1]
+				elif len(kMreactions) == 0:
+					# Take the higest valued constraint overall
+					constraintID = rateOrderedConstraints[-1]
+				self.chosenConstraints[reactionID] = {
+					"constraintID":constraintID,
+					"coefficient":self.constraintMultiplesDict[constraintID],}
 
-		# Find rate limits for all constraints
-		self.allConstraintsLimits = self.enzymeKinetics.allRatesFunction(*inputConcentrations)[0]
-
-		# Set the rate limits only if the option flag is enabled
-		if USE_RATELIMITS:
-			currentRateLimits = {}
-			# Set reaction fluxes to be between  MAX_FLUX_COEFF and MIN_FLUX_COEFF of the predicted rate
-			for index, constraintID in enumerate(self.constraintIDs):
-				# Only use this kinetic limit if it's enabled
-				if self.activeConstraints[index]:
-					# Make sure to never set negative maximum rates
-					assert (self.allConstraintsLimits[index] >= 0 and self.allConstraintsLimits[index] != np.nan)
-
-					# Ensure that this reaction hasn't already been constrained more than this yet
-					if self.constraintToReactionDict[constraintID] in currentRateLimits and currentRateLimits[self.constraintToReactionDict[constraintID]] < self.allConstraintsLimits[index]*MAX_FLUX_COEFF:
-						# This rate has already been constrained more than this constraint, so skip it
-						continue
-
-					# Set the max reaction rate for this reaction
-					self.fba.maxReactionFluxIs(self.constraintToReactionDict[constraintID], self.allConstraintsLimits[index]*self.max_flux_coefficient, raiseForReversible = False)
-					# Set the minimum reaction rate for this reaction
-					self.fba.minReactionFluxIs(self.constraintToReactionDict[constraintID], self.allConstraintsLimits[index]*self.min_flux_coefficient, raiseForReversible = False)
-					
-					# Record what constraint was just applied to this reaction
-					currentRateLimits[self.constraintToReactionDict[constraintID]] = self.allConstraintsLimits[index]*MAX_FLUX_COEFF
-
-				else:
-					self.fba.maxReactionFluxIs(self.constraintToReactionDict[constraintID], defaultRate, raiseForReversible = False)
-					
-		# Set rate limits for NTPs production
-		ReactionIdsATPs = [	"SUCCCOASYN-RXN", 
-							"CARBAMATE-KINASE-RXN", 
-							"RXN0-7115", 
-							"ADENYLYLSULFKIN-RXN", 
-							"DIACYLGLYKIN-RXN", 
-							"ATPPHOSPHORIBOSYLTRANS-RXN", 
-							"ACETATEKIN-RXN", 
-							"PHOSGLYPHOS-RXN", 
-							"RXN-16165-Initiation-tRNAmet/MET/ATP/PROTON//L-methionyl-tRNAfmet/AMP/PPI.64.",
-							self.fba._generatedID_reverseReaction.format("ENTF-RXN"),
-							self.fba._generatedID_reverseReaction.format("ATPSYN-RXN[CCO-PM-BAC-NEG]-ATP/PROTON/WATER//ADP/Pi/PROTON.48."),
-							self.fba._generatedID_reverseReaction.format("PROPKIN-RXN"), 
-							self.fba._generatedID_reverseReaction.format("N-ACETYLGLUCOSAMINE-KINASE-RXN-N-ACETYL-D-GLUCOSAMINE/ATP//CPD-16168/ADP/PROTON.49."),
-							self.fba._generatedID_reverseReaction.format("PEPDEPHOS-RXN"),
-							self.fba._generatedID_reverseReaction.format("RXN-14552"),
-							]
-
-		ReactionIdsCTPs = [	"CPM-KDOSYNTH-RXN",
-							"3.6.1.19-RXN-CTP/WATER//CMP/PPI/PROTON.26.",
-							"CTPSYN-RXN",
-							"NUCLEOSIDE-DIP-KIN-RXN-DCDP/ATP//DCTP/ADP.19.",
-							"2.7.7.60-RXN",
-							"DCTP-PYROPHOSPHATASE-RXN",
-							"DCTP-DEAM-RXN",
-							"RXN-12195",
-							"3.6.1.19-RXN-DCTP/WATER//DCMP/PPI/PROTON.28.",
-							"DCDPKIN-RXN",
-							"CDPKIN-RXN",
-							"RXN-14325",
-							"NUCLEOSIDE-DIP-KIN-RXN-CDP/ATP//CTP/ADP.17.",
-							"CDPDIGLYSYN-RXN-CTP/CPD0-1423/PROTON//CPD-12814/PPI.36.",
-							"CDPDIGLYSYN-RXN-CTP/CPD0-1422/PROTON//CPD-12815/PPI.36.",
-							"P-PANTOCYSLIG-RXN",
-							"RXN0-383",
-							]
-
-		ReactionIdsGTPs = [	"NUCLEOSIDE-DIP-KIN-RXN-GDP/ATP//GTP/ADP.17.",
-							"RXN0-6427",
-							"GUANYLCYC-RXN",
-							"GDPKIN-RXN",
-							]
-
-		ReactionIdsUTPs = [	"NUCLEOSIDE-DIP-KIN-RXN-UDP/ATP//UTP/ADP.17.",
-							"UDPKIN-RXN",
-							]
-
-		# KO reactions related to NTP production
-		ReactionIdsNTPs = ReactionIdsUTPs + ReactionIdsCTPs + ReactionIdsATPs + ReactionIdsGTPs
-
-		FluxesAux = self.fba.reactionFluxes(); 
-
-		# Store upper bounds metabolic model
-		maxReactionFluxNTPs = []
-		for IdNtp in ReactionIdsNTPs:
-			IndexNTP = (np.where(IdNtp == self.fba.reactionIDs()))[0][0]
-			maxReactionFluxNTPs += [self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)]
-			if VERBOSE: print "store upper bound = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
-
-		# Change upper bounds for NTP reactions
-		for IdNtp in ReactionIdsNTPs:
-			IndexNTP = (np.where(IdNtp == self.fba.reactionIDs()))[0][0]
+		if USE_KINETIC_RATES and self._sim.time() > KINETICS_BURN_IN_PERIOD:
+			self.allRateEstimates = self.enzymeKinetics.ratesView(self.allRateReactions, self.chosenConstraints, metaboliteConcentrationsDict, enzymeConcentrationsDict, raiseIfNotFound=True)
 			
-			FluxNonLimited = FluxesAux[IndexNTP]
-			if FluxNonLimited < 0: 
-				FluxNonLimited = 0; 
-				if VERBOSE: print "Warning: flux < 0."
-			if VERBOSE: print "compute actual flux = %f" % FluxNonLimited
+			# Make kinetic targets numerical zero instead of actually zero for solver stability
+			self.allRateEstimates[self.allRateEstimates.asNumber() == 0] = FLUX_UNITS * 1e-20
+			self.fba.setKineticTarget(self.allRateReactions, (TIME_UNITS*self.timeStepSec()*self.allRateEstimates).asNumber(COUNTS_UNITS/VOLUME_UNITS), raiseForReversible=False)
+
+		if USE_BASE_RATES:
+			# Calculate new rates
+			self.baseRatesNew = FLUX_UNITS * self.enzymeReactionMatrix.dot(enzymeConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS))
+			self.baseRatesNew[self.spontaneousIndices] = (FLUX_UNITS) * np.inf
+			# Update allRates
+			updateLocations = np.where(self.baseRatesNew.asNumber(FLUX_UNITS) != self.baseRates.asNumber(FLUX_UNITS))
+			updateReactions = self.fba.reactionIDs()[updateLocations]
+			updateValues = self.baseRatesNew[updateLocations]
+			self.baseRates[updateLocations] = updateValues
+			# Set new reaction rate limits
+			self.fba.setMaxReactionFluxes(updateReactions, (TIME_UNITS*self.timeStepSec()*updateValues).asNumber(COUNTS_UNITS/VOLUME_UNITS), raiseForReversible = False)
+
 
 			# Set rate limits
 			FractionFLux = 1.0
@@ -362,23 +339,19 @@ class Metabolism(wholecell.processes.process.Process):
 			if VERBOSE: print "compute upper bound limited = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
 
 		deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.outputMoleculeLevelsChange())
+		
 		metaboliteCountsFinal = np.fmax(stochasticRound(
 			self.randomState,
 			metaboliteCountsInit + deltaMetabolites.asNumber()
 			), 0).astype(np.int64)
+
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
-		# Show NTP production
-		if VERBOSE:
-			outputMoleculeIDs = np.array(self.fba.outputMoleculeIDs())
-			IdxAtp = (np.where("ATP[c]" == outputMoleculeIDs))[0][0]
-			IdxCtp = (np.where("CTP[c]" == outputMoleculeIDs))[0][0]
-			IdxGtp = (np.where("GTP[c]" == outputMoleculeIDs))[0][0]
-			IdxUtp = (np.where("UTP[c]" == outputMoleculeIDs))[0][0]
-			print "ATP produced (nt) = %f" % deltaMetabolites[IdxAtp] 
-			print "CTP produced (nt) = %f" % deltaMetabolites[IdxCtp]
-			print "GTP produced (nt) = %f" % deltaMetabolites[IdxGtp]
-			print "UTP produced (nt) = %f" % deltaMetabolites[IdxUtp]
+
+		# Use GLPK's dualprimal solver, AFTER the first solution
+		self.fba._solver._model.set_solver_method_dualprimal()
+
+		self.overconstraintMultiples = (self.fba.reactionFluxes()[self.allRateIndices] / self.allRateEstimates.asNumber(FLUX_UNITS))  
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
 
@@ -391,17 +364,38 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("FBAResults", "objectiveValue", # TODO
 		self.fba.objectiveValue()) # / len(deltaMetabolites)) # divide to normalize by number of metabolites
 
-		self.writeToListener("FBAResults", "outputFluxes",
-			self.fba.outputMoleculeLevelsChange() / self.timeStepSec())
+		self.writeToListener("FBAResults", "rowDualValues",
+			self.fba.rowDualValues(self.metaboliteNames))
 
-		self.writeToListener("FBAResults", "deltaMetabolites", # counts produced by metabolism
-			deltaMetabolites)
+		self.writeToListener("FBAResults", "columnDualValues",
+			self.fba.columnDualValues(self.fba.reactionIDs()))
 
-		self.writeToListener("EnzymeKinetics", "reactionRates",
-			self.reactionRates)
+		self.writeToListener("FBAResults", "kineticObjectiveValues",
+			self.fba.kineticObjectiveValues())
 
-		self.writeToListener("EnzymeKinetics", "allConstraintsLimits",
-			self.allConstraintsLimits)
+		self.writeToListener("FBAResults", "homeostaticObjectiveValues",
+			self.fba.homeostaticObjectiveValues())
+
+		self.writeToListener("FBAResults", "homeostaticObjectiveWeight",
+			self.fba.homeostaticObjectiveWeight())
+
+		self.writeToListener("EnzymeKinetics", "baseRates",
+			self.baseRates.asNumber(FLUX_UNITS))
+
+		self.writeToListener("EnzymeKinetics", "reactionKineticPredictions",
+			self.allRateEstimates.asNumber(FLUX_UNITS))
+
+		self.writeToListener("EnzymeKinetics", "overconstraintMultiples",
+			self.overconstraintMultiples)
+
+		self.writeToListener("EnzymeKinetics", "kineticTargetFluxes",
+			self.fba.kineticTargetFluxes())
+
+		self.writeToListener("EnzymeKinetics", "kineticTargetErrors",
+			self.fba.kineticTargetFluxErrors())
+
+		self.writeToListener("EnzymeKinetics", "kineticTargetRelativeDifferences",
+			self.fba.kineticTargetFluxRelativeDifferences())
 
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsInit",
 			metaboliteCountsInit)
@@ -417,100 +411,3 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.writeToListener("EnzymeKinetics", "countsToMolar",
 			countsToMolar.asNumber(COUNTS_UNITS / VOLUME_UNITS))
-
-		self.writeToListener("EnzymeKinetics", "counts_units",
-			str(COUNTS_UNITS))
-
-		self.writeToListener("EnzymeKinetics", "mass_units",
-			str(MASS_UNITS))
-
-		self.writeToListener("EnzymeKinetics", "volume_units",
-			str(VOLUME_UNITS))
-
-
-		# reset upper bounds
-		for IdxNtp in xrange(len(ReactionIdsNTPs)):
-			IdNtp = ReactionIdsNTPs[IdxNtp]
-			if VERBOSE: print "upper bound before reset = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
-			self.fba.maxReactionFluxIs(IdNtp, maxReactionFluxNTPs[IdxNtp], raiseForReversible = False)
-			if VERBOSE: print "upper bound after reset = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
-
-		if VERBOSE: print "Sum(Abs(fluxes) = %f" % np.sum(np.abs(self.fba.reactionFluxes()))
-
-
-		# metabolic fluxes measured (mmol/g/h) in Toya et al. Biotech Prog 2010
-		ReactionIDsCarbonCentral = [	["TRANS-RXN-157", 10.17],
-										["PGLUCISOM-RXN", 6.04],
-										["6PFRUCTPHOS-RXN", 8.06],
-										["F16ALDOLASE-RXN", 8.06],
-										["TRIOSEPISOMERIZATION-RXN", 8.06],
-										["GAPOXNPHOSPHN-RXN", 16.89],
-										["PHOSGLYPHOS-RXN", 16.89],
-										["RXN-15513", 15.85],
-										["3PGAREARR-RXN", 15.85],
-										["PEPDEPHOS-RXN", 1.97],
-										["PYRUVDEH-RXN", 11.12],
-										["GLU6PDEHYDROG-RXN", 3.98],
-										["RXN-9952", 3.98],
-										["RIBULPEPIM-RXN", 2.09],
-										["RIB5PISOM-RXN", 1.88],
-										["1TRANSKETO-RXN", 1.20],
-										["TRANSALDOL-RXN", 1.20],
-										["2TRANSKETO-RXN", 0.89],
-										["CITSYN-RXN", 5.46],
-										["ISOCITDEH-RXN", 5.46],
-										["2OXOGLUTARATEDEH-RXN", 4.62],
-										["SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.", 4.62],
-										["FUMHYDR-RXN", 4.62],
-										["MALATE-DEH-RXN", 3.50],
-										["PEPCARBOX-RXN", 3.34],
-										["MALIC-NADP-RXN", 1.12],
-									]
-
-		# comparing observed and predicted metabolic fluxes
-		fluxPredicted = []
-		fluxObserved = []
-		for IdReacMeas in ReactionIDsCarbonCentral: 
-			Index = (np.where(IdReacMeas[0] == self.fba.reactionIDs()))[0][0]; 
-			if FluxesAux[Index]:
-				fluxPredicted = np.append(fluxPredicted, FluxesAux[Index])
-				fluxObserved = np.append(fluxObserved, IdReacMeas[1])
-		fluxPredicted = ((COUNTS_UNITS / VOLUME_UNITS) * fluxPredicted / coefficient).asNumber(units.mmol / units.g / units.h)
-		PCC = 0
-		PCClog = 0
-		slope = 0
-		slopelog = 0
-		if len(fluxPredicted) > 0:
-			PCC = np.corrcoef(fluxObserved, fluxPredicted)[0,1]
-			PCClog = np.corrcoef(np.log10(fluxObserved), np.log10(fluxPredicted))[0,1]
-			z = np.polyfit(fluxObserved, fluxPredicted, 1)
-			slope = z[0]
-			zlog = np.polyfit(np.log10(fluxObserved), np.log10(fluxPredicted), 1)
-			slopelog = zlog[0]
-
-		#import ipdb; ipdb.set_trace()
-		#print [fluxPredicted, fluxObserved]
-		#print [np.log10(fluxPredicted), np.log10(fluxObserved)]
-		#print "PCC (observed and predicted fluxes) = %.2f" % PCC
-
-		self.writeToListener("FBAResults", "PCC", PCC) 
-		self.writeToListener("FBAResults", "PCClog", PCClog)
-		self.writeToListener("FBAResults", "slope", slope) 
-		self.writeToListener("FBAResults", "slopelog", slopelog)
-		
-
-		# TODO
-		# NOTE: the calculation for the objective components doesn't yet have
-		# an interface, since it will vary in calculation and shape for every
-		# objective type
-
-		# objectiveComponents_raw = (np.array(self.fba._f).flatten() * self.fba._solutionFluxes)[self.fba._objIndexes]
-		# objectiveComponents = objectiveComponents_raw[::2] + objectiveComponents_raw[1::2]
-
-		# self.writeToListener("FBAResults", "objectiveComponents",
-		# 	objectiveComponents
-		# 	)
-
-		# TODO:
-		# - which media exchanges/reactions are limiting, if any
-		# - objective details (value, component values)

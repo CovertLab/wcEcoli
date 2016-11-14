@@ -18,6 +18,7 @@ from models.ecoli.processes.transcript_elongation import TranscriptElongation
 from models.ecoli.processes.protein_degradation import ProteinDegradation
 from models.ecoli.processes.chromosome_formation import ChromosomeFormation
 from models.ecoli.processes.equilibrium import Equilibrium
+from models.ecoli.processes.tf_binding import TfBinding
 
 # Listeners
 from models.ecoli.listeners.mass import Mass
@@ -30,7 +31,8 @@ from models.ecoli.listeners.transcript_elongation_listener import TranscriptElon
 from models.ecoli.listeners.rnap_data import RnapData
 from models.ecoli.listeners.enzyme_kinetics import EnzymeKinetics
 from models.ecoli.listeners.growth_limits import GrowthLimits
-from models.ecoli.listeners.ATPhydrolyzedUsage_listener import ATPhydrolyzedUsageListener
+from models.ecoli.listeners.cell_division import CellDivision
+from models.ecoli.listeners.rna_synth_prob import RnaSynthProb
 
 
 # Analysis
@@ -59,6 +61,7 @@ class EcoliSimulation(Simulation):
 		Complexation,
 		ChromosomeFormation,
 		Equilibrium,
+		TfBinding,
 		)
 
 	_listenerClasses = (
@@ -72,7 +75,8 @@ class EcoliSimulation(Simulation):
 		RnapData,
 		EnzymeKinetics,
 		GrowthLimits,
-		ATPhydrolyzedUsageListener,
+		CellDivision,
+		RnaSynthProb,
 		)
 
 	_hookClasses = ()
@@ -88,6 +92,7 @@ class EcoliSimulation(Simulation):
 		"Dry mass fold change",
 		"Protein fold change",
 		"RNA fold change",
+		"Small mol fold change",
 		"Expected fold change"
 		]
 

@@ -1,0 +1,27 @@
+"condition"	"nutrients"	"genotype perturbations"	"doubling time (units.min)"	"active TFs"
+"basal"	"minimal"	{}	44.0	[]
+"with_aa"	"minimal_plus_amino_acids"	{}	25.0	["CPLX-125", "MONOMER0-162", "CPLX0-7671", "CPLX0-228", "MONOMER0-155"]
+"CPLX-125__active"			25.0
+"CPLX-125__inactive"			44.0
+"CPLX0-228__active"			25.0
+"CPLX0-228__inactive"			44.0
+"CPLX0-7671__active"			25.0
+"CPLX0-7671__inactive"			44.0
+"MONOMER0-155__active"			25.0
+"MONOMER0-155__inactive"			44.0
+"MONOMER0-162__active"			25.0
+"MONOMER0-162__inactive"			44.0
+"PUTA-CPLX__active"			44.0
+"PUTA-CPLX__inactive"			25.0
+"CPLX-172__active"			44.0
+"CPLX-172__inactive"			44.0
+"CPLX0-7916__active"			44.0
+"CPLX0-7916__inactive"			44.0
+"MONOMER0-160__active"			44.0
+"MONOMER0-160__inactive"			44.0
+"CPLX0-7705__active"			44.0
+"CPLX0-7705__inactive"			44.0
+"PD00288__active"			44.0
+"PD00288__inactive"			44.0
+"PC00027__active"			44.0
+"PC00027__inactive"			44.0
