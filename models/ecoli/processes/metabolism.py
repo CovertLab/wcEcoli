@@ -333,11 +333,6 @@ class Metabolism(wholecell.processes.process.Process):
 			self.fba.setMaxReactionFluxes(updateReactions, (TIME_UNITS*self.timeStepSec()*updateValues).asNumber(COUNTS_UNITS/VOLUME_UNITS), raiseForReversible = False)
 
 
-			# Set rate limits
-			FractionFLux = 1.0
-			self.fba.maxReactionFluxIs(IdNtp, FluxNonLimited * FractionFLux, raiseForReversible = False)
-			if VERBOSE: print "compute upper bound limited = %f" % self.fba.maxReactionFlux(IdNtp, raiseForReversible = False)
-
 		deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.outputMoleculeLevelsChange())
 		
 		metaboliteCountsFinal = np.fmax(stochasticRound(

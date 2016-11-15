@@ -33,6 +33,8 @@ class FBAResults(wholecell.listeners.listener.Listener):
 
 		self.metabolism = sim.processes["Metabolism"]
 
+		self.objectiveValue = 0.0
+
 
 	# Allocate memory
 	def allocate(self):
