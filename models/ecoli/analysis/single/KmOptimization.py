@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-@author: John Mason
+@author: Javier Carrera
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/27/2014
+@date: Created 6/27/2016
 """
 
 from __future__ import division

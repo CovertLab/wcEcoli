@@ -85,9 +85,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 
 	# Load ATP usage
-	ATPusageListenerFile = TableReader(os.path.join(simOutDir, "ATPhydrolyzedUsageListener"))
-	atpsHydrolyzed = ATPusageListenerFile.readColumn('atpsHydrolyzed')
-	ATPusageListenerFile.close()
+	# ATPusageListenerFile = TableReader(os.path.join(simOutDir, "ATPhydrolyzedUsageListener"))
+	# atpsHydrolyzed = ATPusageListenerFile.readColumn('atpsHydrolyzed')
+	# ATPusageListenerFile.close()
 
 
 	# bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
@@ -106,7 +106,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	# plt.xlabel("Time (min)", fontsize = 5)
 	# plt.ylabel("GTP counts", fontsize = 5)
 	print "GTP consumption by polypeptide elongation = %d" % np.sum(gtpUsed)
-	print "ATP hydrolyzed for non-growth associated maintenance = %d" % np.sum(atpsHydrolyzed)
+	# print "ATP hydrolyzed for non-growth associated maintenance = %d" % np.sum(atpsHydrolyzed)
 
 	for idx in range(len(moleculeIds)):
 		ax = plt.subplot(7,4,idx+1)
