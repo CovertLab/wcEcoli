@@ -24,7 +24,7 @@ import cvxpy
 
 # Tweaks
 RNA_POLY_MRNA_DEG_RATE_PER_S = np.log(2) / 30. # half-life of 30 seconds
-FRACTION_INCREASE_RIBOSOMAL_PROTEINS = 0.5  # reduce stochasticity from protein expression
+FRACTION_INCREASE_RIBOSOMAL_PROTEINS = 0.05  # reduce stochasticity from protein expression
 FRACTION_INCREASE_RNAP_PROTEINS = 0.05
 
 NUMERICAL_ZERO = 1e-10
@@ -578,7 +578,11 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	totalMass_protein = sim_data.mass.getFractionMass(doubling_time)["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 	individualMasses_protein = sim_data.process.translation.monomerData["mw"] / sim_data.constants.nAvogadro
 	distribution_transcriptsByProtein = normalize(expression[sim_data.relation.rnaIndexToMonomerMapping])
+
 	translation_efficienciesByProtein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
+	# rProtein_max_translation_efficiency = translation_efficienciesByProtein[sim_data.process.translation.monomerData['isRProtein']].max()
+	# translation_efficienciesByProtein[sim_data.process.translation.monomerData['isRProtein']] = rProtein_max_translation_efficiency
+	# translation_efficienciesByProtein = normalize(translation_efficienciesByProtein)
 
 	degradationRates = sim_data.process.translation.monomerData["degRate"]
 
@@ -735,6 +739,9 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 	bulkContainer.countsIs(rRna16SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna16S"]])
 	bulkContainer.countsIs(rRna5SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna5S"]])
 
+	rProteinCounts = bulkContainer.counts(sim_data.moleculeGroups.rProteins)
+	bulkContainer.countsIs(rProteinCounts * 1.0, sim_data.moleculeGroups.rProteins)
+
 
 def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km = None):
 	# -- CONSTRAINT 1: Expected RNA distribution doubling -- #
@@ -802,6 +809,9 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
 
 	translation_efficienciesByProtein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
+	# rProtein_max_translation_efficiency = translation_efficienciesByProtein[sim_data.process.translation.monomerData['isRProtein']].max()
+	# translation_efficienciesByProtein[sim_data.process.translation.monomerData['isRProtein']] = rProtein_max_translation_efficiency
+	# translation_efficienciesByProtein = normalize(translation_efficienciesByProtein)
 
 	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time)
 	totalMass_RNA = avgCellFractionMass["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
@@ -1259,6 +1269,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 			sim_data.process.transcription.rnaSynthProb[D["condition"]][D["idx"]] = value
 
 		for condition in sim_data.process.transcription.rnaSynthProb:
+			if not np.all(sim_data.process.transcription.rnaSynthProb[condition] >= 0):
+				import ipdb; ipdb.set_trace()
 			assert np.all(sim_data.process.transcription.rnaSynthProb[condition] >= 0)
 			sim_data.process.transcription.rnaSynthProb[condition] /= sim_data.process.transcription.rnaSynthProb[condition].sum()
 
