@@ -1170,6 +1170,7 @@
 "tungstate-bound BAES"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 51991.528999999995, 248.84400000000002, 0.0, 0.0, 0.0]	["i"]	"BAES-TUNGSTATE-CPLX_RXN"	"BAES-TUNGSTATE-CPLX"
 "quercetin-bound BAES"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 51991.528999999995, 301.23, 0.0, 0.0, 0.0]	["i"]	"BAES-CPD-520-CPLX_RXN"	"BAES-CPD-520-CPLX"
 "gallate-bound BAES"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 51991.528999999995, 169.11200000000002, 0.0, 0.0, 0.0]	["i"]	"BAES-CPD-183-CPLX_RXN"	"BAES-CPD-183-CPLX"
+"ferric iron-bound BASS"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 41022.36, 55.845, 0.0, 0.0, 0.0]	["i"]	"BASS-FE+3-CPLX_RXN"	"BASS-FE+3-CPLX"
 "succinate-bound DCUS"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 60545.873, 116.072, 0.0, 0.0, 0.0]	["i"]	"DCUS-SUC-CPLX_RXN"	"DCUS-SUC-CPLX"
 "acetate-bound DCUS"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 60545.873, 59.044, 0.0, 0.0, 0.0]	["i"]	"DCUS-ACET-CPLX_RXN"	"DCUS-ACET-CPLX"
 "fumarate-bound DCUS"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 60545.873, 114.056, 0.0, 0.0, 0.0]	["i"]	"DCUS-FUM-CPLX_RXN"	"DCUS-FUM-CPLX"
