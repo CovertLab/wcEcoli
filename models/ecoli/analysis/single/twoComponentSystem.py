@@ -109,7 +109,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 
 	# Plot percentage of TF phosphorylation
-	for idx_TF, idx_subentry in enumerate(np.arange(100, 130, 5)): # Using the last sub-entries
+	for idx_TF, idx_subentry in enumerate(np.arange(100, 135, 5)): # Using the last sub-entries
 		ax = plt.subplot(rows*(num_subentries + 2), cols, idx_subentry)
 		ax.plot(time / 60., RR_phosphorylation[RRs_unique[idx_TF]], linewidth = 1, color = "grey")
 		ax.set_title(RRs_unique[idx_TF], fontsize = 4)
@@ -126,7 +126,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		ax.set_xlim(left = -2)
 		ax.set_xticks([])
 
-	# Title the phosphorylation percentage section
+	# phosphorylation percentage section
 	ax = plt.subplot(rows*(num_subentries + 2), cols, 95)
 	ax.set_title("Fraction of response regulator phosphorylation", fontsize = 6)
 	ax.spines['top'].set_visible(False)
