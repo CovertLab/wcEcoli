@@ -83,6 +83,7 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("condition", "nutrient", "minimal_minus_phosphate.tsv"),
 	os.path.join("condition", "nutrient", "minimal_no_glucose.tsv"),
 	os.path.join("condition", "nutrient", "minimal_plus_amino_acids.tsv"),
+	os.path.join("condition", "nutrient", "minimal_plus_ferric.tsv"),
 	os.path.join("condition", "nutrient", "minimal_plus_gallate.tsv"),
 	os.path.join("condition", "nutrient", "minimal_plus_indole.tsv"),
 	os.path.join("condition", "nutrient", "minimal_plus_nitrate.tsv"),
