@@ -48,6 +48,8 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.kineticTargetFluxNames = fba.kineticTargetFluxNames()
 		self.homeostaticTargetMolecules = fba.homeostaticTargetMolecules()
 
+		self.deltaMetabolites = np.zeros(len(self.metabolism.fba.outputMoleculeLevelsChange()), np.float64)
+
 		self.reactionFluxes = np.zeros(len(self.reactionIDs), np.float64)
 		self.externalExchangeFluxes = np.zeros(len(self.externalMoleculeIDs), np.float64)
 		self.outputFluxes = np.zeros(len(self.outputMoleculeIDs), np.float64)
@@ -81,4 +83,5 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			kineticObjectiveValues = self.kineticObjectiveValues,
 			homeostaticObjectiveValues = self.homeostaticObjectiveValues,
 			homeostaticObjectiveWeight = self.homeostaticObjectiveWeight,
+			deltaMetabolites = self.deltaMetabolites,
 			)

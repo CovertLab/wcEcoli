@@ -102,7 +102,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	# Load data
 	growthLimitsDataFile = TableReader(os.path.join(simOutDir, "GrowthLimits"))
 	# Translation
-	gtpUsed = growthLimitsDataFile.readColumn("gtpUsed")
+	gtpUsed = growthLimitsDataFile.readColumn("gtpAllocated")
 	growthLimitsDataFile.close()
 
 	# Load ATP usage
@@ -111,13 +111,13 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	# ATPusageListenerFile.close()
 
 	# loading metabolism production
-	# fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-	# initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
-	# time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
-	# outputFluxes = fbaResults.readColumn("outputFluxes")
-	# deltaMetabolites = fbaResults.readColumn("deltaMetabolites")
-	# outputMoleculeIDs = np.array(fbaResults.readAttribute("outputMoleculeIDs"))
-	# fbaResults.close()
+	fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
+	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
+	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
+	outputFluxes = fbaResults.readColumn("outputFluxes")
+	deltaMetabolites = fbaResults.readColumn("deltaMetabolites")
+	outputMoleculeIDs = np.array(fbaResults.readAttribute("outputMoleculeIDs"))
+	fbaResults.close()
 
 	# load ntps required for cell doubling
 	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
@@ -162,7 +162,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.ylabel("EndoRNase counts", fontsize = 9)
 	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
-	ax = plt.subplot(7,2,6)
+	ax = plt.subplot(7,2,4)
 	plt.plot(time / 60., countNTPsUSed / 1e6)
 	plt.ylabel("Transcription ($10^{%d}$nt)" % 6, fontsize = 9)
 	plt.title("NTPs needed(x$10^{%d}$) = %.2f" % (6, (countNTPsUSed.sum() / 1e6)), fontsize = 9) 
@@ -174,24 +174,24 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.ylabel("ExoRNase counts", fontsize = 9)	
 	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
-	# IdxAtp = (np.where("ATP[c]" == outputMoleculeIDs))[0][0]; ATP = np.sum(deltaMetabolites[:, IdxAtp])
-	# IdxGtp = (np.where("GTP[c]" == outputMoleculeIDs))[0][0]; GTP = np.sum(deltaMetabolites[:, IdxGtp])
-	# IdxCtp = (np.where("CTP[c]" == outputMoleculeIDs))[0][0]; CTP = np.sum(deltaMetabolites[:, IdxCtp])
-	# IdxUtp = (np.where("UTP[c]" == outputMoleculeIDs))[0][0]; UTP = np.sum(deltaMetabolites[:, IdxUtp])
-	# NtpsProduced = ATP + GTP + CTP + UTP
-	#print "nTPs produced by metabolism (nt/cell-cycle) = %d" % NtpsProduced
-	# ax = plt.subplot(7,2,8)
-	# plt.plot(time / 60., (deltaMetabolites[:, IdxAtp] + deltaMetabolites[:, IdxGtp] + deltaMetabolites[:, IdxCtp] + deltaMetabolites[:, IdxUtp]) / 1e6)
-	# plt.ylabel("Metabolism ($10^{%d}$nt)" % 6, fontsize = 9)
-	# plt.title("NTPs produced (x$10^{%d}$) = %.2f" % (6, (sum(deltaMetabolites[:, IdxAtp] + deltaMetabolites[:, IdxGtp] + deltaMetabolites[:, IdxCtp] + deltaMetabolites[:, IdxUtp])  / 1e6)), fontsize = 9) 
-	# yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+	IdxAtp = (np.where("ATP[c]" == outputMoleculeIDs))[0][0]; ATP = np.sum(deltaMetabolites[:, IdxAtp])
+	IdxGtp = (np.where("GTP[c]" == outputMoleculeIDs))[0][0]; GTP = np.sum(deltaMetabolites[:, IdxGtp])
+	IdxCtp = (np.where("CTP[c]" == outputMoleculeIDs))[0][0]; CTP = np.sum(deltaMetabolites[:, IdxCtp])
+	IdxUtp = (np.where("UTP[c]" == outputMoleculeIDs))[0][0]; UTP = np.sum(deltaMetabolites[:, IdxUtp])
+	NtpsProduced = ATP + GTP + CTP + UTP
+	# print "nTPs produced by metabolism (nt/cell-cycle) = %d" % NtpsProduced
+	ax = plt.subplot(7,2,6)
+	plt.plot(time / 60., (deltaMetabolites[:, IdxAtp] + deltaMetabolites[:, IdxGtp] + deltaMetabolites[:, IdxCtp] + deltaMetabolites[:, IdxUtp]) / 1e6)
+	plt.ylabel("Metabolism ($10^{%d}$nt)" % 6, fontsize = 9)
+	plt.title("NTPs produced (x$10^{%d}$) = %.2f" % (6, (sum(deltaMetabolites[:, IdxAtp] + deltaMetabolites[:, IdxGtp] + deltaMetabolites[:, IdxCtp] + deltaMetabolites[:, IdxUtp])  / 1e6)), fontsize = 9) 
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
 	ax = plt.subplot(7,2,9)
 	plt.plot(time / 60., FractionActiveEndoRNases * 100)
 	plt.ylabel("EndoRN capacity (%)", fontsize = 9)	
 	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
-	ax = plt.subplot(7,2,10)
+	ax = plt.subplot(7,2,8)
 	plt.plot(time / 60., fragmentBasesDigested / 1e6)
 	plt.ylabel("Exo-digestion ($10^{%d}$nt)" % 6, fontsize = 9)
 	plt.title("NTPs recycled (x$10^{%d}$) = %.2f" % (6, (fragmentBasesDigested.sum() / 1e6)), fontsize = 9) 
@@ -203,10 +203,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.ylabel("sum(Residuals)", fontsize = 9)
 	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
-	ax = plt.subplot(7,2,12)
+	ax = plt.subplot(7,2,10)
 	plt.plot(time / 60., (ntpCounts[:, 0] + ntpCounts[:, 1] + ntpCounts[:, 2] + ntpCounts[:, 3]) / 1e6)
 	plt.ylabel("Net production ($10^{%d}$nt)" % 6, fontsize = 9)
-	plt.title("NTPs required for cell division (x$10^{%d}$) = %.2f" % (6, ((ntpCounts[0, 0] + ntpCounts[0, 1] + ntpCounts[0, 2] + ntpCounts[0, 3]) / 1e6)), fontsize = 9) 
+	plt.title("NTPs required for cell division (x$10^{%d}$) = %.2f" % (6, ((ntpCounts[0, 0] + ntpCounts[0, 1] + ntpCounts[0, 2] + ntpCounts[0, 3])  / 1e6)), fontsize = 9) 
 	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 	#print "NTPs required for cell division (nt/cell-cycle) = %d" % sum(ntpCounts[0, :])
 
@@ -220,20 +220,21 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
 	# compute instantaneous balance of nTPs
-	# InstantaneousNTPs = - gtpUsed - atpsHydrolyzed - countNTPsUSed + (deltaMetabolites[:, IdxAtp] + deltaMetabolites[:, IdxGtp] + deltaMetabolites[:, IdxCtp] + deltaMetabolites[:, IdxUtp]) + fragmentBasesDigested
+	InstantaneousNTPs = - gtpUsed - countNTPsUSed + (deltaMetabolites[:, IdxAtp] + deltaMetabolites[:, IdxGtp] + deltaMetabolites[:, IdxCtp] + deltaMetabolites[:, IdxUtp]) + fragmentBasesDigested
 
-	# ax = plt.subplot(7,2,14)
-	# plt.plot(time / 60., InstantaneousNTPs / 1e6)
-	# plt.xlabel("Time (min)")
-	# plt.ylabel("Balance ($10^{%d}$nt)" % 6, fontsize = 9)
-	# plt.title("Average instantaneous balance (x$10^{%d}$) = %.4f" % (6, (np.mean(InstantaneousNTPs) / 1e6)), fontsize = 9) 
-	# yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
+	ax = plt.subplot(7,2,12)
+	plt.plot(time / 60., InstantaneousNTPs / 1e6)
+	plt.xlabel("Time (min)")
+	plt.ylabel("Balance ($10^{%d}$nt)" % 6, fontsize = 9)
+	plt.title("Average instantaneous balance (x$10^{%d}$) = %.4f" % (6, (np.mean(InstantaneousNTPs) / 1e6)), fontsize = 9) 
+	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
 
 	plt.subplots_adjust(hspace = 0.6, wspace = 0.35)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
