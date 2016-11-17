@@ -101,16 +101,12 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	# Load data
 	growthLimitsDataFile = TableReader(os.path.join(simOutDir, "GrowthLimits"))
+
 	# Translation
 	gtpUsed = growthLimitsDataFile.readColumn("gtpAllocated")
 	growthLimitsDataFile.close()
 
-	# Load ATP usage
-	# ATPusageListenerFile = TableReader(os.path.join(simOutDir, "ATPhydrolyzedUsageListener"))
-	# atpsHydrolyzed = ATPusageListenerFile.readColumn('atpsHydrolyzed')
-	# ATPusageListenerFile.close()
-
-	# loading metabolism production
+	# Load metabolism production
 	fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
 	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
@@ -119,7 +115,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	outputMoleculeIDs = np.array(fbaResults.readAttribute("outputMoleculeIDs"))
 	fbaResults.close()
 
-	# load ntps required for cell doubling
+	# Load ntps required for cell doubling
 	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 	moleculeIds = bulkMolecules.readAttribute("objectNames")
 	NTP_IDS = ['ATP[c]', 'CTP[c]', 'GTP[c]', 'UTP[c]']
@@ -149,13 +145,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.plot(time / 60., countRnaDegraded.sum(axis = 1))
 	plt.ylabel("RNAs degraded", fontsize = 9)
 	yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
-
-	# ax = plt.subplot(7,2,4)
-	# plt.plot(time / 60., atpsHydrolyzed / 1e6)
-	# plt.ylabel("ATP usage ($10^{%d}$nt)" % 6, fontsize = 9)
-	# plt.title("ATPs needed (x$10^{%d}$) = %.2f" % (6, (atpsHydrolyzed.sum() / 1e6)), fontsize = 9) 
-	# yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
-	#print "ATP hydrolyzed for non-growth associated maintenance = %d" % np.sum(atpsHydrolyzed)
 
 	ax = plt.subplot(7,2,5)
 	plt.plot(time / 60., totalendoRnaseCounts)
