@@ -1835,7 +1835,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 				alpha
 			)
 
-	needToUpdate = True #False
+	needToUpdate = False
 	fixturesDir = os.path.join(
 			os.path.dirname(os.path.dirname(wholecell.__file__)),
 			"fixtures",
