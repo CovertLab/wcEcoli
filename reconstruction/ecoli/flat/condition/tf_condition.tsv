@@ -13,6 +13,7 @@
 "ihfA"	"PC00027"	"minimal"	{}	"minimal"	{"EG10440_RNA[c]": 0}	"0CS"
 "leuO"	"PD00519"	"minimal"	{}	"minimal"	{"EG10531_RNA[c]": 0}	"0CS"
 "lexA"	"PC00010"	"minimal"	{}	"minimal"	{"EG10533_RNA[c]": 0}	"0CS"
+"metJ"	"CPLX0-7796"	"minimal_plus_sam"	{}	"minimal"	{}	"1CS"
 "baeR"	"PHOSPHO-BAER"	"minimal_plus_indole"	{}	"minimal"	{}	"2CS"
 "basR"	"PHOSPHO-BASR"	"minimal_plus_ferric"	{}	"minimal"	{}	"2CS"
 "dcuR"	"PHOSPHO-DCUR"	"minimal_succinate"	{}	"minimal"	{}	"2CS"
