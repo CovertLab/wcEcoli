@@ -109,7 +109,6 @@ class RnaDecay(object):
 		regularization = regularizationNegativeNumbers + (WFendoR * regularizationEndoR)
 
 		# Loss function
-		#alpha = 0.5
 		LossFunction = T.log(T.exp(residual) + T.exp(alpha * regularization)) - T.log(2)
 		LossFunction_aux = T.log(T.exp(residual_aux) + T.exp(alpha * regularization)) - T.log(2)
 
