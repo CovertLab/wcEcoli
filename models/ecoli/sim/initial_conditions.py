@@ -29,26 +29,28 @@ def calcInitialConditions(sim, sim_data):
 	assert sim._inheritedStatePath == None
 	randomState = sim.randomState
 
+	massDistribution = randomState.normal(loc=1.0, scale=0.1)
+
 	bulkMolCntr = sim.states['BulkMolecules'].container
 	uniqueMolCntr = sim.states["UniqueMolecules"].container
 
 	# Set up states
-	initializeBulkMolecules(bulkMolCntr, sim_data, randomState)
+	initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massDistribution)
 	initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
 
-def initializeBulkMolecules(bulkMolCntr, sim_data, randomState):
+def initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massDistribution):
 
 	## Set protein counts from expression
-	initializeProteinMonomers(bulkMolCntr, sim_data, randomState)
+	initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massDistribution)
 
 	## Set RNA counts from expression
-	initializeRNA(bulkMolCntr, sim_data, randomState)
+	initializeRNA(bulkMolCntr, sim_data, randomState, massDistribution)
 
 	## Set DNA
 	initializeDNA(bulkMolCntr, sim_data, randomState)
 
 	## Set other biomass components
-	initializeSmallMolecules(bulkMolCntr, sim_data, randomState)
+	initializeSmallMolecules(bulkMolCntr, sim_data, randomState, massDistribution)
 
 	## Set constitutive expression
 	initializeConstitutiveExpression(bulkMolCntr, sim_data, randomState)
@@ -56,10 +58,10 @@ def initializeBulkMolecules(bulkMolCntr, sim_data, randomState):
 def initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data)
 
-def initializeProteinMonomers(bulkMolCntr, sim_data, randomState):
+def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massDistribution):
 
 	monomersView = bulkMolCntr.countsView(sim_data.process.translation.monomerData["id"])
-	monomerMass = sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	monomerMass = massDistribution * sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 	# TODO: unify this logic with the fitter so it doesn't fall out of step
 	# again (look at the calcProteinCounts function)
 
@@ -80,10 +82,10 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState):
 		randomState.multinomial(nMonomers, monomerExpression)
 		)
 
-def initializeRNA(bulkMolCntr, sim_data, randomState):
+def initializeRNA(bulkMolCntr, sim_data, randomState, massDistribution):
 
 	rnaView = bulkMolCntr.countsView(sim_data.process.transcription.rnaData["id"])
-	rnaMass = sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	rnaMass = massDistribution * sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 
 	rnaExpression = normalize(sim_data.process.transcription.rnaExpression[sim_data.condition])
 
@@ -113,10 +115,10 @@ def initializeDNA(bulkMolCntr, sim_data, randomState):
 
 # TODO: remove checks for zero concentrations (change to assertion)
 # TODO: move any rescaling logic to KB/fitting
-def initializeSmallMolecules(bulkMolCntr, sim_data, randomState):
+def initializeSmallMolecules(bulkMolCntr, sim_data, randomState, massDistribution):
 	avgCellFractionMass = sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])
 
-	mass = (avgCellFractionMass["proteinMass"] + avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"]) / sim_data.mass.avgCellToInitialCellConvFactor
+	mass = massDistribution * (avgCellFractionMass["proteinMass"] + avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"]) / sim_data.mass.avgCellToInitialCellConvFactor
 
 	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 		sim_data.nutrientsTimeSeries[sim_data.nutrientsTimeSeriesLabel][0][1]
