@@ -119,6 +119,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 		ax = plt.subplot(rows, cols, i + 1)
 		ax.scatter(np.log10(expectedProbBound[i]), np.log10(simulatedProbBound[i]))
 		ax.set_xlim([-3.0, 0.5])
+		ax.set_ylim([-2.5, 0.5])
 		plt.xlabel("log10(Expected probability bound)", fontsize = 6)
 		plt.ylabel("log10(Simulated probability bound)", fontsize = 6)
 		plt.title("%sCS\nSlope: %0.3f   Intercept: %0.3e      \n(Without Small Values:\nSlope: %0.3f Intercept: %0.3e)" % (i, regressionResult.slope, regressionResult.intercept, regressionResultLargeValues.slope, regressionResultLargeValues.intercept), fontsize = 6)
