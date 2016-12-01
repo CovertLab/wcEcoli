@@ -201,7 +201,6 @@ class RnaDegradation(wholecell.processes.process.Process):
 				self.endoRnases.total() * 
 				self.KcatEndoRNases * (units.s * self.timeStepSec())).asNumber()
 			)
-
 		if nRNAsTotalToDegrade != nMRNAsTotalToDegrade + nTRNAsTotalToDegrade + nRRNAsTotalToDegrade:
 			nRNAsTotalToDegrade = nMRNAsTotalToDegrade + nTRNAsTotalToDegrade + nRRNAsTotalToDegrade
 
