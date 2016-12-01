@@ -44,7 +44,7 @@ NONZERO_ENZYMES = False
 
 USE_KINETIC_RATES = True
 USE_BASE_RATES = True
-KINETICS_BURN_IN_PERIOD = 1
+KINETICS_BURN_IN_PERIOD = 10
 
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
@@ -330,7 +330,11 @@ class Metabolism(wholecell.processes.process.Process):
 			# Set new reaction rate limits
 			self.fba.setMaxReactionFluxes(updateReactions, (TIME_UNITS*self.timeStepSec()*updateValues).asNumber(COUNTS_UNITS/VOLUME_UNITS), raiseForReversible = False)
 
-		deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.outputMoleculeLevelsChange())
+		try:
+			deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.outputMoleculeLevelsChange())
+		except RuntimeError:
+			print "TIMESTEP SKIPPED: NON-OPTIMAL SOLUTION: GLP_UNBND (UNBOUNDED)"
+			deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * np.zeros_like(metaboliteCountsInit))
 
 		metaboliteCountsFinal = np.fmax(stochasticRound(
 			self.randomState,
@@ -367,8 +371,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("FBAResults", "homeostaticObjectiveValues",
 			self.fba.homeostaticObjectiveValues())
 
-		self.writeToListener("FBAResults", "homeostaticObjectiveWeight",
-			self.fba.homeostaticObjectiveWeight())
+		# self.writeToListener("FBAResults", "homeostaticObjectiveWeight",
+		# 	self.fba.homeostaticObjectiveWeight())
 
 		self.writeToListener("EnzymeKinetics", "baseRates",
 			self.baseRates.asNumber(FLUX_UNITS))
