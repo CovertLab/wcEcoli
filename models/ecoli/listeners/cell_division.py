@@ -81,7 +81,7 @@ class CellDivision(wholecell.listeners.listener.Listener):
 
 		# End simulation once the mass of an average cell is
 		# added to current cell.
-		if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncreaseDict[self._sim.processes["PolypeptideElongation"].currentNutrients].asNumber(units.fg) * self.randomState.normal(loc=1.0, scale=0.1):
+		if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncreaseDict[self._sim.processes["PolypeptideElongation"].currentNutrients].asNumber(units.fg) * self.randomState.normal(loc=1.0, scale=0.05):
 			if not uneven_counts.any():
 			# if self.fullChromosomeView.count() > 1:
 				self._sim.cellCycleComplete()
