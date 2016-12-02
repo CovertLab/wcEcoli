@@ -1180,3 +1180,4 @@
 "calcium-bound PHOQ"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 110577.52799999999, 40.078, 0.0, 0.0, 0.0]	["i"]	"PHOQ-CA+2-CPLX_RXN"	"PHOQ-CA+2-CPLX"
 "magnesium-bound PHOQ"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 110577.52799999999, 24.305, 0.0, 0.0, 0.0]	["i"]	"PHOQ-MG+2-CPLX_RXN"	"PHOQ-MG+2-CPLX"
 "phosphate-bound PHOR"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 99217.306, 95.97800000000001, 0.0, 0.0, 0.0]	["i"]	"PHOR-Pi-CPLX_RXN"	"PHOR-Pi-CPLX"
+"4FE-4S-bound DNA-binding FNR"	""	[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 55938.74, 351.642, 0.0, 0.0, 0.0]	["c"]	"FNR-4FE-4S_RXN"	"FNR-4FE-4S-CPLX"
