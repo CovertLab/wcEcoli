@@ -42,7 +42,8 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	simulatedProbBound = []
 	expectedSynthProb = []
 	simulatedSynthProb = []
-
+	targetId = []
+	targetCondition = []
 
 	for variant, simDir in zip(variants, all_cells):
 		sim_data = cPickle.load(open(ap.get_variant_kb(variant), "rb"))
@@ -81,6 +82,9 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 			expectedSynthProb.append(sim_data.process.transcription.rnaSynthProb[tf + "__" + tfStatus][rnaIdx])
 			simulatedSynthProb.append(tfTargetSynthProb[5:].mean())
 
+			targetId.append(tfTarget)
+			targetCondition.append(tf + "__" + tfStatus)
+
 		bulkMoleculesReader.close()
 		rnaSynthProbReader.close()
 
@@ -113,6 +117,45 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
+
+	# Bokeh
+	from bokeh.plotting import figure, output_file, ColumnDataSource, show
+	from bokeh.models import HoverTool, BoxZoomTool, LassoSelectTool, PanTool, WheelZoomTool, ResizeTool, UndoTool, RedoTool
+	from bokeh.io import vplot
+
+	source1 = ColumnDataSource(data = dict(x = np.log10(expectedProbBound), y = np.log10(simulatedProbBound), ID = targetId, condition = targetCondition))
+	hover1 = HoverTool(tooltips = [("ID", "@ID"), ("condition", "@condition")])
+	tools1 = [hover1, BoxZoomTool(), LassoSelectTool(), PanTool(), WheelZoomTool(), ResizeTool(),	UndoTool(),	RedoTool(), "reset"]
+	s1 = figure(
+		x_axis_label = "log10(Expected probability bound)",
+		y_axis_label = "log10(Simulated probability bound)",
+		width = 800,
+		height = 400,
+		tools = tools1)
+	s1.scatter("x", "y", source = source1)
+
+	if not os.path.exists(os.path.join(plotOutDir, "html_plots")):
+		os.makedirs(os.path.join(plotOutDir, "html_plots"))
+	import bokeh.io
+	bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + "__probBound" + ".html"), title = plotOutFileName, autosave = False)
+	bokeh.io.save(s1)
+
+
+	source2 = ColumnDataSource(data = dict(x = np.log10(expectedSynthProb), y = np.log10(simulatedSynthProb), ID = targetId, condition = targetCondition))
+	hover2 = HoverTool(tooltips = [("ID", "@ID"), ("condition", "@condition")])
+	tools2 = [hover2, BoxZoomTool(), LassoSelectTool(), PanTool(), WheelZoomTool(), ResizeTool(),	UndoTool(),	RedoTool(), "reset"]
+	s2 = figure(
+		x_axis_label = "log10(Expected synthesis probability)",
+		y_axis_label = "log10(Simulated synthesis probability)",
+		width = 800,
+		height = 400,
+		tools = tools2)
+	s2.scatter("x", "y", source = source2)
+
+	bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + "__synthProb" + ".html"), title = plotOutFileName, autosave = False)
+	bokeh.io.save(s2)
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
