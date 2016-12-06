@@ -38,6 +38,9 @@ from models.ecoli.sim.variants.condition import conditionIndices
 from models.ecoli.sim.variants.anaerobic import anaerobic
 from models.ecoli.sim.variants.anaerobic import anaerobicIndices
 
+from models.ecoli.sim.variants.division_mass_variance import divisionMassVariance
+from models.ecoli.sim.variants.division_mass_variance import divisionMassVarianceTotalIndices
+
 nameToFunctionMapping = {
 	"geneKnockout": geneKnockout,
 	"wildtype": wildtype,
@@ -51,6 +54,7 @@ nameToFunctionMapping = {
 	"condition": condition,
 	"anaerobic": anaerobic,
 	"metabolismKineticHomeostaticRatio": metabolismKineticHomeostaticRatio,
+	"divisionMassVariance" : divisionMassVariance,
 }
 
 nameToNumIndicesMapping = {
@@ -66,4 +70,5 @@ nameToNumIndicesMapping = {
 	"condition": conditionIndices,
 	"anaerobic": anaerobicIndices,
 	"metabolismKineticHomeostaticRatio": metabolismKineticHomeostaticRatioTotalIndices,
+	"divisionMassVariance": divisionMassVarianceTotalIndices,
 }

@@ -72,6 +72,7 @@ class SimulationDataEcoli(object):
 
 		#### VARIANT CODE ####
 		self.translationSaturation = True
+		self.divisionMassVariance = 0.
 		#### VARIANT CODE ####
 
 	def _addHardCodedAttributes(self):
