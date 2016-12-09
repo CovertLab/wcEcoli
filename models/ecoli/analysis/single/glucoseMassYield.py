@@ -27,7 +27,6 @@ MASS_UNITS = units.fg
 GROWTH_UNITS = units.fg / units.s
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
-
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
 
@@ -37,11 +36,14 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	sim_data = cPickle.load(open(simDataFile, "rb"))
 
 	fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
+	externalExchangeFluxes = fbaResults.readColumn("externalExchangeFluxes")
+	if GLUCOSE_ID not in externalExchangeFluxes:
+		print "This plot only runs when glucose is the carbon source."
+		return
+
 	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
 	timeStepSec = TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")
-	externalExchangeFluxes = fbaResults.readColumn("externalExchangeFluxes")
-
 	externalMoleculeIDs = np.array(fbaResults.readAttribute("externalMoleculeIDs"))
 
 	fbaResults.close()
