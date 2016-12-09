@@ -112,7 +112,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 		iExpectedSynthProb = np.array(expectedSynthProb[i])
 		iSimulatedSynthProb = np.array(simulatedSynthProb[i])
 
-
 		regressionResult = scipy.stats.linregress(np.log10(iExpectedProbBound[iExpectedProbBound > NUMERICAL_ZERO]), np.log10(iSimulatedProbBound[iExpectedProbBound > NUMERICAL_ZERO]))
 		regressionResultLargeValues = scipy.stats.linregress(np.log10(iExpectedProbBound[iExpectedProbBound > 1e-2]), np.log10(iSimulatedProbBound[iExpectedProbBound > 1e-2]))
 
@@ -139,6 +138,33 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
+	rows = 2
+	cols = 1
+	color = ["blue", "green", "red"]
+
+	for i in np.arange(3):
+		iExpectedProbBound = np.array(expectedProbBound[i])
+		iSimulatedProbBound = np.array(simulatedProbBound[i])
+		iExpectedSynthProb = np.array(expectedSynthProb[i])
+		iSimulatedSynthProb = np.array(simulatedSynthProb[i])
+
+		ax = plt.subplot(rows, cols, 1)
+		ax.scatter(np.log10(expectedProbBound[i]), np.log10(simulatedProbBound[i]), color = color[i], alpha = 0.5)
+		plt.xlabel("log10(Expected probability bound)", fontsize = 6)
+		plt.ylabel("log10(Simulated probability bound)", fontsize = 6)
+		ax.tick_params(which = 'both', direction = 'out', labelsize = 6)
+
+		ax = plt.subplot(rows, cols, 2)
+		ax.scatter(np.log10(expectedSynthProb[i]), np.log10(simulatedSynthProb[i]), color = color[i], alpha = 0.5)
+		plt.xlabel("log10(Expected synthesis probability)", fontsize = 6)
+		plt.ylabel("log10(Simulated synthesis probability)", fontsize = 6)
+		ax.tick_params(which = 'both', direction = 'out', labelsize = 6)
+	
+	plt.subplots_adjust(hspace = 0.4, wspace = 0.4)
+	exportFigure(plt, plotOutDir, plotOutFileName + "__overlap", metadata)
+	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
