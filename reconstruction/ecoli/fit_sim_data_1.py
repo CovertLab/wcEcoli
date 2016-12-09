@@ -1516,7 +1516,6 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 			break
 		else:
 			lastNorm = np.linalg.norm(np.dot(H, pF) - k, NORM)
-
 	sim_data.pPromoterBound = pPromoterBound
 	updateSynthProb(sim_data, kInfo, np.dot(H, pF))
 
@@ -1616,7 +1615,10 @@ def calculatePromoterBoundProbability(sim_data, cellSpecs):
 				inactiveTf = sim_data.process.two_component_system.activeToInactiveTF[tf + "[c]"]
 				inactiveTfConc = (countsToMolar * cellSpecs[conditionKey]["bulkAverageContainer"].count(inactiveTf)).asNumber(units.mol / units.L)
 
-				D[conditionKey][tf] = activeTfConc / (activeTfConc + inactiveTfConc)
+				if activeTfConc == 0 and inactiveTfConc == 0:
+					D[conditionKey][tf] = 0.
+				else:
+					D[conditionKey][tf] = activeTfConc / (activeTfConc + inactiveTfConc)
 
 	return D
 
@@ -1669,7 +1671,7 @@ def calculateRnapRecruitment(sim_data, cellSpecs, rVector):
 	G = np.zeros(shape, np.float64)
 	G[gI, gJ] = gV
 	S = sklearn.metrics.pairwise.cosine_similarity(G)
-	dupIdxs = np.where((np.tril(S, -1) > 1 - 1e-5).sum(axis = 1))[0]
+	dupIdxs = np.where((np.tril(S, -1) > 1 - 1e-3).sum(axis = 1))[0]
 	uniqueIdxs = [x for x in xrange(G.shape[0]) if x not in dupIdxs]
 	G = G[uniqueIdxs]
 	k = k[uniqueIdxs]
