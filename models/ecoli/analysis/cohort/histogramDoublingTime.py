@@ -49,7 +49,11 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		axesList = [axesList]
 
 	for idx, axes in enumerate(axesList):
-		axes.hist(doubling_time[:,idx].flatten(), np.ceil(np.sqrt(doubling_time[:,idx].size)))	
+		if max_cells_in_gen > 1:
+			axes.hist(doubling_time[:,idx].flatten(), np.ceil(np.sqrt(doubling_time[:,idx].size)))
+		else:
+			axes.plot(doubling_time[:,idx], 1, 'x')
+			axes.set_ylim([0, 2])
 		axes.axvline(doubling_time[:,idx].mean(), color='k', linestyle='dashed', linewidth=2)
 		axes.text(doubling_time[:,idx].mean(), 1, "Mean: %.3f Var: %.3f"%(doubling_time[:,idx].mean(),doubling_time[:,idx].var()))
 
