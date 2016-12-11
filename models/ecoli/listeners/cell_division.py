@@ -46,6 +46,7 @@ class CellDivision(wholecell.listeners.listener.Listener):
 		# Set total mass that should be added to cell
 		# This is an approximation for length
 		self.expectedDryMassIncreaseDict = sim_data.expectedDryMassIncreaseDict
+		self.d_period = 20. * units.min
 
 		# Set initial values
 
@@ -57,6 +58,8 @@ class CellDivision(wholecell.listeners.listener.Listener):
 		# View on full chromosomes
 		self.fullChromosomeView = self.states['BulkMolecules'].container.countView('CHROM_FULL[c]')
 		self.partialChromosomeView = self.states['BulkMolecules'].container.countsView(self.states['BulkMolecules'].divisionIds['partialChromosome'])
+		self.fullChromosomeView = self.states['BulkMolecules'].container.countView(sim_data.moleculeGroups.fullChromosome[0])
+		self.uniqueMoleculeContainer = self.states['UniqueMolecules'].container
 
 		if sim_data.divisionMassVariance == 0.:
 			self.divisionMassMultiplier = 1.
@@ -84,13 +87,25 @@ class CellDivision(wholecell.listeners.listener.Listener):
 		# End simulation once the mass of an average cell is
 		# added to current cell.
 
-		if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncreaseDict[self._sim.processes["PolypeptideElongation"].currentNutrients].asNumber(units.fg) * self.divisionMassMultiplier:
-			if not uneven_counts.any():
-			# if self.fullChromosomeView.count() > 1:
-				self._sim.cellCycleComplete()
+		fullChrom = self.uniqueMoleculeContainer.objectsInCollection("fullChromosome")
+		if len(fullChrom):
+			division_times = fullChrom.attr("division_time")
+			divide_at_time = division_times.min()
+
+			if self.time() >= divide_at_time:
+				fullChrom.delByIndexes(np.where(division_times == divide_at_time)[0])
+				if not uneven_counts.any():
+				# if self.fullChromosomeView.count() > 1:
+					self._sim.cellCycleComplete()
 
 
-		# if self.dryMass - self.dryMassInitial >= 2 * self.dryMassInitial:
+		# if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncreaseDict[self._sim.processes["PolypeptideElongation"].currentNutrients].asNumber(units.fg) * self.divisionMassMultiplier:
+		# 	if not uneven_counts.any():
+		# 	# if self.fullChromosomeView.count() > 1:
+		# 		self._sim.cellCycleComplete()
+
+
+		# if self.dryMass >= 2. * self.dryMassInitial:
 		# 	if not uneven_counts.any():
 		# 	# if self.fullChromosomeView.count() > 1:
 		# 		self._sim.cellCycleComplete()

@@ -147,7 +147,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
 
 	# Divide unique molecules binomially
 	for moleculeName, moleculeAttributeDict in uniqueMoleculesToDivide.iteritems():
-		if moleculeName == 'dnaPolymerase' or moleculeName == 'originOfReplication':
+		if moleculeName == 'dnaPolymerase' or moleculeName == 'originOfReplication' or moleculeName == 'fullChromosome':
 			# NOTE: We are not dividing dna polymerase binomially!
 			continue
 
@@ -301,6 +301,25 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
 
 		d1_unique_molecules_container.objectsNew('originOfReplication', n_d1, **d1_dividedAttributesDict)
 		d2_unique_molecules_container.objectsNew('originOfReplication', n_d2, **d2_dividedAttributesDict)
+
+	# Divide fullChromosomes with chromosome
+	moleculeSet = uniqueMolecules.container.objectsInCollection('fullChromosome')
+	moleculeAttributeDict = uniqueMoleculesToDivide['fullChromosome']
+	if len(moleculeSet) > 0:
+		d1_chromosome_count = chromosome_counts['d1_chromosome_count']
+		d2_chromosome_count = chromosome_counts['d2_chromosome_count']
+
+		d1_bool = np.ones(len(moleculeSet), dtype = bool)
+		d2_bool = np.ones(len(moleculeSet), dtype = bool)
+
+		d1_dividedAttributesDict = {}
+		d2_dividedAttributesDict = {}
+		for moleculeAttribute in moleculeAttributeDict.iterkeys():
+			d1_dividedAttributesDict[moleculeAttribute] = moleculeSet.attr(moleculeAttribute)[d1_bool]
+			d2_dividedAttributesDict[moleculeAttribute] = moleculeSet.attr(moleculeAttribute)[d2_bool]
+
+		d1_unique_molecules_container.objectsNew('fullChromosome', n_d1, **d1_dividedAttributesDict)
+		d2_unique_molecules_container.objectsNew('fullChromosome', n_d2, **d2_dividedAttributesDict)
 
 	return d1_unique_molecules_container, d2_unique_molecules_container
 
