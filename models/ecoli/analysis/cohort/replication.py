@@ -83,7 +83,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		criticalInitiationMass = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("criticalInitiationMass")
 		criticalMassEquivalents = totalMass / criticalInitiationMass
 
-		axesList[2].plot(time, sixtyMinDoublingInitMassEquivalents, linewidth=2)
+		axesList[2].plot(time, criticalInitiationMass, linewidth=2)
 		for N in CRITICAL_N:
 			axesList[2].plot([0, time.max()], [N]*2, 'k', linestyle='--')
 		axesList[2].set_ylabel("Factors of critical\ninitiation mass")
