@@ -11,6 +11,13 @@ def divisionMassVarianceTotalIndices(sim_data):
 
 def divisionMassVariance(sim_data, index):
 
+	conditionLabels = sorted(sim_data.conditionActiveTfs)
+	conditionLabel = conditionLabels[2]
+	sim_data.condition = conditionLabel
+	# TODO: add new column to condition defs to replace this?
+	if sim_data.conditions[conditionLabel]["nutrients"] == "minimal_plus_amino_acids":
+		sim_data.nutrientsTimeSeriesLabel = "000003_aa"
+
 	if index == 0:
 		return CONTROL_OUTPUT, sim_data
 
