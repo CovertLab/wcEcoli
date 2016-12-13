@@ -30,7 +30,12 @@ class ReplicationElongation(wholecell.processes.process.Process):
 		super(ReplicationElongation, self).initialize(sim, sim_data)
 
 		# Load parameters
-		self.criticalInitiationMass = sim_data.growthRateParameters.getDnaCriticalMass(sim_data.conditionToDoublingTime[sim_data.condition])
+		if sim_data.divisionMassVariance == 0.:
+			criticalMassMultiplier = 1.
+		else:
+			criticalMassMultiplier = sim.randomState.normal(loc = 1.0, scale = sim_data.divisionMassVariance)
+
+		self.criticalInitiationMass = criticalMassMultiplier * sim_data.growthRateParameters.getDnaCriticalMass(sim_data.conditionToDoublingTime[sim_data.condition])
 		self.getDnaCriticalMass = sim_data.growthRateParameters.getDnaCriticalMass
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 
