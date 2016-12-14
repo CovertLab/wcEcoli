@@ -1382,7 +1382,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		return T
 
-	def makeH(sim_data, colNames, pPromoterBound, r, fixedTFs):
+	def makeH(sim_data, colNames, pPromoterBound, r, fixedTFs, cellSpecs):
 		rDict = dict([(colName, value) for colName, value in zip(colNames, r)])
 
 		pPromoterBoundIdxs = dict([(condition, {}) for condition in pPromoterBound])
@@ -1409,7 +1409,11 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 						colNamesH.append(colName)
 					hI.append(rowNames.index(rowName))
 					hJ.append(colNamesH.index(colName))
-					hV.append(rDict[rnaIdNoLoc + "__" + tf])
+
+					if cellSpecs[condition]["bulkAverageContainer"].count(tf + "[c]") == 0:
+						hV.append(0)
+					else:
+						hV.append(rDict[rnaIdNoLoc + "__" + tf])
 					pInitI.append(colNamesH.index(colName))
 					pInitV.append(pPromoterBound[condition][tf])
 					pPromoterBoundIdxs[condition][tf] = colNamesH.index(colName)
@@ -1490,7 +1494,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		print np.linalg.norm(np.dot(G, r) - k, NORM)
 
-		H, pInit, pAlphaIdxs, pNotAlphaIdxs, fixedTFIdxs, pPromoterBoundIdxs, colNamesH = makeH(sim_data, colNamesG, pPromoterBound, r, fixedTFs)
+		H, pInit, pAlphaIdxs, pNotAlphaIdxs, fixedTFIdxs, pPromoterBoundIdxs, colNamesH = makeH(sim_data, colNamesG, pPromoterBound, r, fixedTFs, cellSpecs)
 		Pdiff = makePdiff(sim_data, colNamesH, pPromoterBound)
 		if _ == 0:
 			pInit0 = pInit.copy()
