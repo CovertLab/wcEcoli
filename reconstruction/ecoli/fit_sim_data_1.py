@@ -1410,6 +1410,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 					hI.append(rowNames.index(rowName))
 					hJ.append(colNamesH.index(colName))
 
+					# Handle the case of the TF being knocked out (admittedly not the cleanest solution)
 					if cellSpecs[condition]["bulkAverageContainer"].count(tf + "[c]") == 0:
 						hV.append(0)
 					else:
