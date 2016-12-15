@@ -61,12 +61,20 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 		rnaSynthProbReader = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
 		rnaIds = rnaSynthProbReader.readAttribute("rnaIds")
 
-
+		tfTargetBoundIds = []
+		tfTargetBoundIndices = []
+		tfTargetSynthProbIds = []
+		tfTargetSynthProbIndices = []
 		for tfTarget in sorted(sim_data.tfToFC[tf]):
+			tfTargetBoundIds.append(tfTarget + "__" + tf)
+			tfTargetBoundIndices.append(bulkMoleculeIds.index(tfTargetBoundIds[-1]))
+			tfTargetSynthProbIds.append(tfTarget + "[c]")
+			tfTargetSynthProbIndices.append(rnaIds.index(tfTargetSynthProbIds[-1]))
+		tfTargetBoundCountsAll = bulkMoleculesReader.readColumn("counts")[:, tfTargetBoundIndices]
+		tfTargetSynthProbAll = rnaSynthProbReader.readColumn("rnaSynthProb")[:, tfTargetSynthProbIndices]
 
-			tfTargetBoundId = [tfTarget + "__" + tf]
-			tfTargetBoundIndex = np.array([bulkMoleculeIds.index(x) for x in tfTargetBoundId])
-			tfTargetBoundCounts = bulkMoleculesReader.readColumn("counts")[:, tfTargetBoundIndex].reshape(-1)
+		for targetIdx, tfTarget in enumerate(sorted(sim_data.tfToFC[tf])):
+			tfTargetBoundCounts = tfTargetBoundCountsAll[:, targetIdx].reshape(-1)
 
 			tfTargetSynthProbId = [tfTarget + "[c]"]
 			tfTargetSynthProbIndex = np.array([rnaIds.index(x) for x in tfTargetSynthProbId])
@@ -77,23 +85,23 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 			tfType = sim_data.process.transcription_regulation.tfToTfType[tf]
 			if tfType == "0CS":
 				expectedProbBound[0].append(sim_data.pPromoterBound[tf + "__" + tfStatus][tf])
-				simulatedProbBound[0].append(tfTargetBoundCounts.mean())
+				simulatedProbBound[0].append(tfTargetBoundCounts[5:].mean())
 
 				expectedSynthProb[0].append(sim_data.process.transcription.rnaSynthProb[tf + "__" + tfStatus][rnaIdx])
-				simulatedSynthProb[0].append(tfTargetSynthProb.mean())
+				simulatedSynthProb[0].append(tfTargetSynthProb[5:].mean())
 			
 			elif tfType == "1CS":
 				expectedProbBound[1].append(sim_data.pPromoterBound[tf + "__" + tfStatus][tf])
-				simulatedProbBound[1].append(tfTargetBoundCounts.mean())
+				simulatedProbBound[1].append(tfTargetBoundCounts[5:].mean())
 
 				expectedSynthProb[1].append(sim_data.process.transcription.rnaSynthProb[tf + "__" + tfStatus][rnaIdx])
-				simulatedSynthProb[1].append(tfTargetSynthProb.mean())
+				simulatedSynthProb[1].append(tfTargetSynthProb[5:].mean())
 			else:
 				expectedProbBound[2].append(sim_data.pPromoterBound[tf + "__" + tfStatus][tf])
-				simulatedProbBound[2].append(tfTargetBoundCounts.mean())
+				simulatedProbBound[2].append(tfTargetBoundCounts[5:].mean())
 
 				expectedSynthProb[2].append(sim_data.process.transcription.rnaSynthProb[tf + "__" + tfStatus][rnaIdx])
-				simulatedSynthProb[2].append(tfTargetSynthProb.mean())
+				simulatedSynthProb[2].append(tfTargetSynthProb[5:].mean())
 
 		bulkMoleculesReader.close()
 		rnaSynthProbReader.close()
