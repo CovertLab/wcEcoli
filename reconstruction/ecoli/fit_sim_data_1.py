@@ -1896,7 +1896,7 @@ def findKineticCoeffs(sim_data, bulkContainer):
 	# 		solver = "glpk",
 	# 		maintenanceCostGAM = energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
 	# 		maintenanceReaction = {
-	# 			"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "Pi[c]": +1, "PROTON[c]": +1,
+	# 			"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "PI[c]": +1, "PROTON[c]": +1,
 	# 			}
 	# 		)
 

@@ -545,8 +545,8 @@ class TwoComponentSystem(object):
 				dependencyMatrixJ.append(independentMoleculeIndex)
 				dependencyMatrixV.append(-1)
 
-		# ATP dependents: ADP, Pi, WATER, PROTON)
-		for ATPdependent in ["ADP[c]", "Pi[c]", "WATER[c]", "PROTON[c]"]:
+		# ATP dependents: ADP, PI, WATER, PROTON)
+		for ATPdependent in ["ADP[c]", "PI[c]", "WATER[c]", "PROTON[c]"]:
 			dependencyMatrixI.append(int(np.where(self.moleculeNames == ATPdependent)[0]))
 			dependencyMatrixJ.append(dependencyMatrixATPJ)
 			if ATPdependent == "WATER[c]":
@@ -558,7 +558,7 @@ class TwoComponentSystem(object):
 			if col == dependencyMatrixATPJ:
 				continue
 			else:
-				dependencyMatrixI.append(int(np.where(self.moleculeNames == "Pi[c]")[0]))
+				dependencyMatrixI.append(int(np.where(self.moleculeNames == "PI[c]")[0]))
 				dependencyMatrixJ.append(col)
 				dependencyMatrixV.append(1)
 
