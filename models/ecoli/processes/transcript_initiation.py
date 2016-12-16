@@ -172,7 +172,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		if rnaPolyToActivate == 0:
 			return
 
-
 		#### Growth control code ####
 
 		# ribosomeElongationRate = self.readFromListener("RibosomeData", "effectiveElongationRate")
@@ -223,7 +222,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		#### Growth control code ####
 		nNewRnas = self.randomState.multinomial(rnaPolyToActivate,
 			self.rnaSynthProb)
-
 
 		self.writeToListener("RibosomeData", "rrn16S_produced", nNewRnas[self.is_16SrRNA].sum())
 		self.writeToListener("RibosomeData", "rrn23S_produced", nNewRnas[self.is_23SrRNA].sum())		

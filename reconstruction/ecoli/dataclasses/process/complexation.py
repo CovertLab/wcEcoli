@@ -39,10 +39,16 @@ class Complexation(object):
 			assert reaction["dir"] == 1
 
 			for molecule in reaction["stoichiometry"]:
-				moleculeName = "{}[{}]".format(
-					molecule["molecule"],
-					molecule["location"]
-					)
+				if molecule["type"] == "metabolite":
+					moleculeName = "{}[{}]".format(
+						molecule["molecule"].upper(),
+						molecule["location"]
+						)
+				else:
+					moleculeName = "{}[{}]".format(
+						molecule["molecule"],
+						molecule["location"]
+						)
 
 				if moleculeName not in molecules:
 					molecules.append(moleculeName)

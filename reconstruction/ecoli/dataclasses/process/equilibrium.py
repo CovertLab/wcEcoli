@@ -44,7 +44,7 @@ class Equilibrium(object):
 			}
 
 		# Remove reactions that we know won't occur (e.g., don't do computations on metabolites that have zero counts)
-		MOLECULES_THAT_WILL_EXIST_IN_SIMULATION = [m["Metabolite"] for m in raw_data.metaboliteConcentrations] + ["LEU", "S-ADENOSYLMETHIONINE", "ARABINOSE", "4FE-4S"] + [l["molecules"]["LIGAND"] for l in raw_data.twoComponentSystems] + ["Pi"]
+		MOLECULES_THAT_WILL_EXIST_IN_SIMULATION = [m["Metabolite"] for m in raw_data.metaboliteConcentrations] + ["LEU", "S-ADENOSYLMETHIONINE", "ARABINOSE", "4FE-4S"] + [l["molecules"]["LIGAND"] for l in raw_data.twoComponentSystems]
 
 		deleteReactions = []
 		for reactionIndex, reaction in enumerate(raw_data.equilibriumReactions):
@@ -67,7 +67,7 @@ class Equilibrium(object):
 			for molecule in reaction["stoichiometry"]:
 				if molecule["type"] == "metabolite":
 					moleculeName = "{}[{}]".format(
-						molecule["molecule"],
+						molecule["molecule"].upper(),
 						molecule["location"]
 						)
 					self.metaboliteSet.add(moleculeName)
@@ -195,7 +195,6 @@ class Equilibrium(object):
 	def _populateDerivativeAndJacobian(self):
 		# TODO: Decide if this caching is worthwhile
 		# TODO: Unhack this--this assumes a directory structure
-
 		fixturesDir = os.path.join(
 			os.path.dirname(os.path.dirname(wholecell.__file__)),
 			"fixtures",
@@ -236,7 +235,6 @@ class Equilibrium(object):
 			needToCreate = True
 
 		if needToCreate:
-			import sys; sys.setrecursionlimit(4000) # limit found manually
 			self._makeMatrices()
 			self._makeDerivative()
 			writeOdeFileWithRates(odeFile, self.derivativesSymbolic, self.derivativesJacobianSymbolic)
