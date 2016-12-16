@@ -37,17 +37,16 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
 	externalExchangeFluxes = fbaResults.readColumn("externalExchangeFluxes")
-	if GLUCOSE_ID not in externalExchangeFluxes:
-		print "This plot only runs when glucose is the carbon source."
-		return
-
 	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
 	timeStepSec = TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")
 	externalMoleculeIDs = np.array(fbaResults.readAttribute("externalMoleculeIDs"))
-
 	fbaResults.close()
-
+	
+	if GLUCOSE_ID not in externalMoleculeIDs:
+		print "This plot only runs when glucose is the carbon source."
+		return
+	
 	glucoseIdx = np.where(externalMoleculeIDs == GLUCOSE_ID)[0][0]
 	glucoseFlux = FLUX_UNITS * externalExchangeFluxes[:, glucoseIdx]
 
