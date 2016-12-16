@@ -52,9 +52,9 @@ class Equilibrium(wholecell.processes.process.Process):
 
 		# Build views
 
-		moleculeNames = sim_data.process.equilibrium.moleculeNames
+		self.moleculeNames = sim_data.process.equilibrium.moleculeNames
 
-		self.molecules = self.bulkMoleculesView(moleculeNames)
+		self.molecules = self.bulkMoleculesView(self.moleculeNames)
 
 
 	def calculateRequest(self):
@@ -70,7 +70,6 @@ class Equilibrium(wholecell.processes.process.Process):
 
 	def evolveState(self):
 		moleculeCounts = self.molecules.counts()
-
 		rxnFluxes = self.rxnFluxes.copy()
 
 		# If we didn't get allocated all the molecules we need, make do with what we have
@@ -90,6 +89,3 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.molecules.countsInc(
 			np.dot(self.stoichMatrix, rxnFluxes)
 			)
-
-
-

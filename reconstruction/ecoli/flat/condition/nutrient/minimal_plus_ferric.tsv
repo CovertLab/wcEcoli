@@ -9,6 +9,7 @@
 "K+[p]"	NaN	NaN
 "SULFATE[p]"	NaN	NaN
 "FE+2[p]"	NaN	NaN
+"FE+3[p]"	NaN	NaN
 "CA+2[p]"	NaN	NaN
 "CL-[p]"	NaN	NaN
 "CO+2[p]"	NaN	NaN
@@ -22,4 +23,3 @@
 "L-SELENOCYSTEINE[c]"	NaN	NaN
 "GLC-D-LACTONE[c]"	NaN	NaN
 "CYTOSINE[c]"	NaN	NaN
-"S-ADENOSYLMETHIONINE[c]"	NaN	NaN

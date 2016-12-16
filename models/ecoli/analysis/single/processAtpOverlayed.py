@@ -1,77 +1,77 @@
 #!/usr/bin/env python
 """
-@author: Nick Ruggero
+Plot water allocation for each process
+
+@author: Heejo Choi
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 8/8/2014
+@date: Created 6/20/2016
 """
 
 from __future__ import division
 
 import argparse
 import os
-import cPickle
 
 import numpy as np
+from scipy.stats import pearsonr
 import matplotlib
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
+import cPickle
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.utils.fitting import normalize
 from wholecell.utils import units
-
-GLUCOSE_ID = "GLC[p]"
-
-FLUX_UNITS = units.mmol / units.g / units.h
-MASS_UNITS = units.fg
-GROWTH_UNITS = units.fg / units.s
+from wholecell.containers.bulk_objects_container import BulkObjectsContainer
+from wholecell.analysis.analysis_tools import exportFigure
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
+
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
 
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
 
-	sim_data = cPickle.load(open(simDataFile, "rb"))
+	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
+	processNames = bulkMolecules.readAttribute("processNames")
 
-	fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-	externalExchangeFluxes = fbaResults.readColumn("externalExchangeFluxes")
-	if GLUCOSE_ID not in externalExchangeFluxes:
-		print "This plot only runs when glucose is the carbon source."
-		return
+	atpAllocatedInitial = bulkMolecules.readColumn("atpAllocatedInitial")
+	atpRequested = bulkMolecules.readColumn("atpRequested")
 
 	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
-	timeStepSec = TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")
-	externalMoleculeIDs = np.array(fbaResults.readAttribute("externalMoleculeIDs"))
 
-	fbaResults.close()
+	bulkMolecules.close()
 
-	glucoseIdx = np.where(externalMoleculeIDs == GLUCOSE_ID)[0][0]
-	glucoseFlux = FLUX_UNITS * externalExchangeFluxes[:, glucoseIdx]
 
-	mass = TableReader(os.path.join(simOutDir, "Mass"))
-	cellMass = MASS_UNITS * mass.readColumn("cellMass")
-	cellDryMass = MASS_UNITS * mass.readColumn("dryMass")
-	growth = GROWTH_UNITS * mass.readColumn("growth") / timeStepSec
-	mass.close()
+	# Plot
+	plt.figure(figsize = (8.5, 11))
+	rows = 7
+	cols = 2
 
-	glucoseMW = sim_data.getter.getMass([GLUCOSE_ID])[0]
+	for processIndex in np.arange(len(processNames)):
+		ax = plt.subplot(rows, cols, processIndex + 1)
+		ax.plot(time / 60., atpAllocatedInitial[:, processIndex])
+		ax.plot(time / 60., atpRequested[:, processIndex])
+		ax.set_title(str(processNames[processIndex]), fontsize = 8, y = 0.85)
 
-	glucoseMassFlux = glucoseFlux * glucoseMW * cellDryMass
+		ymin = np.amin([atpAllocatedInitial[:, processIndex], atpRequested[:, processIndex]])
+		ymax = np.amax([atpAllocatedInitial[:, processIndex], atpRequested[:, processIndex]])
+		ax.set_ylim([ymin, ymax])
+		ax.set_yticks([ymin, ymax])
+		ax.set_yticklabels(["%0.2e" % ymin, "%0.2e" % ymax])
+		ax.spines['top'].set_visible(False)
+		ax.spines['bottom'].set_visible(False)
+		ax.xaxis.set_ticks_position('bottom')
+		ax.tick_params(which = 'both', direction = 'out', labelsize = 6)
+		# ax.set_xticks([])
 
-	glucoseMassYield = growth / -glucoseMassFlux
-
-	fig = plt.figure(figsize = (8.5, 11))
-	plt.plot(time, glucoseMassYield)
-	plt.xlabel("Time (s)")
-	plt.ylabel("g cell / g glucose")
-
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
+	plt.subplots_adjust(hspace = 2.0, wspace = 2.0)
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
