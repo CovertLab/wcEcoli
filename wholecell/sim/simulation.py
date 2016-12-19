@@ -30,6 +30,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	seed = 0,
 	lengthSec = 3*60*60, # 3 hours max
 	initialTime = 0,
+	massDistribution = True,
 	timeStepSafetyFraction = 1.3,
 	maxTimeStep = 0.9,#2.0, # TODO: Reset to 2 once we update PopypeptideElongation
 	updateTimeStepFreq = 5,
@@ -208,14 +209,16 @@ class Simulation(object):
 
 	# Calculate temporal evolution
 	def _evolveState(self):
-		# Update randstreams
-		for stateName, state in self.states.iteritems():
-			state.seed = self._seedFromName(stateName)
-			state.randomState = np.random.RandomState(seed = state.seed)
 
-		for processName, process in self.processes.iteritems():
-			process.seed = self._seedFromName(processName)
-			process.randomState = np.random.RandomState(seed = process.seed)
+		if self._simulationStep <= 1:
+			# Update randstreams
+			for stateName, state in self.states.iteritems():
+				state.seed = self._seedFromName(stateName)
+				state.randomState = np.random.RandomState(seed = state.seed)
+
+			for processName, process in self.processes.iteritems():
+				process.seed = self._seedFromName(processName)
+				process.randomState = np.random.RandomState(seed = process.seed)
 
 		self._adjustTimeStep()
 		
@@ -286,7 +289,8 @@ class Simulation(object):
 			logger.append(self)
 
 	def _seedFromName(self, name):
-		return np.uint32((self._seed + self.simulationStep() + hash(name)) % np.iinfo(np.uint64).max)
+		return np.uint32((self._seed + hash(name)) % np.iinfo(np.uint64).max)
+		# return np.uint32((self._seed + self.simulationStep() + hash(name)) % np.iinfo(np.uint64).max)
 
 
 	def initialTime(self):

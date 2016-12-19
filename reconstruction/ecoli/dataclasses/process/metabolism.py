@@ -155,7 +155,7 @@ class Metabolism(object):
 		metaboliteIDs.append("PPI[c]")
 		metaboliteConcentrations.append(PPI_CONCENTRATION)
 
-		metaboliteIDs.append("Pi[c]") # TODO: find a real number
+		metaboliteIDs.append("PI[c]") # TODO: find a real number
 		metaboliteConcentrations.append(PPI_CONCENTRATION)
 
 		# NOTE: this assertion is thrown since there are many biomass things not in the (metabolic) model
@@ -215,6 +215,12 @@ class Metabolism(object):
 			location = enzymeID[enzymeID.index("[")+1:enzymeID.index("[")+2]
 
 			validEnzymeCompartments[enzyme].add(location)
+
+		for enzymeID in validEnzymeIDs:
+			enzyme = enzymeID[:enzymeID.index("[")]
+			if len(validEnzymeCompartments[enzyme]) > 1:
+				raise Exception, "Multiple compartments for enzyme %s" % enzyme
+			validEnzymeCompartments[enzyme] = sorted(validEnzymeCompartments[enzyme])[0]
 
 		# Enzymes which should not be used for enzyme-reaction pairs
 		for rxnEnzymePair in raw_data.unconstrainedReactionEnzymes:
@@ -440,7 +446,7 @@ class Metabolism(object):
 
 		self.reactionStoich = reactionStoich
 		self.nutrientsTimeSeries = sim_data.nutrientsTimeSeries
-		self.maintenanceReaction = {"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "Pi[c]": +1, "PROTON[c]": +1,}
+		self.maintenanceReaction = {"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "PI[c]": +1, "PROTON[c]": +1,}
 		self.reversibleReactions = reversibleReactions
 		self.directionInferedReactions = sorted(list(directionInferedReactions))
 		self.reactionRateInfo = reactionRateInfo
@@ -487,7 +493,7 @@ class Metabolism(object):
 		for reactionEnzyme in enzymeIDs:
 			if reactionEnzyme[-3:-2] !='[':
 				if len(validEnzymeCompartmentsDict[reactionEnzyme]) > 0:
-					new_reaction_enzymes.append(reactionEnzyme +'['+str(validEnzymeCompartmentsDict[reactionEnzyme].pop())+']')
+					new_reaction_enzymes.append(reactionEnzyme +'['+str(validEnzymeCompartmentsDict[reactionEnzyme])+']')
 				else:
 					new_reaction_enzymes.append(reactionEnzyme + '[c]')
 			else:
