@@ -108,8 +108,21 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		assert (self.isRRna + self.isRProtein + self.isRnap + self.notPolymerase).sum() == self.rnaLengths.asNumber().size
 
+		self.activationProbMultiplier = 1.
+		# if sim_data.divisionMassVariance == 0.:
+		# 	self.activationProbMultiplier = 1.
+		# else:
+		# 	self.activationProbMultiplier = sim.randomState.normal(loc = 1.0, scale = sim_data.divisionMassVariance)
+
 		self.rProteinToRRnaRatioVector = None
 		self.rnaSynthProbFractions = sim_data.process.transcription.rnaSynthProbFraction
+
+		# for condition, subFractions in self.rnaSynthProbFractions.iteritems():
+		# 	self.rnaSynthProbFractions[condition]["rRna"] = self.rnaSynthProbFractions[condition]["rRna"] * self.rRnaSynthProbMultiplier
+		# 	total = sum(self.rnaSynthProbFractions[condition].values())
+		# 	for rnaFraction, value in self.rnaSynthProbFractions[condition].iteritems():
+		# 		self.rnaSynthProbFractions[condition][rnaFraction] = value / total
+
 		self.rnaSynthProbRProtein = sim_data.process.transcription.rnaSynthProbRProtein
 		self.rnaSynthProbRnaPolymerase = sim_data.process.transcription.rnaSynthProbRnaPolymerase
 
@@ -284,7 +297,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		effectiveFractionActive = fracActiveRnap * 1 / (1 - expectedFractionTimeInactive)
 
-		return effectiveFractionActive * expectedTerminationRate / (1 - effectiveFractionActive)
+		return self.activationProbMultiplier * effectiveFractionActive * expectedTerminationRate / (1 - effectiveFractionActive)
 
 	def calculateRrnInitRate(self, rrn_count, elngRate):
 		'''
