@@ -312,6 +312,9 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
 		d1_bool = np.ones(len(moleculeSet), dtype = bool)
 		d2_bool = np.ones(len(moleculeSet), dtype = bool)
 
+		n_d1 = len(moleculeSet)
+		n_d2 = len(moleculeSet)
+
 		d1_dividedAttributesDict = {}
 		d2_dividedAttributesDict = {}
 		for moleculeAttribute in moleculeAttributeDict.iterkeys():
