@@ -49,5 +49,11 @@ class ChromosomeFormation(wholecell.processes.process.Process):
 			fullUniqueChrom = self.fullChromosomeUnique.moleculesNew("fullChromosome", partialChromosomes.min())
 			fullUniqueChrom.attrIs(division_time = [self.time() + 20. * 60.] * partialChromosomes.min())
 
+			print "grep_marker replication termination - time: {}".format(self.time())
+			print "grep_marker cell division occurs - relative time: {}".format(self.time() - self._sim.initialTime())
+			print "grep_marker replication termination - time set for division: {}".format(self.time() + 20. * 60.)
+			print "grep_marker replication termination - cell mass: {}".format(self.readFromListener("Mass", "cellMass"))
+			print "grep_marker replication termination - partial chromosome counts: {}".format(partialChromosomes)
+
 		self.fullChromosome.countInc(partialChromosomes.min())
 		self.partialChromosomes.countsDec(partialChromosomes.min())
