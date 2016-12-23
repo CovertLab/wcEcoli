@@ -30,6 +30,7 @@ def calcInitialConditions(sim, sim_data):
 	randomState = sim.randomState
 
 	massDistribution = randomState.normal(loc=1.0, scale=0.1)
+	massDistribution = 1.0
 
 	bulkMolCntr = sim.states['BulkMolecules'].container
 	uniqueMolCntr = sim.states["UniqueMolecules"].container
