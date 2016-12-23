@@ -187,6 +187,15 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
 			'sequenceIdx', 'sequenceLength', 'replicationRound', 'chromosomeIndex'
 			)
 
+		print "State at division:"
+		sequenceIdx, sequenceLengths, replicationRound, chromosomeIndex = moleculeSet.attrs(
+			'sequenceIdx', 'sequenceLength', 'replicationRound', 'chromosomeIndex'
+			)
+		print "sequenceIdx: {}".format(sequenceIdx)
+		print "sequenceLengths: {}".format(sequenceLengths)
+		print "replicationRound: {}".format(replicationRound)
+		print "chromosomeIndex: {}".format(chromosomeIndex)
+
 		if d1_chromosome_count + d2_chromosome_count < 2:
 			d1_bool = np.zeros(len(moleculeSet), dtype = bool)
 			d2_bool = np.zeros(len(moleculeSet), dtype = bool)
@@ -216,7 +225,10 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
 					np.logical_and(replicationRound == roundIdx, chromosomeIndex % 2 == d2Index),
 					d2_bool
 					)
-				
+
+		print "d1_bool: {}".format(d1_bool)
+		print "d2_bool: {}".format(d2_bool)
+
 		n_d1 = d1_bool.sum()
 		n_d2 = d2_bool.sum()
 
@@ -231,12 +243,15 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
 			replicationRoundIndexes = d1_dividedAttributesDict['replicationRound'] == replicationRound
 			replicationForks = int(np.ceil(replicationRoundIndexes.sum() / 4))
 			if replicationForks >= 2:
+				# import ipdb; ipdb.set_trace()
 				for index in [0,1,2,3]:
 					# if not possible to have uneven number of partial chromosomes
 					num_index = d1_dividedAttributesDict['sequenceIdx'][replicationRoundIndexes] == index
 					new_value = np.zeros(num_index.sum())
 					for fork in range(replicationForks):
 						new_value[fork * new_value.size / replicationForks:(fork + 1) * new_value.size / replicationForks] = fork
+
+					# import ipdb; ipdb.set_trace()
 
 					# # if uneven number of partial chromosomes
 					# num_index = d1_dividedAttributesDict['sequenceIdx'][replicationRoundIndexes] == index
@@ -323,6 +338,9 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
 
 		d1_unique_molecules_container.objectsNew('fullChromosome', n_d1, **d1_dividedAttributesDict)
 		d2_unique_molecules_container.objectsNew('fullChromosome', n_d2, **d2_dividedAttributesDict)
+
+		print "grep_marker divide cell - fullChromosome to daughter 1: {}".format(n_d1)
+		print "grep_marker divide cell - fullChromosome to daughter 2: {}".format(n_d2)
 
 	return d1_unique_molecules_container, d2_unique_molecules_container
 
