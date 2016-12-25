@@ -24,7 +24,9 @@ from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIn
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 
+
 # SYNTHETASE_KM_SCALE = 0.7
+
 
 class PolypeptideElongation(wholecell.processes.process.Process):
 	""" PolypeptideElongation """
@@ -99,7 +101,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.gtp = self.bulkMoleculeView("GTP[c]")
 		self.gdp = self.bulkMoleculeView("GDP[c]")
-		self.pi = self.bulkMoleculeView("Pi[c]")
+		self.pi = self.bulkMoleculeView("PI[c]")
 		self.h   = self.bulkMoleculeView("PROTON[c]")
 
 		self.gtpUsed = 0
@@ -260,6 +262,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome50S.countInc(nTerminated)
 
 		self.h2o.countInc(nElongations - nInitialized)
+
 
 		# Report stalling information
 
