@@ -209,7 +209,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 		hist_rrn16S_init_prob = removeNanReshape(rrn16S_init_prob / total_rna_init)
 		nbins = np.ceil(np.sqrt(hist_rrn16S_init_prob.size))
-		ax5_1.hist(hist_rrn16S_init_prob, nbins)
+		if hist_rrn16S_init_prob.size:
+			ax5_1.hist(hist_rrn16S_init_prob, nbins)
+		else:
+			pass
 
 		##
 
@@ -220,7 +223,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 		hist_rrn23S_init_prob = removeNanReshape(rrn23S_init_prob / total_rna_init)
 		nbins = np.ceil(np.sqrt(hist_rrn23S_init_prob.size))
-		ax6_1.hist(hist_rrn23S_init_prob, nbins)
+		if hist_rrn23S_init_prob.size:
+			ax6_1.hist(hist_rrn23S_init_prob, nbins)
+		else:
+			pass
 
 		##
 
@@ -231,7 +237,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 		hist_rrn5S_init_prob = removeNanReshape(rrn5S_init_prob / total_rna_init)
 		nbins = np.ceil(np.sqrt(hist_rrn5S_init_prob.size))
-		ax7_1.hist(hist_rrn5S_init_prob, nbins)
+		if hist_rrn5S_init_prob.size:
+			ax7_1.hist(hist_rrn5S_init_prob, nbins)
+		else:
+			pass
 
 		##
 
@@ -241,7 +250,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 		hist_averageElongationRate = removeNanReshape(averageElongationRate)
 		nbins = np.ceil(np.sqrt(hist_averageElongationRate.size))
-		ax8_1.hist(hist_averageElongationRate, nbins)
+		if hist_averageElongationRate.size:
+			ax8_1.hist(hist_averageElongationRate, nbins)
+		else:
+			pass
 
 		##
 
@@ -251,7 +263,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 		hist_fitRibosomeInitRate = removeNanReshape(fitRibosomeInitRate)
 		nbins = np.ceil(np.sqrt(hist_fitRibosomeInitRate.size))
-		ax9_1.hist(hist_fitRibosomeInitRate, nbins)
+		if hist_fitRibosomeInitRate.size:
+			ax9_1.hist(hist_fitRibosomeInitRate, nbins)
+		else:
+			pass
 
 	ax9.set_xlabel("Time (min)")
 
