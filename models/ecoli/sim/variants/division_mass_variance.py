@@ -1,4 +1,4 @@
-DIVISION_MASS_VARIANCE = [0., 0.2]
+DIVISION_MASS_VARIANCE = [1., 0.5, 1.5]
 
 CONTROL_OUTPUT = dict(
 	shortName = "control",
