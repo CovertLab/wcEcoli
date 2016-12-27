@@ -147,7 +147,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
 
 	# Divide unique molecules binomially
 	for moleculeName, moleculeAttributeDict in uniqueMoleculesToDivide.iteritems():
-		if moleculeName == 'dnaPolymerase' or moleculeName == 'originOfReplication' or moleculeName == 'fullChromosome':
+		if moleculeName == 'dnaPolymerase' or moleculeName == 'originOfReplication' or moleculeName == 'fullChromosome' or moleculeName == "activeRibosome":
 			# NOTE: We are not dividing dna polymerase binomially!
 			continue
 
@@ -173,6 +173,37 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
 
 			d1_unique_molecules_container.objectsNew(moleculeName, n_d1, **d1_dividedAttributesDict)
 			d2_unique_molecules_container.objectsNew(moleculeName, n_d2, **d2_dividedAttributesDict)
+
+	# # Unequally divide active ribosomes
+	# moleculeSet = uniqueMolecules.container.objectsInCollection('activeRibosome')
+	# moleculeAttributeDict = uniqueMoleculesToDivide['activeRibosome']
+	# if len(moleculeSet) > 0:
+
+	# 	if randomState.randint(2):
+	# 		coeff = 0.3
+	# 	else:
+	# 		coeff = 0.7
+	# 	n_d1 = randomState.binomial(len(moleculeSet), p = coeff)
+	# 	n_d2 = len(moleculeSet) - n_d1
+	# 	assert n_d1 + n_d2 == len(moleculeSet)
+
+	# 	d1_bool = np.zeros(len(moleculeSet), dtype = bool)
+	# 	d2_bool = np.zeros(len(moleculeSet), dtype = bool)
+	# 	d1_indexes = randomState.choice(range(len(moleculeSet)), size = n_d1, replace = False)
+	# 	d1_bool[d1_indexes] = True
+	# 	d2_bool = np.logical_not(d1_bool)
+
+	# 	d1_dividedAttributesDict = {}
+	# 	d2_dividedAttributesDict = {}
+	# 	for moleculeAttribute in moleculeAttributeDict.iterkeys():
+	# 		d1_dividedAttributesDict[moleculeAttribute] = moleculeSet.attr(moleculeAttribute)[d1_bool]
+	# 		d2_dividedAttributesDict[moleculeAttribute] = moleculeSet.attr(moleculeAttribute)[d2_bool]
+
+	# 	d1_unique_molecules_container.objectsNew('activeRibosome', n_d1, **d1_dividedAttributesDict)
+	# 	d2_unique_molecules_container.objectsNew('activeRibosome', n_d2, **d2_dividedAttributesDict)
+
+
+
 
 	# Divide dna polymerase with chromosome
 	# Get set of molecules to divide and calculate number going to daugher one and daughter two
