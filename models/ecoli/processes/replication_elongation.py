@@ -34,7 +34,7 @@ class ReplicationElongation(wholecell.processes.process.Process):
 		# 	criticalMassMultiplier = 1.
 		# else:
 		# 	criticalMassMultiplier = sim.randomState.normal(loc = 1.0, scale = sim_data.divisionMassVariance)
-		criticalMassMultiplier = 1.
+		criticalMassMultiplier = 1.0
 
 		self.criticalInitiationMass = criticalMassMultiplier * sim_data.growthRateParameters.getDnaCriticalMass(sim_data.conditionToDoublingTime[sim_data.condition])
 		self.getDnaCriticalMass = sim_data.growthRateParameters.getDnaCriticalMass
@@ -115,13 +115,16 @@ class ReplicationElongation(wholecell.processes.process.Process):
 
 
 		if self.time() - self._sim.initialTime() < 1.:
-			print "Simulation starts"
-			sequenceIdx, sequenceLengths, replicationRound, chromosomeIndex = activeDnaPoly.attrs('sequenceIdx', 'sequenceLength', 'replicationRound', 'chromosomeIndex')
+			if activePolymerasePresent:
+				print "Simulation starts"
+				sequenceIdx, sequenceLengths, replicationRound, chromosomeIndex = activeDnaPoly.attrs('sequenceIdx', 'sequenceLength', 'replicationRound', 'chromosomeIndex')
 
-			print "sequenceIdx: {}".format(sequenceIdx)
-			print "sequenceLengths: {}".format(sequenceLengths)
-			print "replicationRound: {}".format(replicationRound)
-			print "chromosomeIndex: {}".format(chromosomeIndex)
+				print "sequenceIdx: {}".format(sequenceIdx)
+				print "sequenceLengths: {}".format(sequenceLengths)
+				print "replicationRound: {}".format(replicationRound)
+				print "chromosomeIndex: {}".format(chromosomeIndex)
+			else:
+				print "No active polymerase present"
 
 			# import ipdb; ipdb.set_trace()
 
