@@ -166,6 +166,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 		rRnaCounts = np.hstack((freeRRnaCounts50S, freeRRnaCounts30S))
 		rRnaCounts = rRnaCounts[:, np.unique(np.where(rRnaCounts > 0)[1])] # Get only non-zero for all time counts
+		if rRnaCounts.size != time.asNumber().size:
+			rRnaCounts = np.zeros(time.asNumber().size)
 
 		counts30S = complexCounts30S
 		counts50S = complexCounts50S
@@ -326,9 +328,12 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax13.plot(time.asNumber(units.min), np.convolve(allocatedElongationRate, np.ones(width) / width, mode = "same"))
 		ax13.axvline(x = time.asNumber(units.min).max(), linewidth=2, color='k', linestyle='--')
 		if gen == 0:
-			y_lim = [allocatedElongationRate[300:].min(), allocatedElongationRate[300:].max()]
+			cutoff = allocatedElongationRate[300:].size or allocatedElongationRate.size * 0.5
+			y_lim = [allocatedElongationRate[cutoff:].min(), allocatedElongationRate[cutoff:].max()]
 		else:
-			y_lim = get_new_ylim(ax13, allocatedElongationRate[300:].min(), allocatedElongationRate[300:].max())
+			cutoff = allocatedElongationRate[300:].size or allocatedElongationRate.size * 0.5
+			y_lim = get_new_ylim(ax13, allocatedElongationRate[cutoff:].min(), allocatedElongationRate[cutoff:].max())
+
 		ax13.set_ylim(y_lim)
 		ax13.set_ylabel("Allocated\nAA / ribosomes")
 
