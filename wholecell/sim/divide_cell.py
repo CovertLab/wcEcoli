@@ -147,7 +147,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts):
 
 	# Divide unique molecules binomially
 	for moleculeName, moleculeAttributeDict in uniqueMoleculesToDivide.iteritems():
-		if moleculeName == 'dnaPolymerase' or moleculeName == 'originOfReplication' or moleculeName == 'fullChromosome' or moleculeName == "activeRibosome":
+		if moleculeName == 'dnaPolymerase' or moleculeName == 'originOfReplication' or moleculeName == 'fullChromosome':
 			# NOTE: We are not dividing dna polymerase binomially!
 			continue
 
