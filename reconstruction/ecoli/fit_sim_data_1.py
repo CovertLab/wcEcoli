@@ -38,8 +38,6 @@ BASAL_EXPRESSION_CONDITION = "M9 Glucose minus AAs"
 
 VERBOSE = 1
 
-from models.ecoli.processes.metabolism import SECRETION_PENALTY_COEFF
-
 COUNTS_UNITS = units.dmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
@@ -60,6 +58,7 @@ def fitSimData_1(raw_data):
 	setTranslationEfficiencies(sim_data)
 	setRNAExpression(sim_data)
 	setRNADegRates(sim_data)
+	setProteinDegRates(sim_data)
 
 	# Set C-period
 	setCPeriod(sim_data)
@@ -439,15 +438,22 @@ def setRnaPolymeraseCodingRnaDegradationRates(sim_data):
 def setTranslationEfficiencies(sim_data):
 	adjustments = {
 		"ADCLY-MONOMER[c]": 5,
+		"EG12438-MONOMER[c]": 5,
+		"EG12298-MONOMER[p]": 5, # for anaerobic condition
+		"ACETYL-COA-ACETYLTRANSFER-MONOMER[c]": 5, # for anaerobic condition
 		}
 
 	for protein in adjustments:
-		idx = np.where(sim_data.process.translation.monomerData == protein)[0]
+		idx = np.where(sim_data.process.translation.monomerData["id"] == protein)[0]
 		sim_data.process.translation.translationEfficienciesByMonomer[idx] *= adjustments[protein]
 
 def setRNAExpression(sim_data):
 	adjustments = {
 		"EG11493_RNA[c]": 10,
+		"EG12438_RNA[c]": 10,
+		"EG10139_RNA[c]": 10,
+		"EG12298_RNA[c]": 10, # for anaerobic condition
+		"EG11672_RNA[c]": 10, # for anaerobic condition
 		}
 
 	for rna in adjustments:
@@ -459,11 +465,21 @@ def setRNAExpression(sim_data):
 def setRNADegRates(sim_data):
 	adjustments = {
 		"EG11493_RNA[c]": 2,
+		"EG10139_RNA[c]": 2,
 		}
 
 	for rna in adjustments:
 		idx = np.where(sim_data.process.transcription.rnaData["id"] == rna)[0]
 		sim_data.process.transcription.rnaData.struct_array["degRate"][idx] *= adjustments[rna]
+
+def setProteinDegRates(sim_data):
+	adjustments = {
+		"EG12298-MONOMER[p]": 0.1, # for anaerobic condition
+		}
+
+	for protein in adjustments:
+		idx = np.where(sim_data.process.translation.monomerData["id"] == protein)[0]
+		sim_data.process.translation.monomerData.struct_array["degRate"][idx] *= adjustments[protein]
 
 def setCPeriod(sim_data):
 	sim_data.growthRateParameters.c_period = sim_data.process.replication.genome_length * units.nt / sim_data.growthRateParameters.dnaPolymeraseElongationRate / 2
@@ -1974,178 +1990,3 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 
 	return units.mol / units.L * KmCooperativeModel
 
-def findKineticCoeffs(sim_data, bulkContainer):
-	pass
-
-
-	# # Estimate the volume of the initial cell
-	# initDryMass = sim_data.mass.avgCellDryMassInit
-	# dryMassPerCellMass = (1. - sim_data.mass.cellWaterMassFraction)
-	# totalCellMassInit = initDryMass / dryMassPerCellMass
-	# cellVolumeInit = totalCellMassInit / sim_data.constants.cellDensity
-
-	# energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / totalCellMassInit
-
-	# reactionStoich = sim_data.process.metabolism.reactionStoich
-	# externalExchangeMolecules = sorted(sim_data.nutrientData["externalExchangeMolecules"]["minimal"])
-	# extMoleculeMasses = sim_data.getter.getMass(externalExchangeMolecules)
-
-	# moleculeMasses = dict(zip(
-	# 	externalExchangeMolecules,
-	# 	sim_data.getter.getMass(externalExchangeMolecules).asNumber(MASS_UNITS / COUNTS_UNITS)
-	# 	))
-
-	# # Make previously observed external molecule fluxes into coefficients of a biomass reaction
-	# jfbaBiomassReactionStoich = {molID:-coeff.asNumber(COUNTS_UNITS/VOLUME_UNITS/TIME_UNITS) for molID, coeff in sim_data.process.metabolism.previousBiomassMeans.iteritems() if np.abs(coeff.asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)) > NUMERICAL_ZERO}
-	# jfbaBiomassReactionStoich["biomass"] = 1
-
-	# n_iterations = 1
-	# overallFluxes = None
-	# modification_probability = .2
-
-	# for iteration in xrange(n_iterations):
-
-	# 	reactionStoichWithBiomass = reactionStoich.copy()
-
-	# 	jfbaBiomassReactionStoichMod = {}
-	# 	for key, value in jfbaBiomassReactionStoich.iteritems():
-	# 		changeAmount = 1.
-	# 		if iteration > 0:
-	# 			changeBoolean = np.random.random() < modification_probability
-	# 			changeAmount = np.random.random()*2 if changeBoolean else 1.
-	# 		jfbaBiomassReactionStoichMod[key] = value * changeAmount
-	# 	reactionStoichWithBiomass["JFBA-BIOMASS-RXN"] = jfbaBiomassReactionStoichMod
-
-	# 	fbaObject = FluxBalanceAnalysis(
-	# 		reactionStoich = reactionStoichWithBiomass,
-	# 		externalExchangedMolecules = externalExchangeMolecules,
-	# 		objective = {"biomass": 1},
-	# 		objectiveType = "standard",
-	# 		moleculeMasses=moleculeMasses,
-	# 		secretionPenaltyCoeff = SECRETION_PENALTY_COEFF,
-	# 		solver = "glpk",
-	# 		maintenanceCostGAM = energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
-	# 		maintenanceReaction = {
-	# 			"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "PI[c]": +1, "PROTON[c]": +1,
-	# 			}
-	# 		)
-
-	# 	# Implicit one second time-step
-	# 	coefficient = dryMassPerCellMass * sim_data.constants.cellDensity * (1. * units.s)
-
-	# 	externalMoleculeLevels, newObjective = sim_data.process.metabolism.exchangeConstraints(
-	# 		fbaObject.externalMoleculeIDs(),
-	# 		coefficient,
-	# 		COUNTS_UNITS / VOLUME_UNITS,
-	# 		sim_data.nutrientsTimeSeriesLabel,
-	# 		1., # time only matters in changing environments, so any > 0 is fine
-	# 		preview=True
-	# 		)
-
-	# 	fbaObject.externalMoleculeLevelsIs(externalMoleculeLevels)
-
-	# 	fbaObject.maxReactionFluxIs(fbaObject._reactionID_NGAM, (sim_data.constants.nonGrowthAssociatedMaintenance * coefficient).asNumber(COUNTS_UNITS / VOLUME_UNITS))
-	# 	fbaObject.minReactionFluxIs(fbaObject._reactionID_NGAM, (sim_data.constants.nonGrowthAssociatedMaintenance * coefficient).asNumber(COUNTS_UNITS / VOLUME_UNITS))
-
-	# 	arrayModel = fbaObject.getArrayBasedModel()
-
-	# 	S_matrix = arrayModel["S_matrix"]
-	# 	reactionNames = arrayModel["Reactions"]
-	# 	upperBoundsDict = arrayModel["Upper bounds"]
-	# 	lowerBoundsDict = arrayModel["Lower bounds"]
-	# 	upperBounds = np.array([upperBoundsDict[x] for x in reactionNames])
-	# 	lowerBounds = np.array([lowerBoundsDict[x] for x in reactionNames])
-
-	# 	x = cvxpy.Variable(S_matrix.shape[1])
-	# 	c = np.zeros(len(reactionNames))
-	# 	c[reactionNames.index("JFBA-BIOMASS-RXN")] = 1
-
-	# 	# Construct the problem.
-	# 	objective = cvxpy.Maximize(c*x)
-	# 	constraints = [lowerBounds <= x, x <= upperBounds, S_matrix*x == 0]
-	# 	prob = cvxpy.Problem(objective, constraints)
-
-	# 	expectedFlux = prob.solve(solver="GLPK")
-
-	# 	predictedFluxes = np.array(x.value)
-
-	# 	if overallFluxes is None:
-	# 		overallFluxes = predictedFluxes
-	# 		originalPredictedFluxes = predictedFluxes.copy()
-	# 	else:
-	# 		overallFluxes += predictedFluxes
-
-	# overallFluxes /= n_iterations
-
-	# fluxNames = np.array(reactionNames).reshape(-1, 1)
-	# predictedFluxesDict = dict(zip([fluxName[0] for fluxName in fluxNames], [(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * flux[0] for flux in overallFluxes]))
-
-	# # Use rabinowitz metabolite concentrations as the estimate
-	# metaboliteConcentrationsDict = sim_data.process.metabolism.concDict
-
-	# # Use fit estimates for protein counts
-	# proteinIds = sim_data.process.translation.monomerData["id"]
-	# proteinCounts =  bulkContainer.counts(proteinIds)
-
-	# # Complex monomers
-	# seed = 1 # Any seed is fine
-	# complexationMoleculeNames = sim_data.process.complexation.moleculeNames
-	# complexationMolecules = bulkContainer.counts(complexationMoleculeNames).astype(np.int64)
-	# complexationStoichMatrix = sim_data.process.complexation.stoichMatrix().astype(np.int64, order = "F")
-	# complexationPrebuiltMatrices = mccBuildMatrices(complexationStoichMatrix)
-	# updatedMoleculeCounts = mccFormComplexesWithPrebuiltMatrices(
-	# 	complexationMolecules,
-	# 	seed,
-	# 	complexationStoichMatrix,
-	# 	*complexationPrebuiltMatrices
-	# 	)
-
-	# # Add updates to concentrations based on complexation
-	# proteinCountsDict = {}
-	# for idx, proteinId in enumerate(proteinIds):
-	# 	if proteinId in complexationMolecules:
-	# 		proteinCountsDict[proteinId] = updatedMoleculeCounts[complexationMolecules.index(proteinId)]
-	# 	else:
-	# 		proteinCountsDict[proteinId] = proteinCounts[idx]
-
-	# proteinConcentrations = (1. / sim_data.constants.nAvogadro / cellVolumeInit) * proteinCounts
-
-	# proteinConcDict = {}
-	# for proteinId, count in proteinCountsDict.iteritems():
-	# 	proteinConcDict[proteinId] = ((1. / sim_data.constants.nAvogadro / cellVolumeInit) * count)
-
-	# # Build an enzyme-reaction association matrix
-	# reactionEnzymes  = sim_data.process.metabolism.reactionEnzymes
-	# reactionIDs = list(fbaObject.reactionIDs())
-	# reactionIDs.remove("JFBA-BIOMASS-RXN")
-	# enzymeReactionMatrix = sim_data.process.metabolism.enzymeReactionMatrix(reactionIDs, proteinIds, reactionEnzymes)
-
-	# spontaneousIndices = np.where(np.sum(enzymeReactionMatrix, axis=1) == 0)
-
-	# # Estimate kinetic rates based on the estimated protein concentrations and the known kcats
-	# kineticRates = enzymeReactionMatrix.dot(proteinConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS))
-	# kineticRates[spontaneousIndices] = np.inf
-	# kineticRatesDict = dict(zip(list(reactionIDs), kineticRates))
-
-	# # Determine which kinetic constraints overconstrain the predicted metabolic fluxes
-	# overconstraintRatio = {}
-	# for rateName, rate in kineticRatesDict.iteritems():
-	# 	if rateName in predictedFluxesDict:
-	# 		flux = predictedFluxesDict[rateName].asNumber(COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)
-	# 		ratio = 0 if flux == 0 else flux / rate
-	# 		if ratio >= 1:
-	# 			print ratio
-	# 		overconstraintRatio[rateName] = ratio
-
-	# # Adjust any kcats which are predicted to overconstrain until they no longer do
-	# coefficientsSet = set()
-	# for constraintID, reactionInfo in sim_data.process.metabolism.reactionRateInfo.iteritems():
-	# 	reactionID = reactionInfo["reactionID"]
-	# 	if reactionID in overconstraintRatio:
-	# 		if overconstraintRatio[reactionID] > 1:
-	# 			coefficientsSet.add((reactionInfo["reactionID"], overconstraintRatio[reactionID]))
-	# 			reactionInfo["constraintMultiple"] = np.ceil(overconstraintRatio[reactionID])
-
-	# if VERBOSE: print coefficientsSet
-
-	# sim_data.process.metabolism.predictedFluxesDict = predictedFluxesDict
