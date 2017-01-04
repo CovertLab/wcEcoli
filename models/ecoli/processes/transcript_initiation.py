@@ -108,12 +108,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		assert (self.isRRna + self.isRProtein + self.isRnap + self.notPolymerase).sum() == self.rnaLengths.asNumber().size
 
-		# self.activationProbMultiplier = 1.
-		# if sim_data.divisionMassVariance == 0.:
-		# 	self.activationProbMultiplier = 1.
-		# else:
-		# 	self.activationProbMultiplier = sim.randomState.normal(loc = 1.0, scale = sim_data.divisionMassVariance)
-		# self.activationProbMultiplier = np.max([0, sim.randomState.normal(loc = 1.0, scale = 0.3)])
+		self.activationProbMultiplierVariance = sim_data.divisionMassVariance
 
 		self.rProteinToRRnaRatioVector = None
 		self.rnaSynthProbFractions = sim_data.process.transcription.rnaSynthProbFraction
@@ -176,7 +171,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			self.rnaSynthProb,
 			)
 
-		self.activationProb = self.activationProb * np.max([0, sim.randomState.normal(loc = 1.0, scale = 0.3)])
+		if self.activationProbMultiplierVariance != 0:
+			self.activationProb = self.activationProb * np.max([0, self.randomState.normal(loc = 1.0, scale = self.activationProbMultiplierVariance)])
 
 		# Sample a multinomial distribution of synthesis probabilities to 
 		# determine what molecules are initialized
@@ -300,7 +296,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		effectiveFractionActive = fracActiveRnap * 1 / (1 - expectedFractionTimeInactive)
 
-		return self.activationProbMultiplier * effectiveFractionActive * expectedTerminationRate / (1 - effectiveFractionActive)
+		return effectiveFractionActive * expectedTerminationRate / (1 - effectiveFractionActive)
 
 	def calculateRrnInitRate(self, rrn_count, elngRate):
 		'''
