@@ -126,8 +126,6 @@ class ReplicationElongation(wholecell.processes.process.Process):
 			else:
 				print "No active polymerase present"
 
-			# import ipdb; ipdb.set_trace()
-
 		if activePolymerasePresent:
 			replicationRound = activeDnaPoly.attr('replicationRound')
 
@@ -142,11 +140,10 @@ class ReplicationElongation(wholecell.processes.process.Process):
 		self.writeToListener("ReplicationData", "criticalMassPerOriC", massPerOrigin)
 		self.writeToListener("ReplicationData", "criticalInitiationMass", self.criticalInitiationMass.asNumber(units.fg))
 
-		if massPerOrigin >= 1.0:
+		if massPerOrigin >= 1.0 and self.chromosomeHalves.total().sum() == 0:
 			initiate = True
 
 		if initiate:
-			# import ipdb; ipdb.set_trace()
 			print "grep_marker replication initiation - time: {}".format(self.time())
 			print "grep_marker cell division occurs - relative time: {}".format(self.time() - self._sim.initialTime())
 			print "grep_marker replication initiation - time + C + D: {}".format(self.time() + (60. + 20.) * 60.)
