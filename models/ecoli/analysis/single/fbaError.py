@@ -123,8 +123,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / COUNTS_UNITS)
 		cellDensity = sim_data.constants.cellDensity.asNumber(MASS_UNITS/VOLUME_UNITS)
 
-		import ipdb; ipdb.set_trace()
-
 		metabolitePoolIDs = sim_data.process.metabolism.metabolitePoolIDs
 		targetConcentrations = sim_data.process.metabolism.metabolitePoolConcentrations.asNumber(COUNTS_UNITS/VOLUME_UNITS)
 
