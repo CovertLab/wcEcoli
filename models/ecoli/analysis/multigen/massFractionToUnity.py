@@ -14,6 +14,7 @@ import wholecell.utils.constants
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
+
 	if not os.path.isdir(seedOutDir):
 		raise Exception, "seedOutDir does not currently exist as a directory"
 
@@ -54,12 +55,14 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
 		mass = TableReader(os.path.join(simOutDir, "Mass"))
 
+		cellMass = mass.readColumn("cellMass")
+
 		massData = np.zeros((len(massNames),time.size))
 
 		for idx, massType in enumerate(massNames):
 			massData[idx,:] = mass.readColumn(massNames[idx])
 
-		massData = massData / massData.sum(axis = 0)
+		massData = massData / cellMass
 
 		for idx, massType in enumerate(massNames):
 			axesList[idx].plot(time / 60, massData[idx,:])
