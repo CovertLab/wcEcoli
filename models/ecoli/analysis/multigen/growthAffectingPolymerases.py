@@ -203,6 +203,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		## Plotting ##
 
 		width = 100
+		if time.asNumber().size < width:
+			width = time.asNumber().size - 1
 
 		# Plot growth rate
 		avgDoublingTime = doublingTime[1:].asNumber(units.min).mean()
@@ -306,9 +308,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax11.plot(time.asNumber(units.min), np.convolve(averageRibosomeElongationRate, np.ones(width) / width, mode = "same"))
 		ax11.axvline(x = time.asNumber(units.min).max(), linewidth=2, color='k', linestyle='--')
 		if gen == 0:
-			y_lim = [averageRibosomeElongationRate[100:].min(), averageRibosomeElongationRate[100:].max()]
+			y_lim = [averageRibosomeElongationRate[width:].min(), averageRibosomeElongationRate[width:].max()]
 		else:
-			y_lim = get_new_ylim(ax11, averageRibosomeElongationRate[100:].min(), averageRibosomeElongationRate[100:].max())
+			y_lim = get_new_ylim(ax11, averageRibosomeElongationRate[width:].min(), averageRibosomeElongationRate[width:].max())
 		ax11.set_ylim(y_lim)
 		ax11.set_ylabel("Eff. ribosome\nelongation rate\n(aa/s)")
 
@@ -317,9 +319,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax12.plot(time.asNumber(units.min), np.convolve(processElongationRate, np.ones(width) / width, mode = "same"))
 		ax12.axvline(x = time.asNumber(units.min).max(), linewidth=2, color='k', linestyle='--')
 		if gen == 0:
-			y_lim = [processElongationRate[100:].min(), processElongationRate[100:].max()]
+			y_lim = [processElongationRate[width:].min(), processElongationRate[width:].max()]
 		else:
-			y_lim = get_new_ylim(ax12, processElongationRate[100:].min(), processElongationRate[100:].max())
+			y_lim = get_new_ylim(ax12, processElongationRate[width:].min(), processElongationRate[width:].max())
 		ax12.set_ylim(y_lim)
 		ax12.set_ylabel("Process ribosome\nelongation rate\n(aa/s)")
 
