@@ -16,7 +16,7 @@ from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 
-def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
+def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
 	if not os.path.isdir(variantDir):
 		raise Exception, "variantDir does not currently exist as a directory"
 
@@ -32,7 +32,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		if n_cells > max_cells_in_gen:
 			max_cells_in_gen = n_cells
 
-	fig, axesList = plt.subplots(ap.n_generation, sharex = True)
+	fig, axesList = plt.subplots(ap.n_generation)
 
 	growth_rate = np.zeros((max_cells_in_gen, ap.n_generation))
 
@@ -40,11 +40,15 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		gen_cells = ap.get_cells(generation = [genIdx])
 		for simDir in gen_cells:
 			simOutDir = os.path.join(simDir, "simOut")
-			growthRate = np.nanmean(TableReader(os.path.join(simOutDir, "Mass")).readColumn("instantaniousGrowthRate"))
-			growthRate = (1 / units.s) * growthRate
-			growthRate = growthRate.asNumber(1 / units.min)
+			# growthRate = np.nanmean(TableReader(os.path.join(simOutDir, "Mass")).readColumn("instantaniousGrowthRate"))
+			# growthRate = (1 / units.s) * growthRate
+			# growthRate = growthRate.asNumber(1 / units.min)
 
-			growth_rate[np.where(simDir == gen_cells)[0], genIdx] = growthRate
+			time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
+			initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
+			doubling_time = (time[-1] - initialTime) * units.s
+			averageGrowthRate = np.log(2) / doubling_time.asNumber(units.min)
+			growth_rate[np.where(simDir == gen_cells)[0], genIdx] = averageGrowthRate
 
 	# Plot initial vs final masses
 	if ap.n_generation == 1:
@@ -52,12 +56,17 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	for idx, axes in enumerate(axesList):
 		if max_cells_in_gen > 1:
-			axes.hist(growth_rate[:,idx].flatten(), np.ceil(np.sqrt(growth_rate[:,idx].size)))
+			axes.hist(growth_rate[:,idx].flatten(), bins=20)
 		else:
 			axes.plot(growth_rate[:,idx], 1, 'x')
 			axes.set_ylim([0, 2])
+
 		axes.axvline(growth_rate[:,idx].mean(), color='k', linestyle='dashed', linewidth=2)
-		axes.text(growth_rate[:,idx].mean(), 1, "Mean: %.3f Var: %.3f"%(growth_rate[:,idx].mean(),growth_rate[:,idx].var()))
+		mean = growth_rate[:,idx].mean()
+		variance = growth_rate[:,idx].var()
+		sd = variance**2.
+		ypos = np.array(axes.get_ylim()).mean()
+		#axes.text(growth_rate[:,idx].mean(), ypos, "Mean:{}\nSD:{}\nSD/Mean:{}"%(mean, sd, sd / mean))
 
 	axesList[-1].set_xlabel("Growth rate (gDCW/gDCW-min))")
 	axesList[ap.n_generation / 2].set_ylabel("Frequency")
