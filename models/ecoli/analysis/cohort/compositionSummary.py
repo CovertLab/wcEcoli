@@ -28,7 +28,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	n_cells = ap.get_cells().size
 
-	fig, axesList = plt.subplots(3,1)
+	fig, axesList = plt.subplots(5,1)
 
 	for simDir in ap.get_cells():
 		simOutDir = os.path.join(simDir, "simOut")
@@ -38,6 +38,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		massDataFile = TableReader(os.path.join(simOutDir, "Mass"))
 		rnaMass = massDataFile.readColumn("rnaMass")
 		proteinMass = massDataFile.readColumn("proteinMass")
+		smallMoleculeMass = massDataFile.readColumn("smallMoleculeMass")
 		cellMass = massDataFile.readColumn("cellMass")
 		massDataFile.close()
 
@@ -47,11 +48,16 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		axesList[0].plot(time / 60., rna_protein_ratio)
 		axesList[1].plot(time / 60., rnaMass / cellMass)
 		axesList[2].plot(time / 60., proteinMass / cellMass)
+		axesList[3].plot(time / 60., smallMoleculeMass / cellMass)
+		axesList[4].plot(time / 60., (rnaMass + proteinMass + smallMoleculeMass) / cellMass)
 
-	axesList[2].set_xlabel("Time (min)")
+	axesList[4].set_xlabel("Time (min)")
+
 	axesList[0].set_ylabel("RNA/Protein\n(mass/mass)")
 	axesList[1].set_ylabel("RNA mass\nfraction")
 	axesList[2].set_ylabel("Protein mass\nfraction")
+	axesList[3].set_ylabel("Small molec mass\nfraction")
+	axesList[4].set_ylabel("Dry mass\nfraction")
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
