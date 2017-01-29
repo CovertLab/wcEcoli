@@ -114,8 +114,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.translationSaturation = sim_data.translationSaturation
 		###### VARIANT CODE #######
 
+		self.setElngRate = None
+
 	def calculateRequest(self):
-		self.ribosomeElongationRate = self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s)
+		if self.setElngRate != None:
+			self.ribosomeElongationRate = self.setElngRate
+		else:
+			self.ribosomeElongationRate = self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s)
 
 		self.activeRibosomes.requestAll()
 
