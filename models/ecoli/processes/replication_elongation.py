@@ -174,7 +174,7 @@ class ReplicationElongation(wholecell.processes.process.Process):
 			sequenceLength = np.zeros(numberOfNewPolymerase, dtype = np.int8)
 			replicationRound = np.ones(numberOfNewPolymerase, dtype=np.int8) * (replicationRound.max() + 1)
 			chromosomeIndex = np.zeros(numberOfNewPolymerase, dtype=np.int8)
-			chromosomeIndex[numberOfNewPolymerase / 2:] = 1.
+			chromosomeIndex[numberOfNewPolymerase / self.full_chromosome.count():] = 1.
 
 			activeDnaPoly.attrIs(
 				sequenceIdx = sequenceIdx,
