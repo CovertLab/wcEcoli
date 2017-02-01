@@ -226,7 +226,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, sim):
 		translationCapacity = elngRate * nRibosomes * randomState.normal(1, 0.2)
 
 		mean = len(moleculeSet) * 0.5
-		sd = 0.1 * mean
+		sd = 0.000001 * mean
 
 		n_d1 = int(np.round(randomState.normal(mean, sd)))
 		n_d2 = len(moleculeSet) - n_d1
