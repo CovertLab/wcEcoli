@@ -91,31 +91,31 @@ class CellDivision(wholecell.listeners.listener.Listener):
 		# End simulation once the mass of an average cell is
 		# added to current cell.
 
-		fullChrom = self.uniqueMoleculeContainer.objectsInCollection("fullChromosome")
-		if len(fullChrom):
-			# print "grep_marker cell division check - full chromosome division times: {}".format(fullChrom.attr("division_time"))
+		# fullChrom = self.uniqueMoleculeContainer.objectsInCollection("fullChromosome")
+		# if len(fullChrom):
+		# 	# print "grep_marker cell division check - full chromosome division times: {}".format(fullChrom.attr("division_time"))
 
-			division_times = fullChrom.attr("division_time")
-			divide_at_time = division_times.min()
+		# 	division_times = fullChrom.attr("division_time")
+		# 	divide_at_time = division_times.min()
 
-			if self.time() >= divide_at_time:
-				print "grep_marker cell division occurs - time: {}".format(self.time())
-				print "grep_marker cell division occurs - relative time: {}".format(self.time() - self._sim.initialTime())
-				print "grep_marker cell division occurs - divide time: {}".format(divide_at_time)
-				print "grep_marker cell division occurs - cell mass: {}".format(self.cellMass)
-
-
-				fullChrom.delByIndexes(np.where(division_times == divide_at_time)[0])
-
-				if not uneven_counts.any():
-				# if self.fullChromosomeView.count() > 1:
-					self._sim.cellCycleComplete()
+		# 	if self.time() >= divide_at_time:
+		# 		print "grep_marker cell division occurs - time: {}".format(self.time())
+		# 		print "grep_marker cell division occurs - relative time: {}".format(self.time() - self._sim.initialTime())
+		# 		print "grep_marker cell division occurs - divide time: {}".format(divide_at_time)
+		# 		print "grep_marker cell division occurs - cell mass: {}".format(self.cellMass)
 
 
-		# if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncreaseDict[self._sim.processes["PolypeptideElongation"].currentNutrients].asNumber(units.fg) * self.divisionMassMultiplier:
-		# 	if not uneven_counts.any():
-		# 	# if self.fullChromosomeView.count() > 1:
-		# 		self._sim.cellCycleComplete()
+		# 		fullChrom.delByIndexes(np.where(division_times == divide_at_time)[0])
+
+		# 		if not uneven_counts.any():
+		# 		# if self.fullChromosomeView.count() > 1:
+		# 			self._sim.cellCycleComplete()
+
+
+		if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncreaseDict[self._sim.processes["PolypeptideElongation"].currentNutrients].asNumber(units.fg) * self.divisionMassMultiplier:
+			if not uneven_counts.any():
+			# if self.fullChromosomeView.count() > 1:
+				self._sim.cellCycleComplete()
 
 
 		# if self.dryMass >= 2. * self.dryMassInitial:
