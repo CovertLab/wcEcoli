@@ -15,7 +15,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
-def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
+def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
 	if not os.path.isdir(variantDir):
 		raise Exception, "variantDir does not currently exist as a directory"
 
@@ -25,6 +25,10 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# Get all cells in each seed
 	ap = AnalysisPaths(variantDir, cohort_plot = True)
 
+	if ap.n_generation == 1:
+		print "Need more data to create addedMass"
+		return
+
 	max_cells_in_gen = 0
 	for genIdx in range(ap.n_generation):
 		n_cells = len(ap.get_cells(generation = [genIdx]))
@@ -32,63 +36,50 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			max_cells_in_gen = n_cells
 
 	# fig, axesList = plt.subplots(ap.n_generation + 1, sharey = True, sharex = True, subplot_kw=dict((("aspect",0.4),("adjustable",'box-forced'))))
-	axesList = []
-	for idx in range(ap.n_generation):
-		args = {
-			"shape" : (ap.n_generation,2),
-			"loc" : (idx,0),
-		}
+	
 
-		if len(axesList):
-			args["sharex"] = axesList[-1]
-
-		axesList.append(plt.subplot2grid(**args))
-
-	axesList.append(plt.subplot2grid((ap.n_generation,2), (0,1), rowspan=2, sharex=axesList[-1]))
-
-	axesList.append(plt.subplot2grid((ap.n_generation,2), (2,1), rowspan=2, sharex=axesList[-1]))
+	fig, axesList = plt.subplots(2,1, sharex = True, sharey = True)
+	fig.set_figwidth(5)
+	fig.set_figheight(10)
 
 	initial_masses = np.zeros((max_cells_in_gen, ap.n_generation))
 	final_masses = np.zeros((max_cells_in_gen, ap.n_generation))
 
+	n_cells = 0
 	for genIdx in range(ap.n_generation):
 		gen_cells = ap.get_cells(generation = [genIdx])
+		if genIdx > 0:
+			n_cells += len(gen_cells)
 		for simDir in gen_cells:
-			simOutDir = os.path.join(simDir, "simOut")
-			mass = TableReader(os.path.join(simOutDir, "Mass"))
-			cellMass = mass.readColumn("cellMass")
+			try:
+				simOutDir = os.path.join(simDir, "simOut")
+				mass = TableReader(os.path.join(simOutDir, "Mass"))
+				cellMass = mass.readColumn("cellMass")
 
-			initial_masses[np.where(simDir == gen_cells)[0], genIdx] = cellMass[0] / 1000.
-			final_masses[np.where(simDir == gen_cells)[0], genIdx] = cellMass[-1] / 1000.
-			added_masses = final_masses - initial_masses
+				initial_masses[np.where(simDir == gen_cells)[0], genIdx] = cellMass[0] / 1000.
+				final_masses[np.where(simDir == gen_cells)[0], genIdx] = cellMass[-1] / 1000.
+				added_masses = final_masses - initial_masses
+			except IndexError:
+				pass
 
 	# Plot initial vs final masses
-	if ap.n_generation == 1:
-		axesList = [axesList]
-
-	# Plot for each generation
-	for idx, axes in enumerate(axesList[:-2]):
-		axes.plot(initial_masses[:, idx], added_masses[:, idx], 'x')
 
 	# Plot for all but first generation
-	axesList[-2].plot(initial_masses[:,1:], added_masses[:,1:], 'x')
+	axesList[0].plot(initial_masses[:,1:], added_masses[:,1:], 'x')
 
 	# Plot contours for all but first generation
-	H, xedges, yedges = np.histogram2d(initial_masses[:,1:].flatten(), added_masses[:,1:].flatten(), bins=20)
+	H, xedges, yedges = np.histogram2d(initial_masses[:,1:].flatten(), added_masses[:,1:].flatten(), bins=np.round(n_cells/10))
 	# counts,ybins,xbins,image = matplotlib.pyplot.hist2d(initial_masses[:,1:].flatten(), added_masses[:,1:].flatten(), bins=20)
 
-	# axesList[-1].contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()])
+	# axesList[1].contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()])
 	X, Y = np.meshgrid(xedges, yedges)
-	axesList[-1].contour(X[:-1,:-1], Y[:-1,:-1], H.transpose())
+	axesList[1].contour(X[:-1,:-1], Y[:-1,:-1], H.transpose())
 
-	axesList[-2].set_xlabel("Initial mass (pg)")
-	axesList[ap.n_generation / 2].set_ylabel("Added mass (pg)")
+	axesList[0].set_title("n = {}\nAll generations after first".format(n_cells))
+	axesList[0].set_ylabel("Added mass (pg)")
 
-	axesList[-2].set_title("All generations after first")
-	axesList[-2].set_ylabel("Added mass (pg)")
-
-	axesList[-1].set_xlabel("Initial mass (pg)")
-	axesList[-1].set_ylabel("Added mass (pg)")
+	axesList[1].set_xlabel("Initial mass (pg)")
+	axesList[1].set_ylabel("Added mass (pg)")
 
 	plt.subplots_adjust(hspace = 0.2, wspace = 0.5)
 
