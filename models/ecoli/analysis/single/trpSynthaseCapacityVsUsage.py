@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 """
-Plot reaction max rate over course of the simulation.
+Plot enzymatic capacity of tryptophan synthase vs amount of tryptophan needed by translation
 
-@date: Created 7/02/2015
-@author: Morgan Paull
+@author: Derek Macklin
 @organization: Covert Lab, Department of Bioengineering, Stanford University
+@date: Created 1/22/2017
 """
-
-from __future__ import division
 
 import argparse
 import os
+import cPickle
 
 import numpy as np
 import matplotlib
@@ -20,39 +19,65 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
-from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
+BURN_IN = 10
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
-	return
+
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
 
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
 
-	enzymeKineticsdata = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
-	
-	enzymeKineticsArray = enzymeKineticsdata.readColumn("reactionKineticPredictions")
+	sim_data = cPickle.load(open(simDataFile, "r"))
+	trpIdx = sim_data.moleculeGroups.aaIDs.index("TRP[c]")
 
-	reactionIDs = enzymeKineticsdata.readAttribute("reactionIDs")
-	
+	growthLimits = TableReader(os.path.join(simOutDir, "GrowthLimits"))
+
+	trpRequests = growthLimits.readColumn("aaRequestSize")[BURN_IN:, trpIdx]
+
+	growthLimits.close()
+
+	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
+
+	moleculeIds = bulkMolecules.readAttribute("objectNames")
+
+	trpSynIdx = moleculeIds.index("TRYPSYN[c]")
+
+	trpSynCounts = bulkMolecules.readColumn("counts")[BURN_IN:, trpSynIdx]
+
+	bulkMolecules.close()
+
+	trpSynKcat = 2**( (37. - 25.) / 10.) * 4.1 # From PMID 6402362 (kcat of 4.1/s measured at 25 C)
+
 	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
-	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
+	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")[BURN_IN:] - initialTime
+	timeStep = TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")[BURN_IN:]
 
-	enzymeKineticsdata.close()
+
+	trpSynMaxCapacity = trpSynKcat * trpSynCounts * timeStep
 
 	plt.figure(figsize = (8.5, 11))
-	plt.title("Enzyme Kinetics")
 
-	for idx, timeCourse in enumerate(enzymeKineticsArray.T):
-		plt.plot(time / 60, timeCourse, label=reactionIDs[idx][:15])
+	plt.subplot(3, 1, 1)
 
+	plt.plot(time / 60., trpSynMaxCapacity, linewidth = 2)
+	plt.ylabel("Tryptophan Synthase Max Capacity")
+
+	plt.subplot(3, 1, 2)
+
+	plt.plot(time / 60., trpRequests, linewidth = 2)
+	plt.ylabel("TRP requested by translation")
+
+	plt.subplot(3, 1, 3)
+
+	plt.plot(time / 60., trpSynMaxCapacity / trpRequests, linewidth = 2)
 	plt.xlabel("Time (min)")
-	plt.ylabel("Reaction Rate ({counts_units}/{volume_units}.{time_units})".format(counts_units=COUNTS_UNITS.strUnit(), volume_units=VOLUME_UNITS.strUnit(), time_units=TIME_UNITS.strUnit()))
-	plt.legend(framealpha=.5, fontsize=6)
+	plt.ylabel("(Max capacity) / (Request)")
+
 
 	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName)
+	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
 if __name__ == "__main__":
@@ -68,5 +93,5 @@ if __name__ == "__main__":
 	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
 
 	args = parser.parse_args().__dict__
-	
+
 	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"])

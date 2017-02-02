@@ -36,6 +36,12 @@ raiseForTruncatedRxns = False
 warnForTruncatedRxns = False
 warnForMultiTruncatedRxns = False
 
+USE_ALL_CONSTRAINTS = False # False will remove problematic constraints from objective
+CONSTRAINTS_TO_DISABLE = [
+	"R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.",
+	"SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.",
+	]
+
 reverseReactionString = "{} (reverse)"
 
 
@@ -370,6 +376,7 @@ class Metabolism(object):
 		kineticsSubstrates = sp.symbols(["kineticsSubstrates[%d]" % idx for idx in xrange(len(kineticsSubstratesList))])
 		enzymes = sp.symbols(["enzymes[%d]" % idx for idx in xrange(len(enzymeIdList))])
 		constraints = [sp.symbol.S.Zero] * len(constraintIdList)
+		constraintIsKcatOnly = np.zeros(len(constraintIdList))
 
 		for constraintIdx, constraintId in enumerate(constraintIdList):
 			constraint = constraintDict[constraintId]
@@ -378,6 +385,8 @@ class Metabolism(object):
 
 			enzymeIdx = enzymeIdList.index(constraint["enzymeIDs"])
 			constraints[constraintIdx] = constraint["kcatAdjusted"].asNumber(1 / units.s) * enzymes[enzymeIdx]
+			if len(constraint["kM"]) == 0 and len(constraint["kI"]) == 0:
+				constraintIsKcatOnly[constraintIdx] = 1
 
 			concSubstratePos = 0
 			for kM in constraint["kM"]:
@@ -425,6 +434,9 @@ class Metabolism(object):
 		self.kineticsSubstratesList = kineticsSubstratesList
 		self.constraintDict = constraintDict
 		self.reactionsToConstraintsDict = reactionsToConstraintsDict
+		self.constraintIsKcatOnly = constraintIsKcatOnly
+		self.useAllConstraints = USE_ALL_CONSTRAINTS
+		self.constraintsToDisable = CONSTRAINTS_TO_DISABLE
 
 
 
@@ -527,7 +539,9 @@ class ConcentrationUpdates(object):
 		concDict = dict(zip(metaboliteTargetIds, concentrations))
 
 		for moleculeName, setAmount in self.moleculeSetAmounts.iteritems():
-			if self._isNutrientExchangePresent(nutrientFluxes, moleculeName):
+			if self._isNutrientExchangePresent(nutrientFluxes, moleculeName) and (moleculeName[:-3] + "[c]" not in self.moleculeScaleFactors or moleculeName == "L-SELENOCYSTEINE[c]"):
+				concDict[moleculeName] = setAmount
+			if moleculeName in self.moleculeScaleFactors and self._isNutrientExchangePresent(nutrientFluxes, moleculeName[:-3] + "[p]"):
 				concDict[moleculeName] = setAmount
 
 		return concDict
