@@ -43,18 +43,33 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	RNase_RnaIDS = np.concatenate((endoRnase_RnaIDs, exoRnase_RnaIDs))
 	RNase_IDS = np.concatenate((RNase_IDS, RNase_RnaIDS))
 
+	
+	# RNase P and PNP
+	RNase_IDS = ['EG10862_RNA[c]', 'EG10743_RNA[c]', 'EG10862-MONOMER[c]', 'EG10743-MONOMER[c]']
+
+
 	rnapRnaIndexes = np.array([moleculeIds.index(rnapRnaId) for rnapRnaId in RNase_IDS], np.int)
 	rnapRnaCounts = bulkMolecules.readColumn("counts")[:, rnapRnaIndexes]
 	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
 	bulkMolecules.close()
 
-	plt.figure(figsize = (8.5, 11))
-	plt.rc('xtick', labelsize=7) 
-	plt.rc('ytick', labelsize=5)
+	# plt.figure(figsize = (8.5, 11))
+	# plt.rc('xtick', labelsize=7) 
+	# plt.rc('ytick', labelsize=5)
+
+	plt.figure(figsize = (8.5, 5))
+	plt.rc('xtick', labelsize=12) 
+	plt.rc('ytick', labelsize=12)
 
 	count = 0
 	count_bis = len(RNase_IDS) / 2
+
+	freq_observed = []
+
+	# import ipdb
+	# ipdb.set_trace()
+
 	for subplotIdx in xrange(0, len(RNase_IDS)):
 		if not subplotIdx % 2:
 			rnapRnaCountsIdx = count
@@ -63,7 +78,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			rnapRnaCountsIdx = count_bis
 			count_bis += 1
 
-		ax = plt.subplot(18, 2, 1 + subplotIdx)
+		ax = plt.subplot(len(RNase_IDS) / 2, 2, 1 + subplotIdx)
 
 		plt.plot(time / 60., rnapRnaCounts[:, rnapRnaCountsIdx])
 
@@ -74,21 +89,21 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			for xlabel_i in frame.axes.get_xticklabels():
 				xlabel_i.set_visible(False)
 
-		if subplotIdx >= len(RNase_IDS) - 2:
-			plt.xlabel("Time (min)", fontsize = 7)
+		# if subplotIdx >= len(RNase_IDS) - 2:
+		# 	plt.xlabel("Time (min)", fontsize = 7)
 
-		if not subplotIdx % 2:	
-			plt.ylabel("Protein counts", fontsize = 5)
-		if subplotIdx % 2:
-			plt.ylabel("RNA counts", fontsize = 5)
+		# if not subplotIdx % 2:	
+		# 	plt.ylabel("RNA counts", fontsize = 10)
+		# if subplotIdx % 2:
+		# 	plt.ylabel("Protein counts", fontsize = 10)
 
-		plt.title(RNase_IDS[rnapRnaCountsIdx], fontsize = 7) 
+		# plt.title(RNase_IDS[rnapRnaCountsIdx], fontsize = 10) 
 
 		max_yticks = 4
 		yloc = plt.MaxNLocator(max_yticks)
 		ax.yaxis.set_major_locator(yloc)
 
-		signal = rnapRnaCounts[:, rnapRnaCountsIdx]
+		signal = rnapRnaCounts[:, subplotIdx]
 		if subplotIdx == 17:
 			np.savetxt(os.path.join(plotOutDir, 'PNPase-MONOMER[c].txt'), signal)
 		if subplotIdx == 35:
@@ -104,7 +119,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		# computing frequencies 
 		n = signal.size
 		timestep = 1 # second
-		freq = np.fft.fftfreq(n, d=timestep)
+		freq = np.fft.fftfreq(n, d = timestep)
 		fft_freq = sorted(zip(abs(fourier),freq))[n-6:n]
 
 		# identifing peaks (frequency and period) with maximum PSD
@@ -112,8 +127,19 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			if fft_freq[i][1] > 0.: # only positive frequencies
 				if 1. / fft_freq[i][1] < 3600.: # only periods lower than the doubling time
 					if abs(fft_freq[i][0] - M) / S > 3: # strong and significant fft
-						pass
-						# print RNase_IDS[rnapRnaCountsIdx], 1. / fft_freq[i][1] / 60. # period (min)
+						if subplotIdx == 17: # PNPase monomer
+							# print RNase_IDS[subplotIdx], 1. / fft_freq[i][1] / 60. # period (min)
+							freq_observed.append([1, 1. / fft_freq[i][1] / 60.])
+
+						if subplotIdx == 35: # PNPase rna
+							# print RNase_IDS[subplotIdx], 1. / fft_freq[i][1] / 60. # period (min)
+							freq_observed.append([0, 1. / fft_freq[i][1] / 60.])
+
+
+	index_generation = plotOutDir[plotOutDir.index('generation_') + 11 : plotOutDir.index('generation_') + 17]
+	fileFrequencies = 'PNPase_frequencies_' + index_generation + '.txt'
+	np.savetxt(os.path.join(plotOutDir, fileFrequencies), freq_observed)
+
 
 	plt.subplots_adjust(hspace = 0.75, top = 0.95, bottom = 0.05)
 	plt.savefig(os.path.join(plotOutDir, plotOutFileName))

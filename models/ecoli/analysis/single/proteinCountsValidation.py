@@ -89,35 +89,43 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	wisniewskiCounts = validation_data.protein.wisniewski2014Data["avgCounts"]
 	proteinIds = validation_data.protein.wisniewski2014Data["monomerId"].tolist()
 
-	fig, ax = plt.subplots(2, sharey=True, figsize = (8.5, 11))
+	# fig, ax = plt.subplots(2, sharey=True, figsize = (8.5, 11))
+	fig, ax = plt.subplots(1, sharey=True, figsize = (4.0, 4.0))
+	plt.rc('xtick', labelsize=14) 
+	plt.rc('ytick', labelsize=14)
+
 
 	# Wisniewski Counts
-	points = ax[0].scatter(np.log10(wisniewskiCounts + 1), np.log10(view_validation.counts() + 1), c='w', edgecolor = 'k', alpha=.7)
-	ax[0].set_xlabel("log10(Wisniewski 2014 Counts)")
-	ax[0].set_title("Pearson r: %0.2f" % pearsonr(np.log10(view_validation.counts() + 1), np.log10(wisniewskiCounts + 1))[0])
+	# points = ax[0].scatter(np.log10(wisniewskiCounts + 1), np.log10(view_validation.counts() + 1), c='w', edgecolor = 'k', alpha=.7)
+	# ax[0].set_xlabel("Log 10(Wisniewski 2014 Counts)")
+	# ax[0].set_title("Pearson r: %0.2f" % pearsonr(np.log10(view_validation.counts() + 1), np.log10(wisniewskiCounts + 1))[0])
 
 	labels = list(proteinIds)
-	tooltip = plugins.PointLabelTooltip(points, labels)
-	plugins.connect(fig, tooltip)
+	# tooltip = plugins.PointLabelTooltip(points, labels)
+	# plugins.connect(fig, tooltip)
 
 	# Schmidt Counts
 	schmidtLabels = validation_data.protein.schmidt2015Data["monomerId"]
 	schmidtCounts = validation_data.protein.schmidt2015Data["glucoseCounts"]
-	schmidtPoints = ax[1].scatter(
+	schmidtPoints = ax.scatter(
+	# schmidtPoints = ax[1].scatter(
 		np.log10(schmidtCounts + 1),
 		np.log10(view_validation_schmidt.counts() + 1),
-		c='w', edgecolor = 'k', alpha=.7)
-	ax[1].set_xlabel("log10(Schmidt 2015 Counts)")
-	ax[1].set_title("Pearson r: %0.2f" % pearsonr(np.log10(view_validation_schmidt.counts() + 1), np.log10(schmidtCounts + 1))[0])
+		facecolor='blue', edgecolor = 'k', alpha=.7)
+	# ax[1].set_xlabel("Log 10(Schmidt 2015 Counts)")
+	# ax[1].set_title("Pearson r: %0.4f" % pearsonr(np.log10(view_validation_schmidt.counts() + 1), np.log10(schmidtCounts + 1))[0])
+	ax.set_xlabel("Log10 (Schmidt 2015 Counts)")
+	# ax.set_title("Pearson r: %0.2f" % pearsonr(np.log10(view_validation_schmidt.counts() + 1), np.log10(schmidtCounts + 1))[0])
 
 	tooltip = plugins.PointLabelTooltip(schmidtPoints, list(schmidtLabels))
 	plugins.connect(fig, tooltip)
 
-	plt.ylabel("log10(Simulation Average Counts)")
+	plt.ylabel("Log10 (Simulation Average Counts)")
 	# NOTE: This Pearson correlation goes up (at the time of writing) about 0.05 if you only
 	# include proteins that you have translational efficiencies for
 	plt.xlim(xmin=0)
 	plt.ylim(ymin=0)
+
 
 	from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
@@ -132,10 +140,10 @@ if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument("simOutDir", help = "Directory containing simulation output", type = str)
-	parser.add_argument("validationDataFile", help = "File containing loaded and pickled validation data", type = str)
 	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
 	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
 	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
+	parser.add_argument("--validationDataFile", help = "KB file name", type = str, default = "None")
 
 	args = parser.parse_args().__dict__
 
