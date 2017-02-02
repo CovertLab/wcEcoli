@@ -50,6 +50,11 @@ def divide_cell(sim):
 	cPickle.dump(daughter_elng_rates["d1_elng_rate"], open(os.path.join(sim._outputDir, "Daughter1", "ElngRate.cPickle"),'wb'))
 	cPickle.dump(daughter_elng_rates["d2_elng_rate"], open(os.path.join(sim._outputDir, "Daughter2", "ElngRate.cPickle"),'wb'))
 
+	cPickle.dump(daughter_elng_rates["d1_elng_rate_factor"], open(os.path.join(sim._outputDir, "Daughter1", "elng_rate_factor.cPickle"),'wb'))
+	cPickle.dump(daughter_elng_rates["d2_elng_rate_factor"], open(os.path.join(sim._outputDir, "Daughter2", "elng_rate_factor.cPickle"),'wb'))
+
+
+
 	# Save daughter cell initial time steps
 	saveTime(sim.time(), os.path.join(sim._outputDir, "Daughter1", "Time"), sim.timeStepSec())
 	saveTime(sim.time(), os.path.join(sim._outputDir, "Daughter2", "Time"), sim.timeStepSec())
@@ -221,14 +226,19 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, sim):
 	if len(moleculeSet) > 0:
 
 		polyElng = sim.processes["PolypeptideElongation"]
+
+		environmentalElongationRate = polyElng.ribosomeElongationRateDict[polyElng.currentNutrients].asNumber(units.aa / units.s)
+
 		elngRate = np.min([polyElng.ribosomeElongationRateDict[polyElng.currentNutrients].asNumber(units.aa / units.s), 21.])
 		nRibosomes = len(uniqueMolecules.container.objectsInCollection("activeRibosome"))
-		translationCapacity = elngRate * nRibosomes * randomState.normal(1, 0.2)
+		noiseMultiplier = randomState.normal(1, 0.2)
+		translationCapacity = elngRate * nRibosomes * noiseMultiplier
 
-		mean = len(moleculeSet) * 0.5
-		sd = 0.000001 * mean
+		# mean = len(moleculeSet) * 0.5
+		# sd = 0.000001 * mean
 
-		n_d1 = int(np.round(randomState.normal(mean, sd)))
+		# n_d1 = int(np.round(randomState.normal(mean, sd)))
+		n_d1 = randomState.binomial(len(moleculeSet), 0.5)
 		n_d2 = len(moleculeSet) - n_d1
 		assert n_d1 + n_d2 == len(moleculeSet)
 
@@ -238,6 +248,8 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, sim):
 		daughter_elng_rates = {
 						"d1_elng_rate" : d1_rib_elng_rate,
 						"d2_elng_rate" : d2_rib_elng_rate,
+						"d1_elng_rate_factor" : d1_rib_elng_rate / environmentalElongationRate,
+						"d2_elng_rate_factor" : d2_rib_elng_rate / environmentalElongationRate,
 						}
 
 		d1_bool = np.zeros(len(moleculeSet), dtype = bool)

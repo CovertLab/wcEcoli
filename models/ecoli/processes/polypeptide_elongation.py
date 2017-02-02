@@ -115,12 +115,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		###### VARIANT CODE #######
 
 		self.setElngRate = None
+		self.elngRateFactor = 1.
 
 	def calculateRequest(self):
-		if self.setElngRate != None:
-			self.ribosomeElongationRate = self.setElngRate
-		else:
-			self.ribosomeElongationRate = self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s)
+		self.ribosomeElongationRate = self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s)
 
 		self.activeRibosomes.requestAll()
 
