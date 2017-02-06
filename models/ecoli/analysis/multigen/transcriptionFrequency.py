@@ -20,6 +20,7 @@ import wholecell.utils.constants
 from wholecell.utils import units
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
+	
 	if not os.path.isdir(seedOutDir):
 		raise Exception, "seedOutDir does not currently exist as a directory"
 
@@ -44,6 +45,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	transcribedBool = []
 	simulatedSynthProbs = []
 	for simDir in allDir:
+
 		simOutDir = os.path.join(simDir, "simOut")
 
 		rnaSynthProb = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
@@ -66,6 +68,14 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	transcribedBool = np.array(transcribedBool)
 	simulatedSynthProbs = np.array(simulatedSynthProbs)
 
+
+	# Save data into txt file
+	ProbTranscriptPerGeneration = sum(transcribedBool)
+	FLOATS = np.array(ProbTranscriptPerGeneration)
+	NAMES  = np.array(mRnaNames)
+	DAT =  np.column_stack((NAMES, FLOATS))
+	np.savetxt(os.path.join(plotOutDir, 'Prob_1mRNAperGeneration.txt'), DAT, delimiter = " ", fmt = "%s")
+
 	# Plot frequency vs. synthesis prob
 	fig = plt.figure(figsize = (12, 12))
 	ax = plt.subplot(1, 1, 1)
@@ -87,6 +97,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax.set_ylabel("Number of genes", fontsize = 14)
 	exportFigure(plt, plotOutDir, plotOutFileName + "__histogram", metadata)
 	plt.close("all")
+
+	import ipdb; ipdb.set_trace()
 
 	# Bokeh
 	from bokeh.plotting import figure, output_file, ColumnDataSource, show
