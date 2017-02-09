@@ -158,8 +158,26 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	existFractionPerMonomer = monomerExistMultigen.mean(axis=0)
 	averageFoldChangePerMonomer = ratioFinalToInitialCountMultigen.mean(axis=0)
-	averageInitiationEventsPerMonomer = initiationEventsPerMonomerMultigen.mean(axis=0) + 1e-1
+	averageInitiationEventsPerMonomer = initiationEventsPerMonomerMultigen.mean(axis=0)
+	stdInitiationEventsPerMonomer = initiationEventsPerMonomerMultigen.std(axis=0)
+	cvInitiationEventsPerMonomer = (stdInitiationEventsPerMonomer + 1e-9) / (averageInitiationEventsPerMonomer + 1e-9)
 
+	fig, ax = plt.subplots(1,1)
+	ax.semilogy(cvInitiationEventsPerMonomer, ratioFinalToInitialCountMultigen.mean(axis=0), '.', linewidth=0, alpha = 0.25, markeredgewidth=0.)
+	ax.set_xlabel("CV of transcription events per monomer " + r"$(\frac{\sigma}{\mu})$", fontsize=FONT_SIZE)
+	ax.set_ylabel("Average fold change per\nmonomer over {} generations".format(ap.n_generation), fontsize = FONT_SIZE)
+	plt.tick_params(
+		axis='y',          # changes apply to the x-axis
+		which='both',      # both major and minor ticks are affected
+		right='off',      # ticks along the bottom edge are off
+		left='on',         # ticks along the top edge are off
+		)
+	whitePadSparklineAxis(ax)
+
+	from wholecell.analysis.analysis_tools import exportFigure
+	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
+	plt.close("all")
+	return
 
 	mws = sim_data.getter.getMass(sim_data.process.translation.monomerData['id'])
 	monomerInitialMasses = (mws * monomerCountInitialMultigen / sim_data.constants.nAvogadro)
@@ -189,8 +207,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# scatterAxis.axhline(2.0, linewidth=0.5, color='black', linestyle="--", xmin = 0.5, xmax = 1.)
 	xhistAxis = plt.subplot2grid((4,5), (0,0), colspan=3, sharex = scatterAxis)
 	yhistAxis = plt.subplot2grid((4,5), (1,3), rowspan=3)#, sharey = scatterAxis)
-	yhistAxis.axhline(1.0, linewidth=1.0, color='black', linestyle="--")
-	yhistAxis.axhline(2.0, linewidth=1.0, color='black', linestyle="--")
+	yhistAxis.axhline(1.0, linewidth=0.5, color='black', linestyle="--")
+	yhistAxis.axhline(2.0, linewidth=0.5, color='black', linestyle="--")
 	#yhistAxis_2 = plt.subplot2grid((4,5), (1,4), rowspan=3, sharey = scatterAxis)
 	#yhistAxis_2.axhline(1.0, linewidth=0.5, color='black', linestyle="--")
 	#yhistAxis_2.axhline(2.0, linewidth=0.5, color='black', linestyle="--")
@@ -212,7 +230,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	
 
 	scatterAxis.set_ylabel("Average fold change per\nmonomer over {} generations".format(ap.n_generation), fontsize = FONT_SIZE)
-	scatterAxis.set_xlabel("Average number of transcription events\nper monomer over {} generations".format(ap.n_generation), fontsize = FONT_SIZE)
+	scatterAxis.set_xlabel("Average number of transcription\nevents per monomer over {} generations".format(ap.n_generation), fontsize = FONT_SIZE)
 
 	# lims = yhistAxis.get_ylim()
 	# step = (lims[1] - lims[0]) / 125
@@ -244,39 +262,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	for label in yhistAxis.xaxis.get_ticklabels()[::2]:
 		label.set_visible(False)
-
-	whitePadSparklineAxis(scatterAxis)
-	whitePadSparklineAxis(yhistAxis)
-	whitePadSparklineAxis(xhistAxis)
-
-	scatterAxis.tick_params(
-		axis='both',          # which axis
-		which='both',      # both major and minor ticks are affected
-		right='off',      # ticks along the bottom edge are off
-		left='on',         # ticks along the top edge are off
-		top = 'off',
-		bottom = 'on',
-		)
-
-	yhistAxis.tick_params(
-		axis='both',          # which axis
-		which='both',      # both major and minor ticks are affected
-		right='off',      # ticks along the bottom edge are off
-		left='on',         # ticks along the top edge are off
-		top = 'off',
-		bottom = 'on',
-		)
-
-	xhistAxis.tick_params(
-		axis='both',          # which axis
-		which='both',      # both major and minor ticks are affected
-		right='off',      # ticks along the bottom edge are off
-		left='on',         # ticks along the top edge are off
-		top = 'off',
-		bottom = 'on',
-		)
-
-	plt.subplots_adjust(wspace=0.3, hspace=0.3, bottom = 0.2)
 
 	# for label in yhistAxis_2.xaxis.get_ticklabels()[::2]:
 	# 	label.set_visible(False)
