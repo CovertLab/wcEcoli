@@ -21,6 +21,9 @@ import wholecell.utils.constants
 
 from wholecell.io.tablereader import TableReader
 
+from wholecell.utils.sparkline import whitePadSparklineAxis
+
+
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
 	if not os.path.isdir(simOutDir):
@@ -67,8 +70,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	freq_observed = []
 
-	# import ipdb
-	# ipdb.set_trace()
+	# import ipdb; ipdb.set_trace()
 
 	for subplotIdx in xrange(0, len(RNase_IDS)):
 		if not subplotIdx % 2:
@@ -79,6 +81,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			count_bis += 1
 
 		ax = plt.subplot(len(RNase_IDS) / 2, 2, 1 + subplotIdx)
+
+		whitePadSparklineAxis(ax)
 
 		plt.plot(time / 60., rnapRnaCounts[:, rnapRnaCountsIdx])
 

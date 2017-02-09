@@ -15,7 +15,7 @@ import os
 import numpy as np
 from scipy import stats
 import matplotlib
-matplotlib.use("Agg")
+# matplotlib.use("Agg")
 import matplotlib.patches as mpatches
 from matplotlib import pyplot as plt
 import cPickle
@@ -90,7 +90,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	proteinIds = validation_data.protein.wisniewski2014Data["monomerId"].tolist()
 
 	# fig, ax = plt.subplots(2, sharey=True, figsize = (8.5, 11))
-	fig, ax = plt.subplots(1, sharey=True, figsize = (4.0, 4.0))
+	fig, ax = plt.subplots(1, figsize = (4.0, 4.0))
 	plt.rc('xtick', labelsize=14) 
 	plt.rc('ytick', labelsize=14)
 
@@ -111,20 +111,29 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	# schmidtPoints = ax[1].scatter(
 		np.log10(schmidtCounts + 1),
 		np.log10(view_validation_schmidt.counts() + 1),
-		facecolor='blue', edgecolor = 'k', alpha=.7)
+		alpha=.2)
 	# ax[1].set_xlabel("Log 10(Schmidt 2015 Counts)")
 	# ax[1].set_title("Pearson r: %0.4f" % pearsonr(np.log10(view_validation_schmidt.counts() + 1), np.log10(schmidtCounts + 1))[0])
 	ax.set_xlabel("Log10 (Schmidt 2015 Counts)")
 	# ax.set_title("Pearson r: %0.2f" % pearsonr(np.log10(view_validation_schmidt.counts() + 1), np.log10(schmidtCounts + 1))[0])
 
-	tooltip = plugins.PointLabelTooltip(schmidtPoints, list(schmidtLabels))
-	plugins.connect(fig, tooltip)
+	# tooltip = plugins.PointLabelTooltip(schmidtPoints, list(schmidtLabels))
+	# plugins.connect(fig, tooltip)
 
 	plt.ylabel("Log10 (Simulation Average Counts)")
+
+	# import ipdb; ipdb.set_trace();
+	maxLine = np.ceil( 
+					max((np.log10(schmidtCounts + 1)).max(), 
+					(np.log10(view_validation_schmidt.counts() + 1)).max())
+				)
+	plt.plot([-0.2, maxLine], [-0.2, maxLine], '-k')
+
+	plt.xlim(xmin=-0.2, xmax=maxLine)
+	plt.ylim(ymin=-0.2, ymax=maxLine)
+
 	# NOTE: This Pearson correlation goes up (at the time of writing) about 0.05 if you only
 	# include proteins that you have translational efficiencies for
-	plt.xlim(xmin=0)
-	plt.ylim(ymin=0)
 
 
 	from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure

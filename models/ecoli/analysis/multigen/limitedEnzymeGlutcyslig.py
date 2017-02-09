@@ -32,10 +32,22 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 	allDir = ap.get_cells()
 
-	enzymeMonomerId = "GLUTCYSLIG-MONOMER[c]"
-	enzymeRnaId = "EG10418_RNA[c]"
-	reactionId = "GLUTCYSLIG-RXN"
-	transcriptionFreq = 1.0
+	# enzymeMonomerId = "GLUTCYSLIG-MONOMER[c]"
+	# enzymeRnaId = "EG10418_RNA[c]"
+	# reactionId = "GLUTCYSLIG-RXN"
+	# transcriptionFreq = 1.0
+	# metaboliteId = "GLUTATHIONE[c]"
+
+	# enzymeMonomerId = "G6096-MONOMER[c]"
+	# enzymeRnaId = "G6096_RNA[c]"
+	# reactionId = "RXN-1961"
+	# transcriptionFreq = 22.0 / 25
+	# metaboliteId = "GLUTATHIONE[c]"
+
+	enzymeMonomerId = "BIOTINLIG-MONOMER[c]"
+	enzymeRnaId = "EG10123_RNA[c]"
+	reactionId = "BIOTINLIG-RXN-BCCP-monomers/BIOTIN/ATP//AMP/BCCP-biotin-monomers/PPI/PROTON.62."
+	transcriptionFreq = 24.0 / 25
 	metaboliteId = "GLUTATHIONE[c]"
 
 	# Get all cells
@@ -77,7 +89,11 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 		fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
 		reactionIDs = np.array(fbaResults.readAttribute("reactionIDs"))
+
 		reactionFluxes = np.array(fbaResults.readColumn("reactionFluxes"))
+
+		# import ipdb; ipdb.set_trace();
+
 		enzymeFluxes += reactionFluxes[:, np.where(reactionIDs == reactionId)[0][0]].tolist()
 		fbaResults.close()
 
@@ -106,6 +122,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	monomerAxis.plot(time / 3600., enzymeMonomerCounts)
 	monomerAxis.set_title("%s counts" % enzymeMonomerId, fontsize = 10)
+
+	import ipdb; ipdb.set_trace();
 
 	fluxAxis.plot(time / 3600., enzymeFluxes)
 	fluxAxis.set_title("%s flux (%s / %s / %s)" % (reactionId, COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS), fontsize = 10)
