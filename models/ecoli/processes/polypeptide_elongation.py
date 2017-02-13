@@ -80,13 +80,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gtpPerElongation = sim_data.constants.gtpPerTranslation
 		# self.ribosomeElongationRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 
+		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
+
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
 
 		self.trpAIndex = np.where(proteinIds == "TRYPSYN-APROTEIN[c]")[0][0]
 
 		##########
 		# self.saturation_km = sim_data.constants.translation_km
-		# self.translation_aa_supply = sim_data.translationSupplyRate
+		self.translation_aa_supply = sim_data.translationSupplyRate
 		self.nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
 		import copy
 		self.nutrientsTimeSeries = copy.deepcopy(sim_data.nutrientsTimeSeries)
@@ -112,14 +114,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeGroups.s30_fullComplex[0])
 		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeGroups.s50_fullComplex[0])
 
-		###### VARIANT CODE #######
-		self.translationSaturation = sim_data.translationSaturation
-		###### VARIANT CODE #######
-
 		self.elngRateFactor = 1.
 
 	def calculateRequest(self):
-		self.ribosomeElongationRate = self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s)
+		# self.ribosomeElongationRate = self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s)
 
 		self.activeRibosomes.requestAll()
 
@@ -142,25 +140,24 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		sequenceHasAA = (sequences != PAD_VALUE)
 		aasInSequences = np.bincount(sequences[sequenceHasAA], minlength=21)
 
-
 		while len(self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel]) and self.time() > self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel][0][0]:
 			_ , nutrients = self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel].popleft()
 			self.currentNutrients = nutrients
 
-		# translationSupplyRate = self.translation_aa_supply[self.currentNutrients]
+		translationSupplyRate = self.translation_aa_supply[self.currentNutrients]
 
-		# self.writeToListener("RibosomeData", "translationSupply", translationSupplyRate.asNumber())
+		self.writeToListener("RibosomeData", "translationSupply", translationSupplyRate.asNumber())
 
 
-		# dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
+		dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
 
-		# molAasRequested = translationSupplyRate * dryMass * self.timeStepSec() * units.s
+		molAasRequested = translationSupplyRate * dryMass * self.timeStepSec() * units.s
 
-		# countAasRequested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
+		countAasRequested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
 
-		# countAasRequested = np.fmin(countAasRequested, aasInSequences)
+		countAasRequested = np.fmin(countAasRequested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
 
-		countAasRequested = aasInSequences
+		# countAasRequested = aasInSequences
 
 		self.aas.requestIs(
 			countAasRequested
@@ -194,7 +191,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			)
 
 		# Build sequence array
-
 		sequences = buildSequences(
 			self.proteinSequences,
 			proteinIndexes,
@@ -310,7 +306,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				return False
 
 		dt = inputTimeStep * timeStepSafetyFraction
-		gtpExpectedUsage = activeRibosomes * self.ribosomeElongationRate * self.gtpPerElongation * dt
+		gtpExpectedUsage = activeRibosomes * self.maxRibosomeElongationRate * self.gtpPerElongation * dt
 
 		if gtpExpectedUsage < self.gtpAvailable:
 			return True
@@ -332,4 +328,4 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			return True
 
 	def _elngRate(self):
-		return int(stochasticRound(self.randomState, self.ribosomeElongationRate * self.timeStepSec()))
+		return int(stochasticRound(self.randomState, self.maxRibosomeElongationRate * self.timeStepSec()))

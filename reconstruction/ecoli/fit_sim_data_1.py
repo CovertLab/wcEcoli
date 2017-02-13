@@ -107,6 +107,17 @@ def fitSimData_1(raw_data):
 		spec["proteinMonomerAverageContainer"] = proteinMonomerAverageContainer
 		spec["proteinMonomerDeviationContainer"] = proteinMonomerDeviationContainer
 
+		translation_aa_supply = calculateTranslationSupply(
+										sim_data,
+										spec["doubling_time"],
+										spec["proteinMonomerAverageContainer"],
+										spec["avgCellDryMassInit"],
+										)
+
+		if sim_data.conditions[condition]["nutrients"] not in sim_data.translationSupplyRate.keys():
+			sim_data.translationSupplyRate[sim_data.conditions[condition]["nutrients"]] = translation_aa_supply
+
+
 	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
 
 	for condition in sorted(cellSpecs):
@@ -194,7 +205,33 @@ def buildBasalCellSpecifications(sim_data):
 	sim_data.process.transcription.rnaExpression["basal"][:] = cellSpecs["basal"]["expression"]
 	sim_data.process.transcription.rnaSynthProb["basal"][:] = cellSpecs["basal"]["synthProb"]
 
+	translation_aa_supply = calculateTranslationSupply(
+									sim_data,
+									cellSpecs["basal"]["doubling_time"],
+									cellSpecs["basal"]["bulkContainer"],
+									cellSpecs["basal"]["avgCellDryMassInit"],
+									)
+
 	return cellSpecs
+
+def calculateTranslationSupply(sim_data, doubling_time, bulkContainer, avgCellDryMassInit):
+	aaCounts = sim_data.process.translation.monomerData["aaCounts"]
+	proteinCounts = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
+	nAvogadro = sim_data.constants.nAvogadro
+
+	molAAPerGDCW = (
+			units.sum(
+				aaCounts * np.tile(proteinCounts.reshape(-1, 1), (1, 21)),
+				axis = 0
+			) * (
+				(1 / (units.aa * nAvogadro)) *
+				(1 / avgCellDryMassInit)
+			)
+		)
+
+	translation_aa_supply = molAAPerGDCW * np.log(2) / doubling_time
+
+	return translation_aa_supply
 
 def buildTfConditionCellSpecifications(sim_data, cellSpecs):
 	for tf in sorted(sim_data.tfToActiveInactiveConds):
