@@ -114,13 +114,13 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		alpha=.2)
 	# ax[1].set_xlabel("Log 10(Schmidt 2015 Counts)")
 	# ax[1].set_title("Pearson r: %0.4f" % pearsonr(np.log10(view_validation_schmidt.counts() + 1), np.log10(schmidtCounts + 1))[0])
-	ax.set_xlabel("Log10 (Schmidt 2015 Counts)")
+	# ax.set_xlabel("Log10 (Schmidt 2015 Counts)")
 	# ax.set_title("Pearson r: %0.2f" % pearsonr(np.log10(view_validation_schmidt.counts() + 1), np.log10(schmidtCounts + 1))[0])
 
 	# tooltip = plugins.PointLabelTooltip(schmidtPoints, list(schmidtLabels))
 	# plugins.connect(fig, tooltip)
 
-	plt.ylabel("Log10 (Simulation Average Counts)")
+	# plt.ylabel("Log10 (Simulation Average Counts)")
 
 	# import ipdb; ipdb.set_trace();
 	maxLine = np.ceil( 

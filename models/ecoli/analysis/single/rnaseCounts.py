@@ -48,7 +48,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	
 	# RNase P and PNP
-	RNase_IDS = ['EG10862_RNA[c]', 'EG10743_RNA[c]', 'EG10862-MONOMER[c]', 'EG10743-MONOMER[c]']
+	RNase_IDS = ['EG10862_RNA[c]', 'EG10862-MONOMER[c]', 'EG10743_RNA[c]', 'EG10743-MONOMER[c]']
 
 
 	rnapRnaIndexes = np.array([moleculeIds.index(rnapRnaId) for rnapRnaId in RNase_IDS], np.int)
@@ -82,16 +82,14 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 		ax = plt.subplot(len(RNase_IDS) / 2, 2, 1 + subplotIdx)
 
-		whitePadSparklineAxis(ax)
-
 		plt.plot(time / 60., rnapRnaCounts[:, rnapRnaCountsIdx])
 
-		if not subplotIdx >= len(RNase_IDS) - 2:
-			frame = plt.gca()
-			for xlabel_i in frame.axes.get_xticklines():
-				xlabel_i.set_visible(True)
-			for xlabel_i in frame.axes.get_xticklabels():
-				xlabel_i.set_visible(False)
+		# if not subplotIdx >= len(RNase_IDS) - 2:
+		# frame = plt.gca()
+		# for xlabel_i in frame.axes.get_xticklines():
+		# 	xlabel_i.set_visible(True)
+			# for xlabel_i in frame.axes.get_xticklabels():
+			# 	xlabel_i.set_visible(False)
 
 		# if subplotIdx >= len(RNase_IDS) - 2:
 		# 	plt.xlabel("Time (min)", fontsize = 7)
@@ -106,6 +104,13 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		max_yticks = 4
 		yloc = plt.MaxNLocator(max_yticks)
 		ax.yaxis.set_major_locator(yloc)
+
+		max_xticks = 4
+		xloc = plt.MaxNLocator(max_xticks)
+		ax.xaxis.set_major_locator(xloc)
+
+
+		whitePadSparklineAxis(ax)
 
 		signal = rnapRnaCounts[:, subplotIdx]
 		if subplotIdx == 17:
