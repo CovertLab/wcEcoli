@@ -16,7 +16,7 @@ import cPickle
 
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import units
-FROM_CACHE = True
+FROM_CACHE = False
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
 
@@ -24,7 +24,7 @@ CLOSE_TO_DOUBLE = 0.1
 FONT_SIZE = 9
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
-
+	return
 	if not os.path.isdir(seedOutDir):
 		raise Exception, "seedOutDir does not currently exist as a directory"
 
@@ -157,8 +157,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	cellMassInitialMultigen = units.fg * cellMassInitialMultigen
 
 	existFractionPerMonomer = monomerExistMultigen.mean(axis=0)
-	averageFoldChangePerMonomer = ratioFinalToInitialCountMultigen.mean(axis=0)
-	averageInitiationEventsPerMonomer = initiationEventsPerMonomerMultigen.mean(axis=0) + 1e-1
+	averageFoldChangePerMonomer = ratioFinalToInitialCountMultigen#.mean(axis=0)
+	averageInitiationEventsPerMonomer = initiationEventsPerMonomerMultigen.mean(axis=0)
+
+	averageInitiationEventsPerMonomer = np.tile(averageInitiationEventsPerMonomer, (6,1))
 
 
 	mws = sim_data.getter.getMass(sim_data.process.translation.monomerData['id'])
@@ -199,8 +201,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	yhistAxis.yaxis.set_visible(False)
 
 	smallBurst = averageInitiationEventsPerMonomer <= 1.
-	scatterAxis.set_xlim([1e-1, 1e3])
-	scatterAxis.set_ylim([0.7, 100])
+	# scatterAxis.set_xlim([1e-1, 1e3])
+	# ----> scatterAxis.set_ylim([0.7, 100])
 
 	# scatterAxis.semilogx(averageInitiationEventsPerMonomer[smallBurst], averageFoldChangePerMonomer[smallBurst], marker = '.', color = "red", alpha = 0.9, lw = 0.)#, s = 5)
 	# scatterAxis.semilogx(averageInitiationEventsPerMonomer[~smallBurst], averageFoldChangePerMonomer[~smallBurst], marker = '.', color = "blue", alpha = 0.9, lw = 0.)#, s = 5)
@@ -211,7 +213,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	scatterAxis.loglog(averageInitiationEventsPerMonomer[~smallBurst], averageFoldChangePerMonomer[~smallBurst], marker = '.', color = "blue", alpha = 0.9, lw = 0.)#, s = 5)
 	
 
-	scatterAxis.set_ylabel("Average fold change per\nmonomer over {} generations".format(ap.n_generation), fontsize = FONT_SIZE)
+	scatterAxis.set_ylabel("Fold change per monomer per\ntranscription event over {} generations".format(ap.n_generation), fontsize = FONT_SIZE)
 	scatterAxis.set_xlabel("Average number of transcription events\nper monomer over {} generations".format(ap.n_generation), fontsize = FONT_SIZE)
 
 	# lims = yhistAxis.get_ylim()
@@ -234,7 +236,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	yhistAxis.hist(averageFoldChangePerMonomer[~smallBurst], histtype = 'step', bins = np.logspace(np.log10(0.1), np.log10(100.), 25), range = [0.7, 100], log = True,  orientation='horizontal')
 	yhistAxis.hist(averageFoldChangePerMonomer[smallBurst], histtype = 'step', bins = np.logspace(np.log10(0.1), np.log10(100.), 125), range = [0.7, 100], log = True,  orientation='horizontal', color="green")
-	yhistAxis.set_ylim([0.7, 100])
+	# yhistAxis.set_ylim([0.7, 100])
 	yhistAxis.set_yscale("log")
 
 

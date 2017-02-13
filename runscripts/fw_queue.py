@@ -22,6 +22,7 @@ import os
 import datetime
 import subprocess
 import collections
+import cPickle
 
 def run_cmd(cmd):
 	environ = {
@@ -170,6 +171,10 @@ for key, value in metadata.iteritems():
 	if type(value) != str:
 		continue
 	write_file(os.path.join(METADATA_DIRECTORY, key), value)
+
+h = open(os.path.join(METADATA_DIRECTORY, "metadata.cPickle"), "w")
+cPickle.dump(metadata, h, cPickle.HIGHEST_PROTOCOL)
+h.close()
 
 #### Create workflow
 
@@ -440,7 +445,7 @@ for i in VARIANTS_TO_RUN:
 			metadata = metadata,
 			),
 		name = fw_name,
-		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":4}
+		spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": 16}, "_priority":4}
 		)
 	wf_fws.append(fw_this_variant_cohort_analysis)
 
@@ -462,7 +467,7 @@ for i in VARIANTS_TO_RUN:
 				metadata = metadata,
 				),
 			name = fw_name,
-			spec = {"_queueadapter": {"job_name": fw_name}, "_priority":3}
+			spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": 12}, "_priority":3}
 			)
 		wf_fws.append(fw_this_variant_this_seed_this_analysis)
 
@@ -504,7 +509,7 @@ for i in VARIANTS_TO_RUN:
 							d_period_division = D_PERIOD_DIVISION,
 							),
 						name = fw_name,
-						spec = {"_queueadapter": {"job_name": fw_name}, "_priority":10}
+						spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": 1}, "_priority":10}
 						)
 				elif k > 0:
 					PARENT_GEN_DIRECTORY = os.path.join(SEED_DIRECTORY, "generation_%06d" % (k - 1))
@@ -527,7 +532,7 @@ for i in VARIANTS_TO_RUN:
 							d_period_division = D_PERIOD_DIVISION,
 							),
 						name = fw_name,
-						spec = {"_queueadapter": {"job_name": fw_name}, "_priority":11}
+						spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": 1}, "_priority":11}
 						)
 
 				wf_fws.append(fw_this_variant_this_gen_this_sim)

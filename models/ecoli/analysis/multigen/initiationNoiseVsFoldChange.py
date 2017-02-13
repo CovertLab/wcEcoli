@@ -16,7 +16,7 @@ import cPickle
 
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import units
-FROM_CACHE = True
+FROM_CACHE = False
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
 
@@ -24,7 +24,7 @@ CLOSE_TO_DOUBLE = 0.1
 FONT_SIZE = 9
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
-
+	return
 	if not os.path.isdir(seedOutDir):
 		raise Exception, "seedOutDir does not currently exist as a directory"
 
