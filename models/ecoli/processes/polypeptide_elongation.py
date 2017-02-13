@@ -114,10 +114,16 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeGroups.s30_fullComplex[0])
 		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeGroups.s50_fullComplex[0])
 
+		self.translationSupply = sim._translationSupply
+
 		self.elngRateFactor = 1.
 
 	def calculateRequest(self):
-		# self.ribosomeElongationRate = self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s)
+
+		if self.translationSupply:
+			self.ribosomeElongationRate = self.maxRibosomeElongationRate
+		else:
+			self.ribosomeElongationRate = self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s)
 
 		self.activeRibosomes.requestAll()
 
@@ -144,20 +150,22 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			_ , nutrients = self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel].popleft()
 			self.currentNutrients = nutrients
 
-		translationSupplyRate = self.translation_aa_supply[self.currentNutrients]
 
-		self.writeToListener("RibosomeData", "translationSupply", translationSupplyRate.asNumber())
+		if self.translationSupply:
+			translationSupplyRate = self.translation_aa_supply[self.currentNutrients]
+
+			self.writeToListener("RibosomeData", "translationSupply", translationSupplyRate.asNumber())
 
 
-		dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
+			dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
 
-		molAasRequested = translationSupplyRate * dryMass * self.timeStepSec() * units.s
+			molAasRequested = translationSupplyRate * dryMass * self.timeStepSec() * units.s
 
-		countAasRequested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
+			countAasRequested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
 
-		countAasRequested = np.fmin(countAasRequested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
-
-		# countAasRequested = aasInSequences
+			countAasRequested = np.fmin(countAasRequested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
+		else:
+			countAasRequested = aasInSequences
 
 		self.aas.requestIs(
 			countAasRequested
@@ -306,7 +314,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				return False
 
 		dt = inputTimeStep * timeStepSafetyFraction
-		gtpExpectedUsage = activeRibosomes * self.maxRibosomeElongationRate * self.gtpPerElongation * dt
+		gtpExpectedUsage = activeRibosomes * self.ribosomeElongationRate * self.gtpPerElongation * dt
 
 		if gtpExpectedUsage < self.gtpAvailable:
 			return True
@@ -328,4 +336,4 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			return True
 
 	def _elngRate(self):
-		return int(stochasticRound(self.randomState, self.maxRibosomeElongationRate * self.timeStepSec()))
+		return int(stochasticRound(self.randomState, self.ribosomeElongationRate * self.timeStepSec()))
