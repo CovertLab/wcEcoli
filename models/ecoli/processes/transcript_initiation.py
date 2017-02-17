@@ -120,7 +120,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# except:
 		# 	self.offset = 0.
 
-		self.offset = 1.
+		self.offset = 0.
 
 		self.integral = 0.
 
@@ -145,6 +145,11 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		import copy
 		synthProbFractions = copy.copy(self.rnaSynthProbFractions[self._sim.processes["PolypeptideElongation"].currentNutrients])
+		self.writeToListener("ControlLoop", "errorInElongationRate", elongationOffset)
+		self.writeToListener("ControlLoop", "proportionalTerm", self.gain * elongationOffset)
+		self.writeToListener("ControlLoop", "integralTerm", 0.0000000000000000001 * self.integral)
+		self.writeToListener("ControlLoop", "rRnaSynthRate_expected", synthProbFractions["rRna"])
+		
 		print "rRna: {} before".format(synthProbFractions["rRna"])
 		print "error in e: {}".format(elongationOffset)
 		print "gain x integral: {}".format(0.0000000000000000001 * self.integral)
@@ -159,8 +164,11 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		for key in synthProbFractions.iterkeys():
 			synthProbFractions[key] /= total
 
+
+		self.writeToListener("ControlLoop", "rRnaSynthRate_updated", synthProbFractions["rRna"])
 		print "rRna: {} after".format(synthProbFractions["rRna"])
-		import ipdb; ipdb.set_trace()
+
+
 		self.rnaSynthProb[self.isMRna] *= synthProbFractions["mRna"] / self.rnaSynthProb[self.isMRna].sum()
 		self.rnaSynthProb[self.isTRna] *= synthProbFractions["tRna"] / self.rnaSynthProb[self.isTRna].sum()
 		self.rnaSynthProb[self.isRRna] *= synthProbFractions["rRna"] / self.rnaSynthProb[self.isRRna].sum()

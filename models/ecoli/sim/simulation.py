@@ -35,6 +35,7 @@ from models.ecoli.listeners.enzyme_kinetics import EnzymeKinetics
 from models.ecoli.listeners.growth_limits import GrowthLimits
 from models.ecoli.listeners.cell_division import CellDivision
 from models.ecoli.listeners.rna_synth_prob import RnaSynthProb
+from models.ecoli.listeners.control_loop import ControlLoop
 
 
 # Analysis
@@ -81,6 +82,7 @@ class EcoliSimulation(Simulation):
 		GrowthLimits,
 		CellDivision,
 		RnaSynthProb,
+		ControlLoop,
 		)
 
 	_hookClasses = ()
