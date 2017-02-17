@@ -75,6 +75,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			self.genetic_perturbations = {"fixedRnaIdxs": fixedRnaIdxs, "fixedSynthProbs": fixedSynthProbs}
 			perturbations = sim_data.genetic_perturbations
 
+		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
+
 		# Views
 
 		self.activeRnaPolys = self.uniqueMoleculesView('activeRnaPoly')
@@ -111,6 +113,17 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.rnaSynthProbRProtein = sim_data.process.transcription.rnaSynthProbRProtein
 		self.rnaSynthProbRnaPolymerase = sim_data.process.transcription.rnaSynthProbRnaPolymerase
 
+		self.gain = 0.3
+
+		# try:
+		# 	self.offset = sim_data.scaling_factor
+		# except:
+		# 	self.offset = 0.
+
+		self.offset = 1.
+
+		self.integral = 0.
+
 	def calculateRequest(self):
 		self.inactiveRnaPolys.requestAll()
 		self.rnaSynthProb = self.recruitmentMatrix.dot(self.recruitmentView.total())
@@ -125,7 +138,29 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		assert np.allclose(self.rnaSynthProb.sum(),1.)
 		assert np.all(self.rnaSynthProb >= 0.)
 
-		synthProbFractions = self.rnaSynthProbFractions[self._sim.processes["PolypeptideElongation"].currentNutrients]
+		effectiveElongationRate = self.readFromListener("RibosomeData", "effectiveElongationRate") * units.aa / units.s
+		expectedElongationRate = self.ribosomeElongationRateDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
+
+		elongationOffset = -1 * (expectedElongationRate - effectiveElongationRate).asNumber() + self.offset
+
+		import copy
+		synthProbFractions = copy.copy(self.rnaSynthProbFractions[self._sim.processes["PolypeptideElongation"].currentNutrients])
+		print "rRna: {} before".format(synthProbFractions["rRna"])
+		print "error in e: {}".format(elongationOffset)
+		print "gain x integral: {}".format(0.0000000000000000001 * self.integral)
+		print "correction to rRNA: {} + {}".format(synthProbFractions["rRna"], self.gain * elongationOffset + 0.0000000000000000001 * self.integral)
+
+		self.integral += elongationOffset
+
+		synthProbFractions["rRna"] = np.max([synthProbFractions["rRna"] + self.gain * elongationOffset + 0.1 * self.integral, 0.])
+
+
+		total = synthProbFractions["mRna"] + synthProbFractions["tRna"] + synthProbFractions["rRna"]
+		for key in synthProbFractions.iterkeys():
+			synthProbFractions[key] /= total
+
+		print "rRna: {} after".format(synthProbFractions["rRna"])
+		import ipdb; ipdb.set_trace()
 		self.rnaSynthProb[self.isMRna] *= synthProbFractions["mRna"] / self.rnaSynthProb[self.isMRna].sum()
 		self.rnaSynthProb[self.isTRna] *= synthProbFractions["tRna"] / self.rnaSynthProb[self.isTRna].sum()
 		self.rnaSynthProb[self.isRRna] *= synthProbFractions["rRna"] / self.rnaSynthProb[self.isRRna].sum()
@@ -135,6 +170,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.rnaSynthProb[self.rnaSynthProb < 0] = 0
 		scaleTheRestBy = (1. - self.rnaSynthProb[self.setIdxs].sum()) / self.rnaSynthProb[~self.setIdxs].sum()
 		self.rnaSynthProb[~self.setIdxs] *= scaleTheRestBy
+
 
 		assert np.allclose(self.rnaSynthProb.sum(),1.)
 		assert np.all(self.rnaSynthProb >= 0.)
@@ -173,6 +209,13 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		#### Growth control code ####
 		nNewRnas = self.randomState.multinomial(rnaPolyToActivate,
 			self.rnaSynthProb)
+
+		# effectiveElongationRate = self.readFromListener("RibosomeData", "effectiveElongationRate") * units.aa / units.s
+		# dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
+		# initiationsPerDryMass =  (1 / dryMass) * nNewRnas[self.isRRna] / (self.timeStepSec() * units.s)
+		# expectedElongationRate = self.ribosomeElongationRateDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
+
+		# ribosomePerGDCW = len(self.activeRibosomes.allMolecules()) / dryMass
 
 		self.writeToListener("RibosomeData", "rrn16S_produced", nNewRnas[self.is_16SrRNA].sum())
 		self.writeToListener("RibosomeData", "rrn23S_produced", nNewRnas[self.is_23SrRNA].sum())		
