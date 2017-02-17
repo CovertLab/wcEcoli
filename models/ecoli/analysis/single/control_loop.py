@@ -22,7 +22,7 @@ from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 
-PLACE_HOLDER = -1
+FONT_SIZE = 7
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -45,42 +45,75 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	integralTerm = TableReader(os.path.join(simOutDir, "ControlLoop")).readColumn("integralTerm")
 	rRnaSynthRate_expected = TableReader(os.path.join(simOutDir, "ControlLoop")).readColumn("rRnaSynthRate_expected")
 	rRnaSynthRate_updated = TableReader(os.path.join(simOutDir, "ControlLoop")).readColumn("rRnaSynthRate_updated")
+	bias = TableReader(os.path.join(simOutDir, "ControlLoop")).readColumn("rRnaSynthRate_updated")
 
-	growth_rate = TableReader(os.path.join(simOutDir, "Mass")).readColumn("instantaniousGrowthRate")
+	growthRate = TableReader(os.path.join(simOutDir, "Mass")).readColumn("instantaniousGrowthRate")
 	growthRate = (1 / units.s) * growthRate
 	doublingTime = 1 / growthRate * np.log(2)
 
 	effective_elongation_rate = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("effectiveElongationRate")
 
+	nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+	sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][0][1]
+	media = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][0][1]
+	expected_elongation_rate = sim_data.process.translation.ribosomeElongationRateDict[media]
+	expected_doubling_time = sim_data.nutrientToDoublingTime[media]
 
-	# nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
-
-	# sim_data.process.translation.ribosomeElongationRateDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
-	# expected_elongation_rate = 
-
-
+	cellMass = TableReader(os.path.join(simOutDir, "Mass")).readColumn("cellMass")
+	uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
+	ribosomeIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRibosome")
+	ribosomeCounts = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, ribosomeIndex]
+	uniqueMoleculeCounts.close()
+	ribosomeConcentration = ((1 / sim_data.constants.nAvogadro) * ribosomeCounts) / ((1.0 / sim_data.constants.cellDensity) * (units.fg * cellMass))
 
 	# Plot stuff
 	plt.figure(figsize = (8.5, 11))
 
-	fig, axesList = plt.subplots(5,1, sharex = True)
+	fig, axesList = plt.subplots(6,1, sharex = True)
 
-	axesList[0].plot(time / 60., errorInElongationRate)
+	axesList[0].plot(time / 60., errorInElongationRate, label="raw")
+	axesList[0].plot(time / 60., np.zeros(time.size), '--')
+	axesList[0].plot(time / 60., errorInElongationRate + bias, label="bias")
+	axesList[0].legend(fontsize=FONT_SIZE, loc=4,frameon=False)
+	axesList[0].set_ylabel("Error " + r"$(e_{expected} - e_{actual})$", fontsize=FONT_SIZE)
 
-	axesList[1].plot(time / 60., proportionalTerm)
-	axesList[1].plot(time / 60., integralTerm)
-	axesList[1].plot(time / 60., proportionalTerm + integralTerm)
+	axesList[1].plot(time / 60., proportionalTerm, label = "proportional", alpha = 0.7)
+	axesList[1].plot(time / 60., integralTerm, label = "integral", alpha = 0.7)
+	axesList[1].plot(time / 60., proportionalTerm + integralTerm, label = "sum", alpha = 0.7)
+	axesList[1].legend(fontsize=FONT_SIZE, loc=4,frameon=False)
+	axesList[1].set_ylabel("Correction terms", fontsize=FONT_SIZE)
 
-	axesList[2].plot(time / 60., rRnaSynthRate_expected)
-	axesList[2].plot(time / 60., rRnaSynthRate_updated)
+	axesList[2].plot(time / 60., rRnaSynthRate_expected, label = "expected")
+	axesList[2].plot(time / 60., rRnaSynthRate_updated, label = "updated")
+	axesList[2].legend(fontsize=FONT_SIZE, loc=4,frameon=False)
+	axesList[2].set_ylabel("rRNA synthesis prob", fontsize=FONT_SIZE)
 
 	axesList[3].plot(time / 60., doublingTime.asNumber(units.min))
+	axesList[3].set_ylabel("Inst. doubling\ntime (min)", fontsize=FONT_SIZE)
+	axesList[3].plot(time / 60., expected_doubling_time.asNumber(units.min) * np.ones(time.size), '--')
 
 	axesList[4].plot(time / 60., effective_elongation_rate)
+	axesList[4].set_ylabel("Eff. elng.\nrate", fontsize=FONT_SIZE)
+	axesList[4].plot(time / 60., expected_elongation_rate.asNumber() * np.ones(time.size), '--')
+
+	axesList[5].plot(time / 60., ribosomeConcentration.asNumber(units.mmol / units.L))
+	axesList[5].set_ylabel("[Rib]", fontsize=FONT_SIZE)
+
+	for a in axesList:
+		for tick in a.yaxis.get_major_ticks():
+			tick.label.set_fontsize(FONT_SIZE) 
+		for tick in a.xaxis.get_major_ticks():
+			tick.label.set_fontsize(FONT_SIZE) 
+		# a.spines["right"].set_visible(False)
+		a.spines["top"].set_visible(False)
+		a.spines["bottom"].set_visible(False)
+		a.xaxis.set_visible(False)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
+	raise Exception()
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

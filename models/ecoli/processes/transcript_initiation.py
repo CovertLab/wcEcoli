@@ -116,13 +116,15 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.gain = 0.3
 
 		# try:
-		# 	self.offset = sim_data.scaling_factor
+		# 	self.bias = sim_data.scaling_factor
 		# except:
-		# 	self.offset = 0.
+		# 	self.bias = 0.
 
-		self.offset = 0.
+		self.bias = 2.
 
 		self.integral = 0.
+
+		self.integralGain = 0.00000000001
 
 	def calculateRequest(self):
 		self.inactiveRnaPolys.requestAll()
@@ -141,33 +143,27 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		effectiveElongationRate = self.readFromListener("RibosomeData", "effectiveElongationRate") * units.aa / units.s
 		expectedElongationRate = self.ribosomeElongationRateDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
 
-		elongationOffset = -1 * (expectedElongationRate - effectiveElongationRate).asNumber() + self.offset
+		elongationOffset = -1 * (expectedElongationRate - effectiveElongationRate).asNumber()
 
 		import copy
 		synthProbFractions = copy.copy(self.rnaSynthProbFractions[self._sim.processes["PolypeptideElongation"].currentNutrients])
 		self.writeToListener("ControlLoop", "errorInElongationRate", elongationOffset)
+
+		elongationOffset += self.bias
+
 		self.writeToListener("ControlLoop", "proportionalTerm", self.gain * elongationOffset)
-		self.writeToListener("ControlLoop", "integralTerm", 0.0000000000000000001 * self.integral)
+		self.writeToListener("ControlLoop", "integralTerm", self.integralGain * self.integral)
 		self.writeToListener("ControlLoop", "rRnaSynthRate_expected", synthProbFractions["rRna"])
-		
-		print "rRna: {} before".format(synthProbFractions["rRna"])
-		print "error in e: {}".format(elongationOffset)
-		print "gain x integral: {}".format(0.0000000000000000001 * self.integral)
-		print "correction to rRNA: {} + {}".format(synthProbFractions["rRna"], self.gain * elongationOffset + 0.0000000000000000001 * self.integral)
+		self.writeToListener("ControlLoop", "bias", self.bias)
 
 		self.integral += elongationOffset
 
-		synthProbFractions["rRna"] = np.max([synthProbFractions["rRna"] + self.gain * elongationOffset + 0.1 * self.integral, 0.])
-
-
+		synthProbFractions["rRna"] = np.max([synthProbFractions["rRna"] + self.gain * elongationOffset + self.integralGain * self.integral, 0.])
 		total = synthProbFractions["mRna"] + synthProbFractions["tRna"] + synthProbFractions["rRna"]
 		for key in synthProbFractions.iterkeys():
 			synthProbFractions[key] /= total
 
-
 		self.writeToListener("ControlLoop", "rRnaSynthRate_updated", synthProbFractions["rRna"])
-		print "rRna: {} after".format(synthProbFractions["rRna"])
-
 
 		self.rnaSynthProb[self.isMRna] *= synthProbFractions["mRna"] / self.rnaSynthProb[self.isMRna].sum()
 		self.rnaSynthProb[self.isTRna] *= synthProbFractions["tRna"] / self.rnaSynthProb[self.isTRna].sum()

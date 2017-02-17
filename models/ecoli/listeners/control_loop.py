@@ -36,6 +36,8 @@ class ControlLoop(wholecell.listeners.listener.Listener):
 		self.proportionalTerm = None
 		self.integralTerm = None
 
+		self.bias = None
+
 		self.rRnaSynthRate_expected = None
 		self.rRnaSynthRate_updated = None
 
@@ -48,6 +50,8 @@ class ControlLoop(wholecell.listeners.listener.Listener):
 		self.integralTerm = 0.
 		self.rRnaSynthRate_updated = 0.
 		self.rRnaSynthRate_expected = 0.
+
+		self.bias = 0.
 
 	def update(self):
 		pass
@@ -65,4 +69,5 @@ class ControlLoop(wholecell.listeners.listener.Listener):
 			integralTerm = self.integralTerm,
 			rRnaSynthRate_expected = self.rRnaSynthRate_expected,
 			rRnaSynthRate_updated = self.rRnaSynthRate_updated,
+			bias = self.bias,
 			)
