@@ -75,6 +75,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	NAMES  = np.array(mRnaNames)
 	DAT =  np.column_stack((NAMES, FLOATS))
 	np.savetxt(os.path.join(plotOutDir, 'Prob_1mRNAperGeneration.txt'), DAT, delimiter = " ", fmt = "%s")
+	# import ipdb; ipdb.set_trace()
 
 	# Plot frequency vs. synthesis prob
 	fig = plt.figure(figsize = (12, 12))
@@ -98,7 +99,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	exportFigure(plt, plotOutDir, plotOutFileName + "__histogram", metadata)
 	plt.close("all")
 
-	import ipdb; ipdb.set_trace()
 
 	# Bokeh
 	from bokeh.plotting import figure, output_file, ColumnDataSource, show

@@ -24,7 +24,7 @@ CLOSE_TO_DOUBLE = 0.1
 FONT_SIZE = 9
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
-	return
+
 	if not os.path.isdir(seedOutDir):
 		raise Exception, "seedOutDir does not currently exist as a directory"
 
@@ -159,6 +159,18 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	existFractionPerMonomer = monomerExistMultigen.mean(axis=0)
 	averageFoldChangePerMonomer = ratioFinalToInitialCountMultigen#.mean(axis=0)
 	averageInitiationEventsPerMonomer = initiationEventsPerMonomerMultigen.mean(axis=0)
+
+
+	# import ipdb; ipdb.set_trace()
+
+	# Save data into txt file
+	FLOATS_averageFoldChangePerMonomer = np.array(ratioFinalToInitialCountMultigen.mean(axis=0))
+	FLOATS_maxFoldChangePerMonomer = np.array(ratioFinalToInitialCountMultigen.max(axis=0))
+	FLOATS_averageInitiationEventsPerMonomer = np.array(averageInitiationEventsPerMonomer)
+	NAMES  = np.array(ids_translation)
+	DAT =  np.column_stack((NAMES, FLOATS_averageInitiationEventsPerMonomer, FLOATS_averageFoldChangePerMonomer, FLOATS_maxFoldChangePerMonomer))
+	np.savetxt(os.path.join(plotOutDir, 'Fig5C_data.txt'), DAT, delimiter = " ", fmt = "%s")
+
 
 	averageInitiationEventsPerMonomer = np.tile(averageInitiationEventsPerMonomer, (6,1))
 
@@ -307,6 +319,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
+
+
 
 
 if __name__ == "__main__":
