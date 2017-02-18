@@ -53,11 +53,15 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	effective_elongation_rate = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("effectiveElongationRate")
 
-	nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
-	sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][0][1]
-	media = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][0][1]
-	expected_elongation_rate = sim_data.process.translation.ribosomeElongationRateDict[media]
-	expected_doubling_time = sim_data.nutrientToDoublingTime[media]
+	expected_doubling_time = TableReader(os.path.join(simOutDir, "ControlLoop")).readColumn("expectedDoublingTime")
+	expected_elongation_rate = TableReader(os.path.join(simOutDir, "ControlLoop")).readColumn("expectedElongationRate")
+
+	# nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+
+
+	# media = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][0][1]
+	# expected_elongation_rate = sim_data.process.translation.ribosomeElongationRateDict[media]
+	# expected_doubling_time = sim_data.nutrientToDoublingTime[media]
 
 	cellMass = TableReader(os.path.join(simOutDir, "Mass")).readColumn("cellMass")
 	uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
@@ -81,6 +85,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	axesList[1].plot(time / 60., integralTerm, label = "integral", alpha = 0.7)
 	axesList[1].plot(time / 60., proportionalTerm + integralTerm, label = "sum", alpha = 0.7)
 	axesList[1].legend(fontsize=FONT_SIZE, loc=4,frameon=False)
+	axesList[1].set_ylim([-1, 1])
 	axesList[1].set_ylabel("Correction terms", fontsize=FONT_SIZE)
 
 	axesList[2].plot(time / 60., rRnaSynthRate_expected, label = "expected")
@@ -90,11 +95,13 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	axesList[3].plot(time / 60., doublingTime.asNumber(units.min))
 	axesList[3].set_ylabel("Inst. doubling\ntime (min)", fontsize=FONT_SIZE)
-	axesList[3].plot(time / 60., expected_doubling_time.asNumber(units.min) * np.ones(time.size), '--')
+	axesList[3].plot(time / 60., expected_doubling_time, '--')
+	axesList[3].set_ylim([20., 50.])
 
 	axesList[4].plot(time / 60., effective_elongation_rate)
 	axesList[4].set_ylabel("Eff. elng.\nrate", fontsize=FONT_SIZE)
-	axesList[4].plot(time / 60., expected_elongation_rate.asNumber() * np.ones(time.size), '--')
+	axesList[4].plot(time / 60., expected_elongation_rate, '--')
+	axesList[4].set_ylim([12., 22.])
 
 	axesList[5].plot(time / 60., ribosomeConcentration.asNumber(units.mmol / units.L))
 	axesList[5].set_ylabel("[Rib]", fontsize=FONT_SIZE)

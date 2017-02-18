@@ -76,6 +76,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			perturbations = sim_data.genetic_perturbations
 
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
+		self.doublingTimeDict = sim_data.nutrientToDoublingTime
 
 		# Views
 
@@ -113,18 +114,21 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.rnaSynthProbRProtein = sim_data.process.transcription.rnaSynthProbRProtein
 		self.rnaSynthProbRnaPolymerase = sim_data.process.transcription.rnaSynthProbRnaPolymerase
 
-		self.gain = 0.3
+		self.gain = 0.5
+		self.bias = 2.
 
 		# try:
 		# 	self.bias = sim_data.scaling_factor
 		# except:
 		# 	self.bias = 0.
 
-		self.bias = 2.
 
 		self.integral = 0.
 
-		self.integralGain = 0.00000000001
+		if hasattr(sim_data, "scaling_factor"):
+			self.integralGain = sim_data.scaling_factor
+		else:
+			self.integralGain = 0.0001
 
 	def calculateRequest(self):
 		self.inactiveRnaPolys.requestAll()
@@ -142,8 +146,14 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		effectiveElongationRate = self.readFromListener("RibosomeData", "effectiveElongationRate") * units.aa / units.s
 		expectedElongationRate = self.ribosomeElongationRateDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
+		expectedDoublingTime = self.doublingTimeDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
 
-		elongationOffset = -1 * (expectedElongationRate - effectiveElongationRate).asNumber()
+		self.writeToListener("ControlLoop", "expectedElongationRate", expectedElongationRate.asNumber())
+		self.writeToListener("ControlLoop", "expectedDoublingTime", expectedDoublingTime.asNumber())
+
+		elongationOffset = 0.
+		if self.time() > 10:
+			elongationOffset = -1 * (expectedElongationRate - effectiveElongationRate).asNumber()
 
 		import copy
 		synthProbFractions = copy.copy(self.rnaSynthProbFractions[self._sim.processes["PolypeptideElongation"].currentNutrients])
@@ -158,7 +168,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.integral += elongationOffset
 
-		synthProbFractions["rRna"] = np.max([synthProbFractions["rRna"] + self.gain * elongationOffset + self.integralGain * self.integral, 0.])
+		correction = synthProbFractions["rRna"] + self.gain * elongationOffset + self.integralGain * self.integral
+
+		synthProbFractions["rRna"] = np.clip(correction, 0, 1)
 		total = synthProbFractions["mRna"] + synthProbFractions["tRna"] + synthProbFractions["rRna"]
 		for key in synthProbFractions.iterkeys():
 			synthProbFractions[key] /= total
@@ -175,6 +187,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		scaleTheRestBy = (1. - self.rnaSynthProb[self.setIdxs].sum()) / self.rnaSynthProb[~self.setIdxs].sum()
 		self.rnaSynthProb[~self.setIdxs] *= scaleTheRestBy
 
+		self.rnaSynthProb[self.rnaSynthProb < 0] = 0.
+		self.rnaSynthProb /= self.rnaSynthProb.sum()
 
 		assert np.allclose(self.rnaSynthProb.sum(),1.)
 		assert np.all(self.rnaSynthProb >= 0.)

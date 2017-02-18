@@ -35,6 +35,8 @@ class ControlLoop(wholecell.listeners.listener.Listener):
 		self.errorInElongationRate = None
 		self.proportionalTerm = None
 		self.integralTerm = None
+		self.expectedElongationRate = None
+		self.expectedDoublingTime = None
 
 		self.bias = None
 
@@ -44,6 +46,9 @@ class ControlLoop(wholecell.listeners.listener.Listener):
 	# Allocate memory
 	def allocate(self):
 		super(ControlLoop, self).allocate()
+
+		self.expectedElongationRate = 0.
+		self.expectedDoublingTime = 0.
 
 		self.errorInElongationRate = 0.
 		self.proportionalTerm = 0.
@@ -70,4 +75,6 @@ class ControlLoop(wholecell.listeners.listener.Listener):
 			rRnaSynthRate_expected = self.rRnaSynthRate_expected,
 			rRnaSynthRate_updated = self.rRnaSynthRate_updated,
 			bias = self.bias,
+			expectedDoublingTime = self.expectedDoublingTime,
+			expectedElongationRate = self.expectedElongationRate,
 			)
