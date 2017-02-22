@@ -92,6 +92,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	axesList[2].plot(time / 60., rRnaSynthRate_updated, label = "updated")
 	axesList[2].legend(fontsize=FONT_SIZE, loc=4,frameon=False)
 	axesList[2].set_ylabel("rRNA synthesis prob", fontsize=FONT_SIZE)
+	axesList[2].set_ylim([0.16, 0.2])
 
 	axesList[3].plot(time / 60., doublingTime.asNumber(units.min))
 	axesList[3].set_ylabel("Inst. doubling\ntime (min)", fontsize=FONT_SIZE)
@@ -119,8 +120,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
-
-	raise Exception()
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
