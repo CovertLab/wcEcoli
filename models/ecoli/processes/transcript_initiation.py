@@ -114,21 +114,18 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.rnaSynthProbRProtein = sim_data.process.transcription.rnaSynthProbRProtein
 		self.rnaSynthProbRnaPolymerase = sim_data.process.transcription.rnaSynthProbRnaPolymerase
 
-		self.gain = 0.5
-		self.bias = 2.
 
-		# try:
-		# 	self.bias = sim_data.scaling_factor
-		# except:
-		# 	self.bias = 0.
-
+		# When using enviornment specific setpoint: gain = 0.5, bias = 2., integral gain = 0.0001
 
 		self.integral = 0.
 
+		self.kp = 0.5
+		self.ki = 0.
+
 		if hasattr(sim_data, "scaling_factor"):
-			self.integralGain = sim_data.scaling_factor
+			self.bias = sim_data.scaling_factor
 		else:
-			self.integralGain = 0.0001
+			self.bias = 0.
 
 	def calculateRequest(self):
 		self.inactiveRnaPolys.requestAll()
@@ -144,36 +141,40 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		assert np.allclose(self.rnaSynthProb.sum(),1.)
 		assert np.all(self.rnaSynthProb >= 0.)
 
-		effectiveElongationRate = self.readFromListener("RibosomeData", "effectiveElongationRate") * units.aa / units.s
-		expectedElongationRate = self.ribosomeElongationRateDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
+		effectiveElongationRate = self.readFromListener("RibosomeData", "effectiveElongationRate")# * units.aa / units.s
+		# expectedElongationRate = self.ribosomeElongationRateDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
 		expectedDoublingTime = self.doublingTimeDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
 
-		self.writeToListener("ControlLoop", "expectedElongationRate", expectedElongationRate.asNumber())
+
+		expectedElongationRate = 21.
+		self.writeToListener("ControlLoop", "expectedElongationRate", expectedElongationRate)
+
+		# self.writeToListener("ControlLoop", "expectedElongationRate", expectedElongationRate.asNumber())
 		self.writeToListener("ControlLoop", "expectedDoublingTime", expectedDoublingTime.asNumber())
 
-		elongationOffset = 0.
-		if self.time() > 10:
-			elongationOffset = -1 * (expectedElongationRate - effectiveElongationRate).asNumber()
-
+		elongationOffset = -1 * (expectedElongationRate - effectiveElongationRate)
 		import copy
 		synthProbFractions = copy.copy(self.rnaSynthProbFractions[self._sim.processes["PolypeptideElongation"].currentNutrients])
 		self.writeToListener("ControlLoop", "errorInElongationRate", elongationOffset)
 
 		elongationOffset += self.bias
 
-		self.writeToListener("ControlLoop", "proportionalTerm", self.gain * elongationOffset)
-		self.writeToListener("ControlLoop", "integralTerm", self.integralGain * self.integral)
+		self.writeToListener("ControlLoop", "proportionalTerm", self.kp * elongationOffset)
+		self.writeToListener("ControlLoop", "integralTerm", self.ki * self.integral)
 		self.writeToListener("ControlLoop", "rRnaSynthRate_expected", synthProbFractions["rRna"])
 		self.writeToListener("ControlLoop", "bias", self.bias)
 
 		self.integral += elongationOffset
 
-		correction = synthProbFractions["rRna"] + self.gain * elongationOffset + self.integralGain * self.integral
+		#correction = synthProbFractions["rRna"] + self.kp * elongationOffset + self.ki * self.integral
+		# synthProbFractions["rRna"] = np.clip(correction, 0, 1)
 
-		synthProbFractions["rRna"] = np.clip(correction, 0, 1)
-		total = synthProbFractions["mRna"] + synthProbFractions["tRna"] + synthProbFractions["rRna"]
-		for key in synthProbFractions.iterkeys():
-			synthProbFractions[key] /= total
+		# ksyn = -5*1.33e-4 * elongationOffset**2 - 1.299e-3 * elongationOffset + 0.184
+		# synthProbFractions["rRna"] = np.clip(ksyn, 0, 1)
+
+		# total = synthProbFractions["mRna"] + synthProbFractions["tRna"] + synthProbFractions["rRna"]
+		# for key in synthProbFractions.iterkeys():
+		# 	synthProbFractions[key] /= total
 
 		self.writeToListener("ControlLoop", "rRnaSynthRate_updated", synthProbFractions["rRna"])
 
