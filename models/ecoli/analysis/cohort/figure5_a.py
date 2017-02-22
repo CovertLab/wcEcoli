@@ -27,6 +27,9 @@ FROM_CACHE = False
 # 	axis.xaxis.set_ticks_position('none')
 # 	axis.tick_params(which = 'both', direction = 'out')
 
+def mm2inch(value):
+	return value * 0.0393701
+
 def align_yaxis(ax1, v1, ax2, v2):
     """adjust ax2 ylimit so that v2 in ax2 is aligned to v1 in ax1"""
     _, y1 = ax1.transData.transform((0, v1))
@@ -65,9 +68,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	rnap_subunit_stoich = data_rnap["subunitStoich"]
 
 	# Get all cells
-	ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
+	ap = AnalysisPaths(seedOutDir, cohort_plot = True)
 	gens = np.arange(3,9)
-	allDir = ap.get_cells(generation = gens)
+	allDir = ap.get_cells(seed=[0], generation = gens)
 
 	first_build = True
 
@@ -202,15 +205,13 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# Bursty idx: 
 	protein_index_of_interest = protein_index_of_interest[:5]
 	protein_idx = protein_index_of_interest[1]
-	protein_idx_burst = protein_index_of_interest_burst[0]
+	protein_idx_burst = protein_index_of_interest_burst[2]
 	# fig, axesList = plt.subplots(2,protein_index_of_interest.size, sharex = True)
 	fig, axesList = plt.subplots(ncols = 2, nrows = 2, sharex = True)
 
 	expProtein_axis = axesList[0,0]
-	expProtein_axis.set_title("Exponential dynamics")
 	expRna_axis = axesList[1,0]
 	burstProtein_axis = axesList[0,1]
-	burstProtein_axis.set_title("Sub-generational dynamics")
 	burstRna_axis = axesList[1,1]
 
 	expProteinFold_axis = expProtein_axis.twinx()
@@ -221,7 +222,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	expProteinFold_axis.tick_params(axis = "x", labelbottom='off')
 	expProteinFold_axis.spines["right"].set_position(("outward", 10))
 	expProteinFold_axis.tick_params(which = "both", direction = "out")
-	expProteinFold_axis.set_ylabel("Fold change")
+	expProteinFold_axis.set_ylabel("Fold change", fontsize=9)
 
 	plt.subplots_adjust(wspace=0.3)
 
@@ -233,10 +234,13 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	burstProteinFold_axis.tick_params(axis = "x", labelbottom='off')
 	burstProteinFold_axis.spines["right"].set_position(("outward", 10))
 	burstProteinFold_axis.tick_params(which = "both", direction = "out")
-	burstProteinFold_axis.set_ylabel("Fold change")
+	burstProteinFold_axis.set_ylabel("Fold change", fontsize=9)
 
 	# fig.set_figwidth(protein_index_of_interest.size * 3)
-	fig.set_figwidth(15)
+	mult = 3
+	fig.set_figwidth(mm2inch(80) * mult)
+	fig.set_figheight(mm2inch(50) * mult)
+
 	firstLine = True
 	firstLineInit = None
 	firstLineInitRna = None
@@ -293,9 +297,11 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			firstLineInitRna_burst = float(rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx_burst][0])			
 			firstLine = False
 
-		expProtein_axis.plot(time / 60., proteinMonomerCounts[:, protein_idx], color = "blue")
+
+		linewidth=1
+		expProtein_axis.plot(time / 60., proteinMonomerCounts[:, protein_idx], color = "blue", linewidth=linewidth)
 		expProteinFold_axis.plot(time / 60., proteinMonomerCounts[:, protein_idx] / firstLineInit, alpha = 0.,color = "red")
-		burstProtein_axis.plot(time / 60., proteinMonomerCounts[:, protein_idx_burst], color = "green")
+		burstProtein_axis.plot(time / 60., proteinMonomerCounts[:, protein_idx_burst], color = "green", linewidth=linewidth)
 		burstProteinFold_axis.plot(time / 60., proteinMonomerCounts[:, protein_idx_burst] / firstLineInit_burst, alpha = 0., color="red")
 
 		# axesList[0].set_aspect('equal', 'box')
@@ -304,22 +310,25 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 		#axesList[0].set_xlabel("Time (min)")
 
-		expRna_axis.plot(time / 60., rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx], color = "blue")
-		burstRna_axis.plot(time / 60., rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx_burst], color = "green")
+		expRna_axis.plot(time / 60., rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx], color = "blue", linewidth=linewidth)
+		burstRna_axis.plot(time / 60., rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx_burst], color = "green", linewidth=linewidth)
 		# axesList[1].set_aspect('equal', 'box')
 
-		burstProtein_axis.set_ylabel("{} count".format(sim_data.process.translation.monomerData['id'][protein_idx_burst][:-3]))
-		expProtein_axis.set_ylabel("{} count".format(sim_data.process.translation.monomerData['id'][protein_idx][:-3]))
+		
 		# expProteinFold_axis.set_ylabel("Fold change")
 		# burstProteinFold_axis.set_ylabel("Fold change")
 
 		
-		burstRna_axis.set_ylabel("{} mRNA count".format(sim_data.process.translation.monomerData['id'][protein_idx_burst][:-3]))
-		expRna_axis.set_ylabel("{} mRNA count".format(sim_data.process.translation.monomerData['id'][protein_idx][:-3]))
+		
+
+
 
 		# axesList[0].set(adjustable='box-forced')#, aspect='equal')
 		#axesList[1].set(adjustable='box-forced', aspect='equal')
-
+	expProtein_axis.set_title("Exponential dynamics: {}".format(sim_data.process.translation.monomerData['id'][protein_idx][:-3]), fontsize=9)
+	burstProtein_axis.set_title("Sub-generational dynamics: {}".format(sim_data.process.translation.monomerData['id'][protein_idx_burst][:-3]), fontsize=9)
+	expProtein_axis.set_ylabel("Protein\ncount", rotation=0, fontsize=9)
+	expRna_axis.set_ylabel("mRNA\ncount", rotation=0, fontsize=9)
 
 	align_yaxis(expProtein_axis, firstLineInit, expProteinFold_axis, 1)
 	expProteinFold_axis.set_yticks([expProteinFold_axis.get_ylim()[0], 1., expProteinFold_axis.get_ylim()[1]])
@@ -335,15 +344,14 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	whitePadSparklineAxis(expRna_axis)
 	whitePadSparklineAxis(burstRna_axis)
 
-	burstRna_axis.set_xlabel("Time (min)")
-	expRna_axis.set_xlabel("Time (min)")
+	burstRna_axis.set_xlabel("Time (min)", fontsize=9)
+	expRna_axis.set_xlabel("Time (min)", fontsize=9)
 
+	plt.subplots_adjust(bottom=0.15)
 
 
 	# axesList[1].set_xlabel("Time (min)")
 	# axesList[1].set_ylabel("mRNA count")
-
-	print "got here 4"
 
 		# 	# Log data
 
@@ -386,10 +394,19 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	# yhistAxis.hist(ratioToPlot, bins = 100, orientation='horizontal', range = [0., 10.], log = True)
 	# xhistAxis.hist(burstSizeToPlot, bins = 100, log = True, range = [0., 1000.])
+	axesList = axesList.flatten().tolist()
+	axesList.append(expProteinFold_axis)
+	axesList.append(burstProteinFold_axis)
+	for axes in axesList:
+		for tick in axes.xaxis.get_major_ticks():
+			tick.label.set_fontsize(9) 
+		for tick in axes.yaxis.get_major_ticks():
+			tick.label.set_fontsize(9) 
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
