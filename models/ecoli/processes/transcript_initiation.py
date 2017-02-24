@@ -119,13 +119,14 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.integral = 0.
 
-		self.kp = 0.5
+		self.kp = 0.005
 		self.ki = 0.
+		self.bias = 1.
 
-		if hasattr(sim_data, "scaling_factor"):
-			self.bias = sim_data.scaling_factor
-		else:
-			self.bias = 0.
+		# if hasattr(sim_data, "scaling_factor"):
+		# 	self.kp = sim_data.scaling_factor
+		# else:
+		# 	self.kp = 0.
 
 	def calculateRequest(self):
 		self.inactiveRnaPolys.requestAll()
@@ -154,6 +155,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		elongationOffset = -1 * (expectedElongationRate - effectiveElongationRate)
 		import copy
+		maxSynthProbRRna = self.rnaSynthProbFractions["minimal_plus_amino_acids"]["rRna"]
 		synthProbFractions = copy.copy(self.rnaSynthProbFractions[self._sim.processes["PolypeptideElongation"].currentNutrients])
 		self.writeToListener("ControlLoop", "errorInElongationRate", elongationOffset)
 
@@ -166,15 +168,18 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.integral += elongationOffset
 
-		#correction = synthProbFractions["rRna"] + self.kp * elongationOffset + self.ki * self.integral
+		# correction = synthProbFractions["rRna"] + self.kp * elongationOffset + self.ki * self.integral
 		# synthProbFractions["rRna"] = np.clip(correction, 0, 1)
+
+		correction = maxSynthProbRRna + self.kp * elongationOffset + self.ki * self.integral
+		synthProbFractions["rRna"] = np.clip(correction, 0, 1)
 
 		# ksyn = -5*1.33e-4 * elongationOffset**2 - 1.299e-3 * elongationOffset + 0.184
 		# synthProbFractions["rRna"] = np.clip(ksyn, 0, 1)
 
-		# total = synthProbFractions["mRna"] + synthProbFractions["tRna"] + synthProbFractions["rRna"]
-		# for key in synthProbFractions.iterkeys():
-		# 	synthProbFractions[key] /= total
+		total = synthProbFractions["mRna"] + synthProbFractions["tRna"] + synthProbFractions["rRna"]
+		for key in synthProbFractions.iterkeys():
+			synthProbFractions[key] /= total
 
 		self.writeToListener("ControlLoop", "rRnaSynthRate_updated", synthProbFractions["rRna"])
 
