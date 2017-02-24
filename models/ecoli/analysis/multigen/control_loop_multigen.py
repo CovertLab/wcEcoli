@@ -26,7 +26,7 @@ from wholecell.utils import units
 
 FONT_SIZE = 7
 
-def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
+def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
 	if not os.path.isdir(seedOutDir):
 		raise Exception, "seedOutDir does not currently exist as a directory"
 
@@ -87,29 +87,29 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		axesList[0].plot(time / 60., errorInElongationRate + bias, label="bias")
 		axesList[0].legend(fontsize=FONT_SIZE, loc=4,frameon=False)
 		axesList[0].set_ylabel("Error " + r"$(e_{expected} - e_{actual})$", fontsize=FONT_SIZE)
+		axesList[0].set_ylim([0, -14])
 
 		axesList[1].plot(time / 60., proportionalTerm, label = "proportional", alpha = 0.7)
 		axesList[1].plot(time / 60., integralTerm, label = "integral", alpha = 0.7)
 		axesList[1].plot(time / 60., proportionalTerm + integralTerm, label = "sum", alpha = 0.7)
 		axesList[1].legend(fontsize=FONT_SIZE, loc=4,frameon=False)
-		axesList[1].set_ylim([-1, 1])
 		axesList[1].set_ylabel("Correction terms", fontsize=FONT_SIZE)
 
 		axesList[2].plot(time / 60., rRnaSynthRate_expected, label = "expected")
 		axesList[2].plot(time / 60., rRnaSynthRate_updated, label = "updated")
 		axesList[2].legend(fontsize=FONT_SIZE, loc=4,frameon=False)
 		axesList[2].set_ylabel("rRNA synthesis prob", fontsize=FONT_SIZE)
-		axesList[2].set_ylim([0.16, 0.2])
+		#axesList[2].set_ylim([0.16, 0.2])
 
 		axesList[3].plot(time / 60., doublingTime.asNumber(units.min))
 		axesList[3].set_ylabel("Inst. doubling\ntime (min)", fontsize=FONT_SIZE)
 		axesList[3].plot(time / 60., expected_doubling_time, '--')
-		axesList[3].set_ylim([20., 50.])
+		axesList[3].set_ylim([20., 120.])
 
 		axesList[4].plot(time / 60., effective_elongation_rate)
 		axesList[4].set_ylabel("Eff. elng.\nrate", fontsize=FONT_SIZE)
 		axesList[4].plot(time / 60., expected_elongation_rate, '--')
-		axesList[4].set_ylim([12., 22.])
+		axesList[4].set_ylim([5., 22.])
 
 		axesList[5].plot(time / 60., ribosomeConcentration.asNumber(units.mmol / units.L))
 		axesList[5].set_ylabel("[Rib]", fontsize=FONT_SIZE)
