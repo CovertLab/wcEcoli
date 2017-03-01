@@ -216,7 +216,7 @@ if COMPRESS_OUTPUT:
 
 	fw_raw_data_compression = Firework(
 		ScriptTask(
-			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_raw_data)
+			script = "echo HelloWorld"
 			),
 		name = fw_name,
 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
@@ -260,7 +260,7 @@ if COMPRESS_OUTPUT:
 
 	fw_sim_data_1_compression = Firework(
 		ScriptTask(
-			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_sim_data_fit_1)
+			script = "echo HelloWorld"
 			),
 		name = fw_name,
 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
@@ -316,7 +316,7 @@ if COMPRESS_OUTPUT:
 	fw_name = "ScriptTask_compression_validation_data_raw"
 	fw_raw_validation_data_compression = Firework(
 		ScriptTask(
-			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_raw_validation_data)
+			script = "echo HelloWorld"
 			),
 		name = fw_name,
 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
@@ -358,7 +358,7 @@ if COMPRESS_OUTPUT:
 
 	fw_validation_data_compression = Firework(
 		ScriptTask(
-			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_validation_data)
+			script = "echo HelloWorld"
 			),
 		name = fw_name,
 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
@@ -422,7 +422,7 @@ for i in VARIANTS_TO_RUN:
 		fw_name = "ScriptTask_compression_variant_KB"
 		fw_this_variant_sim_data_compression = Firework(
 			ScriptTask(
-				script = "bzip2 -v " + os.path.join(VARIANT_SIM_DATA_DIRECTORY, "simData_Modified.cPickle")
+				script = "echo HelloWorld"
 				),
 			name = fw_name,
 			spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
@@ -554,7 +554,7 @@ for i in VARIANTS_TO_RUN:
 					fw_name = "ScriptTask_compression_simulation__Seed_%d__Gen_%d__Cell_%d" % (j, k, l)
 					fw_this_variant_this_gen_this_sim_compression = Firework(
 						ScriptTask(
-							script = 'for dir in %s; do echo "Compressing $dir"; find "$dir" -type f | xargs bzip2; done' % os.path.join(CELL_SIM_OUT_DIRECTORY, "*")
+							script = "echo HelloWorld"
 							),
 						name = fw_name,
 						spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
