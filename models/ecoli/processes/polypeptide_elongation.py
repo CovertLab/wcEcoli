@@ -152,7 +152,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 
 		if self.translationSupply:
-			translationSupplyRate = self.translation_aa_supply[self.currentNutrients]
+			translationSupplyRate = self.translation_aa_supply[self.currentNutrients] * self.elngRateFactor
 
 			self.writeToListener("RibosomeData", "translationSupply", translationSupplyRate.asNumber())
 
@@ -290,6 +290,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("RibosomeData", "expectedElongations", expectedElongations.sum())
 		self.writeToListener("RibosomeData", "actualElongations", sequenceElongations.sum())
+		self.writeToListener("RibosomeData", "actualElongationHist", np.histogram(sequenceElongations, bins = np.arange(0,22))[0])
+		self.writeToListener("RibosomeData", "elongationsNonTerminatingHist", np.histogram(sequenceElongations[~didTerminate], bins=np.arange(0,22))[0])
 
 		self.writeToListener("RibosomeData", "didTerminate", didTerminate.sum())
 		self.writeToListener("RibosomeData", "terminationLoss", (terminalLengths - peptideLengths)[didTerminate].sum())
