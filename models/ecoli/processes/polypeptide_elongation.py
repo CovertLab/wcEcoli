@@ -163,7 +163,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 			countAasRequested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
 
-			countAasRequested = np.fmin(countAasRequested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
+			# countAasRequested = np.fmin(countAasRequested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
 		else:
 			countAasRequested = aasInSequences
 
