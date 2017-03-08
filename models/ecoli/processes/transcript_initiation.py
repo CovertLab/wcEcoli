@@ -121,7 +121,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.kp = 0.005
 		self.ki = 0.
-		self.bias = 1.
+		self.bias = 0.#1.
 
 		# if hasattr(sim_data, "scaling_factor"):
 		# 	self.kp = sim_data.scaling_factor
