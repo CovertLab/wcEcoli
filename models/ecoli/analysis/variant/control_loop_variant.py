@@ -51,6 +51,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 	ax6 = plt.subplot2grid((7,2), (0,1), rowspan=2)
 	ax7 = plt.subplot2grid((7,2), (3,1), rowspan=2)
+	ax8 = plt.subplot2grid((7,2), (5,1))
 
 	axesList = [ax0, ax1, ax2, ax3, ax4, ax5, ax8]
 
@@ -91,6 +92,11 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 			requestedAAs = TableReader(os.path.join(simOutDir, "GrowthLimits")).readColumn("aaRequestSize")
 			usedAAs = TableReader(os.path.join(simOutDir, "GrowthLimits")).readColumn("aasUsed")
+			actualElongationHistogram = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("actualElongationHist")
+
+			elongationsNonTerminatingHist = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("elongationsNonTerminatingHist")
+
+			aaAllocated = TableReader(os.path.join(simOutDir, "GrowthLimits")).readColumn("aaAllocated")
 
 			growthRate = TableReader(os.path.join(simOutDir, "Mass")).readColumn("instantaniousGrowthRate")
 			growthRate = (1 / units.s) * growthRate
@@ -178,6 +184,9 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 			binwidth=bins[1] - bins[0]
 			counts_norm = counts / counts.max()
 			ax7.bar(bins[:-1], counts_norm, width=binwidth, linewidth=0)
+
+
+			# ax8
 
 			firstPass = False
 
