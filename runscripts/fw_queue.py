@@ -216,7 +216,7 @@ if COMPRESS_OUTPUT:
 
 	fw_raw_data_compression = Firework(
 		ScriptTask(
-			script = "echo HelloWorld"
+			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_raw_data)
 			),
 		name = fw_name,
 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
@@ -260,7 +260,7 @@ if COMPRESS_OUTPUT:
 
 	fw_sim_data_1_compression = Firework(
 		ScriptTask(
-			script = "echo HelloWorld"
+			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_sim_data_fit_1)
 			),
 		name = fw_name,
 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
@@ -316,7 +316,7 @@ if COMPRESS_OUTPUT:
 	fw_name = "ScriptTask_compression_validation_data_raw"
 	fw_raw_validation_data_compression = Firework(
 		ScriptTask(
-			script = "echo HelloWorld"
+			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_raw_validation_data)
 			),
 		name = fw_name,
 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
@@ -358,7 +358,7 @@ if COMPRESS_OUTPUT:
 
 	fw_validation_data_compression = Firework(
 		ScriptTask(
-			script = "echo HelloWorld"
+			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_validation_data)
 			),
 		name = fw_name,
 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
@@ -372,21 +372,21 @@ if COMPRESS_OUTPUT:
 # Variant analysis
 VARIANT_PLOT_DIRECTORY = os.path.join(INDIV_OUT_DIRECTORY, "plotOut")
 
-metadata["analysis_type"] = "variant"
-metadata["total_variants"] = str(len(VARIANTS_TO_RUN))
+# metadata["analysis_type"] = "variant"
+# metadata["total_variants"] = str(len(VARIANTS_TO_RUN))
 
-fw_name = "AnalysisVariantTask"
-fw_variant_analysis = Firework(
-	AnalysisVariantTask(
-		input_directory = os.path.join(INDIV_OUT_DIRECTORY),
-		input_validation_data = os.path.join(KB_DIRECTORY, filename_validation_data),
-		output_plots_directory = VARIANT_PLOT_DIRECTORY,
-		metadata = metadata,
-		),
-	name = fw_name,
-	spec = {"_queueadapter": {"job_name": fw_name}, "_priority":5}
-	)
-wf_fws.append(fw_variant_analysis)
+# fw_name = "AnalysisVariantTask"
+# fw_variant_analysis = Firework(
+# 	AnalysisVariantTask(
+# 		input_directory = os.path.join(INDIV_OUT_DIRECTORY),
+# 		input_validation_data = os.path.join(KB_DIRECTORY, filename_validation_data),
+# 		output_plots_directory = VARIANT_PLOT_DIRECTORY,
+# 		metadata = metadata,
+# 		),
+# 	name = fw_name,
+# 	spec = {"_queueadapter": {"job_name": fw_name}, "_priority":5}
+# 	)
+# wf_fws.append(fw_variant_analysis)
 
 ### Create variants and simulations
 for i in VARIANTS_TO_RUN:
@@ -399,41 +399,41 @@ for i in VARIANTS_TO_RUN:
 	metadata["variant_index"] = i
 
 	# Variant simData creation task
-	# fw_name = "VariantSimDataTask_%06d" % (i)
-	# fw_this_variant_sim_data = Firework(
-	# 	VariantSimDataTask(
-	# 		variant_function = VARIANT,
-	# 		variant_index = i,
-	# 		input_sim_data = os.path.join(KB_DIRECTORY, wholecell.utils.constants.SERIALIZED_SIM_DATA_MOST_FIT_FILENAME),
-	# 		output_sim_data = os.path.join(VARIANT_SIM_DATA_DIRECTORY, "simData_Modified.cPickle"),
-	# 		variant_metadata_directory = VARIANT_METADATA_DIRECTORY,
-	# 		),
-	# 	name = fw_name,
-	# 	spec = {"_queueadapter": {"job_name": fw_name}, "_priority":1}
-	# 	)
+	fw_name = "VariantSimDataTask_%06d" % (i)
+	fw_this_variant_sim_data = Firework(
+		VariantSimDataTask(
+			variant_function = VARIANT,
+			variant_index = i,
+			input_sim_data = os.path.join(KB_DIRECTORY, wholecell.utils.constants.SERIALIZED_SIM_DATA_MOST_FIT_FILENAME),
+			output_sim_data = os.path.join(VARIANT_SIM_DATA_DIRECTORY, "simData_Modified.cPickle"),
+			variant_metadata_directory = VARIANT_METADATA_DIRECTORY,
+			),
+		name = fw_name,
+		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":1}
+		)
 
-	# wf_fws.append(fw_this_variant_sim_data)
+	wf_fws.append(fw_this_variant_sim_data)
 
-	# wf_links[fw_symlink_most_fit].append(fw_this_variant_sim_data)
-	# wf_links[fw_this_variant_sim_data].append(fw_sim_data_1_compression)
+	wf_links[fw_symlink_most_fit].append(fw_this_variant_sim_data)
+	wf_links[fw_this_variant_sim_data].append(fw_sim_data_1_compression)
 
-	# if COMPRESS_OUTPUT:
-	# 	# Variant simData compression
-	# 	fw_name = "ScriptTask_compression_variant_KB"
-	# 	fw_this_variant_sim_data_compression = Firework(
-	# 		ScriptTask(
-	# 			script = "echo HelloWorld"
-	# 			),
-	# 		name = fw_name,
-	# 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
-	# 		)
+	if COMPRESS_OUTPUT:
+		# Variant simData compression
+		fw_name = "ScriptTask_compression_variant_KB"
+		fw_this_variant_sim_data_compression = Firework(
+			ScriptTask(
+				script = "bzip2 -v " + os.path.join(VARIANT_SIM_DATA_DIRECTORY, "simData_Modified.cPickle")
+				),
+			name = fw_name,
+			spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
+			)
 
-	# 	wf_fws.append(fw_this_variant_sim_data_compression)
+		wf_fws.append(fw_this_variant_sim_data_compression)
 
 	# Cohort analysis
 	COHORT_PLOT_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "plotOut")
 
-	# metadata["analysis_type"] = "cohort"
+	metadata["analysis_type"] = "cohort"
 
 	# fw_name = "AnalysisCohortTask__Var_%02d" % (i)
 	# fw_this_variant_cohort_analysis = Firework(
@@ -536,9 +536,9 @@ for i in VARIANTS_TO_RUN:
 						)
 
 				wf_fws.append(fw_this_variant_this_gen_this_sim)
-				wf_links[fw_this_variant_this_gen_this_sim].append(fw_this_variant_this_seed_this_analysis)
-				wf_links[fw_this_variant_this_gen_this_sim].append(fw_this_variant_cohort_analysis)
-				wf_links[fw_this_variant_this_gen_this_sim].append(fw_variant_analysis)
+				# wf_links[fw_this_variant_this_gen_this_sim].append(fw_this_variant_this_seed_this_analysis)
+				# wf_links[fw_this_variant_this_gen_this_sim].append(fw_this_variant_cohort_analysis)
+				# wf_links[fw_this_variant_this_gen_this_sim].append(fw_variant_analysis)
 
 				sims_this_seed[k].append(fw_this_variant_this_gen_this_sim)
 
@@ -549,18 +549,18 @@ for i in VARIANTS_TO_RUN:
 					fw_parent_sim = sims_this_seed[k - 1][l // 2]
 					wf_links[fw_parent_sim].append(fw_this_variant_this_gen_this_sim)
 
-				if COMPRESS_OUTPUT:
-					# Output compression job
-					fw_name = "ScriptTask_compression_simulation__Seed_%d__Gen_%d__Cell_%d" % (j, k, l)
-					fw_this_variant_this_gen_this_sim_compression = Firework(
-						ScriptTask(
-							script = "echo HelloWorld"
-							),
-						name = fw_name,
-						spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
-						)
+				# if COMPRESS_OUTPUT:
+				# 	# Output compression job
+				# 	fw_name = "ScriptTask_compression_simulation__Seed_%d__Gen_%d__Cell_%d" % (j, k, l)
+				# 	fw_this_variant_this_gen_this_sim_compression = Firework(
+				# 		ScriptTask(
+				# 			script = 'for dir in %s; do echo "Compressing $dir"; find "$dir" -type f | xargs bzip2; done' % os.path.join(CELL_SIM_OUT_DIRECTORY, "*")
+				# 			),
+				# 		name = fw_name,
+				# 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
+				# 		)
 
-					# wf_fws.append(fw_this_variant_this_gen_this_sim_compression)
+				# 	wf_fws.append(fw_this_variant_this_gen_this_sim_compression)
 
 				metadata["analysis_type"] = "single"
 
