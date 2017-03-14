@@ -206,6 +206,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self._elngRate()
 			)
 
+		if sequences.size == 0:
+			return
+
 		# Calculate elongation resource capacity
 		aaCountInSequence = np.bincount(sequences[(sequences != PAD_VALUE)])
 		aaCounts = self.aas.counts()
