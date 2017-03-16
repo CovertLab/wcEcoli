@@ -125,6 +125,7 @@ class Simulation(object):
 		self.hooks = _orderedAbstractionReference(self._hookClasses)
 		self._initLoggers()
 		self._cellCycleComplete = False
+		self._isDead = False
 
 		for state in self.states.itervalues():
 			state.initialize(self, sim_data)
@@ -188,7 +189,7 @@ class Simulation(object):
 			logger.initialize(self)
 
 		# Simulate
-		while self.time() < self._lengthSec + self.initialTime():
+		while self.time() < self._lengthSec + self.initialTime() and not self._isDead:
 			if self._cellCycleComplete:
 				break
 

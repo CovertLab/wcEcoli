@@ -81,10 +81,13 @@ class TableReader(object):
 		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA)) as dataFile:
 			dataFile.seek(offsets[0])
 
-			return np.fromstring(
+			data = np.fromstring(
 				dataFile.read(), dtype
 				).reshape(nEntries, -1).squeeze()
 
+			if len(data.shape):
+				return data
+			return data.reshape(1,)
 
 	def iterColumn(self, name):
 		if name not in self._columnNames:
