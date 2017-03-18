@@ -41,6 +41,12 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	mRnaSynthProb = np.array([synthProb[x] for x in mRnaIds])
 	mRnaNames = np.array([rnaIds[x] for x in mRnaIds])
 
+	FLOATS = np.array(mRnaSynthProb)
+	NAMES  = np.array(mRnaNames)
+	DAT =  np.column_stack((NAMES, FLOATS))
+	np.savetxt(os.path.join(plotOutDir, 'synthProb.txt'), DAT, delimiter = " ", fmt = "%s")
+	# import ipdb; ipdb.set_trace()
+
 	# Get whether or not mRNAs were transcribed
 	transcribedBool = []
 	simulatedSynthProbs = []

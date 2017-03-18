@@ -63,8 +63,14 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	proteinCountsBulk = bulkMolecules.readColumn("counts")[:, proteinIndexes]
 	bulkMolecules.close()
 
+	# ids_protein_validation = validation_data.protein.schmidt2015Data["monomerId"].tolist()
+	# proteinIndexesValidation = np.array([moleculeIds.index(moleculeId) for moleculeId in ids_protein_validation], np.int)
+	# proteinCountsBulkValidation = bulkMolecules.readColumn("counts")[:, proteinIndexesValidation]
+	# proteinCountsBulkValidationMean = proteinCountsBulkValidation.mean(axis = 0)
+
 	# Account for monomers
 	bulkContainer.countsIs(proteinCountsBulk.mean(axis = 0))
+	# bulkContainer.countsIs(proteinCountsBulk[-1,:])
 
 	# Account for unique molecules
 	uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
@@ -105,6 +111,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	# plugins.connect(fig, tooltip)
 
 	# Schmidt Counts
+	view_validation_schmidt = bulkContainer.countsView(validation_data.protein.schmidt2015Data["monomerId"].tolist())
 	schmidtLabels = validation_data.protein.schmidt2015Data["monomerId"]
 	schmidtCounts = validation_data.protein.schmidt2015Data["glucoseCounts"]
 	schmidtPoints = ax.scatter(
@@ -112,6 +119,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		np.log10(schmidtCounts + 1),
 		np.log10(view_validation_schmidt.counts() + 1),
 		alpha=.2)
+	print pearsonr( np.log10(view_validation_schmidt.counts() + 1), np.log10(schmidtCounts + 1) )[0]
 	# ax[1].set_xlabel("Log 10(Schmidt 2015 Counts)")
 	# ax[1].set_title("Pearson r: %0.4f" % pearsonr(np.log10(view_validation_schmidt.counts() + 1), np.log10(schmidtCounts + 1))[0])
 	# ax.set_xlabel("Log10 (Schmidt 2015 Counts)")

@@ -13,8 +13,8 @@ def whitePadSparklineAxis(axis, xAxis = True):
 	axis.spines["bottom"].set_position(("outward", 10))
 	axis.set_yticks(axis.get_ylim())
 	axis.set_xticks(axis.get_xlim())
-	axis.tick_params(right = "off")
-	axis.tick_params(top = "off")
+	axis.tick_params(right = "on")
+	axis.tick_params(top = "on")
 	axis.tick_params(which = "both", direction = "out")
 
 	if not xAxis:

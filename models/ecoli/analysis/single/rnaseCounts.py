@@ -48,8 +48,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	
 	# RNase P and PNP
-	RNase_IDS = ['EG10862_RNA[c]', 'EG10862-MONOMER[c]', 'EG10743_RNA[c]', 'EG10743-MONOMER[c]']
+	#RNase_IDS = ['EG10862_RNA[c]', 'EG10862-MONOMER[c]', 'EG10743_RNA[c]', 'EG10743-MONOMER[c]']
 
+	# RNase P and SpoT
+	RNase_IDS = ['EG10862_RNA[c]', 'EG10862-MONOMER[c]', 'EG10966_RNA[c]', 'SPOT-MONOMER[c]']
 
 	rnapRnaIndexes = np.array([moleculeIds.index(rnapRnaId) for rnapRnaId in RNase_IDS], np.int)
 	rnapRnaCounts = bulkMolecules.readColumn("counts")[:, rnapRnaIndexes]
