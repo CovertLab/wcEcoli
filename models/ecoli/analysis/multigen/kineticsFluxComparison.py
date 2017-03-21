@@ -20,6 +20,7 @@ import matplotlib
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 
+from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
@@ -30,75 +31,70 @@ from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_U
 
 BURN_IN_STEPS = 20
 
-def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
-	if not os.path.isdir(simOutDir):
-		raise Exception, "simOutDir does not currently exist as a directory"
+def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
+	if not os.path.isdir(seedOutDir):
+		raise Exception, "seedOutDir does not currently exist as a directory"
 
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
 
-	sim_data = cPickle.load(open(simDataFile))
+	# Get all cells
+	ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
+	allDir = ap.get_cells()
+	# allDir = ap.get_cells(generation = [0, 1, 2])
+
+	sim_data = cPickle.load(open(simDataFile, "rb"))
 
 	constraintIsKcatOnly = sim_data.process.metabolism.constraintIsKcatOnly
 	constrainedReactions = np.array(sim_data.process.metabolism.constrainedReactionList)
 	useAllConstraints = sim_data.process.metabolism.useAllConstraints
 	constraintsToDisable = sim_data.process.metabolism.constraintsToDisable
 
-	mainListener = TableReader(os.path.join(simOutDir, "Main"))
-	initialTime = mainListener.readAttribute("initialTime")
-	time = mainListener.readColumn("time") - initialTime
-	timeStepSec = mainListener.readColumn("timeStepSec")
-	mainListener.close()
+	targetFluxList = []
+	actualFluxList = []
 
-	massListener = TableReader(os.path.join(simOutDir, "Mass"))
-	cellMass = massListener.readColumn("cellMass")
-	dryMass = massListener.readColumn("dryMass")
-	massListener.close()
+	for simDir in allDir:
+		simOutDir = os.path.join(simDir, "simOut")
+		mainListener = TableReader(os.path.join(simOutDir, "Main"))
+		initialTime = mainListener.readAttribute("initialTime")
+		time = mainListener.readColumn("time") - initialTime
+		timeStepSec = mainListener.readColumn("timeStepSec")
+		mainListener.close()
 
-	coefficient = dryMass / cellMass * sim_data.constants.cellDensity.asNumber(units.g / units.L) # units - g/L
+		massListener = TableReader(os.path.join(simOutDir, "Mass"))
+		cellMass = massListener.readColumn("cellMass")
+		dryMass = massListener.readColumn("dryMass")
+		massListener.close()
 
-	# read constraint data
-	enzymeKineticsReader = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
-	targetFluxes = (units.dmol / units.g / units.s) * (enzymeKineticsReader.readColumn("targetFluxes").T / coefficient).T
-	actualFluxes = (units.dmol / units.g / units.s) * (enzymeKineticsReader.readColumn("actualFluxes").T / coefficient).T
-	reactionConstraint = enzymeKineticsReader.readColumn("reactionConstraint")
-	enzymeKineticsReader.close()
+		coefficient = dryMass / cellMass * sim_data.constants.cellDensity.asNumber(units.g / units.L) # units - g/L
 
-	targetFluxes = targetFluxes.asNumber(units.mmol / units.g / units.h)
-	actualFluxes = actualFluxes.asNumber(units.mmol / units.g / units.h)
+		# read constraint data
+		enzymeKineticsReader = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
+		targetFluxes = (units.dmol / units.g / units.s) * (enzymeKineticsReader.readColumn("targetFluxes").T / coefficient).T
+		actualFluxes = (units.dmol / units.g / units.s) * (enzymeKineticsReader.readColumn("actualFluxes").T / coefficient).T
+		reactionConstraint = enzymeKineticsReader.readColumn("reactionConstraint")
+		enzymeKineticsReader.close()
 
-	targetAve = np.mean(targetFluxes[BURN_IN_STEPS:, :], axis = 0)
-	actualAve = np.mean(actualFluxes[BURN_IN_STEPS:, :], axis = 0)
+		targetFluxes = targetFluxes.asNumber(units.mmol / units.g / units.h)
+		actualFluxes = actualFluxes.asNumber(units.mmol / units.g / units.h)
 
-	relError = np.abs((actualFluxes[BURN_IN_STEPS:, :] - targetFluxes[BURN_IN_STEPS:, :]) / (targetFluxes[BURN_IN_STEPS:, :] + 1e-15))
-	aveError = np.mean(relError, axis = 0)
+		targetAve = np.mean(targetFluxes[BURN_IN_STEPS:, :], axis = 0)
+		actualAve = np.mean(actualFluxes[BURN_IN_STEPS:, :], axis = 0)
 
-	kcatOnlyReactions = np.all(constraintIsKcatOnly[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
-	kmAndKcatReactions = ~np.any(constraintIsKcatOnly[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
-	mixedReactions = ~(kcatOnlyReactions ^ kmAndKcatReactions)
+		if len(targetFluxList) == 0:
+			targetFluxList = np.array([targetAve])
+			actualFluxList = np.array([actualAve])
+		else:
+			targetFluxList = np.concatenate((targetFluxList, np.array([targetAve])), axis = 0)
+			actualFluxList = np.concatenate((actualFluxList, np.array([actualAve])), axis = 0)
 
-	disabledReactions = np.zeros_like(kcatOnlyReactions)
+	targetAve = np.mean(targetFluxList, axis = 0)
+	actualAve = np.mean(actualFluxList, axis = 0)
+
+	disabledReactions = np.zeros(len(constrainedReactions), dtype = bool)
 	if not useAllConstraints:
 		for rxn in constraintsToDisable:
 			disabledReactions[np.where(constrainedReactions == rxn)[0]] = True
-
-		kcatOnlyReactions[disabledReactions] = False
-		kmAndKcatReactions[disabledReactions] = False
-		mixedReactions[disabledReactions] = False
-
-	# find kinetically constrained reactions that also are catalyzed by an enzyme without kinetics info
-	unconstrainedReactions = np.zeros_like(kcatOnlyReactions)
-	for idx, rxn in enumerate(constrainedReactions):
-		noKinetics = False
-		withKinetics = False
-		for catalyst in sim_data.process.metabolism.reactionCatalysts[rxn]:
-			if catalyst in sim_data.process.metabolism.enzymeIdList:
-				withKinetics = True
-			else:
-				noKinetics = True
-
-		if withKinetics and noKinetics:
-			unconstrainedReactions[idx] = True
 
 	thresholds = [2, 10]
 	categorization = np.zeros(reactionConstraint.shape[1])
@@ -112,31 +108,36 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	siteStr = "https://ecocyc.org/overviewsWeb/celOv.shtml?zoomlevel=1&orgid=ECOLI"
 	excluded = ['RXN0-2201', 'RXN-16000', 'RXN-12583', 'RXN-11496', 'DIMESULFREDUCT-RXN', '3.6.1.41-R[4/63051]5-NUCLEOTID-RXN'] # reactions not recognized by ecocyc
 	rxns = []
-	for i, reaction in enumerate(constrainedReactions):
-		if actualAve[i] == 0:
-			rxn = re.findall(".+RXN", reaction)
-			if len(rxn) == 0:
-				rxn = re.findall("RXN[^-]*-[0-9]+", reaction)
-			if rxn[0] not in excluded:
-				siteStr += "&rnids=%s" % rxn[0]
-			rxns.append(rxn[0])
+	for i, reaction in enumerate(constrainedReactions[categorization == -2]):
+		rxn = re.findall(".+RXN", reaction)
+		if len(rxn) == 0:
+			rxn = re.findall("RXN[^-]*-[0-9]+", reaction)
+		if rxn[0] not in excluded:
+			siteStr += "&rnids=%s" % rxn[0]
+		rxns.append(rxn[0])
 	# print siteStr
+
+	# find kinetically constrained reactions that also are catalyzed by an enzyme without kinetics info
+	unconstrainedReactions = np.zeros(len(constrainedReactions), dtype = bool)
+	for idx, rxn in enumerate(constrainedReactions):
+		noKinetics = False
+		withKinetics = False
+		for catalyst in sim_data.process.metabolism.reactionCatalysts[rxn]:
+			if catalyst in sim_data.process.metabolism.enzymeIdList:
+				withKinetics = True
+			else:
+				noKinetics = True
+
+		if withKinetics and noKinetics:
+			unconstrainedReactions[idx] = True
 
 	csvFile = open(os.path.join(plotOutDir, plotOutFileName + ".tsv"), "wb")
 	output = csv.writer(csvFile, delimiter = "\t")
 	output.writerow(["ecocyc link:", siteStr])
-	output.writerow(["Km and kcat", "Target", "Actual", "Category"])
-	for reaction, target, flux, category in zip(constrainedReactions[kmAndKcatReactions], targetAve[kmAndKcatReactions], actualAve[kmAndKcatReactions], categorization[kmAndKcatReactions]):
-		output.writerow([reaction, target, flux, category])
+	output.writerow(["", "Target", "Actual", "Category"])
 
-	output.writerow(["kcat only"])
-	for reaction, target, flux, category in zip(constrainedReactions[kcatOnlyReactions], targetAve[kcatOnlyReactions], actualAve[kcatOnlyReactions], categorization[kcatOnlyReactions]):
+	for reaction, target, flux, category in zip(constrainedReactions[~disabledReactions], targetAve[~disabledReactions], actualAve[~disabledReactions], categorization[~disabledReactions]):
 		output.writerow([reaction, target, flux, category])
-
-	if np.sum(mixedReactions):
-		output.writerow(["mixed constraints"])
-		for reaction, target, flux, category in zip(constrainedReactions[mixedReactions], targetAve[mixedReactions], actualAve[mixedReactions], categorization[mixedReactions]):
-			output.writerow([reaction, target, flux, category])
 
 	if np.sum(disabledReactions):
 		output.writerow(["disabled constraints"])
@@ -150,11 +151,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	plt.figure(figsize = (8, 8))
 	from scipy.stats import pearsonr
-	targetPearson = targetAve[kmAndKcatReactions]
-	actualPearson = actualAve[kmAndKcatReactions]
 	plt.loglog([1e-7, 1e4], [1e-7, 1e4], 'k')
-	# plt.loglog([1e-7, 1e3], [1e-6, 1e4], 'k', linewidth = 0.5)
-	# plt.loglog([1e-6, 1e4], [1e-7, 1e3], 'k', linewidth = 0.5)
+	# plt.loglog([1e-7, 1e3], [1e-6, 1e4], '--r')
+	# plt.loglog([1e-13, 1], [1e-14, 0.1], '--r')
 	# plt.title(pearsonr(np.log10(targetPearson[actualPearson > 0]), np.log10(actualPearson[actualPearson > 0])))
 	# plt.loglog(targetAve[kmAndKcatReactions][kmAndKcatCategorization == 0], actualAve[kmAndKcatReactions][kmAndKcatCategorization == 0], "og")
 	# plt.loglog(targetAve[kmAndKcatReactions][kmAndKcatCategorization == 1], actualAve[kmAndKcatReactions][kmAndKcatCategorization == 1], "o")

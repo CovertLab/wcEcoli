@@ -27,6 +27,14 @@ def clearLabels(axis):
 	axis.set_yticklabels([])
 	axis.set_ylabel("")
 
+def bold(lines):
+	for line in lines:
+		line.set_linewidth(2)
+
+def unbold(lines):
+	for line in lines:
+		line.set_linewidth(1)
+
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
 		raise Exception, "seedOutDir does not currently exist as a directory"
@@ -36,12 +44,16 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	enzymeComplexId = "MENE-CPLX[c]"
 	enzymeMonomerId = "O-SUCCINYLBENZOATE-COA-LIG-MONOMER[c]"
-	enzymeRnaId = "EG11532_RNA[c]"
+	enzymeRnaId = "EG12437_RNA[c]"
 	reactionId = "O-SUCCINYLBENZOATE-COA-LIG-RXN"
 	metaboliteIds = ["REDUCED-MENAQUINONE[c]", "CPD-12115[c]"]
 
 	# Get all cells
 	ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
+	if 0 not in ap._path_data["seed"]:
+		print "Skipping -- figure5D only runs for seed 0"
+		return
+
 	allDir = ap.get_cells(seed = [0])
 
 	sim_data = cPickle.load(open(simDataFile, "rb"))
@@ -75,6 +87,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		dryMass = []
 		timeStepSec = []
 
+		nTranscriptionInitEventsPerGen = []
+		nAvgTetramersPerGen = []
+
 		for gen, simDir in enumerate(allDir):
 			simOutDir = os.path.join(simDir, "simOut")
 
@@ -85,9 +100,12 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 			bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 			moleculeCounts = bulkMolecules.readColumn("counts")
-			enzymeComplexCounts += moleculeCounts[:, enzymeComplexIndex].tolist()
+			enzymeComplexCountsInThisGen = moleculeCounts[:, enzymeComplexIndex].tolist()
 			enzymeMonomerCounts += moleculeCounts[:, enzymeMonomerIndex].tolist()
 			enzymeRnaCounts += moleculeCounts[:, enzymeRnaIndex].tolist()
+
+			enzymeComplexCounts += enzymeComplexCountsInThisGen
+			nAvgTetramersPerGen.append(np.mean(enzymeComplexCountsInThisGen))
 
 			if gen == 0:
 				metaboliteCounts = moleculeCounts[:, metaboliteIndexes]
@@ -102,8 +120,12 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			fbaResults.close()
 
 			rnapDataReader = TableReader(os.path.join(simOutDir, "RnapData"))
-			enzymeRnaInitEvent += rnapDataReader.readColumn("rnaInitEvent")[:, np.where(mRnaIds == enzymeRnaId)[0][0]].tolist()
+			rnaInitEventsInThisGen = rnapDataReader.readColumn("rnaInitEvent")[:, np.where(rnaIds == enzymeRnaId)[0][0]].tolist()
 			rnapDataReader.close()
+
+			enzymeRnaInitEvent += rnaInitEventsInThisGen
+			nTranscriptionInitEventsPerGen.append(np.sum(rnaInitEventsInThisGen))
+
 
 		time = np.array(time)
 		cPickle.dump({
@@ -117,6 +139,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			"dryMass": dryMass,
 			"cellMass": cellMass,
 			"timeStepSec": timeStepSec,
+			"nTranscriptionInitEventsPerGen": nTranscriptionInitEventsPerGen,	# storing value to report in paper
+			"nAvgTetramersPerGen": nAvgTetramersPerGen,							# storing value to report in paper
 			}, open(os.path.join(plotOutDir, "figure5D.pickle"), "wb"))
 	else:
 		D = cPickle.load(open(os.path.join(plotOutDir, "figure5D.pickle"), "r"))
@@ -145,32 +169,32 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	fluxAxis = plt.subplot(6, 1, 5, sharex = rnaInitAxis)
 	metAxis = plt.subplot(6, 1, 6)
 
-	rnaInitAxis.plot(time / 3600., enzymeRnaInitEvent)
+	rnaInitLine = rnaInitAxis.plot(time / 3600., enzymeRnaInitEvent)
 	rnaInitAxis.set_ylabel(r"$menE$" + "\n transcription\nevents", fontsize = 12, rotation = 0)
 	rnaInitAxis.yaxis.set_label_coords(-.1, 0.25)
 	whitePadSparklineAxis(rnaInitAxis, xAxis = False)
 
-	rnaAxis.plot(time / 3600., enzymeRnaCounts)
+	rnaLine = rnaAxis.plot(time / 3600., enzymeRnaCounts)
 	rnaAxis.set_ylabel("menE mRNA\ncounts", fontsize = 12, rotation = 0)
 	rnaAxis.yaxis.set_label_coords(-.1, 0.25)
 	whitePadSparklineAxis(rnaAxis, xAxis = False)
 
-	monomerAxis.plot(time / 3600., enzymeMonomerCounts)
+	monomerLine = monomerAxis.plot(time / 3600., enzymeMonomerCounts)
 	monomerAxis.set_ylabel("MenE monomer\ncounts", fontsize = 12, rotation = 0)
 	monomerAxis.yaxis.set_label_coords(-.1, 0.25)
 	whitePadSparklineAxis(monomerAxis, xAxis = False)
 
-	complexAxis.plot(time / 3600., enzymeComplexCounts)
+	complexLine = complexAxis.plot(time / 3600., enzymeComplexCounts)
 	complexAxis.set_ylabel("MenE tetramer\ncounts", fontsize = 12, rotation = 0)
 	complexAxis.yaxis.set_label_coords(-.1, 0.25)
 	whitePadSparklineAxis(complexAxis, xAxis = False)
 
-	fluxAxis.plot(time / 3600., enzymeFluxes)
+	fluxLine = fluxAxis.plot(time / 3600., enzymeFluxes)
 	fluxAxis.set_ylabel("SUCBZL flux\n(mmol/gDCW/hour)", fontsize = 12, rotation = 0)
 	fluxAxis.yaxis.set_label_coords(-.1, 0.25)
 	whitePadSparklineAxis(fluxAxis, xAxis = False)
 
-	metAxis.plot(time / 3600., metaboliteCounts[:, 0])
+	metLine = metAxis.plot(time / 3600., metaboliteCounts[:, 0])
 	metAxis.set_ylabel("Menaquinone\ncounts", fontsize = 12, rotation = 0)
 	metAxis.yaxis.set_label_coords(-.1, 0.25)
 	metAxis.set_xlabel("Time (hour)", fontsize = 12)
@@ -181,6 +205,23 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	plt.subplots_adjust(hspace = 0.2, right = 0.9, bottom = 0.1, left = 0.15, top = 0.9)
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
+
+	bold(rnaInitLine)
+	bold(rnaLine)
+	bold(monomerLine)
+	bold(complexLine)
+	bold(fluxLine)
+	bold(metLine)
+	exportFigure(plt, plotOutDir, plotOutFileName + "__boldLines", metadata)
+
+
+	unbold(rnaInitLine)
+	unbold(rnaLine)
+	unbold(monomerLine)
+	unbold(complexLine)
+	unbold(fluxLine)
+	unbold(metLine)
 	plt.suptitle("")
 	clearLabels(rnaInitAxis)
 	clearLabels(rnaAxis)
