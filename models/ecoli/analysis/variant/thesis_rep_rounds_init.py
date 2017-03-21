@@ -46,16 +46,21 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 	ap = AnalysisPaths(inputDir, variant_plot = True)
 
 	fig = plt.figure()
-	fig.set_figwidth(5)
+	fig.set_figwidth(6)
 	fig.set_figheight(5)
 
 	title_list = ["Glucose minimal anaerobic\n" + r"$\mu = $" + "100 min", "Glucose minimal\n" + r"$\mu = $" + "44 min", "Glucose minimal + 20 amino acids\n" + r"$\mu = $" + "22 min"]
 
-	for varIdx in [2]:
+	for varIdx in [0,2]:
 
 		all_cells = ap.get_cells(variant=[varIdx], generation=[2,3,4,5,6,7])
 
-		ax0 = plt.subplot2grid((1,2), (0,1))
+
+		if varIdx == 0:
+			ax0 = plt.subplot2grid((1,2), (0,0))
+			ax0.set_ylabel("Fraction")
+		elif varIdx ==2:
+			ax0 = plt.subplot2grid((1,2), (0,1))
 
 		round_init = np.zeros(len(all_cells))
 
@@ -68,7 +73,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 		#norm_round_init = np.bincount(round_init.astype(np.int))
 		#import ipdb; ipdb.set_trace()
-		ax0.hist(round_init, bins=[0,1,2,3], normed=True)
+		ax0.hist(round_init, bins=[0,1,2,3], normed=True, log=True)
 
 		axes_list = [ax0]
 
@@ -76,14 +81,24 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 			for tick in a.yaxis.get_major_ticks():
 				tick.label.set_fontsize(FONT_SIZE) 
 			for tick in a.xaxis.get_major_ticks():
-				tick.label.set_fontsize(FONT_SIZE) 
+				tick.label.set_fontsize(FONT_SIZE)
 
-		ax0.set_xlabel("Rounds of chromosome replication\ninitated per cell cycle", fontsize=FONT_SIZE)
-		ax0.set_title(title_list[2] + r", $n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
+			plt.tick_params(
+				axis='y',          # changes apply to the x-axis
+				which='both',      # both major and minor ticks are affected
+				left='on',      # ticks along the bottom edge are off
+				right='off') # labels along the bottom edge are off
+
+		ax0.set_xlabel("Rounds of replication\ninitated per cell cycle", fontsize=FONT_SIZE)
+
+		if varIdx == 0:
+			ax0.set_title(title_list[1] + r", $n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
+		elif varIdx == 2:
+			ax0.set_title(title_list[2] + r", $n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
 
 		whitePadSparklineAxis(ax0)
 
-	plt.subplots_adjust(bottom = 0.2, wspace=0.3)
+	plt.subplots_adjust(left = 0.14, bottom = 0.2, wspace=0.3)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)

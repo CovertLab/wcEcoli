@@ -35,6 +35,12 @@ WIDTH = 100
 def mm2inch(value):
 	return value * 0.0393701
 
+def remove_artifacts(a):
+	median = np.median(a)
+	std = np.std(a)
+	a[a < median - 1.5*std] = np.nan
+	a[a > median + 1.5*std] = np.nan
+
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metadata = None):
 	
 	if not os.path.isdir(inputDir):
@@ -53,7 +59,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 	for varIdxReal in range(ap.n_variant):
 
-		all_cells = ap.get_cells(variant=[varIdxReal], seed=[1], generation=[0,1,2,3,4])
+		all_cells = ap.get_cells(variant=[varIdxReal], seed=[0], generation=[0,1,2,3,4])
 
 		import cPickle
 		simDataFile = ap.get_variant_kb(all_cells[0])
@@ -73,12 +79,14 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		else:
 			raise Exception()
 
-		ax0 = plt.subplot2grid((6,ap.n_variant), (0,varIdx))
-		ax1 = plt.subplot2grid((6,ap.n_variant), (1,varIdx), sharex=ax0)
-		ax2 = plt.subplot2grid((6,ap.n_variant), (2,varIdx), sharex=ax0)
-		ax3 = plt.subplot2grid((6,ap.n_variant), (3,varIdx), sharex=ax0)
-		ax4 = plt.subplot2grid((6,ap.n_variant), (4,varIdx), sharex=ax0)
-		ax5 = plt.subplot2grid((6,ap.n_variant), (5,varIdx), sharex=ax0)
+		ax0 = plt.subplot2grid((7,ap.n_variant), (0,varIdx))
+		ax1 = plt.subplot2grid((7,ap.n_variant), (1,varIdx), sharex=ax0)
+		ax2 = plt.subplot2grid((7,ap.n_variant), (2,varIdx), sharex=ax0)
+		ax3 = plt.subplot2grid((7,ap.n_variant), (3,varIdx), sharex=ax0)
+		ax4 = plt.subplot2grid((7,ap.n_variant), (4,varIdx), sharex=ax0)
+		ax5 = plt.subplot2grid((7,ap.n_variant), (5,varIdx), sharex=ax0)
+		ax6 = plt.subplot2grid((7,ap.n_variant), (6,varIdx), sharex=ax0)
+
 
 		for idx, simDir in enumerate(all_cells):
 			color = "black"
@@ -103,28 +111,47 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 			uniqueMoleculeCounts.close()
 			ribosomeConcentration = ((1 / sim_data.constants.nAvogadro) * ribosomeCounts) / ((1.0 / sim_data.constants.cellDensity) * (units.fg * cellMass))
 			ribosomeConcentration = ribosomeConcentration.asNumber(units.umol / units.L)
-			ribosomeConcentration[ribosomeConcentration == 0] = np.nan
+			remove_artifacts(ribosomeConcentration)
 			ax1.plot(time / 60., ribosomeConcentration, color = color, alpha = alpha, linewidth=1)
 
 			# Instantanious growth rate
 			growthRate = TableReader(os.path.join(simOutDir, "Mass")).readColumn("instantaniousGrowthRate")
+			remove_artifacts(growthRate)
 			ax2.plot(time / 60., growthRate * 60., color = color, alpha = alpha, linewidth=1)
 
 			# Get ribosome elongation rate and moving average
 			elongationRate = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("effectiveElongationRate")
 			elongationRate_smooth = np.convolve(elongationRate, np.ones(WIDTH) / WIDTH, mode = "same")
-
-			ax3.plot(time / 60., elongationRate, color = color, alpha = alpha, linewidth=1)
+			remove_artifacts(elongationRate_smooth)
+			ax3.plot(time / 60., elongationRate_smooth, color = color, alpha = alpha, linewidth=1)
 
 			# Supplied vs used capacity
 			timeStepSec = TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")
 			processTranslationUsage = elongationRate * ribosomeCounts / cellMass / timeStepSec
+			remove_artifacts(processTranslationUsage)
 			ax4.plot(time / 60., processTranslationUsage, color = color, alpha = alpha, linewidth=1)
 
 			# Synthesis prob
 			rRnaSynProb = TableReader(os.path.join(simOutDir, "ControlLoop")).readColumn("rRnaSynthRate_updated")
 			ax5.plot(time / 60., rRnaSynProb, color = color, alpha = alpha, linewidth=1)
 
+			# Initiation rates
+			rrn16S_produced = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("rrn16S_produced")
+			rrn23S_produced = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("rrn23S_produced")
+			rrn5S_produced = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("rrn5S_produced")
+
+			rrn16s_init_rate = rrn16S_produced / timeStepSec / cellMass
+			rrn23s_init_rate = rrn23S_produced / timeStepSec / cellMass
+			rrn5s_init_rate = rrn5S_produced / timeStepSec / cellMass
+
+			net_rrn = rrn16s_init_rate + rrn23s_init_rate + rrn5s_init_rate
+
+			net_rrn_smooth = np.convolve(net_rrn, np.ones(WIDTH) / WIDTH, mode = "same")
+
+			remove_artifacts(net_rrn_smooth)
+
+			ax6.plot(time / 60., net_rrn_smooth, color = color, alpha = alpha, linewidth=1)
+ 
 
 		ax0.set_xlim([0., time.max() / 60.])
 		if varIdx == 0:
@@ -166,47 +193,62 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 				tick.label.set_fontsize(FONT_SIZE) 
 
 		if varIdx == 0:
-			ax1.set_ylabel("Instantanious growth rate (fg/fg-min)", fontsize=FONT_SIZE)
-		if varIdx > 0:
-			ax1.yaxis.set_visible(False)
+			ax1.set_ylabel("70S concentration\n(" + r"$\mu$" + "mol/L)", fontsize=FONT_SIZE)
+		# if varIdx > 0:
+		# 	ax1.yaxis.set_visible(False)
+		ax1.set_ylim([16, 30])
 		ax1.xaxis.set_visible(False)
 
+
 		if varIdx == 0:
-			ax2.set_ylabel("70S concentration\n(" + r"$\mu$" + "mol/L)", fontsize=FONT_SIZE)
+			ax2.set_ylabel("Instantanious\ngrowth rate\n(fg/fg-min)", fontsize=FONT_SIZE)
 		if varIdx > 0:
 			ax2.yaxis.set_visible(False)
 		ax2.xaxis.set_visible(False)
+		ax2.set_ylim([0.005, 0.03])
 
 		if varIdx == 0:
-			ax3.set_ylabel("Average 70S elongation rate", fontsize=FONT_SIZE)
+			ax3.set_ylabel("Average 70S\nelongation rate", fontsize=FONT_SIZE)
 		if varIdx > 0:
 			ax3.yaxis.set_visible(False)
 		ax3.xaxis.set_visible(False)
+		ax3.set_ylim([8,21])
 
 		# y_ticks = ax2.get_yticks()
 		# new_y_ticks = y_ticks[0:-1:2]
 		# ax2.set_yticks(new_y_ticks)
 
 		if varIdx == 0:
-			ax4.set_ylabel("Metabolic supply (count/s)", fontsize=FONT_SIZE)
+			ax4.set_ylabel("Metabolic supply\n(count/s)", fontsize=FONT_SIZE)
 		if varIdx > 0:
 			ax4.yaxis.set_visible(False)
 		ax4.xaxis.set_visible(False)
+		ax4.set_ylim([100, 400])
 
-		# if varIdx == 0:
-		# 	ax4.set_ylabel("Relative rate\nof dNTP\npolymerization", fontsize=FONT_SIZE)
-		# if varIdx > 0:
-		# 	ax4.yaxis.set_visible(False)
-		# ax4.set_xlabel("Time (min)", fontsize=FONT_SIZE)
-		# # ax4.axvline(x=44*2+22., linewidth=3, color='gray', alpha = 0.5)
+
+		if varIdx == 0:
+			ax5.set_ylabel("Synth prob", fontsize=FONT_SIZE)
+		if varIdx > 0:
+			ax5.yaxis.set_visible(False)
+		ax5.xaxis.set_visible(False)
+		ax5.set_ylim([0.12, 0.2])
+
+		if varIdx == 0:
+			ax6.set_ylabel("rrn prodction\nrate (1/s-fg)", fontsize=FONT_SIZE)
+		if varIdx > 0:
+			ax6.yaxis.set_visible(False)
+		ax6.set_ylim([0.003, 0.03])
+
 
 		whitePadSparklineAxis(ax0, False)
 		whitePadSparklineAxis(ax1, False)
 		whitePadSparklineAxis(ax2, False)
 		whitePadSparklineAxis(ax3, False)
-		whitePadSparklineAxis(ax4)
+		whitePadSparklineAxis(ax4, False)
+		whitePadSparklineAxis(ax5, False)
+		whitePadSparklineAxis(ax6)
 
-	plt.subplots_adjust(wspace=0.3)
+	plt.subplots_adjust(left = 0.18, wspace=0.3, right=0.92)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
