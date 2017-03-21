@@ -41,7 +41,11 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	initial_masses = np.zeros(0)
 	final_masses = np.zeros(0)
 
-	all_cells = ap.get_cells(generation=[4,5,6,7])
+	# Slow rate
+	all_cells = ap.get_cells(generation=[1,2,3])
+
+	# Fast rate
+	# all_cells = ap.get_cells(generation=[3,4,5,6])
 
 	for simDir in all_cells:
 		simOutDir = os.path.join(simDir, "simOut")
@@ -56,7 +60,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	scaled_initial_masses = initial_masses / initial_masses.mean()
 	scaled_added_masses = added_masses / added_masses.mean()
-
 
 	# # Sucjoon data
 	# sj_mean = [(0.599573863268619, 1.0424971716015852),
@@ -107,8 +110,14 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	fig.set_figheight(mm2inch(38)*mult)
 
 	ax0.plot(scaled_initial_masses, scaled_added_masses, '.', color = "grey", alpha = 0.5, zorder=1)
+	
+	# Fast
+	# nbins=100
+
+	# Slow
 	nbins = 30
-	n_cell_cutoff = 10
+
+	n_cell_cutoff = 20
 	n, _ = np.histogram(scaled_initial_masses, bins=nbins)
 	sy, _ = np.histogram(scaled_initial_masses, bins=nbins, weights=scaled_added_masses)
 	sy2, _ = np.histogram(scaled_initial_masses, bins=nbins, weights=scaled_added_masses*scaled_added_masses)
@@ -116,6 +125,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	std = np.sqrt(sy2/(n-1) - n*mean*mean/(n-1))
 	ax0.errorbar(((_[1:] + _[:-1])/2)[n > n_cell_cutoff], mean[n > n_cell_cutoff], yerr=std[n > n_cell_cutoff], color = "black", linewidth=2, zorder=2)
 
+	print "Mean: {}".format(n[n>n_cell_cutoff].mean())
 	# ax0.errorbar(sj_mean_x, sj_mean_y, sj_error)
 
 	ax0.axhline(1., linewidth = 1, color = "black", alpha = 0.9)
@@ -142,108 +152,108 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "_f", metadata)
 
-	for axes in [ax0]:
-		axes.tick_params(
-			axis='x',          # changes apply to the x-axis
-			which='both',      # both major and minor ticks are affected
-			bottom='off',      # ticks along the bottom edge are off
-			top='off',         # ticks along the top edge are off
-			labelbottom='off') # labels along the bottom edge are off
-		axes.tick_params(
-			axis='y',          # changes apply to the x-axis
-			which='both',      # both major and minor ticks are affected
-			left='off',      # ticks along the bottom edge are off
-			right='off',         # ticks along the top edge are off
-			labelleft='off') # labels along the bottom edge are off
+	# for axes in [ax0]:
+	# 	axes.tick_params(
+	# 		axis='x',          # changes apply to the x-axis
+	# 		which='both',      # both major and minor ticks are affected
+	# 		bottom='off',      # ticks along the bottom edge are off
+	# 		top='off',         # ticks along the top edge are off
+	# 		labelbottom='off') # labels along the bottom edge are off
+	# 	axes.tick_params(
+	# 		axis='y',          # changes apply to the x-axis
+	# 		which='both',      # both major and minor ticks are affected
+	# 		left='off',      # ticks along the bottom edge are off
+	# 		right='off',         # ticks along the top edge are off
+	# 		labelleft='off') # labels along the bottom edge are off
 
-		axes.set_xlabel("")
-		axes.set_ylabel("")
+	# 	axes.set_xlabel("")
+	# 	axes.set_ylabel("")
 
-	plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
+	# plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName + "_f_stripped" ,metadata, transparent = True)
-	plt.close("all")
+	# from wholecell.analysis.analysis_tools import exportFigure
+	# exportFigure(plt, plotOutDir, plotOutFileName + "_f_stripped" ,metadata, transparent = True)
+	# plt.close("all")
 
 	#### FIGURE 4E ####
 
-	fig, ax1 = plt.subplots(1)
-	mult = 2
-	fig.set_figwidth(mm2inch(40)*mult)
-	fig.set_figheight(mm2inch(38)*mult)
+	# fig, ax1 = plt.subplots(1)
+	# mult = 2
+	# fig.set_figwidth(mm2inch(40)*mult)
+	# fig.set_figheight(mm2inch(38)*mult)
 
-	# Plot contours for all but first generation
-	# H, xedges, yedges = np.histogram2d(initial_masses, added_masses, bins=np.round(n_cells/10))
+	# # Plot contours for all but first generation
+	# # H, xedges, yedges = np.histogram2d(initial_masses, added_masses, bins=np.round(n_cells/10))
 
-	H, xedges, yedges = np.histogram2d(initial_masses, added_masses, bins=10)
+	# H, xedges, yedges = np.histogram2d(initial_masses, added_masses, bins=10)
 
-	X, Y = np.meshgrid(xedges, yedges)
-	ax1.contour(X[:-1,:-1], Y[:-1,:-1], H.transpose(), cmap="Greys")
-	ax1.get_yaxis().get_major_formatter().set_useOffset(False)
+	# X, Y = np.meshgrid(xedges, yedges)
+	# ax1.contour(X[:-1,:-1], Y[:-1,:-1], H.transpose(), cmap="Greys")
+	# ax1.get_yaxis().get_major_formatter().set_useOffset(False)
 
-	ax1.set_xlabel("Initial mass (pg)", fontsize=FONT_SIZE)
-	ax1.set_ylabel("Added mass (pg)", fontsize=FONT_SIZE)
+	# ax1.set_xlabel("Initial mass (pg)", fontsize=FONT_SIZE)
+	# ax1.set_ylabel("Added mass (pg)", fontsize=FONT_SIZE)
 
-	#ax1.set_xlim([430, 750])
-	#ax1.set_ylim([180, 300])
+	# #ax1.set_xlim([430, 750])
+	# #ax1.set_ylim([180, 300])
 
-	whitePadSparklineAxis(ax1)
-	plt.subplots_adjust(left = 0.2, bottom = 0.2, wspace= 0.6)
+	# whitePadSparklineAxis(ax1)
+	# plt.subplots_adjust(left = 0.2, bottom = 0.2, wspace= 0.6)
 
 
-	for tick in ax1.yaxis.get_major_ticks():
-		tick.label.set_fontsize(FONT_SIZE) 
-	for tick in ax1.xaxis.get_major_ticks():
-		tick.label.set_fontsize(FONT_SIZE) 
+	# for tick in ax1.yaxis.get_major_ticks():
+	# 	tick.label.set_fontsize(FONT_SIZE) 
+	# for tick in ax1.xaxis.get_major_ticks():
+	# 	tick.label.set_fontsize(FONT_SIZE) 
 
-	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName + "_g", metadata)
+	# from wholecell.analysis.analysis_tools import exportFigure
+	# exportFigure(plt, plotOutDir, plotOutFileName + "_g", metadata)
 
-	for axes in [ax1]:
-		axes.tick_params(
-			axis='x',          # changes apply to the x-axis
-			which='both',      # both major and minor ticks are affected
-			bottom='off',      # ticks along the bottom edge are off
-			top='off',         # ticks along the top edge are off
-			labelbottom='off') # labels along the bottom edge are off
-		axes.tick_params(
-			axis='y',          # changes apply to the x-axis
-			which='both',      # both major and minor ticks are affected
-			left='off',      # ticks along the bottom edge are off
-			right='off',         # ticks along the top edge are off
-			labelleft='off') # labels along the bottom edge are off
+	# for axes in [ax1]:
+	# 	axes.tick_params(
+	# 		axis='x',          # changes apply to the x-axis
+	# 		which='both',      # both major and minor ticks are affected
+	# 		bottom='off',      # ticks along the bottom edge are off
+	# 		top='off',         # ticks along the top edge are off
+	# 		labelbottom='off') # labels along the bottom edge are off
+	# 	axes.tick_params(
+	# 		axis='y',          # changes apply to the x-axis
+	# 		which='both',      # both major and minor ticks are affected
+	# 		left='off',      # ticks along the bottom edge are off
+	# 		right='off',         # ticks along the top edge are off
+	# 		labelleft='off') # labels along the bottom edge are off
 
-		axes.set_xlabel("")
-		axes.set_ylabel("")
+	# 	axes.set_xlabel("")
+	# 	axes.set_ylabel("")
 
-	plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
+	# plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName + "_g_stripped" ,metadata, transparent = True)
-	plt.close("all")
+	# from wholecell.analysis.analysis_tools import exportFigure
+	# exportFigure(plt, plotOutDir, plotOutFileName + "_g_stripped" ,metadata, transparent = True)
+	# plt.close("all")
 
-	#### UNUSED PLOT FOR NOW ####
-	# Linear mapping
+	# #### UNUSED PLOT FOR NOW ####
+	# # Linear mapping
 
-	fig, ax2 = plt.subplots(1)
+	# fig, ax2 = plt.subplots(1)
 
-	ax2.plot(initial_masses, final_masses, '.', color = "black")
-	z = np.polyfit(initial_masses, final_masses, 1)
-	p = np.poly1d(z)
-	ax2.plot(initial_masses, p(initial_masses), '--', color = "grey")
-	text_x = np.min(ax2.get_xlim())
-	text_y = np.max(ax2.get_ylim())
-	ax2.text(text_x, text_y, r"$m_f$=%.3f$\times$$m_i$ + %.3f"%(z[0],z[1]))
+	# ax2.plot(initial_masses, final_masses, '.', color = "black")
+	# z = np.polyfit(initial_masses, final_masses, 1)
+	# p = np.poly1d(z)
+	# ax2.plot(initial_masses, p(initial_masses), '--', color = "grey")
+	# text_x = np.min(ax2.get_xlim())
+	# text_y = np.max(ax2.get_ylim())
+	# ax2.text(text_x, text_y, r"$m_f$=%.3f$\times$$m_i$ + %.3f"%(z[0],z[1]))
 
-	ax2.set_xlabel("Initial mass (pg)")
-	ax2.set_ylabel("Final mass (pg)")
+	# ax2.set_xlabel("Initial mass (pg)")
+	# ax2.set_ylabel("Final mass (pg)")
 
-	whitePadSparklineAxis(ax2)
-	plt.subplots_adjust(left = 0.2, bottom = 0.2, wspace= 0.6)
+	# whitePadSparklineAxis(ax2)
+	# plt.subplots_adjust(left = 0.2, bottom = 0.2, wspace= 0.6)
 
-	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName + "_e", metadata)
-	plt.close("all")
+	# from wholecell.analysis.analysis_tools import exportFigure
+	# exportFigure(plt, plotOutDir, plotOutFileName + "_e", metadata)
+	# plt.close("all")
 
 
 
