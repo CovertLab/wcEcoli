@@ -110,7 +110,9 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		# Get ribosome elongation rate and moving average
 		elongationRate = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("effectiveElongationRate")
 		elongationRate_smooth = np.convolve(elongationRate, np.ones(WIDTH) / WIDTH, mode = "same")
-		remove_artifacts(elongationRate_smooth)
+		median = np.median(elongationRate_smooth)
+		std = np.nanstd(elongationRate_smooth)
+		elongationRate_smooth[elongationRate_smooth < median - 1.5*std] = np.nan
 		ax3.plot(time / 60., elongationRate_smooth, color = color, alpha = alpha, linewidth=1)
 
 		# Supplied vs used capacity

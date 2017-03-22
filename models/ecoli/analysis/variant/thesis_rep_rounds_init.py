@@ -51,7 +51,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 	title_list = ["Glucose minimal anaerobic\n" + r"$\mu = $" + "100 min", "Glucose minimal\n" + r"$\mu = $" + "44 min", "Glucose minimal + 20 amino acids\n" + r"$\mu = $" + "22 min"]
 
-	for varIdx in [0,2]:
+	for varIdx in [0,1,2]:
 
 		all_cells = ap.get_cells(variant=[varIdx], generation=[2,3,4,5,6,7])
 
@@ -89,10 +89,13 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 				left='on',      # ticks along the bottom edge are off
 				right='off') # labels along the bottom edge are off
 
-		ax0.set_xlabel("Rounds of replication\ninitated per cell cycle", fontsize=FONT_SIZE)
+		if varIdx == 0:
+			ax0.set_xlabel("Rounds of replication\ninitated per cell cycle", fontsize=FONT_SIZE)
 
 		if varIdx == 0:
 			ax0.set_title(title_list[1] + r", $n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
+		elif varIdx == 1:
+			ax0.set_title(title_list[0] + r", $n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
 		elif varIdx == 2:
 			ax0.set_title(title_list[2] + r", $n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
 
