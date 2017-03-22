@@ -37,7 +37,7 @@ def mm2inch(value):
 
 def remove_artifacts(a):
 	median = np.median(a)
-	std = np.std(a)
+	std = np.nanstd(a)
 	a[a < median - 1.5*std] = np.nan
 	a[a > median + 1.5*std] = np.nan
 
@@ -79,13 +79,12 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		else:
 			raise Exception()
 
-		ax0 = plt.subplot2grid((7,ap.n_variant), (0,varIdx))
-		ax1 = plt.subplot2grid((7,ap.n_variant), (1,varIdx), sharex=ax0)
-		ax2 = plt.subplot2grid((7,ap.n_variant), (2,varIdx), sharex=ax0)
-		ax3 = plt.subplot2grid((7,ap.n_variant), (3,varIdx), sharex=ax0)
-		ax4 = plt.subplot2grid((7,ap.n_variant), (4,varIdx), sharex=ax0)
-		ax5 = plt.subplot2grid((7,ap.n_variant), (5,varIdx), sharex=ax0)
-		ax6 = plt.subplot2grid((7,ap.n_variant), (6,varIdx), sharex=ax0)
+		ax0 = plt.subplot2grid((6,ap.n_variant), (0,varIdx))
+		ax1 = plt.subplot2grid((6,ap.n_variant), (1,varIdx), sharex=ax0)
+		ax2 = plt.subplot2grid((6,ap.n_variant), (2,varIdx), sharex=ax0)
+		ax3 = plt.subplot2grid((6,ap.n_variant), (3,varIdx), sharex=ax0)
+		ax4 = plt.subplot2grid((6,ap.n_variant), (4,varIdx), sharex=ax0)
+		ax5 = plt.subplot2grid((6,ap.n_variant), (5,varIdx), sharex=ax0)
 
 
 		for idx, simDir in enumerate(all_cells):
@@ -104,6 +103,12 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 			cellMass = mass.readColumn("cellMass")
 			ax0.plot(time / 60., cellMass, color = color, alpha = alpha, linewidth=1)
 
+			# Instantanious growth rate
+			growthRate = TableReader(os.path.join(simOutDir, "Mass")).readColumn("instantaniousGrowthRate")
+			growthRate = growthRate * 60.
+			remove_artifacts(growthRate)
+			ax1.plot(time / 60., growthRate, color = color, alpha = alpha, linewidth=1)
+
 			# Get active ribosome counts
 			uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
 			ribosomeIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRibosome")
@@ -112,12 +117,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 			ribosomeConcentration = ((1 / sim_data.constants.nAvogadro) * ribosomeCounts) / ((1.0 / sim_data.constants.cellDensity) * (units.fg * cellMass))
 			ribosomeConcentration = ribosomeConcentration.asNumber(units.umol / units.L)
 			remove_artifacts(ribosomeConcentration)
-			ax1.plot(time / 60., ribosomeConcentration, color = color, alpha = alpha, linewidth=1)
-
-			# Instantanious growth rate
-			growthRate = TableReader(os.path.join(simOutDir, "Mass")).readColumn("instantaniousGrowthRate")
-			remove_artifacts(growthRate)
-			ax2.plot(time / 60., growthRate * 60., color = color, alpha = alpha, linewidth=1)
+			ax2.plot(time / 60., ribosomeConcentration, color = color, alpha = alpha, linewidth=1)
 
 			# Get ribosome elongation rate and moving average
 			elongationRate = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("effectiveElongationRate")
@@ -130,10 +130,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 			processTranslationUsage = elongationRate * ribosomeCounts / cellMass / timeStepSec
 			remove_artifacts(processTranslationUsage)
 			ax4.plot(time / 60., processTranslationUsage, color = color, alpha = alpha, linewidth=1)
-
-			# Synthesis prob
-			rRnaSynProb = TableReader(os.path.join(simOutDir, "ControlLoop")).readColumn("rRnaSynthRate_updated")
-			ax5.plot(time / 60., rRnaSynProb, color = color, alpha = alpha, linewidth=1)
 
 			# Initiation rates
 			rrn16S_produced = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("rrn16S_produced")
@@ -150,7 +146,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 			remove_artifacts(net_rrn_smooth)
 
-			ax6.plot(time / 60., net_rrn_smooth, color = color, alpha = alpha, linewidth=1)
+			ax5.plot(time / 60., net_rrn_smooth / 3., color = color, alpha = alpha, linewidth=1)
  
 
 		ax0.set_xlim([0., time.max() / 60.])
@@ -170,7 +166,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		# 	print "No shift detected"
 		# 	T_ADD_AA = 1e9
 
-		axes_list = [ax0, ax1, ax2, ax3, ax4]
+		axes_list = [ax0, ax1, ax2, ax3, ax4, ax5]
 		# for a in axes_list:
 		# 	shift_time = T_ADD_AA
 		# 	width = a.get_xlim()[1] - shift_time
@@ -193,22 +189,21 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 				tick.label.set_fontsize(FONT_SIZE) 
 
 		if varIdx == 0:
-			ax1.set_ylabel("70S concentration\n(" + r"$\mu$" + "mol/L)", fontsize=FONT_SIZE)
-		# if varIdx > 0:
-		# 	ax1.yaxis.set_visible(False)
-		ax1.set_ylim([16, 30])
+			ax1.set_ylabel("Instantanious\ngrowth rate\n(fg/fg-min)", fontsize=FONT_SIZE)
+		if varIdx > 0:
+			ax1.yaxis.set_visible(False)
 		ax1.xaxis.set_visible(False)
-
+		ax1.set_ylim([0.004, 0.03])
 
 		if varIdx == 0:
-			ax2.set_ylabel("Instantanious\ngrowth rate\n(fg/fg-min)", fontsize=FONT_SIZE)
+			ax2.set_ylabel("70S concentration\n(" + r"$\mu$" + "mol/L)", fontsize=FONT_SIZE)
 		if varIdx > 0:
 			ax2.yaxis.set_visible(False)
+		ax2.set_ylim([16, 30])
 		ax2.xaxis.set_visible(False)
-		ax2.set_ylim([0.005, 0.03])
 
 		if varIdx == 0:
-			ax3.set_ylabel("Average 70S\nelongation rate", fontsize=FONT_SIZE)
+			ax3.set_ylabel("Average 70S\nelongation rate (aa/s)", fontsize=FONT_SIZE)
 		if varIdx > 0:
 			ax3.yaxis.set_visible(False)
 		ax3.xaxis.set_visible(False)
@@ -219,7 +214,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		# ax2.set_yticks(new_y_ticks)
 
 		if varIdx == 0:
-			ax4.set_ylabel("Metabolic supply\n(count/s)", fontsize=FONT_SIZE)
+			ax4.set_ylabel("Metabolic supply\n(count/s-fg)", fontsize=FONT_SIZE)
 		if varIdx > 0:
 			ax4.yaxis.set_visible(False)
 		ax4.xaxis.set_visible(False)
@@ -227,26 +222,21 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 
 		if varIdx == 0:
-			ax5.set_ylabel("Synth prob", fontsize=FONT_SIZE)
+			ax5.set_ylabel("rrn prodction\nrate (1/s-fg)", fontsize=FONT_SIZE)
 		if varIdx > 0:
 			ax5.yaxis.set_visible(False)
-		ax5.xaxis.set_visible(False)
-		ax5.set_ylim([0.12, 0.2])
+		ax5.set_ylim([0.001, 0.01])
 
-		if varIdx == 0:
-			ax6.set_ylabel("rrn prodction\nrate (1/s-fg)", fontsize=FONT_SIZE)
-		if varIdx > 0:
-			ax6.yaxis.set_visible(False)
-		ax6.set_ylim([0.003, 0.03])
 
+		if varIdx == 1:
+			ax5.set_xlabel("Time (min)")
 
 		whitePadSparklineAxis(ax0, False)
 		whitePadSparklineAxis(ax1, False)
 		whitePadSparklineAxis(ax2, False)
 		whitePadSparklineAxis(ax3, False)
 		whitePadSparklineAxis(ax4, False)
-		whitePadSparklineAxis(ax5, False)
-		whitePadSparklineAxis(ax6)
+		whitePadSparklineAxis(ax5)
 
 	plt.subplots_adjust(left = 0.18, wspace=0.3, right=0.92)
 
