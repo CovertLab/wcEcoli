@@ -24,7 +24,6 @@ FONT_SIZE=9
 trim = 0.05
 
 def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
-
 	if not os.path.isdir(variantDir):
 		raise Exception, "variantDir does not currently exist as a directory"
 
@@ -46,6 +45,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	# Fast rate
 	# all_cells = ap.get_cells(generation=[3,4,5,6])
+
+	if all_cells.tolist() == []:
+		return
 
 	for simDir in all_cells:
 		simOutDir = os.path.join(simDir, "simOut")
