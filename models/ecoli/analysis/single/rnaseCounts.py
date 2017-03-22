@@ -4,7 +4,7 @@ Plot RNAse counts
 
 @author: Javier Carrera
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 1/14/2015
+@date: Created 3/22/2017
 """
 
 import argparse
