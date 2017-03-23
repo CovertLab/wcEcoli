@@ -48,7 +48,10 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 
 	for var_idx in range(ap.n_variant):
-		# sim_data = cPickle.load(open(ap.get_variant_kb(var_idx), "rb"))
+
+		sim_data = cPickle.load(open(ap.get_variant_kb(var_idx), "rb"))
+		max_elng = sim_data.process.translation.ribosomeElongationRateDict[sim_data.conditions[sim_data.condition]['nutrients']].asNumber()
+		max_elng = 21
 		allCells = ap.get_cells(variant=[var_idx])
 
 		net_variant_histogram = np.zeros(21, dtype=np.int)
@@ -77,6 +80,9 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 		hist_avg = np.dot(net_variant_histogram / net_variant_histogram.sum().astype(np.float), np.arange(0,21))
 		ax0.axvline(hist_avg, linewidth=2, color="black")
+		
+		ax0.axvline(max_elng, linewidth=2, color="red")
+		
 		ax0.set_xlim([0,21])
 
 		if var_idx == 2:
