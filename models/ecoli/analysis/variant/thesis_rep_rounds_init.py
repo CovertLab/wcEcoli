@@ -49,7 +49,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 	fig.set_figwidth(6)
 	fig.set_figheight(5)
 
-	title_list = ["Glucose minimal anaerobic\n" + r"$\mu = $" + "100 min", "Glucose minimal\n" + r"$\mu = $" + "44 min", "Glucose minimal + 20 amino acids\n" + r"$\mu = $" + "22 min"]
+	title_list = ["Glucose minimal anaerobic\n" + r"$\tau = $" + "100 min", "Glucose minimal\n" + r"$\tau = $" + "44 min", "Glucose minimal + 20 AA\n" + r"$\tau = $" + "22 min"]
 
 	for varIdx in [0,1,2]:
 
@@ -57,10 +57,12 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 
 		if varIdx == 0:
-			ax0 = plt.subplot2grid((1,2), (0,0))
+			ax0 = plt.subplot2grid((1,3), (0,1))
 			ax0.set_ylabel("Fraction")
 		elif varIdx ==2:
-			ax0 = plt.subplot2grid((1,2), (0,1))
+			ax0 = plt.subplot2grid((1,3), (0,2))
+		elif varIdx == 1:
+			ax0 = plt.subplot2grid((1,3), (0,0))
 
 		round_init = np.zeros(len(all_cells))
 
@@ -71,9 +73,9 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 			massPerOric = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("criticalMassPerOriC")
 			round_init[idx] = np.sum(massPerOric >= 1.)
 
-		#norm_round_init = np.bincount(round_init.astype(np.int))
-		#import ipdb; ipdb.set_trace()
+
 		ax0.hist(round_init, bins=[0,1,2,3], normed=True, log=True)
+		ax0.set_ylim([0.001, 1.0])
 
 		axes_list = [ax0]
 
@@ -83,25 +85,34 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 			for tick in a.xaxis.get_major_ticks():
 				tick.label.set_fontsize(FONT_SIZE)
 
-			plt.tick_params(
-				axis='y',          # changes apply to the x-axis
-				which='both',      # both major and minor ticks are affected
-				left='on',      # ticks along the bottom edge are off
-				right='off') # labels along the bottom edge are off
+			if varIdx == 1:
+				plt.tick_params(
+					axis='y',          # changes apply to the x-axis
+					which='both',      # both major and minor ticks are affected
+					left='on',      # ticks along the bottom edge are off
+					right='off') # labels along the bottom edge are off
+			else:
+				plt.tick_params(
+					axis='y',          # changes apply to the x-axis
+					which='both',      # both major and minor ticks are affected
+					left='off',      # ticks along the bottom edge are off
+					right='off') # labels along the bottom edge are off
+				a.yaxis.set_visible(False)
+
 
 		if varIdx == 0:
 			ax0.set_xlabel("Rounds of replication\ninitated per cell cycle", fontsize=FONT_SIZE)
 
 		if varIdx == 0:
-			ax0.set_title(title_list[1] + r", $n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
+			ax0.set_title(title_list[1] + "\n" +  r"$n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
 		elif varIdx == 1:
-			ax0.set_title(title_list[0] + r", $n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
+			ax0.set_title(title_list[0] + "\n" +  r"$n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
 		elif varIdx == 2:
-			ax0.set_title(title_list[2] + r", $n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
+			ax0.set_title(title_list[2] + "\n" + r"$n_{cells}=$" + "{}".format(len(all_cells)), fontsize=FONT_SIZE)
 
 		whitePadSparklineAxis(ax0)
 
-	plt.subplots_adjust(left = 0.14, bottom = 0.2, wspace=0.3)
+	plt.subplots_adjust(left = 0.14, bottom = 0.2, wspace=0.3, top = 0.88)
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
