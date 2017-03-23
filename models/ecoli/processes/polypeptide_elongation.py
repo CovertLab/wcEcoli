@@ -46,21 +46,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.aaWeightsIncorporated = sim_data.process.translation.translationMonomerWeights
 		self.endWeight = sim_data.process.translation.translationEndWeight
 		self.gtpPerElongation = sim_data.constants.gtpPerTranslation
-<<<<<<< HEAD
 		# self.ribosomeElongationRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 
 		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
 
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
 
-		self.trpAIndex = np.where(proteinIds == "TRYPSYN-APROTEIN[c]")[0][0]
-
-		##########
-		# self.saturation_km = sim_data.constants.translation_km
 		self.translation_aa_supply = sim_data.translationSupplyRate
-=======
-		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
->>>>>>> master
 		self.nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
 		import copy
 		self.nutrientsTimeSeries = copy.deepcopy(sim_data.nutrientsTimeSeries)
