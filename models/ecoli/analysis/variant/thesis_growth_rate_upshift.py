@@ -1,0 +1,160 @@
+#!/usr/bin/env python
+"""
+@author: Heejo Choi
+@organization: Covert Lab, Department of Bioengineering, Stanford University
+@date: Created 1/19/2017
+"""
+
+import argparse
+import os
+import numpy as np
+import cPickle
+import matplotlib
+matplotlib.use("Agg")
+from matplotlib import pyplot as plt
+from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from wholecell.io.tablereader import TableReader
+from scipy.signal import butter, lfilter, freqz
+from scipy.optimize import curve_fit
+import wholecell.utils.constants
+
+NUM_SKIP_TIMESTEPS_AT_GEN_CHANGE = 1
+
+from wholecell.utils.sparkline import whitePadSparklineAxis
+
+trim = 0.03
+trim_1 = 0.06
+def mm2inch(value):
+	return value * 0.0393701
+
+FONT_SIZE=10
+
+def seriesScrubber(series, factor):
+	series[abs(series - np.median(series)) > factor * np.nanstd(series)] = np.nan
+
+
+def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metadata = None):
+	
+	if not os.path.isdir(inputDir):
+		raise Exception, "variantDir does not currently exist as a directory"
+
+	if not os.path.exists(plotOutDir):
+		os.mkdir(plotOutDir)
+
+	ap = AnalysisPaths(inputDir, variant_plot = True)
+
+	sim_data = cPickle.load(open(ap.get_variant_kb(2), "rb"))
+
+	T_ADD_AA = None
+	T_CUT_AA = None
+	nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+	if "aa" in nutrientsTimeSeriesLabel:
+		if "add" in nutrientsTimeSeriesLabel and "cut" in nutrientsTimeSeriesLabel:
+			T_ADD_AA = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][1][0]
+			T_CUT_AA = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][2][0]
+
+	# Get all cells
+	allDir = ap.get_cells(seed=[3]) # 1, 5
+	nCells = allDir.shape[0]
+	nGens = ap.n_generation
+
+	massNames = ["dryMass", "proteinMass", "rnaMass", "dnaMass",]
+	cleanNames = ["Dry mass", "Protein mass", "RNA Mass", "DNA mass",]
+
+	# fig = plt.figure(figsize = (14, 10))
+	# ax1 = plt.subplot2grid((4,2), (0,0), rowspan = 4)
+	# ax2 = plt.subplot2grid((4,2), (0,1))
+	# ax3 = plt.subplot2grid((4,2), (1,1))
+	# ax4 = plt.subplot2grid((4,2), (2,1))
+	# ax5 = plt.subplot2grid((4,2), (3,1))
+	# axesList = [ax2, ax3, ax4, ax5]
+	# colors = ["blue", "green", "red", "cyan"]
+	colors = ["#43aa98", "#0071bb", "#bf673c"]
+
+	fig, axis = plt.subplots(1,1)
+	fig.set_figwidth(5)
+	fig.set_figheight(5)
+
+	width = 200
+
+	timeMultigen = np.zeros(0)
+	cellMassGrowthRateMultigen = np.zeros(0)
+	proteinGrowthRateMultigen = np.zeros(0)
+	rnaGrowthRateMultigen = np.zeros(0)
+
+
+	for gen, simDir in enumerate(allDir):
+		simOutDir = os.path.join(simDir, "simOut")
+		time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
+		timeStep = TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")
+		mass = TableReader(os.path.join(simOutDir, "Mass"))
+
+		cellMass = mass.readColumn("cellMass")
+		proteinMass = mass.readColumn("proteinMass")
+		rnaMass = mass.readColumn("rnaMass")
+		dnaMass = mass.readColumn("dnaMass")
+
+		cellmassGrowthRate = np.diff(cellMass) / cellMass[1:] / timeStep[:-1]
+		proteinGrowthRate = np.diff(proteinMass) / proteinMass[1:] / timeStep[:-1]
+		rnaGrowthRate = np.diff(rnaMass) / rnaMass[1:] / timeStep[:-1]
+		dnaGrowthRate = np.diff(dnaMass) / dnaMass[1:] / timeStep[:-1]
+
+		timeMultigen = np.hstack((timeMultigen, time[:-1]))
+		cellMassGrowthRateMultigen = np.hstack((cellMassGrowthRateMultigen, cellmassGrowthRate))
+		proteinGrowthRateMultigen = np.hstack((proteinGrowthRateMultigen, proteinGrowthRate))
+		rnaGrowthRateMultigen = np.hstack((rnaGrowthRateMultigen, rnaGrowthRate))
+
+	# seriesScrubber(cellMassGrowthRateMultigen, 1.5)
+	# seriesScrubber(proteinGrowthRateMultigen, 1.5)
+	# seriesScrubber(rnaGrowthRateMultigen, 1.5)
+
+	cellMassGrowthRateMultigen = np.convolve(cellMassGrowthRateMultigen, np.ones(width) / width, mode = "same")
+	proteinGrowthRateMultigen = np.convolve(proteinGrowthRateMultigen, np.ones(width) / width, mode = "same")
+	rnaGrowthRateMultigen = np.convolve(rnaGrowthRateMultigen, np.ones(width) / width, mode = "same")
+	# seriesScrubber(proteinGrowthRateMultigen, 2)
+
+		# rnaGrowthRate = np.convolve(rnaGrowthRate, np.ones(width) / width, mode = "same")
+		# dnaGrowthRate = np.convolve(dnaGrowthRate, np.ones(width) / width, mode = "same")
+
+	# 	seriesScrubber(rnaGrowthRate,1.25)
+		# seriesScrubber(dnaGrowthRate,3.25)
+
+	linewidth = 2
+	axis.plot(timeMultigen[:-width] / 60., cellMassGrowthRateMultigen[:-width] * 60., color = colors[0], alpha=0.9, label="Cell mass", linewidth=linewidth)
+	axis.plot(timeMultigen[:-width] / 60., proteinGrowthRateMultigen[:-width] * 60., color = colors[1], alpha=0.9, label="Protein fraction", linewidth=linewidth)
+	axis.plot(timeMultigen[:-width] / 60., rnaGrowthRateMultigen[:-width] * 60., color = colors[2], alpha=0.9, label="RNA fraction", linewidth=linewidth)
+	axis.legend(loc=4,frameon=False, fontsize=FONT_SIZE)
+	# axis.set_ylim([0.015, 0.033])
+
+
+
+	whitePadSparklineAxis(axis)
+
+	for a in [axis]:
+		for tick in a.yaxis.get_major_ticks():
+			tick.label.set_fontsize(FONT_SIZE) 
+		for tick in a.xaxis.get_major_ticks():
+			tick.label.set_fontsize(FONT_SIZE) 
+	axis.set_xlabel("Time (min)", fontsize=FONT_SIZE)
+	axis.set_ylabel("Smoothed instantaneous growth rate (1/min)", fontsize=FONT_SIZE)
+	plt.subplots_adjust(bottom = 0.2, left = 0.2)
+
+	from wholecell.analysis.analysis_tools import exportFigure
+	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
+
+if __name__ == "__main__":
+	defaultSimDataFile = os.path.join(
+			wholecell.utils.constants.SERIALIZED_KB_DIR,
+			wholecell.utils.constants.SERIALIZED_KB_MOST_FIT_FILENAME
+			)
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument("simOutDir", help = "Directory containing simulation output", type = str)
+	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
+	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
+	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
+	parser.add_argument("--validationDataFile")
+
+	args = parser.parse_args().__dict__
+
+	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"], args["validationDataFile"])
