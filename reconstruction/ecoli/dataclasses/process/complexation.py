@@ -6,17 +6,14 @@ from wholecell.utils import units
 
 class Complexation(object):
 	def __init__(self, raw_data, sim_data):
+
 		# Build the abstractions needed for complexation
-
 		molecules = []
-
 		subunits = []
 		complexes = []
-
 		stoichMatrixI = []
 		stoichMatrixJ = []
 		stoichMatrixV = []
-
 		stoichMatrixMass = []
 
 		# Remove complexes that are currently not simulated
@@ -96,6 +93,7 @@ class Complexation(object):
 		# The stoichometric matrix should balance out to numerical zero.
 		assert np.max([abs(x) for x in massBalanceArray]) < 1e-8 # had to bump this up to 1e-8 because of flagella supercomplex
 
+
 	def stoichMatrix(self):
 		shape = (self._stoichMatrixI.max()+1, self._stoichMatrixJ.max()+1)
 
@@ -158,7 +156,7 @@ class Complexation(object):
 
 		return out
 
-	# TODO: redesign this so it doesn't need to create a stoich matrix
+
 	def getMonomers(self, cplxId):
 		'''
 		Returns subunits for a complex (or any ID passed).
