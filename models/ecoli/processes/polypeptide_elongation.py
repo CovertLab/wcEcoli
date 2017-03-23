@@ -82,6 +82,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.elngRateFactor = 1.
 
 	def calculateRequest(self):
+		# Set ribosome elongation rate based on simulation medium enviornment and elongation rate factor
+		# which is used to create single-cell variability in growth rate
+		self.ribosomeElongationRate = int(stochasticRound(self.randomState,
+			self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s) * self.timeStepSec()))
 
 		# Request all active ribosomes
 		self.activeRibosomes.requestAll()
@@ -101,7 +105,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.proteinSequences,
 			proteinIndexes,
 			peptideLengths,
-			self._elngRate()
+			self.ribosomeElongationRate
 			)
 
 		sequenceHasAA = (sequences != PAD_VALUE)
@@ -135,10 +139,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gtpRequest = gtpsHydrolyzed
 
 	def evolveState(self):
-		# Set ribosome elongation rate based on simulation medium enviornment and elongation rate factor
-		# which is used to create single-cell variability in growth rate
-		self.ribosomeElongationRate = self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s)
-
 		# Write allocation data to listener
 		self.writeToListener("GrowthLimits", "gtpAllocated", self.gtp.count())
 		self.writeToListener("GrowthLimits", "aaAllocated", self.aas.counts())
@@ -161,7 +161,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.proteinSequences,
 			proteinIndexes,
 			peptideLengths,
-			self._elngRate()
+			self.ribosomeElongationRate
 			)
 
 		if sequences.size == 0:
@@ -223,11 +223,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		activeRibosomes.delByIndexes(np.where(didTerminate)[0])
 		self.bulkMonomers.countsInc(terminatedProteins)
 
-		self.ribosome30S.countInc(nTerminated)
-		self.ribosome50S.countInc(nTerminated)
-
 		nTerminated = didTerminate.sum()
 		nInitialized = didInitialize.sum()
+
+		self.ribosome30S.countInc(nTerminated)
+		self.ribosome50S.countInc(nTerminated)
 
 		# Update counts of amino acids and water to reflect polymerization reactions
 		self.aas.countsDec(aasUsed)
@@ -235,7 +235,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Report stalling information
 		expectedElongations = np.fmin(
-			self._elngRate(),
+			self.ribosomeElongationRate,
 			terminalLengths - peptideLengths
 			)
 
@@ -253,11 +253,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("RibosomeData", "actualElongations", sequenceElongations.sum())
 
 		self.writeToListener("RibosomeData", "didTerminate", didTerminate.sum())
-		self.writeToListener("RibosomeData", "terminationLoss", (terminalLengths - peptide	
-				# Used for figure in publicationLengths)[didTerminate].sum())
+		self.writeToListener("RibosomeData", "terminationLoss", (terminalLengths - peptideLengths)[didTerminate].sum())
 		self.writeToListener("RibosomeData", "numTrpATerminated", terminatedProteins[self.trpAIndex])
 
-		self.writeToListener("RibosomeData", "processElongationRate", self._elngRate() / self.timeStepSec())
+		self.writeToListener("RibosomeData", "processElongationRate", self.ribosomeElongationRate / self.timeStepSec())
 		self.writeToListener("PolypeptideElongationListener", "countMonomerSynthesized", terminatedProteins)
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
@@ -296,7 +295,3 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			return False
 		else:
 			return True
-
-	def _elngRate(self):
-		# Scales elongation rate by length of current time step
-		return int(stochasticRound(self.randomState, self.ribosomeElongationRate * self.timeStepSec()))
