@@ -274,8 +274,10 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, sim):
 		daughter_elng_rates = {
 						"d1_elng_rate" : d1_rib_elng_rate,
 						"d2_elng_rate" : d2_rib_elng_rate,
-						"d1_elng_rate_factor" : d1_rib_elng_rate / environmentalElongationRate,
-						"d2_elng_rate_factor" : d2_rib_elng_rate / environmentalElongationRate,
+						#"d1_elng_rate_factor" : d1_rib_elng_rate / environmentalElongationRate,
+						#"d2_elng_rate_factor" : d2_rib_elng_rate / environmentalElongationRate,
+						"d1_elng_rate_factor" : noiseMultiplier,
+						"d2_elng_rate_factor" : noiseMultiplier,
 						}
 
 		d1_bool = np.zeros(len(moleculeSet), dtype = bool)
