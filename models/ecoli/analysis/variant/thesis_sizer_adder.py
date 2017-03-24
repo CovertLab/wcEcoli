@@ -139,7 +139,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 			tick.label.set_fontsize(FONT_SIZE) 
 
 	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName + "_f", metadata)
+	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 
 
