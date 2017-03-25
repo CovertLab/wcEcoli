@@ -131,7 +131,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		expectedDoublingTime = self.doublingTimeDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
 
 
-		expectedElongationRate = 21.
+		expectedElongationRate = self.maxRibosomeElongationRate
 		self.writeToListener("ControlLoop", "expectedElongationRate", expectedElongationRate)
 
 		# self.writeToListener("ControlLoop", "expectedElongationRate", expectedElongationRate.asNumber())
