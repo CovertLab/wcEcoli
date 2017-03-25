@@ -45,12 +45,19 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		return
 
 	fig = plt.figure()
-	fig.set_figwidth(15)
-	fig.set_figheight(5)
+	fig.set_figwidth(11)
+	fig.set_figheight(4)
 
-	title_list = ["44 min", "100 min", "22 min"]
+	title_list = ["Glucose minimal\n" + r"$\tau = $" + "44 min", "Glucose minimal anaerobic\n" + r"$\tau = $" + "100 min", "Glucose minimal + 20 amino acids\n" + r"$\tau = $" + "22 min"]
 
 	for varIdx in range(ap.n_variant):
+
+		if varIdx == 0:
+			plotIdx = 1
+		elif varIdx == 1:
+			plotIdx = 0
+		elif varIdx == 2:
+			plotIdx = 2
 
 		initial_masses = np.zeros(0)
 		final_masses = np.zeros(0)
@@ -78,7 +85,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		scaled_initial_masses = initial_masses / initial_masses.mean()
 		scaled_added_masses = added_masses / added_masses.mean()
 
-		ax0 = plt.subplot2grid((1,3), (0,varIdx))
+		ax0 = plt.subplot2grid((1,3), (0,plotIdx))
 		ax0.plot(scaled_initial_masses, scaled_added_masses, '.', color = "grey", alpha = 0.5, zorder=1)
 		
 		nbins = 30
@@ -91,9 +98,9 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		sy2, _ = np.histogram(scaled_initial_masses, bins=nbins, weights=scaled_added_masses*scaled_added_masses)
 		mean = sy / n
 		std = np.sqrt(sy2/(n-1) - n*mean*mean/(n-1))
-		ax0.errorbar(((_[1:] + _[:-1])/2)[n > n_cell_cutoff], mean[n > n_cell_cutoff], yerr=std[n > n_cell_cutoff], color = "black", linewidth=2, zorder=2)
+		ax0.errorbar(((_[1:] + _[:-1])/2)[n > n_cell_cutoff], mean[n > n_cell_cutoff], yerr=std[n > n_cell_cutoff], color = "black", linewidth=1, zorder=2)
 
-		ax0.set_title(title_list[varIdx] + ", n={}".format(len(all_cells)))
+		ax0.set_title(title_list[varIdx] + ", n={}".format(len(all_cells)), fontsize=FONT_SIZE)
 
 		# z = np.polyfit(scaled_initial_masses, scaled_added_masses, 1)
 		# p = np.poly1d(z)
@@ -110,16 +117,17 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 		slope, intercept, r_value, p_value, std_err = linregress(scaled_initial_masses, scaled_added_masses)
 		ax0.plot(scaled_initial_masses, slope * scaled_initial_masses + intercept, color = "blue")
-		ax0.text(0.6, 1.5, r"$m_{add}$=%.3f$\times$$m_{init}$ + %.3f"%(slope,intercept))
-		ax0.text(0.6, 1.4, r"$R^2=$%.3f"%r_value**2)
+		ax0.text(0.6, 0.41, r"$m_{add}$=%.3f$\times$$m_{init}$ + %.3f"%(slope,intercept), fontsize=FONT_SIZE-2)
+		ax0.text(0.6, 0.35, r"$R^2=$%.3f"%r_value**2, fontsize=FONT_SIZE-2)
 		factor = 1.58*std_err
-		ax0.text(0.6, 0.4, "Slope 95 percent CI: %.3f - %.3f"%(slope - factor, slope+factor))
+		#ax0.text(0.6, 0.4, "Slope 95 percent CI: %.3f - %.3f"%(slope - factor, slope+factor))
 
+		print "Slope 95 percent CI: %.3f - %.3f"%(slope - factor, slope+factor)
 		print "Mean: {}".format(n[n>n_cell_cutoff].mean())
 		# ax0.errorbar(sj_mean_x, sj_mean_y, sj_error)
 
 		ax0.axhline(1., linewidth = 1, color = "black", alpha = 0.9)
-		ax0.set_ylim([0., 2.])
+		ax0.set_ylim([0.3, 1.7])
 		ax0.set_xlim([0.6, 1.4])
 
 		ax0.get_yaxis().get_major_formatter().set_useOffset(False)
@@ -129,7 +137,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		ax0.set_ylabel("Normed added mass", fontsize=FONT_SIZE)
 		ax0.set_xlabel("Normed initial mass", fontsize=FONT_SIZE)
 
-		plt.subplots_adjust(left = 0.2, bottom = 0.2, wspace= 0.6)
+		plt.subplots_adjust(bottom = 0.2, wspace= 0.6)
 
 		whitePadSparklineAxis(ax0)
 
