@@ -91,7 +91,7 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.total_rna_init = 0
 		self.expectedInitRate = 0.
 		self.processElongationRate = 0.
-		self.translationSupply = np.zeros(21, np.int64)
+		self.translationSupply = np.zeros(21, np.float64)
 		self.numTrpATerminated = 0.
 
 	def update(self):
