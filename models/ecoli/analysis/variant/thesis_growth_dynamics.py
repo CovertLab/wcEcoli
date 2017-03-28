@@ -55,7 +55,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 	fig.set_figwidth(8.5)
 	fig.set_figheight(10)
 
-	title_list = ["Glucose minimal anaerobic\n" + r"$\mu = $" + "100 min", "Glucose minimal\n" + r"$\mu = $" + "44 min", "Glucose minimal + 20 amino acids\n" + r"$\mu = $" + "22 min"]
+	title_list = ["Glucose minimal anaerobic\n" + r"$\tau = $" + "100 min", "Glucose minimal\n" + r"$\tau = $" + "44 min", "Glucose minimal + 20 amino acids\n" + r"$\tau = $" + "22 min"]
 
 	for varIdxReal in range(ap.n_variant):
 
@@ -193,7 +193,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		if varIdx > 0:
 			ax1.yaxis.set_visible(False)
 		ax1.xaxis.set_visible(False)
-		ax1.set_ylim([0.004, 0.03])
+		ax1.set_ylim([0.003, 0.035])
 
 		if varIdx == 0:
 			ax2.set_ylabel("70S concentration\n(" + r"$\mu$" + "mol/L)", fontsize=FONT_SIZE)
@@ -207,7 +207,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		if varIdx > 0:
 			ax3.yaxis.set_visible(False)
 		ax3.xaxis.set_visible(False)
-		ax3.set_ylim([8,21])
+		ax3.set_ylim([8,22])
 
 		# y_ticks = ax2.get_yticks()
 		# new_y_ticks = y_ticks[0:-1:2]
