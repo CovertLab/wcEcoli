@@ -95,9 +95,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Set ribosome elongation rate based on simulation medium enviornment and elongation rate factor
 		# which is used to create single-cell variability in growth rate
 		if self.translationSupply:
-			self.ribosomeElongationRate = self.maxRibosomeElongationRate
+			self.ribosomeElongationRate = int(stochasticRound(self.randomState,
+				self.maxRibosomeElongationRate * self.timeStepSec()))
 		else:
-			self.ribosomeElongationRate = self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s)
+			self.ribosomeElongationRate = int(stochasticRound(self.randomState,
+			self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s) * self.timeStepSec()))
 
 		# Request all active ribosomes
 		self.activeRibosomes.requestAll()
@@ -142,7 +144,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 			countAasRequested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
 
-			# countAasRequested = np.fmin(countAasRequested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
+			countAasRequested = np.fmin(countAasRequested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
 		else:
 			countAasRequested = aasInSequences
 
@@ -276,8 +278,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("RibosomeData", "expectedElongations", expectedElongations.sum())
 		self.writeToListener("RibosomeData", "actualElongations", sequenceElongations.sum())
-		self.writeToListener("RibosomeData", "actualElongationHist", np.histogram(sequenceElongations, bins = np.arange(0,22))[0])
-		self.writeToListener("RibosomeData", "elongationsNonTerminatingHist", np.histogram(sequenceElongations[~didTerminate], bins=np.arange(0,22))[0])
+		self.writeToListener("RibosomeData", "actualElongationHist", np.histogram(sequenceElongations, bins = np.arange(0,23))[0])
+		self.writeToListener("RibosomeData", "elongationsNonTerminatingHist", np.histogram(sequenceElongations[~didTerminate], bins=np.arange(0,23))[0])
 
 		self.writeToListener("RibosomeData", "didTerminate", didTerminate.sum())
 		self.writeToListener("RibosomeData", "terminationLoss", (terminalLengths - peptideLengths)[didTerminate].sum())

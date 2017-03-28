@@ -74,8 +74,8 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.aaCountInSequence = np.zeros(21, np.int64)
 		self.aaCounts = np.zeros(21, np.int64)
 		self.actualElongations = 0
-		self.actualElongationHist = np.zeros(21, np.int64)
-		self.elongationsNonTerminatingHist = np.zeros(21, np.int64)
+		self.actualElongationHist = np.zeros(22, np.int64)
+		self.elongationsNonTerminatingHist = np.zeros(22, np.int64)
 		self.expectedElongations = 0
 		self.didTerminate = 0
 		self.didInitialize = 0
