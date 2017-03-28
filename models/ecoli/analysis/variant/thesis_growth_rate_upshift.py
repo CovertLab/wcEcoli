@@ -54,7 +54,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 			T_CUT_AA = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][2][0]
 
 	# Get all cells
-	allDir = ap.get_cells(seed=[3]) # 1, 5
+	allDir = ap.get_cells(seed=[1]) # 1, 5
 	nCells = allDir.shape[0]
 	nGens = ap.n_generation
 
