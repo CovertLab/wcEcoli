@@ -45,6 +45,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 
 	sim_data = cPickle.load(open(simDataFile, "rb"))
+
+	# import ipdb; ipdb.set_trace();
 	validation_data = cPickle.load(open(validationDataFile, "rb"))
 
 	ids_complexation = sim_data.process.complexation.moleculeNames
@@ -73,9 +75,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 
 	# Steady-state analysis
-	data =  np.loadtxt(plotOutDir + "dataSupFig2-3Translation model-gene-depedentRIB-RNAaffinity.txt")
-	productionRate = data[:,0]
-	decayRate = data[:,1]
+	# data =  np.loadtxt(plotOutDir + "dataSupFig2-3Translation model-gene-depedentRIB-RNAaffinity.txt")
+	# productionRate = data[:,0]
+	# decayRate = data[:,1]
 
 	# fig = plt.figure(figsize = (8, 8))
 

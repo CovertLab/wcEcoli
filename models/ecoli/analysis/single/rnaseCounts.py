@@ -114,6 +114,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 		whitePadSparklineAxis(ax)
 
+		ax.tick_params(right = "off")
+		ax.tick_params(top = "off")
+
 		signal = rnapRnaCounts[:, subplotIdx]
 		if subplotIdx == 17:
 			np.savetxt(os.path.join(plotOutDir, 'PNPase-MONOMER[c].txt'), signal)
