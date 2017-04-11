@@ -23,6 +23,18 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 
 BUILD_CACHE = True
 PLOT_GENES_OF_INTEREST = False
+PLOT_DENOMINATOR_N_EACH_FREQ_GROUP = False
+FIRST_N_GENS = 5
+
+COLOR_F1 = "r"
+COLOR_F0 = "y"
+COLOR_FSUB = "b"
+
+def remove_xaxis(axis):
+	axis.spines["bottom"].set_visible(False)
+	axis.tick_params(bottom = "off")
+	axis.tick_params(axis = "x", labelbottom = 'off')
+	axis.set_xlabel("")
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -42,8 +54,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		print "Skipping -- figure5B only runs for multigen"
 		return
 
-	# Get mRNA data
 	sim_data = cPickle.load(open(simDataFile, "rb"))
+	validation_data = cPickle.load(open(validationDataFile, "rb"))
+
+	# Get mRNA data
 	rnaIds = sim_data.process.transcription.rnaData["id"]
 	isMRna = sim_data.process.transcription.rnaData["isMRna"]
 	synthProb = sim_data.process.transcription.rnaSynthProb["basal"]
@@ -62,7 +76,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		for gen, simDir in enumerate(allDir):
 			simOutDir = os.path.join(simDir, "simOut")
 
-			time += TableReader(os.path.join(simOutDir, "Main")).readColumn("time").tolist()
+			if gen < FIRST_N_GENS:
+				time += TableReader(os.path.join(simOutDir, "Main")).readColumn("time").tolist()
 
 			rnaSynthProb = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
 			simulatedSynthProb = np.mean(rnaSynthProb.readColumn("rnaSynthProb")[:, mRnaIndexes], axis = 0)
@@ -84,8 +99,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 			if gen == 0:
 				transcriptionEvents = (rnaInitEvent != 0)
-			else:
+			elif gen < FIRST_N_GENS:
 				transcriptionEvents = np.vstack((transcriptionEvents, (rnaInitEvent != 0)))
+			else:
+				pass
 
 		time = np.array(time)
 		transcribedBool = np.array(transcribedBool)
@@ -99,6 +116,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		transcriptionIndex = sim_data.process.transcription.rnaData["id"].tolist()
 		geneIdsOrdered = [sim_data.process.transcription.rnaData["geneId"][transcriptionIndex.index(x)] for x in mRnaIdsOrdered]
 
+		## Commented code is used when PLOT_GENES_OF_INTEREST is True
 		# raw_data = cPickle.load(open("out/SET_A_000000/rawData.cPickle", "rb"))
 		# geneIdToGeneSymbol = dict([(x["id"].encode("utf-8"), x["symbol"].encode("utf-8")) for x in raw_data.genes])
 		# geneSymbolsOrdered = [geneIdToGeneSymbol[x] for x in geneIdsOrdered]
@@ -107,9 +125,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		alwaysPresentIndexes = np.where(transcribedBoolOrdered == 1.)[0]
 		neverPresentIndexes = np.where(transcribedBoolOrdered == 0.)[0]
 		sometimesPresentIndexes = np.array([x for x in np.arange(len(transcribedBoolOrdered)) if x not in alwaysPresentIndexes and x not in neverPresentIndexes])
-		colors = np.repeat("g", len(transcribedBoolOrdered))
-		colors[alwaysPresentIndexes] = "b"
-		colors[neverPresentIndexes] = "r"
+		colors = np.repeat(COLOR_FSUB, len(transcribedBoolOrdered))
+		colors[alwaysPresentIndexes] = COLOR_F1
+		colors[neverPresentIndexes] = COLOR_F0
 		always = transcribedBoolOrdered[alwaysPresentIndexes]
 		never = transcribedBoolOrdered[neverPresentIndexes]
 		sometimes = transcribedBoolOrdered[sometimesPresentIndexes]
@@ -161,7 +179,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		sometimesTranscriptionEvents = D["sometimesTranscriptionEvents"]
 		neverTranscriptionEvents = D["neverTranscriptionEvents"]
 
-
 	# Plot
 	fig = plt.figure(figsize = (16, 8))
 	scatterAxis = plt.subplot2grid((2, 4), (0, 0), colspan = 3, rowspan = 2)
@@ -174,9 +191,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	N, bins, patches = histAxis.hist(transcribedBoolOrdered, bins = len(allDir) + 1, orientation = 'horizontal')
 	for i in xrange(1, len(patches) - 1):
-		plt.setp(patches[i], facecolor = "none", edgecolor = "g")
-	plt.setp(patches[0], facecolor = "none", edgecolor = "r")
-	plt.setp(patches[-1], facecolor = "none", edgecolor = "b")
+		plt.setp(patches[i], facecolor = "none", edgecolor = COLOR_FSUB)
+	plt.setp(patches[0], facecolor = "none", edgecolor = COLOR_F0)
+	plt.setp(patches[-1], facecolor = "none", edgecolor = COLOR_F1)
 	histAxis.set_xscale("log")
 	whitePadSparklineAxis(histAxis)
 	histAxis.xaxis.tick_bottom()
@@ -226,7 +243,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	alwaysAxis = plt.subplot(2, 1, 1)
 	sometimesAxis = plt.subplot(2, 1, 2, sharex = alwaysAxis)
 
-	alwaysAxis.eventplot(alwaysTranscriptionEvents, orientation = "horizontal", linewidths = 2., linelengths = 4., color = "b")
+	alwaysAxis.eventplot(alwaysTranscriptionEvents, orientation = "horizontal", linewidths = 2., linelengths = 4., color = COLOR_F1)
 	alwaysAxis.set_xlim([0, time[-1] / 3600.])
 	alwaysAxis.set_ylim([-1, len(always)])
 	alwaysAxis.set_xticks([])
@@ -235,7 +252,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	alwaysAxis.tick_params(bottom = "off")
 	alwaysAxis.tick_params(axis = "x", labelbottom = 'off')
 	
-	sometimesAxis.eventplot(sometimesTranscriptionEvents, orientation = "horizontal", linewidths = 2., linelengths = 4., color = "g")
+	sometimesAxis.eventplot(sometimesTranscriptionEvents, orientation = "horizontal", linewidths = 2., linelengths = 4., color = COLOR_FSUB)
 	sometimesAxis.set_xlim([0, time[-1] / 3600.])
 	sometimesAxis.set_ylim([-1, len(sometimes)])
 	sometimesAxis.set_xticks([0, time[-1] / 3600.])
@@ -256,6 +273,159 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	sometimesAxis.set_xticklabels([sometimesXmin, "%0.2f" % sometimesXmax])
 	exportFigure(plt, plotOutDir, plotOutFileName + "__bottom", metadata)
 	plt.close("all")
+
+	# Figure 5E
+	nRed = len(never)
+	nGreen = len(sometimes)
+	nBlue = len(always)
+
+	plotRed = 0
+	plotGreen = 0
+	plotBlue = 0
+
+	essentialGenes_rna = validation_data.essentialGenes.essentialRnas
+	for g in essentialGenes_rna:
+		i = np.where(mRnaIdsOrdered == str(g))[0][0]
+		f = transcribedBoolOrdered[i]
+
+		if f == 0.0:
+			plotRed += 1
+		elif f == 1.0:
+			plotBlue += 1
+		else:
+			plotGreen += 1
+	xloc = np.arange(3)
+	width = 0.8
+
+	fig = plt.figure()
+	ax = plt.subplot(1, 1, 1)
+	ax.bar(xloc + width, [plotRed / float(len(essentialGenes_rna)), plotGreen / float(len(essentialGenes_rna)), plotBlue / float(len(essentialGenes_rna))], width, color = [COLOR_F0, COLOR_FSUB, COLOR_F1], edgecolor = "none")
+	whitePadSparklineAxis(ax)
+	ax.spines["left"].set_position(("outward", 0))
+	ax.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8])
+	ax.set_yticklabels(["0%", "20%", "40%", "60%", "80%"])
+	ax.set_ylabel("Percentage of essential genes")
+	ax.set_xticks(xloc + 1.5 * width)
+	ax.set_xticklabels(["%s / %s" % (plotRed, len(essentialGenes_rna)), "%s / %s" % (plotGreen, len(essentialGenes_rna)), "%s / %s" % (plotBlue, len(essentialGenes_rna))])
+	ax.set_xlabel("Total number of essential genes: %s" % len(essentialGenes_rna))
+	plt.subplots_adjust(right = 0.9, bottom = 0.15, left = 0.2, top = 0.9)
+	exportFigure(plt, plotOutDir, "figure5E", metadata)
+
+	ax.set_yticklabels([])
+	ax.set_ylabel("")
+	remove_xaxis(ax)
+	exportFigure(plt, plotOutDir, "figure5E_clean", metadata)
+
+	if PLOT_DENOMINATOR_N_EACH_FREQ_GROUP:	
+		fig = plt.figure()
+		ax = plt.subplot(1, 1, 1)
+		ax.bar(xloc + width, [plotRed / float(nRed), plotGreen / float(nGreen), plotBlue / float(nBlue)], width, color = [COLOR_F0, COLOR_FSUB, COLOR_F1], edgecolor = "none")
+		whitePadSparklineAxis(ax)
+		ax.spines["left"].set_position(("outward", 0))
+		ax.set_yticks([0.0, 0.1, 0.2])
+		ax.set_yticklabels(["0%", "10%", "20%"])
+		ax.set_ylabel("Percentage of genes that are essential genes")
+		ax.set_xticks(xloc + 1.5 * width)
+		ax.set_xticklabels(["%s / %s" % (plotRed, nRed), "%s / %s" % (plotGreen, nGreen), "%s / %s" % (plotBlue, nBlue)])
+		plt.subplots_adjust(right = 0.9, bottom = 0.1, left = 0.2, top = 0.9)
+		exportFigure(plt, plotOutDir, "figure5E_v2", metadata)
+	plt.close()
+
+	# Figure 5F and 5G
+	geneFunctions = validation_data.geneFunctions.geneFunctions
+	unknown = {"r": 0, "g": 0, "b": 0}
+	resistance = {"r": 0, "g": 0, "b": 0}
+	for frameID, function in geneFunctions.iteritems():
+		if function in ["Unknown function", "Unclear/under-characterized"]:
+			i = np.where([frameID in x for x in mRnaIdsOrdered])[0][0]
+			f = transcribedBoolOrdered[i]
+			if f == 0.0:
+				unknown["r"] += 1
+			elif f == 1.0:
+				unknown["b"] += 1
+			else:
+				unknown["g"] += 1
+
+		elif function in ["Antibiotic resistance", "Toxin/antitoxin"]:
+			i = np.where([frameID in x for x in mRnaIdsOrdered])[0][0]
+			f = transcribedBoolOrdered[i]
+			if f == 0.0:
+				resistance["r"] += 1
+			elif f == 1.0:
+				resistance["b"] += 1
+			else:
+				resistance["g"] += 1
+
+	nUnknown = np.sum([unknown[x] for x in ["r", "g", "b"]])
+	fig = plt.figure()
+	ax = plt.subplot(1, 1, 1)
+	ax.bar(xloc + width, [unknown["r"] / float(nUnknown), unknown["g"] / float(nUnknown), unknown["b"] / float(nUnknown)], width, color = [COLOR_F0, COLOR_FSUB, COLOR_F1], edgecolor = "none")
+	whitePadSparklineAxis(ax)
+	ax.spines["left"].set_position(("outward", 0))
+	ax.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8])
+	ax.set_yticklabels(["0%", "20%", "40%", "60%", "80%"])
+	ax.set_ylabel("Percentage of poorly understood / annotated genes")
+	ax.set_xticks(xloc + 1.5 * width)
+	ax.set_xticklabels(["%s / %s" % (unknown["r"], nUnknown), "%s / %s" % (unknown["g"], nUnknown), "%s / %s" % (unknown["b"], nUnknown)])
+	ax.set_xlabel("Total number of poorly understood / annotated genes: %s" % nUnknown)
+	plt.subplots_adjust(right = 0.9, bottom = 0.15, left = 0.2, top = 0.9)
+	exportFigure(plt, plotOutDir, "figure5F", metadata)
+
+	ax.set_yticklabels([])
+	ax.set_ylabel("")
+	remove_xaxis(ax)
+	exportFigure(plt, plotOutDir, "figure5F_clean", metadata)
+
+	if PLOT_DENOMINATOR_N_EACH_FREQ_GROUP:
+		fig = plt.figure()
+		ax = plt.subplot(1, 1, 1)
+		ax.bar(xloc + width, [unknown["r"] / float(nRed), unknown["g"] / float(nGreen), unknown["b"] / float(nBlue)], width, color = [COLOR_F0, COLOR_FSUB, COLOR_F1], edgecolor = "none")
+		whitePadSparklineAxis(ax)
+		ax.spines["left"].set_position(("outward", 0))
+		ax.set_yticks([0.0, 0.2, 0.4, 0.6])
+		ax.set_yticklabels(["0%", "20%", "40%", "60%"])
+		ax.set_ylabel("Percentage of genes that are poorly understood / annotated")
+		ax.set_xticks(xloc + 1.5 * width)
+		ax.set_xticklabels(["%s / %s" % (unknown["r"], nRed), "%s / %s" % (unknown["g"], nGreen), "%s / %s" % (unknown["b"], nBlue)])
+		plt.subplots_adjust(right = 0.9, bottom = 0.1, left = 0.2, top = 0.9)
+		exportFigure(plt, plotOutDir, "figure5F_v2", metadata)
+	plt.close()
+
+
+	nResistance = float(np.sum([resistance[x] for x in ["r", "g", "b"]]))
+	fig = plt.figure()
+	ax = plt.subplot(1, 1, 1)
+	ax.bar(xloc + width, [resistance["r"] / nResistance, resistance["g"] / nResistance, resistance["b"] / nResistance], width, color = [COLOR_F0, COLOR_FSUB, COLOR_F1], edgecolor = "none")
+	whitePadSparklineAxis(ax)
+	ax.spines["left"].set_position(("outward", 0))
+	ax.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8])
+	ax.set_yticklabels(["0%", "20%", "40%", "60%", "80%"])
+	ax.set_ylabel("Percentage of antibiotic related genes")
+	ax.set_xticks(xloc + 1.5 * width)
+	ax.set_xticklabels(["%s / %s" % (resistance["r"], int(nResistance)), "%s / %s" % (resistance["g"], int(nResistance)), "%s / %s" % (resistance["b"], int(nResistance))])
+	ax.set_xlabel("Total number of antibiotic related genes: %s" % int(nResistance))
+	plt.subplots_adjust(right = 0.9, bottom = 0.15, left = 0.2, top = 0.9)
+	exportFigure(plt, plotOutDir, "figure5G", metadata)
+
+	ax.set_yticklabels([])
+	ax.set_ylabel("")
+	remove_xaxis(ax)
+	exportFigure(plt, plotOutDir, "figure5G_clean", metadata)
+
+	if PLOT_DENOMINATOR_N_EACH_FREQ_GROUP:
+		fig = plt.figure()
+		ax = plt.subplot(1, 1, 1)
+		ax.bar(xloc + width, [resistance["r"] / float(nRed), resistance["g"] / float(nGreen), resistance["b"] / float(nBlue)], width, color = [COLOR_F0, COLOR_FSUB, COLOR_F1], edgecolor = "none")
+		whitePadSparklineAxis(ax)
+		ax.spines["left"].set_position(("outward", 0))
+		ax.set_yticks([0.0, 0.025])
+		ax.set_yticklabels(["0%", "2.5%"])
+		ax.set_ylabel("Percentage of genes that are antibiotic related")
+		ax.set_xticks(xloc + 1.5 * width)
+		ax.set_xticklabels(["%s / %s" % (resistance["r"], nRed), "%s / %s" % (resistance["g"], nGreen), "%s / %s" % (resistance["b"], nBlue)])
+		plt.subplots_adjust(right = 0.9, bottom = 0.1, left = 0.2, top = 0.9)
+		exportFigure(plt, plotOutDir, "figure5G", metadata)
+	plt.close()
 
 
 if __name__ == "__main__":

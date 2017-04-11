@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
-Central carbon metabolism comparison to Toya et al for figure 3c
+Central carbon metabolism comparison to Toya et al for figure 3D
 
 @author: Travis Horst
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 2/13/17
+@date: Created 4/3/17
 """
 
 import argparse
@@ -26,17 +26,16 @@ from models.ecoli.analysis.single.centralCarbonMetabolism import net_flux, _gene
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 
-def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
-	if not os.path.isdir(seedOutDir):
-		raise Exception, "seedOutDir does not currently exist as a directory"
+def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
+	if not os.path.isdir(variantDir):
+		raise Exception, "variantDir does not currently exist as a directory"
 
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
 
 	# Get all cells
-	ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
+	ap = AnalysisPaths(variantDir, cohort_plot = True)
 	allDir = ap.get_cells()
-	# allDir = ap.get_cells(generation = [0, 1, 2])
 
 	sim_data = cPickle.load(open(simDataFile, "rb"))
 	metaboliteNames = np.array(sorted(sim_data.process.metabolism.concDict.keys()))
@@ -103,8 +102,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	correlationCoefficient = np.corrcoef(toyaVsReactionAve[:,0], toyaVsReactionAve[:,1])[0,1]
 
 	plt.figure(figsize = (8, 8))
+	ax = plt.axes()
 	plt.title("Central Carbon Metabolism Flux, Pearson R = {:.2}".format(correlationCoefficient))
-	plt.errorbar(toyaVsReactionAve[:,1], toyaVsReactionAve[:,0], xerr = toyaVsReactionAve[:,3], yerr = toyaVsReactionAve[:,2], fmt = "o", ecolor = "k")
+	# plt.errorbar(toyaVsReactionAve[:,1], toyaVsReactionAve[:,0], xerr = toyaVsReactionAve[:,3], yerr = toyaVsReactionAve[:,2], fmt = "o", ecolor = "k")
+	plt.plot(toyaVsReactionAve[:,1], toyaVsReactionAve[:,0], "ob", markeredgewidth = 0.25, alpha = 0.5)
 	ylim = plt.ylim()
 	plt.plot([ylim[0], ylim[1]], [ylim[0], ylim[1]], color = "k")
 	plt.xlabel("Toya 2010 Reaction Flux [mmol/g/hr]")
@@ -112,6 +113,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax = plt.axes()
 	ax.set_ylim(plt.xlim())
 	whitePadSparklineAxis(plt.axes())
+	xlim = ax.get_xlim()
+	ylim = ax.get_ylim()
+	ax.set_yticks(range(int(ylim[0]), int(ylim[1]) + 1, 5))
+	ax.set_xticks(range(int(xlim[0]), int(xlim[1]) + 1, 5))
 
 	from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)

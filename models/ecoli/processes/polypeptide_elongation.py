@@ -46,7 +46,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.aaWeightsIncorporated = sim_data.process.translation.translationMonomerWeights
 		self.endWeight = sim_data.process.translation.translationEndWeight
 		self.gtpPerElongation = sim_data.constants.gtpPerTranslation
+		# self.ribosomeElongationRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
+
+		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
+
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
+
+		self.translation_aa_supply = sim_data.translationSupplyRate
 		self.nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
 		import copy
 		self.nutrientsTimeSeries = copy.deepcopy(sim_data.nutrientsTimeSeries)
@@ -78,14 +84,22 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gtpUsed = 0
 		self.gtpAvailable = 0
 
-		# Factor that creates growth rate noise. If set equal to 1 there is no noise.
+		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeGroups.s30_fullComplex[0])
+		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeGroups.s50_fullComplex[0])
+
+		self.translationSupply = sim._translationSupply
+
 		self.elngRateFactor = 1.
 
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium enviornment and elongation rate factor
 		# which is used to create single-cell variability in growth rate
-		self.ribosomeElongationRate = int(stochasticRound(self.randomState,
-			self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s) * self.timeStepSec()))
+		if self.translationSupply:
+			self.ribosomeElongationRate = np.min([self.maxRibosomeElongationRate, int(stochasticRound(self.randomState,
+				self.maxRibosomeElongationRate * self.timeStepSec()))])
+		else:
+			self.ribosomeElongationRate = np.min([22, int(stochasticRound(self.randomState,
+			self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s) * self.timeStepSec()))])
 
 		# Request all active ribosomes
 		self.activeRibosomes.requestAll()
@@ -101,12 +115,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 					'proteinIndex', 'peptideLength'
 					)
 
-		sequences = buildSequences(
-			self.proteinSequences,
-			proteinIndexes,
-			peptideLengths,
-			self.ribosomeElongationRate
-			)
+		try:
+			sequences = buildSequences(
+				self.proteinSequences,
+				proteinIndexes,
+				peptideLengths,
+				self.ribosomeElongationRate
+				)
+		except:
+			import ipdb; ipdb.set_trace()
 
 		sequenceHasAA = (sequences != PAD_VALUE)
 		aasInSequences = np.bincount(sequences[sequenceHasAA], minlength=21)
@@ -118,8 +135,21 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			_ , nutrients = self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel].popleft()
 			self.currentNutrients = nutrients
 
-		# Request counts of amino acids based on sequence composition
-		countAasRequested = aasInSequences
+		if self.translationSupply:
+			translationSupplyRate = self.translation_aa_supply[self.currentNutrients] * self.elngRateFactor
+
+			self.writeToListener("RibosomeData", "translationSupply", translationSupplyRate.asNumber())
+
+
+			dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
+
+			molAasRequested = translationSupplyRate * dryMass * self.timeStepSec() * units.s
+
+			countAasRequested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
+
+			countAasRequested = np.fmin(countAasRequested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
+		else:
+			countAasRequested = aasInSequences
 
 		self.aas.requestIs(
 			countAasRequested
@@ -251,6 +281,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("RibosomeData", "expectedElongations", expectedElongations.sum())
 		self.writeToListener("RibosomeData", "actualElongations", sequenceElongations.sum())
+		self.writeToListener("RibosomeData", "actualElongationHist", np.histogram(sequenceElongations, bins = np.arange(0,23))[0])
+		self.writeToListener("RibosomeData", "elongationsNonTerminatingHist", np.histogram(sequenceElongations[~didTerminate], bins=np.arange(0,23))[0])
 
 		self.writeToListener("RibosomeData", "didTerminate", didTerminate.sum())
 		self.writeToListener("RibosomeData", "terminationLoss", (terminalLengths - peptideLengths)[didTerminate].sum())
