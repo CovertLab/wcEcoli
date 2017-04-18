@@ -45,12 +45,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	exoRnase_RnaIDs = sim_data.moleculeGroups.exoRnase_RnaIDs
 	RNase_RnaIDS = np.concatenate((endoRnase_RnaIDs, exoRnase_RnaIDs))
 	RNase_IDS = np.concatenate((RNase_IDS, RNase_RnaIDS))
-
-	
-	# RNase P and PNP
 	#RNase_IDS = ['EG10862_RNA[c]', 'EG10862-MONOMER[c]', 'EG10743_RNA[c]', 'EG10743-MONOMER[c]']
 
-	# RNase P and SpoT
+	# RNase P and SpoT for Fig. 2B
 	RNase_IDS = ['EG10862_RNA[c]', 'EG10862-MONOMER[c]', 'EG10966_RNA[c]', 'SPOT-MONOMER[c]']
 
 	rnapRnaIndexes = np.array([moleculeIds.index(rnapRnaId) for rnapRnaId in RNase_IDS], np.int)
@@ -71,8 +68,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	count_bis = len(RNase_IDS) / 2
 
 	freq_observed = []
-
-	# import ipdb; ipdb.set_trace()
 
 	for subplotIdx in xrange(0, len(RNase_IDS)):
 		if not subplotIdx % 2:

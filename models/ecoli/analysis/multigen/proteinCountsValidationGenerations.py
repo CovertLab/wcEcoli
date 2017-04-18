@@ -2,9 +2,9 @@
 """
 Compare protein counts to Wisniewski 2014 data set
 
-@author: Derek Macklin
+@author: Javier	Carrera
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 12/3/2015
+@date: Created 12/4/2017
 """
 
 from __future__ import division
@@ -33,7 +33,11 @@ from wholecell.utils import units
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
 
-# TODO: account for complexation
+
+STEADY_STATE_ANALYSIS = 1
+PROTEOME_CONSISTENCY = 0
+
+
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
 
@@ -45,8 +49,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 
 	sim_data = cPickle.load(open(simDataFile, "rb"))
-
-	# import ipdb; ipdb.set_trace();
 	validation_data = cPickle.load(open(validationDataFile, "rb"))
 
 	ids_complexation = sim_data.process.complexation.moleculeNames
@@ -75,151 +77,188 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 
 	# Steady-state analysis
-	# data =  np.loadtxt(plotOutDir + "dataSupFig2-3Translation model-gene-depedentRIB-RNAaffinity.txt")
-	# productionRate = data[:,0]
-	# decayRate = data[:,1]
+	if STEADY_STATE_ANALYSIS == 1:
 
-	# fig = plt.figure(figsize = (8, 8))
+		data =  np.loadtxt(plotOutDir + "dataSupFig2-3Translation model-gene-depedentRIB-RNAaffinity.txt")
+		productionRate = data[:,1]
+		decayRate = data[:,2]
 
-	# axis = plt.subplot(1,1,1)
+		fig = plt.figure(figsize = (8, 8))
 
-	# axis.scatter(
-	# 	productionRate,
-	# 	decayRate,
-	# 	alpha=.2,
-	# 	s=60)
-	# print pearsonr(productionRate, decayRate)[0]
+		axis = plt.subplot(1,1,1)
 
-	# maxLine = np.ceil( max(productionRate.max(), decayRate.max())) * 1.03
+		axis.scatter(
+			productionRate,
+			decayRate,
+			alpha=.1,
+			s=60,
+			edgecolors = "none",
+			color='black')
 
-	# minLine = np.ceil( min(productionRate.min(), decayRate.min())) * 1.02
+		print pearsonr(productionRate, decayRate)[0]
 
-	# plt.plot([minLine, maxLine], [minLine, maxLine], '-k')
+		maxLine = np.ceil( max(productionRate.max(), decayRate.max()))
 
-	# plt.xlim(xmin=minLine, xmax=maxLine)
-	# plt.ylim(ymin=minLine, ymax=maxLine)
+		minLine = np.ceil( min(productionRate.min(), decayRate.min())) - 1
+
+		plt.plot([minLine, maxLine], [minLine, maxLine], '-k')
+
+		plt.plot([-4, 2], [-3, 3], '--b')
+
+		plt.plot([-3, 3], [-4, 2], '--r')
 
 
-	# axis.spines["right"].set_visible(False)
-	# axis.spines["top"].set_visible(False)
-	# axis.spines["left"].set_position(("outward", 10))
-	# axis.spines["bottom"].set_position(("outward", 10))
-	# # axis.set_yticks(axis.get_ylim())
-	# # axis.set_xticks(axis.get_xlim())
-	# axis.tick_params(right = "off")
-	# axis.tick_params(top = "off")
-	# axis.tick_params(which = "both", direction = "out")
+		# Loading 6 outliers
+		data =  np.loadtxt(plotOutDir + "data outliers.txt")
+		productionRate_outlier = data[:,1]
+		decayRate_outlier = data[:,2]
 
-	# axis.set_xlim([minLine, maxLine])
-	# axis.set_ylim([minLine, maxLine])
+		axis.scatter(
+			productionRate_outlier,
+			decayRate_outlier,
+			color='black',
+			s=60)
 
-	# from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
-	# exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-	# exportHtmlFigure(fig, plt, plotOutDir, plotOutFileName, metadata)
-	# plt.close("all")
+		# Loading 6 new measured data points
+		data =  np.loadtxt(plotOutDir + "data measured.txt")
+		productionRate_measured = data[:,1]
+		decayRate_measured = data[:,2]
+
+		# axis.scatter(
+		# 	productionRate_measured,
+		# 	decayRate_measured,
+		# 	color='blue',
+		# 	s=60)
+
+
+
+		plt.xlim(xmin=minLine, xmax=maxLine)
+		plt.ylim(ymin=minLine, ymax=maxLine)
+
+
+		axis.spines["right"].set_visible(False)
+		axis.spines["top"].set_visible(False)
+		axis.spines["left"].set_position(("outward", 10))
+		axis.spines["bottom"].set_position(("outward", 10))
+		# axis.set_yticks(axis.get_ylim())
+		# axis.set_xticks(axis.get_xlim())
+		axis.tick_params(right = "off")
+		axis.tick_params(top = "off")
+		axis.tick_params(which = "both", direction = "out")
+
+		axis.set_xlim([minLine, maxLine])
+		axis.set_ylim([minLine, maxLine])
+
+		from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		exportHtmlFigure(fig, plt, plotOutDir, plotOutFileName, metadata)
+		plt.close("all")
+
 
 
 	# Simulated vs predicted protein coutns
-	fig = plt.figure(figsize = (8, 8))
+	if PROTEOME_CONSISTENCY == 1:
 
-	for simDir in allDir:
-		print simDir
+		fig = plt.figure(figsize = (8, 8))
 
-		simOutDir = os.path.join(simDir, "simOut")
+		for simDir in allDir:
+			print simDir
 
-		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-		moleculeIds = bulkMolecules.readAttribute("objectNames")
-		proteinIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in ids_protein], np.int)
-		proteinCountsBulk = bulkMolecules.readColumn("counts")[:, proteinIndexes]
-		bulkMolecules.close()
+			simOutDir = os.path.join(simDir, "simOut")
 
-		# Account for monomers
-		bulkContainer.countsIs(proteinCountsBulk.mean(axis = 0))
-		# bulkContainer.countsIs(proteinCountsBulk[-1,:]) # final time point
+			bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
+			moleculeIds = bulkMolecules.readAttribute("objectNames")
+			proteinIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in ids_protein], np.int)
+			proteinCountsBulk = bulkMolecules.readColumn("counts")[:, proteinIndexes]
+			bulkMolecules.close()
 
-		# Account for unique molecules
-		uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
-		ribosomeIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRibosome")
-		rnaPolyIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRnaPoly")
-		nActiveRibosome = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, ribosomeIndex]
-		nActiveRnaPoly = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, rnaPolyIndex]
-		uniqueMoleculeCounts.close()
-		bulkContainer.countsInc(nActiveRibosome.mean(), sim_data.moleculeGroups.s30_fullComplex + sim_data.moleculeGroups.s50_fullComplex)
-		bulkContainer.countsInc(nActiveRnaPoly.mean(), sim_data.moleculeGroups.rnapFull)
+			# Account for monomers
+			bulkContainer.countsIs(proteinCountsBulk.mean(axis = 0))
+			# bulkContainer.countsIs(proteinCountsBulk[-1,:]) # final time point
 
-		# Account for small-molecule bound complexes
-		view_equilibrium.countsInc(
-			np.dot(sim_data.process.equilibrium.stoichMatrixMonomers(), view_equilibrium_complexes.counts() * -1)
-			)
+			# Account for unique molecules
+			uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
+			ribosomeIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRibosome")
+			rnaPolyIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRnaPoly")
+			nActiveRibosome = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, ribosomeIndex]
+			nActiveRnaPoly = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, rnaPolyIndex]
+			uniqueMoleculeCounts.close()
+			bulkContainer.countsInc(nActiveRibosome.mean(), sim_data.moleculeGroups.s30_fullComplex + sim_data.moleculeGroups.s50_fullComplex)
+			bulkContainer.countsInc(nActiveRnaPoly.mean(), sim_data.moleculeGroups.rnapFull)
 
-		# Account for monomers in complexed form
-		view_complexation.countsInc(
-			np.dot(sim_data.process.complexation.stoichMatrixMonomers(), view_complexation_complexes.counts() * -1)
-			)
-
-		wisniewskiCounts = validation_data.protein.wisniewski2014Data["avgCounts"]
-		proteinIds = validation_data.protein.wisniewski2014Data["monomerId"].tolist()
-
-		# Wisniewski Counts
-		# points = ax[0].scatter(np.log10(wisniewskiCounts + 1), np.log10(view_validation.counts() + 1), c='w', edgecolor = 'k', alpha=.7)
-		# ax[0].set_xlabel("Log 10(Wisniewski 2014 Counts)")
-		# ax[0].set_title("Pearson r: %0.2f" % pearsonr(np.log10(view_validation.counts() + 1), np.log10(wisniewskiCounts + 1))[0])
-
-		labels = list(proteinIds)
-		# tooltip = plugins.PointLabelTooltip(points, labels)
-		# plugins.connect(fig, tooltip)
-
-		view_validation_schmidt = bulkContainer.countsView(validation_data.protein.schmidt2015Data["monomerId"].tolist())
-		View_Validation_Schmidt.append(view_validation_schmidt.counts())
-		
-
-	View_Validation_Schmidt = (np.array(View_Validation_Schmidt)).mean(axis = 0)
-
-	# Schmidt Counts
-	schmidtLabels = validation_data.protein.schmidt2015Data["monomerId"]
-	schmidtCounts = validation_data.protein.schmidt2015Data["glucoseCounts"]
-
-
-	axis = plt.subplot(1,1,1)
-
-	axis.scatter(
-		np.log10(schmidtCounts + 1),
-		np.log10(View_Validation_Schmidt + 1),
-		alpha=.2,
-		s=60)
-	print pearsonr( np.log10(View_Validation_Schmidt + 1), np.log10(schmidtCounts + 1) )[0]
-	
-	maxLine = np.ceil( 
-					max((np.log10(schmidtCounts + 1)).max(), 
-					(np.log10(View_Validation_Schmidt + 1)).max())
+			# Account for small-molecule bound complexes
+			view_equilibrium.countsInc(
+				np.dot(sim_data.process.equilibrium.stoichMatrixMonomers(), view_equilibrium_complexes.counts() * -1)
 				)
-	plt.plot([0, maxLine], [0, maxLine], '-k')
 
-	plt.xlim(xmin=0, xmax=maxLine)
-	plt.ylim(ymin=0, ymax=maxLine)
+			# Account for monomers in complexed form
+			view_complexation.countsInc(
+				np.dot(sim_data.process.complexation.stoichMatrixMonomers(), view_complexation_complexes.counts() * -1)
+				)
+
+			wisniewskiCounts = validation_data.protein.wisniewski2014Data["avgCounts"]
+			proteinIds = validation_data.protein.wisniewski2014Data["monomerId"].tolist()
+
+			# Wisniewski Counts
+			# points = ax[0].scatter(np.log10(wisniewskiCounts + 1), np.log10(view_validation.counts() + 1), c='w', edgecolor = 'k', alpha=.7)
+			# ax[0].set_xlabel("Log 10(Wisniewski 2014 Counts)")
+			# ax[0].set_title("Pearson r: %0.2f" % pearsonr(np.log10(view_validation.counts() + 1), np.log10(wisniewskiCounts + 1))[0])
+
+			labels = list(proteinIds)
+			# tooltip = plugins.PointLabelTooltip(points, labels)
+			# plugins.connect(fig, tooltip)
+
+			view_validation_schmidt = bulkContainer.countsView(validation_data.protein.schmidt2015Data["monomerId"].tolist())
+			View_Validation_Schmidt.append(view_validation_schmidt.counts())
+			
+
+		View_Validation_Schmidt = (np.array(View_Validation_Schmidt)).mean(axis = 0)
+
+		# Schmidt Counts
+		schmidtLabels = validation_data.protein.schmidt2015Data["monomerId"]
+		schmidtCounts = validation_data.protein.schmidt2015Data["glucoseCounts"]
 
 
-	axis.spines["right"].set_visible(False)
-	axis.spines["top"].set_visible(False)
-	axis.spines["left"].set_position(("outward", 10))
-	axis.spines["bottom"].set_position(("outward", 10))
-	# axis.set_yticks(axis.get_ylim())
-	# axis.set_xticks(axis.get_xlim())
-	axis.tick_params(right = "off")
-	axis.tick_params(top = "off")
-	axis.tick_params(which = "both", direction = "out")
+		axis = plt.subplot(1,1,1)
 
-	axis.set_xlim([-0.07, maxLine])
-	axis.set_ylim([-0.07, maxLine])
+		axis.scatter(
+			np.log10(schmidtCounts + 1),
+			np.log10(View_Validation_Schmidt + 1),
+			alpha=.2,
+			s=60)
+		print pearsonr( np.log10(View_Validation_Schmidt + 1), np.log10(schmidtCounts + 1) )[0]
+		
+		maxLine = np.ceil( 
+						max((np.log10(schmidtCounts + 1)).max(), 
+						(np.log10(View_Validation_Schmidt + 1)).max())
+					)
+		plt.plot([0, maxLine], [0, maxLine], '-k')
 
-	# NOTE: This Pearson correlation goes up (at the time of writing) about 0.05 if you only
-	# include proteins that you have translational efficiencies for
+		plt.xlim(xmin=0, xmax=maxLine)
+		plt.ylim(ymin=0, ymax=maxLine)
 
 
-	from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
-	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-	exportHtmlFigure(fig, plt, plotOutDir, plotOutFileName, metadata)
-	plt.close("all")
+		axis.spines["right"].set_visible(False)
+		axis.spines["top"].set_visible(False)
+		axis.spines["left"].set_position(("outward", 10))
+		axis.spines["bottom"].set_position(("outward", 10))
+		# axis.set_yticks(axis.get_ylim())
+		# axis.set_xticks(axis.get_xlim())
+		axis.tick_params(right = "off")
+		axis.tick_params(top = "off")
+		axis.tick_params(which = "both", direction = "out")
+
+		axis.set_xlim([-0.07, maxLine])
+		axis.set_ylim([-0.07, maxLine])
+
+		# NOTE: This Pearson correlation goes up (at the time of writing) about 0.05 if you only
+		# include proteins that you have translational efficiencies for
+
+
+		from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		exportHtmlFigure(fig, plt, plotOutDir, plotOutFileName, metadata)
+		plt.close("all")
 
 
 
