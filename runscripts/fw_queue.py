@@ -69,10 +69,10 @@ COMPRESS_OUTPUT = str(os.environ.get("COMPRESS_OUTPUT", "1"))
 SIM_DESCRIPTION = os.environ.get("DESC", "").replace(" ", "_")
 VERBOSE_QUEUE = bool(int(os.environ.get("VERBOSE_QUEUE", "1")))
 MASS_DISTRIBUTION = bool(int(os.environ.get("MASS_DISTRIBUTION", "1")))
-GROWTH_RATE_NOISE = bool(int(os.environ.get("GROWTH_RATE_NOISE", "0")))
-D_PERIOD_DIVISION = bool(int(os.environ.get("D_PERIOD_DIVISION", "0")))
+GROWTH_RATE_NOISE = bool(int(os.environ.get("GROWTH_RATE_NOISE", "1")))
+D_PERIOD_DIVISION = bool(int(os.environ.get("D_PERIOD_DIVISION", "1")))
 TRANSLATION_SUPPLY = bool(int(os.environ.get("TRANSLATION_SUPPLY", "1")))
-RUN_AGGREGATE_ANALYSIS = bool(int(os.environ.get("RUN_AGGREGATE_ANALYSIS", "1")))
+RUN_AGGREGATE_ANALYSIS = bool(int(os.environ.get("RUN_AGGREGATE_ANALYSIS", "0")))
 
 if not RUN_AGGREGATE_ANALYSIS:
 	COMPRESS_OUTPUT = False
