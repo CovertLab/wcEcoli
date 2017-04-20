@@ -36,7 +36,7 @@ def mm2inch(value):
 	return value * 0.0393701
 
 def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
-	return
+	
 	if not os.path.isdir(variantDir):
 		raise Exception, "variantDir does not currently exist as a directory"
 
@@ -64,7 +64,11 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	# Get all cells in each seed
 	ap = AnalysisPaths(variantDir, cohort_plot = True)
-	all_cells = ap.get_cells(seed=[5])
+	#all_cells = ap.get_cells(seed=[0,1,2,3])
+	all_cells = ap.get_cells(seed=[0])
+
+	if not len(all_cells):
+		return
 
 	for idx, simDir in enumerate(all_cells):
 		color = "black"
@@ -80,7 +84,10 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		## Cell mass
 		mass = TableReader(os.path.join(simOutDir, "Mass"))
 		cellMass = mass.readColumn("cellMass")
+		massPerOric = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("criticalMassPerOriC")
+		idxInit = np.where(massPerOric >= 1)[0]
 		ax0.plot(time / 60., cellMass, color = color, alpha = alpha, linewidth=2)
+		ax0.plot(time[idxInit] / 60., cellMass[idxInit],  markersize=6, linewidth=0, marker="o", color = "red", markeredgewidth=0)
 
 		## Inst. growth rate
 		growthRate = mass.readColumn("instantaniousGrowthRate")
@@ -98,7 +105,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ribosomeConcentration = ((1 / sim_data.constants.nAvogadro) * ribosomeCounts) / ((1.0 / sim_data.constants.cellDensity) * (units.fg * cellMass))
 		ribosomeConcentration = ribosomeConcentration.asNumber(units.umol / units.L)
 		ax2.plot(time / 60., ribosomeConcentration, color = color, alpha = alpha, linewidth=2)
-		ax2.set_ylim([20., 35.])
+		ax2.set_ylim([19., 35.])
 		# rnaMass = mass.readColumn("rnaMass")
 		# proteinMass = mass.readColumn("proteinMass")
 		# rnaOverProtein = rnaMass / proteinMass
@@ -143,7 +150,11 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	#ax0.axvline(x=44*2+22., linewidth=3, color='gray', alpha = 0.5)
 
 	nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
-	T_ADD_AA = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][1][0] / 60.
+	try:
+		T_ADD_AA = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][1][0] / 60.
+	except:
+		print "nutrientsTimeSeries does not have correct dimensions for this analysis. Exiting."
+		return
 	axes_list = [ax0, ax1, ax2]#, ax3, ax4]
 	for a in axes_list:
 		shift_time = T_ADD_AA
@@ -236,6 +247,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ap = AnalysisPaths(variantDir, cohort_plot = True)
 	all_cells = ap.get_cells(seed=[5])
 
+	if not len(all_cells):
+		return
+
 	for idx, simDir in enumerate(all_cells):
 		color = "black"
 		alpha = 0.8
@@ -300,7 +314,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		pairsOfForks = (sequenceIdx != PLACE_HOLDER).sum(axis = 1) / 4
 		ax4.plot(time / 60., pairsOfForks, linewidth=2, color = color, alpha = alpha)
 		ax4.set_yticks(np.arange(0,7))
-		ax4.set_ylim([0, 6])
+		ax4.set_ylim([0, 6.1])
+		ax4.set_yticks([0, 6.])
+		ax4.set_yticklabels(["0","6"])
 
 
 	# y_ticks = ax0.get_yticks()

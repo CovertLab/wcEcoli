@@ -199,8 +199,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# scatterAxis.axhline(2.0, linewidth=0.5, color='black', linestyle="--", xmin = 0.5, xmax = 1.)
 	# xhistAxis = plt.subplot2grid((4,5), (0,0), colspan=3, sharex = scatterAxis)
 	yhistAxis = plt.subplot2grid((3,4), (0,3), rowspan=3)#, sharey = scatterAxis)
-	yhistAxis.axhline(1.0, linewidth=1.0, color='black', linestyle = 'dotted')
-	yhistAxis.axhline(2.0, linewidth=1.0, color='black', linestyle = 'dotted')
+	# yhistAxis.axhline(1.0, linewidth=1.0, color='black', linestyle = 'dotted')
+	# yhistAxis.axhline(2.0, linewidth=1.0, color='black', linestyle = 'dotted')
 	#yhistAxis_2 = plt.subplot2grid((4,5), (1,4), rowspan=3, sharey = scatterAxis)
 	#yhistAxis_2.axhline(1.0, linewidth=0.5, color='black', linestyle="--")
 	#yhistAxis_2.axhline(2.0, linewidth=0.5, color='black', linestyle="--")
@@ -218,11 +218,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	## scatterAxis.semilogx(averageInitiationEventsPerMonomer[smallBurst], averageFoldChangePerMonomer[smallBurst], marker = '.', color = "green", alpha = 0.9, lw = 0.)#, s = 5)
 	## scatterAxis.semilogx(averageInitiationEventsPerMonomer[~smallBurst], averageFoldChangePerMonomer[~smallBurst], marker = '.', color = "blue", alpha = 0.9, lw = 0.)#, s = 5)
 	
-	scatterAxis.loglog(averageInitiationEventsPerMonomer[smallBurst], averageFoldChangePerMonomer[smallBurst], marker = '.', color = "green", alpha = 0.5, lw = 0.)#, s = 5)
-	scatterAxis.loglog(averageInitiationEventsPerMonomer[~smallBurst], averageFoldChangePerMonomer[~smallBurst], marker = '.', color = "blue", alpha = 0.5, lw = 0.)#, s = 5)
-	
+	scatterAxis.loglog(averageInitiationEventsPerMonomer[smallBurst], averageFoldChangePerMonomer[smallBurst], marker = '.', color = "blue", alpha = 0.5, lw = 0.)#, s = 5)
+	scatterAxis.loglog(averageInitiationEventsPerMonomer[~smallBurst], averageFoldChangePerMonomer[~smallBurst], marker = '.', color = "red", alpha = 0.5, lw = 0.)#, s = 5)
 
-	scatterAxis.set_ylabel("Fold change per protein per\ntranscription event ({} generations)".format(ap.n_generation), fontsize = FONT_SIZE)
+	scatterAxis.set_ylabel("Fold change per protein\nin each generation ({} generations)".format(ap.n_generation), fontsize = FONT_SIZE)
 	scatterAxis.set_xlabel("Average number of transcription events\nper protein per generation ({} generations)".format(ap.n_generation), fontsize = FONT_SIZE)
 
 	# lims = yhistAxis.get_ylim()
@@ -243,8 +242,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# yhistAxis.hist(averageFoldChangePerMonomer[~smallBurst], histtype = 'step', bins = 25, orientation='horizontal', log = True)
 	# yhistAxis.hist(averageFoldChangePerMonomer[smallBurst], histtype = 'step', bins = 100, orientation='horizontal', log = True, color="green")
 
-	yhistAxis.hist(averageFoldChangePerMonomer[~smallBurst], histtype = 'step', bins = np.logspace(np.log10(0.01), np.log10(1000.), 25), range = [0.7, 100], log = True,  orientation='horizontal', linewidth=1)
-	yhistAxis.hist(averageFoldChangePerMonomer[smallBurst], histtype = 'step', bins = np.logspace(np.log10(0.01), np.log10(1000.), 125), range = [0.7, 100], log = True,  orientation='horizontal', color="green", linewidth=1)
+	yhistAxis.hist(averageFoldChangePerMonomer[~smallBurst], histtype = 'step', bins = np.logspace(np.log10(0.01), np.log10(1000.), 25), range = [0.7, 100], log = True,  orientation='horizontal', color="red", linewidth=1)
+	yhistAxis.hist(averageFoldChangePerMonomer[smallBurst], histtype = 'step', bins = np.logspace(np.log10(0.01), np.log10(1000.), 125), range = [0.7, 100], log = True,  orientation='horizontal', color="blue", linewidth=1)
 	# yhistAxis.set_ylim([0.7, 100])
 	yhistAxis.set_yscale("log")
 
@@ -256,15 +255,16 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	for label in yhistAxis.xaxis.get_ticklabels()[::2]:
 		label.set_visible(False)
 
-
-
 	whitePadSparklineAxis(scatterAxis)
 	whitePadSparklineAxis(yhistAxis)
 	# whitePadSparklineAxis(xhistAxis)
 
-
 	yhistAxis.set_yticks([1., 2.])
-	yhistAxis.set_yticklabels([1.,2.])
+	yhistAxis.set_yticklabels([])
+
+	# Label 1 and 2 with arrows
+	yhistAxis.annotate("1", xy = (1e4, 1), xytext = (1e5, 1), fontsize = FONT_SIZE, arrowprops = dict(facecolor = "black", edgecolor = "none", width = 0.5, headwidth = 4),  verticalalignment = "center")
+	yhistAxis.annotate("2", xy = (1e4, 2), xytext = (1e5, 2), fontsize = FONT_SIZE, arrowprops = dict(facecolor = "black", edgecolor = "none", width = 0.5, headwidth = 4),  verticalalignment = "center")
 
 	for tick in scatterAxis.xaxis.get_major_ticks():
 		tick.label.set_fontsize(FONT_SIZE) 
@@ -330,46 +330,20 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 
 	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
+	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	#plt.close("all")
-
-
-	scatterAxis.tick_params(
-		axis='x',          # changes apply to the x-axis
-		which='both',      # both major and minor ticks are affected
-		bottom='off',      # ticks along the bottom edge are off
-		top='off',         # ticks along the top edge are off
-		labelbottom='off') # labels along the bottom edge are off
-	scatterAxis.tick_params(
-		axis='y',          # changes apply to the x-axis
-		which='both',      # both major and minor ticks are affected
-		left='off',      # ticks along the bottom edge are off
-		right='off',         # ticks along the top edge are off
-		labelleft='off') # labels along the bottom edge are off
 
 	scatterAxis.set_xlabel("")
 	scatterAxis.set_ylabel("")
-
-	yhistAxis.tick_params(
-		axis='x',          # changes apply to the x-axis
-		which='both',      # both major and minor ticks are affected
-		bottom='off',      # ticks along the bottom edge are off
-		top='off',         # ticks along the top edge are off
-		labelbottom='off') # labels along the bottom edge are off
-	yhistAxis.tick_params(
-		axis='y',          # changes apply to the x-axis
-		which='both',      # both major and minor ticks are affected
-		left='off',      # ticks along the bottom edge are off
-		right='off',         # ticks along the top edge are off
-		labelleft='off') # labels along the bottom edge are off
+	scatterAxis.set_xticklabels([])
+	scatterAxis.set_yticklabels([])
 
 	yhistAxis.set_xlabel("")
 	yhistAxis.set_ylabel("")
-
-
+	yhistAxis.set_xticklabels([])
 
 	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName + "_stripped" ,metadata)
+	exportFigure(plt, plotOutDir, plotOutFileName + "_stripped", metadata)
 	plt.close("all")
 
 
