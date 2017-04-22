@@ -67,14 +67,17 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		round_init = np.zeros(len(all_cells))
 
 		for idx, simDir in enumerate(all_cells):
-			simOutDir = os.path.join(simDir, "simOut")
+			try:
+				simOutDir = os.path.join(simDir, "simOut")
 			
-			## Initiation mass
-			massPerOric = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("criticalMassPerOriC")
-			round_init[idx] = np.sum(massPerOric >= 1.)
+				## Initiation mass
+				massPerOric = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("criticalMassPerOriC")
+				round_init[idx] = np.sum(massPerOric >= 1.)
+			except:
+				pass
 
 
-		ax0.hist(round_init, bins=[0,1,2,3], normed=True, log=True)
+		ax0.hist(round_init, bins=[0,1,2,3], normed=True, log=False)
 		ax0.set_ylim([0.001, 1.0])
 
 		axes_list = [ax0]

@@ -67,12 +67,15 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		all_cells = ap.get_cells(generation=gen, variant=[varIdx])
 
 		for simDir in all_cells:
-			simOutDir = os.path.join(simDir, "simOut")
-			mass = TableReader(os.path.join(simOutDir, "Mass"))
-			cellMass = mass.readColumn("dryMass")
+			try:
+				simOutDir = os.path.join(simDir, "simOut")
+				mass = TableReader(os.path.join(simOutDir, "Mass"))
+				cellMass = mass.readColumn("dryMass")
 
-			initial_masses = np.hstack((initial_masses, cellMass[0]))
-			final_masses = np.hstack((final_masses, cellMass[-1]))
+				initial_masses = np.hstack((initial_masses, cellMass[0]))
+				final_masses = np.hstack((final_masses, cellMass[-1]))
+			except:
+				pass
 
 		print final_masses.size
 		added_masses = final_masses - initial_masses

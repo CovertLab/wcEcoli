@@ -59,7 +59,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 	for varIdxReal in range(ap.n_variant):
 
-		all_cells = ap.get_cells(variant=[varIdxReal], seed=[0], generation=[0,1,2,3,4])
+		all_cells = ap.get_cells(variant=[varIdxReal], seed=[1], generation=[0,1,2,3,4])
 
 		import cPickle
 		simDataFile = ap.get_variant_kb(all_cells[0])
@@ -193,7 +193,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		if varIdx > 0:
 			ax1.yaxis.set_visible(False)
 		ax1.xaxis.set_visible(False)
-		ax1.set_ylim([0.003, 0.035])
+		ax1.set_ylim([0.002, 0.033])
 
 		if varIdx == 0:
 			ax2.set_ylabel("70S concentration\n(" + r"$\mu$" + "mol/L)", fontsize=FONT_SIZE)
@@ -207,7 +207,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		if varIdx > 0:
 			ax3.yaxis.set_visible(False)
 		ax3.xaxis.set_visible(False)
-		ax3.set_ylim([8,22])
+		ax3.set_ylim([5,22])
 
 		# y_ticks = ax2.get_yticks()
 		# new_y_ticks = y_ticks[0:-1:2]
@@ -218,7 +218,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		if varIdx > 0:
 			ax4.yaxis.set_visible(False)
 		ax4.xaxis.set_visible(False)
-		ax4.set_ylim([100, 400])
+		ax4.set_ylim([65, 400])
 
 
 		if varIdx == 0:

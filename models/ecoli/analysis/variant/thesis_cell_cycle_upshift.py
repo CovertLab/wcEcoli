@@ -51,7 +51,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 	title_list = ["Glucose minimal anaerobic\n" + r"$\mu = $" + "100 min", "Glucose minimal\n" + r"$\mu = $" + "44 min", "Glucose minimal + 20 amino acids\n" + r"$\mu = $" + "22 min"]
 
-	all_cells = ap.get_cells(variant=[2], seed=[0])
+	all_cells = ap.get_cells(variant=[2], seed=[1])
 
 	import cPickle
 	simDataFile = ap.get_variant_kb(all_cells[0])

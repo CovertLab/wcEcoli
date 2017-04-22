@@ -138,7 +138,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 	ax0.errorbar(sim_doubling_time, sim_rna_mass_per_cell, yerr=sim_rna_mass_per_cell_std, xerr=sim_doubling_time_std, label="Simulation", color="black", fmt='', marker='o', markersize=3, linewidth=0.5)
 	ax0.errorbar(bremer_tau, bremer_rna_mass_per_cell, yerr=np.array(bremer_rna_mass_per_cell) * 0.06, xerr = [bremer_tau_low_err, bremer_tau_high_err], label="Bremer & Dennis 1996", color="blue", marker='o', markersize=3, linewidth=0.5)
 	ax0.set_title("RNA mass per cell (fg)", fontsize=FONT_SIZE)
-	ax0.set_xlim([20, 105])
+	ax0.set_xlim([15, 130])
 
 	ax1.errorbar(sim_doubling_time, sim_elng_rate, yerr=sim_elng_rate_std, xerr=sim_doubling_time_std, label="Simulation", color="black", fmt='', marker='o', markersize=3, linewidth=0.5)
 	ax1.errorbar(bremer_tau, bremer_elng_rate, yerr=np.array(bremer_elng_rate) * 0.06,xerr = [bremer_tau_low_err, bremer_tau_high_err], label="Bremer & Dennis 1996", color="blue", marker='o', markersize=3, linewidth=0.5)

@@ -31,7 +31,7 @@ def rsquared(x, y):
     return r_value**2
 
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metadata = None):
-	return
+	
 	if not os.path.isdir(inputDir):
 		raise Exception, "variantDir does not currently exist as a directory"
 

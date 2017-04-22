@@ -142,7 +142,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 	ax0.errorbar(sim_doubling_time, sim_origin_per_cell, yerr=sim_origin_per_cell_std, xerr=sim_doubling_time_std, label="Simulation", color="black", fmt='', marker='o', markersize=3, linewidth=0.5)
 	ax0.errorbar(bremer_tau, bremer_origin_per_cell, yerr=np.array(bremer_origin_per_cell) * 0.1, xerr = [bremer_tau_low_err, bremer_tau_high_err], label="Bremer & Dennis 1996", color="blue", marker='o', markersize=3, linewidth=0.5)
 	ax0.set_title("Average origin per cell", fontsize=FONT_SIZE)
-	ax0.set_xlim([20, 105])
+	ax0.set_xlim([15, 130])
 
 	ax1.errorbar(sim_doubling_time, sim_terminus_per_cell, yerr=sim_terminus_per_cell_std, xerr=sim_doubling_time_std, label="Simulation", color="black", fmt='', marker='o', markersize=3, linewidth=0.5)
 	ax1.errorbar(bremer_tau, bremer_terminus_per_cell, yerr=np.array(bremer_terminus_per_cell) * 0.1,xerr = [bremer_tau_low_err, bremer_tau_high_err], label="Bremer & Dennis 1996", color="blue", marker='o', markersize=3, linewidth=0.5)

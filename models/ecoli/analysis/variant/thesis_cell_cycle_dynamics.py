@@ -53,7 +53,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 	for varIdxReal in range(ap.n_variant):
 
-		all_cells = ap.get_cells(variant=[varIdxReal], seed=[0], generation=[0,1,2,3,4])
+		all_cells = ap.get_cells(variant=[varIdxReal], seed=[1], generation=[0,1,2,3,4])
 
 		import cPickle
 		simDataFile = ap.get_variant_kb(all_cells[0])

@@ -21,8 +21,8 @@ from scipy.stats import linregress
 def mm2inch(value):
 	return value * 0.0393701
 
-FONT_SIZE=9
-trim = 0.05
+FONT_SIZE=4
+trim = 0.09
 
 def rsquared(x, y):
     """ Return R^2 where x and y are array-like."""
@@ -45,83 +45,80 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		return
 
 	fig = plt.figure()
-	fig.set_figwidth(11)
-	fig.set_figheight(4)
+	fig.set_figwidth(mm2inch(170*1.3))
+	fig.set_figheight(mm2inch(43*1.3))
 
 	title_list = ["Glucose minimal\n" + r"$\tau = $" + "44 min", "Glucose minimal anaerobic\n" + r"$\tau = $" + "100 min", "Glucose minimal + 20 amino acids\n" + r"$\tau = $" + "22 min"]
 
-	for varIdx in range(ap.n_variant):
+	colorlist = ["#43aa98", "#bf673c", "#0071bb"]
+	trendlinecolor = "#91268F"
+	trendlineopacity = 0.5
 
-		if varIdx == 0:
-			plotIdx = 1
-		elif varIdx == 1:
-			plotIdx = 0
-		elif varIdx == 2:
-			plotIdx = 2
+	ax0 = plt.subplot2grid((1,1), (0,0))
+
+	for varIdx in range(ap.n_variant):
 
 		initial_masses = np.zeros(0)
 		final_masses = np.zeros(0)
 
 		if varIdx == 0:
-			gen = [1,2,3]
+			gen = [3]
 		elif varIdx == 1:
-			gen = [1,2,3]
+			gen = [3]
 		elif varIdx == 2:
-			gen = [3,4,5]
+			gen = [5]
 
 		all_cells = ap.get_cells(generation=gen, variant=[varIdx])
 
 		for simDir in all_cells:
-			try:
-				simOutDir = os.path.join(simDir, "simOut")
-				mass = TableReader(os.path.join(simOutDir, "Mass"))
-				cellMass = mass.readColumn("dryMass")
+			simOutDir = os.path.join(simDir, "simOut")
+			mass = TableReader(os.path.join(simOutDir, "Mass"))
+			cellMass = mass.readColumn("dryMass")
 
-				initial_masses = np.hstack((initial_masses, cellMass[0]))
-				final_masses = np.hstack((final_masses, cellMass[-1]))
-			except:
-				pass
+			initial_masses = np.hstack((initial_masses, cellMass[0]))
+			final_masses = np.hstack((final_masses, cellMass[-1]))
+
+		print "VarIdx {}".format(varIdx)
 
 		print final_masses.size
 		added_masses = final_masses - initial_masses
 
-		scaled_initial_masses = initial_masses / initial_masses.mean()
-		scaled_added_masses = added_masses / added_masses.mean()
+		# scaled_initial_masses = initial_masses / initial_masses.mean()
+		# added_masses = added_masses / added_masses.mean()
 
-		ax0 = plt.subplot2grid((1,3), (0,plotIdx))
-		ax0.plot(scaled_initial_masses, scaled_added_masses, '.', color = "grey", alpha = 0.5, zorder=1)
+		ax0.plot(initial_masses, added_masses, '.', color = colorlist[varIdx], alpha = 0.3, zorder=1, markersize=2)
 		
 		nbins = 30
 		if varIdx == 2:
 			nbins = 60
 
 		n_cell_cutoff = 20
-		n, _ = np.histogram(scaled_initial_masses, bins=nbins)
-		sy, _ = np.histogram(scaled_initial_masses, bins=nbins, weights=scaled_added_masses)
-		sy2, _ = np.histogram(scaled_initial_masses, bins=nbins, weights=scaled_added_masses*scaled_added_masses)
+		n, _ = np.histogram(initial_masses, bins=nbins)
+		sy, _ = np.histogram(initial_masses, bins=nbins, weights=added_masses)
+		sy2, _ = np.histogram(initial_masses, bins=nbins, weights=added_masses*added_masses)
 		mean = sy / n
 		std = np.sqrt(sy2/(n-1) - n*mean*mean/(n-1))
-		ax0.errorbar(((_[1:] + _[:-1])/2)[n > n_cell_cutoff], mean[n > n_cell_cutoff], yerr=std[n > n_cell_cutoff], color = "black", linewidth=1, zorder=2)
+		ax0.errorbar(((_[1:] + _[:-1])/2)[n > n_cell_cutoff], mean[n > n_cell_cutoff], yerr=std[n > n_cell_cutoff], color = "black", linewidth=0.3, zorder=2, capsize=0)
 
-		ax0.set_title(title_list[varIdx] + ", n={}".format(len(all_cells)), fontsize=FONT_SIZE)
+		#ax0.set_title(title_list[varIdx] + ", n={}".format(len(all_cells)), fontsize=FONT_SIZE)
 
-		# z = np.polyfit(scaled_initial_masses, scaled_added_masses, 1)
+		# z = np.polyfit(initial_masses, added_masses, 1)
 		# p = np.poly1d(z)
-		# ax0.plot(scaled_initial_masses, p(scaled_initial_masses), color = "blue")
+		# ax0.plot(initial_masses, p(initial_masses), color = "blue")
 		# ax0.text(0.6, 1.5, r"$m_{add}$=%.3f$\times$$m_{init}$ + %.3f"%(z[0],z[1]))
 
-		# x = scaled_initial_masses
-		# y = scaled_added_masses
+		# x = initial_masses
+		# y = added_masses
 		# yhat = p(x)                         # or [p(z) for z in x]
 		# ybar = np.sum(y)/len(y)          # or sum(y)/len(y)
 		# ssreg = np.sum((yhat-ybar)**2)   # or sum([ (yihat - ybar)**2 for yihat in yhat])
 		# sstot = np.sum((y - ybar)**2)    # or sum([ (yi - ybar)**2 for yi in y])
 		# r_squared = ssreg / sstot
 
-		slope, intercept, r_value, p_value, std_err = linregress(scaled_initial_masses, scaled_added_masses)
-		ax0.plot(scaled_initial_masses, slope * scaled_initial_masses + intercept, color = "blue")
-		ax0.text(0.6, 0.41, r"$m_{add}$=%.3f$\times$$m_{init}$ + %.3f"%(slope,intercept), fontsize=FONT_SIZE-2)
-		ax0.text(0.6, 0.35, r"$R^2=$%.3f"%r_value**2, fontsize=FONT_SIZE-2)
+		slope, intercept, r_value, p_value, std_err = linregress(initial_masses, added_masses)
+		ax0.plot(initial_masses, slope * initial_masses + intercept, color = "black", linewidth=0.3)
+		#ax0.text(0.6, 0.41, r"$m_{add}$=%.3f$\times$$m_{init}$ + %.3f"%(slope,intercept), fontsize=FONT_SIZE-2)
+		#ax0.text(0.6, 0.35, r"$R^2=$%.3f"%r_value**2, fontsize=FONT_SIZE-2)
 		factor = 1.58*std_err
 		#ax0.text(0.6, 0.4, "Slope 95 percent CI: %.3f - %.3f"%(slope - factor, slope+factor))
 
@@ -129,18 +126,18 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		print "Mean: {}".format(n[n>n_cell_cutoff].mean())
 		# ax0.errorbar(sj_mean_x, sj_mean_y, sj_error)
 
-		ax0.axhline(1., linewidth = 1, color = "black", alpha = 0.9)
-		ax0.set_ylim([0.3, 1.7])
-		ax0.set_xlim([0.6, 1.4])
+		#ax0.axhline(1., linewidth = 1, color = "black", alpha = 0.9)
+		ax0.set_ylim([80, 1050])
+		ax0.set_xlim([80, 1050])
 
 		ax0.get_yaxis().get_major_formatter().set_useOffset(False)
 		ax0.get_xaxis().get_major_formatter().set_useOffset(False)
 
 		# ax0.set_title("n = {}".format(n_cells))
-		ax0.set_ylabel("Normed added mass", fontsize=FONT_SIZE)
-		ax0.set_xlabel("Normed initial mass", fontsize=FONT_SIZE)
+		ax0.set_ylabel("Added mass (fg)", fontsize=FONT_SIZE)
+		ax0.set_xlabel("Initial mass (fg)", fontsize=FONT_SIZE)
 
-		plt.subplots_adjust(bottom = 0.2, wspace= 0.6)
+		plt.subplots_adjust(bottom = 0.2, left= 0.2)
 
 		whitePadSparklineAxis(ax0)
 
@@ -151,6 +148,30 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
+
+	for axes in [ax0]:
+		axes.tick_params(
+			axis='x',          # changes apply to the x-axis
+			which='both',      # both major and minor ticks are affected
+			bottom='off',      # ticks along the bottom edge are off
+			top='off',         # ticks along the top edge are off
+			labelbottom='off') # labels along the bottom edge are off
+		axes.tick_params(
+			axis='y',          # changes apply to the x-axis
+			which='both',      # both major and minor ticks are affected
+			left='off',      # ticks along the bottom edge are off
+			right='off',         # ticks along the top edge are off
+			labelleft='off') # labels along the bottom edge are off
+
+		axes.set_xlabel("")
+		axes.set_ylabel("")
+
+	#plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
+
+	from wholecell.analysis.analysis_tools import exportFigure
+	exportFigure(plt, plotOutDir, plotOutFileName + "_stripped" ,metadata, transparent = True)
+	plt.close("all")
 
 
 

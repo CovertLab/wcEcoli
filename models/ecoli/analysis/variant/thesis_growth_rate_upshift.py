@@ -124,7 +124,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 	axis.plot(timeMultigen[:-width] / 60., proteinGrowthRateMultigen[:-width] * 60., color = colors[1], alpha=0.9, label="Protein fraction", linewidth=linewidth)
 	axis.plot(timeMultigen[:-width] / 60., rnaGrowthRateMultigen[:-width] * 60., color = colors[2], alpha=0.9, label="RNA fraction", linewidth=linewidth)
 	axis.legend(loc=4,frameon=False, fontsize=FONT_SIZE)
-	# axis.set_ylim([0.015, 0.033])
+	axis.set_ylim([0.012, 0.03])
 
 
 

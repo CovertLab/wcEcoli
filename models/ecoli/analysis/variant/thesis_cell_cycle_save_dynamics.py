@@ -51,8 +51,8 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 	for varIdx in [0]:
 
-		all_cells = ap.get_cells(variant=[varIdx], seed=[2], generation=[0,1,2,3,4])
-
+		all_cells = ap.get_cells(variant=[varIdx], seed=[3], generation=[0,1,2,3,4])
+		#2
 		import cPickle
 		simDataFile = ap.get_variant_kb(all_cells[0])
 		sim_data = cPickle.load(open(simDataFile, "rb"))
