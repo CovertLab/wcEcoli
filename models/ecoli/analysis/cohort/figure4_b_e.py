@@ -65,7 +65,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# Get all cells in each seed
 	ap = AnalysisPaths(variantDir, cohort_plot = True)
 	#all_cells = ap.get_cells(seed=[0,1,2,3])
-	all_cells = ap.get_cells(seed=[0])
+	all_cells = ap.get_cells(seed=[2])
 
 	if not len(all_cells):
 		return
@@ -178,7 +178,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax1.set_ylabel(r"$\mu$ $(\frac{gDCW}{gDCW-min})$", fontsize=FONT_SIZE)
 	ax1.xaxis.set_visible(False)
 	# ax1.axvline(x=44*2+22., linewidth=3, color='gray', alpha = 0.5)
-	ax1.set_ylim([0.012, 0.032])
+	ax1.set_ylim([0.010, 0.032])
 
 	#ax2.set_ylabel("RNA/Protein\n(fg/fg)", fontsize=FONT_SIZE)
 	ax2.set_ylabel("Active\nribosome\n(umol/L)", fontsize=FONT_SIZE)
