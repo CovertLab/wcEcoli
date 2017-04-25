@@ -121,8 +121,12 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		# sstot = np.sum((y - ybar)**2)    # or sum([ (yi - ybar)**2 for yi in y])
 		# r_squared = ssreg / sstot
 
-		slope, intercept, r_value, p_value, std_err = linregress(scaled_initial_masses, scaled_added_masses)
-		ax0.plot(scaled_initial_masses, slope * scaled_initial_masses + intercept, color = "blue")
+		ignored = np.logical_or(scaled_added_masses > 1.7, scaled_added_masses < 0.3)
+		ignored += np.logical_or(scaled_initial_masses < 0.6, scaled_initial_masses > 1.4)
+		print "ignored {} cells".format(ignored.sum())
+
+		slope, intercept, r_value, p_value, std_err = linregress(scaled_initial_masses[~ignored], scaled_added_masses[~ignored])
+		ax0.plot(scaled_initial_masses[~ignored], slope * scaled_initial_masses[~ignored] + intercept, color = "blue")
 		ax0.text(0.6, 0.41, r"$m_{add}$=%.3f$\times$$m_{init}$ + %.3f"%(slope,intercept), fontsize=FONT_SIZE-2)
 		ax0.text(0.6, 0.35, "p-value={}".format(p_value), fontsize=FONT_SIZE-2)
 		factor = 1.58*std_err
@@ -156,7 +160,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
-
+	return
 	####### STRIPPED FIGURES #########
 
 	title_list = ["Glucose minimal\n" + r"$\tau = $" + "44 min", "Glucose minimal anaerobic\n" + r"$\tau = $" + "100 min", "Glucose minimal + 20 amino acids\n" + r"$\tau = $" + "22 min"]
@@ -235,8 +239,12 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 		# sstot = np.sum((y - ybar)**2)    # or sum([ (yi - ybar)**2 for yi in y])
 		# r_squared = ssreg / sstot
 
-		slope, intercept, r_value, p_value, std_err = linregress(scaled_initial_masses, scaled_added_masses)
-		ax0.plot(scaled_initial_masses, slope * scaled_initial_masses + intercept, color = "blue")
+		ignored = np.logical_or(scaled_added_masses > 1.7, scaled_added_masses < 0.3)
+		ignored += np.logical_or(scaled_initial_masses < 0.6, scaled_initial_masses > 1.4)
+		print "ignored {} cells".format(ignored.sum())
+
+		slope, intercept, r_value, p_value, std_err = linregress(scaled_initial_masses[~ignored], scaled_added_masses[~ignored])
+		ax0.plot(scaled_initial_masses[~ignored], slope * scaled_initial_masses[~ignored] + intercept, color = "blue")
 		#ax0.text(0.6, 0.41, r"$m_{add}$=%.3f$\times$$m_{init}$ + %.3f"%(slope,intercept), fontsize=FONT_SIZE-2)
 		#ax0.text(0.6, 0.35, "p-value={}".format(p_value), fontsize=FONT_SIZE-2)
 		factor = 1.58*std_err
