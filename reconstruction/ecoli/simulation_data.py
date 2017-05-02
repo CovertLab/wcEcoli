@@ -31,6 +31,10 @@ VERBOSE = False
 class SimulationDataEcoli(object):
 	""" SimulationDataEcoli """
 
+	def __getattribute__(self, name):
+		print "Accessing sim_data.%s" % name
+		return object.__getattribute__(self, name)
+
 	def __init__(self):
 
 		# Doubling time (used in fitting)

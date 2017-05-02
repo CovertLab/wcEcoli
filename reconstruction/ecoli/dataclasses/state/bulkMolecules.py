@@ -18,6 +18,11 @@ from reconstruction.ecoli.dataclasses.state.stateFunctions import addToStateComm
 class BulkMolecules(object):
 	""" BulkMolecules """
 
+	def __getattribute__(self, name):
+		print "\t\t%s" % name
+		return object.__getattribute__(self, name)
+
+
 	def __init__(self, raw_data, sim_data):
 		bulkData = np.zeros(
 			0,

@@ -4,6 +4,11 @@ Transcription regulation.
 import numpy as np
 
 class TranscriptionRegulation(object):
+
+	def __getattribute__(self, name):
+		print "\t\t%s" % name
+		return object.__getattribute__(self, name)
+
 	def __init__(self, raw_data, sim_data):
 		# Build lookups
 		self._buildLookups(raw_data, sim_data)

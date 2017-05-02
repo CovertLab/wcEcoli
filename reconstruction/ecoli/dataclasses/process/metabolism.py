@@ -36,6 +36,10 @@ reverseReactionString = "{} (reverse)"
 class Metabolism(object):
 	""" Metabolism """
 
+	def __getattribute__(self, name):
+		print "\t\t%s" % name
+		return object.__getattribute__(self, name)
+
 	def __init__(self, raw_data, sim_data):
 		self._buildBiomass(raw_data, sim_data)
 		self._buildMetabolism(raw_data, sim_data)

@@ -25,6 +25,10 @@ import numpy as np
 class Process(object):
 	""" Process """
 
+	def __getattribute__(self, name):
+		print "\t%s" % name
+		return object.__getattribute__(self, name)
+
 	def __init__(self, raw_data, sim_data):
 
 		self.replication = Replication(raw_data, sim_data)

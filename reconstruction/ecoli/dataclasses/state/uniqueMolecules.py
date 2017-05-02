@@ -20,6 +20,11 @@ from reconstruction.ecoli.dataclasses.state.stateFunctions import addToStateComm
 class UniqueMolecules(object):
 	""" UniqueMolecules """
 
+	def __getattribute__(self, name):
+		print "\t\t%s" % name
+		return object.__getattribute__(self, name)
+
+
 	def __init__(self, raw_data, sim_data):
 		self.uniqueMoleculeDefinitions = collections.OrderedDict()
 

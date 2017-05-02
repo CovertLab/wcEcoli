@@ -23,6 +23,12 @@ import re
 import sympy as sp
 
 class TwoComponentSystem(object):
+
+	def __getattribute__(self, name):
+		print "\t\t%s" % name
+		return object.__getattribute__(self, name)
+
+
 	def __init__(self, raw_data, sim_data):
 		# Store two component system raw data for use in analysis
 		sim_data.moleculeGroups.twoComponentSystems = raw_data.twoComponentSystems

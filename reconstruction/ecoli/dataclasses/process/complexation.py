@@ -5,6 +5,12 @@ import numpy as np
 from wholecell.utils import units
 
 class Complexation(object):
+
+	def __getattribute__(self, name):
+		print "\t\t%s" % name
+		return object.__getattribute__(self, name)
+
+	
 	def __init__(self, raw_data, sim_data):
 		# Build the abstractions needed for complexation
 

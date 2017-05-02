@@ -16,6 +16,11 @@ from wholecell.utils import units
 class Replication(object):
 	""" Replication """
 
+	def __getattribute__(self, name):
+		print "\t\t%s" % name
+		return object.__getattribute__(self, name)
+
+
 	def __init__(self, raw_data, sim_data):
 		self._n_nt_types = len(sim_data.dNtpOrder)
 

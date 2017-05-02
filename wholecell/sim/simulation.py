@@ -127,14 +127,28 @@ class Simulation(object):
 		self._cellCycleComplete = False
 		self._isDead = False
 
+		print "==========> BEGIN STATES <=========="
+
 		for state in self.states.itervalues():
+			print "===== %s =====" % state._name
 			state.initialize(self, sim_data)
+			print "===================="
 
+		print "==========> DONE WITH STATES <=========="
+
+		print "==========> BEGIN PROCESSES <=========="
 		for process in self.processes.itervalues():
+			print "===== %s =====" % process._name
 			process.initialize(self, sim_data)
+			print "===================="
 
+		print "==========> DONE WITH PROCESSES <=========="
+		print "==========> BEGIN LISTENERS <=========="
 		for listener in self.listeners.itervalues():
+			print "===== %s =====" % listener._name
 			listener.initialize(self, sim_data)
+			print "===================="
+		print "==========> DONE WITH LISTENERS <=========="
 
 		for hook in self.hooks.itervalues():
 			hook.initialize(self, sim_data)
@@ -145,7 +159,9 @@ class Simulation(object):
 		for listener in self.listeners.itervalues():
 			listener.allocate()
 
+		print "==========> BEGIN INITIAL CONDITIONS <=========="
 		self._initialConditionsFunction(sim_data)
+		print "==========> DONE WITH INITIAL CONDITIONS <=========="
 
 		self._timeTotal = self.initialTime()
 
@@ -175,6 +191,7 @@ class Simulation(object):
 
 	# Run simulation
 	def run(self):
+		return
 		# Perform initial mass calculations
 		for state in self.states.itervalues():
 			state.calculatePreEvolveStateMass()

@@ -22,6 +22,10 @@ import numpy as np
 class State(object):
 	""" State """
 
+	def __getattribute__(self, name):
+		print "\t%s" % name
+		return object.__getattribute__(self, name)
+
 	def __init__(self, raw_data, sim_data):
 
 		self.bulkMolecules = BulkMolecules(raw_data, sim_data)

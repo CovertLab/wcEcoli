@@ -11,6 +11,10 @@ from __future__ import division
 class Constants(object):
 	""" Constants """
 
+	def __getattribute__(self, name):
+		print "\t%s" % name
+		return object.__getattribute__(self, name)
+
 	def __init__(self, raw_data, sim_data):
 		self._buildConstants(raw_data, sim_data)
 

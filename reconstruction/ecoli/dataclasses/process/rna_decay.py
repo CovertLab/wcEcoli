@@ -17,6 +17,11 @@ import theano
 class RnaDecay(object):
 	""" RnaDecay """
 
+	def __getattribute__(self, name):
+		print "\t\t%s" % name
+		return object.__getattribute__(self, name)
+
+
 	def __init__(self, raw_data, sim_data):
 		self._buildRnaDecayData(raw_data, sim_data)
 

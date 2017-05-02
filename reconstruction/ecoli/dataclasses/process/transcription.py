@@ -18,6 +18,11 @@ RNA_SEQ_ANALYSIS = "rsem_tpm"
 class Transcription(object):
 	""" Transcription """
 
+	def __getattribute__(self, name):
+		print "\t\t%s" % name
+		return object.__getattribute__(self, name)
+
+
 	def __init__(self, raw_data, sim_data):
 		self._buildRnaData(raw_data, sim_data)
 		self._buildTranscription(raw_data, sim_data)
