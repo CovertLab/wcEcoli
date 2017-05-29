@@ -12,7 +12,7 @@ class VariantSimDataTask(FireTaskBase):
 	required_params = [
 		"variant_function", "variant_index",
 		"input_sim_data", "output_sim_data",
-		"variant_metadata_directory",
+		"variant_metadata_directory", "input_validation_data",
 		]
 
 	def run_task(self, fw_spec):
@@ -23,8 +23,12 @@ class VariantSimDataTask(FireTaskBase):
 		print "%s: Creating variant sim_data (Variant: %s Index: %d)" % (time.ctime(), self["variant_function"], self["variant_index"])
 
 		sim_data = cPickle.load(open(self["input_sim_data"], "rb"))
+		validation_data = cPickle.load(open(self["input_validation_data"], "rb"))
 
-		info, sim_data = nameToFunctionMapping[self["variant_function"]](sim_data, self["variant_index"])
+		if (self["variant_function"] == 'geneKnockoutEssential'):
+		  info, sim_data = nameToFunctionMapping[self["variant_function"]](sim_data, validation_data, self["variant_index"])
+		else:
+			info, sim_data = nameToFunctionMapping[self["variant_function"]](sim_data, self["variant_index"])
 
 		print info["shortName"]
 
