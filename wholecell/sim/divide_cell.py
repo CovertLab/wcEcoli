@@ -54,6 +54,8 @@ def divide_cell(sim):
 		isDead = True
 	elif sim._isDead:
 		isDead = True
+	elif len(uniqueMolecules.container.objectsInCollection('activeRibosome')) == 0:
+		isDead = True
 
 	import cPickle
 	cPickle.dump(isDead, open(os.path.join(sim._outputDir, "Daughter1", "IsDead.cPickle"),'wb'))
