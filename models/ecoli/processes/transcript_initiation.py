@@ -97,10 +97,12 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# Calculate synthesis probabilities based on transcription regulation
 		self.rnaSynthProb = self.recruitmentMatrix.dot(self.recruitmentView.total())
 		if len(self.genetic_perturbations) > 0:
-			self.rnaSynthProb[self.genetic_perturbations["fixedRnaIdxs"]] = self.genetic_perturbations["fixedSynthProbs"]
+			#Implemented if scaling probability, so if complete knockout, will multiply by 0
+			currentRnaProb = self.rnaSynthProb[self.genetic_perturbations["fixedRnaIdxs"]]
+			self.rnaSynthProb[self.genetic_perturbations["fixedRnaIdxs"]] = self.genetic_perturbations["fixedSynthProbs"] * currentRnaProb
 		regProbs = self.rnaSynthProb[self.isRegulated]
-
 		# Adjust probabilities to not be negative
+
 		self.rnaSynthProb[self.rnaSynthProb < 0] = 0.
 		self.rnaSynthProb /= self.rnaSynthProb.sum()
 		if np.any(self.rnaSynthProb < 0):
