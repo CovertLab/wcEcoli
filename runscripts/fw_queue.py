@@ -415,6 +415,7 @@ for i in VARIANTS_TO_RUN:
 			input_sim_data = os.path.join(KB_DIRECTORY, wholecell.utils.constants.SERIALIZED_SIM_DATA_MOST_FIT_FILENAME),
 			output_sim_data = os.path.join(VARIANT_SIM_DATA_DIRECTORY, "simData_Modified.cPickle"),
 			variant_metadata_directory = VARIANT_METADATA_DIRECTORY,
+			input_validation_data = os.path.join(KB_DIRECTORY, filename_validation_data),
 			),
 		name = fw_name,
 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":1}
