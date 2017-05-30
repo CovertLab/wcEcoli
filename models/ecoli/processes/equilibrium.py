@@ -76,7 +76,11 @@ class Equilibrium(wholecell.processes.process.Process):
 				rxnFluxes[rxnPosIdxs] = np.fmax(0, rxnFluxes[rxnPosIdxs])
 				rxnFluxes[rxnNegIdxs] = np.fmin(0, rxnFluxes[rxnNegIdxs])
 
-		assert(np.all(moleculeCounts + np.dot(self.stoichMatrix, rxnFluxes) >= 0))
+		#Catch error in assertion
+		try:
+			assert(np.all(moleculeCounts + np.dot(self.stoichMatrix, rxnFluxes) >= 0))
+		except:
+			print 'All molecule counts and the reaction fluxes are not greater than 0'
 
 		# Increment changes in molecule counts
 		self.molecules.countsInc(
