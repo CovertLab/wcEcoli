@@ -129,6 +129,10 @@ class Metabolism(wholecell.processes.process.Process):
 		self.useAllConstraints = sim_data.process.metabolism.useAllConstraints
 		self.constraintsToDisable = sim_data.process.metabolism.constraintsToDisable
 
+		# Check for scaling knockouts
+		if hasattr(sim_data, "enzyme_perturbations") and sim_data.enzyme_perturbations != None and len(sim_data.enzyme_perturbations) > 0:
+			self.enzyme_perturbations = sim_data.enzyme_perturbations
+
 		# Set up FBA solver
 		# reactionRateTargets value is just for initialization, it gets reset each timestep during evolveState
 		self.fbaObjectOptions = {
@@ -167,6 +171,10 @@ class Metabolism(wholecell.processes.process.Process):
 		self.currentNgam = 1 * (COUNTS_UNITS / VOLUME_UNITS)
 		self.currentPolypeptideElongationEnergy = 1 * (COUNTS_UNITS / VOLUME_UNITS)
 
+		try:
+			self.fba._solver._model.set_iteration_limit(100000)
+		except:
+			return(self)
 		# External molecules
 		self.externalMoleculeIDs = self.fba.externalMoleculeIDs()
 
@@ -270,6 +278,12 @@ class Metabolism(wholecell.processes.process.Process):
 		catalystsCountsInit = self.catalysts.counts()
 
 		kineticsEnzymesCountsInit = self.kineticsEnzymes.counts()
+
+		# Check if any enzyme perturbed by KO variant
+		if hasattr(self, "enzyme_perturbations"):
+			currentEnCount = kineticsEnzymesCountsInit[self.enzyme_perturbations.keys()]
+			kineticsEnzymesCountsInit[self.enzyme_perturbations.keys()] = currentEnCount * self.enzyme_perturbations.values()
+
 		kineticsEnzymesConcentrations = countsToMolar * kineticsEnzymesCountsInit
 
 		kineticsSubstratesCountsInit = self.kineticsSubstrates.counts()
