@@ -52,9 +52,18 @@ def polymerize(sequences, monomerLimits, reactionLimit, randomState):
 	# Running values
 	activeSequencesIndexes = np.arange(nSequences)
 	currentStep = 0
-	activeSequencesIndexes = activeSequencesIndexes[
-		sequenceReactions[:, currentStep]
+	#Catch error for index out of bounds
+	try:
+		activeSequencesIndexes = activeSequencesIndexes[
+			sequenceReactions[:, currentStep]
 		]
+	except:
+		print 'No active sequences'
+		sequenceElongation = np.zeros(nSequences, np.int64)
+		monomerUsages = np.zeros(nMonomers, np.int64)
+		nReactions = 0
+		return sequenceElongation, monomerUsages, nReactions
+
 
 	#totalMonomers = sequenceMonomers.sum(axis = 1).cumsum(axis = 1)
 	totalMonomers = sum_monomers(sequenceMonomers, activeSequencesIndexes, 0)
