@@ -163,9 +163,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
     metab2formate = exFluxesAvg['FORMATE[p]']
     metab2acet = exFluxesAvg['ACET[p]']
     metab2co2 = exFluxesAvg['CARBON-DIOXIDE[p]']
-    metab2meta = sum(deltaMetabolitesAvg[np.where(deltaMetabolitesAvg > 0)])
+    metab2meta = sum(deltaMetabolitesAvg)
 
-    extra_metab = (gluc2metab + phos2metab + other2metab + aa2metab) - metab2meta - metab2out - metab2co2
+    extra_metab = (gluc2metab + phos2metab + other2metab + aa2metab) - metab2meta - metab2out - metab2co2 - metab2etoh - metab2formate - metab2acet
     metab2outNew = metab2out + extra_metab
 
     values = [gluc2metab, phos2metab, other2metab, metab2meta, metab2outNew, metab2co2, meta2aa, meta2dntp, meta2ntp, meta2other, aa2prot, dntp2dna, ntp2rna]
