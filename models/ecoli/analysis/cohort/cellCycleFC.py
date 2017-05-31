@@ -29,8 +29,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	control_length = 0
 	cellCycleLengths = []
+
+	#Currently does not do anything with dead cell list, but collects if interested in future
 	dead_cells = []
-	all_variants = []
 
 	for variant in varDirs:
 		variantDir = os.path.join(seedOutDir, variant)
@@ -44,14 +45,16 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			except:
 				dead_cells.append(variant)
 				continue
+
 			cellCycle = (time[-1] - time[0]) / 60. / 60.
+
+			#Assumes first variant is the control condition
 			if '000000' in variant:
 				control_length = cellCycle
 			else:
 				#Make sure cell actually divided and did not just reach error or numerical instability
 				if os.path.exists(os.path.join(simOutDir, "Daughter1")):
 					cellCycleLengths.append(cellCycle)
-					all_variants.append(variant)
 				else:
 					dead_cells.append(variant)
 	
