@@ -130,8 +130,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.constraintsToDisable = sim_data.process.metabolism.constraintsToDisable
 
 		# Check for scaling knockouts
-		if hasattr(sim_data, "enzyme_perturbations") and sim_data.enzyme_perturbations != None and len(sim_data.enzyme_perturbations) > 0:
-			self.enzyme_perturbations = sim_data.enzyme_perturbations
+		if hasattr(sim_data, "rxn_perturbations") and sim_data.rxn_perturbations != None and len(sim_data.rxn_perturbations) > 0:
+			self.rxn_perturbations = sim_data.rxn_perturbations
 
 		# Set up FBA solver
 		# reactionRateTargets value is just for initialization, it gets reset each timestep during evolveState
@@ -279,11 +279,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		kineticsEnzymesCountsInit = self.kineticsEnzymes.counts()
 
-		# Check if any enzyme perturbed by KO variant
-		if hasattr(self, "enzyme_perturbations"):
-			currentEnCount = kineticsEnzymesCountsInit[self.enzyme_perturbations.keys()]
-			kineticsEnzymesCountsInit[self.enzyme_perturbations.keys()] = currentEnCount * self.enzyme_perturbations.values()
-
 		kineticsEnzymesConcentrations = countsToMolar * kineticsEnzymesCountsInit
 
 		kineticsSubstratesCountsInit = self.kineticsSubstrates.counts()
@@ -307,6 +302,16 @@ class Metabolism(wholecell.processes.process.Process):
 			updateVals = catalyzedReactionBounds[updateIdxs]
 			self.fba.setMaxReactionFluxes(updateRxns, updateVals, raiseForReversible = False)
 			self.catalyzedReactionBoundsPrev = catalyzedReactionBounds
+
+			# Check if any rxn perturbed by KO variant
+			if hasattr(self, "rxn_perturbations"):
+				import ipdb; ipdb.set_trace()
+				newRxns = self.rxn_perturbations.keys()
+				newUpdateIdxs = [self.reactionsWithCatalystsList.index(r) for r in newRxns]
+				newUpdateRxns = [self.reactionsWithCatalystsList[idx] for idx in newUpdateIdxs]
+				newUpdateVals = catalyzedReactionBounds[newUpdateIdxs] * self.rxn_perturbations.values()
+				self.fba.setMaxReactionFluxes(newUpdateRxns, newUpdateVals, raiseForReversible = False)
+				self.catalyzedReactionBoundsPrev = catalyzedReactionBounds
 
 			# Set target fluxes for reactions based on their most relaxed constraint
 			# kineticsConstraints function created based on units of umol/L/s
