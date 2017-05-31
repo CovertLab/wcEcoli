@@ -41,12 +41,14 @@ def geneKnockoutEssential(sim_data, validation_data, index):
 	sim_data.process.transcription.rnaExpression[sim_data.condition][ind] = 0.0
 	normalize(sim_data.process.transcription.rnaExpression[sim_data.condition])
 
-	#Mapping gene -> enzyme -> catalyst -> complex
 	try:
-		enzyme = sim_data.process.metabolism.enzymeIdList.index(protID)
-		#rxns = [x for x in sim_data.process.metabolism.reactionCatalystsList if enGene[0:len(enGene)-3] in x]
-		EN_dict = {protID: scaling_factor}
-		sim_data.enzyme_perturbations = EN_dict
+		enzyme = protID + '[c]'
+		rxns = [x for x in sim_data.process.metabolism.reactionCatalysts.keys() if enzyme in sim_data.process.metabolism.reactionCatalysts[x]]
+		RXN_dict = dict()
+		for rxn in rxns:
+			RXN_dict[rxn] = scaling_factor
+		sim_data.rxn_perturbations = RXN_dict
+
 	
 	except:
 		return dict(
