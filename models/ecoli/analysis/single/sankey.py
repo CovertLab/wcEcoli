@@ -93,16 +93,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
     #Third level, macromolecules, includes protein, RNA, DNA, small molecules, and other
     mass = TableReader(os.path.join(simOutDir, "Mass"))
-    cellMass = mass.readColumn("cellMass")
     dryMass = mass.readColumn("dryMass")
-    waterMass = mass.readColumn("waterMass")
-    #Not used, just read in for comparison to aa -> prot and so on
-    proteinMass = mass.readColumn("proteinMass")
-    proteinMassDif = [proteinMass[x] - proteinMass[x-1] for x in range(1,len(proteinMass))]
-    rnaMass = mass.readColumn("rnaMass")
-    rnaMassDif = [rnaMass[x] - rnaMass[x-1] for x in range(1,len(rnaMass))]
-    dnaMass = mass.readColumn("dnaMass")
-    dnaMassDif = [dnaMass[x] - dnaMass[x-1] for x in range(1,len(dnaMass))]
 
     #Convert from g / g-DCW-hr to fg
 
@@ -141,10 +132,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
     gluc2metab = exFluxesAvg['GLC[p]']*-1
     phos2metab = exFluxesAvg['PI[p]']*-1
-
-    NGAM = sim_data.constants.nonGrowthAssociatedMaintenance._value
-    atp_mw = allMWs["mass"][allMWs["id"].tolist().index('ATP[p]')][MWind]
-    metab2ngam = np.mean((atp_mw * NGAM * 0.001 * dryMass / 3600) * time, axis=0)
 
     other2metab = 0
     metab2out = 0
