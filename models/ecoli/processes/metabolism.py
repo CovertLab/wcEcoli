@@ -305,7 +305,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 			# Check if any rxn perturbed by KO variant
 			if hasattr(self, "rxn_perturbations"):
-				import ipdb; ipdb.set_trace()
 				newRxns = self.rxn_perturbations.keys()
 				newUpdateIdxs = [self.reactionsWithCatalystsList.index(r) for r in newRxns]
 				newUpdateRxns = [self.reactionsWithCatalystsList[idx] for idx in newUpdateIdxs]
