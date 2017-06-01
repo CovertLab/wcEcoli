@@ -48,7 +48,6 @@ def geneKnockoutEssential(sim_data, validation_data, index):
 		for rxn in rxns:
 			RXN_dict[rxn] = scaling_factor
 		sim_data.rxn_perturbations = RXN_dict
-
 	
 	except:
 		return dict(
