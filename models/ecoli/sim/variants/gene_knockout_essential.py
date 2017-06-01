@@ -12,26 +12,16 @@ CONTROL_OUTPUT = dict(
 def geneKnockoutEssential(sim_data, validation_data, index):
 	
 	#Read in all essential genes as defined in validation data
-	#esGenes = validation_data.essentialGenes.essentialGenes
-	
-	#Reading in list of genes that were not impacted in first generation
-	#gene_file = '~/wcEcoli/function_no_impact_geneIDs.txt'
-	gene_file = '~/wcEcoli/basal_genes_large_impact.txt'
-	prot_file = '~/wcEcoli/validation/ecoli/flat/essentialGenes.tsv'
-	df_esGenes = pd.read_table(gene_file, sep='\t')
-	df_prot = pd.read_table(prot_file, sep='\t')
-	esGenes = df_esGenes['Genes'].tolist()
-	proteinIDs = df_prot['proteinID'].tolist()
+	esGenes = validation_data.essentialGenes.essentialGenes
+	proteinIDs = validation_data.essentialGenes.essentialProteins
 
 	nConditions = len(esGenes)
 
 	if index % nConditions == 0:
-		#sim_data.nutrientsTimeSeriesLabel = "000003_aa"
-		#sim_data.condition = "with_aa"
 		return CONTROL_OUTPUT, sim_data
 
 	esGene = esGenes[index - 1] + '_RNA[c]'
-	protID = proteinIDs[np.where(df_prot['FrameID'] == esGenes[index - 1])[0]]
+	protID = proteinIDs[index-1]
 
 	scaling_factor = 0.5
 	KO_dict = {esGene: scaling_factor}
