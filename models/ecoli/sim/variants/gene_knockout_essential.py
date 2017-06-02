@@ -32,8 +32,7 @@ def geneKnockoutEssential(sim_data, validation_data, index):
 	normalize(sim_data.process.transcription.rnaExpression[sim_data.condition])
 
 	try:
-		enzyme = protID + '[c]'
-		rxns = [x for x in sim_data.process.metabolism.reactionCatalysts.keys() if enzyme in sim_data.process.metabolism.reactionCatalysts[x]]
+		rxns = [x for x in sim_data.process.metabolism.reactionCatalysts.keys() if protID in sim_data.process.metabolism.reactionCatalysts[x]]
 		RXN_dict = dict()
 		for rxn in rxns:
 			RXN_dict[rxn] = scaling_factor
