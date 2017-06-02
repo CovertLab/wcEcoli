@@ -319,7 +319,13 @@ class Metabolism(wholecell.processes.process.Process):
 				kineticsSubstratesConcentrations.asNumber(units.umol / units.L),
 				)
 			reactionTargets = (units.umol / units.L / units.s) * np.max(self.constraintToReactionMatrix * constraintValues, axis = 1)
-
+			
+			if hasattr(self, "rxn_perturbations"):
+				newRxns = self.rxn_perturbations.keys()
+				newUpdateIdxs = [self.reactionsWithCatalystsList.index(r) for r in newRxns]
+				newUpdateRxns = [self.reactionsWithCatalystsList[idx] for idx in newUpdateIdxs]
+				self.fba.setMaxReactionFluxes(newUpdateRxns, reactionTargets[newUpdateIdxs], raiseForReversible = False)
+			
 			# record which constraint was used, add constraintToReactionMatrix to ensure the index is one of the constraints if multiplication is 0
 			reactionConstraint = np.argmax(self.constraintToReactionMatrix * constraintValues + self.constraintToReactionMatrix, axis = 1)
 
