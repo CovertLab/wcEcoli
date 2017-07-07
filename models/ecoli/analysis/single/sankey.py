@@ -45,7 +45,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
     growth = TableReader(os.path.join(simOutDir, "GrowthLimits"))
     moleculeIds = bulkMolecules.readAttribute("objectNames")
     sim_data = cPickle.load(open(simDataFile))
-    validation_data = cPickle.load(open(validationDataFile))
+    #validation_data = cPickle.load(open(validationDataFile))
 
     allMWs = sim_data.state.bulkMolecules.bulkData.struct_array
     MWind = sim_data.molecular_weight_keys.index('metabolite')
@@ -208,10 +208,10 @@ if __name__ == "__main__":
 	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
 	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
 	
-	parser.add_argument("--validationDataFile", help = "KB file name", type = str, default = "None")
+	parser.add_argument("--validationDataFile")
 
 	args = parser.parse_args().__dict__
 
-	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"])
+	#main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"] )
 	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"], args["validationDataFile"])
 
