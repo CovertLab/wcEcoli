@@ -117,9 +117,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
     aaMolarAvg = np.mean(aaMolar, axis=0)
 
     #Not used, can check values at end with mass of aa -> prot and so on
-    proteinMassAvg = np.mean(proteinMassDif, axis=0)
-    rnaMassAvg = np.mean(rnaMassDif, axis=0)
-    dnaMassAvg = np.mean(dnaMassDif, axis=0)
+    # proteinMassAvg = np.mean(proteinMassDif, axis=0)
+    # rnaMassAvg = np.mean(rnaMassDif, axis=0)
+    # dnaMassAvg = np.mean(dnaMassDif, axis=0)
 
     #Get sources, targets, and values for diagram
     meta2aa = sum(deltaMetabolitesAvg[aaIndexesMet])
@@ -184,7 +184,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
     #Generate new javascript file with these variables for access by the html diagram
     #Original js file stored in analysis directory, new one will be moved to plotOutDir 
     js_data = {'sources':sources, 'targets':targets, 'values':values}
-    js = open('sankey.js', 'r')
+    js = open('models/ecoli/analysis/sankey.js', 'r')
     js_out = "var diagram_data = JSON.parse('{}');".format(json.dumps(js_data))
     js_out += '\n'
     js_out += js.read()
@@ -193,8 +193,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
     #Copy d3.js and sankey.html to the analysis folder (for access by new js file), and move sankey_new.js as well
     shutil.move("sankey_new.js", os.path.join(plotOutDir, "sankey.js"))
     #Need to copy instead, keep originals in analysis folder for future use
-    shutil.copy2("d3.js", os.path.join(plotOutDir, "d3.js"))
-    shutil.copy2("sankey.html", os.path.join(plotOutDir, "sankey.html"))
+    shutil.copy2("models/ecoli/analysis/d3.js", os.path.join(plotOutDir, "d3.js"))
+    shutil.copy2("models/ecoli/analysis/sankey.html", os.path.join(plotOutDir, "sankey.html"))
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
@@ -208,7 +208,7 @@ if __name__ == "__main__":
 	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
 	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
 	
-	parser.add_argument("--validationDataFile")
+	parser.add_argument("--validationDataFile", help = "Validation file name", type = str, default = "NONE")
 
 	args = parser.parse_args().__dict__
 
