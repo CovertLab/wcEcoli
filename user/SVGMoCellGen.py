@@ -1,16 +1,17 @@
 import numpy as np
 import os
 import cPickle
+import csv 
 
 def boilerplate_start(h):
-	h.write("<html>\n")
-	h.write("<body>\n")
-	h.write("<svg width=\"120\" height=\"275\"  viewBox=\"0 0 120 275\">\n")
+	# h.write("<html>\n")
+	# h.write("<body>\n")
+	h.write("<svg width=\"120\" height=\"400\"  viewBox=\"0 0 120 400\">\n")
 
 def boilerplate_end(h):
 	h.write("</svg>\n")
-	h.write("</body>\n")
-	h.write("</html>")
+	# h.write("</body>\n")
+	# h.write("</html>")
 
 def svgEcoliParams(height):
 	hW = 50
@@ -28,14 +29,14 @@ def writeEcoliSVG(h,params):
 	tR, tL, bL, bR = params
 	h.write(" <defs>\n")
 	h.write("  <symbol id=\"Ecoli\">\n")
-	h.write("   <g transform=\"translate(60,275) scale(1,-1)\">\n")
+	h.write("   <g transform=\"translate(60,400) scale(1,-1)\">\n")
 	h.write("    <g style=\"stroke: black; stroke-width: 0\">\n")
 	h.write("     <path d=\"M %f %f\n" % (tR[0], tR[1]))
 	h.write("        A 50 50, 0, 0, 1, %f %f\n" % (tL[0], tL[1]))							
 	h.write("        L %f %f\n" % (bL[0], bL[1]))							
 	h.write("        A 50 50, 0, 0, 1, %f %f\n" % (bR[0], bR[1]))							
 	h.write("        Z")							
-	h.write("     \" fill-opacity=\"1.0\" />\n")							
+	h.write("     \" fill-opacity=\"0.5\" />\n")							
 	h.write("    </g>\n")
 	h.write("   </g>\n")
 	h.write("  </symbol>\n")
@@ -48,7 +49,7 @@ def writeSVG(dirname, currHeight, finalHeight, threeCells, timestep):
 	if not os.path.exists(dirname):
 		os.makedirs(dirname)
 
-	h = open(os.path.join(dirname, "moCell_%d.html" % timestep), "w")
+	h = open(os.path.join(dirname, "moCell_%05d.svg" % timestep), "w")
 	boilerplate_start(h)
 
 	#figure out if you're going to make two or three cells, 
@@ -73,43 +74,65 @@ def writeSVG(dirname, currHeight, finalHeight, threeCells, timestep):
 
 def main():
 	#go through a loop of the data, and call writeSVG on each set of relevant params. 
-	directorySomehow = "svg_plots/MoCell2"
+	directorySomehow = "/scratch/PI/mcovert/mhinks/MotherCell/MoCellTransparent400"
 	if not os.path.exists(directorySomehow):
 		os.makedirs(directorySomehow)
 	#import data
-	heightData = cPickle.load(open("heightData.cPickle","rb"))
-	timeData = cPickle.load(open("time.cPickle","rb"))
+	#heightData = cPickle.load(open("heightDataReal.cPickle","rb"))
+	#timeData = cPickle.load(open("time.cPickle","rb"))
 
-	args = []
+	#make these heightData and stuff from tsv file
+	folder = "/scratch/PI/mcovert/thorst/allenTalk"
+	reader = csv.reader(open(os.path.join(folder, "growthAnimation.tsv"), "rU"), delimiter="\t")
+	reader.next()
+	data = np.array(list(reader), dtype = np.float)
 
-	#for each cell, store its initial size 
-	for cell in range(0,2):
-		currCellData = heightData[cell]
-		finalHeight = currCellData[len(currCellData)-1]
-		time = timeData[cell]
-		finalTime = time[len(time)-1]
+	allData = []
+	currCell = []
 
-		for k in xrange(0,len(currCellData)):
+	cellMass = data[:,1]
+	cellDensity = 1.0999999999999999e+18
+	cellVolume = cellMass/cellDensity*10**15
 
-			if time[k] < finalTime - 1800:
-				writeSVG(directorySomehow, currCellData[k], finalHeight, False, time[k])
-			else:
-				writeSVG(directorySomehow, currCellData[k], finalHeight, True, time[k])
-				print "I just switched to three cells at time %f" % time[k] 
+	#micrometer
+	r = 0.5
+	a = cellVolume/(np.pi*r**2)-4/3*r
+	cellHeight = a + 2.0*r
 
+	data[:,1] = cellHeight
 	
 
+	for line in data:
+		print line 
+		if line[0] <= line[2]:
+			print (line[0])
+			currCell.append((line[0], line[1]))
+			if line[0] == line[2]:
+				allData.append(currCell)
+				currCell = []
+	
+	import ipdb; ipdb.set_trace()
+	#for each cell, store its final time and final height 
+	for cell in xrange(len(allData)):
+	#for cell in xrange(0,2):
+		currCellData = allData[cell]
+		finalTime = currCellData[len(currCellData)-1][0]
+		finalHeight = currCellData[len(currCellData)-1][1]		
+		
 
-def test():
-	dirname = "svg_plots"
-	if not os.path.exists(dirname):
-		os.makedirs(dirname)
-	writeSVG(dirname, 1.8, 2.5, False, 1)
+		for k in xrange(0,len(currCellData)):
+			#gotta fix this check maybe?
+			if currCellData[k][0] < finalTime - 1800:
+				writeSVG(directorySomehow, currCellData[k][1], finalHeight, False, currCellData[k][0])
+				#print "I just switched to !!TWO!! cells at time %f" % currCellData[k][0] 
+			else:
+				writeSVG(directorySomehow, currCellData[k][1], finalHeight, True, currCellData[k][0])
+				#print "I just switched to ~~~THREE~~~ cells at time %f" % currCellData[k][0]
 
 
 main()
 
-#
+
 
 
 
