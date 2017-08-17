@@ -31,28 +31,77 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	if not os.path.exists(tsvOutDir):
 		os.mkdir(tsvOutDir)
 
+	reactants = [
+		'GLC[p]',
+		'FRUCTOSE-6P[c]',
+		'2-PG[c]',
+		'ACETYL-COA[c]',
+		'SUC[c]',
+		'D-6-P-GLUCONO-DELTA-LACTONE[c]',
+		'RIBULOSE-5P[c]',
+		'WATER[c]',
+		'ACETYLSERINE[c]',
+		'GLT[c]',
+		'HISTIDINAL[c]',
+		'GLT[c]',
+		'MESO-DIAMINOPIMELATE[c]',
+		'L-DELTA1-PYRROLINE_5-CARBOXYLATE[c]',
+		'DADP[c]',
+		'TDP[c]',
+		'GDP[c]',
+		'ADP[c]',
+		'UDP[c]',
+		'ADP[c]',
+		]
+	products = [
+		'GLC-6-P[c]',
+		'FRUCTOSE-16-DIPHOSPHATE[c]',
+		'PHOSPHO-ENOL-PYRUVATE[c]',
+		'CIT[c]',
+		'FUM[c]',
+		'CPD-2961[c]',
+		'RIBOSE-5P[c]',
+		'SER[c]',
+		'CYS[c]',
+		'PHE[c]',
+		'HIS[c]',
+		'LEU[c]',
+		'LYS[c]',
+		'PRO[c]',
+		'DATP[c]',
+		'TTP[c]',
+		'GTP[c]',
+		'ATP[c]',
+		'UTP[c]',
+		'DADP[c]',
+		]
+
 	# Get all cells
 	ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 	allDir = ap.get_cells()
 
 	sim_data = cPickle.load(open(simDataFile, "rb"))
 	genomeLength = sim_data.process.replication.genome_length
+	rxnStoich = sim_data.process.metabolism.reactionStoich
 
 	# get names of regulated genes
 	tfs = sim_data.conditionActiveTfs['with_aa']
+	isMrna = sim_data.process.transcription.rnaData["isMRna"]
 	targets = []
-	targetIndexes = []
+	targetRnaIndexes = []
 
 	for target in sim_data.process.transcription_regulation.targetTf:
 		for tf in sim_data.process.transcription_regulation.targetTf[target]:
 			if tf in tfs:
 				targets += [target]
-				targetIndexes += np.where(sim_data.process.transcription.rnaData["id"] == target + '[c]')[0].tolist()
+				targetRnaIndexes += np.where(sim_data.process.transcription.rnaData["id"][isMrna] == target + '[c]')[0].tolist()
 				break
+	targetProteinIndexes = sim_data.relation.monomerIndexToRnaMapping[targetRnaIndexes]
 
 	# get data from each generation
 	time = []
 	transcriptionEvents = []
+	proteinConc = []
 	cellMass = []
 	nOric = []
 	dnaIdx = []
@@ -60,10 +109,13 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	chromosomes = []
 	ribosomeConc = []
 	aaConc = []
+	fluxes = []
 	for gen, simDir in enumerate(allDir):
 		simOutDir = os.path.join(simDir, "simOut")
 		bulkReader = TableReader(os.path.join(simOutDir, 'BulkMolecules'))
 		bulkMoleculeNames = bulkReader.readAttribute('objectNames')
+		bulkCounts = bulkReader.readColumn("counts")
+		bulkReader.close()
 
 		# sim time with first gen handled as cumsum because not saved as a float
 		mainReader = TableReader(os.path.join(simOutDir, "Main"))
@@ -76,17 +128,23 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 		# transcription events
 		rnapDataReader = TableReader(os.path.join(simOutDir, "RnapData"))
-		rnaInitEvent = rnapDataReader.readColumn("rnaInitEvent")[:, targetIndexes]
+		rnaInitEvent = rnapDataReader.readColumn("rnaInitEvent")[:, isMrna][:, targetRnaIndexes]
+		import ipdb; ipdb.set_trace()
 		rnapDataReader.close()
+
+		regulatedIdx = [bulkMoleculeNames.index(protein) for protein in sim_data.process.translation.monomerData["id"][targetProteinIndexes]]
+		regulatedProteins = bulkCounts[:, regulatedIdx]
 
 		# cell mass
 		massReader = TableReader(os.path.join(simOutDir, "Mass"))
 		mass = massReader.readColumn("cellMass")
 		cellMass += mass.tolist()
+		countsToMolar = sim_data.constants.cellDensity.asNumber(units.fg / units.L) / sim_data.constants.nAvogadro.asNumber(1 / units.mol) / mass
+		massReader.close()
 
 		# DNA replication
 		chromIdx = bulkMoleculeNames.index('CHROM_FULL[c]')
-		chromosomes += bulkReader.readColumn('counts')[:, chromIdx].tolist()
+		chromosomes += bulkCounts[:, chromIdx].tolist()
 		replicationReader = TableReader(os.path.join(simOutDir, 'ReplicationData'))
 		nOric += replicationReader.readColumn('numberOfOric').tolist()
 
@@ -94,25 +152,44 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
 		ribosomeIdx = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRibosome")
 		activeRibosomes = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, ribosomeIdx]
-		molRibosomes = activeRibosomes / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
-		cellVolume = mass / sim_data.constants.cellDensity.asNumber(units.fg / units.L)
-		ribosomeConc += (molRibosomes / cellVolume).tolist()
+		ribosomeConc += (activeRibosomes * countsToMolar).tolist()
 
 		# amino acid concentrations
 		aaIdx = [bulkMoleculeNames.index(aa) for aa in sim_data.moleculeGroups.aaIDs]
-		aaCounts = bulkReader.readColumn('counts')[:, aaIdx]
-		aaMol = aaCounts / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		aaCounts = bulkCounts[:, aaIdx]
+
+		# metabolism fluxes
+		fbaReader = TableReader(os.path.join(simOutDir, "FBAResults"))
+		reactionIds = fbaReader.readAttribute("reactionIDs")
+		flux = fbaReader.readColumn("reactionFluxes")
+		totalFlux = np.zeros_like(flux[:, :len(reactants)])
+		for idx, (reactant, product) in enumerate(zip(reactants, products)):
+			for rxn in rxnStoich:
+				if reactant in rxnStoich[rxn] and product in rxnStoich[rxn]:
+					if rxnStoich[rxn][reactant] < 0 and rxnStoich[rxn][product] > 0:
+						direction = 1
+					elif rxnStoich[rxn][reactant] > 0 and rxnStoich[rxn][product] < 0:
+						direction = -1
+					else:
+						continue
+
+					totalFlux[:, idx] += flux[:, reactionIds.index(rxn)] * direction
+		fbaReader.close()
 
 		if gen == 0:
 			transcriptionEvents = (rnaInitEvent != 0)
 			dnaLength = replicationReader.readColumn('sequenceLength')
 			dnaIdx = replicationReader.readColumn('sequenceIdx')
-			aaConc = (aaMol.T / cellVolume).T
+			aaConc = (aaCounts.T * countsToMolar).T
+			proteinConc = (regulatedProteins.T * countsToMolar).T
+			fluxes = totalFlux
 		else:
 			transcriptionEvents = np.vstack((transcriptionEvents, (rnaInitEvent != 0)))
 			dnaLength = np.vstack((dnaLength, replicationReader.readColumn('sequenceLength')))
 			dnaIdx = np.vstack((dnaIdx, replicationReader.readColumn('sequenceIdx')))
-			aaConc = np.vstack((aaConc, (aaMol.T / cellVolume).T))
+			aaConc = np.vstack((aaConc, (aaCounts.T * countsToMolar).T))
+			proteinConc = np.vstack((proteinConc, (regulatedProteins.T * countsToMolar).T))
+			fluxes = np.vstack((fluxes, totalFlux))
 
 
 	# write data for transcription events
@@ -131,7 +208,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	replicationWriter = csv.writer(open(os.path.join(tsvOutDir, 'replication.tsv'), 'w'), delimiter='\t')
 	replicationWriter.writerow(['Time', 'Full Chromosomes', 'OriC'])
 	for t, chrom, oric, lengths in zip(time, chromosomes, nOric, dnaLength):
-		replicationWriter.writerow([t, chrom, oric] + lengths.tolist())
+		replicationWriter.writerow([t, chrom, oric])
 
 	# process replication data for chromosome animation
 	fraction1 = []
@@ -194,6 +271,15 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	growthAnimationWriter.writerow(['Time', 'Cell Mass (fg)', 'Time of Next Division'])
 	for t, m, td in zip(time, cellMass, nextDivision):
 		growthAnimationWriter.writerow([t, m, td])
+
+	# write data for fluxes
+	aveFlux = np.mean(fluxes[:11000, :], axis=0)
+	adjustedFluxes = fluxes / aveFlux - 1
+
+	fluxWriter = csv.writer(open(os.path.join(tsvOutDir, 'fluxes.tsv'), 'w'), delimiter='\t')
+	fluxWriter.writerow(['Time'] + ['%s to %s' % (r, p) for (r, p) in zip(reactants, products)])
+	for t, flux in zip(time, adjustedFluxes):
+		fluxWriter.writerow([t] + flux.tolist())
 
 	import ipdb; ipdb.set_trace()
 
