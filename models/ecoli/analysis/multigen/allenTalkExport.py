@@ -20,6 +20,93 @@ from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 
+def getProteinMonomersDissociated(simOutDir, sim_data):
+
+	tcsComplexToMonomers = sim_data.process.two_component_system.complexToMonomer
+	ids_complexation = sim_data.process.complexation.moleculeNames
+	ids_complexation_complexes = [ids_complexation[i] for i in np.where((sim_data.process.complexation.stoichMatrix() == 1).sum(axis = 1))[0]]
+	ids_equilibrium = sim_data.process.equilibrium.moleculeNames
+	ids_equilibrium_complexes = [ids_equilibrium[i] for i in np.where((sim_data.process.equilibrium.stoichMatrix() == 1).sum(axis = 1))[0]]
+	ids_twoComponent = sim_data.process.two_component_system.moleculeNames.tolist()
+	ids_twoComponent_complexes = sim_data.process.two_component_system.complexToMonomer.keys()
+	ids_translation = sim_data.process.translation.monomerData["id"].tolist()
+	ids_protein = sorted(set(ids_complexation + ids_equilibrium + ids_twoComponent + ids_translation))
+
+	bulkContainer = BulkObjectsContainer(ids_protein, dtype = np.float64)
+	view_complexation = bulkContainer.countsView(ids_complexation)
+	view_complexation_complexes = bulkContainer.countsView(ids_complexation_complexes)
+	view_equilibrium = bulkContainer.countsView(ids_equilibrium)
+	view_equilibrium_complexes = bulkContainer.countsView(ids_equilibrium_complexes)
+	view_twoComponent = bulkContainer.countsView(ids_twoComponent)
+	view_twoComponent_complexes = bulkContainer.countsView(ids_twoComponent_complexes)
+	view_translation = bulkContainer.countsView(ids_translation)
+
+	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
+	moleculeIds = bulkMolecules.readAttribute("objectNames")
+	proteinIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in ids_protein], np.int)
+	proteinCountsBulk = bulkMolecules.readColumn("counts")[:, proteinIndexes]
+	bulkMolecules.close()
+
+	# Account for unique molecules
+	uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
+	ribosomeIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRibosome")
+	rnaPolyIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRnaPoly")
+	nActiveRibosome = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, ribosomeIndex]
+	nActiveRnaPoly = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, rnaPolyIndex]
+	uniqueMoleculeCounts.close()
+
+	tfs = sim_data.conditionActiveTfs['with_aa']
+	targets = []
+	targetsPos = []
+	targetsNeg = []
+	targetIndexes = []
+
+	for target in sim_data.process.transcription_regulation.targetTf:
+		for tf in sim_data.process.transcription_regulation.targetTf[target]:
+			if tf in tfs:
+				if sim_data.tfToFC[tf][target] < 0.3:
+					targetsNeg += [target]
+				elif sim_data.tfToFC[tf][target] > 2:
+					targetsPos += [target]
+				targetIndexes += np.where(sim_data.process.transcription.rnaData["id"] == target + '[c]')[0].tolist()
+				break
+
+	targets = targetsPos + targetsNeg
+
+	rnaIdToMonomerId = dict(sim_data.process.translation.monomerData.struct_array[["rnaId", "id"]].tolist())
+	targetMonomers = [rnaIdToMonomerId[x + "[c]"] for x in targets]
+
+	P = proteinCountsBulk.T.copy()
+
+	PRowNames = bulkContainer._objectNames
+	PRowNameToIdx = bulkContainer._objectIndex
+	namesToIdxs = bulkContainer._namesToIndexes
+
+	rowIdxs = namesToIdxs(sim_data.moleculeGroups.s30_fullComplex + sim_data.moleculeGroups.s50_fullComplex)
+	P[rowIdxs, :] += nActiveRibosome
+
+	rowIdxs = namesToIdxs(sim_data.moleculeGroups.rnapFull)
+	P[rowIdxs, :] += nActiveRnaPoly
+
+	rowIdxsInput = view_twoComponent_complexes._indexes
+	rowIdxsOutput = view_twoComponent._indexes
+	S = sim_data.process.two_component_system.stoichMatrixMonomers()
+	P[rowIdxsOutput, :] += np.dot(S, P[rowIdxsInput, :] * -1).astype(np.int64)
+
+	rowIdxsInput = view_equilibrium_complexes._indexes
+	rowIdxsOutput = view_equilibrium._indexes
+	S = sim_data.process.equilibrium.stoichMatrixMonomers()
+	P[rowIdxsOutput, :] += np.dot(S, P[rowIdxsInput, :] * -1).astype(np.int64)
+
+	rowIdxsInput = view_complexation_complexes._indexes
+	rowIdxsOutput = view_complexation._indexes
+	S = sim_data.process.complexation.stoichMatrixMonomers()
+	P[rowIdxsOutput, :] += np.dot(S, P[rowIdxsInput, :] * -1).astype(np.int64)
+
+	rowIdxs = namesToIdxs(targetMonomers)
+	return P[rowIdxs, :]
+
+
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
 		raise Exception, "seedOutDir does not currently exist as a directory"
@@ -84,20 +171,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	genomeLength = sim_data.process.replication.genome_length
 	rxnStoich = sim_data.process.metabolism.reactionStoich
 
-	# get names of regulated genes
-	tfs = sim_data.conditionActiveTfs['with_aa']
-	isMrna = sim_data.process.transcription.rnaData["isMRna"]
-	targets = []
-	targetRnaIndexes = []
-
-	for target in sim_data.process.transcription_regulation.targetTf:
-		for tf in sim_data.process.transcription_regulation.targetTf[target]:
-			if tf in tfs:
-				targets += [target]
-				targetRnaIndexes += np.where(sim_data.process.transcription.rnaData["id"][isMrna] == target + '[c]')[0].tolist()
-				break
-	targetProteinIndexes = sim_data.relation.monomerIndexToRnaMapping[targetRnaIndexes]
-
 	# get data from each generation
 	time = []
 	transcriptionEvents = []
@@ -126,14 +199,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			time += mainReader.readColumn("time").tolist()
 		mainReader.close()
 
-		# transcription events
-		rnapDataReader = TableReader(os.path.join(simOutDir, "RnapData"))
-		rnaInitEvent = rnapDataReader.readColumn("rnaInitEvent")[:, isMrna][:, targetRnaIndexes]
-		import ipdb; ipdb.set_trace()
-		rnapDataReader.close()
-
-		regulatedIdx = [bulkMoleculeNames.index(protein) for protein in sim_data.process.translation.monomerData["id"][targetProteinIndexes]]
-		regulatedProteins = bulkCounts[:, regulatedIdx]
+		regulatedProteins = getProteinMonomersDissociated(simOutDir, sim_data).T
 
 		# cell mass
 		massReader = TableReader(os.path.join(simOutDir, "Mass"))
@@ -274,7 +340,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	# write data for fluxes
 	aveFlux = np.mean(fluxes[:11000, :], axis=0)
-	adjustedFluxes = fluxes / aveFlux - 1
+	adjustedFluxes = np.log2(fluxes / aveFlux)
+	adjustedFluxes[np.isinf(adjustedFluxes)] = adjustedFluxes[~np.isinf(adjustedFluxes)].min() - 1
 
 	fluxWriter = csv.writer(open(os.path.join(tsvOutDir, 'fluxes.tsv'), 'w'), delimiter='\t')
 	fluxWriter.writerow(['Time'] + ['%s to %s' % (r, p) for (r, p) in zip(reactants, products)])
