@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
@@ -104,7 +105,7 @@ def getProteinMonomersDissociated(simOutDir, sim_data):
 	P[rowIdxsOutput, :] += np.dot(S, P[rowIdxsInput, :] * -1).astype(np.int64)
 
 	rowIdxs = namesToIdxs(targetMonomers)
-	return P[rowIdxs, :]
+	return P[rowIdxs, :].T, targetMonomers
 
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
@@ -131,8 +132,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		'GLT[c]',
 		'HISTIDINAL[c]',
 		'GLT[c]',
-		'MESO-DIAMINOPIMELATE[c]',
-		'L-DELTA1-PYRROLINE_5-CARBOXYLATE[c]',
+		'L-ASPARTATE[c]',
+		'0-PHOSPHO-L-HOMOSERINE[c]',
 		'DADP[c]',
 		'TDP[c]',
 		'GDP[c]',
@@ -153,8 +154,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		'PHE[c]',
 		'HIS[c]',
 		'LEU[c]',
-		'LYS[c]',
-		'PRO[c]',
+		'ASN[c]',
+		'THR[c]',
 		'DATP[c]',
 		'TTP[c]',
 		'GTP[c]',
@@ -184,6 +185,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	aaConc = []
 	fluxes = []
 	for gen, simDir in enumerate(allDir):
+		print gen
 		simOutDir = os.path.join(simDir, "simOut")
 		bulkReader = TableReader(os.path.join(simOutDir, 'BulkMolecules'))
 		bulkMoleculeNames = bulkReader.readAttribute('objectNames')
@@ -199,7 +201,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			time += mainReader.readColumn("time").tolist()
 		mainReader.close()
 
-		regulatedProteins = getProteinMonomersDissociated(simOutDir, sim_data).T
+		regulatedProteins, regulatedProteinNames = getProteinMonomersDissociated(simOutDir, sim_data)
 
 		# cell mass
 		massReader = TableReader(os.path.join(simOutDir, "Mass"))
@@ -243,26 +245,17 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		fbaReader.close()
 
 		if gen == 0:
-			transcriptionEvents = (rnaInitEvent != 0)
 			dnaLength = replicationReader.readColumn('sequenceLength')
 			dnaIdx = replicationReader.readColumn('sequenceIdx')
 			aaConc = (aaCounts.T * countsToMolar).T
 			proteinConc = (regulatedProteins.T * countsToMolar).T
 			fluxes = totalFlux
 		else:
-			transcriptionEvents = np.vstack((transcriptionEvents, (rnaInitEvent != 0)))
 			dnaLength = np.vstack((dnaLength, replicationReader.readColumn('sequenceLength')))
 			dnaIdx = np.vstack((dnaIdx, replicationReader.readColumn('sequenceIdx')))
 			aaConc = np.vstack((aaConc, (aaCounts.T * countsToMolar).T))
 			proteinConc = np.vstack((proteinConc, (regulatedProteins.T * countsToMolar).T))
 			fluxes = np.vstack((fluxes, totalFlux))
-
-
-	# write data for transcription events
-	transcriptionWriter = csv.writer(open(os.path.join(tsvOutDir, 'transcriptionEvents.tsv'), 'w'), delimiter='\t')
-	transcriptionWriter.writerow(['Time'] + targets)
-	for t, row in zip(time, transcriptionEvents):
-		transcriptionWriter.writerow([t] + row.tolist())
 
 	# write data for cell mass
 	cellMassWriter = csv.writer(open(os.path.join(tsvOutDir, 'cellMass.tsv'), 'w'), delimiter='\t')
@@ -339,7 +332,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		growthAnimationWriter.writerow([t, m, td])
 
 	# write data for fluxes
-	aveFlux = np.mean(fluxes[:11000, :], axis=0)
+	aveFlux = np.mean(fluxes[10000:11000, :], axis=0)
 	adjustedFluxes = np.log2(fluxes / aveFlux)
 	adjustedFluxes[np.isinf(adjustedFluxes)] = adjustedFluxes[~np.isinf(adjustedFluxes)].min() - 1
 
@@ -347,6 +340,16 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	fluxWriter.writerow(['Time'] + ['%s to %s' % (r, p) for (r, p) in zip(reactants, products)])
 	for t, flux in zip(time, adjustedFluxes):
 		fluxWriter.writerow([t] + flux.tolist())
+
+	# write data for protein conc
+	aveProteinConc = np.mean(proteinConc[10000:11000, :], axis=0)
+	adjustedConc = np.log2(proteinConc / aveProteinConc)
+	adjustedConc[np.isinf(adjustedConc)] = adjustedConc[~np.isinf(adjustedConc)].min() - 1
+
+	proteinWriter = csv.writer(open(os.path.join(tsvOutDir, 'protein.tsv'), 'w'), delimiter='\t')
+	proteinWriter.writerow(['Time'] + regulatedProteinNames)
+	for t, conc in zip(time, adjustedConc):
+		proteinWriter.writerow([t] + conc.tolist())
 
 	import ipdb; ipdb.set_trace()
 
