@@ -67,7 +67,7 @@ def getProteinMonomersDissociated(simOutDir, sim_data):
 			if tf in tfs:
 				if sim_data.tfToFC[tf][target] < 0.3:
 					targetsNeg += [target]
-				elif sim_data.tfToFC[tf][target] > 2:
+				elif sim_data.tfToFC[tf][target] > 1.5:
 					targetsPos += [target]
 				targetIndexes += np.where(sim_data.process.transcription.rnaData["id"] == target + '[c]')[0].tolist()
 				break
