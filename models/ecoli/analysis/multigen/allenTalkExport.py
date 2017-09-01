@@ -133,7 +133,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		'HISTIDINAL[c]',
 		'GLT[c]',
 		'L-ASPARTATE[c]',
-		'0-PHOSPHO-L-HOMOSERINE[c]',
+		'O-PHOSPHO-L-HOMOSERINE[c]',
 		'DADP[c]',
 		'TDP[c]',
 		'GDP[c]',
