@@ -36,6 +36,7 @@ class ValidationDataEcoli(object):
 		self.reactionFlux = ReactionFlux(validation_data_raw, knowledge_base_raw)
 		self.essentialGenes = EssentialGenes(validation_data_raw)
 		self.geneFunctions = GeneFunctions(validation_data_raw)
+		self.trna = Trna(validation_data_raw)
 
 
 class Protein(object):
@@ -223,3 +224,45 @@ class GeneFunctions(object):
 
 		for row in validation_data_raw.geneFunctions:
 			self.geneFunctions[row["FrameID"]] = row["Function"]
+
+class Trna(object):
+	""" Trna """
+
+	def __init__(self, validation_data_raw):
+		self._loadTrnaSynthetaseKinetics(validation_data_raw)
+		self._loadTrnaPairings(validation_data_raw)
+		self._loadAaToTrna(validation_data_raw)
+
+	def _loadTrnaSynthetaseKinetics(self, validation_data_raw):
+		self.synthetaseKinetics = {}
+
+		for row in validation_data_raw.trnaSynthetaseKinetics:
+			self.synthetaseKinetics[row["synthetase"]] = {
+				"kcat AA": row["kcat AA"],
+				"kcat tRNA": row["kcat tRNA"],
+				"kcat ATP": row["kcat ATP"],
+				"kM AA": row["kM AA"],
+				"kM tRNA": row["kM tRNA"],
+				"kM ATP": row["kM ATP"],
+				"amino acid": row["amino acid"],
+			}
+
+	def _loadTrnaPairings(self, validation_data_raw):
+		self.trnaPairings = {}
+
+		for row in validation_data_raw.trnaPairings:
+			self.trnaPairings[row["tRNA ID"]] = {
+				"amino acid": row["amino acid"],
+				"anticodon": row["anticodon"],
+			}
+
+	def _loadAaToTrna(self, validation_data_raw):
+		self.aaToTrna = {}
+
+		for row in validation_data_raw.trnaPairings:
+			aa = row["amino acid"]
+
+			if aa not in self.aaToTrna:
+				self.aaToTrna[aa] = []
+
+			self.aaToTrna[aa].append(row["tRNA ID"])
