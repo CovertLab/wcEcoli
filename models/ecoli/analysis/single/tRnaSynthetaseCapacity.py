@@ -89,46 +89,61 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	substrateList = ["tRNA", "AA", "ATP"]
 	substrateColor = ["b", "g", "r"]
 
+	# For each synthetase
 	for synthetaseId in synthetaseIds:
-		print synthetaseId
-		_aaId = kinetic_data[synthetaseId]["amino acid"]
-		_aaIndex = aaIds.index(_aaId)
-		_trnaIds = aa_to_trna[_aaId]
-		_trnaIndexes = [trnaIds.index(x) for x in _trnaIds]
+		print synthetaseId 		# Print synthetase ID first (total 20)
 
-		ax = axesList[_aaIndex]
+		_aaId = kinetic_data[synthetaseId]["amino acid"] 		# Get aaID associated with synthetase
+		_aaIndex = aaIds.index(_aaId)							# Get aaIndex for aaID
+		_trnaIds = aa_to_trna[_aaId]							# Get trnaIDs that correspond to aaID
+		_trnaIndexes = [trnaIds.index(x) for x in _trnaIds]		# Get trnaIndexes that correspond to trnaIDs
 
-		E = synthetaseConcentrations[:, synthetaseIds.index(synthetaseId)]
-		AA = aaConcentrations[aaIds.index(_aaId)]
-		T = trnaConcentrations[:, _trnaIndexes].sum(axis = 1)
+		ax = axesList[_aaIndex] 	# Designate plot position according to aaIndex
 
-		for i, substrate in enumerate(substrateList):
-			kcat = kinetic_data[synthetaseId]["kcat %s" % substrate]
-			kM = (kinetic_data[synthetaseId]["kM %s" % substrate])
-			if kcat.asNumber() == 0 or kM.asNumber() == 0:
+		E = synthetaseConcentrations[:, synthetaseIds.index(synthetaseId)]  # Get time profile of synthetase conc
+		AA = aaConcentrations[:, aaIds.index(_aaId)]						# Get time profile of AA conc
+		T = trnaConcentrations[:, _trnaIndexes].sum(axis = 1)				# Get time profile of sum of all tRNA concs
+
+		for i, substrate in enumerate(substrateList):						# For each limiting substrate being considered
+			kcat = kinetic_data[synthetaseId]["kcat %s" % substrate]		# Get corresponding kcat value
+			kM = (kinetic_data[synthetaseId]["kM %s" % substrate])			# Get corresponding kM value
+
+			if kcat.asNumber() == 0 or kM.asNumber() == 0:					# If either of them are zero(not available), skip substrate
 				continue
 
-			if PLOT_VMAX:
-				vmax = E*kcat
-				charged_tRNAs_max = np.floor(np.array(vmax * timestep*units.s * cellVolume * nAvogadro, dtype = float))
+			if PLOT_VMAX:				# If only the VMAX is being considered
+				vmax = E*kcat  			# Calculate vmax (E*kcat) time profile
+				charged_tRNAs_max = np.floor(np.array(vmax * timestep*units.s * cellVolume * nAvogadro, dtype = float))			# Vector of charged tRNA counts being synthesized at each timestep
 				ax.plot(time[SKIP_FIRST_N_TIMESTEPS:], charged_tRNAs_max[SKIP_FIRST_N_TIMESTEPS:] / aasUsed[SKIP_FIRST_N_TIMESTEPS:, _aaIndex], substrateColor[i])
-			else:
-				v = E*T / (T + kM.asUnit(units.mol/units.L)) * kcat
-				charged_tRNAs = np.floor(np.array(v * timestep*units.s * cellVolume * nAvogadro, dtype = float))
-				ax.plot(time[SKIP_FIRST_N_TIMESTEPS:], charged_tRNAs[SKIP_FIRST_N_TIMESTEPS:] / aasUsed[SKIP_FIRST_N_TIMESTEPS:, _aaIndex], substrateColor[i])
+				# Divide number of tRNAs by number of AAs used each timestep, and plot against time
 
-	for i, ax in enumerate(axesList):
+			else:						# If M-M kinetics is being considered
+				if substrate == "tRNA":
+					v = E*T / (T + kM.asUnit(units.mol/units.L)) * kcat  	# Calculate M-M rate, using tRNA as limiting agent
+				elif substrate == "AA":
+					v = E*AA / (AA + kM.asUnit(units.mol/units.L)) * kcat  	# Calculate M-M rate, using tRNA as limiting agent
+				else:
+					v = E*atpConcentrations / (atpConcentrations + kM.asUnit(units.mol/units.L)) * kcat  	# Calculate M-M rate, using tRNA as limiting agent
+
+				charged_tRNAs = np.floor(np.array(v * timestep*units.s * cellVolume * nAvogadro, dtype = float)) 	# Vector of charged tRNA counts being synthesized at each timestep
+				ax.plot(time[SKIP_FIRST_N_TIMESTEPS:], charged_tRNAs[SKIP_FIRST_N_TIMESTEPS:] / aasUsed[SKIP_FIRST_N_TIMESTEPS:, _aaIndex], substrateColor[i])
+				# Divide number of tRNAs by number of AAs used each timestep, and plot against time
+
+	for i, ax in enumerate(axesList):	# Axis formatting for each plot
 		ax.set_xlim([time[SKIP_FIRST_N_TIMESTEPS], time[-1]])
 		whitePadSparklineAxis(ax)
 		if ax.get_ylim()[1] > 1:
 			ax.set_yticks([0, 1, ax.get_ylim()[1]])
 		else:
 			ax.set_yticks([0, ax.get_ylim()[0], ax.get_ylim()[1], 1])
-		ax.set_title(aaIds[i], fontsize = 12)
+		ax.set_title(aaIds[i], fontsize = 12)	# Set titles for each subplot to aaID
 	
 	plt.subplots_adjust(hspace = 0.5, wspace = 0.5, left = 0.1, bottom = 0.1, top = 0.85, right = 0.95)
+
+	# Export figure to pdf
 	from wholecell.analysis.analysis_tools import exportFigure
 
+	# Set Figure title
 	if SKIP_FIRST_N_TIMESTEPS != 0:
 		text = "skipping first %s time steps" % SKIP_FIRST_N_TIMESTEPS
 		name_tag = "skip_%s_timesteps" % SKIP_FIRST_N_TIMESTEPS
