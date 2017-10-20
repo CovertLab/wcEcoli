@@ -30,6 +30,8 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 # TODO: account for complexation
 
+MARK_TRNA_SYNTHETASES = False
+
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
 	if not os.path.isdir(simOutDir):
@@ -37,7 +39,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
-
 
 	sim_data = cPickle.load(open(simDataFile, "rb"))
 	validation_data = cPickle.load(open(validationDataFile, "rb"))
@@ -89,10 +90,27 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	wisniewskiCounts = validation_data.protein.wisniewski2014Data["avgCounts"]
 	proteinIds = validation_data.protein.wisniewski2014Data["monomerId"].tolist()
 
+	# synthetase specific code
+	if MARK_TRNA_SYNTHETASES:
+		synthetaseIds = validation_data.trna.synthetaseKinetics.keys()
+		plotIds = []
+		for i in synthetaseIds:
+			if i in ids_complexation_complexes:
+				a = (sim_data.process.complexation.getMonomers(i))["subunitIds"]
+				for j in a:
+					plotIds.append(j)
+			else:
+				plotIds.append(i)
+
+		indexes = [proteinIds.index(x) for x in plotIds]
+
 	fig, ax = plt.subplots(2, sharey=True, figsize = (8.5, 11))
 
 	# Wisniewski Counts
 	points = ax[0].scatter(np.log10(wisniewskiCounts + 1), np.log10(view_validation.counts() + 1), c='w', edgecolor = 'k', alpha=.7)
+	if MARK_TRNA_SYNTHETASES:
+		for x in indexes:
+			ax[0].scatter(np.log10(wisniewskiCounts[x] + 1), np.log10(view_validation.counts()[x] + 1), c = "orange")
 	ax[0].set_xlabel("log10(Wisniewski 2014 Counts)")
 	ax[0].set_title("Pearson r: %0.2f" % pearsonr(np.log10(view_validation.counts() + 1), np.log10(wisniewskiCounts + 1))[0])
 
@@ -101,12 +119,19 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plugins.connect(fig, tooltip)
 
 	# Schmidt Counts
-	schmidtLabels = validation_data.protein.schmidt2015Data["monomerId"]
+	schmidtLabels = validation_data.protein.schmidt2015Data["monomerId"].tolist()
+	if MARK_TRNA_SYNTHETASES:
+		indexes_schmidt = [schmidtLabels.index(x) for x in plotIds]
 	schmidtCounts = validation_data.protein.schmidt2015Data["glucoseCounts"]
 	schmidtPoints = ax[1].scatter(
 		np.log10(schmidtCounts + 1),
 		np.log10(view_validation_schmidt.counts() + 1),
 		c='w', edgecolor = 'k', alpha=.7)
+
+	if MARK_TRNA_SYNTHETASES:
+		for x in indexes_schmidt:
+			ax[1].scatter(np.log10(schmidtCounts[x] + 1), np.log10(view_validation_schmidt.counts()[x] + 1), c = "orange")
+
 	ax[1].set_xlabel("log10(Schmidt 2015 Counts)")
 	ax[1].set_title("Pearson r: %0.2f" % pearsonr(np.log10(view_validation_schmidt.counts() + 1), np.log10(schmidtCounts + 1))[0])
 
