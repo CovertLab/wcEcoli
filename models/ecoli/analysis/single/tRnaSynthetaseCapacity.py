@@ -21,8 +21,9 @@ import wholecell.utils.constants
 from wholecell.utils import units
 from wholecell.utils.sparkline import whitePadSparklineAxis
 
-SKIP_FIRST_N_TIMESTEPS = 10
-PLOT_VMAX = False
+SKIP_FIRST_N_TIMESTEPS = 0
+PLOT_VMAX = True
+PLOT_LOG_RATIOS = True
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
@@ -83,6 +84,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 
 	# Plot
+	aminoacylTrnaCounts = {}
 	fig, axesList = plt.subplots(4, 5, figsize = (14, 10))
 	axesList = axesList.reshape(-1)
 
@@ -114,7 +116,11 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			if PLOT_VMAX:				# If only the VMAX is being considered
 				vmax = E*kcat  			# Calculate vmax (E*kcat) time profile
 				charged_tRNAs_max = np.floor(np.array(vmax * timestep*units.s * cellVolume * nAvogadro, dtype = float))			# Vector of charged tRNA counts being synthesized at each timestep
-				ax.plot(time[SKIP_FIRST_N_TIMESTEPS:], charged_tRNAs_max[SKIP_FIRST_N_TIMESTEPS:] / aasUsed[SKIP_FIRST_N_TIMESTEPS:, _aaIndex], substrateColor[i])
+				aminoacylTrnaCounts[_aaId] = charged_tRNAs_max
+				if PLOT_LOG_RATIOS:
+					ax.plot(time[SKIP_FIRST_N_TIMESTEPS:], np.log10(charged_tRNAs_max[SKIP_FIRST_N_TIMESTEPS:]) / np.log10(aasUsed[SKIP_FIRST_N_TIMESTEPS:, _aaIndex]), substrateColor[i])
+				else:
+					ax.plot(time[SKIP_FIRST_N_TIMESTEPS:], charged_tRNAs_max[SKIP_FIRST_N_TIMESTEPS:] / aasUsed[SKIP_FIRST_N_TIMESTEPS:, _aaIndex], substrateColor[i])
 				# Divide number of tRNAs by number of AAs used each timestep, and plot against time
 
 			else:						# If M-M kinetics is being considered
@@ -126,8 +132,14 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 					v = E*atpConcentrations / (atpConcentrations + kM.asUnit(units.mol/units.L)) * kcat  	# Calculate M-M rate, using tRNA as limiting agent
 
 				charged_tRNAs = np.floor(np.array(v * timestep*units.s * cellVolume * nAvogadro, dtype = float)) 	# Vector of charged tRNA counts being synthesized at each timestep
-				ax.plot(time[SKIP_FIRST_N_TIMESTEPS:], charged_tRNAs[SKIP_FIRST_N_TIMESTEPS:] / aasUsed[SKIP_FIRST_N_TIMESTEPS:, _aaIndex], substrateColor[i])
+
+				if PLOT_LOG_RATIOS:
+					ax.plot(time[SKIP_FIRST_N_TIMESTEPS:], np.log10(charged_tRNAs[SKIP_FIRST_N_TIMESTEPS:]) / np.log10(aasUsed[SKIP_FIRST_N_TIMESTEPS:, _aaIndex]), substrateColor[i])
+				else:
+					ax.plot(time[SKIP_FIRST_N_TIMESTEPS:], charged_tRNAs[SKIP_FIRST_N_TIMESTEPS:] / aasUsed[SKIP_FIRST_N_TIMESTEPS:, _aaIndex], substrateColor[i])
 				# Divide number of tRNAs by number of AAs used each timestep, and plot against time
+
+	cPickle.dump(aminoacylTrnaCounts, open(os.path.join(plotOutDir, "aminoacylTrnaCounts.cPickle"), "wb"))
 
 	for i, ax in enumerate(axesList):	# Axis formatting for each plot
 		ax.set_xlim([time[SKIP_FIRST_N_TIMESTEPS], time[-1]])
@@ -144,15 +156,34 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	from wholecell.analysis.analysis_tools import exportFigure
 
 	# Set Figure title
-	if SKIP_FIRST_N_TIMESTEPS != 0:
-		text = "skipping first %s time steps" % SKIP_FIRST_N_TIMESTEPS
-		name_tag = "skip_%s_timesteps" % SKIP_FIRST_N_TIMESTEPS
+	text = "(blue = tRNA)  (green = amino acid)  (red = ATP)"
+	name_tag = ""
 	if PLOT_VMAX:
-		fig.suptitle("reaction rate = vmax only\n(blue = tRNA)  (green = amino acid)  (red = ATP)\ny-axis = ratio of # charged-tRNAs to # incorporations into polypeptides\nx-axis = time (s)\n%s" % text)
-		exportFigure(plt, plotOutDir, plotOutFileName + "__vmax_only__%s" % name_tag, metadata)
+		text += "\nreaction rate = vmax"
+		name_tag += "__vmax"
 	else:
-		fig.suptitle("reaction rate = vmax * ([substrate] / [substrate] + kM)\n(blue = tRNA)  (green = amino acid)  (red = ATP)\ny-axis = ratio of # charged-tRNAs to # incorporations into polypeptides\nx-axis = time (s)\n%s" % text)
-		exportFigure(plt, plotOutDir, plotOutFileName + "__%s" % name_tag, metadata)
+		text += "\nreaction rate = vmax * ([substrate] / [substrate] + kM)"
+
+	if PLOT_LOG_RATIOS:
+		text += "\ny-axis = ratio of log10(# charged) to log10(# aa incorporations)"
+		name_tag += "__log"
+	else:
+		text += "\ny-axis = ratio of (# charged) to (# aa incorporations)"
+
+	text += "    x-axis = time (s)"
+
+	if SKIP_FIRST_N_TIMESTEPS != 0:
+		text += "\nskipping first %s time steps" % SKIP_FIRST_N_TIMESTEPS
+		name_tag += "__skip_%s_timesteps" % SKIP_FIRST_N_TIMESTEPS
+
+	fig.suptitle(text)
+	exportFigure(plt, plotOutDir, plotOutFileName + "%s" % name_tag, metadata)
+
+	# if PLOT_VMAX:
+	# 	fig.suptitle("reaction rate = vmax only\n(blue = tRNA)  (green = amino acid)  (red = ATP)\ny-axis = ratio of # charged-tRNAs to # incorporations into polypeptides\nx-axis = time (s)\n%s" % text)
+	# 	exportFigure(plt, plotOutDir, plotOutFileName + "__vmax_only__%s" % name_tag, metadata)
+	# else:
+	# 	fig.suptitle("reaction rate = vmax * ([substrate] / [substrate] + kM)\n(blue = tRNA)  (green = amino acid)  (red = ATP)\ny-axis = ratio of # charged-tRNAs to # incorporations into polypeptides\nx-axis = time (s)\n%s" % text)
 
 	plt.close("all")
 
