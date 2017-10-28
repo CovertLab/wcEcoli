@@ -91,35 +91,37 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	ribosomeCapacity_axis = plt.subplot(6,1,1)
 	ribosomeCapacity_axis.plot(time / 60., totalRibosomeCapacity, label="Theoretical total ribosome capacity", linewidth=2, color='b')
 	ribosomeCapacity_axis.plot(time / 60., actualElongations, label="Actual elongations", linewidth=2, color='r')
-	ribosomeCapacity_axis.set_ylabel("Amino acids polymerized")
-	ribosomeCapacity_axis.legend(ncol=2)
+	ribosomeCapacity_axis.set_ylabel("Amino acids\npolymerized")
+	ribosomeCapacity_axis.legend(loc = "lower right")
 
 	activeRibosomeCapacity_axis = plt.subplot(6,1,2)
 	activeRibosomeCapacity_axis.plot(time / 60., activeRibosome * elongationRate, label="Theoretical active ribosome capacity", linewidth=2, color='b')
 	activeRibosomeCapacity_axis.plot(time / 60., actualElongations, label="Actual elongations", linewidth=2, color='r')
-	activeRibosomeCapacity_axis.set_ylabel("Amino acids polymerized")
-	activeRibosomeCapacity_axis.legend(ncol=2)
+	activeRibosomeCapacity_axis.set_ylabel("Amino acids\npolymerized")
+	activeRibosomeCapacity_axis.legend(loc = "lower right")
 
 	inactiveRibosomeCapacity_axis = plt.subplot(6,1,3)
 	inactiveRibosomeCapacity_axis.plot(time / 60., ribosomeSubunitCounts.min(axis=1) * elongationRate, label="Theoretical inactive ribosome capacity", linewidth=2, color='b')
-	inactiveRibosomeCapacity_axis.set_ylabel("Amino acids polymerized")
-	inactiveRibosomeCapacity_axis.legend(ncol=2)
+	inactiveRibosomeCapacity_axis.set_ylabel("Inactive ribosome\ncounts")
+	# inactiveRibosomeCapacity_axis.legend(ncol=2)
 
 	fractionalCapacity_axis = plt.subplot(6,1,4)
 	fractionalCapacity_axis.plot(time / 60., actualElongations / totalRibosomeCapacity, label="Fraction of ribosome capacity used", linewidth=2, color='k')
-	fractionalCapacity_axis.set_ylabel("Fraction of ribosome capacity used")
-	fractionalCapacity_axis.set_yticks(np.arange(0., 1.05, 0.05))
-	#fractionalCapacity_axis.get_yaxis().grid(b=True, which='major', color='b', linestyle='--')
+	fractionalCapacity_axis.set_ylabel("Fraction of ribosome\ncapacity used")
+	fractionalCapacity_axis.set_yticks(np.arange(0., 1.05, 0.1))
 	fractionalCapacity_axis.grid(b=True, which='major', color='b', linestyle='--')
 
 	effectiveElongationRate_axis = plt.subplot(6,1,5)
 	effectiveElongationRate_axis.plot(time / 60., actualElongations / activeRibosome, label="Effective elongation rate", linewidth=2, color='k')
-	effectiveElongationRate_axis.set_ylabel("Effective elongation rate (aa/s/ribosome)")
+	effectiveElongationRate_axis.set_ylabel("Effective\nelongation rate\n(aa/s/ribosome)")
 
 	fractionActive_axis = plt.subplot(6,1,6)
 	fractionActive_axis.plot(time / 60., massFractionActive, label="Mass fraction active", linewidth=2, color='k')
-	fractionActive_axis.set_ylabel("Mass fraction of active ribosomes")
+	fractionActive_axis.set_ylabel("Mass fraction\nof active ribosomes")
 	fractionActive_axis.set_yticks(np.arange(0., 1.1, 0.1))
+	fractionActive_axis.text(time[-1] / 60., 0, "Average: %0.2f" % np.average(massFractionActive), horizontalalignment = "right")
+	fractionActive_axis.set_xlabel("Time (min)")
+
 
 	# Save
 	plt.subplots_adjust(hspace = 0.5, wspace = 0.6)
@@ -139,7 +141,8 @@ if __name__ == "__main__":
 	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
 	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
 	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
+	parser.add_argument("--validationDataFile")
 
 	args = parser.parse_args().__dict__
 
-	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"])
+	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"], args["validationDataFile"])
