@@ -34,6 +34,14 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# Load parameters
 		mrnaIds = sim_data.process.translation.monomerData["rnaId"]
 		self.proteinLens = sim_data.process.translation.monomerData["length"].asNumber()
+
+		# Determine changes from menE parameter variant
+		meneFactor = None
+		if hasattr(sim_data.process.translation, "factor_translEff"):
+			meneFactor = sim_data.process.translation.factor_translEff
+			meneIndex = np.where(mrnaIds == "EG12437_RNA[c]")[0][0]
+			sim_data.process.translation.translationEfficienciesByMonomer[meneIndex] *= meneFactor
+
 		self.translationEfficiencies = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 
 		# Determine changes from parameter shuffling variant
