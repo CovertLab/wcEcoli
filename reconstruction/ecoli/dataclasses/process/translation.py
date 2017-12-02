@@ -19,6 +19,8 @@ class Translation(object):
 		self._buildMonomerData(raw_data, sim_data)
 		self._buildTranslation(raw_data, sim_data)
 		self._buildTranslationEfficiency(raw_data, sim_data)
+		self._buildSynthetaseKinetics(raw_data, sim_data)
+		self._buildAaToTrnaGroups(raw_data, sim_data)
 
 	def _buildMonomerData(self, raw_data, sim_data):
 		assert all([len(protein['location']) == 1 for protein in raw_data.proteins])
@@ -180,3 +182,54 @@ class Translation(object):
 
 		self.translationEfficienciesByMonomer = np.array(trEffs)
 		self.translationEfficienciesByMonomer[np.isnan(self.translationEfficienciesByMonomer)] = np.nanmean(self.translationEfficienciesByMonomer)
+
+	def _buildSynthetaseKinetics(self, raw_data, sim_data):
+		synthetaseKinetics = {}
+		for synthetaseGroup in raw_data.trnaSynthetaseKinetics:
+			synthetaseKinetics[str(synthetaseGroup["synthetase"])] = {
+			"kM_AA": synthetaseGroup["kM AA"],
+			"kM_ATP": synthetaseGroup["kM ATP"],
+			"kM_tRNA": synthetaseGroup["kM tRNA"],
+			"kcat_AA": synthetaseGroup["kcat AA"],
+			"kcat_ATP": synthetaseGroup["kcat ATP"],
+			"kcat_tRNA": synthetaseGroup["kcat tRNA"],
+			"aminoacid": synthetaseGroup["amino acid"]
+			}
+		self.synthetaseKinetics = synthetaseKinetics
+
+	def _buildAaToTrnaGroups(self, raw_data, sim_data):
+		aaToTrnaGroups = {}
+		for row in raw_data.trnaPairings:
+			aa = str(row["amino acid"])
+			if aa not in aaToTrnaGroups:
+				aaToTrnaGroups[aa] = []
+			aaToTrnaGroups[aa].append(str(row["tRNA ID"]))
+		self.aaToTrnaGroups = aaToTrnaGroups
+
+	def computeSynthetaseKineticCapacity(self, aaCounts, atpCount, trnaCounts, synthetaseCounts, aaIds, trnaIds, nAvogadro, cellVolume, timestep):
+		out = np.zeros(len(aaCounts))
+		# ATP = (atpCount / (nAvogadro * cellVolume)).asNumber(units.mol / units.L)
+		for i, synthetaseId in enumerate(self.synthetaseKinetics.keys()):
+
+			_aaId = self.synthetaseKinetics[synthetaseId]["aminoacid"]
+			_trnaIds = self.aaToTrnaGroups[_aaId]
+
+			_aaIndex = aaIds.index(_aaId)
+			_trnaIndices = [trnaIds.index(x) for x in _trnaIds]
+
+			# Compute concentrations
+			E = (synthetaseCounts[i] / (nAvogadro * cellVolume))
+			# A = (aaCounts[_aaIndex] / (nAvogadro * cellVolume)).asNumber(units.mol / units.L)
+			# T = (np.sum(trnaCounts[_trnaIndices]) / (nAvogadro * cellVolume)).asNumber(units.mol / units.L)
+
+			# Use largest kcat
+			kcat = np.max([self.synthetaseKinetics[synthetaseId][x] for x in ["kcat_AA", "kcat_ATP", "kcat_tRNA"]])
+
+			# Compute vmax
+			vmax = kcat * E
+
+			# Convert from concentration to count
+			count = vmax * (timestep * units.s) * cellVolume * nAvogadro
+			out[_aaIndex] = count.asNumber()
+
+		return out
