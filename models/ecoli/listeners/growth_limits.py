@@ -47,6 +47,9 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		self.aaAllocated = None
 		self.aasUsed = None
 
+		self.aaRequestedByTranslationSupply = None
+		self.aaRequestedBySynthetaseKineticCapacity = None
+
 		# For transcription
 		self.ntpPoolSize = None
 		self.ntpRequestSize = None
@@ -69,6 +72,9 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		self.aaRequestSize = np.zeros(len(self.aaIds), np.float64)
 		self.aaAllocated = np.zeros(len(self.aaIds), np.float64)
 		self.aasUsed = np.zeros(len(self.aaIds), np.float64)
+
+		self.aaRequestedByTranslationSupply = np.zeros(len(self.aaIds), np.float64)
+		self.aaRequestedBySynthetaseKineticCapacity = np.zeros(len(self.aaIds), np.float64)
 
 		# For transcription
 		self.ntpPoolSize = np.zeros(len(self.ntpIds), np.float64)
@@ -99,4 +105,6 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			ntpRequestSize = self.ntpRequestSize,
 			ntpAllocated = self.ntpAllocated,
 			ntpUsed = self.ntpUsed,
+			aaRequestedByTranslationSupply = self.aaRequestedByTranslationSupply,
+			aaRequestedBySynthetaseKineticCapacity = self.aaRequestedBySynthetaseKineticCapacity,
 			)
