@@ -68,6 +68,12 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		if hasattr(sim_data.process.transcription, "initiationShuffleIdxs") and sim_data.process.transcription.initiationShuffleIdxs != None:
 			self.shuffleIdxs = sim_data.process.transcription.initiationShuffleIdxs
 
+		self.meneIndex = None
+		self.meneFactor = None
+		if hasattr(sim_data.process.transcription, "meneFactor"):
+			self.meneIndex = np.where(sim_data.process.transcription.rnaData["id"] == "EG12437_RNA[c]")[0][0]
+			self.meneFactor = sim_data.process.transcription.meneFactor
+
 		# Views
 		self.activeRnaPolys = self.uniqueMoleculesView('activeRnaPoly')
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
@@ -115,6 +121,11 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		# Adjust synthesis probabilities depending on environment
 		synthProbFractions = self.rnaSynthProbFractions[self._sim.processes["PolypeptideElongation"].currentNutrients]
+
+		# Adjust menE synthesis probability if running meneParams variant
+		if self.meneIndex != None and self.meneFactor != None:
+			self.rnaSynthProb[self.meneIndex] *= self.meneFactor
+
 		self.rnaSynthProb[self.isMRna] *= synthProbFractions["mRna"] / self.rnaSynthProb[self.isMRna].sum()
 		self.rnaSynthProb[self.isTRna] *= synthProbFractions["tRna"] / self.rnaSynthProb[self.isTRna].sum()
 		self.rnaSynthProb[self.isRRna] *= synthProbFractions["rRna"] / self.rnaSynthProb[self.isRRna].sum()
@@ -122,6 +133,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.rnaSynthProb[self.isRProtein] = self.rnaSynthProbRProtein[self._sim.processes["PolypeptideElongation"].currentNutrients]
 		self.rnaSynthProb[self.isRnap] = self.rnaSynthProbRnaPolymerase[self._sim.processes["PolypeptideElongation"].currentNutrients]
 		self.rnaSynthProb[self.rnaSynthProb < 0] = 0
+
+
 		scaleTheRestBy = (1. - self.rnaSynthProb[self.setIdxs].sum()) / self.rnaSynthProb[~self.setIdxs].sum()
 		self.rnaSynthProb[~self.setIdxs] *= scaleTheRestBy
 
