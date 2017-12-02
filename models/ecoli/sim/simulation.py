@@ -13,6 +13,7 @@ from models.ecoli.processes.rna_degradation import RnaDegradation
 from models.ecoli.processes.chromosome_replication import ChromosomeReplication
 from models.ecoli.processes.polypeptide_initiation import PolypeptideInitiation
 from models.ecoli.processes.polypeptide_elongation import PolypeptideElongation
+# from models.ecoli.processes.polypeptide_elongation_kinetics import PolypeptideElongation
 from models.ecoli.processes.transcript_initiation import TranscriptInitiation
 from models.ecoli.processes.transcript_elongation import TranscriptElongation
 from models.ecoli.processes.protein_degradation import ProteinDegradation
