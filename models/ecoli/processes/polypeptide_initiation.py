@@ -37,9 +37,10 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Determine changes from menE parameter variant
 		meneFactor = None
-		if hasattr(sim_data.process.translation, "factor_translEff"):
-			meneFactor = sim_data.process.translation.factor_translEff
-			meneIndex = np.where(mrnaIds == "EG12437_RNA[c]")[0][0]
+		if hasattr(sim_data.process.translation, "meneFactor"):
+			meneFactor = sim_data.process.translation.meneFactor
+			monomerIds = sim_data.process.translation.monomerData["id"]
+			meneIndex = np.where(monomerIds == "O-SUCCINYLBENZOATE-COA-LIG-MONOMER[c]")[0][0]
 			sim_data.process.translation.translationEfficienciesByMonomer[meneIndex] *= meneFactor
 
 		self.translationEfficiencies = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
