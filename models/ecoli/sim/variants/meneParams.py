@@ -1,5 +1,4 @@
-FACTORS_SYNTH_PROB = [0.1, 1., 10.]
-FACTORS_TRANSL_EFF = [0.1, 1., 10.]
+FACTORS = [0.1, 0.125, 0.25, 0.5, 1., 2., 4., 8., 10.]
 
 CONTROL_OUTPUT = dict(
 	shortName = "control",
@@ -11,18 +10,23 @@ def meneParamsTotalIndices(sim_data):
 
 
 def meneParams(sim_data, index):
-	if index == 4:
+	if index == FACTORS.index(1):
 		return CONTROL_OUTPUT, sim_data
 
-	# Store factor for changing synthesis prob
-	factor_synthProb = FACTORS_SYNTH_PROB[index / 3]
-	sim_data.process.transcription.meneFactor = factor_synthProb
+	adjustFactor = FACTORS[index]
 
-	# Store factor for changing translation efficiency
-	factor_translEff = FACTORS_TRANSL_EFF[index % 3]
-	sim_data.process.translation.meneFactor = factor_translEff
+	# Adjust transcript synthesis probability in recruitmentData
+	mene_rnaIndex = np.where(sim_data.process.transcription.rnaData["id"] == "EG12437_RNA[c]")[0]
+	mene_recruitmentIndices = np.where(sim_data.process.transcription_regulation.recruitmentData["hI"] == mene_rnaIndex)[0]
+
+	adjustedV = sim_data.process.transcription_regulation.recruitmentData["hV"]
+	adjustedV[mene_recruitmentIndices] *= adjustFactor
+	sim_data.process.transcription_regulation.recruitmentData["hV"] = adjustedV
+
+	# Adjust rna expression data in order to impact initial condition
+	sim_data.process.transcription.rnaExpression[sim_data.condition][mene_rnaIndex] *= adjustFactor
 
 	return dict(
 		shortName = "{}_meneParams".format(index),
-		desc = "Simulation with menE synthesis probability increased by factor {}, translation efficiency increased by factor {}.".format(FACTORS_SYNTH_PROB[index / 3], FACTORS_TRANSL_EFF[index % 3])
+		desc = "Simulation with menE synthesis probability increased by the factor {}.".format(FACTORS[index])
 		), sim_data
