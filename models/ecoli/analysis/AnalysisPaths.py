@@ -88,9 +88,9 @@ class AnalysisPaths(object):
 
 		self._path_data = np.zeros(len(generation_dirs), dtype=[
 			("path", "a500"),
-			("variant", "i64"),
-			("seed", "i64"),
-			("generation", "i64"),
+			("variant", "i8"),
+			("seed", "i8"),
+			("generation", "i8"),
 			("variantkb", "a500")
 			])
 
@@ -146,6 +146,9 @@ class AnalysisPaths(object):
 		kb_path = np.unique(self._path_data['variantkb'][self._path_data["variant"] == variant])
 		assert kb_path.size == 1
 		return kb_path[0]
+
+	def get_variants(self):
+		return sorted(np.unique(self._path_data["variant"]))
 
 	def _get_generations(self, directory):
 		generation_files = [join(directory,f) for f in listdir(directory) if isdir(join(directory,f)) and "generation" in f]

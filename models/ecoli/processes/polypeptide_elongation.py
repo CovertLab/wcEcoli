@@ -92,11 +92,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.elngRateFactor = 1.
 
 	def calculateRequest(self):
-		# Set ribosome elongation rate based on simulation medium enviornment and elongation rate factor
+		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
 		# which is used to create single-cell variability in growth rate
+		# The maximum number of amino acids that can be elongated in a single timestep is set to 22 intentionally as the minimum number of padding values
+		# on the protein sequence matrix is set to 22. If timesteps longer than 1.0s are used, this feature will lead to errors in the effective ribosome
+		# elongation rate.
 		if self.translationSupply:
 			self.ribosomeElongationRate = np.min([self.maxRibosomeElongationRate, int(stochasticRound(self.randomState,
-				self.maxRibosomeElongationRate * self.timeStepSec()))])
+				self.maxRibosomeElongationRate * self.timeStepSec()))]) # Will be set to maxRibosomeElongationRate if timeStepSec > 1.0s
 		else:
 			self.ribosomeElongationRate = np.min([22, int(stochasticRound(self.randomState,
 				self.elngRateFactor * self.ribosomeElongationRateDict[self.currentNutrients].asNumber(units.aa / units.s) * self.timeStepSec()))])
@@ -203,7 +206,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		sequenceElongations, aasUsed, nElongations = polymerize(
 			sequences,
 			aaCounts,
-			10000000, # Set to a large number, the limit is now taken care of in meabolism
+			10000000, # Set to a large number, the limit is now taken care of in metabolism
 			self.randomState
 			)
 
@@ -292,6 +295,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		"""
 		Assumes GTP is the readout for failed translation with respect to the timestep.
 		"""
+
+		# Until more padding values are added to the protein sequence matrix, limit the maximum timestep length to 1 second
+		# Since the current upper limit on a.a's elongated by ribosomes during a single timestep is set to 22, timesteps
+		# longer than 1.0s do not lead to errors, but does slow down the ribosome elongation rate of the resulting simulation.
+		# Must be modified if timesteps longer than 1.0s are desired.
+		if inputTimeStep > 1.0:
+			return False
 
 		activeRibosomes = float(self.activeRibosomes.total()[0])
 		self.gtpAvailable = float(self.gtp.total()[0])
