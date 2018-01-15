@@ -16,10 +16,19 @@ NUMERICAL_ZERO = 1e-20
 
 # can add additional solvers to have more options but need to implement NetworkFlow wrapper
 SOLVERS = {}
+S_CPLEX = "cplex"
 S_GLPK = "glpk"
 _SOLVER_PREFERENCE = (
+	S_CPLEX,
 	S_GLPK,
 	)
+
+try:
+	from ._netflow.nf_cplex import NetworkFlowCPLEX
+except ImportError:
+	pass
+else:
+	SOLVERS[S_CPLEX] = NetworkFlowCPLEX
 
 try:
 	from ._netflow.nf_glpk import NetworkFlowGLPK
