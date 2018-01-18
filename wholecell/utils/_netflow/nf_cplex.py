@@ -3,7 +3,7 @@ from __future__ import division
 
 from collections import defaultdict
 
-from cplex import Cplex
+import cplex
 import numpy as np
 from scipy.sparse import coo_matrix
 
@@ -12,14 +12,15 @@ from ._base import NetworkFlowProblemBase
 '''
 TODO:
 - change naming convention (set, get)
+- handle QP vs LP
 '''
 
 class NetworkFlowCPLEX(NetworkFlowProblemBase):
 	_lowerBoundDefault = 0
-	_upperBoundDefault = np.inf
+	_upperBoundDefault = cplex.infinity
 
 	def __init__(self):
-		self._model = Cplex()
+		self._model = cplex.Cplex()
 
 		self._model.set_log_stream(None)
 		self._model.set_error_stream(None)
@@ -31,6 +32,8 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 		self._ub = {}
 		self._objective = {}
 		self._materialCoeffs = defaultdict(list)
+
+		self._linear = True
 
 		self._eqConstBuilt = False
 		self._solved = False
@@ -64,11 +67,9 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 			self._materialCoeffs[material] = zip(coeffs, flowIdxs)
 
 			self._model.linear_constraints.set_coefficients(zip([materialIdx], [flowIdx], [coefficient]))
-			return
-
-		idx = self._getVar(flow)
-
-		self._materialCoeffs[material].append((coefficient, idx))
+		else:
+			idx = self._getVar(flow)
+			self._materialCoeffs[material].append((coefficient, idx))
 
 		self._solved = False
 
@@ -95,10 +96,17 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 	def flowObjectiveCoeffIs(self, flow, coefficient):
 		idx = self._getVar(flow)
 		self._objective[flow] = coefficient
-		self._model.objective.set_linear(
-			idx,				
-			coefficient
-			)
+		if self._linear:
+			self._model.objective.set_linear(
+				idx,
+				coefficient
+				)
+		else:
+			self._model.objective.set_quadratic_coefficients(
+				idx,
+				idx,
+				coefficient
+				)
 
 		self._solved = False
 
@@ -109,7 +117,7 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 		self._solve()
 
 		return np.array(
-			[self._model.solution.get_values(self._getVar(flow)) for flow in flows]
+			[self._model.solution.get_values(self._flows[flow]) if flow in self._flows else None for flow in flows]
 			)
 
 	# TODO: implement
@@ -120,10 +128,9 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 
 		self._solve()
 
-		raise Exception("Function not implemented yet")
-		# return np.array(
-		# 	[self._model.get_row_dual_value(1 + self._materialIdxLookup[material]) for material in materials]
-		# 	)
+		return np.array(
+			[self._model.solution.get_dual_values(self._materialIdxLookup[material]) if material in self._materialIdxLookup else None for material in materials]
+			)
 		return
 
 	# TODO: implement
@@ -134,10 +141,9 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 
 		self._solve()
 
-		raise Exception("Function not implemented yet")
-		# return np.array(
-		# 	[self._model.get_column_dual_value(1 + self._flows[fluxName]) for fluxName in fluxNames]
-		# 	)
+		return np.array(
+			[self._model.solution.get_reduced_costs(self._flows[fluxName]) if fluxName in self._flows else None for fluxName in fluxNames]
+			)
 		return
 
 	def objectiveValue(self):
