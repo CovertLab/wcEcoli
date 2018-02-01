@@ -1,13 +1,22 @@
 
 """
-Flux Balance Analysis for simplified core network
+Forced Transport Flux Balance Analysis for simplified core network
 
 """
 
 import numpy as np
+import os
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
 
-reactionStoich={
+
+timeTotal = 10
+timeStep = 1
+
+
+
+directory = os.path.join('user','forcedFlux')
+
+reactionStoich = {
 	# Metabolic reactions
 	'R1': {'A': -1, 'ATP': -1, 'B': 1},
 	'R2a': {'B': -1, 'ATP': 2, 'NADH': 2, 'C': 1},
@@ -35,8 +44,8 @@ reactionStoich={
 	'Growth': {'C': -1, 'F': -1, 'H': -1, 'ATP': -10, 'Biomass': 1}
 	}
 
-externalExchangedMolecules=['Carbon1', 'Carbon2', 'Dext', 'Eext', 'Fext', 'Hext', 'Oxygen']
-
+transportID = ['Tc1', 'Tc2', 'Tf', 'Td', 'Te', 'Th', 'To2']
+externalExchangedMolecules = ['Carbon1', 'Carbon2', 'Dext', 'Eext', 'Fext', 'Hext', 'Oxygen']
 objectiveFunction = {'Biomass': 1} #might be -1
 
 fbaObjectOptions = {
@@ -46,33 +55,50 @@ fbaObjectOptions = {
 	}
 
 fba = FluxBalanceAnalysis(**fbaObjectOptions) # **kwargs allows arbitrary number of arguments to functions
+
+# initialize external molecule levels
 fba.externalMoleculeLevelsIs(0.1 * np.ones(len(externalExchangedMolecules)))
 
 
-# determine flux across transporters
-transportID = 'Tc2'
-transportFlux = 0.01
+
+# TODO -- iterate FBA over time with timesteps, updating mass and environment.
+# TODO -- plot output
 
 
-fba.minReactionFluxIs(transportID, transportFlux)
-fba.maxReactionFluxIs(transportID, transportFlux)
+
+# update transport fluxes
+transportDict = {ID: None for ID in transportID}
+transportDict['Tc1'] = 0.02 #TODO -- this should be michaelis-menten equation
+
+# constrain transport fluxes
+for ID, value in transportDict.iteritems():
+	if value:
+		fba.minReactionFluxIs(ID, value)
+		fba.maxReactionFluxIs(ID, value)
 
 # results
 reactionIDs=fba.reactionIDs()
 reactionFluxes = fba.reactionFluxes()
-transportFluxes=fba.externalExchangeFluxes()
+# flowRates=fba.externalExchangeFluxes() # flux of external nutrients
 
-index = np.where(reactionIDs==transportID)[0][0]
-getFlux = reactionFluxes[index]
+indices = [np.where(reactionIDs==id)[0][0] for id in transportDict.keys()]
+transportFluxes = reactionFluxes[indices] # flux across transport reactions
+
+
+
+
+
+exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
+
+
 
 
 
 fba.outputMoleculeLevelsChange()
-
 obj = fba.objectiveValue()
 
 
-
+print obj
 
 
 import ipdb; ipdb.set_trace()
