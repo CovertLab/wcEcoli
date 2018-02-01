@@ -5,14 +5,13 @@ Forced Transport Flux Balance Analysis for simplified core network
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 import os
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
 
-
 timeTotal = 10
-timeStep = 1
-
-
+timeStep = 0.5
+time = np.linspace(timeStep, timeTotal, num=int(timeTotal/timeStep))
 
 directory = os.path.join('user','forcedFlux')
 
@@ -53,56 +52,62 @@ fbaObjectOptions = {
 	'externalExchangedMolecules' : externalExchangedMolecules,
 	'objective' : objectiveFunction,
 	}
-
 fba = FluxBalanceAnalysis(**fbaObjectOptions) # **kwargs allows arbitrary number of arguments to functions
 
 # initialize external molecule levels
 fba.externalMoleculeLevelsIs(0.1 * np.ones(len(externalExchangedMolecules)))
 
 
-
 # TODO -- iterate FBA over time with timesteps, updating mass and environment.
 # TODO -- plot output
 
 
-
-# update transport fluxes
-transportDict = {ID: None for ID in transportID}
-transportDict['Tc1'] = 0.02 #TODO -- this should be michaelis-menten equation
-
-# constrain transport fluxes
-for ID, value in transportDict.iteritems():
-	if value:
-		fba.minReactionFluxIs(ID, value)
-		fba.maxReactionFluxIs(ID, value)
-
-# results
-reactionIDs=fba.reactionIDs()
-reactionFluxes = fba.reactionFluxes()
-# flowRates=fba.externalExchangeFluxes() # flux of external nutrients
-
-indices = [np.where(reactionIDs==id)[0][0] for id in transportDict.keys()]
-transportFluxes = reactionFluxes[indices] # flux across transport reactions
+objvec = np.empty(len(time))
 
 
+for i, t in enumerate(time):
+
+	# update transport fluxes
+	transportDict = {ID: None for ID in transportID}
+	transportDict['Tc1'] = 0.02 #TODO -- this should be michaelis-menten equation
+
+	# constrain transport fluxes
+	for ID, value in transportDict.iteritems():
+		if value:
+			fba.minReactionFluxIs(ID, value)
+			fba.maxReactionFluxIs(ID, value)
+
+	# results
+	reactionIDs=fba.reactionIDs()
+	reactionFluxes = fba.reactionFluxes()
+	# flowRates=fba.externalExchangeFluxes() # flux of external nutrients
+
+	indices = [np.where(reactionIDs==id)[0][0] for id in transportDict.keys()]
+	transportFluxes = reactionFluxes[indices] # flux across transport reactions
+
+	# exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
+
+	fba.outputMoleculeLevelsChange()
+	obj = fba.objectiveValue()
+
+	# save values
+	objvec[i] = obj
 
 
 
-exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
 
 
 
+plt.plot(objvec)
+plt.xlabel('time')
+plt.savefig(os.path.join(directory, 'objvec.png'))
 
 
-fba.outputMoleculeLevelsChange()
-obj = fba.objectiveValue()
+
+# import ipdb; ipdb.set_trace()
 
 
-print obj
 
-
-import ipdb; ipdb.set_trace()
-
-
+# TODO -- create michaelis-menten function, for which you can initialize kinetic parameters and then get flux given input concentrations
 
 
