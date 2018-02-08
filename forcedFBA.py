@@ -5,18 +5,30 @@ Forced Transport Flux Balance Analysis for simplified core network
 """
 
 import numpy as np
+import scipy.constants
 import matplotlib.pyplot as plt
 import os
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
+# from wholecell.utils import units
 
-timeTotal = 10
-timeStep = 0.5
-time = np.linspace(timeStep, timeTotal, num=int(timeTotal/timeStep))
+NO_TRANSPORT = False
+TRANSPORT_CONSTRAINT = True # transporter fluxes are set as constraints on FBA optimization
+TRANSPORT_OBJECTIVE = False # transporter fluxes are set as objectives with a penalty
+TRANSPORT_PROCESS = False  # transporter fluxes set internal concentrations, which are pulled from by FBA
+
+#michaelis-menten function, gives flux of reaction
+def michaelisMenten(Kcat, Km, substrate, enzyme):
+	flux = enzyme * substrate * Kcat / (Km + substrate)
+	return flux
 
 directory = os.path.join('user','forcedFlux')
 
+timeTotal = 500.0
+timeStep = 0.5
+time = np.linspace(timeStep, timeTotal, num=int(timeTotal/timeStep))
+
 reactionStoich = {
-	# Metabolic reactions
+	#Metabolic reactions
 	'R1': {'A': -1, 'ATP': -1, 'B': 1},
 	'R2a': {'B': -1, 'ATP': 2, 'NADH': 2, 'C': 1},
 	'R2b': {'C': -1, 'ATP': -2, 'NADH': -2, 'B': 1},
@@ -30,7 +42,7 @@ reactionStoich = {
 	'R8b': {'G': 1, 'ATP': 1, 'NADH': 2, 'H': -1},
 	'Rres': {'NADH': -1, 'O2': -1, 'ATP': 1},
 
-	# Transport processes
+	#Transport processes
 	'Tc1': {'Carbon1': -1, 'A': 1},
 	'Tc2': {'Carbon2': -1, 'A': 1},
 	'Tf': {'Fext': -1, 'F': 1},
@@ -39,75 +51,376 @@ reactionStoich = {
 	'Th': {'Hext': -1, 'H': 1},
 	'To2': {'Oxygen': -1, 'O2': 1},
 
-	# Maintenance and growth processes
+	#Maintenance and growth processes
 	'Growth': {'C': -1, 'F': -1, 'H': -1, 'ATP': -10, 'Biomass': 1}
 	}
 
 transportID = ['Tc1', 'Tc2', 'Tf', 'Td', 'Te', 'Th', 'To2']
+metaboliteID = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'O2', 'ATP', 'NADH']
 externalExchangedMolecules = ['Carbon1', 'Carbon2', 'Dext', 'Eext', 'Fext', 'Hext', 'Oxygen']
+
 objectiveFunction = {'Biomass': 1} #might be -1
+
+transportKinetics = {
+	'Tc1': {'Kcat': 1.0, 'Km': 0.25},
+	'Tc2': {'Kcat': 1.0, 'Km': 0.25},
+	'Tf': {'Kcat': 10.0, 'Km': 2.5},
+	'Td': {'Kcat': 10.0, 'Km': 2.5},
+	'Te': {'Kcat': 10.0, 'Km': 2.5},
+	'Th': {'Kcat': 10.0, 'Km': 2.5},
+	'To2': {'Kcat': 10.0, 'Km': 2.5},
+	}
+
+transportConstraint = ['Tc1','Tc2'] # list of constrained transporters TODO -- put this in transportKinetics.
 
 fbaObjectOptions = {
 	'reactionStoich' : reactionStoich,
 	'externalExchangedMolecules' : externalExchangedMolecules,
 	'objective' : objectiveFunction,
 	}
-fba = FluxBalanceAnalysis(**fbaObjectOptions) # **kwargs allows arbitrary number of arguments to functions
 
-# initialize external molecule levels
-fba.externalMoleculeLevelsIs(0.1 * np.ones(len(externalExchangedMolecules)))
+#initialize fba
+fba = FluxBalanceAnalysis(**fbaObjectOptions)
 
-
-# TODO -- iterate FBA over time with timesteps, updating mass and environment.
-# TODO -- plot output
-
-
-objvec = np.empty(len(time))
-
-
-for i, t in enumerate(time):
-
-	# update transport fluxes
-	transportDict = {ID: None for ID in transportID}
-	transportDict['Tc1'] = 0.02 #TODO -- this should be michaelis-menten equation
-
-	# constrain transport fluxes
-	for ID, value in transportDict.iteritems():
-		if value:
-			fba.minReactionFluxIs(ID, value)
-			fba.maxReactionFluxIs(ID, value)
-
-	# results
-	reactionIDs=fba.reactionIDs()
-	reactionFluxes = fba.reactionFluxes()
-	# flowRates=fba.externalExchangeFluxes() # flux of external nutrients
-
-	indices = [np.where(reactionIDs==id)[0][0] for id in transportDict.keys()]
-	transportFluxes = reactionFluxes[indices] # flux across transport reactions
-
-	# exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
-
-	fba.outputMoleculeLevelsChange()
-	obj = fba.objectiveValue()
-
-	# save values
-	objvec[i] = obj
+#initialize state
+cellDensity = 1100.0 #g/L
+initdryMass = 400.0 # fg = 1e-15 g
+initnutrientLevels = np.full((len(externalExchangedMolecules)), 20) + np.random.normal(0,1.5,len(externalExchangedMolecules)) # add gaussian noise
 
 
 
 
 
 
-plt.plot(objvec)
-plt.xlabel('time')
-plt.savefig(os.path.join(directory, 'objvec.png'))
+#transport kinetics are set as constraints
+if TRANSPORT_CONSTRAINT:
+
+	dryMass = initdryMass
+	nutrientLevels = initnutrientLevels
+
+	fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
+
+	objVec = np.empty(len(time))
+	bioMassVec = np.empty(len(time))
+	nutrientVec = np.empty([len(time),len(externalExchangedMolecules)])
+
+	# iterate FBA over time, updating mass and environment. fba.outputMoleculeLevelsChange() MAKES FBA UPDATE!
+	for i, t in enumerate(time):
+
+		fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
+
+
+		#constrain transport flux
+		transportDict = {ID: None for ID in transportID}
+		for index, ID in enumerate(transportConstraint): #
+			Kcat = transportKinetics[ID]['Kcat']
+			Km = transportKinetics[ID]['Km']
+
+			#get this transporter's substrate (value = -1) from reactionStoic
+			substrateName = reactionStoich[ID].keys()[reactionStoich[ID].values().index(-1)]
+			nutrientIndex = externalExchangedMolecules.index(substrateName)
+			substrateConc = nutrientLevels[nutrientIndex]
+
+			# TODO -- add vector for transporter concentrations
+			transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, 0.1) #transporter concentration set to 1
+
+		for ID, value in transportDict.iteritems():
+			if value:
+				fba.minReactionFluxIs(ID, value)
+				fba.maxReactionFluxIs(ID, value)
+
+		dryMassOld = dryMass
+		bXout = fba.outputMoleculeLevelsChange() # this is flux of biomass
+		
+		# when bXout approaches 0, it becomes nan. 
+		if bXout == bXout and bXout != 0:
+			dryMass = dryMassOld * np.exp(bXout * (timeStep/360))
+			nutrientLevels = nutrientLevels + fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) * (timeStep/360) # TODO -- is the timestep here correct?
+
+		#save starting values
+		objVec[i] = fba.objectiveValue()
+		bioMassVec[i] = dryMass
+		nutrientVec[i] = nutrientLevels.tolist()
+
+	plt.figure(1)
+	plt.plot(time, objVec)
+	plt.xlabel('time (s)')
+	plt.title('objective')
+	plt.savefig(os.path.join(directory, 'constraint_objective.png'))
+
+	plt.figure(2)
+	plt.plot(time, bioMassVec)
+	plt.xlabel('time (s)')
+	plt.title('biomass')
+	plt.savefig(os.path.join(directory, 'constraint_biomass.png'))
+
+	plt.figure(3)
+	for n in range(len(nutrientLevels)):
+		plt.plot(time, nutrientVec[:, n], label=externalExchangedMolecules[n])
+	plt.xlabel('time (s)')
+	plt.ylabel('concentration')
+	plt.legend()
+	plt.title('external molecule levels')
+	plt.savefig(os.path.join(directory, 'constraint_externalMolecules.png'))
 
 
 
-# import ipdb; ipdb.set_trace()
 
 
 
-# TODO -- create michaelis-menten function, for which you can initialize kinetic parameters and then get flux given input concentrations
+
+
+
+
+#transport kinetics are not forced
+if NO_TRANSPORT:
+
+	dryMass = initdryMass
+	nutrientLevels = initnutrientLevels
+
+	fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
+
+	objVec = np.empty(len(time))
+	bioMassVec = np.empty(len(time))
+	nutrientVec = np.empty([len(time),len(externalExchangedMolecules)])
+
+	# iterate FBA over time, updating mass and environment. fba.outputMoleculeLevelsChange() MAKES FBA UPDATE!
+	for i, t in enumerate(time):
+
+		fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
+		dryMassOld = dryMass
+		bXout = fba.outputMoleculeLevelsChange() # this is flux of biomass
+		
+		# when bXout approaches 0, it becomes nan. 
+		if bXout == bXout and bXout != 0:
+			dryMass = dryMassOld * np.exp(bXout * (timeStep/360))
+			nutrientLevels = nutrientLevels + fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) * (timeStep/360) # TODO -- is the timestep here correct?
+
+		#save starting values
+		objVec[i] = fba.objectiveValue()
+		bioMassVec[i] = dryMass
+		nutrientVec[i] = nutrientLevels.tolist()
+
+	plt.figure(4)
+	plt.plot(time, objVec)
+	plt.xlabel('time (s)')
+	plt.title('objective')
+	plt.savefig(os.path.join(directory, 'noforce_objective.png'))
+
+	plt.figure(5)
+	plt.plot(time, bioMassVec)
+	plt.xlabel('time (s)')
+	plt.title('biomass')
+	plt.savefig(os.path.join(directory, 'noforce_biomass.png'))
+
+	plt.figure(6)
+	for n in range(len(nutrientLevels)):
+		plt.plot(time, nutrientVec[:, n], label=externalExchangedMolecules[n])
+	plt.xlabel('time (s)')
+	plt.ylabel('concentration')
+	plt.legend()
+	plt.title('external molecule levels')
+	plt.savefig(os.path.join(directory, 'noforce_externalMolecules.png'))
+
+
+
+
+
+
+
+
+
+
+#transport kinetics are set as objectives
+if TRANSPORT_OBJECTIVE:
+
+	#enable kinetic targets
+	fba.enableKineticTargets()
+	# TODO -- how are these Targets set?
+
+	dryMass = initdryMass
+	nutrientLevels = initnutrientLevels
+
+	fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
+
+	objVec = np.empty(len(time))
+	bioMassVec = np.empty(len(time))
+	nutrientVec = np.empty([len(time),len(externalExchangedMolecules)])
+
+	# iterate FBA over time, updating mass and environment. fba.outputMoleculeLevelsChange() MAKES FBA UPDATE!
+	for i, t in enumerate(time):
+
+		fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
+
+
+		#transport flux targets
+		transportDict = {ID: None for ID in transportID}
+		for index, ID in enumerate(transportConstraint): #
+			Kcat = transportKinetics[ID]['Kcat']
+			Km = transportKinetics[ID]['Km']
+
+			#get this transporter's substrate (value = -1) from reactionStoic
+			substrateName = reactionStoich[ID].keys()[reactionStoich[ID].values().index(-1)]
+			nutrientIndex = externalExchangedMolecules.index(substrateName)
+			substrateConc = nutrientLevels[nutrientIndex]
+
+			# TODO -- add vector for transporter concentrations
+			transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, 0.1) #transporter concentration set to 1
+
+			targets = ... # this should be a numpy array of len(transportConstraint) with target values
+
+
+
+
+		'''
+		TODO -- set kinetic flux targets according to determined transport fluxes
+		'''
+		for ID, value in transportDict.iteritems():
+			if value:
+				# fba.kineticTargetFluxTargets
+				# self.fba.setKineticTarget(self.kineticsConstrainedReactions, targets, raiseForReversible = False)
+				fba.setKineticTarget(transportConstraint, targets)
+
+
+		dryMassOld = dryMass
+		bXout = fba.outputMoleculeLevelsChange() # this is flux of biomass
+		
+		# when bXout approaches 0, it becomes nan. 
+		if bXout == bXout and bXout != 0:
+			dryMass = dryMassOld * np.exp(bXout * (timeStep/360))
+			nutrientLevels = nutrientLevels + fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) * (timeStep/360) # TODO -- is the timestep here correct?
+
+		#save starting values
+		objVec[i] = fba.objectiveValue()
+		bioMassVec[i] = dryMass
+		nutrientVec[i] = nutrientLevels.tolist()
+
+
+	#disable kinetic targets once simulation is done.
+	fba.disableKineticTargets()
+
+	plt.figure(7)
+	plt.plot(time, objVec)
+	plt.xlabel('time (s)')
+	plt.title('objective')
+	plt.savefig(os.path.join(directory, 'obj_objective.png'))
+
+	plt.figure(8)
+	plt.plot(time, bioMassVec)
+	plt.xlabel('time (s)')
+	plt.title('biomass')
+	plt.savefig(os.path.join(directory, 'obj_biomass.png'))
+
+	plt.figure(9)
+	for n in range(len(nutrientLevels)):
+		plt.plot(time, nutrientVec[:, n], label=externalExchangedMolecules[n])
+	plt.xlabel('time (s)')
+	plt.ylabel('concentration')
+	plt.legend()
+	plt.title('external molecule levels')
+	plt.savefig(os.path.join(directory, 'obj_externalMolecules.png'))
+
+
+
+
+
+
+
+
+
+
+#transport kinetics are set as objectives
+if TRANSPORT_PROCESS:
+
+	#enable kinetic targets
+	fba.enableKineticTargets()
+	# TODO -- how are these Targets set?
+
+	dryMass = initdryMass
+	nutrientLevels = initnutrientLevels
+
+	fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
+
+	objVec = np.empty(len(time))
+	bioMassVec = np.empty(len(time))
+	nutrientVec = np.empty([len(time),len(externalExchangedMolecules)])
+
+	# iterate FBA over time, updating mass and environment. fba.outputMoleculeLevelsChange() MAKES FBA UPDATE!
+	for i, t in enumerate(time):
+
+		fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
+
+
+		#transport processes to set downstream limits
+		transportDict = {ID: None for ID in transportID}
+		for index, ID in enumerate(transportConstraint): #
+			Kcat = transportKinetics[ID]['Kcat']
+			Km = transportKinetics[ID]['Km']
+
+			#get this transporter's substrate (value = -1) from reactionStoic
+			substrateName = reactionStoich[ID].keys()[reactionStoich[ID].values().index(-1)]
+			nutrientIndex = externalExchangedMolecules.index(substrateName)
+			substrateConc = nutrientLevels[nutrientIndex]
+
+			# TODO -- add vector for transporter concentrations
+			transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, 0.1) #transporter concentration set to 1
+
+		'''
+		TODO -- determine internal concentrations, use them to set maxReactionFlux downstream
+		Tc1 and Tc2 produce A
+		Tf produces F
+		To2 produces O2
+		Th produces H
+		'''
+
+
+		# for ID, value in transportDict.iteritems():
+		# 	if value:
+		# 		fba.maxReactionFluxIs(ID, value)
+
+
+		dryMassOld = dryMass
+		bXout = fba.outputMoleculeLevelsChange() # this is flux of biomass
+		
+		# when bXout approaches 0, it becomes nan. 
+		if bXout == bXout and bXout != 0:
+			dryMass = dryMassOld * np.exp(bXout * (timeStep/360))
+			nutrientLevels = nutrientLevels + fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) * (timeStep/360) # TODO -- is the timestep here correct?
+
+		#save starting values
+		objVec[i] = fba.objectiveValue()
+		bioMassVec[i] = dryMass
+		nutrientVec[i] = nutrientLevels.tolist()
+
+
+	#disable kinetic targets once simulation is done.
+	fba.disableKineticTargets()
+
+	plt.figure(10)
+	plt.plot(time, objVec)
+	plt.xlabel('time (s)')
+	plt.title('objective')
+	plt.savefig(os.path.join(directory, 'process_objective.png'))
+
+	plt.figure(11)
+	plt.plot(time, bioMassVec)
+	plt.xlabel('time (s)')
+	plt.title('biomass')
+	plt.savefig(os.path.join(directory, 'process_biomass.png'))
+
+	plt.figure(12)
+	for n in range(len(nutrientLevels)):
+		plt.plot(time, nutrientVec[:, n], label=externalExchangedMolecules[n])
+	plt.xlabel('time (s)')
+	plt.ylabel('concentration')
+	plt.legend()
+	plt.title('external molecule levels')
+	plt.savefig(os.path.join(directory, 'process_externalMolecules.png'))
+
+
+
+
+
+
 
 
