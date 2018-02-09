@@ -214,28 +214,24 @@ if TRANSPORT_CONSTRAINT:
 		bioMassVec[i] = dryMass
 		nutrientVec[i] = nutrientLevels.tolist()
 
-	plt.figure(1)
-	plt.plot(time, objVec)
-	plt.xlabel('time (s)')
-	plt.title('objective')
-	plt.savefig(os.path.join(directory, 'constraint_objective.png'))
+	#plot
+	f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+	#wspace = width between subplots, hspace = height between subplots
+	f.subplots_adjust(wspace=0.4, hspace=0.5)
+	ax1.plot(time, objVec)
+	ax1.set(xlabel='time (s)')
+	ax1.set_title('objective')
 
-	plt.figure(2)
-	plt.plot(time, bioMassVec)
-	plt.xlabel('time (s)')
-	plt.title('biomass')
-	plt.savefig(os.path.join(directory, 'constraint_biomass.png'))
+	ax2.plot(time, bioMassVec)
+	ax2.set(xlabel='time (s)')
+	ax2.set_title('biomass')
 
-	plt.figure(3)
 	for n in range(len(nutrientLevels)):
-		plt.plot(time, nutrientVec[:, n], label=externalExchangedMolecules[n])
-	plt.xlabel('time (s)')
-	plt.ylabel('concentration')
-	plt.legend()
-	plt.title('external nutrient levels')
-	plt.savefig(os.path.join(directory, 'constraint_externalNutrients.png'))
+		ax3.plot(time, nutrientVec[:, n], label=externalExchangedMolecules[n])
+	ax3.set(xlabel='time (s)', ylabel='concentration')
+	ax3.set_title('external nutrient levels')
+	ax3.legend(prop={'size': 6})
 
-	plt.figure(4)
 	substrate=np.linspace(0.0, 50.0, num=1001)
 	for ID, kinetics in transportKinetics.iteritems():
 		nflux=np.empty_like(substrate)
@@ -243,13 +239,11 @@ if TRANSPORT_CONSTRAINT:
 			Kcat = kinetics['Kcat']
 			Km = kinetics['Km']
 			nflux[ind]=michaelisMenten(Kcat, Km, sConc, 1)
-		plt.plot(substrate, nflux, label=ID)
-	plt.xlabel('substrate concentration')
-	plt.ylabel('flux')
-	plt.legend()
-	plt.title('Transporters flux range')
-	plt.savefig(os.path.join(directory, 'constraint_MichaelisMenten.png'))
-
+		ax4.plot(substrate, nflux, label=ID)
+	ax4.set(xlabel='substrate concentration', ylabel='flux')
+	ax4.set_title('transporters flux range')
+	ax4.legend(prop={'size': 6})
+	f.savefig(os.path.join(directory, 'constraint_transport.png'), dpi=200)
 
 
 
