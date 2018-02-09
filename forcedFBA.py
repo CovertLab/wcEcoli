@@ -11,7 +11,7 @@ import os
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
 # from wholecell.utils import units
 
-NO_TRANSPORT = True
+NO_TRANSPORT = False
 TRANSPORT_CONSTRAINT = True # transporter fluxes are set as constraints on FBA optimization
 TRANSPORT_OBJECTIVE = False # transporter fluxes are set as objectives with a penalty
 TRANSPORT_PROCESS = False  # transporter fluxes set internal concentrations, which are pulled from by FBA
@@ -62,9 +62,9 @@ externalExchangedMolecules = ['Carbon1', 'Carbon2', 'Dext', 'Eext', 'Fext', 'Hex
 objectiveFunction = {'Biomass': 1} #might be -1
 
 transportKinetics = {
-	'Tc1': {'Kcat': 0.5, 'Km': 0.25},
-	'Tc2': {'Kcat': 0.5, 'Km': 0.25},
-	'Tf': {'Kcat': 10.0, 'Km': 2.5},
+	'Tc1': {'Kcat': 0.5, 'Km': 0.1},
+	'Tc2': {'Kcat': 0.8, 'Km': 2},
+	'Tf': {'Kcat': 5.0, 'Km': 2.5},
 	'Td': {'Kcat': 10.0, 'Km': 2.5},
 	'Te': {'Kcat': 10.0, 'Km': 2.5},
 	'Th': {'Kcat': 10.0, 'Km': 2.5},
@@ -85,7 +85,7 @@ fba = FluxBalanceAnalysis(**fbaObjectOptions)
 #initialize state
 cellDensity = 1100.0 #g/L
 initdryMass = 400.0 # fg = 1e-15 g
-initnutrientLevels = np.full((len(externalExchangedMolecules)), 100) + np.random.normal(0,1.5,len(externalExchangedMolecules)) # add gaussian noise
+initnutrientLevels = np.full((len(externalExchangedMolecules)), 100) + np.random.normal(0,2,len(externalExchangedMolecules)) # add gaussian noise
 
 
 
@@ -107,12 +107,10 @@ if NO_TRANSPORT:
 
 	# iterate FBA over time, updating mass and environment. fba.outputMoleculeLevelsChange() MAKES FBA UPDATE!
 	for i, t in enumerate(time):
-
 		fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
 		dryMassOld = dryMass
 		bXout = fba.outputMoleculeLevelsChange() # this is flux of biomass
-
-		fba.biomassReactionFlux() # is this biomass exchange flux?
+		# fba.biomassReactionFlux() # is this biomass exchange flux?
 
 		# when bXout approaches 0, it becomes nan. 
 		if bXout == bXout and bXout != 0:
@@ -125,7 +123,7 @@ if NO_TRANSPORT:
 		nutrientVec[i] = nutrientLevels.tolist()
 
 
-		# assert sum(dryMass-dryMassOld) == sum(nutrientLevels-nutrientLevelsOld) # these should be equal.. right?
+		assert sum(dryMass-dryMassOld) == sum(nutrientLevels-nutrientLevelsOld) # these should be equal.. right?
 		# import ipdb; ipdb.set_trace()
 
 	plt.figure(4)
@@ -146,15 +144,8 @@ if NO_TRANSPORT:
 	plt.xlabel('time (s)')
 	plt.ylabel('concentration')
 	plt.legend()
-	plt.title('external molecule levels')
-	plt.savefig(os.path.join(directory, 'noforce_externalMolecules.png'))
-
-
-
-
-
-
-
+	plt.title('external nutrient levels')
+	plt.savefig(os.path.join(directory, 'noforce_externalNutrients.png'))
 
 
 
@@ -195,16 +186,17 @@ if TRANSPORT_CONSTRAINT:
 			substrateConc = nutrientLevels[nutrientIndex]
 
 			# TODO -- add vector for transporter concentrations
-			transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, 0.1) #transporter concentration set to 1
+			transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, 1) #transporter concentration set to 1
 
-		import ipdb; ipdb.set_trace()
-
+		# Maybe I should set the following:
+		# fba.setMinReactionFluxes
+		# fba.setMaxReactionFluxes
 		for ID, value in transportDict.iteritems():
 			if value:
 				fba.minReactionFluxIs(ID, value)
 				fba.maxReactionFluxIs(ID, value)
 
-		
+		# import ipdb; ipdb.set_trace()
 
 
 		dryMassOld = dryMass
@@ -213,7 +205,9 @@ if TRANSPORT_CONSTRAINT:
 		# when bXout approaches 0, it becomes nan. 
 		if bXout == bXout and bXout != 0:
 			dryMass = dryMassOld * np.exp(bXout * (timeStep/360))
-			nutrientLevels += fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) #* (timeStep/360) # TODO -- is the timestep here correct?
+			nutrientLevels = nutrientLevels + fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) 
+
+
 
 		#save starting values
 		objVec[i] = fba.objectiveValue()
@@ -238,12 +232,23 @@ if TRANSPORT_CONSTRAINT:
 	plt.xlabel('time (s)')
 	plt.ylabel('concentration')
 	plt.legend()
-	plt.title('external molecule levels')
-	plt.savefig(os.path.join(directory, 'constraint_externalMolecules.png'))
+	plt.title('external nutrient levels')
+	plt.savefig(os.path.join(directory, 'constraint_externalNutrients.png'))
 
-
-
-
+	plt.figure(4)
+	substrate=np.linspace(0.0, 50.0, num=1001)
+	for ID, kinetics in transportKinetics.iteritems():
+		nflux=np.empty_like(substrate)
+		for ind, sConc in enumerate(substrate):
+			Kcat = kinetics['Kcat']
+			Km = kinetics['Km']
+			nflux[ind]=michaelisMenten(Kcat, Km, sConc, 1)
+		plt.plot(substrate, nflux, label=ID)
+	plt.xlabel('substrate concentration')
+	plt.ylabel('flux')
+	plt.legend()
+	plt.title('Transporters flux range')
+	plt.savefig(os.path.join(directory, 'constraint_MichaelisMenten.png'))
 
 
 
@@ -336,8 +341,8 @@ if TRANSPORT_OBJECTIVE:
 	plt.xlabel('time (s)')
 	plt.ylabel('concentration')
 	plt.legend()
-	plt.title('external molecule levels')
-	plt.savefig(os.path.join(directory, 'obj_externalMolecules.png'))
+	plt.title('external nutrient levels')
+	plt.savefig(os.path.join(directory, 'obj_externalNutrients.png'))
 
 
 
@@ -351,54 +356,19 @@ if TRANSPORT_OBJECTIVE:
 #transport kinetics are set as objectives
 if TRANSPORT_PROCESS:
 
-	# #adjust stoichiometry to include additional variables
-	# reactionStoich2 = reactionStoich
-	# reactionStoich2 = {
-	# #transport processes
-	# 'Tc1': {'Carbon1': -1, 'Carbon1in': 1},
-	# 'Tc2': {'Carbon2': -1, 'Carbon2in': 1},
-	# 'Tf': {'Fext': -1, 'Fin': 1},
-	# 'Td': {'Din': -1, 'Dext': 1},
-	# 'Te': {'Ein': -1, 'Eext': 1},
-	# 'Th': {'Hext': -1, 'Hin': 1},
-	# 'To2': {'Oxygen': -1, 'Oxygenin': 1},
-
-	# #internal processes
-	# 'Tc1_in': {'Carbon1in': -1, 'A': 1},
-	# 'Tc2_in': {'Carbon2in': -1, 'A': 1},
-	# 'Tf_in': {'Fin': -1, 'F': 1},
-	# 'Td_in': {'D': -1, 'Din': 1},
-	# 'Te_in': {'E': -1, 'Ein': 1},
-	# 'Th_in': {'Hin': -1, 'H': 1},
-	# 'To2_in': {'Oxygenin': -1, 'O2': 1},
-	# }
-	outsideMolecules = ['Carbon1_out', 'Carbon2_out', 'Dext_out', 'Eext_out', 'Fext_out', 'Hext_out', 'Oxygen_out']
-
-
-
-
-
-
-
-
-	#enable kinetic targets
-	fba.enableKineticTargets()
-	# TODO -- how are these Targets set?
-
+	#initialize stores for added step
+	externalMolecules = ['Carbon1_out', 'Carbon2_out', 'Dext_out', 'Eext_out', 'Fext_out', 'Hext_out', 'Oxygen_out']
 	dryMass = initdryMass
-	nutrientLevels = initnutrientLevels
-
-	fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
+	externalNutrientLevels = initnutrientLevels
+	internalNutrientLevels = np.empty_like(initnutrientLevels)
 
 	objVec = np.empty(len(time))
 	bioMassVec = np.empty(len(time))
 	nutrientVec = np.empty([len(time),len(externalExchangedMolecules)])
+	externalVec = np.empty([len(time),len(externalExchangedMolecules)])
 
 	# iterate FBA over time, updating mass and environment. fba.outputMoleculeLevelsChange() MAKES FBA UPDATE!
 	for i, t in enumerate(time):
-
-		fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
-
 
 		#transport processes to set downstream limits
 		transportDict = {ID: None for ID in transportID}
@@ -409,31 +379,30 @@ if TRANSPORT_PROCESS:
 			#get this transporter's substrate (value = -1) from reactionStoic
 			substrateName = reactionStoich[ID].keys()[reactionStoich[ID].values().index(-1)]
 			nutrientIndex = externalExchangedMolecules.index(substrateName)
-			substrateConc = nutrientLevels[nutrientIndex]
+			substrateConc = externalNutrientLevels[nutrientIndex]
 
 			# TODO -- add vector for transporter concentrations
 			transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, 0.1) #transporter concentration set to 1
 
-		'''
-		TODO -- determine internal concentrations, use them to set a new "externalmolecules" to draw from, which is actually internal
-		Tc1 and Tc2 produce A
-		Tf produces F
-		To2 produces O2
-		Th produces H
+		# 
+
+		# determine internal nutrient levels based on transport
+		# TODO -- if value is "None" (no transport), need to use externalNutrient
+		deltaNutrients = transportDict.values()
+
+		for index, val in enumerate(deltaNutrients):
+			if val is not None:
+				externalNutrientLevels[index] -= deltaNutrients[index]
+				internalNutrientLevels[index] += deltaNutrients[index]
+			else:
+				# TODO -- this should maintain mass... 
+				internalNutrientLevels[index] = externalNutrientLevels[index]
 		
-			external --> new internal molecules 
-		Carbon1 --> Carbon1in
-		Carbon2 --> Carbon2in
-		Fext-->Fin
 
-		"outsideMolecules" are actually variables that track how much was drawn and how much was pulled and how much left.
-		'''
+		# set internal nutrients based on availability from transport
+		fba.externalMoleculeLevelsIs(internalNutrientLevels.tolist())
 
-
-		# for ID, value in transportDict.iteritems():
-		# 	if value:
-		# 		fba.maxReactionFluxIs(ID, value)
-
+		# import ipdb; ipdb.set_trace()
 
 		dryMassOld = dryMass
 		bXout = fba.outputMoleculeLevelsChange() # this is flux of biomass
@@ -441,12 +410,13 @@ if TRANSPORT_PROCESS:
 		# when bXout approaches 0, it becomes nan. 
 		if bXout == bXout and bXout != 0:
 			dryMass = dryMassOld * np.exp(bXout * (timeStep/360))
-			nutrientLevels += fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) #* (timeStep/360) # TODO -- is the timestep here correct?
+			internalNutrientLevels += fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) #* (timeStep/360) # TODO -- is the timestep here correct?
 
 		#save starting values
 		objVec[i] = fba.objectiveValue()
 		bioMassVec[i] = dryMass
-		nutrientVec[i] = nutrientLevels.tolist()
+		nutrientVec[i] = internalNutrientLevels.tolist()
+		externalVec[i] = externalNutrientLevels.tolist()
 
 
 	#disable kinetic targets once simulation is done.
@@ -470,10 +440,18 @@ if TRANSPORT_PROCESS:
 	plt.xlabel('time (s)')
 	plt.ylabel('concentration')
 	plt.legend()
-	plt.title('external molecule levels')
-	plt.savefig(os.path.join(directory, 'process_externalMolecules.png'))
+	plt.title('internal nutrient levels')
+	plt.savefig(os.path.join(directory, 'process_internalNutrients.png'))
 
 
+	plt.figure(13)
+	for n in range(len(externalNutrientLevels)):
+		plt.plot(time, externalVec[:, n], label=externalMolecules[n])
+	plt.xlabel('time (s)')
+	plt.ylabel('concentration')
+	plt.legend()
+	plt.title('external nutrient levels')
+	plt.savefig(os.path.join(directory, 'process_externalNutrients.png'))
 
 
 
