@@ -7,13 +7,14 @@ Forced Transport Flux Balance Analysis for simplified core network
 import numpy as np
 import scipy.constants
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import os
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
 # from wholecell.utils import units
 
 NO_TRANSPORT = False
-TRANSPORT_CONSTRAINT = True # transporter fluxes are set as constraints on FBA optimization
-TRANSPORT_OBJECTIVE = False # transporter fluxes are set as objectives with a penalty
+TRANSPORT_CONSTRAINT = False # transporter fluxes are set as constraints on FBA optimization
+TRANSPORT_OBJECTIVE = True # transporter fluxes are set as objectives with a penalty
 TRANSPORT_PROCESS = False  # transporter fluxes set internal concentrations, which are pulled from by FBA
 
 UPDATE_NUTRIENTS = False
@@ -61,36 +62,34 @@ reactionStoich = {
 
 transportID = ['Tc1', 'Tc2', 'Tf', 'Td', 'Te', 'Th', 'To2']
 metaboliteID = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'O2', 'ATP', 'NADH']
+forcedMolecules = ['Carbon1', 'Carbon2', 'D', 'E', 'Fext', 'Hext', 'Oxygen'] # these are the forced molecules, including some that are internal
 externalExchangedMolecules = ['Carbon1', 'Carbon2', 'Dext', 'Eext', 'Fext', 'Hext', 'Oxygen']
 
 objectiveFunction = {'Biomass': 1} #might be -1
 
 transportKinetics = {
-	'Tc1': {'Kcat': 0.5, 'Km': 0.1},
-	'Tc2': {'Kcat': 0.8, 'Km': 2},
-	'Tf': {'Kcat': 5.0, 'Km': 2.5},
-	'Td': {'Kcat': 10.0, 'Km': 2.5},
-	'Te': {'Kcat': 10.0, 'Km': 2.5},
-	'Th': {'Kcat': 10.0, 'Km': 2.5},
-	'To2': {'Kcat': 10.0, 'Km': 2.5},
+	'Tc1': {'Kcat': 0.5, 'Km': 0.1, 'active': True},
+	'Tc2': {'Kcat': 0.8, 'Km': 2, 'active': True},
+	'Tf': {'Kcat': 0.2, 'Km': 0.1, 'active': False},
+	'Td': {'Kcat': 10.0, 'Km': 2.5, 'active': False},  # this reaction expells material
+	'Te': {'Kcat': 10.0, 'Km': 2.5, 'active': False},  # this reaction expells material
+	'Th': {'Kcat': 10.0, 'Km': 2.5, 'active': False},
+	'To2': {'Kcat': 10.0, 'Km': 2.5, 'active': False},
 	}
 
-transportConstraint = ['Tc1','Tc2','Tf','Td'] # list of constrained transporters TODO -- put this in transportKinetics.
-
-# fbaObjectOptions = {
-# 	'reactionStoich' : reactionStoich,
-# 	'externalExchangedMolecules' : externalExchangedMolecules,
-# 	'objective' : objectiveFunction,
-# 	}
-
-# #initialize fba
-# fba = FluxBalanceAnalysis(**fbaObjectOptions)
+transportConstraint = ['Tc1','Tc2'] # list of constrained transporters TODO -- put this in transportKinetics.
 
 #initialize state
 cellDensity = 1100.0 #g/L
 initdryMass = 400.0 # fg = 1e-15 g
 initnutrientLevels = np.full((len(externalExchangedMolecules)), 25) + np.random.normal(0,2,len(externalExchangedMolecules)) # add gaussian noise
 inittransportLevels = np.full((len(transportID)), 0.5)
+
+
+
+
+
+
 
 
 
@@ -193,21 +192,22 @@ if TRANSPORT_CONSTRAINT:
 		transportLevels += np.random.normal(0,0.5,len(transportLevels)) * timeStep
 		transportLevels[transportLevels<0] = 0
 
-		#constrain transport flux
+		#compute transport flux
 		transportDict = {ID: None for ID in transportID}
-		for index, ID in enumerate(transportConstraint): #
+		for ID, kinetics in transportKinetics.iteritems():
+			if kinetics['active'] is True:
+				index=transportID.index(ID)
+				Kcat = kinetics['Kcat']
+				Km = kinetics['Km']
 
-			Kcat = transportKinetics[ID]['Kcat']
-			Km = transportKinetics[ID]['Km']
+				#get this transporter's substrate (value = -1) from reactionStoic
+				substrateName = reactionStoich[ID].keys()[reactionStoich[ID].values().index(-1)]
+				nutrientIndex = forcedMolecules.index(substrateName)
+				substrateConc = nutrientLevels[nutrientIndex]
+				transportConc = transportLevels[index]
+				transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, transportConc) #transporter concentration set to 1
 
-			#get this transporter's substrate (value = -1) from reactionStoic
-			substrateName = reactionStoich[ID].keys()[reactionStoich[ID].values().index(-1)]
-			nutrientIndex = externalExchangedMolecules.index(substrateName)
-			substrateConc = nutrientLevels[nutrientIndex]
-			transportConc = transportLevels[index]
-			transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, transportConc) #transporter concentration set to 1
-
-		# Maybe I should set the following:
+		# use transport levels as constraint
 		for ID, value in transportDict.iteritems():
 			if value:
 				fba.minReactionFluxIs(ID, value)
@@ -228,60 +228,101 @@ if TRANSPORT_CONSTRAINT:
 		fluxVec[i] = fba.externalExchangeFluxes()
 
 	#plot
-	f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(18,10))
-	f.subplots_adjust(wspace=0.4, hspace=0.3) #wspace = width between subplots, hspace = height between subplots
+	f = plt.figure(figsize=(18,10))
+
+	ax1 = f.add_subplot(2, 3, 1)
 	ax1.plot(time, bioMassVec)
 	ax1.set(xlabel='time (s)')
 	ax1.set_title('biomass')
 
-	substrate=np.linspace(0.0, 50.0, num=1001)
+	ax2 = f.add_subplot(2, 3, 2, projection='3d')
+	substrate=np.linspace(0.0, 50.0, num=21)
+	enzyme=np.linspace(0.0, 1.5, num=21)
+	substrate, enzyme = np.meshgrid(substrate, enzyme)
 	for ID, kinetics in transportKinetics.iteritems():
-		nflux=np.empty_like(substrate)
-		for ind, sConc in enumerate(substrate):
-			Kcat = kinetics['Kcat']
-			Km = kinetics['Km']
-			nflux[ind]=michaelisMenten(Kcat, Km, sConc, 1)
-		ax2.plot(substrate, nflux, label=ID)
-	ax2.set(xlabel='substrate concentration', ylabel='flux')
+		if kinetics['active'] is True:
+		# if ID is 'Tc2':
+			nflux=np.empty_like(substrate)
+			for ind, sConc in enumerate(substrate):
+				Kcat = kinetics['Kcat']
+				Km = kinetics['Km']
+				eConc = enzyme[ind]
+				nflux[ind]=michaelisMenten(Kcat, Km, sConc, eConc)
+			# ax2.plot_surface(substrate, enzyme, nflux)#, label=ID)
+			ax2.plot_wireframe(substrate, enzyme, nflux)#, label=ID)
+	ax2.set(xlabel='substrate concentration', zlabel='flux', ylabel='enzyme concentration')
 	ax2.set_title('transport Michaelis-Menten')
-	ax2.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
+	# ax2.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
 
-	substrate=np.linspace(0.0, 50.0, num=1001)
+
+	ax3 = f.add_subplot(2, 3, 3, projection='3d')
+	substrate=np.linspace(0.0, 50.0, num=21)
+	enzyme=np.linspace(0.0, 1.5, num=21)
+	substrate, enzyme = np.meshgrid(substrate, enzyme)
 	for ID, kinetics in transportKinetics.iteritems():
-		nflux=np.empty_like(substrate)
-		for ind, sConc in enumerate(substrate):
-			Kcat = kinetics['Kcat']
-			Km = kinetics['Km']
-			nflux[ind]=michaelisMenten(Kcat, Km, sConc, 1)
-		ax3.plot(substrate, nflux)#, label=ID)
-	#put actual behavior on top of michaelis menten
-	for n in transportConstraint:
-		ind = [i for i, x in enumerate(transportID) if x == n] #transportID[n]
-		ax3.plot(nutrientVec[:, ind], abs(fluxVec[:, ind]), '.', label=n)
-	ax3.set(xlabel='substrate concentration', ylabel='flux')
+		if kinetics['active'] is True:
+		# if ID is 'Tc2':
+			nflux=np.empty_like(substrate)
+			for ind, sConc in enumerate(substrate):
+				Kcat = kinetics['Kcat']
+				Km = kinetics['Km']
+				eConc = enzyme[ind]
+				nflux[ind]=michaelisMenten(Kcat, Km, sConc, eConc)
+			ax3.plot_wireframe(substrate, enzyme, nflux)#, label=ID)
+			#put simulated behavior on top of michaelis menten
+			ind = [i for i, x in enumerate(transportID) if x == ID] #transportID[n]
+			ax3.scatter(nutrientVec[:, ind], transportVec[:, ind], abs(fluxVec[:, ind]), '.', label=ID)
+	ax3.set(xlabel='substrate concentration', zlabel='flux', ylabel='enzyme concentration')
 	ax3.set_title('transport observed range')
-	ax3.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
 
+	# ax3 = f.add_subplot(2, 3, 3)
+	# substrate=np.linspace(0.0, 50.0, num=1001)
+	# for ID, kinetics in transportKinetics.iteritems():
+	# 	if kinetics['active'] is True:
+
+	# 		nflux=np.empty_like(substrate)
+	# 		for ind, sConc in enumerate(substrate):
+	# 			Kcat = kinetics['Kcat']
+	# 			Km = kinetics['Km']
+	# 			nflux[ind]=michaelisMenten(Kcat, Km, sConc, 1)
+	# 		ax3.plot(substrate, nflux)#, label=ID)
+
+			# #put simulated behavior on top of michaelis menten
+			# ind = [i for i, x in enumerate(transportID) if x == ID] #transportID[n]
+			# ax3.plot(nutrientVec[:, ind], abs(fluxVec[:, ind]), '.', label=ID)
+	# ax3.set(xlabel='substrate concentration', ylabel='flux')
+	# ax3.set_title('transport observed range')
+	# ax3.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
+
+	ax4 = f.add_subplot(2, 3, 4)
 	for n in range(len(transportID)):
 		ax4.plot(time, transportVec[:, n], label=transportID[n])
 	ax4.set(xlabel='time (s)')
 	ax4.set_title('transporter levels')
 	ax4.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
 
+	ax5 = f.add_subplot(2, 3, 5)
 	for n in range(len(nutrientLevels)):
 		ax5.plot(time, nutrientVec[:, n], label=externalExchangedMolecules[n])
 	ax5.set(xlabel='time (s)', ylabel='concentration')
 	ax5.set_title('external nutrient levels')
 	ax5.legend(prop={'size': 8}, bbox_to_anchor=(1.3, 1.0))
 
-
+	ax6 = f.add_subplot(2, 3, 6)
 	for n in range(len(transportID)):
 		ax6.plot(time, fluxVec[:, n], label=transportID[n])
 	ax6.set(xlabel='time (s)')
 	ax6.set_title('transport flux')
 	ax6.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
 
+	f.subplots_adjust(wspace=0.4, hspace=0.3) #wspace = width between subplots, hspace = height between subplots
 	f.savefig(os.path.join(directory, 'constraint_transport.png'), dpi=600)
+
+
+
+
+
+
 
 
 
@@ -302,7 +343,8 @@ if TRANSPORT_OBJECTIVE:
 		'objectiveType' : 'kinetic_only',
 		'objectiveParameters' : {
 			'kineticObjectiveWeight' : kineticObjectiveWeight,
-			'reactionRateTargets' : {reaction : 1 for reaction in transportConstraint},
+			# 'reactionRateTargets' : {reaction : 1 for reaction in transportConstraint}, [ID for ID, kinetics in transportKinetics.iteritems() if kinetics['active'] is True]
+			'reactionRateTargets' : {reaction : 1 for reaction, kinetics in transportKinetics.iteritems() if kinetics['active'] is True},
 			'oneSidedReactionTargets' : [],
 			}
 		}
@@ -330,23 +372,28 @@ if TRANSPORT_OBJECTIVE:
 		transportLevels += np.random.normal(0,0.5,len(transportLevels)) * timeStep
 		transportLevels[transportLevels<0] = 0
 
-		#constrain transport flux
+		#compute transport flux
 		transportDict = {ID: None for ID in transportID}
-		for index, ID in enumerate(transportConstraint): #
+		for ID, kinetics in transportKinetics.iteritems():
+			if kinetics['active'] is True:
 
-			Kcat = transportKinetics[ID]['Kcat']
-			Km = transportKinetics[ID]['Km']
+				index=transportID.index(ID)
+				Kcat = kinetics['Kcat']
+				Km = kinetics['Km']
 
-			#get this transporter's substrate (value = -1) from reactionStoic
-			substrateName = reactionStoich[ID].keys()[reactionStoich[ID].values().index(-1)]
-			nutrientIndex = externalExchangedMolecules.index(substrateName)
-			substrateConc = nutrientLevels[nutrientIndex]
-			transportConc = transportLevels[index]
-			transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, transportConc) #transporter concentration set to 1
+				#get this transporter's substrate (value = -1) from reactionStoic
+				substrateName = reactionStoich[ID].keys()[reactionStoich[ID].values().index(-1)]
+				nutrientIndex = forcedMolecules.index(substrateName)
+				substrateConc = nutrientLevels[nutrientIndex]
+				transportConc = transportLevels[index]
+				transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, transportConc) #transporter concentration set to 1
 
 		# set kinetic flux targets according to determined transport fluxes]
-		IDs=transportConstraint #constrained transport reactions
-		targets=[transportDict[x] for x in transportConstraint] #transportDict[transportConstraint] #their flux according to dict
+		# import ipdb; ipdb.set_trace()
+		IDs = [ID for ID, kinetics in transportKinetics.iteritems() if kinetics['active'] is True]
+		targets = [transportDict[x] for x in IDs]
+		# IDs=transportConstraint #constrained transport reactions
+		# targets=[transportDict[x] for x in transportConstraint] #transportDict[transportConstraint] #their flux according to dict
 
 		fba.setKineticTarget(IDs, targets)
 
@@ -366,58 +413,74 @@ if TRANSPORT_OBJECTIVE:
 	#disable kinetic targets once simulation is done.
 	fba.disableKineticTargets()
 
-	#plot
-	f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(18,10))
-	f.subplots_adjust(wspace=0.4, hspace=0.3) #wspace = width between subplots, hspace = height between subplots
+		#plot
+	f = plt.figure(figsize=(18,10))
+
+	ax1 = f.add_subplot(2, 3, 1)
 	ax1.plot(time, bioMassVec)
 	ax1.set(xlabel='time (s)')
 	ax1.set_title('biomass')
 
-	substrate=np.linspace(0.0, 50.0, num=1001)
+	ax2 = f.add_subplot(2, 3, 2, projection='3d')
+	substrate=np.linspace(0.0, 50.0, num=21)
+	enzyme=np.linspace(0.0, 1.5, num=21)
+	substrate, enzyme = np.meshgrid(substrate, enzyme)
 	for ID, kinetics in transportKinetics.iteritems():
-		nflux=np.empty_like(substrate)
-		for ind, sConc in enumerate(substrate):
-			Kcat = kinetics['Kcat']
-			Km = kinetics['Km']
-			nflux[ind]=michaelisMenten(Kcat, Km, sConc, 1)
-		ax2.plot(substrate, nflux, label=ID)
-	ax2.set(xlabel='substrate concentration', ylabel='flux')
+		if kinetics['active'] is True:
+		# if ID is 'Tc2':
+			nflux=np.empty_like(substrate)
+			for ind, sConc in enumerate(substrate):
+				Kcat = kinetics['Kcat']
+				Km = kinetics['Km']
+				eConc = enzyme[ind]
+				nflux[ind]=michaelisMenten(Kcat, Km, sConc, eConc)
+			# ax2.plot_surface(substrate, enzyme, nflux)#, label=ID)
+			ax2.plot_wireframe(substrate, enzyme, nflux)#, label=ID)
+	ax2.set(xlabel='substrate concentration', zlabel='flux', ylabel='enzyme concentration')
 	ax2.set_title('transport Michaelis-Menten')
-	ax2.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
 
-	substrate=np.linspace(0.0, 50.0, num=1001)
+	ax3 = f.add_subplot(2, 3, 3, projection='3d')
+	substrate=np.linspace(0.0, 50.0, num=21)
+	enzyme=np.linspace(0.0, 1.5, num=21)
+	substrate, enzyme = np.meshgrid(substrate, enzyme)
 	for ID, kinetics in transportKinetics.iteritems():
-		nflux=np.empty_like(substrate)
-		for ind, sConc in enumerate(substrate):
-			Kcat = kinetics['Kcat']
-			Km = kinetics['Km']
-			nflux[ind]=michaelisMenten(Kcat, Km, sConc, 1)
-		ax3.plot(substrate, nflux)#, label=ID)
-	#put actual behavior on top of michaelis menten
-	for n in transportConstraint:
-		ind = [i for i, x in enumerate(transportID) if x == n] #transportID[n]
-		ax3.plot(nutrientVec[:, ind], abs(fluxVec[:, ind]), '.', label=n)
-	ax3.set(xlabel='substrate concentration', ylabel='flux')
+		if kinetics['active'] is True:
+		# if ID is 'Tc2':
+			nflux=np.empty_like(substrate)
+			for ind, sConc in enumerate(substrate):
+				Kcat = kinetics['Kcat']
+				Km = kinetics['Km']
+				eConc = enzyme[ind]
+				nflux[ind]=michaelisMenten(Kcat, Km, sConc, eConc)
+			ax3.plot_wireframe(substrate, enzyme, nflux)#, label=ID)
+			#put simulated behavior on top of michaelis menten
+			ind = [i for i, x in enumerate(transportID) if x == ID] #transportID[n]
+			ax3.scatter(nutrientVec[:, ind], transportVec[:, ind], abs(fluxVec[:, ind]), '.', label=ID)
+	ax3.set(xlabel='substrate concentration', zlabel='flux', ylabel='enzyme concentration')
 	ax3.set_title('transport observed range')
-	ax3.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
 
+	ax4 = f.add_subplot(2, 3, 4)
 	for n in range(len(transportID)):
 		ax4.plot(time, transportVec[:, n], label=transportID[n])
 	ax4.set(xlabel='time (s)')
 	ax4.set_title('transporter levels')
 	ax4.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
 
+	ax5 = f.add_subplot(2, 3, 5)
 	for n in range(len(nutrientLevels)):
 		ax5.plot(time, nutrientVec[:, n], label=externalExchangedMolecules[n])
 	ax5.set(xlabel='time (s)', ylabel='concentration')
 	ax5.set_title('external nutrient levels')
 	ax5.legend(prop={'size': 8}, bbox_to_anchor=(1.3, 1.0))
 
+	ax6 = f.add_subplot(2, 3, 6)
 	for n in range(len(transportID)):
 		ax6.plot(time, fluxVec[:, n], label=transportID[n])
 	ax6.set(xlabel='time (s)')
 	ax6.set_title('transport flux')
 	ax6.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
+
+	f.subplots_adjust(wspace=0.4, hspace=0.3) #wspace = width between subplots, hspace = height between subplots
 
 	f.savefig(os.path.join(directory, 'objectivebased_transport.png'), dpi=200)
 
