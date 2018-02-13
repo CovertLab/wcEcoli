@@ -481,7 +481,6 @@ if TRANSPORT_OBJECTIVE:
 	ax6.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
 
 	f.subplots_adjust(wspace=0.4, hspace=0.3) #wspace = width between subplots, hspace = height between subplots
-
 	f.savefig(os.path.join(directory, 'objectivebased_transport.png'), dpi=200)
 
 
@@ -510,10 +509,6 @@ if TRANSPORT_PROCESS:
 	internalNutrientLevels = np.empty_like(initnutrientLevels)
 	transportLevels = inittransportLevels
 
-
-
-
-
 	objVec = np.empty(len(time))
 	bioMassVec = np.empty(len(time))
 	nutrientVec = np.empty([len(time),len(externalExchangedMolecules)])
@@ -528,21 +523,21 @@ if TRANSPORT_PROCESS:
 		transportLevels += np.random.normal(0,0.5,len(transportLevels)) * timeStep
 		transportLevels[transportLevels<0] = 0
 
-		#transport processes to set downstream limits
+		#compute transport flux
 		transportDict = {ID: None for ID in transportID}
-		for index, ID in enumerate(transportConstraint): #
-			Kcat = transportKinetics[ID]['Kcat']
-			Km = transportKinetics[ID]['Km']
+		for ID, kinetics in transportKinetics.iteritems():
+			if kinetics['active'] is True:
 
-			#get this transporter's substrate (value = -1) from reactionStoic
-			substrateName = reactionStoich[ID].keys()[reactionStoich[ID].values().index(-1)]
-			nutrientIndex = externalExchangedMolecules.index(substrateName)
-			substrateConc = externalNutrientLevels[nutrientIndex]
-			transportConc = transportLevels[index]
-			# TODO -- add vector for transporter concentrations
-			transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, transportConc) #transporter concentration set to 1
+				index=transportID.index(ID)
+				Kcat = kinetics['Kcat']
+				Km = kinetics['Km']
 
-		# 
+				#get this transporter's substrate (value = -1) from reactionStoic
+				substrateName = reactionStoich[ID].keys()[reactionStoich[ID].values().index(-1)]
+				nutrientIndex = forcedMolecules.index(substrateName)
+				substrateConc = nutrientLevels[nutrientIndex]
+				transportConc = transportLevels[index]
+				transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, transportConc) #transporter concentration set to 1
 
 		# determine internal nutrient levels based on transport
 		# TODO -- if value is "None" (no transport), need to use externalNutrient
@@ -559,8 +554,6 @@ if TRANSPORT_PROCESS:
 
 		# set internal nutrients based on availability from transport
 		fba.externalMoleculeLevelsIs(internalNutrientLevels.tolist())
-
-		# import ipdb; ipdb.set_trace()
 
 		dryMassOld = dryMass
 		bXout = fba.outputMoleculeLevelsChange() # this is flux of biomass
