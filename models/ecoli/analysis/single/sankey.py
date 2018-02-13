@@ -116,10 +116,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
     ntpMolarAvg = np.mean(ntpMolar, axis=0)
     aaMolarAvg = np.mean(aaMolar, axis=0)
 
-    #Not used, can check values at end with mass of aa -> prot and so on
-    proteinMassAvg = np.mean(proteinMassDif, axis=0)
-    rnaMassAvg = np.mean(rnaMassDif, axis=0)
-    dnaMassAvg = np.mean(dnaMassDif, axis=0)
+    # #Not used, can check values at end with mass of aa -> prot and so on
+    # proteinMassAvg = np.mean(proteinMassDif, axis=0)
+    # rnaMassAvg = np.mean(rnaMassDif, axis=0)
+    # dnaMassAvg = np.mean(dnaMassDif, axis=0)
 
     #Get sources, targets, and values for diagram
     meta2aa = sum(deltaMetabolitesAvg[aaIndexesMet])
@@ -181,10 +181,15 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
         sources.insert(i,'Metabolism')
         targets.insert(i,'Acetate')
 
+
+    # import ipdb; ipdb.set_trace()
+
+
     #Generate new javascript file with these variables for access by the html diagram
-    #Original js file stored in analysis directory, new one will be moved to plotOutDir 
+    #Original js file stored in analysis directory, new one will be moved to plotOutDir
+    # TODO (Eran) -- make a file in wholecell/analysis that generates sankey.j, d3.js, sankey.html in plotOutDir, remove these from models/ecoli/analysis/
     js_data = {'sources':sources, 'targets':targets, 'values':values}
-    js = open('sankey.js', 'r')
+    js = open('models/ecoli/analysis/sankey.js', 'r') # TODO (Eran) -- bring into this self-contained file
     js_out = "var diagram_data = JSON.parse('{}');".format(json.dumps(js_data))
     js_out += '\n'
     js_out += js.read()
@@ -193,8 +198,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
     #Copy d3.js and sankey.html to the analysis folder (for access by new js file), and move sankey_new.js as well
     shutil.move("sankey_new.js", os.path.join(plotOutDir, "sankey.js"))
     #Need to copy instead, keep originals in analysis folder for future use
-    shutil.copy2("d3.js", os.path.join(plotOutDir, "d3.js"))
-    shutil.copy2("sankey.html", os.path.join(plotOutDir, "sankey.html"))
+    shutil.copy2("models/ecoli/analysis/d3.js", os.path.join(plotOutDir, "d3.js")) # TODO (Eran) -- bring into this self-contained file
+    shutil.copy2("models/ecoli/analysis/sankey.html", os.path.join(plotOutDir, "sankey.html")) # TODO (Eran) -- bring into this self-contained file
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(
@@ -214,4 +220,7 @@ if __name__ == "__main__":
 
 	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"])
 	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"], args["validationDataFile"])
+
+
+
 
