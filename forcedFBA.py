@@ -128,7 +128,7 @@ if NO_TRANSPORT:
 		if bXout == bXout and bXout != 0:
 			dryMass = dryMassOld * np.exp(bXout * (timeStep/360))
 			if UPDATE_NUTRIENTS:
-				nutrientLevels = nutrientLevels + fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld)
+				nutrientLevels += fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) / envVolume
 
 		#save starting values
 		objVec[i] = fba.objectiveValue()
@@ -372,7 +372,6 @@ if TRANSPORT_OBJECTIVE:
 			transportLevels[transportLevels<0] = 0
 
 		#compute transport flux
-		# transportDict = {ID: None for ID in transportID}
 		IDs=[]
 		targets=[]
 		for ID, kinetics in transportKinetics.iteritems():
@@ -398,7 +397,6 @@ if TRANSPORT_OBJECTIVE:
 					nutrientLevels[nutrientIndex]=0.0
 					IDs.append(ID)
 					targets.append(0.0)
-					# import ipdb; ipdb.set_trace()
 
 		# set kinetic flux targets according to determined transport fluxes]
 		fba.setKineticTarget(IDs, targets)
@@ -415,7 +413,7 @@ if TRANSPORT_OBJECTIVE:
 		if bXout == bXout and bXout != 0: # when bXout approaches 0, it becomes nan. 
 			dryMass = dryMassOld * np.exp(bXout * (timeStep/360))
 			if UPDATE_NUTRIENTS:
-				nutrientLevels = nutrientLevels + fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) 
+				nutrientLevels += fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) / envVolume
 
 		#save starting values
 		objVec[i] = fba.objectiveValue()
@@ -472,7 +470,6 @@ if TRANSPORT_OBJECTIVE:
 	ax3.set_title('transport flux')
 	ax3.legend(prop={'size': 8}, bbox_to_anchor=(1.3, 1.0))
 
-
 	ax4 = f.add_subplot(2, 3, 4)
 	for n in range(len(transportID)):
 		ax4.plot(time, transportVec[:, n], label=transportID[n])
@@ -502,6 +499,9 @@ if TRANSPORT_OBJECTIVE:
 
 
 
+
+
+
 #transport kinetics are set as objectives
 if TRANSPORT_PROCESS:
 	#initialize fba
@@ -519,25 +519,27 @@ if TRANSPORT_PROCESS:
 	internalNutrientLevels = np.empty_like(initnutrientLevels)
 	transportLevels = inittransportLevels
 
+	fba.externalMoleculeLevelsIs(nutrientLevels.tolist())
+
 	objVec = np.empty(len(time))
 	bioMassVec = np.empty(len(time))
 	nutrientVec = np.empty([len(time),len(externalExchangedMolecules)])
 	externalVec = np.empty([len(time),len(externalExchangedMolecules)])
-	transportVec = np.empty([len(time),len(transportID)])
-	fluxVec = np.empty([len(time),len(transportID)])
+	transportVec = np.empty([len(time),len(transportLevels)])
+	fluxVec = np.empty([len(time),len(externalExchangedMolecules)])	
 
 	# iterate FBA over time, updating mass and environment. fba.outputMoleculeLevelsChange() MAKES FBA UPDATE!
 	for i, t in enumerate(time):
 
 		#update transporter levels
-		transportLevels += np.random.normal(0,0.5,len(transportLevels)) * timeStep
-		transportLevels[transportLevels<0] = 0
+		if UPDATE_TRANSPORTERS:
+			transportLevels += np.random.normal(0,transportSD,len(transportLevels)) * timeStep
+			transportLevels[transportLevels<0] = 0
 
 		#compute transport flux
 		transportDict = {ID: None for ID in transportID}
 		for ID, kinetics in transportKinetics.iteritems():
 			if kinetics['active'] is True:
-
 				index=transportID.index(ID)
 				Kcat = kinetics['Kcat']
 				Km = kinetics['Km']
@@ -547,12 +549,16 @@ if TRANSPORT_PROCESS:
 				nutrientIndex = forcedMolecules.index(substrateName)
 				substrateConc = nutrientLevels[nutrientIndex]
 				transportConc = transportLevels[index]
-				transportDict[ID] = michaelisMenten(Kcat, Km, substrateConc, transportConc) #transporter concentration set to 1
 
-		# determine internal nutrient levels based on transport
-		# TODO -- if value is "None" (no transport), need to use externalNutrient
+				transportFlux = michaelisMenten(Kcat, Km, substrateConc, transportConc) #transporter concentration set to 1
+
+				#TODO -- make sure ID and flux terms are kept in same order....
+				transportDict[ID] = transportFlux
+
+
 		deltaNutrients = transportDict.values()
-
+		# determine internal nutrient levels based on transport
+		# if value is "None" (no transport), need to use externalNutrient
 		for index, val in enumerate(deltaNutrients):
 			if val is not None:
 				externalNutrientLevels[index] -= deltaNutrients[index]
@@ -562,87 +568,106 @@ if TRANSPORT_PROCESS:
 				internalNutrientLevels[index] = externalNutrientLevels[index]
 		
 
-		# set internal nutrients based on availability from transport
+
+
+
+
+		#set external nutrient levels to the internal stors
 		fba.externalMoleculeLevelsIs(internalNutrientLevels.tolist())
 
 		dryMassOld = dryMass
-		bXout = fba.outputMoleculeLevelsChange() # this is flux of biomass
+		# bXout = fba.outputMoleculeLevelsChange() # this is flux of biomass
+		# bXout = fba.biomassReactionFlux()
+		fba.outputMoleculeLevelsChange() 
+		growthIndex = np.where(fba.reactionIDs() == 'Growth')[0][0]
+		bXout = fba.reactionFluxes()[growthIndex]
+
+		#nutrient concentrations should change based on volume
+		#nutrient levels are mmol/L, 
 		
-		# when bXout approaches 0, it becomes nan. 
-		if bXout == bXout and bXout != 0:
+		if bXout == bXout and bXout != 0: # when bXout approaches 0, it becomes nan. 
 			dryMass = dryMassOld * np.exp(bXout * (timeStep/360))
-			internalNutrientLevels += fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) #* (timeStep/360) # TODO -- is the timestep here correct?
+			if UPDATE_NUTRIENTS:
+				nutrientLevels += fba.externalExchangeFluxes()/bXout * (dryMass - dryMassOld) / envVolume
 
 		#save starting values
 		objVec[i] = fba.objectiveValue()
 		bioMassVec[i] = dryMass
-		nutrientVec[i] = internalNutrientLevels.tolist()
-		externalVec[i] = externalNutrientLevels.tolist()
+		nutrientVec[i] = nutrientLevels.tolist()
 		transportVec[i] = transportLevels
 		fluxVec[i] = fba.externalExchangeFluxes()
-
-
-
-
-
-
-
+		externalVec[i] = externalNutrientLevels.tolist()
 
 	#plot
-	f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(18,10))
-	f.subplots_adjust(wspace=0.4, hspace=0.3) #wspace = width between subplots, hspace = height between subplots
+	f = plt.figure(figsize=(18,10))
+
+	ax1 = f.add_subplot(2, 3, 1)
 	ax1.plot(time, bioMassVec)
-	ax1.set(xlabel='time (s)')
+	ax1.set(xlabel='time (s)', ylabel='DCW (fg)')
 	ax1.set_title('biomass')
 
-	substrate=np.linspace(0.0, 50.0, num=1001)
+	ax2 = f.add_subplot(2, 3, 2, projection='3d')
+	substrate=np.linspace(0.0, 50.0, num=21)
+	enzyme=np.linspace(0.0, 1.5, num=21)
+	substrate, enzyme = np.meshgrid(substrate, enzyme)
 	for ID, kinetics in transportKinetics.iteritems():
-		nflux=np.empty_like(substrate)
-		for ind, sConc in enumerate(substrate):
-			Kcat = kinetics['Kcat']
-			Km = kinetics['Km']
-			nflux[ind]=michaelisMenten(Kcat, Km, sConc, 1)
-		ax2.plot(substrate, nflux, label=ID)
-	ax2.set(xlabel='substrate concentration', ylabel='flux')
-	ax2.set_title('transport Michaelis-Menten')
-	ax2.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
+		if kinetics['active'] is True:
+		# if ID is 'Tc2':
+			nflux=np.empty_like(substrate)
+			for ind, sConc in enumerate(substrate):
+				Kcat = kinetics['Kcat']
+				Km = kinetics['Km']
+				eConc = enzyme[ind]
+				nflux[ind]=michaelisMenten(Kcat, Km, sConc, eConc)
+			ax2.plot_wireframe(substrate, enzyme, nflux)#, label=ID)
+			#put simulated behavior on top of michaelis menten
+			ind = [i for i, x in enumerate(transportID) if x == ID] #transportID[n]
+			ax2.scatter(nutrientVec[:, ind], transportVec[:, ind], abs(fluxVec[:, ind]), '.', label=ID)
+	ax2.set(xlabel='substrate concentration (mMol)', zlabel='flux', ylabel='enzyme concentration (mMol)')
+	ax2.set_title('transport observed range')
 
-	substrate=np.linspace(0.0, 50.0, num=1001)
+	ax3 = f.add_subplot(2, 3, 3)
 	for ID, kinetics in transportKinetics.iteritems():
-		nflux=np.empty_like(substrate)
-		for ind, sConc in enumerate(substrate):
-			Kcat = kinetics['Kcat']
-			Km = kinetics['Km']
-			nflux[ind]=michaelisMenten(Kcat, Km, sConc, 1)
-		ax3.plot(substrate, nflux)#, label=ID)
-	#put actual behavior on top of michaelis menten
-	for n in transportConstraint:
-		ind = [i for i, x in enumerate(transportID) if x == n] #transportID[n]
-		ax3.plot(nutrientVec[:, ind], abs(fluxVec[:, ind]), '.', label=n)
-	ax3.set(xlabel='substrate concentration', ylabel='flux')
-	ax3.set_title('transport observed range')
-	ax3.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
+		if kinetics['active'] is True:
+			nflux=np.empty_like(time)
+			ind = [i for i, x in enumerate(transportID) if x == ID] #transportID[n]
+			for t in range(len(nflux)):
+				Kcat = kinetics['Kcat']
+				Km = kinetics['Km']
+				sConc = nutrientVec[t, ind]
+				eConc = transportVec[t, ind]
+				nflux[t] = -1 * michaelisMenten(Kcat, Km, sConc, eConc)
+			ax3.plot(time, nflux, label=ID+' m-m')
+			ax3.plot(time, fluxVec[:, ind], '--', linewidth=2, label=ID+' sim')
+	ax3.set(xlabel='time (s)')
+	ax3.set_title('transport flux')
+	ax3.legend(prop={'size': 8}, bbox_to_anchor=(1.3, 1.0))
 
+
+	ax4 = f.add_subplot(2, 3, 4)
 	for n in range(len(transportID)):
 		ax4.plot(time, transportVec[:, n], label=transportID[n])
-	ax4.set(xlabel='time (s)')
+	ax4.set(xlabel='time (s)', ylabel='transporter conc (mMol)')
 	ax4.set_title('transporter levels')
 	ax4.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
 
-	for n in range(len(externalNutrientLevels)):
-		ax5.plot(time, externalVec[:, n], label=externalExchangedMolecules[n])
-	ax5.set(xlabel='time (s)', ylabel='concentration')
+	ax5 = f.add_subplot(2, 3, 5)
+	for n in range(len(nutrientLevels)):
+		ax5.plot(time, nutrientVec[:, n], label=externalExchangedMolecules[n])
+	ax5.set(xlabel='time (s)', ylabel='concentration (mMol)')
 	ax5.set_title('external nutrient levels')
 	ax5.legend(prop={'size': 8}, bbox_to_anchor=(1.3, 1.0))
 
-
+	ax6 = f.add_subplot(2, 3, 6)
 	for n in range(len(transportID)):
 		ax6.plot(time, fluxVec[:, n], label=transportID[n])
 	ax6.set(xlabel='time (s)')
 	ax6.set_title('transport flux')
 	ax6.legend(prop={'size': 8}, bbox_to_anchor=(1.2, 1.0))
+	ax6.set_ylim(-5, 5)
 
-	plt.savefig(os.path.join(directory, 'process_based.png'))
+	f.subplots_adjust(wspace=0.4, hspace=0.3) #wspace = width between subplots, hspace = height between subplots
+	plt.savefig(os.path.join(directory, 'process_based.png'), dpi=600)
 
 
 
