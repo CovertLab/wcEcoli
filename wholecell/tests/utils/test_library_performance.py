@@ -120,6 +120,25 @@ class Test_library_performance(unittest.TestCase):
 		M = np.random.random(size=(1000, 1000))
 		self.time_this(lambda: M.dot(M))
 
+	# On Sherlock 1.0 with 1 CPU this takes ~250 ms
+	# Without nosetests overhead, can be ~5x slower than float by float
+	@noseAttrib.attr('performance')
+	@nose.tools.timed(0.35)
+	def test_dot_mixed(self):
+		"""Time NumPy matrix dot()."""
+		f = np.random.random(size=(1000, 1000))
+		i = np.array(np.random.random(size=(1000, 1000)), dtype=np.int)
+		self.time_this(lambda: i.dot(f))
+
+	# On Sherlock 1.0 with 1 CPU this takes ~1.6 s
+	# Without nosetests overhead, only ~3x slower than float by float
+	@noseAttrib.attr('performance')
+	@nose.tools.timed(2)
+	def test_dot_ints(self):
+		"""Time NumPy matrix dot()."""
+		M = np.array(np.random.random(size=(1000, 1000)), dtype=np.int)
+		self.time_this(lambda: M.dot(M))
+
 	@noseAttrib.attr('performance')
 	def multitest_dot(self):
 		"""Time NumPy matrix dot() many times."""
