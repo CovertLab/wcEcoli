@@ -243,7 +243,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	Purpose: Activates RNA polymerases as unique molecules, and distributes them along length of genes,
 	decreases counts of unactivated RNA polymerases (APORNAP-CPLX[c]).
 
-	Normalizes RNA poly placement per length of completed RNA, with synthesis probility based on each environmental condition
+	Normalizes RNA poly placement per length of completed RNA, with synthesis probability based on each environmental condition
 	"""
 
 	# Load parameters
@@ -254,6 +254,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	inactiveRnaPolyCounts = bulkMolCntr.countsView(['APORNAP-CPLX[c]']).counts()[0]
 	rnaSequences = sim_data.process.transcription.transcriptionSequences
 	ntWeights = sim_data.process.transcription.transcriptionMonomerWeights
+	endWeight = sim_data.process.transcription.transcriptionEndWeight #this is needed for completing an RNA
 
 	# Number of rnaPoly to activate
 	rnaPolyToActivate = np.int64(fracActiveRnap * inactiveRnaPolyCounts)
@@ -342,6 +343,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# update mass
 	sequences = rnaSequences[rnaIndices]
 	massIncreaseRna = computeMassIncrease(sequences, updatedLengths, ntWeights)
+	massIncreaseRna += endWeight #add endWeight to all new Rna
 
 	#update molecules. Attributes include which rnas are being transcribed, and the position (length)
 	activeRnaPolys = uniqueMolCntr.objectsNew('activeRnaPoly', rnaPolyToActivate)
@@ -360,7 +362,7 @@ def initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	Normalizes ribosomes placement per length of protein
 	"""
-	
+
 	# Load parameters
 	nAvogadro = sim_data.constants.nAvogadro
 	currentNutrients = sim_data.conditions[sim_data.condition]['nutrients']
@@ -371,6 +373,7 @@ def initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	translationEfficiencies = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 	mRnas = bulkMolCntr.countsView(mrnaIds)
 	aaWeightsIncorporated = sim_data.process.translation.translationMonomerWeights
+	endWeight = sim_data.process.translation.translationEndWeight #this is needed to complete polypeptide
 
 	#find number of ribosomes to activate
 	ribosome30S = bulkMolCntr.countsView(sim_data.moleculeGroups.s30_fullComplex).counts()[0]
@@ -401,14 +404,15 @@ def initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	# update mass
 	sequences = proteinSequences[proteinIndices]
-	updatedMass = computeMassIncrease(sequences, updatedLengths, aaWeightsIncorporated)
+	massIncreaseProtein = computeMassIncrease(sequences, updatedLengths, aaWeightsIncorporated)
+	massIncreaseProtein += endWeight  # add endWeight to all new Rna
 
 	# Create active 70S ribosomes and assign their protein Indices calculated above
 	activeRibosomes = uniqueMolCntr.objectsNew('activeRibosome', ribosomeToActivate)
 	activeRibosomes.attrIs(
 		proteinIndex = proteinIndices,
 		peptideLength = updatedLengths,
-		massDiff_protein = updatedMass
+		massDiff_protein = massIncreaseProtein,
 		)
 
 	# decrease free 30S and 50S ribosomal subunit counts
