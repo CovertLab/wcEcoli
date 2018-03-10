@@ -53,7 +53,7 @@ class NetworkFlowCvxopt(NetworkFlowProblemBase):
 			return len(self._flowNames) - 1
 
 
-	def flowMaterialCoeffIs(self, flow, material, coefficient):
+	def setFlowMaterialCoeff(self, flow, material, coefficient):
 		self._materialIndexes.append(self._getMaterialIndex(material))
 		self._flowIndexes.append(self._getFlowIndex(flow))
 		self._coefficients.append(coefficient)
@@ -61,28 +61,28 @@ class NetworkFlowCvxopt(NetworkFlowProblemBase):
 		self._changedEqConst = True
 
 
-	def flowLowerBoundIs(self, flow, lowerBound):
+	def setFlowLowerBound(self, flow, lowerBound):
 		self._lowerBoundIndexes.append(self._getFlowIndex(flow))
 		self._lowerBoundValues.append(lowerBound)
 
 		self._changedIneqConst = True
 
 
-	def flowUpperBoundIs(self, flow, upperBound):
+	def setFlowUpperBound(self, flow, upperBound):
 		self._upperBoundIndexes.append(self._getFlowIndex(flow))
 		self._upperBoundValues.append(upperBound)
 
 		self._changedIneqConst = True
 
 
-	def flowObjectiveCoeffIs(self, flow, coefficient):
+	def setFlowObjectiveCoeff(self, flow, coefficient):
 		self._objectiveIndexes.append(self._getFlowIndex(flow))
 		self._objectiveCoefficients.append(coefficient)
 
 		self._changedObjective = True
 
 
-	def flowRates(self, flows):
+	def getFlowRates(self, flows):
 		if isinstance(flows, basestring):
 			flows = (flows,)
 
