@@ -51,7 +51,7 @@ class Complexation(wholecell.processes.process.Process):
 		# Macromolecule complexes are requested
 		updatedMoleculeCounts = mccFormComplexesWithPrebuiltMatrices(
 			moleculeCounts,
-			self.seed,
+			self.randomState.randint(1e9),
 			self.stoichMatrix,
 			*self.prebuiltMatrices
 			)
@@ -65,7 +65,7 @@ class Complexation(wholecell.processes.process.Process):
 		# Macromolecule complexes are formed from their subunits
 		updatedMoleculeCounts = mccFormComplexesWithPrebuiltMatrices(
 			moleculeCounts,
-			self.seed,
+			self.randomState.randint(1e9),
 			self.stoichMatrix,
 			*self.prebuiltMatrices
 			)
