@@ -4,13 +4,14 @@
 TODO:
 - document math
 - raise/warn if physiological metabolite concentration targets appear to be smaller than what
- is needed at this time step size
+  is needed at this time step size
 
 """
 
 from __future__ import division
 
 from itertools import izip
+import scipy.sparse
 
 import numpy as np
 import os
@@ -60,7 +61,15 @@ def initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
 	initializeComplexation(bulkMolCntr, sim_data, randomState)
 
 def initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
+
 	initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data)
+
+	# Activate rna polys, with fraction based on environmental conditions
+	initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
+
+	# Activate ribosomes, with fraction based on environmental conditions
+	initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
+
 
 def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff):
 
@@ -214,7 +223,7 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 	massIncreaseDna = computeMassIncrease(
 			np.tile(sequences,(len(sequenceIdx) / 4,1)),
 			sequenceElongations,
-			sim_data.process.replication.replicationMonomerWeights.asNumber(units.fg)	
+			sim_data.process.replication.replicationMonomerWeights.asNumber(units.fg)
 			)
 
 	# Update the attributes of replicating DNA polymerases
@@ -227,6 +236,189 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 		chromosomeIndex = np.array(chromosomeIndex),
 		massDiff_DNA = massIncreaseDna,
 		)
+
+
+def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
+	"""
+	Purpose: Activates RNA polymerases as unique molecules, and distributes them along length of genes,
+	decreases counts of unactivated RNA polymerases (APORNAP-CPLX[c]).
+
+	Normalizes RNA poly placement per length of completed RNA, with synthesis probability based on each environmental condition
+	"""
+
+	# Load parameters
+	nAvogadro = sim_data.constants.nAvogadro
+	rnaLengths = sim_data.process.transcription.rnaData['length'].asNumber()
+	currentNutrients = sim_data.conditions[sim_data.condition]['nutrients']
+	fracActiveRnap = sim_data.process.transcription.rnapFractionActiveDict[currentNutrients]
+	inactiveRnaPolyCounts = bulkMolCntr.countsView(['APORNAP-CPLX[c]']).counts()[0]
+	rnaSequences = sim_data.process.transcription.transcriptionSequences
+	ntWeights = sim_data.process.transcription.transcriptionMonomerWeights
+	endWeight = sim_data.process.transcription.transcriptionEndWeight
+
+	# Number of rnaPoly to activate
+	rnaPolyToActivate = np.int64(fracActiveRnap * inactiveRnaPolyCounts)
+
+	# Parameters for rnaSynthProb
+	recruitmentColNames = sim_data.process.transcription_regulation.recruitmentColNames
+	recruitmentView = bulkMolCntr.counts(recruitmentColNames)
+	recruitmentData = sim_data.process.transcription_regulation.recruitmentData
+	recruitmentMatrix = scipy.sparse.csr_matrix(
+			(recruitmentData['hV'], (recruitmentData['hI'], recruitmentData['hJ'])),
+			shape = recruitmentData['shape']
+		)
+
+	# Synthesis probabilities for different categories of genes
+	rnaSynthProbFractions = sim_data.process.transcription.rnaSynthProbFraction
+	rnaSynthProbRProtein = sim_data.process.transcription.rnaSynthProbRProtein
+	rnaSynthProbRnaPolymerase = sim_data.process.transcription.rnaSynthProbRnaPolymerase
+
+	# Determine changes from genetic perturbations
+	genetic_perturbations = {}
+	perturbations = getattr(sim_data, 'genetic_perturbations', {})
+	if len(perturbations) > 0:
+		rnaIdxs, synthProbs = zip(*[(int(np.where(sim_data.process.transcription.rnaData['id'] == rnaId)[0]), synthProb) for rnaId, synthProb in sim_data.genetic_perturbations.iteritems()])
+		fixedSynthProbs = [synthProb for (rnaIdx, synthProb) in sorted(zip(rnaIdxs, synthProbs), key = lambda pair: pair[0])]
+		fixedRnaIdxs = [rnaIdx for (rnaIdx, synthProb) in sorted(zip(rnaIdxs, synthProbs), key = lambda pair: pair[0])]
+		genetic_perturbations = {'fixedRnaIdxs': fixedRnaIdxs, 'fixedSynthProbs': fixedSynthProbs}
+
+	# If initiationShuffleIdxs does not exist, set value to None
+	shuffleIdxs = getattr(sim_data.process.transcription, 'initiationShuffleIdxs', None)
+
+	# ID Groups
+	isRRna = sim_data.process.transcription.rnaData['isRRna']
+	isMRna = sim_data.process.transcription.rnaData['isMRna']
+	isTRna = sim_data.process.transcription.rnaData['isTRna']
+	isRProtein = sim_data.process.transcription.rnaData['isRProtein']
+	isRnap = sim_data.process.transcription.rnaData['isRnap']
+	isRegulated = np.array([1 if x[:-3] in sim_data.process.transcription_regulation.targetTf or x in perturbations else 0 for x in sim_data.process.transcription.rnaData["id"]], dtype = np.bool)
+	setIdxs = isRRna | isTRna | isRProtein | isRnap | isRegulated
+
+	# Calculate synthesis probabilities based on transcription regulation
+	rnaSynthProb = recruitmentMatrix.dot(recruitmentView)
+	if len(genetic_perturbations) > 0:
+		rnaSynthProb[genetic_perturbations['fixedRnaIdxs']] = genetic_perturbations['fixedSynthProbs']
+	regProbs = rnaSynthProb[isRegulated]
+
+	# Adjust probabilities to not be negative
+	rnaSynthProb[rnaSynthProb < 0] = 0.0
+	rnaSynthProb /= rnaSynthProb.sum()
+	if np.any(rnaSynthProb < 0):
+		raise Exception("Have negative RNA synthesis probabilities")
+
+	# Adjust synthesis probabilities depending on environment
+	synthProbFractions = rnaSynthProbFractions[currentNutrients]
+	rnaSynthProb[isMRna] *= synthProbFractions['mRna'] / rnaSynthProb[isMRna].sum()
+	rnaSynthProb[isTRna] *= synthProbFractions['tRna'] / rnaSynthProb[isTRna].sum()
+	rnaSynthProb[isRRna] *= synthProbFractions['rRna'] / rnaSynthProb[isRRna].sum()
+	rnaSynthProb[isRegulated] = regProbs
+	rnaSynthProb[isRProtein] = rnaSynthProbRProtein[currentNutrients]
+	rnaSynthProb[isRnap] = rnaSynthProbRnaPolymerase[currentNutrients]
+	rnaSynthProb[rnaSynthProb < 0] = 0 # to avoid precision issue
+	scaleTheRestBy = (1. - rnaSynthProb[setIdxs].sum()) / rnaSynthProb[~setIdxs].sum()
+	rnaSynthProb[~setIdxs] *= scaleTheRestBy
+
+	# Shuffle initiation rates if we're running the variant that calls this
+	if shuffleIdxs is not None:
+		rnaSynthProb = rnaSynthProb[shuffleIdxs]
+
+	# normalize to length of rna
+	synthProbLengthAdjusted = rnaSynthProb * rnaLengths
+	synthProbNormalized = synthProbLengthAdjusted / synthProbLengthAdjusted.sum()
+
+	# Sample a multinomial distribution of synthesis probabilities to determine what RNA are initialized
+	nNewRnas = randomState.multinomial(rnaPolyToActivate, synthProbNormalized)
+
+	# RNA Indices
+	rnaIndices = np.empty(rnaPolyToActivate, np.int64)
+	startIndex = 0
+	nonzeroCount = (nNewRnas > 0)
+	for rnaIndex, counts in izip(np.arange(nNewRnas.size)[nonzeroCount], nNewRnas[nonzeroCount]):
+		rnaIndices[startIndex:startIndex+counts] = rnaIndex
+		startIndex += counts
+
+	# TODO (Eran) -- make sure there aren't any rnapolys at same location on same gene
+	updatedLengths = np.array(randomState.rand(rnaPolyToActivate) * rnaLengths[rnaIndices], dtype=np.int)
+
+	# update mass
+	sequences = rnaSequences[rnaIndices]
+	massIncreaseRna = computeMassIncrease(sequences, updatedLengths, ntWeights)
+	massIncreaseRna[updatedLengths != 0] += endWeight  # add endWeight to all new Rna
+
+	#update molecules. Attributes include which rnas are being transcribed, and the position (length)
+	activeRnaPolys = uniqueMolCntr.objectsNew('activeRnaPoly', rnaPolyToActivate)
+	activeRnaPolys.attrIs(
+		rnaIndex = rnaIndices,
+		transcriptLength = updatedLengths,
+		massDiff_mRNA = massIncreaseRna,
+		)
+	bulkMolCntr.countsIs(inactiveRnaPolyCounts - rnaPolyToActivate, ['APORNAP-CPLX[c]'])
+
+
+def initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
+	"""
+	Purpose: Activates ribosomes as unique molecules, and distributes them along length of RNA,
+	decreases counts of unactivated ribosomal subunits (ribosome30S and ribosome50S).
+
+	Normalizes ribosomes placement per length of protein
+	"""
+
+	# Load parameters
+	nAvogadro = sim_data.constants.nAvogadro
+	currentNutrients = sim_data.conditions[sim_data.condition]['nutrients']
+	fracActiveRibosome = sim_data.process.translation.ribosomeFractionActiveDict[currentNutrients]
+	mrnaIds = sim_data.process.translation.monomerData['rnaId']
+	proteinLengths = sim_data.process.translation.monomerData['length'].asNumber()
+	proteinSequences = sim_data.process.translation.translationSequences
+	translationEfficiencies = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
+	mRnas = bulkMolCntr.countsView(mrnaIds)
+	aaWeightsIncorporated = sim_data.process.translation.translationMonomerWeights
+	endWeight = sim_data.process.translation.translationEndWeight
+
+	#find number of ribosomes to activate
+	ribosome30S = bulkMolCntr.countsView(sim_data.moleculeGroups.s30_fullComplex).counts()[0]
+	ribosome50S = bulkMolCntr.countsView(sim_data.moleculeGroups.s50_fullComplex).counts()[0]
+	inactiveRibosomeCount = np.minimum(ribosome30S, ribosome50S)
+	ribosomeToActivate = np.int64(fracActiveRibosome * inactiveRibosomeCount)
+
+	# protein synthesis probabilities
+	proteinInitProb = normalize(mRnas.counts() * translationEfficiencies)
+
+	# normalize to protein length
+	probLengthAdjusted = proteinInitProb * proteinLengths
+	probNormalized = probLengthAdjusted / probLengthAdjusted.sum()
+
+	# Sample a multinomial distribution of synthesis probabilities to determine what RNA are initialized
+	nNewProteins = randomState.multinomial(ribosomeToActivate, probNormalized)
+
+	# protein Indices
+	proteinIndices = np.empty(ribosomeToActivate, np.int64)
+	startIndex = 0
+	nonzeroCount = (nNewProteins > 0)
+	for proteinIndex, counts in izip(np.arange(nNewProteins.size)[nonzeroCount], nNewProteins[nonzeroCount]):
+		proteinIndices[startIndex:startIndex+counts] = proteinIndex
+		startIndex += counts
+
+	# TODO (Eran) -- make sure there aren't any peptides at same location on same rna
+	updatedLengths = np.array(randomState.rand(ribosomeToActivate) * proteinLengths[proteinIndices], dtype=np.int)
+
+	# update mass
+	sequences = proteinSequences[proteinIndices]
+	massIncreaseProtein = computeMassIncrease(sequences, updatedLengths, aaWeightsIncorporated)
+	massIncreaseProtein[updatedLengths != 0] += endWeight  # add endWeight to all new Rna
+
+	# Create active 70S ribosomes and assign their protein Indices calculated above
+	activeRibosomes = uniqueMolCntr.objectsNew('activeRibosome', ribosomeToActivate)
+	activeRibosomes.attrIs(
+		proteinIndex = proteinIndices,
+		peptideLength = updatedLengths,
+		massDiff_protein = massIncreaseProtein,
+		)
+
+	# decrease free 30S and 50S ribosomal subunit counts
+	bulkMolCntr.countsIs(ribosome30S - ribosomeToActivate, sim_data.moleculeGroups.s30_fullComplex)
+	bulkMolCntr.countsIs(ribosome50S - ribosomeToActivate, sim_data.moleculeGroups.s50_fullComplex)
+
 
 def setDaughterInitialConditions(sim, sim_data):
 	assert sim._inheritedStatePath != None
@@ -276,21 +468,21 @@ def determineChromosomeState(C, D, tau, replication_length):
 						simply [0,1,2,3] repeated once for each replication
 						event. Ie for three active replication events (6 forks,
 						12 polymerases) sequenceIdx = [0,1,2,3,0,1,2,3,0,1,2,3]
-			sequenceLength - the position in the genome that each polymerase 
+			sequenceLength - the position in the genome that each polymerase
 						referenced in sequenceIdx has reached, in base-pairs.
-						This is handled such that even though in reality some 
+						This is handled such that even though in reality some
 						polymerases are replicating in different directions all
 						inputs here are as though each starts at 0 and goes up
 						the the number of base-pairs to be replicated.
-			replicationRound - a unique integer stating in which replication 
+			replicationRound - a unique integer stating in which replication
 						generation the polymerase referenced by sequenceIdx.
 						Each time all origins of replication in the cell fire,
-						a new replication generation has started. This array 
+						a new replication generation has started. This array
 						is integer-valued, and counts from 0 (the oldest
 						generation) up to n (the most recent initiation) event.
-			chromosomeIndex - indicator variable for which daughter cell 
+			chromosomeIndex - indicator variable for which daughter cell
 						should inherit which polymerase at division. This
-						array is only relevant to draw distinctions within a 
+						array is only relevant to draw distinctions within a
 						generaation of replicationRound, now between rounds.
 						Within each generation in replicationRound (run of
 						numbers with the same value), half should have
@@ -300,7 +492,7 @@ def determineChromosomeState(C, D, tau, replication_length):
 						[0,1,0,1,0,1,0,1]. The half-and-half rule is excepted
 						for any replication generation with only 4 polymerases
 						(the oldest replication generation should be the only
-						one	with fewer than 8 polymerases). In this case 
+						one	with fewer than 8 polymerases). In this case
 						chromosomeIndex doesn't matter/is effectively NaN,
 						but is set to all 0's to prevent conceptually dividing
 						a single chromosome between two daughter cells.
@@ -356,7 +548,7 @@ def determineChromosomeState(C, D, tau, replication_length):
 		# sequenceIdx refers to the type of elongation - ie forward and
 		# reverse, lagging and leading strands.
 		sequenceIdx += [0,1,2,3]*num_events
-		# sequenceLength refers to how far along in the replication process 
+		# sequenceLength refers to how far along in the replication process
 		# this event already is - at what basepair currently. All four are
 		# assumed to be equally far along.
 		sequenceLength += [fork_location]*4*num_events
@@ -365,7 +557,7 @@ def determineChromosomeState(C, D, tau, replication_length):
 		# of the same generation and round number
 		replicationRound += [(n-1)]*4*num_events
 		# WITHIN each round, chromosomeIndex uniquely identifies individual
-		# origin initaion points. Loop through each intiation event in this 
+		# origin initaion points. Loop through each intiation event in this
 		# generation (2 forks, 4 polymerases each), assign it an increaing,
 		# unique number, starting at zero.
 		chromosomeIndex += [0]*2*num_events + [0]*2*num_events
@@ -395,7 +587,7 @@ def determineNumOriC(C, D, tau):
 			replication_length - the amount of DNA to be replicated per fork,
 			usually half of the genome, in base-pairs
 
-	Outputs: the number of OriC's in the cell at initiation.	
+	Outputs: the number of OriC's in the cell at initiation.
 	"""
 
 	# Number active replication generations (can be many initiations per gen.)

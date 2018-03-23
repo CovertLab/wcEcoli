@@ -56,17 +56,15 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		# Determine changes from genetic perturbations
 		self.genetic_perturbations = {}
-		perturbations = {}
-		if hasattr(sim_data, "genetic_perturbations") and sim_data.genetic_perturbations != None and len(sim_data.genetic_perturbations) > 0:
+		perturbations = getattr(sim_data, "genetic_perturbations", {})
+		if len(perturbations) > 0:
 			rnaIdxs, synthProbs = zip(*[(int(np.where(sim_data.process.transcription.rnaData["id"] == rnaId)[0]), synthProb) for rnaId, synthProb in sim_data.genetic_perturbations.iteritems()])
-			fixedSynthProbs = [synthProb for (rnaIdx, syntheProb) in sorted(zip(rnaIdxs, synthProbs), key = lambda pair: pair[0])]
-			fixedRnaIdxs = [rnaIdx for (rnaIdx, syntheProb) in sorted(zip(rnaIdxs, synthProbs), key = lambda pair: pair[0])]
+			fixedSynthProbs = [synthProb for (rnaIdx, synthProb) in sorted(zip(rnaIdxs, synthProbs), key = lambda pair: pair[0])]
+			fixedRnaIdxs = [rnaIdx for (rnaIdx, synthProb) in sorted(zip(rnaIdxs, synthProbs), key = lambda pair: pair[0])]
 			self.genetic_perturbations = {"fixedRnaIdxs": fixedRnaIdxs, "fixedSynthProbs": fixedSynthProbs}
-			perturbations = sim_data.genetic_perturbations
 
-		self.shuffleIdxs = None
-		if hasattr(sim_data.process.transcription, "initiationShuffleIdxs") and sim_data.process.transcription.initiationShuffleIdxs != None:
-			self.shuffleIdxs = sim_data.process.transcription.initiationShuffleIdxs
+		# If initiationShuffleIdxs does not exist, set value to None
+		self.shuffleIdxs = getattr(sim_data.process.transcription, 'initiationShuffleIdxs', None)
 
 		# Views
 		self.activeRnaPolys = self.uniqueMoleculesView('activeRnaPoly')
@@ -83,11 +81,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.isTRna = sim_data.process.transcription.rnaData["isTRna"]
 		self.isRProtein = sim_data.process.transcription.rnaData['isRProtein']
 		self.isRnap = sim_data.process.transcription.rnaData['isRnap']
-		self.notPolymerase = np.logical_and(np.logical_and(np.logical_not(self.isRRna),np.logical_not(self.isRProtein)), np.logical_not(self.isRnap))
 		self.isRegulated = np.array([1 if x[:-3] in sim_data.process.transcription_regulation.targetTf or x in perturbations else 0 for x in sim_data.process.transcription.rnaData["id"]], dtype = np.bool)
 		self.setIdxs = self.isRRna | self.isTRna | self.isRProtein | self.isRnap | self.isRegulated
-
-		assert (self.isRRna + self.isRProtein + self.isRnap + self.notPolymerase).sum() == self.rnaLengths.asNumber().size
 
 		# Synthesis probabilities for different categories of genes
 		self.rnaSynthProbFractions = sim_data.process.transcription.rnaSynthProbFraction
@@ -105,13 +100,10 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		regProbs = self.rnaSynthProb[self.isRegulated]
 
 		# Adjust probabilities to not be negative
-		self.rnaSynthProb[self.rnaSynthProb < 0] = 0.
+		self.rnaSynthProb[self.rnaSynthProb < 0] = 0.0
 		self.rnaSynthProb /= self.rnaSynthProb.sum()
 		if np.any(self.rnaSynthProb < 0):
-			raise Exception, "Have negative RNA synthesis probabilities"
-
-		assert np.allclose(self.rnaSynthProb.sum(),1.)
-		assert np.all(self.rnaSynthProb >= 0.)
+			raise Exception("Have negative RNA synthesis probabilities")
 
 		# Adjust synthesis probabilities depending on environment
 		synthProbFractions = self.rnaSynthProbFractions[self._sim.processes["PolypeptideElongation"].currentNutrients]
@@ -129,9 +121,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# (In general, this should lead to a cell which does not grow and divide)
 		if self.shuffleIdxs is not None:
 			self.rnaSynthProb = self.rnaSynthProb[self.shuffleIdxs]
-
-		assert np.allclose(self.rnaSynthProb.sum(),1.)
-		assert np.all(self.rnaSynthProb >= 0.)
 
 		self.fracActiveRnap = self.fracActiveRnapDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
 		self.rnaPolymeraseElongationRate = self.rnaPolymeraseElongationRateDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
@@ -152,11 +141,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		#### Growth control code ####
 		# Sample a multinomial distribution of synthesis probabilities to determine what molecules are initialized
 		nNewRnas = self.randomState.multinomial(rnaPolyToActivate, self.rnaSynthProb)
-		assert nNewRnas.sum() == rnaPolyToActivate
 
 		# Build list of RNA indexes
 		rnaIndexes = np.empty(rnaPolyToActivate, np.int64)
-
 		startIndex = 0
 		nonzeroCount = (nNewRnas > 0)
 		for rnaIndex, counts in itertools.izip(np.arange(nNewRnas.size)[nonzeroCount], nNewRnas[nonzeroCount]):

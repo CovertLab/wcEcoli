@@ -69,7 +69,7 @@ N_INIT_SIMS = int(os.environ.get("N_INIT_SIMS", "1"))
 N_GENS = int(os.environ.get("N_GENS", "1"))
 SINGLE_DAUGHTERS = bool(int(os.environ.get("SINGLE_DAUGHTERS", "0")))
 LAUNCHPAD_FILE = str(os.environ.get("LAUNCHPAD_FILE", "my_launchpad.yaml"))
-COMPRESS_OUTPUT = str(os.environ.get("COMPRESS_OUTPUT", "1"))
+COMPRESS_OUTPUT = bool(int(os.environ.get("COMPRESS_OUTPUT", "1")))
 SIM_DESCRIPTION = os.environ.get("DESC", "").replace(" ", "_")
 VERBOSE_QUEUE = bool(int(os.environ.get("VERBOSE_QUEUE", "1")))
 RUN_AGGREGATE_ANALYSIS = bool(int(os.environ.get("RUN_AGGREGATE_ANALYSIS", "1")))
@@ -381,7 +381,7 @@ if COMPRESS_OUTPUT:
 		)
 
 	wf_fws.append(fw_validation_data_compression)
-	
+
 	wf_links[fw_validation_data].append(fw_raw_validation_data_compression)
 	wf_links[fw_validation_data].append(fw_raw_data_compression)
 

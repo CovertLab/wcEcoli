@@ -26,7 +26,6 @@ from wholecell.utils.random import stochasticRound
 from wholecell.utils.constants import REQUEST_PRIORITY_METABOLISM
 
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
-from wholecell.utils.enzymeKinetics import EnzymeKinetics
 
 COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
@@ -111,9 +110,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.catalyzedReactionBoundsPrev = np.inf * np.ones(len(self.reactionsWithCatalystsList))
 
-		# Data structures to compute reaction targets based on kinetic parameters
-		from reconstruction.ecoli.dataclasses.process.metabolism_constraints import constraints as kineticsConstraints
-		self.kineticsConstraints = kineticsConstraints
+		# Function to compute reaction targets based on kinetic parameters and molecule concentrations
+		self.getKineticConstraints = sim_data.process.metabolism.getKineticConstraints
 
 		self.useAllConstraints = sim_data.process.metabolism.useAllConstraints
 		self.constraintsToDisable = sim_data.process.metabolism.constraintsToDisable
@@ -157,14 +155,15 @@ class Metabolism(wholecell.processes.process.Process):
 		self.internalExchangeIdxs = np.array([self.metaboliteNamesFromNutrients.index(x) for x in self.fba.outputMoleculeIDs()])
 
 		# Disable all rates during burn-in
-		if USE_KINETICS and KINETICS_BURN_IN_PERIOD > 0:
-			self.fba.disableKineticTargets()
-			self.burnInComplete = False
-		else:
-			self.burnInComplete = True
-			if not self.useAllConstraints:
-				for rxn in self.constraintsToDisable:
-					self.fba.disableKineticTargets(rxn)
+		if USE_KINETICS:
+			if KINETICS_BURN_IN_PERIOD > 0:
+				self.fba.disableKineticTargets()
+				self.burnInComplete = False
+			else:
+				self.burnInComplete = True
+				if not self.useAllConstraints:
+					for rxn in self.constraintsToDisable:
+						self.fba.disableKineticTargets(rxn)
 
 		# Values will get updated at each time point
 		self.currentNgam = 1 * (COUNTS_UNITS / VOLUME_UNITS)
@@ -309,8 +308,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.catalyzedReactionBoundsPrev = catalyzedReactionBounds
 
 			# Set target fluxes for reactions based on their most relaxed constraint
-			# kineticsConstraints function created based on units of umol/L/s
-			constraintValues = self.kineticsConstraints(
+			constraintValues = self.getKineticConstraints(
 				kineticsEnzymesConcentrations.asNumber(units.umol / units.L),
 				kineticsSubstratesConcentrations.asNumber(units.umol / units.L),
 				)
@@ -340,8 +338,6 @@ class Metabolism(wholecell.processes.process.Process):
 			), 0).astype(np.int64)
 
 		self.metabolites.countsIs(metaboliteCountsFinal)
-		if USE_KINETICS and self.burnInComplete:
-			relError = np.abs((self.fba.reactionFluxes(self.kineticsConstrainedReactions) - targets) / (targets + 1e-15))
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.externalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
 
@@ -352,6 +348,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("FBAResults", "objectiveValue", self.fba.objectiveValue())
 		self.writeToListener("FBAResults", "rowDualValues", self.fba.rowDualValues(self.metaboliteNames))
 		self.writeToListener("FBAResults", "columnDualValues", self.fba.columnDualValues(self.fba.reactionIDs()))
+		self.writeToListener("FBAResults", "targetConcentrations", [self.homeostaticObjective[mol] for mol in self.fba.homeostaticTargetMolecules()])
+		self.writeToListener("FBAResults", "homeostaticObjectiveValues", self.fba.homeostaticObjectiveValues())
 
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsInit", metaboliteCountsInit)
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsFinal", metaboliteCountsFinal)
