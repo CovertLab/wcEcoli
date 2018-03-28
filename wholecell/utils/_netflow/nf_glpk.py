@@ -21,7 +21,7 @@ class MessageLevel(Enum):
 	DBG = glp.GLP_MSG_DBG
 
 class SimplexMethod(Enum):
-	PRIMAL = glp.GLP_PRIMAL  # two-phase primal simplex
+	PRIMAL = glp.GLP_PRIMAL  # two-phase primal simplex (the default)
 	DUALP = glp.GLP_DUALP    # two-phase dual simplex
 	DUAL = glp.GLP_DUAL      # two-phase dual simplex; fallback to the primal simplex
 
@@ -52,22 +52,34 @@ SIMPLEX_RETURN_CODE_TO_STRING = {
 	glp.GLP_ENODFS: "GLP_ENODFS: Presolver: Problem has no dual feasible solution",
 }
 
-
-def _ndarrayToIntArray(array):
-	# assert array.dtype == np.int64
-	# return glp.intArray_frompointer(array.data)  # TODO: Should work, but from int32 or int64?
-	ia = glp.intArray(len(array))  # TODO: Add an element here so the caller doesn't have to?
-	for i in xrange(1, len(array)):
-		ia[i] = int(array[i])
+def _toIndexArray(array):
+	"""Convert a (NumPy or other) array to a GLPK IntArray of indexes: Convert
+	the indexes to int, add 1 to each, and prepend a dummy value.
+	"""
+	# TODO(Jerry): Is it faster to have NumPy add 1 to each array element but
+	# creating a temporary array for that? Move the loop into Cython? Build an
+	# ndarray and use glp.intArray_frompointer(array.data), being very careful
+	# about its element type? int32 or int64?
+	length = len(array)
+	ia = glp.intArray(length + 1)
+	ia[0] = -1
+	for i in xrange(length):
+		ia[i + 1] = int(array[i]) + 1
 	return ia
 
-def _ndarrayToDoubleArray(array):
-	# assert array.dtype == np.float64
-	# return glp.doubleArray_frompointer(array.data)  # TODO: Should work...
-	fa = glp.doubleArray(len(array))  # TODO: Add an element here so the caller doesn't have to?
-	for i in xrange(1, len(array)):
-		fa[i] = float(array[i])
-	return fa
+def _toDoubleArray(array):
+	"""Convert a (NumPy or other) array to a GLPK DoubleArray of indexes:
+	Convert the values to double and prepend a dummy value.
+	"""
+	# TODO(Jerry): Move the loop into Cython? Build an ndarray and call
+	# glp.doubleArray_frompointer(array.data), being very careful about its
+	# element type? float64?
+	length = len(array)
+	da = glp.doubleArray(length + 1)
+	da[0] = np.nan
+	for i in xrange(length):
+		da[i + 1] = float(array[i])
+	return da
 
 
 class NetworkFlowGLPK(NetworkFlowProblemBase):
@@ -103,7 +115,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 
 	@message_level.setter
 	def message_level(self, message_level):
-		"""Set the message for terminal output using an enum value."""
+		"""Set the message level from a MessageLevel enum value."""
 		self._smcp.msg_lev = message_level.value
 
 	@property
@@ -113,7 +125,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 
 	@simplex_method.setter
 	def simplex_method(self, simplex_method):
-		"""Set the Simplex method option using an enum value."""
+		"""Set the Simplex method option from a SimplexMethod enum value."""
 		self._smcp.meth = simplex_method.value
 
 	@property
@@ -173,57 +185,25 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 
 	def _add_rows(self, n_rows):
 		glp.glp_add_rows(self._lp, n_rows)
-		self._n_eq_constraints += 1
+		self._n_eq_constraints += n_rows
 
 	def _add_cols(self, n_cols):
 		glp.glp_add_cols(self._lp, n_cols)
-		self._n_vars += 1
+		self._n_vars += n_cols
 
 	def _set_col_bounds(self, index, lower, upper):
 		if isinf(lower) and isinf(upper):
-			typ = glp.GLP_FR  # free (unbounded) variable
+			type_ = glp.GLP_FR  # free (unbounded) variable
 		elif lower == upper:
-			typ = glp.GLP_FX  # fixed variable
+			type_ = glp.GLP_FX  # fixed variable
 		elif not isinf(lower) and not isinf(upper):
-			typ = glp.GLP_DB  # double-bounded variable
+			type_ = glp.GLP_DB  # double-bounded variable
 		elif isinf(upper):
-			typ = glp.GLP_LO  # variable with lower bound
+			type_ = glp.GLP_LO  # variable with lower bound
 		else:
-			typ = glp.GLP_UP  # variable with upper bound
+			type_ = glp.GLP_UP  # variable with upper bound
 
-		glp.glp_set_col_bnds(self._lp, index, typ, lower, upper)
-
-	def _set_mat_row(self, row, length, ja_array, ar_array):
-		if ja_array.dtype != np.int32:
-			raise ValueError("Expected ja_array of dtype np.int32")
-		if ar_array.dtype != np.float64:
-			raise ValueError("Expected ar_array of dtype np.float64")
-		if ja_array.shape != ar_array.shape:
-			raise ValueError("Array sizes must match")
-
-		ja = _ndarrayToIntArray(ja_array)
-		ar = _ndarrayToDoubleArray(ar_array)
-		glp.glp_set_mat_row(self._lp, row, length, ja, ar)
-
-	def _add_eq_constrs(self, ia_array, ja_array, ar_array):
-		if ia_array.dtype != np.int32:
-			raise ValueError("Expected ia_array of dtype np.int32")
-		if ja_array.dtype != np.int32:
-			raise ValueError("Expected ja_array of dtype np.int32")
-		if ar_array.dtype != np.float64:
-			raise ValueError("Expected ar_array of dtype np.float64")
-		if ia_array.shape != ja_array.shape:
-			raise ValueError("Array sizes must match")
-		if ja_array.shape != ar_array.shape:
-			raise ValueError("Array sizes must match")
-
-		ia = _ndarrayToIntArray(ia_array)
-		ja = _ndarrayToIntArray(ja_array)
-		ar = _ndarrayToDoubleArray(ar_array)
-		for row in xrange(1, self._n_eq_constraints + 1):
-			glp.glp_set_row_bnds(self._lp, row, glp.GLP_FX, 0.0, 0.0)
-		n_elems = ia_array.shape[0]
-		glp.glp_load_matrix(self._lp, n_elems - 1, ia, ja, ar)
+		glp.glp_set_col_bnds(self._lp, index, type_, lower, upper)
 
 	def _getVar(self, flow):
 		if flow in self._flows:
@@ -258,12 +238,14 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 			coeffs[flowLoc] = coefficient
 			self._materialCoeffs[material] = zip(coeffs, flowIdxs)
 
-			rowIdx = np.int32(materialIdx + 1)
-			colIdxs = np.hstack((np.int32(-1), 1 + np.array(flowIdxs, dtype = np.int32))
-				).astype(np.int32, copy = False)
-			data = np.hstack((np.nan, np.array(coeffs, dtype = np.float64))
-				).astype(np.float64, copy = False)
-			self._set_mat_row(rowIdx, np.int32(len(colIdxs) - 1), colIdxs, data)
+			rowIdx = int(materialIdx + 1)
+			length = len(flowIdxs)
+			if length != len(coeffs):
+				raise ValueError("Array sizes must match")
+
+			colIdxs = _toIndexArray(flowIdxs)
+			data = _toDoubleArray(coeffs)
+			glp.glp_set_mat_row(self._lp, rowIdx, length, colIdxs, data)
 		else:
 			idx = self._getVar(flow)
 			self._materialCoeffs[material].append((coefficient, idx))
@@ -389,23 +371,27 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 	def buildEqConst(self):
 		if self._eqConstBuilt:
 			raise Exception("Equality constraints already built.")
+		n_coeffs = len(self._materialCoeffs)
+		n_flows = len(self._flows)
 
-		self._add_rows(len(self._materialCoeffs))
-		A = np.zeros((len(self._materialCoeffs), len(self._flows)))
+		self._add_rows(n_coeffs)
+		A = np.zeros((n_coeffs, n_flows))
 		# avoid creating duplicate constraints
 		self._materialIdxLookup = {}
 		for materialIdx, (material, pairs) in enumerate(sorted(self._materialCoeffs.viewitems())):
 			self._materialIdxLookup[material] = materialIdx
 			for pair in pairs:
 				A[materialIdx, pair[1]] = pair[0]
+
 		A_coo = coo_matrix(A)
-		row = np.hstack((np.int32(-1), 1 + A_coo.row.astype(np.int32))
-			).astype(np.int32, copy = False)
-		col = np.hstack((np.int32(-1), 1 + A_coo.col.astype(np.int32))
-			).astype(np.int32, copy = False)
-		data = np.hstack((np.nan, A_coo.data.astype(np.float64))
-			).astype(np.float64, copy = False)
-		self._add_eq_constrs(row, col, data)
+		rowIdxs = _toIndexArray(A_coo.row)
+		colIdxs = _toIndexArray(A_coo.col)
+		data = _toDoubleArray(A_coo.data)
+		n_elems = len(A_coo.row)
+
+		for row in xrange(1, self._n_eq_constraints + 1):
+			glp.glp_set_row_bnds(self._lp, row, glp.GLP_FX, 0.0, 0.0)
+		glp.glp_load_matrix(self._lp, n_elems, rowIdxs, colIdxs, data)
 
 		self._eqConstBuilt = True
 
