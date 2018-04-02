@@ -1,7 +1,15 @@
-# TODO(Jerry): Review ecyglpki source for more prechecks to avoid GLPK exits.
-# TODO(Jerry): Add more comments from the GLPK docs.
-# TODO(Jerry): Reconsider which exceptions to raise.
+"""
+NetworkFlow's interface to GNU Linear Programming Kit.
+This uses a fraction of the API that's available via the swiglpk pip.
 
+@author: Jerry Morrison
+@organization: Covert Lab, Department of Bioengineering, Stanford University
+@date: Created 3/26/2018
+"""
+
+# TODO(Jerry): Check that integer arguments are in range so GLPK won't exit?
+
+from __future__ import absolute_import
 from __future__ import division
 
 from collections import defaultdict
@@ -59,7 +67,7 @@ def _toIndexArray(array):
 	# TODO(Jerry): Is it faster to have NumPy add 1 to each array element but
 	# creating a temporary array for that? Move the loop into Cython? Build an
 	# ndarray and use glp.intArray_frompointer(array.data), being very careful
-	# about its element type? int32 or int64?
+	# about its element type? int32?
 	length = len(array)
 	ia = glp.intArray(length + 1)
 	ia[0] = -1
@@ -184,18 +192,31 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 
 
 	def _add_rows(self, n_rows):
+		"""Add n_rows rows (constraints) to the end of the row list. Each new
+		row is initially free (unbounded) and has an empty list of constraint
+		coefficients.
+		"""
 		glp.glp_add_rows(self._lp, n_rows)
 		self._n_eq_constraints += n_rows
 
 	def _add_cols(self, n_cols):
+		"""Add n_cols columns (structural variables) to the end of the column
+		list. Each new column is initially fixed at zero and has an empty list
+		of constraint coefficients.
+		"""
 		glp.glp_add_cols(self._lp, n_cols)
 		self._n_vars += n_cols
 
 	def _set_col_bounds(self, index, lower, upper):
+		"""Set the type and bounds of index-th (j-th) column (structural
+		variable). Use -np.inf or np.inf to specify no lower or upper bound.
+		"""
 		if isinf(lower) and isinf(upper):
 			type_ = glp.GLP_FR  # free (unbounded) variable
 		elif lower == upper:
 			type_ = glp.GLP_FX  # fixed variable
+		elif lower > upper:
+			raise ValueError("The lower bound must be <= upper bound")
 		elif not isinf(lower) and not isinf(upper):
 			type_ = glp.GLP_DB  # double-bounded variable
 		elif isinf(upper):
