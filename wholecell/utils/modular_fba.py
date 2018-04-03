@@ -524,14 +524,10 @@ class FluxBalanceAnalysis(object):
 		# By forcing a column to be at unity, we can keep the definition of
 		# the problem as b=Av where b=0.
 
-		self._solver.flowLowerBoundIs(
+		self._solver.setFlowBounds(
 			self._forcedUnityColName,
-			+1
-			)
-
-		self._solver.flowUpperBoundIs(
-			self._forcedUnityColName,
-			+1
+			ub=1,
+			lb=1,
 			)
 
 		# Minimizing an absolute value requires splitting the term into two,
@@ -605,14 +601,10 @@ class FluxBalanceAnalysis(object):
 
 		# By forcing a column to be at unity, we can keep the definition of
 		# the problem as b=Av where b=0.
-		self._solver.flowLowerBoundIs(
+		self._solver.setFlowBounds(
 			self._forcedUnityColName,
-			+1
-			)
-
-		self._solver.flowUpperBoundIs(
-			self._forcedUnityColName,
-			+1
+			ub=1,
+			lb=1,
 			)
 
 		for moleculeID in sorted(objective):
@@ -655,9 +647,9 @@ class FluxBalanceAnalysis(object):
 				)
 
 			# This relaxation can only go to the end of the target range (less and the out range relaxation must be used)
-			self._solver.flowUpperBoundIs(
+			self._solver.setFlowBounds(
 				inRangeID,
-				+abs(homeostaticRangeObjFractionHigher)
+				ub=abs(homeostaticRangeObjFractionHigher),
 				)
 
 
@@ -692,14 +684,10 @@ class FluxBalanceAnalysis(object):
 		self._solver.maximizeObjective(False)
 
 		# Forced a column to always be one
-		self._solver.flowLowerBoundIs(
+		self._solver.setFlowBounds(
 			self._forcedUnityColName,
-			+1
-			)
-
-		self._solver.flowUpperBoundIs(
-			self._forcedUnityColName,
-			+1
+			ub=1,
+			lb=1,
 			)
 
 		for reactionID, expectedFlux in objective.iteritems():
@@ -946,14 +934,14 @@ class FluxBalanceAnalysis(object):
 			if level < 0:
 				print "Setting a negative external molecule level - be sure this is intended behavior."
 
-				self._solver.flowUpperBoundIs(
+				self._solver.setFlowBounds(
 					flowID,
-					-level
+					ub=-level,
 					)
 			else:
-				self._solver.flowLowerBoundIs(
+				self._solver.setFlowBounds(
 					flowID,
-					-level
+					lb=-level,
 					)
 
 
@@ -971,15 +959,16 @@ class FluxBalanceAnalysis(object):
 		for moleculeID, level in izip(self._internalMoleculeIDs, levels_array):
 			flowID = self._generatedID_internalExchange.format(moleculeID)
 
-			self._solver.flowLowerBoundIs(
-				flowID,
-				-level
-				)
-
 			if self._forceInternalExchange:
-				self._solver.flowUpperBoundIs(
+				self._solver.setFlowBounds(
 					flowID,
-					-level
+					ub=-level,
+					lb=-level,
+					)
+			else:
+				self._solver.setFlowBounds(
+					flowID,
+					lb=-level,
 					)
 
 
@@ -987,70 +976,54 @@ class FluxBalanceAnalysis(object):
 		return np.array(self._reactionIDs)
 
 
-	def maxReactionFluxIs(self, reactionID, maxFlux, raiseForReversible = True):
-		if maxFlux < 0:
-			raise InvalidBoundaryError("Maximum reaction flux must be at least 0")
+	def setReactionFluxBounds(self, reactionIDs, upperBounds=None, lowerBounds=None, raiseForReversible=True):
+		'''
+		Sets the upper and lower bounds for a group of reactions
+		If upper or lower bounds are not specified (None), they are left as is
+		inputs:
+			reactionIDs (array-like) - list of reactions to set flux bounds
+			upperBounds (array-like) - upper bound of flux for each reactionID
+			lowerBounds (array-like) - lower bound of flux for each reactionID
+			raiseForReversible (bool) - if true, raises error if there is a
+				reverse reaction since net flux bounds might not be set
+		'''
 
-		if reactionID not in self._reactionIDsSet and reactionID not in self._specialFluxIDsSet:
-			raise InvalidBoundaryError("Unable to set max reaction flux: reaction '%s' not recognized." % (reactionID))
+		nReactions = len(reactionIDs)
+		if upperBounds is None:
+			upperBounds = [None for x in range(nReactions)]
+		if lowerBounds is None:
+			lowerBounds = [None for x in range(nReactions)]
 
-		# if maxFlux < self._lowerBound[colIndex]:
-		# 	raise InvalidBoundaryError("Maximum reaction flux must be greater than or equal to the minimum flux")
+		if nReactions != len(upperBounds) or nReactions != len(lowerBounds):
+			raise Exception("There must be equal numbers of reactionIDs and bounds to set limits.")
 
-		reverseReactionID = self._generatedID_reverseReaction.format(reactionID)
+		# Set reaction flux bounds for each reaction
+		for reactionID, ub, lb in zip(reactionIDs, upperBounds, lowerBounds):
+			if reactionID not in self._reactionIDsSet and reactionID not in self._specialFluxIDsSet:
+				raise InvalidBoundaryError("Unable to set reaction flux: reaction '%s' not recognized." % (reactionID))
 
-		if raiseForReversible and reverseReactionID in self._reactionIDsSet:
-			raise FBAError((
-				"Setting the maximum reaction flux is ambiguous since " +
-				"reaction {} has both a forward [{}] and reverse [{}] " +
-				"component.  Call this method with argument " +
-				"raiseForReversible = False if this is intended behavior."
-				).format(reactionID, reactionID, reverseReactionID))
+			if ub is not None and ub < 0:
+				raise InvalidBoundaryError("Maximum reaction flux must be at least 0")
 
-		self._solver.flowUpperBoundIs(
-			reactionID,
-			maxFlux
-			)
+			if lb is not None and lb < 0:
+				raise InvalidBoundaryError("Minimum reaction flux must be at least 0")
 
+			reverseReactionID = self._generatedID_reverseReaction.format(reactionID)
 
-	def minReactionFluxIs(self, reactionID, minFlux, raiseForReversible = True):
-		if minFlux < 0:
-			raise InvalidBoundaryError("Minimum reaction flux must be at least 0")
+			if raiseForReversible and reverseReactionID in self._reactionIDsSet:
+				raise FBAError((
+					"Setting the reaction flux is ambiguous since " +
+					"reaction {} has both a forward [{}] and reverse [{}] " +
+					"component.  Call this method with argument " +
+					"raiseForReversible = False if this is intended behavior."
+					).format(reactionID, reactionID, reverseReactionID))
 
-		if reactionID not in self._reactionIDsSet and reactionID not in self._specialFluxIDsSet:
-			raise InvalidBoundaryError("Unable to set min reaction flux: reaction '%s' not recognized." % (reactionID))
+			self._solver.setFlowBounds(
+				reactionID,
+				ub=ub,
+				lb=lb,
+				)
 
-		# if minFlux > self._upperBound[colIndex]:
-		# 	raise InvalidBoundaryError("Minimum reaction flux must be less than or equal to the maximum flux")
-
-		reverseReactionID = self._generatedID_reverseReaction.format(reactionID)
-
-		if raiseForReversible and reverseReactionID in self._reactionIDsSet:
-			raise FBAError((
-				"Setting the minimum reaction flux is ambiguous since " +
-				"reaction {} has both a forward [{}] and reverse [{}] " +
-				"component.  Call this method with argument " +
-				"raiseForReversible = False if this is intended behavior."
-				).format(reactionID, reactionID, reverseReactionID))
-
-		self._solver.flowLowerBoundIs(
-			reactionID,
-			minFlux
-			)
-
-	def setMaxReactionFluxes(self, reactionIDs, reactionRates, raiseForReversible=True):
-		if len(reactionIDs) != len(reactionRates):
-			raise Exception("There must be equal numbers of reactionIDs and rates to set limits.")
-
-		for idx, reactionID in enumerate(reactionIDs):
-			self.maxReactionFluxIs(reactionID, reactionRates[idx], raiseForReversible)
-
-	def setMinReactionFluxes(self, reactionIDs, reactionRates, raiseForReversible=True):
-		if len(reactionIDs) != len(reactionRates):
-			raise Exception("There must be equal numbers of reactionIDs and rates to set limits.")
-
-		for idx, reactionID in enumerate(reactionIDs):
-			self.minReactionFluxIs(reactionID, reactionRates[idx], raiseForReversible)
 
 	def setpointIs(self, moleculeID, coeff):
 		if moleculeID not in self._outputMoleculeIDs:
@@ -1073,9 +1046,9 @@ class FluxBalanceAnalysis(object):
 		self._outputMoleculeCoeffs[i][pseudoFluxID] = -coeff
 
 	def maxMassAccumulatedIs(self, maxAccumulation):
-		self._solver.flowUpperBoundIs(
+		self._solver.setFlowBounds(
 			self._massExchangeOutName,
-			maxAccumulation
+			ub=maxAccumulation,
 			)
 
 	# Output
