@@ -1,14 +1,12 @@
-#!/usr/bin/env python
-
 """
 @author: John Mason
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 7/14/2014
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
-from collections import defaultdict
 from itertools import izip
 import warnings
 
@@ -473,7 +471,7 @@ class FluxBalanceAnalysis(object):
 
 			fractionDifferenceLeadingOutID = self._generatedID_fractionalDifferenceLeadingOut.format(moleculeID)
 
-			self._solver(
+			self._solver.flowMaterialCoeffIs(
 				fractionDifferenceLeadingOutID,
 				fractionDifferenceLeadingID,
 				-1
