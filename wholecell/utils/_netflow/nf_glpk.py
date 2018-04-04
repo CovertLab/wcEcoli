@@ -2,6 +2,23 @@
 NetworkFlow's interface to GNU Linear Programming Kit.
 This uses a fraction of the API that's available via the swiglpk pip.
 
+The GLPK manual is at http://kam.mff.cuni.cz/~elias/glpk.pdf
+
+swiglpk is a low-level, SWIG-generated interface that mechanically
+bridges the gap between Python and GLPK's C API.
+See https://pypi.org/project/swiglpk/ and
+https://github.com/biosustain/swiglpk
+
+See http://www.swig.org/Doc1.3/Python.html for documentation on SWIG use
+from Python. E.g. an intArray is just a memory pointer that can get and
+set native int values. It doesn't even track its length, do bounds
+checks, or support iteration, so be careful!
+
+CAUTION: GLPK will exit the process on error, so do pre-checks. It's
+possible to set its error_hook -- if SWIG can pass in a native function
+pointer and use setjmp/longjmp, and the hook has to reallocate the GLPK
+environment, losing state info.
+
 @author: Jerry Morrison
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 3/26/2018
@@ -14,7 +31,6 @@ from __future__ import division
 
 from collections import defaultdict
 from enum import Enum
-from math import isinf
 import numpy as np
 from scipy.sparse import coo_matrix
 import swiglpk as glp
@@ -61,32 +77,37 @@ SIMPLEX_RETURN_CODE_TO_STRING = {
 }
 
 def _toIndexArray(array):
-	"""Convert a (NumPy or other) array to a GLPK IntArray of indexes: Convert
-	the indexes to int, add 1 to each, and prepend a dummy value.
+	"""Convert an array to a GLPK IntArray of indexes: Convert the indexes to
+	int, add 1 to each, and prepend a dummy value.
 	"""
-	# TODO(Jerry): Is it faster to have NumPy add 1 to each array element but
-	# creating a temporary array for that? Move the loop into Cython? Build an
-	# ndarray and use glp.intArray_frompointer(array.data), being very careful
-	# about its element type? int32?
-	length = len(array)
-	ia = glp.intArray(length + 1)
+	# TODO(Jerry): IF this is a performance issue, try caching the array, or
+	# calling glp.as_intArray(list) to quickly convert a list of int (it
+	# prepends 1 uninitialized element but we still need to add 1 to each
+	# element), or making an ndarray(dtype=int32) and using NumPy to add 1 to
+	# each element and then calling glp.intArray_frompointer(ndarray.data).
+	ia = glp.intArray(len(array) + 1)
 	ia[0] = -1
-	for i in xrange(length):
-		ia[i + 1] = int(array[i]) + 1
+	for (i, value) in enumerate(array):
+		ia[i + 1] = int(value) + 1
 	return ia
 
 def _toDoubleArray(array):
-	"""Convert a (NumPy or other) array to a GLPK DoubleArray of indexes:
-	Convert the values to double and prepend a dummy value.
+	"""Convert an array to a GLPK DoubleArray of indexes: Convert the values to
+	double and prepend a dummy value.
 	"""
-	# TODO(Jerry): Move the loop into Cython? Build an ndarray and call
-	# glp.doubleArray_frompointer(array.data), being very careful about its
-	# element type? float64?
-	length = len(array)
-	da = glp.doubleArray(length + 1)
+	# TODO(Jerry): IF this is a performance issue, try caching the array, or
+	# calling glp.as_doubleArray(list) to quickly convert a list of float (it
+	# prepends 1 uninitialized element), or making an ndarray(dtype=float64)
+	# and then calling glp.doubleArray_frompointer(array.data).
+	#
+	# glp.as_doubleArray() is promising but it'll raise a TypeError if the
+	# argument isn't a list, and it'll return NULL (which comes through as
+	# None?) if any element is not a float. See
+	# https://github.com/biosustain/swiglpk/blob/master/swiglpk/glpk.i
+	da = glp.doubleArray(len(array) + 1)
 	da[0] = np.nan
-	for i in xrange(length):
-		da[i + 1] = float(array[i])
+	for (i, value) in enumerate(array):
+		da[i + 1] = float(value)
 	return da
 
 
@@ -96,7 +117,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 
 	def __init__(self):
 		self._lp = glp.glp_create_prob()
-		self._smcp = glp.glp_smcp()
+		self._smcp = glp.glp_smcp()  # simplex solver control parameters
 		glp.glp_init_smcp(self._smcp)
 		self._smcp.msg_lev = glp.GLP_MSG_ERR
 		self._n_vars = 0
@@ -211,20 +232,20 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		"""Set the type and bounds of index-th (j-th) column (structural
 		variable). Use -np.inf or np.inf to specify no lower or upper bound.
 		"""
-		if isinf(lower) and isinf(upper):
-			type_ = glp.GLP_FR  # free (unbounded) variable
+		if np.isinf(lower) and np.isinf(upper):
+			variable_type = glp.GLP_FR  # free (unbounded) variable
 		elif lower == upper:
-			type_ = glp.GLP_FX  # fixed variable
-		elif lower > upper:
-			raise ValueError("The lower bound must be <= upper bound")
-		elif not isinf(lower) and not isinf(upper):
-			type_ = glp.GLP_DB  # double-bounded variable
-		elif isinf(upper):
-			type_ = glp.GLP_LO  # variable with lower bound
+			variable_type = glp.GLP_FX  # fixed variable
+		# elif lower > upper:
+		# 	raise ValueError("The lower bound must be <= upper bound")
+		elif not np.isinf(lower) and not np.isinf(upper):
+			variable_type = glp.GLP_DB  # double-bounded variable
+		elif np.isinf(upper):
+			variable_type = glp.GLP_LO  # variable with lower bound
 		else:
-			type_ = glp.GLP_UP  # variable with upper bound
+			variable_type = glp.GLP_UP  # variable with upper bound
 
-		glp.glp_set_col_bnds(self._lp, index, type_, lower, upper)
+		glp.glp_set_col_bnds(self._lp, index, variable_type, lower, upper)
 
 	def _getVar(self, flow):
 		if flow in self._flows:
