@@ -264,7 +264,7 @@ class Metabolism(wholecell.processes.process.Process):
 		if ngam_diff > ADJUSTMENT_RATIO:
 			self.currentNgam = self.newNgam
 			flux = (self.ngam * coefficient).asNumber(COUNTS_UNITS / VOLUME_UNITS)
-			self.fba.setReactionFluxBounds([self.fba._reactionID_NGAM], upperBounds=[flux], lowerBounds=[flux])
+			self.fba.setReactionFluxBounds(self.fba._reactionID_NGAM, lowerBounds=flux, upperBounds=flux)
 
 		# Calculate GTP usage based on how much was needed in polypeptide elongation in previous step and update if necessary
 		newPolypeptideElongationEnergy = countsToMolar * 0
@@ -274,7 +274,7 @@ class Metabolism(wholecell.processes.process.Process):
 		if poly_diff > ADJUSTMENT_RATIO:
 			self.currentPolypeptideElongationEnergy = newPolypeptideElongationEnergy
 			flux = self.currentPolypeptideElongationEnergy.asNumber(COUNTS_UNITS / VOLUME_UNITS)
-			self.fba.setReactionFluxBounds([self.fba._reactionID_polypeptideElongationEnergy], upperBounds=[flux], lowerBounds=[flux])
+			self.fba.setReactionFluxBounds(self.fba._reactionID_polypeptideElongationEnergy, lowerBounds=flux, upperBounds=flux)
 
 		# Read counts for catalysts and enzymes (catalysts with kinetics constraints)
 		catalystsCountsInit = self.catalysts.counts()

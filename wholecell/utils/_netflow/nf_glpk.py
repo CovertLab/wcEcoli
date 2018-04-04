@@ -303,20 +303,20 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		return self._ub[flow]
 
 
-	def setFlowBounds(self, flow, ub=None, lb=None):
+	def setFlowBounds(self, flow, lowerBound=None, upperBound=None):
 		"""
 		Set the lower and upper bounds for a given flow
 		inputs:
 			flow (str) - name of flow to set bounds for
-			ub (float) - upper bound for flow (None if unchanged)
-			lb (float) - lower bound for flow (None if unchanged)
+			lowerBound (float) - lower bound for flow (None if unchanged)
+			upperBound (float) - upper bound for flow (None if unchanged)
 		"""
 
 		idx = self._getVar(flow)
-		if ub is not None:
-			self._ub[flow] = ub
-		if lb is not None:
-			self._lb[flow] = lb
+		if lowerBound is not None:
+			self._lb[flow] = lowerBound
+		if upperBound is not None:
+			self._ub[flow] = upperBound
 
 		self._set_col_bounds(
 			1 + idx,				# GLPK does 1 indexing
