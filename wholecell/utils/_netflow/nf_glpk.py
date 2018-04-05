@@ -236,8 +236,8 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 			variable_type = glp.GLP_FR  # free (unbounded) variable
 		elif lower == upper:
 			variable_type = glp.GLP_FX  # fixed variable
-		# elif lower > upper:
-		# 	raise ValueError("The lower bound must be <= upper bound")
+		elif lower > upper:
+			raise ValueError("The lower bound must be <= upper bound")
 		elif not np.isinf(lower) and not np.isinf(upper):
 			variable_type = glp.GLP_DB  # double-bounded variable
 		elif np.isinf(upper):
@@ -295,25 +295,29 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		self._solved = False
 
 
-	def flowLowerBoundIs(self, flow, lowerBound):
-		idx = self._getVar(flow)
-		self._lb[flow] = lowerBound
-		self._set_col_bounds(
-			1 + idx,				# GLPK does 1 indexing
-			self._lb[flow],
-			self._ub[flow],
-			)
-
-		self._solved = False
-
-
 	def flowLowerBound(self, flow):
 		return self._lb[flow]
 
 
-	def flowUpperBoundIs(self, flow, upperBound):
+	def flowUpperBound(self, flow):
+		return self._ub[flow]
+
+
+	def setFlowBounds(self, flow, lowerBound=None, upperBound=None):
+		"""
+		Set the lower and upper bounds for a given flow
+		inputs:
+			flow (str) - name of flow to set bounds for
+			lowerBound (float) - lower bound for flow (None if unchanged)
+			upperBound (float) - upper bound for flow (None if unchanged)
+		"""
+
 		idx = self._getVar(flow)
-		self._ub[flow] = upperBound
+		if lowerBound is not None:
+			self._lb[flow] = lowerBound
+		if upperBound is not None:
+			self._ub[flow] = upperBound
+
 		self._set_col_bounds(
 			1 + idx,				# GLPK does 1 indexing
 			self._lb[flow],
@@ -321,10 +325,6 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 			)
 
 		self._solved = False
-
-
-	def flowUpperBound(self, flow):
-		return self._ub[flow]
 
 
 	def flowObjectiveCoeffIs(self, flow, coefficient):
