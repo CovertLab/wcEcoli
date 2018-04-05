@@ -236,8 +236,8 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 			variable_type = glp.GLP_FR  # free (unbounded) variable
 		elif lower == upper:
 			variable_type = glp.GLP_FX  # fixed variable
-		# elif lower > upper:
-		# 	raise ValueError("The lower bound must be <= upper bound")
+		elif lower > upper:
+			raise ValueError("The lower bound must be <= upper bound")
 		elif not np.isinf(lower) and not np.isinf(upper):
 			variable_type = glp.GLP_DB  # double-bounded variable
 		elif np.isinf(upper):
