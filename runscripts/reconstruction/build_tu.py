@@ -15,6 +15,7 @@ import json
 import cPickle
 import numpy as np
 import os
+import re
 
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 
@@ -31,7 +32,7 @@ JSON_OUTPUT_FILE = os.path.join(TU_DIR, 'tu.json')
 MANUAL_DIRECTIONALITY_FILE = os.path.join(TU_DIR, '041018_TU_Directionality.csv')
 
 
-def load_tu_matrix(raw_data, rerun=False):
+def load_tu_matrix(raw_data, rerun=True):
 	if rerun:
 		# read cPickle data from Mialy
 		with open(MATRIX_FILE) as f:
@@ -51,7 +52,7 @@ def load_tu_matrix(raw_data, rerun=False):
 		wcm_cols = np.array(wcm_cols)[n_genes_in_tu > 0].tolist()
 		mat = mat[:, n_genes_in_tu > 0]
 
-		assert np.sum(mat, axis=0) == [len(col) for col in wcm_cols]
+		assert np.all(np.sum(mat, axis=0) == np.array([len(col) for col in wcm_cols]))
 
 		# represent matrix more compactly
 		mati, matj = np.where(mat)
@@ -223,11 +224,11 @@ with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
 		if tu_dir == '+':
 			tu_start = np.min(np.hstack((starts[dir_mask], ends[~dir_mask])))
 			tu_end = np.max(np.hstack((ends[dir_mask], starts[~dir_mask])))
-			tu_seq = genome[tu_start:tu_end]
+			tu_seq = re.sub('T', 'U', str(genome[tu_start:tu_end]))
 		else:
 			tu_start = np.max(np.hstack((starts[dir_mask], ends[~dir_mask])))
 			tu_end = np.min(np.hstack((ends[dir_mask], starts[~dir_mask])))
-			tu_seq = reverse_complement[-tu_start:-tu_end]
+			tu_seq = re.sub('T', 'U', str(reverse_complement[-tu_start:-tu_end]))
 
 		tu_length = len(tu_seq)
 		tu_id = TU_ID_FORMAT.format(count)
