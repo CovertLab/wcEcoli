@@ -4,6 +4,8 @@ SimulationData for transcription process
 @author: Nick Ruggero
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 03/06/2015
+
+TODO - solve optimization for degRates and expression for TU instead of average
 """
 
 from __future__ import division
@@ -22,6 +24,7 @@ class Transcription(object):
 
 	def __init__(self, raw_data, sim_data):
 		self._buildRnaData(raw_data, sim_data)
+		self._buildTuData(raw_data, sim_data)
 		self._buildTranscription(raw_data, sim_data)
 
 	def _buildRnaData(self, raw_data, sim_data):
@@ -46,7 +49,7 @@ class Transcription(object):
 			elif rna['type'] == 'rRNA' or rna['type'] == 'tRNA':
 				expression.append(0.)
 			else:
-				raise Exception('Unknonw RNA {}'.format(rna['id']))
+				raise Exception('Unknown RNA {}'.format(rna['id']))
 
 		expression = np.array(expression)
 		synthProb = expression * (
@@ -87,13 +90,10 @@ class Transcription(object):
 
 		monomerIds = [x['monomerId'] for x in raw_data.rnas]
 
-		# TODO: Add units
 		rnaData = np.zeros(
 			size,
 			dtype = [
 				('id', 'a50'),
-				# ('synthProb', 'f8'),
-				# ('expression', 'float64'),
 				('degRate', 'f8'),
 				('length', 'i8'),
 				('countsACGU', '4i8'),
@@ -114,8 +114,6 @@ class Transcription(object):
 			)
 
 		rnaData['id'] = rnaIds
-		# rnaData["synthProb"] = synthProb
-		# rnaData["expression"] = expression
 		rnaData['degRate'] = rnaDegRates
 		rnaData['length'] = rnaLens
 		rnaData['countsACGU'] = ntCounts
@@ -135,8 +133,6 @@ class Transcription(object):
 
 		field_units = {
 			'id'			:	None,
-			# 'synthProb' 	:	None,
-			# 'expression'	:	None,
 			'degRate'		:	1 / units.s,
 			'length'		:	units.nt,
 			'countsACGU'	:	units.nt,
@@ -161,15 +157,150 @@ class Transcription(object):
 		self.rnaExpression["basal"] = expression / expression.sum()
 		self.rnaSynthProb["basal"] = synthProb / synthProb.sum()
 
-
 		self.rnaData = UnitStructArray(rnaData, field_units)
-		#self.getTrnaAbundanceData = getTrnaAbundanceAtGrowthRate
+
+	def _buildTuData(self, raw_data, sim_data):
+		'''
+		Loads information about transcription units from raw_data and builds
+		other necessary information related to transcription units
+
+		Creates:
+			self.rnaExpression (dict {condition (str): expression (np.array)}) -
+				dictionary containing expression of each transcript
+				(in 'basal' condition)
+			self.rnaSynthProb (dict {condition (str): synthProb (np.array)}) -
+				dictionary containing synthesis probabilities of each
+				transcript (in 'basal' condition)
+			self.tuData (UnitStructArray) - contains TU relevant info
+			self.tuMappingMatrix (# RNA by # TU np.array) - matrix with entry
+				of 1 if an RNA is in an associated TU
+		'''
+
+		location = '[c]'  # TODO - store location as part of flat file?
+		rnaIndices = {rna['id']: idx for idx, rna in enumerate(self.rnaData)}
+		tuIds = ['{}{}'.format(tu['id'], location) for tu in raw_data.transcription_units]
+		tuDegRates = np.array([self._geometricMean([
+			self.rnaData[rnaIndices[rnaId + location]]['degRate']
+			for rnaId in tu['rnas']]) for tu in raw_data.transcription_units])
+		tuLens = np.array([tu['length'] for tu in raw_data.transcription_units])
+		# TODO - save ntCounts in flat file and load from there
+		ntCounts = np.array([
+			(tu['seq'].count('A'), tu['seq'].count('C'),
+				tu['seq'].count('G'), tu['seq'].count('U'))
+			for tu in raw_data.transcription_units
+			])
+
+		expression = np.array([self._geometricMean([
+			self.rnaExpression['basal'][rnaIndices[rnaId + location]]
+			for rnaId in tu['rnas']]) for tu in raw_data.transcription_units])
+		synthProb = expression * (
+			np.log(2) / sim_data.doubling_time.asNumber(units.s)
+			+ tuDegRates
+			)
+		synthProb /= synthProb.sum()
+
+		KcatEndoRNase = 0.001
+		EstimateEndoRNases = 5000
+
+		Km = (KcatEndoRNase * EstimateEndoRNases / tuDegRates) - expression
+
+		mws = np.array([tu['mw'] for tu in raw_data.transcription_units])
+
+		sequences = [tu['seq'] for tu in raw_data.transcription_units]
+		maxSequenceLength = max(len(sequence) for sequence in sequences)
+
+		tuData = np.zeros(
+			len(tuIds),
+			dtype = [
+				('id', 'a50'),
+				('degRate', 'f8'),
+				('length', 'i8'),
+				('countsACGU', '4i8'),
+				('mw', '{}f8'.format(len(sim_data.molecular_weight_keys))),
+				('isMRna', 'bool'),
+				('isMiscRna', 'bool'),
+				('isRRna', 'bool'),
+				('isTRna', 'bool'),
+				('isRRna23S', 'bool'),
+				('isRRna16S', 'bool'),
+				('isRRna5S', 'bool'),
+				('isRProtein', 'bool'),
+				('isRnap',	'bool'),
+				('sequence', 'a{}'.format(maxSequenceLength)),
+				('KmEndoRNase', 'f8'),
+				('isProcessed', 'bool'),
+				]
+			)
+
+		tuData['id'] = tuIds
+		tuData['degRate'] = tuDegRates
+		tuData['length'] = tuLens
+		tuData['countsACGU'] = ntCounts
+		tuData['mw'] = mws
+		# TODO - functionalize array creation or place in a single loop?
+		tuData['isMRna'] = [np.any([self.rnaData[rnaIndices[rnaId + location]]['isMRna'] for rnaId in tu['rnas']]) for tu in raw_data.transcription_units]
+		tuData['isMiscRna'] = [np.any([self.rnaData[rnaIndices[rnaId + location]]['isMiscRna'] for rnaId in tu['rnas']]) for tu in raw_data.transcription_units]
+		tuData['isRRna'] = [np.any([self.rnaData[rnaIndices[rnaId + location]]['isRRna'] for rnaId in tu['rnas']]) for tu in raw_data.transcription_units]
+		tuData['isTRna'] = [np.any([self.rnaData[rnaIndices[rnaId + location]]['isTRna'] for rnaId in tu['rnas']]) for tu in raw_data.transcription_units]
+		tuData['isRProtein'] = [np.any([self.rnaData[rnaIndices[rnaId + location]]['isRProtein'] for rnaId in tu['rnas']]) for tu in raw_data.transcription_units]
+		tuData['isRnap'] = [np.any([self.rnaData[rnaIndices[rnaId + location]]['isRnap'] for rnaId in tu['rnas']]) for tu in raw_data.transcription_units]
+		tuData['isRRna23S'] = [np.any([self.rnaData[rnaIndices[rnaId + location]]['isRRna23S'] for rnaId in tu['rnas']]) for tu in raw_data.transcription_units]
+		tuData['isRRna16S'] = [np.any([self.rnaData[rnaIndices[rnaId + location]]['isRRna16S'] for rnaId in tu['rnas']]) for tu in raw_data.transcription_units]
+		tuData['isRRna5S'] = [np.any([self.rnaData[rnaIndices[rnaId + location]]['isRRna5S'] for rnaId in tu['rnas']]) for tu in raw_data.transcription_units]
+		tuData['sequence'] = sequences
+		tuData['KmEndoRNase'] = Km
+		tuData['isProcessed'] = [tu['processed'] for tu in raw_data.transcription_units]
+
+		field_units = {
+			'id'			:	None,
+			'degRate'		:	1 / units.s,
+			'length'		:	units.nt,
+			'countsACGU'	:	units.nt,
+			'mw'			:	units.g / units.mol,
+			'isMRna'		:	None,
+			'isMiscRna'	:	None,
+			'isRRna'		:	None,
+			'isTRna'		:	None,
+			'isRRna23S'	:	None,
+			'isRRna16S'	:	None,
+			'isRRna5S'		:	None,
+			'isRProtein'	:	None,
+			'isRnap'		:	None,
+			'sequence'		:   None,
+			'KmEndoRNase'	:	units.mol / units.L,
+			'isProcessed'	:	None,
+			}
+
+		self.rnaExpression = {}
+		self.rnaSynthProb = {}
+
+		self.rnaExpression["basal"] = expression / expression.sum()
+		self.rnaSynthProb["basal"] = synthProb / synthProb.sum()
+
+		self.tuData = UnitStructArray(tuData, field_units)
+
+		tuMappingMatrix = np.zeros((len(self.rnaData), len(self.tuData)))
+		for idx, tu in enumerate(raw_data.transcription_units):
+			for rna in tu['rnas']:
+				tuMappingMatrix[rnaIndices[rna + location], idx] = 1
+
+		self.tuMappingMatrix = tuMappingMatrix
+
+	def _geometricMean(self, values):
+		'''
+		Returns a float of the geometric mean for a list of values
+
+		Inputs:
+			values (list or np.array) - list of values to calculate mean of
+		'''
+
+		return np.exp(np.mean(np.log(values)))
 
 	def _buildTranscription(self, raw_data, sim_data):
-		sequences = self.rnaData["sequence"] # TODO: consider removing sequences
+		sequences = self.tuData["sequence"] # TODO: consider removing sequences
 
 		maxLen = np.int64(
-			self.rnaData["length"].asNumber().max()
+			self.tuData["length"].asNumber().max()
 			+ 2 * sim_data.growthRateParameters.rnaPolymeraseElongationRate.asNumber(units.nt / units.s) # hardcode!
 			)
 
@@ -191,3 +322,46 @@ class Transcription(object):
 			).asNumber(units.fg)
 
 		self.transcriptionEndWeight = (sim_data.getter.getMass(["PPI[c]"]) / raw_data.constants['nAvogadro']).asNumber(units.fg)
+
+	def getRnaInTranscriptionUnit(self, transcriptionUnitId):
+		'''
+		Gets the RNA IDs of the RNA in a transcription unit (must include
+		compartment id with transcriptionUnit).	Will return for multiple
+		transcription units if passed an iterable
+
+		Returns np array of np arrays of RNA ID str in transcriptionUnitId
+		Inputs:
+			transcriptionUnitId (str or iterable of str) - ID of transcription
+				unit(s) to get the RNA ID that are part of that TU
+		'''
+
+		if isinstance(transcriptionUnitId, basestring):
+			transcriptionUnitId = [transcriptionUnitId]
+
+		rnaIds = []
+		for tu in transcriptionUnitId:
+			idx = np.where(self.tuData['id'] == tu)[0]
+			rnaIds.append(self.rnaData['id'][np.where(self.tuMappingMatrix[:, idx])[0]])
+
+		return np.array(rnaIds)
+
+	def getTranscriptionUnitWithRna(self, rnaId):
+		'''
+		Gets the TU IDs that the RNA is a part of (must include compartment
+		id with rnaId). Will return for multiple RNAs if passed an iterable
+
+		Returns np array of np arrays of transcription unit ID str with rnaId
+		Inputs:
+			rnaId (str or iterable of str) - ID of RNA(s) to get the
+				transcription unit IDs that contain that RNA
+		'''
+
+		if isinstance(rnaId, basestring):
+			rnaId = [rnaId]
+
+		tuIds = []
+		for rna in rnaId:
+			idx = np.where(self.rnaData['id'] == rna)[0]
+			tuIds.append(self.tuData['id'][np.where(self.tuMappingMatrix[idx, :])[1]])
+
+		return np.array(tuIds)

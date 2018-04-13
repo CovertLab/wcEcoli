@@ -50,6 +50,7 @@ LIST_OF_DICT_FILENAMES = (
 	"terminators.tsv",
 	"tfIds.tsv",
 	"tfOneComponentBound.tsv",
+	"transcription_units.tsv",
 	"translationEfficiency.tsv",
 	"twoComponentSystemTemplates.tsv",
 	"twoComponentSystems.tsv",
