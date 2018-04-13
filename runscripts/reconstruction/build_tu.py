@@ -283,17 +283,17 @@ with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
 
 		# Determine if transcription unit needs to be processed to individual RNA
 		# Ribosomal RNA, tRNA and RNA in complexes will need to be processed
-		processed = False
+		processed = 'false'
 		if ('rRNA' in types or 'tRNA' in types
 				or np.any([rna in rna_in_complexes for rna in tu_genes])):
-			processed = True
+			processed = 'true'
 
 		# Set TU ID
 		tu_id = TU_ID_FORMAT.format(count)
 		count += 1
 
 		# Write info for TU
-		f.write('{}\t"{}"\t"{}"\t{}\t"{}"\t{}\t{}\t"{}"\n'.format(
+		f.write('{}\t"{}"\t"{}"\t{}\t"{}"\t{}\t{}\t{}\n'.format(
 			tu_length, tu_id, tu_seq, tu_start, tu_dir,
 			json.dumps(tu_genes.tolist()), json.dumps(tu_mw.tolist()), processed
 		))
