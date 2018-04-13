@@ -31,6 +31,8 @@ COLS_FILE = os.path.join(TU_DIR, 'geneTUMatrix_Columns.pkl')
 JSON_OUTPUT_FILE = os.path.join(TU_DIR, 'tu.json')
 MANUAL_DIRECTIONALITY_FILE = os.path.join(TU_DIR, '041018_TU_Directionality.csv')
 
+OTHER_RNA_IDX = 10  # molecular weight index for other RNA
+N_MW_TYPES = 11  # number of molecular weight groups that are tracked
 
 def load_tu_matrix(raw_data, rerun=True):
 	if rerun:
@@ -97,37 +99,45 @@ def create_tu_matrix(tu):
 
 	return mat
 
-# load raw data
+
+# Load raw data
 raw_data = KnowledgeBaseEcoli()
 
-# load genome data
+# Load genome data
 genome = raw_data.genome_sequence
 reverse_complement = genome.reverse_complement()
-# genome_length = len(genome)
 
-# create transcription unit matrix (genes x tu)
+# Load masses of interest
+ntps = ['ATP', 'CTP', 'GTP', 'UTP']
+small_molecule_mws = {mol['id']: mol['mw7.2'] for mol in raw_data.metabolites}
+end_weight = small_molecule_mws["PPI"]
+ntp_weights = np.array([small_molecule_mws[ntp] - end_weight for ntp in ntps])
+letter_to_index = {nt[0]: i for i, nt in enumerate(ntps)}
+rna_mws = {rna['id']: rna['mw'] for rna in raw_data.rnas}
+
+# Create transcription unit matrix (genes x tu)
 tu = load_tu_matrix(raw_data)
 save_tu_matrix(tu)
 tu_mat = create_tu_matrix(tu)
 rows = tu['rows']
 cols = tu['cols']
 
-# load gene data from raw_data
-genes = raw_data.genes
-gene_dict = {gene['rnaId']: gene for gene in genes}
+# Load RNA data from raw_data
+gene_dict = {gene['rnaId']: gene for gene in raw_data.genes}
+rna_seqs = {rna['id']: rna['seq'] for rna in raw_data.rnas}
 
-# pull out information about genes in TUs
+# Pull out information about genes in TUs
 single_genes = set([tu[0] for tu in cols if len(tu) == 1])
 n_tu_per_gene = {gene: count for gene, count in zip(rows, np.sum(tu_mat, axis=1))}
 
-# write to csv for manual curation of some directionality
+# Write to csv for manual curation of some directionality
 import csv
 writer = csv.writer(open('opposite_direction_genes.tsv', 'w'), delimiter='\t')
 
-# create a TU for each column in the matrix
+# Create a TU for each column in the matrix
 count = 0
 with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
-	f.write('"length"\t"id"\t"seq"\t"coordinate"\t"direction"\t"rnas"\n')
+	f.write('"length"\t"id"\t"seq"\t"coordinate"\t"direction"\t"rnas"\t"mw"\n')
 	for mat_col, col_name in zip(tu_mat.T, cols):
 		starts = []
 		ends = []
@@ -137,7 +147,7 @@ with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
 		rna_ids = []
 		seqs = []
 
-		# get gene info for each transcription unit
+		# Get gene info for each transcription unit
 		for gene_idx in np.where(mat_col)[0]:
 			gene_id = rows[gene_idx]
 
@@ -170,7 +180,7 @@ with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
 		rna_ids = np.array(rna_ids)[sorted_idx]
 		types = np.array(types)[sorted_idx]
 
-		# determine directionality of TU
+		# Determine directionality of TU
 		if len(dirs) > 1:
 			ignored_misc = types == 'miscRNA'
 
@@ -179,7 +189,7 @@ with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
 
 			skip = False
 			if count_fwd == count_rev:
-				# ignore TUs that can represented as single gene TUs
+				# Ignore TUs that can represented as single gene TUs
 				if len(dirs) == 2:
 					if ((rna_ids[0] in single_genes or n_tu_per_gene[rna_ids[0]] == 1
 							or (n_tu_per_gene[rna_ids[0]] == 2 and rna_ids[0] in single_genes))
@@ -214,13 +224,13 @@ with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
 		else:
 			tu_dir = dirs[0]
 
-		# determine mask for which entries match TU direction
+		# Determine mask for which entries match TU direction
 		dir_mask = dirs == tu_dir
 
-		# determine which proteins can be translated from TU based on directionality
+		# Determine which proteins can be translated from TU based on directionality
 		tu_genes = rna_ids[dir_mask]
 
-		# determine sequence of TU
+		# Determine sequence of TU
 		if tu_dir == '+':
 			tu_start = np.min(np.hstack((starts[dir_mask], ends[~dir_mask])))
 			tu_end = np.max(np.hstack((ends[dir_mask], starts[~dir_mask])))
@@ -231,36 +241,49 @@ with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
 			tu_seq = re.sub('T', 'U', str(reverse_complement[-tu_start:-tu_end]))
 
 		tu_length = len(tu_seq)
+
+		# Determine molecule weight of TU
+		## Total MW of TU sequence
+		ntp_counts = np.array([
+			tu_seq.count('A'), tu_seq.count('C'),
+			tu_seq.count('G'), tu_seq.count('U')
+			])
+		tu_mw = np.zeros(N_MW_TYPES)
+		tu_mw[OTHER_RNA_IDX] = np.dot(ntp_counts, ntp_weights) + end_weight
+
+		## MW for each gene and its type that is part of TU
+		component_types = np.zeros((len(tu_seq), N_MW_TYPES))
+		for rna in tu_genes:
+			rna_mw = np.array(rna_mws[rna])
+
+			seq = rna_seqs[rna]
+			start = tu_seq.index(seq)
+			end = start + len(seq)
+			component_types[start:end, np.where(rna_mws[rna])[0]] += 1
+
+		## Account for overlapping genes in a TU and split MW evenly between
+		## different types for shared nucleotides
+		sequence_mw = np.array([ntp_weights[letter_to_index[ntp]] for ntp in tu_seq])
+		sequence_mw[-1] += end_weight
+		shared_idx = (np.sum(component_types, axis=1) > 1)
+		component_types[shared_idx, :] = (component_types[shared_idx, :]
+			/ np.sum(component_types[shared_idx, :], axis=1).reshape(-1, 1)
+			)
+		component_mw = np.dot(sequence_mw, component_types)
+		tu_mw += component_mw
+		tu_mw[OTHER_RNA_IDX] -= np.sum(component_mw)
+
+		## Adjust for precision errors
+		tu_mw[np.where(np.abs(tu_mw) < 1e-8)[0]] = 0
+
+		# Set TU ID
 		tu_id = TU_ID_FORMAT.format(count)
 		count += 1
 
-		# write info for TU
-		f.write('{}\t"{}"\t"{}"\t{}\t"{}"\t{}\n'.format(
-			tu_length, tu_id, tu_seq, tu_start, tu_dir, json.dumps(tu_genes.tolist())
+		# Write info for TU
+		f.write('{}\t"{}"\t"{}"\t{}\t"{}"\t{}\t{}\n'.format(
+			tu_length, tu_id, tu_seq, tu_start, tu_dir,
+			json.dumps(tu_genes.tolist()), json.dumps(tu_mw.tolist())
 		))
 
 import ipdb; ipdb.set_trace()
-## testing gene information in relation to the genome
-# for gene in genes:
-# 	if gene['direction'] == '+':
-# 		genome_seq = genome[gene['coordinate']:gene['coordinate']+gene['length']]
-# 		coordinate = genome.find(gene['seq'])
-# 	else:
-# 		genome_seq = reverse_complement[-gene['coordinate']-1:-gene['coordinate']+gene['length']-1]
-# 		coordinate = length - reverse_complement.find(gene['seq']) - 1
-#
-# 	if genome_seq == gene['seq']:
-# 		print '%s' % (gene['id'],)
-# 	else:
-# 		print '*** %s' % (gene['id'],)
-# 		print genome_seq
-# 		print gene['seq']
-#
-# 		import ipdb; ipdb.set_trace()
-#
-# 	# if coordinate == gene['coordinate']:
-# 	# 	print '%s: %i' % (gene['id'], coordinate)
-# 	# else:
-# 	# 	print '*** %s: %i (%i)' % (gene['id'], coordinate, gene['coordinate'])
-#
-# import ipdb; ipdb.set_trace()
