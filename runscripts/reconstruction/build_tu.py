@@ -125,6 +125,11 @@ cols = tu['cols']
 # Load RNA data from raw_data
 gene_dict = {gene['rnaId']: gene for gene in raw_data.genes}
 rna_seqs = {rna['id']: rna['seq'] for rna in raw_data.rnas}
+rna_in_complexes = np.hstack([
+	np.array([stoich['molecule']
+	for stoich in rxn['stoichiometry'] if stoich['type'] == 'rna'])
+	for rxn in raw_data.complexationReactions
+	])
 
 # Pull out information about genes in TUs
 single_genes = set([tu[0] for tu in cols if len(tu) == 1])
@@ -137,7 +142,7 @@ writer = csv.writer(open('opposite_direction_genes.tsv', 'w'), delimiter='\t')
 # Create a TU for each column in the matrix
 count = 0
 with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
-	f.write('"length"\t"id"\t"seq"\t"coordinate"\t"direction"\t"rnas"\t"mw"\n')
+	f.write('"length"\t"id"\t"seq"\t"coordinate"\t"direction"\t"rnas"\t"mw"\t"processed"\n')
 	for mat_col, col_name in zip(tu_mat.T, cols):
 		starts = []
 		ends = []
@@ -276,14 +281,21 @@ with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
 		## Adjust for precision errors
 		tu_mw[np.where(np.abs(tu_mw) < 1e-8)[0]] = 0
 
+		# Determine if transcription unit needs to be processed to individual RNA
+		# Ribosomal RNA, tRNA and RNA in complexes will need to be processed
+		processed = False
+		if ('rRNA' in types or 'tRNA' in types
+				or np.any([rna in rna_in_complexes for rna in tu_genes])):
+			processed = True
+
 		# Set TU ID
 		tu_id = TU_ID_FORMAT.format(count)
 		count += 1
 
 		# Write info for TU
-		f.write('{}\t"{}"\t"{}"\t{}\t"{}"\t{}\t{}\n'.format(
+		f.write('{}\t"{}"\t"{}"\t{}\t"{}"\t{}\t{}\t"{}"\n'.format(
 			tu_length, tu_id, tu_seq, tu_start, tu_dir,
-			json.dumps(tu_genes.tolist()), json.dumps(tu_mw.tolist())
+			json.dumps(tu_genes.tolist()), json.dumps(tu_mw.tolist()), processed
 		))
 
 import ipdb; ipdb.set_trace()
