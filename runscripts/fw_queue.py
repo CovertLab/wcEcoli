@@ -216,23 +216,6 @@ fw_init_raw_data = Firework(
 
 wf_fws.append(fw_init_raw_data)
 
-# Unfit KB compression
-if COMPRESS_OUTPUT:
-	fw_name = "ScriptTask_compression_raw_data"
-
-	if VERBOSE_QUEUE:
-		print "Queuing {}".format(fw_name)
-
-	fw_raw_data_compression = Firework(
-		ScriptTask(
-			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_raw_data)
-			),
-		name = fw_name,
-		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
-		)
-
-	wf_fws.append(fw_raw_data_compression)
-
 ### Fit (Level 1)
 
 filename_sim_data_fit_1 = (
@@ -265,6 +248,24 @@ fw_fit_level_1 = Firework(
 
 wf_fws.append(fw_fit_level_1)
 wf_links[fw_init_raw_data].append(fw_fit_level_1)
+
+# Unfit KB compression
+if COMPRESS_OUTPUT:
+	fw_name = "ScriptTask_compression_raw_data"
+
+	if VERBOSE_QUEUE:
+		print "Queuing {}".format(fw_name)
+
+	fw_raw_data_compression = Firework(
+		ScriptTask(
+			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_raw_data)
+			),
+		name = fw_name,
+		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
+		)
+
+	wf_fws.append(fw_raw_data_compression)
+	wf_links[fw_fit_level_1].append(fw_raw_data_compression)
 
 # Fit Level 1 KB compression
 
