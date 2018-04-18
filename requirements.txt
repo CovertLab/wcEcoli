@@ -9,7 +9,7 @@
 #   brew install suite-sparse   # needed for cvxopt to use glpk
 #
 ## Create a pyenv with Python 2.7.14.
-#   pyenv install 2.7.14        # if needed
+#   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.14  # if needed
 #   pyenv local 2.7.14
 #
 ## Create and select a new python virtual environment:
@@ -57,7 +57,7 @@ colorama==0.3.9
 configparser==3.5.0
 coverage==4.5.1
 CVXcanon==0.1.1
-cvxopt==1.2.0
+cvxopt==1.1.7  # cvxopt==1.2.0 installs on OSX but not on Sherlock
 cvxpy==0.4.11
 cycler==0.10.0
 Cython==0.28.2
