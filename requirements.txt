@@ -48,7 +48,7 @@ backports.functools-lru-cache==1.5
 backports.shutil-get-terminal-size==1.0.0
 backports.ssl-match-hostname==3.5.0.1
 biopython==1.71
-bokeh==0.12.15
+bokeh==0.11.1  # bokeh==0.12.15 requires some changes
 certifi==2018.4.16
 chardet==3.0.4
 click==6.7
@@ -58,7 +58,7 @@ configparser==3.5.0
 coverage==4.5.1
 CVXcanon==0.1.1
 cvxopt==1.1.7  # cvxopt==1.2.0 installs on OSX but not on Sherlock
-cvxpy==0.4.11
+cvxpy==0.4.8   # cvxpy==0.4.11 change summary looks like a work in progress
 cycler==0.10.0
 Cython==0.28.2
 decorator==4.3.0

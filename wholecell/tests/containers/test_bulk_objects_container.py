@@ -51,10 +51,10 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			OBJECT_COUNTS[1:]
 			)
 
-	
+
 	@noseAttrib.attr('smalltest', 'bulkObjects')
 	def test_countsIs(self):
-		newCounts = [10, 20, 30]
+		newCounts = [10, 20.0, 30]
 		self.container.countsIs(newCounts)
 
 		self.assertEqual(
@@ -62,7 +62,7 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			newCounts
 			)
 
-		newCounts = [15, 5]
+		newCounts = [15, 5.0]
 		self.container.countsIs(newCounts, OBJECT_NAMES[1:])
 
 		self.assertEqual(
@@ -70,10 +70,10 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			newCounts
 			)
 
-	
+
 	@noseAttrib.attr('smalltest', 'bulkObjects')
 	def test_countsInc(self):
-		incCounts = [10, 20, 30]
+		incCounts = [10, 20.0, 30]
 		newCounts = (self.container.counts() + np.array(incCounts)).tolist()
 		self.container.countsInc(incCounts)
 
@@ -82,7 +82,7 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			newCounts
 			)
 
-		incCounts = [15, 5]
+		incCounts = [15, 5.0]
 		newCounts = (self.container.counts(OBJECT_NAMES[1:]) + np.array(incCounts)).tolist()
 		self.container.countsInc(incCounts, OBJECT_NAMES[1:])
 
@@ -91,10 +91,10 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			newCounts
 			)
 
-	
+
 	@noseAttrib.attr('smalltest', 'bulkObjects')
 	def test_countsDec(self):
-		decCounts = [30, 10, 5]
+		decCounts = [30, 10.0, 5]
 		newCounts = (np.array(OBJECT_COUNTS) - np.array(decCounts)).tolist()
 		self.container.countsDec(decCounts)
 
@@ -103,7 +103,7 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			newCounts
 			)
 
-		decCounts = [5, 2]
+		decCounts = [5.0, 2]
 		newCounts = (self.container.counts(OBJECT_NAMES[1:]) - np.array(decCounts)).tolist()
 		self.container.countsDec(decCounts, OBJECT_NAMES[1:])
 
@@ -112,7 +112,55 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			newCounts
 			)
 
-	
+
+	@noseAttrib.attr('smalltest', 'bulkObjects')
+	def test_countsView_countsInc(self):
+		countsView = self.container.countsView()
+		incCounts = [10, 20.0, 30]
+		newCounts = (self.container.counts() + np.array(incCounts)).tolist()
+		countsView.countsInc(incCounts)
+
+		self.assertEqual(countsView.counts().tolist(), newCounts)
+
+		countsView = self.container.countsView(OBJECT_NAMES[1:])
+		incCounts = [15, 5.0]
+		newCounts = (self.container.counts(OBJECT_NAMES[1:]) + np.array(incCounts)).tolist()
+		countsView.countsInc(incCounts)
+
+		self.assertEqual(countsView.counts().tolist(), newCounts)
+
+
+	@noseAttrib.attr('smalltest', 'bulkObjects')
+	def test_countsView_countsDec(self):
+		countsView = self.container.countsView()
+		decCounts = [30, 10.0, 5]
+		newCounts = (np.array(OBJECT_COUNTS) - np.array(decCounts)).tolist()
+		countsView.countsDec(decCounts)
+
+		self.assertEqual(countsView.counts().tolist(), newCounts)
+
+		countsView = self.container.countsView(OBJECT_NAMES[1:])
+		decCounts = [5.0, 2]
+		newCounts = (self.container.counts(OBJECT_NAMES[1:]) - np.array(decCounts)).tolist()
+		countsView.countsDec(decCounts)
+
+		self.assertEqual(countsView.counts().tolist(), newCounts)
+
+
+	@noseAttrib.attr('smalltest', 'bulkObjects')
+	def test_countView(self):
+		countView = self.container.countView(OBJECT_NAMES[2])
+		incCount = 333.0
+		newCount = OBJECT_COUNTS[2] + incCount
+		countView.countInc(incCount)
+
+		self.assertEqual(countView.count(), newCount)
+
+		newCount -= incCount
+		countView.countDec(incCount)
+		self.assertEqual(countView.count(), newCount)
+
+
 	@noseAttrib.attr('smalltest', 'bulkObjects')
 	def test_count(self):
 		self.assertEqual(
@@ -120,7 +168,7 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			OBJECT_COUNTS[0]
 			)
 
-	
+
 	@noseAttrib.attr('smalltest', 'bulkObjects')
 	def test_countIs(self):
 		newCount = 40
@@ -131,10 +179,19 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			newCount
 			)
 
-	
+
 	@noseAttrib.attr('smalltest', 'bulkObjects')
 	def test_countInc(self):
 		incCount = 40
+		newCount = self.container.count(OBJECT_NAMES[0]) + incCount
+		self.container.countInc(incCount, OBJECT_NAMES[0])
+
+		self.assertEqual(
+			self.container.count(OBJECT_NAMES[0]),
+			newCount
+			)
+
+		incCount = 40.0
 		newCount = self.container.count(OBJECT_NAMES[0]) + incCount
 		self.container.countInc(incCount, OBJECT_NAMES[0])
 
@@ -155,9 +212,19 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			newCount
 			)
 
+		decCount = 40.0
+		newCount = self.container.count(OBJECT_NAMES[0]) - decCount
+		self.container.countDec(decCount, OBJECT_NAMES[0])
+
+		self.assertEqual(
+			self.container.count(OBJECT_NAMES[0]),
+			newCount
+			)
+
+
 	# Internal methods
 
-	
+
 	@noseAttrib.attr('smalltest', 'bulkObjects')
 	def test_namesToIndexes(self):
 		# Test normal ordering
