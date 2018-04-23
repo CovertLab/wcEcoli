@@ -44,7 +44,7 @@ class BulkObjectsContainer(object):
 
 
 	def countsInc(self, values, names = None):
-		values = np.array(values, dtype=np.int64)  # convert floats to ints
+		values = np.array(values, dtype=self._counts.dtype)
 		if names is None:
 			self._counts[:] += values
 
@@ -53,7 +53,7 @@ class BulkObjectsContainer(object):
 
 
 	def countsDec(self, values, names = None): # TODO: raise exception if > max?
-		values = np.array(values, dtype=np.int64)  # convert floats to ints
+		values = np.array(values, dtype=self._counts.dtype)
 		if names is None:
 			self._counts[:] -= values
 
@@ -143,12 +143,12 @@ class _BulkObjectsView(object):
 
 
 	def countsInc(self, values):
-		values = np.array(values, dtype=np.int64)  # convert floats to ints
+		values = np.array(values, dtype=self._container._counts.dtype)
 		self._container._counts[self._indexes] += values
 
 
 	def countsDec(self, values):
-		values = np.array(values, dtype=np.int64)  # convert floats to ints
+		values = np.array(values, dtype=self._container._counts.dtype)
 		self._container._counts[self._indexes] -= values
 
 

@@ -114,6 +114,36 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 
 
 	@noseAttrib.attr('smalltest', 'bulkObjects')
+	def test_dtype_float32(self):
+		"""A BulkObjectsContainer with dtype=np.float32 should support
+		fractional counts and deltas.
+		"""
+		container = BulkObjectsContainer(OBJECT_NAMES, dtype=np.float32)
+		initialCounts = [10, 10.5, 20]
+		container.countsIs(initialCounts)
+		self.assertEqual(container.counts().tolist(), initialCounts)
+
+		incCounts = [10, 20.5, 30.5]
+		newCounts = [20, 31, 50.5]
+		container.countsInc(incCounts)
+		self.assertEqual(container.counts().tolist(), newCounts)
+
+		decCounts = [1.5, 2, 3.5]
+		newCounts = [18.5, 29, 47]
+		container.countsDec(decCounts)
+		self.assertEqual(container.counts().tolist(), newCounts)
+
+		countsView = container.countsView()
+		newCounts = [28.5, 49.5, 77.5]
+		countsView.countsInc(incCounts)
+		self.assertEqual(countsView.counts().tolist(), newCounts)
+
+		newCounts = [27, 47.5, 74]
+		countsView.countsDec(decCounts)
+		self.assertEqual(countsView.counts().tolist(), newCounts)
+
+
+	@noseAttrib.attr('smalltest', 'bulkObjects')
 	def test_countsView_countsInc(self):
 		countsView = self.container.countsView()
 		incCounts = [10, 20.0, 30]
