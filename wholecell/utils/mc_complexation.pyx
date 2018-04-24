@@ -11,12 +11,12 @@ TODO:
 @date: Created 6/17/14
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import numpy as np
 cimport numpy as np
-
-from libc.stdlib cimport rand, srand, RAND_MAX
+import random
 
 np.import_array()
 
@@ -94,8 +94,8 @@ cpdef np.ndarray[np.int64_t, ndim=1] mccFormComplexesWithPrebuiltMatrices(
 		):
 
 	# Set the seed
-	srand(seed)
-	
+	random.seed(seed)
+
 	# Copy the molecule counts into a new vector for return
 	cdef np.ndarray[np.int64_t, ndim=1] updatedMoleculeCounts = moleculeCounts.copy()
 
@@ -127,7 +127,7 @@ cpdef np.ndarray[np.int64_t, ndim=1] mccFormComplexesWithPrebuiltMatrices(
 		reactionIsPossible[reactionIndex] = reactionPossible
 
 	# Recursively form complexes
-	cdef np.float64_t random, cutoffValue, maximumValue
+	cdef np.float64_t random_double, cutoffValue, maximumValue
 	cdef int iteration, overlapIndex, reactionIndex2
 
 	for iteration in range(MAX_ITERATIONS):
@@ -142,16 +142,16 @@ cpdef np.ndarray[np.int64_t, ndim=1] mccFormComplexesWithPrebuiltMatrices(
 					reactionCumulative[reactionIndex-1]
 					+ reactionIsPossible[reactionIndex]
 					)
-		
+
 		maximumValue = reactionCumulative[nReactions-1]
-		
+
 		# Break if no reactions are possible
 		if maximumValue == 0:
 			break
 
 		# Choose which reaction to perform
-		random = <np.float64_t>rand() / <np.float64_t>RAND_MAX
-		cutoffValue = random * maximumValue
+		random_double = random.random()
+		cutoffValue = random_double * maximumValue
 
 		for reactionIndex in range(nReactions):
 			if cutoffValue <= reactionCumulative[reactionIndex]:
