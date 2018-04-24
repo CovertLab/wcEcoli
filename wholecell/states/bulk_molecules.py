@@ -277,12 +277,14 @@ class BulkMoleculesViewBase(wholecell.views.view.View):
 	def _countsInc(self, values):
 		assert (np.size(values) == np.size(self._containerIndexes)) or np.size(values) == 1, 'Inappropriately sized values'
 
+		values = np.array(values, dtype=self._containerIndexes.dtype)
 		self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] += values
 
 
 	def _countsDec(self, values):
 		assert (np.size(values) == np.size(self._containerIndexes)) or np.size(values) == 1, 'Inappropriately sized values'
 
+		values = np.array(values, dtype=self._containerIndexes.dtype)
 		self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] -= values
 
 
