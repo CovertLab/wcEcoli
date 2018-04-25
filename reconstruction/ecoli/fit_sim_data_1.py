@@ -50,9 +50,10 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 	Inputs:
 		raw_data (KnowledgeBaseEcoli) - knowledge base consisting of the
 			necessary raw data
-		cpus (int) - number of CPUs to use (if >1 uses multiprocessing)
-		debug (bool) - if True, only one condition will be fit to speed
-			up debug cycle (should not be used for simulations)
+		cpus (int) - number of processes to use (if >1 uses multiprocessing)
+		debug (bool) - if True, fit only one arbitrarily-chosen transcription
+			factor in order to speed up a debug cycle (should not be used for
+			an actual simulation)
 	'''
 
 	sim_data = SimulationDataEcoli()
