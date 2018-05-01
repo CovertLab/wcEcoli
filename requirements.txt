@@ -133,7 +133,7 @@ ipython==4.0.0
 ipython-genutils==0.1.0
 #ipywidgets==4.1.1
 itsdangerous==0.24
-#Jinja2==2.8
+Jinja2==2.8
 jsonschema==2.5.1
 #jupyter==1.0.0
 #jupyter-client==4.0.0
