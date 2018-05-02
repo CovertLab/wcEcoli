@@ -16,7 +16,8 @@ from __future__ import division
 
 import numpy as np
 cimport numpy as np
-import random
+
+from numpy.random import RandomState
 
 np.import_array()
 
@@ -24,6 +25,7 @@ cimport cython
 
 cdef np.int64_t MAX_ITERATIONS = 10**9
 cdef np.int64_t NO_MORE_ENTRIES = -1
+DEF RANDOM_BATCH_SIZE = 2048
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -93,8 +95,10 @@ cpdef np.ndarray[np.int64_t, ndim=1] mccFormComplexesWithPrebuiltMatrices(
 		np.ndarray[np.int64_t, ndim=2] overlappingReactions,
 		):
 
-	# Set the seed
-	random.seed(seed)
+	# Seed a random number instance. Get a batch of samples at a time for speed.
+	cdef random_state = RandomState(seed)
+	cdef np.float64_t[:] random_batch = None
+	cdef int random_batch_position = RANDOM_BATCH_SIZE
 
 	# Copy the molecule counts into a new vector for return
 	cdef np.ndarray[np.int64_t, ndim=1] updatedMoleculeCounts = moleculeCounts.copy()
@@ -150,7 +154,11 @@ cpdef np.ndarray[np.int64_t, ndim=1] mccFormComplexesWithPrebuiltMatrices(
 			break
 
 		# Choose which reaction to perform
-		random_double = random.random()
+		if random_batch_position >= RANDOM_BATCH_SIZE:
+			random_batch = random_state.random_sample(RANDOM_BATCH_SIZE)
+			random_batch_position = 0
+		random_double = random_batch[random_batch_position]
+		random_batch_position += 1
 		cutoffValue = random_double * maximumValue
 
 		for reactionIndex in range(nReactions):
