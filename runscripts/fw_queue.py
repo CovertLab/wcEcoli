@@ -14,7 +14,6 @@ from wholecell.fireworks.firetasks import AnalysisCohortTask
 from wholecell.fireworks.firetasks import AnalysisSingleTask
 from wholecell.fireworks.firetasks import AnalysisMultiGenTask
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
-from jinja2 import Template
 
 import wholecell.utils.constants
 import yaml
@@ -26,10 +25,11 @@ import cPickle
 
 def run_cmd(cmd):
 	environ = {
-	"PATH": os.environ["PATH"],
-	"LANG": "C",
-	"LC_ALL": "C",
-	}
+		"PATH": os.environ["PATH"],
+		"LD_LIBRARY_PATH": os.environ["LD_LIBRARY_PATH"],
+		"LANG": "C",
+		"LC_ALL": "C",
+		}
 	out = subprocess.Popen(cmd, stdout = subprocess.PIPE, env=environ).communicate()[0]
 	return out
 
@@ -69,12 +69,13 @@ N_INIT_SIMS = int(os.environ.get("N_INIT_SIMS", "1"))
 N_GENS = int(os.environ.get("N_GENS", "1"))
 SINGLE_DAUGHTERS = bool(int(os.environ.get("SINGLE_DAUGHTERS", "0")))
 LAUNCHPAD_FILE = str(os.environ.get("LAUNCHPAD_FILE", "my_launchpad.yaml"))
-COMPRESS_OUTPUT = bool(int(os.environ.get("COMPRESS_OUTPUT", "1")))
+COMPRESS_OUTPUT = bool(int(os.environ.get("COMPRESS_OUTPUT", "0")))
 SIM_DESCRIPTION = os.environ.get("DESC", "").replace(" ", "_")
 VERBOSE_QUEUE = bool(int(os.environ.get("VERBOSE_QUEUE", "1")))
 RUN_AGGREGATE_ANALYSIS = bool(int(os.environ.get("RUN_AGGREGATE_ANALYSIS", "1")))
 CACHED_SIM_DATA = bool(int(os.environ.get("CACHED_SIM_DATA", "0")))
 PARALLEL_FITTER = bool(int(os.environ.get("PARALLEL_FITTER", "0")))
+DEBUG_FITTER = bool(int(os.environ.get("DEBUG_FITTER", "0")))
 
 if not RUN_AGGREGATE_ANALYSIS:
 	COMPRESS_OUTPUT = False
@@ -216,23 +217,6 @@ fw_init_raw_data = Firework(
 
 wf_fws.append(fw_init_raw_data)
 
-# Unfit KB compression
-if COMPRESS_OUTPUT:
-	fw_name = "ScriptTask_compression_raw_data"
-
-	if VERBOSE_QUEUE:
-		print "Queuing {}".format(fw_name)
-
-	fw_raw_data_compression = Firework(
-		ScriptTask(
-			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_raw_data)
-			),
-		name = fw_name,
-		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
-		)
-
-	wf_fws.append(fw_raw_data_compression)
-
 ### Fit (Level 1)
 
 filename_sim_data_fit_1 = (
@@ -258,6 +242,7 @@ fw_fit_level_1 = Firework(
 		cached = CACHED_SIM_DATA,
 		cached_data = os.path.join(CACHED_SIM_DATA_DIRECTORY, filename_sim_data_fit_1),
 		cpus = cpusForFitter,
+		debug = DEBUG_FITTER,
 		),
 	name = fw_name,
 	spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": cpusForFitter}, "_priority":1}
@@ -265,6 +250,24 @@ fw_fit_level_1 = Firework(
 
 wf_fws.append(fw_fit_level_1)
 wf_links[fw_init_raw_data].append(fw_fit_level_1)
+
+# Unfit KB compression
+if COMPRESS_OUTPUT:
+	fw_name = "ScriptTask_compression_raw_data"
+
+	if VERBOSE_QUEUE:
+		print "Queuing {}".format(fw_name)
+
+	fw_raw_data_compression = Firework(
+		ScriptTask(
+			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_raw_data)
+			),
+		name = fw_name,
+		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
+		)
+
+	wf_fws.append(fw_raw_data_compression)
+	wf_links[fw_fit_level_1].append(fw_raw_data_compression)
 
 # Fit Level 1 KB compression
 

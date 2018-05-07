@@ -21,20 +21,61 @@ kernprof doesn't support that.
 @date: Created 10/10/2016
 """
 
+import __builtin__
 import sys
 import os
+import time
+import cProfile
+import pstats
+import StringIO
+
 import numpy as np
 
 # EXPECTS: The current working directory is "wcEcoli/".
 # Put that on the sys path in place of this script's directory so
 # `import wholecell.utils.polymerize` and that module's imports will work even
 # when run via kernprof.
-sys.path[0] = os.getcwd()
+sys.path[0] = os.getcwd() # TODO (John): what is the intention of this line?
 
-from wholecell.utils.polymerize import polymerize, PAD_VALUE
+from wholecell.utils.polymerize import polymerize
 
+PAD_VALUE = polymerize.PAD_VALUE
+
+# Wrap with kernprof profiling decorator - will throw an error if we call this
+# script using the vanilla python interpreter.
+if not __builtin__.__dict__.has_key('profile'):
+	raise Exception(
+		'kernprof @profile decorator not available.  This script should be '
+		+ 'invoked via kernprof -lv.  If invoked correctly and this error '
+		+ 'message is still raised, see issue #117.'
+		)
+
+# Attach __iter__ method to preserve old interface
+# TODO (John): migrate to new interface
+polymerize.__iter__ = lambda self: iter((self.sequenceElongation, self.monomerUsages, self.nReactions))
+
+# Wrap methods in line-profiling decorator
+# TODO (John): write an introspection utility to facilitate decoration
+
+polymerize.__init__ = profile(polymerize.__init__)
+
+polymerize._setup = profile(polymerize._setup)
+polymerize._sanitize_inputs = profile(polymerize._sanitize_inputs)
+polymerize._gather_input_dimensions = profile(polymerize._gather_input_dimensions)
+polymerize._gather_sequence_data = profile(polymerize._gather_sequence_data)
+polymerize._prepare_running_values = profile(polymerize._prepare_running_values)
+polymerize._prepare_outputs = profile(polymerize._prepare_outputs)
+
+polymerize._elongate = profile(polymerize._elongate)
+polymerize._elongate_to_limit = profile(polymerize._elongate_to_limit)
+polymerize._finalize_resource_limited_elongations = profile(polymerize._finalize_resource_limited_elongations)
+polymerize._update_elongation_resource_demands = profile(polymerize._update_elongation_resource_demands)
+
+polymerize._finalize = profile(polymerize._finalize)
+polymerize._clamp_elongation_to_sequence_length = profile(polymerize._clamp_elongation_to_sequence_length)
 
 def _setupRealExample():
+	# Test data pulled from an actual sim at an early time point.
 	monomerLimits = np.array([
 		11311,  6117,  4859,  6496,   843,  7460,  4431,  8986,  2126,
 		6385,  9491,  7254,  2858,  3770,  4171,  5816,  6435,  1064,
@@ -86,8 +127,6 @@ def _setupExample():
 
 
 def _simpleProfile():
-	import time
-
 	np.random.seed(0)
 
 	sequences, monomerLimits, reactionLimit, randomState = _setupExample()
@@ -97,7 +136,8 @@ def _simpleProfile():
 	sequenceLengths = (sequences != PAD_VALUE).sum(axis = 1)
 
 	t = time.time()
-	sequenceElongation, monomerUsages, nReactions = polymerize(sequences, monomerLimits, reactionLimit, randomState)
+	sequenceElongation, monomerUsages, nReactions = polymerize(
+		sequences, monomerLimits, reactionLimit, randomState)
 	evalTime = time.time() - t
 
 	assert (sequenceElongation <= sequenceLengths+1).all()
@@ -137,12 +177,11 @@ def _fullProfile():
 	sequences, monomerLimits, reactionLimit, randomState = _setupRealExample()
 
 	# Recipe from https://docs.python.org/2/library/profile.html#module-cProfile
-
-	import cProfile, pstats, StringIO
 	pr = cProfile.Profile()
 	pr.enable()
 
-	sequenceElongation, monomerUsages, nReactions = polymerize(sequences, monomerLimits, reactionLimit, randomState)
+	sequenceElongation, monomerUsages, nReactions = polymerize(
+		sequences, monomerLimits, reactionLimit, randomState)
 
 	pr.disable()
 	s = StringIO.StringIO()

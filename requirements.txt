@@ -7,20 +7,18 @@
 #   brew install glpk
 #   brew install swig           # needed to install pip CVXcanon
 #   brew install suite-sparse   # needed for cvxopt to use glpk
-#   brew install boost
-#   brew install boost-python   # needed by wholecell/utils/_netflow/glpk.cpp
 #
-## Use python 2.7.4 for now on Sherlock, but on macOS 2.7.8 is the oldest
-## that supports a shared library.
-## Python 2.7.9 is the oldest with working SSL libraries.
+## We're still using python 2.7.4 on Sherlock. (On macOS, 2.7.8 is the oldest
+## that supports a shared library, but that's no longer needed.
+## Python 2.7.9 is the oldest with working SSL libraries.)
 #   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.8
 #   pyenv local 2.7.8
 #
 ## Create and select a new python virtual environment:
-#   pyenv virtualenv ecoli7
-#   pyenv local ecoli7
+#   pyenv virtualenv wcEcoli2
+#   pyenv local wcEcoli2
 #
-## It's probably smart to upgrade pip:
+## It's smart to upgrade the installers:
 #   pip install --upgrade pip setuptools virtualenv wheel
 #
 ## For macOS:
@@ -41,9 +39,10 @@
 #
 ## Then install all the other packages listed here:
 #   CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary cvxopt
+#   pyenv rehash
 
 # Listing numpy first might avoid installation failures. Maybe that's only a
-# problem with older versions of pip.
+# problem with older versions of pip and/or python.
 numpy==1.9.2
 
 #alabaster==0.7.6
@@ -73,7 +72,6 @@ decorator==4.0.2
 #docutils==0.12
 #ecdsa==0.13
 ecos==2.0.4
-enum==0.4.6
 enum34==1.1.6
 Equation==1.2.1
 #Escher==1.4.0
@@ -214,6 +212,7 @@ six==1.10.0
 #Sphinx==1.3.1
 #sphinx-rtd-theme==0.1.8
 #structlog==16.0.0
+swiglpk==1.4.4
 sympy==1.0
 tabulate==0.7.5
 #terminado==0.5
