@@ -9,6 +9,7 @@ TODO - better annotation
 TODO - explain choices
 TODO - explain future considerations
 TODO - document functions
+TODO - consider processing overlapping genes (how to split?)
 '''
 
 import json
@@ -16,6 +17,7 @@ import cPickle
 import numpy as np
 import os
 import re
+import time
 
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 
@@ -29,7 +31,6 @@ MATRIX_FILE = os.path.join(TU_DIR, 'geneTUMatrix.pkl')
 ROWS_FILE = os.path.join(TU_DIR, 'geneTUMatrix_Rows.pkl')
 COLS_FILE = os.path.join(TU_DIR, 'geneTUMatrix_Columns.pkl')
 JSON_OUTPUT_FILE = os.path.join(TU_DIR, 'tu.json')
-MANUAL_DIRECTIONALITY_FILE = os.path.join(TU_DIR, '041018_TU_Directionality.csv')
 
 OTHER_RNA_IDX = 10  # molecular weight index for other RNA
 N_MW_TYPES = 11  # number of molecular weight groups that are tracked
@@ -99,6 +100,14 @@ def create_tu_matrix(tu):
 
 	return mat
 
+def genes_str(genes):
+	# convert list of genes to string for hashing in dict
+	return ''.join(sorted(genes))
+
+def dna_to_rna(dna):
+	# convert DNA sequence str to RNA sequence str
+	return re.sub('T', 'U', dna)
+
 
 # Load raw data
 raw_data = KnowledgeBaseEcoli()
@@ -130,105 +139,85 @@ rna_in_complexes = np.hstack([
 	for stoich in rxn['stoichiometry'] if stoich['type'] == 'rna'])
 	for rxn in raw_data.complexationReactions
 	])
+gene_counts = {id: 0 for id in gene_dict}
 
 # Pull out information about genes in TUs
 single_genes = set([tu[0] for tu in cols if len(tu) == 1])
 n_tu_per_gene = {gene: count for gene, count in zip(rows, np.sum(tu_mat, axis=1))}
 
-# Write to csv for manual curation of some directionality
-import csv
-writer = csv.writer(open('opposite_direction_genes.tsv', 'w'), delimiter='\t')
-
 # Create a TU for each column in the matrix
+tu_indices = {}
+tu_info = {}
 count = 0
-with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
-	f.write('"length"\t"id"\t"seq"\t"coordinate"\t"direction"\t"rnas"\t"mw"\t"processed"\n')
-	for mat_col, col_name in zip(tu_mat.T, cols):
-		starts = []
-		ends = []
-		dirs = []
-		ids = []
-		types = []
-		rna_ids = []
-		seqs = []
+for mat_col, col_name in zip(tu_mat.T, cols):
+	starts = []
+	ends = []
+	dirs = []
+	ids = []
+	types = []
+	rna_ids = []
+	seqs = []
 
-		# Get gene info for each transcription unit
-		for gene_idx in np.where(mat_col)[0]:
-			gene_id = rows[gene_idx]
+	# Get gene info for each transcription unit
+	for gene_idx in np.where(mat_col)[0]:
+		gene_id = rows[gene_idx]
 
-			assert rows[gene_idx] in col_name
+		assert rows[gene_idx] in col_name
 
-			dir = str(gene_dict[gene_id]['direction'])
-			start = int(gene_dict[gene_id]['coordinate'])
-			if dir == '-':
-				start += 1
-			length = int(gene_dict[gene_id]['length'])
-			if dir == '+':
-				end = start + length
-			else:
-				end = start - length
-
-			dirs += [dir]
-			starts += [start]
-			ends += [end]
-			ids += [str(gene_dict[gene_id]['id'])]
-			rna_ids += [str(gene_dict[gene_id]['rnaId'])]
-			types += [str(gene_dict[gene_id]['type'])]
-			seqs += [str(gene_dict[gene_id]['seq'])]
-
-		sorted_idx = np.argsort(starts)
-
-		dirs = np.array(dirs)[sorted_idx]
-		starts = np.array(starts)[sorted_idx]
-		ends = np.array(ends)[sorted_idx]
-		ids = np.array(ids)[sorted_idx]
-		rna_ids = np.array(rna_ids)[sorted_idx]
-		types = np.array(types)[sorted_idx]
-
-		# Determine directionality of TU
-		if len(dirs) > 1:
-			ignored_misc = types == 'miscRNA'
-
-			count_fwd = np.sum(dirs[~ignored_misc] == '+')
-			count_rev = np.sum(dirs[~ignored_misc] == '-')
-
-			skip = False
-			if count_fwd == count_rev:
-				# Ignore TUs that can represented as single gene TUs
-				if len(dirs) == 2:
-					if ((rna_ids[0] in single_genes or n_tu_per_gene[rna_ids[0]] == 1
-							or (n_tu_per_gene[rna_ids[0]] == 2 and rna_ids[0] in single_genes))
-							and (rna_ids[1] in single_genes or n_tu_per_gene[rna_ids[1]] == 1
-							or (n_tu_per_gene[rna_ids[1]] == 2 and rna_ids[1] in single_genes))):
-						skip = True
-
-
-				# TODO - remove skipped TUs
-				# TODO - handle manual curation from file
-				# TODO - verify skipped TUs don't leave a gene without a TU
-				if not skip:
-					writer.writerow([ids, dirs, types, starts])
-					# print col_name
-
-				# flagged = False
-				# internal = False
-				# start_dir = ''
-				# for d in sorted_dir:
-				# 	if start_dir == '':
-				# 		start_dir = d
-				# 	elif d != start_dir:
-				# 		flagged = True
-				# 	elif flagged and d == start_dir:
-				# 		internal = True
-				#
-				# if flagged:
-			elif count_fwd > count_rev:
-				tu_dir = '+'
-			else:
-				tu_dir = '-'
+		dir = str(gene_dict[gene_id]['direction'])
+		start = int(gene_dict[gene_id]['coordinate'])
+		if dir == '-':
+			start += 1
+		length = int(gene_dict[gene_id]['length'])
+		if dir == '+':
+			end = start + length
 		else:
-			tu_dir = dirs[0]
+			end = start - length
 
+		dirs += [dir]
+		starts += [start]
+		ends += [end]
+		ids += [str(gene_dict[gene_id]['id'])]
+		rna_ids += [str(gene_dict[gene_id]['rnaId'])]
+		types += [str(gene_dict[gene_id]['type'])]
+		seqs += [str(gene_dict[gene_id]['seq'])]
+
+	sorted_idx = np.argsort(starts)
+
+	dirs = np.array(dirs)[sorted_idx]
+	starts = np.array(starts)[sorted_idx]
+	ends = np.array(ends)[sorted_idx]
+	ids = np.array(ids)[sorted_idx]
+	rna_ids = np.array(rna_ids)[sorted_idx]
+	types = np.array(types)[sorted_idx]
+
+	# Determine directionality of TU
+	if len(dirs) > 1:
+		ignored_misc = types == 'miscRNA'
+
+		count_fwd = np.sum(dirs[~ignored_misc] == '+')
+		count_rev = np.sum(dirs[~ignored_misc] == '-')
+
+		if count_fwd == count_rev:
+			# Ignore TUs that can be represented as single gene TUs
+			if len(dirs[~ignored_misc]) == 2:
+				rnas = rna_ids[~ignored_misc]
+				if ((rnas[0] in single_genes or n_tu_per_gene[rnas[0]] == 1
+						or (n_tu_per_gene[rnas[0]] == 2 and rnas[0] in single_genes))
+						and (rnas[1] in single_genes or n_tu_per_gene[rnas[1]] == 1
+						or (n_tu_per_gene[rnas[1]] == 2 and rnas[1] in single_genes))):
+					continue
+
+			tu_dirs = ['+', '-']
+		elif count_fwd > count_rev:
+			tu_dirs = ['+']
+		else:
+			tu_dirs = ['-']
+	else:
+		tu_dirs = [dirs[0]]
+
+	# duplicate TUs that have equal genes in opposite directions
+	for tu_dir in tu_dirs:
 		# Determine mask for which entries match TU direction
 		dir_mask = dirs == tu_dir
 
@@ -239,11 +228,11 @@ with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
 		if tu_dir == '+':
 			tu_start = np.min(np.hstack((starts[dir_mask], ends[~dir_mask])))
 			tu_end = np.max(np.hstack((ends[dir_mask], starts[~dir_mask])))
-			tu_seq = re.sub('T', 'U', str(genome[tu_start:tu_end]))
+			tu_seq = dna_to_rna(str(genome[tu_start:tu_end]))
 		else:
 			tu_start = np.max(np.hstack((starts[dir_mask], ends[~dir_mask])))
 			tu_end = np.min(np.hstack((ends[dir_mask], starts[~dir_mask])))
-			tu_seq = re.sub('T', 'U', str(reverse_complement[-tu_start:-tu_end]))
+			tu_seq = dna_to_rna(str(reverse_complement[-tu_start:-tu_end]))
 
 		tu_length = len(tu_seq)
 
@@ -289,13 +278,58 @@ with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
 			processed = 'true'
 
 		# Set TU ID
-		tu_id = TU_ID_FORMAT.format(count)
-		count += 1
+		genes = genes_str(tu_genes)
+		tu_idx = tu_indices.get(genes, count)
+		tu_id = TU_ID_FORMAT.format(tu_idx)
+		if tu_idx < count:
+			if sum(tu_info[tu_id]['tu_mw']) < sum(tu_mw):
+				continue
+		else:
+			for gene in tu_genes:
+				gene_counts[gene] += 1
 
-		# Write info for TU
+			if len(tu_genes) == 1:
+				tu_id = tu_genes[0]
+			else:
+				tu_indices[genes] = tu_idx
+				count += 1
+
+		new_tu = {}
+		new_tu['tu_length'] = tu_length
+		new_tu['tu_id'] = tu_id
+		new_tu['tu_seq'] = tu_seq
+		new_tu['tu_start'] = tu_start
+		new_tu['tu_dir'] = tu_dir
+		new_tu['tu_genes'] = tu_genes
+		new_tu['tu_mw'] = tu_mw
+		new_tu['processed'] = processed
+		tu_info[tu_id] = new_tu
+
+# add single genes not captured in any TU
+for gene, count in gene_counts.items():
+	if count == 0:
+		gene_info = gene_dict[gene]
+		new_tu = {}
+		new_tu['tu_length'] = gene_info['length']
+		new_tu['tu_id'] = gene
+		new_tu['tu_seq'] = dna_to_rna(gene_info['seq'])
+		new_tu['tu_start'] = gene_info['coordinate']
+		new_tu['tu_dir'] = gene_info['direction']
+		new_tu['tu_genes'] = np.array([gene])
+		new_tu['tu_mw'] = np.array(rna_mws[gene])
+		new_tu['processed'] = 'false'  # already single gene
+		tu_info[gene] = new_tu
+
+# write output to file
+with open(TU_FLAT_OUTPUT_FILE, 'w') as f:
+	f.write('# File generated by {} on {}\n'.format(__file__, time.ctime()))
+	f.write('# Contains information for every RNA that can be transcribed.\n')
+	f.write('# Single genes will be labeled with their gene id and multiple genes will have a TU number.\n')
+	f.write('"length"\t"id"\t"seq"\t"coordinate"\t"direction"\t"rnas"\t"mw"\t"processed"\n')
+	for tu_id, tu in sorted(tu_info.items()):
 		f.write('{}\t"{}"\t"{}"\t{}\t"{}"\t{}\t{}\t{}\n'.format(
-			tu_length, tu_id, tu_seq, tu_start, tu_dir,
-			json.dumps(tu_genes.tolist()), json.dumps(tu_mw.tolist()), processed
+			tu['tu_length'], tu['tu_id'], tu['tu_seq'], tu['tu_start'], tu['tu_dir'],
+			json.dumps(tu['tu_genes'].tolist()), json.dumps(tu['tu_mw'].tolist()), tu['processed']
 		))
 
 import ipdb; ipdb.set_trace()
