@@ -14,7 +14,6 @@ from wholecell.fireworks.firetasks import AnalysisCohortTask
 from wholecell.fireworks.firetasks import AnalysisSingleTask
 from wholecell.fireworks.firetasks import AnalysisMultiGenTask
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
-from jinja2 import Template
 
 import wholecell.utils.constants
 import yaml
@@ -76,6 +75,7 @@ VERBOSE_QUEUE = bool(int(os.environ.get("VERBOSE_QUEUE", "1")))
 RUN_AGGREGATE_ANALYSIS = bool(int(os.environ.get("RUN_AGGREGATE_ANALYSIS", "1")))
 CACHED_SIM_DATA = bool(int(os.environ.get("CACHED_SIM_DATA", "0")))
 PARALLEL_FITTER = bool(int(os.environ.get("PARALLEL_FITTER", "0")))
+DEBUG_FITTER = bool(int(os.environ.get("DEBUG_FITTER", "0")))
 
 if not RUN_AGGREGATE_ANALYSIS:
 	COMPRESS_OUTPUT = False
@@ -242,6 +242,7 @@ fw_fit_level_1 = Firework(
 		cached = CACHED_SIM_DATA,
 		cached_data = os.path.join(CACHED_SIM_DATA_DIRECTORY, filename_sim_data_fit_1),
 		cpus = cpusForFitter,
+		debug = DEBUG_FITTER,
 		),
 	name = fw_name,
 	spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": cpusForFitter}, "_priority":1}

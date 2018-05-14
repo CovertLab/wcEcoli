@@ -1,24 +1,25 @@
-#!/usr/bin/env python
+"""
+The fitter, aka parameter calculator.
+"""
 
+from __future__ import absolute_import
 from __future__ import division
 
 import numpy as np
 import os
 import scipy.optimize
-import time
 import cPickle
 
 import wholecell
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
-from reconstruction.ecoli.compendium import growth_data
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWithPrebuiltMatrices
 
+from wholecell.utils import filepath
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize, massesAndCountsToAddForHomeostaticTargets
-from wholecell.utils.modular_fba import FluxBalanceAnalysis
 
-import cvxpy
+from cvxpy import Variable, Problem, Minimize, norm
 
 from multiprocessing import Pool
 
@@ -43,13 +44,30 @@ VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 TIME_UNITS = units.s
 
-def fitSimData_1(raw_data, cpus = 1):
+def fitSimData_1(raw_data, cpus=1, debug=False):
+	'''
+	Fits parameters necessary for the simulation based on the knowledge base
+
+	Inputs:
+		raw_data (KnowledgeBaseEcoli) - knowledge base consisting of the
+			necessary raw data
+		cpus (int) - number of processes to use (if >1 uses multiprocessing)
+		debug (bool) - if True, fit only one arbitrarily-chosen transcription
+			factor in order to speed up a debug cycle (should not be used for
+			an actual simulation)
+	'''
 
 	sim_data = SimulationDataEcoli()
 	sim_data.initialize(
 		raw_data = raw_data,
 		basal_expression_condition = BASAL_EXPRESSION_CONDITION,
 		)
+
+	# Limit the number of conditions that are being fit so that execution time decreases
+	if debug:
+		print("Warning: running fitter in debug mode - not all conditions will be fit")
+		key = sim_data.tfToActiveInactiveConds.keys()[0]
+		sim_data.tfToActiveInactiveConds = {key: sim_data.tfToActiveInactiveConds[key]}
 
 	# Increase RNA poly mRNA deg rates
 	setRnaPolymeraseCodingRnaDegradationRates(sim_data)
@@ -1521,7 +1539,6 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		return Pdiff
 
-	from cvxpy import Variable, Problem, Minimize, norm
 	pPromoterBound = calculatePromoterBoundProbability(sim_data, cellSpecs)
 	pInit0 = None
 	lastNorm = np.inf
@@ -1935,15 +1952,11 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 			)
 
 	needToUpdate = False
-	fixturesDir = os.path.join(
+	fixturesDir = filepath.makedirs(
 			os.path.dirname(os.path.dirname(wholecell.__file__)),
 			"fixtures",
 			"endo_km"
 			)
-
-	if not os.path.exists(fixturesDir):
-		needToUpdate = True
-		os.makedirs(fixturesDir)
 
 	if os.path.exists(os.path.join(fixturesDir, "km.cPickle")):
 		KmcountsCached = cPickle.load(open(os.path.join(fixturesDir, "km.cPickle"), "rb"))
@@ -2013,4 +2026,3 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	sim_data.process.rna_decay.StatsFit['ResScaledKmOpt'] = np.sum(np.abs(R_aux(KmCooperativeModel)))
 
 	return units.mol / units.L * KmCooperativeModel
-
