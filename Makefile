@@ -47,7 +47,7 @@ justKb: buildKb fitKb_1 # execModel_1 execAnalysis_1 fitKb_2
 justSimulation: execModel_2
 
 clean:
-	find . -name "*.cPickle" -exec rm -fr {} \;
+	find . -not \( -path ./out -prune \) -not \( -path ./.git -prune \) -name "*.cPickle" -exec rm -fr {} \;
 	find . -name "*.pyc" -exec rm -rf {} \;
 	find . -name "*.o" -exec rm -fr {} \;
 	find . -name "*.so" -exec rm -fr {} \;
