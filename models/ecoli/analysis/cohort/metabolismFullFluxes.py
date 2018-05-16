@@ -16,9 +16,7 @@ import matplotlib
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from matplotlib import colors
-from matplotlib import gridspec
 import scipy.cluster.hierarchy as sch
-from scipy.spatial import distance
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -43,11 +41,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	plt.suptitle("Full Metabolic Network Reaction Fluxes")
 
-	means = np.zeros((ap.n_seed, ap.n_generation))
-
 	for seedNum in xrange(ap.n_seed):
 		for generationNum in xrange(ap.n_generation):
-			
+
 			# Only plot one cell per seed per generation
 			simDir = ap.get_cells(seed=[seedNum], generation=[generationNum])[0]
 			simOutDir = os.path.join(simDir, "simOut")
@@ -55,7 +51,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
 			time = fbaResults.readColumn("time")
 			reactionFluxes = fbaResults.readColumn("reactionFluxes")
-			reactionIDs = np.array(fbaResults.readAttribute('reactionIDs'))
 			fbaResults.close()
 
 
@@ -66,7 +61,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 			# Cluster once, and then plot all other cells reactions in that same order
 			if seedNum == 0 and generationNum == 0:
-				linkage = sch.linkage(reactionFluxes.T, metric = "correlation")
+				linkage = sch.linkage(reactionFluxes.T)
 				linkage[:, 2] = np.fmax(linkage[:, 2], 0) # fixes rounding issues leading to negative distances
 				index = sch.leaves_list(linkage)
 
@@ -112,10 +107,10 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 			xticks = np.linspace(0,time.size-1, 5, dtype=np.int)
 			currentAxes.set_xticks(xticks)
-			
+
 			if generationNum == 0:
 				currentAxes.set_ylabel("Seed {}".format(seedNum))
-	
+
 			if seedNum == ap.n_seed - 1:
 				if generationNum == 0:
 					currentAxes.set_xlabel("Time (min)")
@@ -124,7 +119,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 				currentAxes.set_xticklabels(np.round(time[xticks]/60.).astype(int))
 			else:
 				currentAxes.set_xticklabels([])
-			
+
 			currentAxes.set_yticks([])
 
 	from wholecell.analysis.analysis_tools import exportFigure
