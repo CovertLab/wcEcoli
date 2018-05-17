@@ -21,7 +21,7 @@ from itertools import izip
 
 import numpy as np
 
-import wholecell.states.state
+import wholecell.states.internal_state
 import wholecell.views.view
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
@@ -34,7 +34,7 @@ ASSERT_POSITIVE_COUNTS = True
 class NegativeCountsError(Exception):
 	pass
 
-class BulkMolecules(wholecell.states.state.State):
+class BulkMolecules(wholecell.states.internal_state.State):
 	_name = 'BulkMolecules'
 
 	def __init__(self, *args, **kwargs):

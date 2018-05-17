@@ -13,6 +13,7 @@ from wholecell.utils.unit_struct_array import UnitStructArray
 
 from reconstruction.ecoli.dataclasses.state.bulkMolecules import BulkMolecules
 from reconstruction.ecoli.dataclasses.state.uniqueMolecules import UniqueMolecules
+from reconstruction.ecoli.dataclasses.state.environmentMolecules import EnvironmentMolecules
 
 from reconstruction.ecoli.dataclasses.state import stateFunctions as sf
 
@@ -26,9 +27,11 @@ class State(object):
 
 		self.bulkMolecules = BulkMolecules(raw_data, sim_data)
 		self.uniqueMolecules = UniqueMolecules(raw_data, sim_data)
+		self.environmentMolecules = EnvironmentMolecules(raw_data, sim_data)
 
 		self._buildBulkMolecules(raw_data, sim_data)
 		self._buildUniqueMolecules(raw_data, sim_data)
+		self._buildEnvironmentMolecules(raw_data, sim_data)
 		self._buildCompartments(raw_data, sim_data)
 
 
@@ -89,6 +92,7 @@ class State(object):
 
 		self.bulkMolecules.addToBulkState(fragmentsIds, fragmentsMasses)
 
+
 	def _buildUniqueMolecules(self, raw_data, sim_data):
 		# Add active RNA polymerase
 		rnaPolyComplexMass = self.bulkMolecules.bulkData["mass"][self.bulkMolecules.bulkData["id"] == "APORNAP-CPLX[c]"]
@@ -133,6 +137,24 @@ class State(object):
 		fullChromosomeMass = units.g / units.mol * np.zeros_like(rnaPolyComplexMass) # NOTE: origins currently have no mass
 		fullChromosomeAttributes = {"division_time" : "f8"}
 		self.uniqueMolecules.addToUniqueState('fullChromosome', fullChromosomeAttributes, fullChromosomeMass)
+
+
+	def _buildEnvironmentMolecules(self, raw_data, sim_data):
+
+		# TODO (Eran) get nutrients instead of metabolites
+		# Set metabolites
+		nutrientIds = sf.createIdsWithCompartments(raw_data.metabolites)
+		nutrientMasses = units.g / units.mol * sf.createMetaboliteMassesByCompartments(raw_data.metabolites, 7, 11)
+
+		self.environmentMolecules.addToEnvironmentState(nutrientIds, nutrientMasses)
+
+		# TODO (Eran) -- get environmental water
+		# # Set water
+		# waterIds = sf.createIdsWithCompartments(raw_data.water)
+		# waterMasses = units.g / units.mol * sf.createMetaboliteMassesByCompartments(raw_data.water, 8, 11)
+		#
+		# self.environmentMolecules.addToEnvironmentState(waterIds, waterMasses)
+
 
 	def _buildCompartments(self, raw_data, sim_data):
 		compartmentData = np.empty(len(raw_data.compartments),

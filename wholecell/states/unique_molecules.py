@@ -17,7 +17,7 @@ from copy import deepcopy
 
 import numpy as np
 
-import wholecell.states.state
+import wholecell.states.internal_state
 import wholecell.views.view
 from wholecell.containers.unique_objects_container import UniqueObjectsContainer, _partition
 from wholecell.utils import units
@@ -26,7 +26,7 @@ DEFAULT_ATTRIBUTES = {
 	"_partitionedProcess":np.int64
 	}
 
-class UniqueMolecules(wholecell.states.state.State):
+class UniqueMolecules(wholecell.states.internal_state.State):
 	"""
 	UniqueMolecules
 
