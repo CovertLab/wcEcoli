@@ -90,7 +90,7 @@ kiwisolver==1.0.1
 lazy-object-proxy==1.3.1
 line-profiler==2.1.2
 MarkupSafe==1.0
-matplotlib==2.2.2
+matplotlib==1.4.3  # matplotlib==2.2.2 breaks mpld3. Try 1.5.3 then try patching or fixing mpld3.
 matplotlib-venn==0.11.5
 mccabe==0.6.1
 memory-profiler==0.52.0
@@ -102,14 +102,14 @@ mpmath==1.0.0
 multiprocess==0.70.5
 nbformat==4.4.0
 nose==1.3.7
-numpy==1.14.2
+numpy==1.14.3
 optlang==1.4.1
 packaging==17.1
 pandas==0.22.0
 path.py==11.0.1
 pathlib==1.0.1
 pathlib2==2.3.0
-pbr==4.0.2
+pbr==4.0.3
 pexpect==4.5.0
 pickleshare==0.7.4
 pluggy==0.6.0
@@ -124,7 +124,7 @@ pymongo==3.6.1
 pyparsing==2.2.0
 pytest==3.5.0
 pytest-benchmark==3.1.1
-python-dateutil==2.7.2
+python-dateutil==2.7.3
 pytz==2018.4
 PyYAML==3.12
 requests==2.18.4
