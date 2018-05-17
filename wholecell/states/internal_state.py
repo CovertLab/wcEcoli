@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 """
-State
+Internal State
 
-State variable base class. Defines the interface states expose to the simulation and processes.
+Internal state variable base class. Defines the interface states expose to the simulation and processes.
 
 @author: Derek Macklin
 @organization: Covert Lab, Department of Bioengineering, Stanford University
@@ -15,7 +15,7 @@ from __future__ import division
 import numpy as np
 
 class State(object):
-	""" State """
+	""" Internal State """
 
 	_name = None
 
@@ -38,6 +38,7 @@ class State(object):
 
 	# Construct state-process graph, calculate constants
 	def initialize(self, sim, sim_data):
+
 		self._sim = sim
 
 		self._nProcesses = len(sim.processes)

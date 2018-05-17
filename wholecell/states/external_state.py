@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 """
-State
+External State
 
-State variable base class. Defines the interface states expose to the simulation and processes.
+External state variable base class. Defines the interface states expose to the simulation and processes.
 
 @author: Eran Agmon
 @organization: Covert Lab, Department of Bioengineering, Stanford University
@@ -15,7 +15,7 @@ from __future__ import division
 import numpy as np
 
 class State(object):
-	""" State """
+	""" External State """
 
 	_name = None
 

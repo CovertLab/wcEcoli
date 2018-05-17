@@ -12,6 +12,7 @@ import cPickle
 
 import wholecell
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
+from wholecell.containers.environment_objects_container import EnvironmentObjectsContainer
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWithPrebuiltMatrices
 
@@ -269,6 +270,11 @@ def buildTfConditionCellSpecifications(sim_data, tf):
 	cellSpecs = {}
 	for choice in ["__active", "__inactive"]:
 		conditionKey = tf + choice
+
+
+		#TODO (Eran) conditionValue should look at sim_data.state.environment
+		import ipdb; ipdb.set_trace()
+
 		conditionValue = sim_data.conditions[conditionKey]
 
 		fcData = {}
@@ -720,6 +726,17 @@ def createBulkContainer(sim_data, expression, doubling_time):
 	bulkContainer.countsIs(counts_protein, ids_protein)
 
 	return bulkContainer
+
+
+def createEnvironmentContainer(sim_data):
+
+	ids_molecules = sim_data.state.environmentMolecules.environmentData["id"]
+
+	## Construct environment container
+
+	environmentContainer = EnvironmentObjectsContainer(ids_molecules, dtype = np.float64)
+
+	return environmentContainer
 
 
 def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time):

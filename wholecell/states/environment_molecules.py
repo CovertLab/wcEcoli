@@ -18,29 +18,27 @@ from itertools import izip
 
 import numpy as np
 
-import wholecell.internal_states.state
+import wholecell.states.external_state
 import wholecell.views.view
-
-#TODO (Eran) create environment objects container
 from wholecell.containers.environment_objects_container import EnvironmentObjectsContainer
 
 from wholecell.utils import units
 
 from wholecell.utils.constants import REQUEST_PRIORITY_DEFAULT
 
-class Environment(wholecell.internal_states.state.State):
-	_name = 'Environment'
+class EnvironmentMolecules(wholecell.states.external_state.State):
+	_name = 'EnvironmentMolecules'
 
 	def __init__(self, *args, **kwargs):
 		self.container = None
 		self._moleculeMass = None
 		self._moleculeIDs = None
 
-		super(Environment, self).__init__(*args, **kwargs)
+		super(EnvironmentMolecules, self).__init__(*args, **kwargs)
 
 
 	def initialize(self, sim, sim_data):
-		super(Environment, self).initialize(sim, sim_data)
+		super(EnvironmentMolecules, self).initialize(sim, sim_data)
 
 		self._processIDs = sim.processes.keys()
 
@@ -71,8 +69,8 @@ class Environment(wholecell.internal_states.state.State):
 		self.container.tableLoad(tableReader, tableIndex)
 
 
-class EnvironmentViewBase(wholecell.views.view.View):
-	_stateID = 'Environment'
+class EnvironmentMoleculesViewBase(wholecell.views.view.View):
+	_stateID = 'EnvironmentMolecules'
 
 	def _updateQuery(self):
 		self._totalIs(self._state.container._counts[self._containerIndexes])
@@ -100,7 +98,7 @@ class EnvironmentViewBase(wholecell.views.view.View):
 		self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] -= values
 
 
-class EnvironmentView(EnvironmentViewBase):
+class EnvironmentMoleculesView(EnvironmentMoleculesViewBase):
 	def __init__(self, *args, **kwargs):
 		super(EnvironmentView, self).__init__(*args, **kwargs)
 
