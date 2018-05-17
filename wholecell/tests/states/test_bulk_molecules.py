@@ -12,6 +12,7 @@ from __future__ import division
 import unittest
 
 import numpy as np
+import numpy.testing as npt
 import nose.plugins.attrib as noseAttrib
 
 from wholecell.states.state import State
@@ -44,25 +45,25 @@ class Test_BulkMolecules(unittest.TestCase):
 	@noseAttrib.attr('smalltest', 'bulkMolecules')
 	def test_counts(self):
 		moleculesView = self.moleculesView
-		self.assertEqual(moleculesView.counts().tolist(), [[OBJECT_COUNTS]] * 3)
+		npt.assert_equal(moleculesView.counts(), [[OBJECT_COUNTS]] * 3)
 
 		incCounts = [10, 20.5, 40.5]
 		newCounts = [110, 40, 50]
 		moleculesView.countsInc(incCounts)
-		self.assertEqual(moleculesView.counts().tolist(), [[newCounts]] * 3)
+		npt.assert_equal(moleculesView.counts(), [[newCounts]] * 3)
 
 		decCounts = [1.5, 2, 3.5]
 		newCounts = [109, 38, 47]
 		moleculesView.countsDec(decCounts)
-		self.assertEqual(moleculesView.counts().tolist(), [[newCounts]] * 3)
+		npt.assert_equal(moleculesView.counts(), [[newCounts]] * 3)
 
 		moleculeView = self.moleculeView
-		self.assertEqual(moleculeView.count().tolist(), [newCounts])
+		npt.assert_equal(moleculeView.count(), [newCounts])
 
 		newCounts = [209, 138, 147]
 		moleculeView.countInc(100.9)
-		self.assertEqual(moleculeView.count().tolist(), [newCounts])
+		npt.assert_equal(moleculeView.count(), [newCounts])
 
 		newCounts = [206, 135, 144]
 		moleculeView.countDec(3.99)
-		self.assertEqual(moleculeView.count().tolist(), [newCounts])
+		npt.assert_equal(moleculeView.count(), [newCounts])
