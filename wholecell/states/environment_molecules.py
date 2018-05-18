@@ -44,8 +44,8 @@ class EnvironmentMolecules(wholecell.states.external_state.State):
 
 		# Load constants
 		# TODO (Eran) create environment objects for sim_data
-		self._moleculeIDs = sim_data.state.environment.environmentData['id']
-		self._moleculeMass = sim_data.state.environment.environmentData['mass'].asNumber(units.fg / units.mol) / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		self._moleculeIDs = sim_data.state.environmentMolecules.environmentData['id']
+		self._moleculeMass = sim_data.state.environmentMolecules.environmentData['mass'].asNumber(units.fg / units.mol) / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
 		self._submassNameToIndex = sim_data.submassNameToIndex
 
 		# Create the container for molecule counts
@@ -80,19 +80,19 @@ class EnvironmentMoleculesViewBase(wholecell.views.view.View):
 		return self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex].copy()
 
 
-	def _setCounts(self, values):
+	def _countsIs(self, values):
 		assert (np.size(values) == np.size(self._containerIndexes)) or np.size(values) == 1, 'Inappropriately sized values'
 
 		self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] = values
 
 
-	def _increaseCounts(self, values):
+	def _countsInc(self, values):
 		assert (np.size(values) == np.size(self._containerIndexes)) or np.size(values) == 1, 'Inappropriately sized values'
 
 		self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] += values
 
 
-	def _decreaseCounts(self, values):
+	def _countsDec(self, values):
 		assert (np.size(values) == np.size(self._containerIndexes)) or np.size(values) == 1, 'Inappropriately sized values'
 
 		self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] -= values
@@ -100,7 +100,7 @@ class EnvironmentMoleculesViewBase(wholecell.views.view.View):
 
 class EnvironmentMoleculesView(EnvironmentMoleculesViewBase):
 	def __init__(self, *args, **kwargs):
-		super(EnvironmentView, self).__init__(*args, **kwargs)
+		super(EnvironmentMoleculesView, self).__init__(*args, **kwargs)
 
 		# State references
 		assert len(set(self._query)) == len(self._query), "Environment molecules views cannot contain duplicate entries"
@@ -119,14 +119,42 @@ class EnvironmentMoleculesView(EnvironmentMoleculesViewBase):
 		return self._mass()
 
 
-	def setCount(self, values):
+	def countsIs(self, values):
 		self._countsIs(values)
 
 
-	def increaseCount(self, values):
+	def countsInc(self, values):
 		self._countsInc(values)
 
 
-	def decreaseCount(self, values):
+	def countsDec(self, values):
 		self._countsDec(values)
+
+
+class EnvironmentMoleculeView(EnvironmentMoleculesViewBase):
+	def __init__(self, *args, **kwargs):
+		super(EnvironmentMoleculeView, self).__init__(*args, **kwargs)
+
+		# State references
+		self._containerIndexes = self._state.container._namesToIndexes((self._query,))
+
+
+	def count(self):
+		return self._counts()[0]
+
+
+	def mass(self):
+		return self._mass()
+
+
+	def countIs(self, value):
+		self._countsIs(value)
+
+
+	def countInc(self, value):
+		self._countsInc(value)
+
+
+	def countDec(self, value):
+		self._countsDec(value)
 

@@ -123,6 +123,7 @@ class Simulation(object):
 	def _initialize(self, sim_data):
 		# self._timeStepSec = self._timeStepSec
 		self.internal_states = _orderedAbstractionReference(self._internalStateClasses)
+		self.external_states = _orderedAbstractionReference(self._externalStateClasses)
 		self.processes = _orderedAbstractionReference(self._processClasses)
 		self.listeners = _orderedAbstractionReference(self._listenerClasses + DEFAULT_LISTENER_CLASSES)
 		self.hooks = _orderedAbstractionReference(self._hookClasses)
@@ -131,6 +132,9 @@ class Simulation(object):
 		self._isDead = False
 
 		for state in self.internal_states.itervalues():
+			state.initialize(self, sim_data)
+
+		for state in self.external_states.itervalues():
 			state.initialize(self, sim_data)
 
 		for process in self.processes.itervalues():
@@ -143,6 +147,9 @@ class Simulation(object):
 			hook.initialize(self, sim_data)
 
 		for state in self.internal_states.itervalues():
+			state.allocate()
+
+		for state in self.external_states.itervalues():
 			state.allocate()
 
 		for listener in self.listeners.itervalues():
@@ -215,6 +222,7 @@ class Simulation(object):
 
 
 	# Calculate temporal evolution
+	# TODO (Eran) add dynamics external_states in evolveState
 	def _evolveState(self):
 
 		if self._simulationStep <= 1:
@@ -305,6 +313,7 @@ class Simulation(object):
 
 
 	# Save to/load from disk
+	# TODO (Eran) -- save external_states
 	def tableCreate(self, tableWriter):
 		tableWriter.writeAttributes(
 			states = self.internal_states.keys(),

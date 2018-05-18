@@ -18,6 +18,7 @@ import warnings
 
 import wholecell.states.bulk_molecules
 import wholecell.states.unique_molecules
+import wholecell.states.environment_molecules
 import numpy as np
 
 from wholecell.listeners.listener import WriteMethod
@@ -41,6 +42,7 @@ class Process(object):
 
 		# References to state
 		self._internal_states = None
+		self._external_states = None
 
 
 	# Construct object graph, calculate constants
@@ -51,6 +53,7 @@ class Process(object):
 
 		self._internal_states = sim.internal_states
 
+		self._external_states = sim.external_states
 
 	# Set state partitioning options
 	# TODO: make this logic consistent amongst internal_states and allow more options
@@ -82,6 +85,7 @@ class Process(object):
 		return wholecell.states.unique_molecules.UniqueMoleculesView(
 			self._internal_states['UniqueMolecules'], self, (moleculeName, attributes))
 
+	#TODO (Eran) add environmentMoleculesView
 
 	# def chromosomeForksView(self, extentForward, extentReverse, includeMoleculesOnEnds):
 	# 	return wholecell.views.view.ChromosomeForksView(

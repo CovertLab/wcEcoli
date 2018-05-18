@@ -35,7 +35,7 @@ class EnvironmentObjectsContainer(object):
 			return self._counts[self._namesToIndexes(names)]
 
 
-	def setCounts(self, values, names = None):
+	def countsIs(self, values, names = None):
 		if names is None:
 			self._counts[:] = values
 
@@ -43,7 +43,7 @@ class EnvironmentObjectsContainer(object):
 			self._counts[self._namesToIndexes(names)] = values
 
 
-	def increaseCounts(self, values, names = None):
+	def countsInc(self, values, names = None):
 		if names is None:
 			self._counts[:] += values
 
@@ -51,7 +51,7 @@ class EnvironmentObjectsContainer(object):
 			self._counts[self._namesToIndexes(names)] += values
 
 
-	def decreaseCounts(self, values, names = None): # TODO: raise exception if > max?
+	def countsDec(self, values, names = None): # TODO: raise exception if > max?
 		if names is None:
 			self._counts[:] -= values
 
@@ -71,15 +71,15 @@ class EnvironmentObjectsContainer(object):
 		return self._counts[self._objectIndex[name]]
 
 
-	def setCount(self, value, name):
+	def countIs(self, value, name):
 		self._counts[self._objectIndex[name]] = value
 
 
-	def increaseCount(self, value, name):
+	def countInc(self, value, name):
 		self._counts[self._objectIndex[name]] += value
 
 
-	def decreaseCount(self, value, name):
+	def countDec(self, value, name):
 		self._counts[self._objectIndex[name]] -= value
 
 
@@ -136,15 +136,15 @@ class _EnvironmentObjectsView(object):
 		return self._container._counts[self._indexes]
 
 
-	def setCounts(self, values):
+	def countsIs(self, values):
 		self._container._counts[self._indexes] = values
 
 
-	def increaseCounts(self, values):
+	def countsInc(self, values):
 		self._container._counts[self._indexes] += values
 
 
-	def decreaseCounts(self, values):
+	def countsDec(self, values):
 		self._container._counts[self._indexes] -= values
 
 
@@ -164,13 +164,13 @@ class _EnvironmentObjectView(object):
 		return self._container._counts[self._index]
 
 
-	def setCount(self, values):
+	def countIs(self, values):
 		self._container._counts[self._index] = values
 
 
-	def increaseCount(self, values):
+	def countInc(self, values):
 		self._container._counts[self._index] += values
 
 
-	def decreaseCount(self, values):
+	def countDec(self, values):
 		self._container._counts[self._index] -= values
