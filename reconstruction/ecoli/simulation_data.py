@@ -38,7 +38,7 @@ class SimulationDataEcoli(object):
 
 	def initialize(self, raw_data, basal_expression_condition = "M9 Glucose minus AAs"):
 
-		# TODO (ERAN) -- condition data should all be brought into self.state.environmentMolecules, this should be removed
+		# TODO (ERAN) -- condition data should all be brought into self.state.environment, this should be removed
 		self._addConditionData(raw_data)
 		self.nutrientData = self._getNutrientData(raw_data)
 		self.condition = "basal"

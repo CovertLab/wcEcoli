@@ -17,7 +17,7 @@ from reconstruction.ecoli.dataclasses.state.stateFunctions import addToStateEnvi
 
 VERBOSE = True
 
-class EnvironmentMolecules(object):
+class Environment(object):
 	""" EnvironmentMolecules """
 
 	def __init__(self, raw_data, sim_data):

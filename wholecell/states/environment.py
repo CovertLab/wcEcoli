@@ -26,25 +26,25 @@ from wholecell.utils import units
 
 from wholecell.utils.constants import REQUEST_PRIORITY_DEFAULT
 
-class EnvironmentMolecules(wholecell.states.external_state.ExternalState):
-	_name = 'EnvironmentMolecules'
+class Environment(wholecell.states.external_state.ExternalState):
+	_name = 'Environment'
 
 	def __init__(self, *args, **kwargs):
 		self.container = None
 		self._moleculeMass = None
 		self._moleculeIDs = None
 
-		super(EnvironmentMolecules, self).__init__(*args, **kwargs)
+		super(Environment, self).__init__(*args, **kwargs)
 
 
 	def initialize(self, sim, sim_data):
-		super(EnvironmentMolecules, self).initialize(sim, sim_data)
+		super(Environment, self).initialize(sim, sim_data)
 
 		self._processIDs = sim.processes.keys()
 
 		# Load constants
-		self._moleculeIDs = sim_data.state.environmentMolecules.environmentData['id']
-		self._moleculeMass = sim_data.state.environmentMolecules.environmentData['mass'].asNumber(units.fg / units.mol) / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		self._moleculeIDs = sim_data.state.environment.environmentData['id']
+		self._moleculeMass = sim_data.state.environment.environmentData['mass'].asNumber(units.fg / units.mol) / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
 		self._submassNameToIndex = sim_data.submassNameToIndex
 
 		# Create the container for molecule counts
@@ -69,7 +69,7 @@ class EnvironmentMolecules(wholecell.states.external_state.ExternalState):
 
 
 class EnvironmentMoleculesViewBase(wholecell.views.view.View):
-	_stateID = 'EnvironmentMolecules'
+	_stateID = 'Environment'
 
 	def _updateQuery(self):
 		self._totalIs(self._state.container._counts[self._containerIndexes])

@@ -13,7 +13,7 @@ from wholecell.utils.unit_struct_array import UnitStructArray
 
 from reconstruction.ecoli.dataclasses.state.bulkMolecules import BulkMolecules
 from reconstruction.ecoli.dataclasses.state.uniqueMolecules import UniqueMolecules
-from reconstruction.ecoli.dataclasses.state.environmentMolecules import EnvironmentMolecules
+from reconstruction.ecoli.dataclasses.state.environment import Environment
 
 from reconstruction.ecoli.dataclasses.state import stateFunctions as sf
 
@@ -30,13 +30,13 @@ class State(object):
 
 		self.bulkMolecules = BulkMolecules(raw_data, sim_data)
 		self.uniqueMolecules = UniqueMolecules(raw_data, sim_data)
-		self.environmentMolecules = EnvironmentMolecules(raw_data, sim_data)
+		self.environment = Environment(raw_data, sim_data)
 
 		self._buildBulkMolecules(raw_data, sim_data)
 		self._buildUniqueMolecules(raw_data, sim_data)
+		self._buildCompartments(raw_data, sim_data)
 		# self._buildEnvironmentMolecules(raw_data, sim_data)
 		self._buildEnvironment(raw_data, sim_data)
-		self._buildCompartments(raw_data, sim_data)
 
 
 	def _buildBulkMolecules(self, raw_data, sim_data):
@@ -156,25 +156,22 @@ class State(object):
 		# nutrientIds = sf.createIdsWithCompartments(raw_data.metabolites)
 		# nutrientMasses = units.g / units.mol * sf.createMetaboliteMassesByCompartments(raw_data.metabolites, 7, 11)
 		#
-		# self.environmentMolecules.addToEnvironmentState(nutrientIds, nutrientMasses)
+		# self.environment.addToEnvironmentState(nutrientIds, nutrientMasses)
 		#
 		# # TODO (Eran) -- get environmental water
 		# # Set water
 		# waterIds = sf.createIdsWithCompartments(raw_data.water)
 		# waterMasses = units.g / units.mol * sf.createMetaboliteMassesByCompartments(raw_data.water, 8, 11)
 		#
-		# self.environmentMolecules.addToEnvironmentState(waterIds, waterMasses)
+		# self.environment.addToEnvironmentState(waterIds, waterMasses)
 
 	def _buildEnvironment(self, raw_data, sim_data):
 
-
-		import ipdb; ipdb.set_trace()
-
-		# TODO (ERAN) -- condition data should all be brought into self.state.environmentMolecules
-		self.environmentMolecules.addConditionData(raw_data)
-		self.environmentMolecules.nutrientData = self._getNutrientData(raw_data)
-		self.environmentMolecules.condition = "basal"
-		self.environmentMolecules.nutrientsTimeSeriesLabel = "000000_basal"
+		# TODO (ERAN) -- condition data should all be brought into self.state.environment
+		self.environment.addConditionData(raw_data)
+		self.environment.nutrientData = self._getNutrientData(raw_data)
+		self.environment.condition = "basal"
+		self.environment.nutrientsTimeSeriesLabel = "000000_basal"
 
 		import ipdb;
 		ipdb.set_trace()
