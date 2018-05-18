@@ -271,9 +271,7 @@ def buildTfConditionCellSpecifications(sim_data, tf):
 	for choice in ["__active", "__inactive"]:
 		conditionKey = tf + choice
 
-
 		#TODO (Eran) conditionValue should look at sim_data.state.environment..
-
 		conditionValue = sim_data.conditions[conditionKey]
 
 		fcData = {}
@@ -388,7 +386,6 @@ def buildCombinedConditionCellSpecifications(sim_data, cellSpecs):
 
 
 def expressionConverge(sim_data, expression, concDict, doubling_time, Km = None, updateConcDict = False):
-
 	# Fit synthesis probabilities for RNA
 	if VERBOSE > 0:
 		print "Fitting RNA synthesis probabilities."
@@ -428,7 +425,6 @@ def expressionConverge(sim_data, expression, concDict, doubling_time, Km = None,
 	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict
 
 def fitCondition(sim_data, spec, condition):
-
 	if VERBOSE > 0:
 		print "Fitting condition {}".format(condition)
 

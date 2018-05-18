@@ -92,7 +92,6 @@ class State(object):
 
 		self.bulkMolecules.addToBulkState(fragmentsIds, fragmentsMasses)
 
-
 	def _buildUniqueMolecules(self, raw_data, sim_data):
 		# Add active RNA polymerase
 		rnaPolyComplexMass = self.bulkMolecules.bulkData["mass"][self.bulkMolecules.bulkData["id"] == "APORNAP-CPLX[c]"]
@@ -137,7 +136,6 @@ class State(object):
 		fullChromosomeMass = units.g / units.mol * np.zeros_like(rnaPolyComplexMass) # NOTE: origins currently have no mass
 		fullChromosomeAttributes = {"division_time" : "f8"}
 		self.uniqueMolecules.addToUniqueState('fullChromosome', fullChromosomeAttributes, fullChromosomeMass)
-
 
 	def _buildEnvironmentMolecules(self, raw_data, sim_data):
 
