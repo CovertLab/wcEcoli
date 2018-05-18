@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-External State
+External state
 
 External state variable base class. Defines the interface states expose to the simulation and processes.
 
@@ -14,7 +14,7 @@ from __future__ import division
 
 import numpy as np
 
-class State(object):
+class ExternalState(object):
 	""" External State """
 
 	_name = None

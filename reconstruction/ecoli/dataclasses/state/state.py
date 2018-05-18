@@ -149,11 +149,11 @@ class State(object):
 		self.environmentMolecules.addToEnvironmentState(nutrientIds, nutrientMasses)
 
 		# TODO (Eran) -- get environmental water
-		# # Set water
-		# waterIds = sf.createIdsWithCompartments(raw_data.water)
-		# waterMasses = units.g / units.mol * sf.createMetaboliteMassesByCompartments(raw_data.water, 8, 11)
-		#
-		# self.environmentMolecules.addToEnvironmentState(waterIds, waterMasses)
+		# Set water
+		waterIds = sf.createIdsWithCompartments(raw_data.water)
+		waterMasses = units.g / units.mol * sf.createMetaboliteMassesByCompartments(raw_data.water, 8, 11)
+
+		self.environmentMolecules.addToEnvironmentState(waterIds, waterMasses)
 
 
 	def _buildCompartments(self, raw_data, sim_data):

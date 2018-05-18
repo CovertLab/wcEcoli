@@ -272,8 +272,7 @@ def buildTfConditionCellSpecifications(sim_data, tf):
 		conditionKey = tf + choice
 
 
-		#TODO (Eran) conditionValue should look at sim_data.state.environment
-		import ipdb; ipdb.set_trace()
+		#TODO (Eran) conditionValue should look at sim_data.state.environment..
 
 		conditionValue = sim_data.conditions[conditionKey]
 
@@ -389,6 +388,7 @@ def buildCombinedConditionCellSpecifications(sim_data, cellSpecs):
 
 
 def expressionConverge(sim_data, expression, concDict, doubling_time, Km = None, updateConcDict = False):
+
 	# Fit synthesis probabilities for RNA
 	if VERBOSE > 0:
 		print "Fitting RNA synthesis probabilities."
@@ -428,6 +428,7 @@ def expressionConverge(sim_data, expression, concDict, doubling_time, Km = None,
 	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict
 
 def fitCondition(sim_data, spec, condition):
+
 	if VERBOSE > 0:
 		print "Fitting condition {}".format(condition)
 
@@ -730,6 +731,7 @@ def createBulkContainer(sim_data, expression, doubling_time):
 
 def createEnvironmentContainer(sim_data):
 
+	#TODO (ERAN) use this container to determine different fitter condition -- use in place of "conditionValue"
 	ids_molecules = sim_data.state.environmentMolecules.environmentData["id"]
 
 	## Construct environment container

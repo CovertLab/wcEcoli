@@ -26,7 +26,7 @@ from wholecell.utils import units
 
 from wholecell.utils.constants import REQUEST_PRIORITY_DEFAULT
 
-class EnvironmentMolecules(wholecell.states.external_state.State):
+class EnvironmentMolecules(wholecell.states.external_state.ExternalState):
 	_name = 'EnvironmentMolecules'
 
 	def __init__(self, *args, **kwargs):
@@ -43,13 +43,12 @@ class EnvironmentMolecules(wholecell.states.external_state.State):
 		self._processIDs = sim.processes.keys()
 
 		# Load constants
-		# TODO (Eran) create environment objects for sim_data
 		self._moleculeIDs = sim_data.state.environmentMolecules.environmentData['id']
 		self._moleculeMass = sim_data.state.environmentMolecules.environmentData['mass'].asNumber(units.fg / units.mol) / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
 		self._submassNameToIndex = sim_data.submassNameToIndex
 
 		# Create the container for molecule counts
-		self.container = EnvironmenObjectsContainer(self._moleculeIDs)
+		self.container = EnvironmentObjectsContainer(self._moleculeIDs)
 
 
 	def tableCreate(self, tableWriter):

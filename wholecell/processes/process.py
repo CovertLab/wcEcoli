@@ -55,7 +55,7 @@ class Process(object):
 
 		self._external_states = sim.external_states
 
-	# Set state partitioning options
+	# Set internal state partitioning options
 	# TODO: make this logic consistent amongst internal_states and allow more options
 	def bulkMoleculesRequestPriorityIs(self, priorityLevel):
 		self._internal_states["BulkMolecules"].processRequestPriorityIs(
@@ -75,17 +75,19 @@ class Process(object):
 		return wholecell.states.bulk_molecules.BulkMoleculesView(
 			self._internal_states['BulkMolecules'], self, moleculeIDs)
 
-
 	def bulkMoleculeView(self, moleculeIDs):
 		return wholecell.states.bulk_molecules.BulkMoleculeView(
 			self._internal_states['BulkMolecules'], self, moleculeIDs)
-
 
 	def uniqueMoleculesView(self, moleculeName, **attributes):
 		return wholecell.states.unique_molecules.UniqueMoleculesView(
 			self._internal_states['UniqueMolecules'], self, (moleculeName, attributes))
 
 	#TODO (Eran) add environmentMoleculesView
+	def environmentMoleculesView(self, moleculeIDs):
+		return wholecell.states.environment_molecules.EnvironmentMoleculesView(
+			self._external_states['EnvironmentMolecules'], self, moleculeIDs)
+
 
 	# def chromosomeForksView(self, extentForward, extentReverse, includeMoleculesOnEnds):
 	# 	return wholecell.views.view.ChromosomeForksView(

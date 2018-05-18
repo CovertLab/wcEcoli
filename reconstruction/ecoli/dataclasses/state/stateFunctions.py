@@ -17,6 +17,22 @@ def addToStateCommon(bulkState, ids, masses):
 
 	return UnitStructArray(np.hstack((bulkState.fullArray(), newAddition)), bulkState.units)
 
+def addToStateEnvironment(environmentState, ids, masses):
+	newAddition = np.zeros(
+		len(ids),
+		dtype = [
+			("id", "a50"),
+			("mass", "{}f8".format(masses.asNumber().shape[1])), # TODO: Make this better
+			]
+		)
+
+	environmentState.units['mass'].matchUnits(masses)
+
+	newAddition["id"] = ids
+	newAddition["mass"] = masses.asNumber()
+
+	return UnitStructArray(np.hstack((environmentState.fullArray(), newAddition)), environmentState.units)
+
 def createIdsInAllCompartments(ids, compartments):
 	idsByCompartment = [
 		'{}[{}]'.format(i, c)

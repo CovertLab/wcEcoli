@@ -14,7 +14,7 @@ from __future__ import division
 
 import numpy as np
 
-class State(object):
+class InternalState(object):
 	""" Internal State """
 
 	_name = None

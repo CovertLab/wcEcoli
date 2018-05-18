@@ -62,6 +62,7 @@ class SimulationDataEcoli(object):
 		# Data classes (can depend on helper functions)
 		# Data classes cannot depend on each other
 		self.process = Process(raw_data, self)
+		# TODO (ERAN) -- should there be a self.internalState and self.externalState?
 		self.state = State(raw_data, self)
 
 		# Relations between data classes (can depend on data classes)

@@ -26,7 +26,7 @@ DEFAULT_ATTRIBUTES = {
 	"_partitionedProcess":np.int64
 	}
 
-class UniqueMolecules(wholecell.states.internal_state.State):
+class UniqueMolecules(wholecell.states.internal_state.InternalState):
 	"""
 	UniqueMolecules
 

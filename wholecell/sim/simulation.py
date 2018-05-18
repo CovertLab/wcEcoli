@@ -222,7 +222,7 @@ class Simulation(object):
 
 
 	# Calculate temporal evolution
-	# TODO (Eran) add dynamics external_states in evolveState
+	# TODO (Eran) add dynamics to external_states in evolveState
 	def _evolveState(self):
 
 		if self._simulationStep <= 1:
@@ -236,7 +236,6 @@ class Simulation(object):
 				process.randomState = np.random.RandomState(seed = process.seed)
 
 		self._adjustTimeStep()
-		
 		# Run pre-evolveState hooks
 		for hook in self.hooks.itervalues():
 			hook.preEvolveState(self)

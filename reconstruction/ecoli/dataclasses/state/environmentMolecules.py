@@ -13,7 +13,7 @@ import numpy as np
 from wholecell.utils import units
 from wholecell.utils.unit_struct_array import UnitStructArray
 
-from reconstruction.ecoli.dataclasses.state.stateFunctions import addToStateCommon
+from reconstruction.ecoli.dataclasses.state.stateFunctions import addToStateEnvironment
 
 class EnvironmentMolecules(object):
 	""" EnvironmentMolecules """
@@ -37,4 +37,4 @@ class EnvironmentMolecules(object):
 		self.environmentData = UnitStructArray(environmentData, field_units)
 
 	def addToEnvironmentState(self, ids, masses):
-		self.environmentData = addToStateCommon(self.environmentData, ids, masses)
+		self.environmentData = addToStateEnvironment(self.environmentData, ids, masses)
