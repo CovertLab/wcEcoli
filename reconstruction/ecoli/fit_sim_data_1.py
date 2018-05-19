@@ -271,7 +271,7 @@ def buildTfConditionCellSpecifications(sim_data, tf):
 	for choice in ["__active", "__inactive"]:
 		conditionKey = tf + choice
 
-		#TODO (Eran) conditionValue should look at sim_data.state.environment..
+		#TODO (Eran) conditionValue should look at sim_data.internalState.environment..
 		conditionValue = sim_data.conditions[conditionKey]
 
 		fcData = {}
@@ -704,7 +704,7 @@ def createBulkContainer(sim_data, expression, doubling_time):
 
 	totalCount_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time)
 	totalCount_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time)
-	ids_molecules = sim_data.state.bulkMolecules.bulkData["id"]
+	ids_molecules = sim_data.internalState.bulkMolecules.bulkData["id"]
 
 	## Construct bulk container
 
@@ -728,7 +728,7 @@ def createBulkContainer(sim_data, expression, doubling_time):
 def createEnvironmentContainer(sim_data):
 
 	#TODO (ERAN) use this container to determine different fitter condition -- use in place of "conditionValue"
-	ids_molecules = sim_data.state.environmentMolecules.environmentData["id"]
+	ids_molecules = sim_data.externalState.environmentMolecules.environmentData["id"]
 
 	## Construct environment container
 
@@ -1043,7 +1043,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 	# instantiate many cells, form complexes, and finally compute the
 	# statistics we will use in the fitting operations.
 
-	bulkContainer = BulkObjectsContainer(sim_data.state.bulkMolecules.bulkData['id'])
+	bulkContainer = BulkObjectsContainer(sim_data.internalState.bulkMolecules.bulkData['id'])
 	rnaView = bulkContainer.countsView(ids_rnas)
 	proteinView = bulkContainer.countsView(ids_protein)
 	complexationMoleculesView = bulkContainer.countsView(ids_complex)
@@ -1133,8 +1133,8 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 
 		allMoleculeCounts[seed, :] = allMoleculesView.counts()
 
-	bulkAverageContainer = BulkObjectsContainer(sim_data.state.bulkMolecules.bulkData['id'], np.float64)
-	bulkDeviationContainer = BulkObjectsContainer(sim_data.state.bulkMolecules.bulkData['id'], np.float64)
+	bulkAverageContainer = BulkObjectsContainer(sim_data.internalState.bulkMolecules.bulkData['id'], np.float64)
+	bulkDeviationContainer = BulkObjectsContainer(sim_data.internalState.bulkMolecules.bulkData['id'], np.float64)
 	proteinMonomerAverageContainer = BulkObjectsContainer(sim_data.process.translation.monomerData["id"], np.float64)
 	proteinMonomerDeviationContainer = BulkObjectsContainer(sim_data.process.translation.monomerData["id"], np.float64)
 
@@ -1860,7 +1860,7 @@ def calculateRnapRecruitment(sim_data, cellSpecs, rVector):
 	H[range(nRows), colIdxs] -= H[range(nRows), colIdxs].min()
 	hV = H[hI, hJ]
 
-	sim_data.state.bulkMolecules.addToBulkState(colNames, stateMasses)
+	sim_data.internalState.bulkMolecules.addToBulkState(colNames, stateMasses)
 	sim_data.moleculeGroups.bulkMoleculesSetTo1Division = [x for x in colNames if x.endswith("__alpha")]
 	sim_data.moleculeGroups.bulkMoleculesBinomialDivision += [x for x in colNames if not x.endswith("__alpha")]
 	sim_data.process.transcription_regulation.recruitmentData = {

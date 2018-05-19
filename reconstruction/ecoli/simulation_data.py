@@ -19,7 +19,8 @@ from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.ecoli.dataclasses.getterFunctions import getterFunctions
 from reconstruction.ecoli.dataclasses.moleculeGroups import moleculeGroups
 from reconstruction.ecoli.dataclasses.constants import Constants
-from reconstruction.ecoli.dataclasses.state.state import State
+from reconstruction.ecoli.dataclasses.state.internal_state import InternalState
+from reconstruction.ecoli.dataclasses.state.external_state import ExternalState
 from reconstruction.ecoli.dataclasses.process.process import Process
 from reconstruction.ecoli.dataclasses.growthRateDependentParameters import Mass, GrowthRateParameters
 from reconstruction.ecoli.dataclasses.relation import Relation
@@ -67,7 +68,8 @@ class SimulationDataEcoli(object):
 		self.process = Process(raw_data, self)
 
 		# TODO (ERAN) -- should there be a self.internalState and self.externalState?
-		self.state = State(raw_data, self)
+		self.externalState = ExternalState(raw_data, self)
+		self.internalState = InternalState(raw_data, self)
 
 		# Relations between data classes (can depend on data classes)
 		# Relations cannot depend on each other
