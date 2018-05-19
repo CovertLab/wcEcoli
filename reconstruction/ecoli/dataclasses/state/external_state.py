@@ -36,14 +36,13 @@ class ExternalState(object):
 
 	def _buildEnvironment(self, raw_data, sim_data):
 
-		# TODO (ERAN) -- condition data should all be brought into self.state.environment
-		self.environment.addConditionData(raw_data)
+		#condition data is brought into environment
+		# self.environment.addConditionData(raw_data)
 		self.environment.nutrientData = self._getNutrientData(raw_data)
 		self.environment.condition = "basal"
 		self.environment.nutrientsTimeSeriesLabel = "000000_basal"
 
-		import ipdb;
-		ipdb.set_trace()
+
 
 	# def _buildEnvironmentMolecules(self, raw_data, sim_data):
 

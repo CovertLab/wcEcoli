@@ -39,14 +39,20 @@ class SimulationDataEcoli(object):
 
 	def initialize(self, raw_data, basal_expression_condition = "M9 Glucose minus AAs"):
 
-		# TODO (ERAN) -- condition data should all be brought into self.state.environment, this should be removed
-		self._addConditionData(raw_data)
-		self.nutrientData = self._getNutrientData(raw_data)
-		self.condition = "basal"
-		self.nutrientsTimeSeriesLabel = "000000_basal"
+		#initialize external state first, because internal state might depend on it
+		self.externalState = ExternalState(raw_data, self)
+
+		self._addConditionData(raw_data) #TODO (Eran) -- is there any nutrient data here that should be brought into environment?
+
+		import ipdb; ipdb.set_trace()
+
+		# condition data is brought into environment, this should be removed
+		# self.nutrientData = self._getNutrientData(raw_data)
+		# self.condition = "basal"
+		# self.nutrientsTimeSeriesLabel = "000000_basal"
 
 		# TODO -- growth rate should not be based on condition. TODO (ERAN) -- point this to env state for now.
-		self.doubling_time = self.conditionToDoublingTime[self.condition]
+		self.doubling_time = self.conditionToDoublingTime[self.externalState.environment.condition]
 
 		# TODO: Check that media condition is valid
 		self.basal_expression_condition = basal_expression_condition
@@ -67,8 +73,6 @@ class SimulationDataEcoli(object):
 		# Data classes cannot depend on each other
 		self.process = Process(raw_data, self)
 
-		# TODO (ERAN) -- should there be a self.internalState and self.externalState?
-		self.externalState = ExternalState(raw_data, self)
 		self.internalState = InternalState(raw_data, self)
 
 		# Relations between data classes (can depend on data classes)

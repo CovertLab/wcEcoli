@@ -44,7 +44,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 
 		# Load constants
 		self._moleculeIDs = sim_data.externalState.environment.environmentData['id']
-		self._moleculeMass = sim_data.externalState.environment.environmentData['mass'].asNumber(units.fg / units.mol) / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		# self._moleculeMass = sim_data.externalState.environment.environmentData['mass'].asNumber(units.fg / units.mol) / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
 		self._submassNameToIndex = sim_data.submassNameToIndex
 
 		# Create the container for molecule counts
