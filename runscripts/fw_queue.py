@@ -240,11 +240,7 @@ wf_fws.append(fw_init_raw_data)
 
 ### Fit (Level 1)
 
-filename_sim_data_fit_1 = (
-			constants.SERIALIZED_SIM_DATA_PREFIX +
-			"_Fit_1" +
-			constants.SERIALIZED_SIM_DATA_SUFFIX
-			)
+filename_sim_data_fit_1 = constants.SERIALIZED_FIT1_FILENAME
 
 fw_name = "FitSimDataTask_Level_1"
 
