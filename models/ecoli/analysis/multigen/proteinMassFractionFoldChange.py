@@ -181,12 +181,12 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	monomerFinalCountMultigen = ratioFinalToInitialCountMultigen * (monomerInitialCountMultigen + 1) - 1
 
-	existFractionPerMonomer = monomerExistMultigen.mean(axis=0)
-	averageFoldChangePerMonomer = ratioFinalToInitialCountMultigen.mean(axis=0)
-	averageInitiationEventsPerMonomer = initiationEventsPerMonomerMultigen.mean(axis=0)
-	averageCountPerMonomer = monomerAvgCountMultigen.mean(axis=0)
+	# existFractionPerMonomer = monomerExistMultigen.mean(axis=0)
+	# averageFoldChangePerMonomer = ratioFinalToInitialCountMultigen.mean(axis=0)
+	# averageInitiationEventsPerMonomer = initiationEventsPerMonomerMultigen.mean(axis=0)
+	# averageCountPerMonomer = monomerAvgCountMultigen.mean(axis=0)
 
-	translationEff = sim_data.process.translation.translationEfficienciesByMonomer
+	# translationEff = sim_data.process.translation.translationEfficienciesByMonomer
 
 	initialMonomerTotalMass = ((monomerMass * monomerInitialCountMultigen) / nAvogadro).asNumber(units.fg)
 	initialMassFraction = initialMonomerTotalMass / np.tile(cellMassInitMultigen.reshape((ap.n_generation,1)), (1,n_monomers))
@@ -195,16 +195,15 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	finalMassFraction = finalMonomerTotalMass / np.tile(cellMassFinalMultigen.reshape((ap.n_generation,1)), (1,n_monomers))
 
 	massFractionRatio = (finalMassFraction / initialMassFraction).mean(axis=0)
-	print "massFractionRatio={}".format(massFractionRatio)  # DEBUG
-	massFractionRatio_realValues = massFractionRatio[~np.logical_or(
-		np.isnan(massFractionRatio), np.isinf(massFractionRatio), (massFractionRatio <= 0))]
+	print "DEBUG: massFractionRatio={}".format(massFractionRatio)
+	# Filter out Inf, NaN, and non-positive values before computing log2().
+	massFractionRatio_realValues = massFractionRatio[np.isfinite(massFractionRatio) & (massFractionRatio > 0)]
+	massFractionRatio_logs = np.log2(massFractionRatio_realValues)
 
-	massFractionRatio_realValues = np.log2(massFractionRatio_realValues)
-
-	if massFractionRatio_realValues.size > 0:
+	if massFractionRatio_logs.size > 0:
 		fig, axesList = plt.subplots(1)
 
-		axesList.hist(massFractionRatio_realValues, bins = 50, log = False)
+		axesList.hist(massFractionRatio_logs, bins = 50, log = False)
 		axesList.set_xticks(range(15))
 		axesList.set_xticklabels(range(15))
 		axesList.set_xlabel("Mean mass fraction fold change per monomer")
