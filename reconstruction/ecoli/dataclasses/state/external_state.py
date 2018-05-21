@@ -36,24 +36,25 @@ class ExternalState(object):
 
 	def _buildEnvironment(self, raw_data, sim_data):
 
-		#condition data is brought into environment
+		#nutrient data is brought into environment
 		# self.environment.addConditionData(raw_data)
 		self.environment.nutrientData = self._getNutrientData(raw_data)
 		self.environment.condition = "basal"
 		self.environment.nutrientsTimeSeriesLabel = "000000_basal"
 
 
-
+	# TODO (Eran): this will be used for the environment as a state with molecules
+	# and counts, should replace static condition representation
 	# def _buildEnvironmentMolecules(self, raw_data, sim_data):
 
-		# # TODO (Eran) get nutrients instead of metabolites
+		# # TODO (Eran): get nutrients instead of metabolites
 		# # Set metabolites
 		# nutrientIds = sf.createIdsWithCompartments(raw_data.metabolites)
 		# nutrientMasses = units.g / units.mol * sf.createMetaboliteMassesByCompartments(raw_data.metabolites, 7, 11)
 		#
 		# self.environment.addToEnvironmentState(nutrientIds, nutrientMasses)
 		#
-		# # TODO (Eran) -- get environmental water
+		# # TODO (Eran): get environmental water
 		# # Set water
 		# waterIds = sf.createIdsWithCompartments(raw_data.water)
 		# waterMasses = units.g / units.mol * sf.createMetaboliteMassesByCompartments(raw_data.water, 8, 11)

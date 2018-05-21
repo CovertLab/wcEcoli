@@ -39,19 +39,14 @@ class SimulationDataEcoli(object):
 
 	def initialize(self, raw_data, basal_expression_condition = "M9 Glucose minus AAs"):
 
-		#initialize external state first, because internal state might depend on it
+		#initialize external state first, with all nutrient data
 		self.externalState = ExternalState(raw_data, self)
 
 		self._addConditionData(raw_data) #TODO (Eran) -- is there any nutrient data here that should be brought into environment?
 
-		import ipdb; ipdb.set_trace()
+		# import ipdb; ipdb.set_trace()
 
-		# condition data is brought into environment, this should be removed
-		# self.nutrientData = self._getNutrientData(raw_data)
-		# self.condition = "basal"
-		# self.nutrientsTimeSeriesLabel = "000000_basal"
-
-		# TODO -- growth rate should not be based on condition. TODO (ERAN) -- point this to env state for now.
+		# TODO -- growth rate should not be based on condition.
 		self.doubling_time = self.conditionToDoublingTime[self.externalState.environment.condition]
 
 		# TODO: Check that media condition is valid
@@ -163,8 +158,8 @@ class SimulationDataEcoli(object):
 			nutrientExchangeMolecules[envName] = sorted(nutrientExchangeMolecules[envName])
 		secretionExchangeMolecules = sorted(secretionExchangeMolecules)
 
-
 		return envDict, externalExchangeMolecules, nutrientExchangeMolecules, secretionExchangeMolecules
+
 
 	def _addConditionData(self, raw_data):
 		self.conditionToDoublingTime = dict([(x["condition"].encode("utf-8"), x["doubling time"]) for x in raw_data.condition.condition_defs])
@@ -269,50 +264,3 @@ class SimulationDataEcoli(object):
 			if nutrientLabel in self.nutrientToDoublingTime and self.conditionToDoublingTime[condition] != self.nutrientToDoublingTime[nutrientLabel]:
 				raise Exception, "Multiple doubling times correspond to the same media conditions"
 			self.nutrientToDoublingTime[nutrientLabel] = self.conditionToDoublingTime[condition]
-
-
-	def _getNutrientData(self, raw_data):
-
-		externalExchangeMolecules = {}
-		importExchangeMolecules = {}
-		secretionExchangeMolecules = set()
-		importConstrainedExchangeMolecules = {}
-		importUnconstrainedExchangeMolecules = {}
-		nutrientsList = [(x, getattr(raw_data.condition.nutrient, x)) for x in dir(raw_data.condition.nutrient) if not x.startswith("__")]
-		for nutrientsName, nutrients in nutrientsList:
-			externalExchangeMolecules[nutrientsName] = set()
-			importExchangeMolecules[nutrientsName] = set()
-			importConstrainedExchangeMolecules[nutrientsName] = {}
-			importUnconstrainedExchangeMolecules[nutrientsName] = []
-			for nutrient in nutrients:
-				if not np.isnan(nutrient["lower bound"].asNumber()) and not np.isnan(nutrient["upper bound"].asNumber()):
-					continue
-				elif not np.isnan(nutrient["upper bound"].asNumber()):
-					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = nutrient["upper bound"]
-					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-				else:
-					importUnconstrainedExchangeMolecules[nutrientsName].append(nutrient["molecule id"])
-					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-
-			for secretion in raw_data.secretions:
-				if secretion["lower bound"] and secretion["upper bound"]:
-					# "non-growth associated maintenance", not included in our metabolic model
-					continue
-
-				else:
-					externalExchangeMolecules[nutrientsName].add(secretion["molecule id"])
-					secretionExchangeMolecules.add(secretion["molecule id"])
-
-			externalExchangeMolecules[nutrientsName] = sorted(externalExchangeMolecules[nutrientsName])
-			importExchangeMolecules[nutrientsName] = sorted(importExchangeMolecules[nutrientsName])
-		secretionExchangeMolecules = sorted(secretionExchangeMolecules)
-
-		return {
-			"externalExchangeMolecules": externalExchangeMolecules,
-			"importExchangeMolecules": importExchangeMolecules,
-			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
-			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
-			"secretionExchangeMolecules": secretionExchangeMolecules,
-		}
