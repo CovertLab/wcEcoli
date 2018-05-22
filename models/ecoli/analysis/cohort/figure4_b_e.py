@@ -147,7 +147,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax0.xaxis.set_visible(False)
 	#ax0.axvline(x=44*2+22., linewidth=3, color='gray', alpha = 0.5)
 
-	nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+	nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
 	try:
 		T_ADD_AA = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][1][0] / 60.
 	except:
@@ -326,7 +326,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# ax0.xaxis.set_visible(False)
 	#ax0.axvline(x=44*2+22., linewidth=3, color='gray', alpha = 0.5)
 
-	nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+	nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
 	T_ADD_AA = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][1][0] / 60.
 	axes_list = [ax3, ax4]
 	for a in axes_list:

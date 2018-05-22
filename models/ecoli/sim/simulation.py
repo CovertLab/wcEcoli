@@ -5,6 +5,7 @@ from wholecell.sim.simulation import Simulation
 # States
 from wholecell.states.bulk_molecules import BulkMolecules
 from wholecell.states.unique_molecules import UniqueMolecules
+from wholecell.states.environment import Environment
 
 # Processes
 from models.ecoli.processes.complexation import Complexation
@@ -35,7 +36,6 @@ from models.ecoli.listeners.growth_limits import GrowthLimits
 from models.ecoli.listeners.cell_division import CellDivision
 from models.ecoli.listeners.rna_synth_prob import RnaSynthProb
 
-
 # Analysis
 import models.ecoli.analysis.single
 import models.ecoli.analysis.cohort
@@ -45,9 +45,13 @@ from wholecell.sim.divide_cell import divide_cell
 from models.ecoli.sim.initial_conditions import setDaughterInitialConditions
 
 class EcoliSimulation(Simulation):
-	_stateClasses = (
+	_internalStateClasses = (
 		BulkMolecules,
 		UniqueMolecules,
+		)
+
+	_externalStateClasses = (
+		Environment,
 		)
 
 	_processClasses = (

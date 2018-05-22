@@ -19,8 +19,9 @@ from reconstruction.ecoli.dataclasses.state import stateFunctions as sf
 import re
 import numpy as np
 
-class State(object):
-	""" State """
+
+class InternalState(object):
+	""" Internal State """
 
 	def __init__(self, raw_data, sim_data):
 

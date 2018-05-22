@@ -19,7 +19,8 @@ from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.ecoli.dataclasses.getterFunctions import getterFunctions
 from reconstruction.ecoli.dataclasses.moleculeGroups import moleculeGroups
 from reconstruction.ecoli.dataclasses.constants import Constants
-from reconstruction.ecoli.dataclasses.state.state import State
+from reconstruction.ecoli.dataclasses.state.internal_state import InternalState
+from reconstruction.ecoli.dataclasses.state.external_state import ExternalState
 from reconstruction.ecoli.dataclasses.process.process import Process
 from reconstruction.ecoli.dataclasses.growthRateDependentParameters import Mass, GrowthRateParameters
 from reconstruction.ecoli.dataclasses.relation import Relation
@@ -38,11 +39,15 @@ class SimulationDataEcoli(object):
 
 	def initialize(self, raw_data, basal_expression_condition = "M9 Glucose minus AAs"):
 
-		self._addConditionData(raw_data)
-		self.nutrientData = self._getNutrientData(raw_data)
-		self.condition = "basal"
-		self.nutrientsTimeSeriesLabel = "000000_basal"
-		self.doubling_time = self.conditionToDoublingTime[self.condition]
+		#initialize external state first, with all nutrient data
+		self.externalState = ExternalState(raw_data, self)
+
+		self._addConditionData(raw_data) #TODO (Eran) -- is there any nutrient data here that should be brought into environment?
+
+		# import ipdb; ipdb.set_trace()
+
+		# TODO -- growth rate should not be based on condition.
+		self.doubling_time = self.conditionToDoublingTime[self.externalState.environment.condition]
 
 		# TODO: Check that media condition is valid
 		self.basal_expression_condition = basal_expression_condition
@@ -62,7 +67,8 @@ class SimulationDataEcoli(object):
 		# Data classes (can depend on helper functions)
 		# Data classes cannot depend on each other
 		self.process = Process(raw_data, self)
-		self.state = State(raw_data, self)
+
+		self.internalState = InternalState(raw_data, self)
 
 		# Relations between data classes (can depend on data classes)
 		# Relations cannot depend on each other
@@ -106,6 +112,7 @@ class SimulationDataEcoli(object):
 
 		self.dNtpOrder = ["A", "C", "G", "T"]
 
+	# TODO (Eran) -- Is this being used? can it be removed?
 	def _addEnvironments(self, raw_data):
 		externalExchangeMolecules = {}
 		nutrientExchangeMolecules = {}
@@ -151,8 +158,8 @@ class SimulationDataEcoli(object):
 			nutrientExchangeMolecules[envName] = sorted(nutrientExchangeMolecules[envName])
 		secretionExchangeMolecules = sorted(secretionExchangeMolecules)
 
-
 		return envDict, externalExchangeMolecules, nutrientExchangeMolecules, secretionExchangeMolecules
+
 
 	def _addConditionData(self, raw_data):
 		self.conditionToDoublingTime = dict([(x["condition"].encode("utf-8"), x["doubling time"]) for x in raw_data.condition.condition_defs])
@@ -257,50 +264,3 @@ class SimulationDataEcoli(object):
 			if nutrientLabel in self.nutrientToDoublingTime and self.conditionToDoublingTime[condition] != self.nutrientToDoublingTime[nutrientLabel]:
 				raise Exception, "Multiple doubling times correspond to the same media conditions"
 			self.nutrientToDoublingTime[nutrientLabel] = self.conditionToDoublingTime[condition]
-
-
-	def _getNutrientData(self, raw_data):
-
-		externalExchangeMolecules = {}
-		importExchangeMolecules = {}
-		secretionExchangeMolecules = set()
-		importConstrainedExchangeMolecules = {}
-		importUnconstrainedExchangeMolecules = {}
-		nutrientsList = [(x, getattr(raw_data.condition.nutrient, x)) for x in dir(raw_data.condition.nutrient) if not x.startswith("__")]
-		for nutrientsName, nutrients in nutrientsList:
-			externalExchangeMolecules[nutrientsName] = set()
-			importExchangeMolecules[nutrientsName] = set()
-			importConstrainedExchangeMolecules[nutrientsName] = {}
-			importUnconstrainedExchangeMolecules[nutrientsName] = []
-			for nutrient in nutrients:
-				if not np.isnan(nutrient["lower bound"].asNumber()) and not np.isnan(nutrient["upper bound"].asNumber()):
-					continue
-				elif not np.isnan(nutrient["upper bound"].asNumber()):
-					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = nutrient["upper bound"]
-					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-				else:
-					importUnconstrainedExchangeMolecules[nutrientsName].append(nutrient["molecule id"])
-					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-
-			for secretion in raw_data.secretions:
-				if secretion["lower bound"] and secretion["upper bound"]:
-					# "non-growth associated maintenance", not included in our metabolic model
-					continue
-
-				else:
-					externalExchangeMolecules[nutrientsName].add(secretion["molecule id"])
-					secretionExchangeMolecules.add(secretion["molecule id"])
-
-			externalExchangeMolecules[nutrientsName] = sorted(externalExchangeMolecules[nutrientsName])
-			importExchangeMolecules[nutrientsName] = sorted(importExchangeMolecules[nutrientsName])
-		secretionExchangeMolecules = sorted(secretionExchangeMolecules)
-
-		return {
-			"externalExchangeMolecules": externalExchangeMolecules,
-			"importExchangeMolecules": importExchangeMolecules,
-			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
-			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
-			"secretionExchangeMolecules": secretionExchangeMolecules,
-		}

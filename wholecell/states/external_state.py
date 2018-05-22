@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
 """
-State
+External state
 
-State variable base class. Defines the interface states expose to the simulation and processes.
+External state variable base class. Defines the interface states expose to the simulation and processes.
 
-@author: Derek Macklin
+@author: Eran Agmon
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 3/29/2013
+@date: Created 5/17/2018
 """
 
 from __future__ import division
 
 import numpy as np
 
-class State(object):
-	""" State """
+class ExternalState(object):
+	""" External State """
 
 	_name = None
 
@@ -62,20 +62,6 @@ class State(object):
 	# Views
 	def viewAdd(self, view):
 		self._views.append(view)
-
-
-	# Partitioning
-	def updateQueries(self):
-		for view in self._views:
-			view._updateQuery()
-
-
-	def partition(self):
-		pass
-
-
-	def merge(self):
-		pass
 
 
 	def calculatePreEvolveStateMass(self):

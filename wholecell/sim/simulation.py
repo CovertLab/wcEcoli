@@ -63,7 +63,8 @@ class Simulation(object):
 
 	# Attributes that must be set by a subclass
 	_definedBySubclass = (
-		"_stateClasses",
+		"_internalStateClasses",
+		"_externalStateClasses",
 		"_processClasses",
 		"_initialConditionsFunction",
 		)
@@ -121,7 +122,8 @@ class Simulation(object):
 	# Link states and processes
 	def _initialize(self, sim_data):
 		# self._timeStepSec = self._timeStepSec
-		self.states = _orderedAbstractionReference(self._stateClasses)
+		self.internal_states = _orderedAbstractionReference(self._internalStateClasses)
+		self.external_states = _orderedAbstractionReference(self._externalStateClasses)
 		self.processes = _orderedAbstractionReference(self._processClasses)
 		self.listeners = _orderedAbstractionReference(self._listenerClasses + DEFAULT_LISTENER_CLASSES)
 		self.hooks = _orderedAbstractionReference(self._hookClasses)
@@ -129,7 +131,10 @@ class Simulation(object):
 		self._cellCycleComplete = False
 		self._isDead = False
 
-		for state in self.states.itervalues():
+		for state in self.internal_states.itervalues():
+			state.initialize(self, sim_data)
+
+		for state in self.external_states.itervalues():
 			state.initialize(self, sim_data)
 
 		for process in self.processes.itervalues():
@@ -141,7 +146,10 @@ class Simulation(object):
 		for hook in self.hooks.itervalues():
 			hook.initialize(self, sim_data)
 
-		for state in self.states.itervalues():
+		for state in self.internal_states.itervalues():
+			state.allocate()
+
+		for state in self.external_states.itervalues():
 			state.allocate()
 
 		for listener in self.listeners.itervalues():
@@ -178,7 +186,7 @@ class Simulation(object):
 	# Run simulation
 	def run(self):
 		# Perform initial mass calculations
-		for state in self.states.itervalues():
+		for state in self.internal_states.itervalues():
 			state.calculatePreEvolveStateMass()
 			state.calculatePostEvolveStateMass()
 
@@ -214,11 +222,12 @@ class Simulation(object):
 
 
 	# Calculate temporal evolution
+	# TODO (Eran) add dynamics to external_states in evolveState
 	def _evolveState(self):
 
 		if self._simulationStep <= 1:
 			# Update randstreams
-			for stateName, state in self.states.iteritems():
+			for stateName, state in self.internal_states.iteritems():
 				state.seed = self._seedFromName(stateName)
 				state.randomState = np.random.RandomState(seed = state.seed)
 
@@ -227,14 +236,13 @@ class Simulation(object):
 				process.randomState = np.random.RandomState(seed = process.seed)
 
 		self._adjustTimeStep()
-		
 		# Run pre-evolveState hooks
 		for hook in self.hooks.itervalues():
 			hook.preEvolveState(self)
 
 		# Update queries
 		# TODO: context manager/function calls for this logic?
-		for i, state in enumerate(self.states.itervalues()):
+		for i, state in enumerate(self.internal_states.itervalues()):
 			t = time.time()
 			state.updateQueries()
 			self._evalTime.updateQueries_times[i] = time.time() - t
@@ -245,14 +253,14 @@ class Simulation(object):
 			process.calculateRequest()
 			self._evalTime.calculateRequest_times[i] = time.time() - t
 
-		# Partition states among processes
-		for i, state in enumerate(self.states.itervalues()):
+		# Partition internal states among processes
+		for i, state in enumerate(self.internal_states.itervalues()):
 			t = time.time()
 			state.partition()
 			self._evalTime.partition_times[i] = time.time() - t
 
 		# Calculate mass of partitioned molecules
-		for state in self.states.itervalues():
+		for state in self.internal_states.itervalues():
 			state.calculatePreEvolveStateMass()
 
 		# Update listeners
@@ -272,13 +280,13 @@ class Simulation(object):
 
 
 		# Merge state
-		for i, state in enumerate(self.states.itervalues()):
+		for i, state in enumerate(self.internal_states.itervalues()):
 			t = time.time()
 			state.merge()
 			self._evalTime.merge_times[i] = time.time() - t
 
 		# Calculate mass of partitioned molecules, after evolution
-		for state in self.states.itervalues():
+		for state in self.internal_states.itervalues():
 			state.calculatePostEvolveStateMass()
 
 
@@ -304,9 +312,10 @@ class Simulation(object):
 
 
 	# Save to/load from disk
+	# TODO (Eran) -- save external_states
 	def tableCreate(self, tableWriter):
 		tableWriter.writeAttributes(
-			states = self.states.keys(),
+			states = self.internal_states.keys(),
 			processes = self.processes.keys()
 			)
 
