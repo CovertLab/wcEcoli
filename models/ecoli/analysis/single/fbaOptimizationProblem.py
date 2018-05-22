@@ -9,6 +9,7 @@ Identifies outliers for each and plots those on separate subplots
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 '''
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -54,7 +55,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	# Plot all shadow prices
 	ax = plt.subplot(3, 2, 1)
-	ax.set_color_cycle(COLORS_SMALL)
+	ax.set_prop_cycle('color', COLORS_SMALL)
 	ax.plot(time[burnIn:], shadowPrices[burnIn:, :])
 	ax.set_xlabel('Time (s)', fontsize=8)
 	ax.set_ylabel('Shadow Price\n(Metabolites)', fontsize=8)
@@ -62,7 +63,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	# Plot all reduced costs
 	ax = plt.subplot(3, 2, 3)
-	ax.set_color_cycle(COLORS_SMALL)
+	ax.set_prop_cycle('color', COLORS_SMALL)
 	ax.plot(time[burnIn:], reducedCosts[burnIn:, :])
 	ax.set_xlabel('Time (s)', fontsize=8)
 	ax.set_ylabel('Reduced Costs\n(Reactions)', fontsize=8)
@@ -76,7 +77,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	idx = outliers[np.argsort(means[outliers])][::-1]
 
 	ax = plt.subplot(3, 2, 2)
-	ax.set_color_cycle(COLORS_SMALL)
+	ax.set_prop_cycle('color', COLORS_SMALL)
 	ax.set_xlabel('Time (s)', fontsize=8)
 	ax.set_ylabel('Shadow Price\n(Metabolites)', fontsize=8)
 	if len(idx):
@@ -92,7 +93,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	idx = outliers[np.argsort(means[outliers])][::-1]
 
 	ax = plt.subplot(3, 2, 4)
-	ax.set_color_cycle(COLORS_SMALL)
+	ax.set_prop_cycle('color', COLORS_SMALL)
 	ax.set_xlabel('Time (s)', fontsize=8)
 	ax.set_ylabel('Reduced Costs\n(Reactions)', fontsize=8)
 	if len(idx):
@@ -109,7 +110,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	idx = outliers[np.argsort(means[outliers])][::-1]
 
 	ax = plt.subplot(3, 2, 4)
-	ax.set_color_cycle(COLORS_SMALL)
+	ax.set_prop_cycle('color', COLORS_SMALL)
 	ax.set_xlabel('Time (s)', fontsize=8)
 	ax.set_ylabel('Reduced Costs\n(Reactions)', fontsize=8)
 	if len(idx):
@@ -126,7 +127,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 		# Plot all reduced costs for kinetically constrained reactions
 		ax = plt.subplot(3, 2, 5)
-		ax.set_color_cycle(COLORS_SMALL)
+		ax.set_prop_cycle('color', COLORS_SMALL)
 		ax.plot(time[burnIn:], kineticsReducedCosts[burnIn:, :])
 		ax.set_xlabel('Time (s)', fontsize=8)
 		ax.set_ylabel('Reduced Costs\n(Kinetically Constrained Reactions)', fontsize=8)
@@ -140,7 +141,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		idx = outliers[np.argsort(means[outliers])][::-1]
 
 		ax = plt.subplot(3, 2, 6)
-		ax.set_color_cycle(COLORS_SMALL)
+		ax.set_prop_cycle('color', COLORS_SMALL)
 		ax.set_xlabel('Time (s)', fontsize=8)
 		ax.set_ylabel('Reduced Costs\n(Kinetically Constrained Reactions)', fontsize=8)
 		if len(idx):
