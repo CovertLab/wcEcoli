@@ -46,7 +46,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	colors = COLORS_LARGE # to match colors between the pdf and html plots
 	plt.figure(figsize = (8.5, 11))
 	ax = plt.subplot(1, 1, 1)
-	ax.set_prop_cycle('color', colors)
+	ax.set_color_cycle(colors)
 	plt.plot(time, normalizedCounts)
 	plt.xlabel("Time (s)")
 	plt.ylabel("Metabolite Fold Change")
