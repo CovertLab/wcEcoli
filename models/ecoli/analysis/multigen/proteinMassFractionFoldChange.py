@@ -195,7 +195,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	finalMassFraction = finalMonomerTotalMass / np.tile(cellMassFinalMultigen.reshape((ap.n_generation,1)), (1,n_monomers))
 
 	massFractionRatio = (finalMassFraction / initialMassFraction).mean(axis=0)
-	print "DEBUG: massFractionRatio={}".format(massFractionRatio)
 	# Filter out Inf, NaN, and non-positive values before computing log2().
 	massFractionRatio_realValues = massFractionRatio[np.isfinite(massFractionRatio) & (massFractionRatio > 0)]
 	massFractionRatio_logs = np.log2(massFractionRatio_realValues)

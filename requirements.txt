@@ -148,7 +148,7 @@ tqdm==4.23.0
 traitlets==4.3.2
 Unum==4.1.4
 urllib3==1.22
-virtualenv==15.2.0
+virtualenv>=16.0.0
 wcwidth==0.1.7
 Werkzeug==0.14.1
 wrapt==1.10.11
