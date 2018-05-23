@@ -5,12 +5,6 @@ BulkMolecules.py
 
 State which represents for a class of molecules the bulk copy numbers.
 
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 10/04/2013
-@author: Nick Ruggero
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@author: John Mason
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
@@ -21,7 +15,7 @@ from itertools import izip
 
 import numpy as np
 
-import wholecell.states.state
+import wholecell.states.internal_state
 import wholecell.views.view
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
@@ -34,7 +28,7 @@ ASSERT_POSITIVE_COUNTS = True
 class NegativeCountsError(Exception):
 	pass
 
-class BulkMolecules(wholecell.states.state.State):
+class BulkMolecules(wholecell.states.internal_state.InternalState):
 	_name = 'BulkMolecules'
 
 	def __init__(self, *args, **kwargs):
