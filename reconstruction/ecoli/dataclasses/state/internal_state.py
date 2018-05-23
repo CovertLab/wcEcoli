@@ -11,21 +11,19 @@ from wholecell.utils.unit_struct_array import UnitStructArray
 
 from reconstruction.ecoli.dataclasses.state.bulkMolecules import BulkMolecules
 from reconstruction.ecoli.dataclasses.state.uniqueMolecules import UniqueMolecules
-from reconstruction.ecoli.dataclasses.state.environment import Environment
 
 from reconstruction.ecoli.dataclasses.state import stateFunctions as sf
 
 import re
 import numpy as np
 
-class State(object):
-	""" State """
+class InternalState(object):
+	""" Internal State """
 
 	def __init__(self, raw_data, sim_data):
 
 		self.bulkMolecules = BulkMolecules(raw_data, sim_data)
 		self.uniqueMolecules = UniqueMolecules(raw_data, sim_data)
-		self.environment = Environment(raw_data, sim_data)
 
 		self._buildBulkMolecules(raw_data, sim_data)
 		self._buildUniqueMolecules(raw_data, sim_data)
@@ -142,18 +140,3 @@ class State(object):
 		compartmentData['id'] = [x['id'] for x in raw_data.compartments]
 		compartmentData['compartmentAbbreviation'] = [x['abbrev'] for x in raw_data.compartments]
 		self.compartments = compartmentData
-
-
-	def _buildEnvironment(self, raw_data, sim_data):
-
-		# Set metabolites
-		metaboliteIds = sf.createIdsWithCompartments(raw_data.metabolites)
-		metaboliteMasses = units.g / units.mol * sf.createMetaboliteMassesByCompartments(raw_data.metabolites, 7, 11)
-
-		self.environment.addToBulkState(metaboliteIds, metaboliteMasses)
-
-		# Set water
-		waterIds = sf.createIdsWithCompartments(raw_data.water)
-		waterMasses = units.g / units.mol * sf.createMetaboliteMassesByCompartments(raw_data.water, 8, 11)
-
-		self.environment.addToBulkState(waterIds, waterMasses)

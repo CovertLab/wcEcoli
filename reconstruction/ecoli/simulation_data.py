@@ -3,9 +3,7 @@ SimulationData for Ecoli
 
 Raw data processed into forms convienent for whole-cell modeling
 
-@author: Nick Ruggero
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 02/12/2015
 """
 from __future__ import division
 
@@ -19,7 +17,8 @@ from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.ecoli.dataclasses.getterFunctions import getterFunctions
 from reconstruction.ecoli.dataclasses.moleculeGroups import moleculeGroups
 from reconstruction.ecoli.dataclasses.constants import Constants
-from reconstruction.ecoli.dataclasses.state.state import State
+from reconstruction.ecoli.dataclasses.state.internal_state import InternalState
+from reconstruction.ecoli.dataclasses.state.external_state import ExternalState
 from reconstruction.ecoli.dataclasses.process.process import Process
 from reconstruction.ecoli.dataclasses.growthRateDependentParameters import Mass, GrowthRateParameters
 from reconstruction.ecoli.dataclasses.relation import Relation
@@ -39,10 +38,16 @@ class SimulationDataEcoli(object):
 	def initialize(self, raw_data, basal_expression_condition = "M9 Glucose minus AAs"):
 
 		self._addConditionData(raw_data)
+
+		#external state is initiated before internal state, because it is used in processing
+		self.externalState = ExternalState(raw_data, self)
+
+		# TODO (ERAN) remove below, this should be entirely in environment
 		self.nutrientData = self._getNutrientData(raw_data)
 		self.condition = "basal"
 		self.nutrientsTimeSeriesLabel = "000000_basal"
-		self.doubling_time = self.conditionToDoublingTime[self.condition]
+
+		self.doubling_time = self.conditionToDoublingTime[self.externalState.environment.condition]
 
 		# TODO: Check that media condition is valid
 		self.basal_expression_condition = basal_expression_condition
@@ -62,7 +67,7 @@ class SimulationDataEcoli(object):
 		# Data classes (can depend on helper functions)
 		# Data classes cannot depend on each other
 		self.process = Process(raw_data, self)
-		self.state = State(raw_data, self)
+		self.internalState = InternalState(raw_data, self)
 
 		# Relations between data classes (can depend on data classes)
 		# Relations cannot depend on each other
@@ -259,6 +264,13 @@ class SimulationDataEcoli(object):
 			self.nutrientToDoublingTime[nutrientLabel] = self.conditionToDoublingTime[condition]
 
 
+
+
+
+
+
+
+	#TODO (ERAN) -- remove below, should be entirely in environment
 	def _getNutrientData(self, raw_data):
 
 		externalExchangeMolecules = {}

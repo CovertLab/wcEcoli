@@ -17,7 +17,6 @@ import numpy as np
 
 import wholecell.states.external_state
 import wholecell.views.view
-from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 from wholecell.utils import units
 
@@ -42,9 +41,10 @@ class Environment(wholecell.states.external_state.ExternalState):
 		super(Environment, self).initialize(sim, sim_data)
 
 		# Load constants
-		self._moleculeIDs = sim_data.state.environment.environmentData['id']
-
-		#TODO (ERAN) -- initiate nutrient conditions, timeseries here. 
+		self._moleculeIDs = sim_data.externalState.environment.environmentData['id']
+		self._nutrientData = sim_data.externalState.environment.nutrientData
+		self._condition = sim_data.externalState.environment.condition
+		self._nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
 
 
 	def tableCreate(self, tableWriter):
@@ -60,7 +60,6 @@ class Environment(wholecell.states.external_state.ExternalState):
 
 	def tableLoad(self, tableReader, tableIndex):
 		self.container.tableLoad(tableReader, tableIndex)
-
 
 
 class EnvironmentViewBase(wholecell.views.view.View):

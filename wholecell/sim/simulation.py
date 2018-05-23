@@ -132,6 +132,9 @@ class Simulation(object):
 		for state in self.internal_states.itervalues():
 			state.initialize(self, sim_data)
 
+		for state in self.external_states.itervalues():
+			state.initialize(self, sim_data)
+
 		for process in self.processes.itervalues():
 			process.initialize(self, sim_data)
 
