@@ -12,8 +12,6 @@ import os
 import re
 
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from matplotlib import colors
 import scipy.cluster.hierarchy as sch
