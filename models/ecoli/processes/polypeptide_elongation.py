@@ -54,7 +54,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
 
 		self.translation_aa_supply = sim_data.translationSupplyRate
-		self.nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+		self.nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
 		self.nutrientsTimeSeries = copy.deepcopy(sim_data.nutrientsTimeSeries)
 		self.currentNutrients = self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel][0][1]
 

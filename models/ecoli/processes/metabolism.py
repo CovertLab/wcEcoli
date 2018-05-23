@@ -60,16 +60,16 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.exchangeConstraints = sim_data.process.metabolism.exchangeConstraints
 
-		self.nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+		self.nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
 
 		self.getBiomassAsConcentrations = sim_data.mass.getBiomassAsConcentrations
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 
 		# Create objective for homeostatic constraints
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			sim_data.nutrientsTimeSeries[sim_data.nutrientsTimeSeriesLabel][0][1]
+			sim_data.nutrientsTimeSeries[sim_data.externalState.environment.nutrientsTimeSeriesLabel][0][1]
 			)
-		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.condition])
+		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.externalState.environment.condition])
 		concDict.update(self.concModificationsBasedOnCondition)
 		self.homeostaticObjective = dict((key, concDict[key].asNumber(COUNTS_UNITS / VOLUME_UNITS)) for key in concDict)
 
@@ -81,10 +81,10 @@ class Metabolism(wholecell.processes.process.Process):
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
 		# Setup molecules in external environment that can be exchanged
-		externalExchangedMolecules = sim_data.nutrientData["secretionExchangeMolecules"]
+		externalExchangedMolecules = sim_data.externalState.environment.nutrientData["secretionExchangeMolecules"]
 		self.metaboliteNamesFromNutrients = set()
 		for time, nutrientsLabel in sim_data.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel]:
-			externalExchangedMolecules += sim_data.nutrientData["importExchangeMolecules"][nutrientsLabel]
+			externalExchangedMolecules += sim_data.externalState.environment.nutrientData["importExchangeMolecules"][nutrientsLabel]
 
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(

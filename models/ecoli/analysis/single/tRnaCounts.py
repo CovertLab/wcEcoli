@@ -14,6 +14,8 @@ import os
 
 import numpy as np
 from scipy import stats
+import matplotlib
+matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import cPickle
 
@@ -58,7 +60,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	counts = rnaCountsBulk[-1, :]
 
-	expectedCountsArbitrary = sim_data.process.transcription.rnaExpression[sim_data.condition][isTRna]
+	expectedCountsArbitrary = sim_data.process.transcription.rnaExpression[sim_data.externalState.environment.condition][isTRna]
 
 	expectedCounts = expectedCountsArbitrary/expectedCountsArbitrary.sum() * counts.sum()
 

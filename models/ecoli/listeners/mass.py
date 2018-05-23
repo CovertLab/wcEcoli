@@ -26,7 +26,7 @@ class Mass(wholecell.listeners.listener.Listener):
 
 	# Constructor
 	def __init__(self, *args, **kwargs):
-		# References to other states
+		# References to other internal states
 		self.internal_states = None
 
 		# NOTE: molecule weight is converted to femtograms/molecule from
@@ -44,7 +44,7 @@ class Mass(wholecell.listeners.listener.Listener):
 
 		self.processNames = list(sim.processes.keys()) + ["Unallocated"]
 
-		self.cellCycleLen = sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.s)
+		self.cellCycleLen = sim_data.conditionToDoublingTime[sim_data.externalState.environment.condition].asNumber(units.s)
 
 		self.rnaIndexes = np.array([
 			sim_data.submassNameToIndex[name]

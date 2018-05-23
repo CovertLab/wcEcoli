@@ -5,6 +5,8 @@ import os
 import re
 
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 
@@ -34,7 +36,7 @@ def mm2inch(value):
 	return value * 0.0393701
 
 def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
-
+	
 	if not os.path.isdir(variantDir):
 		raise Exception, "variantDir does not currently exist as a directory"
 
@@ -78,7 +80,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		simOutDir = os.path.join(simDir, "simOut")
 
 		time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
-
+		
 		## Cell mass
 		mass = TableReader(os.path.join(simOutDir, "Mass"))
 		cellMass = mass.readColumn("cellMass")
@@ -143,11 +145,11 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax0.set_yticks(new_y_ticks)
 
 	ax0.set_xlim([0., time.max() / 60.])
-	ax0.set_ylabel("Cell mass\n(fg)", fontsize=FONT_SIZE)
+	ax0.set_ylabel("Cell mass\n(fg)", fontsize=FONT_SIZE)	
 	ax0.xaxis.set_visible(False)
 	#ax0.axvline(x=44*2+22., linewidth=3, color='gray', alpha = 0.5)
 
-	nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+	nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
 	try:
 		T_ADD_AA = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][1][0] / 60.
 	except:
@@ -171,7 +173,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	for a in axes_list:
 		for tick in a.yaxis.get_major_ticks():
-			tick.label.set_fontsize(FONT_SIZE)
+			tick.label.set_fontsize(FONT_SIZE) 
 
 	ax1.set_ylabel(r"$\mu$ $(\frac{gDCW}{gDCW \cdot \, min})$", fontsize=FONT_SIZE)
 	ax1.xaxis.set_visible(False)
@@ -258,7 +260,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		simOutDir = os.path.join(simDir, "simOut")
 
 		time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
-
+		
 		## Cell mass
 		# mass = TableReader(os.path.join(simOutDir, "Mass"))
 		# cellMass = mass.readColumn("cellMass")
@@ -322,11 +324,11 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# ax0.set_yticks(new_y_ticks)
 
 	ax3.set_xlim([0., time.max() / 60.])
-	# ax0.set_ylabel("Cell mass\n(fg)", fontsize=FONT_SIZE)
+	# ax0.set_ylabel("Cell mass\n(fg)", fontsize=FONT_SIZE)	
 	# ax0.xaxis.set_visible(False)
 	#ax0.axvline(x=44*2+22., linewidth=3, color='gray', alpha = 0.5)
 
-	nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+	nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
 	T_ADD_AA = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][1][0] / 60.
 	axes_list = [ax3, ax4]
 	for a in axes_list:
@@ -346,7 +348,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	for a in axes_list:
 		for tick in a.yaxis.get_major_ticks():
-			tick.label.set_fontsize(FONT_SIZE)
+			tick.label.set_fontsize(FONT_SIZE) 
 
 	# ax1.set_ylabel(r"$\mu$ $(\frac{gDCW}{gDCW-min})$", fontsize=FONT_SIZE)
 	# ax1.xaxis.set_visible(False)

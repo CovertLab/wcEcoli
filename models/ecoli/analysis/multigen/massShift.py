@@ -9,6 +9,8 @@ import argparse
 import os
 import numpy as np
 import cPickle
+import matplotlib
+matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -29,7 +31,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	T_ADD_AA = None
 	T_CUT_AA = None
-	nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+	nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
 	if "aa" in nutrientsTimeSeriesLabel:
 		if "add" in nutrientsTimeSeriesLabel and "cut" in nutrientsTimeSeriesLabel:
 			T_ADD_AA = sim_data.nutrientsTimeSeries[nutrientsTimeSeriesLabel][1][0]

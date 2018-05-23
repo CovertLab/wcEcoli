@@ -46,6 +46,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 		self._condition = sim_data.externalState.environment.condition
 		self._nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
 
+		import ipdb; ipdb.set_trace()
 
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)

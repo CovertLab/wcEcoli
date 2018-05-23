@@ -6,17 +6,18 @@ import argparse
 import os
 
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import units
 import cPickle
 
-def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
+def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
 		raise Exception, "seedOutDir does not currently exist as a directory"
 
@@ -128,9 +129,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		for idx, id5s in enumerate(sim_data.moleculeGroups.s50_5sRRNA):
 			idx_5s[idx] = np.where(sim_data.process.transcription.rnaData['id'] == id5s)[0][0]
 
-		rrn16s_fit_init_prob = sim_data.process.transcription.rnaSynthProb[sim_data.condition][idx_16s].sum()
-		rrn23s_fit_init_prob = sim_data.process.transcription.rnaSynthProb[sim_data.condition][idx_23s].sum()
-		rrn5s_fit_init_prob = sim_data.process.transcription.rnaSynthProb[sim_data.condition][idx_5s].sum()
+		rrn16s_fit_init_prob = sim_data.process.transcription.rnaSynthProb[sim_data.externalState.environment.condition][idx_16s].sum()
+		rrn23s_fit_init_prob = sim_data.process.transcription.rnaSynthProb[sim_data.externalState.environment.condition][idx_23s].sum()
+		rrn5s_fit_init_prob = sim_data.process.transcription.rnaSynthProb[sim_data.externalState.environment.condition][idx_5s].sum()
 
 		## Calculated expected multinomial variance ##
 		total_rna_init = TableReader(os.path.join(simOutDir, "RibosomeData")).readColumn("total_rna_init")
@@ -157,7 +158,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax1.axvline(x = time.asNumber(units.min).max(), linewidth=2, color='k', linestyle='--')
 
 		hist_doublingTime = removeNanReshape(doublingTime.asNumber(units.min))
-		histogram(ax1_1, hist_doublingTime)
+		nbins = np.ceil(np.sqrt(hist_doublingTime.size))
+		ax1_1.hist(hist_doublingTime, nbins)
 
 		##
 
@@ -167,7 +169,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax2.set_ylabel("rrn 16S\ndoubling time")
 
 		hist_rrn16S_doubling_time = removeNanReshape(rrn16S_doubling_time.asNumber(units.min))
-		histogram(ax2_1, hist_rrn16S_doubling_time)
+		nbins = np.ceil(np.sqrt(hist_rrn16S_doubling_time.size))
+		if hist_rrn16S_doubling_time.size:
+			ax2_1.hist(hist_rrn16S_doubling_time, nbins)
 
 		##
 
@@ -177,7 +181,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax3.set_ylabel("rrn 23S\ndoubling time")
 
 		hist_rrn23S_doubling_time = removeNanReshape(rrn23S_doubling_time.asNumber(units.min))
-		histogram(ax3_1, hist_rrn23S_doubling_time)
+		nbins = np.ceil(np.sqrt(hist_rrn23S_doubling_time.size))
+		if hist_rrn23S_doubling_time.size:
+			ax3_1.hist(hist_rrn23S_doubling_time, nbins)
 
 		##
 
@@ -187,7 +193,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax4.set_ylabel("rrn 5S\ndoubling time")
 
 		hist_rrn5S_doubling_time = removeNanReshape(rrn5S_doubling_time.asNumber(units.min))
-		histogram(ax4_1, hist_rrn5S_doubling_time)
+		nbins = np.ceil(np.sqrt(hist_rrn5S_doubling_time.size))
+		if hist_rrn5S_doubling_time.size:
+			ax4_1.hist(hist_rrn5S_doubling_time, nbins)
 
 		##
 
@@ -197,7 +205,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax5.set_ylabel("rrn 16S\ninit prob")
 
 		hist_rrn16S_init_prob = removeNanReshape(rrn16S_init_prob / total_rna_init)
-		histogram(ax5_1, hist_rrn16S_init_prob)
+		nbins = np.ceil(np.sqrt(hist_rrn16S_init_prob.size))
+		ax5_1.hist(hist_rrn16S_init_prob, nbins)
 
 		##
 
@@ -207,7 +216,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax6.set_ylabel("rrn 23S\ninit prob")
 
 		hist_rrn23S_init_prob = removeNanReshape(rrn23S_init_prob / total_rna_init)
-		histogram(ax6_1, hist_rrn23S_init_prob)
+		nbins = np.ceil(np.sqrt(hist_rrn23S_init_prob.size))
+		ax6_1.hist(hist_rrn23S_init_prob, nbins)
 
 		##
 
@@ -217,7 +227,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax7.set_ylabel("rrn 5S\ninit prob")
 
 		hist_rrn5S_init_prob = removeNanReshape(rrn5S_init_prob / total_rna_init)
-		histogram(ax7_1, hist_rrn5S_init_prob)
+		nbins = np.ceil(np.sqrt(hist_rrn5S_init_prob.size))
+		ax7_1.hist(hist_rrn5S_init_prob, nbins)
 
 		##
 
@@ -226,21 +237,16 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax8.set_ylabel("Average ribosome\nelongation rate (aa/s)")
 
 		hist_averageElongationRate = removeNanReshape(averageElongationRate)
-		histogram(ax8_1, hist_averageElongationRate)
+		nbins = np.ceil(np.sqrt(hist_averageElongationRate.size))
+		ax8_1.hist(hist_averageElongationRate, nbins)
 
 	ax8.set_xlabel("Time (min)")
 
 	fig.subplots_adjust(hspace=.5, wspace = 0.3)
 
+	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
-
-
-def histogram(axis, hist_doublingTime):
-	if hist_doublingTime.size > 0:
-		nbins = int(np.ceil(np.sqrt(hist_doublingTime.size)))
-		axis.hist(hist_doublingTime, nbins)
-
 
 def getMassData(simDir, massNames):
 	simOutDir = os.path.join(simDir, "simOut")
