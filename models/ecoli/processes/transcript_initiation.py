@@ -106,13 +106,15 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			raise Exception("Have negative RNA synthesis probabilities")
 
 		# Adjust synthesis probabilities depending on environment
-		synthProbFractions = self.rnaSynthProbFractions[self._sim.processes["PolypeptideElongation"].currentNutrients]
+		currentNutrients = self._external_states.values()[0].condition
+
+		synthProbFractions = self.rnaSynthProbFractions[currentNutrients]
 		self.rnaSynthProb[self.isMRna] *= synthProbFractions["mRna"] / self.rnaSynthProb[self.isMRna].sum()
 		self.rnaSynthProb[self.isTRna] *= synthProbFractions["tRna"] / self.rnaSynthProb[self.isTRna].sum()
 		self.rnaSynthProb[self.isRRna] *= synthProbFractions["rRna"] / self.rnaSynthProb[self.isRRna].sum()
 		self.rnaSynthProb[self.isRegulated] = regProbs
-		self.rnaSynthProb[self.isRProtein] = self.rnaSynthProbRProtein[self._sim.processes["PolypeptideElongation"].currentNutrients]
-		self.rnaSynthProb[self.isRnap] = self.rnaSynthProbRnaPolymerase[self._sim.processes["PolypeptideElongation"].currentNutrients]
+		self.rnaSynthProb[self.isRProtein] = self.rnaSynthProbRProtein[currentNutrients]
+		self.rnaSynthProb[self.isRnap] = self.rnaSynthProbRnaPolymerase[currentNutrients]
 		self.rnaSynthProb[self.rnaSynthProb < 0] = 0
 		scaleTheRestBy = (1. - self.rnaSynthProb[self.setIdxs].sum()) / self.rnaSynthProb[~self.setIdxs].sum()
 		self.rnaSynthProb[~self.setIdxs] *= scaleTheRestBy
@@ -122,8 +124,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		if self.shuffleIdxs is not None:
 			self.rnaSynthProb = self.rnaSynthProb[self.shuffleIdxs]
 
-		self.fracActiveRnap = self.fracActiveRnapDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
-		self.rnaPolymeraseElongationRate = self.rnaPolymeraseElongationRateDict[self._sim.processes["PolypeptideElongation"].currentNutrients]
+		self.fracActiveRnap = self.fracActiveRnapDict[currentNutrients]
+		self.rnaPolymeraseElongationRate = self.rnaPolymeraseElongationRateDict[currentNutrients]
 
 	def evolveState(self):
 		self.writeToListener("RnaSynthProb", "rnaSynthProb", self.rnaSynthProb)

@@ -57,38 +57,6 @@ class ExternalState(object):
 		pass
 
 
-	# Views
-	def viewAdd(self, view):
-		self._views.append(view)
-
-
-	# Partitioning
-	def updateQueries(self):
-		for view in self._views:
-			view._updateQuery()
-
-
-	def partition(self):
-		pass
-
-
-	def merge(self):
-		pass
-
-
-	def calculatePreEvolveStateMass(self):
-		raise NotImplementedError("Subclass must implement")
-
-
-	def calculatePostEvolveStateMass(self):
-		raise NotImplementedError("Subclass must implement")
-
-
-	# Mass calculations
-	def mass(self):
-		return self._masses
-
-
 	# Saving and loading
 
 	def tableCreate(self, tableWriter):

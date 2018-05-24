@@ -106,53 +106,6 @@ class SimulationDataEcoli(object):
 
 		self.dNtpOrder = ["A", "C", "G", "T"]
 
-	# def _addEnvironments(self, raw_data):
-	# 	externalExchangeMolecules = {}
-	# 	nutrientExchangeMolecules = {}
-	# 	secretionExchangeMolecules = set()
-	# 	envDict = {}
-	# 	notEnvList = ["condition_doubling_time", "tf_condition", "condition_defs"]
-	# 	environments = [(x, getattr(raw_data.condition, x)) for x in dir(raw_data.condition) if not x.startswith("__") and x not in notEnvList]
-	# 	for envName, env in environments:
-	# 		externalExchangeMolecules[envName] = set()
-	# 		nutrientExchangeMolecules[envName] = set()
-	# 		envDict[envName] = collections.deque()
-	# 		setpoints = [(float(x.split("_")[-1]), getattr(env, x)) for x in dir(env) if not x.startswith("__")]
-	# 		for time, nutrientBounds in setpoints:
-	# 			constrainedExchangeMolecules = {}
-	# 			unconstrainedExchangeMolecules = []
-	# 			for nutrient in nutrientBounds:
-	# 				if not np.isnan(nutrient["lower bound"].asNumber()) and not np.isnan(nutrient["upper bound"].asNumber()):
-	# 					continue
-	# 				elif not np.isnan(nutrient["upper bound"].asNumber()):
-	# 					constrainedExchangeMolecules[nutrient["molecule id"]] = nutrient["upper bound"]
-	# 					externalExchangeMolecules[envName].add(nutrient["molecule id"])
-	# 					nutrientExchangeMolecules[envName].add(nutrient["molecule id"])
-	# 				else:
-	# 					unconstrainedExchangeMolecules.append(nutrient["molecule id"])
-	# 					externalExchangeMolecules[envName].add(nutrient["molecule id"])
-	# 					nutrientExchangeMolecules[envName].add(nutrient["molecule id"])
-	#
-	# 			for secretion in raw_data.secretions:
-	# 				if secretion["lower bound"] and secretion["upper bound"]:
-	# 					# "non-growth associated maintenance", not included in our metabolic model
-	# 					continue
-	#
-	# 				else:
-	# 					externalExchangeMolecules[envName].add(secretion["molecule id"])
-	# 					secretionExchangeMolecules.add(secretion["molecule id"])
-	#
-	# 			D = {
-	# 				"constrainedExchangeMolecules": constrainedExchangeMolecules,
-	# 				"unconstrainedExchangeMolecules": unconstrainedExchangeMolecules,
-	# 				}
-	# 			envDict[envName].append((time, D))
-	# 		externalExchangeMolecules[envName] = sorted(externalExchangeMolecules[envName])
-	# 		nutrientExchangeMolecules[envName] = sorted(nutrientExchangeMolecules[envName])
-	# 	secretionExchangeMolecules = sorted(secretionExchangeMolecules)
-	#
-	#
-	# 	return envDict, externalExchangeMolecules, nutrientExchangeMolecules, secretionExchangeMolecules
 
 	def _addConditionData(self, raw_data):
 		self.conditionToDoublingTime = dict([(x["condition"].encode("utf-8"), x["doubling time"]) for x in raw_data.condition.condition_defs])

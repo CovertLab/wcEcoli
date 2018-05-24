@@ -22,10 +22,6 @@ from wholecell.utils import units
 
 from wholecell.utils.constants import REQUEST_PRIORITY_DEFAULT
 
-ASSERT_POSITIVE_COUNTS = True
-
-class NegativeCountsError(Exception):
-	pass
 
 class Environment(wholecell.states.external_state.ExternalState):
 	_name = 'Environment'
@@ -40,13 +36,23 @@ class Environment(wholecell.states.external_state.ExternalState):
 	def initialize(self, sim, sim_data):
 		super(Environment, self).initialize(sim, sim_data)
 
-		# Load constants
-		self._moleculeIDs = sim_data.externalState.environment.environmentData['id']
-		self._nutrientData = sim_data.externalState.environment.nutrientData
-		self._condition = sim_data.externalState.environment.condition
-		self._nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
+		# Load nutrient condition and data
+		# TODO (ERAN) -improve terms (state, trajectories)
+		self.nutrientsTimeSeries = sim_data.nutrientsTimeSeries
+		self.nutrientData = sim_data.externalState.environment.nutrientData
 
-		import ipdb; ipdb.set_trace()
+		# current condition and timeseries
+		self.nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
+		self.condition = self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel][0][1]
+
+
+	def update(self):
+
+		# TODO (Eran) -- just go through ts, save current state. no popleft
+		while len(self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel]) and \
+			self.time() > self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel][0][0]:
+				_ , nutrients = self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel].popleft()
+				self.condition = nutrients
 
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)

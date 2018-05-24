@@ -87,8 +87,9 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 	# Calculate temporal evolution
 	def evolveState(self):
-		# Set critical initiaion mass for simulation medium enviornment
-		self.criticalInitiationMass = self.getDnaCriticalMass(self.nutrientToDoublingTime[self._sim.processes["PolypeptideElongation"].currentNutrients])
+		# Set critical initiaion mass for simulation medium environment
+		currentNutrients = self._external_states.values()[0].condition
+		self.criticalInitiationMass = self.getDnaCriticalMass(self.nutrientToDoublingTime[currentNutrients])
 
 		##########################################
 		# Perform replication initiation process #

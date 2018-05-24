@@ -129,11 +129,11 @@ class Simulation(object):
 		self._cellCycleComplete = False
 		self._isDead = False
 
-		for state in self.internal_states.itervalues():
-			state.initialize(self, sim_data)
+		for internal_state in self.internal_states.itervalues():
+			internal_state.initialize(self, sim_data)
 
-		for state in self.external_states.itervalues():
-			state.initialize(self, sim_data)
+		for external_state in self.external_states.itervalues():
+			external_state.initialize(self, sim_data)
 
 		for process in self.processes.itervalues():
 			process.initialize(self, sim_data)
@@ -144,8 +144,8 @@ class Simulation(object):
 		for hook in self.hooks.itervalues():
 			hook.initialize(self, sim_data)
 
-		for state in self.internal_states.itervalues():
-			state.allocate()
+		for internal_state in self.internal_states.itervalues():
+			internal_state.allocate()
 
 		for listener in self.listeners.itervalues():
 			listener.allocate()
@@ -230,7 +230,7 @@ class Simulation(object):
 				process.randomState = np.random.RandomState(seed = process.seed)
 
 		self._adjustTimeStep()
-		
+
 		# Run pre-evolveState hooks
 		for hook in self.hooks.itervalues():
 			hook.preEvolveState(self)
@@ -273,7 +273,6 @@ class Simulation(object):
 			if not process.wasTimeStepShortEnough():
 				raise Exception("The timestep (%.3f) was too long at step %i, failed on process %s" % (self._timeStepSec, self.simulationStep(), str(process.name())))
 
-
 		# Merge state
 		for i, state in enumerate(self.internal_states.itervalues()):
 			t = time.time()
@@ -284,6 +283,9 @@ class Simulation(object):
 		for state in self.internal_states.itervalues():
 			state.calculatePostEvolveStateMass()
 
+		# update environment state
+		for state in self.external_states.itervalues():
+			state.update()
 
 		# Update listeners
 		for listener in self.listeners.itervalues():

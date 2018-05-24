@@ -211,7 +211,9 @@ class Metabolism(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
-		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(self.nutrientToDoublingTime.get(self._sim.processes["PolypeptideElongation"].currentNutrients, self.nutrientToDoublingTime["minimal"]))
+		currentNutrients = self._external_states.values()[0].condition
+		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
+			self.nutrientToDoublingTime.get(currentNutrients, self.nutrientToDoublingTime["minimal"]))
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)

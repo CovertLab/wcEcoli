@@ -26,6 +26,10 @@ class VariantSimDataTask(FireTaskBase):
 
 		info, sim_data = nameToFunctionMapping[self["variant_function"]](sim_data, self["variant_index"])
 
+		#TODO (Eran) -- save this directly to externalState.environment
+		sim_data.externalState.environment.nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+		del sim_data.nutrientsTimeSeriesLabel
+
 		print info["shortName"]
 
 		import sys; sys.setrecursionlimit(4000)
