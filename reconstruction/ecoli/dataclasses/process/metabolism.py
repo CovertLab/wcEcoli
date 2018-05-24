@@ -458,7 +458,7 @@ class Metabolism(object):
 
 		return self._compiledConstraints(enzymes, substrates)
 
-	def exchangeConstraints(self, exchangeIDs, coefficient, targetUnits, nutrientsTimeSeriesLabel, time, concModificationsBasedOnCondition = None, preview = False):
+	def exchangeConstraints(self, exchangeIDs, coefficient, targetUnits, currentNutrients, concModificationsBasedOnCondition = None):
 		"""
 		Called during Metabolism process
 		Returns the homeostatic objective concentrations based on the current nutrients
@@ -466,19 +466,13 @@ class Metabolism(object):
 		"""
 
 		newObjective = None
-		while len(self.nutrientsTimeSeries[nutrientsTimeSeriesLabel]) and time > self.nutrientsTimeSeries[nutrientsTimeSeriesLabel][0][0]:
-			if preview:
-				_, nutrients = self.nutrientsTimeSeries[nutrientsTimeSeriesLabel][0]
-			else:
-				_, nutrients = self.nutrientsTimeSeries[nutrientsTimeSeriesLabel].popleft()
-			self._unconstrainedExchangeMolecules = self.nutrientData["importUnconstrainedExchangeMolecules"][nutrients]
-			self._constrainedExchangeMolecules = self.nutrientData["importConstrainedExchangeMolecules"][nutrients]
-			concDict = self.concentrationUpdates.concentrationsBasedOnNutrients(nutrients, self.nutrientsToInternalConc)
-			if concModificationsBasedOnCondition is not None:
-				concDict.update(concModificationsBasedOnCondition)
-			newObjective = dict((key, concDict[key].asNumber(targetUnits)) for key in concDict)
-			if preview:
-				break
+
+		self._unconstrainedExchangeMolecules = self.nutrientData["importUnconstrainedExchangeMolecules"][currentNutrients]
+		self._constrainedExchangeMolecules = self.nutrientData["importConstrainedExchangeMolecules"][currentNutrients]
+		concDict = self.concentrationUpdates.concentrationsBasedOnNutrients(currentNutrients, self.nutrientsToInternalConc)
+		if concModificationsBasedOnCondition is not None:
+			concDict.update(concModificationsBasedOnCondition)
+		newObjective = dict((key, concDict[key].asNumber(targetUnits)) for key in concDict)
 
 		externalMoleculeLevels = np.zeros(len(exchangeIDs), np.float64)
 

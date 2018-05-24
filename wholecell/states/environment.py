@@ -36,8 +36,6 @@ class Environment(wholecell.states.external_state.ExternalState):
 	def initialize(self, sim, sim_data):
 		super(Environment, self).initialize(sim, sim_data)
 
-		# Load nutrient condition and data
-		# TODO (ERAN) -improve terms (state, trajectories)
 		self.nutrientsTimeSeries = sim_data.nutrientsTimeSeries
 		self.nutrientData = sim_data.externalState.environment.nutrientData
 
@@ -48,25 +46,12 @@ class Environment(wholecell.states.external_state.ExternalState):
 
 	def update(self):
 
-		# TODO (Eran) -- just go through ts, save current state. no popleft
 		while len(self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel]) and \
 			self.time() > self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel][0][0]:
-				_ , nutrients = self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel].popleft()
-				self.condition = nutrients
+				_, self.condition = self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel].popleft()
 
-	def tableCreate(self, tableWriter):
-		self.container.tableCreate(tableWriter)
-		tableWriter.writeAttributes(
-			processNames = self._processIDs,
-			)
+		print "current condition:", self.condition
 
-	def tableAppend(self, tableWriter):
-		tableWriter.append(
-			counts = self.container._counts,
-			)
-
-	def tableLoad(self, tableReader, tableIndex):
-		self.container.tableLoad(tableReader, tableIndex)
 
 
 class EnvironmentViewBase(wholecell.views.view.View):

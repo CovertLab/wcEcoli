@@ -223,8 +223,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS,
-			self.nutrientsTimeSeriesLabel,
-			self.time(),
+			self._external_states.values()[0].condition,
 			self.concModificationsBasedOnCondition,
 			)
 
