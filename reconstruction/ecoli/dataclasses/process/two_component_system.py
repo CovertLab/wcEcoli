@@ -12,10 +12,14 @@ moleculesToNextTimeStep()
 	Consider relocating (since it's useful for both the fitter and simulation)
 
 """
+
+from __future__ import absolute_import
+
 import numpy as np
 import os
 import cPickle
 import wholecell
+from wholecell.utils import filepath
 from wholecell.utils import units
 from wholecell.utils.write_ode_file import writeOdeFile
 import scipy
@@ -221,10 +225,7 @@ class TwoComponentSystem(object):
 		'''
 		Sum along the columns of the massBalance matrix to check for reaction mass balance
 		'''
-		reactionSumsArray = []
-		for index, column in enumerate(self.balanceMatrix.T):
-			reactionSumsArray.append(sum(column))
-		return reactionSumsArray
+		return np.sum(self.balanceMatrix, axis=0)
 
 	def stoichMatrixMonomers(self):
 		'''
@@ -265,7 +266,7 @@ class TwoComponentSystem(object):
 		'''
 		Creates callable functions for computing the derivative and the Jacobian.
 		'''
-		fixturesDir = os.path.join(
+		fixturesDir = filepath.makedirs(
 			os.path.dirname(os.path.dirname(wholecell.__file__)),
 			"fixtures",
 			"twoComponentSystem"
@@ -286,9 +287,6 @@ class TwoComponentSystem(object):
 
 		if not os.path.exists(odeFitterFile):
 			needToCreate = True
-
-		if not os.path.exists(fixturesDir):
-			os.makedirs(fixturesDir)
 
 		if os.path.exists(os.path.join(fixturesDir, "S.cPickle")):
 			S = cPickle.load(open(os.path.join(fixturesDir, "S.cPickle"), "rb"))
@@ -473,7 +471,6 @@ class TwoComponentSystem(object):
 		
 		return (-1* moleculesNeeded), allMoleculesChanges
 
-
 	def getMonomers(self, cplxId):
 		'''
 		Returns subunits for a complex (or any ID passed).
@@ -488,39 +485,6 @@ class TwoComponentSystem(object):
 		else:
 			out = {'subunitIds' : cplxId, 'subunitStoich' : 1}
 		return out
-
-	def _findRow(self, product, speciesList):
-		for sp in range(0, len(speciesList)):
-			if speciesList[sp] == product: return sp
-		return -1
-
-	def _findColumn(self, stoichMatrixRow, row):
-
-		for i in range(0,len(stoichMatrixRow)):
-			if int(stoichMatrixRow[i]) == 1: return i
-		return -1
-
-	def _moleculeRecursiveSearch(self, product, stoichMatrix, speciesList, flag = 0):
-		row = self._findRow(product,speciesList)
-		if row == -1: return []
-
-		col = self._findColumn(stoichMatrix[row,:], row)
-		if col == -1:
-			if flag == 0: return []
-			else: return {product: -1}
-
-		total = {}
-		for i in range(0, len(speciesList)):
-			if i == row: continue
-			val = stoichMatrix[i][col]
-			sp = speciesList[i]
-
-			if val:
-				x = self._moleculeRecursiveSearch(sp, stoichMatrix, speciesList, 1)
-				for j in x:
-					if j in total: total[j] += x[j]*(abs(val))
-					else: total[j] = x[j]*(abs(val))
-		return total
 
 	def getReactionName(self, templateName, systemMolecules):
 		'''

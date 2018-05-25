@@ -10,6 +10,7 @@ from copy import deepcopy
 
 from wholecell.io.tablewriter import TableWriter
 
+from wholecell.utils import filepath
 from wholecell.utils import units
 
 BINOMIAL_COEFF = 0.5
@@ -22,15 +23,8 @@ def divide_cell(sim):
 	uniqueMolecules = sim.states['UniqueMolecules']
 
 	# Create output directories
-	try:
-		os.mkdir(os.path.join(sim._outputDir, "Daughter1"))
-	except OSError:
-		pass
-
-	try:
-		os.mkdir(os.path.join(sim._outputDir, "Daughter2"))
-	except OSError:
-		pass
+	filepath.makedirs(sim._outputDir, "Daughter1")
+	filepath.makedirs(sim._outputDir, "Daughter2")
 
 
 	############################
@@ -367,10 +361,10 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, sim):
 			if replicationForks >= 2:
 				for index in [0,1,2,3]:
 					# if not possible to have uneven number of partial chromosomes
-					num_index = d2_dividedAttributesDict['sequenceIdx'][replicationRoundIndexes] == index
+					num_index = (chrom_dict['sequenceIdx'] == index) & replicationRoundIndexes
 					new_value = np.zeros(num_index.sum())
 					for fork in range(replicationForks):
-						new_value[fork * new_value.size / replicationForks:(fork + 1) * new_value.size / replicationForks] = fork
+						new_value[fork * new_value.size // replicationForks:(fork + 1) * new_value.size // replicationForks] = fork
 
 					d2_dividedAttributesDict['chromosomeIndex'][num_index] = new_value
 

@@ -11,8 +11,6 @@ import argparse
 import os
 
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import cPickle
 
@@ -82,7 +80,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	massFractionActive = activeRnapMass / totalRnapMass
 
 	plt.figure(figsize = (8.5, 11))
-	matplotlib.rc('font', **FONT)
+	plt.rc('font', **FONT)
 
 	rnapCapacity_axis = plt.subplot(4,1,1)
 	rnapCapacity_axis.plot(time / 60., totalRnapCapacity, label="Theoretical total rnap capacity", linewidth=2, color='b')

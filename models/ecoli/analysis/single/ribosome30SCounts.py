@@ -11,8 +11,6 @@ import argparse
 import os
 
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import cPickle
 
@@ -66,7 +64,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	uniqueMoleculeCounts.close()
 
 	plt.figure(figsize = (8.5, 11))
-	matplotlib.rc('font', **FONT)
+	plt.rc('font', **FONT)
 
 	for idx in xrange(len(proteinIds)):
 		rna_axis = plt.subplot(12, 3, idx + 1)

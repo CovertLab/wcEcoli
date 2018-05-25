@@ -6,14 +6,13 @@ import argparse
 import os
 
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import units
 import cPickle
 
@@ -139,7 +138,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		rnaCounts30S = bulkMolecules.readColumn("counts")[:, rnaIndexes30S]
 		freeRRnaCounts30S = bulkMolecules.readColumn("counts")[:, rRnaIndexes30S]
 		complexCounts30S = bulkMolecules.readColumn("counts")[:, complexIndexes30S]
-		
+
 		freeProteinCounts50S = bulkMolecules.readColumn("counts")[:, proteinIndexes50S]
 		rnaCounts50S = bulkMolecules.readColumn("counts")[:, rnaIndexes50S]
 		freeRRnaCounts50S = bulkMolecules.readColumn("counts")[:, rRnaIndexes50S]
@@ -219,7 +218,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax1.axvline(x = time.asNumber(units.min).max(), linewidth=2, color='k', linestyle='--')
 
 		hist_doublingTime = removeNanReshape(doublingTime.asNumber(units.min))
-		nbins = np.ceil(np.sqrt(hist_doublingTime.size))
+		nbins = int(np.ceil(np.sqrt(hist_doublingTime.size)))
 		ax1_1.hist(hist_doublingTime, nbins, (hist_doublingTime.mean() - hist_doublingTime.std() / 2, hist_doublingTime.mean() + hist_doublingTime.std() / 2))
 
 		# Plot RNAP active fraction
@@ -229,7 +228,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax2.set_ylabel("Fraction active\nRNAP")
 
 		hist_fractionRnapActive = removeNanReshape(fractionRnapActive)
-		nbins = np.ceil(np.sqrt(hist_fractionRnapActive.size))
+		nbins = int(np.ceil(np.sqrt(hist_fractionRnapActive.size)))
 		ax2_1.hist(hist_fractionRnapActive, nbins, (hist_fractionRnapActive.mean() - hist_fractionRnapActive.std(), hist_fractionRnapActive.mean() + hist_fractionRnapActive.std()))
 
 		# Plot RNAP active and total counts
@@ -277,7 +276,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax7_1.set_ylim(y_lim)
 		ax7_1.set_ylabel("Active\nribosome\ncount")
 
-		# Plot ratio 
+		# Plot ratio
 		ax8.plot(time.asNumber(units.min), ratioRnaToProteinMass)
 		ax8.axvline(x = time.asNumber(units.min).max(), linewidth=2, color='k', linestyle='--')
 		ax8.set_ylabel("RNA/Protein")
@@ -359,13 +358,12 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	fig.subplots_adjust(hspace=.5, wspace = 0.3)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
 
 def getMassData(simDir, massNames):
 	simOutDir = os.path.join(simDir, "simOut")
-	
+
 	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
 
 	mass = TableReader(os.path.join(simOutDir, "Mass"))

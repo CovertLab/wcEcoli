@@ -12,13 +12,10 @@ import os
 import cPickle
 
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from matplotlib import colors
 from matplotlib import gridspec
 import scipy.cluster.hierarchy as sch
-from scipy.spatial import distance
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
@@ -51,7 +48,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	reactionFluxes = fbaResults.readColumn("reactionFluxes")
 
 	reactionIDs = np.array(fbaResults.readAttribute('reactionIDs'))
-	
+
 	fbaResults.close()
 
 	fig = plt.figure(figsize = (80, 40))
@@ -63,7 +60,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		/ (np.mean(np.abs(reactionFluxes), 0) + 2 * np.std(np.abs(reactionFluxes), 0))
 		).transpose()
 
-	linkage = sch.linkage(reactionFluxes.T, metric = "correlation")
+	linkage = sch.linkage(reactionFluxes.T)
 	linkage[:, 2] = np.fmax(linkage[:, 2], 0) # fixes rounding issues leading to negative distances
 
 	sch.set_link_color_palette(['black'])
@@ -103,7 +100,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	ax_cmap = fig.add_subplot(grid[1])
 
 	gradient = np.array((np.arange(0, 100)/100).tolist() + [+2,]*5, ndmin=2).transpose()
-	
+
 	ax_cmap.imshow(
 		gradient,
 		aspect = "auto",
