@@ -19,8 +19,8 @@ def divide_cell(sim):
 	# Assign data from simulation required
 	randomState = sim.randomState
 
-	bulkMolecules = sim.states['BulkMolecules']
-	uniqueMolecules = sim.states['UniqueMolecules']
+	bulkMolecules = sim.internalState['BulkMolecules']
+	uniqueMolecules = sim.internalState['UniqueMolecules']
 
 	# Create output directories
 	filepath.makedirs(sim._outputDir, "Daughter1")
