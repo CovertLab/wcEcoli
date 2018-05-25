@@ -50,9 +50,6 @@ class Environment(wholecell.states.external_state.ExternalState):
 			self.time() > self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel][0][0]:
 				_, self.condition = self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel].popleft()
 
-		print "current condition:", self.condition
-
-
 
 class EnvironmentViewBase(wholecell.views.view.View):
 	_stateID = 'Environment'
