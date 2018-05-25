@@ -19,8 +19,8 @@ def divide_cell(sim):
 	# Assign data from simulation required
 	randomState = sim.randomState
 
-	bulkMolecules = sim.internalState['BulkMolecules']
-	uniqueMolecules = sim.internalState['UniqueMolecules']
+	bulkMolecules = sim.internal_states['BulkMolecules']
+	uniqueMolecules = sim.internal_states['UniqueMolecules']
 
 	# Create output directories
 	filepath.makedirs(sim._outputDir, "Daughter1")
@@ -244,10 +244,11 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, sim):
 	if len(moleculeSet) > 0:
 
 		polyElng = sim.processes["PolypeptideElongation"]
+		currentNutrients = sim.external_states.values()[0].condition
 
-		environmentalElongationRate = polyElng.ribosomeElongationRateDict[polyElng.currentNutrients].asNumber(units.aa / units.s)
+		environmentalElongationRate = polyElng.ribosomeElongationRateDict[currentNutrients].asNumber(units.aa / units.s)
 
-		elngRate = np.min([polyElng.ribosomeElongationRateDict[polyElng.currentNutrients].asNumber(units.aa / units.s), 21.])
+		elngRate = np.min([polyElng.ribosomeElongationRateDict[currentNutrients].asNumber(units.aa / units.s), 21.])
 		nRibosomes = len(uniqueMolecules.container.objectsInCollection("activeRibosome"))
 		noiseMultiplier = 1.
 		if sim._growthRateNoise:
