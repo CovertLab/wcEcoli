@@ -64,8 +64,13 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			axSynthProb.set_yticks([ymin])
 		else:
 			axSynthProb.set_yticks([ymin, ymax])
-		axSynthProb.text(1.01, 0.5, "synth\nprob", transform = axSynthProb.transAxes, va = "center")
-		
+		axSynthProb.text(-0.3, 0.5, "synth\nprob", transform = axSynthProb.transAxes, va = "center", ha = "right")
+		fractionBound = (rnaSynthProb[:, iGene] == ymin).sum(dtype = float) / len(time)
+		axSynthProb.text(1.025, 0.5, "%0.4f" % fractionBound, transform = axSynthProb.transAxes)
+
+		if iGene == 0:
+			axSynthProb.text(1.025, 1.5, "fraction\nbound", transform = axSynthProb.transAxes)
+
 		axRnaCount = axesList[iAx + 1]
 		axRnaCount.plot(time, rnaCounts[:, iGene])
 		ymin = rnaCounts[:, iGene].min()
@@ -74,10 +79,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 			axRnaCount.set_yticks([ymin])
 		else:
 			axRnaCount.set_yticks([ymin, ymax])
-		axRnaCount.text(1.01, 0.5, "mRNA\ncount", transform = axRnaCount.transAxes, va = "center")
+		axRnaCount.text(-0.3, 0.5, "mRNA\ncount", transform = axRnaCount.transAxes, va = "center", ha = "right")
 
 	axesList[0].set_xlim([time[0], time[-1]])
-	plt.subplots_adjust(hspace = 0.8, left = 0.2, right = 0.9)
+	plt.subplots_adjust(hspace = 0.8, left = 0.3, right = 0.9)
 	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
