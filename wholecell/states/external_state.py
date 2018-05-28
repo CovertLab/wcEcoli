@@ -25,9 +25,6 @@ class ExternalState(object):
 		# Reference to sim
 		self._sim = None
 
-		# References to views
-		self._views = []
-
 		# Random number stream
 		self.randomState = None
 
@@ -39,17 +36,6 @@ class ExternalState(object):
 		self._sim = sim
 
 		self._nProcesses = len(sim.processes)
-
-		# TODO: include compartment
-		self._masses = np.zeros((
-			2,
-			self._nProcesses + 1,
-			len(sim_data.submassNameToIndex),
-			), np.float64)
-
-		self._unallocatedMassIndex = self._nProcesses + 1
-		self._preEvolveStateMassIndex = 0
-		self._postEvolveStateMassIndex = 1
 
 
 	# Allocate memory
