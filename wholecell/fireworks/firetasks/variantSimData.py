@@ -27,7 +27,7 @@ class VariantSimDataTask(FireTaskBase):
 		info, sim_data = nameToFunctionMapping[self["variant_function"]](sim_data, self["variant_index"])
 
 		#TODO (Eran) -- save this directly to external_state.environment
-		sim_data.external_state.environment.nutrientsTimeSeriesLabel = sim_data.nutrientsTimeSeriesLabel
+		sim_data.external_state.environment.nutrients_time_series_label = sim_data.nutrientsTimeSeriesLabel
 		del sim_data.nutrientsTimeSeriesLabel
 
 		print info["shortName"]

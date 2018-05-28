@@ -60,14 +60,14 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.exchangeConstraints = sim_data.process.metabolism.exchangeConstraints
 
-		self.nutrientsTimeSeriesLabel = sim_data.external_state.environment.nutrientsTimeSeriesLabel
+		self.nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
 
 		self.getBiomassAsConcentrations = sim_data.mass.getBiomassAsConcentrations
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 
 		# Create objective for homeostatic constraints
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			sim_data.nutrientsTimeSeries[sim_data.external_state.environment.nutrientsTimeSeriesLabel][0][1]
+			sim_data.nutrientsTimeSeries[self.nutrients_time_series_label][0][1]
 			)
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition]
@@ -83,10 +83,10 @@ class Metabolism(wholecell.processes.process.Process):
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
 		# Setup molecules in external environment that can be exchanged
-		externalExchangedMolecules = sim_data.external_state.environment.nutrientData["secretionExchangeMolecules"]
+		externalExchangedMolecules = sim_data.external_state.environment.nutrient_data["secretionExchangeMolecules"]
 		self.metaboliteNamesFromNutrients = set()
-		for time, nutrientsLabel in sim_data.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel]:
-			externalExchangedMolecules += sim_data.external_state.environment.nutrientData["importExchangeMolecules"][nutrientsLabel]
+		for time, nutrientsLabel in sim_data.nutrientsTimeSeries[self.nutrients_time_series_label]:
+			externalExchangedMolecules += sim_data.external_state.environment.nutrient_data["importExchangeMolecules"][nutrientsLabel]
 
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(

@@ -28,6 +28,6 @@ class ExternalState(object):
 
 	def _buildEnvironment(self, raw_data, sim_data):
 
-		self.environment.nutrientData = self.environment.getNutrientData(raw_data)
+		self.environment.nutrient_data = self.environment.getNutrientData(raw_data)
 		self.environment.condition = "basal"
-		self.environment.nutrientsTimeSeriesLabel = "000000_basal"
+		self.environment.nutrients_time_series_label = "000000_basal"
