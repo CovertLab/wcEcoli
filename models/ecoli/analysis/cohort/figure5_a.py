@@ -123,11 +123,13 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			bulkCounts = bulkMolecules.readColumn("counts")
 			bulkMolecules.close()
 
+			stoich_monomers = sim_data.process.complexation.stoichMatrixMonomers().astype(np.int64)
+
 			# Dissociate protein-protein complexes
-			bulkCounts[:, complexationIdx] += np.dot(sim_data.process.complexation.stoichMatrixMonomers(), bulkCounts[:, complexation_complexesIdx].transpose() * -1).transpose()
+			bulkCounts[:, complexationIdx] += np.dot(stoich_monomers, bulkCounts[:, complexation_complexesIdx].transpose() * -1).transpose()
 
 			# Dissociate protein-small molecule complexes
-			bulkCounts[:, equilibriumIdx] += np.dot(sim_data.process.equilibrium.stoichMatrixMonomers(), bulkCounts[:, equilibrium_complexesIdx].transpose() * -1).transpose()
+			bulkCounts[:, equilibriumIdx] += np.dot(stoich_monomers, bulkCounts[:, equilibrium_complexesIdx].transpose() * -1).transpose()
 
 			# Load unique molecule data for RNAP and ribosomes
 			uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
