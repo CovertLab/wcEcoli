@@ -28,7 +28,9 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		super(ChromosomeReplication, self).initialize(sim, sim_data)
 
 		# Load parameters
-		self.criticalInitiationMass = sim_data.growthRateParameters.getDnaCriticalMass(sim_data.conditionToDoublingTime[sim_data.externalState.environment.condition])
+		self.criticalInitiationMass = sim_data.growthRateParameters.getDnaCriticalMass(
+			sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition]
+			)
 		self.getDnaCriticalMass = sim_data.growthRateParameters.getDnaCriticalMass
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 		self.sequenceLengths = sim_data.process.replication.sequence_lengths
@@ -88,8 +90,8 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 	# Calculate temporal evolution
 	def evolveState(self):
 		# Set critical initiaion mass for simulation medium environment
-		currentNutrients = self._external_states.values()[0].condition
-		self.criticalInitiationMass = self.getDnaCriticalMass(self.nutrientToDoublingTime[currentNutrients])
+		current_nutrients = self._external_states['Environment'].condition
+		self.criticalInitiationMass = self.getDnaCriticalMass(self.nutrientToDoublingTime[current_nutrients])
 
 		##########################################
 		# Perform replication initiation process #

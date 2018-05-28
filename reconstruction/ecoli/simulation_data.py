@@ -40,9 +40,9 @@ class SimulationDataEcoli(object):
 		self._addConditionData(raw_data)
 
 		#external state is initiated before internal state, because it is used in processing parameters
-		self.externalState = ExternalState(raw_data, self)
+		self.external_state = ExternalState(raw_data, self)
 
-		self.doubling_time = self.conditionToDoublingTime[self.externalState.environment.condition]
+		self.doubling_time = self.conditionToDoublingTime[self.external_state.environment.condition]
 
 		# TODO: Check that media condition is valid
 		self.basal_expression_condition = basal_expression_condition
@@ -62,7 +62,7 @@ class SimulationDataEcoli(object):
 		# Data classes (can depend on helper functions)
 		# Data classes cannot depend on each other
 		self.process = Process(raw_data, self)
-		self.internalState = InternalState(raw_data, self)
+		self.internal_state = InternalState(raw_data, self)
 
 		# Relations between data classes (can depend on data classes)
 		# Relations cannot depend on each other

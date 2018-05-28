@@ -114,8 +114,8 @@ class CellDivision(wholecell.listeners.listener.Listener):
 		else:
 			# End simulation once the mass of an average cell is
 			# added to current cell.
-			currentNutrients = self._external_states.values()[0].condition
-			if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncreaseDict[currentNutrients].asNumber(units.fg) * self.divisionMassMultiplier:
+			current_nutrients = self._external_states['Environment'].condition
+			if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncreaseDict[current_nutrients].asNumber(units.fg) * self.divisionMassMultiplier:
 				if not uneven_counts.any():
 				# if self.fullChromosomeView.count() > 1:
 					self._sim.cellCycleComplete()

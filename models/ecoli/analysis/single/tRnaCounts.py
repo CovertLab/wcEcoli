@@ -58,7 +58,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	counts = rnaCountsBulk[-1, :]
 
-	expectedCountsArbitrary = sim_data.process.transcription.rnaExpression[sim_data.externalState.environment.condition][isTRna]
+	nutrient_condition = sim_data.external_state.environment.condition
+	expectedCountsArbitrary = sim_data.process.transcription.rnaExpression[nutrient_condition][isTRna]
 
 	expectedCounts = expectedCountsArbitrary/expectedCountsArbitrary.sum() * counts.sum()
 

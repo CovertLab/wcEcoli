@@ -60,16 +60,18 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.exchangeConstraints = sim_data.process.metabolism.exchangeConstraints
 
-		self.nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
+		self.nutrientsTimeSeriesLabel = sim_data.external_state.environment.nutrientsTimeSeriesLabel
 
 		self.getBiomassAsConcentrations = sim_data.mass.getBiomassAsConcentrations
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 
 		# Create objective for homeostatic constraints
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			sim_data.nutrientsTimeSeries[sim_data.externalState.environment.nutrientsTimeSeriesLabel][0][1]
+			sim_data.nutrientsTimeSeries[sim_data.external_state.environment.nutrientsTimeSeriesLabel][0][1]
 			)
-		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.externalState.environment.condition])
+		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
+			sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition]
+			)
 		concDict.update(self.concModificationsBasedOnCondition)
 		self.homeostaticObjective = dict((key, concDict[key].asNumber(COUNTS_UNITS / VOLUME_UNITS)) for key in concDict)
 
@@ -81,10 +83,10 @@ class Metabolism(wholecell.processes.process.Process):
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
 		# Setup molecules in external environment that can be exchanged
-		externalExchangedMolecules = sim_data.externalState.environment.nutrientData["secretionExchangeMolecules"]
+		externalExchangedMolecules = sim_data.external_state.environment.nutrientData["secretionExchangeMolecules"]
 		self.metaboliteNamesFromNutrients = set()
 		for time, nutrientsLabel in sim_data.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel]:
-			externalExchangedMolecules += sim_data.externalState.environment.nutrientData["importExchangeMolecules"][nutrientsLabel]
+			externalExchangedMolecules += sim_data.external_state.environment.nutrientData["importExchangeMolecules"][nutrientsLabel]
 
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
@@ -211,9 +213,9 @@ class Metabolism(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
-		currentNutrients = self._external_states.values()[0].condition
+		current_nutrients = self._external_states['Environment'].condition
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
-			self.nutrientToDoublingTime.get(currentNutrients, self.nutrientToDoublingTime["minimal"]))
+			self.nutrientToDoublingTime.get(current_nutrients, self.nutrientToDoublingTime["minimal"]))
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
@@ -223,7 +225,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS,
-			self._external_states.values()[0].condition,
+			current_nutrients,
 			self.concModificationsBasedOnCondition,
 			)
 

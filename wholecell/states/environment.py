@@ -37,10 +37,10 @@ class Environment(wholecell.states.external_state.ExternalState):
 		super(Environment, self).initialize(sim, sim_data)
 
 		self.nutrientsTimeSeries = sim_data.nutrientsTimeSeries
-		self.nutrientData = sim_data.externalState.environment.nutrientData
+		self.nutrientData = sim_data.external_state.environment.nutrientData
 
 		# current condition and timeseries
-		self.nutrientsTimeSeriesLabel = sim_data.externalState.environment.nutrientsTimeSeriesLabel
+		self.nutrientsTimeSeriesLabel = sim_data.external_state.environment.nutrientsTimeSeriesLabel
 		self.condition = self.nutrientsTimeSeries[self.nutrientsTimeSeriesLabel][0][1]
 
 

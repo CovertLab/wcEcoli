@@ -33,14 +33,8 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 
 	def __init__(self, *args, **kwargs):
 		self.container = None
-
 		self._moleculeMass = None
-
 		self._moleculeIDs = None
-		# self._compartmentIDs = None
-
-		# self._nCompartments = None
-
 		self._countsRequested = None
 		self._countsAllocatedInitial = None
 		self._countsAllocatedFinal = None
@@ -55,18 +49,11 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 		self._processIDs = sim.processes.keys()
 
 		# Load constants
-		self._moleculeIDs = sim_data.internalState.bulkMolecules.bulkData['id']
-		# self._compartmentIDs = sim_data.internalState.compartments['compartmentAbbreviation']
-		# self._nCompartments = sim_data.nCompartments
+		self._moleculeIDs = sim_data.internal_state.bulkMolecules.bulkData['id']
 
-		self._moleculeMass = sim_data.internalState.bulkMolecules.bulkData['mass'].asNumber(units.fg / units.mol) / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		self._moleculeMass = sim_data.internal_state.bulkMolecules.bulkData['mass'].asNumber(units.fg / units.mol) / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
 
 		self._submassNameToIndex = sim_data.submassNameToIndex
-
-		# self._compIndexes = {
-		# 	compartmentKey:(sim_data.internalState.bulkMolecules.bulkData['compartment'] == compartmentKey)
-		# 	for compartmentKey in sim_data.internalState.compartments['compartmentAbbreviation']
-		# 	}
 
 		# Create the container for molecule counts
 		self.container = BulkObjectsContainer(self._moleculeIDs)

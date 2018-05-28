@@ -85,18 +85,6 @@ class Process(object):
 			self._internal_states['UniqueMolecules'], self, (moleculeName, attributes))
 
 
-	# def chromosomeForksView(self, extentForward, extentReverse, includeMoleculesOnEnds):
-	# 	return wholecell.views.view.ChromosomeForksView(
-	# 		self._internal_states['Chromosome'], self,
-	# 		(extentForward, extentReverse, includeMoleculesOnEnds))
-
-
-	# def chromosomeMoleculesView(self, moleculeName, extentForward, extentReverse, includeMoleculesOnEnds):
-	# 	return wholecell.views.view.ChromosomeMoleculesView(
-	# 		self._internal_states['Chromosome'], self,
-	# 		(moleculeName, extentForward, extentReverse, includeMoleculesOnEnds))
-
-
 	# Communicate with listeners
 
 	# TODO: consider an object-oriented interface to reading/writing to listeners
