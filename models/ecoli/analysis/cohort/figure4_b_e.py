@@ -326,7 +326,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# ax0.xaxis.set_visible(False)
 	#ax0.axvline(x=44*2+22., linewidth=3, color='gray', alpha = 0.5)
 
-	nutrients_time_series_label = sim_data.externalState.environment.nutrients_time_series_label
+	nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
 	T_ADD_AA = sim_data.nutrientsTimeSeries[nutrients_time_series_label][1][0] / 60.
 	axes_list = [ax3, ax4]
 	for a in axes_list:
