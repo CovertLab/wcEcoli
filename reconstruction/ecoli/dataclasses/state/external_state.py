@@ -31,3 +31,10 @@ class ExternalState(object):
 		self.environment.nutrient_data = self.environment.getNutrientData(raw_data)
 		self.environment.condition = "basal"
 		self.environment.nutrients_time_series_label = "000000_basal"
+
+		self.conditions = {}
+		for row in raw_data.condition.condition_defs:
+			condition = row["condition"].encode("utf-8")
+			self.conditions[condition] = {}
+			self.conditions[condition]["nutrients"] = row["nutrients"].encode("utf-8")
+			self.conditions[condition]["perturbations"] = row["genotype perturbations"]

@@ -194,7 +194,7 @@ class SimulationDataEcoli(object):
 			if label.startswith("__"):
 				continue
 
-			self.nutrientsTimeSeries[label] = collections.deque()
+			self.nutrientsTimeSeries[label] = []
 			timeseries = getattr(raw_data.condition.timeseries, label)
 			for row in timeseries:
 				self.nutrientsTimeSeries[label].append((

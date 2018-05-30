@@ -31,11 +31,6 @@ class Environment(object):
 
 		self.environmentData = UnitStructArray(environmentData, field_units)
 
-
-	def addToEnvironmentState(self, ids, masses):
-		self.environmentData = addToStateCommon(self.environmentData, ids, masses)
-
-
 	def getNutrientData(self, raw_data):
 
 		externalExchangeMolecules = {}

@@ -16,24 +16,18 @@ import wholecell.states.external_state
 class Environment(wholecell.states.external_state.ExternalState):
 	_name = 'Environment'
 
-	def __init__(self, *args, **kwargs):
-
-		super(Environment, self).__init__(*args, **kwargs)
-
-
 	def initialize(self, sim, sim_data):
 		super(Environment, self).initialize(sim, sim_data)
 
 		self.nutrients_time_series = sim_data.nutrientsTimeSeries
 		self.nutrient_data = sim_data.external_state.environment.nutrient_data
 
-		# current condition and timeseries
 		self.nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
 		self.condition = self.nutrients_time_series[self.nutrients_time_series_label][0][1]
 
+		self.time_series = [t[0] for t in self.nutrients_time_series[self.nutrients_time_series_label]]
+
 
 	def update(self):
-
-		while len(self.nutrients_time_series[self.nutrients_time_series_label]) and \
-			self.time() > self.nutrients_time_series[self.nutrients_time_series_label][0][0]:
-				_, self.condition = self.nutrients_time_series[self.nutrients_time_series_label].popleft()
+		current_index = [i for i, t in enumerate(self.time_series) if self.time()>=t][-1]
+		self.condition = self.nutrients_time_series[self.nutrients_time_series_label][current_index][1]
