@@ -166,6 +166,7 @@ class SimulationDataEcoli(object):
 			self.tfToActiveInactiveConds[tf]["inactive genotype perturbations"] = inactiveGenotype
 			self.tfToActiveInactiveConds[tf]["inactive nutrients"] = inactiveNutrients
 
+		# TODO (ERAN) separate nutrient condition from genotype perturbation condition
 		self.conditions = {}
 		for row in raw_data.condition.condition_defs:
 			condition = row["condition"].encode("utf-8")
@@ -188,19 +189,6 @@ class SimulationDataEcoli(object):
 			self.conditions[inactiveCondition]["nutrients"] = self.tfToActiveInactiveConds[tf]["inactive nutrients"]
 			self.conditions[activeCondition]["perturbations"] = self.tfToActiveInactiveConds[tf]["active genotype perturbations"]
 			self.conditions[inactiveCondition]["perturbations"] = self.tfToActiveInactiveConds[tf]["inactive genotype perturbations"]
-
-		self.nutrientsTimeSeries = {}
-		for label in dir(raw_data.condition.timeseries):
-			if label.startswith("__"):
-				continue
-
-			self.nutrientsTimeSeries[label] = []
-			timeseries = getattr(raw_data.condition.timeseries, label)
-			for row in timeseries:
-				self.nutrientsTimeSeries[label].append((
-					row["time"].asNumber(units.s),
-					row["nutrients"].encode("utf-8")
-					))
 
 		self.nutrientToDoublingTime = {}
 		for condition in self.conditionToDoublingTime:

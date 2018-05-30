@@ -126,7 +126,7 @@ def initializeSmallMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
 	mass = massCoeff * (avgCellFractionMass["proteinMass"] + avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"]) / sim_data.mass.avgCellToInitialCellConvFactor
 
 	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-		sim_data.nutrientsTimeSeries[sim_data.external_state.environment.nutrients_time_series_label][0][1]
+		sim_data.external_state.environment.nutrients_time_series[sim_data.external_state.environment.nutrients_time_series_label][0][1]
 		)
 	concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition]))
 	moleculeIds = sorted(concDict)

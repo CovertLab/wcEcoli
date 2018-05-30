@@ -19,7 +19,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 	def initialize(self, sim, sim_data):
 		super(Environment, self).initialize(sim, sim_data)
 
-		self.nutrients_time_series = sim_data.nutrientsTimeSeries
+		self.nutrients_time_series = sim_data.external_state.environment.nutrients_time_series
 		self.nutrient_data = sim_data.external_state.environment.nutrient_data
 
 		self.nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label

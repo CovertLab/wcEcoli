@@ -67,7 +67,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Create objective for homeostatic constraints
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			sim_data.nutrientsTimeSeries[self.nutrients_time_series_label][0][1]
+			sim_data.external_state.environment.nutrients_time_series[self.nutrients_time_series_label][0][1]
 			)
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition]
@@ -85,7 +85,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# Setup molecules in external environment that can be exchanged
 		externalExchangedMolecules = sim_data.external_state.environment.nutrient_data["secretionExchangeMolecules"]
 		self.metaboliteNamesFromNutrients = set()
-		for time, nutrientsLabel in sim_data.nutrientsTimeSeries[self.nutrients_time_series_label]:
+		for time, nutrientsLabel in sim_data.external_state.environment.nutrients_time_series[self.nutrients_time_series_label]:
 			externalExchangedMolecules += sim_data.external_state.environment.nutrient_data["importExchangeMolecules"][nutrientsLabel]
 
 			self.metaboliteNamesFromNutrients.update(

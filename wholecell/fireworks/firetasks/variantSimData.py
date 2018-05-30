@@ -26,6 +26,9 @@ class VariantSimDataTask(FireTaskBase):
 
 		info, sim_data = nameToFunctionMapping[self["variant_function"]](sim_data, self["variant_index"])
 
+		# info, data = nameToFunctionMapping[self["variant_function"]](sim_data.external_state.environment, self["variant_index"])
+		import ipdb; ipdb.set_trace()
+
 		#TODO (Eran) -- save this directly to external_state.environment
 		if hasattr(sim_data, 'nutrientsTimeSeriesLabel'):
 			sim_data.external_state.environment.nutrients_time_series_label = sim_data.nutrientsTimeSeriesLabel
