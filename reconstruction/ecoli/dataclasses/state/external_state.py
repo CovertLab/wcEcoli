@@ -19,6 +19,13 @@ This base class includes all data associated with states external to the cells.
 
 - environment.nutrients_time_series: a dictionary of all time series.
 
+Functions:
+----------
+	- _buildEnvironment: initializes the environment using conditions and timeseries
+	from raw_data.
+
+	- _getNutrientData: pulls nutrient data from raw_data
+
 Notes:
 ______
 

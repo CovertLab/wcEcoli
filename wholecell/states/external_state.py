@@ -3,7 +3,7 @@
 """
 External State
 
-State variable base class. Defines the interface states expose to the simulation and processes.
+State variable base class. Defines the interface states expose to the simulation.
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
