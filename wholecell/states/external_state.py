@@ -19,9 +19,6 @@ class ExternalState(object):
 
 	# Constructor
 	def __init__(self):
-		# Constants
-		self._nProcesses = None
-
 		# Reference to sim
 		self._sim = None
 
@@ -34,8 +31,6 @@ class ExternalState(object):
 	# Construct state-process graph, calculate constants
 	def initialize(self, sim, sim_data):
 		self._sim = sim
-
-		self._nProcesses = len(sim.processes)
 
 
 	# Allocate memory

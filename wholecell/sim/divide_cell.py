@@ -244,11 +244,11 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, sim):
 	if len(moleculeSet) > 0:
 
 		polyElng = sim.processes["PolypeptideElongation"]
-		currentNutrients = sim.external_states.values()[0].condition
+		current_nutrients = self._external_states['Environment'].condition
 
-		environmentalElongationRate = polyElng.ribosomeElongationRateDict[currentNutrients].asNumber(units.aa / units.s)
+		environmentalElongationRate = polyElng.ribosomeElongationRateDict[current_nutrients].asNumber(units.aa / units.s)
 
-		elngRate = np.min([polyElng.ribosomeElongationRateDict[currentNutrients].asNumber(units.aa / units.s), 21.])
+		elngRate = np.min([polyElng.ribosomeElongationRateDict[current_nutrients].asNumber(units.aa / units.s), 21.])
 		nRibosomes = len(uniqueMolecules.container.objectsInCollection("activeRibosome"))
 		noiseMultiplier = 1.
 		if sim._growthRateNoise:
