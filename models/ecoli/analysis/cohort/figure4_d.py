@@ -44,8 +44,8 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
 	if "aa" in nutrients_time_series_label:
 		if "add" in nutrients_time_series_label and "cut" in nutrients_time_series_label:
-			T_ADD_AA = sim_data.nutrientsTimeSeries[nutrients_time_series_label][1][0]
-			T_CUT_AA = sim_data.nutrientsTimeSeries[nutrients_time_series_label][2][0]
+			T_ADD_AA = sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label][1][0]
+			T_CUT_AA = sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label][2][0]
 
 	# Get all cells
 	allDir = ap.get_cells(seed=[0])

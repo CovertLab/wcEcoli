@@ -38,7 +38,7 @@ class ExternalState(object):
 			condition = row["condition"].encode("utf-8")
 			self.environment.conditions[condition] = {}
 			self.environment.conditions[condition]["nutrients"] = row["nutrients"].encode("utf-8")
-			self.environment.conditions[condition]["perturbations"] = row["genotype perturbations"]
+			# self.environment.conditions[condition]["perturbations"] = row["genotype perturbations"]
 
 		self.environment.nutrients_time_series = {}
 		for label in dir(raw_data.condition.timeseries):
