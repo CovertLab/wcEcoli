@@ -248,7 +248,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# Load parameters
 	nAvogadro = sim_data.constants.nAvogadro
 	rnaLengths = sim_data.process.transcription.rnaData['length'].asNumber()
-	currentNutrients = sim_data.conditions[sim_data.external_state.environment.condition]['nutrients']
+	currentNutrients = sim_data.external_state.environment.conditions[sim_data.external_state.environment.condition]['nutrients']
 	fracActiveRnap = sim_data.process.transcription.rnapFractionActiveDict[currentNutrients]
 	inactiveRnaPolyCounts = bulkMolCntr.countsView(['APORNAP-CPLX[c]']).counts()[0]
 	rnaSequences = sim_data.process.transcription.transcriptionSequences
@@ -364,7 +364,7 @@ def initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	# Load parameters
 	nAvogadro = sim_data.constants.nAvogadro
-	currentNutrients = sim_data.conditions[sim_data.external_state.environment.condition]['nutrients']
+	currentNutrients = sim_data.external_state.environment.conditions[sim_data.external_state.environment.condition]['nutrients']
 	fracActiveRibosome = sim_data.process.translation.ribosomeFractionActiveDict[currentNutrients]
 	mrnaIds = sim_data.process.translation.monomerData['rnaId']
 	proteinLengths = sim_data.process.translation.monomerData['length'].asNumber()

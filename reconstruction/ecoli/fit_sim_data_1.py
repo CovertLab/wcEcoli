@@ -144,8 +144,8 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 			cellSpecs.update(fitCondition(sim_data, cellSpecs[condition], condition))
 
 	for condition in sorted(cellSpecs):
-		if sim_data.conditions[condition]["nutrients"] not in sim_data.translationSupplyRate.keys():
-			sim_data.translationSupplyRate[sim_data.conditions[condition]["nutrients"]] = cellSpecs[condition]["translation_aa_supply"]
+		if sim_data.external_state.environment.conditions[condition]["nutrients"] not in sim_data.translationSupplyRate.keys():
+			sim_data.translationSupplyRate[sim_data.external_state.environment.conditions[condition]["nutrients"]] = cellSpecs[condition]["translation_aa_supply"]
 
 	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
 
@@ -155,7 +155,7 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 		spec = cellSpecs[condition]
 
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			sim_data.conditions[condition]["nutrients"]
+			sim_data.external_state.environment.conditions[condition]["nutrients"]
 			)
 		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[condition]))
 
@@ -171,33 +171,54 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 		tRnaSynthProb = sim_data.process.transcription.rnaSynthProb[condition][sim_data.process.transcription.rnaData["isTRna"]].sum()
 		rRnaSynthProb = sim_data.process.transcription.rnaSynthProb[condition][sim_data.process.transcription.rnaData["isRRna"]].sum()
 
-		if sim_data.conditions[condition]["nutrients"] not in sim_data.process.transcription.rnaSynthProbFraction and len(sim_data.conditions[condition]["perturbations"]) == 0:
-			sim_data.process.transcription.rnaSynthProbFraction[sim_data.conditions[condition]["nutrients"]] = {
+		if sim_data.external_state.environment.conditions[condition]["nutrients"] not in sim_data.process.transcription.rnaSynthProbFraction and len(sim_data.external_state.environment.conditions[condition]["perturbations"]) == 0:
+			sim_data.process.transcription.rnaSynthProbFraction[sim_data.external_state.environment.conditions[condition]["nutrients"]] = {
 				"mRna": mRnaSynthProb,
 				"tRna": tRnaSynthProb,
 				"rRna": rRnaSynthProb,
 				}
 
-		if sim_data.conditions[condition]["nutrients"] not in sim_data.process.transcription.rnaSynthProbRProtein and len(sim_data.conditions[condition]["perturbations"]) == 0:
-			sim_data.process.transcription.rnaSynthProbRProtein[sim_data.conditions[condition]["nutrients"]] = sim_data.process.transcription.rnaSynthProb[condition][sim_data.process.transcription.rnaData["isRProtein"]]
+		if sim_data.external_state.environment.conditions[condition]["nutrients"] \
+				not in sim_data.process.transcription.rnaSynthProbRProtein \
+				and len(sim_data.external_state.environment.conditions[condition]["perturbations"]) == 0:
+			sim_data.process.transcription.rnaSynthProbRProtein[sim_data.external_state.environment.conditions[condition]["nutrients"]] = \
+				sim_data.process.transcription.rnaSynthProb[condition][sim_data.process.transcription.rnaData["isRProtein"]]
 
-		if sim_data.conditions[condition]["nutrients"] not in sim_data.process.transcription.rnaSynthProbRnaPolymerase and len(sim_data.conditions[condition]["perturbations"]) == 0:
-			sim_data.process.transcription.rnaSynthProbRnaPolymerase[sim_data.conditions[condition]["nutrients"]] = sim_data.process.transcription.rnaSynthProb[condition][sim_data.process.transcription.rnaData["isRnap"]]
+		if sim_data.external_state.environment.conditions[condition]["nutrients"] \
+				not in sim_data.process.transcription.rnaSynthProbRnaPolymerase \
+				and len(sim_data.external_state.environment.conditions[condition]["perturbations"]) == 0:
+			sim_data.process.transcription.rnaSynthProbRnaPolymerase[sim_data.external_state.environment.conditions[condition]["nutrients"]] = \
+				sim_data.process.transcription.rnaSynthProb[condition][sim_data.process.transcription.rnaData["isRnap"]]
 
-		if sim_data.conditions[condition]["nutrients"] not in sim_data.process.transcription.rnapFractionActiveDict and len(sim_data.conditions[condition]["perturbations"]) == 0:
-			sim_data.process.transcription.rnapFractionActiveDict[sim_data.conditions[condition]["nutrients"]] = sim_data.growthRateParameters.getFractionActiveRnap(spec["doubling_time"])
+		if sim_data.external_state.environment.conditions[condition]["nutrients"] \
+				not in sim_data.process.transcription.rnapFractionActiveDict \
+				and len(sim_data.external_state.environment.conditions[condition]["perturbations"]) == 0:
+			sim_data.process.transcription.rnapFractionActiveDict[sim_data.external_state.environment.conditions[condition]["nutrients"]] = \
+				sim_data.growthRateParameters.getFractionActiveRnap(spec["doubling_time"])
 
-		if sim_data.conditions[condition]["nutrients"] not in sim_data.process.transcription.rnaPolymeraseElongationRateDict and len(sim_data.conditions[condition]["perturbations"]) == 0:
-			sim_data.process.transcription.rnaPolymeraseElongationRateDict[sim_data.conditions[condition]["nutrients"]] = sim_data.growthRateParameters.getRnapElongationRate(spec["doubling_time"])
+		if sim_data.external_state.environment.conditions[condition]["nutrients"] \
+				not in sim_data.process.transcription.rnaPolymeraseElongationRateDict \
+				and len(sim_data.external_state.environment.conditions[condition]["perturbations"]) == 0:
+			sim_data.process.transcription.rnaPolymeraseElongationRateDict[sim_data.external_state.environment.conditions[condition]["nutrients"]] = \
+				sim_data.growthRateParameters.getRnapElongationRate(spec["doubling_time"])
 
-		if sim_data.conditions[condition]["nutrients"] not in sim_data.expectedDryMassIncreaseDict and len(sim_data.conditions[condition]["perturbations"]) == 0:
-			sim_data.expectedDryMassIncreaseDict[sim_data.conditions[condition]["nutrients"]] = spec["avgCellDryMassInit"]
+		if sim_data.external_state.environment.conditions[condition]["nutrients"] \
+				not in sim_data.expectedDryMassIncreaseDict \
+				and len(sim_data.external_state.environment.conditions[condition]["perturbations"]) == 0:
+			sim_data.expectedDryMassIncreaseDict[sim_data.external_state.environment.conditions[condition]["nutrients"]] = \
+				spec["avgCellDryMassInit"]
 
-		if sim_data.conditions[condition]["nutrients"] not in sim_data.process.translation.ribosomeElongationRateDict and len(sim_data.conditions[condition]["perturbations"]) == 0:
-			sim_data.process.translation.ribosomeElongationRateDict[sim_data.conditions[condition]["nutrients"]] = sim_data.growthRateParameters.getRibosomeElongationRate(spec["doubling_time"])
+		if sim_data.external_state.environment.conditions[condition]["nutrients"] \
+				not in sim_data.process.translation.ribosomeElongationRateDict \
+				and len(sim_data.external_state.environment.conditions[condition]["perturbations"]) == 0:
+			sim_data.process.translation.ribosomeElongationRateDict[sim_data.external_state.environment.conditions[condition]["nutrients"]] = \
+				sim_data.growthRateParameters.getRibosomeElongationRate(spec["doubling_time"])
 
-		if sim_data.conditions[condition]["nutrients"] not in sim_data.process.translation.ribosomeFractionActiveDict and len(sim_data.conditions[condition]["perturbations"]) == 0:
-			sim_data.process.translation.ribosomeFractionActiveDict[sim_data.conditions[condition]["nutrients"]] = sim_data.growthRateParameters.getFractionActiveRibosome(spec["doubling_time"])
+		if sim_data.external_state.environment.conditions[condition]["nutrients"] \
+				not in sim_data.process.translation.ribosomeFractionActiveDict \
+				and len(sim_data.external_state.environment.conditions[condition]["perturbations"]) == 0:
+			sim_data.process.translation.ribosomeFractionActiveDict[sim_data.external_state.environment.conditions[condition]["nutrients"]] = \
+				sim_data.growthRateParameters.getFractionActiveRibosome(spec["doubling_time"])
 
 	calculateRnapRecruitment(sim_data, cellSpecs, rVector)
 
@@ -269,12 +290,12 @@ def buildTfConditionCellSpecifications(sim_data, tf):
 	cellSpecs = {}
 	for choice in ["__active", "__inactive"]:
 		conditionKey = tf + choice
-		conditionValue = sim_data.conditions[conditionKey]
+		conditionValue = sim_data.external_state.environment.conditions[conditionKey]
 
 		fcData = {}
-		if choice == "__active" and conditionValue != sim_data.conditions["basal"]:
+		if choice == "__active" and conditionValue != sim_data.external_state.environment.conditions["basal"]:
 			fcData = sim_data.tfToFC[tf]
-		if choice == "__inactive" and conditionValue != sim_data.conditions["basal"]:
+		if choice == "__inactive" and conditionValue != sim_data.external_state.environment.conditions["basal"]:
 			fcDataTmp = sim_data.tfToFC[tf].copy()
 			for key, value in fcDataTmp.iteritems():
 				fcData[key] = 1. / value
@@ -327,7 +348,7 @@ def buildCombinedConditionCellSpecifications(sim_data, cellSpecs):
 		if conditionKey == "basal":
 			continue
 
-		conditionValue = sim_data.conditions[conditionKey]
+		conditionValue = sim_data.external_state.environment.conditions[conditionKey]
 		for tf in sim_data.conditionActiveTfs[conditionKey]:
 			for gene in sim_data.tfToFC[tf]:
 				if gene in fcData:

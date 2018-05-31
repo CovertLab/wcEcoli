@@ -26,7 +26,7 @@ def tfActivity(sim_data, index):
 	else:
 		tfStatus = "inactive"
 
-	sim_data.condition = tf + "__" + tfStatus
+	sim_data.external_state.environment.condition = tf + "__" + tfStatus
 
 	sim_data.external_state.environment.nutrients_time_series_label = tf + "__" + tfStatus
 	sim_data.external_state.environment.nutrients_time_series[sim_data.external_state.environment.nutrients_time_series_label] = []
@@ -36,9 +36,9 @@ def tfActivity(sim_data, index):
 		))
 
 	sim_data.genetic_perturbations = {}
-	for rnaId in sim_data.conditions[sim_data.condition]["perturbations"]:
+	for rnaId in sim_data.external_state.environment.conditions[sim_data.external_state.environment.condition]["perturbations"]:
 		rnaIdx = np.where(sim_data.process.transcription.rnaData["id"] == rnaId)[0]
-		sim_data.genetic_perturbations[rnaId] = sim_data.process.transcription.rnaSynthProb[sim_data.condition][rnaIdx]
+		sim_data.genetic_perturbations[rnaId] = sim_data.process.transcription.rnaSynthProb[sim_data.external_state.environment.condition][rnaIdx]
 
 	return dict(
 		shortName = "{}_phenotype".format(tf + "__" + tfStatus),

@@ -11,9 +11,9 @@ def condition(sim_data, index):
 	condition_label = condition_labels[index]
 	sim_data.external_state.environment.condition = condition_label
 	# TODO: add new column to condition defs to replace this?
-	if sim_data.conditions[conditionLabel]["nutrients"] == "minimal_plus_amino_acids":
+	if sim_data.external_state.environment.conditions[conditionLabel]["nutrients"] == "minimal_plus_amino_acids":
 		sim_data.external_state.environment.nutrients_time_series_label = "000003_aa"
-	elif sim_data.conditions[conditionLabel]["nutrients"] == "minimal_minus_oxygen":
+	elif sim_data.external_state.environment.conditions[conditionLabel]["nutrients"] == "minimal_minus_oxygen":
 		sim_data.external_state.environment.nutrients_time_series_label = "000004_oxygen_absent"
 
 

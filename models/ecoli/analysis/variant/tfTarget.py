@@ -56,7 +56,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 			tfs.append(tf)
 			targetIds.append(target)
-	conditions = [sim_data.conditions[tf + "__active"]["nutrients"] for tf in tfs]
+	conditions = [sim_data.external_state.environment.conditions[tf + "__active"]["nutrients"] for tf in tfs]
 
 	x = np.array(x)
 	y = np.array(y)
