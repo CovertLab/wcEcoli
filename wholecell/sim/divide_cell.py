@@ -22,6 +22,9 @@ def divide_cell(sim):
 	bulkMolecules = sim.internal_states['BulkMolecules']
 	uniqueMolecules = sim.internal_states['UniqueMolecules']
 
+	# TODO (Eran): division should be based on both nutrient and gene perturbation condition
+	current_nutrients = sim.external_states['Environment'].condition
+
 	# Create output directories
 	filepath.makedirs(sim._outputDir, "Daughter1")
 	filepath.makedirs(sim._outputDir, "Daughter2")
@@ -72,7 +75,7 @@ def divide_cell(sim):
 
 		# Create divded containers
 		d1_bulkMolCntr, d2_bulkMolCntr = divideBulkMolecules(bulkMolecules, randomState, chromosome_counts)
-		d1_uniqueMolCntr, d2_uniqueMolCntr, daughter_elng_rates = divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, sim)
+		d1_uniqueMolCntr, d2_uniqueMolCntr, daughter_elng_rates = divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, current_nutrients, sim)
 
 	# Save divded containers
 	saveContainer(d1_bulkMolCntr, os.path.join(sim._outputDir, "Daughter1", "BulkMolecules"))
@@ -168,7 +171,7 @@ def divideBulkMolecules(bulkMolecules, randomState, chromosome_counts):
 
 	return d1_bulk_molecules_container, d2_bulk_molecules_container
 
-def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, sim):
+def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, current_nutrients, sim):
 	d1_unique_molecules_container = uniqueMolecules.container.emptyLike()
 	d2_unique_molecules_container = uniqueMolecules.container.emptyLike()
 
@@ -244,10 +247,8 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, sim):
 	if len(moleculeSet) > 0:
 
 		polyElng = sim.processes["PolypeptideElongation"]
-		current_nutrients = self._external_states['Environment'].condition
 
 		environmentalElongationRate = polyElng.ribosomeElongationRateDict[current_nutrients].asNumber(units.aa / units.s)
-
 		elngRate = np.min([polyElng.ribosomeElongationRateDict[current_nutrients].asNumber(units.aa / units.s), 21.])
 		nRibosomes = len(uniqueMolecules.container.objectsInCollection("activeRibosome"))
 		noiseMultiplier = 1.
@@ -289,7 +290,6 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, sim):
 
 		d1_unique_molecules_container.objectsNew('activeRibosome', n_d1, **d1_dividedAttributesDict)
 		d2_unique_molecules_container.objectsNew('activeRibosome', n_d2, **d2_dividedAttributesDict)
-
 
 
 	# Divide dna polymerase with chromosome
