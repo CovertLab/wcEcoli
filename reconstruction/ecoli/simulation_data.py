@@ -41,7 +41,9 @@ class SimulationDataEcoli(object):
 
 		self._addConditionData(raw_data)
 
-		self.doubling_time = self.conditionToDoublingTime[self.external_state.environment.condition]
+		self.condition = "basal"
+
+		self.doubling_time = self.conditionToDoublingTime[self.condition]
 
 		# TODO: Check that media condition is valid
 		self.basal_expression_condition = basal_expression_condition
@@ -146,7 +148,6 @@ class SimulationDataEcoli(object):
 			for item in notFound:
 				print item
 
-
 		self.tfToActiveInactiveConds = {}
 		for row in raw_data.condition.tf_condition:
 			tf = row["active TF"].encode("utf-8")
@@ -165,6 +166,13 @@ class SimulationDataEcoli(object):
 			self.tfToActiveInactiveConds[tf]["inactive genotype perturbations"] = inactiveGenotype
 			self.tfToActiveInactiveConds[tf]["inactive nutrients"] = inactiveNutrients
 
+		self.conditions = {}
+		for row in raw_data.condition.condition_defs:
+			condition = row["condition"].encode("utf-8")
+			self.conditions[condition] = {}
+			self.conditions[condition]["nutrients"] = row["nutrients"].encode("utf-8")
+			self.conditions[condition]["perturbations"] = row["genotype perturbations"]
+
 		for tf in sorted(self.tfToActiveInactiveConds):
 			activeCondition = tf + "__active"
 			inactiveCondition = tf + "__inactive"
@@ -174,18 +182,18 @@ class SimulationDataEcoli(object):
 			if inactiveCondition in self.conditionActiveTfs:
 				del self.conditionActiveTfs[inactiveCondition]
 
-			self.external_state.environment.conditions[activeCondition] = {}
-			self.external_state.environment.conditions[inactiveCondition] = {}
-			self.external_state.environment.conditions[activeCondition]["nutrients"] = self.tfToActiveInactiveConds[tf]["active nutrients"]
-			self.external_state.environment.conditions[inactiveCondition]["nutrients"] = self.tfToActiveInactiveConds[tf]["inactive nutrients"]
-			self.external_state.environment.conditions[activeCondition]["perturbations"] = self.tfToActiveInactiveConds[tf]["active genotype perturbations"]
-			self.external_state.environment.conditions[inactiveCondition]["perturbations"] = self.tfToActiveInactiveConds[tf]["inactive genotype perturbations"]
+			self.conditions[activeCondition] = {}
+			self.conditions[inactiveCondition] = {}
+			self.conditions[activeCondition]["nutrients"] = self.tfToActiveInactiveConds[tf]["active nutrients"]
+			self.conditions[inactiveCondition]["nutrients"] = self.tfToActiveInactiveConds[tf]["inactive nutrients"]
+			self.conditions[activeCondition]["perturbations"] = self.tfToActiveInactiveConds[tf]["active genotype perturbations"]
+			self.conditions[inactiveCondition]["perturbations"] = self.tfToActiveInactiveConds[tf]["inactive genotype perturbations"]
 
 		self.nutrientToDoublingTime = {}
 		for condition in self.conditionToDoublingTime:
-			if len(self.external_state.environment.conditions[condition]["perturbations"]) > 0:
+			if len(self.conditions[condition]["perturbations"]) > 0:
 				continue
-			nutrientLabel = self.external_state.environment.conditions[condition]["nutrients"]
+			nutrientLabel = self.conditions[condition]["nutrients"]
 			if nutrientLabel in self.nutrientToDoublingTime and self.conditionToDoublingTime[condition] != self.nutrientToDoublingTime[nutrientLabel]:
 				raise Exception, "Multiple doubling times correspond to the same media conditions"
 			self.nutrientToDoublingTime[nutrientLabel] = self.conditionToDoublingTime[condition]

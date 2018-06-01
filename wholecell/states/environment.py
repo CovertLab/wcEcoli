@@ -3,12 +3,12 @@
 """
 External state that represents environmental molecules and conditions.
 
-- nutrient_data a dictionary containing keys:
-     - externalExchangeMolecules
-     - importExchangeMolecules
-     - importConstrainedExchangeMolecules
-     - importUnconstrainedExchangeMolecules
-     - secretionExchangeMolecules
+- nutrient_data: a dictionary containing the following keys:
+	- externalExchangeMolecules
+	- importExchangeMolecules
+	- importConstrainedExchangeMolecules
+	- importUnconstrainedExchangeMolecules
+	- secretionExchangeMolecules
 
 - nutrients_time_series: a list of tuples that include time and nutrients in which shifts occur.
 

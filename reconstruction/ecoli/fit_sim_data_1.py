@@ -144,7 +144,7 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 			cellSpecs.update(fitCondition(sim_data, cellSpecs[condition], condition))
 
 	for condition in sorted(cellSpecs):
-		condition_local = sim_data.external_state.environment.conditions[condition]
+		condition_local = sim_data.conditions[condition]
 		if condition_local["nutrients"] not in sim_data.translationSupplyRate.keys():
 			sim_data.translationSupplyRate[condition_local["nutrients"]] = cellSpecs[condition]["translation_aa_supply"]
 
@@ -152,7 +152,7 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 
 	for condition in sorted(cellSpecs):
 
-		condition_local = sim_data.external_state.environment.conditions[condition]
+		condition_local = sim_data.conditions[condition]
 
 		if VERBOSE > 0:
 			print "Updating mass in condition {}".format(condition)
@@ -287,12 +287,12 @@ def buildTfConditionCellSpecifications(sim_data, tf):
 	cellSpecs = {}
 	for choice in ["__active", "__inactive"]:
 		conditionKey = tf + choice
-		conditionValue = sim_data.external_state.environment.conditions[conditionKey]
+		conditionValue = sim_data.conditions[conditionKey]
 
 		fcData = {}
-		if choice == "__active" and conditionValue != sim_data.external_state.environment.conditions["basal"]:
+		if choice == "__active" and conditionValue != sim_data.conditions["basal"]:
 			fcData = sim_data.tfToFC[tf]
-		if choice == "__inactive" and conditionValue != sim_data.external_state.environment.conditions["basal"]:
+		if choice == "__inactive" and conditionValue != sim_data.conditions["basal"]:
 			fcDataTmp = sim_data.tfToFC[tf].copy()
 			for key, value in fcDataTmp.iteritems():
 				fcData[key] = 1. / value
@@ -345,7 +345,7 @@ def buildCombinedConditionCellSpecifications(sim_data, cellSpecs):
 		if conditionKey == "basal":
 			continue
 
-		conditionValue = sim_data.external_state.environment.conditions[conditionKey]
+		conditionValue = sim_data.conditions[conditionKey]
 		for tf in sim_data.conditionActiveTfs[conditionKey]:
 			for gene in sim_data.tfToFC[tf]:
 				if gene in fcData:

@@ -29,7 +29,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 		# Load parameters
 		self.criticalInitiationMass = sim_data.growthRateParameters.getDnaCriticalMass(
-			sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition]
+			sim_data.conditionToDoublingTime[sim_data.condition]
 			)
 		self.getDnaCriticalMass = sim_data.growthRateParameters.getDnaCriticalMass
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime

@@ -46,7 +46,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	# Check if basal sim
 	sim_data = cPickle.load(open(simDataFile, "rb"))
-	if sim_data.external_state.environment.condition != "basal":
+	if sim_data.condition != "basal":
 		print "Skipping - plot only runs for basal sim."
 		return
 

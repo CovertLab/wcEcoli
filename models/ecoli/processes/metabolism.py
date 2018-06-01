@@ -70,7 +70,7 @@ class Metabolism(wholecell.processes.process.Process):
 			sim_data.external_state.environment.nutrients_time_series[self.nutrients_time_series_label][0][1]
 			)
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
-			sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition]
+			sim_data.conditionToDoublingTime[sim_data.condition]
 			)
 		concDict.update(self.concModificationsBasedOnCondition)
 		self.homeostaticObjective = dict((key, concDict[key].asNumber(COUNTS_UNITS / VOLUME_UNITS)) for key in concDict)

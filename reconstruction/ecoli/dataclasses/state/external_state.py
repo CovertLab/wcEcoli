@@ -3,16 +3,12 @@ Simulation data for external state
 
 This base class includes all data associated with states external to the cells.
 
-- environment.nutrient_data:
-		- externalExchangeMolecules
-		- importExchangeMolecules
-		- importConstrainedExchangeMolecules
-		- importUnconstrainedExchangeMolecules
-		- secretionExchangeMolecules
-
-- environment.condition: a string specifying the current condition.
-
-- environment.conditions: a dictionary of all conditions, includes nutrients and perturbations.
+- environment.nutrient_data: a dictionary including keys:
+	- externalExchangeMolecules
+	- importExchangeMolecules
+	- importConstrainedExchangeMolecules
+	- importUnconstrainedExchangeMolecules
+	- secretionExchangeMolecules
 
 - environment.nutrients_time_series_label: a string specifying the time series
 	used for the current simulation.
@@ -61,15 +57,6 @@ class ExternalState(object):
 
 		self.environment.nutrient_data = self._getNutrientData(raw_data)
 		self.environment.nutrients_time_series_label = "000000_basal"
-
-		self.environment.condition = "basal"
-		# TODO (ERAN) remove gene perturbations from here, belongs in internal state
-		self.environment.conditions = {}
-		for row in raw_data.condition.condition_defs:
-			condition = row["condition"].encode("utf-8")
-			self.environment.conditions[condition] = {}
-			self.environment.conditions[condition]["nutrients"] = row["nutrients"].encode("utf-8")
-			self.environment.conditions[condition]["perturbations"] = row["genotype perturbations"]
 
 		self.environment.nutrients_time_series = {}
 		for label in dir(raw_data.condition.timeseries):

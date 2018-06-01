@@ -18,7 +18,7 @@ def anaerobic(sim_data, index):
 		return AEROBIC_OUTPUT, sim_data
 
 	sim_data.external_state.environment.nutrients_time_series_label = "000004_oxygen_absent"
-	sim_data.external_state.environment.condition = "no_oxygen"
-	sim_data.doubling_time = sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition]
+	sim_data.condition = "no_oxygen"
+	sim_data.doubling_time = sim_data.conditionToDoublingTime[sim_data.condition]
 
 	return ANAEROBIC_OUTPUT, sim_data

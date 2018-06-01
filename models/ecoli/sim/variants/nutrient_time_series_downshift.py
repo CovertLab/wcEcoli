@@ -16,7 +16,7 @@ def nutrientTimeSeriesDownshift(sim_data, index):
 		return CONTROL_OUTPUT, sim_data
 
 	# Start in minimal_plus_amino acids, index = 2
-	sim_data.external_state.environment.condition = sorted(sim_data.conditionActiveTfs)[2]
+	sim_data.condition = sorted(sim_data.conditionActiveTfs)[2]
 
 	nutrients_time_series_labels = sorted(sim_data.external_state.environment.nutrients_time_series)
 	nutrients_time_series_label = nutrients_time_series_labels[index]

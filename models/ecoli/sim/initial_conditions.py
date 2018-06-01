@@ -74,14 +74,14 @@ def initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, rand
 def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff):
 
 	monomersView = bulkMolCntr.countsView(sim_data.process.translation.monomerData["id"])
-	monomerMass = massCoeff * sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition])["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	monomerMass = massCoeff * sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 	# TODO: unify this logic with the fitter so it doesn't fall out of step
 	# again (look at the calcProteinCounts function)
 
 	monomerExpression = normalize(
-		sim_data.process.transcription.rnaExpression[sim_data.external_state.environment.condition][sim_data.relation.rnaIndexToMonomerMapping] *
+		sim_data.process.transcription.rnaExpression[sim_data.condition][sim_data.relation.rnaIndexToMonomerMapping] *
 		sim_data.process.translation.translationEfficienciesByMonomer /
-		(np.log(2) / sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition].asNumber(units.s) + sim_data.process.translation.monomerData["degRate"].asNumber(1 / units.s))
+		(np.log(2) / sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.s) + sim_data.process.translation.monomerData["degRate"].asNumber(1 / units.s))
 		)
 
 	nMonomers = countsFromMassAndExpression(
@@ -98,9 +98,9 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff):
 def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff):
 
 	rnaView = bulkMolCntr.countsView(sim_data.process.transcription.rnaData["id"])
-	rnaMass = massCoeff * sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition])["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	rnaMass = massCoeff * sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 
-	rnaExpression = normalize(sim_data.process.transcription.rnaExpression[sim_data.external_state.environment.condition])
+	rnaExpression = normalize(sim_data.process.transcription.rnaExpression[sim_data.condition])
 
 	nRnas = countsFromMassAndExpression(
 		rnaMass.asNumber(units.g),
@@ -121,14 +121,14 @@ def initializeDNA(bulkMolCntr, sim_data, randomState):
 # TODO: remove checks for zero concentrations (change to assertion)
 # TODO: move any rescaling logic to KB/fitting
 def initializeSmallMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
-	avgCellFractionMass = sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition])
+	avgCellFractionMass = sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])
 
 	mass = massCoeff * (avgCellFractionMass["proteinMass"] + avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"]) / sim_data.mass.avgCellToInitialCellConvFactor
 
 	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 		sim_data.external_state.environment.nutrients_time_series[sim_data.external_state.environment.nutrients_time_series_label][0][1]
 		)
-	concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition]))
+	concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.condition]))
 	moleculeIds = sorted(concDict)
 	moleculeConcentrations = (units.mol / units.L) * np.array([concDict[key].asNumber(units.mol / units.L) for key in moleculeIds])
 
@@ -196,7 +196,7 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 	# Find growth rate constants
 	C = sim_data.growthRateParameters.c_period.asUnit(units.min)
 	D = sim_data.growthRateParameters.d_period.asUnit(units.min)
-	tau = sim_data.conditionToDoublingTime[sim_data.external_state.environment.condition].asUnit(units.min)
+	tau = sim_data.conditionToDoublingTime[sim_data.condition].asUnit(units.min)
 	genome_length = sim_data.process.replication.genome_length
 	replication_length = np.ceil(.5*genome_length) * units.nt
 
@@ -248,7 +248,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# Load parameters
 	nAvogadro = sim_data.constants.nAvogadro
 	rnaLengths = sim_data.process.transcription.rnaData['length'].asNumber()
-	currentNutrients = sim_data.external_state.environment.conditions[sim_data.external_state.environment.condition]['nutrients']
+	currentNutrients = sim_data.conditions[sim_data.condition]['nutrients']
 	fracActiveRnap = sim_data.process.transcription.rnapFractionActiveDict[currentNutrients]
 	inactiveRnaPolyCounts = bulkMolCntr.countsView(['APORNAP-CPLX[c]']).counts()[0]
 	rnaSequences = sim_data.process.transcription.transcriptionSequences
@@ -364,7 +364,7 @@ def initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	# Load parameters
 	nAvogadro = sim_data.constants.nAvogadro
-	currentNutrients = sim_data.external_state.environment.conditions[sim_data.external_state.environment.condition]['nutrients']
+	currentNutrients = sim_data.conditions[sim_data.condition]['nutrients']
 	fracActiveRibosome = sim_data.process.translation.ribosomeFractionActiveDict[currentNutrients]
 	mrnaIds = sim_data.process.translation.monomerData['rnaId']
 	proteinLengths = sim_data.process.translation.monomerData['length'].asNumber()
