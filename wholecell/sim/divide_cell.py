@@ -23,7 +23,7 @@ def divide_cell(sim):
 	uniqueMolecules = sim.internal_states['UniqueMolecules']
 
 	# TODO (Eran): division should be based on both nutrient and gene perturbation condition
-	current_nutrients = sim.external_states['Environment'].condition
+	current_nutrients = sim.external_states['Environment'].nutrients
 
 	# Create output directories
 	filepath.makedirs(sim._outputDir, "Daughter1")

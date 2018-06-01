@@ -60,9 +60,9 @@ class ExternalState(object):
 	def _buildEnvironment(self, raw_data, sim_data):
 
 		self.environment.nutrient_data = self._getNutrientData(raw_data)
-		self.environment.condition = "basal"
 		self.environment.nutrients_time_series_label = "000000_basal"
 
+		self.environment.condition = "basal"
 		# TODO (ERAN) remove gene perturbations from here, belongs in internal state
 		self.environment.conditions = {}
 		for row in raw_data.condition.condition_defs:

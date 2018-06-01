@@ -94,7 +94,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# on the protein sequence matrix is set to 22. If timesteps longer than 1.0s are used, this feature will lead to errors in the effective ribosome
 		# elongation rate.
 
-		current_nutrients = self._external_states['Environment'].condition
+		current_nutrients = self._external_states['Environment'].nutrients
 
 		if self.translationSupply:
 			self.ribosomeElongationRate = np.min([self.maxRibosomeElongationRate, int(stochasticRound(self.randomState,

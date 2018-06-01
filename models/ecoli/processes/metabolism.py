@@ -213,7 +213,7 @@ class Metabolism(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
-		current_nutrients = self._external_states['Environment'].condition
+		current_nutrients = self._external_states['Environment'].nutrients
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			self.nutrientToDoublingTime.get(current_nutrients, self.nutrientToDoublingTime["minimal"]))
 
