@@ -215,7 +215,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		current_nutrients = self._external_states['Environment'].nutrients
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
-			self.nutrientToDoublingTime.get(current_nutrients, self.nutrientToDoublingTime["minimal"]))
+			self.nutrientToDoublingTime.get(current_nutrients, self.nutrientToDoublingTime["minimal"])
+			)
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)

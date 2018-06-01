@@ -46,8 +46,6 @@ class ExternalState(object):
 
 		self._buildEnvironment(raw_data, sim_data)
 
-		import ipdb; ipdb.set_trace()
-
 	def _buildEnvironment(self, raw_data, sim_data):
 
 		self.environment.nutrient_data = self._getNutrientData(raw_data)
