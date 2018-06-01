@@ -3,30 +3,24 @@ Simulation data for external state
 
 This base class includes all data associated with states external to the cells.
 
-- environment.nutrient_data: a dictionary including keys:
-	- externalExchangeMolecules
-	- importExchangeMolecules
-	- importConstrainedExchangeMolecules
-	- importUnconstrainedExchangeMolecules
-	- secretionExchangeMolecules
+	- environment.nutrient_data: a dictionary including the following keys and their values:
+		- externalExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
+		- importExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
+		- importConstrainedExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
+		- importUnconstrainedExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
+		- secretionExchangeMolecules: a list of exchange molecules
 
-- environment.nutrients_time_series_label: a string specifying the time series
-	used for the current simulation.
+	- environment.nutrients_time_series: a dictionary of all time series.
 
-- environment.nutrients_time_series: a dictionary of all time series.
+	- environment.nutrients_time_series_label: a string specifying the time series
+		used for the current simulation.
 
-Functions:
-----------
-	- _buildEnvironment: initializes the environment using conditions and timeseries
-	from raw_data.
+	Functions:
+	----------
+	- _buildEnvironment: initializes the environment using conditions and time series
+		from raw_data.
 
-	- _getNutrientData: pulls nutrient data from raw_data
-
-Notes:
-______
-
-- TODO (Eran) environment conditions should not include genetic perturbations.
-	This should be removed, and brought into sim_data for internal state
+	- _getNutrientData: pulls nutrient data from raw_data, saves it in environment.nutrient_data
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
@@ -52,6 +46,7 @@ class ExternalState(object):
 
 		self._buildEnvironment(raw_data, sim_data)
 
+		import ipdb; ipdb.set_trace()
 
 	def _buildEnvironment(self, raw_data, sim_data):
 

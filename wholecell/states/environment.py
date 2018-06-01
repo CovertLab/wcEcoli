@@ -3,18 +3,22 @@
 """
 External state that represents environmental molecules and conditions.
 
-- nutrient_data: a dictionary containing the following keys:
-	- externalExchangeMolecules
-	- importExchangeMolecules
-	- importConstrainedExchangeMolecules
-	- importUnconstrainedExchangeMolecules
-	- secretionExchangeMolecules
+	- nutrient_data: a dictionary including the following keys and their values:
+		- externalExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
+		- importExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
+		- importConstrainedExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
+		- importUnconstrainedExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
+		- secretionExchangeMolecules: a list of exchange molecules
 
-- nutrients_time_series: a list of tuples that include time and nutrients in which shifts occur.
+	- nutrients_time_series: a list of tuples that include time and nutrients in which shifts occur.
 
-- nutrients: a string specifying the current nutrients.
+	- nutrients: a string specifying the current nutrient condition.
 
-- times: a list of all times at which the nutrients shift.
+	- times: a list of all times at which the nutrients shift.
+
+	Functions:
+	----------
+	- update: updates nutrients according to nutrients_time_series
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
