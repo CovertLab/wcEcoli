@@ -68,7 +68,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# If the ribosome elongation rate is zero (which is always the case for the first timestep), set ribosome elongation rate to one in dictionary
 		if self.ribosomeElongationRate == 0:
-			self.ribosomeElongationRate = self.ribosomeElongationRateDict[current_nutrients].asNumber()
+			self.ribosomeElongationRate = self.ribosomeElongationRateDict[current_nutrients].asNumber(units.aa / units.s)
 
 	def evolveState(self):
 		# Calculate number of ribosomes that could potentially be initalized based on

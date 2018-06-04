@@ -143,28 +143,28 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 		for condition in sorted(cellSpecs):
 			cellSpecs.update(fitCondition(sim_data, cellSpecs[condition], condition))
 
-	for condition in sorted(cellSpecs):
-		condition_local = sim_data.conditions[condition]
-		if condition_local["nutrients"] not in sim_data.translationSupplyRate.keys():
-			sim_data.translationSupplyRate[condition_local["nutrients"]] = cellSpecs[condition]["translation_aa_supply"]
+	for condition_label in sorted(cellSpecs):
+		condition = sim_data.conditions[condition_label]
+		if condition["nutrients"] not in sim_data.translationSupplyRate.keys():
+			sim_data.translationSupplyRate[condition["nutrients"]] = cellSpecs[condition_label]["translation_aa_supply"]
 
 	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
 
-	for condition in sorted(cellSpecs):
+	for condition_label in sorted(cellSpecs):
 
-		condition_local = sim_data.conditions[condition]
+		condition = sim_data.conditions[condition_label]
 
 		if VERBOSE > 0:
-			print "Updating mass in condition {}".format(condition)
-		spec = cellSpecs[condition]
+			print "Updating mass in condition {}".format(condition_label)
+		spec = cellSpecs[condition_label]
 
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			condition_local["nutrients"]
+			condition["nutrients"]
 			)
-		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[condition]))
+		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[condition_label]))
 
 		avgCellDryMassInit, fitAvgSolublePoolMass = rescaleMassForSolubleMetabolites(
-			sim_data, spec["bulkContainer"], concDict, sim_data.conditionToDoublingTime[condition]
+			sim_data, spec["bulkContainer"], concDict, sim_data.conditionToDoublingTime[condition_label]
 			)
 
 		if VERBOSE > 0:
@@ -173,55 +173,55 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 		spec["avgCellDryMassInit"] = avgCellDryMassInit
 		spec["fitAvgSolublePoolMass"] = fitAvgSolublePoolMass
 
-		mRnaSynthProb = sim_data.process.transcription.rnaSynthProb[condition][sim_data.process.transcription.rnaData["isMRna"]].sum()
-		tRnaSynthProb = sim_data.process.transcription.rnaSynthProb[condition][sim_data.process.transcription.rnaData["isTRna"]].sum()
-		rRnaSynthProb = sim_data.process.transcription.rnaSynthProb[condition][sim_data.process.transcription.rnaData["isRRna"]].sum()
+		mRnaSynthProb = sim_data.process.transcription.rnaSynthProb[condition_label][sim_data.process.transcription.rnaData["isMRna"]].sum()
+		tRnaSynthProb = sim_data.process.transcription.rnaSynthProb[condition_label][sim_data.process.transcription.rnaData["isTRna"]].sum()
+		rRnaSynthProb = sim_data.process.transcription.rnaSynthProb[condition_label][sim_data.process.transcription.rnaData["isRRna"]].sum()
 
-		if (condition_local["nutrients"] not in sim_data.process.transcription.rnaSynthProbFraction
-				and len(condition_local["perturbations"]) == 0):
-			sim_data.process.transcription.rnaSynthProbFraction[condition_local["nutrients"]] = {
+		if (condition["nutrients"] not in sim_data.process.transcription.rnaSynthProbFraction
+				and len(condition["perturbations"]) == 0):
+			sim_data.process.transcription.rnaSynthProbFraction[condition["nutrients"]] = {
 				"mRna": mRnaSynthProb,
 				"tRna": tRnaSynthProb,
 				"rRna": rRnaSynthProb,
 				}
 
-		if (condition_local["nutrients"] not in sim_data.process.transcription.rnaSynthProbRProtein
-				and len(condition_local["perturbations"]) == 0):
-			sim_data.process.transcription.rnaSynthProbRProtein[condition_local["nutrients"]] = (
-				sim_data.process.transcription.rnaSynthProb[condition][sim_data.process.transcription.rnaData["isRProtein"]]
+		if (condition["nutrients"] not in sim_data.process.transcription.rnaSynthProbRProtein
+				and len(condition["perturbations"]) == 0):
+			sim_data.process.transcription.rnaSynthProbRProtein[condition["nutrients"]] = (
+				sim_data.process.transcription.rnaSynthProb[condition_label][sim_data.process.transcription.rnaData["isRProtein"]]
 				)
 
-		if (condition_local["nutrients"] not in sim_data.process.transcription.rnaSynthProbRnaPolymerase
-				and len(condition_local["perturbations"]) == 0):
-			sim_data.process.transcription.rnaSynthProbRnaPolymerase[condition_local["nutrients"]] = (
-				sim_data.process.transcription.rnaSynthProb[condition][sim_data.process.transcription.rnaData["isRnap"]]
+		if (condition["nutrients"] not in sim_data.process.transcription.rnaSynthProbRnaPolymerase
+				and len(condition["perturbations"]) == 0):
+			sim_data.process.transcription.rnaSynthProbRnaPolymerase[condition["nutrients"]] = (
+				sim_data.process.transcription.rnaSynthProb[condition_label][sim_data.process.transcription.rnaData["isRnap"]]
 				)
 
-		if (condition_local["nutrients"] not in sim_data.process.transcription.rnapFractionActiveDict
-				and len(condition_local["perturbations"]) == 0):
-			sim_data.process.transcription.rnapFractionActiveDict[condition_local["nutrients"]]	= (
+		if (condition["nutrients"] not in sim_data.process.transcription.rnapFractionActiveDict
+				and len(condition["perturbations"]) == 0):
+			sim_data.process.transcription.rnapFractionActiveDict[condition["nutrients"]]	= (
 				sim_data.growthRateParameters.getFractionActiveRnap(spec["doubling_time"])
 				)
 
-		if (condition_local["nutrients"] not in sim_data.process.transcription.rnaPolymeraseElongationRateDict
-				and len(condition_local["perturbations"]) == 0):
-			sim_data.process.transcription.rnaPolymeraseElongationRateDict[condition_local["nutrients"]] = (
+		if (condition["nutrients"] not in sim_data.process.transcription.rnaPolymeraseElongationRateDict
+				and len(condition["perturbations"]) == 0):
+			sim_data.process.transcription.rnaPolymeraseElongationRateDict[condition["nutrients"]] = (
 				sim_data.growthRateParameters.getRnapElongationRate(spec["doubling_time"])
 				)
 
-		if (condition_local["nutrients"] not in sim_data.expectedDryMassIncreaseDict
-				and len(condition_local["perturbations"]) == 0):
-			sim_data.expectedDryMassIncreaseDict[condition_local["nutrients"]] = spec["avgCellDryMassInit"]
+		if (condition["nutrients"] not in sim_data.expectedDryMassIncreaseDict
+				and len(condition["perturbations"]) == 0):
+			sim_data.expectedDryMassIncreaseDict[condition["nutrients"]] = spec["avgCellDryMassInit"]
 
-		if (condition_local["nutrients"] not in sim_data.process.translation.ribosomeElongationRateDict
-				and len(condition_local["perturbations"]) == 0):
-			sim_data.process.translation.ribosomeElongationRateDict[condition_local["nutrients"]] = (
+		if (condition["nutrients"] not in sim_data.process.translation.ribosomeElongationRateDict
+				and len(condition["perturbations"]) == 0):
+			sim_data.process.translation.ribosomeElongationRateDict[condition["nutrients"]] = (
 				sim_data.growthRateParameters.getRibosomeElongationRate(spec["doubling_time"])
 				)
 
-		if (condition_local["nutrients"] not in sim_data.process.translation.ribosomeFractionActiveDict
-				and len(condition_local["perturbations"]) == 0):
-			sim_data.process.translation.ribosomeFractionActiveDict[condition_local["nutrients"]] = (
+		if (condition["nutrients"] not in sim_data.process.translation.ribosomeFractionActiveDict
+				and len(condition["perturbations"]) == 0):
+			sim_data.process.translation.ribosomeFractionActiveDict[condition["nutrients"]] = (
 				sim_data.growthRateParameters.getFractionActiveRibosome(spec["doubling_time"])
 				)
 
