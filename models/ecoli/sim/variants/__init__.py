@@ -68,6 +68,9 @@ from models.ecoli.sim.variants.allShuffleParams import allShuffleParamsTotalIndi
 from models.ecoli.sim.variants.meneParams import meneParams
 from models.ecoli.sim.variants.meneParams import meneParamsTotalIndices
 
+from models.ecoli.sim.variants.lambdaWeight import lambdaWeight
+from models.ecoli.sim.variants.lambdaWeight import lambdaWeightIndices
+
 nameToFunctionMapping = {
 	"geneKnockout": geneKnockout,
 	"wildtype": wildtype,
@@ -91,6 +94,7 @@ nameToFunctionMapping = {
 	"kineticCatalystShuffleParams": kineticCatalystShuffleParams,
 	"allShuffleParams": allShuffleParams,
 	"meneParams": meneParams,
+	"lambdaWeight": lambdaWeight,
 }
 
 nameToNumIndicesMapping = {
@@ -116,4 +120,5 @@ nameToNumIndicesMapping = {
 	"kineticCatalystShuffleParams": kineticCatalystShuffleParamsTotalIndices,
 	"allShuffleParams": allShuffleParamsTotalIndices,
 	"meneParams": meneParamsTotalIndices,
+	"lambdaWeightIndices": lambdaWeightIndices,
 }
