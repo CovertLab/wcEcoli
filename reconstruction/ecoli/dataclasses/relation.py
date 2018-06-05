@@ -22,6 +22,7 @@ class Relation(object):
 		self._buildRnaIndexToMonomerMapping(raw_data, sim_data)
 		self._buildMonomerIndexToRnaMapping(raw_data, sim_data)
 		#self._buildRnaIndexToGeneMapping(raw_data, sim_data)
+		self._buildTRnaToAaMapping(raw_data, sim_data)
 
 	def _buildRnaIndexToMonomerMapping(self, raw_data, sim_data):
 		self.rnaIndexToMonomerMapping = np.array([np.where(x == sim_data.process.transcription.rnaData["id"])[0][0] for x in sim_data.process.translation.monomerData["rnaId"]])
@@ -31,3 +32,23 @@ class Relation(object):
 
 	#def _buildRnaIndexToGeneMapping(self, raw_data, sim_data):
 	#	self.rnaIndexToGeneMapping = np.array([np.where(x + "[c]" == sim_data.process.transcription.rnaData["id"])[0][0] for x in sim_data.process.replication.geneData["rnaId"]])
+
+	def _buildTRnaToAaMapping(self, raw_data, sim_data):
+		"""
+		Creates matrix (number of tRNAs x number of amino acids) that maps each
+		tRNA to the amino acid it codes for.
+		"""
+
+		isTRna = sim_data.process.transcription.rnaData["isTRna"]
+		rnaIds = sim_data.process.transcription.rnaData["id"][isTRna].tolist()
+		aaIDs = sim_data.moleculeGroups.aaIDs
+
+		aaToTrnaGroups = sim_data.process.translation.aaToTrnaGroups
+		trnaToAaMapping = np.zeros([len(rnaIds), len(aaIDs)])
+
+		for i, aaId in enumerate(aaIDs):
+			trnaIds = aaToTrnaGroups[aaId]
+			trnaIndices = [rnaIds.index(x) for x in trnaIds]
+			trnaToAaMapping[trnaIndices, i] = 1
+
+		self.TRnaToAaMapping = trnaToAaMapping
