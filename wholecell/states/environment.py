@@ -45,3 +45,15 @@ class Environment(wholecell.states.external_state.ExternalState):
 	def update(self):
 		current_index = [i for i, t in enumerate(self.times) if self.time()>=t][-1]
 		self.nutrients = self.nutrients_time_series[current_index][1]
+
+
+	def tableCreate(self, tableWriter):
+		tableWriter.writeAttributes(
+			objectNames = ['nutrients'],
+			)
+
+
+	def tableAppend(self, tableWriter):
+		tableWriter.append(
+			nutrients = self.nutrients + ", ",
+			)
