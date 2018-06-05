@@ -232,6 +232,7 @@ class Trna(object):
 		self._loadTrnaSynthetaseKinetics(validation_data_raw)
 		self._loadTrnaPairings(validation_data_raw)
 		self._loadAaToTrna(validation_data_raw)
+		self._loadTrnaData(validation_data_raw)
 
 	def _loadTrnaSynthetaseKinetics(self, validation_data_raw):
 		self.synthetaseKinetics = {}
@@ -266,3 +267,15 @@ class Trna(object):
 				self.aaToTrna[aa] = []
 
 			self.aaToTrna[aa].append(row["tRNA ID"])
+
+	def _loadTrnaData(self, validation_data_raw):
+		self.trnaTo16SRatio = {}
+		for row in validation_data_raw.trna_data:
+			trnaId = row["rna id"]
+			self.trnaTo16SRatio[trnaId] = {
+				"0.4 per hr": row["ratio to 16SrRNA at 0.4 hr^-1"],
+				"0.7 per hr": row["ratio to 16SrRNA at 0.7 hr^-1"],
+				"1.07 per hr": row["ratio to 16SrRNA at 1.07 hr^-1"],
+				"1.6 per hr": row["ratio to 16SrRNA at 1.6 hr^-1"],
+				"2.5 per hr": row["ratio to 16SrRNA at 2.5 hr^-1"],
+			}

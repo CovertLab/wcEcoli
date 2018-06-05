@@ -25,6 +25,7 @@ LIST_OF_DICT_FILENAMES = (
 	"geneFunctions.tsv",
 	"trnaSynthetaseKinetics.tsv",
 	"trnaPairings.tsv",
+	"trna_data.tsv",
 	)
 
 class ValidationDataRawEcoli(object):
