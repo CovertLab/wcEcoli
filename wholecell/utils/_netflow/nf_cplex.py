@@ -73,22 +73,28 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 
 		self._solved = False
 
-	def flowLowerBoundIs(self, flow, lowerBound):
+	def setFlowBounds(self, flow, lowerBound=None, upperBound=None):
+		"""
+		Set the lower and upper bounds for a given flow
+		inputs:
+			flow (str) - name of flow to set bounds for
+			lowerBound (float) - lower bound for flow (None if unchanged)
+			upperBound (float) - upper bound for flow (None if unchanged)
+		"""
+
 		idx = self._getVar(flow)
-		self._lb[flow] = lowerBound
+		if lowerBound is not None:
+			self._lb[flow] = lowerBound
+		if upperBound is not None:
+			self._ub[flow] = upperBound
+
 		self._model.variables.set_lower_bounds(idx, self._lb[flow])
+		self._model.variables.set_upper_bounds(idx, self._ub[flow])
 
 		self._solved = False
 
 	def flowLowerBound(self, flow):
 		return self._lb[flow]
-
-	def flowUpperBoundIs(self, flow, upperBound):
-		idx = self._getVar(flow)
-		self._ub[flow] = upperBound
-		self._model.variables.set_upper_bounds(idx, self._ub[flow])
-
-		self._solved = False
 
 	def flowUpperBound(self, flow):
 		return self._ub[flow]
