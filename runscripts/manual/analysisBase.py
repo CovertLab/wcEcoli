@@ -117,7 +117,7 @@ class AnalysisBase(object):
 		"""Find a simulation variant dir in the given `sim_path`; return the
 		given `default` if none are found."""
 		for subdir in os.listdir(sim_path):
-			if os.path.isdir(subdir) and '_' in subdir:
+			if '_' in subdir and os.path.isdir(os.path.join(sim_path, subdir)):
 				return subdir
 
 		return default
