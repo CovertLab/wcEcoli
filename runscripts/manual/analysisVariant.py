@@ -1,33 +1,35 @@
-# runs all variant analysis plots for a given sim with data from one location to another
-# only need parent directory in wcEcoli_out as argument
+"""
+Runs all variant analysis plots for a given sim.
 
-import os
-import sys
-import cPickle
+Run with '-h' for command line help.
+"""
 
+from __future__ import absolute_import
+from __future__ import division
+
+from runscripts.manual.analysisBase import AnalysisBase
 from wholecell.fireworks.firetasks.analysisVariant import AnalysisVariantTask
 
-BASE_DIR = '/scratch/users/thorst/wcEcoli_out/'
 
-if len(sys.argv) < 2:
-	for folder in sorted(os.listdir(BASE_DIR), reverse = True):
-		if folder[0].isdigit():
-			path = os.path.join(BASE_DIR, folder)
-			break
-else:
-	arg = sys.argv[1]
-	if arg.startswith('out/'):
-		arg = arg[4:]
-	path = os.path.join(BASE_DIR, arg)
+class AnalysisVariant(AnalysisBase):
+	"""Runs all variant analysis plots for a given sim."""
 
-inputDirectory = path
-outputDir = os.path.join(path, 'plotOut')
-validationData = os.path.join(path, 'kb/validationData.cPickle')
-with open(os.path.join(path, 'metadata', 'metadata.cPickle')) as f:
-	metadata = cPickle.load(f)
-metadata['analysis_type'] = 'variant'
-metadata['total_variants'] = None
+	def add_args(self, args):
+		super(AnalysisVariant, self).add_args(args)
 
-print('Variant analysis from {}'.format(inputDirectory))
-task = AnalysisVariantTask(input_directory=inputDirectory, input_validation_data=validationData, output_plots_directory=outputDir, metadata=metadata)
-task.run_task(None)
+		metadata = args.metadata
+		metadata['analysis_type'] = 'variant'
+		metadata['total_variants'] = None
+
+	def run(self, args):
+		task = AnalysisVariantTask(
+			input_directory=args.sim_path,
+			input_validation_data=args.input_validation_data,
+			output_plots_directory=args.output_plots_directory,
+			metadata=args.metadata)
+		task.run_task({})
+
+
+if __name__ == '__main__':
+	analysis = AnalysisVariant()
+	analysis.cli()

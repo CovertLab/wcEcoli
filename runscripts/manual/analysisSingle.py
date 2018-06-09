@@ -1,48 +1,64 @@
-# runs all single analysis plots for a given sim
-# if no folder is given it runs for most recent in wcEcoli_out otherwise picks first arg passed
+"""
+Runs all single analysis plots for a given sim w/optional variant.
+
+Run with '-h' for command line help.
+"""
+
+from __future__ import absolute_import
+from __future__ import division
 
 import os
-import sys
-import cPickle
 
+from runscripts.manual.analysisBase import AnalysisBase
 from wholecell.fireworks.firetasks.analysisSingle import AnalysisSingleTask
 
-BASE_DIR = '/scratch/users/thorst/wcEcoli_out/'
+
 SEED = '000000'
 GEN = 'generation_000000'
 DAUGHTER = '000000'
 DIRS = os.path.join(SEED, GEN, DAUGHTER)
 
-if len(sys.argv) < 2:
-	for folder in sorted(os.listdir(BASE_DIR), reverse = True):
-		if folder[0].isdigit():
-			path = os.path.join(BASE_DIR, folder)
-			break
-else:
-	arg = sys.argv[1]
-	if arg.startswith('out/'):
-		arg = arg[4:]
-	path = os.path.join(BASE_DIR, arg)
 
-for folder in os.listdir(path):
-	if '_' in folder:
-		variant = folder
+class AnalysisSingle(AnalysisBase):
+	"""Runs all single analysis plots for a given sim w/optional variant."""
 
-# variant = 'condition_000000'
-# variant = 'lambdaWeight_000009'
+	def define_parameters(self, parser):
+		super(AnalysisSingle, self).define_parameters(parser)
+		parser.add_argument('--variant',
+			help='simulation variant, e.g. "condition_000000"')
 
-resultsDir = os.path.join(path, variant, DIRS, 'simOut')
-outputDir = os.path.join(path, variant, DIRS, 'plotOut')
-simData = os.path.join(path, variant, 'kb/simData_Modified.cPickle')
-validationData = os.path.join(path, 'kb/validationData.cPickle')
-with open(os.path.join(path, 'metadata', 'metadata.cPickle')) as f:
-	metadata = cPickle.load(f)
-metadata['analysis_type'] = 'single'
-metadata['variant_function'] = variant
-metadata['variant_index'] = None
-metadata['seed'] = SEED
-metadata['gen'] = GEN
+	def add_args(self, args):
+		super(AnalysisSingle, self).add_args(args)
 
-print('Single analysis from {}'.format(resultsDir))
-task = AnalysisSingleTask(input_results_directory=resultsDir, input_sim_data=simData, input_validation_data=validationData, output_plots_directory=outputDir, metadata=metadata)
-task.run_task(None)
+		if args.variant is None:  # defaulted
+			args.variant = self.find_variant_dir(args.sim_path)
+
+		metadata = args.metadata
+		metadata['analysis_type'] = 'single'
+		metadata['variant_function'] = args.variant
+		metadata['variant_index'] = None
+		metadata['seed'] = SEED
+		metadata['gen'] = GEN
+
+	def run(self, args):
+		sim_path = args.sim_path
+		variant = args.variant
+
+		results_dir = os.path.join(sim_path, variant, DIRS, 'simOut')
+		sim_data_modified = os.path.join(
+			sim_path, variant, 'kb', 'simData_Modified.cPickle')
+		# TODO(jerry): Load simData_Modified into metadata?
+		output_dir = os.path.join(sim_path, variant, DIRS, 'plotOut')
+
+		task = AnalysisSingleTask(
+			input_results_directory=results_dir,
+			input_sim_data=sim_data_modified,
+			input_validation_data=args.input_validation_data,
+			output_plots_directory=output_dir,
+			metadata=args.metadata)
+		task.run_task({})
+
+
+if __name__ == '__main__':
+	analysis = AnalysisSingle()
+	analysis.cli()

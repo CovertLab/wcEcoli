@@ -56,6 +56,7 @@ clean:
 clobber:
 	rm -fr out/simOut
 	rm -fr out/plotOut
+	rm -fr launcher_20*/
 	rm -fr runAnalysis*
 	rm -fr runSimulation*
 	rm -fr simShellLog*
