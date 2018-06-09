@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 ChromosomeReplication
 
@@ -30,7 +28,9 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		super(ChromosomeReplication, self).initialize(sim, sim_data)
 
 		# Load parameters
-		self.criticalInitiationMass = sim_data.growthRateParameters.getDnaCriticalMass(sim_data.conditionToDoublingTime[sim_data.condition])
+		self.criticalInitiationMass = sim_data.growthRateParameters.getDnaCriticalMass(
+			sim_data.conditionToDoublingTime[sim_data.condition]
+			)
 		self.getDnaCriticalMass = sim_data.growthRateParameters.getDnaCriticalMass
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 		self.sequenceLengths = sim_data.process.replication.sequence_lengths
@@ -89,8 +89,9 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 	# Calculate temporal evolution
 	def evolveState(self):
-		# Set critical initiaion mass for simulation medium enviornment
-		self.criticalInitiationMass = self.getDnaCriticalMass(self.nutrientToDoublingTime[self._sim.processes["PolypeptideElongation"].currentNutrients])
+		# Set critical initiaion mass for simulation medium environment
+		current_nutrients = self._external_states['Environment'].nutrients
+		self.criticalInitiationMass = self.getDnaCriticalMass(self.nutrientToDoublingTime[current_nutrients])
 
 		##########################################
 		# Perform replication initiation process #
@@ -161,7 +162,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			sequenceLength = np.zeros(numberOfNewPolymerase, dtype = np.int8)
 			replicationRound = np.ones(numberOfNewPolymerase, dtype=np.int8) * (replicationRound.max() + 1)
 			chromosomeIndex = np.zeros(numberOfNewPolymerase, dtype=np.int8)
-			chromosomeIndex[numberOfNewPolymerase / nChromosomes:] = 1.
+			chromosomeIndex[numberOfNewPolymerase // nChromosomes:] = 1.
 
 			activeDnaPoly.attrIs(
 				sequenceIdx = sequenceIdx,

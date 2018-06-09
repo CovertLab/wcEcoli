@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
+
 import argparse
 import os
 
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader

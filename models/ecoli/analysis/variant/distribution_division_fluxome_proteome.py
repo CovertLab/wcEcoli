@@ -7,8 +7,6 @@ import cPickle
 import time
 
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 
@@ -39,9 +37,9 @@ def getPCCProteome((variant, ap, monomerIds, schmidtCounts)):
 		sim_data = cPickle.load(open(ap.get_variant_kb(variant), "rb"))
 
 		ids_complexation = sim_data.process.complexation.moleculeNames
-		ids_complexation_complexes = [ids_complexation[i] for i in np.where((sim_data.process.complexation.stoichMatrix() == 1).sum(axis = 1))[0]]
+		ids_complexation_complexes = sim_data.process.complexation.ids_complexes
 		ids_equilibrium = sim_data.process.equilibrium.moleculeNames
-		ids_equilibrium_complexes = [ids_equilibrium[i] for i in np.where((sim_data.process.equilibrium.stoichMatrix() == 1).sum(axis = 1))[0]]
+		ids_equilibrium_complexes = sim_data.process.equilibrium.ids_complexes
 		ids_translation = sim_data.process.translation.monomerData["id"].tolist()
 		ids_protein = sorted(set(ids_complexation + ids_equilibrium + ids_translation))
 
@@ -256,7 +254,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	stop = time.time()
 	cPickle.dump(proteomeResult, open(os.path.join(plotOutDir, plotOutFileName + "_proteome.cPickle"), "w"))
 	print "%d seconds:\tTo get proteome correlation -- completed" % (stop - start)
-	
+
 	pool.close()
 	pool.join()
 
