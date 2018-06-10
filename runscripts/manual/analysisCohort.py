@@ -39,7 +39,7 @@ class AnalysisCohort(AnalysisBase):
 
 		input_variant_directory = os.path.join(sim_path, variant)
 		sim_data_modified = os.path.join(
-			sim_path, variant, 'kb/simData_Modified.cPickle')
+			sim_path, variant, 'kb', 'simData_Modified.cPickle')
 		# TODO(jerry): Load simData_Modified into metadata?
 		output_dir = os.path.join(sim_path, variant, 'plotOut')
 

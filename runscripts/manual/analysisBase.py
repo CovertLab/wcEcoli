@@ -127,18 +127,15 @@ class AnalysisBase(object):
 		opportunity to translate defaulted args into useful values and compute
 		derived args.
 
-		This base method adds the `input_validation_data` path, the base
-		`output_plots_directory` path, the `metadata_path` path
-		"<sim_path>/metadata/metadata.cPickle" (not simData_Modified.cPickle),
-		and `metadata` loaded from `metadata_path`.
+		This base method adds the `input_validation_data` path, the
+		`metadata_path` path "<sim_path>/metadata/metadata.cPickle", and the
+		`metadata` dict loaded from `metadata_path`.
 		Overrides should first call super().
 
 		SIDE EFFECTS: Modifies `args`.
 		"""
 		args.input_validation_data = os.path.join(
 			args.sim_path, 'kb', 'validationData.cPickle')
-
-		args.output_plots_directory = os.path.join(args.sim_path, 'plotOut')
 
 		args.metadata_path = os.path.join(
 			args.sim_path, 'metadata', 'metadata.cPickle')

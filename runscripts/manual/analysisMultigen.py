@@ -44,19 +44,14 @@ class AnalysisMultigen(AnalysisBase):
 		sim_path = args.sim_path
 		variant = args.variant
 
-		if variant:
-			input_path = os.path.join(sim_path, variant, DIR)
-			sim_data_modified = os.path.join(
-				sim_path, variant, 'kb', 'simData_Modified.cPickle')
-			# TODO(jerry): Load simData_Modified into metadata?
-			output_dir = filepath.makedirs(sim_path, variant, DIR, "plotOut")
-		else:
-			input_path = sim_path
-			sim_data_modified = args.metadata_path  # TODO: Correct?
-			output_dir = args.output_plots_directory
+		input_path = os.path.join(sim_path, variant, DIR)
+		sim_data_modified = os.path.join(
+			sim_path, variant, 'kb', 'simData_Modified.cPickle')
+		# TODO(jerry): Load simData_Modified into metadata?
+		output_dir = filepath.makedirs(sim_path, variant, DIR, "plotOut")
 
 		task = AnalysisMultiGenTask(
-			input_seed_directory=input_path,  # TODO: Correct?
+			input_seed_directory=input_path,
 			input_sim_data=sim_data_modified,
 			input_validation_data=args.input_validation_data,
 			output_plots_directory=output_dir,
