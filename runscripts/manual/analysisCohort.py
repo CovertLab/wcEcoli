@@ -22,8 +22,8 @@ class AnalysisCohort(AnalysisBase):
 		parser.add_argument('--variant',
 			help='simulation variant, e.g. "condition_000001"')
 
-	def add_args(self, args):
-		super(AnalysisCohort, self).add_args(args)
+	def parse_args(self):
+		args = super(AnalysisCohort, self).parse_args()
 
 		if args.variant is None:  # defaulted
 			args.variant = self.find_variant_dir(args.sim_path)

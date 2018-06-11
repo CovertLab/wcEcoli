@@ -16,8 +16,8 @@ from wholecell.fireworks.firetasks.analysisVariant import AnalysisVariantTask
 class AnalysisVariant(AnalysisBase):
 	"""Runs all variant analysis plots for a given sim."""
 
-	def add_args(self, args):
-		super(AnalysisVariant, self).add_args(args)
+	def parse_args(self):
+		args = super(AnalysisVariant, self).parse_args()
 
 		metadata = args.metadata
 		metadata['analysis_type'] = 'variant'

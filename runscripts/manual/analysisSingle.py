@@ -27,8 +27,8 @@ class AnalysisSingle(AnalysisBase):
 		parser.add_argument('--variant',
 			help='simulation variant, e.g. "condition_000000"')
 
-	def add_args(self, args):
-		super(AnalysisSingle, self).add_args(args)
+	def parse_args(self):
+		args = super(AnalysisSingle, self).parse_args()
 
 		if args.variant is None:  # defaulted
 			args.variant = self.find_variant_dir(args.sim_path)

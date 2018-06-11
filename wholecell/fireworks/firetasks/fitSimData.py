@@ -1,7 +1,11 @@
+from __future__ import absolute_import
+from __future__ import division
+
 import cPickle
 import time
 import os
 import shutil
+import sys
 
 from fireworks import FireTaskBase, explicit_serialize
 from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
@@ -32,7 +36,7 @@ class FitSimDataTask(FireTaskBase):
 
 			raw_data = cPickle.load(open(self["input_data"], "rb"))
 			sim_data = fitSimData_1(raw_data, cpus=self["cpus"], debug=self["debug"])
-			import sys; sys.setrecursionlimit(4000) #limit found manually
+			sys.setrecursionlimit(4000) #limit found manually
 			cPickle.dump(
 				sim_data,
 				open(self["output_data"], "wb"),

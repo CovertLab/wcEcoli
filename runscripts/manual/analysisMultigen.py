@@ -29,8 +29,8 @@ class AnalysisMultigen(AnalysisBase):
 		parser.add_argument('--variant',
 			help='simulation variant, e.g. "geneKnockdown_000030"')
 
-	def add_args(self, args):
-		super(AnalysisMultigen, self).add_args(args)
+	def parse_args(self):
+		args = super(AnalysisMultigen, self).parse_args()
 
 		if args.variant is None:  # defaulted
 			args.variant = self.find_variant_dir(args.sim_path)

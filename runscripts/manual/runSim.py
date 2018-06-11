@@ -1,55 +1,60 @@
 """
 Run a simulation.
 Only runs first gen at the moment.
-Set PYTHONPATH when running this.
 
-Arguments:
-	run_name	(string, "manual") outputDir subdirectory of "out/".
+TODO: Call the firetask to do the work in the same way as the FireWorks
+workflow.
+
+Run with '-h' for command line help.
+Set PYTHONPATH when running this.
 """
 
 from __future__ import absolute_import
 from __future__ import division
 
-import datetime
-import time
-import sys
+import errno
 import os
 
 from models.ecoli.sim.simulation import EcoliSimulation
-import wholecell
+from runscripts.manual import scriptBase
 
-options = {}
-# options['lengthSec'] = 30
 
-ROOT_DIR = os.path.dirname(os.path.dirname(wholecell.__file__))
-BASE_DIR = os.path.join(ROOT_DIR, "out")
 
-if len(sys.argv) > 1:
-	run_name = sys.argv[1]
-else:
-	run_name = "manual"
+class RunSimulation(scriptBase.ScriptBase):
+	"""Drives a simple simulation run."""
 
-location = os.path.join(BASE_DIR, run_name)
+	def define_parameters(self, parser):
+		super(RunSimulation, self).define_parameters(parser)
 
-# TODO: Prefer <location>/<variant>/kb/simData_Modified.cPickle
-# TODO: What about <location>/kb/simData_Most_Fit.cPickle?
-simDataFile = os.path.join(location, "kb", "simData_Fit_1.cPickle")
-if not os.path.exists(simDataFile):
-	raise IOError("Missing '{}'.  Run the fitter.".format(simDataFile))
+		parser.add_argument('sim_dir', nargs='?',
+			help='The simulation "out/" subdirectory to read from (optionally'
+				+ ' starting with "out/"), or an absolute directory name, or'
+				+ ' default to the the most interesting subdirectory of "out/".')
 
-options["simDataLocation"] = simDataFile
-options["outputDir"] = os.path.join(location, "sim")
+	def parse_args(self):
+		args = super(RunSimulation, self).parse_args()
+		args.sim_path = scriptBase.find_sim_path(args.sim_dir)
+		return args
 
-start_sec = time.clock()
+	def run(self, args):
+		sim_data_file = os.path.join(args.sim_path, 'kb', 'simData_Fit_1.cPickle')
+		if not os.path.isfile(sim_data_file):
+			raise IOError(
+				errno.ENOENT,
+				'Missing "{}".  Run the Fitter.'.format(sim_data_file))
 
-print "{}: Running simulation".format(time.ctime())
-print "Options: {}\n".format(options)
+		options = {
+			'simDataLocation': sim_data_file,
+			'outputDir': os.path.join(args.sim_path, 'sim'),
+			# 'lengthSec': 30,
+		}
 
-sim = EcoliSimulation(**options)
-sim.run()
+		print 'Simulation options: {}\n'.format(options)
 
-print "{}: Done running simulation".format(time.ctime())
+		sim = EcoliSimulation(**options)
+		sim.run()
 
-end_sec = time.clock()
-elapsed = datetime.timedelta(seconds=end_sec - start_sec)
-print "Ran a simulation in {}h {}m {}s total".format(*str(elapsed).split(':'))
+
+if __name__ == '__main__':
+	script = RunSimulation()
+	script.cli()
