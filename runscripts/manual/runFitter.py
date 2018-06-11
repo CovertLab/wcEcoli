@@ -2,7 +2,8 @@
 Run the Fitter. The output goes into the named subdirectory of wcEcoli/out/,
 defaulting to "manual".
 
-TODO: Call the firetasks to do the work in the same way as in FireWorks.
+TODO: Call the firetasks to do the work in the same way as in FireWorks. That
+supports reading previously cached data from out/cached/simData_Fit_1.cPickle
 
 Run with '-h' for command line help.
 Set PYTHONPATH when running this.
@@ -12,6 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 import cPickle
+import sys
 import time
 import os
 
@@ -28,7 +30,10 @@ class RunFitter(scriptBase.ScriptBase):
 		super(RunFitter, self).define_parameters(parser)
 
 		parser.add_argument('sim_dir', nargs='?', default='manual',
-			help='The simulation "out/" subdirectory to write to.')
+			help='The simulation "out/" subdirectory to write to.'
+				' Default = "manual".')
+		parser.add_argument('-c', '--cpus', type=int, default=1,
+			help="The number of CPU processes to use. Default = 1.")
 		parser.add_argument('-d', '--debug', action='store_true',
 			help="Enable Fitter debugging. This fits only one"
 				 " arbitrarily-chosen transcription factor for a faster debug"
@@ -50,13 +55,15 @@ class RunFitter(scriptBase.ScriptBase):
 
 		print "{}: {}Fitting".format(time.ctime(),
 			'DEBUG-' if args.debug else '')
-		sim_data = fitSimData_1(raw_data, debug=args.debug)
+		sim_data = fitSimData_1(raw_data, cpus=args.cpus, debug=args.debug)
 		print "{}: Done fitting".format(time.ctime())
 
+		sys.setrecursionlimit(4000)  # limit found manually
 		with open(raw_data_file, "wb") as f:
 			cPickle.dump(raw_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
 		with open(sim_data_file, "wb") as f:
 			cPickle.dump(sim_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
+
 		print "{}: Wrote parameter files {}, {}".format(time.ctime(),
 			raw_data_file, sim_data_file)
 

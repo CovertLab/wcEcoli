@@ -41,8 +41,8 @@ class FitSimDataTask(FireTaskBase):
 				raw_data = cPickle.load(f)
 
 			sim_data = fitSimData_1(raw_data, cpus=self["cpus"], debug=self["debug"])
-			sys.setrecursionlimit(4000) #limit found manually
 
+			sys.setrecursionlimit(4000) #limit found manually
 			with open(self["output_data"], "wb") as f:
 				cPickle.dump(sim_data, f, protocol = cPickle.HIGHEST_PROTOCOL)
 
