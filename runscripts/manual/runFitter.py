@@ -2,8 +2,7 @@
 Run the Fitter. The output goes into the named subdirectory of wcEcoli/out/,
 defaulting to "manual".
 
-TODO: Call the firetask to do the work in the same way as the FireWorks
-workflow.
+TODO: Call the firetasks to do the work in the same way as in FireWorks.
 
 Run with '-h' for command line help.
 Set PYTHONPATH when running this.
@@ -43,7 +42,7 @@ class RunFitter(scriptBase.ScriptBase):
 
 	def run(self, args):
 		location = filepath.makedirs(args.sim_path, "kb")
-		raw_data_file = os.path.join(location, "raw_data.cPickle")
+		raw_data_file = os.path.join(location, "rawData.cPickle")
 		sim_data_file = os.path.join(location, "simData_Fit_1.cPickle")
 
 		print "{}: Loading raw".format(time.ctime())
@@ -55,9 +54,9 @@ class RunFitter(scriptBase.ScriptBase):
 		print "{}: Done fitting".format(time.ctime())
 
 		with open(raw_data_file, "wb") as f:
-			cPickle.dump(raw_data, f)
+			cPickle.dump(raw_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
 		with open(sim_data_file, "wb") as f:
-			cPickle.dump(sim_data, f)
+			cPickle.dump(sim_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
 		print "{}: Wrote parameter files {}, {}".format(time.ctime(),
 			raw_data_file, sim_data_file)
 

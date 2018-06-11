@@ -2,8 +2,7 @@
 Run a simulation.
 Only runs first gen at the moment.
 
-TODO: Call the firetask to do the work in the same way as the FireWorks
-workflow.
+TODO: Call the firetask to do the work in the same way as in FireWorks.
 
 Run with '-h' for command line help.
 Set PYTHONPATH when running this.
