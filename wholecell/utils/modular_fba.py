@@ -1080,14 +1080,12 @@ class FluxBalanceAnalysis(object):
 
 
 	def getOutputMoleculeLevelsChange(self):
-		# This is essentially a dot product, need to profile to make sure this
-		# isn't horribly slow
-
 		change = np.zeros(len(self._outputMoleculeIDs))
 
-		for i, outputMoleculeID in enumerate(self._outputMoleculeIDs):
-			for reactionID, coeff in self._outputMoleculeCoeffs[i].viewitems():
-				change[i] += self._solver.getFlowRates(reactionID) * coeff
+		for i, stoich in enumerate(self._outputMoleculeCoeffs):
+			flowRates = self._solver.flowRates(stoich.viewkeys())
+			coeffs = stoich.values()
+			change[i] = np.dot(flowRates, coeffs)
 
 		return -change
 
