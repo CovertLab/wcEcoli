@@ -54,12 +54,14 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 
 	def flowMaterialCoeffIs(self, flow, material, coefficient):
 		if self._eqConstBuilt:
-			if material not in self._materialIdxLookup:
+			materialIdx = self._materialIdxLookup.get(material, None)
+			if materialIdx is None:
 				raise Exception("Invalid material")
-			if flow not in self._flows:
+
+			flowIdx = self._flows.get(flow, None)
+			if flowIdx is None:
 				raise Exception("Invalid flow")
-			materialIdx = self._materialIdxLookup[material]
-			flowIdx = self._flows[flow]
+
 			coeffs, flowIdxs = zip(*self._materialCoeffs[material])
 			coeffs = list(coeffs)
 			flowLoc = flowIdxs.index(flowIdx)
@@ -122,9 +124,8 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 
 		self._solve()
 
-		return np.array(
-			[self._model.solution.get_values(self._flows[flow]) if flow in self._flows else None for flow in flows]
-			)
+		flows = [self._flows.get(flow, None) for flow in flows]
+		return np.array(self._model.solution.get_values(flows))
 
 	# TODO: implement
 	def rowDualValues(self, materials):
@@ -134,10 +135,8 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 
 		self._solve()
 
-		return np.array(
-			[self._model.solution.get_dual_values(self._materialIdxLookup[material]) if material in self._materialIdxLookup else None for material in materials]
-			)
-		return
+		materials = [self._materialIdxLookup.get(material, None) for material in materials]
+		return np.array(self._model.solution.get_dual_values(materials))
 
 	# TODO: implement
 	def columnDualValues(self, fluxNames):
@@ -147,10 +146,8 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 
 		self._solve()
 
-		return np.array(
-			[self._model.solution.get_reduced_costs(self._flows[fluxName]) if fluxName in self._flows else None for fluxName in fluxNames]
-			)
-		return
+		flows = [self._flows.get(flow, None) for flow in fluxNames]
+		return np.array(self._model.solution.get_reduced_costs(flows))
 
 	def objectiveValue(self):
 		return self._model.solution.get_objective_value()
@@ -218,7 +215,7 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 			self._model.objective.set_sense(self._model.objective.sense.maximize)
 		else:
 			self._model.objective.set_sense(self._model.objective.sense.minimize)
-		
+
 		self._model.solve()
 
 		self._solved = True
