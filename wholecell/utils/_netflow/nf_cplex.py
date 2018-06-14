@@ -1,4 +1,12 @@
+'''
+NetworkFlow interface to the CPLEX solver package. This package supports both
+linear and quadratic objectives.
 
+@organization: Covert Lab, Department of Bioengineering, Stanford University
+@date: Created 6/14/2018
+'''
+
+from __future__ import absolute_import
 from __future__ import division
 
 from collections import defaultdict
@@ -9,14 +17,9 @@ from scipy.sparse import coo_matrix
 
 from ._base import NetworkFlowProblemBase
 
-'''
-TODO:
-- change naming convention (set, get)
-- handle QP vs LP
-'''
 
 class NetworkFlowCPLEX(NetworkFlowProblemBase):
-	def __init__(self):
+	def __init__(self, quadratic_objective=False):
 		self._model = cplex.Cplex()
 
 		self._model.set_log_stream(None)
@@ -30,7 +33,7 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 		self._objective = {}
 		self._materialCoeffs = defaultdict(list)
 
-		self._linear = True
+		self.quadratic_objective = quadratic_objective
 
 		self._eqConstBuilt = False
 		self._solved = False
@@ -54,7 +57,7 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 
 		return idx
 
-	def flowMaterialCoeffIs(self, flow, material, coefficient):
+	def setFlowMaterialCoeff(self, flow, material, coefficient):
 		if self._eqConstBuilt:
 			materialIdx = self._materialIdxLookup.get(material, None)
 			if materialIdx is None:
@@ -97,30 +100,25 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 
 		self._solved = False
 
-	def flowLowerBound(self, flow):
-		return self._lb[flow]
-
-	def flowUpperBound(self, flow):
-		return self._ub[flow]
-
-	def flowObjectiveCoeffIs(self, flow, coefficient):
+	def setFlowObjectiveCoeff(self, flow, coefficient):
 		idx = self._getVar(flow)
 		self._objective[flow] = coefficient
-		if self._linear:
-			self._model.objective.set_linear(
+
+		if self.quadratic_objective:
+			self._model.objective.set_quadratic_coefficients(
+				idx,
 				idx,
 				coefficient
 				)
 		else:
-			self._model.objective.set_quadratic_coefficients(
-				idx,
+			self._model.objective.set_linear(
 				idx,
 				coefficient
 				)
 
 		self._solved = False
 
-	def flowRates(self, flows):
+	def getFlowRates(self, flows):
 		if isinstance(flows, basestring):
 			flows = (flows,)
 
@@ -129,8 +127,7 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 		flows = [self._flows.get(flow, None) for flow in flows]
 		return np.array(self._model.solution.get_values(flows))
 
-	# TODO: implement
-	def rowDualValues(self, materials):
+	def getShadowPrices(self, materials):
 		# reduced cost of row
 		if not self._eqConstBuilt:
 			raise Exception("Equality constraints not yet built. Finish construction of the problem before accessing dual values.")
@@ -140,8 +137,7 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 		materials = [self._materialIdxLookup.get(material, None) for material in materials]
 		return np.array(self._model.solution.get_dual_values(materials))
 
-	# TODO: implement
-	def columnDualValues(self, fluxNames):
+	def getReducedCosts(self, fluxNames):
 		# reduced cost of col
 		if not self._eqConstBuilt:
 			raise Exception("Equality constraints not yet built. Finish construction of the problem before accessing dual values.")
@@ -151,7 +147,7 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 		flows = [self._flows.get(flow, None) for flow in fluxNames]
 		return np.array(self._model.solution.get_reduced_costs(flows))
 
-	def objectiveValue(self):
+	def getObjectiveValue(self):
 		return self._model.solution.get_objective_value()
 
 	def getSMatrix(self):

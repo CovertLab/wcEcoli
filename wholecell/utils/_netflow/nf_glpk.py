@@ -112,7 +112,10 @@ def _toDoubleArray(array):
 
 
 class NetworkFlowGLPK(NetworkFlowProblemBase):
-	def __init__(self):
+	def __init__(self, quadratic_objective=False):
+		if quadratic_objective:
+			raise Exception('Quadratic objective not supported for GLPK')
+
 		self._lp = glp.glp_create_prob()
 		self._smcp = glp.glp_smcp()  # simplex solver control parameters
 		glp.glp_init_smcp(self._smcp)
@@ -295,12 +298,6 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 			self._materialCoeffs[material].append((coefficient, idx))
 
 		self._solved = False
-
-	def getFlowLowerBound(self, flow):
-		return self._lb[flow]
-
-	def getFlowUpperBound(self, flow):
-		return self._ub[flow]
 
 	def setFlowBounds(self, flow, lowerBound=None, upperBound=None):
 		"""

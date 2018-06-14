@@ -146,7 +146,7 @@ class Metabolism(wholecell.processes.process.Process):
 					},
 			"moleculeMasses" : moleculeMasses,
 			"secretionPenaltyCoeff" : SECRETION_PENALTY_COEFF, # The "inconvenient constant"--limit secretion (e.g., of CO2)
-			"solver" : "glpk",
+			"solver" : "glpk-linear",
 			"maintenanceCostGAM" : energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
 			"maintenanceReaction" : sim_data.process.metabolism.maintenanceReaction,
 		}
