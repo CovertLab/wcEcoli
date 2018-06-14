@@ -112,9 +112,6 @@ def _toDoubleArray(array):
 
 
 class NetworkFlowGLPK(NetworkFlowProblemBase):
-	_lowerBoundDefault = 0
-	_upperBoundDefault = np.inf
-
 	def __init__(self):
 		self._lp = glp.glp_create_prob()
 		self._smcp = glp.glp_smcp()  # simplex solver control parameters
@@ -132,6 +129,11 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 
 		self._eqConstBuilt = False
 		self._solved = False
+
+		self.inf = np.inf
+
+		self._lowerBoundDefault = 0
+		self._upperBoundDefault = self.inf
 
 	def __del__(self):
 		glp.glp_delete_prob(self._lp)

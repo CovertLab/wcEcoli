@@ -16,9 +16,6 @@ TODO:
 '''
 
 class NetworkFlowCPLEX(NetworkFlowProblemBase):
-	_lowerBoundDefault = 0
-	_upperBoundDefault = cplex.infinity
-
 	def __init__(self):
 		self._model = cplex.Cplex()
 
@@ -37,6 +34,11 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 
 		self._eqConstBuilt = False
 		self._solved = False
+
+		self.inf = cplex.infinity
+
+		self._lowerBoundDefault = 0
+		self._upperBoundDefault = self.inf
 
 	def _getVar(self, flow):
 		if flow in self._flows:
