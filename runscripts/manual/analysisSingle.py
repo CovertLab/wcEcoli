@@ -1,5 +1,5 @@
 """
-Runs all single analysis plots for a given sim w/optional variant.
+Runs all single analysis plots for a given variant of a given sim.
 
 Run with '-h' for command line help.
 """
@@ -11,6 +11,8 @@ import os
 
 from runscripts.manual.analysisBase import AnalysisBase
 from wholecell.fireworks.firetasks.analysisSingle import AnalysisSingleTask
+from wholecell.utils import constants
+from wholecell.utils import filepath
 
 
 SEED = '000000'
@@ -24,34 +26,30 @@ class AnalysisSingle(AnalysisBase):
 
 	def define_parameters(self, parser):
 		super(AnalysisSingle, self).define_parameters(parser)
-		parser.add_argument('--variant',
-			help='simulation variant, e.g. "condition_000000"')
+		self.define_parameter_variant_index(parser)
 
 	def parse_args(self):
 		args = super(AnalysisSingle, self).parse_args()
 
-		if args.variant is None:  # defaulted
-			args.variant = self.find_variant_dir(args.sim_path)
-
 		metadata = args.metadata
 		metadata['analysis_type'] = 'single'
-		metadata['variant_function'] = args.variant
-		metadata['variant_index'] = None
 		metadata['seed'] = SEED
 		metadata['gen'] = GEN
 
+		return args
+
 	def run(self, args):
 		sim_path = args.sim_path
-		variant = args.variant
+		variant_dir_name = args.variant_dir_name
 
-		results_dir = os.path.join(sim_path, variant, DIRS, 'simOut')
-		sim_data_modified = os.path.join(
-			sim_path, variant, 'kb', 'simData_Modified.cPickle')
-		# TODO(jerry): Load simData_Modified into metadata?
-		output_dir = os.path.join(sim_path, variant, DIRS, 'plotOut')
+		input_variant_directory = os.path.join(sim_path, variant_dir_name)
+		input_dir = os.path.join(input_variant_directory, DIRS, 'simOut')
+		sim_data_modified = os.path.join(input_variant_directory, 'kb',
+			constants.SERIALIZED_SIM_DATA_MODIFIED)
+		output_dir = filepath.makedirs(input_variant_directory, DIRS, 'plotOut')
 
 		task = AnalysisSingleTask(
-			input_results_directory=results_dir,
+			input_results_directory=input_dir,
 			input_sim_data=sim_data_modified,
 			input_validation_data=args.input_validation_data,
 			output_plots_directory=output_dir,

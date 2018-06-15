@@ -7,10 +7,11 @@ Run with '-h' for command line help.
 from __future__ import absolute_import
 from __future__ import division
 
-import os
+import errno
 
 from runscripts.manual.analysisBase import AnalysisBase
 from wholecell.fireworks.firetasks.analysisVariant import AnalysisVariantTask
+from wholecell.utils import filepath
 
 
 class AnalysisVariant(AnalysisBase):
@@ -19,12 +20,19 @@ class AnalysisVariant(AnalysisBase):
 	def parse_args(self):
 		args = super(AnalysisVariant, self).parse_args()
 
+		variant_dirs = self.list_variant_dirs(args.sim_path)  # list of tuples
+		if not variant_dirs:
+			raise IOError(errno.ENOENT,
+				'No simulation variant directories found')
+
 		metadata = args.metadata
 		metadata['analysis_type'] = 'variant'
-		metadata['total_variants'] = None
+		metadata['total_variants'] = str(len(variant_dirs))
+
+		return args
 
 	def run(self, args):
-		output_dir = os.path.join(args.sim_path, 'plotOut')
+		output_dir = filepath.makedirs(args.sim_path, 'plotOut')
 
 		task = AnalysisVariantTask(
 			input_directory=args.sim_path,

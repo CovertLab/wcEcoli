@@ -1,5 +1,6 @@
 """
-Run all multigen analysis plots for a given sim.
+Run all multigen analysis plots for initial sim #0 of a given variant of a
+given simulation.
 
 Run with '-h' for command line help.
 
@@ -12,13 +13,13 @@ from __future__ import division
 
 import os
 
-from wholecell.utils import filepath
-
 from runscripts.manual.analysisBase import AnalysisBase
 from wholecell.fireworks.firetasks.analysisMultiGen import AnalysisMultiGenTask
+from wholecell.utils import constants
+from wholecell.utils import filepath
 
 
-DIR = "000000"
+DIR = "000000"  # initial sim #0
 
 
 class AnalysisMultigen(AnalysisBase):
@@ -26,29 +27,23 @@ class AnalysisMultigen(AnalysisBase):
 
 	def define_parameters(self, parser):
 		super(AnalysisMultigen, self).define_parameters(parser)
-		parser.add_argument('--variant',
-			help='simulation variant, e.g. "geneKnockdown_000030"')
+		self.define_parameter_variant_index(parser)
 
 	def parse_args(self):
 		args = super(AnalysisMultigen, self).parse_args()
-
-		if args.variant is None:  # defaulted
-			args.variant = self.find_variant_dir(args.sim_path)
-
-		metadata = args.metadata
-		metadata['analysis_type'] = 'cohort'
-		metadata['variant_function'] = args.variant
-		metadata['variant_index'] = None
+		args.metadata['analysis_type'] = 'multigen'
+		args.metadata["seed"] = 0
+		return args
 
 	def run(self, args):
 		sim_path = args.sim_path
-		variant = args.variant
+		variant_dir_name = args.variant_dir_name
 
-		input_path = os.path.join(sim_path, variant, DIR)
-		sim_data_modified = os.path.join(
-			sim_path, variant, 'kb', 'simData_Modified.cPickle')
-		# TODO(jerry): Load simData_Modified into metadata?
-		output_dir = filepath.makedirs(sim_path, variant, DIR, "plotOut")
+		input_variant_directory = os.path.join(sim_path, variant_dir_name)
+		input_path = os.path.join(input_variant_directory, DIR)
+		sim_data_modified = os.path.join(input_variant_directory, 'kb',
+			constants.SERIALIZED_SIM_DATA_MODIFIED)
+		output_dir = filepath.makedirs(input_path, "plotOut")
 
 		task = AnalysisMultiGenTask(
 			input_seed_directory=input_path,

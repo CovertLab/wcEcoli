@@ -1,6 +1,5 @@
 """
-Runs all cohort analysis plots for a given sim with data from one location to
-another.
+Runs all cohort analysis plots for a given variant of a given sim.
 
 Run with '-h' for command line help.
 """
@@ -12,6 +11,8 @@ import os
 
 from runscripts.manual.analysisBase import AnalysisBase
 from wholecell.fireworks.firetasks.analysisCohort import AnalysisCohortTask
+from wholecell.utils import constants
+from wholecell.utils import filepath
 
 
 class AnalysisCohort(AnalysisBase):
@@ -19,29 +20,22 @@ class AnalysisCohort(AnalysisBase):
 
 	def define_parameters(self, parser):
 		super(AnalysisCohort, self).define_parameters(parser)
-		parser.add_argument('--variant',
-			help='simulation variant, e.g. "condition_000001"')
+		self.define_parameter_variant_index(parser)
 
 	def parse_args(self):
 		args = super(AnalysisCohort, self).parse_args()
-
-		if args.variant is None:  # defaulted
-			args.variant = self.find_variant_dir(args.sim_path)
-
-		metadata = args.metadata
-		metadata['analysis_type'] = 'cohort'
-		metadata['variant_function'] = args.variant
-		metadata['variant_index'] = None
+		args.metadata['analysis_type'] = 'cohort'
+		return args
 
 	def run(self, args):
 		sim_path = args.sim_path
-		variant = args.variant
+		variant_dir_name = args.variant_dir_name
 
-		input_variant_directory = os.path.join(sim_path, variant)
-		sim_data_modified = os.path.join(
-			sim_path, variant, 'kb', 'simData_Modified.cPickle')
+		input_variant_directory = os.path.join(sim_path, variant_dir_name)
+		sim_data_modified = os.path.join(input_variant_directory, 'kb',
+			constants.SERIALIZED_SIM_DATA_MODIFIED)
 		# TODO(jerry): Load simData_Modified into metadata?
-		output_dir = os.path.join(sim_path, variant, 'plotOut')
+		output_dir = filepath.makedirs(input_variant_directory, 'plotOut')
 
 		task = AnalysisCohortTask(
 			input_variant_directory=input_variant_directory,
