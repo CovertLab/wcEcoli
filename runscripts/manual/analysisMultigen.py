@@ -19,20 +19,23 @@ from wholecell.utils import constants
 from wholecell.utils import filepath
 
 
-DIR = "000000"  # initial sim #0
-
-
 class AnalysisMultigen(AnalysisBase):
 	"""Runs all multigen analysis plots for a given sim."""
 
 	def define_parameters(self, parser):
 		super(AnalysisMultigen, self).define_parameters(parser)
 		self.define_parameter_variant_index(parser)
+		parser.add_argument('-s', '--seed', type=int, default=0,
+			help='The initial simulation number (int). The value will get'
+				 ' formatted as a subdirectory name like "000000". Default = 0.')
 
 	def parse_args(self):
 		args = super(AnalysisMultigen, self).parse_args()
+
+		args.seed_str = '%06d' % (args.seed,)
+
 		args.metadata['analysis_type'] = 'multigen'
-		args.metadata["seed"] = 0
+		args.metadata["seed"] = args.seed_str
 		return args
 
 	def run(self, args):
@@ -40,7 +43,7 @@ class AnalysisMultigen(AnalysisBase):
 		variant_dir_name = args.variant_dir_name
 
 		input_variant_directory = os.path.join(sim_path, variant_dir_name)
-		input_path = os.path.join(input_variant_directory, DIR)
+		input_path = os.path.join(input_variant_directory, args.seed_str)
 		sim_data_modified = os.path.join(input_variant_directory, 'kb',
 			constants.SERIALIZED_SIM_DATA_MODIFIED)
 		output_dir = filepath.makedirs(input_path, "plotOut")

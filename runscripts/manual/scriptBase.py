@@ -148,7 +148,7 @@ class ScriptBase(object):
 		Call this in overridden define_parameters() methods as needed.
 		"""
 		parser.add_argument('-v', '--variant_index', type=int,
-			help='The simulation variant number, e.g. "1" to find a'
+			help='The simulation variant number (int), e.g. 1 to find a'
 				 ' subdirectory like "condition_000001".')
 
 	def find_variant_dir(self, sim_path, index=None):
