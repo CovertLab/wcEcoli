@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot dynamic traces of genes with medium expression (about 5 counts of mRNA)
 
@@ -20,6 +19,8 @@ EG10539_RNA[c]	5.3	livJ	Branched chain amino acid ABC transporter - periplasmic 
 @date: Created 10/29/2015
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
 
@@ -28,6 +29,8 @@ from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -77,7 +80,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		plt.title(names[subplotIdx].split(" - ")[0])
 
 	plt.subplots_adjust(hspace = 0.5, top = 0.95, bottom = 0.05)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

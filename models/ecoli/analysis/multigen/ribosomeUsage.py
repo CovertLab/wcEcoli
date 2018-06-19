@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot usage statistics of ribosomes
 
@@ -7,10 +6,11 @@ Plot usage statistics of ribosomes
 @date: Created 10/18/2017
 """
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 import argparse
 import os
+import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -20,7 +20,8 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
-import cPickle
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -282,7 +283,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	fig.subplots_adjust(hspace = 0.5, wspace = 0.3)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
 

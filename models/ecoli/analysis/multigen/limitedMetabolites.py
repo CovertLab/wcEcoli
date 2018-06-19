@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Produces histograms of frequency that production of a metabolite is limited (at least 50 time steps set by WINDOW)
 
@@ -7,10 +6,11 @@ Produces histograms of frequency that production of a metabolite is limited (at 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 import argparse
 import os
+import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -18,9 +18,10 @@ from matplotlib import pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-import cPickle
+from wholecell.analysis.analysis_tools import exportFigure
 
 WINDOW = 50
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -92,7 +93,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax1.set_xlabel("Metabolite Limited")
 	ax1.set_ylabel("Number of genreations")
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -7,8 +7,6 @@ import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib.patches as patches
-
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -16,17 +14,18 @@ import wholecell.utils.constants
 from wholecell.utils import units
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
-from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from scipy.stats import pearsonr
 from multiprocessing import Pool
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
+from wholecell.analysis.analysis_tools import exportFigure
 
 SHUFFLE_VARIANT_TAG = "ShuffleParams"
 PLACE_HOLDER = -1
 
 FONT_SIZE=9
 trim = 0.05
+
 
 def getPCC((variant, ap, toyaReactions, toyaFluxesDict, toyaStdevDict)):
 
@@ -111,15 +110,9 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	ap = AnalysisPaths(inputDir, variant_plot = True)
 
-
-
 	pool = Pool(processes = 16)
 	args = zip(range(ap.n_variant), [ap] * ap.n_variant, [toyaReactions] * ap.n_variant, [toyaFluxesDict] * ap.n_variant, [toyaStdevDict] * ap.n_variant)
-	import time
-	start = time.time()
 	result = pool.map(getPCC, args)
-	end = time.time()
-	print end - start
 	cPickle.dump(result, open("pcc_results_fluxome.cPickle", "w"), cPickle.HIGHEST_PROTOCOL)
 	pool.close()
 	pool.join()
@@ -153,7 +146,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	plt.subplots_adjust(bottom = 0.2, wspace=0.3)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 

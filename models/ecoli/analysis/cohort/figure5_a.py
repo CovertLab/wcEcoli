@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
-
 from itertools import izip
+import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -11,15 +11,9 @@ from matplotlib import pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-
 from wholecell.utils.sparkline import whitePadSparklineAxis
-
 from wholecell.analysis.rdp import rdp
-
-import cPickle
-from matplotlib.ticker import FormatStrFormatter
-
-from wholecell.containers.bulk_objects_container import BulkObjectsContainer
+from wholecell.analysis.analysis_tools import exportFigure
 
 FROM_CACHE = False
 
@@ -388,7 +382,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			tick.label.set_fontsize(9)
 
 	plt.subplots_adjust(wspace = 0.2, hspace = 0.15)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 	for axes in axesList:

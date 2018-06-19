@@ -1,17 +1,16 @@
-#!/usr/bin/env python
-
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
 import os
 
 import numpy as np
-from scipy import stats
 from matplotlib import pyplot as plt
 import cPickle
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
 # TODO: account for complexation
 
@@ -30,6 +29,7 @@ CMAP_COLORS_255 = [
 	]
 
 CMAP_COLORS = [[shade/255. for shade in color] for color in CMAP_COLORS_255]
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -139,7 +139,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	plt.suptitle(name)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

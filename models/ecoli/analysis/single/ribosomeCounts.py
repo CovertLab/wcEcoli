@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot ribosome counts
 
@@ -7,6 +6,7 @@ Plot ribosome counts
 @date: Created 5/8/2014
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -17,8 +17,8 @@ from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
-# from wholecell.containers.unique_molecules_data import UniqueMoleculesData
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -55,7 +55,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.ylabel("Counts")
 	plt.title("Active Ribosomes Final:Initial = %0.2f" % (nActive[-1] / float(nActive[0])))
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

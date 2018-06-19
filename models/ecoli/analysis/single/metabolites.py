@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Shows fold change of metabolites over the course of the simulation
 
@@ -15,14 +14,19 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
+import bokeh.io
+from bokeh.plotting import figure, ColumnDataSource
+from bokeh.models import HoverTool
 
 from wholecell.utils import units
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.analysis.plotting_tools import COLORS_LARGE
+from wholecell.analysis.analysis_tools import exportFigure
 
 PLOT_BOKEH = False
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
@@ -51,17 +55,12 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	# plt.legend(metaboliteNames[lowCountsIdx], fontsize = 4)
 	# plt.plot(time, normalizedCounts[:, lowCountsIdx])
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
 	if not PLOT_BOKEH:
 		return
 
-	# Bokeh
-	from bokeh.plotting import figure, output_file, ColumnDataSource, show
-	from bokeh.models import HoverTool, BoxZoomTool, LassoSelectTool, PanTool, WheelZoomTool, ResizeTool, UndoTool, RedoTool
-	import bokeh.io
 	if not os.path.exists(os.path.join(plotOutDir, "html_plots")):
 		os.makedirs(os.path.join(plotOutDir, "html_plots"))
 	bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + ".html"), title = plotOutFileName, autosave = False)
@@ -81,10 +80,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		plot.add_tools(HoverTool(tooltips = [("ID", "@ID")], renderers = [circle]))
 		plot.line(time, y, line_color = colors[m % len(colors)])
 
-	import bokeh.io
 	bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + ".html"), title = plotOutFileName, autosave = False)
 	bokeh.io.save(plot)
 	bokeh.io.curstate().reset()
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

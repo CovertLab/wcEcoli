@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots transcript frequency (ie. frequency of observing at least 
 one copy of transcript) at the 4th generation across 32 seeds.
@@ -7,6 +6,8 @@ one copy of transcript) at the 4th generation across 32 seeds.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 3/27/2017
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -18,10 +19,11 @@ import matplotlib.pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
 from wholecell.utils.sparkline import whitePadSparklineAxis
+from wholecell.analysis.analysis_tools import exportFigure
 
 N_SEEDS = 32
+
 
 def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	return
@@ -73,7 +75,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		simulatedSynthProb_ = rnaSynthProb.readColumn("rnaSynthProb")
 		rnaSynthProb.close()
 
-		if hadTranscribed == None:
+		if hadTranscribed is None:
 			hadTranscribed = mRnasTranscribed
 			simulatedSynthProb = np.mean(simulatedSynthProb_, axis = 0)[isMRna]
 			continue
@@ -113,9 +115,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	scatterAxis.set_ylim([-.01, 1.01])
 	plt.subplots_adjust(wspace = 0.6, hspace = 0.4, right = 0.9, bottom = 0.1, left = 0.1, top = 0.9)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close()
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

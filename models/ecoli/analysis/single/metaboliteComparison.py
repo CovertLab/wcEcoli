@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Compare metabolite concentrations to target concentrations in FBA objective
 
@@ -7,6 +6,7 @@ Compare metabolite concentrations to target concentrations in FBA objective
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -18,6 +18,7 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils.sparkline import whitePadSparklineAxis
+from wholecell.analysis.analysis_tools import exportFigure
 
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
@@ -90,7 +91,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	plt.tight_layout()
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName)
 	plt.close("all")
 

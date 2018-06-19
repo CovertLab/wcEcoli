@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots Figure 5D. Data is obtained from an analysis of compendium of environment shifts.
 
@@ -7,16 +6,19 @@ Plots Figure 5D. Data is obtained from an analysis of compendium of environment 
 @date: Created 3/29/2017
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
 
-import numpy as np
 import matplotlib.pyplot as plt
 import wholecell.utils.constants
 from matplotlib_venn import venn3
+from wholecell.analysis.analysis_tools import exportFigure
 
 data = [1143, 330, 1920, 79, 854, 2, 25] #order is 100, 010, 110, 001, 101, 011, 111
 dataArea = [1143, 330, 1920, 79, 854, 500, 25]
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -37,7 +39,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	v.get_label_by_id("011").set_text("%s" % data[-2])
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 	for i in ids:
@@ -48,6 +49,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	plt.savefig(os.path.join(plotOutDir, plotOutFileName + "__clean.pdf"))
 	plt.close()
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

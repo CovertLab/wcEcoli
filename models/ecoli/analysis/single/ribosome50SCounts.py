@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots counts of 50S rRNA, associated proteins, and complexes
 
@@ -6,6 +5,8 @@ Plots counts of 50S rRNA, associated proteins, and complexes
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 9/8/2014
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -17,10 +18,12 @@ import cPickle
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils.sparkline import sparklineAxis, setAxisMaxMinY
+from wholecell.analysis.analysis_tools import exportFigure
 
 FONT = {
 		'size'	:	8
 		}
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
@@ -108,9 +111,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	# Save
 	plt.subplots_adjust(hspace = 0.5, wspace = 0.5)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Compare protein counts to Wisniewski 2014 data set
 
@@ -7,24 +6,24 @@ Compare protein counts to Wisniewski 2014 data set
 @date: Created 12/3/2015
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
 import os
 
 import numpy as np
-from scipy import stats
-import matplotlib.patches as mpatches
 from matplotlib import pyplot as plt
 import cPickle
 from scipy.stats import pearsonr
 
-import mpld3
-from mpld3 import plugins, utils
+from mpld3 import plugins
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
+from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
+
 
 # TODO: account for complexation
 
@@ -117,10 +116,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.xlim(xmin=0)
 	plt.ylim(ymin=0)
 
-	from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	exportHtmlFigure(fig, plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots counts of rna degraded and the resulting free NMPs
 
@@ -7,6 +6,7 @@ Plots counts of rna degraded and the resulting free NMPs
 @date: Created 1/15/2015 - Updated 8/10/2015
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -18,6 +18,7 @@ import cPickle
 
 import wholecell.utils.constants
 from wholecell.io.tablereader import TableReader
+from wholecell.analysis.analysis_tools import exportFigure
 
 FONT = {
 		'size'	:	10
@@ -213,7 +214,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	plt.subplots_adjust(hspace = 0.6, wspace = 0.35)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 

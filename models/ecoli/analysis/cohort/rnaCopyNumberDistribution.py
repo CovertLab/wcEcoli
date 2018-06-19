@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots the histograms of the copy number of each RNA at each generation for
 multiple-seed simulations.
@@ -6,6 +5,8 @@ multiple-seed simulations.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 5/21/2018
 """
+
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -26,6 +27,7 @@ from wholecell.utils.filepath import makedirs
 
 # Number of RNAs sampled for Plot 1
 RNA_SAMPLE_COUNT = 50
+
 
 def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile=None, metadata=None):
 	# Check if the given variant directory exists

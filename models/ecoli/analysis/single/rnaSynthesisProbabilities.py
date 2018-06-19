@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot rna synthesis probabilities
 
@@ -7,6 +6,7 @@ Plot rna synthesis probabilities
 @date: Created 9/9/2016
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -18,6 +18,7 @@ from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
@@ -74,7 +75,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 
 	plt.subplots_adjust(hspace = 0.5, )
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 	plt.close("all")

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Plot to compare cell properties across different growth conditions similar to Dennis and Bremer. 1996. Fig 2
 Multiple generations of the same variant will be plotted together
@@ -9,20 +7,22 @@ Multiple generations of the same variant will be plotted together
 @date: Created 6/7/16
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
-import re
 
 import numpy as np
 from matplotlib import pyplot as plt
 import cPickle
-
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 NT_MW = 487.0
 PROTEIN_MW = 110.0
@@ -36,6 +36,7 @@ trim = 0.1
 
 #size1 = (14.429, 18.9)
 size1 = (29.25, 24.401)
+
 
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = None):
 
@@ -229,7 +230,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	for tick in ax0.xaxis.get_major_ticks():
 		tick.label.set_fontsize(FONT_SIZE)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "0", metadata)
 
 	for axes in [ax0]:
@@ -251,7 +251,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "0_stripped" ,metadata, transparent = True)
 	plt.close("all")
 
@@ -274,7 +273,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	for tick in ax2.xaxis.get_major_ticks():
 		tick.label.set_fontsize(FONT_SIZE)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "1", metadata)
 
 	for axes in [ax2]:
@@ -296,7 +294,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "1_stripped" ,metadata, transparent = True)
 	plt.close("all")
 
@@ -322,7 +319,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	for tick in ax5.xaxis.get_major_ticks():
 		tick.label.set_fontsize(FONT_SIZE)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "2", metadata)
 
 	for axes in [ax5]:
@@ -344,7 +340,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "2_stripped" ,metadata, transparent = True)
 	plt.close("all")
 
@@ -367,7 +362,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	for tick in ax3.xaxis.get_major_ticks():
 		tick.label.set_fontsize(FONT_SIZE)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "3", metadata)
 
 	for axes in [ax3]:
@@ -389,7 +383,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "3_stripped" ,metadata, transparent = True)
 	plt.close("all")
 

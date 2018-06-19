@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 '''
 Shows shadow prices and reduced costs for the FBA objective
 Plots all reduced cost and shadow prices on separate subplots
@@ -24,6 +23,7 @@ from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
 from wholecell.analysis.plotting_tools import COLORS_SMALL
+from wholecell.analysis.analysis_tools import exportFigure
 
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
@@ -152,7 +152,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	plt.tight_layout()
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close('all')
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots fluxes across different conditions.
 
@@ -6,17 +5,25 @@ Plots fluxes across different conditions.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 1/19/2017'
 """
+
+from __future__ import absolute_import
+
 import argparse
 import os
-import re
 
 import numpy as np
 from matplotlib import pyplot as plt
 import cPickle
+import bokeh.io
+from bokeh.plotting import figure, ColumnDataSource
+from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
+	WheelZoomTool, ResizeTool, UndoTool, RedoTool)
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = None):
 
@@ -74,7 +81,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 			plt.xlim((-11,0))
 
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
@@ -83,9 +89,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	# Bokeh
 	if len(mean_fluxes) < 2:
 		return
-
-	from bokeh.plotting import figure, output_file, ColumnDataSource, show
-	from bokeh.models import HoverTool, BoxZoomTool, LassoSelectTool, PanTool, WheelZoomTool, ResizeTool, UndoTool, RedoTool
 
 	# Plot first metabolite to initialize plot settings
 	x = np.log10(mean_fluxes[0][:])
@@ -130,7 +133,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	if not os.path.exists(os.path.join(plotOutDir, "html_plots")):
 		os.makedirs(os.path.join(plotOutDir, "html_plots"))
 
-	import bokeh.io
 	bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + ".html"), title=plotOutFileName, autosave=False)
 	bokeh.io.save(p)
 	bokeh.io.curstate().reset()

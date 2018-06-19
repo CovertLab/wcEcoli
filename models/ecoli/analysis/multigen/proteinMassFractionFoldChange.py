@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -18,6 +18,7 @@ from wholecell.utils import units
 FROM_CACHE = False
 
 CLOSE_TO_DOUBLE = 0.1
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 

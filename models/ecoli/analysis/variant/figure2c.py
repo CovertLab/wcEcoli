@@ -1,9 +1,7 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
-import re
-import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -17,8 +15,10 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 
 from scipy.stats import linregress
 
+
 FONT_SIZE=9
 trim = 0.05
+
 
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metadata = None):
 

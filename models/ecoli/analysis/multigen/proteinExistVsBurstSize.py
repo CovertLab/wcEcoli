@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
+import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,13 +10,12 @@ from matplotlib import pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
-import cPickle
-
-from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 FROM_CACHE = False
 
 CLOSE_TO_DOUBLE = 0.1
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -199,8 +199,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# axesList[3].set_ylabel("Probability\ndoubles")
 	# axesList[3].set_xlabel("Number of transcription events per generation")
 
-
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
 

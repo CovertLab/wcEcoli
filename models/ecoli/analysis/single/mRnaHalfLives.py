@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot mRNA half lives (observed vs. actual)
 
@@ -7,18 +6,20 @@ Plot mRNA half lives (observed vs. actual)
 @date: Created 1/30/2015
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
 import os
 
 import numpy as np
-from scipy import stats
 from matplotlib import pyplot as plt
 import cPickle
 
 import wholecell.utils.constants
 from wholecell.io.tablereader import TableReader
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 # TODO: account for complexation
 
@@ -156,11 +157,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.plot(expectedDegR, predictedDegR, 'o', markeredgecolor = 'k', markerfacecolor = 'none')
 	Correlation_ExpPred = np.corrcoef(expectedDegR, predictedDegR)[0][1]
 
-
 	plt.xlabel("Expected RNA decay")
 	plt.ylabel("Actual RNA decay (at final time step)")
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 

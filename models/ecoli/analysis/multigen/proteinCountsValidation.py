@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Compare protein counts to Schmidt 2015 data set
 
@@ -7,14 +6,13 @@ Compare protein counts to Schmidt 2015 data set
 @date: Created 12/4/2017
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
 import os
 
 import numpy as np
-from scipy import stats
-import matplotlib.patches as mpatches
 from matplotlib import pyplot as plt
 import cPickle
 from scipy.stats import pearsonr
@@ -24,6 +22,8 @@ import wholecell.utils.constants
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -126,7 +126,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	axis.set_xlim([-0.07, maxLine])
 	axis.set_ylim([-0.07, maxLine])
 
-	from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

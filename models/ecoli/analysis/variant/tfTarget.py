@@ -1,15 +1,21 @@
+from __future__ import absolute_import
+
 import argparse
 import os
-import re
 
 import numpy as np
 from matplotlib import pyplot as plt
+import bokeh.io
+from bokeh.plotting import figure, ColumnDataSource
+from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
+	WheelZoomTool, ResizeTool, UndoTool, RedoTool)
+
 import cPickle
-import scipy.stats
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = None):
 	if not os.path.isdir(inputDir):
@@ -75,13 +81,8 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	ax.set_xlabel(xlabel)
 	ax.set_ylabel(ylabel)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
-
-	# Bokeh
-	from bokeh.plotting import figure, output_file, ColumnDataSource, save
-	from bokeh.models import HoverTool, BoxZoomTool, LassoSelectTool, PanTool, WheelZoomTool, ResizeTool, UndoTool, RedoTool
 
 	source = ColumnDataSource(data = dict(x = x, y = y[sortedIdxs], targetId = targetIds, tfId = tfs, condition = conditions))
 	hover = HoverTool(tooltips = [("target", "@targetId"), ("TF", "@tfId"), ("condition", "@condition")])
@@ -92,10 +93,10 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	if not os.path.exists(os.path.join(plotOutDir, "html_plots")):
 		os.makedirs(os.path.join(plotOutDir, "html_plots"))
-	import bokeh.io
 	bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + "__probBound" + ".html"), title = plotOutFileName, autosave = False)
 	bokeh.io.save(plot)
 	bokeh.io.curstate().reset()
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

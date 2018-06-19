@@ -6,6 +6,8 @@ Plot two component system counts
 @date: Created 5/20/2016
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
 import cPickle
@@ -16,6 +18,8 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
@@ -138,10 +142,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	ax.set_xticks([])
 	ax.set_xticklabels([])
 
-
 	plt.subplots_adjust(hspace = 1, wspace = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

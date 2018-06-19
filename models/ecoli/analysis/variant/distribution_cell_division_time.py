@@ -1,20 +1,17 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
-import re
 
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib.patches as patches
-
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
+from wholecell.analysis.analysis_tools import exportFigure
 
 SHUFFLE_VARIANT_TAG = "ShuffleParams"
 PLACE_HOLDER = -1
@@ -88,7 +85,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile = None, metad
 
 	plt.subplots_adjust(bottom = 0.2, wspace=0.3)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 

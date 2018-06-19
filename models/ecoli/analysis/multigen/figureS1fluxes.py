@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot fluxes for metabolic map figure during a shift
 
@@ -6,6 +5,8 @@ Plot fluxes for metabolic map figure during a shift
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 2/13/17
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -21,12 +22,14 @@ from wholecell.utils import units
 from wholecell.utils.sparkline import whitePadSparklineAxis
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
+from wholecell.analysis.analysis_tools import exportFigure
 
 START = 8300
 SHIFT = 11000
 END = 13700
 BURNIN = 20
 MA_WIDTH = 15
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -351,7 +354,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax.set_yticks([ylim[0], ylim[1]])
 		ax.set_xticks([xlim[0], xlim[1]])
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 	for i in range(subplotRows * subplotCols):
@@ -373,6 +375,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	exportFigure(plt, plotOutDir, plotOutFileName + "_full", metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

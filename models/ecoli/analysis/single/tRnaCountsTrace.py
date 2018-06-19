@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot tRNA counts
 
@@ -6,6 +5,8 @@ Plot tRNA counts
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 5/19/2017
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -15,6 +16,8 @@ import matplotlib.pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
@@ -47,9 +50,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	ax.spines["top"].set_visible(False)
 	ax.tick_params(right = "off", top = "off", which = "both", direction = "out")
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

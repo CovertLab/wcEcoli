@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots frequency of observing at least 1 protein.
 
@@ -6,6 +5,8 @@ Plots frequency of observing at least 1 protein.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 1/11/2017
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -17,8 +18,9 @@ import matplotlib.pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -30,7 +32,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# Get all cells
 	ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 	allDir = ap.get_cells()
-	
+
 	sim_data = cPickle.load(open(simDataFile, "rb"))
 	tcsComplexToMonomers = sim_data.process.two_component_system.complexToMonomer
 	ids_complexation = sim_data.process.complexation.moleculeNames
@@ -105,7 +107,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax.set_xlabel("Frequency of observing at least 1 protein copy in 1 generation", fontsize = 14)
 	ax.set_ylabel("Number of proteins", fontsize = 14)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

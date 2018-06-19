@@ -1,9 +1,10 @@
-#!/usr/bin/env python
 """
 @author: Heejo Choi
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 1/19/2017
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -12,16 +13,17 @@ import cPickle
 from matplotlib import pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
-from scipy.signal import butter, lfilter, freqz
-from scipy.optimize import curve_fit
 import wholecell.utils.constants
 
 NUM_SKIP_TIMESTEPS_AT_GEN_CHANGE = 1
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 trim = 0.03
 trim_1 = 0.06
+
 def mm2inch(value):
 	return value * 0.0393701
 
@@ -127,7 +129,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	axis.set_xlabel("Time (min)")
 	axis.set_ylabel("Averaged instantaneous growth rate " + r"$(\frac{\frac{dX}{dt}}{X} [=] \frac{1}{min})$")
 	plt.subplots_adjust(bottom = 0.2, left = 0.2)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 
 
@@ -150,7 +151,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "_stripped" ,metadata, transparent = True)
 	plt.close("all")
 
@@ -217,9 +217,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	axis.set_xlabel("Time (min)")
 	axis.set_ylabel("Averaged instantaneous growth rate " + r"$(\frac{\frac{dX}{dt}}{X} [=] \frac{1}{min})$")
 	plt.subplots_adjust(bottom = 0.2, left = 0.2)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "_altsize",metadata)
-
 
 	for axes in [axis]:
 		axes.tick_params(
@@ -240,9 +238,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	plt.subplots_adjust(top = 1, bottom = trim_1, left = trim_1, right = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "_altsize_stripped" ,metadata, transparent = True)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot the protein and RNA levels, as well as synthesis probabilities,
 for regulated genes that are involved in AA biosynthesis
@@ -8,22 +7,21 @@ for regulated genes that are involved in AA biosynthesis
 @date: Created 6/17/2016
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
 import os
 
 import numpy as np
-from scipy.stats import pearsonr
 from matplotlib import pyplot as plt
 import cPickle
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils.fitting import normalize
-from wholecell.utils import units
-from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -217,7 +215,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	plt.tight_layout()
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

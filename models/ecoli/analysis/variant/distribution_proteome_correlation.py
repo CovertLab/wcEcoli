@@ -1,20 +1,17 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
-import re
 import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib.patches as patches
-
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
 
+from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from scipy.stats import pearsonr
@@ -25,6 +22,7 @@ PLACE_HOLDER = -1
 
 FONT_SIZE=9
 trim = 0.05
+
 
 def getPCC((variant, ap, monomerIds, schmidtCounts)):
 	try:
@@ -109,11 +107,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	pool = Pool(processes = 16)
 	args = zip(range(ap.n_variant), [ap] * ap.n_variant, [validation_data.protein.schmidt2015Data["monomerId"].tolist()] * ap.n_variant, [schmidtCounts] * ap.n_variant)
-	# import time
-	# start = time.time()
 	result = pool.map(getPCC, args)
-	# end = time.time()
-	# print end - start
 	# cPickle.dump(result, open("pcc_results.cPickle", "w"), cPickle.HIGHEST_PROTOCOL)
 	pool.close()
 	pool.join()
@@ -147,7 +141,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	plt.subplots_adjust(bottom = 0.2, wspace=0.3)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 

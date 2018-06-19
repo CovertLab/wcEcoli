@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import absolute_import
 
 import argparse
@@ -10,6 +8,7 @@ from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
 COLORS_256 = [ # From colorbrewer2.org, qualitative 8-class set 1
 	[228,26,28],
@@ -26,6 +25,7 @@ COLORS = [
 	[colorValue/255. for colorValue in color]
 	for color in COLORS_256
 	]
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -77,7 +77,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	# plt.show()
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

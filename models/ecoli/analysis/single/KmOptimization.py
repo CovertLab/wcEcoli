@@ -1,22 +1,21 @@
-#!/usr/bin/env python
 """
 @author: Javier Carrera
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 6/27/2016
 """
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 import argparse
 import os
+import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-
-import cPickle
+from wholecell.analysis.analysis_tools import exportFigure
 
 THRESHOLD = 1e-13 # roughly, the mass of an electron
 
@@ -30,6 +29,7 @@ REPRESENTATIVE_MASSES = {
 	"protein":40e3 * FG_PER_DALTON,
 	"ribosome":2700e3 * FG_PER_DALTON
 	}
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -142,7 +142,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		plt.tight_layout()
 		plt.grid(True, which = "major")
 
-		from wholecell.analysis.analysis_tools import exportFigure
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
 

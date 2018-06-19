@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Central carbon metabolism comparison to Toya et al for figure 3D
 
@@ -7,6 +6,8 @@ Central carbon metabolism comparison to Toya et al for figure 3D
 @date: Created 4/3/17
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
 import cPickle
@@ -14,15 +15,17 @@ import re
 
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.stats import pearsonr
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 from wholecell.utils.sparkline import whitePadSparklineAxis
-from models.ecoli.analysis.single.centralCarbonMetabolism import net_flux, _generatedID_reverseReaction
+from wholecell.analysis.analysis_tools import exportFigure
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
+
 
 def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
 	if not os.path.isdir(variantDir):
@@ -90,7 +93,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		if rxn in modelFluxes:
 			toyaVsReactionAve.append((np.mean(modelFluxes[rxn]), toyaFlux.asNumber(units.mmol / units.g / units.h), np.std(modelFluxes[rxn]), toyaStdevDict[rxn].asNumber(units.mmol / units.g / units.h)))
 
-	from scipy.stats import pearsonr
 	toyaVsReactionAve = np.array(toyaVsReactionAve)
 	idx = np.abs(toyaVsReactionAve[:,0]) < 5 * np.abs(toyaVsReactionAve[:,1])
 	rWithAll = pearsonr(toyaVsReactionAve[:,0], toyaVsReactionAve[:,1])
@@ -114,7 +116,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax.set_yticks(range(int(ylim[0]), int(ylim[1]) + 1, 10))
 	ax.set_xticks(range(int(xlim[0]), int(xlim[1]) + 1, 10))
 
-	from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 	ax.set_xlabel("")
@@ -125,6 +126,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	exportFigure(plt, plotOutDir, plotOutFileName + "_stripped", metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

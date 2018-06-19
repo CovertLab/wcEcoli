@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot empirical Kd's (from the simulation) and their expected value (from the sim_data)
 
@@ -6,6 +5,8 @@ Plot empirical Kd's (from the simulation) and their expected value (from the sim
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 8/24/15
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -17,8 +18,10 @@ import cPickle
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
 
 IGNORE_FIRST_PERCENTAGE = 0.1
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
@@ -160,13 +163,12 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	# Save
 	plt.subplots_adjust(hspace = 1, wspace = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
-
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 	plt.close("all")
 
 	bulkMolecules.close()
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

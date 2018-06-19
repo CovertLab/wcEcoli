@@ -1,10 +1,10 @@
-#!/usr/bin/env python
 """
 @author: Morgan Paull
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 4/29/2016
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -22,8 +22,10 @@ from wholecell.utils import units
 from models.ecoli.analysis.single.centralCarbonMetabolism import net_flux, _generatedID_reverseReaction
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
+from wholecell.analysis.analysis_tools import exportFigure
 
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -94,9 +96,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		plt.ylabel("Pearson R")
 
 	plt.subplots_adjust(hspace = 0.2, wspace = 0.5)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

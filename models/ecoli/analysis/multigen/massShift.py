@@ -1,22 +1,25 @@
-#!/usr/bin/env python
 """
 @author: Heejo Choi
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 1/19/2017
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
-import numpy as np
 import cPickle
+
+import numpy as np
 from matplotlib import pyplot as plt
+
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
-from scipy.signal import butter, lfilter, freqz
-from scipy.optimize import curve_fit
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
 NUM_SKIP_TIMESTEPS_AT_GEN_CHANGE = 1
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -68,7 +71,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax1.legend(cleanNames, loc = "best", fontsize = 10)
 	ax1.set_ylabel("Mass (fg)")
 	ax1.set_xlabel("Time (hour)")
-	if T_ADD_AA != None and T_CUT_AA !=None:
+	if T_ADD_AA is not None and T_CUT_AA is not None:
 		ax1.plot((T_ADD_AA / 60. / 60., T_ADD_AA / 60. / 60.), ax1.get_ylim(), "k--")
 		ax1.plot((T_CUT_AA / 60. / 60., T_CUT_AA / 60. / 60.), ax1.get_ylim(), "k--")
 
@@ -78,13 +81,12 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	for idx, ax in enumerate(axesList):
 		ax.set_ylabel(cleanNames[idx])
 		ax.set_xlim(0, time[-1] / 60. / 60.)
-		if T_ADD_AA != None and T_CUT_AA !=None:
+		if T_ADD_AA is not None and T_CUT_AA is not None:
 			ax.plot((T_ADD_AA / 60. / 60., T_ADD_AA / 60. / 60.), ax.get_ylim(), "k--")
 			ax.plot((T_CUT_AA / 60. / 60., T_CUT_AA / 60. / 60.), ax.get_ylim(), "k--")
 
 	plt.subplots_adjust(hspace = 0.2, wspace = 0.2)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
 

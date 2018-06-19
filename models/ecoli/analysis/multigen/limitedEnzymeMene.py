@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots limited enzyme fluxes, protein counts, and transcription initiation events.
 
@@ -7,21 +6,23 @@ Plots limited enzyme fluxes, protein counts, and transcription initiation events
 @date: Created 2/3/2017
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
 import cPickle
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
 from models.ecoli.processes.metabolism import COUNTS_UNITS, TIME_UNITS, VOLUME_UNITS
+from wholecell.analysis.analysis_tools import exportFigure
 
 PLOT_DOWNSTREAM_ENZYME = False
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	return
@@ -141,7 +142,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	metAxis.set_xlabel("Time (hour)\n(%s frequency of at least 1 transcription per generation)" % transcriptionFreq, fontsize = 10)
 
 	plt.subplots_adjust(wspace = 0.4, hspace = 0.4)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

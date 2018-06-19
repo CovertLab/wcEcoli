@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot ribosome stalling
 
@@ -9,16 +8,18 @@ Plot ribosome stalling
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
 import os
 
-import numpy as np
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -44,7 +45,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	plt.subplots_adjust(hspace = 0.5, wspace = 0.5)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

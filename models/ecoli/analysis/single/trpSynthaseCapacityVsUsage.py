@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot enzymatic capacity of tryptophan synthase vs amount of tryptophan needed by translation
 
@@ -7,17 +6,20 @@ Plot enzymatic capacity of tryptophan synthase vs amount of tryptophan needed by
 @date: Created 1/22/2017
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
 import cPickle
 
-import numpy as np
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
 BURN_IN = 10
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -73,8 +75,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.xlabel("Time (min)")
 	plt.ylabel("(Max capacity) / (Request)")
 
-
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

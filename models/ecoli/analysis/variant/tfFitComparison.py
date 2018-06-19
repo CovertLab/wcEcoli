@@ -1,7 +1,7 @@
+from __future__ import absolute_import
 
 import argparse
 import os
-import re
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -11,8 +11,11 @@ import scipy.stats
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 NUMERICAL_ZERO = 1e-12
+
 
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = None):
 	if metadata["variant"] != "tfActivity":
@@ -141,7 +144,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	plt.subplots_adjust(hspace = 0.4, wspace = 0.4)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

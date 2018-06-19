@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot normalized mass fractions of proteome for each protein monomer
 
@@ -7,25 +6,23 @@ Plot normalized mass fractions of proteome for each protein monomer
 @date: Created 7/12/16
 """
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 import argparse
 import os
+import cPickle
+import sys
 
 import numpy as np
-from scipy.stats import pearsonr
 from matplotlib import pyplot as plt
-import cPickle
+import scipy.cluster
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils.fitting import normalize
 from wholecell.utils import units
-from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from wholecell.analysis.analysis_tools import exportFigure
 
-import scipy.cluster
-import sys
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -129,9 +126,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax.tick_params(which = 'both', direction = 'out', labelsize = 6)
 		ax.set_xticks([])
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -15,6 +14,7 @@ import wholecell.utils.constants
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import units
 import cPickle
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
 	if not os.path.isdir(seedOutDir):

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -13,8 +13,13 @@ import wholecell.utils.constants
 from wholecell.utils import units
 import cPickle
 
+from wholecell.analysis.analysis_tools import exportFigure
+from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
+from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
+
 FONT_SIZE = 9
 DOWN_SAMPLE = 100
+
 
 def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -159,7 +164,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	plt.setp(dryMassInit_axis.xaxis.get_majorticklabels(), rotation = 20, fontsize = FONT_SIZE)
 	plt.setp(dryMassFinal_axis.xaxis.get_majorticklabels(), rotation = 20, fontsize = FONT_SIZE)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
@@ -188,11 +192,8 @@ def removeNanReshape(a):
 
 def getExpectedComposition(doubling_time):
 	# return np.ones(6), 100. * units.fg
-
-	from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 	raw_data = KnowledgeBaseEcoli()
 
-	from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
 	sim_data = fitSimData_1(raw_data, doubling_time = doubling_time)
 
 	subMasses = sim_data.mass.avgCellSubMass
@@ -205,6 +206,7 @@ def getExpectedComposition(doubling_time):
 
 def downSample(vector, factor):
 	return vector[:, np.arange(start = 0, stop = vector.shape[1], step = factor)]
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot RNA polymerase counts and counts of mRNA precursors
 
@@ -6,6 +5,8 @@ Plot RNA polymerase counts and counts of mRNA precursors
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 5/8/2014
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -15,6 +16,8 @@ from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -66,7 +69,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		plt.title(RNAP_RNA_IDS[rnapRnaCountsIdx])
 
 	plt.subplots_adjust(hspace = 0.5, top = 0.95, bottom = 0.05)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

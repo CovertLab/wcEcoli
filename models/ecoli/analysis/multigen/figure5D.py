@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots Figure 5D.
 
@@ -6,6 +5,8 @@ Plots Figure 5D.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 2/12/2017
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -20,8 +21,8 @@ from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.utils import units
-from models.ecoli.processes.metabolism import COUNTS_UNITS, TIME_UNITS, VOLUME_UNITS
-import matplotlib.patches as patches
+from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS
+from wholecell.analysis.analysis_tools import exportFigure
 
 FONTSIZE = 6
 LABELSIZE = 6
@@ -254,7 +255,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			axis.add_patch(patches.Rectangle((time[patchStart[i]] / 3600., axis.get_ylim()[0]), width, height, alpha = 0.25, color = "gray", linewidth = 0.))
 
 	plt.subplots_adjust(hspace = 0.5, right = 0.9, bottom = 0.1, left = 0.15, top = 0.9)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 	lineList = [rnaInitLine, rnaLine, monomerLine, complexLine, fluxLine, metLine]

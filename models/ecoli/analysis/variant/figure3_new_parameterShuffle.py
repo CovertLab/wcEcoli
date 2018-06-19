@@ -1,15 +1,16 @@
+from __future__ import absolute_import
+
+import cPickle
+import argparse
+import os
+
 from xlrd import open_workbook
 import numpy as np
 import matplotlib.pyplot as plt
-import cPickle
+
 from wholecell.utils.sparkline import whitePadSparklineAxis
 import wholecell.utils.constants
-from wholecell.utils import units
-import argparse
-import os
-import re
-
-from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from wholecell.analysis.analysis_tools import exportFigure
 
 TITLE_FONTSIZE = 10
 LABEL_FONTSIZE = 8.5
@@ -18,6 +19,7 @@ SCATTER_MSIZE = 5
 LINEWIDTH = 4
 
 GENERATE_CLEAN_SUBPLOTS = True
+
 
 def removeXAxis(ax):
 	ax.spines["bottom"].set_visible(False)
@@ -62,9 +64,9 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	# Load failures
 	failures = cPickle.load(open(os.path.join(plotOutDir, "failed_variants.cPickle"), "rb"))
-	flag1 = 0; # failure
-	flag2 = 0; # 3-hour upper limit
-	flag3 = 0; # final dry mass < 750
+	flag1 = 0  # failure
+	flag2 = 0  # 3-hour upper limit
+	flag3 = 0  # final dry mass < 750
 	data = []
 	for varId, row in enumerate(xrange(2, data_raw.nrows)):
 		row_values = data_raw.row_values(row)
@@ -160,7 +162,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 		ax.tick_params(labelsize = LABEL_FONTSIZE)
 
 	plt.subplots_adjust(wspace = 2, hspace = 2, left = 0.075, right = 0.95)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 	if GENERATE_CLEAN_SUBPLOTS:

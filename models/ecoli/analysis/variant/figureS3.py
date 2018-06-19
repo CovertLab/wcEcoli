@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot to assess sensitivity of menE behavior to model parameters.
 
@@ -6,23 +5,29 @@ Plot to assess sensitivity of menE behavior to model parameters.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 12/1/17
 """
+
+from __future__ import absolute_import
+
 import argparse
 import os
+import cPickle
+
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib import gridspec
+
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 from wholecell.utils.sparkline import whitePadSparklineAxis
-import cPickle
+from wholecell.analysis.analysis_tools import exportFigure
 
 THRESHOLD = 0.001 # .1 percent
 TARGET_CONC_SINGLE = 0.10183094010881857 * units.mmol / units.L # found from WT sim; mmol/L
 FONTSIZE = 10
 LABELSIZE = 8
 MARKERSIZE = 1
+
 
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = None):
 	if not os.path.isdir(inputDir):
@@ -136,7 +141,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 		ax.set_yticks([0, 1])
 
 	plt.subplots_adjust(hspace = 1, wspace = 1, top = 0.9, bottom = 0.1)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
@@ -159,6 +163,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 		ax.set_yticklabels([])
 		exportFigure(plt, plotOutDir, plotOutFileName + "_%s" % filename, metadata)
 		plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

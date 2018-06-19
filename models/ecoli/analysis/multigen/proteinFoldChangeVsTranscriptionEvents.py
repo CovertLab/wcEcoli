@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -9,14 +9,14 @@ from matplotlib import pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
 import cPickle
-
-from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 FROM_CACHE = False
 
 CLOSE_TO_DOUBLE = 0.1
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -171,9 +171,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	xhistAxis.hist(burstSizeToPlot, bins = np.logspace(0., 10., 125), log = True)#, range = [0., 1000.])
 	xhistAxis.set_xscale("log")
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

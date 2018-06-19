@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -9,11 +9,11 @@ from matplotlib import pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-
-from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS
+from wholecell.analysis.analysis_tools import exportFigure
 
 BURN_IN_SECONDS = 500
 DISABLED = True
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -56,9 +56,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		plt.xlabel("Time (min)")
 		plt.ylabel("Mean-normalized concentration")
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

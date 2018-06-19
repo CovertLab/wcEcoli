@@ -1,7 +1,7 @@
+from __future__ import absolute_import
 
 import argparse
 import os
-import re
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -10,6 +10,8 @@ import cPickle
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = None):
 	if metadata["variant"] != "metabolismKineticHomeostaticRatio":
@@ -60,7 +62,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	plt.xlabel("Variant Number")
 	plt.ylabel("Log10 Mean Absolute Relative Difference from Kinetic Targets")
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

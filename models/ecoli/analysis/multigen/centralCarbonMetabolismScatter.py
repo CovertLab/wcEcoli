@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Central carbon metabolism comparison to Toya et al for figure 3c
 
@@ -6,6 +5,8 @@ Central carbon metabolism comparison to Toya et al for figure 3c
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 2/13/17
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -20,9 +21,10 @@ from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 from wholecell.utils.sparkline import whitePadSparklineAxis
-from models.ecoli.analysis.single.centralCarbonMetabolism import net_flux, _generatedID_reverseReaction
+from wholecell.analysis.analysis_tools import exportFigure
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -111,7 +113,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax.set_ylim(plt.xlim())
 	whitePadSparklineAxis(plt.axes())
 
-	from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

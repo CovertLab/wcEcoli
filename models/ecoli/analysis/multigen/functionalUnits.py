@@ -1,9 +1,10 @@
-#!/usr/bin/env python
 """
 @author: Heejo Choi
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 11/8/2017
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -13,8 +14,8 @@ import matplotlib.pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-# from wholecell.utils import units
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
+from wholecell.analysis.analysis_tools import exportFigure
 
 USE_CACHE = False # value of this boolean may change (see line 67)
 PLOT_ZEROS_ON_LINE = 2.5e-6
@@ -31,6 +32,7 @@ monomerToTranslationMonomer = {
 	"MONOMER0-1781[c]": "EG11519-MONOMER[c]", # MONOMER0-1781 is a complex, EG11519 is its monomer
 	"EG10359-MONOMER[c]": "PD00260[c]", # EG10359-MONOMER is not the ID of fur monomer, it's PD00260 (proteins.tsv)
 	}
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	return
@@ -143,7 +145,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			minProteinCounts_thisGen = minMonomerCounts[:]
 			minComplexCounts = view_complexation_complexes.counts()
 
-			for i, complexId in enumerate(ids_complexation_complexes):
+			for j, complexId in enumerate(ids_complexation_complexes):
 				# Map all subsunits to the minimum counts of the complex (ignores counts of monomers)
 				# Some subunits are involved in multiple complexes - these cases are kept track separately
 				# by monomersInManyComplexes_dict
@@ -156,12 +158,12 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 							subunitId = monomerToTranslationMonomer[subunitId]
 						elif "CPLX" in subunitId:
 							# few transcription factors are complexed with ions
-							subunitId = complexToMonomer[subunitId]							
+							subunitId = complexToMonomer[subunitId]
 						elif "RNA" in subunitId:
 							continue
 
 					if subunitId not in monomersInManyComplexes_id:
-						minProteinCounts_thisGen[ids_translation.index(subunitId)] = minComplexCounts[i]
+						minProteinCounts_thisGen[ids_translation.index(subunitId)] = minComplexCounts[j]
 					else:
 						minProteinCounts_thisGen[ids_translation.index(subunitId)] = np.inf
 
@@ -169,9 +171,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 							monomersInManyComplexes_dict[subunitId][complexId] = np.inf
 
 						prev_entry = monomersInManyComplexes_dict[subunitId][complexId]
-						monomersInManyComplexes_dict[subunitId][complexId] = min(prev_entry, minComplexCounts[i])
+						monomersInManyComplexes_dict[subunitId][complexId] = min(prev_entry, minComplexCounts[j])
 
-			# Store			
+			# Store
 			minProteinCounts = np.minimum(minProteinCounts, minProteinCounts_thisGen)
 
 		# Cache
@@ -270,9 +272,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		ax.tick_params(which = "both", direction = "out")
 
 	plt.subplots_adjust(hspace = 0.3, wspace = 0.25, left = 0.1, bottom = 0.1, top = 0.95, right = 0.95)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

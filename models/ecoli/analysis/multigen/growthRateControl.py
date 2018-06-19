@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
+import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -11,7 +12,10 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
-import cPickle
+from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
+from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	print "Disabled because it's slow"
@@ -264,7 +268,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	fig.subplots_adjust(hspace=.5, wspace = 0.3)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
 
@@ -288,10 +291,8 @@ def getExpectedComposition(doubling_time):
 	if doubling_time < 24. * units.min or doubling_time > 100. * units.min:
 		return np.zeros(2), 0 * units.fg
 
-	from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 	raw_data = KnowledgeBaseEcoli()
 
-	from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
 	sim_data = fitSimData_1(raw_data, doubling_time = doubling_time)
 
 	subMasses = sim_data.mass.avgCellSubMass
@@ -307,6 +308,7 @@ def getExpectedComposition(doubling_time):
 	initialMass = sim_data.mass.avgCellDryMassInit
 
 	return masses, initialMass
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

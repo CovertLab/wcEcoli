@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots various effects that may be limiting growth
 
@@ -7,9 +6,12 @@ Plots various effects that may be limiting growth
 @date: Created 6/18/2015
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
 
+from math import log10, floor
 import numpy as np
 from matplotlib import pyplot as plt
 import cPickle
@@ -17,12 +19,13 @@ import cPickle
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
 
 COLOR_CHOICES = np.array([
-[0,0,0],
-[252,174,145],
-[251,106,74],
-[203,24,29]
+	[0,0,0],
+	[252,174,145],
+	[251,106,74],
+	[203,24,29]
 ]) / 256.
 
 IGNORE_FIRST_PERCENTAGE = 0.1
@@ -31,7 +34,7 @@ TOP_RANGE_MARKER_COLOR = 'red'
 BOTTOM_RANGE_MARKER_COLOR = 'blue'
 BOTH_RANGE_MARKER_COLOR = 'purple'
 
-from math import log10, floor
+
 def round_to_1(x):
 	if x < 0:
 		x = x*-1
@@ -147,9 +150,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	# Save
 	plt.subplots_adjust(hspace = 1, wspace = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

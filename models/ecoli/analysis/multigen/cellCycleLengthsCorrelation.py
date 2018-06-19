@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots correlation of cell cycle lengths between each generation and the next.
 
@@ -6,6 +5,9 @@ Plots correlation of cell cycle lengths between each generation and the next.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 9/24/2015
 """
+
+from __future__ import absolute_import
+
 import argparse
 import os
 
@@ -17,6 +19,8 @@ import scipy.stats
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -44,7 +48,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	totalTimeAverage = np.average(cellCycleLengths)
 	totalGens = int(metadata["total_gens"])
-	
+
 	if totalGens > 8:
 		differences = [1,2]
 		for value in np.arange(4, totalGens, totalGens//4):
@@ -58,7 +62,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		xArray = cellCycleLengths[0:-difference]
 		yArray = cellCycleLengths[difference:]
 		coefficient, pValue = scipy.stats.pearsonr(xArray, yArray)
-		
+
 		xMin = np.amin(xArray)
 		xMax = np.amax(xArray)
 		yMin = np.amin(yArray)
@@ -84,9 +88,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	plt.subplots_adjust(hspace = 0.9, wspace = 0.8, bottom = 0.2)
 
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-
 
 	plt.close("all")
 

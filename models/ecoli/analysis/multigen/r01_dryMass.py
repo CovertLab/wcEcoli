@@ -1,14 +1,15 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
 
-import numpy as np
 from matplotlib import pyplot as plt
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -51,7 +52,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			ax.set_ylim([massToPlot.min(), massToPlot.max()])
 			ax.set_xlim([time.min(), time.max()])
 
-			from wholecell.analysis.analysis_tools import exportFigure
 			exportFigure(plt, plotOutDir, "r01_{}_gen{}".format(massType, allDir.index(simDir)))
 			plt.close("all")
 

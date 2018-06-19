@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots fraction of mRNAs transcribed (out of all genes to be transcribed) for all generations.
 
@@ -6,6 +5,8 @@ Plots fraction of mRNAs transcribed (out of all genes to be transcribed) for all
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 6/24/2016
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -18,6 +19,8 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	return
@@ -143,10 +146,10 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax.spines["right"].set_visible(False)
 	plt.subplots_adjust(hspace = 1, wspace = 0)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

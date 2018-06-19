@@ -1,11 +1,10 @@
-#!/usr/bin/env python
 """
 @author: Morgan Paull
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 4/29/2016
 """
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 import argparse
 import os
@@ -18,12 +17,14 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
-
-from models.ecoli.analysis.single.centralCarbonMetabolism import net_flux, _generatedID_reverseReaction
-
-from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
+from models.ecoli.analysis.single.centralCarbonMetabolism import (net_flux,
+	_generatedID_reverseReaction)
+from models.ecoli.processes.metabolism import (COUNTS_UNITS, VOLUME_UNITS,
+	TIME_UNITS)
+from wholecell.analysis.analysis_tools import exportFigure
 
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
+
 
 def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(variantDir):
@@ -104,9 +105,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	plt.legend(line_instances.values(), ["Seed {}".format(x) for x in line_instances.keys()], loc="best")
 
 	plt.subplots_adjust(hspace = 0.2, wspace = 0.5)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

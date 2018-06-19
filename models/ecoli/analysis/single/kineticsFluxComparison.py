@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Compare fluxes in simulation to target fluxes
 
@@ -7,6 +6,7 @@ Compare fluxes in simulation to target fluxes
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -17,6 +17,10 @@ import re
 
 import numpy as np
 from matplotlib import pyplot as plt
+import bokeh.io
+from bokeh.plotting import figure, ColumnDataSource
+from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
+	WheelZoomTool, ResizeTool, UndoTool, RedoTool)
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
@@ -25,8 +29,10 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.plotting_tools import COLORS_LARGE
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
+from wholecell.analysis.analysis_tools import exportFigure
 
 BURN_IN_STEPS = 20
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
@@ -140,14 +146,8 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.minorticks_off()
 	whitePadSparklineAxis(plt.axes())
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName)
 	plt.close("all")
-
-	# Bokeh
-	from bokeh.plotting import figure, output_file, ColumnDataSource, show
-	from bokeh.charts import Bar
-	from bokeh.models import HoverTool, BoxZoomTool, LassoSelectTool, PanTool, WheelZoomTool, ResizeTool, UndoTool, RedoTool
 
 	source = ColumnDataSource(
 		data = dict(
@@ -263,7 +263,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	if not os.path.exists(os.path.join(plotOutDir, "html_plots")):
 		os.makedirs(os.path.join(plotOutDir, "html_plots"))
 
-	import bokeh.io
 	p = bokeh.io.vplot(p1, p2)
 	bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + ".html"), title=plotOutFileName, autosave=False)
 	bokeh.io.save(p)

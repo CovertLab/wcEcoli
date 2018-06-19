@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots frequency of observing at least 1 transcript during a cell's life.
 
@@ -6,6 +5,8 @@ Plots frequency of observing at least 1 transcript during a cell's life.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 1/31/2017
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -18,10 +19,11 @@ import matplotlib.patches as patches
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
 
 USE_CACHE = False
 N_GENES_TO_PLOT = -1
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -226,7 +228,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	neverAxis.text(neverAxis.get_xlim()[1] * 1.02, len(neverTranscriptionEvents_N) + len(neverTranscriptionEvents_E) * 0.5, "%s essential\ngenes" % len(neverTranscriptionEvents_E), fontsize = 10, verticalalignment = "center")
 
 	plt.subplots_adjust(wspace = 0.4, hspace = 0.4, right = 0.83, bottom = 0.05, left = 0.07, top = 0.95)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

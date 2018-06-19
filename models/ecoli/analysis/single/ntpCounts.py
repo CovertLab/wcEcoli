@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot NTP counts
 
@@ -6,6 +5,8 @@ Plot NTP counts
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 5/8/2014
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -15,6 +16,8 @@ from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -51,9 +54,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	print "NTPs required for cell division (nt/cell-cycle) = %d" % sum(ntpCounts[0, :])
 	plt.subplots_adjust(hspace = 0.5)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

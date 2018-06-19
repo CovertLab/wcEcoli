@@ -1,23 +1,18 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
-import re
-
-import numpy as np
 from matplotlib import pyplot as plt
-
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
 from wholecell.analysis.plotting_tools import COLORS_256
+from wholecell.analysis.analysis_tools import exportFigure
 
-COLORS = [
-	[colorValue/255. for colorValue in color]
-	for color in COLORS_256
-	]
+COLORS = [[colorValue/255. for colorValue in color] for color in COLORS_256]
+
 
 def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
 
@@ -79,9 +74,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	axesList[len(massNames) - 1].set_xlabel("Time (hr)")
 	plt.subplots_adjust(hspace = 0.2, wspace = 0.5)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

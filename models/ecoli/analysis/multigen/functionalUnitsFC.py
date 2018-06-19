@@ -1,9 +1,10 @@
-#!/usr/bin/env python
 """
 @author: Heejo Choi
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 11/13/2017
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -12,13 +13,10 @@ import cPickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
 from wholecell.utils.sparkline import whitePadSparklineAxis
-from wholecell.containers.bulk_objects_container import BulkObjectsContainer
-import matplotlib.lines as mlines
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -204,7 +202,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	for ax, label in zip(axesList, ['A', 'B', 'C', 'D', "E", "F", "G"]):
 		ax.text(-0.1, 1.35, label, transform=ax.transAxes, fontsize=16, fontweight='bold', va='top', ha='right')
 	plt.subplots_adjust(hspace = 0.6, wspace = 0.6, left = 0.1, bottom = 0.1, top = 0.75, right = 0.9)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
@@ -221,6 +218,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax.set_yticklabels([])
 	exportFigure(plt, plotOutDir, plotOutFileName + "_C", metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots Figure 5B.
 
@@ -7,19 +6,20 @@ Plots Figure 5B.
 @date: Created 2/12/2017
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
 import cPickle
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
 from wholecell.utils.sparkline import whitePadSparklineAxis
+from wholecell.analysis.analysis_tools import exportFigure
 
 BUILD_CACHE = True
 PLOT_GENES_OF_INTEREST = False
@@ -212,7 +212,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	histAxis.set_xticklabels([])
 
 	plt.subplots_adjust(wspace = 0.6, hspace = 0.4, right = 0.9, bottom = 0.1, left = 0.1, top = 0.9)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, "figure5B__top__clean", "")
 
 	if PLOT_GENES_OF_INTEREST:
@@ -271,7 +270,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	sometimesAxis.set_xticklabels([])
 
 	plt.subplots_adjust(wspace = 0, hspace = 0, right = 0.9, bottom = 0.1, left = 0.1, top = 0.9)
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, "figure5B__bottom__clean")
 
 	plt.suptitle("Transcription initiation events", fontsize = 14)

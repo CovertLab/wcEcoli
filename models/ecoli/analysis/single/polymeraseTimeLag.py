@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots time-step effects on polymerization
 
@@ -6,6 +5,8 @@ Plots time-step effects on polymerization
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 6/18/2015
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -17,6 +18,8 @@ import cPickle
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
@@ -153,9 +156,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	# Save
 	plt.subplots_adjust(hspace = 0.5, wspace = 0.5)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

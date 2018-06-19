@@ -1,15 +1,15 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
-import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata=None):
 
@@ -60,7 +60,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	plt.subplots_adjust(hspace = 0.5, wspace = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -7,16 +7,12 @@ import cPickle
 import time
 
 import numpy as np
-from matplotlib import pyplot as plt
-import matplotlib.patches as patches
-
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 
-from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from scipy.stats import pearsonr
 from multiprocessing import Pool
@@ -28,6 +24,7 @@ PLACE_HOLDER = -1
 
 FONT_SIZE=9
 trim = 0.05
+
 
 def getPCCProteome((variant, ap, monomerIds, schmidtCounts)):
 

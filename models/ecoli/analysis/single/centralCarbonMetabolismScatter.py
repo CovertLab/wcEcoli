@@ -1,10 +1,10 @@
-#!/usr/bin/env python
 """
 @author: Morgan Paull
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 4/29/2016
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -14,25 +14,22 @@ import re
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib import colors
-from matplotlib import gridspec
-from scipy.stats import pearsonr
-
-import mpld3
-from mpld3 import plugins, utils
+from mpld3 import plugins
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 
-from models.ecoli.analysis.single.centralCarbonMetabolism import net_flux, _generatedID_reverseReaction
 from wholecell.analysis.plotting_tools import CMAP_COLORS_255
 
-from models.ecoli.processes.metabolism import COUNTS_UNITS, MASS_UNITS, VOLUME_UNITS, TIME_UNITS
+from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
+from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
+
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 
 CMAP_COLORS = [[shade/255. for shade in color] for color in CMAP_COLORS_255]
 CMAP_OVER = [0, 1, 0.75]
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -107,10 +104,10 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	tooltip = plugins.PointLabelTooltip(points, labels)
 	plugins.connect(fig, tooltip)
 
-	from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	exportHtmlFigure(fig, plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots frequency of observing at least 1 transcript during a cell's life.
 
@@ -7,17 +6,23 @@ Plots frequency of observing at least 1 transcript during a cell's life.
 @date: Created 1/10/2017
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
 import cPickle
 
 import numpy as np
 import matplotlib.pyplot as plt
+from bokeh.plotting import figure, ColumnDataSource
+from bokeh.models import HoverTool
+import bokeh.io
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(seedOutDir):
@@ -74,7 +79,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax.set_title("Frequency of observing at least 1 transcript in 1 generation", fontsize = 14)
 	ax.set_xlabel("log10 (Transcript synthesis probability)", fontsize = 10)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
@@ -88,10 +92,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	exportFigure(plt, plotOutDir, plotOutFileName + "__histogram", metadata)
 	plt.close("all")
 
-	# Bokeh
-	from bokeh.plotting import figure, output_file, ColumnDataSource, show
-	from bokeh.models import HoverTool, BoxZoomTool, LassoSelectTool, PanTool, WheelZoomTool, ResizeTool, UndoTool, RedoTool
-	import bokeh.io
 	if not os.path.exists(os.path.join(plotOutDir, "html_plots")):
 		os.makedirs(os.path.join(plotOutDir, "html_plots"))
 	hover = HoverTool(tooltips = [("ID", "@ID")])
@@ -102,6 +102,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + ".html"), title = plotOutFileName, autosave = False)
 	bokeh.io.save(plot)
 	bokeh.io.curstate().reset()
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

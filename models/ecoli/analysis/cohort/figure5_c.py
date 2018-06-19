@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -12,14 +12,16 @@ import wholecell.utils.constants
 
 import cPickle
 
-from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import units
 FROM_CACHE = False
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 CLOSE_TO_DOUBLE = 0.1
 FONT_SIZE = 9
+
 
 def mm2inch(value):
 	return value * 0.0393701
@@ -326,8 +328,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# axesList[3].set_ylabel("Probability\ndoubles")
 	# axesList[3].set_xlabel("Number of transcription events per generation")
 
-
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	#plt.close("all")
 
@@ -340,7 +340,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	yhistAxis.set_ylabel("")
 	yhistAxis.set_xticklabels([])
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "_stripped", metadata)
 	plt.close("all")
 

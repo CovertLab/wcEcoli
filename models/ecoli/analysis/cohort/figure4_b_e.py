@@ -1,13 +1,12 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
-import re
+import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
-
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -15,6 +14,7 @@ import wholecell.utils.constants
 from wholecell.utils import units
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
+from wholecell.analysis.analysis_tools import exportFigure
 
 
 PLACE_HOLDER = -1
@@ -41,7 +41,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
 
-	import cPickle
 	sim_data = cPickle.load(open(simDataFile, "rb"))
 	oriC = sim_data.constants.oriCCenter.asNumber()
 	terC = sim_data.constants.terCCenter.asNumber()
@@ -201,9 +200,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	# whitePadSparklineAxis(ax3, False)
 	# whitePadSparklineAxis(ax4)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "_b", metadata)
-
 
 	for axes in axes_list:
 		axes.tick_params(
@@ -224,7 +221,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "_b_stripped" ,metadata, transparent = True)
 	plt.close("all")
 
@@ -378,8 +374,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	plt.subplots_adjust(bottom=0.15)
 
-
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "_e", metadata)
 
 
@@ -402,9 +396,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	plt.subplots_adjust(top = 1, bottom = trim, left = trim, right = 1)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName + "_e_stripped" ,metadata, transparent = True)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

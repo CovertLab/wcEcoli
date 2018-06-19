@@ -1,10 +1,10 @@
-#!/usr/bin/env python
 """
 @author: Nick Ruggero
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 8/8/2014
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -17,12 +17,14 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
 
 GLUCOSE_ID = "GLC[p]"
 
 FLUX_UNITS = units.mmol / units.g / units.h
 MASS_UNITS = units.fg
 GROWTH_UNITS = units.fg / units.s
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	if not os.path.isdir(simOutDir):
@@ -65,7 +67,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.xlabel("Time (s)")
 	plt.ylabel("g cell / g glucose")
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

@@ -1,10 +1,10 @@
-#!/usr/bin/env python
 """
 @author: Nick Ruggero
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 3/15/2016
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -13,16 +13,14 @@ import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib import colors
-from matplotlib import gridspec
-import scipy.cluster.hierarchy as sch
-from scipy.spatial import distance
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
 
 FLUX_UNITS = "mmol/gDCW-hr"
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -78,9 +76,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	ax3.set_ylim([minMassExchange, maxMassExchange])
 	ax3.set_ylabel("Water exchange\nwhen doubling time < 0")
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

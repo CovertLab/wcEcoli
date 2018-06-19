@@ -1,15 +1,14 @@
-#!/usr/bin/env python
 """
 @author: Javier Carrera
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 4/04/2016
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
 import os
-import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -19,6 +18,7 @@ import scipy.cluster.hierarchy as sch
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
 CMAP_COLORS_255 = [
 	[247,247,247],
@@ -31,6 +31,7 @@ CMAP_COLORS_255 = [
 
 CMAP_COLORS = [[shade/255. for shade in color] for color in CMAP_COLORS_255]
 CMAP_OVER = [0, 1, 0.75]
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -115,9 +116,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	grid.tight_layout(fig)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

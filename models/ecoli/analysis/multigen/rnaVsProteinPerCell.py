@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots average RNA counts per cell vs average protein counts per cell.
 
@@ -6,6 +5,8 @@ Plots average RNA counts per cell vs average protein counts per cell.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 11/1/2017
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -17,9 +18,9 @@ import matplotlib.pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 import matplotlib.lines as mlines
+from wholecell.analysis.analysis_tools import exportFigure
 
 complexToMonomer = {
 	"CPLX0-7620[c]": "PD00260[c]", # CPLX0-7620's monomer is EG10359-MONOMER, which is ID'ed as PD00260 (proteins.tsv)
@@ -35,6 +36,8 @@ monomerToTranslationMonomer = {
 	}
 
 PLOT_ZEROS_ON_LINE = 2.5e-6
+
+
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 	return
 	HIGHLIGHT_GENES = False
@@ -138,7 +141,7 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 			avgProteinCounts = avgMonomerCounts[:]
 			avgComplexCounts = view_complexation_complexes.counts()
 
-			for i, complexId in enumerate(ids_complexation_complexes):
+			for j, complexId in enumerate(ids_complexation_complexes):
 				# Map all subsunits to the average counts of the complex (ignores counts of monomers)
 				# Some subunits are involved in multiple complexes - these cases are kept track
 				subunitIds = sim_data.process.complexation.getMonomers(complexId)["subunitIds"]
@@ -155,11 +158,11 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 							continue
 
 					if subunitId not in monomersInvolvedInManyComplexes_id:
-						avgProteinCounts[ids_translation.index(subunitId)] = avgComplexCounts[i]
+						avgProteinCounts[ids_translation.index(subunitId)] = avgComplexCounts[j]
 					else:
 						if complexId not in monomersInvolvedInManyComplexes_dict[subunitId]:
 							monomersInvolvedInManyComplexes_dict[subunitId][complexId] = 0.
-						monomersInvolvedInManyComplexes_dict[subunitId][complexId] += avgComplexCounts[i]
+						monomersInvolvedInManyComplexes_dict[subunitId][complexId] += avgComplexCounts[j]
 
 			# Store
 			avgRnaCounts_forAllCells += avgRnaCounts
@@ -239,9 +242,9 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	plt.subplots_adjust(hspace = 0.5, wspace = 0.5, left = 0.1, bottom = 0.1, top = 0.9, right = 0.95)
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

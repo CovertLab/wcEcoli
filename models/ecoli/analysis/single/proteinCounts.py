@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot protein monomer counts
 
@@ -7,6 +6,7 @@ Plot protein monomer counts
 @date: Created 5/27/2014
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -22,6 +22,8 @@ import wholecell.utils.constants
 from wholecell.utils.fitting import normalize
 from wholecell.utils import units
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 # TODO: account for complexation
 
@@ -101,7 +103,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.ylabel("log10(Actual protein distribution (average over life cycle))")
 	plt.title("PCC (of log values): %0.2f" % pearsonr(np.log10(expectedCountsRelative + 1), np.log10(relativeCounts + 1))[0])
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

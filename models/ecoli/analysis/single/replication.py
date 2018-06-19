@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plots things relevant to DNA replication
 
@@ -7,6 +6,7 @@ Plots things relevant to DNA replication
 @date: Created 6/17/2015
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
@@ -19,8 +19,10 @@ import cPickle
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
 
 PLACE_HOLDER = -1
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -132,7 +134,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	ax.set_xlim([0, time.max() / 60])
 	ax.set_xlabel("Time (min)")
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 
@@ -144,9 +145,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 		ax.plot(time / 60., data)
 		ax.set_ylim([0, data.max()+1])
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, 'replicationSequenceIdx')
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

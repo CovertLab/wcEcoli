@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot RNAse counts
 
@@ -7,17 +6,19 @@ Plot RNAse counts
 @date: Created 1/14/2015
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-import scipy.fftpack
 import cPickle
 
 import wholecell.utils.constants
 
 from wholecell.io.tablereader import TableReader
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 

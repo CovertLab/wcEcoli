@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Plot to compare cell properties across different growth conditions similar to Dennis and Bremer. 1996. Fig 2
 Multiple generations of the same variant will be plotted together
@@ -9,21 +7,24 @@ Multiple generations of the same variant will be plotted together
 @date: Created 6/7/16
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
-import re
 
 import numpy as np
 from matplotlib import pyplot as plt
 import cPickle
 
-
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 NT_MW = 487.0
 PROTEIN_MW = 110.0
+
 
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = None):
 
@@ -135,7 +136,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	sp.set_ylabel("Rate Stable RNA to\nRate Total RNA")
 	sp.set_xlabel("Doublings per Hour")
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

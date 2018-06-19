@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Compare fluxes in simulation to target fluxes for supplemental figure 2
 
@@ -7,28 +6,31 @@ Compare fluxes in simulation to target fluxes for supplemental figure 2
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
 import os
 import cPickle
 import csv
-import re
 
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.stats import pearsonr
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.utils import units
 from wholecell.utils.sparkline import whitePadSparklineAxis
-from wholecell.analysis.plotting_tools import COLORS_LARGE
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 # ignore data from metabolism burnin period
 BURN_IN_TIME = 1
+
 
 def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
 	if not os.path.isdir(variantDir):
@@ -144,7 +146,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	targetAve += 1e-6
 	actualAve += 1e-6
 
-	from scipy.stats import pearsonr
 	pearsonAll = pearsonr(np.log10(targetAve), np.log10(actualAve))
 	pearsonNoZeros = pearsonr(np.log10(targetAve[(categorization != -2) & ~disabledReactions]), np.log10(actualAve[(categorization != -2) & ~disabledReactions]))
 
@@ -167,7 +168,6 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	ax.set_yticks(range(-6, int(ylim[1]) + 1, 2))
 	ax.set_xticks(range(-6, int(xlim[1]) + 1, 2))
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName)
 
 	ax.set_xlabel("")
@@ -178,6 +178,7 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 	exportFigure(plt, plotOutDir, plotOutFileName + "_stripped", metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

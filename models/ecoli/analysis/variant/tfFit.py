@@ -1,18 +1,28 @@
+from __future__ import absolute_import
 
 import argparse
 import os
-import re
 
 import numpy as np
 from matplotlib import pyplot as plt
+import bokeh.io
+from bokeh.io import vplot
+from bokeh.plotting import figure, ColumnDataSource
+from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
+	WheelZoomTool, ResizeTool, UndoTool, RedoTool)
+from bokeh.models import CustomJS
+from bokeh.models.widgets import Button
+
 import cPickle
 import scipy.stats
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
 NUMERICAL_ZERO = 1e-12
+
 
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = None):
 	if metadata["variant"] != "tfActivity":
@@ -137,15 +147,8 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	plt.tight_layout()
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
-
-
-	# Bokeh
-	from bokeh.plotting import figure, output_file, ColumnDataSource, save
-	from bokeh.models import HoverTool, BoxZoomTool, LassoSelectTool, PanTool, WheelZoomTool, ResizeTool, UndoTool, RedoTool
-	from bokeh.io import vplot
 
 	# Probability bound - hover for ID
 	source1 = ColumnDataSource(data = dict(x = np.log10(expectedProbBound), y = np.log10(simulatedProbBound), ID = targetId, condition = targetCondition))
@@ -161,7 +164,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	if not os.path.exists(os.path.join(plotOutDir, "html_plots")):
 		os.makedirs(os.path.join(plotOutDir, "html_plots"))
-	import bokeh.io
 	bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + "__probBound" + ".html"), title = plotOutFileName, autosave = False)
 	bokeh.io.save(s1)
 
@@ -181,8 +183,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	bokeh.io.save(s2)
 
 	# Synthesis probability - filter targets by TF type
-	from bokeh.models import CustomJS
-	from bokeh.models.widgets import Button
 	bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + "__synthProb__interactive" + ".html"), title = plotOutFileName, autosave = False)
 
 	tfTypes = []

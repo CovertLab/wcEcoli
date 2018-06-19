@@ -1,3 +1,8 @@
+'''
+AnalysisPaths: object for easily accessing file paths to simulations based on
+variants, seeds, and generation.
+'''
+
 from __future__ import absolute_import
 from __future__ import division
 
@@ -9,25 +14,23 @@ import numpy as np
 
 from wholecell.utils import constants
 
-'''
-AnalysisPaths
-
-Object for easily accessing file paths to simulations based on
-variants, seeds, and generation. Within a specified variant you
-can then access all seeds and/or generations.
-
-Example:
-from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-ap = AnalysisPaths(simOutDir)
-ap.get_cells(variant = [0,3], seed = [0], generation = [1,2])
-
-Above example should return all paths corresponding to variants
-0 and 3, seed 0, and generations 1 and 2. If a field is left blank
-it is assumed that all values for that field are desired. If all
-fields are left blank all cells will be returned.
-'''
-
 class AnalysisPaths(object):
+	'''
+	Object for easily accessing file paths to simulations based on
+	variants, seeds, and generation. Within a specified variant you
+	can then access all seeds and/or generations.
+
+	Example:
+		from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+		ap = AnalysisPaths(simOutDir)
+		ap.get_cells(variant = [0,3], seed = [0], generation = [1,2])
+
+	Above example should return all paths corresponding to variants
+	0 and 3, seed 0, and generations 1 and 2. If a field is left blank
+	it is assumed that all values for that field are desired. If all
+	fields are left blank all cells will be returned.
+	'''
+
 	def __init__(self, out_dir, variant_plot = False, multi_gen_plot = False, cohort_plot = False):
 		assert sum((variant_plot, multi_gen_plot, cohort_plot)) == 1, "Must specify exactly one plot type!"
 

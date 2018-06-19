@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot mRNA counts
 
@@ -7,20 +6,22 @@ Plot mRNA counts
 @date: Created 5/27/2014
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
 import os
 
 import numpy as np
-from scipy import stats
 from matplotlib import pyplot as plt
 import cPickle
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
 # TODO: account for complexation
+
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -64,7 +65,6 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	# plt.show()
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
 

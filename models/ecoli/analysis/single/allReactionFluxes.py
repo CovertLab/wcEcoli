@@ -1,9 +1,10 @@
-#!/usr/bin/env python
 """
 @author: Morgan Paull
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 7/14/2016
 """
+
+from __future__ import absolute_import
 
 import argparse
 import os
@@ -17,9 +18,11 @@ from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, TIME_UNITS, VOLUME_UNITS
-FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
-
 from wholecell.analysis.plotting_tools import COLORS_LARGE
+from wholecell.analysis.analysis_tools import exportFigure
+
+
+FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 
 BURN_IN_PERIOD = 150
 
@@ -28,15 +31,14 @@ NUMERICAL_ZERO = 1e-15
 RANGE_THRESHOLD = 2
 MOVING_AVE_WINDOW_SIZE = 200
 
-def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
+
+def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile = None, metadata = None):
 
 	if not os.path.isdir(simOutDir):
 		raise Exception, "simOutDir does not currently exist as a directory"
 
 	if not os.path.exists(plotOutDir):
 		os.mkdir(plotOutDir)
-
-	idToColor = {}
 
 	sim_data = cPickle.load(open(simDataFile, "rb"))
 
@@ -92,9 +94,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.subplot(2,2,4)
 	plt.xlabel('Time (min)')
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

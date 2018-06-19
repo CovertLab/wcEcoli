@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Plot difference between mass imported to cell and mass created in metabolism process at each time step
 
@@ -7,18 +6,17 @@ Plot difference between mass imported to cell and mass created in metabolism pro
 @date: Created 6/27/2016
 """
 
+from __future__ import absolute_import
+
 import argparse
 import os
-import cPickle
 
-import numpy as np
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
-from wholecell.utils import units
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
-
+from wholecell.analysis.analysis_tools import exportFigure
 
 
 def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata=None):
@@ -64,9 +62,9 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	plt.ylabel("Mass Accumulation per time step (fg)")
 	plt.title("Mass imported - mass created in metabolism process")
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

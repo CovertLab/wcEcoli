@@ -1,15 +1,14 @@
-#!/usr/bin/env python
 """
 @author: Morgan Paull
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 5/30/2016
 """
 
+from __future__ import absolute_import
 from __future__ import division
 
 import argparse
 import os
-import re
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -20,9 +19,11 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
 from wholecell.analysis.plotting_tools import CMAP_COLORS_255
+from wholecell.analysis.analysis_tools import exportFigure
 
 CMAP_COLORS = [[shade/255. for shade in color] for color in CMAP_COLORS_255]
 CMAP_OVER = [0, 1, 0.75]
+
 
 def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -120,9 +121,9 @@ def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 
 			currentAxes.set_yticks([])
 
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	plt.close("all")
+
 
 if __name__ == "__main__":
 	defaultSimDataFile = os.path.join(

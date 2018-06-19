@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+from __future__ import absolute_import
 
 import argparse
 import os
+import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,13 +10,12 @@ from matplotlib import pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
+from wholecell.analysis.analysis_tools import exportFigure
 
-import cPickle
-
-from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 FROM_CACHE = False
 
 CLOSE_TO_DOUBLE = 0.1
+
 
 def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
 
@@ -73,7 +73,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 		initCountsPerMonomer_downSample[idx, :] = initCountsPerMonomer[idx*stride:(idx+1)*stride].sum(axis=0)
 
 
-
 	scatterAxis.imshow(initCountsPerMonomer_downSample > 0, cmap='binary', origin = "upper", extent=[0, n_monomers, 0, initCountsPerMonomer_downSample.shape[0]], aspect = initCountsPerMonomer_downSample.shape[0])#, interpolation='nearest')
 	scatterAxis.set_ylabel("Simulation step")
 	scatterAxis.set_xlabel("Monomer")
@@ -86,8 +85,6 @@ def main(seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFil
 	xhistAxis.bar(range(initCountsPerMonomer.shape[1]), initCountsPerMonomer.sum(axis=0))
 	xhistAxis.set_yscale("log")
 
-
-	from wholecell.analysis.analysis_tools import exportFigure
 	exportFigure(plt, plotOutDir, plotOutFileName,metadata)
 	plt.close("all")
 
