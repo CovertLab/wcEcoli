@@ -43,7 +43,7 @@ class AnalysisPaths(object):
 			for directory in all_dirs:
 				# Accept directories which have a string, an underscore, and then a string
 				# of digits exactly 6 units long
-				if match('.*_\d{6}$',directory) is not None:
+				if match(r'.*_\d{6}$', directory) is not None:
 					variant_out_dirs.append(join(out_dir, directory))
 
 			# Check to see if only wildtype variant exists
@@ -60,7 +60,7 @@ class AnalysisPaths(object):
 			for variant_dir in variant_out_dirs:
 				all_dirs = listdir(variant_dir)
 				for directory in all_dirs:
-					if match('^\d{6}$',directory) is not None:
+					if match(r'^\d{6}$', directory) is not None:
 						seed_out_dirs.append(join(variant_dir, directory))
 
 			# Get all generation files for each seed
@@ -73,7 +73,7 @@ class AnalysisPaths(object):
 			seed_out_dirs = []
 			all_dirs = listdir(out_dir)
 			for directory in all_dirs:
-				if match('^\d{6}$',directory) is not None:
+				if match(r'^\d{6}$', directory) is not None:
 					seed_out_dirs.append(join(out_dir, directory))
 
 			# Get all generation files for each seed
@@ -99,7 +99,7 @@ class AnalysisPaths(object):
 		variant_kb = []
 		for filePath in generation_dirs:
 			# Find generation
-			matches = findall('generation_\d{6}', filePath)
+			matches = findall(r'generation_\d{6}', filePath)
 			if len(matches) > 1:
 				raise Exception("Expected only one match for generation!")
 			generations.append(int(matches[0][-6:]))
@@ -152,14 +152,14 @@ class AnalysisPaths(object):
 		return sorted(np.unique(self._path_data["variant"]))
 
 	def _get_generations(self, directory):
-		generation_files = [join(directory,f) for f in listdir(directory) if isdir(join(directory,f)) and "generation" in f]
+		generation_files = [join(directory, f) for f in listdir(directory) if isdir(join(directory, f)) and "generation" in f]
 		generations = [None] * len(generation_files)
 		for gen_file in generation_files:
 			generations[int(gen_file[gen_file.rfind('_') + 1:])] = self._get_individuals(gen_file)
 		return generations
 
 	def _get_individuals(self, directory):
-		individual_files = [join(directory,f) for f in listdir(directory) if isdir(join(directory,f))]
+		individual_files = [join(directory, f) for f in listdir(directory) if isdir(join(directory, f))]
 		individuals = [None] * len(individual_files)
 		for ind_file in individual_files:
 			individuals[int(ind_file[ind_file.rfind('/')+1:])] = ind_file

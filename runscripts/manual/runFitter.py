@@ -18,13 +18,12 @@ from __future__ import division
 
 import os
 
-from runscripts.manual import scriptBase
 from wholecell.fireworks.firetasks import FitSimDataTask
 from wholecell.fireworks.firetasks import InitRawDataTask
 from wholecell.fireworks.firetasks import InitRawValidationDataTask
 from wholecell.fireworks.firetasks import InitValidationDataTask
 from wholecell.fireworks.firetasks import SymlinkTask
-from wholecell.utils import constants
+from wholecell.utils import constants, scriptBase
 from wholecell.utils import filepath
 
 

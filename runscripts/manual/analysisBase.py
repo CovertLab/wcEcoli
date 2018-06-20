@@ -11,8 +11,7 @@ from __future__ import division
 import cPickle
 import os
 
-from runscripts.manual import scriptBase
-from wholecell.utils import constants
+from wholecell.utils import constants, scriptBase
 
 
 class AnalysisBase(scriptBase.ScriptBase):

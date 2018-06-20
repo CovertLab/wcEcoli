@@ -23,7 +23,6 @@ import wholecell.utils.constants
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 
-
 NT_MW = 487.0
 PROTEIN_MW = 110.0
 
@@ -463,11 +462,8 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	# #plt.subplots_adjust(wspace=0.25, hspace=0.25)
 
-	# from wholecell.analysis.analysis_tools import exportFigure
 	# exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 	# plt.close("all")
-
-
 
 
 if __name__ == "__main__":

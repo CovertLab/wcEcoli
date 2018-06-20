@@ -4,10 +4,12 @@ from xlrd import open_workbook
 import numpy as np
 import matplotlib.pyplot as plt
 import cPickle
-from wholecell.utils.sparkline import whitePadSparklineAxis
 import wholecell.utils.constants
 import argparse
 import os
+
+from wholecell.utils.sparkline import whitePadSparklineAxis
+from wholecell.analysis.analysis_tools import exportFigure
 
 PLOT_FIG1 = True
 PLOT_FIG2 = True
@@ -149,7 +151,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 		plt.subplots_adjust(wspace = 0.5, hspace = 0.5)
 
-		from wholecell.analysis.analysis_tools import exportFigure
 		if not CLEAN_VER:
 			exportFigure(plt, plotOutDir, plotOutFileName + "__splom", metadata)
 		else:
