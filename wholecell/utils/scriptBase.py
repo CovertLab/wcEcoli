@@ -1,6 +1,7 @@
 """
 Common code for scripts that manually run simulation and analysis operations
-outside of Fireworks workflows.
+from the command line (e.g. outside of Fireworks workflows). This has code for
+finding the simulation dir, variant subdirs, etc.
 
 Run with '-h' for command line help.
 Set PYTHONPATH when running this.

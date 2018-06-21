@@ -2,7 +2,8 @@
 Common code for analysis plots. The abstract base class AnalysisPlot defines a
 plot() method for scripts to call.
 
-TODO: Fill in for defaulted command line args.
+TODO: Fill in for defaulted command line args. Use ScriptBase methods for
+finding variant directories, etc.
 
 TODO: Set the fallback for the matplotlib back end so we needn't hack its
 installation. Set the CWD so matplotlib finds the matplotlibrc file even when
@@ -21,7 +22,9 @@ TODO: Memory leak detection.
 
 TODO: Move the run_plot() args to instance variables?
 
-TODO: Other shared code to simplify the subclasses, e.g. make the output dir.
+TODO: Other shared code to simplify the subclasses, e.g. make plotOutDir,
+check that `os.path.isdir(simOutDir)`, instantiate an AnalysisPaths (except for
+SingleAnalysisPlot subclasses), etc.
 """
 
 from __future__ import absolute_import
@@ -34,7 +37,15 @@ from wholecell.utils import scriptBase
 
 class AnalysisPlot(scriptBase.ScriptBase):
 	"""Abstract Base Class for analysis plots.
-	Call the cli() method to run the command line interface.
+
+	Each analysis class must override do_plot().
+
+	Call cli() to run the command line interface for one analysis class.
+
+	Call main() to run an analysis plot for a Firetask.
+
+	The abstract subclasses CohortAnalysisPlot et al will have methods to run
+	all their current analyses in a controlled order.
 	"""
 
 	def description(self):
@@ -42,6 +53,9 @@ class AnalysisPlot(scriptBase.ScriptBase):
 		return '{cls.__module__}.{cls.__name__}'.format(cls=type(self))
 
 	def define_parameters(self, parser):
+		"""Define command line parameters to run a single analysis plot as a
+		standalone script.
+		"""
 		super(AnalysisPlot, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)
 
@@ -61,24 +75,26 @@ class AnalysisPlot(scriptBase.ScriptBase):
 
 		return args
 
+
 	@abc.abstractmethod
-	def run_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
+	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata):
-		"""Inner method to write out a plot with the given arguments."""
-		raise NotImplementedError("AnalysisPlot subclass must implement plot()")
+		"""Inner method that each analysis class must override."""
+		raise NotImplementedError("AnalysisPlot subclass must implement do_plot()")
 
 	def plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
-			validationDataFile=None, metadata=None):
-		"""Public method to set up, write out a plot, and cleanup."""
+			validationDataFile, metadata):
+		"""Public method to set up, make a plot, and cleanup."""
 		# TODO: Setup.
 
-		self.run_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
+		self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata)
 
 		# TODO: Cleanup.
 
+
 	def run(self, args):
-		"""Public method to write out a plot with the given CLI arguments."""
+		"""Run an analysis plot with the given CLI arguments. Called by cli()."""
 		self.plot(
 			args.sim_path,
 			args.plotOutDir,
@@ -88,10 +104,8 @@ class AnalysisPlot(scriptBase.ScriptBase):
 			getattr(args, 'metadata', None),
 		)
 
-	@classmethod
-	def main(cls, inputDir, plotOutDir, plotOutFileName, simDataFile,
+	def main(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile=None, metadata=None):
-		"""Instantiate this (sub)class and run a plot."""
-		instance = cls()
-		instance.plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
+		"""Run an analysis plot for a Firetask."""
+		self.plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata)

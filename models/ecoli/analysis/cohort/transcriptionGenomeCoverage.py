@@ -8,7 +8,6 @@ Plots fraction of mRNAs transcribed (out of all genes to be transcribed) for all
 
 from __future__ import absolute_import
 
-import argparse
 import os
 import cPickle
 
@@ -17,89 +16,78 @@ import matplotlib.pyplot as plt
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
-import wholecell.utils.constants
 from wholecell.analysis.analysis_tools import exportFigure
+from . import cohortAnalysisPlot
 
 
-def main(variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
-	return
-	if not os.path.isdir(variantDir):
-		raise Exception, "variantDir does not currently exist as a directory"
+class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
+	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		return
 
-	if not os.path.exists(plotOutDir):
-		os.mkdir(plotOutDir)
+		if not os.path.isdir(variantDir):
+			raise Exception, "variantDir does not currently exist as a directory"
 
-	# Get IDs of mRNAs
-	sim_data = cPickle.load(open(simDataFile, "rb"))
-	rnaIds = sim_data.process.transcription.rnaData["id"]
-	isMRna = sim_data.process.transcription.rnaData["isMRna"]
-	basalExpression = sim_data.process.transcription.rnaExpression["basal"]
-	mRnaIds = np.where(isMRna)[0]
+		if not os.path.exists(plotOutDir):
+			os.mkdir(plotOutDir)
 
-	mRnaBasalExpression = np.array([basalExpression[x] for x in mRnaIds])
-	mRnaNames = np.array([rnaIds[x] for x in mRnaIds])
+		# Get IDs of mRNAs
+		sim_data = cPickle.load(open(simDataFile, "rb"))
+		rnaIds = sim_data.process.transcription.rnaData["id"]
+		isMRna = sim_data.process.transcription.rnaData["isMRna"]
+		basalExpression = sim_data.process.transcription.rnaExpression["basal"]
+		mRnaIds = np.where(isMRna)[0]
 
-	# Sort in order of decreasing basal expression
-	descendingOrderIndexing = np.argsort(mRnaBasalExpression)[::-1]
-	mRnaBasalExpressionSorted = mRnaBasalExpression[descendingOrderIndexing]
-	mRnaNamesSorted = mRnaNames[descendingOrderIndexing]
+		mRnaBasalExpression = np.array([basalExpression[x] for x in mRnaIds])
+		mRnaNames = np.array([rnaIds[x] for x in mRnaIds])
 
-	# Get all cells in each seed
-	ap = AnalysisPaths(variantDir, cohort_plot = True)
-	all_cells = ap.get_cells()
+		# Sort in order of decreasing basal expression
+		descendingOrderIndexing = np.argsort(mRnaBasalExpression)[::-1]
+		mRnaBasalExpressionSorted = mRnaBasalExpression[descendingOrderIndexing]
+		mRnaNamesSorted = mRnaNames[descendingOrderIndexing]
 
-	# Get number of mRNAs transcribed
-	transcribedFreq = []
-	for simDir in all_cells:
-		simOutDir = os.path.join(simDir, "simOut")
+		# Get all cells in each seed
+		ap = AnalysisPaths(variantDir, cohort_plot = True)
+		all_cells = ap.get_cells()
 
-		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-		moleculeIds = bulkMolecules.readAttribute("objectNames")
-		mRnaIndexes = np.array([moleculeIds.index(x) for x in mRnaNamesSorted])
-		moleculeCounts = bulkMolecules.readColumn("counts")[:, mRnaIndexes]
-		bulkMolecules.close()
+		# Get number of mRNAs transcribed
+		transcribedFreq = []
+		for simDir in all_cells:
+			simOutDir = os.path.join(simDir, "simOut")
 
-		moleculeCountsSumOverTime = moleculeCounts.sum(axis = 0)
-		mRnasTranscribed = np.array([x != 0 for x in moleculeCountsSumOverTime])
+			bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
+			moleculeIds = bulkMolecules.readAttribute("objectNames")
+			mRnaIndexes = np.array([moleculeIds.index(x) for x in mRnaNamesSorted])
+			moleculeCounts = bulkMolecules.readColumn("counts")[:, mRnaIndexes]
+			bulkMolecules.close()
 
-		transcribedFreq.append(mRnasTranscribed)
+			moleculeCountsSumOverTime = moleculeCounts.sum(axis = 0)
+			mRnasTranscribed = np.array([x != 0 for x in moleculeCountsSumOverTime])
 
-	transcribedFreq = np.array(transcribedFreq)
-	transcribedFreqSumOverSeeds = transcribedFreq.sum(axis = 0)
+			transcribedFreq.append(mRnasTranscribed)
 
-	# Plot
-	numMRnas = mRnaNamesSorted.shape[0]
-	numCells = all_cells.shape[0]
-	fig = plt.figure(figsize = (14, 10))
+		transcribedFreq = np.array(transcribedFreq)
+		transcribedFreqSumOverSeeds = transcribedFreq.sum(axis = 0)
 
-	ax = plt.subplot(1, 1, 1)
-	ax.scatter(np.arange(numMRnas), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
+		# Plot
+		numMRnas = mRnaNamesSorted.shape[0]
+		numCells = all_cells.shape[0]
+		fig = plt.figure(figsize = (14, 10))
 
-	heightOffset = 0.01
+		ax = plt.subplot(1, 1, 1)
+		ax.scatter(np.arange(numMRnas), transcribedFreqSumOverSeeds / float(numCells), facecolors = "none", edgecolors = "b")
 
-	ax.set_title("Frequency of producing at least 1 transcript\n(n = %s cells)" % numCells, fontsize = 12)
-	ax.set_xlabel("mRNA transcripts\n(in order of decreasing expected basal expression)", fontsize = 10)
-	ax.set_xlim([0, numMRnas])
-	ax.set_ylim([-.05, 1.05])
-	ax.tick_params(which = "both", direction = "out", top = "off")
-	ax.spines["top"].set_visible(False)
+		heightOffset = 0.01
 
-	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-	plt.close("all")
+		ax.set_title("Frequency of producing at least 1 transcript\n(n = %s cells)" % numCells, fontsize = 12)
+		ax.set_xlabel("mRNA transcripts\n(in order of decreasing expected basal expression)", fontsize = 10)
+		ax.set_xlim([0, numMRnas])
+		ax.set_ylim([-.05, 1.05])
+		ax.tick_params(which = "both", direction = "out", top = "off")
+		ax.spines["top"].set_visible(False)
+
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		plt.close("all")
 
 
 if __name__ == "__main__":
-	defaultSimDataFile = os.path.join(
-			wholecell.utils.constants.SERIALIZED_KB_DIR,
-			wholecell.utils.constants.SERIALIZED_KB_MOST_FIT_FILENAME
-			)
-
-	parser = argparse.ArgumentParser()
-	parser.add_argument("simOutDir", help = "Directory containing simulation output", type = str)
-	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
-	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
-	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
-
-	args = parser.parse_args().__dict__
-
-	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"])
+	Plot().cli()

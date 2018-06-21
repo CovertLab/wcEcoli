@@ -55,6 +55,7 @@ class AnalysisVariantTask(FireTaskBase):
 				self["input_directory"],
 				self["output_plots_directory"],
 				f[:-3],
+				'unused_sim_data_filename',
 				self['input_validation_data'],
 				self["metadata"]
 				)
