@@ -12,7 +12,7 @@ from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
-from . import variantAnalysisPlot
+from models.ecoli.analysis import variantAnalysisPlot
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):

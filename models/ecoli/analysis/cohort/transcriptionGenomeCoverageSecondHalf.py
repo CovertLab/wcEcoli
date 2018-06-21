@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
-from . import cohortAnalysisPlot
+from models.ecoli.analysis import cohortAnalysisPlot
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):

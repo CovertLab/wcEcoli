@@ -19,7 +19,7 @@ from wholecell.utils import units
 from wholecell.analysis.plotting_tools import CMAP_COLORS_255
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
 from wholecell.analysis.analysis_tools import exportFigure
-from . import singleAnalysisPlot
+from models.ecoli.analysis import singleAnalysisPlot
 
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 

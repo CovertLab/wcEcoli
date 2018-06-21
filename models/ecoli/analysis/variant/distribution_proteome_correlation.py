@@ -11,7 +11,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 
 from wholecell.analysis.analysis_tools import exportFigure
-from . import variantAnalysisPlot
+from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from scipy.stats import pearsonr

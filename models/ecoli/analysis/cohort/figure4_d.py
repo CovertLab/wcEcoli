@@ -17,7 +17,7 @@ NUM_SKIP_TIMESTEPS_AT_GEN_CHANGE = 1
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
-from . import cohortAnalysisPlot
+from models.ecoli.analysis import cohortAnalysisPlot
 
 trim = 0.03
 trim_1 = 0.06

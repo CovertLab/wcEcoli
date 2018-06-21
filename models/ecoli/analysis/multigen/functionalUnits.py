@@ -14,7 +14,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.analysis.analysis_tools import exportFigure
-from . import multigenAnalysisPlot
+from models.ecoli.analysis import multigenAnalysisPlot
 
 USE_CACHE = False # value of this boolean may change (see line 67)
 PLOT_ZEROS_ON_LINE = 2.5e-6

@@ -8,7 +8,7 @@ import cPickle
 import os
 
 from wholecell.analysis.analysis_tools import exportFigure
-from . import variantAnalysisPlot
+from models.ecoli.analysis import variantAnalysisPlot
 
 PLOT_FIG1 = True
 PLOT_FIG2 = True

@@ -22,8 +22,7 @@ from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.plotting_tools import COLORS_LARGE
 from wholecell.analysis.analysis_tools import exportFigure
-from . import singleAnalysisPlot
-
+from models.ecoli.analysis import singleAnalysisPlot
 
 BURN_IN_STEPS = 20
 

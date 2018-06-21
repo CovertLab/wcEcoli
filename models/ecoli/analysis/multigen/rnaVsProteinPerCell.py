@@ -19,7 +19,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 import matplotlib.lines as mlines
 from wholecell.analysis.analysis_tools import exportFigure
-from . import multigenAnalysisPlot
+from models.ecoli.analysis import multigenAnalysisPlot
 
 complexToMonomer = {
 	"CPLX0-7620[c]": "PD00260[c]", # CPLX0-7620's monomer is EG10359-MONOMER, which is ID'ed as PD00260 (proteins.tsv)

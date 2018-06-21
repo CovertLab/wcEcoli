@@ -14,7 +14,7 @@ FROM_CACHE = False
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
-from . import multigenAnalysisPlot
+from models.ecoli.analysis import multigenAnalysisPlot
 
 CLOSE_TO_DOUBLE = 0.1
 FONT_SIZE = 9

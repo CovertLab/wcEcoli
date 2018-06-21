@@ -17,7 +17,7 @@ import cPickle
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure
-from . import singleAnalysisPlot
+from models.ecoli.analysis import singleAnalysisPlot
 
 FONT = {
 		'size'	:	8

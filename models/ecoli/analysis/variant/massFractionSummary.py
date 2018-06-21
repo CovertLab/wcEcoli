@@ -10,7 +10,7 @@ from wholecell.io.tablereader import TableReader
 
 from wholecell.analysis.plotting_tools import COLORS_LARGE
 from wholecell.analysis.analysis_tools import exportFigure
-from . import variantAnalysisPlot
+from models.ecoli.analysis import variantAnalysisPlot
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):

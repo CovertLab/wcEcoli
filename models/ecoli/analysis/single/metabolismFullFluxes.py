@@ -17,7 +17,7 @@ import scipy.cluster.hierarchy as sch
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
-from . import singleAnalysisPlot
+from models.ecoli.analysis import singleAnalysisPlot
 
 CMAP_COLORS_255 = [
 	[247,247,247],

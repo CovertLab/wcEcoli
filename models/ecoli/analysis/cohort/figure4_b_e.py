@@ -13,7 +13,7 @@ from wholecell.utils import units
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
-from . import cohortAnalysisPlot
+from models.ecoli.analysis import cohortAnalysisPlot
 
 PLACE_HOLDER = -1
 

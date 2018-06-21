@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
-from . import variantAnalysisPlot
+from models.ecoli.analysis import variantAnalysisPlot
 
 TITLE_FONTSIZE = 10
 LABEL_FONTSIZE = 8.5

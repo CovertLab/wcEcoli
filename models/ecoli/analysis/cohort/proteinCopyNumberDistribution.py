@@ -22,7 +22,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils.filepath import makedirs
-from . import cohortAnalysisPlot
+from models.ecoli.analysis import cohortAnalysisPlot
 
 # Number of proteins sampled for Plot 1
 PROTEIN_SAMPLE_COUNT = 50

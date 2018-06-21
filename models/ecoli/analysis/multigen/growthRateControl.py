@@ -13,7 +13,7 @@ from wholecell.utils import units
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
 from wholecell.analysis.analysis_tools import exportFigure
-from . import multigenAnalysisPlot
+from models.ecoli.analysis import multigenAnalysisPlot
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):

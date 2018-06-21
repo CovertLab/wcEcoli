@@ -104,8 +104,10 @@ class AnalysisPlot(scriptBase.ScriptBase):
 			getattr(args, 'metadata', None),
 		)
 
-	def main(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
+	@classmethod
+	def main(cls, inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile=None, metadata=None):
 		"""Run an analysis plot for a Firetask."""
-		self.plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
+		instance = cls()
+		instance.plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata)

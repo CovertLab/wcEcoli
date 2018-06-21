@@ -17,7 +17,8 @@ import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
-from . import singleAnalysisPlot
+from models.ecoli.analysis import singleAnalysisPlot
+
 
 # TODO: account for complexation
 

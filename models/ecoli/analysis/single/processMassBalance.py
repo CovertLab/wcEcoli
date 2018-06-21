@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
-from . import singleAnalysisPlot
+from models.ecoli.analysis import singleAnalysisPlot
 
 THRESHOLD = 1e-13 # roughly, the mass of an electron
 

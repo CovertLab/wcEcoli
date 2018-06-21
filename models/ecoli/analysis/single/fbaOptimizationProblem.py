@@ -22,7 +22,7 @@ from wholecell.io.tablereader import TableReader
 
 from wholecell.analysis.plotting_tools import COLORS_SMALL
 from wholecell.analysis.analysis_tools import exportFigure
-from . import singleAnalysisPlot
+from models.ecoli.analysis import singleAnalysisPlot
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):

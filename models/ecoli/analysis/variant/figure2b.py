@@ -11,7 +11,7 @@ from wholecell.io.tablereader import TableReader
 
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
-from . import variantAnalysisPlot
+from models.ecoli.analysis import variantAnalysisPlot
 
 FONT_SIZE=9
 

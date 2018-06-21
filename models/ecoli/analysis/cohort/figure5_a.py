@@ -12,7 +12,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.rdp import rdp
 from wholecell.analysis.analysis_tools import exportFigure
-from . import cohortAnalysisPlot
+from models.ecoli.analysis import cohortAnalysisPlot
 
 FROM_CACHE = False
 

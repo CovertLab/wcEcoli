@@ -29,8 +29,7 @@ from wholecell.analysis.plotting_tools import COLORS_LARGE
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from wholecell.analysis.analysis_tools import exportFigure
-from . import multigenAnalysisPlot
-
+from models.ecoli.analysis import multigenAnalysisPlot
 
 BURN_IN_STEPS = 20
 

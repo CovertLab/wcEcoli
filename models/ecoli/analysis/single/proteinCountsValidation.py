@@ -21,7 +21,7 @@ from mpld3 import plugins
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.analysis.analysis_tools import exportFigure, exportHtmlFigure
-from . import singleAnalysisPlot
+from models.ecoli.analysis import singleAnalysisPlot
 
 
 # TODO: account for complexation

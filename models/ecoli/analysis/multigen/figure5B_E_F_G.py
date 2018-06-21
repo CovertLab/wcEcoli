@@ -18,7 +18,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
-from . import multigenAnalysisPlot
+from models.ecoli.analysis import multigenAnalysisPlot
 
 BUILD_CACHE = True
 PLOT_GENES_OF_INTEREST = False

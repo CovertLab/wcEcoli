@@ -8,7 +8,7 @@ from wholecell.io.tablereader import TableReader
 
 from wholecell.analysis.plotting_tools import COLORS_256
 from wholecell.analysis.analysis_tools import exportFigure
-from . import cohortAnalysisPlot
+from models.ecoli.analysis import cohortAnalysisPlot
 
 COLORS = [[colorValue/255. for colorValue in color] for color in COLORS_256]
 

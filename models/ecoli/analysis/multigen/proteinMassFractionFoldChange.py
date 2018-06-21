@@ -12,7 +12,7 @@ from wholecell.analysis.analysis_tools import exportFigure
 import cPickle
 
 from wholecell.utils import units
-from . import multigenAnalysisPlot
+from models.ecoli.analysis import multigenAnalysisPlot
 
 FROM_CACHE = False
 

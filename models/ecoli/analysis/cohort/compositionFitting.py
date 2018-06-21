@@ -14,7 +14,7 @@ import cPickle
 from wholecell.analysis.analysis_tools import exportFigure
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
-from . import cohortAnalysisPlot
+from models.ecoli.analysis import cohortAnalysisPlot
 
 FONT_SIZE = 9
 DOWN_SAMPLE = 100

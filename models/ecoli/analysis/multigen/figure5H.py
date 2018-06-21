@@ -13,7 +13,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib_venn import venn3
 from wholecell.analysis.analysis_tools import exportFigure
-from . import multigenAnalysisPlot
+from models.ecoli.analysis import multigenAnalysisPlot
 
 data = [1143, 330, 1920, 79, 854, 2, 25] #order is 100, 010, 110, 001, 101, 011, 111
 dataArea = [1143, 330, 1920, 79, 854, 500, 25]

@@ -21,7 +21,7 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
-from . import multigenAnalysisPlot
+from models.ecoli.analysis import multigenAnalysisPlot
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):

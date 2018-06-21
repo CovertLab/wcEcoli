@@ -18,7 +18,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.plotting_tools import CMAP_COLORS_255
 from wholecell.analysis.analysis_tools import exportFigure
-from . import cohortAnalysisPlot
+from models.ecoli.analysis import cohortAnalysisPlot
 
 CMAP_COLORS = [[shade/255. for shade in color] for color in CMAP_COLORS_255]
 CMAP_OVER = [0, 1, 0.75]

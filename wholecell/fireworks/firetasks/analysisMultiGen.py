@@ -1,4 +1,3 @@
-import cPickle
 import time
 import os
 import traceback
@@ -52,11 +51,11 @@ class AnalysisMultiGenTask(FireTaskBase):
 				)
 
 			if "WC_ANALYZE_FAST" in os.environ:
-				results.update({f: pool.apply_async(run_function, args = (mod.main, args, f))})
+				results.update({f: pool.apply_async(run_function, args = (mod.Plot.main, args, f))})
 			else:
 				print "%s: Running %s" % (time.ctime(), f)
 				try:
-					mod.main(*args)
+					mod.Plot.main(*args)
 				except SystemExit:
 					raise SystemExit(1)
 				except:

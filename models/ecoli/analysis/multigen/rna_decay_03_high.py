@@ -29,7 +29,7 @@ from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure
-from . import multigenAnalysisPlot
+from models.ecoli.analysis import multigenAnalysisPlot
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):

@@ -21,7 +21,7 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.utils import units
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS
 from wholecell.analysis.analysis_tools import exportFigure
-from . import multigenAnalysisPlot
+from models.ecoli.analysis import multigenAnalysisPlot
 
 FONTSIZE = 6
 LABELSIZE = 6

@@ -12,7 +12,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import units
 import cPickle
-from . import multigenAnalysisPlot
+from models.ecoli.analysis import multigenAnalysisPlot
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):

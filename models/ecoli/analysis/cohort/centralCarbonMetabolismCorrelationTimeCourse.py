@@ -20,7 +20,7 @@ from models.ecoli.analysis.single.centralCarbonMetabolism import (net_flux,
 from models.ecoli.processes.metabolism import (COUNTS_UNITS, VOLUME_UNITS,
 	TIME_UNITS)
 from wholecell.analysis.analysis_tools import exportFigure
-from . import cohortAnalysisPlot
+from models.ecoli.analysis import cohortAnalysisPlot
 
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 

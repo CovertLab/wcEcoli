@@ -17,7 +17,7 @@ from scipy.stats import pearsonr
 from multiprocessing import Pool
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
-from . import variantAnalysisPlot
+from models.ecoli.analysis import variantAnalysisPlot
 
 SHUFFLE_VARIANT_TAG = "ShuffleParams"
 PLACE_HOLDER = -1
