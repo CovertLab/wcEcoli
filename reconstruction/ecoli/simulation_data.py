@@ -41,6 +41,8 @@ class SimulationDataEcoli(object):
 
 		self._addConditionData(raw_data)
 
+		# create a dict with the exchange data for all nutrient conditions
+		self.exchange_data_dict = self._getExchangeData(raw_data)
 		self.condition = "basal"
 
 		self.doubling_time = self.conditionToDoublingTime[self.condition]
@@ -106,6 +108,52 @@ class SimulationDataEcoli(object):
 			))
 
 		self.dNtpOrder = ["A", "C", "G", "T"]
+
+
+	def _getExchangeData(self, raw_data):
+		externalExchangeMolecules = {}
+		importExchangeMolecules = {}
+		secretionExchangeMolecules = set()
+		importConstrainedExchangeMolecules = {}
+		importUnconstrainedExchangeMolecules = {}
+		nutrientsList = [(x, getattr(raw_data.condition.nutrient, x)) for x in dir(raw_data.condition.nutrient) if not x.startswith("__")]
+		for nutrientsName, nutrients in nutrientsList:
+			externalExchangeMolecules[nutrientsName] = set()
+			importExchangeMolecules[nutrientsName] = set()
+			importConstrainedExchangeMolecules[nutrientsName] = {}
+			importUnconstrainedExchangeMolecules[nutrientsName] = []
+			for nutrient in nutrients:
+				if not np.isnan(nutrient["lower bound"].asNumber()) and not np.isnan(nutrient["upper bound"].asNumber()):
+					continue
+				elif not np.isnan(nutrient["upper bound"].asNumber()):
+					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = nutrient["upper bound"]
+					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
+					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
+				else:
+					importUnconstrainedExchangeMolecules[nutrientsName].append(nutrient["molecule id"])
+					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
+					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
+
+			for secretion in raw_data.secretions:
+				if secretion["lower bound"] and secretion["upper bound"]:
+					# "non-growth associated maintenance", not included in our metabolic model
+					continue
+
+				else:
+					externalExchangeMolecules[nutrientsName].add(secretion["molecule id"])
+					secretionExchangeMolecules.add(secretion["molecule id"])
+
+			externalExchangeMolecules[nutrientsName] = sorted(externalExchangeMolecules[nutrientsName])
+			importExchangeMolecules[nutrientsName] = sorted(importExchangeMolecules[nutrientsName])
+		secretionExchangeMolecules = sorted(secretionExchangeMolecules)
+
+		return {
+			"externalExchangeMolecules": externalExchangeMolecules,
+			"importExchangeMolecules": importExchangeMolecules,
+			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
+			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
+			"secretionExchangeMolecules": secretionExchangeMolecules,
+			}
 
 
 	def _addConditionData(self, raw_data):

@@ -3,13 +3,6 @@
 """
 External state that represents environmental molecules and conditions.
 
-	- nutrient_data: a dictionary including the following keys and their values:
-		- externalExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
-		- importExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
-		- importConstrainedExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
-		- importUnconstrainedExchangeMolecules: a dictionary of all the nutrient condition names, with a list of molecules as their values.
-		- secretionExchangeMolecules: a list of exchange molecules
-
 	- nutrients_time_series: a list of tuples that include time and nutrients in which shifts occur.
 
 	- nutrients: a string specifying the current nutrient condition.
@@ -34,7 +27,6 @@ class Environment(wholecell.states.external_state.ExternalState):
 	def initialize(self, sim, sim_data):
 		super(Environment, self).initialize(sim, sim_data)
 
-		self.nutrient_data = sim_data.external_state.environment.nutrient_data
 		self.nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
 		self.nutrients_time_series = sim_data.external_state.environment.nutrients_time_series[
 			self.nutrients_time_series_label
