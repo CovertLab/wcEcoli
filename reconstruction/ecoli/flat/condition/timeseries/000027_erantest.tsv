@@ -1,0 +1,5 @@
+"time (units.s)"	"nutrients"	"volume_liters"
+0	"minimal"	"1E-9"
+20	"minimal_plus_amino_acids"	"1E-9"
+40	"minimal_minus_oxygen"	"1E-9"
+60	"minimal"	"1E-9"

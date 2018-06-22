@@ -35,7 +35,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.objectiveValue = 0.0
 
 		self.metaboliteNamesFromNutrients = set()
-		for time, nutrientsLabel in sim_data.external_state.environment.nutrients_time_series[
+		for time, nutrientsLabel, volume in sim_data.external_state.environment.nutrients_time_series[
 			sim_data.external_state.environment.nutrients_time_series_label
 			]:
 

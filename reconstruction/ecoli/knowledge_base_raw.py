@@ -121,6 +121,12 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("condition", "timeseries", "000024_cut_calcium.tsv"),
 	os.path.join("condition", "timeseries", "000025_cut_aa.tsv"),
 	os.path.join("condition", "timeseries", "000026_add_and_cut_aa.tsv"),
+	os.path.join("condition", "timeseries", "000027_erantest.tsv"),
+	os.path.join("condition", "environment", "minimal.tsv"),
+	os.path.join("condition", "environment", "minimal_acetate.tsv"),
+	os.path.join("condition", "environment", "minimal_minus_oxygen.tsv"),
+	os.path.join("condition", "environment", "minimal_no_glucose.tsv"),
+	os.path.join("condition", "environment", "minimal_plus_amino_acids.tsv"),
 	)
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = ("parameters.tsv", "mass_parameters.tsv")

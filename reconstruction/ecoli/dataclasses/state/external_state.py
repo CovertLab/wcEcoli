@@ -78,5 +78,5 @@ class ExternalState(object):
 		self.environment.nutrients = self.environment.environment_dict[initial_environment]
 
 		# These are used to initiate exchange_flux in metabolism
-		self.environment.nutrients_defs = raw_data.condition.nutrients_defs
-		self.environment.secretions = raw_data.secretions
+		# self.environment.nutrients_defs = raw_data.condition.nutrients_defs
+		# self.environment.secretions = raw_data.secretions

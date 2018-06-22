@@ -65,8 +65,8 @@ class Environment(wholecell.states.external_state.ExternalState):
 		self.nutrients = self.nutrients_time_series[0][1]
 		self._times = [t[0] for t in self.nutrients_time_series]
 
-		self._volume = self.nutrients_time_series[0][2]
 		# get volume if volume is infinite (default), changeCounts is skipped
+		self._volume = self.nutrients_time_series[0][2]
 		if self._volume == 'infinite':
 			self._infinite_environment = True
 		else:

@@ -85,7 +85,8 @@ class Metabolism(wholecell.processes.process.Process):
 		# Setup molecules in external environment that can be exchanged
 		externalExchangedMolecules = sim_data.exchange_data_dict["secretionExchangeMolecules"]
 		self.metaboliteNamesFromNutrients = set()
-		for time, nutrientsLabel in sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label]:
+
+		for time, nutrientsLabel, volume in sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label]:
 			externalExchangedMolecules += sim_data.exchange_data_dict["importExchangeMolecules"][nutrientsLabel]
 
 			self.metaboliteNamesFromNutrients.update(
