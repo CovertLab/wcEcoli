@@ -95,6 +95,10 @@ class Metabolism(wholecell.processes.process.Process):
 					)
 				)
 		externalExchangedMolecules = sorted(set(externalExchangedMolecules))
+
+		# save nutrient names for environment view
+		self.nutrient_ids = externalExchangedMolecules
+
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
 		moleculeMasses = dict(zip(externalExchangedMolecules, sim_data.getter.getMass(externalExchangedMolecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
@@ -175,7 +179,11 @@ class Metabolism(wholecell.processes.process.Process):
 		# External molecules
 		self.externalMoleculeIDs = self.fba.getExternalMoleculeIDs()
 
-		# Views
+		## Views
+		# views of environment
+		self.environment_nutrients = self.environmentView(self.nutrient_ids)
+
+		# views for metabolism
 		self.metaboliteNames = self.fba.getOutputMoleculeIDs()
 		self.metabolites = self.bulkMoleculesView(self.metaboliteNamesFromNutrients)
 		self.catalysts = self.bulkMoleculesView(self.catalystsList)
@@ -345,6 +353,15 @@ class Metabolism(wholecell.processes.process.Process):
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
+
+		# change in nutrient counts, used in non-infinite environments
+		delta_nutrients = ((1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes()).asNumber().astype(int)
+		self.environment_nutrients.changeCounts(delta_nutrients)
+
+		#track glc in environment container
+		import ipdb; ipdb.set_trace()
+		# self._external_states['Environment'].container.concentrations(['GLC[p]'])
+
 
 		# Write outputs to listeners
 		self.writeToListener("FBAResults", "deltaMetabolites", metaboliteCountsFinal - metaboliteCountsInit)

@@ -34,6 +34,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 		self._moleculeIDs = None
 		self._concentrations = None
 		self._volume = None
+		self._infinite_environment = None
 
 		super(Environment, self).__init__(*args, **kwargs)
 
@@ -49,11 +50,6 @@ class Environment(wholecell.states.external_state.ExternalState):
 		# get molecule IDs and initial concentrations
 		self._moleculeIDs = [id for id, value in sim_data.external_state.environment.nutrients.iteritems()]
 		self._concentrations = np.array([value.asNumber() for id, value in sim_data.external_state.environment.nutrients.iteritems()])
-
-		# create container for molecule concentrations
-		self.container = EnvironmentObjectsContainer(self._moleculeIDs)
-		self.container.concentrationsIs(self._concentrations)
-		self.container.volumeIs(self._volume)
 
 		# environment time series data
 		self.environment_dict = sim_data.external_state.environment.environment_dict
@@ -72,6 +68,11 @@ class Environment(wholecell.states.external_state.ExternalState):
 		else:
 			self._infinite_environment = False
 			self._volume = float(self._volume) * (units.L)
+
+		# create container for molecule concentrations
+		self.container = EnvironmentObjectsContainer(self._moleculeIDs)
+		self.container.concentrationsIs(self._concentrations)
+		self.container.volumeIs(self._volume)
 
 		# the length of the longest nutrients name, for padding in nutrients listener
 		self._nutrients_name_max_length = len(max([t[1] for t in self.nutrients_time_series], key=len))
@@ -92,7 +93,6 @@ class Environment(wholecell.states.external_state.ExternalState):
 				self._infinite_environment = False
 				self._volume = float(self._volume) * (units.L)
 
-			import ipdb; ipdb.set_trace()
 
 	def _counts_to_concentration(self, counts):
 		concentrations = counts / (self._volume * self._nAvogadro).asNumber(VOLUME_UNITS / COUNTS_UNITS)
@@ -160,7 +160,7 @@ class EnvironmentView(EnvironmentViewBase):
 
 
 	def changeCounts(self, counts):
-		if self._infinite_environment:
+		if self._state._infinite_environment:
 			return
 
 		self._changeCounts(counts)

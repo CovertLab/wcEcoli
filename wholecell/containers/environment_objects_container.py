@@ -15,7 +15,7 @@ class EnvironmentObjectsContainer(object):
 	EnvironmentObjectsContainer
 
 	A wrapper around a NumPy array that tracks the concentrations of environment objects.
-	Environment objects are bulk molecules in the environmnent.
+	Environment objects are bulk molecules in the environment.
 	'''
 
 	def __init__(self, objectNames, dtype = np.float64):
@@ -27,11 +27,11 @@ class EnvironmentObjectsContainer(object):
 
 		self._concentrations = np.zeros(len(self._objectNames), dtype)
 
-		self._volume = 0.0
+		self._volume = 'infinite'
 
 
 	def volume(self):
-		return self._volume.copy()
+		return self._volume
 
 
 	def volumeIs(self, value):
