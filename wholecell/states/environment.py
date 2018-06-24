@@ -96,10 +96,11 @@ class Environment(wholecell.states.external_state.ExternalState):
 
 	def _counts_to_concentration(self, counts):
 		concentrations = counts / (self._volume * self._nAvogadro).asNumber(VOLUME_UNITS / COUNTS_UNITS)
-
 		return concentrations
 
+
 	def tableCreate(self, tableWriter):
+		self.container.tableCreate(tableWriter)
 		tableWriter.writeAttributes(
 			nutrientTimeSeriesLabel = self.nutrients_time_series_label,
 			)
@@ -108,6 +109,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 	def tableAppend(self, tableWriter):
 		tableWriter.append(
 			nutrients = self.nutrients.ljust(self._nutrients_name_max_length),
+			nutrientConcentrations=self._concentrations,
 			)
 
 

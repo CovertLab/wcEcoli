@@ -11,16 +11,6 @@ Initializes the environment using conditions and time series from raw_data.
 		their concentrations (values).
 	- environment.environment_dict: a dictionary of all environments, each one
 		itself a dictionary nutrients (keys) and their concentrations (values).
-	- environment.nutrients_defs: a list of dicts,  with keys 'id' and 'import
-		constrained'. These are the nutrient's molecule ID and a boolean indicating
-		whether the nutrient is import constrained.
-	- environment.secretions: a list of dicts, with keys 'molecule id', 'lower
-		bound' and 'upper bound' for the flux constraints.
-
-Notes:
------
-	- secretions includes non-growth associate maintenance nutrients, which
-		are not used in metabolism.
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
