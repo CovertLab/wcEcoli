@@ -50,7 +50,7 @@ class ExternalState(object):
 				self.environment.nutrients_time_series[label].append((
 					row["time"].asNumber(units.s),
 					row["nutrients"].encode("utf-8"),
-					row["volume_liters"].encode("utf-8")
+					row["volume"].asNumber(units.L),
 					))
 
 		# create a dictionary with all saved environments

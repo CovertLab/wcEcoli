@@ -63,11 +63,12 @@ class Environment(wholecell.states.external_state.ExternalState):
 
 		# get volume if volume is infinite (default), changeCounts is skipped
 		self._volume = self.nutrients_time_series[0][2]
-		if self._volume == 'infinite':
+		if np.isnan(self._volume):
 			self._infinite_environment = True
 		else:
 			self._infinite_environment = False
-			self._volume = float(self._volume) * (units.L)
+			self._volume = self._volume * (units.L)
+
 
 		# create container for molecule concentrations
 		self.container = EnvironmentObjectsContainer(self._moleculeIDs)
@@ -87,7 +88,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 			self.container.concentrationsIs(self._concentrations)
 
 			self._volume = self.nutrients_time_series[current_index][2]
-			if self._volume == 'infinite':
+			if np.isnan(self._volume):
 				self._infinite_environment = True
 			else:
 				self._infinite_environment = False
@@ -105,11 +106,12 @@ class Environment(wholecell.states.external_state.ExternalState):
 			nutrientTimeSeriesLabel = self.nutrients_time_series_label,
 			)
 
-
+	# TODO (Eran) -- save volume in scientific notation, what format?
 	def tableAppend(self, tableWriter):
 		tableWriter.append(
-			nutrients = self.nutrients.ljust(self._nutrients_name_max_length),
+			nutrientCondition = self.nutrients.ljust(self._nutrients_name_max_length),
 			nutrientConcentrations=self._concentrations,
+			volume=str(self._volume.asNumber(units.L)),
 			)
 
 

@@ -1,3 +1,3 @@
-"time (units.s)"	"nutrients"	"volume_liters"
-0	"minimal"	"infinite"
-11000	"minimal_plus_amino_acids"	"infinite"
+"time (units.s)"	"nutrients"	"volume (units.L)"
+0	"minimal"	NaN
+11000	"minimal_plus_amino_acids"	NaN

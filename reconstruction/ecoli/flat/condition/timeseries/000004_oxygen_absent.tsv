@@ -1,2 +1,2 @@
-"time (units.s)"	"nutrients"	"volume_liters"
-0	"minimal_minus_oxygen"	"infinite"
+"time (units.s)"	"nutrients"	"volume (units.L)"
+0	"minimal_minus_oxygen"	NaN

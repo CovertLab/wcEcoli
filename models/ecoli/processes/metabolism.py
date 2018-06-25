@@ -230,6 +230,13 @@ class Metabolism(wholecell.processes.process.Process):
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
 
+
+		# TODO (Eran) set nutrients with 0 concentration to 0 vmax
+		import ipdb; ipdb.set_trace()
+
+
+
+
 		# Set external molecule levels
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
 			self.externalMoleculeIDs,

@@ -12,6 +12,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 import cPickle
 import math
+import itertools
+
+from wholecell.analysis.plotting_tools import COLORS_LARGE
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
@@ -37,15 +40,22 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	environment = TableReader(os.path.join(simOutDir, "Environment"))
 	nutrient_names = environment.readAttribute("objectNames")
 	nutrient_concentrations = environment.readColumn("nutrientConcentrations")
+	# volume = environment.readColumn("volume")
 	environment.close()
 
+
+
+	# Build a mapping from nutrient_name to color
+	idToColor = {}
+	for nutrient_name, color in itertools.izip(nutrient_names, itertools.cycle(COLORS_LARGE)):
+		idToColor[nutrient_name] = color
 
 	fig = plt.figure(figsize = (17, 6))
 	ax = fig.add_axes([0.1, 0.1, 0.6, 0.75])
 
-	for idx, nutrient_id in enumerate(nutrient_names):
-		if (not math.isnan(nutrient_concentrations[0, idx]) and nutrient_concentrations[0, idx]>0):
-			ax.plot(time, nutrient_concentrations[:,idx], linewidth=2, label=nutrient_id)
+	for idx, nutrient_name in enumerate(nutrient_names):
+		if (not math.isnan(nutrient_concentrations[0, idx]) and np.mean(nutrient_concentrations[:, idx])!=0):
+			ax.plot(time, nutrient_concentrations[:,idx], linewidth=2, label=nutrient_name, color=idToColor[nutrient_name])
 
 	ax.set_xlabel('Time (sec)')
 	ax.set_ylabel('concentration (mmol/L)')
@@ -55,7 +65,7 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 	# plt.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
 	# Put a legend to the right of the current axis
-	ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+	ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., ncol=2, prop={'size': 10})
 
 
 
