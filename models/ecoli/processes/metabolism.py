@@ -53,6 +53,9 @@ class Metabolism(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(Metabolism, self).initialize(sim, sim_data)
 
+		# initialize exchange_data based on initial nutrient condition
+		self.exchange_data = self._initExchangeData(sim_data)
+
 		# Load constants
 		self.nAvogadro = sim_data.constants.nAvogadro
 		self.cellDensity = sim_data.constants.cellDensity
@@ -67,7 +70,7 @@ class Metabolism(wholecell.processes.process.Process):
 		nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
 
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label][0][1]
+			self.exchange_data
 			)
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			sim_data.conditionToDoublingTime[sim_data.condition]
@@ -83,15 +86,18 @@ class Metabolism(wholecell.processes.process.Process):
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
 		# Setup molecules in external environment that can be exchanged
+		# TODO (eran) initialize externalExchangeMolecules without exchange_data_dict
 		externalExchangedMolecules = sim_data.exchange_data_dict["secretionExchangeMolecules"]
 		self.metaboliteNamesFromNutrients = set()
 
-		for time, nutrientsLabel, volume in sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label]:
-			externalExchangedMolecules += sim_data.exchange_data_dict["importExchangeMolecules"][nutrientsLabel]
-
+		for time, nutrient_label, volume in sim_data.external_state.environment.nutrients_time_series[
+				nutrients_time_series_label]:
+			# get exchange data for each nutrient condition in time series
+			nutrient_label_exchange_data = sim_data.process.metabolism._getExchangeData(nutrient_label)
+			externalExchangedMolecules += nutrient_label_exchange_data["importExchangeMolecules"]
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					nutrientsLabel, sim_data.process.metabolism.nutrientsToInternalConc
+					nutrient_label_exchange_data, sim_data.process.metabolism.nutrientsToInternalConc
 					)
 				)
 		externalExchangedMolecules = sorted(set(externalExchangedMolecules))
@@ -232,7 +238,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 
 		# TODO (Eran) set nutrients with 0 concentration to 0 vmax
-		import ipdb; ipdb.set_trace()
+
 
 
 
@@ -242,7 +248,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS,
-			current_nutrients,
+			self.exchange_data,
 			self.concModificationsBasedOnCondition,
 			)
 
@@ -405,3 +411,25 @@ class Metabolism(wholecell.processes.process.Process):
 				externalMoleculeLevels[idx] =  concDiff
 
 		self.fba.setExternalMoleculeLevels(externalMoleculeLevels)
+
+
+	def _initExchangeData(self, sim_data):
+		exchange_data_dict = sim_data.exchange_data_dict
+		nutrient_label = sim_data.external_state.environment.nutrients_time_series[
+			sim_data.external_state.environment.nutrients_time_series_label
+			][0][1]
+
+		# all nutrients from nutrients_def
+		externalExchangeMolecules = exchange_data_dict['externalExchangeMolecules'][nutrient_label]
+		importExchangeMolecules = exchange_data_dict['importExchangeMolecules'][nutrient_label]
+		importConstrainedExchangeMolecules = exchange_data_dict['importConstrainedExchangeMolecules'][nutrient_label]
+		importUnconstrainedExchangeMolecules = exchange_data_dict['importUnconstrainedExchangeMolecules'][nutrient_label]
+		secretionExchangeMolecules = exchange_data_dict['secretionExchangeMolecules']
+
+		return {
+			"externalExchangeMolecules": externalExchangeMolecules,
+			"importExchangeMolecules": importExchangeMolecules,
+			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
+			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
+			"secretionExchangeMolecules": secretionExchangeMolecules,
+			}

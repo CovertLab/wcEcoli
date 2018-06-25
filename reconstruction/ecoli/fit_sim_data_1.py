@@ -158,9 +158,9 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 			print "Updating mass in condition {}".format(condition_label)
 		spec = cellSpecs[condition_label]
 
+		exchange_data = sim_data.process.metabolism._getExchangeData(condition["nutrients"])
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			condition["nutrients"]
-			)
+			exchange_data)
 		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[condition_label]))
 
 		avgCellDryMassInit, fitAvgSolublePoolMass = rescaleMassForSolubleMetabolites(
@@ -232,10 +232,12 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 
 def buildBasalCellSpecifications(sim_data):
 	cellSpecs = {}
+
+	nutrient_label = "minimal"
+	exchange_data = sim_data.process.metabolism._getExchangeData(nutrient_label)
 	cellSpecs["basal"] = {
 		"concDict": sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					"minimal"
-				),
+			exchange_data),
 		"expression": sim_data.process.transcription.rnaExpression["basal"].copy(),
 		"doubling_time": sim_data.conditionToDoublingTime["basal"],
 		"translation_km": np.zeros(len(sim_data.moleculeGroups.aaIDs))
@@ -311,9 +313,9 @@ def buildTfConditionCellSpecifications(sim_data, tf):
 			fcData,
 		)
 
+		exchange_data = sim_data.process.metabolism._getExchangeData(conditionValue["nutrients"])
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			conditionValue["nutrients"]
-			)
+			exchange_data)
 		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[conditionKey]))
 
 		cellSpecs[conditionKey] = {
@@ -370,9 +372,9 @@ def buildCombinedConditionCellSpecifications(sim_data, cellSpecs):
 			fcData,
 		)
 
+		exchange_data = sim_data.process.metabolism._getExchangeData(conditionValue["nutrients"])
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			conditionValue["nutrients"]
-			)
+			exchange_data)
 		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[conditionKey]))
 
 		cellSpecs[conditionKey] = {
