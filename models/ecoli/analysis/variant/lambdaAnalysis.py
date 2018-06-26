@@ -57,6 +57,8 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	n_flux_above_0 = []
 	n_flux_off_axis = []
 	correlation_coefficient = []
+	homeostatic_objective_value = []
+	kinetic_objective_value = []
 
 	# Pull information from sim data and listeners
 	for variant, sim_dir in zip(variants, all_cells):
@@ -64,6 +66,8 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 		sim_data = cPickle.load(open(ap.get_variant_kb(variant), 'rb'))
 		cell_density = sim_data.constants.cellDensity
 		n_avogadro = sim_data.constants.nAvogadro
+		constrained_reactions = sim_data.process.metabolism.constrainedReactionList
+		disabled_constraints = sim_data.process.metabolism.constraintsToDisable
 
 		mass_reader = TableReader(os.path.join(sim_out_dir, 'Mass'))
 		fba_results_reader = TableReader(os.path.join(sim_out_dir, 'FBAResults'))
@@ -156,6 +160,15 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 		toya_vs_reaction_ave = np.array(toya_vs_reaction_ave)
 		correlation_coefficient.append(np.corrcoef(toya_vs_reaction_ave[:, 0], toya_vs_reaction_ave[:, 1])[0, 1])
 
+		# Objective values
+		# Need to filter nan and inf for kinetic
+		enabled_idx = [i for i, rxn in enumerate(constrained_reactions) if rxn not in disabled_constraints]
+		kinetic_objective = np.abs(1 - actual_fluxes[enabled_idx, :] / target_fluxes[enabled_idx, :])
+		filter_idx = ~np.isfinite(kinetic_objective)
+		kinetic_objective[filter_idx] = 0
+		kinetic_objective_value.append(np.mean(np.sum(kinetic_objective, axis=0)))
+		homeostatic_objective_value.append(np.mean(np.sum(fba_results_reader.readColumn('homeostaticObjectiveValues'), axis=1)))
+
 	n_metabolites = len(actual_conc)
 	n_fluxes = len(actual_ave)
 	lambdas = [np.log10(x) if x != 0 else np.nanmin(np.log10(lambdas[lambdas != 0]))-1 for x in lambdas]
@@ -214,6 +227,13 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	plt.xlabel('lambda')
 
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
+	plt.figure()
+	plt.loglog(homeostatic_objective_value, kinetic_objective_value, '-o')
+	plt.xlabel('Homeostatic Objective Value')
+	plt.ylabel('Kinetics Objective Value')
+	exportFigure(plt, plotOutDir, '{}_obj'.format(plotOutFileName), metadata)
+
 	plt.close('all')
 
 
