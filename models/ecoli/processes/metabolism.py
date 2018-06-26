@@ -56,6 +56,10 @@ class Metabolism(wholecell.processes.process.Process):
 		# initialize exchange_data based on initial nutrient condition
 		self.exchange_data = self._initExchangeData(sim_data)
 
+		#TODO (Eran) this can be remove once transport is in place
+		#TODO (Eran) updateing exchange_data changes exchange_data_dict... don't let this happen
+		self.exchange_data_dict = sim_data.exchange_data_dict.copy()
+
 		# Load constants
 		self.nAvogadro = sim_data.constants.nAvogadro
 		self.cellDensity = sim_data.constants.cellDensity
@@ -437,12 +441,30 @@ class Metabolism(wholecell.processes.process.Process):
 
 		k_m = 1 # (units.mmol / units.L). John suggests 10 micromolar
 
-		# if any nutrient concentration is less than threshold k_m, set its importConstrained vmax = 0
+		constrained_ids = self.exchange_data['importConstrainedExchangeMolecules'].keys()
+
 		below_thresh_indices = [idx for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()) if (conc <= k_m and not np.isnan(conc))]
 		below_thresh_ids = [self.environment_nutrients_names[id] for id in below_thresh_indices]
 
-		# TODO (Eran) -- only need to update those that are newly below threshold
-		# TODO (Eran) -- if concentrations go above threshold, remove them from importConstrained
+		# ids to add to constraint list
+		new_below_thresh_ids = np.setdiff1d(below_thresh_ids,constrained_ids)
 
-		for id in below_thresh_ids:
+		above_thresh_indices = [idx for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()) if (conc >= k_m and not np.isnan(conc))]
+		above_thresh_ids = [self.environment_nutrients_names[id] for id in above_thresh_indices]
+
+		# ids to remove from constraint list
+		new_above_thresh_ids = np.intersect1d(above_thresh_ids, constrained_ids)
+
+		# add molecule to import constraint if newly below threshold
+		for id in new_below_thresh_ids:
 			self.exchange_data['importConstrainedExchangeMolecules'][id] = 0 * (units.mmol / units.g / units.h)
+
+		# remove molecule from import constraint if newly above threshold
+		for id in new_above_thresh_ids:
+			self.exchange_data['importConstrainedExchangeMolecules'].pop(id, None)
+
+		import ipdb; ipdb.set_trace()
+		# TODO (Eran) GLC needs to be handled differently, always with an import constraint, and depends on environment
+
+		# self.exchange_data_dict['importConstrainedExchangeMolecules'][self._external_states['Environment'].nutrients]
+		# get glc import constraint from exchange_data_dict

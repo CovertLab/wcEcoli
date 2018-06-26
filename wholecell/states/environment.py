@@ -94,6 +94,16 @@ class Environment(wholecell.states.external_state.ExternalState):
 				self._infinite_environment = False
 				self._volume = float(self._volume) * (units.L)
 
+			# self.timer = 1
+
+		# if self.timer != 0:
+		# 	import ipdb; ipdb.set_trace()
+		#
+		# 	self.timer +=1
+		#
+		# 	if self.timer == 3:
+		# 		self.timer = 0
+
 
 	def _counts_to_concentration(self, counts):
 		concentrations = counts / (self._volume * self._nAvogadro).asNumber(VOLUME_UNITS / COUNTS_UNITS)
@@ -138,6 +148,10 @@ class EnvironmentViewBase(object):
 	def _changeCounts(self, counts):
 		assert (np.size(counts) == np.size(self._containerIndexes)) or np.size(counts) == 1, 'Inappropriately sized values'
 		change_concentrations = self._state._counts_to_concentration(counts)
+
+
+
+
 		self._state._concentrations[self._containerIndexes] += change_concentrations
 
 	# Interface to Process
