@@ -14,7 +14,7 @@ import cPickle
 import math
 import itertools
 
-from wholecell.analysis.plotting_tools import COLORS_LARGE
+from wholecell.analysis.plotting_tools import COLORS_SMALL
 
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.constants
@@ -47,25 +47,35 @@ def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile
 
 	# Build a mapping from nutrient_name to color
 	idToColor = {}
-	for nutrient_name, color in itertools.izip(nutrient_names, itertools.cycle(COLORS_LARGE)):
+	for nutrient_name, color in itertools.izip(nutrient_names, itertools.cycle(COLORS_SMALL)):
 		idToColor[nutrient_name] = color
 
-	fig = plt.figure(figsize = (17, 6))
-	ax = fig.add_axes([0.1, 0.1, 0.6, 0.75])
+	plt.figure(figsize = (17, 12))
+	# ax = fig.add_axes([0.1, 0.1, 0.6, 0.75])
 
 	for idx, nutrient_name in enumerate(nutrient_names):
 		if (not math.isnan(nutrient_concentrations[0, idx]) and np.mean(nutrient_concentrations[:, idx])!=0):
-			ax.plot(time, nutrient_concentrations[:,idx], linewidth=2, label=nutrient_name, color=idToColor[nutrient_name])
 
-	ax.set_xlabel('Time (sec)')
-	ax.set_ylabel('concentration (mmol/L)')
 
-	# # Shrink current axis by 20%
-	# box = plt.get_position()
-	# plt.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+			# Unadjusted
+			plt.subplot(3, 1, 1)
+			plt.plot(time, nutrient_concentrations[:,idx], linewidth=2, label=nutrient_name, color=idToColor[nutrient_name])
+
+			# Log scale
+			plt.subplot(3, 1, 2)
+			plt.plot(time, np.log10(nutrient_concentrations[:,idx]), linewidth=2, label=nutrient_name, color=idToColor[nutrient_name])
+
+
+	plt.subplot(3, 1, 1)
+	plt.xlabel('Time (sec)')
+	plt.ylabel('concentration (mmol/L)')
+
+	plt.subplot(3, 1, 2)
+	plt.xlabel('Time (sec)')
+	plt.ylabel('Log10 concentration (mmol/L)')
 
 	# Put a legend to the right of the current axis
-	ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., ncol=2, prop={'size': 10})
+	plt.legend(bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0., ncol=3, prop={'size': 10})
 
 
 

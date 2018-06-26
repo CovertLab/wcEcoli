@@ -103,7 +103,7 @@ class Metabolism(wholecell.processes.process.Process):
 		externalExchangedMolecules = sorted(set(externalExchangedMolecules))
 
 		# save nutrient names for environment view
-		self.environment_nutrients = externalExchangedMolecules
+		self.environment_nutrients_names = externalExchangedMolecules
 
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
@@ -187,7 +187,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		## Views
 		# views of environment
-		self.environment_nutrients = self.environmentView(self.environment_nutrients)
+		self.environment_nutrients = self.environmentView(self.environment_nutrients_names)
 
 		# views for metabolism
 		self.metaboliteNames = self.fba.getOutputMoleculeIDs()
@@ -239,9 +239,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# TODO (Eran) set nutrients with 0 concentration to 0 vmax
 
-
-
-
+		# Update FBA import constraint variables based on current nutrient concentrations
+		self._updateImportConstraint()
 
 		# Set external molecule levels
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
@@ -433,3 +432,17 @@ class Metabolism(wholecell.processes.process.Process):
 			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
 			"secretionExchangeMolecules": secretionExchangeMolecules,
 			}
+
+	def _updateImportConstraint(self):
+
+		k_m = 1 # (units.mmol / units.L). John suggests 10 micromolar
+
+		# if any nutrient concentration is less than threshold k_m, set its importConstrained vmax = 0
+		below_thresh_indices = [idx for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()) if (conc <= k_m and not np.isnan(conc))]
+		below_thresh_ids = [self.environment_nutrients_names[id] for id in below_thresh_indices]
+
+		# TODO (Eran) -- only need to update those that are newly below threshold
+		# TODO (Eran) -- if concentrations go above threshold, remove them from importConstrained
+
+		for id in below_thresh_ids:
+			self.exchange_data['importConstrainedExchangeMolecules'][id] = 0 * (units.mmol / units.g / units.h)
