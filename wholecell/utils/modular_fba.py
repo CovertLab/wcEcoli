@@ -20,9 +20,9 @@ S_CPLEX_LINEAR = "cplex-linear"
 S_GLPK = "glpk-linear"
 
 _SOLVER_PREFERENCE = (
-	S_CPLEX_QUAD,
-	S_CPLEX_LINEAR,
 	S_GLPK,
+	S_CPLEX_LINEAR,
+	S_CPLEX_QUAD,
 	)
 
 QUADRATIC = {
