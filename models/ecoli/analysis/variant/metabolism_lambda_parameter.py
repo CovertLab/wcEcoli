@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-Analyze results from lambdaWeight variant
+Analyze results from metabolism_lambda_weight variant
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 6/7/18'

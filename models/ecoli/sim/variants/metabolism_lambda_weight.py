@@ -1,10 +1,10 @@
 # lambda from 0 to 1
 LAMBDA = [0] + [10**x for x in range(-8, 1)]
 
-def lambdaWeightIndices(sim_data):
+def metabolism_lambda_weight_indices(sim_data):
 	return len(LAMBDA)
 
-def lambdaWeight(sim_data, index):
+def metabolism_lambda_weight(sim_data, index):
 	weight = LAMBDA[index]
 	sim_data.constants.metabolismKineticObjectiveWeight = weight
 
