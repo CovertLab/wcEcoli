@@ -17,9 +17,6 @@ from models.ecoli.sim.variants.starvation_variant import starvationVariantTotalI
 from models.ecoli.sim.variants.metabolism_target_range import metabolismTargetRange
 from models.ecoli.sim.variants.metabolism_target_range import metabolismTargetRangeTotalIndices
 
-from models.ecoli.sim.variants.metabolism_objective_kinetic_homeostatic_ratio import metabolismKineticHomeostaticRatio
-from models.ecoli.sim.variants.metabolism_objective_kinetic_homeostatic_ratio import metabolismKineticHomeostaticRatioTotalIndices
-
 from models.ecoli.sim.variants.growth_rate import growthRate
 from models.ecoli.sim.variants.growth_rate import growthRateTotalIndices
 
@@ -83,7 +80,6 @@ nameToFunctionMapping = {
 	"tfActivity": tfActivity,
 	"condition": condition,
 	"anaerobic": anaerobic,
-	"metabolismKineticHomeostaticRatio": metabolismKineticHomeostaticRatio,
 	"nutrientTimeSeriesDownshift" : nutrientTimeSeriesDownshift,
 	"kineticsConstraints" : kineticsConstraints,
 	"transcriptionInitiationShuffleParams": transcriptionInitiationShuffleParams,
@@ -109,7 +105,6 @@ nameToNumIndicesMapping = {
 	"tfActivity": tfActivityTotalIndices,
 	"condition": conditionIndices,
 	"anaerobic": anaerobicIndices,
-	"metabolismKineticHomeostaticRatio": metabolismKineticHomeostaticRatioTotalIndices,
 	"nutrientTimeSeriesDownshift" : nutrientTimeSeriesDownshiftTotalIndices,
 	"kineticsConstraints" : kineticsConstraintsIndices,
 	"transcriptionInitiationShuffleParams": transcriptionInitiationShuffleParamsTotalIndices,
