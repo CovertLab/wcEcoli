@@ -59,6 +59,8 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	correlation_coefficient = []
 	homeostatic_objective_value = []
 	kinetic_objective_value = []
+	homeostatic_objective_std = []
+	kinetic_objective_std = []
 
 	# Pull information from sim data and listeners
 	for variant, sim_dir in zip(variants, all_cells):
@@ -163,11 +165,15 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 		# Objective values
 		# Need to filter nan and inf for kinetic
 		enabled_idx = [i for i, rxn in enumerate(constrained_reactions) if rxn not in disabled_constraints]
-		kinetic_objective = np.abs(1 - actual_fluxes[enabled_idx, :] / target_fluxes[enabled_idx, :])
-		filter_idx = ~np.isfinite(kinetic_objective)
-		kinetic_objective[filter_idx] = 0
-		kinetic_objective_value.append(np.mean(np.sum(kinetic_objective, axis=0)))
-		homeostatic_objective_value.append(np.mean(np.sum(fba_results_reader.readColumn('homeostaticObjectiveValues'), axis=1)))
+		kinetic_objective_values = np.abs(1 - actual_fluxes[enabled_idx, :] / target_fluxes[enabled_idx, :])
+		filter_idx = ~np.isfinite(kinetic_objective_values)
+		kinetic_objective_values[filter_idx] = 0
+		kinetic_objective = np.sum(kinetic_objective_values, axis=0)
+		kinetic_objective_value.append(np.mean(kinetic_objective))
+		kinetic_objective_std.append(np.std(kinetic_objective))
+		homeostatic_objective_values = np.sum(fba_results_reader.readColumn('homeostaticObjectiveValues'), axis=1)
+		homeostatic_objective_value.append(np.mean(homeostatic_objective_values))
+		homeostatic_objective_std.append(np.std(homeostatic_objective_values))
 
 	n_metabolites = len(actual_conc)
 	n_fluxes = len(actual_ave)
@@ -229,7 +235,10 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 	plt.figure()
-	plt.loglog(homeostatic_objective_value, kinetic_objective_value, '-o')
+	ax = plt.gca()
+	ax.set_xscale("log", nonposx='clip')
+	ax.set_yscale("log", nonposy='clip')
+	plt.errorbar(homeostatic_objective_value, kinetic_objective_value, xerr=homeostatic_objective_std, yerr=kinetic_objective_std, fmt='o')
 	plt.xlabel('Homeostatic Objective Value')
 	plt.ylabel('Kinetics Objective Value')
 	exportFigure(plt, plotOutDir, '{}_obj'.format(plotOutFileName), metadata)
