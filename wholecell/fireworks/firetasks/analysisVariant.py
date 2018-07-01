@@ -65,9 +65,7 @@ class AnalysisVariantTask(FireTaskBase):
 				print "%s: Running %s" % (time.ctime(), f)
 				try:
 					mod.Plot.main(*args)
-				except SystemExit:
-					raise SystemExit(1)
-				except:
+				except Exception:
 					traceback.print_exc()
 					exception = True
 					exceptionFileList += [f]

@@ -2,12 +2,9 @@
 Run the Fitter. The output goes into the named subdirectory of wcEcoli/out/,
 defaulting to "manual".
 
-NOTE: On macOS, cpus > 1 gets stuck in numpy.linalg.solve(). A deadlock?
-A small test case works fine and will load 8 processes at ~95% CPU each.
-
 TODO: Default to a typical timestamped directory name instead of "manual"?
 
-TODO: Share lots of code with fw_queue.py.
+TODO: Share lots of code with fw_queue.py and AnalysisPaths.py.
 
 Run with '-h' for command line help.
 Set PYTHONPATH when running this.
