@@ -60,7 +60,7 @@ class AnalysisVariantTask(FireTaskBase):
 				)
 
 			if "WC_ANALYZE_FAST" in os.environ:
-				results.update({f: pool.apply_async(run_function, args = (mod.main, args, f))})
+				results[f] = pool.apply_async(run_plot, args=(mod.Plot, args, f))
 			else:
 				print "%s: Running %s" % (time.ctime(), f)
 				try:
@@ -88,10 +88,10 @@ class AnalysisVariantTask(FireTaskBase):
 		else:
 			print "Completed variant analysis in %s" % (time.strftime("%H:%M:%S", time.gmtime(timeTotal)))
 
-def run_function(f, args, name):
+def run_plot(plot_class, args, name):
 	try:
 		print "%s: Running %s" % (time.ctime(), name)
-		f(*args)
+		plot_class.main(*args)
 	except KeyboardInterrupt:
 		import sys; sys.exit(1)
 	except Exception as e:

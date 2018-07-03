@@ -15,9 +15,6 @@ PLOT_FIG2 = True
 CLEAN_VER = False
 
 
-def main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile=None, metadata=None):
-	Plot.main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata)
-
 def emptyAxis(ax):
 	ax.spines["top"].set_visible(False)
 	ax.spines["bottom"].set_visible(False)

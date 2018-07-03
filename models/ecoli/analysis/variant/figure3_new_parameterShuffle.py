@@ -21,9 +21,6 @@ LINEWIDTH = 4
 GENERATE_CLEAN_SUBPLOTS = True
 
 
-def main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile=None, metadata=None):
-	Plot.main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata)
-
 def removeXAxis(ax):
 	ax.spines["bottom"].set_visible(False)
 	ax.tick_params(bottom = "off")

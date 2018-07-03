@@ -61,7 +61,7 @@ class AnalysisCohortTask(FireTaskBase):
 				)
 
 			if "WC_ANALYZE_FAST" in os.environ:
-				results.update({f: pool.apply_async(run_plot, args = (mod, args, f))})
+				results[f] = pool.apply_async(run_plot, args=(mod.Plot, args, f))
 			else:
 				print "%s: Running %s" % (time.ctime(), f)
 				try:
@@ -89,10 +89,10 @@ class AnalysisCohortTask(FireTaskBase):
 		else:
 			print "Completed cohort analysis in %s" % (time.strftime("%H:%M:%S", time.gmtime(timeTotal)))
 
-def run_plot(mod, args, name):
+def run_plot(plot_class, args, name):
 	try:
 		print "%s: Running %s" % (time.ctime(), name)
-		mod.Plot.main(*args)
+		plot_class.main(*args)
 	except KeyboardInterrupt:
 		import sys; sys.exit(1)
 	except Exception as e:

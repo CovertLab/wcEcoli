@@ -51,7 +51,7 @@ class AnalysisSingleTask(FireTaskBase):
 				)
 
 			if "WC_ANALYZE_FAST" in os.environ:
-				results.update({f: pool.apply_async(run_plot, args = (mod.Plot, args, f))})
+				results[f] = pool.apply_async(run_plot, args=(mod.Plot, args, f))
 			else:
 				print "%s: Running %s" % (time.ctime(), f)
 				try:
