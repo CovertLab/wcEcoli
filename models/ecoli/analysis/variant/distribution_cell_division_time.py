@@ -20,6 +20,9 @@ FONT_SIZE=9
 trim = 0.05
 
 
+def main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile=None, metadata=None):
+	Plot.main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata)
+
 def mm2inch(value):
 	return value * 0.0393701
 

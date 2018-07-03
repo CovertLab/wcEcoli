@@ -24,9 +24,11 @@ FONT_SIZE=9
 trim = 0.05
 
 
+def main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile=None, metadata=None):
+	Plot.main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata)
+
 def getPCC((variant, ap, monomerIds, schmidtCounts)):
 	try:
-
 		simDir = ap.get_cells(variant = [variant])[0]
 
 		sim_data = cPickle.load(open(ap.get_variant_kb(variant), "rb"))
@@ -84,7 +86,6 @@ def getPCC((variant, ap, monomerIds, schmidtCounts)):
 	except Exception as e:
 		print e
 		return np.nan, np.nan
-
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):

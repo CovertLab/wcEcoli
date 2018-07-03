@@ -60,11 +60,11 @@ class AnalysisVariantTask(FireTaskBase):
 				)
 
 			if "WC_ANALYZE_FAST" in os.environ:
-				results.update({f: pool.apply_async(run_function, args = (mod.Plot.main, args, f))})
+				results.update({f: pool.apply_async(run_function, args = (mod.main, args, f))})
 			else:
 				print "%s: Running %s" % (time.ctime(), f)
 				try:
-					mod.Plot.main(*args)
+					mod.main(*args)
 				except Exception:
 					traceback.print_exc()
 					exception = True

@@ -25,6 +25,9 @@ NT_MW = 487.0
 PROTEIN_MW = 110.0
 
 
+def main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile=None, metadata=None):
+	Plot.main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata)
+
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		if not os.path.isdir(inputDir):

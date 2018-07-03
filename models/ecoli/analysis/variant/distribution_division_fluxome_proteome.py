@@ -26,8 +26,10 @@ FONT_SIZE=9
 trim = 0.05
 
 
-def getPCCProteome((variant, ap, monomerIds, schmidtCounts)):
+def main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile=None, metadata=None):
+	Plot.main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata)
 
+def getPCCProteome((variant, ap, monomerIds, schmidtCounts)):
 	try:
 		simDir = ap.get_cells(variant = [variant])[0]
 

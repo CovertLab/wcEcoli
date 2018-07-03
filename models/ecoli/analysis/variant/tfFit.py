@@ -24,6 +24,9 @@ from models.ecoli.analysis import variantAnalysisPlot
 NUMERICAL_ZERO = 1e-12
 
 
+def main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile=None, metadata=None):
+	Plot.main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata)
+
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		if metadata["variant"] != "tfActivity":

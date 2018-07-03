@@ -59,6 +59,11 @@ class AnalysisPlot(scriptBase.ScriptBase):
 		super(AnalysisPlot, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)
 
+		# TODO(jerry): For good defaults, implement subclass-specific code like
+		# runscripts/manual/analysis*.py. Better yet, move that code from those
+		# scripts to here for sharing, and unify the run-one vs. run-category
+		# of analysis plots.
+
 		parser.add_argument("--plotOutDir",
 			help="Directory for plot output (will get created if necessary).")
 		parser.add_argument("--plotOutFileName", help="Plot output filename.")

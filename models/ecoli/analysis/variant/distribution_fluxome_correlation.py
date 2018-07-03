@@ -27,8 +27,10 @@ FONT_SIZE=9
 trim = 0.05
 
 
-def getPCC((variant, ap, toyaReactions, toyaFluxesDict, toyaStdevDict)):
+def main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile=None, metadata=None):
+	Plot.main(inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata)
 
+def getPCC((variant, ap, toyaReactions, toyaFluxesDict, toyaStdevDict)):
 	try:
 
 		simDir = ap.get_cells(variant = [variant])[0]
@@ -85,8 +87,6 @@ def getPCC((variant, ap, toyaReactions, toyaFluxesDict, toyaStdevDict)):
 	except Exception as e:
 		print e
 		return np.nan, np.nan
-
-
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
