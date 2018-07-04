@@ -24,9 +24,9 @@ class AnalysisBase(scriptBase.ScriptBase):
 	"""
 
 	def __init__(self, analysis_plotter=None):
-		"""Instantiate with an optional AnalysisPlot to run, otherwise run all
-		ACTIVE AnalysisPlots in a category. (This only uses analysis_plotter's
-		filename, not the instance. We could pass in a class instead.)
+		"""Instantiate with an optional AnalysisPlot to run (this only uses its
+		filename, not the instance), otherwise run all ACTIVE AnalysisPlots in
+		the subclass' category.
 		"""
 		super(AnalysisBase, self).__init__()
 
@@ -53,6 +53,9 @@ class AnalysisBase(scriptBase.ScriptBase):
 				help='One or more analysis plot files to run, e.g.'
 					 ' "figure2e.py". The default is to run all ACTIVE plots'
 					 " listed in this category's __init__.py file.")
+
+		parser.add_argument('-o', '--output_prefix', default='',
+			help='Prefix for all the output plot filenames.')
 
 	def parse_args(self):
 		"""Parse the command line args into an `argparse.Namespace`, including

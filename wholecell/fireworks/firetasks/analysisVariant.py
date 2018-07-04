@@ -29,6 +29,7 @@ class AnalysisVariantTask(FireTaskBase):
 	]
 	optional_params = [
 		"plots_to_run",  # absent or empty => run all active analysis plots
+		"output_filename_prefix",
 	]
 
 	def run_task(self, fw_spec):
@@ -40,6 +41,8 @@ class AnalysisVariantTask(FireTaskBase):
 		if not fileList:
 			fileList = models.ecoli.analysis.variant.ACTIVE
 
+		output_filename_prefix = self.get('output_filename_prefix', '')
+
 		if "WC_ANALYZE_FAST" in os.environ:
 			pool = mp.Pool(processes = 8)
 			results = {}
@@ -50,7 +53,7 @@ class AnalysisVariantTask(FireTaskBase):
 			args = (
 				self["input_directory"],
 				self["output_plots_directory"],
-				f[:-3],
+				output_filename_prefix + f[:-3],
 				'unused_sim_data_filename',
 				self['input_validation_data'],
 				self["metadata"]

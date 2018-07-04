@@ -39,7 +39,9 @@ class AnalysisVariant(AnalysisBase):
 			input_validation_data=args.input_validation_data,
 			output_plots_directory=output_dir,
 			metadata=args.metadata,
-			plots_to_run=args.plot)
+			plots_to_run=args.plot,
+			output_filename_prefix=args.output_prefix,
+		)
 		task.run_task({})
 
 

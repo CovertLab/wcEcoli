@@ -30,6 +30,7 @@ class AnalysisCohortTask(FireTaskBase):
 	]
 	optional_params = [
 		"plots_to_run",  # absent or empty => run all active analysis plots
+		"output_filename_prefix",
 	]
 
 	def run_task(self, fw_spec):
@@ -41,6 +42,8 @@ class AnalysisCohortTask(FireTaskBase):
 		if not fileList:
 			fileList = models.ecoli.analysis.cohort.ACTIVE
 
+		output_filename_prefix = self.get('output_filename_prefix', '')
+
 		if "WC_ANALYZE_FAST" in os.environ:
 			pool = mp.Pool(processes = 8)
 			results = {}
@@ -51,7 +54,7 @@ class AnalysisCohortTask(FireTaskBase):
 			args = (
 				self["input_variant_directory"],
 				self["output_plots_directory"],
-				f[:-3],
+				output_filename_prefix + f[:-3],
 				self["input_sim_data"],
 				self['input_validation_data'],
 				self["metadata"],
