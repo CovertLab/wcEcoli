@@ -614,7 +614,7 @@ class FluxBalanceAnalysis(object):
 		""" Homeostatic FBA with a range of acceptable values. The objective is
 		to minimize the distance between the current metabolite level and a range
 		of target concentrations. Within this target range, there is a small preference
-		for the higher concentraion. The low and high ends of the target range are
+		for the higher concentration. The low and high ends of the target range are
 		defined in the objective."""
 
 		# Load parameters - default to regular homeostatic fba if none given
@@ -622,7 +622,7 @@ class FluxBalanceAnalysis(object):
 		inRangeObjWeight = objectiveParameters["inRangeObjWeight"] if "inRangeObjWeight" in objectiveParameters else 0
 		kineticObjectiveWeight = objectiveParameters["kineticObjectiveWeight"] if "kineticObjectiveWeight" in objectiveParameters else 0
 
-		# Track which molecules have homeostatic tagets
+		# Track which molecules have homeostatic targets
 		self._homeostaticTargetMolecules.update(set(objective.keys()))
 
 		if kineticObjectiveWeight > 1 or kineticObjectiveWeight < 0:
@@ -726,7 +726,7 @@ class FluxBalanceAnalysis(object):
 
 	def _initObjectiveKinetic(self, objective, objectiveParameters=None):
 		""" Given a dict of reaction_name:rate (objective), attempts to
-			minimize the L1 normalized distance between fluxes and those rates.
+			minimize the normalized distance between fluxes and those rates.
 		"""
 
 		self.kineticObjectiveWeight = objectiveParameters.get("kineticObjectiveWeight", 0)
@@ -962,7 +962,7 @@ class FluxBalanceAnalysis(object):
 			maintenanceCostGAM
 			)
 
-		# ... which are consumed in a seperate flux
+		# ... which are consumed in a separate flux
 
 		self._solver.setFlowMaterialCoeff(
 			self._reactionID_GAM,
@@ -1065,7 +1065,7 @@ class FluxBalanceAnalysis(object):
 		'''
 		Sets the upper and lower bounds for a group of reactions.
 		If upper or lower bounds are not specified (None), they are left as is.
-		Pssing a string as the first argument will automatically convert
+		Passing a string as the first argument will automatically convert
 		arguments to a list and lowerBounds and upperBounds should be floats.
 		inputs:
 			reactionIDs (str or array-like) - list of reactions to set flux bounds
