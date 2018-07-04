@@ -31,153 +31,200 @@ DCW_FLUX_UNITS = units.mmol / units.g / units.h
 FRAC_CONC_OFF_AXIS = 0.05
 FRAC_FLUX_OFF_AXIS = 0.05
 
+def get_average_values(array):
+	'''
+	Input:
+		array (numpy array of lists) - array of data to be averaged
+
+	Returns list of floats containing the average of each list in array
+	'''
+
+	return [np.mean(x) for x in array]
+
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = None):
 	if not os.path.isdir(inputDir):
 		raise Exception, 'inputDir does not currently exist as a directory'
 
 	ap = AnalysisPaths(inputDir, variant_plot=True)
-	variants = sorted(ap._path_data['variant'].tolist())
-
-	if len(variants) <= 1:
-		return
-
-	all_cells = sorted(ap.get_cells(seed=[0], generation=[0]))
 	variants = ap.get_variants()
+	n_variants = len(variants)
+
+	if n_variants <= 1:
+		print('This plot only runs for multiple variants'.format(__name__))
+		return
 
 	filepath.makedirs(plotOutDir)
 	validation_data = cPickle.load(open(validationDataFile, 'rb'))
 
 	# Arrays to populate for plots
 	lambdas = []
-	growth_rates = []
-	conc_correlation = []
-	n_conc_off_axis = []
-	flux_correlation = []
-	nonzero_flux_correlation = []
-	n_flux_above_0 = []
-	n_flux_off_axis = []
-	correlation_coefficient = []
-	homeostatic_objective_value = []
-	kinetic_objective_value = []
-	homeostatic_objective_std = []
-	kinetic_objective_std = []
+	growth_rates = np.empty(n_variants, dtype=object)
+	conc_correlation = np.empty(n_variants, dtype=object)
+	n_conc_off_axis = np.empty(n_variants, dtype=object)
+	flux_correlation = np.empty(n_variants, dtype=object)
+	nonzero_flux_correlation = np.empty(n_variants, dtype=object)
+	n_flux_above_0 = np.empty(n_variants, dtype=object)
+	n_flux_off_axis = np.empty(n_variants, dtype=object)
+	correlation_coefficient = np.empty(n_variants, dtype=object)
+	homeostatic_objective_value = np.empty(n_variants, dtype=object)
+	kinetic_objective_value = np.empty(n_variants, dtype=object)
+	homeostatic_objective_std = np.empty(n_variants, dtype=object)
+	kinetic_objective_std = np.empty(n_variants, dtype=object)
 
 	# Pull information from sim data and listeners
-	for variant, sim_dir in zip(variants, all_cells):
-		sim_out_dir = os.path.join(sim_dir, 'simOut')
+	for i, variant in enumerate(variants):
+		# Load sim_data attributes for the given variant
 		sim_data = cPickle.load(open(ap.get_variant_kb(variant), 'rb'))
 		cell_density = sim_data.constants.cellDensity
 		n_avogadro = sim_data.constants.nAvogadro
 		constrained_reactions = sim_data.process.metabolism.constrainedReactionList
 		disabled_constraints = sim_data.process.metabolism.constraintsToDisable
-
-		mass_reader = TableReader(os.path.join(sim_out_dir, 'Mass'))
-		fba_results_reader = TableReader(os.path.join(sim_out_dir, 'FBAResults'))
-		enzyme_kinetics_reader = TableReader(os.path.join(sim_out_dir, 'EnzymeKinetics'))
-		bulk_reader = TableReader(os.path.join(sim_out_dir, 'BulkMolecules'))
-
-		# Mass related values
-		cell_mass = units.fg * mass_reader.readColumn('cellMass')
-		dry_mass = units.fg * mass_reader.readColumn('dryMass')
-		dcw_to_volume = cell_density * (dry_mass / cell_mass).asNumber()
-		avg_dcw_to_volume = np.mean(dcw_to_volume)
-		volume = cell_mass / cell_density
-
-		# lambda values
 		lambdas.append(sim_data.constants.metabolismKineticObjectiveWeight)
 
-		# Growth rates
-		# Growth rate stored in units of per second and first value will be nan
-		growth_rate = 3600 * mass_reader.readColumn('instantaniousGrowthRate')[1:]
-		growth_rates.append(np.mean(growth_rate))
+		# Setup lists to store values for each cell in the variant
+		growth_rates[i] = []
+		conc_correlation[i] = []
+		n_conc_off_axis[i] = []
+		flux_correlation[i] = []
+		nonzero_flux_correlation[i] = []
+		n_flux_above_0[i] = []
+		n_flux_off_axis[i] = []
+		correlation_coefficient[i] = []
+		homeostatic_objective_value[i] = []
+		kinetic_objective_value[i] = []
+		homeostatic_objective_std[i] = []
+		kinetic_objective_std[i] = []
 
-		# Metabolite comparison
-		metabolite_ids = fba_results_reader.readAttribute('homeostaticTargetMolecules')
-		bulk_ids = bulk_reader.readAttribute('objectNames')
+		for sim_dir in ap.get_cells(variant=[variant]):
+			sim_out_dir = os.path.join(sim_dir, 'simOut')
 
-		bulk_idxs = [bulk_ids.index(id) for id in metabolite_ids]
-		actual_counts = bulk_reader.readColumn('counts')[:, bulk_idxs]
-		actual_conc = np.mean((1. / n_avogadro / volume * actual_counts.T).asNumber(COUNTS_UNITS / VOLUME_UNITS), axis=1)
-		target_conc = np.nanmean(fba_results_reader.readColumn('targetConcentrations')[1:,:], axis=0)
-		# actual_conc = np.nanmean(enzyme_kinetics_reader.readColumn('metaboliteConcentrations')[1:,:], axis=0)
+			# Create readers for data
+			try:
+				mass_reader = TableReader(os.path.join(sim_out_dir, 'Mass'))
+				fba_results_reader = TableReader(os.path.join(sim_out_dir, 'FBAResults'))
+				enzyme_kinetics_reader = TableReader(os.path.join(sim_out_dir, 'EnzymeKinetics'))
+				bulk_reader = TableReader(os.path.join(sim_out_dir, 'BulkMolecules'))
+			except Exception as e:
+				print(e)
+				continue
 
-		conc_correlation.append(np.corrcoef(actual_conc, target_conc)[0, 1])
-		n_conc_off_axis.append(np.sum(np.abs((target_conc - actual_conc)/target_conc) > FRAC_CONC_OFF_AXIS))
+			# Mass related values
+			try:
+				cell_mass = units.fg * mass_reader.readColumn('cellMass')
+				dry_mass = units.fg * mass_reader.readColumn('dryMass')
+			except Exception as e:
+				print(e)
+				continue
+			dcw_to_volume = cell_density * (dry_mass / cell_mass).asNumber()
+			avg_dcw_to_volume = np.mean(dcw_to_volume)
+			volume = cell_mass / cell_density
 
-		# Flux target comparison
-		# Nonzero includes fluxes at 0 if target is also 0
-		target_fluxes = MODEL_FLUX_UNITS * enzyme_kinetics_reader.readColumn('targetFluxes').T
-		actual_fluxes = MODEL_FLUX_UNITS * enzyme_kinetics_reader.readColumn('actualFluxes').T
+			# Growth rates
+			# Growth rate stored in units of per second and first value will be nan
+			growth_rate = mass_reader.readColumn('instantaniousGrowthRate')
+			if growth_rate.size <= 1:
+				continue
+			growth_rates[i].append(np.mean(3600 * growth_rate[1:]))
 
-		target_fluxes = (target_fluxes / dcw_to_volume).asNumber(DCW_FLUX_UNITS)
-		actual_fluxes = (actual_fluxes / dcw_to_volume).asNumber(DCW_FLUX_UNITS)
+			# Metabolite comparison
+			metabolite_ids = fba_results_reader.readAttribute('homeostaticTargetMolecules')
+			bulk_ids = bulk_reader.readAttribute('objectNames')
 
-		target_ave = np.nanmean(target_fluxes[:,1:], axis=1)
-		actual_ave = np.nanmean(actual_fluxes[:,1:], axis=1)
+			bulk_idxs = [bulk_ids.index(id) for id in metabolite_ids]
+			actual_counts = bulk_reader.readColumn('counts')[:, bulk_idxs]
+			actual_conc = np.mean((1. / n_avogadro / volume * actual_counts.T).asNumber(COUNTS_UNITS / VOLUME_UNITS), axis=1)
+			target_conc = np.nanmean(fba_results_reader.readColumn('targetConcentrations')[1:,:], axis=0)
+			# actual_conc = np.nanmean(enzyme_kinetics_reader.readColumn('metaboliteConcentrations')[1:,:], axis=0)
 
-		flux_correlation.append(np.corrcoef(actual_ave, target_ave)[0, 1])
-		n_flux_off_axis.append(np.sum(np.abs((target_ave - actual_ave)/target_ave) > FRAC_FLUX_OFF_AXIS))
-		mask = (actual_ave != 0)
-		nonzero_flux_correlation.append(np.corrcoef(actual_ave[mask], target_ave[mask])[0, 1])
-		n_flux_above_0.append(np.sum(actual_ave > 0) + np.sum((actual_ave == 0) & (target_ave == 0)))
+			conc_correlation[i].append(np.corrcoef(actual_conc, target_conc)[0, 1])
+			n_conc_off_axis[i].append(np.sum(np.abs((target_conc - actual_conc)/target_conc) > FRAC_CONC_OFF_AXIS))
 
-		# Toya comparison
-		# Toya units read in as mmol/g/hr
-		reaction_ids = np.array(fba_results_reader.readAttribute('reactionIDs'))
-		reaction_fluxes = fba_results_reader.readColumn('reactionFluxes')
+			# Flux target comparison
+			# Nonzero includes fluxes at 0 if target is also 0
+			target_fluxes = MODEL_FLUX_UNITS * enzyme_kinetics_reader.readColumn('targetFluxes').T
+			actual_fluxes = MODEL_FLUX_UNITS * enzyme_kinetics_reader.readColumn('actualFluxes').T
 
-		toya_reactions = validation_data.reactionFlux.toya2010fluxes['reactionID']
-		toya_fluxes = np.array([(avg_dcw_to_volume * x).asNumber(MODEL_FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes['reactionFlux']])
-		toya_stdev = np.array([(avg_dcw_to_volume * x).asNumber(MODEL_FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes['reactionFluxStdev']])
-		toya_fluxes_dict = dict(zip(toya_reactions, toya_fluxes))
-		toya_stdev_dict = dict(zip(toya_reactions, toya_stdev))
+			target_fluxes = (target_fluxes / dcw_to_volume).asNumber(DCW_FLUX_UNITS)
+			actual_fluxes = (actual_fluxes / dcw_to_volume).asNumber(DCW_FLUX_UNITS)
 
-		toya_vs_reaction_ave = []
-		toya_order = []
-		for toya_reaction_id, toya_flux in toya_fluxes_dict.iteritems():
-			flux_time_course = []
+			target_ave = np.nanmean(target_fluxes[:,1:], axis=1)
+			actual_ave = np.nanmean(actual_fluxes[:,1:], axis=1)
 
-			for rxn in reaction_ids:
-				if re.findall(toya_reaction_id, rxn):
-					reverse = 1
-					if re.findall('(reverse)', rxn):
-						reverse = -1
+			flux_correlation[i].append(np.corrcoef(actual_ave, target_ave)[0, 1])
+			n_flux_off_axis[i].append(np.sum(np.abs((target_ave - actual_ave)/target_ave) > FRAC_FLUX_OFF_AXIS))
+			mask = (actual_ave != 0)
+			nonzero_flux_correlation[i].append(np.corrcoef(actual_ave[mask], target_ave[mask])[0, 1])
+			n_flux_above_0[i].append(np.sum(actual_ave > 0) + np.sum((actual_ave == 0) & (target_ave == 0)))
 
-					if len(flux_time_course):
-						flux_time_course += reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
-					else:
-						flux_time_course = reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
+			# Toya comparison
+			# Toya units read in as mmol/g/hr
+			reaction_ids = np.array(fba_results_reader.readAttribute('reactionIDs'))
+			reaction_fluxes = fba_results_reader.readColumn('reactionFluxes')
 
-			if len(flux_time_course):
-				# flip sign if negative
-				adjustment = 1
-				if toya_flux < 0:
-					adjustment = -1
+			toya_reactions = validation_data.reactionFlux.toya2010fluxes['reactionID']
+			toya_fluxes = np.array([(avg_dcw_to_volume * x).asNumber(MODEL_FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes['reactionFlux']])
+			toya_stdev = np.array([(avg_dcw_to_volume * x).asNumber(MODEL_FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes['reactionFluxStdev']])
+			toya_fluxes_dict = dict(zip(toya_reactions, toya_fluxes))
+			toya_stdev_dict = dict(zip(toya_reactions, toya_stdev))
 
-				flux_ave = np.mean(flux_time_course)
-				flux_stdev = np.std(flux_time_course)
-				toya_vs_reaction_ave.append((adjustment*flux_ave, adjustment*toya_flux, flux_stdev, toya_stdev_dict[toya_reaction_id]))
-				toya_order.append(toya_reaction_id)
+			toya_vs_reaction_ave = []
+			toya_order = []
+			for toya_reaction_id, toya_flux in toya_fluxes_dict.iteritems():
+				flux_time_course = []
 
-		toya_vs_reaction_ave = np.array(toya_vs_reaction_ave)
-		correlation_coefficient.append(np.corrcoef(toya_vs_reaction_ave[:, 0], toya_vs_reaction_ave[:, 1])[0, 1])
+				for rxn in reaction_ids:
+					if re.findall(toya_reaction_id, rxn):
+						reverse = 1
+						if re.findall('(reverse)', rxn):
+							reverse = -1
 
-		# Objective values
-		# Need to filter nan and inf for kinetic
-		enabled_idx = [i for i, rxn in enumerate(constrained_reactions) if rxn not in disabled_constraints]
-		kinetic_objective_values = np.abs(1 - actual_fluxes[enabled_idx, :] / target_fluxes[enabled_idx, :])
-		filter_idx = ~np.isfinite(kinetic_objective_values)
-		kinetic_objective_values[filter_idx] = 0
-		kinetic_objective = np.sum(kinetic_objective_values, axis=0)
-		kinetic_objective_value.append(np.mean(kinetic_objective))
-		kinetic_objective_std.append(np.std(kinetic_objective))
-		homeostatic_objective_values = np.sum(fba_results_reader.readColumn('homeostaticObjectiveValues'), axis=1)
-		homeostatic_objective_value.append(np.mean(homeostatic_objective_values))
-		homeostatic_objective_std.append(np.std(homeostatic_objective_values))
+						if len(flux_time_course):
+							flux_time_course += reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
+						else:
+							flux_time_course = reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
+
+				if len(flux_time_course):
+					# flip sign if negative
+					adjustment = 1
+					if toya_flux < 0:
+						adjustment = -1
+
+					flux_ave = np.mean(flux_time_course)
+					flux_stdev = np.std(flux_time_course)
+					toya_vs_reaction_ave.append((adjustment*flux_ave, adjustment*toya_flux, flux_stdev, toya_stdev_dict[toya_reaction_id]))
+					toya_order.append(toya_reaction_id)
+
+			toya_vs_reaction_ave = np.array(toya_vs_reaction_ave)
+			correlation_coefficient[i].append(np.corrcoef(toya_vs_reaction_ave[:, 0], toya_vs_reaction_ave[:, 1])[0, 1])
+
+			# Objective values
+			# Need to filter nan and inf for kinetic
+			enabled_idx = [idx for idx, rxn in enumerate(constrained_reactions) if rxn not in disabled_constraints]
+			kinetic_objective_values = np.abs(1 - actual_fluxes[enabled_idx, :] / target_fluxes[enabled_idx, :])
+			filter_idx = ~np.isfinite(kinetic_objective_values)
+			kinetic_objective_values[filter_idx] = 0
+			kinetic_objective = np.sum(kinetic_objective_values, axis=0)
+			kinetic_objective_value[i].append(np.mean(kinetic_objective))
+			kinetic_objective_std[i].append(np.std(kinetic_objective))
+			homeostatic_objective_values = np.sum(fba_results_reader.readColumn('homeostaticObjectiveValues'), axis=1)
+			homeostatic_objective_value[i].append(np.mean(homeostatic_objective_values))
+			homeostatic_objective_std[i].append(np.std(homeostatic_objective_values))
 
 	n_metabolites = len(actual_conc)
 	n_fluxes = len(actual_ave)
 	lambdas = [np.log10(x) if x != 0 else np.nanmin(np.log10(lambdas[lambdas != 0]))-1 for x in lambdas]
+	growth_rates = get_average_values(growth_rates)
+	conc_correlation = get_average_values(conc_correlation)
+	n_conc_off_axis = get_average_values(n_conc_off_axis)
+	flux_correlation = get_average_values(flux_correlation)
+	nonzero_flux_correlation = get_average_values(nonzero_flux_correlation)
+	n_flux_above_0 = get_average_values(n_flux_above_0)
+	n_flux_off_axis = get_average_values(n_flux_off_axis)
+	correlation_coefficient = get_average_values(correlation_coefficient)
+	homeostatic_objective_value = get_average_values(homeostatic_objective_value)
+	kinetic_objective_value = get_average_values(kinetic_objective_value)
+	homeostatic_objective_std = get_average_values(homeostatic_objective_std)
+	kinetic_objective_std = get_average_values(kinetic_objective_std)
 
 	plt.figure(figsize = (8.5, 22))
 	subplots = 7
@@ -238,7 +285,8 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	ax = plt.gca()
 	ax.set_xscale("log", nonposx='clip')
 	ax.set_yscale("log", nonposy='clip')
-	plt.errorbar(homeostatic_objective_value, kinetic_objective_value, xerr=homeostatic_objective_std, yerr=kinetic_objective_std, fmt='o')
+	plt.errorbar(homeostatic_objective_value, kinetic_objective_value, fmt='o')
+	# plt.errorbar(homeostatic_objective_value, kinetic_objective_value, xerr=homeostatic_objective_std, yerr=kinetic_objective_std, fmt='o')
 	plt.xlabel('Homeostatic Objective Value')
 	plt.ylabel('Kinetics Objective Value')
 	exportFigure(plt, plotOutDir, '{}_obj'.format(plotOutFileName), metadata)
