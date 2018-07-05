@@ -10,8 +10,6 @@ TODO: Setup/reset matplotlib before each script and cleanup afterwards.
 
 TODO: Enable future warnings, esp. for matplotlib.
 
-TODO: Memory leak detection.
-
 TODO: Move the run_plot() args to instance variables?
 
 TODO: Other shared code to simplify the subclasses, e.g. make plotOutDir,
@@ -23,6 +21,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 import abc
+from wholecell.utils import memory_debug
 
 
 class AnalysisPlot(object):
@@ -31,6 +30,8 @@ class AnalysisPlot(object):
 	Each analysis class must override do_plot().
 
 	Call main() to run an analysis plot for a Firetask.
+
+	Use the environment variable 'DEBUG_GC' to enable memory leak debugging.
 	"""
 	__metaclass__ = abc.ABCMeta
 
@@ -43,12 +44,13 @@ class AnalysisPlot(object):
 	def plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata):
 		"""Public method to set up, make a plot, and cleanup."""
-		# TODO: Setup.
+		with memory_debug.detect_leaks():
+			# TODO: Setup.
 
-		self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
-			validationDataFile, metadata)
+			self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
+				validationDataFile, metadata)
 
-		# TODO: Cleanup.
+			# TODO: Cleanup.
 
 	@classmethod
 	def main(cls, inputDir, plotOutDir, plotOutFileName, simDataFile,
