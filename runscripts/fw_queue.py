@@ -28,9 +28,13 @@ Workflow options:
 		parallel instead of serially
 	DEBUG_FITTER (int, "0"): if nonzero, this reduces the number of TFs and
 		conditions; allows for faster debugging of fitter
+	DEBUG_GC (bool, "False"): if truthy, enable leak detection in the analysis
+		plots
 	COMPRESS_OUTPUT (int, "0"): if nonzero, outputs will be compressed (.bz2)
 	RUN_AGGREGATE_ANALYSIS (int, "1"): if nonzero, all analyses are run on
 		simulation output
+	WC_ANALYZE_FAST (anything, --): if set, run each analysis plot in a separate
+		process
 
 Simulation parameters:
 	N_GENS (int, "1"): the number of generations to be simulated

@@ -1,11 +1,11 @@
 """
-AnalysisCohortTask
+Run the plots for a given list of `models.ecoli.analysis.cohort` analyses, or
+by default the ACTIVE plots listed in that package's `__init__.py`.
 
-Analyzes all cells, all seeds, all generations.
+If the `WC_ANALYZE_FAST` environment variable is set, run the analyses in
+parallel in their own processes.
 
-@author: Morgan Paull
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 11/30/2015
+If the `DEBUG_GC` environment variable is true, enable memory leak detection.
 """
 
 import time

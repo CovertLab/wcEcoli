@@ -1,5 +1,17 @@
 """
-Memory leak debugging utility.
+Memory leak debugging utility. This should detect uncollectable Python objects
+but not leaked C/C++ nodes.
+
+If the caller defaults `enabled`, then the OS environment variable `DEBUG_GC`
+will enable/disable memory leak detection.
+
+Example:
+	with detect_leaks():
+		make_a_matplotlib_chart()
+
+`detect_leaks()` is a context manager that runs a full GC and restores GC debug
+flags when done. It should work fine to nest `with detect_leaks(False)` for a
+block of code inside `with detect_leaks(True)`.
 """
 
 from __future__ import absolute_import

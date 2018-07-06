@@ -1,3 +1,13 @@
+"""
+Run the plots for a given list of `models.ecoli.analysis.single` analyses, or
+by default the ACTIVE plots listed in that package's `__init__.py`.
+
+If the `WC_ANALYZE_FAST` environment variable is set, run the analyses in
+parallel in their own processes.
+
+If the `DEBUG_GC` environment variable is true, enable memory leak detection.
+"""
+
 import time
 import os
 import traceback
