@@ -28,13 +28,9 @@ Workflow options:
 		parallel instead of serially
 	DEBUG_FITTER (int, "0"): if nonzero, this reduces the number of TFs and
 		conditions; allows for faster debugging of fitter
-	DEBUG_GC (bool, "False"): if truthy, enable leak detection in the analysis
-		plots
 	COMPRESS_OUTPUT (int, "0"): if nonzero, outputs will be compressed (.bz2)
 	RUN_AGGREGATE_ANALYSIS (int, "1"): if nonzero, all analyses are run on
 		simulation output
-	WC_ANALYZE_FAST (anything, --): if set, run each analysis plot in a separate
-		process
 
 Simulation parameters:
 	N_GENS (int, "1"): the number of generations to be simulated
@@ -65,6 +61,11 @@ Additional variables:
 	LAUNCHPAD_FILE (str, "my_launchpad.yaml"): set launchpad config file location
 	VERBOSE_QUEUE (int, "1"): if nonzero, gives more detailed messages during
 		fireworks set up
+
+Environment variables that matter when running the workflow:
+	DEBUG_GC (int, "0"): if nonzero, enable leak detection in the analysis plots
+	WC_ANALYZE_FAST (anything, --): if set, run each analysis plot in a separate
+		process
 '''
 
 from fireworks import Firework, LaunchPad, Workflow, ScriptTask

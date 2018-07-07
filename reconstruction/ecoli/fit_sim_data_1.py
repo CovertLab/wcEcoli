@@ -102,7 +102,6 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 		pool.close()
 		pool.join()
 		for result in results:
-			result.wait()
 			assert(result.successful())
 			cellSpecs.update(result.get())
 		pool = None
@@ -139,7 +138,6 @@ def fitSimData_1(raw_data, cpus=1, debug=False):
 		pool.close()
 		pool.join()
 		for result in results:
-			result.wait()
 			assert(result.successful())
 			cellSpecs.update(result.get())
 		pool = None

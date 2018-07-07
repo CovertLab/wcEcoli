@@ -38,7 +38,7 @@ def detect_leaks(enabled=None):
 
 	Set `enabled` to True to enable leak detection, False to disable leak
 	detection, or default to let the 'DEBUG_GC' environment variable
-	enable/disable leak detection.
+	(int, "0") enable leak detection if non-zero.
 
 	Leak detection has some overhead including running a full collection and
 	printing a list of uncollectable objects.
@@ -51,7 +51,7 @@ def detect_leaks(enabled=None):
 	a safe order in which to run the __del__() methods."
 	"""
 	if enabled is None:
-		enabled = os.environ.get('DEBUG_GC', False)
+		enabled = bool(int(os.environ.get('DEBUG_GC', '0')))
 
 	saved_debug_flags = gc.get_debug()
 	gc.set_debug(TRACE_UNCOLLECTABLES if enabled else TRACE_NONE)
