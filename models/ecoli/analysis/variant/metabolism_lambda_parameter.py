@@ -285,8 +285,9 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	ax = plt.gca()
 	ax.set_xscale("log", nonposx='clip')
 	ax.set_yscale("log", nonposy='clip')
-	plt.errorbar(homeostatic_objective_value, kinetic_objective_value, fmt='o')
-	# plt.errorbar(homeostatic_objective_value, kinetic_objective_value, xerr=homeostatic_objective_std, yerr=kinetic_objective_std, fmt='o')
+	plt.errorbar(homeostatic_objective_value, kinetic_objective_value, xerr=homeostatic_objective_std, yerr=kinetic_objective_std, fmt='o')
+	for i in range(len(lambdas)):
+		plt.text(homeostatic_objective_value[i], 0.8*kinetic_objective_value[i], i, horizontalalignment='center', verticalalignment='center')
 	plt.xlabel('Homeostatic Objective Value')
 	plt.ylabel('Kinetics Objective Value')
 	exportFigure(plt, plotOutDir, '{}_obj'.format(plotOutFileName), metadata)
