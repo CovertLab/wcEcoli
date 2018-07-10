@@ -31,15 +31,20 @@ DCW_FLUX_UNITS = units.mmol / units.g / units.h
 FRAC_CONC_OFF_AXIS = 0.05
 FRAC_FLUX_OFF_AXIS = 0.05
 
+OUTLIER_REACTIONS = [
+	'ISOCITDEH-RXN',
+	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.',
+	]
+
 def get_average_values(array):
 	'''
 	Input:
 		array (numpy array of lists) - array of data to be averaged
 
-	Returns list of floats containing the average of each list in array
+	Returns numpy array of floats containing the average of each list in array
 	'''
 
-	return [np.mean(x) for x in array]
+	return np.array([np.mean(x) for x in array])
 
 def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = None):
 	if not os.path.isdir(inputDir):
@@ -55,6 +60,9 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 	filepath.makedirs(plotOutDir)
 	validation_data = cPickle.load(open(validationDataFile, 'rb'))
+	toya_reactions = validation_data.reactionFlux.toya2010fluxes['reactionID']
+	toya_fluxes = np.array([x.asNumber(DCW_FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes['reactionFlux']])
+	outlier_filter = [False if rxn in OUTLIER_REACTIONS else True for rxn in toya_reactions]
 
 	# Arrays to populate for plots
 	lambdas = []
@@ -66,6 +74,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	n_flux_above_0 = np.empty(n_variants, dtype=object)
 	n_flux_off_axis = np.empty(n_variants, dtype=object)
 	correlation_coefficient = np.empty(n_variants, dtype=object)
+	filtered_correlation_coefficient = np.empty(n_variants, dtype=object)
 	homeostatic_objective_value = np.empty(n_variants, dtype=object)
 	kinetic_objective_value = np.empty(n_variants, dtype=object)
 	homeostatic_objective_std = np.empty(n_variants, dtype=object)
@@ -81,6 +90,10 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 		disabled_constraints = sim_data.process.metabolism.constraintsToDisable
 		lambdas.append(sim_data.constants.metabolismKineticObjectiveWeight)
 
+		toya_model_fluxes = {}
+		for rxn in toya_reactions:
+			toya_model_fluxes[rxn] = []
+
 		# Setup lists to store values for each cell in the variant
 		growth_rates[i] = []
 		conc_correlation[i] = []
@@ -90,6 +103,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 		n_flux_above_0[i] = []
 		n_flux_off_axis[i] = []
 		correlation_coefficient[i] = []
+		filtered_correlation_coefficient[i] = []
 		homeostatic_objective_value[i] = []
 		kinetic_objective_value[i] = []
 		homeostatic_objective_std[i] = []
@@ -116,7 +130,6 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 				print(e)
 				continue
 			dcw_to_volume = cell_density * (dry_mass / cell_mass).asNumber()
-			avg_dcw_to_volume = np.mean(dcw_to_volume)
 			volume = cell_mass / cell_density
 
 			# Growth rates
@@ -141,6 +154,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 
 			# Flux target comparison
 			# Nonzero includes fluxes at 0 if target is also 0
+			# Flux for first recorded step is 0
 			target_fluxes = MODEL_FLUX_UNITS * enzyme_kinetics_reader.readColumn('targetFluxes').T
 			actual_fluxes = MODEL_FLUX_UNITS * enzyme_kinetics_reader.readColumn('actualFluxes').T
 
@@ -159,17 +173,10 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 			# Toya comparison
 			# Toya units read in as mmol/g/hr
 			reaction_ids = np.array(fba_results_reader.readAttribute('reactionIDs'))
-			reaction_fluxes = fba_results_reader.readColumn('reactionFluxes')
+			reaction_fluxes = MODEL_FLUX_UNITS * fba_results_reader.readColumn('reactionFluxes').T
+			reaction_fluxes = (reaction_fluxes / dcw_to_volume).asNumber(DCW_FLUX_UNITS).T
 
-			toya_reactions = validation_data.reactionFlux.toya2010fluxes['reactionID']
-			toya_fluxes = np.array([(avg_dcw_to_volume * x).asNumber(MODEL_FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes['reactionFlux']])
-			toya_stdev = np.array([(avg_dcw_to_volume * x).asNumber(MODEL_FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes['reactionFluxStdev']])
-			toya_fluxes_dict = dict(zip(toya_reactions, toya_fluxes))
-			toya_stdev_dict = dict(zip(toya_reactions, toya_stdev))
-
-			toya_vs_reaction_ave = []
-			toya_order = []
-			for toya_reaction_id, toya_flux in toya_fluxes_dict.iteritems():
+			for toya_reaction_id in toya_reactions:
 				flux_time_course = []
 
 				for rxn in reaction_ids:
@@ -179,23 +186,13 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 							reverse = -1
 
 						if len(flux_time_course):
-							flux_time_course += reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
+							flux_time_course += reverse * reaction_fluxes[1:, np.where(reaction_ids == rxn)]
 						else:
-							flux_time_course = reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
+							flux_time_course = reverse * reaction_fluxes[1:, np.where(reaction_ids == rxn)]
 
 				if len(flux_time_course):
-					# flip sign if negative
-					adjustment = 1
-					if toya_flux < 0:
-						adjustment = -1
-
 					flux_ave = np.mean(flux_time_course)
-					flux_stdev = np.std(flux_time_course)
-					toya_vs_reaction_ave.append((adjustment*flux_ave, adjustment*toya_flux, flux_stdev, toya_stdev_dict[toya_reaction_id]))
-					toya_order.append(toya_reaction_id)
-
-			toya_vs_reaction_ave = np.array(toya_vs_reaction_ave)
-			correlation_coefficient[i].append(np.corrcoef(toya_vs_reaction_ave[:, 0], toya_vs_reaction_ave[:, 1])[0, 1])
+					toya_model_fluxes[toya_reaction_id].append(flux_ave)
 
 			# Objective values
 			# Need to filter nan and inf for kinetic
@@ -210,8 +207,16 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 			homeostatic_objective_value[i].append(np.mean(homeostatic_objective_values))
 			homeostatic_objective_std[i].append(np.std(homeostatic_objective_values))
 
+		ave_toya_model = np.array([np.mean(toya_model_fluxes[rxn]) for rxn in toya_reactions])
+		# dist_to_diag = (ave_toya_model - toya_fluxes) / np.sqrt(2)
+		# dist_std = np.std(dist_to_diag)
+		# outlier_filter = np.abs(dist_to_diag) < 3 * dist_std
+		correlation_coefficient[i].append(np.corrcoef(ave_toya_model, toya_fluxes)[0, 1])
+		filtered_correlation_coefficient[i].append(np.corrcoef(ave_toya_model[outlier_filter], toya_fluxes[outlier_filter])[0, 1])
+
 	n_metabolites = len(actual_conc)
 	n_fluxes = len(actual_ave)
+	n_sims = np.array([len(x) for x in growth_rates])
 	lambdas = [np.log10(x) if x != 0 else np.nanmin(np.log10(lambdas[lambdas != 0]))-1 for x in lambdas]
 	growth_rates = get_average_values(growth_rates)
 	conc_correlation = get_average_values(conc_correlation)
@@ -221,21 +226,22 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	n_flux_above_0 = get_average_values(n_flux_above_0)
 	n_flux_off_axis = get_average_values(n_flux_off_axis)
 	correlation_coefficient = get_average_values(correlation_coefficient)
+	filtered_correlation_coefficient = get_average_values(filtered_correlation_coefficient)
 	homeostatic_objective_value = get_average_values(homeostatic_objective_value)
 	kinetic_objective_value = get_average_values(kinetic_objective_value)
 	homeostatic_objective_std = get_average_values(homeostatic_objective_std)
 	kinetic_objective_std = get_average_values(kinetic_objective_std)
 
 	plt.figure(figsize = (8.5, 22))
-	subplots = 7
+	subplots = 8
 
 	# Growth rates
 	plt.subplot(subplots, 1, 1)
 	plt.style.use('seaborn-deep')
-	plt.bar(lambdas, growth_rates, align='center')
-	plt.ylim([0, 2])
-	plt.title('Growth rate')
-	plt.ylabel('Growth rate (1/hr)')
+	plt.bar(lambdas, growth_rates - growth_rates[0], align='center')
+	plt.ylim([-1, 1])
+	plt.title('Growth rate deviation from no kinetics')
+	plt.ylabel('Deviation (1/hr)')
 
 	# Metabolite comparisons
 	plt.subplot(subplots, 1, 2)
@@ -245,7 +251,7 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	plt.title('Concentration correlation')
 
 	plt.subplot(subplots, 1, 3)
-	plt.bar(lambdas, np.array(n_conc_off_axis) / n_metabolites, align='center')
+	plt.bar(lambdas, n_conc_off_axis / n_metabolites, align='center')
 	plt.ylim([0, 1])
 	plt.ylabel('Fraction of concentrations')
 	plt.title('Concentrations off axis (>{:.0f}%)'.format(FRAC_CONC_OFF_AXIS*100))
@@ -259,23 +265,30 @@ def main(inputDir, plotOutDir, plotOutFileName, validationDataFile, metadata = N
 	plt.title('Flux correlation')
 
 	plt.subplot(subplots, 1, 5)
-	plt.bar(lambdas, np.array(n_flux_above_0) / n_fluxes, align='center')
+	plt.bar(lambdas, n_flux_above_0 / n_fluxes, align='center')
 	plt.ylim([0, 1])
 	plt.ylabel('Fraction of fluxes')
 	plt.title('Flux above 0')
 
 	plt.subplot(subplots, 1, 6)
-	plt.bar(lambdas, np.array(n_flux_off_axis) / n_fluxes, align='center')
+	plt.bar(lambdas, n_flux_off_axis / n_fluxes, align='center')
 	plt.ylim([0, 1])
 	plt.ylabel('Fraction of fluxes')
 	plt.title('Fluxes off axis (>{:.0f}%)'.format(FRAC_FLUX_OFF_AXIS*100))
 
 	# Toya comparison
 	plt.subplot(subplots, 1, 7)
+	plt.bar(lambdas, filtered_correlation_coefficient, align='center', color='r')
 	plt.bar(lambdas, correlation_coefficient, align='center')
 	plt.ylim([0, 1])
 	plt.ylabel('PCC')
 	plt.title('Central carbon flux correlation')
+
+	# Viable sims
+	plt.subplot(subplots, 1, 8)
+	plt.bar(lambdas, n_sims, align='center')
+	plt.ylabel('Number of sims')
+	plt.title('Complete sims')
 
 	plt.xlabel('lambda')
 
