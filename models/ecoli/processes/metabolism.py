@@ -463,7 +463,11 @@ class Metabolism(wholecell.processes.process.Process):
 		for id in new_above_thresh_ids:
 			self.exchange_data['importConstrainedExchangeMolecules'].pop(id, None)
 
-		import ipdb; ipdb.set_trace()
+
+
+
+
+		# import ipdb; ipdb.set_trace()
 		# TODO (Eran) GLC needs to be handled differently, always with an import constraint, and depends on environment
 
 		# self.exchange_data_dict['importConstrainedExchangeMolecules'][self._external_states['Environment'].nutrients]
