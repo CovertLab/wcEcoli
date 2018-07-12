@@ -101,7 +101,6 @@ memory-profiler==0.52.0
 mock==2.0.0
 monty==1.0.2
 more-itertools==4.1.0
-mpld3==0.3
 mpmath==1.0.0
 multiprocess==0.70.5
 nbformat==4.4.0
