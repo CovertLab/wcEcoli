@@ -1,188 +1,158 @@
 #!/usr/bin/env python
-"""
+'''
 Plots environment nutrient concentrations
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-"""
+'''
 
-import argparse
+from __future__ import absolute_import
+
 import os
+import cPickle
+import math
 
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import cPickle
-import math
 import itertools
 
-from wholecell.analysis.plotting_tools import COLORS_LARGE
-
 from wholecell.io.tablereader import TableReader
-import wholecell.utils.constants
-from wholecell.utils import units
 
-def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
-	if not os.path.isdir(simOutDir):
-		raise Exception, "simOutDir does not currently exist as a directory"
+from models.ecoli.processes.metabolism import COUNTS_UNITS, TIME_UNITS, VOLUME_UNITS
+from wholecell.analysis.plotting_tools import COLORS_LARGE
+from wholecell.analysis.analysis_tools import exportFigure
+from models.ecoli.analysis import singleAnalysisPlot
 
-	if not os.path.exists(plotOutDir):
-		os.mkdir(plotOutDir)
+FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 
-	# Load data from KB
-	sim_data = cPickle.load(open(simDataFile, "rb"))
-	nAvogadro = sim_data.constants.nAvogadro
-	cellDensity = sim_data.constants.cellDensity
+BURN_IN_PERIOD = 150
+RANGE_THRESHOLD = 2
+MOVING_AVE_WINDOW_SIZE = 200
 
-	# Load mass fractions
-	mass = TableReader(os.path.join(simOutDir, "Mass"))
+class Plot(singleAnalysisPlot.SingleAnalysisPlot):
+	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		if not os.path.isdir(simOutDir):
+			raise Exception, 'simOutDir does not currently exist as a directory'
 
-	protein = mass.readColumn("proteinMass")
-	tRna = mass.readColumn("tRnaMass")
-	rRna = mass.readColumn("rRnaMass")
-	mRna = mass.readColumn("mRnaMass")
-	dna = mass.readColumn("dnaMass")
-	smallMolecules = mass.readColumn("smallMoleculeMass")
+		if not os.path.exists(plotOutDir):
+			os.mkdir(plotOutDir)
 
-	masses = np.vstack([
-		protein/protein[0],
-		rRna/rRna[0],
-		tRna/tRna[0],
-		mRna/mRna[0],
-		dna/dna[0],
-		smallMolecules/smallMolecules[0],
-		]).T
-	massLabels = ["Protein", "rRNA", "tRNA", "mRNA", "DNA", "Small Mol.s"]
+		# Load data from KB
+		sim_data = cPickle.load(open(simDataFile, 'rb'))
 
-	# Load time
-	initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
-	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
+		# Load masses
+		mass = TableReader(os.path.join(simOutDir, 'Mass'))
+		protein = mass.readColumn('proteinMass')
+		tRna = mass.readColumn('tRnaMass')
+		rRna = mass.readColumn('rRnaMass')
+		mRna = mass.readColumn('mRnaMass')
+		dna = mass.readColumn('dnaMass')
+		smallMolecules = mass.readColumn('smallMoleculeMass')
+		total_dry_mass = mass.readColumn('dryMass')
 
-	# Load environment data
-	environment = TableReader(os.path.join(simOutDir, "Environment"))
-	nutrient_names = environment.readAttribute("objectNames")
-	nutrient_concentrations = environment.readColumn("nutrientConcentrations")
-	# volume = environment.readColumn("volume")
-	environment.close()
+		mass_fractions = np.vstack([
+			protein / protein[0],
+			rRna / rRna[0],
+			tRna / tRna[0],
+			mRna / mRna[0],
+			dna / dna[0],
+			smallMolecules / smallMolecules[0],
+			]).T
+		massLabels = ['Protein', 'rRNA', 'tRNA', 'mRNA', 'DNA', 'Small Mol.s']
 
+		# Load time
+		initialTime = TableReader(
+			os.path.join(simOutDir, 'Main')).readAttribute('initialTime')
+		time = TableReader(os.path.join(simOutDir, 'Main')).readColumn(
+			'time') - initialTime
 
-	# Build a mapping from nutrient_name to color
-	idToColor = {}
-	for nutrient_name, color in itertools.izip(nutrient_names, itertools.cycle(COLORS_LARGE)):
-		idToColor[nutrient_name] = color
+		# Load environment data
+		environment = TableReader(os.path.join(simOutDir, 'Environment'))
+		nutrient_names = environment.readAttribute('objectNames')
+		nutrient_concentrations = environment.readColumn(
+			'nutrientConcentrations')
+		# volume = environment.readColumn('volume')
+		environment.close()
 
-	fig = plt.figure(figsize = (17, 18))
-
-	ax1 = fig.add_subplot(3, 1, 1)  # The big subplot
-	ax2 = fig.add_subplot(3, 1, 2)  # The big subplot
-	# ax2_1 = fig.add_subplot(4, 1, 3)
-	# ax2_2 = fig.add_subplot(4, 1, 4)
-
-	# mass fractions
-	ax1.plot(time, masses, linewidth=2)
-	ax1.set_xlabel("Time (min)")
-	ax1.set_ylabel("Mass (normalized by t = 0)")
-	ax1.set_title("Biomass components")
-	ax1.legend(massLabels, loc="best")
+		# Load flux data
+		fbaResults = TableReader(os.path.join(simOutDir, 'FBAResults'))
+		reactionIDs = np.array(fbaResults.readAttribute('reactionIDs'))
+		# reactionFluxes = np.array(fbaResults.readColumn('reactionFluxes'))
+		externalExchangeFluxes = np.array(fbaResults.readColumn('externalExchangeFluxes'))
+		fbaResults.close()
 
 
-	## environment concentrations
-	# log below
-	for idx, nutrient_name in enumerate(nutrient_names):
-		if (not math.isnan(nutrient_concentrations[0, idx]) and np.mean(nutrient_concentrations[:, idx])!=0):
-			ax2.plot(time, nutrient_concentrations[:,idx], linewidth=2, label=nutrient_name, color=idToColor[nutrient_name])
+		# Build a mapping from nutrient_name to color
+		idToColor = {}
+		for nutrient_name, color in itertools.izip(nutrient_names, itertools.cycle(COLORS_LARGE)):
+			idToColor[nutrient_name] = color
 
-	ax2.set_yscale('log')
-	ymin, ymax = ax2.get_ylim()
-	ax2.set_ylim((ymin, 1))
-	ax2.spines['top'].set_visible(False)
-	ax2.xaxis.set_ticks_position('bottom')
+		# Build a mapping from reactionID to color
+		rxnIdToColor = {}
+		for reactionID, color in itertools.izip(reactionIDs, itertools.cycle(COLORS_LARGE)):
+			rxnIdToColor[reactionID] = color
 
-	divider = make_axes_locatable(ax2)
-	axLin = divider.append_axes("top", size="100%", pad=0, sharex=ax2)
+		fig = plt.figure(figsize=(30, 20))
 
-	# linear above
-	for idx, nutrient_name in enumerate(nutrient_names):
-		if (not math.isnan(nutrient_concentrations[0, idx]) and np.mean(nutrient_concentrations[:, idx])!=0):
-			axLin.plot(time, nutrient_concentrations[:,idx], linewidth=2, label=nutrient_name, color=idToColor[nutrient_name])
+		ax1_1 = fig.add_subplot(5, 2, 1)
+		ax1_2 = fig.add_subplot(5, 2, 3)
+		ax1_3 = fig.add_subplot(5, 2, 5)
+		ax2 = fig.add_subplot(2, 2, 2)
 
-	axLin.set_xscale('linear')
-	axLin.set_ylim((1, ymax))
+		## cell mass
+		# total mass
+		ax1_1.plot(time, total_dry_mass, linewidth=2)
+		ax1_1.ticklabel_format(useOffset=False)
+		ax1_1.set_xlabel('Time (sec)')
+		ax1_1.set_ylabel('Mass (fg)')
+		ax1_1.set_title('Dry Cell Mass')
 
-	# Remove bottom axis line
-	axLin.spines['bottom'].set_visible(False)
-	axLin.xaxis.set_ticks_position('top')
-	plt.setp(axLin.get_xticklabels(), visible=False)
+		# mass fractions
+		ax1_2.plot(time, mass_fractions, linewidth=2)
+		ax1_2.set_xlabel('Time (sec)')
+		ax1_2.set_ylabel('Mass (normalized by t = 0)')
+		ax1_2.set_title('Mass Fractions of Biomass Components')
+		ax1_2.legend(massLabels, loc='best')
 
-	ax2.set_title('environment concentrations -- Linear above, log below')
-	ax2.set_xlabel('Time (sec)')
-	ax2.set_ylabel('concentration (mmol/L)')
+		# exchange fluxes
+		for idx, (reactionID, externalExchangeFlux) in enumerate(zip(reactionIDs, externalExchangeFluxes.T)):
+			runningMeanFlux = np.convolve(externalExchangeFlux[BURN_IN_PERIOD:], np.ones((MOVING_AVE_WINDOW_SIZE,))/MOVING_AVE_WINDOW_SIZE, mode='valid')
+			meanNormFlux = runningMeanFlux / np.mean(runningMeanFlux)
+			fluxRange = meanNormFlux.max() - meanNormFlux.min()
 
-	# place legend
-	ax2.legend(bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0., ncol=3, prop={'size': 10})
+			if fluxRange > RANGE_THRESHOLD:
+				ax1_3.plot(time, externalExchangeFlux, linewidth=2, label=reactionID, color=rxnIdToColor[reactionID])
 
-	plt.subplots_adjust(wspace=0.2, hspace=0.4)
+		ax1_3.set_yscale('symlog')
+		ax1_3.set_xlabel('Time (sec)')
+		ax1_3.set_ylabel('symlog Flux {}'.format(FLUX_UNITS.strUnit()))
+		ax1_3.set_title('Exchange Fluxes')
+
+		# place legend
+		ax1_3.legend(bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0.,
+			ncol=1, prop={'size': 10})
+
+		## environment concentrations
+		for idx, nutrient_name in enumerate(nutrient_names):
+			if (not math.isnan(nutrient_concentrations[0, idx]) and np.mean(
+					nutrient_concentrations[:, idx]) != 0):
+				ax2.plot(time, nutrient_concentrations[:, idx], linewidth=2,
+					label=nutrient_name, color=idToColor[nutrient_name])
+
+		ax2.set_yscale('symlog',linthresh=1, linscale=0.1)
+		ax2.set_title('environment concentrations -- symlog')
+		ax2.set_xlabel('Time (sec)')
+		ax2.set_ylabel('symlog concentration (mmol/L)')
+
+		# place legend
+		ax2.legend(bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0.,
+			ncol=3, prop={'size': 10})
+
+		plt.subplots_adjust(wspace=0.2, hspace=0.4)
+
+		exportFigure(plt, plotOutDir, plotOutFileName,metadata)
+		plt.close('all')
 
 
-
-
-
-
-	#
-	# for idx, nutrient_name in enumerate(nutrient_names):
-	# 	if (not math.isnan(nutrient_concentrations[0, idx]) and np.mean(nutrient_concentrations[:, idx])!=0):
-	# 		# Unadjusted
-	# 		plt.subplot(4, 1, 2)
-	# 		plt.plot(time, nutrient_concentrations[:,idx], linewidth=2, label=nutrient_name, color=idToColor[nutrient_name])
-	#
-	# 		# Log scale
-	# 		plt.subplot(4, 1, 3)
-	# 		plt.plot(time, np.log10(nutrient_concentrations[:,idx]), linewidth=2, label=nutrient_name, color=idToColor[nutrient_name])
-	#
-	#
-
-
-
-
-	#
-	#
-	#
-	# plt.subplot(4, 1, 1)
-	# plt.xlabel("Time (min)")
-	# plt.ylabel("Mass (normalized by t = 0)")
-	# plt.title("Biomass components")
-	# plt.legend(massLabels, loc="best")
-	#
-	# plt.subplot(4, 1, 2)
-	# plt.title('environment concentrations')
-	# plt.xlabel('Time (sec)')
-	# plt.ylabel('concentration (mmol/L)')
-	#
-	# plt.subplot(4, 1, 3)
-	# plt.title('environment log(concentrations)')
-	# plt.xlabel('Time (sec)')
-	# plt.ylabel('Log10 concentration (mmol/L)')
-
-	# # place legend
-	# plt.legend(bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0., ncol=3, prop={'size': 10})
-	#
-	# plt.subplots_adjust(wspace=0.2, hspace=0.4)
-
-	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-	plt.close("all")
-
-if __name__ == "__main__":
-	defaultSimDataFile = os.path.join(
-			wholecell.utils.constants.SERIALIZED_KB_DIR,
-			wholecell.utils.constants.SERIALIZED_KB_MOST_FIT_FILENAME
-			)
-
-	parser = argparse.ArgumentParser()
-	parser.add_argument("simOutDir", help = "Directory containing simulation output", type = str)
-	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
-	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
-	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
-
-	args = parser.parse_args().__dict__
-
-	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"], None)
+if __name__ == '__main__':
+	Plot().cli()
