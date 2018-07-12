@@ -6,8 +6,6 @@ TODO: Set the fallback for the matplotlib back end so we needn't hack its
 installation. Set the CWD so matplotlib finds the matplotlibrc file even when
 FireWorks doesn't launch it in the right directory.
 
-TODO: Setup/reset matplotlib before each script and cleanup afterwards.
-
 TODO: Enable future warnings, esp. for matplotlib.
 
 TODO: Move the run_plot() args to instance variables?
@@ -21,6 +19,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 import abc
+import matplotlib as mp
 from wholecell.utils import memory_debug
 
 
@@ -44,13 +43,9 @@ class AnalysisPlot(object):
 	def plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata):
 		"""Public method to set up, make a plot, and cleanup."""
-		with memory_debug.detect_leaks():
-			# TODO: Setup.
-
+		with memory_debug.detect_leaks(), mp.rc_context():
 			self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata)
-
-			# TODO: Cleanup.
 
 	@classmethod
 	def main(cls, inputDir, plotOutDir, plotOutFileName, simDataFile,
