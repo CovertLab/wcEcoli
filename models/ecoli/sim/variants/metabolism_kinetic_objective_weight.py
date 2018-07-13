@@ -6,7 +6,7 @@ def metabolism_kinetic_objective_weight_indices(sim_data):
 
 def metabolism_kinetic_objective_weight(sim_data, index):
 	weight = KINETIC_OBJECTIVE_WEIGHT[index]
-	sim_data.constants.metabolismKineticObjectiveWeight = weight
+	sim_data.process.metabolism.kinetic_objective_weight = weight
 
 	return dict(
 		shortName="lambda={:.0E}".format(weight),

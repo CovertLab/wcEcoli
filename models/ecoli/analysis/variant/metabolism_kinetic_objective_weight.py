@@ -89,7 +89,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			n_avogadro = sim_data.constants.nAvogadro
 			constrained_reactions = sim_data.process.metabolism.constrainedReactionList
 			disabled_constraints = sim_data.process.metabolism.constraintsToDisable
-			lambdas.append(sim_data.constants.metabolismKineticObjectiveWeight)
+			lambdas.append(sim_data.process.metabolism.kinetic_objective_weight)
 
 			toya_model_fluxes = {}
 			for rxn in toya_reactions:
