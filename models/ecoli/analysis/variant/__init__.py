@@ -16,6 +16,7 @@ ACTIVE = [
 	"growthConditionComparison.py",
 	"kineticHomeostaticCoeff.py",
 	"massFractionSummary.py",
+	"metabolism_kinetic_objective_weight.py",
 	"tfFit.py",
 	"tfFitComparison.py",
 	"tfTarget.py",
