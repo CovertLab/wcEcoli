@@ -1,43 +1,40 @@
+'''
+AnalysisPaths: object for easily accessing file paths to simulations based on
+variants, seeds, and generation.
+'''
+
+from __future__ import absolute_import
+from __future__ import division
+
 from os import listdir
-from os.path import isdir, join, commonprefix
+from os.path import isdir, join
 from re import match, findall
 from itertools import chain
 import numpy as np
 
 from wholecell.utils import constants
 
-'''
-AnalysisPaths
-
-Object for easily accessing file paths to simulations based on
-variants, seeds, and generation. Within a specified variant you
-can then access all seeds and/or generations.
-
-Example:
-from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-ap = AnalysisPaths(simOutDir)
-ap.get_cells(variant = [0,3], seed = [0], generation = [1,2])
-
-Above example should return all paths correspinding to variants
-0 and 3, seed 0 , and generations 1 and 2. If a field is left blank
-it is assumed that all values for that field are desired. If all
-fields are left blank all cells will be returned.
-'''
-
 class AnalysisPaths(object):
-	def __init__(self, out_dir, variant_plot = False, multi_gen_plot = False, cohort_plot = False):
-		if variant_plot:
-			assert multi_gen_plot == False, "Cannot specify more than one type of plot!"
-			assert cohort_plot == False, "Cannot specify more than one type of plot!"
-		elif multi_gen_plot:
-			assert variant_plot == False, "Cannot specify more than one type of plot!"
-			assert cohort_plot == False, "Cannot specify more than one type of plot!"
-		elif cohort_plot:
-			assert multi_gen_plot == False, "Cannot specify more than one type of plot!"
-			assert variant_plot == False, "Cannot specify more than one type of plot!"
-		else:
-			raise Exception("Must specify whether this is for a variant plot, a multi-gen plot, or a cohort plot!")
+	'''
+	Object for easily accessing file paths to simulations based on
+	variants, seeds, and generation. Within a specified variant you
+	can then access all seeds and/or generations.
 
+	Example:
+		from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+		ap = AnalysisPaths(simOutDir)
+		ap.get_cells(variant = [0,3], seed = [0], generation = [1,2])
+
+	Above example should return all paths corresponding to variants
+	0 and 3, seed 0, and generations 1 and 2. If a field is left blank
+	it is assumed that all values for that field are desired. If all
+	fields are left blank all cells will be returned.
+	'''
+
+	def __init__(self, out_dir, variant_plot = False, multi_gen_plot = False, cohort_plot = False):
+		assert sum((variant_plot, multi_gen_plot, cohort_plot)) == 1, "Must specify exactly one plot type!"
+
+		generation_dirs = []
 		if variant_plot:
 			# Final all variant files
 			all_dirs = listdir(out_dir)
@@ -46,7 +43,7 @@ class AnalysisPaths(object):
 			for directory in all_dirs:
 				# Accept directories which have a string, an underscore, and then a string
 				# of digits exactly 6 units long
-				if match('.*_\d{6}$',directory) != None:
+				if match(r'.*_\d{6}$', directory) is not None:
 					variant_out_dirs.append(join(out_dir, directory))
 
 			# Check to see if only wildtype variant exists
@@ -63,7 +60,7 @@ class AnalysisPaths(object):
 			for variant_dir in variant_out_dirs:
 				all_dirs = listdir(variant_dir)
 				for directory in all_dirs:
-					if match('^\d{6}$',directory) != None:
+					if match(r'^\d{6}$', directory) is not None:
 						seed_out_dirs.append(join(variant_dir, directory))
 
 			# Get all generation files for each seed
@@ -76,7 +73,7 @@ class AnalysisPaths(object):
 			seed_out_dirs = []
 			all_dirs = listdir(out_dir)
 			for directory in all_dirs:
-				if match('^\d{6}$',directory) != None:
+				if match(r'^\d{6}$', directory) is not None:
 					seed_out_dirs.append(join(out_dir, directory))
 
 			# Get all generation files for each seed
@@ -102,7 +99,7 @@ class AnalysisPaths(object):
 		variant_kb = []
 		for filePath in generation_dirs:
 			# Find generation
-			matches = findall('generation_\d{6}', filePath)
+			matches = findall(r'generation_\d{6}', filePath)
 			if len(matches) > 1:
 				raise Exception("Expected only one match for generation!")
 			generations.append(int(matches[0][-6:]))
@@ -155,14 +152,14 @@ class AnalysisPaths(object):
 		return sorted(np.unique(self._path_data["variant"]))
 
 	def _get_generations(self, directory):
-		generation_files = [join(directory,f) for f in listdir(directory) if isdir(join(directory,f)) and "generation" in f]
+		generation_files = [join(directory, f) for f in listdir(directory) if isdir(join(directory, f)) and "generation" in f]
 		generations = [None] * len(generation_files)
 		for gen_file in generation_files:
 			generations[int(gen_file[gen_file.rfind('_') + 1:])] = self._get_individuals(gen_file)
 		return generations
 
 	def _get_individuals(self, directory):
-		individual_files = [join(directory,f) for f in listdir(directory) if isdir(join(directory,f))]
+		individual_files = [join(directory, f) for f in listdir(directory) if isdir(join(directory, f))]
 		individuals = [None] * len(individual_files)
 		for ind_file in individual_files:
 			individuals[int(ind_file[ind_file.rfind('/')+1:])] = ind_file
