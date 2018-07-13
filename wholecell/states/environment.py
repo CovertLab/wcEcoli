@@ -149,9 +149,6 @@ class EnvironmentViewBase(object):
 		assert (np.size(counts) == np.size(self._containerIndexes)) or np.size(counts) == 1, 'Inappropriately sized values'
 		change_concentrations = self._state._counts_to_concentration(counts)
 
-
-
-
 		self._state._concentrations[self._containerIndexes] += change_concentrations
 
 	# Interface to Process

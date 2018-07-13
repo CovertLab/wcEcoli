@@ -76,10 +76,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Load flux data
 		fbaResults = TableReader(os.path.join(simOutDir, 'FBAResults'))
 		reactionIDs = np.array(fbaResults.readAttribute('reactionIDs'))
-		# reactionFluxes = np.array(fbaResults.readColumn('reactionFluxes'))
 		externalExchangeFluxes = np.array(fbaResults.readColumn('externalExchangeFluxes'))
+		importExchangeMolecules = np.array(fbaResults.readAttribute('importExchangeMolecules'))
+		importConstraints = np.array(fbaResults.readColumn('importConstraint'))
 		fbaResults.close()
 
+		# import ipdb; ipdb.set_trace()
 
 		# Build a mapping from nutrient_name to color
 		idToColor = {}
@@ -91,12 +93,13 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		for reactionID, color in itertools.izip(reactionIDs, itertools.cycle(COLORS_LARGE)):
 			rxnIdToColor[reactionID] = color
 
-		fig = plt.figure(figsize=(30, 20))
-		ax1_1 = plt.subplot2grid((5, 2), (0, 0), rowspan=1, colspan=1)
-		ax1_2 = plt.subplot2grid((5, 2), (1, 0), rowspan=1, colspan=1)
-		ax1_3 = plt.subplot2grid((5, 2), (2, 0), rowspan=1, colspan=1)
-		ax2_1 = plt.subplot2grid((5, 2), (0, 1), rowspan=1, colspan=1)
-		ax2_2 = plt.subplot2grid((5, 2), (1, 1), rowspan=2, colspan=1)
+		fig = plt.figure(figsize=(30, 30))
+		ax1_1 = plt.subplot2grid((7, 2), (0, 0), rowspan=1, colspan=1)
+		ax1_2 = plt.subplot2grid((7, 2), (1, 0), rowspan=1, colspan=1)
+		ax1_3 = plt.subplot2grid((7, 2), (2, 0), rowspan=1, colspan=1)
+		ax1_4 = plt.subplot2grid((7, 2), (4, 0), rowspan=1, colspan=1)
+		ax2_1 = plt.subplot2grid((7, 2), (0, 1), rowspan=1, colspan=1)
+		ax2_2 = plt.subplot2grid((7, 2), (1, 1), rowspan=3, colspan=1)
 
 		# total cell mass
 		ax1_1.plot(time, total_dry_mass, linewidth=2)
@@ -112,6 +115,28 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax1_2.set_title('Mass Fractions of Biomass Components')
 		ax1_2.legend(massLabels, loc='best')
 
+		# plot whether molecule is import constrained
+		# import ipdb;
+		# ipdb.set_trace()
+		#
+		# ax1_3.plot(time, importConstraints, linewidth=2)
+		# ax1_3.set_ylim([-0.1, 1.1])
+		# ax1_3.set_xlabel('Time (sec)')
+		# ax1_3.set_ylabel('Import Constrained (boolean)')
+		# ax1_3.set_title('Import Constrained Molecules')
+		# ax1_3.legend(importExchangeMolecules, loc='best')
+
+		for idx, (importExchangeMolecule, importConstraint) in enumerate(
+				zip(importExchangeMolecules, importConstraints.T)):
+			ax1_3.plot(time, importConstraint, linewidth=2, label=importExchangeMolecule)
+		ax1_3.set_ylim([-0.1, 1.1])
+		ax1_3.set_xlabel('Time (sec)')
+		ax1_3.set_ylabel('Import Constrained (boolean)')
+		ax1_3.set_title('Import Constrained Molecules')
+		ax1_3.legend(importExchangeMolecules, bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0.,
+			ncol=3, prop={'size': 10})
+		# ax1_3.legend(importExchangeMolecules, loc='best')
+
 		# exchange fluxes
 		for idx, (reactionID, externalExchangeFlux) in enumerate(zip(reactionIDs, externalExchangeFluxes.T)):
 			runningMeanFlux = np.convolve(externalExchangeFlux[BURN_IN_PERIOD:], np.ones((MOVING_AVE_WINDOW_SIZE,))/MOVING_AVE_WINDOW_SIZE, mode='valid')
@@ -119,13 +144,13 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			fluxRange = meanNormFlux.max() - meanNormFlux.min()
 
 			if fluxRange > RANGE_THRESHOLD:
-				ax1_3.plot(time, externalExchangeFlux, linewidth=2, label=reactionID, color=rxnIdToColor[reactionID])
+				ax1_4.plot(time, externalExchangeFlux, linewidth=2, label=reactionID, color=rxnIdToColor[reactionID])
 
-		ax1_3.set_yscale('symlog')
-		ax1_3.set_xlabel('Time (sec)')
-		ax1_3.set_ylabel('symlog Flux {}'.format(FLUX_UNITS.strUnit()))
-		ax1_3.set_title('Exchange Fluxes')
-		ax1_3.legend(bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0.,
+		ax1_4.set_yscale('symlog')
+		ax1_4.set_xlabel('Time (sec)')
+		ax1_4.set_ylabel('symlog Flux {}'.format(FLUX_UNITS.strUnit()))
+		ax1_4.set_title('Exchange Fluxes')
+		ax1_4.legend(bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0.,
 			ncol=1, prop={'size': 10})
 
 		# environment volume
@@ -141,7 +166,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				ax2_2.plot(time, nutrient_concentrations[:, idx], linewidth=2,
 					label=nutrient_name, color=idToColor[nutrient_name])
 
-		ax2_2.set_yscale('symlog',linthresh=1, linscale=0.1)
+		ax2_2.set_yscale('symlog',linthreshy=10, linscaley=1)
 		ax2_2.set_title('Environment Concentrations -- symlog')
 		ax2_2.set_xlabel('Time (sec)')
 		ax2_2.set_ylabel('symlog concentration (mmol/L)')

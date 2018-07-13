@@ -67,6 +67,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.deltaMetabolites = np.zeros(len(self.metaboliteNamesFromNutrients), np.float64)
 		self.targetConcentrations = np.zeros(len(self.homeostaticTargetMolecules))
 
+		self.importExchangeMolecules = self.metabolism.exchange_data['importExchangeMolecules']
 
 	def tableCreate(self, tableWriter):
 		tableWriter.writeAttributes(
@@ -76,10 +77,20 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			homeostaticTargetMolecules = self.homeostaticTargetMolecules,
 			kineticTargetFluxNames = self.kineticTargetFluxNames,
 			metaboliteNames = self.metaboliteNamesFromNutrients,
+			importExchangeMolecules = self.importExchangeMolecules,
 			)
 
 
 	def tableAppend(self, tableWriter):
+		# TODO (Eran) save import_constraint elsewhere
+		# save if importExchangeMolecules are constrained
+		import_constraint = []
+		for id in self.importExchangeMolecules:
+			if id in self.metabolism.exchange_data['importConstrainedExchangeMolecules'].keys():
+				import_constraint.append(True)
+			else:
+				import_constraint.append(False)
+
 		tableWriter.append(
 			time = self.time(),
 			simulationStep = self.simulationStep(),
@@ -91,4 +102,5 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			homeostaticObjectiveValues = self.homeostaticObjectiveValues,
 			deltaMetabolites = self.deltaMetabolites,
 			targetConcentrations = self.targetConcentrations,
+			importConstraint = import_constraint,
 			)
