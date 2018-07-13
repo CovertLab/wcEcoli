@@ -65,8 +65,8 @@ from models.ecoli.sim.variants.allShuffleParams import allShuffleParamsTotalIndi
 from models.ecoli.sim.variants.meneParams import meneParams
 from models.ecoli.sim.variants.meneParams import meneParamsTotalIndices
 
-from models.ecoli.sim.variants.metabolism_lambda_weight import metabolism_lambda_weight
-from models.ecoli.sim.variants.metabolism_lambda_weight import metabolism_lambda_weight_indices
+from models.ecoli.sim.variants.metabolism_kinetic_objective_weight import metabolism_kinetic_objective_weight
+from models.ecoli.sim.variants.metabolism_kinetic_objective_weight import metabolism_kinetic_objective_weight_indices
 
 nameToFunctionMapping = {
 	"geneKnockout": geneKnockout,
@@ -90,7 +90,7 @@ nameToFunctionMapping = {
 	"kineticCatalystShuffleParams": kineticCatalystShuffleParams,
 	"allShuffleParams": allShuffleParams,
 	"meneParams": meneParams,
-	"metabolism_lambda_weight": metabolism_lambda_weight,
+	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight,
 }
 
 nameToNumIndicesMapping = {
@@ -115,5 +115,5 @@ nameToNumIndicesMapping = {
 	"kineticCatalystShuffleParams": kineticCatalystShuffleParamsTotalIndices,
 	"allShuffleParams": allShuffleParamsTotalIndices,
 	"meneParams": meneParamsTotalIndices,
-	"metabolism_lambda_weight": metabolism_lambda_weight_indices,
+	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight_indices,
 }
