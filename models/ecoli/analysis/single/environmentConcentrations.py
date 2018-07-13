@@ -69,9 +69,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Load environment data
 		environment = TableReader(os.path.join(simOutDir, 'Environment'))
 		nutrient_names = environment.readAttribute('objectNames')
-		nutrient_concentrations = environment.readColumn(
-			'nutrientConcentrations')
-		# volume = environment.readColumn('volume')
+		nutrient_concentrations = environment.readColumn('nutrientConcentrations')
+		environment_volume = environment.readColumn('volume')
 		environment.close()
 
 		# Load flux data
@@ -93,21 +92,20 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			rxnIdToColor[reactionID] = color
 
 		fig = plt.figure(figsize=(30, 20))
+		ax1_1 = plt.subplot2grid((5, 2), (0, 0), rowspan=1, colspan=1)
+		ax1_2 = plt.subplot2grid((5, 2), (1, 0), rowspan=1, colspan=1)
+		ax1_3 = plt.subplot2grid((5, 2), (2, 0), rowspan=1, colspan=1)
+		ax2_1 = plt.subplot2grid((5, 2), (0, 1), rowspan=1, colspan=1)
+		ax2_2 = plt.subplot2grid((5, 2), (1, 1), rowspan=2, colspan=1)
 
-		ax1_1 = fig.add_subplot(5, 2, 1)
-		ax1_2 = fig.add_subplot(5, 2, 3)
-		ax1_3 = fig.add_subplot(5, 2, 5)
-		ax2 = fig.add_subplot(2, 2, 2)
-
-		## cell mass
-		# total mass
+		# total cell mass
 		ax1_1.plot(time, total_dry_mass, linewidth=2)
 		ax1_1.ticklabel_format(useOffset=False)
 		ax1_1.set_xlabel('Time (sec)')
 		ax1_1.set_ylabel('Mass (fg)')
 		ax1_1.set_title('Dry Cell Mass')
 
-		# mass fractions
+		# cell mass fractions
 		ax1_2.plot(time, mass_fractions, linewidth=2)
 		ax1_2.set_xlabel('Time (sec)')
 		ax1_2.set_ylabel('Mass (normalized by t = 0)')
@@ -127,26 +125,29 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax1_3.set_xlabel('Time (sec)')
 		ax1_3.set_ylabel('symlog Flux {}'.format(FLUX_UNITS.strUnit()))
 		ax1_3.set_title('Exchange Fluxes')
-
-		# place legend
 		ax1_3.legend(bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0.,
 			ncol=1, prop={'size': 10})
 
-		## environment concentrations
+		# environment volume
+		ax2_1.plot(time, environment_volume, linewidth=2)
+		ax2_1.set_xlabel('Time (sec)')
+		ax2_1.set_ylabel('Volume (L)')
+		ax2_1.set_title('Environment Volume')
+
+		# environment concentrations
 		for idx, nutrient_name in enumerate(nutrient_names):
 			if (not math.isnan(nutrient_concentrations[0, idx]) and np.mean(
 					nutrient_concentrations[:, idx]) != 0):
-				ax2.plot(time, nutrient_concentrations[:, idx], linewidth=2,
+				ax2_2.plot(time, nutrient_concentrations[:, idx], linewidth=2,
 					label=nutrient_name, color=idToColor[nutrient_name])
 
-		ax2.set_yscale('symlog',linthresh=1, linscale=0.1)
-		ax2.set_title('environment concentrations -- symlog')
-		ax2.set_xlabel('Time (sec)')
-		ax2.set_ylabel('symlog concentration (mmol/L)')
-
-		# place legend
-		ax2.legend(bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0.,
+		ax2_2.set_yscale('symlog',linthresh=1, linscale=0.1)
+		ax2_2.set_title('Environment Concentrations -- symlog')
+		ax2_2.set_xlabel('Time (sec)')
+		ax2_2.set_ylabel('symlog concentration (mmol/L)')
+		ax2_2.legend(bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0.,
 			ncol=3, prop={'size': 10})
+
 
 		plt.subplots_adjust(wspace=0.2, hspace=0.4)
 

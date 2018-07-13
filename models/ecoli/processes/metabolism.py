@@ -444,23 +444,56 @@ class Metabolism(wholecell.processes.process.Process):
 
 	def _updateImportConstraint(self):
 
-		k_m = 1 # (units.mmol / units.L). John suggests 10 micromolar
+		k_m = 0.01 # 1 # (units.mmol / units.L). John suggests 10 micromolar
 
+		# currently constrained molecules
 		constrained_ids = self.exchange_data['importConstrainedExchangeMolecules'].keys()
 
-		below_thresh_indices = [idx for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()) if (conc <= k_m and not np.isnan(conc))]
-		below_thresh_ids = [self.environment_nutrients_names[id] for id in below_thresh_indices]
+		# import exchange molecules can be constrained
+		importExchangeMolecules = self.exchange_data['importExchangeMolecules']
 
-		# ids to add to constraint list
-		new_below_thresh_ids = np.setdiff1d(below_thresh_ids,constrained_ids)
+		below_thresh_ids = []
+		above_thresh_ids = []
+		nan_conc_ids = []
+		for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()):
+			nutrient_name = self.environment_nutrients_names[idx]
+			if nutrient_name in importExchangeMolecules:
+				if (conc <= k_m and not np.isnan(conc)):
+					below_thresh_ids.append(nutrient_name)
+				elif (conc >= k_m and not np.isnan(conc)):
+					above_thresh_ids.append(nutrient_name)
+				else:
+					nan_conc_ids.append(nutrient_name)
 
-		above_thresh_indices = [idx for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()) if (conc >= k_m and not np.isnan(conc))]
-		above_thresh_ids = [self.environment_nutrients_names[id] for id in above_thresh_indices]
+		import ipdb;
+		ipdb.set_trace()
 
-		# ids to remove from constraint list
-		new_above_thresh_ids = np.intersect1d(above_thresh_ids, constrained_ids)
+		new_below_thresh_ids = np.setdiff1d(below_thresh_ids, constrained_ids)
+		new_above_thresh_ids = np.intersect1d(above_thresh_ids,	constrained_ids)
 
-		# add molecule to import constraint if newly below threshold
+
+
+		# # TODO (Eran) only scan through allowable constraint molecules "importExchangeMolecules"
+		# below_thresh_indices = [idx for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()) if (conc <= k_m and not np.isnan(conc))]
+		# # below_thresh_ids = [self.environment_nutrients_names[idx] for idx in below_thresh_indices]
+		# below_thresh_ids = [self.environment_nutrients_names[idx] for idx in below_thresh_indices if
+		# 	self.environment_nutrients_names[idx] in importExchangeMolecules
+		# 	]
+		# new_below_thresh_ids = np.setdiff1d(below_thresh_ids,constrained_ids)
+		#
+		# above_thresh_indices = [idx for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()) if (conc >= k_m and not np.isnan(conc))]
+		# # above_thresh_ids = [self.environment_nutrients_names[idx] for idx in above_thresh_indices]
+		# above_thresh_ids = [self.environment_nutrients_names[idx] for idx in above_thresh_indices if
+		# 	self.environment_nutrients_names[idx] in importExchangeMolecules
+		# 	]
+		# new_above_thresh_ids = np.intersect1d(above_thresh_ids, constrained_ids)
+
+
+
+		import ipdb;ipdb.set_trace()
+
+
+		# if newly below threshold, add molecule to import constraint and set max flux to 0
 		for id in new_below_thresh_ids:
 			self.exchange_data['importConstrainedExchangeMolecules'][id] = 0 * (units.mmol / units.g / units.h)
 
