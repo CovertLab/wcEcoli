@@ -38,3 +38,15 @@ def cpus():
 		os.environ.get('SLURM_JOB_CPUS_PER_NODE',
 			multiprocessing.cpu_count()))
 	return int(value)
+
+def plotter_cpus():
+	"""Return the number of CPUs available to use within an analysis plot,
+	under the assumption that the analysis Firetask checks the
+	"WC_ANALYZE_FAST" environment variable to run multiple plots in parallel,
+	in which case it's counter-productive to fork a bunch more processes within
+	the plot code.
+	"""
+	value = cpus()
+	if "WC_ANALYZE_FAST" in os.environ:
+		value = 1
+	return value

@@ -212,10 +212,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 		print "Initializing worker pool"
-		cpus = parallelization.cpus()
-		if "WC_ANALYZE_FAST" in os.environ:  # The Firetask is running plots in parallel
-			cpus = 1
-		pool = Pool(processes=cpus)
+		pool = Pool(processes=parallelization.plotter_cpus())
 
 		print "Begin processing"
 

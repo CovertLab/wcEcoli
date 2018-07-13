@@ -104,7 +104,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ap = AnalysisPaths(inputDir, variant_plot = True)
 
 
-		pool = Pool(processes=parallelization.cpus())
+		pool = Pool(processes=parallelization.plotter_cpus())
 		args = zip(range(ap.n_variant), [ap] * ap.n_variant, [validation_data.protein.schmidt2015Data["monomerId"].tolist()] * ap.n_variant, [schmidtCounts] * ap.n_variant)
 		result = pool.map(getPCC, args)
 		# cPickle.dump(result, open("pcc_results.cPickle", "w"), cPickle.HIGHEST_PROTOCOL)
