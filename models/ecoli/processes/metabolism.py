@@ -32,8 +32,6 @@ VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 TIME_UNITS = units.s
 
-NONZERO_ENZYMES = False
-
 USE_KINETICS = True
 KINETICS_BURN_IN_PERIOD = 0
 
@@ -295,10 +293,6 @@ class Metabolism(wholecell.processes.process.Process):
 		kineticsSubstratesCountsInit = self.kineticsSubstrates.counts()
 		kineticsSubstratesConcentrations = countsToMolar * kineticsSubstratesCountsInit
 
-		# Add one of every enzyme to ensure none are zero
-		if NONZERO_ENZYMES:
-			catalystsCountsInit += 1
-			kineticsEnzymesConcentrations = countsToMolar * (kineticsEnzymesCountsInit + 1)
 
 		# Calculate and set kinetic targets if kinetics is enabled
 		if USE_KINETICS and self.burnInComplete:
