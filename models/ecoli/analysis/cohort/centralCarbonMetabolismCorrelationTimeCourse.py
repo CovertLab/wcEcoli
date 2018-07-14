@@ -33,8 +33,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		if not os.path.exists(plotOutDir):
 			os.mkdir(plotOutDir)
 
-		fig = plt.figure(figsize = (8.5, 11))
-		fig.hold(True)
+		plt.figure(figsize = (8.5, 11))
 
 		# Get all cells in each seed
 		ap = AnalysisPaths(variantDir, cohort_plot = True)

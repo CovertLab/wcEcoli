@@ -5,11 +5,7 @@ Reusable plotting functions and tools
 @date: Created 11/06/2015
 """
 
-import os
-import wholecell.utils.constants
-
 import matplotlib.pyplot as plt
-import numpy as np
 from scipy import stats
 
 

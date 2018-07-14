@@ -3,7 +3,7 @@ Analysis script toolbox functions
 """
 
 import os
-import wholecell.utils.constants
+from wholecell.utils import filepath
 
 LOW_RES_DIR = 'low_res_plots'
 SVG_DIR = 'svg_plots'
@@ -52,10 +52,8 @@ def exportFigure(plt, plotOutDir, plotOutFileName, metadata=None, transparent = 
 		plt.figtext(0,0, metadata_signature, size=8)
 
 	# Make folders for holding alternate types of images
-	if not os.path.exists(os.path.join(plotOutDir, LOW_RES_DIR)):
-		os.mkdir(os.path.join(plotOutDir, LOW_RES_DIR))
-	if not os.path.exists(os.path.join(plotOutDir, SVG_DIR)):
-		os.mkdir(os.path.join(plotOutDir, SVG_DIR))
+	filepath.makedirs(plotOutDir, LOW_RES_DIR)
+	filepath.makedirs(plotOutDir, SVG_DIR)
 
 	# Save PDF image
 	plt.savefig(os.path.join(plotOutDir, plotOutFileName + DEFAULT_IMAGE_TYPE), transparent = transparent)

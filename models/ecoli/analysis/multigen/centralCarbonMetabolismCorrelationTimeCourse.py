@@ -46,8 +46,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		plt.figure(figsize = (8.5, 11))
 
-		fig = plt.figure()
-		fig.hold(True)
+		plt.figure()
 
 		for simDir in allDir:
 			simOutDir = os.path.join(simDir, "simOut")
