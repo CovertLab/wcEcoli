@@ -1117,7 +1117,7 @@ class FluxBalanceAnalysis(object):
 
 			if self._solver.quadratic_objective:
 				quadUnityID = self._generatedID_quadFractionFromUnity.format(moleculeID)
-				relax = self.getReactionFlux(quadUnityID)
+				relax = self.getReactionFlux(quadUnityID)**2
 			else:
 				belowUnityID = self._generatedID_fractionBelowUnityOut.format(moleculeID)
 				aboveUnityID = self._generatedID_fractionAboveUnityOut.format(moleculeID)
@@ -1172,11 +1172,40 @@ class FluxBalanceAnalysis(object):
 		return sorted(self._oneSidedReactions)
 
 	def getKineticObjectiveValues(self, reactionIDs=None):
+		'''
+		Returns the value of the kinetic objective associated with each reaction that
+		is part of the kinetic objective.  If the reaction is disabled (not part of
+		the objective) then the value will be 0.
+
+		Inputs:
+			reactionIDs (iterable of str) - specific reaction IDs to get objective
+				value for (if not provided then will return for all reactions in
+				the objective)
+		'''
+
 		if reactionIDs is None:
 			reactionIDs = self.getKineticTargetFluxNames()
-		fluxes = self.kineticTargetFluxes(reactionIDs)
-		targets = self.getKineticReactionFluxTargets(reactionIDs)
-		return np.abs(np.ones_like(fluxes) - fluxes/targets)
+		values = np.zeros(len(reactionIDs))
+		for idx, reactionID in enumerate(reactionIDs):
+			if reactionID not in self._kineticTargetFluxes:
+				raise FBAError("No kinetic target set for reaction {}.".format(reactionID))
+
+			if self._solver.quadratic_objective:
+				quadUnityID = self._generatedID_quadFluxRelax.format(reactionID)
+				relax = self.getReactionFlux(quadUnityID)**2 * self._solver.getFlowObjectiveCoeff(quadUnityID)
+			else:
+				belowUnityID = self._generatedID_amountUnder.format(reactionID)
+				aboveUnityID = self._generatedID_amountOver.format(reactionID)
+				relaxUp = self.getReactionFlux(belowUnityID) * self._solver.getFlowObjectiveCoeff(belowUnityID)
+				relaxDown = self.getReactionFlux(aboveUnityID) * self._solver.getFlowObjectiveCoeff(aboveUnityID)
+
+				relax = relaxUp + relaxDown
+
+				assert relaxUp <= NUMERICAL_ZERO or relaxDown <= NUMERICAL_ZERO
+
+			# Normalize out the kinetic weight objective
+			values[idx] = relax / self.kineticObjectiveWeight
+		return values
 
 	def setKineticTarget(self, reactionIDs, reactionTargets, raiseForReversible=True):
 		# If a single value is passed in, make a list of length 1 from it
