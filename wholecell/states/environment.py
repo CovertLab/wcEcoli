@@ -69,7 +69,6 @@ class Environment(wholecell.states.external_state.ExternalState):
 			self._infinite_environment = False
 			self._volume = self._volume * (units.L)
 
-
 		# create container for molecule concentrations
 		self.container = EnvironmentObjectsContainer(self._moleculeIDs)
 		self.container.concentrationsIs(self._concentrations)
@@ -94,16 +93,6 @@ class Environment(wholecell.states.external_state.ExternalState):
 				self._infinite_environment = False
 				self._volume = float(self._volume) * (units.L)
 
-			# self.timer = 1
-
-		# if self.timer != 0:
-		# 	import ipdb; ipdb.set_trace()
-		#
-		# 	self.timer +=1
-		#
-		# 	if self.timer == 3:
-		# 		self.timer = 0
-
 
 	def _counts_to_concentration(self, counts):
 		concentrations = counts / (self._volume * self._nAvogadro).asNumber(VOLUME_UNITS / COUNTS_UNITS)
@@ -116,14 +105,13 @@ class Environment(wholecell.states.external_state.ExternalState):
 			nutrientTimeSeriesLabel = self.nutrients_time_series_label,
 			)
 
-	# TODO (Eran) -- save volume in scientific notation, what format?
 	def tableAppend(self, tableWriter):
+
 		tableWriter.append(
 			nutrientCondition = self.nutrients.ljust(self._nutrients_name_max_length),
 			nutrientConcentrations=self._concentrations,
-			volume=str(self._volume.asNumber(units.L)),
+			volume=self._volume,
 			)
-
 
 
 class EnvironmentViewBase(object):
@@ -137,19 +125,22 @@ class EnvironmentViewBase(object):
 		self._query = query
 		self._concentrations = np.zeros(self._dataSize(), np.float64) # number of objects that satisfy the query
 
+
 	# Interface to State
 	def _updateQuery(self):
 		self._totalIs(self._state.container._concentrations[self._containerIndexes])
 
-	# TODO (Eran) -- what is totalIs?
+
 	def _totalIs(self, value):
 		self._concentrations[:] = value
+
 
 	def _changeCounts(self, counts):
 		assert (np.size(counts) == np.size(self._containerIndexes)) or np.size(counts) == 1, 'Inappropriately sized values'
 		change_concentrations = self._state._counts_to_concentration(counts)
 
 		self._state._concentrations[self._containerIndexes] += change_concentrations
+
 
 	# Interface to Process
 	def _totalConcentrations(self):

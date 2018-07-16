@@ -116,16 +116,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax1_2.legend(massLabels, loc='best')
 
 		# plot whether molecule is import constrained
-		# import ipdb;
-		# ipdb.set_trace()
-		#
-		# ax1_3.plot(time, importConstraints, linewidth=2)
-		# ax1_3.set_ylim([-0.1, 1.1])
-		# ax1_3.set_xlabel('Time (sec)')
-		# ax1_3.set_ylabel('Import Constrained (boolean)')
-		# ax1_3.set_title('Import Constrained Molecules')
-		# ax1_3.legend(importExchangeMolecules, loc='best')
-
 		for idx, (importExchangeMolecule, importConstraint) in enumerate(
 				zip(importExchangeMolecules, importConstraints.T)):
 			ax1_3.plot(time, importConstraint, linewidth=2, label=importExchangeMolecule)
@@ -135,7 +125,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax1_3.set_title('Import Constrained Molecules')
 		ax1_3.legend(importExchangeMolecules, bbox_to_anchor=(0.5, -0.25), loc=9, borderaxespad=0.,
 			ncol=3, prop={'size': 10})
-		# ax1_3.legend(importExchangeMolecules, loc='best')
 
 		# exchange fluxes
 		for idx, (reactionID, externalExchangeFlux) in enumerate(zip(reactionIDs, externalExchangeFluxes.T)):

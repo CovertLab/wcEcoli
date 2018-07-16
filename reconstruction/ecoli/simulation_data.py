@@ -111,6 +111,23 @@ class SimulationDataEcoli(object):
 
 
 	def _getExchangeData(self, raw_data):
+		'''
+		Creates a dictionary that specifies categories of molecules exchanged between
+		 cell and environment. The categories are used to set different constraints
+		 on FBA.
+
+		The categories of molecules include:
+			- externalExchangeMolecules: All exchange molecules, both import and
+				secretion exchanged molecules.
+			- importExchangeMolecules: molecules that can be imported from the
+				environment into the cell.
+			- importConstrainedExchangeMolecules: exchange molecules that have
+				an upper bound on their flux.
+			- importUnconstrainedExchangeMolecules: exchange molecules that do
+				not have an upper bound on their flux.
+			- secretionExchangeMolecules: molecules that can be secreted by the
+				cell into the environment.
+		'''
 		externalExchangeMolecules = {}
 		importExchangeMolecules = {}
 		secretionExchangeMolecules = set()
