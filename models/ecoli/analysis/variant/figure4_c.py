@@ -44,6 +44,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		ap = AnalysisPaths(inputDir, variant_plot = True)
 		all_cell_paths = ap.get_cells(generation=[0,1], seed=[0])
+		variants = ap.get_variants()
 
 		if ap.n_variant == 1:
 			print "Disabled. Needs correct variant."
@@ -61,7 +62,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		stableRnaSynthRateDict = {}
 		numOriginsAtInitDict = {}
 
-		variantSimDataFile = ap.get_variant_kb(all_cell_paths[0])
+		variantSimDataFile = ap.get_variant_kb(variants[0])
 		sim_data = cPickle.load(open(variantSimDataFile, "rb"))
 		nAvogadro = sim_data.constants.nAvogadro.asNumber()
 		chromMass = (sim_data.getter.getMass(['CHROM_FULL[c]'])[0] / sim_data.constants.nAvogadro).asNumber()
