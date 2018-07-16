@@ -61,6 +61,7 @@ def analyze_variant((variant, ap, toya_reactions, toya_fluxes, outlier_filter)):
 	actual_conc = []
 	target_conc = []
 	homeostatic_objective_values = []
+	kinetic_objective_values = []
 	actual_flux = []
 	target_flux = []
 	toya_model_fluxes = {}
@@ -119,6 +120,12 @@ def analyze_variant((variant, ap, toya_reactions, toya_fluxes, outlier_filter)):
 		target_flux.append(np.nanmean(target_fluxes[:, 1:], axis=1))
 		actual_flux.append(np.nanmean(actual_fluxes[:, 1:], axis=1))
 
+		kinetic_objective = np.abs(1 - actual_fluxes / target_fluxes)
+		filter_idx = ~np.isfinite(kinetic_objective)
+		kinetic_objective[filter_idx] = 0
+		kinetic_objective = np.sum(kinetic_objective, axis=0)
+		kinetic_objective_values.append(np.mean(kinetic_objective))
+
 		# Toya comparison
 		# Toya units read in as mmol/g/hr
 		reaction_ids = np.array(fba_results_reader.readAttribute('reactionIDs'))
@@ -156,7 +163,6 @@ def analyze_variant((variant, ap, toya_reactions, toya_fluxes, outlier_filter)):
 
 	# Flux target comparison
 	# Nonzero includes fluxes at 0 if target is also 0
-	kinetic_objective_values = np.abs(1 - np.array(actual_flux) / np.array(target_flux))
 	actual_flux = np.mean(actual_flux, axis=0)
 	target_flux = np.mean(target_flux, axis=0)
 	flux_correlation = np.corrcoef(actual_flux, target_flux)[0, 1]
@@ -172,11 +178,8 @@ def analyze_variant((variant, ap, toya_reactions, toya_fluxes, outlier_filter)):
 
 	# Objective values
 	# Need to filter nan and inf for kinetic
-	filter_idx = ~np.isfinite(kinetic_objective_values)
-	kinetic_objective_values[filter_idx] = 0
-	kinetic_objective = np.sum(kinetic_objective_values, axis=0)
-	kinetic_objective_value = np.mean(kinetic_objective)
-	kinetic_objective_std = np.std(kinetic_objective)
+	kinetic_objective_value = np.mean(kinetic_objective_values)
+	kinetic_objective_std = np.std(kinetic_objective_values)
 	homeostatic_objective_value = np.mean(homeostatic_objective_values)
 	homeostatic_objective_std = np.std(homeostatic_objective_values)
 
@@ -202,6 +205,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			return
 
 		filepath.makedirs(plotOutDir)
+
+		# Load validation data
 		validation_data = cPickle.load(open(validationDataFile, 'rb'))
 		toya_reactions = validation_data.reactionFlux.toya2010fluxes['reactionID']
 		toya_fluxes = np.array([x.asNumber(DCW_FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes['reactionFlux']])
