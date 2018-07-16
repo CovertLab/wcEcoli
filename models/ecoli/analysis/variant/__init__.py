@@ -14,7 +14,6 @@ ACTIVE = [
 	"figure5_parameterShuffle.py",
 	"figureS3.py",
 	"growthConditionComparison.py",
-	"kineticHomeostaticCoeff.py",
 	"massFractionSummary.py",
 	"metabolism_kinetic_objective_weight.py",
 	"tfFit.py",
