@@ -118,7 +118,7 @@ class Metabolism(wholecell.processes.process.Process):
 		else:
 			constrainedReactionList = sim_data.process.metabolism.constrainedReactionList
 			constraintsToDisable = sim_data.process.metabolism.constraintsToDisable
-			self.active_constraints_mask = np.array([True if rxn not in constraintsToDisable else False for rxn in constrainedReactionList])
+			self.active_constraints_mask = np.array([(rxn not in constraintsToDisable) for rxn in constrainedReactionList])
 			self.kineticsConstrainedReactions = list(np.array(constrainedReactionList)[self.active_constraints_mask])
 
 		self.kineticsEnzymesList = sim_data.process.metabolism.enzymeIdList

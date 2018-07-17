@@ -189,20 +189,27 @@ class FluxBalanceAnalysis(object):
 				"Unrecognized or unavailable solver: {}".format(solver)
 				)
 
-		self.objectiveType = objectiveType
+		# Set objective type
+		if objectiveType is None:
+			self.objectiveType = "standard"
+		else:
+			self.objectiveType = objectiveType
+
+		# Set objective weights
 		if objectiveParameters is not None:
 			self.kineticObjectiveWeight = objectiveParameters.get("kineticObjectiveWeight", 0)
 		else:
 			self.kineticObjectiveWeight = 0
+
 		if self.kineticObjectiveWeight > 1 or self.kineticObjectiveWeight < 0:
-			raise FBAError("kineticObjectiveWeight must be between 0 and 1 inclusive."
-				"It represents the percentage of preference going to kinetics."
+			raise FBAError(
+				"kineticObjectiveWeight must be between 0 and 1 inclusive."
+				+ " It represents the percentage of preference going to kinetics."
 				)
+
 		self.homeostaticObjectiveWeight = 1 - self.kineticObjectiveWeight
 
-		if objectiveType is None:
-			self.objectiveType = "standard"
-
+		# Set solver
 		self._solver = SOLVERS[solver](QUADRATIC[solver])
 
 		self._forceInternalExchange = False
@@ -225,15 +232,15 @@ class FluxBalanceAnalysis(object):
 		self._initReactionNetwork(self.reactionStoich)
 		self._initExternalExchange(externalExchangedMolecules)
 
-		if objectiveType is None or objectiveType == "standard":
+		if self.objectiveType == "standard":
 			self._initObjectiveEquivalents(objective)
 			self._initObjectiveStandard(objective)
 
-		elif objectiveType == "flexible":
+		elif self.objectiveType == "flexible":
 			self._initObjectiveEquivalents(objective)
 			self._initObjectiveFlexible(objective, objectiveParameters)
 
-		elif objectiveType == "homeostatic":
+		elif self.objectiveType == "homeostatic":
 			self._initObjectiveEquivalents(objective)
 			self._initObjectiveHomeostatic(objective)
 
@@ -628,9 +635,10 @@ class FluxBalanceAnalysis(object):
 		homeostaticRangeObjFractionHigher = objectiveParameters.get("homeostaticRangeObjFractionHigher", 0)
 		inRangeObjWeight = objectiveParameters.get("inRangeObjWeight", 0)
 		if inRangeObjWeight > 1 or inRangeObjWeight < 0:
-			raise FBAError("inRangeObjWeight must be between 0 and 1 inclusive."
-				"It represents the weighting relative to the out-of-range relaxation"
-				"fluxes, it must always be less than 1 and positive."
+			raise FBAError(
+				"inRangeObjWeight must be between 0 and 1 inclusive."
+				+ " It represents the weighting relative to the out-of-range relaxation"
+				+ " fluxes, it must always be less than 1 and positive."
 				)
 
 		for moleculeID in sorted(objective):

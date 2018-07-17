@@ -44,7 +44,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		sim_data = cPickle.load(open(simDataFile))
 
 		constraintIsKcatOnly = sim_data.process.metabolism.constraintIsKcatOnly
-		allKineticReactions = np.array(sim_data.process.metabolism.constrainedReactionList)
 
 		mainListener = TableReader(os.path.join(simOutDir, "Main"))
 		initialTime = mainListener.readAttribute("initialTime")
