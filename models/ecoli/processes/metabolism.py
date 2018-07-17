@@ -529,13 +529,12 @@ class Metabolism(wholecell.processes.process.Process):
 		# if newly below threshold, add molecule to import constraint and set max flux to 0
 		for id in new_below_thresh_ids:
 			self.exchange_data['importConstrainedExchangeMolecules'][id] = 0 * (units.mmol / units.g / units.h)
-			self.exchange_data['importUnconstrainedExchangeMolecules'].pop(id, None)
+			self.exchange_data['importUnconstrainedExchangeMolecules'].remove(id)
 
 		# remove molecule from import constraint if newly above threshold
 		for id in new_above_thresh_ids:
 			self.exchange_data['importUnconstrainedExchangeMolecules'].append(id)
 			self.exchange_data['importConstrainedExchangeMolecules'].pop(id, None)
-
 
 		## Glucose is handled differently, always with an import constraint, and depending on environment
 		# if any molecules in condition_1 have a concentration of 0, set glc vmax to 0
@@ -557,5 +556,3 @@ class Metabolism(wholecell.processes.process.Process):
 		# if normal condition, set glc vmax to 20
 		else:
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 20
-
-		import ipdb; ipdb.set_trace()
