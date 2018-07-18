@@ -87,17 +87,28 @@ class TableReader(object):
 
 		sizes = np.diff(offsets)
 
-		if len(set(sizes)) > 1:
+		unique_sizes = set(sizes)
+
+		if len(unique_sizes) > 1:
 			raise VariableWidthError("Cannot load full column; data size varies")
 
+		(unique_size,) = unique_sizes
+
+		itemsize = np.dtype(dtype).itemsize
+
 		nEntries = sizes.size
+		nElements = unique_size // itemsize
+
+		shape = (nEntries, nElements)
 
 		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA)) as dataFile:
-			dataFile.seek(offsets[0])
-
-			return np.fromstring(
-				dataFile.read(), dtype
-				).reshape(nEntries, -1).squeeze()
+			return np.memmap(
+				dataFile,
+				dtype = dtype,
+				mode = 'r',
+				shape = shape,
+				offset = offsets[0]
+				)
 
 
 	def iterColumn(self, name):
