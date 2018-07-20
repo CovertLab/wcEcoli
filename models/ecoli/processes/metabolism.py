@@ -60,6 +60,10 @@ class Metabolism(wholecell.processes.process.Process):
 		## lists for updateImportConstraint
 		# TODO (Eran) remove these once transport kinetics are working
 
+		# threshold (units.mmol / units.L) separates concentrations that are import constrained with
+		# max flux = 0 from unconstrained molecules. John suggests 10 micromolar
+		self.importConstraintThreshold = 1
+
 		# import exchange molecules can be both constrained/unconstrained
 		self.importExchangeMolecules_noGLC = self.exchange_data['importExchangeMolecules'][:]
 		self.importExchangeMolecules_noGLC.remove('GLC[p]')
@@ -484,16 +488,12 @@ class Metabolism(wholecell.processes.process.Process):
 		'''
 		Update importExchangeMolecules for FBA based on current nutrient concentrations.
 
-		This provides a simple type of transport to accomodate changing nutrient
+		This provides a simple type of transport to accommodate changing nutrient
 		concentrations in the environment. Transport is modeled as a binary switch:
 		When there is a high concentrations of environment nutrients, transporters
 		are unconstrained and transport nutrients as needed. When concentrations
 		fall below a threshold, k_m, the transport is constrained to 0 and don't
 		let any nutrients through.
-
-
-
-		TODO (Eran) Glucose is treated differently.
 
 		Notes
 		-----
@@ -502,13 +502,10 @@ class Metabolism(wholecell.processes.process.Process):
 		- TODO (Eran) importConstrained + importUnconstrained = importExchange
 
 		'''
-
-		k_m = 1 # (units.mmol / units.L). John suggests 10 micromolar
-
 		# currently constrained molecules
 		constrained_ids = self.exchange_data['importConstrainedExchangeMolecules'].keys()
 
-		## identify nutrients that crossed the concentration threshold (k_m)
+		## identify nutrients that crossed the concentration threshold
 		below_thresh_ids = []
 		above_thresh_ids = []
 
@@ -516,12 +513,12 @@ class Metabolism(wholecell.processes.process.Process):
 		for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()):
 			nutrient_name = self.environment_nutrients_names[idx]
 
-			# Separate nutrients that are above and below threshold, k_m
+			# Separate nutrients that are above and below threshold
 			# Only use nutrients in importExchangeMolecules_noGLC (GLC always be constrained)
 			if nutrient_name in self.importExchangeMolecules_noGLC:
-				if (conc <= k_m and not np.isnan(conc)):
+				if (conc <= self.importConstraintThreshold and not np.isnan(conc)):
 					below_thresh_ids.append(nutrient_name)
-				elif (conc >= k_m and not np.isnan(conc)):
+				elif (conc >= self.importConstraintThreshold and not np.isnan(conc)):
 					above_thresh_ids.append(nutrient_name)
 
 		new_below_thresh_ids = np.setdiff1d(below_thresh_ids, constrained_ids)

@@ -1,3 +1,3 @@
 "time (units.s)"	"nutrients"	"volume (units.L)"
-0	"M9_plus_glucose"	1E-14
-500	"M9_plus_glucose_minus_oxygen"	1E-14
+0	"minimal"	1E-14
+500	"minimal_minus_oxygen"	1E-14

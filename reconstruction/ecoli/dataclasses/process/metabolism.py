@@ -164,6 +164,10 @@ class Metabolism(object):
 		self.nutrientsToInternalConc["minimal"] = self.concDict.copy()
 
 	def _getExchangeData(self, nutrient_label):
+		'''
+		Returns exchange data used in fitter, using nutrient_labels corresponding to
+		files in reconstruction.ecoli.flat.condition.nutrient
+		'''
 
 		externalExchangeMolecules = self.exchange_data_dict['externalExchangeMolecules'][nutrient_label]
 		importExchangeMolecules = self.exchange_data_dict['importExchangeMolecules'][nutrient_label]
