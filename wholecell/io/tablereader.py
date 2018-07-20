@@ -105,10 +105,10 @@ class TableReader(object):
 			return np.memmap(
 				dataFile,
 				dtype = dtype,
-				mode = 'r',
-				shape = shape,
+				mode = 'c', # c = copy-on-write (can modify in place, but files don't change)
+				shape = shape, # TODO: try loading w/o shape and then reshaping .reshape(nEntries, -1)
 				offset = offsets[0]
-				)
+				).squeeze()
 
 
 	def iterColumn(self, name):
