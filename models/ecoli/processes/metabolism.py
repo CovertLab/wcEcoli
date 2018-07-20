@@ -513,8 +513,8 @@ class Metabolism(wholecell.processes.process.Process):
 		for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()):
 			nutrient_name = self.environment_nutrients_names[idx]
 
-			# Separate nutrients that are above and below threshold
-			# Only use nutrients in importExchangeMolecules_noGLC (GLC always be constrained)
+			# Separate nutrients that are above threshold from those below threshold
+			# Only use nutrients in importExchangeMolecules_noGLC (GLC is always constrained)
 			if nutrient_name in self.importExchangeMolecules_noGLC:
 				if (conc <= self.importConstraintThreshold and not np.isnan(conc)):
 					below_thresh_ids.append(nutrient_name)
