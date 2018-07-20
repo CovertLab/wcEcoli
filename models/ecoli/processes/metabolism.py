@@ -557,5 +557,3 @@ class Metabolism(wholecell.processes.process.Process):
 		# if normal condition, set glc vmax to 20
 		else:
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 20
-
-		import ipdb; ipdb.set_trace()
