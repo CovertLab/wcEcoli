@@ -102,7 +102,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
-		# Setup molecules in external environment that can be exchanged
+		# Identify all molecules in external environment that can be exchanged for the given time series
 		# TODO (eran) initialize externalExchangeMolecules without exchange_data_dict
 		externalExchangedMolecules = sim_data.exchange_data_dict["secretionExchangeMolecules"]
 		self.metaboliteNamesFromNutrients = set()
@@ -516,7 +516,8 @@ class Metabolism(wholecell.processes.process.Process):
 		for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()):
 			nutrient_name = self.environment_nutrients_names[idx]
 
-			# only use nutrients in importExchangeMolecules_noGLC (GLC should always be constrained)
+			# Separate nutrients that are above and below threshold, k_m
+			# Only use nutrients in importExchangeMolecules_noGLC (GLC always be constrained)
 			if nutrient_name in self.importExchangeMolecules_noGLC:
 				if (conc <= k_m and not np.isnan(conc)):
 					below_thresh_ids.append(nutrient_name)
@@ -536,23 +537,25 @@ class Metabolism(wholecell.processes.process.Process):
 			self.exchange_data['importUnconstrainedExchangeMolecules'].append(id)
 			self.exchange_data['importConstrainedExchangeMolecules'].pop(id, None)
 
-		## Glucose is handled differently, always with an import constraint, and depending on environment
-		# if any molecules in condition_1 have a concentration of 0, set glc vmax to 0
+		## Glucose always has an import constraint, with a flux upper bound depending on environment
+		# if any molecules in condition_1 have a concentration of 0, set glc flux upper bound  to 0
 		if any(self.glc_vmax_condition_1.totalConcentrations() == 0):
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 0
 
-		# if any molecules in condition_2 have a concentration of 0, set glc vmax to 10
+		# if any molecules in condition_2 have a concentration of 0, set glc flux upper bound  to 10
 		elif any(self.glc_vmax_condition_2.totalConcentrations() == 0):
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 10
 
-		# if any molecules in condition_3 do not have a concentration of 0, set glc vmax to 10
+		# if any molecules in condition_3 do not have a concentration of 0, set glc flux upper bound  to 10
 		elif any(self.glc_vmax_condition_3.totalConcentrations() != 0):
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 10
 
-		# if any molecules in condition_4 have a concentration of 0, set glc vmax to 100
+		# if any molecules in condition_4 have a concentration of 0, set glc flux upper bound  to 100
 		elif any(self.glc_vmax_condition_4.totalConcentrations() == 0):
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 100
 
 		# if normal condition, set glc vmax to 20
 		else:
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 20
+
+		import ipdb; ipdb.set_trace()
