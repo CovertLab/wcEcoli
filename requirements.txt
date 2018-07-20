@@ -41,6 +41,9 @@
 ## Then install all the other packages listed here:
 #   CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary cvxopt
 #   pyenv rehash
+#
+## Then configure the installed matplotlib as needed, per the instructions in
+## https://github.com/CovertLab/wcEcoli/wiki/How-to-set-up-the-runtime-environment-for-the-model
 
 appnope==0.1.0
 astroid==1.6.5
