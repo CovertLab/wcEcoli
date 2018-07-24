@@ -32,12 +32,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ids_equilibrium_complexes = sim_data.process.equilibrium.ids_complexes # Only complexes
 		ids_translation = sim_data.process.translation.monomerData["id"].tolist() # Only protein monomers
 
-		data_50s = sim_data.process.complexation.getMonomers(sim_data.moleculeGroups.s50_fullComplex[0])
-		data_30s = sim_data.process.complexation.getMonomers(sim_data.moleculeGroups.s30_fullComplex[0])
+		data_50s = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.s50_fullComplex)
+		data_30s = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.s30_fullComplex)
 		ribosome_subunit_ids = data_50s["subunitIds"].tolist() + data_30s["subunitIds"].tolist()
 		ribosome_subunit_stoich = np.hstack((data_50s["subunitStoich"],data_30s["subunitStoich"]))
 
-		data_rnap = sim_data.process.complexation.getMonomers(sim_data.moleculeGroups.rnapFull[0])
+		data_rnap = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)
 		rnap_subunit_ids = data_rnap["subunitIds"].tolist()
 		rnap_subunit_stoich = data_rnap["subunitStoich"]
 
@@ -180,7 +180,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		scatterAxis.set_xlabel("Average number of transcription events per generation per monomer")
 
 		scatterAxis.set_ylim([10e-3, 10e6])
-		scatterAxis.set_xlim([-10., 1000.])
+		scatterAxis.set_xlim([10e-3, 1000.])
 
 		yhistAxis.hist(averageCountPerMonomer, bins = np.logspace(np.log10(10e-3), np.log10(10e6), 125), orientation='horizontal', log = True, range = [10e-3, 10e6])
 		yhistAxis.set_yscale("log")
