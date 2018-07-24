@@ -20,7 +20,39 @@ DESC="SET C 4 gens 256 seeds 3 conditions with growth noise and D period" VARIAN
 
 ## Set D - changes to RNAP and ribosome expression
 # Used for figure 2
-# TODO - John fill this out
+# Misc. options consistent with Set C
+
+# This subset of simulations is redundant with the first variant of Set C
+DESC="SET D1 4 gens 256 seeds" \
+VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+SINGLE_DAUGHTERS=1 N_GENS=4 N_INIT_SIMS=256 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
+DISABLE_RIBOSOME_CAPACITY_FITTING=0 DISABLE_RNAPOLY_CAPACITY_FITTING=0 \
+python runscripts/fw_queue.py
+
+DESC="SET D2 4 gens 256 seeds, unfit ribosome expression" \
+VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+SINGLE_DAUGHTERS=1 N_GENS=4 N_INIT_SIMS=256 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
+DISABLE_RIBOSOME_CAPACITY_FITTING=1 DISABLE_RNAPOLY_CAPACITY_FITTING=0 \
+python runscripts/fw_queue.py
+
+DESC="SET D3 4 gens 256 seeds, unfit rna poly expression" \
+VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+SINGLE_DAUGHTERS=1 N_GENS=4 N_INIT_SIMS=256 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
+DISABLE_RIBOSOME_CAPACITY_FITTING=0 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
+python runscripts/fw_queue.py
+
+DESC="SET D4 4 gens 256 seeds, unfit ribosome and rna poly expression" \
+VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+SINGLE_DAUGHTERS=1 N_GENS=4 N_INIT_SIMS=256 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
+DISABLE_RIBOSOME_CAPACITY_FITTING=1 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
+python runscripts/fw_queue.py
+
+# TODO (John): update runscripts/limited_fitting/growth_rate_from_fitting_histograms.py and add to
+# this execution pipeline (how?)
 
 ## Set E - metabolism objective weighting
 # Used for figure 3
