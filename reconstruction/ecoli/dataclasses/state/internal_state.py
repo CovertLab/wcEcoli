@@ -100,10 +100,10 @@ class InternalState(object):
 		# TODO: This is a bad hack that works because in the fitter
 		# I have forced expression to be these subunits only
 		ribosome30SMass = self.bulkMolecules.bulkData["mass"][
-		self.bulkMolecules.bulkData["id"] == sim_data.moleculeGroups.s30_fullComplex[0]
+		self.bulkMolecules.bulkData["id"] == sim_data.moleculeIds.s30_fullComplex
 			]
 		ribosome50SMass = self.bulkMolecules.bulkData["mass"][
-		self.bulkMolecules.bulkData["id"] == sim_data.moleculeGroups.s50_fullComplex[0]
+		self.bulkMolecules.bulkData["id"] == sim_data.moleculeIds.s50_fullComplex
 			]
 		ribosomeMass = ribosome30SMass + ribosome50SMass
 		ribosomeAttributes = {
@@ -124,7 +124,9 @@ class InternalState(object):
 
 		# Origin of replication
 		originMass = units.g / units.mol * np.zeros_like(rnaPolyComplexMass) # NOTE: origins currently have no mass
-		originAttributes = {}
+		originAttributes = {
+				'chromosomeIndex': 'i8',
+				}
 		self.uniqueMolecules.addToUniqueState('originOfReplication', originAttributes, originMass)
 
 		# Full chromosome

@@ -2,12 +2,9 @@
 Run the Fitter. The output goes into the named subdirectory of wcEcoli/out/,
 defaulting to "manual".
 
-NOTE: On macOS, cpus > 1 gets stuck in numpy.linalg.solve(). A deadlock?
-A small test case works fine and will load 8 processes at ~95% CPU each.
-
 TODO: Default to a typical timestamped directory name instead of "manual"?
 
-TODO: Share lots of code with fw_queue.py.
+TODO: Share lots of code with fw_queue.py and AnalysisPaths.py.
 
 Run with '-h' for command line help.
 Set PYTHONPATH when running this.
@@ -18,13 +15,12 @@ from __future__ import division
 
 import os
 
-from runscripts.manual import scriptBase
 from wholecell.fireworks.firetasks import FitSimDataTask
 from wholecell.fireworks.firetasks import InitRawDataTask
 from wholecell.fireworks.firetasks import InitRawValidationDataTask
 from wholecell.fireworks.firetasks import InitValidationDataTask
 from wholecell.fireworks.firetasks import SymlinkTask
-from wholecell.utils import constants
+from wholecell.utils import constants, scriptBase
 from wholecell.utils import filepath
 
 
@@ -48,6 +44,16 @@ class RunFitter(scriptBase.ScriptBase):
 			help="Enable Fitter debugging: Fit only one arbitrarily-chosen"
 				 " transcription factor for a faster debug cycle. Don't use it"
 				 " for an actual simulation.")
+		parser.add_argument(
+			'--disable-ribosome-fitting',
+			action='store_true',
+			help= "If set, ribosome expression will not be fit to protein synthesis demands."
+			)
+		parser.add_argument(
+			'--disable-rnapoly-fitting',
+			action='store_true',
+			help= "If set, RNA polymerase expression will not be fit to protein synthesis demands."
+			)
 
 	def parse_args(self):
 		args = super(RunFitter, self).parse_args()
@@ -87,6 +93,8 @@ class RunFitter(scriptBase.ScriptBase):
 			cached_data=cached_sim_data_file,  # cached file to copy
 			cpus=args.cpus,
 			debug=args.debug,
+			disable_ribosome_capacity_fitting=args.disable_ribosome_fitting,
+			disable_rnapoly_capacity_fitting=args.disable_rnapoly_fitting
 		)
 		task2.run_task({})
 

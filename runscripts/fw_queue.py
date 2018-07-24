@@ -14,7 +14,7 @@ Set description:
 
 Variant variables:
 	VARIANT (str, "wildtype"): specifies the environmental condition, see
-		models/ecoli/sim/variants/__init__.py for the possible variant choices
+		models/ecoli/sim/variants/*.py for the variant choices
 	FIRST_VARIANT_INDEX (int, "0"): index of the first variant condition to run;
 		the control index depends on the particular variant condition
 	LAST_VARIANT_INDEX (int, "0"): index of the last variant condition to run; Fireworks
@@ -31,6 +31,10 @@ Workflow options:
 	COMPRESS_OUTPUT (int, "0"): if nonzero, outputs will be compressed (.bz2)
 	RUN_AGGREGATE_ANALYSIS (int, "1"): if nonzero, all analyses are run on
 		simulation output
+	DISABLE_RIBOSOME_CAPACITY_FITTING (int, "0"): if nonzero, ribosome
+		expression is not fit to protein synthesis demands
+	DISABLE_RNAPOLY_CAPACITY_FITTING (int, "0"): if nonzero, RNA polymerase
+		expression is not fit to RNA synthesis demands
 
 Simulation parameters:
 	N_GENS (int, "1"): the number of generations to be simulated
@@ -61,6 +65,11 @@ Additional variables:
 	LAUNCHPAD_FILE (str, "my_launchpad.yaml"): set launchpad config file location
 	VERBOSE_QUEUE (int, "1"): if nonzero, gives more detailed messages during
 		fireworks set up
+
+Environment variables that matter when running the workflow:
+	DEBUG_GC (int, "0"): if nonzero, enable leak detection in the analysis plots
+	WC_ANALYZE_FAST (anything, --): if set, run each analysis plot in a separate
+		process
 '''
 
 from fireworks import Firework, LaunchPad, Workflow, ScriptTask
@@ -139,6 +148,8 @@ RUN_AGGREGATE_ANALYSIS = bool(int(os.environ.get("RUN_AGGREGATE_ANALYSIS", "1"))
 CACHED_SIM_DATA = bool(int(os.environ.get("CACHED_SIM_DATA", "0")))
 PARALLEL_FITTER = bool(int(os.environ.get("PARALLEL_FITTER", "0")))
 DEBUG_FITTER = bool(int(os.environ.get("DEBUG_FITTER", "0")))
+DISABLE_RIBOSOME_CAPACITY_FITTING = bool(int(os.environ.get("DISABLE_RIBOSOME_CAPACITY_FITTING", "0")))
+DISABLE_RNAPOLY_CAPACITY_FITTING = bool(int(os.environ.get("DISABLE_RNAPOLY_CAPACITY_FITTING", "0")))
 
 if not RUN_AGGREGATE_ANALYSIS:
 	COMPRESS_OUTPUT = False
@@ -226,7 +237,7 @@ filename_sim_data_modified = constants.SERIALIZED_SIM_DATA_MODIFIED
 fw_name = "InitRawData"
 
 if VERBOSE_QUEUE:
-	print "Queuing {}".format(fw_name)
+	print "Queueing {}".format(fw_name)
 
 fw_init_raw_data = Firework(
 	InitRawDataTask(
@@ -245,7 +256,7 @@ filename_sim_data_fit_1 = constants.SERIALIZED_FIT1_FILENAME
 fw_name = "FitSimDataTask_Level_1"
 
 if VERBOSE_QUEUE:
-	print "Queuing {}".format(fw_name)
+	print "Queueing {}".format(fw_name)
 
 if PARALLEL_FITTER:
 	cpusForFitter = 8
@@ -260,6 +271,8 @@ fw_fit_level_1 = Firework(
 		cached_data = os.path.join(CACHED_SIM_DATA_DIRECTORY, filename_sim_data_fit_1),
 		cpus = cpusForFitter,
 		debug = DEBUG_FITTER,
+		disable_ribosome_capacity_fitting = DISABLE_RIBOSOME_CAPACITY_FITTING,
+		disable_rnapoly_capacity_fitting = DISABLE_RNAPOLY_CAPACITY_FITTING,
 		),
 	name = fw_name,
 	spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": cpusForFitter}, "_priority":1}
@@ -274,7 +287,7 @@ if COMPRESS_OUTPUT:
 	fw_name = "ScriptTask_compression_raw_data"
 
 	if VERBOSE_QUEUE:
-		print "Queuing {}".format(fw_name)
+		print "Queueing {}".format(fw_name)
 
 	fw_raw_data_compression = Firework(
 		ScriptTask(
@@ -294,7 +307,7 @@ if COMPRESS_OUTPUT:
 	fw_name = "ScriptTask_compression_sim_data_1"
 
 	if VERBOSE_QUEUE:
-		print "Queuing {}".format(fw_name)
+		print "Queueing {}".format(fw_name)
 
 	fw_sim_data_1_compression = Firework(
 		ScriptTask(
@@ -312,7 +325,7 @@ if COMPRESS_OUTPUT:
 fw_name = "SymlinkTask_KB_Most_Fit"
 
 if VERBOSE_QUEUE:
-	print "Queuing {}".format(fw_name)
+	print "Queueing {}".format(fw_name)
 
 fw_symlink_most_fit = Firework(
 	SymlinkTask(
@@ -337,7 +350,7 @@ filename_raw_validation_data = constants.SERIALIZED_RAW_VALIDATION_DATA
 fw_name = "InitValidationDataRaw"
 
 if VERBOSE_QUEUE:
-	print "Queuing {}".format(fw_name)
+	print "Queueing {}".format(fw_name)
 
 fw_raw_validation_data = Firework(
 	InitRawValidationDataTask(
@@ -370,7 +383,7 @@ filename_validation_data = constants.SERIALIZED_VALIDATION_DATA
 fw_name = "InitValidationData"
 
 if VERBOSE_QUEUE:
-	print "Queuing {}".format(fw_name)
+	print "Queueing {}".format(fw_name)
 
 fw_validation_data = Firework(
 	InitValidationDataTask(
@@ -392,7 +405,7 @@ if COMPRESS_OUTPUT:
 	fw_name = "ScriptTask_compression_validation_data"
 
 	if VERBOSE_QUEUE:
-		print "Queuing {}".format(fw_name)
+		print "Queueing {}".format(fw_name)
 
 	fw_validation_data_compression = Firework(
 		ScriptTask(
@@ -435,7 +448,7 @@ fw_this_variant_this_gen_this_sim_compression = None
 
 for i in VARIANTS_TO_RUN:
 	if VERBOSE_QUEUE:
-		print "Queuing Variant {}".format(i)
+		print "Queueing Variant {}".format(i)
 	VARIANT_DIRECTORY = os.path.join(INDIV_OUT_DIRECTORY, VARIANT + "_%06d" % i)
 	VARIANT_SIM_DATA_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "kb")
 	VARIANT_METADATA_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "metadata")
@@ -500,7 +513,7 @@ for i in VARIANTS_TO_RUN:
 
 	for j in xrange(N_INIT_SIMS):
 		if VERBOSE_QUEUE:
-			print "\tQueuing Seed {}".format(j)
+			print "\tQueueing Seed {}".format(j)
 		SEED_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "%06d" % j)
 		SEED_PLOT_DIRECTORY = os.path.join(SEED_DIRECTORY, "plotOut")
 		metadata["seed"] = j
@@ -529,14 +542,14 @@ for i in VARIANTS_TO_RUN:
 
 		for k in xrange(N_GENS):
 			if VERBOSE_QUEUE:
-				print "\t\tQueuing Gen %02d." % (k,)
+				print "\t\tQueueing Gen %02d." % (k,)
 			GEN_DIRECTORY = os.path.join(SEED_DIRECTORY, "generation_%06d" % k)
 			metadata["gen"] = k
 
 			for l in (xrange(2**k) if not SINGLE_DAUGHTERS else [0]):
 
 				if VERBOSE_QUEUE:
-					print "\t\t\tQueuing Cell {}".format(l)
+					print "\t\t\tQueueing Cell {}".format(l)
 				CELL_DIRECTORY = os.path.join(GEN_DIRECTORY, "%06d" % l)
 				CELL_SIM_OUT_DIRECTORY = os.path.join(CELL_DIRECTORY, "simOut")
 				CELL_PLOT_OUT_DIRECTORY = os.path.join(CELL_DIRECTORY, "plotOut")
@@ -591,7 +604,8 @@ for i in VARIANTS_TO_RUN:
 					raise ValueError("k ({}) < 0".format(k))
 
 				wf_fws.append(fw_this_variant_this_gen_this_sim)
-				if RUN_AGGREGATE_ANALYSIS:
+				# Only add the last generation as dependencies for multiple sim analysis tasks
+				if RUN_AGGREGATE_ANALYSIS and k == N_GENS - 1:
 					wf_links[fw_this_variant_this_gen_this_sim].append(fw_this_variant_this_seed_this_analysis)
 					wf_links[fw_this_variant_this_gen_this_sim].append(fw_this_variant_cohort_analysis)
 					wf_links[fw_this_variant_this_gen_this_sim].append(fw_variant_analysis)

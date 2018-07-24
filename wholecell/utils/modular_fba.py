@@ -15,18 +15,35 @@ import numpy as np
 NUMERICAL_ZERO = 1e-20
 
 # can add additional solvers to have more options but need to implement NetworkFlow wrapper
-SOLVERS = {}
-S_GLPK = "glpk"
+S_CPLEX_QUAD = "cplex-quad"
+S_CPLEX_LINEAR = "cplex-linear"
+S_GLPK = "glpk-linear"
+
 _SOLVER_PREFERENCE = (
 	S_GLPK,
+	S_CPLEX_LINEAR,
+	S_CPLEX_QUAD,
 	)
+
+QUADRATIC = {
+	S_CPLEX_QUAD: True,
+	S_CPLEX_LINEAR: False,
+	S_GLPK: False,
+	}
+
+SOLVERS = {}
+try:
+	from ._netflow.nf_cplex import NetworkFlowCPLEX
+except ImportError:
+	pass
+else:
+	SOLVERS[S_CPLEX_QUAD] = NetworkFlowCPLEX
+	SOLVERS[S_CPLEX_LINEAR] = NetworkFlowCPLEX
 
 try:
 	from ._netflow.nf_glpk import NetworkFlowGLPK
-
 except ImportError:
 	pass
-
 else:
 	SOLVERS[S_GLPK] = NetworkFlowGLPK
 
@@ -37,7 +54,6 @@ for solver in _SOLVER_PREFERENCE:
 	if solver in SOLVERS:
 		DEFAULT_SOLVER = solver
 		break
-
 else:
 	raise Exception("Could not choose a default solver.")
 
@@ -129,6 +145,7 @@ class FluxBalanceAnalysis(object):
 	## Homeostatic FBA
 	_generatedID_fractionBelowUnityOut = "fraction {} below unity, out"
 	_generatedID_fractionAboveUnityOut = "fraction {} above unity, out"
+	_generatedID_quadFractionFromUnity = "fraction {} off from unity"
 
 	_standardObjectiveReactionName = "Standard biomass objective reaction"
 
@@ -148,6 +165,7 @@ class FluxBalanceAnalysis(object):
 	## MOMA
 	_generatedID_amountOver = "Amount {} flux is over target"
 	_generatedID_amountUnder = "Amount {} flux is under target"
+	_generatedID_quadFluxRelax = "Amount {} flux differs from target"
 
 	_generatedID_kineticReactionEquivalentsPseudoflux = "pseudoflux to remove kinetic objective equivalents for reaction {}"
 	_generatedID_kineticReactionEquivalents = "kinetic reaction objective equivalent for {} reaction"
@@ -155,11 +173,6 @@ class FluxBalanceAnalysis(object):
 	## Kinetic
 	_generatedID_reactionFluxEquivalents = "reaction flux equivalent for {} reaction"
 	_generatedID_conversionFlux = "Flux converting {} flux to kinetic objective equivalents"
-
-
-	# Default values, for clarity
-	_lowerBoundDefault = 0
-	_upperBoundDefault = np.inf
 
 	# Initialization
 
@@ -176,12 +189,28 @@ class FluxBalanceAnalysis(object):
 				"Unrecognized or unavailable solver: {}".format(solver)
 				)
 
-		self.objectiveType = objectiveType
-
+		# Set objective type
 		if objectiveType is None:
 			self.objectiveType = "standard"
+		else:
+			self.objectiveType = objectiveType
 
-		self._solver = SOLVERS[solver]()
+		# Set objective weights
+		if objectiveParameters is not None:
+			self.kineticObjectiveWeight = objectiveParameters.get("kineticObjectiveWeight", 0)
+		else:
+			self.kineticObjectiveWeight = 0
+
+		if self.kineticObjectiveWeight > 1 or self.kineticObjectiveWeight < 0:
+			raise FBAError(
+				"kineticObjectiveWeight must be between 0 and 1 inclusive."
+				+ " It represents the percentage of preference going to kinetics."
+				)
+
+		self.homeostaticObjectiveWeight = 1 - self.kineticObjectiveWeight
+
+		# Set solver
+		self._solver = SOLVERS[solver](QUADRATIC[solver])
 
 		self._forceInternalExchange = False
 
@@ -203,15 +232,15 @@ class FluxBalanceAnalysis(object):
 		self._initReactionNetwork(self.reactionStoich)
 		self._initExternalExchange(externalExchangedMolecules)
 
-		if objectiveType is None or objectiveType == "standard":
+		if self.objectiveType == "standard":
 			self._initObjectiveEquivalents(objective)
 			self._initObjectiveStandard(objective)
 
-		elif objectiveType == "flexible":
+		elif self.objectiveType == "flexible":
 			self._initObjectiveEquivalents(objective)
 			self._initObjectiveFlexible(objective, objectiveParameters)
 
-		elif objectiveType == "homeostatic":
+		elif self.objectiveType == "homeostatic":
 			self._initObjectiveEquivalents(objective)
 			self._initObjectiveHomeostatic(objective)
 
@@ -223,6 +252,7 @@ class FluxBalanceAnalysis(object):
 
 		elif self.objectiveType == "range_homeostatic":
 			self._initObjectiveEquivalents(objective)
+			self._initObjectiveHomeostatic(objective)
 			self._initObjectiveRangeHomeostatic(objective, objectiveParameters)
 
 			if internalExchangedMolecules is not None:
@@ -242,7 +272,7 @@ class FluxBalanceAnalysis(object):
 		elif self.objectiveType == "homeostatic_kinetics_mixed":
 			# Set up homeostatic objective
 			self._initObjectiveEquivalents(objective)
-			self._initObjectiveRangeHomeostatic(objective, objectiveParameters)
+			self._initObjectiveHomeostatic(objective)
 
 			if internalExchangedMolecules is not None:
 				raise FBAError(
@@ -408,12 +438,12 @@ class FluxBalanceAnalysis(object):
 		fractionalDifferenceWeight = objectiveParameters["gamma"]
 
 		if fractionalDifferenceWeight < 0:
-			raise FBAError("flexFBA gamma paramter must be nonnegative")
+			raise FBAError("flexFBA gamma parameter must be nonnegative")
 
 		biomassSatisfactionWeight = objectiveParameters["beta"]
 
 		if biomassSatisfactionWeight < 0:
-			raise FBAError("flexFBA beta paramter must be nonnegative")
+			raise FBAError("flexFBA beta parameter must be nonnegative")
 
 		if any(coeff < 0 for coeff in objective.viewvalues()):
 			warnings.warn("flexFBA is not designed to use negative biomass coefficients")
@@ -528,7 +558,6 @@ class FluxBalanceAnalysis(object):
 
 		# By forcing a column to be at unity, we can keep the definition of
 		# the problem as b=Av where b=0.
-
 		self._solver.setFlowBounds(
 			self._forcedUnityColName,
 			lowerBound=1,
@@ -537,104 +566,83 @@ class FluxBalanceAnalysis(object):
 
 		# Minimizing an absolute value requires splitting the term into two,
 		# one for the positive values and one for the negative.
-
 		for moleculeID in sorted(objective):
 			objectiveEquivID = self._generatedID_moleculeEquivalents.format(moleculeID)
 
 			# Add the forced -1 term so that we can define x_i = f_i - 1
-
 			self._solver.setFlowMaterialCoeff(
 				self._forcedUnityColName,
 				objectiveEquivID,
-				-1
+				-1,
 				)
 
-			# Add the term for when the flux out is below the expected value
+			if self._solver.quadratic_objective:
+				quadUnityID = self._generatedID_quadFractionFromUnity.format(moleculeID)
 
-			belowUnityID = self._generatedID_fractionBelowUnityOut.format(moleculeID)
+				self._solver.setFlowMaterialCoeff(
+					quadUnityID,
+					objectiveEquivID,
+					-1,
+					)
 
-			self._solver.setFlowMaterialCoeff(
-				belowUnityID,
-				objectiveEquivID,
-				+1
-				)
+				self._solver.setFlowObjectiveCoeff(
+					quadUnityID,
+					self.homeostaticObjectiveWeight,
+					)
 
-			self._solver.setFlowObjectiveCoeff(
-				belowUnityID,
-				+1
-				)
+				self._solver.setFlowBounds(
+					quadUnityID,
+					lowerBound=-self._solver.inf,
+					upperBound=self._solver.inf,
+					)
+			else:
+				# Add the term for when the flux out is below the expected value
+				belowUnityID = self._generatedID_fractionBelowUnityOut.format(moleculeID)
 
-			# Add the term for when the flux out is above the expected value
-			aboveUnityID = self._generatedID_fractionAboveUnityOut.format(moleculeID)
+				self._solver.setFlowMaterialCoeff(
+					belowUnityID,
+					objectiveEquivID,
+					1,
+					)
 
-			self._solver.setFlowMaterialCoeff(
-				aboveUnityID,
-				objectiveEquivID,
-				-1
-				)
+				self._solver.setFlowObjectiveCoeff(
+					belowUnityID,
+					self.homeostaticObjectiveWeight,
+					)
 
-			self._solver.setFlowObjectiveCoeff(
-				aboveUnityID,
-				+1
-				)
+				# Add the term for when the flux out is above the expected value
+				aboveUnityID = self._generatedID_fractionAboveUnityOut.format(moleculeID)
+
+				self._solver.setFlowMaterialCoeff(
+					aboveUnityID,
+					objectiveEquivID,
+					-1,
+					)
+
+				self._solver.setFlowObjectiveCoeff(
+					aboveUnityID,
+					self.homeostaticObjectiveWeight,
+					)
 
 	def _initObjectiveRangeHomeostatic(self, objective, objectiveParameters):
 		""" Homeostatic FBA with a range of acceptable values. The objective is
 		to minimize the distance between the current metabolite level and a range
 		of target concentrations. Within this target range, there is a small preference
-		for the higher concentraion. The low and high ends of the target range are
+		for the higher concentration. The low and high ends of the target range are
 		defined in the objective."""
 
 		# Load parameters - default to regular homeostatic fba if none given
-		homeostaticRangeObjFractionHigher = objectiveParameters["homeostaticRangeObjFractionHigher"] if "homeostaticRangeObjFractionHigher" in objectiveParameters else 0
-		inRangeObjWeight = objectiveParameters["inRangeObjWeight"] if "inRangeObjWeight" in objectiveParameters else 0
-		kineticObjectiveWeight = objectiveParameters["kineticObjectiveWeight"] if "kineticObjectiveWeight" in objectiveParameters else 0
-
-		# Track which molecules have homeostatic tagets
-		self._homeostaticTargetMolecules.update(set(objective.keys()))
-
-		if kineticObjectiveWeight > 1 or kineticObjectiveWeight < 0:
-			raise FBAError("kineticObjectiveWeight must be between 0 and 1 inclusive. It represents the percentage of preference going to kinetics.")
-		else:
-			self._homeostaticObjectiveWeight = (1 - kineticObjectiveWeight)
-
+		homeostaticRangeObjFractionHigher = objectiveParameters.get("homeostaticRangeObjFractionHigher", 0)
+		inRangeObjWeight = objectiveParameters.get("inRangeObjWeight", 0)
 		if inRangeObjWeight > 1 or inRangeObjWeight < 0:
-			raise FBAError("inRangeObjWeight must be between 0 and 1 inclusive. It represents the weighting relative to the out-of-range relaxation fluxes, it must always be less than 1 and positive.")
-
-		self._solver.maximizeObjective(False)
-		self._forceInternalExchange = True
-
-		# By forcing a column to be at unity, we can keep the definition of
-		# the problem as b=Av where b=0.
-		self._solver.setFlowBounds(
-			self._forcedUnityColName,
-			lowerBound=1,
-			upperBound=1,
-			)
+			raise FBAError(
+				"inRangeObjWeight must be between 0 and 1 inclusive."
+				+ " It represents the weighting relative to the out-of-range relaxation"
+				+ " fluxes, it must always be less than 1 and positive."
+				)
 
 		for moleculeID in sorted(objective):
 			objectiveEquivID = self._generatedID_moleculeEquivalents.format(moleculeID)
-
-			# Add the forced -1 term so that we can define x_i = f_i - 1
-			self._solver.setFlowMaterialCoeff(
-				self._forcedUnityColName,
-				objectiveEquivID,
-				-1
-				)
-
-			# Add the term for when the flux out is below the expected range
-			belowUnityID = self._generatedID_fractionBelowUnityOut.format(moleculeID)
-
-			self._solver.setFlowMaterialCoeff(
-				belowUnityID,
-				objectiveEquivID,
-				+1
-				)
-
-			self._solver.setFlowObjectiveCoeff(
-				belowUnityID,
-				+(self._homeostaticObjectiveWeight)
-				)
 
 			# Add the term for when the flux out is within the expected range
 			inRangeID = self._generatedID_fractionInRangeOut.format(moleculeID)
@@ -642,13 +650,13 @@ class FluxBalanceAnalysis(object):
 			self._solver.setFlowMaterialCoeff(
 				inRangeID,
 				objectiveEquivID,
-				-homeostaticRangeObjFractionHigher if homeostaticRangeObjFractionHigher > 0 else homeostaticRangeObjFractionHigher
+				-np.abs(homeostaticRangeObjFractionHigher),
 				)
 
 			# Set the weight of running this relaxation
 			self._solver.setFlowObjectiveCoeff(
 				inRangeID,
-				+inRangeObjWeight*(self._homeostaticObjectiveWeight)
+				inRangeObjWeight*(self.homeostaticObjectiveWeight),
 				)
 
 			# This relaxation can only go to the end of the target range (less and the out range relaxation must be used)
@@ -657,30 +665,15 @@ class FluxBalanceAnalysis(object):
 				upperBound=abs(homeostaticRangeObjFractionHigher),
 				)
 
-
-			# Add the term for when the flux out is above the target value and out of the expected range
-			aboveUnityID = self._generatedID_fractionAboveUnityOut.format(moleculeID)
-
-			self._solver.setFlowMaterialCoeff(
-				aboveUnityID,
-				objectiveEquivID,
-				-1
-				)
-
-			self._solver.setFlowObjectiveCoeff(
-				aboveUnityID,
-				+(self._homeostaticObjectiveWeight)
-				)
-
 	def _initObjectiveKinetic(self, objective, objectiveParameters=None):
 		""" Given a dict of reaction_name:rate (objective), attempts to
-			minimize the L1 normalized distance between fluxes and those rates.
+			minimize the normalized distance between fluxes and those rates.
 		"""
 
-		self.kineticObjectiveWeight = objectiveParameters["kineticObjectiveWeight"] if "kineticObjectiveWeight" in objectiveParameters else 0
-
 		# Unless given, assume no reactions are one-sided targets (ie kcat only targets)
-		self._oneSidedReactions = set(objectiveParameters["oneSidedReactionTargets"]) if "oneSidedReactionTargets" in objectiveParameters else set()
+		self._oneSidedReactions = set(objectiveParameters.get("oneSidedReactionTargets", ""))
+		if len(self._oneSidedReactions) and self._solver.quadratic_objective:
+			raise Exception('One sided reactions not implemented for quadratic objectives')
 
 		# Track the kinetic target levels
 		self._currentKineticTargets = objective
@@ -697,7 +690,7 @@ class FluxBalanceAnalysis(object):
 
 		for reactionID, expectedFlux in objective.iteritems():
 			if expectedFlux < 0:
-				raise FBAError("Target flux for reaction {} is negative. Kinetic targets must be postive - set the value for the (reverse) reaction if a negative flux is desired.".format(reactionID))
+				raise FBAError("Target flux for reaction {} is negative. Kinetic targets must be positive - set the value for the (reverse) reaction if a negative flux is desired.".format(reactionID))
 
 			if reactionID not in self.reactionStoich:
 				raise FBAError("{} is not in the reaction network. Target fluxes must be in the reaction network".format(reactionID))
@@ -709,7 +702,7 @@ class FluxBalanceAnalysis(object):
 			self._solver.setFlowMaterialCoeff(
 				reactionID,
 				reactionFluxEquivalent,
-				1.
+				1.,
 				)
 
 			# Conversion to scale reactions to their target (this is what is changed when changing targets)
@@ -718,54 +711,75 @@ class FluxBalanceAnalysis(object):
 			self._solver.setFlowMaterialCoeff(
 				conversionFlux,
 				reactionFluxEquivalent,
-				-expectedFlux
+				-expectedFlux,
 				)
 			self._solver.setFlowMaterialCoeff(
 				conversionFlux,
 				kineticObjEquivalent,
-				1
+				1,
 				)
 
 			# Force consumption of one kinetic objective equivalent
 			self._solver.setFlowMaterialCoeff(
 				self._forcedUnityColName,
 				kineticObjEquivalent,
-				-1
+				-1,
 				)
 
 			## Create relaxation fluxes to allow deviation from this forced consumption
-			# Above
-			# Add a pseudoreaction to allow the flux to be above its target
-			overTargetFlux = self._generatedID_amountOver.format(reactionID)
-			self._solver.setFlowMaterialCoeff(
-				overTargetFlux,
-				kineticObjEquivalent,
-				-1
-				)
-			# Objective is to minimize running this relaxation reaction
-			self._solver.setFlowObjectiveCoeff(
-				overTargetFlux,
-				(self.kineticObjectiveWeight)
-			)
-
-			self._specialFluxIDsSet.add(overTargetFlux)
-
-			# Below
-			# Add a pseudoreaction to allow the flux to be below its target
-			underTargetFlux = self._generatedID_amountUnder.format(reactionID)
-			self._solver.setFlowMaterialCoeff(
-				underTargetFlux,
-				kineticObjEquivalent,
-				1
-				)
-			# Objective is to minimize running this relaxation reaction, unless this is a one-sided kinetic target, in which case it's a free relaxation.
-			if reactionID not in self._oneSidedReactions:
-				self._solver.setFlowObjectiveCoeff(
-					underTargetFlux,
-					(self.kineticObjectiveWeight)
+			if self._solver.quadratic_objective:
+				quadTargetFlux = self._generatedID_quadFluxRelax.format(reactionID)
+				self._solver.setFlowMaterialCoeff(
+					quadTargetFlux,
+					kineticObjEquivalent,
+					-1,
 					)
 
-			self._specialFluxIDsSet.add(underTargetFlux)
+				self._solver.setFlowObjectiveCoeff(
+					quadTargetFlux,
+					self.kineticObjectiveWeight,
+					)
+
+				self._solver.setFlowBounds(
+					quadTargetFlux,
+					lowerBound=-self._solver.inf,
+					upperBound=self._solver.inf,
+				)
+
+				self._specialFluxIDsSet.add(quadTargetFlux)
+			else:
+				# Above
+				# Add a pseudoreaction to allow the flux to be above its target
+				overTargetFlux = self._generatedID_amountOver.format(reactionID)
+				self._solver.setFlowMaterialCoeff(
+					overTargetFlux,
+					kineticObjEquivalent,
+					-1,
+					)
+				# Objective is to minimize running this relaxation reaction
+				self._solver.setFlowObjectiveCoeff(
+					overTargetFlux,
+					self.kineticObjectiveWeight,
+					)
+
+				self._specialFluxIDsSet.add(overTargetFlux)
+
+				# Below
+				# Add a pseudoreaction to allow the flux to be below its target
+				underTargetFlux = self._generatedID_amountUnder.format(reactionID)
+				self._solver.setFlowMaterialCoeff(
+					underTargetFlux,
+					kineticObjEquivalent,
+					1,
+					)
+				# Objective is to minimize running this relaxation reaction, unless this is a one-sided kinetic target, in which case it's a free relaxation.
+				if reactionID not in self._oneSidedReactions:
+					self._solver.setFlowObjectiveCoeff(
+						underTargetFlux,
+						self.kineticObjectiveWeight,
+						)
+
+				self._specialFluxIDsSet.add(underTargetFlux)
 
 
 	def _initInternalExchange(self, internalExchangedMolecules):
@@ -887,7 +901,7 @@ class FluxBalanceAnalysis(object):
 			maintenanceCostGAM
 			)
 
-		# ... which are consumed in a seperate flux
+		# ... which are consumed in a separate flux
 
 		self._solver.setFlowMaterialCoeff(
 			self._reactionID_GAM,
@@ -990,7 +1004,7 @@ class FluxBalanceAnalysis(object):
 		'''
 		Sets the upper and lower bounds for a group of reactions.
 		If upper or lower bounds are not specified (None), they are left as is.
-		Pssing a string as the first argument will automatically convert
+		Passing a string as the first argument will automatically convert
 		arguments to a list and lowerBounds and upperBounds should be floats.
 		inputs:
 			reactionIDs (str or array-like) - list of reactions to set flux bounds
@@ -1069,16 +1083,13 @@ class FluxBalanceAnalysis(object):
 	def getOutputMoleculeIDs(self):
 		return tuple(self._outputMoleculeIDs)
 
-
 	def getOutputMoleculeLevelsChange(self):
-		# This is essentially a dot product, need to profile to make sure this
-		# isn't horribly slow
-
 		change = np.zeros(len(self._outputMoleculeIDs))
 
-		for i, outputMoleculeID in enumerate(self._outputMoleculeIDs):
-			for reactionID, coeff in self._outputMoleculeCoeffs[i].viewitems():
-				change[i] += self._solver.getFlowRates(reactionID) * coeff
+		for i, stoich in enumerate(self._outputMoleculeCoeffs):
+			flowRates = self._solver.getFlowRates(stoich.viewkeys())
+			coeffs = stoich.values()
+			change[i] = np.dot(flowRates, coeffs)
 
 		return -change
 
@@ -1111,18 +1122,25 @@ class FluxBalanceAnalysis(object):
 		for idx, moleculeID in enumerate(moleculeIDs):
 			if moleculeID not in self._homeostaticTargetMolecules:
 				raise FBAError("No homeostatic target set for molecule {}.".format(moleculeID))
-			belowUnityID = self._generatedID_fractionBelowUnityOut.format(moleculeID)
-			aboveUnityID = self._generatedID_fractionAboveUnityOut.format(moleculeID)
-			relaxUp = self.getReactionFlux(belowUnityID)
-			relaxDown = self.getReactionFlux(aboveUnityID)
 
-			assert relaxUp <= NUMERICAL_ZERO or relaxDown <= NUMERICAL_ZERO
+			if self._solver.quadratic_objective:
+				quadUnityID = self._generatedID_quadFractionFromUnity.format(moleculeID)
+				relax = self.getReactionFlux(quadUnityID)**2
+			else:
+				belowUnityID = self._generatedID_fractionBelowUnityOut.format(moleculeID)
+				aboveUnityID = self._generatedID_fractionAboveUnityOut.format(moleculeID)
+				relaxUp = self.getReactionFlux(belowUnityID)
+				relaxDown = self.getReactionFlux(aboveUnityID)
 
-			values[idx] = relaxUp + relaxDown
+				relax = relaxUp + relaxDown
+
+				assert relaxUp <= NUMERICAL_ZERO or relaxDown <= NUMERICAL_ZERO
+
+			values[idx] = relax
 		return values
 
 	def getHomeostaticObjectiveWeight(self):
-		return self._homeostaticObjectiveWeight
+		return self.homeostaticObjectiveWeight
 
 	def getHomeostaticTargetMolecules(self):
 		return sorted(self._homeostaticTargetMolecules)
@@ -1162,15 +1180,44 @@ class FluxBalanceAnalysis(object):
 		return sorted(self._oneSidedReactions)
 
 	def getKineticObjectiveValues(self, reactionIDs=None):
+		'''
+		Returns the value of the kinetic objective associated with each reaction that
+		is part of the kinetic objective.  If the reaction is disabled (not part of
+		the objective) then the value will be 0.
+
+		Inputs:
+			reactionIDs (iterable of str) - specific reaction IDs to get objective
+				value for (if not provided then will return for all reactions in
+				the objective)
+		'''
+
 		if reactionIDs is None:
 			reactionIDs = self.getKineticTargetFluxNames()
-		fluxes = self.kineticTargetFluxes(reactionIDs)
-		targets = self.getKineticReactionFluxTargets(reactionIDs)
-		return np.abs(np.ones_like(fluxes) - fluxes/targets)
+		values = np.zeros(len(reactionIDs))
+		for idx, reactionID in enumerate(reactionIDs):
+			if reactionID not in self._kineticTargetFluxes:
+				raise FBAError("No kinetic target set for reaction {}.".format(reactionID))
+
+			if self._solver.quadratic_objective:
+				quadUnityID = self._generatedID_quadFluxRelax.format(reactionID)
+				relax = self.getReactionFlux(quadUnityID)**2 * self._solver.getFlowObjectiveCoeff(quadUnityID)
+			else:
+				belowUnityID = self._generatedID_amountUnder.format(reactionID)
+				aboveUnityID = self._generatedID_amountOver.format(reactionID)
+				relaxUp = self.getReactionFlux(belowUnityID) * self._solver.getFlowObjectiveCoeff(belowUnityID)
+				relaxDown = self.getReactionFlux(aboveUnityID) * self._solver.getFlowObjectiveCoeff(aboveUnityID)
+
+				relax = relaxUp + relaxDown
+
+				assert relaxUp <= NUMERICAL_ZERO or relaxDown <= NUMERICAL_ZERO
+
+			# Normalize out the kinetic weight objective
+			values[idx] = relax / self.kineticObjectiveWeight
+		return values
 
 	def setKineticTarget(self, reactionIDs, reactionTargets, raiseForReversible=True):
 		# If a single value is passed in, make a list of length 1 from it
-		if isinstance(reactionIDs, str) or isinstance(reactionIDs, unicode):
+		if isinstance(reactionIDs, basestring):
 			reactionIDs = [reactionIDs]
 		if not (isinstance(reactionTargets, list) or isinstance(reactionTargets, np.ndarray)):
 			reactionTargets = [reactionTargets]
@@ -1210,7 +1257,7 @@ class FluxBalanceAnalysis(object):
 
 	def enableKineticTargets(self, reactionIDs=None):
 		# If a single value is passed in, make a list of length 1 from it
-		if isinstance(reactionIDs, str) or isinstance(reactionIDs, unicode):
+		if isinstance(reactionIDs, basestring):
 			reactionIDs = [reactionIDs]
 
 		# If no reactions specified, enable all kinetic reactions
@@ -1220,24 +1267,30 @@ class FluxBalanceAnalysis(object):
 
 		for reactionID in reactionIDs:
 			# Add objective weighting to these reaction's relaxation fluxes
-			# Above
-			overTargetFlux = self._generatedID_amountOver.format(reactionID)
-			# Objective is to minimize running this relaxation reaction
-			self._solver.setFlowObjectiveCoeff(
-				overTargetFlux,
-				(self.kineticObjectiveWeight)
-			)
-			# Below
-			underTargetFlux = self._generatedID_amountUnder.format(reactionID)
-			if reactionID not in self._oneSidedReactions:
+			if self._solver.quadratic_objective:
+				quadTargetFlux = self._generatedID_quadFluxRelax.format(reactionID)
 				self._solver.setFlowObjectiveCoeff(
-					underTargetFlux,
-					self.kineticObjectiveWeight
+					quadTargetFlux,
+					self.kineticObjectiveWeight,
 					)
+			else:
+				# Above
+				overTargetFlux = self._generatedID_amountOver.format(reactionID)
+				self._solver.setFlowObjectiveCoeff(
+					overTargetFlux,
+					self.kineticObjectiveWeight,
+					)
+				# Below
+				underTargetFlux = self._generatedID_amountUnder.format(reactionID)
+				if reactionID not in self._oneSidedReactions:
+					self._solver.setFlowObjectiveCoeff(
+						underTargetFlux,
+						self.kineticObjectiveWeight,
+						)
 
 	def disableKineticTargets(self, reactionIDs=None):
 		# If a single value is passed in, make a list of length 1 from it
-		if isinstance(reactionIDs, str) or isinstance(reactionIDs, unicode):
+		if isinstance(reactionIDs, basestring):
 			reactionIDs = [reactionIDs]
 
 		# If no reactions specified, disable all kinetic reactions
@@ -1247,19 +1300,26 @@ class FluxBalanceAnalysis(object):
 
 		for reactionID in reactionIDs:
 			# Add objective weighting to these reaction's relaxation fluxes
-			# Above
-			overTargetFlux = self._generatedID_amountOver.format(reactionID)
-			# Objective is to minimize running this relaxation reaction
-			self._solver.setFlowObjectiveCoeff(
-				overTargetFlux,
-				0
-			)
-			# Below
-			underTargetFlux = self._generatedID_amountUnder.format(reactionID)
-			self._solver.setFlowObjectiveCoeff(
-				underTargetFlux,
-				0
-			)
+
+			if self._solver.quadratic_objective:
+				quadTargetFlux = self._generatedID_quadFluxRelax.format(reactionID)
+				self._solver.setFlowObjectiveCoeff(
+					quadTargetFlux,
+					0,
+					)
+			else:
+				#Above
+				overTargetFlux = self._generatedID_amountOver.format(reactionID)
+				self._solver.setFlowObjectiveCoeff(
+					overTargetFlux,
+					0,
+					)
+				# Below
+				underTargetFlux = self._generatedID_amountUnder.format(reactionID)
+				self._solver.setFlowObjectiveCoeff(
+					underTargetFlux,
+					0,
+					)
 
 			# Reset flux target - leaving low values can cause issues when objective for reaction is disabled
 			conversionFlux = self._generatedID_conversionFlux.format(reactionID)
@@ -1267,7 +1327,7 @@ class FluxBalanceAnalysis(object):
 			self._solver.setFlowMaterialCoeff(
 				conversionFlux,
 				reactionFluxEquivalent,
-				-1
+				-1,
 				)
 
 	def getArrayBasedModel(self):
