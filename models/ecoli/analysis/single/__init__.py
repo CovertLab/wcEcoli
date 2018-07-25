@@ -4,6 +4,7 @@ ACTIVE = [
 	"KmOptimization.py",
 	"KmRNAdecayComparison.py",
 	"aaCounts.py",
+	"aaDemand.py",
 	"aaExchangeFluxes.py",
 	"allReactionFluxes.py",
 	"centralCarbonMetabolism.py",
