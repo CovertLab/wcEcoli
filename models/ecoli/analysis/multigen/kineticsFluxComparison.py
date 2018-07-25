@@ -49,11 +49,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 
-		constraintIsKcatOnly = sim_data.process.metabolism.constraintIsKcatOnly
-		constrainedReactions = np.array(sim_data.process.metabolism.constrainedReactionList)
-		useAllConstraints = sim_data.process.metabolism.useAllConstraints
-		constraintsToDisable = sim_data.process.metabolism.constraintsToDisable
-
 		targetFluxList = []
 		actualFluxList = []
 
@@ -62,7 +57,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			mainListener = TableReader(os.path.join(simOutDir, "Main"))
 			initialTime = mainListener.readAttribute("initialTime")
 			time = mainListener.readColumn("time") - initialTime
-			timeStepSec = mainListener.readColumn("timeStepSec")
 			mainListener.close()
 
 			massListener = TableReader(os.path.join(simOutDir, "Mass"))
@@ -77,6 +71,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			targetFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (enzymeKineticsReader.readColumn("targetFluxes").T / coefficient).T
 			actualFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (enzymeKineticsReader.readColumn("actualFluxes").T / coefficient).T
 			reactionConstraint = enzymeKineticsReader.readColumn("reactionConstraint")
+			constrainedReactions = np.array(enzymeKineticsReader.readAttribute("constrainedReactions"))
 			enzymeKineticsReader.close()
 
 			targetFluxes = targetFluxes.asNumber(units.mmol / units.g / units.h)
@@ -94,11 +89,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		targetAve = np.mean(targetFluxList, axis = 0)
 		actualAve = np.mean(actualFluxList, axis = 0)
-
-		disabledReactions = np.zeros(len(constrainedReactions), dtype = bool)
-		if not useAllConstraints:
-			for rxn in constraintsToDisable:
-				disabledReactions[np.where(constrainedReactions == rxn)[0]] = True
 
 		thresholds = [2, 10]
 		categorization = np.zeros(reactionConstraint.shape[1])
@@ -126,26 +116,27 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		output.writerow(["ecocyc link:", siteStr])
 		output.writerow(["", "Target", "Actual", "Category"])
 
-		for reaction, target, flux, category in zip(constrainedReactions[~disabledReactions], targetAve[~disabledReactions], actualAve[~disabledReactions], categorization[~disabledReactions]):
+		for reaction, target, flux, category in zip(constrainedReactions, targetAve, actualAve, categorization):
 			output.writerow([reaction, target, flux, category])
-
-		if np.sum(disabledReactions):
-			output.writerow(["disabled constraints"])
-			for reaction, target, flux, category in zip(constrainedReactions[disabledReactions], targetAve[disabledReactions], actualAve[disabledReactions], categorization[disabledReactions]):
-				output.writerow([reaction, target, flux, category])
 
 		csvFile.close()
 
 		targetAve += 1e-6
 		actualAve += 1e-6
 
+		axes_limits = [1e-7, 1e4]
 		plt.figure(figsize = (8, 8))
-		plt.loglog([1e-7, 1e4], [1e-7, 1e4], 'k')
-		plt.loglog(targetAve[~disabledReactions], actualAve[~disabledReactions], "ob", markeredgewidth = 0.25, alpha = 0.25)
+		ax = plt.axes()
+		plt.loglog(axes_limits, axes_limits, 'k')
+		plt.loglog(targetAve, actualAve, "ob", markeredgewidth = 0.25, alpha = 0.25)
 		plt.xlabel("Target Flux (mmol/g/hr)")
 		plt.ylabel("Actual Flux (mmol/g/hr)")
 		plt.minorticks_off()
-		whitePadSparklineAxis(plt.axes())
+		whitePadSparklineAxis(ax)
+		ax.set_ylim(axes_limits)
+		ax.set_xlim(axes_limits)
+		ax.set_yticks(axes_limits)
+		ax.set_xticks(axes_limits)
 
 		exportFigure(plt, plotOutDir, plotOutFileName)
 		plt.close("all")

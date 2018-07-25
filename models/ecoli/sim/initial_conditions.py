@@ -116,7 +116,7 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff):
 
 def initializeDNA(bulkMolCntr, sim_data, randomState):
 
-	chromosomeView = bulkMolCntr.countsView(sim_data.moleculeGroups.fullChromosome)
+	chromosomeView = bulkMolCntr.countsView([sim_data.moleculeIds.fullChromosome])
 	chromosomeView.countsIs([1])
 
 # TODO: remove checks for zero concentrations (change to assertion)
@@ -211,35 +211,29 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 		C, D, tau, replication_length)
 	n_dnap = sequenceIdx.size
 
-	# Return if no replication is occurring at all
-	if n_dnap == 0:
-		return
-
-	# Add oriCs as unique molecules and set attributes
 	oriC = uniqueMolCntr.objectsNew('originOfReplication', n_oric)
-	oriC.attrIs(
-		chromosomeIndex = chromosomeIndexOriC,
-		)
+	oriC.attrIs(chromosomeIndex = chromosomeIndexOriC)
 
-	# Update mass to account for DNA strands that have already been elongated
-	# Determine the sequences of already-replicated DNA
-	sequences = sim_data.process.replication.replication_sequences
-	sequenceElongations = sequenceLength.astype(np.int64)
-	massIncreaseDna = computeMassIncrease(
-			np.tile(sequences, (n_dnap//4, 1)),
-			sequenceElongations,
-			sim_data.process.replication.replicationMonomerWeights.asNumber(units.fg)
+	if n_dnap != 0:
+		# Update mass to account for DNA strands that have already been elongated
+		# Determine the sequences of already-replicated DNA
+		sequences = sim_data.process.replication.replication_sequences
+		sequenceElongations = sequenceLength.astype(np.int64)
+		massIncreaseDna = computeMassIncrease(
+				np.tile(sequences, (n_dnap//4, 1)),
+				sequenceElongations,
+				sim_data.process.replication.replicationMonomerWeights.asNumber(units.fg)
+				)
+
+		# Add replicating DNA polymerases as unique molecules and set attributes
+		dnaPoly = uniqueMolCntr.objectsNew('dnaPolymerase', n_dnap)
+		dnaPoly.attrIs(
+			sequenceIdx = sequenceIdx,
+			sequenceLength = sequenceLength,
+			replicationRound = replicationRound,
+			chromosomeIndex = chromosomeIndexPolymerase,
+			massDiff_DNA = massIncreaseDna,
 			)
-
-	# Add replicating DNA polymerases as unique molecules and set attributes
-	dnaPoly = uniqueMolCntr.objectsNew('dnaPolymerase', n_dnap)
-	dnaPoly.attrIs(
-		sequenceIdx = sequenceIdx,
-		sequenceLength = sequenceLength,
-		replicationRound = replicationRound,
-		chromosomeIndex = chromosomeIndexPolymerase,
-		massDiff_DNA = massIncreaseDna,
-		)
 
 
 def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
@@ -380,8 +374,8 @@ def initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	endWeight = sim_data.process.translation.translationEndWeight
 
 	#find number of ribosomes to activate
-	ribosome30S = bulkMolCntr.countsView(sim_data.moleculeGroups.s30_fullComplex).counts()[0]
-	ribosome50S = bulkMolCntr.countsView(sim_data.moleculeGroups.s50_fullComplex).counts()[0]
+	ribosome30S = bulkMolCntr.countsView([sim_data.moleculeIds.s30_fullComplex]).counts()[0]
+	ribosome50S = bulkMolCntr.countsView([sim_data.moleculeIds.s50_fullComplex]).counts()[0]
 	inactiveRibosomeCount = np.minimum(ribosome30S, ribosome50S)
 	ribosomeToActivate = np.int64(fracActiveRibosome * inactiveRibosomeCount)
 
@@ -420,8 +414,8 @@ def initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		)
 
 	# decrease free 30S and 50S ribosomal subunit counts
-	bulkMolCntr.countsIs(ribosome30S - ribosomeToActivate, sim_data.moleculeGroups.s30_fullComplex)
-	bulkMolCntr.countsIs(ribosome50S - ribosomeToActivate, sim_data.moleculeGroups.s50_fullComplex)
+	bulkMolCntr.countsIs(ribosome30S - ribosomeToActivate, [sim_data.moleculeIds.s30_fullComplex])
+	bulkMolCntr.countsIs(ribosome50S - ribosomeToActivate, [sim_data.moleculeIds.s50_fullComplex])
 
 
 def setDaughterInitialConditions(sim, sim_data):

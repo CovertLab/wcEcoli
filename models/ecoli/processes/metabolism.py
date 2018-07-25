@@ -32,8 +32,6 @@ VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 TIME_UNITS = units.s
 
-NONZERO_ENZYMES = False
-
 USE_KINETICS = True
 KINETICS_BURN_IN_PERIOD = 0
 
@@ -147,12 +145,16 @@ class Metabolism(wholecell.processes.process.Process):
 		# Function to compute reaction targets based on kinetic parameters and molecule concentrations
 		self.getKineticConstraints = sim_data.process.metabolism.getKineticConstraints
 
-		self.useAllConstraints = sim_data.process.metabolism.useAllConstraints
-		self.constraintsToDisable = sim_data.process.metabolism.constraintsToDisable
-		self.kineticsConstrainedReactions = sim_data.process.metabolism.constrainedReactionList
+		# Remove disabled reactions so they don't get included in the FBA problem setup
 		if hasattr(sim_data.process.metabolism, "kineticTargetShuffleRxns") and sim_data.process.metabolism.kineticTargetShuffleRxns != None:
 			self.kineticsConstrainedReactions = sim_data.process.metabolism.kineticTargetShuffleRxns
-			self.useAllConstraints = True
+			self.active_constraints_mask = np.ones(len(self.kineticsConstrainedReactions), dtype=bool)
+		else:
+			constrainedReactionList = sim_data.process.metabolism.constrainedReactionList
+			constraintsToDisable = sim_data.process.metabolism.constraintsToDisable
+			self.active_constraints_mask = np.array([(rxn not in constraintsToDisable) for rxn in constrainedReactionList])
+			self.kineticsConstrainedReactions = list(np.array(constrainedReactionList)[self.active_constraints_mask])
+
 		self.kineticsEnzymesList = sim_data.process.metabolism.enzymeIdList
 		self.kineticsSubstratesList = sim_data.process.metabolism.kineticsSubstratesList
 
@@ -164,12 +166,15 @@ class Metabolism(wholecell.processes.process.Process):
 		self.constraintToReactionMatrix[constraintToReactionMatrixI, constraintToReactionMatrixJ] = constraintToReactionMatrixV
 		self.constraintIsKcatOnly = sim_data.process.metabolism.constraintIsKcatOnly
 
-		# Select solver and associated kinetic objective weight (lambda)
-		solver = "glpk-linear"
-		if "linear" in solver:
-			kineticObjectiveWeight = sim_data.constants.metabolismKineticObjectiveWeightLinear
-		else:
-			kineticObjectiveWeight = sim_data.constants.metabolismKineticObjectiveWeightQuadratic
+		# Set solver and kinetic objective weight (lambda)
+		solver = sim_data.process.metabolism.solver
+		kinetic_objective_weight = sim_data.process.metabolism.kinetic_objective_weight
+
+		# Disable kinetics completely if weight is 0 or specified in file above
+		self.use_kinetics = True
+		if not USE_KINETICS or kinetic_objective_weight == 0:
+			self.use_kinetics = False
+			kinetic_objective_weight = 0
 
 		# Set up FBA solver
 		# reactionRateTargets value is just for initialization, it gets reset each timestep during evolveState
@@ -179,7 +184,7 @@ class Metabolism(wholecell.processes.process.Process):
 			"objective" : self.homeostaticObjective,
 			"objectiveType" : "homeostatic_kinetics_mixed",
 			"objectiveParameters" : {
-					"kineticObjectiveWeight" : kineticObjectiveWeight,
+					"kineticObjectiveWeight" : kinetic_objective_weight,
 					"reactionRateTargets" : {reaction : 1 for reaction in self.kineticsConstrainedReactions},
 					"oneSidedReactionTargets" : [],
 					},
@@ -189,22 +194,19 @@ class Metabolism(wholecell.processes.process.Process):
 			"maintenanceCostGAM" : energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
 			"maintenanceReaction" : sim_data.process.metabolism.maintenanceReaction,
 		}
-		if USE_KINETICS == False:
+		if not self.use_kinetics:
 			self.fbaObjectOptions["objectiveType"] = "homeostatic"
 		self.fba = FluxBalanceAnalysis(**self.fbaObjectOptions)
 
 		self.internalExchangeIdxs = np.array([self.metaboliteNamesFromNutrients.index(x) for x in self.fba.getOutputMoleculeIDs()])
 
 		# Disable all rates during burn-in
-		if USE_KINETICS:
+		if self.use_kinetics:
 			if KINETICS_BURN_IN_PERIOD > 0:
 				self.fba.disableKineticTargets()
 				self.burnInComplete = False
 			else:
 				self.burnInComplete = True
-				if not self.useAllConstraints:
-					for rxn in self.constraintsToDisable:
-						self.fba.disableKineticTargets(rxn)
 
 		# Values will get updated at each time point
 		self.currentNgam = 1 * (COUNTS_UNITS / VOLUME_UNITS)
@@ -295,7 +297,7 @@ class Metabolism(wholecell.processes.process.Process):
 			updatedObjective = True
 
 		# After completing the burn-in, enable kinetic rates
-		if (USE_KINETICS) and (not self.burnInComplete) and (self._sim.time() > KINETICS_BURN_IN_PERIOD):
+		if self.use_kinetics and (not self.burnInComplete) and (self._sim.time() > KINETICS_BURN_IN_PERIOD):
 			self.burnInComplete = True
 			self.fba.enableKineticTargets()
 
@@ -335,57 +337,51 @@ class Metabolism(wholecell.processes.process.Process):
 			flux = self.currentPolypeptideElongationEnergy.asNumber(COUNTS_UNITS / VOLUME_UNITS)
 			self.fba.setReactionFluxBounds(self.fba._reactionID_polypeptideElongationEnergy, lowerBounds=flux, upperBounds=flux)
 
-		# Read counts for catalysts and enzymes (catalysts with kinetics constraints)
+		# Constrain reactions based on absence of catalysts
+		## Read counts for catalysts and enzymes (catalysts with kinetics constraints)
 		catalystsCountsInit = self.catalysts.counts()
 
+		## Set hard upper bounds constraints based on enzyme presence (infinite upper bound) or absence (upper bound of zero)
+		catalyzedReactionBounds = np.inf * np.ones(len(self.reactionsWithCatalystsList))
+		rxnPresence = self.catalysisMatrix.dot(catalystsCountsInit)
+		catalyzedReactionBounds[rxnPresence == 0] = 0
+		if self.shuffleCatalyzedIdxs is not None:
+			catalyzedReactionBounds = catalyzedReactionBounds[self.shuffleCatalyzedIdxs]
+
+		## Only update reaction limits that are different from previous time step
+		updateIdxs = np.where(catalyzedReactionBounds != self.catalyzedReactionBoundsPrev)[0]
+		updateRxns = [self.reactionsWithCatalystsList[idx] for idx in updateIdxs]
+		updateVals = catalyzedReactionBounds[updateIdxs]
+		self.fba.setReactionFluxBounds(updateRxns, upperBounds=updateVals, raiseForReversible=False)
+		self.catalyzedReactionBoundsPrev = catalyzedReactionBounds
+
+		# Constrain reactions based on kinetic values
 		kineticsEnzymesCountsInit = self.kineticsEnzymes.counts()
 		kineticsEnzymesConcentrations = countsToMolar * kineticsEnzymesCountsInit
 
 		kineticsSubstratesCountsInit = self.kineticsSubstrates.counts()
 		kineticsSubstratesConcentrations = countsToMolar * kineticsSubstratesCountsInit
 
-		# Add one of every enzyme to ensure none are zero
-		if NONZERO_ENZYMES:
-			catalystsCountsInit += 1
-			kineticsEnzymesConcentrations = countsToMolar * (kineticsEnzymesCountsInit + 1)
+		## Set target fluxes for reactions based on their most relaxed constraint
+		constraintValues = self.getKineticConstraints(
+			kineticsEnzymesConcentrations.asNumber(units.umol / units.L),
+			kineticsSubstratesConcentrations.asNumber(units.umol / units.L),
+			)
+		reactionTargets = (units.umol / units.L / units.s) * np.max(self.constraintToReactionMatrix * constraintValues, axis = 1)
 
-		# Calculate and set kinetic targets if kinetics is enabled
-		if USE_KINETICS and self.burnInComplete:
-			# Set hard upper bounds constraints based on enzyme presence (infinite upper bound) or absence (upper bound of zero)
-			catalyzedReactionBounds = np.inf * np.ones(len(self.reactionsWithCatalystsList))
-			rxnPresence = self.catalysisMatrix.dot(catalystsCountsInit)
-			catalyzedReactionBounds[rxnPresence == 0] = 0
-			if self.shuffleCatalyzedIdxs is not None:
-				catalyzedReactionBounds = catalyzedReactionBounds[self.shuffleCatalyzedIdxs]
+		## Shuffle parameters (only performed in very specific cases)
+		if self.shuffleIdxs is not None:
+			reactionTargets = (units.umol / units.L / units.s) * reactionTargets.asNumber()[self.shuffleIdxs]
 
+		## Record which constraint was used, add constraintToReactionMatrix to ensure the index is one of the constraints if multiplication is 0
+		reactionConstraint = np.argmax(self.constraintToReactionMatrix * constraintValues + self.constraintToReactionMatrix, axis = 1)
 
-			# Only update reaction limits that are different from previous time step
-			updateIdxs = np.where(catalyzedReactionBounds != self.catalyzedReactionBoundsPrev)[0]
-			updateRxns = [self.reactionsWithCatalystsList[idx] for idx in updateIdxs]
-			updateVals = catalyzedReactionBounds[updateIdxs]
-			self.fba.setReactionFluxBounds(updateRxns, upperBounds=updateVals, raiseForReversible=False)
-			self.catalyzedReactionBoundsPrev = catalyzedReactionBounds
+		## Calculate reaction flux target for current time step
+		targets = (TIME_UNITS * self.timeStepSec() * reactionTargets).asNumber(COUNTS_UNITS / VOLUME_UNITS)[self.active_constraints_mask]
 
-			# Set target fluxes for reactions based on their most relaxed constraint
-			constraintValues = self.getKineticConstraints(
-				kineticsEnzymesConcentrations.asNumber(units.umol / units.L),
-				kineticsSubstratesConcentrations.asNumber(units.umol / units.L),
-				)
-			reactionTargets = (units.umol / units.L / units.s) * np.max(self.constraintToReactionMatrix * constraintValues, axis = 1)
-
-			# Shuffle parameters (only performed in very specific cases)
-			if self.shuffleIdxs is not None:
-				reactionTargets = (units.umol / units.L / units.s) * reactionTargets.asNumber()[self.shuffleIdxs]
-
-			# record which constraint was used, add constraintToReactionMatrix to ensure the index is one of the constraints if multiplication is 0
-			reactionConstraint = np.argmax(self.constraintToReactionMatrix * constraintValues + self.constraintToReactionMatrix, axis = 1)
-
-			# set reaction flux targets
-			targets = (TIME_UNITS * self.timeStepSec() * reactionTargets).asNumber(COUNTS_UNITS / VOLUME_UNITS)
+		## Set kinetic targets only if kinetics is enabled
+		if self.use_kinetics and self.burnInComplete:
 			self.fba.setKineticTarget(self.kineticsConstrainedReactions, targets, raiseForReversible = False)
-
-			if not self.useAllConstraints:
-				self.fba.disableKineticTargets(self.constraintsToDisable)
 
 		# Solve FBA problem and update metabolite counts
 		deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.getOutputMoleculeLevelsChange())
@@ -414,6 +410,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("FBAResults", "reducedCosts", self.fba.getReducedCosts(self.fba.getReactionIDs()))
 		self.writeToListener("FBAResults", "targetConcentrations", [self.homeostaticObjective[mol] for mol in self.fba.getHomeostaticTargetMolecules()])
 		self.writeToListener("FBAResults", "homeostaticObjectiveValues", self.fba.getHomeostaticObjectiveValues())
+		self.writeToListener("FBAResults", "kineticObjectiveValues", self.fba.getKineticObjectiveValues())
 
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsInit", metaboliteCountsInit)
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsFinal", metaboliteCountsFinal)
@@ -422,9 +419,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "countsToMolar", countsToMolar.asNumber(COUNTS_UNITS / VOLUME_UNITS))
 		self.writeToListener("EnzymeKinetics", "actualFluxes", self.fba.getReactionFluxes(self.kineticsConstrainedReactions) / self.timeStepSec())
 
-		if USE_KINETICS and self.burnInComplete:
-			self.writeToListener("EnzymeKinetics", "targetFluxes", targets / self.timeStepSec())
-			self.writeToListener("EnzymeKinetics", "reactionConstraint", reactionConstraint)
+		self.writeToListener("EnzymeKinetics", "targetFluxes", targets / self.timeStepSec())
+		self.writeToListener("EnzymeKinetics", "reactionConstraint", reactionConstraint[self.active_constraints_mask])
 
 	# limit amino acid uptake to what is needed to meet concentration objective to prevent use as carbon source
 	def _setExternalMoleculeLevels(self, externalMoleculeLevels, metaboliteConcentrations):

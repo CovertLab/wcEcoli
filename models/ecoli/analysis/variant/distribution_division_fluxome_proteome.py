@@ -10,7 +10,7 @@ import numpy as np
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import units
+from wholecell.utils import units, parallelization
 
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from scipy.stats import pearsonr
@@ -65,8 +65,8 @@ def getPCCProteome((variant, ap, monomerIds, schmidtCounts)):
 		nActiveRibosome = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, ribosomeIndex]
 		nActiveRnaPoly = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, rnaPolyIndex]
 		uniqueMoleculeCounts.close()
-		bulkContainer.countsInc(nActiveRibosome.mean(), sim_data.moleculeGroups.s30_fullComplex + sim_data.moleculeGroups.s50_fullComplex)
-		bulkContainer.countsInc(nActiveRnaPoly.mean(), sim_data.moleculeGroups.rnapFull)
+		bulkContainer.countsInc(nActiveRibosome.mean(), [sim_data.moleculeIds.s30_fullComplex, sim_data.moleculeIds.s50_fullComplex])
+		bulkContainer.countsInc(nActiveRnaPoly.mean(), [sim_data.moleculeIds.rnapFull])
 
 		# Account for small-molecule bound complexes
 		view_equilibrium.countsInc(
@@ -212,7 +212,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 		print "Initializing worker pool"
-		pool = Pool(processes = 16)
+		pool = Pool(processes=parallelization.plotter_cpus())
 
 		print "Begin processing"
 
