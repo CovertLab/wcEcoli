@@ -29,7 +29,7 @@ RANGE_THRESHOLD = 2
 MOVING_AVE_WINDOW_SIZE = 200
 
 # set upper end on time (sec). False disables this feature
-XLIMIT = 2000
+XLIMIT = False #2000
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -171,8 +171,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# plot concentrations in environment
 		for idx, nutrient_name in enumerate(nutrient_names):
-			if (not math.isnan(nutrient_concentrations[0, idx]) and np.mean(
-					nutrient_concentrations[:, idx]) != 0):
+			if (not math.isnan(nutrient_concentrations[0, idx]) and (np.mean(
+					nutrient_concentrations[:, idx]) != 0)) and (not math.isinf(nutrient_concentrations[0, idx])):
 				ax2_2.plot(time, nutrient_concentrations[:, idx], linewidth=2,
 					label=nutrient_name, color=idToColor[nutrient_name])
 		ax2_2.set_yscale('symlog',linthreshy=10, linscaley=1)
