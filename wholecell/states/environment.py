@@ -26,6 +26,8 @@ from wholecell.containers.environment_objects_container import EnvironmentObject
 COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
 
+ASSERT_POSITIVE_CONCENTRATION = True
+
 class Environment(wholecell.states.external_state.ExternalState):
 	_name = 'Environment'
 
@@ -92,6 +94,32 @@ class Environment(wholecell.states.external_state.ExternalState):
 			else:
 				self._infinite_environment = False
 				self._volume = float(self._volume) * (units.L)
+
+
+
+
+
+
+
+
+
+		# if ASSERT_POSITIVE_CONCENTRATION and not (self._concentrations >= 0).all():
+		# 	raise NegativeCountsError(
+		# 			"Negative value(s) in self._concentrations:\n"
+		# 			+ "\n".join(
+		# 			"{} in {} ({})".format(
+		# 				self._moleculeIDs[molIndex],
+		# 				self._processIDs[processIndex],
+		# 				self._countsAllocatedFinal[molIndex, processIndex]
+		# 				)
+		# 			for molIndex, processIndex in izip(*np.where(self._countsAllocatedFinal < 0))
+		# 			)
+		# 		)
+
+
+
+
+
 
 
 	def _counts_to_concentration(self, counts):

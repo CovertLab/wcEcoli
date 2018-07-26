@@ -189,10 +189,21 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			ax1_4.set_xlim([0, XLIMIT])
 			ax2_2.set_xlim([0, XLIMIT])
 
-			autoscale_y(ax1_1)
-			autoscale_y(ax1_2)
-			autoscale_y(ax1_4)
-			autoscale_y(ax2_2)
+			# autoscale_y(ax1_1)
+			# autoscale_y(ax1_2)
+			# autoscale_y(ax1_4)
+			# autoscale_y(ax2_2)
+		else:
+			ax1_1.set_xlim([0, time[-1]])
+			ax1_2.set_xlim([0, time[-1]])
+			ax1_3.set_xlim([0, time[-1]])
+			ax1_4.set_xlim([0, time[-1]])
+			ax2_2.set_xlim([0, time[-1]])
+
+			# autoscale_y(ax1_1)
+			# autoscale_y(ax1_2)
+			# autoscale_y(ax1_4)
+			# autoscale_y(ax2_2)
 
 
 		# plot vertical lines at nutrient shifts

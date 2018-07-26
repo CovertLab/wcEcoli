@@ -530,21 +530,28 @@ class Metabolism(wholecell.processes.process.Process):
 			self.exchange_data['importUnconstrainedExchangeMolecules'].append(id)
 			self.exchange_data['importConstrainedExchangeMolecules'].pop(id, None)
 
+
+
 		## Glucose always has an import constraint, with a flux upper bound depending on environment
-		# if any molecules in condition_1 have a concentration of 0, set glc flux upper bound  to 0
-		if any(self.glc_vmax_condition_1.totalConcentrations() == 0):
+
+		# if any molecules in condition_1 ('GLC[p]')
+		# have a concentration <= threshold, set glc flux upper bound to 0
+		if any(self.glc_vmax_condition_1.totalConcentrations() <= self.importConstraintThreshold):
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 0
 
-		# if any molecules in condition_2 have a concentration of 0, set glc flux upper bound  to 10
-		elif any(self.glc_vmax_condition_2.totalConcentrations() == 0):
+		# if any molecules in condition_2 ('CA+2[p]', 'MG+2[p]')
+		# have a concentration <= threshold, set glc flux upper bound to 10
+		elif any(self.glc_vmax_condition_2.totalConcentrations() <= self.importConstraintThreshold):
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 10
 
-		# if any molecules in condition_3 do not have a concentration of 0, set glc flux upper bound  to 10
-		elif any(self.glc_vmax_condition_3.totalConcentrations() != 0):
+		# if any molecules in condition_3 ('CPD-183[p]', 'INDOLE[p]', 'NITRATE[p]', 'NITRITE[p]', 'CPD-520[p]', 'TUNGSTATE[p]')
+		# have a concentration >= threshold, set glc flux upper bound  to 10
+		elif any(self.glc_vmax_condition_3.totalConcentrations() >= self.importConstraintThreshold):
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 10
 
-		# if any molecules in condition_4 have a concentration of 0, set glc flux upper bound  to 100
-		elif any(self.glc_vmax_condition_4.totalConcentrations() == 0):
+		# if any molecules in condition_4 ('OXYGEN-MOLECULE[p]')
+		# have a concentration <= threshold, set glc flux upper bound  to 100
+		elif any(self.glc_vmax_condition_4.totalConcentrations() <= self.importConstraintThreshold):
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 100
 
 		# if normal condition, set glc vmax to 20
