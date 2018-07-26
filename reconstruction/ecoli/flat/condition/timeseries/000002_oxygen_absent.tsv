@@ -1,2 +1,2 @@
 "time (units.s)"	"nutrients"	"volume (units.L)"
-0	"minimal_no_glucose"	1E-14
+0	"minimal_minus_oxygen"	Infinity

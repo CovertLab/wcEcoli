@@ -398,7 +398,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# change in nutrient counts, used in non-infinite environments
 		delta_nutrients = ((1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes()).asNumber().astype(int)
-		self.environment_nutrients.changeCounts(delta_nutrients)
+		self.environment_nutrients.countsInc(delta_nutrients)
 
 
 		# Write outputs to listeners
@@ -493,7 +493,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		Notes
 		-----
-		- TODO (ERAN) eliminate this when kinetic transport process is operational
+		- TODO (ERAN) remove this when kinetic transport process is operational
 		- TODO (Eran) with importConstrained changing, importUnconstrained also needs to change.
 		- TODO (Eran) importConstrained + importUnconstrained = importExchange
 

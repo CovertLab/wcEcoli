@@ -61,9 +61,9 @@ class Environment(wholecell.states.external_state.ExternalState):
 		self.nutrients = self.nutrients_time_series[0][1]
 		self._times = [t[0] for t in self.nutrients_time_series]
 
-		# get volume if volume is infinite (default), changeCounts is skipped
+		# get volume if volume is infinite (default), countsInc is skipped
 		self._volume = self.nutrients_time_series[0][2]
-		if np.isnan(self._volume):
+		if np.isinf(self._volume):
 			self._infinite_environment = True
 		else:
 			self._infinite_environment = False
@@ -87,7 +87,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 			self.container.concentrationsIs(self._concentrations)
 
 			self._volume = self.nutrients_time_series[current_index][2]
-			if np.isnan(self._volume):
+			if np.isinf(self._volume):
 				self._infinite_environment = True
 			else:
 				self._infinite_environment = False
@@ -135,7 +135,7 @@ class EnvironmentViewBase(object):
 		self._concentrations[:] = value
 
 
-	def _changeCounts(self, counts):
+	def _countsInc(self, counts):
 		assert (np.size(counts) == np.size(self._containerIndexes)) or np.size(counts) == 1, 'Inappropriately sized values'
 		change_concentrations = self._state._counts_to_concentration(counts)
 
@@ -165,8 +165,8 @@ class EnvironmentView(EnvironmentViewBase):
 		return self._totalConcentrations()
 
 
-	def changeCounts(self, counts):
+	def countsInc(self, counts):
 		if self._state._infinite_environment:
 			return
 
-		self._changeCounts(counts)
+		self._countsInc(counts)

@@ -1,7 +1,7 @@
 """
 SimulationData for Ecoli
 
-Raw data processed into forms convienent for whole-cell modeling
+Raw data processed into forms convenient for whole-cell modeling
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
