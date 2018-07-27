@@ -11,7 +11,7 @@ ACTIVE = [
 	"figure3_new_parameterShuffle.py",
 	"figure5_parameterShuffle.py",
 	"figureS3.py",
-	"growth_condition_comparison_bremer_dennis.py",
+	"growth_condition_comparison_validation.py",
 	"growthConditionComparison.py",
 	"massFractionSummary.py",
 	"metabolism_kinetic_objective_weight.py",
