@@ -35,6 +35,12 @@ TIME_UNITS = units.s
 USE_KINETICS = True
 KINETICS_BURN_IN_PERIOD = 0
 
+# threshold (units.mmol / units.L) separates concentrations that are import constrained with
+# max flux = 0 from unconstrained molecules.
+# TODO (Eran) remove this once transport kinetics are working
+IMPORT_CONSTRAINT_THRESHOLD =  1.0 #0.1
+GLC_DEFAULT_UPPER_BOUND = 30 * (units.mmol / units.g / units.h)
+
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
 
@@ -54,26 +60,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		#TODO (Eran) this can be remove once transport is in place
 		self.exchange_data_dict = sim_data.exchange_data_dict.copy()
-
-		## lists for updateImportConstraint
-		# TODO (Eran) remove these once transport kinetics are working
-
-		# threshold (units.mmol / units.L) separates concentrations that are import constrained with
-		# max flux = 0 from unconstrained molecules. John suggests 10 micromolar
-		self.importConstraintThreshold = 1
-
-		# import exchange molecules can be both constrained/unconstrained
-		self.importExchangeMolecules_noGLC = self.exchange_data['importExchangeMolecules'][:]
-		self.importExchangeMolecules_noGLC.remove('GLC[p]')
-
-		# dictionary of with conditions specifying sets of molecules that determine
-		# glc's upper bound for FBA import constraint.
-		self.glc_vmax_conditions = {
-			'glc_vmax_condition_1': ['GLC[p]'],
-			'glc_vmax_condition_2': ['CA+2[p]', 'MG+2[p]'],
-			'glc_vmax_condition_3': ['CPD-183[p]', 'INDOLE[p]', 'NITRATE[p]', 'NITRITE[p]', 'CPD-520[p]', 'TUNGSTATE[p]'],
-			'glc_vmax_condition_4': ['OXYGEN-MOLECULE[p]'],
-			}
 
 		# Load constants
 		self.nAvogadro = sim_data.constants.nAvogadro
@@ -219,12 +205,6 @@ class Metabolism(wholecell.processes.process.Process):
 		# views of environment
 		self.environment_nutrients = self.environmentView(self.environment_nutrients_names)
 
-		# views of environment, specific for determining FBA import constraints
-		self.glc_vmax_condition_1 = self.environmentView(self.glc_vmax_conditions['glc_vmax_condition_1'])
-		self.glc_vmax_condition_2 = self.environmentView(self.glc_vmax_conditions['glc_vmax_condition_2'])
-		self.glc_vmax_condition_3 = self.environmentView(self.glc_vmax_conditions['glc_vmax_condition_3'])
-		self.glc_vmax_condition_4 = self.environmentView(self.glc_vmax_conditions['glc_vmax_condition_4'])
-
 		# views for metabolism
 		self.metaboliteNames = self.fba.getOutputMoleculeIDs()
 		self.metabolites = self.bulkMoleculesView(self.metaboliteNamesFromNutrients)
@@ -271,9 +251,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
-
-
-		# TODO (Eran) set nutrients with 0 concentration to 0 vmax
 
 		# Update FBA import constraint variables based on current nutrient concentrations
 		self._updateImportConstraint()
@@ -487,73 +464,30 @@ class Metabolism(wholecell.processes.process.Process):
 		This provides a simple type of transport to accommodate changing nutrient
 		concentrations in the environment. Transport is modeled as a binary switch:
 		When there is a high concentrations of environment nutrients, transporters
-		are unconstrained and transport nutrients as needed. When concentrations
-		fall below a threshold, k_m, the transport is constrained to 0 and don't
-		let any nutrients through.
+		are unconstrained and nutrients are transported as needed by metabolism.
+		When concentrations fall below the threshold, that nutrient's transport
+		is constrained to max flux of 0.
 
 		Notes
 		-----
+		- importConstrainedMolecules + importUnconstrainedMolecules = importExchangeMolecules
 		- TODO (ERAN) remove this when kinetic transport process is operational
-		- TODO (Eran) with importConstrained changing, importUnconstrained also needs to change.
-		- TODO (Eran) importConstrained + importUnconstrained = importExchange
-
 		'''
-		# currently constrained molecules
-		constrained_ids = self.exchange_data['importConstrainedExchangeMolecules'].keys()
 
-		## identify nutrients that crossed the concentration threshold
-		below_thresh_ids = []
-		above_thresh_ids = []
+		self.exchange_data['importConstrainedExchangeMolecules'] = {}
+		self.exchange_data['importUnconstrainedExchangeMolecules'] = []
+		for name, conc in zip(self.environment_nutrients_names, self.environment_nutrients.totalConcentrations()):
 
-		# go through all environmental nutrient concentrations
-		for idx, conc in enumerate(self.environment_nutrients.totalConcentrations()):
-			nutrient_name = self.environment_nutrients_names[idx]
+			# only check nutrients in importExchangeMolecules
+			if name in self.exchange_data['importExchangeMolecules']:
+				# if concentration < threshold, constrain import to 0
+				if conc < IMPORT_CONSTRAINT_THRESHOLD:
+					self.exchange_data['importConstrainedExchangeMolecules'][name] = 0 * (units.mmol / units.g / units.h)
 
-			# Separate nutrients that are above threshold from those below threshold
-			# Only use nutrients in importExchangeMolecules_noGLC (GLC is always constrained)
-			if nutrient_name in self.importExchangeMolecules_noGLC:
-				if (conc <= self.importConstraintThreshold and not np.isnan(conc)):
-					below_thresh_ids.append(nutrient_name)
-				elif (conc >= self.importConstraintThreshold and not np.isnan(conc)):
-					above_thresh_ids.append(nutrient_name)
+				# if GLC >= threshold, constrain import to its default upper bound
+				elif name == 'GLC[p]':
+					self.exchange_data['importConstrainedExchangeMolecules'][name] = GLC_DEFAULT_UPPER_BOUND
 
-		new_below_thresh_ids = np.setdiff1d(below_thresh_ids, constrained_ids)
-		new_above_thresh_ids = np.intersect1d(above_thresh_ids,	constrained_ids)
-
-		# if newly below threshold, add molecule to import constraint and set max flux to 0
-		for id in new_below_thresh_ids:
-			self.exchange_data['importConstrainedExchangeMolecules'][id] = 0 * (units.mmol / units.g / units.h)
-			self.exchange_data['importUnconstrainedExchangeMolecules'].remove(id)
-
-		# remove molecule from import constraint if newly above threshold
-		for id in new_above_thresh_ids:
-			self.exchange_data['importUnconstrainedExchangeMolecules'].append(id)
-			self.exchange_data['importConstrainedExchangeMolecules'].pop(id, None)
-
-
-
-		## Glucose always has an import constraint, with a flux upper bound depending on environment
-
-		# if any molecules in condition_1 ('GLC[p]')
-		# have a concentration <= threshold, set glc flux upper bound to 0
-		if any(self.glc_vmax_condition_1.totalConcentrations() <= self.importConstraintThreshold):
-			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 0
-
-		# if any molecules in condition_2 ('CA+2[p]', 'MG+2[p]')
-		# have a concentration <= threshold, set glc flux upper bound to 10
-		elif any(self.glc_vmax_condition_2.totalConcentrations() <= self.importConstraintThreshold):
-			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 10
-
-		# if any molecules in condition_3 ('CPD-183[p]', 'INDOLE[p]', 'NITRATE[p]', 'NITRITE[p]', 'CPD-520[p]', 'TUNGSTATE[p]')
-		# have a concentration >= threshold, set glc flux upper bound  to 10
-		elif any(self.glc_vmax_condition_3.totalConcentrations() >= self.importConstraintThreshold):
-			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 10
-
-		# if any molecules in condition_4 ('OXYGEN-MOLECULE[p]')
-		# have a concentration <= threshold, set glc flux upper bound  to 100
-		elif any(self.glc_vmax_condition_4.totalConcentrations() <= self.importConstraintThreshold):
-			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 100
-
-		# if normal condition, set glc vmax to 20
-		else:
-			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]']._value = 20
+				# if molecule >= threshold, unconstrain nutrient's import
+				else:
+					self.exchange_data['importUnconstrainedExchangeMolecules'].append(name)
