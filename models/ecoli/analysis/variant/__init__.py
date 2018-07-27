@@ -6,7 +6,7 @@ ACTIVE = [
 	"distribution_division_fluxome_proteome.py",
 	"distribution_fluxome_correlation.py",
 	"distribution_proteome_correlation.py",
-	"figure2b.py",
+	"doubling_time_histogram.py",
 	"figure2c.py",
 	"figure3_new_parameterShuffle.py",
 	"figure5_parameterShuffle.py",
