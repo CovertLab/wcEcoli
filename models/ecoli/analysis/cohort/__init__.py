@@ -3,6 +3,7 @@
 ACTIVE = [
 	"centralCarbonMetabolismCorrelationTimeCourse.py",
 	"centralCarbonMetabolismScatter.py",
+	"doubling_times_histogram_all.py",
 	# "compositionFitting.py",
 	# "compositionFittingByGeneration.py",
 	"expression_dynamics.py",
@@ -22,4 +23,4 @@ ACTIVE = [
 	# "transcriptFrequency.py",
 	# "transcriptionGenomeCoverage.py",
 	# "transcriptionGenomeCoverageSecondHalf.py",
-]
+	]
