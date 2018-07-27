@@ -2,9 +2,9 @@
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
 	"centralCarbonMetabolismCorrelationTimeCourse.py",
+	"centralCarbonMetabolismScatter.py",
 	# "compositionFitting.py",
 	# "compositionFittingByGeneration.py",
-	"figure2e.py",
 	"figure4_b_e.py",
 	"figure4_d.py",
 	"figure5_a.py",
