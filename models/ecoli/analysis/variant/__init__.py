@@ -10,7 +10,6 @@ ACTIVE = [
 	"figure2b.py",
 	"figure2c.py",
 	"figure3_new_parameterShuffle.py",
-	"figure4_c.py",
 	"figure5_parameterShuffle.py",
 	"figureS3.py",
 	"growthConditionComparison.py",
