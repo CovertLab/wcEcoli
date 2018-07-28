@@ -38,9 +38,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		if not os.path.exists(plotOutDir):
 			os.mkdir(plotOutDir)
-
-		# Load data from KB
-		sim_data = cPickle.load(open(simDataFile, 'rb'))
+		#
+		# # Load data from KB
+		# sim_data = cPickle.load(open(simDataFile, 'rb'))
 
 		# Load masses
 		mass = TableReader(os.path.join(simOutDir, 'Mass'))

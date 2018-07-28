@@ -28,6 +28,11 @@ from wholecell.utils import units
 
 VERBOSE = False
 
+# threshold (units.mmol / units.L) separates environment concentrations that are
+# import constrained and import unconstrained .
+IMPORT_CONSTRAINT_THRESHOLD =  1.0
+GLC_DEFAULT_UPPER_BOUND = 30 * (units.mmol / units.g / units.h)
+
 class SimulationDataEcoli(object):
 	""" SimulationDataEcoli """
 
@@ -129,25 +134,41 @@ class SimulationDataEcoli(object):
 				not have an upper bound on their flux.
 			- secretionExchangeMolecules: molecules that can be secreted by the
 				cell into the environment.
+
+		Notes
+		-----
+			- the output does not exactly match previous exchange_data, and could have
+			some influence over FBA results.
 		'''
 		externalExchangeMolecules = {}
 		importExchangeMolecules = {}
 		secretionExchangeMolecules = set()
 		importConstrainedExchangeMolecules = {}
 		importUnconstrainedExchangeMolecules = {}
-		nutrientsList = [(x, getattr(raw_data.condition.nutrient, x)) for x in dir(raw_data.condition.nutrient) if not x.startswith("__")]
+		nutrientsList = [(x, getattr(raw_data.condition.environment, x)) for x in dir(raw_data.condition.environment) if not x.startswith("__")]
 		for nutrientsName, nutrients in nutrientsList:
 			externalExchangeMolecules[nutrientsName] = set()
 			importExchangeMolecules[nutrientsName] = set()
 			importConstrainedExchangeMolecules[nutrientsName] = {}
 			importUnconstrainedExchangeMolecules[nutrientsName] = []
 			for nutrient in nutrients:
-				if not np.isnan(nutrient["lower bound"].asNumber()) and not np.isnan(nutrient["upper bound"].asNumber()):
+				# continue to next iteration if nutrients concentrations are zero
+				if nutrient["concentration"].asNumber() == 0:
 					continue
-				elif not np.isnan(nutrient["upper bound"].asNumber()):
-					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = nutrient["upper bound"]
+
+				# add to import constrained if GLC
+				elif nutrient["molecule id"]  == 'GLC[p]':
+					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = GLC_DEFAULT_UPPER_BOUND
 					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
 					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
+
+				# add to import constrained if concentration < threshold
+				elif nutrient["concentration"].asNumber() < IMPORT_CONSTRAINT_THRESHOLD:
+					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = 0 * (units.mmol / units.g / units.h)
+					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
+					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
+
+				# add to import unconstrained if concentration >= threshold
 				else:
 					importUnconstrainedExchangeMolecules[nutrientsName].append(nutrient["molecule id"])
 					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])

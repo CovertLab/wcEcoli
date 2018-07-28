@@ -173,7 +173,7 @@ class Metabolism(object):
 	def _getExchangeData(self, nutrient_label):
 		'''
 		Returns exchange data used in fitter, using nutrient_labels corresponding to
-		files in reconstruction.ecoli.flat.condition.nutrient
+		files in reconstruction.ecoli.flat.condition.environment
 		'''
 
 		externalExchangeMolecules = self.exchange_data_dict['externalExchangeMolecules'][nutrient_label]

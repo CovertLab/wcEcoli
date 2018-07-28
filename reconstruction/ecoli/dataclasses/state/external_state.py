@@ -61,7 +61,7 @@ class ExternalState(object):
 			self.environment.environment_dict[label] = {}
 			environments = getattr(raw_data.condition.environment, label)
 			for row in environments:
-				self.environment.environment_dict[label].update({row["moleculeid"]: row["concentration"]})
+				self.environment.environment_dict[label].update({row["molecule id"]: row["concentration"]})
 
 		# initial state
 		initial_environment = "minimal"
