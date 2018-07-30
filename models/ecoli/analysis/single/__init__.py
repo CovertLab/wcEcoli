@@ -38,6 +38,7 @@ ACTIVE = [
 	"mrnasVsProteinSingle.py",
 	"ntpCounts.py",
 	"polymeraseTimeLag.py",
+	"polypeptideElongationVsSynthetaseCapacity.py",
 	"processAtpOverlayed.py",
 	"processAtpSeparated.py",
 	"processMassBalance.py",
