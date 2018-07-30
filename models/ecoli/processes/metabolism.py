@@ -39,7 +39,7 @@ KINETICS_BURN_IN_PERIOD = 0
 # max flux = 0 from unconstrained molecules.
 # TODO (Eran) remove this once transport kinetics are working
 IMPORT_CONSTRAINT_THRESHOLD =  1.0 #0.1
-GLC_DEFAULT_UPPER_BOUND = 30 * (units.mmol / units.g / units.h)
+GLC_DEFAULT_UPPER_BOUND = 20 * (units.mmol / units.g / units.h)  #30
 
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
