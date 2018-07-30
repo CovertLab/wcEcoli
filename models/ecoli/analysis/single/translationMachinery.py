@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Analyzes kinetic capacity of tRNA synthetases.
 
@@ -7,124 +6,118 @@ Analyzes kinetic capacity of tRNA synthetases.
 @date: Created 10/17/2017
 """
 
-import argparse
-import os
+from __future__ import absolute_import
 
-import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-from matplotlib import pyplot as plt
+import os
 import cPickle
+import numpy as np
+import matplotlib.pyplot as plt
 
 from wholecell.io.tablereader import TableReader
-import wholecell.utils.constants
-from wholecell.utils import units
+from wholecell.analysis.analysis_tools import exportFigure
+from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.utils.sparkline import whitePadSparklineAxis
+
 
 FRACTION_EFTU_AATRNA = 0.84
 FACTOR_RIBOSOME_AATRNA = 5.5
 
-def main(simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata = None):
-	return
-	if not os.path.isdir(simOutDir):
-		raise Exception, "simOutDir does not currently exist as a directory"
-	if not os.path.exists(plotOutDir):
-		os.mkdir(plotOutDir)
+class Plot(singleAnalysisPlot.SingleAnalysisPlot):
+	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		if not os.path.isdir(simOutDir):
+			raise Exception, "simOutDir does not currently exist as a directory"
 
-	# Load sim data
-	sim_data = cPickle.load(open(simDataFile, "rb"))
+		if not os.path.exists(plotOutDir):
+			os.mkdir(plotOutDir)
 
-	# Load validation data
-	# Load kinetic data from validation
-	validation_data = cPickle.load(open(validationDataFile, "rb"))
-	kinetic_data = validation_data.trna.synthetaseKinetics
-	synthetaseIds = kinetic_data.keys()
+		# Load sim data
+		sim_data = cPickle.load(open(simDataFile, "rb"))
 
-	# Load time data
-	time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
+		# Load validation data
+		validation_data = cPickle.load(open(validationDataFile, "rb"))
+		kinetic_data = validation_data.trna.synthetaseKinetics
+		synthetaseIds = kinetic_data.keys()
 
-	# Load counts of EF-Tu, ribosome subunits
-	EFTu1Id = "EG11036-MONOMER[i]"
-	EFTu2Id = "EG11037-MONOMER[c]"
-	ribosome30SId = sim_data.moleculeGroups.s30_fullComplex[0]
-	ribosome50SId = sim_data.moleculeGroups.s50_fullComplex[0]
+		# Load time data
+		time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
 
-	bulkMoleculesReader = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-	moleculeIds = bulkMoleculesReader.readAttribute("objectNames")
-	moleculeIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in [EFTu1Id, EFTu2Id, ribosome30SId, ribosome50SId]], np.int)
-	synthetaseIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in synthetaseIds])
-	moleculeCounts = bulkMoleculesReader.readColumn("counts")[:, moleculeIndexes]
-	synthetaseCounts = bulkMoleculesReader.readColumn("counts")[:, synthetaseIndexes]
-	bulkMoleculesReader.close()
+		# Load counts of EF-Tu, ribosome subunits
+		EFTu1Id = "EG11036-MONOMER[i]"
+		EFTu2Id = "EG11037-MONOMER[c]"
+		ribosome30SIds = sim_data.moleculeGroups.s30_proteins
+		ribosome50SIds = sim_data.moleculeGroups.s50_proteins
 
-	# Load counts of active ribosomes
-	uniqueMoleculeCountsReader = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
-	ribosomeIndex = uniqueMoleculeCountsReader.readAttribute("uniqueMoleculeIds").index("activeRibosome")
-	activeRibosomeCounts = uniqueMoleculeCountsReader.readColumn("uniqueMoleculeCounts")[:, ribosomeIndex]
-	uniqueMoleculeCountsReader.close()
+		bulkMoleculesReader = TableReader(os.path.join(simOutDir, "BulkMolecules"))
+		moleculeIds = bulkMoleculesReader.readAttribute("objectNames")
+		EFTu1Index = moleculeIds.index(EFTu1Id)
+		EFTu2Index = moleculeIds.index(EFTu2Id)
+		ribosome30SIndices = np.array([moleculeIds.index(x) for x in ribosome30SIds], np.int)
+		ribosome50SIndices = np.array([moleculeIds.index(x) for x in ribosome50SIds], np.int)
+		synthetaseIndices = np.array([moleculeIds.index(x) for x in synthetaseIds], np.int)
+		moleculeCounts = bulkMoleculesReader.readColumn("counts")
+		bulkMoleculesReader.close()
+		EFTu1Counts = moleculeCounts[:, EFTu1Index]
+		EFTu2Counts = moleculeCounts[:, EFTu2Index]
+		ribosome30SCounts = moleculeCounts[:, ribosome30SIndices]
+		ribosome50SCounts = moleculeCounts[:, ribosome50SIndices]
+		synthetaseCounts = moleculeCounts[:, synthetaseIndices]
 
-	# Load counts of amino acids incorporated into polypeptides
-	aaIds = sim_data.moleculeGroups.aaIDs
-	selenocysteine_index = aaIds.index("L-SELENOCYSTEINE[c]")
-	aasUsed = TableReader(os.path.join(simOutDir, "GrowthLimits")).readColumn("aasUsed")
-	aasUsed = np.delete(aasUsed, selenocysteine_index, 1)
+		# Load counts of active ribosomes
+		uniqueMoleculeCountsReader = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
+		ribosomeIndex = uniqueMoleculeCountsReader.readAttribute("uniqueMoleculeIds").index("activeRibosome")
+		activeRibosomeCounts = uniqueMoleculeCountsReader.readColumn("uniqueMoleculeCounts")[:, ribosomeIndex]
+		uniqueMoleculeCountsReader.close()
 
-	# Plot
-	fig, axesList = plt.subplots(4, 1, figsize = (10, 10))
-	ax1, ax2, ax3, ax4 = axesList
+		# Load counts of amino acids incorporated into polypeptides
+		aaIds = sim_data.moleculeGroups.aaIDs
+		selenocysteine_index = aaIds.index("L-SELENOCYSTEINE[c]")
+		aasUsed = TableReader(os.path.join(simOutDir, "GrowthLimits")).readColumn("aasUsed")
+		aasUsed = np.delete(aasUsed, selenocysteine_index, 1)
 
-	ax1.plot(time, moleculeCounts[:, 0], color = "b", linestyle = "--")
-	ax1.plot(time, moleculeCounts[:, 1], color = "b", linestyle = "--")
-	ax1.plot(time, np.sum(moleculeCounts[:, :2], axis = 1), color = "b")
-	ax1.text(time[-1], moleculeCounts[-1, 0], "EF-Tu 1")
-	ax1.text(time[-1], moleculeCounts[-1, 1], "EF-Tu 2")
-	ax1.text(time[-1], np.sum(moleculeCounts[-1, :2]), "EF-Tu (total)")
+		# Plot
+		fig, axesList = plt.subplots(4, 1, figsize = (8.5, 11))
+		ax1, ax2, ax3, ax4 = axesList
 
-	ax2.plot(time, FRACTION_EFTU_AATRNA * np.sum(moleculeCounts[:, :2], axis = 1), color = "b")
-	ax2.plot(time, FACTOR_RIBOSOME_AATRNA * activeRibosomeCounts, color = "g")
-	ax2.text(time[-1], FRACTION_EFTU_AATRNA * np.sum(moleculeCounts[-1, :2]), "%s EF-Tu total" % FRACTION_EFTU_AATRNA)
-	ax2.text(time[-1], FACTOR_RIBOSOME_AATRNA * activeRibosomeCounts[-1], "%s Ribosomes (active)" % FACTOR_RIBOSOME_AATRNA)
+		ax1.plot(time, EFTu1Counts, color = "b", linestyle = "--")
+		ax1.plot(time, EFTu2Counts, color = "b", linestyle = "--")
+		ax1.plot(time, EFTu1Counts + EFTu2Counts, color = "b")
+		ax1.text(time[-1], EFTu1Counts[-1], "EF-Tu 1")
+		ax1.text(time[-1], EFTu2Counts[-1], "EF-Tu 2")
+		ax1.text(time[-1], EFTu1Counts[-1] + EFTu2Counts[-1], "EF-Tu (total)")
 
-	aminoacylTrnaCounts = cPickle.load(open(os.path.join(plotOutDir, "aminoacylTrnaCounts.cPickle"), "rb"))
-	totalAminoacylTrnaCounts = []
-	for aa in aminoacylTrnaCounts.keys():
-		totalAminoacylTrnaCounts.append(aminoacylTrnaCounts[aa])
-	totalAminoacylTrnaCounts = np.array(totalAminoacylTrnaCounts)
-	ax2.plot(time, np.sum(totalAminoacylTrnaCounts, axis = 0), color = "r")
-	ax2.text(time[-1], totalAminoacylTrnaCounts[:, -1].sum(), "aminoacylated-tRNA (kinetic estimation)")
+		ax2.plot(time, FRACTION_EFTU_AATRNA * (EFTu1Counts + EFTu2Counts), color = "b")
+		ax2.plot(time, FACTOR_RIBOSOME_AATRNA * activeRibosomeCounts, color = "g")
+		ax2.text(time[-1], FRACTION_EFTU_AATRNA * (EFTu1Counts + EFTu2Counts)[-1], "%s EF-Tu total" % FRACTION_EFTU_AATRNA)
+		ax2.text(time[-1], FACTOR_RIBOSOME_AATRNA * activeRibosomeCounts[-1], "%s Ribosomes (active)" % FACTOR_RIBOSOME_AATRNA)
 
-	ax2.plot(time, aasUsed.sum(axis = 1), "r")
-	ax2.text(time[-1], aasUsed[-1, :].sum(), "aminoacylated-tRNA (demand estimation)")
+		aminoacylTrnaCounts = cPickle.load(open(os.path.join(plotOutDir, "aminoacylTrnaCounts.cPickle"), "rb"))
+		totalAminoacylTrnaCounts = []
+		for aa in aminoacylTrnaCounts.keys():
+			totalAminoacylTrnaCounts.append(aminoacylTrnaCounts[aa])
+		totalAminoacylTrnaCounts = np.array(totalAminoacylTrnaCounts)
+		ax2.plot(time, np.sum(totalAminoacylTrnaCounts, axis = 0), color = "r")
+		ax2.text(time[-1], totalAminoacylTrnaCounts[:, -1].sum(), "aminoacylated-tRNA (kinetic estimation)")
 
-	ax3.plot(time, activeRibosomeCounts, color = "g")
-	ax3.plot(time, moleculeCounts[:, 2], color = "g", linestyle = "--")
-	ax3.plot(time, moleculeCounts[:, 3], color = "g", linestyle = "--")
-	ax3.text(time[-1], moleculeCounts[-1, 2], "30S subunit")
-	ax3.text(time[-1], moleculeCounts[-1, 3], "50S subunit")
-	ax3.text(time[-1], activeRibosomeCounts[-1], "Ribosomes (active)")
+		ax2.plot(time, aasUsed.sum(axis = 1), "r")
+		ax2.text(time[-1], aasUsed[-1, :].sum(), "aminoacylated-tRNA (demand estimation)")
 
-	ax4.plot(time, np.array(synthetaseCounts.sum(axis = 1), np.float) / np.sum(moleculeCounts[:, :2], axis = 1))
-	ax4.set_title("total synthetase / total EF-Tu")
+		ax3.plot(time, activeRibosomeCounts, color = "g")
+		ax3.plot(time, ribosome30SCounts.sum(axis = 1), color = "g", linestyle = "--")
+		ax3.plot(time, ribosome50SCounts.sum(axis = 1), color = "g", linestyle = "--")
+		ax3.text(time[-1], ribosome30SCounts[-1, :].sum(), "30S subunit")
+		ax3.text(time[-1], ribosome50SCounts[-1, :].sum(), "50S subunit")
+		ax3.text(time[-1], activeRibosomeCounts[-1], "Ribosomes (active)")
 
-	for ax in axesList:
-		whitePadSparklineAxis(ax)
-	plt.subplots_adjust(hspace = 0.5, wspace = 0.5, left = 0.1, bottom = 0.1, top = 0.9, right = 0.85)
-	from wholecell.analysis.analysis_tools import exportFigure
-	exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		ax4.plot(time, np.array(synthetaseCounts.sum(axis = 1), np.float) / (EFTu1Counts + EFTu2Counts))
+		ax4.set_title("total synthetase / total EF-Tu")
+
+		for i, ax in enumerate(axesList):
+			if i < 3:
+				ax.set_ylabel("counts")
+			whitePadSparklineAxis(ax)
+		plt.subplots_adjust(hspace = 0.5, wspace = 0.5, left = 0.15, bottom = 0.1, top = 0.9, right = 0.7)
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
 
 if __name__ == "__main__":
-	defaultSimDataFile = os.path.join(
-			wholecell.utils.constants.SERIALIZED_KB_DIR,
-			wholecell.utils.constants.SERIALIZED_KB_MOST_FIT_FILENAME
-			)
-
-	parser = argparse.ArgumentParser()
-	parser.add_argument("simOutDir", help = "Directory containing simulation output", type = str)
-	parser.add_argument("plotOutDir", help = "Directory containing plot output (will get created if necessary)", type = str)
-	parser.add_argument("plotOutFileName", help = "File name to produce", type = str)
-	parser.add_argument("--simDataFile", help = "KB file name", type = str, default = defaultSimDataFile)
-	parser.add_argument("--validationDataFile")
-
-	args = parser.parse_args().__dict__
-
-	main(args["simOutDir"], args["plotOutDir"], args["plotOutFileName"], args["simDataFile"], args["validationDataFile"])
+	Plot().cli()

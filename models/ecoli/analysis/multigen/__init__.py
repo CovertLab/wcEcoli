@@ -48,6 +48,7 @@ ACTIVE = [
 	# "transcriptionGenomeCoverage.py",
 	"transcriptionInitiationMap.py",
 	"translationFrequency.py",
+	"trpOperon.py",
 	"trpRegulation.py",
 	"trpSynthaseCapacityVsUsage.py",
 	"tyrRegulation.py",
