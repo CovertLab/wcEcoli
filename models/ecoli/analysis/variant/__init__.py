@@ -1,6 +1,7 @@
 # Active analysis modules to run, in this order.
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
+	"aminoAcidDemand.py",
 	"conditionalFlux.py",
 	"distribution_cell_division_time.py",
 	"distribution_division_fluxome_proteome.py",
@@ -19,4 +20,5 @@ ACTIVE = [
 	"tfFit.py",
 	"tfFitComparison.py",
 	"tfTarget.py",
+	"trnaTimesteps.py",
 ]
