@@ -8,7 +8,7 @@ ACTIVE = [
 	# "compositionFittingByGeneration.py",
 	"expression_dynamics.py",
 	"figure4_b_e.py",
-	# "figure5_c.py",
+	# "proteinFoldChangeVsTranscriptionFrequency.py",
 	"histogramDoublingTime.py",
 	"histogramFinalMass.py",
 	"histogramGrowthRate.py",
