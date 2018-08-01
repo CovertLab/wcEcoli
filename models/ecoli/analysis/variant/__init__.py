@@ -8,7 +8,7 @@ ACTIVE = [
 	"distribution_fluxome_correlation.py",
 	"distribution_proteome_correlation.py",
 	"doubling_time_histogram.py",
-	"figure3_new_parameterShuffle.py",
+	"parameterShuffle.py",
 	"parameterShuffleSplom.py",
 	"meneSensitivity.py",
 	"growth_condition_comparison_validation.py",
