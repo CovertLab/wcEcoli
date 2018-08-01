@@ -9,7 +9,7 @@ ACTIVE = [
 	"centralCarbonMetabolismScatter.py",
 	"environmental_shift_fluxes.py",
 	"subgenerationalTranscription.py",
-	"figure5H.py",
+	"subgenerationalTranscriptionEnvironmentDependence.py",
 	"functionalUnits.py",
 	"functionalUnitsFC.py",
 	"growthAffectingPolymerases.py",
