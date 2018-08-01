@@ -19,12 +19,14 @@ from itertools import izip
 
 import numpy as np
 import copy
+import re
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 
+uM = units.umol / units.L
 
 
 class PolypeptideElongation(wholecell.processes.process.Process):
@@ -41,6 +43,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Load parameters
 		self.nAvogadro = sim_data.constants.nAvogadro
 		self.cellDensity = sim_data.constants.cellDensity
+		self.aaNames = sim_data.moleculeGroups.aaIDs
 		proteinIds = sim_data.process.translation.monomerData['id']
 		self.proteinLengths = sim_data.process.translation.monomerData["length"].asNumber()
 		self.proteinSequences = sim_data.process.translation.translationSequences
@@ -69,7 +72,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
 
 		# Create views onto all polymerization reaction small molecules
-		self.aas = self.bulkMoleculesView(sim_data.moleculeGroups.aaIDs)
+		self.aas = self.bulkMoleculesView(self.aaNames)
 		self.h2o = self.bulkMoleculeView('WATER[c]')
 		self.gtp = self.bulkMoleculeView("GTP[c]")
 		self.gdp = self.bulkMoleculeView("GDP[c]")
@@ -86,6 +89,38 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.translationSupply = sim._translationSupply
 
 		self.elngRateFactor = 1.
+
+
+		self.synthetaseNames = []
+		synthetaseRxns = [rxn for rxn in sim_data.process.metabolism.reactionCatalysts if re.findall('Charged\-(.*?)\-tRNAs', rxn)]
+		for rxn in synthetaseRxns:
+			for syn in sim_data.process.metabolism.reactionCatalysts[rxn]:
+				if syn not in self.synthetaseNames:
+					self.synthetaseNames.append(syn)
+
+		# Build matrix to map AA and synthetases
+		self.aaFromSynthetase = np.zeros((len(self.aaNames), len(self.synthetaseNames)))
+		for rxn in synthetaseRxns:
+			aa = re.findall('Charged\-(.*?)\-tRNAs', rxn)[0]
+			if aa == "ALA":
+				aa = "L-ALPHA-ALANINE"
+			elif aa == "ASP":
+				aa = "L-ASPARTATE"
+
+			for syn in sim_data.process.metabolism.reactionCatalysts[rxn]:
+				aaIdx = self.aaNames.index(aa + "[c]")
+				synIdx = self.synthetaseNames.index(syn)
+				self.aaFromSynthetase[aaIdx, synIdx] = 1
+
+		self.chargingStoichMatrix = sim_data.process.transcription.chargingStoichMatrix
+		self.unchargedTrnaNames = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']]
+		self.chargedTrnaNames = sim_data.process.transcription.chargedTrnaNames
+		self.chargingMoleculeNames = sim_data.process.transcription.chargingMolecules
+		self.uncharged_trna = self.bulkMoleculesView(self.unchargedTrnaNames)
+		self.charged_trna = self.bulkMoleculesView(self.chargedTrnaNames)
+		self.chargingMolecules = self.bulkMoleculesView(self.chargingMoleculeNames)
+		self.aaFromTrna = sim_data.process.transcription.aaFromTrna
+		self.synthetases = self.bulkMoleculesView(self.synthetaseNames)
 
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
@@ -127,6 +162,77 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		sequenceHasAA = (sequences != polymerize.PAD_VALUE)
 		aasInSequences = np.bincount(sequences[sequenceHasAA], minlength=21)
 
+		# ppGpp parameters
+		kS = 100. / units.s  # synthetase charging rate
+		KMtf = 1. * uM  # Micahelis constant for synthetases and uncharged tRNAs
+		KMaa = 100. * uM # Michaelis constant for synthetases and amino acids
+		krib = 22. / units.s  # ribosome elongation rate
+		krta = 1. * uM  # dissociation constant of charged tRNA-ribosome
+		krtf = 500. * uM  # dissociation constant of uncharged tRNA-ribosome
+
+		# conversion from counts to molarity
+		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
+		cell_volume = cell_mass / self.cellDensity
+		counts_to_molar = 1 / (self.nAvogadro * cell_volume)
+
+		# get counts - convert synthetase and tRNA to a per AA basis
+		synthetase_counts = np.dot(self.aaFromSynthetase, self.synthetases.total())
+		aa_counts = self.aas.total()
+		uncharged_trna_counts = np.dot(self.aaFromTrna, self.uncharged_trna.total())
+		charged_trna_counts = np.dot(self.aaFromTrna, self.charged_trna.total()) + 1
+		total_trna_counts = uncharged_trna_counts + charged_trna_counts
+		ribosome_counts = len(self.activeRibosomes.allMolecules())
+
+		# get concentration
+		mask = np.ones(21, dtype=bool)
+		mask[-2] = False
+		f = aasInSequences[mask] / np.sum(aasInSequences[mask])
+		synthetase_conc = (counts_to_molar * synthetase_counts)[mask]
+		aa_conc = (counts_to_molar * aa_counts)[mask]
+		uncharged_trna_conc = counts_to_molar * uncharged_trna_counts[mask]
+		charged_trna_conc = counts_to_molar * charged_trna_counts[mask]
+		total_trna_conc = (counts_to_molar * total_trna_counts)[mask]
+		ribosome_conc = counts_to_molar * ribosome_counts
+
+		# ## attempting to solve for charged fraction explicitly
+		# c1 = kS * synthetase_conc * total_trna_conc
+		# c2 = (aa_conc / KMaa).asNumber()
+		# c4 = krib * ribosome_conc
+		# c5 = f * (krta / krtf).asNumber()
+		# c6 = 1 - c5
+		# c7 = c5 * (krtf / total_trna_conc + 1).asNumber()
+		# c8 = KMtf + total_trna_conc
+		#
+		# a = (c4*total_trna_conc*(1+c2)-c1*c2*c6).asNumber(uM**2 / units.s)
+		# b = (c1*c2*(c6-c7) - c4*c8*(1 + c2)).asNumber(uM**2 / units.s)
+		# c = (c1 * c2 * c7).asNumber(uM**2 / units.s)
+		#
+		# import ipdb; ipdb.set_trace()
+		# x1 = (-b + np.sqrt(b**2 - 4*a*c)) / (2*a)
+		# x2 = (-b - np.sqrt(b**2 - 4*a*c)) / (2*a)
+
+		## solve to steady state with short time steps
+		dt = 0.005
+		diff = 1
+		i = 0
+		while diff > 1e-3:
+			v_charging = (kS * synthetase_conc * uncharged_trna_conc * aa_conc
+				/ (KMaa * KMtf *
+				(1 + uncharged_trna_conc/KMtf + aa_conc/KMaa + uncharged_trna_conc*aa_conc/KMtf/KMaa))
+				)
+			numerator_ribosome = 1 + np.sum(f * krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * krta / krtf)
+			v_rib = krib*ribosome_conc / numerator_ribosome
+
+			delta_conc = (v_charging - v_rib*f) * dt * units.s
+			uncharged_trna_conc -= delta_conc
+			charged_trna_conc += delta_conc
+			diff = np.linalg.norm(delta_conc.asNumber(uM))
+			if np.any(charged_trna_conc.asNumber() < 0) or np.any(uncharged_trna_conc.asNumber() < 0):
+				import ipdb; ipdb.set_trace()
+			i += 1
+			# print diff
+		print 'iterations: {}'.format(i)
+
 		if self.translationSupply:
 			translationSupplyRate = self.translation_aa_supply[current_nutrients] * self.elngRateFactor
 
@@ -143,6 +249,20 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		else:
 			countAasRequested = aasInSequences
 
+		# self.aas.requestIs(
+		# 	countAasRequested
+		# 	)
+
+		charging_aa_request = (v_rib * f * self._sim.timeStepSec() * units.s / counts_to_molar).asNumber()
+		supply_aa_request = countAasRequested[mask]
+		fraction = charging_aa_request / supply_aa_request
+		total_trna_conc = uncharged_trna_conc + charged_trna_conc
+		fraction_charged = charged_trna_conc / total_trna_conc
+		# print fraction
+		print min(fraction), max(fraction)
+		# print fraction_charged
+
+		countAasRequested[mask] = charging_aa_request
 		self.aas.requestIs(
 			countAasRequested
 			)
