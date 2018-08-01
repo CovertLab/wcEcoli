@@ -8,7 +8,7 @@ ACTIVE = [
 	"centralCarbonMetabolismCorrelationTimeCourse.py",
 	"centralCarbonMetabolismScatter.py",
 	"environmental_shift_fluxes.py",
-	"figure5B_E_F_G.py",
+	"subgenerationalTranscription.py",
 	"figure5H.py",
 	"functionalUnits.py",
 	"functionalUnitsFC.py",
