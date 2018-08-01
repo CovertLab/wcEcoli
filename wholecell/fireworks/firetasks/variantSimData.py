@@ -1,6 +1,7 @@
 import cPickle
 import time
 import os
+import sys
 
 from fireworks import FireTaskBase, explicit_serialize
 from models.ecoli.sim.variants import nameToFunctionMapping
@@ -28,7 +29,7 @@ class VariantSimDataTask(FireTaskBase):
 
 		print info["shortName"]
 
-		import sys; sys.setrecursionlimit(4000)
+		sys.setrecursionlimit(4000)
 
 		cPickle.dump(
 			sim_data,
@@ -36,10 +37,8 @@ class VariantSimDataTask(FireTaskBase):
 			protocol = cPickle.HIGHEST_PROTOCOL
 			)
 
-		h = open(os.path.join(self["variant_metadata_directory"], "short_name"), "w")
-		h.write("%s\n" % info["shortName"])
-		h.close()
+		with open(os.path.join(self["variant_metadata_directory"], "short_name"), "w") as h:
+			h.write("%s\n" % info["shortName"])
 
-		h = open(os.path.join(self["variant_metadata_directory"], "description"), "w")
-		h.write("%s\n" % info["desc"])
-		h.close()
+		with open(os.path.join(self["variant_metadata_directory"], "description"), "w") as h:
+			h.write("%s\n" % info["desc"])
