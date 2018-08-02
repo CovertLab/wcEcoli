@@ -199,7 +199,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# TODO - functionalize and add to initial conditions
 		dt = 0.001
 		diff = 1
-		i = 0
 		while diff > 1e-3:
 			v_charging = (kS * synthetase_conc * uncharged_trna_conc * aa_conc
 				/ (KMaa * KMtf *
@@ -212,11 +211,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			uncharged_trna_conc -= delta_conc
 			charged_trna_conc += delta_conc
 			diff = np.linalg.norm(delta_conc)
-			if np.any(charged_trna_conc < 0) or np.any(uncharged_trna_conc < 0):
-				import ipdb; ipdb.set_trace()
-			i += 1
-			# print diff
-		print 'iterations: {}'.format(i)
 
 		if self.translationSupply:
 			translationSupplyRate = self.translation_aa_supply[current_nutrients] * self.elngRateFactor
@@ -244,9 +238,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		total_trna_conc = uncharged_trna_conc + charged_trna_conc
 		fraction_charged = np.zeros(len(self.aaNames))
 		fraction_charged[mask] = charged_trna_conc / total_trna_conc
-		# print fraction
 		print min(fraction), max(fraction)
-		# print fraction_charged
 
 		total_trna = self.charged_trna.total() + self.uncharged_trna.total()
 		final_charged_trna = np.dot(fraction_charged, self.aaFromTrna * total_trna)
@@ -264,6 +256,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.charged_trna.requestIs(charged_trna_request)
 		self.uncharged_trna.requestIs(uncharged_trna_request)
 
+		self.writeToListener("GrowthLimits", "fraction_trna_charged", np.dot(fraction_charged, self.aaFromTrna))
 		self.writeToListener("GrowthLimits", "aaPoolSize", self.aas.total())
 		self.writeToListener("GrowthLimits", "aaRequestSize", countAasRequested)
 
@@ -401,6 +394,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		ribosomeStalls = expectedElongations - sequenceElongations
 
 		# Write data to listeners
+		self.writeToListener("GrowthLimits", "net_charged", net_charged)
 		self.writeToListener("GrowthLimits", "aasUsed", aasUsed)
 		self.writeToListener("GrowthLimits", "gtpUsed", self.gtpUsed)
 
