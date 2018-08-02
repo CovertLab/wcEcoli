@@ -122,6 +122,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.aaFromTrna = sim_data.process.transcription.aaFromTrna
 		self.synthetases = self.bulkMoleculesView(self.synthetaseNames)
 
+		# ppGpp parameters
+		# TODO - put in flat file
+		self.kS = 100.  # / units.s  # synthetase charging rate
+		self.KMtf = 1.  # * uM  # Micahelis constant for synthetases and uncharged tRNAs
+		self.KMaa = 100.  # * uM # Michaelis constant for synthetases and amino acids
+		self.krib = 22.  # / units.s  # ribosome elongation rate
+		self.krta = 1.  # * uM  # dissociation constant of charged tRNA-ribosome
+		self.krtf = 500.  # * uM  # dissociation constant of uncharged tRNA-ribosome
+
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
 		# which is used to create single-cell variability in growth rate
@@ -162,15 +171,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		sequenceHasAA = (sequences != polymerize.PAD_VALUE)
 		aasInSequences = np.bincount(sequences[sequenceHasAA], minlength=21)
 
-		# ppGpp parameters
-		# TODO - put in flat file
-		kS = 100.  # / units.s  # synthetase charging rate
-		KMtf = 1.  # * uM  # Micahelis constant for synthetases and uncharged tRNAs
-		KMaa = 100.  # * uM # Michaelis constant for synthetases and amino acids
-		krib = 22.  # / units.s  # ribosome elongation rate
-		krta = 1.  # * uM  # dissociation constant of charged tRNA-ribosome
-		krtf = 500.  # * uM  # dissociation constant of uncharged tRNA-ribosome
-
 		# conversion from counts to molarity
 		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
 		cell_volume = cell_mass / self.cellDensity
@@ -188,29 +188,16 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		mask = np.ones(21, dtype=bool)
 		mask[-2] = False
 		f = aasInSequences[mask] / np.sum(aasInSequences[mask])
-		synthetase_conc = (counts_to_molar * synthetase_counts).asNumber(uM)[mask]
-		aa_conc = (counts_to_molar * aa_counts).asNumber(uM)[mask]
-		uncharged_trna_conc = (counts_to_molar * uncharged_trna_counts).asNumber(uM)[mask]
-		charged_trna_conc = (counts_to_molar * charged_trna_counts).asNumber(uM)[mask]
-		total_trna_conc = (counts_to_molar * total_trna_counts).asNumber(uM)[mask]
-		ribosome_conc = (counts_to_molar * ribosome_counts).asNumber(uM)
+		synthetase_conc = (counts_to_molar * synthetase_counts)[mask]
+		aa_conc = (counts_to_molar * aa_counts)[mask]
+		uncharged_trna_conc = (counts_to_molar * uncharged_trna_counts)[mask]
+		charged_trna_conc = (counts_to_molar * charged_trna_counts)[mask]
+		total_trna_conc = (counts_to_molar * total_trna_counts)[mask]
+		ribosome_conc = (counts_to_molar * ribosome_counts)
 
-		## solve to steady state with short time steps
-		# TODO - functionalize and add to initial conditions
-		dt = 0.001
-		diff = 1
-		while diff > 1e-3:
-			v_charging = (kS * synthetase_conc * uncharged_trna_conc * aa_conc
-				/ (KMaa * KMtf *
-				(1 + uncharged_trna_conc/KMtf + aa_conc/KMaa + uncharged_trna_conc*aa_conc/KMtf/KMaa))
-				)
-			numerator_ribosome = 1 + np.sum(f * krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * krta / krtf)
-			v_rib = krib*ribosome_conc / numerator_ribosome
-
-			delta_conc = (v_charging - v_rib*f) * dt
-			uncharged_trna_conc -= delta_conc
-			charged_trna_conc += delta_conc
-			diff = np.linalg.norm(delta_conc)
+		updated_uncharged_trna_conc, updated_charged_trna_conc, v_rib = self.calculate_trna_charging(
+			synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f
+			)
 
 		if self.translationSupply:
 			translationSupplyRate = self.translation_aa_supply[current_nutrients] * self.elngRateFactor
@@ -235,9 +222,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		charging_aa_request = v_rib * f * self._sim.timeStepSec() / counts_to_molar.asNumber(uM)
 		supply_aa_request = countAasRequested[mask]
 		fraction = charging_aa_request / supply_aa_request
-		total_trna_conc = uncharged_trna_conc + charged_trna_conc
+		total_trna_conc = updated_uncharged_trna_conc + updated_charged_trna_conc
 		fraction_charged = np.zeros(len(self.aaNames))
-		fraction_charged[mask] = charged_trna_conc / total_trna_conc
+		fraction_charged[mask] = updated_charged_trna_conc / total_trna_conc
 		print min(fraction), max(fraction)
 
 		total_trna = self.charged_trna.total() + self.uncharged_trna.total()
@@ -412,6 +399,52 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("RibosomeData", "numTrpATerminated", terminatedProteins[self.trpAIndex])
 
 		self.writeToListener("RibosomeData", "processElongationRate", self.ribosomeElongationRate / self.timeStepSec())
+
+	def calculate_trna_charging(self, synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f):
+		'''
+		Calculates the steady state value of tRNA based on charging and incorporation through polypeptide elongation.
+		The fraction of charged/uncharged is also used to determine how quickly the ribosome is elongating.
+
+		Inputs:
+			synthetase_conc (array of floats with concentration units) - concentration of synthetases associated
+				with each amino acid
+			uncharged_trna_conc (array of floats with concentration units) - concentration of uncharged tRNA associated
+				with each amino acid
+			charged_trna_conc (array of floats with concentration units) - concentration of charged tRNA associated
+				with each amino acid
+			aa_conc (array of floats with concentration units) - concentration of each amino acid
+			ribosome_conc (float with concentration units) - concentration of active ribosomes
+			f (array of floats) - fraction of each amino acid to be incorporated to total amino acids incorporated
+
+		Returns:
+			uncharged_trna_conc (array of floats) - concentration of uncharged tRNA in units of uM
+			charged_trna_conc (array of floats) - concentration of charged tRNA in units of uM
+			v_rib (float) - ribosomal elongation rate in units of uM/s
+		'''
+
+		synthetase_conc = synthetase_conc.asNumber(uM)
+		uncharged_trna_conc = uncharged_trna_conc.asNumber(uM)
+		charged_trna_conc = charged_trna_conc.asNumber(uM)
+		aa_conc = aa_conc.asNumber(uM)
+		ribosome_conc = ribosome_conc.asNumber(uM)
+
+		## solve to steady state with short time steps
+		dt = 0.001
+		diff = 1
+		while diff > 1e-3:
+			v_charging = (self.kS * synthetase_conc * uncharged_trna_conc * aa_conc
+				/ (self.KMaa * self.KMtf *
+				(1 + uncharged_trna_conc/self.KMtf + aa_conc/self.KMaa + uncharged_trna_conc*aa_conc/self.KMtf/self.KMaa))
+				)
+			numerator_ribosome = 1 + np.sum(f * self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf)
+			v_rib = self.krib*ribosome_conc / numerator_ribosome
+
+			delta_conc = (v_charging - v_rib*f) * dt
+			uncharged_trna_conc -= delta_conc
+			charged_trna_conc += delta_conc
+			diff = np.linalg.norm(delta_conc)
+
+		return uncharged_trna_conc, charged_trna_conc, v_rib
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		"""
