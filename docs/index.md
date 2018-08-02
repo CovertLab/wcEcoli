@@ -35,3 +35,8 @@ development
 * [Style guide](style-guide.md)
 * [Architecture](architecture.md)
 * [Use of fireworks](fireworks.md)
+
+relevant papers
+---------------
+
+* [A Whole-Cell Computational Model Predicts Phenotype from Genotype](https://www.cell.com/cell/abstract/S0092-8674(12)00776-3)
