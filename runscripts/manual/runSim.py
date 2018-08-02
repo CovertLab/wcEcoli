@@ -3,9 +3,6 @@ Run a simple simulation, assuming you've run the Fitter. This does not run
 multiple initial simulations, multiple generations, or multiple daughters per
 generation.
 
-NOTE: The command line option names are long, but argparse accepts any
-unambiguous prefix.
-
 TODO: Share lots of code with fw_queue.py.
 
 Run with '-h' for command line help.
@@ -19,19 +16,12 @@ import cPickle
 import errno
 import os
 import pprint as pp
-import subprocess
 
 from wholecell.fireworks.firetasks.simulation import SimulationTask
 from wholecell.fireworks.firetasks import VariantSimDataTask
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants, scriptBase
-from wholecell.utils.filepath import makedirs
-
-
-def run_cmd(cmd):
-	environ = {"PATH": os.environ["PATH"]}
-	out = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=environ).communicate()[0]
-	return out
+import wholecell.utils.filepath as fp
 
 
 class RunSimulation(scriptBase.ScriptBase):
@@ -39,7 +29,12 @@ class RunSimulation(scriptBase.ScriptBase):
 
 	def description(self):
 		"""Describe the command line program."""
-		return 'a Whole Cell simulation'
+		return 'Whole Cell E. coli simulation'
+
+	def help(self):
+		"""Return help text for the Command Line Interface."""
+		return ('Run a {}. (The option names are long but you can use any'
+				' unambiguous prefixes.)'.format(self.description()))
 
 	def define_parameters(self, parser):
 		def add_bool_option(name, key, help):
@@ -98,9 +93,9 @@ class RunSimulation(scriptBase.ScriptBase):
 
 		# Write the metadata file.
 		metadata = {
-			"git_hash":           run_cmd(["git", "rev-parse", "HEAD"]),
-			"git_branch":         run_cmd("git symbolic-ref --short HEAD".split()),
-			# "git_diff":           run_cmd(["git", "diff"]),
+			"git_hash":           fp.run_cmd(line="git rev-parse HEAD"),
+			"git_branch":         fp.run_cmd(line="git symbolic-ref --short HEAD"),
+			# "git_diff":           fp.run_cmd(line="git diff"),
 			"description":        "a manual run",
 			"time":               self.timestamp(),
 			"total_gens":         1,
@@ -111,7 +106,7 @@ class RunSimulation(scriptBase.ScriptBase):
 			"d_period_division":  args.d_period_division,
 			"translation_supply": args.translation_supply,
 			}
-		metadata_dir = makedirs(args.sim_path, 'metadata')
+		metadata_dir = fp.makedirs(args.sim_path, 'metadata')
 		metadata_path = os.path.join(metadata_dir, constants.SERIALIZED_METADATA_FILE)
 		with open(metadata_path, "wb") as f:
 			cPickle.dump(metadata, f, cPickle.HIGHEST_PROTOCOL)
@@ -123,10 +118,9 @@ class RunSimulation(scriptBase.ScriptBase):
 		# Set up variant, seed, and generation directories.
 		# args.sim_path is called INDIV_OUT_DIRECTORY in fw_queue.
 		for i in variants_to_run:
-			variant_directory = makedirs(args.sim_path, variant_type + "_%06d" % i)
-			variant_sim_data_directory = makedirs(variant_directory, "kb")
-			variant_metadata_directory = makedirs(variant_directory, "metadata")
-			# variant_cohort_plot_directory = makedirs(variant_directory, "plotOut")
+			variant_directory = fp.makedirs(args.sim_path, variant_type + "_%06d" % i)
+			variant_sim_data_directory = fp.makedirs(variant_directory, "kb")
+			variant_metadata_directory = fp.makedirs(variant_directory, "metadata")
 
 			most_fit_filename = os.path.join(
 				kb_directory, constants.SERIALIZED_SIM_DATA_MOST_FIT_FILENAME)
@@ -143,17 +137,15 @@ class RunSimulation(scriptBase.ScriptBase):
 			task.run_task({})
 
 			j = 0  # init sim number. Don't loop over range(N_INIT_SIMS).
-			seed_directory = makedirs(variant_directory, "%06d" % j)
-			# seed_plot_directory = makedirs(seed_directory, "plotOut")
+			seed_directory = fp.makedirs(variant_directory, "%06d" % j)
 
 			k = 0  # generation number. (NOTE: Looping over range(N_GENS) would
 			# require selecting SimulationTask vs. SimulationDaughterTask.)
-			gen_directory = makedirs(seed_directory, "generation_%06d" % k)
+			gen_directory = fp.makedirs(seed_directory, "generation_%06d" % k)
 
 			l = 0  # daughter number. Don't support 2**k daughters.
-			cell_directory = makedirs(gen_directory, "%06d" % l)
-			cell_sim_out_directory = makedirs(cell_directory, "simOut")
-			# cell_plot_out_directory = makedirs(cell_directory, "plotOut")
+			cell_directory = fp.makedirs(gen_directory, "%06d" % l)
+			cell_sim_out_directory = fp.makedirs(cell_directory, "simOut")
 
 			task = SimulationTask(
 				input_sim_data=variant_sim_data_modified_file,

@@ -90,8 +90,14 @@ class ScriptBase(object):
 	VARIANT_DIR_PATTERN = re.compile(r'([a-zA-Z_\d]+)_(\d+)\Z')
 
 	def description(self):
-		"""Describe the command line program."""
+		"""Describe the command line program. This defaults to the class name."""
 		return type(self).__name__
+
+	def help(self):
+		"""Return help text for the Command Line Interface. This defaults to a
+		string constructed around `self.description()`.
+		"""
+		return 'Run {}.'.format(self.description())
 
 	def timestamp(self, dt=None):
 		"""Construct a datetime-timestamp from `dt`; default = now()."""
@@ -141,8 +147,8 @@ class ScriptBase(object):
 		"""Add a boolean option parameter to the parser. The CLI input can be
 		`--name`, `--no_name`, `--name true`, `--name false`, `--name 1`,
 		`--name 0`, `--name=true`, etc. The default can be True or False, and
-		changing it won't affect any of those explicit input forms. This adds
-		the default value to the help text.
+		changing it won't affect any of those explicit input forms. This method
+		adds the default value to the help text.
 		"""
 		default = bool(default)
 		group = parser.add_mutually_exclusive_group()
@@ -215,8 +221,7 @@ class ScriptBase(object):
 		(A `Namespace` is an object with attributes and some methods like
 		`__repr__()` and `__eq__()`. Call `vars(args)` to turn it into a dict.)
 		"""
-		parser = argparse.ArgumentParser(
-			description='Run {}.'.format(self.description()))
+		parser = argparse.ArgumentParser(description=self.help())
 
 		self.define_parameters(parser)
 

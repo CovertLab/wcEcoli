@@ -27,7 +27,7 @@ class VariantSimDataTask(FireTaskBase):
 
 		info, sim_data = nameToFunctionMapping[self["variant_function"]](sim_data, self["variant_index"])
 
-		print info["shortName"]
+		print "Variant short name:", info["shortName"]
 
 		sys.setrecursionlimit(4000)
 

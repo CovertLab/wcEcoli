@@ -92,20 +92,9 @@ from wholecell.utils import filepath
 import yaml
 import os
 import datetime
-import subprocess
 import collections
 import cPickle
 
-def run_cmd(cmd):
-	environ = {
-		"PATH": os.environ["PATH"],
-		}
-	out = subprocess.Popen(cmd, stdout = subprocess.PIPE, env=environ).communicate()[0]
-	return out
-
-def write_file(filename, content):
-	with open(filename, "w") as f:
-		f.write(content)
 
 #### Initial setup ###
 
@@ -191,9 +180,9 @@ for i in VARIANTS_TO_RUN:
 
 ### Write metadata
 metadata = {
-	"git_hash": run_cmd(["git", "rev-parse", "HEAD"]),
-	"git_branch": run_cmd(["git", "symbolic-ref", "--short", "HEAD"]),
-	"git_diff": run_cmd(["git", "diff"]),
+	"git_hash": filepath.run_cmd(line="git rev-parse HEAD"),
+	"git_branch": filepath.run_cmd(line="git symbolic-ref --short HEAD"),
+	"git_diff": filepath.run_cmd(line="git diff"),
 	"description": os.environ.get("DESC", ""),
 	"time": SUBMISSION_TIME,
 	"total_gens": str(N_GENS),
@@ -208,7 +197,7 @@ metadata = {
 for key, value in metadata.iteritems():
 	if not isinstance(value, basestring):
 		continue
-	write_file(os.path.join(METADATA_DIRECTORY, key), value)
+	filepath.write_file(os.path.join(METADATA_DIRECTORY, key), value)
 
 with open(os.path.join(METADATA_DIRECTORY, constants.SERIALIZED_METADATA_FILE), "wb") as f:
 	cPickle.dump(metadata, f, cPickle.HIGHEST_PROTOCOL)
