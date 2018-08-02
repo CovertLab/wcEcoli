@@ -29,8 +29,8 @@
 # This will return a dictionary of molecule names to integers representing the counts of how much each molecule
 # changed with respect to its local environment.
 
-class Drivable:
-	def initialize(state, molecules_of_interest):
+class Drivable(object):
+	def initialize(self, state, molecules_of_interest):
 		# state - dictionary of strings to arbitrary structures (whatever is required for initialization)
 		# molecules_of_interest - array of strings (molecule names)
 		# ----------------------------------------
@@ -40,7 +40,7 @@ class Drivable:
 		#   for these molecules can be supplied.
 		pass
 
-	def receive_environment(environment, time_to_run):
+	def receive_environment(self, environment, time_to_run):
 		# environment - dictionary of molecules to counts
 		# time_to_run - integer
 		# ---------------------
@@ -49,7 +49,7 @@ class Drivable:
 		#   tracking the deltas for the `molecules_of_interest`
 		pass
 
-	def read_deltas():
+	def read_deltas(self):
 		# return - dictionary of strings (molecule keys) to integers (molecule counts)
 		# ----------------------------
 		#   return a dictionary containing the deltas for each molecule previously passed
