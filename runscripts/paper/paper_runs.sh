@@ -68,9 +68,6 @@ DISABLE_RIBOSOME_CAPACITY_FITTING=1 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fw_queue.py
 
-# TODO (John): update runscripts/limited_fitting/growth_rate_from_fitting_histograms.py and add to
-# this execution pipeline (how?)
-
 ## Set E - metabolism objective weighting
 # Used for figure 3
 DESC="SET E 8 gens 8 seeds 10 metabolism weighting values" \
