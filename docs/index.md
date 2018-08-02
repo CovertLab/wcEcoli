@@ -8,30 +8,30 @@ Topics include:
 high level
 --------------
 
-* [How we got here](docs/history.md)
-* [What is in the model](docs/complete.md)
-* [What is missing from the model](docs/incomplete.md)
-* [Where we are going](docs/future.md)
+* [How we got here](history.md)
+* [What is in the model](complete.md)
+* [What is missing from the model](incomplete.md)
+* [Where we are going](future.md)
 
 setup
 -------
 
-* [Setup on Mac](docs/setup-mac.md)
-* [Setup on Ubuntu](docs/setup-ubuntu.md)
-* [Setup on Sherlock](docs/setup-sherlock.md)
-* [Creating your pyenv](docs/create-pyenv.md)
+* [Setup on Mac](setup-mac.md)
+* [Setup on Ubuntu](setup-ubuntu.md)
+* [Setup on Sherlock](setup-sherlock.md)
+* [Creating your pyenv](create-pyenv.md)
 
 running
 -----------
 
-* [Running the model locally](docs/run-locally.md)
-* [Running the model on Sherlock](docs/run-sherlock.md)
-* [Running the model on Google Cloud](docs/run-google-cloud.md)
+* [Running the model locally](run-locally.md)
+* [Running the model on Sherlock](run-sherlock.md)
+* [Running the model on Google Cloud](run-google-cloud.md)
 
 development
 ------------
 
-* [Development tools](docs/dev-tools.md)
-* [Style guide](docs/style-guide.md)
-* [Architecture](docs/architecture.md)
-* [Use of fireworks](docs/fireworks.md)
+* [Development tools](dev-tools.md)
+* [Style guide](style-guide.md)
+* [Architecture](architecture.md)
+* [Use of fireworks](fireworks.md)
