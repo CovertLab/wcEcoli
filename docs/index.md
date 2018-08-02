@@ -40,3 +40,7 @@ relevant papers
 ---------------
 
 * [A Whole-Cell Computational Model Predicts Phenotype from Genotype](https://www.cell.com/cell/abstract/S0092-8674(12)00776-3)
+* [Toward a Whole-Cell Model of Escherichia coli](derek-macklin-dissertation.pdf)
+* [Development and Application of Whole-Cell Computational Models for Science and Engineering](jonathan-ross-karr-dissertation.pdf)
+* [Towards a Whole-Cell Model of Growth Rate and Cell Size Control in Escherichia coli](nicholas-ruggero-dissertation.pdf)
+* [Transcriptional Regulation in Escherichia coli: A Systems Biology Approach](markus-covert-dissertation.pdf)
