@@ -7,6 +7,10 @@ There are a number of dependencies that need to be set up before the model will 
 
 You may also have to find the proprietary package `python-glpk` and install that as well. 
 
+Also, set your `PYTHONPATH` to point to the WcEcoli model directory:
+
+    export PYTHONPATH=$CODE/WcEcoli
+
 pyenv
 -----
 
