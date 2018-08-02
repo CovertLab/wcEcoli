@@ -29,9 +29,10 @@ from wholecell.utils import units
 VERBOSE = False
 
 # threshold (units.mmol / units.L) separates environment concentrations that are
-# import constrained and import unconstrained .
+# import constrained and import unconstrained.
+# These values are also implemented in metabolism
 IMPORT_CONSTRAINT_THRESHOLD =  1.0
-GLC_DEFAULT_UPPER_BOUND = 30 * (units.mmol / units.g / units.h)
+GLC_DEFAULT_UPPER_BOUND = 20 * (units.mmol / units.g / units.h)
 
 class SimulationDataEcoli(object):
 	""" SimulationDataEcoli """
@@ -137,8 +138,8 @@ class SimulationDataEcoli(object):
 
 		Notes
 		-----
-			- the output does not exactly match previous exchange_data, and could have
-			some influence over FBA results.
+			- if the output does not exactly match previous exchange_data, it could
+			 influence FBA results.
 		'''
 		externalExchangeMolecules = {}
 		importExchangeMolecules = {}

@@ -32,11 +32,9 @@ class ExternalState(object):
 
 	def __init__(self, raw_data, sim_data):
 
-		#TODO (Eran) is Environment(raw_data, sim_data) needed?
 		self.environment = Environment(raw_data, sim_data)
 
 		# default parameters
-		# self.environment.volume = "infinite"
 		self.environment.nutrients_time_series_label = "000000_basal"
 
 		# create a dictionary of all nutrient time series

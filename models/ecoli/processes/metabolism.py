@@ -37,9 +37,10 @@ KINETICS_BURN_IN_PERIOD = 0
 
 # threshold (units.mmol / units.L) separates concentrations that are import constrained with
 # max flux = 0 from unconstrained molecules.
-# TODO (Eran) remove this once transport kinetics are working
-IMPORT_CONSTRAINT_THRESHOLD =  1.0 #0.1
-GLC_DEFAULT_UPPER_BOUND = 20 * (units.mmol / units.g / units.h)  #30
+# TODO (Eran) remove this once a transport kinetics process is operating
+# these values are also implemented in simulation_data.py
+IMPORT_CONSTRAINT_THRESHOLD =  1.0
+GLC_DEFAULT_UPPER_BOUND = 20 * (units.mmol / units.g / units.h)
 
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
@@ -58,7 +59,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# initialize exchange_data based on initial nutrient condition
 		self.exchange_data = self._initExchangeData(sim_data)
 
-		#TODO (Eran) this can be remove once transport is in place
+		#TODO (Eran) this can be remove once transport kinetics process is operating
 		self.exchange_data_dict = sim_data.exchange_data_dict.copy()
 
 		# Load constants
@@ -91,7 +92,7 @@ class Metabolism(wholecell.processes.process.Process):
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
 		# Identify all molecules in external environment that can be exchanged for the given time series
-		# TODO (eran) initialize externalExchangeMolecules without exchange_data_dict
+		# TODO (Eran) initialize externalExchangeMolecules without exchange_data_dict, based on current state
 		externalExchangedMolecules = sim_data.exchange_data_dict["secretionExchangeMolecules"]
 		self.metaboliteNamesFromNutrients = set()
 
