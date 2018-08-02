@@ -42,3 +42,13 @@ Finally, run the `requirements.txt`:
 
     CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary cvxopt
     pyenv rehash
+
+Post-finally, compile the CYTHON code:
+
+    make clean compile
+
+To make sure everything is working, run the tests:
+
+    nosetests -a smalltests
+
+If these pass, you are good to go.
