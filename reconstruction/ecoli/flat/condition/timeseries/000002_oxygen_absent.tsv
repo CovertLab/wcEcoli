@@ -1,2 +1,2 @@
 "time (units.s)"	"nutrients"	"volume (units.L)"
-0	"minimal"	Infinity
+0	"minimal_minus_oxygen"	Infinity
