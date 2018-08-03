@@ -128,6 +128,7 @@ class Simulation(object):
 		self._initLoggers()
 		self._cellCycleComplete = False
 		self._isDead = False
+		self._finalized = False
 
 		for internal_state in self.internal_states.itervalues():
 			internal_state.initialize(self, sim_data)
@@ -188,22 +189,30 @@ class Simulation(object):
 				self._logToDiskEvery
 				)
 
-
-	# -- Run simulation --
-
 	# Run simulation
-	def run(self, time_to_run=None):
-		run_for = self._lengthSec + self.initialTime()
+	def run(self):
+		"""
+		Run the simulation for the time period specified in `self._lengthSec`
+		and then clean up.
+		"""
 
-		# If time_to_run is supplied, use that to determine how
-		# long to run instead of the initialized value.
-		if time_to_run:
-			run_for = time_to_run + self.time()
+		self.run_incremental(self._lengthSec + self.initialTime() - self.time())
+		self.finalize()
+
+	def run_incremental(self, run_for):
+		"""
+		Run the simulation for a given amount of time.
+
+		Args:
+		    run_for (float): interval of time to run the simulation for. 
+		"""
+
+		run_until = run_for + self.time()
 
 		# Simulate
-		while self.time() < run_for and not self._isDead:
+		while self.time() < run_until and not self._isDead:
 			if self._cellCycleComplete:
-				break
+				self.finalize()
 
 			self._simulationStep += 1
 
@@ -211,18 +220,27 @@ class Simulation(object):
 
 			self._evolveState()
 
-	# Clean up any details once the simulation has finished
 	def finalize(self):
-		# Run post-simulation hooks
-		for hook in self.hooks.itervalues():
-			hook.finalize(self)
+		"""
+		Clean up any details once the simulation has finished.
+		Specifically, this calls `finalize` in all hooks,
+		invokes the simulation's `_divideCellFunction` and then
+		shuts down all loggers
+		"""
 
-		# Divide mother into daughter cells
-		self._divideCellFunction()
+		if not self.finalized:
+			# Run post-simulation hooks
+			for hook in self.hooks.itervalues():
+				hook.finalize(self)
 
-		# Finish logging
-		for logger in self.loggers.itervalues():
-			logger.finalize(self)
+			# Divide mother into daughter cells
+			self._divideCellFunction()
+
+			# Finish logging
+			for logger in self.loggers.itervalues():
+				logger.finalize(self)
+
+			self.finalized = True
 
 	# Calculate temporal evolution
 	def _evolveState(self):
