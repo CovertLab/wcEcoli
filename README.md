@@ -161,8 +161,6 @@ To do a simple simulation run:
 python runscripts/manual/runSim.py [-h] [--verbose] [--variant VARIANT_TYPE FIRST_INDEX LAST_INDEX] [sim_dir]
 ```
 
-> [Note: runSim.py does not yet run all the steps needed to write all the files needed to run analysis plots.]
-
 To run all the analysis plots on the given `sim_dir`, which defaults to the most recent simulation run:
 
 ```bash
