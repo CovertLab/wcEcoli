@@ -55,7 +55,7 @@ class Drivable(object):
 
 
 
-	def set_local_environment(self, moleculeIDs, concentrations, time_to_run):
+	def set_local_environment(self, molecule_ids, concentrations, time_to_run):
 		#
 		# environment - dictionary of molecules to counts
 		# time_to_run - integer
