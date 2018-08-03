@@ -29,8 +29,13 @@
 # This will return a dictionary of molecule names to integers representing the counts of how much each molecule
 # changed with respect to its local environment.
 
+
+from wholecell.fireworks.firetasks.simulation import SimulationTask
+
+
+
 class Drivable(object):
-	def initialize(self, state, molecules_of_interest):
+	def initialize(self, sim_data):
 		# state - dictionary of strings to arbitrary structures (whatever is required for initialization)
 		# molecules_of_interest - array of strings (molecule names)
 		# ----------------------------------------
@@ -38,9 +43,20 @@ class Drivable(object):
 		#   (this is the state traditionally supplied by the output of the fitter),
 		#   and set up the given `molecules_of_interest` to be tracked so that later the deltas
 		#   for these molecules can be supplied.
-		pass
 
-	def receive_environment(self, environment, time_to_run):
+
+
+		# initialize a cell. It will be similar to firetasks.simulation.py
+		task = SimulationTask(
+			input_sim_data=sim_data_file,
+			output_directory=makedirs(args.sim_path, 'sim'),
+		)
+		task.run_task({})
+
+
+
+	def set_local_environment(self, moleculeIDs, concentrations, time_to_run):
+		#
 		# environment - dictionary of molecules to counts
 		# time_to_run - integer
 		# ---------------------
@@ -49,7 +65,8 @@ class Drivable(object):
 		#   tracking the deltas for the `molecules_of_interest`
 		pass
 
-	def read_deltas(self):
+
+	def get_environment_deltas(self):
 		# return - dictionary of strings (molecule keys) to integers (molecule counts)
 		# ----------------------------
 		#   return a dictionary containing the deltas for each molecule previously passed
