@@ -1,7 +1,7 @@
 Development tools
 ===================================================
 
-Most of the team uses Sublime Text 3 pr PyCharm Pro.
+Most of the team uses Sublime Text 3 or PyCharm Pro.
 
 Also install git and maybe the GitHub Desktop app.
 
