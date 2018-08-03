@@ -35,7 +35,7 @@ To set these up there are a number of commands to run:
 
 Now that you have pyenv and related libraries installed, you can install python and set up your local environment:
 
-    pyenv install 2.7.15
+    PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.15
     pyenv local 2.7.15
     pyenv virtualenv wcEcoli2
     pyenv local wcEcoli2
