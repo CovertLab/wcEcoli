@@ -12,14 +12,14 @@ Tip: On macOS, iTerm2 is much nicer than the built-in Terminal app.
 pyenv tools
 ------------
 
-Use homebrew's `brew install` command to install
+Use homebrew to install
 
-    pyenv
-    pyenv-virtualenv
-    pyenv-virtualenvwrapper
-    glpk
-    swig
-    suite-sparse
+    brew install pyenv
+    brew install pyenv-virtualenv
+    brew install pyenv-virtualenvwrapper
+    brew install glpk
+    brew install swig
+    brew install suite-sparse
 
 swig is needed to install pip CVXcanon.
 suite-sparse is needed for cvxopt to call glpk.
