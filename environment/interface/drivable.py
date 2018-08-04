@@ -4,31 +4,28 @@
 # methods with the given signatures in the simulation class, so this class is not intended
 # to be extended, but rather provide a definition of the methods to implement).
 # 
-# First, the simulation object, once created, will be initialized with whatever state it requires,
-# and also an array detailing which molecules the larger simulation will be concerned with:
+# First, the simulation object, once created, will be initialized with an id and
+# whatever state it requires (currently sim_data)
 #
-#     simulation.initialize(state, molecules_of_interest)
+#     simulation.initialize(id, sim_data)
 # 
-# This `state` object in our case is traditionally whatever is output by the fitter.
-# To keep the interface clean let's have this be the instantiated object and not the pickled file
-# (so, we do the work of reading an unpickling the file before it is passed to `initialize`
+# This `sim_data` object in our case is traditionally whatever is output by the fitter.
 #
-# Once the simulation has been initialized, it will receive a message containing its local environment
-# and also the time step to be run until:
+# Once the simulation has been initialized, it will receive a message containing
+# its local environment and also the time step to be run until:
 #
-#     simulation.receive_environment(environment, time_to_run)
+#     simulation.set_local_environment(molecule_ids, concentrations, run_for)
 #
-# Once this is invoked, the simulation will set its local environment and trigger the execution
-# of the simulation until the given `time_to_run`. During this execution some means must be taken to record
-# the deltas of the `molecules_of_interest` defined earlier.
+# Once this is invoked, the simulation will set its local environment and trigger
+# the execution of the simulation until the given `run_for`. During this execution
+# some means must be taken to record the deltas of the `molecule_ids` defined earlier.
 #
-# Once the simulation has executed for the given time period, the deltas will be read by calling `read_deltas()`:
+# Once the simulation has executed for the given time period, the deltas will be read by calling `get_environment_change()`:
 #
-#     simulation.read_deltas()
+#     simulation.get_environment_change()
 #
-# This will return a dictionary of molecule names to integers representing the counts of how much each molecule
-# changed with respect to its local environment.
-
+# This will return a dictionary of molecule names to integers representing the counts
+# of how much each molecule changed with respect to its local environment.
 
 from wholecell.sim.simulation import Simulation
 
@@ -36,7 +33,7 @@ import wholecell.states.environment
 
 
 class Drivable(object):
-	def initialize(self, sim_data):
+	def initialize(self, id, sim_data):
 		# state - dictionary of strings to arbitrary structures (whatever is required for initialization)
 		# molecules_of_interest - array of strings (molecule names)
 		# ----------------------------------------
@@ -47,7 +44,7 @@ class Drivable(object):
 		pass
 
 
-	def set_local_environment(self, moleculeIDs, concentrations, run_for):
+	def set_local_environment(self, molecule_ids, concentrations, run_for):
 		#
 		# molecule_ids (str)
 		# concentrations (float)
@@ -56,7 +53,7 @@ class Drivable(object):
 		#   accept state of molecular concentrations and apply it to the local environment
 		#   then, trigger execution for `run_for` steps (run simulation loop until that time step)
 
-		Environment.setLocalEnvironment(moleculeIDs, concentrations)
+		Environment.setLocalEnvironment(molecule_ids, concentrations)
 		Simulation.runIncremental(run_for)
 
 
