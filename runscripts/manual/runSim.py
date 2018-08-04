@@ -47,7 +47,7 @@ class RunSimulation(scriptBase.ScriptBase):
 
 		if args.variant:
 			variant_type = args.variant[0]
-			variants_to_run = range(args.variant[1], args.variant[2] + 1)
+			variants_to_run = range(int(args.variant[1]), int(args.variant[2]) + 1)
 		else:
 			variant_type = 'wildtype'
 			variants_to_run = [0]
