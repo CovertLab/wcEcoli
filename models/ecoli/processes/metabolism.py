@@ -40,7 +40,7 @@ KINETICS_BURN_IN_PERIOD = 0
 # TODO (Eran) remove this once a transport kinetics process is operating
 # these values are also implemented in simulation_data.py
 IMPORT_CONSTRAINT_THRESHOLD =  1.0
-GLC_DEFAULT_UPPER_BOUND = 20 * (units.mmol / units.g / units.h)
+GLC_DEFAULT_UPPER_BOUND = 50 * (units.mmol / units.g / units.h)
 
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
@@ -480,6 +480,8 @@ class Metabolism(wholecell.processes.process.Process):
 		for name, conc in zip(self.environment_nutrients_names, self.environment_nutrients.totalConcentrations()):
 
 			# only check nutrients in importExchangeMolecules
+			# TODO (Eran) importExchangeMolecules can exclude some molecules that
+			# were not in any of the initial environments, but came in through other means.
 			if name in self.exchange_data['importExchangeMolecules']:
 				# if concentration < threshold, constrain import to 0
 				if conc < IMPORT_CONSTRAINT_THRESHOLD:

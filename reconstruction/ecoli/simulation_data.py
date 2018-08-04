@@ -32,7 +32,7 @@ VERBOSE = False
 # import constrained and import unconstrained.
 # These values are also implemented in metabolism
 IMPORT_CONSTRAINT_THRESHOLD =  1.0
-GLC_DEFAULT_UPPER_BOUND = 20 * (units.mmol / units.g / units.h)
+GLC_DEFAULT_UPPER_BOUND = 50 * (units.mmol / units.g / units.h)
 
 class SimulationDataEcoli(object):
 	""" SimulationDataEcoli """
