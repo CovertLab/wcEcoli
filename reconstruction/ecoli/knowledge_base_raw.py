@@ -104,7 +104,6 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("condition", "timeseries", "000007_oxygen_absent_finite.tsv"),
 	os.path.join("condition", "timeseries", "000008_add_aa_finite.tsv"),
 	os.path.join("condition", "timeseries", "000009_cut_oxygen_finite.tsv"),
-	os.path.join("condition", "timeseries", "000010_erantest.tsv"),
 	)
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = ("parameters.tsv", "mass_parameters.tsv")
