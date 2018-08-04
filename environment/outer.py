@@ -14,7 +14,7 @@ class Outer(object):
 			value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
 		self.consumer = KafkaConsumer(
-			bootstrap_servers=self.kafka['host']
+			bootstrap_servers=self.kafka['host'],
 			value_deserializer=json.loads,
 			group_id=self.id)
 
@@ -35,7 +35,7 @@ class Outer(object):
 		for id, simulation in self.simulations.iteritems():
 			self.send({
 				id: id,
-				event: 'ENVIRONMENT_UPDATED'
+				event: 'ENVIRONMENT_UPDATED',
 				molecule_ids: self.molecule_ids,
 				concentrations: concentrations,
 				run_for: run_for})
