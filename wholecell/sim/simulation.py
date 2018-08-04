@@ -198,7 +198,7 @@ class Simulation(object):
 		self.run_incremental(self._lengthSec + self.initialTime() - self.time())
 		self.finalize()
 
-	def run_incremental(self, run_for):
+	def runIncremental(self, run_for):
 		"""
 		Run the simulation for a given amount of time.
 
@@ -227,7 +227,7 @@ class Simulation(object):
 		shuts down all loggers
 		"""
 
-		if not self.finalized:
+		if not self._finalized:
 			# Run post-simulation hooks
 			for hook in self.hooks.itervalues():
 				hook.finalize(self)
@@ -239,7 +239,7 @@ class Simulation(object):
 			for logger in self.loggers.itervalues():
 				logger.finalize(self)
 
-			self.finalized = True
+			self._finalized = True
 
 	# Calculate temporal evolution
 	def _evolveState(self):

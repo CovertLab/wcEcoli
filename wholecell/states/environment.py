@@ -53,8 +53,10 @@ class Environment(wholecell.states.external_state.ExternalState):
 		self._nAvogadro = sim_data.constants.nAvogadro
 
 		# get molecule IDs and initial concentrations
-		self._moleculeIDs = [id for id, value in sim_data.external_state.environment.nutrients.iteritems()]
-		self._concentrations = np.array([value.asNumber() for id, value in sim_data.external_state.environment.nutrients.iteritems()])
+		moleculeIDs = [id for id, value in sim_data.external_state.environment.nutrients.iteritems()]
+		concentrations = np.array([value.asNumber() for id, value in sim_data.external_state.environment.nutrients.iteritems()])
+
+		self.setLocalEnvironment(moleculeIDs, concentrations)
 
 		# environment time series data
 		self.environment_dict = sim_data.external_state.environment.environment_dict
@@ -81,6 +83,11 @@ class Environment(wholecell.states.external_state.ExternalState):
 
 		# the length of the longest nutrients name, for padding in nutrients listener
 		self._nutrients_name_max_length = len(max([t[1] for t in self.nutrients_time_series], key=len))
+
+
+	def setLocalEnvironment(self, moleculeIDs, concentrations):
+		self._moleculeIDs = moleculeIDs
+		self._concentrations = concentrations
 
 
 	def update(self):

@@ -30,8 +30,9 @@
 # changed with respect to its local environment.
 
 
-from wholecell.fireworks.firetasks.simulation import SimulationTask
+from wholecell.sim.simulation import Simulation
 
+import wholecell.states.environment
 
 
 class Drivable(object):
@@ -43,30 +44,23 @@ class Drivable(object):
 		#   (this is the state traditionally supplied by the output of the fitter),
 		#   and set up the given `molecules_of_interest` to be tracked so that later the deltas
 		#   for these molecules can be supplied.
-
-
-
-		# initialize a cell. It will be similar to firetasks.simulation.py
-		task = SimulationTask(
-			input_sim_data=sim_data_file,
-			output_directory=makedirs(args.sim_path, 'sim'),
-		)
-		task.run_task({})
-
-
-
-	def set_local_environment(self, molecule_ids, concentrations, time_to_run):
-		#
-		# environment - dictionary of molecules to counts
-		# time_to_run - integer
-		# ---------------------
-		#   accept environmental information and apply it to the local environment
-		#   then, trigger execution for `time_to_run` steps (run simulation loop until that time step),
-		#   tracking the deltas for the `molecules_of_interest`
 		pass
 
 
-	def get_environment_deltas(self):
+	def set_local_environment(self, moleculeIDs, concentrations, run_for):
+		#
+		# molecule_ids (str)
+		# concentrations (float)
+		# run_for (float) - time (sec) to run the WCM
+		# ---------------------
+		#   accept state of molecular concentrations and apply it to the local environment
+		#   then, trigger execution for `run_for` steps (run simulation loop until that time step)
+
+		Environment.setLocalEnvironment(moleculeIDs, concentrations)
+		Simulation.runIncremental(run_for)
+
+
+	def get_environment_change(self):
 		# return - dictionary of strings (molecule keys) to integers (molecule counts)
 		# ----------------------------
 		#   return a dictionary containing the deltas for each molecule previously passed
