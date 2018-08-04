@@ -195,10 +195,10 @@ class Simulation(object):
 		and then clean up.
 		"""
 
-		self.run_incremental(self._lengthSec + self.initialTime())
+		self.runIncremental(self._lengthSec + self.initialTime())
 		self.finalize()
 
-	def run_incremental(self, run_until):
+	def runIncremental(self, run_until):
 		"""
 		Run the simulation for a given amount of time.
 
