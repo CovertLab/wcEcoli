@@ -86,6 +86,9 @@ class Environment(wholecell.states.external_state.ExternalState):
 	def update(self):
 		current_index = [i for i, t in enumerate(self._times) if self.time()>=t][-1]
 
+		# update nutrients based on nutrient_time_series. This updates the concentrations,
+		# and also the nutrients label is used in polypeptide_elongation to find
+		# a ribosomeElongationRate in ribosomeElongationRateDict
 		if self.nutrients != self.nutrients_time_series[current_index][1]:
 			self.nutrients = self.nutrients_time_series[current_index][1]
 			self._concentrations = np.array([value.asNumber() for id, value in self.environment_dict[self.nutrients].iteritems()])
