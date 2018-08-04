@@ -109,7 +109,6 @@ class Simulation(object):
 		# doesn't.
 		filepath.makedirs(self._outputDir)
 
-		# Load KB
 		sim_data = self._simData
 
 		# Initialize simulation from fit KB
