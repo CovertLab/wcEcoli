@@ -195,7 +195,7 @@ class Simulation(object):
 		and then clean up.
 		"""
 
-		self.run_incremental(self._lengthSec + self.initialTime() - self.time())
+		self.runIncremental(self._lengthSec + self.initialTime() - self.time())
 		self.finalize()
 
 	def runIncremental(self, run_for):
