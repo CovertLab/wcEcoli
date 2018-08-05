@@ -15,7 +15,6 @@ from __future__ import division
 import cPickle
 import errno
 import os
-import pprint as pp
 
 from wholecell.fireworks.firetasks.simulation import SimulationTask
 from wholecell.fireworks.firetasks import VariantSimDataTask
@@ -88,8 +87,6 @@ class RunSimulation(scriptBase.ScriptBase):
 
 		variant_type = args.variant[0]
 		variants_to_run = xrange(int(args.variant[1]), int(args.variant[2]) + 1)
-
-		pp.pprint({'Sim parameters': vars(args)})
 
 		# Write the metadata file.
 		metadata = {

@@ -16,6 +16,7 @@ import datetime
 import errno
 import re
 import os
+import pprint as pp
 import time
 
 import wholecell
@@ -255,8 +256,7 @@ class ScriptBase(object):
 			location = ' at ' + location
 
 		print '{}: {}{}'.format(time.ctime(), self.description(), location)
-		if args.verbose:
-			print '    args: {}'.format(args)
+		pp.pprint({'Arguments': vars(args)})
 
 		start_sec = time.clock()
 		self.run(args)
