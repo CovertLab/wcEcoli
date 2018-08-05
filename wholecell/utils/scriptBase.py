@@ -152,12 +152,21 @@ class ScriptBase(object):
 		adds the default value to the help text.
 		"""
 		default = bool(default)
+		examples = 'true or 1' if default else 'false or 0'
 		group = parser.add_mutually_exclusive_group()
 		group.add_argument('--' + name, nargs='?', default=default,
 			const='true',  # needed for nargs='?'
 			type=str_to_bool,
-			help='{}. Default = {}'.format(help, default))
+			help='({}, {}) {}'.format('bool', examples, help))
 		group.add_argument('--no_' + name, dest=name, action='store_false')
+
+	def define_option(self, parser, name, datatype, default, help):
+			"""Add an option with the given name and datatype to the parser."""
+			parser.add_argument('--' + name,
+				type=datatype,
+				default=default,
+				help='({}, {}) {}'.format(datatype.__name__, default, help)
+				)
 
 	def define_parameter_sim_dir(self, parser):
 		"""Add a `sim_dir` parameter to the command line parser. parse_args()
