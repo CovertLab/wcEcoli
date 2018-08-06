@@ -189,8 +189,10 @@ class Simulation(object):
 				self._logToDiskEvery
 				)
 
-	def track_environment_change(self):
+	def initialize_local_environment(self, molecule_ids):
 		self._tracking_environment_change = True
+		self.molecule_ids = molecule_ids
+		self._environment_change = np.empty(len(molecule_ids))
 
 	# Run simulation
 	def run(self):
@@ -223,10 +225,10 @@ class Simulation(object):
 			self._evolveState()
 
 			if self._tracking_environment_change:
-				self.cumulate_environment_change()
+				self.accumulate_environment_change()
 
-	def cumulate_environment_change(self):
-		self._environment_change += stufffffffff
+	def accumulate_environment_change(self):
+		self._environment_change += self.external_states['Environment'].get_deltas()
 
 	def get_environment_change(self):
 		return self._environment_change
