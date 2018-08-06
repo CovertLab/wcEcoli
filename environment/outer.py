@@ -1,5 +1,10 @@
 import json
-from kafka import KafkaProducer, KafkaConsumer
+from confluent_kafka import Producer, Consumer, KafkaError
+
+def delivery_report(err, msg):
+	if err is not None:
+		print('message delivery failed: {}'.format(msg))
+		print('failed message: {}'.format(err))
 
 class Outer(object):
 	def __init__(self, kafka, molecule_ids, run_for, concentrations, id='environment'):
@@ -9,31 +14,58 @@ class Outer(object):
 		self.molecule_ids = concentrations.keys()
 		self.run_for = run_for
 		self.time = 0
+		self.simulations = {}
 
-		self.producer = KafkaProducer(
-			bootstrap_servers=self.kafka['host'],
-			value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+		self.producer = Producer({
+			'bootstrap.servers': self.kafka['host']})
 
-		self.consumer = KafkaConsumer(
-			bootstrap_servers=self.kafka['host'],
-			value_deserializer=json.loads,
-			auto_offset_reset='latest',
-			group_id=self.id)
+		self.consumer = Consumer({
+			'bootstrap.servers': self.kafka['host'],
+			'enable.auto.commit': True,
+			'group.id': str(id),
+			'default.topic.config': {
+				'auto.offset.reset': 'smallest'}})
 
 		self.consumer.subscribe(
 			[self.kafka['simulation_send'],
 			 self.kafka['environment_control']])
 
-		self.simulations = {}
+		self.poll()
 
-		for message in self.consumer:
+	def poll(self):
+		running = True
+		while running:
+			raw = self.consumer.poll()
+			if raw is None:
+				continue
+			if raw.error():
+				if raw.error().code() == KafkaError._PARTITION_EOF:
+					continue
+				else:
+					print(raw.error())
+					running = False
+
+			message = json.loads(raw.value().decode('utf-8'))
 			print(message)
-			self.receive(message.value)
+			if message['event'] == 'TRIGGER_SHUTDOWN':
+				self.finalize()
+				running = False
+			else:
+				self.receive(message)
+
+	def finalize(self):
+		for id, simulation in self.simulations.iteritems():
+			self.send({
+				'id': id,
+				'event': 'ENVIRONMENT_SHUTDOWN'})
 
 	def send(self, message):
-		self.producer.send(
+		self.producer.flush()
+		self.producer.poll(0)
+		self.producer.produce(
 			self.kafka['simulation_receive'],
-			message)
+			json.dumps(message).encode('utf-8'),
+			callback=delivery_report)
 
 	def send_concentrations(self, concentrations, run_for):
 		for id, simulation in self.simulations.iteritems():
@@ -74,9 +106,3 @@ class Outer(object):
 			if self.ready_to_advance(self.time):
 				self.time += self.run_for
 				self.send_concentrations(self.concentrations, self.run_for)
-
-		if message['event'] == 'TRIGGER_SHUTDOWN':
-			for id, simulation in self.simulations.iteritems():
-				self.send({
-					'id': id,
-					'event': 'ENVIRONMENT_SHUTDOWN'})

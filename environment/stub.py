@@ -16,7 +16,7 @@ class SimulationStub(object):
 		self.molecule_ids = molecule_ids
 		self.molecule_changes = {}
 		for molecule in self.molecule_ids:
-			if not self.molecule_changes[molecule]:
+			if not molecule in self.molecule_changes:
 				self.molecule_changes[molecule] = 0
 		self.concentrations = concentrations
 
