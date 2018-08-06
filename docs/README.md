@@ -24,9 +24,7 @@ setup
 running
 -----------
 
-* [Running the model locally](run-locally.md)
-* [Running the model on Sherlock](run-sherlock.md)
-* [Running the model on Google Cloud](run-google-cloud.md)
+* [How to run the model](run.md)
 
 development
 ------------
