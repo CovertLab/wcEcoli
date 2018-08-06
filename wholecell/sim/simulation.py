@@ -126,8 +126,10 @@ class Simulation(object):
 		self._initLoggers()
 		self._cellCycleComplete = False
 		self._isDead = False
-		self._finalized = False
 
+		self._finalized = False
+		self._tracking_environment_change = False
+		
 		for internal_state in self.internal_states.itervalues():
 			internal_state.initialize(self, sim_data)
 
@@ -187,6 +189,9 @@ class Simulation(object):
 				self._logToDiskEvery
 				)
 
+	def track_environment_change(self):
+		self._tracking_environment_change = True
+
 	# Run simulation
 	def run(self):
 		"""
@@ -216,6 +221,15 @@ class Simulation(object):
 			self._timeTotal += self._timeStepSec
 
 			self._evolveState()
+
+			if self._tracking_environment_change:
+				self.cumulate_environment_change()
+
+	def cumulate_environment_change(self):
+		self._environment_change += stufffffffff
+
+	def get_environment_change(self):
+		return self._environment_change
 
 	def finalize(self):
 		"""
