@@ -19,22 +19,29 @@ class Inner(Agent):
 		self.simulation.finalize()
 
 	def receive(self, topic, message):
-		if message['event'] == 'ENVIRONMENT_UPDATED':
-			self.simulation.set_local_environment(
-				message['molecule_ids'],
-				message['concentrations'])
+		if message['id'] == self.id:
+			print(topic + ': ' + str(message))
 
-			self.simulation.run_incremental(message['run_for'] + self.simulation.time())
+			if message['event'] == 'ENVIRONMENT_UPDATED':
+				self.simulation.set_local_environment(
+					message['molecule_ids'],
+					message['concentrations'])
 
-			stop = self.simulation.time()
-			changes = self.simulation.get_environment_change()
+				self.simulation.run_incremental(message['run_for'] + self.simulation.time())
 
-			self.send(self.kafka['simulation_send'], {
-				'event': 'SIMULATION_ENVIRONMENT',
-				'id': self.id,
-				'message_id': message['message_id'],
-				'time': stop,
-				'changes': changes})
+				stop = self.simulation.time()
+				changes = self.simulation.get_environment_change()
 
-		if message['event'] == 'SIMULATION_SHUTDOWN':
-			self.shutdown()
+				self.send(self.kafka['simulation_send'], {
+					'event': 'SIMULATION_ENVIRONMENT',
+					'id': self.id,
+					'message_id': message['message_id'],
+					'time': stop,
+					'changes': changes})
+
+			if message['event'] == 'SHUTDOWN_SIMULATION':
+				self.send(self.kafka['simulation_send'], {
+					'event': 'SIMULATION_SHUTDOWN',
+					'id': self.id})
+
+				self.shutdown()

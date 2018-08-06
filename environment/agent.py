@@ -14,19 +14,22 @@ class Agent(object):
 		self.producer = Producer({
 			'bootstrap.servers': self.kafka['host']})
 
-		self.consumer = Consumer({
-			'bootstrap.servers': self.kafka['host'],
-			'enable.auto.commit': True,
-			'group.id': 'simulation-' + str(id),
-			'default.topic.config': {
-				'auto.offset.reset': 'largest'}})
+		self.has_consumer = len(self.kafka['subscribe_topics']) > 0
+		if self.has_consumer:
+			self.consumer = Consumer({
+				'bootstrap.servers': self.kafka['host'],
+				'enable.auto.commit': True,
+				'group.id': 'simulation-' + str(id),
+				'default.topic.config': {
+					'auto.offset.reset': 'latest'}})
 
 		self.initialize()
 
-		self.consumer.subscribe(
-			self.kafka['subscribe_topics'])
+		if self.has_consumer:
+			self.consumer.subscribe(
+				self.kafka['subscribe_topics'])
 
-		self.poll()
+			self.poll()
 
 	def initialize(self):
 		pass
@@ -45,7 +48,6 @@ class Agent(object):
 					self.running = False
 
 			message = json.loads(raw.value().decode('utf-8'))
-			print(message)
 
 			if message['event'] == 'GLOBAL_SHUTDOWN':
 				self.shutdown()
@@ -66,7 +68,13 @@ class Agent(object):
 	def shutdown(self):
 		self.running = False
 		self.finalize()
-		self.consumer.close()
+
+		self.producer.flush()
+		self.producer.poll(0)
+
+		if self.has_consumer:
+			self.consumer.commit()
+			self.consumer.close()
 
 	def finalize(self):
 		pass

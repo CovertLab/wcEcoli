@@ -9,6 +9,7 @@ class Outer(Agent):
 		self.run_for = run_for
 		self.time = 0
 		self.simulations = {}
+
 		kafka['subscribe_topics'] = [
 			kafka['simulation_send'],
 			kafka['environment_control']]
@@ -16,10 +17,7 @@ class Outer(Agent):
 		super(Outer, self).__init__(id, kafka)
 
 	def finalize(self):
-		for id, simulation in self.simulations.iteritems():
-			self.send(self.kafka['simulation_receive'], {
-				'id': id,
-				'event': 'SIMULATION_SHUTDOWN'})
+		print('environment shutting down')
 
 	def send_concentrations(self, concentrations, run_for):
 		for id, simulation in self.simulations.iteritems():
@@ -42,6 +40,8 @@ class Outer(Agent):
 		return ready
 
 	def receive(self, topic, message):
+		print(topic + ': ' + str(message))
+
 		if message['event'] == 'SIMULATION_INITIALIZED':
 			self.simulations[message['id']] = {
 				'time': 0,
@@ -61,5 +61,15 @@ class Outer(Agent):
 				self.time += self.run_for
 				self.send_concentrations(self.concentrations, self.run_for)
 
-		if message['event'] == 'ENVIRONMENT_SHUTDOWN':
-			self.shutdown()
+		if message['event'] == 'SHUTDOWN_ENVIRONMENT':
+			for id, simulation in self.simulations.iteritems():
+				self.send(self.kafka['simulation_receive'], {
+					'id': id,
+					'event': 'SHUTDOWN_SIMULATION'})
+
+		if message['event'] == 'SIMULATION_SHUTDOWN':
+			gone = self.simulations.pop(message['id'], {})
+			print('simulation shutdown: ' + str(gone))
+
+			if not any(self.simulations):
+				self.shutdown()

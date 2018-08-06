@@ -1,5 +1,6 @@
 import json
 
+from environment.agent import Agent
 from environment.outer import Outer
 from environment.inner import Inner
 from environment.stub import SimulationStub
@@ -10,11 +11,6 @@ default_kafka_config = {
 	'simulation_send': 'environment_listen',
 	'simulation_receive': 'environment_broadcast',
 	'environment_control': 'environment_control'}
-
-def delivery_report(err, msg):
-	if err is not None:
-		print('message delivery failed: {}'.format(msg))
-		print('failed message: {}'.format(err))
 
 class BootOuter(object):
 	def __init__(self):
@@ -36,16 +32,18 @@ class BootInner(object):
 			self.simulation,
 			default_kafka_config)
 
-class EnvironmentControl(object):
+class EnvironmentControl(Agent):
 	def __init__(self):
-		self.kafka = default_kafka_config
-		self.producer = Producer({
-			'bootstrap.servers': self.kafka['host']})
+		id = 'environment_control'
+		kafka = default_kafka_config.copy()
+		kafka['subscribe_topics'] = []
 
-	def send(self, message):
-		self.producer.flush()
-		self.producer.poll(0)
-		self.producer.produce(
-			self.kafka['environment_control'],
-			json.dumps(message).encode('utf-8'),
-			callback=delivery_report)
+		super(EnvironmentControl, self).__init__(id, kafka)
+
+	def trigger_execution(self):
+		self.send(self.kafka['environment_control'], {
+			'event': 'TRIGGER_EXECUTION'})
+
+	def shutdown_environment(self):
+		self.send(self.kafka['environment_control'], {
+			'event': 'SHUTDOWN_ENVIRONMENT'})
