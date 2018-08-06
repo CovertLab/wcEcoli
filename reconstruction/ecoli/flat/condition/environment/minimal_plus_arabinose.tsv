@@ -1,7 +1,7 @@
-#M9 media + 0.4pct. glucose + arabinose.
-#arabinose concentrations unknown
-#M9 recipe from: Maniatis, T., Fritsch, E. F., & Sambrook, J. (1982).
-#Molecular cloning: a laboratory manual (Vol. 545). Cold Spring Harbor, NY: Cold spring harbor laboratory.
+# M9 media + 0.4pct. glucose + arabinose.
+# arabinose concentrations unknown
+# M9 recipe from: Maniatis, T., Fritsch, E. F., & Sambrook, J. (1982).
+# Molecular cloning: a laboratory manual (Vol. 545). Cold Spring Harbor, NY: Cold spring harbor laboratory.
 "molecule id"	"concentration (units.mmol / units.L)"
 "GLC[p]"	22.203
 "ACET[p]"	0
