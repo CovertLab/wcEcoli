@@ -6,7 +6,7 @@ class SimulationStub(object):
 		self.local_time = 0
 		self._tracking_environment_change = False
 
-	def track_environment_change(self):
+	def initialize_local_environment(self):
 		self._tracking_environment_change = True
 
 	def time(self):
