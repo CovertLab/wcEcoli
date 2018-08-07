@@ -1,4 +1,6 @@
 import json
+import uuid
+import argparse
 
 from environment.agent import Agent
 from environment.outer import Outer
@@ -13,9 +15,9 @@ default_kafka_config = {
 	'environment_control': 'environment_control'}
 
 class BootOuter(object):
-	def __init__(self):
+	def __init__(self, kafka):
 		self.outer = Outer(
-			default_kafka_config,
+			kafka,
 			['yellow', 'green', 'red', 'blue'],
 			1,
 			{'yellow': 5,
@@ -24,18 +26,17 @@ class BootOuter(object):
 			 'blue': 12})
 
 class BootInner(object):
-	def __init__(self, id):
+	def __init__(self, id, kafka):
 		self.id = id
 		self.simulation = SimulationStub()
 		self.inner = Inner(
 			self.id,
 			self.simulation,
-			default_kafka_config)
+			kafka)
 
 class EnvironmentControl(Agent):
-	def __init__(self):
+	def __init__(self, kafka):
 		id = 'environment_control'
-		kafka = default_kafka_config.copy()
 		kafka['subscribe_topics'] = []
 
 		super(EnvironmentControl, self).__init__(id, kafka)
@@ -47,3 +48,48 @@ class EnvironmentControl(Agent):
 	def shutdown_environment(self):
 		self.send(self.kafka['environment_control'], {
 			'event': 'SHUTDOWN_ENVIRONMENT'})
+
+if __name__ == '__main__':
+	parser = argparse.ArgumentParser(
+		description='Boot the various agents for the environmental context simulation')
+
+	parser.add_argument(
+		'role',
+		help='which role to boot')
+
+	parser.add_argument(
+		'--id',
+		default=str(uuid.uuid1()),
+		help='unique identifier for simulation agent')
+
+	parser.add_argument(
+		'--kafka-host',
+		default='localhost:9092',
+		help='address for Kafka server')
+
+	parser.add_argument(
+		'--environment-control',
+		default='environment_control',
+		help='topic the environment will receive control messages on')
+
+	parser.add_argument(
+		'--simulation-receive',
+		default='environment_broadcast',
+		help='topic the simulations will receive messages on')
+
+	parser.add_argument(
+		'--simulation-send',
+		default='environment_listen',
+		help='topic the simulations will send messages on')
+
+	args = parser.parse_args()
+	kafka = {
+		'host': args.kafka_host,
+		'environment_control': args.environment_control,
+		'simulation_receive': args.simulation_receive,
+		'simulation_send': args.simulation_send}
+
+	if args.role == 'inner':
+		inner = BootInner(args.id, kafka)
+	elif args.role == 'outer':
+		outer = BootOuter(kafka)

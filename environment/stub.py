@@ -9,17 +9,20 @@ class SimulationStub(object):
 	def time(self):
 		return self.local_time
 
-	def initialize_local_environment(self, molecule_ids):
+	def initialize_local_environment(self):
 		self._tracking_environment_change = True
-		self.molecule_ids = molecule_ids
-		self.concentrations = np.empty(len(molecule_ids))
-		self.environment_change = dict.fromkeys(molecule_ids)
+		self.local_set = False
 
 	def set_local_environment(self, molecule_ids, concentrations):
-		for molecule in molecule_ids:
-			if not molecule in self.environment_change:
-				self.environment_change[molecule] = 0
+		self.molecule_ids = molecule_ids
 		self.concentrations = concentrations
+
+		if not self.local_set:
+			# self.concentrations = np.empty(len(molecule_ids))
+			self.environment_change = {}
+			for molecule in molecule_ids:
+				self.environment_change[molecule] = 0
+			self.local_set = True
 
 	def run_incremental(self, run_until):
 		time.sleep(1)
