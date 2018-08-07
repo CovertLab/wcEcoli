@@ -35,6 +35,13 @@ TIME_UNITS = units.s
 USE_KINETICS = True
 KINETICS_BURN_IN_PERIOD = 0
 
+# threshold (units.mmol / units.L) separates concentrations that are import constrained with
+# max flux = 0 from unconstrained molecules.
+# TODO (Eran) remove this once a transport kinetics process is operating
+# these values are also implemented in simulation_data.py
+IMPORT_CONSTRAINT_THRESHOLD =  1.0
+GLC_DEFAULT_UPPER_BOUND = 20 * (units.mmol / units.g / units.h)
+
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
 
@@ -48,6 +55,12 @@ class Metabolism(wholecell.processes.process.Process):
 	# Construct object graph
 	def initialize(self, sim, sim_data):
 		super(Metabolism, self).initialize(sim, sim_data)
+
+		# initialize exchange_data based on initial nutrient condition
+		self.exchange_data = self._initExchangeData(sim_data)
+
+		#TODO (Eran) this can be remove once transport kinetics process is operating
+		self.exchange_data_dict = sim_data.exchange_data_dict.copy()
 
 		# Load constants
 		self.nAvogadro = sim_data.constants.nAvogadro
@@ -63,7 +76,7 @@ class Metabolism(wholecell.processes.process.Process):
 		nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
 
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label][0][1]
+			self.exchange_data
 			)
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			sim_data.conditionToDoublingTime[sim_data.condition]
@@ -78,18 +91,26 @@ class Metabolism(wholecell.processes.process.Process):
 
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
-		# Setup molecules in external environment that can be exchanged
-		externalExchangedMolecules = sim_data.external_state.environment.nutrient_data["secretionExchangeMolecules"]
+		# Identify all molecules in external environment that can be exchanged for the given time series
+		# TODO (Eran) initialize externalExchangeMolecules without exchange_data_dict, based on current state
+		externalExchangedMolecules = sim_data.exchange_data_dict["secretionExchangeMolecules"]
 		self.metaboliteNamesFromNutrients = set()
-		for time, nutrientsLabel in sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label]:
-			externalExchangedMolecules += sim_data.external_state.environment.nutrient_data["importExchangeMolecules"][nutrientsLabel]
 
+		for time, nutrient_label, volume in sim_data.external_state.environment.nutrients_time_series[
+				nutrients_time_series_label]:
+			# get exchange data for each nutrient condition in time series
+			nutrient_label_exchange_data = sim_data.process.metabolism._getExchangeData(nutrient_label)
+			externalExchangedMolecules += nutrient_label_exchange_data["importExchangeMolecules"]
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					nutrientsLabel, sim_data.process.metabolism.nutrientsToInternalConc
+					nutrient_label_exchange_data, sim_data.process.metabolism.nutrientsToInternalConc
 					)
 				)
 		externalExchangedMolecules = sorted(set(externalExchangedMolecules))
+
+		# save nutrient names for environment view
+		self.environment_nutrients_names = externalExchangedMolecules
+
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
 		moleculeMasses = dict(zip(externalExchangedMolecules, sim_data.getter.getMass(externalExchangedMolecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
@@ -181,7 +202,11 @@ class Metabolism(wholecell.processes.process.Process):
 		# External molecules
 		self.externalMoleculeIDs = self.fba.getExternalMoleculeIDs()
 
-		# Views
+		## Views
+		# views of environment
+		self.environment_nutrients = self.environmentView(self.environment_nutrients_names)
+
+		# views for metabolism
 		self.metaboliteNames = self.fba.getOutputMoleculeIDs()
 		self.metabolites = self.bulkMoleculesView(self.metaboliteNamesFromNutrients)
 		self.catalysts = self.bulkMoleculesView(self.catalystsList)
@@ -228,12 +253,15 @@ class Metabolism(wholecell.processes.process.Process):
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
 
+		# Update FBA import constraint variables based on current nutrient concentrations
+		self._updateImportConstraint()
+
 		# Set external molecule levels
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
 			self.externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS,
-			current_nutrients,
+			self.exchange_data,
 			self.concModificationsBasedOnCondition,
 			)
 
@@ -346,6 +374,11 @@ class Metabolism(wholecell.processes.process.Process):
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
 
+		# change in nutrient counts, used in non-infinite environments
+		delta_nutrients = ((1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes()).asNumber().astype(int)
+		self.environment_nutrients.countsInc(delta_nutrients)
+
+
 		# Write outputs to listeners
 		self.writeToListener("FBAResults", "deltaMetabolites", metaboliteCountsFinal - metaboliteCountsInit)
 		self.writeToListener("FBAResults", "reactionFluxes", self.fba.getReactionFluxes() / self.timeStepSec())
@@ -385,3 +418,77 @@ class Metabolism(wholecell.processes.process.Process):
 				externalMoleculeLevels[idx] =  concDiff
 
 		self.fba.setExternalMoleculeLevels(externalMoleculeLevels)
+
+
+	def _initExchangeData(self, sim_data):
+		'''
+		Returns a dictionary with the five categories of exchange data used by FBA.
+
+		The categories of molecules include:
+			- externalExchangeMolecules: All exchange molecules, both import and
+				secretion exchanged molecules.
+			- importExchangeMolecules: molecules that can be imported from the
+				environment into the cell.
+			- importConstrainedExchangeMolecules: exchange molecules that have
+				an upper bound on their flux.
+			- importUnconstrainedExchangeMolecules: exchange molecules that do
+				not have an upper bound on their flux.
+			- secretionExchangeMolecules: molecules that can be secreted by the
+				cell into the environment.
+
+		'''
+
+		exchange_data_dict = sim_data.exchange_data_dict.copy()
+		nutrient_label = sim_data.external_state.environment.nutrients_time_series[
+			sim_data.external_state.environment.nutrients_time_series_label
+			][0][1]
+
+		# all nutrients from nutrients_def
+		externalExchangeMolecules = exchange_data_dict['externalExchangeMolecules'][nutrient_label]
+		importExchangeMolecules = exchange_data_dict['importExchangeMolecules'][nutrient_label]
+		importConstrainedExchangeMolecules = exchange_data_dict['importConstrainedExchangeMolecules'][nutrient_label]
+		importUnconstrainedExchangeMolecules = exchange_data_dict['importUnconstrainedExchangeMolecules'][nutrient_label]
+		secretionExchangeMolecules = exchange_data_dict['secretionExchangeMolecules']
+
+		return {
+			"externalExchangeMolecules": externalExchangeMolecules,
+			"importExchangeMolecules": importExchangeMolecules,
+			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
+			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
+			"secretionExchangeMolecules": secretionExchangeMolecules,
+			}
+
+	def _updateImportConstraint(self):
+		'''
+		Update importExchangeMolecules for FBA based on current nutrient concentrations.
+
+		This provides a simple type of transport to accommodate changing nutrient
+		concentrations in the environment. Transport is modeled as a binary switch:
+		When there is a high concentrations of environment nutrients, transporters
+		are unconstrained and nutrients are transported as needed by metabolism.
+		When concentrations fall below the threshold, that nutrient's transport
+		is constrained to max flux of 0.
+
+		Notes
+		-----
+		- importConstrainedMolecules + importUnconstrainedMolecules = importExchangeMolecules
+		- TODO (ERAN) remove this when kinetic transport process is operational
+		'''
+
+		self.exchange_data['importConstrainedExchangeMolecules'] = {}
+		self.exchange_data['importUnconstrainedExchangeMolecules'] = []
+		for name, conc in zip(self.environment_nutrients_names, self.environment_nutrients.totalConcentrations()):
+
+			# only check nutrients in importExchangeMolecules
+			if name in self.exchange_data['importExchangeMolecules']:
+				# if concentration < threshold, constrain import to 0
+				if conc < IMPORT_CONSTRAINT_THRESHOLD:
+					self.exchange_data['importConstrainedExchangeMolecules'][name] = 0 * (units.mmol / units.g / units.h)
+
+				# if GLC >= threshold, constrain import to its default upper bound
+				elif name == 'GLC[p]':
+					self.exchange_data['importConstrainedExchangeMolecules'][name] = GLC_DEFAULT_UPPER_BOUND
+
+				# if molecule >= threshold, unconstrain nutrient's import
+				else:
+					self.exchange_data['importUnconstrainedExchangeMolecules'].append(name)

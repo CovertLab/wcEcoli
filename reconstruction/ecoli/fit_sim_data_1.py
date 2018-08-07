@@ -215,7 +215,10 @@ def fitSimData_1(
 			print "Updating mass in condition {}".format(condition_label)
 		spec = cellSpecs[condition_label]
 
-		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(nutrients)
+		exchange_data = sim_data.process.metabolism._getExchangeData(condition["nutrients"])
+		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
+			exchange_data)
+
 		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[condition_label]))
 
 		avgCellDryMassInit, fitAvgSolublePoolMass = rescaleMassForSolubleMetabolites(
@@ -321,8 +324,12 @@ def buildBasalCellSpecifications(
 
 	# Create dictionary for basal condition
 	cellSpecs = {}
+
+	nutrient_label = "minimal"
+	exchange_data = sim_data.process.metabolism._getExchangeData(nutrient_label)
 	cellSpecs["basal"] = {
-		"concDict": sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients("minimal"),
+		"concDict": sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
+			exchange_data),
 		"expression": sim_data.process.transcription.rnaExpression["basal"].copy(),
 		"doubling_time": sim_data.conditionToDoublingTime["basal"],
 		}
@@ -422,9 +429,9 @@ def buildTfConditionCellSpecifications(
 			)
 
 		# Get metabolite concentrations for the condition
+		exchange_data = sim_data.process.metabolism._getExchangeData(conditionValue["nutrients"])
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			conditionValue["nutrients"]
-			)
+			exchange_data)
 		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[conditionKey]))
 
 		# Create dictionary for the condition
@@ -519,9 +526,9 @@ def buildCombinedConditionCellSpecifications(
 			)
 
 		# Get metabolite concentrations for the condition
+		exchange_data = sim_data.process.metabolism._getExchangeData(conditionValue["nutrients"])
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			conditionValue["nutrients"]
-			)
+			exchange_data)
 		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[conditionKey]))
 
 		# Create dictionary for the condition

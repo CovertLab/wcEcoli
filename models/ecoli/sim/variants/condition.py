@@ -12,9 +12,9 @@ def condition(sim_data, index):
 	sim_data.condition = condition_label
 	# TODO: add new column to condition defs to replace this?
 	if sim_data.conditions[condition_label]["nutrients"] == "minimal_plus_amino_acids":
-		sim_data.external_state.environment.nutrients_time_series_label = "000003_aa"
+		sim_data.external_state.environment.nutrients_time_series_label = "000001_aa"
 	elif sim_data.conditions[condition_label]["nutrients"] == "minimal_minus_oxygen":
-		sim_data.external_state.environment.nutrients_time_series_label = "000004_oxygen_absent"
+		sim_data.external_state.environment.nutrients_time_series_label = "000002_oxygen_absent"
 
 
 	return dict(

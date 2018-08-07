@@ -10,7 +10,6 @@ from __future__ import absolute_import
 from __future__ import division
 
 import collections
-import cPickle
 import time
 
 import numpy as np
@@ -37,7 +36,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	outputDir = None,
 	overwriteExistingFiles = False,
 	logToDiskEvery = 1,
-	simDataLocation = None,
+	simData = None,
 	inheritedStatePath = None,
 	)
 
@@ -110,8 +109,7 @@ class Simulation(object):
 		# doesn't.
 		filepath.makedirs(self._outputDir)
 
-		# Load KB
-		sim_data = cPickle.load(open(self._simDataLocation, "rb"))
+		sim_data = self._simData
 
 		# Initialize simulation from fit KB
 		self._initialize(sim_data)
@@ -129,6 +127,9 @@ class Simulation(object):
 		self._cellCycleComplete = False
 		self._isDead = False
 
+		self._finalized = False
+		self._tracking_environment_change = False
+		
 		for internal_state in self.internal_states.itervalues():
 			internal_state.initialize(self, sim_data)
 
@@ -160,6 +161,19 @@ class Simulation(object):
 		# Make permanent reference to evaluation time listener
 		self._evalTime = self.listeners["EvaluationTime"]
 
+		# Perform initial mass calculations
+		for state in self.internal_states.itervalues():
+			state.calculatePreEvolveStateMass()
+			state.calculatePostEvolveStateMass()
+
+		# Perform initial listener update
+		for listener in self.listeners.itervalues():
+			listener.initialUpdate()
+
+		# Start logging
+		for logger in self.loggers.itervalues():
+			logger.initialize(self)
+
 	def _initLoggers(self):
 		self.loggers = collections.OrderedDict()
 
@@ -175,27 +189,33 @@ class Simulation(object):
 				self._logToDiskEvery
 				)
 
-
-	# -- Run simulation --
+	def initialize_local_environment(self, molecule_ids):
+		self._tracking_environment_change = True
+		self.molecule_ids = molecule_ids
+		self._environment_change = np.empty(len(molecule_ids))
 
 	# Run simulation
 	def run(self):
-		# Perform initial mass calculations
-		for state in self.internal_states.itervalues():
-			state.calculatePreEvolveStateMass()
-			state.calculatePostEvolveStateMass()
+		"""
+		Run the simulation for the time period specified in `self._lengthSec`
+		and then clean up.
+		"""
 
-		# Perform initial listener update
-		for listener in self.listeners.itervalues():
-			listener.initialUpdate()
+		self.run_incremental(self._lengthSec + self.initialTime())
+		self.finalize()
 
-		# Start logging
-		for logger in self.loggers.itervalues():
-			logger.initialize(self)
+	def run_incremental(self, run_until):
+		"""
+		Run the simulation for a given amount of time.
+
+		Args:
+		    run_until (float): absolute time to run the simulation until. 
+		"""
 
 		# Simulate
-		while self.time() < self._lengthSec + self.initialTime() and not self._isDead:
+		while self.time() < run_until and not self._isDead:
 			if self._cellCycleComplete:
+				self.finalize()
 				break
 
 			self._simulationStep += 1
@@ -204,17 +224,36 @@ class Simulation(object):
 
 			self._evolveState()
 
-		# Run post-simulation hooks
-		for hook in self.hooks.itervalues():
-			hook.finalize(self)
+			if self._tracking_environment_change:
+				self.accumulate_environment_change()
 
-		# Divide mother into daughter cells
-		self._divideCellFunction()
+	def accumulate_environment_change(self):
+		self._environment_change += self.external_states['Environment'].get_deltas()
 
-		# Finish logging
-		for logger in self.loggers.itervalues():
-			logger.finalize(self)
+	def get_environment_change(self):
+		return self._environment_change
 
+	def finalize(self):
+		"""
+		Clean up any details once the simulation has finished.
+		Specifically, this calls `finalize` in all hooks,
+		invokes the simulation's `_divideCellFunction` and then
+		shuts down all loggers
+		"""
+
+		if not self._finalized:
+			# Run post-simulation hooks
+			for hook in self.hooks.itervalues():
+				hook.finalize(self)
+
+			# Divide mother into daughter cells
+			self._divideCellFunction()
+
+			# Finish logging
+			for logger in self.loggers.itervalues():
+				logger.finalize(self)
+
+			self._finalized = True
 
 	# Calculate temporal evolution
 	def _evolveState(self):
@@ -230,6 +269,10 @@ class Simulation(object):
 				process.randomState = np.random.RandomState(seed = process.seed)
 
 		self._adjustTimeStep()
+
+		# update environment state
+		for state in self.external_states.itervalues():
+			state.update()
 
 		# Run pre-evolveState hooks
 		for hook in self.hooks.itervalues():
@@ -282,10 +325,6 @@ class Simulation(object):
 		# Calculate mass of partitioned molecules, after evolution
 		for state in self.internal_states.itervalues():
 			state.calculatePostEvolveStateMass()
-
-		# update environment state
-		for state in self.external_states.itervalues():
-			state.update()
 
 		# Update listeners
 		for listener in self.listeners.itervalues():

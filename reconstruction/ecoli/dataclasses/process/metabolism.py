@@ -155,17 +155,40 @@ class Metabolism(object):
 			metaboliteConcentrations.append(value.asNumber(units.mol / units.L))
 
 		# save concentrations as class variables
-		self.nutrient_data = sim_data.external_state.environment.nutrient_data
+		self.exchange_data_dict = sim_data.exchange_data_dict
 		self.concentrationUpdates = ConcentrationUpdates(dict(zip(
 			metaboliteIDs,
 			(units.mol / units.L) * np.array(metaboliteConcentrations)
 			)),
 			raw_data.equilibriumReactions,
-			self.nutrient_data,
+			self.exchange_data_dict,
 		)
-		self.concDict = self.concentrationUpdates.concentrationsBasedOnNutrients("minimal")
+
+		nutrient_label = "minimal"
+		nutrient_label_exchange_data = self._getExchangeData(nutrient_label)
+		self.concDict = self.concentrationUpdates.concentrationsBasedOnNutrients(nutrient_label_exchange_data)
 		self.nutrientsToInternalConc = {}
 		self.nutrientsToInternalConc["minimal"] = self.concDict.copy()
+
+	def _getExchangeData(self, nutrient_label):
+		'''
+		Returns exchange data used in fitter, using nutrient_labels corresponding to
+		files in reconstruction.ecoli.flat.condition.environment
+		'''
+
+		externalExchangeMolecules = self.exchange_data_dict['externalExchangeMolecules'][nutrient_label]
+		importExchangeMolecules = self.exchange_data_dict['importExchangeMolecules'][nutrient_label]
+		importConstrainedExchangeMolecules = self.exchange_data_dict['importConstrainedExchangeMolecules'][nutrient_label]
+		importUnconstrainedExchangeMolecules = self.exchange_data_dict['importUnconstrainedExchangeMolecules'][nutrient_label]
+		secretionExchangeMolecules = self.exchange_data_dict['secretionExchangeMolecules']
+
+		return {
+			"externalExchangeMolecules": externalExchangeMolecules,
+			"importExchangeMolecules": importExchangeMolecules,
+			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
+			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
+			"secretionExchangeMolecules": secretionExchangeMolecules,
+			}
 
 	def _buildMetabolism(self, raw_data, sim_data):
 		"""
@@ -465,7 +488,7 @@ class Metabolism(object):
 
 		return self._compiledConstraints(enzymes, substrates)
 
-	def exchangeConstraints(self, exchangeIDs, coefficient, targetUnits, currentNutrients, concModificationsBasedOnCondition = None):
+	def exchangeConstraints(self, exchangeIDs, coefficient, targetUnits, exchange_data, concModificationsBasedOnCondition = None):
 		"""
 		Called during Metabolism process
 		Returns the homeostatic objective concentrations based on the current nutrients
@@ -474,9 +497,9 @@ class Metabolism(object):
 
 		newObjective = None
 
-		self._unconstrainedExchangeMolecules = self.nutrient_data["importUnconstrainedExchangeMolecules"][currentNutrients]
-		self._constrainedExchangeMolecules = self.nutrient_data["importConstrainedExchangeMolecules"][currentNutrients]
-		concDict = self.concentrationUpdates.concentrationsBasedOnNutrients(currentNutrients, self.nutrientsToInternalConc)
+		self._unconstrainedExchangeMolecules = exchange_data["importUnconstrainedExchangeMolecules"]
+		self._constrainedExchangeMolecules = exchange_data["importConstrainedExchangeMolecules"]
+		concDict = self.concentrationUpdates.concentrationsBasedOnNutrients(exchange_data, self.nutrientsToInternalConc)
 		if concModificationsBasedOnCondition is not None:
 			concDict.update(concModificationsBasedOnCondition)
 		newObjective = dict((key, concDict[key].asNumber(targetUnits)) for key in concDict)
@@ -500,7 +523,7 @@ class ConcentrationUpdates(object):
 	def __init__(self, concDict, equilibriumReactions, nutrientData):
 		self.units = units.getUnit(concDict.values()[0])
 		self.defaultConcentrationsDict = dict((key, concDict[key].asNumber(self.units)) for key in concDict)
-		self.nutrient_data = nutrientData
+		self.exchange_data_dict = nutrientData
 
 		# factor of internal amino acid increase if maino acids present in nutrients
 		self.moleculeScaleFactors = {
@@ -530,18 +553,18 @@ class ConcentrationUpdates(object):
 		self.moleculeSetAmounts = self._addMoleculeAmounts(equilibriumReactions, self.defaultConcentrationsDict)
 
 	# return adjustments to concDict based on nutrient conditions
-	def concentrationsBasedOnNutrients(self, nutrientsLabel = None, nutrientsToInternalConc = None):
+	def concentrationsBasedOnNutrients(self, exchange_data = None, nutrientsToInternalConc = None):
 		concentrationsDict = self.defaultConcentrationsDict.copy()
 
 		metaboliteTargetIds = sorted(concentrationsDict.keys())
 		concentrations = self.units * np.array([concentrationsDict[k] for k in metaboliteTargetIds])
 
-		if nutrientsLabel == None:
+		if exchange_data == None:
 			return dict(zip(metaboliteTargetIds, concentrations))
 
 		nutrientFluxes = {
-			"importConstrainedExchangeMolecules": self.nutrient_data["importConstrainedExchangeMolecules"][nutrientsLabel],
-			"importUnconstrainedExchangeMolecules": self.nutrient_data["importUnconstrainedExchangeMolecules"][nutrientsLabel],
+			"importConstrainedExchangeMolecules": exchange_data["importConstrainedExchangeMolecules"],
+			"importUnconstrainedExchangeMolecules": exchange_data["importUnconstrainedExchangeMolecules"],
 		}
 
 		concDict = dict(zip(metaboliteTargetIds, concentrations))
