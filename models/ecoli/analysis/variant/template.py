@@ -27,13 +27,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		filepath.makedirs(plotOutDir)
 
-		validation_data = cPickle.load(open(validationDataFile, 'rb'))
+		with open(validationDataFile, 'rb') as f:
+			validation_data = cPickle.load(f)
 
 		ap = AnalysisPaths(inputDir, variant_plot=True)
 		variants = ap.get_variants()
 
 		for variant in variants:
-			sim_data = cPickle.load(open(ap.get_variant_kb(variant)))
+			with open(ap.get_variant_kb(variant), 'rb') as f:
+				sim_data = cPickle.load(f)
 
 			for sim_dir in ap.get_cells(variant=[variant]):
 				simOutDir = os.path.join(sim_dir, "simOut")

@@ -27,8 +27,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		filepath.makedirs(plotOutDir)
 
-		sim_data = cPickle.load(open(simDataFile, 'rb'))
-		validation_data = cPickle.load(open(validationDataFile, 'rb'))
+		with open(simDataFile, 'rb') as f:
+			sim_data = cPickle.load(f)
+		with open(validationDataFile, 'rb') as f:
+			validation_data = cPickle.load(f)
 
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot=True)
 

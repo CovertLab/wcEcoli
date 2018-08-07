@@ -26,8 +26,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		filepath.makedirs(plotOutDir)
 
-		sim_data = cPickle.load(open(simDataFile, 'rb'))
-		validation_data = cPickle.load(open(validationDataFile, 'rb'))
+		with open(simDataFile, 'rb') as f:
+			sim_data = cPickle.load(f)
+		with open(validationDataFile, 'rb') as f:
+			validation_data = cPickle.load(f)
 
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
