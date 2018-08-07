@@ -64,6 +64,7 @@ ACTIVE = [
 	"translationSupply.py",
 	"trnaRrnaRatio.py",
 	"trnaSynthetaseDemand.py",
+	"trnaSynthetaseKcatValidation.py",
 	"trnaSynthetaseKinetics.py",
 	"trpOperon.py",
 	"trpRegulation.py",
