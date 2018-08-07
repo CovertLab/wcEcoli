@@ -233,7 +233,9 @@ class Trna(object):
 		self._loadTrnaSynthetaseKinetics(validation_data_raw)
 		self._loadTrnaPairings(validation_data_raw)
 		self._loadAaToTrna(validation_data_raw)
+		self._loadAaToSynthetase(validation_data_raw)
 		self._loadTrnaData(validation_data_raw)
+		self._loadTrnaSynthetaseValidation(validation_data_raw)
 
 	def _loadTrnaSynthetaseKinetics(self, validation_data_raw):
 		self.synthetaseKinetics = {}
@@ -269,6 +271,13 @@ class Trna(object):
 
 			self.aaToTrna[aa].append(row["tRNA ID"])
 
+	def _loadAaToSynthetase(self, validation_data_raw):
+		self.aaToSynthetase = {}
+		for row in validation_data_raw.trnaSynthetaseKinetics:
+			aa = row["amino acid"]
+			synthetase = row["synthetase"]
+			self.aaToSynthetase[aa] = synthetase
+
 	def _loadTrnaData(self, validation_data_raw):
 		self.trnaTo16SRatio = {}
 		for row in validation_data_raw.trna_data:
@@ -280,3 +289,11 @@ class Trna(object):
 				"1.6 per hr": row["ratio to 16SrRNA at 1.6 hr^-1"],
 				"2.5 per hr": row["ratio to 16SrRNA at 2.5 hr^-1"],
 			}
+
+	def _loadTrnaSynthetaseValidation(self, validation_data_raw):
+		self.synthetaseKineticsValidation = {}
+		for row in validation_data_raw.trnaSynthetaseValidation:
+			enzymeId = row["enzymeId"]
+			if enzymeId not in self.synthetaseKineticsValidation:
+				self.synthetaseKineticsValidation[enzymeId] = []
+			self.synthetaseKineticsValidation[enzymeId].append(row)
