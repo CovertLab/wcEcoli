@@ -35,10 +35,8 @@ class BootInner(object):
 			kafka)
 
 class EnvironmentControl(Agent):
-	def __init__(self, kafka):
+	def __init__(self, kafka=default_kafka_config):
 		id = 'environment_control'
-		kafka['subscribe_topics'] = []
-
 		super(EnvironmentControl, self).__init__(id, kafka)
 
 	def trigger_execution(self):
@@ -87,9 +85,11 @@ if __name__ == '__main__':
 		'host': args.kafka_host,
 		'environment_control': args.environment_control,
 		'simulation_receive': args.simulation_receive,
-		'simulation_send': args.simulation_send}
+		'simulation_send': args.simulation_send,
+		'subscribe_topics': []}
 
 	if args.role == 'inner':
 		inner = BootInner(args.id, kafka)
+
 	elif args.role == 'outer':
 		outer = BootOuter(kafka)

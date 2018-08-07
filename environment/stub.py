@@ -2,6 +2,15 @@ import time
 import random
 
 class SimulationStub(object):
+	"""
+	Provide a stub for the simulation.
+
+	This class is not meant to be functional but rather to implement in the simplest way 
+	the interface the agents expect when interacting with the simulation.
+
+	Full interface documented in `environment/inner.py`.
+	"""
+
 	def __init__(self):
 		self.local_time = 0
 		self._tracking_environment_change = False
