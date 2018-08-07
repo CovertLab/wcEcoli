@@ -161,11 +161,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 					'proteinIndex', 'peptideLength'
 					)
 
+
+		print self.ribosomeElongationRate
+		self.elongation_factor = 1.1  # TODO - remove/ensure sequence is long enough with padding
+
 		sequences = buildSequences(
 			self.proteinSequences,
 			proteinIndexes,
 			peptideLengths,
-			self.ribosomeElongationRate
+			self.ribosomeElongationRate * self.elongation_factor
 			)
 
 		sequenceHasAA = (sequences != polymerize.PAD_VALUE)
@@ -185,16 +189,18 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		ribosome_counts = len(self.activeRibosomes.allMolecules())
 
 		# get concentration
+		factor = 1  # TODO - remove
 		mask = np.ones(21, dtype=bool)
 		mask[-2] = False
 		f = aasInSequences[mask] / np.sum(aasInSequences[mask])
 		synthetase_conc = (counts_to_molar * synthetase_counts)[mask]
 		aa_conc = (counts_to_molar * aa_counts)[mask]
-		uncharged_trna_conc = (counts_to_molar * uncharged_trna_counts)[mask]
-		charged_trna_conc = (counts_to_molar * charged_trna_counts)[mask]
+		uncharged_trna_conc = (counts_to_molar * uncharged_trna_counts * factor)[mask]
+		charged_trna_conc = (counts_to_molar * charged_trna_counts * factor)[mask]
 		total_trna_conc = (counts_to_molar * total_trna_counts)[mask]
 		ribosome_conc = (counts_to_molar * ribosome_counts)
 
+		# import ipdb; ipdb.set_trace()
 		updated_uncharged_trna_conc, updated_charged_trna_conc, v_rib = self.calculate_trna_charging(
 			synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f
 			)
@@ -211,13 +217,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 			countAasRequested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
 
-			countAasRequested = np.fmin(countAasRequested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
+			countAasRequested = np.fmin(countAasRequested, aasInSequences/self.elongation_factor) # Check if this is required. It is a better request but there may be fewer elongations.
 		else:
 			countAasRequested = aasInSequences
-
-		# self.aas.requestIs(
-		# 	countAasRequested
-		# 	)
 
 		charging_aa_request = v_rib * f * self._sim.timeStepSec() / counts_to_molar.asNumber(uM)
 		supply_aa_request = countAasRequested[mask]
@@ -279,7 +281,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.proteinSequences,
 			proteinIndexes,
 			peptideLengths,
-			self.ribosomeElongationRate
+			self.ribosomeElongationRate * self.elongation_factor
 			)
 
 		if sequences.size == 0:
