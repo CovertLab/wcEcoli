@@ -24,6 +24,7 @@ LIST_OF_DICT_FILENAMES = (
 	"essentialGenes.tsv",
 	"geneFunctions.tsv",
 	"trnaSynthetaseKinetics.tsv",
+	"trnaSynthetaseValidation.tsv",
 	"trnaPairings.tsv",
 	"trna_data.tsv",
 	)
