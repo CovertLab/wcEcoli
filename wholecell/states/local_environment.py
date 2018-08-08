@@ -21,7 +21,7 @@ import wholecell.states.external_state
 import wholecell.views.view
 
 from wholecell.utils import units
-from wholecell.containers.environment_objects_container import EnvironmentObjectsContainer
+from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
@@ -64,9 +64,9 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		self.nutrients = self.nutrients_time_series[0][1]
 		self._times = [t[0] for t in self.nutrients_time_series]
 
-		# create container for molecule concentrations
-		self.container = EnvironmentObjectsContainer(self._moleculeIDs)
-		self.container.concentrationsIs(self._concentrations)
+		# create bulk container for molecule concentrations. This uses concentrations instead of counts.
+		self.container = BulkObjectsContainer(self._moleculeIDs, dtype=np.float64)
+		self.container.countsIs(self._concentrations)
 
 		# the length of the longest nutrients name, for padding in nutrients listener
 		self._nutrients_name_max_length = len(max([t[1] for t in self.nutrients_time_series], key=len))
@@ -81,7 +81,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		if self.nutrients != self.nutrients_time_series[current_index][1]:
 			self.nutrients = self.nutrients_time_series[current_index][1]
 			self._concentrations = np.array([value.asNumber() for id, value in self.environment_dict[self.nutrients].iteritems()])
-			self.container.concentrationsIs(self._concentrations)
+			self.container.countsIs(self._concentrations)
 
 		if ASSERT_POSITIVE_CONCENTRATIONS and (self._concentrations < 0).any():
 			raise NegativeConcentrationError(
@@ -123,7 +123,7 @@ class EnvironmentViewBase(object):
 
 	# Interface to State
 	def _updateQuery(self):
-		self._totalIs(self._state.container._concentrations[self._containerIndexes])
+		self._totalIs(self._state.container._counts[self._containerIndexes])
 
 
 	def _totalIs(self, value):
