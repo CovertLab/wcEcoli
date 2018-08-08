@@ -27,10 +27,10 @@ The command line interface for the system is is `environment/boot.py`, and has a
 
 The available roles are
 
-* outer - the larger environmental context
-* inner - each individual simulation
-* trigger - start the execution of the system
-* shutdown - stop the execution of the system
+* `outer` - the larger environmental context
+* `inner` - each individual simulation
+* `trigger` - start the execution of the system
+* `shutdown` - stop the execution of the system
 
 In the first tab start the environmental context:
 
