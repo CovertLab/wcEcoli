@@ -60,9 +60,6 @@ class Metabolism(wholecell.processes.process.Process):
 			sim_data.external_state.environment.nutrients_time_series_label][0][1]
 		self.exchange_data = sim_data.process.metabolism.getExchangeData(nutrient_label)
 
-		#TODO (Eran) this can be remove once transport kinetics process is operating
-		self.exchange_data_dict = sim_data.exchange_data_dict.copy()
-
 		# Load constants
 		self.nAvogadro = sim_data.constants.nAvogadro
 		self.cellDensity = sim_data.constants.cellDensity
