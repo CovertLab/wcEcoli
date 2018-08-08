@@ -39,6 +39,8 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		self._moleculeIDs = None
 		self._concentrations = None
 
+		self.save_accumulated_deltas = False
+
 		super(LocalEnvironment, self).__init__(*args, **kwargs)
 
 
@@ -70,7 +72,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 		# the length of the longest nutrients name, for padding in nutrients listener
 		self._nutrients_name_max_length = len(max([t[1] for t in self.nutrients_time_series], key=len))
-
+		
 
 	def update(self):
 		current_index = [i for i, t in enumerate(self._times) if self.time()>=t][-1]
@@ -93,6 +95,21 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 					for molIndex in np.where(self._concentrations < 0)[0]
 					)
 				)
+
+
+	# This sets accumulate_deltas to true and initializes the dictionary of save total_deltas
+	def save_deltas(self):
+		self.save_accumulated_deltas = True
+		self.total_deltas = dict((id,0) for id in self._moleculeIDs)
+
+
+	def accumulate_deltas(self, molecule_ids, counts):
+		for id, count in zip(molecule_ids, counts):
+			self.total_deltas[id] += count
+
+
+	def clear_accumulated_deltas(self):
+		self.total_deltas = dict.fromkeys(self.total_deltas, 0)
 
 
 	def tableCreate(self, tableWriter):
@@ -157,7 +174,9 @@ class EnvironmentView(EnvironmentViewBase):
 		return self._totalConcentrations()
 
 
-	def countsInc(self, counts):
-		# TODO (Eran) accumulate deltas to pass to external environment
+	def countsInc(self, molecule_ids, counts):
+		if self._state.save_accumulated_deltas:
+			self._state.accumulate_deltas(molecule_ids, counts)
+
 		return
 

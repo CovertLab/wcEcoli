@@ -374,7 +374,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# change in nutrient counts, used in non-infinite environments
 		delta_nutrients = ((1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes()).asNumber().astype(int)
-		self.environment_nutrients.countsInc(delta_nutrients)
+
+		self.environment_nutrients.countsInc(self.environment_nutrients_names, delta_nutrients)
 
 
 		# Write outputs to listeners
@@ -440,7 +441,7 @@ class Metabolism(wholecell.processes.process.Process):
 		for name, conc in zip(self.environment_nutrients_names, self.environment_nutrients.totalConcentrations()):
 
 			# only check nutrients in importExchangeMolecules
-			# TODO (Eran) importExchangeMolecules can exclude some molecules that
+			# TODO (Eran) importExchangeMolecules could potentially exclude some molecules that
 			# were not in any of the initial environments, but came in through other means.
 			if name in self.exchange_data['importExchangeMolecules']:
 				# if concentration < threshold, constrain import to 0

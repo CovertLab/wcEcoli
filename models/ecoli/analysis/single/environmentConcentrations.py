@@ -245,8 +245,6 @@ def autoscale_y(ax,margin=0.1):
 	ax -- a matplotlib axes object
 	margin -- the fraction of the total height of the y-data to pad the upper and lower ylims"""
 
-	# import numpy as np
-
 	def get_bottom_top(line):
 		xd = line.get_xdata()
 		yd = line.get_ydata()
