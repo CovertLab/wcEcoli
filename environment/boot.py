@@ -6,7 +6,6 @@ from environment.agent import Agent
 from environment.outer import Outer
 from environment.inner import Inner
 from environment.stub import SimulationStub
-from confluent_kafka import Producer
 
 default_kafka_config = {
 	'host': 'localhost:9092',
@@ -63,7 +62,7 @@ if __name__ == '__main__':
 
 	parser.add_argument(
 		'--id',
-		default=str(uuid.uuid1()),
+		default='None',
 		help='unique identifier for simulation agent')
 
 	parser.add_argument(
@@ -99,3 +98,16 @@ if __name__ == '__main__':
 
 	elif args.role == 'outer':
 		outer = BootOuter(kafka)
+
+	elif args.role == 'trigger':
+		control = EnvironmentControl(kafka)
+		control.trigger_execution()
+		control.shutdown()
+
+	elif args.role == 'shutdown':
+		control = EnvironmentControl(kafka)
+		if args.id == 'None':
+			control.shutdown_environment()
+		else:
+			control.shutdown_simulation(args.id)
+		control.shutdown()
