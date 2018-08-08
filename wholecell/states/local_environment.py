@@ -72,7 +72,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 		# the length of the longest nutrients name, for padding in nutrients listener
 		self._nutrients_name_max_length = len(max([t[1] for t in self.nutrients_time_series], key=len))
-		
+
 
 	def update(self):
 		current_index = [i for i, t in enumerate(self._times) if self.time()>=t][-1]
@@ -179,4 +179,3 @@ class EnvironmentView(EnvironmentViewBase):
 			self._state.accumulate_deltas(molecule_ids, counts)
 
 		return
-

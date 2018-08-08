@@ -28,11 +28,6 @@ from wholecell.utils import units
 
 VERBOSE = False
 
-# threshold (units.mmol / units.L) separates environment concentrations that are
-# import constrained and import unconstrained.
-# These values are also implemented in metabolism
-IMPORT_CONSTRAINT_THRESHOLD =  1.0
-GLC_DEFAULT_UPPER_BOUND = 50 * (units.mmol / units.g / units.h)
 
 class SimulationDataEcoli(object):
 	""" SimulationDataEcoli """
@@ -48,8 +43,6 @@ class SimulationDataEcoli(object):
 
 		self._addConditionData(raw_data)
 
-		# create a dict with the exchange data for all nutrient conditions
-		self.exchange_data_dict = self._getExchangeData(raw_data)
 		self.condition = "basal"
 
 		self.doubling_time = self.conditionToDoublingTime[self.condition]
@@ -117,84 +110,6 @@ class SimulationDataEcoli(object):
 
 		self.dNtpOrder = ["A", "C", "G", "T"]
 
-
-	def getExchangeData(self, raw_data):
-		'''
-		Creates a dictionary that specifies categories of molecules exchanged between
-		 cell and environment. The categories are used to set different constraints
-		 on FBA.
-
-		The categories of molecules include:
-			- externalExchangeMolecules: All exchange molecules, both import and
-				secretion exchanged molecules.
-			- importExchangeMolecules: molecules that can be imported from the
-				environment into the cell.
-			- importConstrainedExchangeMolecules: exchange molecules that have
-				an upper bound on their flux.
-			- importUnconstrainedExchangeMolecules: exchange molecules that do
-				not have an upper bound on their flux.
-			- secretionExchangeMolecules: molecules that can be secreted by the
-				cell into the environment.
-
-		Notes
-		-----
-			- if the output does not exactly match previous exchange_data, it could
-			 influence FBA results.
-		'''
-		externalExchangeMolecules = {}
-		importExchangeMolecules = {}
-		secretionExchangeMolecules = set()
-		importConstrainedExchangeMolecules = {}
-		importUnconstrainedExchangeMolecules = {}
-		nutrientsList = [(x, getattr(raw_data.condition.environment, x)) for x in dir(raw_data.condition.environment) if not x.startswith("__")]
-		for nutrientsName, nutrients in nutrientsList:
-			externalExchangeMolecules[nutrientsName] = set()
-			importExchangeMolecules[nutrientsName] = set()
-			importConstrainedExchangeMolecules[nutrientsName] = {}
-			importUnconstrainedExchangeMolecules[nutrientsName] = []
-			for nutrient in nutrients:
-				# continue to next iteration if nutrients concentrations are zero
-				if nutrient["concentration"].asNumber() == 0:
-					continue
-
-				# add to import constrained if GLC
-				elif nutrient["molecule id"]  == 'GLC[p]':
-					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = GLC_DEFAULT_UPPER_BOUND
-					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-
-				# add to import constrained if concentration < threshold
-				elif nutrient["concentration"].asNumber() < IMPORT_CONSTRAINT_THRESHOLD:
-					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = 0 * (units.mmol / units.g / units.h)
-					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-
-				# add to import unconstrained if concentration >= threshold
-				else:
-					importUnconstrainedExchangeMolecules[nutrientsName].append(nutrient["molecule id"])
-					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-
-			for secretion in raw_data.secretions:
-				if secretion["lower bound"] and secretion["upper bound"]:
-					# "non-growth associated maintenance", not included in our metabolic model
-					continue
-
-				else:
-					externalExchangeMolecules[nutrientsName].add(secretion["molecule id"])
-					secretionExchangeMolecules.add(secretion["molecule id"])
-
-			externalExchangeMolecules[nutrientsName] = sorted(externalExchangeMolecules[nutrientsName])
-			importExchangeMolecules[nutrientsName] = sorted(importExchangeMolecules[nutrientsName])
-		secretionExchangeMolecules = sorted(secretionExchangeMolecules)
-
-		return {
-			"externalExchangeMolecules": externalExchangeMolecules,
-			"importExchangeMolecules": importExchangeMolecules,
-			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
-			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
-			"secretionExchangeMolecules": secretionExchangeMolecules,
-			}
 
 
 	def _addConditionData(self, raw_data):

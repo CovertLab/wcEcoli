@@ -215,7 +215,7 @@ def fitSimData_1(
 			print "Updating mass in condition {}".format(condition_label)
 		spec = cellSpecs[condition_label]
 
-		exchange_data = sim_data.process.metabolism._getExchangeData(condition["nutrients"])
+		exchange_data = sim_data.process.metabolism.getExchangeData(condition["nutrients"])
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 			exchange_data)
 
@@ -326,7 +326,7 @@ def buildBasalCellSpecifications(
 	cellSpecs = {}
 
 	nutrient_label = "minimal"
-	exchange_data = sim_data.process.metabolism._getExchangeData(nutrient_label)
+	exchange_data = sim_data.process.metabolism.getExchangeData(nutrient_label)
 	cellSpecs["basal"] = {
 		"concDict": sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 			exchange_data),
@@ -429,7 +429,7 @@ def buildTfConditionCellSpecifications(
 			)
 
 		# Get metabolite concentrations for the condition
-		exchange_data = sim_data.process.metabolism._getExchangeData(conditionValue["nutrients"])
+		exchange_data = sim_data.process.metabolism.getExchangeData(conditionValue["nutrients"])
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 			exchange_data)
 		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[conditionKey]))
@@ -526,7 +526,7 @@ def buildCombinedConditionCellSpecifications(
 			)
 
 		# Get metabolite concentrations for the condition
-		exchange_data = sim_data.process.metabolism._getExchangeData(conditionValue["nutrients"])
+		exchange_data = sim_data.process.metabolism.getExchangeData(conditionValue["nutrients"])
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 			exchange_data)
 		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[conditionKey]))

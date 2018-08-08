@@ -91,7 +91,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Identify all molecules in external environment that can be exchanged for the given time series
 		# TODO (Eran) initialize externalExchangeMolecules without exchange_data_dict, based on current state
-		externalExchangedMolecules = sim_data.exchange_data_dict["secretionExchangeMolecules"]
+		externalExchangedMolecules = sim_data.process.metabolism.exchange_data_dict["secretionExchangeMolecules"]
 		self.metaboliteNamesFromNutrients = set()
 
 		for time, nutrient_label, volume in sim_data.external_state.environment.nutrients_time_series[
