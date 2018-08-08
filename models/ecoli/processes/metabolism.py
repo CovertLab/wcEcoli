@@ -56,8 +56,9 @@ class Metabolism(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(Metabolism, self).initialize(sim, sim_data)
 
-		# initialize exchange_data based on initial nutrient condition
-		self.exchange_data = self._initExchangeData(sim_data)
+		nutrient_label = sim_data.external_state.environment.nutrients_time_series[
+			sim_data.external_state.environment.nutrients_time_series_label][0][1]
+		self.exchange_data = sim_data.process.metabolism.getExchangeData(nutrient_label)
 
 		#TODO (Eran) this can be remove once transport kinetics process is operating
 		self.exchange_data_dict = sim_data.exchange_data_dict.copy()
@@ -99,7 +100,7 @@ class Metabolism(wholecell.processes.process.Process):
 		for time, nutrient_label, volume in sim_data.external_state.environment.nutrients_time_series[
 				nutrients_time_series_label]:
 			# get exchange data for each nutrient condition in time series
-			nutrient_label_exchange_data = sim_data.process.metabolism._getExchangeData(nutrient_label)
+			nutrient_label_exchange_data = sim_data.process.metabolism.getExchangeData(nutrient_label)
 			externalExchangedMolecules += nutrient_label_exchange_data["importExchangeMolecules"]
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
@@ -419,44 +420,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.fba.setExternalMoleculeLevels(externalMoleculeLevels)
 
-
-	def _initExchangeData(self, sim_data):
-		'''
-		Returns a dictionary with the five categories of exchange data used by FBA.
-
-		The categories of molecules include:
-			- externalExchangeMolecules: All exchange molecules, both import and
-				secretion exchanged molecules.
-			- importExchangeMolecules: molecules that can be imported from the
-				environment into the cell.
-			- importConstrainedExchangeMolecules: exchange molecules that have
-				an upper bound on their flux.
-			- importUnconstrainedExchangeMolecules: exchange molecules that do
-				not have an upper bound on their flux.
-			- secretionExchangeMolecules: molecules that can be secreted by the
-				cell into the environment.
-
-		'''
-
-		exchange_data_dict = sim_data.exchange_data_dict.copy()
-		nutrient_label = sim_data.external_state.environment.nutrients_time_series[
-			sim_data.external_state.environment.nutrients_time_series_label
-			][0][1]
-
-		# all nutrients from nutrients_def
-		externalExchangeMolecules = exchange_data_dict['externalExchangeMolecules'][nutrient_label]
-		importExchangeMolecules = exchange_data_dict['importExchangeMolecules'][nutrient_label]
-		importConstrainedExchangeMolecules = exchange_data_dict['importConstrainedExchangeMolecules'][nutrient_label]
-		importUnconstrainedExchangeMolecules = exchange_data_dict['importUnconstrainedExchangeMolecules'][nutrient_label]
-		secretionExchangeMolecules = exchange_data_dict['secretionExchangeMolecules']
-
-		return {
-			"externalExchangeMolecules": externalExchangeMolecules,
-			"importExchangeMolecules": importExchangeMolecules,
-			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
-			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
-			"secretionExchangeMolecules": secretionExchangeMolecules,
-			}
 
 	def _updateImportConstraint(self):
 		'''

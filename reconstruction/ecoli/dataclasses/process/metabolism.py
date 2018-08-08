@@ -165,12 +165,12 @@ class Metabolism(object):
 		)
 
 		nutrient_label = "minimal"
-		nutrient_label_exchange_data = self._getExchangeData(nutrient_label)
+		nutrient_label_exchange_data = self.getExchangeData(nutrient_label)
 		self.concDict = self.concentrationUpdates.concentrationsBasedOnNutrients(nutrient_label_exchange_data)
 		self.nutrientsToInternalConc = {}
 		self.nutrientsToInternalConc["minimal"] = self.concDict.copy()
 
-	def _getExchangeData(self, nutrient_label):
+	def getExchangeData(self, nutrient_label):
 		'''
 		Returns exchange data used in fitter, using nutrient_labels corresponding to
 		files in reconstruction.ecoli.flat.condition.environment
@@ -559,7 +559,7 @@ class ConcentrationUpdates(object):
 		metaboliteTargetIds = sorted(concentrationsDict.keys())
 		concentrations = self.units * np.array([concentrationsDict[k] for k in metaboliteTargetIds])
 
-		if exchange_data == None:
+		if exchange_data is None:
 			return dict(zip(metaboliteTargetIds, concentrations))
 
 		nutrientFluxes = {

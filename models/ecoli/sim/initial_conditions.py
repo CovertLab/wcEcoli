@@ -129,7 +129,7 @@ def initializeSmallMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
 	# Get exchange data for the current nutrient state
 	nutrient_label = sim_data.external_state.environment.nutrients_time_series[
 		sim_data.external_state.environment.nutrients_time_series_label][0][1]
-	exchange_data = sim_data.process.metabolism._getExchangeData(nutrient_label)
+	exchange_data = sim_data.process.metabolism.getExchangeData(nutrient_label)
 	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 		exchange_data)
 	concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.condition]))

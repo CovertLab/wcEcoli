@@ -37,7 +37,7 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.metaboliteNamesFromNutrients = set()
 		for time, nutrient_label, volume in sim_data.external_state.environment.nutrients_time_series[
 				sim_data.external_state.environment.nutrients_time_series_label]:
-			exchange_data = sim_data.process.metabolism._getExchangeData(nutrient_label)
+			exchange_data = sim_data.process.metabolism.getExchangeData(nutrient_label)
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 					exchange_data, sim_data.process.metabolism.nutrientsToInternalConc

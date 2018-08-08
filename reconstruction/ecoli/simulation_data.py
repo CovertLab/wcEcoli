@@ -118,7 +118,7 @@ class SimulationDataEcoli(object):
 		self.dNtpOrder = ["A", "C", "G", "T"]
 
 
-	def _getExchangeData(self, raw_data):
+	def getExchangeData(self, raw_data):
 		'''
 		Creates a dictionary that specifies categories of molecules exchanged between
 		 cell and environment. The categories are used to set different constraints

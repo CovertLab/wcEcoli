@@ -83,7 +83,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 			self._concentrations = np.array([value.asNumber() for id, value in self.environment_dict[self.nutrients].iteritems()])
 			self.container.concentrationsIs(self._concentrations)
 
-		if ASSERT_POSITIVE_CONCENTRATIONS and not (self._concentrations >= 0).all():
+		if ASSERT_POSITIVE_CONCENTRATIONS and (self._concentrations < 0).any():
 			raise NegativeConcentrationError(
 					"Negative environment concentration(s) in self._concentrations:\n"
 					+ "\n".join(
