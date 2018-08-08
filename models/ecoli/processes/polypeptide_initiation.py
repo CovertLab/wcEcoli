@@ -55,7 +55,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.mRnas = self.bulkMoleculesView(mrnaIds)
 
 	def calculateRequest(self):
-		current_nutrients = self._external_states['Environment'].nutrients
+		current_nutrients = self._external_states['LocalEnvironment'].nutrients
 
 		self.ribosome30S.requestAll()
 		self.ribosome50S.requestAll()

@@ -31,21 +31,19 @@ ASSERT_POSITIVE_CONCENTRATIONS = True
 class NegativeConcentrationError(Exception):
 	pass
 
-class Environment(wholecell.states.external_state.ExternalState):
-	_name = 'Environment'
+class LocalEnvironment(wholecell.states.external_state.ExternalState):
+	_name = 'LocalEnvironment'
 
 	def __init__(self, *args, **kwargs):
 		self.container = None
 		self._moleculeIDs = None
 		self._concentrations = None
-		self._volume = None
-		self._infinite_environment = None
 
-		super(Environment, self).__init__(*args, **kwargs)
+		super(LocalEnvironment, self).__init__(*args, **kwargs)
 
 
 	def initialize(self, sim, sim_data):
-		super(Environment, self).initialize(sim, sim_data)
+		super(LocalEnvironment, self).initialize(sim, sim_data)
 
 		self._processIDs = sim.processes.keys()
 
@@ -66,18 +64,9 @@ class Environment(wholecell.states.external_state.ExternalState):
 		self.nutrients = self.nutrients_time_series[0][1]
 		self._times = [t[0] for t in self.nutrients_time_series]
 
-		# get volume if volume is infinite (default), countsInc is skipped
-		self._volume = self.nutrients_time_series[0][2]
-		if np.isinf(self._volume):
-			self._infinite_environment = True
-		else:
-			self._infinite_environment = False
-			self._volume = self._volume * (units.L)
-
 		# create container for molecule concentrations
 		self.container = EnvironmentObjectsContainer(self._moleculeIDs)
 		self.container.concentrationsIs(self._concentrations)
-		self.container.volumeIs(self._volume)
 
 		# the length of the longest nutrients name, for padding in nutrients listener
 		self._nutrients_name_max_length = len(max([t[1] for t in self.nutrients_time_series], key=len))
@@ -94,13 +83,6 @@ class Environment(wholecell.states.external_state.ExternalState):
 			self._concentrations = np.array([value.asNumber() for id, value in self.environment_dict[self.nutrients].iteritems()])
 			self.container.concentrationsIs(self._concentrations)
 
-			self._volume = self.nutrients_time_series[current_index][2]
-			if np.isinf(self._volume):
-				self._infinite_environment = True
-			else:
-				self._infinite_environment = False
-				self._volume = float(self._volume) * (units.L)
-
 		if ASSERT_POSITIVE_CONCENTRATIONS and not (self._concentrations >= 0).all():
 			raise NegativeConcentrationError(
 					"Negative environment concentration(s) in self._concentrations:\n"
@@ -111,11 +93,6 @@ class Environment(wholecell.states.external_state.ExternalState):
 					for molIndex in np.where(self._concentrations < 0)[0]
 					)
 				)
-
-
-	def _counts_to_concentration(self, counts):
-		concentrations = counts / (self._volume * self._nAvogadro).asNumber(VOLUME_UNITS / COUNTS_UNITS)
-		return concentrations
 
 
 	def tableCreate(self, tableWriter):
@@ -129,12 +106,11 @@ class Environment(wholecell.states.external_state.ExternalState):
 		tableWriter.append(
 			nutrientCondition = self.nutrients.ljust(self._nutrients_name_max_length),
 			nutrientConcentrations=self._concentrations,
-			volume=self._volume,
 			)
 
 
 class EnvironmentViewBase(object):
-	_stateID = 'Environment'
+	_stateID = 'LocalEnvironment'
 
 	def __init__(self, state, process, query): # weight, priority, coupling id, option to not evaluate the query
 		self._state = state
@@ -155,10 +131,7 @@ class EnvironmentViewBase(object):
 
 
 	def _countsInc(self, counts):
-		assert (np.size(counts) == np.size(self._containerIndexes)) or np.size(counts) == 1, 'Inappropriately sized values'
-		change_concentrations = self._state._counts_to_concentration(counts)
-
-		self._state._concentrations[self._containerIndexes] += change_concentrations
+		return
 
 
 	# Interface to Process
@@ -185,7 +158,6 @@ class EnvironmentView(EnvironmentViewBase):
 
 
 	def countsInc(self, counts):
-		if self._state._infinite_environment:
-			return
+		# TODO (Eran) accumulate deltas to pass to external environment
+		return
 
-		self._countsInc(counts)

@@ -18,7 +18,7 @@ import warnings
 
 import wholecell.states.bulk_molecules
 import wholecell.states.unique_molecules
-import wholecell.states.environment
+import wholecell.states.local_environment
 import numpy as np
 
 from wholecell.listeners.listener import WriteMethod
@@ -72,8 +72,8 @@ class Process(object):
 
 	# Construct views
 	def environmentView(self, moleculeIDs):
-		return wholecell.states.environment.EnvironmentView(
-			self._external_states['Environment'], self, moleculeIDs)
+		return wholecell.states.local_environment.EnvironmentView(
+			self._external_states['LocalEnvironment'], self, moleculeIDs)
 
 
 	def bulkMoleculesView(self, moleculeIDs):

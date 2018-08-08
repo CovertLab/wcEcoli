@@ -99,12 +99,6 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("condition", "timeseries", "000002_oxygen_absent.tsv"),
 	os.path.join("condition", "timeseries", "000003_add_aa.tsv"),
 	os.path.join("condition", "timeseries", "000004_cut_oxygen.tsv"),
-	os.path.join("condition", "timeseries", "000005_basal_finite.tsv"),
-	os.path.join("condition", "timeseries", "000006_aa_finite.tsv"),
-	os.path.join("condition", "timeseries", "000007_oxygen_absent_finite.tsv"),
-	os.path.join("condition", "timeseries", "000008_add_aa_finite.tsv"),
-	os.path.join("condition", "timeseries", "000009_cut_oxygen_finite.tsv"),
-	os.path.join("condition", "timeseries", "000010_example.tsv"),
 	)
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = ("parameters.tsv", "mass_parameters.tsv")

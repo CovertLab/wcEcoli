@@ -5,7 +5,7 @@ from wholecell.sim.simulation import Simulation
 # States
 from wholecell.states.bulk_molecules import BulkMolecules
 from wholecell.states.unique_molecules import UniqueMolecules
-from wholecell.states.environment import Environment
+from wholecell.states.local_environment import LocalEnvironment
 
 # Processes
 from models.ecoli.processes.complexation import Complexation
@@ -52,7 +52,7 @@ class EcoliSimulation(Simulation):
 		)
 
 	_externalStateClasses = (
-		Environment,
+		LocalEnvironment,
 		)
 
 	_processClasses = (
