@@ -36,7 +36,7 @@ In the first tab start the environmental context:
 
     0> python environment/boot.py outer
 
-This has started the environmental process and is waiting for simulations initialize and register. Let's do that now.
+This has started the environmental process and is waiting for simulations initialize and register. Let's do that now. In a new tab:
 
     1> python environment/boot.py inner --id 1
 
