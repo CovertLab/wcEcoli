@@ -48,7 +48,7 @@ class Metabolism(object):
 		else:
 			self.kinetic_objective_weight = sim_data.constants.metabolismKineticObjectiveWeightQuadratic
 
-		self.exchange_data_dict = self.getExchangeDataDict(raw_data)
+		self.exchange_data_dict = self._getExchangeDataDict(raw_data)
 
 		self._buildBiomass(raw_data, sim_data)
 		self._buildMetabolism(raw_data, sim_data)
@@ -178,7 +178,7 @@ class Metabolism(object):
 
 
 
-	def getExchangeDataDict(self, raw_data):
+	def _getExchangeDataDict(self, raw_data):
 		'''
 		Creates a dictionary that specifies categories of molecules exchanged between
 		 cell and environment. The categories are used to set different constraints
