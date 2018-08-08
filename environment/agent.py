@@ -135,6 +135,8 @@ class Agent(object):
                 present will throw errors.
 		"""
 
+		print('<-- ' + topic + ': ' + str(message))
+
 		self.producer.flush()
 		self.producer.poll(0)
 		self.producer.produce(

@@ -26,6 +26,7 @@ class Outer(Agent):
 		self.run_for = run_for
 		self.time = 0
 		self.simulations = {}
+		self.shutting_down = False
 
 		kafka['subscribe_topics'] = [
 			kafka['simulation_send'],
@@ -49,7 +50,7 @@ class Outer(Agent):
 				'concentrations': concentrations,
 				'run_for': run_for})
 
-	def ready_to_advance(self, time):
+	def ready_to_advance(self):
 		"""
 		Predicate to determine if the environment has heard back from all known simulations,
 		in which case the environment can proceed to the next step.
@@ -62,6 +63,12 @@ class Outer(Agent):
 				break
 
 		return ready
+
+	def send_shutdown(self):
+		for id, simulation in self.simulations.iteritems():
+			self.send(self.kafka['simulation_receive'], {
+				'id': id,
+				'event': 'SHUTDOWN_SIMULATION'})
 
 	def receive(self, topic, message):
 		"""
@@ -86,9 +93,11 @@ class Outer(Agent):
 		    until it has heard from each simulation, integrate their changes and then calculate
 		    the new local environment for each simulation and respond with an `ENVIRONMENT_UPDATED`
 		    message.
+		* SIMULATION_SHUTDOWN: Received when the simulation has completed. Once all simulations
+		    have reported back that they have shut down the environment can complete.
 		"""
 
-		print(topic + ': ' + str(message))
+		print('--> ' + topic + ': ' + str(message))
 
 		if message['event'] == 'SIMULATION_INITIALIZED':
 			self.simulations[message['id']] = {
@@ -101,23 +110,34 @@ class Outer(Agent):
 			self.send_concentrations(self.concentrations, self.run_for)
 
 		if message['event'] == 'SIMULATION_ENVIRONMENT':
-			self.simulations[message['id']]['changes'] = message['changes']
-			self.simulations[message['id']]['time'] = message['time']
-			self.simulations[message['id']]['last_message_id'] = message['message_id']
+			if message['id'] in self.simulations:
+				simulation = self.simulations[message['id']]
 
-			if self.ready_to_advance(self.time):
-				self.time += self.run_for
-				self.send_concentrations(self.concentrations, self.run_for)
+				if message['message_id'] == simulation['message_id']:
+					simulation['changes'] = message['changes']
+					simulation['time'] = message['time']
+					simulation['last_message_id'] = message['message_id']
+
+					if self.ready_to_advance():
+						if self.shutting_down:
+							self.send_shutdown()
+						else:
+							self.time += self.run_for
+							self.send_concentrations(self.concentrations, self.run_for)
 
 		if message['event'] == 'SHUTDOWN_ENVIRONMENT':
-			for id, simulation in self.simulations.iteritems():
-				self.send(self.kafka['simulation_receive'], {
-					'id': id,
-					'event': 'SHUTDOWN_SIMULATION'})
+			if len(self.simulations) > 0:
+				if self.ready_to_advance():
+					self.send_shutdown()
+				else:
+					self.shutting_down = True
+			else:
+				self.shutdown()
 
 		if message['event'] == 'SIMULATION_SHUTDOWN':
-			gone = self.simulations.pop(message['id'], {})
-			print('simulation shutdown: ' + str(gone))
+			if message['id'] in self.simulations:
+				gone = self.simulations.pop(message['id'], {'id': -1})
+				print('simulation shutdown: ' + str(gone))
 
-			if not any(self.simulations):
-				self.shutdown()
+				if not any(self.simulations):
+					self.shutdown()

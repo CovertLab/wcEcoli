@@ -12,7 +12,8 @@ default_kafka_config = {
 	'host': 'localhost:9092',
 	'simulation_send': 'environment_listen',
 	'simulation_receive': 'environment_broadcast',
-	'environment_control': 'environment_control'}
+	'environment_control': 'environment_control',
+	'subscribe_topics': []}
 
 class BootOuter(object):
 	def __init__(self, kafka):
@@ -46,6 +47,11 @@ class EnvironmentControl(Agent):
 	def shutdown_environment(self):
 		self.send(self.kafka['environment_control'], {
 			'event': 'SHUTDOWN_ENVIRONMENT'})
+
+	def shutdown_simulation(self, id):
+		self.send(self.kafka['simulation_receive'], {
+			'event': 'SHUTDOWN_SIMULATION',
+			'id': id})
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(

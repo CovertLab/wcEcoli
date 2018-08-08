@@ -96,7 +96,7 @@ class Inner(Agent):
 		"""
 
 		if message['id'] == self.id:
-			print(topic + ': ' + str(message))
+			print('--> ' + topic + ': ' + str(message))
 
 			if message['event'] == 'ENVIRONMENT_UPDATED':
 				self.simulation.set_local_environment(
