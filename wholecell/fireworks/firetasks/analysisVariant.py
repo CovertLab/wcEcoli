@@ -8,8 +8,6 @@ If the `DEBUG_GC` environment variable is true, enable memory leak detection.
 from __future__ import absolute_import
 from __future__ import division
 
-import importlib
-
 from fireworks import explicit_serialize
 
 from wholecell.fireworks.firetasks.analysisBase import AnalysisBase
@@ -29,12 +27,13 @@ class AnalysisVariantTask(AnalysisBase):
 	optional_params = [
 		"plots_to_run",  # absent or empty => run all active analysis plots
 		"output_filename_prefix",
+		"cpus",
 		]
+	MODULE_PATH = 'models.ecoli.analysis.variant'
 	ACTIVE_MODULES = models.ecoli.analysis.variant.ACTIVE
 
-	def module_and_args(self, module_filename):
-		mod = importlib.import_module("models.ecoli.analysis.variant." + module_filename[:-3])
-		args = (
+	def plotter_args(self, module_filename):
+		return (
 			self["input_directory"],
 			self["output_plots_directory"],
 			self['output_filename_prefix'] + module_filename[:-3],
@@ -42,4 +41,3 @@ class AnalysisVariantTask(AnalysisBase):
 			self['input_validation_data'],
 			self["metadata"],
 			)
-		return mod, args

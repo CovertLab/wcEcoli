@@ -113,8 +113,9 @@ class ScriptBase(object):
 
 	def list_variant_dirs(self, sim_path):
 		"""List the available variant subdirectories of the given sim_path,
+		in alphabetical order,
 		returning for each a tuple (subdir_name, variant_type, variant_index),
-		with the variant_index as an int.
+		where the variant_index is an int.
 		"""
 		available = []
 
@@ -186,7 +187,8 @@ class ScriptBase(object):
 	def define_parameter_variant_index(self, parser):
 		"""Add a `variant_index` parameter to the command line parser.
 		parse_args() will then use the `variant_index` and `sim_path`
-		arguments, call find_variant_dir(), and set `args.variant_dir`.
+		arguments, call find_variant_dir(), and set `args.variant_dir` to the
+		first matching variant.
 
 		Call this in overridden define_parameters() methods as needed.
 		"""

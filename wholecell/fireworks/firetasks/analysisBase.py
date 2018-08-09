@@ -1,9 +1,6 @@
 """
 Abstract base class for a Firetask that runs a category of analysis plots.
 
-If the `WC_ANALYZE_FAST` environment variable is set, run the analyses in
-parallel in their own processes.
-
 If the `DEBUG_GC` environment variable is true, enable memory leak detection.
 """
 
@@ -11,8 +8,8 @@ from __future__ import absolute_import
 from __future__ import division
 
 import abc
+import importlib
 import multiprocessing as mp
-import os
 import sys
 import time
 import traceback
@@ -30,18 +27,16 @@ class AnalysisBase(FiretaskBase):
 
 		ACTIVE_MODULES = the list of active module names for this category to
 			use if the caller doesn't provide a specific list.
+		MODULE_PATH = the module pathname to load for this subclass of analysis
+			plots.
 
-	Expected params include plots_to_run, ...
+	Optional params include plots_to_run, output_filename_prefix, cpus.
 	"""
 
 	@abc.abstractmethod
-	def module_and_args(self, module_filename):
-		"""(Abstract) Import the given analysis module_filename and return a
-		tuple `(mod, args)` of info to run it:
-
-			mod = the module containing the analysis class.
-
-			args = the tuple of arguments to pass to its `Plot()` class method.
+	def plotter_args(self, module_filename):
+		"""(Abstract) Return a tuple of arguments to pass to the analysis plot
+		class' `main()` method.
 		"""
 		raise NotImplementedError
 
@@ -56,15 +51,19 @@ class AnalysisBase(FiretaskBase):
 
 		self['output_filename_prefix'] = self.get('output_filename_prefix', '')
 
-		if "WC_ANALYZE_FAST" in os.environ:
-			pool = mp.Pool(processes=parallelization.cpus())
-			results = {}
+		cpus = min(self.get("cpus", 1), parallelization.cpus())
+		pool = None
+		results = {}
+
+		if cpus > 1:
+			pool = mp.Pool(processes=cpus)
 
 		exceptionFileList = []
 		for f in fileList:
-			(mod, args) = self.module_and_args(f)
+			mod = importlib.import_module(self.MODULE_PATH + '.' + f[:-3])
+			args = self.plotter_args(f)
 
-			if "WC_ANALYZE_FAST" in os.environ:
+			if pool:
 				results[f] = pool.apply_async(run_plot, args=(mod.Plot, args, f))
 			else:
 				print "{}: Running {}".format(time.ctime(), f)
@@ -74,7 +73,7 @@ class AnalysisBase(FiretaskBase):
 					traceback.print_exc()
 					exceptionFileList.append(f)
 
-		if "WC_ANALYZE_FAST" in os.environ:
+		if pool:
 			pool.close()
 			pool.join()
 			for f, result in results.items():
@@ -94,9 +93,13 @@ class AnalysisBase(FiretaskBase):
 
 
 def run_plot(plot_class, args, name):
+	"""Run the given plot class in a Pool worker.
+	Since this Firetask is running multiple plot classes in parallel, ask them
+	to use just 1 CPU core each.
+	"""
 	try:
 		print "{}: Running {}".format(time.ctime(), name)
-		plot_class.main(*args)
+		plot_class.main(*args, cpus=1)
 	except KeyboardInterrupt:
 		sys.exit(1)
 	except Exception as e:

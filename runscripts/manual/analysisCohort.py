@@ -44,7 +44,8 @@ class AnalysisCohort(AnalysisBase):
 			metadata=args.metadata,
 			plots_to_run=args.plot,
 			output_filename_prefix=args.output_prefix,
-		)
+			cpus=args.cpus,
+			)
 		task.run_task({})
 
 

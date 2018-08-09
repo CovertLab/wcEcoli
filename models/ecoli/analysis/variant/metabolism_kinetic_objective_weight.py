@@ -8,7 +8,6 @@ Analyze results from metabolism_kinetic_objective_weight variant
 from __future__ import division
 from __future__ import absolute_import
 
-import argparse
 import os
 import re
 
@@ -21,7 +20,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.utils import filepath, units, parallelization
+from wholecell.utils import filepath, units
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
 
@@ -230,7 +229,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		kinetic_objective_std = np.zeros(n_variants)
 
 		# Pull information from sim data and listeners in parallel
-		pool = Pool(processes=parallelization.plotter_cpus())
+		pool = Pool(processes=self.cpus)
 		args = zip(
 			variants,
 			[ap] * n_variants,
