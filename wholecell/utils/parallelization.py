@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 
-import multiprocessing
+import multiprocessing as mp
 import os
 
 
@@ -36,5 +36,43 @@ def cpus():
 	"""
 	value = os.environ.get('SLURM_CPUS_PER_TASK',
 		os.environ.get('SLURM_JOB_CPUS_PER_NODE',
-			multiprocessing.cpu_count()))
+			mp.cpu_count()))
 	return int(value)
+
+
+def pool(processes=None):
+	"""Return a multiprocessing.Pool or an InlinePool, depending on the
+	requested number of processes. See `InlinePool` for why this is important.
+
+	Requesting the default number of processes checks the SLURM CPU count,
+	unlike `multiprocessing.Pool()`. See `cpus()`.
+	"""
+	if processes is None:
+		processes = cpus()
+
+	return mp.Pool(processes=processes) if processes > 1 else InlinePool()
+
+
+class InlinePool(object):
+	"""
+	A substitute for multiprocessing.Pool() that runs the work inline in the
+	current process. This is important because (1) a regular Pool worker cannot
+	construct a nested Pool (even with processes=1) since daemon processes are
+	not allowed to have children, and (2) it's easier to debug code running in
+	the main process.
+	"""
+
+	def map(self, func, iterable):
+		"""Map the function over the iterable."""
+		return map(func, iterable)
+
+	# TODO(jerry): Implement apply_async() if needed.
+
+	def close(self):
+		pass
+
+	def terminate(self):
+		pass
+
+	def join(self):
+		pass
