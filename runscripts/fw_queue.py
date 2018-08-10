@@ -89,7 +89,6 @@ from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 
 from wholecell.utils import constants
 from wholecell.utils import filepath
-from wholecell.utils import parallelization
 import yaml
 import os
 import datetime
@@ -147,7 +146,7 @@ WC_ECOLI_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIRECTORY = filepath.makedirs(WC_ECOLI_DIRECTORY, "out")
 CACHED_SIM_DATA_DIRECTORY = os.path.join(WC_ECOLI_DIRECTORY, "cached")
 
-ANALYSIS_CPUS = parallelization.cpus() if "WC_ANALYZE_FAST" in os.environ else 1
+ANALYSIS_CPUS = 8 if "WC_ANALYZE_FAST" in os.environ else 1
 
 now = datetime.datetime.now()
 SUBMISSION_TIME = "%04d%02d%02d.%02d%02d%02d.%06d" % (
@@ -247,7 +246,7 @@ fw_name = "FitSimDataTask_Level_1"
 if VERBOSE_QUEUE:
 	print "Queueing {}".format(fw_name)
 
-cpusForFitter = parallelization.cpus() if PARALLEL_FITTER else 1
+cpusForFitter = 8 if PARALLEL_FITTER else 1
 fw_fit_level_1 = Firework(
 	FitSimDataTask(
 		fit_level = 1,
@@ -425,7 +424,7 @@ if RUN_AGGREGATE_ANALYSIS:
 			metadata = metadata,
 			),
 		name = fw_name,
-		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":5}
+		spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": ANALYSIS_CPUS}, "_priority":5}
 		)
 	wf_fws.append(fw_variant_analysis)
 
@@ -493,7 +492,7 @@ for i in VARIANTS_TO_RUN:
 				metadata = metadata,
 				),
 			name = fw_name,
-			spec = {"_queueadapter": {"job_name": fw_name}, "_priority":4}
+			spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": ANALYSIS_CPUS}, "_priority":4}
 			)
 		wf_fws.append(fw_this_variant_cohort_analysis)
 
@@ -520,7 +519,7 @@ for i in VARIANTS_TO_RUN:
 					metadata = metadata,
 					),
 				name = fw_name,
-				spec = {"_queueadapter": {"job_name": fw_name}, "_priority":3}
+				spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": ANALYSIS_CPUS}, "_priority":3}
 				)
 			wf_fws.append(fw_this_variant_this_seed_this_analysis)
 
@@ -636,7 +635,7 @@ for i in VARIANTS_TO_RUN:
 							metadata = metadata,
 							),
 						name = fw_name,
-						spec = {"_queueadapter": {"job_name": fw_name}, "_priority":2}
+						spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": ANALYSIS_CPUS}, "_priority":2}
 						)
 
 					wf_fws.append(fw_this_variant_this_gen_this_sim_analysis)
