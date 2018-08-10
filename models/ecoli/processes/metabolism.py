@@ -40,7 +40,6 @@ KINETICS_BURN_IN_PERIOD = 0
 # TODO (Eran) remove this once a transport kinetics process is operating
 # these values are also implemented in simulation_data.py
 IMPORT_CONSTRAINT_THRESHOLD =  1.0
-GLC_DEFAULT_UPPER_BOUND = 50 * (units.mmol / units.g / units.h)
 
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
@@ -59,6 +58,15 @@ class Metabolism(wholecell.processes.process.Process):
 		nutrient_label = sim_data.external_state.environment.nutrients_time_series[
 			sim_data.external_state.environment.nutrients_time_series_label][0][1]
 		self.exchange_data = sim_data.process.metabolism.getExchangeData(nutrient_label)
+
+		# dictionary of with conditions specifying sets of molecules that determine
+		# glc's upper bound for FBA import constraint.
+		self.glc_vmax_conditions = {
+			'1': ['GLC[p]'],
+			'2': ['CA+2[p]', 'MG+2[p]'],
+			'3': ['CPD-183[p]', 'INDOLE[p]', 'NITRATE[p]', 'NITRITE[p]', 'CPD-520[p]', 'TUNGSTATE[p]'],
+			'4': ['OXYGEN-MOLECULE[p]'],
+			}
 
 		# Load constants
 		self.nAvogadro = sim_data.constants.nAvogadro
@@ -203,6 +211,12 @@ class Metabolism(wholecell.processes.process.Process):
 		## Views
 		# views of environment
 		self.environment_nutrients = self.environmentView(self.environment_nutrients_names)
+
+		# views of environment, specific for determining FBA import constraints
+		self.glc_vmax_condition_1 = self.environmentView(self.glc_vmax_conditions['1'])
+		self.glc_vmax_condition_2 = self.environmentView(self.glc_vmax_conditions['2'])
+		self.glc_vmax_condition_3 = self.environmentView(self.glc_vmax_conditions['3'])
+		self.glc_vmax_condition_4 = self.environmentView(self.glc_vmax_conditions['4'])
 
 		# views for metabolism
 		self.metaboliteNames = self.fba.getOutputMoleculeIDs()
@@ -443,15 +457,29 @@ class Metabolism(wholecell.processes.process.Process):
 			# only check nutrients in importExchangeMolecules
 			# TODO (Eran) importExchangeMolecules could potentially exclude some molecules that
 			# were not in any of the initial environments, but came in through other means.
-			if name in self.exchange_data['importExchangeMolecules']:
+			if name in self.exchange_data['importExchangeMolecules'] and name is not 'GLC[p]':
 				# if concentration < threshold, constrain import to 0
 				if conc < IMPORT_CONSTRAINT_THRESHOLD:
 					self.exchange_data['importConstrainedExchangeMolecules'][name] = 0 * (units.mmol / units.g / units.h)
-
-				# if GLC >= threshold, constrain import to its default upper bound
-				elif name == 'GLC[p]':
-					self.exchange_data['importConstrainedExchangeMolecules'][name] = GLC_DEFAULT_UPPER_BOUND
-
-				# if molecule >= threshold, unconstrain nutrient's import
 				else:
 					self.exchange_data['importUnconstrainedExchangeMolecules'].append(name)
+
+		## Glucose always has an import constraint, with a flux upper bound depending on environment
+		# The values of these upper bound are set by conditional statements (conditions 1-4), with a default
+		# glucose flux of 20 mmol/g DCW/hr
+		# TODO (Eran) this makes explicit an assumption previously more implicit.
+		# if any molecules in condition_1 have a concentration of 0, set glc flux upper bound  to 0
+		if any(self.glc_vmax_condition_1.totalConcentrations() < IMPORT_CONSTRAINT_THRESHOLD):
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 0
+		# if any molecules in condition_2 have a concentration of 0, set glc flux upper bound  to 10
+		elif any(self.glc_vmax_condition_2.totalConcentrations() < IMPORT_CONSTRAINT_THRESHOLD):
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 10
+		# if any molecules in condition_3 do not have a concentration of 0, set glc flux upper bound  to 10
+		elif any(self.glc_vmax_condition_3.totalConcentrations() >= IMPORT_CONSTRAINT_THRESHOLD):
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 10
+		# if any molecules in condition_4 have a concentration of 0, set glc flux upper bound  to 100
+		elif any(self.glc_vmax_condition_4.totalConcentrations() < IMPORT_CONSTRAINT_THRESHOLD):
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 100
+		# if normal condition, set glc vmax to 20
+		else:
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 20
