@@ -57,8 +57,14 @@ class ExternalState(object):
 			if label.startswith("__"):
 				continue
 			self.environment.environment_dict[label] = {}
-			environments = getattr(raw_data.condition.environment, label)
-			for row in environments:
+
+			#initiate all molecules with 0 concentrations
+			for row in raw_data.condition.environment_molecules:
+				self.environment.environment_dict[label].update({row["molecule id"]: 0 * (units.mmol / units.L)})
+
+			# update non-zero concentrations
+			molecule_concentrations = getattr(raw_data.condition.environment, label)
+			for row in molecule_concentrations:
 				self.environment.environment_dict[label].update({row["molecule id"]: row["concentration"]})
 
 		# initial state
