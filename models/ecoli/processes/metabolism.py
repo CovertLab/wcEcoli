@@ -39,7 +39,7 @@ KINETICS_BURN_IN_PERIOD = 0
 # max flux = 0 from unconstrained molecules.
 # TODO (Eran) remove this once a transport kinetics process is operating
 # these values are also implemented in simulation_data.py
-IMPORT_CONSTRAINT_THRESHOLD =  1.0
+IMPORT_CONSTRAINT_THRESHOLD =  0.1
 
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
@@ -470,16 +470,16 @@ class Metabolism(wholecell.processes.process.Process):
 		# TODO (Eran) this makes explicit an assumption previously more implicit.
 		# if any molecules in condition_1 have a concentration of 0, set glc flux upper bound  to 0
 		if any(self.glc_vmax_condition_1.totalConcentrations() < IMPORT_CONSTRAINT_THRESHOLD):
-			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 0
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 0 * (units.mmol / units.g / units.h)
 		# if any molecules in condition_2 have a concentration of 0, set glc flux upper bound  to 10
 		elif any(self.glc_vmax_condition_2.totalConcentrations() < IMPORT_CONSTRAINT_THRESHOLD):
-			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 10
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 10 * (units.mmol / units.g / units.h)
 		# if any molecules in condition_3 do not have a concentration of 0, set glc flux upper bound  to 10
 		elif any(self.glc_vmax_condition_3.totalConcentrations() >= IMPORT_CONSTRAINT_THRESHOLD):
-			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 10
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 10 * (units.mmol / units.g / units.h)
 		# if any molecules in condition_4 have a concentration of 0, set glc flux upper bound  to 100
 		elif any(self.glc_vmax_condition_4.totalConcentrations() < IMPORT_CONSTRAINT_THRESHOLD):
-			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 100
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 100 * (units.mmol / units.g / units.h)
 		# if normal condition, set glc vmax to 20
 		else:
-			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 20
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 20 * (units.mmol / units.g / units.h)

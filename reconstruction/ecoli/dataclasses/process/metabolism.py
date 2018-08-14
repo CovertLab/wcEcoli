@@ -34,7 +34,7 @@ reverseReactionString = "{} (reverse)"
 
 # threshold (units.mmol / units.L) separates environment concentrations that are
 # import constrained and import unconstrained.
-IMPORT_CONSTRAINT_THRESHOLD =  1.0
+IMPORT_CONSTRAINT_THRESHOLD =  0.1
 GLC_DEFAULT_UPPER_BOUND = 50 * (units.mmol / units.g / units.h)
 
 class Metabolism(object):
@@ -213,19 +213,16 @@ class Metabolism(object):
 			importConstrainedExchangeMolecules[nutrientsName] = {}
 			importUnconstrainedExchangeMolecules[nutrientsName] = []
 			for nutrient in nutrients:
-				# continue to next iteration if nutrients concentrations are zero
-				if nutrient["concentration"].asNumber() == 0:
-					continue
 
-				# add to import constrained if GLC
-				elif nutrient["molecule id"]  == 'GLC[p]':
-					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = GLC_DEFAULT_UPPER_BOUND
+				# add to import constrained if concentration < threshold
+				if nutrient["concentration"].asNumber() < IMPORT_CONSTRAINT_THRESHOLD:
+					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = 0 * (units.mmol / units.g / units.h)
 					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
 					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
 
-				# add to import constrained if concentration < threshold
-				elif nutrient["concentration"].asNumber() < IMPORT_CONSTRAINT_THRESHOLD:
-					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = 0 * (units.mmol / units.g / units.h)
+				# if GLC, add to import constrained with default upper bound
+				elif nutrient["molecule id"]  == 'GLC[p]':
+					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = GLC_DEFAULT_UPPER_BOUND
 					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
 					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
 
@@ -234,6 +231,8 @@ class Metabolism(object):
 					importUnconstrainedExchangeMolecules[nutrientsName].append(nutrient["molecule id"])
 					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
 					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
+
+
 
 			for secretion in raw_data.secretions:
 				if secretion["lower bound"] and secretion["upper bound"]:
