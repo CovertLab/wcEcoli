@@ -18,6 +18,7 @@ from __future__ import division
 
 import numpy as np
 from scipy.sparse import csr_matrix
+import copy
 
 import wholecell.processes.process
 from wholecell.utils import units
@@ -55,18 +56,14 @@ class Metabolism(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(Metabolism, self).initialize(sim, sim_data)
 
+		# initialize exchange_data based on initial nutrient_label of the time_series
 		nutrient_label = sim_data.external_state.environment.nutrients_time_series[
 			sim_data.external_state.environment.nutrients_time_series_label][0][1]
 		self.exchange_data = sim_data.process.metabolism.getExchangeData(nutrient_label)
 
 		# dictionary of with conditions specifying sets of molecules that determine
 		# glc's upper bound for FBA import constraint.
-		self.glc_vmax_conditions = {
-			'1': ['GLC[p]'],
-			'2': ['CA+2[p]', 'MG+2[p]'],
-			'3': ['CPD-183[p]', 'INDOLE[p]', 'NITRATE[p]', 'NITRITE[p]', 'CPD-520[p]', 'TUNGSTATE[p]'],
-			'4': ['OXYGEN-MOLECULE[p]'],
-			}
+		self.glc_vmax_conditions = sim_data.process.metabolism.glc_vmax_conditions
 
 		# Load constants
 		self.nAvogadro = sim_data.constants.nAvogadro
@@ -98,8 +95,7 @@ class Metabolism(wholecell.processes.process.Process):
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
 		# Identify all molecules in external environment that can be exchanged for the given time series
-		# TODO (Eran) initialize externalExchangeMolecules without exchange_data_dict, based on current state
-		externalExchangedMolecules = sim_data.process.metabolism.exchange_data_dict["secretionExchangeMolecules"]
+		externalExchangedMolecules = copy.copy(sim_data.process.metabolism.exchange_data_dict["secretionExchangeMolecules"])
 		self.metaboliteNamesFromNutrients = set()
 
 		for time, nutrient_label, volume in sim_data.external_state.environment.nutrients_time_series[
@@ -112,10 +108,13 @@ class Metabolism(wholecell.processes.process.Process):
 					nutrient_label_exchange_data, sim_data.process.metabolism.nutrientsToInternalConc
 					)
 				)
+
+		#TODO (Eran) externalExchangedMolecules should be comprehensive -- all 87 from local environment. This could change default behavior.
+		#TODO (Eran) use self._external_states['LocalEnvironment']._moleculeIDs
 		externalExchangedMolecules = sorted(set(externalExchangedMolecules))
 
-		# save nutrient names for environment view
-		self.environment_nutrients_names = externalExchangedMolecules
+		# save nutrient names for environment view, using all moleculeIDs in local environment
+		self.environment_nutrients_names = self._external_states['LocalEnvironment']._moleculeIDs
 
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
@@ -451,18 +450,19 @@ class Metabolism(wholecell.processes.process.Process):
 		'''
 
 		self.exchange_data['importConstrainedExchangeMolecules'] = {}
+		self.exchange_data['importExchangeMolecules'] = []
 		self.exchange_data['importUnconstrainedExchangeMolecules'] = []
 		for name, conc in zip(self.environment_nutrients_names, self.environment_nutrients.totalConcentrations()):
 
-			# only check nutrients in importExchangeMolecules
-			# TODO (Eran) importExchangeMolecules could potentially exclude some molecules that
-			# were not in any of the initial environments, but came in through other means.
-			if name in self.exchange_data['importExchangeMolecules'] and name is not 'GLC[p]':
+			# only check nutrients with nonzero concentrations
+			if conc != 0 and name is not 'GLC[p]':
 				# if concentration < threshold, constrain import to 0
 				if conc < IMPORT_CONSTRAINT_THRESHOLD:
 					self.exchange_data['importConstrainedExchangeMolecules'][name] = 0 * (units.mmol / units.g / units.h)
 				else:
 					self.exchange_data['importUnconstrainedExchangeMolecules'].append(name)
+
+				self.exchange_data['importExchangeMolecules'].append(name)
 
 		## Glucose always has an import constraint, with a flux upper bound depending on environment
 		# The values of these upper bound are set by conditional statements (conditions 1-4), with a default
@@ -483,3 +483,5 @@ class Metabolism(wholecell.processes.process.Process):
 		# if normal condition, set glc vmax to 20
 		else:
 			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 20 * (units.mmol / units.g / units.h)
+
+		#TODO (Eran) update externalExchangeMolecules. Should be importExchangeMolecules + secretionExchangeMolecules
