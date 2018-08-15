@@ -52,10 +52,6 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		# load constants
 		self._nAvogadro = sim_data.constants.nAvogadro
 
-		# get molecule IDs and initial concentrations
-		self._moleculeIDs = [id for id, value in sim_data.external_state.environment.nutrients.iteritems()]
-		self._concentrations = np.array([value.asNumber() for id, value in sim_data.external_state.environment.nutrients.iteritems()])
-
 		# environment time series data
 		self.environment_dict = sim_data.external_state.environment.environment_dict
 		self.nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
@@ -63,8 +59,13 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 			self.nutrients_time_series_label
 			]
 
+		# get current nutrients label
 		self.nutrients = self.nutrients_time_series[0][1]
 		self._times = [t[0] for t in self.nutrients_time_series]
+
+		# initialize molecule IDs and concentrations based on initial environment
+		self._moleculeIDs = [id for id, concentration in self.environment_dict[self.nutrients].iteritems()]
+		self._concentrations = np.array([concentration.asNumber() for id, concentration in self.environment_dict[self.nutrients].iteritems()])
 
 		# create bulk container for molecule concentrations. This uses concentrations instead of counts.
 		self.container = BulkObjectsContainer(self._moleculeIDs, dtype=np.float64)
@@ -82,7 +83,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		# a ribosomeElongationRate in ribosomeElongationRateDict
 		if self.nutrients != self.nutrients_time_series[current_index][1]:
 			self.nutrients = self.nutrients_time_series[current_index][1]
-			self._concentrations = np.array([value.asNumber() for id, value in self.environment_dict[self.nutrients].iteritems()])
+			self._concentrations = np.array([concentration.asNumber() for id, concentration in self.environment_dict[self.nutrients].iteritems()])
 			self.container.countsIs(self._concentrations)
 
 		if ASSERT_POSITIVE_CONCENTRATIONS and (self._concentrations < 0).any():

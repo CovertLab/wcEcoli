@@ -51,7 +51,7 @@ class ExternalState(object):
 					row["volume"].asNumber(units.L),
 					))
 
-		# create a dictionary with all saved environments
+		# create a dictionary with all saved environments, including molecules of concentration == 0
 		self.environment.environment_dict = {}
 		for label in dir(raw_data.condition.environment):
 			if label.startswith("__"):
@@ -67,6 +67,6 @@ class ExternalState(object):
 			for row in molecule_concentrations:
 				self.environment.environment_dict[label].update({row["molecule id"]: row["concentration"]})
 
-		# initial state
+		# initial state, default is minimal
 		initial_environment = "minimal"
 		self.environment.nutrients = self.environment.environment_dict[initial_environment]

@@ -48,6 +48,14 @@ class Metabolism(object):
 		else:
 			self.kinetic_objective_weight = sim_data.constants.metabolismKineticObjectiveWeightQuadratic
 
+		# glc's upper bound for FBA import constraint.
+		self.glc_vmax_conditions = {
+			'1': ['GLC[p]'],
+			'2': ['CA+2[p]', 'MG+2[p]', 'PI[p]'],
+			'3': ['CPD-183[p]', 'INDOLE[p]', 'NITRATE[p]', 'NITRITE[p]', 'CPD-520[p]', 'TUNGSTATE[p]'],
+			'4': ['OXYGEN-MOLECULE[p]'],
+			}
+
 		self.exchange_data_dict = self._getExchangeDataDict(raw_data)
 
 		self._buildBiomass(raw_data, sim_data)
@@ -212,17 +220,33 @@ class Metabolism(object):
 			importExchangeMolecules[nutrientsName] = set()
 			importConstrainedExchangeMolecules[nutrientsName] = {}
 			importUnconstrainedExchangeMolecules[nutrientsName] = []
+
+			concentration_dict={}
+			for item in nutrients:
+				concentration_dict[item['molecule id']] = item['concentration']
+
 			for nutrient in nutrients:
+				# skip if concentration is 0. Do not include these nonexistent molecules in FBA problem definition.
+				if nutrient["molecule id"] != 'GLC[p]' and nutrient["concentration"].asNumber() == 0:
+					continue
 
-				# add to import constrained if concentration < threshold
-				if nutrient["concentration"].asNumber() < IMPORT_CONSTRAINT_THRESHOLD:
-					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = 0 * (units.mmol / units.g / units.h)
-					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
+				# if GLC, add to import constrained
+				elif nutrient["molecule id"] == 'GLC[p]':
+					# if any molecules in glc_vmax_conditions['1'] is ABSENT:
+					if not all(key in concentration_dict for key in self.glc_vmax_conditions['1']):
+						importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = 0 * (units.mmol / units.g / units.h)
+					# if any molecules in glc_vmax_conditions['2'] is ABSENT:
+					elif not all(key in concentration_dict for key in self.glc_vmax_conditions['2']):
+						importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = 10 * (units.mmol / units.g / units.h)
+					# if any molecules in glc_vmax_conditions['3'] is PRESENT:
+					elif any(key in concentration_dict for key in self.glc_vmax_conditions['3']):
+						importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = 10 * (units.mmol / units.g / units.h)
+					# if any molecules in glc_vmax_conditions['4'] is ABSENT:
+					elif not all(key in concentration_dict for key in self.glc_vmax_conditions['4']):
+						importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = 100 * (units.mmol / units.g / units.h)
+					else:
+						importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = 20 * (units.mmol / units.g / units.h)
 
-				# if GLC, add to import constrained with default upper bound
-				elif nutrient["molecule id"]  == 'GLC[p]':
-					importConstrainedExchangeMolecules[nutrientsName][nutrient["molecule id"]] = GLC_DEFAULT_UPPER_BOUND
 					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
 					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
 
@@ -231,7 +255,6 @@ class Metabolism(object):
 					importUnconstrainedExchangeMolecules[nutrientsName].append(nutrient["molecule id"])
 					externalExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
 					importExchangeMolecules[nutrientsName].add(nutrient["molecule id"])
-
 
 
 			for secretion in raw_data.secretions:
@@ -245,6 +268,7 @@ class Metabolism(object):
 
 			externalExchangeMolecules[nutrientsName] = sorted(externalExchangeMolecules[nutrientsName])
 			importExchangeMolecules[nutrientsName] = sorted(importExchangeMolecules[nutrientsName])
+
 		secretionExchangeMolecules = sorted(secretionExchangeMolecules)
 
 		return {
