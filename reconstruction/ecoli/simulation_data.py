@@ -1,7 +1,7 @@
 """
 SimulationData for Ecoli
 
-Raw data processed into forms convienent for whole-cell modeling
+Raw data processed into forms convenient for whole-cell modeling
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
@@ -27,6 +27,7 @@ from reconstruction.ecoli.dataclasses.relation import Relation
 from wholecell.utils import units
 
 VERBOSE = False
+
 
 class SimulationDataEcoli(object):
 	""" SimulationDataEcoli """
@@ -108,6 +109,7 @@ class SimulationDataEcoli(object):
 			))
 
 		self.dNtpOrder = ["A", "C", "G", "T"]
+
 
 
 	def _addConditionData(self, raw_data):

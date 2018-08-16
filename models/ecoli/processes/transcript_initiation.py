@@ -106,7 +106,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			raise Exception("Have negative RNA synthesis probabilities")
 
 		# Adjust synthesis probabilities depending on environment
-		current_nutrients = self._external_states['Environment'].nutrients
+		current_nutrients = self._external_states['LocalEnvironment'].nutrients
 
 		synthProbFractions = self.rnaSynthProbFractions[current_nutrients]
 		self.rnaSynthProb[self.isMRna] *= synthProbFractions["mRna"] / self.rnaSynthProb[self.isMRna].sum()

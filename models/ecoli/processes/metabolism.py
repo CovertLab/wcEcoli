@@ -18,6 +18,7 @@ from __future__ import division
 
 import numpy as np
 from scipy.sparse import csr_matrix
+import copy
 
 import wholecell.processes.process
 from wholecell.utils import units
@@ -35,6 +36,12 @@ TIME_UNITS = units.s
 USE_KINETICS = True
 KINETICS_BURN_IN_PERIOD = 0
 
+# threshold (units.mmol / units.L) separates concentrations that are import constrained with
+# max flux = 0 from unconstrained molecules.
+# TODO (Eran) remove this once a transport kinetics process is operating
+# these values are also implemented in simulation_data.py
+IMPORT_CONSTRAINT_THRESHOLD =  0.1
+
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
 
@@ -48,6 +55,15 @@ class Metabolism(wholecell.processes.process.Process):
 	# Construct object graph
 	def initialize(self, sim, sim_data):
 		super(Metabolism, self).initialize(sim, sim_data)
+
+		# initialize exchange_data based on initial nutrient_label of the time_series
+		nutrient_label = sim_data.external_state.environment.nutrients_time_series[
+			sim_data.external_state.environment.nutrients_time_series_label][0][1]
+		self.exchange_data = sim_data.process.metabolism.getExchangeData(nutrient_label)
+
+		# dictionary of with conditions specifying sets of molecules that determine
+		# glc's upper bound for FBA import constraint.
+		self.glc_vmax_conditions = sim_data.process.metabolism.glc_vmax_conditions
 
 		# Load constants
 		self.nAvogadro = sim_data.constants.nAvogadro
@@ -63,7 +79,7 @@ class Metabolism(wholecell.processes.process.Process):
 		nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
 
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label][0][1]
+			self.exchange_data
 			)
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			sim_data.conditionToDoublingTime[sim_data.condition]
@@ -78,18 +94,28 @@ class Metabolism(wholecell.processes.process.Process):
 
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
-		# Setup molecules in external environment that can be exchanged
-		externalExchangedMolecules = sim_data.external_state.environment.nutrient_data["secretionExchangeMolecules"]
+		# Identify all molecules in external environment that can be exchanged for the given time series
+		externalExchangedMolecules = copy.copy(sim_data.process.metabolism.exchange_data_dict["secretionExchangeMolecules"])
 		self.metaboliteNamesFromNutrients = set()
-		for time, nutrientsLabel in sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label]:
-			externalExchangedMolecules += sim_data.external_state.environment.nutrient_data["importExchangeMolecules"][nutrientsLabel]
 
+		for time, nutrient_label, volume in sim_data.external_state.environment.nutrients_time_series[
+				nutrients_time_series_label]:
+			# get exchange data for each nutrient condition in time series
+			nutrient_label_exchange_data = sim_data.process.metabolism.getExchangeData(nutrient_label)
+			externalExchangedMolecules += nutrient_label_exchange_data["importExchangeMolecules"]
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					nutrientsLabel, sim_data.process.metabolism.nutrientsToInternalConc
+					nutrient_label_exchange_data, sim_data.process.metabolism.nutrientsToInternalConc
 					)
 				)
+
+		#TODO (Eran) externalExchangedMolecules should be comprehensive -- all 87 from local environment. This could change default behavior.
+		#TODO (Eran) use self._external_states['LocalEnvironment']._moleculeIDs
 		externalExchangedMolecules = sorted(set(externalExchangedMolecules))
+
+		# save nutrient names for environment view, using all moleculeIDs in local environment
+		self.environment_nutrients_names = self._external_states['LocalEnvironment']._moleculeIDs
+
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
 		moleculeMasses = dict(zip(externalExchangedMolecules, sim_data.getter.getMass(externalExchangedMolecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
@@ -181,7 +207,17 @@ class Metabolism(wholecell.processes.process.Process):
 		# External molecules
 		self.externalMoleculeIDs = self.fba.getExternalMoleculeIDs()
 
-		# Views
+		## Views
+		# views of environment
+		self.environment_nutrients = self.environmentView(self.environment_nutrients_names)
+
+		# views of environment, specific for determining FBA import constraints
+		self.glc_vmax_condition_1 = self.environmentView(self.glc_vmax_conditions['1'])
+		self.glc_vmax_condition_2 = self.environmentView(self.glc_vmax_conditions['2'])
+		self.glc_vmax_condition_3 = self.environmentView(self.glc_vmax_conditions['3'])
+		self.glc_vmax_condition_4 = self.environmentView(self.glc_vmax_conditions['4'])
+
+		# views for metabolism
 		self.metaboliteNames = self.fba.getOutputMoleculeIDs()
 		self.metabolites = self.bulkMoleculesView(self.metaboliteNamesFromNutrients)
 		self.catalysts = self.bulkMoleculesView(self.catalystsList)
@@ -220,7 +256,7 @@ class Metabolism(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
-		current_nutrients = self._external_states['Environment'].nutrients
+		current_nutrients = self._external_states['LocalEnvironment'].nutrients
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			self.nutrientToDoublingTime.get(current_nutrients, self.nutrientToDoublingTime["minimal"])
 			)
@@ -228,12 +264,15 @@ class Metabolism(wholecell.processes.process.Process):
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
 
+		# Update FBA import constraint variables based on current nutrient concentrations
+		self._updateImportConstraint()
+
 		# Set external molecule levels
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
 			self.externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS,
-			current_nutrients,
+			self.exchange_data,
 			self.concModificationsBasedOnCondition,
 			)
 
@@ -346,6 +385,12 @@ class Metabolism(wholecell.processes.process.Process):
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
 
+		# change in nutrient counts, used in non-infinite environments
+		delta_nutrients = ((1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes()).asNumber().astype(int)
+
+		self.environment_nutrients.countsInc(self.environment_nutrients_names, delta_nutrients)
+
+
 		# Write outputs to listeners
 		self.writeToListener("FBAResults", "deltaMetabolites", metaboliteCountsFinal - metaboliteCountsInit)
 		self.writeToListener("FBAResults", "reactionFluxes", self.fba.getReactionFluxes() / self.timeStepSec())
@@ -385,3 +430,58 @@ class Metabolism(wholecell.processes.process.Process):
 				externalMoleculeLevels[idx] =  concDiff
 
 		self.fba.setExternalMoleculeLevels(externalMoleculeLevels)
+
+
+	def _updateImportConstraint(self):
+		'''
+		Update importExchangeMolecules for FBA based on current nutrient concentrations.
+
+		This provides a simple type of transport to accommodate changing nutrient
+		concentrations in the environment. Transport is modeled as a binary switch:
+		When there is a high concentrations of environment nutrients, transporters
+		are unconstrained and nutrients are transported as needed by metabolism.
+		When concentrations fall below the threshold, that nutrient's transport
+		is constrained to max flux of 0.
+
+		Notes
+		-----
+		- importConstrainedMolecules + importUnconstrainedMolecules = importExchangeMolecules
+		- TODO (ERAN) remove this when kinetic transport process is operational
+		'''
+
+		self.exchange_data['importConstrainedExchangeMolecules'] = {}
+		self.exchange_data['importExchangeMolecules'] = []
+		self.exchange_data['importUnconstrainedExchangeMolecules'] = []
+		for name, conc in zip(self.environment_nutrients_names, self.environment_nutrients.totalConcentrations()):
+
+			# only check nutrients with nonzero concentrations
+			if conc != 0 and name is not 'GLC[p]':
+				# if concentration < threshold, constrain import to 0
+				if conc < IMPORT_CONSTRAINT_THRESHOLD:
+					self.exchange_data['importConstrainedExchangeMolecules'][name] = 0 * (units.mmol / units.g / units.h)
+				else:
+					self.exchange_data['importUnconstrainedExchangeMolecules'].append(name)
+
+				self.exchange_data['importExchangeMolecules'].append(name)
+
+		## Glucose always has an import constraint, with a flux upper bound depending on environment
+		# The values of these upper bound are set by conditional statements (conditions 1-4), with a default
+		# glucose flux of 20 mmol/g DCW/hr
+		# TODO (Eran) this makes explicit an assumption previously more implicit.
+		# if any molecules in condition_1 have a concentration of 0, set glc flux upper bound  to 0
+		if any(self.glc_vmax_condition_1.totalConcentrations() < IMPORT_CONSTRAINT_THRESHOLD):
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 0 * (units.mmol / units.g / units.h)
+		# if any molecules in condition_2 have a concentration of 0, set glc flux upper bound  to 10
+		elif any(self.glc_vmax_condition_2.totalConcentrations() < IMPORT_CONSTRAINT_THRESHOLD):
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 10 * (units.mmol / units.g / units.h)
+		# if any molecules in condition_3 do not have a concentration of 0, set glc flux upper bound  to 10
+		elif any(self.glc_vmax_condition_3.totalConcentrations() >= IMPORT_CONSTRAINT_THRESHOLD):
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 10 * (units.mmol / units.g / units.h)
+		# if any molecules in condition_4 have a concentration of 0, set glc flux upper bound  to 100
+		elif any(self.glc_vmax_condition_4.totalConcentrations() < IMPORT_CONSTRAINT_THRESHOLD):
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 100 * (units.mmol / units.g / units.h)
+		# if normal condition, set glc vmax to 20
+		else:
+			self.exchange_data['importConstrainedExchangeMolecules']['GLC[p]'] = 20 * (units.mmol / units.g / units.h)
+
+		#TODO (Eran) update externalExchangeMolecules. Should be importExchangeMolecules + secretionExchangeMolecules

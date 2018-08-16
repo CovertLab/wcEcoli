@@ -35,13 +35,13 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.objectiveValue = 0.0
 
 		self.metaboliteNamesFromNutrients = set()
-		for time, nutrientsLabel in sim_data.external_state.environment.nutrients_time_series[
-			sim_data.external_state.environment.nutrients_time_series_label
-			]:
+		for time, nutrient_label, volume in sim_data.external_state.environment.nutrients_time_series[
+				sim_data.external_state.environment.nutrients_time_series_label]:
 
+			exchange_data = sim_data.process.metabolism.getExchangeData(nutrient_label)
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					nutrientsLabel, sim_data.process.metabolism.nutrientsToInternalConc
+					exchange_data, sim_data.process.metabolism.nutrientsToInternalConc
 					)
 				)
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
@@ -68,6 +68,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.deltaMetabolites = np.zeros(len(self.metaboliteNamesFromNutrients), np.float64)
 		self.targetConcentrations = np.zeros(len(self.homeostaticTargetMolecules))
 
+		self.importExchangeMolecules = self.metabolism.exchange_data['importExchangeMolecules']
 
 	def tableCreate(self, tableWriter):
 		tableWriter.writeAttributes(
@@ -77,10 +78,20 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			homeostaticTargetMolecules = self.homeostaticTargetMolecules,
 			kineticTargetFluxNames = self.kineticTargetFluxNames,
 			metaboliteNames = self.metaboliteNamesFromNutrients,
+			importExchangeMolecules = self.importExchangeMolecules,
 			)
 
 
 	def tableAppend(self, tableWriter):
+		# TODO (Eran) save import_constraint elsewhere
+		# save if importExchangeMolecules are constrained
+		import_constraint = []
+		for id in self.importExchangeMolecules:
+			if id in self.metabolism.exchange_data['importConstrainedExchangeMolecules'].keys():
+				import_constraint.append(True)
+			else:
+				import_constraint.append(False)
+
 		tableWriter.append(
 			time = self.time(),
 			simulationStep = self.simulationStep(),
@@ -93,4 +104,5 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			kineticObjectiveValues = self.kineticObjectiveValues,
 			deltaMetabolites = self.deltaMetabolites,
 			targetConcentrations = self.targetConcentrations,
+			importConstraint = import_constraint,
 			)

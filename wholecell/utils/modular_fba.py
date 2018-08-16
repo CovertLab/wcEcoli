@@ -228,7 +228,7 @@ class FluxBalanceAnalysis(object):
 		# Keep track of homeostatic targets, empty if not used
 		self._homeostaticTargetMolecules = set()
 
-		# Call indivdual initialization methods
+		# Call individual initialization methods
 		self._initReactionNetwork(self.reactionStoich)
 		self._initExternalExchange(externalExchangedMolecules)
 

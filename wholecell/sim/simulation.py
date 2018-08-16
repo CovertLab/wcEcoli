@@ -256,6 +256,10 @@ class Simulation(object):
 
 		self._adjustTimeStep()
 
+		# update environment state
+		for state in self.external_states.itervalues():
+			state.update()
+
 		# Run pre-evolveState hooks
 		for hook in self.hooks.itervalues():
 			hook.preEvolveState(self)
@@ -307,10 +311,6 @@ class Simulation(object):
 		# Calculate mass of partitioned molecules, after evolution
 		for state in self.internal_states.itervalues():
 			state.calculatePostEvolveStateMass()
-
-		# update environment state
-		for state in self.external_states.itervalues():
-			state.update()
 
 		# Update listeners
 		for listener in self.listeners.itervalues():
