@@ -8,6 +8,12 @@ class EnvironmentNonSpatial(object):
 		self.simulations = {}
 		self.concentrations = concentrations
 
+	def update_concentrations(self, all_changes):
+		self._time += self.run_for
+		for id, changes in all_changes.iteritems():
+			for molecule, change in changes.iteritems():
+				self.concentrations[molecule] += change
+
 	def time(self):
 		return self._time
 
@@ -17,12 +23,6 @@ class EnvironmentNonSpatial(object):
 
 	def remove_simulation(self, id):
 		return self.simulations.pop(id, {})
-
-	def update_concentrations(self, all_changes):
-		self._time += self.run_for
-		for id, changes in all_changes.iteritems():
-			for molecule, change in changes.iteritems():
-				self.concentrations[molecule] += change
 
 	def run_until(self):
 		until = {}

@@ -397,3 +397,14 @@ class Simulation(object):
 			raise Exception, "Timestep adjustment did not converge, last attempt was %f" % (candidateTimeStep)
 
 		return candidateTimeStep
+
+	## Agent interface
+	def initialize_local_environment(self):
+		pass
+
+	def set_local_environment(self, concentrations):
+		# TODO (Eran) concentrations are received as a dict
+		self.external_states['Environment'].set_local_environment(concentrations)
+
+	def get_environment_change(self):
+		return self.external_states['Environment'].set_deltas()

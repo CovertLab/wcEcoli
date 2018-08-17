@@ -9,7 +9,11 @@ from agent.agent import Agent
 from agent.outer import Outer
 from agent.inner import Inner
 from agent.stub import SimulationStub, EnvironmentStub
+
 from environment.nonspatial import EnvironmentNonSpatial
+from models.ecoli.sim.simulation import EcoliSimulation
+
+from wholecell.fireworks.firetasks import VariantSimDataTask
 
 # Raw data class
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
@@ -81,10 +85,50 @@ class BootEnvironmentNonSpatial(object):
 			for row in molecule_concentrations:
 				self.environment_dict[label].update({row["molecule id"]: row["concentration"]})
 
-		# TODO (Eran) don't hardcode initial environment
+		# TODO (Eran) don't hardcode initial environment, get this from timeseries
 		environment_label = 'minimal'
 		self.environment = EnvironmentNonSpatial(self.environment_dict[environment_label])
 		self.outer = Outer(kafka_config, self.environment)
+
+
+class BootEcoli(object):
+	def __init__(self, id, kafka_config):
+		self.id = id
+
+		# copy the file simData_Most_Fit.cPickle to simData_Modlfied.cPickle
+		task = VariantSimDataTask(
+			variant_function='wildtype',
+			variant_index=0,
+			input_sim_data='/Users/eranagmon/code/wcEcoli/out/manual/kb/simData_Most_Fit.cPickle',
+			output_sim_data='/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/kb/simData_Modified.cPickle',
+			variant_metadata_directory='/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/metadata',
+		)
+		task.run_task({})
+
+		options = {}
+
+		options["simDataLocation"] = '/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/kb/simData_Modified.cPickle'
+		options["outputDir"] = '/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/000000/generation_000000/000000/simOut'
+		options["logToDisk"] = True
+		options["overwriteExistingFiles"] = False
+
+		options["seed"] = 0
+		options["lengthSec"] = 10800
+		options["timeStepSafetyFraction"] = 1.3
+		options["maxTimeStep"] = 0.9
+		options["updateTimeStepFreq"] = 5
+		options["logToShell"] = True
+		options["logToDiskEvery"] = 1
+		options["massDistribution"] = True
+		options["growthRateNoise"] = False
+		options["dPeriodDivision"] = False
+		options["translationSupply"] = True
+
+		self.simulation = EcoliSimulation(**options)
+		self.inner = Inner(
+			kafka_config,
+			self.id,
+			self.simulation)
 
 
 class EnvironmentControl(Agent):
@@ -124,7 +168,7 @@ def main():
 
 	parser.add_argument(
 		'command',
-		choices=['inner', 'outer', 'nonspatial', 'trigger', 'shutdown'],
+		choices=['inner', 'outer', 'ecoli', 'nonspatial', 'trigger', 'shutdown'],
 		help='which command to boot')
 
 	parser.add_argument(
@@ -167,6 +211,12 @@ def main():
 
 	elif args.command == 'outer':
 		outer = BootOuter(kafka_config)
+
+	if args.command == 'ecoli':
+		if not args.id:
+			raise ValueError('--id must be supplied for inner command')
+
+		inner = BootEcoli(args.id, kafka_config)
 
 	elif args.command == 'nonspatial':
 		outer = BootEnvironmentNonSpatial(kafka_config)
