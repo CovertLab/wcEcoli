@@ -37,7 +37,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 		self._moleculeIDs = None
 		self._concentrations = None
 
-		self._environment_deltas = None
+		self._cumulative_env_deltas = None
 
 		super(Environment, self).__init__(*args, **kwargs)
 
@@ -61,6 +61,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 		# initialize molecule IDs and concentrations based on initial environment
 		self._moleculeIDs = [id for id, concentration in self.environment_dict[self.nutrients].iteritems()]
 		self._concentrations = np.array([concentration.asNumber() for id, concentration in self.environment_dict[self.nutrients].iteritems()])
+		self._cumulative_env_deltas = dict((molecule_id, 0) for molecule_id in self._moleculeIDs)
 
 		# create bulk container for molecule concentrations. This uses concentrations instead of counts.
 		self.container = BulkObjectsContainer(self._moleculeIDs, dtype=np.float64)
@@ -94,34 +95,22 @@ class Environment(wholecell.states.external_state.ExternalState):
 
 	# Functions for multi-scaling interface
 	def set_local_environment(self, concentrations):
+		self._cumulative_env_deltas = dict.fromkeys(self._cumulative_env_deltas, 0)
 		for idx, molecule_id in enumerate(self._moleculeIDs):
 			self._concentrations[idx] = concentrations[molecule_id]
 
+	def get_environment_change(self):
+		return self._cumulative_env_deltas
 
-	# def get_deltas(self):
-	# 	return self.total_deltas
-	#
-	# # This sets accumulate_deltas to true and initializes the dictionary of save total_deltas
-	# def save_deltas(self):
-	# 	self.save_accumulated_deltas = True
-	# 	self.total_deltas = dict((id,0) for id in self._moleculeIDs)
-	#
-	# def accumulate_deltas(self, molecule_ids, counts):
-	# 	for id, count in zip(molecule_ids, counts):
-	# 		self.total_deltas[id] += count
-	#
-	# def clear_accumulated_deltas(self):
-	# 	self.total_deltas = dict.fromkeys(self.total_deltas, 0)
-
-
-
+	def accumulate_deltas(self, molecule_ids, counts):
+		for molecule_id, count in zip(molecule_ids, counts):
+			self._cumulative_env_deltas[molecule_id] += count
 
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)
 		tableWriter.writeAttributes(
 			nutrientTimeSeriesLabel = self.nutrients_time_series_label,
 			)
-
 
 	def tableAppend(self, tableWriter):
 		tableWriter.append(
@@ -178,7 +167,9 @@ class EnvironmentView(EnvironmentViewBase):
 
 
 	def countsInc(self, molecule_ids, counts):
-		self._state._environment_deltas = counts
+		# self._state._environment_deltas = counts
+
+		self._state.accumulate_deltas(molecule_ids, counts)
 		#TODO (Eran) save deltas for external environment dict(zip(molecule_ids, counts))
 		#TODO (Eran) deltas size varies because of changing importExchange.  This will need to be fixed for a listener to save these
 

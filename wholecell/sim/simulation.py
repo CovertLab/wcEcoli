@@ -407,5 +407,4 @@ class Simulation(object):
 		self.external_states['Environment'].set_local_environment(concentrations)
 
 	def get_environment_change(self):
-		pass
-		# return self.external_states['Environment'].set_deltas()
+		return self.external_states['Environment'].get_environment_change()
