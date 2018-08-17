@@ -9,6 +9,10 @@ from agent.agent import Agent
 from agent.outer import Outer
 from agent.inner import Inner
 from agent.stub import SimulationStub, EnvironmentStub
+from environment.nonspatial import EnvironmentNonSpatial
+
+# Raw data class
+from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 
 default_kafka_config = {
 	'host': '127.0.0.1:9092',
@@ -57,6 +61,30 @@ class BootInner(object):
 			self.id,
 			self.simulation)
 
+
+class BootEnvironmentNonSpatial(object):
+	def __init__(self, kafka):
+		raw_data = KnowledgeBaseEcoli()
+		# create a dictionary with all saved environments
+		self.environment_dict = {}
+		for label in dir(raw_data.condition.environment):
+			if label.startswith("__"):
+				continue
+			self.environment_dict[label] = {}
+			# initiate all molecules with 0 concentrations
+			for row in raw_data.condition.environment_molecules:
+				self.environment_dict[label].update({row["molecule id"]: 0 * (units.mmol / units.L)})
+			# update non-zero concentrations
+			molecule_concentrations = getattr(raw_data.condition.environment, label)
+			for row in molecule_concentrations:
+				self.environment_dict[label].update({row["molecule id"]: row["concentration"]})
+
+		# TODO (Eran) don't hardcode initial environment
+		environment_label = 'minimal'
+		self.environment = EnvironmentNonSpatial(self.environment_dict[environment_label])
+		self.outer = Outer(kafka, self.environment)
+
+
 class EnvironmentControl(Agent):
 
 	"""
@@ -94,7 +122,7 @@ def main():
 
 	parser.add_argument(
 		'command',
-		choices=['inner', 'outer', 'trigger', 'shutdown'],
+		choices=['inner', 'outer', 'nonspatial', 'trigger', 'shutdown'],
 		help='which command to boot')
 
 	parser.add_argument(
@@ -137,6 +165,9 @@ def main():
 
 	elif args.command == 'outer':
 		outer = BootOuter(kafka_config)
+
+	elif args.command == 'nonspatial':
+		outer = BootEnvironmentNonSpatial(kafka_config)
 
 	elif args.command == 'trigger':
 		control = EnvironmentControl(kafka_config)
