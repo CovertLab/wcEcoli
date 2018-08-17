@@ -403,8 +403,9 @@ class Simulation(object):
 		pass
 
 	def set_local_environment(self, concentrations):
-		# TODO (Eran) concentrations are received as a dict
+		# concentrations are received as a dict
 		self.external_states['Environment'].set_local_environment(concentrations)
 
 	def get_environment_change(self):
-		return self.external_states['Environment'].set_deltas()
+		pass
+		# return self.external_states['Environment'].set_deltas()

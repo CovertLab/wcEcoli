@@ -92,6 +92,30 @@ class Environment(wholecell.states.external_state.ExternalState):
 					)
 				)
 
+	# Functions for multi-scaling interface
+	def set_local_environment(self, concentrations):
+		for idx, molecule_id in enumerate(self._moleculeIDs):
+			self._concentrations[idx] = concentrations[molecule_id]
+
+
+	# def get_deltas(self):
+	# 	return self.total_deltas
+	#
+	# # This sets accumulate_deltas to true and initializes the dictionary of save total_deltas
+	# def save_deltas(self):
+	# 	self.save_accumulated_deltas = True
+	# 	self.total_deltas = dict((id,0) for id in self._moleculeIDs)
+	#
+	# def accumulate_deltas(self, molecule_ids, counts):
+	# 	for id, count in zip(molecule_ids, counts):
+	# 		self.total_deltas[id] += count
+	#
+	# def clear_accumulated_deltas(self):
+	# 	self.total_deltas = dict.fromkeys(self.total_deltas, 0)
+
+
+
+
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)
 		tableWriter.writeAttributes(

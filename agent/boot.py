@@ -79,15 +79,16 @@ class BootEnvironmentNonSpatial(object):
 			self.environment_dict[label] = {}
 			# initiate all molecules with 0 concentrations
 			for row in raw_data.condition.environment_molecules:
-				self.environment_dict[label].update({row["molecule id"]: 0 * (units.mmol / units.L)})
+				self.environment_dict[label].update({row["molecule id"]: 0}) #* (units.mmol / units.L)})
 			# update non-zero concentrations
 			molecule_concentrations = getattr(raw_data.condition.environment, label)
 			for row in molecule_concentrations:
-				self.environment_dict[label].update({row["molecule id"]: row["concentration"]})
+				self.environment_dict[label].update({row["molecule id"]: row["concentration"].asNumber()})
 
 		# TODO (Eran) don't hardcode initial environment, get this from timeseries
-		environment_label = 'minimal'
-		self.environment = EnvironmentNonSpatial(self.environment_dict[environment_label])
+		concentrations = self.environment_dict['minimal']
+
+		self.environment = EnvironmentNonSpatial(concentrations)
 		self.outer = Outer(kafka_config, self.environment)
 
 
