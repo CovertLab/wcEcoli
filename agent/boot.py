@@ -14,6 +14,8 @@ from environment.nonspatial import EnvironmentNonSpatial
 # Raw data class
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 
+from wholecell.utils import units
+
 default_kafka_config = {
 	'host': '127.0.0.1:9092',
 	'simulation_send': 'environment_listen',
