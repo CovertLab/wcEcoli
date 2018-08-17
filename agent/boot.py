@@ -65,7 +65,7 @@ class BootInner(object):
 
 
 class BootEnvironmentNonSpatial(object):
-	def __init__(self, kafka):
+	def __init__(self, kafka_config):
 		raw_data = KnowledgeBaseEcoli()
 		# create a dictionary with all saved environments
 		self.environment_dict = {}
@@ -84,7 +84,7 @@ class BootEnvironmentNonSpatial(object):
 		# TODO (Eran) don't hardcode initial environment
 		environment_label = 'minimal'
 		self.environment = EnvironmentNonSpatial(self.environment_dict[environment_label])
-		self.outer = Outer(kafka, self.environment)
+		self.outer = Outer(kafka_config, self.environment)
 
 
 class EnvironmentControl(Agent):
