@@ -34,7 +34,7 @@ class Outer(Agent):
 	    
 	* environment.remove_simulation(id)
 
-	* environment.update_concentrations(changes)
+	* environment.update_counts(changes)
         `changes` is a dictionary of simulation ids to counts
 
 	* environment.run_until()
@@ -160,7 +160,7 @@ class Outer(Agent):
 							self.send_shutdown()
 						else:
 							changes = self.simulation_changes()
-							self.environment.update_concentrations(changes)
+							self.environment.update_counts(changes)
 							self.send_concentrations()
 
 		elif message['event'] == event.SHUTDOWN_ENVIRONMENT:

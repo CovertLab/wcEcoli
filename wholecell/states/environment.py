@@ -37,7 +37,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 		self._moleculeIDs = None
 		self._concentrations = None
 
-		self._cumulative_env_deltas = None
+		self._env_delta_counts = None
 
 		super(Environment, self).__init__(*args, **kwargs)
 
@@ -61,7 +61,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 		# initialize molecule IDs and concentrations based on initial environment
 		self._moleculeIDs = [id for id, concentration in self.environment_dict[self.nutrients].iteritems()]
 		self._concentrations = np.array([concentration.asNumber() for id, concentration in self.environment_dict[self.nutrients].iteritems()])
-		self._cumulative_env_deltas = dict((molecule_id, 0) for molecule_id in self._moleculeIDs)
+		self._env_delta_counts = dict((molecule_id, 0) for molecule_id in self._moleculeIDs)
 
 		# create bulk container for molecule concentrations. This uses concentrations instead of counts.
 		self.container = BulkObjectsContainer(self._moleculeIDs, dtype=np.float64)
@@ -95,16 +95,16 @@ class Environment(wholecell.states.external_state.ExternalState):
 
 	# Functions for multi-scaling interface
 	def set_local_environment(self, concentrations):
-		self._cumulative_env_deltas = dict.fromkeys(self._cumulative_env_deltas, 0)
+		self._env_delta_counts = dict.fromkeys(self._env_delta_counts, 0)
 		for idx, molecule_id in enumerate(self._moleculeIDs):
 			self._concentrations[idx] = concentrations[molecule_id]
 
 	def get_environment_change(self):
-		return self._cumulative_env_deltas
+		return self._env_delta_counts
 
 	def accumulate_deltas(self, molecule_ids, counts):
 		for molecule_id, count in zip(molecule_ids, counts):
-			self._cumulative_env_deltas[molecule_id] += count
+			self._env_delta_counts[molecule_id] += count
 
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)

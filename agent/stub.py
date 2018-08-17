@@ -78,16 +78,16 @@ class EnvironmentStub(object):
 	def remove_simulation(self, id):
 		return self.simulations.pop(id, {})
 
-	def update_concentrations(self, all_changes):
+	def update_counts(self, all_changes):
 		self._time += self.run_for
-		for id, changes in all_changes.iteritems():
+		for sim_id, changes in all_changes.iteritems():
 			for molecule, change in changes.iteritems():
 				self.concentrations[molecule] += change
 
 	def run_until(self):
 		until = {}
-		for id in self.simulations.keys():
-			until[id] = self.time() + self.run_for
+		for sim_id in self.simulations.keys():
+			until[sim_id] = self.time() + self.run_for
 
 		return until
 
@@ -96,7 +96,7 @@ class EnvironmentStub(object):
 
 	def get_concentrations(self):
 		concentrations = {}
-		for id in self.simulations.keys():
-			concentrations[id] = self.concentrations
+		for sim_id in self.simulations.keys():
+			concentrations[sim_id] = self.concentrations
 		
 		return concentrations
