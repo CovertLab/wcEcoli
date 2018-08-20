@@ -27,14 +27,16 @@ from wholecell.utils import units
 
 from models.ecoli.analysis import cohortAnalysisPlot
 
+THROW_ON_BAD_SIMULATION_OUTPUT = False
+
 # First generation (counting from zero) from which to gather doubling time
 # values.  If fewer generations were run, this script quits early without
 # plotting anything.
 FIRST_GENERATION = 2
 
-DOUBLING_TIME_BOUNDS_MINUTES = [35, 170]
+DOUBLING_TIME_BOUNDS_MINUTES = [30, 170]
 N_BINS = 30
-FREQUENCY_MAX = 160
+FREQUENCY_MAX = 250
 
 FIGSIZE = (3.5, 3.5)
 
@@ -71,16 +73,52 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		doubling_times_minutes = []
 
+		missing_files = []
+		broken_files = []
+
 		for sim_dir in sim_dirs:
 			sim_out_dir = os.path.join(sim_dir, "simOut")
 
+			path = os.path.join(sim_out_dir, 'Main')
+
+			if not os.path.exists(path):
+				missing_files.append(path)
+				continue
+
 			# Assume simulated time == doubling time
-			time = TableReader(os.path.join(sim_out_dir, 'Main')).readColumn('time')
+			try:
+				time = TableReader(path).readColumn('time')
+
+			except Exception as e:
+				broken_files.append(path)
+				continue
 
 			# Time is relative to the first simulation, so need to take a difference
 			doubling_time = time[-1] - time[0]
 
 			doubling_times_minutes.append(doubling_time / 60.)
+
+		if missing_files or broken_files:
+			messages = []
+
+			if missing_files:
+				messages.append('Missing files:\n{}'.format(
+					'\n'.join(missing_files)
+					))
+
+			if broken_files:
+				messages.append('Broken files:\n{}'.format(
+					'\n'.join(broken_files)
+					))
+
+			message = '\n'.join(messages)
+
+			if THROW_ON_BAD_SIMULATION_OUTPUT:
+				# Throw late so we get a full picture of what files are missing
+				raise Exception(message)
+
+			else:
+				print message
 
 		plt.figure(figsize = FIGSIZE)
 
