@@ -7,8 +7,8 @@
 
 # Panel A
 
-# Figure 2 panels a (tentatively) are the four variants with optional
-# fitting of ribosome and RNA polymerase expression, corresponding* to sets
+# Figure 2A (tentatively) is the four variants with optional fitting of
+# ribosome and RNA polymerase expression, corresponding* to sets
 # D1 - rib fit, RNAp fit
 # D2 - rib unfit, RNAp fit
 # D3 - rib fit, RNAp unfit
@@ -27,8 +27,12 @@ python $FIG2A_SCRIPT $SET_D2
 python $FIG2A_SCRIPT $SET_D3
 python $FIG2A_SCRIPT $SET_D4
 
-# TODO:
-#	The rest of figure 2's panels
-#	Supplementary figures - cell composition over time?
-#	Finalize simulation set/panel association
-#	Copy output (and rename?) into a convenient directory?
+
+# Supplementary
+
+SUPL_SCRIPT1=models/ecoli/analysis/multigen/massFractionSummary.py
+
+python $SUPL_SCRIPT1 $SET_D1 -s 0
+python $SUPL_SCRIPT1 $SET_D2 -s 0
+python $SUPL_SCRIPT1 $SET_D3 -s 0
+python $SUPL_SCRIPT1 $SET_D4 -s 0
