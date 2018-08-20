@@ -59,8 +59,10 @@ class Environment(wholecell.states.external_state.ExternalState):
 		self._times = [t[0] for t in self.current_time_series]
 
 		# initialize molecule IDs and concentrations based on initial environment
-		self._moleculeIDs = [id for id, concentration in self.environment_dict[self.nutrients].iteritems()]
-		self._concentrations = np.array([concentration.asNumber() for id, concentration in self.environment_dict[self.nutrients].iteritems()])
+
+
+		self._moleculeIDs = [molecule_id for molecule_id, concentration in self.environment_dict[self.nutrients].iteritems()]
+		self._concentrations = np.array([concentration for molecule_id, concentration in self.environment_dict[self.nutrients].iteritems()])
 		self._env_delta_counts = dict((molecule_id, 0) for molecule_id in self._moleculeIDs)
 
 		# create bulk container for molecule concentrations. This uses concentrations instead of counts.
@@ -79,7 +81,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 		# a ribosomeElongationRate in ribosomeElongationRateDict
 		if self.nutrients != self.current_time_series[current_index][1]:
 			self.nutrients = self.current_time_series[current_index][1]
-			self._concentrations = np.array([concentration.asNumber() for id, concentration in self.environment_dict[self.nutrients].iteritems()])
+			self._concentrations = np.array([concentration for id, concentration in self.environment_dict[self.nutrients].iteritems()])
 			self.container.countsIs(self._concentrations)
 
 		if ASSERT_POSITIVE_CONCENTRATIONS and (self._concentrations < 0).any():
