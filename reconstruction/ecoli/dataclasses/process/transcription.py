@@ -313,8 +313,13 @@ class Transcription(object):
 
 		self.charging_molecules = molecules
 
-	# returns matrix with rows of metabolites for each tRNA charging reaction on the column
 	def charging_stoich_matrix(self):
+		'''
+		Creates stoich matrix from i, j, v arrays
+
+		Returns 2D array with rows of metabolites for each tRNA charging reaction on the column
+		'''
+
 		shape = (self._stoich_matrix_i.max() + 1, self._stoich_matrix_j.max() + 1)
 
 		out = np.zeros(shape, np.float64)
