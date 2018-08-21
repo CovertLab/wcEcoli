@@ -8,22 +8,7 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
-
-COLORS_256 = [ # From colorbrewer2.org, qualitative 8-class set 1
-	[228,26,28],
-	[55,126,184],
-	[77,175,74],
-	[152,78,163],
-	[255,127,0],
-	[255,255,51],
-	[166,86,40],
-	[247,129,191]
-	]
-
-COLORS = [
-	[colorValue/255. for colorValue in color]
-	for color in COLORS_256
-	]
+from wholecell.utils.sparkline import whitePadSparklineAxis
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
@@ -36,10 +21,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		mass = TableReader(os.path.join(simOutDir, "Mass"))
 
-		# cell = mass.readColumn("cellMass")
-		# cellDry = mass.readColumn("dryMass")
 		protein = mass.readColumn("proteinMass")
-		# rna = mass.readColumn("rnaMass")
 		tRna = mass.readColumn("tRnaMass")
 		rRna = mass.readColumn("rRnaMass")
 		mRna = mass.readColumn("mRnaMass")
@@ -48,7 +30,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 		t = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
-
 
 		masses = np.vstack([
 			protein/protein[0],
@@ -59,24 +40,38 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			smallMolecules/smallMolecules[0],
 			]).T
 
-		massLabels = ["Protein", "rRNA", "tRNA", "mRNA", "DNA", "Small Mol.s"]
+		massLabels = ["Protein", "rRNA", "tRNA", "mRNA", "DNA", "Small Mol."]
 
 		plt.figure(figsize = (8.5, 11))
 
-		# plt.rc('axes', color_cycle=COLORS)
-		plt.gca().set_prop_cycle('color', COLORS)
+		ax = plt.gca()
+		ax.set_prop_cycle(plt.style.library['fivethirtyeight']['axes.prop_cycle'])
 
 		plt.plot(t / 60., masses, linewidth = 2)
 		plt.xlabel("Time (min)")
 		plt.ylabel("Mass (normalized by t = 0 min)")
 		plt.title("Biomass components")
-		#plt.axis([0, 60, 0.5, 2.5])
-
 		plt.legend(massLabels, loc = "best")
+		plt.axhline(2, linestyle='--', color='k')
 
-		# plt.show()
+		whitePadSparklineAxis(ax)
+
+		xticks = [0, t[-1] / 60]
+		yticks = [1, 2, np.max(masses)]
+		ax.set_xlim(xticks)
+		ax.set_ylim((yticks[0], yticks[-1]))
+		ax.set_xticks(xticks)
+		ax.set_yticks(yticks)
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
+		ax.set_xlabel("")
+		ax.set_ylabel("")
+		ax.set_title("")
+		ax.set_xticklabels([])
+		ax.set_yticklabels([])
+
+		exportFigure(plt, plotOutDir, plotOutFileName + "_stripped", metadata)
 		plt.close("all")
 
 
