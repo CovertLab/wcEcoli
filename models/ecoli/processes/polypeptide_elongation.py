@@ -90,17 +90,16 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.elngRateFactor = 1.
 
-
-		self.synthetaseNames = []
-		synthetaseRxns = [rxn for rxn in sim_data.process.metabolism.reactionCatalysts if re.findall('Charged\-(.*?)\-tRNAs', rxn)]
-		for rxn in synthetaseRxns:
-			for syn in sim_data.process.metabolism.reactionCatalysts[rxn]:
-				if syn not in self.synthetaseNames:
-					self.synthetaseNames.append(syn)
+		self.synthetase_names = []
+		synthetase_rxns = [rxn for rxn in sim_data.process.metabolism.reactionCatalysts if re.findall('Charged\-(.*?)\-tRNAs', rxn)]
+		for rxn in synthetase_rxns:
+			for synthetase in sim_data.process.metabolism.reactionCatalysts[rxn]:
+				if synthetase not in self.synthetase_names:
+					self.synthetase_names.append(synthetase)
 
 		# Build matrix to map AA and synthetases
-		self.aaFromSynthetase = np.zeros((len(self.aaNames), len(self.synthetaseNames)))
-		for rxn in synthetaseRxns:
+		self.aa_from_synthetase = np.zeros((len(self.aaNames), len(self.synthetase_names)))
+		for rxn in synthetase_rxns:
 			aa = re.findall('Charged\-(.*?)\-tRNAs', rxn)[0]
 			if aa == "ALA":
 				aa = "L-ALPHA-ALANINE"
@@ -108,9 +107,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				aa = "L-ASPARTATE"
 
 			for syn in sim_data.process.metabolism.reactionCatalysts[rxn]:
-				aaIdx = self.aaNames.index(aa + "[c]")
-				synIdx = self.synthetaseNames.index(syn)
-				self.aaFromSynthetase[aaIdx, synIdx] = 1
+				aa_idx = self.aaNames.index(aa + "[c]")
+				syn_idx = self.synthetase_names.index(syn)
+				self.aa_from_synthetase[aa_idx, syn_idx] = 1
 
 		self.charging_stoich_matrix = sim_data.process.transcription.charging_stoich_matrix
 		self.uncharged_trna_names = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']]
@@ -120,7 +119,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.charged_trna = self.bulkMoleculesView(self.charged_trna_names)
 		self.charging_molecules = self.bulkMoleculesView(self.charging_molecule_names)
 		self.aa_from_trna = sim_data.process.transcription.aa_from_trna
-		self.synthetases = self.bulkMoleculesView(self.synthetaseNames)
+		self.synthetases = self.bulkMoleculesView(self.synthetase_names)
 
 		# ppGpp parameters
 		# TODO - put in flat file
@@ -161,8 +160,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 					'proteinIndex', 'peptideLength'
 					)
 
-
-		print self.ribosomeElongationRate
 		self.elongation_factor = 1.1  # TODO - remove/ensure sequence is long enough with padding
 
 		sequences = buildSequences(
@@ -181,7 +178,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		counts_to_molar = 1 / (self.nAvogadro * cell_volume)
 
 		# get counts - convert synthetase and tRNA to a per AA basis
-		synthetase_counts = np.dot(self.aaFromSynthetase, self.synthetases.total())
+		synthetase_counts = np.dot(self.aa_from_synthetase, self.synthetases.total())
 		aa_counts = self.aas.total()
 		uncharged_trna_counts = np.dot(self.aa_from_trna, self.uncharged_trna.total())
 		charged_trna_counts = np.dot(self.aa_from_trna, self.charged_trna.total()) + 1
@@ -200,7 +197,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		total_trna_conc = (counts_to_molar * total_trna_counts)[mask]
 		ribosome_conc = (counts_to_molar * ribosome_counts)
 
-		# import ipdb; ipdb.set_trace()
 		updated_uncharged_trna_conc, updated_charged_trna_conc, v_rib = self.calculate_trna_charging(
 			synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f
 			)
@@ -227,7 +223,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		total_trna_conc = updated_uncharged_trna_conc + updated_charged_trna_conc
 		fraction_charged = np.zeros(len(self.aaNames))
 		fraction_charged[mask] = updated_charged_trna_conc / total_trna_conc
-		print min(fraction), max(fraction)
 
 		total_trna = self.charged_trna.total() + self.uncharged_trna.total()
 		final_charged_trna = np.dot(fraction_charged, self.aa_from_trna * total_trna)
