@@ -11,6 +11,8 @@ from agent.inner import Inner
 from agent.stub import SimulationStub, EnvironmentStub
 
 from environment.nonspatial import EnvironmentNonSpatial
+from environment.spatial_lattice import EnvironmentSpatialLattice
+
 from models.ecoli.sim.simulation import EcoliSimulation
 
 from wholecell.fireworks.firetasks import VariantSimDataTask
@@ -92,6 +94,30 @@ class BootEnvironmentNonSpatial(object):
 		self.outer = Outer(kafka_config, self.environment)
 
 
+class BootEnvironmentSpatialLattice(object):
+	def __init__(self, kafka_config):
+		raw_data = KnowledgeBaseEcoli()
+		# create a dictionary with all saved environments
+		self.environment_dict = {}
+		for label in dir(raw_data.condition.environment):
+			if label.startswith("__"):
+				continue
+			self.environment_dict[label] = {}
+			# initiate all molecules with 0 concentrations
+			for row in raw_data.condition.environment_molecules:
+				self.environment_dict[label].update({row["molecule id"]: 0}) #* (units.mmol / units.L)})
+			# update non-zero concentrations
+			molecule_concentrations = getattr(raw_data.condition.environment, label)
+			for row in molecule_concentrations:
+				self.environment_dict[label].update({row["molecule id"]: row["concentration"].asNumber()})
+
+		# TODO (Eran) don't hardcode initial environment, get this from timeseries
+		concentrations = self.environment_dict['minimal']
+
+		self.environment = EnvironmentSpatialLattice(concentrations)
+		self.outer = Outer(kafka_config, self.environment)
+
+
 class BootEcoli(object):
 	def __init__(self, id, kafka_config):
 		self.id = id
@@ -168,7 +194,7 @@ def main():
 
 	parser.add_argument(
 		'command',
-		choices=['inner', 'outer', 'ecoli', 'nonspatial', 'trigger', 'shutdown'],
+		choices=['inner', 'outer', 'ecoli', 'nonspatial', 'lattice', 'trigger', 'shutdown'],
 		help='which command to boot')
 
 	parser.add_argument(
@@ -220,6 +246,9 @@ def main():
 
 	elif args.command == 'nonspatial':
 		outer = BootEnvironmentNonSpatial(kafka_config)
+
+	elif args.command == 'lattice':
+		outer = BootEnvironmentSpatialLattice(kafka_config)
 
 	elif args.command == 'trigger':
 		control = EnvironmentControl(kafka_config)
