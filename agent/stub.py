@@ -84,7 +84,7 @@ class EnvironmentStub(object):
 			for molecule, change in changes.iteritems():
 				self.concentrations[molecule] += change
 
-	def run_until(self):
+	def simulations_run_until(self):
 		until = {}
 		for sim_id in self.simulations.keys():
 			until[sim_id] = self.time() + self.run_for

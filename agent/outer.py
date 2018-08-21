@@ -37,7 +37,7 @@ class Outer(Agent):
 	* environment.update_counts(changes)
         `changes` is a dictionary of simulation ids to counts
 
-	* environment.run_until()
+	* environment.simulations_run_until()
 	    Returns a dictionary of simulation ids to time points for each simulation to run until.
 
 	* environment.molecule_ids()
@@ -77,7 +77,7 @@ class Outer(Agent):
 		""" Send updated concentrations to each inner agent. """
 
 		concentrations = self.environment.get_concentrations()
-		run_until = self.environment.run_until()
+		run_until = self.environment.simulations_run_until()
 
 		for id, simulation in self.simulations.iteritems():
 			simulation['message_id'] += 1
@@ -87,6 +87,8 @@ class Outer(Agent):
 				'event': event.ENVIRONMENT_UPDATED,
 				'concentrations': concentrations[id],
 				'run_until': run_until[id]})
+
+		self.environment.run_incremental(run_until[self.environment.id])
 
 	def ready_to_advance(self):
 		"""
