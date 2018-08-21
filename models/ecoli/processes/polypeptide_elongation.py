@@ -197,9 +197,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		total_trna_conc = (counts_to_molar * total_trna_counts)[mask]
 		ribosome_conc = (counts_to_molar * ribosome_counts)
 
-		updated_uncharged_trna_conc, updated_charged_trna_conc, v_rib = self.calculate_trna_charging(
+		fraction_charged, v_rib = self.calculate_trna_charging(
 			synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f
 			)
+		updated_uncharged_trna_conc = total_trna_conc * (1 - fraction_charged)
+		updated_charged_trna_conc = total_trna_conc * fraction_charged
 
 		if self.translationSupply:
 			translationSupplyRate = self.translation_aa_supply[current_nutrients] * self.elngRateFactor
@@ -221,11 +223,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		supply_aa_request = countAasRequested[mask]
 		fraction = charging_aa_request / supply_aa_request
 		total_trna_conc = updated_uncharged_trna_conc + updated_charged_trna_conc
-		fraction_charged = np.zeros(len(self.aaNames))
-		fraction_charged[mask] = updated_charged_trna_conc / total_trna_conc
+		updated_fraction_charged = np.zeros(len(self.aaNames))
+		updated_fraction_charged[mask] = fraction_charged
 
 		total_trna = self.charged_trna.total() + self.uncharged_trna.total()
-		final_charged_trna = np.dot(fraction_charged, self.aa_from_trna * total_trna)
+		final_charged_trna = np.dot(updated_fraction_charged, self.aa_from_trna * total_trna)
 
 		charged_trna_request = self.charged_trna.total() - final_charged_trna
 		charged_trna_request[charged_trna_request < 0] = 0
@@ -240,7 +242,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.charged_trna.requestIs(charged_trna_request)
 		self.uncharged_trna.requestIs(uncharged_trna_request)
 
-		self.writeToListener("GrowthLimits", "fraction_trna_charged", np.dot(fraction_charged, self.aa_from_trna))
+		self.writeToListener("GrowthLimits", "fraction_trna_charged", np.dot(updated_fraction_charged, self.aa_from_trna))
 		self.writeToListener("GrowthLimits", "aaPoolSize", self.aas.total())
 		self.writeToListener("GrowthLimits", "aaRequestSize", countAasRequested)
 
@@ -414,8 +416,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			f (array of floats) - fraction of each amino acid to be incorporated to total amino acids incorporated
 
 		Returns:
-			uncharged_trna_conc (array of floats) - concentration of uncharged tRNA in units of uM
-			charged_trna_conc (array of floats) - concentration of charged tRNA in units of uM
+			fraction_charged (array of floats) - fraction of total tRNA that is charged for each tRNA species
 			v_rib (float) - ribosomal elongation rate in units of uM/s
 		'''
 
@@ -441,7 +442,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			charged_trna_conc += delta_conc
 			diff = np.linalg.norm(delta_conc)
 
-		return uncharged_trna_conc, charged_trna_conc, v_rib
+		fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
+		return fraction_charged, v_rib
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		"""
