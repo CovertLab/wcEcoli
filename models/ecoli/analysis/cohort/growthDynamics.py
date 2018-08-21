@@ -66,10 +66,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		for idx, simDir in enumerate(all_cells):
-			color = "black"
+			#color = "black"
+			color = "#0d71b9"
 			alpha = 1
 			if idx % 2:
-				color = "#BF673B"
+				color = "#0d71b9"
 				blue = 0.8
 
 			simOutDir = os.path.join(simDir, "simOut")
@@ -82,7 +83,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			massPerOric = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("criticalMassPerOriC")
 			idxInit = np.where(massPerOric >= 1)[0]
 			ax0.plot(time / 60., cellMass, color = color, alpha = alpha, linewidth=2)
-			ax0.plot(time[idxInit] / 60., cellMass[idxInit],  markersize=6, linewidth=0, marker="o", color = "#FCBE67", markeredgewidth=0)
+			ax0.plot(time[idxInit] / 60., cellMass[idxInit],  markersize=6, linewidth=0, marker="o", color = "#ed2224", markeredgewidth=0)
 
 			## Inst. growth rate
 			growthRate = mass.readColumn("instantaniousGrowthRate")
@@ -243,10 +244,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		for idx, simDir in enumerate(all_cells):
-			color = "black"
+			#color = "black"
+			color = "#0d71b9"
 			alpha = 1
 			if idx % 2:
-				color = "#BF673B"
+				color = "#0d71b9"
 				blue = 0.8
 
 			simOutDir = os.path.join(simDir, "simOut")
