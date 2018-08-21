@@ -96,7 +96,7 @@ class BootEcoli(object):
 	def __init__(self, id, kafka_config):
 		self.id = id
 
-		# copy the file simData_Most_Fit.cPickle to simData_Modlfied.cPickle
+		# copy the file simData_Most_Fit.cPickle to simData_Modified.cPickle
 		task = VariantSimDataTask(
 			variant_function='wildtype',
 			variant_index=0,
@@ -107,11 +107,10 @@ class BootEcoli(object):
 		task.run_task({})
 
 		options = {}
-
 		options["simDataLocation"] = '/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/kb/simData_Modified.cPickle'
-		options["outputDir"] = '/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/000000/generation_000000/000000/simOut'
+		options["outputDir"] = '/Users/eranagmon/code/wcEcoli/out/manual/sim_' + self.id + '/simOut'
 		options["logToDisk"] = True
-		options["overwriteExistingFiles"] = False
+		options["overwriteExistingFiles"] = True
 
 		options["seed"] = 0
 		options["lengthSec"] = 10800
