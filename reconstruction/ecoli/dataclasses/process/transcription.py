@@ -23,11 +23,11 @@ class Transcription(object):
 	""" Transcription """
 
 	def __init__(self, raw_data, sim_data):
-		self._buildRnaData(raw_data, sim_data)
-		self._buildTranscription(raw_data, sim_data)
-		self._buildChargedTrna(raw_data, sim_data)
+		self._build_rna_data(raw_data, sim_data)
+		self._build_transcription(raw_data, sim_data)
+		self._build_charged_trna(raw_data, sim_data)
 
-	def _buildRnaData(self, raw_data, sim_data):
+	def _build_rna_data(self, raw_data, sim_data):
 		assert all([len(rna['location']) == 1 for rna in raw_data.rnas])
 		rnaIds = ['{}[{}]'.format(rna['id'], rna['location'][0]) for rna in raw_data.rnas if len(rna['location']) == 1]
 		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in raw_data.rnas]) # TODO: units
@@ -168,7 +168,7 @@ class Transcription(object):
 		self.rnaData = UnitStructArray(rnaData, field_units)
 		#self.getTrnaAbundanceData = getTrnaAbundanceAtGrowthRate
 
-	def _buildTranscription(self, raw_data, sim_data):
+	def _build_transcription(self, raw_data, sim_data):
 		sequences = self.rnaData["sequence"] # TODO: consider removing sequences
 
 		maxLen = np.int64(
@@ -195,24 +195,29 @@ class Transcription(object):
 
 		self.transcriptionEndWeight = (sim_data.getter.getMass(["PPI[c]"]) / raw_data.constants['nAvogadro']).asNumber(units.fg)
 
-	def _buildChargedTrna(self, raw_data, sim_data):
+	def _build_charged_trna(self, raw_data, sim_data):
+		'''
+		Loads information and creates data structures necessary for charging of tRNA
+		'''
+
 		# create list of charged tRNAs
-		trnaNames = self.rnaData['id'][self.rnaData['isTRna']]
-		chargedTrnas = [x['modifiedForms'] for x in raw_data.rnas if x['id'] + '[c]' in trnaNames]
-		filteredCharged = []
-		for chargedArray in chargedTrnas:
-			for charged in chargedArray:
-				if 'FMET' in charged or 'modified' in charged:
+		trna_names = self.rnaData['id'][self.rnaData['isTRna']]
+		charged_trnas = [x['modifiedForms'] for x in raw_data.rnas if x['id'] + '[c]' in trna_names]
+		filtered_charged_trna = []
+		for charged_list in charged_trnas:
+			for trna in charged_list:
+				#
+				if 'FMET' in trna or 'modified' in trna:
 					continue
 
-				assert('c' in sim_data.getter.getLocation([charged])[0])
-				filteredCharged += [charged + '[c]']
+				assert('c' in sim_data.getter.getLocation([trna])[0])
+				filtered_charged_trna += [trna + '[c]']
 
-		self.chargedTrnaNames = filteredCharged
-		assert(len(self.chargedTrnaNames) == len(trnaNames))
+		self.charged_trna_names = filtered_charged_trna
+		assert(len(self.charged_trna_names) == len(trna_names))
 
 		# create mapping of each tRNA/charged tRNA to associated AA
-		trnaDict = {
+		trna_dict = {
 			'RNA0-300[c]': 'VAL',
 			'RNA0-301[c]': 'LYS',
 			'RNA0-302[c]': 'LYS',
@@ -221,9 +226,9 @@ class Transcription(object):
 			'RNA0-305[c]': 'ILE',
 			'RNA0-306[c]': 'MET',
 			}
-		aaNames = sim_data.moleculeGroups.aaIDs
-		self.aaFromTrna = np.zeros((len(aaNames), len(trnaNames)))
-		for trna in trnaNames:
+		aa_names = sim_data.moleculeGroups.aaIDs
+		self.aa_from_trna = np.zeros((len(aa_names), len(trna_names)))
+		for trna in trna_names:
 			aa = trna[:3].upper()
 			if aa == 'ALA':
 				aa = 'L-ALPHA-ALANINE'
@@ -232,95 +237,87 @@ class Transcription(object):
 			elif aa == 'SEL':
 				aa = 'L-SELENOCYSTEINE'
 			elif aa == 'RNA':
-				aa = trnaDict[trna]
+				aa = trna_dict[trna]
 
 			assert('c' in sim_data.getter.getLocation([aa])[0])
 			aa += '[c]'
-			if aa in aaNames:
-				aaIdx = aaNames.index(aa)
-				trnaIdx = np.where(trnaNames == trna)[0]
-				self.aaFromTrna[aaIdx, trnaIdx] = 1
+			if aa in aa_names:
+				aaIdx = aa_names.index(aa)
+				trnaIdx = np.where(trna_names == trna)[0]
+				self.aa_from_trna[aaIdx, trnaIdx] = 1
 
 		# array for stoichiometry matrix
 		molecules = []
 
-		stoichMatrixI = []
-		stoichMatrixJ = []
-		stoichMatrixV = []
-
-		stoichMatrixMass = []
-
-		# remove reactions from modificationReactions that don't have both an uncharged and charged tRNA
-		deleteReactions = []
-		for reactionIndex, reaction in enumerate(raw_data.modificationReactions):
-			noChargedTrnaInReaction = True
-			noTrnaInReaction = True
-			for mol in [molecule['molecule'] + '[' + molecule['location'] + ']' for molecule in reaction['stoichiometry']]:
-				if mol in self.chargedTrnaNames:
-					noChargedTrnaInReaction = False
-
-				if mol in trnaNames:
-					noTrnaInReaction = False
-
-			if noChargedTrnaInReaction or noTrnaInReaction:
-				deleteReactions.append(reactionIndex)
-
-		for reactionIndex in deleteReactions[::-1]:
-			del raw_data.modificationReactions[reactionIndex]
+		stoich_matrix_i = []
+		stoich_matrix_j = []
+		stoich_matrix_v = []
 
 		# create stoichiometry matrix for charging reactions
 		for reaction in raw_data.modificationReactions:
+			# skip reactions from modificationReactions that don't have both an uncharged and charged tRNA
+			no_charged_trna_in_reaction = True
+			no_trna_in_reaction = True
+			for mol in [molecule['molecule'] + '[' + molecule['location'] + ']' for molecule in reaction['stoichiometry']]:
+				if mol in self.charged_trna_names:
+					no_charged_trna_in_reaction = False
+
+				if mol in trna_names:
+					no_trna_in_reaction = False
+
+			if no_charged_trna_in_reaction or no_trna_in_reaction:
+				continue
+
 			assert reaction['process'] == 'rna'
 			assert reaction['dir'] == 1
 
 			trna = None
 			for mol in [molecule['molecule'] + '[' + molecule['location'] + ']' for molecule in reaction['stoichiometry']]:
-				if mol in trnaNames:
+				if mol in trna_names:
 					trna = mol
 					break
 
 			if trna is None:
 				continue
-			trnaIndex = np.where(trnaNames == trna)[0][0]
+			trna_index = np.where(trna_names == trna)[0][0]
 
 			for molecule in reaction['stoichiometry']:
 				if molecule['type'] == 'metabolite':
-					moleculeName = '{}[{}]'.format(
+					molecule_name = '{}[{}]'.format(
 						molecule['molecule'].upper(),
 						molecule['location']
 						)
 				else:
-					moleculeName = '{}[{}]'.format(
+					molecule_name = '{}[{}]'.format(
 						molecule['molecule'],
 						molecule['location']
 						)
 
-				if moleculeName not in molecules:
-					molecules.append(moleculeName)
-					moleculeIndex = len(molecules) - 1
+				if molecule_name not in molecules:
+					molecules.append(molecule_name)
+					molecule_index = len(molecules) - 1
 				else:
-					moleculeIndex = molecules.index(moleculeName)
+					molecule_index = molecules.index(molecule_name)
 
 				coefficient = molecule['coeff']
 
 				assert coefficient % 1 == 0
 
-				stoichMatrixI.append(moleculeIndex)
-				stoichMatrixJ.append(trnaIndex)
-				stoichMatrixV.append(coefficient)
+				stoich_matrix_i.append(molecule_index)
+				stoich_matrix_j.append(trna_index)
+				stoich_matrix_v.append(coefficient)
 
-		self._stoichMatrixI = np.array(stoichMatrixI)
-		self._stoichMatrixJ = np.array(stoichMatrixJ)
-		self._stoichMatrixV = np.array(stoichMatrixV)
+		self._stoich_matrix_i = np.array(stoich_matrix_i)
+		self._stoich_matrix_j = np.array(stoich_matrix_j)
+		self._stoich_matrix_v = np.array(stoich_matrix_v)
 
-		self.chargingMolecules = molecules
+		self.charging_molecules = molecules
 
 	# returns matrix with rows of metabolites for each tRNA charging reaction on the column
-	def chargingStoichMatrix(self):
-		shape = (self._stoichMatrixI.max()+1, self._stoichMatrixJ.max()+1)
+	def charging_stoich_matrix(self):
+		shape = (self._stoich_matrix_i.max() + 1, self._stoich_matrix_j.max() + 1)
 
 		out = np.zeros(shape, np.float64)
-
-		out[self._stoichMatrixI, self._stoichMatrixJ] = self._stoichMatrixV
+		out[self._stoich_matrix_i, self._stoich_matrix_j] = self._stoich_matrix_v
 
 		return out
