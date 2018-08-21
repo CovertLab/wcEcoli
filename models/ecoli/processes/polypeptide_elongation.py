@@ -15,11 +15,11 @@ TODO:
 
 from __future__ import division
 
+import copy
 from itertools import izip
+import re
 
 import numpy as np
-import copy
-import re
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
