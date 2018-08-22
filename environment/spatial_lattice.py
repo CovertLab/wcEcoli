@@ -4,6 +4,10 @@ import random
 import numpy as np
 from scipy import constants
 
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+
 class EnvironmentSpatialLattice(object):
 	def __init__(self, concentrations):
 		self._time = 0
@@ -21,14 +25,54 @@ class EnvironmentSpatialLattice(object):
 		self.locations = {}
 
 		self.molecules = concentrations.keys()
+
 		# Create lattice and fill each site with concentrations dictionary
 		self.lattice = np.empty([self.nbins for dim in xrange(self.ndim)], dtype=dict)
 		self.lattice.fill(concentrations)
 
+		# plt.ion()
+		self.fig = plt.figure()
+		self.fig.canvas.draw()
+		self.plot_environment()
+
+
+	def plot_environment(self):
+
+		import ipdb; ipdb.set_trace()
+
+		glucose_lattice = np.zeros_like(self.lattice, dtype=float)
+		for (x, y), value in np.ndenumerate(self.lattice):
+			glucose_lattice[x][y] = self.lattice[x][y]['GLC[p]']
+
+		plt.imshow(glucose_lattice)
+
+		# redraw everything
+		self.fig.canvas.draw()
+		self.fig.canvas.flush_events()
+
+		# plt.pause calls canvas.draw()
+		plt.pause(0.000000000001)
+
+
+
+	# # plt.ion()
+		# self.fig.canvas.flush_events()
+		# plt.imshow(glucose_lattice)
+		# # plt.draw()
+		# # plt.pause(0.001)
+		# self.fig.canvas.draw()
+
+
 
 	def evolve(self):
 		''' Evolve environment '''
+
 		self.update_locations()
+
+		# diffuse environmental concentrations
+		self.diffusion()
+
+		self.plot_environment()
 
 
 	def update_locations(self):
@@ -39,6 +83,10 @@ class EnvironmentSpatialLattice(object):
 			# lattice cutoff
 			location[location < 0] = 0
 			location[location >= self.size] = self.size - 0.000001 # minus infinitesimal helps keep within lattice
+
+
+	def diffusion(self):
+		pass
 
 
 	def run_incremental(self, run_until):
