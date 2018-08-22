@@ -20,7 +20,6 @@ PLACE_HOLDER = -1
 FONT_SIZE=8
 trim = 0.03
 
-
 # def sparklineAxis(axis):
 # 	axis.spines['top'].set_visible(False)
 # 	axis.spines['bottom'].set_visible(False)
@@ -174,7 +173,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ax1.set_ylabel(r"$\mu$ $(\frac{gDCW}{gDCW \cdot \, min})$", fontsize=FONT_SIZE)
 		ax1.xaxis.set_visible(False)
 		# ax1.axvline(x=44*2+22., linewidth=3, color='gray', alpha = 0.5)
-		ax1.set_ylim([0.008, 0.032])
+		ax1.set_ylim([0, 0.032])
 
 		#ax2.set_ylabel("RNA/Protein\n(fg/fg)", fontsize=FONT_SIZE)
 		ax2.set_ylabel("Active\nribosome\n(umol/L)", fontsize=FONT_SIZE)
