@@ -41,10 +41,7 @@ class Environment(wholecell.states.external_state.ExternalState):
 			]
 		self.times = [t[0] for t in self.nutrients_time_series]
 
-		if hasattr(self._sim, '_timeTotal'):
-			self.update()
-		else:
-			self.nutrients = self.nutrients_time_series[0][1]
+		self.nutrients = self.nutrients_time_series[0][1]
 
 		# save the length of the longest nutrients name, for padding names in listener
 		self.nutrients_name_max_length = len(max([t[1] for t in self.nutrients_time_series], key=len))
