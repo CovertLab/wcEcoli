@@ -35,6 +35,8 @@ Workflow options:
 		expression is not fit to protein synthesis demands
 	DISABLE_RNAPOLY_CAPACITY_FITTING (int, "0"): if nonzero, RNA polymerase
 		expression is not fit to RNA synthesis demands
+	ADJUST_RNA_AND_PROTEIN_PARAMETERS (int, "1"): if nonzero, some RNA and
+		protein expression parameters will be adjusted to get expression
 
 Simulation parameters:
 	N_GENS (int, "1"): the number of generations to be simulated
@@ -136,6 +138,7 @@ PARALLEL_FITTER = bool(int(os.environ.get("PARALLEL_FITTER", "0")))
 DEBUG_FITTER = bool(int(os.environ.get("DEBUG_FITTER", "0")))
 DISABLE_RIBOSOME_CAPACITY_FITTING = bool(int(os.environ.get("DISABLE_RIBOSOME_CAPACITY_FITTING", "0")))
 DISABLE_RNAPOLY_CAPACITY_FITTING = bool(int(os.environ.get("DISABLE_RNAPOLY_CAPACITY_FITTING", "0")))
+ADJUST_RNA_AND_PROTEIN_PARAMETERS = bool(int(os.environ.get("ADJUST_RNA_AND_PROTEIN_PARAMETERS", "1")))
 
 if not RUN_AGGREGATE_ANALYSIS:
 	COMPRESS_OUTPUT = False
@@ -259,6 +262,7 @@ fw_fit_level_1 = Firework(
 		debug = DEBUG_FITTER,
 		disable_ribosome_capacity_fitting = DISABLE_RIBOSOME_CAPACITY_FITTING,
 		disable_rnapoly_capacity_fitting = DISABLE_RNAPOLY_CAPACITY_FITTING,
+		adjust_rna_and_protein_parameters = ADJUST_RNA_AND_PROTEIN_PARAMETERS,
 		),
 	name = fw_name,
 	spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": cpusForFitter}, "_priority":1}

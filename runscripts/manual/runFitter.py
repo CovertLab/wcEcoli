@@ -54,6 +54,11 @@ class RunFitter(scriptBase.ScriptBase):
 			action='store_true',
 			help= "If set, RNA polymerase expression will not be fit to protein synthesis demands."
 			)
+		parser.add_argument(
+			'--no-expression-adjustment',
+			action='store_false',
+			help= "If set, some RNA and protein expression parameters will not be adjusted."
+			)
 
 	def parse_args(self):
 		args = super(RunFitter, self).parse_args()
@@ -94,7 +99,8 @@ class RunFitter(scriptBase.ScriptBase):
 				cpus=args.cpus,
 				debug=args.debug,
 				disable_ribosome_capacity_fitting=args.disable_ribosome_fitting,
-				disable_rnapoly_capacity_fitting=args.disable_rnapoly_fitting
+				disable_rnapoly_capacity_fitting=args.disable_rnapoly_fitting,
+				adjust_rna_and_protein_parameters=args.no_expression_adjustment,
 				),
 
 			SymlinkTask(
