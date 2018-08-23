@@ -163,13 +163,14 @@ def analyze_variant((variant, ap, toya_reactions, toya_fluxes, outlier_filter)):
 	n_conc_off_axis = np.sum(np.abs((target_conc - actual_conc) / target_conc) > FRAC_CONC_OFF_AXIS)
 
 	# Flux target comparison
-	# Nonzero includes fluxes at 0 if target is also 0
+	# Add small value (1e-6) to fluxes for correlation so not taking log of 0
 	actual_flux = np.mean(actual_flux, axis=0)
 	target_flux = np.mean(target_flux, axis=0)
-	flux_correlation = np.corrcoef(actual_flux, target_flux)[0, 1]
+	flux_correlation = np.corrcoef(np.log(actual_flux + 1e-6), np.log(target_flux + 1e-6))[0, 1]
 	n_flux_off_axis = np.sum(np.abs((target_flux - actual_flux) / target_flux) > FRAC_FLUX_OFF_AXIS)
 	mask = (actual_flux != 0)
-	nonzero_flux_correlation = np.corrcoef(actual_flux[mask], target_flux[mask])[0, 1]
+	nonzero_flux_correlation = np.corrcoef(np.log(actual_flux[mask] + 1e-6), np.log(target_flux[mask] + 1e-6))[0, 1]
+
 	n_flux_above_0 = np.sum(actual_flux > 0) + np.sum((actual_flux == 0) & (target_flux == 0))
 
 	# Toya comparison
