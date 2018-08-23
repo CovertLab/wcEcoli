@@ -1,12 +1,14 @@
 import time
 import random
 
+import os
+
 import numpy as np
 from scipy import constants
 
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
+# import matplotlib
+# matplotlib.use('TkAgg')
+# import matplotlib.pyplot as plt
 
 class EnvironmentSpatialLattice(object):
 	def __init__(self, concentrations):
@@ -14,7 +16,7 @@ class EnvironmentSpatialLattice(object):
 		self._timestep = 0.2
 		self.run_for = 20
 		self.size = 1
-		self.ndim = 2
+		self.ndims = 2
 		self.nbins = 20
 		self.volume = 1000 #TODO (Eran) initialize this value
 		self.nAvogadro = constants.N_A #TODO (ERAN) get this from sim_data.constants.nAvogadro
@@ -27,41 +29,38 @@ class EnvironmentSpatialLattice(object):
 		self.molecules = concentrations.keys()
 
 		# Create lattice and fill each site with concentrations dictionary
-		self.lattice = np.empty([self.nbins for dim in xrange(self.ndim)], dtype=dict)
+		#TODO (Eran) make this an ndims+1, with +1 for indexing each molecule
+		self.lattice = np.empty([self.nbins for dim in xrange(self.ndims)], dtype=dict)
 		self.lattice.fill(concentrations)
 
-		# plt.ion()
-		self.fig = plt.figure()
-		self.fig.canvas.draw()
-		self.plot_environment()
+		if os.path.exists("out/manual/environment.txt"):
+			os.remove("out/manual/environment.txt")
+		if os.path.exists("out/manual/locations.txt"):
+			os.remove("out/manual/locations.txt")
 
 
-	def plot_environment(self):
-
-		import ipdb; ipdb.set_trace()
+	def save_environment(self):
 
 		glucose_lattice = np.zeros_like(self.lattice, dtype=float)
 		for (x, y), value in np.ndenumerate(self.lattice):
 			glucose_lattice[x][y] = self.lattice[x][y]['GLC[p]']
 
-		plt.imshow(glucose_lattice)
+		glucose_lattice = glucose_lattice.tolist()
 
-		# redraw everything
-		self.fig.canvas.draw()
-		self.fig.canvas.flush_events()
-
-		# plt.pause calls canvas.draw()
-		plt.pause(0.000000000001)
+		# open in append mode
+		lattice_file = open("out/manual/environment.txt", "a")
+		lattice_file.write("%s\n" % glucose_lattice)
+		lattice_file.close()
 
 
+	def save_locations(self):
 
-	# # plt.ion()
-		# self.fig.canvas.flush_events()
-		# plt.imshow(glucose_lattice)
-		# # plt.draw()
-		# # plt.pause(0.001)
-		# self.fig.canvas.draw()
+		locations = self.locations.values()[0].tolist()
 
+		# open in append mode
+		locations_file = open("out/manual/locations.txt", "a")
+		locations_file.write("%s\n" % locations)
+		locations_file.close()
 
 
 	def evolve(self):
@@ -72,17 +71,16 @@ class EnvironmentSpatialLattice(object):
 		# diffuse environmental concentrations
 		self.diffusion()
 
-		self.plot_environment()
-
 
 	def update_locations(self):
 		''' Update location for all sim_ids '''
 		for sim_id, location in self.locations.iteritems():
-			location += np.random.normal(0, 0.1, self.ndim)
+			location += np.random.normal(0, 0.1, self.ndims)
 
 			# lattice cutoff
 			location[location < 0] = 0
 			location[location >= self.size] = self.size - 0.000001 # minus infinitesimal helps keep within lattice
+
 
 
 	def diffusion(self):
@@ -91,6 +89,10 @@ class EnvironmentSpatialLattice(object):
 
 	def run_incremental(self, run_until):
 		''' Simulate until run_until '''
+
+		self.save_environment()
+		self.save_locations()
+
 		while self._time < run_until:
 			self._time += self._timestep
 			self.evolve()
@@ -116,6 +118,7 @@ class EnvironmentSpatialLattice(object):
 			for molecule, delta_conc in zip(delta_counts.keys(), delta_concentrations):
 				self.lattice[bin][molecule] += delta_conc
 
+
 	def molecule_ids(self):
 		''' Return the ids of all molecule species in the environment '''
 		return self.molecules
@@ -139,7 +142,7 @@ class EnvironmentSpatialLattice(object):
 		state = {}
 
 		# Place cell at a random initial location
-		location = np.random.uniform(0,self.size,self.ndim)
+		location = np.random.uniform(0,self.size,self.ndims)
 
 		self.simulations[id] = state
 		self.locations[id] = location
