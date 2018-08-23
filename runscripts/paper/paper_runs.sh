@@ -84,6 +84,15 @@ SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=8 \
 MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
 python runscripts/fw_queue.py
 
+## Set G - no RNA and protein expression parameter adjustments
+# Used in supplemental figure
+DESC="SET G 32 gens 8 seeds basal without parameter adjustments" \
+VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+SINGLE_DAUGHTERS=1 N_GENS=32 N_INIT_SIMS=8 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
+ADJUST_RNA_AND_PROTEIN_PARAMETERS=0 \
+python runscripts/fw_queue.py
+
 
 ## Launch the fireworks created with fw_queue.py
 # Uncomment one method - rlaunch is interactive, qlaunch is distributed
