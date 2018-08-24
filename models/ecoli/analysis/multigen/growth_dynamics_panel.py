@@ -68,23 +68,32 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		tfBoundIds = [target + "__CPLX-125" for target in sim_data.tfToFC["CPLX-125"].keys()]
 		synthProbIds = [target + "[c]" for target in sim_data.tfToFC["CPLX-125"].keys()]
+
+		# Initialize for instantaneous growth rate calculations:
+		timeMultigen = np.zeros(0)
+		cellMassGrowthRateMultigen = np.zeros(0)
+		proteinGrowthRateMultigen = np.zeros(0)
+		rnaGrowthRateMultigen = np.zeros(0)
 				
 		for simDir in allDirs:
 			simOutDir = os.path.join(simDir, "simOut")
 			# Load time
 			initialTime = 0#TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
 			time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
+			timeStep = TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")
 
 			# Load mass data
 			# Total cell mass is needed to compute concentrations (since we have cell density)
 			# Protein mass is needed to compute the mass fraction of the proteome that is trpA
 			massReader = TableReader(os.path.join(simOutDir, "Mass"))
-			cellMass = units.fg * massReader.readColumn("cellMass")
-			cellMass_no_conv = massReader.readColumn("cellMass")
-			proteinMass = units.fg * massReader.readColumn("proteinMass")
-
-			# Get instantanous growth rate
+			
+			cellMass = massReader.readColumn("cellMass")
+			proteinMass = massReader.readColumn("proteinMass")
+			rnaMass = massReader.readColumn("rnaMass")
+			dnaMass = massReader.readColumn("dnaMass")
 			growth_rate = massReader.readColumn("instantaniousGrowthRate")
+			cellMass_fg = units.fg * massReader.readColumn("cellMass")
+			proteinMass_fg = units.fg * massReader.readColumn("proteinMass")
 			massReader.close()
 
 			# Load data from ribosome data listener
@@ -101,7 +110,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			trpIndex = np.array([bulkMoleculeIds.index(x) for x in trpId])
 			trpCounts = bulkMoleculesReader.readColumn("counts")[:, trpIndex].reshape(-1)
 			trpMols = 1. / nAvogadro * trpCounts
-			volume = cellMass / cellDensity
+			volume = cellMass_fg / cellDensity
 			trpConcentration = trpMols * 1. / volume
 
 			# Get the promoter-bound status for all regulated genes
@@ -163,7 +172,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			growth_rate[abs(growth_rate - np.median(growth_rate)) > 1.25 * np.nanstd(growth_rate)] = np.nan
 
 			# Calculate Ribosome Concentration:
-			ribosomeConcentration = ((1 / sim_data.constants.nAvogadro) * ribosomeCounts) / ((1.0 / sim_data.constants.cellDensity) * (cellMass))
+			ribosomeConcentration = ((1 / sim_data.constants.nAvogadro) * ribosomeCounts) / ((1.0 / sim_data.constants.cellDensity) * (cellMass_fg))
 			ribosomeConcentration = ribosomeConcentration.asNumber(units.umol / units.L)
 
 			# Fork Position:
@@ -184,6 +193,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# Relative Rate of dNTP polymerization
 			relative_rate_dNTP_poly = (sequenceIdx != -1).sum(axis = 1) / 4
 
+			# Calculate the average instananeous growth rate
+
+			cellmassGrowthRate = np.diff(cellMass) / cellMass[1:] / timeStep[:-1]
+			proteinGrowthRate = np.diff(proteinMass) / proteinMass[1:] / timeStep[:-1]
+			rnaGrowthRate = np.diff(rnaMass) / rnaMass[1:] / timeStep[:-1]
+			dnaGrowthRate = np.diff(dnaMass) / dnaMass[1:] / timeStep[:-1]
+
+			timeMultigen = np.hstack((timeMultigen, time[:-1]))
+			cellMassGrowthRateMultigen = np.hstack((cellMassGrowthRateMultigen, cellmassGrowthRate))
+			proteinGrowthRateMultigen = np.hstack((proteinGrowthRateMultigen, proteinGrowthRate))
+			rnaGrowthRateMultigen = np.hstack((rnaGrowthRateMultigen, rnaGrowthRate))
+
+			
 			'''
 			Plots:
 			Note: Some of the Y axis limits are hard coded. 
@@ -192,6 +214,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			so make sure to change to be more dynamic 
 			if using on a different data set.
 			'''	
+
 			# Plot parameters:
 			plot_line_color = '#0d71b9'
 			plot_marker_color = '#ed2224'
@@ -199,8 +222,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			##############################################################
 			ax1 = plt.subplot(nRows, nCols, 1)
-			ax1.plot(time, cellMass_no_conv, color = plot_line_color)
-			ax1.plot(time[idxInit], cellMass_no_conv[idxInit],  markersize=6, 
+			ax1.plot(time, cellMass, color = plot_line_color)
+			ax1.plot(time[idxInit], cellMass[idxInit],  markersize=6, 
 				linewidth=0, marker="o", color = plot_marker_color, 
 				markeredgewidth=0)
 			plt.ylabel("Cell Mass\n(fg)", fontsize = plot_font_size)
@@ -289,9 +312,26 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax10.set_yticks([y_min_10, y_max_10])
 			ax10.set_yticklabels([y_min_10, y_max_10])
 			##############################################################
-			# Plot average instantanous growth rate
-
 			##############################################################
+			
+		##############################################################
+		width_inst = 200
+		cellMassGrowthRateMultigen = np.convolve(cellMassGrowthRateMultigen, np.ones(width_inst) / width_inst, mode = "same")
+		proteinGrowthRateMultigen = np.convolve(proteinGrowthRateMultigen, np.ones(width_inst) / width_inst, mode = "same")
+		rnaGrowthRateMultigen = np.convolve(rnaGrowthRateMultigen, np.ones(width_inst) / width_inst, mode = "same")
+		# Plot average instantanous growth rate
+		colors = ["#43aa98", "#0071bb", "#bf673c"]
+		ax11 = plt.subplot(nRows, nCols, 11)
+		ax11.plot(timeMultigen[:-width_inst], cellMassGrowthRateMultigen[:-width_inst] * 60.,color = colors[0])
+		ax11.plot(timeMultigen[:-width_inst], proteinGrowthRateMultigen[:-width_inst] * 60., color = colors[1])
+		ax11.plot(timeMultigen[:-width_inst], rnaGrowthRateMultigen[:-width_inst] * 60., color = colors[2])
+
+		plt.ylabel("Average Instantaneous Growth Rate.\n(min -1)", fontsize = plot_font_size)
+		y_min_11, y_max_11 = 0.014, 0.029
+		ax11.set_ylim([y_min_11, y_max_11])
+		ax11.set_yticks([y_min_11, y_max_11])
+		ax11.set_yticklabels([y_min_11, y_max_11])
+		
 		for nrows, ncols, plot_number in subplots_to_make:
 			if plot_number > (num_subplots - nCols):
 				sub.set_xticks([0, time.max()])
