@@ -94,7 +94,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				continue
 
 			# Time is relative to the first simulation, so need to take a difference
-			doubling_time = time[-1] - time[0]
+			try:
+				doubling_time = time[-1] - time[0]
+
+			except Exception as e:
+				broken_files.append(path)
+				continue
 
 			doubling_times_minutes.append(doubling_time / 60.)
 
