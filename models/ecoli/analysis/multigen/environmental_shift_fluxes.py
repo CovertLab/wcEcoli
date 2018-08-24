@@ -234,13 +234,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		fullReactants = [
 			"2-KETOGLUTARATE[c]",
 			"L-DELTA1-PYRROLINE_5-CARBOXYLATE[c]",
-			"DCDP[c]",
+			"DADP[c]",
 		]
 
 		fullProducts = [
 			"SUC-COA[c]",
 			"PRO[c]",
-			"DCTP[c]",
+			"DATP[c]",
 		]
 
 		figAll = plt.figure(figsize = (17, 22))
@@ -333,12 +333,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 				if firstGen:
 					ax.axhline(0, color = "#aaaaaa", linewidth = 0.25)
-					ax.axvline(SHIFT, color = "#aaaaaa", linewidth = 0.25)
+					ax.axvline(SHIFT / 60, color = "#aaaaaa", linewidth = 0.25)
 					ax.set_title("%s to %s" % (reactant, product), fontsize = 4)
 					ax.tick_params(axis = "both", labelsize = 4)
 
 				totalFlux = np.array([np.convolve(totalFlux, np.ones(MA_WIDTH) / MA_WIDTH, mode = "same")]).T
-				ax.plot(time, totalFlux, color = "b", linewidth = 0.5)
+				ax.plot(time / 60, totalFlux, color = "b", linewidth = 0.5)
 
 			firstGen = False
 
@@ -367,10 +367,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.minorticks_off()
 
 			whitePadSparklineAxis(ax)
-			xlim = ax.get_xlim()
-			ylim = ax.get_ylim()
-			ax.set_yticks([ylim[0], ylim[1]])
-			ax.set_xticks([xlim[0], xlim[1]])
+			bounds = ax.dataLim.bounds
+			xlim = [bounds[0], bounds[2]]
+			ylim = [bounds[1], bounds[3]]
+			ax.set_xticks(xlim)
+			ax.set_yticks(ylim)
+			ax.set_xlim(xlim)
+			ax.set_ylim(ylim)
 
 		exportFigure(plt, plotOutDir, plotOutFileName + "_full", metadata)
 		plt.close("all")
