@@ -56,10 +56,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for simDir in allDir:
 			simOutDir = os.path.join(simDir, "simOut")
 
-			massListener = TableReader(os.path.join(simOutDir, "Mass"))
-			cellMass = massListener.readColumn("cellMass")
-			dryMass = massListener.readColumn("dryMass")
-			massListener.close()
+			try:
+				massListener = TableReader(os.path.join(simOutDir, "Mass"))
+				cellMass = massListener.readColumn("cellMass")
+				dryMass = massListener.readColumn("dryMass")
+				massListener.close()
+			except Exception as e:
+				print(e)
+				continue
+
+			# skip if no data
+			if cellMass.shape is ():
+				continue
 
 			coefficient = dryMass / cellMass * cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
 
