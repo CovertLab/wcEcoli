@@ -34,9 +34,9 @@ THROW_ON_BAD_SIMULATION_OUTPUT = False
 # plotting anything.
 FIRST_GENERATION = 2
 
-DOUBLING_TIME_BOUNDS_MINUTES = [30, 170]
+DOUBLING_TIME_BOUNDS_MINUTES = [0, 170]
 N_BINS = 30
-FREQUENCY_MAX = 250
+FREQUENCY_MAX = 350
 
 FIGSIZE = (3.5, 3.5)
 
@@ -94,7 +94,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				continue
 
 			# Time is relative to the first simulation, so need to take a difference
-			doubling_time = time[-1] - time[0]
+			try:
+				doubling_time = time[-1] - time[0]
+
+			except Exception as e:
+				broken_files.append(path)
+				continue
 
 			doubling_times_minutes.append(doubling_time / 60.)
 
@@ -131,7 +136,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.hist(doubling_times_minutes, bins = bins, **HIST_STYLE)
 
 		plt.axvline(
-			sim_data.doubling_time.asNumber(units.min),
+			sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.min),
 			**TARGET_LINE_STYLE
 			)
 

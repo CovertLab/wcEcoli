@@ -59,7 +59,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				gen = [2,3]
 			elif varIdx == 2:
 				plotIdx = 2
-				gen = [6,7]
+				gen = [2,3]
 			else:
 				continue
 

@@ -27,6 +27,26 @@ python $FIG2A_SCRIPT $SET_D2
 python $FIG2A_SCRIPT $SET_D3
 python $FIG2A_SCRIPT $SET_D4
 
+# Figure 2B is the distribution of doubling times for anaerobic and +AA
+# conditions. Minimal media conditions already plotted in Figure 2A.
+
+FIG2B_SCRIPT=models/ecoli/analysis/cohort/doubling_times_histogram_all.py
+SET_C=/scratch/PI/mcovert/wc_ecoli/paper/SET_C/20180810.094634.563490__SET_C_4_gens_256_seeds_3_conditions_with_growth_noise_and_D_period/
+
+python $FIG2B_SCRIPT $SET_C --variant_index 1
+python $FIG2B_SCRIPT $SET_C --variant_index 2
+
+# Figure 2C
+
+FIG2C_SCRIPT=models/ecoli/analysis/variant/growth_condition_comparison_validation.py
+
+python $FIG2C_SCRIPT $SET_C
+
+# Figure 2D
+
+FIG2D_SCRIPT=models/ecoli/analysis/variant/adder_sizer.py
+
+python $FIG2D_SCRIPT $SET_C
 
 # Supplementary
 
