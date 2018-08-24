@@ -91,7 +91,7 @@ class EnvironmentStub(object):
 
 		return until
 
-	def molecule_ids(self):
+	def get_molecule_ids(self):
 		return self.concentrations.keys()
 
 	def get_concentrations(self):

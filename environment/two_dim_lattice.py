@@ -6,19 +6,17 @@ import os
 import numpy as np
 from scipy import constants
 
-# import matplotlib
-# matplotlib.use('TkAgg')
-# import matplotlib.pyplot as plt
+
+N_DIMS = 2 # number of dimensions. DO NOT CHANGE THIS!
 
 class EnvironmentSpatialLattice(object):
 	def __init__(self, concentrations):
 		self._time = 0
 		self._timestep = 0.2
-		self.run_for = 20
+		self.run_for = 10
 		self.size = 1
-		self.ndims = 2
 		self.nbins = 20
-		self.volume = 1000 #TODO (Eran) initialize this value
+		self.volume = 1E-14 #(this is bin volume for now) #TODO (Eran) initialize this value
 		self.nAvogadro = constants.N_A #TODO (ERAN) get this from sim_data.constants.nAvogadro
 
 		self.id = -1
@@ -26,12 +24,15 @@ class EnvironmentSpatialLattice(object):
 		self.simulations = {}
 		self.locations = {}
 
-		self.molecules = concentrations.keys()
+		self.molecule_ids = concentrations.keys()
+		self.concentrations = concentrations.values()
 
 		# Create lattice and fill each site with concentrations dictionary
-		#TODO (Eran) make this an ndims+1, with +1 for indexing each molecule
-		self.lattice = np.empty([self.nbins for dim in xrange(self.ndims)], dtype=dict)
-		self.lattice.fill(concentrations)
+		self.lattice = np.empty([len(self.molecule_ids)] + [self.nbins for dim in xrange(N_DIMS)], dtype=float)
+		for idx, molecule in enumerate(self.molecule_ids):
+			self.lattice[idx].fill(self.concentrations[idx])
+
+		# self.lattice[self.molecule_ids.index('GLC[p]')]
 
 		if os.path.exists("out/manual/environment.txt"):
 			os.remove("out/manual/environment.txt")
@@ -41,11 +42,12 @@ class EnvironmentSpatialLattice(object):
 
 	def save_environment(self):
 
-		glucose_lattice = np.zeros_like(self.lattice, dtype=float)
-		for (x, y), value in np.ndenumerate(self.lattice):
-			glucose_lattice[x][y] = self.lattice[x][y]['GLC[p]']
-
-		glucose_lattice = glucose_lattice.tolist()
+		# glucose_lattice = np.zeros_like(self.lattice, dtype=float)
+		# for (x, y), value in np.ndenumerate(self.lattice):
+		# 	glucose_lattice[x][y] = self.lattice[x][y]['GLC[p]']
+		#
+		# glucose_lattice = glucose_lattice.tolist()
+		glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')].tolist()
 
 		# open in append mode
 		lattice_file = open("out/manual/environment.txt", "a")
@@ -55,7 +57,7 @@ class EnvironmentSpatialLattice(object):
 
 	def save_locations(self):
 
-		locations = self.locations.values()[0].tolist()
+		locations = [location.tolist() for location in self.locations.values()]
 
 		# open in append mode
 		locations_file = open("out/manual/locations.txt", "a")
@@ -75,12 +77,11 @@ class EnvironmentSpatialLattice(object):
 	def update_locations(self):
 		''' Update location for all sim_ids '''
 		for sim_id, location in self.locations.iteritems():
-			location += np.random.normal(0, 0.1, self.ndims)
+			location += np.random.normal(0, 0.001, N_DIMS)
 
 			# lattice cutoff
 			location[location < 0] = 0
 			location[location >= self.size] = self.size - 0.000001 # minus infinitesimal helps keep within lattice
-
 
 
 	def diffusion(self):
@@ -106,31 +107,31 @@ class EnvironmentSpatialLattice(object):
 
 	def update_counts(self, all_changes):
 		'''
-		Use delta counts from all the inner simulations, convert them to concentations,
-		and add to the environmental concentrations
+		Use delta counts from all the inner simulations, convert them to concentrations,
+		and add to the environmental concentrations of each molecule at each simulation's location
 		'''
-
 		for sim_id, delta_counts in all_changes.iteritems():
 			location = self.locations[sim_id] * self.nbins
 			bin = tuple(np.floor(location).astype(int))
 
 			delta_concentrations = self.counts_to_concentration(delta_counts.values())
 			for molecule, delta_conc in zip(delta_counts.keys(), delta_concentrations):
-				self.lattice[bin][molecule] += delta_conc
+				self.lattice[self.molecule_ids.index(molecule), bin[0], bin[1]] += delta_conc
 
 
-	def molecule_ids(self):
+	def get_molecule_ids(self):
 		''' Return the ids of all molecule species in the environment '''
-		return self.molecules
+		return self.molecule_ids
 
 
 	def get_concentrations(self):
+		'''returns a dict with {molecule_id: conc} for each sim give its current location'''
 		concentrations = {}
 		for sim_id in self.simulations.keys():
 			# get concentration from cell's given bin
 			location = self.locations[sim_id] * self.nbins
 			bin = tuple(np.floor(location).astype(int))
-			concentrations[sim_id] = self.lattice[bin]
+			concentrations[sim_id] = dict(zip(self.molecule_ids, self.lattice[:,bin[0],bin[1]]))
 		return concentrations
 
 
@@ -142,7 +143,7 @@ class EnvironmentSpatialLattice(object):
 		state = {}
 
 		# Place cell at a random initial location
-		location = np.random.uniform(0,self.size,self.ndims)
+		location = np.random.uniform(0,self.size,N_DIMS)
 
 		self.simulations[id] = state
 		self.locations[id] = location

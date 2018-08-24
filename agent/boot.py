@@ -11,7 +11,7 @@ from agent.inner import Inner
 from agent.stub import SimulationStub, EnvironmentStub
 
 from environment.nonspatial import EnvironmentNonSpatial
-from environment.spatial_lattice import EnvironmentSpatialLattice
+from environment.two_dim_lattice import EnvironmentSpatialLattice
 
 from models.ecoli.sim.simulation import EcoliSimulation
 

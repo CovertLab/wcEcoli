@@ -40,7 +40,7 @@ class Outer(Agent):
 	* environment.simulations_run_until()
 	    Returns a dictionary of simulation ids to time points for each simulation to run until.
 
-	* environment.molecule_ids()
+	* environment.get_molecule_ids()
 
 	* environment.get_concentrations()
 	    Returns a dictionary of simulation ids to concentrations coming from the environment.
@@ -64,7 +64,7 @@ class Outer(Agent):
 		print('environment shutting down')
 
 	def initialize_simulation(self, id):
-		changes = {molecule: 0 for molecule in self.environment.molecule_ids()}
+		changes = {molecule: 0 for molecule in self.environment.get_molecule_ids()}
 		self.simulations[id] = {
 			'time': 0,
 			'message_id': -1,
