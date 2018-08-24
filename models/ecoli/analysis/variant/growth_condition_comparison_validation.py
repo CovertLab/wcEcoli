@@ -78,11 +78,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				try:
 					time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
+					doubling_time[idx] = time[-1] - time[0]
 				except Exception as e:
 					print 'Error with data for %s: %s' % (simDir, e)
 					continue
 
-				doubling_time[idx] = time[-1] - time[0]
 				timeStepSec = TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")
 
 				meanRnaMass[idx] = TableReader(os.path.join(simOutDir, "Mass")).readColumn("rnaMass").mean()
