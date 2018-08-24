@@ -107,11 +107,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ax = plt.axes()
 		whitePadSparklineAxis(ax)
 
-		ax.set_xlim([-20, 30])
-		xlim = ax.get_xlim()
-		ylim = ax.get_ylim()
-		ax.set_yticks(range(int(ylim[0]), int(ylim[1]) + 1, 10))
+		xlim = [-20, 30]
+		ylim = [-20, 70]
+		ax.set_xlim(xlim)
+		ax.set_ylim(ylim)
 		ax.set_xticks(range(int(xlim[0]), int(xlim[1]) + 1, 10))
+		ax.set_yticks(range(int(ylim[0]), int(ylim[1]) + 1, 10))
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 

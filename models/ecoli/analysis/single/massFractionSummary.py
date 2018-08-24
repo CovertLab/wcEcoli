@@ -42,12 +42,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		massLabels = ["Protein", "rRNA", "tRNA", "mRNA", "DNA", "Small Mol."]
 
-		plt.figure(figsize = (8.5, 11))
+		plt.figure(figsize = (2, 2.5))
 
 		ax = plt.gca()
 		ax.set_prop_cycle(plt.style.library['fivethirtyeight']['axes.prop_cycle'])
 
-		plt.plot(t / 60., masses, linewidth = 2)
+		plt.plot(t / 60., masses, linewidth=1)
 		plt.xlabel("Time (min)")
 		plt.ylabel("Mass (normalized by t = 0 min)")
 		plt.title("Biomass components")
@@ -70,6 +70,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax.set_title("")
 		ax.set_xticklabels([])
 		ax.set_yticklabels([])
+		ax.legend_.remove()
 
 		exportFigure(plt, plotOutDir, plotOutFileName + "_stripped", metadata)
 		plt.close("all")
