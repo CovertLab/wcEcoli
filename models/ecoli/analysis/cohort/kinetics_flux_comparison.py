@@ -52,9 +52,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for simDir in allDir:
 			simOutDir = os.path.join(simDir, "simOut")
 
-			mainListener = TableReader(os.path.join(simOutDir, "Main"))
+			try:
+				mainListener = TableReader(os.path.join(simOutDir, "Main"))
+			except Exception as e:
+				print(e)
+				continue
 			time = mainListener.readColumn("time")
 			mainListener.close()
+
+			# skip if no data
+			if time.shape is ():
+				continue
 			burnIn = time > BURN_IN_TIME
 			burnIn[0] = False
 
