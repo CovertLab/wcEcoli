@@ -28,22 +28,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		allDirs = ap.get_cells()
 
-		# Load data from KB
-		sim_data = cPickle.load(open(simDataFile, "rb"))
-		nAvogadro = sim_data.constants.nAvogadro
-		cellDensity = sim_data.constants.cellDensity
-		oriC = sim_data.constants.oriCCenter.asNumber()
-		terC = sim_data.constants.terCCenter.asNumber()
-		genomeLength = len(sim_data.process.replication.genome_sequence)
-
-		recruitmentColNames = sim_data.process.transcription_regulation.recruitmentColNames
-		tfs = sorted(set([x.split("__")[-1] for x in recruitmentColNames 
-			if x.split("__")[-1] != "alpha"]))
-		trpRIndex = [i for i, tf in enumerate(tfs) if tf == "CPLX-125"][0]
-
-		tfBoundIds = [target + "__CPLX-125" for target in sim_data.tfToFC["CPLX-125"].keys()]
-		synthProbIds = [target + "[c]" for target in sim_data.tfToFC["CPLX-125"].keys()]
-
+		###################
+		#Initialize Figure:
 		num_subplots = 9
 		nRows = 3
 		nCols = 3
@@ -65,7 +51,24 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_number < (num_subplots + 1 - nCols):
 				sub.spines['bottom'].set_visible(False)
 				sub.set_xticks([])
-		
+		###################
+
+		# Load data from KB
+		sim_data = cPickle.load(open(simDataFile, "rb"))
+		nAvogadro = sim_data.constants.nAvogadro
+		cellDensity = sim_data.constants.cellDensity
+		oriC = sim_data.constants.oriCCenter.asNumber()
+		terC = sim_data.constants.terCCenter.asNumber()
+		genomeLength = len(sim_data.process.replication.genome_sequence)
+
+		recruitmentColNames = sim_data.process.transcription_regulation.recruitmentColNames
+		tfs = sorted(set([x.split("__")[-1] for x in recruitmentColNames 
+			if x.split("__")[-1] != "alpha"]))
+		trpRIndex = [i for i, tf in enumerate(tfs) if tf == "CPLX-125"][0]
+
+		tfBoundIds = [target + "__CPLX-125" for target in sim_data.tfToFC["CPLX-125"].keys()]
+		synthProbIds = [target + "[c]" for target in sim_data.tfToFC["CPLX-125"].keys()]
+
 		for simDir in allDirs:
 			simOutDir = os.path.join(simDir, "simOut")
 			# Load time
