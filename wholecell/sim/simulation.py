@@ -10,7 +10,6 @@ from __future__ import absolute_import
 from __future__ import division
 
 import collections
-import cPickle
 import time
 
 import numpy as np
@@ -37,7 +36,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	outputDir = None,
 	overwriteExistingFiles = False,
 	logToDiskEvery = 1,
-	simDataLocation = None,
+	simData = None,
 	inheritedStatePath = None,
 	)
 
@@ -110,8 +109,7 @@ class Simulation(object):
 		# doesn't.
 		filepath.makedirs(self._outputDir)
 
-		# Load KB
-		sim_data = cPickle.load(open(self._simDataLocation, "rb"))
+		sim_data = self._simData
 
 		# Initialize simulation from fit KB
 		self._initialize(sim_data)
@@ -166,7 +164,7 @@ class Simulation(object):
 			state.calculatePreEvolveStateMass()
 			state.calculatePostEvolveStateMass()
 
-		# Update environment state according to the current time in time series
+		# Update environment state according to the current time in timeseries
 		for external_state in self.external_states.itervalues():
 			external_state.update()
 
