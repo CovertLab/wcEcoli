@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import os
 import json
 import uuid
+import cPickle
 import argparse
 
 import agent.event as event
@@ -119,11 +121,13 @@ class BootEnvironmentSpatialLattice(object):
 
 
 class BootEcoli(object):
-	def __init__(self, id, kafka_config):
+	def __init__(self, id, kafka_config, working_dir):
 		self.id = id
 
-		sim_data_fit = '/Users/eranagmon/code/wcEcoli/out/manual/kb/simData_Most_Fit.cPickle'
-		sim_data_variant = '/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/kb/simData_Modified.cPickle'
+		sim_data_fit = '{}/out/manual/kb/simData_Most_Fit.cPickle'.format(working_dir)
+		sim_data_variant = '{}/out/manual/wildtype_000000/kb/simData_Modified.cPickle'.format(working_dir)
+		variant_metadata = '{}/out/manual/wildtype_000000/metadata'.format(working_dir)
+		output_dir = '{}/out/manual/sim_{}/simOut'.format(working_dir, self.id)
 
 		# copy the file simData_Most_Fit.cPickle to simData_Modified.cPickle
 		task = VariantSimDataTask(
@@ -131,7 +135,7 @@ class BootEcoli(object):
 			variant_index=0,
 			input_sim_data=sim_data_fit,
 			output_sim_data=sim_data_variant,
-			variant_metadata_directory='/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/metadata',
+			variant_metadata_directory=variant_metadata,
 		)
 		task.run_task({})
 
@@ -140,7 +144,7 @@ class BootEcoli(object):
 
 		options = {}
 		options["simData"] = sim_data
-		options["outputDir"] = '/Users/eranagmon/code/wcEcoli/out/manual/sim_' + self.id + '/simOut'
+		options["outputDir"] = output_dir
 		options["logToDisk"] = True
 		options["overwriteExistingFiles"] = True
 
@@ -172,6 +176,8 @@ class EnvironmentControl(Agent):
 	then terminate).
 	"""
 
+	print(os.getcwd())
+	
 	def __init__(self, kafka_config=default_kafka_config):
 		id = 'environment_control'
 		super(EnvironmentControl, self).__init__(id, kafka_config)
@@ -227,6 +233,12 @@ def main():
 		default='environment_listen',
 		help='topic the simulations will send messages on')
 
+	parser.add_argument(
+		'--working-dir',
+		default=os.getcwd(),
+		help='the directory containing the project files'
+	)
+
 	args = parser.parse_args()
 	kafka_config = {
 		'host': args.kafka_host,
@@ -244,11 +256,11 @@ def main():
 	elif args.command == 'outer':
 		outer = BootOuter(kafka_config)
 
-	if args.command == 'ecoli':
+	elif args.command == 'ecoli':
 		if not args.id:
 			raise ValueError('--id must be supplied for inner command')
 
-		inner = BootEcoli(args.id, kafka_config)
+		inner = BootEcoli(args.id, kafka_config, args.working_dir)
 
 	elif args.command == 'nonspatial':
 		outer = BootEnvironmentNonSpatial(kafka_config)
