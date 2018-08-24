@@ -45,9 +45,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
 		mult = 2.3
-		fig = plt.figure()
-		fig.set_figwidth(mm2inch(97)*mult)
-		fig.set_figheight(mm2inch(58)*mult)
+		fig = plt.figure(figsize=(6, 6))
+		#fig.set_figwidth(mm2inch(97)*mult)
+		#fig.set_figheight(mm2inch(58)*mult)
 
 		ax0 = plt.subplot2grid((3,4), (0,0), colspan = 4)
 		ax1 = plt.subplot2grid((3,4), (1,0), colspan = 4, sharex=ax0)
@@ -299,7 +299,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			m = m.reshape(sequenceLength.shape)
 			sequenceLength[~m] = np.nan
 
-			ax3.plot(time / 60., sequenceLength, marker=',', markersize=2, linewidth=0, color = color, alpha = alpha)
+			ax3.plot(time / 60., sequenceLength, marker='o', markersize=2, linewidth=0, color = color, alpha = alpha)
+			#ax3.plot(time / 60., sequenceLength, linewidth=1, color = color, alpha = alpha)
 			ax3.set_yticks([-1 * genomeLength / 2, 0, genomeLength / 2])
 			ax3.set_yticklabels(['-terC', 'oriC', '+terC'])
 
