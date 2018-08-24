@@ -20,7 +20,6 @@ PLACE_HOLDER = -1
 FONT_SIZE=8
 trim = 0.03
 
-
 # def sparklineAxis(axis):
 # 	axis.spines['top'].set_visible(False)
 # 	axis.spines['bottom'].set_visible(False)
@@ -46,9 +45,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
 		mult = 2.3
-		fig = plt.figure()
-		fig.set_figwidth(mm2inch(97)*mult)
-		fig.set_figheight(mm2inch(58)*mult)
+		fig = plt.figure(figsize=(6, 6))
+		#fig.set_figwidth(mm2inch(97)*mult)
+		#fig.set_figheight(mm2inch(58)*mult)
 
 		ax0 = plt.subplot2grid((3,4), (0,0), colspan = 4)
 		ax1 = plt.subplot2grid((3,4), (1,0), colspan = 4, sharex=ax0)
@@ -66,10 +65,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		for idx, simDir in enumerate(all_cells):
-			color = "black"
+			#color = "black"
+			color = "#0d71b9"
 			alpha = 1
 			if idx % 2:
-				color = "#BF673B"
+				color = "#0d71b9"
 				blue = 0.8
 
 			simOutDir = os.path.join(simDir, "simOut")
@@ -82,7 +82,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			massPerOric = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("criticalMassPerOriC")
 			idxInit = np.where(massPerOric >= 1)[0]
 			ax0.plot(time / 60., cellMass, color = color, alpha = alpha, linewidth=2)
-			ax0.plot(time[idxInit] / 60., cellMass[idxInit],  markersize=6, linewidth=0, marker="o", color = "#FCBE67", markeredgewidth=0)
+			ax0.plot(time[idxInit] / 60., cellMass[idxInit],  markersize=6, linewidth=0, marker="o", color = "#ed2224", markeredgewidth=0)
 
 			## Inst. growth rate
 			growthRate = mass.readColumn("instantaniousGrowthRate")
@@ -173,7 +173,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ax1.set_ylabel(r"$\mu$ $(\frac{gDCW}{gDCW \cdot \, min})$", fontsize=FONT_SIZE)
 		ax1.xaxis.set_visible(False)
 		# ax1.axvline(x=44*2+22., linewidth=3, color='gray', alpha = 0.5)
-		ax1.set_ylim([0.008, 0.032])
+		ax1.set_ylim([0, 0.032])
 
 		#ax2.set_ylabel("RNA/Protein\n(fg/fg)", fontsize=FONT_SIZE)
 		ax2.set_ylabel("Active\nribosome\n(umol/L)", fontsize=FONT_SIZE)
@@ -243,10 +243,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		for idx, simDir in enumerate(all_cells):
-			color = "black"
+			#color = "black"
+			color = "#0d71b9"
 			alpha = 1
 			if idx % 2:
-				color = "#BF673B"
+				color = "#0d71b9"
 				blue = 0.8
 
 			simOutDir = os.path.join(simDir, "simOut")
@@ -298,7 +299,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			m = m.reshape(sequenceLength.shape)
 			sequenceLength[~m] = np.nan
 
-			ax3.plot(time / 60., sequenceLength, marker=',', markersize=2, linewidth=0, color = color, alpha = alpha)
+			ax3.plot(time / 60., sequenceLength, marker='o', markersize=2, linewidth=0, color = color, alpha = alpha)
+			#ax3.plot(time / 60., sequenceLength, linewidth=1, color = color, alpha = alpha)
 			ax3.set_yticks([-1 * genomeLength / 2, 0, genomeLength / 2])
 			ax3.set_yticklabels(['-terC', 'oriC', '+terC'])
 
