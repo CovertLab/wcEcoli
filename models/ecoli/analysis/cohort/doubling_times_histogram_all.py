@@ -136,7 +136,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.hist(doubling_times_minutes, bins = bins, **HIST_STYLE)
 
 		plt.axvline(
-			sim_data.doubling_time.asNumber(units.min),
+			sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.min),
 			**TARGET_LINE_STYLE
 			)
 
