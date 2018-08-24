@@ -122,18 +122,24 @@ class BootEcoli(object):
 	def __init__(self, id, kafka_config):
 		self.id = id
 
+		sim_data_fit = '/Users/eranagmon/code/wcEcoli/out/manual/kb/simData_Most_Fit.cPickle'
+		sim_data_variant = '/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/kb/simData_Modified.cPickle'
+
 		# copy the file simData_Most_Fit.cPickle to simData_Modified.cPickle
 		task = VariantSimDataTask(
 			variant_function='wildtype',
 			variant_index=0,
-			input_sim_data='/Users/eranagmon/code/wcEcoli/out/manual/kb/simData_Most_Fit.cPickle',
-			output_sim_data='/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/kb/simData_Modified.cPickle',
+			input_sim_data=sim_data_fit,
+			output_sim_data=sim_data_variant,
 			variant_metadata_directory='/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/metadata',
 		)
 		task.run_task({})
 
+		with open(sim_data_variant, "rb") as input_sim_data:
+			sim_data = cPickle.load(input_sim_data)
+
 		options = {}
-		options["simDataLocation"] = '/Users/eranagmon/code/wcEcoli/out/manual/wildtype_000000/kb/simData_Modified.cPickle'
+		options["simData"] = sim_data
 		options["outputDir"] = '/Users/eranagmon/code/wcEcoli/out/manual/sim_' + self.id + '/simOut'
 		options["logToDisk"] = True
 		options["overwriteExistingFiles"] = True

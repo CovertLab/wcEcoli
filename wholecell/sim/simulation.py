@@ -164,7 +164,7 @@ class Simulation(object):
 			state.calculatePreEvolveStateMass()
 			state.calculatePostEvolveStateMass()
 
-		# Update environment state according to the current time in timeseries
+		# Update environment state according to the current time in time series
 		for external_state in self.external_states.itervalues():
 			external_state.update()
 
