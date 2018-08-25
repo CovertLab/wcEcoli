@@ -176,8 +176,6 @@ class EnvironmentControl(Agent):
 	then terminate).
 	"""
 
-	print(os.getcwd())
-	
 	def __init__(self, kafka_config=default_kafka_config):
 		id = 'environment_control'
 		super(EnvironmentControl, self).__init__(id, kafka_config)

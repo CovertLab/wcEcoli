@@ -6,6 +6,12 @@ import os
 import numpy as np
 from scipy import constants
 
+import matplotlib
+matplotlib.use('TKAgg')
+import matplotlib.pyplot as plt
+plt.ion()
+
+fig = plt.figure()
 
 N_DIMS = 2 # number of dimensions. DO NOT CHANGE THIS!
 
@@ -39,6 +45,12 @@ class EnvironmentSpatialLattice(object):
 		if os.path.exists("out/manual/locations.txt"):
 			os.remove("out/manual/locations.txt")
 
+		print(matplotlib.get_backend())
+		# plt.ion()
+		glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')]
+		im = plt.imshow(glucose_lattice)
+		plt.pause(0.0001)
+		# plt.show()
 
 	def save_environment(self):
 
@@ -47,7 +59,12 @@ class EnvironmentSpatialLattice(object):
 		# 	glucose_lattice[x][y] = self.lattice[x][y]['GLC[p]']
 		#
 		# glucose_lattice = glucose_lattice.tolist()
-		glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')].tolist()
+
+		glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')]
+		plt.clf()
+		im = plt.imshow(glucose_lattice)
+
+		# glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')].tolist()
 
 		# open in append mode
 		lattice_file = open("out/manual/environment.txt", "a")
@@ -57,7 +74,13 @@ class EnvironmentSpatialLattice(object):
 
 	def save_locations(self):
 
-		locations = [location.tolist() for location in self.locations.values()]
+		locations = self.locations.values()
+		x = [location[1] * self.nbins - 0.5 for location in locations]
+		y = [location[0] * self.nbins - 0.5 for location in locations]
+		plt.scatter(x, y)
+		plt.pause(0.0001)
+
+		# locations = [location.tolist() for location in self.locations.values()]
 
 		# open in append mode
 		locations_file = open("out/manual/locations.txt", "a")
