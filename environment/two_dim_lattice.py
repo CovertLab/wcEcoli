@@ -62,34 +62,6 @@ class EnvironmentSpatialLattice(object):
 		plt.pause(0.0001)
 
 
-	def save_environment(self):
-
-		glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')]
-		plt.clf()
-		im = plt.imshow(glucose_lattice, cmap='YlGn')
-		plt.colorbar()
-		plt.axis('off')
-
-		# # open in append mode
-		# lattice_file = open("out/manual/environment.txt", "a")
-		# lattice_file.write("%s\n" % glucose_lattice)
-		# lattice_file.close()
-
-
-	def save_locations(self):
-
-		locations = self.locations.values()
-		x = [location[1] * BINS_PER_EDGE - 0.5 for location in locations]
-		y = [location[0] * BINS_PER_EDGE - 0.5 for location in locations]
-		plt.scatter(x, y, s=100, c='k')
-		plt.pause(0.0001)
-
-		# # open in append mode
-		# locations_file = open("out/manual/locations.txt", "a")
-		# locations_file.write("%s\n" % locations)
-		# locations_file.close()
-
-
 	def evolve(self):
 		''' Evolve environment '''
 
@@ -101,7 +73,7 @@ class EnvironmentSpatialLattice(object):
 	def update_locations(self):
 		''' Update location for all sim_ids '''
 		for sim_id, location in self.locations.iteritems():
-			location += np.random.normal(0, 0.001, N_DIMS)
+			location += np.random.normal(0, 0.005, N_DIMS)
 
 			# lattice cutoff
 			location[location < 0] = 0
@@ -141,6 +113,32 @@ class EnvironmentSpatialLattice(object):
 		while self._time < run_until:
 			self._time += self._timestep
 			self.evolve()
+
+
+	def save_environment(self):
+		glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')]
+		plt.clf()
+		im = plt.imshow(glucose_lattice, cmap='YlGn')
+		plt.colorbar()
+		plt.axis('off')
+
+		# # open in append mode
+		# lattice_file = open("out/manual/environment.txt", "a")
+		# lattice_file.write("%s\n" % glucose_lattice)
+		# lattice_file.close()
+
+
+	def save_locations(self):
+		locations = self.locations.values()
+		x = [location[1] * BINS_PER_EDGE - 0.5 for location in locations]
+		y = [location[0] * BINS_PER_EDGE - 0.5 for location in locations]
+		plt.scatter(x, y, s=100, c='k')
+		plt.pause(0.0001)
+
+		# # open in append mode
+		# locations_file = open("out/manual/locations.txt", "a")
+		# locations_file.write("%s\n" % locations)
+		# locations_file.close()
 
 
 	def counts_to_concentration(self, counts):
