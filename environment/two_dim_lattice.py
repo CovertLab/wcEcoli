@@ -25,8 +25,8 @@ DIFFUSION = 0.00001 # diffusion constant, TODO -- units!
 
 # Derived parameters
 BIN_VOLUME = TOTAL_VOLUME / (BINS_PER_EDGE*BINS_PER_EDGE)
-DX = EDGE_LENGTH/ BINS_PER_EDGE # intervals in x-, y- directions
-DX2 = DX*DX
+DX = DY = EDGE_LENGTH/ BINS_PER_EDGE # intervals in x-, y- directions
+DX2, DY2 = DX*DX, DY*DY
 # DT = DX2 * DY2 / (2 * DIFFUSION * (DX2 + DY2))
 
 
