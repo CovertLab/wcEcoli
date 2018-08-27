@@ -70,10 +70,10 @@ class EnvironmentSpatialLattice(object):
 		plt.colorbar()
 		plt.axis('off')
 
-		# open in append mode
-		lattice_file = open("out/manual/environment.txt", "a")
-		lattice_file.write("%s\n" % glucose_lattice)
-		lattice_file.close()
+		# # open in append mode
+		# lattice_file = open("out/manual/environment.txt", "a")
+		# lattice_file.write("%s\n" % glucose_lattice)
+		# lattice_file.close()
 
 
 	def save_locations(self):
@@ -84,10 +84,10 @@ class EnvironmentSpatialLattice(object):
 		plt.scatter(x, y, s=100, c='k')
 		plt.pause(0.0001)
 
-		# open in append mode
-		locations_file = open("out/manual/locations.txt", "a")
-		locations_file.write("%s\n" % locations)
-		locations_file.close()
+		# # open in append mode
+		# locations_file = open("out/manual/locations.txt", "a")
+		# locations_file.write("%s\n" % locations)
+		# locations_file.close()
 
 
 	def evolve(self):
@@ -114,7 +114,7 @@ class EnvironmentSpatialLattice(object):
 			molecule = self.lattice[idx]
 
 			# if not np.any(np.isinf(molecule)) and not np.any(molecule == 0) and not (len(set(molecule.flatten()))==1):
-			# if molecule field is not uniform
+			# run diffusion if molecule field is not uniform
 			if not (len(set(molecule.flatten())) == 1):
 				delta_lattice[idx] = self.diffusion_timestep(molecule)
 
