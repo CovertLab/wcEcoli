@@ -34,11 +34,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		nRows = 3
 		nCols = 3
 
-		fig =plt.figure(figsize=(6,4))
+		fig =plt.figure(figsize=(7,4))
 		subplots_to_make = []
 		for i in range(1, num_subplots+1):
 			subplots_to_make.append((nRows, nCols, i))
-
 
 		for nrows, ncols, plot_number in subplots_to_make:
 			sub = fig.add_subplot(nrows, ncols, plot_number)
@@ -51,6 +50,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_number < (num_subplots + 1 - nCols):
 				sub.spines['bottom'].set_visible(False)
 				sub.set_xticks([])
+
 		###################
 
 		# Load data from KB
@@ -197,7 +197,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			##############################################################
 			ax1 = plt.subplot(nRows, nCols, 1)
 			ax1.plot(time, cellMass_no_conv, color = plot_line_color)
-			ax1.plot(time[idxInit], cellMass_no_conv[idxInit],  markersize=6, 
+			ax1.plot(time[idxInit], cellMass_no_conv[idxInit],  markersize=4, 
 				linewidth=0, marker="o", color = plot_marker_color, 
 				markeredgewidth=0)
 			plt.ylabel("Cell Mass\n(fg)", fontsize = plot_font_size)
@@ -206,7 +206,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax1.set_yticks([y_min_1, y_max_1])
 			##############################################################	
 			ax2 = plt.subplot(nRows, nCols, 2)
-			ax2.plot(time, sequenceLength, marker='o', markersize=2, 
+			ax2.plot(time, sequenceLength, marker='o', markersize=.5, 
 				linewidth=0, color = plot_line_color)
 			plt.ylabel("DNA polymerase\nposition", fontsize = plot_font_size)
 			ax2.set_yticks([-1 * genomeLength / 2, 0, genomeLength / 2])
@@ -250,6 +250,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			y_min_7, y_max_7 = ax7.get_ylim()
 			ax7.set_yticks([y_min_7, y_max_7])
 			ax7.set_yticklabels(["%0.0f" % y_min_7, "%0.0f" % y_max_7])
+			ax7.set_xticks([0, time.max()])
+			ax7.set_xticklabels([0., np.round(time.max() / 60., decimals = 0)])
 			##############################################################
 			ax8 = plt.subplot(nRows, nCols, 8)
 			ax8.plot(time, tfBoundCountsMA, color = plot_line_color)
@@ -259,6 +261,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			y_min_8, y_max_8 = 0, 1
 			ax8.set_ylim([y_min_8, y_max_8])
 			ax8.set_yticks([y_min_8, y_max_8])
+			ax8.set_xticks([0, time.max()])
+			ax8.set_xticklabels([0., np.round(time.max() / 60., decimals = 0)])
 			##############################################################
 			ax9 = plt.subplot(nRows, nCols, 9)
 			ax9.plot(time, trpConcentration.asNumber(units.umol / units.L), 
@@ -268,12 +272,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax9.set_ylim([y_min_9, y_max_9])
 			ax9.set_yticks([y_min_9, y_max_9])
 			ax9.set_yticklabels([y_min_9, y_max_9])
+			ax9.set_xticks([0, time.max()])
+			ax9.set_xticklabels([0., np.round(time.max() / 60., decimals = 0)])
 			##############################################################
-		for nrows, ncols, plot_number in subplots_to_make:
-			if plot_number > (num_subplots - nCols):
-				sub.set_xticks([0, time.max()])
-				sub.set_xticklabels([0., np.round(time.max() / 60., 
-					decimals = 0)])
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
