@@ -279,6 +279,5 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
 
-
 if __name__ == "__main__":
 	Plot().cli()
