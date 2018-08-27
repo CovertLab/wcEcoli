@@ -78,7 +78,8 @@ TIME_UNITS = units.s
 def fitSimData_1(
 		raw_data, cpus=1, debug=False,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False
+		disable_rnapoly_capacity_fitting=False,
+		adjust_rna_and_protein_parameters=True,
 		):
 	"""
 	Fits parameters necessary for the simulation based on the knowledge base
@@ -94,6 +95,8 @@ def fitSimData_1(
 			is not fit to protein synthesis demands
 		disable_rnapoly_capacity_fitting (bool) - if True, RNA polymerase
 			expression is not fit to protein synthesis demands
+		adjust_rna_and_protein_parameters (bool) - if True, some RNA and protein
+			expression parameters will be adjusted to get expression
 	"""
 
 	sim_data = SimulationDataEcoli()
@@ -112,10 +115,11 @@ def fitSimData_1(
 	setRnaPolymeraseCodingRnaDegradationRates(sim_data)
 
 	# Make adjustments for metabolic enzymes
-	setTranslationEfficiencies(sim_data)
-	setRNAExpression(sim_data)
-	setRNADegRates(sim_data)
-	setProteinDegRates(sim_data)
+	if adjust_rna_and_protein_parameters:
+		setTranslationEfficiencies(sim_data)
+		setRNAExpression(sim_data)
+		setRNADegRates(sim_data)
+		setProteinDegRates(sim_data)
 
 	# Set C-period
 	setCPeriod(sim_data)

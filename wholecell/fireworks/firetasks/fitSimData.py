@@ -19,7 +19,8 @@ class FitSimDataTask(FireTaskBase):
 	optional_params = [
 		"sim_out_dir",
 		"disable_ribosome_capacity_fitting",
-		"disable_rnapoly_capacity_fitting"
+		"disable_rnapoly_capacity_fitting",
+		"adjust_rna_and_protein_parameters",
 		]
 
 	def run_task(self, fw_spec):
@@ -48,6 +49,7 @@ class FitSimDataTask(FireTaskBase):
 				raw_data, cpus=self["cpus"], debug=self["debug"],
 				disable_ribosome_capacity_fitting=self['disable_ribosome_capacity_fitting'],
 				disable_rnapoly_capacity_fitting=self['disable_rnapoly_capacity_fitting'],
+				adjust_rna_and_protein_parameters=self['adjust_rna_and_protein_parameters'],
 				)
 
 			sys.setrecursionlimit(4000) #limit found manually
