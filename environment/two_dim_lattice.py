@@ -13,17 +13,28 @@ plt.ion()
 
 fig = plt.figure()
 
+# Constants
+N_AVOGADRO = constants.N_A #TODO (ERAN) get this from sim_data.constants.nAvogadro
+
 N_DIMS = 2 # number of dimensions. DO NOT CHANGE THIS!
+BINS_PER_EDGE = 20 #  TODO -- units!
+TOTAL_VOLUME = 1E-11 #(L) TODO (Eran) initialize this value
+EDGE_LENGTH = 1. # TODO -- units!
+
+DIFFUSION = 0.00001 # diffusion constant, TODO -- units!
+
+# Derived parameters
+BIN_VOLUME = TOTAL_VOLUME / (BINS_PER_EDGE*BINS_PER_EDGE)
+DX = EDGE_LENGTH/ BINS_PER_EDGE # intervals in x-, y- directions
+DX2 = DX*DX
+# DT = DX2 * DY2 / (2 * DIFFUSION * (DX2 + DY2))
+
 
 class EnvironmentSpatialLattice(object):
 	def __init__(self, concentrations):
 		self._time = 0
 		self._timestep = 0.2
 		self.run_for = 10
-		self.size = 1
-		self.nbins = 20
-		self.volume = 1E-14 #(this is bin volume for now) #TODO (Eran) initialize this value
-		self.nAvogadro = constants.N_A #TODO (ERAN) get this from sim_data.constants.nAvogadro
 
 		self.id = -1
 
@@ -34,11 +45,9 @@ class EnvironmentSpatialLattice(object):
 		self.concentrations = concentrations.values()
 
 		# Create lattice and fill each site with concentrations dictionary
-		self.lattice = np.empty([len(self.molecule_ids)] + [self.nbins for dim in xrange(N_DIMS)], dtype=float)
+		self.lattice = np.empty([len(self.molecule_ids)] + [BINS_PER_EDGE for dim in xrange(N_DIMS)], dtype=float)
 		for idx, molecule in enumerate(self.molecule_ids):
 			self.lattice[idx].fill(self.concentrations[idx])
-
-		# self.lattice[self.molecule_ids.index('GLC[p]')]
 
 		if os.path.exists("out/manual/environment.txt"):
 			os.remove("out/manual/environment.txt")
@@ -46,25 +55,20 @@ class EnvironmentSpatialLattice(object):
 			os.remove("out/manual/locations.txt")
 
 		print(matplotlib.get_backend())
-		# plt.ion()
 		glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')]
-		im = plt.imshow(glucose_lattice)
+		im = plt.imshow(glucose_lattice, vmin=0, vmax=25, cmap='YlGn')
+		plt.colorbar()
+		plt.axis('off')
 		plt.pause(0.0001)
-		# plt.show()
+
 
 	def save_environment(self):
 
-		# glucose_lattice = np.zeros_like(self.lattice, dtype=float)
-		# for (x, y), value in np.ndenumerate(self.lattice):
-		# 	glucose_lattice[x][y] = self.lattice[x][y]['GLC[p]']
-		#
-		# glucose_lattice = glucose_lattice.tolist()
-
 		glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')]
 		plt.clf()
-		im = plt.imshow(glucose_lattice)
-
-		# glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')].tolist()
+		im = plt.imshow(glucose_lattice, cmap='YlGn')
+		plt.colorbar()
+		plt.axis('off')
 
 		# open in append mode
 		lattice_file = open("out/manual/environment.txt", "a")
@@ -75,12 +79,10 @@ class EnvironmentSpatialLattice(object):
 	def save_locations(self):
 
 		locations = self.locations.values()
-		x = [location[1] * self.nbins - 0.5 for location in locations]
-		y = [location[0] * self.nbins - 0.5 for location in locations]
-		plt.scatter(x, y)
+		x = [location[1] * BINS_PER_EDGE - 0.5 for location in locations]
+		y = [location[0] * BINS_PER_EDGE - 0.5 for location in locations]
+		plt.scatter(x, y, s=100, c='k')
 		plt.pause(0.0001)
-
-		# locations = [location.tolist() for location in self.locations.values()]
 
 		# open in append mode
 		locations_file = open("out/manual/locations.txt", "a")
@@ -93,7 +95,6 @@ class EnvironmentSpatialLattice(object):
 
 		self.update_locations()
 
-		# diffuse environmental concentrations
 		self.diffusion()
 
 
@@ -104,16 +105,36 @@ class EnvironmentSpatialLattice(object):
 
 			# lattice cutoff
 			location[location < 0] = 0
-			location[location >= self.size] = self.size - 0.000001 # minus infinitesimal helps keep within lattice
+			location[location >= EDGE_LENGTH] = EDGE_LENGTH - 0.000001 # minus infinitesimal keep location within lattice
 
 
 	def diffusion(self):
-		pass
+		delta_lattice = np.zeros(self.lattice.shape)
+		for idx in xrange(len(self.lattice)):
+			molecule = self.lattice[idx]
+
+			# if not np.any(np.isinf(molecule)) and not np.any(molecule == 0) and not (len(set(molecule.flatten()))==1):
+			# if molecule field is not uniform
+			if not (len(set(molecule.flatten())) == 1):
+				delta_lattice[idx] = self.diffusion_timestep(molecule)
+
+		self.lattice += delta_lattice
+
+
+	def diffusion_timestep(self, lattice):
+		''' calculate delta cause by diffusion. Assumes periodic lattice, with wrapping'''
+		N = np.roll(lattice, 1, axis=0)
+		S = np.roll(lattice, -1, axis=0)
+		W = np.roll(lattice, 1, axis=1)
+		E = np.roll(lattice, -1, axis=1)
+
+		delta_lattice = DIFFUSION * self._timestep * ((N + S - 2 * lattice) / DX2 + (W + E - 2 * lattice) / DY2)
+
+		return delta_lattice
 
 
 	def run_incremental(self, run_until):
 		''' Simulate until run_until '''
-
 		self.save_environment()
 		self.save_locations()
 
@@ -124,7 +145,7 @@ class EnvironmentSpatialLattice(object):
 
 	def counts_to_concentration(self, counts):
 		''' Convert an array of counts to concentrations '''
-		concentrations = [count / (self.volume * self.nAvogadro) for count in counts]
+		concentrations = [count / (BIN_VOLUME * N_AVOGADRO) for count in counts]
 		return concentrations
 
 
@@ -134,7 +155,7 @@ class EnvironmentSpatialLattice(object):
 		and add to the environmental concentrations of each molecule at each simulation's location
 		'''
 		for sim_id, delta_counts in all_changes.iteritems():
-			location = self.locations[sim_id] * self.nbins
+			location = self.locations[sim_id] * BINS_PER_EDGE
 			bin = tuple(np.floor(location).astype(int))
 
 			delta_concentrations = self.counts_to_concentration(delta_counts.values())
@@ -152,7 +173,7 @@ class EnvironmentSpatialLattice(object):
 		concentrations = {}
 		for sim_id in self.simulations.keys():
 			# get concentration from cell's given bin
-			location = self.locations[sim_id] * self.nbins
+			location = self.locations[sim_id] * BINS_PER_EDGE
 			bin = tuple(np.floor(location).astype(int))
 			concentrations[sim_id] = dict(zip(self.molecule_ids, self.lattice[:,bin[0],bin[1]]))
 		return concentrations
@@ -166,7 +187,7 @@ class EnvironmentSpatialLattice(object):
 		state = {}
 
 		# Place cell at a random initial location
-		location = np.random.uniform(0,self.size,N_DIMS)
+		location = np.random.uniform(0,EDGE_LENGTH,N_DIMS)
 
 		self.simulations[id] = state
 		self.locations[id] = location

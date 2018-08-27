@@ -125,8 +125,8 @@ class BootEcoli(object):
 		self.id = id
 
 		sim_data_fit = '{}/out/manual/kb/simData_Most_Fit.cPickle'.format(working_dir)
-		sim_data_variant = '{}/out/manual/wildtype_000000/kb/simData_Modified.cPickle'.format(working_dir)
-		variant_metadata = '{}/out/manual/wildtype_000000/metadata'.format(working_dir)
+		sim_data_variant = '{}/out/manual/kb/simData_Modified.cPickle'.format(working_dir)
+		variant_metadata = '{}/out/manual/metadata'.format(working_dir)
 		output_dir = '{}/out/manual/sim_{}/simOut'.format(working_dir, self.id)
 
 		# copy the file simData_Most_Fit.cPickle to simData_Modified.cPickle
