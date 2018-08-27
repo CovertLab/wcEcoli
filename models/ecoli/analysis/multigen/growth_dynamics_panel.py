@@ -34,7 +34,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		nRows = 11
 		nCols = 1
 
-		fig =plt.figure(figsize=(6,15))
+		fig =plt.figure(figsize=(3.4,13))
 		subplots_to_make = []
 		for i in range(1, num_subplots+1):
 			subplots_to_make.append((nRows, nCols, i))
@@ -133,7 +133,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			trpARnaCounts = bulkMoleculesReader.readColumn("counts")[:, trpARnaIndex].reshape(-1)
 
 			#Get mass per Origin
-
 			mass_per_oriC = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("criticalMassPerOriC")
 
 			#RNA over protein:
@@ -205,7 +204,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			proteinGrowthRateMultigen = np.hstack((proteinGrowthRateMultigen, proteinGrowthRate))
 			rnaGrowthRateMultigen = np.hstack((rnaGrowthRateMultigen, rnaGrowthRate))
 
-			
 			'''
 			Plots:
 			Note: Some of the Y axis limits are hard coded. 
@@ -223,7 +221,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			##############################################################
 			ax1 = plt.subplot(nRows, nCols, 1)
 			ax1.plot(time, cellMass, color = plot_line_color)
-			ax1.plot(time[idxInit], cellMass[idxInit],  markersize=6, 
+			ax1.plot(time[idxInit], cellMass[idxInit],  markersize=4, 
 				linewidth=0, marker="o", color = plot_marker_color, 
 				markeredgewidth=0)
 			plt.ylabel("Cell Mass\n(fg)", fontsize = plot_font_size)
@@ -251,7 +249,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			##############################################################
 			# Plot DNA Polymerase Position
 			ax4 = plt.subplot(nRows, nCols, 4)
-			ax4.plot(time, sequenceLength, marker='o', markersize=2, 
+			ax4.plot(time, sequenceLength, marker='o', markersize=1, 
 				linewidth=0, color = plot_line_color)
 			plt.ylabel("DNA polymerase\nposition", fontsize = plot_font_size)
 			ax4.set_yticks([-1 * genomeLength / 2, 0, genomeLength / 2])
@@ -312,13 +310,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax10.set_yticks([y_min_10, y_max_10])
 			ax10.set_yticklabels([y_min_10, y_max_10])
 			##############################################################
-			##############################################################
 			
-		##############################################################
+		# Get the moving averages of the instantaneous growth rates.
+
 		width_inst = 200
 		cellMassGrowthRateMultigen = np.convolve(cellMassGrowthRateMultigen, np.ones(width_inst) / width_inst, mode = "same")
 		proteinGrowthRateMultigen = np.convolve(proteinGrowthRateMultigen, np.ones(width_inst) / width_inst, mode = "same")
 		rnaGrowthRateMultigen = np.convolve(rnaGrowthRateMultigen, np.ones(width_inst) / width_inst, mode = "same")
+		##############################################################
 		# Plot average instantanous growth rate
 		colors = ["#43aa98", "#0071bb", "#bf673c"]
 		ax11 = plt.subplot(nRows, nCols, 11)
@@ -331,7 +330,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ax11.set_ylim([y_min_11, y_max_11])
 		ax11.set_yticks([y_min_11, y_max_11])
 		ax11.set_yticklabels([y_min_11, y_max_11])
-		
+		##############################################################
+
 		for nrows, ncols, plot_number in subplots_to_make:
 			if plot_number > (num_subplots - nCols):
 				sub.set_xticks([0, time.max()])
