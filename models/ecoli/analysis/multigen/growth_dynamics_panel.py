@@ -219,6 +219,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plot_font_size = 6
 
 			##############################################################
+			# Plot Cell Mass
 			ax1 = plt.subplot(nRows, nCols, 1)
 			ax1.plot(time, cellMass, color = plot_line_color)
 			ax1.plot(time[idxInit], cellMass[idxInit],  markersize=4, 
