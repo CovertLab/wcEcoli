@@ -59,8 +59,6 @@ class Environment(wholecell.states.external_state.ExternalState):
 		self._times = [t[0] for t in self.current_time_series]
 
 		# initialize molecule IDs and concentrations based on initial environment
-
-
 		self._moleculeIDs = [molecule_id for molecule_id, concentration in self.environment_dict[self.nutrients].iteritems()]
 		self._concentrations = np.array([concentration for molecule_id, concentration in self.environment_dict[self.nutrients].iteritems()])
 		self._env_delta_counts = dict((molecule_id, 0) for molecule_id in self._moleculeIDs)
