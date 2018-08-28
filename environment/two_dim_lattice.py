@@ -17,7 +17,7 @@ fig = plt.figure()
 N_AVOGADRO = constants.N_A #TODO (ERAN) get this from sim_data.constants.nAvogadro
 
 N_DIMS = 2 # number of dimensions. DO NOT CHANGE THIS!
-BINS_PER_EDGE = 20 #  TODO -- units!
+BINS_PER_EDGE = 20
 TOTAL_VOLUME = 1E-11 #(L) TODO (Eran) initialize this value
 EDGE_LENGTH = 1. # TODO -- units!
 
@@ -25,7 +25,7 @@ DIFFUSION = 0.00001 # diffusion constant, TODO -- units!
 
 # Derived parameters
 BIN_VOLUME = TOTAL_VOLUME / (BINS_PER_EDGE*BINS_PER_EDGE)
-DX = DY = EDGE_LENGTH/ BINS_PER_EDGE # intervals in x-, y- directions
+DX = DY = EDGE_LENGTH / BINS_PER_EDGE # intervals in x-, y- directions
 DX2, DY2 = DX*DX, DY*DY
 # DT = DX2 * DY2 / (2 * DIFFUSION * (DX2 + DY2))
 
@@ -192,8 +192,8 @@ class EnvironmentSpatialLattice(object):
 
 
 	def remove_simulation(self, id):
-		return self.simulations.pop(id, {})
-		return self.locations.pop(id, {})
+		self.simulations.pop(id, {})
+		self.locations.pop(id, {})
 
 
 	def simulations_run_until(self):

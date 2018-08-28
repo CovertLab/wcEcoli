@@ -12,7 +12,7 @@ from agent.outer import Outer
 from agent.inner import Inner
 from agent.stub import SimulationStub, EnvironmentStub
 
-from environment.nonspatial import EnvironmentNonSpatial
+from environment.batch_culture_nonspatial import EnvironmentBatchNonSpatial
 from environment.two_dim_lattice import EnvironmentSpatialLattice
 
 from models.ecoli.sim.simulation import EcoliSimulation
@@ -72,7 +72,7 @@ class BootInner(object):
 			self.simulation)
 
 
-class BootEnvironmentNonSpatial(object):
+class BootEnvironmentBatch(object):
 	def __init__(self, kafka_config):
 		raw_data = KnowledgeBaseEcoli()
 		# create a dictionary with all saved environments
@@ -92,7 +92,7 @@ class BootEnvironmentNonSpatial(object):
 		# TODO (Eran) don't hardcode initial environment, get this from timeseries
 		concentrations = self.environment_dict['minimal']
 
-		self.environment = EnvironmentNonSpatial(concentrations)
+		self.environment = EnvironmentBatchNonSpatial(concentrations)
 		self.outer = Outer(kafka_config, self.environment)
 
 
@@ -204,7 +204,7 @@ def main():
 
 	parser.add_argument(
 		'command',
-		choices=['inner', 'outer', 'ecoli', 'nonspatial', 'lattice', 'trigger', 'shutdown'],
+		choices=['inner', 'outer', 'ecoli', 'batch', 'lattice', 'trigger', 'shutdown'],
 		help='which command to boot')
 
 	parser.add_argument(
@@ -260,8 +260,8 @@ def main():
 
 		inner = BootEcoli(args.id, kafka_config, args.working_dir)
 
-	elif args.command == 'nonspatial':
-		outer = BootEnvironmentNonSpatial(kafka_config)
+	elif args.command == 'batch':
+		outer = BootEnvironmentBatch(kafka_config)
 
 	elif args.command == 'lattice':
 		outer = BootEnvironmentSpatialLattice(kafka_config)
