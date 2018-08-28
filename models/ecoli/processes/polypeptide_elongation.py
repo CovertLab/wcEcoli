@@ -343,10 +343,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# number that can be charged
 		aa_for_charging = total_aa_counts - aas_used
 		n_aa_charged = np.fmin(aa_for_charging, np.dot(self.aa_from_trna, uncharged_trna))
-		n_trna_charged = np.dot(n_aa_charged, self.aa_from_trna) * fraction_trna_per_aa
+		n_trna_charged = self.distribution_from_aa(n_aa_charged, fraction_trna_per_aa)
 		net_charged = n_trna_charged - charged_trna
 
-		charged_and_elongated = np.dot(aas_used, self.aa_from_trna) * fraction_trna_per_aa
+		charged_and_elongated = self.distribution_from_aa(aas_used, fraction_trna_per_aa)
 		total_charging_reactions = charged_and_elongated + net_charged
 		self.charging_molecules.countsInc(np.dot(self.charging_stoich_matrix, total_charging_reactions))
 
@@ -465,6 +465,49 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
 		return fraction_charged, v_rib
+
+	def distribution_from_aa(self, n_aa, f_trna):
+		'''
+		Distributes counts of amino acids to tRNAs that are associated with each amino acid
+		Uses self.aa_from_trna mapping to distribute from amino acids to tRNA
+
+		Inputs:
+			n_aa (array of ints) - counts per amino acid to distribute to each tRNA
+			f_trna (array of floats) - fraction of each tRNA to determine the distribution
+
+		Returns:
+			array of ints - distributed counts for each tRNA
+
+		TODO:
+			include limits on what can be charged/uncharged - might be necessary for some edge cases
+		'''
+
+		trna_counts = np.zeros(f_trna.shape, int)
+		for i, row in enumerate(self.aa_from_trna):
+			count = n_aa[i]
+			idx = row == 1
+			frac = f_trna[idx]
+
+			counts = np.round(frac * count)
+			diff = int(count - np.sum(counts))
+
+			# Adjust if rounding doesn't lead to correct distribution
+			# Only remove from ones that have been assigned if more assigned than available
+			if diff < 0:
+				for _ in range(-diff):
+					new_frac = counts / np.sum(counts)
+					adjustment = self.randomState.multinomial(1, new_frac)
+					counts -= adjustment
+			# Add additional counts to get up to counts to distribute
+			elif diff > 0:
+				adjustment = self.randomState.multinomial(diff, frac)
+				counts += adjustment
+
+			trna_counts[idx] = counts
+			if np.any(counts < 0):
+				import ipdb; ipdb.set_trace()
+
+		return trna_counts
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		"""
