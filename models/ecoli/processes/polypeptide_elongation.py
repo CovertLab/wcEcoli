@@ -73,11 +73,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Create views onto all polymerization reaction small molecules
 		self.aas = self.bulkMoleculesView(self.aaNames)
-		self.h2o = self.bulkMoleculeView('WATER[c]')
+		self.water = self.bulkMoleculeView('WATER[c]')
 		self.gtp = self.bulkMoleculeView("GTP[c]")
-		self.gdp = self.bulkMoleculeView("GDP[c]")
-		self.pi = self.bulkMoleculeView("PI[c]")
-		self.h   = self.bulkMoleculeView("PROTON[c]")
+		self.proton = self.bulkMoleculeView("PROTON[c]")
 
 		# Set for timestep calculation
 		self.gtpUsed = 0
@@ -111,7 +109,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				syn_idx = self.synthetase_names.index(syn)
 				self.aa_from_synthetase[aa_idx, syn_idx] = 1
 
-		self.charging_stoich_matrix = sim_data.process.transcription.charging_stoich_matrix
+		self.charging_stoich_matrix = sim_data.process.transcription.charging_stoich_matrix()
 		self.uncharged_trna_names = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']]
 		self.charged_trna_names = sim_data.process.transcription.charged_trna_names
 		self.charging_molecule_names = sim_data.process.transcription.charging_molecules
@@ -181,13 +179,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		synthetase_counts = np.dot(self.aa_from_synthetase, self.synthetases.total())
 		aa_counts = self.aas.total()
 		uncharged_trna_counts = np.dot(self.aa_from_trna, self.uncharged_trna.total())
-		charged_trna_counts = np.dot(self.aa_from_trna, self.charged_trna.total()) + 1
+		charged_trna_counts = np.dot(self.aa_from_trna, self.charged_trna.total()) + 1  # TODO - remove
 		total_trna_counts = uncharged_trna_counts + charged_trna_counts
 		ribosome_counts = len(self.activeRibosomes.allMolecules())
 
 		# get concentration
 		factor = 1  # TODO - remove
-		mask = np.ones(21, dtype=bool)
+		mask = np.ones(21, dtype=bool)  # TODO - handle selenocysteine
 		mask[-2] = False
 		f = aasInSequences[mask] / np.sum(aasInSequences[mask])
 		synthetase_conc = (counts_to_molar * synthetase_counts)[mask]
@@ -213,16 +211,20 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 			molAasRequested = translationSupplyRate * dryMass * self.timeStepSec() * units.s
 
-			countAasRequested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
+			count_aas_requested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
 
-			countAasRequested = np.fmin(countAasRequested, aasInSequences/self.elongation_factor) # Check if this is required. It is a better request but there may be fewer elongations.
+			count_aas_requested = np.fmin(count_aas_requested, aasInSequences/self.elongation_factor) # Check if this is required. It is a better request but there may be fewer elongations.
 		else:
-			countAasRequested = aasInSequences
+			count_aas_requested = aasInSequences
 
 		charging_aa_request = v_rib * f * self._sim.timeStepSec() / counts_to_molar.asNumber(uM)
-		supply_aa_request = countAasRequested[mask]
+
+		## TODO - remove block of code
+		supply_aa_request = count_aas_requested[mask]
 		fraction = charging_aa_request / supply_aa_request
 		total_trna_conc = updated_uncharged_trna_conc + updated_charged_trna_conc
+		##
+
 		updated_fraction_charged = np.zeros(len(self.aaNames))
 		updated_fraction_charged[mask] = fraction_charged
 
@@ -234,20 +236,31 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		uncharged_trna_request = final_charged_trna - self.charged_trna.total()
 		uncharged_trna_request[uncharged_trna_request < 0] = 0
 
-		countAasRequested[mask] = charging_aa_request
-		self.aa_counts_for_translation = np.array(countAasRequested)
-		countAasRequested += np.dot(self.aa_from_trna, uncharged_trna_request)
+		count_aas_requested[mask] = charging_aa_request
+		self.aa_counts_for_translation = np.array(count_aas_requested)
 
-		self.aas.requestIs(countAasRequested)
+		frac_trna_of_aa = total_trna / np.dot(np.dot(self.aa_from_trna, total_trna), self.aa_from_trna)
+		total_charging_reactions = np.dot(count_aas_requested, self.aa_from_trna) * frac_trna_of_aa + uncharged_trna_request
+
+		# Only request molecules that will be consumed in the charging reactions
+		requested_molecules = -np.dot(self.charging_stoich_matrix, total_charging_reactions)
+		requested_molecules[requested_molecules < 0] = 0
+		self.charging_molecules.requestIs(requested_molecules)
+
+		# Request charged tRNA that will become uncharged
 		self.charged_trna.requestIs(charged_trna_request)
-		self.uncharged_trna.requestIs(uncharged_trna_request)
+
+		# Request water for transfer of AA from tRNA for initial polypeptide
+		# This is severe overestimate being worst case of every elongation is
+		# to initialize a polypeptide but excess of water shouldn't matter
+		self.water.requestIs(np.sum(charging_aa_request))
 
 		self.writeToListener("GrowthLimits", "fraction_trna_charged", np.dot(updated_fraction_charged, self.aa_from_trna))
 		self.writeToListener("GrowthLimits", "aaPoolSize", self.aas.total())
-		self.writeToListener("GrowthLimits", "aaRequestSize", countAasRequested)
+		self.writeToListener("GrowthLimits", "aaRequestSize", count_aas_requested)
 
 		# Request GTP for polymerization based on sequences
-		gtpsHydrolyzed = np.int64(np.ceil(self.gtpPerElongation * countAasRequested.sum()))
+		gtpsHydrolyzed = np.int64(np.ceil(self.gtpPerElongation * count_aas_requested.sum()))
 
 		self.writeToListener("GrowthLimits", "gtpPoolSize", self.gtp.total()[0])
 		self.writeToListener("GrowthLimits", "gtpRequestSize", gtpsHydrolyzed)
@@ -299,7 +312,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			)
 
 		sequenceElongations = result.sequenceElongation
-		aasUsed = result.monomerUsages
+		aas_used = result.monomerUsages
 		nElongations = result.nReactions
 
 		# Update masses of ribosomes attached to polymerizing polypeptides
@@ -320,21 +333,26 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		updatedMass[didInitialize] += self.endWeight
 
-		# number that can be charged
-		# TODO - use charging reactions
-		aa_for_charging = total_aa_counts - aasUsed
-		n_aa_charged = np.fmin(aa_for_charging, np.dot(self.aa_from_trna, self.uncharged_trna.counts()))
-		fraction_uncharged_trna_per_aa = self.uncharged_trna.counts() / np.dot(
-			np.dot(self.aa_from_trna, self.uncharged_trna.counts()),
-			self.aa_from_trna
-			)
-		n_trna_charged = np.dot(n_aa_charged, self.aa_from_trna) * fraction_uncharged_trna_per_aa
-		net_charged = n_trna_charged - self.charged_trna.counts()
-		net_charged[~np.isfinite(net_charged)] = 0
+		# get tRNA counts
+		uncharged_trna = self.uncharged_trna.counts()
+		charged_trna = self.charged_trna.counts()
+		total_trna = uncharged_trna + charged_trna
+		fraction_trna_per_aa = total_trna / np.dot(np.dot(self.aa_from_trna, total_trna), self.aa_from_trna)
+		fraction_trna_per_aa[~np.isfinite(fraction_trna_per_aa)] = 0
 
-		self.charged_trna.countsInc(net_charged)
-		self.uncharged_trna.countsDec(net_charged)
-		self.aas.countsDec(np.dot(self.aa_from_trna, net_charged))
+		# number that can be charged
+		aa_for_charging = total_aa_counts - aas_used
+		n_aa_charged = np.fmin(aa_for_charging, np.dot(self.aa_from_trna, uncharged_trna))
+		n_trna_charged = np.dot(n_aa_charged, self.aa_from_trna) * fraction_trna_per_aa
+		net_charged = n_trna_charged - charged_trna
+
+		charged_and_elongated = np.dot(aas_used, self.aa_from_trna) * fraction_trna_per_aa
+		total_charging_reactions = charged_and_elongated + net_charged
+		self.charging_molecules.countsInc(np.dot(self.charging_stoich_matrix, total_charging_reactions))
+
+		# account for uncharging of tRNA during elongation
+		self.charged_trna.countsDec(charged_and_elongated)
+		self.uncharged_trna.countsInc(charged_and_elongated)
 
 		# Write current average elongation to listener
 		currElongRate = (sequenceElongations.sum() / len(activeRibosomes)) / self.timeStepSec()
@@ -367,9 +385,12 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome30S.countInc(nTerminated)
 		self.ribosome50S.countInc(nTerminated)
 
-		# Update counts of amino acids and water to reflect polymerization reactions
-		self.aas.countsDec(aasUsed)
-		self.h2o.countInc(nElongations - nInitialized)
+		# Update counts protons to reflect polymerization reactions and transfer of AA from tRNA
+		# Peptide bond formation releases a water but transferring AA from tRNA consumes a OH-
+		# Net production of H+ for each elongation, consume extra water for each initialization
+		# since a peptide bond doesn't form
+		self.proton.countInc(nElongations)
+		self.water.countDec(nInitialized)
 
 		# Report stalling information
 		expectedElongations = np.fmin(
@@ -381,7 +402,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Write data to listeners
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
-		self.writeToListener("GrowthLimits", "aasUsed", aasUsed)
+		self.writeToListener("GrowthLimits", "aasUsed", aas_used)
 		self.writeToListener("GrowthLimits", "gtpUsed", self.gtpUsed)
 
 		self.writeToListener("RibosomeData", "ribosomeStalls", ribosomeStalls)
