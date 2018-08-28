@@ -200,7 +200,7 @@ class Transcription(object):
 		Loads information and creates data structures necessary for charging of tRNA
 		'''
 
-		# create list of charged tRNAs
+		# Create list of charged tRNAs
 		trna_names = self.rnaData['id'][self.rnaData['isTRna']]
 		charged_trnas = [x['modifiedForms'] for x in raw_data.rnas if x['id'] + '[c]' in trna_names]
 		filtered_charged_trna = []
@@ -216,7 +216,7 @@ class Transcription(object):
 		self.charged_trna_names = filtered_charged_trna
 		assert(len(self.charged_trna_names) == len(trna_names))
 
-		# create mapping of each tRNA/charged tRNA to associated AA
+		# Create mapping of each tRNA/charged tRNA to associated AA
 		trna_dict = {
 			'RNA0-300[c]': 'VAL',
 			'RNA0-301[c]': 'LYS',
@@ -227,6 +227,7 @@ class Transcription(object):
 			'RNA0-306[c]': 'MET',
 			}
 		aa_names = sim_data.moleculeGroups.aaIDs
+		aa_indices = {aa: i for i, aa in enumerate(aa_names)}
 		self.aa_from_trna = np.zeros((len(aa_names), len(trna_names)))
 		for trna in trna_names:
 			aa = trna[:3].upper()
@@ -242,20 +243,24 @@ class Transcription(object):
 			assert('c' in sim_data.getter.getLocation([aa])[0])
 			aa += '[c]'
 			if aa in aa_names:
-				aaIdx = aa_names.index(aa)
-				trnaIdx = np.where(trna_names == trna)[0]
-				self.aa_from_trna[aaIdx, trnaIdx] = 1
+				aa_idx = aa_indices[aa]
+				trna_idx = np.where(trna_names == trna)[0]
+				self.aa_from_trna[aa_idx, trna_idx] = 1
 
-		# array for stoichiometry matrix
+		# Arrays for stoichiometry and synthetase mapping matrices
 		molecules = []
 
 		stoich_matrix_i = []
 		stoich_matrix_j = []
 		stoich_matrix_v = []
 
-		# create stoichiometry matrix for charging reactions
+		synthetase_names = []
+		synthetase_mapping_aa = []
+		synthetase_mapping_syn = []
+
+		# Create stoichiometry matrix for charging reactions
 		for reaction in raw_data.modificationReactions:
-			# skip reactions from modificationReactions that don't have both an uncharged and charged tRNA
+			# Skip reactions from modificationReactions that don't have both an uncharged and charged tRNA
 			no_charged_trna_in_reaction = True
 			no_trna_in_reaction = True
 			for mol in [molecule['molecule'] + '[' + molecule['location'] + ']' for molecule in reaction['stoichiometry']]:
@@ -271,6 +276,7 @@ class Transcription(object):
 			assert reaction['process'] == 'rna'
 			assert reaction['dir'] == 1
 
+			# Get uncharged tRNA name for the given reaction
 			trna = None
 			for mol in [molecule['molecule'] + '[' + molecule['location'] + ']' for molecule in reaction['stoichiometry']]:
 				if mol in trna_names:
@@ -281,6 +287,8 @@ class Transcription(object):
 				continue
 			trna_index = np.where(trna_names == trna)[0][0]
 
+			# Get molecule information
+			aa_idx = None
 			for molecule in reaction['stoichiometry']:
 				if molecule['type'] == 'metabolite':
 					molecule_name = '{}[{}]'.format(
@@ -299,6 +307,8 @@ class Transcription(object):
 				else:
 					molecule_index = molecules.index(molecule_name)
 
+				aa_idx = aa_indices.get(molecule_name, aa_idx)
+
 				coefficient = molecule['coeff']
 
 				assert coefficient % 1 == 0
@@ -307,10 +317,27 @@ class Transcription(object):
 				stoich_matrix_j.append(trna_index)
 				stoich_matrix_v.append(coefficient)
 
+			assert aa_idx is not None
+
+			# Create mapping for synthetases catalyzing charging
+			for synthetase in reaction['catBy']:
+				synthetase = '{}[{}]'.format(synthetase, molecule['location'])
+
+				if synthetase not in synthetase_names:
+					synthetase_names.append(synthetase)
+
+				synthetase_mapping_aa.append(aa_idx)
+				synthetase_mapping_syn.append(synthetase_names.index(synthetase))
+
+		# Save matrices and related lists of names
 		self._stoich_matrix_i = np.array(stoich_matrix_i)
 		self._stoich_matrix_j = np.array(stoich_matrix_j)
 		self._stoich_matrix_v = np.array(stoich_matrix_v)
 
+		self.aa_from_synthetase = np.zeros((len(aa_names), len(synthetase_names)))
+		self.aa_from_synthetase[synthetase_mapping_aa, synthetase_mapping_syn] = 1
+
+		self.synthetase_names = synthetase_names
 		self.charging_molecules = molecules
 
 	def charging_stoich_matrix(self):
