@@ -5,8 +5,6 @@ Output file is charged_data.tsv in the same directory as the script
 Notes:
 - Masses of small molecules are added to the tRNA mass so that the charging
 reactions are mass balanced
-- If sim_data.cp file is in the same directory, the script will load sim_data
-from there instead of running fitSimData_1
 '''
 
 import cPickle
@@ -15,13 +13,12 @@ import os
 
 import numpy as np
 
-from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
+from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from reconstruction.spreadsheets import JsonWriter
 
 # file paths
 file_loc = os.path.dirname(__file__)
-sim_data_filename = os.path.join(file_loc, "sim_data.cp")
 output_filename = os.path.join(file_loc, 'charged_data.tsv')
 
 # suppress scientific notation output
@@ -29,12 +26,8 @@ np.set_printoptions(suppress = True)
 
 # get raw and sim data
 raw_data = KnowledgeBaseEcoli()
-
-if os.path.exists(sim_data_filename):
-	with open(sim_data_filename, 'rb') as f:
-		sim_data = cPickle.load(f)
-else:
-	sim_data = fitSimData_1(raw_data)
+sim_data = SimulationDataEcoli()
+sim_data.initialize(raw_data)
 
 # determine masses and write to output file
 with open(output_filename, 'w') as out:
