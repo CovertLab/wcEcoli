@@ -158,48 +158,42 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 					'proteinIndex', 'peptideLength'
 					)
 
-		self.elongation_factor = 1.1  # TODO - remove/ensure sequence is long enough with padding
-
 		sequences = buildSequences(
 			self.proteinSequences,
 			proteinIndexes,
 			peptideLengths,
-			self.ribosomeElongationRate * self.elongation_factor
+			self.ribosomeElongationRate,
 			)
 
 		sequenceHasAA = (sequences != polymerize.PAD_VALUE)
 		aasInSequences = np.bincount(sequences[sequenceHasAA], minlength=21)
 
-		# conversion from counts to molarity
+		# Conversion from counts to molarity
 		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
 		cell_volume = cell_mass / self.cellDensity
 		counts_to_molar = 1 / (self.nAvogadro * cell_volume)
 
-		# get counts - convert synthetase and tRNA to a per AA basis
+		# Get counts and convert synthetase and tRNA to a per AA basis
 		synthetase_counts = np.dot(self.aa_from_synthetase, self.synthetases.total())
 		aa_counts = self.aas.total()
 		uncharged_trna_counts = np.dot(self.aa_from_trna, self.uncharged_trna.total())
-		charged_trna_counts = np.dot(self.aa_from_trna, self.charged_trna.total()) + 1  # TODO - remove
-		total_trna_counts = uncharged_trna_counts + charged_trna_counts
+		charged_trna_counts = np.dot(self.aa_from_trna, self.charged_trna.total())
 		ribosome_counts = len(self.activeRibosomes.allMolecules())
 
-		# get concentration
-		factor = 1  # TODO - remove
+		# Get concentration
 		mask = np.ones(21, dtype=bool)  # TODO - handle selenocysteine
 		mask[-2] = False
 		f = aasInSequences[mask] / np.sum(aasInSequences[mask])
 		synthetase_conc = (counts_to_molar * synthetase_counts)[mask]
 		aa_conc = (counts_to_molar * aa_counts)[mask]
-		uncharged_trna_conc = (counts_to_molar * uncharged_trna_counts * factor)[mask]
-		charged_trna_conc = (counts_to_molar * charged_trna_counts * factor)[mask]
-		total_trna_conc = (counts_to_molar * total_trna_counts)[mask]
+		uncharged_trna_conc = (counts_to_molar * uncharged_trna_counts)[mask]
+		charged_trna_conc = (counts_to_molar * charged_trna_counts)[mask]
 		ribosome_conc = (counts_to_molar * ribosome_counts)
 
+		# Calculate steady state tRNA levels and resulting elongation rate
 		fraction_charged, v_rib = self.calculate_trna_charging(
 			synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f
 			)
-		updated_uncharged_trna_conc = total_trna_conc * (1 - fraction_charged)
-		updated_charged_trna_conc = total_trna_conc * fraction_charged
 
 		if self.translationSupply:
 			translationSupplyRate = self.translation_aa_supply[current_nutrients] * self.elngRateFactor
@@ -213,17 +207,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 			count_aas_requested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
 
-			count_aas_requested = np.fmin(count_aas_requested, aasInSequences/self.elongation_factor) # Check if this is required. It is a better request but there may be fewer elongations.
+			count_aas_requested = np.fmin(count_aas_requested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
 		else:
 			count_aas_requested = aasInSequences
 
 		charging_aa_request = v_rib * f * self._sim.timeStepSec() / counts_to_molar.asNumber(uM)
-
-		## TODO - remove block of code
-		supply_aa_request = count_aas_requested[mask]
-		fraction = charging_aa_request / supply_aa_request
-		total_trna_conc = updated_uncharged_trna_conc + updated_charged_trna_conc
-		##
 
 		updated_fraction_charged = np.zeros(len(self.aaNames))
 		updated_fraction_charged[mask] = fraction_charged
@@ -291,7 +279,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.proteinSequences,
 			proteinIndexes,
 			peptideLengths,
-			self.ribosomeElongationRate * self.elongation_factor
+			self.ribosomeElongationRate,
 			)
 
 		if sequences.size == 0:
@@ -455,7 +443,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				/ (self.KMaa * self.KMtf *
 				(1 + uncharged_trna_conc/self.KMtf + aa_conc/self.KMaa + uncharged_trna_conc*aa_conc/self.KMtf/self.KMaa))
 				)
-			numerator_ribosome = 1 + np.sum(f * self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf)
+			numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
 			v_rib = self.krib*ribosome_conc / numerator_ribosome
 
 			delta_conc = (v_charging - v_rib*f) * dt
