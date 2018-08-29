@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import division
+
 import time
 import random
 
@@ -25,9 +29,9 @@ DIFFUSION = 0.00001 # diffusion constant, TODO -- units!
 
 # Derived parameters
 BIN_VOLUME = TOTAL_VOLUME / (BINS_PER_EDGE*BINS_PER_EDGE)
-DX = DY = EDGE_LENGTH / BINS_PER_EDGE # intervals in x-, y- directions
-DX2, DY2 = DX*DX, DY*DY
-# DT = DX2 * DY2 / (2 * DIFFUSION * (DX2 + DY2))
+DX = EDGE_LENGTH / BINS_PER_EDGE # intervals in x- directions (assume y- direction equivalent)
+DX2 = DX*DX
+# DT = DX2 * DX2 / (2 * DIFFUSION * (DX2 + DX2)) # upper limit on the time scale (go with at least 50% of this)
 
 
 class EnvironmentSpatialLattice(object):
@@ -36,17 +40,18 @@ class EnvironmentSpatialLattice(object):
 		self._timestep = 0.2
 		self.run_for = 10
 
-		self.id = -1
+		self.sim_id = -1
 
 		self.simulations = {}
 		self.locations = {}
 
-		self.molecule_ids = concentrations.keys()
+		self._molecule_ids = concentrations.keys()
 		self.concentrations = concentrations.values()
 
 		# Create lattice and fill each site with concentrations dictionary
-		self.lattice = np.empty([len(self.molecule_ids)] + [BINS_PER_EDGE for dim in xrange(N_DIMS)], dtype=float)
-		for idx, molecule in enumerate(self.molecule_ids):
+		# Molecule identities are defined along the major axis, with spatial dimensions along the other two axes.
+		self.lattice = np.empty([len(self._molecule_ids)] + [BINS_PER_EDGE for dim in xrange(N_DIMS)], dtype=np.float64)
+		for idx, molecule in enumerate(self._molecule_ids):
 			self.lattice[idx].fill(self.concentrations[idx])
 
 		if os.path.exists("out/manual/environment.txt"):
@@ -54,8 +59,7 @@ class EnvironmentSpatialLattice(object):
 		if os.path.exists("out/manual/locations.txt"):
 			os.remove("out/manual/locations.txt")
 
-		print(matplotlib.get_backend())
-		glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')]
+		glucose_lattice = self.lattice[self._molecule_ids.index('GLC[p]')]
 		im = plt.imshow(glucose_lattice, vmin=0, vmax=25, cmap='YlGn')
 		plt.colorbar()
 		plt.axis('off')
@@ -67,7 +71,7 @@ class EnvironmentSpatialLattice(object):
 
 		self.update_locations()
 
-		self.diffusion()
+		self.run_diffusion()
 
 
 	def update_locations(self):
@@ -75,12 +79,12 @@ class EnvironmentSpatialLattice(object):
 		for sim_id, location in self.locations.iteritems():
 			location += np.random.normal(0, 0.005, N_DIMS)
 
-			# lattice cutoff
-			location[location < 0] = 0
-			location[location >= EDGE_LENGTH] = EDGE_LENGTH - 0.000001 # minus infinitesimal keep location within lattice
+			# wrap cell location
+			location[location < 0] = EDGE_LENGTH - location[location < 0]
+			location[location >= EDGE_LENGTH] = location[location >= EDGE_LENGTH] - EDGE_LENGTH
 
 
-	def diffusion(self):
+	def run_diffusion(self):
 		delta_lattice = np.zeros(self.lattice.shape)
 		for idx in xrange(len(self.lattice)):
 			molecule = self.lattice[idx]
@@ -100,23 +104,24 @@ class EnvironmentSpatialLattice(object):
 		W = np.roll(lattice, 1, axis=1)
 		E = np.roll(lattice, -1, axis=1)
 
-		delta_lattice = DIFFUSION * self._timestep * ((N + S - 2 * lattice) / DX2 + (W + E - 2 * lattice) / DY2)
+		delta_lattice = DIFFUSION * self._timestep * ((N + S + W + E - 4 * lattice) / DX2)
 
 		return delta_lattice
 
 
 	def run_incremental(self, run_until):
 		''' Simulate until run_until '''
-		self.save_environment()
-		self.save_locations()
+		self.output_environment()
+		self.output_locations()
 
 		while self._time < run_until:
 			self._time += self._timestep
 			self.evolve()
 
 
-	def save_environment(self):
-		glucose_lattice = self.lattice[self.molecule_ids.index('GLC[p]')]
+	def output_environment(self):
+		'''plot environment lattice'''
+		glucose_lattice = self.lattice[self._molecule_ids.index('GLC[p]')]
 		plt.clf()
 		im = plt.imshow(glucose_lattice, cmap='YlGn')
 		plt.colorbar()
@@ -128,7 +133,8 @@ class EnvironmentSpatialLattice(object):
 		# lattice_file.close()
 
 
-	def save_locations(self):
+	def output_locations(self):
+		'''plot cell locations'''
 		locations = self.locations.values()
 		x = [location[1] * BINS_PER_EDGE - 0.5 for location in locations]
 		y = [location[0] * BINS_PER_EDGE - 0.5 for location in locations]
@@ -154,16 +160,16 @@ class EnvironmentSpatialLattice(object):
 		'''
 		for sim_id, delta_counts in all_changes.iteritems():
 			location = self.locations[sim_id] * BINS_PER_EDGE
-			bin = tuple(np.floor(location).astype(int))
+			bin_site = tuple(np.floor(location).astype(int))
 
 			delta_concentrations = self.counts_to_concentration(delta_counts.values())
 			for molecule, delta_conc in zip(delta_counts.keys(), delta_concentrations):
-				self.lattice[self.molecule_ids.index(molecule), bin[0], bin[1]] += delta_conc
+				self.lattice[self._molecule_ids.index(molecule), bin_site[0], bin_site[1]] += delta_conc
 
 
 	def get_molecule_ids(self):
 		''' Return the ids of all molecule species in the environment '''
-		return self.molecule_ids
+		return self._molecule_ids
 
 
 	def get_concentrations(self):
@@ -172,8 +178,8 @@ class EnvironmentSpatialLattice(object):
 		for sim_id in self.simulations.keys():
 			# get concentration from cell's given bin
 			location = self.locations[sim_id] * BINS_PER_EDGE
-			bin = tuple(np.floor(location).astype(int))
-			concentrations[sim_id] = dict(zip(self.molecule_ids, self.lattice[:,bin[0],bin[1]]))
+			bin_site = tuple(np.floor(location).astype(int))
+			concentrations[sim_id] = dict(zip(self._molecule_ids, self.lattice[:,bin_site[0],bin_site[1]]))
 		return concentrations
 
 
@@ -196,13 +202,13 @@ class EnvironmentSpatialLattice(object):
 		self.locations.pop(id, {})
 
 
-	def simulations_run_until(self):
+	def run_simulations_until(self):
 		until = {}
 		run_until = self.time() + self.run_for
 		for sim_id in self.simulations.keys():
 			until[sim_id] = run_until
 
 		# pass the environment a run_until
-		until[self.id] = run_until
+		until[self.sim_id] = run_until
 
 		return until

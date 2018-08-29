@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import division
+
 import time
 import random
 
@@ -17,11 +21,11 @@ class EnvironmentBatchNonSpatial(object):
 		self._timestep = 0.2
 		self.run_for = 10
 
-		self.id = -1
+		self.sim_id = -1
 
 		self.simulations = {}
 
-		self.molecule_ids = concentrations.keys()
+		self._molecule_ids = concentrations.keys()
 		self.concentrations = concentrations.values()
 
 		if os.path.exists("out/manual/batch_environment.txt"):
@@ -30,14 +34,14 @@ class EnvironmentBatchNonSpatial(object):
 
 	def run_incremental(self, run_until):
 		''' Simulate until run_until '''
-		self.save_environment()
+		self.output_environment()
 
 		while self._time < run_until:
 			self._time += self._timestep
 
 
-	def save_environment(self):
-		# open in append mode
+	def output_environment(self):
+		'''save environment state to text'''
 		env_file = open("out/manual/batch_environment.txt", "a")
 		env_file.write("%s\n" % self.concentrations)
 		env_file.close()
@@ -58,12 +62,12 @@ class EnvironmentBatchNonSpatial(object):
 			delta_concentrations = self.counts_to_concentration(delta_counts.values())
 
 			for molecule, delta_conc in zip(delta_counts.keys(), delta_concentrations):
-				self.concentrations[self.molecule_ids.index(molecule)] += delta_conc
+				self.concentrations[self._molecule_ids.index(molecule)] += delta_conc
 
 
 	def get_molecule_ids(self):
 		''' Return the ids of all molecule species in the environment '''
-		return self.molecule_ids
+		return self._molecule_ids
 
 
 	def get_concentrations(self):
@@ -71,7 +75,7 @@ class EnvironmentBatchNonSpatial(object):
 		concentrations = {}
 		for sim_id in self.simulations.keys():
 			# get concentration
-			concentrations[sim_id] = dict(zip(self.molecule_ids, self.concentrations))
+			concentrations[sim_id] = dict(zip(self._molecule_ids, self.concentrations))
 		return concentrations
 
 
@@ -88,13 +92,13 @@ class EnvironmentBatchNonSpatial(object):
 		self.simulations.pop(id, {})
 
 
-	def simulations_run_until(self):
+	def run_simulations_until(self):
 		until = {}
 		run_until = self.time() + self.run_for
 		for sim_id in self.simulations.keys():
 			until[sim_id] = run_until
 
 		# pass the environment a run_until
-		until[self.id] = run_until
+		until[self.sim_id] = run_until
 
 		return until
