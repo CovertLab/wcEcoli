@@ -24,7 +24,7 @@ from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 
 from wholecell.utils import units
 
-default_kafka_config = {
+DEFAULT_KAFKA_CONFIG = {
 	'host': '127.0.0.1:9092',
 	'simulation_send': 'environment_listen',
 	'simulation_receive': 'environment_broadcast',
@@ -50,7 +50,7 @@ class BootOuter(object):
 			'blue': 12}
 
 		self.environment = EnvironmentStub(volume, concentrations)
-		self.outer = Outer(kafka_config, self.environment)
+		self.outer = Outer('EnvironmentStub', kafka_config, self.environment)
 
 class BootInner(object):
 
@@ -180,7 +180,9 @@ class EnvironmentControl(Agent):
 	then terminate).
 	"""
 
-	def __init__(self, kafka_config=default_kafka_config):
+	def __init__(self, kafka_config=None):
+		if kafka_config is None:
+			kafka_config = DEFAULT_KAFKA_CONFIG.copy()
 		sim_id = 'environment_control'
 		super(EnvironmentControl, self).__init__(sim_id, kafka_config)
 
@@ -253,10 +255,10 @@ def main():
 		if not args.id:
 			raise ValueError('--id must be supplied for inner command')
 
-		inner = BootInner(args.id, kafka_config)
+		BootInner(args.id, kafka_config)
 
 	elif args.command == 'outer':
-		outer = BootOuter(kafka_config)
+		BootOuter(kafka_config)
 
 	elif args.command == 'ecoli':
 		if not args.id:

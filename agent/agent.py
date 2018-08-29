@@ -71,6 +71,7 @@ class Agent(object):
 		self.producer = Producer({
 			'bootstrap.servers': self.kafka_config['host']})
 
+		self.running = False
 		self.consumer = None
 		if self.kafka_config['subscribe_topics']:
 			self.consumer = Consumer({
@@ -124,6 +125,9 @@ class Agent(object):
 					self.running = False
 
 			else:
+				# `raw.value()` is implemented in C with a docstring that
+				# suggests it needs a `payload` argument. Suppress the warning.
+				# noinspection PyArgumentList
 				message = json.loads(raw.value().decode('utf-8'))
 
 				if message['event'] == event.GLOBAL_SHUTDOWN:
