@@ -40,21 +40,24 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(PolypeptideElongation, self).initialize(sim, sim_data)
 
+		constants = sim_data.constants
+		translation = sim_data.process.translation
+		transcription = sim_data.process.transcription
+
 		# Load parameters
-		self.nAvogadro = sim_data.constants.nAvogadro
-		self.cellDensity = sim_data.constants.cellDensity
+		self.nAvogadro = constants.nAvogadro
+		self.cellDensity = constants.cellDensity
 		self.aaNames = sim_data.moleculeGroups.aaIDs
-		proteinIds = sim_data.process.translation.monomerData['id']
-		self.proteinLengths = sim_data.process.translation.monomerData["length"].asNumber()
-		self.proteinSequences = sim_data.process.translation.translationSequences
-		self.aaWeightsIncorporated = sim_data.process.translation.translationMonomerWeights
-		self.endWeight = sim_data.process.translation.translationEndWeight
-		self.gtpPerElongation = sim_data.constants.gtpPerTranslation
-		# self.ribosomeElongationRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
+		proteinIds = translation.monomerData['id']
+		self.proteinLengths = translation.monomerData["length"].asNumber()
+		self.proteinSequences = translation.translationSequences
+		self.aaWeightsIncorporated = translation.translationMonomerWeights
+		self.endWeight = translation.translationEndWeight
+		self.gtpPerElongation = constants.gtpPerTranslation
 
-		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
+		self.maxRibosomeElongationRate = float(constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
 
-		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
+		self.ribosomeElongationRateDict = translation.ribosomeElongationRateDict
 
 		self.translation_aa_supply = sim_data.translationSupplyRate
 
@@ -88,27 +91,25 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.elngRateFactor = 1.
 
-		self.synthetase_names = sim_data.process.transcription.synthetase_names
-		self.aa_from_synthetase = sim_data.process.transcription.aa_from_synthetase
+		self.synthetase_names = transcription.synthetase_names
+		self.aa_from_synthetase = transcription.aa_from_synthetase
+		self.aa_from_trna = transcription.aa_from_trna
 
-		self.charging_stoich_matrix = sim_data.process.transcription.charging_stoich_matrix()
-		self.uncharged_trna_names = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']]
-		self.charged_trna_names = sim_data.process.transcription.charged_trna_names
-		self.charging_molecule_names = sim_data.process.transcription.charging_molecules
+		self.charging_stoich_matrix = transcription.charging_stoich_matrix()
+		self.uncharged_trna_names = transcription.rnaData['id'][transcription.rnaData['isTRna']]
+		self.charged_trna_names = transcription.charged_trna_names
+		self.charging_molecule_names = transcription.charging_molecules
 		self.uncharged_trna = self.bulkMoleculesView(self.uncharged_trna_names)
 		self.charged_trna = self.bulkMoleculesView(self.charged_trna_names)
 		self.charging_molecules = self.bulkMoleculesView(self.charging_molecule_names)
-		self.aa_from_trna = sim_data.process.transcription.aa_from_trna
 		self.synthetases = self.bulkMoleculesView(self.synthetase_names)
 
 		# ppGpp parameters
-		# TODO - put in flat file
-		self.kS = 100.  # / units.s  # synthetase charging rate
-		self.KMtf = 1.  # * uM  # Micahelis constant for synthetases and uncharged tRNAs
-		self.KMaa = 100.  # * uM # Michaelis constant for synthetases and amino acids
-		self.krib = 22.  # / units.s  # ribosome elongation rate
-		self.krta = 1.  # * uM  # dissociation constant of charged tRNA-ribosome
-		self.krtf = 500.  # * uM  # dissociation constant of uncharged tRNA-ribosome
+		self.kS = constants.synthetase_charging_rate.asNumber(1 / units.s)  # synthetase charging rate
+		self.KMtf = constants.Km_synthetase_uncharged_trna.asNumber(uM)  # Micahelis constant for synthetases and uncharged tRNAs
+		self.KMaa = constants.Km_synthetase_amino_acid.asNumber(uM)  # Michaelis constant for synthetases and amino acids
+		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(uM)  # dissociation constant of charged tRNA-ribosome
+		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(uM)  # dissociation constant of uncharged tRNA-ribosome
 
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
@@ -420,7 +421,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				(1 + uncharged_trna_conc/self.KMtf + aa_conc/self.KMaa + uncharged_trna_conc*aa_conc/self.KMtf/self.KMaa))
 				)
 			numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
-			v_rib = self.krib*ribosome_conc / numerator_ribosome
+			v_rib = self.maxRibosomeElongationRate * ribosome_conc / numerator_ribosome
 
 			# Handle case when f is 0 and charged_trna_conc is 0
 			if not np.isfinite(v_rib):
