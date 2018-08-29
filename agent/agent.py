@@ -26,7 +26,7 @@ class Agent(object):
 	To subclass Agent:
 
 	* First, a call to super must be made in the `__init__` method of the overriding class.
-	  `sim_id` is any unique string and identifies this agent with other agents in the system.
+	  `agent_id` is any unique string and identifies this agent with other agents in the system.
 	  `kafka_config` is a configuration dictionary containing information about the kafka host,
 	  topics to subscribe to and additional information. Its details are described in the
 	  docstring for `__init__`.
@@ -46,12 +46,12 @@ class Agent(object):
 	using the configured Kafka Producer.
 	"""
 
-	def __init__(self, sim_id, kafka_config):
+	def __init__(self, agent_id, kafka_config):
 		"""
 		Initialize the Agent object with a unique id and kafka configuration.
 
 		Args:
-		    sim_id (str): A unique identifier which distinguishes this agent from
+		    agent_id (str): A unique identifier which distinguishes this agent from
 		        the rest of the agents in the system.
 
 		    kafka_config (dict): A dictionary containing Kafka configuration information.
@@ -65,7 +65,7 @@ class Agent(object):
 		        to represent topics for sending messages to. 
 		"""
 
-		self.sim_id = sim_id
+		self.agent_id = agent_id
 		self.kafka_config = kafka_config
 
 		self.producer = Producer({
@@ -77,7 +77,7 @@ class Agent(object):
 			self.consumer = Consumer({
 				'bootstrap.servers': self.kafka_config['host'],
 				'enable.auto.commit': True,
-				'group.id': 'simulation-' + str(sim_id),
+				'group.id': 'simulation-' + str(agent_id),
 				'default.topic.config': {
 					'auto.offset.reset': 'latest'}})
 
@@ -106,7 +106,7 @@ class Agent(object):
 
 		Once poll is called, the thread will be claimed and any interaction with the 
 		system from this point on will be mediated through message passing. This is called
-		at the end of the base class's `__init__(sim_id, kafka_config)` method and does not need to be
+		at the end of the base class's `__init__(agent_id, kafka_config)` method and does not need to be
 		called manually by the subclass.
 		"""
 

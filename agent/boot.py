@@ -63,12 +63,12 @@ class BootInner(object):
 	Outer agent.
 	"""
 
-	def __init__(self, sim_id, kafka_config):
-		self.sim_id = sim_id
+	def __init__(self, agent_id, kafka_config):
+		self.agent_id = agent_id
 		self.simulation = SimulationStub()
 		self.inner = Inner(
 			kafka_config,
-			self.sim_id,
+			self.agent_id,
 			self.simulation)
 
 
@@ -117,7 +117,7 @@ class BootEnvironmentSpatialLattice(object):
 		concentrations = self.environment_dict['minimal']
 
 		self.environment = EnvironmentSpatialLattice(concentrations)
-		self.outer = Outer(kafka_config, self.environment)
+		self.outer = Outer(str(self.environment.agent_id), kafka_config, self.environment)
 
 
 class BootEcoli(object):
@@ -125,13 +125,13 @@ class BootEcoli(object):
 	This class initializes an EcoliSimulation, passes it to the `Inner` agent, and launches the simulation.
 	The EcoliSimulation is initialized by passing it directions to sim_data, along with hardcoded simulation parameters.
 	'''
-	def __init__(self, sim_id, kafka_config, working_dir):
-		self.sim_id = sim_id
+	def __init__(self, agent_id, kafka_config, working_dir):
+		self.agent_id = agent_id
 
 		sim_data_fit = '{}/out/manual/kb/simData_Most_Fit.cPickle'.format(working_dir)
 		sim_data_variant = '{}/out/manual/kb/simData_Modified.cPickle'.format(working_dir)
 		variant_metadata = '{}/out/manual/metadata'.format(working_dir)
-		output_dir = '{}/out/manual/sim_{}/simOut'.format(working_dir, self.sim_id)
+		output_dir = '{}/out/manual/sim_{}/simOut'.format(working_dir, self.agent_id)
 
 		# copy the file simData_Most_Fit.cPickle to simData_Modified.cPickle
 		task = VariantSimDataTask(
@@ -167,7 +167,7 @@ class BootEcoli(object):
 		self.simulation = EcoliSimulation(**options)
 		self.inner = Inner(
 			kafka_config,
-			self.sim_id,
+			self.agent_id,
 			self.simulation)
 
 
@@ -183,8 +183,8 @@ class EnvironmentControl(Agent):
 	def __init__(self, kafka_config=None):
 		if kafka_config is None:
 			kafka_config = DEFAULT_KAFKA_CONFIG.copy()
-		sim_id = 'environment_control'
-		super(EnvironmentControl, self).__init__(sim_id, kafka_config)
+		agent_id = 'environment_control'
+		super(EnvironmentControl, self).__init__(agent_id, kafka_config)
 
 	def trigger_execution(self):
 		self.send(self.kafka_config['environment_control'], {
@@ -194,10 +194,10 @@ class EnvironmentControl(Agent):
 		self.send(self.kafka_config['environment_control'], {
 			'event': event.SHUTDOWN_ENVIRONMENT})
 
-	def shutdown_simulation(self, sim_id):
+	def shutdown_simulation(self, agent_id):
 		self.send(self.kafka_config['simulation_receive'], {
 			'event': event.SHUTDOWN_SIMULATION,
-			'inner_id': sim_id})
+			'inner_id': agent_id})
 
 def main():
 	"""

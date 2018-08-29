@@ -40,7 +40,7 @@ class EnvironmentSpatialLattice(object):
 		self._timestep = 0.2
 		self.run_for = 10
 
-		self.sim_id = -1
+		self.agent_id = -1
 
 		self.simulations = {}
 		self.locations = {}
@@ -75,8 +75,8 @@ class EnvironmentSpatialLattice(object):
 
 
 	def update_locations(self):
-		''' Update location for all sim_ids '''
-		for sim_id, location in self.locations.iteritems():
+		''' Update location for all agent_ids '''
+		for agent_id, location in self.locations.iteritems():
 			location += np.random.normal(0, 0.005, N_DIMS)
 
 			# wrap cell location
@@ -158,8 +158,8 @@ class EnvironmentSpatialLattice(object):
 		Use delta counts from all the inner simulations, convert them to concentrations,
 		and add to the environmental concentrations of each molecule at each simulation's location
 		'''
-		for sim_id, delta_counts in all_changes.iteritems():
-			location = self.locations[sim_id] * BINS_PER_EDGE
+		for agent_id, delta_counts in all_changes.iteritems():
+			location = self.locations[agent_id] * BINS_PER_EDGE
 			bin_site = tuple(np.floor(location).astype(int))
 
 			delta_concentrations = self.counts_to_concentration(delta_counts.values())
@@ -175,11 +175,11 @@ class EnvironmentSpatialLattice(object):
 	def get_concentrations(self):
 		'''returns a dict with {molecule_id: conc} for each sim give its current location'''
 		concentrations = {}
-		for sim_id in self.simulations.keys():
+		for agent_id in self.simulations.keys():
 			# get concentration from cell's given bin
-			location = self.locations[sim_id] * BINS_PER_EDGE
+			location = self.locations[agent_id] * BINS_PER_EDGE
 			bin_site = tuple(np.floor(location).astype(int))
-			concentrations[sim_id] = dict(zip(self._molecule_ids, self.lattice[:,bin_site[0],bin_site[1]]))
+			concentrations[agent_id] = dict(zip(self._molecule_ids, self.lattice[:,bin_site[0],bin_site[1]]))
 		return concentrations
 
 
@@ -205,10 +205,10 @@ class EnvironmentSpatialLattice(object):
 	def run_simulations_until(self):
 		until = {}
 		run_until = self.time() + self.run_for
-		for sim_id in self.simulations.keys():
-			until[sim_id] = run_until
+		for agent_id in self.simulations.keys():
+			until[agent_id] = run_until
 
 		# pass the environment a run_until
-		until[self.sim_id] = run_until
+		until[self.agent_id] = run_until
 
 		return until

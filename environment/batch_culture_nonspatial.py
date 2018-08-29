@@ -21,7 +21,7 @@ class EnvironmentBatchNonSpatial(object):
 		self._timestep = 0.2
 		self.run_for = 10
 
-		self.sim_id = -1
+		self.agent_id = -1
 
 		self.simulations = {}
 
@@ -58,7 +58,7 @@ class EnvironmentBatchNonSpatial(object):
 		Use delta counts from all the inner simulations, convert them to concentrations,
 		and add to the environmental concentrations of each molecule at each simulation's location
 		'''
-		for sim_id, delta_counts in all_changes.iteritems():
+		for agent_id, delta_counts in all_changes.iteritems():
 			delta_concentrations = self.counts_to_concentration(delta_counts.values())
 
 			for molecule, delta_conc in zip(delta_counts.keys(), delta_concentrations):
@@ -73,9 +73,9 @@ class EnvironmentBatchNonSpatial(object):
 	def get_concentrations(self):
 		'''returns a dict with {molecule_id: conc} for each sim give its current location'''
 		concentrations = {}
-		for sim_id in self.simulations.keys():
+		for agent_id in self.simulations.keys():
 			# get concentration
-			concentrations[sim_id] = dict(zip(self._molecule_ids, self.concentrations))
+			concentrations[agent_id] = dict(zip(self._molecule_ids, self.concentrations))
 		return concentrations
 
 
@@ -95,10 +95,10 @@ class EnvironmentBatchNonSpatial(object):
 	def run_simulations_until(self):
 		until = {}
 		run_until = self.time() + self.run_for
-		for sim_id in self.simulations.keys():
-			until[sim_id] = run_until
+		for agent_id in self.simulations.keys():
+			until[agent_id] = run_until
 
 		# pass the environment a run_until
-		until[self.sim_id] = run_until
+		until[self.agent_id] = run_until
 
 		return until
