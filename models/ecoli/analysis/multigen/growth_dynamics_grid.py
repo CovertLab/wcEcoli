@@ -156,7 +156,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# Calculate the growth rate:
 			growth_rate = (1 / units.s) * growth_rate
 			growth_rate = growth_rate.asNumber(1 / units.min)
-			growth_rate[abs(growth_rate - np.median(growth_rate)) > 1.25 * np.nanstd(growth_rate)] = np.nan
 
 			# Calculate Ribosome Concentration:
 			ribosomeConcentration = ((1 / sim_data.constants.nAvogadro) * ribosomeCounts) / ((1.0 / sim_data.constants.cellDensity) * (cellMass))
