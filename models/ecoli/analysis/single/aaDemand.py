@@ -18,8 +18,6 @@ from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
 
 
-FONTSIZE = 8
-
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		if not os.path.isdir(simOutDir):
@@ -46,37 +44,37 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Map tRNAs to amino acids
 		trnaToAaMapping = sim_data.relation.TRnaToAaMapping
 		rnaCounts_summedByAa = np.dot(rnaCounts, trnaToAaMapping)
+		aaIds = sim_data.moleculeGroups.aaIDs
+
+		# Remove selenocysteine
+		selenocysteineId = "L-SELENOCYSTEINE[c]"
+		selenocysteineIndex = aaIds.index(selenocysteineId)
+		aaIds.remove(selenocysteineId)
+		aasUsed = np.delete(aasUsed, selenocysteineIndex, 1)
+		rnaCounts_summedByAa = np.delete(rnaCounts_summedByAa, selenocysteineIndex, 1)
 
 		# Plot
-		fig, axesList = plt.subplots(6, 4, figsize = (8.5, 11))
-		axToRemove = axesList.flatten()[-3:]
-		axesList = axesList.flatten()[:-3]
-		aaIds = sim_data.moleculeGroups.aaIDs
-		for i, ax in enumerate(axesList):
-			# Normalize data (to get fraction of timesteps)
-			data, bins = np.histogram(aasUsed[:, i] / rnaCounts_summedByAa[:, i], bins = 20)
-			data = data.astype(np.float32) / data.sum()
+		xlabels = []
+		fig, ax = plt.subplots(1, 1, figsize = (11, 8.5))
+		for i, aaId in enumerate(aaIds):
+			ratio = aasUsed[:, i] / rnaCounts_summedByAa[:, i]
+			std = np.std(ratio)
+			print std
+			ax.errorbar(i, np.average(ratio), yerr=std, marker='o', mfc='b', mec='b', ecolor='b', capsize = 2)
 
-			ax.bar(bins[:-1], data, width = (bins[1] - bins[0]))
-			ax.set_title(aaIds[i], fontsize = FONTSIZE)
-			ax.set_ylabel("Fraction of simulation", fontsize = FONTSIZE)
-			ax.set_yticks([0, 0.5, 1])
-			ax.tick_params(axis = "both", labelsize = FONTSIZE)
+			if len(aaId) < 7:
+				xlabels.append(aaId[:-3])
+			elif aaId == 'L-ALPHA-ALANINE[c]':
+				xlabels.append("ALA")
+			elif aaId == 'L-ASPARTATE[c]':
+				xlabels.append("ASP")
+			else:
+				print "unexpected amino acid during labeling"
 
-			# Report mean average
-			ax.text(0.5, 0.8,
-				"mean = %0.2f" % np.mean(aasUsed[:, i] / rnaCounts_summedByAa[:, i]),
-				transform = ax.transAxes,
-				ha = "center",
-				fontsize = FONTSIZE,
-				)
-
-		# Remove extra axes
-		for ax in axToRemove:
-			ax.axis("off")
-		plt.suptitle("Ratio of amino acids used to its tRNA count")
-		plt.subplots_adjust(wspace = 0.5, hspace = 0.5, bottom = 0.07, top = 0.92)
-
+		ax.set_xticks(range(len(aaIds)))
+		ax.set_xticklabels(xlabels)
+		ax.axhline(y = 1, c = 'b')
+		ax.set_ylabel("amino acids used / number of tRNAs")
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
 
