@@ -99,6 +99,8 @@ class EnvironmentSpatialLattice(object):
 
 	def diffusion_timestep(self, lattice):
 		''' calculate delta cause by diffusion. Assumes periodic lattice, with wrapping'''
+
+		# TODO (Eran) write this as matrix operation rather than np.roll.
 		N = np.roll(lattice, 1, axis=0)
 		S = np.roll(lattice, -1, axis=0)
 		W = np.roll(lattice, 1, axis=1)

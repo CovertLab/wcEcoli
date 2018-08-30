@@ -72,54 +72,6 @@ class BootInner(object):
 			self.simulation)
 
 
-class BootEnvironmentBatch(object):
-	def __init__(self, kafka_config):
-		raw_data = KnowledgeBaseEcoli()
-		# create a dictionary with all saved environments
-		self.environment_dict = {}
-		for label in dir(raw_data.condition.environment):
-			if label.startswith("__"):
-				continue
-			self.environment_dict[label] = {}
-			# initiate all molecules with 0 concentrations
-			for row in raw_data.condition.environment_molecules:
-				self.environment_dict[label].update({row["molecule id"]: 0}) #* (units.mmol / units.L)})
-			# update non-zero concentrations
-			molecule_concentrations = getattr(raw_data.condition.environment, label)
-			for row in molecule_concentrations:
-				self.environment_dict[label].update({row["molecule id"]: row["concentration"].asNumber()}) # TODO (eran) pass units?
-
-		# TODO (Eran) don't hardcode initial environment, get this from timeseries
-		concentrations = self.environment_dict['minimal']
-
-		self.environment = EnvironmentBatchNonSpatial(concentrations)
-		self.outer = Outer(kafka_config, self.environment)
-
-
-class BootEnvironmentSpatialLattice(object):
-	def __init__(self, kafka_config):
-		raw_data = KnowledgeBaseEcoli()
-		# create a dictionary with all saved environments
-		self.environment_dict = {}
-		for label in dir(raw_data.condition.environment):
-			if label.startswith("__"):
-				continue
-			self.environment_dict[label] = {}
-			# initiate all molecules with 0 concentrations
-			for row in raw_data.condition.environment_molecules:
-				self.environment_dict[label].update({row["molecule id"]: 0}) #* (units.mmol / units.L)})
-			# update non-zero concentrations
-			molecule_concentrations = getattr(raw_data.condition.environment, label)
-			for row in molecule_concentrations:
-				self.environment_dict[label].update({row["molecule id"]: row["concentration"].asNumber()})
-
-		# TODO (Eran) don't hardcode initial environment, get this from timeseries
-		concentrations = self.environment_dict['minimal']
-
-		self.environment = EnvironmentSpatialLattice(concentrations)
-		self.outer = Outer(str(self.environment.agent_id), kafka_config, self.environment)
-
-
 class BootEcoli(object):
 	'''
 	This class initializes an EcoliSimulation, passes it to the `Inner` agent, and launches the simulation.
@@ -210,7 +162,7 @@ def main():
 
 	parser.add_argument(
 		'command',
-		choices=['inner', 'outer', 'ecoli', 'batch', 'lattice', 'trigger', 'shutdown'],
+		choices=['inner', 'outer', 'ecoli', 'trigger', 'shutdown'],
 		help='which command to boot')
 
 	parser.add_argument(
@@ -265,12 +217,6 @@ def main():
 			raise ValueError('--id must be supplied for inner command')
 
 		inner = BootEcoli(args.id, kafka_config, args.working_dir)
-
-	elif args.command == 'batch':
-		outer = BootEnvironmentBatch(kafka_config)
-
-	elif args.command == 'lattice':
-		outer = BootEnvironmentSpatialLattice(kafka_config)
 
 	elif args.command == 'trigger':
 		control = EnvironmentControl(kafka_config)
