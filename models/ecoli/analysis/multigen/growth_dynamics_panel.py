@@ -145,7 +145,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			#Find the sequence index and length (to find the fork position later):
 			sequenceIdx = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("sequenceIdx")
 			sequenceLength = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("sequenceLength")
-			import ipdb; ipdb.set_trace()
 			sequenceLength[sequenceLength == -1] = np.nan
 
 			bulkMoleculesReader.close()
