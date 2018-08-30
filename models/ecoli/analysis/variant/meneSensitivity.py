@@ -134,7 +134,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i, ax in enumerate([ax1, ax2]):
 			ax.set_ylabel("Fraction of Time\n%s" % title_tags[i], fontsize = FONTSIZE)
 			ax.set_xlabel("Factor of increase of menE synthesis probability", fontsize = FONTSIZE)
-			ax.set_ylim([-0.1, 1.1])
 			ax.set_xlim([-0.25, 8.25])
 			whitePadSparklineAxis(ax)
 			ax.set_xticks(xvals)
@@ -151,7 +150,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			fig, ax = plt.subplots(1, 1, figsize = (10, 3))
 			ax.scatter(xvals, avg, edgecolor = "none", clip_on = False, s = MARKERSIZE)
 			ax.errorbar(xvals, avg, yerr = std, color = "b", linewidth = 1, clip_on = False, fmt = "o", capsize = 4, capthick = 1, markeredgecolor = "none")
-			ax.set_ylim([-0.1, 1.1])
 			ax.set_xlim([-0.25, 8.25])
 			if FIRST:
 				FIRST = False
