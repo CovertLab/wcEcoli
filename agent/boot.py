@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
 import argparse
 
 import agent.event as event
@@ -9,10 +8,6 @@ from agent.agent import Agent
 from agent.outer import Outer
 from agent.inner import Inner
 from agent.stub import SimulationStub, EnvironmentStub
-
-from models.ecoli.sim.simulation import EcoliSimulation
-
-from wholecell.fireworks.firetasks import VariantSimDataTask
 
 
 DEFAULT_KAFKA_CONFIG = {
@@ -63,57 +58,6 @@ class BootInner(object):
 			self.simulation)
 
 
-class BootEcoli(object):
-	'''
-	This class initializes an EcoliSimulation, passes it to the `Inner` agent, and launches the simulation.
-	The EcoliSimulation is initialized by passing it directions to sim_data, along with hardcoded simulation parameters.
-	'''
-	def __init__(self, agent_id, kafka_config, working_dir):
-		self.agent_id = agent_id
-
-		sim_data_fit = '{}/out/manual/kb/simData_Most_Fit.cPickle'.format(working_dir)
-		sim_data_variant = '{}/out/manual/kb/simData_Modified.cPickle'.format(working_dir)
-		variant_metadata = '{}/out/manual/metadata'.format(working_dir)
-		output_dir = '{}/out/manual/sim_{}/simOut'.format(working_dir, self.agent_id)
-
-		# copy the file simData_Most_Fit.cPickle to simData_Modified.cPickle
-		task = VariantSimDataTask(
-			variant_function='wildtype',
-			variant_index=0,
-			input_sim_data=sim_data_fit,
-			output_sim_data=sim_data_variant,
-			variant_metadata_directory=variant_metadata,
-		)
-		task.run_task({})
-
-		with open(sim_data_variant, "rb") as input_sim_data:
-			sim_data = cPickle.load(input_sim_data)
-
-		options = {}
-		options["simData"] = sim_data
-		options["outputDir"] = output_dir
-		options["logToDisk"] = True
-		options["overwriteExistingFiles"] = True
-
-		options["seed"] = 0
-		options["lengthSec"] = 10800
-		options["timeStepSafetyFraction"] = 1.3
-		options["maxTimeStep"] = 0.9
-		options["updateTimeStepFreq"] = 5
-		options["logToShell"] = True
-		options["logToDiskEvery"] = 1
-		options["massDistribution"] = True
-		options["growthRateNoise"] = False
-		options["dPeriodDivision"] = False
-		options["translationSupply"] = True
-
-		self.simulation = EcoliSimulation(**options)
-		self.inner = Inner(
-			kafka_config,
-			self.agent_id,
-			self.simulation)
-
-
 class EnvironmentControl(Agent):
 
 	"""
@@ -153,7 +97,7 @@ def main():
 
 	parser.add_argument(
 		'command',
-		choices=['inner', 'outer', 'ecoli', 'trigger', 'shutdown'],
+		choices=['inner', 'outer', 'trigger', 'shutdown'],
 		help='which command to boot')
 
 	parser.add_argument(
@@ -202,12 +146,6 @@ def main():
 
 	elif args.command == 'outer':
 		BootOuter(kafka_config)
-
-	elif args.command == 'ecoli':
-		if not args.id:
-			raise ValueError('--id must be supplied for inner command')
-
-		inner = BootEcoli(args.id, kafka_config, args.working_dir)
 
 	elif args.command == 'trigger':
 		control = EnvironmentControl(kafka_config)
