@@ -1,8 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import json
-import uuid
 import cPickle
 import argparse
 
@@ -12,17 +10,10 @@ from agent.outer import Outer
 from agent.inner import Inner
 from agent.stub import SimulationStub, EnvironmentStub
 
-from environment.batch_culture_nonspatial import EnvironmentBatchNonSpatial
-from environment.two_dim_lattice import EnvironmentSpatialLattice
-
 from models.ecoli.sim.simulation import EcoliSimulation
 
 from wholecell.fireworks.firetasks import VariantSimDataTask
 
-# Raw data class
-from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
-
-from wholecell.utils import units
 
 DEFAULT_KAFKA_CONFIG = {
 	'host': '127.0.0.1:9092',
