@@ -145,6 +145,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			#Find the sequence index and length (to find the fork position later):
 			sequenceIdx = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("sequenceIdx")
 			sequenceLength = TableReader(os.path.join(simOutDir, "ReplicationData")).readColumn("sequenceLength")
+			import ipdb; ipdb.set_trace()
 			sequenceLength[sequenceLength == -1] = np.nan
 
 			bulkMoleculesReader.close()
@@ -166,7 +167,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			idxInit = np.where(mass_per_oriC >= 1)[0]
 
 			# Calculate the growth rate:
-			#import ipdb; ipdb.set_trace()
 			growth_rate = (1 / units.s) * growth_rate
 			growth_rate = growth_rate.asNumber(1 / units.min)
 
@@ -293,7 +293,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax8.set_yticks([y_min_8, y_max_8])
 			ax8.set_yticklabels(["%0.0f" % y_min_8, "%0.0f" % y_max_8])
 			##############################################################
-			# Plot TrpA monomer Counts
+			# Plot Total TrpA Counts
 			ax9 = plt.subplot(nRows, nCols, 9)
 			ax9.plot(time, trpAProteinTotalCounts, color = plot_line_color)
 			plt.ylabel("TrpA Counts", fontsize = plot_font_size)
