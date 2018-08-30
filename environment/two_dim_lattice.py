@@ -10,12 +10,18 @@ import os
 import numpy as np
 from scipy import constants
 
-import matplotlib
-matplotlib.use('TKAgg')
-import matplotlib.pyplot as plt
-plt.ion()
+in_sherlock = 'SHERLOCK' in os.environ
 
-fig = plt.figure()
+import matplotlib
+
+if not in_sherlock:
+	matplotlib.use('TKAgg')
+
+import matplotlib.pyplot as plt
+
+if not in_sherlock:
+	plt.ion()
+	fig = plt.figure()
 
 # Constants
 N_AVOGADRO = constants.N_A #TODO (ERAN) get this from sim_data.constants.nAvogadro
@@ -141,7 +147,9 @@ class EnvironmentSpatialLattice(object):
 		x = [location[1] * BINS_PER_EDGE - 0.5 for location in locations]
 		y = [location[0] * BINS_PER_EDGE - 0.5 for location in locations]
 		plt.scatter(x, y, s=100, c='k')
-		plt.pause(0.0001)
+
+		if not in_sherlock:
+			plt.pause(0.0001)
 
 		# # open in append mode
 		# locations_file = open("out/manual/locations.txt", "a")
