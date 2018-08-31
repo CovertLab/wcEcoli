@@ -94,22 +94,28 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					modelFluxes[toyaReaction].append(np.mean(fluxTimeCourse).asNumber(units.mmol / units.g / units.h))
 
 		toyaVsReactionAve = []
+		rxn_order = []
 		for rxn, toyaFlux in toyaFluxesDict.iteritems():
+			rxn_order.append(rxn)
 			if rxn in modelFluxes:
 				toyaVsReactionAve.append((np.mean(modelFluxes[rxn]), toyaFlux.asNumber(units.mmol / units.g / units.h), np.std(modelFluxes[rxn]), toyaStdevDict[rxn].asNumber(units.mmol / units.g / units.h)))
 
+		outlier_indicies = np.zeros(len(toyaReactions), bool)
+		outlier_indicies[rxn_order.index('SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.')] = True
+		outlier_indicies[rxn_order.index('ISOCITDEH-RXN')] = True
+
 		toyaVsReactionAve = np.array(toyaVsReactionAve)
-		idx = np.abs(toyaVsReactionAve[:,0]) < 5 * np.abs(toyaVsReactionAve[:,1])
 		rWithAll = pearsonr(toyaVsReactionAve[:,0], toyaVsReactionAve[:,1])
-		rWithoutOutliers = pearsonr(toyaVsReactionAve[idx,0], toyaVsReactionAve[idx,1])
+		rWithoutOutliers = pearsonr(toyaVsReactionAve[~outlier_indicies,0], toyaVsReactionAve[~outlier_indicies,1])
 
 		plt.figure(figsize = (3.5, 3.5))
 		ax = plt.axes()
 		plt.title("Central Carbon Metabolism Flux, Pearson R = %.4f, p = %s\n(%.4f, %s without outliers)" % (rWithAll[0], rWithAll[1], rWithoutOutliers[0], rWithoutOutliers[1]), fontsize = 6)
-		plt.errorbar(toyaVsReactionAve[:,1], toyaVsReactionAve[:,0], xerr = toyaVsReactionAve[:,3], yerr = toyaVsReactionAve[:,2], fmt = ".", ecolor = "k", alpha = 0.5, linewidth = 0.5)
+		plt.errorbar(toyaVsReactionAve[:,1], toyaVsReactionAve[:,0], xerr = toyaVsReactionAve[:,3], yerr = toyaVsReactionAve[:,2], fmt = "none", ecolor = "k", alpha = 0.5, linewidth = 0.5)
 		ylim = plt.ylim()
 		plt.plot([ylim[0], ylim[1]], [ylim[0], ylim[1]], color = "k")
-		plt.plot(toyaVsReactionAve[:,1], toyaVsReactionAve[:,0], "ob", markeredgewidth = 0.1, alpha = 0.9)
+		plt.plot(toyaVsReactionAve[~outlier_indicies,1], toyaVsReactionAve[~outlier_indicies,0], "ob", markeredgewidth=0.1, alpha=0.9)
+		plt.plot(toyaVsReactionAve[outlier_indicies,1], toyaVsReactionAve[outlier_indicies,0], "o", color='#ed713a', markeredgewidth=0.1, alpha=0.9)
 		plt.xlabel("Toya 2010 Reaction Flux [mmol/g/hr]")
 		plt.ylabel("Mean WCM Reaction Flux [mmol/g/hr]")
 		ax = plt.axes()
