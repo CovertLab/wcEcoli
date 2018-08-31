@@ -329,13 +329,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 		# Plot kinetic vs homeostatic objective values
-		plt.figure()
+		plt.figure(figsize=(3.5, 3.5))
 		ax = plt.gca()
 		ax.set_xscale("log", nonposx='clip')
 		ax.set_yscale("log", nonposy='clip')
-		plt.errorbar(homeostatic_objective_value, kinetic_objective_value, xerr=homeostatic_objective_std, yerr=kinetic_objective_std, fmt='o')
+		plt.errorbar(homeostatic_objective_value, kinetic_objective_value, xerr=homeostatic_objective_std, yerr=kinetic_objective_std, fmt='none', ecolor='k', alpha=0.5, linewidth=0.5)
+		plt.plot(homeostatic_objective_value, kinetic_objective_value, "ob", markeredgewidth=0.1, alpha=0.9)
 		for i in range(len(lambdas)):
-			plt.text(homeostatic_objective_value[i], 0.8*kinetic_objective_value[i], i, horizontalalignment='center', verticalalignment='center')
+			plt.text(homeostatic_objective_value[i], 0.6*kinetic_objective_value[i], i, horizontalalignment='center', verticalalignment='center')
 		plt.xlabel('Homeostatic Objective Value')
 		plt.ylabel('Kinetics Objective Value')
 
