@@ -78,7 +78,7 @@ class EnvironmentStub(object):
 	def remove_simulation(self, agent_id):
 		return self.simulations.pop(agent_id, {})
 
-	def update_counts(self, all_changes):
+	def update_from_simulations(self, all_changes):
 		self._time += self.run_for
 		for agent_id, changes in all_changes.iteritems():
 			for molecule, change in changes.iteritems():

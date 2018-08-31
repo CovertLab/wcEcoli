@@ -164,7 +164,7 @@ class EnvironmentSpatialLattice(object):
 		return concentrations
 
 
-	def update_counts(self, all_changes):
+	def update_from_simulations(self, all_changes):
 		'''
 		Use delta counts from all the inner simulations, convert them to concentrations,
 		and add to the environmental concentrations of each molecule at each simulation's location
