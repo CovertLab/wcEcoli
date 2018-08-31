@@ -145,9 +145,10 @@ class EnvironmentSpatialLattice(object):
 	def output_locations(self):
 		'''plot cell locations'''
 		locations = self.locations.values()
+		plot_volume=[v * 100 for v in self.volumes.values()]
 		x = [location[1] * BINS_PER_EDGE - 0.5 for location in locations]
 		y = [location[0] * BINS_PER_EDGE - 0.5 for location in locations]
-		plt.scatter(x, y, s=100, c='k')
+		plt.scatter(x, y, s=plot_volume, c='k')
 
 		if not in_sherlock:
 			plt.pause(0.0001)
@@ -209,7 +210,7 @@ class EnvironmentSpatialLattice(object):
 
 		self.simulations[id] = state
 		self.locations[id] = location
-		self.volumes[id] = None
+		self.volumes[id] = 1.
 
 
 	def remove_simulation(self, id):
