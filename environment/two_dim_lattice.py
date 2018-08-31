@@ -2,9 +2,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
 
-import time
-import random
-
 import os
 
 import numpy as np
@@ -14,6 +11,7 @@ in_sherlock = 'SHERLOCK' in os.environ
 
 import matplotlib
 
+# Turn off interactive plotting when running on sherlock
 if not in_sherlock:
 	matplotlib.use('TKAgg')
 
@@ -24,18 +22,18 @@ if not in_sherlock:
 	fig = plt.figure()
 
 # Constants
-N_AVOGADRO = constants.N_A #TODO (ERAN) get this from sim_data.constants.nAvogadro
+N_AVOGADRO = constants.N_A # TODO (ERAN) get this from sim_data.constants.nAvogadro
 
-N_DIMS = 2 # number of dimensions. DO NOT CHANGE THIS!
+N_DIMS = 2
 BINS_PER_EDGE = 20
-TOTAL_VOLUME = 1E-11 #(L) TODO (Eran) initialize this value
-EDGE_LENGTH = 1. # TODO -- units!
+TOTAL_VOLUME = 1E-11  # (L) TODO (Eran) initialize this value
+EDGE_LENGTH = 1.  # TODO -- units!
 
-DIFFUSION = 0.00001 # diffusion constant, TODO -- units!
+DIFFUSION = 0.00001 # diffusion constant. TODO -- units!
 
 # Derived parameters
 BIN_VOLUME = TOTAL_VOLUME / (BINS_PER_EDGE*BINS_PER_EDGE)
-DX = EDGE_LENGTH / BINS_PER_EDGE # intervals in x- directions (assume y- direction equivalent)
+DX = EDGE_LENGTH / BINS_PER_EDGE  # intervals in x- directions (assume y- direction equivalent)
 DX2 = DX*DX
 # DT = DX2 * DX2 / (2 * DIFFUSION * (DX2 + DX2)) # upper limit on the time scale (go with at least 50% of this)
 
@@ -67,7 +65,7 @@ class EnvironmentSpatialLattice(object):
 			os.remove("out/manual/locations.txt")
 
 		glucose_lattice = self.lattice[self._molecule_ids.index('GLC[p]')]
-		im = plt.imshow(glucose_lattice, vmin=0, vmax=25, cmap='YlGn')
+		plt.imshow(glucose_lattice, vmin=0, vmax=25, cmap='YlGn')
 		plt.colorbar()
 		plt.axis('off')
 		plt.pause(0.0001)
@@ -84,9 +82,10 @@ class EnvironmentSpatialLattice(object):
 	def update_locations(self):
 		''' Update location for all agent_ids '''
 		for agent_id, location in self.locations.iteritems():
+			# Move the cells around randomly
 			location += np.random.normal(0, 0.005, N_DIMS)
 
-			# wrap cell location
+			# Wrap cell location
 			location[location < 0] = EDGE_LENGTH - location[location < 0]
 			location[location >= EDGE_LENGTH] = location[location >= EDGE_LENGTH] - EDGE_LENGTH
 
@@ -96,9 +95,8 @@ class EnvironmentSpatialLattice(object):
 		for idx in xrange(len(self.lattice)):
 			molecule = self.lattice[idx]
 
-			# if not np.any(np.isinf(molecule)) and not np.any(molecule == 0) and not (len(set(molecule.flatten()))==1):
 			# run diffusion if molecule field is not uniform
-			if not (len(set(molecule.flatten())) == 1):
+			if (len(set(molecule.flatten())) != 1):
 				change_lattice[idx] = self.diffusion_timestep(molecule)
 
 		self.lattice += change_lattice
@@ -132,14 +130,9 @@ class EnvironmentSpatialLattice(object):
 		'''plot environment lattice'''
 		glucose_lattice = self.lattice[self._molecule_ids.index('GLC[p]')]
 		plt.clf()
-		im = plt.imshow(glucose_lattice, cmap='YlGn')
+		plt.imshow(glucose_lattice, cmap='YlGn')
 		plt.colorbar()
 		plt.axis('off')
-
-		# # open in append mode
-		# lattice_file = open("out/manual/environment.txt", "a")
-		# lattice_file.write("%s\n" % glucose_lattice)
-		# lattice_file.close()
 
 
 	def output_locations(self):
@@ -152,11 +145,6 @@ class EnvironmentSpatialLattice(object):
 
 		if not in_sherlock:
 			plt.pause(0.0001)
-
-		# # open in append mode
-		# locations_file = open("out/manual/locations.txt", "a")
-		# locations_file.write("%s\n" % locations)
-		# locations_file.close()
 
 
 	def counts_to_concentration(self, counts):
@@ -225,7 +213,7 @@ class EnvironmentSpatialLattice(object):
 		for agent_id in self.simulations.keys():
 			until[agent_id] = run_until
 
-		# pass the environment a run_until
+		# Pass the environment a run_until
 		until[self.agent_id] = run_until
 
 		return until

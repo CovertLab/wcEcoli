@@ -27,10 +27,13 @@ class BootEnvironmentSpatialLattice(object):
 			if label.startswith("__"):
 				continue
 			self.environment_dict[label] = {}
+
 			# initiate all molecules with 0 concentrations
-			for row in raw_data.condition.environment_molecules:
-				self.environment_dict[label].update({row["molecule id"]: 0}) #* (units.mmol / units.L)})
-			# update non-zero concentrations
+			self.environment_dict[label] = {
+				row["molecule id"]: 0 for row in raw_data.condition.environment_molecules
+			}
+
+			# update non-zero concentrations (assuming units.mmol / units.L)
 			molecule_concentrations = getattr(raw_data.condition.environment, label)
 			for row in molecule_concentrations:
 				self.environment_dict[label].update({row["molecule id"]: row["concentration"].asNumber()})
@@ -45,15 +48,15 @@ class BootEnvironmentSpatialLattice(object):
 class BootEcoli(object):
 	'''
 	This class initializes an EcoliSimulation, passes it to the `Inner` agent, and launches the simulation.
-	The EcoliSimulation is initialized by passing it directions to sim_data, along with hardcoded simulation parameters.
+	The EcoliSimulation is initialized by passing it a pathname to sim_data, along with simulation parameters.
 	'''
 	def __init__(self, agent_id, kafka_config, working_dir):
 		self.agent_id = agent_id
 
-		sim_data_fit = '{}/out/manual/kb/simData_Most_Fit.cPickle'.format(working_dir)
-		sim_data_variant = '{}/out/manual/kb/simData_Modified.cPickle'.format(working_dir)
-		variant_metadata = '{}/out/manual/metadata'.format(working_dir)
-		output_dir = '{}/out/manual/sim_{}/simOut'.format(working_dir, self.agent_id)
+		sim_data_fit = os.path.join(os.getcwd(),'out','manual','kb','simData_Most_Fit.cPickle')
+		sim_data_variant = os.path.join(os.getcwd(), 'out', 'manual', 'kb', 'simData_Modified.cPickle')
+		variant_metadata = os.path.join(os.getcwd(), 'out', 'manual', 'metadata')
+		output_dir = os.path.join(os.getcwd(), 'out', 'manual', 'sim_' + self.agent_id,'simOut')
 
 		# copy the file simData_Most_Fit.cPickle to simData_Modified.cPickle
 		task = VariantSimDataTask(
@@ -99,8 +102,12 @@ def main():
 	respective commands.
 	"""
 
+	# TODO (eran) share argparse code with agent/boot.py
+	# One way to do that is via a base class similar to ScriptBase.py or shared subroutines.
+	# another way is argparse.ArgumentParser(parents=[parent_parser]): https://docs.python.org/2/library/argparse.html?highlight=argparse#parents
+
 	parser = argparse.ArgumentParser(
-		description='Boot the various agents for the environmental context simulation')
+		description='Run the agents for the environmental context simulation')
 
 	parser.add_argument(
 		'command',
@@ -150,7 +157,7 @@ def main():
 
 	elif args.command == 'ecoli':
 		if not args.id:
-			raise ValueError('--id must be supplied for inner command')
+			raise ValueError('--id must be supplied for ecoli command')
 
 		inner = BootEcoli(args.id, kafka_config, args.working_dir)
 
