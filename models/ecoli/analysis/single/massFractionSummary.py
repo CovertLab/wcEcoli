@@ -57,7 +57,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		whitePadSparklineAxis(ax)
 
 		xticks = [0, t[-1] / 60]
-		yticks = [1, 2, np.max(masses)]
+		yticks = [1, 2, 2.2]
 		ax.set_xlim(xticks)
 		ax.set_ylim((yticks[0], yticks[-1]))
 		ax.set_xticks(xticks)
