@@ -23,20 +23,20 @@ class BootEnvironmentSpatialLattice(object):
 		raw_data = KnowledgeBaseEcoli()
 		# create a dictionary with all saved environments
 		self.environment_dict = {}
-		for label in dir(raw_data.condition.environment):
-			if label.startswith("__"):
-				continue
-			self.environment_dict[label] = {}
-
+		for label in vars(raw_data.condition.environment):
 			# initiate all molecules with 0 concentrations
 			self.environment_dict[label] = {
 				row["molecule id"]: 0 for row in raw_data.condition.environment_molecules
-			}
+				}
 
-			# update non-zero concentrations (assuming units.mmol / units.L)
+			# get non-zero concentrations (assuming units.mmol / units.L)
 			molecule_concentrations = getattr(raw_data.condition.environment, label)
-			for row in molecule_concentrations:
-				self.environment_dict[label].update({row["molecule id"]: row["concentration"].asNumber()})
+			environment_non_zero_dict = {
+				row["molecule id"]: row["concentration"].asNumber() for row in molecule_concentrations
+				}
+
+			# update environment_dict with non zero concentrations
+			self.environment_dict[label].update(environment_non_zero_dict)
 
 		# TODO (Eran) don't hardcode initial environment, get this from timeseries
 		concentrations = self.environment_dict['minimal']
@@ -153,13 +153,13 @@ def main():
 		'subscribe_topics': []}
 
 	if args.command == 'lattice':
-		outer = BootEnvironmentSpatialLattice(kafka_config)
+		BootEnvironmentSpatialLattice(kafka_config)
 
 	elif args.command == 'ecoli':
 		if not args.id:
 			raise ValueError('--id must be supplied for ecoli command')
 
-		inner = BootEcoli(args.id, kafka_config, args.working_dir)
+		BootEcoli(args.id, kafka_config, args.working_dir)
 
 if __name__ == '__main__':
 	main()

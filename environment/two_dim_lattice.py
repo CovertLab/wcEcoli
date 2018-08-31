@@ -82,12 +82,8 @@ class EnvironmentSpatialLattice(object):
 	def update_locations(self):
 		''' Update location for all agent_ids '''
 		for agent_id, location in self.locations.iteritems():
-			# Move the cells around randomly
-			location += np.random.normal(0, 0.005, N_DIMS)
-
-			# Wrap cell location
-			location[location < 0] = EDGE_LENGTH - location[location < 0]
-			location[location >= EDGE_LENGTH] = location[location >= EDGE_LENGTH] - EDGE_LENGTH
+			# Move the cell around randomly
+			self.locations[agent_id] = (location + np.random.normal(0, 0.005, N_DIMS)) % EDGE_LENGTH
 
 
 	def run_diffusion(self):
