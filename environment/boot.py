@@ -7,7 +7,6 @@ import argparse
 from agent.outer import Outer
 from agent.inner import Inner
 
-from environment.batch_culture_nonspatial import EnvironmentBatchNonSpatial
 from environment.two_dim_lattice import EnvironmentSpatialLattice
 
 # Raw data class
@@ -17,29 +16,6 @@ from models.ecoli.sim.simulation import EcoliSimulation
 
 from wholecell.fireworks.firetasks import VariantSimDataTask
 
-
-class BootEnvironmentBatch(object):
-	def __init__(self, kafka_config):
-		raw_data = KnowledgeBaseEcoli()
-		# create a dictionary with all saved environments
-		self.environment_dict = {}
-		for label in dir(raw_data.condition.environment):
-			if label.startswith("__"):
-				continue
-			self.environment_dict[label] = {}
-			# initiate all molecules with 0 concentrations
-			for row in raw_data.condition.environment_molecules:
-				self.environment_dict[label].update({row["molecule id"]: 0}) #* (units.mmol / units.L)})
-			# update non-zero concentrations
-			molecule_concentrations = getattr(raw_data.condition.environment, label)
-			for row in molecule_concentrations:
-				self.environment_dict[label].update({row["molecule id"]: row["concentration"].asNumber()}) # TODO (eran) pass units?
-
-		# TODO (Eran) don't hardcode initial environment, get this from timeseries
-		concentrations = self.environment_dict['minimal']
-
-		self.environment = EnvironmentBatchNonSpatial(concentrations)
-		self.outer = Outer(kafka_config, self.environment)
 
 
 class BootEnvironmentSpatialLattice(object):
@@ -128,7 +104,7 @@ def main():
 
 	parser.add_argument(
 		'command',
-		choices=['ecoli', 'batch', 'lattice'],
+		choices=['ecoli', 'lattice'],
 		help='which command to boot')
 
 	parser.add_argument(
@@ -169,10 +145,7 @@ def main():
 		'simulation_send': args.simulation_send,
 		'subscribe_topics': []}
 
-	if args.command == 'batch':
-		outer = BootEnvironmentBatch(kafka_config)
-
-	elif args.command == 'lattice':
+	if args.command == 'lattice':
 		outer = BootEnvironmentSpatialLattice(kafka_config)
 
 	elif args.command == 'ecoli':

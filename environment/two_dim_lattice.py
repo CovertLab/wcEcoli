@@ -92,20 +92,20 @@ class EnvironmentSpatialLattice(object):
 
 
 	def run_diffusion(self):
-		delta_lattice = np.zeros(self.lattice.shape)
+		change_lattice = np.zeros(self.lattice.shape)
 		for idx in xrange(len(self.lattice)):
 			molecule = self.lattice[idx]
 
 			# if not np.any(np.isinf(molecule)) and not np.any(molecule == 0) and not (len(set(molecule.flatten()))==1):
 			# run diffusion if molecule field is not uniform
 			if not (len(set(molecule.flatten())) == 1):
-				delta_lattice[idx] = self.diffusion_timestep(molecule)
+				change_lattice[idx] = self.diffusion_timestep(molecule)
 
-		self.lattice += delta_lattice
+		self.lattice += change_lattice
 
 
 	def diffusion_timestep(self, lattice):
-		''' calculate delta cause by diffusion. Assumes periodic lattice, with wrapping'''
+		''' calculate concentration changes cause by diffusion. Assumes periodic lattice, with wrapping'''
 
 		# TODO (Eran) write this as matrix operation rather than np.roll.
 		N = np.roll(lattice, 1, axis=0)
@@ -113,9 +113,9 @@ class EnvironmentSpatialLattice(object):
 		W = np.roll(lattice, 1, axis=1)
 		E = np.roll(lattice, -1, axis=1)
 
-		delta_lattice = DIFFUSION * self._timestep * ((N + S + W + E - 4 * lattice) / DX2)
+		change_lattice = DIFFUSION * self._timestep * ((N + S + W + E - 4 * lattice) / DX2)
 
-		return delta_lattice
+		return change_lattice
 
 
 	def run_incremental(self, run_until):
@@ -167,19 +167,19 @@ class EnvironmentSpatialLattice(object):
 
 	def update_from_simulations(self, all_changes):
 		'''
-		Use delta counts from all the inner simulations, convert them to concentrations,
+		Use change counts from all the inner simulations, convert them to concentrations,
 		and add to the environmental concentrations of each molecule at each simulation's location
 		'''
 		for agent_id, update in all_changes.iteritems():
 			self.volumes[agent_id] = update['volume']
-			delta_counts = update['environment_change']
+			change_counts = update['environment_change']
 
 			location = self.locations[agent_id] * BINS_PER_EDGE
 			bin_site = tuple(np.floor(location).astype(int))
 
-			delta_concentrations = self.counts_to_concentration(delta_counts.values())
-			for molecule, delta_conc in zip(delta_counts.keys(), delta_concentrations):
-				self.lattice[self._molecule_ids.index(molecule), bin_site[0], bin_site[1]] += delta_conc
+			change_concentrations = self.counts_to_concentration(change_counts.values())
+			for molecule, change_conc in zip(change_counts.keys(), change_concentrations):
+				self.lattice[self._molecule_ids.index(molecule), bin_site[0], bin_site[1]] += change_conc
 
 
 	def get_molecule_ids(self):
