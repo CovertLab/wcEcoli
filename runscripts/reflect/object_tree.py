@@ -16,6 +16,7 @@ leaf_types = (
 	set,
 	str,
 	unicode,
+	type(None),
 	np.int_,
 	np.intc,
 	np.intp,
@@ -63,8 +64,10 @@ def is_leaf(value, leaves=leaf_types):
 
 def object_tree(obj, path='', debug=None):
 	"""
+	Diagnostic tool to inspect a complex data structure.
+
 	Given an object, exhaustively traverse down all attributes it contains until leaves are
-	reached and convert everything found into a dictionary.
+	reached, and convert everything found into a dictionary or a list.
 
 	The resulting dictionary will mirror the structure of the original object, but instead of 
 	attributes with values it will be a dictionary where the keys are the attribute names. 
@@ -86,17 +89,22 @@ def object_tree(obj, path='', debug=None):
 
 	if is_leaf(obj):
 		if callable(obj) and (debug == 'CALLABLE'):
-			print(path)
+			print('{}: {}'.format(path, obj))
 		return obj
 	elif isinstance(obj, collections.Mapping):
-		return {key: object_tree(obj[key], "{}['{}']".format(path, key), debug) for key in obj.viewkeys()}
+		return {key: object_tree(value, "{}['{}']".format(path, key), debug)
+			for (key, value) in obj.iteritems()}
 	elif isinstance(obj, collections.Sequence):
 		return [object_tree(subobj, "{}[{}]".format(path, index), debug) for index, subobj in enumerate(obj)]
 	else:
-		attrs = dir(obj)
-		tree = {attr: object_tree(getattr(obj, attr), "{}.{}".format(path, attr), debug)
-				for attr in attrs
-				if not is_hidden(attr)}
+		if hasattr(obj, '__dict__'):
+			attrs = vars(obj)  # instance variables
+		else:
+			attrs = {key: getattr(obj, key)
+				for key in dir(obj)  # instance variables, slots, and (alas) class members
+				if not is_hidden(key)}
+		tree = {key: object_tree(value, "{}.{}".format(path, key), debug)
+				for (key, value) in attrs.iteritems()}
 		tree['!type'] = type(obj)
 
 		return tree
