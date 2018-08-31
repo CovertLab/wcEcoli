@@ -202,21 +202,21 @@ class EnvironmentSpatialLattice(object):
 		return self._time
 
 
-	def add_simulation(self, id):
+	def add_simulation(self, agent_id):
 		state = {}
 
 		# Place cell at a random initial location
 		location = np.random.uniform(0,EDGE_LENGTH,N_DIMS)
 
-		self.simulations[id] = state
-		self.locations[id] = location
-		self.volumes[id] = 1.
+		self.simulations[agent_id] = state
+		self.locations[agent_id] = location
+		self.volumes[agent_id] = 1.
 
 
-	def remove_simulation(self, id):
-		self.simulations.pop(id, {})
-		self.locations.pop(id, {})
-		self.volumes.pop(id, {})
+	def remove_simulation(self, agent_id):
+		self.simulations.pop(agent_id, {})
+		self.locations.pop(agent_id, {})
+		self.volumes.pop(agent_id, {})
 
 
 	def run_simulations_until(self):
