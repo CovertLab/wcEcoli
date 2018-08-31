@@ -409,4 +409,7 @@ class Simulation(object):
 		self.external_states['Environment'].set_local_environment(concentrations)
 
 	def get_environment_change(self):
-		return self.external_states['Environment'].get_environment_change()
+		# sends environment a dictionary with relevant state changes
+		return {'volume': self.listeners['Mass'].volume,
+				'environment_change': self.external_states['Environment'].get_environment_change(),
+				}

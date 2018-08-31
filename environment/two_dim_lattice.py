@@ -50,6 +50,7 @@ class EnvironmentSpatialLattice(object):
 
 		self.simulations = {}
 		self.locations = {}
+		self.volumes = {}
 
 		self._molecule_ids = concentrations.keys()
 		self.concentrations = concentrations.values()
@@ -168,7 +169,10 @@ class EnvironmentSpatialLattice(object):
 		Use delta counts from all the inner simulations, convert them to concentrations,
 		and add to the environmental concentrations of each molecule at each simulation's location
 		'''
-		for agent_id, delta_counts in all_changes.iteritems():
+		for agent_id, update in all_changes.iteritems():
+			self.volumes[agent_id] = update['volume']
+			delta_counts = update['environment_change']
+
 			location = self.locations[agent_id] * BINS_PER_EDGE
 			bin_site = tuple(np.floor(location).astype(int))
 
@@ -205,11 +209,13 @@ class EnvironmentSpatialLattice(object):
 
 		self.simulations[id] = state
 		self.locations[id] = location
+		self.volumes[id] = None
 
 
 	def remove_simulation(self, id):
 		self.simulations.pop(id, {})
 		self.locations.pop(id, {})
+		self.volumes.pop(id, {})
 
 
 	def run_simulations_until(self):
