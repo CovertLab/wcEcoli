@@ -1,0 +1,3 @@
+function lattice(m, n) {
+  
+}
