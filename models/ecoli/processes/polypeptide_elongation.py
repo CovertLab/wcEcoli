@@ -164,7 +164,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		ribosome_counts = len(self.activeRibosomes.allMolecules())
 
 		# Get concentration
-		f = aasInSequences / np.sum(aasInSequences)
+		f = aasInSequences / aasInSequences.sum()
 		synthetase_conc = counts_to_molar * synthetase_counts
 		aa_conc = counts_to_molar * aa_counts
 		uncharged_trna_conc = counts_to_molar * uncharged_trna_counts
@@ -204,8 +204,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.aa_counts_for_translation = np.array(count_aas_requested)
 
-		frac_trna_of_aa = total_trna / np.dot(np.dot(self.aa_from_trna, total_trna), self.aa_from_trna)
-		total_charging_reactions = np.dot(count_aas_requested, self.aa_from_trna) * frac_trna_of_aa + uncharged_trna_request
+		fraction_trna_per_aa = total_trna / np.dot(np.dot(self.aa_from_trna, total_trna), self.aa_from_trna)
+		total_charging_reactions = np.dot(count_aas_requested, self.aa_from_trna) * fraction_trna_per_aa + uncharged_trna_request
 
 		# Only request molecules that will be consumed in the charging reactions
 		requested_molecules = -np.dot(self.charging_stoich_matrix, total_charging_reactions)
@@ -218,7 +218,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Request water for transfer of AA from tRNA for initial polypeptide
 		# This is severe overestimate being worst case of every elongation is
 		# to initialize a polypeptide but excess of water shouldn't matter
-		self.water.requestIs(np.sum(count_aas_requested))
+		self.water.requestIs(count_aas_requested.sum())
 
 		self.writeToListener("GrowthLimits", "fraction_trna_charged", np.dot(fraction_charged, self.aa_from_trna))
 		self.writeToListener("GrowthLimits", "aaPoolSize", self.aas.total())
@@ -298,24 +298,28 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		updatedMass[didInitialize] += self.endWeight
 
-		# get tRNA counts
+		# Get tRNA counts
 		uncharged_trna = self.uncharged_trna.counts()
 		charged_trna = self.charged_trna.counts()
 		total_trna = uncharged_trna + charged_trna
-		fraction_trna_per_aa = total_trna / np.dot(np.dot(self.aa_from_trna, total_trna), self.aa_from_trna)
-		fraction_trna_per_aa[~np.isfinite(fraction_trna_per_aa)] = 0
 
-		# number that can be charged
+		# Adjust molecules for number of charging reactions that occurred
+		## Net charged is tRNA that can be charged minus allocated charged tRNA for uncharging
+		fraction_uncharged_trna_per_aa = uncharged_trna / np.dot(np.dot(self.aa_from_trna, uncharged_trna), self.aa_from_trna)
+		fraction_uncharged_trna_per_aa[~np.isfinite(fraction_uncharged_trna_per_aa)] = 0
 		aa_for_charging = total_aa_counts - aas_used
 		n_aa_charged = np.fmin(aa_for_charging, np.dot(self.aa_from_trna, uncharged_trna))
-		n_trna_charged = self.distribution_from_aa(n_aa_charged, fraction_trna_per_aa)
+		n_trna_charged = self.distribution_from_aa(n_aa_charged, fraction_uncharged_trna_per_aa, uncharged_trna)
 		net_charged = n_trna_charged - charged_trna
 
+		## Reactions that are charged and elongated in same time step
+		fraction_trna_per_aa = total_trna / np.dot(np.dot(self.aa_from_trna, total_trna), self.aa_from_trna)
+		fraction_trna_per_aa[~np.isfinite(fraction_trna_per_aa)] = 0
 		charged_and_elongated = self.distribution_from_aa(aas_used, fraction_trna_per_aa)
 		total_charging_reactions = charged_and_elongated + net_charged
 		self.charging_molecules.countsInc(np.dot(self.charging_stoich_matrix, total_charging_reactions))
 
-		# account for uncharging of tRNA during elongation
+		## Account for uncharging of tRNA during elongation
 		self.charged_trna.countsDec(charged_and_elongated)
 		self.uncharged_trna.countsInc(charged_and_elongated)
 
@@ -435,7 +439,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
 		return fraction_charged, v_rib
 
-	def distribution_from_aa(self, n_aa, f_trna):
+	def distribution_from_aa(self, n_aa, f_trna, limits=None):
 		'''
 		Distributes counts of amino acids to tRNAs that are associated with each amino acid
 		Uses self.aa_from_trna mapping to distribute from amino acids to tRNA
@@ -443,12 +447,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		Inputs:
 			n_aa (array of ints) - counts per amino acid to distribute to each tRNA
 			f_trna (array of floats) - fraction of each tRNA to determine the distribution
+			limits (array of ints) - limits on distribution to each tRNA
 
 		Returns:
 			array of ints - distributed counts for each tRNA
-
-		TODO:
-			include limits on what can be charged/uncharged - might be necessary for some edge cases
 		'''
 
 		trna_counts = np.zeros(f_trna.shape, int)
@@ -457,20 +459,21 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			idx = row == 1
 			frac = f_trna[idx]
 
-			counts = np.round(frac * count)
-			diff = int(count - np.sum(counts))
+			counts = np.floor(frac * count)
+			diff = int(count - counts.sum())
 
-			# Adjust if rounding doesn't lead to correct distribution
-			# Only remove from ones that have been assigned if more assigned than available
-			if diff < 0:
-				for _ in range(-diff):
-					new_frac = counts / np.sum(counts)
-					adjustment = self.randomState.multinomial(1, new_frac)
-					counts -= adjustment
 			# Add additional counts to get up to counts to distribute
-			elif diff > 0:
-				adjustment = self.randomState.multinomial(diff, frac)
-				counts += adjustment
+			# Prevent adding over the limit if limits are given
+			if diff > 0:
+				if limits is None:
+					adjustment = self.randomState.multinomial(diff, frac)
+					counts += adjustment
+				else:
+					for _ in range(diff):
+						frac[limits[idx] - counts == 0] = 0
+						frac /= frac.sum()  # normalize for multinomial distribution
+						adjustment = self.randomState.multinomial(1, frac)
+						counts += adjustment
 
 			trna_counts[idx] = counts
 
