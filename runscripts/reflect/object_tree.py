@@ -45,9 +45,11 @@ def is_leaf(value, leaves=leaf_types):
 	Predicate to determine if we have reached the end of how deep we want to traverse through 
 	the object tree.
 	"""
+	if isinstance(value, (collections.Mapping, collections.Sequence)):
+		return isinstance(value, basestring)
 	return (callable(value)                 # it's callable
 			or isinstance(value, leaves)    # it's an instance of a declared leaf type
-			or not has_python_vars(value))  # it has no Python instance variables
+			or not has_python_vars(value))  # an object without Python instance variables
 
 def object_tree(obj, path='', debug=None):
 	"""
