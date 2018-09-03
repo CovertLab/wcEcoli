@@ -25,26 +25,31 @@ if not in_sherlock:
 N_AVOGADRO = constants.N_A # TODO (ERAN) get this from sim_data.constants.nAvogadro
 PI = constants.pi
 
+# Lattice parameters
 N_DIMS = 2
-BINS_PER_EDGE = 20
-TOTAL_VOLUME = 1E-11  # (L) TODO (Eran) initialize this value
-EDGE_LENGTH = 1.  # TODO -- units!
+PATCHS_PER_EDGE = 30
+TOTAL_VOLUME = 1E-11  # (L)
+EDGE_LENGTH = 10.  # (micrometers). for reference: e.coli length is on average 2 micrometers.
 
-DIFFUSION = 0.00001  # diffusion constant. TODO -- units!
-ORIENTATION_JITTER = PI/40  # radians
+# Physical parameters
+DIFFUSION = 0.001  # diffusion constant. (micrometers^2/s) # TODO (Eran) calculate correct diffusion rate
 
-# Derived parameters
-BIN_VOLUME = TOTAL_VOLUME / (BINS_PER_EDGE*BINS_PER_EDGE)
-DX = EDGE_LENGTH / BINS_PER_EDGE  # intervals in x- directions (assume y- direction equivalent)
+# Derived environmental parameters
+PATCH_VOLUME = TOTAL_VOLUME / (PATCHS_PER_EDGE*PATCHS_PER_EDGE)
+DX = EDGE_LENGTH / PATCHS_PER_EDGE  # intervals in x- directions (assume y- direction equivalent)
 DX2 = DX*DX
 # DT = DX2 * DX2 / (2 * DIFFUSION * (DX2 + DX2)) # upper limit on the time scale (go with at least 50% of this)
 
+# Cell parameters
+CELL_RADIUS = 0.5 # (micrometers)
+ORIENTATION_JITTER = PI/20  # (radians/s)
+LOCATION_JITTER = 0.1 # (micrometers/s)
 
 class EnvironmentSpatialLattice(object):
 	def __init__(self, concentrations):
 		self._time = 0
-		self._timestep = 0.2
-		self.run_for = 10
+		self._ts = 0.2
+		self.run_for = 5
 
 		self.agent_id = -1
 
@@ -57,7 +62,7 @@ class EnvironmentSpatialLattice(object):
 
 		# Create lattice and fill each site with concentrations dictionary
 		# Molecule identities are defined along the major axis, with spatial dimensions along the other two axes.
-		self.lattice = np.empty([len(self._molecule_ids)] + [BINS_PER_EDGE for dim in xrange(N_DIMS)], dtype=np.float64)
+		self.lattice = np.empty([len(self._molecule_ids)] + [PATCHS_PER_EDGE for dim in xrange(N_DIMS)], dtype=np.float64)
 		for idx, molecule in enumerate(self._molecule_ids):
 			self.lattice[idx].fill(self.concentrations[idx])
 
@@ -76,6 +81,8 @@ class EnvironmentSpatialLattice(object):
 	def evolve(self):
 		''' Evolve environment '''
 
+		# TODO (Eran) updating location with the environment causes cells to jump at run_for ts, and then cells deposit
+		# all of their deltas at the jumps, rather than along their path laid out during evolve()
 		self.update_locations()
 
 		self.run_diffusion()
@@ -85,10 +92,10 @@ class EnvironmentSpatialLattice(object):
 		''' Update location for all agent_ids '''
 		for agent_id, location in self.locations.iteritems():
 			# Move the cell around randomly
-			self.locations[agent_id][0:2] = (location[0:2] + np.random.normal(0, 0.005, N_DIMS)) % EDGE_LENGTH
+			self.locations[agent_id][0:2] = (location[0:2] + np.random.normal(0, LOCATION_JITTER * self._ts, N_DIMS)) % EDGE_LENGTH
 
 			# Orientation jitter
-			self.locations[agent_id][2] = (location[2] + np.random.normal(0, ORIENTATION_JITTER))
+			self.locations[agent_id][2] = (location[2] + np.random.normal(0, ORIENTATION_JITTER * self._ts))
 
 
 	def run_diffusion(self):
@@ -112,7 +119,7 @@ class EnvironmentSpatialLattice(object):
 		W = np.roll(lattice, 1, axis=1)
 		E = np.roll(lattice, -1, axis=1)
 
-		change_lattice = DIFFUSION * self._timestep * ((N + S + W + E - 4 * lattice) / DX2)
+		change_lattice = DIFFUSION * self._ts * ((N + S + W + E - 4 * lattice) / DX2)
 
 		return change_lattice
 
@@ -123,13 +130,14 @@ class EnvironmentSpatialLattice(object):
 		self.output_locations()
 
 		while self._time < run_until:
-			self._time += self._timestep
+			self._time += self._ts
 			self.evolve()
 
 
 	def output_environment(self):
 		'''plot environment lattice'''
 		glucose_lattice = self.lattice[self._molecule_ids.index('GLC[p]')]
+
 		plt.clf()
 		plt.imshow(glucose_lattice, cmap='YlGn')
 		plt.colorbar()
@@ -139,25 +147,43 @@ class EnvironmentSpatialLattice(object):
 	def output_locations(self):
 		'''plot cell locations and orientations'''
 		for agent_id, location in self.locations.iteritems():
-			y = location[0] * BINS_PER_EDGE - 0.5
-			x = location[1] * BINS_PER_EDGE - 0.5
+			y = location[0] * PATCHS_PER_EDGE / EDGE_LENGTH - 0.5
+			x = location[1] * PATCHS_PER_EDGE / EDGE_LENGTH - 0.5
 			theta = location[2]
-			plot_volume = self.volumes[agent_id]
-			length = plot_volume / 2  # TODO (eran) get actual length
+			volume = self.volumes[agent_id]
+
+			# get length, scaled to lattice resolution
+			length = self.volume_to_length(volume) * PATCHS_PER_EDGE / EDGE_LENGTH
+			radius = CELL_RADIUS * PATCHS_PER_EDGE / EDGE_LENGTH
 
 			dx = length * np.sin(theta)
 			dy = length * np.cos(theta)
 
-			plt.plot([x-dx, x+dx], [y-dy, y+dy], color='blue', linewidth=10)
+			plt.plot([x-dx/2, x+dx/2], [y-dy/2, y+dy/2], color='slateblue', linewidth=radius*20, solid_capstyle='round')
 
 
 		if not in_sherlock:
 			plt.pause(0.0001)
 
 
+	def volume_to_length(self, volume):
+		'''
+		get cell length from volume, using the following equation for capsule volume, with V=volume, r=radius,
+		a=length of cylinder without rounded caps, l=total length:
+
+		V = (4/3)PIr^3 + PIr^2a
+		l = a + 2r
+		'''
+
+		cylinder_length = (volume - (4/3) * PI * CELL_RADIUS**3) / (PI * CELL_RADIUS**2)
+		total_length = cylinder_length + 2 * CELL_RADIUS
+
+		return total_length
+
+
 	def counts_to_concentration(self, counts):
 		''' Convert an array of counts to concentrations '''
-		concentrations = [count / (BIN_VOLUME * N_AVOGADRO) for count in counts]
+		concentrations = [count / (PATCH_VOLUME * N_AVOGADRO) for count in counts]
 		return concentrations
 
 
@@ -170,12 +196,12 @@ class EnvironmentSpatialLattice(object):
 			self.volumes[agent_id] = update['volume']
 			change_counts = update['environment_change']
 
-			location = self.locations[agent_id][0:2] * BINS_PER_EDGE
-			bin_site = tuple(np.floor(location).astype(int))
+			location = self.locations[agent_id][0:2] * PATCHS_PER_EDGE / EDGE_LENGTH
+			patch_site = tuple(np.floor(location).astype(int))
 
 			change_concentrations = self.counts_to_concentration(change_counts.values())
 			for molecule, change_conc in zip(change_counts.keys(), change_concentrations):
-				self.lattice[self._molecule_ids.index(molecule), bin_site[0], bin_site[1]] += change_conc
+				self.lattice[self._molecule_ids.index(molecule), patch_site[0], patch_site[1]] += change_conc
 
 
 	def get_molecule_ids(self):
@@ -188,9 +214,10 @@ class EnvironmentSpatialLattice(object):
 		concentrations = {}
 		for agent_id in self.simulations.keys():
 			# get concentration from cell's given bin
-			location = self.locations[agent_id][0:2] * BINS_PER_EDGE
-			bin_site = tuple(np.floor(location).astype(int))
-			concentrations[agent_id] = dict(zip(self._molecule_ids, self.lattice[:,bin_site[0],bin_site[1]]))
+			location = self.locations[agent_id][0:2] * PATCHS_PER_EDGE / EDGE_LENGTH
+			patch_site = tuple(np.floor(location).astype(int))
+
+			concentrations[agent_id] = dict(zip(self._molecule_ids, self.lattice[:,patch_site[0],patch_site[1]]))
 		return concentrations
 
 
