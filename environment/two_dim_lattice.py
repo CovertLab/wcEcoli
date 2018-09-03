@@ -27,7 +27,7 @@ PI = np.pi
 
 # Lattice parameters
 N_DIMS = 2
-PATCHES_PER_EDGE = 20
+PATCHES_PER_EDGE = 10
 TOTAL_VOLUME = 1E-11  # (L)
 EDGE_LENGTH = 10.  # (micrometers). for reference: e.coli length is on average 2 micrometers.
 
@@ -156,14 +156,13 @@ class EnvironmentSpatialLattice(object):
 			volume = self.volumes[agent_id]
 
 			# get length, scaled to lattice resolution
-			length = self.volume_to_length(volume) * PATCHES_PER_EDGE / EDGE_LENGTH
-			radius = CELL_RADIUS * PATCHES_PER_EDGE / EDGE_LENGTH
+			length = self.volume_to_length(volume)
 
-			dx = length * np.sin(theta)
-			dy = length * np.cos(theta)
+			dx = length * PATCHES_PER_EDGE / EDGE_LENGTH * np.sin(theta)
+			dy = length * PATCHES_PER_EDGE / EDGE_LENGTH * np.cos(theta)
 
-			plt.plot([x-dx/2, x+dx/2], [y-dy/2, y+dy/2], color='slateblue', linewidth=radius*20, solid_capstyle='round')
-
+			plt.plot([x-dx/2, x+dx/2], [y-dy/2, y+dy/2],
+				color='slateblue', linewidth=CELL_RADIUS/EDGE_LENGTH*600, solid_capstyle='round')
 
 		if not in_sherlock:
 			plt.pause(0.0001)
