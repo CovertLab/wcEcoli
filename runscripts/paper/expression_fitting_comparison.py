@@ -38,7 +38,7 @@ TRNA_ID_TO_GENE = {
 # Output configuration
 
 MAX_DECIMALS = 3 # precision of changes we care about
-MAX_GENE_PRINT = 50 # more than this, and we just print a number rather than names
+MAX_GENE_PRINT = 15 # more than this, and we just print a number rather than names
 
 def main(unfit_path, fit_path, condition = 'basal'):
 	# Load sim data (parameters)
@@ -129,6 +129,10 @@ def main(unfit_path, fit_path, condition = 'basal'):
 		id_[:4] if id_.endswith('-tRNA[c]') else TRNA_ID_TO_GENE[id_]
 		for id_ in trna_ids
 		]
+	else_names = [
+		id_[:4] if id_[:4] in id_to_name else id_[:4]
+		for id_ in rna_ids[is_else]
+		]
 
 	# Calculations
 
@@ -184,11 +188,6 @@ def main(unfit_path, fit_path, condition = 'basal'):
 				precision = MAX_DECIMALS
 				)
 
-	print 'rRNAs'
-	print '-'*79
-	print_table(r_rna_names, ratios[r_rna_indices])
-
-	print
 	print 'rProteins'
 	print '-'*79
 	print_table(r_protein_names, ratios[r_protein_indices])
@@ -199,6 +198,11 @@ def main(unfit_path, fit_path, condition = 'basal'):
 	print_table(rnap_names, ratios[rnap_indices])
 
 	print
+	print 'rRNAs'
+	print '-'*79
+	print_table(r_rna_names, ratios[r_rna_indices])
+
+	print
 	print 'tRNAs'
 	print '-'*79
 	print_table(trna_names, ratios[trna_indices])
@@ -206,7 +210,7 @@ def main(unfit_path, fit_path, condition = 'basal'):
 	print
 	print 'All other proteins'
 	print '-'*79
-	print_table(rna_ids[is_else], ratios[is_else])
+	print_table(else_names, ratios[is_else])
 
 if __name__ == '__main__':
 	# Paths
@@ -224,9 +228,9 @@ if __name__ == '__main__':
 		PATH_TO_SIMDATA
 		)
 
-	for condition in ['basal']:
+	for condition in ['basal', 'with_aa', 'no_oxygen']:
 		print
 		print '='*79
 		print 'Condition: {}'.format(condition)
 		print
-		main(UNFIT_SOURCE, FIT_SOURCE)
+		main(UNFIT_SOURCE, FIT_SOURCE, condition)
