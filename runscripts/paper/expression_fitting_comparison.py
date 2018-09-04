@@ -178,9 +178,10 @@ def main(unfit_path, fit_path, condition = 'basal'):
 			else:
 				names = '{} genes'.format(c)
 
-			print '{}\t{:0.3F}'.format(
-				names,
-				r
+			print '{names}\t{value:0.{precision}F}'.format(
+				names = names,
+				value = r,
+				precision = MAX_DECIMALS
 				)
 
 	print 'rRNAs'
