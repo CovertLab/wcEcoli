@@ -162,7 +162,9 @@ class EnvironmentSpatialLattice(object):
 			dy = length * PATCHES_PER_EDGE / EDGE_LENGTH * np.cos(theta)
 
 			plt.plot([x-dx/2, x+dx/2], [y-dy/2, y+dy/2],
-				color='slateblue', linewidth=CELL_RADIUS/EDGE_LENGTH*600, solid_capstyle='round')
+				color='salmon', linewidth=CELL_RADIUS/EDGE_LENGTH*600, solid_capstyle='round')
+			plt.plot([x-dx*9.5/20, x+dx*9.5/20], [y-dy*9.5/20, y+dy*9.5/20],
+				color='slateblue', linewidth=CELL_RADIUS/EDGE_LENGTH*450, solid_capstyle='round')
 
 		if not in_sherlock:
 			plt.pause(0.0001)
