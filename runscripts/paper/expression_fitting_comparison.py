@@ -133,8 +133,8 @@ def main(unfit_path, fit_path, condition = 'basal'):
 	# Calculations
 
 	# Get synthesis probabilities
-	unfit_synth = unfit_parameters.process.transcription.rnaSynthProb['basal']
-	fit_synth = fit_parameters.process.transcription.rnaSynthProb['basal']
+	unfit_synth = unfit_parameters.process.transcription.rnaSynthProb[condition]
+	fit_synth = fit_parameters.process.transcription.rnaSynthProb[condition]
 
 	# Compute ratios
 	ratios = fit_synth/unfit_synth
