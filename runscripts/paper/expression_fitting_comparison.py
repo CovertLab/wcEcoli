@@ -178,7 +178,7 @@ def main(unfit_path, fit_path, condition = 'basal'):
 			else:
 				names = '{} genes'.format(c)
 
-			print '{}\t{}'.format(
+			print '{}\t{:0.3F}'.format(
 				names,
 				r
 				)
