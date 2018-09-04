@@ -130,7 +130,7 @@ def main(unfit_path, fit_path, condition = 'basal'):
 		for id_ in trna_ids
 		]
 	else_names = [
-		id_[:4] if id_[:4] in id_to_name else id_[:4]
+		id_to_name[id_[:-7]] if id_[:-7] in id_to_name else id_[:-7]
 		for id_ in rna_ids[is_else]
 		]
 
