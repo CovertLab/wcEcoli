@@ -9,7 +9,7 @@ modified to reevaluate this script on new data.
 
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import cPickle
 import os
@@ -203,34 +203,34 @@ def main(unfit_path, fit_path, condition = 'basal'):
 			else:
 				names = '{} genes'.format(c)
 
-			print '{names}\t{value:0.{precision}F}'.format(
+			print('{names}\t{value:0.{precision}F}'.format(
 				names = names,
 				value = r,
 				precision = MAX_DECIMALS
-				)
+				))
 
-	print 'rProteins'
-	print '-'*PRINTED_DIVIDER_SIZE
+	print('rProteins')
+	print('-'*PRINTED_DIVIDER_SIZE)
 	print_table(r_protein_names, ratios[r_protein_indices])
 
-	print
-	print 'RNA polymerase subunits'
-	print '-'*PRINTED_DIVIDER_SIZE
+	print()
+	print('RNA polymerase subunits')
+	print('-'*PRINTED_DIVIDER_SIZE)
 	print_table(rnap_names, ratios[rnap_indices])
 
-	print
-	print 'rRNAs'
-	print '-'*PRINTED_DIVIDER_SIZE
+	print()
+	print('rRNAs')
+	print('-'*PRINTED_DIVIDER_SIZE)
 	print_table(r_rna_names, ratios[r_rna_indices])
 
-	print
-	print 'tRNAs'
-	print '-'*PRINTED_DIVIDER_SIZE
+	print()
+	print('tRNAs')
+	print('-'*PRINTED_DIVIDER_SIZE)
 	print_table(trna_names, ratios[trna_indices])
 
-	print
-	print 'All other proteins'
-	print '-'*PRINTED_DIVIDER_SIZE
+	print()
+	print('All other proteins')
+	print('-'*PRINTED_DIVIDER_SIZE)
 	print_table(else_names, ratios[is_else])
 
 if __name__ == '__main__':
@@ -250,8 +250,8 @@ if __name__ == '__main__':
 		)
 
 	for condition in ['basal', 'with_aa', 'no_oxygen']:
-		print
-		print '='*PRINTED_DIVIDER_SIZE
-		print 'Condition: {}'.format(condition)
-		print
+		print()
+		print('='*PRINTED_DIVIDER_SIZE)
+		print('Condition: {}'.format(condition))
+		print()
 		main(UNFIT_SOURCE, FIT_SOURCE, condition)
