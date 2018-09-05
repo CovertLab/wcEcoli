@@ -40,15 +40,6 @@ FREQUENCY_MAX = 350
 
 FIGSIZE = (3.5, 3.5)
 
-HIST_STYLE = dict(
-	fc = 'royalblue'
-	)
-
-TARGET_LINE_STYLE = dict(
-	color = 'crimson',
-	lw = 2
-	)
-
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		if not os.path.isdir(variantDir):
@@ -126,6 +117,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				print message
 
 		plt.figure(figsize = FIGSIZE)
+		plt.style.use('seaborn-deep')
+		color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 		bins = np.linspace(
 			DOUBLING_TIME_BOUNDS_MINUTES[0],
@@ -133,11 +126,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			N_BINS + 1 # +1 because we need n+1 bin bounds for n bins
 			)
 
-		plt.hist(doubling_times_minutes, bins = bins, **HIST_STYLE)
+		plt.hist(doubling_times_minutes, bins = bins)
+
+		plt.axvline(
+			np.median(doubling_times_minutes), color='k', lw=2, linestyle='--'
+			)
 
 		plt.axvline(
 			sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.min),
-			**TARGET_LINE_STYLE
+			color=color_cycle[2], lw=2
 			)
 
 		plt.title('n = {}'.format(len(doubling_times_minutes)))
