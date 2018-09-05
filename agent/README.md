@@ -36,7 +36,7 @@ If you don't have access to a remote cluster, you can install Kafka locally.
 and pasting the checksum into [the verification page](https://www.apache.org/info/verification.html).
    2. Untar the `.tgz` file in a suitable directory.
 
-      `tar xvf ../kafka_2.11-2.0.0.tgz`
+      `tar xvf kafka_2.11-2.0.0.tgz`
 
 3. In your untar directory, start Zookeeper first:
 
