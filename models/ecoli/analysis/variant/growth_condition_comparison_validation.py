@@ -18,7 +18,6 @@ FONT_SIZE=9
 
 SIM_PLOT_STYLE = dict(
 	label="Simulation",
-	color="royalblue",
 	fmt='',
 	marker='o',
 	markersize=5,
@@ -26,8 +25,7 @@ SIM_PLOT_STYLE = dict(
 	capsize=2)
 
 EXP_PLOT_STYLE = dict(
-	label="Bremer & Dennis 1996",
-	color="crimson",
+	label="Experimental",
 	marker='o',
 	markersize=5,
 	linewidth=1,
@@ -135,8 +133,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sim_doubling_time_std[varIdx] = np.nanstd(doubling_time) / 60.
 			sim_rrn_init_rate_std[varIdx] = np.nanstd(meanRrnInitRate)
 
-		sim_growth_rate = np.log(2) / sim_doubling_time
-		bremer_growth_rate = np.log(2) / bremer_tau
+		bremer_tau = np.array(bremer_tau)
 
 		ax0 = plt.subplot2grid((2,2), (0,0))
 		ax1 = plt.subplot2grid((2,2), (1,0), sharex=ax0)
@@ -145,31 +142,34 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		lines = {'linestyle': 'dashed'}
 		plt.rc('lines', **lines)
+		plt.style.use('seaborn-deep')
+		color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-		ax0.errorbar(sim_growth_rate[np.argsort(sim_growth_rate)[::-1]], sim_rna_mass_per_cell[np.argsort(sim_growth_rate)[::-1]], yerr=sim_rna_mass_per_cell_std[np.argsort(sim_growth_rate)[::-1]], **SIM_PLOT_STYLE)
-		ax0.errorbar(bremer_growth_rate[np.argsort(bremer_growth_rate)[::-1]], np.array(bremer_rna_mass_per_cell)[np.argsort(bremer_growth_rate)[::-1]], **EXP_PLOT_STYLE)
+		ax0.errorbar(sim_doubling_time[np.argsort(sim_doubling_time)[::-1]], sim_rna_mass_per_cell[np.argsort(sim_doubling_time)[::-1]], yerr=sim_rna_mass_per_cell_std[np.argsort(sim_doubling_time)[::-1]], color=color_cycle[0], **SIM_PLOT_STYLE)
+		ax0.errorbar(bremer_tau[np.argsort(bremer_tau)[::-1]], np.array(bremer_rna_mass_per_cell)[np.argsort(bremer_tau)[::-1]], color=color_cycle[2], **EXP_PLOT_STYLE)
 		ax0.set_title("RNA mass per cell (fg)", fontsize=FONT_SIZE)
-		ax0.set_xlim([0.005, 0.03])
+		ax0.set_xlim([0, 135])
 		ax0.set_ylim([0, 250])
+		ax0.legend(loc=1, fontsize='xx-small', markerscale=0.5, frameon=False)
 
-		ax1.errorbar(sim_growth_rate[np.argsort(sim_growth_rate)[::-1]], sim_elng_rate[np.argsort(sim_growth_rate)[::-1]], yerr=sim_elng_rate_std[np.argsort(sim_growth_rate)[::-1]], **SIM_PLOT_STYLE)
-		ax1.errorbar(bremer_growth_rate[np.argsort(bremer_growth_rate)[::-1]], np.array(bremer_elng_rate)[np.argsort(bremer_growth_rate)[::-1]], **EXP_PLOT_STYLE)
+		ax1.errorbar(sim_doubling_time[np.argsort(sim_doubling_time)[::-1]], sim_elng_rate[np.argsort(sim_doubling_time)[::-1]], yerr=sim_elng_rate_std[np.argsort(sim_doubling_time)[::-1]], color=color_cycle[0], **SIM_PLOT_STYLE)
+		ax1.errorbar(bremer_tau[np.argsort(bremer_tau)[::-1]], np.array(bremer_elng_rate)[np.argsort(bremer_tau)[::-1]], color=color_cycle[2], **EXP_PLOT_STYLE)
 		ax1.set_title("Ribosome elongation\nrate (aa/s/ribosome)", fontsize=FONT_SIZE)
-		ax1.set_xlabel("Growth rate (1/min)", fontsize=FONT_SIZE)
+		ax1.set_xlabel("Doubling time (min)", fontsize=FONT_SIZE)
 		ax1.set_ylim([0, 24])
 
-		ax2.errorbar(sim_growth_rate[np.argsort(sim_growth_rate)[::-1]], sim_origins_per_cell_at_initiation[np.argsort(sim_growth_rate)[::-1]], yerr=sim_origins_per_cell_at_initiation_std[np.argsort(sim_growth_rate)[::-1]], **SIM_PLOT_STYLE)
-		ax2.errorbar(bremer_growth_rate[np.argsort(bremer_growth_rate)[::-1]], np.array(bremer_origins_per_cell_at_initiation)[np.argsort(bremer_growth_rate)[::-1]], **EXP_PLOT_STYLE)
+		ax2.errorbar(sim_doubling_time[np.argsort(sim_doubling_time)[::-1]], sim_origins_per_cell_at_initiation[np.argsort(sim_doubling_time)[::-1]], yerr=sim_origins_per_cell_at_initiation_std[np.argsort(sim_doubling_time)[::-1]], color=color_cycle[0], **SIM_PLOT_STYLE)
+		ax2.errorbar(bremer_tau[np.argsort(bremer_tau)[::-1]], np.array(bremer_origins_per_cell_at_initiation)[np.argsort(bremer_tau)[::-1]], color=color_cycle[2], **EXP_PLOT_STYLE)
 		ax2.set_title("Average origins at chrom. init.", fontsize=FONT_SIZE)
 		ax2.set_ylim([0.5, 4.5])
 
-		ax3.errorbar(sim_growth_rate[np.argsort(sim_growth_rate)[::-1]], sim_rrn_init_rate[np.argsort(sim_growth_rate)[::-1]], yerr=sim_rrn_init_rate_std[np.argsort(sim_growth_rate)[::-1]], **SIM_PLOT_STYLE)
-		ax3.errorbar(bremer_growth_rate[np.argsort(bremer_growth_rate)[::-1]], np.array(bremer_rrn_init_rate)[np.argsort(bremer_growth_rate)[::-1]], **EXP_PLOT_STYLE)
+		ax3.errorbar(sim_doubling_time[np.argsort(sim_doubling_time)[::-1]], sim_rrn_init_rate[np.argsort(sim_doubling_time)[::-1]], yerr=sim_rrn_init_rate_std[np.argsort(sim_doubling_time)[::-1]], color=color_cycle[0], **SIM_PLOT_STYLE)
+		ax3.errorbar(bremer_tau[np.argsort(bremer_tau)[::-1]], np.array(bremer_rrn_init_rate)[np.argsort(bremer_tau)[::-1]], color=color_cycle[2], **EXP_PLOT_STYLE)
 		ax3.set_title("Rate of rrn initiation (1/min)", fontsize=FONT_SIZE)
 		ax3.set_ylim([0, 2500])
 
 		# ax3.legend(loc=1, frameon=True, fontsize=7)
-		ax3.set_xlabel("Growth rate (1/min)", fontsize=FONT_SIZE)
+		ax3.set_xlabel("Doubling time (min)", fontsize=FONT_SIZE)
 
 		axes_list = [ax0, ax1, ax2, ax3]
 
