@@ -17,7 +17,7 @@ import csv
 
 import numpy as np
 
-# Misc. data
+# ID parsing constants
 
 RRNA_ID_TO_GENE = {
 	'RRSA-RRNA[c]': 'rrsA',
@@ -35,10 +35,19 @@ TRNA_ID_TO_GENE = {
 	'RNA0-306[c]': 'metV'
 	}
 
+SLICE_RNA_TO_FRAME_ID = slice(None, -len('_RNA[c]'))
+TRNA_TRAILING_ID = '-tRNA[c]'
+SLICE_TRNA_TO_GENE_NAME = slice(None, -len(TRNA_TRAILING_ID))
+
 # Output configuration
 
 MAX_DECIMALS = 3 # precision of changes we care about
 MAX_GENE_PRINT = 15 # more than this, and we just print a number rather than names
+
+# Printing
+
+PRINTED_DIVIDER_SIZE = 79
+
 
 def main(unfit_path, fit_path, condition = 'basal'):
 	# Load sim data (parameters)
@@ -94,6 +103,8 @@ def main(unfit_path, fit_path, condition = 'basal'):
 
 	# Parse IDs to common gene names
 
+	# Load the frame-to-gene mapping
+
 	# This file should eventually be available elsewhere, but had to be extracted
 	# from another branch and commit.
 	# (053211cf57ffcfe77436607345a1963e91ee94b5/models/ecoli/analysis/causal_network/Genes.txt)
@@ -101,6 +112,7 @@ def main(unfit_path, fit_path, condition = 'basal'):
 		for row in csv.DictReader(f, dialect = 'excel-tab'):
 			id_to_name[row['Gene Name']] = row['Names'].split(' // ')[0].strip('"')
 
+	# Pick out the different groupings
 	r_rna_indices = [rna_to_index[id_] for id_ in r_rna_ids]
 	r_protein_indices = [rna_to_index[id_] for id_ in r_protein_ids]
 	rnap_indices = [rna_to_index[id_] for id_ in rnap_ids]
@@ -113,24 +125,33 @@ def main(unfit_path, fit_path, condition = 'basal'):
 	is_else[rnap_indices] = False
 	is_else[trna_indices] = False
 
+	# Collect gene names (parsing from IDs)
 	r_rna_names = [
 		RRNA_ID_TO_GENE[id_]
 		for id_ in r_rna_ids
 		]
 	r_protein_names = [
-		id_to_name[id_[:-7]]
+		id_to_name[id_[SLICE_RNA_TO_FRAME_ID]]
 		for id_ in r_protein_ids
 		]
 	rnap_names = [
-		id_to_name[id_[:-7]]
+		id_to_name[id_[SLICE_RNA_TO_FRAME_ID]]
 		for id_ in rnap_ids
 		]
 	trna_names = [
-		id_[:4] if id_.endswith('-tRNA[c]') else TRNA_ID_TO_GENE[id_]
+		(
+			id_[SLICE_TRNA_TO_GENE_NAME]
+			if id_.endswith(TRNA_TRAILING_ID)
+			else TRNA_ID_TO_GENE[id_]
+			)
 		for id_ in trna_ids
 		]
 	else_names = [
-		id_to_name[id_[:-7]] if id_[:-7] in id_to_name else id_[:-7]
+		(
+			id_to_name[id_[SLICE_RNA_TO_FRAME_ID]]
+			if (id_[SLICE_RNA_TO_FRAME_ID] in id_to_name)
+			else id_[SLICE_RNA_TO_FRAME_ID]
+			)
 		for id_ in rna_ids[is_else]
 		]
 
@@ -189,27 +210,27 @@ def main(unfit_path, fit_path, condition = 'basal'):
 				)
 
 	print 'rProteins'
-	print '-'*79
+	print '-'*PRINTED_DIVIDER_SIZE
 	print_table(r_protein_names, ratios[r_protein_indices])
 
 	print
 	print 'RNA polymerase subunits'
-	print '-'*79
+	print '-'*PRINTED_DIVIDER_SIZE
 	print_table(rnap_names, ratios[rnap_indices])
 
 	print
 	print 'rRNAs'
-	print '-'*79
+	print '-'*PRINTED_DIVIDER_SIZE
 	print_table(r_rna_names, ratios[r_rna_indices])
 
 	print
 	print 'tRNAs'
-	print '-'*79
+	print '-'*PRINTED_DIVIDER_SIZE
 	print_table(trna_names, ratios[trna_indices])
 
 	print
 	print 'All other proteins'
-	print '-'*79
+	print '-'*PRINTED_DIVIDER_SIZE
 	print_table(else_names, ratios[is_else])
 
 if __name__ == '__main__':
@@ -230,7 +251,7 @@ if __name__ == '__main__':
 
 	for condition in ['basal', 'with_aa', 'no_oxygen']:
 		print
-		print '='*79
+		print '='*PRINTED_DIVIDER_SIZE
 		print 'Condition: {}'.format(condition)
 		print
 		main(UNFIT_SOURCE, FIT_SOURCE, condition)
