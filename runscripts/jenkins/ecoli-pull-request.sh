@@ -25,20 +25,25 @@ N_FAILS=$(lpad get_fws -s FIZZLED -d count)
 
 test $N_FAILS = 0
 
-export TOP_DIR="$PWD"
+# TODO (John): These calls are disabled because the files weren't appearing
+# quickly enough, post-analysis.  Consequently the PR test build was failing
+# despite running all of the code without issue.  If and when these issues are
+# addressed, the lines can be restored.  See #316
 
-cd out/2*/wildtype_000000/000000/generation_000000/000000/plotOut/low_res_plots/
+# export TOP_DIR="$PWD"
 
-curl -F file=@massFractionSummary.png -F channels=#jenkins -F token=xoxb-17787270916-3VkwrS6348nn9DJz8bDs6EYG https://slack.com/api/files.upload
+# cd out/2*/wildtype_000000/000000/generation_000000/000000/plotOut/low_res_plots/
 
-cd $TOP_DIR
-cd out/2*/wildtype_000000/000000/plotOut/low_res_plots/
+# curl -F file=@massFractionSummary.png -F channels=#jenkins -F token=xoxb-17787270916-3VkwrS6348nn9DJz8bDs6EYG https://slack.com/api/files.upload
 
-curl -F file=@massFractionSummary.png -F channels=#jenkins -F token=xoxb-17787270916-3VkwrS6348nn9DJz8bDs6EYG https://slack.com/api/files.upload
+# cd $TOP_DIR
+# cd out/2*/wildtype_000000/000000/plotOut/low_res_plots/
 
-cd $TOP_DIR
-cd out/2*/wildtype_000000/plotOut/low_res_plots/
+# curl -F file=@massFractionSummary.png -F channels=#jenkins -F token=xoxb-17787270916-3VkwrS6348nn9DJz8bDs6EYG https://slack.com/api/files.upload
 
-curl -F file=@massFractionSummary.png -F channels=#jenkins -F token=xoxb-17787270916-3VkwrS6348nn9DJz8bDs6EYG https://slack.com/api/files.upload
-cd $TOP_DIR
-# rm -fr out/* # TODO (John): re-enable?
+# cd $TOP_DIR
+# cd out/2*/wildtype_000000/plotOut/low_res_plots/
+
+# curl -F file=@massFractionSummary.png -F channels=#jenkins -F token=xoxb-17787270916-3VkwrS6348nn9DJz8bDs6EYG https://slack.com/api/files.upload
+# cd $TOP_DIR
+# rm -fr out/*
