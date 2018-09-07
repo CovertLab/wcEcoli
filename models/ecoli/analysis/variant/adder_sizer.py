@@ -5,6 +5,7 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
@@ -45,6 +46,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		yHist = plt.figure()
 		yHist.set_figwidth(11)
 		yHist.set_figheight(6)
+
+		plt.style.use('seaborn-deep')
+		color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 		title_list = ["Glucose minimal\n" + r"$\tau = $" + "44 min", "Glucose minimal anaerobic\n" + r"$\tau = $" + "100 min", "Glucose minimal + 20 amino acids\n" + r"$\tau = $" + "22 min"]
 
@@ -137,19 +141,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				tick.label.set_fontsize(FONT_SIZE)
 
 			# plot stripped figure
-			if varIdx == 2:
-				line_color = "crimson"
-			else:
-				line_color = "royalblue"
-
 			fig = plt.figure()
 			fig.set_figwidth(1.73)
 			fig.set_figheight(1.18)
 			ax = plt.subplot2grid((1,1), (0,0))
-			ax.plot(scaled_initial_masses, scaled_added_masses, '.', color = "black", alpha = 0.2, zorder=1, markeredgewidth = 0.0)
-			ax.errorbar(((xbin[1:] + xbin[:-1])/2), mean, yerr=std, color = "black", linewidth=1, zorder=2)
+			ax.plot(scaled_initial_masses, scaled_added_masses, '.', color = color_cycle[0], alpha = 0.2, zorder=1, markeredgewidth = 0.0)
 			ax.set_title(title_list[varIdx] + ", n=%d, n*=%d"% (len(all_cells) - fail, len(scaled_initial_masses)), fontsize=FONT_SIZE)
-			ax.plot(scaled_initial_masses, slope * scaled_initial_masses + intercept, color = line_color)
+			ax.plot(scaled_initial_masses, slope * scaled_initial_masses + intercept, color = 'k')
 
 			ax.set_ylim([0.45, 1.5])
 
@@ -182,13 +180,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# plot histogram for x-axis
 			plt.figure(xHist.number)
-			bins = 50
+			bins = 25
 			ax = plt.subplot2grid((1,3), (0,plotIdx))
-			ax.hist(all_scaled_initial_masses, bins, color="royalblue")
+			ax.hist(all_scaled_initial_masses, bins, color=color_cycle[0])
 
-			ax.axvline(x = 0.6, color = "crimson", linestyle = "--")
-			ax.axvline(x = 1.25, color = "crimson", linestyle = "--")
+			ax.axvline(x = 0.6, color = "k", linestyle = "--")
+			ax.axvline(x = 1.25, color = "k", linestyle = "--")
 			ax.set_title(title_list[varIdx] + "\n" + "[0.6, 1.25]", fontsize = FONT_SIZE)
+			ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
 			ax.set_xlabel("Normed initial mass", fontsize = FONT_SIZE)
 
@@ -204,11 +203,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# plot histogram for y-axis
 			plt.figure(yHist.number)
 			ax = plt.subplot2grid((1,3), (0,plotIdx))
-			ax.hist(all_scaled_added_masses, bins, color="royalblue")
+			ax.hist(all_scaled_added_masses, bins, color=color_cycle[0])
 
-			ax.axvline(x = 0.45, color = "crimson", linestyle = "--")
-			ax.axvline(x = 1.5, color = "crimson", linestyle = "--")
+			ax.axvline(x = 0.45, color = "k", linestyle = "--")
+			ax.axvline(x = 1.5, color = "k", linestyle = "--")
 			ax.set_title(title_list[varIdx] + "\n" + "[0.45, 1.5]", fontsize = FONT_SIZE)
+			ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
 			ax.set_xlabel("Normed added mass", fontsize = FONT_SIZE)
 
