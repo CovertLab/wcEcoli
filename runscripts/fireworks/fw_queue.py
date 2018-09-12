@@ -91,7 +91,6 @@ from wholecell.utils import constants
 from wholecell.utils import filepath
 import yaml
 import os
-import datetime
 import collections
 
 
