@@ -72,6 +72,7 @@ class Agent(object):
 			'bootstrap.servers': self.kafka_config['host']})
 
 		self.running = False
+		self.initialized = False
 		self.consumer = None
 		if self.kafka_config['subscribe_topics']:
 			self.consumer = Consumer({
@@ -80,8 +81,6 @@ class Agent(object):
 				'group.id': 'simulation-' + str(agent_id),
 				'default.topic.config': {
 					'auto.offset.reset': 'latest'}})
-
-		self.initialize()
 
 		if self.consumer:
 			self.consumer.subscribe(
@@ -113,6 +112,13 @@ class Agent(object):
 		self.running = True
 		while self.running:
 			raw = self.consumer.poll(timeout=1.0)  # timeout (in seconds) so ^C works
+
+			# calling initialize() once consumer is established so as not to miss
+			# immediate responses to initialization sends
+			if not self.initialized:
+				self.initialize()
+				self.initialized = True
+
 			if raw is None:
 				continue
 			if raw.error():
