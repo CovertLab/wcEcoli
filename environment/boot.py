@@ -34,11 +34,15 @@ class EnvironmentAgent(Outer):
 				'location': self.environment.locations[agent_id][0:2].tolist(),
 				'orientation': self.environment.locations[agent_id][2]}
 			for agent_id, state in self.environment.simulations.iteritems()}
+		collisions = {
+			'collision': self.environment.collisions[0],
+			'distance': self.environment.collisions[1]}
 
 		return {
 			'time': self.environment.time(),
 			'lattice': lattice,
-			'simulations': simulations}
+			'simulations': simulations,
+			'collisions' : collisions}
 
 	def update_state(self):
 		self.send(self.kafka_config['environment_visualization'], self.build_state())

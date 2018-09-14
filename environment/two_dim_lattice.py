@@ -3,7 +3,7 @@ from __future__ import print_function
 from __future__ import division
 
 import os
-
+import fcl
 import numpy as np
 from scipy import constants
 
@@ -50,6 +50,11 @@ LOCATION_JITTER = 0.01 # (micrometers/s)
 
 class EnvironmentSpatialLattice(EnvironmentSimulation):
 	def __init__(self, concentrations):
+		'''
+		FCL Workflow:
+		1. Initialize manager to handle collisions between agents.
+		2. Initialize a dictionary to hold onto collision geometry.
+		'''
 		self._time = 0
 		self._timestep = 1.0
 		self.run_for = 5
@@ -60,6 +65,13 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		self._molecule_ids = concentrations.keys()
 		self.concentrations = concentrations.values()
 		self.molecule_index = {molecule: index for index, molecule in enumerate(self._molecule_ids)}
+
+		# Initialize a "manager" to handle collisions between "box" CollisionObjects.
+		self.manager = fcl.DynamicAABBTreeCollisionManager()
+		# Initialize a "boxes" dictionary with "agent_id" keys and "box" values.
+		self.boxes = {}
+		# Initialize a "collisions" list with "collision anywhere?" boolean and "minimum distance" float
+		self.collisions = []
 
 		# Create lattice and fill each site with concentrations dictionary
 		# Molecule identities are defined along the major axis, with spatial dimensions along the other two axes.
@@ -101,6 +113,54 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 			self.locations[agent_id][2] = (location[2] +
 				np.random.normal(scale=ORIENTATION_JITTER * self._timestep)
 				)
+
+			# Call the CollisionObject "box" from the boxes dictionary
+			box = self.boxes[agent_id]
+
+			# Mirror the random translation to box
+			box.setTranslation(np.array[self.locations[agent_id][0], self.locations[agent_id][1], 0.0])
+
+			# Mirror the orientation jitter to box CollisionObject
+			orientation = (self.locations[agent_id][2])
+
+			# See add_simulation for explanation of this transform
+			q_z = np.sin(orientation / 2) * 1.0
+			q_w = np.cos(orientation / 2)
+			box.setRotation(np.array[0.0, 0.0, q_z, q_w])
+
+			# Undergo collision detection
+			self.collision_detection()
+
+	def collision_detection(self):
+		'''
+		FCL Workflow:
+		1. Setup the collision manager to contain all boxes.
+		2. Check for any box-to-box collisions within manager.
+		3. If Step 2 = True, check for closest box-to-box distance within manager.
+		4. Write collision & distance results to dictionary for visualization.
+		'''
+		# TODO: Add real volume exclusion using overlapping distance vectors
+		# TODO: Feed collisions dictionary to visualization layer
+
+		# Setup CollisionObject manager
+		self.manager.setup()
+
+		# Setup data structure to hold collision data called collision_data
+		collision_data = fcl.CollisionData()
+		# Setup data structure to hold distance data called distance_data
+		distance_data = fcl.DistanceData()
+		# Check box-to-box collisions within manager
+		self.manager.collide(collision_data, fcl.defaultCollisionCallback)
+
+		# If there are ANY collisions within manager, then result.is_collision returns True
+		if collision_data.result.is_collision == True:
+			# Check box-to-box distances within manager
+			self.manager.distance(distance_data, fcl.defaultDistanceCallback)
+			# If cells collide, try randomly moving them again
+			self.update_locations()  # FIXME: with many cells this may effectively call an infinite loop!
+
+		# Store collision and distance data in "collisions" list
+		self.collisions = [collision_data.result.is_collision, distance_data.result.min_distance]
 
 	def run_diffusion(self):
 		change_lattice = np.zeros(self.lattice.shape)
@@ -229,10 +289,40 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 
 	def add_simulation(self, agent_id, state):
+		'''
+		FCL Workflow:
+		1. Initialize CollisionObject of type "box" as a bounding box around an agent.
+		2. Give box some geometry, a translation, and a rotation to match agent.
+		3. Write box to a dictionary value with agent_id as its key.
+		'''
 		# Place cell at a random initial location
 		location = np.random.uniform(0,EDGE_LENGTH,N_DIMS)
 		orientation = np.random.uniform(0, 2*PI)
 
+		# Initialize a CollisionObject with geometry "box" and (x,y,z) = (radius, length, 0.0)
+		box = fcl.CollisionObject(fcl.Box(CELL_RADIUS, self.volume_to_length(state['volume']), 0.0))
+
+		# Mirror location onto box CollisionObject using setTranslation()
+		# setTranslation reads np.array(x, y, z) = (location(x), location(y), 0.0)
+		box.setTranslation(np.array([location.item(0), location.item(1), 0.0]))
+
+		# Mirror orientation onto box CollisionObject using setRotation()
+		# setRotation() reads a 4D quaternion np.array (x, y, z, w)
+
+		''' To convert 2D orientation theta to 4D, use axis-angle around x:
+        q_x = sin(orientation/2) * axis_x
+        q_y = sin(orientation/2) * axis_y
+        q_z = sin(orientation/2) * axis_z
+        q_w = cos(orientation/2)
+        '''
+
+		# In 2D axis.x & axis.y = 0.0 & axis.z is 1.0 since we rotate around z
+		q_z = np.sin(orientation / 2) * 1.0
+		q_w = np.cos(orientation / 2)
+		box.setRotation(np.array[0.0, 0.0, q_z, q_w])
+
+		# Write dictionary "boxes" with "agent_id" as keys and "box" as values
+		self.boxes[agent_id] = box
 		self.simulations[agent_id] = state
 		self.locations[agent_id] = np.hstack((location, orientation))
 
@@ -243,7 +333,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 	def remove_simulation(self, agent_id):
 		self.simulations.pop(agent_id, {})
 		self.locations.pop(agent_id, {})
-
+		self.boxes.pop(agent_id, {})
 
 	def run_simulations_until(self):
 		until = {}
