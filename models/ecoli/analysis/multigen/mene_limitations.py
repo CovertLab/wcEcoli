@@ -22,19 +22,11 @@ from models.ecoli.analysis import multigenAnalysisPlot
 
 FONTSIZE = 6
 LABELSIZE = 6
-PLOT_DOWNSTREAM = True
+PLOT_DOWNSTREAM = False
 
 def clearLabels(axis):
 	axis.set_yticklabels([])
 	axis.set_ylabel("")
-
-def bold(lines):
-	for line in lines:
-		line.set_linewidth(2)
-
-def unbold(lines):
-	for line in lines:
-		line.set_linewidth(1)
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -176,9 +168,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			averages.append(avg)
 
 		# Plot
-		fig = plt.figure(figsize = (7, 7))
-		plt.suptitle("O-succinylbenzoate-CoA ligase downstream behaviors", fontsize = FONTSIZE
-			)
+		fig = plt.figure(figsize = (11, 8.5))
+		plt.suptitle("O-succinylbenzoate-CoA ligase downstream behaviors", fontsize = FONTSIZE)
 		rnaInitAxis = plt.subplot(6, 1, 1)
 		rnaAxis = plt.subplot(6, 1, 2, sharex = rnaInitAxis)
 		monomerAxis = plt.subplot(6, 1, 3, sharex = rnaInitAxis)
@@ -186,38 +177,43 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		fluxAxis = plt.subplot(6, 1, 5, sharex = rnaInitAxis)
 		metAxis = plt.subplot(6, 1, 6)
 
-		rnaInitLine = rnaInitAxis.plot(time / 3600., enzymeRnaInitEvent)
+		rnaInitLine = rnaInitAxis.plot(time / 3600., enzymeRnaInitEvent, c = "b")
 		rnaInitAxis.set_ylabel(r"$menE$" + "\n transcription\nevents", fontsize = FONTSIZE, rotation = 0)
 		rnaInitAxis.yaxis.set_label_coords(-.1, 0.25)
+		rnaInitAxis.set_xlim([time[0] / 3600., time[-1] / 3600.])
 		whitePadSparklineAxis(rnaInitAxis, xAxis = False)
+		rnaInitAxis.set_yticks([0, 1])
 
-		rnaLine = rnaAxis.plot(time / 3600., enzymeRnaCounts)
+		rnaLine = rnaAxis.plot(time / 3600., enzymeRnaCounts, c = "b")
 		rnaAxis.set_ylabel("menE mRNA\ncounts", fontsize = FONTSIZE, rotation = 0)
 		rnaAxis.yaxis.set_label_coords(-.1, 0.25)
 		whitePadSparklineAxis(rnaAxis, xAxis = False)
+		rnaAxis.set_yticks([0, max(enzymeRnaCounts)])
 
-		monomerLine = monomerAxis.plot(time / 3600., enzymeMonomerCounts)
+		monomerLine = monomerAxis.plot(time / 3600., enzymeMonomerCounts, c = "b")
 		monomerAxis.set_ylabel("MenE monomer\ncounts", fontsize = FONTSIZE, rotation = 0)
 		monomerAxis.yaxis.set_label_coords(-.1, 0.25)
 		whitePadSparklineAxis(monomerAxis, xAxis = False)
-		monomerAxis.set_yticks([0, 4, monomerAxis.get_ylim()[1]])
-		monomerAxis.set_yticklabels(["0", "4", "%s" % monomerAxis.get_ylim()[1]])
+		monomerAxis.set_yticks([0, 4, max(enzymeMonomerCounts)])
 
-		complexLine = complexAxis.plot(time / 3600., enzymeComplexCounts)
+		complexLine = complexAxis.plot(time / 3600., enzymeComplexCounts, c = "b")
 		complexAxis.set_ylabel("MenE tetramer\ncounts", fontsize = FONTSIZE, rotation = 0)
 		complexAxis.yaxis.set_label_coords(-.1, 0.25)
 		whitePadSparklineAxis(complexAxis, xAxis = False)
+		complexAxis.set_yticks([0, max(enzymeComplexCounts)])
 
-		fluxLine = fluxAxis.plot(time / 3600., enzymeFluxes)
+		fluxLine = fluxAxis.plot(time / 3600., enzymeFluxes, c = "b")
 		fluxAxis.set_ylabel("SUCBZL flux\n(mmol/gDCW/hour)", fontsize = FONTSIZE, rotation = 0)
 		fluxAxis.yaxis.set_label_coords(-.1, 0.25)
 		whitePadSparklineAxis(fluxAxis, xAxis = False)
+		fluxAxis.set_yticks([min(enzymeFluxes), max(enzymeFluxes)])
 
-		metLine = metAxis.plot(time / 3600., np.sum(metaboliteCounts, axis = 1))
+		metLine = metAxis.plot(time / 3600., np.sum(metaboliteCounts, axis = 1), c = "b")
 		metAxis.set_ylabel("End product\ncounts", fontsize = FONTSIZE, rotation = 0)
 		metAxis.yaxis.set_label_coords(-.1, 0.25)
 		metAxis.set_xlabel("Time (hour)\ntickmarks at each new generation", fontsize = FONTSIZE)
 		metAxis.set_ylim([metAxis.get_ylim()[0] * 0.2, metAxis.get_ylim()[1]])
+		metAxis.set_xlim([time[0] / 3600., time[-1] / 3600.])
 		whitePadSparklineAxis(metAxis)
 		metAxis.set_yticklabels(["%0.1e" % metAxis.get_ylim()[0], "%0.1e" % metAxis.get_ylim()[1]])
 		metAxis.set_xticks(np.array(generationTicks) / 3600.)
@@ -253,14 +249,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.subplots_adjust(hspace = 0.5, right = 0.9, bottom = 0.1, left = 0.15, top = 0.9)
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
-		lineList = [rnaInitLine, rnaLine, monomerLine, complexLine, fluxLine, metLine]
 		axesList = [rnaInitAxis, rnaAxis, monomerAxis, complexAxis, fluxAxis, metAxis]
-		for l in lineList:
-			bold(l)
-		exportFigure(plt, plotOutDir, plotOutFileName + "__boldLines", metadata)
 
-		for l in lineList:
-			unbold(l)
 		for a in axesList:
 			clearLabels(a)
 		plt.suptitle("")
@@ -270,7 +260,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.close("all")
 
 		if PLOT_DOWNSTREAM:
-			fig, axesList = plt.subplots(12, figsize = (14, 14))
+			fig, axesList = plt.subplots(12, figsize = (11, 8.5))
 			plt.subplots_adjust(hspace = 0.5, right = 0.95, bottom = 0.05, left = 0.15, top = 0.95)
 			enzymeIds = ["MENE-CPLX[c]", "CPLX0-7882[c]", "CPLX0-8128[c]", "DMK-MONOMER[i]", "2-OCTAPRENYL-METHOXY-BENZOQ-METH-MONOMER[c]"]
 			reactionIds = ["O-SUCCINYLBENZOATE-COA-LIG-RXN", "NAPHTHOATE-SYN-RXN", "RXN-9311", "DMK-RXN", "ADOMET-DMK-METHYLTRANSFER-RXN"]
@@ -311,7 +301,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					fluxAxis.plot(time_ / 3600., plotFlux, color = "b")
 				axesList[-2].plot(time_ / 3600., reactantCounts, color = "b")
 				axesList[-1].plot(time_ / 3600., metCounts, color = "b")
-				exportFigure(plt, plotOutDir, plotOutFileName + "__downstreamFluxes", metadata)
 
 			ylabels = ["menE", "menB", "menI", "menA", "ubiE", "CPD-12115", "Menaquinone"]
 			for i, axis in enumerate(axesList[::2]):
