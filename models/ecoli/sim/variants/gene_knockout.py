@@ -1,3 +1,16 @@
+"""
+Knockout expression of a gene
+
+Modifies:
+	sim_data.process.transcription.rnaSynthProb
+	sim_data.process.transcription.rnaExpression
+	sim_data.process.transcription_regulation.recruitmentData
+
+Expected variant indices (depends on length of sim_data.process.transcription.rnaData):
+	0: control
+	1-4558: gene index to knockout
+"""
+
 import numpy as np
 
 CONTROL_OUTPUT = dict(
