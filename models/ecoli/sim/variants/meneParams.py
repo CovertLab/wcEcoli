@@ -21,9 +21,6 @@ CONTROL_OUTPUT = dict(
 	)
 
 
-def meneParamsTotalIndices(sim_data):
-	return len(FACTORS)
-
 def meneParams(sim_data, index):
 	if index == FACTORS.index(1):
 		return CONTROL_OUTPUT, sim_data

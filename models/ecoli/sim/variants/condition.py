@@ -11,10 +11,6 @@ Expected variant indices (dependent on sorted order of sim_data.conditionActiveT
 	2: with amino acids
 """
 
-def conditionIndices(sim_data):
-	nConditions = len(sim_data.conditionActiveTfs)
-	return nConditions
-
 def condition(sim_data, index):
 	condition_labels = sorted(sim_data.conditionActiveTfs)
 	condition_label = condition_labels[index]

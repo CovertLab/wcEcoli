@@ -15,8 +15,5 @@ CONTROL_OUTPUT = dict(
 	)
 
 
-def wildtypeTotalIndices(sim_data):
-	return 1
-
 def wildtype(sim_data, index):
 	return CONTROL_OUTPUT, sim_data
