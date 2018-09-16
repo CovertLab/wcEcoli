@@ -4,18 +4,21 @@
 @date: Updated 7/14/16, Created 1/1/2015
 """
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
 # Path to files
-PATH_TO_RNASEQ_DATA = "data/RNAseq/seal_rpkm_without_withAAs-bis.tsv"
-PATH_TO_RNASEQ_MAP = "data/RNAseq/mapRNAseq2EcoMAC.tsv"
-PATH_TO_PROTEOME = "data/Proteome/Proteome_Schmidt.tsv"
-PATH_TO_TRANSLATION_EFFICIENCY = "data/TranslationEfficiency.tsv"
-PATH_TO_GENE = "data/EcoMAC/geneName.tsv"
-PATH_TO_MRNA = "data/EcoMAC/length_mRNA.tsv"
-PATH_TO_PROTEIN_DECAY = "data/proteinFastDecay.tsv"
-PATH_TO_OUTPUT = "steadyStateOutput.tsv"
+dirname = os.path.dirname(__file__)
+PATH_TO_RNASEQ_DATA = os.path.join(dirname, "data/RNAseq/seal_rpkm_without_withAAs-bis.tsv")
+PATH_TO_RNASEQ_MAP = os.path.join(dirname, "data/RNAseq/mapRNAseq2EcoMAC.tsv")
+PATH_TO_PROTEOME = os.path.join(dirname, "data/Proteome/Proteome_Schmidt.tsv")
+PATH_TO_TRANSLATION_EFFICIENCY = os.path.join(dirname, "data/TranslationEfficiency.tsv")
+PATH_TO_GENE = os.path.join(dirname, "data/EcoMAC/geneName.tsv")
+PATH_TO_MRNA = os.path.join(dirname, "data/EcoMAC/length_mRNA.tsv")
+PATH_TO_PROTEIN_DECAY = os.path.join(dirname, "data/proteinFastDecay.tsv")
+PATH_TO_OUTPUT_TSV = os.path.join(dirname, "steadyStateOutput.tsv")
+PATH_TO_OUTPUT_PDF = os.path.join(dirname, "steadyStateOutput.pdf")
 
 # Constants
 doublingTime = 45. # minutes
@@ -33,7 +36,7 @@ proteinHalfLife = 10. # hours
 
 def main():
 	"""
-	Performs steady state analysis, writes output to PATH_TO_OUTPUT, and
+	Performs steady state analysis, writes output to PATH_TO_OUTPUT_TSV, and
 	produces plot shown in Fig. 5A.
 
 	The rate of change of protein concentration was described as:
@@ -84,7 +87,7 @@ def main():
 	y_vals = np.log10(protein * (proteinDecay + growthRatePerSec))
 
 	# Save output
-	with open(PATH_TO_OUTPUT, "w") as f:
+	with open(PATH_TO_OUTPUT_TSV, "w") as f:
 		for i, x, y in zip(1 + np.where(candidates)[0], x_vals, y_vals):
 			f.write("{0}\t{1}\t{2}\n".format(i, x, y))
 
@@ -113,7 +116,7 @@ def main():
 	ax.set_xlabel("Log10 production rate (protein/s)")
 	ax.set_ylabel("Log10 loss rate (protein/s)")
 	plt.subplots_adjust(bottom = 0.2, top = 0.8)
-	plt.savefig("steadyStateOutput.pdf")
+	plt.savefig(PATH_TO_OUTPUT_PDF)
 	plt.close("all")
 	return
 
