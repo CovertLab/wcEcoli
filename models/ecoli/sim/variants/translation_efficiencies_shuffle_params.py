@@ -6,7 +6,7 @@ CONTROL_OUTPUT = dict(
 	)
 
 
-def translationEfficienciesShuffleParams(sim_data, index):
+def translation_efficiencies_shuffle_params(sim_data, index):
 	if index == 0:
 		return CONTROL_OUTPUT, sim_data
 

@@ -23,7 +23,7 @@ CONTROL_OUTPUT = dict(
 	)
 
 
-def tfActivity(sim_data, index):
+def tf_activity(sim_data, index):
 	nNutrientTimeSeries = len(sim_data.tfToActiveInactiveConds)
 	nTfActivityTimeSeries = (2 * nNutrientTimeSeries + 1)
 

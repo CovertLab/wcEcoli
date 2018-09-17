@@ -6,14 +6,14 @@ CONTROL_OUTPUT = dict(
 	)
 
 
-def rnaDegRateShuffleParams(sim_data, index):
+def monomer_deg_rate_shuffle_params(sim_data, index):
 	if index == 0:
 		return CONTROL_OUTPUT, sim_data
 
 	np.random.seed(index)
-	idxs = np.arange(len(sim_data.process.transcription.rnaData["degRate"]))
+	idxs = np.arange(len(sim_data.process.translation.monomerData["degRate"]))
 	np.random.shuffle(idxs)
-	sim_data.process.transcription.rnaDegRateShuffleIdxs = idxs
+	sim_data.process.translation.monomerDegRateShuffleIdxs = idxs
 
 	return dict(
 		shortName = "{}_monomerDegRateShuffle".format(index),

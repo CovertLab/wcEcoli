@@ -4,7 +4,7 @@ CONTROL_OUTPUT = dict(
 	)
 
 
-def geneKnockout(sim_data, index):
+def gene_knockout(sim_data, index):
 	# Knocks-out genes in order
 	nGenes = sim_data.process.transcription.rnaData.fullArray().size
 	nConditions = nGenes + 1

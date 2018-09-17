@@ -4,7 +4,7 @@ CONTROL_OUTPUT = dict(
 	)
 
 
-def nutrientTimeSeries(sim_data, index):
+def nutrient_time_series(sim_data, index):
 	n_nutrients_time_series = len(sim_data.external_state.environment.nutrients_time_series)
 
 	if index % n_nutrients_time_series == 0:

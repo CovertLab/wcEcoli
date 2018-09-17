@@ -1,33 +1,49 @@
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-from models.ecoli.sim.variants.gene_knockout import geneKnockout
-from models.ecoli.sim.variants.wildtype import wildtype
-from models.ecoli.sim.variants.nutrientTimeSeries import nutrientTimeSeries
-from models.ecoli.sim.variants.tf_activity import tfActivity
-from models.ecoli.sim.variants.condition import condition
-from models.ecoli.sim.variants.transcriptionInitiationShuffleParams import transcriptionInitiationShuffleParams
-from models.ecoli.sim.variants.kineticTargetShuffleParams import kineticTargetShuffleParams
-from models.ecoli.sim.variants.catalystShuffleParams import catalystShuffleParams
-from models.ecoli.sim.variants.translationEfficienciesShuffleParams import translationEfficienciesShuffleParams
-from models.ecoli.sim.variants.monomerDegRateShuffleParams import monomerDegRateShuffleParams
-from models.ecoli.sim.variants.kineticCatalystShuffleParams import kineticCatalystShuffleParams
-from models.ecoli.sim.variants.allShuffleParams import allShuffleParams
-from models.ecoli.sim.variants.meneParams import meneParams
-from models.ecoli.sim.variants.metabolism_kinetic_objective_weight import metabolism_kinetic_objective_weight
+from .gene_knockout import gene_knockout
+from .wildtype import wildtype
+from .nutrient_time_series import nutrient_time_series
+from .tf_activity import tf_activity
+from .condition import condition
+from .transcription_initiation_shuffle_params import transcription_initiation_shuffle_params
+from .kinetic_target_shuffle_params import kinetic_target_shuffle_params
+from .catalyst_shuffle_params import catalyst_shuffle_params
+from .translation_efficiencies_shuffle_params import translation_efficiencies_shuffle_params
+from .monomer_deg_rate_shuffle_params import monomer_deg_rate_shuffle_params
+from .kinetic_catalyst_shuffle_params import kinetic_catalyst_shuffle_params
+from .all_shuffle_params import all_shuffle_params
+from .mene_params import mene_params
+from .metabolism_kinetic_objective_weight import metabolism_kinetic_objective_weight
+from .rna_deg_rate_shuffle_params import rna_deg_rate_shuffle_params
+
 
 nameToFunctionMapping = {
-	"geneKnockout": geneKnockout,
+	"gene_knockout": gene_knockout,
 	"wildtype": wildtype,
-	"nutrientTimeSeries": nutrientTimeSeries,
-	"tfActivity": tfActivity,
+	"nutrient_time_series": nutrient_time_series,
+	"tf_activity": tf_activity,
 	"condition": condition,
-	"transcriptionInitiationShuffleParams": transcriptionInitiationShuffleParams,
-	"kineticTargetShuffleParams": kineticTargetShuffleParams,
-	"catalystShuffleParams": catalystShuffleParams,
-	"translationEfficienciesShuffleParams": translationEfficienciesShuffleParams,
-	"monomerDegRateShuffleParams": monomerDegRateShuffleParams,
-	"kineticCatalystShuffleParams": kineticCatalystShuffleParams,
-	"allShuffleParams": allShuffleParams,
-	"meneParams": meneParams,
+	"transcription_initiation_shuffle_params": transcription_initiation_shuffle_params,
+	"kinetic_target_shuffle_params": kinetic_target_shuffle_params,
+	"catalyst_shuffle_params": catalyst_shuffle_params,
+	"translation_efficiencies_shuffle_params": translation_efficiencies_shuffle_params,
+	"monomer_deg_rate_shuffle_params": monomer_deg_rate_shuffle_params,
+	"kinetic_catalyst_shuffle_params": kinetic_catalyst_shuffle_params,
+	"all_shuffle_params": all_shuffle_params,
+	"mene_params": mene_params,
 	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight,
-}
+	"rna_deg_rate_shuffle_params": rna_deg_rate_shuffle_params,
+
+	# Support the old names for compatibility with existing shell scripts.
+	"allShuffleParams": all_shuffle_params,
+	"catalystShuffleParams": catalyst_shuffle_params,
+	"geneKnockout": gene_knockout,
+	"kineticCatalystShuffleParams": kinetic_catalyst_shuffle_params,
+	"kineticTargetShuffleParams": kinetic_target_shuffle_params,
+	"meneParams": mene_params,
+	"monomerDegRateShuffleParams": monomer_deg_rate_shuffle_params,
+	"nutrientTimeSeries": nutrient_time_series,
+	"tfActivity": tf_activity,
+	"translationEfficienciesShuffleParams": translation_efficiencies_shuffle_params,
+	"transcriptionInitiationShuffleParams": transcription_initiation_shuffle_params,
+	}
