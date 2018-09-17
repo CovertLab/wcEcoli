@@ -18,21 +18,21 @@ from .rna_deg_rate_shuffle_params import rna_deg_rate_shuffle_params
 
 
 nameToFunctionMapping = {
-	"gene_knockout": gene_knockout,
-	"wildtype": wildtype,
-	"nutrient_time_series": nutrient_time_series,
-	"tf_activity": tf_activity,
-	"condition": condition,
-	"transcription_initiation_shuffle_params": transcription_initiation_shuffle_params,
-	"kinetic_target_shuffle_params": kinetic_target_shuffle_params,
-	"catalyst_shuffle_params": catalyst_shuffle_params,
-	"translation_efficiencies_shuffle_params": translation_efficiencies_shuffle_params,
-	"monomer_deg_rate_shuffle_params": monomer_deg_rate_shuffle_params,
-	"kinetic_catalyst_shuffle_params": kinetic_catalyst_shuffle_params,
 	"all_shuffle_params": all_shuffle_params,
+	"catalyst_shuffle_params": catalyst_shuffle_params,
+	"condition": condition,
+	"gene_knockout": gene_knockout,
+	"kinetic_catalyst_shuffle_params": kinetic_catalyst_shuffle_params,
+	"kinetic_target_shuffle_params": kinetic_target_shuffle_params,
 	"mene_params": mene_params,
 	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight,
+	"monomer_deg_rate_shuffle_params": monomer_deg_rate_shuffle_params,
+	"nutrient_time_series": nutrient_time_series,
 	"rna_deg_rate_shuffle_params": rna_deg_rate_shuffle_params,
+	"tf_activity": tf_activity,
+	"transcription_initiation_shuffle_params": transcription_initiation_shuffle_params,
+	"translation_efficiencies_shuffle_params": translation_efficiencies_shuffle_params,
+	"wildtype": wildtype,
 
 	# Support the old names for compatibility with existing shell scripts.
 	"allShuffleParams": all_shuffle_params,
@@ -44,6 +44,6 @@ nameToFunctionMapping = {
 	"monomerDegRateShuffleParams": monomer_deg_rate_shuffle_params,
 	"nutrientTimeSeries": nutrient_time_series,
 	"tfActivity": tf_activity,
-	"translationEfficienciesShuffleParams": translation_efficiencies_shuffle_params,
 	"transcriptionInitiationShuffleParams": transcription_initiation_shuffle_params,
+	"translationEfficienciesShuffleParams": translation_efficiencies_shuffle_params,
 	}
