@@ -134,8 +134,6 @@ class Outer(Agent):
 					'concentrations': concentrations[agent_id],
 					'run_until': run_until[agent_id]})
 
-			minimum_until = min(run_until.values())
-			self.environment.run_incremental(minimum_until)
 
 	def ready_to_advance(self):
 		"""
@@ -159,6 +157,12 @@ class Outer(Agent):
 			else:
 				changes = self.simulation_changes()
 				self.environment.update_from_simulations(changes)
+
+				# run environment to catch up to simulations
+				run_until = self.environment.run_simulations_until()
+				minimum_until = min(run_until.values())
+				self.environment.run_incremental(minimum_until)
+
 				self.send_concentrations()
 
 	def simulation_changes(self):
