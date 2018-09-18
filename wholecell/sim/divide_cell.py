@@ -2,7 +2,7 @@
 divide_cell.py
 Functions needed for division from mother cell into daughter cells
 """
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import os
@@ -15,6 +15,15 @@ from wholecell.utils import filepath
 from wholecell.utils import units
 
 BINOMIAL_COEFF = 0.5
+
+
+def zero_elongation_rate():
+	return {
+		"d1_elng_rate": 0.,
+		"d2_elng_rate": 0.,
+		"d1_elng_rate_factor": 0.,
+		"d2_elng_rate_factor": 0.,
+		}
 
 
 def divide_cell(sim):
@@ -75,8 +84,7 @@ def divide_cell(sim):
 		d2_bulkMolCntr = bulkMolecules.container.emptyLike()
 		d1_uniqueMolCntr = uniqueMolecules.container.emptyLike()
 		d2_uniqueMolCntr = uniqueMolecules.container.emptyLike()
-		daughter_elng_rates = {"d1_elng_rate": 0., "d2_elng_rate": 0.,
-			"d1_elng_rate_factor": 0., "d2_elng_rate_factor": 0.}
+		daughter_elng_rates = zero_elongation_rate()
 	else:
 		# Divide the chromosome into two daughter cells
 		# The output is used when dividing both bulk molecules and unique
@@ -274,6 +282,8 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, curre
 	moleculeSet = uniqueMolecules.container.objectsInCollection('activeRibosome')
 	moleculeAttributeDict = uniqueMoleculesToDivide['activeRibosome']
 	n_ribosomes = len(moleculeSet)
+
+	daughter_elng_rates = zero_elongation_rate()
 
 	if n_ribosomes > 0:
 		# Read the ribosome elongation rate of the mother cell
