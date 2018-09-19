@@ -41,8 +41,12 @@ def divide_cell(sim):
 	current_nutrients = sim.external_states['Environment'].nutrients
 
 	# Create output directories
-	filepath.makedirs(sim._outputDir, "Daughter1")
-	filepath.makedirs(sim._outputDir, "Daughter2")
+	d1_path = filepath.makedirs(sim._outputDir, "Daughter1")
+	d2_path = filepath.makedirs(sim._outputDir, "Daughter2")
+	print('Writing daughter cell data to {} et al.'.format(d1_path))
+	# TODO(jerry): In a multi-scale sim, set inherited_state_path=d1_path and
+	# inherited_state_path=d2_path in the daughter cell agent_config dicts,
+	# along with the correct variant_type, variant_index, and seed.
 
 	# Check for uneven numbers of partial chromosomes. This should not happen
 	# too often if the four partial chromosomes are elongated in a roughly
