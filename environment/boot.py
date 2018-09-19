@@ -208,8 +208,8 @@ def switch():
 					' `pause` pause the simulation,'
 					' `remove --id ID` ask all Shepherds to remove agents "ID*",'
 					' `shepherd [--working-dir D]` run a Shepherd agent in this process,'
-					' `shutdown` shut down the environment agent and all its connected agents'
-					' `trigger` start running the simulation,'
+					' `shutdown` shut down the environment agent and all its connected agents,'
+					' `trigger` start running the simulation'
 		)
 
 	parser.add_argument(
