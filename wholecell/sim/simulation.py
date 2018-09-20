@@ -10,16 +10,18 @@ from __future__ import absolute_import
 from __future__ import division
 
 import collections
-import cPickle
 import time
 
 import numpy as np
+
+from agent.inner import CellSimulation
 
 from wholecell.listeners.evaluation_time import EvaluationTime
 from wholecell.utils import filepath
 
 import wholecell.loggers.shell
 import wholecell.loggers.disk
+
 
 DEFAULT_SIMULATION_KWARGS = dict(
 	seed = 0,
@@ -37,7 +39,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	outputDir = None,
 	overwriteExistingFiles = False,
 	logToDiskEvery = 1,
-	simDataLocation = None,
+	simData = None,
 	inheritedStatePath = None,
 	)
 
@@ -56,7 +58,7 @@ DEFAULT_LISTENER_CLASSES = (
 	EvaluationTime,
 	)
 
-class Simulation(object):
+class Simulation(CellSimulation):
 	""" Simulation """
 
 	# Attributes that must be set by a subclass
@@ -110,8 +112,7 @@ class Simulation(object):
 		# doesn't.
 		filepath.makedirs(self._outputDir)
 
-		# Load KB
-		sim_data = cPickle.load(open(self._simDataLocation, "rb"))
+		sim_data = self._simData
 
 		# Initialize simulation from fit KB
 		self._initialize(sim_data)
@@ -128,6 +129,7 @@ class Simulation(object):
 		self._initLoggers()
 		self._cellCycleComplete = False
 		self._isDead = False
+		self._finalized = False
 
 		for internal_state in self.internal_states.itervalues():
 			internal_state.initialize(self, sim_data)
@@ -160,6 +162,23 @@ class Simulation(object):
 		# Make permanent reference to evaluation time listener
 		self._evalTime = self.listeners["EvaluationTime"]
 
+		# Perform initial mass calculations
+		for state in self.internal_states.itervalues():
+			state.calculatePreEvolveStateMass()
+			state.calculatePostEvolveStateMass()
+
+		# Update environment state according to the current time in time series
+		for external_state in self.external_states.itervalues():
+			external_state.update()
+
+		# Perform initial listener update
+		for listener in self.listeners.itervalues():
+			listener.initialUpdate()
+
+		# Start logging
+		for logger in self.loggers.itervalues():
+			logger.initialize(self)
+
 	def _initLoggers(self):
 		self.loggers = collections.OrderedDict()
 
@@ -175,27 +194,28 @@ class Simulation(object):
 				self._logToDiskEvery
 				)
 
-
-	# -- Run simulation --
-
 	# Run simulation
 	def run(self):
-		# Perform initial mass calculations
-		for state in self.internal_states.itervalues():
-			state.calculatePreEvolveStateMass()
-			state.calculatePostEvolveStateMass()
+		"""
+		Run the simulation for the time period specified in `self._lengthSec`
+		and then clean up.
+		"""
 
-		# Perform initial listener update
-		for listener in self.listeners.itervalues():
-			listener.initialUpdate()
+		self.run_incremental(self._lengthSec + self.initialTime())
+		self.finalize()
 
-		# Start logging
-		for logger in self.loggers.itervalues():
-			logger.initialize(self)
+	def run_incremental(self, run_until):
+		"""
+		Run the simulation for a given amount of time.
+
+		Args:
+		    run_until (float): absolute time to run the simulation until. 
+		"""
 
 		# Simulate
-		while self.time() < self._lengthSec + self.initialTime() and not self._isDead:
+		while self.time() < run_until and not self._isDead:
 			if self._cellCycleComplete:
+				self.finalize()
 				break
 
 			self._simulationStep += 1
@@ -204,17 +224,27 @@ class Simulation(object):
 
 			self._evolveState()
 
-		# Run post-simulation hooks
-		for hook in self.hooks.itervalues():
-			hook.finalize(self)
+	def finalize(self):
+		"""
+		Clean up any details once the simulation has finished.
+		Specifically, this calls `finalize` in all hooks,
+		invokes the simulation's `_divideCellFunction` and then
+		shuts down all loggers
+		"""
 
-		# Divide mother into daughter cells
-		self._divideCellFunction()
+		if not self._finalized:
+			# Run post-simulation hooks
+			for hook in self.hooks.itervalues():
+				hook.finalize(self)
 
-		# Finish logging
-		for logger in self.loggers.itervalues():
-			logger.finalize(self)
+			# Divide mother into daughter cells
+			self._divideCellFunction()
 
+			# Finish logging
+			for logger in self.loggers.itervalues():
+				logger.finalize(self)
+
+			self._finalized = True
 
 	# Calculate temporal evolution
 	def _evolveState(self):
@@ -372,3 +402,23 @@ class Simulation(object):
 			raise Exception, "Timestep adjustment did not converge, last attempt was %f" % (candidateTimeStep)
 
 		return candidateTimeStep
+
+
+	## Additional CellSimulation methods for embedding in an Agent
+
+	def initialize_local_environment(self):
+		pass
+
+	def set_local_environment(self, concentrations):
+		# concentrations are received as a dict
+		self.external_states['Environment'].set_local_environment(concentrations)
+
+	def get_environment_change(self):
+		# sends environment a dictionary with relevant state changes
+		return {'volume': self.listeners['Mass'].volume,
+				'environment_change': self.external_states['Environment'].get_environment_change()}
+
+	def synchronize_state(self, state):
+		if 'time' in state:
+			self._initialTime = state['time']
+			self._timeTotal = state['time']

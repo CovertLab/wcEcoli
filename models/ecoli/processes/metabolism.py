@@ -54,16 +54,29 @@ class Metabolism(wholecell.processes.process.Process):
 		self.cellDensity = sim_data.constants.cellDensity
 		self.ngam = sim_data.constants.nonGrowthAssociatedMaintenance
 
+		self.getExchangeData = sim_data.process.metabolism.getExchangeData
 		self.exchangeConstraints = sim_data.process.metabolism.exchangeConstraints
+		self.updateExchangeData = sim_data.process.metabolism.exchangeDataFromConcentrations
+		self.saveImportConstraints = sim_data.process.metabolism.saveImportConstraints
+
+		# TODO (Eran) all_external_exchange_molecules can be used in place of externalExchangedMolecules
+		self.all_external_exchange_molecules = sim_data.process.metabolism.all_external_exchange_molecules
+		self.import_constraint = sim_data.process.metabolism.import_constraint
+		self.import_exchange = sim_data.process.metabolism.import_exchange
 
 		self.getBiomassAsConcentrations = sim_data.mass.getBiomassAsConcentrations
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 
 		# Create objective for homeostatic constraints
 		nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
+		initial_environment = sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label][0][1]
+
+		# initialize exchange_data according to initial concentrations in environment
+		self.exchange_data = self.updateExchangeData(sim_data.external_state.environment.environment_dict[initial_environment])
+		self.saveImportConstraints(self.exchange_data)
 
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label][0][1]
+			initial_environment
 			)
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			sim_data.conditionToDoublingTime[sim_data.condition]
@@ -79,17 +92,23 @@ class Metabolism(wholecell.processes.process.Process):
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
 		# Setup molecules in external environment that can be exchanged
-		externalExchangedMolecules = sim_data.external_state.environment.nutrient_data["secretionExchangeMolecules"]
+		#TODO (Eran) this can be replaced with reference to exchange_data
+		externalExchangedMolecules = self.getExchangeData('minimal')['secretionExchangeMolecules'][:]
 		self.metaboliteNamesFromNutrients = set()
-		for time, nutrientsLabel in sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label]:
-			externalExchangedMolecules += sim_data.external_state.environment.nutrient_data["importExchangeMolecules"][nutrientsLabel]
-
+		for time, environment_label in sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label]:
+			externalExchangedMolecules += self.getExchangeData(environment_label)['importExchangeMolecules']
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					nutrientsLabel, sim_data.process.metabolism.nutrientsToInternalConc
+					environment_label, sim_data.process.metabolism.nutrientsToInternalConc
 					)
 				)
 		externalExchangedMolecules = sorted(set(externalExchangedMolecules))
+
+		# save nutrient names for environment view, using all moleculeIDs in local environment
+		# TODO (Eran) make all environment molecules into external exchange molecules, not just this subset
+		self.environment_molecule_ids = self._external_states['Environment']._moleculeIDs
+		self.external_exchange_molecule_ids = externalExchangedMolecules
+
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
 		moleculeMasses = dict(zip(externalExchangedMolecules, sim_data.getter.getMass(externalExchangedMolecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
@@ -136,6 +155,12 @@ class Metabolism(wholecell.processes.process.Process):
 		solver = sim_data.process.metabolism.solver
 		kinetic_objective_weight = sim_data.process.metabolism.kinetic_objective_weight
 
+		# Disable kinetics completely if weight is 0 or specified in file above
+		self.use_kinetics = True
+		if not USE_KINETICS or kinetic_objective_weight == 0:
+			self.use_kinetics = False
+			kinetic_objective_weight = 0
+
 		# Set up FBA solver
 		# reactionRateTargets value is just for initialization, it gets reset each timestep during evolveState
 		self.fbaObjectOptions = {
@@ -154,14 +179,14 @@ class Metabolism(wholecell.processes.process.Process):
 			"maintenanceCostGAM" : energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
 			"maintenanceReaction" : sim_data.process.metabolism.maintenanceReaction,
 		}
-		if USE_KINETICS == False:
+		if not self.use_kinetics:
 			self.fbaObjectOptions["objectiveType"] = "homeostatic"
 		self.fba = FluxBalanceAnalysis(**self.fbaObjectOptions)
 
 		self.internalExchangeIdxs = np.array([self.metaboliteNamesFromNutrients.index(x) for x in self.fba.getOutputMoleculeIDs()])
 
 		# Disable all rates during burn-in
-		if USE_KINETICS:
+		if self.use_kinetics:
 			if KINETICS_BURN_IN_PERIOD > 0:
 				self.fba.disableKineticTargets()
 				self.burnInComplete = False
@@ -175,7 +200,12 @@ class Metabolism(wholecell.processes.process.Process):
 		# External molecules
 		self.externalMoleculeIDs = self.fba.getExternalMoleculeIDs()
 
-		# Views
+		## Construct views
+		# views on environment
+		self.environment_molecules = self.environmentView(self.environment_molecule_ids)
+		self.external_exchange_molecules = self.environmentView(self.external_exchange_molecule_ids)
+
+		# views on metabolism bulk molecules
 		self.metaboliteNames = self.fba.getOutputMoleculeIDs()
 		self.metabolites = self.bulkMoleculesView(self.metaboliteNamesFromNutrients)
 		self.catalysts = self.bulkMoleculesView(self.catalystsList)
@@ -214,7 +244,14 @@ class Metabolism(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
+		# TODO (Eran) remove dependence on current_nutrient label, work only with current_environment's concentrations
 		current_nutrients = self._external_states['Environment'].nutrients
+
+		# recalculate exchange_data based on current environment
+		current_environment = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
+		self.exchange_data = self.updateExchangeData(current_environment)
+		self.saveImportConstraints(self.exchange_data)
+
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			self.nutrientToDoublingTime.get(current_nutrients, self.nutrientToDoublingTime["minimal"])
 			)
@@ -223,11 +260,13 @@ class Metabolism(wholecell.processes.process.Process):
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
 
 		# Set external molecule levels
+		# TODO (Eran) remove current_nutrients
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
 			self.externalMoleculeIDs,
 			coefficient,
 			COUNTS_UNITS / VOLUME_UNITS,
 			current_nutrients,
+			self.exchange_data,
 			self.concModificationsBasedOnCondition,
 			)
 
@@ -241,7 +280,7 @@ class Metabolism(wholecell.processes.process.Process):
 			updatedObjective = True
 
 		# After completing the burn-in, enable kinetic rates
-		if (USE_KINETICS) and (not self.burnInComplete) and (self._sim.time() > KINETICS_BURN_IN_PERIOD):
+		if self.use_kinetics and (not self.burnInComplete) and (self._sim.time() > KINETICS_BURN_IN_PERIOD):
 			self.burnInComplete = True
 			self.fba.enableKineticTargets()
 
@@ -281,49 +320,50 @@ class Metabolism(wholecell.processes.process.Process):
 			flux = self.currentPolypeptideElongationEnergy.asNumber(COUNTS_UNITS / VOLUME_UNITS)
 			self.fba.setReactionFluxBounds(self.fba._reactionID_polypeptideElongationEnergy, lowerBounds=flux, upperBounds=flux)
 
-		# Read counts for catalysts and enzymes (catalysts with kinetics constraints)
+		# Constrain reactions based on absence of catalysts
+		## Read counts for catalysts and enzymes (catalysts with kinetics constraints)
 		catalystsCountsInit = self.catalysts.counts()
 
+		## Set hard upper bounds constraints based on enzyme presence (infinite upper bound) or absence (upper bound of zero)
+		catalyzedReactionBounds = np.inf * np.ones(len(self.reactionsWithCatalystsList))
+		rxnPresence = self.catalysisMatrix.dot(catalystsCountsInit)
+		catalyzedReactionBounds[rxnPresence == 0] = 0
+		if self.shuffleCatalyzedIdxs is not None:
+			catalyzedReactionBounds = catalyzedReactionBounds[self.shuffleCatalyzedIdxs]
+
+		## Only update reaction limits that are different from previous time step
+		updateIdxs = np.where(catalyzedReactionBounds != self.catalyzedReactionBoundsPrev)[0]
+		updateRxns = [self.reactionsWithCatalystsList[idx] for idx in updateIdxs]
+		updateVals = catalyzedReactionBounds[updateIdxs]
+		self.fba.setReactionFluxBounds(updateRxns, upperBounds=updateVals, raiseForReversible=False)
+		self.catalyzedReactionBoundsPrev = catalyzedReactionBounds
+
+		# Constrain reactions based on kinetic values
 		kineticsEnzymesCountsInit = self.kineticsEnzymes.counts()
 		kineticsEnzymesConcentrations = countsToMolar * kineticsEnzymesCountsInit
 
 		kineticsSubstratesCountsInit = self.kineticsSubstrates.counts()
 		kineticsSubstratesConcentrations = countsToMolar * kineticsSubstratesCountsInit
 
+		## Set target fluxes for reactions based on their most relaxed constraint
+		constraintValues = self.getKineticConstraints(
+			kineticsEnzymesConcentrations.asNumber(units.umol / units.L),
+			kineticsSubstratesConcentrations.asNumber(units.umol / units.L),
+			)
+		reactionTargets = (units.umol / units.L / units.s) * np.max(self.constraintToReactionMatrix * constraintValues, axis = 1)
 
-		# Calculate and set kinetic targets if kinetics is enabled
-		if USE_KINETICS and self.burnInComplete:
-			# Set hard upper bounds constraints based on enzyme presence (infinite upper bound) or absence (upper bound of zero)
-			catalyzedReactionBounds = np.inf * np.ones(len(self.reactionsWithCatalystsList))
-			rxnPresence = self.catalysisMatrix.dot(catalystsCountsInit)
-			catalyzedReactionBounds[rxnPresence == 0] = 0
-			if self.shuffleCatalyzedIdxs is not None:
-				catalyzedReactionBounds = catalyzedReactionBounds[self.shuffleCatalyzedIdxs]
+		## Shuffle parameters (only performed in very specific cases)
+		if self.shuffleIdxs is not None:
+			reactionTargets = (units.umol / units.L / units.s) * reactionTargets.asNumber()[self.shuffleIdxs]
 
+		## Record which constraint was used, add constraintToReactionMatrix to ensure the index is one of the constraints if multiplication is 0
+		reactionConstraint = np.argmax(self.constraintToReactionMatrix * constraintValues + self.constraintToReactionMatrix, axis = 1)
 
-			# Only update reaction limits that are different from previous time step
-			updateIdxs = np.where(catalyzedReactionBounds != self.catalyzedReactionBoundsPrev)[0]
-			updateRxns = [self.reactionsWithCatalystsList[idx] for idx in updateIdxs]
-			updateVals = catalyzedReactionBounds[updateIdxs]
-			self.fba.setReactionFluxBounds(updateRxns, upperBounds=updateVals, raiseForReversible=False)
-			self.catalyzedReactionBoundsPrev = catalyzedReactionBounds
+		## Calculate reaction flux target for current time step
+		targets = (TIME_UNITS * self.timeStepSec() * reactionTargets).asNumber(COUNTS_UNITS / VOLUME_UNITS)[self.active_constraints_mask]
 
-			# Set target fluxes for reactions based on their most relaxed constraint
-			constraintValues = self.getKineticConstraints(
-				kineticsEnzymesConcentrations.asNumber(units.umol / units.L),
-				kineticsSubstratesConcentrations.asNumber(units.umol / units.L),
-				)
-			reactionTargets = (units.umol / units.L / units.s) * np.max(self.constraintToReactionMatrix * constraintValues, axis = 1)
-
-			# Shuffle parameters (only performed in very specific cases)
-			if self.shuffleIdxs is not None:
-				reactionTargets = (units.umol / units.L / units.s) * reactionTargets.asNumber()[self.shuffleIdxs]
-
-			# record which constraint was used, add constraintToReactionMatrix to ensure the index is one of the constraints if multiplication is 0
-			reactionConstraint = np.argmax(self.constraintToReactionMatrix * constraintValues + self.constraintToReactionMatrix, axis = 1)
-
-			# set reaction flux targets
-			targets = (TIME_UNITS * self.timeStepSec() * reactionTargets).asNumber(COUNTS_UNITS / VOLUME_UNITS)[self.active_constraints_mask]
+		## Set kinetic targets only if kinetics is enabled
+		if self.use_kinetics and self.burnInComplete:
 			self.fba.setKineticTarget(self.kineticsConstrainedReactions, targets, raiseForReversible = False)
 
 		# Solve FBA problem and update metabolite counts
@@ -338,6 +378,12 @@ class Metabolism(wholecell.processes.process.Process):
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
+
+		# change in nutrient counts, used in non-infinite environments
+		delta_nutrients = ((1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes()).asNumber().astype(int)
+
+		# TODO (Eran) use environment_molecule_ids rather than external_exchange_molecules, delta_nutrients needs to be for all env molecules
+		self.environment_molecules.countsInc(self.external_exchange_molecule_ids, delta_nutrients)
 
 		# Write outputs to listeners
 		self.writeToListener("FBAResults", "deltaMetabolites", metaboliteCountsFinal - metaboliteCountsInit)
@@ -357,9 +403,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "countsToMolar", countsToMolar.asNumber(COUNTS_UNITS / VOLUME_UNITS))
 		self.writeToListener("EnzymeKinetics", "actualFluxes", self.fba.getReactionFluxes(self.kineticsConstrainedReactions) / self.timeStepSec())
 
-		if USE_KINETICS and self.burnInComplete:
-			self.writeToListener("EnzymeKinetics", "targetFluxes", targets / self.timeStepSec())
-			self.writeToListener("EnzymeKinetics", "reactionConstraint", reactionConstraint[self.active_constraints_mask])
+		self.writeToListener("EnzymeKinetics", "targetFluxes", targets / self.timeStepSec())
+		self.writeToListener("EnzymeKinetics", "reactionConstraint", reactionConstraint[self.active_constraints_mask])
 
 	# limit amino acid uptake to what is needed to meet concentration objective to prevent use as carbon source
 	def _setExternalMoleculeLevels(self, externalMoleculeLevels, metaboliteConcentrations):

@@ -36,6 +36,7 @@ from models.ecoli.listeners.enzyme_kinetics import EnzymeKinetics
 from models.ecoli.listeners.growth_limits import GrowthLimits
 from models.ecoli.listeners.cell_division import CellDivision
 from models.ecoli.listeners.rna_synth_prob import RnaSynthProb
+from models.ecoli.listeners.monomer_counts import MonomerCounts
 
 
 # Analysis
@@ -85,6 +86,7 @@ class EcoliSimulation(Simulation):
 		GrowthLimits,
 		CellDivision,
 		RnaSynthProb,
+		MonomerCounts,
 		)
 
 	_hookClasses = ()
@@ -108,3 +110,12 @@ class EcoliSimulation(Simulation):
 
 class EcoliDaughterSimulation(EcoliSimulation):
 	_initialConditionsFunction = setDaughterInitialConditions
+
+
+def ecoli_simulation(**options):
+	"""Instantiate an initial EcoliSimulation or a daughter
+	EcoliDaughterSimulation with the given options, depending on whether
+	there's a non-None `inheritedStatePath` option.
+	"""
+	is_daughter = options.get('inheritedStatePath', None) is not None
+	return EcoliDaughterSimulation(**options) if is_daughter else EcoliSimulation(**options)

@@ -1,3 +1,10 @@
+Whole Cell Model - *Escherichia coli*
+===================================
+
+This repository contains work to date on the [Covert Lab's](https://www.covert.stanford.edu/) Whole Cell Model for [*Escherichia coli*](https://en.wikipedia.org/wiki/Escherichia_coli), as well as some effort to create a framework for building whole cell models in general. 
+
+Until now most of the work has been on Stanford's local [Sherlock](https://www.sherlock.stanford.edu/) cluster, though recent efforts have enabled the simulation and its associated analyses to be run manually on a local machine.
+
 Usage
 ======
 
@@ -75,7 +82,7 @@ lpad reset
 To queue up a single simulation in Fireworks:
 
 ```bash
-DESC="Example run of a single simulation." python runscripts/fw_queue.py
+DESC="Example run of a single simulation." python runscripts/fireworks/fw_queue.py
 ```
 
 The `DESC` text should be more descriptive so you can readily distinguish your runs.
@@ -85,7 +92,7 @@ The `DESC` text should be more descriptive so you can readily distinguish your r
 To queue multiple simulations (in this case 4 simulations) in fireworks:
 
 ```bash
-DESC="Example run of multiple simulations." N_INIT_SIMS=4 python runscripts/fw_queue.py
+DESC="Example run of multiple simulations." N_INIT_SIMS=4 python runscripts/fireworks/fw_queue.py
 ```
 
 ### Multiple generations
@@ -93,21 +100,21 @@ DESC="Example run of multiple simulations." N_INIT_SIMS=4 python runscripts/fw_q
 To queue multiple generations (in this case 4 generations) from a single mother cell:
 
 ```bash
-DESC="Example run of multiple generations." N_GENS=4 python runscripts/fw_queue.py
+DESC="Example run of multiple generations." N_GENS=4 python runscripts/fireworks/fw_queue.py
 ```
 
 To queue multiple generations (in this case 3 generations) from multiple mother cells (in this case 2 mother cells:
 
 ```bash
-DESC="Example run of multiple generations from multiple mother cells." N_GENS=3 N_INIT_SIMS=2 python runscripts/fw_queue.py
+DESC="Example run of multiple generations from multiple mother cells." N_GENS=3 N_INIT_SIMS=2 python runscripts/fireworks/fw_queue.py
 ```
 
 ### Shifting nutrient conditions
 
-To queue a simulation that switches between environments, use the "nutrientTimeSeries" variant, and give the range of indices (in this case from 1 to 1) specifying conditions defined in wcEcoli/reconstruction/ecoli/flat/condition/timeseries:
+To queue a simulation that switches between environments, use the "nutrient_time_series" variant, and give the range of indices (in this case from 1 to 1) specifying conditions defined in wcEcoli/reconstruction/ecoli/flat/condition/timeseries:
 
 ```bash
-DESC="Example run of nutrient shifts." VARIANT="nutrientTimeSeries" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 python runscripts/fw_queue.py
+DESC="Example run of nutrient shifts." VARIANT="nutrient_time_series" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 python runscripts/fireworks/fw_queue.py
 ```
 
 ### Using the cached sim data object
@@ -115,7 +122,7 @@ DESC="Example run of nutrient shifts." VARIANT="nutrientTimeSeries" FIRST_VARIAN
 To use the cached sim data object, use the CACHED_SIM_DATA environment variable:
 
 ```bash
-DESC="Example run with cached sim data." CACHED_SIM_DATA=1 python runscripts/fw_queue.py
+DESC="Example run with cached sim data." CACHED_SIM_DATA=1 python runscripts/fireworks/fw_queue.py
 ```
 
 ### Using an interactive node to run a Fireworks workflow
@@ -142,42 +149,45 @@ This command will run forever until you `Ctrl-C` to kill it once you see that al
 
 `qlaunch` is relatively lightweight, so you can probably get away with running it on a login node.
 
+`qlaunch` will create block directories with stdout and stderr from each firework.  To troubleshoot any errors or just to see the output you would normally see from an interactive session, use the following commands to search the block directories for your desired fw_id:
+```bash
+./runscripts/fw_info.sh out 1
+./runscripts/fw_info.sh error 1
+```
+This will display the stdout and stderr from the execution of a firework with fw_id of 1.
+
 Using the manual runscripts
 ---------------------------
 
-These scripts will run portions of the fitter + simulation + analysis work directly without Fireworks. They're handy for development, e.g. running under the PyCharm debugger. They all have command line interfaces.
+These scripts will run the fitter, simulation, and analysis steps directly without Fireworks. They're handy for development, e.g. running under the PyCharm debugger. They have command line interfaces built on `argparse`, which means for one thing that you can use shorter option names as long as they're unambiguous.
 
-Use the `-h` or `--help` switch to get documentation on the parameters and the short and long parameter names.
+Use the `-h` or `--help` switch to get complete, up-to-date documentation on the options.
 
 
 To run all the parameter-fitter steps:
 ```bash
-python runscripts/manual/runFitter.py [-h] [--verbose] [--cpus CPUS] [--cached] [--debug] [sim_outdir]
+python runscripts/manual/runFitter.py [-h] [--cpus CPUS] [--cached] [--debug] [sim_outdir]
 ```
 
 To do a simple simulation run:
 
 ```bash
-python runscripts/manual/runSim.py [-h] [--verbose] [--variant VARIANT_TYPE FIRST_INDEX LAST_INDEX] [sim_dir]
+python runscripts/manual/runSim.py [-h] [--variant VARIANT_TYPE FIRST_INDEX LAST_INDEX] [sim_dir]
 ```
 
-> [Note: runSim.py does not yet run all the steps needed to write all the files needed to run analysis plots.]
-
-To run all the analysis plots on the given `sim_dir`, which defaults to the most recent simulation run:
+To run all the analysis plots on a given `sim_dir`:
 
 ```bash
-python runscripts/manual/analysisCohort.py [-h] [--verbose] [--plot PLOT [PLOT ...]] [--output_prefix OUTPUT_PREFIX] [--variant_index VARIANT_INDEX] [sim_dir]
+python runscripts/manual/analysisCohort.py [-h] [--plot PLOT [PLOT ...]] [--cpus CPUS] [--output_prefix OUTPUT_PREFIX] [--variant_index VARIANT_INDEX] [sim_dir]
 
-python runscripts/manual/analysisMultigen.py [-h] [--verbose] [--plot PLOT [PLOT ...]] [--output_prefix OUTPUT_PREFIX] [--variant_index VARIANT_INDEX] [--seed SEED] [sim_dir]
+python runscripts/manual/analysisMultigen.py [-h] [--plot PLOT [PLOT ...]] [--cpus CPUS] [--output_prefix OUTPUT_PREFIX] [--variant_index VARIANT_INDEX] [--seed SEED] [sim_dir]
 
-python runscripts/manual/analysisSingle.py [-h] [--verbose] [--plot PLOT [PLOT ...]] [--output_prefix OUTPUT_PREFIX] [--variant_index VARIANT_INDEX] [--seed SEED] [--generation GENERATION] [--daughter DAUGHTER] [sim_dir]
+python runscripts/manual/analysisSingle.py [-h] [--plot PLOT [PLOT ...]] [--cpus CPUS] [--output_prefix OUTPUT_PREFIX] [--variant_index VARIANT_INDEX] [--seed SEED] [--generation GENERATION] [--daughter DAUGHTER] [sim_dir]
 
-python runscripts/manual/analysisVariant.py [-h] [--verbose] [--plot PLOT [PLOT ...]] [--output_prefix OUTPUT_PREFIX] [sim_dir]
+python runscripts/manual/analysisVariant.py [-h] [--plot PLOT [PLOT ...]] [--cpus CPUS] [--output_prefix OUTPUT_PREFIX] [sim_dir]
 ```
 
 If you default the parameters, it will pick the latest simulation directory, the first variant, the first generation, and so on.
-
-Set the environment variable `WC_ANALYZE_FAST` to run the analysis scripts in parallel processes.
 
 Set the environment variable `DEBUG_GC=1` to check for Python memory leaks in the analysis scripts.
 
