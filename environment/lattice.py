@@ -148,12 +148,13 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		glucose_lattice = self.lattice[self.molecule_index['GLC[p]']]
 
 		plt.clf()
-		# plt.imshow(np.pad(glucose_lattice, ((2,2),(2,2)), 'wrap'), cmap='YlGn')
+		# plt.imshow(np.pad(glucose_lattice, ((1,1),(1,1)), 'wrap'), cmap='YlGn')
 		plt.imshow(glucose_lattice, cmap='YlGn')
 		plt.title('time: ' + str(self._time) + ' (s)')
 		plt.colorbar()
 		plt.axis('off')
-		plt.ylim((0, EDGE_LENGTH))
+		# plt.ylim((-DX, EDGE_LENGTH+DX))
+		# plt.xlim((-DX, EDGE_LENGTH+DX))
 
 
 	def output_locations(self):
