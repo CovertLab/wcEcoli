@@ -11,7 +11,7 @@ from agent.inner import Inner
 from agent.shepherd import AgentShepherd
 from agent.boot import EnvironmentControl, AgentCommand
 
-from environment.two_dim_lattice import EnvironmentSpatialLattice
+from environment.lattice import EnvironmentSpatialLattice
 
 # Raw data class
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli

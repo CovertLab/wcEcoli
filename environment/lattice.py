@@ -95,12 +95,13 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 			# Move the cell around randomly
 			self.locations[agent_id][0:2] = (location[0:2] +
 				np.random.normal(scale=np.sqrt(LOCATION_JITTER * self._timestep), size=N_DIMS)
-				) % EDGE_LENGTH
+				)
+
+			# Bounce cells off of the lattice edges
+			self.locations[agent_id][0:2][self.locations[agent_id][0:2] >= EDGE_LENGTH] -= 2 * self.locations[agent_id][0:2][self.locations[agent_id][0:2]>= EDGE_LENGTH] % EDGE_LENGTH
 
 			# Orientation jitter
-			self.locations[agent_id][2] = (location[2] +
-				np.random.normal(scale=ORIENTATION_JITTER * self._timestep)
-				)
+			self.locations[agent_id][2] = (location[2] + np.random.normal(scale=ORIENTATION_JITTER * self._timestep))
 
 	def run_diffusion(self):
 		change_lattice = np.zeros(self.lattice.shape)
