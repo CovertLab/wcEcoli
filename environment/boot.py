@@ -46,7 +46,7 @@ class EnvironmentAgent(Outer):
 		self.send(self.kafka_config['environment_visualization'], self.build_state())
 
 class BootEnvironmentSpatialLattice(object):
-	def __init__(self, agent_id, agent_config, recipe):
+	def __init__(self, agent_id, agent_config, media):
 		kafka_config = agent_config['kafka_config']
 		raw_data = KnowledgeBaseEcoli()
 		# create a dictionary with all saved environments
@@ -66,7 +66,7 @@ class BootEnvironmentSpatialLattice(object):
 			# update environment_dict with non zero concentrations
 			self.environment_dict[label].update(environment_non_zero_dict)
 
-		concentrations = self.environment_dict[recipe]
+		concentrations = self.environment_dict[media]
 
 		self.environment = EnvironmentSpatialLattice(concentrations)
 		self.outer = EnvironmentAgent(agent_id, kafka_config, self.environment)
@@ -197,7 +197,7 @@ class EnvironmentCommand(AgentCommand):
 		`add [--variant V] [--index I] [--seed S]` ask the Shepherd to add an Ecoli agent,
 		`ecoli --id ID [--working-dir D] [--variant V] [--index I] [--seed S]` run an Ecoli agent in this process,
 		`experiment [--number N]` ask the Shepherd to run a Lattice agent and N Ecoli agents,
-		`lattice --id ID [--recipe R]` run a Lattice environment agent in this process,
+		`lattice --id ID [--media M]` run a Lattice environment agent in this process,
 		`pause` pause the simulation,
 		`remove --id ID` ask all Shepherds to remove agents "ID*",
 		`shepherd [--working-dir D]` run a Shepherd agent in this process,
@@ -228,10 +228,10 @@ class EnvironmentCommand(AgentCommand):
 			help='The simulation seed')
 
 		parser.add_argument(
-			'-r', '--recipe',
+			'-m', '--media',
 			type=str,
 			default='minimal',
-			help='The environment recipe')
+			help='The environment media')
 
 		return parser
 
@@ -256,8 +256,8 @@ class EnvironmentCommand(AgentCommand):
 
 	def lattice(self, args):
 		agent_id = args.id or 'lattice'
-		recipe = args.recipe
-		BootEnvironmentSpatialLattice(agent_id, {'kafka_config': self.kafka_config}, recipe)
+		media = args.media
+		BootEnvironmentSpatialLattice(agent_id, {'kafka_config': self.kafka_config}, media)
 
 	def ecoli(self, args):
 		if not args.id:
