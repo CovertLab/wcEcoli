@@ -30,7 +30,7 @@ PI = np.pi
 
 # Lattice parameters
 N_DIMS = 2
-PATCHES_PER_EDGE = 5 # TODO (Eran) this should scale to accomodate diffusion
+PATCHES_PER_EDGE = 10 # TODO (Eran) this should scale to accomodate diffusion
 
 EDGE_LENGTH = 10.0  # (micrometers). for reference: an average e.coli has a length of 2 micrometers.
 DEPTH = 3000.0 # (micrometers). an average Petri dish has a depth of 3-4 mm
@@ -148,9 +148,12 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		glucose_lattice = self.lattice[self.molecule_index['GLC[p]']]
 
 		plt.clf()
+		# plt.imshow(np.pad(glucose_lattice, ((2,2),(2,2)), 'wrap'), cmap='YlGn')
 		plt.imshow(glucose_lattice, cmap='YlGn')
+		plt.title('time: ' + str(self._time) + ' (s)')
 		plt.colorbar()
 		plt.axis('off')
+		plt.ylim((0, EDGE_LENGTH))
 
 
 	def output_locations(self):
@@ -169,6 +172,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 			plt.plot([x-dx/2, x+dx/2], [y-dy/2, y+dy/2],
 				color='slateblue', linewidth=CELL_RADIUS/EDGE_LENGTH*600, solid_capstyle='round')
+
 
 		if animating:
 			plt.pause(0.0001)
