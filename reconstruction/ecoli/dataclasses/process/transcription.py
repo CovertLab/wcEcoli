@@ -210,7 +210,7 @@ class Transcription(object):
 		filtered_charged_trna = []
 		for charged_list in charged_trnas:
 			for trna in charged_list:
-				#
+				# Skip modified forms so only one charged tRNA per uncharged tRNA
 				if 'FMET' in trna or 'modified' in trna:
 					continue
 
