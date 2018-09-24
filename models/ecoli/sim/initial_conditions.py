@@ -38,8 +38,7 @@ def calcInitialConditions(sim, sim_data):
 
 	# Must be called after unique and bulk molecules are initialized to get
 	# concentrations for ribosomes, tRNA, synthetases etc from cell volume
-	# TODO - set from sim
-	if True:
+	if sim._trna_charging:
 		initialize_trna_charging(sim_data, sim.internal_states, sim.processes['PolypeptideElongation'].calculate_trna_charging)
 
 def initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massCoeff):

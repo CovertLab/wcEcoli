@@ -89,7 +89,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Simulation options
 		self.translationSupply = sim._translationSupply
-		self.use_trna_charging = True  # TODO - update from sim
+		self.use_trna_charging = sim._trna_charging
 
 		self.elngRateFactor = 1.
 
