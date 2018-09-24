@@ -3,7 +3,7 @@ from __future__ import print_function
 from __future__ import division
 
 import os
-import fcl
+import fcl # fcl is python-fcl in the PyPi package listing and on Github
 import numpy as np
 from scipy import constants
 
@@ -124,9 +124,10 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 			orientation = (self.locations[agent_id][2])
 
 			# See add_simulation for explanation of this transform
-			q_z = np.sin(orientation / 2) * 1.0
-			q_w = np.cos(orientation / 2)
-			box.setRotation(np.array[0.0, 0.0, q_z, q_w])
+			rot = np.array([[np.cos(orientation), -np.sin(orientation), 0.0],
+							[np.sin(orientation), np.cos(orientation), 0.0],
+							[0.0, 0.0, 1.0]])
+			box.setRotation(rot)
 
 			# Undergo collision detection
 			self.collision_detection()
@@ -307,19 +308,12 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		box.setTranslation(np.array([location.item(0), location.item(1), 0.0]))
 
 		# Mirror orientation onto box CollisionObject using setRotation()
-		# setRotation() reads a 4D quaternion np.array (x, y, z, w)
-
-		''' To convert 2D orientation theta to 4D, use axis-angle around x:
-        q_x = sin(orientation/2) * axis_x
-        q_y = sin(orientation/2) * axis_y
-        q_z = sin(orientation/2) * axis_z
-        q_w = cos(orientation/2)
-        '''
-
-		# In 2D axis.x & axis.y = 0.0 & axis.z is 1.0 since we rotate around z
-		q_z = np.sin(orientation / 2) * 1.0
-		q_w = np.cos(orientation / 2)
-		box.setRotation(np.array[0.0, 0.0, q_z, q_w])
+		# Use a 3x3 rotation matrix that rotates only around the z axis:
+		# rotation around z-axis (rot) = ([cos -sin 0], [sin cos 0], [0 0 1])
+		rot = np.array([[np.cos(orientation), -np.sin(orientation), 0.0],
+						[np.sin(orientation), np.cos(orientation), 0.0],
+						[0.0, 0.0, 1.0]])
+		box.setRotation(rot)
 
 		# Write dictionary "boxes" with "agent_id" as keys and "box" as values
 		self.boxes[agent_id] = box
