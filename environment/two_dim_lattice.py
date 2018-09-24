@@ -71,7 +71,9 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		# Initialize a "boxes" dictionary with "agent_id" keys and "box" values.
 		self.boxes = {}
 		# Initialize a "collisions" list with "collision anywhere?" boolean and "minimum distance" float
-		self.collisions = []
+		self.collisions = {
+			'any_collisions': False,
+			'minimum_distance': float('inf')}
 
 		# Create lattice and fill each site with concentrations dictionary
 		# Molecule identities are defined along the major axis, with spatial dimensions along the other two axes.
@@ -118,7 +120,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 			box = self.boxes[agent_id]
 
 			# Mirror the random translation to box
-			box.setTranslation(np.array[self.locations[agent_id][0], self.locations[agent_id][1], 0.0])
+			box.setTranslation(np.array([self.locations[agent_id][0], self.locations[agent_id][1], 0.0]))
 
 			# Mirror the orientation jitter to box CollisionObject
 			orientation = (self.locations[agent_id][2])
@@ -161,7 +163,8 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 			self.update_locations()  # FIXME: with many cells this may effectively call an infinite loop!
 
 		# Store collision and distance data in "collisions" list
-		self.collisions = [collision_data.result.is_collision, distance_data.result.min_distance]
+		self.collisions['any_collisions'] = collision_data.result.is_collision
+		self.collisions['minimum_distance'] = distance_data.result.min_distance
 
 	def run_diffusion(self):
 		change_lattice = np.zeros(self.lattice.shape)
@@ -296,13 +299,15 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		return self._time
 
 
-	def add_simulation(self, agent_id, state):
+	def add_simulation(self, agent_id, simulation):
 		'''
 		FCL Workflow:
 		1. Initialize CollisionObject of type "box" as a bounding box around an agent.
 		2. Give box some geometry, a translation, and a rotation to match agent.
 		3. Write box to a dictionary value with agent_id as its key.
 		'''
+		state = simulation['state']
+
 		# Place cell at a random initial location
 		location = np.random.uniform(0,EDGE_LENGTH,N_DIMS)
 		orientation = np.random.uniform(0, 2*PI)
@@ -324,7 +329,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 		# Write dictionary "boxes" with "agent_id" as keys and "box" as values
 		self.boxes[agent_id] = box
-		self.simulations[agent_id] = state
+		self.simulations[agent_id] = simulation
 		self.locations[agent_id] = np.hstack((location, orientation))
 
 
