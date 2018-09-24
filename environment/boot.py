@@ -41,7 +41,8 @@ class EnvironmentAgent(Outer):
 			'time': self.environment.time(),
 			'lattice': lattice,
 			'simulations': simulations,
-			'collisions' : self.environment.collisions}
+			'collisions' : self.environment.collisions,
+			'overlap' : self.environment.overlap}
 
 	def update_state(self):
 		self.send(self.kafka_config['environment_visualization'], self.build_state())

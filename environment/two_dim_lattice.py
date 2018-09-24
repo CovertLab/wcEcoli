@@ -70,10 +70,14 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		self.manager = fcl.DynamicAABBTreeCollisionManager()
 		# Initialize a "boxes" dictionary with "agent_id" keys and "box" values.
 		self.boxes = {}
-		# Initialize a "collisions" list with "collision anywhere?" boolean and "minimum distance" float
+		# Initialize a "geometry" dictionary with "agent_id" keys and [axes, translation, rotation] values
+		self.geometry = {}
+		# Initialize a "collisions" dictionary with "any_collisions" and "minimum_distance" between all boxes
 		self.collisions = {
 			'any_collisions': False,
 			'minimum_distance': float('inf')}
+		# Initialize a "overlap" dictionary with integer keys and [x,y,z] coordinates of box overlap
+		self.overlap = {}
 
 		# Create lattice and fill each site with concentrations dictionary
 		# Molecule identities are defined along the major axis, with spatial dimensions along the other two axes.
@@ -143,28 +147,42 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		4. Write collision & distance results to dictionary for visualization.
 		'''
 		# TODO: Add real volume exclusion using overlapping distance vectors
-		# TODO: Feed collisions dictionary to visualization layer
-
+		# Add box CollisionObjects to manager
+		self.manager.registerObjects(self.boxes.values())
 		# Setup CollisionObject manager
 		self.manager.setup()
 
 		# Setup data structure to hold collision data called collision_data
-		collision_data = fcl.CollisionData()
+		crequest = fcl.CollisionRequest(
+			num_max_contacts=1000,
+			enable_contact = True
+		)
+		collision_data = fcl.CollisionData(crequest, fcl.CollisionResult())
+
 		# Setup data structure to hold distance data called distance_data
-		distance_data = fcl.DistanceData()
+		drequest = fcl.DistanceRequest(
+			enable_nearest_points=True
+		)
+		distance_data = fcl.DistanceData(drequest, fcl.DistanceResult())
+
 		# Check box-to-box collisions within manager
 		self.manager.collide(collision_data, fcl.defaultCollisionCallback)
 
+		# Check box-to-box distances within manager
+		self.manager.distance(distance_data, fcl.defaultDistanceCallback)
+
 		# If there are ANY collisions within manager, then result.is_collision returns True
 		if collision_data.result.is_collision == True:
-			# Check box-to-box distances within manager
-			self.manager.distance(distance_data, fcl.defaultDistanceCallback)
 			# If cells collide, try randomly moving them again
 			self.update_locations()  # FIXME: with many cells this may effectively call an infinite loop!
 
-		# Store collision and distance data in "collisions" list
+		# Store collision and distance data in "collisions" dictionary
 		self.collisions['any_collisions'] = collision_data.result.is_collision
 		self.collisions['minimum_distance'] = distance_data.result.min_distance
+
+		# Store overlap coordinates (x,y,z) in "overlap" dictionary
+		for i in range(len(collision_data.result.contacts)):
+			self.overlap[i] = collision_data.result.contacts[i].pos
 
 	def run_diffusion(self):
 		change_lattice = np.zeros(self.lattice.shape)
@@ -313,22 +331,27 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		orientation = np.random.uniform(0, 2*PI)
 
 		# Initialize a CollisionObject with geometry "box" and (x,y,z) = (radius, length, 0.0)
-		box = fcl.CollisionObject(fcl.Box(CELL_RADIUS, self.volume_to_length(state['volume']), 0.0))
+		box_axes = [CELL_RADIUS, self.volume_to_length(state['volume']), 0.0]
+		box = fcl.CollisionObject(fcl.Box(box_axes[0], box_axes[1], box_axes[2]))
 
 		# Mirror location onto box CollisionObject using setTranslation()
 		# setTranslation reads np.array(x, y, z) = (location(x), location(y), 0.0)
-		box.setTranslation(np.array([location.item(0), location.item(1), 0.0]))
+		box_translation = np.array([location.item(0), location.item(1), 0.0])
+		box.setTranslation(box_translation)
 
 		# Mirror orientation onto box CollisionObject using setRotation()
 		# Use a 3x3 rotation matrix that rotates only around the z axis:
 		# rotation around z-axis (rot) = ([cos -sin 0], [sin cos 0], [0 0 1])
-		rot = np.array([[np.cos(orientation), -np.sin(orientation), 0.0],
+		box_rotation = np.array([[np.cos(orientation), -np.sin(orientation), 0.0],
 						[np.sin(orientation), np.cos(orientation), 0.0],
 						[0.0, 0.0, 1.0]])
-		box.setRotation(rot)
+		box.setRotation(box_rotation)
 
 		# Write dictionary "boxes" with "agent_id" as keys and "box" as values
 		self.boxes[agent_id] = box
+		# Write dictionary "geometry" with "agent_id" as keys and [axes, translation, rotation] as values
+		self.geometry[agent_id] = [box_axes, box_translation, box_rotation]
+
 		self.simulations[agent_id] = simulation
 		self.locations[agent_id] = np.hstack((location, orientation))
 
