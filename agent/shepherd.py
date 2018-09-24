@@ -10,7 +10,7 @@ class AgentShepherd(Agent):
 	AgentShepherd is an agent that spawns, tracks and removes other agent processes in
 	a multiprocessing environment. The type of agents it is able to spawn is mediated by
 	a dictionary of "initializers" that is passed to it on init. Each key is the name of an agent
-	type and each value is a function that takes two arguments, and `agent_id` and an `agent_config`
+	type and each value is a function that takes two arguments, an `agent_id` and an `agent_config`
 	dictionary. Each time an agent is added, it is done so by calling one of these initializers.
 
 	AgentShepherd responds to two messages, ADD_AGENT and REMOVE_AGENT.
@@ -28,6 +28,16 @@ class AgentShepherd(Agent):
 		"""
 		Initialize the AgentShepherd with its id, kafka config and a dictionary of initializers,
 		which determine what kind of agents the shepherd is able to spawn.
+
+		Args:
+		    agent_id (str): A unique identifier for the new agent.
+		    kafka_config (dict): a set of entries describing how to connect to and interact with
+		        kafka. The key `shepherd_control` is required and names the topic the shepherd
+		        will communicate on.
+		    agent_initializers (dict): This is the set of agents this shepherd will be able to
+		        spawn. The values are callables that take two arguments, `agent_id` (str) and
+		        `agent_config` (dict), and will be passed to `multiprocessing.Process` to spawn
+		        a new agent process.
 		"""
 
 		self.agents = {}
@@ -39,6 +49,7 @@ class AgentShepherd(Agent):
 	def initialize(self):
 		print('agent shepherd waiting')
 
+	# TODO(Ryan): add command to list agent state
 	def add_agent(self, agent_id, agent_type, agent_config):
 		"""
 		Add a new agent for the shepherd to track.
@@ -53,12 +64,18 @@ class AgentShepherd(Agent):
 
 		initializer = self.agent_initializers.get(agent_type, None)
 		if initializer:
-			process = mp.Process(target=initializer, args=(agent_id, agent_config))
-			process.start()
+			process = mp.Process(
+				target=initializer,
+				name=agent_id,
+				args=(agent_id, agent_config))
+
 			self.agents[agent_id] = {
 				'process': process,
 				'type': agent_type,
 				'config': agent_config}
+
+			process.start()
+
 		else:
 			print('agent initializer not found for {}'.format(agent_type))
 
@@ -77,14 +94,11 @@ class AgentShepherd(Agent):
 
 		removed = {}
 		for key in removing:
-			self.send(self.kafka_config['simulation_receive'], {
-				'event': event.SHUTDOWN_SIMULATION,
-				'inner_id': key})
-
 			removed[key] = self.agents.pop(key)
-
-		for key in removing:
-			removed[key]['process'].join()
+			if removed[key]['process'].is_alive():
+				self.send(self.kafka_config['simulation_receive'], {
+					'event': event.SHUTDOWN_AGENT,
+					'agent_id': key})
 
 		print('removal complete {}'.format(removing))
 
