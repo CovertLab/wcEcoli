@@ -198,6 +198,10 @@ class Transcription(object):
 	def _build_charged_trna(self, raw_data, sim_data):
 		'''
 		Loads information and creates data structures necessary for charging of tRNA
+
+		Note:
+			Requires self.rnaData so can't be built in translation even if some
+			data structures would be more appropriate there.
 		'''
 
 		# Create list of charged tRNAs

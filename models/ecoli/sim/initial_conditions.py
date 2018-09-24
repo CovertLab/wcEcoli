@@ -36,7 +36,11 @@ def calcInitialConditions(sim, sim_data):
 	initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massCoeff)
 	initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
 
-	initialize_trna_charging(sim_data, sim.internal_states, sim.processes['PolypeptideElongation'].calculate_trna_charging)
+	# Must be called after unique and bulk molecules are initialized to get
+	# concentrations for ribosomes, tRNA, synthetases etc from cell volume
+	# TODO - set from sim
+	if True:
+		initialize_trna_charging(sim_data, sim.internal_states, sim.processes['PolypeptideElongation'].calculate_trna_charging)
 
 def initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
 
