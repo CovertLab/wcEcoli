@@ -1,3 +1,20 @@
+"""
+Lattice
+
+A two-dimensional lattice environmental model
+
+## Physics
+# Diffusion constant of glucose in 0.5 and 1.5 percent agarose gel = ~6 * 10^-10 m^2/s (Weng et al. 2005. Transport of glucose and poly(ethylene glycol)s in agarose gels).
+# Conversion to micrometers: 6 * 10^-10 m^2/s = 600 micrometers^2/s.
+
+## Cell biophysics
+# rotational diffusion in liquid medium with viscosity = 1 mPa.s: Dr = 3.5+/-0.3 rad^2/s (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
+# translational diffusion in liquid medium with viscosity = 1 mPa.s: Dt=100 micrometers^2/s (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
+
+
+@organization: Covert Lab, Department of Bioengineering, Stanford University
+"""
+
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
@@ -32,14 +49,12 @@ PI = np.pi
 N_DIMS = 2
 PATCHES_PER_EDGE = 10 # TODO (Eran) this should scale to accomodate diffusion
 
-EDGE_LENGTH = 10.0  # (micrometers). for reference: an average e.coli has a length of 2 micrometers.
-DEPTH = 3000.0 # (micrometers). an average Petri dish has a depth of 3-4 mm
-TOTAL_VOLUME = (DEPTH * EDGE_LENGTH**2) * (10**-15) # (L) (micrometer**3 = 10**-15 L).
+EDGE_LENGTH = 10.0  # (micrometers)
+DEPTH = 3000.0 # (micrometers). An average Petri dish has a depth of 3-4 mm
+TOTAL_VOLUME = (DEPTH * EDGE_LENGTH**2) * (10**-15) # (L)
 
 # Physical constants
 DIFFUSION = 0.1  # (micrometers^2/s)
-# Diffusion constant of glucose in 0.5 and 1.5 percent agarose gel = ~6 * 10^-10 m^2/s (Weng et al. 2005. Transport of glucose and poly(ethylene glycol)s in agarose gels).
-# 6 * 10^-10 m^2/s = 600 micrometers^2/s.
 
 # Derived environmental constants
 PATCH_VOLUME = TOTAL_VOLUME / (PATCHES_PER_EDGE**2)
@@ -51,8 +66,6 @@ DX2 = DX*DX
 CELL_RADIUS = 0.5 # (micrometers)
 ROTATIONAL_JITTER = 0.05 # (radians/s)
 TRANSLATIONAL_JITTER = 0.001 # (micrometers/s)
-# rotational diffusion in liquid medium with viscosity = 1 mPa.s: Dr = 3.5+/-0.3 rad^2/s (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
-# translational diffusion in liquid medium with viscosity = 1 mPa.s: Dt=100 micrometers^2/s (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
 
 class EnvironmentSpatialLattice(EnvironmentSimulation):
 	def __init__(self, concentrations):
