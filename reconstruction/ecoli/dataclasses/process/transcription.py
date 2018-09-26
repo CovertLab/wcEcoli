@@ -232,6 +232,7 @@ class Transcription(object):
 			}
 		aa_names = sim_data.moleculeGroups.aaIDs
 		aa_indices = {aa: i for i, aa in enumerate(aa_names)}
+		trna_indices = {trna: i for i, trna in enumerate(trna_names)}
 		self.aa_from_trna = np.zeros((len(aa_names), len(trna_names)))
 		for trna in trna_names:
 			aa = trna[:3].upper()
@@ -248,7 +249,7 @@ class Transcription(object):
 			aa += '[c]'
 			if aa in aa_names:
 				aa_idx = aa_indices[aa]
-				trna_idx = np.where(trna_names == trna)[0]
+				trna_idx = trna_indices[trna]
 				self.aa_from_trna[aa_idx, trna_idx] = 1
 
 		# Arrays for stoichiometry and synthetase mapping matrices
@@ -290,21 +291,19 @@ class Transcription(object):
 
 			if trna is None:
 				continue
-			trna_index = np.where(trna_names == trna)[0][0]
+			trna_index = trna_indices[trna]
 
 			# Get molecule information
 			aa_idx = None
 			for molecule in reaction['stoichiometry']:
+				molecule_prefix = molecule['molecule']
 				if molecule['type'] == 'metabolite':
-					molecule_name = '{}[{}]'.format(
-						molecule['molecule'].upper(),
-						molecule['location']
-						)
-				else:
-					molecule_name = '{}[{}]'.format(
-						molecule['molecule'],
-						molecule['location']
-						)
+					molecule_prefix = molecule_prefix.upper()
+
+				molecule_name = '{}[{}]'.format(
+					molecule_prefix,
+					molecule['location']
+					)
 
 				if molecule_name not in molecules:
 					molecules.append(molecule_name)
