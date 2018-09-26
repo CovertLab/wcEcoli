@@ -183,7 +183,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f
 				)
 
-			count_aas_requested = v_rib * f * self._sim.timeStepSec() / counts_to_molar.asNumber(uM)
+			aa_counts_for_translation = v_rib * f * self._sim.timeStepSec() / counts_to_molar.asNumber(uM)
 
 			total_trna = self.charged_trna.total() + self.uncharged_trna.total()
 			final_charged_trna = np.dot(fraction_charged, self.aa_from_trna * total_trna)
@@ -193,10 +193,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			uncharged_trna_request = final_charged_trna - self.charged_trna.total()
 			uncharged_trna_request[uncharged_trna_request < 0] = 0
 
-			self.aa_counts_for_translation = np.array(count_aas_requested)
+			self.aa_counts_for_translation = np.array(aa_counts_for_translation)
 
 			fraction_trna_per_aa = total_trna / np.dot(np.dot(self.aa_from_trna, total_trna), self.aa_from_trna)
-			total_charging_reactions = np.dot(count_aas_requested, self.aa_from_trna) * fraction_trna_per_aa + uncharged_trna_request
+			total_charging_reactions = np.dot(aa_counts_for_translation, self.aa_from_trna) * fraction_trna_per_aa + uncharged_trna_request
 
 			# Only request molecules that will be consumed in the charging reactions
 			requested_molecules = -np.dot(self.charging_stoich_matrix, total_charging_reactions)
@@ -209,7 +209,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			# Request water for transfer of AA from tRNA for initial polypeptide
 			# This is severe overestimate being worst case of every elongation is
 			# to initialize a polypeptide but excess of water shouldn't matter
-			self.water.requestIs(count_aas_requested.sum())
+			self.water.requestIs(aa_counts_for_translation.sum())
 		else:
 			if self.translationSupply:
 				translationSupplyRate = self.translation_aa_supply[current_nutrients] * self.elngRateFactor
@@ -220,23 +220,23 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 				molAasRequested = translationSupplyRate * dryMass * self.timeStepSec() * units.s
 
-				count_aas_requested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
+				aa_counts_for_translation = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
 
-				count_aas_requested = np.fmin(count_aas_requested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
+				aa_counts_for_translation = np.fmin(aa_counts_for_translation, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
 			else:
-				count_aas_requested = aasInSequences
+				aa_counts_for_translation = aasInSequences
 
-			self.aas.requestIs(count_aas_requested)
+			self.aas.requestIs(aa_counts_for_translation)
 
 			# Not modeling charging so set fraction charged to 0 for all tRNA
 			fraction_charged = np.zeros(len(self.aaNames))
 
 		self.writeToListener("GrowthLimits", "fraction_trna_charged", np.dot(fraction_charged, self.aa_from_trna))
 		self.writeToListener("GrowthLimits", "aaPoolSize", self.aas.total())
-		self.writeToListener("GrowthLimits", "aaRequestSize", count_aas_requested)
+		self.writeToListener("GrowthLimits", "aaRequestSize", aa_counts_for_translation)
 
 		# Request GTP for polymerization based on sequences
-		gtpsHydrolyzed = np.int64(np.ceil(self.gtpPerElongation * count_aas_requested.sum()))
+		gtpsHydrolyzed = np.int64(np.ceil(self.gtpPerElongation * aa_counts_for_translation.sum()))
 
 		self.writeToListener("GrowthLimits", "gtpPoolSize", self.gtp.total()[0])
 		self.writeToListener("GrowthLimits", "gtpRequestSize", gtpsHydrolyzed)
