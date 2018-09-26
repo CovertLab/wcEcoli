@@ -254,6 +254,7 @@ class Transcription(object):
 		# Arrays for stoichiometry and synthetase mapping matrices
 		molecules = []
 
+		# Sparse matrix representation - i, j are row/column indices and v is value
 		stoich_matrix_i = []
 		stoich_matrix_j = []
 		stoich_matrix_v = []
