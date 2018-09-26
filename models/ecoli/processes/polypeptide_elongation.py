@@ -15,9 +15,7 @@ TODO:
 
 from __future__ import division
 
-import copy
 from itertools import izip
-import re
 
 import numpy as np
 
@@ -26,7 +24,7 @@ from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIn
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 
-uM = units.umol / units.L
+MICROMOLAR_UNITS = units.umol / units.L
 
 
 class PolypeptideElongation(wholecell.processes.process.Process):
@@ -112,10 +110,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# ppGpp parameters for tRNA charging and ribosome elongation
 		self.kS = constants.synthetase_charging_rate.asNumber(1 / units.s)
-		self.KMtf = constants.Km_synthetase_uncharged_trna.asNumber(uM)
-		self.KMaa = constants.Km_synthetase_amino_acid.asNumber(uM)
-		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(uM)
-		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(uM)
+		self.KMtf = constants.Km_synthetase_uncharged_trna.asNumber(MICROMOLAR_UNITS)
+		self.KMaa = constants.Km_synthetase_amino_acid.asNumber(MICROMOLAR_UNITS)
+		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
+		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
@@ -183,7 +181,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f
 				)
 
-			aa_counts_for_translation = v_rib * f * self._sim.timeStepSec() / counts_to_molar.asNumber(uM)
+			aa_counts_for_translation = v_rib * f * self._sim.timeStepSec() / counts_to_molar.asNumber(MICROMOLAR_UNITS)
 
 			total_trna = self.charged_trna.total() + self.uncharged_trna.total()
 			final_charged_trna = np.dot(fraction_charged, self.aa_from_trna * total_trna)
@@ -206,9 +204,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			# Request charged tRNA that will become uncharged
 			self.charged_trna.requestIs(charged_trna_request)
 
-			# Request water for transfer of AA from tRNA for initial polypeptide
-			# This is severe overestimate being worst case of every elongation is
-			# to initialize a polypeptide but excess of water shouldn't matter
+			# Request water for transfer of AA from tRNA for initial polypeptide.
+			# This is severe overestimate assuming the worst case that every
+			# elongation is initializing a polypeptide. This excess of water
+			# shouldn't matter though.
 			self.water.requestIs(aa_counts_for_translation.sum())
 		else:
 			if self.translationSupply:
@@ -351,17 +350,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 			# Adjust molecules for number of charging reactions that occurred
 			## Net charged is tRNA that can be charged minus allocated charged tRNA for uncharging
-			fraction_uncharged_trna_per_aa = uncharged_trna / np.dot(np.dot(self.aa_from_trna, uncharged_trna), self.aa_from_trna)
-			fraction_uncharged_trna_per_aa[~np.isfinite(fraction_uncharged_trna_per_aa)] = 0
 			aa_for_charging = total_aa_counts - aas_used
 			n_aa_charged = np.fmin(aa_for_charging, np.dot(self.aa_from_trna, uncharged_trna))
-			n_trna_charged = self.distribution_from_aa(n_aa_charged, fraction_uncharged_trna_per_aa, uncharged_trna)
+			n_trna_charged = self.distribution_from_aa(n_aa_charged, uncharged_trna, True)
 			net_charged = n_trna_charged - charged_trna
 
 			## Reactions that are charged and elongated in same time step
-			fraction_trna_per_aa = total_trna / np.dot(np.dot(self.aa_from_trna, total_trna), self.aa_from_trna)
-			fraction_trna_per_aa[~np.isfinite(fraction_trna_per_aa)] = 0
-			charged_and_elongated = self.distribution_from_aa(aas_used, fraction_trna_per_aa)
+			charged_and_elongated = self.distribution_from_aa(aas_used, total_trna)
 			total_charging_reactions = charged_and_elongated + net_charged
 			self.charging_molecules.countsInc(np.dot(self.charging_stoich_matrix, total_charging_reactions))
 
@@ -430,13 +425,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			v_rib (float) - ribosomal elongation rate in units of uM/s
 		'''
 
-		synthetase_conc = synthetase_conc.asNumber(uM)
-		uncharged_trna_conc = uncharged_trna_conc.asNumber(uM)
-		charged_trna_conc = charged_trna_conc.asNumber(uM)
-		aa_conc = aa_conc.asNumber(uM)
-		ribosome_conc = ribosome_conc.asNumber(uM)
+		synthetase_conc = synthetase_conc.asNumber(MICROMOLAR_UNITS)
+		uncharged_trna_conc = uncharged_trna_conc.asNumber(MICROMOLAR_UNITS)
+		charged_trna_conc = charged_trna_conc.asNumber(MICROMOLAR_UNITS)
+		aa_conc = aa_conc.asNumber(MICROMOLAR_UNITS)
+		ribosome_conc = ribosome_conc.asNumber(MICROMOLAR_UNITS)
 
-		## solve to steady state with short time steps
+		# Solve to steady state with short time steps
 		dt = 0.001
 		diff = 1
 		while diff > 1e-3:
@@ -459,41 +454,48 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
 		return fraction_charged, v_rib
 
-	def distribution_from_aa(self, n_aa, f_trna, limits=None):
+	def distribution_from_aa(self, n_aa, n_trna, limited=False):
 		'''
-		Distributes counts of amino acids to tRNAs that are associated with each amino acid
-		Uses self.aa_from_trna mapping to distribute from amino acids to tRNA
+		Distributes counts of amino acids to tRNAs that are associated with each amino acid.
+		Uses self.aa_from_trna mapping to distribute from amino acids to tRNA based on the
+		fraction that each tRNA species makes up for all tRNA species that code for the
+		same amino acid.
 
 		Inputs:
-			n_aa (array of ints) - counts per amino acid to distribute to each tRNA
-			f_trna (array of floats) - fraction of each tRNA to determine the distribution
-			limits (array of ints) - limits on distribution to each tRNA
+			n_aa (array of ints) - counts of each amino acid to distribute to each tRNA
+			n_trna (array of ints) - counts of each tRNA to determine the distribution
+			limited (bool) - optional, if True, limits the amino acids distributed to
+				each tRNA to the number of tRNA that are available (n_trna)
 
 		Returns:
 			array of ints - distributed counts for each tRNA
 		'''
 
-		trna_counts = np.zeros(f_trna.shape, int)
-		for i, row in enumerate(self.aa_from_trna):
-			count = n_aa[i]
-			idx = row == 1
+		# Determine the fraction each tRNA species makes up out of all tRNA of the
+		# associated amino acid
+		f_trna = n_trna / np.dot(np.dot(self.aa_from_trna, n_trna), self.aa_from_trna)
+		f_trna[~np.isfinite(f_trna)] = 0
+
+		trna_counts = np.zeros(f_trna.shape, np.int64)
+		for count, row in izip(n_aa, self.aa_from_trna):
+			idx = (row == 1)
 			frac = f_trna[idx]
 
 			counts = np.floor(frac * count)
 			diff = int(count - counts.sum())
 
 			# Add additional counts to get up to counts to distribute
-			# Prevent adding over the limit if limits are given
+			# Prevent adding over the number of tRNA available if limited
 			if diff > 0:
-				if limits is None:
-					adjustment = self.randomState.multinomial(diff, frac)
-					counts += adjustment
-				else:
+				if limited:
 					for _ in range(diff):
-						frac[limits[idx] - counts == 0] = 0
+						frac[(n_trna[idx] - counts) == 0] = 0
 						frac /= frac.sum()  # normalize for multinomial distribution
 						adjustment = self.randomState.multinomial(1, frac)
 						counts += adjustment
+				else:
+					adjustment = self.randomState.multinomial(diff, frac)
+					counts += adjustment
 
 			trna_counts[idx] = counts
 
