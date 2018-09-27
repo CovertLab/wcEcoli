@@ -23,16 +23,16 @@ class EnvironmentSimulation(object):
 		"""
 		return {}
 
-	def update_from_simulations(self, update, now):
-		"""Update the environment's state of the inner agent simulations given the
-		changes dictionary mapping agent_id to dictionary of molecule counts.
+	def apply_inner_update(self, update, now):
+		"""Update the environment's state from only the inner agent simulations that have reached
+		but not passed the `now` time point, given the `update` dictionary mapping agent_id to
+		the changes calculated during their run.
 		"""
 
-	def get_molecule_ids(self):
-		"""Return the list of molecule IDs."""
-
-	def get_concentrations(self, now):
-		"""Return a dictionary of agent_id to concentrations coming from the environment."""
+	def generate_outer_update(self, now):
+		"""Return a dictionary of agent_id to updates coming from the environment for
+		each agent that has run to `now` but not past.
+		"""
 
 	def run_incremental(self, time):
 		"""Run the environment's own simulation until the given time."""
@@ -115,21 +115,21 @@ class Outer(Agent):
 		""" Called before each simulation is updated with the current state of the system. """
 		pass
 
-	def send_concentrations(self, now, run_until):
+	def send_updates(self, now, run_until):
 		""" Send updated concentrations to each inner agent. """
 
-		concentrations = self.environment.get_concentrations(now)
+		update = self.environment.generate_outer_update(now)
 		self.update_state()
 
 		for inner_id, simulation in self.simulations.iteritems():
-			if inner_id in concentrations:
+			if inner_id in update:
 				simulation['message_id'] += 1
 				self.send(self.kafka_config['simulation_receive'], {
 					'event': event.ENVIRONMENT_UPDATED,
 					'outer_id': self.agent_id,
 					'inner_id': inner_id,
 					'message_id': simulation['message_id'],
-					'concentrations': concentrations[inner_id],
+					'state': update[inner_id],
 					'run_until': run_until})
 
 	def ready_to_advance(self):
@@ -152,11 +152,11 @@ class Outer(Agent):
 		Advance the environment once it has heard back from all registered simulations,
 		then send out the newly calculated concentrations to each simulation.
 
-		This will check first to see if all simulations are ready to advance, then it
-		will check to see how long each simulation actually ran, only advancing to
-		the earliest time point a simulation hit. In this way the environment is always
-		running behind the simulations, and each simulation only runs once all other
-		simulations have caught up to it (including the environment).
+		This will check first to see if all cells are ready to advance, then it
+		will check to see how long each cell actually ran, only advancing to
+		the earliest time point a cell hit. In this way the environment is always
+		running behind the cells, and each cell only runs once all other
+		cells and the environment have caught up to it.
 		"""
 
 		if not self.paused and self.ready_to_advance():
@@ -176,7 +176,7 @@ class Outer(Agent):
 
 				# apply all the updates received from the simulations to the
 				# environment's original time point
-				self.environment.update_from_simulations(self.simulations, now)
+				self.environment.apply_inner_update(self.simulations, now)
 
 				# run the environment to the current time point
 				self.environment.run_incremental(now)
@@ -190,7 +190,7 @@ class Outer(Agent):
 
 				print('============= environment | ran: {}, now: {}, later: {}, run_until: {}, time: {}'.format(ran, now, later, run_until, self.environment.time()))
 
-				self.send_concentrations(now, run_until)
+				self.send_updates(now, run_until)
 
 	def send_shutdown(self):
 		for inner_id, simulation in self.simulations.iteritems():
@@ -209,6 +209,7 @@ class Outer(Agent):
 		Control messages:
 
 		* TRIGGER_EXECUTION: Send messages to all registered inner agents to begin execution.
+		* PAUSE_ENVIRONMENT: Stop sending messages until another TRIGGER_ENVIRONMENT is received.
 		* SHUTDOWN_ENVIRONMENT: Send messages to inner agents notifying them that the outer agent
 		    is shutting down, and wait for acknowledgement before exiting.
 

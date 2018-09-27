@@ -84,11 +84,11 @@ Now that it is running you can start an experiment:
 
    `> python -m environment.boot experiment --number 3`
 
-This will generate an environment agent and three simulation agents, all running in the shepherd's tab. You still need to trigger execution:
+This will send four `ADD_AGENT` messages to the shepherd, one for the environment agent and three for the simulation agents. Note the `agent_id` for the lattice as you will need this for future control messages (like trigger and shutdown). These messages are received by the shepherd and you will see them all boot in the shepherd's tab. You still need to trigger execution, which requires the `agent_id` of the environment:
 
    `> python -m environment.boot trigger --id xxxxxx-xxxx-xxxxxxxxxx`
 
-Substitute the id for the id assigned to your lattice. Now that they are running, you can add new agents with `add`:
+Now that they are running, you can add new agents with `add`:
 
    `> python -m environment.boot add --id xxxxxx-xxxx-xxxxxxxxxx`
 
@@ -101,3 +101,25 @@ Finally, to shut down the experiment call `shutdown` as before:
    `> python -m environment.boot shutdown --id xxxxxx-xxxx-xxxxxxxxxx`
 
 Notice this just shuts down the experiment, the shepherd is still running and a new experiment can be started. To shut down the shepherd process, just `Ctrl-C`.
+
+## commands
+
+To summarize, the list of agent control commands is:
+
+* trigger - start the simulation
+* pause - pause the simulation
+* shutdown - shutdown the simulation
+
+Spawning specific agents:
+
+* inner - start an inner agent
+* outer - start an outer agent
+* ecoli - start an ecoli agent
+* lattice - start a two dimensional lattice agent
+
+Shepherd oriented commands:
+
+* shepherd - start the agent shepherd
+* add - add an agent to the agent shepherd
+* remove - remove an agent from the agent shepherd
+* experiment - spawn an experiment from the agent shepherd
