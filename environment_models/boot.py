@@ -52,14 +52,14 @@ class BootEnvironmentSpatialLattice(object):
 		raw_data = KnowledgeBaseEcoli()
 		# create a dictionary with all saved environments
 		self.environment_dict = {}
-		for label in vars(raw_data.condition.environment):
+		for label in vars(raw_data.condition.media):
 			# initiate all molecules with 0 concentrations
 			self.environment_dict[label] = {
 				row["molecule id"]: 0 for row in raw_data.condition.environment_molecules
 				}
 
 			# get non-zero concentrations (assuming units.mmol / units.L)
-			molecule_concentrations = getattr(raw_data.condition.environment, label)
+			molecule_concentrations = getattr(raw_data.condition.media, label)
 			environment_non_zero_dict = {
 				row["molecule id"]: row["concentration"].asNumber()
 				for row in molecule_concentrations}
