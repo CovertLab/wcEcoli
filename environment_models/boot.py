@@ -11,7 +11,7 @@ from agent.inner import Inner
 from agent.shepherd import AgentShepherd
 from agent.boot import EnvironmentControl, AgentCommand
 
-from environment.lattice import EnvironmentSpatialLattice
+from environment_models.lattice import EnvironmentSpatialLattice
 
 # Raw data class
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
@@ -47,6 +47,7 @@ class EnvironmentAgent(Outer):
 
 class BootEnvironmentSpatialLattice(object):
 	def __init__(self, agent_id, agent_config, media):
+		print("Media condition: %s" % (media))
 		kafka_config = agent_config['kafka_config']
 		raw_data = KnowledgeBaseEcoli()
 		# create a dictionary with all saved environments
@@ -176,10 +177,10 @@ class ShepherdControl(EnvironmentControl):
 			'ecoli',
 			agent_config)
 
-	def lattice_experiment(self, simulations):
+	def lattice_experiment(self, args):
 		lattice_id = str(uuid.uuid1())
-		self.add_agent(lattice_id, 'lattice', {})
-		for index in range(simulations):
+		self.add_agent(lattice_id, 'lattice', {'media': args.media})
+		for index in range(args.number):
 			self.add_ecoli({'outer_id': lattice_id})
 
 
@@ -195,8 +196,8 @@ class EnvironmentCommand(AgentCommand):
 		The commands are:
 		`add --id OUTER_ID [--variant V] [--index I] [--seed S]` ask the Shepherd to add an Ecoli agent,
 		`ecoli --id ID --outer-id OUTER_ID [--working-dir D] [--variant V] [--index I] [--seed S]` run an Ecoli agent in this process,
-		`experiment [--number N]` ask the Shepherd to run a Lattice agent and N Ecoli agents,
-		`lattice --id ID [--media M]` run a Lattice environment agent in this process,
+		`experiment [--number N] [--media M]` ask the Shepherd to run a Lattice agent and N Ecoli agents in media condition M,
+		`lattice --id ID [--media M]` run a Lattice environment agent in this process in media condition M,
 		`pause --id OUTER_ID` pause the simulation,
 		`remove --id OUTER_ID` ask all Shepherds to remove agents "ID*",
 		`shepherd [--working-dir D]` run a Shepherd agent in this process,
@@ -247,7 +248,7 @@ class EnvironmentCommand(AgentCommand):
 		def initialize_lattice(agent_id, agent_config):
 			agent_config = dict(agent_config)
 			agent_config['kafka_config'] = self.kafka_config
-			return BootEnvironmentSpatialLattice(agent_id, agent_config)
+			return BootEnvironmentSpatialLattice(agent_id, agent_config, agent_config.get('media', args.media))
 
 		initializers['lattice'] = initialize_lattice
 		initializers['ecoli'] = initialize_ecoli
@@ -256,8 +257,7 @@ class EnvironmentCommand(AgentCommand):
 
 	def lattice(self, args):
 		agent_id = args.id or 'lattice'
-		media = args.media
-		BootEnvironmentSpatialLattice(agent_id, {'kafka_config': self.kafka_config}, media)
+		BootEnvironmentSpatialLattice(agent_id, {'kafka_config': self.kafka_config}, args.media)
 
 	def ecoli(self, args):
 		if not args.id:
@@ -287,7 +287,7 @@ class EnvironmentCommand(AgentCommand):
 
 	def experiment(self, args):
 		control = ShepherdControl(self.kafka_config)
-		control.lattice_experiment(args.number)
+		control.lattice_experiment(args)
 		control.shutdown()
 
 
