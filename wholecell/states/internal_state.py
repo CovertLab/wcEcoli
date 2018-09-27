@@ -29,9 +29,14 @@ class InternalState(object):
 		self._views = []
 
 		# Random number stream
-		self.randomState = None
+		self.randomState = None  # TODO: What sets this? UniqueMolecules.partition() seems to use it.
 
 		self.seed = None
+
+		self._masses = None
+		self._unallocatedMassIndex = 0
+		self._preEvolveStateMassIndex = 0
+		self._postEvolveStateMassIndex = 0
 
 
 	# Construct state-process graph, calculate constants
