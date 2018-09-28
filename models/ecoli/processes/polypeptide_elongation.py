@@ -178,7 +178,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 			# Calculate steady state tRNA levels and resulting elongation rate
 			fraction_charged, v_rib = self.calculate_trna_charging(
-				synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f
+				synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, self.timeStepSec()
 				)
 
 			aa_counts_for_translation = v_rib * f * self._sim.timeStepSec() / counts_to_molar.asNumber(MICROMOLAR_UNITS)
@@ -404,7 +404,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("RibosomeData", "processElongationRate", self.ribosomeElongationRate / self.timeStepSec())
 
-	def calculate_trna_charging(self, synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f):
+	def calculate_trna_charging(self, synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, time_limit=None):
 		'''
 		Calculates the steady state value of tRNA based on charging and incorporation through polypeptide elongation.
 		The fraction of charged/uncharged is also used to determine how quickly the ribosome is elongating.
@@ -419,6 +419,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			aa_conc (array of floats with concentration units) - concentration of each amino acid
 			ribosome_conc (float with concentration units) - concentration of active ribosomes
 			f (array of floats) - fraction of each amino acid to be incorporated to total amino acids incorporated
+			time_limit (float) - if not None, time limit to reach steady state, will warn if reached
 
 		Returns:
 			fraction_charged (array of floats) - fraction of total tRNA that is charged for each tRNA species
@@ -432,6 +433,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		ribosome_conc = ribosome_conc.asNumber(MICROMOLAR_UNITS)
 
 		# Solve to steady state with short time steps
+		t = 0
 		dt = 0.001
 		diff = 1
 		while diff > 1e-3:
@@ -450,6 +452,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			uncharged_trna_conc -= delta_conc
 			charged_trna_conc += delta_conc
 			diff = np.linalg.norm(delta_conc)
+
+			t += dt
+			if time_limit is not None and t >= time_limit:
+				print('Warning: time limit reached for tRNA charging, norm is {:0.4f}'.format(diff))
+				break
 
 		fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
 		return fraction_charged, v_rib
