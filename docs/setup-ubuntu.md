@@ -26,6 +26,7 @@ To set these up there are a number of commands to run:
     echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
     echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
     echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile
+    source ~/.bash_profile
 
     git clone https://github.com/pyenv/pyenv-virtualenv.git $(pyenv root)/plugins/pyenv-virtualenv
     echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.bash_profile
@@ -33,7 +34,7 @@ To set these up there are a number of commands to run:
     git clone https://github.com/pyenv/pyenv-virtualenvwrapper.git $(pyenv root)/plugins/pyenv-virtualenvwrapper
     source ~/.bash_profile
 
-Now that you have pyenv and related libraries installed, you can install python and set up your local environment:
+Now that you have pyenv and related libraries installed, you can install python and set up your local environment (NOTE: if you have a `~/.local/` directory, paths might not work properly with `pyenv` and you might receive error messages):
 
     PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.15
     pyenv local 2.7.15
