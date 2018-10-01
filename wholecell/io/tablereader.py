@@ -136,11 +136,14 @@ class TableReader(object):
 		name : str
 			The name of the column.
 		indices (optional) : numpy array of ints
-			The specific indices at each time point to read
-			If None, reads in all data
+			The specific indices at each time point to read. If None, reads in
+			all data. If provided, gives performance boost for files with many
+			entries.
 		block_read (optional) : bool
 			If True, will only read one block per time point, otherwise will
 			seek between contiguous data. Only applies if indices are given.
+			NOTE: If False and indices are spread out, reading can be orders
+			of magnitude slower.
 
 		Returns
 		-------
