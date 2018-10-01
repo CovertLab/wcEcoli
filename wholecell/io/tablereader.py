@@ -127,7 +127,7 @@ class TableReader(object):
 			)
 
 
-	def readColumn(self, name):
+	def readColumn(self, name, indices=None, block_read=True):
 		"""
 		Load a full column (all entries).
 
@@ -135,6 +135,12 @@ class TableReader(object):
 		----------
 		name : str
 			The name of the column.
+		indices (optional) : numpy array of ints
+			The specific indices at each time point to read
+			If None, reads in all data
+		block_read (optional) : bool
+			If True, will only read one block per time point, otherwise will
+			seek between contiguous data. Only applies if indices are given.
 
 		Returns
 		-------
@@ -172,11 +178,62 @@ class TableReader(object):
 		nEntries = sizes.size
 
 		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA)) as dataFile:
-			dataFile.seek(offsets[0])
+			if indices is None:
+				dataFile.seek(offsets[0])
 
-			return np.fromstring(
-				dataFile.read(), dtype
-				).reshape(nEntries, -1).squeeze()
+				return np.fromstring(
+					dataFile.read(), dtype
+					).reshape(nEntries, -1).squeeze()
+			else:
+				type_size = np.dtype(dtype).itemsize
+				n_items = int(sizes[0] / type_size)
+				data = np.zeros((nEntries, len(indices)), dtype)
+
+				dataFile.seek(offsets[0])
+
+				# Precalculate seeks for each entry
+				# Sort to improve speed of seeking
+				sort_indices = np.argsort(indices)
+				indices = indices[sort_indices]
+				seeks = np.zeros_like(indices)
+				seeks[0] = indices[0] * type_size
+				seeks[1:] = (indices[1:] - indices[:-1] - 1) * type_size
+				last_seek = (n_items - indices[-1] - 1) * type_size
+
+				if block_read:
+					# Read only from first to last index of interest
+					seek = last_seek + seeks[0]
+					indices -= indices[0]
+					dataFile.seek(seeks[0], 1)
+					for i in range(nEntries):
+						data[i, sort_indices] = np.fromstring(dataFile.read((indices[-1]+1) * type_size), dtype)[indices]
+						dataFile.seek(seek, 1)
+					return data.squeeze()
+				else:
+					# Group contiguous data (seek of 0) into one read
+					grouped_indices = []
+					read_lengths = []
+					new_seeks = [seeks[0]]
+					current_group = [sort_indices[0]]
+					for idx, seek in zip(sort_indices[1:], seeks[1:]):
+						if seek == 0:
+							current_group += [idx]
+						else:
+							new_seeks += [seek]
+							read_lengths += [len(current_group)]
+							grouped_indices += [np.array(current_group)]
+							current_group = [idx]
+					read_lengths += [len(current_group)]
+					grouped_indices += [np.array(current_group)]
+
+					# Loop over data to read only indices of interest
+					read_info = zip(grouped_indices, read_lengths, new_seeks)
+					for i in range(nEntries):
+						for idx, n_reads, seek in read_info:
+							dataFile.seek(seek, 1)
+							data[i, idx] = np.fromstring(dataFile.read(n_reads * type_size), dtype)
+						dataFile.seek(last_seek, 1)
+					return data.squeeze()
 
 
 	def iterColumn(self, name):
