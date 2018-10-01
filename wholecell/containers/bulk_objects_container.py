@@ -3,6 +3,31 @@ from __future__ import absolute_import
 from __future__ import division
 
 import numpy as np
+import zlib
+
+
+def decomp(compressed_names, dtype, compressed_counts):
+	"""Decompress the names and counts into a BulkObjectsContainer. "decomp" is
+	intentionally short and awkward for intended use limited to pickling. It
+	calls the public API so indexes and caches get set up properly.
+
+	CAUTION: Since this is used for unpickling, future edits are expected to
+	maintain backward compatibility with stored arguments. (One could add
+	optional args or "reduce" to separate unpickling functions.)
+
+	Args:
+		compressed_names (bytes) zlib-compressed tab-separated object names
+		dtype (str) array-protocol typestring [dtype.str]
+		compressed_counts (bytes) zlib-compressed bytes of the counts ndarray
+	"""
+	names = zlib.decompress(compressed_names).split('\t')
+	counts_array = np.frombuffer(zlib.decompress(compressed_counts), dtype)
+	container = BulkObjectsContainer(names, counts_array.dtype)
+	container.countsIs(counts_array)
+	return container
+
+decomp.__safe_for_unpickling__ = True
+
 
 class BulkObjectsContainer(object):
 	"""
@@ -30,6 +55,9 @@ class BulkObjectsContainer(object):
 
 	If used more than once, creating a view is more efficient than operating on
 	the container directly.
+
+	You can store a BulkObjectsContainer via TableWriter or more efficiently
+	by pickling.
 
 	Parameters
 	----------
@@ -72,8 +100,6 @@ class BulkObjectsContainer(object):
 		self._objectNames = tuple(objectNames)
 		self._nObjects = len(self._objectNames)
 
-		self._dtype = dtype
-
 		# Store the indices for each element in a dictionary for faster
 		# (on average, O(1)) look-up (list.index is slow, O(n))
 		self._objectIndex = {
@@ -81,7 +107,20 @@ class BulkObjectsContainer(object):
 			for index, objectName in enumerate(self._objectNames)
 			}
 
-		self._counts = np.zeros(self._nObjects, self._dtype)
+		self._counts = np.zeros(self._nObjects, dtype)
+		self._dtype = self._counts.dtype
+
+
+	def __reduce__(self):
+		"""Reduce a BulkObjectsContainer to defining state for pickling.
+		Compress the state for transmission efficiency.
+		Return a callable object and its args.
+		"""
+		compact_names = '\t'.join(self._objectNames)
+		compressed_names = zlib.compress(compact_names, 9)
+		compressed_counts = zlib.compress(self._counts.tobytes(), 9)
+		dtype = self._counts.dtype
+		return decomp, (compressed_names, dtype.str, compressed_counts)
 
 
 	def counts(self, names = None):
@@ -170,6 +209,14 @@ class BulkObjectsContainer(object):
 
 		else:
 			self._counts[self._namesToIndexes(names)] -= values
+
+
+	def copyCounts(self, other):
+		"""Copy counts from another BulkObjectsContainer, which must have the
+		same object names.
+		"""
+		assert self._objectNames == other.objectNames()
+		self.countsIs(other.counts())
 
 
 	def countsView(self, names = None):
@@ -318,7 +365,7 @@ class BulkObjectsContainer(object):
 
 	def __eq__(self, other):
 		"""
-		Return whether the counts of one BulkObjectsContainer instance are all
+		Return whether the contents of one BulkObjectsContainer instance are
 		equal to another.
 
 		Parameters
@@ -327,21 +374,19 @@ class BulkObjectsContainer(object):
 
 		Returns
 		-------
-		True if all counts are the same, otherwise False.
+		True if the object names and counts are the same, otherwise False.
+		The dtypes don't need to be equal.
 
 		Notes
 		-----
-		TODO (John): This should fail if the elements of one container are
-			different from another, even if their sizes are the same.
-
 		TODO (John): If all elements are the same but in a different order,
 			this method should be sensitive to that.
 
 		TODO (John): This method really shouldn't be inspecting a private
 			attribute of another object.
-
 		"""
-		return (self._counts == other._counts).all()
+		return (self._objectNames == other.objectNames()
+				and (self._counts == other._counts).all())
 
 
 	def tableCreate(self, tableWriter):
@@ -398,7 +443,7 @@ class BulkObjectsContainer(object):
 
 		assert self._objectNames == tuple(tableReader.readAttribute("objectNames"))
 
-		self._counts = tableReader.readRow(tableIndex)["counts"]
+		self._counts[:] = tableReader.readRow(tableIndex)["counts"]
 
 
 class _BulkObjectsView(object):

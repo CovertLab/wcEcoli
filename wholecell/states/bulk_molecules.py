@@ -195,6 +195,10 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 			)
 
 
+	def copyCounts(self, container):
+		"""Copy counts from `container`, which must have the same object names."""
+		self.container.copyCounts(container)
+
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)
 		tableWriter.writeAttributes(

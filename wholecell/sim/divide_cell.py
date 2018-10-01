@@ -101,8 +101,6 @@ def divide_cell(sim):
 			)
 
 	# Save divided containers
-	saveContainer(d1_bulkMolCntr, os.path.join(d1_path, "BulkMolecules"))
-	saveContainer(d2_bulkMolCntr, os.path.join(d2_path, "BulkMolecules"))
 	saveContainer(d1_uniqueMolCntr, os.path.join(d1_path, "UniqueMolecules"))
 	saveContainer(d2_uniqueMolCntr, os.path.join(d2_path, "UniqueMolecules"))
 
@@ -114,13 +112,17 @@ def divide_cell(sim):
 		is_dead=isDead,
 		initial_time=initial_time,
 		elng_rate=daughter_elng_rates["d1_elng_rate"],
-		elng_rate_factor=daughter_elng_rates["d1_elng_rate_factor"])
+		elng_rate_factor=daughter_elng_rates["d1_elng_rate_factor"],
+		bulk_molecules=d1_bulkMolCntr,
+		)
 	save_inherited_state(
 		d2_path,
 		is_dead=isDead,
 		initial_time=initial_time,
 		elng_rate=daughter_elng_rates["d2_elng_rate"],
-		elng_rate_factor=daughter_elng_rates["d2_elng_rate_factor"])
+		elng_rate_factor=daughter_elng_rates["d2_elng_rate_factor"],
+		bulk_molecules=d2_bulkMolCntr,
+		)
 
 def chromosomeDivision(bulkMolecules, randomState):
 	"""
@@ -451,11 +453,9 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_counts, curre
 
 
 def save_inherited_state(daughter_path, **inherited_state):
-	"""Save `inherited_state` dict for a daughter cell.
-	TODO: Include the molecules containers in this output file.
-	"""
+	"""Save the `inherited_state` dict for a daughter cell."""
 	with open(os.path.join(daughter_path, SERIALIZED_INHERITED_STATE), 'wb') as f:
-		cPickle.dump(inherited_state, f)
+		cPickle.dump(inherited_state, f, cPickle.HIGHEST_PROTOCOL)
 
 def load_inherited_state(daughter_path):
 	"""Load `inherited_state` dict to initialize a daughter cell."""

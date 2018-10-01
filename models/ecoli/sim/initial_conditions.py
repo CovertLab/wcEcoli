@@ -424,8 +424,7 @@ def setDaughterInitialConditions(sim, sim_data):
 		sim.processes["PolypeptideElongation"].setElngRate = elngRate
 		sim.processes["PolypeptideElongation"].elngRateFactor = elng_rate_factor
 
-	bulk_table_reader = TableReader(os.path.join(inherited_state_path, "BulkMolecules"))
-	sim.internal_states["BulkMolecules"].tableLoad(bulk_table_reader, 0)
+	sim.internal_states["BulkMolecules"].copyCounts(inherited_state['bulk_molecules'])
 
 	unique_table_reader = TableReader(os.path.join(inherited_state_path, "UniqueMolecules"))
 	sim.internal_states["UniqueMolecules"].tableLoad(unique_table_reader, 0)

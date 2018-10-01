@@ -227,12 +227,6 @@ class TableReader(object):
 		Returns
 		-------
 		dict of {string: ndarray} pairs
-
-		Notes
-		-----
-		TODO (John): This method appears to currently be unused.  Consider
-			removing it.
-
 		"""
 
 		return {
