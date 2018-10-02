@@ -29,21 +29,19 @@ ITERS = 10
 BLOCK_SIZE = 5000  # roughly number of proteins or RNA
 
 
-def test_method(method, reader, indices, text):
+def test_method(method, text):
 	'''
 	Tests a method for indexing into data from a reader
 
 	Inputs:
-		method (lambda function): takes reader and indices as parameters to
-			select the given indices from a reader object
-		reader (TableReader object): file to read data from to test performance
-		indices (numpy array of int): indices of data to select
+		method (function): reads data and selects indices according to the
+			desired method to be tested
 		text (str): description of method
 	'''
 
 	start = time.time()
 	for i in range(ITERS):
-		counts = method(reader, indices)
+		counts = method()
 	end = time.time()
 
 	print('\t{}: {:.3f} s'.format(text, end - start))
@@ -60,8 +58,7 @@ def test_old(reader, indices):
 		indices (numpy array of int): indices of data to select
 	'''
 
-	method = lambda reader, indices: reader.readColumn('counts')[:, indices]
-	return test_method(method, reader, indices, 'Old method')
+	return test_method(lambda : reader.readColumn('counts')[:, indices], 'Old method')
 
 def test_new_block(reader, indices):
 	'''
@@ -73,8 +70,7 @@ def test_new_block(reader, indices):
 		indices (numpy array of int): indices of data to select
 	'''
 
-	method = lambda reader, indices: reader.readColumn('counts', indices)
-	return test_method(method, reader, indices, 'New method, block read')
+	return test_method(lambda : reader.readColumn('counts', indices), 'New method, block read')
 
 def test_new_multiple(reader, indices):
 	'''
@@ -87,8 +83,7 @@ def test_new_multiple(reader, indices):
 		indices (numpy array of int): indices of data to select
 	'''
 
-	method = lambda reader, indices: reader.readColumn('counts', indices, False)
-	return test_method(method, reader, indices, 'New method, multiple reads')
+	return test_method(lambda : reader.readColumn('counts', indices, False), 'New method, multiple reads')
 
 def test_all_functions(text, reader, indices):
 	'''
