@@ -292,6 +292,20 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 
 		assert container4 == container3
 
+	@noseAttrib.attr('smalltest', 'bulkObjects')
+	def test_cannot_pickle(self):
+		"""Try to pickle a container whose dtype has fields or a subarray."""
+		container = BulkObjectsContainer(ELEMENTS, dtype=[('a', 'f4'), ('b', 'i4')])
+		with self.assertRaises(ValueError):
+			cPickle.dumps(container)
+
+		container = BulkObjectsContainer(ELEMENTS, dtype='(2,3)f8')
+		with self.assertRaises(ValueError):
+			cPickle.dumps(container)
+
+		container = BulkObjectsContainer([OBJECT_NAMES, OBJECT_NAMES], dtype='f8')
+		with self.assertRaises(TypeError):
+			cPickle.dumps(container)
 
 	@noseAttrib.attr('smalltest', 'bulkObjects')
 	def test_write_table(self):
