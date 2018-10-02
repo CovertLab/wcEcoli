@@ -29,6 +29,27 @@ ITERS = 10
 BLOCK_SIZE = 5000  # roughly number of proteins or RNA
 
 
+def test_method(method, reader, indices, text):
+	'''
+	Tests a method for indexing into data from a reader
+
+	Inputs:
+		method (lambda function): takes reader and indices as parameters to
+			select the given indices from a reader object
+		reader (TableReader object): file to read data from to test performance
+		indices (numpy array of int): indices of data to select
+		text (str): description of method
+	'''
+
+	start = time.time()
+	for i in range(ITERS):
+		counts = method(reader, indices)
+	end = time.time()
+
+	print('\t{}: {:.3f} s'.format(text, end - start))
+
+	return counts
+
 def test_old(reader, indices):
 	'''
 	Tests original readColumn method where all data is read and then indices
@@ -39,14 +60,8 @@ def test_old(reader, indices):
 		indices (numpy array of int): indices of data to select
 	'''
 
-	start = time.time()
-	for i in range(ITERS):
-		counts = reader.readColumn('counts')[:, indices]
-	end = time.time()
-
-	print('\tOld method: {:.3f} s'.format(end - start))
-
-	return counts
+	method = lambda reader, indices: reader.readColumn('counts')[:, indices]
+	return test_method(method, reader, indices, 'Old method')
 
 def test_new_block(reader, indices):
 	'''
@@ -58,14 +73,8 @@ def test_new_block(reader, indices):
 		indices (numpy array of int): indices of data to select
 	'''
 
-	start = time.time()
-	for i in range(ITERS):
-		counts = reader.readColumn('counts', indices)
-	end = time.time()
-
-	print('\tNew method, block read: {:.3f} s'.format(end - start))
-
-	return counts
+	method = lambda reader, indices: reader.readColumn('counts', indices)
+	return test_method(method, reader, indices, 'New method, block read')
 
 def test_new_multiple(reader, indices):
 	'''
@@ -78,14 +87,8 @@ def test_new_multiple(reader, indices):
 		indices (numpy array of int): indices of data to select
 	'''
 
-	start = time.time()
-	for i in range(ITERS):
-		counts = reader.readColumn('counts', indices, False)
-	end = time.time()
-
-	print('\tNew method, multiple reads: {:.3f} s'.format(end - start))
-
-	return counts
+	method = lambda reader, indices: reader.readColumn('counts', indices, False)
+	return test_method(method, reader, indices, 'New method, multiple reads')
 
 def test_all_functions(text, reader, indices):
 	'''
