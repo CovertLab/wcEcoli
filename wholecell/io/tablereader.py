@@ -1,11 +1,9 @@
 
 from __future__ import division
+from __future__ import print_function
 
 import os
 import json
-import re
-
-from itertools import izip
 
 import numpy as np
 
@@ -166,6 +164,8 @@ class TableReader(object):
 
 		TODO (John): Open in binary mode.
 
+		TODO: Select criteria to automatically select between two methods for indices
+
 		"""
 
 		if name not in self._columnNames:
@@ -209,9 +209,10 @@ class TableReader(object):
 					indices -= indices[0]
 					dataFile.seek(seeks[0], 1)
 					for i in range(nEntries):
-						data[i, sort_indices] = np.fromstring(dataFile.read((indices[-1]+1) * type_size), dtype)[indices]
+						data[i, sort_indices] = np.fromstring(
+							dataFile.read((indices[-1]+1) * type_size), dtype
+							)[indices]
 						dataFile.seek(seek, 1)
-					return data.squeeze()
 				else:
 					# Group contiguous data (seek of 0) into one read
 					grouped_indices = []
@@ -234,9 +235,12 @@ class TableReader(object):
 					for i in range(nEntries):
 						for idx, n_reads, seek in read_info:
 							dataFile.seek(seek, 1)
-							data[i, idx] = np.fromstring(dataFile.read(n_reads * type_size), dtype)
+							data[i, idx] = np.fromstring(
+								dataFile.read(n_reads * type_size), dtype
+								)
 						dataFile.seek(last_seek, 1)
-					return data.squeeze()
+
+				return data.squeeze()
 
 
 	def iterColumn(self, name):
