@@ -58,7 +58,7 @@ def test_old(reader, indices):
 		indices (numpy array of int): indices of data to select
 	'''
 
-	return test_method(lambda : reader.readColumn('counts')[:, indices], 'Old method')
+	return test_method(lambda : reader.readColumn('counts')[:, indices].squeeze(), 'Old method')
 
 def test_new_block(reader, indices):
 	'''
@@ -85,45 +85,21 @@ def test_new_multiple(reader, indices):
 
 	return test_method(lambda : reader.readColumn('counts', indices, False), 'New method, multiple reads')
 
-def test_all_functions(text, reader, indices):
+def test_functions(functions, text, reader, indices):
 	'''
-	Tests all readColumn methods for performance and the same output
+	Tests the given readColumn methods for performance and the same output
 
 	Inputs:
+		functions (list of functions): test functions from above to call
 		text (str): description to display for the set of indices
 		reader (TableReader object): file to read data from to test performance
 		indices (numpy array of int): indices of data to select
 	'''
 
-	functions = [test_old, test_new_block, test_new_multiple]
-
 	print('\n{} with {} iterations:'.format(text, ITERS))
 	results = [f(reader, indices) for f in functions]
-	if np.all(results[0] == results[1]) and np.all(results[0] == results[2]):
-		print('\tResults match!')
-	else:
-		print('\tResults do not match')
-
-def test_two_functions(text, reader, indices):
-	'''
-	Tests two readColumn methods for performance and the same output.
-	The multiple read method can be slow for certain indices so it is
-	excluded here.
-
-	Inputs:
-		text (str): description to display for the set of indices
-		reader (TableReader object): file to read data from to test performance
-		indices (numpy array of int): indices of data to select
-	'''
-
-	functions = [test_old, test_new_block]
-
-	print('\n{} with {} iterations:'.format(text, ITERS))
-	results = [f(reader, indices) for f in functions]
-	if np.all(results[0] == results[1]):
-		print('\tResults match!')
-	else:
-		print('\tResults do not match')
+	for result in results[1:]:
+		np.testing.assert_array_equal(results[0], result)
 
 def test_performance(sim_out_dir):
 	'''
@@ -138,36 +114,40 @@ def test_performance(sim_out_dir):
 	bulk_ids = bulk_molecules.readAttribute('objectNames')
 	n_mols = len(bulk_ids)
 
+	# Sets of functions to test
+	three_functions = [test_old, test_new_block, test_new_multiple]
+	two_functions = [test_old, test_new_block]
+
 	# Test reads
 	## Single index
 	indices = np.array([0])
-	test_all_functions('One index', bulk_molecules, indices)
+	test_functions(three_functions, 'One index', bulk_molecules, indices)
 
 	## First and last index
 	indices = np.array([0, n_mols-1])
-	test_all_functions('First and last indices', bulk_molecules, indices)
+	test_functions(three_functions, 'First and last indices', bulk_molecules, indices)
 
 	## Large block
 	indices = np.array(range(BLOCK_SIZE))
-	test_all_functions('Block indices', bulk_molecules, indices)
+	test_functions(three_functions, 'Block indices', bulk_molecules, indices)
 
 	## 2 Large blocks
 	indices = np.array(range(BLOCK_SIZE) + range(n_mols)[-BLOCK_SIZE:])
-	test_all_functions('Two blocks of indices', bulk_molecules, indices)
+	test_functions(three_functions, 'Two blocks of indices', bulk_molecules, indices)
 
 	## Dispersed reads - multiple reads method is slow so only test two methods
 	indices = np.linspace(0, n_mols-1, BLOCK_SIZE, dtype=np.int64)
-	test_two_functions('Dispersed indices', bulk_molecules, indices)
+	test_functions(two_functions, 'Dispersed indices', bulk_molecules, indices)
 
 	## Random reads - multiple reads method is slow so only test two methods
 	indices = np.array(range(n_mols))
 	np.random.shuffle(indices)
 	indices = indices[:BLOCK_SIZE]
-	test_two_functions('Random indices', bulk_molecules, indices)
+	test_functions(two_functions, 'Random indices', bulk_molecules, indices)
 
 	## All indices
 	indices = np.array(range(n_mols))
-	test_all_functions('All indices', bulk_molecules, indices)
+	test_functions(three_functions, 'All indices', bulk_molecules, indices)
 
 
 if __name__ == '__main__':
