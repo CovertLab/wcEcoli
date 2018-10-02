@@ -129,26 +129,24 @@ class TableReader(object):
 		"""
 		Load a full column (all entries).
 
-		Parameters
-		----------
-		name : str
-			The name of the column.
-		indices (optional) : numpy array of ints
-			The specific indices at each time point to read. If None, reads in
-			all data. If provided, gives performance boost for files with many
-			entries.
-		block_read (optional) : bool
-			If True, will only read one block per time point, otherwise will
-			seek between contiguous data. Only applies if indices are given.
-			NOTE: If False and indices are spread out, reading can be orders
-			of magnitude slower.
+		Parameters:
+			name (str): The name of the column.
+			indices (ndarray): Numpy array of ints. The specific indices at each
+				time point to read. If None, reads in all data. If provided, can
+				give a performance boost for files with many entries.
+				NOTE: performance benefit might only be realized if the file
+				is in the disk cache (i.e. the file has been recently read),
+				which should typically be the case.
+			block_read (bool): If True, will only read one block per time point,
+				otherwise will seek between contiguous data. Only applies if
+				indices are given.
+				NOTE: If False and indices are spread out, reading can be orders
+				of magnitude slower.
 
-		Returns
-		-------
-		A NumPy array, with entries along the first dimension.
+		Returns:
+			ndarray: data read with entries along the first dimension
 
-		Notes
-		-----
+		Notes:
 		If entry sizes varies, this method cannot be used.
 
 		Output will be squeezed; e.g. scalars or scalar-likes written with
@@ -165,7 +163,6 @@ class TableReader(object):
 		TODO (John): Open in binary mode.
 
 		TODO: Select criteria to automatically select between two methods for indices
-
 		"""
 
 		if name not in self._columnNames:
