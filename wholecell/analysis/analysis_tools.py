@@ -76,9 +76,9 @@ def read_bulk_molecule_counts(sim_out_dir, mol_names):
 
 	Args:
 		sim_out_dir (str): path to the directory with simulation output data
-		mol_names (ndarray or tuple of ndarrays): lists of strings containing
-			names of molecules to read the counts for. An array will be converted
-			to a tuple for processing.
+		mol_names (list-like or tuple of list-like): lists of strings containing
+			names of molecules to read the counts for. A single array will be
+			converted to a tuple for processing.
 
 	Returns:
 		generator of ndarray: int counts with all time points on the first dimension
@@ -86,9 +86,15 @@ def read_bulk_molecule_counts(sim_out_dir, mol_names):
 		generated arrays will be separated based on the input dimensions of mol_names
 		(ie if mol_names is a tuple of two arrays, two arrays will be generated).
 
-	Example use cases (where names are numpy arrays of molecules of interest):
-		counts, = read_bulk_molecule_counts(sim_out_dir, names)
-		counts1, counts2 = read_bulk_molecule_counts(sim_out_dir, (names1, names2))
+	Example use cases:
+		names1 = ['ATP[c]', 'AMP[c]']
+		names2 = ['WATER[c]']
+
+		# Read one set of molecules
+		(counts1,) = read_bulk_molecule_counts(sim_out_dir, names1)
+
+		# Read two or more sets of molecules
+		(counts1, counts2) = read_bulk_molecule_counts(sim_out_dir, (names1, names2))
 
 	TODO: generalize to any TableReader, not just BulkMolecules, if readColumn method
 	is used for those tables.
