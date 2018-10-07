@@ -6,15 +6,22 @@ test_unique_objects_container.py
 @data: Created 2/27/2014
 '''
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
+import cPickle
 import unittest
 import os
+import shutil
+import tempfile
 
 import numpy as np
+import numpy.testing as npt
 import nose.plugins.attrib as noseAttrib
 
 from wholecell.containers.unique_objects_container import UniqueObjectsContainer, UniqueObjectsContainerException
+from wholecell.io.tablereader import TableReader
+from wholecell.io.tablewriter import TableWriter
+
 
 TEST_KB = {
 	'RNA polymerase':{
@@ -24,27 +31,29 @@ TEST_KB = {
 	'DNA polymerase':{
 		'boundToChromosome':'bool',
 		'chromosomeLocation':'uint32'
-		}
+		},
+	'Chocolate':{
+		'boundToChromosome':'bool',
+		'chromosomeLocation':'uint32',
+		'percent':'float32',
+		'nuts':'bool',
+		},
 	}
 
 
 class Test_UniqueObjectsContainer(unittest.TestCase):
-	@classmethod
-	def setupClass(cls):
-		pass
-
-
-	@classmethod
-	def tearDownClass(cls):
-		pass
-
-
 	def setUp(self):
 		self.container = createContainer()
-
+		self.test_dir = None
 
 	def tearDown(self):
-		pass
+		if self.test_dir:
+			shutil.rmtree(self.test_dir)
+
+	def make_test_dir(self):
+		if not self.test_dir:
+			self.test_dir = tempfile.mkdtemp()
+
 
 	# Interface tests
 
@@ -81,6 +90,8 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 		for molecule in molecules:
 			# Weird logic to get one molecule
 			break
+		else:
+			raise ValueError("Expected at least one molecule")
 
 		with self.assertRaises(UniqueObjectsContainerException) as context:
 			molecule.attr('boundToChromosome')
@@ -261,11 +272,13 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 	def test_counts(self):
 		self.container.objectsNew('DNA polymerase', 15)
 
-		all_object_counts = self.container.counts()
-		partial_object_counts = self.container.counts(["DNA polymerase"])
+		npt.assert_array_equal((0, 15, 20), self.container.counts(), str(self.container.objectNames()))
+		self.assertEqual(15, self.container.counts(["DNA polymerase"]), "DNA polymerase")
 
-		self.assertEqual(tuple(all_object_counts), tuple([15, 20]))
-		self.assertEqual(partial_object_counts, 15)
+		self.container.objectsNew('Chocolate', 1000, nuts=True, percent=95.0)
+		npt.assert_array_equal((1000, 15, 20), self.container.counts(), str(self.container.objectNames()))
+		npt.assert_array_equal((20, 15), self.container.counts(["RNA polymerase", "DNA polymerase"]), "RNA, DNA")
+
 
 	# Internal tests
 
@@ -293,6 +306,8 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 		for molecule in self.container.objectsInCollection('RNA polymerase'):
 			# Weird logic to get one molecule
 			break
+		else:
+			raise ValueError("expected at least one molecule")
 
 		globalIndex = molecule.attr('_globalIndex')
 
@@ -309,13 +324,81 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 	def test_eq_method(self):
 		# Test against self
 		self.assertEqual(self.container, self.container)
+		self.assertNotEqual(self.container, object())
 
 		# Test against other, presumably identical container
 		otherContainer = createContainer()
 
 		self.assertEqual(self.container, otherContainer)
 
-	# TODO: test saving/loading
+		self.container.objectsNew(
+			'Chocolate', 3, percent=90.0, nuts=True, chromosomeLocation=2001)
+		self.assertNotEqual(self.container, otherContainer)
+
+		otherContainer.objectsNew(
+			'Chocolate', 3, chromosomeLocation=2001, percent=90.0, nuts=True)
+		self.assertEqual(self.container, otherContainer)
+		npt.assert_array_equal(self.container._collections[0], otherContainer._collections[0])
+		npt.assert_array_equal(self.container._collections[1], otherContainer._collections[1])
+		npt.assert_array_equal(self.container._collections[2], otherContainer._collections[2])
+
+		self.container.objectsNew(
+			'Chocolate', 1, percent=80.0, chromosomeLocation=2001, nuts=False)
+		self.assertNotEqual(self.container, otherContainer)
+
+		otherContainer.objectsNew(
+			'Chocolate', 1, nuts=False, percent=80.0, chromosomeLocation=2001)
+		self.assertEqual(self.container, otherContainer)
+
+		self.container.objectsNew(
+			'Chocolate', 1, percent=95.0, chromosomeLocation=3000, nuts=False)
+		self.assertNotEqual(self.container, otherContainer)
+
+		otherContainer.objectsNew(
+			'Chocolate', 1, nuts=False, percent=95.0, chromosomeLocation=1000)
+		self.assertNotEqual(self.container, otherContainer)
+
+	# I/O
+
+	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
+	def test_pickle(self):
+		data = cPickle.dumps(self.container)
+		container2 = cPickle.loads(data)
+		self.assertEqual(self.container, container2)
+
+		print("Pickled a UniqueObjectsContainer to {} bytes".format(len(data)))
+
+		# Test that internal fields are properly restored which __eq__() assumes.
+		self.assertEqual(self.container.objectNames(), container2.objectNames())
+		self.assertEqual(self.container._nameToIndexMapping, container2._nameToIndexMapping)
+
+		self.container.objectsNew('Chocolate', 101, percent=95.0, nuts=False)
+		self.assertNotEqual(self.container, container2)
+
+		data = cPickle.dumps(self.container)
+		container3 = cPickle.loads(data)
+		self.assertEqual(self.container, container3)
+
+
+	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
+	def test_write_table(self):
+		self.make_test_dir()
+		path = os.path.join(self.test_dir, 'UniqueObjects')
+
+		table_writer = TableWriter(path)
+		self.container.tableCreate(table_writer)
+		self.container.tableAppend(table_writer)
+		table_writer.close()
+
+		table_reader = TableReader(path)
+		container2 = UniqueObjectsContainer(TEST_KB)
+		container2.tableLoad(table_reader, 0)
+		self.assertEqual(container2, self.container)
+
+		# Test that internal fields are properly restored which __eq__() assumes.
+		self.assertEqual(self.container.objectNames(), container2.objectNames())
+		self.assertEqual(self.container._nameToIndexMapping, container2._nameToIndexMapping)
+
 
 	# @noseAttrib.attr('mediumtest', 'uniqueObjects', 'containerObject', 'saveload')
 	# def test_save_load(self):

@@ -248,16 +248,23 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 
 	@noseAttrib.attr('smalltest', 'bulkObjects')
 	def test_eq(self):
+		self.assertEqual(self.container, self.container)
+		self.assertNotEqual(self.container, object())
+
 		newContainer = createContainer()
 
-		assert self.container == newContainer
+		self.assertEqual(newContainer, self.container)
 		npt.assert_equal(self.container.counts(), newContainer.counts())
+
+		container2 = BulkObjectsContainer(tuple('abcdefghijklmnopqrstuvwxyz'))
+		self.assertNotEquals(self.container, container2)  # different names and shape
 
 		# __eq__() tests the counts. The dtypes may differ.
 		newContainer.countsIs(7 + 9876 * np.arange(len(OBJECT_NAMES)))
 		container3 = BulkObjectsContainer(OBJECT_NAMES, 'int16')
+		self.assertNotEqual(newContainer, container3)
 		container3.countsIs(7 + 9876 * np.arange(len(OBJECT_NAMES)))
-		assert newContainer == container3
+		self.assertEqual(newContainer, container3)
 
 
 	# I/O
