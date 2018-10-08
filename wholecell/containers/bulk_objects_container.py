@@ -120,7 +120,7 @@ class BulkObjectsContainer(object):
 		compressed_counts = zlib.compress(self._counts.tobytes(), 9)
 		dtype = self._counts.dtype
 
-		if self._counts.ndim != 1 or dtype.shape or dtype.names:
+		if self._counts.ndim != 1 or dtype.shape or dtype.names or dtype.subdtype:
 			raise ValueError("Pickling is implemented only for a simple BulkObjectsContainer")
 
 		return decomp, (compressed_names, dtype.str, compressed_counts)

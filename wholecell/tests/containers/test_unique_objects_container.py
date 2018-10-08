@@ -103,6 +103,10 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 
 		self.assertEqual(str(context.exception), 'Attempted to access an inactive object.')
 
+
+	# TODO(jerry): Test _UniqueObjectSet.delByIndexes().
+
+
 	# Querying
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
 	def test_empty_query(self):
@@ -113,18 +117,26 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
 	def test_bool_query(self):
-		molecules = self.container.objectsInCollection(
-			'RNA polymerase',
-			boundToChromosome = ('==', False)
-			)
+		RNA = 'RNA polymerase'
+		molecules = self.container.objectsInCollection(RNA, boundToChromosome = ('==', False))
 
-		self.assertEqual(len(molecules), 10)
+		self.assertEqual(10, len(molecules))
+		self.assertEqual(molecules, molecules)
 
 		for molecule in molecules:
 			self.assertEqual(
 				molecule.attr('boundToChromosome'),
 				False
 				)
+
+		m1 = self.container.objectsInCollection(RNA, boundToChromosome = ('==', False))
+		self.assertIsNot(molecules, m1)
+		self.assertEqual(10, len(m1))
+		self.assertEqual(molecules, m1)
+
+		m2 = self.container.objectsInCollection(RNA, chromosomeLocation = ('>', 10))
+		self.assertEqual(5, len(m2))
+		self.assertNotEqual(molecules, m2)
 
 
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
@@ -338,6 +350,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 		otherContainer.objectsNew(
 			'Chocolate', 3, chromosomeLocation=2001, percent=90.0, nuts=True)
 		self.assertEqual(self.container, otherContainer)
+		npt.assert_array_equal(self.container._globalReference, otherContainer._globalReference)
 		npt.assert_array_equal(self.container._collections[0], otherContainer._collections[0])
 		npt.assert_array_equal(self.container._collections[1], otherContainer._collections[1])
 		npt.assert_array_equal(self.container._collections[2], otherContainer._collections[2])
@@ -358,6 +371,23 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 			'Chocolate', 1, nuts=False, percent=95.0, chromosomeLocation=1000)
 		self.assertNotEqual(self.container, otherContainer)
 
+	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
+	def test_emptyLike(self):
+		e1 = self.container.emptyLike()
+		e2 = self.container.emptyLike()
+		self.assertNotEqual(self.container, e1)
+		self.assertEqual(e1, e2)
+		self.assertEqual(tuple(sorted(TEST_KB.keys())), e1.objectNames())
+		self.assertEqual(e1._specifications, e2._specifications)
+		npt.assert_array_equal((0, 0, 0), e1.counts())
+
+		self.assertEqual(0,
+			np.where(e1._globalReference['_entryState'] == e1._entryActive)[0].size)
+		self.assertEqual(0, len([obj for obj in e1.objects()]))
+		self.assertEqual(0, len([obj for obj in e1.objectsInCollection('Chocolate')]))
+		self.assertEqual(0, len([obj for obj in e1.objectsInCollections(TEST_KB.keys())]))
+
+
 	# I/O
 
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
@@ -366,24 +396,39 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 		container2 = cPickle.loads(data)
 		self.assertEqual(self.container, container2)
 
-		print("Pickled a UniqueObjectsContainer to {} bytes".format(len(data)))
+		# print("Pickled a UniqueObjectsContainer to {} bytes".format(len(data)))
 
 		# Test that internal fields are properly restored which __eq__() assumes.
 		self.assertEqual(self.container.objectNames(), container2.objectNames())
 		self.assertEqual(self.container._nameToIndexMapping, container2._nameToIndexMapping)
+		npt.assert_array_equal(self.container._globalReference, container2._globalReference)
 
+		# Test on a collection with added & deleted entries.
 		self.container.objectsNew('Chocolate', 101, percent=95.0, nuts=False)
 		self.assertNotEqual(self.container, container2)
+
+		counts = self.container.counts(['RNA polymerase', 'DNA polymerase'])
+		rna_objects = self.container.objectsInCollection('RNA polymerase')
+		self.container.objectDel(rna_objects[0])
+		npt.assert_array_equal(counts - [1, 0],
+			self.container.counts(['RNA polymerase', 'DNA polymerase']))
 
 		data = cPickle.dumps(self.container)
 		container3 = cPickle.loads(data)
 		self.assertEqual(self.container, container3)
+		self.assertEqual(self.container.objectNames(), container3.objectNames())
+		self.assertEqual(self.container._nameToIndexMapping, container3._nameToIndexMapping)
+		npt.assert_array_equal(self.container._globalReference, container3._globalReference)
 
 
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
 	def test_write_table(self):
 		self.make_test_dir()
 		path = os.path.join(self.test_dir, 'UniqueObjects')
+
+		self.container.objectsNew('Chocolate', 2001, percent=75.0, nuts=True)
+		rna_objects = self.container.objectsInCollection('RNA polymerase')
+		self.container.objectDel(rna_objects[0])
 
 		table_writer = TableWriter(path)
 		self.container.tableCreate(table_writer)
@@ -398,6 +443,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 		# Test that internal fields are properly restored which __eq__() assumes.
 		self.assertEqual(self.container.objectNames(), container2.objectNames())
 		self.assertEqual(self.container._nameToIndexMapping, container2._nameToIndexMapping)
+		npt.assert_array_equal(self.container._globalReference, container2._globalReference)
 
 
 	# @noseAttrib.attr('mediumtest', 'uniqueObjects', 'containerObject', 'saveload')
