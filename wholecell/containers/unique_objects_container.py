@@ -27,7 +27,7 @@ class UniqueObjectsContainerException(Exception):
 	pass
 
 
-def decomp(specifications, compressed_collections, compressed_global_refs):
+def decomp(specifications, compressed_collections, global_ref_count):
 	"""Decompress the arguments into a UniqueObjectsContainer. "decomp" is
 	intentionally short and awkward for intended use limited to pickling. It
 	calls the constructor to set up indexes and caches, unlike `__setstate__`.
@@ -43,7 +43,7 @@ def decomp(specifications, compressed_collections, compressed_global_refs):
 	Args:
 		specifications (dict): dtype specs as passed to UniqueObjectsContainer()
 		compressed_collections (list[bytes]): zlib-compressed bytes of the collections ndarrays
-		compressed_global_refs (bytes): zlib-compressed bytes of the global references ndarray
+		global_ref_count (int): the size of the global references ndarray
 
 	Returns:
 		A filled-in UniqueObjectsContainer.
@@ -51,10 +51,21 @@ def decomp(specifications, compressed_collections, compressed_global_refs):
 	container = UniqueObjectsContainer(specifications)
 	_collections = container._collections
 
+	# Decompress the _collections arrays.
 	for index, bytes in enumerate(compressed_collections):
 		_collections[index] = decompress_ndarray(bytes, _collections[index].dtype)
 
-	container._globalReference = decompress_ndarray(compressed_global_refs, container._globalReference.dtype)
+	# Reconstruct the _globalReference array.
+	grefs = np.zeros(global_ref_count, container._globalReference.dtype)
+	container._globalReference = grefs
+	for collectionIndex, collection in enumerate(_collections):
+		for objectIndex, entry in enumerate(collection):
+			if entry["_entryState"] == container._entryActive:
+				global_ref = grefs[entry["_globalIndex"]]
+				global_ref["_entryState"] = container._entryActive
+				global_ref["_collectionIndex"] = collectionIndex
+				global_ref["_objectIndex"] = objectIndex
+
 	return container
 
 
@@ -103,7 +114,11 @@ class UniqueObjectsContainer(object):
 	_entryInactive = 0 # an available entry; 0 works for np.zeros() allocation
 	_entryActive = 1 # an entry that is in use
 	# TODO(jerry): Store the _entryState in a parallel array? Or keep a count
-	# of active entries and always compact them? Use narrower index fields?
+	#   of active entries and always compact them? Do int8 _entryState fields
+	#   make in-memory performance faster than int64 (better cache locality) or
+	#   slower (maybe misaligned following fields)? What about in TableWriter?
+	#   When pickling, the data gets compressed so the impact is smaller.
+	# TODO(jerry): Use narrower index fields?
 
 	_defaultSpecification = {  # bookkeeping fields to add to every struct type
 		"_entryState":np.int8, # see state descriptions above
@@ -112,7 +127,7 @@ class UniqueObjectsContainer(object):
 		}
 
 	_globalReferenceDtype = {
-		"_entryState":np.int64, # see state descriptions above
+		"_entryState":np.int8, # see state descriptions above
 		"_collectionIndex":np.int64,
 		"_objectIndex":np.int64,
 		}
@@ -174,15 +189,13 @@ class UniqueObjectsContainer(object):
 		Compress the state for transmission efficiency.
 		Return a callable object and its args.
 		"""
-		# TODO(jerry): Send just enough data for decomp to reconstruct _globalReference.
 		# TODO(jerry): Compress the specs?
-		# TODO(jerry): Omit inactive entries and _entryState fields, but either
-		#   indicate which slots are inactive or make __eq__ ignore differences
-		#   in their positions and impact on indexes. Worth the effort?
+		# TODO(jerry): Squeeze out inactive entries and _entryState fields, but
+		#   indicate which slots are inactive or else make __eq__ ignore
+		#   differences in their positions and impact on indexes. Worth the work?
 		specs = self._copy_specs()
 		compressed_collections = [compress_ndarray(col) for col in self._collections]
-		compressed_global_refs = compress_ndarray(self._globalReference)
-		return decomp, (specs, compressed_collections, compressed_global_refs)
+		return decomp, (specs, compressed_collections, self._globalReference.size)
 
 
 	def _growArray(self, array, nObjects):

@@ -452,6 +452,8 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 		self.assertEqual(self.container._nameToIndexMapping, container3._nameToIndexMapping)
 		npt.assert_array_equal(self.container._globalReference, container3._globalReference)
 
+		# print("Pickled a UniqueObjectsContainer to {} bytes".format(len(data)))
+
 
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
 	def test_write_table(self):
