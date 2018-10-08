@@ -84,8 +84,8 @@ class UniqueObjectsContainer(object):
 				'RNA polymerase': {'bound': 'bool', 'location': 'int32', 'decay': 'float32'},
 				}
 
-	You can store a UniqueObjectsContainer via TableWriter or more efficiently
-	via pickling.
+	You can store a UniqueObjectsContainer via TableWriter or (for a single
+	snapshot) more compactly via pickling.
 	"""
 
 	# State descriptions
@@ -241,7 +241,7 @@ class UniqueObjectsContainer(object):
 		"""Add a new object/molecule of the named type with the given
 		attributes. Returns a _UniqueObject proxy for the new entry.
 		"""
-		(molecule,) = self.objectsNew(collectionName, 1, **attributes) # NOTE: iterable unpacking
+		(molecule,) = self.objectsNew(collectionName, 1, **attributes) # NOTE: tuple unpacking
 
 		return molecule
 
@@ -592,6 +592,7 @@ class _UniqueObjectSet(object):
 
 	# TODO: More set-like operations (intersection, etc.)
 	def __or__(self, other):
+		# Use `|` -- not `or` -- to call this set operation.
 		if not self._container is other._container:
 			raise UniqueObjectsContainerException("Object comparisons across UniqueMoleculesContainer objects not supported.")
 

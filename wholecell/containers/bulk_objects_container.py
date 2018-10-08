@@ -55,8 +55,8 @@ class BulkObjectsContainer(object):
 	If used more than once, creating a view is more efficient than operating on
 	the container directly.
 
-	You can store a BulkObjectsContainer via TableWriter or more efficiently
-	via pickling.
+	You can store a BulkObjectsContainer via TableWriter or (for a single
+	snapshot) more compactly via pickling.
 
 	Parameters:
 		objectNames (iterable of str):

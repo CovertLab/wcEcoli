@@ -134,25 +134,57 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 		self.assertEqual(10, len(m1))
 		self.assertEqual(molecules, m1)
 
-		m2 = self.container.objectsInCollection(RNA, chromosomeLocation = ('>', 10))
-		self.assertEqual(5, len(m2))
-		self.assertNotEqual(molecules, m2)
+		DNA = 'DNA polymerase'
+		m2 = self.container.objectsInCollection(DNA, boundToChromosome = ('==', False))
+		self.assertIsNot(molecules, m2)
+		self.assertEqual(0, len(m2))
 
 
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
 	def test_numeric_query(self):
-		molecules = self.container.objectsInCollection(
-			'RNA polymerase',
-			chromosomeLocation = ('>', 0)
-			)
+		RNA = 'RNA polymerase'
+		molecules = self.container.objectsInCollection(RNA, chromosomeLocation = ('>', 0))
 
-		self.assertEqual(len(molecules), 5)
+		self.assertEqual(5, len(molecules))
 
 		for molecule in molecules:
 			self.assertGreater(
 				molecule.attr('chromosomeLocation'),
 				0
 				)
+
+		m_eq = self.container.objectsInCollection(RNA, chromosomeLocation = ('==', 0))
+		self.assertEqual(15, len(m_eq))
+		self.assertNotEqual(molecules, m_eq)
+
+		m_ge = self.container.objectsInCollection(RNA, chromosomeLocation = ('>=', 0))
+		self.assertEqual(20, len(m_ge))
+		self.assertNotEqual(molecules, m_ge)
+
+		m_lt = self.container.objectsInCollection(RNA, chromosomeLocation = ('<', 0))
+		self.assertEqual(0, len(m_lt))
+		self.assertNotEqual(molecules, m_lt)
+
+		# Probe the set relations of the query results.
+		self.assertIn(molecules[1], m_ge)
+		self.assertIn(m_eq[1], m_ge)
+		self.assertNotIn(m_eq[1], molecules)
+		self.assertNotIn(molecules[1], m_eq)
+
+		(m_gt_0, m_gt_1, m_gt_2, m_gt_3, m_gt_4) = molecules  # tuple (actually iterable) unpacking
+		self.assertIn(m_gt_0, molecules)
+		self.assertNotIn(m_gt_0, m_eq)
+		self.assertIn(m_gt_0, m_ge)
+		self.assertGreater(m_gt_1.attr('chromosomeLocation'), 0)
+
+		m_gt_or_eq = molecules | m_eq
+		self.assertEqual(20, len(m_gt_or_eq))
+		self.assertEqual(m_ge, m_gt_or_eq)
+		self.assertGreaterEqual(m_gt_or_eq[3].attr('chromosomeLocation'), 0)
+		self.assertGreaterEqual(m_gt_or_eq.attr('chromosomeLocation')[4], 0)
+
+		self.assertEqual(15, len(m_lt | m_eq))
+		self.assertEqual(20, len(m_lt | m_ge))
 
 
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
