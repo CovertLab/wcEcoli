@@ -13,6 +13,7 @@ from itertools import izip
 from functools import partial
 
 import numpy as np
+import zlib
 
 import wholecell.utils.linear_programming as lp
 
@@ -26,7 +27,7 @@ class UniqueObjectsContainerException(Exception):
 	pass
 
 
-def decomp(specifications, globalReference, collections):
+def decomp(specifications, compressed_collections, compressed_global_refs):
 	"""Decompress the arguments into a UniqueObjectsContainer. "decomp" is
 	intentionally short and awkward for intended use limited to pickling. It
 	calls the constructor to set up indexes and caches, unlike `__setstate__`.
@@ -37,21 +38,31 @@ def decomp(specifications, globalReference, collections):
 
 	The current stored format is sensitive to all the internal representation
 	details including inactive entries, bookkeeping fields, and index fields
-	which would be better reconstructed here.
+	which could all be reconstructed here.
 
 	Args:
-		specifications (dict): dtype specs as passed to UniqueObjectsContainer().
-		globalReference (ndarray): global references to objects in all collections
-		collections (list of ndarray): the collections data
+		specifications (dict): dtype specs as passed to UniqueObjectsContainer()
+		compressed_collections (list[bytes]): zlib-compressed bytes of the collections ndarrays
+		compressed_global_refs (bytes): zlib-compressed bytes of the global references ndarray
 
 	Returns:
 		A filled-in UniqueObjectsContainer.
 	"""
 	container = UniqueObjectsContainer(specifications)
-	container._globalReference = globalReference
-	for index, value in enumerate(collections):
-		container._collections[index] = value
+	_collections = container._collections
+
+	for index, bytes in enumerate(compressed_collections):
+		_collections[index] = decompress_ndarray(bytes, _collections[index].dtype)
+
+	container._globalReference = decompress_ndarray(compressed_global_refs, container._globalReference.dtype)
 	return container
+
+
+def compress_ndarray(array):
+	return zlib.compress(array.tobytes(), 9)
+
+def decompress_ndarray(compressed_bytes, dtype):
+	return np.frombuffer(zlib.decompress(compressed_bytes), dtype)
 
 
 def make_dtype_spec(dict_of_dtype_specs):
@@ -163,10 +174,15 @@ class UniqueObjectsContainer(object):
 		Compress the state for transmission efficiency.
 		Return a callable object and its args.
 		"""
-		# TODO(jerry): Extract and compress the array bytes. Omit _globalReference?
-		# TODO(jerry): Omit inactive entries and _entryState fields.
+		# TODO(jerry): Send just enough data for decomp to reconstruct _globalReference.
+		# TODO(jerry): Compress the specs?
+		# TODO(jerry): Omit inactive entries and _entryState fields, but either
+		#   indicate which slots are inactive or make __eq__ ignore differences
+		#   in their positions and impact on indexes. Worth the effort?
 		specs = self._copy_specs()
-		return decomp, (specs, self._globalReference, self._collections)
+		compressed_collections = [compress_ndarray(col) for col in self._collections]
+		compressed_global_refs = compress_ndarray(self._globalReference)
+		return decomp, (specs, compressed_collections, compressed_global_refs)
 
 
 	def _growArray(self, array, nObjects):
