@@ -447,6 +447,18 @@ class UniqueObjectsContainer(object):
 		new_copy = UniqueObjectsContainer(specifications)
 		return new_copy
 
+	def copyContents(self, other):
+		"""Copy in all the contents from another UniqueObjectsContainer, which
+		must have the same specifications.
+		"""
+		assert isinstance(other, UniqueObjectsContainer)
+		assert self._specifications == other._specifications
+		assert self._names == other._names
+
+		self._globalReference = other._globalReference.copy()
+		for index, collection in enumerate(other._collections):
+			self._collections[index] = collection.copy()
+
 	def __eq__(self, other):
 		# TODO(jerry): Ignore inactive entries and index values.
 		# TODO(jerry): Don't access other's private fields.

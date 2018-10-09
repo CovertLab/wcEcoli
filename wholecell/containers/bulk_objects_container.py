@@ -202,6 +202,7 @@ class BulkObjectsContainer(object):
 		"""Copy counts from another BulkObjectsContainer, which must have the
 		same object names.
 		"""
+		assert isinstance(other, BulkObjectsContainer)
 		assert self._objectNames == other.objectNames()
 		self.countsIs(other.counts())
 

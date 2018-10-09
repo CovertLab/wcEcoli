@@ -143,7 +143,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 				objectRequestsArray[:, doCalculatePartition],
 				requestNumberVector[doCalculatePartition],
 				requestProcessArray[doCalculatePartition, :],
-				self.randomState
+				self.randomState  # <-- TODO(jerry): Is this initialized anywhere?
 				)
 
 		for view in self._views:
@@ -205,6 +205,11 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 				masses[processIndex, :] += massDiffs[processIndex == processIndexes, :].sum(axis = 0)
 
 		return masses
+
+
+	def copyContents(self, container):
+		"""Copy contents from `container`, which must have the same specifications."""
+		self.container.copyContents(container)
 
 
 	def tableCreate(self, tableWriter):

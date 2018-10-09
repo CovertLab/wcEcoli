@@ -10,14 +10,12 @@ from itertools import izip
 import scipy.sparse
 
 import numpy as np
-import os
 
 from wholecell.utils.fitting import normalize, countsFromMassAndExpression, masses_and_counts_for_homeostatic_target
 from wholecell.utils.polymerize import computeMassIncrease
 from wholecell.utils import units
 from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWithPrebuiltMatrices
 
-from wholecell.io.tablereader import TableReader
 from wholecell.sim.divide_cell import load_inherited_state
 
 
@@ -425,9 +423,7 @@ def setDaughterInitialConditions(sim, sim_data):
 		sim.processes["PolypeptideElongation"].elngRateFactor = elng_rate_factor
 
 	sim.internal_states["BulkMolecules"].copyCounts(inherited_state['bulk_molecules'])
-
-	unique_table_reader = TableReader(os.path.join(inherited_state_path, "UniqueMolecules"))
-	sim.internal_states["UniqueMolecules"].tableLoad(unique_table_reader, 0)
+	sim.internal_states["UniqueMolecules"].copyContents(inherited_state['unique_molecules'])
 
 	sim._initialTime = inherited_state['initial_time']
 

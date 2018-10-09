@@ -419,6 +419,25 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 		self.assertEqual(0, len([obj for obj in e1.objectsInCollection('Chocolate')]))
 		self.assertEqual(0, len([obj for obj in e1.objectsInCollections(TEST_KB.keys())]))
 
+	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
+	def test_copyContents(self):
+		self.container.objectsNew('Chocolate', 17, percent=88.8)
+		npt.assert_array_equal((17, 0, 20), self.container.counts())
+
+		e1 = self.container.emptyLike()
+		self.assertNotEqual(self.container, e1)
+		e1.copyContents(self.container)
+		self.assertEqual(self.container, e1)
+		npt.assert_array_equal((17, 0, 20), e1.counts())
+
+		KB2 = {'RNA': {'boundToChromosome': 'bool', 'chromosomeLocation': 'uint32'},
+			'RSA:': {'boundToChromosome': 'bool', 'chromosomeLocation': 'uint32'}}
+		c1 = UniqueObjectsContainer(KB2)
+		self.assertNotEqual(self.container, c1)
+
+		with self.assertRaises(AssertionError):  # different specifications
+			c1.copyContents(self.container)
+
 
 	# I/O
 

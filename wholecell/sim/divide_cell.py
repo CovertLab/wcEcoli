@@ -10,7 +10,6 @@ import cPickle
 from copy import deepcopy
 from itertools import izip
 
-from wholecell.io.tablewriter import TableWriter
 from wholecell.utils.constants import SERIALIZED_INHERITED_STATE
 from wholecell.utils import filepath
 from wholecell.utils import units
@@ -100,12 +99,7 @@ def divide_cell(sim):
 			chromosome_counts, current_nutrients, sim)
 			)
 
-	# Save divided containers
-	saveContainer(d1_uniqueMolCntr, os.path.join(d1_path, "UniqueMolecules"))
-	saveContainer(d2_uniqueMolCntr, os.path.join(d2_path, "UniqueMolecules"))
-
-	# Save the remaining daughter initialization state.
-	# TODO: Put it all in one file per daughter cell.
+	# Save the daughter initialization state.
 	initial_time = sim.time() + sim.timeStepSec()
 	save_inherited_state(
 		d1_path,
@@ -114,6 +108,7 @@ def divide_cell(sim):
 		elng_rate=daughter_elng_rates["d1_elng_rate"],
 		elng_rate_factor=daughter_elng_rates["d1_elng_rate_factor"],
 		bulk_molecules=d1_bulkMolCntr,
+		unique_molecules=d1_uniqueMolCntr,
 		)
 	save_inherited_state(
 		d2_path,
@@ -122,6 +117,7 @@ def divide_cell(sim):
 		elng_rate=daughter_elng_rates["d2_elng_rate"],
 		elng_rate_factor=daughter_elng_rates["d2_elng_rate_factor"],
 		bulk_molecules=d2_bulkMolCntr,
+		unique_molecules=d2_uniqueMolCntr,
 		)
 
 def chromosomeDivision(bulkMolecules, randomState):
@@ -462,13 +458,6 @@ def load_inherited_state(daughter_path):
 	with open(os.path.join(daughter_path, SERIALIZED_INHERITED_STATE), "rb") as f:
 		inherited_state = cPickle.load(f)
 	return inherited_state
-
-def saveContainer(container, path):
-	"""Save a molecules container for a daughter cell."""
-	table_writer = TableWriter(path)
-	container.tableCreate(table_writer)
-	container.tableAppend(table_writer)
-	table_writer.close()
 
 
 def resetChromosomeIndex(oldChromosomeIndex, chromosomeCount):

@@ -220,6 +220,32 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 		npt.assert_equal(self.container.count(OBJECT_NAMES[0]), newCount)
 
 
+	@noseAttrib.attr('smalltest', 'bulkObjects')
+	def test_emptyLike(self):
+		e1 = self.container.emptyLike()
+		e2 = self.container.emptyLike()
+		self.assertNotEqual(self.container, e1)
+		self.assertEqual(e1, e2)
+		self.assertEqual(OBJECT_NAMES, e1.objectNames())
+		npt.assert_array_equal((0, 0, 0), e1.counts())
+
+	@noseAttrib.attr('smalltest', 'bulkObjects')
+	def test_copyCounts(self):
+		npt.assert_array_equal(OBJECT_COUNTS, self.container.counts())
+
+		c1 = self.container.emptyLike()
+		c2 = BulkObjectsContainer(OBJECT_NAMES[1:])
+		self.assertNotEqual(self.container, c1)
+		self.assertNotEqual(c1, c2)
+
+		c1.copyCounts(self.container)
+		self.assertEqual(self.container, c1)
+		npt.assert_array_equal(OBJECT_COUNTS, c1.counts())
+
+		with self.assertRaises(AssertionError):  # different object names
+			c2.copyCounts(self.container)
+
+
 	# Internal methods
 
 	@noseAttrib.attr('smalltest', 'bulkObjects')
