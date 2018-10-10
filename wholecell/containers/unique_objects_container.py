@@ -52,8 +52,8 @@ def decomp(specifications, compressed_collections, global_ref_count):
 	_collections = container._collections
 
 	# Decompress the _collections arrays.
-	for index, bytes in enumerate(compressed_collections):
-		_collections[index] = decompress_ndarray(bytes, _collections[index].dtype)
+	for index, data in enumerate(compressed_collections):
+		_collections[index] = decompress_ndarray(data, _collections[index].dtype)
 
 	# Reconstruct the _globalReference array.
 	grefs = np.zeros(global_ref_count, container._globalReference.dtype)
@@ -90,9 +90,9 @@ class UniqueObjectsContainer(object):
 	"""
 	Essentially a database of unique molecules and other unique objects kept in
 	a dict of structured arrays (that is, a dict of ndarrays of structs). Each
-	dict entry (DB table) names a collection of similar objects, each array
-	entry (DB row) holds the state for a unique object instance, and the
-	structured array fields (DB columns) hold its attributes and unique ID.
+	structured array (DB table) names a collection of similar objects, each
+	array entry (DB row) holds the state for a unique object instance, and the
+	structured array fields (DB columns) hold its attributes.
 	Used for unique molecules state and partitions.
 
 	Parameters:

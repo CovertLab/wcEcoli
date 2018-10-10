@@ -29,7 +29,7 @@ class InternalState(object):
 		self._views = []
 
 		# Random number stream
-		self.randomState = None  # TODO: What sets this? UniqueMolecules.partition() seems to use it.
+		self.randomState = None  # Set at the first time step by Simulation._evolveState()
 
 		self.seed = None
 

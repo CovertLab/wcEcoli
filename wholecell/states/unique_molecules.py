@@ -143,7 +143,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 				objectRequestsArray[:, doCalculatePartition],
 				requestNumberVector[doCalculatePartition],
 				requestProcessArray[doCalculatePartition, :],
-				self.randomState  # <-- TODO(jerry): Is this initialized anywhere?
+				self.randomState
 				)
 
 		for view in self._views:
