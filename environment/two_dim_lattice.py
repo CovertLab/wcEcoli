@@ -79,6 +79,15 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		# Initialize a "overlap" dictionary with integer keys and [x,y,z] coordinates of box overlap
 		self.overlap = {}
 
+		### Required to map collisions to agent ids:
+		# Initialize a "geom_to_agent" with "id(box)" as keys and "agent_id" as values
+		self.geom_to_agent = {id(box) : agent_id}
+		# Initialize a "geom_to_name" with "id(box)" as keys and "agent_id" as value, formatted as string
+		self.geom_to_name = {id(box) : str(agent_id)}
+		# Initialize a "deltas" dictionary with "agent_id" keys and "[delta_x, delta_y, delta_theta]" values
+		self.deltas = {}
+
+
 		# Create lattice and fill each site with concentrations dictionary
 		# Molecule identities are defined along the major axis, with spatial dimensions along the other two axes.
 		self.lattice = np.empty([len(self._molecule_ids)] + [PATCHES_PER_EDGE for dim in xrange(N_DIMS)], dtype=np.float64)
@@ -110,15 +119,22 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 	def update_locations(self):
 		''' Update location for all agent_ids '''
 		for agent_id, location in self.locations.iteritems():
-			# Move the cell around randomly
-			self.locations[agent_id][0:2] = (location[0:2] +
-				np.random.normal(scale=np.sqrt(LOCATION_JITTER * self._timestep), size=N_DIMS)
-				) % EDGE_LENGTH
+			# # Move the cell around randomly
+			# self.locations[agent_id][0:2] = (location[0:2] +
+			# 	np.random.normal(scale=np.sqrt(LOCATION_JITTER * self._timestep), size=N_DIMS)
+			# 	) % EDGE_LENGTH
+			#
+			# # Orientation jitter
+			# self.locations[agent_id][2] = (location[2] +
+			# 	np.random.normal(scale=ORIENTATION_JITTER * self._timestep)
+			# 	)
 
-			# Orientation jitter
-			self.locations[agent_id][2] = (location[2] +
-				np.random.normal(scale=ORIENTATION_JITTER * self._timestep)
-				)
+			# Move the cell around randomly but explicitly save transformation in each dimension
+			delta_x = np.random.normal(scale=np.sqrt(LOCATION_JITTER * self._timestep)) % EDGE_LENGTH
+			delta_y = np.random.normal(scale=np.sqrt(LOCATION_JITTER * self._timestep)) % EDGE_LENGTH
+			delta_theta = np.random.normal(scale=ORIENTATION_JITTER * self._timestep)
+			self.deltas[agent_id] = [delta_x, delta_y, delta_theta]
+			self.locations[agent_id][0:2] = (location[0:2] + self.deltas[agent_id][0:2])
 
 			# Call the CollisionObject "box" from the boxes dictionary
 			box = self.boxes[agent_id]
@@ -135,8 +151,8 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 							[0.0, 0.0, 1.0]])
 			box.setRotation(rot)
 
-			# Undergo collision detection
-			self.collision_detection()
+		# Undergo collision detection
+		self.collision_detection()
 
 	def collision_detection(self):
 		'''
@@ -154,7 +170,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 		# Setup data structure to hold collision data called collision_data
 		crequest = fcl.CollisionRequest(
-			num_max_contacts=1000,
+			num_max_contacts=100,
 			enable_contact = True
 		)
 		collision_data = fcl.CollisionData(crequest, fcl.CollisionResult())
@@ -173,16 +189,43 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 		# If there are ANY collisions within manager, then result.is_collision returns True
 		if collision_data.result.is_collision == True:
-			# If cells collide, try randomly moving them again
-			self.update_locations()  # FIXME: with many cells this may effectively call an infinite loop!
+			# Extract collision data from contacts and use that to infer set of CollisionObjects that are in collision
+			agent_ids_in_collision = set()
+			agent_names_in_collision = set()
+			for contact in collision_data.result.contacts:
+				# Extract collision geometries in contact
+				coll_geom_0 = contact.o1
+				coll_geom_1 = contact.o2
+				# Get their agent_ids and store them as float (coll_ids) and string (coll_names)
+				coll_ids = [self.geom_to_id[id(coll_geom_0)], self.geom_to_id[id(coll_geom_1)]]
+				coll_names = [self.geom_to_name[id(coll_geom_0)], self.geom_to_name[id(coll_geom_1)]]
+
+				coll_ids = tuple(sorted(coll_ids))
+				coll_names = tuple(sorted(coll_names))
+				agent_ids_in_collision.add(coll_ids)
+				agent_names_in_collision.add(coll_names)
+
+			for coll_pair in agent_names_in_collision:
+				print('Agent {} in collision with agent {}'.format(coll_pair[0], coll_pair[1]))
+
+			# Perform volume exclusion
+			self.volume_exclusion(coll_ids)
 
 		# Store collision and distance data in "collisions" dictionary
 		self.collisions['any_collisions'] = collision_data.result.is_collision
-		self.collisions['minimum_distance'] = distance_data.result.min_distance
+		if self.collisions['minimum_distance'] > distance_data.result.min_distance:
+			self.collisions['minimum_distance'] = distance_data.result.min_distance
 
 		# Store overlap coordinates (x,y,z) in "overlap" dictionary
 		for i in range(len(collision_data.result.contacts)):
 			self.overlap[i] = collision_data.result.contacts[i].pos
+
+	def volume_exclusion(self, coll_ids):
+		for coll_ids, location in self.locations.iteritems():
+			# 'Bounce' colliding cells off of each other:
+			# Colliding cells ids are floats stored in coll_ids
+			# Subtract location deltas from update_location() method
+			self.locations[coll_ids][0:1] = (location[0:1] - self.deltas[coll_ids][0:1])
 
 	def run_diffusion(self):
 		change_lattice = np.zeros(self.lattice.shape)
@@ -351,6 +394,12 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		self.boxes[agent_id] = box
 		# Write dictionary "geometry" with "agent_id" as keys and [axes, translation, rotation] as values
 		self.geometry[agent_id] = [box_axes, box_translation, box_rotation]
+
+		# Write dictionary "geom_to_agent" with "id(box)" as keys and "agent_id" as values
+		self.geom_to_agent = {id(box) : agent_id}
+
+		# Write dictionary "geom_to_name" with "id(box)" as keys and "agent_id" as value, formatted as string
+		self.geom_to_name = {id(box) : str(agent_id)}
 
 		self.simulations[agent_id] = simulation
 		self.locations[agent_id] = np.hstack((location, orientation))
