@@ -93,7 +93,7 @@ class _Column(object):
 	def __init__(self, path):
 		filepath.makedirs(path)
 
-		self._data = open(os.path.join(path, FILE_DATA), "w")
+		self._data = open(os.path.join(path, FILE_DATA), "wb")
 		self._offsets = open(os.path.join(path, FILE_OFFSETS), "w")
 
 		self._dtype = None
@@ -123,7 +123,7 @@ class _Column(object):
 			if len(descr) == 1 and descr[0][0] == "":
 				descr = descr[0][1]
 
-			self._data.write(json.dumps(descr) + "\n")
+			self._data.write((json.dumps(descr) + "\n").encode('utf-8'))
 			self._offsets.write(str(self._data.tell()) + "\n")
 
 		self._data.write(value.tobytes())

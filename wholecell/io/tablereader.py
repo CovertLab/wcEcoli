@@ -156,12 +156,6 @@ class TableReader(object):
 			until it is operated on.  Early work (see issue #221) suggests that
 			this may lead to cryptic performance issues.
 
-		TODO (John): This method should probably use np.frombuffer rather than
-			np.fromstring.  It seems that using np.fromstring here will become
-			deprecated in later versions of NumPy.
-
-		TODO (John): Open in binary mode.
-
 		TODO: Select criteria to automatically select between two methods for indices
 		"""
 
@@ -177,13 +171,13 @@ class TableReader(object):
 
 		nEntries = sizes.size
 
-		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA)) as dataFile:
+		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA), 'rb') as dataFile:
 			if indices is None:
 				dataFile.seek(offsets[0])
 
-				return np.fromstring(
+				return np.frombuffer(
 					dataFile.read(), dtype
-					).reshape(nEntries, -1).squeeze()
+					).copy().reshape(nEntries, -1).squeeze()
 			else:
 				type_size = np.dtype(dtype).itemsize
 				n_items = int(sizes[0] / type_size)
@@ -206,7 +200,7 @@ class TableReader(object):
 					indices -= indices[0]
 					dataFile.seek(seeks[0], 1)
 					for i in range(nEntries):
-						data[i, sort_indices] = np.fromstring(
+						data[i, sort_indices] = np.frombuffer(
 							dataFile.read((indices[-1]+1) * type_size), dtype
 							)[indices]
 						dataFile.seek(seek, 1)
@@ -232,7 +226,7 @@ class TableReader(object):
 					for i in range(nEntries):
 						for idx, n_reads, seek in read_info:
 							dataFile.seek(seek, 1)
-							data[i, idx] = np.fromstring(
+							data[i, idx] = np.frombuffer(
 								dataFile.read(n_reads * type_size), dtype
 								)
 						dataFile.seek(last_seek, 1)
@@ -267,14 +261,13 @@ class TableReader(object):
 
 		sizes = np.diff(offsets)
 
-		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA)) as dataFile:
+		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA), 'rb') as dataFile:
 			dataFile.seek(offsets[0])
 
 			for size in sizes:
-				yield np.fromstring(
+				yield np.frombuffer(
 					dataFile.read(size), dtype
-					)
-
+					).copy()
 
 	def readRow(self, index):
 		"""
@@ -323,13 +316,12 @@ class TableReader(object):
 
 		size = offsets[index+1] - offsets[index]
 
-		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA)) as dataFile:
+		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA), 'rb') as dataFile:
 			dataFile.seek(offsets[index])
 
-			return np.fromstring(
+			return np.frombuffer(
 				dataFile.read(size), dtype
-				)
-
+				).copy()
 
 	def _loadOffsets(self, name):
 		"""
@@ -353,8 +345,8 @@ class TableReader(object):
 		with open(os.path.join(self._dirColumns, name, tw.FILE_OFFSETS)) as offsetsFile:
 			offsets = np.array([int(i.strip()) for i in offsetsFile])
 
-		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA)) as dataFile:
-			rawDtype = json.loads(dataFile.read(offsets[0]))
+		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA), 'rb') as dataFile:
+			rawDtype = json.loads(dataFile.read(offsets[0]).decode('utf-8'))
 
 			if isinstance(rawDtype, basestring):
 				dtype = str(rawDtype)
