@@ -207,9 +207,9 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 		return masses
 
 
-	def copyContents(self, container):
+	def loadSnapshot(self, container):
 		"""Copy contents from `container`, which must have the same specifications."""
-		self.container.copyContents(container)
+		self.container.loadSnapshot(container)
 
 
 	def tableCreate(self, tableWriter):

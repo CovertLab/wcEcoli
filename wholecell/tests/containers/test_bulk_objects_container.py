@@ -238,12 +238,12 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 		self.assertNotEqual(self.container, c1)
 		self.assertNotEqual(c1, c2)
 
-		c1.copyCounts(self.container)
+		c1.loadSnapshot(self.container)
 		self.assertEqual(self.container, c1)
 		npt.assert_array_equal(OBJECT_COUNTS, c1.counts())
 
-		with self.assertRaises(AssertionError):  # different object names
-			c2.copyCounts(self.container)
+		with self.assertRaises(ValueError):  # different object names
+			c2.loadSnapshot(self.container)
 
 
 	# Internal methods
@@ -324,6 +324,12 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 		# 	len(ELEMENT_NAMES), len(data)))
 
 		assert container4 == container3
+
+		# Test that an unpickled container is mutable as always. It's at risk
+		# because np.frombuffer(f.read()) gets an ndarray onto a readonly byte str.
+		e = container4.count('Einsteinium')
+		container4.countInc(1010, 'Einsteinium')
+		self.assertEqual(1010 + e, container4.count('Einsteinium'))
 
 	@noseAttrib.attr('smalltest', 'bulkObjects')
 	def test_cannot_pickle(self):

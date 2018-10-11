@@ -198,15 +198,6 @@ class BulkObjectsContainer(object):
 			self._counts[self._namesToIndexes(names)] -= values
 
 
-	def copyCounts(self, other):
-		"""Copy counts from another BulkObjectsContainer, which must have the
-		same object names.
-		"""
-		assert isinstance(other, BulkObjectsContainer)
-		assert self._objectNames == other.objectNames()
-		self.countsIs(other.counts())
-
-
 	def countsView(self, names = None):
 		"""
 		Create a view on a set of objects.
@@ -358,6 +349,20 @@ class BulkObjectsContainer(object):
 		return not (self == other)
 
 
+	def loadSnapshot(self, other):
+		"""Load data from a snapshot BulkObjectsContainer which must have the
+		same object names, otherwise there's been a schema change.
+		"""
+		assert isinstance(other, BulkObjectsContainer)
+
+		if self._objectNames != other.objectNames():
+			raise ValueError(
+				'Schema change loading a BulkObjectsContainer snapshot',
+				other.objectNames(), self._objectNames)
+
+		self.countsIs(other.counts())
+
+
 	def tableCreate(self, tableWriter):
 		"""
 		Write the names of the objects to a 'table' file's attributes.
@@ -396,8 +401,8 @@ class BulkObjectsContainer(object):
 		Load the counts of objects from a 'table' file.
 
 		Parameters:
-		tableReader (TableReader): A TableReader to read from.
-		tableIndex (non-negative integer): Specifies which table row to read.
+			tableReader (TableReader): A TableReader to read from.
+			tableIndex (non-negative integer): Specifies which table row to read.
 
 		TODO (John): If this was a class method, it could instantiate with the
 			correct object names instead of asserting that the names are

@@ -179,7 +179,9 @@ class UniqueObjectsContainer(object):
 			self._collections.append(newArray)
 			self._nameToIndexMapping[collectionName] = collectionIndex
 
-		# Create an array which handles global references to objects in all collections
+		# Create an array which handles global references to objects in all
+		# _collections. This is an index across all the unique object names
+		# (molecule types) in this container.
 		self._globalReference = np.zeros(
 			1, dtype = make_dtype_spec(self._globalReferenceDtype))
 
@@ -361,6 +363,10 @@ class UniqueObjectsContainer(object):
 		comparison operations and return a boolean array that's True where
 		entries passed all the comparisons. `operations` is a dict
 		`{attribute_name: (comparison_operator_str, query_value)}`.
+
+		The comparison_operator_str is one of '>', '>=', '<', '<=', '==', '!=',
+		'in', 'not in'. `operations` can perform at most one comparison per
+		attribute. The matched sets are intersected together.
 		"""
 		operations["_entryState"] = ("==", self._entryActive)
 		collection = self._collections[collectionIndex]
@@ -447,18 +453,6 @@ class UniqueObjectsContainer(object):
 		new_copy = UniqueObjectsContainer(specifications)
 		return new_copy
 
-	def copyContents(self, other):
-		"""Copy in all the contents from another UniqueObjectsContainer, which
-		must have the same specifications.
-		"""
-		assert isinstance(other, UniqueObjectsContainer)
-		assert self._specifications == other._specifications
-		assert self._names == other._names
-
-		self._globalReference = other._globalReference.copy()
-		for index, collection in enumerate(other._collections):
-			self._collections[index] = collection.copy()
-
 	def __eq__(self, other):
 		# TODO(jerry): Ignore inactive entries and index values.
 		# TODO(jerry): Don't access other's private fields.
@@ -474,6 +468,24 @@ class UniqueObjectsContainer(object):
 	def __ne__(self, other):
 		# assertNotEquals() calls `!=`.
 		return not (self == other)
+
+
+	def loadSnapshot(self, other):
+		"""Load data from a snapshot UniqueObjectsContainer which must have the
+		same specifications, otherwise there's been a schema change.
+		"""
+		assert isinstance(other, UniqueObjectsContainer)
+
+		if self._specifications != other._specifications:
+			raise ValueError(
+				'Schema change loading a UniqueObjectsContainer snapshot',
+				other._specifications, self._specifications)
+
+		assert self._names == other._names  # double check
+
+		self._globalReference = other._globalReference.copy()
+		for index, collection in enumerate(other._collections):
+			self._collections[index] = collection.copy()
 
 
 	def tableCreate(self, tableWriter):

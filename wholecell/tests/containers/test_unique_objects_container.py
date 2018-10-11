@@ -426,7 +426,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 
 		e1 = self.container.emptyLike()
 		self.assertNotEqual(self.container, e1)
-		e1.copyContents(self.container)
+		e1.loadSnapshot(self.container)
 		self.assertEqual(self.container, e1)
 		npt.assert_array_equal((17, 0, 20), e1.counts())
 
@@ -435,8 +435,8 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 		c1 = UniqueObjectsContainer(KB2)
 		self.assertNotEqual(self.container, c1)
 
-		with self.assertRaises(AssertionError):  # different specifications
-			c1.copyContents(self.container)
+		with self.assertRaises(ValueError):  # different specifications
+			c1.loadSnapshot(self.container)
 
 
 	# I/O
@@ -472,6 +472,11 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 		npt.assert_array_equal(self.container._globalReference, container3._globalReference)
 
 		# print("Pickled a UniqueObjectsContainer to {} bytes".format(len(data)))
+
+		# Test that an unpickled container is mutable as always. It's at risk
+		# because np.frombuffer(f.read()) gets an ndarray onto a readonly byte str.
+		container3.objectsNew('Chocolate', 3, percent=75.0, nuts=True)
+		self.assertEqual((104,), container3.counts(['Chocolate']))
 
 
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')

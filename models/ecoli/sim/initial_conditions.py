@@ -478,8 +478,8 @@ def setDaughterInitialConditions(sim, sim_data):
 		sim.processes["PolypeptideElongation"].setElngRate = elngRate
 		sim.processes["PolypeptideElongation"].elngRateFactor = elng_rate_factor
 
-	sim.internal_states["BulkMolecules"].copyCounts(inherited_state['bulk_molecules'])
-	sim.internal_states["UniqueMolecules"].copyContents(inherited_state['unique_molecules'])
+	sim.internal_states["BulkMolecules"].loadSnapshot(inherited_state['bulk_molecules'])
+	sim.internal_states["UniqueMolecules"].loadSnapshot(inherited_state['unique_molecules'])
 
 	sim._initialTime = inherited_state['initial_time']
 
