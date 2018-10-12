@@ -120,6 +120,9 @@ def divide_cell(sim):
 		unique_molecules=d2_uniqueMolCntr,
 		)
 
+	return [d1_path, d2_path]
+
+
 def chromosomeDivision(bulkMolecules, randomState):
 	"""
 	Randomly divides full chromosome counts into two daughter cells. If there
