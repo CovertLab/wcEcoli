@@ -7,9 +7,6 @@ Requires:
 Usage example:
 	python wholecell/tests/io/test_bulk_reader.py out/sim_desc/wildtype_000000/000000/generation_000000/000000/simOut
 
-TODO:
-	- Add unit tests for TableReader and TableWriter
-
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 9/28/18
 '''
@@ -39,6 +36,7 @@ def test_method(method, text):
 		text (str): description of method
 	'''
 
+	counts = None
 	start = time.time()
 	for i in range(ITERS):
 		counts = method()

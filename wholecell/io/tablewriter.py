@@ -273,6 +273,7 @@ class TableWriter(object):
 		self._columns = None
 
 
+	@profile
 	def append(self, **namesAndValues):
 		"""
 		Write a new set of values to each column.

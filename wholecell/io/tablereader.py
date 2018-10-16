@@ -70,9 +70,6 @@ class TableReader(object):
 	TODO (John): Consider a method for loading an indexed portion of a column.
 
 	TODO (John): Consider removing unused methods (see below).
-
-	TODO (John): Unit tests.
-
 	"""
 
 	def __init__(self, path):
