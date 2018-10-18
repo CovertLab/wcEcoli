@@ -46,6 +46,8 @@ RNA_EXPRESSION_ADJUSTMENTS = {
 	}
 RNA_DEG_RATES_ADJUSTMENTS = {
 	"EG11493_RNA[c]": 2,  # pabC, aminodeoxychorismate lyase
+	"EG10709_RNA[c]": 2,  # pheS, phenylalanine synthetase subunit; for tRNA charging in anaerobic condition
+	"EG10710_RNA[c]": 2,  # pheT, phenylalanine synthetase subunit; for tRNA charging in anaerobic condition
 	}
 PROTEIN_DEG_RATES_ADJUSTMENTS = {
 	"EG12298-MONOMER[p]": 0.1, # yibQ, Predicted polysaccharide deacetylase; This protein is fit for the anaerobic condition
