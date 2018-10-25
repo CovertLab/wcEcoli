@@ -24,6 +24,7 @@ TIME_STEP = 0.1 # seconds
 
 # genetic algorithm parameters
 POPULATION_SIZE = 20
+MUTATION_VARIANCE = 1.0
 
 # set allowable parameter ranges
 PARAM_RANGES = {
@@ -124,9 +125,12 @@ class aa_transport_estimation:
 		self.concentrations = self.initialize_concentrations(args.simout)
 		self.parameter_indices, parameter_values = self.initialize_parameters() # TODO pass ids separate from values? we only need ids once
 
-		# run genetic algorithm
 		population = self.initialize_population()
+
+		# genetic algorithm loop
+
 		fitness = self.evaluate_fitness(population)
+		population = self.repopulate(population, fitness)
 
 		import ipdb; ipdb.set_trace()
 
@@ -135,12 +139,48 @@ class aa_transport_estimation:
 		self.run_sim(args.simout, parameter_values)
 
 
+	def repopulate(self, population, fitness):
+
+		new_population = {}
+
+		# normalize fitness
+		total = np.sum(fitness.values())
+		fitness.update((idx, value/total) for idx, value in fitness.items())
+
+		idx = 0
+		while len(new_population) < POPULATION_SIZE:
+			## Selection
+			selection = 0
+			sum = fitness[selection]
+			rand = random.uniform(0,1)
+			while sum < rand:
+				selection += 1
+				sum += fitness[selection]
+
+			## Mutation
+			genotype = population[selection]
+
+			# gaussian distance
+			magnitude = random.gauss(0, MUTATION_VARIANCE)
+
+			# random unit vector
+			direction = [random.gauss(0, 1) for i in range(len(genotype))]
+			direction_mag = np.sum(x**2 for x in direction)**0.5
+			vector = [magnitude * x / direction_mag for x in direction]
+
+			# apply mutation
+			new_population[idx] = genotype + vector
+
+			idx +=1
+
+		return new_population
 
 
 	def evaluate_fitness(self, population):
 
 		fitness = {}
 
+		# get mean squared error
 		for ind, params in population.iteritems():
 
 			reaction_fluxes, molecule_fluxes = self.get_fluxes(params, self.concentrations)
@@ -153,10 +193,9 @@ class aa_transport_estimation:
 			for molecule, target_flux in TARGETS['molecule_flux'].iteritems():
 				error += MOLECULE_FLUX_PENALTY * (molecule_fluxes[molecule] - target_flux) ** 2
 
-			fitness[ind] = error
+			fitness[ind] = 1 / (1 + error)
 
 		return fitness
-
 
 
 
