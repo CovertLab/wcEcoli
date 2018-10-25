@@ -120,30 +120,21 @@ class aa_transport_estimation:
 		# initialize
 		# TODO -- functionalize everything, to allow for population-level initialization
 		self.initialize_from_WCM()
-		# self.reactions = self.initialize_reactions() # TODO -- this is currently assigning values to parameters
 		self.concentrations = self.initialize_concentrations()
 		self.parameter_indices, parameter_values = self.initialize_parameters() # TODO pass ids separate from values? we only need ids once
 
-		# # run genetic algorithm
-		# population = self.initialize_population()
-		# fitness = self.evaluate_fitness(population)
-		#
-		# import ipdb; ipdb.set_trace()
+		# run genetic algorithm
+		population = self.initialize_population()
+		fitness = self.evaluate_fitness(population)
+
+		import ipdb; ipdb.set_trace()
+
 
 		# run simulation and save output for optimized parameters
 		self.run_sim(parameter_values)
 
 
-	def initialize_population(self):
-		''' fill self.population with {index: [parameters]} for index in POPULATION_SIZE'''
 
-		population = {}
-
-		for ind in xrange(POPULATION_SIZE):
-			parameter_indices, parameter_values = self.initialize_parameters()
-			population[ind] = parameter_values
-
-		return population
 
 	def evaluate_fitness(self, population):
 
@@ -165,69 +156,7 @@ class aa_transport_estimation:
 
 		return fitness
 
-	def get_fluxes(self, parameters, concentrations):
 
-		reaction_fluxes = {}
-		molecule_fluxes = {mol : 0.0 for mol in concentrations.keys()}
-
-		# loop through all reactions, save reaction flux and molecule flux.
-		for rxn, specs in INITIAL_REACTIONS.iteritems():
-
-			params = {param : parameters[idx] for param, idx in self.parameter_indices[rxn].iteritems()}
-
-			if specs['type'] is 'uniport':
-				reaction_fluxes[rxn] = self.get_uniporter_flux(
-					specs['substrates'],
-					specs['transporter'][0],
-					params,
-					concentrations,
-					)
-
-				# molecule flux
-				A1 = specs['substrates']['A1']
-				A2 = specs['substrates']['A2']
-				molecule_fluxes[A1] -= reaction_fluxes[rxn]
-				molecule_fluxes[A2] += reaction_fluxes[rxn]
-
-			# TODO -- add if specs['type'] is 'uniport_reversible'
-
-			if specs['type'] is 'symport':
-				reaction_fluxes[rxn] = self.get_symporter_flux(
-					specs['substrates'],
-					specs['transporter'][0],
-					params,
-					concentrations,
-					)
-
-				# molecule flux
-				A1 = specs['substrates']['A1']
-				A2 = specs['substrates']['A2']
-				B1 = specs['substrates']['B1']
-				B2 = specs['substrates']['B2']
-				molecule_fluxes[A1] -= reaction_fluxes[rxn]
-				molecule_fluxes[A2] += reaction_fluxes[rxn]
-				molecule_fluxes[B1] -= reaction_fluxes[rxn]
-				molecule_fluxes[B2] += reaction_fluxes[rxn]
-
-			if specs['type'] is 'symport_reversible':
-				reaction_fluxes[rxn] = self.get_symporter_reversible_flux(
-					specs['substrates'],
-					specs['transporter'][0],
-					params,
-					concentrations,
-					)
-
-				# molecule flux
-				A1 = specs['substrates']['A1']
-				A2 = specs['substrates']['A2']
-				B1 = specs['substrates']['B1']
-				B2 = specs['substrates']['B2']
-				molecule_fluxes[A1] -= reaction_fluxes[rxn]
-				molecule_fluxes[A2] += reaction_fluxes[rxn]
-				molecule_fluxes[B1] -= reaction_fluxes[rxn]
-				molecule_fluxes[B2] += reaction_fluxes[rxn]
-
-		return reaction_fluxes, molecule_fluxes
 
 
 	## Initialization
@@ -242,26 +171,6 @@ class aa_transport_estimation:
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		self.coefficient = self.dry_cell_mass[0] / self.cell_mass[0] * self.density * (TIME_STEP)
-
-	# TODO -- remove initialize_reactions, do everything with reduced parameter representation
-	def initialize_reactions(self):
-
-		reactions = copy.deepcopy(INITIAL_REACTIONS)
-
-		km_range = PARAM_RANGES['km']
-		kcat_range = PARAM_RANGES['kcat']
-
-		# loop through all reactions
-		for rxn, specs in reactions.iteritems():
-			# loop through all of the reaction's parameters and fill unassigned parameter values
-			for param, value in specs['params'].iteritems():
-
-				if value is None and 'km' in param:
-					reactions[rxn]['params'][param] = random.uniform(km_range[0], km_range[1])
-				if value is None and 'kcat' in param:
-					reactions[rxn]['params'][param] = random.uniform(kcat_range[0], km_range[1])
-
-		return reactions
 
 	def initialize_parameters(self):
 
@@ -337,6 +246,83 @@ class aa_transport_estimation:
 
 		return concentrations
 
+	def initialize_population(self):
+		''' fill self.population with {index: [parameters]} for index in POPULATION_SIZE'''
+
+		population = {}
+
+		for ind in xrange(POPULATION_SIZE):
+			parameter_indices, parameter_values = self.initialize_parameters()
+			population[ind] = parameter_values
+
+		return population
+
+
+	## Get flux for all reactions and molecules
+	def get_fluxes(self, parameters, concentrations):
+
+		reaction_fluxes = {}
+		molecule_fluxes = {mol : 0.0 for mol in concentrations.keys()}
+
+		# loop through all reactions, save reaction flux and molecule flux.
+		for rxn, specs in INITIAL_REACTIONS.iteritems():
+
+			params = {param : parameters[idx] for param, idx in self.parameter_indices[rxn].iteritems()}
+
+			if specs['type'] is 'uniport':
+				reaction_fluxes[rxn] = self.get_uniporter_flux(
+					specs['substrates'],
+					specs['transporter'][0],
+					params,
+					concentrations,
+					)
+
+				# molecule flux
+				A1 = specs['substrates']['A1']
+				A2 = specs['substrates']['A2']
+				molecule_fluxes[A1] -= reaction_fluxes[rxn]
+				molecule_fluxes[A2] += reaction_fluxes[rxn]
+
+			# TODO -- add if specs['type'] is 'uniport_reversible'
+
+			if specs['type'] is 'symport':
+				reaction_fluxes[rxn] = self.get_symporter_flux(
+					specs['substrates'],
+					specs['transporter'][0],
+					params,
+					concentrations,
+					)
+
+				# molecule flux
+				A1 = specs['substrates']['A1']
+				A2 = specs['substrates']['A2']
+				B1 = specs['substrates']['B1']
+				B2 = specs['substrates']['B2']
+				molecule_fluxes[A1] -= reaction_fluxes[rxn]
+				molecule_fluxes[A2] += reaction_fluxes[rxn]
+				molecule_fluxes[B1] -= reaction_fluxes[rxn]
+				molecule_fluxes[B2] += reaction_fluxes[rxn]
+
+			if specs['type'] is 'symport_reversible':
+				reaction_fluxes[rxn] = self.get_symporter_reversible_flux(
+					specs['substrates'],
+					specs['transporter'][0],
+					params,
+					concentrations,
+					)
+
+				# molecule flux
+				A1 = specs['substrates']['A1']
+				A2 = specs['substrates']['A2']
+				B1 = specs['substrates']['B1']
+				B2 = specs['substrates']['B2']
+				molecule_fluxes[A1] -= reaction_fluxes[rxn]
+				molecule_fluxes[A2] += reaction_fluxes[rxn]
+				molecule_fluxes[B1] -= reaction_fluxes[rxn]
+				molecule_fluxes[B2] += reaction_fluxes[rxn]
+
+		return reaction_fluxes, molecule_fluxes
+
 
 	## Transporter models
 	def get_symporter_flux(self, substrates_dict, transporter, parameters_dict, concentrations):
@@ -411,7 +397,7 @@ class aa_transport_estimation:
 		return flux
 
 
-	## Run simulation. Plot timeseries of concentrations, flux
+	## Run simulation. plot time series of concentrations, flux
 	def run_sim(self, parameters):
 		time = 0
 
