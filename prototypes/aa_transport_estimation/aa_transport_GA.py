@@ -1,6 +1,7 @@
 
 import matplotlib.pyplot as plt
 import os, cPickle
+import argparse
 import random
 import numpy as np
 from scipy import constants
@@ -9,8 +10,8 @@ import copy
 
 from wholecell.io.tablereader import TableReader
 
-simDataFile = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/kb/simData_Modified.cPickle'
-simOutDir = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/000000/generation_000000/000000/simOut'
+# simDataFile = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/kb/simData_Modified.cPickle'
+# simOutDir = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/000000/generation_000000/000000/simOut'
 
 OUTDIR = os.path.join(
 	os.path.split(__file__)[0],
@@ -115,12 +116,12 @@ INITIAL_REACTIONS = {
 class aa_transport_estimation:
 
 
-	def main(self):
+	def main(self, args):
 
 		# initialize
 		# TODO -- functionalize everything, to allow for population-level initialization
-		self.initialize_from_WCM()
-		self.concentrations = self.initialize_concentrations()
+		self.initialize_from_WCM(args.simout)
+		self.concentrations = self.initialize_concentrations(args.simout)
 		self.parameter_indices, parameter_values = self.initialize_parameters() # TODO pass ids separate from values? we only need ids once
 
 		# run genetic algorithm
@@ -131,7 +132,7 @@ class aa_transport_estimation:
 
 
 		# run simulation and save output for optimized parameters
-		self.run_sim(parameter_values)
+		self.run_sim(args.simout, parameter_values)
 
 
 
@@ -160,7 +161,7 @@ class aa_transport_estimation:
 
 
 	## Initialization
-	def initialize_from_WCM(self):
+	def initialize_from_WCM(self, simOutDir):
 		# get mass, density, and compute volume
 		mass = TableReader(os.path.join(simOutDir, "Mass"))
 		self.cell_mass = mass.readColumn("cellMass")
@@ -210,7 +211,7 @@ class aa_transport_estimation:
 
 		return parameter_indices, parameter_values
 
-	def initialize_concentrations(self):
+	def initialize_concentrations(self, simOutDir):
 		''' set all initial undefined molecular concentrations to their initial concentrations in the WCM'''
 
 		concentrations = copy.deepcopy(INITIAL_CONCENTRATIONS)
@@ -235,7 +236,7 @@ class aa_transport_estimation:
 			for transporter in transporters:
 				# if substrate is not in concentrations dict
 				if transporter not in concentrations.keys() or concentrations[transporter] is None:
-					transporter_id = [id for id in molecule_ids if transporter in id]
+n					transporter_id = [id for id in molecule_ids if transporter in id]
 					transporter_index = molecule_ids.index(transporter_id[0])
 					transporter_count = bulkMolecules.readColumn("counts")[0, transporter_index]
 
@@ -398,11 +399,11 @@ class aa_transport_estimation:
 
 
 	## Run simulation. plot time series of concentrations, flux
-	def run_sim(self, parameters):
+	def run_sim(self, simOutDir, parameters):
 		time = 0
 
 		# initialize concentrations
-		self.concentrations = self.initialize_concentrations()
+		self.concentrations = self.initialize_concentrations(simOutDir)
 
 		# create dicts for saved timeseries, starting with initial concentrations and fluxes = 0
 		saved_concentrations = {mol : [conc] for mol, conc in self.concentrations.iteritems()}
@@ -505,4 +506,7 @@ class aa_transport_estimation:
 
 
 if __name__ == "__main__":
-	aa_transport_estimation().main()
+	parser = argparse.ArgumentParser(description='evolve parameters for transport')
+	parser.add_argument('--simout', help='directory of sim out data')
+	args = parser.parse_args()
+	aa_transport_estimation().main(args)
