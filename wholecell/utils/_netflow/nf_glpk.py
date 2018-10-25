@@ -334,9 +334,9 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		self._solve()
 
 		return np.array(
-			[glp.glp_get_col_prim(self._lp, 1 + self._flows[flow])
-			 if flow in self._flows else None
-			 for flow in flows]
+			[self._col_primals[self._flows[flow]]
+			if flow in self._flows else None
+			for flow in flows]
 			)
 
 	def getShadowPrices(self, materials):
@@ -346,9 +346,9 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		self._solve()
 
 		return np.array(
-			[glp.glp_get_row_dual(self._lp, 1 + self._materialIdxLookup[material])
-			 if material in self._materialIdxLookup else None
-			 for material in materials]
+			[self._row_duals[self._materialIdxLookup[material]]
+			if material in self._materialIdxLookup else None
+			for material in materials]
 			)
 
 	def getReducedCosts(self, fluxNames):
@@ -358,9 +358,9 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		self._solve()
 
 		return np.array(
-			[glp.glp_get_col_dual(self._lp, 1 + self._flows[fluxName])
-			 if fluxName in self._flows else None
-			 for fluxName in fluxNames]
+			[self._col_duals[self._flows[fluxName]]
+			if fluxName in self._flows else None
+			for fluxName in fluxNames]
 			)
 
 	def getObjectiveValue(self):
@@ -471,3 +471,8 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 			raise RuntimeError(self.status_string)
 
 		self._solved = True
+
+		# Read results for better performance when accessing individual values
+		self._col_primals = glp.get_col_primals(self._lp)
+		self._col_duals = glp.get_col_duals(self._lp)
+		self._row_duals = glp.get_row_duals(self._lp)
