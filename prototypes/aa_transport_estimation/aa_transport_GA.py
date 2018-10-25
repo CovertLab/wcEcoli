@@ -236,7 +236,7 @@ class aa_transport_estimation:
 			for transporter in transporters:
 				# if substrate is not in concentrations dict
 				if transporter not in concentrations.keys() or concentrations[transporter] is None:
-n					transporter_id = [id for id in molecule_ids if transporter in id]
+					transporter_id = [id for id in molecule_ids if transporter in id]
 					transporter_index = molecule_ids.index(transporter_id[0])
 					transporter_count = bulkMolecules.readColumn("counts")[0, transporter_index]
 
