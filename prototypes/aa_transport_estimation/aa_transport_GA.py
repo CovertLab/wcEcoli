@@ -507,6 +507,6 @@ n					transporter_id = [id for id in molecule_ids if transporter in id]
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='evolve parameters for transport')
-	parser.add_argument('--simout', help='directory of sim out data')
+	parser.add_argument('--simout', help='directory of sim out data', default='out/manual/condition_000002/000000/generation_000000/000000/simOut')
 	args = parser.parse_args()
 	aa_transport_estimation().main(args)
