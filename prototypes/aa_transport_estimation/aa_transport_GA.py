@@ -23,8 +23,9 @@ TIME_TOTAL = 10.0 # seconds
 TIME_STEP = 0.1 # seconds
 
 # genetic algorithm parameters
-POPULATION_SIZE = 20
+POPULATION_SIZE = 50
 MUTATION_VARIANCE = 1.0
+MAX_GENERATIONS = 50
 
 # set allowable parameter ranges
 PARAM_RANGES = {
@@ -128,15 +129,22 @@ class aa_transport_estimation:
 		population = self.initialize_population()
 
 		# genetic algorithm loop
+		generations = 0
+		top_fitness = []
 
-		fitness = self.evaluate_fitness(population)
-		population = self.repopulate(population, fitness)
+		while generations < MAX_GENERATIONS:
+			fitness = self.evaluate_fitness(population)
+			population = self.repopulate(population, fitness)
+			top_fitness.append(max(fitness.values()))
+			generations += 1
 
-		import ipdb; ipdb.set_trace()
+			print('gen ' + str(generations) + ' top_fit: ' + str(max(fitness.values())))
 
+		self.plot_evolution(top_fitness)
 
-		# run simulation and save output for optimized parameters
-		self.run_sim(args.simout, parameter_values)
+		# run simulation and save output for best individual
+		top_idx = fitness.values().index(max(fitness.values()))
+		self.run_sim(args.simout, population[top_idx])
 
 
 	def repopulate(self, population, fitness):
@@ -148,6 +156,11 @@ class aa_transport_estimation:
 		fitness.update((idx, value/total) for idx, value in fitness.items())
 
 		idx = 0
+		# reseed top individual
+		top_idx = fitness.values().index(max(fitness.values()))
+		new_population[idx] = population[top_idx]
+		idx += 1
+
 		while len(new_population) < POPULATION_SIZE:
 			## Selection
 			selection = 0
@@ -169,12 +182,11 @@ class aa_transport_estimation:
 			vector = [magnitude * x / direction_mag for x in direction]
 
 			# apply mutation
-			new_population[idx] = genotype + vector
+			new_population[idx] = [x + y for x, y in zip(genotype, vector)]
 
-			idx +=1
+			idx += 1
 
 		return new_population
-
 
 	def evaluate_fitness(self, population):
 
@@ -196,7 +208,6 @@ class aa_transport_estimation:
 			fitness[ind] = 1 / (1 + error)
 
 		return fitness
-
 
 
 	## Initialization
@@ -540,7 +551,21 @@ class aa_transport_estimation:
 
 		if not os.path.exists(OUTDIR):
 			os.mkdir(OUTDIR)
-		fig_name = (str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
+		fig_name = ('sim_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
+		plt.savefig(os.path.join(OUTDIR,fig_name))
+
+
+	def plot_evolution(self, top_fitness):
+
+		plt.plot(top_fitness)
+		plt.ylabel('Fitness')
+		plt.xlabel('Generation')
+
+		now = datetime.datetime.now()
+
+		if not os.path.exists(OUTDIR):
+			os.mkdir(OUTDIR)
+		fig_name = ('GA_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
 		plt.savefig(os.path.join(OUTDIR,fig_name))
 
 
