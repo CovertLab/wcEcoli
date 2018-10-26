@@ -144,6 +144,22 @@ class TransportEstimation(object):
 		population = self.initialize_population()
 
 		# genetic algorithm loop
+		population, fitness, saved_fitness = self.evolve_population(population)
+
+		# analytics
+		self.plot_evolution(saved_fitness)
+
+		# run simulation best individual and save output
+		top_idx = fitness.values().index(max(fitness.values()))
+		top_parameters = population[top_idx]
+		saved_concentrations, saved_fluxes = self.run_sim(args.simout, top_parameters)
+
+		self.plot_out(saved_concentrations, saved_fluxes, top_parameters)
+
+	## Genetic algorithm
+	def evolve_population(self, population):
+
+		# genetic algorithm loop
 		generations = 0
 		saved_fitness = []
 
@@ -161,12 +177,7 @@ class TransportEstimation(object):
 
 			print('gen ' + str(generations) + ' top_fit: ' + str(top_fit))
 
-		self.plot_evolution(saved_fitness)
-
-		# run simulation and save output for best individual
-		top_idx = fitness.values().index(max(fitness.values()))
-		self.run_sim(args.simout, population[top_idx])
-
+		return population, fitness, saved_fitness
 
 	def repopulate(self, population, fitness):
 
@@ -522,7 +533,7 @@ class TransportEstimation(object):
 			for rxn, timeseries in saved_fluxes.iteritems():
 				timeseries.append(reaction_fluxes[rxn])
 
-		self.plot_out(saved_concentrations, saved_fluxes, parameters)
+		return saved_concentrations, saved_fluxes
 
 	def plot_out(self, saved_concentrations, saved_fluxes, parameters):
 
