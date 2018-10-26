@@ -33,6 +33,23 @@ PARAM_RANGES = {
 	'kcat': [0.1, 2.0],
 	}
 
+## From Parest
+# '''
+# Concentration are bounded from 1 fM to 1 MM.  Both are more permissive than
+# expected values.  A concentration of one molecule per E. coli cell is roughly
+# 1 nM, while water, the most abundant species, has a concentration of about
+# 50 M.  The range is consistent with the RESOLUTION.
+# '''
+# LOWER_CONC = 1e-10
+# UPPER_CONC = 1e2
+#
+# lower_kcat = 1e-2  # gives average kcat of about 100 w/ upper kcat of 1e6
+# upper_kcat = 1e6  # catalase is around 1e5 /s
+#
+# lower_KM = lower_conc
+# upper_KM = upper_conc
+
+
 # set estimation targets and penalities
 CONCENTRATION_PENALTY = 0.0
 FLUX_PENALTY = 0.0
@@ -114,7 +131,7 @@ INITIAL_REACTIONS = {
 				}},
 			}
 
-class aa_transport_estimation:
+class TransportEstimation(object):
 
 
 	def main(self, args):
@@ -128,23 +145,23 @@ class aa_transport_estimation:
 
 		# genetic algorithm loop
 		generations = 0
-		top_fitness = []
-		avg_fitness = []
+		saved_fitness = []
 
 		while generations < MAX_GENERATIONS:
-			fitness = self.evaluate_fitness(population)
-			top_fit = max(fitness.values())
-			avg_fit = sum(fitness.values())/len(fitness.values())
-			top_fitness.append(top_fit)
-			avg_fitness.append(avg_fit)
 
+			# evaluate fitness and repopulate
+			fitness = self.evaluate_fitness(population)
 			population = self.repopulate(population, fitness)
 
 			generations += 1
 
+			# save values
+			saved_fitness.append(fitness.values())
+			top_fit = max(fitness.values())
+
 			print('gen ' + str(generations) + ' top_fit: ' + str(top_fit))
 
-		self.plot_evolution(top_fitness, avg_fitness)
+		self.plot_evolution(saved_fitness)
 
 		# run simulation and save output for best individual
 		top_idx = fitness.values().index(max(fitness.values()))
@@ -154,11 +171,11 @@ class aa_transport_estimation:
 	def repopulate(self, population, fitness):
 
 		new_population = {}
+		# normalized_fitness = {}
 
 		# normalize fitness
 		total = np.sum(fitness.values())
-		# TODO -- don't update this in place
-		fitness.update((idx, value/total) for idx, value in fitness.items())
+		normalized_fitness = {idx: value/total for idx, value in fitness.items()}
 
 		idx = 0
 		# re-seed top individual
@@ -169,11 +186,11 @@ class aa_transport_estimation:
 		while len(new_population) < POPULATION_SIZE:
 			## Selection
 			selection = 0
-			sum = fitness[selection]
+			sum = normalized_fitness[selection]
 			rand = random.uniform(0,1)
 			while sum < rand:
 				selection += 1
-				sum += fitness[selection]
+				sum += normalized_fitness[selection]
 
 			## Mutation
 			genotype = population[selection]
@@ -561,13 +578,35 @@ class aa_transport_estimation:
 		fig_name = ('sim_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
 		plt.savefig(os.path.join(OUTDIR,fig_name))
 
+	def plot_evolution(self, saved_fitness):
 
-	def plot_evolution(self, top_fitness, avg_fitness):
+		show_nth_gen = (MAX_GENERATIONS/5) #20
+		n_bins = 10
+		plot_gen = saved_fitness[0::show_nth_gen]
+		gen_label = ['gen ' + str(idx*show_nth_gen) for idx in xrange(len(plot_gen))]
 
+		top_fitness = [max(fit) for fit in saved_fitness]
+		avg_fitness = [sum(fit) / len(fit) for fit in saved_fitness]
+
+		plt.figure(figsize=(8.5, 11))
+
+		# plot fitness over gens
+		plt.subplot(2, 1, 1)
 		plt.plot(top_fitness)
 		plt.plot(avg_fitness, 'r')
 		plt.ylabel('Fitness')
 		plt.xlabel('Generation')
+
+		plt.subplot(2, 1, 2)
+		plt.hist(plot_gen, bins=n_bins, label=gen_label)
+		plt.legend(loc='upper right')
+		plt.ylabel('Count')
+		plt.xlabel('Fitness')
+
+		plt.hist(saved_fitness[0], bins=10)
+
+		plt.subplots_adjust(hspace=0.5)
+
 
 		now = datetime.datetime.now()
 
@@ -581,4 +620,4 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='evolve parameters for transport')
 	parser.add_argument('--simout', help='directory of sim out data', default='out/manual/condition_000002/000000/generation_000000/000000/simOut')
 	args = parser.parse_args()
-	aa_transport_estimation().main(args)
+	TransportEstimation().main(args)
