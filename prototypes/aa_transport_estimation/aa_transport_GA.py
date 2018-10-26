@@ -151,8 +151,8 @@ class TransportEstimation(object):
 		self.plot_evolution(saved_fitness)
 
 		# run simulation of best individual and plot output
-		top_idx = fitness.values().index(max(fitness.values()))
-		top_parameters = population[top_idx]
+		top_index = fitness.values().index(max(fitness.values()))
+		top_parameters = population[top_index]
 		saved_concentrations, saved_fluxes = self.run_sim(args.simout, top_parameters)
 
 		self.plot_out(saved_concentrations, saved_fluxes, top_parameters)
@@ -200,13 +200,13 @@ class TransportEstimation(object):
 
 		# normalize fitness
 		total = np.sum(fitness.values())
-		normalized_fitness = {idx: value/total for idx, value in fitness.items()}
+		normalized_fitness = {index: value/total for index, value in fitness.items()}
 
-		idx = 0
+		index = 0
 		# re-seed top individual
-		top_idx = fitness.values().index(max(fitness.values()))
-		new_population[idx] = population[top_idx]
-		idx += 1
+		top_index = fitness.values().index(max(fitness.values()))
+		new_population[index] = population[top_index]
+		index += 1
 
 		while len(new_population) < POPULATION_SIZE:
 			## Selection
@@ -229,11 +229,11 @@ class TransportEstimation(object):
 			vector = [magnitude * x / direction_mag for x in direction]
 
 			# apply mutation
-			new_population[idx] = [x + y for x, y in zip(genotype, vector)]
+			new_population[index] = [x + y for x, y in zip(genotype, vector)]
 
 			# TODO -- enforce bounds
 
-			idx += 1
+			index += 1
 
 		return new_population
 
@@ -282,7 +282,7 @@ class TransportEstimation(object):
 		km_range = PARAM_RANGES['km']
 		kcat_range = PARAM_RANGES['kcat']
 
-		idx = 0
+		index = 0
 		# loop through all reactions
 		for rxn, specs in reactions.iteritems():
 			# loop through all of the reaction's parameters
@@ -290,23 +290,23 @@ class TransportEstimation(object):
 
 				# fill unassigned parameter values
 				if value is None and 'km' in param:
-					parameter_indices[rxn][param] = idx
+					parameter_indices[rxn][param] = index
 					parameter_values.append(random.uniform(km_range[0], km_range[1]))
 
 				elif value is None and 'kcat' in param:
-					parameter_indices[rxn][param] = idx
+					parameter_indices[rxn][param] = index
 					parameter_values.append(random.uniform(kcat_range[0], kcat_range[1]))
 
 				# if value already assigned
 				elif 'km' in param:
-					parameter_indices[rxn][param] = idx
+					parameter_indices[rxn][param] = index
 					parameter_values.append(value)
 
 				elif 'kcat' in param:
-					parameter_indices[rxn][param] = idx
+					parameter_indices[rxn][param] = index
 					parameter_values.append(value)
 
-				idx += 1
+				index += 1
 
 		return parameter_indices, parameter_values
 
@@ -368,7 +368,7 @@ class TransportEstimation(object):
 		# loop through all reactions, save reaction flux and molecule flux.
 		for rxn, specs in INITIAL_REACTIONS.iteritems():
 
-			params = {param : parameters[idx] for param, idx in self.parameter_indices[rxn].iteritems()}
+			params = {param : parameters[index] for param, index in self.parameter_indices[rxn].iteritems()}
 
 			if specs['type'] is 'uniport':
 				reaction_fluxes[rxn] = self.get_uniporter_flux(
@@ -554,12 +554,12 @@ class TransportEstimation(object):
 		columns = 2
 		rows = len(saved_concentrations)
 
-		idx = 1
+		index = 1
 		for molecule, timeseries in saved_concentrations.iteritems():
-			plt.subplot(rows, columns, 2*idx-1)
+			plt.subplot(rows, columns, 2*index-1)
 			plt.plot(timeseries)
 			plt.title(molecule)
-			if idx < len(saved_concentrations):
+			if index < len(saved_concentrations):
 				plt.tick_params(
 					axis='x',  # changes apply to the x-axis
 					which='both',  # both major and minor ticks are affected
@@ -569,14 +569,14 @@ class TransportEstimation(object):
 			else:
 				plt.ylabel("Concentration")
 				plt.xlabel("Time (s)")
-			idx += 1
+			index += 1
 
-		idx = 1
+		index = 1
 		for reaction, timeseries in saved_fluxes.iteritems():
-			plt.subplot(rows, columns, 2*idx)
+			plt.subplot(rows, columns, 2*index)
 			plt.plot(timeseries, 'r')
 			plt.title(reaction)
-			if idx < len(saved_fluxes):
+			if index < len(saved_fluxes):
 				plt.tick_params(
 					axis='x',  # changes apply to the x-axis
 					which='both',  # both major and minor ticks are affected
@@ -586,14 +586,14 @@ class TransportEstimation(object):
 			else:
 				plt.ylabel("Flux")
 				plt.xlabel("Time (s)")
-			idx += 1
+			index += 1
 
 		plt.subplot(int(rows/2), columns, int(rows/2) * columns)
 
 		# save params in dictionary and add to figure as text
 		reaction_params = {} #rxn : {} for rxn, params in self.parameter_indices.iteritems()}
 		for rxn, params in self.parameter_indices.iteritems():
-			reaction_params[rxn] = {param : parameters[idx] for param, idx in self.parameter_indices[rxn].iteritems()}
+			reaction_params[rxn] = {param : parameters[index] for param, index in self.parameter_indices[rxn].iteritems()}
 
 		plt.text(0.0, 1.0, reaction_params, wrap=True)
 		plt.axis('off')
@@ -614,7 +614,7 @@ class TransportEstimation(object):
 		n_bins = 10
 
 		plot_gen = saved_fitness[0::show_nth_gen]
-		gen_label = ['gen ' + str(idx*show_nth_gen) for idx in xrange(len(plot_gen))]
+		gen_label = ['gen ' + str(index*show_nth_gen) for index in xrange(len(plot_gen))]
 
 		top_fitness = [max(fit) for fit in saved_fitness]
 		avg_fitness = [sum(fit) / len(fit) for fit in saved_fitness]
