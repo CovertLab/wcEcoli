@@ -1,12 +1,13 @@
+from __future__ import absolute_import, division, print_function
 
-import matplotlib.pyplot as plt
-import os, cPickle
+import os
 import argparse
-import random
-import numpy as np
-from scipy import constants
+import random # TODO -- use numpy random
 import datetime
 import copy
+
+import numpy as np
+import matplotlib.pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 
@@ -23,6 +24,7 @@ TIME_TOTAL = 10.0 # seconds
 TIME_STEP = 0.1 # seconds
 
 # genetic algorithm parameters
+COHORT_SIZE = 1
 POPULATION_SIZE = 100
 MUTATION_VARIANCE = 0.5
 MAX_GENERATIONS = 100
@@ -133,30 +135,42 @@ INITIAL_REACTIONS = {
 
 class TransportEstimation(object):
 
-
 	def main(self, args):
 
 		# initialize
 		self.initialize_from_WCM(args.simout)
 		self.concentrations = self.initialize_concentrations(args.simout)
-		self.parameter_indices, parameter_values = self.initialize_parameters() # TODO pass ids separate from values? we only need ids once
 
-		population = self.initialize_population()
+		# TODO -- get parameter indices separately from values
+		self.parameter_indices, parameter_values = self.initialize_parameters()
 
-		# genetic algorithm loop
-		population, fitness, saved_fitness = self.evolve_population(population)
+		# evolve populations
+		population, fitness, saved_fitness = self.evolve_cohorts()
 
 		# analytics
 		self.plot_evolution(saved_fitness)
 
-		# run simulation best individual and save output
+		# run simulation of best individual and plot output
 		top_idx = fitness.values().index(max(fitness.values()))
 		top_parameters = population[top_idx]
 		saved_concentrations, saved_fluxes = self.run_sim(args.simout, top_parameters)
 
 		self.plot_out(saved_concentrations, saved_fluxes, top_parameters)
 
+
 	## Genetic algorithm
+	def evolve_cohorts(self):
+
+		for cohort in xrange(COHORT_SIZE):
+			population = self.initialize_population()
+
+			# genetic algorithm loop
+			population, fitness, saved_fitness = self.evolve_population(population)
+
+
+		return population, fitness, saved_fitness
+
+
 	def evolve_population(self, population):
 
 		# genetic algorithm loop
@@ -318,10 +332,11 @@ class TransportEstimation(object):
 					concentrations[substrate] = substrate_count / self.cell_volume[0]
 
 			# loop through transporters
+			# Note -- this is different from the substrate loop in that it looks for the transporter name within the strin
 			for transporter in transporters:
 				# if substrate is not in concentrations dict
 				if transporter not in concentrations.keys() or concentrations[transporter] is None:
-					transporter_id = [id for id in molecule_ids if transporter in id]
+					transporter_id = [mol_id for mol_id in molecule_ids if transporter in mol_id]
 					transporter_index = molecule_ids.index(transporter_id[0])
 					transporter_count = bulkMolecules.readColumn("counts")[0, transporter_index]
 
@@ -344,7 +359,7 @@ class TransportEstimation(object):
 		return population
 
 
-	## Get flux for all reactions and molecules
+	## Transporter models
 	def get_fluxes(self, parameters, concentrations):
 
 		reaction_fluxes = {}
@@ -413,8 +428,6 @@ class TransportEstimation(object):
 
 		return reaction_fluxes, molecule_fluxes
 
-
-	## Transporter models
 	def get_symporter_flux(self, substrates_dict, transporter, parameters_dict, concentrations):
 
 		# concentrations
@@ -593,10 +606,13 @@ class TransportEstimation(object):
 		fig_name = ('sim_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
 		plt.savefig(os.path.join(OUTDIR,fig_name))
 
+
+	## Analyze evolution
 	def plot_evolution(self, saved_fitness):
 
-		show_nth_gen = (MAX_GENERATIONS/5) #20
+		show_nth_gen = int(MAX_GENERATIONS/5)
 		n_bins = 10
+
 		plot_gen = saved_fitness[0::show_nth_gen]
 		gen_label = ['gen ' + str(idx*show_nth_gen) for idx in xrange(len(plot_gen))]
 
