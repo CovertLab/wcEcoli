@@ -29,8 +29,8 @@ MAX_GENERATIONS = 100
 
 # set allowable parameter ranges
 PARAM_RANGES = {
-	'km': [1.0, 10.0],
-	'kcat': [0.1, 2.0],
+	'km': [1e-9, 1e2],
+	'kcat': [1e-2, 1e2],
 	}
 
 ## From Parest
@@ -186,11 +186,11 @@ class TransportEstimation(object):
 		while len(new_population) < POPULATION_SIZE:
 			## Selection
 			selection = 0
-			sum = normalized_fitness[selection]
+			total = normalized_fitness[selection]
 			rand = random.uniform(0,1)
-			while sum < rand:
+			while total < rand:
 				selection += 1
-				sum += normalized_fitness[selection]
+				total += normalized_fitness[selection]
 
 			## Mutation
 			genotype = population[selection]
@@ -360,7 +360,7 @@ class TransportEstimation(object):
 
 			# TODO -- add if specs['type'] is 'uniport_reversible'
 
-			if specs['type'] is 'symport':
+			elif specs['type'] is 'symport':
 				reaction_fluxes[rxn] = self.get_symporter_flux(
 					specs['substrates'],
 					specs['transporter'][0],
@@ -378,7 +378,7 @@ class TransportEstimation(object):
 				molecule_fluxes[B1] -= reaction_fluxes[rxn]
 				molecule_fluxes[B2] += reaction_fluxes[rxn]
 
-			if specs['type'] is 'symport_reversible':
+			elif specs['type'] is 'symport_reversible':
 				reaction_fluxes[rxn] = self.get_symporter_reversible_flux(
 					specs['substrates'],
 					specs['transporter'][0],
@@ -395,6 +395,10 @@ class TransportEstimation(object):
 				molecule_fluxes[A2] += reaction_fluxes[rxn]
 				molecule_fluxes[B1] -= reaction_fluxes[rxn]
 				molecule_fluxes[B2] += reaction_fluxes[rxn]
+
+			else:
+				raise Exception('Unknown reaction type: {}'.format(specs['type']))
+
 
 		return reaction_fluxes, molecule_fluxes
 
@@ -524,14 +528,14 @@ class TransportEstimation(object):
 
 		plt.figure(figsize=(8.5, 11))
 		columns = 2
-		rows = len(saved_concentrations.keys())
+		rows = len(saved_concentrations)
 
 		idx = 1
 		for molecule, timeseries in saved_concentrations.iteritems():
 			plt.subplot(rows, columns, 2*idx-1)
 			plt.plot(timeseries)
 			plt.title(molecule)
-			if idx < len(saved_concentrations.keys()):
+			if idx < len(saved_concentrations):
 				plt.tick_params(
 					axis='x',  # changes apply to the x-axis
 					which='both',  # both major and minor ticks are affected
@@ -548,7 +552,7 @@ class TransportEstimation(object):
 			plt.subplot(rows, columns, 2*idx)
 			plt.plot(timeseries, 'r')
 			plt.title(reaction)
-			if idx < len(saved_fluxes.keys()):
+			if idx < len(saved_fluxes):
 				plt.tick_params(
 					axis='x',  # changes apply to the x-axis
 					which='both',  # both major and minor ticks are affected
