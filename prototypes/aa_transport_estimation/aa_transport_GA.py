@@ -23,9 +23,9 @@ TIME_TOTAL = 10.0 # seconds
 TIME_STEP = 0.1 # seconds
 
 # genetic algorithm parameters
-POPULATION_SIZE = 50
-MUTATION_VARIANCE = 1.0
-MAX_GENERATIONS = 50
+POPULATION_SIZE = 100
+MUTATION_VARIANCE = 0.5
+MAX_GENERATIONS = 100
 
 # set allowable parameter ranges
 PARAM_RANGES = {
@@ -34,9 +34,8 @@ PARAM_RANGES = {
 	}
 
 # set estimation targets and penalities
-
-CONCENTRATION_PENALTY = 1.0
-FLUX_PENALTY = 1.0
+CONCENTRATION_PENALTY = 0.0
+FLUX_PENALTY = 0.0
 MOLECULE_FLUX_PENALTY = 1.0
 
 TARGETS = {
@@ -121,7 +120,6 @@ class aa_transport_estimation:
 	def main(self, args):
 
 		# initialize
-		# TODO -- functionalize everything, to allow for population-level initialization
 		self.initialize_from_WCM(args.simout)
 		self.concentrations = self.initialize_concentrations(args.simout)
 		self.parameter_indices, parameter_values = self.initialize_parameters() # TODO pass ids separate from values? we only need ids once
@@ -131,16 +129,22 @@ class aa_transport_estimation:
 		# genetic algorithm loop
 		generations = 0
 		top_fitness = []
+		avg_fitness = []
 
 		while generations < MAX_GENERATIONS:
 			fitness = self.evaluate_fitness(population)
+			top_fit = max(fitness.values())
+			avg_fit = sum(fitness.values())/len(fitness.values())
+			top_fitness.append(top_fit)
+			avg_fitness.append(avg_fit)
+
 			population = self.repopulate(population, fitness)
-			top_fitness.append(max(fitness.values()))
+
 			generations += 1
 
-			print('gen ' + str(generations) + ' top_fit: ' + str(max(fitness.values())))
+			print('gen ' + str(generations) + ' top_fit: ' + str(top_fit))
 
-		self.plot_evolution(top_fitness)
+		self.plot_evolution(top_fitness, avg_fitness)
 
 		# run simulation and save output for best individual
 		top_idx = fitness.values().index(max(fitness.values()))
@@ -153,10 +157,11 @@ class aa_transport_estimation:
 
 		# normalize fitness
 		total = np.sum(fitness.values())
+		# TODO -- don't update this in place
 		fitness.update((idx, value/total) for idx, value in fitness.items())
 
 		idx = 0
-		# reseed top individual
+		# re-seed top individual
 		top_idx = fitness.values().index(max(fitness.values()))
 		new_population[idx] = population[top_idx]
 		idx += 1
@@ -183,6 +188,8 @@ class aa_transport_estimation:
 
 			# apply mutation
 			new_population[idx] = [x + y for x, y in zip(genotype, vector)]
+
+			# TODO -- enforce bounds
 
 			idx += 1
 
@@ -555,9 +562,10 @@ class aa_transport_estimation:
 		plt.savefig(os.path.join(OUTDIR,fig_name))
 
 
-	def plot_evolution(self, top_fitness):
+	def plot_evolution(self, top_fitness, avg_fitness):
 
 		plt.plot(top_fitness)
+		plt.plot(avg_fitness, 'r')
 		plt.ylabel('Fitness')
 		plt.xlabel('Generation')
 
