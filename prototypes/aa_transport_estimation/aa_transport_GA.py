@@ -38,9 +38,9 @@ TIME_STEP = 0.1 # seconds
 
 # genetic algorithm parameters
 COHORT_SIZE = 1
-POPULATION_SIZE = 200
+POPULATION_SIZE = 100
 MUTATION_VARIANCE = 0.5
-MAX_GENERATIONS = 500
+MAX_GENERATIONS = 50
 
 # set allowable parameter ranges
 # PARAM_RANGES = {
@@ -181,6 +181,22 @@ class TransportEstimation(object):
 
 
 		## Visualization and Analysis
+
+		# make cohort_id, for saving output
+		now = datetime.datetime.now()
+		time_stamp = (str(now.month) + str(now.day))
+
+		cohort_nums = os.listdir(OUTDIR)
+		if not cohort_nums:
+			cohort_num = 1
+		else:
+			cohort_nums = [name.replace(name[0:name.find("__")+2], '') for name in cohort_nums]
+			cohort_nums = [name.replace(name[name.find("."):], '') for name in cohort_nums]
+			cohort_nums = [int(name) for name in cohort_nums]
+			cohort_num = max(cohort_nums) + 1
+
+		self.cohort_id = (time_stamp + '__' + str(cohort_num))
+
 		self.plot_evolution(saved_fitness)
 
 		# parameter analysis
@@ -711,11 +727,10 @@ class TransportEstimation(object):
 
 
 		plt.subplots_adjust(hspace=0.9, wspace=0.5)
-		now = datetime.datetime.now()
 
 		if not os.path.exists(OUTDIR):
 			os.mkdir(OUTDIR)
-		fig_name = ('sim_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
+		fig_name = ('sim_' + self.cohort_id)
 		plt.savefig(os.path.join(OUTDIR,fig_name))
 
 
@@ -734,11 +749,9 @@ class TransportEstimation(object):
 		plt.figure(figsize=(8.5, 8.5))
 		plt.scatter(best_params_reduced[:, 0], best_params_reduced[:, 1])
 
-		now = datetime.datetime.now()
-
 		if not os.path.exists(OUTDIR):
 			os.mkdir(OUTDIR)
-		fig_name = ('param_space_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
+		fig_name = ('param_space_' + self.cohort_id)
 		plt.savefig(os.path.join(OUTDIR,fig_name))
 
 	def plot_evolution(self, saved_fitness):
@@ -776,11 +789,10 @@ class TransportEstimation(object):
 		plt.subplots_adjust(hspace=0.5)
 
 
-		now = datetime.datetime.now()
 
 		if not os.path.exists(OUTDIR):
 			os.mkdir(OUTDIR)
-		fig_name = ('GA_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
+		fig_name = ('GA_' + self.cohort_id)
 		plt.savefig(os.path.join(OUTDIR,fig_name))
 
 
