@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import csv
 import argparse
 import random # TODO -- use numpy random
 import datetime
@@ -8,11 +9,18 @@ import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 
 from wholecell.io.tablereader import TableReader
 
 # simDataFile = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/kb/simData_Modified.cPickle'
 # simOutDir = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/000000/generation_000000/000000/simOut'
+
+## options
+POPULATION_ANALYTICS = True
+
+
+PARAM_FILE = 'best_parameters.tsv'
 
 OUTDIR = os.path.join(
 	os.path.split(__file__)[0],
@@ -25,9 +33,9 @@ TIME_STEP = 0.1 # seconds
 
 # genetic algorithm parameters
 COHORT_SIZE = 1
-POPULATION_SIZE = 100
+POPULATION_SIZE = 30
 MUTATION_VARIANCE = 0.5
-MAX_GENERATIONS = 100
+MAX_GENERATIONS = 50
 
 # set allowable parameter ranges
 PARAM_RANGES = {
@@ -52,7 +60,7 @@ PARAM_RANGES = {
 # upper_KM = upper_conc
 
 
-# set estimation targets and penalities
+# set estimation targets and penalties
 CONCENTRATION_PENALTY = 0.0
 FLUX_PENALTY = 0.0
 MOLECULE_FLUX_PENALTY = 1.0
@@ -145,14 +153,47 @@ class TransportEstimation(object):
 		self.parameter_indices, parameter_values = self.initialize_parameters()
 
 		# evolve populations
-		population, fitness, saved_fitness = self.evolve_cohorts()
+		# population, fitness, saved_fitness = self.evolve_cohorts()
 
-		# analytics
+		population = self.initialize_population()
+
+		# genetic algorithm loop
+		final_population, final_fitness, saved_fitness = self.evolve_population(population)
+
+
+
+
+		# analysis
 		self.plot_evolution(saved_fitness)
 
 		# run simulation of best individual and plot output
-		top_index = fitness.values().index(max(fitness.values()))
-		top_parameters = population[top_index]
+		top_index = final_fitness.values().index(max(final_fitness.values()))
+		top_parameters = final_population[top_index]
+
+		fit_indices = [index for index, value in enumerate(final_fitness.values()) if value >= 0.95]
+		fit_parameters = [final_population[index] for index in fit_indices]
+
+
+
+		if POPULATION_ANALYTICS:
+			# save top parameters to file
+			if not os.path.exists(OUTDIR):
+				os.mkdir(OUTDIR)
+
+			with open(os.path.join(OUTDIR,PARAM_FILE), 'a') as tsv_file:
+				writer = csv.writer(tsv_file) #, quoting=csv.QUOTE_NONE)
+				for parameter in fit_parameters:
+					writer.writerow(parameter)
+			tsv_file.close()
+
+			with open(os.path.join(OUTDIR,PARAM_FILE), 'r') as tsv_file:
+				reader = csv.reader(tsv_file) #, delimiter=' ', quotechar='|')
+				best_parameters = list(reader)
+			tsv_file.close()
+
+			self.plot_parameters(best_parameters)
+
+
 		saved_concentrations, saved_fluxes = self.run_sim(args.simout, top_parameters)
 
 		self.plot_out(saved_concentrations, saved_fluxes, top_parameters)
@@ -160,6 +201,10 @@ class TransportEstimation(object):
 
 	## Genetic algorithm
 	def evolve_cohorts(self):
+
+
+		# TODO -- each cohort is a full evolutionary run. save top individuals, and pass them back.
+		#
 
 		for cohort in xrange(COHORT_SIZE):
 			population = self.initialize_population()
@@ -169,7 +214,6 @@ class TransportEstimation(object):
 
 
 		return population, fitness, saved_fitness
-
 
 	def evolve_population(self, population):
 
@@ -342,8 +386,6 @@ class TransportEstimation(object):
 
 					#convert to concentration
 					concentrations[transporter] = transporter_count / self.cell_volume[0]
-
-		bulkMolecules.close()
 
 		return concentrations
 
@@ -518,24 +560,24 @@ class TransportEstimation(object):
 			reaction_fluxes, molecule_fluxes = self.get_fluxes(parameters, self.concentrations)
 
 			for rxn, flux in reaction_fluxes.iteritems():
-				exchange_flux = flux / self.coefficient
+				concentration_change = flux / self.coefficient
 				substrates = INITIAL_REACTIONS[rxn]['substrates']
 
 				if INITIAL_REACTIONS[rxn]['type'] is 'symport':
-					self.concentrations[substrates['A1']] -= exchange_flux
-					self.concentrations[substrates['B1']] -= exchange_flux
-					self.concentrations[substrates['A2']] += exchange_flux
-					self.concentrations[substrates['B2']] += exchange_flux
+					self.concentrations[substrates['A1']] -= concentration_change
+					self.concentrations[substrates['B1']] -= concentration_change
+					self.concentrations[substrates['A2']] += concentration_change
+					self.concentrations[substrates['B2']] += concentration_change
 
 				if INITIAL_REACTIONS[rxn]['type'] is 'symport_reversible':
-					self.concentrations[substrates['A1']] -= exchange_flux
-					self.concentrations[substrates['B1']] -= exchange_flux
-					self.concentrations[substrates['A2']] += exchange_flux
-					self.concentrations[substrates['B2']] += exchange_flux
+					self.concentrations[substrates['A1']] -= concentration_change
+					self.concentrations[substrates['B1']] -= concentration_change
+					self.concentrations[substrates['A2']] += concentration_change
+					self.concentrations[substrates['B2']] += concentration_change
 
 				if INITIAL_REACTIONS[rxn]['type'] is 'uniport':
-					self.concentrations[substrates['A1']] -= exchange_flux
-					self.concentrations[substrates['A2']] += exchange_flux
+					self.concentrations[substrates['A1']] -= concentration_change
+					self.concentrations[substrates['A2']] += concentration_change
 
 			time += TIME_STEP
 
@@ -610,11 +652,13 @@ class TransportEstimation(object):
 	## Analyze evolution
 	def plot_evolution(self, saved_fitness):
 
-		show_nth_gen = int(MAX_GENERATIONS/5)
 		n_bins = 10
+		n_gens = 10
+		nth_gen = int(MAX_GENERATIONS/n_gens)
 
-		plot_gen = saved_fitness[0::show_nth_gen]
-		gen_label = ['gen ' + str(index*show_nth_gen) for index in xrange(len(plot_gen))]
+
+		plot_gen = saved_fitness[0::nth_gen]
+		gen_label = ['gen ' + str(index*nth_gen) for index in xrange(len(plot_gen))]
 
 		top_fitness = [max(fit) for fit in saved_fitness]
 		avg_fitness = [sum(fit) / len(fit) for fit in saved_fitness]
@@ -629,6 +673,8 @@ class TransportEstimation(object):
 		plt.xlabel('Generation')
 
 		plt.subplot(2, 1, 2)
+		# plt.hist(plot_gen, bins=np.logspace(np.log10(0.01),np.log10(1.0), n_bins), label=gen_label)
+		# plt.gca().set_xscale("log")
 		plt.hist(plot_gen, bins=n_bins, label=gen_label)
 		plt.legend(loc='upper right')
 		plt.ylabel('Count')
@@ -645,6 +691,38 @@ class TransportEstimation(object):
 			os.mkdir(OUTDIR)
 		fig_name = ('GA_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
 		plt.savefig(os.path.join(OUTDIR,fig_name))
+
+	def plot_parameters(self, best_parameters):
+
+		best_param_array = np.array(best_parameters, np.float64)
+
+		pca = PCA(n_components=2)
+		pca.fit(best_param_array)
+		best_params_reduced = pca.transform(best_param_array)
+
+
+		# todo -- cluster analysis
+
+		plt.figure(figsize=(8.5, 11))
+		plt.scatter(best_params_reduced[:, 0], best_params_reduced[:, 1])
+
+		now = datetime.datetime.now()
+
+		if not os.path.exists(OUTDIR):
+			os.mkdir(OUTDIR)
+		fig_name = ('param_space_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
+		plt.savefig(os.path.join(OUTDIR,fig_name))
+
+		# import ipdb;
+		# ipdb.set_trace()
+
+		# for color, i, target_name in zip(colors, [0, 1, 2], target_names):
+		#
+		#
+		# 	plt.scatter(X_r[y == i, 0], X_r[y == i, 1], color=color, alpha=.8)
+		# 	plt.legend(loc='best', shadow=False, scatterpoints=1)
+		# 	plt.title('PCA of IRIS dataset')
+
 
 
 if __name__ == "__main__":
