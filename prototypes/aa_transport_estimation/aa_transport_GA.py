@@ -17,10 +17,13 @@ from wholecell.io.tablereader import TableReader
 # simOutDir = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/000000/generation_000000/000000/simOut'
 
 ## options
-POPULATION_ANALYTICS = True
-
-
+POPULATION_ANALYTICS = False
 PARAM_FILE = 'best_parameters.tsv'
+
+PARAMOUTDIR = os.path.join(
+	os.path.split(__file__)[0],
+	'saved_parameters'
+	)
 
 OUTDIR = os.path.join(
 	os.path.split(__file__)[0],
@@ -33,9 +36,9 @@ TIME_STEP = 0.1 # seconds
 
 # genetic algorithm parameters
 COHORT_SIZE = 1
-POPULATION_SIZE = 30
+POPULATION_SIZE = 50
 MUTATION_VARIANCE = 0.5
-MAX_GENERATIONS = 50
+MAX_GENERATIONS = 100
 
 # set allowable parameter ranges
 PARAM_RANGES = {
@@ -50,14 +53,13 @@ PARAM_RANGES = {
 # 1 nM, while water, the most abundant species, has a concentration of about
 # 50 M.  The range is consistent with the RESOLUTION.
 # '''
-# LOWER_CONC = 1e-10
-# UPPER_CONC = 1e2
+# lower_KM = 1e-10
+# upper_KM = 1e2
 #
 # lower_kcat = 1e-2  # gives average kcat of about 100 w/ upper kcat of 1e6
 # upper_kcat = 1e6  # catalase is around 1e5 /s
-#
-# lower_KM = lower_conc
-# upper_KM = upper_conc
+
+
 
 
 # set estimation targets and penalties
@@ -81,7 +83,7 @@ TARGETS = {
 # set initial concentrations.
 # those not set here will be taken from the WCM
 INITIAL_CONCENTRATIONS = {
-	'G6458-MONOMER': 0.0,
+	# 'G6458-MONOMER': 0.0,
 	}
 
 # define the reactions. Parameters set to None will be assigned
@@ -141,6 +143,7 @@ INITIAL_REACTIONS = {
 				}},
 			}
 
+
 class TransportEstimation(object):
 
 	def main(self, args):
@@ -174,20 +177,21 @@ class TransportEstimation(object):
 		fit_parameters = [final_population[index] for index in fit_indices]
 
 
+		# save top parameters to file
+		if not os.path.exists(PARAMOUTDIR):
+			os.mkdir(PARAMOUTDIR)
+
+		with open(os.path.join(PARAMOUTDIR, PARAM_FILE), 'a') as tsv_file:
+			writer = csv.writer(tsv_file)
+			for parameter in fit_parameters:
+				writer.writerow(parameter)
+		tsv_file.close()
+
 
 		if POPULATION_ANALYTICS:
-			# save top parameters to file
-			if not os.path.exists(OUTDIR):
-				os.mkdir(OUTDIR)
 
-			with open(os.path.join(OUTDIR,PARAM_FILE), 'a') as tsv_file:
-				writer = csv.writer(tsv_file) #, quoting=csv.QUOTE_NONE)
-				for parameter in fit_parameters:
-					writer.writerow(parameter)
-			tsv_file.close()
-
-			with open(os.path.join(OUTDIR,PARAM_FILE), 'r') as tsv_file:
-				reader = csv.reader(tsv_file) #, delimiter=' ', quotechar='|')
+			with open(os.path.join(PARAMOUTDIR,PARAM_FILE), 'r') as tsv_file:
+				reader = csv.reader(tsv_file)
 				best_parameters = list(reader)
 			tsv_file.close()
 
@@ -278,6 +282,8 @@ class TransportEstimation(object):
 			# TODO -- enforce bounds
 
 			index += 1
+
+		import ipdb; ipdb.set_trace()
 
 		return new_population
 
@@ -592,13 +598,13 @@ class TransportEstimation(object):
 
 	def plot_out(self, saved_concentrations, saved_fluxes, parameters):
 
-		plt.figure(figsize=(8.5, 11))
-		columns = 2
-		rows = len(saved_concentrations)
+		plt.figure(figsize=(12, 11))
+		columns = 3
+		rows = max([len(saved_concentrations), len(saved_fluxes), len(parameters)])
 
 		index = 1
 		for molecule, timeseries in saved_concentrations.iteritems():
-			plt.subplot(rows, columns, 2*index-1)
+			plt.subplot(rows, columns, 3*index-2)
 			plt.plot(timeseries)
 			plt.title(molecule)
 			if index < len(saved_concentrations):
@@ -615,7 +621,7 @@ class TransportEstimation(object):
 
 		index = 1
 		for reaction, timeseries in saved_fluxes.iteritems():
-			plt.subplot(rows, columns, 2*index)
+			plt.subplot(rows, columns, 3*index-1)
 			plt.plot(timeseries, 'r')
 			plt.title(reaction)
 			if index < len(saved_fluxes):
@@ -630,15 +636,40 @@ class TransportEstimation(object):
 				plt.xlabel("Time (s)")
 			index += 1
 
-		plt.subplot(int(rows/2), columns, int(rows/2) * columns)
+		# plt.subplot(int(rows/2), columns, int(rows/2) * columns)
+		# # save params in dictionary and add to figure as text
+		# reaction_params = {} #rxn : {} for rxn, params in self.parameter_indices.iteritems()}
+		# reaction_params[rxn] = {param : parameters[index] for param, index in self.parameter_indices[rxn].iteritems()}
+		# plt.text(0.0, 1.0, reaction_params, wrap=True)
+		# plt.axis('off')
 
-		# save params in dictionary and add to figure as text
-		reaction_params = {} #rxn : {} for rxn, params in self.parameter_indices.iteritems()}
+		index = 1
+		km_range = PARAM_RANGES['km']
+		kcat_range = PARAM_RANGES['kcat']
 		for rxn, params in self.parameter_indices.iteritems():
-			reaction_params[rxn] = {param : parameters[index] for param, index in self.parameter_indices[rxn].iteritems()}
+			for param, param_idx in params.iteritems():
 
-		plt.text(0.0, 1.0, reaction_params, wrap=True)
-		plt.axis('off')
+				plt.subplot(rows, columns, 3*index)
+
+				param_value = parameters[param_idx]
+				if 'km' in param:
+					plt.axvline(x=km_range[0])
+					plt.axvline(x=km_range[1])
+					plt.xlim(km_range[0], km_range[1])
+				elif 'kcat' in param:
+					plt.axvline(x=kcat_range[0])
+					plt.axvline(x=kcat_range[1])
+					plt.xlim(kcat_range[0], kcat_range[1])
+
+				plt.plot(0.5, param_value, 'bo', markersize=10)
+
+				info = (rxn + ' -- ' + INITIAL_REACTIONS[rxn]['type'] + ': ' + param)
+				plt.title(info)
+				plt.ylim(0, 1)
+				plt.axis('off')
+
+				index += 1
+
 
 		plt.subplots_adjust(hspace=0.9, wspace=0.5)
 		now = datetime.datetime.now()
@@ -649,7 +680,28 @@ class TransportEstimation(object):
 		plt.savefig(os.path.join(OUTDIR,fig_name))
 
 
-	## Analyze evolution
+	## Analysis plots of parameters and evolution
+	def plot_parameters(self, best_parameters):
+
+		best_param_array = np.array(best_parameters, np.float64)
+
+		pca = PCA(n_components=2)
+		pca.fit(best_param_array)
+		best_params_reduced = pca.transform(best_param_array)
+
+
+		# todo -- cluster analysis
+
+		plt.figure(figsize=(8.5, 8.5))
+		plt.scatter(best_params_reduced[:, 0], best_params_reduced[:, 1])
+
+		now = datetime.datetime.now()
+
+		if not os.path.exists(OUTDIR):
+			os.mkdir(OUTDIR)
+		fig_name = ('param_space_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
+		plt.savefig(os.path.join(OUTDIR,fig_name))
+
 	def plot_evolution(self, saved_fitness):
 
 		n_bins = 10
@@ -692,36 +744,6 @@ class TransportEstimation(object):
 		fig_name = ('GA_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
 		plt.savefig(os.path.join(OUTDIR,fig_name))
 
-	def plot_parameters(self, best_parameters):
-
-		best_param_array = np.array(best_parameters, np.float64)
-
-		pca = PCA(n_components=2)
-		pca.fit(best_param_array)
-		best_params_reduced = pca.transform(best_param_array)
-
-
-		# todo -- cluster analysis
-
-		plt.figure(figsize=(8.5, 11))
-		plt.scatter(best_params_reduced[:, 0], best_params_reduced[:, 1])
-
-		now = datetime.datetime.now()
-
-		if not os.path.exists(OUTDIR):
-			os.mkdir(OUTDIR)
-		fig_name = ('param_space_' + str(now.month) + '-' + str(now.day) + '_' + str(now.hour) + str(now.minute) + str(now.second))
-		plt.savefig(os.path.join(OUTDIR,fig_name))
-
-		# import ipdb;
-		# ipdb.set_trace()
-
-		# for color, i, target_name in zip(colors, [0, 1, 2], target_names):
-		#
-		#
-		# 	plt.scatter(X_r[y == i, 0], X_r[y == i, 1], color=color, alpha=.8)
-		# 	plt.legend(loc='best', shadow=False, scatterpoints=1)
-		# 	plt.title('PCA of IRIS dataset')
 
 
 
