@@ -18,6 +18,8 @@ from wholecell.io.tablereader import TableReader
 
 ## options
 POPULATION_ANALYTICS = False
+ENFORCE_BOUNDS = False
+
 PARAM_FILE = 'best_parameters.tsv'
 
 PARAMOUTDIR = os.path.join(
@@ -36,11 +38,15 @@ TIME_STEP = 0.1 # seconds
 
 # genetic algorithm parameters
 COHORT_SIZE = 1
-POPULATION_SIZE = 50
+POPULATION_SIZE = 200
 MUTATION_VARIANCE = 0.5
-MAX_GENERATIONS = 100
+MAX_GENERATIONS = 500
 
 # set allowable parameter ranges
+# PARAM_RANGES = {
+# 	'km': [1e-10, 1e2],
+# 	'kcat': [1e-2, 1e6],
+# 	}
 PARAM_RANGES = {
 	'km': [1e-9, 1e2],
 	'kcat': [1e-2, 1e2],
@@ -155,9 +161,17 @@ class TransportEstimation(object):
 		# TODO -- get parameter indices separately from values
 		self.parameter_indices, parameter_values = self.initialize_parameters()
 
+		# save specific parameter indices, for easy bounds enforcement
+		self.km_indices = []
+		self.kcat_indices = []
+		for rxn, params in self.parameter_indices.iteritems():
+			kms = [index for param, index in params.iteritems() if 'km' in param]
+			kcats = [index for param, index in params.iteritems() if 'kcat' in param]
+			self.km_indices.extend(kms)
+			self.kcat_indices.extend(kcats)
+
 		# evolve populations
 		# population, fitness, saved_fitness = self.evolve_cohorts()
-
 		population = self.initialize_population()
 
 		# genetic algorithm loop
@@ -166,16 +180,15 @@ class TransportEstimation(object):
 
 
 
-		# analysis
+		## Visualization and Analysis
 		self.plot_evolution(saved_fitness)
 
-		# run simulation of best individual and plot output
+		# parameter analysis
 		top_index = final_fitness.values().index(max(final_fitness.values()))
 		top_parameters = final_population[top_index]
 
 		fit_indices = [index for index, value in enumerate(final_fitness.values()) if value >= 0.95]
 		fit_parameters = [final_population[index] for index in fit_indices]
-
 
 		# save top parameters to file
 		if not os.path.exists(PARAMOUTDIR):
@@ -187,9 +200,7 @@ class TransportEstimation(object):
 				writer.writerow(parameter)
 		tsv_file.close()
 
-
 		if POPULATION_ANALYTICS:
-
 			with open(os.path.join(PARAMOUTDIR,PARAM_FILE), 'r') as tsv_file:
 				reader = csv.reader(tsv_file)
 				best_parameters = list(reader)
@@ -198,6 +209,7 @@ class TransportEstimation(object):
 			self.plot_parameters(best_parameters)
 
 
+		# run simulation of the best individual and plot output
 		saved_concentrations, saved_fluxes = self.run_sim(args.simout, top_parameters)
 
 		self.plot_out(saved_concentrations, saved_fluxes, top_parameters)
@@ -244,7 +256,9 @@ class TransportEstimation(object):
 	def repopulate(self, population, fitness):
 
 		new_population = {}
-		# normalized_fitness = {}
+
+		km_range = PARAM_RANGES['km']
+		kcat_range = PARAM_RANGES['kcat']
 
 		# normalize fitness
 		total = np.sum(fitness.values())
@@ -258,6 +272,7 @@ class TransportEstimation(object):
 
 		while len(new_population) < POPULATION_SIZE:
 			## Selection
+			# TODO -- use numpy multimodal instead, for fitness-proportionate selection
 			selection = 0
 			total = normalized_fitness[selection]
 			rand = random.uniform(0,1)
@@ -279,11 +294,33 @@ class TransportEstimation(object):
 			# apply mutation
 			new_population[index] = [x + y for x, y in zip(genotype, vector)]
 
-			# TODO -- enforce bounds
+			# enforce bounds
+			if ENFORCE_BOUNDS:
+				for idx in self.km_indices:
+					param_value = new_population[index][idx]
+
+					# # if parameter is not in range, initialize it randomly within range
+					# if not (km_range[0] <= param_value <= km_range[1]):
+					# 	new_population[index][idx] = random.uniform(km_range[0], km_range[1])
+
+					if param_value < km_range[0]:
+						new_population[index][idx] = km_range[0]
+					if param_value > km_range[1]:
+						new_population[index][idx] = km_range[1]
+
+				for idx in self.kcat_indices:
+					param_value = new_population[index][idx]
+
+					# # if parameter is not in range, initialize it randomly within range
+					# if not (kcat_range[0] <= param_value <= kcat_range[1]):
+					# 	new_population[index][idx] = random.uniform(kcat_range[0], kcat_range[1])
+
+					if param_value < kcat_range[0]:
+						new_population[index][idx] = kcat_range[0]
+					if param_value > kcat_range[1]:
+						new_population[index][idx] = kcat_range[1]
 
 			index += 1
-
-		import ipdb; ipdb.set_trace()
 
 		return new_population
 
@@ -655,13 +692,15 @@ class TransportEstimation(object):
 				if 'km' in param:
 					plt.axvline(x=km_range[0])
 					plt.axvline(x=km_range[1])
-					plt.xlim(km_range[0], km_range[1])
+					# plt.xlim(km_range[0], km_range[1])
 				elif 'kcat' in param:
 					plt.axvline(x=kcat_range[0])
 					plt.axvline(x=kcat_range[1])
-					plt.xlim(kcat_range[0], kcat_range[1])
+					# plt.xlim(kcat_range[0], kcat_range[1])
 
-				plt.plot(0.5, param_value, 'bo', markersize=10)
+				plt.axhline(y=0.5)
+
+				plt.plot(param_value, 0.5, 'bo', markersize=10)
 
 				info = (rxn + ' -- ' + INITIAL_REACTIONS[rxn]['type'] + ': ' + param)
 				plt.title(info)
