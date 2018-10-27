@@ -24,12 +24,12 @@ PARAM_FILE = 'best_parameters.tsv'
 
 PARAMOUTDIR = os.path.join(
 	os.path.split(__file__)[0],
-	'saved_parameters'
+	'out/saved_parameters'
 	)
 
 OUTDIR = os.path.join(
 	os.path.split(__file__)[0],
-	'out'
+	'out/plot_out'
 	)
 
 # simulation parameters
@@ -38,9 +38,9 @@ TIME_STEP = 0.1 # seconds
 
 # genetic algorithm parameters
 COHORT_SIZE = 1
-POPULATION_SIZE = 100
+POPULATION_SIZE = 200
 MUTATION_VARIANCE = 0.5
-MAX_GENERATIONS = 50
+MAX_GENERATIONS = 1000
 
 # set allowable parameter ranges
 # PARAM_RANGES = {
@@ -48,7 +48,7 @@ MAX_GENERATIONS = 50
 # 	'kcat': [1e-2, 1e6],
 # 	}
 PARAM_RANGES = {
-	'km': [1e-9, 1e2],
+	'km': [1e-10, 1e2],
 	'kcat': [1e-2, 1e2],
 	}
 
@@ -64,8 +64,6 @@ PARAM_RANGES = {
 #
 # lower_kcat = 1e-2  # gives average kcat of about 100 w/ upper kcat of 1e6
 # upper_kcat = 1e6  # catalase is around 1e5 /s
-
-
 
 
 # set estimation targets and penalties
@@ -183,6 +181,7 @@ class TransportEstimation(object):
 		## Visualization and Analysis
 
 		# make cohort_id, for saving output
+		# TODO -- what if there are files in outfolder that don't match pattern?
 		now = datetime.datetime.now()
 		time_stamp = (str(now.month) + str(now.day))
 
@@ -197,37 +196,37 @@ class TransportEstimation(object):
 
 		self.cohort_id = (time_stamp + '__' + str(cohort_num))
 
-		self.plot_evolution(saved_fitness)
 
 		# parameter analysis
 		top_index = final_fitness.values().index(max(final_fitness.values()))
 		top_parameters = final_population[top_index]
+		top_fit_indices = [index for index, value in enumerate(final_fitness.values()) if value >= 0.95]
+		top_fit_parameters = [final_population[index] for index in top_fit_indices]
 
-		fit_indices = [index for index, value in enumerate(final_fitness.values()) if value >= 0.95]
-		fit_parameters = [final_population[index] for index in fit_indices]
-
-		# save top parameters to file
+		# save top parameters to 'best_parameters' file
 		if not os.path.exists(PARAMOUTDIR):
 			os.mkdir(PARAMOUTDIR)
 
 		with open(os.path.join(PARAMOUTDIR, PARAM_FILE), 'a') as tsv_file:
 			writer = csv.writer(tsv_file)
-			for parameter in fit_parameters:
+			for parameter in top_fit_parameters:
 				writer.writerow(parameter)
 		tsv_file.close()
 
+		# Plot parameter space
 		if POPULATION_ANALYTICS:
+			# gather all saved parameter values
 			with open(os.path.join(PARAMOUTDIR,PARAM_FILE), 'r') as tsv_file:
 				reader = csv.reader(tsv_file)
 				best_parameters = list(reader)
 			tsv_file.close()
-
 			self.plot_parameters(best_parameters)
 
+		# Plot evolution
+		self.plot_evolution(saved_fitness)
 
-		# run simulation of the best individual and plot output
+		# Run simulation of the best individual and plot output
 		saved_concentrations, saved_fluxes = self.run_sim(args.simout, top_parameters)
-
 		self.plot_out(saved_concentrations, saved_fluxes, top_parameters)
 
 
@@ -249,11 +248,14 @@ class TransportEstimation(object):
 
 	def evolve_population(self, population):
 
+		fitness_max = 0.9999 # todo -- make this a global
+
 		# genetic algorithm loop
 		generations = 0
+		top_fit = 0
 		saved_fitness = []
 
-		while generations < MAX_GENERATIONS:
+		while generations < MAX_GENERATIONS and top_fit < fitness_max:
 
 			# evaluate fitness and repopulate
 			fitness = self.evaluate_fitness(population)
@@ -265,7 +267,10 @@ class TransportEstimation(object):
 			saved_fitness.append(fitness.values())
 			top_fit = max(fitness.values())
 
-			print('gen ' + str(generations) + ' top_fit: ' + str(top_fit))
+			print('gen ' + str(generations) + ' fittest: ' + str(top_fit))
+
+		if top_fit >= fitness_max:
+			print('Success!')
 
 		return population, fitness, saved_fitness
 
@@ -757,8 +762,13 @@ class TransportEstimation(object):
 	def plot_evolution(self, saved_fitness):
 
 		n_bins = 10
-		n_gens = 10
-		nth_gen = int(MAX_GENERATIONS/n_gens)
+		max_gens_plot = 10
+		n_saved_gens = len(saved_fitness)
+
+		if n_saved_gens >= max_gens_plot:
+			nth_gen = int(n_saved_gens/max_gens_plot)
+		else:
+			nth_gen = 1
 
 
 		plot_gen = saved_fitness[0::nth_gen]
