@@ -17,8 +17,9 @@ from wholecell.io.tablereader import TableReader
 # simOutDir = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/000000/generation_000000/000000/simOut'
 
 ## options
-POPULATION_ANALYTICS = False
+POPULATION_ANALYTICS = True
 ENFORCE_BOUNDS = False
+USE_WCM = False
 
 PARAM_FILE = 'best_parameters.tsv'
 
@@ -147,14 +148,37 @@ INITIAL_REACTIONS = {
 				}},
 			}
 
+WCM_INITIAL_CONCS = {
+	'LEU[c]': 699439.9961946806,
+	'NA+[p]': 60086.898174455666,
+	'ADP[c]': 336487.9122664919,
+	'LEU[p]': 0.0,
+	'BRNQ-MONOMER': 69.78251909824665,
+	'ABC-304-CPLX': 68.27370787450077,
+	'G6984-MONOMER': 7.1668533127929,
+	'B4141-MONOMER': 18.86014029682342,
+	'ATP[c]': 5768368.6289441595,
+	'NA+[c]': 0.0,
+	'G6458-MONOMER': 82.60741450008658,
+	'PROTON[c]': 37.72028059364684,
+	'ABC-15-CPLX': 69.40531629231019,
+	'PROTON[p]': 0.0
+}
+
 
 class TransportEstimation(object):
 
 	def main(self, args):
 
 		# initialize
-		self.initialize_from_WCM(args.simout)
+		if USE_WCM:
+			self.initialize_from_WCM(args.simout)
+		else:
+			self.coefficient = 33.14430980346108 # taken from WCM
+			self.cell_volume = 2.6510937465518967
+
 		self.concentrations = self.initialize_concentrations(args.simout)
+
 
 		# TODO -- get parameter indices separately from values
 		self.parameter_indices, parameter_values = self.initialize_parameters()
@@ -421,35 +445,60 @@ class TransportEstimation(object):
 	def initialize_concentrations(self, simOutDir):
 		''' set all initial undefined molecular concentrations to their initial concentrations in the WCM'''
 
-		concentrations = copy.deepcopy(INITIAL_CONCENTRATIONS)
-		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-		molecule_ids = bulkMolecules.readAttribute("objectNames")
+		if USE_WCM:
+			concentrations = copy.deepcopy(INITIAL_CONCENTRATIONS)
+			bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
+			molecule_ids = bulkMolecules.readAttribute("objectNames")
 
-		# get all substrates in self.reactions
-		for rxn, specs in INITIAL_REACTIONS.iteritems():
-			substrates = specs['substrates'].values()
-			transporters = specs['transporter']
+			# get all substrates in self.reactions
+			for rxn, specs in INITIAL_REACTIONS.iteritems():
+				substrates = specs['substrates'].values()
+				transporters = specs['transporter']
 
-			# loop through substrates
-			for substrate in substrates:
-				# if substrate is not in concentrations dict
-				if substrate not in concentrations.keys() or concentrations[substrate] is None:
-					substrate_index = molecule_ids.index(substrate)
-					substrate_count = bulkMolecules.readColumn("counts")[0, substrate_index]
-					#convert to concentration
-					concentrations[substrate] = substrate_count / self.cell_volume[0]
+				# loop through substrates
+				for substrate in substrates:
+					# if substrate is not in concentrations dict
+					if substrate not in concentrations.keys() or concentrations[substrate] is None:
+						substrate_index = molecule_ids.index(substrate)
+						substrate_count = bulkMolecules.readColumn("counts")[0, substrate_index]
+						#convert to concentration
+						concentrations[substrate] = substrate_count / self.cell_volume[0]
 
-			# loop through transporters
-			# Note -- this is different from the substrate loop in that it looks for the transporter name within the strin
-			for transporter in transporters:
-				# if substrate is not in concentrations dict
-				if transporter not in concentrations.keys() or concentrations[transporter] is None:
-					transporter_id = [mol_id for mol_id in molecule_ids if transporter in mol_id]
-					transporter_index = molecule_ids.index(transporter_id[0])
-					transporter_count = bulkMolecules.readColumn("counts")[0, transporter_index]
+				# loop through transporters
+				# Note -- this is different from the substrate loop in that it looks for the transporter name within the strin
+				for transporter in transporters:
+					# if substrate is not in concentrations dict
+					if transporter not in concentrations.keys() or concentrations[transporter] is None:
+						transporter_id = [mol_id for mol_id in molecule_ids if transporter in mol_id]
+						transporter_index = molecule_ids.index(transporter_id[0])
+						transporter_count = bulkMolecules.readColumn("counts")[0, transporter_index]
 
-					#convert to concentration
-					concentrations[transporter] = transporter_count / self.cell_volume[0]
+						#convert to concentration
+						concentrations[transporter] = transporter_count / self.cell_volume[0]
+
+		else:
+			concentrations = copy.deepcopy(INITIAL_CONCENTRATIONS)
+
+			# get all substrates in self.reactions
+			for rxn, specs in INITIAL_REACTIONS.iteritems():
+				substrates = specs['substrates'].values()
+				transporters = specs['transporter']
+
+				# loop through substrates
+				for substrate in substrates:
+					# if substrate is not in concentrations dict
+					if substrate not in concentrations.keys() or concentrations[substrate] is None:
+						#convert to concentration
+						concentrations[substrate] = WCM_INITIAL_CONCS[substrate]
+
+				# loop through transporters
+				# Note -- this is different from the substrate loop in that it looks for the transporter name within the strin
+				for transporter in transporters:
+					# if substrate is not in concentrations dict
+					if transporter not in concentrations.keys() or concentrations[transporter] is None:
+
+						# retrieve from saved initial concentrations
+						concentrations[transporter] = WCM_INITIAL_CONCS[transporter]
 
 		return concentrations
 
