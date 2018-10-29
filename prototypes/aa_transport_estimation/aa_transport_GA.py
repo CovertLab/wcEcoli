@@ -17,8 +17,8 @@ from wholecell.io.tablereader import TableReader
 # simOutDir = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/000000/generation_000000/000000/simOut'
 
 ## options
-POPULATION_ANALYTICS = True
 ENFORCE_BOUNDS = False
+POPULATION_ANALYTICS = False
 USE_WCM = False
 
 PARAM_FILE = 'best_parameters.tsv'
@@ -82,7 +82,13 @@ TARGETS = {
 		},
 	'molecule_flux': {
 		'LEU[c]' : 1.427, 
-		}
+		},
+	'parameters' : {
+		'TRANS-RXN0-270': {
+			'kcat': None,
+			'km_A': 0.1,
+			'km_B': None,
+		}},
 	}
 
 # set initial concentrations.
@@ -102,21 +108,14 @@ INITIAL_REACTIONS = {
 					'B2': 'PROTON[c]',
 				},
 				'transporter': ['G6984-MONOMER', 'B4141-MONOMER'], # TODO (eran) only using the first transporter
-				'params': {
-				   'kcat': None,
-				   'km_A': None,
-				   'km_B': None,
-				}},
+				},
 			'TRANS-RXN0-569-LEU': {'type': 'uniport', # export
 				'substrates': {
 				   'A1': 'LEU[c]',
 				   'A2': 'LEU[p]',
 				},
 				'transporter': ['G6458-MONOMER'],
-				'params': {
-				   'kcat': None,
-				   'km': None,
-				}},
+				},
 			'ABC-35-RXN': {'type': 'symport_reversible',
 				'substrates': {
 				   'A1': 'LEU[p]',
@@ -125,14 +124,7 @@ INITIAL_REACTIONS = {
 				   'B2': 'ADP[c]',
 				},
 				'transporter': ['ABC-15-CPLX', 'ABC-304-CPLX'], # TODO (eran) only using the first transporter
-				'params': {
-					'kcat_f': None,
-					'kcat_r': None,
-					'km_A1': None,
-					'km_A2': None,
-					'km_B1': None,
-					'km_B2': None,
-				}},
+				},
 			'TRANS-RXN-126B': {'type': 'symport',
 				'substrates': {
 				   'A1': 'LEU[p]',
@@ -141,12 +133,15 @@ INITIAL_REACTIONS = {
 				   'B2': 'NA+[c]',
 				},
 				'transporter': ['BRNQ-MONOMER'],
-				'params': {
-				   'kcat': None,
-				   'km_A': None,
-				   'km_B': None,
-				}},
+				},
 			}
+
+REACTION_PARAMS = {
+	'uniport' : ['kcat', 'km'],
+	'uniport_reversible' : ['kcat_f', 'kcat_r', 'km_A1', 'km_A2'],
+	'symport' : ['kcat', 'km_A', 'km_B'],
+	'symport_reversible' : ['kcat_f', 'kcat_r', 'km_A1', 'km_A2', 'km_B1', 'km_B2'],
+	}
 
 WCM_INITIAL_CONCS = {
 	'LEU[c]': 699439.9961946806,
@@ -163,7 +158,7 @@ WCM_INITIAL_CONCS = {
 	'PROTON[c]': 37.72028059364684,
 	'ABC-15-CPLX': 69.40531629231019,
 	'PROTON[p]': 0.0
-}
+	}
 
 
 class TransportEstimation(object):
@@ -177,13 +172,11 @@ class TransportEstimation(object):
 			self.coefficient = 33.14430980346108 # taken from WCM
 			self.cell_volume = 2.6510937465518967
 
-		self.concentrations = self.initialize_concentrations(args.simout)
-
-
-		# TODO -- get parameter indices separately from values
-		self.parameter_indices, parameter_values = self.initialize_parameters()
+		# assign indices to all parameters in problem
+		self.parameter_indices, self.n_parameters = self.initialize_parameter_map()
 
 		# save specific parameter indices, for easy bounds enforcement
+		# TODO -- this can be cleaned up
 		self.km_indices = []
 		self.kcat_indices = []
 		for rxn, params in self.parameter_indices.iteritems():
@@ -192,7 +185,14 @@ class TransportEstimation(object):
 			self.km_indices.extend(kms)
 			self.kcat_indices.extend(kcats)
 
-		# evolve populations
+		# initialize parameter values
+		parameter_values = self.initialize_parameters()
+
+		# set concentrations of substrates and transporters
+		self.concentrations = self.initialize_concentrations(args.simout)
+
+
+		## Evolve populations
 		# population, fitness, saved_fitness = self.evolve_cohorts()
 		population = self.initialize_population()
 
@@ -404,43 +404,61 @@ class TransportEstimation(object):
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		self.coefficient = self.dry_cell_mass[0] / self.cell_mass[0] * self.density * (TIME_STEP)
 
-	def initialize_parameters(self):
+	def initialize_parameter_map(self):
+		''' create a dictionary that maps each parameter to an index in the parameter array'''
 
 		reactions = INITIAL_REACTIONS
-
-		parameter_indices = {rxn : {} for rxn in reactions.keys()}
-		parameter_values = []
-
-		km_range = PARAM_RANGES['km']
-		kcat_range = PARAM_RANGES['kcat']
+		parameter_indices = {rxn: {} for rxn in reactions.keys()}
 
 		index = 0
 		# loop through all reactions
 		for rxn, specs in reactions.iteritems():
-			# loop through all of the reaction's parameters
-			for param, value in specs['params'].iteritems():
-
-				# fill unassigned parameter values
-				if value is None and 'km' in param:
-					parameter_indices[rxn][param] = index
-					parameter_values.append(random.uniform(km_range[0], km_range[1]))
-
-				elif value is None and 'kcat' in param:
-					parameter_indices[rxn][param] = index
-					parameter_values.append(random.uniform(kcat_range[0], kcat_range[1]))
-
-				# if value already assigned
-				elif 'km' in param:
-					parameter_indices[rxn][param] = index
-					parameter_values.append(value)
-
-				elif 'kcat' in param:
-					parameter_indices[rxn][param] = index
-					parameter_values.append(value)
-
+			parameters = REACTION_PARAMS[specs['type']]
+			for param in parameters:
+				parameter_indices[rxn][param] = index
 				index += 1
 
-		return parameter_indices, parameter_values
+		return parameter_indices, index
+
+	def initialize_parameters(self):
+
+		reactions = INITIAL_REACTIONS
+		target_params = TARGETS['parameters']
+
+		parameter_indices = self.parameter_indices
+
+		# intitialize parameters
+		parameter_values = np.empty(self.n_parameters)
+
+		km_range = PARAM_RANGES['km']
+		kcat_range = PARAM_RANGES['kcat']
+
+		# loop through all reactions
+		for rxn, specs in reactions.iteritems():
+			rxn_parameters = REACTION_PARAMS[specs['type']]
+
+			# loop through all of the reaction's parameters
+			for param in rxn_parameters:
+
+				param_index = parameter_indices[rxn][param]
+
+				no_target = True
+
+				# if target parameter value assigned, seed search at that parameter
+				if rxn in target_params:
+					if (param in target_params[rxn]) and (target_params[rxn][param] is not None):
+						param_value = target_params[rxn][param]
+						parameter_values[param_index] = param_value
+						no_target = False
+				# if there is no target, initialize parameter randomly within range
+				if no_target:
+					# fill unassigned parameter values
+					if 'km' in param:
+						parameter_values[param_index] = random.uniform(km_range[0], km_range[1])
+					elif 'kcat' in param:
+						parameter_values[param_index] = random.uniform(kcat_range[0], kcat_range[1])
+
+		return parameter_values
 
 	def initialize_concentrations(self, simOutDir):
 		''' set all initial undefined molecular concentrations to their initial concentrations in the WCM'''
@@ -508,7 +526,7 @@ class TransportEstimation(object):
 		population = {}
 
 		for ind in xrange(POPULATION_SIZE):
-			parameter_indices, parameter_values = self.initialize_parameters()
+			parameter_values = self.initialize_parameters()
 			population[ind] = parameter_values
 
 		return population
