@@ -13,14 +13,12 @@ from sklearn.decomposition import PCA
 
 from wholecell.io.tablereader import TableReader
 
-# simDataFile = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/kb/simData_Modified.cPickle'
-# simOutDir = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/000000/generation_000000/000000/simOut'
-
 ## options
-ENFORCE_BOUNDS = False
+ENFORCE_BOUNDS = True
 POPULATION_ANALYTICS = False
-USE_WCM = False
+USE_WCM = True
 
+SAVE_FITNESS_THRESHOLD = 0.95
 PARAM_FILE = 'best_parameters.tsv'
 
 PARAMOUTDIR = os.path.join(
@@ -40,22 +38,21 @@ TIME_STEP = 0.1 # seconds
 # genetic algorithm parameters
 COHORT_SIZE = 1
 POPULATION_SIZE = 200
-MUTATION_VARIANCE = 0.5
-MAX_GENERATIONS = 1000
+MUTATION_VARIANCE = 1.0
+MAX_GENERATIONS = 200
 
 # set allowable parameter ranges
 PARAM_RANGES = {
 	'km': [1e-10, 1e2],
-	'kcat': [1e-2, 1e2],
+	'kcat': [1e-2, 1e6],
 	}
 
-## From Parest
-# '''
+## from Parest:
 # Concentration are bounded from 1 fM to 1 MM.  Both are more permissive than
 # expected values.  A concentration of one molecule per E. coli cell is roughly
 # 1 nM, while water, the most abundant species, has a concentration of about
 # 50 M.  The range is consistent with the RESOLUTION.
-# '''
+#
 # lower_KM = 1e-10
 # upper_KM = 1e2
 #
@@ -63,7 +60,7 @@ PARAM_RANGES = {
 # upper_kcat = 1e6  # catalase is around 1e5 /s
 
 
-# set estimation targets and penalties
+# estimation targets and penalties
 CONCENTRATION_PENALTY = 0.0
 FLUX_PENALTY = 0.0
 MOLECULE_FLUX_PENALTY = 1.0
@@ -77,7 +74,7 @@ TARGETS = {
 		'TRANS-RXN-126B': 0.05, # millimol/sec (?)
 		},
 	'molecule_flux': {
-		'LEU[c]' : 1.427, 
+		'LEU[c]' : 1.427,
 		},
 	'parameters' : {
 		'TRANS-RXN0-270': {
@@ -105,15 +102,15 @@ TARGETS = {
 	},
 	}
 
-# set initial concentrations.
+# initial concentrations.
 # those not set here will be taken from the WCM, or from WCM_INITIAL_CONCS
 INITIAL_CONCENTRATIONS = {
-	# 'G6458-MONOMER': 0.0,
+	'G6458-MONOMER': 0.0,
 	}
 
 # define the reactions. Parameters set to None will be assigned
 # a random initial value within a range defined by PARAM_RANGES
-INITIAL_REACTIONS = {
+REACTIONS = {
 			'TRANS-RXN0-270': {'type': 'symport', # export
 				'substrates': {
 					'A1': 'LEU[c]',
@@ -187,25 +184,10 @@ class TransportEstimation(object):
 			self.cell_volume = 2.6510937465518967
 
 		# assign indices to all parameters in problem
-		self.parameter_indices, self.n_parameters = self.initialize_parameter_map()
-
-		# save specific parameter indices, for easy bounds enforcement
-		# TODO -- this can be cleaned up
-		self.km_indices = []
-		self.kcat_indices = []
-		for rxn, params in self.parameter_indices.iteritems():
-			kms = [index for param, index in params.iteritems() if 'km' in param]
-			kcats = [index for param, index in params.iteritems() if 'kcat' in param]
-			self.km_indices.extend(kms)
-			self.kcat_indices.extend(kcats)
-
-		# initialize parameter values
-		parameter_values = self.initialize_parameters()
+		self.phenotype_function, self.parameter_indices = self.get_phenotype_function()
 
 		# set concentrations of substrates and transporters
 		self.concentrations = self.initialize_concentrations(args.simout)
-
-
 
 		## Evolve populations
 		# initial population
@@ -213,8 +195,6 @@ class TransportEstimation(object):
 
 		# run genetic algorithm
 		final_population, final_fitness, saved_fitness = self.evolve_population(population)
-
-
 
 		## Visualization and Analysis
 		# make cohort_id, for naming saved output in organized fashion
@@ -234,54 +214,23 @@ class TransportEstimation(object):
 		self.cohort_id = (time_stamp + '__' + str(cohort_num))
 
 
-		# parameter analysis
-		top_index = final_fitness.values().index(max(final_fitness.values()))
-		top_parameters = final_population[top_index]
-		top_fit_indices = [index for index, value in enumerate(final_fitness.values()) if value >= 0.95]
-		top_fit_parameters = [final_population[index] for index in top_fit_indices]
-
-		# save top parameters to 'best_parameters' file
-		if not os.path.exists(PARAMOUTDIR):
-			os.mkdir(PARAMOUTDIR)
-
-		with open(os.path.join(PARAMOUTDIR, PARAM_FILE), 'a') as tsv_file:
-			writer = csv.writer(tsv_file)
-			for parameter in top_fit_parameters:
-				writer.writerow(parameter)
-		tsv_file.close()
-
-		# Plot parameter space
-		if POPULATION_ANALYTICS:
-			# gather all saved parameter values
-			with open(os.path.join(PARAMOUTDIR,PARAM_FILE), 'r') as tsv_file:
-				reader = csv.reader(tsv_file)
-				best_parameters = list(reader)
-			tsv_file.close()
-			self.plot_parameters(best_parameters)
+		# Parameter analysis
+		self.parameter_analysis(final_population, final_fitness)
 
 		# Plot evolution
 		self.plot_evolution(saved_fitness)
 
 		# Run simulation of the best individual and plot output
-		saved_concentrations, saved_fluxes = self.run_sim(args.simout, top_parameters)
-		self.plot_out(saved_concentrations, saved_fluxes, top_parameters)
+		top_index = final_fitness.values().index(max(final_fitness.values()))
+		top_genotype = final_population[top_index]
+
+		top_phenotype = self.get_phenotype(top_genotype)
+
+		saved_concentrations, saved_fluxes = self.run_sim(args.simout, top_phenotype)
+		self.plot_out(saved_concentrations, saved_fluxes, top_phenotype)
 
 
 	## Genetic algorithm
-	def evolve_cohorts(self):
-
-
-		# TODO -- each cohort is a full evolutionary run. save top individuals, and pass them back.
-		#
-
-		for cohort in xrange(COHORT_SIZE):
-			population = self.initialize_population()
-
-			# genetic algorithm loop
-			population, fitness, saved_fitness = self.evolve_population(population)
-
-
-		return population, fitness, saved_fitness
 
 	def evolve_population(self, population):
 
@@ -308,20 +257,14 @@ class TransportEstimation(object):
 
 		if top_fit >= fitness_max:
 			print('Success!')
+		else:
+			print('Did not find solution :-(')
 
 		return population, fitness, saved_fitness
 
 	def repopulate(self, population, fitness):
 
-
-		import ipdb; ipdb.set_trace()
-
-		# TODO -- scale parameters to param bound
-
 		new_population = {}
-
-		km_range = PARAM_RANGES['km']
-		kcat_range = PARAM_RANGES['kcat']
 
 		# normalize fitness
 		total = np.sum(fitness.values())
@@ -336,15 +279,16 @@ class TransportEstimation(object):
 		while len(new_population) < POPULATION_SIZE:
 			## Selection
 			# TODO -- use numpy multimodal instead, for fitness-proportionate selection
-			selection = 0
-			total = normalized_fitness[selection]
+			selection_index = 0
+			total = normalized_fitness[selection_index]
 			rand = random.uniform(0,1)
 			while total < rand:
-				selection += 1
-				total += normalized_fitness[selection]
+				selection_index += 1
+				total += normalized_fitness[selection_index]
 
 			## Mutation
-			genotype = population[selection]
+			# TODO -- vectorize these steps, apply mutations to the entire population at once.
+			genotype = population[selection_index]
 
 			# gaussian distance
 			magnitude = random.gauss(0, MUTATION_VARIANCE)
@@ -355,33 +299,19 @@ class TransportEstimation(object):
 			vector = [magnitude * x / direction_mag for x in direction]
 
 			# apply mutation
-			new_population[index] = [x + y for x, y in zip(genotype, vector)]
+			new_genotype = np.array([x + y for x, y in zip(genotype, vector)])
 
-			# enforce bounds
+			# enforce bounds on genotype
 			if ENFORCE_BOUNDS:
-				for idx in self.km_indices:
-					param_value = new_population[index][idx]
+				#X clip at bounds
+				# new_genotype[new_genotype >= 1.0] = 1.0
+				# new_genotype[new_genotype <= 0.0] = 0.0
 
-					# # if parameter is not in range, initialize it randomly within range
-					# if not (km_range[0] <= param_value <= km_range[1]):
-					# 	new_population[index][idx] = random.uniform(km_range[0], km_range[1])
+				# if parameter is not in range, initialize it randomly within range
+				out_of_range = np.where(np.logical_or(new_genotype <= 0.0, new_genotype >= 1.0))
+				new_genotype[out_of_range] = random.uniform(0.0, 1.0)
 
-					if param_value < km_range[0]:
-						new_population[index][idx] = km_range[0]
-					if param_value > km_range[1]:
-						new_population[index][idx] = km_range[1]
-
-				for idx in self.kcat_indices:
-					param_value = new_population[index][idx]
-
-					# # if parameter is not in range, initialize it randomly within range
-					# if not (kcat_range[0] <= param_value <= kcat_range[1]):
-					# 	new_population[index][idx] = random.uniform(kcat_range[0], kcat_range[1])
-
-					if param_value < kcat_range[0]:
-						new_population[index][idx] = kcat_range[0]
-					if param_value > kcat_range[1]:
-						new_population[index][idx] = kcat_range[1]
+			new_population[index] = new_genotype
 
 			index += 1
 
@@ -392,9 +322,11 @@ class TransportEstimation(object):
 		fitness = {}
 
 		# get mean squared error
-		for ind, params in population.iteritems():
+		for individual, genotype in population.iteritems():
 
-			reaction_fluxes, molecule_fluxes = self.get_fluxes(params, self.concentrations)
+			phenotype = self.get_phenotype(genotype)
+
+			reaction_fluxes, molecule_fluxes = self.get_fluxes(phenotype, self.concentrations)
 
 			error = 0.0
 			for molecule, target_conc in TARGETS['concentrations'].iteritems():
@@ -404,7 +336,7 @@ class TransportEstimation(object):
 			for molecule, target_flux in TARGETS['molecule_flux'].iteritems():
 				error += MOLECULE_FLUX_PENALTY * (molecule_fluxes[molecule] - target_flux) ** 2
 
-			fitness[ind] = 1 / (1 + error)
+			fitness[individual] = 1 / (1 + error)
 
 		return fitness
 
@@ -422,60 +354,69 @@ class TransportEstimation(object):
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		self.coefficient = self.dry_cell_mass[0] / self.cell_mass[0] * self.density * (TIME_STEP)
 
-	def initialize_parameter_map(self):
-		''' create a dictionary that maps each parameter to an index in the parameter array'''
+	def get_phenotype_function(self):
+		''' create a list that maps each parameter to an index in the parameter array'''
 
-		reactions = INITIAL_REACTIONS
-		parameter_indices = {rxn: {} for rxn in reactions.keys()}
+		parameter_indices = {rxn: {} for rxn in REACTIONS.keys()}
+		phenotype_function = []
 
 		index = 0
 		# loop through all reactions
-		for rxn, specs in reactions.iteritems():
+		for rxn, specs in REACTIONS.iteritems():
 			parameters = REACTION_PARAMS[specs['type']]
 			for param in parameters:
+
+				if 'km' in param:
+					bounds = PARAM_RANGES['km']
+
+					g_to_p = self.make_genotype_to_phenotype(bounds[0], bounds[1])
+					p_to_g = self.make_phenotype_to_genotype(bounds[0], bounds[1])
+
+				elif 'kcat' in param:
+					bounds = PARAM_RANGES['kcat']
+
+					g_to_p = self.make_genotype_to_phenotype(bounds[0], bounds[1])
+					p_to_g = self.make_phenotype_to_genotype(bounds[0], bounds[1])
+
+				map = {
+					'bounds' : bounds,
+					'geno_to_pheno' : g_to_p,
+					'pheno_to_geno' : p_to_g,
+					}
+
+				phenotype_function.append(map)
+
 				parameter_indices[rxn][param] = index
 				index += 1
 
-		return parameter_indices, index
+		return phenotype_function, parameter_indices
 
-	def initialize_parameters(self):
+	def make_phenotype_to_genotype(self, min_phenotype, max_phenotype):
+		a = min_phenotype
+		b = max_phenotype / min_phenotype
 
-		reactions = INITIAL_REACTIONS
-		target_params = TARGETS['parameters']
+		def p_to_g(x):
+			return (np.log(x / a) / np.log(b))
 
-		parameter_indices = self.parameter_indices
+		return p_to_g
 
-		# intitialize parameters
-		parameter_values = np.empty(self.n_parameters)
+	def make_genotype_to_phenotype(self, min_phenotype, max_phenotype):
+		a = min_phenotype
+		b = max_phenotype / min_phenotype
 
-		km_range = PARAM_RANGES['km']
-		kcat_range = PARAM_RANGES['kcat']
+		def g_to_p(x):
+			return (a * b ** (x))
 
-		# loop through all reactions
-		for rxn, specs in reactions.iteritems():
-			# get this reaction's required parameters
-			rxn_parameters = REACTION_PARAMS[specs['type']]
+		return g_to_p
 
-			# loop through all of the reaction's parameters
-			for param in rxn_parameters:
-				param_index = parameter_indices[rxn][param]
-				no_target = True
+	def get_phenotype(self, genotype):
+		'''convert all genes to param values using geno_to_geno mapping'''
 
-				# if a target parameter value assigned, seed the search at that value
-				if rxn in target_params:
-					if (param in target_params[rxn]) and (target_params[rxn][param] is not None):
-						param_value = target_params[rxn][param]
-						parameter_values[param_index] = param_value
-						no_target = False
-				# if there is no target, initialize parameter randomly within defined range
-				if no_target:
-					# fill unassigned parameter values
-					if 'km' in param:
-						parameter_values[param_index] = random.uniform(km_range[0], km_range[1])
-					elif 'kcat' in param:
-						parameter_values[param_index] = random.uniform(kcat_range[0], kcat_range[1])
+		phenotype = np.empty(len(self.phenotype_function))
+		for index, gene in enumerate(genotype):
+			phenotype[index] = self.phenotype_function[index]['geno_to_pheno'](gene)
 
-		return parameter_values
+		return phenotype
 
 	def initialize_concentrations(self, simOutDir):
 		''' set all initial undefined molecular concentrations to their initial concentrations in the WCM'''
@@ -486,7 +427,7 @@ class TransportEstimation(object):
 			molecule_ids = bulkMolecules.readAttribute("objectNames")
 
 			# get all substrates in self.reactions
-			for rxn, specs in INITIAL_REACTIONS.iteritems():
+			for rxn, specs in REACTIONS.iteritems():
 				substrates = specs['substrates'].values()
 				transporters = specs['transporter']
 
@@ -515,7 +456,7 @@ class TransportEstimation(object):
 			concentrations = copy.deepcopy(INITIAL_CONCENTRATIONS)
 
 			# get all substrates in self.reactions
-			for rxn, specs in INITIAL_REACTIONS.iteritems():
+			for rxn, specs in REACTIONS.iteritems():
 				substrates = specs['substrates'].values()
 				transporters = specs['transporter']
 
@@ -541,22 +482,35 @@ class TransportEstimation(object):
 		''' fill self.population with {index: [parameters]} for index in POPULATION_SIZE'''
 
 		population = {}
-
 		for ind in xrange(POPULATION_SIZE):
-			parameter_values = self.initialize_parameters()
-			population[ind] = parameter_values
+			population[ind] = self.initialize_genotype()
 
 		return population
 
+	def initialize_genotype(self):
+
+		genotype = np.random.uniform(0, 1, len(self.phenotype_function))
+
+		# set parameters that have a target value
+		for rxn, params in TARGETS['parameters'].iteritems():
+			for param, pheno_target in params.iteritems():
+				if pheno_target:
+					index = self.parameter_indices[rxn][param]
+					gene_value = self.phenotype_function[index]['pheno_to_geno'](pheno_target)
+					genotype[index] = gene_value
+
+		return genotype
 
 	## Transporter models
 	def get_fluxes(self, parameters, concentrations):
+
+		# TODO -- pass in a phenotype as dictionary, with parameters in there.
 
 		reaction_fluxes = {}
 		molecule_fluxes = {mol : 0.0 for mol in concentrations.keys()}
 
 		# loop through all reactions, save reaction flux and molecule flux.
-		for rxn, specs in INITIAL_REACTIONS.iteritems():
+		for rxn, specs in REACTIONS.iteritems():
 
 			params = {param : parameters[index] for param, index in self.parameter_indices[rxn].iteritems()}
 
@@ -709,21 +663,21 @@ class TransportEstimation(object):
 
 			for rxn, flux in reaction_fluxes.iteritems():
 				concentration_change = flux / self.coefficient
-				substrates = INITIAL_REACTIONS[rxn]['substrates']
+				substrates = REACTIONS[rxn]['substrates']
 
-				if INITIAL_REACTIONS[rxn]['type'] is 'symport':
+				if REACTIONS[rxn]['type'] is 'symport':
 					self.concentrations[substrates['A1']] -= concentration_change
 					self.concentrations[substrates['B1']] -= concentration_change
 					self.concentrations[substrates['A2']] += concentration_change
 					self.concentrations[substrates['B2']] += concentration_change
 
-				if INITIAL_REACTIONS[rxn]['type'] is 'symport_reversible':
+				if REACTIONS[rxn]['type'] is 'symport_reversible':
 					self.concentrations[substrates['A1']] -= concentration_change
 					self.concentrations[substrates['B1']] -= concentration_change
 					self.concentrations[substrates['A2']] += concentration_change
 					self.concentrations[substrates['B2']] += concentration_change
 
-				if INITIAL_REACTIONS[rxn]['type'] is 'uniport':
+				if REACTIONS[rxn]['type'] is 'uniport':
 					self.concentrations[substrates['A1']] -= concentration_change
 					self.concentrations[substrates['A2']] += concentration_change
 
@@ -740,90 +694,114 @@ class TransportEstimation(object):
 
 	def plot_out(self, saved_concentrations, saved_fluxes, parameters):
 
-		plt.figure(figsize=(12, 11))
-		columns = 3
-		rows = max([len(saved_concentrations), len(saved_fluxes), len(parameters)])
+			plt.figure(figsize=(16, 16))
+			columns = 4
+			rows = max([len(saved_concentrations), len(saved_fluxes), len(parameters)])
 
-		index = 1
-		for molecule, timeseries in saved_concentrations.iteritems():
-			plt.subplot(rows, columns, 3*index-2)
-			plt.plot(timeseries)
-			plt.title(molecule)
-			if index < len(saved_concentrations):
-				plt.tick_params(
-					axis='x',  # changes apply to the x-axis
-					which='both',  # both major and minor ticks are affected
-					bottom=False,  # ticks along the bottom edge are off
-					top=False,  # ticks along the top edge are off
-					labelbottom=False)  # labels along the bottom edge are off
-			else:
-				plt.ylabel("Concentration")
-				plt.xlabel("Time (s)")
-			index += 1
-
-		index = 1
-		for reaction, timeseries in saved_fluxes.iteritems():
-			plt.subplot(rows, columns, 3*index-1)
-			plt.plot(timeseries, 'r')
-			plt.title(reaction)
-			if index < len(saved_fluxes):
-				plt.tick_params(
-					axis='x',  # changes apply to the x-axis
-					which='both',  # both major and minor ticks are affected
-					bottom=False,  # ticks along the bottom edge are off
-					top=False,  # ticks along the top edge are off
-					labelbottom=False)  # labels along the bottom edge are off
-			else:
-				plt.ylabel("Flux")
-				plt.xlabel("Time (s)")
-			index += 1
-
-		# plt.subplot(int(rows/2), columns, int(rows/2) * columns)
-		# # save params in dictionary and add to figure as text
-		# reaction_params = {} #rxn : {} for rxn, params in self.parameter_indices.iteritems()}
-		# reaction_params[rxn] = {param : parameters[index] for param, index in self.parameter_indices[rxn].iteritems()}
-		# plt.text(0.0, 1.0, reaction_params, wrap=True)
-		# plt.axis('off')
-
-		index = 1
-		km_range = PARAM_RANGES['km']
-		kcat_range = PARAM_RANGES['kcat']
-		for rxn, params in self.parameter_indices.iteritems():
-			for param, param_idx in params.iteritems():
-
-				plt.subplot(rows, columns, 3*index)
-
-				param_value = parameters[param_idx]
-				if 'km' in param:
-					plt.axvline(x=km_range[0])
-					plt.axvline(x=km_range[1])
-					# plt.xlim(km_range[0], km_range[1])
-				elif 'kcat' in param:
-					plt.axvline(x=kcat_range[0])
-					plt.axvline(x=kcat_range[1])
-					# plt.xlim(kcat_range[0], kcat_range[1])
-
-				plt.axhline(y=0.5)
-
-				plt.plot(param_value, 0.5, 'bo', markersize=10)
-
-				info = (rxn + ' -- ' + INITIAL_REACTIONS[rxn]['type'] + ': ' + param)
-				plt.title(info)
-				plt.ylim(0, 1)
-				plt.axis('off')
-
+			index = 1
+			for molecule, timeseries in saved_concentrations.iteritems():
+				plt.subplot(rows, columns, columns*index-(columns-1))
+				plt.plot(timeseries)
+				plt.title(molecule)
+				if index < len(saved_concentrations):
+					plt.tick_params(
+						axis='x',  # changes apply to the x-axis
+						which='both',  # both major and minor ticks are affected
+						bottom=False,  # ticks along the bottom edge are off
+						top=False,  # ticks along the top edge are off
+						labelbottom=False)  # labels along the bottom edge are off
+				else:
+					plt.ylabel("Concentration")
+					plt.xlabel("Time (s)")
 				index += 1
 
+			index = 1
+			for reaction, timeseries in saved_fluxes.iteritems():
+				plt.subplot(rows, columns, columns*index-(columns-2))
+				plt.plot(timeseries, 'r')
+				plt.title(reaction)
+				if index < len(saved_fluxes):
+					plt.tick_params(
+						axis='x',  # changes apply to the x-axis
+						which='both',  # both major and minor ticks are affected
+						bottom=False,  # ticks along the bottom edge are off
+						top=False,  # ticks along the top edge are off
+						labelbottom=False)  # labels along the bottom edge are off
+				else:
+					plt.ylabel("Flux")
+					plt.xlabel("Time (s)")
+				index += 1
 
-		plt.subplots_adjust(hspace=0.9, wspace=0.5)
+			index = 1
+			km_range = PARAM_RANGES['km']
+			kcat_range = PARAM_RANGES['kcat']
+			for rxn, params in self.parameter_indices.iteritems():
+				for param, param_idx in params.iteritems():
 
-		if not os.path.exists(OUTDIR):
-			os.mkdir(OUTDIR)
-		fig_name = ('sim_' + self.cohort_id)
-		plt.savefig(os.path.join(OUTDIR,fig_name))
+					plt.subplot(rows, columns, columns*index-(columns-3))
+
+					param_value = parameters[param_idx]
+					if 'km' in param:
+						plt.axvline(x=km_range[0])
+						plt.axvline(x=km_range[1])
+					elif 'kcat' in param:
+						plt.axvline(x=kcat_range[0])
+						plt.axvline(x=kcat_range[1])
+
+					plt.axhline(y=0.5)
+
+					plt.plot(param_value, 0.5, 'bo', markersize=10)
+
+					info = (rxn + ' -- ' + REACTIONS[rxn]['type'] + ': ' + param)
+					plt.title(info)
+					plt.ylim(0, 1)
+					plt.xscale("log")
+					# plt.yticks([])
+					plt.tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=True)
+					# plt.axis('off')
+
+					index += 1
+
+			plt.subplots_adjust(hspace=2.0, wspace=0.5)
+
+			if not os.path.exists(OUTDIR):
+				os.mkdir(OUTDIR)
+			fig_name = ('sim_' + self.cohort_id)
+			plt.savefig(os.path.join(OUTDIR,fig_name))
+
+			print('top simulation plot saved')
 
 
 	## Analysis plots of parameters and evolution
+	def parameter_analysis(self, final_population, final_fitness):
+
+		# get indices of individualus with fitness higher than 0.95
+		top_fit_indices = [index for index, value in enumerate(final_fitness.values()) if value >= SAVE_FITNESS_THRESHOLD]
+		top_fit_parameters = [final_population[index] for index in top_fit_indices]
+
+		# TODO -- convert genotype to phenotype
+
+		# save top parameters to 'best_parameters' file
+		if not os.path.exists(PARAMOUTDIR):
+			os.mkdir(PARAMOUTDIR)
+
+		with open(os.path.join(PARAMOUTDIR, PARAM_FILE), 'a') as tsv_file:
+			writer = csv.writer(tsv_file)
+			for parameter in top_fit_parameters:
+				writer.writerow(parameter)
+		tsv_file.close()
+
+		# Plot parameter space
+		if POPULATION_ANALYTICS:
+			# gather all saved parameter values
+			with open(os.path.join(PARAMOUTDIR,PARAM_FILE), 'r') as tsv_file:
+				reader = csv.reader(tsv_file)
+				best_parameters = list(reader)
+			tsv_file.close()
+			self.plot_parameters(best_parameters)
+
+		print('parameters analyzed')
+
 	def plot_parameters(self, best_parameters):
 
 		best_param_array = np.array(best_parameters, np.float64)
@@ -837,11 +815,15 @@ class TransportEstimation(object):
 
 		plt.figure(figsize=(8.5, 8.5))
 		plt.scatter(best_params_reduced[:, 0], best_params_reduced[:, 1])
+		plt.xlabel('PC1')
+		plt.ylabel('PC2')
 
 		if not os.path.exists(OUTDIR):
 			os.mkdir(OUTDIR)
 		fig_name = ('param_space_' + self.cohort_id)
 		plt.savefig(os.path.join(OUTDIR,fig_name))
+
+		print('parameters plot saved')
 
 	def plot_evolution(self, saved_fitness):
 
@@ -889,7 +871,7 @@ class TransportEstimation(object):
 		fig_name = ('GA_' + self.cohort_id)
 		plt.savefig(os.path.join(OUTDIR,fig_name))
 
-
+		print('evolution plot saved')
 
 
 if __name__ == "__main__":
