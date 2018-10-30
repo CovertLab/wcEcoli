@@ -17,8 +17,8 @@ from wholecell.io.tablereader import TableReader
 # simOutDir = '/Users/eranagmon/code/wcEcoli/out/manual/condition_000002/000000/generation_000000/000000/simOut'
 
 ## options
-ENFORCE_BOUNDS = False
-POPULATION_ANALYTICS = True
+ENFORCE_BOUNDS = True
+POPULATION_ANALYTICS = False
 USE_WCM = False
 
 SAVE_FITNESS_THRESHOLD = 0.95
@@ -199,7 +199,6 @@ class TransportEstimation(object):
 		# run genetic algorithm
 		final_population, final_fitness, saved_fitness = self.evolve_population(population)
 
-
 		## Visualization and Analysis
 		# make cohort_id, for naming saved output in organized fashion
 		# TODO -- what if there are files in outfolder that don't match pattern?
@@ -226,7 +225,9 @@ class TransportEstimation(object):
 
 		# Run simulation of the best individual and plot output
 		top_index = final_fitness.values().index(max(final_fitness.values()))
-		top_phenotype = final_population[top_index]
+		top_genotype = final_population[top_index]
+
+		top_phenotype = self.get_phenotype(top_genotype)
 
 		saved_concentrations, saved_fluxes = self.run_sim(args.simout, top_phenotype)
 		self.plot_out(saved_concentrations, saved_fluxes, top_phenotype)
@@ -281,16 +282,16 @@ class TransportEstimation(object):
 		while len(new_population) < POPULATION_SIZE:
 			## Selection
 			# TODO -- use numpy multimodal instead, for fitness-proportionate selection
-			selection = 0
-			total = normalized_fitness[selection]
+			selection_index = 0
+			total = normalized_fitness[selection_index]
 			rand = random.uniform(0,1)
 			while total < rand:
-				selection += 1
-				total += normalized_fitness[selection]
+				selection_index += 1
+				total += normalized_fitness[selection_index]
 
 			## Mutation
 			# TODO -- vectorize these steps, apply mutations to the entire population at once.
-			genotype = population[selection]
+			genotype = population[selection_index]
 
 			# gaussian distance
 			magnitude = random.gauss(0, MUTATION_VARIANCE)
@@ -301,14 +302,19 @@ class TransportEstimation(object):
 			vector = [magnitude * x / direction_mag for x in direction]
 
 			# apply mutation
-			individual = np.array([x + y for x, y in zip(genotype, vector)])
+			new_genotype = np.array([x + y for x, y in zip(genotype, vector)])
 
-			# enforce bounds
+			# enforce bounds on genotype
 			if ENFORCE_BOUNDS:
-				individual[individual >= 1.0] = 1.0
-				individual[individual <= 0.0] = 0.0
+				#X clip at bounds
+				# new_genotype[new_genotype >= 1.0] = 1.0
+				# new_genotype[new_genotype <= 0.0] = 0.0
 
-			new_population[index] = individual
+				# if parameter is not in range, initialize it randomly within range
+				out_of_range = np.where(np.logical_or(new_genotype <= 0.0, new_genotype >= 1.0))
+				new_genotype[out_of_range] = random.uniform(0.0, 1.0)
+
+			new_population[index] = new_genotype
 
 			index += 1
 
@@ -354,40 +360,31 @@ class TransportEstimation(object):
 	def get_phenotype_function(self):
 		''' create a list that maps each parameter to an index in the parameter array'''
 
-		reactions = REACTIONS
-		km_range = PARAM_RANGES['km']
-		kcat_range = PARAM_RANGES['kcat']
-
-		parameter_indices = {rxn: {} for rxn in reactions.keys()}
+		parameter_indices = {rxn: {} for rxn in REACTIONS.keys()}
 		phenotype_function = []
 
 		index = 0
 		# loop through all reactions
-		for rxn, specs in reactions.iteritems():
+		for rxn, specs in REACTIONS.iteritems():
 			parameters = REACTION_PARAMS[specs['type']]
 			for param in parameters:
 
 				if 'km' in param:
-					bounds = km_range
-					# TODO -- enforce bounds in the function
+					bounds = PARAM_RANGES['km']
 
-					def geno_to_pheno(x):
-						return np.log(x + 1)
-					def pheno_to_geno(x):
-						return (np.exp(x) - 1)
+					g_to_p = self.make_genotype_to_phenotype(bounds[0], bounds[1])
+					p_to_g = self.make_phenotype_to_genotype(bounds[0], bounds[1])
 
 				elif 'kcat' in param:
-					bounds = kcat_range
+					bounds = PARAM_RANGES['kcat']
 
-					def geno_to_pheno(x):
-						return np.log(x + 1)
-					def pheno_to_geno(x):
-						return (np.exp(x) - 1)
+					g_to_p = self.make_genotype_to_phenotype(bounds[0], bounds[1])
+					p_to_g = self.make_phenotype_to_genotype(bounds[0], bounds[1])
 
 				map = {
 					'bounds' : bounds,
-					'geno_to_pheno' : geno_to_pheno,
-					'pheno_to_geno' : pheno_to_geno,
+					'geno_to_pheno' : g_to_p,
+					'pheno_to_geno' : p_to_g,
 					}
 
 				phenotype_function.append(map)
@@ -397,29 +394,32 @@ class TransportEstimation(object):
 
 		return phenotype_function, parameter_indices
 
+	def make_phenotype_to_genotype(self, min_phenotype, max_phenotype):
+		a = min_phenotype
+		b = max_phenotype / min_phenotype
+
+		def p_to_g(x):
+			return (np.log(x / a) / np.log(b))
+
+		return p_to_g
+
+	def make_genotype_to_phenotype(self, min_phenotype, max_phenotype):
+		a = min_phenotype
+		b = max_phenotype / min_phenotype
+
+		def g_to_p(x):
+			return (a * b ** (x))
+
+		return g_to_p
+
 	def get_phenotype(self, genotype):
+		'''convert all genes to param values using geno_to_geno mapping'''
 
 		phenotype = np.empty(len(self.phenotype_function))
-		# TODO -- make phenotype a dictionary rather than array
-
 		for index, gene in enumerate(genotype):
 			phenotype[index] = self.phenotype_function[index]['geno_to_pheno'](gene)
 
 		return phenotype
-
-	def initialize_genotype(self):
-
-		genotype = np.random.uniform(0, 1, len(self.phenotype_function))
-
-		# set parameters that have a target value
-		for rxn, params in TARGETS['parameters'].iteritems():
-			for param, pheno_target in params.iteritems():
-				if pheno_target:
-					index = self.parameter_indices[rxn][param]
-					gene_value = self.phenotype_function[index]['pheno_to_geno'](pheno_target)
-					genotype[index] = gene_value
-
-		return genotype
 
 	def initialize_concentrations(self, simOutDir):
 		''' set all initial undefined molecular concentrations to their initial concentrations in the WCM'''
@@ -485,13 +485,24 @@ class TransportEstimation(object):
 		''' fill self.population with {index: [parameters]} for index in POPULATION_SIZE'''
 
 		population = {}
-
 		for ind in xrange(POPULATION_SIZE):
-			genotype = self.initialize_genotype()
-			population[ind] = genotype
+			population[ind] = self.initialize_genotype()
 
 		return population
 
+	def initialize_genotype(self):
+
+		genotype = np.random.uniform(0, 1, len(self.phenotype_function))
+
+		# set parameters that have a target value
+		for rxn, params in TARGETS['parameters'].iteritems():
+			for param, pheno_target in params.iteritems():
+				if pheno_target:
+					index = self.parameter_indices[rxn][param]
+					gene_value = self.phenotype_function[index]['pheno_to_geno'](pheno_target)
+					genotype[index] = gene_value
+
+		return genotype
 
 	## Transporter models
 	def get_fluxes(self, parameters, concentrations):
@@ -686,13 +697,13 @@ class TransportEstimation(object):
 
 	def plot_out(self, saved_concentrations, saved_fluxes, parameters):
 
-		plt.figure(figsize=(12, 11))
-		columns = 3
+		plt.figure(figsize=(16, 16))
+		columns = 4
 		rows = max([len(saved_concentrations), len(saved_fluxes), len(parameters)])
 
 		index = 1
 		for molecule, timeseries in saved_concentrations.iteritems():
-			plt.subplot(rows, columns, 3*index-2)
+			plt.subplot(rows, columns, columns*index-(columns-1))
 			plt.plot(timeseries)
 			plt.title(molecule)
 			if index < len(saved_concentrations):
@@ -709,7 +720,7 @@ class TransportEstimation(object):
 
 		index = 1
 		for reaction, timeseries in saved_fluxes.iteritems():
-			plt.subplot(rows, columns, 3*index-1)
+			plt.subplot(rows, columns, columns*index-(columns-2))
 			plt.plot(timeseries, 'r')
 			plt.title(reaction)
 			if index < len(saved_fluxes):
@@ -730,7 +741,7 @@ class TransportEstimation(object):
 		for rxn, params in self.parameter_indices.iteritems():
 			for param, param_idx in params.iteritems():
 
-				plt.subplot(rows, columns, 3*index)
+				plt.subplot(rows, columns, columns*index-(columns-3))
 
 				param_value = parameters[param_idx]
 				if 'km' in param:
@@ -747,12 +758,15 @@ class TransportEstimation(object):
 				info = (rxn + ' -- ' + REACTIONS[rxn]['type'] + ': ' + param)
 				plt.title(info)
 				plt.ylim(0, 1)
-				plt.axis('off')
+				plt.xscale("log")
+				# plt.yticks([])
+				plt.tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=True)
+				# plt.axis('off')
 
 				index += 1
 
 
-		plt.subplots_adjust(hspace=0.9, wspace=0.5)
+		plt.subplots_adjust(hspace=2.0, wspace=0.5)
 
 		if not os.path.exists(OUTDIR):
 			os.mkdir(OUTDIR)
@@ -768,6 +782,8 @@ class TransportEstimation(object):
 		# get indices of individualus with fitness higher than 0.95
 		top_fit_indices = [index for index, value in enumerate(final_fitness.values()) if value >= SAVE_FITNESS_THRESHOLD]
 		top_fit_parameters = [final_population[index] for index in top_fit_indices]
+
+		# TODO -- convert genotype to phenotype
 
 		# save top parameters to 'best_parameters' file
 		if not os.path.exists(PARAMOUTDIR):
@@ -803,6 +819,8 @@ class TransportEstimation(object):
 
 		plt.figure(figsize=(8.5, 8.5))
 		plt.scatter(best_params_reduced[:, 0], best_params_reduced[:, 1])
+		plt.xlabel('PC1')
+		plt.ylabel('PC2')
 
 		if not os.path.exists(OUTDIR):
 			os.mkdir(OUTDIR)
