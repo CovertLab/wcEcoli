@@ -101,10 +101,11 @@ class _Column(object):
 
 	def append(self, value):
 		"""
-		Appends an array-like to the end of a column.
+		Appends an array-like cell value to the end of a column, converting it
+		to a 1-D array.
 
-		On first call, the NumPy dtype of the column is inferred from the
-		input.  On subsequent calls this dtype is checked for consistency.
+		The first call to this method will define the column's NumPy dtype.
+		Subsequent calls will check data types for consistency.
 
 		Parameters
 		----------
@@ -174,8 +175,11 @@ class TableWriter(object):
 
 	NumPy can save and load arrays to disk.  This class provides a convenient
 	interface to repeated appending of NumPy array data to an output file,
-	which can be loaded one entry at a time or all at once via the companion
-	class, TableReader.
+	which can be loaded one entry (row) at a time or all at once via the
+	companion class, TableReader.
+
+	A Table has one or more named columns. Each (row x column) cell value is a
+	1-D NumPy array.
 
 	Output file structure:
 
@@ -216,12 +220,12 @@ class TableWriter(object):
 	downstream analysis or otherwise improve portability.  E.g. a list of names
 	associated with the elements of a vector-column.
 
-	Data written to columns can be of fixed or variable size.  If fixed, the
-	output can be read in as a single, higher dimensional array by TableReader.
-	Otherwise output will need to be handled one line at a time.
+	Data written to columns can be a fixed or variable size 1D NumPy array.
+	If fixed, the output can be read in as a single, 2D array by TableReader.
+	Otherwise the data must be read one entry (row) at a time.
 
 	0D and 1D array writing is supported.  Higher dimensions are outside of
-	spec, and will likely be flattened when read by TableReader.
+	spec and will be flattened by TableWriter.
 	TODO (John): throw an error for > 1D?
 
 	Both simple and structured ndarray dtypes are supported.  Structured arrays
@@ -249,10 +253,8 @@ class TableWriter(object):
 		directory, save everything to an uncompressed archive.  Built-in module
 		zipfile seems like a good option; np.savez uses it.
 
-	TODO (John): Unit tests.
-
 	TODO (John): Test portability across machines (particularly, different
-	operating systems).
+		operating systems).
 
 	TODO (John): Consider separating out the fixed and variable size
 		implementations.  Further, consider writing all fields simultaneously
@@ -273,18 +275,17 @@ class TableWriter(object):
 		self._columns = None
 
 
-	@profile
 	def append(self, **namesAndValues):
 		"""
-		Write a new set of values to each column.
+		Write a new row of values, writing a 1-D NumPy array to each named
+		column.
 
-		On the first call to this method, the columns will be set up with the
-		appropriate names and data type information.  Subsequent calls will
-		validate that the names and data types are consistent.
+		The first call to this method will define the column names and dtypes.
+		Subsequent calls will validate the names and types for consistency.
 
 		Parameters
 		----------
-		**namesAndValues : dict of {string: array-like} pairs
+		**namesAndValues : dict of named array-like values.
 			The column names (fields) and associated values to append to the
 			end of the columns.
 

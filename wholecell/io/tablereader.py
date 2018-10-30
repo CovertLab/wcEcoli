@@ -124,7 +124,9 @@ class TableReader(object):
 
 	def readColumn(self, name, indices=None, block_read=True):
 		"""
-		Load a full column (all entries).
+		Load a full column (all entries). Each (row x column) cell value is a
+		1-D NumPy array. This method can optionally read just a slice of all
+		those arrays: their array values at the given `indices`.
 
 		Parameters:
 			name (str): The name of the column.
@@ -134,14 +136,14 @@ class TableReader(object):
 				NOTE: performance benefit might only be realized if the file
 				is in the disk cache (i.e. the file has been recently read),
 				which should typically be the case.
-			block_read (bool): If True, will only read one block per time point,
+			block_read (bool): If True, will only read one block per entry,
 				otherwise will seek between contiguous data. Only applies if
 				indices are given.
 				NOTE: If False and indices are spread out, reading can be orders
 				of magnitude slower.
 
 		Returns:
-			ndarray: data read with entries along the first dimension
+			ndarray: a 2-D NumPy array, with entries along the first dimension
 
 		Notes:
 		If entry sizes varies, this method cannot be used.
@@ -182,7 +184,7 @@ class TableReader(object):
 
 				dataFile.seek(offsets[0])
 
-				# Precalculate seeks for each entry
+				# Precalculate relative seeks for each entry
 				# Sort to improve speed of seeking
 				sort_indices = np.argsort(indices)
 				indices = indices[sort_indices]
@@ -312,7 +314,7 @@ class TableReader(object):
 
 			return np.frombuffer(
 				dataFile.read(size), dtype
-				).copy()
+				).copy()  # read() bytes are immutable; copy for mutability
 
 	def _loadOffsets(self, name):
 		"""

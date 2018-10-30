@@ -10,15 +10,15 @@ import nose.plugins.attrib as noseAttrib
 
 
 def noop_decorator():
-	def noop(fcn):
+	def same(fcn):
 		return fcn
-	return noop
+	return same
 
-# Cope if this is not running under kernprof.
+# TODO(jerry): Remove before flight: Workaround for @profile defined only by kernprof.
 __builtins__.setdefault('profile', noop_decorator())
 
 
-from wholecell.io.tablereader import TableReader, DoesNotExistError
+from wholecell.io.tablereader import TableReader, DoesNotExistError, VariableWidthError
 from wholecell.io.tablewriter import TableWriter, MissingFieldError, UnrecognizedFieldError
 
 
@@ -26,7 +26,11 @@ COLUMNS = 'x y z theta'.split()
 DATA = {key: np.arange(10.0) + ord(key[0]) for key in COLUMNS}
 
 
-class Test_BulkObjectsContainer(unittest.TestCase):
+# TODO(jerry): Test readColumn() w/non-default indices and block_read.
+# TODO(jerry): Test structured dtypes.
+# TODO(jerry): Test or delete iterColumn().
+
+class Test_TableReader_Writer(unittest.TestCase):
 	def setUp(self):
 		self.test_dir = None
 
@@ -37,6 +41,21 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 	def make_test_dir(self):
 		if not self.test_dir:
 			self.test_dir = tempfile.mkdtemp()
+
+	def assert_equal_row(self, written_row, read_row):
+		'''Assert that a read-in row (dict of cell values) matches the written
+		row, adjusting for the fact that **TableWriter stores a 1-D array in
+		each table cell even if the written cell value was a scalar or an
+		n-D array.**
+		'''
+		self.assertEqual(set(written_row.keys()), set(read_row.keys()))
+
+		for key, expected_value in written_row.iteritems():
+			actual_value = read_row[key]
+			if isinstance(expected_value, np.ndarray):
+				expected_value = expected_value.reshape(expected_value.size)
+			self.assertIsInstance(actual_value, np.ndarray)
+			npt.assert_array_equal(expected_value, actual_value)
 
 	@noseAttrib.attr('smalltest', 'table')
 	def test_basic(self):
@@ -77,14 +96,10 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 		npt.assert_array_equal(expected, actual)
 
 		actual = reader.readRow(1)
-		self.assertEqual(set(d2.keys()), set(actual.keys()))
-		for key in d2:
-			npt.assert_array_equal(d2[key], actual[key])
+		self.assert_equal_row(d2, actual)
 
 		actual = reader.readRow(0)
-		self.assertEqual(set(DATA.keys()), set(actual.keys()))
-		for key in DATA:
-			npt.assert_array_equal(DATA[key], actual[key])
+		self.assert_equal_row(DATA, actual)
 
 		column_name = COLUMNS[2]
 		values = list(reader.iterColumn(column_name))
@@ -94,7 +109,6 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			reader.readColumn('JUNK')
 
 		reader.close()
-
 
 	@noseAttrib.attr('smalltest', 'table')
 	def test_attributes(self):
@@ -134,4 +148,44 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 
 		reader.close()
 
-	# TODO(jerry): Test readColumn() w/non-default indices and block_read.
+	@noseAttrib.attr('smalltest', 'table')
+	def test_array_dimensions(self):
+		'''Test 0D, 2D, and non-uniform array lengths, also automatic int to
+		float value conversion.
+		'''
+		self.make_test_dir()
+		d0 = {key: 19 for key in DATA.iterkeys()}
+		d2 = {key: value.reshape(2, -1) for key, value in DATA.iteritems()}
+		d3 = {key: value[2:] for key, value in DATA.iteritems()}
+
+		# --- Write ---
+		writer = TableWriter(self.test_dir)
+		writer.append(**DATA)
+		writer.append(**d0)  # row 1
+		writer.append(**d2)
+		writer.append(**d3)
+		writer.close()
+
+		# --- Read ---
+		reader = TableReader(self.test_dir)
+		self.assertEqual(set(COLUMNS), set(reader.columnNames()))
+
+		column_name = COLUMNS[0]
+		with self.assertRaises(VariableWidthError):
+			reader.readColumn(column_name)
+
+		actual = reader.readRow(1)
+		self.assertEqual(d0, actual)
+		self.assert_equal_row(d0, actual)
+		for key in DATA:  # expect 1-length arrays
+			self.assertEqual(np.float64, actual[key].dtype)
+			self.assertEqual((1,), actual[key].shape)
+
+		actual = reader.readRow(2)
+		self.assert_equal_row(d2, actual)
+
+		actual = reader.readRow(3)
+		self.assert_equal_row(d3, actual)
+
+		actual = reader.readRow(0)
+		self.assert_equal_row(DATA, actual)
