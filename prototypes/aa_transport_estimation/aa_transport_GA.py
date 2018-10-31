@@ -41,9 +41,10 @@ TIME_STEP = 0.1 # seconds
 
 # genetic algorithm parameters
 COHORT_SIZE = 1
-POPULATION_SIZE = 50
+POPULATION_SIZE = 100
 MUTATION_VARIANCE = 1.0
-MAX_GENERATIONS = 100
+MAX_GENERATIONS = 500
+FITNESS_MAX = 0.98
 
 # set allowable parameter ranges
 PARAM_RANGES = {
@@ -67,7 +68,8 @@ PARAM_RANGES = {
 # estimation targets and penalties
 CONCENTRATION_PENALTY = 0.0
 FLUX_PENALTY = 0.0
-MOLECULE_FLUX_PENALTY = 1.0
+MOLECULE_FLUX_PENALTY = 0.01
+PARAMETER_TARGET_PENALTY = 10000000000000.0
 
 TARGETS = {
 	'concentrations': {
@@ -93,7 +95,7 @@ TARGETS = {
 		'ABC-35-RXN': {
 			'kcat_f': None,
 			'kcat_r': None,
-			'km_A1': None,
+			'km_A1': 0.4, # Landick, Oxender, Ames. "Bacterial amino acid transport systems." 1985.
 			'km_A2': None,
 			'km_B1': None,
 			'km_B2': None,
@@ -166,9 +168,6 @@ class TransportEstimation(object):
 
 	def main(self, args):
 
-		# import ipdb;
-		# ipdb.set_trace()
-
 		# initialize
 		if USE_WCM:
 			self.initialize_from_WCM(args.simout)
@@ -186,6 +185,9 @@ class TransportEstimation(object):
 		# initial population
 		population = self.initialize_population()
 
+		# make dictionary for saving error terms
+		self.error_saved = {term : 0 for term, specs in TARGETS.iteritems()}
+
 		# run genetic algorithm
 		final_population, final_fitness, saved_fitness = self.evolve_population(population)
 
@@ -193,7 +195,7 @@ class TransportEstimation(object):
 		# make cohort_id, for naming saved output in organized fashion
 		# TODO -- what if there are files in outfolder that don't match pattern?
 		now = datetime.datetime.now()
-		time_stamp = (str(now.month) + str(now.day))
+		time_stamp = now.strftime('%m-%d_%H:%M:%S')
 
 		cohort_nums = os.listdir(OUTDIR)
 		if not cohort_nums:
@@ -226,15 +228,12 @@ class TransportEstimation(object):
 	## Genetic algorithm
 
 	def evolve_population(self, population):
-
-		fitness_max = 0.9999 # TODO -- make this a global
-
 		generations = 0
 		top_fit = 0
 		saved_fitness = []
 
 		# genetic algorithm loop
-		while generations < MAX_GENERATIONS and top_fit < fitness_max:
+		while generations < MAX_GENERATIONS and top_fit < FITNESS_MAX:
 
 			# evaluate fitness and repopulate
 			fitness = self.evaluate_fitness(population)
@@ -246,9 +245,16 @@ class TransportEstimation(object):
 			saved_fitness.append(fitness.values())
 			top_fit = max(fitness.values())
 
-			print('gen ' + str(generations) + ' fittest: ' + str(top_fit))
+			print(
+				'gen ' + str(generations) +
+				' fittest: ' + str(top_fit) +
+				' error: conc=' + str(self.error_saved['concentrations']) +
+				' rxn_flux=' + str(self.error_saved['fluxes']) +
+				' mol_flux=' + str(self.error_saved['molecule_flux']) +
+				' params=' + str(self.error_saved['parameters'])
+				)
 
-		if top_fit >= fitness_max:
+		if top_fit >= FITNESS_MAX:
 			print('Success!')
 		else:
 			print('Did not find solution')
@@ -321,15 +327,39 @@ class TransportEstimation(object):
 
 			reaction_fluxes, molecule_fluxes = self.get_fluxes(phenotype, self.concentrations)
 
-			error = 0.0
+			total_error = 0.0
+			# concentration error
 			for molecule, target_conc in TARGETS['concentrations'].iteritems():
-				error += CONCENTRATION_PENALTY * (self.concentrations[molecule] - target_conc) ** 2
-			for rxn, target_flux in TARGETS['fluxes'].iteritems():
-				error += FLUX_PENALTY * (reaction_fluxes[rxn] - target_flux) ** 2
-			for molecule, target_flux in TARGETS['molecule_flux'].iteritems():
-				error += MOLECULE_FLUX_PENALTY * (molecule_fluxes[molecule] - target_flux) ** 2
+				error = CONCENTRATION_PENALTY * (self.concentrations[molecule] - target_conc) ** 2
+				total_error += error
+				self.error_saved['concentrations'] += error
 
-			fitness[individual] = 1 / (1 + error)
+			# reaction flux error
+			for rxn, target_flux in TARGETS['fluxes'].iteritems():
+				error = FLUX_PENALTY * (reaction_fluxes[rxn] - target_flux) ** 2
+				total_error += error
+				self.error_saved['fluxes'] += error
+
+			# molecular flux error
+			for molecule, target_flux in TARGETS['molecule_flux'].iteritems():
+				error = MOLECULE_FLUX_PENALTY * (molecule_fluxes[molecule] - target_flux) ** 2
+				total_error += error
+				self.error_saved['molecule_flux'] += error
+
+			# parameter error -- use gene values for comparison
+			for rxn, parameters in TARGETS['parameters'].iteritems():
+				for param_id, parameter_target in parameters.iteritems():
+					if parameter_target:
+						index = self.parameter_indices[rxn][param_id]
+						# parameter_value = phenotype[index]
+						gene_value_target = self.phenotype_function[index]['pheno_to_geno'](parameter_target)
+						gene_value = genotype[index]
+
+						error = PARAMETER_TARGET_PENALTY * (gene_value - gene_value_target) ** 2
+						total_error += error
+						self.error_saved['parameters'] += error
+
+			fitness[individual] = 1 / (1 + total_error)
 
 		return fitness
 
@@ -840,21 +870,23 @@ class TransportEstimation(object):
 		plt.figure(figsize=(8.5, 11))
 
 		# plot fitness over gens
-		plt.subplot(2, 1, 1)
+		plt.subplot(3, 1, 1)
 		plt.plot(top_fitness)
 		plt.plot(avg_fitness, 'r')
 		plt.ylabel('Fitness')
 		plt.xlabel('Generation')
 
-		plt.subplot(2, 1, 2)
-		# plt.hist(plot_gen, bins=np.logspace(np.log10(0.01),np.log10(1.0), n_bins), label=gen_label)
-		# plt.gca().set_xscale("log")
+		# plot histograms of fitness over several generations
+		plt.subplot(3, 1, 2)
 		plt.hist(plot_gen, bins=n_bins, label=gen_label)
 		plt.legend(loc='upper right')
 		plt.ylabel('Count')
 		plt.xlabel('Fitness')
+		# plt.hist(saved_fitness[0], bins=10)
 
-		plt.hist(saved_fitness[0], bins=10)
+		plt.subplot(3, 1, 3)
+		plt.bar(self.error_saved.keys(), self.error_saved.values())
+		plt.ylabel('error')
 
 		plt.subplots_adjust(hspace=0.5)
 
