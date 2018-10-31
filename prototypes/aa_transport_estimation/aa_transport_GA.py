@@ -43,7 +43,7 @@ TIME_STEP = 0.1 # seconds
 COHORT_SIZE = 1
 POPULATION_SIZE = 100
 MUTATION_VARIANCE = 1.0
-MAX_GENERATIONS = 500
+MAX_GENERATIONS = 100
 FITNESS_MAX = 0.98
 
 # set allowable parameter ranges
@@ -133,8 +133,8 @@ INCLUDE_REACTIONS = [
 	]
 
 REACTIONS = {}
+# get rxn_ids from ALL_REACTIONS
 for reaction in INCLUDE_REACTIONS:
-	# get rxn_ids from ALL_REACTIONS
 	rxn_id = [rxn for rxn, specs in ALL_REACTIONS.iteritems() if (rxn in reaction) or (reaction in rxn)]
 	REACTIONS[rxn_id[0]] = ALL_REACTIONS[rxn_id[0]]
 
@@ -247,11 +247,11 @@ class TransportEstimation(object):
 
 			print(
 				'gen ' + str(generations) +
-				' fittest: ' + str(top_fit) +
-				' error: conc=' + str(self.error_saved['concentrations']) +
-				' rxn_flux=' + str(self.error_saved['fluxes']) +
-				' mol_flux=' + str(self.error_saved['molecule_flux']) +
-				' params=' + str(self.error_saved['parameters'])
+				' fittest: ' + str(top_fit)
+				#  + ' error: conc=' + str(self.error_saved['concentrations']) +
+				# ' rxn_flux=' + str(self.error_saved['fluxes']) +
+				# ' mol_flux=' + str(self.error_saved['molecule_flux']) +
+				# ' params=' + str(self.error_saved['parameters'])
 				)
 
 		if top_fit >= FITNESS_MAX:
@@ -765,14 +765,23 @@ class TransportEstimation(object):
 					plt.subplot(rows, columns, columns*index-(columns-3))
 
 					param_value = parameters[param_idx]
+
+					# plot range
 					if 'km' in param:
 						plt.axvline(x=km_range[0])
 						plt.axvline(x=km_range[1])
 					elif 'kcat' in param:
 						plt.axvline(x=kcat_range[0])
 						plt.axvline(x=kcat_range[1])
-
 					plt.axhline(y=0.5)
+
+					# plot target parameters if defined in TARGETS['parameters']
+					rxn_id = [rxn_name for rxn_name, specs in TARGETS['parameters'].iteritems() if (rxn_name in rxn) or (rxn in rxn_name)]
+					if TARGETS['parameters'][rxn_id[0]]:
+						if TARGETS['parameters'][rxn_id[0]][param]:
+							target_value = TARGETS['parameters'][rxn_id[0]][param]
+							plt.axvline(x=target_value, linewidth=4, color='r')
+
 
 					plt.plot(param_value, 0.5, 'bo', markersize=10)
 
@@ -780,9 +789,12 @@ class TransportEstimation(object):
 					plt.title(info)
 					plt.ylim(0, 1)
 					plt.xscale("log")
-					# plt.yticks([])
-					plt.tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=True)
-					# plt.axis('off')
+					plt.tick_params(
+						left=False,
+						right=False,
+						bottom=False,
+						top=False,
+						labelleft=False)
 
 					index += 1
 
@@ -886,7 +898,7 @@ class TransportEstimation(object):
 
 		plt.subplot(3, 1, 3)
 		plt.bar(self.error_saved.keys(), self.error_saved.values())
-		plt.ylabel('error')
+		plt.ylabel('error contribution across evolution')
 
 		plt.subplots_adjust(hspace=0.5)
 
