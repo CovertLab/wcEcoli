@@ -25,8 +25,6 @@ USE_WCM = True
 SAVE_FITNESS_THRESHOLD = 0.95
 PARAM_FILE = 'best_parameters.tsv'
 
-
-
 PARAMOUTDIR = os.path.join(
 	os.path.split(__file__)[0],
 	'out/saved_parameters'
@@ -114,8 +112,7 @@ INITIAL_CONCENTRATIONS = {
 	# 'G6458-MONOMER': 0.0,
 	}
 
-# define the reactions. Parameters set to None will be assigned
-# a random initial value within a range defined by PARAM_RANGES
+## Initialize the reactions
 # load all reactions from file
 REACTIONS_FILE = os.path.join(
 	os.path.split(__file__)[0],
@@ -125,52 +122,19 @@ REACTIONS_FILE = os.path.join(
 with open(REACTIONS_FILE, "r") as f:
   ALL_REACTIONS = json.loads(f.read())
 
+# define which reactions to include in the problem
 INCLUDE_REACTIONS = [
-	'TRANS-RXN0-270',
-	'TRANS-RXN0-569-LEU',
-	'ABC-35-RXN',
-	'TRANS-RXN-126B'
+	'TRANS-RXN0-270',		# leucine
+	'TRANS-RXN0-569-LEU',	# leucine
+	'ABC-35-RXN',			# leucine
+	'TRANS-RXN-126B'		# leucine
 	]
 
-# import ipdb; ipdb.set_trace()
-REACTIONS = {reaction : specs for reaction, specs in ALL_REACTIONS.iteritems() if reaction in INCLUDE_REACTIONS}
-
-# REACTIONS = {
-# 			'TRANS-RXN0-270': {'type': 'symport', # export
-# 				'substrates': {
-# 					'A1': 'LEU[c]',
-# 					'B1': 'PROTON[p]',
-# 					'A2': 'LEU[p]',
-# 					'B2': 'PROTON[c]',
-# 				},
-# 				'transporter': ['G6984-MONOMER', 'B4141-MONOMER'], # TODO (eran) only using the first transporter
-# 				},
-# 			# 'TRANS-RXN0-569-LEU': {'type': 'uniport', # export
-# 			# 	'substrates': {
-# 			# 	   'A1': 'LEU[c]',
-# 			# 	   'A2': 'LEU[p]',
-# 			# 	},
-# 			# 	'transporter': ['G6458-MONOMER'],
-# 			# 	},
-# 			'ABC-35-RXN': {'type': 'symport_reversible',
-# 				'substrates': {
-# 				   'A1': 'LEU[p]',
-# 				   'A2': 'LEU[c]',
-# 				   'B1': 'ATP[c]',
-# 				   'B2': 'ADP[c]',
-# 				},
-# 				'transporter': ['ABC-15-CPLX', 'ABC-304-CPLX'], # TODO (eran) only using the first transporter
-# 				},
-# 			'TRANS-RXN-126B': {'type': 'symport',
-# 				'substrates': {
-# 				   'A1': 'LEU[p]',
-# 				   'A2': 'LEU[c]',
-# 				   'B1': 'NA+[p]',
-# 				   'B2': 'NA+[c]',
-# 				},
-# 				'transporter': ['BRNQ-MONOMER'],
-# 				},
-# 			}
+REACTIONS = {}
+for reaction in INCLUDE_REACTIONS:
+	# get rxn_ids from ALL_REACTIONS
+	rxn_id = [rxn for rxn, specs in ALL_REACTIONS.iteritems() if (rxn in reaction) or (reaction in rxn)]
+	REACTIONS[rxn_id[0]] = ALL_REACTIONS[rxn_id[0]]
 
 REACTION_PARAMS = {
 	'uniport' : ['kcat', 'km'],
@@ -179,6 +143,7 @@ REACTION_PARAMS = {
 	'symport_reversible' : ['kcat_f', 'kcat_r', 'km_A1', 'km_A2', 'km_B1', 'km_B2'],
 	}
 
+# TODO -- non-WCM-mode needs to be removed? or save a json with all initial concs for all substrates/transporters
 WCM_INITIAL_CONCS = {
 	'LEU[c]': 699439.9961946806,
 	'NA+[p]': 60086.898174455666,
@@ -368,6 +333,15 @@ class TransportEstimation(object):
 
 		return fitness
 
+	def get_phenotype(self, genotype):
+		'''convert all genes to param values using geno_to_pheno function'''
+
+		phenotype = np.empty(len(self.phenotype_function))
+		for index, gene in enumerate(genotype):
+			phenotype[index] = self.phenotype_function[index]['geno_to_pheno'](gene)
+
+		return phenotype
+
 
 	## Initialization
 	def initialize_from_WCM(self, simOutDir):
@@ -436,15 +410,6 @@ class TransportEstimation(object):
 			return (a * b ** (x))
 
 		return g_to_p
-
-	def get_phenotype(self, genotype):
-		'''convert all genes to param values using geno_to_geno mapping'''
-
-		phenotype = np.empty(len(self.phenotype_function))
-		for index, gene in enumerate(genotype):
-			phenotype[index] = self.phenotype_function[index]['geno_to_pheno'](gene)
-
-		return phenotype
 
 	def initialize_concentrations(self, simOutDir):
 		''' set all initial undefined molecular concentrations to their initial concentrations in the WCM'''
@@ -528,6 +493,7 @@ class TransportEstimation(object):
 					genotype[index] = gene_value
 
 		return genotype
+
 
 	## Transporter models
 	def get_fluxes(self, parameters, concentrations):
@@ -723,7 +689,7 @@ class TransportEstimation(object):
 	def plot_out(self, saved_concentrations, saved_fluxes, parameters):
 
 			plt.figure(figsize=(16, 16))
-			columns = 4
+			columns = 3
 			rows = max([len(saved_concentrations), len(saved_fluxes), len(parameters)])
 
 			index = 1
