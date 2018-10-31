@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import csv
+import json
+import yaml # for non-unicoded dict-loading
 import argparse
 import random # TODO -- use numpy random
 import datetime
@@ -13,6 +15,8 @@ from sklearn.decomposition import PCA
 
 from wholecell.io.tablereader import TableReader
 
+
+
 ## options
 ENFORCE_BOUNDS = True
 POPULATION_ANALYTICS = False
@@ -20,6 +24,8 @@ USE_WCM = True
 
 SAVE_FITNESS_THRESHOLD = 0.95
 PARAM_FILE = 'best_parameters.tsv'
+
+
 
 PARAMOUTDIR = os.path.join(
 	os.path.split(__file__)[0],
@@ -37,9 +43,9 @@ TIME_STEP = 0.1 # seconds
 
 # genetic algorithm parameters
 COHORT_SIZE = 1
-POPULATION_SIZE = 200
+POPULATION_SIZE = 50
 MUTATION_VARIANCE = 1.0
-MAX_GENERATIONS = 200
+MAX_GENERATIONS = 100
 
 # set allowable parameter ranges
 PARAM_RANGES = {
@@ -105,47 +111,66 @@ TARGETS = {
 # initial concentrations.
 # those not set here will be taken from the WCM, or from WCM_INITIAL_CONCS
 INITIAL_CONCENTRATIONS = {
-	'G6458-MONOMER': 0.0,
+	# 'G6458-MONOMER': 0.0,
 	}
 
 # define the reactions. Parameters set to None will be assigned
 # a random initial value within a range defined by PARAM_RANGES
-REACTIONS = {
-			'TRANS-RXN0-270': {'type': 'symport', # export
-				'substrates': {
-					'A1': 'LEU[c]',
-					'B1': 'PROTON[p]',
-					'A2': 'LEU[p]',
-					'B2': 'PROTON[c]',
-				},
-				'transporter': ['G6984-MONOMER', 'B4141-MONOMER'], # TODO (eran) only using the first transporter
-				},
-			'TRANS-RXN0-569-LEU': {'type': 'uniport', # export
-				'substrates': {
-				   'A1': 'LEU[c]',
-				   'A2': 'LEU[p]',
-				},
-				'transporter': ['G6458-MONOMER'],
-				},
-			'ABC-35-RXN': {'type': 'symport_reversible',
-				'substrates': {
-				   'A1': 'LEU[p]',
-				   'A2': 'LEU[c]',
-				   'B1': 'ATP[c]',
-				   'B2': 'ADP[c]',
-				},
-				'transporter': ['ABC-15-CPLX', 'ABC-304-CPLX'], # TODO (eran) only using the first transporter
-				},
-			'TRANS-RXN-126B': {'type': 'symport',
-				'substrates': {
-				   'A1': 'LEU[p]',
-				   'A2': 'LEU[c]',
-				   'B1': 'NA+[p]',
-				   'B2': 'NA+[c]',
-				},
-				'transporter': ['BRNQ-MONOMER'],
-				},
-			}
+# load all reactions from file
+REACTIONS_FILE = os.path.join(
+	os.path.split(__file__)[0],
+	'aa_transport_reactions.json'
+	)
+
+with open(REACTIONS_FILE, "r") as f:
+  ALL_REACTIONS = json.loads(f.read())
+
+INCLUDE_REACTIONS = [
+	'TRANS-RXN0-270',
+	'TRANS-RXN0-569-LEU',
+	'ABC-35-RXN',
+	'TRANS-RXN-126B'
+	]
+
+# import ipdb; ipdb.set_trace()
+REACTIONS = {reaction : specs for reaction, specs in ALL_REACTIONS.iteritems() if reaction in INCLUDE_REACTIONS}
+
+# REACTIONS = {
+# 			'TRANS-RXN0-270': {'type': 'symport', # export
+# 				'substrates': {
+# 					'A1': 'LEU[c]',
+# 					'B1': 'PROTON[p]',
+# 					'A2': 'LEU[p]',
+# 					'B2': 'PROTON[c]',
+# 				},
+# 				'transporter': ['G6984-MONOMER', 'B4141-MONOMER'], # TODO (eran) only using the first transporter
+# 				},
+# 			# 'TRANS-RXN0-569-LEU': {'type': 'uniport', # export
+# 			# 	'substrates': {
+# 			# 	   'A1': 'LEU[c]',
+# 			# 	   'A2': 'LEU[p]',
+# 			# 	},
+# 			# 	'transporter': ['G6458-MONOMER'],
+# 			# 	},
+# 			'ABC-35-RXN': {'type': 'symport_reversible',
+# 				'substrates': {
+# 				   'A1': 'LEU[p]',
+# 				   'A2': 'LEU[c]',
+# 				   'B1': 'ATP[c]',
+# 				   'B2': 'ADP[c]',
+# 				},
+# 				'transporter': ['ABC-15-CPLX', 'ABC-304-CPLX'], # TODO (eran) only using the first transporter
+# 				},
+# 			'TRANS-RXN-126B': {'type': 'symport',
+# 				'substrates': {
+# 				   'A1': 'LEU[p]',
+# 				   'A2': 'LEU[c]',
+# 				   'B1': 'NA+[p]',
+# 				   'B2': 'NA+[c]',
+# 				},
+# 				'transporter': ['BRNQ-MONOMER'],
+# 				},
+# 			}
 
 REACTION_PARAMS = {
 	'uniport' : ['kcat', 'km'],
@@ -175,6 +200,9 @@ WCM_INITIAL_CONCS = {
 class TransportEstimation(object):
 
 	def main(self, args):
+
+		# import ipdb;
+		# ipdb.set_trace()
 
 		# initialize
 		if USE_WCM:
@@ -258,7 +286,7 @@ class TransportEstimation(object):
 		if top_fit >= fitness_max:
 			print('Success!')
 		else:
-			print('Did not find solution :-(')
+			print('Did not find solution')
 
 		return population, fitness, saved_fitness
 
@@ -514,7 +542,7 @@ class TransportEstimation(object):
 
 			params = {param : parameters[index] for param, index in self.parameter_indices[rxn].iteritems()}
 
-			if specs['type'] is 'uniport':
+			if specs['type'] == 'uniport':
 				reaction_fluxes[rxn] = self.get_uniporter_flux(
 					specs['substrates'],
 					specs['transporter'][0],
@@ -530,7 +558,7 @@ class TransportEstimation(object):
 
 			# TODO -- add if specs['type'] is 'uniport_reversible'
 
-			elif specs['type'] is 'symport':
+			elif specs['type'] == 'symport':
 				reaction_fluxes[rxn] = self.get_symporter_flux(
 					specs['substrates'],
 					specs['transporter'][0],
@@ -548,7 +576,7 @@ class TransportEstimation(object):
 				molecule_fluxes[B1] -= reaction_fluxes[rxn]
 				molecule_fluxes[B2] += reaction_fluxes[rxn]
 
-			elif specs['type'] is 'symport_reversible':
+			elif specs['type'] == 'symport_reversible':
 				reaction_fluxes[rxn] = self.get_symporter_reversible_flux(
 					specs['substrates'],
 					specs['transporter'][0],
