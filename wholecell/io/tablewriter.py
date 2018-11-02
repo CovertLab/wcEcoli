@@ -101,7 +101,7 @@ class _Column(object):
 
 	def append(self, value):
 		"""
-		Appends an array-like cell value to the end of a column, converting it
+		Appends an array-like entry to the end of a column, converting it
 		to a 1-D array.
 
 		The first call to this method will define the column's NumPy dtype.
@@ -178,7 +178,7 @@ class TableWriter(object):
 	which can be loaded one entry (row) at a time or all at once via the
 	companion class, TableReader.
 
-	A Table has one or more named columns. Each (row x column) cell value is a
+	A Table has one or more named columns. Each (row x column) entry is a
 	1-D NumPy array.
 
 	Output file structure:

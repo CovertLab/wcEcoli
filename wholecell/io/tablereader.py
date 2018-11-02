@@ -124,7 +124,7 @@ class TableReader(object):
 
 	def readColumn(self, name, indices=None, block_read=True):
 		"""
-		Load a full column (all entries). Each (row x column) cell value is a
+		Load a full column (all entries). Each (row x column) entry is a
 		1-D NumPy array. This method can optionally read just a slice of all
 		those arrays: their array values at the given `indices`.
 
@@ -143,13 +143,11 @@ class TableReader(object):
 				of magnitude slower.
 
 		Returns:
-			ndarray: a 2-D NumPy array, with entries along the first dimension
+			ndarray: a 2-D NumPy array (row x subcolumn) OR squeezed into a
+			1-D array if the entries written were scalars or 1-element arrays.
 
 		Notes:
 		If entry sizes varies, this method cannot be used.
-
-		Output will be squeezed; e.g. scalars or scalar-likes written with
-		TableWriter will be returned as vectors.
 
 		TODO (John): Consider using np.memmap to defer loading of the data
 			until it is operated on.  Early work (see issue #221) suggests that
@@ -233,49 +231,14 @@ class TableReader(object):
 				return data.squeeze()
 
 
-	def iterColumn(self, name):
-		"""
-		Iterate over a column, entry-by-entry.
-
-		Parameters
-		----------
-		name : str
-			The name of the column.
-
-		Yields
-		------
-		NumPy ndarrays.
-
-		Notes
-		-----
-		TODO (John): This method appears to currently be unused.  Consider
-			removing it.
-
-		"""
-
-		if name not in self._columnNames:
-			raise DoesNotExistError("No such column: {}".format(name))
-
-		offsets, dtype = self._loadOffsets(name)
-
-		sizes = np.diff(offsets)
-
-		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA), 'rb') as dataFile:
-			dataFile.seek(offsets[0])
-
-			for size in sizes:
-				yield np.frombuffer(
-					dataFile.read(size), dtype
-					).copy()
-
 	def readRow(self, index):
 		"""
-		Returns the values for all columns for a given entry.
+		Returns the values for all columns for a given row.
 
 		Parameters
 		----------
 		index : int
-			The index of the desired row (entry).
+			The index of the desired row.
 
 		Returns
 		-------
@@ -290,7 +253,7 @@ class TableReader(object):
 
 	def _loadEntry(self, name, index):
 		"""
-		Internal method for loading a column value for a given entry.
+		Internal method for loading a (row x column) entry.
 
 		Parameters
 		----------

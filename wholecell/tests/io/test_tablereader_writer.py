@@ -26,9 +26,8 @@ COLUMNS = 'x y z theta'.split()
 DATA = {key: np.arange(10.0) + ord(key[0]) for key in COLUMNS}
 
 
-# TODO(jerry): Test readColumn() w/non-default indices and block_read.
+# TODO(jerry): Test readColumn() w/non-default indices.
 # TODO(jerry): Test structured dtypes.
-# TODO(jerry): Test or delete iterColumn().
 
 class Test_TableReader_Writer(unittest.TestCase):
 	def setUp(self):
@@ -43,10 +42,9 @@ class Test_TableReader_Writer(unittest.TestCase):
 			self.test_dir = tempfile.mkdtemp()
 
 	def assert_equal_row(self, written_row, read_row):
-		'''Assert that a read-in row (dict of cell values) matches the written
-		row, adjusting for the fact that **TableWriter stores a 1-D array in
-		each table cell even if the written cell value was a scalar or an
-		n-D array.**
+		'''Assert that a read-in row (dict of entries) matches the written row,
+		adjusting for the fact that **TableWriter stores each entry as a 1-D
+		array even if the written cell value was an n-D array.**
 		'''
 		self.assertEqual(set(written_row.keys()), set(read_row.keys()))
 
@@ -94,16 +92,13 @@ class Test_TableReader_Writer(unittest.TestCase):
 		actual = reader.readColumn(column_name)  # the basic readColumn() case
 		expected = np.vstack((DATA[column_name], d2[column_name]))
 		npt.assert_array_equal(expected, actual)
+		self.assertEqual(2, actual.ndim)
 
 		actual = reader.readRow(1)
 		self.assert_equal_row(d2, actual)
 
 		actual = reader.readRow(0)
 		self.assert_equal_row(DATA, actual)
-
-		column_name = COLUMNS[2]
-		values = list(reader.iterColumn(column_name))
-		npt.assert_array_equal((DATA[column_name], d2[column_name]), values)
 
 		with self.assertRaises(DoesNotExistError):
 			reader.readColumn('JUNK')
@@ -160,10 +155,10 @@ class Test_TableReader_Writer(unittest.TestCase):
 
 		# --- Write ---
 		writer = TableWriter(self.test_dir)
-		writer.append(**DATA)
-		writer.append(**d0)  # row 1
-		writer.append(**d2)
-		writer.append(**d3)
+		writer.append(**DATA)  # 1-D float arrays in table row 0
+		writer.append(**d0)  # 0-D arrays in table row 1
+		writer.append(**d2)  # 2-D arrays in table row 2
+		writer.append(**d3)  # narrower 1-D arrays than row 0
 		writer.close()
 
 		# --- Read ---
@@ -178,7 +173,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 		self.assertEqual(d0, actual)
 		self.assert_equal_row(d0, actual)
 		for key in DATA:  # expect 1-length arrays
-			self.assertEqual(np.float64, actual[key].dtype)
+			self.assertEqual(np.float64, actual[key].dtype)  # ints converted to floats
 			self.assertEqual((1,), actual[key].shape)
 
 		actual = reader.readRow(2)
@@ -189,3 +184,45 @@ class Test_TableReader_Writer(unittest.TestCase):
 
 		actual = reader.readRow(0)
 		self.assert_equal_row(DATA, actual)
+
+	@noseAttrib.attr('smalltest', 'table')
+	def test_scalars(self):
+		'''Test the case where all rows contain scalars, where readColumn()
+		returns a 1-D array instead of a 2-D array!
+		'''
+		self.make_test_dir()
+
+		# --- Write ---
+		writer = TableWriter(self.test_dir)
+		writer.append(x=20)  # scalar int
+		writer.append(x=21)
+		writer.append(x=22)
+		writer.close()
+
+		# --- Read ---
+		reader = TableReader(self.test_dir)
+		actual = reader.readColumn('x')
+		self.assertEqual(1, actual.ndim)
+		self.assertEqual((3,), actual.shape)
+		npt.assert_array_equal([20, 21, 22], actual)
+
+	@noseAttrib.attr('smalltest', 'table')
+	def test_1_element_arrays(self):
+		'''Test the case where all rows contain 1-element arrays, where
+		readColumn() returns a 1-D array instead of a 2-D array!
+		'''
+		self.make_test_dir()
+
+		# --- Write ---
+		writer = TableWriter(self.test_dir)
+		writer.append(x=[20])
+		writer.append(x=[21])
+		writer.append(x=[22])
+		writer.close()
+
+		# --- Read ---
+		reader = TableReader(self.test_dir)
+		actual = reader.readColumn('x')
+		self.assertEqual(1, actual.ndim)
+		self.assertEqual((3,), actual.shape)
+		npt.assert_array_equal([20, 21, 22], actual)
