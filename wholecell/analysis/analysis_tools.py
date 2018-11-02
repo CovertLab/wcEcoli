@@ -116,7 +116,7 @@ def read_bulk_molecule_counts(sim_out_dir, mol_names):
 
 	lengths = [len(names) for names in mol_names]
 	indices = np.hstack([[mol_indices[mol] for mol in names] for names in mol_names])
-	bulk_counts = bulk_reader.readColumn('counts', indices)
+	bulk_counts = bulk_reader.readColumn('counts', indices).reshape(-1, len(indices))
 
 	start_slice = 0
 	for length in lengths:
