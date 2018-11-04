@@ -48,40 +48,29 @@ def test_method(method, text):
 
 def test_old(reader, indices):
 	'''
-	Tests original readColumn method where all data is read and then indices
-	are selected from the entire data matrix.
+	Tests original readColumn method where all data is read and then subcolumn
+	indices are selected from the entire data matrix.
 
 	Inputs:
 		reader (TableReader object): file to read data from to test performance
 		indices (numpy array of int): indices of data to select
 	'''
 
-	return test_method(lambda : reader.readColumn('counts')[:, indices].squeeze(), 'Old method')
+	return test_method(lambda : reader.readColumn('counts')[:, indices].squeeze(),
+		'Old method, read all')
 
 def test_new_block(reader, indices):
 	'''
-	Tests new readColumn method where one chunk of data is read at each time point
-	and then indices are selected.
+	Tests the new readColumn method that reads one data chunk from each entry,
+	then selects subcolumns by indices, then aggregates the rows.
 
 	Inputs:
 		reader (TableReader object): file to read data from to test performance
 		indices (numpy array of int): indices of data to select
 	'''
 
-	return test_method(lambda : reader.readColumn('counts', indices), 'New method, block read')
-
-def test_new_multiple(reader, indices):
-	'''
-	Tests new readColumn method where multiple reads are made at each time point
-	for contiguous data.  Performance can be significantly slower than reading
-	all of the data with a high number of seeks (dispersed indices).
-
-	Inputs:
-		reader (TableReader object): file to read data from to test performance
-		indices (numpy array of int): indices of data to select
-	'''
-
-	return test_method(lambda : reader.readColumn('counts', indices, False), 'New method, multiple reads')
+	return test_method(lambda : reader.readColumn('counts', indices),
+		'New method, block read')
 
 def test_functions(functions, text, reader, indices):
 	'''
@@ -113,31 +102,32 @@ def test_performance(sim_out_dir):
 	n_mols = len(bulk_ids)
 
 	# Sets of functions to test
-	three_functions = [test_old, test_new_block, test_new_multiple]
 	two_functions = [test_old, test_new_block]
 
 	# Test reads
 	## Single index
 	indices = np.array([0])
-	test_functions(three_functions, 'One index', bulk_molecules, indices)
+	test_functions(two_functions, 'One index', bulk_molecules, indices)
 
 	## First and last index
 	indices = np.array([0, n_mols-1])
-	test_functions(three_functions, 'First and last indices', bulk_molecules, indices)
+	test_functions(two_functions, 'First and last indices', bulk_molecules,
+		indices)
 
 	## Large block
 	indices = np.array(range(BLOCK_SIZE))
-	test_functions(three_functions, 'Block indices', bulk_molecules, indices)
+	test_functions(two_functions, 'Block indices', bulk_molecules, indices)
 
 	## 2 Large blocks
 	indices = np.array(range(BLOCK_SIZE) + range(n_mols)[-BLOCK_SIZE:])
-	test_functions(three_functions, 'Two blocks of indices', bulk_molecules, indices)
+	test_functions(two_functions, 'Two blocks of indices', bulk_molecules,
+		indices)
 
-	## Dispersed reads - multiple reads method is slow so only test two methods
+	## Dispersed reads
 	indices = np.linspace(0, n_mols-1, BLOCK_SIZE, dtype=np.int64)
 	test_functions(two_functions, 'Dispersed indices', bulk_molecules, indices)
 
-	## Random reads - multiple reads method is slow so only test two methods
+	## Random reads
 	indices = np.array(range(n_mols))
 	np.random.shuffle(indices)
 	indices = indices[:BLOCK_SIZE]
@@ -145,7 +135,7 @@ def test_performance(sim_out_dir):
 
 	## All indices
 	indices = np.array(range(n_mols))
-	test_functions(three_functions, 'All indices', bulk_molecules, indices)
+	test_functions(two_functions, 'All indices', bulk_molecules, indices)
 
 
 if __name__ == '__main__':

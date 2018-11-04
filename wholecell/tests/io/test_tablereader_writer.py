@@ -9,13 +9,11 @@ import unittest
 import nose.plugins.attrib as noseAttrib
 
 
-def noop_decorator():
-	def same(fcn):
-		return fcn
-	return same
+def noop_decorator(fcn):
+	return fcn
 
 # TODO(jerry): Remove before flight: Workaround for @profile defined only by kernprof.
-__builtins__.setdefault('profile', noop_decorator())
+__builtins__.setdefault('profile', noop_decorator)
 
 
 from wholecell.io.tablereader import TableReader, DoesNotExistError, VariableWidthError
