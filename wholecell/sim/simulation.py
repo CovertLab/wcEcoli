@@ -340,7 +340,7 @@ class Simulation(CellSimulation):
 		return self._initialTime
 
 
-	# Save to/load from disk
+	# Save to disk
 	def tableCreate(self, tableWriter):
 		tableWriter.writeAttributes(
 			states = self.internal_states.keys(),
@@ -353,10 +353,6 @@ class Simulation(CellSimulation):
 			time = self.time(),
 			timeStepSec = self.timeStepSec()
 			)
-
-
-	def tableLoad(self, tableReader, tableIndex):
-		pass
 
 
 	def time(self):

@@ -231,54 +231,6 @@ class TableReader(object):
 				return data.squeeze()
 
 
-	def readRow(self, index):
-		"""
-		Returns the values for all columns for a given row.
-
-		Parameters
-		----------
-		index : int
-			The index of the desired row.
-
-		Returns
-		-------
-		dict of {string: ndarray} pairs
-		"""
-
-		return {
-			name: self._loadEntry(name, index)
-			for name in self._columnNames
-			}
-
-
-	def _loadEntry(self, name, index):
-		"""
-		Internal method for loading a (row x column) entry.
-
-		Parameters
-		----------
-		name : str
-			Name of the column.
-		index : int
-			Index of the entry.
-
-		Returns
-		-------
-		NumPy ndarray.
-
-		"""
-
-		offsets, dtype = self._loadOffsets(name)
-
-		size = offsets[index+1] - offsets[index]
-
-		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA), 'rb') as dataFile:
-			dataFile.seek(offsets[index])
-
-			return np.frombuffer(
-				dataFile.read(size), dtype
-				).copy()  # read() bytes are immutable; copy for mutability
-
 	def _loadOffsets(self, name):
 		"""
 		Internal method for loading data needed to interpret a column.

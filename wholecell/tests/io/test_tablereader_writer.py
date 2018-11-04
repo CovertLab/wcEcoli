@@ -41,20 +41,6 @@ class Test_TableReader_Writer(unittest.TestCase):
 		if not self.test_dir:
 			self.test_dir = tempfile.mkdtemp()
 
-	def assert_equal_row(self, written_row, read_row):
-		'''Assert that a read-in row (dict of entries) matches the written row,
-		adjusting for the fact that **TableWriter stores each entry as a 1-D
-		array even if the written cell value was an n-D array.**
-		'''
-		self.assertEqual(set(written_row.keys()), set(read_row.keys()))
-
-		for key, expected_value in written_row.iteritems():
-			actual_value = read_row[key]
-			if isinstance(expected_value, np.ndarray):
-				expected_value = expected_value.reshape(expected_value.size)
-			self.assertIsInstance(actual_value, np.ndarray)
-			npt.assert_array_equal(expected_value, actual_value)
-
 	@noseAttrib.attr('smalltest', 'table')
 	def test_basic(self):
 		'''Test a table with some float arrays and no attributes.'''
@@ -93,12 +79,6 @@ class Test_TableReader_Writer(unittest.TestCase):
 		expected = np.vstack((DATA[column_name], d2[column_name]))
 		npt.assert_array_equal(expected, actual)
 		self.assertEqual(2, actual.ndim)
-
-		actual = reader.readRow(1)
-		self.assert_equal_row(d2, actual)
-
-		actual = reader.readRow(0)
-		self.assert_equal_row(DATA, actual)
 
 		with self.assertRaises(DoesNotExistError):
 			reader.readColumn('JUNK')
@@ -168,22 +148,6 @@ class Test_TableReader_Writer(unittest.TestCase):
 		column_name = COLUMNS[0]
 		with self.assertRaises(VariableWidthError):
 			reader.readColumn(column_name)
-
-		actual = reader.readRow(1)
-		self.assertEqual(d0, actual)
-		self.assert_equal_row(d0, actual)
-		for key in DATA:  # expect 1-length arrays
-			self.assertEqual(np.float64, actual[key].dtype)  # ints converted to floats
-			self.assertEqual((1,), actual[key].shape)
-
-		actual = reader.readRow(2)
-		self.assert_equal_row(d2, actual)
-
-		actual = reader.readRow(3)
-		self.assert_equal_row(d3, actual)
-
-		actual = reader.readRow(0)
-		self.assert_equal_row(DATA, actual)
 
 	@noseAttrib.attr('smalltest', 'table')
 	def test_scalars(self):
