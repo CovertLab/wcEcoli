@@ -98,6 +98,8 @@ def read_bulk_molecule_counts(sim_out_dir, mol_names):
 
 	TODO: generalize to any TableReader, not just BulkMolecules, if readColumn method
 	is used for those tables.
+	TODO: change readColumn() to readColumn2D() when available so reshape doesn't need
+	to be called.
 	'''
 
 	# Convert an array to tuple to ensure correct dimensions
