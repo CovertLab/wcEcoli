@@ -67,6 +67,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 		# --- Read ---
 		reader = TableReader(self.test_dir)
 		self.assertEqual([], reader.attributeNames())
+		self.assertEqual(['_version'], reader.allAttributeNames())
 		self.assertEqual(set(COLUMNS), set(reader.columnNames()))
 
 		with self.assertRaises(DoesNotExistError):

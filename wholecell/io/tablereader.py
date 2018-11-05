@@ -1,6 +1,5 @@
 
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import os
 import json
@@ -8,8 +7,7 @@ import json
 import numpy as np
 
 from . import tablewriter as tw
-
-ZIP_FILETYPE = ".bz2"
+from wholecell.utils import filepath
 
 __all__ = [
 	"TableReader",
@@ -18,13 +16,6 @@ __all__ = [
 class TableReaderError(Exception):
 	"""
 	Base exception class for TableReader-associated exceptions.
-	"""
-	pass
-
-
-class NotUnzippedError(TableReaderError):
-	"""
-	An error raised when it appears that the input files are compressed.
 	"""
 	pass
 
@@ -64,35 +55,23 @@ class TableReader(object):
 	See also
 	--------
 	wholecell.io.tablewriter.TableWriter
-
-	Notes
-	-----
-	TODO (John): Consider a method for loading an indexed portion of a column.
-
-	TODO (John): Consider removing unused methods (see below).
 	"""
 
 	def __init__(self, path):
-		# Open version file for table
-		versionFilePath = os.path.join(path, tw.DIR_METADATA, tw.FILE_VERSION)
+		# Read the table's attributes file
+		attributes_filename = os.path.join(path, tw.FILE_ATTRIBUTES)
 		try:
-			with open(versionFilePath) as f:
-				version = f.read()
+			self._attributes = filepath.read_json_file(attributes_filename)
 
 		except IOError as e:
-			# Check if a zipped version file exists. Print appropriate error prompts.
-			if os.path.exists(versionFilePath + ZIP_FILETYPE):
-				raise NotUnzippedError("The version file for a table ({}) was found zipped. Unzip all table files before reading table.".format(path), e)
-			else:
-				raise VersionError("Could not open the version file for a table ({})".format(path), e)
+			raise VersionError(
+				"Could not read a table's attributes file ({})."
+				" Unzip all table files if needed.".format(attributes_filename), e)
 
-		# Check if the table version matches the latest version
+		# Check if the table's version matches the expected version
+		version = self._attributes['_version']
 		if version != tw.VERSION:
 			raise VersionError("Expected version {} but found version {}".format(tw.VERSION, version))
-
-		# Read attribute names for table
-		self._dirAttributes = os.path.join(path, tw.DIR_ATTRIBUTES)
-		self._attributeNames = os.listdir(self._dirAttributes)
 
 		# Read column names for table
 		self._dirColumns = os.path.join(path, tw.DIR_COLUMNS)
@@ -101,7 +80,7 @@ class TableReader(object):
 
 	def readAttribute(self, name):
 		"""
-		Load an attribute.
+		Return an attribute value.
 
 		Parameters
 		----------
@@ -114,12 +93,9 @@ class TableReader(object):
 
 		"""
 
-		if name not in self._attributeNames:
+		if name not in self._attributes:
 			raise DoesNotExistError("No such attribute: {}".format(name))
-
-		return json.loads(
-			open(os.path.join(self._dirAttributes, name)).read()
-			)
+		return self._attributes[name]
 
 
 	def readColumn(self, name, indices=None):
@@ -221,11 +197,19 @@ class TableReader(object):
 		return offsets, dtype
 
 
+	def allAttributeNames(self):
+		"""
+		Returns a list of all attribute names including Table metadata.
+		"""
+		return self._attributes.keys()
+
+
 	def attributeNames(self):
 		"""
-		Returns the names of all attributes.
+		Returns a list of ordinary (client-provided) attribute names.
 		"""
-		return self._attributeNames
+		names = [k for k in self._attributes.keys() if not k.startswith('_')]
+		return names
 
 
 	def columnNames(self):

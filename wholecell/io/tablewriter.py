@@ -1,6 +1,5 @@
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import os
 import json
@@ -9,7 +8,6 @@ import numpy as np
 
 from wholecell.utils import filepath
 
-# TODO: tests
 
 __all__ = [
 	"TableWriter",
@@ -21,12 +19,10 @@ __all__ = [
 	# "AttributeTypeError"
 	]
 
-VERSION = "2" # should update this any time there is a spec-breaking change
+VERSION = 2  # should update this any time there is a spec-breaking change
 
-DIR_METADATA = "metadata"
-DIR_ATTRIBUTES = "attributes"
 DIR_COLUMNS = "columns"
-FILE_VERSION = "version"
+FILE_ATTRIBUTES = "attributes.json"
 FILE_DATA = "data"
 FILE_OFFSETS = "offsets"
 
@@ -171,7 +167,7 @@ class _Column(object):
 
 class TableWriter(object):
 	"""
-	Generic live output writer for NumPy ndarrays.
+	Generic live streaming output writer for NumPy ndarrays.
 
 	NumPy can save and load arrays to disk.  This class provides a convenient
 	interface to repeated appending of NumPy array data to an output file,
@@ -184,8 +180,7 @@ class TableWriter(object):
 	Output file structure:
 
 	<root directory> : Root path, provided by during instantiation.
-		/attributes : Directory for saved JSON data, provided by the user.
-			/<attribute name> : A JSON file.
+		/attributes.json : A JSON file containing the attributes and metadata.
 		/columns : Directory for the main output streams ("columns").
 			/<column name> : Directory for a specific column.
 				data : Contains the JSON-serialized format specification for
@@ -193,10 +188,6 @@ class TableWriter(object):
 					ndarrays.
 				offsets : A list of integers (one per line) corresponding to
 					the associated byte offset for each entry in the column.
-		/metadata : Directory for saving any critical internals for TableWriter
-				and TableReader.
-			version : An integer representing the "version number" of the data
-				format specification.
 
 	Parameters
 	----------
@@ -236,22 +227,14 @@ class TableWriter(object):
 	for saving and loading, which will be terribly slow.
 
 	TODO (John): Consider moving the Numpy dtype format specification out of
-		the 'data' file and into its own file.  This was done originally to
+		the 'data' file to the attributes file.  This was done originally to
 		keep the format tightly associated with the data, improving portability
 		and consistency with the np.save implementation.  However it leads to
 		logical complications in saving and loading, and it mixes JSON string
 		data with array binary data in one file.
 
-	TODO (John): Drop the 'version' idea as well as the 'metadata' directory.
-		We so rarely try to run new scripts on old data (or vice-versa) that
-		I'm not sure this needs to exist or be maintained.
-
 	TODO (John): Move the _Column class into the TableWriter namespace.
 		There's no reason for it to be available at the module level.
-
-	TODO (John): Instead of saving many files and sub-directories under one
-		directory, save everything to an uncompressed archive.  Built-in module
-		zipfile seems like a good option; np.savez uses it.
 
 	TODO (John): Test portability across machines (particularly, different
 		operating systems).
@@ -259,20 +242,15 @@ class TableWriter(object):
 	TODO (John): Consider separating out the fixed and variable size
 		implementations.  Further, consider writing all fields simultaneously
 		as part of a structured array (i.e. a hybrid data type).
-
 	"""
 
 	def __init__(self, path):
-
-		dirMetadata = filepath.makedirs(path, DIR_METADATA)
-
-		open(os.path.join(dirMetadata, FILE_VERSION), "w").write(VERSION)
-
-		self._dirAttributes = filepath.makedirs(path, DIR_ATTRIBUTES)
-		self._attributeNames = []
-
 		self._dirColumns = filepath.makedirs(path, DIR_COLUMNS)
 		self._columns = None
+
+		self._attributes = {}
+		self._attributes_filename = os.path.join(path, FILE_ATTRIBUTES)
+		self.writeAttributes(_version=VERSION)
 
 
 	def append(self, **namesAndValues):
@@ -332,6 +310,9 @@ class TableWriter(object):
 		**namesAndValues : dict of {string: JSON-serializable} pairs
 			The attribute names and associated values.
 
+			NOTE: TableWriter uses attribute names starting with "_" for its
+			metadata.
+
 		Notes
 		-----
 		This method can be called at any time, so long as an attribute name is
@@ -340,30 +321,26 @@ class TableWriter(object):
 		"""
 
 		for name, value in namesAndValues.viewitems():
-			if name in self._attributeNames:
+			if name in self._attributes:
 				raise AttributeAlreadyExistsError(
 					"An attribute named '{}' already exists.".format(name)
 					)
 
 			try:
 				if isinstance(value, np.ndarray):
-					print "Warning - converting '{}' attribute from ndarray to list for JSON serialization.".format(name)
-
+					print("Warning - converting '{}' attribute from ndarray to list for JSON serialization.".format(name))
 					value = value.tolist()
 
-				serialized = json.dumps(value)
+				json.dumps(value)  # test that it's JSON serializable
 
 			except TypeError:
-
 				raise AttributeTypeError(
-					"Attribute '{}' value ({}) was not JSON serializable.".format(
-						name, value # TODO: repr for value instead of str
-						)
+					"Attribute '{}' value ({!r}) was not JSON serializable.".format(name, value)
 					)
 
-			open(os.path.join(self._dirAttributes, name), "w").write(serialized)
+			self._attributes[name] = value
 
-			self._attributeNames.append(name)
+		filepath.write_json_file(self._attributes_filename, self._attributes, indent=1)
 
 
 	def close(self):
