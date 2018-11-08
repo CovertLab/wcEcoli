@@ -7,7 +7,6 @@ import json
 import numpy as np
 
 from . import tablewriter as tw
-from wholecell.utils import filepath
 
 __all__ = [
 	"TableReader",
@@ -22,8 +21,8 @@ class TableReaderError(Exception):
 
 class VersionError(TableReaderError):
 	"""
-	An error raised when the input files claim to be from a different version
-	of the file specification.
+	An error raised when the input files claim to be from a different format or
+	version of the file specification.
 	"""
 	pass
 
@@ -35,12 +34,32 @@ class DoesNotExistError(TableReaderError):
 	pass
 
 
-class VariableWidthError(TableReaderError):
-	"""
-	An error raised when trying to load an entire column as one array when
-	entry sizes vary.
-	"""
-	pass
+class _ColumnHeader(object):
+	'''A Column's HEADER info, decoded from the data file header bytes.'''
+	def __init__(self, header_bytes):
+		(magic_signature,
+		self.bytes_per_entry,
+		self.elements_per_entry,
+		entries_per_block,
+		compression_type,
+		descr_json) = tw.HEADER.unpack(header_bytes)
+
+		if magic_signature != tw.COLUMN_SIGNATURE:
+			raise VersionError('Unrecognized Column file header')
+
+		if compression_type != 0:
+			raise VersionError('Unsupported Column compression type')
+
+		if entries_per_block != 1:
+			raise VersionError('Unsupported Column entry packing')
+
+		descr = json.loads(descr_json)
+		if isinstance(descr, basestring):
+			self.dtype = str(descr)  # really the dtype.descr
+		else:
+			# numpy requires list-of-tuples-of-strings
+			# TODO(jerry): Support triples?
+			self.dtype = [(str(n), str(t)) for n, t in descr]
 
 
 class TableReader(object):
@@ -61,7 +80,8 @@ class TableReader(object):
 		# Read the table's attributes file
 		attributes_filename = os.path.join(path, tw.FILE_ATTRIBUTES)
 		try:
-			self._attributes = filepath.read_json_file(attributes_filename)
+			with open(attributes_filename) as f:
+				self._attributes = json.load(f)
 
 		except IOError as e:
 			raise VersionError(
@@ -76,6 +96,7 @@ class TableReader(object):
 		# Read column names for table
 		self._dirColumns = os.path.join(path, tw.DIR_COLUMNS)
 		self._columnNames = os.listdir(self._dirColumns)
+		self._columnHeaders = {}  # maps column name to _ColumnHeader
 
 
 	def readAttribute(self, name):
@@ -130,71 +151,48 @@ class TableReader(object):
 		if name not in self._columnNames:
 			raise DoesNotExistError("No such column: {}".format(name))
 
-		offsets, dtype = self._loadOffsets(name)
-
-		sizes = np.diff(offsets)
-
-		if len(set(sizes)) > 1:
-			raise VariableWidthError("Cannot load full column; data size varies")
-
-		entry_size = sizes[0]
-		nEntries = sizes.size
+		header = self._loadHeader(name)
 
 		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA), 'rb') as dataFile:
-			if indices is None:
-				dataFile.seek(offsets[0])
+			dataFile.seek(0, os.SEEK_END)
+			file_size = dataFile.tell()
+			nEntries = (file_size - tw.HEADER.size) // header.bytes_per_entry
 
+			dataFile.seek(tw.HEADER.size)
+
+			if indices is None:
 				return np.frombuffer(
-					dataFile.read(), dtype
+					dataFile.read(), header.dtype
 					).copy().reshape(nEntries, -1).squeeze()
 			else:
-				data = np.zeros((nEntries, len(indices)), dtype)
 
-				dataFile.seek(offsets[0])
+			else:
+				data = np.zeros((nEntries, len(indices)), header.dtype)
 
 				for i in range(nEntries):
 					data[i, :] = np.frombuffer(
-						dataFile.read(entry_size), dtype
+						dataFile.read(header.bytes_per_entry), header.dtype
 						)[indices]
 
 				return data.squeeze()
 
 
-	def _loadOffsets(self, name):
+	def _loadHeader(self, name):
 		"""
-		Internal method for loading data needed to interpret a column.
+		Load the named _ColumnHeader from disk or cache.
 
-		Parameters
-		----------
-		name : str
-			The name of the column.
-
-		Returns
-		-------
-		offsets : ndarray (int)
-			An integer array.  Each element corresponds to the offset (in
-			bytes) for each entry in the column's data file.
-		dtype : list-of-tuples-of-strings
-			A data type specific for instantiating a NumPy ndarray.
-
+		Parameters:
+			name (str): The column name.
 		"""
 
-		with open(os.path.join(self._dirColumns, name, tw.FILE_OFFSETS)) as offsetsFile:
-			offsets = np.array([int(i.strip()) for i in offsetsFile])
+		if name in self._columnHeaders:
+			return self._columnHeaders[name]
 
 		with open(os.path.join(self._dirColumns, name, tw.FILE_DATA), 'rb') as dataFile:
-			rawDtype = json.loads(dataFile.read(offsets[0]).decode('utf-8'))
+			header_data = dataFile.read(tw.HEADER.size)
 
-			if isinstance(rawDtype, basestring):
-				dtype = str(rawDtype)
-
-			else:
-				dtype = [ # numpy requires list-of-tuples-of-strings
-					(str(n), str(t))
-					for n, t in rawDtype
-					]
-
-		return offsets, dtype
+		header = _ColumnHeader(header_data)
+		return header
 
 
 	def allAttributeNames(self):

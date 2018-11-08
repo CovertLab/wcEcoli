@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import json
+import struct
 
 import numpy as np
 
@@ -19,12 +20,15 @@ __all__ = [
 	# "AttributeTypeError"
 	]
 
-VERSION = 2  # should update this any time there is a spec-breaking change
+VERSION = 3  # should update this any time there is a spec-breaking change
 
 DIR_COLUMNS = "columns"
 FILE_ATTRIBUTES = "attributes.json"
 FILE_DATA = "data"
-FILE_OFFSETS = "offsets"
+COLUMN_SIGNATURE = 0xDECAFF
+
+# Column data file's header struct. See HEADER.pack(), below.
+HEADER = struct.Struct('<2I 3H 64p')
 
 
 class TableWriterError(Exception):
@@ -61,6 +65,12 @@ class AttributeTypeError(TableWriterError):
 	"""
 	pass
 
+class VariableEntrySize(TableWriterError):
+	"""Error raised on attempt to write an entry that's not the same size as
+	the previous entries in the same Column.
+	"""
+	pass
+
 
 class _Column(object):
 	"""
@@ -89,10 +99,11 @@ class _Column(object):
 	def __init__(self, path):
 		filepath.makedirs(path)
 
+		self._path = path
 		self._data = open(os.path.join(path, FILE_DATA), "wb")
-		self._offsets = open(os.path.join(path, FILE_OFFSETS), "w")
-
 		self._dtype = None
+		self._bytes_per_entry = None
+		self._elements_per_entry = None  # aka subcolumn count
 
 
 	def append(self, value):
@@ -100,18 +111,19 @@ class _Column(object):
 		Appends an array-like entry to the end of a column, converting it
 		to a 1-D array.
 
-		The first call to this method will define the column's NumPy dtype.
-		Subsequent calls will check data types for consistency.
+		The first call to this method will define the column's NumPy dtype,
+		element array size (subcolumns), and element size in bytes.
+		Subsequent entries must be consistent.
 
 		Parameters
 		----------
 		value : array-like
 			A NumPy ndarray or anything that can be cast to an array via
 			np.asarray, including scalars (i.e. 0D arrays).
-
 		"""
 
 		value = np.asarray(value, self._dtype)
+		data_bytes = value.tobytes()
 
 		if self._dtype is None:
 			self._dtype = value.dtype
@@ -119,48 +131,58 @@ class _Column(object):
 			descr = self._dtype.descr
 			if len(descr) == 1 and descr[0][0] == "":
 				descr = descr[0][1]
+			descr_json = json.dumps(descr, separators=(',', ':'))
 
-			self._data.write((json.dumps(descr) + "\n").encode('utf-8'))
-			self._offsets.write(str(self._data.tell()) + "\n")
+			self._bytes_per_entry = len(data_bytes)
+			self._elements_per_entry = value.size
 
-		self._data.write(value.tobytes())
-		self._offsets.write(str(self._data.tell()) + "\n")
+			# TODO(jerry): Test that this raises an exception if the numeric
+			# values are out of range.
+			# TODO(jerry): Raise an exception if descr_json doesn't fit.
+			header = HEADER.pack(
+				COLUMN_SIGNATURE,          # I: magic signature
+				self._bytes_per_entry,     # I: bytes/entry
+				self._elements_per_entry,  # H: subcolumns
+				1,                         # H: entries/written block
+				0,                         # H: compression type code (0 = none)
+				descr_json,                # 64p: element dtype description
+				)
+
+			self._data.write(header)
+
+		elif self._bytes_per_entry != len(data_bytes):
+			raise VariableEntrySize(
+				'Entry size in bytes, elements {} is inconsistent with {}'
+				' for Table column {}'.format(
+					(len(data_bytes), value.size),
+					(self._bytes_per_entry, self._elements_per_entry),
+					self._path))
+
+		self._data.write(data_bytes)
 
 
 	def close(self):
 		"""
-		Close the files associated with the column.
-
-		While running, each column keeps two files open; one associated with
-		the data itself (as well as the dtype information), and one associated
-		with the offsets between entries.  This method explicitly closes those
-		files.
+		Close the column's data file.
 
 		Notes
 		-----
 		Trying to append after closing will raise an error.
-
 		"""
 
 		self._data.close()
-		self._offsets.close()
 
 
 	def __del__(self):
 		"""
-		Explicitly closes the output files once the instance is totally
+		Explicitly closes the output file once the instance is totally
 		dereferenced.
 
 		Notes
 		-----
 		This will lead to errors consequent of operating on a closed file if
-		references to the output files (which ought to be private attributes)
+		references to the output file (which ought to be private)
 		exist.  This is desirable, because such references should not be made.
-
-		TODO (John): Decide whether we want this sort of 'irresponsible
-			developer' error prevention.  E.g. see the Wikipedia page on
-			"offensive programming".
-
 		"""
 		self.close()
 
@@ -186,8 +208,6 @@ class TableWriter(object):
 				data : Contains the JSON-serialized format specification for
 					the Numpy array dtype and appended binary data from NumPy
 					ndarrays.
-				offsets : A list of integers (one per line) corresponding to
-					the associated byte offset for each entry in the column.
 
 	Parameters
 	----------
@@ -316,8 +336,10 @@ class TableWriter(object):
 		Notes
 		-----
 		This method can be called at any time, so long as an attribute name is
-		not reused.
-
+		not reused. That's because attributes are not designed for time-series
+		data. [We could almost require all writeAttributes() to happen before
+		append() except 'lengthSec' and 'endTime' attributes get written to
+		'Main' at the end of each generation.]
 		"""
 
 		for name, value in namesAndValues.viewitems():
@@ -340,8 +362,9 @@ class TableWriter(object):
 
 			self._attributes[name] = value
 
-		filepath.write_json_file(self._attributes_filename, self._attributes, indent=1)
-
+		attributes_json = json.dumps(self._attributes, separators=(',', ':')) + '\n'
+		with open(self._attributes_filename, "w") as f:
+			f.write(attributes_json)
 
 	def close(self):
 		"""

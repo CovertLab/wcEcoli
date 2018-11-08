@@ -16,8 +16,9 @@ def noop_decorator(fcn):
 __builtins__.setdefault('profile', noop_decorator)
 
 
-from wholecell.io.tablereader import TableReader, DoesNotExistError, VariableWidthError
-from wholecell.io.tablewriter import TableWriter, MissingFieldError, UnrecognizedFieldError
+from wholecell.io.tablereader import TableReader, DoesNotExistError
+from wholecell.io.tablewriter import (TableWriter, MissingFieldError,
+	UnrecognizedFieldError, VariableEntrySize)
 
 
 COLUMNS = 'x y z theta'.split()
@@ -135,9 +136,15 @@ class Test_TableReader_Writer(unittest.TestCase):
 		# --- Write ---
 		writer = TableWriter(self.test_dir)
 		writer.append(**DATA)  # 1-D float arrays in table row 0
-		writer.append(**d0)  # 0-D arrays in table row 1
+
+		with self.assertRaises(VariableEntrySize):
+			writer.append(**d0)  # 0-D arrays: inconsistent entry sizes
+
 		writer.append(**d2)  # 2-D arrays in table row 2
-		writer.append(**d3)  # narrower 1-D arrays than row 0
+
+		with self.assertRaises(VariableEntrySize):
+			writer.append(**d3)  # narrower 1-D arrays than row 0
+
 		writer.close()
 
 		# --- Read ---
@@ -145,8 +152,10 @@ class Test_TableReader_Writer(unittest.TestCase):
 		self.assertEqual(set(COLUMNS), set(reader.columnNames()))
 
 		column_name = COLUMNS[0]
-		with self.assertRaises(VariableWidthError):
-			reader.readColumn(column_name)
+		actual = reader.readColumn(column_name)
+		self.assertEqual(1, actual[1].ndim)  # 2-D d2 values reshaped to 1-D
+		expected = np.vstack((DATA[column_name], DATA[column_name]))
+		npt.assert_array_equal(expected, actual)
 
 	@noseAttrib.attr('smalltest', 'table')
 	def test_scalars(self):
