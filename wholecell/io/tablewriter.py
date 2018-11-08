@@ -22,9 +22,7 @@ __all__ = [
 
 VERSION = 3  # should update this any time there is a spec-breaking change
 
-DIR_COLUMNS = "columns"
 FILE_ATTRIBUTES = "attributes.json"
-FILE_DATA = "data"
 COLUMN_SIGNATURE = 0xDECAFF
 
 # Column data file's header struct. See HEADER.pack(), below.
@@ -80,10 +78,8 @@ class _Column(object):
 	each append operation.  This private class encapsulates the logic and data
 	for a particular 'column'.
 
-	Parameters
-	----------
-	path : str
-		The path to the sub-directory associated with this particular column.
+	Parameters:
+		path (str): The path for this particular column's data file.
 
 	Notes
 	-----
@@ -93,14 +89,11 @@ class _Column(object):
 	TODO (John): With some adjustment this class could be made public, and used
 		as a lightweight alternative to TableWriter in addition to part of
 		TableWriter's internal implementation.
-
 	"""
 
 	def __init__(self, path):
-		filepath.makedirs(path)
-
 		self._path = path
-		self._data = open(os.path.join(path, FILE_DATA), "wb")
+		self._data = open(path, "wb")
 		self._dtype = None
 		self._bytes_per_entry = None
 		self._elements_per_entry = None  # aka subcolumn count
@@ -203,11 +196,9 @@ class TableWriter(object):
 
 	<root directory> : Root path, provided by during instantiation.
 		/attributes.json : A JSON file containing the attributes and metadata.
-		/columns : Directory for the main output streams ("columns").
 			/<column name> : Directory for a specific column.
-				data : Contains the JSON-serialized format specification for
-					the Numpy array dtype and appended binary data from NumPy
-					ndarrays.
+		/<column name> : File for a specific column, container a HEADER followed
+				by the entries which are binary data from NumPy ndarrays.
 
 	Parameters
 	----------
@@ -265,7 +256,7 @@ class TableWriter(object):
 	"""
 
 	def __init__(self, path):
-		self._dirColumns = filepath.makedirs(path, DIR_COLUMNS)
+		self._path = filepath.makedirs(path)
 		self._columns = None
 
 		self._attributes = {}
@@ -281,21 +272,19 @@ class TableWriter(object):
 		The first call to this method will define the column names and dtypes.
 		Subsequent calls will validate the names and types for consistency.
 
-		Parameters
 		----------
-		**namesAndValues : dict of named array-like values.
-			The column names (fields) and associated values to append to the
-			end of the columns.
+		Parameters:
+			**namesAndValues (dict[str, array-like]):  The column names (fields)
+				and associated values to append to the end of the columns.
 
 		Notes
 		-----
 		All fields must be provided every time this method is called.
-
 		"""
 
 		if self._columns is None:
 			self._columns = {
-				name:_Column(os.path.join(self._dirColumns, name))
+				name:_Column(os.path.join(self._path, name))
 				for name in namesAndValues.viewkeys()
 				}
 
@@ -385,11 +374,5 @@ class TableWriter(object):
 		"""
 		Explicitly closes the output files once the instance is totally
 		dereferenced.
-
-		Notes
-		-----
-		TODO (John): Decide whether we want to implement __del__ (see analogous
-			method in the _Column class for more details).
-
 		"""
 		self.close()

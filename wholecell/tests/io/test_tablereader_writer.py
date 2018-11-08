@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import numpy.testing as npt
+import os
 import shutil
 import tempfile
 import unittest
@@ -31,14 +32,17 @@ DATA = {key: np.arange(10.0) + ord(key[0]) for key in COLUMNS}
 class Test_TableReader_Writer(unittest.TestCase):
 	def setUp(self):
 		self.test_dir = None
+		self.table_path = None
 
 	def tearDown(self):
 		if self.test_dir:
 			shutil.rmtree(self.test_dir)
 
 	def make_test_dir(self):
+		'''Create a temp test dir. TableWriter must make its own subdir.'''
 		if not self.test_dir:
 			self.test_dir = tempfile.mkdtemp()
+			self.table_path = os.path.join(self.test_dir, 'Main')
 
 	@noseAttrib.attr('smalltest', 'table')
 	def test_basic(self):
@@ -46,7 +50,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 		self.make_test_dir()
 
 		# --- Write ---
-		writer = TableWriter(self.test_dir)
+		writer = TableWriter(self.table_path)
 		writer.append(**DATA)
 
 		d2 = {key: -10 * value for key, value in DATA.iteritems()}
@@ -66,9 +70,9 @@ class Test_TableReader_Writer(unittest.TestCase):
 			writer.append(**DATA)  # writer is closed
 
 		# --- Read ---
-		reader = TableReader(self.test_dir)
+		reader = TableReader(self.table_path)
 		self.assertEqual([], reader.attributeNames())
-		self.assertEqual(['_version'], reader.allAttributeNames())
+		self.assertEqual({'_version'}, set(reader.allAttributeNames()))
 		self.assertEqual(set(COLUMNS), set(reader.columnNames()))
 
 		with self.assertRaises(DoesNotExistError):
@@ -100,14 +104,14 @@ class Test_TableReader_Writer(unittest.TestCase):
 		keys = set(d1.keys() + d2.keys() + d3.keys())
 
 		# --- Write ---
-		writer = TableWriter(self.test_dir)
+		writer = TableWriter(self.table_path)
 		writer.writeAttributes(**d1)
 		writer.writeAttributes(**d2)
 		writer.writeAttributes(**d3)
 		writer.close()
 
 		# --- Read ---
-		reader = TableReader(self.test_dir)
+		reader = TableReader(self.table_path)
 		self.assertEqual([], reader.columnNames())
 		self.assertEqual(keys, set(reader.attributeNames()))
 		self.assertEqual(len(keys), len(reader.attributeNames()))
@@ -134,7 +138,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 		d3 = {key: value[2:] for key, value in DATA.iteritems()}
 
 		# --- Write ---
-		writer = TableWriter(self.test_dir)
+		writer = TableWriter(self.table_path)
 		writer.append(**DATA)  # 1-D float arrays in table row 0
 
 		with self.assertRaises(VariableEntrySize):
@@ -148,7 +152,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 		writer.close()
 
 		# --- Read ---
-		reader = TableReader(self.test_dir)
+		reader = TableReader(self.table_path)
 		self.assertEqual(set(COLUMNS), set(reader.columnNames()))
 
 		column_name = COLUMNS[0]
@@ -165,14 +169,14 @@ class Test_TableReader_Writer(unittest.TestCase):
 		self.make_test_dir()
 
 		# --- Write ---
-		writer = TableWriter(self.test_dir)
+		writer = TableWriter(self.table_path)
 		writer.append(x=20)  # scalar int
 		writer.append(x=21)
 		writer.append(x=22)
 		writer.close()
 
 		# --- Read ---
-		reader = TableReader(self.test_dir)
+		reader = TableReader(self.table_path)
 		actual = reader.readColumn('x')
 		self.assertEqual(1, actual.ndim)
 		self.assertEqual((3,), actual.shape)
@@ -186,15 +190,52 @@ class Test_TableReader_Writer(unittest.TestCase):
 		self.make_test_dir()
 
 		# --- Write ---
-		writer = TableWriter(self.test_dir)
+		writer = TableWriter(self.table_path)
 		writer.append(x=[20])
 		writer.append(x=[21])
 		writer.append(x=[22])
 		writer.close()
 
 		# --- Read ---
-		reader = TableReader(self.test_dir)
+		reader = TableReader(self.table_path)
 		actual = reader.readColumn('x')
 		self.assertEqual(1, actual.ndim)
 		self.assertEqual((3,), actual.shape)
 		npt.assert_array_equal([20, 21, 22], actual)
+
+	@unittest.skip('sensitive to implementation details; maybe not portable')
+	@noseAttrib.attr('smalltest', 'table')
+	def test_path_clash(self):
+		'''Test what happens if two TableWriters are writing to the same directory.'''
+		self.make_test_dir()
+		d1 = {key: np.arange(5) + ord(key[0]) for key in COLUMNS}
+
+		writer1 = TableWriter(self.table_path)
+		writer1.append(**d1)
+		writer1.append(**d1)
+		writer1.append(**d1)
+
+		writer2 = TableWriter(self.table_path)
+		writer2.append(**d1)
+
+		d2 = {key: -value for key, value in d1.iteritems()}
+		writer2.append(**d2)
+
+		writer1.writeAttributes(x=1, y=2, z=3)
+		writer2.writeAttributes(x=10, a='a', b='b')
+
+		# WARNING: The results depend on the closing order, the longer files,
+		# and probably I/O buffer sizes!
+		writer1.close()
+		writer2.close()
+
+		reader = TableReader(self.table_path)
+		column_name = COLUMNS[0]
+		actual = reader.readColumn(column_name)
+		expected = np.vstack((d1[column_name], d2[column_name], d1[column_name]))
+		npt.assert_array_equal(expected, actual)
+
+		# WARNING: The last table to write any attributes (including automatic
+		# writes of internal Table metadata) takes all. This esp. matters if
+		# the column names are stored in an attribute.
+		self.assertEqual(set('x a b'.split()), set(reader.attributeNames()))
