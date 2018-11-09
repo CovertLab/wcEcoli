@@ -6,6 +6,7 @@ import json
 
 import numpy as np
 
+from wholecell.utils import filepath
 from . import tablewriter as tw
 
 __all__ = [
@@ -80,8 +81,7 @@ class TableReader(object):
 		# Read the table's attributes file
 		attributes_filename = os.path.join(path, tw.FILE_ATTRIBUTES)
 		try:
-			with open(attributes_filename) as f:
-				self._attributes = json.load(f)
+			self._attributes = filepath.read_json_file(attributes_filename)
 
 		except IOError as e:
 			raise VersionError(
@@ -176,7 +176,6 @@ class TableReader(object):
 				return data.squeeze()
 
 
-	def _loadHeader(self, name):
 	def _loadHeader(self, name, dataFile):
 		"""
 		Load the named column's _ColumnHeader from disk or cache.

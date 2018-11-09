@@ -196,7 +196,6 @@ class TableWriter(object):
 
 	<root directory> : Root path, provided by during instantiation.
 		/attributes.json : A JSON file containing the attributes and metadata.
-			/<column name> : Directory for a specific column.
 		/<column name> : File for a specific column, container a HEADER followed
 				by the entries which are binary data from NumPy ndarrays.
 
@@ -272,7 +271,6 @@ class TableWriter(object):
 		The first call to this method will define the column names and dtypes.
 		Subsequent calls will validate the names and types for consistency.
 
-		----------
 		Parameters:
 			**namesAndValues (dict[str, array-like]):  The column names (fields)
 				and associated values to append to the end of the columns.
@@ -351,9 +349,7 @@ class TableWriter(object):
 
 			self._attributes[name] = value
 
-		attributes_json = json.dumps(self._attributes, separators=(',', ':')) + '\n'
-		with open(self._attributes_filename, "w") as f:
-			f.write(attributes_json)
+		filepath.write_json_file(self._attributes_filename, self._attributes, indent=1)
 
 	def close(self):
 		"""
