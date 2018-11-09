@@ -19,7 +19,7 @@ __builtins__.setdefault('profile', noop_decorator)
 
 from wholecell.io.tablereader import TableReader, DoesNotExistError
 from wholecell.io.tablewriter import (TableWriter, MissingFieldError,
-	UnrecognizedFieldError, VariableEntrySize)
+	UnrecognizedFieldError, VariableEntrySizeError)
 
 
 COLUMNS = 'x y z theta'.split()
@@ -27,7 +27,7 @@ DATA = {key: np.arange(10.0) + ord(key[0]) for key in COLUMNS}
 
 
 # TODO(jerry): Test readColumn() w/non-default indices.
-# TODO(jerry): Test structured dtypes.
+# TODO(jerry): Test structured dtypes and a dtype too complex for the HEADER.
 
 class Test_TableReader_Writer(unittest.TestCase):
 	def setUp(self):
@@ -90,6 +90,98 @@ class Test_TableReader_Writer(unittest.TestCase):
 		reader.close()
 
 	@noseAttrib.attr('smalltest', 'table')
+	def test_readColumn2D(self):
+		'''Test readColumn2D() vs. readColumn() array squeezing.
+		readColumn2D() should always return a 2D array.
+		readColumn() may return a 0D, 1D, or 2D array, depending on the data.
+		Cases: {1, 2} rows x {scalar, 1-element, 1D, 2D} x {None, 1, 2} indices.
+		TODO(jerry): Test 0 rows?
+		'''
+		self.make_test_dir()
+
+		data = {
+			'scalar': 1,
+			'1_element': np.array([100]),
+			'1D': np.arange(4),
+			'2D': np.arange(12).reshape(4, 3),
+			}
+		index1 = np.array([0])
+		index2 = np.array([0, 1])
+
+		# === Write 1 row ===
+		writer = TableWriter(self.table_path)
+		writer.append(**data)
+		writer.close()
+
+		# --- Read 1 row with readColumn2D() ---
+		reader = TableReader(self.table_path)
+		self.assertEqual(2, reader.readColumn2D('scalar').ndim)
+		self.assertEqual(2, reader.readColumn2D('1_element').ndim)
+		self.assertEqual(2, reader.readColumn2D('1D').ndim)
+		self.assertEqual(2, reader.readColumn2D('2D').ndim)
+
+		self.assertEqual(2, reader.readColumn2D('scalar', index1).ndim)
+		self.assertEqual(2, reader.readColumn2D('1_element', index1).ndim)
+		self.assertEqual(2, reader.readColumn2D('1D', index1).ndim)
+		self.assertEqual(2, reader.readColumn2D('2D', index1).ndim)
+
+		with self.assertRaises(IndexError):
+			self.assertEqual(2, reader.readColumn2D('scalar', index2).ndim)
+		with self.assertRaises(IndexError):
+			self.assertEqual(2, reader.readColumn2D('1_element', index2).ndim)
+		self.assertEqual(2, reader.readColumn2D('1D', index2).ndim)
+		self.assertEqual(2, reader.readColumn2D('2D', index2).ndim)
+
+		# --- Read 1 row with readColumn() ---
+		self.assertEqual(0, reader.readColumn('scalar').ndim)
+		self.assertEqual(0, reader.readColumn('1_element').ndim)
+		self.assertEqual(1, reader.readColumn('1D').ndim)
+		self.assertEqual(1, reader.readColumn('2D').ndim)
+
+		self.assertEqual(0, reader.readColumn('scalar', index1).ndim)
+		self.assertEqual(0, reader.readColumn('1_element', index1).ndim)
+		self.assertEqual(0, reader.readColumn('1D', index1).ndim)
+		self.assertEqual(0, reader.readColumn('2D', index1).ndim)
+
+		self.assertEqual(1, reader.readColumn('1D', index2).ndim)
+		self.assertEqual(1, reader.readColumn('2D', index2).ndim)
+
+		# === Write 2 rows ===
+		writer = TableWriter(self.table_path)
+		writer.append(**data)
+		writer.append(**data)
+		writer.close()
+
+		# --- Read 2 rows with readColumn2D() ---
+		reader = TableReader(self.table_path)
+		self.assertEqual(2, reader.readColumn2D('scalar').ndim)
+		self.assertEqual(2, reader.readColumn2D('1_element').ndim)
+		self.assertEqual(2, reader.readColumn2D('1D').ndim)
+		self.assertEqual(2, reader.readColumn2D('2D').ndim)
+
+		self.assertEqual(2, reader.readColumn2D('scalar', index1).ndim)
+		self.assertEqual(2, reader.readColumn2D('1_element', index1).ndim)
+		self.assertEqual(2, reader.readColumn2D('1D', index1).ndim)
+		self.assertEqual(2, reader.readColumn2D('2D', index1).ndim)
+
+		self.assertEqual(2, reader.readColumn2D('1D', index2).ndim)
+		self.assertEqual(2, reader.readColumn2D('2D', index2).ndim)
+
+		# --- Read 2 rows with readColumn() ---
+		self.assertEqual(1, reader.readColumn('scalar').ndim)
+		self.assertEqual(1, reader.readColumn('1_element').ndim)
+		self.assertEqual(2, reader.readColumn('1D').ndim)
+		self.assertEqual(2, reader.readColumn('2D').ndim)
+
+		self.assertEqual(1, reader.readColumn('scalar', index1).ndim)
+		self.assertEqual(1, reader.readColumn('1_element', index1).ndim)
+		self.assertEqual(1, reader.readColumn('1D', index1).ndim)
+		self.assertEqual(1, reader.readColumn('2D', index1).ndim)
+
+		self.assertEqual(2, reader.readColumn('1D', index2).ndim)
+		self.assertEqual(2, reader.readColumn('2D', index2).ndim)
+
+	@noseAttrib.attr('smalltest', 'table')
 	def test_attributes(self):
 		'''Test a table with attributes and no columns.'''
 		def check_attributes(attribute_dict):
@@ -141,12 +233,12 @@ class Test_TableReader_Writer(unittest.TestCase):
 		writer = TableWriter(self.table_path)
 		writer.append(**DATA)  # 1-D float arrays in table row 0
 
-		with self.assertRaises(VariableEntrySize):
+		with self.assertRaises(VariableEntrySizeError):
 			writer.append(**d0)  # 0-D arrays: inconsistent entry sizes
 
 		writer.append(**d2)  # 2-D arrays in table row 2
 
-		with self.assertRaises(VariableEntrySize):
+		with self.assertRaises(VariableEntrySizeError):
 			writer.append(**d3)  # narrower 1-D arrays than row 0
 
 		writer.close()
@@ -202,40 +294,3 @@ class Test_TableReader_Writer(unittest.TestCase):
 		self.assertEqual(1, actual.ndim)
 		self.assertEqual((3,), actual.shape)
 		npt.assert_array_equal([20, 21, 22], actual)
-
-	@unittest.skip('sensitive to implementation details; maybe not portable')
-	@noseAttrib.attr('smalltest', 'table')
-	def test_path_clash(self):
-		'''Test what happens if two TableWriters are writing to the same directory.'''
-		self.make_test_dir()
-		d1 = {key: np.arange(5) + ord(key[0]) for key in COLUMNS}
-
-		writer1 = TableWriter(self.table_path)
-		writer1.append(**d1)
-		writer1.append(**d1)
-		writer1.append(**d1)
-
-		writer2 = TableWriter(self.table_path)
-		writer2.append(**d1)
-
-		d2 = {key: -value for key, value in d1.iteritems()}
-		writer2.append(**d2)
-
-		writer1.writeAttributes(x=1, y=2, z=3)
-		writer2.writeAttributes(x=10, a='a', b='b')
-
-		# WARNING: The results depend on the closing order, the longer files,
-		# and probably I/O buffer sizes!
-		writer1.close()
-		writer2.close()
-
-		reader = TableReader(self.table_path)
-		column_name = COLUMNS[0]
-		actual = reader.readColumn(column_name)
-		expected = np.vstack((d1[column_name], d2[column_name], d1[column_name]))
-		npt.assert_array_equal(expected, actual)
-
-		# WARNING: The last table to write any attributes (including automatic
-		# writes of internal Table metadata) takes all. This esp. matters if
-		# the column names are stored in an attribute.
-		self.assertEqual(set('x a b'.split()), set(reader.attributeNames()))

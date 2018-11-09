@@ -46,33 +46,52 @@ def test_method(method, text):
 
 	return counts
 
-def test_old(reader, indices):
+def test_old(reader, column, indices):
 	'''
 	Tests original readColumn method where all data is read and then subcolumn
 	indices are selected from the entire data matrix.
 
 	Inputs:
 		reader (TableReader object): file to read data from to test performance
+		column (str): the column name to read
 		indices (numpy array of int): indices of data to select
 	'''
 
-	return test_method(lambda : reader.readColumn('counts')[:, indices].squeeze(),
+	return test_method(
+		lambda : reader.readColumn2D(column)[:, indices],
+		'Old method, read all, select subcolumns')
+
+def test_old_full(reader, column, indices):
+	'''
+	Tests original readColumn method where all data is read with no subcolumn
+	selection by indices.
+
+	Inputs:
+		reader (TableReader object): file to read data from to test performance
+		column (str): the column name to read
+		indices (numpy array of int): indices of data to select [ignored]
+	'''
+
+	return test_method(
+		lambda : reader.readColumn2D(column),
 		'Old method, read all')
 
-def test_new_block(reader, indices):
+def test_new_block(reader, column, indices):
 	'''
-	Tests the new readColumn method that reads one data chunk from each entry,
+	Tests the new readColumn method that reads one I/O block per entry,
 	then selects subcolumns by indices, then aggregates the rows.
 
 	Inputs:
 		reader (TableReader object): file to read data from to test performance
+		column (str): the column name to read
 		indices (numpy array of int): indices of data to select
 	'''
 
-	return test_method(lambda : reader.readColumn('counts', indices),
-		'New method, block read')
+	return test_method(
+		lambda : reader.readColumn2D(column, indices),
+		'New method, read subcolumns')
 
-def test_functions(functions, text, reader, indices):
+def test_functions(functions, text, reader, column, indices):
 	'''
 	Tests the given readColumn methods for performance and the same output
 
@@ -84,7 +103,7 @@ def test_functions(functions, text, reader, indices):
 	'''
 
 	print('\n{} with {} iterations:'.format(text, ITERS))
-	results = [f(reader, indices) for f in functions]
+	results = [f(reader, column, indices) for f in functions]
 	for result in results[1:]:
 		np.testing.assert_array_equal(results[0], result)
 
@@ -101,41 +120,60 @@ def test_performance(sim_out_dir):
 	bulk_ids = bulk_molecules.readAttribute('objectNames')
 	n_mols = len(bulk_ids)
 
+	# Mass table
+	mass = TableReader(os.path.join(sim_out_dir, 'Mass'))
+
 	# Sets of functions to test
 	two_functions = [test_old, test_new_block]
+	three_functions = [test_old, test_old_full, test_new_block]
 
 	# Test reads
+	## Mass/time is a small column with just one int per entry
+	indices = np.array([0])
+	test_functions(three_functions, '1-element column', mass,
+		'time', indices)
+
 	## Single index
 	indices = np.array([0])
-	test_functions(two_functions, 'One index', bulk_molecules, indices)
+	test_functions(two_functions, 'One index', bulk_molecules,
+		'counts', indices)
 
 	## First and last index
 	indices = np.array([0, n_mols-1])
 	test_functions(two_functions, 'First and last indices', bulk_molecules,
-		indices)
+		'counts', indices)
 
 	## Large block
 	indices = np.array(range(BLOCK_SIZE))
-	test_functions(two_functions, 'Block indices', bulk_molecules, indices)
+	test_functions(two_functions, 'Block indices', bulk_molecules,
+		'counts', indices)
 
 	## 2 Large blocks
 	indices = np.array(range(BLOCK_SIZE) + range(n_mols)[-BLOCK_SIZE:])
 	test_functions(two_functions, 'Two blocks of indices', bulk_molecules,
-		indices)
+		'counts', indices)
 
 	## Dispersed reads
 	indices = np.linspace(0, n_mols-1, BLOCK_SIZE, dtype=np.int64)
-	test_functions(two_functions, 'Dispersed indices', bulk_molecules, indices)
+	test_functions(two_functions, 'Dispersed indices', bulk_molecules,
+		'counts', indices)
 
 	## Random reads
 	indices = np.array(range(n_mols))
 	np.random.shuffle(indices)
 	indices = indices[:BLOCK_SIZE]
-	test_functions(two_functions, 'Random indices', bulk_molecules, indices)
+	test_functions(two_functions, 'Random indices', bulk_molecules,
+		'counts', indices)
 
-	## All indices
+	## All indices, same large column as most of these tests
 	indices = np.array(range(n_mols))
-	test_functions(two_functions, 'All indices', bulk_molecules, indices)
+	test_functions(three_functions, 'All indices', bulk_molecules,
+		'counts', indices)
+
+	## All indices, small column
+	indices = np.array(range(12))
+	test_functions(three_functions, 'All indices, small column', bulk_molecules,
+		'atpRequested', indices)
 
 
 if __name__ == '__main__':

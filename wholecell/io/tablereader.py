@@ -103,15 +103,12 @@ class TableReader(object):
 		"""
 		Return an attribute value.
 
-		Parameters
-		----------
-		name : str
-			The name of the attribute.
+		Parameters:
+			name (str): The attribute name.
 
 		Returns
 		-------
-		The attribute, JSON-deserialized from a string.
-
+		The attribute value, JSON-deserialized from a string.
 		"""
 
 		if name not in self._attributes:
@@ -119,21 +116,25 @@ class TableReader(object):
 		return self._attributes[name]
 
 
-	def readColumn(self, name, indices=None):
+	def readColumn2D(self, name, indices=None):
 		"""
 		Load a full column (all entries). Each (row x column) entry is a
 		1-D NumPy array. This method can optionally read just a slice of all
-		those arrays: their subcolumns at the given `indices`.
+		those arrays -- the subcolumns at the given `indices`.
 
 		Parameters:
 			name (str): The name of the column.
-			indices (ndarray): Numpy array of ints. The specific subcolumn
-				indices to read from each entry. If None, reads in all data.
-				If provided, can give a performance boost for columns with many
-				entries.
+			indices (ndarray[int]): The subcolumn indices to select from each
+				entry, or None to read in all data.
+
+				If provided, this can give a performance boost for columns that
+				are wide and tall.
+
 				NOTE: The performance benefit might only be realized if the file
 				is in the disk cache (i.e. the file has been recently read),
-				which should typically be the case.
+				which should typically be the case, AND only if the entries are
+				large enough that reading them one at a time won't add a lot of
+				I/O overhead.
 
 		Returns:
 			ndarray: a 2-D NumPy array (row x subcolumn) OR squeezed into a
@@ -163,7 +164,7 @@ class TableReader(object):
 			if indices is None:
 				return np.frombuffer(
 					dataFile.read(), header.dtype
-					).copy().reshape(nEntries, -1).squeeze()
+					).copy().reshape(nEntries, -1)
 
 			else:
 				data = np.zeros((nEntries, len(indices)), header.dtype)
@@ -173,7 +174,30 @@ class TableReader(object):
 						dataFile.read(header.bytes_per_entry), header.dtype
 						)[indices]
 
-				return data.squeeze()
+				return data
+
+
+	def readColumn(self, name, indices=None):
+		'''
+		Read a column just like readColumn2D() then squeeze() the resulting
+		NumPy array, returning a 0D, 1D, or 2D array, depending on the number
+		of rows and subcolumns written.
+
+		1 row x 1 subcolumn => 0D.
+
+		n rows x 1 subcolumn or 1 row x n subcolumns => 1D.
+
+		n rows x m subcolumns => 2D.
+
+		Args:
+			name (str): the column name.
+			indices (ndarray[int]): The subcolumn indices to select from each
+				entry, or None to read in all data. See readColumn2D().
+
+		Returns:
+			A 0D, 1D, or 2D array.
+		'''
+		return self.readColumn2D(name, indices).squeeze()
 
 
 	def _loadHeader(self, name, dataFile):
@@ -230,6 +254,5 @@ class TableReader(object):
 		TODO (John): Consider removing this method.  At the moment are usage is
 			inconsistent, and gives the impression that it is actually
 			beneficial or necessary.
-
 		"""
 		pass

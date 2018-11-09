@@ -13,11 +13,12 @@ from wholecell.utils import filepath
 __all__ = [
 	"TableWriter",
 	# "TableWriterError",
-	# "FilesClosedError",
 	# "MissingFieldError",
 	# "UnrecognizedFieldError",
 	# "AttributeAlreadyExistsError",
-	# "AttributeTypeError"
+	# "AttributeTypeError",
+	# "VariableEntrySizeError",
+	# "DtypeTooComplexError",
 	]
 
 VERSION = 3  # should update this any time there is a spec-breaking change
@@ -26,7 +27,7 @@ FILE_ATTRIBUTES = "attributes.json"
 COLUMN_SIGNATURE = 0xDECAFF
 
 # Column data file's header struct. See HEADER.pack(), below.
-HEADER = struct.Struct('<2I 3H 64p')
+HEADER, DTYPE_BYTE_LEN = struct.Struct('<2I 3H 64p'), 64
 
 
 class TableWriterError(Exception):
@@ -63,9 +64,17 @@ class AttributeTypeError(TableWriterError):
 	"""
 	pass
 
-class VariableEntrySize(TableWriterError):
+class VariableEntrySizeError(TableWriterError):
 	"""Error raised on attempt to write an entry that's not the same size as
 	the previous entries in the same Column.
+	"""
+	pass
+
+class DtypeTooComplexError(TableWriterError):
+	"""Error raised on attempt to write an entry whose NumPy dtype description
+	doesn't fit in the relevant HEADER field. This is unexpected since all the
+	current descriptions fit in 6 bytes including the p-string length byte:
+	`"<i8"`, `"<f8"`, `"|b1"`, `"|S7"`.
 	"""
 	pass
 
@@ -84,7 +93,8 @@ class _Column(object):
 	Notes
 	-----
 	See TableWriter for more information about output file and directory
-	structure.
+	structure.  Each column creates one file containing the packed HEADER
+	followed by the array entries.
 
 	TODO (John): With some adjustment this class could be made public, and used
 		as a lightweight alternative to TableWriter in addition to part of
@@ -108,11 +118,9 @@ class _Column(object):
 		element array size (subcolumns), and element size in bytes.
 		Subsequent entries must be consistent.
 
-		Parameters
-		----------
-		value : array-like
-			A NumPy ndarray or anything that can be cast to an array via
-			np.asarray, including scalars (i.e. 0D arrays).
+		Parameters:
+			value (array-like): A NumPy ndarray or anything that can be cast to
+				an array via np.asarray, including a scalar (i.e. 0D array).
 		"""
 
 		value = np.asarray(value, self._dtype)
@@ -129,9 +137,8 @@ class _Column(object):
 			self._bytes_per_entry = len(data_bytes)
 			self._elements_per_entry = value.size
 
-			# TODO(jerry): Test that this raises an exception if the numeric
-			# values are out of range.
-			# TODO(jerry): Raise an exception if descr_json doesn't fit.
+			if len(descr_json) >= DTYPE_BYTE_LEN:
+				raise DtypeTooComplexError(descr_json)
 			header = HEADER.pack(
 				COLUMN_SIGNATURE,          # I: magic signature
 				self._bytes_per_entry,     # I: bytes/entry
@@ -144,7 +151,7 @@ class _Column(object):
 			self._data.write(header)
 
 		elif self._bytes_per_entry != len(data_bytes):
-			raise VariableEntrySize(
+			raise VariableEntrySizeError(
 				'Entry size in bytes, elements {} is inconsistent with {}'
 				' for Table column {}'.format(
 					(len(data_bytes), value.size),
@@ -186,8 +193,7 @@ class TableWriter(object):
 
 	NumPy can save and load arrays to disk.  This class provides a convenient
 	interface to repeated appending of NumPy array data to an output file,
-	which can be loaded one entry (row) at a time or all at once via the
-	companion class, TableReader.
+	which can be loaded one column at a time via the TableReader class.
 
 	A Table has one or more named columns. Each (row x column) entry is a
 	1-D NumPy array.
@@ -196,15 +202,13 @@ class TableWriter(object):
 
 	<root directory> : Root path, provided by during instantiation.
 		/attributes.json : A JSON file containing the attributes and metadata.
-		/<column name> : File for a specific column, container a HEADER followed
+		/<column name> : A file per column containing a HEADER followed
 				by the entries which are binary data from NumPy ndarrays.
 
-	Parameters
-	----------
-	path : str
-		Path to the directory that will be created.  All data will be saved
-		under this directory.  If the directory already exists, no error will
-		occur.
+	Parameters:
+		path (str): Path to the directory to create.  All data will be saved
+			within this directory.  If the directory already exists, it won't
+			raise an error, but don't put multiple Tables in the same directory.
 
 	See also
 	--------
@@ -213,21 +217,13 @@ class TableWriter(object):
 	Notes
 	-----
 	The terms used in this class are adapted from the analogy of a spreadsheet
-	or table.  Each append operation adds a new 'row' to the table, also called
-	an 'entry'.  Every 'column' corresponds to a 'field' and contains a
-	particular set of data (i.e. of a fixed type) for all entries.
+	or table.
 
-	Attributes are meant for user-provided annotation that may be useful for
-	downstream analysis or otherwise improve portability.  E.g. a list of names
-	associated with the elements of a vector-column.
-
-	Data written to columns can be a fixed or variable size 1D NumPy array.
-	If fixed, the output can be read in as a single, 2D array by TableReader.
-	Otherwise the data must be read one entry (row) at a time.
-
-	0D and 1D array writing is supported.  Higher dimensions are outside of
-	spec and will be flattened by TableWriter.
-	TODO (John): throw an error for > 1D?
+	Each append() operation adds a new 'row' to the table containing one
+	'entry' (or table cell) per 'column'.  Each 'column' corresponds to a
+	'field' and holds a fixed array size and data type for all of its entries.
+	append() will convert scalar values and higher dimension arrays to 1D
+	arrays.  The 1D array elements are called 'subcolumns'.
 
 	Both simple and structured ndarray dtypes are supported.  Structured arrays
 	are a good way to work around the dimensional limitations.
@@ -236,21 +232,15 @@ class TableWriter(object):
 	not supported.  They might work, but under the hood will rely on pickling
 	for saving and loading, which will be terribly slow.
 
-	TODO (John): Consider moving the Numpy dtype format specification out of
-		the 'data' file to the attributes file.  This was done originally to
-		keep the format tightly associated with the data, improving portability
-		and consistency with the np.save implementation.  However it leads to
-		logical complications in saving and loading, and it mixes JSON string
-		data with array binary data in one file.
-
-	TODO (John): Move the _Column class into the TableWriter namespace.
-		There's no reason for it to be available at the module level.
+	A Table also stores named 'attributes' meant for user-provided annotations
+	that may be useful for downstream analysis or portability.  E.g. a list of
+	element names for a vector-column.  Each attribute can be written only
+	once -- attributes do not support time-series data.
 
 	TODO (John): Test portability across machines (particularly, different
 		operating systems).
 
-	TODO (John): Consider separating out the fixed and variable size
-		implementations.  Further, consider writing all fields simultaneously
+	TODO (John): Consider writing all fields simultaneously
 		as part of a structured array (i.e. a hybrid data type).
 	"""
 
@@ -312,13 +302,12 @@ class TableWriter(object):
 		the columns.  This method can be called to write JSON-serializable
 		data (e.g. a list of strings) alongside the column data.
 
-		Parameters
-		----------
-		**namesAndValues : dict of {string: JSON-serializable} pairs
-			The attribute names and associated values.
+		Parameters:
+			**namesAndValues (dict[str, JSON-serializable]): The named
+				attribute values.
 
-			NOTE: TableWriter uses attribute names starting with "_" for its
-			metadata.
+		NOTE: TableWriter uses attribute names starting with "_" to hold its
+		internal metadata.
 
 		Notes
 		-----
@@ -368,7 +357,6 @@ class TableWriter(object):
 
 	def __del__(self):
 		"""
-		Explicitly closes the output files once the instance is totally
-		dereferenced.
+		Close the output files once the instance is totally dereferenced.
 		"""
 		self.close()
