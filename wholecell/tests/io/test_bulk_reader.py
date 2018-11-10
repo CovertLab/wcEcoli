@@ -59,7 +59,7 @@ def test_old(reader, column, indices):
 
 	return test_method(
 		lambda : reader.readColumn2D(column)[:, indices],
-		'Old method, read all, select subcolumns')
+		'Old method, read all + select subcolumns')
 
 def test_old_full(reader, column, indices):
 	'''
@@ -106,6 +106,7 @@ def test_functions(functions, text, reader, column, indices):
 	results = [f(reader, column, indices) for f in functions]
 	for result in results[1:]:
 		np.testing.assert_array_equal(results[0], result)
+	return results[1]
 
 def test_performance(sim_out_dir):
 	'''
@@ -125,7 +126,7 @@ def test_performance(sim_out_dir):
 
 	# Sets of functions to test
 	two_functions = [test_old, test_new_block]
-	three_functions = [test_old, test_old_full, test_new_block]
+	three_functions = [test_old_full, test_old, test_new_block]
 
 	# Test reads
 	## Mass/time is a small column with just one int per entry
@@ -170,10 +171,17 @@ def test_performance(sim_out_dir):
 	test_functions(three_functions, 'All indices', bulk_molecules,
 		'counts', indices)
 
-	## All indices, small column
-	indices = np.array(range(12))
-	test_functions(three_functions, 'All indices, small column', bulk_molecules,
+	## All indices, narrow column
+	# ASSUMES: The processNames attribute indicates how many subcolumns are in
+	# the atpRequested table. Check after timing; beforehand could preload the
+	# disk cache.
+	n_processes = len(bulk_molecules.readAttribute('processNames'))
+	indices = np.array(range(n_processes))
+	a = test_functions(three_functions, 'All indices, narrow column', bulk_molecules,
 		'atpRequested', indices)
+	if a.shape[1] != n_processes:
+		raise ValueError('Expected {} "atpRequested" subcolumns; got {}'.format(
+			n_processes, a.shape[1]))
 
 
 if __name__ == '__main__':

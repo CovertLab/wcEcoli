@@ -45,7 +45,7 @@ class _ColumnHeader(object):
 		compression_type,
 		descr_json) = tw.HEADER.unpack(header_bytes)
 
-		if magic_signature != tw.COLUMN_SIGNATURE:
+		if magic_signature != tw.MAGIC_SIGNATURE:
 			raise VersionError('Unrecognized Column file header')
 
 		if compression_type != 0:

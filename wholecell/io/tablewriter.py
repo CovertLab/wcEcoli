@@ -24,7 +24,7 @@ __all__ = [
 VERSION = 3  # should update this any time there is a spec-breaking change
 
 FILE_ATTRIBUTES = "attributes.json"
-COLUMN_SIGNATURE = 0xDECAFF
+MAGIC_SIGNATURE = 0x2018ce11
 
 # Column data file's header struct. See HEADER.pack(), below.
 HEADER, DTYPE_BYTE_LEN = struct.Struct('<2I 3H 64p'), 64
@@ -75,6 +75,12 @@ class DtypeTooComplexError(TableWriterError):
 	doesn't fit in the relevant HEADER field. This is unexpected since all the
 	current descriptions fit in 6 bytes including the p-string length byte:
 	`"<i8"`, `"<f8"`, `"|b1"`, `"|S7"`.
+	"""
+	pass
+
+class TableExitsError(TableWriterError):
+	"""Error raised on attempt to create a Table in a directory that already
+	has a table (completed or in progress).
 	"""
 	pass
 
@@ -140,7 +146,7 @@ class _Column(object):
 			if len(descr_json) >= DTYPE_BYTE_LEN:
 				raise DtypeTooComplexError(descr_json)
 			header = HEADER.pack(
-				COLUMN_SIGNATURE,          # I: magic signature
+				MAGIC_SIGNATURE,           # I: for format validation & versioning
 				self._bytes_per_entry,     # I: bytes/entry
 				self._elements_per_entry,  # H: subcolumns
 				1,                         # H: entries/written block
@@ -170,7 +176,9 @@ class _Column(object):
 		Trying to append after closing will raise an error.
 		"""
 
-		self._data.close()
+		if not self._data.closed:
+			self._data.truncate()
+			self._data.close()
 
 
 	def __del__(self):
@@ -207,8 +215,10 @@ class TableWriter(object):
 
 	Parameters:
 		path (str): Path to the directory to create.  All data will be saved
-			within this directory.  If the directory already exists, it won't
-			raise an error, but don't put multiple Tables in the same directory.
+			within this directory.  It's OK if the directory already exists but
+			not OK if it contains Table files. This will raise TableExitsError
+			if its attributes.json file already exists. Existing or concurrent
+			Table files would confuse each other.
 
 	See also
 	--------
@@ -250,6 +260,13 @@ class TableWriter(object):
 
 		self._attributes = {}
 		self._attributes_filename = os.path.join(path, FILE_ATTRIBUTES)
+
+		if os.path.exists(self._attributes_filename):
+			raise TableExitsError('In {}'.format(self._path))
+
+		# The column file's magic signature mostly obviates the '_version'
+		# attribute but writing the attributes file now lets the above check
+		# also prevent competing TableWriters.
 		self.writeAttributes(_version=VERSION)
 
 

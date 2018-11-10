@@ -10,6 +10,8 @@ from __future__ import absolute_import
 from __future__ import division
 
 import collections
+import os.path
+import shutil
 import time
 
 import numpy as np
@@ -109,9 +111,13 @@ class Simulation(CellSimulation):
 
 		self.randomState = np.random.RandomState(seed = np.uint32(self._seed % np.iinfo(np.uint32).max))
 
+		# Start with an empty output dir -- mixing in new output files would
+		# make a mess. Also, TableWriter refuses to overwrite a Table, and
 		# divide_cell will fail if _outputDir is no good (e.g. defaulted to
 		# None) so catch it *before* running the simulation in case _logToDisk
 		# doesn't.
+		if os.path.isdir(self._outputDir):
+			shutil.rmtree(self._outputDir)
 		filepath.makedirs(self._outputDir)
 
 		sim_data = self._simData

@@ -19,7 +19,7 @@ __builtins__.setdefault('profile', noop_decorator)
 
 from wholecell.io.tablereader import TableReader, DoesNotExistError
 from wholecell.io.tablewriter import (TableWriter, MissingFieldError,
-	UnrecognizedFieldError, VariableEntrySizeError)
+	TableExitsError, UnrecognizedFieldError, VariableEntrySizeError)
 
 
 COLUMNS = 'x y z theta'.split()
@@ -147,13 +147,14 @@ class Test_TableReader_Writer(unittest.TestCase):
 		self.assertEqual(1, reader.readColumn('2D', index2).ndim)
 
 		# === Write 2 rows ===
-		writer = TableWriter(self.table_path)
+		table2_path = os.path.join(self.test_dir, 'Segundo')
+		writer = TableWriter(table2_path)
 		writer.append(**data)
 		writer.append(**data)
 		writer.close()
 
 		# --- Read 2 rows with readColumn2D() ---
-		reader = TableReader(self.table_path)
+		reader = TableReader(table2_path)
 		self.assertEqual(2, reader.readColumn2D('scalar').ndim)
 		self.assertEqual(2, reader.readColumn2D('1_element').ndim)
 		self.assertEqual(2, reader.readColumn2D('1D').ndim)
@@ -294,3 +295,13 @@ class Test_TableReader_Writer(unittest.TestCase):
 		self.assertEqual(1, actual.ndim)
 		self.assertEqual((3,), actual.shape)
 		npt.assert_array_equal([20, 21, 22], actual)
+
+	@noseAttrib.attr('smalltest', 'table')
+	def test_path_clash(self):
+		'''Test two TableWriters trying to write to the same directory.'''
+		self.make_test_dir()
+
+		TableWriter(self.table_path)
+
+		with self.assertRaises(TableExitsError):
+			TableWriter(self.table_path)
