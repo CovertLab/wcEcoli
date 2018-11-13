@@ -167,7 +167,7 @@ def measure_block_subranges(array, table_name='', column_name=''):
 		measure_block(data)
 	return power_of_2_array
 
-def test_performance(sim_out_dir, table_name, column_name):
+def measure_performance_metrics(sim_out_dir, table_name, column_name):
 	reader = TableReader(os.path.join(sim_out_dir, table_name))
 	array = reader.readColumn2D(column_name)
 	print('')
@@ -181,4 +181,4 @@ if __name__ == '__main__':
 		print("Args needed: simOut_directory, table_name, column_name")
 		sys.exit(1)
 
-	test_performance(*sys.argv[1:4])
+	measure_performance_metrics(*sys.argv[1:4])

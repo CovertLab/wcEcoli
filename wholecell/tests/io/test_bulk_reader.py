@@ -17,6 +17,7 @@ from __future__ import division
 import os
 import sys
 import time
+import unittest
 
 import numpy as np
 
@@ -26,6 +27,7 @@ ITERS = 10
 BLOCK_SIZE = 5000  # roughly number of proteins or RNA
 
 
+@unittest.skip
 def test_method(method, text):
 	'''
 	Tests a method for indexing into data from a reader
@@ -46,6 +48,7 @@ def test_method(method, text):
 
 	return counts
 
+@unittest.skip
 def test_old(reader, column, indices):
 	'''
 	Tests original readColumn method where all data is read and then subcolumn
@@ -61,6 +64,7 @@ def test_old(reader, column, indices):
 		lambda : reader.readColumn2D(column)[:, indices],
 		'Old method, read all + select subcolumns')
 
+@unittest.skip
 def test_old_full(reader, column, indices):
 	'''
 	Tests original readColumn method where all data is read with no subcolumn
@@ -76,6 +80,7 @@ def test_old_full(reader, column, indices):
 		lambda : reader.readColumn2D(column),
 		'Old method, read all')
 
+@unittest.skip
 def test_new_block(reader, column, indices):
 	'''
 	Tests the new readColumn method that reads one I/O block per entry,
@@ -91,6 +96,7 @@ def test_new_block(reader, column, indices):
 		lambda : reader.readColumn2D(column, indices),
 		'New method, read subcolumns')
 
+@unittest.skip
 def test_functions(functions, text, reader, column, indices):
 	'''
 	Tests the given readColumn methods for performance and the same output
@@ -108,6 +114,7 @@ def test_functions(functions, text, reader, column, indices):
 		np.testing.assert_array_equal(results[0], result)
 	return results[1]
 
+@unittest.skip
 def test_performance(sim_out_dir):
 	'''
 	Performs tests on multiple index conditions to compare times of various methods.
