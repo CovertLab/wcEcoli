@@ -3,8 +3,8 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import json
-
 import numpy as np
+import zlib
 
 from wholecell.utils import filepath
 from . import tablewriter as tw
@@ -36,25 +36,31 @@ class DoesNotExistError(TableReaderError):
 
 
 class _ColumnHeader(object):
-	'''A Column's HEADER info, decoded from the data file header bytes.'''
-	def __init__(self, header_bytes):
-		(magic_signature,
-		self.bytes_per_entry,
+	'''Column header info read from a Column file's header chunk.'''
+	def __init__(self, dataFile):
+		chunk_header = dataFile.read(tw.CHUNK_HEADER.size)
+		(chunk_type, chunk_size) = tw.CHUNK_HEADER.unpack(chunk_header)
+		self.column_chunk_end = tw.CHUNK_HEADER.size + chunk_size
+
+		if chunk_type != tw.COLUMN_CHUNK_TYPE:
+			raise VersionError('Not a Column file or unsupported version')
+
+		header_struct = dataFile.read(tw.COLUMN_STRUCT.size)
+		(self.bytes_per_entry,
 		self.elements_per_entry,
-		entries_per_block,
-		compression_type,
-		descr_json) = tw.HEADER.unpack(header_bytes)
+		self.entries_per_block,
+		self.compression_type) = tw.COLUMN_STRUCT.unpack(header_struct)
 
-		if magic_signature != tw.MAGIC_SIGNATURE:
-			raise VersionError('Unrecognized Column file header')
+		if self.compression_type not in (tw.COMPRESSION_TYPE_NONE, tw.COMPRESSION_TYPE_ZLIB):
+			raise VersionError('Unsupported Column compression type {}'.format(
+				self.compression_type))
 
-		if compression_type != 0:
-			raise VersionError('Unsupported Column compression type')
-
-		if entries_per_block != 1:
-			raise VersionError('Unsupported Column entry packing')
-
+		descr_json_len = chunk_size - tw.COLUMN_STRUCT.size
+		descr_json = dataFile.read(descr_json_len)
+		if len(descr_json) < descr_json_len:
+			raise IOError('Column file header cut short')
 		descr = json.loads(descr_json)
+
 		if isinstance(descr, basestring):
 			self.dtype = str(descr)  # really the dtype.descr
 		else:
@@ -86,6 +92,7 @@ class TableReader(object):
 		except IOError as e:
 			raise VersionError(
 				"Could not read a table's attributes file ({})."
+				" Version 2 tables are not supported."  # they could be...
 				" Unzip all table files if needed.".format(attributes_filename), e)
 
 		# Check if the table's version matches the expected version
@@ -94,7 +101,7 @@ class TableReader(object):
 			raise VersionError("Expected version {} but found version {}".format(
 				tw.VERSION, version))
 
-		# List the column names. Ignore the 'attributes.json' file.
+		# List the column file names. Ignore the 'attributes.json' file.
 		self._columnNames = {p for p in os.listdir(path) if '.json' not in p}
 		self._columnHeaders = {}  # maps column name to _ColumnHeader
 
@@ -152,29 +159,42 @@ class TableReader(object):
 		if name not in self._columnNames:
 			raise DoesNotExistError("No such column: {}".format(name))
 
+		entry_blocks = []
+
 		with open(os.path.join(self._path, name), 'rb') as dataFile:
 			header = self._loadHeader(name, dataFile)
+			decompressor = (
+				zlib.decompress if header.compression_type == tw.COMPRESSION_TYPE_ZLIB
+				else lambda data: data)
 
-			dataFile.seek(0, os.SEEK_END)
-			file_size = dataFile.tell()
-			nEntries = (file_size - tw.HEADER.size) // header.bytes_per_entry
+			# Read, decompress, and unpack all the blocks.
+			while True:
+				block_header = dataFile.read(tw.CHUNK_HEADER.size)
+				if not block_header:
+					break
+				if len(block_header) < tw.CHUNK_HEADER.size:
+					raise EOFError('Short data block header')
 
-			dataFile.seek(tw.HEADER.size)
+				chunk_type, chunk_size = tw.CHUNK_HEADER.unpack(block_header)
+				if chunk_type != tw.BLOCK_CHUNK_TYPE:
+					dataFile.seek(chunk_size, os.SEEK_CUR)  # skip this unknown chunk
+					continue
 
-			if indices is None:
-				return np.frombuffer(
-					dataFile.read(), header.dtype
-					).copy().reshape(nEntries, -1)
+				raw = dataFile.read(chunk_size)
+				if len(raw) != chunk_size:
+					raise EOFError('Data block cut short {}/{}'.format(
+						len(raw), chunk_size))
+				data = decompressor(raw)
+				entries = np.frombuffer(data, header.dtype).reshape(
+					-1, header.elements_per_entry)
+				if indices is not None:
+					entries = entries[:, indices]
+				entry_blocks.append(entries)
 
-			else:
-				data = np.zeros((nEntries, len(indices)), header.dtype)
-
-				for i in range(nEntries):
-					data[i, :] = np.frombuffer(
-						dataFile.read(header.bytes_per_entry), header.dtype
-						)[indices]
-
-				return data
+		# Note: frombuffer() returns a write-protected ndarray onto the
+		# immutable byte str. entries[:, indices] makes a writeable array, as
+		# does vstack(), otherwise this should copy the array.
+		return np.vstack(entry_blocks)
 
 
 	def readColumn(self, name, indices=None):
@@ -204,8 +224,7 @@ class TableReader(object):
 		"""
 		Load the named column's _ColumnHeader from disk or cache.
 
-		SIDE EFFECTS: Reads the header from the file if it isn't cached, in
-		that case moving the file's read position.
+		SIDE EFFECTS: Seeks dataFile to the end of the column header chunk.
 
 		Parameters:
 			name (str): The column name.
@@ -213,10 +232,10 @@ class TableReader(object):
 		"""
 
 		if name in self._columnHeaders:
+			dataFile.seek(self._columnHeaders[name].column_chunk_end)
 			return self._columnHeaders[name]
 
-		header_data = dataFile.read(tw.HEADER.size)
-		header = _ColumnHeader(header_data)
+		header = _ColumnHeader(dataFile)
 		self._columnHeaders[name] = header
 		return header
 

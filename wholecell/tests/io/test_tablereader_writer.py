@@ -18,8 +18,9 @@ __builtins__.setdefault('profile', noop_decorator)
 
 
 from wholecell.io.tablereader import TableReader, DoesNotExistError
-from wholecell.io.tablewriter import (TableWriter, MissingFieldError,
-	TableExitsError, UnrecognizedFieldError, VariableEntrySizeError)
+from wholecell.io.tablewriter import (BLOCK_BYTES_GOAL,
+	TableWriter, MissingFieldError, TableExitsError, UnrecognizedFieldError,
+	VariableEntrySizeError)
 
 
 COLUMNS = 'x y z theta'.split()
@@ -27,7 +28,7 @@ DATA = {key: np.arange(10.0) + ord(key[0]) for key in COLUMNS}
 
 
 # TODO(jerry): Test readColumn() w/non-default indices.
-# TODO(jerry): Test structured dtypes and a dtype too complex for the HEADER.
+# TODO(jerry): Test structured dtypes.
 
 class Test_TableReader_Writer(unittest.TestCase):
 	def setUp(self):
@@ -102,7 +103,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 		data = {
 			'scalar': 1,
 			'1_element': np.array([100]),
-			'1D': np.arange(4),
+			'1D': np.arange(4, dtype=np.int8),
 			'2D': np.arange(12).reshape(4, 3),
 			}
 		index1 = np.array([0])
@@ -295,6 +296,53 @@ class Test_TableReader_Writer(unittest.TestCase):
 		self.assertEqual(1, actual.ndim)
 		self.assertEqual((3,), actual.shape)
 		npt.assert_array_equal([20, 21, 22], actual)
+
+	@noseAttrib.attr('smalltest', 'table')
+	def test_big_entries(self):
+		'''Test entries that are larger than BLOCK_BYTES_GOAL.'''
+		self.make_test_dir()
+		ints = np.arange(9001, dtype=np.int16)
+		floats = np.arange(9002, dtype=np.float16)
+		d0 = {'ManyInts': ints, 'ManyFloats': floats}
+
+		# --- Write ---
+		writer = TableWriter(self.table_path)
+		writer.append(**d0)
+		writer.append(**d0)
+		writer.append(**d0)
+		writer.append(**d0)
+		writer.append(**d0)
+		writer.close()
+
+		# --- Read ---
+		reader = TableReader(self.table_path)
+		actual_ints = reader.readColumn2D('ManyInts')
+		actual_floats = reader.readColumn2D('ManyFloats')
+		npt.assert_array_equal(np.vstack(5 * [ints]), actual_ints)
+		npt.assert_array_equal(np.vstack(5 * [floats]), actual_floats)
+
+	@noseAttrib.attr('smalltest', 'table')
+	def test_many_entries(self):
+		'''Test enough entries to pack into many blocks.'''
+		self.make_test_dir()
+		ints = np.arange(500, dtype=np.int8)
+		floats = np.arange(500, dtype=np.float16)
+		d0 = {'ManyInts': ints, 'ManyFloats': floats}
+
+		rows = (BLOCK_BYTES_GOAL + ints.nbytes - 1) // ints.nbytes * 11 + 2
+
+		# --- Write ---
+		writer = TableWriter(self.table_path)
+		for _ in xrange(rows):
+			writer.append(**d0)
+		writer.close()
+
+		# --- Read ---
+		reader = TableReader(self.table_path)
+		actual_ints = reader.readColumn2D('ManyInts')
+		actual_floats = reader.readColumn2D('ManyFloats')
+		npt.assert_array_equal(np.vstack(rows * [ints]), actual_ints)
+		npt.assert_array_equal(np.vstack(rows * [floats]), actual_floats)
 
 	@noseAttrib.attr('smalltest', 'table')
 	def test_path_clash(self):
