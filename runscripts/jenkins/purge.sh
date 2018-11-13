@@ -61,8 +61,8 @@ else
 	NEXT_YEAR=$YEAR
 fi
 
-# Only remove if less than 30 directories to remove (ie 1 month) as a safety check (might not be necessary)
-if [ $(find $DIR -maxdepth 1 -type d -newermt $YEAR-$MONTH-$DAY ! -newermt $NEXT_YEAR-$NEXT_MONTH-1 | wc -l) -lt 30 ]; then
+# Only remove if 30 directories or less to remove (ie 1 month) as a safety check (might not be necessary)
+if [ $(find $DIR -maxdepth 1 -type d -newermt $YEAR-$MONTH-$DAY ! -newermt $NEXT_YEAR-$NEXT_MONTH-1 | wc -l) -le 30 ]; then
 	echo "Purging directories from $MONTH/$YEAR to $NEXT_MONTH/$NEXT_YEAR created on or after day $DAY for $DIR"
 	find $DIR -maxdepth 1 -type d -newermt $YEAR-$MONTH-$DAY ! -newermt $NEXT_YEAR-$NEXT_MONTH-1 -printf "%p\n" -exec rm -fr {} \;
 else
