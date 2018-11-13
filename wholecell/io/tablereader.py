@@ -1,6 +1,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from chunk import Chunk
 import os
 import json
 import numpy as np
@@ -40,15 +41,11 @@ class DoesNotExistError(TableReaderError):
 
 class _ColumnHeader(object):
 	'''Column header info read from a Column file's first chunk.'''
-	def __init__(self, dataFile):
-		chunk_header = dataFile.read(tw.CHUNK_HEADER.size)
-		(chunk_type, chunk_size) = tw.CHUNK_HEADER.unpack(chunk_header)
-		self.column_chunk_end = tw.CHUNK_HEADER.size + chunk_size
+	def __init__(self, chunk):
+		if chunk.getname() != tw.COLUMN_CHUNK_TYPE:
+			raise VersionError('Not a supported Column file format/version')
 
-		if chunk_type != tw.COLUMN_CHUNK_TYPE:
-			raise VersionError('Not a Column file or unsupported version')
-
-		header_struct = dataFile.read(tw.COLUMN_STRUCT.size)
+		header_struct = chunk.read(tw.COLUMN_STRUCT.size)
 		(self.bytes_per_entry,
 		self.elements_per_entry,
 		self.entries_per_block,
@@ -58,10 +55,7 @@ class _ColumnHeader(object):
 			raise VersionError('Unsupported Column compression type {}'.format(
 				self.compression_type))
 
-		descr_json_len = chunk_size - tw.COLUMN_STRUCT.size
-		descr_json = dataFile.read(descr_json_len)
-		if len(descr_json) < descr_json_len:
-			raise IOError('Column file header cut short')
+		descr_json = chunk.read()
 		descr = json.loads(descr_json)
 
 		if isinstance(descr, basestring):
@@ -106,7 +100,6 @@ class TableReader(object):
 
 		# List the column file names. Ignore the 'attributes.json' file.
 		self._columnNames = {p for p in os.listdir(path) if '.json' not in p}
-		self._columnHeaders = {}  # maps column name to _ColumnHeader
 
 
 	def readAttribute(self, name):
@@ -164,35 +157,35 @@ class TableReader(object):
 
 		entry_blocks = []
 
+		# Read the header and read, decompress, and unpack all the blocks.
 		with open(os.path.join(self._path, name), 'rb') as dataFile:
-			header = self._loadHeader(name, dataFile)
+			chunk = Chunk(dataFile, align=False)
+			header = _ColumnHeader(chunk)
+			chunk.close()
 			decompressor = (
 				zlib.decompress if header.compression_type == tw.COMPRESSION_TYPE_ZLIB
-				else lambda data: data)
+				else lambda data_bytes: data_bytes)
 
-			# Read, decompress, and unpack all the blocks.
 			while True:
-				block_header = dataFile.read(tw.CHUNK_HEADER.size)
-				if not block_header:
+				try:
+					chunk = Chunk(dataFile, align=False)
+				except EOFError:
 					break
-				if len(block_header) < tw.CHUNK_HEADER.size:
-					raise EOFError('Short data block header')
 
-				chunk_type, chunk_size = tw.CHUNK_HEADER.unpack(block_header)
-				if chunk_type != tw.BLOCK_CHUNK_TYPE:
-					dataFile.seek(chunk_size, os.SEEK_CUR)  # skip this unknown chunk
-					continue
+				if chunk.getname() == tw.BLOCK_CHUNK_TYPE:
+					raw = chunk.read()
+					if len(raw) != chunk.getsize():
+						raise EOFError('Data block cut short {}/{}'.format(
+							len(raw), chunk.getsize()))
 
-				raw = dataFile.read(chunk_size)
-				if len(raw) != chunk_size:
-					raise EOFError('Data block cut short {}/{}'.format(
-						len(raw), chunk_size))
-				data = decompressor(raw)
-				entries = np.frombuffer(data, header.dtype).reshape(
-					-1, header.elements_per_entry)
-				if indices is not None:
-					entries = entries[:, indices]
-				entry_blocks.append(entries)
+					data = decompressor(raw)
+					entries = np.frombuffer(data, header.dtype).reshape(
+						-1, header.elements_per_entry)
+					if indices is not None:
+						entries = entries[:, indices]
+					entry_blocks.append(entries)
+
+				chunk.close()  # skips the rest of the chunk including an unrecognized chunk
 
 		# Note: frombuffer() returns a write-protected ndarray onto the
 		# immutable byte str. entries[:, indices] makes a writeable array, as
@@ -221,26 +214,6 @@ class TableReader(object):
 			A 0D, 1D, or 2D array.
 		'''
 		return self.readColumn2D(name, indices).squeeze()
-
-
-	def _loadHeader(self, name, dataFile):
-		"""
-		Load the named column's _ColumnHeader from disk or cache.
-
-		SIDE EFFECTS: Seeks dataFile to the end of the column header chunk.
-
-		Parameters:
-			name (str): The column name.
-			dataFile (BinaryIO): The open column data file @ seek position 0.
-		"""
-
-		if name in self._columnHeaders:
-			dataFile.seek(self._columnHeaders[name].column_chunk_end)
-			return self._columnHeaders[name]
-
-		header = _ColumnHeader(dataFile)
-		self._columnHeaders[name] = header
-		return header
 
 
 	def allAttributeNames(self):

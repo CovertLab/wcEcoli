@@ -73,7 +73,7 @@ ZLIB_LEVEL = 6
 # compression size, and the ability to read an entry without decompressing
 # everything before it depends on saving & reloading the compression state,
 # which takes space and that feature is not in the Python zlib library.
-BLOCK_BYTES_GOAL = 4096
+BLOCK_BYTES_GOAL = 16384
 
 V2_DIR_COLUMNS = "columns"  # format v2's directory of column files
 
