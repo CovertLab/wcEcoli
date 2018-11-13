@@ -102,7 +102,7 @@ def test_functions(functions, text, reader, column, indices):
 		indices (numpy array of int): indices of data to select
 	'''
 
-	print('\n{} with {} iterations:'.format(text, ITERS))
+	print('\n{} "{}" with {} iterations:'.format(text, column, ITERS))
 	results = [f(reader, column, indices) for f in functions]
 	for result in results[1:]:
 		np.testing.assert_array_equal(results[0], result)
@@ -136,22 +136,22 @@ def test_performance(sim_out_dir):
 
 	## Single index
 	indices = np.array([0])
-	test_functions(two_functions, 'One index', bulk_molecules,
+	test_functions(two_functions, 'One index into', bulk_molecules,
 		'counts', indices)
 
 	## First and last index
 	indices = np.array([0, n_mols-1])
-	test_functions(two_functions, 'First and last indices', bulk_molecules,
+	test_functions(two_functions, 'First and last indices into', bulk_molecules,
 		'counts', indices)
 
 	## Large block
 	indices = np.array(range(BLOCK_SIZE))
-	test_functions(two_functions, 'Block indices', bulk_molecules,
+	test_functions(two_functions, 'Block indices into', bulk_molecules,
 		'counts', indices)
 
 	## 2 Large blocks
 	indices = np.array(range(BLOCK_SIZE) + range(n_mols)[-BLOCK_SIZE:])
-	test_functions(two_functions, 'Two blocks of indices', bulk_molecules,
+	test_functions(two_functions, 'Two blocks of indices into', bulk_molecules,
 		'counts', indices)
 
 	## Dispersed reads
@@ -163,12 +163,12 @@ def test_performance(sim_out_dir):
 	indices = np.array(range(n_mols))
 	np.random.shuffle(indices)
 	indices = indices[:BLOCK_SIZE]
-	test_functions(two_functions, 'Random indices', bulk_molecules,
+	test_functions(two_functions, 'Random indices into', bulk_molecules,
 		'counts', indices)
 
 	## All indices, same large column as most of these tests
 	indices = np.array(range(n_mols))
-	test_functions(three_functions, 'All indices', bulk_molecules,
+	test_functions(three_functions, 'All indices into', bulk_molecules,
 		'counts', indices)
 
 	## All indices, narrow column
