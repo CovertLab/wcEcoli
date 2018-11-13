@@ -39,6 +39,7 @@ class DoesNotExistError(TableReaderError):
 
 
 class _ColumnHeader(object):
+	'''Column header info read from a Column file's first chunk.'''
 	def __init__(self, dataFile):
 		chunk_header = dataFile.read(tw.CHUNK_HEADER.size)
 		(chunk_type, chunk_size) = tw.CHUNK_HEADER.unpack(chunk_header)
@@ -46,7 +47,6 @@ class _ColumnHeader(object):
 
 		if chunk_type != tw.COLUMN_CHUNK_TYPE:
 			raise VersionError('Not a Column file or unsupported version')
-	'''Column header info read from a Column file's first chunk.'''
 
 		header_struct = dataFile.read(tw.COLUMN_STRUCT.size)
 		(self.bytes_per_entry,

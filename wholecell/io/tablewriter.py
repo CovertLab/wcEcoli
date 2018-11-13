@@ -187,9 +187,6 @@ class _Column(object):
 			self._entries_per_block = int(np.ceil(BLOCK_BYTES_GOAL / value.nbytes))
 			self._elements_per_entry = value.size
 
-			print('*** DEBUG: Column {} packing {} entries/block = {} bytes/block'.format(
-				self._path, self._entries_per_block, self._entries_per_block * value.nbytes))
-
 			descr = self._dtype.descr
 			if len(descr) == 1 and descr[0][0] == "":
 				descr = descr[0][1]
