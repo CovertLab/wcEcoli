@@ -14,6 +14,8 @@
 #       (eg. 2 when the current month is Nov will remove all but the first day run
 #       in Sept)
 
+set -eu
+
 # Handle arguments
 DIR_TO_PURGE="$1"
 MONTHS_AGO_TO_PURGE="$2"
@@ -23,41 +25,41 @@ if [ $# -ne 2 ]; then
 	exit
 fi
 
-if [ $DIR_TO_PURGE != "daily_build" ] && [ $DIR_TO_PURGE != "with_aa" ] && [ $DIR_TO_PURGE != "anaerobic" ]; then
-	echo "Incorrect directory passed"
+if [ "$DIR_TO_PURGE" != "daily_build" ] && [ "$DIR_TO_PURGE" != "with_aa" ] && [ "$DIR_TO_PURGE" != "anaerobic" ]; then
+	echo "Incorrect directory passed (got: $DIR_TO_PURGE)"
 	exit
 fi
 
 re='^[0-9]+$'
-if ! [[ $MONTHS_AGO_TO_PURGE =~ $re ]] || [ $MONTHS_AGO_TO_PURGE -lt 6 ]; then
-	echo "Need to supply a month greater than 5"
+if ! [[ "$MONTHS_AGO_TO_PURGE" =~ $re ]] || [ "$MONTHS_AGO_TO_PURGE" -lt 6 ]; then
+	echo "Need to supply a month greater than 5 (got: $MONTHS_AGO_TO_PURGE)"
 	exit
 fi
 
 DIR="/scratch/PI/mcovert/wc_ecoli/$DIR_TO_PURGE"
 
 # Only deletes files from one month which is selected by MONTHS_AGO_TO_PURGE months prior to today
-MONTH=`expr $(date +%m) - $MONTHS_AGO_TO_PURGE`
+MONTH=$(($(date +%m) - $MONTHS_AGO_TO_PURGE))
 YEAR=$(date +%Y)
 while [ $MONTH -lt 1 ]; do
-	MONTH=`expr $MONTH + 12`
-	YEAR=`expr $YEAR - 1`
+	MONTH=$(($MONTH + 12))
+	YEAR=$(($YEAR - 1))
 done
 DAY=2
 
 # Find the first date of the month that has a file (it won't be removed)
 FILES=$(find $DIR -maxdepth 1 -type d -newermt $YEAR-$MONTH-1 ! -newermt $YEAR-$MONTH-$DAY | wc -l)
 while [ $FILES -lt 1 ] && [ $DAY -lt 31 ]; do
-	DAY=`expr $DAY + 1`
+	DAY=$(($DAY + 1))
 	FILES=$(find $DIR -maxdepth 1 -type d -newermt $YEAR-$MONTH-1 ! -newermt $YEAR-$MONTH-$DAY | wc -l)
 done
 
 # Set next month so that only one month gets removed
-if [ `expr $MONTH + 1` -gt 12 ]; then
+if [ $(($MONTH + 1)) -gt 12 ]; then
 	NEXT_MONTH=1
-	NEXT_YEAR=`expr $YEAR + 1`
+	NEXT_YEAR=$(($YEAR + 1))
 else
-	NEXT_MONTH=`expr $MONTH + 1`
+	NEXT_MONTH=$(($MONTH + 1))
 	NEXT_YEAR=$YEAR
 fi
 
