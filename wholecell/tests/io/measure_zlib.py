@@ -1,5 +1,5 @@
 '''
-Uses WCM Table columns to make space & time performance measurements on zlib,
+Space and time performance measurements of zlib on wcEcoli Table data:
 zlib parameter variations, compressing incrementally vs. separate blocks, block
 sizes, zlib flush modes, and the ability to not store the Z_SYNC_FLUSH 4-byte
 suffix (https://www.bolet.org/~pornin/deflate-flush.html).
@@ -9,7 +9,7 @@ to be:
 	`dc.decompress(dc.unconsumed_tail + bs)`
 
 Usage example:
-	python wholecell/tests/io/test_zlib.py \
+	python wholecell/tests/io/measure_zlib.py \
 	out/manual/wildtype_000000/000000/generation_000000/000000/simOut \
 	BulkMolecules atpRequested
 
@@ -153,6 +153,14 @@ def measure_block(array):
 		tup = measure1_block(array, level)
 		tup = (tup[0], row_bytes) + tup[1:]
 		print('zlib {:<3d} {:9d} {:9d} {:8d} {:8.4f} {:6.1f}% {:6.1f}%'.format(*tup))
+
+def time_decompressor(bytestrings, level):
+	'''Measure the block decompression time at different compression levels.'''
+	# Results: Decompression time is about the same at levels 4 - 9, and maybe
+	# 30% faster only with large data at levels 0 - 3.
+	pieces = compress_list_block(bytestrings, level)
+	results = timeit(lambda: decompress_list_block(pieces))
+	return results[0]
 
 def measure_block_subranges(array, table_name='', column_name=''):
 	'''Measure block compression on aggregated subranges of the given array.'''
