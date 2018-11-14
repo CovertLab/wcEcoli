@@ -20,6 +20,8 @@ __all__ = [
 	# "VariableEntrySizeError",
 	]
 
+
+# --- Persistent values and structures ---
 VERSION = 3  # should update this any time there is a spec-breaking change
 
 FILE_ATTRIBUTES = "attributes.json"
@@ -35,6 +37,10 @@ COLUMN_STRUCT = struct.Struct('>2I 2H')
 COMPRESSION_TYPE_NONE = 0
 COMPRESSION_TYPE_ZLIB = 1
 
+V2_DIR_COLUMNS = "columns"  # format v2's directory of column files
+# ----------------------------------------
+
+
 # zlib's default compression level is 6.
 #
 # Measuring zlib compression of Mass/time, BulkMolecules/atpRequested, and
@@ -43,39 +49,37 @@ COMPRESSION_TYPE_ZLIB = 1
 # ~40% time, level 8 takes 5x, and level 9 takes 15x time.
 ZLIB_LEVEL = 6
 
-# Pack enough entries into each data block to total about this many bytes
-# before compression.
+# Pack enough entries into each data block to total about BLOCK_BYTES_GOAL
+# bytes before compression.
 #
 # Compressing multiple entries as a block saves considerable space for small
 # and medium size entries. E.g. compressing an 8-byte Mass/time entry doubles
-# the size, and adding a chunk header makes it 3x, while compressing 512 of
+# the size, and adding a chunk header gets it to 3x, while compressing 512 of
 # them into a block gets the entire chunk down to 68% of the input size.
 #
 # BulkMolecules/atpRequested has 96-byte entries which compress individually to
-# 30% including header. It goes down to 10% after packing 16 entries together,
+# 30% including header. It gets down to 10% after packing 16 entries together,
 # 9% when packing 32 entries together, and about 7% when packing 512 entries
 # together.
 #
-# Packing also saves compression time and should save some I/O time.
+# Packing also saves compression time and presumably I/O time.
 # TODO: Measure I/O time at different block sizes.
 #
 # The column file format isn't designed for random access but a reader could
 # skip chunk to chunk without decompressing them to get to a desired block, and
 # adding a chunk index would enable block-level random access.
 #
-# zlib supports incrementally compressing a bytestring at a time to save RAM
+# zlib supports incrementally compressing a bytestring at a time to save buffers
 # and use the cumulative data history to improve the overall compression ratio,
 # but measurements show it can't obviate data blocks. For readers to decompress
-# an entry at a time, the writer has to do a Z_SYNC_FLUSH which reduces the
+# an entry at a time, the writer has to Z_SYNC_FLUSH each one which reduces the
 # compression ratio (even if the writer discards the '\x00\x00\xff\xff' suffix
 # and the reader restores it). So the writer still needs to group entries into
 # blocks. Then cumulative incremental compression has a tiny +/- impact on
-# compression size, and the ability to read an entry without decompressing
+# compression size, and the ability to read such an entry without decompressing
 # everything before it depends on saving & reloading the compression state,
-# which takes space and that feature is not in the Python zlib library.
+# which takes space -- and that feature is not in the Python zlib library.
 BLOCK_BYTES_GOAL = 16384
-
-V2_DIR_COLUMNS = "columns"  # format v2's directory of column files
 
 
 class TableWriterError(Exception):
@@ -139,10 +143,11 @@ class _Column(object):
 	Notes
 	-----
 	See TableWriter for more information about output file and directory
-	structure.  Each column creates one file containing a COLUMN_CHUNK_TYPE
+	structure.  Each column creates a file containing a COLUMN_CHUNK_TYPE
 	chunk followed by the data BLOCK_CHUNK_TYPE chunks. Each data block
 	contains one or more NumPy array 'entries', optionally compressed. One
-	can read it using the Python chunk library Chunk(file, False).
+	can read it using the Python chunk library Chunk(file, False). A conforming
+	reader must skip unrecognized chunks.
 
 	TODO (John): With some adjustment this class could be made public, and used
 		as a lightweight alternative to TableWriter in addition to part of
@@ -165,8 +170,8 @@ class _Column(object):
 
 	def append(self, value):
 		"""
-		Appends an array-like entry to the end of a column, converting it
-		to a 1-D array.
+		Appends an array-like entry to the end of a column, converting the
+		value to a 1-D array.
 
 		The first call to this method will define the column's NumPy dtype,
 		element array size (subcolumns), and element size in bytes.
@@ -282,15 +287,15 @@ class TableWriter(object):
 	<root directory> : Root path, provided by during instantiation.
 		/attributes.json : A JSON file containing the attributes and metadata.
 		/<column name> : A file per column containing a COLUMN_CHUNK_TYPE of
-				header chunk followed by data chunks containing compressed
-				NumPy ndarray data. It's extensible.
+				header chunk followed by data chunks containing optionally
+				compressed NumPy ndarray data. The format is extensible.
 
 	Parameters:
 		path (str): Path to the directory to create.  All data will be saved
 			within this directory.  It's OK if the directory already exists but
-			not OK if it contains Table files. This will raise TableExitsError
-			if its attributes.json file already exists. Existing or concurrent
-			Table files would confuse each other.
+			not OK if it contains Table files since existing or concurrent
+			Table files would confuse each other, so this will raise
+			TableExitsError if its attributes.json file already exists.
 
 	See also
 	--------
@@ -333,10 +338,11 @@ class TableWriter(object):
 		self._attributes = {}
 		self._attributes_filename = os.path.join(path, FILE_ATTRIBUTES)
 
-		if os.path.exists(self._attributes_filename) or os.path.exists(V2_DIR_COLUMNS):
+		if (os.path.exists(self._attributes_filename)
+				or os.path.exists(os.path.join(path, V2_DIR_COLUMNS))):
 			raise TableExitsError('In {}'.format(self._path))
 
-		# The column file's magic signature mostly obviates the '_version'
+		# The column file's header chunk type mostly obviates the '_version'
 		# attribute but writing the attributes file now lets the above check
 		# also prevent competing TableWriters.
 		self.writeAttributes(_version=VERSION)
@@ -352,7 +358,7 @@ class TableWriter(object):
 
 		Parameters:
 			**namesAndValues (dict[str, array-like]):  The column names (fields)
-				and associated values to append to the end of the columns.
+				and associated values to append to the ends of the columns.
 
 		Notes
 		-----

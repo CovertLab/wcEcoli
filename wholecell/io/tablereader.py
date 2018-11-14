@@ -121,9 +121,10 @@ class TableReader(object):
 
 	def readColumn2D(self, name, indices=None):
 		"""
-		Load a full column (all entries). Each (row x column) entry is a
-		1-D NumPy array. This method can optionally read just a slice of all
-		those arrays -- the subcolumns at the given `indices`.
+		Load a full column (all rows). Each row entry is a 1-D NumPy array of
+		subcolumns, so the result is a 2-D array row x subcolumn. This method
+		can optionally read just a vertical slice of all those arrays -- the
+		subcolumns at the given `indices`.
 
 		Parameters:
 			name (str): The name of the column.
@@ -135,21 +136,28 @@ class TableReader(object):
 
 				NOTE: The performance benefit might only be realized if the file
 				is in the disk cache (i.e. the file has been recently read),
-				which should typically be the case, AND only if the entries are
-				large enough that reading them one at a time won't add a lot of
-				I/O overhead.
+				which should typically be the case.
 
 		Returns:
-			ndarray: a 2-D NumPy array (row x subcolumn) OR squeezed into a
-			1-D array if the entries written were scalars or 1-element arrays
-			or there's only one row.
+			ndarray: a writable 2-D NumPy array (row x subcolumn).
 
-		Notes:
-		If entry sizes varies, this method cannot be used.
+		TODO (jerry): Bring back the code to block-read `indices` of the data
+			from uncompressed tables or after decompression, via seek + read,
+			or np.frombuffer(data, dtype, count, offset), or
+			np.frombuffer(data[min:max], dtype). It's tricky for packed blocks
+			but more worthwhile for large entries where entries_per_block = 1.
+
+			The speed of various read methods is surprising and shape dependent.
+			Techniques like `frombuffer(join(all_the_bytestrings))` or loop
+			over `result[i, :] = frombuffer(byestring)` tended to take about as
+			long in a simple test of BulkMolecules/counts but run slower in
+			measure_bulk_reader.py. The differences are more pronounced for a
+			smaller table like BulkMolecules/atpRequested.
 
 		TODO (John): Consider using np.memmap to defer loading of the data
 			until it is operated on.  Early work (see issue #221) suggests that
-			this may lead to cryptic performance issues.
+			this may lead to cryptic performance issues and it's only good for
+			uncompressed columns.
 		"""
 
 		if name not in self._columnNames:
@@ -185,7 +193,7 @@ class TableReader(object):
 						entries = entries[:, indices]
 					entry_blocks.append(entries)
 
-				chunk.close()  # skips the rest of the chunk including an unrecognized chunk
+				chunk.close()  # skips to the next chunk
 
 		# Note: frombuffer() returns a write-protected ndarray onto the
 		# immutable byte str. entries[:, indices] makes a writeable array, as
@@ -195,13 +203,13 @@ class TableReader(object):
 
 	def readColumn(self, name, indices=None):
 		'''
-		Read a column just like readColumn2D() then squeeze() the resulting
-		NumPy array, returning a 0D, 1D, or 2D array, depending on the number
-		of rows and subcolumns written.
+		Read a column via readColumn2D() then squeeze() the resulting
+		NumPy array into a 0D, 1D, or 2D array, depending on the number
+		of rows and subcolumns it has.
 
 		1 row x 1 subcolumn => 0D.
 
-		n rows x 1 subcolumn or 1 row x n subcolumns => 1D.
+		n rows x 1 subcolumn or 1 row x m subcolumns => 1D.
 
 		n rows x m subcolumns => 2D.
 
@@ -211,7 +219,7 @@ class TableReader(object):
 				entry, or None to read in all data. See readColumn2D().
 
 		Returns:
-			A 0D, 1D, or 2D array.
+			A writable 0D, 1D, or 2D array.
 		'''
 		return self.readColumn2D(name, indices).squeeze()
 
@@ -227,7 +235,7 @@ class TableReader(object):
 		"""
 		Returns a list of ordinary (client-provided) attribute names.
 		"""
-		names = [k for k in self._attributes.keys() if not k.startswith('_')]
+		names = [k for k in self._attributes.iterkeys() if not k.startswith('_')]
 		return names
 
 

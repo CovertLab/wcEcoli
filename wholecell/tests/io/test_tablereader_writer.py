@@ -15,10 +15,11 @@ import nose.plugins.attrib as noseAttrib
 # # Workaround for @profile only defined when running under kernprof:
 # __builtins__.setdefault('profile', noop_decorator)
 
+from wholecell.utils import filepath
 from wholecell.io.tablereader import TableReader, DoesNotExistError
 from wholecell.io.tablewriter import (BLOCK_BYTES_GOAL,
 	TableWriter, MissingFieldError, TableExitsError, UnrecognizedFieldError,
-	VariableEntrySizeError)
+	VariableEntrySizeError, V2_DIR_COLUMNS)
 
 
 COLUMNS = 'x y z theta'.split()
@@ -348,6 +349,15 @@ class Test_TableReader_Writer(unittest.TestCase):
 		self.make_test_dir()
 
 		TableWriter(self.table_path)
+
+		with self.assertRaises(TableExitsError):
+			TableWriter(self.table_path)
+
+	@noseAttrib.attr('smalltest', 'table')
+	def test_v2_clash(self):
+		'''Test a TableWriter trying to write to a V2 table's directory.'''
+		self.make_test_dir()
+		filepath.makedirs(self.table_path, V2_DIR_COLUMNS)
 
 		with self.assertRaises(TableExitsError):
 			TableWriter(self.table_path)
