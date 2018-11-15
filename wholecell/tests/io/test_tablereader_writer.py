@@ -18,8 +18,9 @@ import nose.plugins.attrib as noseAttrib
 from wholecell.utils import filepath
 from wholecell.io.tablereader import TableReader, DoesNotExistError
 from wholecell.io.tablewriter import (BLOCK_BYTES_GOAL,
-	TableWriter, MissingFieldError, TableExitsError, UnrecognizedFieldError,
-	VariableEntrySizeError, V2_DIR_COLUMNS)
+	TableWriter, MissingFieldError, TableExistsError, UnrecognizedFieldError,
+	VariableEntrySizeError, AttributeAlreadyExistsError, AttributeTypeError,
+	V2_DIR_COLUMNS)
 
 
 COLUMNS = 'x y z theta'.split()
@@ -350,7 +351,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 
 		TableWriter(self.table_path)
 
-		with self.assertRaises(TableExitsError):
+		with self.assertRaises(TableExistsError):
 			TableWriter(self.table_path)
 
 	@noseAttrib.attr('smalltest', 'table')
@@ -359,5 +360,32 @@ class Test_TableReader_Writer(unittest.TestCase):
 		self.make_test_dir()
 		filepath.makedirs(self.table_path, V2_DIR_COLUMNS)
 
-		with self.assertRaises(TableExitsError):
+		with self.assertRaises(TableExistsError):
 			TableWriter(self.table_path)
+
+	@noseAttrib.attr('smalltest', 'table')
+	def test_attribute_errors(self):
+		'''Test errors adding attributes.'''
+		self.make_test_dir()
+
+		writer = TableWriter(self.table_path)
+
+		with self.assertRaises(AttributeAlreadyExistsError):
+			writer.writeAttributes(_version=-1)
+		writer.writeAttributes(heading=90.0)  # attributes should still work
+
+		with self.assertRaises(AttributeAlreadyExistsError):
+			writer.writeAttributes(heading=-90.0)
+		writer.writeAttributes(rate=60.0, stars='*****')
+
+		with self.assertRaises(AttributeTypeError):
+			writer.writeAttributes(object=self)
+		writer.writeAttributes(speed=186000.0, list=['a', 'b', 'c'])
+
+		with self.assertRaises(AttributeTypeError):
+			writer.writeAttributes(fcn=lambda: 1)
+		writer.writeAttributes(x=1, y=2, z=3, red='green')
+
+		with self.assertRaises(AttributeTypeError):
+			writer.writeAttributes(fcn=lambda: 1, object=self, alpha='zed')
+		writer.writeAttributes(alpha='ZED')  # not previously written

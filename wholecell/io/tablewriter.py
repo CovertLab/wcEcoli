@@ -122,7 +122,7 @@ class VariableEntrySizeError(TableWriterError):
 	"""
 	pass
 
-class TableExitsError(TableWriterError):
+class TableExistsError(TableWriterError):
 	"""Error raised on attempt to create a Table in a directory that already
 	has a table (completed or in progress).
 	"""
@@ -225,7 +225,7 @@ class _Column(object):
 		elif self._data.closed:
 			raise ValueError('I/O operation on closed file')
 
-
+	@profile
 	def _write_block(self):
 		'''Compress and write the current block, if any.'''
 		if self._current_block:
@@ -295,7 +295,7 @@ class TableWriter(object):
 			within this directory.  It's OK if the directory already exists but
 			not OK if it contains Table files since existing or concurrent
 			Table files would confuse each other, so this will raise
-			TableExitsError if its attributes.json file already exists.
+			TableExistsError if its attributes.json file already exists.
 
 	See also
 	--------
@@ -340,7 +340,7 @@ class TableWriter(object):
 
 		if (os.path.exists(self._attributes_filename)
 				or os.path.exists(os.path.join(path, V2_DIR_COLUMNS))):
-			raise TableExitsError('In {}'.format(self._path))
+			raise TableExistsError('In {}'.format(self._path))
 
 		# The column file's header chunk type mostly obviates the '_version'
 		# attribute but writing the attributes file now lets the above check
@@ -413,6 +413,8 @@ class TableWriter(object):
 		'Main' at the end of each generation.]
 		"""
 
+		sanitized = {}  # check before modifying self._attributes
+
 		for name, value in namesAndValues.viewitems():
 			if name in self._attributes:
 				raise AttributeAlreadyExistsError(
@@ -431,10 +433,12 @@ class TableWriter(object):
 					"Attribute '{}' value ({!r}) was not JSON serializable.".format(name, value)
 					)
 
-			self._attributes[name] = value
+			sanitized[name] = value
 
+		self._attributes.update(sanitized)
 		filepath.write_json_file(self._attributes_filename, self._attributes, indent=1)
 
+	@profile
 	def close(self):
 		"""
 		Close the output files (columns).
