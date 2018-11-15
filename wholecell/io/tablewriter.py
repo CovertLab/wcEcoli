@@ -225,7 +225,7 @@ class _Column(object):
 		elif self._data.closed:
 			raise ValueError('I/O operation on closed file')
 
-	@profile
+
 	def _write_block(self):
 		'''Compress and write the current block, if any.'''
 		if self._current_block:
@@ -438,7 +438,7 @@ class TableWriter(object):
 		self._attributes.update(sanitized)
 		filepath.write_json_file(self._attributes_filename, self._attributes, indent=1)
 
-	@profile
+
 	def close(self):
 		"""
 		Close the output files (columns).
