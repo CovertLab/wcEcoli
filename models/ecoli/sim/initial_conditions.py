@@ -347,7 +347,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		)
 
 	# Synthesis probabilities for different categories of genes
-	rnaSynthProbFractions = sim_data.process.transcription.rnaSynthProbFraction
+	rnaSynthProbScaleFactor = sim_data.process.transcription.rnaSynthProbScaleFactor
 	rnaSynthProbRProtein = sim_data.process.transcription.rnaSynthProbRProtein
 	rnaSynthProbRnaPolymerase = sim_data.process.transcription.rnaSynthProbRnaPolymerase
 
@@ -385,10 +385,10 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		raise Exception("Have negative RNA synthesis probabilities")
 
 	# Adjust synthesis probabilities depending on environment
-	synthProbFractions = rnaSynthProbFractions[currentNutrients]
-	rnaSynthProb[isMRna] *= synthProbFractions['mRna'] / rnaSynthProb[isMRna].sum()
-	rnaSynthProb[isTRna] *= synthProbFractions['tRna'] / rnaSynthProb[isTRna].sum()
-	rnaSynthProb[isRRna] *= synthProbFractions['rRna'] / rnaSynthProb[isRRna].sum()
+	synthProbScaleFactors = rnaSynthProbScaleFactor[currentNutrients]
+	rnaSynthProb[isMRna] *= synthProbScaleFactors['mRna']
+	rnaSynthProb[isTRna] *= synthProbScaleFactors['tRna']
+	rnaSynthProb[isRRna] *= synthProbScaleFactors['rRna']
 	rnaSynthProb[isRegulated] = regProbs
 	rnaSynthProb[isRProtein] = rnaSynthProbRProtein[currentNutrients]
 	rnaSynthProb[isRnap] = rnaSynthProbRnaPolymerase[currentNutrients]

@@ -91,7 +91,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.setIdxs = self.isRRna | self.isTRna | self.isRProtein | self.isRnap
 
 		# Synthesis probabilities for different categories of genes
-		self.rnaSynthProbFractions = sim_data.process.transcription.rnaSynthProbFraction
+		self.rnaSynthProbScaleFactor = sim_data.process.transcription.rnaSynthProbScaleFactor
 		self.rnaSynthProbRProtein = sim_data.process.transcription.rnaSynthProbRProtein
 		self.rnaSynthProbRnaPolymerase = sim_data.process.transcription.rnaSynthProbRnaPolymerase
 
@@ -114,13 +114,11 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			self.rnaSynthProb[self.rnaSynthProb < 0] = 0.0
 			self.rnaSynthProb /= self.rnaSynthProb.sum()
 
-			# Adjust synthesis probabilities depending on environment
-			synthProbFractions = self.rnaSynthProbFractions[current_nutrients]
-
-			# Allocate synthesis probabilities based on type of RNA
-			self.rnaSynthProb[self.isMRna] *= synthProbFractions["mRna"] / self.rnaSynthProb[self.isMRna].sum()
-			self.rnaSynthProb[self.isTRna] *= synthProbFractions["tRna"] / self.rnaSynthProb[self.isTRna].sum()
-			self.rnaSynthProb[self.isRRna] *= synthProbFractions["rRna"] / self.rnaSynthProb[self.isRRna].sum()
+			# Rescale synthesis probabilities depending on environment
+			synthProbScaleFactor = self.rnaSynthProbScaleFactor[current_nutrients]
+			self.rnaSynthProb[self.isMRna] *= synthProbScaleFactor["mRna"]
+			self.rnaSynthProb[self.isTRna] *= synthProbScaleFactor["tRna"]
+			self.rnaSynthProb[self.isRRna] *= synthProbScaleFactor["rRna"]
 
 			# Set fixed synthesis probabilities for RProteins and RNAPs
 			self.rnaSynthProb[self.isRProtein] = self.rnaSynthProbRProtein[current_nutrients]
