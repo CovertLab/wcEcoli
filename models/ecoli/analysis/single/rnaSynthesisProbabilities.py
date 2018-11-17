@@ -37,12 +37,13 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		isRRna = sim_data.process.transcription.rnaData["isRRna"]
 		isTRna = sim_data.process.transcription.rnaData["isTRna"]
 		nutrients = sim_data.conditions[sim_data.condition]["nutrients"]
-		synth_prob_fractions = sim_data.process.transcription.rnaSynthProbFraction[nutrients]
+		synth_prob_fraction_basal = sim_data.process.transcription.rnaSynthProbFractionBasal
+		synth_prob_scale_factor = sim_data.process.transcription.rnaSynthProbScaleFactor[nutrients]
 
 		# Get "average" synthesis probability fractions set by the fitter
-		mrna_avg_synth_prob = synth_prob_fractions["mRna"]
-		trna_avg_synth_prob = synth_prob_fractions["tRna"]
-		rrna_avg_synth_prob = synth_prob_fractions["rRna"]
+		mrna_avg_synth_prob = synth_prob_fraction_basal["mRna"]*synth_prob_scale_factor["mRna"]
+		trna_avg_synth_prob = synth_prob_fraction_basal["tRna"]*synth_prob_scale_factor["tRna"]
+		rrna_avg_synth_prob = synth_prob_fraction_basal["rRna"]*synth_prob_scale_factor["rRna"]
 
 		# Listeners used
 		rna_synth_prob_reader = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
