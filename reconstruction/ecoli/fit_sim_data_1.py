@@ -178,7 +178,7 @@ def fitSimData_1(
 		disable_rnapoly_capacity_fitting
 		)
 
-	sim_data.process.transcription.rnaSynthProbFraction = {}
+	sim_data.process.transcription.rnaSynthProbScaleFactor = {}
 	sim_data.process.transcription.rnapFractionActiveDict = {}
 	sim_data.process.transcription.rnaSynthProbRProtein = {}
 	sim_data.process.transcription.rnaSynthProbRnaPolymerase = {}
@@ -210,6 +210,20 @@ def fitSimData_1(
 	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
 	fitLigandConcentrations(sim_data, cellSpecs)
 
+	# Get sum of synthesis probabilities for each RNA type under basal conditions
+	mrna_synth_prob_basal = sim_data.process.transcription.rnaSynthProb[
+		"basal"][sim_data.process.transcription.rnaData["isMRna"]].sum()
+	trna_synth_prob_basal = sim_data.process.transcription.rnaSynthProb[
+		"basal"][sim_data.process.transcription.rnaData["isTRna"]].sum()
+	rrna_synth_prob_basal = sim_data.process.transcription.rnaSynthProb[
+		"basal"][sim_data.process.transcription.rnaData["isRRna"]].sum()
+
+	sim_data.process.transcription.rnaSynthProbFractionBasal = {
+		"mRna": mrna_synth_prob_basal,
+		"tRna": trna_synth_prob_basal,
+		"rRna": rrna_synth_prob_basal,
+		}
+
 	for condition_label in sorted(cellSpecs):
 		condition = sim_data.conditions[condition_label]
 		nutrients = condition["nutrients"]
@@ -231,16 +245,20 @@ def fitSimData_1(
 		spec["avgCellDryMassInit"] = avgCellDryMassInit
 		spec["fitAvgSolublePoolMass"] = fitAvgSolublePoolMass
 
-		mRnaSynthProb = sim_data.process.transcription.rnaSynthProb[condition_label][sim_data.process.transcription.rnaData["isMRna"]].sum()
-		tRnaSynthProb = sim_data.process.transcription.rnaSynthProb[condition_label][sim_data.process.transcription.rnaData["isTRna"]].sum()
-		rRnaSynthProb = sim_data.process.transcription.rnaSynthProb[condition_label][sim_data.process.transcription.rnaData["isRRna"]].sum()
-
 		if len(condition["perturbations"]) == 0:
-			if nutrients not in sim_data.process.transcription.rnaSynthProbFraction:
-				sim_data.process.transcription.rnaSynthProbFraction[nutrients] = {
-					"mRna": mRnaSynthProb,
-					"tRna": tRnaSynthProb,
-					"rRna": rRnaSynthProb,
+
+			mrna_synth_prob = sim_data.process.transcription.rnaSynthProb[
+				condition_label][sim_data.process.transcription.rnaData["isMRna"]].sum()
+			trna_synth_prob = sim_data.process.transcription.rnaSynthProb[
+				condition_label][sim_data.process.transcription.rnaData["isTRna"]].sum()
+			rrna_synth_prob = sim_data.process.transcription.rnaSynthProb[
+				condition_label][sim_data.process.transcription.rnaData["isRRna"]].sum()
+
+			if nutrients not in sim_data.process.transcription.rnaSynthProbScaleFactor:
+				sim_data.process.transcription.rnaSynthProbScaleFactor[nutrients] = {
+					"mRna": mrna_synth_prob/mrna_synth_prob_basal,
+					"tRna": trna_synth_prob/trna_synth_prob_basal,
+					"rRna": rrna_synth_prob/rrna_synth_prob_basal,
 					}
 
 			if nutrients not in sim_data.process.transcription.rnaSynthProbRProtein:
