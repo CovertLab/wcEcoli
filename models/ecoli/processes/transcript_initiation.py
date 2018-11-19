@@ -86,9 +86,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.isRRna = sim_data.process.transcription.rnaData['isRRna']
 		self.isMRna = sim_data.process.transcription.rnaData["isMRna"]
 		self.isTRna = sim_data.process.transcription.rnaData["isTRna"]
-		self.isRProtein = sim_data.process.transcription.rnaData['isRProtein']
-		self.isRnap = sim_data.process.transcription.rnaData['isRnap']
-		self.setIdxs = self.isRRna | self.isTRna | self.isRProtein | self.isRnap
 
 		# Synthesis probabilities for different categories of genes
 		self.rnaSynthProbScaleFactor = sim_data.process.transcription.rnaSynthProbScaleFactor
@@ -110,25 +107,15 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			if len(self.genetic_perturbations) > 0:
 				self.rnaSynthProb[self.genetic_perturbations["fixedRnaIdxs"]] = self.genetic_perturbations["fixedSynthProbs"]
 
-			# Adjust probabilities to not be negative
-			self.rnaSynthProb[self.rnaSynthProb < 0] = 0.0
-			self.rnaSynthProb /= self.rnaSynthProb.sum()
-
 			# Rescale synthesis probabilities depending on environment
 			synthProbScaleFactor = self.rnaSynthProbScaleFactor[current_nutrients]
 			self.rnaSynthProb[self.isMRna] *= synthProbScaleFactor["mRna"]
 			self.rnaSynthProb[self.isTRna] *= synthProbScaleFactor["tRna"]
 			self.rnaSynthProb[self.isRRna] *= synthProbScaleFactor["rRna"]
 
-			# Set fixed synthesis probabilities for RProteins and RNAPs
-			self.rnaSynthProb[self.isRProtein] = self.rnaSynthProbRProtein[current_nutrients]
-			self.rnaSynthProb[self.isRnap] = self.rnaSynthProbRnaPolymerase[current_nutrients]
-
-			assert self.rnaSynthProb[self.setIdxs].sum() < 1.0
-
-			# Scale remaining synthesis probabilities accordingly
-			scaleTheRestBy = (1. - self.rnaSynthProb[self.setIdxs].sum()) / self.rnaSynthProb[~self.setIdxs].sum()
-			self.rnaSynthProb[~self.setIdxs] *= scaleTheRestBy
+			# Adjust probabilities to not be negative
+			self.rnaSynthProb[self.rnaSynthProb < 0] = 0.0
+			self.rnaSynthProb /= self.rnaSynthProb.sum()
 
 			# Shuffle initiation rates if we're running the variant that calls this
 			# (In general, this should lead to a cell which does not grow and
