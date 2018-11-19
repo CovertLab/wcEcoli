@@ -76,6 +76,9 @@ class TableReader(object):
 	See also
 	--------
 	wholecell.io.tablewriter.TableWriter
+	wholecell.tests.io.measure_bulk_reader
+	wholecell.tests.io.measure_zlib
+	"docs/misc/byte_strings_to_2D_arrays.md"
 	"""
 
 	def __init__(self, path):
@@ -109,9 +112,8 @@ class TableReader(object):
 		Parameters:
 			name (str): The attribute name.
 
-		Returns
-		-------
-		The attribute value, JSON-deserialized from a string.
+		Returns:
+			value (any): The attribute value, JSON-deserialized from a string.
 		"""
 
 		if name not in self._attributes:
@@ -126,6 +128,22 @@ class TableReader(object):
 		can optionally read just a vertical slice of all those arrays -- the
 		subcolumns at the given `indices`.
 
+		The current approach collects the compressed blocks, allocates the
+		result array, then unpacks entries into it. This saves RAM and ~10%
+		time over accumulating unpacked blocks then combining them via
+		np.vstack(). It could save more RAM and a bit more time if it knew the
+		entry count up front, but the writer would have to backpatch it there
+		and the reader would reject files where the writer exited before
+		backpatching. (Is that a feature?) If the writer wrote a chunk
+		containing the total entry count before closing the file, the reader
+		wouldn't have to special-case the last (partially filled) block but it
+		would have to do something if the entry-count chunk is missing.
+
+		Another approach is to collect the compressed blocks, then decompress
+		and join them, then make one call to np.frombuffer().copy(). That turns
+		out to be faster for tiny columns but takes more time and RAM for a
+		large column which is much more expensive.
+
 		Parameters:
 			name (str): The name of the column.
 			indices (ndarray[int]): The subcolumn indices to select from each
@@ -134,18 +152,17 @@ class TableReader(object):
 				If provided, this can give a performance boost for columns that
 				are wide and tall.
 
-				NOTE: The performance benefit might only be realized if the file
-				is in the disk cache (i.e. the file has been recently read),
-				which should typically be the case.
+				NOTE: The speed benefit might only be realized if the file is
+				in the disk cache (i.e. the file has been recently read), which
+				should typically be the case. This will still save RAM.
 
 		Returns:
 			ndarray: a writable 2-D NumPy array (row x subcolumn).
 
 		TODO (jerry): Bring back the code to block-read `indices` of the data
-			from uncompressed tables or after decompression, via seek + read,
-			or np.frombuffer(data, dtype, count, offset), or
-			np.frombuffer(data[min:max], dtype). It's tricky for packed blocks
-			but more worthwhile for large entries where entries_per_block = 1.
+			from uncompressed tables or after decompression, via seek + read or
+			np.frombuffer(data, dtype, count, offset). It might be worthwhile
+			only when header.entries_per_block == 1.
 
 			The speed of various read methods is surprising and shape dependent.
 			Techniques like `frombuffer(join(all_the_bytestrings))` or loop
@@ -159,6 +176,14 @@ class TableReader(object):
 			this may lead to cryptic performance issues and it's only good for
 			uncompressed columns.
 		"""
+		def decomp(raw_block):
+			'''Decompress and unpack a raw block to an ndarray.'''
+			data = decompressor(raw_block)
+			entries = np.frombuffer(data, header.dtype).reshape(
+				-1, header.elements_per_entry)
+			if indices is not None:
+				entries = entries[:, indices]
+			return entries
 
 		if name not in self._columnNames:
 			raise DoesNotExistError("No such column: {}".format(name))
@@ -185,20 +210,27 @@ class TableReader(object):
 					if len(raw) != chunk.getsize():
 						raise EOFError('Data block cut short {}/{}'.format(
 							len(raw), chunk.getsize()))
-
-					data = decompressor(raw)
-					entries = np.frombuffer(data, header.dtype).reshape(
-						-1, header.elements_per_entry)
-					if indices is not None:
-						entries = entries[:, indices]
-					entry_blocks.append(entries)
+					entry_blocks.append(raw)
 
 				chunk.close()  # skips to the next chunk
 
-		# Note: frombuffer() returns a write-protected ndarray onto the
-		# immutable byte str. entries[:, indices] makes a writeable array, as
-		# does vstack(), otherwise this should copy the array.
-		return np.vstack(entry_blocks)
+		# Decompress the last block to get its shape, then allocate the result.
+		raw = None  # release the block ref
+		last_entries = decomp(entry_blocks.pop())
+		last_num_rows = last_entries.shape[0]
+		num_rows = len(entry_blocks) * header.entries_per_block + last_num_rows
+		num_subcolumns = header.elements_per_entry if indices is None else len(indices)
+		result = np.zeros((num_rows, num_subcolumns), header.dtype)
+
+		row = 0
+		for raw in entry_blocks:
+			entries = decomp(raw)
+			additional_rows = entries.shape[0]
+			result[row : (row + additional_rows)] = entries
+			row += additional_rows
+
+		result[row : (row + last_num_rows)] = last_entries
+		return result
 
 
 	def readColumn(self, name, indices=None):
@@ -219,7 +251,7 @@ class TableReader(object):
 				entry, or None to read in all data. See readColumn2D().
 
 		Returns:
-			A writable 0D, 1D, or 2D array.
+			ndarray: A writable 0D, 1D, or 2D array.
 		'''
 		return self.readColumn2D(name, indices).squeeze()
 

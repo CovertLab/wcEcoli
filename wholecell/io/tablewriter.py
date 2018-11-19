@@ -47,6 +47,8 @@ V2_DIR_COLUMNS = "columns"  # format v2's directory of column files
 # BulkMolecules/counts, higher levels yielded a fraction of a percent space
 # savings at substantial time costs. For BulkMolecules/counts, level 7 adds
 # ~40% time, level 8 takes 5x, and level 9 takes 15x time.
+#
+# See wholecell/tests/io/measure_zlib.py
 ZLIB_LEVEL = 6
 
 # Pack enough entries into each data block to total about BLOCK_BYTES_GOAL
@@ -79,6 +81,8 @@ ZLIB_LEVEL = 6
 # compression size, and the ability to read such an entry without decompressing
 # everything before it depends on saving & reloading the compression state,
 # which takes space -- and that feature is not in the Python zlib library.
+#
+# See wholecell/tests/io/measure_zlib.py
 BLOCK_BYTES_GOAL = 16384
 
 
@@ -136,6 +140,12 @@ class _Column(object):
 	Each field in a 'table' corresponds to a 'column' that is written to on
 	each append operation.  This private class encapsulates the logic and data
 	for a particular 'column'.
+
+	The file format is a sequence of chunks. It begins with a COLUMN_CHUNK_TYPE
+	header chunk followed by one or more BLOCK_CHUNK_TYPE data chunks (a column
+	cannot be empty) containing optionally compressed NumPy ndarray data and
+	potentially other chunk types. The format is extensible since readers
+	should skip unrecognized chunk types.
 
 	Parameters:
 		path (str): The path for this particular column's data file.
@@ -286,9 +296,8 @@ class TableWriter(object):
 
 	<root directory> : Root path, provided by during instantiation.
 		/attributes.json : A JSON file containing the attributes and metadata.
-		/<column name> : A file per column containing a COLUMN_CHUNK_TYPE of
-				header chunk followed by data chunks containing optionally
-				compressed NumPy ndarray data. The format is extensible.
+		/<column name> : A file per column containing the array data in an
+				extensible sequence of chunks. See _Column.
 
 	Parameters:
 		path (str): Path to the directory to create.  All data will be saved

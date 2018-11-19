@@ -27,7 +27,6 @@ COLUMNS = 'x y z theta'.split()
 DATA = {key: np.arange(10.0) + ord(key[0]) for key in COLUMNS}
 
 
-# TODO(jerry): Test readColumn() w/non-default indices.
 # TODO(jerry): Test structured dtypes.
 
 class Test_TableReader_Writer(unittest.TestCase):
@@ -146,6 +145,10 @@ class Test_TableReader_Writer(unittest.TestCase):
 
 		self.assertEqual(1, reader.readColumn('1D', index2).ndim)
 		self.assertEqual(1, reader.readColumn('2D', index2).ndim)
+
+		# Test that the reader returns writeable arrays.
+		reader.readColumn2D('2D')[0, 0] = 0
+		reader.readColumn2D('2D', index2)[0, 0] = 0
 
 		# === Write 2 rows ===
 		table2_path = os.path.join(self.test_dir, 'Segundo')
