@@ -128,21 +128,14 @@ class TableReader(object):
 		can optionally read just a vertical slice of all those arrays -- the
 		subcolumns at the given `indices`.
 
-		The current approach collects the compressed blocks, allocates the
-		result array, then unpacks entries into it. This saves RAM and ~10%
-		time over accumulating unpacked blocks then combining them via
-		np.vstack(). It could save more RAM and a bit more time if it knew the
-		entry count up front, but the writer would have to backpatch it there
-		and the reader would reject files where the writer exited before
-		backpatching. (Is that a feature?) If the writer wrote a chunk
-		containing the total entry count before closing the file, the reader
-		wouldn't have to special-case the last (partially filled) block but it
-		would have to do something if the entry-count chunk is missing.
+		The current approach collects up the compressed blocks, allocates the
+		result array, then unpacks entries into it, keeping each decompressed
+		block in memory only while copying into the result array. For a large
+		column, this saves considerable RAM and a bit of time over collecting
+		decompressed blocks then combining them via np.vstack().
 
-		Another approach is to collect the compressed blocks, then decompress
-		and join them, then make one call to np.frombuffer().copy(). That turns
-		out to be faster for tiny columns but takes more time and RAM for a
-		large column which is much more expensive.
+		See docs/misc/byte_strings_to_2D_arrays.md for more design tradeoffs
+		and their performance measurements.
 
 		Parameters:
 			name (str): The name of the column.
@@ -170,11 +163,6 @@ class TableReader(object):
 			long in a simple test of BulkMolecules/counts but run slower in
 			measure_bulk_reader.py. The differences are more pronounced for a
 			smaller table like BulkMolecules/atpRequested.
-
-		TODO (John): Consider using np.memmap to defer loading of the data
-			until it is operated on.  Early work (see issue #221) suggests that
-			this may lead to cryptic performance issues and it's only good for
-			uncompressed columns.
 		"""
 		def decomp(raw_block):
 			'''Decompress and unpack a raw block to an ndarray.'''
