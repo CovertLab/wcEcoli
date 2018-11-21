@@ -14,9 +14,9 @@ Example command line:
 
 from __future__ import absolute_import, division, print_function
 
-from pprint import pprint
 import numpy as np
 import os
+from pprint import pprint
 import sys
 
 from wholecell.io.tablereader import TableReader, VersionError
