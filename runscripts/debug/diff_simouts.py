@@ -1,6 +1,6 @@
 '''
 Compare whether two simulation runs produced identical output and, if not,
-print info on where they differ. This also returns a shell exit status code.
+print info on their differences. This also returns a shell exit status code.
 
 This aim is to check that a code change such as a simulation speedup didn't
 accidentally change the output. This does not support a tolerance between nor
@@ -10,124 +10,170 @@ Example command line:
 
     diff_simouts.py out/manual/wildtype_000000/000000/generation_000000/000000/simOut \
     	out/experiment/wildtype_000000/000000/generation_000000/000000/simOut
+
+The output is a dict containing keys like:
+
+	* `'Main'`: a subdir; present if there's a message about absent subdirs or
+		subdirs that don't contain Tables
+	* `'Main@startTime'`: a Table attribute
+	* `'RnaDegradationListener/DiffRelativeFirstOrderDecay'`: a Table column
+
+The values are usually*  tuples containing the respective values from the first
+and second simOut dirs but they may contain messages like:
+
+	* --absent subdir--: an absent subdirectory in this simOut dir
+	* --absent column--: an absent column in this simOut dir
+	* --absent value--: an absent attribute value in this simOut dir
+	* Arrays are not equal (mismatch 21.6859279402%)...: A NumPy Testing message
+		summarizing the differences between two arrays
 '''
 
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import os
+import os.path as op
 from pprint import pprint
+import re
 import sys
 
 from wholecell.io.tablereader import TableReader, VersionError
 
 
-def array_equal(array1, array2):
-	'''Returns True if the two ndarrays are equal, checking the shape and all
-	elements, allowing for NaN values.
+WHITESPACE = re.compile(r'\s+')
+
+class Repr(object):
+	'''A Repr prints the given repr_ string without quotes and is not equal
+	to any other value.
+	'''
+	def __init__(self, repr_):
+		self.repr_ = repr_
+
+	def __repr__(self):
+		return self.repr_
+
+def is_repr(value):
+	'''Returns True if the value is a Repr object.'''
+	return isinstance(value, Repr)
+
+def elide(value, max=100):
+	'''Return a value with the same repr but elided if it'd be longer than max.'''
+	repr_ = repr(value)
+	if len(repr_) > max:
+		return Repr(repr_[:max] + '...')
+	return value
+
+def compare_arrays(array1, array2):
+	'''Compare two ndarrays, checking the shape and all elements, allowing for
+	NaN values and non-numeric values.
 
 	Args:
 		array1 (np.ndarray): array to compare
 		array2 (np.ndarray): array to compare
+	Return:
+		description (Repr): a "representation" of the array mismatch, or '' if
+			the arrays match
 	'''
 	try:
 		np.testing.assert_array_equal(array1, array2)
-		return True
-	except AssertionError:
-		return False
+		return ''
+	except AssertionError as e:
+		return elide(Repr(WHITESPACE.sub(' ', e.message).strip()))
 
-def diff_name_lists(diffs, kind, list1, list2):
-	'''Diff name list `list2` against `list1`.
+def open_table(simout_dir, subdir):
+	'''Try to open a Table in the given simOut/subdir.
 
 	Args:
-		diffs (dict): a dict to accumulate info about the differences
-		kind (str): the kind of things named in the lists, e.g. 'Table'
-		list1 (list[str]): a list of things from one simOut dir
-		list2 (list[str]): a list of things from the other simOut dir
+		simout_dir (str): a simOut directory
+		subdir (str): a subdirectory name within simout_dir
 	Returns:
-		set[str]: a set of the names in common
-	Side effects:
-		adds into about the differing names to `diffs`
+		tuple (tuple[TableReader, Repr): a tuple containing a TableReader or
+			None if unsuccessful, and a descriptive Repr
 	'''
-	set1 = set(list1)
-	set2 = set(list2)
-	missing = set1 - set2
-	extra = set2 - set1
+	table_path = op.join(simout_dir, subdir)
 
-	if missing:
-		diffs['-Missing: ' + kind] = sorted(missing)
-	if extra:
-		diffs['+Extra: ' + kind] = sorted(extra)
+	try:
+		table_reader = TableReader(table_path)
+		table_message = Repr('--valid Table--')
+	except VersionError:
+		# Note: This could use the exception message but it's verbose.
+		table_reader = None
+		table_message = Repr('--not a Table--' if op.isdir(table_path) else '--absent subdir--')
 
-	return set1 & set2
+	return table_reader, table_message
 
-def diff_tables(diffs, table_name, simout_dir1, simout_dir2):
-	'''Diff the named Table in `simout_dir2` against the one in `simout_dir1`.
+def diff_subdirs(subdir, simout_dir1, simout_dir2):
+	'''Use the Table contents of the named subdir in `simout_dir1` as a
+	reference point to diff the corresponding Table contents in `simout_dir2`.
 
 	Args:
-		diffs (dict): a dict to accumulate info about the differences
-		table_name (str): the name of a table in both simOut dirs
+		subdir (str): the name of a subdir, hopefully containing a Table in
+			both simOut dirs
 		simout_dir1 (str): the reference simOut directory
 		simout_dir2 (str): the other simOut directory
+	Returns:
+		diffs (dict): a dict describing the differences
 	'''
-	table_errors = []
-	table1 = table2 = None
-	try:
-		table1 = TableReader(os.path.join(simout_dir1, table_name))
-	except VersionError as e:
-		table_errors.append("simOut dir 1 doesn't have a Table: " + str(e))
-
-	try:
-		table2 = TableReader(os.path.join(simout_dir2, table_name))
-	except VersionError as e:
-		table_errors.append("simOut dir 2 doesn't have a Table: " + str(e))
-
-	if table_errors:
-		diffs['Subdir: ' + table_name] = table_errors
-		return
-
-	# Compare Column names.
-	column_names1 = table1.columnNames()
-	column_names2 = table2.columnNames()
-	table_diffs = {}
-	common_columns = diff_name_lists(table_diffs, 'Column file', column_names1, column_names2)
-
-	# Diff the Column contents in common_columns and add to table_diffs.
-	diff_contents = [
-		name for name in common_columns
-		if not array_equal(table1.readColumn2D(name), table2.readColumn2D(name))
-		]
-	if diff_contents:
-		table_diffs['Unequal Columns'] = sorted(diff_contents)
-
-	# Diff the Table Attributes and add to table_diffs.
-	attribute_names1 = table1.attributeNames()
-	attribute_names2 = table2.attributeNames()
-	common_attributes = diff_name_lists(table_diffs, 'Attribute', attribute_names1, attribute_names2)
-
-	diff_attributes = [
-		key for key in common_attributes
-		if table1.readAttribute(key) != table2.readAttribute(key)]
-	if diff_attributes:
-		table_diffs['Unequal Attributes'] = sorted(diff_attributes)
-
-	if table_diffs:
-		diffs['Table: ' + table_name] = table_diffs
-
-def diff_simout(simout_dir1, simout_dir2):
-	'''Diff two simOut dirs. Return a dict describing the differences.'''
-	subdir_names1 = os.listdir(simout_dir1)
-	subdir_names2 = os.listdir(simout_dir2)
+	table1, table_message1 = open_table(simout_dir1, subdir)
+	table2, table_message2 = open_table(simout_dir2, subdir)
 
 	diffs = {}
-	common_tables = diff_name_lists(diffs, 'Subdir', subdir_names1, subdir_names2)
+	if table1 is None or table2 is None:
+		diffs[subdir] = (table_message1, table_message2)
+		return diffs
 
-	for subdir_name in common_tables:
-		if subdir_name in {'Daughter1', 'Daughter2'}:
-			# TODO(jerry): Compare (instead of ignoring) the inherited_state?
-			pass
+	# Compare Column names.
+	column_names1 = set(table1.columnNames())
+	column_names2 = set(table2.columnNames())
+
+	# Diff the Table Columns.
+	for key in column_names1 | column_names2:
+		column1 = table1.readColumn2D(key) if key in column_names1 else Repr('--absent column--')
+		column2 = table2.readColumn2D(key) if key in column_names2 else Repr('--absent column--')
+		if is_repr(column1) or is_repr(column2):
+			description = (column1, column2)
 		else:
-			diff_tables(diffs, subdir_name, simout_dir1, simout_dir2)
+			description = compare_arrays(column1, column2)
+		if description:
+			diffs[subdir + '/' + key] = description
+
+	# Diff the Table Attributes.
+	attribute_names1 = set(table1.attributeNames())
+	attribute_names2 = set(table2.attributeNames())
+
+	for key in attribute_names1 | attribute_names2:
+		v1 = table1.readAttribute(key) if key in attribute_names1 else Repr('--absent value--')
+		v2 = table2.readAttribute(key) if key in attribute_names2 else Repr('--absent value--')
+		if v1 != v2:
+			# Call str(key) to avoid the u'...' unicode marker clutter
+			diffs[subdir + '@' + str(key)] = (elide(v1), elide(v2))
+
+	return diffs
+
+def diff_simout(simout_dir1, simout_dir2):
+	'''Diff two simOut dirs. Return a dict describing the differences.
+
+	TODO(jerry): One could call this function in a Python shell and explore the
+	values, but to do that it should return all the original values and make
+	the caller elide them before printing.
+	'''
+	diffs = {}
+
+	subdirs1 = set(os.listdir(simout_dir1))
+	subdirs2 = set(os.listdir(simout_dir2))
+
+	# ------------------------------------------------------------------------
+	# Ignore the daughter cell inherited state directories. They don't contain
+	# Tables and they only depend on wholecell/sim/divide_cell.py, not the
+	# actual simulation.
+	#
+	# Ignore the EvaluationTime table since CPU timing measurements will always
+	# vary. It isn't really simulation output.
+	# ------------------------------------------------------------------------
+	subdirs = (subdirs1 | subdirs2) - {'Daughter1', 'Daughter2', 'EvaluationTime'}
+
+	for subdir in subdirs:
+		diffs.update(diff_subdirs(subdir, simout_dir1, simout_dir2))
 
 	return diffs
 
@@ -140,9 +186,9 @@ def cmd_diff_simout(simout_dir1, simout_dir2):
 
 	print('Using simOut {} to check {}\n'.format(simout_dir1, simout_dir2))
 
-	if not os.path.isdir(simout_dir1):
+	if not op.isdir(simout_dir1):
 		return 'diff_simouts: No simOut directory 1: {}'.format(simout_dir1)
-	if not os.path.isdir(simout_dir2):
+	if not op.isdir(simout_dir2):
 		return 'diff_simouts: No simOut directory 2: {}'.format(simout_dir2)
 
 	diffs = diff_simout(simout_dir1, simout_dir2)
