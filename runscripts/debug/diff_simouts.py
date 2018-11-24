@@ -11,21 +11,7 @@ Example command line:
     diff_simouts.py out/manual/wildtype_000000/000000/generation_000000/000000/simOut \
     	out/experiment/wildtype_000000/000000/generation_000000/000000/simOut
 
-The output is a dict containing keys like:
-
-	* `'Main'`: a subdir; present if there's a message about absent subdirs or
-		subdirs that don't contain Tables
-	* `'Main@startTime'`: a Table attribute
-	* `'RnaDegradationListener/DiffRelativeFirstOrderDecay'`: a Table column
-
-The values are usually*  tuples containing the respective values from the first
-and second simOut dirs but they may contain messages like:
-
-	* --absent subdir--: an absent subdirectory in this simOut dir
-	* --absent column--: an absent column in this simOut dir
-	* --absent value--: an absent attribute value in this simOut dir
-	* Arrays are not equal (mismatch 21.6859279402%)...: A NumPy Testing message
-		summarizing the differences between two arrays
+See the `-h` command line usage help.
 '''
 
 from __future__ import absolute_import, division, print_function
@@ -94,11 +80,11 @@ def open_table(simout_dir, subdir):
 
 	try:
 		table_reader = TableReader(table_path)
-		table_message = Repr('--valid Table--')
+		table_message = Repr('<valid Table>')
 	except VersionError:
 		# Note: This could use the exception message but it's verbose.
 		table_reader = None
-		table_message = Repr('--not a Table--' if op.isdir(table_path) else '--absent subdir--')
+		table_message = Repr('<not a Table>' if op.isdir(table_path) else '<absent subdir>')
 
 	return table_reader, table_message
 
@@ -119,7 +105,7 @@ def diff_subdirs(subdir, simout_dir1, simout_dir2):
 
 	diffs = {}
 	if table1 is None or table2 is None:
-		diffs[subdir] = (table_message1, table_message2)
+		diffs[subdir + '/'] = (table_message1, table_message2)
 		return diffs
 
 	# Compare Column names.
@@ -128,8 +114,8 @@ def diff_subdirs(subdir, simout_dir1, simout_dir2):
 
 	# Diff the Table Columns.
 	for key in column_names1 | column_names2:
-		column1 = table1.readColumn2D(key) if key in column_names1 else Repr('--absent column--')
-		column2 = table2.readColumn2D(key) if key in column_names2 else Repr('--absent column--')
+		column1 = table1.readColumn2D(key) if key in column_names1 else Repr('<absent column>')
+		column2 = table2.readColumn2D(key) if key in column_names2 else Repr('<absent column>')
 		if is_repr(column1) or is_repr(column2):
 			description = (column1, column2)
 		else:
@@ -142,8 +128,8 @@ def diff_subdirs(subdir, simout_dir1, simout_dir2):
 	attribute_names2 = set(table2.attributeNames())
 
 	for key in attribute_names1 | attribute_names2:
-		v1 = table1.readAttribute(key) if key in attribute_names1 else Repr('--absent value--')
-		v2 = table2.readAttribute(key) if key in attribute_names2 else Repr('--absent value--')
+		v1 = table1.readAttribute(key) if key in attribute_names1 else Repr('<absent value>')
+		v2 = table2.readAttribute(key) if key in attribute_names2 else Repr('<absent value>')
 		if v1 != v2:
 			# Call str(key) to avoid the u'...' unicode marker clutter
 			diffs[subdir + '@' + str(key)] = (elide(v1), elide(v2))
@@ -184,7 +170,7 @@ def cmd_diff_simout(simout_dir1, simout_dir2):
 	if simout_dir1 == simout_dir2:
 		return "diff_simouts: Don't diff a simOut directory against itself"
 
-	print('Using simOut {} to check {}\n'.format(simout_dir1, simout_dir2))
+	print('Comparing: {}\n'.format((simout_dir1, simout_dir2)))
 
 	if not op.isdir(simout_dir1):
 		return 'diff_simouts: No simOut directory 1: {}'.format(simout_dir1)
