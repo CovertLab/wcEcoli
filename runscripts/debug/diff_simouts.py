@@ -189,7 +189,25 @@ def cmd_diff_simout(simout_dir1, simout_dir2):
 
 if __name__ == '__main__':
 	if len(sys.argv) == 2 and sys.argv[1] in {'-h', '--help'}:
-		print('diff_simouts <simOut1> <simOut2> -- diffs two WCM simOut directories')
+		print('''Usage:  diff_simouts <simOut1> <simOut2>
+Diff two Whole Cell Model simOut directories
+
+The output is a dict with keys like:
+
+	* 'Main/': a subdir; present if there's a message about absent subdirs or
+	  subdirs that don't contain Tables
+	* 'Main@startTime': a Table attribute
+	* 'RnaDegradationListener/DiffRelativeFirstOrderDecay': a Table column
+
+The dict values are tuples of the corresponding simOut values or special
+messages like:
+
+	* <absent subdir>: an absent subdirectory
+	* <absent column>: an absent column
+	* <absent value>: an absent attribute value
+	* Arrays are not equal (mismatch 21.6859279402%)...: A NumPy Testing
+	  message summarizing the differences between two arrays
+''')
 		sys.exit()
 
 	if len(sys.argv) < 3:
