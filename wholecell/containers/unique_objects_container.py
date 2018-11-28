@@ -98,7 +98,7 @@ class UniqueObjectsContainer(object):
 	Used for unique molecules state and partitions.
 
 	Parameters:
-		specifications (dict[str, dict[str, str]]): Maps the unique molecule
+		specifications (Dict[str, Dict[str, str]]): Maps the unique molecule
 			names (collection names) to the {attribute_name: dtype} molecule
 			attributes (structured array fields). The dtype declarations are
 			strings describing NumPy scalar types.
