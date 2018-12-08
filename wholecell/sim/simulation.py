@@ -140,10 +140,10 @@ class Simulation(CellSimulation):
 		self._finalized = False
 
 		for internal_state in self.internal_states.itervalues():
-			internal_state.initialize(self, sim_data)
+			internal_state.initialize(sim_data, self.processes.keys())
 
 		for external_state in self.external_states.itervalues():
-			external_state.initialize(self, sim_data)
+			external_state.initialize(sim_data, self.processes.keys())
 
 		for process in self.processes.itervalues():
 			process.initialize(self, sim_data)
@@ -172,12 +172,14 @@ class Simulation(CellSimulation):
 
 		# Perform initial mass calculations
 		for state in self.internal_states.itervalues():
+			state.prepareCalculations()
 			state.calculatePreEvolveStateMass()
+			state.prepareCalculations()
 			state.calculatePostEvolveStateMass()
 
 		# Update environment state according to the current time in time series
 		for external_state in self.external_states.itervalues():
-			external_state.update()
+			external_state.update(self.time())
 
 		# Perform initial listener update
 		for listener in self.listeners.itervalues():
@@ -323,7 +325,7 @@ class Simulation(CellSimulation):
 
 		# update environment state
 		for state in self.external_states.itervalues():
-			state.update()
+			state.update(self.time())
 
 		# Update listeners
 		for listener in self.listeners.itervalues():

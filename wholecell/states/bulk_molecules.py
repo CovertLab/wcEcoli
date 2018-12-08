@@ -50,10 +50,10 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 		self.divisionIds = {}
 
 
-	def initialize(self, sim, sim_data):
-		super(BulkMolecules, self).initialize(sim, sim_data)
+	def initialize(self, sim_data, process_keys):
+		super(BulkMolecules, self).initialize(sim_data, process_keys)
 
-		self._processIDs = sim.processes.keys()
+		self._processIDs = process_keys # sim.processes.keys()
 
 		# Load constants
 		self._moleculeIDs = sim_data.internal_state.bulkMolecules.bulkData['id']
@@ -151,11 +151,13 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 
 		self._countsAllocatedFinal[:] = self._countsAllocatedInitial
 
+
+	def prepareCalculations(self):
+		self._countsUnallocated = self.container._counts
+
+
 	def calculatePreEvolveStateMass(self):
 		# Compute masses of partitioned molecules
-
-		if self.simulationStep() == 0:
-			self._countsUnallocated = self.container._counts
 
 		self._masses[self._preEvolveStateMassIndex, ...] = np.dot(
 			np.hstack([self._countsAllocatedInitial, self._countsUnallocated[:, np.newaxis]]).T,
@@ -184,9 +186,6 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 
 	def calculatePostEvolveStateMass(self):
 		# Compute masses of partitioned molecules
-
-		if self.simulationStep() == 0:
-			self._countsUnallocated = self.container._counts
 
 		self._masses[self._postEvolveStateMassIndex, ...] = np.dot(
 			np.hstack([self._countsAllocatedFinal, self._countsUnallocated[:, np.newaxis]]).T,

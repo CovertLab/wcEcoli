@@ -22,9 +22,6 @@ class InternalState(object):
 		# Constants
 		self._nProcesses = None
 
-		# Reference to sim
-		self._sim = None
-
 		# References to views
 		self._views = []
 
@@ -40,10 +37,9 @@ class InternalState(object):
 
 
 	# Construct state-process graph, calculate constants
-	def initialize(self, sim, sim_data):
-		self._sim = sim
-
-		self._nProcesses = len(sim.processes)
+	def initialize(self, sim_data, process_keys):
+		self._process_keys = process_keys
+		self._nProcesses = len(process_keys)
 
 		# TODO: include compartment
 		self._masses = np.zeros((
@@ -81,6 +77,10 @@ class InternalState(object):
 		pass
 
 
+	def prepareCalculations(self):
+		pass
+
+
 	def calculatePreEvolveStateMass(self):
 		raise NotImplementedError("Subclass must implement")
 
@@ -105,12 +105,6 @@ class InternalState(object):
 
 
 	# Basic accessors
-
-	def time(self):
-		return self._sim.time()
-
-	def simulationStep(self):
-		return self._sim.simulationStep()
 
 	@classmethod
 	def name(cls):

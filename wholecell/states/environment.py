@@ -41,10 +41,10 @@ class Environment(wholecell.states.external_state.ExternalState):
 
 		super(Environment, self).__init__(*args, **kwargs)
 
-	def initialize(self, sim, sim_data):
-		super(Environment, self).initialize(sim, sim_data)
+	def initialize(self, sim_data, process_keys):
+		super(Environment, self).initialize(sim_data, process_keys)
 
-		self._processIDs = sim.processes.keys()
+		self._processIDs = process_keys
 
 		# load constants
 		self._nAvogadro = sim_data.constants.nAvogadro
@@ -71,8 +71,8 @@ class Environment(wholecell.states.external_state.ExternalState):
 		self._nutrients_name_max_length = max([len(t[1]) for t in self.current_time_series])
 
 
-	def update(self):
-		current_index = [i for i, t in enumerate(self._times) if self.time()>=t][-1]
+	def update(self, time):
+		current_index = [i for i, t in enumerate(self._times) if time >= t][-1]
 
 		# update nutrients based on nutrient_time_series. This updates the concentrations,
 		# and also the nutrients label is used in polypeptide_elongation to find

@@ -52,8 +52,8 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 		self._unassignedPartitionedValue = None
 
 
-	def initialize(self, sim, sim_data):
-		super(UniqueMolecules, self).initialize(sim, sim_data)
+	def initialize(self, sim_data, process_keys):
+		super(UniqueMolecules, self).initialize(sim_data, process_keys)
 
 		# Used to store information for cell division
 		# Should not contain DEFAULT_ATTRIBUTES
@@ -155,16 +155,17 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 				molecules.attrIs(_partitionedProcess = view._processIndex)
 
 
+	def prepareCalculations(self):
+		# Set everything to the "unassigned" value
+		# TODO: consider allowing a default value option for unique objects
+		objects = self.container.objects()
+
+		if len(objects) > 0:
+			objects.attrIs(_partitionedProcess = self._unassignedPartitionedValue)
+
+
 	def calculatePreEvolveStateMass(self):
 		# Compute partitioned masses
-
-		if self.simulationStep() == 0:
-			# Set everything to the "unassigned" value
-			# TODO: consider allowing a default value option for unique objects
-			objects = self.container.objects()
-
-			if len(objects) > 0:
-				objects.attrIs(_partitionedProcess = self._unassignedPartitionedValue)
 
 		self._masses[self._preEvolveStateMassIndex, ...] = self._calculateMass()
 

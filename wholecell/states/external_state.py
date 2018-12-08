@@ -19,9 +19,6 @@ class ExternalState(object):
 
 	# Constructor
 	def __init__(self):
-		# Reference to sim
-		self._sim = None
-
 		# References to views
 		self._views = []
 
@@ -32,8 +29,12 @@ class ExternalState(object):
 
 
 	# Construct state-process graph, calculate constants
-	def initialize(self, sim, sim_data):
-		self._sim = sim
+	def initialize(self, sim_data, process_keys):
+		self._process_keys = process_keys
+
+
+	def update(self, time):
+		pass
 
 
 	# Allocate memory
@@ -57,12 +58,6 @@ class ExternalState(object):
 
 
 	# Basic accessors
-
-	def time(self):
-		return self._sim.time()
-
-	def simulationStep(self):
-		return self._sim.simulationStep()
 
 	@classmethod
 	def name(cls):

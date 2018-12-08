@@ -8,8 +8,7 @@ import sys
 from runscripts.reflect.object_tree import object_tree, diff_trees
 
 
-def load_fit_tree(out_subdir):
-	'''Load the Fitter's output as an object_tree.'''
+def load_sim_data(out_subdir):
 	path = os.path.join(
 		os.getcwd(),
 		'out',
@@ -20,6 +19,11 @@ def load_fit_tree(out_subdir):
 	with open(path, "rb") as f:
 		sim_data = cPickle.load(f)
 
+	return sim_data
+
+
+def load_fit_tree(out_subdir):
+	sim_data = load_sim_data(out_subdir)
 	return object_tree(sim_data)
 
 
