@@ -4,7 +4,6 @@ import json
 import uuid
 import argparse
 
-from agent.agent import Agent
 from agent.outer import Outer
 from agent.inner import Inner
 from agent.stub import SimulationStub, EnvironmentStub
@@ -58,10 +57,7 @@ class BootAgent(object):
 	"""
 
 	def __init__(self):
-		description='Boot agents for the environmental context simulation'
-		parser = argparse.ArgumentParser(description=description)
-		self.parser = self.add_arguments(parser)
-		self.args = self.parser.parse_args()
+		self.description='Boot agents for the environmental context simulation'
 		self.agent_types = {
 			'outer': boot_outer,
 			'inner': boot_inner}
@@ -75,18 +71,25 @@ class BootAgent(object):
 		parser.add_argument(
 			'--type',
 			default='inner',
+			choices=self.agent_types,
 			help='type of the new agent')
 
 		parser.add_argument(
 			'--config',
-			default='{}',
-			help='configuration for the new agent')
+			required=True,
+			help='''JSON configuration dictionary for the new agent. It must
+				have a "kafka_config" dictionary containing "host",
+				"subscribe", and "topics" fields.''')
 
 		return parser
 
 	def execute(self):
-		args = vars(self.args)
-		args['config'] = json.loads(self.args.config)
+		parser = argparse.ArgumentParser(description=self.description)
+		parser = self.add_arguments(parser)
+		parse_args = parser.parse_args()
+
+		args = vars(parse_args)
+		args['config'] = json.loads(parse_args.config)
 		boot = self.agent_types[args['type']]
 		agent = boot(args['id'], args['type'], args['config'])
 		agent.start()

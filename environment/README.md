@@ -10,7 +10,7 @@ See the top-level [README.md](../README.md) for general setup instructions, and 
 
 ## Usage
 
-1. To run Cell simulations, you need to have the sim_data files. You can generate them via the
+1. To run Whole Cell E.coli simulations, you need to have the sim_data files. You can generate them via the
 runFitter manual runscript. In the wcEcoli directory:
 
     `> PYTHONPATH="$PWD" python runscripts/manual/runFitter.py`
@@ -34,27 +34,25 @@ server and browser window per the instructions on that page. To recap:
 
    2. Open a browser window onto [http://localhost:33332](http://localhost:33332)
 
-4. Boot an Environment agent and Cell agents through this environment directory, with
-each process in a new terminal tab. (**Tip:** Use iTerm split windows to make
-it easy to watch all these processeses at once.)
+4. You _could_ run an Environment agent and Cell agents from the command line, but you'll have to supply a JSON config dictionary with
+various fields including a `"kafka_config"` dictionary. Use the `-h` argument for usage help.
+
+   (**Tip:** Run each process in a new terminal tab. Use iTerm split windows to make it easy to watch them all at once.)
 
    1. In the first tab start an Environment model:
 
-      `> python -m environment.boot lattice --id lattice`
+      `> python -m environment.boot --type lattice --id lattice --config '{...}`
 
       This creates the Environment agent, waiting for Cell simulations to register.
 
-      **NOTE:** If you didn't open the browser-based visualization, you can have the
+      **VARIATION:** If you didn't open the browser-based visualization, you can have the
       Environment agent open a "microscope" view onto the plate by launching it like this:
 
-      `> ENVIRONMENT_ANIMATION=1 python -m environment.boot lattice --id lattice`
+      `> ENVIRONMENT_ANIMATION=1 python -m environment.boot --type lattice --id lattice --config '{...}`
 
    2. Now start a Cell agent in a new tab:
 
-      `> python -m environment.boot ecoli --id 1 --outer-id lattice`
-
-      **Optional:** Supply additional arguments to set a variant, seed, and so on.
-      Use the `-h` argument for help. 
+      `> python -m environment.boot --type ecoli --id 1 --outer-id lattice`
 
 5. Start as many cells as desired, each with its own unique id (agent name), and each in a
 separate terminal tab.
@@ -76,33 +74,35 @@ You will see a message sent from the newly initialized simulation on the `enviro
 
 ## Agent Shepherd
 
+**TODO:** Update this for the Clojure shepherd. Make the Python shepherd work as an alternative?
+
 An alternate way to start the simulation is to use the agent shepherd, which will manage the spawning and removal of agents with multiprocessing rather than launching each in its own tab. To do this first start the agent shepherd:
 
    `> python -m environment.boot shepherd`
 
-Now that it is running you can start an experiment:
+Now that it is running you can start an experiment in another terminal tab:
 
-   `> python -m environment.boot experiment --number 3`
+   `> python -m environment.control experiment --number 3`
 
 This will send four `ADD_AGENT` messages to the shepherd, one for the environment agent and three for the simulation agents. Note the `agent_id` for the lattice as you will need this for future control messages (like trigger and shutdown). These messages are received by the shepherd and you will see them all boot in the shepherd's tab. You still need to trigger execution, which requires the `agent_id` of the environment:
 
-   `> python -m environment.boot trigger --id xxxxxx-xxxx-xxxxxxxxxx`
+   `> python -m environment.control trigger --id xxxxxx-xxxx-xxxxxxxxxx`
 
 If you know that this is the only environment you are running, or you want to control all environments at once, you can omit the `--id` option:
 
-   `> python -m environment.boot trigger`
+   `> python -m environment.control trigger`
 
 Now that they are running, you can add new agents with `add`:
 
-   `> python -m environment.boot add --id xxxxxx-xxxx-xxxxxxxxxx`
+   `> python -m environment.control add --id xxxxxx-xxxx-xxxxxxxxxx`
 
 Or remove them with `remove` given an id. This can be just the prefix of the agent's id so you don't have to type the whole uuid:
 
-   `> python -m environment.boot remove --id dgaf`
+   `> python -m environment.control remove --id dgaf`
 
 Finally, to shut down the experiment call `shutdown` as before:
 
-   `> python -m environment.boot shutdown --id xxxxxx-xxxx-xxxxxxxxxx`
+   `> python -m environment.control shutdown --id xxxxxx-xxxx-xxxxxxxxxx`
 
 Notice this just shuts down the experiment, the shepherd is still running and a new experiment can be started. To shut down the shepherd process, just `Ctrl-C`.
 

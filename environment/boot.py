@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import os
 import time
 import errno
-import argparse
 
 import agent.event as event
 from agent.outer import Outer
@@ -157,7 +156,6 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 		"translationSupply":      True}
 
 	# Write a metadata file to aid analysis plots.
-	# TODO(jerry): Skip it if another cell already wrote one?
 	metadata = {
 		"git_hash":           fp.run_cmdline("git rev-parse HEAD"),
 		"git_branch":         fp.run_cmdline("git symbolic-ref --short HEAD"),

@@ -170,7 +170,7 @@ class Agent(object):
 				needs to be JSON serializable, so must contain only basic types like `str`,
 				`int`, `float`, `list`, `tuple`, `array`, and `dict`. Any functions or objects
 				present will throw errors.
-		    print_send (boolean): Whether or not to print the message that is sent.
+		    print_send (bool): Whether or not to print the message that is sent.
 		"""
 
 		# json.dumps(m, ensure_ascii=False) returns a str or unicode string, depending on
@@ -229,7 +229,7 @@ class Agent(object):
 
 		if self.consumer:
 			self.consumer.commit()
-			self.consumer.close()
+			self.consumer.close(timeout=5.0)
 
 	def finalize(self):
 		"""

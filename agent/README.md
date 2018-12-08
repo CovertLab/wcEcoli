@@ -53,95 +53,28 @@ With this you should be ready to go.
 
 You will want some way to run multiple command line processes, as each component of the system claims the execution thread. This can be in multiple terminal tabs locally, or running on multiple VM's in a cloud environment. Here I will refer to them as tabs.
 
-The command line interface for the system is is `agent/boot.py`, and has a number of options depending on the role you are interacting with.
+The command line interface to run an agent is `agent/boot.py`. Use `--help` to get current usage details.
 
-The available roles are
+The available agent types are
 
 * `outer` - the larger environmental context
 * `inner` - each individual simulation
-* `trigger` - start the execution of the system
-* `shutdown` - stop the execution of the system
 
-In the first tab start the environmental context:
+You _could_ run an outer (environment simulation) agent like this but you'll have to supply a JSON config dictionary with various fields including a `"kafka_config"` dictionary:
 
-    0> python -m agent.boot outer --id out
+    0> python -m agent.boot --type outer --id out --config '{...}'
 
-Each outer agent must be assigned a unique `id` so that inner agents can connect to it. This has started the environmental process and is waiting for simulations initialize and register. Let's do that now. In a new tab:
+The outer agent needs an `id` so that inner agents can connect to it.
 
-    1> python -m agent.boot inner --id 1 --outer-id out
+Similarly, you _could_ run an inner (cell model) agent like this, in a new tab:
 
-When starting individual simulations the `id` argument is required. Assigning a unique id to each simulation allows the environment to communicate in specific ways with each simulation. You will see a message sent from the newly initialized simulation on the `environment_listen` topic:
+    1> python -m agent.boot --type inner --id 1 --config '{...}'
 
-    <-- environment_listen: {'event': 'SIMULATION_INITIALIZED', 'inner_id': '1', 'outer_id': 'out'}
 
-and also if you go back to the environment tab you will see it has received a message from the new simulation:
+It's easier to use `agent/control.py`. That's the command line interface to issue commands to agents.
+It implements a variety of commands including `experiment`, `add`, `remove`, `pause`, `trigger` (start/resume), and `shutdown`.
+Use `--help` to get usage details.
 
-    --> environment_listen: {u'event': u'SIMULATION_INITIALIZED', 'inner_id': '1', 'outer_id': 'out'}
+    1> python -m agent.control --type inner --id 1 --config '{...}'
 
-Let's start another one in another tab:
-
-    2> python -m agent.boot inner --id 2 --outer-id out
-    <-- environment_listen: {'event': 'SIMULATION_INITIALIZED', 'inner_id': '2', 'outer_id': 'out'}
-
-We will see this message has also reached the environmental process:
-
-    --> environment_listen: {u'event': u'SIMULATION_INITIALIZED', 'inner_id': u'2', 'outer_id': 'out'}
-
-Now that we have a couple of simulations running, let's start the execution. In yet another tab (the `control` tab):
-
-    3> python -m agent.boot trigger --id out
-
-You will see this sends a message to the `environment_control` topic:
-
-    <-- environment_control: {'event': 'TRIGGER_EXECUTION', 'agent_id': 'out'}
-
-which is then received by the environment:
-
-    --> environment_control: {u'event': u'TRIGGER_EXECUTION', 'agent_id': 'out'}
-
-Now things have started to run. You will see in the environment tab that it has sent two messages out along the `environment_broadcast` topic:
-
-    <-- environment_broadcast: {'run_for': 1, 'id': u'1', 'message_id': 0, 'concentrations': {'blue': 12, 'green': 11, 'red': 44, 'yellow': 5}, 'event': 'ENVIRONMENT_UPDATED'}
-    <-- environment_broadcast: {'run_for': 1, 'id': u'2', 'message_id': 0, 'concentrations': {'blue': 12, 'green': 11, 'red': 44, 'yellow': 5}, 'event': 'ENVIRONMENT_UPDATED'}
-
-These are in turn received by the simulation, each responding to the message given by its id:
-
-    --> environment_broadcast: {u'run_for': 1, u'id': u'1', u'message_id': 0, u'concentrations': {u'blue': 12, u'green': 11, u'yellow': 5, u'red': 44}, u'event': u'ENVIRONMENT_UPDATED'}
-
-This message tells the simulation what its molecule ids are, the respective concentrations, and how long to run until. Upon receiving this message it begins the simulation and runs until it reaches the given time step (`run_until`). Once it completes this segment of execution, it responds with a message on the `environment_listen` topic detailing the local changes to concentrations it has calculated:
-
-    <-- environment_listen: {'message_id': 0, 'time': 1, 'changes': {u'blue': 1, u'green': 6, u'yellow': 3, u'red': 2}, 'event': 'SIMULATION_ENVIRONMENT', 'id': '1'}
-
-The environment will wait until it has received messages from all its registered simulations, at which point it will perform the work to integrate the separate changes in concentrations it has received and respond with a new message to each simulation with its now updated environment. These are of the same form as the 'ENVIRONMENT_UPDATED' messages above.
-
-Once this has gone on awhile and you are ready to stop the simulation, you can call shutdown from the command tab:
-
-    3> python -m agent.boot shutdown --id out
-
-This sends an `ENVIRONMENT_SHUTDOWN` message on the `environment_control` topic:
-
-    <-- environment_control: {'event': 'SHUTDOWN_AGENT', 'agent_id': 'out'}
-
-The environment receives this message and waits until it receives all outstanding messages from the individual simulations, and then sends a shutdown message to each one:
-
-    --> environment_control: {u'event': u'SHUTDOWN_AGENT', 'agent_id': 'out'}
-    <-- environment_broadcast: {'inner_id': '1', 'outer_id': 'out', 'event': 'SHUTDOWN_SIMULATION'}
-    <-- environment_broadcast: {'inner_id': '2', 'outer_id': 'out', 'event': 'SHUTDOWN_SIMULATION'}
-
-At this point all three processes have exited.
-
-Alternatively, you can pause the simulation if you want to restart it later (unlike shutdown, which actually terminates the simulations). 
-
-    4> python -m agent.boot pause --id out
-
-While paused the simulations will not progress, but they are still running and available to resume with `trigger`:
-
-    5> python -m agent.boot trigger --id out
-
-Now they are all happily running again.
-
-**Tip:** You can shut down an individual agent (say #1) like this:
-
-    python -m agent.boot shutdown --id 1
-
-That's handy if the Outer agent raised an exception and exited.
+**TODO:** Document how to get started with `agent.control`.
