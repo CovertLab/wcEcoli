@@ -74,11 +74,11 @@ You will see a message sent from the newly initialized simulation on the `enviro
 
 ## Agent Shepherd
 
-**TODO:** Update this for the Clojure shepherd. Make the Python shepherd work as an alternative?
+The current way to start the simulation is to use the agent shepherd, which will manage the spawning and removal of agents as subprocesses rather than launching each in its own tab.
 
-An alternate way to start the simulation is to use the agent shepherd, which will manage the spawning and removal of agents with multiprocessing rather than launching each in its own tab. To do this first start the agent shepherd:
+Clone the [CovertLab/shepherd](https://github.com/CovertLab/shepherd) repo and run:
 
-   `> python -m environment.boot shepherd`
+   `> lein run`
 
 Now that it is running you can start an experiment in another terminal tab:
 
