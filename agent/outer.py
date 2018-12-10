@@ -379,7 +379,7 @@ class Outer(Agent):
 		"""
 
 		if message.get('outer_id', message.get('agent_id')) == self.agent_id:
-			print('--> {} ({}) [{}]: {}'.format(topic, message['event'], self.agent_id, message))
+			self.print_message(topic, message)
 
 			if message['event'] == event.TRIGGER_AGENT:
 				self.paused = False

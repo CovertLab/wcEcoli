@@ -83,16 +83,17 @@ def boot_lattice(agent_id, agent_type, agent_config):
 
 def boot_ecoli(agent_id, agent_type, agent_config):
 	'''
-	Instantiates an initial or daughter EcoliSimulation, passes it to the
+	Instantiates an initial or daughter EcoliSimulation, passes it to a new
 	`Inner` agent, and launches the simulation. `agent_config` fields:
 	    * kafka_config
 	    * outer_id (id of environmental context agent)
-	    * working_dir (wcEcoli path containing the sim path out/manual/)
+	    * working_dir (optional, wcEcoli path containing the sim path out/manual/)
 	    * inherited_state_path (optional, to make a daughter cell)
 	    * start_time (optional)
 	    * variant_type (optional)
 	    * variant_index (optional)
 	    * seed (optional)
+	    * volume (optional)
 	'''
 	if 'outer_id' not in agent_config:
 		raise ValueError("--outer-id required")
@@ -105,9 +106,13 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	variant_type = agent_config.get('variant_type', 'wildtype')
 	variant_index = agent_config.get('variant_index', 0)
 	seed = agent_config.get('seed', 0)
+	volume = agent_config.get('volume', 1.2)
 
-	# create the inner agent before instantiating so we can send a message to the lattice
-	# without waiting for the simulation to boot
+	# Create the inner agent before instantiating the simulation so it can send
+	# a message to the lattice without waiting for the simulation to initialize.
+	# TODO(jerry): Is it OK for the agent to receive messages w/o a sim? Add a
+	#    setter for its simulation property, make it queue messages until it
+	#    gets one, change the constructor type signature to allow None?
 	inner = Inner(
 		agent_id,
 		outer_id,
@@ -115,7 +120,6 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 		agent_config,
 		None)
 
-	volume = agent_config.get('volume', 1.2)
 	inner.send(kafka_config['topics']['environment_receive'], {
 		'event': event.CELL_DECLARE,
 		'agent_id': outer_id,
