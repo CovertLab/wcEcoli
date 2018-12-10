@@ -1,7 +1,8 @@
 # Environment
 
-Models of environments, which can be interfaced with cells via the agent module. Includes boot.py for starting both
-environments and cells.
+Models of environments, which can be interfaced with cells via the agent module.
+Includes command line tools `environment.boot` for running environment and cell agents
+and `environment.control` for sending commands to agents.
 
 ## Setup
 
@@ -36,11 +37,9 @@ server and browser window per the instructions on that page. To recap:
 
 4. You can run an Environment agent and Cell agents directly from the command line although we usually do it via an agent Shepherd (see below).
 
-   (**Tip:** Use the `-h` argument for usage help on any of these command line programs.)
-
    (**Tip:** Run each process in a new terminal tab. Use iTerm split windows to make it easy to watch them all at once.)
 
-   1. In the first tab start an Environment model:
+   In the first tab start an Environment model agent:
 
       `> python -m environment.boot --type lattice --id lattice`
 
@@ -52,25 +51,27 @@ server and browser window per the instructions on that page. To recap:
 
       `> ENVIRONMENT_ANIMATION=1 python -m environment.boot --type lattice --id lattice`
 
-   2. Now start a Cell agent in a new tab:
+5. Now start a Cell agent in a new tab:
 
-      `> python -m environment.boot --type ecoli --id 1 --outer-id lattice`
+    `> python -m environment.boot --type ecoli --id 1 --outer-id lattice`
 
-5. Start as many cells as desired, each with its own unique id (agent name), and each in a
+   You'll see messages like this one from the Cell agent to the Environment agent,
+   declaring itself to the environment and giving its current state:
+
+   `<-- environment-receive (CELL_DECLARE) [1]: {"inner_id": "1", "agent_config": {...}, "state": {"volume": 1.2, "environment_change": {}}, "event": "CELL_DECLARE", "agent_id": "lattice"}`
+
+   In turn, the cell will receive messages like this:
+
+   `--> cell-receive (ENVIRONMENT_SYNCHRONIZE) [1]: {u'inner_id': u'1', u'state': {u'time': 0}, u'outer_id': u'lattice', u'event': u'ENVIRONMENT_SYNCHRONIZE'}`
+
+6. Start as many cells as desired, each with its own unique id (agent name), and each in a
 separate terminal tab.
-You will see a message sent from the newly initialized simulation on the `environment_listen` topic:
 
-   `<-- environment_listen: {'event': 'SIMULATION_INITIALIZED', 'id': '1'}`
-
-   and in the environment tab you will see it has received a message from the new Cell simulation:
-
-   `--> environment_listen: {u'event': u'SIMULATION_INITIALIZED', u'id': u'1'}`
-
-6. Finally, run this in a separate "command" tab to start the simulation clock:
+7. Finally, run `trigger` in a separate "command" tab to start the simulation clock:
 
    `> python -m environment.control trigger --id lattice`
 
-7. To stop the simulation, run `shutdown` in the command tab:
+8. To stop the simulation, run `shutdown` in the command tab:
 
    `> python -m environment.control shutdown --id lattice`
 
@@ -108,25 +109,25 @@ Finally, to shut down the experiment call `shutdown` as before:
 
 Notice this just shuts down the experiment, the shepherd is still running and a new experiment can be started. To shut down the shepherd process, just `Ctrl-C`.
 
-## commands
+## command summary
 
-To summarize, the list of agent control commands is:
+This is just a summary.
+Use the `-h` argument to get complete usage help on these command line programs.
 
-* trigger - start the simulation
-* pause - pause the simulation
+The environment.boot commands run an agent in the current shell tab:
+
+* ecoli - an ecoli cell agent
+* lattice - a two dimensional lattice environment agent
+* chemotaxis - a chemotaxis surrogate that can move up glucose gradients within a chemotaxis_experiment
+
+The environment.control commands include:
+
+* trigger - start/resume the simulation clock
+* pause - pause the simulation clock
 * shutdown - shutdown the simulation
-* divide - trigger cell division in the given simulation
 
-Spawning specific agents:
+Some environment.control commands require an [agent shepherd](https://github.com/CovertLab/shepherd), including:
 
-* inner - start an inner agent
-* outer - start an outer agent
-* ecoli - start an ecoli agent
-* lattice - start a two dimensional lattice agent
-
-Shepherd oriented commands:
-
-* shepherd - start the agent shepherd
-* add - add an agent to the agent shepherd
-* remove - remove an agent from the agent shepherd
-* experiment - spawn an experiment from the agent shepherd
+* add - ask the shepherd to spawn an agent and add it to an environment
+* remove - ask the shepherd to remove an agent
+* experiment - ask the shepherd to spawn a lattice and multiple cell agents

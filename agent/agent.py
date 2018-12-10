@@ -162,7 +162,7 @@ class Agent(object):
 
 	def send(self, topic, message, print_send=True):
 		"""
-		Send a dictionary as a message on the given topic. 
+		Send a dictionary as a message on the given topic.
 
 		Args:
 			topic (str): The Kafka topic to send the message on.

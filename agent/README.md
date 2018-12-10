@@ -12,7 +12,7 @@ Kafka is built on Zookeeper, which is a platform for coordinating access to an a
 
 If you have access to a remote Kafka cluster, you can just specify the host as an option to the various boot scripts supplied here:
 
-    python -m agent.boot --host ip.to.remote.cluster:9092
+   `python -m agent.boot --host ip.to.remote.cluster:9092`
 
 If you don't have access to a remote cluster, you can install Kafka locally.
  
@@ -43,42 +43,21 @@ and pasting the checksum into [the verification page](https://www.apache.org/inf
    `./bin/zookeeper-server-start.sh ./config/zookeeper.properties`
 
    It will keep running until forced to shut down.
+
+   **Tip:** Use iTerm split windows to keep the Zookeeper and Kafka shells together.
+
+   **Tip:** Create a shell alias like this in your bash profile:
+
+   `alias zookeeper="cd ~/dev/kafka_2.11-2.0.0 && ./bin/zookeeper-server-start.sh ./config/zookeeper.properties"`
+
 4. In another shell tab, in the same untar directory, start the Kafka server:
 
     `./bin/kafka-server-start.sh ./config/server.properties`
 
-With this you should be ready to go.
+   **Tip:** Create a shell alias like this in your bash profile:
 
-## Usage
+   `alias kafka="cd ~/dev/kafka_2.11-2.0.0 && ./bin/kafka-server-start.sh ./config/server.properties"`
 
-You will want some way to run multiple command line processes, as each component of the system claims the execution thread. This can be in multiple terminal tabs locally, or running on multiple VM's in a cloud environment. Here I will refer to them as tabs.
-
-The command line interface to run an agent is `agent/boot.py`. Use `--help` to get current usage details.
-
-The available agent types are
-
-* `outer` - the larger environmental context
-* `inner` - each individual simulation
-
-You can run an outer (environment simulation) agent like this, optionally supplying a JSON config dictionary:
-
-    0> python -m agent.boot --type outer --id out
-
-The outer agent needs an `id` so that inner agents can connect to it.
-
-Use `--help` to get usage details.
-
-Similarly, you can run an inner (cell model) agent like this, in a new tab:
-
-    1> python -m agent.boot --type inner --id 1 --outer-id out
-
-
-Then use `agent/control.py` as the command line interface to issue commands to agents:
-
-    3> python -m agent.control trigger --id out
-
-    3> python -m agent.control pause --id out
-
-    3> python -m agent.control shutdown --id out
-
-Some of its commands like `experiment` and `add` require a running agent shepherd.
+You _can_ run stub agents using the command line tools `agent.boot` and `agent.control`, but
+in practice we use the commands in [environment/README.md](../environment/README.md) to run
+E. coli cell agents and their environment.

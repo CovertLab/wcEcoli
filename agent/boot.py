@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import json
-import uuid
 import argparse
 
 from agent.control import DEFAULT_KAFKA_CONFIG
