@@ -14,12 +14,15 @@ mathematica file.
 from __future__ import division
 
 import argparse
+import multiprocessing as mp
 import os
+import time
 
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy.integrate import odeint
 from scipy.integrate import ode
+
 
 file_location = os.path.dirname(os.path.realpath(__file__))
 
@@ -37,33 +40,35 @@ r_index = ppgpp_index + 1
 np.random.seed(10)
 
 # pars
-e = 0.05
-kn = 0.2 * np.random.lognormal(np.log(1), 0.2, 20)
-kIa = 100
-sTot = 1
-ks = 100
-kMaa = 100
-kMtf = 1
-krib = 20
-krta = 1
-krt = 500
-kRelA = 75
-RelAtot = 100 / (nAvogadro * cellVolume / 1e6)
-kDRelA = 0.26
-vSpoTSynt = 0.001
-kSpoTdeg = np.log(2) / 30
-vInitMax = 2000
-rnapF = 1
-kMrrn = 20
-kIppGpp = 1
-nppGpp = 1
-gammamax = 1
-tau = 0.5
-f = 0.05
-bm = proteinContent / (cellVolume*nAvogadro/1e6)
-nARib = 7459 * 1.65
-nAmet = 300
-rmax = proteinContent / (cellVolume*nAvogadro/1e6) / (7459*1.65)
+params = {
+	'e': 0.05,
+	'kn': 0.2 * np.random.lognormal(np.log(1), 0.2, 20),
+	'kIa': 100,
+	'sTot': 1,
+	'ks': 100,
+	'kMaa': 100,
+	'kMtf': 1,
+	'krib': 20,
+	'krta': 1,
+	'krt': 500,
+	'kRelA': 75,
+	'RelAtot': 100 / (nAvogadro * cellVolume / 1e6),
+	'kDRelA': 0.26,
+	'vSpoTSynt': 0.001,
+	'kSpoTdeg': np.log(2) / 30,
+	'vInitMax': 2000,
+	'rnapF': 1,
+	'kMrrn': 20,
+	'kIppGpp': 1,
+	'nppGpp': 1,
+	'gammamax': 1,
+	'tau': 0.5,
+	'f': 0.05,
+	'bm': proteinContent / (cellVolume*nAvogadro/1e6),
+	'nARib': 7459 * 1.65,
+	'nAmet': 300,
+	'rmax': proteinContent / (cellVolume*nAvogadro/1e6) / (7459*1.65),
+	}
 
 # Parameters for AA noise
 aa_mean = 1
@@ -81,7 +86,7 @@ def dcdt_ode(t, c, args):
 		t (float): time of integration step
 		c (array[float]): concentrations at integration step
 		args (tuple): tuple to match the additional arguments in dcdt
-			(shift (float), single_shift (bool), f_aa (float or array[float])
+			(params (dict), shift (float), single_shift (bool), f_aa (float or array[float])
 
 	Returns:
 		array[float]: rates of change of each concentration
@@ -89,13 +94,14 @@ def dcdt_ode(t, c, args):
 
 	return dcdt(c, t, *args)
 
-def dcdt(c, t, shift=0, single_shift=False, f_aa=f):
+def dcdt(c, t, params, shift=0, single_shift=False, f_aa=None):
 	'''
 	Derivatives function that is called by odeint from scipy.integrate
 
 	Args:
 		t (float): time of integration step
 		c (array[float]): concentrations at integration step
+		params (dict): dictionary of model parameters with keys as defined at the top of the file
 		shift (float): indicator of nutrient shift direction
 			0 (default): no shift
 			positive: upshift
@@ -111,6 +117,9 @@ def dcdt(c, t, shift=0, single_shift=False, f_aa=f):
 	'''
 
 	dc = np.zeros_like(c)
+
+	if f_aa is None:
+		f_aa = params['f']
 
 	# shift - not in mathematica file
 	shift_magnitude = np.ones(nAA)
@@ -133,25 +142,25 @@ def dcdt(c, t, shift=0, single_shift=False, f_aa=f):
 	ppGpp = c[ppgpp_index]
 	r = c[r_index]
 
-	tf = tau * r - taa
+	tf = params['tau'] * r - taa
 
-	vAAsynt = shift_magnitude * bm * e * kn * (1 - r/rmax) / (nAmet * (1 + aa / kIa))
-	vtRNAchar = ks * sTot * tf * aa / (kMaa * kMtf * (1 + tf / kMtf + aa / kMaa + tf * aa / kMaa / kMtf))  # modified with `1 +`
-	numeratorRibosome = 1 + np.sum(f_aa * (krta/taa + tf/taa*krta/krt))
-	vR = krib*r / numeratorRibosome
-	mu = vR / bm
-	vrrnInit = vInitMax*rnapF/(kMrrn + rnapF) / (1 + ppGpp / kIppGpp * nppGpp) / (cellVolume*nAvogadro/1e6)
+	vAAsynt = shift_magnitude * params['bm'] * params['e']* params['kn'] * (1 - r/params['rmax']) / (params['nAmet'] * (1 + aa / params['kIa']))
+	vtRNAchar = params['ks'] * params['sTot'] * tf * aa / (params['kMaa'] * params['kMtf'] * (1 + tf / params['kMtf'] + aa / params['kMaa'] + tf * aa / params['kMaa'] / params['kMtf']))  # modified with `1 +`
+	numeratorRibosome = 1 + np.sum(f_aa * (params['krta']/taa + tf/taa*params['krta']/params['krt']))
+	vR = params['krib']*r / numeratorRibosome
+	mu = vR / params['bm']
+	vrrnInit = params['vInitMax'] * params['rnapF'] / (params['kMrrn'] + params['rnapF']) / (1 + ppGpp / params['kIppGpp'] * params['nppGpp']) / (cellVolume * nAvogadro / 1e6)
 	vribosome = vR
-	vRsynt = min(vrrnInit, gammamax*vR/nARib)
+	vRsynt = min(vrrnInit, params['gammamax']*vR/params['nARib'])
 	vRdilution = r * mu
-	rtfSolutions = r*(f_aa*tf/taa*krta/krt)/numeratorRibosome
+	rtfSolutions = r * (f_aa * tf / taa * params['krta'] / params['krt']) / numeratorRibosome
 	rtfTot = np.sum(rtfSolutions)
-	vRelA = kRelA * RelAtot / (1 + kDRelA/rtfTot)
-	vSpoTdeg = kSpoTdeg * ppGpp
+	vRelA = params['kRelA'] * params['RelAtot'] / (1 + params['kDRelA'] / rtfTot)
+	vSpoTdeg = params['kSpoTdeg'] * ppGpp
 
 	odesAA = vAAsynt - vtRNAchar
 	odesTAA = vtRNAchar - f_aa*vribosome
-	odesppGpp = vRelA + vSpoTSynt - vSpoTdeg
+	odesppGpp = vRelA + params['vSpoTSynt'] - vSpoTdeg
 	odesMacromolComp = vRsynt - vRdilution
 
 	# derivatives
@@ -162,25 +171,25 @@ def dcdt(c, t, shift=0, single_shift=False, f_aa=f):
 
 	return dc
 
-def simulate(args):
+def simulate(args, params, output_file):
 	'''
 	Simulate the ODE system and plot the results
 
 	Args:
 		args: arguments parsed from the command line
+		params (dict): dictionary of model parameters with keys as defined at the top of the file
+		output_file (str): path to plot output
 	'''
 
-	output_file = os.path.join(file_location, args.output)
-
-	f_aa = f * np.ones(nAA)
-	f_params = (args.shift, args.single_shift, f_aa)
+	f_aa = params['f'] * np.ones(nAA)
+	f_params = (params, args.shift, args.single_shift, f_aa)
 
 	# initial conditions
 	co = np.zeros(2*nAA + 2)
-	co[aa_indices] = kIa  # aa (100)
-	co[ta_indices] = 0.1*tau*rmax  # charged tRNA (4.063)
-	co[ppgpp_index] = kIppGpp  # ppGpp (1)
-	co[r_index] = 0.2*rmax  # ribosome (16.25)
+	co[aa_indices] = params['kIa']  # aa (100)
+	co[ta_indices] = 0.1 * params['tau'] * params['rmax']  # charged tRNA (4.063)
+	co[ppgpp_index] = params['kIppGpp']  # ppGpp (1)
+	co[r_index] = 0.2 * params['rmax']  # ribosome (16.25)
 	tmax = 5000
 	to = 0
 	t = np.linspace(to,tmax,tmax)
@@ -202,7 +211,7 @@ def simulate(args):
 			if args.noise:
 				f_aa = np.random.normal(aa_mean, aa_std, nAA)
 				f_aa /= f_aa.sum()
-				f_params = (args.shift, args.single_shift, f_aa)
+				f_params = (params, args.shift, args.single_shift, f_aa)
 			solver.set_f_params(f_params)
 			solver.integrate(solver.t + args.timestep)
 			sol.append(solver.y)
@@ -219,9 +228,9 @@ def simulate(args):
 	r = sol[:,r_index]
 
 	# derived timeseries
-	tf = tau * r.reshape(-1,1) - taa
-	numeratorRibosome = 1 + np.sum(f_all * (krta / taa + tf / taa * krta / krt), axis=1)
-	vElongation = krib / numeratorRibosome
+	tf = params['tau'] * r.reshape(-1,1) - taa
+	numeratorRibosome = 1 + np.sum(f_all * (params['krta'] / taa + tf / taa * params['krta'] / params['krt']), axis=1)
+	vElongation = params['krib'] / numeratorRibosome
 
 	# plot results
 	n_subplots = 5
@@ -247,8 +256,28 @@ def simulate(args):
 	plt.ylabel('Elongation Rate (AA/s)')
 
 	plt.savefig(output_file)
+	plt.close('all')
+
+def update_params(params, key, value):
+	'''
+	Replaces a value in the params dictionary and returns the new dictionary.
+
+	Args:
+		params (dict): dictionary of model parameters with keys as defined at the top of the file
+		key (str): key in params to update the value of
+		value (float): value to update params to
+
+	Returns:
+		dict: copy of params input with the updated value for the specified key
+	'''
+
+	d = params.copy()
+	d[key] = value
+	return d
 
 if __name__ == '__main__':
+	start = time.time()
+
 	parser = argparse.ArgumentParser(description='Simulate growth control with ppGpp dynamics')
 
 	parser.add_argument('-o', '--output', default='ppgpp',
@@ -262,10 +291,45 @@ if __name__ == '__main__':
 	parser.add_argument('-t', '--timestep', type=float, default=1,
 		help='Timestep to advance for each integration (default: 1), not implemented for lsoda')
 	parser.add_argument('--noise', action='store_true',
-		help='Add noise to AA usage, not implemented for lsoda')
+		help='Add noise to AA usage if set, not implemented for lsoda')
 	parser.add_argument('--single-shift', action='store_true',
 		help='Shift only one amino acid if set')
+	parser.add_argument('--sensitivity', action='store_true',
+		help='Perform sensitivity analysis if set, otherwise run one simulation')
+	parser.add_argument('--no-parallel', action='store_true',
+		help='Do not perform sensitivity analysis in parallel if set, only works with --sensitivity')
 
 	args = parser.parse_args()
 
-	simulate(args)
+	# Analyze sensitivity to parameters
+	if args.sensitivity:
+		# Store output in sensitivity directory
+		output_dir = os.path.join(file_location, 'sensitivity')
+		if not os.path.exists(output_dir):
+			os.makedirs(output_dir)
+
+		# Factors to vary parameters by
+		variations = [0.1, 0.2, 0.5, 2, 5, 10]
+
+		# Perform sensitivity for each parameter in params
+		for key, value in params.items():
+			print('Running sensitivity for {}'.format(key))
+
+			sim_args = [(args, update_params(params, key, value*factor),
+				os.path.join(output_dir,'{}_{}_{}.png'.format(args.output, key, factor)))
+				for factor in variations]
+
+			if args.no_parallel:
+				for sa in sim_args:
+					simulate(*sa)
+			else:
+				pool = mp.Pool(processes=mp.cpu_count())
+				results = [pool.apply_async(simulate, sa) for sa in sim_args]
+				pool.close()
+				pool.join()
+	# Run one simulation
+	else:
+		output_file = os.path.join(file_location, args.output)
+		simulate(args, params, output_file)
+
+	print('Completed in {:.1f} min'.format((time.time() - start) / 60))
