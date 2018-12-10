@@ -229,7 +229,7 @@ class Agent(object):
 
 		if self.consumer:
 			self.consumer.commit()
-			self.consumer.close(timeout=5.0)
+			self.consumer.close()
 
 	def finalize(self):
 		"""

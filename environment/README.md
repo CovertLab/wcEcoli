@@ -34,21 +34,23 @@ server and browser window per the instructions on that page. To recap:
 
    2. Open a browser window onto [http://localhost:33332](http://localhost:33332)
 
-4. You _could_ run an Environment agent and Cell agents from the command line, but you'll have to supply a JSON config dictionary with
-various fields including a `"kafka_config"` dictionary. Use the `-h` argument for usage help.
+4. You can run an Environment agent and Cell agents directly from the command line although we usually do it via an agent Shepherd (see below).
+
+   (**Tip:** Use the `-h` argument for usage help on any of these command line programs.)
 
    (**Tip:** Run each process in a new terminal tab. Use iTerm split windows to make it easy to watch them all at once.)
 
    1. In the first tab start an Environment model:
 
-      `> python -m environment.boot --type lattice --id lattice --config '{...}`
+      `> python -m environment.boot --type lattice --id lattice`
 
       This creates the Environment agent, waiting for Cell simulations to register.
+      You can optionally pass in a JSON `--config '{...}'` dictionary.
 
       **VARIATION:** If you didn't open the browser-based visualization, you can have the
       Environment agent open a "microscope" view onto the plate by launching it like this:
 
-      `> ENVIRONMENT_ANIMATION=1 python -m environment.boot --type lattice --id lattice --config '{...}`
+      `> ENVIRONMENT_ANIMATION=1 python -m environment.boot --type lattice --id lattice`
 
    2. Now start a Cell agent in a new tab:
 
@@ -66,15 +68,15 @@ You will see a message sent from the newly initialized simulation on the `enviro
 
 6. Finally, run this in a separate "command" tab to start the simulation clock:
 
-   `> python -m environment.boot trigger --id lattice`
+   `> python -m environment.control trigger --id lattice`
 
 7. To stop the simulation, run `shutdown` in the command tab:
 
-   `> python -m environment.boot shutdown --id lattice`
+   `> python -m environment.control shutdown --id lattice`
 
 ## Agent Shepherd
 
-The current way to start the simulation is to use the agent shepherd, which will manage the spawning and removal of agents as subprocesses rather than launching each in its own tab.
+The current way to start the simulation is to use the agent Shepherd, which will manage the spawning and removal of agents as subprocesses rather than launching each in its own tab.
 
 Clone the [CovertLab/shepherd](https://github.com/CovertLab/shepherd) repo and run:
 

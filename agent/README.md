@@ -60,21 +60,25 @@ The available agent types are
 * `outer` - the larger environmental context
 * `inner` - each individual simulation
 
-You _could_ run an outer (environment simulation) agent like this but you'll have to supply a JSON config dictionary with various fields including a `"kafka_config"` dictionary:
+You can run an outer (environment simulation) agent like this, optionally supplying a JSON config dictionary:
 
-    0> python -m agent.boot --type outer --id out --config '{...}'
+    0> python -m agent.boot --type outer --id out
 
 The outer agent needs an `id` so that inner agents can connect to it.
 
-Similarly, you _could_ run an inner (cell model) agent like this, in a new tab:
-
-    1> python -m agent.boot --type inner --id 1 --config '{...}'
-
-
-It's easier to use `agent/control.py`. That's the command line interface to issue commands to agents.
-It implements a variety of commands including `experiment`, `add`, `remove`, `pause`, `trigger` (start/resume), and `shutdown`.
 Use `--help` to get usage details.
 
-    1> python -m agent.control --type inner --id 1 --config '{...}'
+Similarly, you can run an inner (cell model) agent like this, in a new tab:
 
-**TODO:** Document how to get started with `agent.control`.
+    1> python -m agent.boot --type inner --id 1 --outer-id out
+
+
+Then use `agent/control.py` as the command line interface to issue commands to agents:
+
+    3> python -m agent.control trigger --id out
+
+    3> python -m agent.control pause --id out
+
+    3> python -m agent.control shutdown --id out
+
+Some of its commands like `experiment` and `add` require a running agent shepherd.

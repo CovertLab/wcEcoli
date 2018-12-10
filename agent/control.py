@@ -104,9 +104,8 @@ class AgentCommand(object):
 
 	This class provides a means to send messages to simulations running in a
 	distributed environment from the command line. Override `add_arguments` to 
-	add more arguments to the argument parser. Override `execute` to respond to more 
-	commands. Override `shepherd_initializers` to provide more types of agents the
-	AgentShepherd can spawn.
+	add more arguments to the argument parser. To respond to more commands,
+	supply a `choices` list and implement the methods it names.
 	"""
 
 	def __init__(self, choices, description=None):
@@ -173,7 +172,7 @@ class AgentCommand(object):
 
 		parser.add_argument(
 			'--kafka-host',
-			default='127.0.0.1:9092',
+			default=DEFAULT_KAFKA_CONFIG['host'],
 			help='address for Kafka server')
 
 		parser.add_argument(

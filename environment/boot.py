@@ -55,7 +55,7 @@ class EnvironmentAgent(Outer):
 def boot_lattice(agent_id, agent_type, agent_config):
 	media = agent_config.get('media', 'minimal')
 	print("Media condition: {}".format(media))
-	kafka_config = agent_config['kafka_config']
+	# kafka_config = agent_config['kafka_config']
 	raw_data = KnowledgeBaseEcoli()
 
 	# create a dictionary with all saved environments
@@ -94,6 +94,9 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	    * variant_index (optional)
 	    * seed (optional)
 	'''
+	if 'outer_id' not in agent_config:
+		raise ValueError("--outer-id required")
+
 	kafka_config = agent_config['kafka_config']
 	working_dir = agent_config.get('working_dir', os.getcwd())
 	outer_id = agent_config['outer_id']
@@ -209,9 +212,11 @@ def boot_chemotaxis(agent_id, agent_type, agent_config):
 class BootEnvironment(BootAgent):
 	def __init__(self):
 		super(BootEnvironment, self).__init__()
-		self.agent_types['lattice'] = boot_lattice
-		self.agent_types['ecoli'] = boot_ecoli
-		self.agent_types['chemotaxis'] = boot_chemotaxis
+		self.agent_types = {
+			'lattice': boot_lattice,
+			'ecoli': boot_ecoli,
+			'chemotaxis': boot_chemotaxis,
+			}
 
 if __name__ == '__main__':
 	boot = BootEnvironment()
