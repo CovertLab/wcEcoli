@@ -24,7 +24,6 @@ from scipy.integrate import ode
 file_location = os.path.dirname(os.path.realpath(__file__))
 
 nAA = 20
-tmax = 10000
 cellVolume = 2.5e-15
 nAvogadro = 6e23
 proteinContent = 15e8
@@ -66,6 +65,10 @@ nARib = 7459 * 1.65
 nAmet = 300
 rmax = proteinContent / (cellVolume*nAvogadro/1e6) / (7459*1.65)
 
+# Parameters for AA noise
+aa_mean = 1
+aa_std = 0.05
+
 
 def dcdt_ode(t, c, args):
 	'''
@@ -76,32 +79,35 @@ def dcdt_ode(t, c, args):
 
 	Args:
 		t (float): time of integration step
-		c (array[floats]): concentrations at integration step
+		c (array[float]): concentrations at integration step
 		args (tuple): tuple to match the additional arguments in dcdt
-			(shift (float), single_shift (bool))
+			(shift (float), single_shift (bool), f_aa (float or array[float])
 
 	Returns:
-		array[floats]: rates of change of each concentration
+		array[float]: rates of change of each concentration
 	'''
 
 	return dcdt(c, t, *args)
 
-def dcdt(c, t, shift=0, single_shift=False):
+def dcdt(c, t, shift=0, single_shift=False, f_aa=f):
 	'''
 	Derivatives function that is called by odeint from scipy.integrate
 
 	Args:
 		t (float): time of integration step
-		c (array[floats]): concentrations at integration step
+		c (array[float]): concentrations at integration step
 		shift (float): indicator of nutrient shift direction
 			0 (default): no shift
 			positive: upshift
 			negative: downshit
 		single_shift (bool): whether to shift all amino acids (False, default)
 			or a single AA (True)
+		f_aa (float or array[float]): fraction of each amino acid present,
+			if float it is constant for each, otherwise an array should contain
+			a value for each amino acid
 
 	Returns:
-		array[floats]: rates of change of each concentration
+		array[float]: rates of change of each concentration
 	'''
 
 	dc = np.zeros_like(c)
@@ -131,20 +137,20 @@ def dcdt(c, t, shift=0, single_shift=False):
 
 	vAAsynt = shift_magnitude * bm * e * kn * (1 - r/rmax) / (nAmet * (1 + aa / kIa))
 	vtRNAchar = ks * sTot * tf * aa / (kMaa * kMtf * (1 + tf / kMtf + aa / kMaa + tf * aa / kMaa / kMtf))  # modified with `1 +`
-	numeratorRibosome = 1 + np.sum(f * (krta/taa + tf/taa*krta/krt))
+	numeratorRibosome = 1 + np.sum(f_aa * (krta/taa + tf/taa*krta/krt))
 	vR = krib*r / numeratorRibosome
 	mu = vR / bm
 	vrrnInit = vInitMax*rnapF/(kMrrn + rnapF) / (1 + ppGpp / kIppGpp * nppGpp) / (cellVolume*nAvogadro/1e6)
 	vribosome = vR
 	vRsynt = min(vrrnInit, gammamax*vR/nARib)
 	vRdilution = r * mu
-	rtfSolutions = r*(f*tf/taa*krta/krt)/numeratorRibosome
+	rtfSolutions = r*(f_aa*tf/taa*krta/krt)/numeratorRibosome
 	rtfTot = np.sum(rtfSolutions)
 	vRelA = kRelA * RelAtot / (1 + kDRelA/rtfTot)
 	vSpoTdeg = kSpoTdeg * ppGpp
 
 	odesAA = vAAsynt - vtRNAchar
-	odesTAA = vtRNAchar - f*vribosome
+	odesTAA = vtRNAchar - f_aa*vribosome
 	odesppGpp = vRelA + vSpoTSynt - vSpoTdeg
 	odesMacromolComp = vRsynt - vRdilution
 
@@ -164,14 +170,10 @@ def simulate(args):
 		args: arguments parsed from the command line
 	'''
 
-	# Handle arguments from argparse
-	shift = args.shift
-	single_shift = args.single_shift
-	method = args.method  # adams (forward), bdf (backward), lsoda
-	order = args.order
-	dt = args.timestep
 	output_file = os.path.join(file_location, args.output)
-	f_params = (shift, single_shift)
+
+	f_aa = f * np.ones(nAA)
+	f_params = (args.shift, args.single_shift, f_aa)
 
 	# initial conditions
 	co = np.zeros(2*nAA + 2)
@@ -184,22 +186,28 @@ def simulate(args):
 	t = np.linspace(to,tmax,tmax)
 
 	# solve ode with odeint (lsoda)
-	if method == 'lsoda':
+	if args.method == 'lsoda':
 		sol = odeint(dcdt, co, t, args=f_params)
 	# solve ode with ode (vode, forward or backward)
 	else:
-		sol = np.zeros((tmax, len(co)))
 		solver = ode(dcdt_ode)
 		solver.set_f_params(f_params)
-		solver.set_integrator('vode', method=method, order=order)
+		solver.set_integrator('vode', method=args.method, order=args.order)
 		solver.set_initial_value(co, to)
 
 		sol = [co]
 		t = [to]
+		f_all = [f_aa]
 		while solver.successful() and solver.t < tmax:
-			solver.integrate(solver.t + dt)
+			if args.noise:
+				f_aa = np.random.normal(aa_mean, aa_std, nAA)
+				f_aa /= f_aa.sum()
+				f_params = (args.shift, args.single_shift, f_aa)
+			solver.set_f_params(f_params)
+			solver.integrate(solver.t + args.timestep)
 			sol.append(solver.y)
 			t.append(solver.t)
+			f_all.append(f_aa)
 
 	t = np.array(t)
 	sol = np.array(sol)
@@ -212,7 +220,7 @@ def simulate(args):
 
 	# derived timeseries
 	tf = tau * r.reshape(-1,1) - taa
-	numeratorRibosome = 1 + np.sum(f * (krta / taa + tf / taa * krta / krt), axis=1)
+	numeratorRibosome = 1 + np.sum(f_all * (krta / taa + tf / taa * krta / krt), axis=1)
 	vElongation = krib / numeratorRibosome
 
 	# plot results
@@ -253,6 +261,8 @@ if __name__ == '__main__':
 		help='Order of solver method (default: 2), <= 12 for adams, <= 5 for bdf, not implemented for lsoda')
 	parser.add_argument('-t', '--timestep', type=float, default=1,
 		help='Timestep to advance for each integration (default: 1), not implemented for lsoda')
+	parser.add_argument('--noise', action='store_true',
+		help='Add noise to AA usage, not implemented for lsoda')
 	parser.add_argument('--single-shift', action='store_true',
 		help='Shift only one amino acid if set')
 
