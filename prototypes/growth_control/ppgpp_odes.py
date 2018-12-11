@@ -150,7 +150,7 @@ def dcdt(c, t, params, shift=0, single_shift=False, f_aa=None):
 	numeratorRibosome = 1 + np.sum(f_aa * (params['krta']/taa + tf/taa*params['krta']/params['krt']))
 	vR = params['krib']*r / numeratorRibosome
 	mu = vR / params['bm']
-	vrrnInit = params['vInitMax'] * params['rnapF'] / (params['kMrrn'] + params['rnapF']) / (1 + ppGpp / params['kIppGpp'] * params['nppGpp']) / (cellVolume * nAvogadro / 1e6)
+	vrrnInit = params['vInitMax'] * params['rnapF'] / (params['kMrrn'] + params['rnapF']) / (1 + (ppGpp / params['kIppGpp'])**params['nppGpp']) / (cellVolume * nAvogadro / 1e6)
 	vribosome = vR
 	vRsynt = min(vrrnInit, params['gammamax']*vR/params['nARib'])
 	vRdilution = r * mu
@@ -187,6 +187,7 @@ def simulate(args, params, output_file):
 
 	f_aa = params['f'] * np.ones(nAA)
 	f_params = (params, args.shift, args.single_shift, f_aa)
+	f_all = [f_aa]
 
 	# initial conditions
 	co = np.zeros(2*nAA + 2)
@@ -210,7 +211,6 @@ def simulate(args, params, output_file):
 
 		sol = [co]
 		t = [to]
-		f_all = [f_aa]
 		while solver.successful() and solver.t < tmax:
 			if args.noise:
 				f_aa = np.random.normal(aa_mean, aa_std, nAA)
@@ -262,7 +262,7 @@ def simulate(args, params, output_file):
 	plt.savefig(output_file)
 	plt.close('all')
 
-	return np.hstack((ppgpp[-1], r[-1], vElongation[-1], aa[-1, :], taa[-1, :]))
+	return np.hstack((ppgpp[-1], r[-1], vElongation[-1], aa[-1, :].mean(), taa[-1, :].mean(), aa[-1, :], taa[-1, :]))
 
 def update_params(params, key, value):
 	'''
@@ -309,8 +309,8 @@ def parse():
 		help='Shift only one amino acid if set')
 	parser.add_argument('--sensitivity', action='store_true',
 		help='Perform sensitivity analysis if set, otherwise run one simulation')
-	parser.add_argument('--no-parallel', action='store_true',
-		help='Do not perform sensitivity analysis in parallel if set, only works with --sensitivity')
+	parser.add_argument('--parallel', action='store_true',
+		help='Perform sensitivity analysis in parallel if set, only works with --sensitivity')
 
 	return parser.parse_args()
 
@@ -336,8 +336,8 @@ if __name__ == '__main__':
 		# Perform sensitivity for each parameter in params
 		with open(os.path.join(file_location, '{}.tsv'.format(args.output)), 'w') as f:
 			writer = csv.writer(f, delimiter='\t')
-			writer.writerow(['Parameter', 'Factor', 'ppGpp', 'Ribosomes', 'Elongation Rate']
-				+ ['AA_{}'.format(i) for i in range(nAA)]
+			writer.writerow(['Parameter', 'Factor', 'ppGpp', 'Ribosomes', 'Elongation Rate',
+				'Average AA', 'Average tRNA'] + ['AA_{}'.format(i) for i in range(nAA)]
 				+ ['tRNA_{}'.format(i) for i in range(nAA)])
 
 			for key, value in params.items():
@@ -347,11 +347,7 @@ if __name__ == '__main__':
 					os.path.join(output_dir,'{}_{}_{}.png'.format(args.output, key, factor)))
 					for factor in variations]
 
-				if args.no_parallel:
-					for sa, factor in zip(sim_args, variations):
-						sol = simulate(*sa)
-						writer.writerow([key, factor] + list(sol / baseline))
-				else:
+				if args.parallel:
 					pool = mp.Pool(processes=mp.cpu_count())
 					results = [pool.apply_async(simulate, sa) for sa in sim_args]
 					pool.close()
@@ -362,7 +358,12 @@ if __name__ == '__main__':
 							sol = result.get()
 							writer.writerow([key, factor] + list(sol / baseline))
 						else:
-							print('Error in multiprocessing for {} x{}'.format(key, factor))
+							print('*** Error in multiprocessing for {} x{} ***'.format(key, factor))
+							writer.writerow([key, factor])
+				else:
+					for sa, factor in zip(sim_args, variations):
+						sol = simulate(*sa)
+						writer.writerow([key, factor] + list(sol / baseline))
 	# Run one simulation
 	else:
 		output_file = os.path.join(file_location, args.output)
