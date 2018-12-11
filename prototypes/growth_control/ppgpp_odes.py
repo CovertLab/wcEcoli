@@ -177,7 +177,7 @@ def simulate(args, params, output_file):
 	Simulate the ODE system and plot the results
 
 	Args:
-		args: arguments parsed from the command line
+		args (argparse.Namespace): arguments parsed from the command line
 		params (dict): dictionary of model parameters with keys as defined at the top of the file
 		output_file (str): path to plot output
 
@@ -194,7 +194,7 @@ def simulate(args, params, output_file):
 	co[ta_indices] = 0.1 * params['tau'] * params['rmax']  # charged tRNA (4.063)
 	co[ppgpp_index] = params['kIppGpp']  # ppGpp (1)
 	co[r_index] = 0.2 * params['rmax']  # ribosome (16.25)
-	tmax = 5000
+	tmax = args.tmax
 	to = 0
 	t = np.linspace(to,tmax,tmax)
 
@@ -281,8 +281,13 @@ def update_params(params, key, value):
 	d[key] = value
 	return d
 
-if __name__ == '__main__':
-	start = time.time()
+def parse():
+	'''
+	Parses arguments from the command line.
+
+	Returns:
+		argparse.Namespace: parsed arguments and values
+	'''
 
 	parser = argparse.ArgumentParser(description='Simulate growth control with ppGpp dynamics')
 
@@ -296,6 +301,8 @@ if __name__ == '__main__':
 		help='Order of solver method (default: 2), <= 12 for adams, <= 5 for bdf, not implemented for lsoda')
 	parser.add_argument('-t', '--timestep', type=float, default=1,
 		help='Timestep to advance for each integration (default: 1), not implemented for lsoda')
+	parser.add_argument('--tmax', type=float, default=5000,
+		help='Max time to integrate to (default: 5000)')
 	parser.add_argument('--noise', action='store_true',
 		help='Add noise to AA usage if set, not implemented for lsoda')
 	parser.add_argument('--single-shift', action='store_true',
@@ -305,7 +312,13 @@ if __name__ == '__main__':
 	parser.add_argument('--no-parallel', action='store_true',
 		help='Do not perform sensitivity analysis in parallel if set, only works with --sensitivity')
 
-	args = parser.parse_args()
+	return parser.parse_args()
+
+
+if __name__ == '__main__':
+	start = time.time()
+
+	args = parse()
 
 	# Analyze sensitivity to parameters
 	if args.sensitivity:
