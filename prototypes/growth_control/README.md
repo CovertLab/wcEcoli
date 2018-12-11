@@ -24,6 +24,11 @@ Adding a nutrient upshift can be done with:
 python ppgpp_odes.py -s 1
 ```
 
+To get an idea of how sensitive the output is to the different parameters, run with the following flag and look in the `sensitivity` directory. A summary of how final values change compared to the baseline can be found in `ppgpp.tsv` in the base directory.
+```bash
+python ppgpp_odes.py --sensitivity
+```
+
 Different solver methods, order of method and timesteps can be selected with arguments.  To get more information on usage, use the following:
 ```bash
 python ppgpp_odes.py -h
@@ -34,13 +39,13 @@ python ppgpp_odes.py -h
 Concentration traces over time are the output of the model, saved in `ppgpp.png` or the specified filename.
 
 Example output for no shift:
-![no_shift](https://github.com/CovertLab/wcEcoli/blob/master/prototype/growth_control/output/no_shift.png)
+![no_shift](https://github.com/CovertLab/wcEcoli/blob/master/prototypes/growth_control/output/no_shift.png)
 
 Example output with a nutrient upshift:
-![upshift](https://github.com/CovertLab/wcEcoli/blob/master/prototype/growth_control/output/upshift.png)
+![upshift](https://github.com/CovertLab/wcEcoli/blob/master/prototypes/growth_control/output/upshift.png)
 
 Example output with a nutrient downshift:
-![downshift](https://github.com/CovertLab/wcEcoli/blob/master/prototype/growth_control/output/downshift.png)
+![downshift](https://github.com/CovertLab/wcEcoli/blob/master/prototypes/growth_control/output/downshift.png)
 
 # Applications for whole-cell modeling
 
