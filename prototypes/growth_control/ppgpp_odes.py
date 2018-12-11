@@ -14,6 +14,7 @@ mathematica file.
 from __future__ import division
 
 import argparse
+import csv
 import multiprocessing as mp
 import os
 import time
@@ -179,6 +180,9 @@ def simulate(args, params, output_file):
 		args: arguments parsed from the command line
 		params (dict): dictionary of model parameters with keys as defined at the top of the file
 		output_file (str): path to plot output
+
+	Returns:
+		array[float]: final values of ppGpp, ribosomes, elongation rate, AA, tRNA
 	'''
 
 	f_aa = params['f'] * np.ones(nAA)
@@ -222,10 +226,10 @@ def simulate(args, params, output_file):
 	sol = np.array(sol)
 
 	# solution timeseries
-	aa = sol[:,aa_indices]
-	taa = sol[:,ta_indices]
-	ppgpp = sol[:,ppgpp_index]
-	r = sol[:,r_index]
+	aa = sol[:, aa_indices]
+	taa = sol[:, ta_indices]
+	ppgpp = sol[:, ppgpp_index]
+	r = sol[:, r_index]
 
 	# derived timeseries
 	tf = params['tau'] * r.reshape(-1,1) - taa
@@ -234,29 +238,31 @@ def simulate(args, params, output_file):
 
 	# plot results
 	n_subplots = 5
-	plt.figure(figsize=(6,9))
-	plt.subplot(n_subplots,1,1)
+	plt.figure(figsize=(6, 9))
+	plt.subplot(n_subplots, 1, 1)
 	plt.plot(t, ppgpp)
 	plt.ylabel('[ppGpp]')
 
-	plt.subplot(n_subplots,1,2)
+	plt.subplot(n_subplots, 1, 2)
 	plt.plot(t, r)
 	plt.ylabel('[ribosomes]')
 
-	plt.subplot(n_subplots,1,3)
+	plt.subplot(n_subplots, 1, 3)
 	plt.plot(t, aa)
 	plt.ylabel('[AA]')
 
-	plt.subplot(n_subplots,1,4)
+	plt.subplot(n_subplots, 1, 4)
 	plt.plot(t, taa)
 	plt.ylabel('[charged tRNA]')
 
-	plt.subplot(n_subplots,1,5)
+	plt.subplot(n_subplots, 1, 5)
 	plt.plot(t, vElongation)
 	plt.ylabel('Elongation Rate (AA/s)')
 
 	plt.savefig(output_file)
 	plt.close('all')
+
+	return np.hstack((ppgpp[-1], r[-1], vElongation[-1], aa[-1, :], taa[-1, :]))
 
 def update_params(params, key, value):
 	'''
@@ -281,7 +287,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Simulate growth control with ppGpp dynamics')
 
 	parser.add_argument('-o', '--output', default='ppgpp',
-		help='Output filename for plot (default: ppgpp)')
+		help='Output filename for plot and sensitivity analysis (default: ppgpp)')
 	parser.add_argument('-s', '--shift', type=int, default=0,
 		help='Shift direction (0 (default): no shift, positive: upshift, negative: downshift)')
 	parser.add_argument('-m', '--method', default='adams',
@@ -311,22 +317,39 @@ if __name__ == '__main__':
 		# Factors to vary parameters by
 		variations = [0.1, 0.2, 0.5, 2, 5, 10]
 
+		print('Running baseline')
+		baseline = simulate(args, params, os.path.join(file_location, args.output))
+
 		# Perform sensitivity for each parameter in params
-		for key, value in params.items():
-			print('Running sensitivity for {}'.format(key))
+		with open(os.path.join(file_location, '{}.tsv'.format(args.output)), 'w') as f:
+			writer = csv.writer(f, delimiter='\t')
+			writer.writerow(['Parameter', 'Factor', 'ppGpp', 'Ribosomes', 'Elongation Rate']
+				+ ['AA_{}'.format(i) for i in range(nAA)]
+				+ ['tRNA_{}'.format(i) for i in range(nAA)])
 
-			sim_args = [(args, update_params(params, key, value*factor),
-				os.path.join(output_dir,'{}_{}_{}.png'.format(args.output, key, factor)))
-				for factor in variations]
+			for key, value in params.items():
+				print('Running sensitivity for {}'.format(key))
 
-			if args.no_parallel:
-				for sa in sim_args:
-					simulate(*sa)
-			else:
-				pool = mp.Pool(processes=mp.cpu_count())
-				results = [pool.apply_async(simulate, sa) for sa in sim_args]
-				pool.close()
-				pool.join()
+				sim_args = [(args, update_params(params, key, value*factor),
+					os.path.join(output_dir,'{}_{}_{}.png'.format(args.output, key, factor)))
+					for factor in variations]
+
+				if args.no_parallel:
+					for sa, factor in zip(sim_args, variations):
+						sol = simulate(*sa)
+						writer.writerow([key, factor] + list(sol / baseline))
+				else:
+					pool = mp.Pool(processes=mp.cpu_count())
+					results = [pool.apply_async(simulate, sa) for sa in sim_args]
+					pool.close()
+					pool.join()
+
+					for result, factor in zip(results, variations):
+						if result.successful():
+							sol = result.get()
+							writer.writerow([key, factor] + list(sol / baseline))
+						else:
+							print('Error in multiprocessing for {} x{}'.format(key, factor))
 	# Run one simulation
 	else:
 		output_file = os.path.join(file_location, args.output)
