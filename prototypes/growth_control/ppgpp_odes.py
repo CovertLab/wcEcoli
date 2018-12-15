@@ -145,7 +145,7 @@ def dcdt(c, t, params, shift=0, single_shift=False, f_aa=None):
 
 	tf = params['tau'] * r - taa
 
-	vAAsynt = shift_magnitude * params['bm'] * params['e']* params['kn'] * (1 - r/params['rmax']) / (params['nAmet'] * (1 + aa / params['kIa']))
+	vAAsynt = shift_magnitude * params['bm'] * params['e'] * params['kn'] * (1 - r/params['rmax']) / (params['nAmet'] * (1 + aa / params['kIa']))
 	vtRNAchar = params['ks'] * params['sTot'] * tf * aa / (params['kMaa'] * params['kMtf'] * (1 + tf / params['kMtf'] + aa / params['kMaa'] + tf * aa / params['kMaa'] / params['kMtf']))  # modified with `1 +`
 	numeratorRibosome = 1 + np.sum(f_aa * (params['krta']/taa + tf/taa*params['krta']/params['krt']))
 	vR = params['krib']*r / numeratorRibosome
@@ -328,17 +328,18 @@ if __name__ == '__main__':
 			os.makedirs(output_dir)
 
 		# Factors to vary parameters by
-		variations = [0.1, 0.2, 0.5, 2, 5, 10]
+		variations = [0.1, 0.2, 0.5, 0.9, 1.1, 2, 5, 10]
 
 		print('Running baseline')
-		baseline = simulate(args, params, os.path.join(file_location, args.output))
+		baseline = simulate(args, params, os.path.join(output_dir, args.output))
 
 		# Perform sensitivity for each parameter in params
-		with open(os.path.join(file_location, '{}.tsv'.format(args.output)), 'w') as f:
+		with open(os.path.join(output_dir, '{}.tsv'.format(args.output)), 'w') as f:
 			writer = csv.writer(f, delimiter='\t')
 			writer.writerow(['Parameter', 'Factor', 'ppGpp', 'Ribosomes', 'Elongation Rate',
 				'Average AA', 'Average tRNA'] + ['AA_{}'.format(i) for i in range(nAA)]
 				+ ['tRNA_{}'.format(i) for i in range(nAA)])
+			writer.writerow(['Baseline', ''] + list(baseline))
 
 			for key, value in params.items():
 				print('Running sensitivity for {}'.format(key))
@@ -366,7 +367,7 @@ if __name__ == '__main__':
 						writer.writerow([key, factor] + list(sol / baseline))
 	# Run one simulation
 	else:
-		output_file = os.path.join(file_location, args.output)
+		output_file = os.path.join(file_location, 'output', args.output)
 		simulate(args, params, output_file)
 
 	print('Completed in {:.1f} min'.format((time.time() - start) / 60))

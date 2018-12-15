@@ -14,7 +14,7 @@ A few key assumptions of the model are:
 
 # Running the simulation
 
-A basic simulation without a shift can be run with the following command, which will output a plot of concentrations as they reach steady state (`ppgpp.png`) in the directory of the script.
+A basic simulation without a shift can be run with the following command, which will output a plot of concentrations as they reach steady state (`ppgpp.png`) in the `output` directory.
 ```bash
 python ppgpp_odes.py
 ```
@@ -24,7 +24,7 @@ Adding a nutrient upshift can be done with:
 python ppgpp_odes.py -s 1
 ```
 
-To get an idea of how sensitive the output is to the different parameters, run with the following flag and look in the `sensitivity` directory. A summary of how final values change compared to the baseline can be found in `ppgpp.tsv` in the base directory.
+To get an idea of how sensitive the output is to the different parameters, run with the following flag and look in the `sensitivity` directory for plots. A summary of how final values change compared to the baseline can be found in `sensitivity/ppgpp.tsv`.
 ```bash
 python ppgpp_odes.py --sensitivity
 ```
