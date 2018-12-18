@@ -216,11 +216,16 @@ class Agent(object):
 			num_blobs = len(message[BLOBS])
 			del redacted_message[BLOBS]
 
-		print('{} {} ({}) [{}]: {}{}'.format(
+		print('{} {} {}'       # <-- topic event
+			  ' [{} {}]:'      # [agent_type agent_id]
+			  ' {}{}'.format(  # {message dict} + 2 BLOBs
 			'-->' if incoming else '<--',
 			topic,
 			message.get('event', 'generic'),
+
+			self.agent_type,
 			self.agent_id,
+
 			redacted_message,
 			' + {} BLOBs'.format(num_blobs) if num_blobs else '',
 			))
