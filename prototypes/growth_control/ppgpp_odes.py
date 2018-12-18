@@ -124,7 +124,7 @@ def dcdt(c, t, params, shift=0, single_shift=False, f_aa=None):
 
 	# shift - not in mathematica file
 	shift_magnitude = np.ones(nAA)
-	if t > 2000:
+	if t > args.shift_time:
 		# downshifts
 		if shift < 0:
 			if single_shift:
@@ -303,6 +303,8 @@ def parse():
 		help='Timestep to advance for each integration (default: 1), not implemented for lsoda')
 	parser.add_argument('--tmax', type=float, default=5000,
 		help='Max time to integrate to (default: 5000)')
+	parser.add_argument('--shift-time', type=float, default=2000,
+		help='Time when shift occurs, only works with -s set (default: 2000)')
 	parser.add_argument('--noise', action='store_true',
 		help='Add noise to AA usage if set, not implemented for lsoda')
 	parser.add_argument('--single-shift', action='store_true',
