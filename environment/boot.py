@@ -22,7 +22,6 @@ import wholecell.utils.filepath as fp
 from models.ecoli.sim.variants import apply_variant
 
 
-
 class EnvironmentAgent(Outer):
 	def build_state(self):
 		lattice = {
@@ -88,7 +87,8 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	    * kafka_config
 	    * outer_id (id of environmental context agent)
 	    * working_dir (optional, wcEcoli path containing the sim path out/manual/)
-	    * inherited_state_path (optional, to make a daughter cell)
+	    * files (optional) list of data files:
+			files[0] -- inherited_state_path to make a daughter cell
 	    * start_time (optional)
 	    * variant_type (optional)
 	    * variant_index (optional)
@@ -102,7 +102,8 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	working_dir = agent_config.get('working_dir', os.getcwd())
 	outer_id = agent_config['outer_id']
 	start_time = agent_config.get('start_time', 0)
-	inherited_state_path = agent_config.get('inherited_state_path', None)
+	files = agent_config.get('files', [])
+	inherited_state_path = files[0] if files else None
 	variant_type = agent_config.get('variant_type', 'wildtype')
 	variant_index = agent_config.get('variant_index', 0)
 	seed = agent_config.get('seed', 0)
@@ -110,7 +111,7 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 
 	# Create the inner agent before instantiating the simulation so it can send
 	# a message to the lattice without waiting for the simulation to initialize.
-	# TODO(jerry): Is it OK for the agent to receive messages w/o a sim? Add a
+	# TODO(jerry): Is the agent OK receiving messages w/o a sim? Add a
 	#    setter for its simulation property, make it queue messages until it
 	#    gets one, change the constructor type signature to allow None?
 	inner = Inner(
