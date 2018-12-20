@@ -268,7 +268,7 @@ class Agent(object):
 		blobs = []
 		while True:
 			try:
-				chunk = Chunk(bytestream, align=True)
+				chunk = Chunk(bytestream, align=False)
 			except EOFError:
 				break
 
