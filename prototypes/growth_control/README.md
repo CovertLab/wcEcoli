@@ -29,6 +29,11 @@ To get an idea of how sensitive the output is to the different parameters, run w
 python ppgpp_odes.py --sensitivity
 ```
 
+Simulations can also be performed with noise related to amino acids to more closely match expected output from the whole-cell model (note that the level of noise included is not based on biology and was arbitrarily chosen to qualitatively match the whole-cell model).
+```bash
+python ppgpp_odes.py --noise
+```
+
 Different solver methods, order of method and timesteps can be selected with arguments.  To get more information on usage, use the following:
 ```bash
 python ppgpp_odes.py -h
@@ -36,7 +41,7 @@ python ppgpp_odes.py -h
 
 # Visualization
 
-Concentration traces over time are the output of the model, saved in `ppgpp.png` or the specified filename.
+Concentration traces over time are the output of the model, saved in `output/ppgpp.png` or the specified filename.
 
 Example output for no shift:
 ![no_shift](https://github.com/CovertLab/wcEcoli/blob/master/prototypes/growth_control/output/no_shift.png)
@@ -46,6 +51,10 @@ Example output with a nutrient upshift:
 
 Example output with a nutrient downshift:
 ![downshift](https://github.com/CovertLab/wcEcoli/blob/master/prototypes/growth_control/output/downshift.png)
+
+Example output for no shift with noise:
+![noise](https://github.com/CovertLab/wcEcoli/blob/master/prototypes/growth_control/output/noise.png)
+
 
 # Applications for whole-cell modeling
 
