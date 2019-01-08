@@ -54,6 +54,6 @@ Post-finally, compile the CYTHON code:
 
 To make sure everything is working, run the tests:
 
-    nosetests -a smalltests
+    nosetests -a smalltest
 
 If these pass, you are good to go.
