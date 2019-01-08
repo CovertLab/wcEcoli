@@ -87,7 +87,8 @@ def dcdt_ode(t, c, args):
 		t (float): time of integration step
 		c (array[float]): concentrations at integration step
 		args (tuple): tuple to match the additional arguments in dcdt
-			(params (dict), shift (float), single_shift (bool), f_aa (float or array[float])
+			(params (dict), shift (float), single_shift (bool),
+			shift_time (float), f_aa (float or array[float])
 
 	Returns:
 		array[float]: rates of change of each concentration
@@ -95,7 +96,7 @@ def dcdt_ode(t, c, args):
 
 	return dcdt(c, t, *args)
 
-def dcdt(c, t, params, shift=0, single_shift=False, f_aa=None):
+def dcdt(c, t, params, shift=0, single_shift=False, shift_time=2000, f_aa=None):
 	'''
 	Derivatives function that is called by odeint from scipy.integrate
 
@@ -109,6 +110,7 @@ def dcdt(c, t, params, shift=0, single_shift=False, f_aa=None):
 			negative: downshit
 		single_shift (bool): whether to shift all amino acids (False, default)
 			or a single AA (True)
+		shift_time (float): time when nutrient shift (if any) occurs
 		f_aa (float or array[float]): fraction of each amino acid present,
 			if float it is constant for each, otherwise an array should contain
 			a value for each amino acid
@@ -124,7 +126,7 @@ def dcdt(c, t, params, shift=0, single_shift=False, f_aa=None):
 
 	# shift - not in mathematica file
 	shift_magnitude = np.ones(nAA)
-	if t > args.shift_time:
+	if t > shift_time:
 		# downshifts
 		if shift < 0:
 			if single_shift:
@@ -186,7 +188,7 @@ def simulate(args, params, output_file):
 	'''
 
 	f_aa = params['f'] * np.ones(nAA)
-	f_params = (params, args.shift, args.single_shift, f_aa)
+	f_params = (params, args.shift, args.single_shift, args.shift_time, f_aa)
 	f_all = [f_aa]
 
 	# initial conditions
