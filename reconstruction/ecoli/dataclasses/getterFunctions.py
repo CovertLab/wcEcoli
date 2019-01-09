@@ -25,7 +25,7 @@ class getterFunctions(object):
 	def getMass(self, ids):
 		assert isinstance(ids, (list, np.ndarray))
 		try:
-			masses = [self._all_mass[re.sub("\[[a-z]\]","", i)] for i in ids]
+			masses = [self._all_mass[self._location_tag.sub('', i)] for i in ids]
 		except KeyError:
 			raise Exception("Unrecognized id: {}".format(i))
 
@@ -48,6 +48,7 @@ class getterFunctions(object):
 
 		self._all_mass = all_mass
 		self._mass_units = units.g / units.mol
+		self._location_tag = re.compile('\[[a-z]\]')
 
 	def _buildLocations(self, raw_data, sim_data):
 		locationDict = {}
