@@ -92,6 +92,7 @@ class knowledge_base(object):
 
         """amino acids"""
         aa_ids = sim_data.moleculeGroups.aaIDs
+        self.aa_ids = aa_ids
         n_aa = bulk_container.counts(aa_ids)
         self.aa = n_aa / AVOGADROS_NUM / cell_volume
 
