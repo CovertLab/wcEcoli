@@ -9,7 +9,7 @@ You may also have to find the proprietary package `python-glpk` and install that
 
 Also, set your `PYTHONPATH` to point to the WcEcoli model directory:
 
-    export PYTHONPATH=$CODE/WcEcoli
+    export PYTHONPATH=$CODE/wcEcoli
 
 pyenv
 -----
