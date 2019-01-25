@@ -35,7 +35,6 @@ monomerToTranslationMonomer = {
 	}
 
 PLOT_ZEROS_ON_LINE = 2.5e-6
-HIGHLIGHT_GENES = False
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
@@ -92,15 +91,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ids_complexation = sim_data.process.complexation.moleculeNames
 		ids_complexation_complexes = sim_data.process.complexation.ids_complexes
 		ids_equilibrium = sim_data.process.equilibrium.moleculeNames
-		ids_equilibrium_complexes = sim_data.process.equilibrium.ids_complexes
 		ids_translation = sim_data.process.translation.monomerData["id"].tolist()
 		ids_protein = sorted(set(ids_complexation + ids_equilibrium + ids_translation))
 		bulkContainer = BulkObjectsContainer(ids_protein, dtype = np.float64)
-		view_complexation = bulkContainer.countsView(ids_complexation)
 		view_complexation_complexes = bulkContainer.countsView(ids_complexation_complexes)
-		view_equilibrium = bulkContainer.countsView(ids_equilibrium)
-		view_equilibrium_complexes = bulkContainer.countsView(ids_equilibrium_complexes)
-		view_translation = bulkContainer.countsView(ids_translation)
 
 		# Identify monomers that are subunits for multiple complexes
 		monomersInvolvedInManyComplexes = []
@@ -126,34 +120,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 			bulkMoleculeCounts = bulkMolecules.readColumn("counts")
 			moleculeIds = bulkMolecules.readAttribute("objectNames")
-			proteinIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in ids_protein], np.int)
-			proteinCountsBulk = bulkMoleculeCounts[:, proteinIndexes]
 			rnaIndexes = np.array([moleculeIds.index(moleculeId) for moleculeId in rnaIds], np.int)
 			avgRnaCounts = bulkMoleculeCounts[:, rnaIndexes].mean(axis = 0)
 			bulkMolecules.close()
-			if i == 0:
-				# Skip first few time steps for 1st generation (because complexes have not yet formed during these steps)
-				bulkContainer.countsIs(np.mean(proteinCountsBulk[5:, :], axis = 0))
-			else:
-				bulkContainer.countsIs(proteinCountsBulk.mean(axis = 0))
-
-			# Unique molecules
-			uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
-			ribosomeIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRibosome")
-			rnaPolyIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRnaPoly")
-			nActiveRibosome = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, ribosomeIndex]
-			nActiveRnaPoly = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, rnaPolyIndex]
-			uniqueMoleculeCounts.close()
-
-			# Account for unique molecules
-			bulkContainer.countsInc(nActiveRibosome.mean(), [sim_data.moleculeIds.s30_fullComplex, sim_data.moleculeIds.s50_fullComplex])
-			bulkContainer.countsInc(nActiveRnaPoly.mean(), [sim_data.moleculeIds.rnapFull])
-
-			# Account for small-molecule bound complexes
-			view_equilibrium.countsInc(np.dot(sim_data.process.equilibrium.stoichMatrixMonomers(), view_equilibrium_complexes.counts() * -1))
 
 			# Average counts of monomers
-			avgMonomerCounts = view_translation.counts()
+			monomerCountsReader = TableReader(os.path.join(simOutDir, "MonomerCounts"))
+			monomerCounts = monomerCountsReader.readColumn("monomerCounts")
+
+			if i == 0:
+				# Skip first few time steps since complexes have not formed yet
+				avgMonomerCounts = np.average(monomerCounts[5:, :], axis = 0)
+			else:
+				avgMonomerCounts = np.average(monomerCounts, axis = 0)
 
 			# Get counts of "functional units" (ie. complexed forms)
 			avgProteinCounts = avgMonomerCounts[:]
@@ -217,7 +196,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		for i in A:
 			color = colors[mrnaIds.index(rnaIds[i])]
 			ax.loglog(avgRnaCounts_perCell[i], avgProteinCounts_perCell[i], alpha = 0.5, marker = ".", lw = 0., color = color)
-		# ax.loglog(avgRnaCounts_perCell[A], avgProteinCounts_perCell[A], alpha = 0.5, marker = ".", lw = 0., color = plot_colors)
 
 		# Plot genes with zero transcripts on an arbitrary line
 		noTranscripts_indices = [x for x in np.where(avgRnaCounts_perCell == 0)[0] if x not in monomersInvolvedInManyComplexes_index]
@@ -225,25 +203,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			color = colors[mrnaIds.index(rnaIds[i])]
 			ax.loglog(PLOT_ZEROS_ON_LINE, avgProteinCounts_perCell[i], alpha = 0.5, marker = ".", lw = 0., color = color)
 
-		# Highlight
-		if HIGHLIGHT_GENES:
-			rnaIds = rnaIds.tolist()
-			highlights_rnaId = ["EG12437_RNA[c]", "EG12058_RNA[c]"] # menE, ccmB
-			colors = ["g", "r"]
-			for i, rna in enumerate(highlights_rnaId):
-				if avgRnaCounts_perCell[rnaIds.index(rna)] == 0:
-					ax.loglog(PLOT_ZEROS_ON_LINE, avgProteinCounts_perCell[rnaIds.index(rna)], marker = '.', lw = 0., color = colors[i], ms = 15)
-				else:
-					ax.loglog(avgRnaCounts_perCell[rnaIds.index(rna)], avgProteinCounts_perCell[rnaIds.index(rna)], marker = '.', lw = 0., color = colors[i], ms = 15)
-
-			green_dot = mlines.Line2D([], [], color = "green", linewidth = 0., marker = ".", markersize = 15, label = "menE")
-			red_dot = mlines.Line2D([], [], color = "red", linewidth = 0., marker = ".", markersize = 15, label = "ccmB")
-			plt.legend(handles = [green_dot, red_dot], loc = "lower right")
-
-		# ax.hlines(1, ax.get_xlim()[0], ax.get_xlim()[1], linestyle = "--")
-		ax.hlines(9786.77, ax.get_xlim()[0], ax.get_xlim()[1], linestyle = "--")
-
-		ax.set_title("Each (translatable) gene's functional unit is represented as a point\n(ie. x points per gene where x == number of complexes the monomer is involved in)\n(avg across %s generations)" % len(allDir))
+		ax.set_title("Each (translatable) gene's functional unit is represented as a point\n(ie. x points per gene "
+					 "where x is number of complexes the monomer is involved in)\n(avg across {0} "
+					 "generations)".format(len(allDir)))
 		ax.set_xlabel("<RNA> per cell")
 		ax.set_ylabel("<Functional units (protein)> per cell")
 		ax.tick_params(which = "both", direction = "out")
