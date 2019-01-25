@@ -35,28 +35,16 @@ monomerToTranslationMonomer = {
 	}
 
 PLOT_ZEROS_ON_LINE = 2.5e-6
+HIGHLIGHT_GENES = False
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		return
-
-		HIGHLIGHT_GENES = False
-
 		if not os.path.isdir(seedOutDir):
 			raise Exception, "seedOutDir does not currently exist as a directory"
 
 		if not os.path.exists(plotOutDir):
 			os.mkdir(plotOutDir)
-
-		# Check if cache from figure5B_E_F_G.py exist
-		if os.path.exists(os.path.join(plotOutDir, "figure5B.pickle")):
-			figure5B_data = cPickle.load(open(os.path.join(plotOutDir, "figure5B.pickle"), "rb"))
-			colors = figure5B_data["colors"]
-			mrnaIds = figure5B_data["id"].tolist()
-		else:
-			print "Requires figure5B.pickle from figure5B_E_F_G.py"
-			return
 
 		# Get all cells
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
@@ -64,7 +52,41 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Load sim data
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		rnaIds = sim_data.process.transcription.rnaData["id"][sim_data.relation.rnaIndexToMonomerMapping] # orders rna IDs to match monomer IDs
+
+		# Load rna IDs, ordered by monomer IDs
+		rnaIds = sim_data.process.transcription.rnaData["id"][sim_data.relation.rnaIndexToMonomerMapping]
+
+		# Identify sub-generationally transcribed genes
+		nonzeroSumRnaCounts_allGens = []
+		for i, simDir in enumerate(allDir):
+			simOutDir = os.path.join(simDir, "simOut")
+
+			# Read counts of transcripts
+			bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
+			if i == 0:
+				moleculeIds = bulkMolecules.readAttribute("objectNames")
+				rnaIndices = np.array([moleculeIds.index(x) for x in rnaIds])
+			rnaCounts = bulkMolecules.readColumn("counts")[:, rnaIndices]
+			bulkMolecules.close()
+
+			# Sum counts over timesteps
+			sumRnaCounts = rnaCounts.sum(axis=0)
+
+			# Flag where the sum is nonzero (True if nonzero, False if zero)
+			nonzeroSumRnaCounts = sumRnaCounts != 0
+			nonzeroSumRnaCounts_allGens.append(nonzeroSumRnaCounts)
+
+		# Average (mean) over generations
+		nonzeroSumRnaCounts_allGens = np.array(nonzeroSumRnaCounts_allGens)
+		avgRnaCounts = nonzeroSumRnaCounts_allGens.mean(axis=0)
+
+		# Identify subgenerationally transcribed genes
+		subgenRnaIndices = np.where(np.logical_and(avgRnaCounts != 0., avgRnaCounts != 1.))[0]
+		subgenRnaIds = rnaIds[subgenRnaIndices]
+
+		# Generate 'colors' for use in plotting (y = 0, b = subgen, r = 1)
+		colors = ["y" if avgRnaCount == 0 else "r" if avgRnaCount == 1 else "b" for avgRnaCount in avgRnaCounts]
+		mrnaIds = rnaIds.tolist()
 
 		# Make views for monomers
 		ids_complexation = sim_data.process.complexation.moleculeNames
@@ -94,7 +116,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		for x in monomersInvolvedInManyComplexes_id:
 			monomersInvolvedInManyComplexes_dict[x] = {}
 
-		# Get average (over timesteps) counts for All genseration (ie. All cells)
+		# Get average (over timesteps) counts for all generations
 		avgRnaCounts_forAllCells = np.zeros(rnaIds.shape[0], np.float64)
 		avgProteinCounts_forAllCells = np.zeros(rnaIds.shape[0], np.float64)
 		for i, simDir in enumerate(allDir):
@@ -110,7 +132,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avgRnaCounts = bulkMoleculeCounts[:, rnaIndexes].mean(axis = 0)
 			bulkMolecules.close()
 			if i == 0:
-				# Skip first few time steps for 1st generation (becaused complexes have not yet formed during these steps)
+				# Skip first few time steps for 1st generation (because complexes have not yet formed during these steps)
 				bulkContainer.countsIs(np.mean(proteinCountsBulk[5:, :], axis = 0))
 			else:
 				bulkContainer.countsIs(proteinCountsBulk.mean(axis = 0))
@@ -138,7 +160,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avgComplexCounts = view_complexation_complexes.counts()
 
 			for j, complexId in enumerate(ids_complexation_complexes):
-				# Map all subsunits to the average counts of the complex (ignores counts of monomers)
+				# Map all subunits to the average counts of the complex (ignores counts of monomers)
 				# Some subunits are involved in multiple complexes - these cases are kept track
 				subunitIds = sim_data.process.complexation.getMonomers(complexId)["subunitIds"]
 
@@ -197,7 +219,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax.loglog(avgRnaCounts_perCell[i], avgProteinCounts_perCell[i], alpha = 0.5, marker = ".", lw = 0., color = color)
 		# ax.loglog(avgRnaCounts_perCell[A], avgProteinCounts_perCell[A], alpha = 0.5, marker = ".", lw = 0., color = plot_colors)
 
-		# Plot genes with zero transcripts an arbitrary line
+		# Plot genes with zero transcripts on an arbitrary line
 		noTranscripts_indices = [x for x in np.where(avgRnaCounts_perCell == 0)[0] if x not in monomersInvolvedInManyComplexes_index]
 		for i in noTranscripts_indices:
 			color = colors[mrnaIds.index(rnaIds[i])]
