@@ -276,7 +276,7 @@ def fitSimData_1(
 	calculateRnapRecruitment(sim_data, rVector)
 
 	# Add cellSpecs to sim_data
-	sim_data.cell_specs_basal = cellSpecs["basal"]
+	sim_data.cell_specs = cellSpecs
 
 	return sim_data
 
