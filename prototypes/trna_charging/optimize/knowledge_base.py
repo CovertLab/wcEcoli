@@ -114,14 +114,25 @@ class knowledge_base(object):
 
             """
             fraction of proteome that is composed of amino acid
-            Notes:
-                Sums to 1
-                Assumes proteome is composed of 1 count of all translatable genes
+            Note: sums to 1
             """
+            # Get counts of protein
+            counts_proteome = bulk_container.counts(translation.monomerData["id"])
+
+            # Get counts of each amino acid per protein
             polypeptide_seq = translation.translationSequences
-            aa_indices, counts = np.unique(polypeptide_seq, return_counts = True)
-            count_each_aa = counts[np.where(aa_indices != -1)]
-            f = count_each_aa.astype(float) / count_each_aa.sum()
+            proteome_to_aa = np.zeros((len(aa_ids), counts_proteome.shape[0]))
+            for i, seq in enumerate(polypeptide_seq):
+                indices, counts = np.unique(seq, return_counts = True)
+                for index, count in zip(indices, counts):
+                    if index == -1:
+                        continue
+
+                    proteome_to_aa[index, i] = count
+
+            # Compute amino acid representation across proteome
+            counts_aa = np.dot(proteome_to_aa, counts_proteome)
+            f = counts_aa.astype(float) / counts_aa.sum()
             fractions_proteome.append(f)
 
             # Targets
