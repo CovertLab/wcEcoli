@@ -12,10 +12,17 @@ import cPickle
 import numpy as np
 import matplotlib.pyplot as plt
 
+from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
+from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from models.ecoli.analysis import multigenAnalysisPlot
 
+
+SKIP_FIRST_N_TIME_STEPS = 5 # complexes do not form yet during these time steps
+COLOR_FREQ_0 = "y"
+COLOR_FREQ_1 = "r"
+COLOR_FREQ_SUBGEN = "b"
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -32,15 +39,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avgProteinCounts_perCell = avgProteinCounts_forAllCells / float(32)
 		else:
 			print "Requires rnaVsProteinPerCell.cPickle from rnaVsProteinPerCell.py"
-			return
-
-		# Check if cache from figure5B_E_F_G.py exist
-		if os.path.exists(os.path.join(plotOutDir, "figure5B.pickle")):
-			figure5B_data = cPickle.load(open(os.path.join(plotOutDir, "figure5B.pickle"), "rb"))
-			colors = figure5B_data["colors"]
-			mrnaIds = figure5B_data["id"].tolist()
-		else:
-			print "Requires figure5B.pickle from figure5B_E_F_G.py"
 			return
 
 		# Check if cache functionalUnits.py exist
@@ -60,24 +58,73 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			print "Requires ratioFinalToInitialCountMultigen.pickle from figure5_c.py"
 			return
 
+		# Get all cells
+		ap = AnalysisPaths(seedOutDir, multi_gen_plot=True)
+		allDir = ap.get_cells()
+
 		# Load sim data
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		rnaIds = sim_data.process.transcription.rnaData["id"][sim_data.relation.rnaIndexToMonomerMapping] # orders rna IDs to match monomer IDs
-		rnaIds = rnaIds.tolist()
-		ids_complexation = sim_data.process.complexation.moleculeNames # Complexe of proteins, and protein monomers
-		ids_complexation_complexes = sim_data.process.complexation.ids_complexes # Only complexes
-		ids_translation = sim_data.process.translation.monomerData["id"].tolist() # Only protein monomers
 
-		# ID subgenerational rnas
-		subgenerational_indices = np.where(colors == "b")[0]
-		subgenerational_rnaIds = np.array(mrnaIds)[subgenerational_indices]
+		# Load rna IDs, ordered by monomer IDs
+		rnaIds = sim_data.process.transcription.rnaData["id"][sim_data.relation.rnaIndexToMonomerMapping]
+
+		# Load complex IDs
+		complexIds = sim_data.process.complexation.ids_complexes
+
+		# Get data from all generations
+		rnaSumIsNonZero = []
+		for i, simDir in enumerate(allDir):
+			simOutDir = os.path.join(simDir, "simOut")
+
+			# Read from bulk molecules
+			rnaCounts, complexCounts = read_bulk_molecule_counts(simOutDir, (rnaIds, complexIds))
+
+			# Sum RNA counts over timesteps
+			rnaCountsSum = rnaCounts.sum(axis=0)
+
+			# Flag where the sum is nonzero (True if nonzero, False if zero)
+			rnaSumIsNonZero.append(rnaCountsSum != 0)
+
+		# Compute transcription frequency (over generations)
+		transcriptionFreq = np.mean(rnaSumIsNonZero, axis=0)
+
+		# Identify sub-generational genes
+		isSubgen = np.logical_and(transcriptionFreq != 0., transcriptionFreq != 1.)
+		subgenerational_indices = np.where(isSubgen)[0]
+		subgenerational_rnaIds = rnaIds[isSubgen]
+
+		monomerIds = sim_data.process.translation.monomerData["id"]
+		subgenerational_monomerIds = monomerIds[isSubgen]
+
+		# Distinguish sub-generational genes that function as monomers vs complexes
+		translation = sim_data.process.translation
+		subgenerational_complexIds = []
+		subgenerational_monomersInComplexation = []
+		for complexId in complexIds:
+			subunitIds = sim_data.process.complexation.getMonomers(complexId)["subunitIds"]
+
+			for subunitId in subunitIds:
+
+				# Skip RNA subunits in complexes
+				if subunitId not in translation.monomerData["id"]:
+					continue
+
+				if subunitId in subgenerational_monomerIds:
+					subgenerational_complexIds.append(complexId)
+					subgenerational_monomersInComplexation.append(subunitId)
+
+		subgenerational_complexIds = np.array(list(set(subgenerational_complexIds)))
+		subgenerational_monomersInComplexation = np.array(list(set(subgenerational_monomersInComplexation)))
+		subgenerational_monomersNotInComplexation = np.array([x for x in subgenerational_monomerIds if x not in \
+																							   subgenerational_monomersInComplexation])
+
+		###
 
 		# Get min count of monomers for each subgenerational rna
 		rnaIndices = [rnaIds.index(x) for x in subgenerational_rnaIds]
 		minProteinCounts = minProteinCounts[rnaIndices]
 
 		# Get min count of functional units (ie. monomers involved in complexes) for each subgeneration rna
-		subgenerational_monomerIds = np.array(ids_translation)[rnaIndices]
 		subgenerational_monomersInComplex = [x for x in subgenerational_monomerIds if x in monomersInManyComplexes_dict]
 		subgenerational_monomersNotInComplex = [x for x in subgenerational_monomerIds if x not in subgenerational_monomersInComplex]
 		complexMinCounts_dict = {}
@@ -119,6 +166,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				complex_one.append(i)
 
 		# Get indices of subgenerational genes (in order of ids_translation)
+		ids_translation = monomerIds.tolist()
 		subG_indices = [ids_translation.index(x) for x in subgenerational_monomerIds]
 		subG_noncomplex_indices = [ids_translation.index(x) for x in subgenerational_monomersNotInComplex]
 		subG_noncomplex_zero_indices = [ids_translation.index(x) for x in noncomplex_zero_monomerIDs]
