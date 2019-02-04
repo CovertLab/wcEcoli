@@ -1,6 +1,6 @@
 # M9 media + 0.4pct. glucose + amino acids (5x Supplement EZ without VA Vitamin Solution).
 # F. C. Neidhardt, P. L. Bloch, D. F. Smith, Journal of bacteriology 119, 736 (1974).
-# https://www.genome.wisc.edu/resources/protocols/ezmedium.htm
+# https://ecocyc.org/ECOLI/NEW-IMAGE?type=Growth-Media&object=MIX0-76
 "molecule id"	"concentration (units.mmol / units.L)"
 "GLC[p]"	22.203
 "OXYGEN-MOLECULE[p]"	Infinity
@@ -23,23 +23,23 @@
 "L-SELENOCYSTEINE[c]"	Infinity
 "GLC-D-LACTONE[c]"	Infinity
 "CYTOSINE[c]"	Infinity
-"L-ALPHA-ALANINE[p]"	3.996
-"ARG[p]"	26.037
-"ASN[p]"	1.998
-"L-ASPARTATE[p]"	1.998
-"CYS[p]"	0.513
-"GLT[p]"	3.001
-"GLN[p]"	3.078
-"GLY[p]"	3.996
-"HIS[p]"	1.002
-"ILE[p]"	1.982
-"LEU[p]"	4.024
-"LYS[p]"	2.003
-"MET[p]"	1.005
-"PHE[p]"	2.010
-"PRO[p]"	1.998
-"SER[p]"	49.952
-"THR[p]"	1.998
-"TRP[p]"	0.509
-"TYR[p]"	0.993
-"VAL[p]"	3.003
+"L-ALPHA-ALANINE[p]"	0.8
+"ARG[p]"	5.2
+"ASN[p]"	0.4
+"L-ASPARTATE[p]"	0.4
+"CYS[p]"	0.1
+"GLT[p]"	0.6
+"GLN[p]"	0.6
+"GLY[p]"	0.8
+"HIS[p]"	0.2
+"ILE[p]"	0.4
+"LEU[p]"	0.8
+"LYS[p]"	0.4
+"MET[p]"	0.2
+"PHE[p]"	0.4
+"PRO[p]"	0.4
+"SER[p]"	10.0
+"THR[p]"	0.4
+"TRP[p]"	0.1
+"TYR[p]"	0.2
+"VAL[p]"	0.6
