@@ -7,6 +7,7 @@ import numpy as np
 from wholecell.utils import units
 import wholecell
 
+
 # The wcEcoli project root path
 ROOT_PATH = os.path.dirname(
     os.path.dirname(os.path.abspath(wholecell.__file__)))
@@ -23,6 +24,7 @@ INITIAL_CELL_TO_AVG_CELL =  1.35
 FRACTION_RIBOSOMES_ACTIVE = 0.85
 CELL_WATER_MASS_FRACTION = 0.7
 
+
 class knowledge_base(object):
     def __init__(self):
         # Load sim data
@@ -31,30 +33,37 @@ class knowledge_base(object):
         translation = sim_data.process.translation
         cell_specs = sim_data.cell_specs
 
-        ribosomes_active = []
-        synthetases = []
-        trnas = []
-        aminoacids = []
-        atps = []
-        fractions_proteome = []
-        target_elongation_rates = []
+        # Initialize attributes
+        self.ribosome = []
+        self.synthetase = []
+        self.trna_total = []
+        self.aa = []
+        self.atp = []
+        self.target_v_translation = []
+        self.f = []
 
+        # For each condition, gather molecule counts
         self.conditions = ["basal", "with_aa"]
+        condition_ids_translation = ["minimal", "minimal_plus_amino_acids"]
+        for i, condition in enumerate(self.conditions):
 
-        for condition in self.conditions:
+            # Load cell specs
+            cell_specs_condition = cell_specs[condition]
+            bulk_container = cell_specs_condition["bulkAverageContainer"]
+
             # Compute cell volume
-            cell_volume = self.__get_volume__(cell_specs[condition]["avgCellDryMassInit"])
-
-            # Get bulk container
-            bulk_container = cell_specs[condition]["bulkAverageContainer"]
+            cell_dry_mass_init = cell_specs_condition["avgCellDryMassInit"]
+            cell_dry_mass_avg = cell_dry_mass_init * INITIAL_CELL_TO_AVG_CELL
+            cell_mass_avg = cell_dry_mass_avg / (1. - CELL_WATER_MASS_FRACTION)
+            cell_volume = cell_mass_avg / CELL_DENSITY
 
             """
             Ribosomes
             Notes:
-                Resembles computation in initial_conditions.py for acquiring number
-                of active ribosomes:
-                - number of total (ie. active + inactive) ribosomes is minimum of
-                  30s and 50s
+                Resembles computation in initial_conditions.py for acquiring
+                number of active ribosomes:
+                - number of total (ie. active + inactive) ribosomes is minimum
+                  of 30s and 50s
                 - 85% of total ribosomes are active
             """
             s30_id = "CPLX0-3953[c]"
@@ -62,8 +71,9 @@ class knowledge_base(object):
             n_ribosome_total = np.min(bulk_container.counts([s30_id, s50_id]))
             n_ribosome_active = np.round(
                 FRACTION_RIBOSOMES_ACTIVE * n_ribosome_total)
-            ribosome = n_ribosome_active / AVOGADROS_NUM / cell_volume
-            ribosomes_active.append(ribosome)
+            self.ribosome.append(
+                (n_ribosome_active / AVOGADROS_NUM / cell_volume) \
+                .asNumber(units.mol / units.L))
 
             """
             tRNA synthetases
@@ -93,27 +103,31 @@ class knowledge_base(object):
                 "CPLX0-1141[c]",
                 "VALS-MONOMER[c]",
             ]
-            n_synthetase = bulk_container.counts(synthetase_ids)
-            synthetases.append(n_synthetase / AVOGADROS_NUM / cell_volume)
+            synthetase_count = bulk_container.counts(synthetase_ids)
+            synthetase_concentration = synthetase_count / AVOGADROS_NUM / cell_volume
+            self.synthetase.append(self._remove_units(synthetase_concentration))
 
             """tRNA isoacceptors"""
             trna_ids = transcription.rnaData["id"][transcription.rnaData["isTRna"]]
-            n_trna = bulk_container.counts(trna_ids)
-            n_trna_rep = np.dot(transcription.aa_from_trna, n_trna)
-            trnas.append(n_trna_rep / AVOGADROS_NUM / cell_volume)
+            trna_count = bulk_container.counts(trna_ids)
+            rep_trna_count = np.dot(transcription.aa_from_trna, trna_count)
+            trna_total_concentration = rep_trna_count / AVOGADROS_NUM / cell_volume
+            self.trna_total.append(self._remove_units(trna_total_concentration))
 
             """amino acids"""
             aa_ids = sim_data.moleculeGroups.aaIDs
-            self.aa_ids = aa_ids
-            n_aa = bulk_container.counts(aa_ids)
-            aminoacids.append(n_aa / AVOGADROS_NUM / cell_volume)
+            aa_count = bulk_container.counts(aa_ids)
+            aa_concentration = aa_count / AVOGADROS_NUM / cell_volume
+            self.aa.append(self._remove_units(aa_concentration))
 
             """atp"""
-            n_atp = bulk_container.count("ATP[c]")
-            atps.append(n_atp / AVOGADROS_NUM / cell_volume)
+            atp_count = bulk_container.count("ATP[c]")
+            self.atp.append(
+                (atp_count / AVOGADROS_NUM / cell_volume) \
+                .asNumber(units.mol / units.L))
 
             """
-            fraction of proteome that is composed of amino acid
+            fraction of proteome that is composed of each amino acid
             Note: sums to 1
             """
             # Get counts of protein
@@ -122,37 +136,23 @@ class knowledge_base(object):
             # Get counts of each amino acid per protein
             polypeptide_seq = translation.translationSequences
             proteome_to_aa = np.zeros((len(aa_ids), counts_proteome.shape[0]))
-            for i, seq in enumerate(polypeptide_seq):
+            for j, seq in enumerate(polypeptide_seq):
                 indices, counts = np.unique(seq, return_counts = True)
                 for index, count in zip(indices, counts):
                     if index == -1:
                         continue
 
-                    proteome_to_aa[index, i] = count
+                    proteome_to_aa[index, j] = count
 
             # Compute amino acid representation across proteome
             counts_aa = np.dot(proteome_to_aa, counts_proteome)
             f = counts_aa.astype(float) / counts_aa.sum()
-            fractions_proteome.append(f)
+            self.f.append(f)
 
             # Targets
-            elongation_rate = translation.ribosomeElongationRateDict["minimal"].asNumber(units.aa / units.s) # aa / s / rib
-            target_elongation_rates.append(elongation_rate * ribosome / units.s)
+            elongation_rate = translation.ribosomeElongationRateDict \
+                [condition_ids_translation[i]].asNumber(units.aa / units.s)
+            self.target_v_translation.append(elongation_rate * self.ribosome[i])
 
-        self.ribosomes_active = np.array(ribosomes_active)
-        self.synthetases = np.array(synthetases)
-        self.trnas = np.array(trnas)
-        self.aminoacids = np.array(aminoacids)
-        self.atps = np.array(atps)
-        self.fractions_proteome = np.array(fractions_proteome)
-        self.target_elongation_rates = np.array(target_elongation_rates)
-
-
-    def __get_volume__(self, cell_dry_mass_init):
-        cell_dry_mass_avg = cell_dry_mass_init * INITIAL_CELL_TO_AVG_CELL
-        cell_mass_avg = cell_dry_mass_avg / (1. - CELL_WATER_MASS_FRACTION)
-        cell_volume = cell_mass_avg / CELL_DENSITY
-        return cell_volume
-
-
-kb = knowledge_base()
+    def _remove_units(self, array):
+        return np.array([x.asNumber() for x in array])
