@@ -1672,10 +1672,10 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 		complexationMoleculeCounts = complexationMoleculesView.counts()
 
 		# Form complexes
-		time_step = 1
+		duration = 2**15
 		complexation_rates = sim_data.process.complexation.rates
 		system = StochasticSystem(complexationStoichMatrix.T, complexation_rates, random_seed=seed)
-		complexation_result = system.evolve(time_step, complexationMoleculeCounts)
+		complexation_result = system.evolve(duration, complexationMoleculeCounts)
 
 		updatedCompMoleculeCounts = complexation_result['outcome']
 		complexationEvents = complexation_result['occurrences']
