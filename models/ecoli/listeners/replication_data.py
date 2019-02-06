@@ -37,6 +37,8 @@ class ReplicationData(wholecell.listeners.listener.Listener):
 
 		self.fork_coordinates = np.full(75, np.nan, np.float64)
 		self.fork_domains = np.full(75, np.nan, np.float64)
+		self.fork_replichore = np.full(75, np.nan, np.float64)
+		self.fork_global_index = np.full(75, np.nan, np.float64)
 
 		self.numberOfOric = np.nan
 		self.criticalMassPerOriC = 0.
@@ -54,11 +56,13 @@ class ReplicationData(wholecell.listeners.listener.Listener):
 
 		self.fork_coordinates[:] = np.nan
 		if len(active_replisomes) > 0:
-			fork_coordinates, fork_domains = active_replisomes.attrs(
-				"coordinates", "domain_index"
+			fork_coordinates, fork_domains, fork_replichore, fork_global_index = active_replisomes.attrs(
+				"coordinates", "domain_index", "right_replichore", "_globalIndex"
 				)
 			self.fork_coordinates[:fork_coordinates.size] = fork_coordinates
 			self.fork_domains[:fork_domains.size] = fork_domains
+			self.fork_replichore[:fork_replichore.size] = fork_replichore
+			self.fork_global_index[:fork_global_index.size] = fork_global_index
 
 	def tableCreate(self, tableWriter):
 		pass
@@ -67,6 +71,8 @@ class ReplicationData(wholecell.listeners.listener.Listener):
 		tableWriter.append(
 			fork_coordinates = self.fork_coordinates,
 			fork_domains = self.fork_domains,
+			fork_replichore = self.fork_replichore,
+			fork_global_index = self.fork_global_index,
 			numberOfOric = self.numberOfOric,
 			criticalMassPerOriC = self.criticalMassPerOriC,
 			criticalInitiationMass = self.criticalInitiationMass,
