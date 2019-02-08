@@ -73,7 +73,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# initialize exchange_data according to initial concentrations in environment
 		self.exchange_data = self.updateExchangeData(sim_data.external_state.environment.environment_dict[initial_environment])
-		self.import_exchange, self.import_constraint = self.saveImportConstraints(self.exchange_data)
 
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 			initial_environment
@@ -250,7 +249,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# recalculate exchange_data based on current environment
 		current_environment = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
 		self.exchange_data = self.updateExchangeData(current_environment)
-		self.import_exchange, self.import_constraint = self.saveImportConstraints(self.exchange_data)
+		import_exchange, import_constraint = self.saveImportConstraints(self.exchange_data)
 
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			self.nutrientToDoublingTime.get(current_nutrients, self.nutrientToDoublingTime["minimal"])
@@ -387,6 +386,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.environment_molecules.countsInc(self.external_exchange_molecule_ids, delta_nutrients)
 
 		# Write outputs to listeners
+		self.writeToListener("FBAResults", "import_exchange", import_exchange)
+		self.writeToListener("FBAResults", "import_constraint", import_constraint)
 		self.writeToListener("FBAResults", "deltaMetabolites", metaboliteCountsFinal - metaboliteCountsInit)
 		self.writeToListener("FBAResults", "reactionFluxes", self.fba.getReactionFluxes() / self.timeStepSec())
 		self.writeToListener("FBAResults", "externalExchangeFluxes", converted_exchange_fluxes)
