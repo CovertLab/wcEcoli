@@ -1193,7 +1193,10 @@ class FluxBalanceAnalysis(object):
 
 		if reactionIDs is None:
 			reactionIDs = self.getKineticTargetFluxNames()
+
+		if not reactionIDs:
 			return []
+
 		values = np.zeros(len(reactionIDs))
 
 		# Get all reaction fluxes at once for faster performance
