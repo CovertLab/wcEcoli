@@ -1195,7 +1195,7 @@ class FluxBalanceAnalysis(object):
 			reactionIDs = self.getKineticTargetFluxNames()
 
 		if not reactionIDs:
-			return []
+			return np.array([])
 
 		values = np.zeros(len(reactionIDs))
 
