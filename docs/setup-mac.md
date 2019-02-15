@@ -19,7 +19,7 @@ Use homebrew to install
 swig is needed to install pip CVXcanon.
 suite-sparse is needed for cvxopt to call glpk.
 
-When using Mojave or higher you will aslo need to install the additional SKD headers.
+When using Mojave or higher (10.14+) you will also need to install the additional SKD headers.
 
     sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /g
 
