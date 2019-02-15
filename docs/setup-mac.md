@@ -36,4 +36,28 @@ Example `.profile` lines for macOS:
 Also consider (when you're not working on other Python projects):
 
     export PYTHONPATH="$HOME/wcEcoli:$PYTHONPATH"
+    
+Now that you have pyenv and related libraries installed, you can install python and set up your local environment (NOTE: if you have a `~/.local/` directory, paths might not work properly with `pyenv` and you might receive error messages):
+
+    PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.15
+    pyenv local 2.7.15
+    pyenv virtualenv wcEcoli2
+    pyenv local wcEcoli2
+    pip install --upgrade pip setuptools virtualenv wheel
+    pip install numpy==1.14.3
+
+Finally, run the `requirements.txt`:
+
+    CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary cvxopt
+    pyenv rehash
+
+Post-finally, compile the CYTHON code:
+
+    make clean compile
+
+To make sure everything is working, run the tests:
+
+    nosetests -a smalltest
+
+If these pass, you are good to go.
 
