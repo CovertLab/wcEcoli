@@ -14,24 +14,26 @@ pyenv tools
 
 Use homebrew to install
 
-    brew install pyenv
-    brew install pyenv-virtualenv
-    brew install pyenv-virtualenvwrapper
-    brew install glpk
-    brew install swig
-    brew install suite-sparse
-    brew install zlib
+    brew install pyenv pyenv-virtualenv pyenv-virtualenvwrapper glpk swig suite-sparse zlib readline xz
 
 swig is needed to install pip CVXcanon.
 suite-sparse is needed for cvxopt to call glpk.
 
+When using Mojave or higher you will aslo need to install the additional SKD headers.
+
+    sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /g
+
 Set pyenv and optionally pyenv-virtualenv to initialize in your shell login script (`.profile` on macOS).
 
-Example `.profile` lines for macOS:
+Example `.bash_profile` lines for macOS:
 
     export PYENV_ROOT=/usr/local/var/pyenv
     if which pyenv > /dev/null; then eval "$(pyenv init -)"; fi
     if which pyenv-virtualenv-init > /dev/null; then eval "$(pyenv virtualenv-init -)"; fi
+    
+Run your .bash_profile
+
+    source ~/.bash_profile
 
 Also consider (when you're not working on other Python projects):
 
