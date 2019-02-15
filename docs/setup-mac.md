@@ -20,6 +20,7 @@ Use homebrew to install
     brew install glpk
     brew install swig
     brew install suite-sparse
+    brew install zlib
 
 swig is needed to install pip CVXcanon.
 suite-sparse is needed for cvxopt to call glpk.
