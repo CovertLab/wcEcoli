@@ -1,3 +1,7 @@
+This licensing agreement applies only for NON-COMMERCIAL use.  
+For COMMERCIAL licensing terms, contact Professor Markus Covert, m.covert&lsqb;at&rsqb;&lsqb;name of our university&rsqb;&lsqb;dot&rsqb;edu.
+
+
 **STANFORD ACADEMIC SOFTWARE LICENSE AGREEMENT FOR**  
 **Stanford Docket S18-475: A whole-cell mathematical model of Escherichia coli**
 
@@ -14,5 +18,3 @@
 11. Title and copyright to the Software and any derivatives and any associated documentation shall at all times remain with STANFORD, and RECIPIENT agrees to preserve same.
 12. If RECIPIENT plans to publish any peer reviewed papers, abstracts, or similar publications, RECIPIENT agrees to grant to acknowledge Software and its creators in a manner consistent with academic (industry) practice. 
 13. If RECIPIENT wishes to terminate this license, RECIPIENT shall destroy all copies of Software.
-
-For commercial licensing terms, contact [Professor Markus Covert](mailto:m.covert@stanford.edu).
