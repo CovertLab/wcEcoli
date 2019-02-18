@@ -1,18 +1,29 @@
 Ubuntu - how to set up the runtime environment for the model
 ===================================================
 
-There are a number of dependencies that need to be set up before the model will run on Ubuntu.
+The `requirements.txt` file contains terse setup instructions for a Python environment, mainly the package list to use with `pip install`. See the additional details, below.
 
-    sudo apt install -y gcc make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev glpk-utils libglpk-dev glpk-doc python-cvxopt
 
-You may also have to find the proprietary package `python-glpk` and install that as well. 
+## Prerequisites
 
-Also, set your `PYTHONPATH` to point to the WcEcoli model directory:
+* See [Development tools](dev-tools.md) for instructions to set up the development tools.
+* There are a number of dependencies that need to be set up before the model will run on Ubuntu:
 
-    export PYTHONPATH=$CODE/wcEcoli
+   ```
+   sudo apt install -y gcc make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
+   libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev \
+   glpk-utils libglpk-dev glpk-doc python-cvxopt
+   ```
 
-pyenv
------
+* You may also have to find the proprietary package `python-glpk` and install that as well. 
+* Also, set your `PYTHONPATH` to point to the directory where you cloned the `wcEcoli` repository:
+
+  ```
+  export PYTHONPATH=$CODE/wcEcoli
+  ```
+
+
+## pyenv
 
 pyenv has a related set of packages that need to be installed, which on ubuntu is currently through cloning git repositories and adding things to your `.bash_profile`.
 
@@ -48,12 +59,12 @@ Finally, run the `requirements.txt`:
     CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary cvxopt
     pyenv rehash
 
-Post-finally, compile the CYTHON code:
+Post-finally, compile the native code:
 
     make clean compile
 
 To make sure everything is working, run the tests:
 
-    nosetests -a smalltest
+    nosetests
 
 If these pass, you are good to go.
