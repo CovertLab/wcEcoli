@@ -240,6 +240,18 @@ def calculatePartition(processPriorities, countsRequested, counts, countsPartiti
 			counts[:, np.newaxis] * fractionalRequests
 			).astype(np.int64)
 
+		compare = np.equal(requests, allocations)
+		if not np.all(compare):
+
+			import ipdb; ipdb.set_trace()
+
+			print('partitioning occurs level {}: \n{}\n{}\n{}\n{}\n'.format(
+				priorityLevel,
+				np.where(processHasPriority),
+				np.where(~compare),
+				requests[~compare],
+				allocations[~compare]))
+
 		countsPartitioned[:, processHasPriority] = allocations
 
 		counts -= allocations.sum(axis = 1)
