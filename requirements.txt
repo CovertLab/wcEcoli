@@ -80,7 +80,6 @@ futures==3.2.0
 gnureadline==6.3.8
 gunicorn==19.7.1
 idna==2.6
-imageio==2.5.0
 ipdb==0.11
 ipython==5.7.0  # 6.0+ are for Python 3
 ipython-genutils==0.2.0
@@ -109,7 +108,6 @@ optlang==1.4.2
 osqp==0.3.1
 packaging==17.1
 pandas==0.22.0  # pandas 0.23+ releases have backwards incompatible API changes
-Pillow==5.4.1
 path.py==11.0.1
 pathlib==1.0.1
 pathlib2==2.3.2
