@@ -1,21 +1,13 @@
 ## How to build a Whole Cell pyenv virtualenv:
 ## Prepare as needed. Install these packages using your local package
 ## manager such as brew on macOS:
-#   brew install pyenv
-#   brew install pyenv-virtualenv
-#   brew install pyenv-virtualenvwrapper
-#   brew install glpk
-#   brew install openssl
-#   brew install swig           # needed to install pip CVXcanon
-#   brew install suite-sparse   # needed for cvxopt to use glpk
-#   brew install xz             # needed for pyenv to use zlib
-#
+#   brew install pyenv pyenv-virtualenv pyenv-virtualenvwrapper
+#   brew install glpk openssl swig suite-sparse xz
 #
 ## On macOS Mojave or higher (10.14+), use the steps to install additional
 ## SDK headers on https://github.com/pyenv/pyenv/wiki/Common-build-problems
 #
-#
-## Download and install other packages according to their instructions
+## Optional: Download and install other packages according to their instructions
 #	CPLEX from IBM (free for students)
 #
 ## Create a pyenv with Python 2.7.15.
@@ -27,10 +19,10 @@
 #   pyenv local wcEcoli2
 #
 ## Upgrade the installers:
-#   pip install --upgrade pip setuptools virtualenv wheel
+#   pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
 #
 ## See https://github.com/CovertLab/wcEcoli/wiki/How-to-set-up-the-runtime-environment-for-the-model
-## and /share/PI/mcovert/installation_notes/openblas.txt on Sherlock
+## (and /share/PI/mcovert/installation_notes/openblas.txt on Sherlock)
 ## to build openblas, numpy, and scipy from source to fix non-determinism problems.
 ## In short:
 #    * Install OpenBLAS 0.3.5 or later via brew or compile it from source.
@@ -40,12 +32,9 @@
 #        library_dirs = /opt/OpenBLAS/lib
 #        include_dirs = /opt/OpenBLAS/include
 #    * pip install numpy==1.14.5 scipy==1.0.1 --no-binary numpy,scipy --force-reinstall
-## If you don't need to install numpy from source, pip might need a local numpy
-## before installing the other packages:
-#   pip install numpy==1.14.5
 #
-## Then install all the other packages listed here:
-#   CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary cvxopt
+## Then install the packages listed in this file:
+#   CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary numpy,scipy,cvxopt
 #   pyenv rehash
 #
 ## Then configure the installed matplotlib as needed, per the instructions in
@@ -91,6 +80,7 @@ futures==3.2.0
 gnureadline==6.3.8
 gunicorn==19.7.1
 idna==2.6
+imageio==2.5.0
 ipdb==0.11
 ipython==5.7.0  # 6.0+ are for Python 3
 ipython-genutils==0.2.0
@@ -119,6 +109,7 @@ optlang==1.4.2
 osqp==0.3.1
 packaging==17.1
 pandas==0.22.0  # pandas 0.23+ releases have backwards incompatible API changes
+Pillow==5.4.1
 path.py==11.0.1
 pathlib==1.0.1
 pathlib2==2.3.2
@@ -150,7 +141,8 @@ simplegeneric==0.8.1
 singledispatch==3.4.0.3
 six==1.11.0
 statistics==1.0.3.5
-stochastic-arrow==0.1.4
+stevedore==1.30.0
+stochastic-arrow==0.1.7
 subprocess32==3.5.2
 swiglpk==1.4.4
 sympy==1.1.1
@@ -160,9 +152,13 @@ toolz==0.9.0
 tornado==5.0.2
 tqdm==4.23.0
 traitlets==4.3.2
+typing==3.6.6
+typing-extensions==3.7.2
 Unum==4.1.4
 urllib3==1.23
-virtualenv>=16.0.0
+virtualenv>=16.4.1
+virtualenv-clone>=0.5.1
+virtualenvwrapper>=4.8.4
 wcwidth==0.1.7
 Werkzeug==0.14.1
 wrapt==1.10.11
