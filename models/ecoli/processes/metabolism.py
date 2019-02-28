@@ -171,6 +171,8 @@ class Metabolism(wholecell.processes.process.Process):
 					"kineticObjectiveWeight" : kinetic_objective_weight,
 					"reactionRateTargets" : {reaction : 1 for reaction in self.kineticsConstrainedReactions},
 					"oneSidedReactionTargets" : [],
+					'homeostatic_flex': 0,
+					'kinetics_flex': 0,
 					},
 			"moleculeMasses" : moleculeMasses,
 			"secretionPenaltyCoeff" : sim_data.constants.secretion_penalty_coeff, # The "inconvenient constant"--limit secretion (e.g., of CO2)

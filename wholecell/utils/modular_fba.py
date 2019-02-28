@@ -174,6 +174,8 @@ class FluxBalanceAnalysis(object):
 	_generatedID_reactionFluxEquivalents = "reaction flux equivalent for {} reaction"
 	_generatedID_conversionFlux = "Flux converting {} flux to kinetic objective equivalents"
 
+	_generatedID_flex = "{}, flex"
+
 	# Initialization
 
 	def __init__(self, reactionStoich, externalExchangedMolecules, objective,
@@ -290,6 +292,20 @@ class FluxBalanceAnalysis(object):
 
 		else:
 			raise FBAError("Unrecognized self.objectiveType: {}".format(self.objectiveType))
+
+		# Add flexible objective equivalents for homeostatic and kinetic objectives
+		homeostatic_flex = objectiveParameters.get('homeostatic_flex', None)
+		if homeostatic_flex is not None and homeostatic_flex > 0:
+			self._add_flex_objective(
+				[self._generatedID_moleculeEquivalents.format(mol) for mol in self._homeostaticTargetMolecules],
+				homeostatic_flex,
+				)
+		kinetics_flex = objectiveParameters.get('kinetics_flex', None)
+		if kinetics_flex is not None and kinetics_flex > 0:
+			self._add_flex_objective(
+				[self._generatedID_kineticReactionEquivalents.format(rxn) for rxn in self._kineticTargetFluxes],
+				kinetics_flex,
+				)
 
 		self._initInternalExchange(internalExchangedMolecules)
 
@@ -932,6 +948,29 @@ class FluxBalanceAnalysis(object):
 		self._specialFluxIDsSet.add(self._reactionID_NGAM)
 		self._specialFluxIDsSet.add(self._reactionID_polypeptideElongationEnergy)
 
+	def _add_flex_objective(self, ids, flex):
+		'''
+		Allows for flexible objective equivalents by setting a range that does
+		not count towards the objective.
+
+		Args:
+			ids (List[str]): IDs for objective equivalents to set to be flexible
+			flex (float): range of flex allowed (-flex to flex is not part of objective)
+		'''
+
+		for flex_id in ids:
+			flow_id = self._generatedID_flex.format(flex_id)
+			self._solver.setFlowMaterialCoeff(
+				flow_id,
+				flex_id,
+				-1,
+				)
+
+			self._solver.setFlowBounds(
+				flow_id,
+				lowerBound=-flex,
+				upperBound=flex,
+				)
 
 	def _buildEqConst(self):
 		self._solver.buildEqConst()
