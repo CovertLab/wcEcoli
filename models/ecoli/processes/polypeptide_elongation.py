@@ -61,7 +61,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Create view onto activly elongating 70S ribosomes
 		self.activeRibosomes = self.uniqueMoleculesView('activeRibosome')
 
-		# Create views onto 30S and 70S ribosomal subunits for termination
+		# Create views onto 30S and 50S ribosomal subunits for termination
 		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeIds.s30_fullComplex)
 		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeIds.s50_fullComplex)
 
@@ -88,20 +88,30 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.elngRateFactor = 1.
 
 	def calculateRequest(self):
-		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
-		# which is used to create single-cell variability in growth rate
-		# The maximum number of amino acids that can be elongated in a single timestep is set to 22 intentionally as the minimum number of padding values
-		# on the protein sequence matrix is set to 22. If timesteps longer than 1.0s are used, this feature will lead to errors in the effective ribosome
-		# elongation rate.
+		# Set ribosome elongation rate based on simulation medium environment and elongation rate
+		# factor which is used to create single-cell variability in growth rate. The maximum number
+		# of amino acids that can be elongated in a single timestep is set to 22 intentionally as
+		# the minimum number of padding values on the protein sequence matrix is set to 22. If
+		# timesteps longer than 1.0s are used, this feature will lead to errors in the effective
+		# ribosome elongation rate.
 
 		current_nutrients = self._external_states['Environment'].nutrients
 
 		if self.translationSupply:
-			self.ribosomeElongationRate = np.min([self.maxRibosomeElongationRate, int(stochasticRound(self.randomState,
-				self.maxRibosomeElongationRate * self.timeStepSec()))]) # Will be set to maxRibosomeElongationRate if timeStepSec > 1.0s
+			noise = int(stochasticRound(
+				self.randomState,
+				self.maxRibosomeElongationRate * self.timeStepSec()))
+
+			self.ribosomeElongationRate = np.min([
+				self.maxRibosomeElongationRate,
+				noise]) # Will be set to maxRibosomeElongationRate if timeStepSec > 1.0s
 		else:
-			self.ribosomeElongationRate = np.min([22, int(stochasticRound(self.randomState,
-				self.elngRateFactor * self.ribosomeElongationRateDict[current_nutrients].asNumber(units.aa / units.s) * self.timeStepSec()))])
+			rate = self.ribosomeElongationRateDict[current_nutrients].asNumber(units.aa / units.s)
+			noise = int(stochasticRound(
+				self.randomState,
+				self.elngRateFactor * rate * self.timeStepSec()))
+
+			self.ribosomeElongationRate = np.min([22, noise])
 
 		# Request all active ribosomes
 		self.activeRibosomes.requestAll()
@@ -114,15 +124,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Build sequences to request appropriate amount of amino acids to
 		# polymerize for next timestep
 		proteinIndexes, peptideLengths = activeRibosomes.attrs(
-					'proteinIndex', 'peptideLength'
-					)
+			'proteinIndex',
+			'peptideLength')
 
 		sequences = buildSequences(
 			self.proteinSequences,
 			proteinIndexes,
 			peptideLengths,
-			self.ribosomeElongationRate
-			)
+			self.ribosomeElongationRate)
 
 		sequenceHasAA = (sequences != polymerize.PAD_VALUE)
 		aasInSequences = np.bincount(sequences[sequenceHasAA], minlength=21)
@@ -143,9 +152,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		else:
 			countAasRequested = aasInSequences
 
-		self.aas.requestIs(
-			countAasRequested
-			)
+		self.aas.requestIs(countAasRequested)
 
 		self.writeToListener("GrowthLimits", "aaPoolSize", self.aas.total())
 		self.writeToListener("GrowthLimits", "aaRequestSize", countAasRequested)
@@ -155,6 +162,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("GrowthLimits", "gtpPoolSize", self.gtp.total()[0])
 		self.writeToListener("GrowthLimits", "gtpRequestSize", gtpsHydrolyzed)
+
+		if self._sim._simulationStep > 30:
+			import ipdb; ipdb.set_trace()
 
 		# GTP hydrolysis is carried out in Metabolism process for growth associated maintenence
 		# THis is set here for metabolism to use
