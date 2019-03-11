@@ -13,16 +13,6 @@ def within(bounds, point):
 	return 0 <= point[0] < bounds[0] and 0 <= point[1] < bounds[1]
 
 
-def constrain(point, bounds):
-	'''
-	Constrain a point to be in the 2D range [(0, 0) .. bounds].
-	NOTE: This uses a closed interval. within() uses a half-open interval.
-	'''
-	x = max(min(point[0], bounds[0]), 0)
-	y = max(min(point[1], bounds[1]), 0)
-	return x, y
-
-
 def normalize(vector):
 	''' normalize the given vector based on its magnitude '''
 

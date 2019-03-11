@@ -31,7 +31,7 @@ if animating:
 	import matplotlib.pyplot as plt
 
 from agent.outer import EnvironmentSimulation
-from environment.collision.grid import Grid, Rectangle, constrain
+from environment.collision.grid import Grid, Rectangle
 from environment.collision.volume_exclusion import volume_exclusion
 
 if animating:
@@ -328,7 +328,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 			if simulation['time'] <= now:
 				# get concentration from cell's given bin
 				location = self.locations[agent_id][0:2] * self.patches_per_edge / self.edge_length
-				patch_site = constrain(tuple(np.floor(location).astype(int)), bounds)
+				patch_site = tuple(np.floor(location).astype(int))
 				update[agent_id] = {}
 				update[agent_id]['concentrations'] = dict(zip(
 					self._molecule_ids,
