@@ -10,7 +10,7 @@
 
 ## Using the Manual Runscripts
 
-You can accomplishes largely the same thing that running via Fireworks does by running:
+You can accomplish largely the same thing that running via Fireworks does by running:
 
 1. `runFitter.py` -- creates the `kb/*` sim data files for the control case
 2. `runSim.py` -- creates the modified modified sim data files for requested variants and runs the sims

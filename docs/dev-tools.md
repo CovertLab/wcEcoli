@@ -12,21 +12,23 @@ On macOS, you need to have Xcode's command line tools to run the C compiler. Unl
 
 ## Additional steps for macOS Mojave
 
-**Mojave:** **Update FUSE before upgrading to macOS Mojave!** After installing Mojave, run `xcode-select --install` again.
+**Mojave:** **Before upgrading to macOS Mojave, update FUSE.** After installing Mojave, run `xcode-select --install` again.
 
-**Mojave:** For macOS Mojave or higher (10.14+), see the "you will also need to install the additional SDK headers" instructions on [https://github.com/pyenv/pyenv/wiki/Common-build-problems](https://github.com/pyenv/pyenv/wiki/Common-build-problems). In short:
+**Mojave:** For macOS Mojave or higher (10.14+), follow the "you will also need to install the additional SDK headers" instructions on [https://github.com/pyenv/pyenv/wiki/Common-build-problems](https://github.com/pyenv/pyenv/wiki/Common-build-problems). In short:
 
    ```bash
    sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
    ```
 
-## Setting up the pyenv tools
+## Installing the pyenv tools
+
+pyenv lets you easily switch between multiple versions of Python and between groups of third party libraries.
 
 1. Install `pyenv`, `pyenv-virtualenv`, `pyenv-virtualenvwrapper` using your local package manager, e.g. **homebrew** on macOS. (These are already installed on Sherlock.) E.g.
    ```bash
    brew install pyenv pyenv-virtualenv pyenv-virtualenvwrapper
    ```
-2. Set `pyenv` and optionally `pyenv-virtualenv` to initialize in your shell login script (`.bash_profile` on Linux; `.profile` or `.bash_profile` on macOS, etc.).
+2. Initialize `pyenv` and optionally `pyenv-virtualenv` in your shell login script (`.bash_profile` on Linux; `.profile` or `.bash_profile` on macOS, etc.).
    - See [setup_using_python.md](https://github.com/CovertLab/ComputationalResources/blob/master/_sherlock/setup_using_python.md) and docs in the same directory about setting up this stuff including Linux modules, but beware that those docs are out of date, e.g. they're for now-obsolete Sherlock 1.0.
 
    - Example `.profile` or `.bash_profile` lines for macOS:
@@ -52,7 +54,7 @@ On macOS, you need to have Xcode's command line tools to run the C compiler. Unl
    fi
    ```
 
-3. Also consider adding this to your profile (when you're not working on other Python projects):
+3. You'll need to put the project on the `PYTHONPATH` when working on it. Consider adding this to your profile or creating a shell alias to do this when you work on wcEcoli:
 
    ```bash
    export PYTHONPATH="$HOME/wcEcoli:$PYTHONPATH"
@@ -80,8 +82,6 @@ After building the pyenv and cloning the repo to a local directory, you can crea
 * Double-press Shift -- search everywhere in the project.
 * Refactor -- commands to do small code refactorings like rename a function or change its calling signature.
 * Hit `F1` to get documentation on an identifier's definition.
-
-[TODO] more...
 
 
 ## iTerm2 Tips

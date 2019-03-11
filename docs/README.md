@@ -4,19 +4,22 @@ These are the docs for a variety of topics on the Whole Cell Model.
 
 ## setup
 
-* [Creating your pyenv](create-pyenv.md)
+* [Development tools: installation and tips](dev-tools.md)
+* [Creating your "pyenv" runtime environment](create-pyenv.md)
 * [Setup on Mac](setup-mac.md)
 * [Setup on Ubuntu](setup-ubuntu.md)
 * [Setup on Sherlock](setup-sherlock.md)
+* [Set up Zookeeper and Kafka for multi-scale agents](../agent/README.md)
 
 ## running
 
-* [How to run the model](run.md)
+* [How to run the Whole Cell Model](run.md)
+* [How to run the Causality visualization tool](https://github.com/CovertLab/causality)
+* [How to run multi-scale agents](../environment/README.md)
 
 ## development
 
 * [Background on the model](background.md)
-* [Development tools](dev-tools.md)
 * [Style guide](style-guide.md)
 
 ## relevant papers
