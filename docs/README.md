@@ -4,12 +4,9 @@ These are the docs for a variety of topics on the Whole Cell Model.
 
 ## setup
 
-* [Development tools: installation and tips](dev-tools.md)
-* [Creating your "pyenv" runtime environment](create-pyenv.md)
-* [Setup on Mac](setup-mac.md)
-* [Setup on Ubuntu](setup-ubuntu.md)
-* [Setup on Sherlock](setup-sherlock.md)
-* [Set up Zookeeper and Kafka for multi-scale agents](../agent/README.md)
+* [Required development tools](dev-tools.md) -- installation and tips
+* [Creating the "pyenv" runtime environment](create-pyenv.md)
+* [Set up Zookeeper and Kafka](../agent/README.md) -- needed only for multi-scale agents
 
 ## running
 
@@ -20,7 +17,7 @@ These are the docs for a variety of topics on the Whole Cell Model.
 ## development
 
 * [Background on the model](background.md)
-* [Style guide](style-guide.md)
+* [Coding style guide](style-guide.md)
 
 ## relevant papers
 

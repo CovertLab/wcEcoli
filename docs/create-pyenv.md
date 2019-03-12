@@ -1,96 +1,48 @@
-# Create a pyenv
+# Create the Python runtime environment
 
-The [requirements.txt](https://github.com/CovertLab/wcEcoli/blob/master/requirements.txt) file contains terse setup instructions for a Python environment, mainly the package list to use with `pip install`. This page contains additional details.
+The [requirements.txt](https://github.com/CovertLab/wcEcoli/blob/master/requirements.txt) file contains the needed package list for the Python runtime environment and terse setup instructions.
 
-1. On Sherlock, see `$PI_HOME/downloads/` for notes on downloading and compiling native code packages like `glpk`, as needed to install new packages or new versions.
-2. See [Development-Tools](Development-Tools) for instructions to install the development tools including a C compiler and `pyenv`. Those steps include using your package manager to install `pyenv`, `pyenv-virtualenv`, and `pyenv-virtualenvwrapper`.
-3. Use your package manager (e.g. **homebrew** on macOS) to install the needed packages [see the `requirements.txt` file for the current list], e.g.:
+This page goes through the Python environment setup steps in more detail and with more options.
+
+**Prerequisites:** Install the software tools as described in [dev-tools](dev-tools.md). That page covers installing pyenv and pyenv-virtualenv, initializing them in your shell profile, installing a C compiler, and more.
+
+**Sherlock??** Sherlock is the Stanford scientific computing cluster. Outside the Covert lab, just skip the Sherlock notes here. Inside the Covert lab, look in `$PI_HOME/downloads/` and `$PI_HOME/installation_notes/` for downloaded software packages and notes on compiling them, as needed to install new packages or new versions for the team.
+
+
+## Install native packages
+
+1. Use your package manager to install the needed packages [see the `requirements.txt` file for the current list].
+
+   For macOS:
 
    ```bash
-   brew install glpk openssl swig suite-sparse xz
+   brew install glpk openssl readline swig suite-sparse xz
    ```
 
-## Setup mods to fix Non-determinism Issues, Jan. 8, 2019
+   For Ubuntu:
 
-**Problem:** Per [Issue #196](https://github.com/CovertLab/wcEcoli/issues/196), the Fitter does not always produce consistent results from run to run. The following modifications to the setup instructions seem to fix that by building NumPy and SciPy on OpenBLAS v0.3.5+.
+   ```bash
+   sudo apt install -y glpk-utils libglpk-dev glpk-doc libssl-dev libreadline-dev \
+     libncurses5-dev libncursesw5-dev libffi-dev zlib1g-dev libbz2-dev xz-utils \
+     libsqlite3-dev python-cvxopt tk-dev
+   ```
 
-**Background:** You can install different implementations of BLAS (Basic Linear Algebra Subprograms) and link NumPy and SimPy to call them. OpenBLAS 0.3.5 fixes several bugs with non-determinism and hanging.
+   For Ubuntu, you might also need to find and install the proprietary package `python-glpk`.
 
-   * Linux might come with an unoptimized version of BLAS.
-   * MacOS comes with Apple's Accelerate. As of Dec. 5, 2018 OS 10.14.1 Mojave, it exhibits non-determinism bugs. See [#196](https://github.com/CovertLab/wcEcoli/issues/196).
-   * Intel provides [Math Kernel Library (MKL) and related software](https://software.intel.com/en-us/articles/installing-the-intel-distribution-for-python-and-intel-performance-libraries-with-pip-and) optimized for their CPUs. It seems to run a little faster than Accelerate and OpenBLAS, and their `tbb` tool should fix the "oversubscription" problem where multiple processes collectively request too many CPU cores. **But** as of Dec. 5, 2018, it exhibits the non-determinism bugs. Eventually it'll become a good choice for speed and easier installation, in brief, `pip uninstall numpy scipy scikit-learn -y; pip install intel-numpy intel-scipy tbb4py`.
-   * OpenBLAS [release](https://github.com/xianyi/OpenBLAS/releases) `0.3.5` fixed several multi-threading bugs.
+   For Sherlock, the needed packages are already installed. You just need to run this in your bash profile:
 
-**Installation Steps:** For OpenBLAS, NumPy, and SciPy.
+   ```bash
+   module load wcEcoli/sherlock2
+   ```
 
-   1. Fetch OpenBLAS source, compile it, and install it in a local directory [it does not usually belong on the compiler include path and the linker library path] or install 0.3.5+ using a package manager. [On Sherlock, it's in `$PI_HOME/downloads-sherlock2/compiled/openblas/lib`.]:
+2. Optional: Download and install other packages according to their instructions or take a wait-and-see approach with them.
 
-      ```bash
-      brew install gcc  # if you don't have a gfortran compiler
-      cd <the directory containing your git projects>
-      git clone https://github.com/xianyi/OpenBLAS
-      cd OpenBLAS
-      git checkout v0.3.5
-      make FC=gfortran
-      sudo make PREFIX=/opt/OpenBLAS install  # <-- pick another PREFIX dir if you don't/can't sudo
-      ```
-
-   2. Download https://github.com/numpy/numpy/blob/master/site.cfg.example to your local file `~/.numpy-site.cfg`
-   3. Uncomment and edit this part of the openblas section (_naming the directory you installed it into_) (or just save these lines; the rest of the downloaded `site.cfg.example` file is just instructions and commented-out configuration choices):
-
-      ```
-      [openblas]
-      libraries = openblas
-      library_dirs = /opt/OpenBLAS/lib
-      include_dirs = /opt/OpenBLAS/include
-      ```
-
-   4. Install NumPy and SciPy from source (without manually downloading them) in your pyenv using your openblas build:
-
-      ```bash
-      cd wcEcoli
-      pip install numpy==1.14.5 scipy==1.0.1 --no-binary numpy,scipy --force-reinstall
-      ```
-
-      _Or_ combine that step with installing all the other required pips by running:
-
-      ```bash
-      CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary numpy,scipy,cvxopt
-      ```
-
-      and if you had a previously-installed theano:
-
-      ```bash
-      theano-cache clear
-      ```
-
-   5. Check the installation
-
-      ```bash
-      python runscripts/debug/summarize_environment.py
-      ```
-      It should print something like this for numpy and scipy,  referring to the
-      `library_dirs` that you set above:
-      ```
-      lapack_opt_info:
-          libraries = ['openblas', 'openblas']
-          library_dirs = ['/opt/OpenBLAS/lib']
-          define_macros = [('HAVE_CBLAS', None)]
-          language = c
-      ```
-
-      ```bash
-      python
-      import theano
-      theano.config.blas.ldflags
-      ```
-      It should print something like `-L/opt/OpenBLAS/lib -lopenblas -lopenblas`, referring to the
-      library_dirs that you set above.
+   * CPLEX from IBM (free for students)
 
 
-## Create a pyenv
+## Install Python
 
-1. **Sherlock only:** Before installing another version of Python on Sherlock, you might need to do these steps [TODO: Put them in module `wcEcoli/sherlock2`?]:
+1. **Sherlock only:** The step after this will install a version of Python. Skip that if it's already installed. Before installing a new version of Python on Sherlock, you might need to do these steps:
 
    ```bash
    module load readline/7.0
@@ -105,57 +57,138 @@ The [requirements.txt](https://github.com/CovertLab/wcEcoli/blob/master/requirem
 
    to avoid:
 
-   WARNING: The Python readline extension was not compiled. Missing the GNU readline lib?
-   WARNING: The Python sqlite3 extension was not compiled. Missing the SQLite3 lib?
+        WARNING: The Python readline extension was not compiled. Missing the GNU readline lib?
+        WARNING: The Python sqlite3 extension was not compiled. Missing the SQLite3 lib?
 
-2. Install the relevant version of Python via `pyenv`, enabling shared (dynamic) libraries.
+2. Install the required version of Python via `pyenv`, and _remember to enable it as a shared library_:
 
    ```bash
    PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.15
    ```
 
-   [If running the unit tests (below) fails with an error message saying the loader can't load `.../pyenv/versions/.../lib/libpython2.7.a`, that means you didn't successfully `--enable-shared` when installing python.]
 
-3. Create a pyenv and use it for the local directory.
+## Create the "wcEcoli2" python virtual environment
+
+1. Create a pyenv and select it for your project directory. (On Sherlock, consider picking a new virtualenv name or simply do `pyenv local wcEcoli2` to select the existing, shared `wcEcoli2` environment for your project directory.)
 
    ```bash
-   cd ~/wcEcoli  # or ~/dev/wcEcoli or wherever you cloned `wcEcoli` to
+   cd ~/dev/wcEcoli  # or wherever you cloned the `wcEcoli` project to
    pyenv local 2.7.15
-   pyenv virtualenv wcEcoli2  # <-- picking a suitable virtualenv name
+   pyenv virtualenv wcEcoli2
    pyenv local wcEcoli2
    ```
 
-4. Upgrade the installers.
+2. Upgrade this virtual environment's installers.
 
    ```bash
-   pip install --upgrade pip setuptools virtualenv wheel
+   pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
    ```
 
-5. Then install all the other packages listed in `requirements.txt`:
+3. Install OpenBLAS 0.3.5 or later.
+
+   **Background:** Older versions of OpenBLAS have threading bugs that cause unreliable results and computations that might hang. The alternative implementations of BLAS (Basic Linear Algebra Subprograms) -- Apple's "Accelerate" framework and Intel's Math Kernel Library -- also have threading bugs as of December, 2018.
+
+   Install OpenBLAS 0.3.5 or later using your package manager, e.g.
+
+      ```bash
+      brew install openblas
+      ```
+
+   _or_ use the following steps to download and build it from source. (In the "make install" step, note that OpenBLAS does not usually belong on the compiler _include_ path or the linker _library_ path.)
+
+      ```bash
+      brew install gcc  # if you don't have a gfortran compiler
+      cd <the directory containing your git projects>
+      git clone https://github.com/xianyi/OpenBLAS
+      cd OpenBLAS
+      git checkout v0.3.5
+      make FC=gfortran
+      sudo make PREFIX=/opt/OpenBLAS install  # <-- pick another PREFIX dir if you don't/can't sudo
+      cd ..
+      ```
+
+4. Create `~/.numpy-site.cfg` pointing to _your OpenBLAS installation directory._
+
+   (If you want, you can download [site.cfg.example](https://github.com/numpy/numpy/blob/master/site.cfg.example) to your local file `~/.numpy-site.cfg` to start from their example configuration choices and documentation.)
+
+   (Brew installs OpenBLAS in `/usr/local/opt/openblas/`. Building it from source as above, you installed it in `/opt/OpenBLAS/`. On Sherlock, it's in `$PI_HOME/downloads-sherlock2/compiled/openblas/lib`.)
+
+      ```
+      [openblas]
+      libraries = openblas
+      library_dirs = /usr/local/opt/openblas/lib
+      include_dirs = /usr/local/opt/openblas/include
+      ```
+
+5. Install NumPy and SciPy, linked to this OpenBLAS thanks to `~/.numpy-site.cfg`:
+
+      ```bash
+      cd wcEcoli
+      pip install numpy==1.14.5 scipy==1.0.1 --no-binary numpy,scipy --force-reinstall
+      ```
+
+6. Test the NumPy and SciPy installation
+
+      ```bash
+      python runscripts/debug/summarize_environment.py
+      ```
+      It should print entries like this for numpy and scipy, naming the
+      `library_dirs` that you set above:
+      ```
+      lapack_opt_info:
+          libraries = ['openblas', 'openblas']
+          library_dirs = ['/usr/local/opt/openblas/lib']
+          define_macros = [('HAVE_CBLAS', None)]
+          language = c
+      ```
+
+7. Install the packages listed in `requirements.txt`:
 
    ```bash
-   CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary cvxopt
+   CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary numpy,scipy,cvxopt
    pyenv rehash
    ```
-   - **NOTE:** Per [#161](https://github.com/CovertLab/wcEcoli/issues/161), the backend for `matplotlib` might need to be changed from `TkAgg` to the default (or specifically to `agg`) in `$PYENV_ROOT/versions/wcEcoli2/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc`.
-      1. This is only a problem when running under Fireworks. All the wcEcoli code expects to run in the `wcEcoli` directory and with that directory on the `PYTHONPATH`, but Fireworks `rlaunch rapidfire` sets the current working directory to its `launcher_...` subdirectory instead. `rlaunch singleshot` does not have that problem, manual runscripts do not have that problem, and I don't know about `qlaunch`.
-      1. After installing or updating matplotlib, test if it can import pyplot:
+
+8. Test Theano:
+
+      ```bash
+      python
+      import theano
+      theano.config.blas.ldflags
+      ```
+
+   It should print something like
+
+      ```bash
+      '-L/usr/local/opt/openblas/lib -lopenblas -lopenblas'
+      ```
+
+   naming the library_dirs that you set above.
+
+9. Per [#161](https://github.com/CovertLab/wcEcoli/issues/161), the backend for `matplotlib` might need to be changed from `TkAgg` to the default -- or specifically to `agg`.
+
+   This is only a problem when running under the "Fireworks" workflow manager. All the wcEcoli code expects to run with `wcEcoli` as the working directory and on the `PYTHONPATH`, but Fireworks' `rlaunch rapidfire` sets the current working directory to its `launcher_...` subdirectory instead. `rlaunch singleshot` does not have that problem, manual runscripts do not have that problem, and we're not sure about `qlaunch`.
+
+   After installing or updating `matplotlib`, test if it can import pyplot:
+
       1. `cd` to a directory that does not have a `matplotlibrc` file, e.g. `wcEcoli/docs/`.
-      1. Use the `pyenv version` command to verify that the pyenv `wcEcoli2` is active. (This should be fine if the current directory is a subdirectory of `wcEcoli` and if the latter has a `.python-version` file set via the command `pyenv local wcEcoli2`.)
+      1. Use the `pyenv version` command to verify that the pyenv `wcEcoli2` is active. (This should be fine if the current directory is a subdirectory of `wcEcoli` and if the latter has a `.python-version` file previously set by `pyenv local wcEcoli2`.)
       1. Start a python shell and type `import matplotlib.pyplot`
-         * If it raised `ImportError: No module named _tkinter`, then edit the `.../site-packages/matplotlib/mpl-data/matplotlibrc` file, commenting out the line `backend : TkAgg`, then retest.
+         * If it raised `ImportError: No module named _tkinter`, then edit the relevant `site-packages/matplotlib/mpl-data/matplotlibrc` file, probably the one in `$PYENV_ROOT/versions/wcEcoli2/lib/python2.7/`, commenting out the line `backend : TkAgg`, then retest.
          * If it didn't raise an error, run `matplotlib.get_backend()` and check that it returns `'agg'` or similar.
 
-6. Compile the project's native code.
+10. Compile the project's native code.
 
    ```bash
    make clean compile
    ```
 
-(Yes, that prints deprecation warnings.)
+   (Yes, that prints deprecation warnings.)
 
-7. Run the unit tests.
+11. Run all the unit tests.
 
    ```bash
    nosetests
    ```
+
+   If the unit tests fail with an error message saying the loader can't load `.../pyenv/versions/.../lib/libpython2.7.a`, that means you didn't successfully `--enable-shared` when installing python. Go back to that step, run `PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.15 --force`, and repeat all the steps after it.

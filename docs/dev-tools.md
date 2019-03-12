@@ -1,46 +1,66 @@
 # Development tools
 
-Most of the team uses **Sublime Text 3** and **PyCharm Pro**.
+This page explains how to install the needed development tools. You won't have to revisit this very often.
 
-Also install **git** and maybe the **GitHub Desktop app**.
 
-On macOS, you need to have Xcode's command line tools to run the C compiler. Unless homebrew did it for you, run
+## Required tools: gcc, make, git
 
-    xcode-select --install
+For macOS, you need Xcode's command line tools including the C compiler, make, and git. Run:
 
-**Tip:** On macOS, **iTerm2** is much nicer than the built-in Terminal app.
+```bash
+xcode-select --install
+```
 
-## Additional steps for macOS Mojave
+For Ubuntu:
 
-**Mojave:** **Before upgrading to macOS Mojave, update FUSE.** After installing Mojave, run `xcode-select --install` again.
+```bash
+sudo apt install -y gcc make build-essential wget curl llvm
+```
 
-**Mojave:** For macOS Mojave or higher (10.14+), follow the "you will also need to install the additional SDK headers" instructions on [https://github.com/pyenv/pyenv/wiki/Common-build-problems](https://github.com/pyenv/pyenv/wiki/Common-build-problems). In short:
+For Sherlock, the needed tools are already installed.
 
-   ```bash
-   sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
-   ```
+For other OSs, you'll need at least **gcc**, **git**, and **make**.
 
-## Installing the pyenv tools
 
-pyenv lets you easily switch between multiple versions of Python and between groups of third party libraries.
 
-1. Install `pyenv`, `pyenv-virtualenv`, `pyenv-virtualenvwrapper` using your local package manager, e.g. **homebrew** on macOS. (These are already installed on Sherlock.) E.g.
+## Required tools: pyenv and virtualenv
+
+_pyenv_ and _virtualenv_ are tools to install versions of Python and switch between virtual environments. A virtual environment contains an installation of Python and additional libraries. Separate projects should use separate virtual environments so they won't clash over these requirements.
+
+1. Install `pyenv`, `pyenv-virtualenv`, `pyenv-virtualenvwrapper` using your local package manager, e.g. [homebrew](https://brew.sh/) on macOS. E.g.
    ```bash
    brew install pyenv pyenv-virtualenv pyenv-virtualenvwrapper
    ```
-2. Initialize `pyenv` and optionally `pyenv-virtualenv` in your shell login script (`.bash_profile` on Linux; `.profile` or `.bash_profile` on macOS, etc.).
-   - See [setup_using_python.md](https://github.com/CovertLab/ComputationalResources/blob/master/_sherlock/setup_using_python.md) and docs in the same directory about setting up this stuff including Linux modules, but beware that those docs are out of date, e.g. they're for now-obsolete Sherlock 1.0.
 
+   See [pyenv Installation](https://github.com/pyenv/pyenv#installation) for various ways to install pyenv on various operating systems.
+
+   Or try these commands on Ubuntu:
+
+   ```bash
+   git clone https://github.com/pyenv/pyenv.git ~/.pyenv
+   echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
+   echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+   echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile
+   source ~/.bash_profile
+
+   git clone https://github.com/pyenv/pyenv-virtualenv.git $(pyenv root)/plugins/pyenv-virtualenv
+   echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.bash_profile
+
+   git clone https://github.com/pyenv/pyenv-virtualenvwrapper.git $(pyenv root)/plugins/pyenv-virtualenvwrapper
+   source ~/.bash_profile
+   ```
+
+2. Set your shell login script (`.bash_profile` on Linux; `.profile` or `.bash_profile` on macOS, etc.) to initialize `pyenv` and optionally `pyenv-virtualenv` for each shell. To do this, follow the steps below or the more intricate instructions under "Add pyenv init to your shell" in [pyenv Installation](https://github.com/pyenv/pyenv#installation).
    - Example `.profile` or `.bash_profile` lines for macOS:
 
    ```bash
    export PYENV_ROOT=/usr/local/var/pyenv
    if which pyenv > /dev/null; then eval "$(pyenv init -)"; fi
    if which pyenv-virtualenv-init > /dev/null; then eval "$(pyenv virtualenv-init -)"; fi
-   ## -- Do this before sourcing iterm2_shell_integration
+   ## -- Do this *before* sourcing iterm2_shell_integration
    ```
 
-   - Example `.bash_profile` lines for Sherlock:
+   - Example `.bash_profile` lines for Stanford's "Sherlock" compute cluster, and note the `module load` command (more info at [setup_getting_started.md](https://github.com/CovertLab/ComputationalResources/blob/master/_sherlock/setup_getting_started.md), but that doc is out of date):
 
    ```bash
    module load wcEcoli/sherlock2
@@ -54,18 +74,38 @@ pyenv lets you easily switch between multiple versions of Python and between gro
    fi
    ```
 
-3. You'll need to put the project on the `PYTHONPATH` when working on it. Consider adding this to your profile or creating a shell alias to do this when you work on wcEcoli:
+3. Open a new shell so it runs the updated profile.
+
+4. You'll need to put the project on the `PYTHONPATH` when working on it. Consider adding this to your profile _or_ creating a shell alias to do it when you work on wcEcoli:
 
    ```bash
    export PYTHONPATH="$HOME/wcEcoli:$PYTHONPATH"
    ```
 
-4. Open a new shell so it runs the updated profile.
-
-5. NOTE: if you have a `~/.local/` directory, paths might not work properly with `pyenv` and you might receive error messages. ([TODO] In that case, delete the directory?)
+5. **NOTE:** if you have a `~/.local/` directory, paths might not work properly with `pyenv` and you might receive error messages. ([TODO] What error messages? Delete the directory?)
 
 
-## PyCharm setup
+## Additional requirements for macOS Mojave
+
+**macOS Mojave (10.14+):**
+  * **Update FUSE before upgrading to macOS Mojave** if you have FUSE.
+  * After upgrading to Mojave, run `xcode-select --install` again.
+  * On Mojave, follow the "you will also need to install the additional SDK headers" instructions on [https://github.com/pyenv/pyenv/wiki/Common-build-problems](https://github.com/pyenv/pyenv/wiki/Common-build-problems). In short:
+
+   ```bash
+   sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
+   ```
+
+
+## Recommended tools
+
+  * [PyCharm](https://www.jetbrains.com/pycharm/) or PyCharm Pro -- a very productive Integrated Development Environment (IDE)
+  * [Sublime Text 3](https://www.sublimetext.com/) -- a slick code editor with many speed features
+  * [GitHub Desktop app](https://desktop.github.com/) -- greases the skids for common git operations and lets you compose commit messages while reviewing the edits
+  * [iTerm2](https://www.iterm2.com/) for macOS -- much nicer than the built-in Terminal app
+
+
+### PyCharm setup
 
 After building the pyenv and cloning the repo to a local directory, you can create a project in PyCharm.
 
@@ -74,8 +114,10 @@ After building the pyenv and cloning the repo to a local directory, you can crea
 
 [TODO] Notes on setting up code style, inspections, ...
 
+
 ### Great PyCharm features to know
 
+* Install the "Markdown support" plug-in to help with editing `*.md` files.
 * Cmd-click (or Ctrl-click) a name to jump to its definition.
 * Navigate > Class, Navigate > File, Navigate > Symbol -- jump to any class, file, or symbol defined in the project or its libraries. This supports "fuzzy matching" where you can type characters in the name to narrow down the list.
 * Edit > Find > Find Usages -- find all references to the selected symbol.
@@ -84,7 +126,7 @@ After building the pyenv and cloning the repo to a local directory, you can crea
 * Hit `F1` to get documentation on an identifier's definition.
 
 
-## iTerm2 Tips
+### iTerm2 Tips
 
 **iTerm2** is a macOS app that [greatly improves on the stock terminal app](https://www.iterm2.com/features.html).
 
@@ -92,7 +134,7 @@ Tips (also see [the FAQ](https://www.iterm2.com/faq.html)):
 
 * If you configure it to save & load preferences to a Dropbox folder, you don't have to do much when switching to a new Mac.
 * tmux Integration lets you make and adjust window split panes much more easily than typing tmux commands.
-* [Shell Integration](https://www.iterm2.com/documentation-shell-integration.html) is very handy, but the regular setup didn't work quite right on Sherlock with the pyenv virtualenv shell prompt. So for Sherlock, Jerry just set up the Triggers as documented on that page. The "Prompt Detected" trigger is probably the most useful part since it lets you jump between shell prompts in the terminal output.
+* [Shell Integration](https://www.iterm2.com/documentation-shell-integration.html) is very handy, but the regular setup didn't work quite right on Sherlock with the pyenv virtualenv shell prompt. So for Sherlock, just set up the "Triggers" as documented on that page. The "Prompt Detected" trigger is probably the most useful part since it lets you jump between shell prompts in the terminal output.
 
 Example "Default" profile configuration for "Keys":
 * Option up/down arrows: scroll one line up/down
