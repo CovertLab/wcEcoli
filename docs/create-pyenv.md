@@ -192,3 +192,20 @@ This page goes through the Python environment setup steps in more detail and wit
    ```
 
    If the unit tests fail with an error message saying the loader can't load `.../pyenv/versions/.../lib/libpython2.7.a`, that means you didn't successfully `--enable-shared` when installing python. Go back to that step, run `PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.15 --force`, and repeat all the steps after it.
+
+
+## Sherlock SCRATCH directory setup
+
+1. Make sure the model's output goes to the `$SCRATCH` filesystem (which is larger) rather than SHERLOCK HOME.
+
+   ```bash
+   mkdir $SCRATCH/wcEcoli_out
+   cd wcEcoli
+   ln -s $SCRATCH/wcEcoli_out out
+   ```
+
+2. Create a symbolic link to a shared sim data cache directory on `$PI_SCRATCH` that should contain a copy of the newest sim data object (it should be updated by the daily build):
+
+   ```bash
+   ln -s $PI_SCRATCH/wc_ecoli/cached cached
+   ```
