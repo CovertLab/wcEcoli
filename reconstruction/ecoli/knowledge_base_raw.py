@@ -45,6 +45,7 @@ LIST_OF_DICT_FILENAMES = (
 	"proteinComplexes.tsv",
 	"proteins.tsv",
 	"reactions.tsv",
+	"ribosomal_protein_transcripts.tsv",
 	"rnas.tsv",
 	"secretions.tsv",
 	"terminators.tsv",

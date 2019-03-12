@@ -74,12 +74,15 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			'sequenceIdx', 'sequenceLength'
 			)
 
+		elongation_rates = np.full(
+			self.sequences.shape[0],
+			self._dnaPolymeraseElongationRate())
+
 		sequences = buildSequences(
 			self.sequences,
 			sequenceIdx,
 			sequenceLength,
-			self._dnaPolymeraseElongationRate()
-			)
+			elongation_rates)
 
 		# Count number of each dNTP in sequences for the next timestep
 		sequenceComposition = np.bincount(
@@ -192,12 +195,15 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			'sequenceIdx', 'sequenceLength', 'massDiff_DNA'
 			)
 
+		elongation_rates = np.full(
+			self.sequences.shape[0],
+			self._dnaPolymeraseElongationRate())
+
 		sequences = buildSequences(
 			self.sequences,
 			sequenceIdx,
 			sequenceLengths,
-			self._dnaPolymeraseElongationRate()
-			)
+			elongation_rates)
 
 		# Use polymerize algorithm to quickly calculate the number of
 		# elongations each "polymerase" catalyzes

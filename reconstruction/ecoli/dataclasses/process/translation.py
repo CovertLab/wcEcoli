@@ -21,6 +21,7 @@ class Translation(object):
 		self._buildMonomerData(raw_data, sim_data)
 		self._buildTranslation(raw_data, sim_data)
 		self._buildTranslationEfficiency(raw_data, sim_data)
+		self._buildRibosomalProteins(raw_data, sim_data)
 
 	def _buildMonomerData(self, raw_data, sim_data):
 		assert all([len(protein['location']) == 1 for protein in raw_data.proteins])
@@ -40,8 +41,7 @@ class Translation(object):
 
 			rnaIds.append('{}[{}]'.format(
 				rnaId,
-				rnaLocation
-				))
+				rnaLocation))
 
 		lengths = []
 		aaCounts = []
@@ -53,9 +53,7 @@ class Translation(object):
 			counts = []
 
 			for aa in sim_data.amino_acid_1_to_3_ordered.viewkeys():
-				counts.append(
-					sequence.count(aa)
-					)
+				counts.append(sequence.count(aa))
 
 			lengths.append(len(sequence))
 			aaCounts.append(counts)
@@ -140,8 +138,7 @@ class Translation(object):
 
 		maxLen = np.int64(
 			self.monomerData["length"].asNumber().max()
-			+ sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s)
-			)
+			+ sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
 
 		self.translationSequences = np.empty((sequences.shape[0], maxLen), np.int8)
 		self.translationSequences.fill(polymerize.PAD_VALUE)
@@ -167,6 +164,7 @@ class Translation(object):
 		self.translationEndWeight = (sim_data.getter.getMass(["WATER[c]"]) / raw_data.constants['nAvogadro']).asNumber(units.fg)
 
 	def _buildTranslationEfficiency(self, raw_data, sim_data):
+		# WTF?
 		monomerIds = [x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]" for x in raw_data.proteins]
 		monomerIdToGeneId = dict([(x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]", x["geneId"].encode("utf-8")) for x in raw_data.proteins])
 		geneIdToTrEff = dict([(x["geneId"].encode("utf-8"), x["translationEfficiency"]) for x in raw_data.translationEfficiency if type(x["translationEfficiency"]) == float])
@@ -180,3 +178,8 @@ class Translation(object):
 
 		self.translationEfficienciesByMonomer = np.array(trEffs)
 		self.translationEfficienciesByMonomer[np.isnan(self.translationEfficienciesByMonomer)] = np.nanmean(self.translationEfficienciesByMonomer)
+
+	def _buildRibosomalProteins(self, raw_data, sim_data):
+		self.ribosomal_proteins = [
+			rprotein['id'] + rprotein['location']
+			for rprotein in raw_data.ribosomal_protein_transcripts]

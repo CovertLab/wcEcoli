@@ -194,7 +194,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		# advance one step at a time until a sequence is limited
 		while notLimited and projectionIndex < self._maxElongation:
 			index = self._currentStep + projectionIndex
-			monomerStep = sum_monomers(self._sequenceMonomers[:, :, index], self._activeSequencesIndexes)
+			monomerStep = sum_monomers(
+				self._sequenceMonomers[:, :, index],
+				self._activeSequencesIndexes)
+
 			self._monomerHistory[projectionIndex] = monomerProjection + monomerStep
 			self._monomerIsLimiting = self._monomerHistory[projectionIndex] > self._monomerLimits
 			if self._monomerIsLimiting.any():

@@ -50,6 +50,20 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# self.ribosomeElongationRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 
 		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
+		self.base_elongation_rate = float(sim_data.constants.ribosomeElongationRateBase.asNumber(units.aa / units.s))
+
+		self.ribosomal_protein_ids = sim_data.process.translation.ribosomal_proteins
+
+		self.protein_indexes = {
+			protein: index
+			for index, protein in enumerate(proteinIds)}
+
+		self.ribosomal_proteins = {
+			rprotein: protein_indexes[rprotein]
+			for rprotein in enumerate(self.ribosomal_protein_ids)}
+
+		self.elongation_rates = np.full(proteinIds.shape, self.base_elongation_rate)
+		self.elongation_rates[self.ribosomal_proteins] = self.maxRibosomeElongationRate
 
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
 
@@ -131,7 +145,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.proteinSequences,
 			proteinIndexes,
 			peptideLengths,
-			self.ribosomeElongationRate)
+			self.elongation_rates)
 
 		sequenceHasAA = (sequences != polymerize.PAD_VALUE)
 		aasInSequences = np.bincount(sequences[sequenceHasAA], minlength=21)
@@ -146,7 +160,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 			molAasRequested = translationSupplyRate * dryMass * self.timeStepSec() * units.s
 
-			countAasRequested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
+			countAasRequested = units.convertNoUnitToNumber(
+				molAasRequested * self.nAvogadro)
 
 			countAasRequested = np.fmin(countAasRequested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
 		else:
@@ -185,15 +200,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Build amino acids sequences for each ribosome to polymerize
 		proteinIndexes, peptideLengths, massDiffProtein = activeRibosomes.attrs(
-			'proteinIndex', 'peptideLength', 'massDiff_protein'
-			)
+			'proteinIndex', 'peptideLength', 'massDiff_protein')
 
 		sequences = buildSequences(
 			self.proteinSequences,
 			proteinIndexes,
 			peptideLengths,
-			self.ribosomeElongationRate
-			)
+			self.elongation_rates)
 
 		if sequences.size == 0:
 			return
@@ -208,8 +221,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			sequences,
 			aaCounts,
 			10000000, # Set to a large number, the limit is now taken care of in metabolism
-			self.randomState
-			)
+			self.randomState)
 
 		sequenceElongations = result.sequenceElongation
 		aasUsed = result.monomerUsages
@@ -219,15 +231,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		massIncreaseProtein = computeMassIncrease(
 			sequences,
 			sequenceElongations,
-			self.aaWeightsIncorporated
-			)
+			self.aaWeightsIncorporated)
 
 		updatedLengths = peptideLengths + sequenceElongations
 
 		didInitialize = (
 			(sequenceElongations > 0) &
-			(peptideLengths == 0)
-			)
+			(peptideLengths == 0))
 
 		updatedMass = massDiffProtein + massIncreaseProtein
 
@@ -240,8 +250,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Update active ribosomes, terminating if neccessary
 		activeRibosomes.attrIs(
 			peptideLength = updatedLengths,
-			massDiff_protein = updatedMass
-			)
+			massDiff_protein = updatedMass)
 
 		# Ribosomes that reach the end of their sequences are terminated and
 		# dissociated into 30S and 50S subunits. The polypeptide that they are polymerizing
@@ -252,8 +261,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		terminatedProteins = np.bincount(
 			proteinIndexes[didTerminate],
-			minlength = self.proteinSequences.shape[0]
-			)
+			minlength = self.proteinSequences.shape[0])
 
 		activeRibosomes.delByIndexes(np.where(didTerminate)[0])
 		self.bulkMonomers.countsInc(terminatedProteins)
@@ -271,8 +279,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Report stalling information
 		expectedElongations = np.fmin(
 			self.ribosomeElongationRate,
-			terminalLengths - peptideLengths
-			)
+			terminalLengths - peptideLengths)
 
 		ribosomeStalls = expectedElongations - sequenceElongations
 
