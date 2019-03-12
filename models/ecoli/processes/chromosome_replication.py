@@ -76,7 +76,8 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 		elongation_rates = np.full(
 			self.sequences.shape[0],
-			self._dnaPolymeraseElongationRate())
+			self._dnaPolymeraseElongationRate(),
+			dtype=np.int64)
 
 		sequences = buildSequences(
 			self.sequences,
@@ -197,7 +198,8 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 		elongation_rates = np.full(
 			self.sequences.shape[0],
-			self._dnaPolymeraseElongationRate())
+			self._dnaPolymeraseElongationRate(),
+			dtype=np.int64)
 
 		sequences = buildSequences(
 			self.sequences,

@@ -19,6 +19,7 @@ from itertools import izip
 
 import numpy as np
 import copy
+import re
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
@@ -52,18 +53,29 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
 		self.base_elongation_rate = float(sim_data.constants.ribosomeElongationRateBase.asNumber(units.aa / units.s))
 
-		self.ribosomal_protein_ids = sim_data.process.translation.ribosomal_proteins
+		self.ribosomal_protein_ids = [
+			re.sub(r'RNA', 'MONOMER', rprotein)
+			for rprotein in sim_data.process.translation.ribosomal_proteins]
 
 		self.protein_indexes = {
 			protein: index
 			for index, protein in enumerate(proteinIds)}
 
 		self.ribosomal_proteins = {
-			rprotein: protein_indexes[rprotein]
+			rprotein: self.protein_indexes.get(rprotein, -1)
 			for rprotein in enumerate(self.ribosomal_protein_ids)}
 
-		self.elongation_rates = np.full(proteinIds.shape, self.base_elongation_rate)
-		self.elongation_rates[self.ribosomal_proteins] = self.maxRibosomeElongationRate
+		self.rprotein_indexes = np.array([
+			index
+			for index in self.ribosomal_proteins.values()
+			if index >= 0], dtype=np.int64)
+
+		self.elongation_rates = np.full(
+			proteinIds.shape,
+			self.base_elongation_rate,
+			dtype=np.int64)
+
+		self.elongation_rates[self.rprotein_indexes] = self.maxRibosomeElongationRate
 
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
 
@@ -178,8 +190,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("GrowthLimits", "gtpPoolSize", self.gtp.total()[0])
 		self.writeToListener("GrowthLimits", "gtpRequestSize", gtpsHydrolyzed)
 
-		if self._sim._simulationStep > 30:
-			import ipdb; ipdb.set_trace()
+		# if self._sim._simulationStep > 30:
+		# 	import ipdb; ipdb.set_trace()
 
 		# GTP hydrolysis is carried out in Metabolism process for growth associated maintenence
 		# THis is set here for metabolism to use
