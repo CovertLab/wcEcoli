@@ -1,11 +1,13 @@
 # Running the model
 
-[TODO] Combine all the how-to-run pages into one page with sections for the parts that differ between environments. It would be impractical to maintain docs for the cross-product of ways to run the model (manual scripts, Fireworks, whatever works on the Google Cloud) × places to run it (on your desktop, on Sherlock, on Google Cloud). This should move over docs from "Running on Sherlock" and "Computational Resources".
+See the top level [README](../README.md) for general instructions and [README](README.md) for details on setup and running.
+
+[TODO] Describe the different ways to run the model and their tradeoffs. Reevaluate the doc organization. What to copy from "Computational Resources"?
 
 
 ## Fireworks
 
-[TODO] Move over (or link to) the documents on setting up MongoDB and Fireworks then using `fw_queue.py` and `lpad` or `rlaunch`. Meanwhile, see the top level [README](../README.md) and the old `GettingStartedTutorial_sherlock.pdf`.
+See [Setting up to run FireWorks](wholecell/fireworks/README.md) for setup to run a FireWorks workflow of cell simulations and analysis plots.
 
 
 ## Using the Manual Runscripts

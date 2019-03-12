@@ -5,7 +5,7 @@ This repository contains work to date on the [Covert Lab's](https://www.covert.s
 
 ## Setup
 
-See [docs/README.md](docs/README.md) for docs on how to set up and run the model. As a shortcut, follow the instructions in
+See [docs/README.md](docs/README.md) for docs on how to set up and run the model. As a shortcut, the core setup instructions are in:
 
   1. [Required development tools](dev-tools.md) to install the basic tools, then
   2. [Creating the "pyenv" runtime environment](create-pyenv.md) to set up the Python runtime environment for the model.
@@ -31,6 +31,8 @@ There are three ways to run the model:
    1. Use the manual runscripts.
    2. Queue up a Fireworks workflow, then run it.
    3. Use the multi-scale agent-based framework.
+
+[TODO] Summarize the differences and tradeoffs.
 
 
 ## Using the manual runscripts
