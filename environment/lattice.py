@@ -71,6 +71,17 @@ LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 # UNDECAPRENYL-DIPHOSPHATE[p]: 5373
 # -------------------------------------------------
 
+# Function for getting media keys from sorted timeline
+# TODO: add docstring
+# TODO: generalize this function as "select x from paired timeline", not media-specific
+def select_media(timeline, time):
+	selected = None
+	for t, media in timeline:
+		if time < t:
+			break
+		selected = media
+	return selected
+
 class EnvironmentSpatialLattice(EnvironmentSimulation):
 	def __init__(self, config):
 		self._time = 0
@@ -92,6 +103,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		self.translation_jitter = config.get('translation_jitter', 0.001)
 		self.rotation_jitter = config.get('rotation_jitter', 0.05)
 		self.depth = config.get('depth', 3000.0)
+		self.timeline = sorted(config.get('timeline', [(0,'minimal')])) #TODO: function to lookup concentrations based on condition
 
 		# derived parameters
 		self.total_volume = (self.depth * self.edge_length ** 2) * (10 ** -15) # (L)
@@ -145,6 +157,9 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 	def gaussian(self, distance):
 		return np.exp(-np.power(distance, 2.) / (2 * np.power(self.gradient['deviation'], 2.)))
+
+	# def select_media(self, timeline, time):
+
 
 	def evolve(self):
 		''' Evolve environment '''
