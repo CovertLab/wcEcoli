@@ -52,7 +52,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 				shape = recruitmentData["shape"]
 			)
 
-		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
+		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateBase.asNumber(units.aa / units.s))
+		# self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
 
 		# Determine changes from genetic perturbations
 		self.genetic_perturbations = {}

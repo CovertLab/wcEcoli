@@ -53,9 +53,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
 		self.base_elongation_rate = float(sim_data.constants.ribosomeElongationRateBase.asNumber(units.aa / units.s))
 
-		self.ribosomal_protein_ids = [
-			re.sub(r'RNA', 'MONOMER', rprotein)
-			for rprotein in sim_data.process.translation.ribosomal_proteins]
+		self.ribosomal_protein_ids = sim_data.moleculeGroups.rProteins
+		# self.ribosomal_protein_ids = [
+		# 	re.sub(r'RNA', 'MONOMER', rprotein)
+		# 	for rprotein in sim_data.process.translation.ribosomal_proteins]
 
 		self.protein_indexes = {
 			protein: index
@@ -63,7 +64,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.ribosomal_proteins = {
 			rprotein: self.protein_indexes.get(rprotein, -1)
-			for rprotein in enumerate(self.ribosomal_protein_ids)}
+			for rprotein in self.ribosomal_protein_ids}
 
 		self.rprotein_indexes = np.array([
 			index
