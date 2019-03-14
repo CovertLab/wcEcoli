@@ -11,6 +11,8 @@ from __future__ import absolute_import
 import os
 import cPickle
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import sys
 from datetime import date
@@ -20,6 +22,14 @@ from wholecell.io.tablereader import TableReader
 #from wholecell.analysis.analysis_tools import exportFigure
 #from models.ecoli.analysis import multigenAnalysisPlot
 #from wholecell.utils.sparkline import whitePadSparklineAxis
+'''
+#TODO:
+
+change all names to having underscore from all camel case.
+
+'''
+
+
 
 
 
@@ -46,11 +56,12 @@ def make_output_dirs(sim_data_path):
 	Make the output directory if it does not already exist
 	"""
 	output_file_name = get_todays_date()
-	output_dir = os.path.join(os.path.dirname(sim_data_path), 
-		'subgenerational_analysis', 'outputs', output_file_name)
+	base_output_dir = os.path.join(os.path.dirname(sim_data_path), 
+		'subgenerational_analysis', output_file_name)
+	output_dir = os.path.join(base_output_dir, 'outputs')
 	if not os.path.exists(output_dir):
 		os.makedirs(output_dir)
-	return
+	return output_dir
 
 def get_input_paths(argument): 
 	# Check for input file.
@@ -73,80 +84,84 @@ def get_input_paths(argument):
 
 simulation_data_path, simulation_data_path_gen, simulation_data_file = get_input_paths(sys.argv)
 sim_data = load_simulation_data(simulation_data_file)
-make_output_dirs(simulation_data_path)
+output_dir = make_output_dirs(simulation_data_path)
 
 #get all cells
 ap = AnalysisPaths(simulation_data_path_gen, multi_gen_plot = True)
-allDir = ap.get_cells()
+all_dir = ap.get_cells()
 
 rna_ids = sim_data.process.transcription.rnaData["id"]
 gene_ids = sim_data.process.transcription.rnaData["geneId"]
 protein_ids = sim_data.process.translation.monomerData["id"]
 
 # For each generation
-nonzeroSumRnaCounts_allGens = []
-nonzeroSumProteinCounts_allGens = []
+non_zero_sum_rna_counts_all_gens = []
+non_zero_sum_protein_counts_all_gens = []
 time = []
 time_eachGen = []
-for i, simDir in enumerate(allDir):
-	simOutDir = os.path.join(simDir, "simOut")
-	print 'Got to this point at least'
-
-	time += TableReader(os.path.join(simOutDir, "Main")).readColumn("time").tolist()
-	time_eachGen.append(TableReader(os.path.join(simOutDir, "Main")).readColumn("time").tolist()[0])
+for i, sim_dir in enumerate(all_dir):
+	sim_out_dir = os.path.join(sim_dir, "simOut")
+	
+	time += TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()
+	time_eachGen.append(TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()[0])
 
 	# Read counts of transcripts
-	bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
+	bulkMolecules = TableReader(os.path.join(sim_out_dir, "BulkMolecules"))
 	if i == 0:
-		moleculeIds = bulkMolecules.readAttribute("objectNames")
-		rnaIndices = np.array([moleculeIds.index(x) for x in rna_ids])
-		proteinIndicesAll = np.array([moleculeIds.index(x) for x in proteinIdsall])
-	rna_counts = bulkMolecules.readColumn("counts")[:, rnaIndices]
-	proteinCountsAll = bulkMolecules.readColumn("counts")[:, proteinIndicesAll]
+		molecule_ids = bulkMolecules.readAttribute("objectNames")
+		rna_indices = np.array([molecule_ids.index(x) for x in rna_ids])
+		protein_indices = np.array([molecule_ids.index(x) for x in protein_ids])
+	rna_counts = bulkMolecules.readColumn("counts")[:, rna_indices]
+	protein_counts_all = bulkMolecules.readColumn("counts")[:, protein_indices]
+	#I think i initially called this _all cause its different than how heejo classified protein ids.
 	bulkMolecules.close()
 
+
 	# Sum counts over timesteps
-	sumRnaCounts = rna_counts.sum(axis = 0)
-	sumProteinCounts = proteinCountsAll.sum(axis = 0)
+	sum_rna_counts = rna_counts.sum(axis = 0)
+	sum_protein_counts = protein_counts_all.sum(axis = 0)
 
 	# Flag where the sum is nonzero (True if nonzero, False if zero)
-	nonzeroSumRnaCounts = sumRnaCounts != 0
-	nonzeroSumRnaCounts_allGens.append(nonzeroSumRnaCounts)
-	nonzeroSumProteinCounts = sumProteinCounts != 0
-	nonzeroSumProteinCounts_allGens.append(nonzeroSumProteinCounts)
+	non_zero_sum_rna_counts = sum_rna_counts != 0
+	non_zero_sum_rna_counts_all_gens.append(non_zero_sum_rna_counts)
+	non_zero_sum_protein_counts = sum_protein_counts != 0
+	non_zero_sum_protein_counts_all_gens.append(non_zero_sum_protein_counts)
 
-import pdb; pdb.set_trace()
 
 rna_ids_counts = np.vstack((rna_ids, rna_counts))
-protein_ids_counts = np.vstack((proteinIdsall, proteinCountsAll))
-with open(os.path.join(plotOutDir, "multi_gen_rnacounts_ids.tsv"), 'wb') as fp:
+protein_ids_counts = np.vstack((protein_ids, protein_counts_all))
+
+combined_rna_protein_counts = np.hstack((rna_ids_counts, protein_ids_counts))
+
+with open(os.path.join(output_dir, "multi_gen_rnacounts_ids.tsv"), 'wb') as fp:
 	np.savetxt(fp, rna_ids_counts, '%s','\t')
-with open(os.path.join(plotOutDir, "multi_gen_proteincounts_ids.tsv"), 'wb') as fp:
+with open(os.path.join(output_dir, "multi_gen_proteincounts_ids.tsv"), 'wb') as fp:
 	np.savetxt(fp, protein_ids_counts, '%s','\t')
+with open(os.path.join(output_dir, "multi_gen_rna_protein_counts_ids.tsv"), 'wb') as fp:
+	np.savetxt(fp, combined_rna_protein_counts, '%s','\t')
 
 # Average (mean) over generations
-nonzeroSumRnaCounts_allGens = np.array(nonzeroSumRnaCounts_allGens)
-avgRnaCounts = nonzeroSumRnaCounts_allGens.mean(axis = 0)
+non_zero_sum_rna_counts_all_gens = np.array(non_zero_sum_rna_counts_all_gens)
+avg_rna_counts = non_zero_sum_rna_counts_all_gens.mean(axis = 0)
 
 # Average (mean) monomers over generations
-nonzeroSumProteinCounts_allGens = np.array(nonzeroSumProteinCounts_allGens)
-avgProteinCounts = nonzeroSumProteinCounts_allGens.mean(axis = 0)
+non_zero_sum_protein_counts_all_gens = np.array(non_zero_sum_protein_counts_all_gens)
+avg_protein_counts = non_zero_sum_protein_counts_all_gens.mean(axis = 0)
 
 # Identify subgenerationally transcribed genes
-subgenRnaIndices = np.where(np.logical_and(avgRnaCounts != 0., avgRnaCounts != 1.))[0]
-subgenRnaIds = rnaIds[subgenRnaIndices]
-subgenMonomerIndices = [np.where(sim_data.process.translation.monomerData["rnaId"] == x)[0][0] for x in subgenRnaIds]
-subgenMonomerIds = sim_data.process.translation.monomerData["id"][subgenMonomerIndices]
+subgen_rna_indices = np.where(np.logical_and(avg_rna_counts != 0., avg_rna_counts != 1.))[0]
+subgen_rna_ids = rna_ids[subgen_rna_indices]
+subgen_monomer_indices = [np.where(sim_data.process.translation.monomerData["rnaId"] == x)[0][0] for x in subgen_rna_ids]
+subgen_monomer_ids = sim_data.process.translation.monomerData["id"][subgen_monomer_indices]
 
 # Identify subgenerationally translated genes (not directly tied to subgenerational transcription)
-subgenMonomerIndicesAll = np.where(np.logical_and(avgProteinCounts != 0., avgProteinCounts != 1.))[0]
-subgenMonomerIdsAll = proteinIdsall[subgenMonomerIndicesAll]
-
-with open(os.path.join(plotOutDir, "subgenerational_rna_ids.tsv"), 'wb') as fp:
-	np.savetxt(fp, subgenRnaIds, '%s','\t')
-with open(os.path.join(plotOutDir, "subgenerational_protein_ids.tsv"), 'wb') as fp:
-	np.savetxt(fp, subgenMonomerIdsAll, '%s','\t')
+subgen_monomer_indices_all = np.where(np.logical_and(avg_protein_counts != 0., avg_protein_counts != 1.))[0]
+subgen_monomer_ids_all = protein_ids[subgen_monomer_indices_all]
 
 
-#load simulation data
+with open(os.path.join(output_dir, "subgenerational_rna_ids.tsv"), 'wb') as fp:
+	np.savetxt(fp, subgen_rna_ids, '%s','\t')
+with open(os.path.join(output_dir, "subgenerational_protein_ids.tsv"), 'wb') as fp:
+	np.savetxt(fp, subgen_monomer_ids_all, '%s','\t')
 
+# plot mRNA and 
