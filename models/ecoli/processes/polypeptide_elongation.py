@@ -113,7 +113,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.KMtf = constants.Km_synthetase_uncharged_trna.asNumber(MICROMOLAR_UNITS)
 		self.KMaa = constants.Km_synthetase_amino_acid.asNumber(MICROMOLAR_UNITS)
 		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
-		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
+		self.krtf = 500
+		self.KD_RelA = constants.KD_RelA_ribosome.asNumber(MICROMOLAR_UNITS)
+		self.k_RelA = constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s)
+		self.k_SpoT_syn = constants.k_SpoT_ppGpp_synthesis.asNumber(MICROMOLAR_UNITS / units.s)
+		self.k_SpoT_deg = constants.k_SpoT_ppGpp_degradation.asNumber(1 / units.s)
 
 		self.aa_conc_diff = {}
 
