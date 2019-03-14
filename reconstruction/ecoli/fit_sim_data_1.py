@@ -1,5 +1,5 @@
 """
-The fitter, aka parameter calculator.
+The parca, aka parameter calculator.
 
 TODO: establish a controlled language for function behaviors (i.e. create* set* fit*)
 TODO: functionalize so that values are not both set and returned from some methods
@@ -14,10 +14,11 @@ import scipy.optimize
 import cPickle
 from itertools import izip
 
+from arrow import StochasticSystem
+
 import wholecell
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
-from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWithPrebuiltMatrices
 
 from wholecell.utils import filepath, parallelization
 from wholecell.utils import units
@@ -104,7 +105,7 @@ def fitSimData_1(
 
 	# Limit the number of conditions that are being fit so that execution time decreases
 	if debug:
-		print("Warning: Running the Fitter in debug mode - not all conditions will be fit")
+		print("Warning: Running the Parca in debug mode - not all conditions will be fit")
 		key = sim_data.tfToActiveInactiveConds.keys()[0]
 		sim_data.tfToActiveInactiveConds = {key: sim_data.tfToActiveInactiveConds[key]}
 
@@ -144,7 +145,7 @@ def fitSimData_1(
 	cpus = parallelization.cpus(cpus, advice='mac override')
 
 	if cpus > 1:
-		print("Starting {} Fitter processes".format(cpus))
+		print("Starting {} Parca processes".format(cpus))
 		pool = mp.Pool(processes = cpus)
 		conds = sorted(sim_data.tfToActiveInactiveConds)
 		results = [
@@ -191,7 +192,7 @@ def fitSimData_1(
 	sim_data.process.translation.ribosomeFractionActiveDict = {}
 
 	if cpus > 1:
-		print("Starting {} Fitter processes".format(cpus))
+		print("Starting {} Parca processes".format(cpus))
 		pool = mp.Pool(processes = cpus)
 		results = [pool.apply_async(fitCondition, (sim_data, cellSpecs[condition], condition)) for condition in sorted(cellSpecs)]
 		pool.close()
@@ -1613,10 +1614,6 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 
 	# Data for complexation
 	complexationStoichMatrix = sim_data.process.complexation.stoichMatrix().astype(np.int64, order = "F")
-	complexationPrebuiltMatrices = mccBuildMatrices(
-		complexationStoichMatrix
-		)
-
 	# Data for equilibrium binding
 	# equilibriumDerivatives = sim_data.process.equilibrium.derivatives
 	# equilibriumDerivativesJacobian = sim_data.process.equilibrium.derivativesJacobian
@@ -1675,12 +1672,13 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 		complexationMoleculeCounts = complexationMoleculesView.counts()
 
 		# Form complexes
-		updatedCompMoleculeCounts, complexationEvents = mccFormComplexesWithPrebuiltMatrices(
-			complexationMoleculeCounts,
-			seed,
-			complexationStoichMatrix,
-			*complexationPrebuiltMatrices
-			)
+		time_step = 2**31 # don't stop until all complexes are formed.
+		complexation_rates = sim_data.process.complexation.rates
+		system = StochasticSystem(complexationStoichMatrix.T, complexation_rates, random_seed=seed)
+		complexation_result = system.evolve(time_step, complexationMoleculeCounts)
+
+		updatedCompMoleculeCounts = complexation_result['outcome']
+		complexationEvents = complexation_result['occurrences']
 
 		complexationMoleculesView.countsIs(updatedCompMoleculeCounts)
 
