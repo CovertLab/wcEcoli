@@ -242,6 +242,12 @@ class Metabolism(wholecell.processes.process.Process):
 			self.nutrientToDoublingTime.get(current_media, self.nutrientToDoublingTime["minimal"])
 			)
 
+		for aa, diff in getattr(self._sim.processes['PolypeptideElongation'], 'aa_conc_diff').items():
+			new_target = CONC_UNITS * self.homeostaticObjective[aa] + diff
+			if new_target.asNumber() < 0:
+				new_target *= 0
+			self.concModificationsBasedOnCondition[aa] = new_target
+
 		# Set external molecule levels
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
 			self.externalMoleculeIDs,
@@ -266,10 +272,10 @@ class Metabolism(wholecell.processes.process.Process):
 			self.burnInComplete = True
 			self.fba.enableKineticTargets()
 
-		# Allow flexibility for solver in first time step after an environment shift
-		if updatedObjective:
-			self.fba.disableKineticTargets()
-			self.burnInComplete = False
+		# # Allow flexibility for solver in first time step after an environment shift
+		# if updatedObjective:
+		# 	self.fba.disableKineticTargets()
+		# 	self.burnInComplete = False
 
 		#  Find metabolite concentrations from metabolite counts
 		metaboliteConcentrations =  countsToMolar * metaboliteCountsInit[self.internalExchangeIdxs]

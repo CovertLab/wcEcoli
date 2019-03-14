@@ -115,6 +115,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 
+		self.aa_conc_diff = {}
+
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
 		# which is used to create single-cell variability in growth rate
@@ -152,6 +154,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		sequenceHasAA = (sequences != polymerize.PAD_VALUE)
 		aasInSequences = np.bincount(sequences[sequenceHasAA], minlength=21)
 
+		# Calculate AA supply for expected doubling of protein
+		dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
+		translation_supply_rate = self.translation_aa_supply[current_nutrients] * self.elngRateFactor
+		mol_aas_supplied = translation_supply_rate * dryMass * self.timeStepSec() * units.s
+		self.aa_supply = units.convertNoUnitToNumber(mol_aas_supplied * self.nAvogadro)
+		self.writeToListener("RibosomeData", "translationSupply", translation_supply_rate.asNumber())
+
+		# Calculate AA request
 		if self.use_trna_charging:
 			# Conversion from counts to molarity
 			cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
@@ -208,17 +218,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.water.requestIs(aa_counts_for_translation.sum())
 		else:
 			if self.translationSupply:
-				translationSupplyRate = self.translation_aa_supply[current_media_id] * self.elngRateFactor
-
-				self.writeToListener("RibosomeData", "translationSupply", translationSupplyRate.asNumber())
-
-				dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
-
-				molAasRequested = translationSupplyRate * dryMass * self.timeStepSec() * units.s
-
-				aa_counts_for_translation = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
-
-				aa_counts_for_translation = np.fmin(aa_counts_for_translation, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
+				aa_counts_for_translation = np.fmin(self.aa_supply, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
 			else:
 				aa_counts_for_translation = aasInSequences
 
@@ -242,6 +242,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gtpRequest = gtpsHydrolyzed
 
 	def evolveState(self):
+		self.aa_conc_diff = {}
+
 		# Write allocation data to listener
 		self.writeToListener("GrowthLimits", "gtpAllocated", self.gtp.count())
 		self.writeToListener("GrowthLimits", "aaAllocated", self.aas.counts())
@@ -368,6 +370,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.aas.countsDec(aas_used)
 			self.water.countInc(nElongations - nInitialized)
 			net_charged = np.zeros(len(self.uncharged_trna_names))
+
+		aa_diff = self.aa_supply - (np.dot(self.aa_from_trna, net_charged) + aas_used)
+		self.aa_conc_diff = {aa: counts_to_molar * diff for aa, diff in zip(self.aaNames, aa_diff)}
+
 
 		# Write data to listeners
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
