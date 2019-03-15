@@ -38,6 +38,7 @@ LIST_OF_DICT_FILENAMES = (
 	"modifiedForms.tsv",
 	"modifiedFormsStoichiometry.tsv",
 	"modifiedRnas.tsv",
+	"operon_rnas.tsv",
 	"polymerized.tsv",
 	"previousBiomassFluxes.tsv",
 	"promoters.tsv",
