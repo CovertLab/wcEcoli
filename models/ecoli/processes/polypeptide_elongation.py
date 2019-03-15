@@ -375,7 +375,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.water.countInc(nElongations - nInitialized)
 			net_charged = np.zeros(len(self.uncharged_trna_names))
 
-		aa_diff = self.aa_supply - (np.dot(self.aa_from_trna, net_charged) + aas_used)
+		aa_used = np.dot(self.aa_from_trna, charged_and_elongated) + n_aa_charged
+		aa_diff = self.aa_supply - aa_used
 		self.aa_conc_diff = {aa: counts_to_molar * diff for aa, diff in zip(self.aaNames, aa_diff)}
 
 
