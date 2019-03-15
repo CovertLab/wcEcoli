@@ -231,7 +231,7 @@ class Metabolism(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
-		self.aa_targets = {aa: (conc * countsToMolar).asNumber(CONC_UNITS) for aa, conc in zip(self.aa_names, self.aas.total())}
+		self.aa_targets = {aa: (counts * countsToMolar).asNumber(CONC_UNITS) for aa, counts in zip(self.aa_names, self.aas.total())}
 
 		# get boundary conditions
 		self.boundary.updateBoundary()
@@ -249,7 +249,7 @@ class Metabolism(wholecell.processes.process.Process):
 			for aa, diff in self._sim.processes['PolypeptideElongation'].aa_conc_diff.items():
 				new_target = CONC_UNITS * self.aa_targets[aa] + diff
 				if new_target.asNumber() < 0:
-					new_target *= 0
+					new_target = (1 * countsToMolar).asNumber(CONC_UNITS)
 				self.concModificationsBasedOnCondition[aa] = new_target
 		else:
 			for aa, conc in self.aa_targets.items():
