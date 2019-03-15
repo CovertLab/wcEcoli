@@ -8,62 +8,69 @@ from agent.inner import CellSimulation
 
 
 TUMBLE_JITTER = 0.4 # (radians)
+# TODO: convert sample_fluxes to changes in molecules, round molecules to whole integers
+# TODO:
+def sample_fluxes(flux_distributions, media):
+	'''
+	Randomly sample a flux from the distribution of fluxes available for all reactions.
+	Args:
+		flux_distributions: Nested dictionary of the form {media: {reaction: [fluxes]}}
+		media: One of three WCM environments (minimal, minimal_plus_amino_acids, minimal_minus_oxygen)
+
+	Returns: dictionary of the form {reaction: flux}
+
+	'''
+	return {reaction: np.random.choice(distribution)
+			for reaction, distribution in flux_distributions[media].iteritems()}
+
+# TODO: only change fluxes when media changes
+
 
 class Transport(CellSimulation):
 	'''
 	Simple transport surrogate that inherits chemotaxis behavior from environment.surrogates.chemotaxis.py
 	'''
 
-	def __init__(self):
+	def __init__(self, config):
 		self.initial_time = 0.0
 		self.local_time = 0.0
 		# self.timestep = 1.0
 		self.environment_change = {}
-		self.volume = 1.0
+		self.volume = 1.0 # fL
 		self.division_time = 100
-
-		# Initialize transport reaction rate
-		self.reaction_rate = 10.0
-		self.equilibrium_constant = 1.0
 
 		# initial state
 		self.state = ['tumble']
-		self.external_concentrations = {
-			'GLC[p]': 0.0
-		}
-		self.internal_concentrations = {
-			'CheY': 0.0,
-			'CheY-P': 0.0,
-			'CheZ' : 0.0,
-			'CheA' : 0.0,
-			'GLC_internal' : 1.0,
-		} # save these internal_concentrations so that they can be output later through a listener
+		# self.external_concentrations = {
+		# 	'GLC[p]': 0.0
+		# }
+		self.internal_counts = {
+			'GLC': 1000,
+			'GLT': 1000,
+			'CYS': 1000
+		} # TODO: initialize this with something from the config
+		self.substrate_counts = config.get('substrate_counts')
+
+		# load in fluxes
+		self.flux_distributions = config.get('flux')
+		self.stoichiometry = config.get('stoichiometry')
+
+		# save these internal_concentrations so that they can be output later through a listener
 		self.motile_force = [0.0, 0.0] # initial magnitude and relative orientation
 		self.division = []
 
-		# Initialize flux direction and equilibrium concentration (mass action law)
-		# Equilibrium concentration determined by the equation GLC[p] / GLC_internal = equilibrium_constant
-		self.flux = ['influx']
-		self.equilibrium_concentration = self.external_concentrations['GLC[p]'] / self.equilibrium_constant
+		# Initialize media environment and fluxes
+		self.media = 'minimal'
+		# self.fluxes = config.get('flux_distributions', {'minimal':{'transporter':[0,0,0,0,1]}})
+		# self._molecule_ids = update['concentrations'].keys()
 
 
 	def update_state(self):
-		# update state based on internal and external concentrations
-
-		if self.external_concentrations['GLC[p]'] >= self.internal_concentrations['CheY-P']:
-			self.state = 'run'
-		else:
-			self.state = 'tumble'
-
-		# update internal glucose concentration based on distance from equilibrium concentration
-		if self.external_concentrations['GLC[p]'] >= self.internal_concentrations['GLC_internal']:
-			self.flux = 'influx'
-		else:
-			self.flux = 'efflux'
-
-		# update intracellular concentrations
-		self.internal_concentrations['CheY-P'] = self.external_concentrations['GLC[p]']
-
+		fluxes = sample_fluxes(self.flux_distributions, self.media) # TODO: make this once per cell cycle
+		print(fluxes)
+		# self.internal_counts
+		# countsToMolar = 1 / (self.nAvogadro * self.volume)
+		# delta_nutrients = ((1 / countsToMolar) * exchange_fluxes).astype(int)
 
 	def update_behavior(self):
 		# update behavior based on the current state of the system
@@ -77,19 +84,6 @@ class Transport(CellSimulation):
 			torque = np.random.normal(scale=TUMBLE_JITTER)
 			self.motile_force = [force, torque]
 
-		if self.flux is 'influx':
-			if self.external_concentrations['GLC[p]'] >= self.reaction_rate:
-				self.internal_concentrations['GLC_internal'] += self.reaction_rate
-			else:
-				self.internal_concentrations['GLC_internal'] += self.external_concentrations['GLC[p]']
-
-		elif self.state is 'efflux':
-			if self.internal_concentrations['GLC_internal'] - self.reaction_rate > 0:
-				self.internal_concentration['GLC_internal'] -= self.reaction_rate
-			else:
-				self.internal_concentrations['GLC_internal'] = 0
-
-
 	def check_division(self):
 		# update division state based on time since initialization
 
@@ -102,16 +96,10 @@ class Transport(CellSimulation):
 		return self.local_time
 
 	def apply_outer_update(self, update):
+		# Update media conditions based on function select_media in lattice.py:
+		self.media = update['media']
 		self.external_concentrations = update['concentrations']
-
 		self.environment_change = {}
-		for molecule in self.external_concentrations.iterkeys():
-			self.environment_change[molecule] = 0
-		# self.environment_change['GLC[p]'] -= self.reaction_rate
-		if self.state is 'influx':
-			self.environment_change['GLC[p]'] -= self.reaction_rate
-		elif self.state is 'efflux':
-			self.environment_change['GLC[p]'] += self.reaction_rate
 
 	def run_incremental(self, run_until):
 		# update state once per message exchange
@@ -128,6 +116,7 @@ class Transport(CellSimulation):
 			'motile_force': self.motile_force,
 			'environment_change': self.environment_change,
 			'division': self.division,
+			'media': self.media,
 			}
 
 	def synchronize_state(self, state):

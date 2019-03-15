@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import time
 import errno
+import numpy as np
 
 import agent.event as event
 from agent.outer import Outer
@@ -21,7 +22,6 @@ from models.ecoli.sim.simulation import ecoli_simulation
 from wholecell.utils import constants
 import wholecell.utils.filepath as fp
 from models.ecoli.sim.variants import apply_variant
-
 
 class EnvironmentAgent(Outer):
 	def build_state(self):
@@ -99,6 +99,7 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	if 'outer_id' not in agent_config:
 		raise ValueError("--outer-id required")
 
+	# TODO: don't pass this after the initial config; clean up the message logs
 	kafka_config = agent_config['kafka_config']
 	working_dir = agent_config.get('working_dir', os.getcwd())
 	outer_id = agent_config['outer_id']
@@ -234,9 +235,10 @@ def boot_transport(agent_id, agent_type, agent_config):
 		'agent_config': agent_config,
 		'state': {
 			'volume': volume,
-			'environment_change': {}}})
+			'environment_change': {}},
+		})
 
-	simulation = Transport()
+	simulation = Transport(agent_config)
 	inner.simulation = simulation
 
 	time.sleep(5) # to give the environment long enough to boot

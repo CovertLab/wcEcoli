@@ -353,6 +353,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 			return point
 
+		media = select_media(self.timeline, now) # TODO: Update environmental concentrations from this declaration
 		update = {}
 		for agent_id, simulation in self.simulations.iteritems():
 			# only provide concentrations if we have reached this simulation's time point.
@@ -360,10 +361,13 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 				# get concentration from cell's given bin
 				location = self.locations[agent_id][0:2] * self.patches_per_edge / self.edge_length
 				patch_site = constrain(bounds, tuple(np.floor(location).astype(int)))
-				update[agent_id] = {}
-				update[agent_id]['concentrations'] = dict(zip(
+				update[agent_id] = agent_update = {}
+				agent_update['concentrations'] = dict(zip(
 					self._molecule_ids,
 					self.lattice[:,patch_site[0],patch_site[1]]))
+
+				# update agents with media name
+				agent_update['media'] = media
 
 		return update
 
@@ -387,6 +391,8 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 		if agent_id not in self.motile_forces:
 			self.motile_forces[agent_id] = [0.0, 0.0]
+
+		# TODO: see if "agent_id not in self.media" loop needs to go here
 
 	def simulation_parameters(self, agent_id):
 		latest = max([
