@@ -60,6 +60,7 @@ class Protein(object):
 		self._loadHouser2015Counts(validation_data_raw)
 		self._loadWisniewski2014Counts(validation_data_raw, knowledge_base_raw)
 		self._loadSchmidt2015Counts(validation_data_raw)
+		self._loadChen2012(validation_data_raw)
 
 	def _loadTaniguchi2010Counts(self, validation_data_raw):
 		# Load taniguichi Xie Science 2010 dataset
@@ -177,6 +178,14 @@ class Protein(object):
 		schmidt2015Data["glucoseCounts"] = glucoseCounts
 
 		self.schmidt2015Data = schmidt2015Data
+
+	def _loadChen2012(self, validation_data_raw):
+		chen2012 = validation_data_raw.chen2012
+		rproteinIds = [str(x["id"]) for x in chen2012]
+		fraction = [float(x["fraction_of_full_ribosomes"]) for x in chen2012]
+		names = [str(x["name"]) for x in chen2012]
+		self.chen2012 = dict(zip(rproteinIds, fraction))
+		self.chen2012_id_to_name = dict(zip(rproteinIds, names))
 
 
 class ReactionFlux(object):
