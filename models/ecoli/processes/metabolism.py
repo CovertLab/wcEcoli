@@ -212,6 +212,10 @@ class Metabolism(wholecell.processes.process.Process):
 		if hasattr(sim_data.process.metabolism, "catalystShuffleIdxs") and sim_data.process.metabolism.catalystShuffleIdxs != None:
 			self.shuffleCatalyzedIdxs = sim_data.process.metabolism.catalystShuffleIdxs
 
+		self.aa_targets = {}
+		self.aa_names = sim_data.moleculeGroups.aaIDs
+		self.aas = self.bulkMoleculesView(self.aa_names)
+
 	def calculateRequest(self):
 		self.metabolites.requestAll()
 		self.catalysts.requestAll()
@@ -227,8 +231,7 @@ class Metabolism(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
-		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
-		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
+		self.aa_targets = {aa: (conc * countsToMolar).asNumber(CONC_UNITS) for aa, conc in zip(self.aa_names, self.aas.total())}
 
 		# get boundary conditions
 		self.boundary.updateBoundary()
@@ -242,11 +245,18 @@ class Metabolism(wholecell.processes.process.Process):
 			self.nutrientToDoublingTime.get(current_media, self.nutrientToDoublingTime["minimal"])
 			)
 
-		for aa, diff in getattr(self._sim.processes['PolypeptideElongation'], 'aa_conc_diff').items():
-			new_target = CONC_UNITS * self.homeostaticObjective[aa] + diff
-			if new_target.asNumber() < 0:
-				new_target *= 0
-			self.concModificationsBasedOnCondition[aa] = new_target
+		if len(self._sim.processes['PolypeptideElongation'].aa_conc_diff):
+			for aa, diff in self._sim.processes['PolypeptideElongation'].aa_conc_diff.items():
+				new_target = CONC_UNITS * self.aa_targets[aa] + diff
+				if new_target.asNumber() < 0:
+					new_target *= 0
+				self.concModificationsBasedOnCondition[aa] = new_target
+		else:
+			for aa, conc in self.aa_targets.items():
+				self.concModificationsBasedOnCondition[aa] = CONC_UNITS * conc
+
+		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
+		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
 
 		# Set external molecule levels
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
@@ -266,6 +276,8 @@ class Metabolism(wholecell.processes.process.Process):
 			self.internalExchangeIdxs = np.array([self.metaboliteNamesFromNutrients.index(x) for x in self.fba.getOutputMoleculeIDs()])
 			self.homeostaticObjective = newObjective
 			updatedObjective = True
+
+		print('Phe: {}'.format(self.homeostaticObjective.get('PHE[c]', 0)))
 
 		# After completing the burn-in, enable kinetic rates
 		if self.use_kinetics and (not self.burnInComplete) and (self._sim.time() > KINETICS_BURN_IN_PERIOD):
