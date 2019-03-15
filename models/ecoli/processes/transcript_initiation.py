@@ -95,6 +95,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.rnaSynthProbRProtein = sim_data.process.transcription.rnaSynthProbRProtein
 		self.rnaSynthProbRnaPolymerase = sim_data.process.transcription.rnaSynthProbRnaPolymerase
 
+		import ipdb; ipdb.set_trace()
+
 
 	def calculateRequest(self):
 		# Get all inactive RNA polymerases
