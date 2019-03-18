@@ -37,12 +37,14 @@ class ExternalState(object):
 
 		# create a dictionary of all nutrient time series
 		self.environment.nutrients_time_series = {}
-		for label in dir(raw_data.condition.timeseries):
+
+		for label in dir(raw_data.condition.timelines):
 			if label.startswith("__"):
 				continue
 			self.environment.nutrients_time_series[label] = []
-			timeseries = getattr(raw_data.condition.timeseries, label)
-			for row in timeseries:
+			timelines = getattr(raw_data.condition.timelines, label)
+			for row in timelines:
+				# TODO (eran) rename nutrients_time_series as timeline
 				self.environment.nutrients_time_series[label].append((
 					row["time"].asNumber(units.s),
 					row["nutrients"].encode("utf-8"),
