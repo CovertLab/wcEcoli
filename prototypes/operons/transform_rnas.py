@@ -3,14 +3,22 @@ from functools import partial
 
 from reconstruction import spreadsheets
 
+'''
+There is an error in this file when there is no monomerID the 
+value is not saved.
+
+Fix this error today.
+
+'''
+
 DIALECT = "excel-tab"
 JsonReader = partial(spreadsheets.JsonReader, dialect = DIALECT)
 JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
 
 
 FLAT_DIR = os.path.join("reconstruction", "ecoli", "flat")
-RNA_FILE = os.path.join(FLAT_DIR, "rnas.tsv")
-output_file = os.path.join(FLAT_DIR, "operon_rnas.tsv")
+RNA_FILE = os.path.join(FLAT_DIR, "operon_rnas.tsv")
+output_file = os.path.join(FLAT_DIR, "operon_rnas_2.tsv")
 
 def make_collection():
 	with open(RNA_FILE, "r") as f:
