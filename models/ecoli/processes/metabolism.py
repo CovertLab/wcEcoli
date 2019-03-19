@@ -204,8 +204,6 @@ class Metabolism(wholecell.processes.process.Process):
 		## Construct views
 		# views on environment
 		self.environment_molecules = self.environmentView(self.environment_molecule_ids)
-		# self.external_exchange_molecules = self.environmentView(self.external_exchange_molecule_ids)
-		# self.external_exchange_molecules = self.bulkMoleculesView(self.external_exchange_molecule_ids)
 
 		# views on metabolism bulk molecules
 		self.metaboliteNames = self.fba.getOutputMoleculeIDs()
@@ -251,6 +249,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# recalculate exchange_data based on current environment
 		current_environment = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
+
+		# get current_exchange from current_environment using the env_to_exchange_map
 		current_exchange = {self.env_to_exchange_map[mol]: conc for mol, conc in current_environment.iteritems()}
 		self.exchange_data = self.updateExchangeData(current_exchange)
 		import_exchange, import_constraint = self.saveImportConstraints(self.exchange_data)
@@ -386,10 +386,9 @@ class Metabolism(wholecell.processes.process.Process):
 		# change in nutrient counts, used in non-infinite environments
 		delta_nutrients = ((1 / countsToMolar) * exchange_fluxes).asNumber().astype(int)
 
-		# convert exchange molecules to environmental molecules (transport to external)
+		# convert exchange molecules to environmental molecules using maping
+		# This step stands in for transporting from exchange to local environment
 		environment_molecule_ids = [self.exchange_to_env_map[mol_id] for mol_id in self.external_exchange_molecule_ids]
-
-		# TODO (Eran) use environment_molecule_ids rather than external_exchange_molecules, delta_nutrients needs to be for all env molecules
 		self.environment_molecules.countsInc(environment_molecule_ids, delta_nutrients)
 
 		# Write outputs to listeners
