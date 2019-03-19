@@ -29,7 +29,7 @@ class NegativeConcentrationError(Exception):
 	pass
 
 
-class Environment(wholecell.states.external_state.ExternalState):
+class LocalEnvironment(wholecell.states.external_state.ExternalState):
 	_name = 'Environment'
 
 	def __init__(self, *args, **kwargs):
@@ -39,10 +39,10 @@ class Environment(wholecell.states.external_state.ExternalState):
 
 		self._env_delta_counts = None
 
-		super(Environment, self).__init__(*args, **kwargs)
+		super(LocalEnvironment, self).__init__(*args, **kwargs)
 
 	def initialize(self, sim, sim_data):
-		super(Environment, self).initialize(sim, sim_data)
+		super(LocalEnvironment, self).initialize(sim, sim_data)
 
 		self._processIDs = sim.processes.keys()
 
