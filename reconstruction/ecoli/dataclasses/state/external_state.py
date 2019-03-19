@@ -66,6 +66,25 @@ class ExternalState(object):
 			for row in molecule_concentrations:
 				self.environment.environment_dict[label].update({row["molecule id"]: row["concentration"].asNumber()})
 
+		# make mapping from external molecule to exchange molecule
+		self.environment.env_to_exchange_map = {
+			mol["molecule id"]: raw_data.condition.exchange_molecules[mol_index]["molecule id"]
+			for mol_index, mol in enumerate(raw_data.condition.environment_molecules)
+			}
+
+		self.environment.exchange_to_env_map = {
+			raw_data.condition.exchange_molecules[mol_index]["molecule id"]: mol["molecule id"]
+			for mol_index, mol in enumerate(raw_data.condition.environment_molecules)
+			}
+
+		# make dict with exchange molecules for all saved environments, using env_to_exchange_map
+		self.environment.exchange_dict = {}
+		for media, concentrations in self.environment.environment_dict.iteritems():
+			self.environment.exchange_dict[media] = {
+				self.environment.env_to_exchange_map[mol]: conc
+				for mol, conc in concentrations.iteritems()
+				}
+
 		# initial state based on default nutrient time series
 		self.environment.nutrients = self.environment.environment_dict[
 			self.environment.nutrients_time_series[self.environment.nutrients_time_series_label][0][1]]

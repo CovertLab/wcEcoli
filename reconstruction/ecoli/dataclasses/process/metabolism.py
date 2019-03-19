@@ -174,7 +174,7 @@ class Metabolism(object):
 		is used to quickly pull up  exchange data for these different environments by their name.
 		'''
 
-		self.environment_dict = sim_data.external_state.environment.environment_dict
+		self.exchange_dict = sim_data.external_state.environment.exchange_dict
 
 		externalExchangeMolecules = {}
 		importExchangeMolecules = {}
@@ -182,7 +182,7 @@ class Metabolism(object):
 		importUnconstrainedExchangeMolecules = {}
 		secretionExchangeMolecules = self._secretion_exchange_molecules
 
-		for environment_name, molecules in self.environment_dict.iteritems():
+		for environment_name, molecules in self.exchange_dict.iteritems():
 
 			exchange_data = self.exchangeDataFromConcentrations(molecules)
 
@@ -241,7 +241,7 @@ class Metabolism(object):
 		'''
 		externalExchangeData = []
 		# initiate all molecules with 0 concentrations
-		for row in raw_data.condition.environment_molecules:
+		for row in raw_data.condition.exchange_molecules:
 			externalExchangeData.append(row["molecule id"])
 
 		return externalExchangeData

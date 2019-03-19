@@ -67,9 +67,11 @@ class Metabolism(wholecell.processes.process.Process):
 		self._getBiomassAsConcentrations = sim_data.mass.getBiomassAsConcentrations
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 
-		# Create objective for homeostatic constraints
+		# get environment variables
 		nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
 		initial_environment = sim_data.external_state.environment.nutrients_time_series[nutrients_time_series_label][0][1]
+		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
+		self.exchange_to_env_map = sim_data.external_state.environment.exchange_to_env_map
 
 		# initialize exchange_data according to initial concentrations in environment
 		self.exchange_data = self.updateExchangeData(sim_data.external_state.environment.environment_dict[initial_environment])
@@ -202,7 +204,8 @@ class Metabolism(wholecell.processes.process.Process):
 		## Construct views
 		# views on environment
 		self.environment_molecules = self.environmentView(self.environment_molecule_ids)
-		self.external_exchange_molecules = self.environmentView(self.external_exchange_molecule_ids)
+		# self.external_exchange_molecules = self.environmentView(self.external_exchange_molecule_ids)
+		# self.external_exchange_molecules = self.bulkMoleculesView(self.external_exchange_molecule_ids)
 
 		# views on metabolism bulk molecules
 		self.metaboliteNames = self.fba.getOutputMoleculeIDs()
@@ -248,7 +251,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# recalculate exchange_data based on current environment
 		current_environment = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
-		self.exchange_data = self.updateExchangeData(current_environment)
+		current_exchange = {self.env_to_exchange_map[mol]: conc for mol, conc in current_environment.iteritems()}
+		self.exchange_data = self.updateExchangeData(current_exchange)
 		import_exchange, import_constraint = self.saveImportConstraints(self.exchange_data)
 
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
@@ -382,8 +386,11 @@ class Metabolism(wholecell.processes.process.Process):
 		# change in nutrient counts, used in non-infinite environments
 		delta_nutrients = ((1 / countsToMolar) * exchange_fluxes).asNumber().astype(int)
 
+		# convert exchange molecules to environmental molecules (transport to external)
+		environment_molecule_ids = [self.exchange_to_env_map[mol_id] for mol_id in self.external_exchange_molecule_ids]
+
 		# TODO (Eran) use environment_molecule_ids rather than external_exchange_molecules, delta_nutrients needs to be for all env molecules
-		self.environment_molecules.countsInc(self.external_exchange_molecule_ids, delta_nutrients)
+		self.environment_molecules.countsInc(environment_molecule_ids, delta_nutrients)
 
 		# Write outputs to listeners
 		self.writeToListener("FBAResults", "import_exchange", import_exchange)
