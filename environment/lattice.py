@@ -76,10 +76,16 @@ LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 # TODO: generalize this function as "select x from paired timeline", not media-specific
 def select_media(timeline, time):
 	selected = None
-	for t, media in timeline:
+	for t, media in timeline.iteritems():
+		last_selected = selected
+		print('time = ')
+		print(time)
+		print('time key = ')
+		print(t)
 		if time < t:
-			break
-		selected = media
+			selected = last_selected
+		else:
+			selected = media
 	return selected
 
 class EnvironmentSpatialLattice(EnvironmentSimulation):
@@ -103,7 +109,10 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		self.translation_jitter = config.get('translation_jitter', 0.001)
 		self.rotation_jitter = config.get('rotation_jitter', 0.05)
 		self.depth = config.get('depth', 3000.0)
-		self.timeline = sorted(config.get('timeline', [(0,'minimal')])) #TODO: function to lookup concentrations based on condition
+		# self.timeline = sorted(config.get('timeline', [(0,'minimal')])) #TODO: function to lookup concentrations based on condition
+
+		# quick and dirty timeline dict #TODO: remove this
+		self.timeline = {0:'minimal', 50:'minimal_plus_amino_acids', 100:'minimal_minus_oxygen'}
 
 		# derived parameters
 		self.total_volume = (self.depth * self.edge_length ** 2) * (10 ** -15) # (L)

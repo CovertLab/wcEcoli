@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import time
 import uuid
 import numpy as np
+import csv
 
 from agent.control import AgentControl, AgentCommand
 
@@ -10,13 +11,23 @@ MEDIA = ['minimal', 'minimal_plus_amino_acids', 'minimal_minus_oxygen']
 
 TRANSPORT_REACTIONS = ['reaction_1', 'reaction_2', 'reaction_3']
 
-SUBSTRATES = ['GLC[e]', 'GLT[e]', 'CYS[e]', 'GLC[c]', 'GLT[c]', 'CYS[c]']
+SUBSTRATES = ['GLC[p]', 'GLT[p]', 'CYS[p]', 'GLC[c]', 'GLT[c]', 'CYS[c]']
 
 def substrate_counts():
-	counts = np.random.randint(10, size=len(SUBSTRATES))
+	'''
+	Concatenate a list of substrate names with random starting values for each substrate.
+	Returns: dictionary of the form {substrate:int}
+
+	'''
+	counts = np.random.randint(100,1000, size=len(SUBSTRATES))
 	return dict(zip(SUBSTRATES, counts))
 
 def make_flux_distributions():
+	'''
+	Write flux distributions per media condition, per transport reaction. Used as test data.
+	Returns: dictionary of the form {media:{reaction:[array of ints]}}
+
+	'''
 	flux_distributions = {}
 	for condition in MEDIA:
 		flux_distributions[condition] = {}
@@ -26,11 +37,26 @@ def make_flux_distributions():
 
 
 def make_stoichiometry():
+	'''
+	Assign stoichiometry to each transport reaction to determine the magnitude and direction of substrates in each reaction
+	Returns: dictionary of the form {reaction:{substrate:int}}
+
+	'''
 	stoichiometry = {
-		TRANSPORT_REACTIONS[0]: {SUBSTRATES[0]: -1, SUBSTRATES[3]: 1},
+		TRANSPORT_REACTIONS[0]: {SUBSTRATES[0]: -1, SUBSTRATES[3]: 2},
 		TRANSPORT_REACTIONS[1]: {SUBSTRATES[1]: -1, SUBSTRATES[4]: 1},
 		TRANSPORT_REACTIONS[2]: {SUBSTRATES[2]: -1, SUBSTRATES[5]: 1}}
 	return stoichiometry
+
+def write_data_file():
+	'''
+	Initialize a data file to write test data and visualize in a Jupyter notebook
+	Returns: CSV file 'test_data.csv' as variable 'test_data' and file-writing object 'filewriter'
+
+	'''
+	with open('test_data.csv', 'wb') as test_data:
+		filewriter = csv.writer(test_data, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+		filewriter.writerow(['agent_id', 'timestep', 'volume', 'media', 'GLC[c]', 'GLT[c]', 'CYS[c]'])
 
 
 class ShepherdControl(AgentControl):
@@ -53,6 +79,7 @@ class ShepherdControl(AgentControl):
 			agent_config)
 
 	def lattice_experiment(self, args):
+		write_data_file()
 		lattice_id = str(uuid.uuid1())
 		num_cells = args['number']
 		print('Creating lattice agent_id {} and {} cell agents\n'.format(
@@ -91,7 +118,7 @@ class ShepherdControl(AgentControl):
 				'outer_id': lattice_id,
 				'seed': index})
 
-	# TODO: make this work
+	# TODO: fix this, as it doesn't work correctly
 	def transport_experiment(self, args):
 		lattice_id = str(uuid.uuid1())
 		num_cells = args['number']
@@ -102,8 +129,8 @@ class ShepherdControl(AgentControl):
 			'static_concentrations': True,
 			'gradient': {'seed': True},
 			'diffusion': 0.0,
-			'translation_jitter': 1.0,
-			'rotation_jitter': 0.2,
+			'translation_jitter': 4.0,	# TODO: implement this movement
+			'rotation_jitter': 1.0,		# TODO: implement this movement
 			'edge_length': 20.0,
 			'patches_per_edge': 30,}
 		self.add_agent(lattice_id, 'lattice', lattice_config)
@@ -141,7 +168,8 @@ The commands are:
      connected agents,
 'chemotaxis-experiment [--number N] [--type T]` ask the Shepherd to run a
     chemotaxis environment with N agents of type T
-'transport-experiment [--number N] [--type T]` ask the Shepherd to run a transport environment with N agents of type T'''
+'transport-experiment [--number N] [--type T]` ask the Shepherd to run a 
+	transport environment with N agents of type T'''
 
 		super(EnvironmentCommand, self).__init__(choices, description)
 
@@ -162,7 +190,6 @@ The commands are:
 		control = ShepherdControl({'kafka_config': self.kafka_config})
 		control.transport_experiment(args)
 		control.shutdown()
-
 
 if __name__ == '__main__':
 	command = EnvironmentCommand()
