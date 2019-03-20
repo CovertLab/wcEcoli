@@ -29,7 +29,7 @@ def parse_tsv(tsv_file):
 #parent_directory = os.path.dirname(os.path.dirname(os.getcwd()))
 flat_file_dirctory = os.path.join('reconstruction', 'ecoli', 'flat')
 rnas_file = os.path.join(flat_file_dirctory, 'rnas.tsv')
-tus_file = os.path.join(flat_file_dirctory, 'operon_rnas.tsv')
+tus_file = os.path.join(flat_file_dirctory, 'operon_rnas_2.tsv')
 
 #rna_info contains all the rna info directly pulled from rnas.tsv as a list of lists.
 rna_info = parse_tsv(rnas_file)
@@ -83,7 +83,7 @@ for row in rna_info:
 		for gene in genes_in_tu:
 			if gene == gene_id:
 				gene_tu_matrix[gene_index, tu_index] = 1
-				
+
 
 
 
