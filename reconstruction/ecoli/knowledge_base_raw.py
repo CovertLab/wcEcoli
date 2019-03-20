@@ -83,7 +83,6 @@ LIST_OF_DICT_FILENAMES = (
 	)
 LIST_OF_ENV_FILENAMES = (
 	os.path.join("condition", "environment_molecules.tsv"),
-	os.path.join("condition", "exchange_molecules.tsv"),
 	os.path.join("condition", "media", "minimal.tsv"),
 	os.path.join("condition", "media", "minimal_acetate.tsv"),
 	os.path.join("condition", "media", "minimal_fumarate.tsv"),

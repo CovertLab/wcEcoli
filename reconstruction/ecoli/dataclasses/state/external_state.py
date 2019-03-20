@@ -67,14 +67,10 @@ class ExternalState(object):
 
 		# make mapping from external molecule to exchange molecule
 		self.environment.env_to_exchange_map = {
-			mol["molecule id"]: raw_data.condition.exchange_molecules[mol_index]["molecule id"]
+			mol["molecule id"]: mol["molecule id"] + mol["exchange molecule location"]
 			for mol_index, mol in enumerate(raw_data.condition.environment_molecules)
 			}
-
-		self.environment.exchange_to_env_map = {
-			raw_data.condition.exchange_molecules[mol_index]["molecule id"]: mol["molecule id"]
-			for mol_index, mol in enumerate(raw_data.condition.environment_molecules)
-			}
+		self.environment.exchange_to_env_map = {v: k for k, v in self.environment.env_to_exchange_map.viewitems()}
 
 		# make dict with exchange molecules for all saved environments, using env_to_exchange_map
 		self.environment.exchange_dict = {}

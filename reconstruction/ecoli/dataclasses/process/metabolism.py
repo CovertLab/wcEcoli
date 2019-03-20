@@ -48,6 +48,8 @@ class Metabolism(object):
 		else:
 			self.kinetic_objective_weight = sim_data.constants.metabolismKineticObjectiveWeightQuadratic
 
+		## BEGIN TRANSPORT
+		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
 		# lists of molecules whose presence modifies glc's upper bound for FBA import constraint, whose default is 20 (mmol/g DCW/hr).
 		# This is implemented to reproduce glc maximum uptake previous instantiated in environment files, but now done explicitly here.
 		# TODO (Eran) transport should do away with these conditional requirements for determining GLC flux.
@@ -65,6 +67,7 @@ class Metabolism(object):
 		self.all_external_exchange_molecules = self._getAllExternalExchangeMolecules(raw_data)
 		self._secretion_exchange_molecules = self._getSecretionExchangeMolecules(raw_data)
 		self._exchange_data_dict = self._getExchangeDataDict(raw_data, sim_data)
+		## END TRANSPORT
 
 		self._buildBiomass(raw_data, sim_data)
 		self._buildMetabolism(raw_data, sim_data)
@@ -117,7 +120,8 @@ class Metabolism(object):
 		secretionExchangeMolecules = self._secretion_exchange_molecules
 
 		#remove molecules with low concentration
-		nonzero_molecules = {molecule_id:concentration for molecule_id, concentration in molecules.items() if concentration >= 0.00001}
+		exchange_molecules = {self.env_to_exchange_map[mol]: conc for mol, conc in molecules.iteritems()}
+		nonzero_molecules = {molecule_id:concentration for molecule_id, concentration in exchange_molecules.items() if concentration >= 0.00001}
 
 		for molecule_id, concentration in nonzero_molecules.iteritems():
 
@@ -174,7 +178,7 @@ class Metabolism(object):
 		is used to quickly pull up  exchange data for these different environments by their name.
 		'''
 
-		exchange_dict = sim_data.external_state.environment.exchange_dict
+		environment_dict = sim_data.external_state.environment.environment_dict
 
 		externalExchangeMolecules = {}
 		importExchangeMolecules = {}
@@ -182,7 +186,7 @@ class Metabolism(object):
 		importUnconstrainedExchangeMolecules = {}
 		secretionExchangeMolecules = self._secretion_exchange_molecules
 
-		for environment_name, molecules in exchange_dict.iteritems():
+		for environment_name, molecules in environment_dict.iteritems():
 
 			exchange_data = self.exchangeDataFromConcentrations(molecules)
 
@@ -241,8 +245,8 @@ class Metabolism(object):
 		'''
 		externalExchangeData = []
 		# initiate all molecules with 0 concentrations
-		for row in raw_data.condition.exchange_molecules:
-			externalExchangeData.append(row["molecule id"])
+		for row in raw_data.condition.environment_molecules:
+			externalExchangeData.append(row["molecule id"] + row["exchange molecule location"])
 
 		return externalExchangeData
 

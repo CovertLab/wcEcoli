@@ -256,8 +256,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# recalculate exchange_data based on current environment
 		current_environment = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
-		current_exchange = {self.env_to_exchange_map[mol]: conc for mol, conc in current_environment.iteritems()}
-		self.exchange_data = self.updateExchangeData(current_exchange)
+		self.exchange_data = self.updateExchangeData(current_environment)
 		self.external_exchange_molecule_ids = self.exchange_data['externalExchangeMolecules']
 		import_exchange, import_constraint = self.saveImportConstraints(self.exchange_data)
 
