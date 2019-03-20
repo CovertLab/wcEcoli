@@ -53,17 +53,27 @@ def make_collection():
 
 	#now need to write to a file:
 	#Tried doing with Json writer but had an issue bringin in the header.
-	with open (output_file, 'w') as f:
+	#with open (output_file, 'w') as f:
+		'''
 		writer = csv.writer(f, dialect = DIALECT, quoting=csv.QUOTE_MINIMAL)
+		#import ipdb; ipdb.set_trace()
 		writer.writerow(fieldnames)	
 		for rna_row in rna_info:
 			rna_data = list(rna_row.values())
 			writer.writerow(rna_data)
+		'''
+	with open(output_file, "w") as f:
+		writer = JsonWriter(f, fieldnames)
+		writer.writeheader()
+		for rna_row in rna_info:
+			#rna_data = list(rna_row.values())
+			writer.writerow(rna_row)
+		#for key in sorted(entries.keys()):
+			#writer.writerow(entries[key])
+	#
 
-	#import ipdb; ipdb.set_trace()
+
 '''
-
-
 def make_collection():
 	with open(RNA_FILE, "r") as f:
 		reader = JsonReader(f)
