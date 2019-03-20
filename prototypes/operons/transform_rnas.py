@@ -19,6 +19,8 @@ JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
 
 FLAT_DIR = os.path.join("reconstruction", "ecoli", "flat")
 RNA_FILE = os.path.join(FLAT_DIR, "rnas.tsv")
+#saving to a new file for now so that all manually input TUs in 
+#operon_rnas.tsv are not overwritten.
 output_file = os.path.join(FLAT_DIR, "operon_rnas_2.tsv")
 
 
@@ -31,7 +33,6 @@ def parse_tsv(tsv_file):
 	with open(tsv_file) as tsvfile:
 		reader = JsonReader(tsvfile)
 		fieldnames = reader.fieldnames
-		#reader.next()
 		for row in reader:
 			tsv_list.append(row)
 	return tsv_list, fieldnames
@@ -50,44 +51,13 @@ def make_collection():
 		else:
 			rna_row['monomerId'] = [rna_row['monomerId']]
 
-
-	#now need to write to a file:
-	#Tried doing with Json writer but had an issue bringin in the header.
-	#with open (output_file, 'w') as f:
-		'''
-		writer = csv.writer(f, dialect = DIALECT, quoting=csv.QUOTE_MINIMAL)
-		#import ipdb; ipdb.set_trace()
-		writer.writerow(fieldnames)	
-		for rna_row in rna_info:
-			rna_data = list(rna_row.values())
-			writer.writerow(rna_data)
-		'''
 	with open(output_file, "w") as f:
 		writer = JsonWriter(f, fieldnames)
 		writer.writeheader()
 		for rna_row in rna_info:
-			#rna_data = list(rna_row.values())
 			writer.writerow(rna_row)
-		#for key in sorted(entries.keys()):
-			#writer.writerow(entries[key])
-	#
 
 
-'''
-def make_collection():
-	with open(RNA_FILE, "r") as f:
-		reader = JsonReader(f)
-		entries = {entry["monomerId"]: entry for entry in reader} #this is the line that is excluting information.
-		fieldnames = reader.fieldnames
-		for entry in entries.values():
-			entry["monomerId"] = [entry["monomerId"]]
-	with open(output_file, "w") as f:
-		writer = JsonWriter(f, fieldnames)
-		writer.writeheader()
-
-		for key in sorted(entries.keys()):
-			writer.writerow(entries[key])
-'''
 if __name__ == "__main__":
 	make_collection()
 
