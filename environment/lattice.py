@@ -341,9 +341,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		return self._time
 
 	def add_simulation(self, agent_id, simulation):
-		if agent_id not in self.simulations:
-			self.simulations[agent_id] = {}
-		self.simulations[agent_id].update(simulation)
+		self.simulations.setdefault(agent_id, {}).update(simulation)
 
 		if agent_id not in self.locations:
 			# Place cell at either the provided or a random initial location
@@ -383,9 +381,10 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		translation = (offset * rotation).A1
 		return location + translation
 
-	def apply_parent_state(self, agent_id, parent):
-		parent_location = parent['location']
-		index = parent['index']
+	def apply_parent_state(self, agent_id, simulation):
+		# TODO(jerry): Merge this into add_simulation().
+		parent_location = simulation['location']
+		index = simulation['index']
 		orientation = parent_location[2]
 		volume = self.simulations[agent_id]['state']['volume'] * 0.5
 		length = self.volume_to_length(volume)
