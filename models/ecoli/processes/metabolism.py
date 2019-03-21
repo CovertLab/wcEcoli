@@ -257,7 +257,6 @@ class Metabolism(wholecell.processes.process.Process):
 		# recalculate exchange_data based on current environment
 		current_environment = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
 		self.exchange_data = self.updateExchangeData(current_environment)
-		self.external_exchange_molecule_ids = self.exchange_data['externalExchangeMolecules']
 		import_exchange, import_constraint = self.saveImportConstraints(self.exchange_data)
 
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
@@ -392,6 +391,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		## BEGIN TRANSPORT
 		# convert exchange molecules to environmental molecules using mapping
+		self.external_exchange_molecule_ids = self.fba.getExternalMoleculeIDs()
 		mapped_environment_molecule_ids = [self.exchange_to_env_map[mol_id] for mol_id in self.external_exchange_molecule_ids]
 		self.environment_molecules.countsInc(mapped_environment_molecule_ids, delta_nutrients)
 		## END TRANSPORT
