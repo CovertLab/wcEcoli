@@ -140,8 +140,6 @@ class Outer(Agent):
 		self.shutting_down = False
 
 		# Log parent -> child relationships for analysis.
-		# self.parentage maps parent ID -> {daughter_ID: 1}, using a dict
-		# instead of a set to log in JSON form.
 		working_dir = agent_config.get('working_dir', os.getcwd())
 		output_dir = fp.makedirs(working_dir, 'out', 'manual',
 			'lattice_' + agent_id)
