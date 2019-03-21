@@ -1,6 +1,6 @@
 """
-Run the Fitter. The output goes into the named subdirectory of wcEcoli/out/,
-defaulting to "manual".
+Run the Parameter Calculator (Parca).
+The output goes into the named subdirectory of wcEcoli/out/, defaulting to "manual".
 
 TODO: Default to a typical timestamped directory name instead of "manual"?
 
@@ -24,11 +24,11 @@ from wholecell.utils import constants, scriptBase
 from wholecell.utils import filepath
 
 
-class RunFitter(scriptBase.ScriptBase):
-	"""Runs the Fitter, aka simulation parameter calculator."""
+class RunParca(scriptBase.ScriptBase):
+	"""Runs the Parca, aka simulation parameter calculator."""
 
 	def define_parameters(self, parser):
-		super(RunFitter, self).define_parameters(parser)
+		super(RunParca, self).define_parameters(parser)
 
 		# NOTE: Don't name this arg sim_dir since that makes parse_args() look
 		# for an existing sim_dir directory.
@@ -44,9 +44,10 @@ class RunFitter(scriptBase.ScriptBase):
 				 + '" file instead of generating it.'
 			)
 		parser.add_argument('-d', '--debug', action='store_true',
-			help="Enable Fitter debugging: Fit only one arbitrarily-chosen"
-				 " transcription factor for a faster debug cycle. Don't use it"
-				 " for an actual simulation."
+			help="Enable Parca debugging: For a faster debug cycle, calculate"
+				 " only one arbitrarily-chosen transcription factor condition"
+				 " when adjusting gene expression levels, leaving the others at"
+				 " their input levels. Do not use this for an actual simulation."
 			)
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
 			help="Fit ribosome expression to protein synthesis demands"
@@ -56,7 +57,7 @@ class RunFitter(scriptBase.ScriptBase):
 			)
 
 	def parse_args(self):
-		args = super(RunFitter, self).parse_args()
+		args = super(RunParca, self).parse_args()
 		args.sim_path = filepath.makedirs(
 			scriptBase.ROOT_PATH, "out", args.sim_outdir)
 		return args
@@ -75,7 +76,7 @@ class RunFitter(scriptBase.ScriptBase):
 			kb_directory, constants.SERIALIZED_VALIDATION_DATA)
 
 		if args.debug or args.cached:
-			print "{}{}Fitter".format(
+			print "{}{}Parca".format(
 				'DEBUG ' if args.debug else '',
 				'CACHED ' if args.cached else '',
 				)
@@ -121,5 +122,5 @@ class RunFitter(scriptBase.ScriptBase):
 
 
 if __name__ == '__main__':
-	script = RunFitter()
+	script = RunParca()
 	script.cli()

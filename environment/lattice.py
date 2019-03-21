@@ -33,7 +33,7 @@ if animating:
 	import matplotlib.pyplot as plt
 
 from agent.outer import EnvironmentSimulation
-from environment.collision.grid import Grid, Rectangle, within
+from environment.collision.grid import Grid, Rectangle
 from environment.collision.volume_exclusion import volume_exclusion
 
 if animating:
@@ -319,22 +319,6 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		'''returns a dict with {molecule_id: conc} for each sim give its current location'''
 
 		bounds = [self.patches_per_edge, self.patches_per_edge]
-		def constrain(bounds, point):
-			if not within(bounds, point):
-				print('outside bounds {}: {}'.format(bounds, point))
-
-			x = point[0]
-			y = point[1]
-			if x < 0:
-				x = 0
-			if y < 0:
-				y = 0
-			if x >= bounds[0]:
-				x = bounds[0]
-			if y >= bounds[1]:
-				y = bounds[1]
-
-			return point
 
 		# Update cells with concentrations and media conditions
 		media = select_media(self.timeline, now)
@@ -344,13 +328,10 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 			if simulation['time'] <= now:
 				# get concentration from cell's given bin
 				location = self.locations[agent_id][0:2] * self.patches_per_edge / self.edge_length
-				patch_site = constrain(bounds, tuple(np.floor(location).astype(int)))
+				patch_site = tuple(np.floor(location).astype(int))
 				update[agent_id] = agent_update = {}
 				agent_update['media'] = media
-				agent_update['concentrations'] = dict(zip(
-					self._molecule_ids,
-					self.lattice[:,patch_site[0],patch_site[1]]))
-
+				agent_update['concentrations'] = dict(zip(self._molecule_ids, self.lattice[:,patch_site[0],patch_site[1]]))
 		return update
 
 
