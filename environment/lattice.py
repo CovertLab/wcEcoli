@@ -72,16 +72,11 @@ LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 # -------------------------------------------------
 
 # Function for getting media keys from sorted timeline
-# TODO: add docstring
-# TODO: generalize this function as "select x from paired timeline", not media-specific
+
 def select_media(timeline, time):
 	selected = None
 	for t, media in timeline.iteritems():
 		last_selected = selected
-		print('time = ')
-		print(time)
-		print('time key = ')
-		print(t)
 		if time < t:
 			selected = last_selected
 		else:
@@ -362,7 +357,8 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 			return point
 
-		media = select_media(self.timeline, now) # TODO: Update environmental concentrations from this declaration
+		# Update cells with concentrations and media conditions
+		media = select_media(self.timeline, now)
 		update = {}
 		for agent_id, simulation in self.simulations.iteritems():
 			# only provide concentrations if we have reached this simulation's time point.
@@ -371,12 +367,11 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 				location = self.locations[agent_id][0:2] * self.patches_per_edge / self.edge_length
 				patch_site = constrain(bounds, tuple(np.floor(location).astype(int)))
 				update[agent_id] = agent_update = {}
+				agent_update['media'] = media
 				agent_update['concentrations'] = dict(zip(
 					self._molecule_ids,
 					self.lattice[:,patch_site[0],patch_site[1]]))
 
-				# update agents with media name
-				agent_update['media'] = media
 
 		return update
 
@@ -400,8 +395,6 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 		if agent_id not in self.motile_forces:
 			self.motile_forces[agent_id] = [0.0, 0.0]
-
-		# TODO: see if "agent_id not in self.media" loop needs to go here
 
 	def simulation_parameters(self, agent_id):
 		latest = max([
@@ -433,8 +426,8 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		parent_location = parent['location']
 		index = parent['index']
 		orientation = parent_location[2]
-		volume = self.simulations[agent_id]['state']['volume'] * 0.5
-		length = self.volume_to_length(volume)
+		#self.simulations[agent_id]['state']['volume'] *= 0.5
+		length = self.volume_to_length(self.simulations[agent_id]['state']['volume'])
 		location = self.daughter_location(parent_location[0:2], orientation, length, index)
 
 		# print("=== parent: {} - daughter: {}".format(parent_location, location))

@@ -218,7 +218,7 @@ def boot_chemotaxis(agent_id, agent_type, agent_config):
 def boot_transport(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
-	volume = 1.0
+	volume = agent_config.get('volume', 1.0)
 	kafka_config = agent_config['kafka_config']
 
 	inner = Inner(
@@ -240,8 +240,6 @@ def boot_transport(agent_id, agent_type, agent_config):
 
 	simulation = Transport(agent_config)
 	inner.simulation = simulation
-
-	time.sleep(5) # to give the environment long enough to boot
 
 	return inner
 

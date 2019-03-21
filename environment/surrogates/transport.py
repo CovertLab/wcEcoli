@@ -1,31 +1,32 @@
 from __future__ import absolute_import, division, print_function
 
+import csv
 import time
+
 import numpy as np
 from scipy import constants
-import csv
 
 from agent.inner import CellSimulation
 
-
 TUMBLE_JITTER = 0.4 # (radians)
+N_AVOGADRO = constants.N_A # Avogadro's number
 
 def sample_fluxes(flux_distributions, media):
 	'''
-	Randomly sample a flux from the distribution of fluxes available for all reactions.
+	Randomly sample a flux from the distribution of fluxes available for all reactions. If sample_fluxes is called once
+	per timestep, a timeseries of internal_substrate_counts will appear erratic and random.
 	Args:
 		flux_distributions: Nested dictionary of the form {media: {reaction: [fluxes]}} from self.flux_distributions
-		media: One of three WCM environments (minimal, minimal_plus_amino_acids, minimal_minus_oxygen)
+		media: One of the WCM environments (e.g. minimal, minimal_plus_amino_acids, minimal_minus_oxygen)
 
 	Returns: dictionary of the form {reaction: flux}
 
 	'''
-	return {reaction: np.random.choice(distribution)
-			for reaction, distribution in flux_distributions[media].iteritems()}
+	fluxes = {}
+	for reaction, distribution in flux_distributions[media].iteritems():
+		fluxes[reaction] = np.random.choice(distribution)
+	return fluxes
 
-# TODO: only change fluxes when media changes
-
-N_AVOGADRO = constants.N_A
 
 class Transport(CellSimulation):
 	'''
@@ -33,97 +34,113 @@ class Transport(CellSimulation):
 	'''
 
 	def __init__(self, config):
-
 		# give self a unique ID
-		self.random_id = np.random.randint(1,10000)
+		self.random_id = np.random.randint(1, 10000)
 
 		self.initial_time = 0.0
 		self.local_time = 0.0
 		self.environment_change = {}
-		self.volume = 1.0 # fL
-		self.division_time = 100
+		self.volume = config.get('volume', 1.0)  # fL
+		self.division_time = 30
 
-		# Initial state
-		# self.internal_counts = {
-		# 	'GLC': 1000,
-		# 	'GLT': 1000,
-		# 	'CYS': 1000
-		# }
-
-
-		self.delta_nutrients = 0
-
-		# Initialize media environment and flux distributions/associated stoichiometry
-		# self.media = 'minimal'
-		self.media = config.get('media')
+		# Get media condition from select_media function in lattice.py
+		self.media = config.get('media', None)
+		# get flux_distributions from make_flux_distributions() in control.py
+		# note: self.flux_distributions is an entire list of choices, while self.fluxes is a single flux choice
 		self.flux_distributions = config.get('flux')
+		# get stoichiometry from make_stoichiometry() in control.py
 		self.stoichiometry = config.get('stoichiometry')
+		# get seed for random number generator, default 1
+		self.seed = config.get('seed', 0)
 
-		# Random substrate counts
-		# self.internal_substrate_counts = config.get('substrate_counts')
-		self.internal_substrate_counts = {'GLC[c]': np.random.randint(1000,100000), 'GLT[c]': np.random.randint(1000,100000), 'CYS[c]': np.random.randint(1000,100000)}
-		self.external_substrate_counts = {'GLC[p]': 0, 'GLT[p]': 0, 'CYS[p]': 0}
+		# Initialize internal and external substrate counts at t = 0
+		self.internal_substrate_counts = config.get('internal_substrate_counts')
+		self.external_substrate_counts = config.get('external_substrate_counts')
 
-
-		self.motile_force = [0.0, 0.0] # initial magnitude and relative orientation
+		self.motile_force = [0.0, 0.0]  # initial magnitude and relative orientation
 		self.division = []
 
 	def update_state(self):
 		'''
-		Update the internal state of the surrogate, including transport fluxes and internal substrate counts.
-
-		TODO: modify commented code below to convert environmental substrate concentrations to counts
-		TODO: prepare a message about how many molecules to change in the environment to pass in self.environment_change
-		Returns: Nothing, except a printout of fluxes
+		Update the internal state of the surrogate, including transport fluxes and internal/external substrate counts as delta_nutrients. Add volume based on total substrates present in the surrogate and write output to test_data.csv
 
 		'''
-		fluxes = sample_fluxes(self.flux_distributions, self.media) # TODO: make this once per cell cycle instead of once per time step, move to init
-		print("fluxes = ")
-		print(fluxes)
+		# fluxes = sample_fluxes(self.flux_distributions, self.media)
 
-		# Set up delta_nutrients and modify internal_substrate_counts
-		self.delta_nutrients = {}
+		# Set up delta_nutrients and modify internal_substrate_counts and external_substrate_counts
+		delta_nutrients = {}
 		delta_volume = 0
-		print(N_AVOGADRO)
-		for reaction in fluxes:
+		for reaction in self.fluxes:
 			for substrate in self.stoichiometry[reaction]:
-				self.delta_nutrients[substrate] = int((self.stoichiometry[reaction][substrate] * fluxes[reaction]) * (N_AVOGADRO * self.volume))
-				delta_volume += self.stoichiometry[reaction][substrate] * 0.1
+				delta_nutrients[substrate] = int(
+					(self.stoichiometry[reaction][substrate] * self.fluxes[reaction]) * (N_AVOGADRO * self.volume))
+				delta_volume += self.stoichiometry[reaction][substrate] * 0.01
+
+		# Printout for debugging
+		print('*************** START update_state')
+		print('media = ')
+		print(self.media)
+		print('fluxes = ')
+		print(self.fluxes.items())
+		print('stoichiometry = ')
+		print(self.stoichiometry.items())
+		print('delta_volume = ')
+		print('volume = ')
+		print(self.volume)
+		print(delta_volume)
+		print('delta_nutrients = ')
+		print(delta_nutrients.items())
+		print('internal_substrate_counts = ')
+		print(self.internal_substrate_counts.items())
+		print('internal_substrate_counts = ')
+		print(self.external_substrate_counts.items())
+		print('*************** END update_state')
 
 		for substrate in self.internal_substrate_counts:
-			self.internal_substrate_counts[substrate] += self.delta_nutrients[substrate]
-			print("internal substrates: " + substrate)
-			print(self.internal_substrate_counts[substrate])
+			self.internal_substrate_counts[substrate] += delta_nutrients[substrate]
 
 		for substrate in self.external_substrate_counts:
-			self.external_substrate_counts[substrate] += self.delta_nutrients[substrate]
-			print("external substrates: " + substrate)
-			print(self.external_substrate_counts[substrate])
+			self.external_substrate_counts[substrate] += delta_nutrients[substrate]
 
-		# TODO: partition delta_nutrients into internal and external molecules: internal passes to self.internal_counts and external passes to self.environment_change
-
-		# add arbitrary volume
-		self.volume += delta_volume # TODO: relate volume change to delta_nutrients and self.internal_counts
+		# TODO: exchange this arbitrary addition for a growth function
+		self.volume += delta_volume
 
 		# write output to 'test_data.csv'
 		data_row = [self.random_id, self.local_time, self.volume, self.media,
-			self.internal_substrate_counts['GLC[c]']/(self.volume* N_AVOGADRO), self.internal_substrate_counts['CYS[c]']/(self.volume* N_AVOGADRO), self.internal_substrate_counts['CYS[c]']/(self.volume* N_AVOGADRO)]
-
-		# with open('test_data.csv', 'ab') as fd:
-		# 	fd.write(data_row)
-		# 	fd.close()
-
+					self.internal_substrate_counts['GLC[c]'] / (self.volume * N_AVOGADRO),
+					self.internal_substrate_counts['CYS[c]'] / (self.volume * N_AVOGADRO),
+					self.internal_substrate_counts['CYS[c]'] / (self.volume * N_AVOGADRO)]
 		with open('test_data.csv', 'a') as f:
 			writer = csv.writer(f)
 			writer.writerow(data_row)
 			f.close()
 
+	def divide(self):
+		return self.division
 
 	def check_division(self):
 		# update division state based on time since initialization
 
 		if self.local_time >= self.initial_time + self.division_time:
-			self.division = [{'time': self.local_time}, {'time': self.local_time}]
+
+			# halve internal substrate counts and pass them along
+			daughter_substrate_counts = {}
+			for substrate in self.internal_substrate_counts:
+				daughter_substrate_counts[substrate] = self.internal_substrate_counts[substrate] * 0.5
+
+			# define a common dictionary to pass to daughters
+			common = dict(
+				time=self.local_time,
+				flux=self.flux_distributions,
+				stoichiometry = self.stoichiometry,
+				internal_substrate_counts=daughter_substrate_counts,
+				external_substrate_counts=self.external_substrate_counts,
+				volume=self.volume * 0.5)
+			self.division = [
+				dict(common,
+					 seed=37 * self.seed + 47 * 1 + 997),
+				dict(common,
+					 seed=37 * self.seed + 47 * 2 + 997)]
 
 		return self.division
 
@@ -132,15 +149,17 @@ class Transport(CellSimulation):
 
 	def apply_outer_update(self, update):
 		# Update media conditions based on function select_media in lattice.py:
-		self.media = update['media']
+		if self.media != update['media']:
+				self.media = update['media']
+				self.fluxes = sample_fluxes(self.flux_distributions, self.media)
 		self.external_concentrations = update['concentrations']
 		self.environment_change = {}
+
+		# TODO: generalize this ASAP:
 		# quick and dirty environmental modification, this will change ASAP when molecules are renamed and lookup tables are implemented. For now, this is for demonstration purposes only:
 		self.environment_change['GLC[p]'] = self.external_substrate_counts['GLC[p]']
 		self.environment_change['CYS[p]'] = self.external_substrate_counts['CYS[p]']
 		self.environment_change['GLT[p]'] = self.external_substrate_counts['GLT[p]']
-		print('environment_change dict: ')
-		print(self.environment_change)
 
 	def run_incremental(self, run_until):
 		'''
@@ -150,6 +169,7 @@ class Transport(CellSimulation):
 		'''
 		self.update_state()
 		self.local_time = run_until
+		self.check_division()
 
 		time.sleep(1.0)  # pause for better coordination with Lens visualization. TODO: remove this
 

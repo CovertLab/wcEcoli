@@ -1,17 +1,26 @@
 from __future__ import absolute_import, division, print_function
 
+import csv
 import time
 import uuid
+
 import numpy as np
-import csv
 
 from agent.control import AgentControl, AgentCommand
 
+# TODO: read these from CSV files instead of hard-coding them.
 MEDIA = ['minimal', 'minimal_plus_amino_acids', 'minimal_minus_oxygen']
 
 TRANSPORT_REACTIONS = ['reaction_1', 'reaction_2', 'reaction_3']
 
 SUBSTRATES = ['GLC[p]', 'GLT[p]', 'CYS[p]', 'GLC[c]', 'GLT[c]', 'CYS[c]']
+
+STOICHIOMETRY = [-1, 2, -1, 1, -1, 1]
+
+INTERNAL_SUBSTRATE_COUNTS = {'GLC[c]': np.random.randint(1000, 100000),
+								  'GLT[c]': np.random.randint(1000, 100000),
+								  'CYS[c]': np.random.randint(1000, 100000)}
+EXTERNAL_SUBSTRATE_COUNTS = {'GLC[p]': 0, 'GLT[p]': 0, 'CYS[p]': 0}
 
 def substrate_counts():
 	'''
@@ -39,19 +48,20 @@ def make_flux_distributions():
 def make_stoichiometry():
 	'''
 	Assign stoichiometry to each transport reaction to determine the magnitude and direction of substrates in each reaction
+	# TODO: use a for loop to generalize stoichiometry assignment for != 3 TRANSPORT_REACTIONS
 	Returns: dictionary of the form {reaction:{substrate:int}}
 
 	'''
 	stoichiometry = {
-		TRANSPORT_REACTIONS[0]: {SUBSTRATES[0]: -1, SUBSTRATES[3]: 2},
-		TRANSPORT_REACTIONS[1]: {SUBSTRATES[1]: -1, SUBSTRATES[4]: 1},
-		TRANSPORT_REACTIONS[2]: {SUBSTRATES[2]: -1, SUBSTRATES[5]: 1}}
+		TRANSPORT_REACTIONS[0]: {SUBSTRATES[0]: STOICHIOMETRY[0], SUBSTRATES[3]: STOICHIOMETRY[1]},
+		TRANSPORT_REACTIONS[1]: {SUBSTRATES[1]: STOICHIOMETRY[2], SUBSTRATES[4]: STOICHIOMETRY[3]},
+		TRANSPORT_REACTIONS[2]: {SUBSTRATES[2]: STOICHIOMETRY[4], SUBSTRATES[5]: STOICHIOMETRY[5]}}
 	return stoichiometry
 
 def write_data_file():
 	'''
-	Initialize a data file to write test data and visualize in a Jupyter notebook
-	Returns: CSV file 'test_data.csv' as variable 'test_data' and file-writing object 'filewriter'
+	Initialize a data file to write test data and visualize in a Jupyter notebook.
+	Returns: CSV file 'test_data.csv' initialized with a list of strings as column headers
 
 	'''
 	with open('test_data.csv', 'wb') as test_data:
@@ -86,8 +96,9 @@ class ShepherdControl(AgentControl):
 			lattice_id, num_cells))
 		self.add_agent(lattice_id, 'lattice', {})
 
-		time.sleep(10)
+		time.sleep(15)
 
+		# TODO: change self.add_cell to transport.add_cell, removes need to maintain agent configuration from both control and transport
 		for index in range(num_cells):
 			self.add_cell(args['type'] or 'ecoli', {
 				'outer_id': lattice_id,
@@ -95,7 +106,10 @@ class ShepherdControl(AgentControl):
 				'seed': index,
 				'flux': make_flux_distributions(),
 				'stoichiometry': make_stoichiometry(),
-				'substrate_counts': substrate_counts()})
+				'substrate_counts': substrate_counts(),
+				'internal_substrate_counts': INTERNAL_SUBSTRATE_COUNTS,
+				'external_substrate_counts': EXTERNAL_SUBSTRATE_COUNTS
+			})
 
 	def chemotaxis_experiment(self, args):
 		lattice_id = str(uuid.uuid1())

@@ -26,11 +26,10 @@ class CellSimulation(object):
 		Generate the update that will be sent to the environment based on changes calculated
 		by the CellSimulation during `run_incremental(run_until)`.
 
-		If the dictionary returned by this function contains a `division` key it will trigger
-		preparations for cell division in the environment. The value for this key is a pair of
-		dictionaries, of which the only required key is `id` containing the new daughter id.
-		Additional keys are specific to the particular implementation of `EnvironmentSimulation`
-		that receives this update (see `outer.py`).
+		If the dictionary returned by this function contains a `division` key containing a non-empty
+		list, it will trigger preparations for cell division in the environment. The value for this
+		key is a list of dictionaries containing initial state info for the daughter cells. The dict
+		fields are interpreted by the daughter cell.
 		"""
 
 	def divide(self):
