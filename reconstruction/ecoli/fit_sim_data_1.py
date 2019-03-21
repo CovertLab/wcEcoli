@@ -279,8 +279,7 @@ def fitSimData_1(
 def buildBasalCellSpecifications(
 		sim_data,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False
-		):
+		disable_rnapoly_capacity_fitting=False):
 	"""
 	Creates cell specifications for the basal condition by fitting expression.
 	Relies on expressionConverge() to set the expression and update masses.
@@ -325,40 +324,101 @@ def buildBasalCellSpecifications(
 
 	# Create dictionary for basal condition
 	cellSpecs = {}
-	cellSpecs["basal"] = {
+	condition = 'basal'
+	cellSpecs[condition] = {
 		"concDict": sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients("minimal"),
 		"expression": sim_data.process.transcription.rnaExpression["basal"].copy(),
-		"doubling_time": sim_data.conditionToDoublingTime["basal"],
-		}
+		"doubling_time": sim_data.conditionToDoublingTime["basal"]}
 
-	# Determine expression and synthesis probabilities
-	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _ = expressionConverge(
+	spec_converge, translational_efficiencies = calculate_translational_efficiencies(
 		sim_data,
-		cellSpecs["basal"]["expression"],
-		cellSpecs["basal"]["concDict"],
-		cellSpecs["basal"]["doubling_time"],
-		disable_ribosome_capacity_fitting = disable_ribosome_capacity_fitting,
-		disable_rnapoly_capacity_fitting = disable_rnapoly_capacity_fitting
-		)
+		condition,
+		cellSpecs)
 
-	# Store calculated values
-	cellSpecs["basal"]["expression"] = expression
-	cellSpecs["basal"]["synthProb"] = synthProb
-	cellSpecs["basal"]["avgCellDryMassInit"] = avgCellDryMassInit
-	cellSpecs["basal"]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
-	cellSpecs["basal"]["bulkContainer"] = bulkContainer
-
-	# Modify sim_data mass
-	sim_data.mass.avgCellDryMassInit = avgCellDryMassInit
-	sim_data.mass.avgCellDryMass = sim_data.mass.avgCellDryMassInit * sim_data.mass.avgCellToInitialCellConvFactor
-	sim_data.mass.avgCellWaterMassInit = sim_data.mass.avgCellDryMassInit / sim_data.mass.cellDryMassFraction * sim_data.mass.cellWaterMassFraction
-	sim_data.mass.fitAvgSolubleTargetMolMass = fitAvgSolubleTargetMolMass
-
-	# Modify sim_data expression
-	sim_data.process.transcription.rnaExpression["basal"][:] = cellSpecs["basal"]["expression"]
-	sim_data.process.transcription.rnaSynthProb["basal"][:] = cellSpecs["basal"]["synthProb"]
+	update_sim_data_masses(sim_data, condition, spec)
 
 	return cellSpecs
+
+	# # Determine expression and synthesis probabilities
+	# expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer = expressionConverge(
+	# 	sim_data,
+	# 	cellSpecs["basal"]["expression"],
+	# 	cellSpecs["basal"]["concDict"],
+	# 	cellSpecs["basal"]["doubling_time"],
+	# 	disable_ribosome_capacity_fitting = disable_ribosome_capacity_fitting,
+	# 	disable_rnapoly_capacity_fitting = disable_rnapoly_capacity_fitting)
+
+	# # Store calculated values
+	# cellSpecs["basal"]["expression"] = expression
+	# cellSpecs["basal"]["synthProb"] = synthProb
+	# cellSpecs["basal"]["avgCellDryMassInit"] = avgCellDryMassInit
+	# cellSpecs["basal"]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
+	# cellSpecs["basal"]["bulkContainer"] = bulkContainer
+
+	# # Modify sim_data mass
+	# sim_data.mass.avgCellDryMassInit = avgCellDryMassInit
+	# sim_data.mass.avgCellDryMass = sim_data.mass.avgCellDryMassInit * sim_data.mass.avgCellToInitialCellConvFactor
+	# sim_data.mass.avgCellWaterMassInit = sim_data.mass.avgCellDryMassInit / sim_data.mass.cellDryMassFraction * sim_data.mass.cellWaterMassFraction
+	# sim_data.mass.fitAvgSolubleTargetMolMass = fitAvgSolubleTargetMolMass
+
+	# # Modify sim_data expression
+	# sim_data.process.transcription.rnaExpression["basal"][:] = cellSpecs["basal"]["expression"]
+	# sim_data.process.transcription.rnaSynthProb["basal"][:] = cellSpecs["basal"]["synthProb"]
+
+	return cellSpecs
+
+
+def calculate_translational_efficiencies(sim_data, condition, cellSpecs):
+	spec = cellSpecs[condition].copy()
+	doubling_time = spec['doubling_time']
+	protein_degradation = sim_data.process.translation.monomerData['degRate']
+	protein_loss = netLossRateFromDilutionAndDegradationProtein(doubling_time, protein_degradation)
+	translation_efficiencies_original = sim_data.process.translation.translationEfficienciesByMonomer
+	total_mass_protein = sim_data.mass.getFractionMass(doubling_time)["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	individual_masses_protein = sim_data.process.translation.monomerData["mw"] / sim_data.constants.nAvogadro
+
+	pre_expression, pre_synthesis, pre_average_dry_mass, pre_average_molar_mass, pre_bulk = expressionConverge(
+		sim_data,
+		spec['expression'],
+		spec['concDict'],
+		spec['doubling_time'],
+		disable_ribosome_capacity_fitting = False,
+		disable_rnapoly_capacity_fitting = False)
+	pre_transcripts = pre_expression[sim_data.relation.rnaIndexToMonomerMapping]
+	pre_counts = pre_bulk.counts(sim_data.process.translation.monomerData['id'])
+
+	post_expression, post_synthesis, post_average_dry_mass, post_average_molar_mass, post_bulk = expressionConverge(
+		sim_data,
+		spec['expression'],
+		spec['concDict'],
+		spec['doubling_time'],
+		disable_ribosome_capacity_fitting = True,
+		disable_rnapoly_capacity_fitting = True)
+	post_transcripts = post_expression[sim_data.relation.rnaIndexToMonomerMapping]
+	post_counts = post_bulk.counts(sim_data.process.translation.monomerData['id'])
+
+	import ipdb; ipdb.set_trace()
+
+	spec['expression'] = pre_expression
+	spec['synthProb'] = pre_synthesis
+	spec['avgCellDryMassInit'] = pre_average_dry_mass
+	spec['fitAvgSolubleTargetMolMass'] = pre_average_molar_mass
+	spec['bulkContainer'] = pre_bulk
+
+	return spec, translational_efficiencies
+
+
+def update_sim_data_masses(sim_data, condition, spec):
+	# Modify sim_data mass
+	sim_data.mass.avgCellDryMassInit = spec['avgCellDryMassInit']
+	sim_data.mass.avgCellDryMass = sim_data.mass.avgCellDryMassInit * sim_data.mass.avgCellToInitialCellConvFactor
+	sim_data.mass.avgCellWaterMassInit = sim_data.mass.avgCellDryMassInit / sim_data.mass.cellDryMassFraction * sim_data.mass.cellWaterMassFraction
+	sim_data.mass.fitAvgSolubleTargetMolMass = spec['fitAvgSolubleTargetMolMass']
+
+	# Modify sim_data expression
+	sim_data.process.transcription.rnaExpression[condition][:] = spec['expression']
+	sim_data.process.transcription.rnaSynthProb[condition][:] = spec['synthProb']
+
 
 def buildTfConditionCellSpecifications(
 		sim_data,
@@ -442,7 +502,7 @@ def buildTfConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
@@ -539,7 +599,7 @@ def buildCombinedConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
@@ -639,7 +699,7 @@ def expressionConverge(
 	else:
 		raise Exception("Fitting did not converge")
 
-	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict
+	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer
 
 def fitCondition(sim_data, spec, condition):
 	"""
@@ -1445,11 +1505,13 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	mRnaExpressionView = rnaExpressionContainer.countsView(sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]])
 	mRnaExpressionFrac = np.sum(mRnaExpressionView.counts())
 
+	mRNADistribution = mRNADistributionFromProtein(
+		normalize(counts_protein),
+		translation_efficienciesByProtein,
+		netLossRate_protein)
+
 	mRnaExpressionView.countsIs(
-		mRnaExpressionFrac * mRNADistributionFromProtein(
-			normalize(counts_protein), translation_efficienciesByProtein, netLossRate_protein
-			)[sim_data.relation.monomerIndexToRnaMapping]
-		)
+		mRnaExpressionFrac * mRNADistribution[sim_data.relation.monomerIndexToRnaMapping])
 
 	expression = rnaExpressionContainer.counts()
 
@@ -1457,8 +1519,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	nRnas = totalCountFromMassesAndRatios(
 		totalMass_RNA,
 		sim_data.process.transcription.rnaData["mw"] / sim_data.constants.nAvogadro,
-		expression
-		)
+		expression)
 
 	view_RNA.countsIs(nRnas * expression)
 
@@ -1811,6 +1872,12 @@ def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, net
 	distributionNormed.checkNoUnit()
 
 	return distributionNormed.asNumber()
+
+def translationalEfficienciesFromProteinAndmRNA(distribution_protein, expression, netLossRate):
+	efficiencies = netLossRate * distributionProtein / expression
+	efficiencies.checkNoUnit()
+
+	return efficiencies
 
 def mRNADistributionFromProtein(distribution_protein, translation_efficiencies, netLossRate):
 	"""
