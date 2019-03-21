@@ -75,6 +75,7 @@ def create_gene_to_tu_matrix():
 					gene_to_tu_matrix[gene_index, tu_index] = 1
 		gene_id_vector.append(gene_id)
 		count += 1
+	
 	return gene_to_tu_matrix, gene_id_vector
 
 def create_rnaseq_count_vector(gene_id_vector):
@@ -82,7 +83,8 @@ def create_rnaseq_count_vector(gene_id_vector):
 	The counts vector is not in the same order as the Gene_TU_Matrix.
 	Need to reoder and pull out count information. 
 
-
+	Gathers information needed based on the condition the model is 
+	being run in.
 	'''
 	rna_seq_data_all_cond = parse_tsv(RNA_SEQ_FILE)
 	rna_seq_gene_id_list = []
@@ -94,7 +96,6 @@ def create_rnaseq_count_vector(gene_id_vector):
 			if row['Gene'] == gene:
 				rna_seq_gene_id_list.append(row['Gene'])
 				rna_seq_counts_vector.append(row[CONDITION])
-	import ipdb; ipdb.set_trace()
 
 	return rna_seq_gene_id_list, rna_seq_counts_vector
 
@@ -108,5 +109,9 @@ CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
 
 gene_tu_matrix, gene_id_vector = create_gene_to_tu_matrix()
-rna_counts_vector = create_rnaseq_count_vector(gene_id_vector)
+rna_seq_ids, rna_seq_counts_vector = create_rnaseq_count_vector(gene_id_vector)
+#returns 0's for anything that is not in a TU.
+#do i need to make a new vector contining the rna seq counts with tu_counts_soln?
+tu_counts_solution = np.linalg.lstsq(gene_tu_matrix, rna_seq_counts_vector)[0]
+import ipdb; ipdb.set_trace()
 
