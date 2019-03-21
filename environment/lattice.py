@@ -61,7 +61,7 @@ def select_media(timeline, time):
 		else:
 			break
 		i += 1
-	return '/home/lt5bf/Documents/git-repos/wcEcoli/environment/surrogates/tables/' + selected
+	return '/home/lt5bf/Documents/git-repos/wcEcoli/environment/condition/tables/' + selected
 
 class EnvironmentSpatialLattice(EnvironmentSimulation):
 	def __init__(self, config):
@@ -87,7 +87,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 		# assign timeline
 		# TODO: make this timeline selection a terminal command
-		self.timeline_str = config.get('timeline', '/home/lt5bf/Documents/git-repos/wcEcoli/environment/surrogates/timelines/timeline_1.tsv')
+		self.timeline_str = config.get('timeline', '/home/lt5bf/Documents/git-repos/wcEcoli/environment/condition/timelines/timeline_1.tsv')
 		self.timeline = pd.read_csv(self.timeline_str, sep='\t', header=0)
 
 		# derived parameters

@@ -71,7 +71,7 @@ class Transport(CellSimulation):
 
 		# Get media condition and select associated look-up table
 		self.timeline = config.get('timeline')
-		self.media = config.get('media', '/home/lt5bf/Documents/git-repos/wcEcoli/environment/surrogates/tables/aa_transport_lookup_amino_acids.tsv')
+		self.media = config.get('media', '/home/lt5bf/Documents/git-repos/wcEcoli/environment/condition/tables/aa_transport_lookup_amino_acids.tsv')
 		self.transport_table = select_transport_table(self.media)
 
 		# Build substrate list from look-up table
