@@ -64,7 +64,7 @@ def create_gene_to_tu_matrix():
 	tu_index = find_tu_indices(tu_info)
 
 	count = 0
-	gene_id_vector = []
+	rnas_gene_order = []
 	for row in rna_info:
 		gene_id = row['geneId']
 		gene_index = count
@@ -73,12 +73,12 @@ def create_gene_to_tu_matrix():
 			for gene in genes_in_tu:
 				if gene == gene_id:
 					gene_to_tu_matrix[gene_index, tu_index] = 1
-		gene_id_vector.append(gene_id)
+		rnas_gene_order.append(gene_id)
 		count += 1
-	
-	return gene_to_tu_matrix, gene_id_vector
+		import ipdb; ipdb.set_trace()
+	return gene_to_tu_matrix, rnas_gene_order
 
-def create_rnaseq_count_vector(gene_id_vector):
+def create_rnaseq_count_vector(rnas_gene_order):
 	'''
 	The counts vector is not in the same order as the Gene_TU_Matrix.
 	Need to reoder and pull out count information. 
@@ -91,7 +91,7 @@ def create_rnaseq_count_vector(gene_id_vector):
 	rna_seq_counts_vector = []
 	#have this nexted for loop structure bc, I am trying to preserve the 
 	#gene order from rnas.tsv so that the matrix and the vector match up.
-	for gene in gene_id_vector:
+	for gene in rnas_gene_order:
 		for row in rna_seq_data_all_cond:
 			if row['Gene'] == gene:
 				rna_seq_gene_id_list.append(row['Gene'])
@@ -108,10 +108,10 @@ RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv'
 CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
 
-gene_tu_matrix, gene_id_vector = create_gene_to_tu_matrix()
-rna_seq_ids, rna_seq_counts_vector = create_rnaseq_count_vector(gene_id_vector)
+gene_tu_matrix, rnas_gene_order = create_gene_to_tu_matrix()
+rna_seq_ids, rna_seq_counts_vector = create_rnaseq_count_vector(rnas_gene_order)
 #returns 0's for anything that is not in a TU.
 #do i need to make a new vector contining the rna seq counts with tu_counts_soln?
-tu_counts_solution = np.linalg.lstsq(gene_tu_matrix, rna_seq_counts_vector)[0]
-import ipdb; ipdb.set_trace()
+tu_counts_vector = np.linalg.lstsq(gene_tu_matrix, rna_seq_counts_vector)[0]
+
 
