@@ -1,40 +1,52 @@
-## How to build a Whole Cell pyenv virtualenv:
-## Prepare as needed. Install these packages using your local package
-## manager such as brew on macOS:
-#   brew install pyenv
-#   brew install pyenv-virtualenv
-#   brew install pyenv-virtualenvwrapper
-#   brew install glpk
-#   brew install swig           # needed to install pip CVXcanon
-#   brew install suite-sparse   # needed for cvxopt to use glpk
+## How to set up a Python runtime environment for the Whole Cell Model.
+## (See docs/create-pyenv.md for more details.)
+## (See docs/dev-tools.md for prerequisites such as installing command line
+## tools, additional SDK headers, and adding pyenv init to your shell.)
 #
-## Download and install other packages according to their instructions
+## Install these packages using your local package manager such as homebrew on macOS:
+#   brew install pyenv pyenv-virtualenv pyenv-virtualenvwrapper
+#   brew install glpk openssl readline swig suite-sparse xz
+#
+## Optional: Download and install other packages according to their instructions
+## or take a wait-and-see approach with them:
 #	CPLEX from IBM (free for students)
 #
-## Create a pyenv with Python 2.7.15.
-#   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.15  # if needed
-#   pyenv local 2.7.15
+## Install the required version of Python via pyenv, and remember to enable it as
+## a shared library:
+#   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.15
 #
-## Create and select a new python virtual environment:
+## Create the "wcEcoli2" python virtual environment and select it for your project
+## directory (adjust this for where you keep your git repo clones, e.g. ~/dev/):
+#   cd ~/dev/wcEcoli
+#   pyenv local 2.7.15
 #   pyenv virtualenv wcEcoli2
 #   pyenv local wcEcoli2
 #
-## Upgrade the installers:
-#   pip install --upgrade pip setuptools virtualenv wheel
+## Upgrade this virtual environment's installers:
+#   pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
 #
-## Pip needs a local numpy before installing the other packages:
-#   pip install numpy==1.14.5
+## Install OpenBLAS 0.3.5 or later using your package manager or download and
+## build it from source. (Earlier releases of OpenBLAS had threading bugs. So
+## does Apple's "Accelerate" framework and Intel's Math Kernel Library, so don't
+## use those substitutes.) See docs/create-pyenv.md for instructions if you need
+## to download and build OpenBLAS.
 #
-## For Sherlock:
-## See /share/PI/mcovert/installation_notes/scipy_with_openblas.txt on how
-## to build scipy from source using a site.cfg file.
+## Create ~/.numpy-site.cfg pointing to your openblas installation.
+## (Brew installs openblas in /usr/local/opt/openblas/. Building it from source,
+## you might've installed it in /opt/OpenBLAS/.)
+#    [openblas]
+#    libraries = openblas
+#    library_dirs = /usr/local/opt/openblas/lib
+#    include_dirs = /usr/local/opt/openblas/include
 #
-## Then install all the other packages listed here:
-#   CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary cvxopt
+## Install NumPy and SciPy, linked to this OpenBLAS thanks to ~/.numpy-site.cfg:
+#   pip install numpy==1.14.5 scipy==1.0.1 --no-binary numpy,scipy --force-reinstall
+#
+## Install the packages listed in this file:
+#   CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary numpy,scipy,cvxopt
 #   pyenv rehash
 #
-## Then configure the installed matplotlib as needed, per the instructions in
-## https://github.com/CovertLab/wcEcoli/wiki/How-to-set-up-the-runtime-environment-for-the-model
+## Configure the installed matplotlib per the instructions in docs/create-pyenv.md
 
 appnope==0.1.0
 astroid==1.6.5
@@ -65,7 +77,7 @@ ecos==2.0.5
 enum34==1.1.6
 Equation==1.2.1
 fastcache==1.0.2
-FireWorks==1.7.6
+FireWorks==1.8.7
 Flask==1.0.2
 flask-paginate==0.5.1
 funcsigs==1.0.2
@@ -145,7 +157,9 @@ tqdm==4.23.0
 traitlets==4.3.2
 Unum==4.1.4
 urllib3==1.23
-virtualenv>=16.0.0
+virtualenv>=16.4.1
+virtualenv-clone>=0.5.1
+virtualenvwrapper>=4.8.4
 wcwidth==0.1.7
 Werkzeug==0.14.1
 wrapt==1.10.11
