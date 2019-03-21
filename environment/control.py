@@ -4,70 +4,7 @@ import csv
 import time
 import uuid
 
-import numpy as np
-
 from agent.control import AgentControl, AgentCommand
-
-# TODO: read these from CSV files instead of hard-coding them.
-MEDIA = ['minimal', 'minimal_plus_amino_acids', 'minimal_minus_oxygen']
-
-TRANSPORT_REACTIONS = ['reaction_1', 'reaction_2', 'reaction_3']
-
-SUBSTRATES = ['GLC[p]', 'GLT[p]', 'CYS[p]', 'GLC[c]', 'GLT[c]', 'CYS[c]']
-
-STOICHIOMETRY = [-1, 2, -1, 1, -1, 1]
-
-INTERNAL_SUBSTRATE_COUNTS = {'GLC[c]': np.random.randint(1000, 100000),
-								  'GLT[c]': np.random.randint(1000, 100000),
-								  'CYS[c]': np.random.randint(1000, 100000)}
-EXTERNAL_SUBSTRATE_COUNTS = {'GLC[p]': 0, 'GLT[p]': 0, 'CYS[p]': 0}
-
-def substrate_counts():
-	'''
-	Concatenate a list of substrate names with random starting values for each substrate.
-	Returns: dictionary of the form {substrate:int}
-
-	'''
-	counts = np.random.randint(100,1000, size=len(SUBSTRATES))
-	return dict(zip(SUBSTRATES, counts))
-
-def make_flux_distributions():
-	'''
-	Write flux distributions per media condition, per transport reaction. Used as test data.
-	Returns: dictionary of the form {media:{reaction:[array of ints]}}
-
-	'''
-	flux_distributions = {}
-	for condition in MEDIA:
-		flux_distributions[condition] = {}
-		for reaction in TRANSPORT_REACTIONS:
-			flux_distributions[condition][reaction] = list(np.random.randint(10, size=10))
-	return flux_distributions
-
-
-def make_stoichiometry():
-	'''
-	Assign stoichiometry to each transport reaction to determine the magnitude and direction of substrates in each reaction
-	# TODO: use a for loop to generalize stoichiometry assignment for != 3 TRANSPORT_REACTIONS
-	Returns: dictionary of the form {reaction:{substrate:int}}
-
-	'''
-	stoichiometry = {
-		TRANSPORT_REACTIONS[0]: {SUBSTRATES[0]: STOICHIOMETRY[0], SUBSTRATES[3]: STOICHIOMETRY[1]},
-		TRANSPORT_REACTIONS[1]: {SUBSTRATES[1]: STOICHIOMETRY[2], SUBSTRATES[4]: STOICHIOMETRY[3]},
-		TRANSPORT_REACTIONS[2]: {SUBSTRATES[2]: STOICHIOMETRY[4], SUBSTRATES[5]: STOICHIOMETRY[5]}}
-	return stoichiometry
-
-def write_data_file():
-	'''
-	Initialize a data file to write test data and visualize in a Jupyter notebook.
-	Returns: CSV file 'test_data.csv' initialized with a list of strings as column headers
-
-	'''
-	with open('test_data.csv', 'wb') as test_data:
-		filewriter = csv.writer(test_data, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-		filewriter.writerow(['agent_id', 'timestep', 'volume', 'media', 'GLC[c]', 'GLT[c]', 'CYS[c]'])
-
 
 class ShepherdControl(AgentControl):
 
@@ -89,7 +26,10 @@ class ShepherdControl(AgentControl):
 			agent_config)
 
 	def lattice_experiment(self, args):
-		write_data_file()
+		# Open a file "test_data.csv" that will populate with agent-specific data to open in Jupyter notebook
+		with open('test_data.csv', 'wb') as test_data:
+			filewriter = csv.writer(test_data, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+			filewriter.writerow(['agent_id', 'timestep', 'volume', 'media', 'GLT[c]'])
 		lattice_id = str(uuid.uuid1())
 		num_cells = args['number']
 		print('Creating lattice agent_id {} and {} cell agents\n'.format(
@@ -103,12 +43,7 @@ class ShepherdControl(AgentControl):
 			self.add_cell(args['type'] or 'ecoli', {
 				'outer_id': lattice_id,
 				'working_dir': args['working_dir'],
-				'seed': index,
-				'flux': make_flux_distributions(),
-				'stoichiometry': make_stoichiometry(),
-				'substrate_counts': substrate_counts(),
-				'internal_substrate_counts': INTERNAL_SUBSTRATE_COUNTS,
-				'external_substrate_counts': EXTERNAL_SUBSTRATE_COUNTS
+				'seed': index
 			})
 
 	def chemotaxis_experiment(self, args):
@@ -152,10 +87,7 @@ class ShepherdControl(AgentControl):
 		for index in range(num_cells):
 			self.add_cell(args['type'] or 'transport', {
 				'outer_id': lattice_id,
-				'seed': index,
-				'flux': make_flux_distributions(),
-				'stoichiometry': make_stoichiometry(),
-				'substrate_counts': substrate_counts()})
+				'seed': index})
 
 
 class EnvironmentCommand(AgentCommand):

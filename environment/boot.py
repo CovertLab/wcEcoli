@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import os
 import time
 import errno
-import numpy as np
 
 import agent.event as event
 from agent.outer import Outer
@@ -55,6 +54,8 @@ class EnvironmentAgent(Outer):
 def boot_lattice(agent_id, agent_type, agent_config):
 	media = agent_config.get('media', 'minimal')
 	print("Media condition: {}".format(media))
+	timeline = agent_config.get('timeline', 'timeline_1.tsv')
+	print("Timeline: {}".format(timeline))
 	# kafka_config = agent_config['kafka_config']
 	raw_data = KnowledgeBaseEcoli()
 
@@ -235,7 +236,9 @@ def boot_transport(agent_id, agent_type, agent_config):
 		'agent_config': agent_config,
 		'state': {
 			'volume': volume,
-			'environment_change': {}},
+			'environment_change': {},
+			'substrates': {}
+		},
 		})
 
 	simulation = Transport(agent_config)

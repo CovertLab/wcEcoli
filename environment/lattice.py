@@ -18,6 +18,8 @@ A two-dimensional lattice environmental model
 from __future__ import absolute_import, division, print_function
 import os
 
+
+import pandas as pd
 import numpy as np
 from scipy import constants
 from scipy.ndimage import convolve
@@ -48,40 +50,18 @@ N_DIMS = 2
 # laplacian kernel for diffusion
 LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 
-# these are the molecules that will show a difference in gradient for minimal media:
-# --------------------------------------------------
-# AMMONIUM[c]: -3451555
-# CARBON-MONOXIDE[p]: 127
-# CL-[p]: -3682
-# CPD0-2167[c]: 611
-# CPD-108[p]: 127
-# CPD-560[p]: 4397
-# CPD-10774[c]: 6116
-# GLC[p]: -6389373
-# GLYCOLLATE[c]: 3483039
-# INDOLE[p]: 4982
-# K+[p]: -138237
-# METOH[p]: 25
-# MG+2[p]: -6139
-# NA+[p]: -139
-# PI[p]: -560427
-# PROTON[p]: 6374126
-# S-ADENOSYL-4-METHYLTHIO-2-OXOBUTANOATE[c]: 25
-# SULFATE[p]: -82322
-# UNDECAPRENYL-DIPHOSPHATE[p]: 5373
-# -------------------------------------------------
-
-# Function for getting media keys from sorted timeline
-
 def select_media(timeline, time):
-	selected = None
-	for t, media in timeline.iteritems():
-		last_selected = selected
-		if time < t:
-			selected = last_selected
+	selected = timeline.iloc[0, 1]
+	timepoint = time
+	length = len(timeline[['time']])
+	i = 0
+	while i < length:
+		if timepoint >= timeline.iloc[i, 0]:
+			selected = timeline.iloc[i, 1]
 		else:
-			selected = media
-	return selected
+			break
+		i += 1
+	return '/home/lt5bf/Documents/git-repos/wcEcoli/environment/surrogates/tables/' + selected
 
 class EnvironmentSpatialLattice(EnvironmentSimulation):
 	def __init__(self, config):
@@ -104,10 +84,11 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		self.translation_jitter = config.get('translation_jitter', 0.001)
 		self.rotation_jitter = config.get('rotation_jitter', 0.05)
 		self.depth = config.get('depth', 3000.0)
-		# self.timeline = sorted(config.get('timeline', [(0,'minimal')])) #TODO: function to lookup concentrations based on condition
 
-		# quick and dirty timeline dict #TODO: remove this
-		self.timeline = {0:'minimal', 50:'minimal_plus_amino_acids', 100:'minimal_minus_oxygen'}
+		# assign timeline
+		# TODO: make this timeline selection a terminal command
+		self.timeline_str = config.get('timeline', '/home/lt5bf/Documents/git-repos/wcEcoli/environment/surrogates/timelines/timeline_1.tsv')
+		self.timeline = pd.read_csv(self.timeline_str, sep='\t', header=0)
 
 		# derived parameters
 		self.total_volume = (self.depth * self.edge_length ** 2) * (10 ** -15) # (L)
@@ -161,9 +142,6 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 	def gaussian(self, distance):
 		return np.exp(-np.power(distance, 2.) / (2 * np.power(self.gradient['deviation'], 2.)))
-
-	# def select_media(self, timeline, time):
-
 
 	def evolve(self):
 		''' Evolve environment '''
@@ -327,8 +305,9 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 					for molecule, count in state['environment_change'].iteritems():
 						concentration = self.count_to_concentration(count)
-						index = self.molecule_index[molecule]
-						self.lattice[index, patch_site[0], patch_site[1]] += concentration
+						if molecule in self.molecule_index:
+							index = self.molecule_index[molecule]
+							self.lattice[index, patch_site[0], patch_site[1]] += concentration
 
 
 	def get_molecule_ids(self):
@@ -371,7 +350,6 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 				agent_update['concentrations'] = dict(zip(
 					self._molecule_ids,
 					self.lattice[:,patch_site[0],patch_site[1]]))
-
 
 		return update
 
