@@ -1,4 +1,4 @@
-"time (units.s)"	"nutrients"
+"time (units.s)"	"media"
 0	"minimal_minus_oxygen"
 50	"minimal_plus_amino_acids"
 100	"minimal_minus_oxygen"

@@ -46,7 +46,7 @@ class ExternalState(object):
 			for row in timelines:
 				self.environment.nutrients_time_series[label].append((
 					row["time"].asNumber(units.s),
-					row["nutrients"].encode("utf-8"),
+					row["media"].encode("utf-8"),
 					))
 
 		# create a dictionary with all saved environments, including molecules of concentration == 0
