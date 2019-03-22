@@ -71,17 +71,6 @@ class EnvironmentSimulation(object):
 		"""Run the environment's own simulation until the given time."""
 
 
-def _append(element, a_list):
-	"""If element is not in a_list, append it and return True. (Sets aren't
-	supported in JSON, dicts would make clunky JSON, and neither is ordered in
-	Python 2.)
-	"""
-	if element not in a_list:
-		a_list.append(element)
-		return True
-	return False
-
-
 class Outer(Agent):
 
 	"""
@@ -143,8 +132,8 @@ class Outer(Agent):
 		working_dir = agent_config.get('working_dir', os.getcwd())
 		output_dir = fp.makedirs(working_dir, 'out', 'manual',
 			'lattice_' + agent_id)
-		self.parentage_filename = os.path.join(output_dir, 'cell_parentage.json')
-		self.parentage = defaultdict(list)  # type: Dict[List[str]]
+		self.lineage_filename = os.path.join(output_dir, 'cell_lineage.json')
+		self.lineage = {}
 
 		self.update_state()
 
@@ -180,8 +169,9 @@ class Outer(Agent):
 		if parent_id:
 			self.environment.apply_parent_state(inner_id, simulation)
 
-		if _append(inner_id, self.parentage[parent_id]):
-			fp.write_json_file(self.parentage_filename, self.parentage, indent=2)
+		if inner_id not in self.lineage:
+			self.lineage[inner_id] = parent_id
+			fp.write_json_file(self.lineage_filename, self.lineage, indent=2)
 
 		self.update_state()
 
