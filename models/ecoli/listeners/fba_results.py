@@ -69,9 +69,9 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.targetConcentrations = np.zeros(len(self.homeostaticTargetMolecules))
 
 		# exchange with environment
-		self.externalExchangeMolecules = self.metabolism.transport.all_external_exchange_molecules
-		self.import_constraint = [False] * len(self.externalExchangeMolecules)
-		self.import_exchange = [False] * len(self.externalExchangeMolecules)
+		self.all_external_exchange_molecules = self.metabolism.boundary.all_external_exchange_molecules
+		self.import_constraint = [False] * len(self.all_external_exchange_molecules)
+		self.import_exchange = [False] * len(self.all_external_exchange_molecules)
 
 
 	def tableCreate(self, tableWriter):
@@ -82,7 +82,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			homeostaticTargetMolecules = self.homeostaticTargetMolecules,
 			kineticTargetFluxNames = self.kineticTargetFluxNames,
 			metaboliteNames = self.metaboliteNamesFromNutrients,
-			externalExchangeMolecules = self.externalExchangeMolecules
+			all_external_exchange_molecules = self.all_external_exchange_molecules,
 			)
 
 

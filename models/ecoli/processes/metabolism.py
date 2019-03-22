@@ -61,12 +61,12 @@ class Metabolism(wholecell.processes.process.Process):
 		self._getBiomassAsConcentrations = sim_data.mass.getBiomassAsConcentrations
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 
-		# create transport object
-		# TODO -- make transport into a process, so that it has access to external states
-		self.transport = Transport(sim_data, self._external_states, self.environmentView)
+		# create boundary object
+		# TODO -- make boundary into a process, so that it has access to external states
+		self.boundary = Boundary(sim_data, self._external_states, self.environmentView)
 
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			self.transport.current_media
+			self.boundary.current_media
 			)
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			sim_data.conditionToDoublingTime[sim_data.condition]
@@ -81,11 +81,10 @@ class Metabolism(wholecell.processes.process.Process):
 
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
 
+		self.metaboliteNamesFromNutrients = sorted(self.boundary.metaboliteNamesFromNutrients)
 
-		self.metaboliteNamesFromNutrients = sorted(self.transport.metaboliteNamesFromNutrients)
-
-		moleculeMasses = dict(zip(self.transport.externalExchangedMolecules,
-			sim_data.getter.getMass(self.transport.externalExchangedMolecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
+		moleculeMasses = dict(zip(self.boundary.externalExchangedMolecules,
+			sim_data.getter.getMass(self.boundary.externalExchangedMolecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
 
 		# Data structures to compute reaction bounds based on enzyme presence/absence
 		self.catalystsList = sim_data.process.metabolism.catalystsList
@@ -139,7 +138,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# reactionRateTargets value is just for initialization, it gets reset each timestep during evolveState
 		self.fbaObjectOptions = {
 			"reactionStoich" : sim_data.process.metabolism.reactionStoich,
-			"externalExchangedMolecules" : self.transport.externalExchangedMolecules,
+			"externalExchangedMolecules" : self.boundary.externalExchangedMolecules,
 			"objective" : self.homeostaticObjective,
 			"objectiveType" : "homeostatic_kinetics_mixed",
 			"objectiveParameters" : {
@@ -217,16 +216,14 @@ class Metabolism(wholecell.processes.process.Process):
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
 
-		# get exchange data from transport
-		# TODO (Eran) -- don't use current_media_label, only exchange data.
-		current_media_label, exchange_data, import_exchange, import_constraint = self.transport.currentMedia()
+		# get exchange_data from boundary
+		current_media_label, exchange_data = self.boundary.currentExchangeData()
 
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			self.nutrientToDoublingTime.get(current_media_label, self.nutrientToDoublingTime["minimal"])
 			)
 
 		# Set external molecule levels
-		# TODO (Eran) remove current_media_label
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
 			self.externalMoleculeIDs,
 			coefficient,
@@ -349,8 +346,9 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# update environmental nutrient counts
 		delta_nutrients = ((1 / countsToMolar) * exchange_fluxes).asNumber().astype(int)
-		self.external_exchange_molecule_ids = self.fba.getExternalMoleculeIDs()
-		self.transport.updateEnvironment(self.external_exchange_molecule_ids, delta_nutrients)
+		external_exchange_molecule_ids = self.fba.getExternalMoleculeIDs()
+		self.boundary.updateEnvironment(external_exchange_molecule_ids, delta_nutrients)
+		import_exchange, import_constraint = self.boundary.getImportConstraints(exchange_data)
 
 		# Write outputs to listeners
 		self.writeToListener("FBAResults", "import_exchange", import_exchange)
@@ -413,62 +411,51 @@ class Metabolism(wholecell.processes.process.Process):
 
 		return self.biomass_concentrations[doubling_time]
 
-class Transport(object):
 
+class Boundary(object):
+	# TODO -- get external_state and environmentView by making boundary into a separate process
 	def __init__(self, sim_data, external_state, environmentView):
-
-		# TODO -- get external state by making transport into a separate process
 		self.external_state = external_state
 
-		self.updateExchangeData = sim_data.process.metabolism.transport.exchangeDataFromConcentrations
-		self.getExchangeData = sim_data.process.metabolism.transport.getExchangeData
-		self.saveImportConstraints = sim_data.process.metabolism.transport.saveImportConstraints
-
-		# TODO (Eran) all_external_exchange_molecules can be used in place of externalExchangedMolecules
-		self.all_external_exchange_molecules = sim_data.process.metabolism.transport.all_external_exchange_molecules
+		# get functions
+		self.exchangeDataFromConcentrations = sim_data.process.metabolism.boundary.exchangeDataFromConcentrations
+		self.exchangeDataFromMedia = sim_data.process.metabolism.boundary.exchangeDataFromMedia
+		self.getImportConstraints = sim_data.process.metabolism.boundary.getImportConstraints
 
 		# get environment variables
+		self.all_external_exchange_molecules = sim_data.process.metabolism.boundary.all_external_exchange_molecules
 		self.nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
 		self.current_media = sim_data.external_state.environment.nutrients_time_series[self.nutrients_time_series_label][0][1]
 		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
 		self.exchange_to_env_map = sim_data.external_state.environment.exchange_to_env_map
 
-		# initialize exchange_data according to initial concentrations in environment
-		self.exchange_data = self.updateExchangeData(sim_data.external_state.environment.environment_dict[self.current_media])
-
-		# Setup molecules in external environment that can be exchanged
+		# get molecules in external environment that can be exchanged
 		#TODO (Eran) this can be replaced with reference to exchange_data
-		self.externalExchangedMolecules = self.getExchangeData('minimal')['secretionExchangeMolecules'][:]
+		self.externalExchangedMolecules = self.exchangeDataFromMedia('minimal')['secretionExchangeMolecules'][:]
 
 		# TODO (eran) -- what is metaboliteNamesFromNutrients? Should this be in Metabolism?
 		self.metaboliteNamesFromNutrients = set()
 		for time, environment_label in sim_data.external_state.environment.nutrients_time_series[self.nutrients_time_series_label]:
-			self.externalExchangedMolecules += self.getExchangeData(environment_label)['importExchangeMolecules']
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 					environment_label, sim_data.process.metabolism.nutrientsToInternalConc
 					)
 				)
+			self.externalExchangedMolecules += self.exchangeDataFromMedia(environment_label)['importExchangeMolecules']
 		self.externalExchangedMolecules = sorted(set(self.externalExchangedMolecules))
 
-		# save nutrient names for environment view, using all moleculeIDs in local environment
-		self.environment_molecule_ids = external_state['Environment']._moleculeIDs
-		self.external_exchange_molecule_ids = self.externalExchangedMolecules
-
 		# views on environment
+		self.environment_molecule_ids = external_state['Environment']._moleculeIDs
 		self.environment_molecules = environmentView(self.environment_molecule_ids)
 
 
-	def currentMedia(self):
+	def currentExchangeData(self):
 		# TODO (Eran) remove dependence on current_nutrient label, work only with current_environment's concentrations
 		current_media_label = self.external_state['Environment'].nutrients
-
-		# recalculate exchange_data based on current environment
 		current_environment = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
-		self.exchange_data = self.updateExchangeData(current_environment)
-		import_exchange, import_constraint = self.saveImportConstraints(self.exchange_data)
+		exchange_data = self.exchangeDataFromConcentrations(current_environment)
 
-		return current_media_label, self.exchange_data, import_exchange, import_constraint
+		return current_media_label, exchange_data
 
 
 	def updateEnvironment(self, external_exchange_molecule_ids, delta_nutrients):

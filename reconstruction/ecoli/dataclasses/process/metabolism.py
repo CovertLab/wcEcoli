@@ -48,7 +48,7 @@ class Metabolism(object):
 		else:
 			self.kinetic_objective_weight = sim_data.constants.metabolismKineticObjectiveWeightQuadratic
 
-		self.transport = Transport(raw_data, sim_data)
+		self.boundary = Boundary(raw_data, sim_data)
 
 		self._buildBiomass(raw_data, sim_data)
 		self._buildMetabolism(raw_data, sim_data)
@@ -167,7 +167,7 @@ class Metabolism(object):
 			(units.mol / units.L) * np.array(metaboliteConcentrations)
 			)),
 			raw_data.equilibriumReactions,
-			self.transport.exchange_data_dict,
+			self.boundary.exchange_data_dict,
 		)
 		self.concDict = self.concentrationUpdates.concentrationsBasedOnNutrients("minimal")
 		self.nutrientsToInternalConc = {}
@@ -591,7 +591,7 @@ class ConcentrationUpdates(object):
 		return moleculeSetAmounts
 
 
-class Transport(object):
+class Boundary(object):
 	def __init__(self, raw_data, sim_data):
 		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
 		# lists of molecules whose presence modifies glc's upper bound for FBA import constraint, whose default is 20 (mmol/g DCW/hr).
@@ -745,7 +745,7 @@ class Transport(object):
 			"secretionExchangeMolecules": secretionExchangeMolecules,
 		}
 
-	def getExchangeData(self, environment_label):
+	def exchangeDataFromMedia(self, environment_label):
 		'''
 		Returns exchange_data for a given environment_label saved in exchange_data_dict.
 		'''
@@ -764,7 +764,7 @@ class Transport(object):
 			"secretionExchangeMolecules": secretionExchangeMolecules,
 		}
 
-	def saveImportConstraints(self, exchange_data):
+	def getImportConstraints(self, exchange_data):
 		'''
 		Saves import_constraint and import_exchange for the fba_results listener.
 		import_constraint saves all importConstrainedExchangeMolecules as true, and the rest as false.
