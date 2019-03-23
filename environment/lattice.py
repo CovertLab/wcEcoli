@@ -318,10 +318,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 
 	def generate_outer_update(self, now):
-		'''returns a dict with {molecule_id: conc} for each sim give its current location'''
-
-		bounds = [self.patches_per_edge, self.patches_per_edge]
-
+		'''Return a dict with {molecule_id: conc} for each sim at its current location'''
 		update = {}
 		for agent_id, simulation in self.simulations.iteritems():
 			# only provide concentrations if we have reached this simulation's time point.

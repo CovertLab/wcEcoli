@@ -388,6 +388,7 @@ class Outer(Agent):
 
 		Simulation messages:
 
+		* CELL_DECLARE: Declare an inner agent. [How does this differ from CELL_INITIALIZE?]
 		* CELL_INITIALIZE: Registers inner agents that will be driven once the
 		    TRIGGER_AGENT event is received.
 		* CELL_EXCHANGE: Received from each inner agent when it has computed its 
