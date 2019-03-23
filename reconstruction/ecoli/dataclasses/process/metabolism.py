@@ -512,7 +512,7 @@ class ConcentrationUpdates(object):
 		self.defaultConcentrationsDict = dict((key, concDict[key].asNumber(self.units)) for key in concDict)
 		self.exchange_data_dict = exchange_data_dict
 
-		# factor of internal amino acid increase if maino acids present in nutrients
+		# factor of internal amino acid increase if amino acids present in nutrients
 		self.moleculeScaleFactors = {
 			"L-ALPHA-ALANINE[c]": 2.,
 			"ARG[c]": 2.,
@@ -593,10 +593,11 @@ class ConcentrationUpdates(object):
 
 class Boundary(object):
 	def __init__(self, raw_data, sim_data):
+
 		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
+
 		# lists of molecules whose presence modifies glc's upper bound for FBA import constraint, whose default is 20 (mmol/g DCW/hr).
 		# This is implemented to reproduce glc maximum uptake previous instantiated in environment files, but now done explicitly here.
-		# TODO (Eran) transport should do away with these conditional requirements for determining GLC flux.
 		self.glc_vmax_conditions = [
 			# if any of these molecules are ABSENT, GLC upper bound is set to 0 (mmol/g DCW/hr)
 			['GLC[p]'],
