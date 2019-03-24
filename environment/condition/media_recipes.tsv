@@ -1,0 +1,7 @@
+# File specifies recipes for making different media by adding ingredients to base media defined in ```media/```
+"media id"	"base media"	"ingredients"
+"minimal"	"M9_GLC"	""
+"minimal_acetate"	"M9_GLC"	"ACET"
+"minimal_fumarate"	"M9_GLC"	"FUM"
+"minimal_malate"	"M9_GLC"	"MAL"
+"minimal_no_glucose"	"M9"	""
