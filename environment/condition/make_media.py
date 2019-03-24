@@ -16,6 +16,7 @@ CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
 
 
 class MakeMedia(object):
+	''' MakeMedia '''
 
 	def __init__(self):
 

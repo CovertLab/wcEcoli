@@ -18,12 +18,11 @@ Initializes the environment using conditions and time series from raw_data.
 from __future__ import division
 
 from wholecell.utils import units
-from wholecell.utils.unit_struct_array import UnitStructArray
-
 from reconstruction.ecoli.dataclasses.state.environment import Environment
 
-import re
-import numpy as np
+# TODO (eran) -- import Makemedia as a module
+from environment.condition.make_media import MakeMedia
+
 
 class ExternalState(object):
 	""" External State """
@@ -48,6 +47,21 @@ class ExternalState(object):
 					row["time"].asNumber(units.s),
 					row["media"].encode("utf-8"),
 					))
+
+
+
+		make_media = MakeMedia()
+
+		# make media from media_recipes, add to self.environment.environment_dict
+		for row in raw_data.condition.media_recipes:
+
+			import ipdb; ipdb.set_trace()
+
+
+
+
+
+
 
 		# create a dictionary with all saved environments, including molecules of concentration == 0
 		self.environment.environment_dict = {}
