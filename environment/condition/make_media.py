@@ -176,22 +176,3 @@ class Media(object):
 				)
 
 		return new_media
-
-# # example use
-# media_obj = Media()
-#
-# # make ingredients into a new media
-# base_media = media_obj.stock_media['M9_GLC']
-# base_media2 = media_obj.stock_media['5X_supplement_EZ']
-# ingredients = [
-# 	('L-ALPHA-ALANINE', 1.78 * units.g, 0.025 * units.L),
-# 	('ARG', 8.44 * units.g, 0.1 * units.L),
-# 	('LEU', float("inf") * units.g, 0 * units.L),
-# 	('OXYGEN-MOLECULE', float("-inf") * units.g, 0 * units.L),
-# 	]
-#
-# # add ingredients directly into an existing media
-# new_media1 = media_obj.add_ingredients(base_media, 0.8 * units.L, ingredients)
-#
-# # combine two medias
-# new_media2 = media_obj.combine_media(base_media, 0.8 * units.L, base_media2, 0.2 * units.L)
