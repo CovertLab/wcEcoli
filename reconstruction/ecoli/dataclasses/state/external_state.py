@@ -19,11 +19,12 @@ from __future__ import absolute_import, division, print_function
 
 from wholecell.utils import units
 from reconstruction.ecoli.dataclasses.state.environment import Environment
+from environment.condition.make_media import Media
 
-# TODO (eran) -- import Makemedia as a module
-# import environment.condition.make_media
-from environment.condition.make_media import MakeMedia
-
+COUNTS_UNITS = units.mmol
+VOLUME_UNITS = units.L
+MASS_UNITS = units.g
+CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
 
 class ExternalState(object):
 	""" External State """
@@ -50,20 +51,17 @@ class ExternalState(object):
 					))
 
 		# create a dictionary with all media conditions specified in media_recipes
-		# these include molecules of concentration == 0
-		make_media = MakeMedia()
-		self.environment.environment_dict2 = {}
+		make_media = Media()
+		self.environment.environment_dict = {}
 		for row in raw_data.condition.media_recipes:
 			media_id = row["media id"]
 			base_id = row["base media"]
 			added_id = row["added media"]
 			ingredient_ids = row["ingredients"]
 
-			# TODO initialize new_media with all ids
-			new_media = {}
+			base_media = make_media.stock_media[base_id]
 
 			if added_id:
-				base_media = make_media.stock_media[base_id]
 				added_media = make_media.stock_media[added_id]
 				base_vol = row["base media volume"]
 				added_vol = row["added media volume"]
@@ -74,40 +72,13 @@ class ExternalState(object):
 				added_weight = row["ingredients weight"]
 				added_vol = row["ingredients volume"]
 				ingredients = [(ing_ids, added_weight, added_vol)]
-
-				import ipdb;
-				ipdb.set_trace()
-
 				new_media = make_media.add_ingredients(base_media, base_vol, ingredients)
 			else:
-				new_media = make_media.stock_media[base_id]
+				new_media = base_media
 
-			unitless_new_media = {mol: conc.asNumber() for mol, conc in new_media.iteritems()}
-			self.environment.environment_dict2[media_id] = unitless_new_media
-
-
-
-		# # create a dictionary with all saved environments, including moleculesself.environment.environment_dict['minimal_plus_amino_acids'] of concentration == 0
-		# self.environment.environment_dict = {}
-		# for label in dir(raw_data.condition.media):
-		# 	if label.startswith("__"):
-		# 		continue
-		# 	self.environment.environment_dict[label] = {}
-		#
-		# 	#initiate all molecules with 0 concentrations
-		# 	for row in raw_data.condition.environment_molecules:
-		# 		self.environment.environment_dict[label].update({row["molecule id"]: 0})
-		#
-		# 	# update non-zero concentrations, remove units
-		# 	molecule_concentrations = getattr(raw_data.condition.media, label)
-		# 	for row in molecule_concentrations:
-		# 		self.environment.environment_dict[label].update({row["molecule id"]: row["concentration"].asNumber()})
-
-
-		import ipdb;
-		ipdb.set_trace()
-
-
+			# remove concentration units, setting at CONC_UNITS
+			unitless_new_media = {mol: conc.asNumber(CONC_UNITS) for mol, conc in new_media.iteritems()}
+			self.environment.environment_dict[media_id] = unitless_new_media
 
 		# make mapping from external molecule to exchange molecule
 		self.environment.env_to_exchange_map = {
