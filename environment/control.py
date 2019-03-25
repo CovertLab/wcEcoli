@@ -3,8 +3,12 @@ from __future__ import absolute_import, division, print_function
 import csv
 import time
 import uuid
+import environment
+import os
 
 from agent.control import AgentControl, AgentCommand
+
+ROOT_PATH = os.path.dirname(os.path.dirname(os.path.abspath(environment.__file__)))
 
 
 class ShepherdControl(AgentControl):
@@ -22,7 +26,7 @@ class ShepherdControl(AgentControl):
 
 	def lattice_experiment(self, args):
 		# Open a file "test_data.csv" that will populate with agent-specific data to open in Jupyter notebook
-		with open('test_data.csv', 'wb') as test_data:
+		with open(ROOT_PATH + '/environment/analysis/test_data.csv', 'wb') as test_data:
 			filewriter = csv.writer(test_data, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 			filewriter.writerow(['agent_id', 'timestep', 'volume', 'media', 'GLT[c]'])
 		lattice_id = str(uuid.uuid1())

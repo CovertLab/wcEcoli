@@ -9,6 +9,10 @@ import numpy as np
 from scipy import constants
 
 from agent.inner import CellSimulation
+import os
+import environment
+
+ROOT_PATH = os.path.dirname(os.path.dirname(os.path.abspath(environment.__file__)))
 
 TUMBLE_JITTER = 0.4 # (radians)
 N_AVOGADRO = constants.N_A # Avogadro's number
@@ -72,8 +76,7 @@ class Transport(CellSimulation):
 		# Get media condition and select associated look-up table
 		# TODO: Eliminate dependency on new media/timeline files
 		self.timeline = config.get('timeline')
-		# TODO: change absolute path to relative path
-		self.media = config.get('media', '/home/lt5bf/Documents/git-repos/wcEcoli/environment/condition/tables/aa_transport_lookup_amino_acids.tsv')
+		self.media = config.get('media', ROOT_PATH + '/environment/condition/tables/aa_transport_lookup_amino_acids.tsv')
 		self.transport_table = select_transport_table(self.media)
 
 		# Build substrate list from look-up table
@@ -106,7 +109,7 @@ class Transport(CellSimulation):
 		# write output to 'test_data.csv'
 		data_row = [self.seed, self.local_time, self.volume, self.media,
 					float(self.substrates['GLT[c]']) / (self.volume * N_AVOGADRO)]
-		with open('test_data.csv', 'a') as f:
+		with open(ROOT_PATH + '/environment/analysis/test_data.csv', 'a') as f:
 			writer = csv.writer(f)
 			writer.writerow(data_row)
 			f.close()

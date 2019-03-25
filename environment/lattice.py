@@ -17,13 +17,14 @@ A two-dimensional lattice environmental model
 
 from __future__ import absolute_import, division, print_function
 import os
-import wholecell
+import environment
 
 import pandas as pd
 import numpy as np
 from scipy import constants
 from scipy.ndimage import convolve
 
+ROOT_PATH = os.path.dirname(os.path.dirname(os.path.abspath(environment.__file__)))
 animating = 'ENVIRONMENT_ANIMATION' in os.environ
 
 # Turn off interactive plotting when running on sherlock
@@ -61,8 +62,7 @@ def select_media(timeline, time):
 		else:
 			break
 		i += 1
-	# TODO: change absolute path to relative path
-	return '/home/lt5bf/Documents/git-repos/wcEcoli/environment/condition/tables/' + selected
+	return ROOT_PATH + '/environment/condition/tables/' + selected
 
 class EnvironmentSpatialLattice(EnvironmentSimulation):
 	def __init__(self, config):
@@ -88,8 +88,8 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 		# assign timeline
 		# TODO: make this timeline selection a terminal command
-		# TODO: change absolute path to relative path
-		self.timeline_str = config.get('timeline', '/home/lt5bf/Documents/git-repos/wcEcoli/environment/condition/timelines/timeline_1.tsv')
+		self.timeline_str = config.get('timeline', )
+		self.timeline_str = config.get('timeline', ROOT_PATH + '/environment/condition/timelines/timeline_1.tsv')
 		self.timeline = pd.read_csv(self.timeline_str, sep='\t', header=0)
 
 		# derived parameters
@@ -341,9 +341,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		return self._time
 
 	def add_simulation(self, agent_id, simulation):
-		if agent_id not in self.simulations:
-			self.simulations[agent_id] = {}
-		self.simulations[agent_id].update(simulation)
+		self.simulations.setdefault(agent_id, {}).update(simulation)
 
 		if agent_id not in self.locations:
 			# Place cell at either the provided or a random initial location
@@ -383,9 +381,10 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		translation = (offset * rotation).A1
 		return location + translation
 
-	def apply_parent_state(self, agent_id, parent):
-		parent_location = parent['location']
-		index = parent['index']
+	def apply_parent_state(self, agent_id, simulation):
+		# TODO(jerry): Merge this into add_simulation().
+		parent_location = simulation['location']
+		index = simulation['index']
 		orientation = parent_location[2]
 		#self.simulations[agent_id]['state']['volume'] *= 0.5
 		length = self.volume_to_length(self.simulations[agent_id]['state']['volume'])
