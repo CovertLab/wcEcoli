@@ -30,8 +30,6 @@ class Media(object):
 		self.environment_molecules_fw = self._get_environment_molecules_fw(raw_data)
 		self.stock_media = self._get_stock_media(raw_data)
 
-
-
 	def _get_environment_molecules_fw(self, raw_data):
 		'''get formula weight (units.g / units.mol) for all environmental molecules'''
 

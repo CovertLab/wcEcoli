@@ -38,7 +38,6 @@ class ExternalState(object):
 
 		# create a dictionary of all nutrient time series
 		self.environment.nutrients_time_series = {}
-
 		for label in dir(raw_data.condition.timelines):
 			if label.startswith("__"):
 				continue
@@ -54,7 +53,7 @@ class ExternalState(object):
 		make_media = Media()
 		self.environment.environment_dict = {}
 		for row in raw_data.condition.media_recipes:
-			media_id = row["media id"]
+			new_media_id = row["media id"]
 			base_id = row["base media"]
 			added_id = row["added media"]
 			ingredient_ids = row["ingredients"]
@@ -78,7 +77,7 @@ class ExternalState(object):
 
 			# remove concentration units, setting at CONC_UNITS
 			unitless_new_media = {mol: conc.asNumber(CONC_UNITS) for mol, conc in new_media.iteritems()}
-			self.environment.environment_dict[media_id] = unitless_new_media
+			self.environment.environment_dict[new_media_id] = unitless_new_media
 
 		# make mapping from external molecule to exchange molecule
 		self.environment.env_to_exchange_map = {
