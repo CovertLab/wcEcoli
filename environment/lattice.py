@@ -17,7 +17,7 @@ A two-dimensional lattice environmental model
 
 from __future__ import absolute_import, division, print_function
 import os
-
+import wholecell
 
 import pandas as pd
 import numpy as np
@@ -61,6 +61,7 @@ def select_media(timeline, time):
 		else:
 			break
 		i += 1
+	# TODO: change absolute path to relative path
 	return '/home/lt5bf/Documents/git-repos/wcEcoli/environment/condition/tables/' + selected
 
 class EnvironmentSpatialLattice(EnvironmentSimulation):
@@ -87,6 +88,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 		# assign timeline
 		# TODO: make this timeline selection a terminal command
+		# TODO: change absolute path to relative path
 		self.timeline_str = config.get('timeline', '/home/lt5bf/Documents/git-repos/wcEcoli/environment/condition/timelines/timeline_1.tsv')
 		self.timeline = pd.read_csv(self.timeline_str, sep='\t', header=0)
 

@@ -70,7 +70,9 @@ class Transport(CellSimulation):
 		self.division_volume = 2.0
 
 		# Get media condition and select associated look-up table
+		# TODO: Eliminate dependency on new media/timeline files
 		self.timeline = config.get('timeline')
+		# TODO: change absolute path to relative path
 		self.media = config.get('media', '/home/lt5bf/Documents/git-repos/wcEcoli/environment/condition/tables/aa_transport_lookup_amino_acids.tsv')
 		self.transport_table = select_transport_table(self.media)
 
@@ -94,6 +96,8 @@ class Transport(CellSimulation):
 
 		# TODO: exchange this arbitrary addition for a growth function
 		delta_volume = 0
+
+		# TODO: check against 'environment_molecules.tsv' for actual list of internal and external molecules
 		for substrate in self.substrates:
 			delta_volume += float(self.substrates[substrate])
 		delta_volume = delta_volume / self.volume
