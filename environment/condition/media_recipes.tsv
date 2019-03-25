@@ -1,7 +1,24 @@
 # File specifies recipes for making different media by adding ingredients to base media defined in ```media/```
-"media id"	"base media"	"ingredients"
-"minimal"	"M9_GLC"	""
-"minimal_acetate"	"M9_GLC"	"ACET"
-"minimal_fumarate"	"M9_GLC"	"FUM"
-"minimal_malate"	"M9_GLC"	"MAL"
-"minimal_no_glucose"	"M9"	""
+"media id"	"base media"	"base media volume (units.L)"	"added media"	"added media volume (units.L)"	"ingredients"	"ingredients weight (units.g)"	"ingredients volume (units.L)"
+"minimal"	"M9_GLC"	1.0	""	0	""	0	0
+"minimal_plus_amino_acids"	"M9_GLC"	0.8	"5X_supplement_EZ"	0.2	""	0	0
+"minimal_acetate"	"M9_GLC"	1.0	""	0	"ACET"	0	0
+# minimal_fumarate	M9_GLC				FUM	Infinity
+# minimal_malate	M9_GLC				MAL	Infinity
+# minimal_minus_calcium	M9_GLC				CA+2	remove
+# minimal_minus_magnesium	M9_GLC				MG+2	remove
+# minimal_minus_oxygen	M9_GLC				OXYGEN-MOLECULE	remove
+# minimal_minus_phosphate	M9_GLC				PI	remove
+# minimal_no_glucose	M9					None
+# minimal_plus_amino_acids	M9_GLC		5X_supplement_EZ			None
+# minimal_plus_arabinose
+# minimal_plus_cytidine
+# minimal_plus_ferric
+# minimal_plus_gallate
+# minimal_plus_indole
+# minimal_plus_nitrate
+# minimal_plus_nitrite
+# minimal_plus_quercetin
+# minimal_plus_sam
+# minimal_plus_tungstate
+# minimal_succinate

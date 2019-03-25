@@ -15,12 +15,13 @@ Initializes the environment using conditions and time series from raw_data.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 from wholecell.utils import units
 from reconstruction.ecoli.dataclasses.state.environment import Environment
 
 # TODO (eran) -- import Makemedia as a module
+# import environment.condition.make_media
 from environment.condition.make_media import MakeMedia
 
 
@@ -48,36 +49,65 @@ class ExternalState(object):
 					row["media"].encode("utf-8"),
 					))
 
-
-
+		# create a dictionary with all media conditions specified in media_recipes
+		# these include molecules of concentration == 0
 		make_media = MakeMedia()
-
-		# make media from media_recipes, add to self.environment.environment_dict
+		self.environment.environment_dict2 = {}
 		for row in raw_data.condition.media_recipes:
+			media_id = row["media id"]
+			base_id = row["base media"]
+			added_id = row["added media"]
+			ingredient_ids = row["ingredients"]
 
-			import ipdb; ipdb.set_trace()
+			# TODO initialize new_media with all ids
+			new_media = {}
+
+			if added_id:
+				base_media = make_media.stock_media[base_id]
+				added_media = make_media.stock_media[added_id]
+				base_vol = row["base media volume"]
+				added_vol = row["added media volume"]
+				new_media = make_media.combine_media(base_media, base_vol, added_media, added_vol)
+			elif ingredient_ids:
+				base_vol = row["base media volume"]
+				ing_ids = row["ingredients"]
+				added_weight = row["ingredients weight"]
+				added_vol = row["ingredients volume"]
+				ingredients = [(ing_ids, added_weight, added_vol)]
+
+				import ipdb;
+				ipdb.set_trace()
+
+				new_media = make_media.add_ingredients(base_media, base_vol, ingredients)
+			else:
+				new_media = make_media.stock_media[base_id]
+
+			unitless_new_media = {mol: conc.asNumber() for mol, conc in new_media.iteritems()}
+			self.environment.environment_dict2[media_id] = unitless_new_media
 
 
 
+		# # create a dictionary with all saved environments, including moleculesself.environment.environment_dict['minimal_plus_amino_acids'] of concentration == 0
+		# self.environment.environment_dict = {}
+		# for label in dir(raw_data.condition.media):
+		# 	if label.startswith("__"):
+		# 		continue
+		# 	self.environment.environment_dict[label] = {}
+		#
+		# 	#initiate all molecules with 0 concentrations
+		# 	for row in raw_data.condition.environment_molecules:
+		# 		self.environment.environment_dict[label].update({row["molecule id"]: 0})
+		#
+		# 	# update non-zero concentrations, remove units
+		# 	molecule_concentrations = getattr(raw_data.condition.media, label)
+		# 	for row in molecule_concentrations:
+		# 		self.environment.environment_dict[label].update({row["molecule id"]: row["concentration"].asNumber()})
 
 
+		import ipdb;
+		ipdb.set_trace()
 
 
-		# create a dictionary with all saved environments, including molecules of concentration == 0
-		self.environment.environment_dict = {}
-		for label in dir(raw_data.condition.media):
-			if label.startswith("__"):
-				continue
-			self.environment.environment_dict[label] = {}
-
-			#initiate all molecules with 0 concentrations
-			for row in raw_data.condition.environment_molecules:
-				self.environment.environment_dict[label].update({row["molecule id"]: 0})
-
-			# update non-zero concentrations, remove units
-			molecule_concentrations = getattr(raw_data.condition.media, label)
-			for row in molecule_concentrations:
-				self.environment.environment_dict[label].update({row["molecule id"]: row["concentration"].asNumber()})
 
 		# make mapping from external molecule to exchange molecule
 		self.environment.env_to_exchange_map = {
