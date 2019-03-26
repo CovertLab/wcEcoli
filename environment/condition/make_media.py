@@ -92,20 +92,17 @@ class Media(object):
 
 		# get new_media volume
 		new_volume = media_1_volume + media_2_volume
+		new_media = {mol_id: 0 for mol_id, conc in media_1.iteritems()}
 
-		# initialize new_media by diluting media_1 to new_volume
-		new_media = self._dilute_media(media_1, media_1_volume, new_volume)
+		for mol_id, conc_1 in media_1.iteritems():
+			conc_2 = media_2[mol_id]
 
-		# add media_2
-		for mol_id, conc in media_2.iteritems():
-			old_conc = new_media[mol_id]
-
-			if conc.asNumber() == float("inf") or old_conc.asNumber() == float("inf"):
+			if conc_1.asNumber() == float("inf") or conc_2.asNumber() == float("inf"):
 				new_media[mol_id] = float("inf") * CONC_UNITS
 			else:
-				old_counts = old_conc * new_volume
-				added_counts = conc * media_2_volume
-				new_counts = old_counts + added_counts
+				counts_1 = conc_1 * media_1_volume
+				counts_2 = conc_2 * media_2_volume
+				new_counts = counts_1 + counts_2
 				new_conc = new_counts / new_volume
 
 				# update media
