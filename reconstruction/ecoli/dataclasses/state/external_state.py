@@ -49,28 +49,31 @@ class ExternalState(object):
 					row["media"].encode("utf-8"),
 					))
 
-		# create a dictionary with all media conditions specified in media_recipes
+		# create a dictionary with all media conditions specified by media_recipes
 		make_media = Media()
 		self.environment.environment_dict = {}
 		for row in raw_data.condition.media_recipes:
 			new_media_id = row["media id"]
 			base_id = row["base media"]
-			added_id = row["added media"]
+			added_media_id = row["added media"]
 			ingredient_ids = row["ingredients"]
-
 			base_media = make_media.stock_media[base_id]
 
-			if added_id:
-				added_media = make_media.stock_media[added_id]
+			if added_media_id:
+				added_media = make_media.stock_media[added_media_id]
 				base_vol = row["base media volume"]
 				added_vol = row["added media volume"]
 				new_media = make_media.combine_media(base_media, base_vol, added_media, added_vol)
 			elif ingredient_ids:
 				base_vol = row["base media volume"]
-				ing_ids = row["ingredients"]
 				added_weight = row["ingredients weight"]
+				added_counts = row["ingredients counts"]
 				added_vol = row["ingredients volume"]
-				ingredients = [(ing_ids, added_weight, added_vol)]
+				ingredients = {ingred_id:
+								   {'weight': added_weight[index],
+									'counts': added_counts[index],
+									'volume': added_vol[index],
+									} for index, ingred_id in enumerate(ingredient_ids)}
 				new_media = make_media.add_ingredients(base_media, base_vol, ingredients)
 			else:
 				new_media = base_media

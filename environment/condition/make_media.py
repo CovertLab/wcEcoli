@@ -5,6 +5,8 @@ Functions for making media
 
 from __future__ import absolute_import, division, print_function
 
+import numpy as np
+
 from wholecell.utils import units
 
 # Raw data class
@@ -64,20 +66,6 @@ class Media(object):
 
 		return stock_media
 
-	def _dilute_media(self, media_1, media_1_volume, new_volume):
-		new_media = {mol_id: 0 for mol_id, conc in media_1.iteritems()}
-
-		# update media concentrations
-		for mol_id, conc in media_1.iteritems():
-			if conc.asNumber() == float("inf"):
-				new_media[mol_id] = float("inf") * CONC_UNITS
-			else:
-				counts = conc * media_1_volume
-				dilute_conc = counts / new_volume
-				new_media[mol_id] = dilute_conc
-
-		return new_media
-
 	def combine_media(self, media_1, media_1_volume, media_2, media_2_volume):
 		'''
 		Combines two medias and returns a new media
@@ -90,7 +78,6 @@ class Media(object):
 			new_media (dict): {molecule_id: concentrations}
 		'''
 
-		# get new_media volume
 		new_volume = media_1_volume + media_2_volume
 		new_media = {mol_id: 0 for mol_id, conc in media_1.iteritems()}
 
@@ -120,56 +107,102 @@ class Media(object):
 		Args:
 			media_1 (dict): {molecule_id: concentrations}
 			media_1_volume:
-			ingredients (list of tuples): [(mol_id, weight, volume)]
+			ingredients (dict): a dictionary of all ingredients with sub-dicts that have added weight, counts, volume.
+				Only one of weights (in g) or counts (in mmol) is needed; if both are specified, it will use weight
+				Example format:
+					{mol_id_1: {'weight': 1.78 * units.g, 'volume': 0.025 * units.L),
+					mol_id_2: {'counts': 0.2 * units.mmol, 'volume': 0.1 * units.L),
+					}
 
 		Returns:
 			new_media (dict): {molecule_id: concentrations}
 		'''
 
+		# intialize new_media
+		new_media = {mol_id: 0.0 * CONC_UNITS for mol_id, conc_1 in media_1.iteritems()}
+
 		# get new_media volume
 		ingredients_volume = 0 * VOLUME_UNITS
-		for (mol_id, weight, volume) in ingredients:
-			ingredients_volume += volume
+		for mol_id, quantities in ingredients.iteritems():
+			ingredients_volume += quantities['volume']
 		new_volume = media_1_volume + ingredients_volume
 
-		if new_volume.asNumber() < 0:
-			raise AddIngredientsError(
-				"Adding negative volume"
-			)
+		# get new_media concentrations from mixing ingredients
+		for mol_id, conc_1 in media_1.iteritems():
 
-		# initialize new_media by diluting media_1 to new_volume
-		new_media = self._dilute_media(media_1, media_1_volume, new_volume)
+			if mol_id in ingredients:
+				counts_1 = conc_1 * media_1_volume
+				quantities = ingredients[mol_id]
+				weight = quantities['weight']
+				added_counts = quantities['counts']
 
-		# add ingredients
-		for (mol_id, weight, volume) in ingredients:
-			# add infinite concentration of ingredient if weight is Infinity
-			if weight.asNumber() == float("inf"):
-				new_media[mol_id] = float("inf") * CONC_UNITS
+				# if an added weight is specified.
+				# this will override added counts if they are separately specified
+				if not np.isnan(weight.asNumber()):
+					# add infinite concentration of ingredient if weight is Infinity
+					if weight.asNumber() == float("inf"):
+						new_media[mol_id] = float("inf") * CONC_UNITS
 
-			# remove ingredient from media if weight is -Infinity
-			elif weight.asNumber() == float("-inf"):
-				new_media[mol_id] = 0.0 * CONC_UNITS
+					# remove ingredient from media if weight is -Infinity
+					# this will override infinite concentrations in media_1
+					elif weight.asNumber() == float("-inf"):
+						new_media[mol_id] = 0.0 * CONC_UNITS
 
-			# if a weight is specified, it needs a formula weight listed in environment_molecules.tsv
-			elif weight.asNumber() > 0:
-				if self.environment_molecules_fw[mol_id] is not None:
-					fw = self.environment_molecules_fw[mol_id]
-					added_counts = weight / fw
-					new_conc = added_counts / new_volume
-					new_media[mol_id] = new_conc
+					# if media_1 has infinite concentration, adding ingredient won't change it
+					elif conc_1.asNumber() == float("inf"):
+						new_media[mol_id] = float("inf") * CONC_UNITS
+
+					# if a weight is specified, it needs a formula weight listed in environment_molecules.tsv
+					elif weight.asNumber() >= 0:
+						if self.environment_molecules_fw[mol_id] is not None:
+							fw = self.environment_molecules_fw[mol_id]
+							counts_2 = weight / fw
+							new_counts = counts_1 + counts_2
+							new_conc = new_counts / new_volume
+							new_media[mol_id] = new_conc
+						else:
+							raise AddIngredientsError(
+								"No fw defined for {} in environment_molecules.tsv".format(mol_id)
+							)
+
+					else:
+						raise AddIngredientsError(
+							"Negative weight given for {}".format(mol_id)
+						)
+
+				# if added counts is specified
+				elif not np.isnan(added_counts.asNumber()):
+					# make infinite concentration of ingredient if added counts is Infinity
+					if added_counts.asNumber() == float("inf"):
+						new_media[mol_id] = float("inf") * CONC_UNITS
+
+					# remove ingredient from media if weight is -Infinity
+					# this will override infinite concentrations in media_1
+					elif added_counts.asNumber() == float("-inf"):
+						new_media[mol_id] = 0.0 * CONC_UNITS
+
+					# if media_1 has infinite concentration, adding ingredient won't change it
+					elif conc_1.asNumber() == float("inf"):
+						new_media[mol_id] = float("inf") * CONC_UNITS
+
+					elif added_counts.asNumber() >= 0:
+						new_counts = counts_1 + added_counts
+						new_conc = new_counts / new_volume
+						new_media[mol_id] = new_conc
+
+					else:
+						raise AddIngredientsError(
+							"Negative counts given for {}".format(mol_id)
+						)
+
 				else:
 					raise AddIngredientsError(
-						"No fw defined for {} in environment_molecules.tsv".format(mol_id)
+						"No added added weight or counts for {}".format(mol_id)
 					)
-
-			elif weight.asNumber() < 0:
-				raise AddIngredientsError(
-					"Negative weight for {}".format(mol_id)
-				)
-
+			# if mol_id is not in ingredients, dilute its concentration in new_media
 			else:
-				raise AddIngredientsError(
-					"No added weight for {}".format(mol_id)
-				)
+				counts_1 = conc_1 * media_1_volume
+				new_conc = counts_1 / new_volume
+				new_media[mol_id] = new_conc
 
 		return new_media
