@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import time
 import numpy as np
-import random
 
 from agent.inner import CellSimulation
 
@@ -15,10 +14,8 @@ class Chemotaxis(CellSimulation):
 	State is a function of the current glucose concentrations, and internal CheY concentrations -- the 'memory' of
 	glucose concentrations from the previous time step.
 
-	TODO (Eran) make surrogate into a proper state machine
-	TODO (Eran) make transition rates between states a function of CheY
-	TODO (Eran) dynamically update CheY
-	TODO (Eran) fit transition rates to experimental results
+	TODO (Eran) implement mechanistic model of chemotaxis pathway. The following paper's model shoud suffice:
+	Bray, Dennis, Robert B. Bourret, and Melvin I. Simon. "Computer simulation of the phosphorylation cascade controlling bacterial chemotaxis." Molecular Biology of the Cell (1993)
 	'''
 
 	def __init__(self):
@@ -51,7 +48,6 @@ class Chemotaxis(CellSimulation):
 
 	def update_state(self):
 		# update state based on internal and external concentrations
-
 		if self.external_concentrations['GLC'] >= self.internal_concentrations['CheY-P']:
 			self.state = 'run'
 		else:
@@ -62,7 +58,6 @@ class Chemotaxis(CellSimulation):
 
 	def update_behavior(self):
 		# update behavior based on the current state of the system
-
 		if self.state is 'run':
 			force = 0.2
 			torque = 0.0
@@ -74,7 +69,6 @@ class Chemotaxis(CellSimulation):
 
 	def check_division(self):
 		# update division state based on time since initialization
-
 		if self.local_time >= self.initial_time + self.division_time:
 			self.division = [{'time': self.local_time}, {'time': self.local_time}]
 
