@@ -164,8 +164,11 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 			translation_jitter = np.random.normal(scale=np.sqrt(self.translation_jitter * self._timestep), size=N_DIMS)
 			rotation_jitter = np.random.normal(scale=self.rotation_jitter * self._timestep)
 
-			self.locations[agent_id][0:2] += translation_jitter
-			self.locations[agent_id][2] += rotation_jitter
+			self.locations[agent_id][0:2] += translation_jitter * self.run_for
+			self.locations[agent_id][2] += rotation_jitter * self.run_for
+
+			# Enforce 2*PI range
+			self.locations[agent_id][2] = self.locations[agent_id][2] % (2 * PI)
 
 			# Enforce lattice edges
 			self.locations[agent_id][0:2][self.locations[agent_id][0:2] > self.edge_length] = self.edge_length - self.dx/2 #-= self.locations[agent_id][0:2][self.locations[agent_id][0:2] > self.edge_length] % self.edge_length
