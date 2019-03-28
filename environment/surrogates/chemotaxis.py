@@ -32,7 +32,7 @@ class Chemotaxis(CellSimulation):
 		# initial state
 		self.state = ['tumble']
 		self.external_concentrations = {
-			'GLC[p]': 0.0
+			'GLC': 0.0
 		}
 		self.internal_concentrations = {
 			'CheY': 0.0,
@@ -47,13 +47,13 @@ class Chemotaxis(CellSimulation):
 	def update_state(self):
 		# update state based on internal and external concentrations
 
-		if self.external_concentrations['GLC[p]'] >= self.internal_concentrations['CheY-P']:
+		if self.external_concentrations['GLC'] >= self.internal_concentrations['CheY-P']:
 			self.state = 'run'
 		else:
 			self.state = 'tumble'
 
 		# update intracellular concentrations
-		self.internal_concentrations['CheY-P'] = self.external_concentrations['GLC[p]']
+		self.internal_concentrations['CheY-P'] = self.external_concentrations['GLC']
 
 	def update_behavior(self):
 		# update behavior based on the current state of the system

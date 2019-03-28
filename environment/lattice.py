@@ -129,15 +129,10 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 					distance = np.sqrt(dx ** 2 + dy ** 2)
 					scale = self.gaussian(distance)
 					# multiply glucose gradient by scale
-					self.lattice[self._molecule_ids.index('GLC[p]')][x_patch][y_patch] *= scale
-
-		if os.path.exists("out/manual/environment.txt"):
-			os.remove("out/manual/environment.txt")
-		if os.path.exists("out/manual/locations.txt"):
-			os.remove("out/manual/locations.txt")
+					self.lattice[self._molecule_ids.index('GLC')][x_patch][y_patch] *= scale
 
 		if animating:
-			glucose_lattice = self.lattice[self.molecule_index['GLC[p]']]
+			glucose_lattice = self.lattice[self.molecule_index['GLC']]
 			plt.imshow(glucose_lattice, vmin=0, vmax=25, cmap='YlGn')
 			plt.colorbar()
 			plt.axis('off')
@@ -232,7 +227,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 
 	def output_environment(self):
 		'''plot environment lattice'''
-		glucose_lattice = self.lattice[self.molecule_index['GLC[p]']]
+		glucose_lattice = self.lattice[self.molecule_index['GLC']]
 
 		plt.clf()
 		# plt.imshow(np.pad(glucose_lattice, ((1,1),(1,1)), 'wrap'), cmap='YlGn')
