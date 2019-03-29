@@ -12,17 +12,19 @@ In particular, the media ```minimal```, ```minimal_plus_amino_acids```, ```with_
 > base_media2 = media_obj.stock_media['5X_supplement_EZ']
 
 ### Define a dict of ingredients
-Each ingredient has a sub-dict with {'weight': value * (units.g), 'counts': value * (units.mmol), 'volume': value *  (units.L)}. 
-Only one of weights (in units.g) or counts (in units.mmol) is needed; if both are specified as non NaN, it will use weight
-If weight is Infinity, it sets the final concentration to infinity. If weight is -Infinity, it sets the final concentration to 0.
+Ingredients is a dict with molecule ids as the keys.
+Each ingredient's value is a dict with {'weight': value * (units.g), 'counts': value * (units.mmol), 'volume': value *  (units.L)}.
+Only one of 'weights' (in units.g) or 'counts' (in units.mmol) is required; if both are specified, it will use weight.
+If weight or counts is Infinity, it sets the final concentration to inf.
+If weight or counts is -Infinity, it sets the final concentration to 0.
 
 Example:
 > ingredients = {
-	'L-ALPHA-ALANINE': {'weight': 1.78 * units.g, 'counts': np.nan * units.mmol, 'volume': 0.025 * units.L},
-	'ARG': {'weight': 8.44 * units.g, 'counts': np.nan * units.mmol, 'volume': 0.1 * units.L},
-	'UREA': {'weight': np.nan * units.g, 'counts': 102.0 * units.mmol, 'volume': 1.0 * units.L},
-	'LEU': {'weight': float("inf") * units.g, 'counts': np.nan * units.mmol, 'volume': 0 * units.L},
-	'OXYGEN-MOLECULE': {'weight': float("-inf") * units.g, 'counts': np.nan * units.mmol, 'volume': 0 * units.L},
+	'L-ALPHA-ALANINE': {'weight': 1.78 * units.g, 'volume': 0.025 * units.L},
+	'ARG': {'weight': 8.44 * units.g, 'volume': 0.1 * units.L},
+	'UREA': {'counts': 102.0 * units.mmol, 'volume': 1.0 * units.L},
+	'LEU': {'weight': float("inf") * units.g, 'volume': 0 * units.L},
+	'OXYGEN-MOLECULE': {'weight': float("-inf") * units.g, 'volume': 0 * units.L},
     }
 
 ### Add ingredients directly into an existing media

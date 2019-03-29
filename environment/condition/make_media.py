@@ -12,6 +12,8 @@ from wholecell.utils import units
 # Raw data class
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 
+INF = float("inf")
+
 COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
@@ -22,7 +24,12 @@ class AddIngredientsError(Exception):
 	pass
 
 class Media(object):
-	''' Media '''
+	'''
+	A media object is a factory for making new media by either combining two saved media at different volumes (with self.combine_media(), or adding ingredients to a saved media (with self.add_ingredients()).
+	Ingredients can be added by either specifying their weight (in grams) or the counts (in mmol) in addition to the volume.
+	The new media dicts are returned to the caller, and are not saved in this object.
+	A media object holds dicts about stock media in ```self.stock_media``` and the formula weight of environmental molecules in ```self.environment_molecules_fw```, which is needed for mixing in ingredients at weights.
+	'''
 
 	def __init__(self):
 
@@ -47,6 +54,8 @@ class Media(object):
 		return environment_molecules_fw
 
 	def _get_stock_media(self, raw_data):
+		'''load all stock medi'''
+
 		stock_media = {}
 		for label in vars(raw_data.condition.media):
 			# initiate all molecules with 0 concentrations
@@ -72,14 +81,17 @@ class Media(object):
 
 		Args:
 			media_1, media_2 (dict): dicts with {molecule_id: concentration}
-			media_1_volume, media_2_volume: the volume of media_1 and media_2
+			media_1_volume, media_2_volume (unum): the volumes of media_1 and media_2 (floats) with a volume units (i.e. units.L)
 
 		Returns:
 			new_media (dict): {molecule_id: concentrations}
 		'''
 
+		# intialize new_media
+		new_media = {mol_id: 0.0 * CONC_UNITS for mol_id, conc in media_1.iteritems()}
+
+		# get new_media volume
 		new_volume = media_1_volume + media_2_volume
-		new_media = {mol_id: 0 for mol_id, conc in media_1.iteritems()}
 
 		for mol_id, conc_1 in media_1.iteritems():
 			conc_2 = media_2[mol_id]
@@ -99,17 +111,16 @@ class Media(object):
 
 	def add_ingredients(self, media_1, media_1_volume, ingredients):
 		'''
-		Combines ingredients to existing media. Ingredients are specified as a list,
-		with a tuple for each added ingredient specifying (mol_id, weight, volume).
-		If weight is Infinity, the concentration is set to inf. If the weight is -Infinity,
-		the concentration is set to 0.
+		Combines ingredients to existing media to make new media.
 
 		Args:
 			media_1 (dict): {molecule_id: concentrations}
 			media_1_volume:
-			ingredients (dict): a dictionary of all ingredients with sub-dicts that have added weight, counts, volume.
-				Only one of weights (in g) or counts (in mmol) is needed; if both are specified, it will use weight
-				Example format:
+			ingredients (dict): keys are ingredient ids, values are dicts with weight, counts, volume.
+				Only one of weights (in g) or counts (in mmol) is needed; if both are specified, it will use weight.
+				If weight or counts is Infinity, the new concentration is set to inf. If the weight or counts is -Infinity,
+				the new concentration is set to 0.
+				Example format of ingredients:
 					{mol_id_1: {'weight': 1.78 * units.g, 'volume': 0.025 * units.L),
 					mol_id_2: {'counts': 0.2 * units.mmol, 'volume': 0.1 * units.L),
 					}
@@ -119,11 +130,11 @@ class Media(object):
 		'''
 
 		# intialize new_media
-		new_media = {mol_id: 0.0 * CONC_UNITS for mol_id, conc_1 in media_1.iteritems()}
+		new_media = {mol_id: 0.0 * CONC_UNITS for mol_id, conc in media_1.iteritems()}
 
 		# get new_media volume
 		ingredients_volume = 0 * VOLUME_UNITS
-		for mol_id, quantities in ingredients.iteritems():
+		for quantities in ingredients.itervalues():
 			ingredients_volume += quantities['volume']
 		new_volume = media_1_volume + ingredients_volume
 
@@ -133,24 +144,30 @@ class Media(object):
 			if mol_id in ingredients:
 				counts_1 = conc_1 * media_1_volume
 				quantities = ingredients[mol_id]
-				weight = quantities['weight']
-				added_counts = quantities['counts']
+				weight = quantities.get('weight', None)
+				added_counts = quantities.get('counts', None)
+
+
+
+				# TODO -- compute counts_2 first, and then pass it into a simpler loop.
+
+
+
 
 				# if an added weight is specified.
 				# this will override added counts if they are separately specified
-				if not np.isnan(weight.asNumber()):
+				if weight is not None:
 					# add infinite concentration of ingredient if weight is Infinity
-					if weight.asNumber() == float("inf"):
-						new_media[mol_id] = float("inf") * CONC_UNITS
+					if weight.asNumber() == INF:
+						new_media[mol_id] = INF * CONC_UNITS
 
 					# remove ingredient from media if weight is -Infinity
-					# this will override infinite concentrations in media_1
 					elif weight.asNumber() == float("-inf"):
 						new_media[mol_id] = 0.0 * CONC_UNITS
 
 					# if media_1 has infinite concentration, adding ingredient won't change it
-					elif conc_1.asNumber() == float("inf"):
-						new_media[mol_id] = float("inf") * CONC_UNITS
+					elif conc_1.asNumber() == INF:
+						new_media[mol_id] = INF * CONC_UNITS
 
 					# if a weight is specified, it needs a formula weight listed in environment_molecules.tsv
 					elif weight.asNumber() >= 0:
@@ -164,17 +181,17 @@ class Media(object):
 							raise AddIngredientsError(
 								"No fw defined for {} in environment_molecules.tsv".format(mol_id)
 							)
-
 					else:
 						raise AddIngredientsError(
 							"Negative weight given for {}".format(mol_id)
 						)
 
-				# if added counts is specified
-				elif not np.isnan(added_counts.asNumber()):
+				# if counts are specified
+				elif added_counts is not None:
+
 					# make infinite concentration of ingredient if added counts is Infinity
-					if added_counts.asNumber() == float("inf"):
-						new_media[mol_id] = float("inf") * CONC_UNITS
+					if added_counts.asNumber() == INF:
+						new_media[mol_id] = INF * CONC_UNITS
 
 					# remove ingredient from media if weight is -Infinity
 					# this will override infinite concentrations in media_1
@@ -182,8 +199,8 @@ class Media(object):
 						new_media[mol_id] = 0.0 * CONC_UNITS
 
 					# if media_1 has infinite concentration, adding ingredient won't change it
-					elif conc_1.asNumber() == float("inf"):
-						new_media[mol_id] = float("inf") * CONC_UNITS
+					elif conc_1.asNumber() == INF:
+						new_media[mol_id] = INF * CONC_UNITS
 
 					elif added_counts.asNumber() >= 0:
 						new_counts = counts_1 + added_counts
