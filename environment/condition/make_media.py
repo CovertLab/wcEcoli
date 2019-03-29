@@ -13,6 +13,7 @@ from wholecell.utils import units
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 
 INF = float("inf")
+NEG_INF = float("-inf")
 
 COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
@@ -145,38 +146,19 @@ class Media(object):
 				counts_1 = conc_1 * media_1_volume
 				quantities = ingredients[mol_id]
 				weight = quantities.get('weight', None)
-				added_counts = quantities.get('counts', None)
+				counts_2 = quantities.get('counts', None)
 
-
-
-				# TODO -- compute counts_2 first, and then pass it into a simpler loop.
-
-
-
-
-				# if an added weight is specified.
-				# this will override added counts if they are separately specified
+				# calculate counts_2 from weight.
+				# This will overwrite added counts if those were specified
 				if weight is not None:
-					# add infinite concentration of ingredient if weight is Infinity
 					if weight.asNumber() == INF:
-						new_media[mol_id] = INF * CONC_UNITS
-
-					# remove ingredient from media if weight is -Infinity
-					elif weight.asNumber() == float("-inf"):
-						new_media[mol_id] = 0.0 * CONC_UNITS
-
-					# if media_1 has infinite concentration, adding ingredient won't change it
-					elif conc_1.asNumber() == INF:
-						new_media[mol_id] = INF * CONC_UNITS
-
-					# if a weight is specified, it needs a formula weight listed in environment_molecules.tsv
+						counts_2 = INF * COUNTS_UNITS
+					elif weight.asNumber() == NEG_INF:
+						counts_2 = NEG_INF * COUNTS_UNITS
 					elif weight.asNumber() >= 0:
 						if self.environment_molecules_fw[mol_id] is not None:
 							fw = self.environment_molecules_fw[mol_id]
 							counts_2 = weight / fw
-							new_counts = counts_1 + counts_2
-							new_conc = new_counts / new_volume
-							new_media[mol_id] = new_conc
 						else:
 							raise AddIngredientsError(
 								"No fw defined for {} in environment_molecules.tsv".format(mol_id)
@@ -185,37 +167,26 @@ class Media(object):
 						raise AddIngredientsError(
 							"Negative weight given for {}".format(mol_id)
 						)
-
-				# if counts are specified
-				elif added_counts is not None:
-
-					# make infinite concentration of ingredient if added counts is Infinity
-					if added_counts.asNumber() == INF:
-						new_media[mol_id] = INF * CONC_UNITS
-
-					# remove ingredient from media if weight is -Infinity
-					# this will override infinite concentrations in media_1
-					elif added_counts.asNumber() == float("-inf"):
-						new_media[mol_id] = 0.0 * CONC_UNITS
-
-					# if media_1 has infinite concentration, adding ingredient won't change it
-					elif conc_1.asNumber() == INF:
-						new_media[mol_id] = INF * CONC_UNITS
-
-					elif added_counts.asNumber() >= 0:
-						new_counts = counts_1 + added_counts
-						new_conc = new_counts / new_volume
-						new_media[mol_id] = new_conc
-
-					else:
-						raise AddIngredientsError(
-							"Negative counts given for {}".format(mol_id)
-						)
-
-				else:
+				elif counts_2 is None:
 					raise AddIngredientsError(
 						"No added added weight or counts for {}".format(mol_id)
 					)
+
+				# get new concentration
+				# make infinite concentration of ingredient if counts_2 is Infinity
+				if counts_2.asNumber() == INF:
+					new_media[mol_id] = INF * CONC_UNITS
+
+				# remove ingredient from media if counts_2 is -Infinity
+				# this will override infinite concentrations in media_1
+				elif counts_2.asNumber() == NEG_INF:
+					new_media[mol_id] = 0.0 * CONC_UNITS
+
+				else:
+					new_counts = counts_1 + counts_2
+					new_conc = new_counts / new_volume
+					new_media[mol_id] = new_conc
+
 			# if mol_id is not in ingredients, dilute its concentration in new_media
 			else:
 				counts_1 = conc_1 * media_1_volume
