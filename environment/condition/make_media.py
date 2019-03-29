@@ -97,8 +97,8 @@ class Media(object):
 		for mol_id, conc_1 in media_1.iteritems():
 			conc_2 = media_2[mol_id]
 
-			if conc_1.asNumber() == float("inf") or conc_2.asNumber() == float("inf"):
-				new_media[mol_id] = float("inf") * CONC_UNITS
+			if conc_1.asNumber() == INF or conc_2.asNumber() == INF:
+				new_media[mol_id] = INF * CONC_UNITS
 			else:
 				counts_1 = conc_1 * media_1_volume
 				counts_2 = conc_2 * media_2_volume
