@@ -65,15 +65,22 @@ class ExternalState(object):
 				added_vol = row["added media volume"]
 				new_media = make_media.combine_media(base_media, base_vol, added_media, added_vol)
 			elif ingredient_ids:
-				base_vol = row["base media volume"]
-				added_weight = row["ingredients weight"]
-				added_counts = row["ingredients counts"]
-				added_vol = row["ingredients volume"]
-				ingredients = {ingred_id:
-								   {'weight': added_weight[index],
-									'counts': added_counts[index],
-									'volume': added_vol[index],
-									} for index, ingred_id in enumerate(ingredient_ids)}
+				base_vol = row.get("base media volume", 0 * units.L)
+				added_weight = row.get("ingredients weight", None)
+				added_counts = row.get("ingredients counts", None)
+				added_vol = row.get("ingredients volume")  # the row is a list with units.L, even an empty list is read.
+
+				ingredients = {ingred_id: {} for ingred_id in ingredient_ids}
+				for index, ingred_id in enumerate(ingredient_ids):
+					if added_weight:
+						ingredients[ingred_id]['weight'] = added_weight[index]
+					if added_counts:
+						ingredients[ingred_id]['counts'] = added_counts[index]
+					if added_vol:
+						ingredients[ingred_id]['volume'] = added_vol[index]
+					else:
+						ingredients[ingred_id]['volume'] = 0 * units.L
+
 				new_media = make_media.add_ingredients(base_media, base_vol, ingredients)
 			else:
 				new_media = base_media
