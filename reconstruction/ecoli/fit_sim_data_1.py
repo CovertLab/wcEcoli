@@ -568,6 +568,7 @@ def expressionConverge(
 		Km=None,
 		disable_ribosome_capacity_fitting=False,
 		disable_rnapoly_capacity_fitting=False,
+        disable_rnapoly_active_fraction_fitting=True,
 		):
 	"""
 	Iteratively fits synthesis probabilities for RNA. Calculates initial
@@ -625,6 +626,11 @@ def expressionConverge(
 
 		if not disable_rnapoly_capacity_fitting:
 			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
+
+		if not disable_rnapoly_active_fraction_fitting:
+			rnapActiveFraction = getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time)
+			print("Estimated fraction of active RNA polymerase: {}".format(rnapActiveFraction))
+			return
 
 		# Normalize expression and write out changes
 		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
@@ -1382,6 +1388,53 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 		print 'rnap counts set to: {}'.format(rnapLims[np.where(rnapLims.max() == rnapLims)[0]][0])
 
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
+
+def getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time):
+	"""
+		Set active fraction of RNA polymerase
+
+		Requires
+		--------
+		- the return value from getFractionIncreaseRnapProteins(doubling_time),
+		described in growthRateDependentParameters.py
+
+		Inputs
+		------
+		- bulkContainer (BulkObjectsContainer object) - counts of bulk molecules
+		- doubling_time (float with units of time) - doubling time given the condition
+		- avgCellDryMassInit (float with units of mass) - expected initial dry cell mass
+		- Km (array of floats with units of mol/volume) - Km for each RNA associated
+		with RNases
+
+		Modifies
+		--------
+		-
+		"""
+
+	# -- CONSTRAINT 1: Expected RNA distribution doubling -- #
+	rnaLengths = units.sum(sim_data.process.transcription.rnaData['countsACGU'], axis=1)
+
+	# RNA loss rate is in units of counts/time, and computed by summing the
+	# contributions of degradation and dilution.
+	rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
+		doubling_time,
+		sim_data.process.transcription.rnaData["degRate"],
+		bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
+		)
+
+	# Compute number of RNA polymerases required to maintain steady state of RNA
+	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
+		rnaLengths, sim_data.growthRateParameters.getRnapElongationRate(doubling_time), rnaLossRate)
+
+	nActiveRnapNeeded = units.convertNoUnitToNumber(nActiveRnapNeeded)
+	# nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
+	nRnapsNeeded = nActiveRnapNeeded
+
+	rnapIds = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitIds']
+	rnapCounts = bulkContainer.counts(rnapIds)
+
+	activeFractionNeeded = nRnapsNeeded / np.min(rnapCounts)
+	return activeFractionNeeded
 
 def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km=None):
 	"""
