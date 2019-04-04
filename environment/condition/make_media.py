@@ -5,8 +5,6 @@ Functions for making media
 
 from __future__ import absolute_import, division, print_function
 
-import numpy as np
-
 from wholecell.utils import units
 
 # Raw data class
@@ -81,6 +79,9 @@ class Media(object):
 			stock_media[label].update(environment_non_zero_dict)
 
 		return stock_media
+
+	def make_timeline(self, timeline_string):
+		pass
 
 	def combine_media(self, base_media, base_media_volume, mix_media, mix_media_volume):
 		'''

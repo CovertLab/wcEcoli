@@ -83,6 +83,7 @@ LIST_OF_DICT_FILENAMES = (
 	)
 LIST_OF_ENV_FILENAMES = (
 	os.path.join("condition", "environment_molecules.tsv"),
+	os.path.join("condition", "timelines_def.tsv"),
 	os.path.join("condition", "media_recipes.tsv"),
 	os.path.join("condition", "media", "M9.tsv"),
 	os.path.join("condition", "media", "M9_GLC.tsv"),

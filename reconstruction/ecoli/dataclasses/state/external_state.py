@@ -36,18 +36,14 @@ class ExternalState(object):
 		# default parameters
 		self.environment.nutrients_time_series_label = "000000_basal"
 
-		# create a dictionary of all nutrient time series
+		# create a dictionary with all saved environment timelines
 		self.environment.nutrients_time_series = {}
-		for label in dir(raw_data.condition.timelines):
-			if label.startswith("__"):
-				continue
-			self.environment.nutrients_time_series[label] = []
-			timelines = getattr(raw_data.condition.timelines, label)
-			for row in timelines:
-				self.environment.nutrients_time_series[label].append((
-					row["time"].asNumber(units.s),
-					row["media"].encode("utf-8"),
-					))
+		for row in raw_data.condition.timelines_def:
+			timeline_id = row["timeline"]
+			events = row["events"]
+			self.environment.nutrients_time_series[timeline_id] = []
+			for event in events:
+				self.environment.nutrients_time_series[timeline_id].append(eval(event))
 
 		# create a dictionary with all media conditions specified by media_recipes
 		make_media = Media()
@@ -104,6 +100,6 @@ class ExternalState(object):
 				for mol, conc in concentrations.iteritems()
 				}
 
-		# initial state based on default nutrient time series
-		self.environment.nutrients = self.environment.environment_dict[
-			self.environment.nutrients_time_series[self.environment.nutrients_time_series_label][0][1]]
+		# # initial state based on default nutrient time series
+		# self.environment.nutrients = self.environment.environment_dict[
+		# 	self.environment.nutrients_time_series[self.environment.nutrients_time_series_label][0][1]]

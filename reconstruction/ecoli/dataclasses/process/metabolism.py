@@ -419,7 +419,6 @@ class Metabolism(object):
 
 		# Properties for FBA reconstruction
 		self.reactionStoich = reactionStoich
-		self.nutrientsTimeSeries = sim_data.external_state.environment.nutrients_time_series
 		self.maintenanceReaction = {"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "PI[c]": +1, "PROTON[c]": +1,}
 		self.reversibleReactions = reversibleReactions
 

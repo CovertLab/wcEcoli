@@ -49,18 +49,26 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		# load constants
 		self._nAvogadro = sim_data.constants.nAvogadro
 
-		# environment time series data
+		# environment data
+		# TODO -- rename as shown below
+		# self.saved_media = sim_data.external_state.environment.environment_dict
+		# self.saved_timelines = sim_data.external_state.environment.nutrients_time_series
+		# self.current_timeline_id = sim_data.external_state.environment.nutrients_time_series_label
+		# self.current_timeline = self.saved_timelines[self.current_timeline_id]
+		# self.current_media_id = self.current_timeline[0][1]
+		# self.current_media = self.saved_media[self.current_media_id]
+		# self._times = [t[0] for t in self.current_timeline]
 		self.environment_dict = sim_data.external_state.environment.environment_dict
+		self.time_series_dict = sim_data.external_state.environment.nutrients_time_series
 		self.nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
-
-		# get current nutrients label
-		self.current_time_series = sim_data.external_state.environment.nutrients_time_series[self.nutrients_time_series_label]
+		self.current_time_series = self.time_series_dict[self.nutrients_time_series_label]
 		self.nutrients = self.current_time_series[0][1]
+		self.current_media = self.environment_dict[self.nutrients]
 		self._times = [t[0] for t in self.current_time_series]
 
 		# initialize molecule IDs and concentrations based on initial environment
-		self._moleculeIDs = [molecule_id for molecule_id, concentration in self.environment_dict[self.nutrients].iteritems()]
-		self._concentrations = np.array([concentration for molecule_id, concentration in self.environment_dict[self.nutrients].iteritems()])
+		self._moleculeIDs = [molecule_id for molecule_id, concentration in self.current_media.iteritems()]
+		self._concentrations = np.array([concentration for molecule_id, concentration in self.current_media.iteritems()])
 		self._env_delta_counts = dict((molecule_id, 0) for molecule_id in self._moleculeIDs)
 
 		# create bulk container for molecule concentrations. This uses concentrations instead of counts.
