@@ -62,7 +62,12 @@ class Metabolism(wholecell.processes.process.Process):
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 
 		# create boundary object
-		self.boundary = Boundary(sim_data, self._external_states, self.environmentView)
+		self.boundary = Boundary(
+			sim_data.external_state.environment,
+			sim_data.process.metabolism.boundary,
+			self._external_states,
+			self.environmentView
+			)
 
 		# go through all media in the timeline and add to metaboliteNames
 		self.metaboliteNamesFromNutrients = set()
@@ -426,21 +431,21 @@ class Boundary(object):
 	This includes handling all references to the media condition and exchange_data
 	'''
 
-	def __init__(self, sim_data, external_state, environmentView):
+	def __init__(self, sim_data_environment, sim_data_boundary, external_state, environmentView):
 		self.external_state = external_state
 
 		# get maps between environment and exchange molecules
-		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
-		self.exchange_to_env_map = sim_data.external_state.environment.exchange_to_env_map
+		self.env_to_exchange_map = sim_data_environment.env_to_exchange_map
+		self.exchange_to_env_map = sim_data_environment.exchange_to_env_map
 
 		# get functions
-		self.exchangeDataFromConcentrations = sim_data.process.metabolism.boundary.exchangeDataFromConcentrations
-		self.exchangeDataFromMedia = sim_data.process.metabolism.boundary.exchangeDataFromMedia
-		self.getImportConstraints = sim_data.process.metabolism.boundary.getImportConstraints
+		self.exchangeDataFromConcentrations = sim_data_boundary.exchangeDataFromConcentrations
+		self.exchangeDataFromMedia = sim_data_boundary.exchangeDataFromMedia
+		self.getImportConstraints = sim_data_boundary.getImportConstraints
 
 		# get variables from environment
-		self.nutrients_time_series_label = sim_data.external_state.environment.nutrients_time_series_label
-		self.current_timeline = sim_data.external_state.environment.nutrients_time_series[self.nutrients_time_series_label]
+		self.nutrients_time_series_label = sim_data_environment.nutrients_time_series_label
+		self.current_timeline = sim_data_environment.nutrients_time_series[self.nutrients_time_series_label]
 
 		# views on environment
 		self.environment_molecule_ids = external_state['Environment']._moleculeIDs
@@ -452,11 +457,23 @@ class Boundary(object):
 		'''
 		update all boundary variables for the current environment
 		'''
+
 		self.current_media = self.external_state['Environment'].nutrients
 		current_concentrations = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
 		self.exchange_data = self.exchangeDataFromConcentrations(current_concentrations)
 
 	def updateEnvironment(self, external_exchange_molecule_ids, delta_nutrients):
-		# convert exchange molecules to environmental molecules using mapping
+		'''
+		Convert exchange molecules to environmental molecules using mapping, and passes delta counts to the local environment
+
+		Args:
+			external_exchange_molecule_ids (tuple[str]): a tuple with all the external exchange molecules from FBA
+			delta_nutrients (np.array[int]): an array with the delta counts for all of the exchange molecules.
+				The array length should be the same as external_exchange_molecule_ids.
+
+		Modifies:
+			uses countsInc() to update local_environment's _env_delta_counts
+		'''
+
 		mapped_environment_molecule_ids = [self.exchange_to_env_map[mol_id] for mol_id in external_exchange_molecule_ids]
 		self.environment_molecules.countsInc(mapped_environment_molecule_ids, delta_nutrients)

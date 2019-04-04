@@ -592,6 +592,11 @@ class ConcentrationUpdates(object):
 
 
 class Boundary(object):
+	'''
+	Boundary provides an interface between metabolism and the environment.
+	This class builds exchange_data_dict, with keys for the five categories
+	of external molecules that set up the FBA problem space (see _getExchangeDataDict for a description).
+	'''
 	def __init__(self, raw_data, sim_data):
 
 		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
@@ -611,11 +616,12 @@ class Boundary(object):
 
 		self.all_external_exchange_molecules = self._getAllExternalExchangeMolecules(raw_data)
 		self.secretion_exchange_molecules = self._getSecretionExchangeMolecules(raw_data)
-		self.exchange_data_dict = self._getExchangeDataDict(raw_data, sim_data)
+		self.exchange_data_dict = self._getExchangeDataDict(sim_data)
 
 	def _getAllExternalExchangeMolecules(self, raw_data):
 		'''
-		get list of all external exchange molecules from raw data
+		Returns:
+			list[str]: all external exchange molecules
 		'''
 		externalExchangeData = []
 		# initiate all molecules with 0 concentrations
@@ -626,7 +632,8 @@ class Boundary(object):
 
 	def _getSecretionExchangeMolecules(self, raw_data):
 		'''
-		get list of all secretion exchange molecules from raw data
+		Returns:
+			list[str]: all secretion exchange molecules
 		'''
 		secretionExchangeMolecules = []
 		for secretion in raw_data.secretions:
@@ -638,13 +645,19 @@ class Boundary(object):
 
 		return secretionExchangeMolecules
 
-	def _getExchangeDataDict(self, raw_data, sim_data):
+	def _getExchangeDataDict(self, sim_data):
 		'''
-		Returns a dictionary of the five exchange_data variables, each with a dictionary
-		of all media conditions. This dictionary is used to quickly pull up exchange
-		data for these different media by their name.
-		'''
+		Returns:
+			exchange_data_dict (dict): keys are the five exchange_data variables,
+				with their entries as dicts for all saved media conditions.
 
+		exchange_data_dict includes the following fields:
+			- externalExchangeMolecules: All exchange molecules, both import and secretion exchanged molecules.
+			- importExchangeMolecules: molecules that can be imported from the environment into the cell.
+			- importConstrainedExchangeMolecules: exchange molecules that have an upper bound on their flux.
+			- importUnconstrainedExchangeMolecules: exchange molecules that do not have an upper bound on their flux.
+			- secretionExchangeMolecules: molecules that can be secreted by the	cell into the environment.
+		'''
 		environment_dict = sim_data.external_state.environment.environment_dict
 
 		externalExchangeMolecules = {}
@@ -679,13 +692,6 @@ class Boundary(object):
 		are unconstrained and nutrients are transported as needed by metabolism.
 		When concentrations fall below the threshold, that nutrient's transport
 		is constrained to max flux of 0.
-
-		Five categories of molecules set up the FBA problem space. These include:
-			- externalExchangeMolecules: All exchange molecules, both import and secretion exchanged molecules.
-			- importExchangeMolecules: molecules that can be imported from the environment into the cell.
-			- importConstrainedExchangeMolecules: exchange molecules that have an upper bound on their flux.
-			- importUnconstrainedExchangeMolecules: exchange molecules that do not have an upper bound on their flux.
-			- secretionExchangeMolecules: molecules that can be secreted by the	cell into the environment.
 		'''
 
 		externalExchangeMolecules = set()
@@ -746,15 +752,16 @@ class Boundary(object):
 			"secretionExchangeMolecules": secretionExchangeMolecules,
 		}
 
-	def exchangeDataFromMedia(self, environment_label):
+	def exchangeDataFromMedia(self, media_label):
 		'''
-		Returns exchange_data for a given environment_label saved in exchange_data_dict.
+		Returns:
+			dict: exchange_data for a media_label saved in exchange_data_dict.
 		'''
 
-		externalExchangeMolecules = self.exchange_data_dict['externalExchangeMolecules'][environment_label]
-		importExchangeMolecules = self.exchange_data_dict['importExchangeMolecules'][environment_label]
-		importConstrainedExchangeMolecules = self.exchange_data_dict['importConstrainedExchangeMolecules'][environment_label]
-		importUnconstrainedExchangeMolecules = self.exchange_data_dict['importUnconstrainedExchangeMolecules'][environment_label]
+		externalExchangeMolecules = self.exchange_data_dict['externalExchangeMolecules'][media_label]
+		importExchangeMolecules = self.exchange_data_dict['importExchangeMolecules'][media_label]
+		importConstrainedExchangeMolecules = self.exchange_data_dict['importConstrainedExchangeMolecules'][media_label]
+		importUnconstrainedExchangeMolecules = self.exchange_data_dict['importUnconstrainedExchangeMolecules'][media_label]
 		secretionExchangeMolecules = self.exchange_data_dict['secretionExchangeMolecules']
 
 		return {
@@ -767,9 +774,11 @@ class Boundary(object):
 
 	def getImportConstraints(self, exchange_data):
 		'''
-		Saves import_constraint and import_exchange for the fba_results listener.
-		import_constraint saves all importConstrainedExchangeMolecules as true, and the rest as false.
-		import_exchange saves all importExchangeMolecules as true, and the rest as false.
+		Returns:
+			import_constraint (list[bool]): the indices of all importConstrainedExchangeMolecules
+				in self.all_external_exchange_molecules are true, the rest as false.
+			import_exchange (list[bool]): the indices of all importExchangeMolecules
+				in self.all_external_exchange_molecules are true, the rest as false.
 		'''
 
 		# molecules from all_external_exchange_molecules set to 'true' if they are current importExchangeMolecules.
