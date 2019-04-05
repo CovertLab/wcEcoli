@@ -81,6 +81,9 @@ class Media(object):
 		return stock_media
 
 	def make_timeline(self, timeline_string):
+
+		import ipdb; ipdb.set_trace()
+
 		pass
 
 	def combine_media(self, base_media, base_media_volume, mix_media, mix_media_volume):

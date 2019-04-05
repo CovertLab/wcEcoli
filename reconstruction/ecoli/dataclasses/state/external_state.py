@@ -33,6 +33,9 @@ class ExternalState(object):
 
 		self.environment = Environment(raw_data, sim_data)
 
+		# make media object
+		make_media = Media()
+
 		# default parameters
 		self.environment.nutrients_time_series_label = "000000_basal"
 
@@ -41,12 +44,18 @@ class ExternalState(object):
 		for row in raw_data.condition.timelines_def:
 			timeline_id = row["timeline"]
 			events = row["events"]
-			self.environment.nutrients_time_series[timeline_id] = []
-			for event in events:
-				self.environment.nutrients_time_series[timeline_id].append(eval(event))
+
+
+
+			new_timeline = make_media.make_timeline(events)
+
+			import ipdb; ipdb.set_trace()
+			self.environment.nutrients_time_series[timeline_id] = new_timeline
+			# for event in events:
+			# 	self.environment.nutrients_time_series[timeline_id].append(eval(event))
 
 		# create a dictionary with all media conditions specified by media_recipes
-		make_media = Media()
+
 		self.environment.environment_dict = {}
 		for row in raw_data.condition.media_recipes:
 			new_media_id = row["media id"]
