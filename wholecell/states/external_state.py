@@ -32,8 +32,10 @@ class ExternalState(object):
 
 
 	# Construct state-process graph, calculate constants
-	def initialize(self, sim, sim_data):
+	def initialize(self, sim, sim_data, timeline):
 		self._sim = sim
+
+		import ipdb; ipdb.set_trace()
 
 
 	# Allocate memory

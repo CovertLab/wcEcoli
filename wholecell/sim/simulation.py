@@ -148,7 +148,7 @@ class Simulation(CellSimulation):
 			internal_state.initialize(self, sim_data)
 
 		for external_state in self.external_states.itervalues():
-			external_state.initialize(self, sim_data)
+			external_state.initialize(self, sim_data, self._timeline)
 
 		for process_name, process in self.processes.iteritems():
 			# initialize random streams

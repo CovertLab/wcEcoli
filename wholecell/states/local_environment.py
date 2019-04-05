@@ -47,19 +47,30 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 		super(LocalEnvironment, self).__init__(*args, **kwargs)
 
-	def initialize(self, sim, sim_data):
-		super(LocalEnvironment, self).initialize(sim, sim_data)
+	def initialize(self, sim, sim_data, timeline):
+		super(LocalEnvironment, self).initialize(sim, sim_data, timeline)
 
 		self._processIDs = sim.processes.keys()
 
 		# load constants
 		self._nAvogadro = sim_data.constants.nAvogadro
 
+
+		import ipdb; ipdb.set_trace()
+
+
+		# self.saved_timelines = sim_data.external_state.environment.saved_timelines
+		# self.current_timeline_id = sim_data.external_state.environment.current_timeline_id
+		# self.current_timeline = self.saved_timelines[self.current_timeline_id]
+
+		self.current_timeline =
+
 		# environment data
 		self.saved_media = sim_data.external_state.environment.saved_media
-		self.saved_timelines = sim_data.external_state.environment.saved_timelines
-		self.current_timeline_id = sim_data.external_state.environment.current_timeline_id
-		self.current_timeline = self.saved_timelines[self.current_timeline_id]
+
+
+
+
 		self.current_media_id = self.current_timeline[0][1]
 		self.current_media = self.saved_media[self.current_media_id]
 		self._times = [t[0] for t in self.current_timeline]
