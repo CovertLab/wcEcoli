@@ -7,10 +7,10 @@ Initializes the environment using conditions and time series from raw_data.
 	- environment.saved_timelines: a dictionary of all timelines.
 	- environment.current_timeline_id: a string specifying the timelines
 		used for the current simulation.
-	- environment.nutrients: a dictionary of environmental nutrients (keys) and
+	- environment.current_media: a dictionary of molecules (keys) and
 		their concentrations (values).
-	- environment.saved_media: a dictionary of all media, each one
-		itself a dictionary nutrients (keys) and their concentrations (values).
+	- environment.saved_media: a dictionary of all media, each entry
+		itself a dictionary molecules (keys) and their concentrations (values).
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
@@ -102,5 +102,5 @@ class ExternalState(object):
 				}
 
 		# # initial state based on default nutrient time series
-		# self.environment.nutrients = self.environment.saved_media[
+		# self.environment.current_media_id = self.environment.saved_media[
 		# 	self.environment.saved_timelines[self.environment.current_timeline_id][0][1]]

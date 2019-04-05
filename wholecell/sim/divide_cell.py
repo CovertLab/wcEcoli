@@ -41,7 +41,7 @@ def divide_cell(sim):
 	sim_data = sim.get_sim_data()
 
 	# TODO (Eran): division should be based on both nutrient and gene perturbation condition
-	current_media_id = sim.external_states['Environment'].nutrients
+	current_media_id = sim.external_states['Environment'].current_media_id
 
 	# Create the output directory
 	sim_out_dir = filepath.makedirs(sim._outputDir)

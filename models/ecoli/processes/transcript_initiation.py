@@ -104,7 +104,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.TU_index, bound_TF = promoters.attrs("TU_index", "bound_TF")
 
 		# Read current environment
-		current_media_id = self._external_states['Environment'].nutrients
+		current_media_id = self._external_states['Environment'].current_media_id
 
 		if self.full_chromosomes.total_counts()[0] > 0:
 			# Calculate probabilities of the RNAP binding to each promoter

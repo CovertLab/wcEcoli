@@ -86,7 +86,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
 
 		# Get critical initiation mass for current simulation environment
-		current_media_id = self._external_states['Environment'].nutrients
+		current_media_id = self._external_states['Environment'].current_media_id
 		self.criticalInitiationMass = self.getDnaCriticalMass(
 			self.nutrientToDoublingTime[current_media_id])
 

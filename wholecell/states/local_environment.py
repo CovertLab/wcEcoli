@@ -2,13 +2,19 @@
 
 """
 External state that represents environmental molecules and conditions.
-	- saved_timelines: a list of tuples that include time and nutrients in
-		which shifts occur.
-	- nutrients: a string specifying the current nutrient condition.
-	- times: a list of all times at which the nutrients shift.
+
+	Variables:
+		- current_media (dict): with {molecule_id: concentration}
+		- current_timeline (list): a list of events as tuples with (time, media_id)
+		- current_media_id (str): the current media's id
+		- current_timeline_id (str): the current timeline's id
+		- saved_media (dict): all saved media, keys are media_ids
+		- saved_timelines (dict): all saved timelines, keys are timeline_ids
+		- _times: a list of all times at which the media shifts
+
 	Functions:
-	----------
-	- update: updates nutrients according to saved_timelines
+		- update(): updates current_media_id according to saved_timelines
+
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
@@ -50,12 +56,13 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		self._nAvogadro = sim_data.constants.nAvogadro
 
 		# environment data
+		# TODO -- don't set current_timeline_id in sim_data.
 		self.saved_media = sim_data.external_state.environment.saved_media
 		self.saved_timelines = sim_data.external_state.environment.saved_timelines
 		self.current_timeline_id = sim_data.external_state.environment.current_timeline_id
 		self.current_timeline = self.saved_timelines[self.current_timeline_id]
-		self.nutrients = self.current_timeline[0][1]
-		self.current_media = self.saved_media[self.nutrients]
+		self.current_media_id = self.current_timeline[0][1]
+		self.current_media = self.saved_media[self.current_media_id]
 		self._times = [t[0] for t in self.current_timeline]
 
 		# initialize molecule IDs and concentrations based on initial environment
@@ -67,19 +74,18 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		self.container = BulkObjectsContainer(self._moleculeIDs, dtype=np.float64)
 		self.container.countsIs(self._concentrations)
 
-		# the length of the longest nutrients name, for padding in nutrients listener
-		self._nutrients_name_max_length = max([len(t[1]) for t in self.current_timeline])
+		# the length of the longest media_id, for padding in listener
+		self._media_id_max_length = max([len(t[1]) for t in self.current_timeline])
 
 
 	def update(self):
+		'''update self.current_media_id based on self.current_timeline and self.time'''
+
 		current_index = [i for i, t in enumerate(self._times) if self.time()>=t][-1]
 
-		# update nutrients based on nutrient_time_series. This updates the concentrations,
-		# and also the nutrients label is used in polypeptide_elongation to find
-		# a ribosomeElongationRate in ribosomeElongationRateDict
-		if self.nutrients != self.current_timeline[current_index][1]:
-			self.nutrients = self.current_timeline[current_index][1]
-			self._concentrations = np.array([concentration for id, concentration in self.saved_media[self.nutrients].iteritems()])
+		if self.current_media_id != self.current_timeline[current_index][1]:
+			self.current_media_id = self.current_timeline[current_index][1]
+			self._concentrations = np.array([concentration for id, concentration in self.saved_media[self.current_media_id].iteritems()])
 			self.container.countsIs(self._concentrations)
 
 		if ASSERT_POSITIVE_CONCENTRATIONS and (self._concentrations < 0).any():
@@ -93,7 +99,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 					)
 				)
 
-	# Functions for multi-scaling interface
+	## Functions for multi-scaling interface
 	def set_local_environment(self, concentrations):
 		self._env_delta_counts = dict.fromkeys(self._env_delta_counts, 0)
 		for idx, molecule_id in enumerate(self._moleculeIDs):
@@ -114,7 +120,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 	def tableAppend(self, tableWriter):
 		tableWriter.append(
-			nutrientCondition = self.nutrients.ljust(self._nutrients_name_max_length),
+			nutrientCondition = self.current_media_id.ljust(self._media_id_max_length),
 			nutrientConcentrations = self._concentrations,
 			)
 

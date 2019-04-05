@@ -458,7 +458,7 @@ class Boundary(object):
 		update all boundary variables for the current environment
 		'''
 
-		self.current_media = self.external_state['Environment'].nutrients
+		self.current_media = self.external_state['Environment'].current_media_id
 		current_concentrations = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
 		self.exchange_data = self.exchangeDataFromConcentrations(current_concentrations)
 

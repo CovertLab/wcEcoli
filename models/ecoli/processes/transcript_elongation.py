@@ -52,7 +52,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 	def calculateRequest(self):
 		# Calculate elongation rate based on the current media
-		current_media_id = self._external_states['Environment'].nutrients
+		current_media_id = self._external_states['Environment'].current_media_id
 
 		self.rnapElngRate = int(stochasticRound(self.randomState,
 			self.rnaPolymeraseElongationRateDict[current_media_id].asNumber(units.nt / units.s) * self.timeStepSec()))
