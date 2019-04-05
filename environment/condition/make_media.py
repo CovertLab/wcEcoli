@@ -5,6 +5,8 @@ Functions for making media
 
 from __future__ import absolute_import, division, print_function
 
+import re
+
 from wholecell.utils import units
 
 # Raw data class
@@ -80,11 +82,22 @@ class Media(object):
 
 		return stock_media
 
-	def make_timeline(self, timeline_string):
+	def make_timeline(self, timeline_str):
+		'''
+		Make a timeline from a string
 
-		import ipdb; ipdb.set_trace()
+		Args:
+			timeline_str (str): 'time1 media_id1, time2 media_id2'
+		Returns:
+			timeline (list[tuple]): a list of tuples with (time (float), media_id (str))
+		'''
+		timeline = []
+		events_str = timeline_str.split(', ')
+		for event in events_str:
+			time, media = event.split()
+			timeline.append((eval(time),media))
 
-		pass
+		return timeline
 
 	def combine_media(self, base_media, base_media_volume, mix_media, mix_media_volume):
 		'''

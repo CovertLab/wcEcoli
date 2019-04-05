@@ -44,18 +44,10 @@ class ExternalState(object):
 		for row in raw_data.condition.timelines_def:
 			timeline_id = row["timeline"]
 			events = row["events"]
-
-
-
 			new_timeline = make_media.make_timeline(events)
-
-			import ipdb; ipdb.set_trace()
 			self.environment.nutrients_time_series[timeline_id] = new_timeline
-			# for event in events:
-			# 	self.environment.nutrients_time_series[timeline_id].append(eval(event))
 
 		# create a dictionary with all media conditions specified by media_recipes
-
 		self.environment.environment_dict = {}
 		for row in raw_data.condition.media_recipes:
 			new_media_id = row["media id"]
