@@ -5,16 +5,16 @@ CONTROL_OUTPUT = dict(
 
 
 def nutrient_time_series(sim_data, index):
-	n_nutrients_time_series = len(sim_data.external_state.environment.nutrients_time_series)
+	n_saved_timelines = len(sim_data.external_state.environment.saved_timelines)
 
-	if index % n_nutrients_time_series == 0:
+	if index % n_saved_timelines == 0:
 		return CONTROL_OUTPUT, sim_data
 
-	nutrients_time_series_labels = sorted(sim_data.external_state.environment.nutrients_time_series)
-	nutrients_time_series_label = nutrients_time_series_labels[index]
-	sim_data.external_state.environment.nutrients_time_series_label = nutrients_time_series_label
+	current_timeline_ids = sorted(sim_data.external_state.environment.saved_timelines)
+	current_timeline_id = current_timeline_ids[index]
+	sim_data.external_state.environment.current_timeline_id = current_timeline_id
 
 	return dict(
-		shortName = "{}_env".format(nutrients_time_series_label),
-		desc = "Simulation of environment {}.".format(nutrients_time_series_label)
+		shortName = "{}_env".format(current_timeline_id),
+		desc = "Simulation of environment {}.".format(current_timeline_id)
 		), sim_data

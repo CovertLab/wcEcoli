@@ -51,11 +51,11 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
 
 	def calculateRequest(self):
-		# Calculate elongation rate based on the current nutrients
-		current_nutrients = self._external_states['Environment'].nutrients
+		# Calculate elongation rate based on the current media
+		current_media_id = self._external_states['Environment'].nutrients
 
 		self.rnapElngRate = int(stochasticRound(self.randomState,
-			self.rnaPolymeraseElongationRateDict[current_nutrients].asNumber(units.nt / units.s) * self.timeStepSec()))
+			self.rnaPolymeraseElongationRateDict[current_media_id].asNumber(units.nt / units.s) * self.timeStepSec()))
 
 		# If there are no active RNA polymerases, return immediately
 		if self.activeRnaPolys.total_counts()[0] == 0:

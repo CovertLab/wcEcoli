@@ -180,7 +180,7 @@ def initializeSmallMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
 	mass = massCoeff * (avgCellFractionMass["proteinMass"] + avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"]) / sim_data.mass.avgCellToInitialCellConvFactor
 
 	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-		sim_data.external_state.environment.nutrients_time_series[sim_data.external_state.environment.nutrients_time_series_label][0][1]
+		sim_data.external_state.environment.saved_timelines[sim_data.external_state.environment.current_timeline_id][0][1]
 		)
 	concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.condition]))
 	moleculeIds = sorted(concDict)
@@ -398,8 +398,8 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	# Load parameters
 	rnaLengths = sim_data.process.transcription.rnaData['length'].asNumber()
-	current_nutrients = sim_data.conditions[sim_data.condition]['nutrients']
-	fracActiveRnap = sim_data.process.transcription.rnapFractionActiveDict[current_nutrients]
+	current_media_id = sim_data.conditions[sim_data.condition]['nutrients']
+	fracActiveRnap = sim_data.process.transcription.rnapFractionActiveDict[current_media_id]
 	inactiveRnaPolyCounts = bulkMolCntr.countsView(['APORNAP-CPLX[c]']).counts()[0]
 	rnaSequences = sim_data.process.transcription.transcriptionSequences
 	ntWeights = sim_data.process.transcription.transcriptionMonomerWeights
@@ -472,7 +472,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		raise Exception("Have negative RNA synthesis probabilities")
 
 	# Adjust synthesis probabilities depending on environment
-	synthProbFractions = rnaSynthProbFractions[current_nutrients]
+	synthProbFractions = rnaSynthProbFractions[current_media_id]
 
 	# Create masks for different types of RNAs
 	is_mrna = np.isin(TU_index, idx_mrna)
@@ -492,8 +492,8 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		promoter_init_probs, TU_index,
 		np.concatenate((idx_rprotein, idx_rnap)),
 		np.concatenate((
-			rnaSynthProbRProtein[current_nutrients],
-			rnaSynthProbRnaPolymerase[current_nutrients])))
+			rnaSynthProbRProtein[current_media_id],
+			rnaSynthProbRnaPolymerase[current_media_id])))
 
 	assert promoter_init_probs[is_fixed].sum() < 1.0
 

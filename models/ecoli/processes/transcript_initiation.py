@@ -104,7 +104,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.TU_index, bound_TF = promoters.attrs("TU_index", "bound_TF")
 
 		# Read current environment
-		current_nutrients = self._external_states['Environment'].nutrients
+		current_media_id = self._external_states['Environment'].nutrients
 
 		if self.full_chromosomes.total_counts()[0] > 0:
 			# Calculate probabilities of the RNAP binding to each promoter
@@ -121,7 +121,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			self.promoter_init_probs /= self.promoter_init_probs.sum()
 
 			# Adjust synthesis probabilities depending on environment
-			synthProbFractions = self.rnaSynthProbFractions[current_nutrients]
+			synthProbFractions = self.rnaSynthProbFractions[current_media_id]
 
 			# Create masks for different types of RNAs
 			is_mrna = np.isin(self.TU_index, self.idx_mrna)
@@ -140,8 +140,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			self._rescale_initiation_probs(
 				np.concatenate((self.idx_rprotein, self.idx_rnap)),
 				np.concatenate((
-					self.rnaSynthProbRProtein[current_nutrients],
-					self.rnaSynthProbRnaPolymerase[current_nutrients]
+					self.rnaSynthProbRProtein[current_media_id],
+					self.rnaSynthProbRnaPolymerase[current_media_id]
 					)))
 
 			assert self.promoter_init_probs[is_fixed].sum() < 1.0
@@ -154,8 +154,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		else:
 			self.promoter_init_probs = np.zeros(len(self.TU_index))
 
-		self.fracActiveRnap = self.fracActiveRnapDict[current_nutrients]
-		self.rnaPolymeraseElongationRate = self.rnaPolymeraseElongationRateDict[current_nutrients]
+		self.fracActiveRnap = self.fracActiveRnapDict[current_media_id]
+		self.rnaPolymeraseElongationRate = self.rnaPolymeraseElongationRateDict[current_media_id]
 
 
 	def evolveState(self):

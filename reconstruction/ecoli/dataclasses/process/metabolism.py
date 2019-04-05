@@ -539,18 +539,18 @@ class ConcentrationUpdates(object):
 		self.moleculeSetAmounts = self._addMoleculeAmounts(equilibriumReactions, self.defaultConcentrationsDict)
 
 	# return adjustments to concDict based on nutrient conditions
-	def concentrationsBasedOnNutrients(self, nutrientsLabel = None, nutrientsToInternalConc = None):
+	def concentrationsBasedOnNutrients(self, media_id = None, nutrientsToInternalConc = None):
 		concentrationsDict = self.defaultConcentrationsDict.copy()
 
 		metaboliteTargetIds = sorted(concentrationsDict.keys())
 		concentrations = self.units * np.array([concentrationsDict[k] for k in metaboliteTargetIds])
 
-		if nutrientsLabel == None:
+		if media_id == None:
 			return dict(zip(metaboliteTargetIds, concentrations))
 
 		nutrientFluxes = {
-			"importConstrainedExchangeMolecules": self.exchange_data_dict["importConstrainedExchangeMolecules"][nutrientsLabel],
-			"importUnconstrainedExchangeMolecules": self.exchange_data_dict["importUnconstrainedExchangeMolecules"][nutrientsLabel],
+			"importConstrainedExchangeMolecules": self.exchange_data_dict["importConstrainedExchangeMolecules"][media_id],
+			"importUnconstrainedExchangeMolecules": self.exchange_data_dict["importUnconstrainedExchangeMolecules"][media_id],
 		}
 
 		concDict = dict(zip(metaboliteTargetIds, concentrations))
@@ -657,7 +657,7 @@ class Boundary(object):
 			- importUnconstrainedExchangeMolecules: exchange molecules that do not have an upper bound on their flux.
 			- secretionExchangeMolecules: molecules that can be secreted by the	cell into the environment.
 		'''
-		environment_dict = sim_data.external_state.environment.environment_dict
+		saved_media = sim_data.external_state.environment.saved_media
 
 		externalExchangeMolecules = {}
 		importExchangeMolecules = {}
@@ -665,7 +665,7 @@ class Boundary(object):
 		importUnconstrainedExchangeMolecules = {}
 		secretionExchangeMolecules = self.secretion_exchange_molecules
 
-		for environment_name, molecules in environment_dict.iteritems():
+		for environment_name, molecules in saved_media.iteritems():
 
 			exchange_data = self.exchangeDataFromConcentrations(molecules)
 

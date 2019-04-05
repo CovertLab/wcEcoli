@@ -77,7 +77,7 @@ class Media(object):
 				row["molecule id"]: row["concentration"]
 				for row in molecule_concentrations}
 
-			# update environment_dict with non zero concentrations
+			# update saved_media with non zero concentrations
 			stock_media[label].update(environment_non_zero_dict)
 
 		return stock_media
@@ -91,6 +91,7 @@ class Media(object):
 		Returns:
 			timeline (list[tuple]): a list of tuples with (time (float), media_id (str))
 		'''
+
 		timeline = []
 		events_str = timeline_str.split(', ')
 		for event in events_str:

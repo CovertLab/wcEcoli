@@ -1,3 +1,4 @@
+# specifies the different timelines, with the timeline id and a string specifying all the events by "time1 media1, time2 media2"
 "timeline"	"events"
 "000000_basal"	"0 minimal"
 "000001_cut_glucose"	"0 minimal, 1200 minimal_no_glucose"

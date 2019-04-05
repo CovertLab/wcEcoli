@@ -444,8 +444,8 @@ class Boundary(object):
 		self.getImportConstraints = sim_data_boundary.getImportConstraints
 
 		# get variables from environment
-		self.nutrients_time_series_label = sim_data_environment.nutrients_time_series_label
-		self.current_timeline = sim_data_environment.nutrients_time_series[self.nutrients_time_series_label]
+		self.current_timeline_id = sim_data_environment.current_timeline_id
+		self.current_timeline = sim_data_environment.saved_timelines[self.current_timeline_id]
 
 		# views on environment
 		self.environment_molecule_ids = external_state['Environment']._moleculeIDs
