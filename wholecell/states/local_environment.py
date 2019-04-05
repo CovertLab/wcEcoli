@@ -56,7 +56,6 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		self._nAvogadro = sim_data.constants.nAvogadro
 
 		# environment data
-		# TODO -- don't set current_timeline_id in sim_data.
 		self.saved_media = sim_data.external_state.environment.saved_media
 		self.saved_timelines = sim_data.external_state.environment.saved_timelines
 		self.current_timeline_id = sim_data.external_state.environment.current_timeline_id
