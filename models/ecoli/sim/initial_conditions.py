@@ -41,7 +41,7 @@ def calcInitialConditions(sim, sim_data):
 	uniqueMolCntr = sim.internal_states["UniqueMolecules"].container
 
 	# Set up states
-	initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massCoeff)
+	initializeBulkMolecules(bulkMolCntr, sim_data, sim, randomState, massCoeff)
 	initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
 
 	# Must be called after unique and bulk molecules are initialized to get
@@ -49,7 +49,7 @@ def calcInitialConditions(sim, sim_data):
 	if sim._trna_charging:
 		initialize_trna_charging(sim_data, sim.internal_states, sim.processes['PolypeptideElongation'].calculate_trna_charging)
 
-def initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
+def initializeBulkMolecules(bulkMolCntr, sim_data, sim, randomState, massCoeff):
 
 	# Set protein counts from expression
 	initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff)
@@ -58,7 +58,7 @@ def initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
 	initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff)
 
 	# Set other biomass components
-	initializeSmallMolecules(bulkMolCntr, sim_data, randomState, massCoeff)
+	initializeSmallMolecules(bulkMolCntr, sim_data, sim, randomState, massCoeff)
 
 	# Form complexes
 	initializeComplexation(bulkMolCntr, sim_data, randomState)
@@ -174,13 +174,13 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff):
 
 # TODO: remove checks for zero concentrations (change to assertion)
 # TODO: move any rescaling logic to KB/fitting
-def initializeSmallMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
+def initializeSmallMolecules(bulkMolCntr, sim_data, sim, randomState, massCoeff):
 	avgCellFractionMass = sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])
 
 	mass = massCoeff * (avgCellFractionMass["proteinMass"] + avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"]) / sim_data.mass.avgCellToInitialCellConvFactor
 
 	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-		sim_data.external_state.environment.saved_timelines[sim_data.external_state.environment.current_timeline_id][0][1]
+		sim.external_states['Environment'].current_media_id
 		)
 	concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.condition]))
 	moleculeIds = sorted(concDict)

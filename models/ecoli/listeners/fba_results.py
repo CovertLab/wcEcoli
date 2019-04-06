@@ -35,10 +35,8 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.objectiveValue = 0.0
 
 		self.metaboliteNamesFromNutrients = set()
-		for time, media_id in sim_data.external_state.environment.saved_timelines[
-			sim_data.external_state.environment.current_timeline_id
-			]:
 
+		for time, media_id in sim.external_states['Environment'].current_timeline:
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 					media_id, sim_data.process.metabolism.nutrientsToInternalConc

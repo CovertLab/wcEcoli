@@ -35,8 +35,6 @@ class ExternalState(object):
 	def initialize(self, sim, sim_data, timeline):
 		self._sim = sim
 
-		import ipdb; ipdb.set_trace()
-
 
 	# Allocate memory
 	def allocate(self):

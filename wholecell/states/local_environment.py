@@ -55,22 +55,9 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		# load constants
 		self._nAvogadro = sim_data.constants.nAvogadro
 
-
-		import ipdb; ipdb.set_trace()
-
-
-		# self.saved_timelines = sim_data.external_state.environment.saved_timelines
-		# self.current_timeline_id = sim_data.external_state.environment.current_timeline_id
-		# self.current_timeline = self.saved_timelines[self.current_timeline_id]
-
-		self.current_timeline =
-
 		# environment data
+		self.current_timeline = self.make_timeline(timeline)
 		self.saved_media = sim_data.external_state.environment.saved_media
-
-
-
-
 		self.current_media_id = self.current_timeline[0][1]
 		self.current_media = self.saved_media[self.current_media_id]
 		self._times = [t[0] for t in self.current_timeline]
@@ -109,6 +96,27 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 					)
 				)
 
+
+	def make_timeline(self, timeline_str):
+		'''
+		Make a timeline from a string
+
+		Args:
+			timeline_str (str): 'time1 media_id1, time2 media_id2'
+		Returns:
+			timeline (list[tuple]): a list of tuples with (time (float), media_id (str))
+		'''
+
+		timeline = []
+		events_str = timeline_str.split(', ')
+		for event in events_str:
+			time, media = event.split()
+			timeline.append((eval(time),media))
+
+		return timeline
+
+
+
 	## Functions for multi-scaling interface
 	def set_local_environment(self, concentrations):
 		self._env_delta_counts = dict.fromkeys(self._env_delta_counts, 0)
@@ -125,7 +133,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)
 		tableWriter.writeAttributes(
-			nutrientTimeSeriesLabel = self.current_timeline_id,
+			# nutrientTimeSeriesLabel = self.current_timeline_id,
 			)
 
 	def tableAppend(self, tableWriter):

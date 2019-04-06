@@ -71,10 +71,10 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# go through all media in the timeline and add to metaboliteNames
 		self.metaboliteNamesFromNutrients = set()
-		for time, media_label in self.boundary.current_timeline:
+		for time, media_id in self.boundary.current_timeline:
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					media_label, sim_data.process.metabolism.nutrientsToInternalConc
+					media_id, sim_data.process.metabolism.nutrientsToInternalConc
 					)
 				)
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
@@ -444,8 +444,7 @@ class Boundary(object):
 		self.getImportConstraints = sim_data_boundary.getImportConstraints
 
 		# get variables from environment
-		self.current_timeline_id = sim_data_environment.current_timeline_id
-		self.current_timeline = sim_data_environment.saved_timelines[self.current_timeline_id]
+		self.current_timeline = external_state['Environment'].current_timeline
 
 		# views on environment
 		self.environment_molecule_ids = external_state['Environment']._moleculeIDs

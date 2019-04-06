@@ -114,7 +114,7 @@ class RunSimulation(scriptBase.ScriptBase):
 			args.variant = ['wildtype', '0', '0']
 
 		if not args.timeline:
-			args.timeline = ['0 minimal']
+			args.timeline = '0 minimal'
 
 		return args
 

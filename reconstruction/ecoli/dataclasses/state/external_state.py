@@ -29,27 +29,11 @@ CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
 class ExternalState(object):
 	""" External State """
 
-	def __init__(self, raw_data, sim_data, timeline):
-
-
-		import ipdb; ipdb.set_trace()
-		# is timeline going in here?
-
+	def __init__(self, raw_data, sim_data):
 		self.environment = Environment(raw_data, sim_data)
 
 		# make media object
 		make_media = Media()
-
-		# # default timeline
-		# self.environment.current_timeline_id = "000000_basal"
-		#
-		# # create a dictionary with all saved timelines
-		# self.environment.saved_timelines = {}
-		# for row in raw_data.condition.timelines_def:
-		# 	timeline_id = row["timeline"]
-		# 	timeline_str = row["events"]
-		# 	new_timeline = make_media.make_timeline(timeline_str)
-		# 	self.environment.saved_timelines[timeline_id] = new_timeline
 
 		# create a dictionary with all media conditions specified by media_recipes
 		self.environment.saved_media = {}
@@ -104,7 +88,3 @@ class ExternalState(object):
 				self.environment.env_to_exchange_map[mol]: conc
 				for mol, conc in concentrations.iteritems()
 				}
-
-		# # initial state based on default nutrient time series
-		# self.environment.current_media_id = self.environment.saved_media[
-		# 	self.environment.saved_timelines[self.environment.current_timeline_id][0][1]]
