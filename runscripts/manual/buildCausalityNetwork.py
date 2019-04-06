@@ -66,7 +66,6 @@ class BuildCausalityNetwork(AnalysisBase):
 			output_dynamics_directory=dynamics_output_dir,
 			check_sanity=args.check_sanity,
 			metadata=args.metadata,
-			output_filename_prefix=args.output_prefix,
 			)
 		task.run_task({})
 

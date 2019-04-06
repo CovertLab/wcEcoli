@@ -11,8 +11,7 @@ import traceback
 
 from fireworks import FireTaskBase, explicit_serialize
 from models.ecoli.analysis.causality_network.build_network import BuildNetwork
-from models.ecoli.analysis.causality_network.network_components import NODELIST_FILENAME, NODELIST_JSON, DYNAMICS_FILENAME
-import models.ecoli.analysis.causality_network
+from models.ecoli.analysis.causality_network.network_components import NODELIST_JSON
 
 
 @explicit_serialize
@@ -27,7 +26,6 @@ class BuildCausalityNetworkTask(FireTaskBase):
 		"metadata",
 		]
 	optional_params = [
-		"output_filename_prefix",
 		"check_sanity",
 		]
 
@@ -39,7 +37,7 @@ class BuildCausalityNetworkTask(FireTaskBase):
 		return (
 			self["input_results_directory"],
 			self["output_dynamics_directory"],
-			self['output_filename_prefix'] + DYNAMICS_FILENAME,
+			None,
 			self["input_sim_data"],
 			self["node_list_file"],
 			self["metadata"],
@@ -52,10 +50,10 @@ class BuildCausalityNetworkTask(FireTaskBase):
 
 		self['node_list_file'] = os.path.join(
 			self["output_network_directory"], NODELIST_JSON)
-			# self["output_network_directory"], NODELIST_FILENAME)
 
 		self["check_sanity"] = self.get("check_sanity", False)
 
+		# Build network first if the node list file does not exist
 		if not os.path.isfile(self['node_list_file']):
 			print("{}: Building causality network".format(time.ctime()))
 
@@ -64,14 +62,14 @@ class BuildCausalityNetworkTask(FireTaskBase):
 				self["check_sanity"])
 			causality_network.run()
 
-		self['output_filename_prefix'] = self.get('output_filename_prefix', '')
+		# Read dynamics from sim results if the dynamics directory is empty
+		if len(os.listdir(self["output_dynamics_directory"])) == 0:
+			mod = importlib.import_module(self.READER_FILE_PATH)
+			args = self.plotter_args()
 
-		mod = importlib.import_module(self.READER_FILE_PATH)
-		args = self.plotter_args()
-
-		print("{}: Reading simulation results for causality network"
-			.format(time.ctime()))
-		mod.Plot.main(*args)
+			print("{}: Reading simulation results for causality network"
+				.format(time.ctime()))
+			mod.Plot.main(*args)
 
 		timeTotal = time.time() - startTime
 
@@ -79,3 +77,14 @@ class BuildCausalityNetworkTask(FireTaskBase):
 		print("{}: Completed building causality network in {}".format(
 			time.ctime(), duration)
 			)
+
+		# Root directory of wcEcoli repo
+		root_dir = os.path.dirname(os.path.dirname(
+			os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+		# Launch app through causality repo
+		print("{}: Launching causality network app".format(time.ctime()))
+		os.system("%s %s %s" % (
+			os.path.join(os.path.dirname(root_dir), "causality", "site", "server.py"),
+			os.path.dirname(self["node_list_file"]),
+			self["output_dynamics_directory"]))
