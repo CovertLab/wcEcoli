@@ -5,8 +5,6 @@ Functions for making media
 
 from __future__ import absolute_import, division, print_function
 
-import re
-
 from wholecell.utils import units
 
 # Raw data class
