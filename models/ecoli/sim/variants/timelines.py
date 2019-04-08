@@ -5,6 +5,13 @@ CONTROL_OUTPUT = dict(
 
 
 def timelines(sim_data, index):
+	'''
+	Run variants of different timelines, saved in condition/media/timelines_def.tsv
+	Args:
+		index: the index in timelines_def.tsv for this variant's timeline
+
+	'''
+
 	n_saved_timelines = len(sim_data.external_state.environment.saved_timelines)
 
 	if index % n_saved_timelines == 0:
