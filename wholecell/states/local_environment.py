@@ -63,7 +63,8 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		# environment data
 		# if current_timeline_id is specified by variant, look it up in saved_timelines
 		if sim_data.external_state.environment.current_timeline_id:
-			self.current_timeline = sim_data.external_state.environment.saved_timelines[sim_data.external_state.environment.current_timeline_id]
+			self.current_timeline = sim_data.external_state.environment.saved_timelines[
+				sim_data.external_state.environment.current_timeline_id]
 		else:
 			self.current_timeline = make_media.make_timeline(timeline)
 
@@ -98,34 +99,8 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		if ASSERT_POSITIVE_CONCENTRATIONS and (self._concentrations < 0).any():
 			raise NegativeConcentrationError(
 					"Negative environment concentration(s) in self._concentrations:\n"
-					+ "\n".join(
-					"{}".format(
-						self._moleculeIDs[molIndex],
-						)
-					for molIndex in np.where(self._concentrations < 0)[0]
-					)
-				)
-
-
-	# def make_timeline(self, timeline_str):
-	# 	'''
-	# 	Make a timeline from a string
-	#
-	# 	Args:
-	# 		timeline_str (str): 'time1 media_id1, time2 media_id2'
-	# 	Returns:
-	# 		timeline (list[tuple]): a list of tuples with (time (float), media_id (str))
-	# 	'''
-	#
-	# 	timeline = []
-	# 	events_str = timeline_str.split(', ')
-	# 	for event in events_str:
-	# 		time, media = event.split()
-	# 		timeline.append((eval(time),media))
-	#
-	# 	return timeline
-
-
+					+ "\n".join("{}".format(self._moleculeIDs[molIndex])
+					for molIndex in np.where(self._concentrations < 0)[0]))
 
 	## Functions for multi-scaling interface
 	def set_local_environment(self, concentrations):

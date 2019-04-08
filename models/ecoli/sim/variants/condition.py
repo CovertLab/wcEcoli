@@ -16,6 +16,7 @@ def condition(sim_data, index):
 	condition_label = condition_labels[index]
 	sim_data.condition = condition_label
 	# TODO: add new column to condition defs to replace this?
+	# TODO (eran) -- this could pass in a timeline to local_environment with '0 media_id'
 	if sim_data.conditions[condition_label]["nutrients"] == "minimal_plus_amino_acids":
 		sim_data.external_state.environment.current_timeline_id = "000003_aa"
 	elif sim_data.conditions[condition_label]["nutrients"] == "minimal_minus_oxygen":

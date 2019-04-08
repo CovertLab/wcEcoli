@@ -215,6 +215,6 @@ class Media(object):
 		events_str = timeline_str.split(', ')
 		for event in events_str:
 			time, media = event.split()
-			timeline.append((eval(time),media))
+			timeline.append((float(time),media))
 
 		return timeline
