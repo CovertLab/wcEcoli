@@ -167,7 +167,12 @@ class Translation(object):
 		# WTF?
 		monomerIds = [x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]" for x in raw_data.proteins]
 		monomerIdToGeneId = dict([(x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]", x["geneId"].encode("utf-8")) for x in raw_data.proteins])
-		geneIdToTrEff = dict([(x["geneId"].encode("utf-8"), x["translationEfficiency"]) for x in raw_data.translationEfficiency if type(x["translationEfficiency"]) == float])
+
+		geneIdToTrEff = dict([
+			(x["gene_id"].encode("utf-8"), x["translation_efficiency"])
+			for x in raw_data.derived_translation_efficiencies
+			if type(x["translation_efficiency"]) == float])
+
 		trEffs = []
 		for monomerId in monomerIds:
 			geneId = monomerIdToGeneId[monomerId]
