@@ -35,6 +35,17 @@ class ExternalState(object):
 		# make media object
 		make_media = Media()
 
+		# create a dictionary with all saved timelines
+		self.environment.saved_timelines = {}
+		for row in raw_data.condition.timelines_def:
+			timeline_id = row["timeline"]
+			timeline_str = row["events"]
+			new_timeline = make_media.make_timeline(timeline_str)
+			self.environment.saved_timelines[timeline_id] = new_timeline
+
+		# set default current_timeline_id to None, this can be overwritten by the timelines variant
+		self.environment.current_timeline_id = None
+
 		# create a dictionary with all media conditions specified by media_recipes
 		self.environment.saved_media = {}
 		for row in raw_data.condition.media_recipes:

@@ -26,6 +26,8 @@ import wholecell.views.view
 from wholecell.utils import units
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
+from environment.condition.make_media import Media
+
 COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
 
@@ -55,8 +57,16 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		# load constants
 		self._nAvogadro = sim_data.constants.nAvogadro
 
+		# make media object
+		make_media = Media()
+
 		# environment data
-		self.current_timeline = self.make_timeline(timeline)
+		# if current_timeline_id is specified by variant, look it up in saved_timelines
+		if sim_data.external_state.environment.current_timeline_id:
+			self.current_timeline = sim_data.external_state.environment.saved_timelines[sim_data.external_state.environment.current_timeline_id]
+		else:
+			self.current_timeline = make_media.make_timeline(timeline)
+
 		self.saved_media = sim_data.external_state.environment.saved_media
 		self.current_media_id = self.current_timeline[0][1]
 		self.current_media = self.saved_media[self.current_media_id]
@@ -97,23 +107,23 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 				)
 
 
-	def make_timeline(self, timeline_str):
-		'''
-		Make a timeline from a string
-
-		Args:
-			timeline_str (str): 'time1 media_id1, time2 media_id2'
-		Returns:
-			timeline (list[tuple]): a list of tuples with (time (float), media_id (str))
-		'''
-
-		timeline = []
-		events_str = timeline_str.split(', ')
-		for event in events_str:
-			time, media = event.split()
-			timeline.append((eval(time),media))
-
-		return timeline
+	# def make_timeline(self, timeline_str):
+	# 	'''
+	# 	Make a timeline from a string
+	#
+	# 	Args:
+	# 		timeline_str (str): 'time1 media_id1, time2 media_id2'
+	# 	Returns:
+	# 		timeline (list[tuple]): a list of tuples with (time (float), media_id (str))
+	# 	'''
+	#
+	# 	timeline = []
+	# 	events_str = timeline_str.split(', ')
+	# 	for event in events_str:
+	# 		time, media = event.split()
+	# 		timeline.append((eval(time),media))
+	#
+	# 	return timeline
 
 
 
