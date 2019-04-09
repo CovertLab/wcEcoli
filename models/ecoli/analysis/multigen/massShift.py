@@ -33,7 +33,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		T_ADD_AA = None
 		T_CUT_AA = None
 		current_timeline_id = sim_data.external_state.environment.current_timeline_id
-		if "aa" in current_timeline_id:
+
+		if current_timeline_id and "aa" in current_timeline_id:
 			if "add" in current_timeline_id and "cut" in current_timeline_id:
 				T_ADD_AA = sim_data.external_state.environment.saved_timelines[current_timeline_id][1][0]
 				T_CUT_AA = sim_data.external_state.environment.saved_timelines[current_timeline_id][2][0]
