@@ -45,6 +45,7 @@ class Media(object):
 		# get dicts from knowledge base
 		self.environment_molecules_fw = self._get_environment_molecules_fw(raw_data)
 		self.stock_media = self._get_stock_media(raw_data)
+		self.recipes = self._get_recipes(raw_data)
 
 	def _get_environment_molecules_fw(self, raw_data):
 		'''get formula weight (units.g / units.mol) for all environmental molecules'''
@@ -82,48 +83,80 @@ class Media(object):
 
 		return stock_media
 
-	def make_saved_media(self, raw_media_recipes):
+	def _get_recipes(self, raw_data):
+		'''load recipes'''
+
+		recipes = {}
+		for row in raw_data.condition.media_recipes:
+			new_media_id = row["media id"]
+
+			recipe = {}
+			recipe["base media"] = row["base media"]
+			recipe["added media"] = row.get("added media", None)
+			recipe["ingredients"] = row.get("ingredients", None)
+
+			# TODO -- with units placed on Infinity, it makes entries return TypeError: can't multiply sequence by non-int of type 'float'
+			# TODO -- This still works for making media, but you can't read the recipes
+			recipe["base media volume"] = row.get("base media volume", 0 * units.L)
+			recipe["added media volume"] = row.get("added media volume", 0 * units.L)
+			recipe["ingredients weight"] = row.get("ingredients weight", None)
+			recipe["ingredients counts"] = row.get("ingredients counts", None)
+			recipe["ingredients volume"] = row.get("ingredients volume", 0 * units.L)
+
+			recipes[new_media_id] = recipe
+
+		return recipes
+
+	def make_saved_media(self):
+		'''make all the media recipes in self.recipes'''
 
 		self.saved_media = {}
-
-		for row in raw_media_recipes:
-			new_media_id = row["media id"]
-			base_id = row["base media"]
-			added_media_id = row["added media"]
-			ingredient_ids = row["ingredients"]
-			base_media = self.stock_media[base_id]
-
-			if added_media_id:
-				added_media = self.stock_media[added_media_id]
-				base_vol = row["base media volume"]
-				added_vol = row["added media volume"]
-				new_media = self.combine_media(base_media, base_vol, added_media, added_vol)
-			elif ingredient_ids:
-				base_vol = row.get("base media volume", 0 * units.L)
-				added_weight = row.get("ingredients weight", None)
-				added_counts = row.get("ingredients counts", None)
-				added_vol = row.get("ingredients volume")  # the row is a list with units.L, even an empty list is read.
-
-				ingredients = {ingred_id: {} for ingred_id in ingredient_ids}
-				for index, ingred_id in enumerate(ingredient_ids):
-					if added_weight:
-						ingredients[ingred_id]['weight'] = added_weight[index]
-					if added_counts:
-						ingredients[ingred_id]['counts'] = added_counts[index]
-					if added_vol:
-						ingredients[ingred_id]['volume'] = added_vol[index]
-					else:
-						ingredients[ingred_id]['volume'] = 0 * units.L
-
-				new_media = self.add_ingredients(base_media, base_vol, ingredients)
-			else:
-				new_media = base_media
-
+		for new_media_id in self.recipes.iterkeys():
+			new_media = self.make_recipe(new_media_id)
 			# remove concentration units, setting at CONC_UNITS
 			unitless_new_media = {mol: conc.asNumber(CONC_UNITS) for mol, conc in new_media.iteritems()}
 			self.saved_media[new_media_id] = unitless_new_media
 
 		return self.saved_media
+
+	def make_recipe(self, media_id):
+		'''make a single media recipe from self.recipes'''
+
+		recipe = self.recipes[media_id]
+		base_id = recipe["base media"]
+		added_media_id = recipe["added media"]
+		ingredient_ids = recipe["ingredients"]
+		base_media = self.stock_media[base_id]
+
+		if added_media_id:
+			added_media = self.stock_media[added_media_id]
+			base_vol = recipe["base media volume"]
+			added_vol = recipe["added media volume"]
+			new_media = self.combine_media(base_media, base_vol, added_media, added_vol)
+		elif ingredient_ids:
+			base_vol = recipe.get("base media volume", 0 * units.L)
+			added_weight = recipe.get("ingredients weight", None)
+			added_counts = recipe.get("ingredients counts", None)
+			added_vol = recipe.get("ingredients volume")  # the row is a list with units.L, even an empty list is read.
+
+			ingredients = {ingred_id: {} for ingred_id in ingredient_ids}
+			for index, ingred_id in enumerate(ingredient_ids):
+				if added_weight:
+					ingredients[ingred_id]['weight'] = added_weight[index]
+				if added_counts:
+					ingredients[ingred_id]['counts'] = added_counts[index]
+				if added_vol:
+					ingredients[ingred_id]['volume'] = added_vol[index]
+				else:
+					ingredients[ingred_id]['volume'] = 0 * units.L
+
+			new_media = self.add_ingredients(base_media, base_vol, ingredients)
+		else:
+			new_media = base_media
+
+		return new_media
+
+
 
 	def combine_media(self, base_media, base_media_volume, mix_media, mix_media_volume):
 		'''

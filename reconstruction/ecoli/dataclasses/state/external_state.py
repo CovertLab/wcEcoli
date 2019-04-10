@@ -51,7 +51,7 @@ class ExternalState(object):
 
 		# make a dictionary with all media conditions specified by media_recipes
 		make_media = Media()
-		self.environment.environment_dict = make_media.make_saved_media(raw_data.condition.media_recipes)
+		self.environment.environment_dict = make_media.make_saved_media()
 
 		# make mapping from external molecule to exchange molecule
 		self.environment.env_to_exchange_map = {
