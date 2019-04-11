@@ -21,10 +21,6 @@ from wholecell.utils import units
 from reconstruction.ecoli.dataclasses.state.environment import Environment
 from environment.condition.make_media import Media
 
-COUNTS_UNITS = units.mmol
-VOLUME_UNITS = units.L
-MASS_UNITS = units.g
-CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
 
 class ExternalState(object):
 	""" External State """

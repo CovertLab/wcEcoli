@@ -113,9 +113,7 @@ class Media(object):
 		self.saved_media = {}
 		for new_media_id in self.recipes.iterkeys():
 			new_media = self.make_recipe(new_media_id)
-			# remove concentration units, setting at CONC_UNITS
-			unitless_new_media = {mol: conc.asNumber(CONC_UNITS) for mol, conc in new_media.iteritems()}
-			self.saved_media[new_media_id] = unitless_new_media
+			self.saved_media[new_media_id] = new_media
 
 		return self.saved_media
 
@@ -154,7 +152,10 @@ class Media(object):
 		else:
 			new_media = base_media
 
-		return new_media
+		# remove concentration units, setting at CONC_UNITS
+		unitless_new_media = {mol: conc.asNumber(CONC_UNITS) for mol, conc in new_media.iteritems()}
+
+		return unitless_new_media
 
 
 

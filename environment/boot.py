@@ -18,16 +18,9 @@ from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from models.ecoli.sim.simulation import ecoli_simulation
 from environment.condition.make_media import Media
 
-from wholecell.utils import units
 from wholecell.utils import constants
 import wholecell.utils.filepath as fp
 from models.ecoli.sim.variants import apply_variant
-
-
-COUNTS_UNITS = units.mmol
-VOLUME_UNITS = units.L
-MASS_UNITS = units.g
-CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
 
 class EnvironmentAgent(Outer):
 	def build_state(self):
@@ -67,10 +60,8 @@ def boot_lattice(agent_id, agent_type, agent_config):
 	# make media object
 	make_media = Media()
 	new_media = make_media.make_recipe(media)
-	# remove concentration units, setting at CONC_UNITS
-	unitless_new_media = {mol: conc.asNumber(CONC_UNITS) for mol, conc in new_media.iteritems()}
 
-	concentrations = unitless_new_media
+	concentrations = new_media
 	agent_config['concentrations'] = concentrations
 	environment = EnvironmentSpatialLattice(agent_config)
 
