@@ -207,6 +207,9 @@ class Media(object):
 			timeline_str (str): 'time1 media_id1, time2 media_id2'
 		Returns:
 			timeline (list[tuple]): a list of tuples with (time (float), media_id (str))
+
+		TODO (Eran) make a parsing expression grammar for this: https://github.com/erikrose/parsimonious
+		TODO (Eran) expand capabilities to also pass in ingredients to be added from the prior event
 		'''
 
 		timeline = []

@@ -38,9 +38,7 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		for time, media_id in sim.external_states['Environment'].current_timeline:
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					media_id, sim_data.process.metabolism.nutrientsToInternalConc
-					)
-				)
+					media_id, sim_data.process.metabolism.nutrientsToInternalConc))
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
 	# Allocate memory
