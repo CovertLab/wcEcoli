@@ -41,7 +41,7 @@ def calcInitialConditions(sim, sim_data):
 	uniqueMolCntr = sim.internal_states["UniqueMolecules"].container
 
 	# Set up states
-	initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massCoeff)
+	initializeBulkMolecules(bulkMolCntr, sim_data, sim.external_states['Environment'].current_media_id, randomState, massCoeff)
 	initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
 
 	# Must be called after unique and bulk molecules are initialized to get
@@ -49,7 +49,7 @@ def calcInitialConditions(sim, sim_data):
 	if sim._trna_charging:
 		initialize_trna_charging(sim_data, sim.internal_states, sim.processes['PolypeptideElongation'].calculate_trna_charging)
 
-def initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
+def initializeBulkMolecules(bulkMolCntr, sim_data, current_media_id, randomState, massCoeff):
 
 	# Set protein counts from expression
 	initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff)
@@ -58,7 +58,7 @@ def initializeBulkMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
 	initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff)
 
 	# Set other biomass components
-	initializeSmallMolecules(bulkMolCntr, sim_data, randomState, massCoeff)
+	initializeSmallMolecules(bulkMolCntr, sim_data, current_media_id, randomState, massCoeff)
 
 	# Form complexes
 	initializeComplexation(bulkMolCntr, sim_data, randomState)
@@ -174,13 +174,13 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff):
 
 # TODO: remove checks for zero concentrations (change to assertion)
 # TODO: move any rescaling logic to KB/fitting
-def initializeSmallMolecules(bulkMolCntr, sim_data, randomState, massCoeff):
+def initializeSmallMolecules(bulkMolCntr, sim_data, current_media_id, randomState, massCoeff):
 	avgCellFractionMass = sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])
 
 	mass = massCoeff * (avgCellFractionMass["proteinMass"] + avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"]) / sim_data.mass.avgCellToInitialCellConvFactor
 
 	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-		sim_data.external_state.environment.nutrients_time_series[sim_data.external_state.environment.nutrients_time_series_label][0][1]
+		current_media_id
 		)
 	concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.condition]))
 	moleculeIds = sorted(concDict)
@@ -398,12 +398,14 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	# Load parameters
 	rnaLengths = sim_data.process.transcription.rnaData['length'].asNumber()
-	current_nutrients = sim_data.conditions[sim_data.condition]['nutrients']
-	fracActiveRnap = sim_data.process.transcription.rnapFractionActiveDict[current_nutrients]
+	current_media_id = sim_data.conditions[sim_data.condition]['nutrients']
+	fracActiveRnap = sim_data.process.transcription.rnapFractionActiveDict[current_media_id]
 	inactiveRnaPolyCounts = bulkMolCntr.countsView(['APORNAP-CPLX[c]']).counts()[0]
 	rnaSequences = sim_data.process.transcription.transcriptionSequences
 	ntWeights = sim_data.process.transcription.transcriptionMonomerWeights
 	endWeight = sim_data.process.transcription.transcriptionEndWeight
+	replichore_lengths = sim_data.process.replication.replichore_lengths
+	chromosome_length = replichore_lengths.sum()
 
 	# Number of rnaPoly to activate
 	rnaPolyToActivate = np.int64(fracActiveRnap * inactiveRnaPolyCounts)
@@ -430,6 +432,12 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	rnaSynthProbFractions = sim_data.process.transcription.rnaSynthProbFraction
 	rnaSynthProbRProtein = sim_data.process.transcription.rnaSynthProbRProtein
 	rnaSynthProbRnaPolymerase = sim_data.process.transcription.rnaSynthProbRnaPolymerase
+
+	# Get coordinates and transcription directions of transcription units
+	replication_coordinate = sim_data.process.transcription.rnaData[
+		"replicationCoordinate"]
+	transcription_direction = sim_data.process.transcription.rnaData[
+		"direction"]
 
 	# Determine changes from genetic perturbations
 	genetic_perturbations = {}
@@ -472,7 +480,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		raise Exception("Have negative RNA synthesis probabilities")
 
 	# Adjust synthesis probabilities depending on environment
-	synthProbFractions = rnaSynthProbFractions[current_nutrients]
+	synthProbFractions = rnaSynthProbFractions[current_media_id]
 
 	# Create masks for different types of RNAs
 	is_mrna = np.isin(TU_index, idx_mrna)
@@ -492,8 +500,8 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		promoter_init_probs, TU_index,
 		np.concatenate((idx_rprotein, idx_rnap)),
 		np.concatenate((
-			rnaSynthProbRProtein[current_nutrients],
-			rnaSynthProbRnaPolymerase[current_nutrients])))
+			rnaSynthProbRProtein[current_media_id],
+			rnaSynthProbRnaPolymerase[current_media_id])))
 
 	assert promoter_init_probs[is_fixed].sum() < 1.0
 
@@ -506,8 +514,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# Shuffle initiation rates if we're running the variant that calls this
 	if shuffleIdxs is not None:
 		rescale_initiation_probs(
-			promoter_init_probs, TU_index,
-			np.arange(n_TUs),
+			promoter_init_probs, TU_index, np.arange(n_TUs),
 			TU_synth_probs[shuffleIdxs])
 
 	# normalize to length of rna
@@ -520,25 +527,49 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		rnaPolyToActivate, init_prob_normalized)
 
 	# RNA Indices
-	rnaIndexes = np.repeat(TU_index, n_initiations)
+	TU_index_rnap = np.repeat(TU_index, n_initiations)
 
-	# TODO (Eran) -- make sure there aren't any rnapolys at same location on same gene
-	updatedLengths = np.array(
-		randomState.rand(rnaPolyToActivate) * rnaLengths[rnaIndexes],
+	# Build list of starting coordinates and transcription directions
+	starting_coordinates = replication_coordinate[TU_index_rnap]
+	direction = transcription_direction[TU_index_rnap]
+
+	# Randomly advance RNAPs along the gene
+	# TODO (Eran): make sure there aren't any RNAPs at same location on same gene
+	updated_lengths = np.array(
+		randomState.rand(rnaPolyToActivate) * rnaLengths[TU_index_rnap],
 		dtype=np.int)
 
+	# Convert boolean array of directions to an array of 1's and -1's.
+	# True is converted to 1, False is converted to -1.
+	direction_converted = (2 * (direction - 0.5)).astype(np.int64)
+
+	# Compute the updated coordinates of RNAPs. Coordinates of RNAPs
+	# moving in the positive direction are increased, whereas coordinates
+	# of RNAPs moving in the negative direction are decreased.
+	updated_coordinates = starting_coordinates + np.multiply(
+		direction_converted, updated_lengths)
+
+	# Reset coordinates of RNAPs that cross the boundaries between right and
+	# left replichores
+	updated_coordinates[
+		updated_coordinates > replichore_lengths[0]] -= chromosome_length
+	updated_coordinates[
+		updated_coordinates < -replichore_lengths[1]] += chromosome_length
+
 	# update mass
-	sequences = rnaSequences[rnaIndexes]
-	massIncreaseRna = computeMassIncrease(sequences, updatedLengths, ntWeights)
-	massIncreaseRna[updatedLengths != 0] += endWeight  # add endWeight to all new Rna
+	sequences = rnaSequences[TU_index_rnap]
+	massIncreaseRna = computeMassIncrease(sequences, updated_lengths, ntWeights)
+	massIncreaseRna[updated_lengths != 0] += endWeight  # add endWeight to all new Rna
 
 	# update molecules. Attributes include which rnas are being transcribed,
 	# and the position (length)
 	uniqueMolCntr.objectsNew(
 		'activeRnaPoly', rnaPolyToActivate,
-		rnaIndex=rnaIndexes,
-		transcriptLength=updatedLengths,
-		massDiff_mRNA=massIncreaseRna)
+		TU_index=TU_index_rnap,
+		transcript_length=updated_lengths,
+		coordinates=updated_coordinates,
+		direction=direction,
+		massDiff_RNA=massIncreaseRna)
 
 	bulkMolCntr.countsIs(inactiveRnaPolyCounts - rnaPolyToActivate, ['APORNAP-CPLX[c]'])
 

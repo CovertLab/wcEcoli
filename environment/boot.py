@@ -61,8 +61,7 @@ def boot_lattice(agent_id, agent_type, agent_config):
 	make_media = Media()
 	new_media = make_media.make_recipe(media)
 
-	concentrations = new_media
-	agent_config['concentrations'] = concentrations
+	agent_config['concentrations'] = new_media
 	environment = EnvironmentSpatialLattice(agent_config)
 
 	return EnvironmentAgent(agent_id, agent_type, agent_config, environment)
