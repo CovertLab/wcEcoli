@@ -119,7 +119,6 @@ def chromosomeDivision(uniqueMolecules, randomState, no_child_place_holder):
 	# Read attributes of full chromosomes and chromosome domains
 	full_chromosomes = uniqueMolecules.container.objectsInCollection("fullChromosome")
 	domain_index_full_chroms = full_chromosomes.attr("domain_index")
-	full_chromosome_count = domain_index_full_chroms.size
 
 	chromosome_domains = uniqueMolecules.container.objectsInCollection("chromosome_domain")
 	domain_index_domains, child_domains = chromosome_domains.attrs(
@@ -131,16 +130,26 @@ def chromosomeDivision(uniqueMolecules, randomState, no_child_place_holder):
 
 	index = not d1_gets_first_chromosome
 	d1_domain_index_full_chroms = domain_index_full_chroms[index::2]
+	d2_domain_index_full_chroms = domain_index_full_chroms[~index::2]
 	d1_all_domain_indexes = get_descendent_domains(
 		d1_domain_index_full_chroms, domain_index_domains,
 		child_domains, no_child_place_holder
 		)
+	d2_all_domain_indexes = get_descendent_domains(
+		d2_domain_index_full_chroms, domain_index_domains,
+		child_domains, no_child_place_holder
+		)
+
+	# Check that the domains are being divided correctly
+	assert np.intersect1d(d1_all_domain_indexes, d2_all_domain_indexes).size == 0
+	assert d1_all_domain_indexes.size + d2_all_domain_indexes.size == domain_index_domains.size
 
 	d1_chromosome_count = d1_domain_index_full_chroms.size
-	d2_chromosome_count = full_chromosome_count - d1_chromosome_count
+	d2_chromosome_count = d2_domain_index_full_chroms.size
 
 	return {
 		"d1_all_domain_indexes": d1_all_domain_indexes,
+		"d2_all_domain_indexes": d2_all_domain_indexes,
 		"d1_chromosome_count": d1_chromosome_count,
 		"d2_chromosome_count": d2_chromosome_count,
 		}
@@ -194,8 +203,9 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 
 	uniqueMoleculesToDivide = deepcopy(uniqueMolecules.uniqueMoleculeDefinitions)
 
-	# Get indexes of chromosome domains assigned to first daughter
+	# Get indexes of chromosome domains assigned to each daughter
 	d1_all_domain_indexes = chromosome_division_results['d1_all_domain_indexes']
+	d2_all_domain_indexes = chromosome_division_results['d2_all_domain_indexes']
 
 	for molecule_name, molecule_attribute_dict in uniqueMoleculesToDivide.iteritems():
 
@@ -204,7 +214,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 		molecule_attribute_dict = uniqueMoleculesToDivide[molecule_name]
 		n_molecules = len(molecule_set)
 
-		if molecule_name in uniqueMolecules.division_modes['active_ribosome']:
+		if molecule_name in uniqueMolecules.division_mode['active_ribosome']:
 			# Binomially divide active ribosomes, but also set the ribosome
 			# elongation rates of daughter cells such that the two daughters
 			# have identical translational capacities.
@@ -253,39 +263,20 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 			else:
 				continue
 
-		elif molecule_name in uniqueMolecules.division_modes['domain_index']:
+		elif molecule_name in uniqueMolecules.division_mode['domain_index']:
 			# Divide molecules associated with chromosomes based on the index
 			# of the chromosome domains the molecules are associated with
 			if n_molecules > 0:
 				domain_index = molecule_set.attr("domain_index")
 
 				# Divide molecule based on their domain indexes
-				d1_bool = np.zeros(n_molecules, dtype=bool)
-				for index in d1_all_domain_indexes:
-					d1_bool = np.logical_or(d1_bool, domain_index == index)
-				d2_bool = np.logical_not(d1_bool)
+				d1_bool = np.isin(domain_index, d1_all_domain_indexes)
+				d2_bool = np.isin(domain_index, d2_all_domain_indexes)
 
 				n_d1 = d1_bool.sum()
 				n_d2 = d2_bool.sum()
-			else:
-				continue
 
-		elif molecule_name in uniqueMolecules.division_modes['binomial']:
-			# Binomially divide molecules with binomial division modes.
-			# Currently, only the active RNA polymerase is divided in this way.
-			if n_molecules > 0:
-				n_d1 = randomState.binomial(n_molecules,
-					p=BINOMIAL_COEFF)
-				n_d2 = n_molecules - n_d1
-
-				# Randomly index molecules in the mother cell with a boolean
-				# value such that each daughter gets amount calculated above
-				d1_bool = np.zeros(n_molecules, dtype=bool)
-				d1_indexes = randomState.choice(
-					range(n_molecules), size=n_d1, replace=False
-					)
-				d1_bool[d1_indexes] = True
-				d2_bool = np.logical_not(d1_bool)
+				assert n_molecules == n_d1 + n_d2
 			else:
 				continue
 
