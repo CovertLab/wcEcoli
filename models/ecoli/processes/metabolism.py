@@ -270,10 +270,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		updatedObjective = False
 		if newObjective != None and newObjective != self.homeostaticObjective:
-			# Build new fba instance with new objective
-			self.fbaObjectOptions["objective"] = newObjective
-			self.fba = FluxBalanceAnalysis(**self.fbaObjectOptions)
-			self.internalExchangeIdxs = np.array([self.metaboliteNamesFromNutrients.index(x) for x in self.fba.getOutputMoleculeIDs()])
+			self.fba.update_homeostatic_targets(newObjective)
 			self.homeostaticObjective = newObjective
 			updatedObjective = True
 
