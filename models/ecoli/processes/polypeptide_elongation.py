@@ -114,10 +114,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.KMaa = constants.Km_synthetase_amino_acid.asNumber(MICROMOLAR_UNITS)
 		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 		self.krtf = 500
-		self.KD_RelA = constants.KD_RelA_ribosome.asNumber(MICROMOLAR_UNITS)
-		self.k_RelA = constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s)
-		self.k_SpoT_syn = constants.k_SpoT_ppGpp_synthesis.asNumber(MICROMOLAR_UNITS / units.s)
-		self.k_SpoT_deg = constants.k_SpoT_ppGpp_degradation.asNumber(1 / units.s)
 
 		self.aa_conc_diff = {}
 
@@ -170,7 +166,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			# Conversion from counts to molarity
 			cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
 			cell_volume = cell_mass / self.cellDensity
-			counts_to_molar = 1 / (self.nAvogadro * cell_volume)
+			self.counts_to_molar = 1 / (self.nAvogadro * cell_volume)
 
 			# Get counts and convert synthetase and tRNA to a per AA basis
 			synthetase_counts = np.dot(self.aa_from_synthetase, self.synthetases.total_counts())
@@ -181,18 +177,18 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 			# Get concentration
 			f = aasInSequences / aasInSequences.sum()
-			synthetase_conc = counts_to_molar * synthetase_counts
-			aa_conc = counts_to_molar * aa_counts
-			uncharged_trna_conc = counts_to_molar * uncharged_trna_counts
-			charged_trna_conc = counts_to_molar * charged_trna_counts
-			ribosome_conc = counts_to_molar * ribosome_counts
+			synthetase_conc = self.counts_to_molar * synthetase_counts
+			aa_conc = self.counts_to_molar * aa_counts
+			uncharged_trna_conc = self.counts_to_molar * uncharged_trna_counts
+			charged_trna_conc = self.counts_to_molar * charged_trna_counts
+			ribosome_conc = self.counts_to_molar * ribosome_counts
 
 			# Calculate steady state tRNA levels and resulting elongation rate
 			fraction_charged, v_rib = self.calculate_trna_charging(
 				synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, self.timeStepSec()
 				)
 
-			aa_counts_for_translation = v_rib * f * self._sim.timeStepSec() / counts_to_molar.asNumber(MICROMOLAR_UNITS)
+			aa_counts_for_translation = v_rib * f * self._sim.timeStepSec() / self.counts_to_molar.asNumber(MICROMOLAR_UNITS)
 
 			total_trna = self.charged_trna.total_counts() + self.uncharged_trna.total_counts()
 			final_charged_trna = np.dot(fraction_charged, self.aa_from_trna * total_trna)
@@ -377,7 +373,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		aa_used = np.dot(self.aa_from_trna, charged_and_elongated) + n_aa_charged
 		aa_diff = self.aa_supply - aa_used
-		self.aa_conc_diff = {aa: counts_to_molar * diff for aa, diff in zip(self.aaNames, aa_diff)}
+		self.aa_conc_diff = {aa: self.counts_to_molar * diff for aa, diff in zip(self.aaNames, aa_diff)}
 
 
 		# Write data to listeners

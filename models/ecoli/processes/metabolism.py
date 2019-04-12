@@ -268,29 +268,19 @@ class Metabolism(wholecell.processes.process.Process):
 			self.concModificationsBasedOnCondition,
 			)
 
-		updatedObjective = False
 		if newObjective != None and newObjective != self.homeostaticObjective:
 			self.fba.update_homeostatic_targets(newObjective)
 			self.homeostaticObjective = newObjective
-			updatedObjective = True
-
-		print('Phe: {}'.format(self.homeostaticObjective.get('PHE[c]', 0)))
 
 		# After completing the burn-in, enable kinetic rates
 		if self.use_kinetics and (not self.burnInComplete) and (self._sim.time() > KINETICS_BURN_IN_PERIOD):
 			self.burnInComplete = True
 			self.fba.enableKineticTargets()
 
-		# # Allow flexibility for solver in first time step after an environment shift
-		# if updatedObjective:
-		# 	self.fba.disableKineticTargets()
-		# 	self.burnInComplete = False
-
 		#  Find metabolite concentrations from metabolite counts
 		metaboliteConcentrations =  countsToMolar * metaboliteCountsInit[self.internalExchangeIdxs]
 
 		# Make a dictionary of metabolite names to metabolite concentrations
-		metaboliteConcentrationsDict = dict(zip(self.metaboliteNames, metaboliteConcentrations))
 		self.fba.setInternalMoleculeLevels(metaboliteConcentrations.asNumber(CONC_UNITS))
 
 		# Set external molecule levels
