@@ -7,8 +7,7 @@ from agent.inner import CellSimulation
 
 
 TUMBLE_JITTER = 2.0 # (radians)
-DEFAULT_COLOR = [76, 0 , 153]
-DEFAULT_COLOR = [color/255 for color in DEFAULT_COLOR]
+DEFAULT_COLOR = [color/255 for color in [76, 0 , 153]]
 
 class Chemotaxis(CellSimulation):
 	'''
