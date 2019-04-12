@@ -63,8 +63,10 @@ class RunSimulation(scriptBase.ScriptBase):
 		parser.add_argument('-s', '--seed', type=int, default=0,
 			help='Cell simulation seed. Default = 0'
 			)
-		parser.add_argument('-t', '--timeline', type=str,
-			help='set timeline. Default = "0 minimal"'
+		parser.add_argument('-t', '--timeline', type=str, default='0 minimal',
+			help='set timeline. Default = "0 minimal". See'
+				 ' environment/condition/make_media.py, make_timeline() for'
+				 ' timeline formatting details'
 			)
 		add_option('length_sec', 'lengthSec', int,
 			help='The maximum simulation time, in seconds. Useful for short'
