@@ -12,6 +12,7 @@ from agent.boot import BootAgent
 from environment.lattice import EnvironmentSpatialLattice
 from environment.surrogates.chemotaxis import Chemotaxis
 from models.ecoli.sim.simulation import ecoli_simulation
+from environment.condition.make_media import Media
 
 from wholecell.utils import constants
 import wholecell.utils.filepath as fp
