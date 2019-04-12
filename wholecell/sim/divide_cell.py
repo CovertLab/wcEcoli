@@ -41,7 +41,7 @@ def divide_cell(sim):
 	sim_data = sim.get_sim_data()
 
 	# TODO (Eran): division should be based on both nutrient and gene perturbation condition
-	current_nutrients = sim.external_states['Environment'].nutrients
+	current_media_id = sim.external_states['Environment'].current_media_id
 
 	# Create the output directory
 	sim_out_dir = filepath.makedirs(sim._outputDir)
@@ -79,7 +79,7 @@ def divide_cell(sim):
 			bulkMolecules, randomState)
 		d1_uniqueMolCntr, d2_uniqueMolCntr, daughter_elng_rates = (
 			divideUniqueMolecules(uniqueMolecules, randomState,
-				chromosome_division_results, current_nutrients, sim))
+				chromosome_division_results, current_media_id, sim))
 
 	# Save the daughter initialization state.
 	# TODO(jerry): Include the variant_type and variant_index? The seed?
@@ -184,7 +184,7 @@ def divideBulkMolecules(bulkMolecules, randomState):
 
 
 def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_results,
-		current_nutrients, sim):
+		current_media_id, sim):
 	"""
 	Divides unique molecules of the mother cell to the two daughter cells. Each
 	class of unique molecules is divided in a different way.
@@ -214,7 +214,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 		molecule_attribute_dict = uniqueMoleculesToDivide[molecule_name]
 		n_molecules = len(molecule_set)
 
-		if molecule_name in uniqueMolecules.division_modes['active_ribosome']:
+		if molecule_name in uniqueMolecules.division_mode['active_ribosome']:
 			# Binomially divide active ribosomes, but also set the ribosome
 			# elongation rates of daughter cells such that the two daughters
 			# have identical translational capacities.
@@ -224,7 +224,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 				# Read the ribosome elongation rate of the mother cell
 				polypeptide_elongation = sim.processes["PolypeptideElongation"]
 				elngRate = np.min([polypeptide_elongation.ribosomeElongationRateDict[
-					current_nutrients].asNumber(units.aa / units.s), 21.])
+					current_media_id].asNumber(units.aa / units.s), 21.])
 
 				# If growth rate noise is set to True, multiply noise parameter
 				# to translation capacity
@@ -263,7 +263,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 			else:
 				continue
 
-		elif molecule_name in uniqueMolecules.division_modes['domain_index']:
+		elif molecule_name in uniqueMolecules.division_mode['domain_index']:
 			# Divide molecules associated with chromosomes based on the index
 			# of the chromosome domains the molecules are associated with
 			if n_molecules > 0:
@@ -277,25 +277,6 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 				n_d2 = d2_bool.sum()
 
 				assert n_molecules == n_d1 + n_d2
-			else:
-				continue
-
-		elif molecule_name in uniqueMolecules.division_modes['binomial']:
-			# Binomially divide molecules with binomial division modes.
-			# Currently, only the active RNA polymerase is divided in this way.
-			if n_molecules > 0:
-				n_d1 = randomState.binomial(n_molecules,
-					p=BINOMIAL_COEFF)
-				n_d2 = n_molecules - n_d1
-
-				# Randomly index molecules in the mother cell with a boolean
-				# value such that each daughter gets amount calculated above
-				d1_bool = np.zeros(n_molecules, dtype=bool)
-				d1_indexes = randomState.choice(
-					range(n_molecules), size=n_d1, replace=False
-					)
-				d1_bool[d1_indexes] = True
-				d2_bool = np.logical_not(d1_bool)
 			else:
 				continue
 
