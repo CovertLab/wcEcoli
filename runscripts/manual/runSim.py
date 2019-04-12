@@ -50,7 +50,7 @@ class RunSimulation(scriptBase.ScriptBase):
 		super(RunSimulation, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)
 
-		parser.add_argument('-v', '--variant', nargs=3,
+		parser.add_argument('-v', '--variant', nargs=3, default=['wildtype', '0', '0'],
 			metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'),
 			help='The variant type name, first index, and last index. See'
 				 ' models/ecoli/sim/variants/__init__.py for the possible'
@@ -111,12 +111,6 @@ class RunSimulation(scriptBase.ScriptBase):
 	def parse_args(self):
 		args = super(RunSimulation, self).parse_args()
 		args.sim_path = scriptBase.find_sim_path(args.sim_dir)
-
-		if not args.variant:
-			args.variant = ['wildtype', '0', '0']
-
-		if not args.timeline:
-			args.timeline = '0 minimal'
 
 		return args
 
