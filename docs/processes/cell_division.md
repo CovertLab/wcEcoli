@@ -72,4 +72,3 @@ Algorithms \ref{dna_replication_termination_algorithm} and \ref{cell_division_al
 
 \subparagraph{Difference from \emph{M. genitalium} model.}
 The \emph{E. coli} model is not yet a gene complete model and many of the mechanistic details of cell division are not implemented as they were in the \emph{M. genitalium} model. In \emph{E. coli}, cytokinesis, septation, and chromosome segregation are all not modeled explicitly.  However, cell division in our \textit{E. coli} model is consistent with growth at multiple growth rates, which was not the case in \textit{M. genitalium}.
-

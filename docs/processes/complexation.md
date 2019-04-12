@@ -55,4 +55,3 @@ Stoichiometric coefficients that define 1,023 reactions to form protein complexe
 
 \subparagraph{Difference from \emph{M. genitalium} model.}
 This sub-model is implemented very similarly to the \textit{M. genitalium} model of complexation.  In the \textit{M. genitalium} simulations, however, the selection of a complexation reaction was weighted by a multinomial distribution parameterized by substrate availability rather than a uniform distribution.  We found that the choice of distribution had no major effect on behavior of the process. Additionally, the \textit{M. genitalium} simulations describe 201 macromolecular complexes, whereas over 5 times as many are implemented in the \textit{E. coli} model.
-
