@@ -11,12 +11,7 @@ from agent.boot import BootAgent
 
 from environment.lattice import EnvironmentSpatialLattice
 from environment.surrogates.chemotaxis import Chemotaxis
-
-# Raw data class
-from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
-
 from models.ecoli.sim.simulation import ecoli_simulation
-from environment.condition.make_media import Media
 
 from wholecell.utils import constants
 import wholecell.utils.filepath as fp
@@ -53,15 +48,11 @@ class EnvironmentAgent(Outer):
 			print_send=False)
 
 def boot_lattice(agent_id, agent_type, agent_config):
-	media = agent_config.get('media', 'minimal')
-	print("Media condition: {}".format(media))
-	raw_data = KnowledgeBaseEcoli()
+	media_id = agent_config.get('media_id', 'minimal')
+	media = agent_config.get('media', {})
+	print("Media condition: {}".format(media_id))
 
-	# make media object
-	make_media = Media()
-	new_media = make_media.make_recipe(media)
-
-	agent_config['concentrations'] = new_media
+	agent_config['concentrations'] = media
 	environment = EnvironmentSpatialLattice(agent_config)
 
 	return EnvironmentAgent(agent_id, agent_type, agent_config, environment)
