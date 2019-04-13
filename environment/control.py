@@ -51,10 +51,8 @@ class ShepherdControl(AgentControl):
 		print('Creating lattice agent_id {} and {} cell agents\n'.format(
 			lattice_id, num_cells))
 
-		# make media
-		media_id = args.get('media', 'minimal')
-		make_media = Media()
-		media = make_media.make_recipe(media_id)
+		media_id = 'GLC'
+		media = {'GLC': 20.0}
 
 		chemotaxis_config = {
 			'run_for' : 1.0,
