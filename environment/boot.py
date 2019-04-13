@@ -55,6 +55,9 @@ def boot_lattice(agent_id, agent_type, agent_config):
 	media_id = agent_config.get('media_id', 'minimal')
 	media = agent_config.get('media', {})
 	print("Media condition: {}".format(media_id))
+	if not media:
+		make_media = Media()
+		media = make_media.make_recipe(media_id)
 
 	agent_config['concentrations'] = media
 	environment = EnvironmentSpatialLattice(agent_config)
