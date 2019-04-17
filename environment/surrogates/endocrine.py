@@ -54,8 +54,12 @@ class Endocrine(CellSimulation):
 			self.environment_change['signal'] = 1e8
 		if self.state == 'receiver':
 			activation = self.external_concentrations['signal']
-			brightness = [color * (math.exp(10000*activation)-1) for color in self.receiver_color_distance if (math.exp(10000*activation)-1) <= 1]
-			activation_color = add_lists(self.receiver_color_dark, brightness)
+			if (math.exp(10000 * activation) - 1) < 1:
+				brightness = [color * (math.exp(10000 * activation) - 1) for color in self.receiver_color_distance]
+				activation_color = add_lists(self.receiver_color_dark, brightness)
+			else:
+				activation_color = self.receiver_color_bright
+
 			self.color = [color / 255 for color in activation_color]
 
 	def check_division(self):
