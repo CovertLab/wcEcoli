@@ -11,11 +11,6 @@ from agent.boot import BootAgent
 
 from environment.lattice import EnvironmentSpatialLattice
 from environment.surrogates.chemotaxis import Chemotaxis
-from environment.surrogates.endocrine import Endocrine
-
-# Raw data class
-from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
-
 from models.ecoli.sim.simulation import ecoli_simulation
 from environment.condition.make_media import Media
 
@@ -57,15 +52,14 @@ class EnvironmentAgent(Outer):
 			print_send=False)
 
 def boot_lattice(agent_id, agent_type, agent_config):
-	media = agent_config.get('media', 'minimal')
-	print("Media condition: {}".format(media))
-	raw_data = KnowledgeBaseEcoli()
+	media_id = agent_config.get('media_id', 'minimal')
+	media = agent_config.get('media', {})
+	print("Media condition: {}".format(media_id))
+	if not media:
+		make_media = Media()
+		media = make_media.make_recipe(media_id)
 
-	# make media object
-	make_media = Media()
-	new_media = make_media.make_recipe(media)
-
-	agent_config['concentrations'] = new_media
+	agent_config['concentrations'] = media
 	environment = EnvironmentSpatialLattice(agent_config)
 
 	return EnvironmentAgent(agent_id, agent_type, agent_config, environment)
@@ -203,34 +197,6 @@ def boot_chemotaxis(agent_id, agent_type, agent_config):
 
 	return inner
 
-def boot_endocrine(agent_id, agent_type, agent_config):
-	agent_id = agent_id
-	outer_id = agent_config['outer_id']
-	volume = 1.0
-	kafka_config = agent_config['kafka_config']
-
-	inner = Inner(
-		agent_id,
-		outer_id,
-		agent_type,
-		agent_config,
-		None)
-
-	inner.send(kafka_config['topics']['environment_receive'], {
-		'event': event.CELL_DECLARE,
-		'agent_id': outer_id,
-		'inner_id': agent_id,
-		'agent_config': agent_config,
-		'state': {
-			'volume': volume,
-			'environment_change': {}}})
-
-	simulation = Endocrine()
-	inner.simulation = simulation
-
-	time.sleep(5)  # TODO(jerry): Wait for the Endocrine to boot
-
-	return inner
 
 class BootEnvironment(BootAgent):
 	def __init__(self):
@@ -239,7 +205,6 @@ class BootEnvironment(BootAgent):
 			'lattice': boot_lattice,
 			'ecoli': boot_ecoli,
 			'chemotaxis': boot_chemotaxis,
-			'endocrine': boot_endocrine,
 			}
 
 if __name__ == '__main__':
