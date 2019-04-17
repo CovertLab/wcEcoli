@@ -165,6 +165,14 @@ class Outer(Agent):
 
 		self.environment.add_simulation(inner_id, simulation)
 
+		# synchronize state of the new cell
+		parameters = self.environment.simulation_parameters(inner_id)
+		self.send(self.topics['cell_receive'], {
+			'event': event.ENVIRONMENT_SYNCHRONIZE,
+			'inner_id': inner_id,
+			'outer_id': self.agent_id,
+			'state': parameters})
+
 		parent_id = simulation.get('parent_id', '')
 		if parent_id:
 			self.environment.apply_parent_state(inner_id, simulation)
@@ -202,13 +210,6 @@ class Outer(Agent):
 		simulation.update({
 			'message_id': -1,
 			'last_message_id': -1})
-
-		parameters = self.environment.simulation_parameters(inner_id)
-		self.send(self.topics['cell_receive'], {
-			'event': event.ENVIRONMENT_SYNCHRONIZE,
-			'inner_id': inner_id,
-			'outer_id': self.agent_id,
-			'state': parameters})
 
 		self.advance()
 

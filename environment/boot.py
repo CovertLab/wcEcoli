@@ -164,7 +164,14 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 	fp.write_json_file(metadata_path, metadata)
 
+
+
+
+	# TODO (Eran) wait for ENVIRONMENT_SYNCHRONIZE before starting simulation
 	inner.simulation = ecoli_simulation(**options)
+
+
+
 
 	return inner
 
