@@ -34,7 +34,7 @@ nosetests.*.xml
 
 # Output files #
 ################
-out
+/out
 
 # Cached sim data #
 ###################
