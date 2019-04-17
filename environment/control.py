@@ -71,7 +71,7 @@ class ShepherdControl(AgentControl):
 		time.sleep(15)
 
 		for index in range(num_cells):
-			self.add_cell(args['type'] or 'chemotaxis', {
+			self.add_cell(args['type'] or 'endocrine', {
 				'outer_id': lattice_id,
 				'seed': index})
 
