@@ -54,7 +54,7 @@ class ShepherdControl(AgentControl):
 		media_id = 'GLC'
 		media = {'GLC': 20.0, 'signal': 0.0}
 
-		chemotaxis_config = {
+		endocrine_config = {
 			'run_for' : 1.0,
 			# 'static_concentrations': True,
 			# 'gradient': {'seed': True},
@@ -65,7 +65,7 @@ class ShepherdControl(AgentControl):
 			'patches_per_edge': 10,
 			'media_id': media_id,
 			'media': media}
-		self.add_agent(lattice_id, 'lattice', chemotaxis_config)
+		self.add_agent(lattice_id, 'lattice', endocrine_config)
 
 		# give lattice time before adding the cells
 		time.sleep(15)
