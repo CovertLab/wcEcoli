@@ -373,6 +373,7 @@ def buildBasalCellSpecifications(
 	cellSpecs["basal"]["avgCellDryMassInit"] = avgCellDryMassInit
 	cellSpecs["basal"]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 	cellSpecs["basal"]["bulkContainer"] = bulkContainer
+	cellSpecs["basal"]["rnapActiveFraction"] = rnapActiveFraction
 
 	# Modify sim_data mass
 	sim_data.mass.avgCellDryMassInit = avgCellDryMassInit
@@ -492,6 +493,7 @@ def buildTfConditionCellSpecifications(
 		cellSpecs[conditionKey]["avgCellDryMassInit"] = avgCellDryMassInit
 		cellSpecs[conditionKey]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 		cellSpecs[conditionKey]["bulkContainer"] = bulkContainer
+		cellSpecs[conditionKey]["rnapActiveFraction"] = rnapActiveFraction
 
 	return cellSpecs
 
@@ -597,6 +599,7 @@ def buildCombinedConditionCellSpecifications(
 		cellSpecs[conditionKey]["avgCellDryMassInit"] = avgCellDryMassInit
 		cellSpecs[conditionKey]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 		cellSpecs[conditionKey]["bulkContainer"] = bulkContainer
+		cellSpecs[conditionKey]["rnapActiveFraction"] = rnapActiveFraction
 
 		# Modify sim_data expression
 		sim_data.process.transcription.rnaExpression[conditionKey] = cellSpecs[conditionKey]["expression"]
@@ -657,34 +660,43 @@ def expressionConverge(
 	"""
 
 	if VERBOSE > 0:
-		print("Fitting RNA synthesis probabilities.")
+		print("Fitting RNA synthesis probabilities and/or polymerase active fractions.")
+
+	rnapActiveFraction = sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
 
 	for iteration in xrange(MAX_FITTING_ITERATIONS):
 		if VERBOSE > 1:
 			print('Iteration: {}'.format(iteration))
 
 		initialExpression = expression.copy()
+		initialRnapActiveFraction = rnapActiveFraction.copy()
+
 		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
 		bulkContainer = createBulkContainer(sim_data, expression, doubling_time)
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
+
+		if not disable_rnapoly_active_fraction_fitting:
+			rnapActiveFraction = getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time)
+
+		if not disable_ribosome_active_fraction_fitting:
+			pass
 
 		if not disable_ribosome_capacity_fitting:
 			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time)
 
 		if not disable_rnapoly_capacity_fitting:
-			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
-
-		if not disable_rnapoly_active_fraction_fitting:
-			rnapActiveFraction = getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time)
-			print("Estimated fraction of active RNA polymerase: {}".format(rnapActiveFraction))
-			return
+			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, rnapActiveFraction, Km)
 
 		# Normalize expression and write out changes
 		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
 
-		degreeOfFit = np.sqrt(np.mean(np.square(initialExpression - expression)))
+		degreeOfFitExpression = np.sqrt(np.mean(np.square(initialExpression - expression)))
+		degreeOfFitRnapActiveFraction =  np.sqrt(np.mean(np.square(initialRnapActiveFraction - rnapActiveFraction)))
+		degreeOfFit = sum([degreeOfFitExpression, degreeOfFitRnapActiveFraction])
+
 		if VERBOSE > 1:
-			print('degree of fit: {}'.format(degreeOfFit))
+			print('\tdegree of fit: {}'.format(degreeOfFit))
+			print('\tRNAP active fraction: {}'.format(rnapActiveFraction))
 
 		if degreeOfFit < FITNESS_THRESHOLD:
 			break
@@ -692,7 +704,7 @@ def expressionConverge(
 	else:
 		raise Exception("Fitting did not converge")
 
-	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict
+	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActiveFraction
 
 def fitCondition(sim_data, spec, condition):
 	"""
@@ -1341,7 +1353,7 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 	bulkContainer.countsIs(rRna16SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna16S"]])
 	bulkContainer.countsIs(rRna5SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna5S"]])
 
-def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km=None):
+def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, rnapActiveFraction, Km=None):
 	"""
 	Set counts of RNA polymerase based on two constraints:
 	(1) Number of RNAP subunits required to maintain steady state of mRNAs
@@ -1411,7 +1423,7 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 		rnaLengths, sim_data.growthRateParameters.getRnapElongationRate(doubling_time), rnaLossRate)
 
 	nActiveRnapNeeded = units.convertNoUnitToNumber(nActiveRnapNeeded)
-	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
+	nRnapsNeeded = nActiveRnapNeeded / rnapActiveFraction
 
 	# Convert nRnapsNeeded to the number of RNA polymerase subunits required
 	# Note: The return value from getFractionIncreaseRnapProteins() is
@@ -1438,27 +1450,29 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 
 def getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time):
 	"""
-		Set active fraction of RNA polymerase
+	Get active fraction of RNA polymerase required to achieve steady-state
+	doubling of RNAs.
 
-		Requires
-		--------
-		- the return value from getFractionIncreaseRnapProteins(doubling_time),
-		described in growthRateDependentParameters.py
+	Requires
+	--------
+	- the return value from getFractionIncreaseRnapProteins(doubling_time),
+	described in growthRateDependentParameters.py
 
-		Inputs
-		------
-		- bulkContainer (BulkObjectsContainer object) - counts of bulk molecules
-		- doubling_time (float with units of time) - doubling time given the condition
-		- avgCellDryMassInit (float with units of mass) - expected initial dry cell mass
-		- Km (array of floats with units of mol/volume) - Km for each RNA associated
-		with RNases
+	Inputs
+	------
+	- bulkContainer (BulkObjectsContainer object) - counts of bulk molecules
+	- doubling_time (float with units of time) - doubling time given the
+	  condition
+	- avgCellDryMassInit (float with units of mass) - expected initial dry cell
+	  mass
 
-		Modifies
-		--------
-		-
-		"""
+	Returns
+	--------
+	- activeFractionNeeded (float) - active fraction of RNA polymerase required
+	  to achieve steady-state doubling of RNA
+	"""
 
-	# -- CONSTRAINT 1: Expected RNA distribution doubling -- #
+	# -- CONSTRAINT: Expected RNA distribution doubling -- #
 	rnaLengths = units.sum(sim_data.process.transcription.rnaData['countsACGU'], axis=1)
 
 	# RNA loss rate is in units of counts/time, and computed by summing the
@@ -1472,15 +1486,15 @@ def getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubli
 	# Compute number of RNA polymerases required to maintain steady state of RNA
 	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
 		rnaLengths, sim_data.growthRateParameters.getRnapElongationRate(doubling_time), rnaLossRate)
-
 	nActiveRnapNeeded = units.convertNoUnitToNumber(nActiveRnapNeeded)
-	# nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
-	nRnapsNeeded = nActiveRnapNeeded
 
+	# Get number of RNA polymerases that can be made (according to bulk molecule counts)
 	rnapIds = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitIds']
 	rnapCounts = bulkContainer.counts(rnapIds)
 
-	activeFractionNeeded = nRnapsNeeded / np.min(rnapCounts)
+	# Get required RNA polymerase active fraction
+	activeFractionNeeded = nActiveRnapNeeded / np.min(rnapCounts)
+
 	return activeFractionNeeded
 
 def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km=None):
