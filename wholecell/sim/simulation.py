@@ -101,10 +101,11 @@ class Simulation(CellSimulation):
 
 			setattr(self, "_" + attrName, value)
 
-		unknownKeywords = kwargs.viewkeys() - DEFAULT_SIMULATION_KWARGS.viewkeys()
-
-		if any(unknownKeywords):
-			raise SimulationException("Unknown keyword arguments: {}".format(unknownKeywords))
+		# TODO (Eran) new args are coming in from the compartment, triggers exception here
+		# unknownKeywords = kwargs.viewkeys() - DEFAULT_SIMULATION_KWARGS.viewkeys()
+		#
+		# if any(unknownKeywords):
+		# 	raise SimulationException("Unknown keyword arguments: {}".format(unknownKeywords))
 
 		# Set time variables
 		self._simulationStep = 0
@@ -439,11 +440,6 @@ class Simulation(CellSimulation):
 			'volume': self.listeners['Mass'].volume,
 			'division': self.daughter_config(),
 			'environment_change': self.external_states['Environment'].get_environment_change()}
-
-	def synchronize_state(self, state):
-		if 'time' in state:
-			self._initialTime = state['time']
-			self._timeTotal = state['time']
 
 	def divide(self):
 		self.cellCycleComplete()

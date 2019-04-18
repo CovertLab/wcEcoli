@@ -64,6 +64,12 @@ def boot_lattice(agent_id, agent_type, agent_config):
 
 	return EnvironmentAgent(agent_id, agent_type, agent_config, environment)
 
+def initialize_ecoli(boot_config):
+	ecoli_simulation(**boot_config)
+
+# TODO -- provide initialize_surrogate method
+# def initalize_surrogate()
+
 def boot_ecoli(agent_id, agent_type, agent_config):
 	'''
 	Instantiates an initial or daughter EcoliSimulation, passes it to a new
@@ -91,29 +97,9 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	variant_type = agent_config.get('variant_type', 'wildtype')
 	variant_index = agent_config.get('variant_index', 0)
 	seed = agent_config.get('seed', 0)
-	volume = agent_config.get('volume', 1.2)
+	# volume = agent_config.get('volume', 1.2)
 
-	# Create the inner agent before instantiating the simulation so it can send
-	# a message to the lattice without waiting for the simulation to initialize.
-	# TODO(jerry): Is the agent OK receiving messages w/o a sim? Add a
-	#    setter for its simulation property, make it queue messages until it
-	#    gets one, change the constructor type signature to allow None?
-	inner = Inner(
-		agent_id,
-		outer_id,
-		agent_type,
-		agent_config,
-		None)
-
-	inner.send(kafka_config['topics']['environment_receive'], {
-		'event': event.CELL_DECLARE,
-		'agent_id': outer_id,
-		'inner_id': agent_id,
-		'agent_config': agent_config,
-		'state': {
-			'volume': volume,
-			'environment_change': {}}})
-
+	# make options for boot config
 	sim_path = fp.makedirs(working_dir, 'out', 'manual')
 	sim_data_fit = os.path.join(sim_path, 'kb', 'simData_Most_Fit.cPickle')
 	output_dir = os.path.join(sim_path, 'sim_' + agent_id, 'simOut')
@@ -164,14 +150,18 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 	fp.write_json_file(metadata_path, metadata)
 
-
-
-
-	# TODO (Eran) wait for ENVIRONMENT_SYNCHRONIZE before starting simulation
-	inner.simulation = ecoli_simulation(**options)
-
-
-
+	# Create the inner agent before instantiating the simulation so it can send
+	# a message to the lattice without waiting for the simulation to initialize.
+	# TODO(jerry): Is the agent OK receiving messages w/o a sim? Add a
+	#    setter for its simulation property, make it queue messages until it
+	#    gets one, change the constructor type signature to allow None?
+	inner = Inner(
+		agent_id,
+		outer_id,
+		agent_type,
+		agent_config,
+		options,
+		initialize_ecoli)
 
 	return inner
 

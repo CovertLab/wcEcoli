@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import uuid
+import time
 
 import agent.event as event
 from agent.agent import Agent
@@ -11,9 +12,6 @@ class CellSimulation(object):
 
 	def time(self):
 		"""Return the current time according to this CellSimulation."""
-
-	def synchronize_state(self, state):
-		"""Synchronize the cell's clock to the environment."""
 
 	def apply_outer_update(self, update):
 		"""Apply the update received from the environment to this simulation."""
@@ -51,7 +49,7 @@ class Inner(Agent):
 	an environmental simulation.
 	"""
 
-	def __init__(self, agent_id, outer_id, agent_type, agent_config, simulation):
+	def __init__(self, agent_id, outer_id, agent_type, agent_config, boot_config, sim_initialize):
 		"""
 		Construct the agent.
 
@@ -79,6 +77,10 @@ class Inner(Agent):
 		        calculations.
 		"""
 
+		self.sim_initialize = sim_initialize
+		self.boot_config = boot_config
+		volume = agent_config.get('volume', 1.2)
+
 		kafka_config = agent_config['kafka_config']
 		kafka_config['subscribe'].append(
 			kafka_config['topics']['cell_receive'])
@@ -86,13 +88,27 @@ class Inner(Agent):
 		super(Inner, self).__init__(agent_id, agent_type, agent_config)
 
 		self.outer_id = outer_id
-		self.simulation = simulation
+
+		# TODO -- cell declare here
+		# TODO -- need to get volume in from boot
+		self.send(kafka_config['topics']['environment_receive'], {
+			'event': event.CELL_DECLARE,
+			'agent_id': outer_id,
+			'inner_id': agent_id,
+			'agent_config': agent_config,
+			'state': {
+				'volume': volume,
+				'environment_change': {}}})
 
 	def initialize(self):
+		pass
+
+	def send_initialize(self):
 		"""
 		Initialization: Register this inner agent with the outer agent.
 		"""
 
+		# TODO -- why is self.simulation 'NoneType'?
 		now = self.simulation.time()
 		state = self.simulation.generate_inner_update()
 
@@ -221,7 +237,13 @@ class Inner(Agent):
 			message_event = message['event']
 
 			if message_event == event.ENVIRONMENT_SYNCHRONIZE:
-				self.simulation.synchronize_state(message['state'])
+				# TODO -- initialize state here.
+				self.boot_config.update(message['state'])
+				self.simulation = self.sim_initialize(self.boot_config)
+
+				time.sleep(15)
+
+				self.send_initialize()
 
 			elif message_event == event.ENVIRONMENT_UPDATE:
 				self.environment_update(message)
