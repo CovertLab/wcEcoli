@@ -79,6 +79,8 @@ def fitSimData_1(
 		raw_data, cpus=1, debug=False,
 		disable_ribosome_capacity_fitting=False,
 		disable_rnapoly_capacity_fitting=False,
+		disable_rnapoly_active_fraction_fitting=False,
+		disable_ribosome_active_fraction_fitting=False,
 		adjust_rna_and_protein_parameters=True,
 		):
 	"""
@@ -95,6 +97,10 @@ def fitSimData_1(
 			is not fit to protein synthesis demands
 		disable_rnapoly_capacity_fitting (bool) - if True, RNA polymerase
 			expression is not fit to protein synthesis demands
+		disable_rnapoly_active_fraction_fitting (bool) - if True, RNA polymerase
+			active fraction is not fit to RNA / protein synthesis demands
+		disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
+			active fraction is not fit to protein synthesis demands
 		adjust_rna_and_protein_parameters (bool) - if True, some RNA and protein
 			expression parameters will be adjusted to get expression
 	"""
@@ -127,7 +133,9 @@ def fitSimData_1(
 	cellSpecs = buildBasalCellSpecifications(
 		sim_data,
 		disable_ribosome_capacity_fitting,
-		disable_rnapoly_capacity_fitting
+		disable_rnapoly_capacity_fitting,
+		disable_rnapoly_active_fraction_fitting,
+		disable_ribosome_active_fraction_fitting,
 		)
 
 	# Modify other properties
@@ -149,8 +157,12 @@ def fitSimData_1(
 		results = [
 			pool.apply_async(
 				buildTfConditionCellSpecifications,
-				(sim_data, tf, disable_ribosome_capacity_fitting, disable_rnapoly_capacity_fitting)
-				)
+				(sim_data, tf,
+				 disable_ribosome_capacity_fitting,
+				 disable_rnapoly_capacity_fitting,
+				 disable_rnapoly_active_fraction_fitting,
+				 disable_ribosome_active_fraction_fitting,
+				 ))
 			for tf in conds
 			]
 		pool.close()
@@ -163,7 +175,11 @@ def fitSimData_1(
 	else:
 		for tf in sorted(sim_data.tfToActiveInactiveConds):
 			cellSpecs.update(buildTfConditionCellSpecifications(
-				sim_data, tf, disable_ribosome_capacity_fitting, disable_rnapoly_capacity_fitting
+				sim_data, tf,
+				disable_ribosome_capacity_fitting,
+				disable_rnapoly_capacity_fitting,
+				disable_rnapoly_active_fraction_fitting,
+				disable_ribosome_active_fraction_fitting,
 				))
 
 	for conditionKey in cellSpecs:
@@ -177,7 +193,9 @@ def fitSimData_1(
 		sim_data,
 		cellSpecs,
 		disable_ribosome_capacity_fitting,
-		disable_rnapoly_capacity_fitting
+		disable_rnapoly_capacity_fitting,
+		disable_rnapoly_active_fraction_fitting,
+		disable_ribosome_active_fraction_fitting,
 		)
 
 	sim_data.process.transcription.rnaSynthProbFraction = {}
@@ -279,7 +297,9 @@ def fitSimData_1(
 def buildBasalCellSpecifications(
 		sim_data,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False
+		disable_rnapoly_capacity_fitting=False,
+		disable_rnapoly_active_fraction_fitting=False,
+		disable_ribosome_active_fraction_fitting=False,
 		):
 	"""
 	Creates cell specifications for the basal condition by fitting expression.
@@ -291,6 +311,10 @@ def buildBasalCellSpecifications(
 	is not fit
 	- disable_rnapoly_capacity_fitting (bool) - if True, RNA polymerase
 	expression is not fit
+	- disable_rnapoly_active_fraction_fitting (bool) - if True, RNA polymerase
+		active fraction is not fit to RNA / protein synthesis demands
+	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
+		active fraction is not fit to protein synthesis demands
 
 	Requires
 	--------
@@ -332,13 +356,15 @@ def buildBasalCellSpecifications(
 		}
 
 	# Determine expression and synthesis probabilities
-	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _ = expressionConverge(
+	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _, rnapActiveFraction = expressionConverge(
 		sim_data,
 		cellSpecs["basal"]["expression"],
 		cellSpecs["basal"]["concDict"],
 		cellSpecs["basal"]["doubling_time"],
 		disable_ribosome_capacity_fitting = disable_ribosome_capacity_fitting,
-		disable_rnapoly_capacity_fitting = disable_rnapoly_capacity_fitting
+		disable_rnapoly_capacity_fitting = disable_rnapoly_capacity_fitting,
+		disable_rnapoly_active_fraction_fitting = disable_rnapoly_active_fraction_fitting,
+		disable_ribosome_active_fraction_fitting = disable_ribosome_active_fraction_fitting,
 		)
 
 	# Store calculated values
@@ -364,7 +390,9 @@ def buildTfConditionCellSpecifications(
 		sim_data,
 		tf,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False
+		disable_rnapoly_capacity_fitting=False,
+		disable_rnapoly_active_fraction_fitting=False,
+		disable_ribosome_active_fraction_fitting=False,
 		):
 	"""
 	Creates cell specifications for a given transcription factor by
@@ -380,6 +408,10 @@ def buildTfConditionCellSpecifications(
 	is not fit
 	- disable_rnapoly_capacity_fitting (bool) - if True, RNA polymerase
 	expression is not fit
+	- disable_rnapoly_active_fraction_fitting (bool) - if True, RNA polymerase
+	active fraction is not fit to RNA / protein synthesis demands
+	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
+	active fraction is not fit to protein synthesis demands
 
 	Requires
 	--------
@@ -442,14 +474,16 @@ def buildTfConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActiveFraction = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
 			cellSpecs[conditionKey]["doubling_time"],
 			sim_data.process.transcription.rnaData["KmEndoRNase"],
 			disable_ribosome_capacity_fitting = disable_ribosome_capacity_fitting,
-			disable_rnapoly_capacity_fitting = disable_rnapoly_capacity_fitting
+			disable_rnapoly_capacity_fitting = disable_rnapoly_capacity_fitting,
+			disable_rnapoly_active_fraction_fitting = disable_rnapoly_active_fraction_fitting,
+			disable_ribosome_active_fraction_fitting = disable_ribosome_active_fraction_fitting,
 			)
 
 		# Store calculated values
@@ -465,7 +499,9 @@ def buildCombinedConditionCellSpecifications(
 		sim_data,
 		cellSpecs,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False
+		disable_rnapoly_capacity_fitting=False,
+		disable_rnapoly_active_fraction_fitting=False,
+		disable_ribosome_active_fraction_fitting=False,
 		):
 	"""
 	Creates cell specifications for sets of transcription factors being active.
@@ -480,6 +516,10 @@ def buildCombinedConditionCellSpecifications(
 	is not fit
 	- disable_rnapoly_capacity_fitting (bool) - if True, RNA polymerase
 	expression is not fit
+	- disable_rnapoly_active_fraction_fitting (bool) - if True, RNA polymerase
+	active fraction is not fit to RNA / protein synthesis demands
+	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
+	active fraction is not fit to protein synthesis demands
 
 	Requires
 	--------
@@ -539,14 +579,16 @@ def buildCombinedConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActiveFraction = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
 			cellSpecs[conditionKey]["doubling_time"],
 			sim_data.process.transcription.rnaData["KmEndoRNase"],
 			disable_ribosome_capacity_fitting = disable_ribosome_capacity_fitting,
-			disable_rnapoly_capacity_fitting = disable_rnapoly_capacity_fitting
+			disable_rnapoly_capacity_fitting = disable_rnapoly_capacity_fitting,
+			disable_rnapoly_active_fraction_fitting = disable_rnapoly_active_fraction_fitting,
+			disable_ribosome_active_fraction_fitting = disable_ribosome_active_fraction_fitting,
 			)
 
 		# Modify cellSpecs for calculated values
@@ -568,7 +610,8 @@ def expressionConverge(
 		Km=None,
 		disable_ribosome_capacity_fitting=False,
 		disable_rnapoly_capacity_fitting=False,
-        disable_rnapoly_active_fraction_fitting=True,
+        disable_rnapoly_active_fraction_fitting=False,
+		disable_ribosome_active_fraction_fitting=False,
 		):
 	"""
 	Iteratively fits synthesis probabilities for RNA. Calculates initial
@@ -588,6 +631,10 @@ def expressionConverge(
 	is not fit
 	- disable_rnapoly_capacity_fitting (bool) - if True, RNA polymerase
 	expression is not fit
+	- disable_rnapoly_active_fraction_fitting (bool) - if True, RNA polymerase
+		active fraction is not fit to RNA / protein synthesis demands
+	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
+		active fraction is not fit to protein synthesis demands
 
 	Requires
 	--------
