@@ -18,6 +18,7 @@ from __future__ import division
 from itertools import izip
 
 import numpy as np
+from scipy.integrate import odeint
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
@@ -393,7 +394,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("RibosomeData", "processElongationRate", self.ribosomeElongationRate / self.timeStepSec())
 
-	def calculate_trna_charging(self, synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, time_limit=None):
+	def calculate_trna_charging(self, synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, time_limit=1000):
 		'''
 		Calculates the steady state value of tRNA based on charging and incorporation through polypeptide elongation.
 		The fraction of charged/uncharged is also used to determine how quickly the ribosome is elongating.
@@ -408,28 +409,32 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			aa_conc (array of floats with concentration units) - concentration of each amino acid
 			ribosome_conc (float with concentration units) - concentration of active ribosomes
 			f (array of floats) - fraction of each amino acid to be incorporated to total amino acids incorporated
-			time_limit (float) - if not None, time limit to reach steady state, will warn if reached
+			time_limit (float) - time limit to reach steady state
 
 		Returns:
 			fraction_charged (array of floats) - fraction of total tRNA that is charged for each tRNA species
 			v_rib (float) - ribosomal elongation rate in units of uM/s
 		'''
 
-		synthetase_conc = synthetase_conc.asNumber(MICROMOLAR_UNITS)
-		uncharged_trna_conc = uncharged_trna_conc.asNumber(MICROMOLAR_UNITS)
-		charged_trna_conc = charged_trna_conc.asNumber(MICROMOLAR_UNITS)
-		aa_conc = aa_conc.asNumber(MICROMOLAR_UNITS)
-		ribosome_conc = ribosome_conc.asNumber(MICROMOLAR_UNITS)
+		def dcdt(c, t):
+			'''
+			Function for odeint to integrate
 
-		# Solve to steady state with short time steps
-		t = 0
-		dt = 0.001
-		diff = 1
-		while diff > 1e-3:
-			v_charging = (self.kS * synthetase_conc * uncharged_trna_conc * aa_conc
-				/ (self.KMaa * self.KMtf *
-				(1 + uncharged_trna_conc/self.KMtf + aa_conc/self.KMaa + uncharged_trna_conc*aa_conc/self.KMtf/self.KMaa))
-				)
+			Args:
+				c (ndarray[float]): 1D array of concentrations of uncharged and charged tRNAs
+					dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
+				t (float): time of integration step
+
+			Returns:
+				ndarray[float]: dc/dt for tRNA concentrations
+					dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
+			'''
+
+			uncharged_trna_conc = c[:n_aas]
+			charged_trna_conc = c[n_aas:]
+
+			v_charging = (self.kS * synthetase_conc * uncharged_trna_conc * aa_conc / (self.KMaa * self.KMtf)
+				/ (1 + uncharged_trna_conc/self.KMtf + aa_conc/self.KMaa + uncharged_trna_conc*aa_conc/self.KMtf/self.KMaa))
 			numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
 			v_rib = self.maxRibosomeElongationRate * ribosome_conc / numerator_ribosome
 
@@ -437,17 +442,31 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			if not np.isfinite(v_rib):
 				v_rib = 0
 
-			delta_conc = (v_charging - v_rib*f) * dt
-			uncharged_trna_conc -= delta_conc
-			charged_trna_conc += delta_conc
-			diff = np.linalg.norm(delta_conc)
+			dc = v_charging - v_rib*f
 
-			t += dt
-			if time_limit is not None and t >= time_limit:
-				print('Warning: time limit reached for tRNA charging, norm is {:0.4f}'.format(diff))
-				break
+			return np.hstack((-dc, dc))
 
+		# Convert inputs for integration
+		synthetase_conc = synthetase_conc.asNumber(MICROMOLAR_UNITS)
+		uncharged_trna_conc = uncharged_trna_conc.asNumber(MICROMOLAR_UNITS)
+		charged_trna_conc = charged_trna_conc.asNumber(MICROMOLAR_UNITS)
+		aa_conc = aa_conc.asNumber(MICROMOLAR_UNITS)
+		ribosome_conc = ribosome_conc.asNumber(MICROMOLAR_UNITS)
+		n_aas = len(aa_conc)
+
+		# Integrate rates of charging and elongation
+		dt = 0.001
+		t = np.arange(0, time_limit, dt)
+		co = np.hstack((uncharged_trna_conc, charged_trna_conc))
+		sol = odeint(dcdt, co, t)
+
+		# Determine new values from integration results
+		uncharged_trna_conc = sol[-1, :n_aas]
+		charged_trna_conc = sol[-1, n_aas:]
 		fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
+		numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
+		v_rib = self.maxRibosomeElongationRate * ribosome_conc / numerator_ribosome
+
 		return fraction_charged, v_rib
 
 	def distribution_from_aa(self, n_aa, n_trna, limited=False):
