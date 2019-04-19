@@ -1,9 +1,9 @@
 # This is the Dockerfile for building the environment for the whole cell model. It stops just
 # short of copying in the `wcEcoli` code.
 #
-# To build locally, execute the following command in this directory:
+# To build locally, execute the following command in the root level wcEcoli directory:
 #
-#     > docker build -t wcm-runtime .
+#     > docker build -f cloud/docker/base/Dockerfile -t wcm-runtime .
 #
 # To build using gcloud container service in this directory:
 #
