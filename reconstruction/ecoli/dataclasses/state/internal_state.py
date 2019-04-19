@@ -22,10 +22,12 @@ class InternalState(object):
 
 		self.bulkMolecules = BulkMolecules(raw_data, sim_data)
 		self.uniqueMolecules = UniqueMolecules(raw_data, sim_data)
+		self.cellProperties = BulkMolecules(raw_data, sim_data)
 
 		self._buildBulkMolecules(raw_data, sim_data)
 		self._buildUniqueMolecules(raw_data, sim_data)
 		self._buildCompartments(raw_data, sim_data)
+		self._buildCellProperties(raw_data, sim_data)
 
 
 	def _buildBulkMolecules(self, raw_data, sim_data):
@@ -291,3 +293,15 @@ class InternalState(object):
 		compartmentData['id'] = [x['id'] for x in raw_data.compartments]
 		compartmentData['compartmentAbbreviation'] = [x['abbrev'] for x in raw_data.compartments]
 		self.compartments = compartmentData
+
+
+	def _buildCellProperties(self, raw_data, sim_data):
+		"""
+		Add data (IDs and mass) for all classes of cell properties.
+		"""
+		pass
+
+		# property_ids = ['volume']
+		# masses = (units.g/units.mol) * np.array([0])
+		#
+		# self.cellProperties.addToBulkState(property_ids, masses)

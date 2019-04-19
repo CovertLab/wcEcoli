@@ -4,6 +4,7 @@ from wholecell.sim.simulation import Simulation
 # States
 from wholecell.states.bulk_molecules import BulkMolecules
 from wholecell.states.unique_molecules import UniqueMolecules
+from wholecell.states.cell_properties import CellProperties
 from wholecell.states.local_environment import LocalEnvironment
 
 # Processes
@@ -45,6 +46,7 @@ class EcoliSimulation(Simulation):
 	_internalStateClasses = (
 		BulkMolecules,
 		UniqueMolecules,
+		CellProperties,
 		)
 
 	_externalStateClasses = (
