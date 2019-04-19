@@ -70,7 +70,8 @@ def initialize_ecoli(boot_config, synchronize_config):
 	return ecoli_simulation(**boot_config)
 
 def initialize_chemotaxis(boot_config, synchronize_config):
-	return Chemotaxis()
+	boot_config.update(synchronize_config)
+	return Chemotaxis(boot_config)
 
 
 def boot_ecoli(agent_id, agent_type, agent_config):

@@ -88,8 +88,6 @@ class Inner(Agent):
 
 		self.outer_id = outer_id
 
-		# TODO -- cell declare here
-		# TODO -- need to get volume in from boot
 		self.send(kafka_config['topics']['environment_receive'], {
 			'event': event.CELL_DECLARE,
 			'agent_id': outer_id,
@@ -106,8 +104,6 @@ class Inner(Agent):
 		"""
 		Initialization: Register this inner agent with the outer agent.
 		"""
-
-		# TODO -- why is self.simulation 'NoneType'?
 		now = self.simulation.time()
 		state = self.simulation.generate_inner_update()
 
