@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import uuid
-import time
 
 import agent.event as event
 from agent.agent import Agent
@@ -237,12 +236,7 @@ class Inner(Agent):
 			message_event = message['event']
 
 			if message_event == event.ENVIRONMENT_SYNCHRONIZE:
-				# TODO -- initialize state here.
-				self.boot_config.update(message['state'])
-				self.simulation = self.sim_initialize(self.boot_config)
-
-				time.sleep(15)
-
+				self.simulation = self.sim_initialize(self.boot_config, message['state'])
 				self.send_initialize()
 
 			elif message_event == event.ENVIRONMENT_UPDATE:

@@ -101,11 +101,13 @@ class Simulation(CellSimulation):
 
 			setattr(self, "_" + attrName, value)
 
+
 		# TODO (Eran) new args are coming in from the compartment, triggers exception here
-		# unknownKeywords = kwargs.viewkeys() - DEFAULT_SIMULATION_KWARGS.viewkeys()
-		#
-		# if any(unknownKeywords):
-		# 	raise SimulationException("Unknown keyword arguments: {}".format(unknownKeywords))
+		unknownKeywords = kwargs.viewkeys() - DEFAULT_SIMULATION_KWARGS.viewkeys()
+
+		if any(unknownKeywords):
+			raise SimulationException("Unknown keyword arguments: {}".format(unknownKeywords))
+
 
 		# Set time variables
 		self._simulationStep = 0

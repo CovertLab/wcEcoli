@@ -64,8 +64,10 @@ def boot_lattice(agent_id, agent_type, agent_config):
 
 	return EnvironmentAgent(agent_id, agent_type, agent_config, environment)
 
-def initialize_ecoli(boot_config):
-	ecoli_simulation(**boot_config)
+def initialize_ecoli(boot_config, synchronize_config):
+	synchronize_config['initialTime'] = synchronize_config.pop('time')
+	boot_config.update(synchronize_config)
+	return ecoli_simulation(**boot_config)
 
 # TODO -- provide initialize_surrogate method
 # def initalize_surrogate()
