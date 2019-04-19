@@ -37,9 +37,13 @@ class CellProperties(wholecell.states.internal_state.InternalState):
 		self.container = BulkObjectsContainer(self._moleculeIDs, dtype=np.float64)
 		self.container.countsIs(self._concentrations)
 
-		import ipdb; ipdb.set_trace()
 
+	def calculatePreEvolveStateMass(self):
+		pass
 
+	def calculatePostEvolveStateMass(self):
+		pass
+	
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)
 		tableWriter.writeAttributes()
