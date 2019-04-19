@@ -207,6 +207,9 @@ def fitSimData_1(
 	sim_data.process.translation.ribosomeElongationRateDict = {}
 	sim_data.process.translation.ribosomeFractionActiveDict = {}
 
+	# Set active fractions of minimal media to those computed for basal cell
+	sim_data.process.transcription.rnapFractionActiveDict["minimal"] = cellSpecs["basal"]["rnapActiveFraction"]
+
 	if cpus > 1:
 		print "Start parallel processing with %i processes" % (cpus,)
 		pool = Pool(processes = cpus)
@@ -271,8 +274,10 @@ def fitSimData_1(
 				sim_data.process.transcription.rnaSynthProbRnaPolymerase[nutrients] = prob
 
 			if nutrients not in sim_data.process.transcription.rnapFractionActiveDict:
-				frac = sim_data.growthRateParameters.getFractionActiveRnap(spec["doubling_time"])
-				sim_data.process.transcription.rnapFractionActiveDict[nutrients] = frac
+				sim_data.process.transcription.rnapFractionActiveDict[nutrients] = cellSpecs[condition_label]["rnapActiveFraction"]
+				# Note: The value stored in cellSpecs defaults to return from
+				# sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
+				# if RNA polymerase active fraction is disabled. See expressionConverge().
 
 			if nutrients not in sim_data.process.transcription.rnaPolymeraseElongationRateDict:
 				rate = sim_data.growthRateParameters.getRnapElongationRate(spec["doubling_time"])
@@ -436,6 +441,8 @@ def buildTfConditionCellSpecifications(
 		'bulkContainer' (BulkObjectsContainer object) - expected counts for
 			bulk molecules based on expression
 	"""
+	if VERBOSE > 1:
+		print("\nBuild cell specs for TF: {}".format(tf))
 
 	cellSpecs = {}
 	for choice in ["__active", "__inactive"]:
