@@ -69,8 +69,9 @@ def initialize_ecoli(boot_config, synchronize_config):
 	boot_config.update(synchronize_config)
 	return ecoli_simulation(**boot_config)
 
-# TODO -- provide initialize_surrogate method
-# def initalize_surrogate()
+def initialize_chemotaxis(boot_config, synchronize_config):
+	return Chemotaxis()
+
 
 def boot_ecoli(agent_id, agent_type, agent_config):
 	'''
@@ -172,27 +173,15 @@ def boot_chemotaxis(agent_id, agent_type, agent_config):
 	outer_id = agent_config['outer_id']
 	volume = 1.0
 	kafka_config = agent_config['kafka_config']
+	options = {}
 
 	inner = Inner(
 		agent_id,
 		outer_id,
 		agent_type,
 		agent_config,
-		None)
-
-	inner.send(kafka_config['topics']['environment_receive'], {
-		'event': event.CELL_DECLARE,
-		'agent_id': outer_id,
-		'inner_id': agent_id,
-		'agent_config': agent_config,
-		'state': {
-			'volume': volume,
-			'environment_change': {}}})
-
-	simulation = Chemotaxis()
-	inner.simulation = simulation
-
-	time.sleep(5)  # TODO(jerry): Wait for the Chemotaxis to boot
+		options,
+		initialize_chemotaxis)
 
 	return inner
 
