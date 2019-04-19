@@ -55,6 +55,16 @@ class RunFitter(scriptBase.ScriptBase):
 			help= "If set, RNA polymerase expression will not be fit to protein synthesis demands."
 			)
 		parser.add_argument(
+			'--disable-rnapoly-active-fraction-fitting',
+			action='store_true',
+			help="If set, RNA polymerase active fraction will not be fit to protein synthesis demands."
+		)
+		parser.add_argument(
+			'--disable-ribosome-active-fraction-fitting',
+			action='store_true',
+			help="If set, ribosome active fraction will not be fit to protein synthesis demands."
+		)
+		parser.add_argument(
 			'--no-expression-adjustment',
 			action='store_false',
 			help= "If set, some RNA and protein expression parameters will not be adjusted."
@@ -100,6 +110,8 @@ class RunFitter(scriptBase.ScriptBase):
 				debug=args.debug,
 				disable_ribosome_capacity_fitting=args.disable_ribosome_fitting,
 				disable_rnapoly_capacity_fitting=args.disable_rnapoly_fitting,
+				disable_rnapoly_active_fraction_fitting=args.disable_rnapoly_active_fraction_fitting,
+				disable_ribosome_active_fraction_fitting=args.disable_ribosome_active_fraction_fitting,
 				adjust_rna_and_protein_parameters=args.no_expression_adjustment,
 				),
 
