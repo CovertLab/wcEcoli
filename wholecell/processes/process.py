@@ -18,7 +18,7 @@ import warnings
 
 import wholecell.states.bulk_molecules
 import wholecell.states.unique_molecules
-import wholecell.states.environment
+import wholecell.states.local_environment
 import numpy as np
 
 from wholecell.listeners.listener import WriteMethod
@@ -72,7 +72,7 @@ class Process(object):
 
 	# Construct views
 	def environmentView(self, moleculeIDs):
-		return wholecell.states.environment.EnvironmentView(
+		return wholecell.states.local_environment.EnvironmentView(
 			self._external_states['Environment'], self, moleculeIDs)
 
 
@@ -119,10 +119,21 @@ class Process(object):
 					setattr(listener, attributeName, getattr(listener, attributeName) + value)
 				elif writeMethod == WriteMethod.append:
 					data = getattr(listener, attributeName)
-					if isinstance(data, np.ndarray):
+					if isinstance(value, np.ndarray):
 						setattr(listener, attributeName, np.append(data, value, axis=0))
 					else:
-						warnings.warn("The {} process attempted to append to {} on the {} listener, but it is not an ndarray".format(
+						warnings.warn("The {} process attempted to append to {} on the {} listener, but the given value is not an ndarray".format(
+							self._name,
+							attributeName,
+							listenerName))
+				elif writeMethod == WriteMethod.fill:
+					data = getattr(listener, attributeName)
+					if isinstance(value, np.ndarray) and len(value.shape) == 1:
+						n_elements = value.size
+						data[:n_elements] = value
+						data[n_elements:] = np.nan
+					else:
+						warnings.warn("The {} process attempted to fill in {} on the {} listener, but the given value is not a 1-dimensional ndarray".format(
 							self._name,
 							attributeName,
 							listenerName))

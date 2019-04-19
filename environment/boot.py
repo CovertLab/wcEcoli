@@ -11,16 +11,15 @@ from agent.boot import BootAgent
 
 from environment.lattice import EnvironmentSpatialLattice
 from environment.surrogates.chemotaxis import Chemotaxis
-
-# Raw data class
-from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
-
+from environment.surrogates.endocrine import Endocrine
 from models.ecoli.sim.simulation import ecoli_simulation
+from environment.condition.make_media import Media
 
 from wholecell.utils import constants
 import wholecell.utils.filepath as fp
 from models.ecoli.sim.variants import apply_variant
 
+DEFAULT_COLOR = [0.6, 0.4, 0.3]
 
 class EnvironmentAgent(Outer):
 	def build_state(self):
@@ -31,8 +30,10 @@ class EnvironmentAgent(Outer):
 		simulations = {
 			agent_id: {
 				'volume': simulation['state']['volume'],
+				'color': simulation['state'].get('color', DEFAULT_COLOR),
 				'location': self.environment.locations[agent_id][0:2].tolist(),
-				'orientation': self.environment.locations[agent_id][2]}
+				'orientation': self.environment.locations[agent_id][2],
+				'parent_id': simulation.get('parent_id', '')}
 			for agent_id, simulation in self.environment.simulations.iteritems()}
 
 		return {
@@ -52,30 +53,14 @@ class EnvironmentAgent(Outer):
 			print_send=False)
 
 def boot_lattice(agent_id, agent_type, agent_config):
-	media = agent_config.get('media', 'minimal')
-	print("Media condition: {}".format(media))
-	# kafka_config = agent_config['kafka_config']
-	raw_data = KnowledgeBaseEcoli()
+	media_id = agent_config.get('media_id', 'minimal')
+	media = agent_config.get('media', {})
+	print("Media condition: {}".format(media_id))
+	if not media:
+		make_media = Media()
+		media = make_media.make_recipe(media_id)
 
-	# create a dictionary with all saved environments
-	environment_dict = {}
-	for label in vars(raw_data.condition.media):
-		# initiate all molecules with 0 concentrations
-		environment_dict[label] = {
-			row["molecule id"]: 0
-			for row in raw_data.condition.environment_molecules}
-
-		# get non-zero concentrations (assuming units.mmol / units.L)
-		molecule_concentrations = getattr(raw_data.condition.media, label)
-		environment_non_zero_dict = {
-			row["molecule id"]: row["concentration"].asNumber()
-			for row in molecule_concentrations}
-
-		# update environment_dict with non zero concentrations
-		environment_dict[label].update(environment_non_zero_dict)
-
-	concentrations = environment_dict[media]
-	agent_config['concentrations'] = concentrations
+	agent_config['concentrations'] = media
 	environment = EnvironmentSpatialLattice(agent_config)
 
 	return EnvironmentAgent(agent_id, agent_type, agent_config, environment)
@@ -184,6 +169,35 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 
 	return inner
 
+def boot_endocrine(agent_id, agent_type, agent_config):
+	agent_id = agent_id
+	outer_id = agent_config['outer_id']
+	volume = 1.0
+	kafka_config = agent_config['kafka_config']
+
+	inner = Inner(
+		agent_id,
+		outer_id,
+		agent_type,
+		agent_config,
+		None)
+
+	inner.send(kafka_config['topics']['environment_receive'], {
+		'event': event.CELL_DECLARE,
+		'agent_id': outer_id,
+		'inner_id': agent_id,
+		'agent_config': agent_config,
+		'state': {
+			'volume': volume,
+			'environment_change': {}}})
+
+	simulation = Endocrine()
+	inner.simulation = simulation
+
+	time.sleep(5)  # TODO(jerry): Wait for the Chemotaxis to boot
+
+	return inner
+
 def boot_chemotaxis(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
@@ -209,7 +223,7 @@ def boot_chemotaxis(agent_id, agent_type, agent_config):
 	simulation = Chemotaxis()
 	inner.simulation = simulation
 
-	time.sleep(5) # to give the environment long enough to boot
+	time.sleep(5)  # TODO(jerry): Wait for the Chemotaxis to boot
 
 	return inner
 
@@ -221,6 +235,7 @@ class BootEnvironment(BootAgent):
 			'lattice': boot_lattice,
 			'ecoli': boot_ecoli,
 			'chemotaxis': boot_chemotaxis,
+			'endocrine': boot_endocrine,
 			}
 
 if __name__ == '__main__':

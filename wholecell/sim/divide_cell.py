@@ -41,7 +41,7 @@ def divide_cell(sim):
 	sim_data = sim.get_sim_data()
 
 	# TODO (Eran): division should be based on both nutrient and gene perturbation condition
-	current_nutrients = sim.external_states['Environment'].nutrients
+	current_media_id = sim.external_states['Environment'].current_media_id
 
 	# Create the output directory
 	sim_out_dir = filepath.makedirs(sim._outputDir)
@@ -76,11 +76,10 @@ def divide_cell(sim):
 
 		# Create divided containers
 		d1_bulkMolCntr, d2_bulkMolCntr = divideBulkMolecules(
-			bulkMolecules, uniqueMolecules, randomState,
-			chromosome_division_results, sim_data)
+			bulkMolecules, randomState)
 		d1_uniqueMolCntr, d2_uniqueMolCntr, daughter_elng_rates = (
 			divideUniqueMolecules(uniqueMolecules, randomState,
-				chromosome_division_results, current_nutrients, sim))
+				chromosome_division_results, current_media_id, sim))
 
 	# Save the daughter initialization state.
 	# TODO(jerry): Include the variant_type and variant_index? The seed?
@@ -120,7 +119,6 @@ def chromosomeDivision(uniqueMolecules, randomState, no_child_place_holder):
 	# Read attributes of full chromosomes and chromosome domains
 	full_chromosomes = uniqueMolecules.container.objectsInCollection("fullChromosome")
 	domain_index_full_chroms = full_chromosomes.attr("domain_index")
-	full_chromosome_count = domain_index_full_chroms.size
 
 	chromosome_domains = uniqueMolecules.container.objectsInCollection("chromosome_domain")
 	domain_index_domains, child_domains = chromosome_domains.attrs(
@@ -132,23 +130,32 @@ def chromosomeDivision(uniqueMolecules, randomState, no_child_place_holder):
 
 	index = not d1_gets_first_chromosome
 	d1_domain_index_full_chroms = domain_index_full_chroms[index::2]
+	d2_domain_index_full_chroms = domain_index_full_chroms[~index::2]
 	d1_all_domain_indexes = get_descendent_domains(
 		d1_domain_index_full_chroms, domain_index_domains,
 		child_domains, no_child_place_holder
 		)
+	d2_all_domain_indexes = get_descendent_domains(
+		d2_domain_index_full_chroms, domain_index_domains,
+		child_domains, no_child_place_holder
+		)
+
+	# Check that the domains are being divided correctly
+	assert np.intersect1d(d1_all_domain_indexes, d2_all_domain_indexes).size == 0
+	assert d1_all_domain_indexes.size + d2_all_domain_indexes.size == domain_index_domains.size
 
 	d1_chromosome_count = d1_domain_index_full_chroms.size
-	d2_chromosome_count = full_chromosome_count - d1_chromosome_count
+	d2_chromosome_count = d2_domain_index_full_chroms.size
 
 	return {
 		"d1_all_domain_indexes": d1_all_domain_indexes,
+		"d2_all_domain_indexes": d2_all_domain_indexes,
 		"d1_chromosome_count": d1_chromosome_count,
 		"d2_chromosome_count": d2_chromosome_count,
 		}
 
 
-def divideBulkMolecules(bulkMolecules, uniqueMolecules, randomState,
-		chromosome_division_results, sim_data):
+def divideBulkMolecules(bulkMolecules, randomState):
 	"""
 	Divide bulk molecules into two daughter cells based on the division mode of
 	the molecule.
@@ -173,93 +180,11 @@ def divideBulkMolecules(bulkMolecules, uniqueMolecules, randomState,
 	# Check that no bulk molecules need to be divided equally
 	assert len(bulkMolecules.division_mode['equally']) == 0
 
-	# Calculate gene copy numbers for each chromosome from chromosome state
-	# Get total gene copy number
-	total_gene_counts = bulkMolecules.container.counts(
-		bulkMolecules.division_mode['geneCopyNumber'])
-
-	# Get coordinates of genes and existing replication forks
-	replicationCoordinate = sim_data.process.transcription.rnaData[
-		"replicationCoordinate"]
-	active_replisomes = uniqueMolecules.container.objectsInCollection(
-		"active_replisome")
-
-	# Get all domain indexes that should be moved to daughter 1
-	d1_all_domain_indexes = chromosome_division_results['d1_all_domain_indexes']
-
-	# Initialize gene counts for daughter 1 to one
-	d1_gene_counts = np.ones(len(replicationCoordinate), dtype=np.int64)
-
-	# Add to gene counts if there are active replication forks
-	if len(active_replisomes) > 0:
-		coordinates, right_replichore, domain_index = active_replisomes.attrs(
-			"coordinates", "right_replichore", "domain_index"
-			)
-
-		# Get indexes of d1 domains in domain_index
-		d1_domains_in_domain_index = np.where(np.in1d(domain_index, d1_all_domain_indexes))[0]
-
-		# Filter out attributes of replisomes that belong to daughter 1
-		d1_coordinates = coordinates[d1_domains_in_domain_index]
-		d1_right_replichore = right_replichore[d1_domains_in_domain_index]
-
-		forward_fork_coordinates = d1_coordinates[d1_right_replichore]
-		reverse_fork_coordinates = d1_coordinates[~d1_right_replichore]
-
-		assert len(forward_fork_coordinates) == len(reverse_fork_coordinates)
-
-		# Increment gene counts if gene is between two replication forks
-		for (forward, reverse) in izip(forward_fork_coordinates,
-				reverse_fork_coordinates):
-			d1_gene_counts[
-				np.logical_and(replicationCoordinate < forward,
-					replicationCoordinate > reverse)
-				] += 1
-
-	# Set gene copy numbers in daughter 2 by subtracting from total count
-	d2_gene_counts = total_gene_counts - d1_gene_counts
-
-	# Set gene copy numbers in daughter cells
-	d1_bulk_molecules_container.countsIs(d1_gene_counts,
-		bulkMolecules.division_mode['geneCopyNumber'])
-	d2_bulk_molecules_container.countsIs(d2_gene_counts,
-		bulkMolecules.division_mode['geneCopyNumber'])
-
-	# Divide bound TFs based on gene copy numbers for each chromosome
-	molecule_counts = bulkMolecules.container.counts(
-		bulkMolecules.division_mode['boundTF'])
-
-	# Bound TFs are first divided binomially. Since the number of bound TFs
-	# cannot be larger than the copy number of the target gene, the "overshoot"
-	# counts for each daughter are added to the counts for the other daughter.
-	d1_tf_counts = randomState.binomial(molecule_counts, p=BINOMIAL_COEFF)
-	d2_tf_counts = molecule_counts - d1_tf_counts
-
-	rna_index_to_bound_tf_mapping = sim_data.process.transcription_regulation.rna_index_to_bound_tf_mapping
-
-	d1_tf_overshoot = (
-		d1_tf_counts - d1_gene_counts[rna_index_to_bound_tf_mapping]
-		).clip(min=0)
-	d2_tf_overshoot = (
-		d2_tf_counts - d2_gene_counts[rna_index_to_bound_tf_mapping]
-		).clip(min=0)
-
-	d1_tf_counts = d1_tf_counts - d1_tf_overshoot + d2_tf_overshoot
-	d2_tf_counts = d2_tf_counts - d2_tf_overshoot + d1_tf_overshoot
-
-	assert np.all(d1_tf_counts + d2_tf_counts == molecule_counts)
-
-	# Set bound TF counts in daughter cells
-	d1_bulk_molecules_container.countsIs(d1_tf_counts,
-		bulkMolecules.division_mode['boundTF'])
-	d2_bulk_molecules_container.countsIs(d2_tf_counts,
-		bulkMolecules.division_mode['boundTF'])
-
 	return d1_bulk_molecules_container, d2_bulk_molecules_container
 
 
 def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_results,
-		current_nutrients, sim):
+		current_media_id, sim):
 	"""
 	Divides unique molecules of the mother cell to the two daughter cells. Each
 	class of unique molecules is divided in a different way.
@@ -278,8 +203,9 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 
 	uniqueMoleculesToDivide = deepcopy(uniqueMolecules.uniqueMoleculeDefinitions)
 
-	# Get indexes of chromosome domains assigned to first daughter
+	# Get indexes of chromosome domains assigned to each daughter
 	d1_all_domain_indexes = chromosome_division_results['d1_all_domain_indexes']
+	d2_all_domain_indexes = chromosome_division_results['d2_all_domain_indexes']
 
 	for molecule_name, molecule_attribute_dict in uniqueMoleculesToDivide.iteritems():
 
@@ -288,7 +214,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 		molecule_attribute_dict = uniqueMoleculesToDivide[molecule_name]
 		n_molecules = len(molecule_set)
 
-		if molecule_name in uniqueMolecules.division_modes['active_ribosome']:
+		if molecule_name in uniqueMolecules.division_mode['active_ribosome']:
 			# Binomially divide active ribosomes, but also set the ribosome
 			# elongation rates of daughter cells such that the two daughters
 			# have identical translational capacities.
@@ -298,7 +224,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 				# Read the ribosome elongation rate of the mother cell
 				polypeptide_elongation = sim.processes["PolypeptideElongation"]
 				elngRate = np.min([polypeptide_elongation.ribosomeElongationRateDict[
-					current_nutrients].asNumber(units.aa / units.s), 21.])
+					current_media_id].asNumber(units.aa / units.s), 21.])
 
 				# If growth rate noise is set to True, multiply noise parameter
 				# to translation capacity
@@ -337,39 +263,20 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 			else:
 				continue
 
-		elif molecule_name in uniqueMolecules.division_modes['domain_index']:
+		elif molecule_name in uniqueMolecules.division_mode['domain_index']:
 			# Divide molecules associated with chromosomes based on the index
 			# of the chromosome domains the molecules are associated with
 			if n_molecules > 0:
 				domain_index = molecule_set.attr("domain_index")
 
 				# Divide molecule based on their domain indexes
-				d1_bool = np.zeros(n_molecules, dtype=bool)
-				for index in d1_all_domain_indexes:
-					d1_bool = np.logical_or(d1_bool, domain_index == index)
-				d2_bool = np.logical_not(d1_bool)
+				d1_bool = np.isin(domain_index, d1_all_domain_indexes)
+				d2_bool = np.isin(domain_index, d2_all_domain_indexes)
 
 				n_d1 = d1_bool.sum()
 				n_d2 = d2_bool.sum()
-			else:
-				continue
 
-		elif molecule_name in uniqueMolecules.division_modes['binomial']:
-			# Binomially divide molecules with binomial division modes.
-			# Currently, only the active RNA polymerase is divided in this way.
-			if n_molecules > 0:
-				n_d1 = randomState.binomial(n_molecules,
-					p=BINOMIAL_COEFF)
-				n_d2 = n_molecules - n_d1
-
-				# Randomly index molecules in the mother cell with a boolean
-				# value such that each daughter gets amount calculated above
-				d1_bool = np.zeros(n_molecules, dtype=bool)
-				d1_indexes = randomState.choice(
-					range(n_molecules), size=n_d1, replace=False
-					)
-				d1_bool[d1_indexes] = True
-				d2_bool = np.logical_not(d1_bool)
+				assert n_molecules == n_d1 + n_d2
 			else:
 				continue
 

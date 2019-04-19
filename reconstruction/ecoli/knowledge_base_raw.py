@@ -18,6 +18,7 @@ from wholecell.utils import units  # used by eval()
 
 CSV_DIALECT = csv.excel_tab
 FLAT_DIR = os.path.join(os.path.dirname(__file__), "flat")
+ENV_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "environment")
 LIST_OF_DICT_FILENAMES = (
 	"biomass.tsv",
 	"compartments.tsv",
@@ -73,56 +74,6 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("rna_seq_data","rnaseq_seal_rpkm_std.tsv"),
 	os.path.join("condition", "tf_condition.tsv"),
 	os.path.join("condition", "condition_defs.tsv"),
-	os.path.join("condition", "environment_molecules.tsv"),
-	os.path.join("condition", "media", "minimal.tsv"),
-	os.path.join("condition", "media", "minimal_acetate.tsv"),
-	os.path.join("condition", "media", "minimal_fumarate.tsv"),
-	os.path.join("condition", "media", "minimal_malate.tsv"),
-	os.path.join("condition", "media", "minimal_minus_calcium.tsv"),
-	os.path.join("condition", "media", "minimal_minus_magnesium.tsv"),
-	os.path.join("condition", "media", "minimal_minus_oxygen.tsv"),
-	os.path.join("condition", "media", "minimal_minus_phosphate.tsv"),
-	os.path.join("condition", "media", "minimal_no_glucose.tsv"),
-	os.path.join("condition", "media", "minimal_plus_amino_acids.tsv"),
-	os.path.join("condition", "media", "minimal_plus_cytidine.tsv"),
-	os.path.join("condition", "media", "minimal_plus_ferric.tsv"),
-	os.path.join("condition", "media", "minimal_plus_gallate.tsv"),
-	os.path.join("condition", "media", "minimal_plus_indole.tsv"),
-	os.path.join("condition", "media", "minimal_plus_nitrate.tsv"),
-	os.path.join("condition", "media", "minimal_plus_nitrite.tsv"),
-	os.path.join("condition", "media", "minimal_plus_quercetin.tsv"),
-	os.path.join("condition", "media", "minimal_plus_tungstate.tsv"),
-	os.path.join("condition", "media", "minimal_succinate.tsv"),
-	os.path.join("condition", "media", "minimal_plus_sam.tsv"),
-	os.path.join("condition", "media", "minimal_plus_arabinose.tsv"),
-	os.path.join("condition", "timeseries", "000000_basal.tsv"),
-	os.path.join("condition", "timeseries", "000001_cut_glucose.tsv"),
-	os.path.join("condition", "timeseries", "000002_add_aa.tsv"),
-	os.path.join("condition", "timeseries", "000003_aa.tsv"),
-	os.path.join("condition", "timeseries", "000004_oxygen_absent.tsv"),
-	os.path.join("condition", "timeseries", "000005_indole_present.tsv"),
-	os.path.join("condition", "timeseries", "000006_tungstate_present.tsv"),
-	os.path.join("condition", "timeseries", "000007_quercetin_present.tsv"),
-	os.path.join("condition", "timeseries", "000008_gallate_present.tsv"),
-	os.path.join("condition", "timeseries", "000009_succinate_carbon_source.tsv"),
-	os.path.join("condition", "timeseries", "000010_acetate_carbon_source.tsv"),
-	os.path.join("condition", "timeseries", "000011_fumarate_carbon_source.tsv"),
-	os.path.join("condition", "timeseries", "000012_malate_carbon_source.tsv"),
-	os.path.join("condition", "timeseries", "000013_nitrate_present.tsv"),
-	os.path.join("condition", "timeseries", "000014_nitrite_present.tsv"),
-	os.path.join("condition", "timeseries", "000015_calcium_absent.tsv"),
-	os.path.join("condition", "timeseries", "000016_magnesium_absent.tsv"),
-	os.path.join("condition", "timeseries", "000017_phosphate_absent.tsv"),
-	os.path.join("condition", "timeseries", "000018_cut_oxygen.tsv"),
-	os.path.join("condition", "timeseries", "000019_add_arabinose.tsv"),
-	os.path.join("condition", "timeseries", "000020_add_oxygen.tsv"),
-	os.path.join("condition", "timeseries", "000021_add_indole.tsv"),
-	os.path.join("condition", "timeseries", "000022_cut_indole.tsv"),
-	os.path.join("condition", "timeseries", "000023_add_calcium.tsv"),
-	os.path.join("condition", "timeseries", "000024_cut_calcium.tsv"),
-	os.path.join("condition", "timeseries", "000025_cut_aa.tsv"),
-	os.path.join("condition", "timeseries", "000026_add_and_cut_aa.tsv"),
-	os.path.join("condition", "timeseries", "000027_example.tsv"),
 	os.path.join("common_names", "genes.tsv"),
 	os.path.join("common_names", "metabolites.tsv"),
 	os.path.join("common_names", "mrna.tsv"),
@@ -130,6 +81,14 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("common_names", "protein-complexes.tsv"),
 	os.path.join("common_names", "reactions.tsv"),
 	os.path.join("common_names", "rnas.tsv"),
+	)
+LIST_OF_ENV_FILENAMES = (
+	os.path.join("condition", "environment_molecules.tsv"),
+	os.path.join("condition", "timelines_def.tsv"),
+	os.path.join("condition", "media_recipes.tsv"),
+	os.path.join("condition", "media", "M9.tsv"),
+	os.path.join("condition", "media", "M9_GLC.tsv"),
+	os.path.join("condition", "media", "5X_supplement_EZ.tsv"),
 	)
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = ("parameters.tsv", "mass_parameters.tsv")
@@ -145,7 +104,10 @@ class KnowledgeBaseEcoli(object):
 	def __init__(self):
 		# Load raw data from TSV files
 		for filename in LIST_OF_DICT_FILENAMES:
-			self._load_tsv(os.path.join(FLAT_DIR, filename))
+			self._load_tsv(FLAT_DIR, os.path.join(FLAT_DIR, filename))
+
+		for filename in LIST_OF_ENV_FILENAMES:
+			self._load_tsv(ENV_DIR, os.path.join(ENV_DIR, filename))
 
 		for filename in LIST_OF_PARAMETER_FILENAMES:
 			self._load_parameters(os.path.join(FLAT_DIR, filename))
@@ -153,9 +115,9 @@ class KnowledgeBaseEcoli(object):
 
 		self.genome_sequence = self._load_sequence(os.path.join(FLAT_DIR, SEQUENCE_FILE))
 
-	def _load_tsv(self, file_name):
+	def _load_tsv(self, dir_name, file_name):
 		path = self
-		for subPath in file_name[len(FLAT_DIR) + 1 : ].split(os.path.sep)[:-1]:
+		for subPath in file_name[len(dir_name) + 1 : ].split(os.path.sep)[:-1]:
 			if not hasattr(path, subPath):
 				setattr(path, subPath, DataStore())
 			path = getattr(path, subPath)

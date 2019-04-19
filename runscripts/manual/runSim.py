@@ -50,7 +50,7 @@ class RunSimulation(scriptBase.ScriptBase):
 		super(RunSimulation, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)
 
-		parser.add_argument('-v', '--variant', nargs=3,
+		parser.add_argument('-v', '--variant', nargs=3, default=['wildtype', '0', '0'],
 			metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'),
 			help='The variant type name, first index, and last index. See'
 				 ' models/ecoli/sim/variants/__init__.py for the possible'
@@ -62,6 +62,11 @@ class RunSimulation(scriptBase.ScriptBase):
 			)
 		parser.add_argument('-s', '--seed', type=int, default=0,
 			help='Cell simulation seed. Default = 0'
+			)
+		parser.add_argument('-t', '--timeline', type=str, default='0 minimal',
+			help='set timeline. Default = "0 minimal". See'
+				 ' environment/condition/make_media.py, make_timeline() for'
+				 ' timeline formatting details'
 			)
 		add_option('length_sec', 'lengthSec', int,
 			help='The maximum simulation time, in seconds. Useful for short'
@@ -107,9 +112,6 @@ class RunSimulation(scriptBase.ScriptBase):
 		args = super(RunSimulation, self).parse_args()
 		args.sim_path = scriptBase.find_sim_path(args.sim_dir)
 
-		if not args.variant:
-			args.variant = ['wildtype', '0', '0']
-
 		return args
 
 	def run(self, args):
@@ -124,13 +126,14 @@ class RunSimulation(scriptBase.ScriptBase):
 
 		# Write the metadata file.
 		metadata = {
-			"git_hash":           fp.run_cmdline("git rev-parse HEAD"),
-			"git_branch":         fp.run_cmdline("git symbolic-ref --short HEAD"),
+			"git_hash":           fp.run_cmdline("git rev-parse HEAD") or 'container',
+			"git_branch":         fp.run_cmdline("git symbolic-ref --short HEAD") or 'container',
 			"description":        "a manual run",
 			"time":               fp.timestamp(),
 			"total_gens":         args.generations,
 			"analysis_type":      None,
 			"variant":            variant_type,
+			"timeline":           args.timeline,
 			"mass_distribution":  args.mass_distribution,
 			"growth_rate_noise":  args.growth_rate_noise,
 			"d_period_division":  args.d_period_division,
@@ -179,6 +182,7 @@ class RunSimulation(scriptBase.ScriptBase):
 				options = dict(
 					input_sim_data=variant_sim_data_modified_file,
 					output_directory=cell_sim_out_directory,
+					timeline=args.timeline,
 					seed=j,
 					length_sec=args.length_sec,
 					timestep_safety_frac=args.timestep_safety_frac,
