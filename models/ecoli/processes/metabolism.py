@@ -216,6 +216,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.aa_names = sim_data.moleculeGroups.aaIDs
 		self.aas = self.bulkMoleculesView(self.aa_names)
 
+		self.use_trna_charging = sim._trna_charging
+
 	def calculateRequest(self):
 		self.metabolites.requestAll()
 		self.catalysts.requestAll()
@@ -245,19 +247,20 @@ class Metabolism(wholecell.processes.process.Process):
 			self.nutrientToDoublingTime.get(current_media, self.nutrientToDoublingTime["minimal"])
 			)
 
-		if len(self._sim.processes['PolypeptideElongation'].aa_conc_diff):
-			for aa, diff in self._sim.processes['PolypeptideElongation'].aa_conc_diff.items():
-				if aa == 'L-SELENOCYSTEINE[c]':
-					continue
-				new_target = CONC_UNITS * self.aa_targets[aa] + diff
-				if new_target.asNumber() < 0:
-					new_target = (1 * countsToMolar).asNumber(CONC_UNITS)
-				self.concModificationsBasedOnCondition[aa] = new_target
-		else:
-			for aa, conc in self.aa_targets.items():
-				if aa == 'L-SELENOCYSTEINE[c]':
-					continue
-				self.concModificationsBasedOnCondition[aa] = CONC_UNITS * conc
+		if self.use_trna_charging:
+			if len(self._sim.processes['PolypeptideElongation'].aa_conc_diff):
+				for aa, diff in self._sim.processes['PolypeptideElongation'].aa_conc_diff.items():
+					if aa == 'L-SELENOCYSTEINE[c]':
+						continue
+					new_target = CONC_UNITS * self.aa_targets[aa] + diff
+					if new_target.asNumber() < 0:
+						new_target = (1 * countsToMolar).asNumber(CONC_UNITS)
+					self.concModificationsBasedOnCondition[aa] = new_target
+			else:
+				for aa, conc in self.aa_targets.items():
+					if aa == 'L-SELENOCYSTEINE[c]':
+						continue
+					self.concModificationsBasedOnCondition[aa] = CONC_UNITS * conc
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)

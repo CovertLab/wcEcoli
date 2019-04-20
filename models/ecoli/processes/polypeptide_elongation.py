@@ -366,15 +366,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			# since a peptide bond doesn't form
 			self.proton.countInc(nElongations)
 			self.water.countDec(nInitialized)
+
+			aa_diff = self.aa_supply - np.dot(self.aa_from_trna, total_charging_reactions)
+			self.aa_conc_diff = {aa: self.counts_to_molar * diff for aa, diff in zip(self.aaNames, aa_diff)}
 		else:
 			# Update counts of amino acids and water to reflect polymerization reactions
 			self.aas.countsDec(aas_used)
 			self.water.countInc(nElongations - nInitialized)
 			net_charged = np.zeros(len(self.uncharged_trna_names))
-
-		aa_diff = self.aa_supply - np.dot(self.aa_from_trna, total_charging_reactions)
-		self.aa_conc_diff = {aa: self.counts_to_molar * diff for aa, diff in zip(self.aaNames, aa_diff)}
-
 
 		# Write data to listeners
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
