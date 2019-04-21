@@ -34,7 +34,8 @@ class ShepherdControl(AgentControl):
 			current_timeline = make_media.make_timeline(timeline)
 			media_id = current_timeline[0][1]
 		else:
-			current_timeline = '0 ' + media_id
+			timeline = '0 ' + media_id
+			current_timeline = make_media.make_timeline(timeline)
 		media = make_media.make_recipe(media_id)
 
 		lattice_config = {
