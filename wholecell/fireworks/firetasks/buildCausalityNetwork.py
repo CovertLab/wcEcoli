@@ -7,12 +7,10 @@ from __future__ import absolute_import, division, print_function
 import importlib
 import os
 import time
-import traceback
 
 from fireworks import FireTaskBase, explicit_serialize
 from models.ecoli.analysis.causality_network.build_network import BuildNetwork
 from models.ecoli.analysis.causality_network.network_components import NODELIST_FILENAME, NODELIST_JSON, DYNAMICS_FILENAME
-import models.ecoli.analysis.causality_network
 
 
 @explicit_serialize
