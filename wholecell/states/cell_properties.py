@@ -5,6 +5,7 @@ import numpy as np
 
 import wholecell.states.internal_state
 import wholecell.views.view
+from wholecell.utils import units
 
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
@@ -28,8 +29,18 @@ class CellProperties(wholecell.states.internal_state.InternalState):
 		super(CellProperties, self).initialize(sim, sim_data)
 
 		self._processIDs = sim.processes.keys()
+		self.internal_states = sim.internal_states
 
-		# initialize molecule IDs and concentrations
+		# load constants
+		self.nAvogadro = sim_data.constants.nAvogadro
+		self.cellDensity = sim_data.constants.cellDensity #.asNumber(units.g / units.L)
+
+		# initialize properties
+		self.cellMass = 0.0 * units.fg
+		self.volume = self.cellMass / self.cellDensity
+		self.countsToMolar = 0.0 #1.0 / (self.nAvogadro * self.volume)
+
+		# initialize properties IDs and values
 		self.property_ids = []
 		self.property_values = np.array([])
 
@@ -41,8 +52,14 @@ class CellProperties(wholecell.states.internal_state.InternalState):
 	def update(self):
 		'''update cell properties'''
 
-		# TODO -- update cellMass, volume, countsToMolar
+		# update cellMass, volume, countsToMolar
+		masses = sum(state.mass() for state in self.internal_states.itervalues())
+		postEvolveMasses = masses[1, ...]
+		self.cellMass = postEvolveMasses.sum() # sum over all dimensions
+		self.volume = self.cellMass / self.cellDensity
+		self.countsToMolar = 1 / (self.nAvogadro * self.volume)
 
+		# TODO -- property values in container
 
 	def calculatePreEvolveStateMass(self):
 		pass

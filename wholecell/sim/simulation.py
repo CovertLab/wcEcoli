@@ -320,11 +320,11 @@ class Simulation(CellSimulation):
 		for state in self.internal_states.itervalues():
 			state.calculatePostEvolveStateMass()
 
-		# update environment state
+		# Update environment state
 		for state in self.external_states.itervalues():
 			state.update()
 
-		# update cell properties
+		# Update cell properties
 		for state in self.internal_states.itervalues():
 			state.update()
 
