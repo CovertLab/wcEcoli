@@ -138,7 +138,7 @@ class CellPropertiesView(CellPropertiesViewBase):
 		super(CellPropertiesView, self).__init__(*args, **kwargs)
 
 		# State references
-		assert len(set(self._query)) == len(self._query), "Environment views cannot contain duplicate entries"
+		assert len(set(self._query)) == len(self._query), "cell property views cannot contain duplicate entries"
 		self._containerIndexes = self._state.container._namesToIndexes(self._query)
 
 	def _dataSize(self):
@@ -147,7 +147,7 @@ class CellPropertiesView(CellPropertiesViewBase):
 	def allValues(self):
 		return self._allValues()
 
-	def countsInc(self, molecule_ids, counts):
-		# self._state._environment_deltas = counts
-		# self._state.accumulate_deltas(molecule_ids, counts)
-		return
+	# def countsInc(self, molecule_ids, counts):
+	# 	# self._state._environment_deltas = counts
+	# 	# self._state.accumulate_deltas(molecule_ids, counts)
+	# 	return
