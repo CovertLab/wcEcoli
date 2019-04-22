@@ -191,6 +191,16 @@ class Metabolism(wholecell.processes.process.Process):
 		self.kineticsEnzymes = self.bulkMoleculesView(self.kineticsEnzymesList)
 		self.kineticsSubstrates = self.bulkMoleculesView(self.kineticsSubstratesList)
 
+		# views on cell properties
+		self.property_ids = [
+			'cell_mass',
+			'dry_mass',
+			'volume',
+			'counts_to_molar',
+			 ]
+
+		self.cell_properties = self.cellPropertiesView(self.property_ids)
+
 		outputMoleculeIDs = self.fba.getOutputMoleculeIDs()
 
 		assert outputMoleculeIDs == self.fba.getInternalMoleculeIDs()
@@ -217,11 +227,12 @@ class Metabolism(wholecell.processes.process.Process):
 	def evolveState(self):
 		metaboliteCountsInit = self.metabolites.counts()
 
-		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
-		dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
+		# TODO -- initialize cell_properties values
+		cell_properties = self.cell_properties.allValues()
 
-		cellVolume = cellMass / self.cellDensity
-		countsToMolar = 1 / (self.nAvogadro * cellVolume)
+		cellMass = cell_properties[self.property_ids.index('cell_mass')]
+		dryMass = cell_properties[self.property_ids.index('dry_mass')]
+		countsToMolar = cell_properties[self.property_ids.index('counts_to_molar')]
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)

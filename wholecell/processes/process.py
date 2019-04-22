@@ -82,6 +82,11 @@ class Process(object):
 			self._internal_states['BulkMolecules'], self, moleculeIDs)
 
 
+	def bulkMoleculeView(self, moleculeIDs):
+		return wholecell.states.bulk_molecules.BulkMoleculeView(
+			self._internal_states['BulkMolecules'], self, moleculeIDs)
+
+
 	def uniqueMoleculesView(self, moleculeName):
 		return wholecell.states.unique_molecules.UniqueMoleculesView(
 			self._internal_states['UniqueMolecules'], self, moleculeName)
