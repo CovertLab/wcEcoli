@@ -19,6 +19,7 @@ import warnings
 import wholecell.states.bulk_molecules
 import wholecell.states.unique_molecules
 import wholecell.states.local_environment
+import wholecell.states.cell_properties
 import numpy as np
 
 from wholecell.listeners.listener import WriteMethod
@@ -81,14 +82,14 @@ class Process(object):
 			self._internal_states['BulkMolecules'], self, moleculeIDs)
 
 
-	def bulkMoleculeView(self, moleculeIDs):
-		return wholecell.states.bulk_molecules.BulkMoleculeView(
-			self._internal_states['BulkMolecules'], self, moleculeIDs)
-
-
 	def uniqueMoleculesView(self, moleculeName):
 		return wholecell.states.unique_molecules.UniqueMoleculesView(
 			self._internal_states['UniqueMolecules'], self, moleculeName)
+
+
+	def cellPropertiesView(self, property_ids):
+		return wholecell.states.cell_properties.CellPropertiesView(
+			self._internal_states['CellProperties'], self, property_ids)
 
 
 	# Communicate with listeners
