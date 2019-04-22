@@ -19,8 +19,8 @@ class CellProperties(wholecell.states.internal_state.InternalState):
 
 	def __init__(self, *args, **kwargs):
 		self.container = None
-		self._moleculeIDs = None
-		self._concentrations = None
+		self.property_ids = None
+		self.property_values = None
 
 		super(CellProperties, self).__init__(*args, **kwargs)
 
@@ -30,20 +30,28 @@ class CellProperties(wholecell.states.internal_state.InternalState):
 		self._processIDs = sim.processes.keys()
 
 		# initialize molecule IDs and concentrations
-		self._moleculeIDs = []
-		self._concentrations = np.array([])
+		self.property_ids = []
+		self.property_values = np.array([])
 
 		# create bulk container for molecule concentrations. This uses concentrations instead of counts.
-		self.container = BulkObjectsContainer(self._moleculeIDs, dtype=np.float64)
-		self.container.countsIs(self._concentrations)
+		self.container = BulkObjectsContainer(self.property_ids, dtype=np.float64)
+		self.container.countsIs(self.property_values)
+
+
+	def update(self):
+		'''update cell properties'''
+
+		# TODO -- update cellMass, volume, countsToMolar
 
 
 	def calculatePreEvolveStateMass(self):
 		pass
 
+
 	def calculatePostEvolveStateMass(self):
 		pass
-	
+
+
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)
 		tableWriter.writeAttributes()

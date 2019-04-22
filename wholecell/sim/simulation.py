@@ -324,6 +324,10 @@ class Simulation(CellSimulation):
 		for state in self.external_states.itervalues():
 			state.update()
 
+		# update cell properties
+		for state in self.internal_states.itervalues():
+			state.update()
+
 		# Update listeners
 		for listener in self.listeners.itervalues():
 			listener.update()
