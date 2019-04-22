@@ -227,12 +227,11 @@ class Metabolism(wholecell.processes.process.Process):
 	def evolveState(self):
 		metaboliteCountsInit = self.metabolites.counts()
 
-		# TODO -- initialize cell_properties values
+		# get cell_properties values
 		cell_properties = self.cell_properties.allValues()
-
-		cellMass = cell_properties[self.property_ids.index('cell_mass')]
-		dryMass = cell_properties[self.property_ids.index('dry_mass')]
-		countsToMolar = cell_properties[self.property_ids.index('counts_to_molar')]
+		cellMass = cell_properties[self.property_ids.index('cell_mass')] * units.fg
+		dryMass = cell_properties[self.property_ids.index('dry_mass')] * units.fg
+		countsToMolar = cell_properties[self.property_ids.index('counts_to_molar')] * (units.mol / units.L)
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
