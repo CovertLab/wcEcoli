@@ -28,38 +28,55 @@ class CellProperties(wholecell.states.internal_state.InternalState):
 	def initialize(self, sim, sim_data):
 		super(CellProperties, self).initialize(sim, sim_data)
 
-		self._processIDs = sim.processes.keys()
+		# self._processIDs = sim.processes.keys()
+
 		self.internal_states = sim.internal_states
 
 		# load constants
-		self.nAvogadro = sim_data.constants.nAvogadro
-		self.cellDensity = sim_data.constants.cellDensity #.asNumber(units.g / units.L)
+		self.nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		self.cell_density = sim_data.constants.cellDensity.asNumber(units.g / units.L)
 
 		# initialize properties
-		self.cellMass = 0.0 * units.fg
-		self.volume = self.cellMass / self.cellDensity
-		self.countsToMolar = 0.0 #1.0 / (self.nAvogadro * self.volume)
+		self.cell_mass = 0.0
+		self.volume = self.cell_mass / self.cell_density
+		self.counts_to_molar = 0.0  # (units.g * units.mol / units.L)
+		# self.counts_to_molar = 1.0 / (self.nAvogadro * self.volume)
 
 		# initialize properties IDs and values
-		self.property_ids = []
-		self.property_values = np.array([])
+		self.property_ids = [
+			'cell_mass',
+			'volume',
+			'counts_to_molar',
+			 ]
+		self.property_values = np.array([
+			self.cell_mass,
+			self.volume,
+			self.counts_to_molar,
+		])
 
-		# create bulk container for molecule concentrations. This uses concentrations instead of counts.
+		# create bulk container for property values.
 		self.container = BulkObjectsContainer(self.property_ids, dtype=np.float64)
 		self.container.countsIs(self.property_values)
 
 
 	def update(self):
-		'''update cell properties'''
 
-		# update cellMass, volume, countsToMolar
+		# update cell_mass, volume, countsToMolar
 		masses = sum(state.mass() for state in self.internal_states.itervalues())
 		postEvolveMasses = masses[1, ...]
-		self.cellMass = postEvolveMasses.sum() # sum over all dimensions
-		self.volume = self.cellMass / self.cellDensity
-		self.countsToMolar = 1 / (self.nAvogadro * self.volume)
+		self.cell_mass = postEvolveMasses.sum() # sum over all dimensions
+		self.volume = self.cell_mass / self.cell_density
+		self.counts_to_molar = 1 / (self.nAvogadro * self.volume)
 
-		# TODO -- property values in container
+		self.property_values = np.array([
+			self.cell_mass,
+			self.volume,
+			self.counts_to_molar,
+		])
+
+		# update property values in container
+		self.container.countsIs(self.property_values)
+
 
 	def calculatePreEvolveStateMass(self):
 		pass
