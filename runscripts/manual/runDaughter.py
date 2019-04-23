@@ -13,7 +13,7 @@ from __future__ import absolute_import, division, print_function
 import errno
 import os
 
-from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask
+from wholecell.fireworks.firetasks import SimulationDaughterTask
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants, scriptBase
 import wholecell.utils.filepath as fp
