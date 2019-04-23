@@ -415,6 +415,21 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			v_rib (float) - ribosomal elongation rate in units of uM/s
 		'''
 
+		def negative_check(trna1, trna2):
+			'''
+			Check for floating point precision issues that can lead to small
+			negative numbers instead of 0 and adjusts both species of tRNA to
+			bring concentration to 0 and keep the same total concentration.
+
+			Args:
+				trna1 (ndarray[float]): concentration of one tRNA species (charged or uncharged)
+				trna2 (ndarray[float]): concentration of another tRNA species (charged or uncharged)
+			'''
+
+			mask = trna1 < 0
+			trna2[mask] = trna1[mask] + trna2[mask]
+			trna1[mask] = 0
+
 		def dcdt(c, t):
 			'''
 			Function for odeint to integrate
@@ -462,6 +477,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Determine new values from integration results
 		uncharged_trna_conc = sol[-1, :n_aas]
 		charged_trna_conc = sol[-1, n_aas:]
+		negative_check(uncharged_trna_conc, charged_trna_conc)
+		negative_check(charged_trna_conc, uncharged_trna_conc)
+
 		fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
 		numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
 		v_rib = self.maxRibosomeElongationRate * ribosome_conc / numerator_ribosome
