@@ -54,6 +54,7 @@ class Process(object):
 
 		self._internal_states = sim.internal_states
 		self._external_states = sim.external_states
+		self._derived_states = sim.derived_states
 
 
 	# Set state partitioning options
@@ -94,7 +95,7 @@ class Process(object):
 
 	def cellPropertiesView(self, property_ids):
 		return wholecell.states.cell_properties.CellPropertiesView(
-			self._internal_states['CellProperties'], self, property_ids)
+			self._derived_states['CellProperties'], self, property_ids)
 
 
 	# Communicate with listeners

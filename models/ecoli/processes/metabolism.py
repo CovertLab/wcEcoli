@@ -231,6 +231,7 @@ class Metabolism(wholecell.processes.process.Process):
 		cell_properties = self.cell_properties.allValues()
 		cellMass = cell_properties[self.property_ids.index('cell_mass')] * units.fg
 		dryMass = cell_properties[self.property_ids.index('dry_mass')] * units.fg
+		cellVolume = cell_properties[self.property_ids.index('volume')] * (units.L)
 		countsToMolar = cell_properties[self.property_ids.index('counts_to_molar')] * (units.mol / units.L)
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis

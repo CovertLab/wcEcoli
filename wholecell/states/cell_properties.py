@@ -35,15 +35,13 @@ class CellProperties(wholecell.states.internal_state.InternalState):
 		# load constants
 		self.nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / units.mol)
 		self.waterIndex = sim_data.submassNameToIndex["water"]
-		self.cell_density = sim_data.constants.cellDensity.asNumber(units.g / units.L)
+		self.cell_density = sim_data.constants.cellDensity.asNumber(units.fg / units.L)
 
 		# initialize properties
-		# TODO -- these need to be initialized to the correct value
-		self.cell_mass = 1339.0
-		self.dry_mass = 403.0
-		self.volume = self.cell_mass / self.cell_density
-		# self.counts_to_molar = 1.0  # (units.g * units.mol / units.L)
-		self.counts_to_molar = 1.0 / (self.nAvogadro * self.volume)
+		self.cell_mass = 0.0
+		self.dry_mass = 0.0
+		self.volume = 0.0
+		self.counts_to_molar = 0.0
 
 		# initialize properties IDs and values
 		self.property_ids = [
@@ -76,7 +74,7 @@ class CellProperties(wholecell.states.internal_state.InternalState):
 		self.water_mass = submasses[self.waterIndex]
 		self.dry_mass = self.cell_mass - self.water_mass
 
-		self.volume = self.cell_mass / self.cell_density
+		self.volume = self.cell_mass / self.cell_density  #
 		self.counts_to_molar = 1 / (self.nAvogadro * self.volume)
 
 		self.property_values = np.array([

@@ -69,6 +69,7 @@ class Simulation(CellSimulation):
 	_definedBySubclass = (
 		"_internalStateClasses",
 		"_externalStateClasses",
+		"_derivedStateClasses",
 		"_processClasses",
 		"_initialConditionsFunction",
 		)
@@ -132,6 +133,7 @@ class Simulation(CellSimulation):
 		# self._timeStepSec = self._timeStepSec
 		self.internal_states = _orderedAbstractionReference(self._internalStateClasses)
 		self.external_states = _orderedAbstractionReference(self._externalStateClasses)
+		self.derived_states = _orderedAbstractionReference(self._derivedStateClasses)
 		self.processes = _orderedAbstractionReference(self._processClasses)
 		self.listeners = _orderedAbstractionReference(self._listenerClasses + DEFAULT_LISTENER_CLASSES)
 		self.hooks = _orderedAbstractionReference(self._hookClasses)
@@ -146,6 +148,13 @@ class Simulation(CellSimulation):
 			internal_state.randomState = np.random.RandomState(seed=internal_state.seed)
 
 			internal_state.initialize(self, sim_data)
+
+		for state_name, derived_state in self.derived_states.iteritems():
+			# initialize random streams
+			derived_state.seed = self._seedFromName(state_name)
+			derived_state.randomState = np.random.RandomState(seed=derived_state.seed)
+
+			derived_state.initialize(self, sim_data)
 
 		for external_state in self.external_states.itervalues():
 			external_state.initialize(self, sim_data, self._timeline)
@@ -183,6 +192,9 @@ class Simulation(CellSimulation):
 		for state in self.internal_states.itervalues():
 			state.calculatePreEvolveStateMass()
 			state.calculatePostEvolveStateMass()
+
+		for state_name, derived_state in self.derived_states.iteritems():
+			derived_state.update()
 
 		# Update environment state according to the current time in time series
 		for external_state in self.external_states.itervalues():
@@ -325,7 +337,7 @@ class Simulation(CellSimulation):
 			state.update()
 
 		# Update cell properties
-		for state in self.internal_states.itervalues():
+		for state in self.derived_states.itervalues():
 			state.update()
 
 		# Update listeners

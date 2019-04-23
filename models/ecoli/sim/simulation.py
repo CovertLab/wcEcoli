@@ -46,11 +46,14 @@ class EcoliSimulation(Simulation):
 	_internalStateClasses = (
 		BulkMolecules,
 		UniqueMolecules,
-		CellProperties,
 		)
 
 	_externalStateClasses = (
 		LocalEnvironment,
+		)
+
+	_derivedStateClasses = (
+		CellProperties,
 		)
 
 	_processClasses = (
