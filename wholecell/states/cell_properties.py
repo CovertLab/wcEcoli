@@ -88,14 +88,6 @@ class CellProperties(wholecell.states.internal_state.InternalState):
 		self.container.countsIs(self.property_values)
 
 
-	def calculatePreEvolveStateMass(self):
-		pass
-
-
-	def calculatePostEvolveStateMass(self):
-		pass
-
-
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)
 		tableWriter.writeAttributes()

@@ -81,10 +81,6 @@ class InternalState(object):
 		pass
 
 
-	def update(self):
-		pass
-
-
 	def calculatePreEvolveStateMass(self):
 		raise NotImplementedError("Subclass must implement")
 
