@@ -150,10 +150,6 @@ class Simulation(CellSimulation):
 			internal_state.initialize(self, sim_data)
 
 		for state_name, derived_state in self.derived_states.iteritems():
-			# initialize random streams
-			derived_state.seed = self._seedFromName(state_name)
-			derived_state.randomState = np.random.RandomState(seed=derived_state.seed)
-
 			derived_state.initialize(self, sim_data)
 
 		for external_state in self.external_states.itervalues():
