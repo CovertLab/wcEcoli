@@ -1,13 +1,14 @@
-# This is the Dockerfile for building the environment for the whole cell model. It stops just
-# short of copying in the `wcEcoli` code.
+# Container image #1: wcm-runtime.
+# This Dockerfile builds the runtime environment for the whole cell model.
 #
-# To build locally, execute the following command in the root level wcEcoli directory:
+# To build locally in the wcEcoli/ project root directory:
 #
 #     > docker build -f cloud/docker/base/Dockerfile -t wcm-runtime .
 #
-# To build using gcloud container service in this directory:
+# To build using the Cloud Build service and store in the Container Registry, in
+# the project root directory:
 #
-#     > gcloud builds submit --timeout=2h --tag gcr.io/allen-discovery-center-mcovert/wcm-runtime .
+#     > gcloud builds submit --timeout=2h --config cloudbuild1-runtime.json
 
 FROM python:2.7.15-alpine
 
@@ -35,9 +36,15 @@ ENV CVXOPT_BUILD_GLPK=1 \
     CVXOPT_GLPK_LIB_DIR=/usr/local/lib \
     CVXOPT_GLPK_INC_DIR=/usr/local/include \
     CVXOPT_BLAS_LIB=openblas \
-    CVXOPT_LAPACK_LIB=openblas
+    CVXOPT_LAPACK_LIB=openblas \
+    OPENBLAS_NUM_THREADS=1
+
+RUN echo "[openblas]" > ~/.numpy-site.cfg \
+    && echo "libraries = openblas" >> ~/.numpy-site.cfg \
+    && echo "library_dirs = /usr/lib" >> ~/.numpy-site.cfg \
+    && echo "include_dirs = /usr/include" >> ~/.numpy-site.cfg
 
 # Install all the pips within one Docker layer and don't cache the downloads.
 COPY requirements.txt /
-RUN pip install --no-cache-dir 'numpy==1.14.5' \
-    && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir 'numpy==1.14.5' --no-binary numpy \
+    && pip install --no-cache-dir -r requirements.txt --no-binary numpy,scipy,cvxopt
