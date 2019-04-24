@@ -94,7 +94,12 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		# Determine sequences that can be elongated
 		rnaIndexes, transcriptLengths, massDiffRna = activeRnaPolys.attrs('rnaIndex', 'transcriptLength', 'massDiff_mRNA')
-		sequences = buildSequences(self.rnaSequences, rnaIndexes, transcriptLengths, elongation_rates)
+		sequences = buildSequences(
+			self.rnaSequences,
+			rnaIndexes,
+			transcriptLengths,
+			self.elongation_rates)
+
 		ntpCountInSequence = np.bincount(sequences[sequences != polymerize.PAD_VALUE], minlength = 4)
 
 		# Polymerize transcripts based on sequences and available nucleotides

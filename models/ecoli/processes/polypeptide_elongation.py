@@ -130,8 +130,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Build sequences to request appropriate amount of amino acids to
 		# polymerize for next timestep
 		proteinIndexes, peptideLengths = activeRibosomes.attrs(
-			'proteinIndex',
-			'peptideLength')
+			'proteinIndex', 'peptideLength'
+			)
 
 		sequences = buildSequences(
 			self.proteinSequences,
