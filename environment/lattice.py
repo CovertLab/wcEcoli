@@ -353,6 +353,8 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 					self._molecule_ids,
 					self.lattice[:, patch_site[0], patch_site[1]]))
 
+				update[agent_id]['media_id'] = self.media_id
+
 		return update
 
 
