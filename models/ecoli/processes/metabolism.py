@@ -250,15 +250,15 @@ class Metabolism(wholecell.processes.process.Process):
 				for aa, diff in self._sim.processes['PolypeptideElongation'].aa_conc_diff.items():
 					if aa == 'L-SELENOCYSTEINE[c]':
 						continue
-					new_target = CONC_UNITS * self.homeostaticObjective[aa] + diff
-					if new_target.asNumber() < 0:
-						new_target = (1 * countsToMolar).asNumber(CONC_UNITS)
-					self.concModificationsBasedOnCondition[aa] = new_target
+					self.aa_targets[aa] += diff
 			else:
 				for aa, counts in zip(self.aa_names, self.aas.total()):
 					if aa == 'L-SELENOCYSTEINE[c]':
 						continue
-					self.concModificationsBasedOnCondition[aa] = counts * countsToMolar
+					self.aa_targets[aa] = counts
+
+			for aa, counts in self.aa_targets.items():
+				self.concModificationsBasedOnCondition[aa] = counts * countsToMolar
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)

@@ -368,7 +368,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.water.countDec(nInitialized)
 
 			aa_diff = self.aa_supply - np.dot(self.aa_from_trna, total_charging_reactions)
-			self.aa_conc_diff = {aa: self.counts_to_molar * diff for aa, diff in zip(self.aaNames, aa_diff)}
+			self.aa_conc_diff = {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
 		else:
 			# Update counts of amino acids and water to reflect polymerization reactions
 			self.aas.countsDec(aas_used)
