@@ -43,7 +43,8 @@ class Translation(object):
 
 			rnaIds.append('{}[{}]'.format(
 				rnaId,
-				rnaLocation))
+				rnaLocation
+				))
 
 		lengths = []
 		aaCounts = []
@@ -55,7 +56,9 @@ class Translation(object):
 			counts = []
 
 			for aa in sim_data.amino_acid_1_to_3_ordered.viewkeys():
-				counts.append(sequence.count(aa))
+				counts.append(
+					sequence.count(aa)
+					)
 
 			lengths.append(len(sequence))
 			aaCounts.append(counts)
@@ -140,7 +143,8 @@ class Translation(object):
 
 		maxLen = np.int64(
 			self.monomerData["length"].asNumber().max()
-			+ sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
+			+ sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s)
+			)
 
 		self.translationSequences = np.empty((sequences.shape[0], maxLen), np.int8)
 		self.translationSequences.fill(polymerize.PAD_VALUE)
