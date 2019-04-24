@@ -51,7 +51,12 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 		# Create bulk molecules view for full chromosome
 		self.full_chromosome = self.bulkMoleculeView("CHROM_FULL[c]")
-		self.elongation_rates = sim_data.process.replication.elongation_rates
+
+		# TODO(Ryan): remove this and use sim_data.process.replication.elongation_rates
+		self.base_elongation_rate = int(
+			round(sim_data.growthRateParameters.dnaPolymeraseElongationRate.asNumber(
+			units.nt / units.s)))
+		self.elongation_rates = sim_data.process.replication.make_elongation_rates(self.base_elongation_rate)
 
 	def calculateRequest(self):
 
@@ -71,11 +76,12 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			'sequenceIdx', 'sequenceLength'
 			)
 
+		rates = np.rint(self.elongation_rates * self.timeStepSec()).astype(np.int64)
 		sequences = buildSequences(
 			self.sequences,
 			sequenceIdx,
 			sequenceLength,
-			self.elongation_rates * self.timeStepSec())
+			rates)
 
 		# Count number of each dNTP in sequences for the next timestep
 		sequenceComposition = np.bincount(
@@ -188,11 +194,12 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			'sequenceIdx', 'sequenceLength', 'massDiff_DNA'
 			)
 
+		rates = np.rint(self.elongation_rates * self.timeStepSec()).astype(np.int64)
 		sequences = buildSequences(
 			self.sequences,
 			sequenceIdx,
 			sequenceLengths,
-			self.elongation_rates * self.timeStepSec())
+			rates)
 
 		# Use polymerize algorithm to quickly calculate the number of
 		# elongations each "polymerase" catalyzes

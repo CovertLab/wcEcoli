@@ -195,7 +195,7 @@ class Transcription(object):
 	def make_elongation_rates(self, base):
 		rates = np.full(
 			self.transcriptionSequences.shape[0],
-			base.asNumber(units.aa / units.s),
+			base,
 			dtype=np.int64)
 
 		# rates[self.rprotein_indexes] = self.maxRibosomeElongationRate

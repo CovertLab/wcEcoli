@@ -24,6 +24,8 @@ class Replication(object):
 		self._buildGeneData(raw_data, sim_data)
 		self._buildReplication(raw_data, sim_data)
 
+		self._build_elongation_rates(raw_data, sim_data)
+
 	def _buildSequence(self, raw_data, sim_data):
 		self.genome_sequence = raw_data.genome_sequence
 		self.genome_length = len(self.genome_sequence)

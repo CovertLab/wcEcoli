@@ -48,7 +48,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.aaWeightsIncorporated = sim_data.process.translation.translationMonomerWeights
 		self.endWeight = sim_data.process.translation.translationEndWeight
 		self.gtpPerElongation = sim_data.constants.gtpPerTranslation
-		self.translation_data = sim_data.translation
+		self.translation_data = sim_data.process.translation
 		self.ribosomeElongationRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 
 		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
@@ -130,8 +130,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Build sequences to request appropriate amount of amino acids to
 		# polymerize for next timestep
 		proteinIndexes, peptideLengths = activeRibosomes.attrs(
-			'proteinIndex', 'peptideLength'
-			)
+			'proteinIndex',
+			'peptideLength')
 
 		sequences = buildSequences(
 			self.proteinSequences,
