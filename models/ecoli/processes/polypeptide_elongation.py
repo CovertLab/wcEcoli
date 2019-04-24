@@ -117,7 +117,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 			self.ribosomeElongationRate = np.min([22, noise])
 
-		self.elongation_rates = self.translation_data.elongation_rates(self.ribosomeElongationRate)
+		self.elongation_rates = self.translation_data.make_elongation_rates(self.ribosomeElongationRate)
 
 		# Request all active ribosomes
 		self.activeRibosomes.requestAll()
@@ -220,13 +220,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		massIncreaseProtein = computeMassIncrease(
 			sequences,
 			sequenceElongations,
-			self.aaWeightsIncorporated)
+			self.aaWeightsIncorporated
+			)
 
 		updatedLengths = peptideLengths + sequenceElongations
 
 		didInitialize = (
 			(sequenceElongations > 0) &
-			(peptideLengths == 0))
+			(peptideLengths == 0)
+			)
 
 		updatedMass = massDiffProtein + massIncreaseProtein
 
@@ -239,7 +241,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Update active ribosomes, terminating if neccessary
 		activeRibosomes.attrIs(
 			peptideLength = updatedLengths,
-			massDiff_protein = updatedMass)
+			massDiff_protein = updatedMass
+			)
 
 		# Ribosomes that reach the end of their sequences are terminated and
 		# dissociated into 30S and 50S subunits. The polypeptide that they are polymerizing
@@ -250,7 +253,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		terminatedProteins = np.bincount(
 			proteinIndexes[didTerminate],
-			minlength = self.proteinSequences.shape[0])
+			minlength = self.proteinSequences.shape[0]
+			)
 
 		activeRibosomes.delByIndexes(np.where(didTerminate)[0])
 		self.bulkMonomers.countsInc(terminatedProteins)
@@ -268,7 +272,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Report stalling information
 		expectedElongations = np.fmin(
 			self.ribosomeElongationRate,
-			terminalLengths - peptideLengths)
+			terminalLengths - peptideLengths
+			)
 
 		ribosomeStalls = expectedElongations - sequenceElongations
 
