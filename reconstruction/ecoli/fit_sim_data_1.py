@@ -1218,17 +1218,13 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 		proteinDegradationRates,
 		)
 
-	base = sim_data.growthRateParameters.getRibosomeElongationRate(doubling_time)
-	elongation_rates = sim_data.process.translation.elongation_rates(base)
+	base = sim_data.growthRateParameters.getRibosomeElongationRate(doubling_time).asNumber(units.aa / units.s)
+	elongation_rates = sim_data.process.translation.make_elongation_rates(base)
 	nRibosomesNeeded = calculateMinPolymerizingEnzymeByProductDistribution(
 		proteinLengths,
 		elongation_rates,
 		netLossRate_protein,
-		proteinCounts,
-		)
-	nRibosomesNeeded.normalize() # FIXES NO UNIT BUG
-	nRibosomesNeeded.checkNoUnit()
-	nRibosomesNeeded = nRibosomesNeeded.asNumber()
+		proteinCounts)
 
 	# Minimum number of ribosomes needed
 	constraint1_ribosome30SCounts = (
@@ -1357,11 +1353,10 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 
 	# Compute number of RNA polymerases required to maintain steady state of mRNA
 	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time)
-	elongation_rates = sim_data.process.transcription.elongation_rates(base)
+	elongation_rates = sim_data.process.transcription.make_elongation_rates(base)
 	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
 		rnaLengths, elongation_rates, rnaLossRate)
 
-	nActiveRnapNeeded = units.convertNoUnitToNumber(nActiveRnapNeeded)
 	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
 
 	# Convert nRnapsNeeded to the number of RNA polymerase subunits required
@@ -1890,7 +1885,7 @@ def calculateMinPolymerizingEnzymeByProductDistribution(productLengths, elongati
 		* netLossRate
 		* productCounts)
 
-	return nPolymerizingEnzymeNeeded
+	return nPolymerizingEnzymeNeeded.asNumber(units.aa / units.s)
 
 def calculateMinPolymerizingEnzymeByProductDistributionRNA(productLengths, elongationRates, netLossRate):
 	"""
@@ -1927,7 +1922,7 @@ def calculateMinPolymerizingEnzymeByProductDistributionRNA(productLengths, elong
 		productLengths / elongationRates
 		* netLossRate)
 
-	return nPolymerizingEnzymeNeeded
+	return nPolymerizingEnzymeNeeded.asNumber(units.nt / units.s)
 
 def netLossRateFromDilutionAndDegradationProtein(doublingTime, degradationRates):
 	"""
