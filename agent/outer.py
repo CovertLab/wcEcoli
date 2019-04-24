@@ -143,7 +143,8 @@ class Outer(Agent):
 	def finalize(self):
 		print('environment shutting down')
 
-	def cell_declare(self, message):
+	def cell_update(self, message):
+		''' '''
 		inner_id = message['inner_id']
 
 		simulation_time = self.environment.time()
@@ -165,14 +166,6 @@ class Outer(Agent):
 
 		self.environment.add_simulation(inner_id, simulation)
 
-		# synchronize state of the new cell
-		parameters = self.environment.simulation_parameters(inner_id)
-		self.send(self.topics['cell_receive'], {
-			'event': event.ENVIRONMENT_SYNCHRONIZE,
-			'inner_id': inner_id,
-			'outer_id': self.agent_id,
-			'state': parameters})
-
 		parent_id = simulation.get('parent_id', '')
 		if parent_id:
 			self.environment.apply_parent_state(inner_id, simulation)
@@ -182,6 +175,19 @@ class Outer(Agent):
 			fp.write_json_file(self.lineage_filename, self.lineage, indent=2)
 
 		self.update_state()
+
+	def cell_declare(self, message):
+		''' synchronize cell state after receiving CELL_DECLARE message'''
+		self.cell_update(message)
+		inner_id = message['inner_id']
+
+		# synchronize state of the new cell
+		parameters = self.environment.simulation_parameters(inner_id)
+		self.send(self.topics['cell_receive'], {
+			'event': event.ENVIRONMENT_SYNCHRONIZE,
+			'inner_id': inner_id,
+			'outer_id': self.agent_id,
+			'state': parameters})
 
 	def cell_initialize(self, message):
 		"""
@@ -200,7 +206,7 @@ class Outer(Agent):
 		ready to advance.
 		"""
 
-		self.cell_declare(message)
+		self.cell_update(message)
 
 		inner_id = message['inner_id']
 		simulation = self.simulations[inner_id]
