@@ -1,23 +1,29 @@
 # Container image #1: wcm-runtime.
 # This Dockerfile builds the runtime environment for the whole cell model.
 #
-# To build locally in the wcEcoli/ project root directory:
+# To build locally from the wcEcoli/ project root directory:
 #
-#     > docker build -f cloud/docker/base/Dockerfile -t wcm-runtime .
+#     > docker build -f cloud/docker/runtime/Dockerfile -t wcm-runtime .
 #
-# To build using the Cloud Build service and store in the Container Registry, in
-# the project root directory:
+# (If you want to build container image #2 on top of the locally-built base,
+# you'll have to edit that Dockerfile or upload this image.)
 #
-#     > gcloud builds submit --timeout=2h --config cloudbuild1-runtime.json
+# To build using the Cloud Build service and store in the Container Registry,
+# from this directory:
+#
+#     > cp ../../../requirements.txt .
+#     > gcloud builds submit --timeout=2h --tag gcr.io/allen-discovery-center-mcovert/wcm-runtime .
+#     > rm requirements.txt
 
-FROM python:2.7.15-alpine
+# DO NOT USE python:2.7.15-alpine since the simulation math comes out different!
+FROM python:2.7.16
 
-RUN apk add --no-cache build-base linux-headers gcc g++ gfortran llvm make cmake \
-    wget curl pkgconfig freetype-dev libpng-dev swig ncurses-dev librdkafka-dev
+RUN apt-get update \
+    && apt-get install -y glpk-utils libglpk-dev glpk-doc swig python-cvxopt \
+        gfortran llvm cmake ncurses-dev libreadline7 libreadline-dev
 
 # Install openblas v0.3.5 (not buggy v0.3.3).
-# Future:  RUN apk add --no-cache openblas-dev
-RUN apk add --no-cache perl
+# Future: Install openblas-dev via apt-get.
 RUN (mkdir -p openblas && cd openblas \
     && curl -SL https://github.com/xianyi/OpenBLAS/archive/v0.3.5.tar.gz | tar -xz \
     && cd OpenBLAS* \
@@ -39,12 +45,9 @@ ENV CVXOPT_BUILD_GLPK=1 \
     CVXOPT_LAPACK_LIB=openblas \
     OPENBLAS_NUM_THREADS=1
 
-RUN echo "[openblas]" > ~/.numpy-site.cfg \
-    && echo "libraries = openblas" >> ~/.numpy-site.cfg \
-    && echo "library_dirs = /usr/lib" >> ~/.numpy-site.cfg \
-    && echo "include_dirs = /usr/include" >> ~/.numpy-site.cfg
-
 # Install all the pips within one Docker layer and don't cache the downloads.
 COPY requirements.txt /
 RUN pip install --no-cache-dir 'numpy==1.14.5' --no-binary numpy \
     && pip install --no-cache-dir -r requirements.txt --no-binary numpy,scipy,cvxopt
+
+CMD ["/bin/bash"]

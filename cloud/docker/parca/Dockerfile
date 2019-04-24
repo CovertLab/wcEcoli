@@ -1,26 +1,21 @@
 # Container image #3: wcm-parca.
-# This Dockerfile builds a container image with the wcEcoli Parca (parameter
-# calculator) data (ready to run simulations), layered on the wcm-code container
-# image.
+# This Dockerfile builds a container image with the wcEcoli Parca output (ready
+# to run simulations), layered on the wcm-code image.
 #
-# To build locally in the wcEcoli/ project root directory:
+# To build locally from the wcEcoli/ project root directory:
 #
-#     > docker build -f cloud/docker/parca/Dockerfile -t parca .
+#     > docker build -f cloud/docker/parca/Dockerfile -t wcm-parca .
 #
-# To build using the Cloud Build service and store in the Container Registry, in
-# the project root directory:
+# To build using the Cloud Build service and store in the Container Registry,
+# from this directory:
 #
-#     > gcloud builds submit --timeout=90m --config cloudbuild3-wcm-parca.json
+#     > gcloud builds submit --timeout=90m --tag gcr.io/allen-discovery-center-mcovert/wcm-parca .
 #
 # After building locally you can start up a new container from the image:
 #
-#     > docker run --name parcatest -it -d parca
+#     > docker run --name parcatest -it parca
 #
-# Once the container exists you can `exec` a shell inside it:
-#
-#     > docker exec -it parcatest /bin/sh
-#
-# You will be dropped into an `sh` shell where you can execute commands:
+# It will start a shell where you can execute commands:
 #
 #     # nosetests
 #
@@ -32,3 +27,5 @@
 FROM gcr.io/allen-discovery-center-mcovert/wcm-code:latest
 
 RUN python runscripts/manual/runParca.py
+
+CMD ["/bin/bash"]

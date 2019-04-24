@@ -4,15 +4,13 @@
         "name": "gcr.io/cloud-builders/docker",
         "args": [
             "build",
-            "-t",
-            "gcr.io/$PROJECT_ID/wcm-parca",
-            "-f",
-            "cloud/docker/parca/Dockerfile",
+            "-t", "gcr.io/$PROJECT_ID/wcm-code",
+            "-f", "cloud/docker/wholecell/Dockerfile",
             "."
         ]
     }
     ],
     "images": [
-        "gcr.io/$PROJECT_ID/wcm-parca"
+        "gcr.io/$PROJECT_ID/wcm-code"
     ]
 }

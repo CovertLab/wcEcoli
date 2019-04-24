@@ -2,24 +2,23 @@
 # This Dockerfile builds a container image with the wcEcoli whole cell model
 # code, layered on the wcm-runtime container image.
 #
-# To build locally in the wcEcoli/ project root directory:
+# To build locally from the wcEcoli/ project root directory:
 #
-#     > docker build -f cloud/docker/wholecell/Dockerfile -t wholecell .
+#     > docker build -f cloud/docker/wholecell/Dockerfile -t wcm-code .
 #
-# To build using the Cloud Build service and store in the Container Registry, in
-# the project root directory:
+# (If you want to build container image #3 on top of the locally-built base,
+# you'll have to edit that Dockerfile or upload this image.)
 #
-#     > gcloud builds submit --timeout=15m --config cloudbuild2-wcm-code.json
+# To build using the Cloud Build service and store in the Container Registry,
+# from the wcEcoli/ project root directory:
+#
+#     > gcloud builds submit --timeout=15m --config config-build-2-wcm-code.json
 #
 # After building locally you can start up a new container from the image:
 #
-#     > docker run --name wholecelltest -it -d wholecell
+#     > docker run --name wholecelltest -it wholecell
 #
-# Once the container exists you can `exec` a shell inside it:
-#
-#     > docker exec -it wholecelltest /bin/sh
-#
-# You will be dropped into an `sh` shell where you can execute commands:
+# It will start a shell where you can execute commands:
 #
 #     # nosetests
 #
@@ -36,4 +35,4 @@ WORKDIR /wcEcoli
 RUN make clean compile
 ENV PYTHONPATH=/wcEcoli
 
-# TODO: Set CMD?
+CMD ["/bin/bash"]
