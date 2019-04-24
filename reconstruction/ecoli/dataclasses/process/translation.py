@@ -210,7 +210,7 @@ class Translation(object):
 
 		self.elongation_rates[self.rprotein_indexes] = self.maxRibosomeElongationRate
 
-	def elongation_rates(self, base):
+	def make_elongation_rates(self, base):
 		rates = np.full(
 			proteinIds.shape,
 			base,

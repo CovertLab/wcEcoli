@@ -55,7 +55,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 		# Create bulk molecules view for full chromosome
 		self.full_chromosome = self.bulkMoleculeView("CHROM_FULL[c]")
-		self.elongation_rates = sim_data.process.transcription.elongation_rates
+		self.elongation_rates = sim_data.process.replication.elongation_rates
 
 	def calculateRequest(self):
 
