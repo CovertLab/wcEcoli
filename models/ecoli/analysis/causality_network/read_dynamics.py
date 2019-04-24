@@ -401,8 +401,6 @@ def read_charging_dynamics(sim_data, node, node_id, columns, indexes, volume):
 	rna = '{}[c]'.format(node_id.split(' ')[0])
 	rna_idx = indexes["Charging"][rna]
 
-	# print(node_id)
-	# print(rna_idx)
 	dynamics = {
 		'reaction rate': columns[("GrowthLimits", "net_charged")][:, rna_idx]
 		}
