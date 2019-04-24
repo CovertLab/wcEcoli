@@ -16,6 +16,7 @@ variants = [
 	'minimal',
 	'minimal_minus_oxygen',
 	'minimal_plus_amino_acids']
+
 amino_acids = [
 	'L-ALPHA-ALANINE',
 	'ARG',
@@ -93,13 +94,8 @@ class TransportProcess(CellSimulation):
 		exchange_ids = exchange_molecules + aa_p_ids
 		self.transport_reactions_ids = self.reactions_from_exchange(exchange_ids)
 
-
-
-
-
-		# TODO -- load in media_id!!!
-		# TODO -- use synchronize to set media_id upon initialization
-		self.media_id = 'minimal_plus_amino_acids'
+		# TODO (Eran) -- use synchronize to get media_id upon initialization
+		self.media_id = 'minimal'
 		self.current_flux_lookup = self.flux_lookup[self.media_id]
 		self.transport_fluxes = self.get_fluxes(self.current_flux_lookup, self.transport_reactions_ids)
 
@@ -111,7 +107,7 @@ class TransportProcess(CellSimulation):
 		delta_counts = self.flux_to_counts(self.transport_fluxes)
 
 		for molecule in self.external_concentrations.keys():
-			# TODO -- use external exchange map rather than + '[p]'
+			# TODO -- use external exchange map rather than (molecule + '[p]')
 			if (molecule + '[p]') in delta_counts:
 				self.environment_change[molecule] = delta_counts[molecule + '[p]']
 

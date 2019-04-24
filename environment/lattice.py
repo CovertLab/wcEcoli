@@ -167,6 +167,8 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		if self.media_id != self.timeline[current_index][1]:
 			self.media_id = self.timeline[current_index][1]
 
+			print('Media condition: ' + str(self.media_id))
+
 			# make new_media
 			new_media = self.make_media.make_recipe(self.media_id)
 
