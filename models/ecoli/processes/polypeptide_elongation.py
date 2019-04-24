@@ -152,14 +152,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 			molAasRequested = translationSupplyRate * dryMass * self.timeStepSec() * units.s
 
-			countAasRequested = units.convertNoUnitToNumber(
-				molAasRequested * self.nAvogadro)
+			countAasRequested = units.convertNoUnitToNumber(molAasRequested * self.nAvogadro)
 
 			countAasRequested = np.fmin(countAasRequested, aasInSequences) # Check if this is required. It is a better request but there may be fewer elongations.
 		else:
 			countAasRequested = aasInSequences
 
-		self.aas.requestIs(countAasRequested)
+		self.aas.requestIs(
+			countAasRequested
+			)
 
 		self.writeToListener("GrowthLimits", "aaPoolSize", self.aas.total())
 		self.writeToListener("GrowthLimits", "aaRequestSize", countAasRequested)
@@ -189,7 +190,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Build amino acids sequences for each ribosome to polymerize
 		proteinIndexes, peptideLengths, massDiffProtein = activeRibosomes.attrs(
-			'proteinIndex', 'peptideLength', 'massDiff_protein')
+			'proteinIndex', 'peptideLength', 'massDiff_protein'
+			)
 
 		sequences = buildSequences(
 			self.proteinSequences,
@@ -210,7 +212,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			sequences,
 			aaCounts,
 			10000000, # Set to a large number, the limit is now taken care of in metabolism
-			self.randomState)
+			self.randomState
+			)
 
 		sequenceElongations = result.sequenceElongation
 		aasUsed = result.monomerUsages
