@@ -149,7 +149,7 @@ class Simulation(CellSimulation):
 
 			internal_state.initialize(self, sim_data)
 
-		for state_name, derived_state in self.derived_states.iteritems():
+		for derived_state in self.derived_states.itervalues():
 			derived_state.initialize(self, sim_data)
 
 		for external_state in self.external_states.itervalues():
@@ -189,7 +189,7 @@ class Simulation(CellSimulation):
 			state.calculatePreEvolveStateMass()
 			state.calculatePostEvolveStateMass()
 
-		for state_name, derived_state in self.derived_states.iteritems():
+		for derived_state in self.derived_states.itervalues():
 			derived_state.update()
 
 		# Update environment state according to the current time in time series

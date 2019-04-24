@@ -9,11 +9,6 @@ from wholecell.utils import units
 
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-ASSERT_POSITIVE_CONCENTRATIONS = True
-
-class NegativeConcentrationError(Exception):
-	pass
-
 
 class CellProperties(wholecell.states.internal_state.InternalState):
 	_name = 'CellProperties'
@@ -38,10 +33,12 @@ class CellProperties(wholecell.states.internal_state.InternalState):
 		self.cell_density = sim_data.constants.cellDensity.asNumber(units.fg / units.L)
 
 		# initialize properties
-		self.cell_mass = 0.0
-		self.dry_mass = 0.0
-		self.volume = 0.0
-		self.counts_to_molar = 0.0
+		# TODO (Eran) -- save these values with their units.
+		# TODO -- this would require improved units management, including multiple dtypes in the container, and handling units in TableWriter
+		self.cell_mass = 0.0  # units.fg
+		self.dry_mass = 0.0  # units.fg
+		self.volume = 0.0  # units.L
+		self.counts_to_molar = 0.0  # (units.mol / units.L)
 
 		# initialize properties IDs and values
 		self.property_ids = [
@@ -115,9 +112,6 @@ class CellPropertiesViewBase(object):
 	def _valueIs(self, value):
 		self._values[:] = value
 
-	def _countsInc(self, counts):
-		return
-
 	# Interface to Process
 	def _allValues(self):
 		return np.array(self._state.property_values)[self._containerIndexes].copy()
@@ -136,8 +130,3 @@ class CellPropertiesView(CellPropertiesViewBase):
 
 	def allValues(self):
 		return self._allValues()
-
-	# def countsInc(self, molecule_ids, counts):
-	# 	# self._state._environment_deltas = counts
-	# 	# self._state.accumulate_deltas(molecule_ids, counts)
-	# 	return
