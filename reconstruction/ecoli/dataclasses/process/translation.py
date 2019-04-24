@@ -21,7 +21,9 @@ class Translation(object):
 		self._buildMonomerData(raw_data, sim_data)
 		self._buildTranslation(raw_data, sim_data)
 		self._buildTranslationEfficiency(raw_data, sim_data)
-		self._buildRibosomalProteins(raw_data, sim_data)
+
+		self.ribosomal_proteins = self._build_ribosomal_proteins(raw_data, sim_data)
+		self.elongation_rates = self._build_elongation_rates(raw_data, sim_data)
 
 	def _buildMonomerData(self, raw_data, sim_data):
 		assert all([len(protein['location']) == 1 for protein in raw_data.proteins])
@@ -179,7 +181,41 @@ class Translation(object):
 		self.translationEfficienciesByMonomer = np.array(trEffs)
 		self.translationEfficienciesByMonomer[np.isnan(self.translationEfficienciesByMonomer)] = np.nanmean(self.translationEfficienciesByMonomer)
 
-	def _buildRibosomalProteins(self, raw_data, sim_data):
+	def _build_ribosomal_proteins(self, raw_data, sim_data):
 		self.ribosomal_proteins = [
 			rprotein['id'] + rprotein['location']
 			for rprotein in raw_data.ribosomal_protein_transcripts]
+
+	def _build_elongation_rates(self, raw_data, sim_data):
+		self.protein_ids = sim_data.process.translation.monomerData['id']
+		self.ribosomal_protein_ids = sim_data.moleculeGroups.rProteins
+
+		self.protein_indexes = {
+			protein: index
+			for index, protein in enumerate(proteinIds)}
+
+		self.ribosomal_proteins = {
+			rprotein: self.protein_indexes.get(rprotein, -1)
+			for rprotein in self.ribosomal_protein_ids}
+
+		self.rprotein_indexes = np.array([
+			index
+			for index in self.ribosomal_proteins.values()
+			if index >= 0], dtype=np.int64)
+
+		self.elongation_rates = np.full(
+			proteinIds.shape,
+			self.base_elongation_rate,
+			dtype=np.int64)
+
+		self.elongation_rates[self.rprotein_indexes] = self.maxRibosomeElongationRate
+
+	def elongation_rates(self, base):
+		rates = np.full(
+			proteinIds.shape,
+			base,
+			dtype=np.int64)
+
+		rates[self.rprotein_indexes] = self.maxRibosomeElongationRate
+
+		return rates

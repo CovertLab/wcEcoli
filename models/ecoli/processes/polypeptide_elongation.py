@@ -48,35 +48,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.aaWeightsIncorporated = sim_data.process.translation.translationMonomerWeights
 		self.endWeight = sim_data.process.translation.translationEndWeight
 		self.gtpPerElongation = sim_data.constants.gtpPerTranslation
-		# self.ribosomeElongationRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
+		self.translation_data = sim_data.translation
+		self.ribosomeElongationRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 
 		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
 		self.base_elongation_rate = float(sim_data.constants.ribosomeElongationRateBase.asNumber(units.aa / units.s))
-
-		self.ribosomal_protein_ids = sim_data.moleculeGroups.rProteins
-		# self.ribosomal_protein_ids = [
-		# 	re.sub(r'RNA', 'MONOMER', rprotein)
-		# 	for rprotein in sim_data.process.translation.ribosomal_proteins]
-
-		self.protein_indexes = {
-			protein: index
-			for index, protein in enumerate(proteinIds)}
-
-		self.ribosomal_proteins = {
-			rprotein: self.protein_indexes.get(rprotein, -1)
-			for rprotein in self.ribosomal_protein_ids}
-
-		self.rprotein_indexes = np.array([
-			index
-			for index in self.ribosomal_proteins.values()
-			if index >= 0], dtype=np.int64)
-
-		self.elongation_rates = np.full(
-			proteinIds.shape,
-			self.base_elongation_rate,
-			dtype=np.int64)
-
-		self.elongation_rates[self.rprotein_indexes] = self.maxRibosomeElongationRate
 
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
 
@@ -112,6 +88,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.translationSupply = sim._translationSupply
 
+		# I like how we multiply a bunch of things by this number
 		self.elngRateFactor = 1.
 
 	def calculateRequest(self):
@@ -139,6 +116,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				self.elngRateFactor * rate * self.timeStepSec()))
 
 			self.ribosomeElongationRate = np.min([22, noise])
+
+		self.elongation_rates = self.translation_data.elongation_rates(self.ribosomeElongationRate)
 
 		# Request all active ribosomes
 		self.activeRibosomes.requestAll()
@@ -190,9 +169,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("GrowthLimits", "gtpPoolSize", self.gtp.total()[0])
 		self.writeToListener("GrowthLimits", "gtpRequestSize", gtpsHydrolyzed)
-
-		# if self._sim._simulationStep > 30:
-		# 	import ipdb; ipdb.set_trace()
 
 		# GTP hydrolysis is carried out in Metabolism process for growth associated maintenence
 		# THis is set here for metabolism to use

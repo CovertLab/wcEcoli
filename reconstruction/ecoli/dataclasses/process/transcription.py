@@ -24,6 +24,8 @@ class Transcription(object):
 		self._buildRnaData(raw_data, sim_data)
 		self._buildTranscription(raw_data, sim_data)
 
+		self.elongation_rates = self.build_elongation_rates(raw_data, sim_data)
+
 	def _buildRnaData(self, raw_data, sim_data):
 		assert all([len(rna['location']) == 1 for rna in raw_data.rnas])
 		rnaIds = ['{}[{}]'.format(rna['id'], rna['location'][0]) for rna in raw_data.rnas if len(rna['location']) == 1]
@@ -191,3 +193,16 @@ class Transcription(object):
 			).asNumber(units.fg)
 
 		self.transcriptionEndWeight = (sim_data.getter.getMass(["PPI[c]"]) / raw_data.constants['nAvogadro']).asNumber(units.fg)
+
+	def build_elongation_rates(self, raw_data, sim_data):
+		base_elongation_rate = int(
+			round(sim_data.growthRateParameters.dnaPolymeraseElongationRate.asNumber(
+			units.nt / units.s)))
+
+		elongation_rates = np.full(
+			self.sequences.shape[0],
+			base_elongation_rate,
+			dtype=np.int64)
+
+		return elongation_rates
+
