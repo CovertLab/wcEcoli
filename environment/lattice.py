@@ -118,12 +118,13 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		self.motile_forces = {}	# map of agent_id to motile force, with magnitude and relative orientation
 
 		self.grid = Grid([self.edge_length, self.edge_length], 0.1)
+		media = config['concentrations']
 		self._molecule_ids = config['concentrations'].keys()
 		self.concentrations = config['concentrations'].values()
 		self.molecule_index = {molecule: index for index, molecule in enumerate(self._molecule_ids)}
 
 		# fill all lattice patches with concentrations from self.concentrations
-		self.fill_lattice()
+		self.fill_lattice(media)
 
 		# Add gradient
 		if self.gradient['seed']:
@@ -147,12 +148,15 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 			plt.axis('off')
 			plt.pause(0.0001)
 
-	def fill_lattice(self):
+	def fill_lattice(self, media):
 		# Create lattice and fill each site with concentrations dictionary
 		# Molecule identities are defined along the major axis, with spatial dimensions along the other two axes.
-		self.lattice = np.empty([len(self._molecule_ids)] + [self.patches_per_edge for dim in xrange(N_DIMS)], dtype=np.float64)
-		for index, molecule in enumerate(self._molecule_ids):
-			self.lattice[index].fill(self.concentrations[index])
+		molecule_ids = media.keys()
+		concentrations = media.values()
+
+		self.lattice = np.empty([len(molecule_ids)] + [self.patches_per_edge for dim in xrange(N_DIMS)], dtype=np.float64)
+		for index, molecule in enumerate(molecule_ids):
+			self.lattice[index].fill(concentrations[index])
 
 	def gaussian(self, deviation, distance):
 		return np.exp(-np.power(distance, 2.) / (2 * np.power(deviation, 2.)))
@@ -175,15 +179,11 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 			if self.media_id != self.timeline[current_index][1]:
 				self.media_id = self.timeline[current_index][1]
 
-				print('Media condition: ' + str(self.media_id))
-
-				# make new_media
+				# make new_media, update the lattice with new concentrations
 				new_media = self.make_media.make_recipe(self.media_id)
+				self.fill_lattice(new_media)
 
-				# update the lattice
-				self._molecule_ids = new_media.keys()
-				self.concentrations = new_media.values()
-				self.fill_lattice()
+				print('Media condition: ' + str(self.media_id))
 
 	def update_locations(self):
 		''' Update location for all agent_ids '''
