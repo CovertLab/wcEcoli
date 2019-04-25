@@ -210,12 +210,9 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 	def fill_lattice(self, media):
 		# Create lattice and fill each site with concentrations dictionary
 		# Molecule identities are defined along the major axis, with spatial dimensions along the other two axes.
-		molecule_ids = media.keys()
-		concentrations = media.values()
-
-		self.lattice = np.empty([len(molecule_ids)] + [self.patches_per_edge for dim in xrange(N_DIMS)], dtype=np.float64)
-		for index, molecule in enumerate(molecule_ids):
-			self.lattice[index].fill(concentrations[index])
+		self.lattice = np.empty([len(self._molecule_ids)] + [self.patches_per_edge for dim in xrange(N_DIMS)], dtype=np.float64)
+		for index, molecule_id in enumerate(self._molecule_ids):
+			self.lattice[index].fill(media[molecule_id])
 
 
 	def run_diffusion(self):

@@ -47,7 +47,7 @@ class TransportProcess(CellSimulation):
 	def __init__(self):
 		self.initial_time = 0.0
 		self.local_time = 0.0
-		# self.timestep = 1.0
+		self.timestep = 1.0
 		self.environment_change = {}
 		self.volume = 1.0  # (fL)
 		self.division_time = 100
@@ -106,10 +106,19 @@ class TransportProcess(CellSimulation):
 		self.transport_fluxes = self.get_fluxes(self.current_flux_lookup, self.transport_reactions_ids)
 		delta_counts = self.flux_to_counts(self.transport_fluxes)
 
+		environment_deltas = {}
 		for molecule in self.external_concentrations.keys():
 			# TODO -- use external exchange map rather than (molecule + '[p]')
-			if (molecule + '[p]') in delta_counts:
-				self.environment_change[molecule] = delta_counts[molecule + '[p]']
+			molecule_p = molecule + '[p]'
+			if molecule_p in delta_counts:
+				environment_deltas[molecule] = delta_counts[molecule_p]
+
+		# accumulate in environment_change
+		self.accumulate_deltas(environment_deltas)
+
+	def accumulate_deltas(self, environment_deltas):
+		for molecule_id, count in environment_deltas.iteritems():
+			self.environment_change[molecule_id] += count
 
 	def check_division(self):
 		# update division state based on time since initialization
@@ -133,11 +142,11 @@ class TransportProcess(CellSimulation):
 			self.environment_change[molecule] = 0
 
 	def run_incremental(self, run_until):
-		# TODO -- implement time steps! Will require an accumulate_deltas() as in local_environment.py
-		# update state once per message exchange
-		self.update_state()
-		# self.check_division()
-		self.local_time = run_until
+		'''run until run_until'''
+		while self.time() < run_until and not self._isDead:
+			self.local_time += self.timestep
+			self.update_state()
+			# self.check_division()
 
 		time.sleep(1.0)  # pause for better coordination with Lens visualization. TODO: remove this
 
