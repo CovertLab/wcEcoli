@@ -17,14 +17,13 @@ A two-dimensional lattice environmental model
 
 from __future__ import absolute_import, division, print_function
 import os
-import environment
 
 import pandas as pd
 import numpy as np
 from scipy import constants
 from scipy.ndimage import convolve
 
-ROOT_PATH = os.path.dirname(os.path.dirname(os.path.abspath(environment.__file__)))
+ROOT_PATH = os.path.dirname(os.path.dirname(os.path.abspath('environment/boot.py')))
 animating = 'ENVIRONMENT_ANIMATION' in os.environ
 
 # Turn off interactive plotting when running on sherlock
@@ -52,16 +51,19 @@ N_DIMS = 2
 LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 
 def select_media(timeline, time):
+	'''
+	Import a timeline file from environment/condition/timelines and compare it with a given time to determine when it is
+	time to switch media conditions.
+	:param timeline: tsv file based on template file environment/condition/timelines/default_timeline.tsv
+	:param time: simulation time (for now, will only be self.time)
+	:return: return the selected media file from a given timeline file and time
+	'''
 	selected = timeline.iloc[0, 1]
-	timepoint = time
 	length = len(timeline[['time']])
-	i = 0
-	while i < length:
-		if timepoint >= timeline.iloc[i, 0]:
-			selected = timeline.iloc[i, 1]
-		else:
+	for i in xrange(length):
+		if time <= timeline.iloc[i, 0]:
 			break
-		i += 1
+		selected = str(timeline.iloc[i, 1])
 	return ROOT_PATH + '/environment/condition/tables/' + selected
 
 class EnvironmentSpatialLattice(EnvironmentSimulation):
@@ -69,6 +71,9 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		self._time = 0
 		self._timestep = 1.0 #DT
 		self._max_time = 10e6
+
+		# used to name the transport_listener file
+		self.listener_id = np.random.randint(1,1000000)
 
 		# configured parameters
 		self.run_for = config.get('run_for', 5.0)
@@ -86,11 +91,20 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		self.rotation_jitter = config.get('rotation_jitter', 0.05)
 		self.depth = config.get('depth', 3000.0)
 
-		# assign timeline
-		# TODO: make this timeline selection a terminal command
-		self.timeline_str = config.get('timeline', )
-		self.timeline_str = config.get('timeline', ROOT_PATH + '/environment/condition/timelines/timeline_1.tsv')
+		# # Enable this section to let users select timelines in the console
+		# user_timeline = raw_input("Please enter the name of a timeline (or hit 'Enter' to select default)") or "default_timeline.tsv"
+		# try:
+		# 	# TODO (Lee): check this against all available timelines
+		# 	user_timeline = str(user_timeline)
+		# except ValueError:
+		# 	print(
+		# 		"This is not a valid string. Please try again.")
+
+		user_timeline = 'default_timeline.tsv'
+
+		self.timeline_str = config.get('timeline', ROOT_PATH + '/environment/condition/timelines/' + user_timeline)
 		self.timeline = pd.read_csv(self.timeline_str, sep='\t', header=0)
+
 
 		# derived parameters
 		self.total_volume = (self.depth * self.edge_length ** 2) * (10 ** -15) # (L)
@@ -311,7 +325,6 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 							index = self.molecule_index[molecule]
 							self.lattice[index, patch_site[0], patch_site[1]] += concentration
 
-
 	def get_molecule_ids(self):
 		''' Return the ids of all molecule species in the environment '''
 		return self._molecule_ids
@@ -333,7 +346,8 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 				patch_site = tuple(np.floor(location).astype(int))
 				update[agent_id] = agent_update = {}
 				agent_update['media'] = media
-				agent_update['concentrations'] = dict(zip(self._molecule_ids, self.lattice[:,patch_site[0],patch_site[1]]))
+				agent_update['concentrations'] = dict(zip(self._molecule_ids, self.lattice[:, patch_site[0], patch_site[1]]))
+				agent_update['listener_id'] = self.listener_id
 		return update
 
 
@@ -386,7 +400,7 @@ class EnvironmentSpatialLattice(EnvironmentSimulation):
 		parent_location = simulation['location']
 		index = simulation['index']
 		orientation = parent_location[2]
-		#self.simulations[agent_id]['state']['volume'] *= 0.5
+		# self.simulations[agent_id]['state']['volume'] *= 0.5
 		length = self.volume_to_length(self.simulations[agent_id]['state']['volume'])
 		location = self.daughter_location(parent_location[0:2], orientation, length, index)
 

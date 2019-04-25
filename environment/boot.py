@@ -55,7 +55,7 @@ class EnvironmentAgent(Outer):
 def boot_lattice(agent_id, agent_type, agent_config):
 	media = agent_config.get('media', 'minimal')
 	print("Media condition: {}".format(media))
-	timeline = agent_config.get('timeline', 'timeline_1.tsv')
+	timeline = agent_config.get('timeline', 'default_timeline.tsv')
 	print("Timeline: {}".format(timeline))
 	raw_data = KnowledgeBaseEcoli()
 
@@ -210,6 +210,7 @@ def boot_chemotaxis(agent_id, agent_type, agent_config):
 			'environment_change': {}}})
 
 	simulation = Chemotaxis()
+	# TODO: fix this so that Inner calls a setter method instead of an instance variable without a simulation
 	inner.simulation = simulation
 
 	time.sleep(5)  # TODO(jerry): Wait for the Chemotaxis to boot
@@ -217,7 +218,6 @@ def boot_chemotaxis(agent_id, agent_type, agent_config):
 	return inner
 
 def boot_transport(agent_id, agent_type, agent_config):
-	agent_id = agent_id
 	outer_id = agent_config['outer_id']
 	volume = agent_config.get('volume', 1.0)
 	kafka_config = agent_config['kafka_config']
@@ -237,11 +237,10 @@ def boot_transport(agent_id, agent_type, agent_config):
 		'state': {
 			'volume': volume,
 			'environment_change': {},
-			'substrates': {}
-		},
-		})
+			'substrates': {}},})
 
-	simulation = Transport(agent_config)
+	simulation = Transport(agent_config, agent_id)
+	# TODO: fix this so that Inner calls a setter method instead of an instance variable without a simulation
 	inner.simulation = simulation
 
 	return inner

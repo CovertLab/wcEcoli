@@ -1,0 +1,409 @@
+{
+    "0": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "GLN[c]": 1,
+        "GLN[p]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "WATER[c]": -1
+    },
+    "1": {
+        "L-ALPHA-ALANINE[c]": 1,
+        "L-ALPHA-ALANINE[p]": -1,
+        "PROTON[c]": 1,
+        "PROTON[p]": -1
+    },
+    "2": {
+        "HIS[c]": -1,
+        "HIS[p]": 1
+    },
+    "3": {
+        "THR[c]": -1,
+        "THR[p]": 1
+    },
+    "4": {
+        "TRP[c]": -1,
+        "TRP[p]": 1
+    },
+    "5": {
+        "ASN[c]": -1,
+        "ASN[p]": 1
+    },
+    "6": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "HIS[c]": 1,
+        "HIS[p]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "WATER[c]": -1
+    },
+    "7": {
+        "GLY[c]": 1,
+        "GLY[p]": -1,
+        "PROTON[c]": 1,
+        "PROTON[p]": -1
+    },
+    "8": {
+        "MET[c]": -1,
+        "MET[p]": 1
+    },
+    "9": {
+        "L-ASPARTATE[c]": 1,
+        "L-ASPARTATE[p]": -1
+    },
+    "10": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "VAL[c]": 1,
+        "VAL[p]": -1,
+        "WATER[c]": -1
+    },
+    "11": {
+        "ADP[c]": 1,
+        "ARG[c]": 1,
+        "ARG[p]": -1,
+        "ATP[c]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "WATER[c]": -1
+    },
+    "12": {
+        "MET[c]": -1,
+        "MET[p]": 1,
+        "PROTON[c]": 1,
+        "PROTON[p]": -1
+    },
+    "13": {
+        "PROTON[c]": 1,
+        "PROTON[p]": -1,
+        "PRO[c]": 1,
+        "PRO[p]": -1
+    },
+    "14": {
+        "LEU[c]": -1,
+        "LEU[p]": 1,
+        "PROTON[c]": 1,
+        "PROTON[p]": -1
+    },
+    "15": {
+        "CYS[c]": -1,
+        "CYS[p]": 1
+    },
+    "16": {
+        "PHE[c]": -1,
+        "PHE[p]": 1
+    },
+    "17": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "L-ASPARTATE[c]": 1,
+        "L-ASPARTATE[p]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "WATER[c]": -1
+    },
+    "18": {
+        "L-ASPARTATE[c]": 1,
+        "L-ASPARTATE[p]": -1,
+        "PROTON[c]": 2,
+        "PROTON[p]": -2
+    },
+    "19": {
+        "VAL[c]": -1,
+        "VAL[p]": 1
+    },
+    "20": {
+        "ARG[c]": -1,
+        "ARG[p]": 1
+    },
+    "21": {
+        "LYS[c]": -1,
+        "LYS[p]": 1
+    },
+    "22": {
+        "VAL[c]": -1,
+        "VAL[p]": 1
+    },
+    "23": {
+        "L-SELENOCYSTEINE[c]": -1,
+        "L-SELENOCYSTEINE[p]": 1
+    },
+    "24": {
+        "L-ASPARTATE[c]": 1,
+        "L-ASPARTATE[p]": -1,
+        "PROTON[c]": 2,
+        "PROTON[p]": -2
+    },
+    "25": {
+        "GLY[c]": 1,
+        "GLY[p]": -1
+    },
+    "26": {
+        "HIS[c]": -1,
+        "HIS[p]": 1
+    },
+    "27": {
+        "TRP[c]": -1,
+        "TRP[p]": 1
+    },
+    "28": {
+        "CYS[c]": 1,
+        "CYS[p]": -1
+    },
+    "29": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "ILE[c]": 1,
+        "ILE[p]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "WATER[c]": -1
+    },
+    "30": {
+        "L-ASPARTATE[c]": -1,
+        "L-ASPARTATE[p]": 1
+    },
+    "31": {
+        "GLN[c]": -1,
+        "GLN[p]": 1
+    },
+    "32": {
+        "LEU[c]": 1,
+        "LEU[p]": -1,
+        "NA+[c]": 1,
+        "NA+[p]": -1
+    },
+    "33": {
+        "NA+[c]": 1,
+        "NA+[p]": -1,
+        "VAL[c]": 1,
+        "VAL[p]": -1
+    },
+    "34": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "PRO[c]": 1,
+        "PRO[p]": -1,
+        "WATER[c]": -1
+    },
+    "35": {
+        "NA+[c]": 1,
+        "NA+[p]": -1,
+        "PRO[c]": 1,
+        "PRO[p]": -1
+    },
+    "36": {
+        "PROTON[c]": 1,
+        "PROTON[p]": -1,
+        "THR[c]": -1,
+        "THR[p]": 1
+    },
+    "37": {
+        "L-SELENOCYSTEINE[c]": 1,
+        "L-SELENOCYSTEINE[p]": -1
+    },
+    "38": {
+        "LYS[c]": 1,
+        "LYS[p]": -1,
+        "PROTON[c]": 1,
+        "PROTON[p]": -1
+    },
+    "39": {
+        "LEU[c]": -1,
+        "LEU[p]": 1
+    },
+    "40": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "GLT[c]": 1,
+        "GLT[p]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "WATER[c]": -1
+    },
+    "41": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "MET[c]": 1,
+        "MET[p]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "WATER[c]": -1
+    },
+    "42": {
+        "TYR[c]": -1,
+        "TYR[p]": 1
+    },
+    "43": {
+        "PHE[c]": 1,
+        "PHE[p]": -1,
+        "PROTON[c]": 1,
+        "PROTON[p]": -1
+    },
+    "44": {
+        "TYR[c]": -1,
+        "TYR[p]": 1
+    },
+    "45": {
+        "PROTON[c]": 1,
+        "PROTON[p]": -1,
+        "THR[c]": 1,
+        "THR[p]": -1
+    },
+    "46": {
+        "CADAVERINE[c]": -1,
+        "CADAVERINE[p]": 1,
+        "LYS[c]": 1,
+        "LYS[p]": -1
+    },
+    "47": {
+        "PROTON[c]": 1,
+        "PROTON[p]": -1,
+        "TYR[c]": 1,
+        "TYR[p]": -1
+    },
+    "48": {
+        "PROTON[c]": 1,
+        "PROTON[p]": -1,
+        "TRP[c]": 1,
+        "TRP[p]": -1
+    },
+    "49": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "LYS[c]": 1,
+        "LYS[p]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "WATER[c]": -1
+    },
+    "50": {
+        "PRO[c]": -1,
+        "PRO[p]": 1
+    },
+    "51": {
+        "ILE[c]": -1,
+        "ILE[p]": 1
+    },
+    "52": {
+        "GLT[c]": -1,
+        "GLT[p]": 1
+    },
+    "53": {
+        "GLT[c]": 1,
+        "GLT[p]": -1,
+        "PROTON[c]": 2,
+        "PROTON[p]": -2
+    },
+    "54": {
+        "CYS[c]": -1,
+        "CYS[p]": 1
+    },
+    "55": {
+        "NA+[c]": 1,
+        "NA+[p]": -1,
+        "SER[c]": 1,
+        "SER[p]": -1
+    },
+    "56": {
+        "L-ALPHA-ALANINE[c]": 1,
+        "L-ALPHA-ALANINE[p]": -1,
+        "NA+[c]": 1,
+        "NA+[p]": -1
+    },
+    "57": {
+        "ILE[c]": 1,
+        "ILE[p]": -1,
+        "NA+[c]": 1,
+        "NA+[p]": -1
+    },
+    "58": {
+        "PROTON[c]": 1,
+        "PROTON[p]": -1,
+        "SER[c]": 1,
+        "SER[p]": -1
+    },
+    "59": {
+        "GLT[c]": 1,
+        "GLT[p]": -1,
+        "NA+[c]": 2,
+        "NA+[p]": -2
+    },
+    "60": {
+        "PHE[c]": -1,
+        "PHE[p]": 1
+    },
+    "61": {
+        "SER[c]": -1,
+        "SER[p]": 1
+    },
+    "62": {
+        "L-ALPHA-ALANINE[c]": -1,
+        "L-ALPHA-ALANINE[p]": 1
+    },
+    "63": {
+        "4-AMINO-BUTYRATE[c]": -1,
+        "4-AMINO-BUTYRATE[p]": 1,
+        "GLT[c]": 1,
+        "GLT[p]": -1
+    },
+    "64": {
+        "L-ASPARTATE[c]": 1,
+        "L-ASPARTATE[p]": -1,
+        "SUC[c]": -1,
+        "SUC[p]": 1
+    },
+    "65": {
+        "GLY[c]": -1,
+        "GLY[p]": 1
+    },
+    "66": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "CYS[c]": 1,
+        "CYS[p]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "WATER[c]": -1
+    },
+    "67": {
+        "L-ALPHA-ALANINE[c]": -1,
+        "L-ALPHA-ALANINE[p]": 1
+    },
+    "68": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "LEU[c]": 1,
+        "LEU[p]": -1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "WATER[c]": -1
+    },
+    "69": {
+        "ASN[c]": 1,
+        "ASN[p]": -1,
+        "PROTON[c]": 1,
+        "PROTON[p]": -1
+    },
+    "70": {
+        "ADP[c]": 1,
+        "ATP[c]": -1,
+        "CYS[c]": -1,
+        "CYS[p]": 1,
+        "PI[c]": 1,
+        "PROTON[c]": 1,
+        "WATER[c]": -1
+    },
+    "71": {
+        "L-ASPARTATE[c]": 1,
+        "L-ASPARTATE[p]": -1,
+        "PROTON[c]": 3,
+        "PROTON[p]": -3
+    }
+}

@@ -12,7 +12,7 @@ Add surrogates into an environmental simulation using ```experiment``` from agen
 
         python -m environment.boot experiment --number N --type T
         
-Here, ```T``` specifies the surrogate type, such as ```chemotaxis```, and ```N``` specifies the number of cells.
+Here, ```T``` specifies the surrogate type, such as ```chemotaxis```, or ```transport``` and ```N``` specifies the number of cells.
 
 They can also be added to an already-running experiment with ```add```:
 
@@ -31,3 +31,13 @@ A new surrogate also requires the addition of functions to ```environment.boot``
 
 Finally, it also requires an initializer:
 - ```initializers['SURROGATE'] = initialize_SURROGATE```
+
+# The Transport Surrogate
+
+The transport surrogate (laid out in surrogates/transport.py) utilize a lookup table derived from the whole-cell model to simulate the flux of molecules through the cell membrane in different media conditions. The transport surrogate utilizes a timeline function (condition/timelines) to change the media environment at different time points. At each time point, the transport surrogate updates its local media condition, then parses a lookup table associated with that media condition (condition/tables/*.tsv).
+
+## The Look-up Table
+The lookup tables record each molecular transport reaction, along with its molecules (substrates) and their ratios (stoichiometry). These ratios are multiplied by the flux, which is sampled by the transport surrogate from a list of values from multiple whole-cell model experiments.
+
+## Pre- and Post-Processing the data
+The lookup tables require some pre-processing to read the keys correctly in the nested stoichiometry and flux distribution dictionaries. This is done outside of the source code, as it requires ```ast.literal_eval()``` which is potentially very dangerous. Additionally, a CSV file is generated in out/manual that tracks some information about each cell (see ```transport_listener()```), but as everyone's use for these data will be slightly different, the post-processing scripts will not be included until the surrogate model is being prepared for wide dissemination. 

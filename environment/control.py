@@ -3,13 +3,8 @@ from __future__ import absolute_import, division, print_function
 import csv
 import time
 import uuid
-import environment
-import os
 
 from agent.control import AgentControl, AgentCommand
-
-ROOT_PATH = os.path.dirname(os.path.dirname(os.path.abspath(environment.__file__)))
-
 
 class ShepherdControl(AgentControl):
 	"""Send messages to agents in the system to control execution."""
@@ -25,10 +20,6 @@ class ShepherdControl(AgentControl):
 			agent_config)
 
 	def lattice_experiment(self, args):
-		# Open a file "test_data.csv" that will populate with agent-specific data to open in Jupyter notebook
-		with open(ROOT_PATH + '/environment/analysis/test_data.csv', 'wb') as test_data:
-			filewriter = csv.writer(test_data, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-			filewriter.writerow(['agent_id', 'timestep', 'volume', 'media', 'GLT[c]'])
 		lattice_id = str(uuid.uuid1())
 		num_cells = args['number']
 		print('Creating lattice agent_id {} and {} cell agents\n'.format(
@@ -72,7 +63,7 @@ class ShepherdControl(AgentControl):
 		num_cells = args['number']
 		print('Creating lattice agent_id {} and {} cell agents\n'.format(
 			lattice_id, num_cells))
-		lattice_config = {
+		transport_config = {
 			'run_for' : 1.0,
 			'static_concentrations': True,
 			'gradient': {'seed': True},
@@ -81,7 +72,7 @@ class ShepherdControl(AgentControl):
 			'rotation_jitter': 1.0,		# TODO: implement this movement
 			'edge_length': 20.0,
 			'patches_per_edge': 30,}
-		self.add_agent(lattice_id, 'lattice', lattice_config)
+		self.add_agent(lattice_id, 'lattice', transport_config)
 
 		for index in range(num_cells):
 			self.add_cell(args['type'] or 'transport', {
@@ -111,9 +102,9 @@ The commands are:
 `divide --id AGENT_ID` ask a cell agent to divide,
 `shutdown [--id OUTER_ID]` shut down one or all environment agents and their
      connected agents,
-'chemotaxis-experiment [--number N] [--type T]` ask the Shepherd to run a
+`chemotaxis-experiment [--number N] [--type T]` ask the Shepherd to run a
     chemotaxis environment with N agents of type T
-'transport-experiment [--number N] [--type T]` ask the Shepherd to run a 
+`transport-experiment [--number N] [--type T]` ask the Shepherd to run a 
 	transport environment with N agents of type T'''
 
 		super(EnvironmentCommand, self).__init__(choices, description)
