@@ -176,7 +176,11 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 def boot_chemotaxis(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
-	volume = 1.0
+	state = {
+		'volume': 1.0
+		'environment_change': {}}
+
+	agent_config['state'] = state
 	kafka_config = agent_config['kafka_config']
 	options = {}
 

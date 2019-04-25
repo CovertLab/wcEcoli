@@ -138,7 +138,7 @@ class Outer(Agent):
 
 		self.update_state()
 
-	def initialize(self):
+	def preinitialize(self):
 		print('environment started')
 
 	def finalize(self):

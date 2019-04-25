@@ -78,7 +78,6 @@ class Inner(Agent):
 
 		self.sim_initialize = sim_initialize
 		self.boot_config = boot_config
-		volume = agent_config.get('volume', 1.2)
 
 		kafka_config = agent_config['kafka_config']
 		kafka_config['subscribe'].append(
@@ -88,17 +87,14 @@ class Inner(Agent):
 
 		self.outer_id = outer_id
 
+	def preinitialize(self):
+		state = self.agent_config['state']
 		self.send(kafka_config['topics']['environment_receive'], {
 			'event': event.CELL_DECLARE,
-			'agent_id': outer_id,
-			'inner_id': agent_id,
-			'agent_config': agent_config,
-			'state': {
-				'volume': volume,
-				'environment_change': {}}})
-
-	def initialize(self):
-		pass
+			'agent_id': self.outer_id,
+			'inner_id': self.agent_id,
+			'agent_config': self.agent_config,
+			'state': state}
 
 	def send_initialize(self):
 		"""
