@@ -101,7 +101,7 @@ class TransportProcess(CellSimulation):
 
 
 	def update_state(self):
-		# nAvogadro is in 1/mol, convert to 1/mmol. volume is in fL, convert to L
+		# nAvogadro is in 1/mol --> convert to 1/mmol. volume is in fL --> convert to L
 		self.molar_to_counts = (self.nAvogadro * 1e-3) * (self.volume * 1e-15)
 		self.transport_fluxes = self.get_fluxes(self.current_flux_lookup, self.transport_reactions_ids)
 		delta_counts = self.flux_to_counts(self.transport_fluxes)
@@ -123,6 +123,8 @@ class TransportProcess(CellSimulation):
 	def apply_outer_update(self, update):
 		self.external_concentrations = update['concentrations']
 		self.media_id = update['media_id']
+
+		# update lookup table
 		self.current_flux_lookup = self.flux_lookup[self.media_id]
 
 		# reset environment change
@@ -131,13 +133,13 @@ class TransportProcess(CellSimulation):
 			self.environment_change[molecule] = 0
 
 	def run_incremental(self, run_until):
+		# TODO -- implement time steps! Will require an accumulate_deltas() as in local_environment.py
 		# update state once per message exchange
 		self.update_state()
 		# self.check_division()
 		self.local_time = run_until
 
-		# TODO -- time steps!
-		time.sleep(5.0)  # pause for better coordination with Lens visualization. TODO: remove this
+		time.sleep(1.0)  # pause for better coordination with Lens visualization. TODO: remove this
 
 	def generate_inner_update(self):
 		return {
