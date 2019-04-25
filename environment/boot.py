@@ -96,7 +96,7 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	if 'outer_id' not in agent_config:
 		raise ValueError("--outer-id required")
 
-	kafka_config = agent_config['kafka_config']
+	# kafka_config = agent_config['kafka_config']
 	working_dir = agent_config.get('working_dir', os.getcwd())
 	outer_id = agent_config['outer_id']
 	start_time = agent_config.get('start_time', 0)
@@ -105,7 +105,12 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	variant_type = agent_config.get('variant_type', 'wildtype')
 	variant_index = agent_config.get('variant_index', 0)
 	seed = agent_config.get('seed', 0)
-	# volume = agent_config.get('volume', 1.2)
+
+	# initialize state
+	state = {
+		'volume': 1.0,
+		'environment_change': {}}
+	agent_config['state'] = state
 
 	# make options for boot config
 	sim_path = fp.makedirs(working_dir, 'out', 'manual')
@@ -176,12 +181,12 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 def boot_chemotaxis(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
-	state = {
-		'volume': 1.0
-		'environment_change': {}}
 
+	# initialize state and options
+	state = {
+		'volume': 1.0,
+		'environment_change': {}}
 	agent_config['state'] = state
-	kafka_config = agent_config['kafka_config']
 	options = {}
 
 	inner = Inner(
@@ -198,8 +203,12 @@ def boot_chemotaxis(agent_id, agent_type, agent_config):
 def boot_endocrine(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
-	volume = 1.0
-	kafka_config = agent_config['kafka_config']
+
+	# initialize state and options
+	state = {
+		'volume': 1.0,
+		'environment_change': {}}
+	agent_config['state'] = state
 	options = {}
 
 	inner = Inner(

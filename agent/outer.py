@@ -196,8 +196,6 @@ class Outer(Agent):
 		self.cell_update(message)
 		inner_id = message['inner_id']
 
-		time.sleep(0.2) # TODO (Eran) pause to allow initialization before synchronize is applied
-
 		# synchronize state of the new cell
 		parameters = self.environment.simulation_parameters(inner_id)
 		self.send(self.topics['cell_receive'], {

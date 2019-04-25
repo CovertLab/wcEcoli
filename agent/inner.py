@@ -88,13 +88,14 @@ class Inner(Agent):
 		self.outer_id = outer_id
 
 	def preinitialize(self):
+		kafka_config = self.agent_config['kafka_config']
 		state = self.agent_config['state']
 		self.send(kafka_config['topics']['environment_receive'], {
 			'event': event.CELL_DECLARE,
 			'agent_id': self.outer_id,
 			'inner_id': self.agent_id,
 			'agent_config': self.agent_config,
-			'state': state}
+			'state': state})
 
 	def send_initialize(self):
 		"""
