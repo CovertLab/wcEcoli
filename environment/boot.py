@@ -305,7 +305,7 @@ def initialize_transport_compartment(boot_config, synchronize_config):
 	'''
 	initialize_processes = {
 		'transport': initialize_transport_minimal,
-		'internal': initialize_ecoli}
+		'ecoli': initialize_ecoli}
 	return TransportCompartment(boot_config, synchronize_config, initialize_processes)
 
 

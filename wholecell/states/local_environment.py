@@ -56,6 +56,9 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 		self._processIDs = sim.processes.keys()
 
+		# load target transport reactions from compartment
+		self.target_transport_reactions = sim._target_transport_reactions
+
 		# load constants
 		self._nAvogadro = sim_data.constants.nAvogadro
 
@@ -109,11 +112,14 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 	## Functions for multi-scaling interface
 	def set_local_environment(self, update):
+
+		# apply environment's concentrations
 		concentrations = update['concentrations']
 		self._env_delta_counts = dict.fromkeys(self._env_delta_counts, 0)
 		for idx, molecule_id in enumerate(self._moleculeIDs):
 			self._concentrations[idx] = concentrations[molecule_id]
 
+		# get transport fluxes passed in from the environment
 		self.transport_fluxes = update.get('transport_fluxes', {})
 
 	def get_environment_change(self):

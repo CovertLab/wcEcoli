@@ -13,16 +13,21 @@ class TransportCompartment(CellSimulation):
 
 	def __init__(self, boot_config, synchronize_config, initialize_processes):
 
-		# boot the processes
+		# initialize transport
 		self.processes = {}
-		# self.processes['transport'] = initialize_processes['transport'](boot_config, synchronize_config)
+		self.processes['transport'] = initialize_processes['transport'](boot_config, synchronize_config)
 
-		for process_id, process_init in initialize_processes.iteritems():
-			self.processes[process_id] = process_init(boot_config, synchronize_config)
+		# update ecoli's synchronize_config with transport fluxes.
+		ecoli_synchronize_config = boot_config
+		ecoli_synchronize_config['target_transport_reactions'] = self.processes['transport'].transport_reactions_ids
+
+		# initialize ecoli
+		self.processes['ecoli'] = initialize_processes['ecoli'](boot_config, ecoli_synchronize_config)
 
 
-		# TODO -- update synchronize_config with transport fluxes.
-		# TODO -- use compartments color as default
+
+		# TODO -- use compartment's color as default
+
 
 		# # resolve_inner_update defines what process each inner update is taken from
 		# self.resolve_inner_update = {
@@ -41,19 +46,11 @@ class TransportCompartment(CellSimulation):
 		# # use one process' functions exclusively
 
 
-
-
-
-		self.run_incremental = self.processes['transport'].run_incremental
+		# self.run_incremental = self.processes['transport'].run_incremental
 		self.generate_inner_update = self.processes['transport'].generate_inner_update
 		self.apply_outer_update = self.processes['transport'].apply_outer_update
 		self.time = self.processes['transport'].time
 		self.divide = self.processes['transport'].divide
-
-
-
-
-
 		# self.divide = self.internal.divide  # TODO (eran) what happens when one process declares division? Can it divide the rest?
 
 
@@ -95,10 +92,10 @@ class TransportCompartment(CellSimulation):
 	# 	#
 	# 	# # TODO -- only apply outer update from ecoli to environment, outer update from transport is only for ecoli targets
 	#
-	# def run_incremental(self, run_until):
-	# 	for process in self.processes.itervalues():
-	# 		process.run_incremental(run_until)
-	#
-	# def finalize(self):
-	# 	for process in self.processes.itervalues():
-	# 		process.finalize()
+	def run_incremental(self, run_until):
+		for process in self.processes.itervalues():
+			process.run_incremental(run_until)
+
+	def finalize(self):
+		for process in self.processes.itervalues():
+			process.finalize()
