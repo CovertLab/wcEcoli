@@ -181,8 +181,8 @@ def fitSimData_1(
 		sim_data,
 		cellSpecs,
 		disable_ribosome_capacity_fitting,
-		disable_rnapoly_capacity_fitting
-		)
+		disable_rnapoly_capacity_fitting,
+		flat_elongation)
 
 	sim_data.process.transcription.rnaSynthProbFraction = {}
 	sim_data.process.transcription.rnapFractionActiveDict = {}
@@ -469,8 +469,8 @@ def buildCombinedConditionCellSpecifications(
 		sim_data,
 		cellSpecs,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False
-		):
+		disable_rnapoly_capacity_fitting=False,
+		flat_elongation=False):
 	"""
 	Creates cell specifications for sets of transcription factors being active.
 	These sets include conditions like 'with_aa' or 'no_oxygen' where multiple
