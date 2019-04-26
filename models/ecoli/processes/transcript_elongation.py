@@ -50,6 +50,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.ntps = self.bulkMoleculesView(["ATP[c]", "CTP[c]", "GTP[c]", "UTP[c]"])
 		self.ppi = self.bulkMoleculeView('PPI[c]')
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
+		self.flat_elongation = sim._flat_elongation
 
 	def calculateRequest(self):
 		# Calculate elongation rate based on the current nutrients
@@ -58,7 +59,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.rnapElongationRate = int(stochasticRound(self.randomState,
 			self.rnaPolymeraseElongationRateDict[current_nutrients].asNumber(units.nt / units.s) * self.timeStepSec()))
 
-		self.elongation_rates = self.transcription_data.make_elongation_rates(self.rnapElongationRate)
+		self.elongation_rates = self.transcription_data.make_elongation_rates(self.rnapElongationRate, self.flat_elongation)
 
 		# Request all active RNA polymerases
 		activeRnaPolys = self.activeRnaPolys.allMolecules()

@@ -192,12 +192,27 @@ class Transcription(object):
 
 		self.transcriptionEndWeight = (sim_data.getter.getMass(["PPI[c]"]) / raw_data.constants['nAvogadro']).asNumber(units.fg)
 
-	def make_elongation_rates(self, base):
+	def _build_elongation_rates(self, raw_data, sim_data):
+		self.max_elongation_rate = 85 ## D&B
+		self.rna_indexes = {
+			rna['id']: index
+			for index, rna in enumerate(raw_data.rnas)}
+
+		self.s30_16sRRNA = sim_data.moleculeGroups.s30_16sRRNA
+		self.s50_5sRRNA = sim_data.moleculeGroups.s50_5sRRNA
+		self.s50_23sRRNA = sim_data.moleculeGroups.s50_23sRRNA
+		self.RRNA_ids = np.concatenate(self.s30_16sRRNA, self.s50_5sRRNA, self.s50_23sRRNA)
+		self.RRNA_indexes = [
+			self.rna_indexes[rrna_id]
+			for rrna_id in self.RRNA_ids]
+
+	def make_elongation_rates(self, base, flat_elongation=False):
 		rates = np.full(
 			self.transcriptionSequences.shape[0],
 			base,
 			dtype=np.int64)
 
-		# rates[self.rprotein_indexes] = self.maxRibosomeElongationRate
+		if not flat_elongation:
+			rates[self.RRNA_indexes] = self.max_elongation_rate
 
 		return rates

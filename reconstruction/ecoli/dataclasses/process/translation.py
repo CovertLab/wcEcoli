@@ -216,12 +216,13 @@ class Translation(object):
 
 		self.elongation_rates[self.rprotein_indexes] = self.max_elongation_rate
 
-	def make_elongation_rates(self, base):
+	def make_elongation_rates(self, base, flat_elongation=False):
 		rates = np.full(
 			self.protein_ids.shape,
 			base,
 			dtype=np.int64)
 
-		rates[self.rprotein_indexes] = self.max_elongation_rate
+		if not flat_elongation:
+			rates[self.rprotein_indexes] = self.max_elongation_rate
 
 		return rates
