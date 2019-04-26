@@ -80,8 +80,8 @@ def fitSimData_1(
 		disable_ribosome_capacity_fitting=False,
 		disable_rnapoly_capacity_fitting=False,
 		flat_elongation=False,
-		adjust_rna_and_protein_parameters=True,
-		):
+		adjust_rna_and_protein_parameters=True):
+
 	"""
 	Fits parameters necessary for the simulation based on the knowledge base
 
@@ -164,8 +164,11 @@ def fitSimData_1(
 	else:
 		for tf in sorted(sim_data.tfToActiveInactiveConds):
 			cellSpecs.update(buildTfConditionCellSpecifications(
-				sim_data, tf, disable_ribosome_capacity_fitting, disable_rnapoly_capacity_fitting
-				))
+				sim_data,
+				tf,
+				disable_ribosome_capacity_fitting,
+				disable_rnapoly_capacity_fitting,
+				flat_elongation))
 
 	for conditionKey in cellSpecs:
 		if conditionKey == "basal":
@@ -365,8 +368,8 @@ def buildTfConditionCellSpecifications(
 		sim_data,
 		tf,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False
-		):
+		disable_rnapoly_capacity_fitting=False,
+		flat_elongation=False):
 	"""
 	Creates cell specifications for a given transcription factor by
 	fitting expression. Will set for the active and inactive TF condition.
@@ -1354,7 +1357,7 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 			)
 
 	# Compute number of RNA polymerases required to maintain steady state of mRNA
-	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time)
+	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time).asNumber(units.nt / units.s)
 	elongation_rates = sim_data.process.transcription.make_elongation_rates(base, flat_elongation=flat_elongation)
 	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
 		rnaLengths, elongation_rates, rnaLossRate)
