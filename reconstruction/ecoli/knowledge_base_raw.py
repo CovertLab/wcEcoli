@@ -52,7 +52,6 @@ LIST_OF_DICT_FILENAMES = (
 	"tfOneComponentBound.tsv",
 	"transcriptionUnits.tsv",
 	"translationEfficiency.tsv",
-	"transport_reactions.tsv",
 	"twoComponentSystemTemplates.tsv",
 	"twoComponentSystems.tsv",
 	"water.tsv",
@@ -81,9 +80,6 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("common_names", "protein-complexes.tsv"),
 	os.path.join("common_names", "reactions.tsv"),
 	os.path.join("common_names", "rnas.tsv"),
-	os.path.join("transport_data", "transport_avg_minimal.tsv"),
-	os.path.join("transport_data", "transport_avg_minimal_minus_oxygen.tsv"),
-	os.path.join("transport_data", "transport_avg_minimal_plus_amino_acids.tsv"),
 	)
 LIST_OF_ENV_FILENAMES = (
 	os.path.join("condition", "environment_molecules.tsv"),

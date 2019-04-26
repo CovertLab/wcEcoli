@@ -1,5 +1,4 @@
-# fluxes are in mmol/L
-"reaction id"	"average flux"
+"reaction id"	"average flux mmol/L"
 "TRANS-RXN0-592"	0.0
 "TRANS-RXN-108-5-METHYLAMINOMETHYL-2-SELENOURIDINE/PROTON//5-METHYLAMINOMETHYL-2-SELENOURIDINE/PROTON.87."	0.0
 "TRANS-RXN0-266"	0.0

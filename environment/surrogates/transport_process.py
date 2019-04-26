@@ -1,21 +1,23 @@
 from __future__ import absolute_import, division, print_function
 
+import os
+import csv
 import time
-import numpy as np
 from scipy import constants
 
 from agent.inner import CellSimulation
-
-# Raw data class
-from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
+from reconstruction.spreadsheets import JsonReader
 
 TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 69, 0]]
 
-variants = [
-	'minimal',
-	'minimal_minus_oxygen',
-	'minimal_plus_amino_acids']
+CSV_DIALECT = csv.excel_tab
+TRANSPORT_REACTIONS_FILE = os.path.join("environment", "condition", "look_up_tables", "transport_reactions.tsv")
+LIST_OF_LOOKUP_FILES = (
+	os.path.join("environment", "condition", "look_up_tables", "avg_flux", "minimal.tsv"),
+	os.path.join("environment", "condition", "look_up_tables", "avg_flux", "minimal_minus_oxygen.tsv"),
+	os.path.join("environment", "condition", "look_up_tables", "avg_flux", "minimal_plus_amino_acids.tsv"),
+)
 
 amino_acids = [
 	'L-ALPHA-ALANINE',
@@ -59,34 +61,33 @@ class TransportProcess(CellSimulation):
 		self.motile_force = [0.01, 0.01] # initial magnitude and relative orientation
 		self.division = []
 
-		raw_data = KnowledgeBaseEcoli()
+		# make dict of transport reactions
 		self.all_transport_reactions = {}
-		for row in raw_data.transport_reactions:
-			reaction_id = row["reaction id"]
-			stoichiometry = row["stoichiometry"]
-			reversible = row["is reversible"]
-			catalyzed = row["catalyzed by"]
-			self.all_transport_reactions[reaction_id] = {
-				"stoichiometry": stoichiometry,
-				"is reversible": reversible,
-				"catalyzed by": catalyzed,
-			}
+		with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
+			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+			for row in reader:
+				reaction_id = row["reaction id"]
+				stoichiometry = row["stoichiometry"]
+				reversible = row["is reversible"]
+				catalyzed = row["catalyzed by"]
+				self.all_transport_reactions[reaction_id] = {
+					"stoichiometry": stoichiometry,
+					"is reversible": reversible,
+					"catalyzed by": catalyzed,
+				}
 
 		# make a dictionary with saved average fluxes for all transport reactions, in the three conditions
 		# fluxes are in mmol/L
-		self.flux_lookup = {variant: {} for variant in variants}
-		for row in raw_data.transport_data.transport_avg_minimal:
-			reaction_id = row["reaction id"]
-			flux = row["average flux"]
-			self.flux_lookup['minimal'][reaction_id] = flux
-		for row in raw_data.transport_data.transport_avg_minimal_minus_oxygen:
-			reaction_id = row["reaction id"]
-			flux = row["average flux"]
-			self.flux_lookup['minimal_minus_oxygen'][reaction_id] = flux
-		for row in raw_data.transport_data.transport_avg_minimal_plus_amino_acids:
-			reaction_id = row["reaction id"]
-			flux = row["average flux"]
-			self.flux_lookup['minimal_plus_amino_acids'][reaction_id] = flux
+		self.flux_lookup = {}
+		for file_name in LIST_OF_LOOKUP_FILES:
+			attrName = file_name.split(os.path.sep)[-1].split(".")[0]
+			self.flux_lookup[attrName] = {}
+			with open(file_name, 'rU') as csvfile:
+				reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+				for row in reader:
+					reaction_id = row["reaction id"]
+					flux = row["average flux mmol/L"]
+					self.flux_lookup[attrName][reaction_id] = flux
 
 		# exchange_ids declares which molecules' exchange will be controlled by transport
 		aa_p_ids = [aa_id + "[p]" for aa_id in amino_acids]
@@ -143,7 +144,7 @@ class TransportProcess(CellSimulation):
 
 	def run_incremental(self, run_until):
 		'''run until run_until'''
-		while self.time() < run_until and not self._isDead:
+		while self.time() < run_until:
 			self.local_time += self.timestep
 			self.update_state()
 			# self.check_division()
