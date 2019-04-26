@@ -57,7 +57,8 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		self._processIDs = sim.processes.keys()
 
 		# load target transport reactions from compartment
-		self.target_transport_reactions = sim._target_transport_reactions
+		boundary_reactions = sim._boundary_reactions
+		self.transport_fluxes = {reaction: 0.0 for reaction in boundary_reactions}
 
 		# load constants
 		self._nAvogadro = sim_data.constants.nAvogadro
@@ -89,9 +90,6 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 		# the length of the longest media_id, for padding in listener
 		self._media_id_max_length = max([len(t[1]) for t in self.current_timeline])
-
-		# variables from a compartment
-		self.transport_fluxes = {}
 
 
 	def update(self):
