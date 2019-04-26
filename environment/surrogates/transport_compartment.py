@@ -24,9 +24,6 @@ class TransportCompartment(CellSimulation):
 		# initialize ecoli
 		self.processes['ecoli'] = initialize_processes['ecoli'](boot_config, ecoli_synchronize_config)
 
-
-
-		# TODO -- use compartment's color as default
 		# resolve_inner_update defines what process each inner update is taken from
 		self.resolve_inner_update = {
 			'environment_change': 'ecoli',
@@ -42,8 +39,6 @@ class TransportCompartment(CellSimulation):
 		self.added_update = {update_id: None for update_id in self.cross_updates.iterkeys()}
 
 		# use one process' functions exclusively
-		# self.generate_inner_update = self.processes['transport'].generate_inner_update
-		# self.apply_outer_update = self.processes['transport'].apply_outer_update
 		self.time = self.processes['transport'].time
 		self.divide = self.processes['ecoli'].divide
 		# self.divide = self.internal.divide  # TODO (eran) what happens when one process declares division? Can it divide the rest?
@@ -63,7 +58,7 @@ class TransportCompartment(CellSimulation):
 		for update_parameter, process_id in self.resolve_inner_update.iteritems():
 			inner_update[update_parameter] = process_updates[process_id][update_parameter]
 
-		# TODO -- inner_updates from some processes become outer_updates for other
+		# apply cross_updates: inner_updates from some processes become outer_updates used by other
 		for update, (process_source, process_target) in self.cross_updates.iteritems():
 			self.added_update[update] = process_updates[process_source][update]
 
@@ -75,12 +70,10 @@ class TransportCompartment(CellSimulation):
 
 	def apply_outer_update(self, outer_update):
 		# add to update
+		# TODO -- only apply outer update from ecoli to environment, outer update from transport is only for ecoli targets
 		outer_update.update(self.added_update)
 		for process_id, process in self.processes.iteritems():
 			process.apply_outer_update(outer_update)
-
-		print('outer_update: ' + str(outer_update))
-		# TODO -- only apply outer update from ecoli to environment, outer update from transport is only for ecoli targets
 
 
 	def run_incremental(self, run_until):
