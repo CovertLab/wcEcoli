@@ -43,12 +43,12 @@ amino_acids = [
 	'VAL'
 ]
 
-class TransportProcess(CellSimulation):
+class TransportMinimal(CellSimulation):
 	''''''
 
-	def __init__(self):
-		self.initial_time = 0.0
-		self.local_time = 0.0
+	def __init__(self, state):
+		self.initial_time = state.get('time', 0.0)
+		self.local_time = state.get('time', 0.0)
 		self.timestep = 1.0
 		self.environment_change = {}
 		self.volume = 1.0  # (fL)

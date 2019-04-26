@@ -12,7 +12,7 @@ from agent.boot import BootAgent
 from environment.lattice import EnvironmentSpatialLattice
 from environment.surrogates.chemotaxis import Chemotaxis
 from environment.surrogates.endocrine import Endocrine
-from environment.surrogates.transport_process import TransportProcess
+from environment.surrogates.transport_lookup_minimal import TransportMinimal
 from models.ecoli.sim.simulation import ecoli_simulation
 from environment.condition.make_media import Media
 
@@ -66,6 +66,12 @@ def boot_lattice(agent_id, agent_type, agent_config):
 
 	return EnvironmentAgent(agent_id, agent_type, agent_config, environment)
 
+# wcEcoli initialize and boot
+def initialize_ecoli(boot_config, synchronize_config):
+	synchronize_config['initialTime'] = synchronize_config.pop('time')
+	boot_config.update(synchronize_config)
+	return ecoli_simulation(**boot_config)
+
 def boot_ecoli(agent_id, agent_type, agent_config):
 	'''
 	Instantiates an initial or daughter EcoliSimulation, passes it to a new
@@ -84,7 +90,7 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	if 'outer_id' not in agent_config:
 		raise ValueError("--outer-id required")
 
-	kafka_config = agent_config['kafka_config']
+	# kafka_config = agent_config['kafka_config']
 	working_dir = agent_config.get('working_dir', os.getcwd())
 	outer_id = agent_config['outer_id']
 	start_time = agent_config.get('start_time', 0)
@@ -93,29 +99,14 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	variant_type = agent_config.get('variant_type', 'wildtype')
 	variant_index = agent_config.get('variant_index', 0)
 	seed = agent_config.get('seed', 0)
-	volume = agent_config.get('volume', 1.2)
 
-	# Create the inner agent before instantiating the simulation so it can send
-	# a message to the lattice without waiting for the simulation to initialize.
-	# TODO(jerry): Is the agent OK receiving messages w/o a sim? Add a
-	#    setter for its simulation property, make it queue messages until it
-	#    gets one, change the constructor type signature to allow None?
-	inner = Inner(
-		agent_id,
-		outer_id,
-		agent_type,
-		agent_config,
-		None)
+	# initialize state
+	state = {
+		'volume': 1.0,
+		'environment_change': {}}
+	agent_config['state'] = state
 
-	inner.send(kafka_config['topics']['environment_receive'], {
-		'event': event.CELL_DECLARE,
-		'agent_id': outer_id,
-		'inner_id': agent_id,
-		'agent_config': agent_config,
-		'state': {
-			'volume': volume,
-			'environment_change': {}}})
-
+	# make options for boot config
 	sim_path = fp.makedirs(working_dir, 'out', 'manual')
 	sim_data_fit = os.path.join(sim_path, 'kb', 'simData_Most_Fit.cPickle')
 	output_dir = os.path.join(sim_path, 'sim_' + agent_id, 'simOut')
@@ -166,93 +157,96 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 	fp.write_json_file(metadata_path, metadata)
 
-	inner.simulation = ecoli_simulation(**options)
+	# Create the inner agent before instantiating the simulation so it can send
+	# a message to the lattice without waiting for the simulation to initialize.
+	# TODO(jerry): Is the agent OK receiving messages w/o a sim? Add a
+	#    setter for its simulation property, make it queue messages until it
+	#    gets one, change the constructor type signature to allow None?
+	inner = Inner(
+		agent_id,
+		outer_id,
+		agent_type,
+		agent_config,
+		options,
+		initialize_ecoli)
 
 	return inner
+
+# Chemotaxis surrogate initialize and boot
+def initialize_chemotaxis(boot_config, synchronize_config):
+	boot_config.update(synchronize_config)
+	return Chemotaxis(boot_config)
 
 def boot_chemotaxis(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
-	volume = 1.0
-	kafka_config = agent_config['kafka_config']
+
+	# initialize state and options
+	state = {
+		'volume': 1.0,
+		'environment_change': {}}
+	agent_config['state'] = state
+	options = {}
 
 	inner = Inner(
 		agent_id,
 		outer_id,
 		agent_type,
 		agent_config,
-		None)
-
-	inner.send(kafka_config['topics']['environment_receive'], {
-		'event': event.CELL_DECLARE,
-		'agent_id': outer_id,
-		'inner_id': agent_id,
-		'agent_config': agent_config,
-		'state': {
-			'volume': volume,
-			'environment_change': {}}})
-
-	simulation = Chemotaxis()
-	inner.simulation = simulation
-
-	time.sleep(5)  # TODO(jerry): Wait for the Chemotaxis to boot
+		options,
+		initialize_chemotaxis)
 
 	return inner
+
+# Endocrine surrogate initialize and boot
+def initialize_endocrine(boot_config, synchronize_config):
+	boot_config.update(synchronize_config)
+	return Endocrine(boot_config)
 
 def boot_endocrine(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
-	volume = 1.0
-	kafka_config = agent_config['kafka_config']
+
+	# initialize state and options
+	state = {
+		'volume': 1.0,
+		'environment_change': {}}
+	agent_config['state'] = state
+	options = {}
 
 	inner = Inner(
 		agent_id,
 		outer_id,
 		agent_type,
 		agent_config,
-		None)
-
-	inner.send(kafka_config['topics']['environment_receive'], {
-		'event': event.CELL_DECLARE,
-		'agent_id': outer_id,
-		'inner_id': agent_id,
-		'agent_config': agent_config,
-		'state': {
-			'volume': volume,
-			'environment_change': {}}})
-
-	simulation = Endocrine()
-	inner.simulation = simulation
-
-	time.sleep(5)
+		options,
+		initialize_endocrine)
 
 	return inner
 
+# Transport lookup minimal surrogate initialize and boot
+def initialize_transport_minimal(boot_config, synchronize_config):
+	boot_config.update(synchronize_config)
+	return TransportMinimal(boot_config)
+
 def boot_transport_minimal(agent_id, agent_type, agent_config):
+	agent_id = agent_id
 	outer_id = agent_config['outer_id']
-	volume = 1.0
-	kafka_config = agent_config['kafka_config']
+
+	# initialize state and options
+	state = {
+		'volume': 1.0,
+		'environment_change': {}}
+	agent_config['state'] = state
+	options = {}
 
 	inner = Inner(
 		agent_id,
 		outer_id,
 		agent_type,
 		agent_config,
-		None)
-
-	inner.send(kafka_config['topics']['environment_receive'], {
-		'event': event.CELL_DECLARE,
-		'agent_id': outer_id,
-		'inner_id': agent_id,
-		'agent_config': agent_config,
-		'state': {
-			'volume': volume,
-			'environment_change': {}}})
-
-	simulation = TransportProcess()
-	inner.simulation = simulation
-
-	time.sleep(5)
+		options,
+		initialize_transport_minimal)
 
 	return inner
 
