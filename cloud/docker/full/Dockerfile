@@ -1,19 +1,19 @@
-# Container image #3: wcm-parca.
-# This Dockerfile builds a container image with the wcEcoli Parca output (ready
-# to run simulations), layered on the wcm-code image.
+# Container image #3: wcm-full.
+# This Dockerfile builds a container image with the full Whole Cell Model, ready
+# to run simulations, layered on the wcm-code image.
 #
 # To build locally from the wcEcoli/ project root directory:
 #
-#     > docker build -f cloud/docker/parca/Dockerfile -t wcm-parca .
+#     > docker build -f cloud/docker/full/Dockerfile -t wcm-full .
 #
 # To build using the Cloud Build service and store in the Container Registry,
 # from this directory:
 #
-#     > gcloud builds submit --timeout=90m --tag gcr.io/allen-discovery-center-mcovert/wcm-parca .
+#     > gcloud builds submit --timeout=90m --tag gcr.io/allen-discovery-center-mcovert/wcm-full .
 #
 # After building locally you can start up a new container from the image:
 #
-#     > docker run --name parcatest -it parca
+#     > docker run --name wcm -it wcm-full
 #
 # It will start a shell where you can execute commands:
 #

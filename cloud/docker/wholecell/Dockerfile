@@ -16,7 +16,7 @@
 #
 # After building locally you can start up a new container from the image:
 #
-#     > docker run --name wholecelltest -it wholecell
+#     > docker run --name wholecelltest -it wcm-code
 #
 # It will start a shell where you can execute commands:
 #
