@@ -33,6 +33,10 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.metaboliteIDs = sorted(sim_data.process.metabolism.concDict)
 		self.nConstrainedReactions = len(self.metabolism.kineticsConstrainedReactions)
 
+		# Add kinetic reaction targets from boundary
+		self.nBoundaryConstrainedReactions = len(self.metabolism.boundaryConstrainedReactions)
+		self.nAllConstrainedReactions = self.nConstrainedReactions + self.nBoundaryConstrainedReactions
+
 		# Get metabolite names similar to how it's done in the metabolism process
 		self.metaboliteNamesFromNutrients = set()
 		for time, media_id in sim.external_states['Environment'].current_timeline:
@@ -54,8 +58,10 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.enzymeIDs = self.metabolism.kineticsEnzymesList
 		self.enzymeCountsInit = np.zeros(len(self.metabolism.kineticsEnzymesList), np.float64)
 		self.countsToMolar = np.zeros(1, np.float64)
-		self.targetFluxes = np.zeros(self.nConstrainedReactions, np.float64)
-		self.actualFluxes = np.zeros(self.nConstrainedReactions, np.float64)
+		self.targetFluxes = np.zeros(self.nAllConstrainedReactions, np.float64)
+		self.actualFluxes = np.zeros(self.nAllConstrainedReactions, np.float64)
+
+		# reactionConstraint is only for kinetic constrained reactions, without boundary constrained reactions
 		self.reactionConstraint = np.zeros(self.nConstrainedReactions, np.int)
 
 	def update(self):
@@ -65,7 +71,9 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		tableWriter.writeAttributes(
 			enzymeIDs = self.enzymeIDs,
 			metaboliteNames = self.metaboliteNamesFromNutrients,
-			constrainedReactions = self.metabolism.kineticsConstrainedReactions,
+			constrainedReactions = self.metabolism.allConstrainedReactions,
+			kineticsConstrainedReactions = self.metabolism.kineticsConstrainedReactions,
+			boundaryConstrainedReactions = self.metabolism.boundaryConstrainedReactions,
 			)
 
 

@@ -87,6 +87,9 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		# the length of the longest media_id, for padding in listener
 		self._media_id_max_length = max([len(t[1]) for t in self.current_timeline])
 
+		# variables from a compartment
+		self.transport_fluxes = {}
+
 
 	def update(self):
 		'''update self.current_media_id based on self.current_timeline and self.time'''
@@ -105,10 +108,13 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 					for molIndex in np.where(self._concentrations < 0)[0]))
 
 	## Functions for multi-scaling interface
-	def set_local_environment(self, concentrations):
+	def set_local_environment(self, update):
+		concentrations = update['concentrations']
 		self._env_delta_counts = dict.fromkeys(self._env_delta_counts, 0)
 		for idx, molecule_id in enumerate(self._moleculeIDs):
 			self._concentrations[idx] = concentrations[molecule_id]
+
+		self.transport_fluxes = update.get('transport_fluxes', {})
 
 	def get_environment_change(self):
 		return self._env_delta_counts

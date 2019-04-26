@@ -1,10 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import time
 import errno
 
-import agent.event as event
 from agent.outer import Outer
 from agent.inner import Inner
 from agent.boot import BootAgent
@@ -13,6 +11,7 @@ from environment.lattice import EnvironmentSpatialLattice
 from environment.surrogates.chemotaxis import Chemotaxis
 from environment.surrogates.endocrine import Endocrine
 from environment.surrogates.transport_lookup_minimal import TransportMinimal
+from environment.surrogates.transport_compartment import TransportCompartment
 from models.ecoli.sim.simulation import ecoli_simulation
 from environment.condition.make_media import Media
 
@@ -251,6 +250,46 @@ def boot_transport_minimal(agent_id, agent_type, agent_config):
 	return inner
 
 
+# Transport compartment initialize and boot
+def initialize_transport_compartment(boot_config, synchronize_config):
+	boot_config.update(synchronize_config)
+
+
+	import ipdb; ipdb.set_trace()
+
+	# put transport and ecoli into a compartment
+	transport = TransportMinimal(boot_config)
+	ecoli = initialize_ecoli(boot_config, synchronize_config)
+	processes = {
+		'transport': transport,
+		'internal': ecoli}
+	return TransportCompartment(boot_config, processes)
+
+def boot_transport_compartment(agent_id, agent_type, agent_config):
+	'''
+	Boot a compartment with transport process and a wcEcoli
+	'''
+	agent_id = agent_id
+	outer_id = agent_config['outer_id']
+
+	# initialize state and options
+	state = {
+		'volume': 1.0,
+		'environment_change': {}}
+	agent_config['state'] = state
+	options = {}
+
+	inner = Inner(
+		agent_id,
+		outer_id,
+		agent_type,
+		agent_config,
+		options,
+		initialize_transport_minimal)
+
+	return inner
+
+
 class BootEnvironment(BootAgent):
 	def __init__(self):
 		super(BootEnvironment, self).__init__()
@@ -260,6 +299,7 @@ class BootEnvironment(BootAgent):
 			'chemotaxis': boot_chemotaxis,
 			'endocrine': boot_endocrine,
 			'transport_minimal': boot_transport_minimal,
+			'transport_compartment': boot_transport_compartment,
 			}
 
 if __name__ == '__main__':
