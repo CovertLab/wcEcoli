@@ -49,6 +49,7 @@ class TransportMinimal(CellSimulation):
 	def __init__(self, state):
 		self.initial_time = state.get('time', 0.0)
 		self.local_time = state.get('time', 0.0)
+		self.media_id = state.get('media_id', 'minimal')
 		self.timestep = 1.0
 		self.environment_change = {}
 		self.volume = 1.0  # (fL)
@@ -95,8 +96,7 @@ class TransportMinimal(CellSimulation):
 		exchange_ids = exchange_molecules + aa_p_ids
 		self.transport_reactions_ids = self.reactions_from_exchange(exchange_ids)
 
-		# TODO (Eran) -- use synchronize to get media_id upon initialization
-		self.media_id = 'minimal'
+		# get the current flux lookup table, and set initial transport fluxes
 		self.current_flux_lookup = self.flux_lookup[self.media_id]
 		self.transport_fluxes = self.get_fluxes(self.current_flux_lookup, self.transport_reactions_ids)
 
