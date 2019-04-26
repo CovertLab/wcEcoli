@@ -67,31 +67,43 @@ def boot_lattice(agent_id, agent_type, agent_config):
 
 # wcEcoli initialize and boot
 def initialize_ecoli(boot_config, synchronize_config):
+	'''
+	Args:
+		boot_config (dict): essential options for initializing a simulation
+		synchronize_config (dict): additional options that can be passed in for initialization
+
+	Returns:
+		simulation (CellSimulation): The actual simulation which will perform the calculations.
+	'''
 	synchronize_config['initialTime'] = synchronize_config.pop('time')
 	boot_config.update(synchronize_config)
 	return ecoli_simulation(**boot_config)
 
-def boot_ecoli(agent_id, agent_type, agent_config):
+def get_ecoli_boot_config(agent_id, agent_config):
 	'''
-	Instantiates an initial or daughter EcoliSimulation, passes it to a new
-	`Inner` agent, and launches the simulation. `agent_config` fields:
-	    * kafka_config
-	    * outer_id (id of environmental context agent)
-	    * working_dir (optional, wcEcoli path containing the sim path out/manual/)
-	    * files (optional) list of data files:
-			files[0] -- inherited_state_path to make a daughter cell
-	    * start_time (optional)
-	    * variant_type (optional)
-	    * variant_index (optional)
-	    * seed (optional)
-	    * volume (optional)
+	Sets up an ecoli simulation. Makes the metadata files. Returns a dictionary of options
+
+	Args:
+		agent_id (str): the id of this agent
+		agent_config (dict) with fields
+			* kafka_config
+			* outer_id (id of environmental context agent)
+			* working_dir (optional, wcEcoli path containing the sim path out/manual/)
+			* files (optional) list of data files:
+				files[0] -- inherited_state_path to make a daughter cell
+			* start_time (optional)
+			* variant_type (optional)
+			* variant_index (optional)
+			* seed (optional)
+			* volume (optional)
+
+	Returns:
+		options:
 	'''
-	if 'outer_id' not in agent_config:
-		raise ValueError("--outer-id required")
+
 
 	# kafka_config = agent_config['kafka_config']
 	working_dir = agent_config.get('working_dir', os.getcwd())
-	outer_id = agent_config['outer_id']
 	start_time = agent_config.get('start_time', 0)
 	files = agent_config.get('files', [])
 	inherited_state_path = files[0] if files else None
@@ -156,11 +168,17 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 	fp.write_json_file(metadata_path, metadata)
 
-	# Create the inner agent before instantiating the simulation so it can send
-	# a message to the lattice without waiting for the simulation to initialize.
-	# TODO(jerry): Is the agent OK receiving messages w/o a sim? Add a
-	#    setter for its simulation property, make it queue messages until it
-	#    gets one, change the constructor type signature to allow None?
+	return options
+
+def boot_ecoli(agent_id, agent_type, agent_config):
+	'''
+	passes configuration and initialization function to a new `Inner` agent, which will launch the simulation.
+	'''
+	if 'outer_id' not in agent_config:
+		raise ValueError("--outer-id required")
+	outer_id = agent_config['outer_id']
+	options = get_ecoli_boot_config(agent_id, agent_config)
+
 	inner = Inner(
 		agent_id,
 		outer_id,
@@ -171,8 +189,17 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 
 	return inner
 
+
 # Chemotaxis surrogate initialize and boot
 def initialize_chemotaxis(boot_config, synchronize_config):
+	'''
+	Args:
+		boot_config (dict): essential options for initializing a simulation
+		synchronize_config (dict): additional options that can be passed in for initialization
+
+	Returns:
+		simulation (CellSimulation): The actual simulation which will perform the calculations.
+	'''
 	boot_config.update(synchronize_config)
 	return Chemotaxis(boot_config)
 
@@ -199,6 +226,14 @@ def boot_chemotaxis(agent_id, agent_type, agent_config):
 
 # Endocrine surrogate initialize and boot
 def initialize_endocrine(boot_config, synchronize_config):
+	'''
+	Args:
+		boot_config (dict): essential options for initializing a simulation
+		synchronize_config (dict): additional options that can be passed in for initialization
+
+	Returns:
+		simulation (CellSimulation): The actual simulation which will perform the calculations.
+	'''
 	boot_config.update(synchronize_config)
 	return Endocrine(boot_config)
 
@@ -225,6 +260,14 @@ def boot_endocrine(agent_id, agent_type, agent_config):
 
 # Transport lookup minimal surrogate initialize and boot
 def initialize_transport_minimal(boot_config, synchronize_config):
+	'''
+	Args:
+		boot_config (dict): essential options for initializing a simulation
+		synchronize_config (dict): additional options that can be passed in for initialization
+
+	Returns:
+		simulation (CellSimulation): The actual simulation which will perform the calculations.
+	'''
 	boot_config.update(synchronize_config)
 	return TransportMinimal(boot_config)
 
@@ -252,23 +295,21 @@ def boot_transport_minimal(agent_id, agent_type, agent_config):
 
 # Transport compartment initialize and boot
 def initialize_transport_compartment(boot_config, synchronize_config):
-	boot_config.update(synchronize_config)
+	'''
+	Args:
+		boot_config (dict): essential options for initializing a simulation
+		synchronize_config (dict): additional options that can be passed in for initialization
 
+	Returns:
+		simulation (CellSimulation): The actual simulation which will perform the calculations.
+	'''
+	initialize_processes = {
+		'transport': initialize_transport_minimal,
+		'internal': initialize_ecoli}
+	return TransportCompartment(boot_config, synchronize_config, initialize_processes)
 
-	import ipdb; ipdb.set_trace()
-
-	# put transport and ecoli into a compartment
-	transport = TransportMinimal(boot_config)
-	ecoli = initialize_ecoli(boot_config, synchronize_config)
-	processes = {
-		'transport': transport,
-		'internal': ecoli}
-	return TransportCompartment(boot_config, processes)
 
 def boot_transport_compartment(agent_id, agent_type, agent_config):
-	'''
-	Boot a compartment with transport process and a wcEcoli
-	'''
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
 
@@ -277,7 +318,9 @@ def boot_transport_compartment(agent_id, agent_type, agent_config):
 		'volume': 1.0,
 		'environment_change': {}}
 	agent_config['state'] = state
-	options = {}
+
+	# options for ecoli
+	options = get_ecoli_boot_config(agent_id, agent_config)
 
 	inner = Inner(
 		agent_id,
@@ -285,7 +328,7 @@ def boot_transport_compartment(agent_id, agent_type, agent_config):
 		agent_type,
 		agent_config,
 		options,
-		initialize_transport_minimal)
+		initialize_transport_compartment)
 
 	return inner
 
