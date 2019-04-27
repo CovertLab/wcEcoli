@@ -11,12 +11,12 @@
 ## a shared library:
 #   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.16
 #
-## Create the "wcEcoli3" python virtual environment and select it for your project
+## Create the "wcEcoli2" python virtual environment and select it for your project
 ## directory:
 #   cd ~/dev/wcEcoli
 #   pyenv local 2.7.16
-#   pyenv virtualenv wcEcoli3
-#   pyenv local wcEcoli3
+#   pyenv virtualenv wcEcoli2
+#   pyenv local wcEcoli2
 #
 ## Upgrade this virtual environment's installers:
 #   pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
