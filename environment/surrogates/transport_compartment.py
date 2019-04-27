@@ -24,24 +24,25 @@ class TransportCompartment(CellSimulation):
 		# initialize ecoli
 		self.processes['ecoli'] = initialize_processes['ecoli'](boot_config, ecoli_synchronize_config)
 
-		# resolve_inner_update defines what process each inner update is taken from
-		self.resolve_inner_update = {
+		# update_assignment where each inner_update is taken from
+		self.output_assignment = {
 			'environment_change': 'ecoli',
 			'volume': 'ecoli',
 			'division': 'ecoli',
 			'motile_force': 'transport',
 			'transport_fluxes': 'transport'}
 
-		# cross_update defines what inner_updates of one process become outer_update of another
-		self.cross_updates = {
+		# connections defines what inner_updates of one process become outer_updates of another
+		self.connections = {
 			'transport_fluxes': ('transport', 'ecoli')
 			}
-		self.added_update = {update_id: None for update_id in self.cross_updates.iterkeys()}
+		self.compartment_updates = {update_id: None for update_id in self.connections.iterkeys()}
 
 		# use one process' functions exclusively
 		self.time = self.processes['transport'].time
 		self.divide = self.processes['ecoli'].divide
-		# self.divide = self.internal.divide  # TODO (eran) what happens when one process declares division? Can it divide the rest?
+
+		# TODO (eran) what happens when one process declares division? Can it divide the rest? How do they share inheritance, etc.
 
 
 	def generate_inner_update(self):
@@ -55,12 +56,12 @@ class TransportCompartment(CellSimulation):
 
 		# add to inner update by pulling from individual process updates according to resolve_inner_update
 		inner_update = {}
-		for update_parameter, process_id in self.resolve_inner_update.iteritems():
+		for update_parameter, process_id in self.output_assignment.iteritems():
 			inner_update[update_parameter] = process_updates[process_id][update_parameter]
 
 		# apply cross_updates: inner_updates from some processes become outer_updates used by other
-		for update, (process_source, process_target) in self.cross_updates.iteritems():
-			self.added_update[update] = process_updates[process_source][update]
+		for update, (process_source, process_target) in self.connections.iteritems():
+			self.compartment_updates[update] = process_updates[process_source][update]
 
 		# inner updates from compartment
 		inner_update['color'] = DEFAULT_COLOR
@@ -71,7 +72,7 @@ class TransportCompartment(CellSimulation):
 	def apply_outer_update(self, outer_update):
 		# add to update
 		# TODO -- only apply outer update from ecoli to environment, outer update from transport is only for ecoli targets
-		outer_update.update(self.added_update)
+		outer_update.update(self.compartment_updates)
 		for process_id, process in self.processes.iteritems():
 			process.apply_outer_update(outer_update)
 
