@@ -173,6 +173,7 @@ class Outer(Agent):
 
 		self.environment.add_simulation(inner_id, simulation)
 
+		# lineage tracing
 		parent_id = simulation.get('parent_id', '')
 		if parent_id:
 			self.environment.apply_parent_state(inner_id, simulation)
@@ -180,6 +181,12 @@ class Outer(Agent):
 		if inner_id not in self.lineage:
 			self.lineage[inner_id] = parent_id
 			fp.write_json_file(self.lineage_filename, self.lineage, indent=2)
+
+		# get generation number
+		generation = 0
+		while parent_id:
+			generation += 1
+			parent_id = self.lineage[parent_id]
 
 		self.update_state()
 
