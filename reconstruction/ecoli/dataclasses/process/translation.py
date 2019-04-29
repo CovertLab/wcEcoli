@@ -170,7 +170,11 @@ class Translation(object):
 		self.translationEndWeight = (sim_data.getter.getMass(["WATER[c]"]) / raw_data.constants['nAvogadro']).asNumber(units.fg)
 
 	def _buildTranslationEfficiency(self, raw_data, sim_data):
-		# WTF?
+		"""
+		Since the translation efficiency data set from Li et al. 2014 does not
+		report a measurement for all genes, genes that do not have a measurement
+		are assigned the average translation efficiency.
+		"""
 		monomerIds = [x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]" for x in raw_data.proteins]
 		monomerIdToGeneId = dict([(x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]", x["geneId"].encode("utf-8")) for x in raw_data.proteins])
 		geneIdToTrEff = dict([(x["geneId"].encode("utf-8"), x["translationEfficiency"]) for x in raw_data.translationEfficiency if type(x["translationEfficiency"]) == float])
