@@ -33,7 +33,7 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.metaboliteIDs = sorted(sim_data.process.metabolism.concDict)
 		self.nConstrainedReactions = len(self.metabolism.kineticsConstrainedReactions)
 
-		# Add kinetic reaction targets from boundary
+		# flux targets from boundary
 		self.nBoundaryConstrainedReactions = len(self.metabolism.boundaryConstrainedReactions)
 		self.nAllConstrainedReactions = self.nConstrainedReactions + self.nBoundaryConstrainedReactions
 

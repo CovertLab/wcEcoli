@@ -49,7 +49,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		boundaryConstrainedReactions = np.array(enzymeKineticsReader.readAttribute("boundaryConstrainedReactions"))
 		enzymeKineticsReader.close()
 
-		# separate the kinetic target fluxes from boundary target fluxes
+		# kinetic target fluxes
 		targetFluxes = allTargetFluxes[:, 0:len(kineticsConstrainedReactions)]
 		actualFluxes = allActualFluxes[:, 0:len(kineticsConstrainedReactions)]
 

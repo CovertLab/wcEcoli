@@ -92,11 +92,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allTargetAve = np.mean(allTargetFluxList, axis = 0)
 		allActualAve = np.mean(allActualFluxList, axis = 0)
 
-		# separate the boundary target fluxes
+		# boundary target fluxes
 		boundaryTargetAve = allTargetAve[len(kineticsConstrainedReactions):]
 		boundaryActualAve = allActualAve[len(kineticsConstrainedReactions):]
 
-		# separate the kinetic target fluxes
+		# kinetic target fluxes
 		targetFluxes = allTargetFluxes[:, 0:len(kineticsConstrainedReactions)]
 		actualFluxes = allActualFluxes[:, 0:len(kineticsConstrainedReactions)]
 		targetAve = allTargetAve[0:len(kineticsConstrainedReactions)]
