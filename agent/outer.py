@@ -131,8 +131,7 @@ class Outer(Agent):
 
 		# Log parent -> child relationships for analysis.
 		working_dir = agent_config.get('working_dir', os.getcwd())
-		output_dir = fp.makedirs(working_dir, 'out', 'manual',
-			'lattice_' + agent_id)
+		output_dir = fp.makedirs(working_dir, 'out', 'manual', agent_id)
 		self.lineage_filename = os.path.join(output_dir, 'cell_lineage.json')
 		self.lineage = {}
 

@@ -91,6 +91,7 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 		raise ValueError("--outer-id required")
 
 	# kafka_config = agent_config['kafka_config']
+	experiment_id = agent_config.get('outer_id', 'lattice_000000')
 	working_dir = agent_config.get('working_dir', os.getcwd())
 	outer_id = agent_config['outer_id']
 	start_time = agent_config.get('start_time', 0)
@@ -106,10 +107,15 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 		'environment_change': {}}
 	agent_config['state'] = state
 
+	# TODO -- get these from lineage trace.
+	cohort_id = agent_id  # an experiment's initial agents are its cohort
+	generation = 'generation_000000' # this depends on the depth of the lineage trace -- should be passed in.
+	cell_id = agent_id
+
 	# make options for boot config
 	sim_path = fp.makedirs(working_dir, 'out', 'manual')
 	sim_data_fit = os.path.join(sim_path, 'kb', 'simData_Most_Fit.cPickle')
-	output_dir = os.path.join(sim_path, 'sim_' + agent_id, 'simOut')
+	output_dir = os.path.join(sim_path, experiment_id, cohort_id, generation, cell_id, 'simOut')
 
 	if not os.path.isfile(sim_data_fit):
 		raise IOError(

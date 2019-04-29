@@ -21,7 +21,7 @@ class ShepherdControl(AgentControl):
 			agent_config)
 
 	def lattice_experiment(self, args):
-		lattice_id = str(uuid.uuid1())
+		lattice_id = 'lattice_' + str(uuid.uuid1())
 		num_cells = args['number']
 		print('Creating lattice agent_id {} and {} cell agents\n'.format(
 			lattice_id, num_cells))
