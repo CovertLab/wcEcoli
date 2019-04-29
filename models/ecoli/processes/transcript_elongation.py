@@ -139,7 +139,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.ppi.countInc(nElongations - nInitialized)
 
 		# Calculate stalls
-		expectedElongations = np.fmin(self.rnapElongationRate, terminalLengths - transcriptLengths)
+		expectedElongations = np.fmin([self.elongation_rates[x] for x in rnaIndexes], terminalLengths - transcriptLengths)
 		rnapStalls = expectedElongations - sequenceElongations
 
 		# Write outputs to listeners
