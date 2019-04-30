@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import uuid
+import time
 
 import agent.event as event
 from agent.agent import Agent
@@ -72,8 +73,8 @@ class Inner(Agent):
 		                associated outer agent (given by `outer_id`) and environmental simulation.
 		            * `shepherd_receive`: The topic this agent will send messages on for 
 		                adding agents to and removing agents from the environment.
-		    simulation (CellSimulation): The actual simulation which will perform the
-		        calculations.
+		    boot_config (dict): a dictionary of options for initializing the simulation
+		    sim_initialize: the function for initializing a simulation. Requires boot_config and synchronize_config to run
 		"""
 
 		self.sim_initialize = sim_initialize
@@ -89,6 +90,9 @@ class Inner(Agent):
 		self.outer_id = outer_id
 
 	def preinitialize(self):
+
+		time.sleep(1.0)
+
 		kafka_config = self.agent_config['kafka_config']
 		state = self.agent_config['state']
 		self.send(kafka_config['topics']['environment_receive'], {
@@ -174,6 +178,9 @@ class Inner(Agent):
 				parent_id=self.agent_id,
 				outer_id=self.outer_id,
 				generation=generation)
+
+			print('agent_type: ' + str(agent_type))
+			print('divide_config: ' + str(agent_config))
 
 			# Send the inherited state data as a blob instead of a file path.
 			inherited_state_path = agent_config.pop('inherited_state_path', None)

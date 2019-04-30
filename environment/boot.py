@@ -1,10 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import time
 import errno
 
-import agent.event as event
 from agent.outer import Outer
 from agent.inner import Inner
 from agent.boot import BootAgent
@@ -68,11 +66,18 @@ def boot_lattice(agent_id, agent_type, agent_config):
 
 # wcEcoli initialize and boot
 def initialize_ecoli(boot_config, synchronize_config):
+	'''
+	Args:
+		boot_config (dict): options for initializing a simulation
+		synchronize_config (dict): additional options that can be passed in for initialization
+	Returns:
+		simulation (CellSimulation): The actual simulation which will perform the calculations.
+	'''
 	synchronize_config['initialTime'] = synchronize_config.pop('time')
 	boot_config.update(synchronize_config)
 	return ecoli_simulation(**boot_config)
 
-def boot_ecoli(agent_id, agent_type, agent_config):
+def ecoli_boot_config(agent_id, agent_config):
 	'''
 	Instantiates an initial or daughter EcoliSimulation, passes it to a new	`Inner` agent.
 	Makes a simOut directory for the simulation in an embedded format:
@@ -89,14 +94,13 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	    * variant_index (optional)
 	    * seed (optional)
 	    * volume (optional)
-	'''
-	if 'outer_id' not in agent_config:
-		raise ValueError("--outer-id required")
 
-	experiment_id = agent_config.get('outer_id', 'lattice_000000')
+	Returns:
+		options (dict): simulation arguments for ecoli
+	'''
 	generation = agent_config.get('generation', 0)
 	working_dir = agent_config.get('working_dir', os.getcwd())
-	outer_id = agent_config['outer_id']
+	outer_id = agent_config.get('outer_id', 'lattice_000000')
 	start_time = agent_config.get('start_time', 0)
 	files = agent_config.get('files', [])
 	inherited_state_path = files[0] if files else None
@@ -117,7 +121,7 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	# make options for boot config
 	sim_out_path = fp.makedirs(working_dir, 'out')
 	sim_data_fit = os.path.join(sim_out_path, 'manual', 'kb', 'simData_Most_Fit.cPickle')
-	output_dir = os.path.join(sim_out_path, 'manual', experiment_id, cohort_id, generation_id, cell_id, 'simOut')
+	output_dir = os.path.join(sim_out_path, 'manual', outer_id, cohort_id, generation_id, cell_id, 'simOut')
 
 	if not os.path.isfile(sim_data_fit):
 		raise IOError(
@@ -165,11 +169,17 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 	fp.write_json_file(metadata_path, metadata)
 
-	# Create the inner agent before instantiating the simulation so it can send
-	# a message to the lattice without waiting for the simulation to initialize.
-	# TODO(jerry): Is the agent OK receiving messages w/o a sim? Add a
-	#    setter for its simulation property, make it queue messages until it
-	#    gets one, change the constructor type signature to allow None?
+	return options
+
+def boot_ecoli(agent_id, agent_type, agent_config):
+	'''
+	passes configuration and initialization function to a new `Inner` agent, which will launch the simulation.
+	'''
+	if 'outer_id' not in agent_config:
+		raise ValueError("--outer-id required")
+	outer_id = agent_config['outer_id']
+	options = ecoli_boot_config(agent_id, agent_config)
+
 	inner = Inner(
 		agent_id,
 		outer_id,
@@ -182,6 +192,13 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 
 # Chemotaxis surrogate initialize and boot
 def initialize_chemotaxis(boot_config, synchronize_config):
+	'''
+	Args:
+		boot_config (dict): options for initializing a simulation
+		synchronize_config (dict): additional options that can be passed in for initialization
+	Returns:
+		simulation (CellSimulation): The actual simulation which will perform the calculations.
+	'''
 	boot_config.update(synchronize_config)
 	return Chemotaxis(boot_config)
 
@@ -208,6 +225,13 @@ def boot_chemotaxis(agent_id, agent_type, agent_config):
 
 # Endocrine surrogate initialize and boot
 def initialize_endocrine(boot_config, synchronize_config):
+	'''
+	Args:
+		boot_config (dict): options for initializing a simulation
+		synchronize_config (dict): additional options that can be passed in for initialization
+	Returns:
+		simulation (CellSimulation): The actual simulation which will perform the calculations.
+	'''
 	boot_config.update(synchronize_config)
 	return Endocrine(boot_config)
 
