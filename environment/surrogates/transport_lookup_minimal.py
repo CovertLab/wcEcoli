@@ -110,7 +110,7 @@ class TransportMinimal(CellSimulation):
 
 		# adjust fluxes
 		for transport_id, flux in self.transport_fluxes.iteritems():
-			self.transport_fluxes[transport_id] = flux + 1e-6
+			self.transport_fluxes[transport_id] = flux + 1e-4
 
 		delta_counts = self.flux_to_counts(self.transport_fluxes)
 
