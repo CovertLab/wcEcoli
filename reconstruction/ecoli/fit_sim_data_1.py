@@ -1509,7 +1509,6 @@ def getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubli
 	# Compute number of RNA polymerases required to maintain steady state of RNA
 	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
 		rnaLengths, sim_data.growthRateParameters.getRnapElongationRate(doubling_time), rnaLossRate)
-	nActiveRnapNeeded = units.convertNoUnitToNumber(nActiveRnapNeeded)
 
 	# Get number of RNA polymerases that can be made (according to bulk molecule counts)
 	rnapIds = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitIds']
@@ -1574,9 +1573,8 @@ def getRibosomeActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, do
 		netLossRate_protein,
 		proteinCounts,
 	)
-	nRibosomesNeeded.normalize()  # FIXES NO UNIT BUG
-	nRibosomesNeeded.checkNoUnit()
-	nRibosomeDemand = nRibosomesNeeded.asNumber()
+
+	nRibosomeDemand = nRibosomesNeeded
 
 	# -- SUPPLY 1: Measured rRNA mass fraction -- #
 	## Calculate exact number of 30S and 50S subunits based on measured mass
@@ -2111,7 +2109,7 @@ def calculateMinPolymerizingEnzymeByProductDistribution(productLengths, elongati
 		* netLossRate
 		* productCounts)
 
-	return nPolymerizingEnzymeNeeded.asNumber(units.aa / units.s)
+	return nPolymerizingEnzymeNeeded.asNumber() # nPolymerizingEnzymeNeeded.asNumber(units.aa / units.s)
 
 def calculateMinPolymerizingEnzymeByProductDistributionRNA(productLengths, elongationRates, netLossRate):
 	"""
@@ -2148,7 +2146,7 @@ def calculateMinPolymerizingEnzymeByProductDistributionRNA(productLengths, elong
 		productLengths / elongationRates
 		* netLossRate)
 
-	return nPolymerizingEnzymeNeeded.asNumber(units.nt / units.s)
+	return nPolymerizingEnzymeNeeded.asNumber() # nPolymerizingEnzymeNeeded.asNumber(units.nt / units.s)
 
 def netLossRateFromDilutionAndDegradationProtein(doublingTime, degradationRates):
 	"""
