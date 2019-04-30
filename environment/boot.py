@@ -87,15 +87,15 @@ def ecoli_boot_config(agent_id, agent_config):
 		out/manual/experiment_id/cohort_id/generation_id/cell_id/simOut
 
 	`agent_config` fields:
-		* outer_id (id of outer environmental agent -- the experiment)
-		* working_dir (optional, wcEcoli path containing the sim path out/manual/)
-		* files (optional) list of data files:
+	    * outer_id (id of outer environmental agent -- the experiment)
+	    * working_dir (optional, wcEcoli path containing the sim path out/manual/)
+	    * files (optional) list of data files:
 			files[0] -- inherited_state_path to make a daughter cell
-		* start_time (optional)
-		* variant_type (optional)
-		* variant_index (optional)
-		* seed (optional)
-		* volume (optional)
+	    * start_time (optional)
+	    * variant_type (optional)
+	    * variant_index (optional)
+	    * seed (optional)
+	    * volume (optional)
 
 	Returns:
 		options (dict): simulation arguments for ecoli
