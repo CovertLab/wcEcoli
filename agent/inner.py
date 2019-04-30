@@ -152,6 +152,8 @@ class Inner(Agent):
 		"""
 		Perform agent cell division.
 
+		The generation count is increased and added to the daughter cells' agent_config.
+
 		This sends three messages to the agent shepherd: one `ADD_AGENT` for each new daughter cell,
 		and finally a `REMOVE_AGENT` for itself. These new agents will initialize and notify the 
 		outer agent, inheriting properties from their parent cell.
