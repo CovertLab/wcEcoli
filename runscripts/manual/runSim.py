@@ -69,6 +69,10 @@ class RunSimulation(scriptBase.ScriptBase):
 			help='if True, the ribosome elongation rate is limited by the'
 				 ' condition specific rate of amino acid supply; otherwise the'
 				 ' elongation rate is set by condition')
+		add_bool_option('flat_elongation', 'flat_elongation',
+			help='if True, all elongation rates are the same for each type.'
+				 'if False, elongation rates are faster for ribosomal proteins and transcripts')
+		
 
 	def parse_args(self):
 		args = super(RunSimulation, self).parse_args()
@@ -105,7 +109,8 @@ class RunSimulation(scriptBase.ScriptBase):
 			"growth_rate_noise":  args.growth_rate_noise,
 			"d_period_division":  args.d_period_division,
 			"translation_supply": args.translation_supply,
-			}
+			"flat_elongation":    args.flat_elongation}
+
 		metadata_dir = fp.makedirs(args.sim_path, 'metadata')
 		metadata_path = os.path.join(metadata_dir, constants.SERIALIZED_METADATA_FILE)
 		with open(metadata_path, "wb") as f:
@@ -159,7 +164,8 @@ class RunSimulation(scriptBase.ScriptBase):
 				growth_rate_noise=args.growth_rate_noise,
 				d_period_division=args.d_period_division,
 				translation_supply=args.translation_supply,
-				)
+				flat_elongation=args.flat_elongation)
+
 			task.run_task({})
 
 

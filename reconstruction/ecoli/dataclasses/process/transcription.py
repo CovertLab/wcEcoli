@@ -24,6 +24,8 @@ class Transcription(object):
 		self._buildRnaData(raw_data, sim_data)
 		self._buildTranscription(raw_data, sim_data)
 
+		self._build_elongation_rates(raw_data, sim_data)
+
 	def _buildRnaData(self, raw_data, sim_data):
 		assert all([len(rna['location']) == 1 for rna in raw_data.rnas])
 		rnaIds = ['{}[{}]'.format(rna['id'], rna['location'][0]) for rna in raw_data.rnas if len(rna['location']) == 1]
@@ -191,3 +193,29 @@ class Transcription(object):
 			).asNumber(units.fg)
 
 		self.transcriptionEndWeight = (sim_data.getter.getMass(["PPI[c]"]) / raw_data.constants['nAvogadro']).asNumber(units.fg)
+
+	def _build_elongation_rates(self, raw_data, sim_data):
+		self.max_elongation_rate = 85 ## D&B
+		self.rna_indexes = {
+			'{}[{}]'.format(rna['id'], rna['location'][0]): index
+			for index, rna in enumerate(raw_data.rnas)}
+
+		self.s30_16sRRNA = sim_data.moleculeGroups.s30_16sRRNA
+		self.s50_5sRRNA = sim_data.moleculeGroups.s50_5sRRNA
+		self.s50_23sRRNA = sim_data.moleculeGroups.s50_23sRRNA
+		self.RRNA_ids = self.s30_16sRRNA + self.s50_5sRRNA + self.s50_23sRRNA
+
+		self.RRNA_indexes = [
+			self.rna_indexes[rrna_id]
+			for rrna_id in self.RRNA_ids]
+
+	def make_elongation_rates(self, base, flat_elongation=False):
+		rates = np.full(
+			self.transcriptionSequences.shape[0],
+			base,
+			dtype=np.int64)
+
+		if not flat_elongation:
+			rates[self.RRNA_indexes] = self.max_elongation_rate
+
+		return rates

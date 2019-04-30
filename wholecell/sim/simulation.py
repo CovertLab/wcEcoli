@@ -29,6 +29,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	dPeriodDivision = False,
 	growthRateNoise = False,
 	translationSupply = True,
+	flat_elongation = False,
 	timeStepSafetyFraction = 1.3,
 	maxTimeStep = 0.9,#2.0, # TODO: Reset to 2 once we update PopypeptideElongation
 	updateTimeStepFreq = 5,
