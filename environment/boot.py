@@ -74,10 +74,13 @@ def initialize_ecoli(boot_config, synchronize_config):
 
 def boot_ecoli(agent_id, agent_type, agent_config):
 	'''
-	Instantiates an initial or daughter EcoliSimulation, passes it to a new
-	`Inner` agent, and launches the simulation. `agent_config` fields:
-	    * kafka_config
-	    * outer_id (id of environmental context agent)
+	Instantiates an initial or daughter EcoliSimulation, passes it to a new	`Inner` agent.
+	Makes a simOut directory for the simulation in an embedded format:
+
+		out/manual/experiment_id/cohort_id/generation_id/cell_id/simOut
+
+	`agent_config` fields:
+	    * outer_id (id of outer environmental agent -- the experiment)
 	    * working_dir (optional, wcEcoli path containing the sim path out/manual/)
 	    * files (optional) list of data files:
 			files[0] -- inherited_state_path to make a daughter cell
@@ -90,7 +93,6 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	if 'outer_id' not in agent_config:
 		raise ValueError("--outer-id required")
 
-	# kafka_config = agent_config['kafka_config']
 	experiment_id = agent_config.get('outer_id', 'lattice_000000')
 	generation = agent_config.get('generation', 0)
 	working_dir = agent_config.get('working_dir', os.getcwd())
