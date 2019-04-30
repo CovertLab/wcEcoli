@@ -113,9 +113,9 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 	cell_id = agent_id
 
 	# make options for boot config
-	sim_path = fp.makedirs(working_dir, 'out', 'manual')
-	sim_data_fit = os.path.join(sim_path, 'kb', 'simData_Most_Fit.cPickle')
-	output_dir = os.path.join(sim_path, experiment_id, cohort_id, generation_id, cell_id, 'simOut')
+	sim_out_path = fp.makedirs(working_dir, 'out')
+	sim_data_fit = os.path.join(sim_out_path, 'manual', 'kb', 'simData_Most_Fit.cPickle')
+	output_dir = os.path.join(sim_out_path, 'manual', experiment_id, cohort_id, generation_id, cell_id, 'simOut')
 
 	if not os.path.isfile(sim_data_fit):
 		raise IOError(
@@ -159,7 +159,7 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 		"growth_rate_noise":  options['growthRateNoise'],
 		"d_period_division":  options['dPeriodDivision'],
 		"translation_supply": options['translationSupply']}
-	metadata_dir = fp.makedirs(sim_path, 'metadata')
+	metadata_dir = fp.makedirs(sim_out_path, 'manual', 'metadata')
 	metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 	fp.write_json_file(metadata_path, metadata)
 
