@@ -78,6 +78,7 @@ class Inner(Agent):
 
 		self.sim_initialize = sim_initialize
 		self.boot_config = boot_config
+		self.generation = agent_config.get('generation', 0)
 
 		kafka_config = agent_config['kafka_config']
 		kafka_config['subscribe'].append(
@@ -156,6 +157,7 @@ class Inner(Agent):
 		outer agent, inheriting properties from their parent cell.
 		"""
 
+		generation = self.generation + 1
 		for daughter in division:
 			agent_id = daughter.get('id', str(uuid.uuid1()))
 
@@ -168,7 +170,8 @@ class Inner(Agent):
 			agent_config = dict(
 				daughter,
 				parent_id=self.agent_id,
-				outer_id=self.outer_id)
+				outer_id=self.outer_id,
+				generation=generation)
 
 			# Send the inherited state data as a blob instead of a file path.
 			inherited_state_path = agent_config.pop('inherited_state_path', None)
