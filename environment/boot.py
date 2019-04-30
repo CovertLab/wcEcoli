@@ -302,10 +302,18 @@ def initialize_transport_compartment(boot_config, synchronize_config):
 	Returns:
 		simulation (CellSimulation): The actual simulation which will perform the calculations.
 	'''
-	initialize_processes = {
+
+	# function_map = {
+	# 	'transport.time':
+	# }
+
+	network_config = {}
+	network_config['initilize'] = {
 		'transport': initialize_transport_minimal,
 		'ecoli': initialize_ecoli}
-	return TransportCompartment(boot_config, synchronize_config, initialize_processes)
+
+
+	return TransportCompartment(boot_config, synchronize_config, network_config)
 
 def boot_transport_compartment(agent_id, agent_type, agent_config):
 	agent_id = agent_id

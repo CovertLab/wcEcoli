@@ -11,7 +11,9 @@ DEFAULT_COLOR = [color/255 for color in [0, 128, 255]]
 class TransportCompartment(CellSimulation):
 	''''''
 
-	def __init__(self, boot_config, synchronize_config, initialize_processes):
+	def __init__(self, boot_config, synchronize_config, network_config):
+
+		initialize_processes = network_config['initilize']
 
 		# initialize transport
 		self.processes = {}
@@ -36,7 +38,7 @@ class TransportCompartment(CellSimulation):
 		self.connections = {
 			'transport_fluxes': ('transport', 'ecoli')
 			}
-		self.compartment_updates = {update_id: None for update_id in self.connections.iterkeys()}
+		self.connections_updates = {update_id: None for update_id in self.connections.iterkeys()}
 
 		# use one process' functions exclusively
 		self.time = self.processes['transport'].time
@@ -61,7 +63,7 @@ class TransportCompartment(CellSimulation):
 
 		# apply cross_updates: inner_updates from some processes become outer_updates used by other
 		for update, (process_source, process_target) in self.connections.iteritems():
-			self.compartment_updates[update] = process_updates[process_source][update]
+			self.connections_updates[update] = process_updates[process_source][update]
 
 		# inner updates from compartment
 		inner_update['color'] = DEFAULT_COLOR
@@ -72,7 +74,7 @@ class TransportCompartment(CellSimulation):
 	def apply_outer_update(self, outer_update):
 		# add to update
 		# TODO -- only apply outer update from ecoli to environment, outer update from transport is only for ecoli targets
-		outer_update.update(self.compartment_updates)
+		outer_update.update(self.connections_updates)
 		for process_id, process in self.processes.iteritems():
 			process.apply_outer_update(outer_update)
 
