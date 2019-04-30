@@ -104,7 +104,14 @@ class TransportMinimal(CellSimulation):
 	def update_state(self):
 		# nAvogadro is in 1/mol --> convert to 1/mmol. volume is in fL --> convert to L
 		self.molar_to_counts = (self.nAvogadro * 1e-3) * (self.volume * 1e-15)
+
+		# transport fluxes
 		self.transport_fluxes = self.get_fluxes(self.current_flux_lookup, self.transport_reactions_ids)
+
+		# adjust fluxes
+		for transport_id, flux in self.transport_fluxes.iteritems():
+			self.transport_fluxes[transport_id] = flux + 1e-6
+
 		delta_counts = self.flux_to_counts(self.transport_fluxes)
 
 		environment_deltas = {}
