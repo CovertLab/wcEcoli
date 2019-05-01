@@ -22,6 +22,7 @@ class FitSimDataTask(FireTaskBase):
 		"disable_rnapoly_capacity_fitting",
 		"disable_rnapoly_active_fraction_fitting",
 		"disable_rnapoly_active_fraction_fitting",
+		"flat_elongation",
 		"adjust_rna_and_protein_parameters",
 		]
 
@@ -53,6 +54,7 @@ class FitSimDataTask(FireTaskBase):
 				disable_rnapoly_capacity_fitting=self['disable_rnapoly_capacity_fitting'],
 				disable_rnapoly_active_fraction_fitting=self['disable_rnapoly_active_fraction_fitting'],
 				disable_ribosome_active_fraction_fitting=self['disable_ribosome_active_fraction_fitting'],
+				flat_elongation=self['flat_elongation'],
 				adjust_rna_and_protein_parameters=self['adjust_rna_and_protein_parameters'],
 				)
 

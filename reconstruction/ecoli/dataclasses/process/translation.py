@@ -22,6 +22,9 @@ class Translation(object):
 		self._buildTranslation(raw_data, sim_data)
 		self._buildTranslationEfficiency(raw_data, sim_data)
 
+		self.ribosomal_proteins = self._build_ribosomal_proteins(raw_data, sim_data)
+		self.elongation_rates = self._build_elongation_rates(raw_data, sim_data)
+
 	def _buildMonomerData(self, raw_data, sim_data):
 		assert all([len(protein['location']) == 1 for protein in raw_data.proteins])
 		ids = ['{}[{}]'.format(protein['id'], protein['location'][0]) for protein in raw_data.proteins]
@@ -167,6 +170,11 @@ class Translation(object):
 		self.translationEndWeight = (sim_data.getter.getMass(["WATER[c]"]) / raw_data.constants['nAvogadro']).asNumber(units.fg)
 
 	def _buildTranslationEfficiency(self, raw_data, sim_data):
+		"""
+		Since the translation efficiency data set from Li et al. 2014 does not
+		report a measurement for all genes, genes that do not have a measurement
+		are assigned the average translation efficiency.
+		"""
 		monomerIds = [x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]" for x in raw_data.proteins]
 		monomerIdToGeneId = dict([(x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]", x["geneId"].encode("utf-8")) for x in raw_data.proteins])
 		geneIdToTrEff = dict([(x["geneId"].encode("utf-8"), x["translationEfficiency"]) for x in raw_data.translationEfficiency if type(x["translationEfficiency"]) == float])
@@ -180,3 +188,45 @@ class Translation(object):
 
 		self.translationEfficienciesByMonomer = np.array(trEffs)
 		self.translationEfficienciesByMonomer[np.isnan(self.translationEfficienciesByMonomer)] = np.nanmean(self.translationEfficienciesByMonomer)
+
+	def _build_ribosomal_proteins(self, raw_data, sim_data):
+		self.ribosomal_proteins = [
+			rprotein['id'] + rprotein['location']
+			for rprotein in raw_data.ribosomal_protein_transcripts]
+
+	def _build_elongation_rates(self, raw_data, sim_data):
+		self.protein_ids = self.monomerData['id']
+		self.ribosomal_protein_ids = sim_data.moleculeGroups.rProteins
+
+		self.protein_indexes = {
+			protein: index
+			for index, protein in enumerate(self.protein_ids)}
+
+		self.ribosomal_proteins = {
+			rprotein: self.protein_indexes.get(rprotein, -1)
+			for rprotein in self.ribosomal_protein_ids}
+
+		self.rprotein_indexes = np.array([
+			index
+			for index in self.ribosomal_proteins.values()
+			if index >= 0], dtype=np.int64)
+
+		self.base_elongation_rate = sim_data.constants.ribosomeElongationRateBase.asNumber(units.aa / units.s)
+		self.max_elongation_rate = sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s)
+		self.elongation_rates = np.full(
+			self.protein_ids.shape,
+			self.base_elongation_rate,
+			dtype=np.int64)
+
+		self.elongation_rates[self.rprotein_indexes] = self.max_elongation_rate
+
+	def make_elongation_rates(self, base, flat_elongation=False):
+		rates = np.full(
+			self.protein_ids.shape,
+			base,
+			dtype=np.int64)
+
+		if not flat_elongation:
+			rates[self.rprotein_indexes] = self.max_elongation_rate
+
+		return rates
