@@ -52,7 +52,6 @@ class EnvironmentAgent(Outer):
 			self.build_state(),
 			print_send=False)
 
-
 def boot_lattice(agent_id, agent_type, agent_config):
 	media_id = agent_config.get('media_id', 'minimal')
 	media = agent_config.get('media', {})

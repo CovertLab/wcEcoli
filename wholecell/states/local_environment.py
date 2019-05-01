@@ -88,7 +88,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		self.container = BulkObjectsContainer(self._moleculeIDs, dtype=np.float64)
 		self.container.countsIs(self._concentrations)
 
-		# the length of the longest media_id, for padding in listener
+		# set the maximum length for a media_id saved to the listener, this is used for padding
 		self._media_id_max_length = 25
 
 

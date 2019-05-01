@@ -169,9 +169,10 @@ class TransportMinimal(CellSimulation):
 
 	## Flux-related functions
 	def get_fluxes(self, flux_lookup, transport_reactions_ids):
-		transport_fluxes = {transport_id: flux_lookup[transport_id] for transport_id in transport_reactions_ids}
-		adjusted_transport_fluxes = self.adjust_fluxes(transport_fluxes)
-		return adjusted_transport_fluxes
+		# TODO -- get reversible reactions, some fluxes are negative
+		transport_fluxes = {transport_id: max(flux_lookup[transport_id], 0.0) for transport_id in transport_reactions_ids}
+		# transport_fluxes = self.adjust_fluxes(transport_fluxes)
+		return transport_fluxes
 
 	def adjust_fluxes(self, transport_fluxes):
 		'''adjust fluxes found by look up table'''
