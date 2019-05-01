@@ -108,20 +108,20 @@ class TransportKinetics(CellSimulation):
 				else:
 					self.kinetic_parameters[reaction_id] = transporter_kinetics
 
-		# Get list of reaction_ids
+		# Get list of reaction_ids and molecule_ids
 		self.transport_reactions_ids = self.kinetic_parameters.keys()  # use all kinetic parameters
-
-		# Make transport_reactions list and prepare for removing reactions from metabolism
 		self.molecule_ids = self._get_molecules(self.transport_reactions_ids)
 
 		import ipdb; ipdb.set_trace()
 
+		# Get list of external molecules
+		self.external_molecule_ids = []
+		for row in raw_data.condition.environment_molecules:
+			self.external_molecule_ids.append(row["molecule id"])
 
-		# # exchange_ids declares which molecules' exchange will be controlled by transport
-		# aa_p_ids = [aa_id + "[p]" for aa_id in amino_acids]
-		# exchange_molecules = ["OXYGEN-MOLECULE[p]", "GLC[p]"]
-		# exchange_ids = exchange_molecules + aa_p_ids
-		# self.transport_reactions_ids = self.reactions_from_exchange(exchange_ids)
+		# Get internal molecule ids by removing external molecule ids
+		self.internal_molecule_ids = [mol_id for mol_id in self.molecule_ids if mol_id not in self.external_molecule_ids]
+		self.all_molecule_ids = self.internal_molecule_ids + self.external_molecule_ids
 
 
 		# # Get molecule IDs
@@ -147,8 +147,7 @@ class TransportKinetics(CellSimulation):
 		# nAvogadro is in 1/mol --> convert to 1/mmol. volume is in fL --> convert to L
 		self.molar_to_counts = (self.nAvogadro) * (self.volume * 1e-15)
 
-
-		# self.transport_fluxes = self.get_fluxes(self.current_flux_lookup, self.transport_reactions_ids)
+		self.transport_fluxes = []
 
 		delta_counts = self.flux_to_counts(self.transport_fluxes)
 
@@ -274,10 +273,9 @@ class TransportKinetics(CellSimulation):
 	## Configure reactions
 	def _get_molecules(self, reaction_ids):
 		'''
-		Make a reaction list that will be passed to metabolism to remove from FBA
 		Inputs:
 			reaction_ids - a list of all reaction ids that will be used by transport
-		Makes:
+		Returns:
 			self.molecule_ids - a list of all molecules used by these reactions
 		'''
 
