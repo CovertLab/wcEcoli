@@ -303,15 +303,26 @@ def initialize_transport_compartment(boot_config, synchronize_config):
 		simulation (CellSimulation): The actual simulation which will perform the calculations.
 	'''
 
-	# function_map = {
-	# 	'transport.time':
-	# }
-
 	network_config = {}
 	network_config['initilize'] = {
 		'transport': initialize_transport_minimal,
 		'ecoli': initialize_ecoli}
 
+	# configure the compartment. organized as a network with {target: source}
+	network_config['connections'] = {
+		# messages used by compartment
+		'ecoli.environment_change': 'compartment.environment_change',
+		'ecoli.volume': 'compartment.volume',
+		'ecoli.division': 'compartment.division',
+		'transport.motile_force': 'compartment.motile_force',
+
+		# one process' inner update becomes the other process' outer update
+		'transport.transport_fluxes': 'ecoli.transport_fluxes',
+
+		# # functions to be used by compartment
+		# 'compartment.time': 'ecoli.time',
+		# 'compartment.divide': 'ecoli.divide',
+	}
 
 	return TransportCompartment(boot_config, synchronize_config, network_config)
 

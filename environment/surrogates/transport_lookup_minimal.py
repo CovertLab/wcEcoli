@@ -176,8 +176,7 @@ class TransportMinimal(CellSimulation):
 	def adjust_fluxes(self, transport_fluxes):
 		'''adjust fluxes found by look up table'''
 
-		# added_flux = 1e-2
-		added_flux = 1e-2 * (1 + math.sin(10 * self.local_time))
+		added_flux = 0  # 1e-2 * (1 + math.sin(10 * self.local_time))
 		adjusted_transport_fluxes = {
 			transport_id: max(flux + added_flux, 0.0) for transport_id, flux in transport_fluxes.iteritems()}
 
