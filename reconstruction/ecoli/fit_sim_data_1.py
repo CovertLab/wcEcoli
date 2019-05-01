@@ -372,11 +372,11 @@ def buildBasalCellSpecifications(
 		cellSpecs["basal"]["expression"],
 		cellSpecs["basal"]["concDict"],
 		cellSpecs["basal"]["doubling_time"],
-		disable_ribosome_capacity_fitting = disable_ribosome_capacity_fitting,
-		disable_rnapoly_capacity_fitting = disable_rnapoly_capacity_fitting,
-		disable_rnapoly_active_fraction_fitting = disable_rnapoly_active_fraction_fitting,
-		disable_ribosome_active_fraction_fitting = disable_ribosome_active_fraction_fitting,
-		flat_elongation,
+		disable_ribosome_capacity_fitting=disable_ribosome_capacity_fitting,
+		disable_rnapoly_capacity_fitting=disable_rnapoly_capacity_fitting,
+		disable_rnapoly_active_fraction_fitting=disable_rnapoly_active_fraction_fitting,
+		disable_ribosome_active_fraction_fitting=disable_ribosome_active_fraction_fitting,
+		flat_elongation=flat_elongation,
 		)
 
 	# Store calculated values
