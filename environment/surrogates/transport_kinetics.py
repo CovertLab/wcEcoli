@@ -110,6 +110,7 @@ class TransportKinetics(CellSimulation):
 					self.kinetic_parameters[reaction_id] = transporter_kinetics
 
 		# Get list of external molecules
+		# TODO -- bring back # in EXTERNAL_MOLECULES_FILE, strip them before JsonReader
 		self.external_molecule_ids = []
 		with open(EXTERNAL_MOLECULES_FILE, 'rU') as csvfile:
 			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
@@ -266,7 +267,6 @@ class TransportKinetics(CellSimulation):
 		exchange_fluxes_array = np.asarray([exchange_fluxes[molecule_id] for molecule_id in self.all_molecule_ids])
 
 		return reaction_fluxes_array, exchange_fluxes_array
-
 
 
 
