@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import csv
 import time
+import ast
 from scipy import constants
 import numpy as np
 
@@ -74,9 +75,8 @@ class TransportKinetics(CellSimulation):
 
 		# make dict of transport reactions
 		self.all_transport_reactions = {}
-		with open(KINETIC_PARAMETERS_FILE, 'rU') as csvfile:
+		with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
 			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
-
 			for row in reader:
 				reaction_id = row["reaction id"]
 				stoichiometry = row["stoichiometry"]
@@ -90,13 +90,13 @@ class TransportKinetics(CellSimulation):
 
 		# Make kinetic_parameters in a nested format: {reaction_id: {transporter_id : {param_id: param_value}}}
 		self.kinetic_parameters = {}
-		with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
+		with open(KINETIC_PARAMETERS_FILE, 'rU') as csvfile:
 			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
 			for row in reader:
 				reaction_id = row['reaction id']
 				transporter = row['transporter']
-				k_avg = row['k_avg']
-				max_conc = row['max_conc']
+				k_avg = ast.literal_eval(row['k_avg'])
+				max_conc = ast.literal_eval(row['max_conc'])
 
 				# Combine kinetics into single dictionary
 				k_param = {'k_avg': k_avg}
@@ -109,26 +109,21 @@ class TransportKinetics(CellSimulation):
 					self.kinetic_parameters[reaction_id] = transporter_kinetics
 
 		# Get list of reaction_ids
-		self.reaction_ids = self.kinetic_parameters.keys()  # use all kinetic parameters
+		self.transport_reactions_ids = self.kinetic_parameters.keys()  # use all kinetic parameters
 
+		# Make transport_reactions list and prepare for removing reactions from metabolism
+		self.molecule_ids = self._get_molecules(self.transport_reactions_ids)
 
 		import ipdb; ipdb.set_trace()
 
 
-
-		# exchange_ids declares which molecules' exchange will be controlled by transport
-		aa_p_ids = [aa_id + "[p]" for aa_id in amino_acids]
-		exchange_molecules = ["OXYGEN-MOLECULE[p]", "GLC[p]"]
-		exchange_ids = exchange_molecules + aa_p_ids
-		self.transport_reactions_ids = self.reactions_from_exchange(exchange_ids)
-
+		# # exchange_ids declares which molecules' exchange will be controlled by transport
+		# aa_p_ids = [aa_id + "[p]" for aa_id in amino_acids]
+		# exchange_molecules = ["OXYGEN-MOLECULE[p]", "GLC[p]"]
+		# exchange_ids = exchange_molecules + aa_p_ids
+		# self.transport_reactions_ids = self.reactions_from_exchange(exchange_ids)
 
 
-
-		# # Get transport reactions and parameters
-		# self.reaction_ids = [reaction["reaction id"] for reaction in self.transport_reactions]
-		#
-		#
 		# # Get molecule IDs
 		# internal_molecule_ids = sim_data.process.transport.internal_molecule_ids
 		# self.external_molecule_ids = sim_data.process.transport.external_molecule_ids
@@ -140,8 +135,8 @@ class TransportKinetics(CellSimulation):
 		# self.internal_molecule_indices = [index for index, mol_id in enumerate(self.all_molecule_ids) if mol_id in self.internal_molecule_ids]
 		# self.external_molecule_indices = [index for index, mol_id in enumerate(self.all_molecule_ids) if mol_id in self.external_molecule_ids]
 		#
-		# # Build rate laws
-		# self.rate_laws = self._make_rate_laws()
+		# Build rate laws
+		self.rate_laws = self._make_rate_laws()
 
 
 		# get initial fluxes
@@ -276,32 +271,20 @@ class TransportKinetics(CellSimulation):
 
 
 
-
-
 	## Configure reactions
-	def _get_reactions(self, reaction_ids):
+	def _get_molecules(self, reaction_ids):
 		'''
 		Make a reaction list that will be passed to metabolism to remove from FBA
 		Inputs:
 			reaction_ids - a list of all reaction ids that will be used by transport
 		Makes:
-			self.transport_reactions - a list of all transport reaction details, which includes
-				reaction id, enzyme ids, reversibility, stoichiometry
-			self.remove_metabolism_reactions - a list of reaction_ids, which will be removed from
-				metabolism if sim_data.remove_transport_from_metabolism = True
+			self.molecule_ids - a list of all molecules used by these reactions
 		'''
 
-		self.transport_reactions = []
 		molecule_ids = []
-		self.remove_metabolism_reactions = []
-
-		# Make reactions list
-		for index, reaction in enumerate(self.all_transport_reactions):
-			reaction_id = reaction["reaction id"]
-
+		for reaction_id, specs in self.all_transport_reactions.iteritems():
 			if reaction_id in reaction_ids:
-				stoichiometry = reaction["stoichiometry"]
-
+				stoichiometry = specs["stoichiometry"]
 				substrates = stoichiometry.keys()
 				transporters = self.kinetic_parameters[reaction_id].keys()
 
@@ -309,14 +292,8 @@ class TransportKinetics(CellSimulation):
 				molecule_ids.extend(substrates)
 				molecule_ids.extend(transporters)
 
-				# Add reaction details to transport reaction list
-				self.transport_reactions.append(reaction)
-
-				# Save reaction_id, to remove from metabolism
-				self.remove_metabolism_reactions.append(reaction_id)
-
 		# Save unique molecule ids
-		self.molecule_ids = list(set(molecule_ids))
+		return list(set(molecule_ids))
 
 	def _make_rate_laws(self):
 		'''
