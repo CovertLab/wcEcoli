@@ -260,12 +260,12 @@ def boot_endocrine(agent_id, agent_type, agent_config):
 # Transport lookup minimal surrogate initialize and boot
 def initialize_transport_minimal(boot_config, synchronize_config):
 	'''
-		Args:
-			boot_config (dict): essential options for initializing a simulation
-			synchronize_config (dict): additional options that can be passed in for initialization
+	Args:
+		boot_config (dict): essential options for initializing a simulation
+		synchronize_config (dict): additional options that can be passed in for initialization
 
-		Returns:
-			simulation (CellSimulation): The actual simulation which will perform the calculations.
+	Returns:
+		simulation (CellSimulation): The actual simulation which will perform the calculations.
 	'''
 	boot_config.update(synchronize_config)
 	return TransportMinimal(boot_config)
