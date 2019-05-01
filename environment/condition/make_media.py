@@ -51,7 +51,7 @@ class Media(object):
 		environment_molecules_fw = {}
 		for row in raw_data.condition.environment_molecules:
 			mol = row["molecule id"]
-			fw = row["formula weight"]
+			fw = row["formula weight g/mol"]
 			if fw == 'None':
 				environment_molecules_fw[mol] = None
 			else:

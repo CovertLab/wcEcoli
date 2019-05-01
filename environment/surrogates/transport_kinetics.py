@@ -27,6 +27,7 @@ DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
 CSV_DIALECT = csv.excel_tab
 TRANSPORT_REACTIONS_FILE = os.path.join("environment", "condition", "look_up_tables", "transport_reactions.tsv")
 KINETIC_PARAMETERS_FILE = os.path.join("environment", "condition", "parameters", "glt_family.tsv")
+EXTERNAL_MOLECULES_FILE = os.path.join("environment", "condition", "environment_molecules.tsv")
 
 amino_acids = [
 	'L-ALPHA-ALANINE',
@@ -98,7 +99,7 @@ class TransportKinetics(CellSimulation):
 				k_avg = ast.literal_eval(row['k_avg'])
 				max_conc = ast.literal_eval(row['max_conc'])
 
-				# Combine kinetics into single dictionary
+				# Combine kinetics into dictionary
 				k_param = {'k_avg': k_avg}
 				k_param.update(max_conc)
 				transporter_kinetics = {transporter: k_param}
@@ -108,33 +109,32 @@ class TransportKinetics(CellSimulation):
 				else:
 					self.kinetic_parameters[reaction_id] = transporter_kinetics
 
+		# Get list of external molecules
+		self.external_molecule_ids = []
+		with open(EXTERNAL_MOLECULES_FILE, 'rU') as csvfile:
+			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+			for row in reader:
+				self.external_molecule_ids.append(row["molecule id"])
+
+
 		# Get list of reaction_ids and molecule_ids
 		self.transport_reactions_ids = self.kinetic_parameters.keys()  # use all kinetic parameters
 		self.molecule_ids = self._get_molecules(self.transport_reactions_ids)
-
-		import ipdb; ipdb.set_trace()
-
-		# Get list of external molecules
-		self.external_molecule_ids = []
-		for row in raw_data.condition.environment_molecules:
-			self.external_molecule_ids.append(row["molecule id"])
 
 		# Get internal molecule ids by removing external molecule ids
 		self.internal_molecule_ids = [mol_id for mol_id in self.molecule_ids if mol_id not in self.external_molecule_ids]
 		self.all_molecule_ids = self.internal_molecule_ids + self.external_molecule_ids
 
-
 		# # Get molecule IDs
-		# internal_molecule_ids = sim_data.process.transport.internal_molecule_ids
-		# self.external_molecule_ids = sim_data.process.transport.external_molecule_ids
 		# bulk_molecule_ids = sim_data.internal_state.bulkMolecules.bulkData['id']
 		# self.internal_molecule_ids = [mol_id for mol_id in internal_molecule_ids if mol_id in bulk_molecule_ids]
 		# self.all_molecule_ids = self.internal_molecule_ids + self.external_molecule_ids
-		#
-		# # Get indices, for reading out arrays in calculateRequest and evolveState
-		# self.internal_molecule_indices = [index for index, mol_id in enumerate(self.all_molecule_ids) if mol_id in self.internal_molecule_ids]
-		# self.external_molecule_indices = [index for index, mol_id in enumerate(self.all_molecule_ids) if mol_id in self.external_molecule_ids]
-		#
+
+		# Get indices, for reading out arrays in calculateRequest and evolveState
+		self.internal_molecule_indices = [index for index, mol_id in enumerate(self.all_molecule_ids) if mol_id in self.internal_molecule_ids]
+		self.external_molecule_indices = [index for index, mol_id in enumerate(self.all_molecule_ids) if mol_id in self.external_molecule_ids]
+
+
 		# Build rate laws
 		self.rate_laws = self._make_rate_laws()
 
