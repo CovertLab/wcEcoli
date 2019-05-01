@@ -13,7 +13,7 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__fi
 PATH_TO_COVERT_TPM = os.path.join(root_dir, "reconstruction", "ecoli", "flat", "rna_seq_data","rnaseq_{}_mean.tsv".format(RNA_SEQ_ANALYSIS))
 PATH_TO_COVERT_RPKM = os.path.join(root_dir, "reconstruction", "ecoli", "flat", "rna_seq_data","rnaseq_{}_mean.tsv".format(RNA_SEQ_ANALYSIS_RPKM))
 PATH_TO_LI = os.path.join(root_dir, "paper", "investigation", "RNAseq_GeneWeiLi.tsv")
-PATH_TO_OUTPUT = os.path.join(root_dir, "paper", "investigation", "investigate_rna_seq4.{}")
+PATH_TO_OUTPUT = os.path.join(root_dir, "paper", "investigation", "investigate_rna_seq.{}")
 
 
 def openfile(filename):
@@ -123,8 +123,7 @@ ax.scatter(x[rnap_indexes], y[rnap_indexes], s=big_marker_size, c="g")
 ax.scatter(x[enzyme_indexes], y[enzyme_indexes], s=big_marker_size, c="c")
 ax.set_title("log10 mRNA expression (RPKM)")
 ax.set_xlabel("Covert 2019 (this study)\n(MG1655, M9 + glucose)")
-ax.set_ylabel("Li 2014\n(MG1655, MOPS + glucose)")
-
+ax.set_ylabel("Li 2014\n(MG1655, MOPS complete + glucose)")
 
 # Format plot
 ax_min = min([ax.get_xlim()[0], ax.get_ylim()[0]])
@@ -138,6 +137,24 @@ red_patch = mpatches.Patch(color="r", label="mRNA for r-proteins")
 green_patch = mpatches.Patch(color="g", label="mRNA for RNAp monomers")
 cyan_patch = mpatches.Patch(color="c", label="mRNA for 5 enzymes with adjustments")
 ax.legend(handles=[red_patch, green_patch, cyan_patch])
+
+# Compare r-proteins between the 2 datasets
+ax = axesList[1]
+x = np.log10(data[r_protein_indexes, 2].astype(float))
+y = np.log10(data[r_protein_indexes, 3].astype(float))
+ax.bar(range(len(x)), y/x)
+ax.set_xlabel("r-proteins")
+ax.set_ylabel("Li RPKM / Covert RPKM")
+ax.set_xticks([])
+
+# Compare RNA polymerase subunits between the 2 datasets
+ax = axesList[2]
+x = np.log10(data[rnap_indexes, 2].astype(float))
+y = np.log10(data[rnap_indexes, 3].astype(float))
+ax.bar(range(len(x)), y/x)
+ax.set_xlabel("RNA polymerase subunits")
+ax.set_ylabel("Li RPKM / Covert RPKM")
+ax.set_xticks([])
 
 # Save
 plt.savefig(PATH_TO_OUTPUT.format("pdf"))
