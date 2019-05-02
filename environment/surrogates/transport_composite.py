@@ -63,7 +63,7 @@ class TransportComposite(CellSimulation):
 			process_update = process.generate_inner_update()
 			process_updates[process_id] = process_update
 
-		# add to inner update by pulling from individual process updates according to resolve_inner_update
+		# add to inner update by pulling from individual process updates according to connections
 		inner_update = {}
 		for source, target in self.connections.iteritems():
 			source_process, source_message = source.split('.')
