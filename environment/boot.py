@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import errno
+import shutil
 
 from agent.outer import Outer
 from agent.inner import Inner
@@ -123,6 +124,13 @@ def ecoli_boot_config(agent_id, agent_config):
 	sim_out_path = fp.makedirs(working_dir, 'out')
 	sim_data_fit = os.path.join(sim_out_path, 'manual', 'kb', 'simData_Most_Fit.cPickle')
 	output_dir = os.path.join(sim_out_path, 'manual', outer_id, cohort_id, generation_id, cell_id, 'simOut')
+
+	variant_sim_data_directory = fp.makedirs(sim_out_path, 'manual', outer_id, 'kb')
+	# variant_metadata_directory = fp.makedirs(sim_out_path, 'manual', outer_id, 'metadata')
+	variant_sim_data_modified_file = os.path.join(variant_sim_data_directory, 'simData_Modified.cPickle')
+
+	# copy sim_data into the experiment directory to support analysis
+	shutil.copy(sim_data_fit, variant_sim_data_modified_file)
 
 	if not os.path.isfile(sim_data_fit):
 		raise IOError(
