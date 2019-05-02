@@ -305,12 +305,15 @@ def boot_transport_minimal(agent_id, agent_type, agent_config):
 # Transport composite initialize and boot
 def initialize_transport_composite(boot_config, synchronize_config):
 	'''
+	Initialization function for the transport composite agent. This sets up a network_config, which defines
+	how messages are passed between subprocesses and what functions can be used by the composite.
+
 	Args:
 		boot_config (dict): essential options for initializing a simulation
 		synchronize_config (dict): additional options that can be passed in for initialization
 
 	Returns:
-		simulation (CellSimulation): The actual simulation which will perform the calculations.
+		simulation (CellSimulation): The actual composite simulation
 	'''
 
 	# configure the composite.

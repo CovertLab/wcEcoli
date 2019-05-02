@@ -19,11 +19,11 @@ class TransportComposite(CellSimulation):
 
 	Args:
 		network_config (dict) includes:
-			* subprocesses -- a list of all subprocesses
-			* intialize -- a dict mapping each subprocess id to a function for initializing that subprocess
-			* connections -- a dict for crossing messages, {source_process.source_message: target_process.target_message}
-
-	TODO -- explain the cross wiring configurations that the composite can take on
+			* initialize -- a dict mapping each subprocess id to a function for initializing that subprocess
+			* message_connections -- a dict for crossing messages with:
+					{source_process.source_message: target_process.target_message}
+			* function_connections -- a dict for assigning a subprocess function to the composite with:
+					{function_name: source_process}
 	'''
 
 	def __init__(self, boot_config, synchronize_config, network_config):
