@@ -696,10 +696,10 @@ def expressionConverge(
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
 
 		if not disable_rnapoly_active_fraction_fitting:
-			rnapActiveFraction = getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time)
+			rnapActiveFraction = getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation)
 
 		if not disable_ribosome_active_fraction_fitting:
-			ribosomeActiveFraction = getRibosomeActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time)
+			ribosomeActiveFraction = getRibosomeActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation)
 
 		if not disable_ribosome_capacity_fitting:
 			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, ribosomeActiveFraction, flat_elongation)
@@ -1470,7 +1470,7 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
 
-def getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time):
+def getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation=False):
 	"""
 	Get active fraction of RNA polymerase required to achieve steady-state
 	doubling of RNAs.
@@ -1506,8 +1506,12 @@ def getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubli
 		)
 
 	# Compute number of RNA polymerases required to maintain steady state of RNA
+	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time).asNumber(units.nt / units.s)
+	elongation_rates = sim_data.process.transcription.make_elongation_rates(base, flat_elongation=flat_elongation)
 	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
-		rnaLengths, sim_data.growthRateParameters.getRnapElongationRate(doubling_time), rnaLossRate)
+		rnaLengths,
+		elongation_rates * (units.nt / units.s),
+		rnaLossRate)
 
 	# Get number of RNA polymerases that can be made (according to bulk molecule counts)
 	rnapIds = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitIds']
@@ -1518,7 +1522,7 @@ def getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubli
 
 	return activeFractionNeeded
 
-def getRibosomeActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time):
+def getRibosomeActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation=False):
 	"""
 	Get active fraction of ribosomes required to achieve steady-state doubling
 	of proteins. Ribosome demand is estimated from the expectation that the
@@ -1566,15 +1570,15 @@ def getRibosomeActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, do
 	)
 
 	# Minimum number of ribosomes needed
+	base = sim_data.growthRateParameters.getRibosomeElongationRate(doubling_time).asNumber(units.aa / units.s)
+	elongation_rates = sim_data.process.translation.make_elongation_rates(base, flat_elongation=flat_elongation)
 	nRibosomesNeeded = calculateMinPolymerizingEnzymeByProductDistribution(
 		proteinLengths,
-		sim_data.growthRateParameters.getRibosomeElongationRate(doubling_time),
+		elongation_rates * (units.aa / units.s),
 		netLossRate_protein,
 		proteinCounts,
 	)
-	nRibosomesNeeded.normalize()  # FIXES NO UNIT BUG
-	nRibosomesNeeded.checkNoUnit()
-	nRibosomeDemand = nRibosomesNeeded.asNumber()
+	nRibosomeDemand = nRibosomesNeeded
 
 	# -- SUPPLY 1: Measured rRNA mass fraction -- #
 	## Calculate exact number of 30S and 50S subunits based on measured mass
