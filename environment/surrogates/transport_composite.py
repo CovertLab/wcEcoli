@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 from agent.inner import CellSimulation
 
-TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [0, 128, 255]]
 
 
@@ -11,11 +10,11 @@ def merge_two_dicts(x, y):
 	z.update(y)
 	return z
 
-class TransportCompartment(CellSimulation):
+class TransportComposite(CellSimulation):
 	'''
 	This CellSimulation class is a composite agent, which coordinates the function of multiple agents.
 
-	TODO -- explain the cross wiring configurations that the compartment can take on
+	TODO -- explain the cross wiring configurations that the composite can take on
 	'''
 
 	def __init__(self, boot_config, synchronize_config, network_config):
@@ -62,12 +61,12 @@ class TransportCompartment(CellSimulation):
 			source_process, source_message = source.split('.')
 			target_process, target_message = target.split('.')
 
-			if target_process == 'compartment':
+			if target_process == 'composite':
 				inner_update[target_message] = process_updates[source_process][source_message]
 			else:
 				self.cross_update[target_process][target_message] = process_updates[source_process][source_message]
 
-		# inner updates from compartment
+		# inner updates from composite
 		inner_update['color'] = DEFAULT_COLOR
 
 		return inner_update

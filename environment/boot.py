@@ -12,7 +12,7 @@ from environment.lattice import EnvironmentSpatialLattice
 from environment.surrogates.chemotaxis import Chemotaxis
 from environment.surrogates.endocrine import Endocrine
 from environment.surrogates.transport_lookup_minimal import TransportMinimal
-from environment.surrogates.transport_compartment import TransportCompartment
+from environment.surrogates.transport_composite import TransportComposite
 from models.ecoli.sim.simulation import ecoli_simulation
 from environment.condition.make_media import Media
 
@@ -116,9 +116,12 @@ def ecoli_boot_config(agent_id, agent_config):
 		'environment_change': {}}
 	agent_config['state'] = state
 
-	cohort_id = '000000'  # TODO -- get actual cohort indices
+	# TODO -- get actual cohort and cell ids
+	# TODO -- change analysis scripts to allow the agent_id to be used here
+	# TODO -- need to count number of initialized cells so that they won't over-write each other as 000000
+	cohort_id = '%06d' % 0  # analysis scripts require starting with 0
 	generation_id = 'generation_%06d' % generation
-	cell_id = '000000'    # TODO -- change analysis scripts to allow the agent_id to be used here
+	cell_id = '%06d' % 0    # analysis scripts require starting with 0
 
 	# make options for boot config
 	sim_out_path = fp.makedirs(working_dir, 'out')
@@ -299,8 +302,8 @@ def boot_transport_minimal(agent_id, agent_type, agent_config):
 
 	return inner
 
-# Transport compartment initialize and boot
-def initialize_transport_compartment(boot_config, synchronize_config):
+# Transport composite initialize and boot
+def initialize_transport_composite(boot_config, synchronize_config):
 	'''
 	Args:
 		boot_config (dict): essential options for initializing a simulation
@@ -310,7 +313,7 @@ def initialize_transport_compartment(boot_config, synchronize_config):
 		simulation (CellSimulation): The actual simulation which will perform the calculations.
 	'''
 
-	# configure the compartment.
+	# configure the composite.
 	network_config = {}
 	network_config['initilize'] = {
 		'transport': initialize_transport_minimal,
@@ -320,20 +323,20 @@ def initialize_transport_compartment(boot_config, synchronize_config):
 
 	# organized as a network with {source_process.source_message: target_process.target_message}
 	network_config['connections'] = {
-		'ecoli.environment_change': 'compartment.environment_change',
-		'ecoli.volume': 'compartment.volume',
-		'ecoli.division': 'compartment.division',
-		'transport.motile_force': 'compartment.motile_force',
+		'ecoli.environment_change': 'composite.environment_change',
+		'ecoli.volume': 'composite.volume',
+		'ecoli.division': 'composite.division',
+		'transport.motile_force': 'composite.motile_force',
 		'transport.transport_fluxes': 'ecoli.transport_fluxes',
 	}
 	# TODO -- (eran) need to assign functions for time and divide?
-	# # functions to be used by compartment
-	# 'compartment.time': 'ecoli.time',
-	# 'compartment.divide': 'ecoli.divide',
+	# # functions to be used by composite
+	# 'composite.time': 'ecoli.time',
+	# 'composite.divide': 'ecoli.divide',
 
-	return TransportCompartment(boot_config, synchronize_config, network_config)
+	return TransportComposite(boot_config, synchronize_config, network_config)
 
-def boot_transport_compartment(agent_id, agent_type, agent_config):
+def boot_transport_composite(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
 
@@ -352,7 +355,7 @@ def boot_transport_compartment(agent_id, agent_type, agent_config):
 		agent_type,
 		agent_config,
 		options,
-		initialize_transport_compartment)
+		initialize_transport_composite)
 
 	return inner
 
@@ -366,7 +369,7 @@ class BootEnvironment(BootAgent):
 			'chemotaxis': boot_chemotaxis,
 			'endocrine': boot_endocrine,
 			'transport_minimal': boot_transport_minimal,
-			'transport_compartment': boot_transport_compartment,
+			'transport_composite': boot_transport_composite,
 			}
 
 if __name__ == '__main__':

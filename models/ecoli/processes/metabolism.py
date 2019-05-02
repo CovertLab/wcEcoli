@@ -235,7 +235,7 @@ class Metabolism(wholecell.processes.process.Process):
 		current_media = self.boundary.current_media
 		exchange_data = self.boundary.exchange_data
 
-		# check for new flux targets in self.metabolism.allConstrainedReactions
+		# check for new flux targets from the boundary
 		if not set(self.boundary.transport_fluxes.keys()).issubset(self.all_constrained_reactions):
 			self.boundary_constrained_reactions = self.boundary.transport_fluxes.keys()
 			self.all_constrained_reactions = self.kinetics_constrained_reactions + self.boundary_constrained_reactions

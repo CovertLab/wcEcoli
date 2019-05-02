@@ -1,5 +1,5 @@
 """
-Plot transport
+Plot boundary fluxes
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
