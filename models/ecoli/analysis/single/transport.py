@@ -20,7 +20,6 @@ from wholecell.utils import filepath
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 
-# START_TIME_STEP = 5 # remove initialization artifacts
 BURN_IN_STEPS = 20 # remove initialization artifacts
 
 def set_ticks(ax, time):
@@ -80,7 +79,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		## Plot
 		cols = 1
 		rows = len(boundaryConstrainedReactions) + 1
-
 		n_char_of_reaction_id = 25 # number of characters of reaction_id string in title
 
 		# initialize subplot indices
@@ -92,7 +90,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 			# initialize flux column
 			col = 1
-			row_idx = row_idx
 			plot_index = row_idx * cols + col
 			ax1 = plt.subplot(rows, cols, plot_index)
 

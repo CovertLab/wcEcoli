@@ -478,7 +478,7 @@ class Boundary(object):
 		current_concentrations = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
 		self.exchange_data = self.exchangeDataFromConcentrations(current_concentrations)
 
-		# variables from a compartment
+		# transport fluxes from the external state
 		self.transport_fluxes = self.external_state['Environment'].transport_fluxes
 
 	def updateEnvironment(self, external_exchange_molecule_ids, delta_nutrients):
