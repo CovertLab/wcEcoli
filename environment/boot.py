@@ -315,24 +315,27 @@ def initialize_transport_composite(boot_config, synchronize_config):
 
 	# configure the composite.
 	network_config = {}
+
+	# a dict mapping each subprocess to its initialization function
 	network_config['initilize'] = {
 		'transport': initialize_transport_minimal,
 		'ecoli': initialize_ecoli}
 
-	# TODO -- (eran) need network configuration for initializing processes and their synchronization messages
-
+	# connections between subprocess messages and those used by the composite
 	# organized as a network with {source_process.source_message: target_process.target_message}
-	network_config['connections'] = {
+	network_config['message_connections'] = {
 		'ecoli.environment_change': 'composite.environment_change',
 		'ecoli.volume': 'composite.volume',
 		'ecoli.division': 'composite.division',
 		'transport.motile_force': 'composite.motile_force',
 		'transport.transport_fluxes': 'ecoli.transport_fluxes',
 	}
-	# TODO -- (eran) need to assign functions for time and divide?
-	# # functions to be used by composite
-	# 'composite.time': 'ecoli.time',
-	# 'composite.divide': 'ecoli.divide',
+
+	# TODO -- (eran) need to make connections between subprocess functions (such as time and divide)
+	# functions to be used by composite. {function_used_by_composite: source_process}
+	network_config['function_connections'] = {
+		'time': 'ecoli',
+		'divide': 'ecoli'}
 
 	return TransportComposite(boot_config, synchronize_config, network_config)
 

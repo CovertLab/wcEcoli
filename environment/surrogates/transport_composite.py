@@ -12,19 +12,27 @@ def merge_two_dicts(x, y):
 
 class TransportComposite(CellSimulation):
 	'''
-	This CellSimulation class is a composite agent, which coordinates the function of multiple agents.
+	This CellSimulation class is a composite agent, which coordinates the function of multiple sub-agents.
+
+	Its primary function is to initialize the individual sub-agent, adding additional arguments to synchronize_config,
+	and then to manage the message passing between them.
+
+	Args:
+		network_config (dict) includes:
+			* subprocesses -- a list of all subprocesses
+			* intialize -- a dict mapping each subprocess id to a function for initializing that subprocess
+			* connections -- a dict for crossing messages, {source_process.source_message: target_process.target_message}
 
 	TODO -- explain the cross wiring configurations that the composite can take on
 	'''
 
 	def __init__(self, boot_config, synchronize_config, network_config):
 		initialize_processes = network_config['initilize']
-		self.connections = network_config['connections']
+		function_connections = network_config['function_connections']
+		self.connections = network_config['message_connections']
 
-		# TODO -- don't hardcode cross_update
-		self.cross_update = {
-			'transport': {},
-			'ecoli': {}}
+		# initialize message passing between subprocesses
+		self.cross_update = {subprocess: {} for subprocess in initialize_processes.keys()}
 
 		# initialize transport
 		self.processes = {}
@@ -37,10 +45,10 @@ class TransportComposite(CellSimulation):
 		# initialize ecoli
 		self.processes['ecoli'] = initialize_processes['ecoli'](boot_config, ecoli_synchronize_config)
 
-		# use one process' functions exclusively
-		self.time = self.processes['transport'].time
-		self.divide = self.processes['ecoli'].divide
+		# use source process' functions as composite function
 		# TODO (eran) what happens when one process declares division? Can it divide the rest? How do they share inheritance, etc.
+		self.time = self.processes[function_connections['time']].time
+		self.divide = self.processes[function_connections['divide']].divide
 
 
 	def generate_inner_update(self):
