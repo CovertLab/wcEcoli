@@ -23,8 +23,8 @@ class ShepherdControl(AgentControl):
 
 	def lattice_experiment(self, args):
 		now = datetime.datetime.now()
-		time_stamp = now.strftime('%m-%d_%H-%M-%S')
-		lattice_id = time_stamp + '_lattice_' + str(uuid.uuid1())
+		time_stamp = now.strftime('%Y-%m-%d_%H-%M-%S')
+		lattice_id = time_stamp + '_lattice_' + '000000'#str(uuid.uuid1())
 		num_cells = args['number']
 		print('Creating lattice agent_id {} and {} cell agents\n'.format(
 			lattice_id, num_cells))

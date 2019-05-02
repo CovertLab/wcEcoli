@@ -115,9 +115,9 @@ def ecoli_boot_config(agent_id, agent_config):
 		'environment_change': {}}
 	agent_config['state'] = state
 
-	cohort_id = agent_id  # an experiment's initial agents are its cohort
+	cohort_id = '000000'  # agent_id  # an experiment's initial agents are its cohort
 	generation_id = 'generation_%06d' % generation
-	cell_id = agent_id
+	cell_id = '000000'  #  agent_id
 
 	# make options for boot config
 	sim_out_path = fp.makedirs(working_dir, 'out')

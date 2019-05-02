@@ -12,7 +12,9 @@ def merge_two_dicts(x, y):
 	return z
 
 class TransportCompartment(CellSimulation):
-	''''''
+	'''
+	TODO -- explain the cross wiring configurations that the compartment can take on
+	'''
 
 	def __init__(self, boot_config, synchronize_config, network_config):
 		initialize_processes = network_config['initilize']
