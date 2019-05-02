@@ -7,18 +7,21 @@ DEFAULT_COLOR = [color/255 for color in [0, 128, 255]]
 
 
 def merge_two_dicts(x, y):
-	z = x.copy()  # start with x's keys and values
-	z.update(y)  # modifies z with y's keys and values & returns None
+	z = x.copy()
+	z.update(y)
 	return z
 
 class TransportCompartment(CellSimulation):
 	'''
+	This CellSimulation class is a composite agent, which coordinates the function of multiple agents.
+
 	TODO -- explain the cross wiring configurations that the compartment can take on
 	'''
 
 	def __init__(self, boot_config, synchronize_config, network_config):
 		initialize_processes = network_config['initilize']
 		self.connections = network_config['connections']
+
 		# TODO -- don't hardcode cross_update
 		self.cross_update = {
 			'transport': {},

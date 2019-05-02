@@ -115,17 +115,17 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Remove disabled reactions so they don't get included in the FBA problem setup
 		if hasattr(sim_data.process.metabolism, "kineticTargetShuffleRxns") and sim_data.process.metabolism.kineticTargetShuffleRxns != None:
-			self.kineticsConstrainedReactions = sim_data.process.metabolism.kineticTargetShuffleRxns
-			self.active_constraints_mask = np.ones(len(self.kineticsConstrainedReactions), dtype=bool)
+			self.kinetics_constrained_reactions = sim_data.process.metabolism.kineticTargetShuffleRxns
+			self.active_constraints_mask = np.ones(len(self.kinetics_constrained_reactions), dtype=bool)
 		else:
 			constrainedReactionList = sim_data.process.metabolism.constrainedReactionList
 			constraintsToDisable = sim_data.process.metabolism.constraintsToDisable
 			self.active_constraints_mask = np.array([(rxn not in constraintsToDisable) for rxn in constrainedReactionList])
-			self.kineticsConstrainedReactions = list(np.array(constrainedReactionList)[self.active_constraints_mask])
+			self.kinetics_constrained_reactions = list(np.array(constrainedReactionList)[self.active_constraints_mask])
 
 		# Add kinetic reaction targets from boundary
-		self.boundaryConstrainedReactions = self.boundary.transport_fluxes.keys()
-		self.allConstrainedReactions = self.kineticsConstrainedReactions + self.boundaryConstrainedReactions
+		self.boundary_constrained_reactions = self.boundary.transport_fluxes.keys()
+		self.all_constrained_reactions = self.kinetics_constrained_reactions + self.boundary_constrained_reactions
 
 		self.kineticsEnzymesList = sim_data.process.metabolism.enzymeIdList
 		self.kineticsSubstratesList = sim_data.process.metabolism.kineticsSubstratesList
@@ -157,7 +157,7 @@ class Metabolism(wholecell.processes.process.Process):
 			"objectiveType" : "homeostatic_kinetics_mixed",
 			"objectiveParameters" : {
 					"kineticObjectiveWeight" : kinetic_objective_weight,
-					"reactionRateTargets" : {reaction: 1 for reaction in self.allConstrainedReactions},
+					"reactionRateTargets" : {reaction: 1 for reaction in self.all_constrained_reactions},
 					"oneSidedReactionTargets" : [],
 					},
 			"moleculeMasses" : moleculeMasses,
@@ -236,10 +236,10 @@ class Metabolism(wholecell.processes.process.Process):
 		exchange_data = self.boundary.exchange_data
 
 		# check for new flux targets in self.metabolism.allConstrainedReactions
-		if not set(self.boundary.transport_fluxes.keys()).issubset(self.allConstrainedReactions):
-			self.boundaryConstrainedReactions = self.boundary.transport_fluxes.keys()
-			self.allConstrainedReactions = self.kineticsConstrainedReactions + self.boundaryConstrainedReactions
-			self.fbaObjectOptions["objectiveParameters"]["reactionRateTargets"] = {reaction: 1 for reaction in self.allConstrainedReactions}
+		if not set(self.boundary.transport_fluxes.keys()).issubset(self.all_constrained_reactions):
+			self.boundary_constrained_reactions = self.boundary.transport_fluxes.keys()
+			self.all_constrained_reactions = self.kinetics_constrained_reactions + self.boundary_constrained_reactions
+			self.fbaObjectOptions["objectiveParameters"]["reactionRateTargets"] = {reaction: 1 for reaction in self.all_constrained_reactions}
 			self.fba = FluxBalanceAnalysis(**self.fbaObjectOptions)
 
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
@@ -350,7 +350,7 @@ class Metabolism(wholecell.processes.process.Process):
 		targets = (TIME_UNITS * self.timeStepSec() * reactionTargets).asNumber(CONC_UNITS)[self.active_constraints_mask]
 
 		# add boundary targets
-		all_constrained_reactions = self.kineticsConstrainedReactions + self.boundary.transport_fluxes.keys()
+		all_constrained_reactions = self.kinetics_constrained_reactions + self.boundary.transport_fluxes.keys()
 		all_targets = np.concatenate((targets, self.boundary.transport_fluxes.values()), axis=0)
 
 		## Set kinetic targets only if kinetics is enabled
@@ -396,7 +396,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "enzymeCountsInit", kineticsEnzymesCountsInit)
 		self.writeToListener("EnzymeKinetics", "metaboliteConcentrations", metaboliteConcentrations.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "countsToMolar", countsToMolar.asNumber(CONC_UNITS))
-		self.writeToListener("EnzymeKinetics", "actualFluxes", self.fba.getReactionFluxes(self.allConstrainedReactions) / self.timeStepSec())
+		self.writeToListener("EnzymeKinetics", "actualFluxes", self.fba.getReactionFluxes(self.all_constrained_reactions) / self.timeStepSec())
 		self.writeToListener("EnzymeKinetics", "targetFluxes", all_targets / self.timeStepSec())
 		self.writeToListener("EnzymeKinetics", "reactionConstraint", reactionConstraint[self.active_constraints_mask])
 
@@ -464,7 +464,7 @@ class Boundary(object):
 		self.environment_molecule_ids = self.external_state['Environment']._moleculeIDs
 		self.environment_molecules = environmentView(self.environment_molecule_ids)
 
-		# variables from a compartment
+		# transport fluxes from the external state
 		self.transport_fluxes = self.external_state['Environment'].transport_fluxes
 
 		self.updateBoundary()
