@@ -126,11 +126,9 @@ def ecoli_boot_config(agent_id, agent_config):
 
 	# make options for boot config
 	sim_out_path = fp.makedirs(working_dir, 'out')
-	sim_data_fit = os.path.join(sim_out_path, 'manual', 'kb', 'simData_Most_Fit.cPickle')
+	sim_data_fit = os.path.join(sim_out_path, 'manual', 'kb', constants.SERIALIZED_SIM_DATA_MOST_FIT_FILENAME)
 	output_dir = os.path.join(sim_out_path, 'manual', outer_id, cohort_id, generation_id, cell_id, 'simOut')
-
 	variant_sim_data_directory = fp.makedirs(sim_out_path, 'manual', outer_id, 'kb')
-	# variant_metadata_directory = fp.makedirs(sim_out_path, 'manual', outer_id, 'metadata')
 	variant_sim_data_modified_file = os.path.join(variant_sim_data_directory, constants.SERIALIZED_SIM_DATA_MODIFIED)
 
 	# copy sim_data into the experiment directory to support analysis
