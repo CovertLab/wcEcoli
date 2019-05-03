@@ -38,8 +38,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
-		with open(validationDataFile, 'rb') as f:
-			validation_data = cPickle.load(f)
 
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
@@ -49,12 +47,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# main reader
 		initialTime = main_reader.readAttribute("initialTime")
 		time = main_reader.readColumn("time") - initialTime
-		main_reader.close()
 
 		# mass reader
 		cellMass = mass_reader.readColumn("cellMass")
 		dryMass = mass_reader.readColumn("dryMass")
-		mass_reader.close()
 
 		coefficient = dryMass / cellMass * sim_data.constants.cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
 
@@ -63,7 +59,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		allActualFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (enzyme_kinetics_reader.readColumn("actualFluxes").T / coefficient).T
 		kineticsConstrainedReactions = np.array(enzyme_kinetics_reader.readAttribute("kineticsConstrainedReactions"))
 		boundaryConstrainedReactions = np.array(enzyme_kinetics_reader.readAttribute("boundaryConstrainedReactions"))
-		enzyme_kinetics_reader.close()
 
 		allTargetFluxes = allTargetFluxes.asNumber(units.mmol / units.g / units.h)
 		allActualFluxes = allActualFluxes.asNumber(units.mmol / units.g / units.h)
@@ -77,21 +72,16 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 
 		## Plot
-		cols = 1
 		rows = len(boundaryConstrainedReactions) + 1
 		n_char_of_reaction_id = 25 # number of characters of reaction_id string in title
 
-		# initialize subplot indices
-		row_idx = 1
-
-		plt.figure(figsize=(5*cols, 2*rows))
-		for reaction_id, reaction_flux in boundary_actual_flux_dict.iteritems():
+		plt.figure(figsize=(5, 2*rows))
+		# for reaction_id, reaction_flux in boundary_actual_flux_dict.iteritems():
+		for row_idx, (reaction_id, reaction_flux) in enumerate(boundary_actual_flux_dict.iteritems()):
 			target_flux = boundary_target_flux_dict[reaction_id]
 
 			# initialize flux column
-			col = 1
-			plot_index = row_idx * cols + col
-			ax1 = plt.subplot(rows, cols, plot_index)
+			ax1 = plt.subplot(rows, 1, row_idx+1)
 
 			# plot flux
 			ax1.plot(time / 60., target_flux, color='Red', label='target flux')
@@ -99,12 +89,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 			# add labels
 			ax1.set_xlabel("Time (min)", fontsize = 12)
-			ax1.set_ylabel("flux", fontsize = 12)
+			ax1.set_ylabel("flux (mmol/g/hr)", fontsize = 12)
 			ax1.set_title("%i. %s" % (row_idx, reaction_id[:n_char_of_reaction_id]), fontsize=14, y=1.15)
 			set_ticks(ax1, time)
 			ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=8)
-
-			row_idx += 1
 
 
 		plt.tight_layout()

@@ -99,13 +99,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		boundaryActualAve = allActualAve[len(kineticsConstrainedReactions):]
 
 		# kinetic target fluxes
-		targetFluxes = allTargetFluxes[:, 0:len(kineticsConstrainedReactions)]
-		actualFluxes = allActualFluxes[:, 0:len(kineticsConstrainedReactions)]
-		targetAve = allTargetAve[0:len(kineticsConstrainedReactions)]
-		actualAve = allActualAve[0:len(kineticsConstrainedReactions)]
-
-
-
+		targetAve = allTargetAve[:len(kineticsConstrainedReactions)]
+		actualAve = allActualAve[:len(kineticsConstrainedReactions)]
 
 		# categorize reactions that use constraints with only kcat, Km and kcat, or switch between both types of constraints
 		kcatOnlyReactions = np.all(constraintIsKcatOnly[reactionConstraintList], axis = 0)
@@ -153,6 +148,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.plot([-5, 4], [-6, 3], 'k', linewidth = 0.5)
 		plt.plot([-6, 3], [-5, 4], 'k', linewidth = 0.5)
 		plt.plot(np.log10(targetAve), np.log10(actualAve), 'o', color = "black", markersize = 8, alpha = 0.15, zorder=1, markeredgewidth = 0.0)
+		plt.plot(np.log10(boundaryTargetAve), np.log10(boundaryActualAve), "ob", c='r', markeredgewidth=0.25, alpha=0.9)
 		plt.xlabel("Log10(Target Flux [mmol/g/hr])")
 		plt.ylabel("Log10(Actual Flux [mmol/g/hr])")
 		plt.title("PCC = %.3f, p = %s\n(%.3f, p = %s without points at zero)" % (pearsonAll[0], pearsonAll[1], pearsonNoZeros[0], pearsonNoZeros[1]))

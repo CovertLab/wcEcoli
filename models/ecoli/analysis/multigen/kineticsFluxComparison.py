@@ -99,8 +99,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# kinetic target fluxes
 		targetFluxes = allTargetFluxes[:, 0:len(kineticsConstrainedReactions)]
 		actualFluxes = allActualFluxes[:, 0:len(kineticsConstrainedReactions)]
-		targetAve = allTargetAve[0:len(kineticsConstrainedReactions)]
-		actualAve = allActualAve[0:len(kineticsConstrainedReactions)]
+		targetAve = allTargetAve[:len(kineticsConstrainedReactions)]
+		actualAve = allActualAve[:len(kineticsConstrainedReactions)]
 
 		thresholds = [2, 10]
 		categorization = np.zeros(reactionConstraint.shape[1])

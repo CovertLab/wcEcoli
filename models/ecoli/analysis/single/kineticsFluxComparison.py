@@ -80,9 +80,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# kinetic target fluxes
 		targetFluxes = allTargetFluxes[:, 0:len(kineticsConstrainedReactions)]
 		actualFluxes = allActualFluxes[:, 0:len(kineticsConstrainedReactions)]
-		targetAve = allTargetAve[0:len(kineticsConstrainedReactions)]
-		actualAve = allActualAve[0:len(kineticsConstrainedReactions)]
-
+		targetAve = allTargetAve[:len(kineticsConstrainedReactions)]
+		actualAve = allActualAve[:len(kineticsConstrainedReactions)]
 
 		kcatOnlyReactions = np.all(constraintIsKcatOnly[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
 		kmAndKcatReactions = ~np.any(constraintIsKcatOnly[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
