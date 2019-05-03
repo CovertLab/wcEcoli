@@ -153,7 +153,6 @@ def get_molecules(all_reactions, reaction_ids):
 
 
 
-
 class KineticFluxModel(object):
 	'''
 	Attributes:
@@ -177,7 +176,7 @@ class KineticFluxModel(object):
 		self.molecule_ids = get_molecules(all_reactions, self.reaction_ids)
 
 		# make the rate laws
-		self.rate_laws = make_rate_laws_minimal(self.reaction_ids, self.kinetic_parameters) #, self.transport_configuration, self.parameter_indices)
+		self.rate_laws = make_rate_laws_minimal(self.reaction_ids, self.kinetic_parameters)
 
 
 	def get_fluxes(self, concentrations_dict):

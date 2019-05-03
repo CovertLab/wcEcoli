@@ -67,6 +67,8 @@ class TransportKinetics(CellSimulation):
 				}
 
 		# Make kinetic_parameters in a nested format: {reaction_id: {transporter_id : {param_id: param_value}}}
+		# TODO -- don't use literal_eval
+		# TODO -- strip # before JsonReader
 		self.kinetic_parameters = {}
 		with open(KINETIC_PARAMETERS_FILE, 'rU') as csvfile:
 			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
