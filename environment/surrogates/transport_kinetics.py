@@ -7,11 +7,13 @@ import ast
 from scipy import constants
 import numpy as np
 
+from reconstruction.spreadsheets import JsonReader
+from itertools import ifilter
+from wholecell.utils import units
+
 from agent.inner import CellSimulation
 from environment.make_rate_laws import KineticFluxModel
-from reconstruction.spreadsheets import JsonReader
 
-from wholecell.utils import units
 
 COUNTS_UNITS = units.mol
 VOLUME_UNITS = units.L
@@ -92,14 +94,17 @@ class TransportKinetics(CellSimulation):
 		# TODO -- bring back # in EXTERNAL_MOLECULES_FILE, strip them before JsonReader
 		self.external_molecule_ids = []
 		with open(EXTERNAL_MOLECULES_FILE, 'rU') as csvfile:
-			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+			# reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+			reader = JsonReader(
+				ifilter(lambda x: x.lstrip()[0] != "#", csvfile), # Strip comments
+				dialect = CSV_DIALECT)
 			for row in reader:
 				self.external_molecule_ids.append(row['molecule id'])
 
 		# with open(WCM_SIMDATA_FILE, 'r') as f:
 		# 	wcm_sim_out = json.loads(f.read())
 		#
-			
+
 		# make the kinetic model
 		self.kinetic_rate_laws = KineticFluxModel(self.all_transport_reactions, self.kinetic_parameters)
 

@@ -1,4 +1,5 @@
-"molecule id"	"exchange molecule location"	"formula weight g/mol"
+# formula weight is in  (units.g / units.mol)
+"molecule id"	"exchange molecule location"	"formula weight"
 "GLC"	"[p]"	"None"
 "ACET"	"[p]"	"None"
 "FUM"	"[p]"	"None"
@@ -64,6 +65,7 @@
 "GLYCOLLATE"	"[c]"	"None"
 "CPD-10774"	"[p]"	"None"
 "BETAINE"	"[p]"	"None"
+# "CPD-10774"	"[c]"	"None"
 "CH33ADO"	"[c]"	"None"
 "URACIL"	"[p]"	"None"
 "METOH"	"[p]"	"None"
