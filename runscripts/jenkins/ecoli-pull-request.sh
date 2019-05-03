@@ -11,13 +11,14 @@ pyenv local wcEcoli2
 make clean
 make compile
 
-PYTHONPATH=$PWD:$PYTHONPATH nosetests -a 'smalltest' --with-xunit --with-coverage --cover-package=wholecell --cover-xml
+PYTHONPATH=$PWD:$PYTHONPATH nosetests --with-xunit --with-coverage --cover-package=wholecell --cover-xml
 
 sh runscripts/jenkins/fireworks-config.sh $HOST $NAME $PORT $PASSWORD
 
 echo y | lpad reset
 
-PYTHONPATH=$PWD DESC="2 generations completion test." WC_ANALYZE_FAST=1 SINGLE_DAUGHTERS=1 N_GENS=2 MASS_DISTRIBUTION=0 PARALLEL_PARCA=1 COMPRESS_OUTPUT=0 PLOTS=ACTIVE python runscripts/fireworks/fw_queue.py
+PYTHONPATH=$PWD DESC="2 generations completion test." WC_ANALYZE_FAST=1 SINGLE_DAUGHTERS=1 N_GENS=2 MASS_DISTRIBUTION=0 \
+	PARALLEL_PARCA=1 COMPRESS_OUTPUT=0 PLOTS=ACTIVE BUILD_CAUSALITY_NETWORK=1 python runscripts/fireworks/fw_queue.py
 
 PYTHONPATH=$PWD rlaunch rapidfire --nlaunches 0
 

@@ -224,7 +224,7 @@ for i in VARIANTS_TO_RUN:
 				CELL_DIRECTORY = filepath.makedirs(GEN_DIRECTORY, "%06d" % l)
 				CELL_SIM_OUT_DIRECTORY = filepath.makedirs(CELL_DIRECTORY, "simOut")
 				CELL_PLOT_OUT_DIRECTORY = filepath.makedirs(CELL_DIRECTORY, "plotOut")
-
+				CELL_SERIES_OUT_DIRECTORY = filepath.makedirs(CELL_DIRECTORY, "seriesOut")
 
 ### Write metadata
 metadata = {
@@ -253,7 +253,7 @@ filepath.write_file(os.path.join(METADATA_DIRECTORY, "git_diff"), git_diff)
 
 # Create launchpad
 with open(LAUNCHPAD_FILE) as f:
-	lpad = LaunchPad(**yaml.load(f))
+	lpad = LaunchPad(**yaml.safe_load(f))
 
 # Store list of FireWorks
 wf_fws = []
@@ -581,6 +581,7 @@ for i in VARIANTS_TO_RUN:
 				CELL_DIRECTORY = os.path.join(GEN_DIRECTORY, "%06d" % l)
 				CELL_SIM_OUT_DIRECTORY = os.path.join(CELL_DIRECTORY, "simOut")
 				CELL_PLOT_OUT_DIRECTORY = os.path.join(CELL_DIRECTORY, "plotOut")
+				CELL_SERIES_OUT_DIRECTORY = os.path.join(CELL_DIRECTORY, "seriesOut")
 
 				# TODO: Add conditional logic here for mother vs daughter cells
 				# Simulation task
@@ -715,7 +716,7 @@ for i in VARIANTS_TO_RUN:
 							input_results_directory = CELL_SIM_OUT_DIRECTORY,
 							input_sim_data = os.path.join(VARIANT_SIM_DATA_DIRECTORY, filename_sim_data_modified),
 							output_network_directory = VARIANT_SIM_DATA_DIRECTORY,
-							output_dynamics_directory = CELL_PLOT_OUT_DIRECTORY,
+							output_dynamics_directory = CELL_SERIES_OUT_DIRECTORY,
 							metadata = md_single,
 							),
 						name = fw_name,
