@@ -12,8 +12,7 @@ from itertools import ifilter
 from wholecell.utils import units
 
 from agent.inner import CellSimulation
-from environment.make_rate_laws import KineticFluxModel
-
+from environment.kinetic_rate_laws import KineticFluxModel
 
 COUNTS_UNITS = units.mol
 VOLUME_UNITS = units.L
@@ -21,7 +20,6 @@ MASS_UNITS = units.g
 TIME_UNITS = units.s
 CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
-
 
 TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
@@ -35,7 +33,9 @@ EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_
 mM_to_M = 1E-3 # convert mmol/L to mol/L
 
 class TransportKinetics(CellSimulation):
-	'''	'''
+	'''
+	A surrogate that uses kinetic rate laws to determine transport flux
+	'''
 
 	def __init__(self, state):
 		self.initial_time = state.get('time', 0.0)
@@ -88,6 +88,7 @@ class TransportKinetics(CellSimulation):
 				k_param.update(max_conc)
 				transporter_kinetics = {transporter: k_param}
 
+				# Add to kinetic_parameters dict
 				if reaction_id in self.kinetic_parameters:
 					self.kinetic_parameters[reaction_id].update(transporter_kinetics)
 				else:
@@ -109,8 +110,10 @@ class TransportKinetics(CellSimulation):
 		# with open(WCM_SIMDATA_FILE, 'r') as f:
 		# 	wcm_sim_out = json.loads(f.read())
 
+		make_reactions = self.kinetic_parameters.keys()
+
 		# Make the kinetic model
-		self.kinetic_rate_laws = KineticFluxModel(self.all_transport_reactions, self.kinetic_parameters)
+		self.kinetic_rate_laws = KineticFluxModel(make_reactions, self.kinetic_parameters, self.all_transport_reactions)
 
 		# Get list of molecule_ids used by kinetic rate laws
 		self.molecule_ids = self.kinetic_rate_laws.molecule_ids
@@ -188,6 +191,8 @@ class TransportKinetics(CellSimulation):
 			}
 
 
+
+	# TODO -- move these to make_rate_laws
 	## Flux-related functions
 	def flux_to_counts(self, fluxes):
 		rxn_counts = {reaction_id: int(self.molar_to_counts * flux) for reaction_id, flux in fluxes.iteritems()}

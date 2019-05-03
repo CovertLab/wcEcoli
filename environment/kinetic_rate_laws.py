@@ -5,6 +5,65 @@ import numpy as np
 
 mM_to_M = 1E-3 # convert mmol/L to mol/L
 
+class KineticFluxModel(object):
+	'''
+	Args:
+		make_reactions (list): these are the reactions that will be parameterized
+
+		kinetic_parameters (dict): a dictionary of parameters a nested format:
+			{reaction_id: {
+				transporter_id : {
+					param_id: param_value}}}
+
+		all_reactions (dict): all metabolic reactions, with
+			{reaction_id: {
+				'catalyzed by': list,
+				'is reversible': bool,
+				'stoichiometry': dict,
+				}}
+
+	Attributes:
+		rate_laws: a dict, with a key for each reaction id, and then subdictionaries with each reaction's transporters
+			and their rate law function. These rate laws are used directly from within this dictionary
+	'''
+
+	def __init__(self, make_reactions, kinetic_parameters, all_reactions):
+
+		self.avogadro = constants.Avogadro
+		self.kinetic_parameters = kinetic_parameters
+		self.reaction_ids = make_reactions
+
+
+		# TODO -- check that all reaction_ids are in kinetic_parameters
+
+		# get all relevant molecule ids
+		self.molecule_ids = get_molecules(all_reactions, self.reaction_ids)
+
+		# make the rate laws
+		self.rate_laws = make_rate_laws_minimal(self.reaction_ids, self.kinetic_parameters)
+
+
+	def get_fluxes(self, concentrations_dict):
+		'''
+		Use rate law functions to calculate flux
+
+		Args:
+			concentrations_dict (dict) {molecule_id: concentration} - a dictionary of all relevant
+		molecules and their concentrations, in mmol/L.
+
+		Returns:
+			reaction_fluxes (dict) - with fluxes for all reactionss
+		'''
+
+		# Initialize reaction_fluxes and exchange_fluxes dictionaries
+		reaction_fluxes = {reaction_id: 0.0 for reaction_id in self.reaction_ids}
+
+		for reaction_id, transporters in self.rate_laws.iteritems():
+			for transporter, rate_law in transporters.iteritems():
+				flux = self.rate_laws[reaction_id][transporter](concentrations_dict)
+				reaction_fluxes[reaction_id] += flux
+
+		return reaction_fluxes
 
 
 def make_rate_laws_minimal(reactions, kinetic_parameters):
@@ -106,7 +165,6 @@ def construct_rate_law_no_transporter(parameters):
 	Returns:
 		rate_law - a function for the kinetic rate law, which takes a
 			dictionary of concentrations as input, and which returns flux as output
-
 	'''
 
 	max_conc = dict(parameters)
@@ -150,53 +208,3 @@ def get_molecules(all_reactions, reaction_ids):
 		molecule_ids.extend(enzymes)
 
 	return list(set(molecule_ids))
-
-
-
-class KineticFluxModel(object):
-	'''
-	Attributes:
-		parameter_indices: a dictionary, organized by transporter -- each with 'reaction_cofactors' for
-			each reaction that it is a part of, 'partition' for all of its bounded forms, and 'parameter_indices'
-			for the indices at which each of its parameters can be assigned in an array.
-
-		rate_laws: a dict, with a key for each reaction id, and then subdictionaries with each reaction's transporters
-			and their rate law function. These rate laws are used directly from within this dictionary
-	'''
-
-	def __init__(self, all_reactions, kinetic_parameters):
-
-		self.avogadro = constants.Avogadro
-		self.kinetic_parameters = kinetic_parameters
-
-		# define what reactions will be in this model
-		self.reaction_ids = self.kinetic_parameters.keys()
-
-		# get all relevant molecule ids
-		self.molecule_ids = get_molecules(all_reactions, self.reaction_ids)
-
-		# make the rate laws
-		self.rate_laws = make_rate_laws_minimal(self.reaction_ids, self.kinetic_parameters)
-
-
-	def get_fluxes(self, concentrations_dict):
-		'''
-		Use rate law functions to calculate flux
-
-		Args:
-			concentrations_dict (dict) {molecule_id: concentration} - a dictionary of all relevant
-		molecules and their concentrations, in mmol/L.
-
-		Returns:
-			reaction_fluxes (dict) - with fluxes for all reactionss
-		'''
-
-		# Initialize reaction_fluxes and exchange_fluxes dictionaries
-		reaction_fluxes = {reaction_id: 0.0 for reaction_id in self.reaction_ids}
-
-		for reaction_id, transporters in self.rate_laws.iteritems():
-			for transporter, rate_law in transporters.iteritems():
-				flux = self.rate_laws[reaction_id][transporter](concentrations_dict)
-				reaction_fluxes[reaction_id] += flux
-
-		return reaction_fluxes
