@@ -45,18 +45,20 @@ class TransportKinetics(CellSimulation):
 		self.environment_change = {}
 		self.volume = 1.0  # (fL)
 		self.division_time = 100
-		self.nAvogadro = constants.N_A * 1e-3  # convert 1/mol to 1/mmol.
+		self.nAvogadro = constants.N_A
 
-		# initial state
+		# Initial state
 		self.external_concentrations = {}
 		self.internal_concentrations = {}
 		self.motile_force = [0.01, 0.01] # initial magnitude and relative orientation
 		self.division = []
 
-		# make dict of transport reactions
+		# Make dict of transport reactions
 		self.all_transport_reactions = {}
 		with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
-			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+			reader = JsonReader(
+				ifilter(lambda x: x.lstrip()[0] != "#", csvfile), # Strip comments
+				dialect = CSV_DIALECT)
 			for row in reader:
 				reaction_id = row['reaction id']
 				stoichiometry = row['stoichiometry']
@@ -71,7 +73,9 @@ class TransportKinetics(CellSimulation):
 		# Make kinetic_parameters in a nested format: {reaction_id: {transporter_id : {param_id: param_value}}}
 		self.kinetic_parameters = {}
 		with open(KINETIC_PARAMETERS_FILE, 'rU') as csvfile:
-			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+			reader = JsonReader(
+				ifilter(lambda x: x.lstrip()[0] != "#", csvfile), # Strip comments
+				dialect = CSV_DIALECT)
 			for row in reader:
 				reaction_id = row['reaction id']
 				transporter = row['transporter']
@@ -89,67 +93,51 @@ class TransportKinetics(CellSimulation):
 				else:
 					self.kinetic_parameters[reaction_id] = transporter_kinetics
 
-		# Get list of external molecules
-		# TODO -- bring back # in EXTERNAL_MOLECULES_FILE, strip them before JsonReader
-		self.external_molecule_ids = []
+		# Make map of external molecule_ids with a location tag (as used in reaction stoichiometry) to molecule_ids in the environment
+		self.molecule_to_external_map = {}
+		self.external_to_molecule_map = {}
 		with open(EXTERNAL_MOLECULES_FILE, 'rU') as csvfile:
-			# reader = JsonReader(csvfile, dialect=CSV_DIALECT)
 			reader = JsonReader(
 				ifilter(lambda x: x.lstrip()[0] != "#", csvfile), # Strip comments
 				dialect = CSV_DIALECT)
 			for row in reader:
-				self.external_molecule_ids.append(row['molecule id'])
+				molecule_id = row['molecule id']
+				location = row['exchange molecule location']
+				self.molecule_to_external_map[molecule_id + location] = molecule_id
+				self.external_to_molecule_map[molecule_id] = molecule_id + location
 
 		# with open(WCM_SIMDATA_FILE, 'r') as f:
 		# 	wcm_sim_out = json.loads(f.read())
-		#
 
-		# make the kinetic model
+		# Make the kinetic model
 		self.kinetic_rate_laws = KineticFluxModel(self.all_transport_reactions, self.kinetic_parameters)
 
 		# Get list of molecule_ids used by kinetic rate laws
 		self.molecule_ids = self.kinetic_rate_laws.molecule_ids
 
-		# Get internal molecule ids by removing external molecule ids
-		self.internal_molecule_ids = [mol_id for mol_id in self.molecule_ids if mol_id not in self.external_molecule_ids]
-		self.all_molecule_ids = self.internal_molecule_ids + self.external_molecule_ids
-
 		# TODO -- generate concentration dict from WCM data
-		self.concentrations = {molecule_id: 1.0 for molecule_id in self.all_molecule_ids}
+		self.concentrations = {molecule_id: 1.0 for molecule_id in self.molecule_ids}
 
-		# get initial fluxes
+		# Get initial fluxes
 		self.transport_fluxes = self.kinetic_rate_laws.get_fluxes(self.concentrations)
-
-
-
-
-
-		# TODO -- merge external and internal concentrations.
-
-
-
-
-
-
-
 
 
 	def update_state(self):
 		# nAvogadro is in 1/mol --> convert to 1/mmol. volume is in fL --> convert to L
-		self.molar_to_counts = (self.nAvogadro) * (self.volume * 1e-15)
+		self.molar_to_counts = (self.nAvogadro * 1e-3) * (self.volume * 1e-15)
 
+		# Get transport fluxes, convert to change in counts
 		self.transport_fluxes = self.kinetic_rate_laws.get_fluxes(self.concentrations)
-
 		delta_counts = self.flux_to_counts(self.transport_fluxes)
 
+		# Get the deltas for environmental molecules
 		environment_deltas = {}
-		for molecule in self.external_concentrations.keys():
-			# TODO -- use external exchange map rather than (molecule + '[p]')
-			molecule_p = molecule + '[p]'
-			if molecule_p in delta_counts:
-				environment_deltas[molecule] = delta_counts[molecule_p]
+		for molecule_id in delta_counts.keys():
+			if molecule_id in self.molecule_to_external_map:
+				external_molecule_id = self.molecule_to_external_map[molecule_id]
+				environment_deltas[external_molecule_id] = delta_counts[molecule_id]
 
-		# accumulate in environment_change
+		# Accumulate in environment_change
 		self.accumulate_deltas(environment_deltas)
 
 	def accumulate_deltas(self, environment_deltas):
@@ -157,7 +145,7 @@ class TransportKinetics(CellSimulation):
 			self.environment_change[molecule_id] += count
 
 	def check_division(self):
-		# update division state based on time since initialization
+		# Update division state based on time since initialization
 		if self.local_time >= self.initial_time + self.division_time:
 			self.division = [{'time': self.local_time}, {'time': self.local_time}]
 		return self.division
@@ -169,7 +157,13 @@ class TransportKinetics(CellSimulation):
 		self.external_concentrations = update['concentrations']
 		self.media_id = update['media_id']
 
-		# reset environment change
+		# Map from external_id to concentration key
+		new_concentrations = {self.external_to_molecule_map[mol_id]: conc for mol_id, conc in self.external_concentrations.iteritems()}
+
+		# Update concentrations dict
+		self.concentrations.update(new_concentrations)
+
+		# Reset environment change
 		self.environment_change = {}
 		for molecule in self.external_concentrations.iterkeys():
 			self.environment_change[molecule] = 0
@@ -201,7 +195,7 @@ class TransportKinetics(CellSimulation):
 		for reaction_id, rxn_count in rxn_counts.iteritems():
 			stoichiometry = self.all_transport_reactions[reaction_id]['stoichiometry']
 			substrate_counts = {substrate_id: coeff * rxn_count for substrate_id, coeff in stoichiometry.iteritems()}
-			# add to delta_counts
+			# Add to delta_counts
 			for substrate, delta in substrate_counts.iteritems():
 				if substrate in delta_counts:
 					delta_counts[substrate] += delta

@@ -93,7 +93,7 @@ separate terminal tab or PyCharm run/debug tab.
 
 7. Finally, use another terminal tab to start the simulation running:
 
-   `> python -m environment.control run`
+   `> python -m environment.control run --id lattice`
 
    You can `pause` and `run` it whenever you want.
 
