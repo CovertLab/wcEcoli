@@ -3,9 +3,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import csv
 import time
-import ast
 from scipy import constants
 import numpy as np
+import json
 
 from reconstruction.spreadsheets import JsonReader
 from itertools import ifilter
@@ -69,16 +69,15 @@ class TransportKinetics(CellSimulation):
 				}
 
 		# Make kinetic_parameters in a nested format: {reaction_id: {transporter_id : {param_id: param_value}}}
-		# TODO -- don't use literal_eval
-		# TODO -- strip # before JsonReader
 		self.kinetic_parameters = {}
 		with open(KINETIC_PARAMETERS_FILE, 'rU') as csvfile:
 			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
 			for row in reader:
 				reaction_id = row['reaction id']
 				transporter = row['transporter']
-				k_avg = ast.literal_eval(row['k_avg'])
-				max_conc = ast.literal_eval(row['max_conc'])
+				k_avg = float(row['k_avg'])
+				json_acceptable_max_conc = row['max_conc'].replace("'", "\"")
+				max_conc = json.loads(json_acceptable_max_conc)
 
 				# Combine kinetics into dictionary
 				k_param = {'k_avg': k_avg}
