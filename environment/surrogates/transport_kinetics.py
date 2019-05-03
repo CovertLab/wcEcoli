@@ -11,7 +11,6 @@ from agent.inner import CellSimulation
 from environment.make_rate_laws import KineticFluxModel
 from reconstruction.spreadsheets import JsonReader
 
-
 from wholecell.utils import units
 
 COUNTS_UNITS = units.mol
@@ -26,33 +25,10 @@ TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
 
 CSV_DIALECT = csv.excel_tab
-TRANSPORT_REACTIONS_FILE = os.path.join("environment", "condition", "look_up_tables", "transport_reactions.tsv")
-KINETIC_PARAMETERS_FILE = os.path.join("environment", "condition", "parameters", "glt_family.tsv")
-EXTERNAL_MOLECULES_FILE = os.path.join("environment", "condition", "environment_molecules.tsv")
-
-amino_acids = [
-	'L-ALPHA-ALANINE',
-	'ARG',
-	'ASN',
-	'L-ASPARTATE',
-	'CYS',
-	'GLT',
-	'GLN',
-	'GLY',
-	'HIS',
-	'ILE',
-	'LEU',
-	'LYS',
-	'MET',
-	'PHE',
-	'PRO',
-	'SER',
-	'THR',
-	'TRP',
-	'TYR',
-	'L-SELENOCYSTEINE',
-	'VAL'
-]
+TRANSPORT_REACTIONS_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'transport_reactions.tsv')
+KINETIC_PARAMETERS_FILE = os.path.join('environment', 'condition', 'parameters', 'glt_family.tsv')
+EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
+# WCM_SIMDATA_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'wcm_sim_data.json')
 
 mM_to_M = 1E-3 # convert mmol/L to mol/L
 
@@ -80,14 +56,14 @@ class TransportKinetics(CellSimulation):
 		with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
 			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
 			for row in reader:
-				reaction_id = row["reaction id"]
-				stoichiometry = row["stoichiometry"]
-				reversible = row["is reversible"]
-				catalyzed = row["catalyzed by"]
+				reaction_id = row['reaction id']
+				stoichiometry = row['stoichiometry']
+				reversible = row['is reversible']
+				catalyzed = row['catalyzed by']
 				self.all_transport_reactions[reaction_id] = {
-					"stoichiometry": stoichiometry,
-					"is reversible": reversible,
-					"catalyzed by": catalyzed,
+					'stoichiometry': stoichiometry,
+					'is reversible': reversible,
+					'catalyzed by': catalyzed,
 				}
 
 		# Make kinetic_parameters in a nested format: {reaction_id: {transporter_id : {param_id: param_value}}}
@@ -116,38 +92,39 @@ class TransportKinetics(CellSimulation):
 		with open(EXTERNAL_MOLECULES_FILE, 'rU') as csvfile:
 			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
 			for row in reader:
-				self.external_molecule_ids.append(row["molecule id"])
+				self.external_molecule_ids.append(row['molecule id'])
 
+		# with open(WCM_SIMDATA_FILE, 'r') as f:
+		# 	wcm_sim_out = json.loads(f.read())
+		#
+			
 		# make the kinetic model
-		self.kinetic_rate_laws = KineticFluxModel(self.kinetic_parameters)
+		self.kinetic_rate_laws = KineticFluxModel(self.all_transport_reactions, self.kinetic_parameters)
 
+		# Get list of molecule_ids used by kinetic rate laws
+		self.molecule_ids = self.kinetic_rate_laws.molecule_ids
 
+		# Get internal molecule ids by removing external molecule ids
+		self.internal_molecule_ids = [mol_id for mol_id in self.molecule_ids if mol_id not in self.external_molecule_ids]
+		self.all_molecule_ids = self.internal_molecule_ids + self.external_molecule_ids
 
-		# TODO -- generate concentration dict
+		# TODO -- generate concentration dict from WCM data
+		self.concentrations = {molecule_id: 1.0 for molecule_id in self.all_molecule_ids}
 
 		# get initial fluxes
 		self.transport_fluxes = self.kinetic_rate_laws.get_fluxes(self.concentrations)
 
 
 
-		import ipdb; ipdb.set_trace()
 
-		# # Get list of reaction_ids and molecule_ids
-		# self.transport_reactions_ids = self.kinetic_parameters.keys()  # use all kinetic parameters
-		# self.molecule_ids = self._get_molecules(self.transport_reactions_ids)
 
-		# Get internal molecule ids by removing external molecule ids
-		self.internal_molecule_ids = [mol_id for mol_id in self.molecule_ids if mol_id not in self.external_molecule_ids]
-		self.all_molecule_ids = self.internal_molecule_ids + self.external_molecule_ids
+		# TODO -- merge external and internal concentrations.
 
-		# # Get molecule IDs
-		# bulk_molecule_ids = sim_data.internal_state.bulkMolecules.bulkData['id']
-		# self.internal_molecule_ids = [mol_id for mol_id in internal_molecule_ids if mol_id in bulk_molecule_ids]
-		# self.all_molecule_ids = self.internal_molecule_ids + self.external_molecule_ids
 
-		# Get indices, for reading out arrays in calculateRequest and evolveState
-		self.internal_molecule_indices = [index for index, mol_id in enumerate(self.all_molecule_ids) if mol_id in self.internal_molecule_ids]
-		self.external_molecule_indices = [index for index, mol_id in enumerate(self.all_molecule_ids) if mol_id in self.external_molecule_ids]
+
+
+
+
 
 
 
