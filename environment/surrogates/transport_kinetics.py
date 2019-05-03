@@ -28,7 +28,7 @@ CSV_DIALECT = csv.excel_tab
 TRANSPORT_REACTIONS_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'transport_reactions.tsv')
 KINETIC_PARAMETERS_FILE = os.path.join('environment', 'condition', 'parameters', 'glt_family.tsv')
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
-# WCM_SIMDATA_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'wcm_sim_data.json')
+WCM_SIMDATA_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'wcm_sim_data.json')
 
 mM_to_M = 1E-3 # convert mmol/L to mol/L
 
@@ -107,8 +107,24 @@ class TransportKinetics(CellSimulation):
 				self.molecule_to_external_map[molecule_id + location] = molecule_id
 				self.external_to_molecule_map[molecule_id] = molecule_id + location
 
-		# with open(WCM_SIMDATA_FILE, 'r') as f:
-		# 	wcm_sim_out = json.loads(f.read())
+
+
+		# TODO -- set initial concentrations from WCM data
+		with open(WCM_SIMDATA_FILE, 'r') as f:
+			wcm_sim_out = json.loads(f.read())
+			self.volume = wcm_sim_out['volume'][0]
+			volume_L = self.volume / 1e15  # convert to L
+
+			initial_concentrations = {}
+			for molecule, series in wcm_sim_out.iteritems():
+				if molecule not in ['time', 'cell_mass', 'volume']:
+					# convert counts to molar concentrations
+
+					# TODO -- check that this is correct
+					initial_concentrations[molecule] = series[0] / self.nAvogadro / volume_L  # [M]
+
+
+
 
 		make_reactions = self.kinetic_parameters.keys()
 
