@@ -19,6 +19,7 @@ from environment.condition.make_media import Media
 from wholecell.utils import constants
 import wholecell.utils.filepath as fp
 from models.ecoli.sim.variants import apply_variant
+from wholecell.utils import constants
 
 DEFAULT_COLOR = [0.6, 0.4, 0.3]
 
@@ -130,7 +131,7 @@ def ecoli_boot_config(agent_id, agent_config):
 
 	variant_sim_data_directory = fp.makedirs(sim_out_path, 'manual', outer_id, 'kb')
 	# variant_metadata_directory = fp.makedirs(sim_out_path, 'manual', outer_id, 'metadata')
-	variant_sim_data_modified_file = os.path.join(variant_sim_data_directory, 'simData_Modified.cPickle')
+	variant_sim_data_modified_file = os.path.join(variant_sim_data_directory, constants.SERIALIZED_SIM_DATA_MODIFIED)
 
 	# copy sim_data into the experiment directory to support analysis
 	shutil.copy(sim_data_fit, variant_sim_data_modified_file)

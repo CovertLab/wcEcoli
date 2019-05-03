@@ -235,12 +235,8 @@ class Metabolism(wholecell.processes.process.Process):
 		current_media = self.boundary.current_media
 		exchange_data = self.boundary.exchange_data
 
-		# check for new flux targets from the boundary
-		if not set(self.boundary.transport_fluxes.keys()).issubset(self.all_constrained_reactions):
-			self.boundary_constrained_reactions = self.boundary.transport_fluxes.keys()
-			self.all_constrained_reactions = self.kinetics_constrained_reactions + self.boundary_constrained_reactions
-			self.fbaObjectOptions["objectiveParameters"]["reactionRateTargets"] = {reaction: 1 for reaction in self.all_constrained_reactions}
-			self.fba = FluxBalanceAnalysis(**self.fbaObjectOptions)
+		# make sure there are no new flux targets from the boundary
+		assert set(self.boundary.transport_fluxes.keys()).issubset(self.all_constrained_reactions)
 
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
 			self.nutrientToDoublingTime.get(current_media, self.nutrientToDoublingTime["minimal"])
@@ -350,12 +346,11 @@ class Metabolism(wholecell.processes.process.Process):
 		targets = (TIME_UNITS * self.timeStepSec() * reactionTargets).asNumber(CONC_UNITS)[self.active_constraints_mask]
 
 		# add boundary targets
-		all_constrained_reactions = self.kinetics_constrained_reactions + self.boundary.transport_fluxes.keys()
 		all_targets = np.concatenate((targets, self.boundary.transport_fluxes.values()), axis=0)
 
 		## Set kinetic targets only if kinetics is enabled
 		if self.use_kinetics and self.burnInComplete:
-			self.fba.setKineticTarget(all_constrained_reactions, all_targets, raiseForReversible = False)
+			self.fba.setKineticTarget(self.all_constrained_reactions, all_targets, raiseForReversible = False)
 
 		# Solve FBA problem and update metabolite counts
 		deltaMetabolites = (1 / countsToMolar) * (CONC_UNITS * self.fba.getOutputMoleculeLevelsChange())
