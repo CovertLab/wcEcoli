@@ -1,8 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-import scipy.constants as constants
 import numpy as np
-import matplotlib.pyplot as plt
 
 mM_to_M = 1E-3 # convert mmol/L to mol/L
 
@@ -30,7 +28,6 @@ class KineticFluxModel(object):
 
 	def __init__(self, reactions, kinetic_parameters):
 
-		self.avogadro = constants.Avogadro
 		self.kinetic_parameters = kinetic_parameters
 
 		self.reactions = reactions
@@ -41,20 +38,14 @@ class KineticFluxModel(object):
 		# get all relevant molecule ids
 		self.molecule_ids = get_molecules(self.reactions)
 
-		convenience_kinetics_rate_laws = True
-		minimal_rate_laws = False
-
 		# make the rate laws
-		if convenience_kinetics_rate_laws:
-			self.rate_law_configuration = make_configuration(self.reactions)
+		self.rate_law_configuration = {}
+		self.rate_law_configuration = make_configuration(self.reactions)
 
-			self.rate_laws = make_convenience_rate_laws(
-				self.reactions,
-				self.rate_law_configuration,
-				self.kinetic_parameters)
-
-		elif minimal_rate_laws:
-			self.rate_laws = make_piecewise_rate_laws(self.reaction_ids, self.kinetic_parameters)
+		self.rate_laws = make_rate_laws(
+			self.reactions,
+			self.rate_law_configuration,
+			self.kinetic_parameters)
 
 
 	def get_fluxes(self, concentrations_dict):
@@ -78,7 +69,6 @@ class KineticFluxModel(object):
 				reaction_fluxes[reaction_id] += flux
 
 		return reaction_fluxes
-
 
 
 
@@ -158,12 +148,9 @@ def get_molecules(reactions):
 
 
 
-
 ## Make rate laws
 
-# Convencience Kinetics rate laws
-def make_convenience_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
-
+def make_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
 	# make rate law for each reaction
 	rate_laws = {reaction_id: {} for reaction_id in reactions.iterkeys()}
 	for reaction_id, specs in reactions.iteritems():
@@ -204,6 +191,8 @@ def cofactor_denominator(concentration, km):
 
 def construct_convenience_rate_law(stoichiometry, transporter, cofactors_sets, partition, parameters):
 	'''
+	Make a convenience kinetics rate law for one transporter
+
 	Args:
 		cofactors: a list with the required cofactors , each pair needs a kcat.
 		partition: a list of lists. each sublist is the set of cofactors for a given partition.
@@ -259,131 +248,5 @@ def construct_convenience_rate_law(stoichiometry, transporter, cofactors_sets, p
 		flux = numerator / denominator
 
 		return flux
-
-	return rate_law
-
-
-# Piecewise linear rate laws
-def make_piecewise_rate_laws(reactions, kinetic_parameters):
-	'''
-	Make rate laws for all reactions
-
-	Returns:
-		rate_laws (dict) {'reaction id': {transporter: rate_law}} - A dictionary with
-			rate laws saved as functions, in nested.
-	'''
-
-	# Make rate laws for each reaction
-	rate_laws = {reaction_id: {} for reaction_id in reactions}
-	for reaction_id in reactions:
-		transporters = kinetic_parameters[reaction_id]
-
-		# Rate law for each transporter
-		for transporter, params in transporters.iteritems():
-
-			if transporter == 'None':
-				del params['k_avg']
-				# If there are remaining parameters (max_conc), build rate law
-				if params:
-					rate_law = construct_rate_law_no_transporter(params)
-
-					# Save the rate law in this reaction under transporter 'None'
-					rate_laws[reaction_id][transporter] = rate_law
-
-					print('{}, has no transporter'.format(reaction_id))
-				else:
-					rate_law = construct_empty_rate_law()
-					# Save the rate law in this reaction under transporter 'None'
-					rate_laws[reaction_id][transporter] = rate_law
-
-					print('{}, has no transporter, no parameters'.format(reaction_id))
-
-			else:
-				rate_law = construct_rate_law_piecewise_linear(
-					transporter,
-					params
-				)
-
-				# Save the rate law for each transporter in this reaction
-				rate_laws[reaction_id][transporter] = rate_law
-
-	return rate_laws
-
-def construct_empty_rate_law():
-	def rate_law(concentrations):
-		return 0.0
-	return rate_law
-
-def construct_rate_law_piecewise_linear(transporter, parameters):
-	'''
-	Makes a single piecewise linear rate law.
-
-	Inputs:
-		transporter (str)
-		parameters (dict) {parameter: value} - requires a 'k_avg' entry, and max_conc entries for all
-			relevant substrates.
-
-	Returns:
-		rate_law - a function for the kinetic rate law of the given transporter, which takes a
-			dictionary of concentrations as input, and which returns flux as output
-	'''
-
-	k_avg = parameters.get('k_avg')
-	max_conc = dict(parameters)
-	del max_conc['k_avg']
-
-	# add units. max_conc is in mmol/L --> convert to mol/L
-	max_conc = {mol_id : value * mM_to_M for mol_id, value in max_conc.iteritems()}
-
-	# Construct rate law for this transporter
-	def rate_law(concentrations):
-		transporter_concentration = concentrations[transporter]
-
-		substrates_normalized = 1.0
-		for substrate, substrate_max_conc in max_conc.iteritems():
-			# If concentration is above the max, assume saturated
-			if concentrations[substrate] > substrate_max_conc:
-				continue
-			else:
-				substrates_normalized *= concentrations[substrate] / substrate_max_conc
-
-		flux = k_avg * transporter_concentration * substrates_normalized
-		return flux
-
-	return rate_law
-
-def construct_rate_law_no_transporter(parameters):
-	'''
-	Makes a single piecewise linear rate law, based entirely on substrate concentrations.
-
-	Inputs:
-		parameters (dict) {parameter: value} - requires a 'k_avg' entry, and max_conc
-			entries for all relevant substrates.
-
-	Returns:
-		rate_law - a function for the kinetic rate law, which takes a
-			dictionary of concentrations as input, and which returns flux as output
-	'''
-
-	max_conc = dict(parameters)
-
-	# add units. max_conc is in mmol/L --> convert to mol/L
-	max_conc = {mol_id : value * mM_to_M for mol_id, value in max_conc.iteritems()}
-
-	# Construct rate law for this transporter
-	def rate_law(concentrations):
-		substrates_normalized = 1.0
-		for substrate, substrate_max_conc in max_conc.iteritems():
-			# If concentration is above the max, assume saturated
-			if concentrations[substrate] > substrate_max_conc:
-				continue
-			else:
-				substrates_normalized *= concentrations[substrate] / substrate_max_conc
-
-		flux = substrates_normalized
-
-		# TODO -- we don't want a flux of 1... need a different rate law
-		# return flux
-		return 0.0
 
 	return rate_law

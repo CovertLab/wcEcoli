@@ -208,7 +208,7 @@ class TransportKinetics(CellSimulation):
 
 
 
-	# TODO -- move these to make_convenience_rate_laws
+	# TODO -- move these to make_rate_laws
 	## Flux-related functions
 	def flux_to_counts(self, fluxes):
 		rxn_counts = {reaction_id: int(self.molar_to_counts * flux) for reaction_id, flux in fluxes.iteritems()}
