@@ -28,25 +28,30 @@ class KineticFluxModel(object):
 			and their rate law function. These rate laws are used directly from within this dictionary
 	'''
 
-	def __init__(self, make_reactions, kinetic_parameters, all_reactions):
+	def __init__(self, reactions, kinetic_parameters):
 
 		self.avogadro = constants.Avogadro
 		self.kinetic_parameters = kinetic_parameters
-		self.reaction_ids = make_reactions
+
+		self.reactions = reactions
+		self.reaction_ids = self.reactions.keys()
 
 		# TODO -- check that all reaction_ids are in kinetic_parameters
 
 		# get all relevant molecule ids
-		self.molecule_ids = get_molecules(all_reactions, self.reaction_ids)
+		self.molecule_ids = get_molecules(self.reactions)
 
 		convenience_kinetics_rate_laws = True
 		minimal_rate_laws = False
 
 		# make the rate laws
 		if convenience_kinetics_rate_laws:
-			# self.rate_law_configuration = make_configuration(all_reactions)
+			self.rate_law_configuration = make_configuration(self.reactions)
 
-			self.rate_laws = make_rate_laws(all_reactions, self.kinetic_parameters)
+			self.rate_laws = make_rate_laws(
+				self.reactions,
+				self.rate_law_configuration,
+				self.kinetic_parameters)
 
 			# self.baseline_concentrations = initialize_state(self.set_baseline)
 
@@ -292,23 +297,20 @@ class KineticFluxModel(object):
 
 def make_configuration(reactions):
 	'''
+	Make the rate law configuration, which tells the parameters where to be placed.
 
 	Args:
-		reactions: A dictionary with all reactions, passed into object in init.
-		each reaction ids assigned to subdictionary with a 'transporters' list,
-		stoichiometry, and reversibility
+		* reactions: A dictionary with all reactions that will get rate laws.
 
 	Returns:
 		rate_law_configuration: a dictionary with partition and reaction_cofactor entries for each reaction
 	'''
 
-	# initialize dictionaries
 	rate_law_configuration = {}
-
-	for reaction, specs in reactions.iteritems():
-		transporters = specs['transporters']
-
-		# initialize transporters' entries
+	# gets all potential interactions between the reactions
+	for reaction_id, specs in reactions.iteritems():
+		transporters = specs['catalyzed by']
+		# initialize all transporters' entries
 		for transporter in transporters:
 			if transporter not in rate_law_configuration:
 				rate_law_configuration[transporter] = {
@@ -316,11 +318,11 @@ def make_configuration(reactions):
 					'reaction_cofactors': {},
 				}
 
-	# get parameters for all reactions
-	for reaction, specs in reactions.iteritems():
-		stoich = specs['stoichiometry']
-		transporters = specs['transporters']
-		reversibility = specs['reversibility']
+	# identify parameters for reactions
+	for reaction_id, specs in reactions.iteritems():
+		stoich = specs.get('stoichiometry')
+		transporters = specs.get('catalyzed by', None)
+		reversibility = specs.get('is reversible', False)
 
 		# get sets of cofactors driving this reaction
 		forward_cofactors = [mol for mol, coeff in stoich.iteritems() if coeff < 0]
@@ -335,7 +337,7 @@ def make_configuration(reactions):
 
 			# get competition for this transporter from all other reactions
 			competing_reactions = [rxn for rxn, specs2 in reactions.iteritems() if
-					(rxn is not reaction) and (transporter in specs2['transporters'])]
+					(rxn is not reaction_id) and (transporter in specs2['catalyzed by'])]
 
 			competitors = []
 			for reaction2 in competing_reactions:
@@ -346,13 +348,13 @@ def make_configuration(reactions):
 			# partition includes both competitors and cofactors.
 			partition = competitors + cofactors
 			rate_law_configuration[transporter]['partition'] = partition
-			rate_law_configuration[transporter]['reaction_cofactors'][reaction] = cofactors
+			rate_law_configuration[transporter]['reaction_cofactors'][reaction_id] = cofactors
 
 	return rate_law_configuration
 
 
 
-def get_molecules(all_reactions, reaction_ids):
+def get_molecules(reactions):
 	'''
 	Inputs:
 		   reaction_ids - a list of all reaction ids that will be used by transport
@@ -360,10 +362,10 @@ def get_molecules(all_reactions, reaction_ids):
 		   self.molecule_ids - a list of all molecules used by these reactions
 	'''
 	molecule_ids = []
-	for reaction_id in reaction_ids:
-		stoichiometry = all_reactions[reaction_id]['stoichiometry']
+	for reaction_id, specs in reactions.iteritems():
+		stoichiometry = specs['stoichiometry']
 		substrates = stoichiometry.keys()
-		enzymes = all_reactions[reaction_id]['catalyzed by']
+		enzymes = specs['catalyzed by']
 		# Add all relevant molecules_ids
 		molecule_ids.extend(substrates)
 		molecule_ids.extend(enzymes)
@@ -375,58 +377,31 @@ def get_molecules(all_reactions, reaction_ids):
 # Make rate laws
 
 # def make_rate_laws_minimal(reactions, kinetic_parameters):
-def make_rate_laws(all_reactions, kinetic_parameters):
+def make_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
 
-	rate_laws = {reaction_id: {} for reaction_id in kinetic_parameters.iterkeys()}
 	# make rate law for each reaction
-	for reaction_id, transporters in kinetic_parameters.iteritems():
-		stoichiometry = all_reactions[reaction_id]['stoichiometry']
-		reversible = all_reactions[reaction_id]['is reversible']
+	rate_laws = {reaction_id: {} for reaction_id in reactions.iterkeys()}
+	for reaction_id, specs in reactions.iteritems():
+		stoichiometry = specs.get('stoichiometry')
+		# reversible = specs.get('is reversible')
+		transporters = specs.get('catalyzed by')
 
-		for transporter, specs in transporters.iteritems():
+		# rate law for each transporter
+		# TODO -- make sure that transporter is in the rate law configuration
+		for transporter in transporters:
+			cofactors_sets = rate_law_configuration[transporter]["reaction_cofactors"][reaction_id]
+			partition = rate_law_configuration[transporter]["partition"]
 
-			import ipdb;
-			ipdb.set_trace()
+		rate_law = construct_rate_law(
+			stoichiometry,
+			transporter,
+			cofactors_sets,
+			partition,
+			kinetic_parameters[reaction_id][transporter]
+		)
 
-
-			# # reaction_id = reaction["reaction id"]
-			# stoichiometry = specs["stoichiometry"]
-			# transporters = specs["catalyzed by"]
-			#
-			# # Get transporter ids with compartments, from transport_kinetics definition
-			# transporters = kinetic_parameters[reaction_id].keys()
-			#
-			#
-			#
-			#
-			# # TODO -- where can I get transport configuration?
-			# #
-			# import ipdb; ipdb.set_trace()
-			#
-			#
-			#
-			# # rate law for each transporter
-			# for transporter in transporters:
-			# 	cofactors_sets = rate_law_configuration[transporter]["reaction_cofactors"][reaction_id]
-			# 	partition = rate_law_configuration[transporter]["partition"]
-
-
-
-
-			rate_law = construct_rate_law(
-				stoichiometry,
-				transporter,
-				cofactors_sets,
-				partition,
-				kinetic_parameters[reaction_id][transporter]
-			)
-
-			# save the rate law for each transporter in this reaction
-			rate_laws[reaction_id][transporter] = rate_law
-
-
-
-
+		# save the rate law for each transporter in this reaction
+		rate_laws[reaction_id][transporter] = rate_law
 
 	return rate_laws
 
@@ -705,10 +680,16 @@ def test_rate_laws():
 			else:
 				kinetic_parameters[reaction_id] = transporter_kinetics
 
-	make_reactions = kinetic_parameters.keys()
+	# make a dict of reactions that will be configured with the parameters
+	make_reaction_ids = kinetic_parameters.keys()
+	make_reactions = {
+		reaction_id: specs
+		for reaction_id, specs in all_transport_reactions.iteritems()
+		if reaction_id in make_reaction_ids}
+
 
 	# Make the kinetic model
-	kinetic_rate_laws = KineticFluxModel(make_reactions, kinetic_parameters, all_transport_reactions)
+	kinetic_rate_laws = KineticFluxModel(make_reactions, kinetic_parameters)
 
 	# Get list of molecule_ids used by kinetic rate laws
 	molecule_ids = kinetic_rate_laws.molecule_ids
