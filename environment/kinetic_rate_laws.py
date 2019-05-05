@@ -53,9 +53,6 @@ class KineticFluxModel(object):
 				self.rate_law_configuration,
 				self.kinetic_parameters)
 
-			# self.baseline_concentrations = initialize_state(self.set_baseline)
-
-
 		elif minimal_rate_laws:
 			self.rate_laws = make_rate_laws_minimal(self.reaction_ids, self.kinetic_parameters)
 
@@ -300,7 +297,7 @@ def make_configuration(reactions):
 	Make the rate law configuration, which tells the parameters where to be placed.
 
 	Args:
-		* reactions: A dictionary with all reactions that will get rate laws.
+		reactions: A dictionary with all reactions that will be made into rate laws.
 
 	Returns:
 		rate_law_configuration: a dictionary with partition and reaction_cofactor entries for each reaction
@@ -431,6 +428,15 @@ def construct_rate_law(stoichiometry, transporter, cofactors_sets, partition, pa
 
 	kcat_f = parameters.get('kcat_f')
 	kcat_r = parameters.get('kcat_r')
+
+
+
+
+	import ipdb;
+	ipdb.set_trace()
+
+
+
 
 	def rate_law(concentrations):
 
@@ -638,6 +644,8 @@ EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_
 WCM_SIMDATA_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'wcm_sim_data.json')
 
 
+# self.baseline_concentrations = initialize_state(self.set_baseline)
+
 def test_rate_laws():
 	# Make dict of transport reactions
 	all_transport_reactions = {}
@@ -694,7 +702,9 @@ def test_rate_laws():
 	# Get list of molecule_ids used by kinetic rate laws
 	molecule_ids = kinetic_rate_laws.molecule_ids
 
-
+	# initialize concentrations and get fluxes
+	concentrations = {molecule_id: 1e-2 for molecule_id in molecule_ids}
+	reaction_fluxes = kinetic_rate_laws.get_fluxes(concentrations)
 
 	import ipdb; ipdb.set_trace()
 
