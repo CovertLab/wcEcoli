@@ -3,8 +3,7 @@ Plot boundary fluxes
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import cPickle
 import os
@@ -19,6 +18,8 @@ from wholecell.utils import units
 from wholecell.utils import filepath
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
+
+FLUX_UNITS = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
 
 BURN_IN_STEPS = 20 # remove initialization artifacts
 
@@ -55,8 +56,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		coefficient = dryMass / cellMass * sim_data.constants.cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
 
 		# enzyme kinetics reader
-		allTargetFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (enzyme_kinetics_reader.readColumn("targetFluxes").T / coefficient).T
-		allActualFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (enzyme_kinetics_reader.readColumn("actualFluxes").T / coefficient).T
+		allTargetFluxes = FLUX_UNITS * (enzyme_kinetics_reader.readColumn("targetFluxes").T / coefficient).T
+		allActualFluxes = FLUX_UNITS * (enzyme_kinetics_reader.readColumn("actualFluxes").T / coefficient).T
 		kineticsConstrainedReactions = np.array(enzyme_kinetics_reader.readAttribute("kineticsConstrainedReactions"))
 		boundaryConstrainedReactions = np.array(enzyme_kinetics_reader.readAttribute("boundaryConstrainedReactions"))
 

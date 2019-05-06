@@ -5,11 +5,6 @@ from agent.inner import CellSimulation
 DEFAULT_COLOR = [color/255 for color in [0, 128, 255]]
 
 
-def merge_two_dicts(x, y):
-	z = x.copy()
-	z.update(y)
-	return z
-
 class TransportComposite(CellSimulation):
 	'''
 	This CellSimulation class is a composite agent, which coordinates the function of multiple sub-agents.
@@ -27,7 +22,7 @@ class TransportComposite(CellSimulation):
 	'''
 
 	def __init__(self, boot_config, synchronize_config, network_config):
-		initialize_processes = network_config['initilize']
+		initialize_processes = network_config['initialize']
 		function_connections = network_config['function_connections']
 		self.connections = network_config['message_connections']
 
@@ -83,7 +78,8 @@ class TransportComposite(CellSimulation):
 	def apply_outer_update(self, outer_update):
 		for process_id, process in self.processes.iteritems():
 			cross_update = self.cross_update[process_id]
-			process_update = merge_two_dicts(outer_update, cross_update)
+			# merge dicts
+			process_update = dict(outer_update, **cross_update)  # Python 3 uses dict(**a, **b)
 			process.apply_outer_update(process_update)
 
 	def run_incremental(self, run_until):

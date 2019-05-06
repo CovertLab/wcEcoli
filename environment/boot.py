@@ -127,11 +127,14 @@ def ecoli_boot_config(agent_id, agent_config):
 	# make options for boot config
 	sim_out_path = fp.makedirs(working_dir, 'out')
 	sim_data_fit = os.path.join(sim_out_path, 'manual', 'kb', constants.SERIALIZED_SIM_DATA_MOST_FIT_FILENAME)
-	output_dir = os.path.join(sim_out_path, 'manual', outer_id, cohort_id, generation_id, cell_id, 'simOut')
-	variant_sim_data_directory = fp.makedirs(sim_out_path, 'manual', outer_id, 'kb')
+	output_dir = os.path.join(sim_out_path, 'agent', outer_id, cohort_id, generation_id, cell_id, 'simOut')
+	variant_sim_data_directory = fp.makedirs(sim_out_path, 'agent', outer_id, 'kb')
 	variant_sim_data_modified_file = os.path.join(variant_sim_data_directory, constants.SERIALIZED_SIM_DATA_MODIFIED)
+	metadata_dir = fp.makedirs(sim_out_path, 'agent', 'metadata')
+	metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 
 	# copy sim_data into the experiment directory to support analysis
+	# TODO (Eran) -- revisit this copy. Re-consider where to put the parca output.
 	shutil.copy(sim_data_fit, variant_sim_data_modified_file)
 
 	if not os.path.isfile(sim_data_fit):
@@ -169,15 +172,13 @@ def ecoli_boot_config(agent_id, agent_config):
 		"git_branch":         fp.run_cmdline("git symbolic-ref --short HEAD"),
 		"description":        "an Ecoli Cell Agent",
 		"time":               fp.timestamp(),
-		# "total_gens":       1,  # not known in advance for multi-scale sims
+		"total_gens":         0,  # not known in advance for multi-scale sims
 		"analysis_type":      None,
 		"variant":            variant_type,
 		"mass_distribution":  options['massDistribution'],
 		"growth_rate_noise":  options['growthRateNoise'],
 		"d_period_division":  options['dPeriodDivision'],
 		"translation_supply": options['translationSupply']}
-	metadata_dir = fp.makedirs(sim_out_path, 'manual', 'metadata')
-	metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 	fp.write_json_file(metadata_path, metadata)
 
 	return options
@@ -319,11 +320,11 @@ def initialize_transport_composite(boot_config, synchronize_config):
 	network_config = {}
 
 	# a dict mapping each subprocess to its initialization function
-	network_config['initilize'] = {
+	network_config['initialize'] = {
 		'transport': initialize_transport_minimal,
 		'ecoli': initialize_ecoli}
 
-	# connections between subprocess messages and those used by the composite
+	# connections between the messages of sub-agent simulations and those used by the composite
 	# organized as a network with {source_process.source_message: target_process.target_message}
 	network_config['message_connections'] = {
 		'ecoli.environment_change': 'composite.environment_change',

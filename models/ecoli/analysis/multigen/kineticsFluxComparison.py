@@ -92,15 +92,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allTargetAve = np.mean(allTargetFluxList, axis = 0)
 		allActualAve = np.mean(allActualFluxList, axis = 0)
 
+		n_kinetic_constrained_reactions = len(kineticsConstrainedReactions)
+
 		# boundary target fluxes
-		boundaryTargetAve = allTargetAve[len(kineticsConstrainedReactions):]
-		boundaryActualAve = allActualAve[len(kineticsConstrainedReactions):]
+		boundaryTargetAve = allTargetAve[n_kinetic_constrained_reactions:]
+		boundaryActualAve = allActualAve[n_kinetic_constrained_reactions:]
 
 		# kinetic target fluxes
-		targetFluxes = allTargetFluxes[:, 0:len(kineticsConstrainedReactions)]
-		actualFluxes = allActualFluxes[:, 0:len(kineticsConstrainedReactions)]
-		targetAve = allTargetAve[:len(kineticsConstrainedReactions)]
-		actualAve = allActualAve[:len(kineticsConstrainedReactions)]
+		targetFluxes = allTargetFluxes[:, :n_kinetic_constrained_reactions]
+		actualFluxes = allActualFluxes[:, :n_kinetic_constrained_reactions]
+		targetAve = allTargetAve[:n_kinetic_constrained_reactions]
+		actualAve = allActualAve[:n_kinetic_constrained_reactions]
 
 		thresholds = [2, 10]
 		categorization = np.zeros(reactionConstraint.shape[1])
@@ -141,7 +143,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ax = plt.axes()
 		plt.loglog(axes_limits, axes_limits, 'k')
 		plt.loglog(targetAve, actualAve, "ob", markeredgewidth = 0.25, alpha = 0.25)
-		plt.loglog(boundaryTargetAve, boundaryActualAve, "ob", c='r', markeredgewidth=0.25, alpha=0.9)
+		plt.loglog(boundaryTargetAve, boundaryActualAve, "ob", c='r', markeredgewidth=0.25, alpha=0.9, label='boundary fluxes')
 		plt.xlabel("Target Flux (mmol/g/hr)")
 		plt.ylabel("Actual Flux (mmol/g/hr)")
 		plt.minorticks_off()
@@ -150,6 +152,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ax.set_xlim(axes_limits)
 		ax.set_yticks(axes_limits)
 		ax.set_xticks(axes_limits)
+		ax.legend()
 
 		exportFigure(plt, plotOutDir, plotOutFileName)
 		plt.close("all")

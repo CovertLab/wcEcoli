@@ -117,7 +117,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 			self._concentrations[idx] = concentrations[molecule_id]
 
 		# media_id passed from external overwrites the default timeline
-		# TODO -- fix this so that the current_timeline does not need to be re-written
+		# TODO (eran) -- fix this so that the current_timeline does not need to be re-written
 		self.current_media_id = update['media_id']
 		self.current_timeline = [(0.0, self.current_media_id)]
 

@@ -170,7 +170,9 @@ class TransportMinimal(CellSimulation):
 	## Flux-related functions
 	def get_fluxes(self, flux_lookup, transport_reactions_ids):
 		# TODO -- get reversible reactions, some fluxes are negative
-		transport_fluxes = {transport_id: max(flux_lookup[transport_id], 0.0) for transport_id in transport_reactions_ids}
+		transport_fluxes = {
+			transport_id: max(flux_lookup[transport_id], 0.0)
+			for transport_id in transport_reactions_ids}
 		# transport_fluxes = self.adjust_fluxes(transport_fluxes)
 		return transport_fluxes
 
@@ -179,16 +181,21 @@ class TransportMinimal(CellSimulation):
 
 		added_flux = 0  # 1e-2 * (1 + math.sin(10 * self.local_time))
 		adjusted_transport_fluxes = {
-			transport_id: max(flux + added_flux, 0.0) for transport_id, flux in transport_fluxes.iteritems()}
+			transport_id: max(flux + added_flux, 0.0)
+			for transport_id, flux in transport_fluxes.iteritems()}
 
 		return adjusted_transport_fluxes
 
 	def flux_to_counts(self, fluxes):
-		rxn_counts = {reaction_id: int(self.molar_to_counts * flux) for reaction_id, flux in fluxes.iteritems()}
+		rxn_counts = {
+			reaction_id: int(self.molar_to_counts * flux)
+			for reaction_id, flux in fluxes.iteritems()}
 		delta_counts = {}
 		for reaction_id, rxn_count in rxn_counts.iteritems():
 			stoichiometry = self.all_transport_reactions[reaction_id]['stoichiometry']
-			substrate_counts = {substrate_id: coeff * rxn_count for substrate_id, coeff in stoichiometry.iteritems()}
+			substrate_counts = {
+				substrate_id: coeff * rxn_count
+				for substrate_id, coeff in stoichiometry.iteritems()}
 			# add to delta_counts
 			for substrate, delta in substrate_counts.iteritems():
 				if substrate in delta_counts:
