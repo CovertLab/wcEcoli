@@ -2,8 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
-mM_to_M = 1E-3 # convert mmol/L to mol/L
-
 class KineticFluxModel(object):
 	'''
 	Args:
@@ -154,16 +152,16 @@ def get_parameter_template(reactions, rate_law_configuration):
 				parameter_template[reaction_id] = {}
 
 			parameter_template[reaction_id][enzyme_id] = {}
-			parameter_template[reaction_id][enzyme_id]['kcat_f'] = 0.0
+			parameter_template[reaction_id][enzyme_id]['kcat_f'] = None
 
 			reversible = reactions[reaction_id]['is reversible']
 			if reversible:
-				parameter_template[reaction_id][enzyme_id]['kcat_r'] = 0.0
+				parameter_template[reaction_id][enzyme_id]['kcat_r'] = None
 
 			all_bound_molecules = [mol_id for set in partition for mol_id in set]
 
 			for molecule_id in all_bound_molecules:
-				parameter_template[reaction_id][enzyme_id][molecule_id] = 0.0
+				parameter_template[reaction_id][enzyme_id][molecule_id] = None
 
 	return parameter_template
 

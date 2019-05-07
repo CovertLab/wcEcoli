@@ -12,11 +12,12 @@ from itertools import ifilter
 
 import environment.kinetic_rate_laws.kinetic_rate_laws as rate_laws
 
-CSV_DIALECT = csv.excel_tab
 TRANSPORT_REACTIONS_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'transport_reactions.tsv')
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
 WCM_SIMDATA_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'wcm_sim_data.json')
 KINETIC_PARAMETERS_FILE = os.path.join('environment', 'kinetic_rate_laws', 'parameters', 'glt.json')
+
+# set output directory and files
 OUTPUT_DIR = os.path.join('environment', 'kinetic_rate_laws', 'out')
 OUTPUT_PARAM_TEMPLATE = os.path.join(OUTPUT_DIR, 'parameter_template.json')
 
@@ -26,12 +27,17 @@ SAVE_RATE_LAWS_CONFIG = False
 
 
 def test_rate_laws():
+	'''
+	Tests the rate law configuration defined in KINETIC_PARAMETERS_FILE, save analysis plot
+
+	'''
+
 	# Make dict of transport reactions
 	all_transport_reactions = {}
 	with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
 		reader = JsonReader(
 			ifilter(lambda x: x.lstrip()[0] != "#", csvfile),  # Strip comments
-			dialect=CSV_DIALECT)
+			dialect=csv.excel_tab)
 		for row in reader:
 			reaction_id = row['reaction id']
 			stoichiometry = row['stoichiometry']
@@ -74,7 +80,6 @@ def test_rate_laws():
 	analyze_rate_laws(kinetic_rate_laws, concentrations)
 
 
-
 def initialize_state(wcm_sim_out, molecule_ids):
 	''' set all initial undefined molecular concentrations to their initial concentrations in the WCM'''
 
@@ -92,6 +97,15 @@ def initialize_state(wcm_sim_out, molecule_ids):
 
 
 def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
+	'''
+	Args:
+		kinetic_rate_laws (object): a configured kinetic_rate_law object
+		baseline_concentrations (dict): concentrations for all molecules required for the rate laws
+
+	Function:
+		Runs an analysis of all rate laws in kinetic_rate_laws and saves the output
+
+	'''
 
 	test_transporter = True
 	test_cofactor = True
@@ -286,8 +300,28 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 
 
 
-def save_rate_law_configuration_template():
+def save_rate_law_configuration_template(reactions):
+	'''
+	Create an empty parameter file for convenience kinetics rate laws structured by reactions
 
+	Args:
+		reactions (dict): a dict of all reactions that are to be configured
+	'''
+
+	# get the rate law configuration for the set of reactions
+	rate_law_configuration = rate_laws.make_configuration(reactions)
+
+	# make a parameter template
+	parameter_template = rate_laws.get_parameter_template(reactions, rate_law_configuration)
+
+	with open(OUTPUT_PARAM_TEMPLATE, 'w') as fp:
+		json.dump(parameter_template, fp, sort_keys=True, indent=2)
+
+	print('rate law parameter template saved')
+
+
+# for running this script on its own
+if SAVE_RATE_LAWS_CONFIG:
 	amino_acids = [
 		# 'L-ALPHA-ALANINE',
 		# 'ARG',
@@ -311,13 +345,14 @@ def save_rate_law_configuration_template():
 		# 'L-SELENOCYSTEINE',
 		# 'VAL'
 	]
+	exchange_molecules = [aa_id + "[p]" for aa_id in amino_acids]
 
 	# Make dict of transport reactions
 	all_reactions = {}
 	with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
 		reader = JsonReader(
 			ifilter(lambda x: x.lstrip()[0] != "#", csvfile),  # Strip comments
-			dialect=CSV_DIALECT)
+			dialect=csv.excel_tab)
 		for row in reader:
 			reaction_id = row['reaction id']
 			stoichiometry = row['stoichiometry']
@@ -329,27 +364,14 @@ def save_rate_law_configuration_template():
 				'catalyzed by': catalyzed,
 			}
 
-	exchange_molecules = [aa_id + "[p]" for aa_id in amino_acids]
-
 	# get a list of all reactions with exchange_molecules
 	reactions_list = rate_laws.get_reactions_from_exchange(all_reactions, exchange_molecules)
 
 	# make a dict of the given reactions using specs from all_reactions
 	reactions = {reaction_id: all_reactions[reaction_id] for reaction_id in reactions_list}
 
-	# get the rate law configuration for the set of reactions
-	rate_law_configuration = rate_laws.make_configuration(reactions)
+	save_rate_law_configuration_template(reactions)
 
-	# make a parameter template
-	parameter_template = rate_laws.get_parameter_template(reactions, rate_law_configuration)
-
-	with open(OUTPUT_PARAM_TEMPLATE, 'w') as fp:
-		json.dump(parameter_template, fp, sort_keys=True, indent=2)
-
-
-# for running this script on its own
-if SAVE_RATE_LAWS_CONFIG:
-	save_rate_law_configuration_template()
 
 if ANALYZE_RATE_LAWS:
 	# Run test
