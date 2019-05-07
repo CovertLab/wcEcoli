@@ -22,7 +22,7 @@ OUTPUT_PARAM_TEMPLATE = os.path.join(OUTPUT_DIR, 'parameter_template.json')
 
 
 ANALYZE_RATE_LAWS = True
-GET_RATE_LAWS_CONFIG = False
+SAVE_RATE_LAWS_CONFIG = False
 
 
 def test_rate_laws():
@@ -286,7 +286,7 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 
 
 
-def get_rate_law_configuration_template():
+def save_rate_law_configuration_template():
 
 	amino_acids = [
 		# 'L-ALPHA-ALANINE',
@@ -347,9 +347,9 @@ def get_rate_law_configuration_template():
 		json.dump(parameter_template, fp, sort_keys=True, indent=2)
 
 
-
-if GET_RATE_LAWS_CONFIG:
-	get_rate_law_configuration_template()
+# for running this script on its own
+if SAVE_RATE_LAWS_CONFIG:
+	save_rate_law_configuration_template()
 
 if ANALYZE_RATE_LAWS:
 	# Run test

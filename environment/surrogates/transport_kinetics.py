@@ -4,7 +4,6 @@ import os
 import csv
 import time
 from scipy import constants
-import numpy as np
 import json
 
 from reconstruction.spreadsheets import JsonReader
@@ -12,7 +11,8 @@ from itertools import ifilter
 from wholecell.utils import units
 
 from agent.inner import CellSimulation
-from environment.kinetic_rate_laws import KineticFluxModel
+import environment.kinetic_rate_laws.rate_laws_utilities as rate_laws_utilities
+from environment.kinetic_rate_laws.kinetic_rate_laws import KineticFluxModel
 
 COUNTS_UNITS = units.mol
 VOLUME_UNITS = units.L
@@ -26,7 +26,7 @@ DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
 
 CSV_DIALECT = csv.excel_tab
 TRANSPORT_REACTIONS_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'transport_reactions.tsv')
-KINETIC_PARAMETERS_FILE = os.path.join('environment', 'condition', 'parameters', 'kcats', 'all_transport_kcats_variant_2.tsv')
+KINETIC_PARAMETERS_FILE = os.path.join('environment', 'kinetic_rate_laws', 'parameters', 'glt.json')
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
 WCM_SIMDATA_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'wcm_sim_data.json')
 
@@ -70,41 +70,6 @@ class TransportKinetics(CellSimulation):
 					'catalyzed by': catalyzed,
 				}
 
-		# Make kinetic_parameters in a nested format: {reaction_id: {transporter_id : {param_id: param_value}}}
-		self.kinetic_parameters = {}
-		with open(KINETIC_PARAMETERS_FILE, 'rU') as csvfile:
-			reader = JsonReader(
-				ifilter(lambda x: x.lstrip()[0] != "#", csvfile), # Strip comments
-				dialect = CSV_DIALECT)
-			for row in reader:
-
-
-
-
-				import ipdb; ipdb.set_trace()
-				# TODO -- load in KINETIC_PARAMETERS_FILE, load into kinetic object
-
-
-
-
-
-				reaction_id = row['reaction id']
-				transporter = row['transporter']
-				k_avg = float(row['k_avg'])
-				json_acceptable_max_conc = row['max_conc'].replace("'", "\"")
-				max_conc = json.loads(json_acceptable_max_conc)
-
-				# Combine kinetics into dictionary
-				k_param = {'k_avg': k_avg}
-				k_param.update(max_conc)
-				transporter_kinetics = {transporter: k_param}
-
-				# Add to kinetic_parameters dict
-				if reaction_id in self.kinetic_parameters:
-					self.kinetic_parameters[reaction_id].update(transporter_kinetics)
-				else:
-					self.kinetic_parameters[reaction_id] = transporter_kinetics
-
 		# Make map of external molecule_ids with a location tag (as used in reaction stoichiometry) to molecule_ids in the environment
 		self.molecule_to_external_map = {}
 		self.external_to_molecule_map = {}
@@ -118,37 +83,33 @@ class TransportKinetics(CellSimulation):
 				self.molecule_to_external_map[molecule_id + location] = molecule_id
 				self.external_to_molecule_map[molecule_id] = molecule_id + location
 
-
-
-		# TODO -- set initial concentrations from WCM data
+		# load WCM data to set initial concentrations
 		with open(WCM_SIMDATA_FILE, 'r') as f:
 			wcm_sim_out = json.loads(f.read())
-			self.volume = wcm_sim_out['volume'][0]
-			volume_L = self.volume / 1e15  # convert to L
 
-			initial_concentrations = {}
-			for molecule, series in wcm_sim_out.iteritems():
-				if molecule not in ['time', 'cell_mass', 'volume']:
-					# convert counts to molar concentrations
+		# load dict of saved parameters
+		with open(KINETIC_PARAMETERS_FILE, 'r') as fp:
+			self.kinetic_parameters = json.load(fp)
 
-					# TODO -- check that this is correct
-					initial_concentrations[molecule] = series[0] / self.nAvogadro / volume_L  # [M]
+		# list of reactions to construct
+		make_reaction_ids = self.kinetic_parameters.keys()
 
-
-
-
-		make_reactions = self.kinetic_parameters.keys()
+		# make dict for all reactions in make_reaction_ids
+		make_reactions = {
+			reaction_id: specs
+			for reaction_id, specs in self.all_transport_reactions.iteritems()
+			if reaction_id in make_reaction_ids}
 
 		# Make the kinetic model
-		self.kinetic_rate_laws = KineticFluxModel(make_reactions, self.kinetic_parameters, self.all_transport_reactions)
+		self.kinetic_rate_laws = KineticFluxModel(make_reactions, self.kinetic_parameters)
 
 		# Get list of molecule_ids used by kinetic rate laws
 		self.molecule_ids = self.kinetic_rate_laws.molecule_ids
 
-		# TODO -- generate concentration dict from WCM data
-		self.concentrations = {molecule_id: 1.0 for molecule_id in self.molecule_ids}
+		# Get concentrations of all molecule_ids from wcm
+		self.concentrations = rate_laws_utilities.initialize_state(wcm_sim_out, self.molecule_ids)
 
-		# Get initial fluxes
+		# Set initial fluxes
 		self.transport_fluxes = self.kinetic_rate_laws.get_fluxes(self.concentrations)
 
 
@@ -188,7 +149,9 @@ class TransportKinetics(CellSimulation):
 		self.media_id = update['media_id']
 
 		# Map from external_id to concentration key
-		new_concentrations = {self.external_to_molecule_map[mol_id]: conc for mol_id, conc in self.external_concentrations.iteritems()}
+		new_concentrations = {
+			self.external_to_molecule_map[mol_id]: conc
+			for mol_id, conc in self.external_concentrations.iteritems()}
 
 		# Update concentrations dict
 		self.concentrations.update(new_concentrations)
@@ -217,9 +180,7 @@ class TransportKinetics(CellSimulation):
 			'transport_fluxes': self.transport_fluxes,
 			}
 
-
-
-	# TODO -- move these to make_rate_laws
+	# TODO (eran) -- move this function to rate_law_utilities
 	## Flux-related functions
 	def flux_to_counts(self, fluxes):
 		rxn_counts = {reaction_id: int(self.molar_to_counts * flux) for reaction_id, flux in fluxes.iteritems()}
@@ -234,12 +195,3 @@ class TransportKinetics(CellSimulation):
 				else:
 					delta_counts[substrate] = delta
 		return delta_counts
-
-	def reactions_from_exchange(self, include_exchanges):
-		include_reactions = []
-		for reaction_id, specs in self.all_transport_reactions.iteritems():
-			reaction_molecules = specs['stoichiometry'].keys()
-			for exchange in include_exchanges:
-				if exchange in reaction_molecules:
-					include_reactions.append(reaction_id)
-		return include_reactions
