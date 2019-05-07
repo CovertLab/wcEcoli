@@ -11,7 +11,6 @@ from itertools import ifilter
 from wholecell.utils import units
 
 from agent.inner import CellSimulation
-import environment.kinetic_rate_laws.rate_laws_utilities as rate_laws_utilities
 from environment.kinetic_rate_laws.kinetic_rate_laws import KineticFluxModel
 
 COUNTS_UNITS = units.mol
@@ -107,7 +106,7 @@ class TransportKinetics(CellSimulation):
 		self.molecule_ids = self.kinetic_rate_laws.molecule_ids
 
 		# Get concentrations of all molecule_ids from wcm
-		self.concentrations = rate_laws_utilities.initialize_state(wcm_sim_out, self.molecule_ids)
+		self.concentrations = initialize_state(wcm_sim_out, self.molecule_ids)
 
 		# Set initial fluxes
 		self.transport_fluxes = self.kinetic_rate_laws.get_fluxes(self.concentrations)
@@ -195,3 +194,19 @@ class TransportKinetics(CellSimulation):
 				else:
 					delta_counts[substrate] = delta
 		return delta_counts
+
+# TODO (Eran) -- make a rate law utilities function
+def initialize_state(wcm_sim_out, molecule_ids):
+	''' set all initial undefined molecular concentrations to their initial concentrations in the WCM'''
+
+	time_index = int(len(wcm_sim_out['time']) / 2)  # get midpoint of timeseries
+	cell_volume_fL = wcm_sim_out['volume'][time_index]  # [fL]
+	cell_volume_L = cell_volume_fL / 1e15  # convert to L
+	avogadro = constants.Avogadro
+
+	concentrations = {} #molecule_id: 0.0 for molecule_id in molecule_ids}
+	for molecule_id in molecule_ids:
+		molecule_counts = wcm_sim_out[molecule_id][time_index]
+		concentrations[molecule_id] = 1e3 * molecule_counts / avogadro / cell_volume_L  # mmol / L
+
+	return concentrations

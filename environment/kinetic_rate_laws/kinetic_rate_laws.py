@@ -69,7 +69,6 @@ class KineticFluxModel(object):
 		return reaction_fluxes
 
 
-
 def make_configuration(reactions):
 	'''
 	Make the rate law configuration, which tells the parameters where to be placed.
@@ -165,7 +164,6 @@ def get_parameter_template(reactions, rate_law_configuration):
 
 	return parameter_template
 
-
 def get_molecules(reactions):
 	'''
 	Inputs:
@@ -182,7 +180,6 @@ def get_molecules(reactions):
 		molecule_ids.extend(substrates)
 		molecule_ids.extend(enzymes)
 	return list(set(molecule_ids))
-
 
 def get_reactions_from_exchange(all_reactions, include_exchanges):
 	'''
@@ -203,9 +200,7 @@ def get_reactions_from_exchange(all_reactions, include_exchanges):
 	return include_reactions
 
 
-
 ## Make rate laws
-
 def make_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
 	# make rate law for each reaction
 	rate_laws = {reaction_id: {} for reaction_id in reactions.iterkeys()}
