@@ -248,12 +248,12 @@ class Metabolism(wholecell.processes.process.Process):
 		if self.use_trna_charging:
 			if len(self._sim.processes['PolypeptideElongation'].aa_conc_diff):
 				for aa, diff in self._sim.processes['PolypeptideElongation'].aa_conc_diff.items():
-					if aa == 'L-SELENOCYSTEINE[c]':
+					if aa == 'L-SELENOCYSTEINE[c]' or aa == 'GLT[c]' or aa == 'LEU[c]':
 						continue
 					self.aa_targets[aa] += diff
 			else:
 				for aa, counts in zip(self.aa_names, self.aas.total()):
-					if aa == 'L-SELENOCYSTEINE[c]':
+					if aa == 'L-SELENOCYSTEINE[c]' or aa == 'GLT[c]' or aa == 'LEU[c]':
 						continue
 					self.aa_targets[aa] = counts
 
