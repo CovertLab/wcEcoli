@@ -10,15 +10,14 @@ import scipy.constants as constants
 from reconstruction.spreadsheets import JsonReader
 from itertools import ifilter
 
-import environment.kinetic_rate_laws as rate_laws
+import environment.kinetic_rate_laws.kinetic_rate_laws as rate_laws
 
 CSV_DIALECT = csv.excel_tab
 TRANSPORT_REACTIONS_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'transport_reactions.tsv')
-KINETIC_PARAMETERS_FILE = os.path.join('environment', 'condition', 'parameters', 'convenience_kinetics', 'glt.json')
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
 WCM_SIMDATA_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'wcm_sim_data.json')
-
-OUTPUT_DIR = os.path.join('environment', 'condition', 'parameters', 'out')
+KINETIC_PARAMETERS_FILE = os.path.join('environment', 'kinetic_rate_laws', 'parameters', 'glt.json')
+OUTPUT_DIR = os.path.join('environment', 'kinetic_rate_laws', 'out')
 OUTPUT_PARAM_TEMPLATE = os.path.join(OUTPUT_DIR, 'parameter_template.json')
 
 
