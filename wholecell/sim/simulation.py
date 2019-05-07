@@ -28,6 +28,7 @@ import wholecell.loggers.disk
 DEFAULT_SIMULATION_KWARGS = dict(
 	timeline = '0 minimal',
 	boundary_reactions = [],
+	boundary_views = [],
 	seed = 0,
 	lengthSec = 3*60*60, # 3 hours max
 	initialTime = 0.,

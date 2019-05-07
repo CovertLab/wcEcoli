@@ -13,7 +13,8 @@ from environment.surrogates.chemotaxis import Chemotaxis
 from environment.surrogates.endocrine import Endocrine
 from environment.surrogates.transport_lookup_minimal import TransportMinimal
 from environment.surrogates.transport_kinetics import TransportKinetics
-from environment.surrogates.transport_composite import TransportComposite
+from environment.surrogates.lookup_composite import LookupComposite
+from environment.surrogates.kinetics_composite import KineticsComposite
 from models.ecoli.sim.simulation import ecoli_simulation
 from environment.condition.make_media import Media
 
@@ -329,11 +330,11 @@ def boot_transport_kinetics(agent_id, agent_type, agent_config):
 
 	return inner
 
-# Transport composite initialize and boot
-def initialize_transport_composite(boot_config, synchronize_config):
+# Lookup composite initialize and boot
+def initialize_lookup_composite(boot_config, synchronize_config):
 	'''
-	Initialization function for the transport composite agent. This sets up a network_config, which defines
-	how messages are passed between subprocesses and what functions can be used by the composite.
+	Initialization function for the lookup composite agent. This sets up a network_config, which defines
+	how messages are passed between sub-agents and what functions can be used by the composite.
 	Args:
 		boot_config (dict): essential options for initializing a simulation
 		synchronize_config (dict): additional options that can be passed in for initialization
@@ -365,9 +366,9 @@ def initialize_transport_composite(boot_config, synchronize_config):
 		'time': 'ecoli',
 		'divide': 'ecoli'}
 
-	return TransportComposite(boot_config, synchronize_config, network_config)
+	return LookupComposite(boot_config, synchronize_config, network_config)
 
-def boot_transport_composite(agent_id, agent_type, agent_config):
+def boot_lookup_composite(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
 
@@ -386,7 +387,68 @@ def boot_transport_composite(agent_id, agent_type, agent_config):
 		agent_type,
 		agent_config,
 		options,
-		initialize_transport_composite)
+		initialize_lookup_composite)
+
+	return inner
+
+# Transport composite initialize and boot
+def initialize_kinetics_composite(boot_config, synchronize_config):
+	'''
+	Initialization function for the transport composite agent. This sets up a network_config, which defines
+	how messages are passed between subprocesses and what functions can be used by the composite.
+	Args:
+		boot_config (dict): essential options for initializing a simulation
+		synchronize_config (dict): additional options that can be passed in for initialization
+	Returns:
+		simulation (CellSimulation): The actual composite simulation
+	'''
+
+	# configure the composite.
+	network_config = {}
+
+	# a dict mapping each subprocess to its initialization function
+	network_config['initialize'] = {
+		'transport': initialize_transport_kinetics,
+		'ecoli': initialize_ecoli}
+
+	# connections between the messages of sub-agent simulations and those used by the composite
+	# organized as a network with {source_process.source_message: target_process.target_message}
+	network_config['message_connections'] = {
+		'ecoli.environment_change': 'composite.environment_change',
+		'ecoli.volume': 'composite.volume',
+		'ecoli.division': 'composite.division',
+		'transport.motile_force': 'composite.motile_force',
+		'transport.transport_fluxes': 'ecoli.transport_fluxes',
+	}
+
+	# TODO -- (eran) need to make connections between subprocess functions (such as time and divide)
+	# functions to be used by composite. {function_used_by_composite: source_process}
+	network_config['function_connections'] = {
+		'time': 'ecoli',
+		'divide': 'ecoli'}
+
+	return KineticsComposite(boot_config, synchronize_config, network_config)
+
+def boot_kinetics_composite(agent_id, agent_type, agent_config):
+	agent_id = agent_id
+	outer_id = agent_config['outer_id']
+
+	# initialize state and options
+	state = {
+		'volume': 1.0,
+		'environment_change': {}}
+	agent_config['state'] = state
+
+	# options for ecoli
+	options = ecoli_boot_config(agent_id, agent_config)
+
+	inner = Inner(
+		agent_id,
+		outer_id,
+		agent_type,
+		agent_config,
+		options,
+		initialize_kinetics_composite)
 
 	return inner
 
@@ -401,7 +463,8 @@ class BootEnvironment(BootAgent):
 			'endocrine': boot_endocrine,
 			'transport_minimal': boot_transport_minimal,
 			'transport_kinetics': boot_transport_kinetics,
-			'transport_composite': boot_transport_composite,
+			'lookup_composite': boot_lookup_composite,
+			'kinetics_composite': boot_kinetics_composite,
 			}
 
 if __name__ == '__main__':

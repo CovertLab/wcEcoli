@@ -91,16 +91,16 @@ class TransportKinetics(CellSimulation):
 			self.kinetic_parameters = json.load(fp)
 
 		# list of reactions to construct
-		make_reaction_ids = self.kinetic_parameters.keys()
+		kinetic_reaction_ids = self.kinetic_parameters.keys()
 
-		# make dict for all reactions in make_reaction_ids
-		make_reactions = {
+		# make dict for all reactions in kinetic_reaction_ids
+		kinetic_reactions = {
 			reaction_id: specs
 			for reaction_id, specs in self.all_transport_reactions.iteritems()
-			if reaction_id in make_reaction_ids}
+			if reaction_id in kinetic_reaction_ids}
 
 		# Make the kinetic model
-		self.kinetic_rate_laws = KineticFluxModel(make_reactions, self.kinetic_parameters)
+		self.kinetic_rate_laws = KineticFluxModel(kinetic_reactions, self.kinetic_parameters)
 
 		# Get list of molecule_ids used by kinetic rate laws
 		self.molecule_ids = self.kinetic_rate_laws.molecule_ids

@@ -2,10 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 from agent.inner import CellSimulation
 
-DEFAULT_COLOR = [color/255 for color in [0, 128, 255]]
+DEFAULT_COLOR = [color/255 for color in [255, 255, 0]]
 
 
-class TransportComposite(CellSimulation):
+class KineticsComposite(CellSimulation):
 	'''
 	This CellSimulation class is a composite agent, which coordinates the function of multiple sub-agents.
 
@@ -35,7 +35,12 @@ class TransportComposite(CellSimulation):
 
 		# update ecoli's synchronize_config using transport_reactions_ids from transport
 		ecoli_synchronize_config = boot_config
-		ecoli_synchronize_config['boundary_reactions'] = self.processes['transport'].transport_reactions_ids
+
+		# TODO (Eran) make sure all boundary reactions have the same key for all transport processes that could be used
+		ecoli_synchronize_config['boundary_reactions'] = self.processes['transport'].kinetic_rate_laws.reaction_ids
+
+		# TODO -- need to request view of proteins.
+		ecoli_synchronize_config['boundary_views'] = self.processes['transport'].molecule_ids
 
 		# initialize ecoli
 		self.processes['ecoli'] = initialize_processes['ecoli'](boot_config, ecoli_synchronize_config)

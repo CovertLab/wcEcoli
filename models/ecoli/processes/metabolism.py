@@ -194,6 +194,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.catalysts = self.bulkMoleculesView(self.catalystsList)
 		self.kineticsEnzymes = self.bulkMoleculesView(self.kineticsEnzymesList)
 		self.kineticsSubstrates = self.bulkMoleculesView(self.kineticsSubstratesList)
+		self.boundary_view = self.bulkMoleculesView(self.boundary.boundary_view_molecules)
 
 		outputMoleculeIDs = self.fba.getOutputMoleculeIDs()
 
@@ -231,7 +232,10 @@ class Metabolism(wholecell.processes.process.Process):
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
 
 		# get boundary conditions
-		self.boundary.updateBoundary()
+		boundary_counts = self.boundary_view.counts()
+		boundary_concentrations = countsToMolar * boundary_counts
+		self.boundary.update_view(boundary_concentrations)
+		self.boundary.update_boundary()
 		current_media = self.boundary.current_media
 		exchange_data = self.boundary.exchange_data
 
@@ -369,7 +373,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# update environmental nutrient counts
 		delta_nutrients = ((1 / countsToMolar) * exchange_fluxes).asNumber().astype(int)
 		external_exchange_molecule_ids = self.fba.getExternalMoleculeIDs()
-		self.boundary.updateEnvironment(external_exchange_molecule_ids, delta_nutrients)
+		self.boundary.update_environment(external_exchange_molecule_ids, delta_nutrients)
 
 		import_exchange, import_constraint = self.boundary.getImportConstraints(exchange_data)
 
@@ -462,9 +466,21 @@ class Boundary(object):
 		# transport fluxes from the external state
 		self.transport_fluxes = self.external_state['Environment'].transport_fluxes
 
-		self.updateBoundary()
+		self.boundary_view_molecules = self.external_state['Environment'].boundary_view_molecules
 
-	def updateBoundary(self):
+		self.update_boundary()
+
+	def update_view(self, boundary_concentrations):
+		'''
+		update the boundary view
+
+		'''
+		boundary_concentrations_dict = dict(zip(self.boundary_view_molecules, boundary_concentrations))
+		print('boundary_concentrations: ' + str(boundary_concentrations_dict))
+
+
+
+	def update_boundary(self):
 		'''
 		update all boundary variables for the current environment
 		'''
@@ -476,7 +492,7 @@ class Boundary(object):
 		# transport fluxes from the external state
 		self.transport_fluxes = self.external_state['Environment'].transport_fluxes
 
-	def updateEnvironment(self, external_exchange_molecule_ids, delta_nutrients):
+	def update_environment(self, external_exchange_molecule_ids, delta_nutrients):
 		'''
 		Convert exchange molecules to environmental molecules using mapping, and passes delta counts to the local environment
 
