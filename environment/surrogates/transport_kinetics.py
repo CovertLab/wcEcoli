@@ -26,7 +26,7 @@ DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
 
 CSV_DIALECT = csv.excel_tab
 TRANSPORT_REACTIONS_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'transport_reactions.tsv')
-KINETIC_PARAMETERS_FILE = os.path.join('environment', 'condition', 'parameters', 'glt_family.tsv')
+KINETIC_PARAMETERS_FILE = os.path.join('environment', 'condition', 'parameters', 'kcats', 'all_transport_kcats_variant_2.tsv')
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
 WCM_SIMDATA_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'wcm_sim_data.json')
 
@@ -77,6 +77,17 @@ class TransportKinetics(CellSimulation):
 				ifilter(lambda x: x.lstrip()[0] != "#", csvfile), # Strip comments
 				dialect = CSV_DIALECT)
 			for row in reader:
+
+
+
+
+				import ipdb; ipdb.set_trace()
+				# TODO -- load in KINETIC_PARAMETERS_FILE, load into kinetic object
+
+
+
+
+
 				reaction_id = row['reaction id']
 				transporter = row['transporter']
 				k_avg = float(row['k_avg'])
