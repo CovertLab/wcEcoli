@@ -1,5 +1,3 @@
-# Testing
-
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -12,40 +10,21 @@ import scipy.constants as constants
 from reconstruction.spreadsheets import JsonReader
 from itertools import ifilter
 
-
-from environment.kinetic_rate_laws import KineticFluxModel
+import environment.kinetic_rate_laws as rate_laws
 
 CSV_DIALECT = csv.excel_tab
 TRANSPORT_REACTIONS_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'transport_reactions.tsv')
-KINETIC_PARAMETERS_FILE = os.path.join('environment', 'condition', 'parameters', 'glt_family.tsv')
+KINETIC_PARAMETERS_FILE = os.path.join('environment', 'condition', 'parameters', 'convenience_kinetics', 'glt.json')
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
 WCM_SIMDATA_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'wcm_sim_data.json')
+
 OUTPUT_DIR = os.path.join('environment', 'condition', 'parameters', 'out')
+OUTPUT_PARAM_TEMPLATE = os.path.join(OUTPUT_DIR, 'parameter_template.json')
 
-# TODO -- reaction_ids and parameters should ultimately come from sim_data
-REACTIONS = ["RXN0-5202", "TRANS-RXN-62B"]  # competing reactions
 
-# TODO -- how to programatically add compartment to transporter? [i] should not be hardcoded
-PARAMETERS = {
-  "RXN0-5202": {
-     "CYCA-MONOMER[i]": {
-        "kcat_f": 1e4,
-        "L-ALPHA-ALANINE[p]": 1e-3,
-        "GLY[p]": 1e-3,
-        "PROTON[p]": 1e-3
-     }
-  },
-  "TRANS-RXN-62B": {
-     "CYCA-MONOMER[i]": {
-        "kcat_f": 1e2,
-        "L-ALPHA-ALANINE[p]": 1e-3,
-        "GLY[p]": 1e-3,
-        "PROTON[p]": 1e-3
-     }
-  }
-}
+ANALYZE_RATE_LAWS = True
+GET_RATE_LAWS_CONFIG = False
 
-# self.baseline_concentrations = initialize_state(self.set_baseline)
 
 def test_rate_laws():
 	# Make dict of transport reactions
@@ -65,33 +44,9 @@ def test_rate_laws():
 				'catalyzed by': catalyzed,
 			}
 
-	# Make kinetic_parameters in a nested format: {reaction_id: {transporter_id : {param_id: param_value}}}
-	kinetic_parameters = {}
-	with open(KINETIC_PARAMETERS_FILE, 'rU') as csvfile:
-		reader = JsonReader(
-			ifilter(lambda x: x.lstrip()[0] != "#", csvfile),  # Strip comments
-			dialect=CSV_DIALECT)
-		for row in reader:
-			reaction_id = row['reaction id']
-			transporter = row['transporter']
-			k_avg = float(row['k_avg'])
-			json_acceptable_max_conc = row['max_conc'].replace("'", "\"")
-			max_conc = json.loads(json_acceptable_max_conc)
-
-			# Combine kinetics into dictionary
-			k_param = {'k_avg': k_avg}
-			k_param.update(max_conc)
-			transporter_kinetics = {transporter: k_param}
-
-			# Add to kinetic_parameters dict
-			if reaction_id in kinetic_parameters:
-				kinetic_parameters[reaction_id].update(transporter_kinetics)
-			else:
-				kinetic_parameters[reaction_id] = transporter_kinetics
-
-	# pass
-	# TODO -- remove these, load in M-M kinetics through file
-	kinetic_parameters = PARAMETERS
+	# load dict of saved parameters
+	with open(KINETIC_PARAMETERS_FILE, 'r') as fp:
+		kinetic_parameters = json.load(fp)
 
 	# make a dict of reactions that will be configured with the parameters
 	make_reaction_ids = kinetic_parameters.keys()
@@ -101,7 +56,7 @@ def test_rate_laws():
 		if reaction_id in make_reaction_ids}
 
 	# Make the kinetic model
-	kinetic_rate_laws = KineticFluxModel(make_reactions, kinetic_parameters)
+	kinetic_rate_laws = rate_laws.KineticFluxModel(make_reactions, kinetic_parameters)
 
 	# Get list of molecule_ids used by kinetic rate laws
 	molecule_ids = kinetic_rate_laws.molecule_ids
@@ -118,7 +73,6 @@ def test_rate_laws():
 
 	# run analyses and save output
 	analyze_rate_laws(kinetic_rate_laws, concentrations)
-
 
 
 
@@ -159,7 +113,6 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 	cmap = plt.cm.get_cmap('Spectral')
 	colors = [cmap(float(idx) / n_samples_shown) for idx in range(n_samples_shown)]
 
-
 	plt.figure(figsize=(6*columns, 3*rows))
 	plot_number = 1
 	row_number = 0
@@ -182,25 +135,21 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 		plot_number += columns
 		row_number += 1
 
-		# TODO select the molecule more smartly
-		# a1_set = False
-		# for mol in self.exchange_molecules:
-		# 	if mol in reactants:
-		# 		a1 = mol
-		# 		a1_set = True
-		#
-		# if not a1_set:
-		# 	a1 = reactants[0]
-		a1 = reactants[0]
-
-		# get cofactor
-		b1 = None
-		if len(reactants) > 1:
-			cofactors = [x for x in reactants if x != a1]
-			b1 = cofactors[0]
-
 		# test michaelis menten by sampling substrate concentrations
 		for transporter in transporters:
+
+			# TODO select the molecule more smartly
+			for reactant in reactants:
+				if parameters[transporter][reactant] is not None:
+					a1 = reactant
+
+			# get cofactor
+			b1 = None
+			if len(reactants) > 1:
+				for reactant in reactants:
+					if parameters[transporter][reactant] is not None and reactant is not a1:
+						b1 = reactant
+
 			concentrations = baseline_concentrations.copy()
 			conc_samples = np.logspace(-9, 0, num=n_samples, endpoint=True, base=10)
 
@@ -244,11 +193,11 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 						label = ('conc = %.2e' % (transporter_conc)),
 						)
 
-				plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+				plt.legend(loc='center left', title=transporter, bbox_to_anchor=(1.15, 0.5))
 				plt.xscale('log')
 				plt.xlabel(a1 + ' concentration (M)')
 				plt.ylabel('flux (M/s)')
-				plt.title('transporter: %s' % transporter)
+				plt.title('test transporter')
 
 				plot_number += 1
 
@@ -276,11 +225,11 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 										label = ('conc = %.2e' % (cofactor_conc)),
 										)
 
-					plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+					plt.legend(loc='center left', title=b1, bbox_to_anchor=(1.15, 0.5))
 					plt.xscale('log')
 					plt.xlabel(a1 + ' concentration (M)')
 					plt.ylabel('flux (M/s)')
-					plt.title('cofactor: %s' % b1)
+					plt.title('test cofactor')
 
 				plot_number += 1
 
@@ -315,11 +264,11 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 												label = ('conc = %.2e' % (competitor_conc)),
 												)
 
-					plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+					plt.legend(loc='center left', title=competitor, bbox_to_anchor=(1.15, 0.5))
 					plt.xscale('log')
 					plt.xlabel(a1 + ' concentration (M)')
 					plt.ylabel('flux (M/s)')
-					plt.title('competitor: %s' % (competitor))
+					plt.title('test competitor')
 
 				plot_number += 1
 
@@ -337,5 +286,72 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 	print('rate law analysis plot saved')
 
 
-# Run test
-test_rate_laws()
+
+def get_rate_law_configuration_template():
+
+	amino_acids = [
+		# 'L-ALPHA-ALANINE',
+		# 'ARG',
+		# 'ASN',
+		# 'L-ASPARTATE',
+		# 'CYS',
+		'GLT',
+		# 'GLN',
+		# 'GLY',
+		# 'HIS',
+		# 'ILE',
+		# 'LEU',
+		# 'LYS',
+		# 'MET',
+		# 'PHE',
+		# 'PRO',
+		# 'SER',
+		# 'THR',
+		# 'TRP',
+		# 'TYR',
+		# 'L-SELENOCYSTEINE',
+		# 'VAL'
+	]
+
+	# Make dict of transport reactions
+	all_reactions = {}
+	with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
+		reader = JsonReader(
+			ifilter(lambda x: x.lstrip()[0] != "#", csvfile),  # Strip comments
+			dialect=CSV_DIALECT)
+		for row in reader:
+			reaction_id = row['reaction id']
+			stoichiometry = row['stoichiometry']
+			reversible = row['is reversible']
+			catalyzed = row['catalyzed by']
+			all_reactions[reaction_id] = {
+				'stoichiometry': stoichiometry,
+				'is reversible': reversible,
+				'catalyzed by': catalyzed,
+			}
+
+	exchange_molecules = [aa_id + "[p]" for aa_id in amino_acids]
+
+	# get a list of all reactions with exchange_molecules
+	reactions_list = rate_laws.get_reactions_from_exchange(all_reactions, exchange_molecules)
+
+	# make a dict of the given reactions using specs from all_reactions
+	reactions = {reaction_id: all_reactions[reaction_id] for reaction_id in reactions_list}
+
+	# get the rate law configuration for the set of reactions
+	rate_law_configuration = rate_laws.make_configuration(reactions)
+
+	# make a parameter template
+	parameter_template = rate_laws.get_parameter_template(reactions, rate_law_configuration)
+
+	with open(OUTPUT_PARAM_TEMPLATE, 'w') as fp:
+		json.dump(parameter_template, fp, sort_keys=True, indent=2)
+
+
+
+if GET_RATE_LAWS_CONFIG:
+	get_rate_law_configuration_template()
+
+if ANALYZE_RATE_LAWS:
+	# Run test
+	test_rate_laws()

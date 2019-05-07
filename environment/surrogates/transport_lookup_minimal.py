@@ -181,6 +181,8 @@ class TransportMinimal(CellSimulation):
 					delta_counts[substrate] = delta
 		return delta_counts
 
+
+	# TODO (Eran) -- use kinetic_rate_laws reactions_from_exchange()
 	def reactions_from_exchange(self, include_exchanges):
 		include_reactions = []
 		for reaction_id, specs in self.all_transport_reactions.iteritems():

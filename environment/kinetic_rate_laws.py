@@ -129,6 +129,45 @@ def make_configuration(reactions):
 
 	return rate_law_configuration
 
+def get_parameter_template(reactions, rate_law_configuration):
+	'''
+	Given a rate law configuration, return a template for required parameters
+
+	Args:
+		reactions:
+		rate_law_configuration:
+
+	Returns:
+		parameter_template (dict): a template for all parameters required by this rate_law_configuration,
+			filled with values of 0.0.
+
+	'''
+	parameter_template = {}
+	for enzyme_id, configuration in rate_law_configuration.iteritems():
+		reaction_cofactors = configuration['reaction_cofactors']
+		partition = configuration['partition']
+
+		for reaction_id, cofactors in reaction_cofactors.iteritems():
+
+			# check if reaction is already in the template
+			if reaction_id not in parameter_template:
+				parameter_template[reaction_id] = {}
+
+			parameter_template[reaction_id][enzyme_id] = {}
+			parameter_template[reaction_id][enzyme_id]['kcat_f'] = 0.0
+
+			reversible = reactions[reaction_id]['is reversible']
+			if reversible:
+				parameter_template[reaction_id][enzyme_id]['kcat_r'] = 0.0
+
+			all_bound_molecules = [mol_id for set in partition for mol_id in set]
+
+			for molecule_id in all_bound_molecules:
+				parameter_template[reaction_id][enzyme_id][molecule_id] = 0.0
+
+	return parameter_template
+
+
 def get_molecules(reactions):
 	'''
 	Inputs:
@@ -145,6 +184,25 @@ def get_molecules(reactions):
 		molecule_ids.extend(substrates)
 		molecule_ids.extend(enzymes)
 	return list(set(molecule_ids))
+
+
+def get_reactions_from_exchange(all_reactions, include_exchanges):
+	'''
+	Args:
+		all_reactions (dict): all reactions with stoichiometry, reversibility, enzymes
+		include_exchanges (list): molecules whose reactions are of interest
+
+	Returns:
+		include_reactions (list): all the reactions for molecules listed in include_exchanges
+
+	'''
+	include_reactions = []
+	for reaction_id, specs in all_reactions.iteritems():
+		reaction_molecules = specs['stoichiometry'].keys()
+		for exchange in include_exchanges:
+			if exchange in reaction_molecules:
+				include_reactions.append(reaction_id)
+	return include_reactions
 
 
 
@@ -205,6 +263,17 @@ def construct_convenience_rate_law(stoichiometry, transporter, cofactors_sets, p
 
 	kcat_f = parameters.get('kcat_f')
 	kcat_r = parameters.get('kcat_r')
+
+	# remove km parameters with None as their value
+	for parameter, value in parameters.iteritems():
+		if 'kcat' not in parameter:
+			if value is None:
+				for part in partition:
+					if parameter in part:
+						part.remove(parameter)
+				for set in cofactors_sets:
+					if parameter in set:
+						set.remove(parameter)
 
 	def rate_law(concentrations):
 
