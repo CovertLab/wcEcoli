@@ -2889,7 +2889,7 @@ def fitLigandConcentrations(sim_data, cellSpecs):
 
 		if negativeSignal:
 			if p_inactive == 0:
-				raise Exception('Inf ligand concentration from p_inactive = 0.'
+				raise ValueError('Inf ligand concentration from p_inactive = 0.'
 					' Check results from fitPromoterBoundProbability and Kd values.')
 			if 1 - p_active < 1e-9:
 				kdNew = kd  # Concentration of metabolite-bound TF is negligible
@@ -2902,7 +2902,7 @@ def fitLigandConcentrations(sim_data, cellSpecs):
 
 		else:
 			if p_active == 1:
-				raise Exception('Inf ligand concentration from p_active = 1.'
+				raise ValueError('Inf ligand concentration from p_active = 1.'
 					' Check results from fitPromoterBoundProbability and Kd values.')
 			if p_inactive < 1e-9:
 				kdNew = kd  # Concentration of metabolite-bound TF is negligible
