@@ -8,17 +8,17 @@ import json
 
 from reconstruction.spreadsheets import JsonReader
 from itertools import ifilter
-from wholecell.utils import units
+# from wholecell.utils import units
 
 from agent.inner import CellSimulation
 from environment.kinetic_rate_laws.kinetic_rate_laws import KineticFluxModel
 
-COUNTS_UNITS = units.mol
-VOLUME_UNITS = units.L
-MASS_UNITS = units.g
-TIME_UNITS = units.s
-CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
-FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
+# COUNTS_UNITS = units.mol
+# VOLUME_UNITS = units.L
+# MASS_UNITS = units.g
+# TIME_UNITS = units.s
+# CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
+# FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 
 TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
@@ -146,6 +146,7 @@ class TransportKinetics(CellSimulation):
 	def apply_outer_update(self, update):
 		self.external_concentrations = update['concentrations']
 		self.media_id = update['media_id']
+		boundary_concentrations = update.get('boundary_view')  # in mmol/L
 
 		# Map from external_id to concentration key
 		new_concentrations = {
@@ -154,6 +155,7 @@ class TransportKinetics(CellSimulation):
 
 		# Update concentrations dict
 		self.concentrations.update(new_concentrations)
+		self.concentrations.update(boundary_concentrations)
 
 		# Reset environment change
 		self.environment_change = {}
@@ -195,7 +197,7 @@ class TransportKinetics(CellSimulation):
 					delta_counts[substrate] = delta
 		return delta_counts
 
-# TODO (Eran) -- make a rate law utilities function
+# TODO (Eran) -- use the rate law utilities function
 def initialize_state(wcm_sim_out, molecule_ids):
 	''' set all initial undefined molecular concentrations to their initial concentrations in the WCM'''
 

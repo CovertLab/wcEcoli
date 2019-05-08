@@ -62,6 +62,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 		# load views of molecules for boundary
 		self.boundary_view_molecules = sim._boundary_views
+		self.boundary_concentrations_dict = {molecule_id: 0.0 for molecule_id in self.boundary_view_molecules}
 
 		# load constants
 		self._nAvogadro = sim_data.constants.nAvogadro
@@ -129,6 +130,9 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 	def get_environment_change(self):
 		return self._env_delta_counts
+
+	def get_boundary_view(self):
+		return self.boundary_concentrations_dict
 
 	def accumulate_deltas(self, molecule_ids, counts):
 		for molecule_id, count in zip(molecule_ids, counts):

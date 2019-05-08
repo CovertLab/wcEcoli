@@ -440,7 +440,9 @@ class Simulation(CellSimulation):
 		return {
 			'volume': self.listeners['Mass'].volume,
 			'division': self.daughter_config(),
-			'environment_change': self.external_states['Environment'].get_environment_change()}
+			'environment_change': self.external_states['Environment'].get_environment_change(),
+			'boundary_view': self.external_states['Environment'].get_boundary_view(),
+		}
 
 	def divide(self):
 		self.cellCycleComplete()

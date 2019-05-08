@@ -419,6 +419,7 @@ def initialize_kinetics_composite(boot_config, synchronize_config):
 		'ecoli.division': 'composite.division',
 		'transport.motile_force': 'composite.motile_force',
 		'transport.transport_fluxes': 'ecoli.transport_fluxes',
+		'ecoli.boundary_view': 'transport.boundary_view',
 	}
 
 	# TODO -- (eran) need to make connections between subprocess functions (such as time and divide)

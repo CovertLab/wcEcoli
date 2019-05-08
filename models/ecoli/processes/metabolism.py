@@ -472,13 +472,12 @@ class Boundary(object):
 
 	def update_view(self, boundary_concentrations):
 		'''
-		update the boundary view
+		update the boundary view and pass back to the local environment
 
 		'''
-		boundary_concentrations_dict = dict(zip(self.boundary_view_molecules, boundary_concentrations))
-		print('boundary_concentrations: ' + str(boundary_concentrations_dict))
 
-
+		boundary_concentrations_dict = dict(zip(self.boundary_view_molecules, boundary_concentrations.asNumber(CONC_UNITS)))
+		self.external_state['Environment'].boundary_concentrations_dict.update(boundary_concentrations_dict)
 
 	def update_boundary(self):
 		'''
