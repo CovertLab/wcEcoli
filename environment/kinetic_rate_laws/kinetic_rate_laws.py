@@ -267,6 +267,7 @@ def construct_convenience_rate_law(stoichiometry, transporter, cofactors_sets, p
 				for set in cofactors_sets:
 					if parameter in set:
 						set.remove(parameter)
+				# print('removing parameter: {}'.format(parameter))
 
 	def rate_law(concentrations):
 

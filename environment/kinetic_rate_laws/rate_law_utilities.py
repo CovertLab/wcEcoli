@@ -322,30 +322,9 @@ def save_rate_law_configuration_template(reactions):
 
 # for running this script on its own
 if SAVE_RATE_LAWS_CONFIG:
-	amino_acids = [
-		# 'L-ALPHA-ALANINE',
-		# 'ARG',
-		# 'ASN',
-		# 'L-ASPARTATE',
-		# 'CYS',
-		'GLT',
-		# 'GLN',
-		# 'GLY',
-		# 'HIS',
-		# 'ILE',
-		# 'LEU',
-		# 'LYS',
-		# 'MET',
-		# 'PHE',
-		# 'PRO',
-		# 'SER',
-		# 'THR',
-		# 'TRP',
-		# 'TYR',
-		# 'L-SELENOCYSTEINE',
-		# 'VAL'
-	]
-	exchange_molecules = [aa_id + "[p]" for aa_id in amino_acids]
+
+	# set up reactions
+	exchange_molecules = ['GLT[p]']
 
 	# Make dict of transport reactions
 	all_reactions = {}
@@ -374,5 +353,6 @@ if SAVE_RATE_LAWS_CONFIG:
 
 
 if ANALYZE_RATE_LAWS:
-	# Run test
+
+	# Run test and save output
 	test_rate_laws()
