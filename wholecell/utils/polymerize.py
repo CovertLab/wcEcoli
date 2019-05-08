@@ -26,6 +26,10 @@ from ._fastsums import sum_monomers, sum_monomers_reference_implementation
 # "unused import statement" warnings.)
 __all__ = ['polymerize', 'buildSequences', 'computeMassIncrease']
 
+def sample_array(array):
+	samples = np.random.random(array.shape)
+	return np.where(array > samples)[0]
+
 class polymerize(object): # Class name is lowercase because interface is function-like
 	"""
 	Polymerize the given DNA/RNA/protein sequences as far as possible within
@@ -51,12 +55,13 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 	PAD_VALUE = -1
 
-	def __init__(self, sequences, monomerLimits, reactionLimit, randomState):
+	def __init__(self, sequences, monomerLimits, reactionLimit, randomState, elongation_rates):
 		# Gather inputs
 		self._sequences = sequences
 		self._monomerLimits = monomerLimits
 		self._reactionLimit = reactionLimit
 		self._randomState = randomState
+		self.elongation_rates = elongation_rates / np.max(elongation_rates)
 
 		# Prepare for iteration
 		self._setup()
@@ -107,12 +112,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		#     (num_monomers, num_sequences, num_steps), a bitmask of monomer usage.
 		self._sequenceMonomers = np.empty(
 			(self._nMonomers, self._nSequences, self._sequenceLength),
-			dtype = np.bool
-			)
+			dtype = np.bool)
 		for monomerIndex in xrange(self._nMonomers):
 			self._sequenceMonomers[monomerIndex, ...] = (
-				self._sequences == monomerIndex
-				)
+				self._sequences == monomerIndex)
 
 		# sequenceReactions: ndarray of bool, shape (num_sequences, num_steps), of
 		#     sequence continuation.
@@ -130,9 +133,9 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		#     currently active sequences.
 		self._activeSequencesIndexes = np.arange(self._nSequences)
 		self._currentStep = 0
+		self._progress = np.zeros(self._nSequences)
 		self._activeSequencesIndexes = self._activeSequencesIndexes[
-			self._sequenceReactions[:, self._currentStep]
-			]
+			self._sequenceReactions[:, self._currentStep]]
 
 		self._update_elongation_resource_demands()
 		self._monomerHistory = np.empty((self._maxElongation, self._nMonomers), np.int64)
@@ -189,14 +192,24 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 		projectionIndex = 0
 		notLimited = True
+		advancementIndex = np.zeros(self._nSequences, np.int64)
 		monomerProjection = np.zeros(self._nMonomers, np.int64)
 
 		# advance one step at a time until a sequence is limited
 		while notLimited and projectionIndex < self._maxElongation:
-			index = self._currentStep + projectionIndex
+			step = self._currentStep + projectionIndex
+			index = self._progress + advancementIndex
+			level = self.elongation_rates * step
+			last_unit = (level - np.floor(level))
+			elongating = np.union1d(
+				np.where(self.elongation_rates >= last_unit),
+				np.where(last_unit == 0.0))
+			active = np.intersect1d(self._activeSequencesIndexes, elongating)
+
+			# elongating = sample_array(self.elongation_rates[self._activeSequencesIndexes])
 			monomerStep = sum_monomers(
 				self._sequenceMonomers[:, :, index],
-				self._activeSequencesIndexes)
+				active)
 
 			self._monomerHistory[projectionIndex] = monomerProjection + monomerStep
 			self._monomerIsLimiting = self._monomerHistory[projectionIndex] > self._monomerLimits
@@ -205,14 +218,14 @@ class polymerize(object): # Class name is lowercase because interface is functio
 			else:
 				monomerProjection += monomerStep
 				projectionIndex += 1
+				advancementIndex[active] += 1
 
 		reactionLimitedAt = self._maxElongation
 
 		# reactionLimitingExtents: ndarray of integer, shape (integer,), all
 		# the currentStep-relative step numbers beyond the reactionLimit.
 		reactionLimitingExtents = np.where(
-			self._totalReactions > self._reactionLimit
-			)[0]
+			self._totalReactions > self._reactionLimit)[0]
 
 		if reactionLimitingExtents.size:
 			reactionLimitedAt = reactionLimitingExtents[0]
@@ -260,8 +273,7 @@ class polymerize(object): # Class name is lowercase because interface is functio
 			# sequencesWithMonomer: ndarray of integer, shape (integer,), the
 			# active sequence indexes that use this monomer in currentStep.
 			sequencesWithMonomer = np.where(
-				self._sequenceMonomers[monomerIndex, self._activeSequencesIndexes, self._currentStep]
-				)[0]
+				self._sequenceMonomers[monomerIndex, self._activeSequencesIndexes, self._currentStep])[0]
 
 			nToCull = sequencesWithMonomer.size - monomerLimit
 
@@ -272,8 +284,7 @@ class polymerize(object): # Class name is lowercase because interface is functio
 			culledIndexes = self._randomState.choice(
 				sequencesWithMonomer,
 				nToCull,
-				replace = False
-				)
+				replace = False)
 
 			sequencesToCull[culledIndexes] = True
 
@@ -282,8 +293,7 @@ class polymerize(object): # Class name is lowercase because interface is functio
 			# sequencesWithReaction: ndarray of integer, shape (integer,), the
 			# active sequence indexes not yet ruled out.
 			sequencesWithReaction = np.where(
-				~sequencesToCull
-				)[0]
+				~sequencesToCull)[0]
 
 			nToCull = sequencesWithReaction.size - self._reactionLimit
 
@@ -293,8 +303,7 @@ class polymerize(object): # Class name is lowercase because interface is functio
 				culledIndexes = self._randomState.choice(
 					sequencesWithReaction,
 					nToCull,
-					replace = False
-					)
+					replace = False)
 
 				sequencesToCull[culledIndexes] = True
 
@@ -334,5 +343,4 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 		self.sequenceElongation = np.fmin(
 			self.sequenceElongation,
-			self._sequenceLengths
-			)
+			self._sequenceLengths)
