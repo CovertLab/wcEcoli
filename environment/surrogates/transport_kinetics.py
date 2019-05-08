@@ -24,12 +24,13 @@ TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
 
 CSV_DIALECT = csv.excel_tab
-TRANSPORT_REACTIONS_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'transport_reactions.tsv')
+LOOKUP_DIR = os.path.join('environment', 'condition', 'look_up_tables')
+TRANSPORT_REACTIONS_FILE = os.path.join(LOOKUP_DIR, 'transport_reactions.tsv')
+CONC_LOOKUP_MINIMAL = os.path.join(LOOKUP_DIR, 'avg_concentrations', 'minimal.tsv')
+CONC_LOOKUP_ANAEROBIC = os.path.join(LOOKUP_DIR, 'avg_concentrations', 'minimal_minus_oxygen.tsv')
+CONC_LOOKUP_AA = os.path.join(LOOKUP_DIR, 'avg_concentrations', 'minimal_plus_amino_acids.tsv')
 KINETIC_PARAMETERS_FILE = os.path.join('environment', 'kinetic_rate_laws', 'parameters', 'glt.json')
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
-WCM_SIMDATA_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'wcm_sim_data.json')
-
-mM_to_M = 1E-3 # convert mmol/L to mol/L
 
 class TransportKinetics(CellSimulation):
 	'''
@@ -42,7 +43,7 @@ class TransportKinetics(CellSimulation):
 		self.media_id = state.get('media_id', 'minimal')
 		self.timestep = 1.0
 		self.environment_change = {}
-		self.volume = 1.0  # (fL)
+		self.volume = 1.0  # (fL) TODO (Eran) volume needs to change for transport fluxes to translate to increasing delta counts
 		self.division_time = 100
 		self.nAvogadro = constants.N_A
 
@@ -82,31 +83,39 @@ class TransportKinetics(CellSimulation):
 				self.molecule_to_external_map[molecule_id + location] = molecule_id
 				self.external_to_molecule_map[molecule_id] = molecule_id + location
 
-		# load WCM data to set initial concentrations
-		with open(WCM_SIMDATA_FILE, 'r') as f:
-			wcm_sim_out = json.loads(f.read())
+		# load saved wcEcoli concentrations of molecules from minimal condition
+		wcm_concs = {}
+		with open(CONC_LOOKUP_AA, 'rU') as csvfile:
+			reader = JsonReader(
+				ifilter(lambda x: x.lstrip()[0] != "#", csvfile),  # Strip comments
+				dialect=csv.excel_tab)
+			for row in reader:
+				molecule_id = row['molecule id']
+				avg_conc = row['average concentration mmol/L']
+				wcm_concs[molecule_id] = avg_conc
 
 		# load dict of saved parameters
 		with open(KINETIC_PARAMETERS_FILE, 'r') as fp:
-			self.kinetic_parameters = json.load(fp)
+			kinetic_parameters = json.load(fp)
 
 		# list of reactions to construct
-		kinetic_reaction_ids = self.kinetic_parameters.keys()
+		self.kinetic_reaction_ids = kinetic_parameters.keys()
 
 		# make dict for all reactions in kinetic_reaction_ids
 		kinetic_reactions = {
 			reaction_id: specs
 			for reaction_id, specs in self.all_transport_reactions.iteritems()
-			if reaction_id in kinetic_reaction_ids}
+			if reaction_id in self.kinetic_reaction_ids}
 
 		# Make the kinetic model
-		self.kinetic_rate_laws = KineticFluxModel(kinetic_reactions, self.kinetic_parameters)
+		self.kinetic_rate_laws = KineticFluxModel(kinetic_reactions, kinetic_parameters)
 
 		# Get list of molecule_ids used by kinetic rate laws
 		self.molecule_ids = self.kinetic_rate_laws.molecule_ids
 
 		# Get concentrations of all molecule_ids from wcm
-		self.concentrations = initialize_state(wcm_sim_out, self.molecule_ids)
+		self.concentrations = {mol_id: wcm_concs[mol_id] for mol_id in self.molecule_ids}
+		self.concentrations['GLT[p]'] = 0.6  # mmol/L
 
 		# Set initial fluxes
 		self.transport_fluxes = self.kinetic_rate_laws.get_fluxes(self.concentrations)
@@ -114,7 +123,7 @@ class TransportKinetics(CellSimulation):
 
 	def update_state(self):
 		# nAvogadro is in 1/mol --> convert to 1/mmol. volume is in fL --> convert to L
-		self.molar_to_counts = (self.nAvogadro * 1e-3) * (self.volume * 1e-15)
+		self.millimolar_to_counts = (self.nAvogadro * 1e-3) * (self.volume * 1e-15)
 
 		# Get transport fluxes, convert to change in counts
 		self.transport_fluxes = self.kinetic_rate_laws.get_fluxes(self.concentrations)
@@ -144,9 +153,9 @@ class TransportKinetics(CellSimulation):
 		return self.local_time
 
 	def apply_outer_update(self, update):
-		self.external_concentrations = update['concentrations']
 		self.media_id = update['media_id']
-		boundary_concentrations = update.get('boundary_view')  # in mmol/L
+		self.external_concentrations = update.get('concentrations', {})
+		boundary_concentrations = update.get('boundary_view', {})  # in mmol/L
 
 		# Map from external_id to concentration key
 		new_concentrations = {
@@ -172,6 +181,8 @@ class TransportKinetics(CellSimulation):
 		time.sleep(1.0)  # pause for better coordination with Lens visualization. TODO: remove this
 
 	def generate_inner_update(self):
+		# round off changes in counts
+		self.environment_change = {mol_id: int(counts) for mol_id, counts in self.environment_change.iteritems()}
 		return {
 			'volume': self.volume,
 			'motile_force': self.motile_force,
@@ -184,7 +195,8 @@ class TransportKinetics(CellSimulation):
 	# TODO (eran) -- move this function to rate_law_utilities
 	## Flux-related functions
 	def flux_to_counts(self, fluxes):
-		rxn_counts = {reaction_id: int(self.molar_to_counts * flux) for reaction_id, flux in fluxes.iteritems()}
+		# rxn_counts aren't rounded off here, need to be rounded off before generate_inner_update is sent
+		rxn_counts = {reaction_id: self.millimolar_to_counts * flux for reaction_id, flux in fluxes.iteritems()}
 		delta_counts = {}
 		for reaction_id, rxn_count in rxn_counts.iteritems():
 			stoichiometry = self.all_transport_reactions[reaction_id]['stoichiometry']
@@ -196,19 +208,3 @@ class TransportKinetics(CellSimulation):
 				else:
 					delta_counts[substrate] = delta
 		return delta_counts
-
-# TODO (Eran) -- use the rate law utilities function
-def initialize_state(wcm_sim_out, molecule_ids):
-	''' set all initial undefined molecular concentrations to their initial concentrations in the WCM'''
-
-	time_index = int(len(wcm_sim_out['time']) / 2)  # get midpoint of timeseries
-	cell_volume_fL = wcm_sim_out['volume'][time_index]  # [fL]
-	cell_volume_L = cell_volume_fL / 1e15  # convert to L
-	avogadro = constants.Avogadro
-
-	concentrations = {} #molecule_id: 0.0 for molecule_id in molecule_ids}
-	for molecule_id in molecule_ids:
-		molecule_counts = wcm_sim_out[molecule_id][time_index]
-		concentrations[molecule_id] = 1e3 * molecule_counts / avogadro / cell_volume_L  # mmol / L
-
-	return concentrations

@@ -55,7 +55,7 @@ class KineticFluxModel(object):
 		molecules and their concentrations, in mmol/L.
 
 		Returns:
-			reaction_fluxes (dict) - with fluxes for all reactionss
+			reaction_fluxes (dict) - with fluxes for all reactions
 		'''
 
 		# Initialize reaction_fluxes and exchange_fluxes dictionaries

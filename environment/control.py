@@ -181,7 +181,7 @@ class EnvironmentCommand(AgentCommand):
 		parser.add_argument(
 			'-m', '--media',
 			type=str,
-			default='minimal',
+			default='minimal_plus_amino_acids',
 			help='The environment media')
 
 		parser.add_argument(

@@ -57,7 +57,7 @@ class EnvironmentAgent(Outer):
 			print_send=False)
 
 def boot_lattice(agent_id, agent_type, agent_config):
-	media_id = agent_config.get('media_id', 'minimal')
+	media_id = agent_config.get('media_id', 'minimal_plus_amino_acids')
 	media = agent_config.get('media', {})
 	print("Media condition: {}".format(media_id))
 	if not media:

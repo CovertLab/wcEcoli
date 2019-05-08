@@ -4,7 +4,7 @@
       "ATP[c]": null,
       "GLT[p]": 1e-3,
       "WATER[c]": null,
-      "kcat_f": 0.6
+      "kcat_f": 1e9
     }
   },
   "TRANS-RXN-122": {
@@ -22,22 +22,22 @@
   },
   "TRANS-RXN-162": {
     "GLTP-MONOMER[i]": {
-      "GLT[p]": 1e-3,
+      "GLT[p]": 1e-4,
       "NA+[p]": null,
       "PROTON[p]": null,
-      "kcat_f": 4.3
+      "kcat_f": 1e10
     }
   },
   "TRANS-RXN-261": {
     "XASA-MONOMER[i]": {
-      "4-AMINO-BUTYRATE[c]": 1e-1,
+      "4-AMINO-BUTYRATE[c]": null,
       "GLT[p]": 1e-3,
-      "kcat_f": 74.2
+      "kcat_f": 1e11
     }
   },
   "TRANS-RXN0-569-GLT//GLT.9.": {
     "G6458-MONOMER[i]": {
-      "GLT[c]": 1e-3,
+      "GLT[c]": 1e-4,
       "kcat_f": 0.0
     }
   }

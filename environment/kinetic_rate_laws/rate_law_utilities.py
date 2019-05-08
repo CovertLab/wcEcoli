@@ -12,9 +12,12 @@ from itertools import ifilter
 
 import environment.kinetic_rate_laws.kinetic_rate_laws as rate_laws
 
-TRANSPORT_REACTIONS_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'transport_reactions.tsv')
-EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
-WCM_SIMDATA_FILE = os.path.join('environment', 'condition', 'look_up_tables', 'wcm_sim_data.json')
+
+LOOKUP_DIR = os.path.join('environment', 'condition', 'look_up_tables')
+TRANSPORT_REACTIONS_FILE = os.path.join(LOOKUP_DIR, 'transport_reactions.tsv')
+CONC_LOOKUP_MINIMAL = os.path.join(LOOKUP_DIR, 'avg_concentrations', 'minimal.tsv')
+
+# external molecules file to make a map between
 KINETIC_PARAMETERS_FILE = os.path.join('environment', 'kinetic_rate_laws', 'parameters', 'glt.json')
 
 # set output directory and files
@@ -49,6 +52,16 @@ def test_rate_laws():
 				'catalyzed by': catalyzed,
 			}
 
+	wcm_concs_minimal = {}
+	with open(CONC_LOOKUP_MINIMAL, 'rU') as csvfile:
+		reader = JsonReader(
+			ifilter(lambda x: x.lstrip()[0] != "#", csvfile),  # Strip comments
+			dialect=csv.excel_tab)
+		for row in reader:
+			molecule_id = row['molecule id']
+			avg_conc = row['average concentration mmol/L']
+			wcm_concs_minimal[molecule_id] = avg_conc
+
 	# load dict of saved parameters
 	with open(KINETIC_PARAMETERS_FILE, 'r') as fp:
 		kinetic_parameters = json.load(fp)
@@ -66,34 +79,14 @@ def test_rate_laws():
 	# Get list of molecule_ids used by kinetic rate laws
 	molecule_ids = kinetic_rate_laws.molecule_ids
 
-	# initialize concentrations and get fluxes
-	with open(WCM_SIMDATA_FILE, 'r') as f:
-		wcm_sim_out = json.loads(f.read())
-
-	# get concentrations from wcm
-	concentrations = initialize_state(wcm_sim_out, molecule_ids)
+	# get concentrations from wcm (mmol/L)
+	concentrations = {mol_id: wcm_concs_minimal[mol_id] for mol_id in molecule_ids}
 
 	# get reaction fluxes
 	reaction_fluxes = kinetic_rate_laws.get_fluxes(concentrations)
 
 	# run analyses and save output
 	analyze_rate_laws(kinetic_rate_laws, concentrations)
-
-
-def initialize_state(wcm_sim_out, molecule_ids):
-	''' set all initial undefined molecular concentrations to their initial concentrations in the WCM'''
-
-	time_index = int(len(wcm_sim_out['time']) / 2)  # get midpoint of timeseries
-	cell_volume_fL = wcm_sim_out['volume'][time_index]  # [fL]
-	cell_volume_L = cell_volume_fL / 1e15  # convert to L
-	avogadro = constants.Avogadro
-
-	concentrations = {} #molecule_id: 0.0 for molecule_id in molecule_ids}
-	for molecule_id in molecule_ids:
-		molecule_counts = wcm_sim_out[molecule_id][time_index]
-		concentrations[molecule_id] = 1e3 * molecule_counts / avogadro / cell_volume_L  # mmol / L
-
-	return concentrations
 
 
 def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
@@ -299,7 +292,6 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 	print('rate law analysis plot saved')
 
 
-
 def save_rate_law_configuration_template(reactions):
 	'''
 	Create an empty parameter file for convenience kinetics rate laws structured by reactions
@@ -320,8 +312,10 @@ def save_rate_law_configuration_template(reactions):
 	print('rate law parameter template saved')
 
 
-# for running this script on its own
 if SAVE_RATE_LAWS_CONFIG:
+	'''
+	make reaction dictionary for a set of exchange molecules and pass to save_rate_law_configuration_template
+	'''
 
 	# set up reactions
 	exchange_molecules = ['GLT[p]']
@@ -353,6 +347,7 @@ if SAVE_RATE_LAWS_CONFIG:
 
 
 if ANALYZE_RATE_LAWS:
+	'''test the rate law specified in KINETIC_PARAMETERS_FILE'''
 
 	# Run test and save output
 	test_rate_laws()
