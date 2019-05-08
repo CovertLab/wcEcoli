@@ -8,17 +8,10 @@ import json
 
 from reconstruction.spreadsheets import JsonReader
 from itertools import ifilter
-# from wholecell.utils import units
 
 from agent.inner import CellSimulation
 from environment.kinetic_rate_laws.kinetic_rate_laws import KineticFluxModel
 
-# COUNTS_UNITS = units.mol
-# VOLUME_UNITS = units.L
-# MASS_UNITS = units.g
-# TIME_UNITS = units.s
-# CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
-# FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 
 TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
@@ -35,6 +28,8 @@ EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_
 class TransportKinetics(CellSimulation):
 	'''
 	A surrogate that uses kinetic rate laws to determine transport flux
+
+	# TODO (Eran) -- bring back units management
 	'''
 
 	def __init__(self, state):
@@ -83,7 +78,7 @@ class TransportKinetics(CellSimulation):
 				self.molecule_to_external_map[molecule_id + location] = molecule_id
 				self.external_to_molecule_map[molecule_id] = molecule_id + location
 
-		# load saved wcEcoli concentrations of molecules from minimal condition
+		# Load saved wcEcoli concentrations of molecules from minimal condition
 		wcm_concs = {}
 		with open(CONC_LOOKUP_AA, 'rU') as csvfile:
 			reader = JsonReader(
@@ -94,23 +89,25 @@ class TransportKinetics(CellSimulation):
 				avg_conc = row['average concentration mmol/L']
 				wcm_concs[molecule_id] = avg_conc
 
-		# load dict of saved parameters
+		# Load dict of saved parameters
 		with open(KINETIC_PARAMETERS_FILE, 'r') as fp:
 			kinetic_parameters = json.load(fp)
 
-		# list of reactions to construct
-		self.kinetic_reaction_ids = kinetic_parameters.keys()
+		# List of reactions to construct
+		# This is used by transport_composite to set boundary_fluxes in wcEcoli
+		self.transport_reactions_ids = kinetic_parameters.keys()
 
-		# make dict for all reactions in kinetic_reaction_ids
+		# Make dict for all reactions in transport_reactions_ids
 		kinetic_reactions = {
 			reaction_id: specs
 			for reaction_id, specs in self.all_transport_reactions.iteritems()
-			if reaction_id in self.kinetic_reaction_ids}
+			if reaction_id in self.transport_reactions_ids}
 
 		# Make the kinetic model
 		self.kinetic_rate_laws = KineticFluxModel(kinetic_reactions, kinetic_parameters)
 
 		# Get list of molecule_ids used by kinetic rate laws
+		# This is used by transport_composite to set boundary_views in wcEcoli
 		self.molecule_ids = self.kinetic_rate_laws.molecule_ids
 
 		# Get concentrations of all molecule_ids from wcm
@@ -163,8 +160,8 @@ class TransportKinetics(CellSimulation):
 			for mol_id, conc in self.external_concentrations.iteritems()}
 
 		# Update concentrations dict
-		self.concentrations.update(new_concentrations)
 		self.concentrations.update(boundary_concentrations)
+		self.concentrations.update(new_concentrations)
 
 		# Reset environment change
 		self.environment_change = {}
@@ -181,7 +178,7 @@ class TransportKinetics(CellSimulation):
 		time.sleep(1.0)  # pause for better coordination with Lens visualization. TODO: remove this
 
 	def generate_inner_update(self):
-		# round off changes in counts
+		# Round off changes in counts
 		self.environment_change = {mol_id: int(counts) for mol_id, counts in self.environment_change.iteritems()}
 		return {
 			'volume': self.volume,
@@ -195,7 +192,7 @@ class TransportKinetics(CellSimulation):
 	# TODO (eran) -- move this function to rate_law_utilities
 	## Flux-related functions
 	def flux_to_counts(self, fluxes):
-		# rxn_counts aren't rounded off here, need to be rounded off before generate_inner_update is sent
+		# rxn_counts are not rounded off here, need to be rounded off before generate_inner_update is sent
 		rxn_counts = {reaction_id: self.millimolar_to_counts * flux for reaction_id, flux in fluxes.iteritems()}
 		delta_counts = {}
 		for reaction_id, rxn_count in rxn_counts.iteritems():

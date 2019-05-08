@@ -96,6 +96,7 @@ class TransportMinimal(CellSimulation):
 		exchange_molecules = ["OXYGEN-MOLECULE[p]", "GLC[p]"]
 		exchange_ids = exchange_molecules + aa_p_ids
 		self.transport_reactions_ids = self.reactions_from_exchange(exchange_ids)
+		self.molecule_ids = [] # empty molecule ids, to be used by transport_composite
 
 		# get the current flux lookup table, and set initial transport fluxes
 		self.current_flux_lookup = self.flux_lookup[self.media_id]

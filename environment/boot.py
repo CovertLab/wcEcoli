@@ -13,8 +13,7 @@ from environment.surrogates.chemotaxis import Chemotaxis
 from environment.surrogates.endocrine import Endocrine
 from environment.surrogates.transport_lookup_minimal import TransportMinimal
 from environment.surrogates.transport_kinetics import TransportKinetics
-from environment.surrogates.lookup_composite import LookupComposite
-from environment.surrogates.kinetics_composite import KineticsComposite
+from environment.surrogates.transport_composite import TransportComposite
 from models.ecoli.sim.simulation import ecoli_simulation
 from environment.condition.make_media import Media
 
@@ -366,7 +365,7 @@ def initialize_lookup_composite(boot_config, synchronize_config):
 		'time': 'ecoli',
 		'divide': 'ecoli'}
 
-	return LookupComposite(boot_config, synchronize_config, network_config)
+	return TransportComposite(boot_config, synchronize_config, network_config)
 
 def boot_lookup_composite(agent_id, agent_type, agent_config):
 	agent_id = agent_id
@@ -428,7 +427,7 @@ def initialize_kinetics_composite(boot_config, synchronize_config):
 		'time': 'ecoli',
 		'divide': 'ecoli'}
 
-	return KineticsComposite(boot_config, synchronize_config, network_config)
+	return TransportComposite(boot_config, synchronize_config, network_config)
 
 def boot_kinetics_composite(agent_id, agent_type, agent_config):
 	agent_id = agent_id
