@@ -17,9 +17,9 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.utils import filepath
 
-from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
+from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
 
-FLUX_UNITS = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
+FLUX_UNITS = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS)
 CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
 
 BURN_IN_STEPS = 20 # remove initialization artifacts
@@ -48,26 +48,24 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# main reader
 		initialTime = main_reader.readAttribute("initialTime")
-		time = main_reader.readColumn("time") - initialTime
+		time = main_reader.readColumn("time")[BURN_IN_STEPS:] - initialTime
 
 		# mass reader
-		cell_mass = mass_reader.readColumn("cellMass")
-		dry_mass = mass_reader.readColumn("dryMass")
+		cell_mass = mass_reader.readColumn("cellMass")[BURN_IN_STEPS:]
 		cell_density = sim_data.constants.cellDensity
 		nAvogadro = sim_data.constants.nAvogadro
 
 		cell_volume = np.array([mass * units.fg / cell_density for mass in cell_mass])
-		coefficient = dry_mass / cell_mass * cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
 		counts_to_molar = np.array([1 / (nAvogadro * volume) for volume in cell_volume])
 
 		# enzyme kinetics reader
-		allTargetFluxes = FLUX_UNITS * (enzyme_kinetics_reader.readColumn("targetFluxes").T / coefficient).T
-		allActualFluxes = FLUX_UNITS * (enzyme_kinetics_reader.readColumn("actualFluxes").T / coefficient).T
+		allTargetFluxes = FLUX_UNITS * enzyme_kinetics_reader.readColumn("targetFluxes")[BURN_IN_STEPS:]
+		allActualFluxes = FLUX_UNITS * enzyme_kinetics_reader.readColumn("actualFluxes")[BURN_IN_STEPS:]
 		kineticsConstrainedReactions = np.array(enzyme_kinetics_reader.readAttribute("kineticsConstrainedReactions"))
 		boundaryConstrainedReactions = np.array(enzyme_kinetics_reader.readAttribute("boundaryConstrainedReactions"))
 
-		allTargetFluxes = allTargetFluxes.asNumber(units.mmol / units.g / units.h)
-		allActualFluxes = allActualFluxes.asNumber(units.mmol / units.g / units.h)
+		allTargetFluxes = allTargetFluxes.asNumber(FLUX_UNITS)
+		allActualFluxes = allActualFluxes.asNumber(FLUX_UNITS)
 
 		# boundary target fluxes
 		boundaryTargetFluxes = allTargetFluxes[:, len(kineticsConstrainedReactions):]
@@ -85,7 +83,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 		molecule_ids = bulkMolecules.readAttribute("objectNames")
 		enzyme_indexes = np.array([molecule_ids.index(mol_id) for mol_id in enzyme_ids_list], np.int)
-		enzyme_counts = bulkMolecules.readColumn("counts")[:, enzyme_indexes]
+		enzyme_counts = bulkMolecules.readColumn("counts")[BURN_IN_STEPS:, enzyme_indexes]
 
 		enzyme_concs = counts_to_molar * enzyme_counts.T
 		enzyme_concs_mM = [[conc.asNumber(CONC_UNITS) for conc in conc_vec]
@@ -126,7 +124,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 			# add labels
 			ax1.set_xlabel("time (min)", fontsize = 12)
-			ax1.set_ylabel("flux (mmol/g/hr)", fontsize = 12)
+			ax1.set_ylabel("flux (mmol/L/s)", fontsize = 12)
 			ax1.set_title("%i. %s" % (row_idx, reaction_id[:n_char_of_reaction_id]), fontsize=14, y=1.15)
 			set_ticks(ax1, time)
 			ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=8)

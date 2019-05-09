@@ -11,7 +11,6 @@ from itertools import ifilter
 
 from agent.inner import CellSimulation
 from environment.kinetic_rate_laws.kinetic_rate_laws import KineticFluxModel
-from environment.condition.make_media import Media
 
 
 TUMBLE_JITTER = 2.0 # (radians)
@@ -20,10 +19,15 @@ DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
 CSV_DIALECT = csv.excel_tab
 LOOKUP_DIR = os.path.join('environment', 'condition', 'look_up_tables')
 TRANSPORT_REACTIONS_FILE = os.path.join(LOOKUP_DIR, 'transport_reactions.tsv')
-LIST_OF_LOOKUP_FILES = (
+LIST_CONC_LOOKUP_FILES = (
 	os.path.join(LOOKUP_DIR, "avg_concentrations", "minimal.tsv"),
 	os.path.join(LOOKUP_DIR, "avg_concentrations", "minimal_minus_oxygen.tsv"),
 	os.path.join(LOOKUP_DIR, "avg_concentrations", "minimal_plus_amino_acids.tsv"),
+)
+LIST_FLUX_LOOKUP_FILES = (
+	os.path.join(LOOKUP_DIR, "avg_flux", "minimal.tsv"),
+	os.path.join(LOOKUP_DIR, "avg_flux", "minimal_minus_oxygen.tsv"),
+	os.path.join(LOOKUP_DIR, "avg_flux", "minimal_plus_amino_acids.tsv"),
 )
 
 
@@ -83,9 +87,9 @@ class TransportKinetics(CellSimulation):
 				self.molecule_to_external_map[molecule_id + location] = molecule_id
 				self.external_to_molecule_map[molecule_id] = molecule_id + location
 
-		# Load saved wcEcoli avergage concentrations of molecules from all media conditions
+		# Load saved wcEcoli average concentrations of molecules from all media conditions
 		self.avg_conc_lookup = {}
-		for file_name in LIST_OF_LOOKUP_FILES:
+		for file_name in LIST_CONC_LOOKUP_FILES:
 			media = file_name.split(os.path.sep)[-1].split(".")[0]
 			self.avg_conc_lookup[media] = {}
 			with open(file_name, 'rU') as csvfile:
@@ -94,6 +98,18 @@ class TransportKinetics(CellSimulation):
 					molecule_id = row["molecule id"]
 					conc = row["average concentration mmol/L"]
 					self.avg_conc_lookup[media][molecule_id] = conc
+
+		# Load saved wcEcoli average fluxes from all media conditions
+		self.avg_flux_lookup = {}
+		for file_name in LIST_FLUX_LOOKUP_FILES:
+			media = file_name.split(os.path.sep)[-1].split(".")[0]
+			self.avg_flux_lookup[media] = {}
+			with open(file_name, 'rU') as csvfile:
+				reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+				for row in reader:
+					reaction_id = row["reaction id"]
+					flux = row["average flux mmol/L"]
+					self.avg_flux_lookup[media][reaction_id] = flux
 
 		# Load dict of saved parameters
 		with open(KINETIC_PARAMETERS_FILE, 'r') as fp:
@@ -120,16 +136,13 @@ class TransportKinetics(CellSimulation):
 		current_conc_lookup = self.avg_conc_lookup[self.media_id]
 		self.concentrations = {mol_id: current_conc_lookup[mol_id] for mol_id in self.molecule_ids}
 
-		make_media = Media()
-		media = make_media.make_recipe(self.media_id)
-		media = {self.external_to_molecule_map[mol_id]: conc for mol_id, conc in media.iteritems()}
-
-		# get current media into concentrations.
-		self.concentrations.update(media)
-
 		# Set initial fluxes
 		self.transport_fluxes = self.kinetic_rate_laws.get_fluxes(self.concentrations)
 
+		# use lookup to set initial fluxes
+		current_flux_lookup = self.avg_flux_lookup[self.media_id]
+		self.transport_fluxes = {reaction_id: current_flux_lookup[reaction_id]
+								 for reaction_id in self.transport_reactions_ids}
 
 	def update_state(self):
 		# nAvogadro is in 1/mol --> convert to 1/mmol. volume is in fL --> convert to L

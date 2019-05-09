@@ -58,7 +58,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 		# load target transport reactions for boundary
 		boundary_reactions = sim._boundary_reactions
-		self.transport_fluxes = {reaction: 0.0 for reaction in boundary_reactions}
+		self.transport_fluxes = {reaction: 0.0 for reaction in boundary_reactions}  # mmol/L
 
 		# load views of molecules for boundary
 		self.boundary_view_molecules = sim._boundary_views
