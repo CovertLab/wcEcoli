@@ -212,11 +212,12 @@ class Metabolism(wholecell.processes.process.Process):
 		if hasattr(sim_data.process.metabolism, "catalystShuffleIdxs") and sim_data.process.metabolism.catalystShuffleIdxs != None:
 			self.shuffleCatalyzedIdxs = sim_data.process.metabolism.catalystShuffleIdxs
 
+		# Track updated AA concentration targets with tRNA charging
+		self.use_trna_charging = sim._trna_charging
 		self.aa_targets = {}
+		self.aa_targets_not_updated = set(['L-SELENOCYSTEINE[c]', 'GLT[c]', 'LEU[c]'])
 		self.aa_names = sim_data.moleculeGroups.aaIDs
 		self.aas = self.bulkMoleculesView(self.aa_names)
-
-		self.use_trna_charging = sim._trna_charging
 
 	def calculateRequest(self):
 		self.metabolites.requestAll()
@@ -246,24 +247,7 @@ class Metabolism(wholecell.processes.process.Process):
 			)
 
 		if self.use_trna_charging:
-			# Skips updates to certain molecules:
-			# - L-SELENOCYSTEINE: rare amino acid and led to high variability
-			# - GLT: high measured concentration that never doubled causing slow growth
-			# - LEU: increase in concentration caused TF regulation to stop transcription
-			#   of AA synthesis pathway genes
-			if len(self._sim.processes['PolypeptideElongation'].aa_count_diff):
-				for aa, diff in self._sim.processes['PolypeptideElongation'].aa_count_diff.items():
-					if aa == 'L-SELENOCYSTEINE[c]' or aa == 'GLT[c]' or aa == 'LEU[c]':
-						continue
-					self.aa_targets[aa] += diff
-			else:
-				for aa, counts in zip(self.aa_names, self.aas.total_counts()):
-					if aa == 'L-SELENOCYSTEINE[c]' or aa == 'GLT[c]' or aa == 'LEU[c]':
-						continue
-					self.aa_targets[aa] = counts
-
-			for aa, counts in self.aa_targets.items():
-				self.concModificationsBasedOnCondition[aa] = counts * countsToMolar
+			self.concModificationsBasedOnCondition.update(self.update_amino_acid_targets(countsToMolar))
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
@@ -447,6 +431,44 @@ class Metabolism(wholecell.processes.process.Process):
 			self.biomass_concentrations[doubling_time] = self._getBiomassAsConcentrations(doubling_time)
 
 		return self.biomass_concentrations[doubling_time]
+
+	def update_amino_acid_targets(self, counts_to_molar):
+		'''
+		Finds new amino acid concentration targets based on difference in supply
+		and number of amino acids used in polypeptide_elongation
+
+		Args:
+			counts_to_molar (float with mol/volume units): conversion from counts
+				to molar for the current state of the cell
+
+		Returns:
+			dict {AA name (str): AA conc (float with mol/volume units)}:
+				new concentration targets for each amino acid
+
+		Skips updates to certain molecules defined in self.aa_targets_not_updated:
+		- L-SELENOCYSTEINE: rare amino acid that led to high variability when updated
+		- GLT: high measured concentration that never doubled causing slow growth
+		- LEU: increase in concentration caused TF regulation to stop transcription
+		  of AA synthesis pathway genes
+
+		TODO:
+		- remove access to PolypeptideElongation class attribute (aa_count_diff)
+		'''
+
+		count_diff = self._sim.processes['PolypeptideElongation'].aa_count_diff
+
+		if len(count_diff):
+			for aa, diff in count_diff.items():
+				if aa in self.aa_targets_not_updated:
+					continue
+				self.aa_targets[aa] += diff
+		else:
+			for aa, counts in zip(self.aa_names, self.aas.total_counts()):
+				if aa in self.aa_targets_not_updated:
+					continue
+				self.aa_targets[aa] = counts
+
+		return {aa: counts * counts_to_molar for aa, counts in self.aa_targets.items()}
 
 
 class Boundary(object):
