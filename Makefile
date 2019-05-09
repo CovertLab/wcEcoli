@@ -1,4 +1,4 @@
-.PHONY: compile, clean, clobber
+.PHONY: compile, clean
 
 PYTHON_INCLUDE=$(shell pyenv virtualenv-prefix)/include/python2.7
 PYTHON_LIB=$(shell pyenv virtualenv-prefix)/lib
@@ -14,8 +14,4 @@ clean:
 	find . -name "*.o" -exec rm -fr {} \;
 	find . -name "*.so" -exec rm -fr {} \;
 	rm -fr build
-	rm -fr launcher_20*/
-
-clobber:
-	rm -fr out/*
-	rm -fr block_20*
+	rm -fr launcher_20* block_20*
