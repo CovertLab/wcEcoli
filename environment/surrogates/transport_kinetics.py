@@ -11,6 +11,7 @@ from itertools import ifilter
 
 from agent.inner import CellSimulation
 from environment.kinetic_rate_laws.kinetic_rate_laws import KineticFluxModel
+from environment.condition.make_media import Media
 
 
 TUMBLE_JITTER = 2.0 # (radians)
@@ -19,9 +20,13 @@ DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
 CSV_DIALECT = csv.excel_tab
 LOOKUP_DIR = os.path.join('environment', 'condition', 'look_up_tables')
 TRANSPORT_REACTIONS_FILE = os.path.join(LOOKUP_DIR, 'transport_reactions.tsv')
-CONC_LOOKUP_MINIMAL = os.path.join(LOOKUP_DIR, 'avg_concentrations', 'minimal.tsv')
-CONC_LOOKUP_ANAEROBIC = os.path.join(LOOKUP_DIR, 'avg_concentrations', 'minimal_minus_oxygen.tsv')
-CONC_LOOKUP_AA = os.path.join(LOOKUP_DIR, 'avg_concentrations', 'minimal_plus_amino_acids.tsv')
+LIST_OF_LOOKUP_FILES = (
+	os.path.join(LOOKUP_DIR, "avg_concentrations", "minimal.tsv"),
+	os.path.join(LOOKUP_DIR, "avg_concentrations", "minimal_minus_oxygen.tsv"),
+	os.path.join(LOOKUP_DIR, "avg_concentrations", "minimal_plus_amino_acids.tsv"),
+)
+
+
 KINETIC_PARAMETERS_FILE = os.path.join('environment', 'kinetic_rate_laws', 'parameters', 'glt.json')
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
 
@@ -35,7 +40,8 @@ class TransportKinetics(CellSimulation):
 	def __init__(self, state):
 		self.initial_time = state.get('time', 0.0)
 		self.local_time = state.get('time', 0.0)
-		self.media_id = state.get('media_id', 'minimal')
+		self.media_id = state.get('media_id', 'minimal_plus_amino_acids')
+		# self.media = state.get('media', {})
 		self.timestep = 1.0
 		self.environment_change = {}
 		self.volume = 1.0  # (fL) TODO (Eran) volume needs to change for transport fluxes to translate to increasing delta counts
@@ -78,16 +84,17 @@ class TransportKinetics(CellSimulation):
 				self.molecule_to_external_map[molecule_id + location] = molecule_id
 				self.external_to_molecule_map[molecule_id] = molecule_id + location
 
-		# Load saved wcEcoli concentrations of molecules from minimal condition
-		wcm_concs = {}
-		with open(CONC_LOOKUP_AA, 'rU') as csvfile:
-			reader = JsonReader(
-				ifilter(lambda x: x.lstrip()[0] != "#", csvfile),  # Strip comments
-				dialect=csv.excel_tab)
-			for row in reader:
-				molecule_id = row['molecule id']
-				avg_conc = row['average concentration mmol/L']
-				wcm_concs[molecule_id] = avg_conc
+		# Load saved wcEcoli avergage concentrations of molecules from all media conditions
+		self.avg_conc_lookup = {}
+		for file_name in LIST_OF_LOOKUP_FILES:
+			media = file_name.split(os.path.sep)[-1].split(".")[0]
+			self.avg_conc_lookup[media] = {}
+			with open(file_name, 'rU') as csvfile:
+				reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+				for row in reader:
+					molecule_id = row["molecule id"]
+					conc = row["average concentration mmol/L"]
+					self.avg_conc_lookup[media][molecule_id] = conc
 
 		# Load dict of saved parameters
 		with open(KINETIC_PARAMETERS_FILE, 'r') as fp:
@@ -110,9 +117,16 @@ class TransportKinetics(CellSimulation):
 		# This is used by transport_composite to set boundary_views in wcEcoli
 		self.molecule_ids = self.kinetic_rate_laws.molecule_ids
 
-		# Get concentrations of all molecule_ids from wcm
-		self.concentrations = {mol_id: wcm_concs[mol_id] for mol_id in self.molecule_ids}
-		self.concentrations['GLT[p]'] = 0.6  # mmol/L
+		# Get saved average concentrations of all molecule_ids for this condition
+		current_conc_lookup = self.avg_conc_lookup[self.media_id]
+		self.concentrations = {mol_id: current_conc_lookup[mol_id] for mol_id in self.molecule_ids}
+
+		make_media = Media()
+		media = make_media.make_recipe(self.media_id)
+		media = {self.external_to_molecule_map[mol_id]: conc for mol_id, conc in media.iteritems()}
+
+		# get current media into concentrations.
+		self.concentrations.update(media)
 
 		# Set initial fluxes
 		self.transport_fluxes = self.kinetic_rate_laws.get_fluxes(self.concentrations)

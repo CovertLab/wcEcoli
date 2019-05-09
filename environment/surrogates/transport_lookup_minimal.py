@@ -82,14 +82,14 @@ class TransportMinimal(CellSimulation):
 		# fluxes are in mmol/L
 		self.flux_lookup = {}
 		for file_name in LIST_OF_LOOKUP_FILES:
-			attrName = file_name.split(os.path.sep)[-1].split(".")[0]
-			self.flux_lookup[attrName] = {}
+			media_id = file_name.split(os.path.sep)[-1].split(".")[0]
+			self.flux_lookup[media_id] = {}
 			with open(file_name, 'rU') as csvfile:
 				reader = JsonReader(csvfile, dialect=CSV_DIALECT)
 				for row in reader:
 					reaction_id = row["reaction id"]
 					flux = row["average flux mmol/L"]
-					self.flux_lookup[attrName][reaction_id] = flux
+					self.flux_lookup[media_id][reaction_id] = flux
 
 		# exchange_ids declares which molecules' exchange will be controlled by transport
 		aa_p_ids = [aa_id + "[p]" for aa_id in amino_acids]
