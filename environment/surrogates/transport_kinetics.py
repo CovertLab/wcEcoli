@@ -41,7 +41,6 @@ class TransportKinetics(CellSimulation):
 		self.initial_time = state.get('time', 0.0)
 		self.local_time = state.get('time', 0.0)
 		self.media_id = state.get('media_id', 'minimal_plus_amino_acids')
-		# self.media = state.get('media', {})
 		self.timestep = 1.0
 		self.environment_change = {}
 		self.volume = 1.0  # (fL) TODO (Eran) volume needs to change for transport fluxes to translate to increasing delta counts
