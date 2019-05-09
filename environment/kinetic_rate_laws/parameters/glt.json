@@ -10,12 +10,12 @@
   "TRANS-RXN-122": {
     "DCTA-MONOMER[i]": {
       "GLT[p]": 1e-3,
-      "NA+[p]": null,
+      "NA+[p]": 1e-5,
       "kcat_f": 0.0
     },
     "GLTP-MONOMER[i]": {
       "GLT[p]": 1e-3,
-      "NA+[p]": null,
+      "NA+[p]": 1e-5,
       "PROTON[p]": null,
       "kcat_f": 0.0
     }
@@ -23,7 +23,7 @@
   "TRANS-RXN-162": {
     "GLTP-MONOMER[i]": {
       "GLT[p]": 1e-4,
-      "NA+[p]": null,
+      "NA+[p]": 1e-5,
       "PROTON[p]": null,
       "kcat_f": 1e10
     }

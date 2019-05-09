@@ -245,8 +245,12 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 				competing_rxns = [trpr for trpr in rxns_transporter if trpr not in reaction_id]
 				competitor = None
 				for rx in competing_rxns:
-					competitors = rate_law_configuration[transporter]['reaction_cofactors'][rx]
-					competitor = competitors[0][0]
+					competitor_candidates = rate_law_configuration[transporter]['reaction_cofactors'][rx]
+					competitors = [mol for mol in competitor_candidates[0] if mol != a1 and mol != b1]
+					if competitors:
+						competitor = competitors[0]
+
+
 
 				if competitor is not None:
 					concentrations = baseline_concentrations.copy()
@@ -282,7 +286,7 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 
 		plot_number = row_number * columns + 1
 
-	plt.subplots_adjust(hspace=0.5, wspace=1.5)
+	plt.subplots_adjust(hspace=0.8, wspace=1.1)
 
 	if not os.path.exists(OUTPUT_DIR):
 		os.mkdir(OUTPUT_DIR)
