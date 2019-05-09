@@ -29,6 +29,9 @@ TAGS = {
 	'DIVISION': [
 		"initialVsFinalMass.py",
 		],
+	'GROWTH': [
+		"aa_conc.py",
+		],
 	'HETEROGENEITY': [
 		"proteinCopyNumberDistribution.py",
 		"rnaCopyNumberDistribution.py",

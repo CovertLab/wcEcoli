@@ -69,6 +69,7 @@ TAGS = {
 		"growthAffectingPolymerases.py",
 		],
 	'METABOLISM': [
+		"aa_conc.py",
 		"centralCarbonMetabolismCorrelationTimeCourse.py",
 		"centralCarbonMetabolismScatter.py",
 		"kineticsFluxComparison.py",
