@@ -234,6 +234,9 @@ class Metabolism(wholecell.processes.process.Process):
 		cellVolume = cellMass / self.cellDensity
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
+		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
+		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
+
 		# get boundary conditions
 		self.boundary.updateBoundary()
 		current_media = self.boundary.current_media
@@ -248,9 +251,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		if self.use_trna_charging:
 			self.concModificationsBasedOnCondition.update(self.update_amino_acid_targets(countsToMolar))
-
-		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
-		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
 
 		# Set external molecule levels
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
