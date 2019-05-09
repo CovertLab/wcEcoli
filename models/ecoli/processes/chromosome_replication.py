@@ -209,8 +209,8 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			sequences,
 			dNtpCounts,
 			reactionLimit,
-			self.randomState
-			)
+			self.randomState,
+			self.elongation_rates)
 
 		sequenceElongations = result.sequenceElongation
 		dNtpsUsed = result.monomerUsages

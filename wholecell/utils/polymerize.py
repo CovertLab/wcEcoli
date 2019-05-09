@@ -197,13 +197,15 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 		# advance one step at a time until a sequence is limited
 		while notLimited and projectionIndex < self._maxElongation:
+			import ipdb; ipdb.set_trace()
+
 			step = self._currentStep + projectionIndex
 			index = self._progress + advancementIndex
 			level = self.elongation_rates * step
 			last_unit = (level - np.floor(level))
 			elongating = np.union1d(
-				np.where(self.elongation_rates >= last_unit),
-				np.where(last_unit == 0.0))
+				np.where(self.elongation_rates >= last_unit)[0],
+				np.where(last_unit == 0.0)[0])
 			active = np.intersect1d(self._activeSequencesIndexes, elongating)
 
 			# elongating = sample_array(self.elongation_rates[self._activeSequencesIndexes])

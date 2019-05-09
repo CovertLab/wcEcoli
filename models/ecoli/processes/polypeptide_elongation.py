@@ -213,8 +213,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			sequences,
 			aaCounts,
 			10000000, # Set to a large number, the limit is now taken care of in metabolism
-			self.randomState
-			)
+			self.randomState,
+			self.elongation_rates)
 
 		sequenceElongations = result.sequenceElongation
 		aasUsed = result.monomerUsages
