@@ -78,12 +78,23 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Plot histogram
 		plt.figure(figsize=(8.5, 11))
 
-		for idx in xrange(21):
-			plt.subplot(6, 4, idx + 1)
+		n_row = 6
+		n_col = 4
+		for idx in xrange(len(aa_ids)):
+			ave_conc = aa_conc[:, idx].mean()
+			plt.subplot(n_row, n_col, idx + 1)
 			plt.hist(aa_conc[:, idx])
 			plt.axvline(targets[idx], color='r', linestyle='--')
-			plt.title(aa_ids[idx], fontsize=8)
+			plt.axvline(ave_conc, color='k', linestyle='--')
+			plt.xlabel('Conc (mM)', fontsize=6)
+			plt.title('{}\nAve: {:.3f} mM'.format(aa_ids[idx], ave_conc), fontsize=8)
 			plt.tick_params(labelsize=8)
+
+		plt.subplot(n_row, n_col, len(aa_ids) + 1)
+		plt.axis('off')
+		plt.plot(0, 0, 'r--')
+		plt.plot(0, 0, 'k--')
+		plt.legend(['Expected Conc', 'Average Simulation Conc'], fontsize=8, loc=10)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + '_hist', metadata)

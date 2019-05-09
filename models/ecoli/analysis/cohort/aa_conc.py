@@ -1,5 +1,5 @@
 """
-Comparison of average amino acid concentrations to measured in vivo concentrations
+Comparison of average amino acid concentrations to expected concentrations
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 4/26/19
@@ -39,7 +39,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
 
 		aa_conc = None
-		for sim_dir in ap.get_cells(generation=range(6, 12)):
+		for sim_dir in ap.get_cells():
 			simOutDir = os.path.join(sim_dir, 'simOut')
 
 			# Load data
@@ -65,18 +65,32 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.loglog(targets, ave_conc, 'o')
 		plt.loglog([0, max_conc], [0, max_conc], 'k--')
 
+		plt.xlabel('Expected Amino Acid Conc (mM)')
+		plt.ylabel('Average Simulation Conc (mM)')
+
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 		# Plot histogram
 		plt.figure(figsize=(8.5, 11))
 
-		for idx in xrange(21):
-			plt.subplot(6, 4, idx + 1)
+		n_row = 6
+		n_col = 4
+		for idx in xrange(len(aa_ids)):
+			ave_conc = aa_conc[:, idx].mean()
+			plt.subplot(n_row, n_col, idx + 1)
 			plt.hist(aa_conc[:, idx])
 			plt.axvline(targets[idx], color='r', linestyle='--')
-			plt.title(aa_ids[idx], fontsize=8)
+			plt.axvline(ave_conc, color='k', linestyle='--')
+			plt.xlabel('Conc (mM)', fontsize=6)
+			plt.title('{}\nAve: {:.3f} mM'.format(aa_ids[idx], ave_conc), fontsize=8)
 			plt.tick_params(labelsize=8)
+
+		plt.subplot(n_row, n_col, len(aa_ids) + 1)
+		plt.axis('off')
+		plt.plot(0, 0, 'r--')
+		plt.plot(0, 0, 'k--')
+		plt.legend(['Expected Conc', 'Average Simulation Conc'], fontsize=8, loc=10)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + '_hist', metadata)
