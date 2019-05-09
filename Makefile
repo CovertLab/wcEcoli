@@ -14,12 +14,8 @@ clean:
 	find . -name "*.o" -exec rm -fr {} \;
 	find . -name "*.so" -exec rm -fr {} \;
 	rm -fr build
+	rm -fr launcher_20*/
 
 clobber:
-	rm -fr out/simOut
-	rm -fr out/plotOut
-	rm -fr launcher_20*/
-	rm -fr runAnalysis*
-	rm -fr runSimulation*
-	rm -fr simShellLog*
-	rm -fr analysisSingle*
+	rm -fr out/*
+	rm -fr block_20*
