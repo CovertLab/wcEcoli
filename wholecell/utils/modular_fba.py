@@ -1068,7 +1068,7 @@ class FluxBalanceAnalysis(object):
 		for molecule_id, coeff in objective.items():
 			if molecule_id not in self._outputMoleculeIDs:
 				raise FBAError(
-					"setpointIs() only allows for modification of setpoint values, " +
+					"This function only allows for modification of setpoint values, " +
 					"not adding new ones. %s is an unrecognized molecule" % moleculeID
 					)
 
