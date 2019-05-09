@@ -133,7 +133,7 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		#     currently active sequences.
 		self._activeSequencesIndexes = np.arange(self._nSequences)
 		self._currentStep = 0
-		self._progress = np.zeros(self._nSequences)
+		self._progress = np.zeros(self._nSequences, np.int64)
 		self._activeSequencesIndexes = self._activeSequencesIndexes[
 			self._sequenceReactions[:, self._currentStep]]
 
@@ -201,10 +201,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 			step = self._currentStep + projectionIndex
 			index = self._progress + advancementIndex
-			level = self.elongation_rates * step
+			level = self.elongation_rates * (step + 1)
 			last_unit = (level - np.floor(level))
 			elongating = np.union1d(
-				np.where(self.elongation_rates >= last_unit)[0],
+				np.where(self.elongation_rates > last_unit)[0],
 				np.where(last_unit == 0.0)[0])
 			active = np.intersect1d(self._activeSequencesIndexes, elongating)
 
