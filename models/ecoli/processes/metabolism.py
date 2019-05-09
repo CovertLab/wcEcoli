@@ -462,6 +462,8 @@ class Metabolism(wholecell.processes.process.Process):
 				if aa in self.aa_targets_not_updated:
 					continue
 				self.aa_targets[aa] += diff
+		# First time step of a simulation so set target to current counts to prevent
+		# concentration jumps between generations
 		else:
 			for aa, counts in zip(self.aa_names, self.aas.total_counts()):
 				if aa in self.aa_targets_not_updated:

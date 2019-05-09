@@ -117,6 +117,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 
 		self.aa_count_diff = {}
+		self.new_count_diff = {}
 
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
@@ -124,6 +125,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# The maximum number of amino acids that can be elongated in a single timestep is set to 22 intentionally as the minimum number of padding values
 		# on the protein sequence matrix is set to 22. If timesteps longer than 1.0s are used, this feature will lead to errors in the effective ribosome
 		# elongation rate.
+
+		# Update in calculateRequest from previous evolveState since aa_count_diff is accessed in metabolism evolveState
+		# to prevent any execution order dependence
+		# TODO: use something other than a class attribute to pass this
+		self.aa_count_diff = dict(self.new_count_diff)
 
 		current_media_id = self._external_states['Environment'].current_media_id
 
@@ -243,7 +249,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gtpRequest = gtpsHydrolyzed
 
 	def evolveState(self):
-		self.aa_count_diff = {}
+		self.new_count_diff = {}
 
 		# Write allocation data to listener
 		self.writeToListener("GrowthLimits", "gtpAllocated", self.gtp.count())
@@ -368,7 +374,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.water.countDec(nInitialized)
 
 			aa_diff = self.aa_supply - np.dot(self.aa_from_trna, total_charging_reactions)
-			self.aa_count_diff = {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
+			self.new_count_diff = {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
 		else:
 			# Update counts of amino acids and water to reflect polymerization reactions
 			self.aas.countsDec(aas_used)
