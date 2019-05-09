@@ -116,7 +116,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 		self.krtf = 500
 
-		self.aa_conc_diff = {}
+		self.aa_count_diff = {}
 
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
@@ -243,7 +243,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gtpRequest = gtpsHydrolyzed
 
 	def evolveState(self):
-		self.aa_conc_diff = {}
+		self.aa_count_diff = {}
 
 		# Write allocation data to listener
 		self.writeToListener("GrowthLimits", "gtpAllocated", self.gtp.count())
@@ -368,7 +368,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.water.countDec(nInitialized)
 
 			aa_diff = self.aa_supply - np.dot(self.aa_from_trna, total_charging_reactions)
-			self.aa_conc_diff = {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
+			self.aa_count_diff = {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
 		else:
 			# Update counts of amino acids and water to reflect polymerization reactions
 			self.aas.countsDec(aas_used)

@@ -246,13 +246,18 @@ class Metabolism(wholecell.processes.process.Process):
 			)
 
 		if self.use_trna_charging:
-			if len(self._sim.processes['PolypeptideElongation'].aa_conc_diff):
-				for aa, diff in self._sim.processes['PolypeptideElongation'].aa_conc_diff.items():
+			# Skips updates to certain molecules:
+			# - L-SELENOCYSTEINE: rare amino acid and led to high variability
+			# - GLT: high measured concentration that never doubled causing slow growth
+			# - LEU: increase in concentration caused TF regulation to stop transcription
+			#   of AA synthesis pathway genes
+			if len(self._sim.processes['PolypeptideElongation'].aa_count_diff):
+				for aa, diff in self._sim.processes['PolypeptideElongation'].aa_count_diff.items():
 					if aa == 'L-SELENOCYSTEINE[c]' or aa == 'GLT[c]' or aa == 'LEU[c]':
 						continue
 					self.aa_targets[aa] += diff
 			else:
-				for aa, counts in zip(self.aa_names, self.aas.total()):
+				for aa, counts in zip(self.aa_names, self.aas.total_counts()):
 					if aa == 'L-SELENOCYSTEINE[c]' or aa == 'GLT[c]' or aa == 'LEU[c]':
 						continue
 					self.aa_targets[aa] = counts
