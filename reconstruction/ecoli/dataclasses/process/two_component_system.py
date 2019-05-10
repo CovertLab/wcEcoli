@@ -16,7 +16,7 @@ import re
 import sympy as sp
 
 from wholecell.utils import units
-from wholecell.utils.build_ode import build_ode_derivatives, build_ode_derivatives_jacobian
+from wholecell.utils import build_ode
 
 
 class TwoComponentSystem(object):
@@ -288,14 +288,14 @@ class TwoComponentSystem(object):
 		self._makeDerivative()
 		self._makeDerivativeParca()
 
-		self.derivatives = build_ode_derivatives(self.derivativesSymbolic)
-		self.derivatives_jacobian = build_ode_derivatives_jacobian(self.derivativesJacobianSymbolic)
+		self.derivatives = build_ode.derivatives(self.derivativesSymbolic)
+		self.derivatives_jacobian = build_ode.derivatives_jacobian(self.derivativesJacobianSymbolic)
 
 		# TODO(jerry): JIT-compile derivatives_flipped() and derivatives_jacobian_flipped()?
 
 		# WORKAROUND: Numba would raise LoweringError when it gets to JIT-compiling these functions:
-		self.derivatives_parca = build_ode_derivatives(self.derivativesParcaSymbolic, jit=False)
-		self.derivatives_parca_jacobian = build_ode_derivatives_jacobian(self.derivativesParcaJacobianSymbolic, jit=False)
+		self.derivatives_parca = build_ode.derivatives(self.derivativesParcaSymbolic, jit=False)
+		self.derivatives_parca_jacobian = build_ode.derivatives_jacobian(self.derivativesParcaJacobianSymbolic, jit=False)
 
 
 	def _makeDerivative(self):

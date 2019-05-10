@@ -10,8 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from wholecell.utils import units
-from wholecell.utils.build_ode import (build_ode_derivatives_with_rates,
-	build_ode_derivatives_jacobian_with_rates)
+from wholecell.utils import build_ode
 import sympy as sp
 
 
@@ -230,8 +229,8 @@ class Equilibrium(object):
 		self._makeMatrices()
 		self._makeDerivative()
 
-		self.derivatives = build_ode_derivatives_with_rates(self.derivativesSymbolic)
-		self.derivativesJacobian = build_ode_derivatives_jacobian_with_rates(
+		self.derivatives = build_ode.derivatives_with_rates(self.derivativesSymbolic)
+		self.derivativesJacobian = build_ode.derivatives_jacobian_with_rates(
 			self.derivativesJacobianSymbolic)
 
 	def _makeMatrices(self):
@@ -341,7 +340,7 @@ class Equilibrium(object):
 		already a monomer returns the monomer ID again with a stoichiometric
 		coefficient of one.
 		'''
-		info = self._moleculeRecursiveSearch(cplxId, self.stoichMatrix(), self.moleculeNames)
+		info = self._moleculeRecursiveSearch(cplxId, self._stoichMatrix, self.moleculeNames)
 		return {'subunitIds': np.array(info.keys()), 'subunitStoich': np.array(info.values())}
 
 	def getMetabolite(self, cplxId):
