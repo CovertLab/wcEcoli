@@ -16,7 +16,6 @@ from itertools import izip
 
 from arrow import StochasticSystem
 
-import wholecell
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 

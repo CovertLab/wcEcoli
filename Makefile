@@ -8,7 +8,7 @@ compile:
 	rm -fr build
 
 clean:
-	find . -not \( -path ./out -prune \) -not \( -path ./.git -prune \) -name "*.cPickle" -exec rm -fr {} \;
+	rm -fr fixtures cached
 	(cd reconstruction/ecoli/dataclasses/process && rm -f equilibrium_odes.py two_component_system_odes*.py)
 	find . -name "*.pyc" -exec rm -rf {} \;
 	find . -name "*.o" -exec rm -fr {} \;
