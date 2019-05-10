@@ -8,7 +8,7 @@ compile:
 	rm -fr build
 
 clean:
-	rm -fr fixtures cached
+	rm -fr fixtures
 	(cd reconstruction/ecoli/dataclasses/process && rm -f equilibrium_odes.py two_component_system_odes*.py)
 	find . -name "*.pyc" -exec rm -rf {} \;
 	find . -name "*.o" -exec rm -fr {} \;
