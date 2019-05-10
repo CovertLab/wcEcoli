@@ -291,18 +291,14 @@ class TwoComponentSystem(object):
 		self.derivatives = build_ode.derivatives(self.derivativesSymbolic)
 		self.derivatives_jacobian = build_ode.derivatives_jacobian(self.derivativesJacobianSymbolic)
 
-		# TODO(jerry): JIT-compile derivatives_flipped() and derivatives_jacobian_flipped()?
+		# TODO(jerry): Also JIT-compile derivatives_flipped() and derivatives_jacobian_flipped()?
 
-		# WORKAROUND: Numba would raise LoweringError when it gets to JIT-compiling these functions:
+		# WORKAROUND: Avoid Numba LoweringError JIT-compiling these functions:
 		self.derivatives_parca = build_ode.derivatives(self.derivativesParcaSymbolic, jit=False)
 		self.derivatives_parca_jacobian = build_ode.derivatives_jacobian(self.derivativesParcaJacobianSymbolic, jit=False)
 
 
-	def _makeDerivative(self):
-		'''
-		Creates symbolic representation of the ordinary differential equations
-		and the Jacobian. Used during simulations.
-		'''
+	def _make_y_dy(self):
 		S = self.stoichMatrix()
 
 		yStrings = ["y[%d]" % x for x in xrange(S.shape[0])]
@@ -328,6 +324,16 @@ class TwoComponentSystem(object):
 				dy[thisIdx] += fluxForNegIdxs
 			for thisIdx in posIdxs:
 				dy[thisIdx] += fluxForPosIdxs
+
+		return y, dy
+
+
+	def _makeDerivative(self):
+		'''
+		Creates symbolic representation of the ordinary differential equations
+		and the Jacobian. Used during simulations.
+		'''
+		y, dy = self._make_y_dy()
 
 		dy = sp.Matrix(dy)
 		J = dy.jacobian(y)
@@ -342,31 +348,7 @@ class TwoComponentSystem(object):
 		and the Jacobian assuming ATP, ADP, Pi, water and protons are at
 		steady state. Used in the parca.
 		'''
-		S = self.stoichMatrix()
-
-		yStrings = ["y[%d]" % x for x in xrange(S.shape[0])]
-		y = sp.symbols(yStrings)
-		dy = [sp.symbol.S.Zero] * S.shape[0]
-
-		for colIdx in xrange(S.shape[1]):
-			negIdxs = np.where(S[:, colIdx] < 0)[0]
-			posIdxs = np.where(S[:, colIdx] > 0)[0]
-
-			reactantFlux = self.ratesFwd[colIdx]
-			for negIdx in negIdxs:
-				reactantFlux *= (y[negIdx] ** (-1 * S[negIdx, colIdx]))
-
-			productFlux = self.ratesRev[colIdx]
-			for posIdx in posIdxs:
-				productFlux *=  (y[posIdx] ** ( 1 * S[posIdx, colIdx]))
-
-			fluxForNegIdxs = (-1. * reactantFlux) + (1. * productFlux)
-			fluxForPosIdxs = ( 1. * reactantFlux) - (1. * productFlux)
-
-			for thisIdx in negIdxs:
-				dy[thisIdx] += fluxForNegIdxs
-			for thisIdx in posIdxs:
-				dy[thisIdx] += fluxForPosIdxs
+		y, dy = self._make_y_dy()
 
 		# Metabolism will keep these molecules at steady state
 		constantMolecules = ["ATP[c]", "ADP[c]", "PI[c]", "WATER[c]", "PROTON[c]"]
