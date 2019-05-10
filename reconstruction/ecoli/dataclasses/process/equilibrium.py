@@ -218,14 +218,10 @@ class Equilibrium(object):
 		Creates callable functions for computing the derivative and the Jacobian.
 		'''
 		fixturesDir = filepath.makedirs(
-			os.path.dirname(os.path.dirname(wholecell.__file__)),
-			"fixtures",
-			"equilibrium"
-			)
+			filepath.ROOT_PATH, "fixtures", "equilibrium")
 		odeFile = os.path.join(
-			os.path.dirname(os.path.dirname(wholecell.__file__)),
-			"reconstruction", "ecoli", "dataclasses", "process", "equilibrium_odes.py"
-			)
+			filepath.ROOT_PATH, "reconstruction", "ecoli", "dataclasses",
+			"process", "equilibrium_odes.py")
 
 		needToCreate = False
 

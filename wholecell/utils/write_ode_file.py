@@ -1,4 +1,4 @@
-import numpy as np
+from __future__ import absolute_import, division, print_function
 
 def writeOdeFile(fileName, derivatives, derivativesJacobian):
 	h = open(fileName, "w")

@@ -3226,11 +3226,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 			)
 
 	needToUpdate = False
-	fixturesDir = filepath.makedirs(
-			os.path.dirname(os.path.dirname(wholecell.__file__)),
-			"fixtures",
-			"endo_km"
-			)
+	fixturesDir = filepath.makedirs(filepath.ROOT_PATH, "fixtures", "endo_km")
 	km_filepath = os.path.join(fixturesDir, "km.cPickle")
 
 	if os.path.exists(km_filepath):

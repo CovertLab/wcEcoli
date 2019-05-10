@@ -277,18 +277,13 @@ class TwoComponentSystem(object):
 		Jacobian.
 		'''
 		fixturesDir = filepath.makedirs(
-			os.path.dirname(os.path.dirname(wholecell.__file__)),
-			"fixtures",
-			"twoComponentSystem"
-			)
+			filepath.ROOT_PATH, "fixtures", "twoComponentSystem")
 		odeFile = os.path.join(
-			os.path.dirname(os.path.dirname(wholecell.__file__)),
-			"reconstruction", "ecoli", "dataclasses", "process", "two_component_system_odes.py"
-			)
+			filepath.ROOT_PATH, "reconstruction", "ecoli", "dataclasses", "process",
+			"two_component_system_odes.py")
 		odeParcaFile = os.path.join(
-			os.path.dirname(os.path.dirname(wholecell.__file__)),
-			"reconstruction", "ecoli", "dataclasses", "process", "two_component_system_odes_parca.py"
-			)
+			filepath.ROOT_PATH, "reconstruction", "ecoli", "dataclasses", "process",
+			"two_component_system_odes_parca.py")
 
 		needToCreate = False
 
