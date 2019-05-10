@@ -116,8 +116,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 
-		self.aa_count_diff = {}
-		self.new_count_diff = {}
+		# Dictionaries for homeostatic AA count updates in metabolism
+		self.aa_count_diff = {}  # attribute to be read by metabolism
+		self.new_count_diff = {}  # update from most recent time step
 
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
@@ -373,6 +374,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.proton.countInc(nElongations)
 			self.water.countDec(nInitialized)
 
+			# Use the difference between expected AA supply based on expected doubling time
+			# and current DCW and AA used to charge tRNA to update the concentration target
+			# in metabolism during the next time step
 			aa_diff = self.aa_supply - np.dot(self.aa_from_trna, total_charging_reactions)
 			self.new_count_diff = {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
 		else:
@@ -424,8 +428,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		def negative_check(trna1, trna2):
 			'''
 			Check for floating point precision issues that can lead to small
-			negative numbers instead of 0 and adjusts both species of tRNA to
-			bring concentration to 0 and keep the same total concentration.
+			negative numbers instead of 0. Adjusts both species of tRNA to
+			bring concentration of trna1 to 0 and keep the same total concentration.
 
 			Args:
 				trna1 (ndarray[float]): concentration of one tRNA species (charged or uncharged)
@@ -477,8 +481,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Integrate rates of charging and elongation
 		dt = 0.001
 		t = np.arange(0, time_limit, dt)
-		co = np.hstack((uncharged_trna_conc, charged_trna_conc))
-		sol = odeint(dcdt, co, t)
+		c_init = np.hstack((uncharged_trna_conc, charged_trna_conc))
+		sol = odeint(dcdt, c_init, t)
 
 		# Determine new values from integration results
 		uncharged_trna_conc = sol[-1, :n_aas]
