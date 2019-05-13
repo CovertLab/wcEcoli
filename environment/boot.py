@@ -11,7 +11,7 @@ from agent.boot import BootAgent
 from environment.lattice import EnvironmentSpatialLattice
 from environment.surrogates.chemotaxis import Chemotaxis
 from environment.surrogates.endocrine import Endocrine
-from environment.surrogates.transport_lookup_minimal import TransportMinimal
+from environment.surrogates.transport_lookup import TransportMinimal
 from environment.surrogates.transport_composite import TransportComposite
 from models.ecoli.sim.simulation import ecoli_simulation
 from environment.condition.make_media import Media

@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import os
 import csv
 import time
-import math
 from scipy import constants
 
 from agent.inner import CellSimulation
