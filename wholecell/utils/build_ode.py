@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from numba import njit
+from sympy import Matrix
 from typing import Callable
 
 
@@ -31,29 +32,35 @@ def build_function(arguments, expression, jit=True):
 	return f
 
 
-# TODO(jerry): Surely we can extract the argument of "Matrix([arg])" using
+# TODO(jerry): Surely we can extract the argument array of "Matrix([...])" via
 #  sympy calls more reliably than str(expr)[7:-1].
+def _matrix_to_array(matrix):
+	# type: (Matrix, bool) -> str
+	"""Convert a sympy Matrix expression to an 'np.array([...])' literal."""
+	matrix_string = str(matrix)
+	assert matrix_string.startswith('Matrix([')
+	return 'np.array({})'.format(matrix_string[7:-1])
+
 
 def derivatives(derivatives, jit=True):
+	# type: (Matrix, bool) -> Callable
 	"""Build an optimized derivatives ODE function(y, t)."""
 	return build_function('y, t',
-		'np.array(' + str(derivatives)[7:-1] + ').reshape(-1)',
-		jit)
+		_matrix_to_array(derivatives) + '.reshape(-1)', jit)
 
 def derivatives_jacobian(derivatives_jacobian, jit=True):
+	# type: (Matrix, bool) -> Callable
 	"""Build an optimized derivatives ODE Jacobian function(y, t)."""
-	return build_function('y, t',
-		'np.array(' + str(derivatives_jacobian)[7:-1] + ')',
-		jit)
+	return build_function('y, t', _matrix_to_array(derivatives_jacobian), jit)
 
 def derivatives_with_rates(derivatives, jit=True):
+	# type: (Matrix, bool) -> Callable
 	"""Build an optimized derivatives ODE function(y, t, kf, kr)."""
 	return build_function('y, t, kf, kr',
-		'np.array(' + str(derivatives)[7:-1] + ').reshape(-1)',
-		jit)
+		_matrix_to_array(derivatives) + '.reshape(-1)', jit)
 
 def derivatives_jacobian_with_rates(derivatives_jacobian, jit=True):
+	# type: (Matrix, bool) -> Callable
 	"""Build an optimized derivatives ODE Jacobian function(y, t, kf, kr)."""
 	return build_function('y, t, kf, kr',
-		'np.array(' + str(derivatives_jacobian)[7:-1] + ')',
-		jit)
+		_matrix_to_array(derivatives_jacobian), jit)
