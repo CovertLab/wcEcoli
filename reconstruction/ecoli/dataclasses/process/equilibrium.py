@@ -9,9 +9,11 @@ fluxesAndMoleculesToSS()
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-from wholecell.utils import units
-from wholecell.utils import build_ode
 import sympy as sp
+
+from wholecell.utils import build_ode
+from wholecell.utils import data
+from wholecell.utils import units
 
 
 class EquilibriumError(Exception):
@@ -143,14 +145,11 @@ class Equilibrium(object):
 		__setstate__() will recompute, esp. those like the ode_derivatives
 		that don't pickle.
 		"""
-		state = self.__dict__.copy()
-		for attribute in (
-				'_stoichMatrix',
-				'Rp', 'Pp', 'metsToRxnFluxes',
-				'derivativesSymbolic', 'derivativesJacobianSymbolic',
-				'derivatives', 'derivativesJacobian'):
-			del state[attribute]
-		return state
+		return data.dissoc_strict(self.__dict__, (
+			'_stoichMatrix',
+			'Rp', 'Pp', 'metsToRxnFluxes',
+			'derivativesSymbolic', 'derivativesJacobianSymbolic',
+			'derivatives', 'derivativesJacobian'))
 
 	def __setstate__(self, state):
 		"""Restore instance attributes, recomputing some of them."""

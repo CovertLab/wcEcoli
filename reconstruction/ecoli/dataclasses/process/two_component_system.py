@@ -15,8 +15,9 @@ import scipy
 import re
 import sympy as sp
 
-from wholecell.utils import units
 from wholecell.utils import build_ode
+from wholecell.utils import data
+from wholecell.utils import units
 
 
 class TwoComponentSystem(object):
@@ -181,18 +182,15 @@ class TwoComponentSystem(object):
 
 	def __getstate__(self):
 		"""Return the state to pickle, omitting derived attributes that
-		__setstate__() will recompute, esp. those like the ode_derivatives
+		__setstate__() will recompute, esp. the ode_derivatives
 		that don't pickle.
 		"""
-		state = self.__dict__.copy()
-		for attribute in (
-				'derivativesSymbolic', 'derivativesJacobianSymbolic',
-				'derivativesParcaSymbolic', 'derivativesParcaJacobianSymbolic',
-				'derivatives', 'derivatives_jacobian',
-				'derivatives_parca', 'derivatives_parca_jacobian',
-				'dependencyMatrix'):
-			del state[attribute]
-		return state
+		return data.dissoc_strict(self.__dict__, (
+			'derivativesSymbolic', 'derivativesJacobianSymbolic',
+			'derivativesParcaSymbolic', 'derivativesParcaJacobianSymbolic',
+			'derivatives', 'derivatives_jacobian',
+			'derivatives_parca', 'derivatives_parca_jacobian',
+			'dependencyMatrix'))
 
 	def __setstate__(self, state):
 		"""Restore instance attributes, recomputing some of them."""

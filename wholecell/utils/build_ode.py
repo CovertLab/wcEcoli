@@ -1,3 +1,7 @@
+"""
+Utilities to compile functions, esp. from Sympy-constructed Matrix math.
+"""
+
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
@@ -35,32 +39,32 @@ def build_function(arguments, expression, jit=True):
 # TODO(jerry): Surely we can extract the argument array of "Matrix([...])" via
 #  sympy calls more reliably than str(expr)[7:-1].
 def _matrix_to_array(matrix):
-	# type: (Matrix, bool) -> str
+	# type: (Matrix) -> str
 	"""Convert a sympy Matrix expression to an 'np.array([...])' literal."""
 	matrix_string = str(matrix)
 	assert matrix_string.startswith('Matrix([')
 	return 'np.array({})'.format(matrix_string[7:-1])
 
 
-def derivatives(derivatives, jit=True):
+def derivatives(matrix, jit=True):
 	# type: (Matrix, bool) -> Callable
 	"""Build an optimized derivatives ODE function(y, t)."""
 	return build_function('y, t',
-		_matrix_to_array(derivatives) + '.reshape(-1)', jit)
+		_matrix_to_array(matrix) + '.reshape(-1)', jit)
 
-def derivatives_jacobian(derivatives_jacobian, jit=True):
+def derivatives_jacobian(jacobian_matrix, jit=True):
 	# type: (Matrix, bool) -> Callable
 	"""Build an optimized derivatives ODE Jacobian function(y, t)."""
-	return build_function('y, t', _matrix_to_array(derivatives_jacobian), jit)
+	return build_function('y, t', _matrix_to_array(jacobian_matrix), jit)
 
-def derivatives_with_rates(derivatives, jit=True):
+def derivatives_with_rates(matrix, jit=True):
 	# type: (Matrix, bool) -> Callable
 	"""Build an optimized derivatives ODE function(y, t, kf, kr)."""
 	return build_function('y, t, kf, kr',
-		_matrix_to_array(derivatives) + '.reshape(-1)', jit)
+		_matrix_to_array(matrix) + '.reshape(-1)', jit)
 
-def derivatives_jacobian_with_rates(derivatives_jacobian, jit=True):
+def derivatives_jacobian_with_rates(jacobian_matrix, jit=True):
 	# type: (Matrix, bool) -> Callable
 	"""Build an optimized derivatives ODE Jacobian function(y, t, kf, kr)."""
 	return build_function('y, t, kf, kr',
-		_matrix_to_array(derivatives_jacobian), jit)
+		_matrix_to_array(jacobian_matrix), jit)
