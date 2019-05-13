@@ -1,23 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
-import os
-import csv
 import time
 from scipy import constants
 
 from agent.inner import CellSimulation
-from reconstruction.spreadsheets import JsonReader
+from environment.condition.look_up_tables.look_up import LookUp
 
 TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 69, 0]]
-
-CSV_DIALECT = csv.excel_tab
-TRANSPORT_REACTIONS_FILE = os.path.join("environment", "condition", "look_up_tables", "transport_reactions.tsv")
-LIST_OF_LOOKUP_FILES = (
-	os.path.join("environment", "condition", "look_up_tables", "avg_flux", "minimal.tsv"),
-	os.path.join("environment", "condition", "look_up_tables", "avg_flux", "minimal_minus_oxygen.tsv"),
-	os.path.join("environment", "condition", "look_up_tables", "avg_flux", "minimal_plus_amino_acids.tsv"),
-)
 
 amino_acids = [
 	'L-ALPHA-ALANINE',
@@ -62,33 +52,8 @@ class TransportMinimal(CellSimulation):
 		self.motile_force = [0.01, 0.01] # initial magnitude and relative orientation
 		self.division = []
 
-		# make dict of transport reactions
-		self.all_transport_reactions = {}
-		with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
-			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
-			for row in reader:
-				reaction_id = row["reaction id"]
-				stoichiometry = row["stoichiometry"]
-				reversible = row["is reversible"]
-				catalyzed = row["catalyzed by"]
-				self.all_transport_reactions[reaction_id] = {
-					"stoichiometry": stoichiometry,
-					"is reversible": reversible,
-					"catalyzed by": catalyzed,
-				}
-
-		# make a dictionary with saved average fluxes for all transport reactions, in the three conditions
-		# fluxes are in mmol/L
-		self.flux_lookup = {}
-		for file_name in LIST_OF_LOOKUP_FILES:
-			attrName = file_name.split(os.path.sep)[-1].split(".")[0]
-			self.flux_lookup[attrName] = {}
-			with open(file_name, 'rU') as csvfile:
-				reader = JsonReader(csvfile, dialect=CSV_DIALECT)
-				for row in reader:
-					reaction_id = row["reaction id"]
-					flux = row["average flux mmol/L"]
-					self.flux_lookup[attrName][reaction_id] = flux
+		# make look up object
+		self.look_up = LookUp()
 
 		# exchange_ids declares which molecules' exchange will be controlled by transport
 		aa_p_ids = [aa_id + "[p]" for aa_id in amino_acids]
@@ -97,7 +62,7 @@ class TransportMinimal(CellSimulation):
 		self.transport_reactions_ids = self.reactions_from_exchange(exchange_ids)
 
 		# get the current flux lookup table, and set initial transport fluxes
-		self.current_flux_lookup = self.flux_lookup[self.media_id]
+		self.current_flux_lookup = self.look_up.avg_flux[self.media_id]
 		self.transport_fluxes = self.get_fluxes(self.current_flux_lookup, self.transport_reactions_ids)
 
 
