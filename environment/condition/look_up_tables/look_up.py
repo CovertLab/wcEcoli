@@ -18,11 +18,6 @@ FLUX_LOOKUP_FILES = (
 	os.path.join(LOOKUP_DIR, "transport_fluxes", "minimal_minus_oxygen.tsv"),
 	os.path.join(LOOKUP_DIR, "transport_fluxes", "minimal_plus_amino_acids.tsv"),
 )
-KCAT_LOOKUP_FILES = (
-	os.path.join(LOOKUP_DIR, "transport_kcats", "minimal.tsv"),
-	os.path.join(LOOKUP_DIR, "transport_kcats", "minimal_minus_oxygen.tsv"),
-	os.path.join(LOOKUP_DIR, "transport_kcats", "minimal_plus_amino_acids.tsv"),
-)
 
 CSV_DIALECT = csv.excel_tab
 
@@ -72,31 +67,33 @@ class LookUp(object):
 					self.flux_avg[media][reaction_id] = flux_avg
 					self.flux_dist[media][reaction_id] = flux_dist
 
-		# Load estimated wcEcoli k_cats from all media conditions
-		self.kcat_avg = {}
-		for file_name in FLUX_LOOKUP_FILES:
-			media = file_name.split(os.path.sep)[-1].split(".")[0]
-			self.kcat_avg[media] = {}
-			with open(file_name, 'rU') as csvfile:
-				reader = JsonReader(csvfile, dialect=CSV_DIALECT)
-				for row in reader:
-					reaction_id = row.get("reaction id")
-					# enzyme_id = row.get("enzyme id")
-					kcat_avg = row.get("k_cat avg")
-					self.kcat_avg[media][reaction_id] = kcat_avg
 
-
-	def get_fluxes(self, flux_type, media, reaction_ids):
+	def get_fluxes(self, lookup_type, media, reaction_ids):
 		''' Get a flux for each reaction in reaction_ids'''
 
-		transport_fluxes = {}
-		if flux_type == 'average':
-			transport_fluxes = {
-				transport_id: self.flux_avg[media][transport_id]
-				for transport_id in reaction_ids}
-		if flux_type == 'distribution':
-			transport_fluxes = {
-				transport_id: random.choice(self.flux_dist[media][transport_id])
-				for transport_id in reaction_ids}
+		fluxes = {}
+		if lookup_type == 'average':
+			fluxes = {
+				reaction_id: self.flux_avg[media][reaction_id]
+				for reaction_id in reaction_ids}
+		if lookup_type == 'distribution':
+			fluxes = {
+				reaction_id: random.choice(self.flux_dist[media][reaction_id])
+				for reaction_id in reaction_ids}
 
-		return transport_fluxes
+		return fluxes
+
+	def get_concs(self, lookup_type, media, reaction_ids):
+		''' Get a flux for each reaction in reaction_ids'''
+
+		concentrations = {}
+		if lookup_type == 'average':
+			concentrations = {
+				molecule_id: self.conc_dist[media][molecule_id]
+				for molecule_id in reaction_ids}
+		if lookup_type == 'distribution':
+			concentrations = {
+				molecule_id: random.choice(self.conc_dist[media][molecule_id])
+				for molecule_id in reaction_ids}
+
+		return concentrations
