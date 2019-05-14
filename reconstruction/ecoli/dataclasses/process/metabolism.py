@@ -51,8 +51,6 @@ class Metabolism(object):
 		self.boundary = Boundary(raw_data, sim_data)
 		self.transport_reactions = raw_data.transport_reactions
 
-		import ipdb; ipdb.set_trace()
-
 		self._buildBiomass(raw_data, sim_data)
 		self._buildMetabolism(raw_data, sim_data)
 

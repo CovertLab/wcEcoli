@@ -592,7 +592,7 @@ class BuildNetwork(object):
 		transport_reactions_raw = self.sim_data.process.metabolism.transport_reactions
 		transport_reactions = []
 
-		# TODO -- make transport_reactions a list of ids, don't need the rest of the file.
+		# make a list of transport reactions
 		for transport_reaction in transport_reactions_raw:
 			reaction_id = transport_reaction.get('reaction id')
 			transport_reactions.append(reaction_id)
