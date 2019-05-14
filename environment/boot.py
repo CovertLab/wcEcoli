@@ -286,6 +286,7 @@ def boot_transport_lookup(agent_id, agent_type, agent_config):
 
 	# initialize state and options
 	state = {
+		'lookup': 'average',
 		'volume': 1.0,
 		'environment_change': {}}
 	agent_config['state'] = state

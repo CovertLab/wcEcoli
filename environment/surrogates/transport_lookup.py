@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import time
 import os
 import csv
+import math
 from scipy import constants
 
 from agent.inner import CellSimulation
@@ -11,6 +12,8 @@ from reconstruction.spreadsheets import JsonReader
 from itertools import ifilter
 
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
+TRANSPORT_REACTIONS_FILE = os.path.join("environment", "condition", "look_up_tables", "transport_reactions.tsv")
+
 CSV_DIALECT = csv.excel_tab
 TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 69, 0]]
@@ -50,6 +53,7 @@ class TransportLookup(CellSimulation):
 		self.initial_time = state.get('time', 0.0)
 		self.local_time = state.get('time', 0.0)
 		self.media_id = state.get('media_id', 'minimal')
+		self.lookup_type = state.get('lookup', 'average')
 		self.timestep = 1.0
 		self.environment_change = {}
 		self.volume = 1.0  # (fL)
@@ -62,8 +66,20 @@ class TransportLookup(CellSimulation):
 		self.motile_force = [0.01, 0.01] # initial magnitude and relative orientation
 		self.division = []
 
-		# make look up object
-		self.look_up = LookUp()
+		# make dict of transport reactions
+		self.all_transport_reactions = {}
+		with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
+			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+			for row in reader:
+				reaction_id = row["reaction id"]
+				stoichiometry = row["stoichiometry"]
+				reversible = row["is reversible"]
+				catalyzed = row["catalyzed by"]
+				self.all_transport_reactions[reaction_id] = {
+					"stoichiometry": stoichiometry,
+					"is reversible": reversible,
+					"catalyzed by": catalyzed,
+				}
 
 		# Make map of external molecule_ids with a location tag (as used in reaction stoichiometry) to molecule_ids in the environment
 		self.molecule_to_external_map = {}
@@ -78,14 +94,21 @@ class TransportLookup(CellSimulation):
 				self.molecule_to_external_map[molecule_id + location] = molecule_id
 				self.external_to_molecule_map[molecule_id] = molecule_id + location
 
-		# exchange_ids declares which molecules' exchange will be controlled by transport
-		self.transport_reactions_ids = self.reactions_from_exchange(exchange_ids)
 
-		import ipdb; ipdb.set_trace()
+		# make look up object
+		self.look_up = LookUp()
 
-		# get the current flux lookup table, and set initial transport fluxes
-		self.current_flux_lookup = self.look_up.avg_flux[self.media_id]
-		self.transport_fluxes = self.get_fluxes(self.current_flux_lookup, self.transport_reactions_ids)
+		# exchange_ids declares which molecules' exchange will be applied
+		self.transport_reaction_ids = self.reactions_from_exchange(exchange_ids)
+
+		# get the fluxes
+		self.transport_fluxes = self.look_up.get_fluxes(
+			self.lookup_type,
+			self.media_id,
+			self.transport_reaction_ids)
+
+		# adjust the fluxes
+		# self.transport_fluxes = self.adjust_fluxes(self.transport_fluxes)
 
 
 	def update_state(self):
@@ -93,7 +116,11 @@ class TransportLookup(CellSimulation):
 		self.molar_to_counts = (self.nAvogadro * 1e-3) * (self.volume * 1e-15)
 
 		# get transport fluxes
-		self.transport_fluxes = self.get_fluxes(self.current_flux_lookup, self.transport_reactions_ids)
+		self.transport_fluxes = self.look_up.get_fluxes(
+			self.lookup_type,
+			self.media_id,
+			self.transport_reaction_ids)
+		# self.transport_fluxes = self.adjust_fluxes(self.transport_fluxes)
 
 		# convert to counts
 		delta_counts = self.flux_to_counts(self.transport_fluxes)
@@ -125,9 +152,6 @@ class TransportLookup(CellSimulation):
 		self.external_concentrations = update['concentrations']
 		self.media_id = update['media_id']
 
-		# update lookup table
-		self.current_flux_lookup = self.flux_lookup[self.media_id]
-
 		# reset environment change
 		self.environment_change = {}
 		for molecule in self.external_concentrations.iterkeys():
@@ -152,22 +176,12 @@ class TransportLookup(CellSimulation):
 			'transport_fluxes': self.transport_fluxes,
 			}
 
-
-	## Flux-related functions
-	def get_fluxes(self, flux_lookup, transport_reactions_ids):
-		# TODO -- get reversible reactions, some fluxes are negative
-		transport_fluxes = {
-			transport_id: max(flux_lookup[transport_id], 0.0)
-			for transport_id in transport_reactions_ids}
-		# transport_fluxes = self.adjust_fluxes(transport_fluxes)
-		return transport_fluxes
-
 	def adjust_fluxes(self, transport_fluxes):
 		'''adjust fluxes found by look up table'''
 
-		added_flux = 0  # 1e-2 * (1 + math.sin(10 * self.local_time))
+		time_constant = 10
 		adjusted_transport_fluxes = {
-			transport_id: max(flux + added_flux, 0.0)
+			transport_id: max(flux(1 + math.sin(time_constant * self.local_time)), 0.0)
 			for transport_id, flux in transport_fluxes.iteritems()}
 
 		return adjusted_transport_fluxes

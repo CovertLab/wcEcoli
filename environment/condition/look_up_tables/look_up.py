@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import csv
+import random
 
 from reconstruction.spreadsheets import JsonReader
 
@@ -42,6 +43,11 @@ class LookUp(object):
 					molecule_id = row.get("enzyme id")
 					conc_avg = row.get("concentration avg mmol/L")
 					conc_dist = row.get("concentration distribution mmol/L")
+
+					# convert to list of floats
+					conc_dist = conc_dist.replace('[', '').replace(']', '').split(', ')
+					conc_dist = [float(conc) for conc in conc_dist]
+
 					self.concentration_avg[media][molecule_id] = conc_avg
 					self.concentration_dist[media][molecule_id] = conc_dist
 
@@ -58,22 +64,39 @@ class LookUp(object):
 					reaction_id = row.get("reaction id")
 					flux_avg = row.get("flux avg mmol/L/s")
 					flux_dist = row.get("flux distribution mmol/L/s")
+
+					# convert to list of floats
+					flux_dist = flux_dist.replace('[', '').replace(']', '').split(', ')
+					flux_dist = [float(flux) for flux in flux_dist]
+
 					self.flux_avg[media][reaction_id] = flux_avg
 					self.flux_dist[media][reaction_id] = flux_dist
 
 		# Load estimated wcEcoli k_cats from all media conditions
 		self.kcat_avg = {}
-		self.kcat_dist = {}
 		for file_name in FLUX_LOOKUP_FILES:
 			media = file_name.split(os.path.sep)[-1].split(".")[0]
 			self.kcat_avg[media] = {}
-			self.kcat_dist[media] = {}
 			with open(file_name, 'rU') as csvfile:
 				reader = JsonReader(csvfile, dialect=CSV_DIALECT)
 				for row in reader:
 					reaction_id = row.get("reaction id")
 					# enzyme_id = row.get("enzyme id")
 					kcat_avg = row.get("k_cat avg")
-					kcat_dist = row.get("k_cat distribution")
 					self.kcat_avg[media][reaction_id] = kcat_avg
-					self.kcat_dist[media][reaction_id] = kcat_dist
+
+
+	def get_fluxes(self, flux_type, media, reaction_ids):
+		''' Get a flux for each reaction in reaction_ids'''
+
+		transport_fluxes = {}
+		if flux_type == 'average':
+			transport_fluxes = {
+				transport_id: self.flux_avg[media][transport_id]
+				for transport_id in reaction_ids}
+		if flux_type == 'distribution':
+			transport_fluxes = {
+				transport_id: random.choice(self.flux_dist[media][transport_id])
+				for transport_id in reaction_ids}
+
+		return transport_fluxes
