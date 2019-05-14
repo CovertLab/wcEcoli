@@ -1,11 +1,17 @@
 from __future__ import absolute_import, division, print_function
 
 import time
+import os
+import csv
 from scipy import constants
 
 from agent.inner import CellSimulation
 from environment.condition.look_up_tables.look_up import LookUp
+from reconstruction.spreadsheets import JsonReader
+from itertools import ifilter
 
+EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
+CSV_DIALECT = csv.excel_tab
 TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 69, 0]]
 
@@ -33,7 +39,11 @@ amino_acids = [
 	'VAL'
 ]
 
-class TransportMinimal(CellSimulation):
+aa_p_ids = [aa_id + "[p]" for aa_id in amino_acids]
+exchange_molecules = ["OXYGEN-MOLECULE[p]", "GLC[p]"]
+exchange_ids = exchange_molecules + aa_p_ids
+
+class TransportLookup(CellSimulation):
 	''''''
 
 	def __init__(self, state):
@@ -55,11 +65,23 @@ class TransportMinimal(CellSimulation):
 		# make look up object
 		self.look_up = LookUp()
 
+		# Make map of external molecule_ids with a location tag (as used in reaction stoichiometry) to molecule_ids in the environment
+		self.molecule_to_external_map = {}
+		self.external_to_molecule_map = {}
+		with open(EXTERNAL_MOLECULES_FILE, 'rU') as csvfile:
+			reader = JsonReader(
+				ifilter(lambda x: x.lstrip()[0] != "#", csvfile), # Strip comments
+				dialect = CSV_DIALECT)
+			for row in reader:
+				molecule_id = row['molecule id']
+				location = row['exchange molecule location']
+				self.molecule_to_external_map[molecule_id + location] = molecule_id
+				self.external_to_molecule_map[molecule_id] = molecule_id + location
+
 		# exchange_ids declares which molecules' exchange will be controlled by transport
-		aa_p_ids = [aa_id + "[p]" for aa_id in amino_acids]
-		exchange_molecules = ["OXYGEN-MOLECULE[p]", "GLC[p]"]
-		exchange_ids = exchange_molecules + aa_p_ids
 		self.transport_reactions_ids = self.reactions_from_exchange(exchange_ids)
+
+		import ipdb; ipdb.set_trace()
 
 		# get the current flux lookup table, and set initial transport fluxes
 		self.current_flux_lookup = self.look_up.avg_flux[self.media_id]
@@ -76,12 +98,12 @@ class TransportMinimal(CellSimulation):
 		# convert to counts
 		delta_counts = self.flux_to_counts(self.transport_fluxes)
 
+		# Get the deltas for environmental molecules
 		environment_deltas = {}
-		for molecule in self.external_concentrations.keys():
-			# TODO -- use external exchange map rather than (molecule + '[p]')
-			molecule_p = molecule + '[p]'
-			if molecule_p in delta_counts:
-				environment_deltas[molecule] = delta_counts[molecule_p]
+		for molecule_id in delta_counts.keys():
+			if molecule_id in self.molecule_to_external_map:
+				external_molecule_id = self.molecule_to_external_map[molecule_id]
+				environment_deltas[external_molecule_id] = delta_counts[molecule_id]
 
 		# accumulate in environment_change
 		self.accumulate_deltas(environment_deltas)

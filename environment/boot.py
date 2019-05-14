@@ -11,7 +11,7 @@ from agent.boot import BootAgent
 from environment.lattice import EnvironmentSpatialLattice
 from environment.surrogates.chemotaxis import Chemotaxis
 from environment.surrogates.endocrine import Endocrine
-from environment.surrogates.transport_lookup import TransportMinimal
+from environment.surrogates.transport_lookup import TransportLookup
 from environment.surrogates.transport_composite import TransportComposite
 from models.ecoli.sim.simulation import ecoli_simulation
 from environment.condition.make_media import Media
@@ -268,7 +268,7 @@ def boot_endocrine(agent_id, agent_type, agent_config):
 	return inner
 
 # Transport lookup minimal surrogate initialize and boot
-def initialize_transport_minimal(boot_config, synchronize_config):
+def initialize_transport_lookup(boot_config, synchronize_config):
 	'''
 	Args:
 		boot_config (dict): essential options for initializing a simulation
@@ -278,9 +278,9 @@ def initialize_transport_minimal(boot_config, synchronize_config):
 		simulation (CellSimulation): The actual simulation which will perform the calculations.
 	'''
 	boot_config.update(synchronize_config)
-	return TransportMinimal(boot_config)
+	return TransportLookup(boot_config)
 
-def boot_transport_minimal(agent_id, agent_type, agent_config):
+def boot_transport_lookup(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
 
@@ -297,7 +297,7 @@ def boot_transport_minimal(agent_id, agent_type, agent_config):
 		agent_type,
 		agent_config,
 		options,
-		initialize_transport_minimal)
+		initialize_transport_lookup)
 
 	return inner
 
@@ -320,7 +320,7 @@ def initialize_transport_composite(boot_config, synchronize_config):
 
 	# a dict mapping each subprocess to its initialization function
 	network_config['initialize'] = {
-		'transport': initialize_transport_minimal,
+		'transport': initialize_transport_lookup,
 		'ecoli': initialize_ecoli}
 
 	# connections between the messages of sub-agent simulations and those used by the composite
@@ -373,7 +373,7 @@ class BootEnvironment(BootAgent):
 			'ecoli': boot_ecoli,
 			'chemotaxis': boot_chemotaxis,
 			'endocrine': boot_endocrine,
-			'transport_minimal': boot_transport_minimal,
+			'transport_lookup': boot_transport_lookup,
 			'transport_composite': boot_transport_composite,
 			}
 
