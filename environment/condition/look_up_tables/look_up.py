@@ -84,7 +84,7 @@ class LookUp(object):
 		return fluxes
 
 	def get_concs(self, lookup_type, media, molecule_ids):
-		''' Get a flux for each reaction in reaction_ids'''
+		''' Get a concentration for each molecule in molecule_ids'''
 
 		concentrations = {}
 		if lookup_type == 'average':
