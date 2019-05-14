@@ -654,10 +654,10 @@ class BuildNetwork(object):
 				# stoichiometric coefficient.
 				if stoich > 0:
 					self._append_edge(node_type, reaction_id, metabolite,
-									  stoich)
+						stoich)
 				else:
 					self._append_edge(node_type, metabolite, reaction_id,
-									  stoich)
+						stoich)
 
 		# Add specific charging reactions
 		# TODO (Travis): add charged/uncharged tRNA as RNA not metabolites?
