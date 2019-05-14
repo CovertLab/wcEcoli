@@ -13,7 +13,7 @@ TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 69, 0]]
 
 CSV_DIALECT = csv.excel_tab
-TRANSPORT_REACTIONS_FILE = os.path.join("environment", "condition", "look_up_tables", "transport_reactions.tsv")
+TRANSPORT_REACTIONS_FILE = os.path.join("reconstruction", "ecoli", "flat", "transport_reactions.tsv")
 LIST_OF_LOOKUP_FILES = (
 	os.path.join("environment", "condition", "look_up_tables", "avg_flux", "minimal.tsv"),
 	os.path.join("environment", "condition", "look_up_tables", "avg_flux", "minimal_minus_oxygen.tsv"),

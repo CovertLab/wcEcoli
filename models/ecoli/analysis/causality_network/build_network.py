@@ -588,11 +588,27 @@ class BuildNetwork(object):
 		# Get reaction to catalyst dict from sim_data
 		reaction_catalysts = self.sim_data.process.metabolism.reactionCatalysts
 
+		# get transport reactions and remove from metabolism
+		transport_reactions_raw = self.sim_data.process.metabolism.transport_reactions
+		transport_reactions = []
+
+		# TODO -- make transport_reactions a list of ids, don't need the rest of the file.
+		for transport_reaction in transport_reactions_raw:
+			reaction_id = transport_reaction.get('reaction id')
+			transport_reactions.append(reaction_id)
+
 		# Initialize list of metabolite IDs
 		metabolite_ids = []
 
 		# Loop through all reactions
 		for reaction_id, stoich_dict in reaction_stoich.iteritems():
+
+			node_type = 'Metabolism'
+
+			# make a transport node if the reaction is in transport_reactions list
+			if reaction_id in transport_reactions:
+				node_type = 'Transport'
+
 			# Initialize a single metabolism node for each reaction
 			metabolism_node = Node()
 
@@ -602,13 +618,13 @@ class BuildNetwork(object):
 			elif reaction_id.startswith("RXN"):
 				reaction_url_tag = "-".join(reaction_id.split("-")[:2])
 			else:
-				reaction_url_tag =  reaction_id.split("-RXN")[0] + "-RXN"
+				reaction_url_tag = reaction_id.split("-RXN")[0] + "-RXN"
 			reaction_url = URL_TEMPLATE.format(reaction_url_tag.replace(" (reverse)", ""))
 
 			# Add attributes to the node
 			attr = {
 				'node_class': 'Process',
-				'node_type': 'Metabolism',
+				'node_type': node_type,
 				'node_id': reaction_id,
 				'name': reaction_id,
 				'url': reaction_url,
@@ -624,7 +640,7 @@ class BuildNetwork(object):
 
 			# Add an edge from each catalyst to the metabolism node
 			for catalyst in catalyst_list:
-				self._append_edge("Metabolism", catalyst, reaction_id)
+				self._append_edge(node_type, catalyst, reaction_id)
 
 			# Loop through all metabolites participating in the reaction
 			for metabolite, stoich in stoich_dict.items():
@@ -637,11 +653,11 @@ class BuildNetwork(object):
 				# Note: the direction of the edge is determined by the sign of the
 				# stoichiometric coefficient.
 				if stoich > 0:
-					self._append_edge("Metabolism", reaction_id, metabolite,
-						stoich)
+					self._append_edge(node_type, reaction_id, metabolite,
+									  stoich)
 				else:
-					self._append_edge("Metabolism", metabolite, reaction_id,
-						stoich)
+					self._append_edge(node_type, metabolite, reaction_id,
+									  stoich)
 
 		# Add specific charging reactions
 		# TODO (Travis): add charged/uncharged tRNA as RNA not metabolites?
