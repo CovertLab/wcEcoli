@@ -12,7 +12,7 @@ from reconstruction.spreadsheets import JsonReader
 TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 69, 0]]
 
-CSV_DIALECT = csv.excel_tab
+TSV_DIALECT = csv.excel_tab
 REACTIONS_FILE = os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv")
 TRANSPORT_IDS_FILE = os.path.join("reconstruction", "ecoli", "flat", "transport_reactions.tsv")
 
@@ -68,8 +68,8 @@ class TransportMinimal(CellSimulation):
 		# make dict of transport reactions
 		# get all reactions
 		all_reactions = {}
-		with open(REACTIONS_FILE, 'rU') as csvfile:
-			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+		with open(REACTIONS_FILE, 'rU') as tsvfile:
+			reader = JsonReader(tsvfile, dialect=TSV_DIALECT)
 			for row in reader:
 				reaction_id = row["reaction id"]
 				stoichiometry = row["stoichiometry"]
@@ -83,8 +83,8 @@ class TransportMinimal(CellSimulation):
 
 		# make dict of reactions in TRANSPORT_IDS_FILE
 		self.all_transport_reactions = {}
-		with open(TRANSPORT_IDS_FILE, 'rU') as csvfile:
-			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+		with open(TRANSPORT_IDS_FILE, 'rU') as tsvfile:
+			reader = JsonReader(tsvfile, dialect=TSV_DIALECT)
 			for row in reader:
 				reaction_id = row["reaction id"]
 				self.all_transport_reactions[reaction_id] = {
@@ -99,8 +99,8 @@ class TransportMinimal(CellSimulation):
 		for file_name in LIST_OF_LOOKUP_FILES:
 			attrName = file_name.split(os.path.sep)[-1].split(".")[0]
 			self.flux_lookup[attrName] = {}
-			with open(file_name, 'rU') as csvfile:
-				reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+			with open(file_name, 'rU') as tsvfile:
+				reader = JsonReader(tsvfile, dialect=TSV_DIALECT)
 				for row in reader:
 					reaction_id = row["reaction id"]
 					flux = row["average flux mmol/L"]

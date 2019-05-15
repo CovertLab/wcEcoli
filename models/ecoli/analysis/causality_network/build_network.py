@@ -589,13 +589,7 @@ class BuildNetwork(object):
 		reaction_catalysts = self.sim_data.process.metabolism.reactionCatalysts
 
 		# get transport reactions and remove from metabolism
-		transport_reactions_raw = self.sim_data.process.metabolism.transport_reactions
-		transport_reactions = []
-
-		# make a list of transport reactions
-		for transport_reaction in transport_reactions_raw:
-			reaction_id = transport_reaction.get('reaction id')
-			transport_reactions.append(reaction_id)
+		transport_reactions = set(self.sim_data.process.metabolism.transport_reactions)
 
 		# Initialize list of metabolite IDs
 		metabolite_ids = []
@@ -605,7 +599,7 @@ class BuildNetwork(object):
 
 			node_type = 'Metabolism'
 
-			# make a transport node if the reaction is in transport_reactions list
+			# make a transport node if the reaction is in transport_reactions
 			if reaction_id in transport_reactions:
 				node_type = 'Transport'
 
