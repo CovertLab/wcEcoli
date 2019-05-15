@@ -210,7 +210,7 @@ def make_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
 		transporters = specs.get('catalyzed by')
 
 		# rate law for each transporter
-		# TODO -- make sure that transporter is in the rate law configuration
+		# TODO (Eran) -- make sure that transporter is in the rate law configuration
 		for transporter in transporters:
 			cofactors_sets = rate_law_configuration[transporter]["reaction_cofactors"][reaction_id]
 			partition = rate_law_configuration[transporter]["partition"]

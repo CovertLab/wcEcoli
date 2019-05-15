@@ -17,10 +17,9 @@ from wholecell.kinetic_rate_laws.kinetic_rate_laws import KineticFluxModel
 TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
 
-CSV_DIALECT = csv.excel_tab
-LOOKUP_DIR = os.path.join('environment', 'condition', 'look_up_tables')
-TRANSPORT_REACTIONS_FILE = os.path.join(LOOKUP_DIR, 'transport_reactions.tsv')
-
+TSV_DIALECT = csv.excel_tab
+REACTIONS_FILE = os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv")
+TRANSPORT_IDS_FILE = os.path.join("reconstruction", "ecoli", "flat", "transport_reactions.tsv")
 KINETIC_PARAMETERS_FILE = os.path.join('wholecell', 'kinetic_rate_laws', 'parameters', 'glt.json')
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
 
@@ -47,27 +46,44 @@ class TransportKinetics(CellSimulation):
 		self.division = []
 
 		# make dict of transport reactions
-		self.all_transport_reactions = {}
-		with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
-			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
+		# get all reactions
+		all_reactions = {}
+		with open(REACTIONS_FILE, 'rU') as tsvfile:
+			reader = JsonReader(
+				ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
+				dialect = TSV_DIALECT)
 			for row in reader:
 				reaction_id = row["reaction id"]
 				stoichiometry = row["stoichiometry"]
 				reversible = row["is reversible"]
 				catalyzed = row["catalyzed by"]
-				self.all_transport_reactions[reaction_id] = {
+				all_reactions[reaction_id] = {
 					"stoichiometry": stoichiometry,
 					"is reversible": reversible,
 					"catalyzed by": catalyzed,
 				}
 
+		# make dict of reactions in TRANSPORT_IDS_FILE
+		self.all_transport_reactions = {}
+		with open(TRANSPORT_IDS_FILE, 'rU') as tsvfile:
+			reader = JsonReader(
+				ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
+				dialect = TSV_DIALECT)
+			for row in reader:
+				reaction_id = row["reaction id"]
+				self.all_transport_reactions[reaction_id] = {
+					"stoichiometry": all_reactions[reaction_id]["stoichiometry"],
+					"is reversible": all_reactions[reaction_id]["is reversible"],
+					"catalyzed by": all_reactions[reaction_id]["catalyzed by"],
+				}
+
 		# Make map of external molecule_ids with a location tag (as used in reaction stoichiometry) to molecule_ids in the environment
 		self.molecule_to_external_map = {}
 		self.external_to_molecule_map = {}
-		with open(EXTERNAL_MOLECULES_FILE, 'rU') as csvfile:
+		with open(EXTERNAL_MOLECULES_FILE, 'rU') as tsvfile:
 			reader = JsonReader(
-				ifilter(lambda x: x.lstrip()[0] != "#", csvfile), # Strip comments
-				dialect = CSV_DIALECT)
+				ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
+				dialect = TSV_DIALECT)
 			for row in reader:
 				molecule_id = row['molecule id']
 				location = row['exchange molecule location']
@@ -99,11 +115,16 @@ class TransportKinetics(CellSimulation):
 		# This is used by transport_composite to set boundary_views in wcEcoli
 		self.molecule_ids = self.kinetic_rate_laws.molecule_ids
 
+
+		import ipdb;		ipdb.set_trace()
+
+
 		# Get saved average concentrations of all molecule_ids for minimal condition
-		self.concentrations = self.look_up.get_concs('average', 'minimal', self.molecule_ids)
+		self.concentrations = self.look_up.look_up('average', 'minimal', self.molecule_ids)
 
 
 		import ipdb; ipdb.set_trace()
+
 
 		# self.concentrations = {mol_id: current_conc_lookup[mol_id] for mol_id in self.molecule_ids}
 
