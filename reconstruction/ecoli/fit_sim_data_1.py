@@ -702,7 +702,7 @@ def expressionConverge(
 			ribosomeActiveFraction = getRibosomeActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation)
 
 		if not disable_ribosome_capacity_fitting:
-			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, ribosomeActiveFraction, flat_elongation)
+			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, ribosomeActiveFraction, disable_ribosome_active_fraction_fitting, flat_elongation)
 
 		if not disable_rnapoly_capacity_fitting:
 			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, rnapActiveFraction, Km, flat_elongation)
@@ -1265,7 +1265,7 @@ def createBulkContainer(sim_data, expression, doubling_time):
 
 	return bulkContainer
 
-def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, ribosomeActiveFraction, flat_elongation=False):
+def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, ribosomeActiveFraction, disable_ribosome_active_fraction_fitting, flat_elongation=False):
 	"""
 	Set counts of ribosomal subunits based on three constraints:
 	(1) Expected protein distribution doubles in one cell cycle
@@ -1313,10 +1313,11 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 		netLossRate_protein,
 		proteinCounts)
 
-	# TODO: Below line is required for fitting ribosome active fraction, but
-	# is temporarily commented out in order to match calculation in the
-	# release-paper branch.
-	# nRibosomesNeeded /= ribosomeActiveFraction
+	# To match calculations in the release-paper branch, ribosome active
+	# fraction is incorporated into the estimation of the number of ribosomes
+	# needed only if the ribosome active fraction is being fit.
+	if not disable_ribosome_active_fraction_fitting:
+		nRibosomesNeeded /= ribosomeActiveFraction
 
 	# Minimum number of ribosomes needed
 	constraint1_ribosome30SCounts = (
