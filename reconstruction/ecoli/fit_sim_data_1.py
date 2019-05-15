@@ -1312,7 +1312,11 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 		elongation_rates * (units.aa / units.s),
 		netLossRate_protein,
 		proteinCounts)
-	nRibosomesNeeded /= ribosomeActiveFraction
+
+	# TODO: Below line is required for fitting ribosome active fraction, but
+	# is temporarily commented out in order to match calculation in the
+	# release-paper branch.
+	# nRibosomesNeeded /= ribosomeActiveFraction
 
 	# Minimum number of ribosomes needed
 	constraint1_ribosome30SCounts = (
