@@ -12,6 +12,7 @@ from environment.lattice import EnvironmentSpatialLattice
 from environment.surrogates.chemotaxis import Chemotaxis
 from environment.surrogates.endocrine import Endocrine
 from environment.surrogates.transport_lookup_minimal import TransportMinimal
+from environment.surrogates.transport_kinetics import TransportKinetics
 from environment.surrogates.transport_composite import TransportComposite
 from models.ecoli.sim.simulation import ecoli_simulation
 from environment.condition.make_media import Media
@@ -301,6 +302,41 @@ def boot_transport_minimal(agent_id, agent_type, agent_config):
 
 	return inner
 
+
+# Transport kinetic surrogate initialize and boot
+def initialize_kinetic_transport(boot_config, synchronize_config):
+	'''
+	Args:
+		boot_config (dict): essential options for initializing a simulation
+		synchronize_config (dict): additional options that can be passed in for initialization
+	Returns:
+		simulation (CellSimulation): The actual simulation which will perform the calculations.
+	'''
+	boot_config.update(synchronize_config)
+	return TransportKinetics(boot_config)
+
+def boot_kinetic_transport(agent_id, agent_type, agent_config):
+	agent_id = agent_id
+	outer_id = agent_config['outer_id']
+
+	# initialize state and options
+	state = {
+		'volume': 1.0,
+		'environment_change': {}}
+	agent_config['state'] = state
+	options = {}
+
+	inner = Inner(
+		agent_id,
+		outer_id,
+		agent_type,
+		agent_config,
+		options,
+		initialize_kinetic_transport)
+
+	return inner
+
+
 # Transport composite initialize and boot
 def initialize_transport_composite(boot_config, synchronize_config):
 	'''
@@ -374,6 +410,7 @@ class BootEnvironment(BootAgent):
 			'chemotaxis': boot_chemotaxis,
 			'endocrine': boot_endocrine,
 			'transport_minimal': boot_transport_minimal,
+			'kinetics': boot_kinetic_transport,
 			'transport_composite': boot_transport_composite,
 			}
 

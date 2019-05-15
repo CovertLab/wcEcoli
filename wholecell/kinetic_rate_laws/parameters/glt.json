@@ -1,0 +1,44 @@
+{
+  "ABC-13-RXN": {
+    "ABC-13-CPLX[i]": {
+      "ATP[c]": null,
+      "GLT[p]": 1e-3,
+      "WATER[c]": null,
+      "kcat_f": 1e0
+    }
+  },
+  "TRANS-RXN-122": {
+    "DCTA-MONOMER[i]": {
+      "GLT[p]": 1e-3,
+      "NA+[p]": 1e-5,
+      "kcat_f": 0.0
+    },
+    "GLTP-MONOMER[i]": {
+      "GLT[p]": 1e-3,
+      "NA+[p]": 1e-5,
+      "PROTON[p]": null,
+      "kcat_f": 0.0
+    }
+  },
+  "TRANS-RXN-162": {
+    "GLTP-MONOMER[i]": {
+      "GLT[p]": 1e-4,
+      "NA+[p]": 1e-5,
+      "PROTON[p]": null,
+      "kcat_f": 1e6
+    }
+  },
+  "TRANS-RXN-261": {
+    "XASA-MONOMER[i]": {
+      "4-AMINO-BUTYRATE[c]": null,
+      "GLT[p]": 1e-3,
+      "kcat_f": 1e0
+    }
+  },
+  "TRANS-RXN0-569-GLT//GLT.9.": {
+    "G6458-MONOMER[i]": {
+      "GLT[c]": 1e-4,
+      "kcat_f": 0.0
+    }
+  }
+}
