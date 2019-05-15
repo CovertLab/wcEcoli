@@ -12,7 +12,6 @@ from reconstruction.spreadsheets import JsonReader
 from itertools import ifilter
 
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
-
 REACTIONS_FILE = os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv")
 TRANSPORT_IDS_FILE = os.path.join("reconstruction", "ecoli", "flat", "transport_reactions.tsv")
 
@@ -112,7 +111,6 @@ class TransportLookup(CellSimulation):
 				location = row['exchange molecule location']
 				self.molecule_to_external_map[molecule_id + location] = molecule_id
 				self.external_to_molecule_map[molecule_id] = molecule_id + location
-
 
 		# make look up object
 		self.look_up = LookUp()
