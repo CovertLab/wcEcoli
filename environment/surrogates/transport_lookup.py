@@ -112,14 +112,14 @@ class TransportLookup(CellSimulation):
 				self.molecule_to_external_map[molecule_id + location] = molecule_id
 				self.external_to_molecule_map[molecule_id] = molecule_id + location
 
-		# make look up object
-		self.look_up = LookUp()
-
 		# exchange_ids declares which molecules' exchange will be applied
 		self.transport_reaction_ids = self.reactions_from_exchange(exchange_ids)
 
+		# make look up object
+		self.look_up = LookUp()
+
 		# get the fluxes
-		self.transport_fluxes = self.look_up.get_fluxes(
+		self.transport_fluxes = self.look_up.look_up(
 			self.lookup_type,
 			self.media_id,
 			self.transport_reaction_ids)
@@ -127,13 +127,12 @@ class TransportLookup(CellSimulation):
 		# adjust the fluxes
 		# self.transport_fluxes = self.adjust_fluxes(self.transport_fluxes)
 
-
 	def update_state(self):
 		# nAvogadro is in 1/mol --> convert to 1/mmol. volume is in fL --> convert to L
 		self.molar_to_counts = (self.nAvogadro * 1e-3) * (self.volume * 1e-15)
 
 		# get transport fluxes
-		self.transport_fluxes = self.look_up.get_fluxes(
+		self.transport_fluxes = self.look_up.look_up(
 			self.lookup_type,
 			self.media_id,
 			self.transport_reaction_ids)

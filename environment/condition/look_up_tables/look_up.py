@@ -3,97 +3,70 @@ from __future__ import absolute_import, division, print_function
 import os
 import csv
 import random
-
+from itertools import ifilter
 from reconstruction.spreadsheets import JsonReader
 
 LOOKUP_DIR = os.path.join('environment', 'condition', 'look_up_tables')
 
-CONC_LOOKUP_FILES = (
-	os.path.join(LOOKUP_DIR, "transport_concentrations", "minimal.tsv"),
-	os.path.join(LOOKUP_DIR, "transport_concentrations", "minimal_minus_oxygen.tsv"),
-	os.path.join(LOOKUP_DIR, "transport_concentrations", "minimal_plus_amino_acids.tsv"),
-)
-FLUX_LOOKUP_FILES = (
-	os.path.join(LOOKUP_DIR, "transport_fluxes", "minimal.tsv"),
-	os.path.join(LOOKUP_DIR, "transport_fluxes", "minimal_minus_oxygen.tsv"),
-	os.path.join(LOOKUP_DIR, "transport_fluxes", "minimal_plus_amino_acids.tsv"),
-)
+MEDIA_IDS = ["minimal", "minimal_minus_oxygen", "minimal_plus_amino_acids"]
 
-CSV_DIALECT = csv.excel_tab
+CONC_LOOKUP_FILES = [
+	os.path.join(LOOKUP_DIR, "transport_concentrations", media_id + ".tsv")
+	for media_id in MEDIA_IDS]
+
+FLUX_LOOKUP_FILES = [
+	os.path.join(LOOKUP_DIR, "transport_fluxes", media_id + ".tsv")
+	for media_id in MEDIA_IDS]
+
+TSV_DIALECT = csv.excel_tab
 
 class LookUp(object):
 
 	def __init__(self):
 
-		# Load saved wcEcoli  concentrations from all media conditions
-		self.concentration_avg = {}
-		self.concentration_dist = {}
-		for file_name in CONC_LOOKUP_FILES:
-			media = file_name.split(os.path.sep)[-1].split(".")[0]
-			self.concentration_avg[media] = {}
-			self.concentration_dist[media] = {}
-			with open(file_name, 'rU') as csvfile:
-				reader = JsonReader(csvfile, dialect=CSV_DIALECT)
-				for row in reader:
-					molecule_id = row.get("enzyme id")
-					conc_avg = row.get("concentration avg mmol/L")
-					conc_dist = row.get("concentration distribution mmol/L")
+		self.lookup_avg = {media_id: {} for media_id in MEDIA_IDS}
+		self.lookup_dist = {media_id: {} for media_id in MEDIA_IDS}
 
-					# convert to list of floats
-					conc_dist = conc_dist.replace('[', '').replace(']', '').split(', ')
-					conc_dist = [float(conc) for conc in conc_dist]
+		for filename in (CONC_LOOKUP_FILES + FLUX_LOOKUP_FILES):
+			media_id = filename.split(os.path.sep)[-1].split(".")[0]
+			avg, dist = load_lookup(filename)
+			self.lookup_avg[media_id].update(avg)
+			self.lookup_dist[media_id].update(dist)
 
-					self.concentration_avg[media][molecule_id] = conc_avg
-					self.concentration_dist[media][molecule_id] = conc_dist
+	def look_up(self, lookup_type, media, keys):
+		''' return look up values for each key in keys'''
 
-		# Load saved wcEcoli fluxes from all media conditions
-		self.flux_avg = {}
-		self.flux_dist = {}
-		for file_name in FLUX_LOOKUP_FILES:
-			media = file_name.split(os.path.sep)[-1].split(".")[0]
-			self.flux_avg[media] = {}
-			self.flux_dist[media] = {}
-			with open(file_name, 'rU') as csvfile:
-				reader = JsonReader(csvfile, dialect=CSV_DIALECT)
-				for row in reader:
-					reaction_id = row.get("reaction id")
-					flux_avg = row.get("flux avg mmol/L/s")
-					flux_dist = row.get("flux distribution mmol/L/s")
-
-					# convert to list of floats
-					flux_dist = flux_dist.replace('[', '').replace(']', '').split(', ')
-					flux_dist = [float(flux) for flux in flux_dist]
-
-					self.flux_avg[media][reaction_id] = flux_avg
-					self.flux_dist[media][reaction_id] = flux_dist
-
-
-	def get_fluxes(self, lookup_type, media, reaction_ids):
-		''' Get a flux for each reaction in reaction_ids'''
-
-		fluxes = {}
+		values = {}
 		if lookup_type == 'average':
-			fluxes = {
-				reaction_id: self.flux_avg[media][reaction_id]
-				for reaction_id in reaction_ids}
+			values = {
+				key: self.lookup_avg[media][key]
+				for key in keys}
 		if lookup_type == 'distribution':
-			fluxes = {
-				reaction_id: random.choice(self.flux_dist[media][reaction_id])
-				for reaction_id in reaction_ids}
+			values = {
+				key: random.choice(self.lookup_avg[media][key])
+				for key in keys}
 
-		return fluxes
+		return values
 
-	def get_concs(self, lookup_type, media, molecule_ids):
-		''' Get a concentration for each molecule in molecule_ids'''
 
-		concentrations = {}
-		if lookup_type == 'average':
-			concentrations = {
-				molecule_id: self.concentration_avg[media][molecule_id]
-				for molecule_id in molecule_ids}
-		if lookup_type == 'distribution':
-			concentrations = {
-				molecule_id: random.choice(self.concentration_dist[media][molecule_id])
-				for molecule_id in molecule_ids}
+def load_lookup(filename):
+	''' load a file and pass back dicts with lookup_avg and lookup_dist'''
+	lookup_avg = {}
+	lookup_dist = {}
+	with open(filename, 'rU') as tsvfile:
+		reader = JsonReader(
+			ifilter(lambda x: x.lstrip()[0] != "#", tsvfile),  # Strip comments
+			dialect=TSV_DIALECT)
+		for row in reader:
+			key = row.get("id")
+			avg = row.get("average")
+			dist = row.get("distribution")
 
-		return concentrations
+			# convert to list of floats
+			dist = dist.replace('[', '').replace(']', '').split(', ')
+			dist = [float(value) for value in dist]
+
+			lookup_avg[key] = avg
+			lookup_dist[key] = dist
+
+	return lookup_avg, lookup_dist
