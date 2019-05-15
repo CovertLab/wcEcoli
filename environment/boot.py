@@ -11,8 +11,8 @@ from agent.boot import BootAgent
 from environment.lattice import EnvironmentSpatialLattice
 from environment.surrogates.chemotaxis import Chemotaxis
 from environment.surrogates.endocrine import Endocrine
-from environment.surrogates.transport_lookup_minimal import TransportMinimal
 from environment.surrogates.transport_kinetics import TransportKinetics
+from environment.surrogates.transport_lookup import TransportLookup
 from environment.surrogates.transport_composite import TransportComposite
 from models.ecoli.sim.simulation import ecoli_simulation
 from environment.condition.make_media import Media
@@ -66,6 +66,7 @@ def boot_lattice(agent_id, agent_type, agent_config):
 	environment = EnvironmentSpatialLattice(agent_config)
 
 	return EnvironmentAgent(agent_id, agent_type, agent_config, environment)
+
 
 # wcEcoli initialize and boot
 def initialize_ecoli(boot_config, synchronize_config):
@@ -202,6 +203,7 @@ def boot_ecoli(agent_id, agent_type, agent_config):
 
 	return inner
 
+
 # Chemotaxis surrogate initialize and boot
 def initialize_chemotaxis(boot_config, synchronize_config):
 	'''
@@ -234,6 +236,7 @@ def boot_chemotaxis(agent_id, agent_type, agent_config):
 		initialize_chemotaxis)
 
 	return inner
+
 
 # Endocrine surrogate initialize and boot
 def initialize_endocrine(boot_config, synchronize_config):
@@ -268,8 +271,9 @@ def boot_endocrine(agent_id, agent_type, agent_config):
 
 	return inner
 
+
 # Transport lookup minimal surrogate initialize and boot
-def initialize_transport_minimal(boot_config, synchronize_config):
+def initialize_lookup_transport(boot_config, synchronize_config):
 	'''
 	Args:
 		boot_config (dict): essential options for initializing a simulation
@@ -279,14 +283,15 @@ def initialize_transport_minimal(boot_config, synchronize_config):
 		simulation (CellSimulation): The actual simulation which will perform the calculations.
 	'''
 	boot_config.update(synchronize_config)
-	return TransportMinimal(boot_config)
+	return TransportLookup(boot_config)
 
-def boot_transport_minimal(agent_id, agent_type, agent_config):
+def boot_lookup_transport(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
 
 	# initialize state and options
 	state = {
+		'lookup': 'average',
 		'volume': 1.0,
 		'environment_change': {}}
 	agent_config['state'] = state
@@ -298,7 +303,7 @@ def boot_transport_minimal(agent_id, agent_type, agent_config):
 		agent_type,
 		agent_config,
 		options,
-		initialize_transport_minimal)
+		initialize_lookup_transport)
 
 	return inner
 
@@ -338,7 +343,7 @@ def boot_kinetic_transport(agent_id, agent_type, agent_config):
 
 
 # Transport composite initialize and boot
-def initialize_transport_composite(boot_config, synchronize_config):
+def initialize_lookup_transport_composite(boot_config, synchronize_config):
 	'''
 	Initialization function for the transport composite agent. This sets up a network_config, which defines
 	how messages are passed between subprocesses and what functions can be used by the composite.
@@ -356,7 +361,7 @@ def initialize_transport_composite(boot_config, synchronize_config):
 
 	# a dict mapping each subprocess to its initialization function
 	network_config['initialize'] = {
-		'transport': initialize_transport_minimal,
+		'transport': initialize_lookup_transport,
 		'ecoli': initialize_ecoli}
 
 	# connections between the messages of sub-agent simulations and those used by the composite
@@ -377,7 +382,7 @@ def initialize_transport_composite(boot_config, synchronize_config):
 
 	return TransportComposite(boot_config, synchronize_config, network_config)
 
-def boot_transport_composite(agent_id, agent_type, agent_config):
+def boot_lookup_transport_composite(agent_id, agent_type, agent_config):
 	agent_id = agent_id
 	outer_id = agent_config['outer_id']
 
@@ -396,7 +401,7 @@ def boot_transport_composite(agent_id, agent_type, agent_config):
 		agent_type,
 		agent_config,
 		options,
-		initialize_transport_composite)
+		initialize_lookup_transport_composite)
 
 	return inner
 
@@ -409,9 +414,9 @@ class BootEnvironment(BootAgent):
 			'ecoli': boot_ecoli,
 			'chemotaxis': boot_chemotaxis,
 			'endocrine': boot_endocrine,
-			'transport_minimal': boot_transport_minimal,
 			'kinetics': boot_kinetic_transport,
-			'transport_composite': boot_transport_composite,
+			'lookup': boot_lookup_transport,
+			'lookup_composite': boot_lookup_transport_composite,
 			}
 
 if __name__ == '__main__':
