@@ -83,17 +83,17 @@ class LookUp(object):
 
 		return fluxes
 
-	def get_concs(self, lookup_type, media, reaction_ids):
-		''' Get a flux for each reaction in reaction_ids'''
+	def get_concs(self, lookup_type, media, molecule_ids):
+		''' Get a concentration for each molecule in molecule_ids'''
 
 		concentrations = {}
 		if lookup_type == 'average':
 			concentrations = {
-				molecule_id: self.conc_dist[media][molecule_id]
-				for molecule_id in reaction_ids}
+				molecule_id: self.concentration_avg[media][molecule_id]
+				for molecule_id in molecule_ids}
 		if lookup_type == 'distribution':
 			concentrations = {
-				molecule_id: random.choice(self.conc_dist[media][molecule_id])
-				for molecule_id in reaction_ids}
+				molecule_id: random.choice(self.concentration_dist[media][molecule_id])
+				for molecule_id in molecule_ids}
 
 		return concentrations
