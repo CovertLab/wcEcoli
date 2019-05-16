@@ -64,7 +64,12 @@ def load_lookup(filename):
 
 			# convert to list of floats
 			dist = dist.replace('[', '').replace(']', '').split(', ')
-			dist = [float(value) for value in dist]
+
+			# check if empty distribution
+			if dist[0]:
+				dist = [float(value) for value in dist]
+			else:
+				dist=[0]
 
 			lookup_avg[key] = avg
 			lookup_dist[key] = dist
