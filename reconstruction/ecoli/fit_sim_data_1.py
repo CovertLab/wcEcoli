@@ -83,6 +83,7 @@ def fitSimData_1(
 		disable_ribosome_active_fraction_fitting=False,
 		flat_elongation=False,
 		adjust_rna_and_protein_parameters=True,
+		alternate_mass_fraction=None,
 		):
 	"""
 	Fits parameters necessary for the simulation based on the knowledge base
@@ -104,6 +105,9 @@ def fitSimData_1(
 			active fraction is not fit to protein synthesis demands
 		adjust_rna_and_protein_parameters (bool) - if True, some RNA and protein
 			expression parameters will be adjusted to get expression
+		alternate_mass_fraction (str) - describes which alternate mass fraction
+			to use (either "protein" or "rna". Default value of None results in
+			original mass fractions.
 	"""
 
 	sim_data = SimulationDataEcoli()

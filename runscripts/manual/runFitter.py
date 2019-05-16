@@ -74,6 +74,10 @@ class RunFitter(scriptBase.ScriptBase):
 			action='store_false',
 			help= "If set, some RNA and protein expression parameters will not be adjusted."
 			)
+		parser.add_argument(
+			'--alternate-mass-fraction', type=str,
+			help="Alternate mass fractions - either 'protein' or 'rna'. Default = None."
+		)
 
 	def parse_args(self):
 		args = super(RunFitter, self).parse_args()
@@ -119,6 +123,7 @@ class RunFitter(scriptBase.ScriptBase):
 				disable_ribosome_active_fraction_fitting=args.disable_ribosome_active_fraction_fitting,
 				flat_elongation=args.flat_elongation,
 				adjust_rna_and_protein_parameters=args.no_expression_adjustment,
+				alternate_mass_fraction=args.alternate_mass_fraction,
 				),
 
 			SymlinkTask(

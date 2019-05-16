@@ -24,6 +24,7 @@ class FitSimDataTask(FireTaskBase):
 		"disable_rnapoly_active_fraction_fitting",
 		"flat_elongation",
 		"adjust_rna_and_protein_parameters",
+		"alternate_mass_fraction",
 		]
 
 	def run_task(self, fw_spec):
@@ -56,6 +57,7 @@ class FitSimDataTask(FireTaskBase):
 				disable_ribosome_active_fraction_fitting=self['disable_ribosome_active_fraction_fitting'],
 				flat_elongation=self['flat_elongation'],
 				adjust_rna_and_protein_parameters=self['adjust_rna_and_protein_parameters'],
+				alternate_mass_fraction=self['alternate_mass_fraction'],
 				)
 
 			sys.setrecursionlimit(4000) #limit found manually
