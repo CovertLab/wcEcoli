@@ -142,6 +142,7 @@ def fitSimData_1(
 		disable_rnapoly_active_fraction_fitting,
 		disable_ribosome_active_fraction_fitting,
 		flat_elongation,
+		alternate_mass_fraction,
 		)
 
 	# Modify other properties
@@ -168,6 +169,7 @@ def fitSimData_1(
 				 disable_rnapoly_capacity_fitting,
 				 disable_rnapoly_active_fraction_fitting,
 				 disable_ribosome_active_fraction_fitting,
+				 alternate_mass_fraction,
 				 ))
 			for tf in conds
 			]
@@ -186,7 +188,8 @@ def fitSimData_1(
 				disable_rnapoly_capacity_fitting,
 				disable_rnapoly_active_fraction_fitting,
 				disable_ribosome_active_fraction_fitting,
-				flat_elongation))
+				flat_elongation,
+				alternate_mass_fraction))
 
 	for conditionKey in cellSpecs:
 		if conditionKey == "basal":
@@ -202,7 +205,8 @@ def fitSimData_1(
 		disable_rnapoly_capacity_fitting,
 		disable_rnapoly_active_fraction_fitting,
 		disable_ribosome_active_fraction_fitting,
-		flat_elongation)
+		flat_elongation,
+		alternate_mass_fraction)
 
 	sim_data.process.transcription.rnaSynthProbFraction = {}
 	sim_data.process.transcription.rnapFractionActiveDict = {}
@@ -220,7 +224,7 @@ def fitSimData_1(
 	if cpus > 1:
 		print "Start parallel processing with %i processes" % (cpus,)
 		pool = Pool(processes = cpus)
-		results = [pool.apply_async(fitCondition, (sim_data, cellSpecs[condition], condition)) for condition in sorted(cellSpecs)]
+		results = [pool.apply_async(fitCondition, (sim_data, cellSpecs[condition], condition, alternate_mass_fraction)) for condition in sorted(cellSpecs)]
 		pool.close()
 		pool.join()
 		for result in results:
@@ -230,7 +234,7 @@ def fitSimData_1(
 		print "End parallel processing"
 	else:
 		for condition in sorted(cellSpecs):
-			cellSpecs.update(fitCondition(sim_data, cellSpecs[condition], condition))
+			cellSpecs.update(fitCondition(sim_data, cellSpecs[condition], condition, alternate_mass_fraction))
 
 	for condition_label in sorted(cellSpecs):
 		nutrients = sim_data.conditions[condition_label]["nutrients"]
@@ -251,7 +255,7 @@ def fitSimData_1(
 		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[condition_label]))
 
 		avgCellDryMassInit, fitAvgSolublePoolMass = rescaleMassForSolubleMetabolites(
-			sim_data, spec["bulkContainer"], concDict, sim_data.conditionToDoublingTime[condition_label]
+			sim_data, spec["bulkContainer"], concDict, sim_data.conditionToDoublingTime[condition_label], alternate_mass_fraction
 			)
 
 		if VERBOSE > 0:
@@ -315,6 +319,7 @@ def buildBasalCellSpecifications(
 		disable_rnapoly_active_fraction_fitting=False,
 		disable_ribosome_active_fraction_fitting=False,
 		flat_elongation=False,
+		alternate_mass_fraction=None,
 		):
 	"""
 	Creates cell specifications for the basal condition by fitting expression.
@@ -330,6 +335,9 @@ def buildBasalCellSpecifications(
 		active fraction is not fit to RNA / protein synthesis demands
 	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
 		active fraction is not fit to protein synthesis demands
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+		to use (either "protein" or "rna". Default value of None results in
+		original mass fractions.
 
 	Requires
 	--------
@@ -381,6 +389,7 @@ def buildBasalCellSpecifications(
 		disable_rnapoly_active_fraction_fitting=disable_rnapoly_active_fraction_fitting,
 		disable_ribosome_active_fraction_fitting=disable_ribosome_active_fraction_fitting,
 		flat_elongation=flat_elongation,
+		alternate_mass_fraction=alternate_mass_fraction,
 		)
 
 	# Store calculated values
@@ -411,7 +420,8 @@ def buildTfConditionCellSpecifications(
 		disable_rnapoly_capacity_fitting=False,
 		disable_rnapoly_active_fraction_fitting=False,
 		disable_ribosome_active_fraction_fitting=False,
-		flat_elongation=False):
+		flat_elongation=False,
+		alternate_mass_fraction=None):
 	"""
 	Creates cell specifications for a given transcription factor by
 	fitting expression. Will set for the active and inactive TF condition.
@@ -430,6 +440,9 @@ def buildTfConditionCellSpecifications(
 	active fraction is not fit to RNA / protein synthesis demands
 	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
 	active fraction is not fit to protein synthesis demands
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+		to use (either "protein" or "rna". Default value of None results in
+		original mass fractions.
 
 	Requires
 	--------
@@ -504,7 +517,8 @@ def buildTfConditionCellSpecifications(
 			disable_rnapoly_capacity_fitting=disable_rnapoly_capacity_fitting,
 			disable_rnapoly_active_fraction_fitting=disable_rnapoly_active_fraction_fitting,
 			disable_ribosome_active_fraction_fitting=disable_ribosome_active_fraction_fitting,
-			flat_elongation=flat_elongation)
+			flat_elongation=flat_elongation,
+			alternate_mass_fraction=alternate_mass_fraction)
 
 		# Store calculated values
 		cellSpecs[conditionKey]["expression"] = expression
@@ -524,7 +538,8 @@ def buildCombinedConditionCellSpecifications(
 		disable_rnapoly_capacity_fitting=False,
 		disable_rnapoly_active_fraction_fitting=False,
 		disable_ribosome_active_fraction_fitting=False,
-		flat_elongation=False):
+		flat_elongation=False,
+		alternate_mass_fraction=None):
 	"""
 	Creates cell specifications for sets of transcription factors being active.
 	These sets include conditions like 'with_aa' or 'no_oxygen' where multiple
@@ -542,6 +557,9 @@ def buildCombinedConditionCellSpecifications(
 	active fraction is not fit to RNA / protein synthesis demands
 	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
 	active fraction is not fit to protein synthesis demands
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+	to use (either "protein" or "rna". Default value of None results in
+	original mass fractions.
 
 	Requires
 	--------
@@ -611,7 +629,8 @@ def buildCombinedConditionCellSpecifications(
 			disable_rnapoly_capacity_fitting=disable_rnapoly_capacity_fitting,
 			disable_rnapoly_active_fraction_fitting=disable_rnapoly_active_fraction_fitting,
 			disable_ribosome_active_fraction_fitting=disable_ribosome_active_fraction_fitting,
-			flat_elongation=flat_elongation)
+			flat_elongation=flat_elongation,
+			alternate_mass_fraction=alternate_mass_fraction)
 
 		# Modify cellSpecs for calculated values
 		cellSpecs[conditionKey]["expression"] = expression
@@ -637,6 +656,7 @@ def expressionConverge(
         disable_rnapoly_active_fraction_fitting=False,
 		disable_ribosome_active_fraction_fitting=False,
 		flat_elongation=False,
+		alternate_mass_fraction=None,
 		):
 	"""
 	Iteratively fits synthesis probabilities for RNA. Calculates initial
@@ -660,6 +680,9 @@ def expressionConverge(
 		active fraction is not fit to RNA / protein synthesis demands
 	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
 		active fraction is not fit to protein synthesis demands
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+		to use (either "protein" or "rna". Default value of None results in
+		original mass fractions.
 
 	Requires
 	--------
@@ -695,9 +718,9 @@ def expressionConverge(
 		initialRnapActiveFraction = copy.copy(rnapActiveFraction)
 		initialRibosomeActiveFraction = copy.copy(ribosomeActiveFraction)
 
-		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
-		bulkContainer = createBulkContainer(sim_data, expression, doubling_time)
-		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
+		expression = setInitialRnaExpression(sim_data, expression, doubling_time, alternate_mass_fraction)
+		bulkContainer = createBulkContainer(sim_data, expression, doubling_time, alternate_mass_fraction)
+		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time, alternate_mass_fraction)
 
 		if not disable_rnapoly_active_fraction_fitting:
 			rnapActiveFraction = getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation)
@@ -712,7 +735,7 @@ def expressionConverge(
 			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, rnapActiveFraction, Km, flat_elongation)
 
 		# Normalize expression and write out changes
-		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
+		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, alternate_mass_fraction, Km)
 
 		degreeOfFitExpression = np.sqrt(np.mean(np.square(initialExpression - expression)))
 		degreeOfFitRnapActiveFraction =  np.sqrt(np.mean(np.square(initialRnapActiveFraction - rnapActiveFraction)))
@@ -732,7 +755,7 @@ def expressionConverge(
 
 	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActiveFraction, ribosomeActiveFraction
 
-def fitCondition(sim_data, spec, condition):
+def fitCondition(sim_data, spec, condition, alternate_mass_fraction):
 	"""
 	Takes a given condition and returns the predicted bulk average, bulk deviation,
 	protein monomer average, protein monomer deviation, and amino acid supply to
@@ -744,6 +767,9 @@ def fitCondition(sim_data, spec, condition):
 	- spec {property (str): property values} - cell specifications for the given condition.
 	This function uses the specs "expression", "concDict", "avgCellDryMassInit",
 	and "doubling_time"
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+		to use (either "protein" or "rna". Default value of None results in
+		original mass fractions.
 
 	Returns
 	--------
@@ -768,6 +794,7 @@ def fitCondition(sim_data, spec, condition):
 		spec["concDict"],
 		spec["avgCellDryMassInit"],
 		spec["doubling_time"],
+		alternate_mass_fraction
 		)
 	spec["bulkAverageContainer"] = bulkAverageContainer
 	spec["bulkDeviationContainer"] = bulkDeviationContainer
@@ -960,7 +987,7 @@ def setCPeriod(sim_data):
 
 	sim_data.growthRateParameters.c_period = sim_data.process.replication.genome_length * units.nt / sim_data.growthRateParameters.dnaPolymeraseElongationRate / 2
 
-def rescaleMassForSolubleMetabolites(sim_data, bulkMolCntr, concDict, doubling_time):
+def rescaleMassForSolubleMetabolites(sim_data, bulkMolCntr, concDict, doubling_time, alternate_mass_fraction):
 	"""
 	Adjust the cell's mass to accomodate target small molecule concentrations.
 
@@ -969,6 +996,9 @@ def rescaleMassForSolubleMetabolites(sim_data, bulkMolCntr, concDict, doubling_t
 	- bulkMolCntr (BulkObjectsContainer object) - a container that tracks the counts of all bulk molecules
 	- concDict (dict) - a dictionary of metabolite ID (string) : concentration (unit'd number, dimensions of concentration) pairs
 	- doubling_time (float with units of time) - measured doubling times given the condition
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+		to use (either "protein" or "rna". Default value of None results in
+		original mass fractions.
 
 	Requires
 	--------
@@ -989,7 +1019,7 @@ def rescaleMassForSolubleMetabolites(sim_data, bulkMolCntr, concDict, doubling_t
 	- fitAvgSolubleTargetMolMass, the adjusted dry mass of the soluble fraction of a cell
 	"""
 
-	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time)
+	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time, alternate_mass_fraction)
 
 	non_small_molecule_initial_cell_mass = (
 		avgCellFractionMass["proteinMass"]
@@ -1032,7 +1062,7 @@ def rescaleMassForSolubleMetabolites(sim_data, bulkMolCntr, concDict, doubling_t
 
 	return newAvgCellDryMassInit, fitAvgSolubleTargetMolMass
 
-def setInitialRnaExpression(sim_data, expression, doubling_time):
+def setInitialRnaExpression(sim_data, expression, doubling_time, alternate_mass_fraction):
 	"""
 	Creates a container that with the initial count and ID of each RNA, calculated based on the mass fraction,
 	molecular weight, and expression distribution of each RNA. For rRNA the counts are set based on mass, while for
@@ -1048,6 +1078,9 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	------
 	- expression (array of floats) - expression for each RNA, normalized to 1
 	- doubling_time (float with units of time) - doubling time for condition
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+		to use (either "protein" or "rna". Default value of None results in
+		original mass fractions.
 
 	Returns
 	--------
@@ -1070,7 +1103,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	ids_tRNA = sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isTRna"]] # tRNAs
 	ids_mRNA = sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]] # mRNAs
 
-	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time)
+	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time, alternate_mass_fraction)
 
 	## Mass fractions
 	totalMass_rRNA23S = avgCellFractionMass["rRna23SMass"] / sim_data.mass.avgCellToInitialCellConvFactor
@@ -1156,7 +1189,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 
 	return expression
 
-def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
+def totalCountIdDistributionProtein(sim_data, expression, doubling_time, alternate_mass_fraction):
 	"""
 	Calculates the total counts of proteins from the relative expression of RNA,
 	individual protein mass, and total protein mass. Relies on the math functions
@@ -1167,6 +1200,9 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	------
 	- expression (array of floats) - relative frequency distribution of RNA expression
 	- doubling_time (float with units of time) - measured doubling time given the condition
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+		to use (either "protein" or "rna". Default value of None results in
+		original mass fractions.
 
 	Returns
 	--------
@@ -1177,7 +1213,7 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	"""
 
 	ids_protein = sim_data.process.translation.monomerData["id"]
-	total_mass_protein = sim_data.mass.getFractionMass(doubling_time)["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	total_mass_protein = sim_data.mass.getFractionMass(doubling_time, alternate_mass_fraction)["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 	individual_masses_protein = sim_data.process.translation.monomerData["mw"] / sim_data.constants.nAvogadro
 	distribution_transcripts_by_protein = normalize(expression[sim_data.relation.rnaIndexToMonomerMapping])
 	translation_efficiencies_by_protein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
@@ -1203,7 +1239,7 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 
 	return total_count_protein, ids_protein, distribution_protein
 
-def totalCountIdDistributionRNA(sim_data, expression, doubling_time):
+def totalCountIdDistributionRNA(sim_data, expression, doubling_time, alternate_mass_fraction):
 	"""
 	Calculates the total counts of RNA from their relative expression, individual
 	mass, and total RNA mass. Relies on the math function totalCountFromMassesAndRatios.
@@ -1212,6 +1248,9 @@ def totalCountIdDistributionRNA(sim_data, expression, doubling_time):
 	------
 	- expression (array of floats) - relative frequency distribution of RNA expression
 	- doubling_time (float with units of time) - measured doubling time given the condition
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+		to use (either "protein" or "rna". Default value of None results in
+		original mass fractions.
 
 	Returns
 	--------
@@ -1222,7 +1261,7 @@ def totalCountIdDistributionRNA(sim_data, expression, doubling_time):
 	"""
 
 	ids_rnas = sim_data.process.transcription.rnaData["id"]
-	total_mass_RNA = sim_data.mass.getFractionMass(doubling_time)["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	total_mass_RNA = sim_data.mass.getFractionMass(doubling_time, alternate_mass_fraction)["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 	individual_masses_RNA = sim_data.process.transcription.rnaData["mw"] / sim_data.constants.nAvogadro
 
 	distribution_RNA = normalize(expression)
@@ -1235,7 +1274,7 @@ def totalCountIdDistributionRNA(sim_data, expression, doubling_time):
 
 	return total_count_RNA, ids_rnas, distribution_RNA
 
-def createBulkContainer(sim_data, expression, doubling_time):
+def createBulkContainer(sim_data, expression, doubling_time, alternate_mass_fraction):
 	"""
 	Creates a container that tracks the counts of all bulk molecules. Relies on
 	totalCountIdDistributionRNA and totalCountIdDistributionProtein to set the
@@ -1245,6 +1284,9 @@ def createBulkContainer(sim_data, expression, doubling_time):
 	------
 	- expression (array of floats) - relative frequency distribution of RNA expression
 	- doubling_time (float with units of time) - measured doubling time given the condition
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+		to use (either "protein" or "rna". Default value of None results in
+		original mass fractions.
 
 	Returns
 	-------
@@ -1252,8 +1294,8 @@ def createBulkContainer(sim_data, expression, doubling_time):
 	array that tracks the counts of bulk molecules
 	"""
 
-	total_count_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time)
-	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time)
+	total_count_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time, alternate_mass_fraction)
+	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time, alternate_mass_fraction)
 	ids_molecules = sim_data.internal_state.bulkMolecules.bulkData["id"]
 
 	# Construct bulk container
@@ -1619,7 +1661,7 @@ def getRibosomeActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, do
 
 	return activeFractionNeeded
 
-def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km=None):
+def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, alternate_mass_fraction, Km=None):
 	"""
 	Determines expression and synthesis probabilities for RNA molecules to fit
 	protein levels and RNA degradation rates. Assumes a steady state analysis
@@ -1633,6 +1675,9 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	bulk molecules based on expression
 	- doubling_time (float with units of time) - doubling time
 	- avgCellDryMassInit (float with units of mass) - expected initial dry cell mass
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+		to use (either "protein" or "rna". Default value of None results in
+		original mass fractions.
 	- Km (array of floats with units of mol/volume) - Km for each RNA associated
 	with RNases
 
@@ -1657,7 +1702,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 
 	translation_efficienciesByProtein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 
-	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time)
+	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time, alternate_mass_fraction)
 	totalMass_RNA = avgCellFractionMass["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 
 	degradationRates_protein = sim_data.process.translation.monomerData["degRate"]
@@ -1800,7 +1845,7 @@ def fitMaintenanceCosts(sim_data, bulkContainer):
 
 	sim_data.constants.darkATP = darkATP
 
-def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassInit, doubling_time):
+def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassInit, doubling_time, alternate_mass_fraction):
 	"""
 	Finds a distribution of copy numbers for macromolecules. While RNA and protein
 	expression can be approximated using well-described statistical	distributions,
@@ -1821,6 +1866,9 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 	dictionary for concentrations of each metabolite with location tag
 	- avgCellDryMassInit (float with units of mass) - initial dry cell mass
 	- doubling_time (float with units of time) - doubling time for condition
+	- alternate_mass_fraction (str) - describes which alternate mass fraction
+		to use (either "protein" or "rna". Default value of None results in
+		original mass fractions.
 
 	Returns
 	--------
@@ -1831,8 +1879,8 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 	"""
 
 	# Ids
-	totalCount_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time)
-	totalCount_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time)
+	totalCount_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time, alternate_mass_fraction)
+	totalCount_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time, alternate_mass_fraction)
 	ids_complex = sim_data.process.complexation.moleculeNames
 	ids_equilibrium = sim_data.process.equilibrium.moleculeNames
 	ids_twoComponentSystem = sim_data.process.two_component_system.moleculeNames
