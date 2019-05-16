@@ -26,6 +26,9 @@ class Mass(object):
 		self._buildSubMasses(raw_data, sim_data)
 		self._buildCDPeriod(raw_data, sim_data)
 
+		# Alternate masses for paper investigation
+		self._buildAlternateSubMasses(raw_data)
+
 		self.avgCellDryMass = self.getAvgCellDryMass(self._doubling_time)
 		self.massFraction = self.getMassFraction(self._doubling_time)
 		self.avgCellSubMass = self.getFractionMass(self._doubling_time)
@@ -89,6 +92,48 @@ class Mass(object):
 
 		self.chromosomeSequenceMass = self._chromosomeSequenceMass(raw_data, sim_data)
 
+	def _buildAlternateSubMasses(self, raw_data):
+		'''
+		Builds alternate mass fractions according to data described in alternate
+		dry mass fraction files:
+			dryMassComposition_alternateProtein.tsv
+			dryMassComposition_alternateRna.tsv
+
+		In preparation for the interpolation, doubling times that are not
+		described in the alternate dry mass fraction files are taken from the
+		original dryMassComposition.tsv.
+		'''
+
+		base = raw_data.dryMassComposition[:]
+
+		# Alternate protein mass fraction
+		alternateProtein = base[:]
+		alternateProteinDoublingTime = raw_data.dryMassComposition_alternateProtein[0]["doublingTime"]
+		alternateProtein[[x["doublingTime"] for x in base].index(alternateProteinDoublingTime)] = raw_data.dryMassComposition_alternateProtein[0]
+
+		self._proteinMassFractionParams_alternateProtein = self._getFitParameters(alternateProtein, 'proteinMassFraction')
+		self._rnaMassFractionParams_alternateProtein = self._getFitParameters(alternateProtein, 'rnaMassFraction')
+		self._lipidMassFractionParams_alternateProtein = self._getFitParameters(alternateProtein, 'lipidMassFraction')
+		self._lpsMassFractionParams_alternateProtein = self._getFitParameters(alternateProtein, 'lpsMassFraction')
+		self._mureinMassFractionParams_alternateProtein = self._getFitParameters(alternateProtein, 'mureinMassFraction')
+		self._glycogenMassFractionParams_alternateProtein = self._getFitParameters(alternateProtein, 'glycogenMassFraction')
+		self._solublePoolMassFractionParams_alternateProtein = self._getFitParameters(alternateProtein, 'solublePoolMassFraction')
+		self._inorganicIonMassFractionParams_alternateProtein = self._getFitParameters(alternateProtein, 'inorganicIonMassFraction')
+
+		# Alternate RNA mass fraction
+		alternateRna = base[:]
+		alternateRnaDoublingTime = raw_data.dryMassComposition_alternateRna[0]["doublingTime"]
+		alternateRna[[x["doublingTime"] for x in base].index(alternateRnaDoublingTime)] = raw_data.dryMassComposition_alternateRna[0]
+
+		self._proteinMassFractionParams_alternateRna = self._getFitParameters(alternateRna, 'proteinMassFraction')
+		self._rnaMassFractionParams_alternateRna = self._getFitParameters(alternateRna, 'rnaMassFraction')
+		self._lipidMassFractionParams_alternateRna = self._getFitParameters(alternateRna, 'lipidMassFraction')
+		self._lpsMassFractionParams_alternateRna = self._getFitParameters(alternateRna, 'lpsMassFraction')
+		self._mureinMassFractionParams_alternateRna = self._getFitParameters(alternateRna, 'mureinMassFraction')
+		self._glycogenMassFractionParams_alternateRna = self._getFitParameters(alternateRna, 'glycogenMassFraction')
+		self._solublePoolMassFractionParams_alternateRna = self._getFitParameters(alternateRna, 'solublePoolMassFraction')
+		self._inorganicIonMassFractionParams_alternateRna = self._getFitParameters(alternateRna, 'inorganicIonMassFraction')
+
 	def _getFitParameters(self, dryMassComposition, massFractionName):
 		massFraction = np.array([float(x[massFractionName]) for x in dryMassComposition])
 		x = self._doubling_time_vector.asNumber(units.min)[::-1]
@@ -109,7 +154,7 @@ class Mass(object):
 		return avgCellDryMass
 
 	# Set mass fractions based on growth rate
-	def getMassFraction(self, doubling_time):
+	def getMassFraction(self, doubling_time, alternate=None):
 		if type(doubling_time) != unum.Unum:
 			raise Exception("Doubling time was not set!")
 
@@ -120,14 +165,42 @@ class Mass(object):
 		D["dna"] = dnaMassFraction.asNumber()
 
 		doubling_time = self._clipTau_d(doubling_time)
-		D["protein"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._proteinMassFractionParams))
-		D["rna"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._rnaMassFractionParams))
-		D["lipid"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._lipidMassFractionParams))
-		D["lps"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._lpsMassFractionParams))
-		D["murein"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._mureinMassFractionParams))
-		D["glycogen"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._glycogenMassFractionParams))
-		D["solublePool"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._solublePoolMassFractionParams))
-		D["inorganicIon"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._inorganicIonMassFractionParams))
+
+		if alternate is None:
+			# Original mass fractions
+			D["protein"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._proteinMassFractionParams))
+			D["rna"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._rnaMassFractionParams))
+			D["lipid"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._lipidMassFractionParams))
+			D["lps"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._lpsMassFractionParams))
+			D["murein"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._mureinMassFractionParams))
+			D["glycogen"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._glycogenMassFractionParams))
+			D["solublePool"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._solublePoolMassFractionParams))
+			D["inorganicIon"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._inorganicIonMassFractionParams))
+
+		elif alternate == "protein":
+			# Alternate protein mass fractions
+			D["protein"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._proteinMassFractionParams_alternateProtein))
+			D["rna"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._rnaMassFractionParams_alternateProtein))
+			D["lipid"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._lipidMassFractionParams_alternateProtein))
+			D["lps"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._lpsMassFractionParams_alternateProtein))
+			D["murein"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._mureinMassFractionParams_alternateProtein))
+			D["glycogen"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._glycogenMassFractionParams_alternateProtein))
+			D["solublePool"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._solublePoolMassFractionParams_alternateProtein))
+			D["inorganicIon"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._inorganicIonMassFractionParams_alternateProtein))
+
+		elif alternate == "rna":
+			# Alternate rna mass fractions
+			D["protein"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._proteinMassFractionParams_alternateRna))
+			D["rna"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._rnaMassFractionParams_alternateRna))
+			D["lipid"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._lipidMassFractionParams_alternateRna))
+			D["lps"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._lpsMassFractionParams_alternateRna))
+			D["murein"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._mureinMassFractionParams_alternateRna))
+			D["glycogen"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._glycogenMassFractionParams_alternateRna))
+			D["solublePool"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._solublePoolMassFractionParams_alternateRna))
+			D["inorganicIon"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._inorganicIonMassFractionParams_alternateRna))
+
+		else:
+			raise ValueError("Unexpected alternate mass fractions requested: {}. Should be either 'protein' or 'rna'.".format(alternate))
 
 		total = np.sum([y for x,y in D.iteritems()])
 		for key, value in D.iteritems():
@@ -137,9 +210,9 @@ class Mass(object):
 		return D
 
 
-	def getFractionMass(self, doubling_time):
+	def getFractionMass(self, doubling_time, alternate=None):
 		D = {}
-		massFraction = self.getMassFraction(doubling_time)
+		massFraction = self.getMassFraction(doubling_time, alternate)
 		for key, value in massFraction.iteritems():
 			D[key + "Mass"] = value * self.getAvgCellDryMass(doubling_time)
 
