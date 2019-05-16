@@ -26,6 +26,8 @@ LIST_OF_DICT_FILENAMES = (
 	"complexationReactions.tsv",
 	"disabledKineticReactions.tsv",
 	"dryMassComposition.tsv",
+	"dryMassComposition_alternateProtein.tsv",
+	"dryMassComposition_alternateRna.tsv",
 	"endoRnases.tsv",
 	"enzymeKinetics.tsv",
 	"equilibriumReactions.tsv",
