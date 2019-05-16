@@ -51,7 +51,6 @@ class MakeVariants(scriptBase.ScriptBase):
 		variant_type = args.variant[0]
 		variants_to_run = xrange(int(args.variant[1]), int(args.variant[2]) + 1)
 
-		# Set up variant, seed, and generation directories.
 		# args.sim_path is called INDIV_OUT_DIRECTORY in fw_queue.
 		for i in variants_to_run:
 			variant_directory = fp.makedirs(args.sim_path, variant_type + "_%06d" % i)

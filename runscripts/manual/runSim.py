@@ -5,7 +5,7 @@ seeds, and multiple generations, but only single daughters per generation.
 Prerequisite: Run the parameter calculator (runParca.py).
 
 Prerequisite: Generate the sim_data variant (makeVariants.py) before running
-`runSim.py --variant_index INDEX`.
+`runSim.py --require_variants`.
 
 * Easy usage: runParca.py, then runSim.py, then analysis*.py.
 * Fancy usage: runParca.py, makeVariants.py, lots of runSim.py and
@@ -94,9 +94,9 @@ class RunSimulation(scriptBase.ScriptBase):
 				or require, depending on the --require_variants option. See
 				models/ecoli/sim/variants/__init__.py for the variant
 				type choices. Default = wildtype 0 0''')
-		self.define_parameter_bool(parser, 'require_variants', True,
-			help='''Require the sim_data variant(s) specified by the --variant
-				option to already exist; set to false to make the variant(s).''')
+		self.define_parameter_bool(parser, 'require_variants', False,
+			help='''true => require the sim_data variant(s) specified by the
+				--variant option to already exist; false => make the variant(s).''')
 		parser.add_argument('-g', '--generations', type=int, default=1,
 			help='Number of cell generations to run. (Single daughters only.)'
 				 ' Default = 1'
@@ -193,7 +193,6 @@ class RunSimulation(scriptBase.ScriptBase):
 		fp.write_json_file(metadata_path, metadata)
 
 
-		# Set up variant, seed, and generation directories.
 		# args.sim_path is called INDIV_OUT_DIRECTORY in fw_queue.
 		for i in variants_to_run:
 			variant_directory = os.path.join(args.sim_path, variant_type + "_%06d" % i)
