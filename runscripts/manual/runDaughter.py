@@ -1,6 +1,9 @@
 """
-Run a simple daughter simulation, assuming you've run the parameter calculator (Parca)
-and parent generations first.  This does not run multiple generations.
+Run a simple daughter simulation.  This does not run multiple generations.
+
+Prerequisite: Run the parameter calculator (runParca.py).
+
+Prerequisite: Run the parent generations (runSim.py, runDaughter.py).
 
 TODO: Share more code with fw_queue.py.
 
@@ -10,7 +13,6 @@ Set PYTHONPATH when running this.
 
 from __future__ import absolute_import, division, print_function
 
-import errno
 import os
 
 from wholecell.fireworks.firetasks import SimulationDaughterTask
@@ -24,12 +26,12 @@ class RunDaughter(scriptBase.ScriptBase):
 
 	def description(self):
 		"""Describe the command line program."""
-		return 'Whole Cell E. coli simulation'
+		return 'Whole Cell E. coli daughter simulation'
 
 	def help(self):
 		"""Return help text for the Command Line Interface."""
 		return ('Run a {}. (The option names are long but you can use any'
-				' unambiguous prefixes.)'.format(self.description()))
+				' unambiguous prefix.)'.format(self.description()))
 
 	def define_parameters(self, parser):
 		def add_option(name, key, datatype, help):
@@ -117,9 +119,7 @@ class RunDaughter(scriptBase.ScriptBase):
 
 		kb_directory = os.path.join(args.sim_path, 'kb')
 		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_SIM_DATA_FILENAME)
-		if not os.path.isfile(sim_data_file):
-			raise IOError(errno.ENOENT,
-				'Missing "{}".  Run the Parca?'.format(sim_data_file))
+		fp.verify_file_exists(sim_data_file, 'Run runParca?')
 
 		j = args.seed
 		k = args.generation

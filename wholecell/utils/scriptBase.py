@@ -18,7 +18,7 @@ import os
 import pprint as pp
 import time
 
-from wholecell.utils.filepath import ROOT_PATH
+import wholecell.utils.filepath as fp
 
 
 def default_wcecoli_out_subdir_path():
@@ -26,7 +26,7 @@ def default_wcecoli_out_subdir_path():
 	wcEcoli/out/: the subdirectory name that starts with the latest timestamp
 	or (if none) the one that's first alphabetically.
 	"""
-	out_dir = os.path.join(ROOT_PATH, 'out')
+	out_dir = os.path.join(fp.ROOT_PATH, 'out')
 	fallback = None
 
 	for directory in sorted(os.listdir(out_dir), reverse=True):
@@ -40,7 +40,7 @@ def default_wcecoli_out_subdir_path():
 		return fallback
 
 	raise IOError(errno.ENOENT,
-		'"{}" has no subdirectories.  Run the Parca?'.format(out_dir))
+		'"{}" has no subdirectories.  Run runParca?'.format(out_dir))
 
 def find_sim_path(directory=None):
 	"""Find a simulation path, looking for the given directory name as an
@@ -53,12 +53,11 @@ def find_sim_path(directory=None):
 	elif os.path.isabs(directory):
 		input_dir = directory
 	elif directory.startswith('out/'):
-		input_dir = os.path.join(ROOT_PATH, directory)
+		input_dir = os.path.join(fp.ROOT_PATH, directory)
 	else:
-		input_dir = os.path.join(ROOT_PATH, 'out', directory)
+		input_dir = os.path.join(fp.ROOT_PATH, 'out', directory)
 
-	if not os.path.isdir(input_dir):
-		raise IOError(errno.ENOENT, '{} is not a simulation path'.format(input_dir))
+	fp.verify_dir_exists(input_dir, "Need a simulation dir.")
 	return input_dir
 
 def str_to_bool(s):
@@ -142,15 +141,16 @@ class ScriptBase(object):
 		group.add_argument('--' + name, nargs='?', default=default,
 			const='true',  # needed for nargs='?'
 			type=str_to_bool,
-			help='({}, {}) {}'.format('bool', examples, help))
-		group.add_argument('--no_' + name, dest=name, action='store_false')
+			help='({}; {}) {}'.format('bool', examples, help))
+		group.add_argument('--no_' + name, dest=name, action='store_false',
+			help='Like {}=0'.format(name))
 
 	def define_option(self, parser, name, datatype, default, help):
 			"""Add an option with the given name and datatype to the parser."""
 			parser.add_argument('--' + name,
 				type=datatype,
 				default=default,
-				help='({}, {}) {}'.format(datatype.__name__, default, help)
+				help='({}; {}) {}'.format(datatype.__name__, default, help)
 				)
 
 	def define_parameter_sim_dir(self, parser):

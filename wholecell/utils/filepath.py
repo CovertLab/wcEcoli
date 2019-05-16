@@ -51,6 +51,20 @@ def timestamp(dt=None):
 		dt.hour, dt.minute, dt.second,
 		dt.microsecond)
 
+def verify_file_exists(file_path, message=''):
+	# type: (str, str) -> None
+	"""Raise an IOError if file_path isn't an existing file."""
+	if not os.path.isfile(file_path):
+		raise IOError(errno.ENOENT,
+			'Missing file "{}".  {}'.format(file_path, message))
+
+def verify_dir_exists(dir_path, message=''):
+	# type: (str, str) -> None
+	"""Raise an IOError if dir_path isn't an existing directory."""
+	if not os.path.isdir(dir_path):
+		raise IOError(errno.ENOENT,
+			'Missing dir "{}".  {}'.format(dir_path, message))
+
 def run_cmd(tokens, trim=True):
 	"""Run a shell command-line (in token list form) and return its output.
 	This does not expand filename patterns or environment variables or do other

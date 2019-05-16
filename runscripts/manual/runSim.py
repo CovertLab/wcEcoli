@@ -1,6 +1,15 @@
 """
-Run a simple simulation, assuming you've run the parameter calculator first (Parca).
-This does not run multiple initial simulations or multiple daughters per generation.
+Run wcEcoli cell simulations, supporting multiple variants, multiple initial
+seeds, and multiple generations, but only single daughters per generation.
+
+Prerequisite: Run the parameter calculator (runParca.py).
+
+Prerequisite: Generate the sim_data variant (makeVariants.py) before running
+`runSim.py --variant_index INDEX`.
+
+* Easy usage: runParca.py, then runSim.py, then analysis*.py.
+* Fancy usage: runParca.py, makeVariants.py, lots of runSim.py and
+  runDaughter.py runs, and analysis*.py, in a parallel workflow.
 
 TODO: Share more code with fw_queue.py.
 
@@ -10,7 +19,6 @@ Set PYTHONPATH when running this.
 
 from __future__ import absolute_import, division, print_function
 
-import errno
 import re
 import os
 from typing import Tuple
@@ -56,7 +64,8 @@ class RunSimulation(scriptBase.ScriptBase):
 		return '''Run a {}.
 				If the sim_path ends with a dir like
 				"20190704.101500.123456__Latest_sim_run", this will get the
-				timestamp and description from the path for metadata.json.
+				timestamp and description from the path to write into
+				metadata.json.
 				The command line option names are long but you can use any
 				unambiguous prefix.'''.format(self.description())
 
@@ -81,10 +90,13 @@ class RunSimulation(scriptBase.ScriptBase):
 
 		parser.add_argument('-v', '--variant', nargs=3, default=['wildtype', '0', '0'],
 			metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'),
-			help='The variant type name, first index, and last index. See'
-				 ' models/ecoli/sim/variants/__init__.py for the possible'
-				 ' variant choices. Default = wildtype 0 0'
-			)
+			help='''The variant type name, first index, and last index to make
+				or require, depending on the --require_variants option. See
+				models/ecoli/sim/variants/__init__.py for the variant
+				type choices. Default = wildtype 0 0''')
+		self.define_parameter_bool(parser, 'require_variants', True,
+			help='''Require the sim_data variant(s) specified by the --variant
+				option to already exist; set to false to make the variant(s).''')
 		parser.add_argument('-g', '--generations', type=int, default=1,
 			help='Number of cell generations to run. (Single daughters only.)'
 				 ' Default = 1'
@@ -143,7 +155,6 @@ class RunSimulation(scriptBase.ScriptBase):
 
 	def parse_args(self):
 		args = super(RunSimulation, self).parse_args()
-		args.sim_path = scriptBase.find_sim_path(args.sim_dir)
 
 		if args.total_gens is None:
 			args.total_gens = args.generations
@@ -153,9 +164,7 @@ class RunSimulation(scriptBase.ScriptBase):
 	def run(self, args):
 		kb_directory = os.path.join(args.sim_path, 'kb')
 		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_SIM_DATA_FILENAME)
-		if not os.path.isfile(sim_data_file):
-			raise IOError(errno.ENOENT,
-				'Missing "{}".  Run the Parca?'.format(sim_data_file))
+		fp.verify_file_exists(sim_data_file, 'Run runParca?')
 
 		timestamp, description = parse_timestamp_description(args.sim_path)
 
@@ -187,21 +196,27 @@ class RunSimulation(scriptBase.ScriptBase):
 		# Set up variant, seed, and generation directories.
 		# args.sim_path is called INDIV_OUT_DIRECTORY in fw_queue.
 		for i in variants_to_run:
-			variant_directory = fp.makedirs(args.sim_path, variant_type + "_%06d" % i)
-			variant_sim_data_directory = fp.makedirs(variant_directory, "kb")
-			variant_metadata_directory = fp.makedirs(variant_directory, "metadata")
+			variant_directory = os.path.join(args.sim_path, variant_type + "_%06d" % i)
+			variant_sim_data_directory = os.path.join(variant_directory, "kb")
 
 			variant_sim_data_modified_file = os.path.join(
 				variant_sim_data_directory, constants.SERIALIZED_SIM_DATA_MODIFIED)
 
-			task = VariantSimDataTask(
-				variant_function=variant_type,
-				variant_index=i,
-				input_sim_data=sim_data_file,
-				output_sim_data=variant_sim_data_modified_file,
-				variant_metadata_directory=variant_metadata_directory,
-				)
-			task.run_task({})
+			if args.require_variants:
+				fp.verify_file_exists(
+					variant_sim_data_modified_file, 'Run makeVariants?')
+			else:
+				fp.makedirs(variant_sim_data_directory)
+				variant_metadata_directory = fp.makedirs(variant_directory,
+					"metadata")
+				task = VariantSimDataTask(
+					variant_function=variant_type,
+					variant_index=i,
+					input_sim_data=sim_data_file,
+					output_sim_data=variant_sim_data_modified_file,
+					variant_metadata_directory=variant_metadata_directory,
+					)
+				task.run_task({})
 
 			for j in xrange(args.seed, args.seed + args.init_sims):  # init sim seeds
 				seed_directory = fp.makedirs(variant_directory, "%06d" % j)
