@@ -19,7 +19,7 @@ FRACTION_INCREASE_RNAP_PROTEINS = {100: 0, 44: 0.05}
 class Mass(object):
 	""" Mass """
 
-	def __init__(self, raw_data, sim_data):
+	def __init__(self, raw_data, sim_data, alternate):
 		self._doubling_time = sim_data.doubling_time
 
 		self._buildConstants(raw_data, sim_data)
@@ -27,11 +27,10 @@ class Mass(object):
 		self._buildCDPeriod(raw_data, sim_data)
 
 		# Alternate masses for paper investigation
+		self._alternate = alternate
 		self._buildAlternateSubMasses(raw_data)
 
 		self.avgCellDryMass = self.getAvgCellDryMass(self._doubling_time)
-		self.massFraction = self.getMassFraction(self._doubling_time)
-		self.avgCellSubMass = self.getFractionMass(self._doubling_time)
 
 		self._buildDependentConstants()
 
@@ -154,7 +153,7 @@ class Mass(object):
 		return avgCellDryMass
 
 	# Set mass fractions based on growth rate
-	def getMassFraction(self, doubling_time, alternate=None):
+	def getMassFraction(self, doubling_time):
 		if type(doubling_time) != unum.Unum:
 			raise Exception("Doubling time was not set!")
 
@@ -177,7 +176,7 @@ class Mass(object):
 			D["solublePool"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._solublePoolMassFractionParams))
 			D["inorganicIon"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._inorganicIonMassFractionParams))
 
-		elif alternate == "protein":
+		elif self._alternate == "protein":
 			# Alternate protein mass fractions
 			D["protein"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._proteinMassFractionParams_alternateProtein))
 			D["rna"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._rnaMassFractionParams_alternateProtein))
@@ -188,7 +187,7 @@ class Mass(object):
 			D["solublePool"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._solublePoolMassFractionParams_alternateProtein))
 			D["inorganicIon"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._inorganicIonMassFractionParams_alternateProtein))
 
-		elif alternate == "rna":
+		elif self._alternate == "rna":
 			# Alternate rna mass fractions
 			D["protein"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._proteinMassFractionParams_alternateRna))
 			D["rna"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._rnaMassFractionParams_alternateRna))
@@ -210,9 +209,9 @@ class Mass(object):
 		return D
 
 
-	def getFractionMass(self, doubling_time, alternate=None):
+	def getFractionMass(self, doubling_time):
 		D = {}
-		massFraction = self.getMassFraction(doubling_time, alternate)
+		massFraction = self.getMassFraction(doubling_time)
 		for key, value in massFraction.iteritems():
 			D[key + "Mass"] = value * self.getAvgCellDryMass(doubling_time)
 
