@@ -76,6 +76,7 @@ class Translation(object):
 		# TODO: citation
 		fastRate = (np.log(2) / (2*units.min)).asUnit(1 / units.s)
 		slowRate = (np.log(2) / (10*60*units.min)).asUnit(1 / units.s)
+		self.fastRate = fastRate
 
 		fastAAs = ["R", "K", "F", "L", "W", "Y"]
 		slowAAs = ["H", "I", "D", "E", "N", "Q", "C", "A", "S", "T", "G", "V", "M"]
