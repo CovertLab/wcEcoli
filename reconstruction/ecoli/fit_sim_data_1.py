@@ -126,6 +126,11 @@ def fitSimData_1(
 		key = sim_data.tfToActiveInactiveConds.keys()[0]
 		sim_data.tfToActiveInactiveConds = {key: sim_data.tfToActiveInactiveConds[key]}
 
+	# Set fast monomer degradation rates for r-proteins
+	if alternate_r_protein_degradation:
+		translation = sim_data.process.translation
+		translation.monomerData["degRate"][translation.monomerData["isRProtein"]] = translation.fastRate
+
 	# Increase RNA poly mRNA deg rates
 	setRnaPolymeraseCodingRnaDegradationRates(sim_data)
 
