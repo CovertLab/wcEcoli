@@ -84,6 +84,7 @@ def fitSimData_1(
 		flat_elongation=False,
 		adjust_rna_and_protein_parameters=True,
 		alternate_mass_fraction=None,
+		alternate_r_protein_degradation=False,
 		):
 	"""
 	Fits parameters necessary for the simulation based on the knowledge base
@@ -108,6 +109,8 @@ def fitSimData_1(
 		alternate_mass_fraction (str) - describes which alternate mass fraction
 			to use (one of the following: 'protein', 'rna', or 'mrna'. Default
 			value of None results in original mass fractions.
+		alternate_r_protein_degradation (bool) - if True, r-proteins are
+			degraded at fast rate.
 	"""
 
 	sim_data = SimulationDataEcoli()

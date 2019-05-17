@@ -78,6 +78,11 @@ class RunFitter(scriptBase.ScriptBase):
 			'--alternate-mass-fraction', type=str,
 			help="Alternate mass fractions - one of the following: 'protein', 'rna', or 'mrna'. Default = None."
 		)
+		parser.add_argument(
+			'--alternate-r-protein-degradation',
+			action='store_true',
+			help= "If set, r-protein degradation will set to fast value."
+			)
 
 	def parse_args(self):
 		args = super(RunFitter, self).parse_args()
@@ -124,6 +129,7 @@ class RunFitter(scriptBase.ScriptBase):
 				flat_elongation=args.flat_elongation,
 				adjust_rna_and_protein_parameters=args.no_expression_adjustment,
 				alternate_mass_fraction=args.alternate_mass_fraction,
+				alternate_r_protein_degradation=args.alternate_r_protein_degradation,
 				),
 
 			SymlinkTask(
