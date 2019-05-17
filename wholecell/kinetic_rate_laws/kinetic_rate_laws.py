@@ -30,21 +30,15 @@ class KineticFluxModel(object):
 
 		self.reactions = reactions
 		self.reaction_ids = self.reactions.keys()
-
-		# TODO -- check that all reaction_ids are in kinetic_parameters
-
-		# get all relevant molecule ids
 		self.molecule_ids = get_molecules(self.reactions)
 
 		# make the rate laws
-		self.rate_law_configuration = {}
 		self.rate_law_configuration = make_configuration(self.reactions)
 
 		self.rate_laws = make_rate_laws(
 			self.reactions,
 			self.rate_law_configuration,
 			self.kinetic_parameters)
-
 
 	def get_fluxes(self, concentrations_dict):
 		'''
@@ -126,44 +120,6 @@ def make_configuration(reactions):
 
 	return rate_law_configuration
 
-def get_parameter_template(reactions, rate_law_configuration):
-	'''
-	Given a rate law configuration, return a template for required parameters
-
-	Args:
-		reactions:
-		rate_law_configuration:
-
-	Returns:
-		parameter_template (dict): a template for all parameters required by this rate_law_configuration,
-			filled with values of 0.0.
-
-	'''
-	parameter_template = {}
-	for enzyme_id, configuration in rate_law_configuration.iteritems():
-		reaction_cofactors = configuration['reaction_cofactors']
-		partition = configuration['partition']
-
-		for reaction_id, cofactors in reaction_cofactors.iteritems():
-
-			# check if reaction is already in the template
-			if reaction_id not in parameter_template:
-				parameter_template[reaction_id] = {}
-
-			parameter_template[reaction_id][enzyme_id] = {}
-			parameter_template[reaction_id][enzyme_id]['kcat_f'] = None
-
-			reversible = reactions[reaction_id]['is reversible']
-			if reversible:
-				parameter_template[reaction_id][enzyme_id]['kcat_r'] = None
-
-			all_bound_molecules = [mol_id for set in partition for mol_id in set]
-
-			for molecule_id in all_bound_molecules:
-				parameter_template[reaction_id][enzyme_id][molecule_id] = None
-
-	return parameter_template
-
 def get_molecules(reactions):
 	'''
 	Inputs:
@@ -181,24 +137,6 @@ def get_molecules(reactions):
 		molecule_ids.extend(enzymes)
 	return list(set(molecule_ids))
 
-def get_reactions_from_exchange(all_reactions, include_exchanges):
-	'''
-	Args:
-		all_reactions (dict): all reactions with stoichiometry, reversibility, enzymes
-		include_exchanges (list): molecules whose reactions are of interest
-
-	Returns:
-		include_reactions (list): all the reactions for molecules listed in include_exchanges
-
-	'''
-	include_reactions = []
-	for reaction_id, specs in all_reactions.iteritems():
-		reaction_molecules = specs['stoichiometry'].keys()
-		for exchange in include_exchanges:
-			if exchange in reaction_molecules:
-				include_reactions.append(reaction_id)
-	return include_reactions
-
 
 ## Make rate laws
 def make_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
@@ -206,11 +144,11 @@ def make_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
 	rate_laws = {reaction_id: {} for reaction_id in reactions.iterkeys()}
 	for reaction_id, specs in reactions.iteritems():
 		stoichiometry = specs.get('stoichiometry')
+		# TODO -- add reversibility based on specs
 		# reversible = specs.get('is reversible')
 		transporters = specs.get('catalyzed by')
 
 		# rate law for each transporter
-		# TODO (Eran) -- make sure that transporter is in the rate law configuration
 		for transporter in transporters:
 			cofactors_sets = rate_law_configuration[transporter]["reaction_cofactors"][reaction_id]
 			partition = rate_law_configuration[transporter]["partition"]

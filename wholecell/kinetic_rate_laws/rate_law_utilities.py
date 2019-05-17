@@ -19,12 +19,10 @@ REACTIONS_FILE = os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv"
 PROTEINS_FILE = os.path.join("reconstruction", "ecoli", "flat", "proteins.tsv")
 COMPLEXATION_FILE = os.path.join("reconstruction", "ecoli", "flat", "complexationReactions.tsv")
 
-
 KINETIC_PARAMETERS_PATH = os.path.join('wholecell', 'kinetic_rate_laws', 'parameters')
 
 # set output directory and files
 OUTPUT_DIR = os.path.join('wholecell', 'kinetic_rate_laws', 'out')
-OUTPUT_PARAM_TEMPLATE = os.path.join(OUTPUT_DIR, 'parameter_template.json')
 
 
 def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
@@ -34,7 +32,7 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 		baseline_concentrations (dict): concentrations for all molecules required for the rate laws
 
 	Function:
-		Runs an analysis of all rate laws in kinetic_rate_laws and saves the output
+		Runs an analysis of all rate laws in kinetic_rate_laws and saves the output in a plot
 
 	'''
 
@@ -82,7 +80,7 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 		# test michaelis menten by sampling substrate concentrations
 		for transporter in transporters:
 
-			# TODO select the molecule more smartly
+			# TODO select the example molecule more smartly
 			for reactant in reactants:
 				if parameters[transporter][reactant] is not None:
 					a1 = reactant
@@ -227,12 +225,14 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 
 	if not os.path.exists(OUTPUT_DIR):
 		os.mkdir(OUTPUT_DIR)
-	fig_name = ('rate_law_analysis')
-	plt.savefig(os.path.join(OUTPUT_DIR, fig_name), bbox_inches='tight')
+	plt.savefig(os.path.join(OUTPUT_DIR, 'rate_law_analysis'), bbox_inches='tight')
 
 	print('rate law analysis plot saved')
 
 def load_reactions():
+	'''
+	Load all reactions, including the locations of enzymes into each reaction's 'catalyzed by' key
+	'''
 
 	# get protein locations
 	proteins_locations = {}
@@ -285,6 +285,41 @@ def load_reactions():
 
 	return all_reactions
 
+def get_reactions_from_exchange(all_reactions, include_exchanges):
+	'''
+	Args:
+		all_reactions (dict): all reactions with stoichiometry, reversibility, enzymes
+		include_exchanges (list): molecules whose reactions are of interest
+
+	Returns:
+		include_reactions (list): all the reactions for molecules listed in include_exchanges
+
+	'''
+	include_reactions = []
+	for reaction_id, specs in all_reactions.iteritems():
+		reaction_molecules = specs['stoichiometry'].keys()
+		for exchange in include_exchanges:
+			if exchange in reaction_molecules:
+				include_reactions.append(reaction_id)
+	return include_reactions
+
+def get_molecules_from_reactions(reactions):
+	'''
+	Inputs:
+		   reaction_ids - a list of all reaction ids that will be used by transport
+	Returns:
+		   self.molecule_ids - a list of all molecules used by these reactions
+	'''
+	molecule_ids = []
+	for reaction_id, specs in reactions.iteritems():
+		stoichiometry = specs['stoichiometry']
+		substrates = stoichiometry.keys()
+		enzymes = specs['catalyzed by']
+		# Add all relevant molecules_ids
+		molecule_ids.extend(substrates)
+		molecule_ids.extend(enzymes)
+	return list(set(molecule_ids))
+
 
 class AnalyzeRateLaws(object):
 
@@ -303,7 +338,6 @@ class AnalyzeRateLaws(object):
 
 		# make a dict of reactions that will be configured with the parameters
 		make_reaction_ids = kinetic_parameters.keys()
-
 		make_reactions = {
 			reaction_id: specs
 			for reaction_id, specs in self.all_reactions.iteritems()
@@ -325,7 +359,6 @@ class AnalyzeRateLaws(object):
 
 		# run analyses and save output
 		analyze_rate_laws(self.kinetic_rate_laws, self.concentrations)
-
 
 	def add_arguments(self, parser):
 		# parser.add_argument(
@@ -353,27 +386,69 @@ class AnalyzeRateLaws(object):
 
 		return parser
 
+
+	# TODO -- does this need to be in the object? Seems like a separate utility
 	def template_for_exchange(self, exchange_molecules=['GLT']):
 		'''
 		make reaction dictionary for a set of exchange molecules and pass to save_rate_law_configuration_template
+
 		'''
 
 		# get a list of all reactions with exchange_molecules
-		reactions_list = rate_laws.get_reactions_from_exchange(self.all_reactions, exchange_molecules)
+		reactions_list = self.get_reactions_from_exchange(self.all_reactions, exchange_molecules)
 
 		# make a dict of the given reactions using specs from all_reactions
 		reactions = {reaction_id: self.all_reactions[reaction_id] for reaction_id in reactions_list}
 
-
-		rate_law_configuration = rate_laws.make_configuration(reactions)
-
 		# make a parameter template
-		parameter_template = rate_laws.get_parameter_template(reactions, rate_law_configuration)
+		parameter_template = self.get_parameter_template(reactions)
 
-		with open(OUTPUT_PARAM_TEMPLATE, 'w') as fp:
+		output_name = os.path.join(OUTPUT_DIR, 'parameter_template.json')
+		with open(output_name, 'w') as fp:
 			json.dump(parameter_template, fp, sort_keys=True, indent=2)
 
 		print('rate law parameter template saved')
+
+	def get_parameter_template(self, reactions):
+		'''
+		Given a rate law configuration, return a template for required parameters
+
+		Args:
+			reactions:
+			rate_law_configuration:
+
+		Returns:
+			parameter_template (dict): a template for all parameters required by this rate_law_configuration,
+				filled with values of 0.0.
+
+		'''
+
+		rate_law_configuration = rate_laws.make_configuration(reactions)
+
+		parameter_template = {}
+		for enzyme_id, configuration in rate_law_configuration.iteritems():
+			reaction_cofactors = configuration['reaction_cofactors']
+			partition = configuration['partition']
+
+			for reaction_id, cofactors in reaction_cofactors.iteritems():
+
+				# check if reaction is already in the template
+				if reaction_id not in parameter_template:
+					parameter_template[reaction_id] = {}
+
+				parameter_template[reaction_id][enzyme_id] = {}
+				parameter_template[reaction_id][enzyme_id]['kcat_f'] = None
+
+				reversible = reactions[reaction_id]['is reversible']
+				if reversible:
+					parameter_template[reaction_id][enzyme_id]['kcat_r'] = None
+
+				all_bound_molecules = [mol_id for set in partition for mol_id in set]
+
+				for molecule_id in all_bound_molecules:
+					parameter_template[reaction_id][enzyme_id][molecule_id] = None
+
+		return parameter_template
 
 
 if __name__ == '__main__':
