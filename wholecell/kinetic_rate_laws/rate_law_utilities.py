@@ -5,84 +5,26 @@ import csv
 import json
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
 
 from reconstruction.spreadsheets import JsonReader
 from itertools import ifilter
 
+from environment.condition.look_up_tables.look_up import LookUp
 import wholecell.kinetic_rate_laws.kinetic_rate_laws as rate_laws
 
+TSV_DIALECT = csv.excel_tab
 
-LOOKUP_DIR = os.path.join('environment', 'condition', 'look_up_tables')
-TRANSPORT_REACTIONS_FILE = os.path.join(LOOKUP_DIR, 'transport_reactions.tsv')
-CONC_LOOKUP_MINIMAL = os.path.join(LOOKUP_DIR, 'avg_concentrations', 'minimal.tsv')
+REACTIONS_FILE = os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv")
+PROTEINS_FILE = os.path.join("reconstruction", "ecoli", "flat", "proteins.tsv")
+COMPLEXATION_FILE = os.path.join("reconstruction", "ecoli", "flat", "complexationReactions.tsv")
 
-# external molecules file to make a map between
-KINETIC_PARAMETERS_FILE = os.path.join('wholecell', 'kinetic_rate_laws', 'parameters', 'glt.json')
+
+KINETIC_PARAMETERS_PATH = os.path.join('wholecell', 'kinetic_rate_laws', 'parameters')
 
 # set output directory and files
 OUTPUT_DIR = os.path.join('wholecell', 'kinetic_rate_laws', 'out')
 OUTPUT_PARAM_TEMPLATE = os.path.join(OUTPUT_DIR, 'parameter_template.json')
-
-
-ANALYZE_RATE_LAWS = True
-SAVE_RATE_LAWS_CONFIG = False
-
-
-def test_rate_laws():
-	'''
-	Tests the rate law configuration defined in KINETIC_PARAMETERS_FILE, save analysis plot
-
-	'''
-
-	# Make dict of transport reactions
-	all_transport_reactions = {}
-	with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
-		reader = JsonReader(
-			ifilter(lambda x: x.lstrip()[0] != "#", csvfile),  # Strip comments
-			dialect=csv.excel_tab)
-		for row in reader:
-			reaction_id = row['reaction id']
-			stoichiometry = row['stoichiometry']
-			reversible = row['is reversible']
-			catalyzed = row['catalyzed by']
-			all_transport_reactions[reaction_id] = {
-				'stoichiometry': stoichiometry,
-				'is reversible': reversible,
-				'catalyzed by': catalyzed,
-			}
-
-	wcm_concs_minimal = {}
-	with open(CONC_LOOKUP_MINIMAL, 'rU') as csvfile:
-		reader = JsonReader(
-			ifilter(lambda x: x.lstrip()[0] != "#", csvfile),  # Strip comments
-			dialect=csv.excel_tab)
-		for row in reader:
-			molecule_id = row['molecule id']
-			avg_conc = row['average concentration mmol/L']
-			wcm_concs_minimal[molecule_id] = avg_conc
-
-	# load dict of saved parameters
-	with open(KINETIC_PARAMETERS_FILE, 'r') as fp:
-		kinetic_parameters = json.load(fp)
-
-	# make a dict of reactions that will be configured with the parameters
-	make_reaction_ids = kinetic_parameters.keys()
-	make_reactions = {
-		reaction_id: specs
-		for reaction_id, specs in all_transport_reactions.iteritems()
-		if reaction_id in make_reaction_ids}
-
-	# Make the kinetic model
-	kinetic_rate_laws = rate_laws.KineticFluxModel(make_reactions, kinetic_parameters)
-
-	# Get list of molecule_ids used by kinetic rate laws
-	molecule_ids = kinetic_rate_laws.molecule_ids
-
-	# get concentrations from wcm (mmol/L)
-	concentrations = {mol_id: wcm_concs_minimal[mol_id] for mol_id in molecule_ids}
-
-	# run analyses and save output
-	analyze_rate_laws(kinetic_rate_laws, concentrations)
 
 
 def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
@@ -290,63 +232,150 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 
 	print('rate law analysis plot saved')
 
+def load_reactions():
 
-def save_rate_law_configuration_template(reactions):
-	'''
-	Create an empty parameter file for convenience kinetics rate laws structured by reactions
-
-	Args:
-		reactions (dict): a dict of all reactions that are to be configured
-	'''
-
-	# get the rate law configuration for the set of reactions
-	rate_law_configuration = rate_laws.make_configuration(reactions)
-
-	# make a parameter template
-	parameter_template = rate_laws.get_parameter_template(reactions, rate_law_configuration)
-
-	with open(OUTPUT_PARAM_TEMPLATE, 'w') as fp:
-		json.dump(parameter_template, fp, sort_keys=True, indent=2)
-
-	print('rate law parameter template saved')
-
-
-if SAVE_RATE_LAWS_CONFIG:
-	'''
-	make reaction dictionary for a set of exchange molecules and pass to save_rate_law_configuration_template
-	'''
-
-	# set up reactions
-	exchange_molecules = ['GLT[p]']
-
-	# Make dict of transport reactions
-	all_reactions = {}
-	with open(TRANSPORT_REACTIONS_FILE, 'rU') as csvfile:
+	# get protein locations
+	proteins_locations = {}
+	with open(PROTEINS_FILE, 'rU') as tsvfile:
 		reader = JsonReader(
-			ifilter(lambda x: x.lstrip()[0] != "#", csvfile),  # Strip comments
-			dialect=csv.excel_tab)
+			ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
+			dialect = TSV_DIALECT)
 		for row in reader:
-			reaction_id = row['reaction id']
-			stoichiometry = row['stoichiometry']
-			reversible = row['is reversible']
-			catalyzed = row['catalyzed by']
+			molecule_id = row["id"]
+			location = row["location"]
+			molecule_loc = ['{}[{}]'.format(molecule_id, loc) for loc in location]
+			proteins_locations[molecule_id] = molecule_loc
+
+	# get complex locations
+	with open(COMPLEXATION_FILE, 'rU') as tsvfile:
+		reader = JsonReader(
+			ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
+			dialect = TSV_DIALECT)
+		for row in reader:
+			stoichiometry = row["stoichiometry"]
+			for stoich in stoichiometry:
+				molecule_id =  stoich['molecule']
+				location = stoich["location"]
+				molecule_loc = ['{}[{}]'.format(molecule_id, loc) for loc in location]
+				proteins_locations[molecule_id] = molecule_loc
+
+	# make dict of all reactions
+	all_reactions = {}
+	with open(REACTIONS_FILE, 'rU') as tsvfile:
+		reader = JsonReader(
+			ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
+			dialect = TSV_DIALECT)
+		for row in reader:
+			reaction_id = row["reaction id"]
+			stoichiometry = row["stoichiometry"]
+			reversible = row["is reversible"]
+			enzymes = row["catalyzed by"]
+
+			# get location
+			enzymes_loc = []
+			for enzyme in enzymes:
+				if enzyme in proteins_locations.keys():
+					enzymes_loc.extend(proteins_locations[enzyme])
+
 			all_reactions[reaction_id] = {
-				'stoichiometry': stoichiometry,
-				'is reversible': reversible,
-				'catalyzed by': catalyzed,
+				"stoichiometry": stoichiometry,
+				"is reversible": reversible,
+				"catalyzed by": enzymes_loc,
 			}
 
-	# get a list of all reactions with exchange_molecules
-	reactions_list = rate_laws.get_reactions_from_exchange(all_reactions, exchange_molecules)
-
-	# make a dict of the given reactions using specs from all_reactions
-	reactions = {reaction_id: all_reactions[reaction_id] for reaction_id in reactions_list}
-
-	save_rate_law_configuration_template(reactions)
+	return all_reactions
 
 
-if ANALYZE_RATE_LAWS:
-	'''test the rate law specified in KINETIC_PARAMETERS_FILE'''
+class AnalyzeRateLaws(object):
 
-	# Run test and save output
-	test_rate_laws()
+	def __init__(self):
+
+		parser = argparse.ArgumentParser(description='analyze rate laws')
+		self.parser = self.add_arguments(parser)
+		self.args = self.parser.parse_args()
+
+		self.all_reactions = load_reactions()
+
+		# load dict of saved parameters
+		parameter_file = os.path.join(self.args.path, self.args.file)
+		with open(parameter_file, 'r') as fp:
+			kinetic_parameters = json.load(fp)
+
+		# make a dict of reactions that will be configured with the parameters
+		make_reaction_ids = kinetic_parameters.keys()
+
+		make_reactions = {
+			reaction_id: specs
+			for reaction_id, specs in self.all_reactions.iteritems()
+			if reaction_id in make_reaction_ids}
+
+		# Make the kinetic model
+		self.kinetic_rate_laws = rate_laws.KineticFluxModel(make_reactions, kinetic_parameters)
+
+		# Get list of molecule_ids used by kinetic rate laws
+		self.molecule_ids = self.kinetic_rate_laws.molecule_ids
+
+		# make look up object
+		self.look_up = LookUp()
+
+		# get concentrations from wcm (mmol/L)
+		self.concentrations = self.look_up.look_up('average', self.args.media, self.molecule_ids)
+
+	def run_analysis(self):
+
+		# run analyses and save output
+		analyze_rate_laws(self.kinetic_rate_laws, self.concentrations)
+
+
+	def add_arguments(self, parser):
+		# parser.add_argument(
+		# 	'command',
+		# 	choices=self.choices,
+		# 	help='which command to run')
+		#
+		parser.add_argument(
+			'-m', '--media',
+			type=str,
+			default='minimal',
+			help='The environment media')
+
+		parser.add_argument(
+			'--path',
+			type=str,
+			default=KINETIC_PARAMETERS_PATH,
+			help='the parameter file to be analyze')
+
+		parser.add_argument(
+			'--file',
+			type=str,
+			default='example_parameters.json',
+			help='the parameter file to be analyze')
+
+		return parser
+
+	def template_for_exchange(self, exchange_molecules=['GLT']):
+		'''
+		make reaction dictionary for a set of exchange molecules and pass to save_rate_law_configuration_template
+		'''
+
+		# get a list of all reactions with exchange_molecules
+		reactions_list = rate_laws.get_reactions_from_exchange(self.all_reactions, exchange_molecules)
+
+		# make a dict of the given reactions using specs from all_reactions
+		reactions = {reaction_id: self.all_reactions[reaction_id] for reaction_id in reactions_list}
+
+
+		rate_law_configuration = rate_laws.make_configuration(reactions)
+
+		# make a parameter template
+		parameter_template = rate_laws.get_parameter_template(reactions, rate_law_configuration)
+
+		with open(OUTPUT_PARAM_TEMPLATE, 'w') as fp:
+			json.dump(parameter_template, fp, sort_keys=True, indent=2)
+
+		print('rate law parameter template saved')
+
+
+if __name__ == '__main__':
+	command = AnalyzeRateLaws()
+	command.run_analysis()

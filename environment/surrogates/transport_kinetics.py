@@ -12,17 +12,15 @@ from itertools import ifilter
 from agent.inner import CellSimulation
 from environment.condition.look_up_tables.look_up import LookUp
 from wholecell.kinetic_rate_laws.kinetic_rate_laws import KineticFluxModel
-
+from wholecell.kinetic_rate_laws.rate_law_utilities import load_reactions
 
 TUMBLE_JITTER = 2.0 # (radians)
 DEFAULT_COLOR = [color/255 for color in [255, 51, 51]]
 
 TSV_DIALECT = csv.excel_tab
-REACTIONS_FILE = os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv")
 TRANSPORT_IDS_FILE = os.path.join("reconstruction", "ecoli", "flat", "transport_reactions.tsv")
-KINETIC_PARAMETERS_FILE = os.path.join('wholecell', 'kinetic_rate_laws', 'parameters', 'glt.json')
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
-TRANSPORTER_LOCATIONS_FILE = os.path.join('environment', 'condition', 'transporter_locations.tsv')
+KINETIC_PARAMETERS_FILE = os.path.join('wholecell', 'kinetic_rate_laws', 'parameters', 'example_parameters.json')
 
 class TransportKinetics(CellSimulation):
 	'''
@@ -146,7 +144,7 @@ class TransportKinetics(CellSimulation):
 			}
 
 
-	# TODO (eran) -- move this function to rate_law object
+	# TODO (eran) -- move this function to rate_law_utilities
 	## Flux-related functions
 	def flux_to_counts(self, fluxes):
 
@@ -169,35 +167,8 @@ class TransportKinetics(CellSimulation):
 
 
 	def load_data(self):
-
-		# make dict of transport reactions
-		# get all reactions
-		all_reactions = {}
-		with open(REACTIONS_FILE, 'rU') as tsvfile:
-			reader = JsonReader(
-				ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
-				dialect = TSV_DIALECT)
-			for row in reader:
-				reaction_id = row["reaction id"]
-				stoichiometry = row["stoichiometry"]
-				reversible = row["is reversible"]
-				catalyzed = row["catalyzed by"]
-				all_reactions[reaction_id] = {
-					"stoichiometry": stoichiometry,
-					"is reversible": reversible,
-					"catalyzed by": catalyzed,
-				}
-
-		# Make map of transporter molecule_id with no location to location-tagged molecule_id
-		transporter_location = {}
-		with open(TRANSPORTER_LOCATIONS_FILE, 'rU') as tsvfile:
-			reader = JsonReader(
-				ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
-				dialect = TSV_DIALECT)
-			for row in reader:
-				molecule_id = row['molecule id']
-				location = row['location']
-				transporter_location[molecule_id] = molecule_id + location
+		# use rate_law_utilities to get all_reactions
+		all_reactions = load_reactions()
 
 		# make dict of reactions in TRANSPORT_IDS_FILE
 		self.all_transport_reactions = {}
@@ -209,15 +180,7 @@ class TransportKinetics(CellSimulation):
 				reaction_id = row["reaction id"]
 				stoichiometry = all_reactions[reaction_id]["stoichiometry"]
 				reversible = all_reactions[reaction_id]["is reversible"]
-				transporters = all_reactions[reaction_id]["catalyzed by"]
-
-				# add location tag to enzymes
-				transporters_loc = []
-				for mol_id in transporters:
-					if mol_id in transporter_location:
-						transporters_loc.append(transporter_location[mol_id])
-					else:
-						transporters_loc.append(mol_id)
+				transporters_loc = all_reactions[reaction_id]["catalyzed by"]
 
 				self.all_transport_reactions[reaction_id] = {
 					"stoichiometry": stoichiometry,
