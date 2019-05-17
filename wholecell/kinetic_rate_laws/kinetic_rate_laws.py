@@ -1,6 +1,5 @@
 '''
-Kinetic rate laws
-
+Kinetic rate law generation using the Convenience Kinetics formulation of Michaelis Menten kinetics
 
 '''
 

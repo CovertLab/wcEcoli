@@ -7,8 +7,6 @@ for constructing and analyzing kinetic rate laws with wholecell.kinetic_rate_law
 This module can be called with:
 > python -m wholecell.kinetic_rate_laws.rate_law_utilities
 
-
-
 '''
 
 from __future__ import absolute_import, division, print_function
@@ -31,10 +29,7 @@ TSV_DIALECT = csv.excel_tab
 REACTIONS_FILE = os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv")
 PROTEINS_FILE = os.path.join("reconstruction", "ecoli", "flat", "proteins.tsv")
 COMPLEXATION_FILE = os.path.join("reconstruction", "ecoli", "flat", "complexationReactions.tsv")
-
 KINETIC_PARAMETERS_PATH = os.path.join('wholecell', 'kinetic_rate_laws', 'parameters')
-
-# set output directory and files
 OUTPUT_DIR = os.path.join('wholecell', 'kinetic_rate_laws', 'out')
 
 
@@ -346,7 +341,7 @@ class RateLawUtilities(object):
 		self.all_reactions = load_reactions()
 
 		# load dict of saved parameters
-		parameter_file = os.path.join(self.args.path, self.args.file)
+		parameter_file = self.args.path
 		with open(parameter_file, 'r') as fp:
 			kinetic_parameters = json.load(fp)
 
@@ -378,30 +373,25 @@ class RateLawUtilities(object):
 			molecule_list = self.args.ex_template.split(',')
 			self.template_from_exchange(molecule_list)
 
-	def run_analysis(self):
-
-		# run analyses and save output
-		analyze_rate_laws(self.kinetic_rate_laws, self.concentrations)
-
 	def add_arguments(self, parser):
 
 		parser.add_argument(
 			'--analyze',
-			type=bool,
+			action='store_true',
 			default=False,
-			help='If set to true, rate laws will be analyzed')
+			help='run analysis on parameter files specified by path')
 
 		parser.add_argument(
-			'--template',
+			'-t', '--template',
 			type=str,
 			default='',
-			help='A list of reactions for making an empty parameter template, formatted as "reaction_1, reaction_2"')
+			help='A list of reactions for making an empty parameter template, formatted as "reaction_id_1, reaction_id_2"')
 
 		parser.add_argument(
 			'--ex_template',
 			type=str,
 			default='',
-			help='A list of exchange molecules for making an empty parameter template, formatted as "molecule_1, molecule_2"')
+			help='A list of exchange molecules for making an empty parameter template, formatted as "molecule_id_1, molecule_id_2"')
 
 		parser.add_argument(
 			'-m', '--media',
@@ -412,20 +402,19 @@ class RateLawUtilities(object):
 		parser.add_argument(
 			'--path',
 			type=str,
-			default=KINETIC_PARAMETERS_PATH,
-			help='the parameter file to be analyze')
-
-		parser.add_argument(
-			'--file',
-			type=str,
-			default='example_parameters.json',
-			help='the parameter file to be analyze')
+			default=os.path.join(KINETIC_PARAMETERS_PATH, 'example_parameters.json') ,
+			help='the path to the parameter file to be analyzed. parameters available in {}'.format(KINETIC_PARAMETERS_PATH))
 
 		return parser
 
+	def run_analysis(self):
+
+		# run analyses and save output
+		analyze_rate_laws(self.kinetic_rate_laws, self.concentrations)
+
 	def template_from_exchange(self, exchange_molecules):
 		'''
-		make reaction dictionary for a set of exchange molecules and pass to save_rate_law_configuration_template
+		saves a rate law parameter template for the list of exchange molecules
 
 		'''
 
@@ -436,7 +425,7 @@ class RateLawUtilities(object):
 
 	def template_from_reactions(self, reactions_list):
 		'''
-		make reaction dictionary for a set of exchange molecules and pass to save_rate_law_configuration_template
+		saves a rate law parameter template for the list of reactions
 
 		'''
 		# make a dict of the given reactions using specs from all_reactions
@@ -456,7 +445,8 @@ class RateLawUtilities(object):
 		Given a list of reactions, return a template for required parameters
 
 		Args:
-			reactions:
+			reactions (dict): a reaction network, with
+			 {reaction_id: {'catalyzed by': (list), 'is reversible': (bool), 'stoichiometry': (dict)}}
 
 		Returns:
 			parameter_template (dict): a template for all parameters required by this rate_law_configuration,
