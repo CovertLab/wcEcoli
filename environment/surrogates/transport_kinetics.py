@@ -1,3 +1,12 @@
+'''
+kinetic transport surrogate agent
+
+This uses kinetic rate laws defined in the file KINETIC_PARAMETERS_FILE
+
+TODO (Eran) -- pass in kinetic parameters through boot
+'''
+
+
 from __future__ import absolute_import, division, print_function
 
 import os

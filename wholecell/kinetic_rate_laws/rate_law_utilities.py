@@ -1,10 +1,15 @@
 '''
 Rate law utilities
 
-This collection of functions provides a collection of helpful functions
-for constructing and analyzing kinetic rate laws with wholecell.kinetic_rate_laws.kinetic_rate_laws
+This collection of functions can assist in constructing and analyzing kinetic rate laws
+that are generated in wholecell.kinetic_rate_laws.kinetic_rate_laws.
 
-This module can be called with:
+Functions include:
+	- load_reactions(): returns a dict of all_reactions, with location tags added to the enzymes
+	- get_reactions_from_exchange: provided a dict of reactions and exchange molecules, this returns a list of all reactions for those exchange molecules
+	- get_molecules_from_reactions: given a dict of reactions, returns all the relevant molecules -- substrates and enzymes
+
+The RateLawUtilities module can be called with:
 > python -m wholecell.kinetic_rate_laws.rate_law_utilities
 
 '''
@@ -240,6 +245,9 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 def load_reactions():
 	'''
 	Load all reactions, including the locations of enzymes into each reaction's 'catalyzed by' key
+
+	Returns:
+		all_reactions(dict)
 	'''
 
 	# get protein locations
