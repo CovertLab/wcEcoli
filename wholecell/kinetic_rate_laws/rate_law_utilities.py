@@ -377,14 +377,14 @@ class RateLawUtilities(object):
 			reactions_list = self.args.template.split(',')
 			self.template_from_reactions(reactions_list)
 
-		if self.args.ex_template:
-			molecule_list = self.args.ex_template.split(',')
+		if self.args.exchange_template:
+			molecule_list = self.args.exchange_template.split(',')
 			self.template_from_exchange(molecule_list)
 
 	def add_arguments(self, parser):
 
 		parser.add_argument(
-			'--analyze',
+			'-a', '--analyze',
 			action='store_true',
 			default=False,
 			help='run analysis on parameter files specified by path')
@@ -396,7 +396,7 @@ class RateLawUtilities(object):
 			help='A list of reactions for making an empty parameter template, formatted as "reaction_id_1, reaction_id_2"')
 
 		parser.add_argument(
-			'--ex_template',
+			'-ex', '--exchange_template',
 			type=str,
 			default='',
 			help='A list of exchange molecules for making an empty parameter template, formatted as "molecule_id_1, molecule_id_2"')
