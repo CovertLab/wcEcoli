@@ -96,7 +96,8 @@ class RunSimulation(scriptBase.ScriptBase):
 				type choices. Default = wildtype 0 0''')
 		self.define_parameter_bool(parser, 'require_variants', False,
 			help='''true => require the sim_data variant(s) specified by the
-				--variant option to already exist; false => make the variant(s).''')
+				--variant option to already exist; false => make the variant(s).
+				Run makeVariants.py to make sim_data variants.''')
 		parser.add_argument('-g', '--generations', type=int, default=1,
 			help='Number of cell generations to run. (Single daughters only.)'
 				 ' Default = 1'

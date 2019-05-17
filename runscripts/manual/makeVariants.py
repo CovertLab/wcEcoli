@@ -1,8 +1,10 @@
 """
 Make one or more sim_data variants via VariantSimDataTask, writing e.g.
 `wildtype_000000/kb/simData_Modified.cPickle`, in preparation for running
-cell simulations via `runSim --variant_index INDEX`. (In the simple case,
-runSim will handle this step for you.)
+cell simulations via `runSim --require_variants`. (Without --require_variants,
+runSim will make the sim_data variants, which is handy until you want to launch
+multiple first-gen runSim runs in parallel without collisions writing the same
+`simData_Modified.cPickle` file.)
 
 Prerequisite: Run the parameter calculator (runParca.py).
 
