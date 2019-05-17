@@ -76,7 +76,7 @@ class RunFitter(scriptBase.ScriptBase):
 			)
 		parser.add_argument(
 			'--alternate-mass-fraction', type=str,
-			help="Alternate mass fractions - either 'protein' or 'rna'. Default = None."
+			help="Alternate mass fractions - one of the following: 'protein', 'rna', or 'mrna'. Default = None."
 		)
 
 	def parse_args(self):
