@@ -100,11 +100,14 @@ class Translation(object):
 		ribosomalProteins.extend([x[:-3] for x in sim_data.moleculeGroups.s50_proteins])
 
 		degRate = np.zeros(len(raw_data.proteins))
+		isRProtein = []
 		for i,m in enumerate(raw_data.proteins):
 			if m['id'] not in ribosomalProteins:
 				degRate[i] = NruleDegRate[m['seq'][0]].asNumber()
+				isRProtein.append(False)
 			else:
 				degRate[i] = slowRate.asNumber()
+				isRProtein.append(True)
 
 		monomerData = np.zeros(
 			size,
@@ -116,6 +119,7 @@ class Translation(object):
 				('aaCounts', '{}i8'.format(nAAs)),
 				('mw', 'f8'),
 				('sequence', 'a{}'.format(maxSequenceLength)),
+				('isRProtein', 'bool'),
 				]
 			)
 
@@ -126,6 +130,7 @@ class Translation(object):
 		monomerData['aaCounts'] = aaCounts
 		monomerData['mw'] = mws
 		monomerData['sequence'] = sequences
+		monomerData['isRProtein'] = isRProtein
 
 		field_units = {
 			'id'		:	None,
@@ -134,7 +139,8 @@ class Translation(object):
 			'length'	:	units.aa,
 			'aaCounts'	:	units.aa,
 			'mw'		:	units.g / units.mol,
-			'sequence'  :   None
+			'sequence'  :   None,
+			'isRProtein':   None,
 			}
 
 		self.monomerData = UnitStructArray(monomerData, field_units)
