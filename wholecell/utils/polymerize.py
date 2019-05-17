@@ -192,15 +192,13 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 		projectionIndex = 0
 		notLimited = True
-		advancementIndex = np.zeros(self._nSequences, np.int64)
+		advancementIndex = np.zeros(self._activeSequencesIndexes.shape, np.int64)
 		monomerProjection = np.zeros(self._nMonomers, np.int64)
 
 		# advance one step at a time until a sequence is limited
 		while notLimited and projectionIndex < self._maxElongation:
-			import ipdb; ipdb.set_trace()
-
 			step = self._currentStep + projectionIndex
-			index = self._progress + advancementIndex
+			index = self._progress[self._activeSequencesIndexes] + advancementIndex
 			level = self.elongation_rates * (step + 1)
 			last_unit = (level - np.floor(level))
 			elongating = np.union1d(
@@ -210,11 +208,13 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 			# elongating = sample_array(self.elongation_rates[self._activeSequencesIndexes])
 			monomerStep = sum_monomers(
-				self._sequenceMonomers[:, :, index],
+				self._sequenceMonomers[:, :],
+				index,
 				active)
 
 			self._monomerHistory[projectionIndex] = monomerProjection + monomerStep
 			self._monomerIsLimiting = self._monomerHistory[projectionIndex] > self._monomerLimits
+
 			if self._monomerIsLimiting.any():
 				notLimited = False
 			else:
@@ -250,12 +250,14 @@ class polymerize(object): # Class name is lowercase because interface is functio
 			self.nReactions += deltaReactions
 
 		# Update lengths
-		self.sequenceElongation[self._activeSequencesIndexes] += limitingExtent
+		self.sequenceElongation[self._activeSequencesIndexes] += advancementIndex # limitingExtent
 
 		# Determine whether we are finished elongating
 		# TODO (John): see if we can determine this outside this context,
 		# consequently removing the need to "return" anything
 		fully_elongated = (limitingExtent == self._maxElongation)
+
+		import ipdb; ipdb.set_trace()
 
 		return fully_elongated
 
@@ -265,7 +267,13 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		# sequencesToCull: ndarray of bool, shape (num_active_sequences,),
 		# selecting active sequences to cull, initially the ones that finished
 		# by currentStep.
-		sequencesToCull = ~self._sequenceReactions[self._activeSequencesIndexes, self._currentStep]
+		OLDsequencesToCull = ~self._sequenceReactions[self._activeSequencesIndexes, self._currentStep]
+		LISTsequencesToCull = np.array([
+			not self._sequenceReactions[sequence, self.sequenceElongation[sequence]]
+			for index, sequence in enumerate(self._activeSequencesIndexes)])
+
+		active_elongation = self.sequenceElongation[self._activeSequencesIndexes]
+		sequencesToCull = ~self._sequenceReactions[self._activeSequencesIndexes, active_elongation]
 
 		# Find and finalize monomer-limiting sequences
 		for monomerIndex, monomerLimit in enumerate(self._monomerLimits):
@@ -274,8 +282,23 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 			# sequencesWithMonomer: ndarray of integer, shape (integer,), the
 			# active sequence indexes that use this monomer in currentStep.
+			LISTsequencesWithMonomer = np.array([
+				sequence
+				for index, sequence in enumerate(self._activeSequencesIndexes)
+				if self._sequenceMonomers[
+					monomerIndex,
+					sequence,
+					self.sequenceElongation[sequence]]])
+
+			# sequencesWithMonomer = np.where(
+			# 	self._sequenceMonomers[monomerIndex, self._activeSequencesIndexes, self._currentStep])[0]
 			sequencesWithMonomer = np.where(
-				self._sequenceMonomers[monomerIndex, self._activeSequencesIndexes, self._currentStep])[0]
+				self._sequenceMonomers[
+					monomerIndex,
+					self._activeSequencesIndexes,
+					active_elongation])[0]
+
+			import ipdb; ipdb.set_trace()
 
 			nToCull = sequencesWithMonomer.size - monomerLimit
 
