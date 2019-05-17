@@ -19,7 +19,6 @@ Set PYTHONPATH when running this.
 
 from __future__ import absolute_import, division, print_function
 
-import argparse
 import re
 import os
 from typing import Tuple
@@ -164,7 +163,6 @@ class RunSimulation(scriptBase.ScriptBase):
 		return args
 
 	def run(self, args):
-		# type: (argparse.Namespace) -> None
 		kb_directory = os.path.join(args.sim_path, 'kb')
 		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_SIM_DATA_FILENAME)
 		fp.verify_file_exists(sim_data_file, 'Run runParca?')
@@ -180,22 +178,18 @@ class RunSimulation(scriptBase.ScriptBase):
 			'd_period_division', 'translation_supply', 'trna_charging'))
 
 		# Write the metadata file.
-		metadata = {
-			"git_hash":           fp.run_cmdline("git rev-parse HEAD") or '--',
-			"git_branch":         fp.run_cmdline("git symbolic-ref --short HEAD") or '--',
-			"description":        description,
-			"time":               timestamp,
-			"total_gens":         args.total_gens,
-			"analysis_type":      None,
-			"variant":            variant_type,
-			"total_variants": 	  str(len(variants_to_run)),
-			"timeline":           args.timeline,
-			"mass_distribution":  args.mass_distribution,
-			"growth_rate_noise":  args.growth_rate_noise,
-			"d_period_division":  args.d_period_division,
-			"translation_supply": args.translation_supply,
-			"trna_charging":      args.trna_charging,
-			}
+		cli_metadata_args = data.select_keys(vars(args),
+			('total_gens', 'timeline', 'mass_distribution', 'growth_rate_noise',
+			'd_period_division', 'translation_supply', 'trna_charging'))
+		metadata = dict(cli_metadata_args,
+			git_hash=fp.run_cmdline("git rev-parse HEAD") or '--',
+			git_branch=fp.run_cmdline("git symbolic-ref --short HEAD") or '--',
+			description=description,
+			time=timestamp,
+			analysis_type=None,
+			variant=variant_type,
+			total_variants=str(len(variants_to_run)),
+			)
 		metadata_dir = fp.makedirs(args.sim_path, 'metadata')
 		metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 		fp.write_json_file(metadata_path, metadata)
