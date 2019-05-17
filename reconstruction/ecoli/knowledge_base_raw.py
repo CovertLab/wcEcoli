@@ -126,7 +126,8 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("condition", "timeseries", "000026_add_and_cut_aa.tsv"),
 	)
 SEQUENCE_FILE = 'sequence.fasta'
-LIST_OF_PARAMETER_FILENAMES = ("parameters.tsv", "mass_parameters.tsv")
+LIST_OF_PARAMETER_FILENAMES = (
+	"parameters.tsv", "mass_parameters.tsv", "mass_parameters_alternate.tsv")
 CONSTANTS_FILENAME = "constants.tsv"
 
 class DataStore(object):

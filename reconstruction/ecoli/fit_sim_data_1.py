@@ -106,8 +106,8 @@ def fitSimData_1(
 		adjust_rna_and_protein_parameters (bool) - if True, some RNA and protein
 			expression parameters will be adjusted to get expression
 		alternate_mass_fraction (str) - describes which alternate mass fraction
-			to use (either "protein" or "rna". Default value of None results in
-			original mass fractions.
+			to use (one of the following: 'protein', 'rna', or 'mrna'. Default
+			value of None results in original mass fractions.
 	"""
 
 	sim_data = SimulationDataEcoli()

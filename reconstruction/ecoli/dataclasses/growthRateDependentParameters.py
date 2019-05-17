@@ -38,8 +38,8 @@ class Mass(object):
 
 	## Setup constants
 	def _buildConstants(self, raw_data, sim_data):
-		mass_parameters = raw_data.mass_parameters
-		self.__dict__.update(mass_parameters)
+		self.__dict__.update(raw_data.mass_parameters)
+		self.__dict__.update(raw_data.mass_parameters_alternate)
 
 		self.cellDryMassFraction = 1. - self.cellWaterMassFraction
 		self.avgCellToInitialCellConvFactor = np.exp(np.log(2) * self.avgCellCellCycleProgress)
@@ -165,7 +165,7 @@ class Mass(object):
 
 		doubling_time = self._clipTau_d(doubling_time)
 
-		if alternate is None:
+		if self._alternate is None or self._alternate == "mrna":
 			# Original mass fractions
 			D["protein"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._proteinMassFractionParams))
 			D["rna"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._rnaMassFractionParams))
@@ -199,7 +199,9 @@ class Mass(object):
 			D["inorganicIon"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._inorganicIonMassFractionParams_alternateRna))
 
 		else:
-			raise ValueError("Unexpected alternate mass fractions requested: {}. Should be either 'protein' or 'rna'.".format(alternate))
+			raise ValueError("Unexpected alternate mass fractions requested: {}"
+			                 ". Should be one of the following: 'protein', 'rna"
+			                 "', or 'mrna'.".format(self._alternate))
 
 		total = np.sum([y for x,y in D.iteritems()])
 		for key, value in D.iteritems():
@@ -215,11 +217,19 @@ class Mass(object):
 		for key, value in massFraction.iteritems():
 			D[key + "Mass"] = value * self.getAvgCellDryMass(doubling_time)
 
-		D["rRna23SMass"] = D['rnaMass'] * self._rrna23s_mass_sub_fraction
-		D["rRna16SMass"] = D['rnaMass'] * self._rrna16s_mass_sub_fraction
-		D["rRna5SMass"] = D['rnaMass'] * self._rrna5s_mass_sub_fraction
-		D["tRnaMass"] = D['rnaMass'] * self._trna_mass_sub_fraction
-		D["mRnaMass"] = D['rnaMass'] * self._mrna_mass_sub_fraction
+		if self._alternate == "mrna":
+			D["rRna23SMass"] = D['rnaMass'] * self._rrna23s_mass_sub_fraction_alternate
+			D["rRna16SMass"] = D['rnaMass'] * self._rrna16s_mass_sub_fraction_alternate
+			D["rRna5SMass"] = D['rnaMass'] * self._rrna5s_mass_sub_fraction_alternate
+			D["tRnaMass"] = D['rnaMass'] * self._trna_mass_sub_fraction_alternate
+			D["mRnaMass"] = D['rnaMass'] * self._mrna_mass_sub_fraction_alternate
+
+		else:
+			D["rRna23SMass"] = D['rnaMass'] * self._rrna23s_mass_sub_fraction
+			D["rRna16SMass"] = D['rnaMass'] * self._rrna16s_mass_sub_fraction
+			D["rRna5SMass"] = D['rnaMass'] * self._rrna5s_mass_sub_fraction
+			D["tRnaMass"] = D['rnaMass'] * self._trna_mass_sub_fraction
+			D["mRnaMass"] = D['rnaMass'] * self._mrna_mass_sub_fraction
 
 		return D
 
