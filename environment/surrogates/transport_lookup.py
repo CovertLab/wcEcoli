@@ -8,11 +8,12 @@ from scipy import constants
 
 from agent.inner import CellSimulation
 from environment.condition.look_up_tables.look_up import LookUp
+from wholecell.kinetic_rate_laws.rate_law_utilities import load_reactions
+from wholecell.kinetic_rate_laws.rate_law_utilities import get_reactions_from_exchange
 from reconstruction.spreadsheets import JsonReader
 from itertools import ifilter
 
 EXTERNAL_MOLECULES_FILE = os.path.join('environment', 'condition', 'environment_molecules.tsv')
-REACTIONS_FILE = os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv")
 TRANSPORT_IDS_FILE = os.path.join("reconstruction", "ecoli", "flat", "transport_reactions.tsv")
 
 TSV_DIALECT = csv.excel_tab
@@ -67,53 +68,11 @@ class TransportLookup(CellSimulation):
 		self.motile_force = [0.01, 0.01] # initial magnitude and relative orientation
 		self.division = []
 
-		# make dict of transport reactions
-		# get all reactions
-		all_reactions = {}
-		with open(REACTIONS_FILE, 'rU') as tsvfile:
-			reader = JsonReader(
-				ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
-				dialect = TSV_DIALECT)
-			for row in reader:
-				reaction_id = row["reaction id"]
-				stoichiometry = row["stoichiometry"]
-				reversible = row["is reversible"]
-				catalyzed = row["catalyzed by"]
-				all_reactions[reaction_id] = {
-					"stoichiometry": stoichiometry,
-					"is reversible": reversible,
-					"catalyzed by": catalyzed,
-				}
-
-		# make dict of reactions in TRANSPORT_IDS_FILE
-		self.all_transport_reactions = {}
-		with open(TRANSPORT_IDS_FILE, 'rU') as tsvfile:
-			reader = JsonReader(
-				ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
-				dialect = TSV_DIALECT)
-			for row in reader:
-				reaction_id = row["reaction id"]
-				self.all_transport_reactions[reaction_id] = {
-					"stoichiometry": all_reactions[reaction_id]["stoichiometry"],
-					"is reversible": all_reactions[reaction_id]["is reversible"],
-					"catalyzed by": all_reactions[reaction_id]["catalyzed by"],
-				}
-
-		# Make map of external molecule_ids with a location tag (as used in reaction stoichiometry) to molecule_ids in the environment
-		self.molecule_to_external_map = {}
-		self.external_to_molecule_map = {}
-		with open(EXTERNAL_MOLECULES_FILE, 'rU') as tsvfile:
-			reader = JsonReader(
-				ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
-				dialect = TSV_DIALECT)
-			for row in reader:
-				molecule_id = row['molecule id']
-				location = row['exchange molecule location']
-				self.molecule_to_external_map[molecule_id + location] = molecule_id
-				self.external_to_molecule_map[molecule_id] = molecule_id + location
+		# load all reactions and
+		self.load_data()
 
 		# exchange_ids declares which molecules' exchange will be applied
-		self.transport_reaction_ids = self.reactions_from_exchange(exchange_ids)
+		self.transport_reaction_ids = get_reactions_from_exchange(self.all_transport_reactions, exchange_ids)
 
 		# make look up object
 		self.look_up = LookUp()
@@ -220,11 +179,44 @@ class TransportLookup(CellSimulation):
 					delta_counts[substrate] = delta
 		return delta_counts
 
-	def reactions_from_exchange(self, include_exchanges):
-		include_reactions = []
-		for reaction_id, specs in self.all_transport_reactions.iteritems():
-			reaction_molecules = specs['stoichiometry'].keys()
-			for exchange in include_exchanges:
-				if exchange in reaction_molecules:
-					include_reactions.append(reaction_id)
-		return include_reactions
+	def load_data(self):
+		'''
+		- Loads all reactions, including locations for enzymes.
+		- Separates out the transport reactions as an class dictionary
+		- Makes mappings from molecule ids with location tags to external molecules without location tags
+
+		'''
+
+		# use rate_law_utilities to get all_reactions
+		all_reactions = load_reactions()
+
+		# make dict of reactions in TRANSPORT_IDS_FILE
+		self.all_transport_reactions = {}
+		with open(TRANSPORT_IDS_FILE, 'rU') as tsvfile:
+			reader = JsonReader(
+				ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
+				dialect = TSV_DIALECT)
+			for row in reader:
+				reaction_id = row["reaction id"]
+				stoichiometry = all_reactions[reaction_id]["stoichiometry"]
+				reversible = all_reactions[reaction_id]["is reversible"]
+				transporters_loc = all_reactions[reaction_id]["catalyzed by"]
+
+				self.all_transport_reactions[reaction_id] = {
+					"stoichiometry": stoichiometry,
+					"is reversible": reversible,
+					"catalyzed by": transporters_loc,
+				}
+
+		# Make map of external molecule_ids with a location tag (as used in reaction stoichiometry) to molecule_ids in the environment
+		self.molecule_to_external_map = {}
+		self.external_to_molecule_map = {}
+		with open(EXTERNAL_MOLECULES_FILE, 'rU') as tsvfile:
+			reader = JsonReader(
+				ifilter(lambda x: x.lstrip()[0] != "#", tsvfile), # Strip comments
+				dialect = TSV_DIALECT)
+			for row in reader:
+				molecule_id = row['molecule id']
+				location = row['exchange molecule location']
+				self.molecule_to_external_map[molecule_id + location] = molecule_id
+				self.external_to_molecule_map[molecule_id] = molecule_id + location

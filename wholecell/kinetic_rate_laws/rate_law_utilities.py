@@ -1,3 +1,16 @@
+'''
+Rate law utilities
+
+This collection of functions provides a collection of helpful functions
+for constructing and analyzing kinetic rate laws with wholecell.kinetic_rate_laws.kinetic_rate_laws
+
+This module can be called with:
+> python -m wholecell.kinetic_rate_laws.rate_law_utilities
+
+
+
+'''
+
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -321,7 +334,7 @@ def get_molecules_from_reactions(reactions):
 	return list(set(molecule_ids))
 
 
-class AnalyzeRateLaws(object):
+class RateLawUtilities(object):
 
 	def __init__(self):
 
@@ -329,6 +342,7 @@ class AnalyzeRateLaws(object):
 		self.parser = self.add_arguments(parser)
 		self.args = self.parser.parse_args()
 
+		# load all reactions
 		self.all_reactions = load_reactions()
 
 		# load dict of saved parameters
@@ -349,11 +363,20 @@ class AnalyzeRateLaws(object):
 		# Get list of molecule_ids used by kinetic rate laws
 		self.molecule_ids = self.kinetic_rate_laws.molecule_ids
 
-		# make look up object
+		# make look up object and get saved concentrations from wcm (mmol/L)
 		self.look_up = LookUp()
-
-		# get concentrations from wcm (mmol/L)
 		self.concentrations = self.look_up.look_up('average', self.args.media, self.molecule_ids)
+
+		if self.args.analyze:
+			self.run_analysis()
+
+		if self.args.template:
+			reactions_list = self.args.template.split(',')
+			self.template_from_reactions(reactions_list)
+
+		if self.args.ex_template:
+			molecule_list = self.args.ex_template.split(',')
+			self.template_from_exchange(molecule_list)
 
 	def run_analysis(self):
 
@@ -361,11 +384,25 @@ class AnalyzeRateLaws(object):
 		analyze_rate_laws(self.kinetic_rate_laws, self.concentrations)
 
 	def add_arguments(self, parser):
-		# parser.add_argument(
-		# 	'command',
-		# 	choices=self.choices,
-		# 	help='which command to run')
-		#
+
+		parser.add_argument(
+			'--analyze',
+			type=bool,
+			default=False,
+			help='If set to true, rate laws will be analyzed')
+
+		parser.add_argument(
+			'--template',
+			type=str,
+			default='',
+			help='A list of reactions for making an empty parameter template, formatted as "reaction_1, reaction_2"')
+
+		parser.add_argument(
+			'--ex_template',
+			type=str,
+			default='',
+			help='A list of exchange molecules for making an empty parameter template, formatted as "molecule_1, molecule_2"')
+
 		parser.add_argument(
 			'-m', '--media',
 			type=str,
@@ -386,17 +423,22 @@ class AnalyzeRateLaws(object):
 
 		return parser
 
-
-	# TODO -- does this need to be in the object? Seems like a separate utility
-	def template_for_exchange(self, exchange_molecules=['GLT']):
+	def template_from_exchange(self, exchange_molecules):
 		'''
 		make reaction dictionary for a set of exchange molecules and pass to save_rate_law_configuration_template
 
 		'''
 
 		# get a list of all reactions with exchange_molecules
-		reactions_list = self.get_reactions_from_exchange(self.all_reactions, exchange_molecules)
+		reactions_list = get_reactions_from_exchange(self.all_reactions, exchange_molecules)
 
+		self.template_from_reactions(reactions_list)
+
+	def template_from_reactions(self, reactions_list):
+		'''
+		make reaction dictionary for a set of exchange molecules and pass to save_rate_law_configuration_template
+
+		'''
 		# make a dict of the given reactions using specs from all_reactions
 		reactions = {reaction_id: self.all_reactions[reaction_id] for reaction_id in reactions_list}
 
@@ -411,11 +453,10 @@ class AnalyzeRateLaws(object):
 
 	def get_parameter_template(self, reactions):
 		'''
-		Given a rate law configuration, return a template for required parameters
+		Given a list of reactions, return a template for required parameters
 
 		Args:
 			reactions:
-			rate_law_configuration:
 
 		Returns:
 			parameter_template (dict): a template for all parameters required by this rate_law_configuration,
@@ -452,5 +493,4 @@ class AnalyzeRateLaws(object):
 
 
 if __name__ == '__main__':
-	command = AnalyzeRateLaws()
-	command.run_analysis()
+	command = RateLawUtilities()
