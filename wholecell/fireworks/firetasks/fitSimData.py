@@ -26,6 +26,7 @@ class FitSimDataTask(FireTaskBase):
 		"adjust_rna_and_protein_parameters",
 		"alternate_mass_fraction",
 		"alternate_r_protein_degradation",
+		"alternate_rna_seq",
 		]
 
 	def run_task(self, fw_spec):
@@ -60,6 +61,7 @@ class FitSimDataTask(FireTaskBase):
 				adjust_rna_and_protein_parameters=self['adjust_rna_and_protein_parameters'],
 				alternate_mass_fraction=self['alternate_mass_fraction'],
 				alternate_r_protein_degradation=self['alternate_r_protein_degradation'],
+				alternate_rna_seq=self['alternate_rna_seq'],
 				)
 
 			sys.setrecursionlimit(4000) #limit found manually

@@ -58,12 +58,12 @@ class RunFitter(scriptBase.ScriptBase):
 			'--disable-rnapoly-active-fraction-fitting',
 			action='store_true',
 			help="If set, RNA polymerase active fraction will not be fit to protein synthesis demands."
-		)
+			)
 		parser.add_argument(
 			'--disable-ribosome-active-fraction-fitting',
 			action='store_true',
 			help="If set, ribosome active fraction will not be fit to protein synthesis demands."
-		)
+			)
 		parser.add_argument(
 			'--flat-elongation',
 			action='store_true',
@@ -77,11 +77,15 @@ class RunFitter(scriptBase.ScriptBase):
 		parser.add_argument(
 			'--alternate-mass-fraction', type=str,
 			help="Alternate mass fractions - one of the following: 'protein', 'rna', or 'mrna'. Default = None."
-		)
+			)
 		parser.add_argument(
 			'--alternate-r-protein-degradation',
 			action='store_true',
 			help= "If set, r-protein degradation will set to fast value."
+			)
+		parser.add_argument(
+			'--alternate-rna-seq', type=str,
+			help="Alternate RNA-seq input - one of the following: 'Covert', 'Cho', or 'Dong'. Default = None."
 			)
 
 	def parse_args(self):
@@ -130,6 +134,7 @@ class RunFitter(scriptBase.ScriptBase):
 				adjust_rna_and_protein_parameters=args.no_expression_adjustment,
 				alternate_mass_fraction=args.alternate_mass_fraction,
 				alternate_r_protein_degradation=args.alternate_r_protein_degradation,
+				alternate_rna_seq=args.alternate_rna_seq,
 				),
 
 			SymlinkTask(

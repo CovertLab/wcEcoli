@@ -85,6 +85,7 @@ def fitSimData_1(
 		adjust_rna_and_protein_parameters=True,
 		alternate_mass_fraction=None,
 		alternate_r_protein_degradation=False,
+		alternate_rna_seq=None,
 		):
 	"""
 	Fits parameters necessary for the simulation based on the knowledge base
