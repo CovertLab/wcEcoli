@@ -118,7 +118,7 @@ def fitSimData_1(
 	sim_data.initialize(
 		raw_data = raw_data,
 		basal_expression_condition = BASAL_EXPRESSION_CONDITION,
-		alternate = alternate_mass_fraction,
+		alternate_mass = alternate_mass_fraction,
 		)
 
 	# Limit the number of conditions that are being fit so that execution time decreases

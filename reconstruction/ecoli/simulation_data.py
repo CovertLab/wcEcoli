@@ -36,7 +36,9 @@ class SimulationDataEcoli(object):
 		# Doubling time (used in fitting)
 		self.doubling_time = None
 
-	def initialize(self, raw_data, basal_expression_condition="M9 Glucose minus AAs", alternate=None):
+	def initialize(self, raw_data,
+	               basal_expression_condition="M9 Glucose minus AAs",
+	               alternate_mass=None):
 
 		self.external_state = ExternalState(raw_data, self)
 
@@ -60,7 +62,7 @@ class SimulationDataEcoli(object):
 
 		# Growth rate dependent parameters are set first
 		self.growthRateParameters = GrowthRateParameters(raw_data, self)
-		self.mass = Mass(raw_data, self, alternate)
+		self.mass = Mass(raw_data, self, alternate_mass)
 
 		# Data classes (can depend on helper functions)
 		# Data classes cannot depend on each other
