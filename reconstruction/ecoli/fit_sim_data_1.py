@@ -112,6 +112,10 @@ def fitSimData_1(
 			value of None results in original mass fractions.
 		alternate_r_protein_degradation (bool) - if True, r-proteins are
 			degraded at fast rate.
+		alternate_rna_seq (str) - describes which alternate RNA-seq dataset to
+			use for fitting RNA expression. One of the following: 'Covert',
+			'Cho', or 'Dong'. Default value of None results in original RNA-seq
+			input.
 	"""
 
 	sim_data = SimulationDataEcoli()
@@ -119,6 +123,7 @@ def fitSimData_1(
 		raw_data = raw_data,
 		basal_expression_condition = BASAL_EXPRESSION_CONDITION,
 		alternate_mass = alternate_mass_fraction,
+		alternate_rna = alternate_rna_seq,
 		)
 
 	# Limit the number of conditions that are being fit so that execution time decreases

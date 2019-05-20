@@ -20,13 +20,13 @@ RNA_SEQ_ANALYSIS = "rsem_tpm"
 class Transcription(object):
 	""" Transcription """
 
-	def __init__(self, raw_data, sim_data):
-		self._buildRnaData(raw_data, sim_data)
+	def __init__(self, raw_data, sim_data, alternate_rna):
+		self._buildRnaData(raw_data, sim_data, alternate_rna)
 		self._buildTranscription(raw_data, sim_data)
 
 		self._build_elongation_rates(raw_data, sim_data)
 
-	def _buildRnaData(self, raw_data, sim_data):
+	def _buildRnaData(self, raw_data, sim_data, alternate_rna):
 		assert all([len(rna['location']) == 1 for rna in raw_data.rnas])
 		rnaIds = ['{}[{}]'.format(rna['id'], rna['location'][0]) for rna in raw_data.rnas if len(rna['location']) == 1]
 		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in raw_data.rnas]) # TODO: units
@@ -38,9 +38,15 @@ class Transcription(object):
 			])
 
 		# Load expression from RNA-seq data
+		rna_seq_file = "raw_data.rna_seq_data"
+		if alternate_rna == None:
+			rna_seq_file += ".rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS)
+		else:
+			rna_seq_file += ".alternate_rna_seq_{}".format(alternate_rna)
+
 		expression = []
 		for rna in raw_data.rnas:
-			arb_exp = [x[sim_data.basal_expression_condition] for x in eval("raw_data.rna_seq_data.rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS)) if x['Gene'] == rna['geneId']]
+			arb_exp = [x[sim_data.basal_expression_condition] for x in eval(rna_seq_file) if x['Gene'] == rna['geneId']]
 			if len(arb_exp):
 				expression.append(arb_exp[0])
 			elif rna['type'] == 'mRNA' or rna['type'] == 'miscRNA':

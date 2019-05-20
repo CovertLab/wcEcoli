@@ -25,11 +25,11 @@ import numpy as np
 class Process(object):
 	""" Process """
 
-	def __init__(self, raw_data, sim_data):
+	def __init__(self, raw_data, sim_data, alternate_rna):
 
 		self.replication = Replication(raw_data, sim_data)
 		self.metabolism = Metabolism(raw_data, sim_data)
-		self.transcription = Transcription(raw_data, sim_data)
+		self.transcription = Transcription(raw_data, sim_data, alternate_rna)
 		self.translation = Translation(raw_data, sim_data)
 		self.complexation = Complexation(raw_data, sim_data)
 		self.rna_decay = RnaDecay(raw_data, sim_data)
