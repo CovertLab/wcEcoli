@@ -29,12 +29,11 @@ class KineticFluxModel(object):
 			and their rate law function. These rate laws are used directly from within this dictionary
 	'''
 
-	def __init__(self, reactions, kinetic_parameters):
+	def __init__(self, all_reactions, kinetic_parameters):
 
 		self.kinetic_parameters = kinetic_parameters
-
-		self.reactions = reactions
-		self.reaction_ids = self.reactions.keys()
+		self.reaction_ids = self.kinetic_parameters.keys()
+		self.reactions = {reaction_id: all_reactions[reaction_id] for reaction_id in all_reactions}
 		self.molecule_ids = get_molecules(self.reactions)
 
 		# make the rate laws
@@ -149,25 +148,25 @@ def make_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
 	rate_laws = {reaction_id: {} for reaction_id in reactions.iterkeys()}
 	for reaction_id, specs in reactions.iteritems():
 		stoichiometry = specs.get('stoichiometry')
-		# TODO -- add reversibility based on specs
-		# reversible = specs.get('is reversible')
+		# reversible = specs.get('is reversible') # TODO (eran) -- add reversibility based on specs
 		transporters = specs.get('catalyzed by')
 
-		# rate law for each transporter
-		for transporter in transporters:
-			cofactors_sets = rate_law_configuration[transporter]["reaction_cofactors"][reaction_id]
-			partition = rate_law_configuration[transporter]["partition"]
+		if transporters:
+			# rate law for each transporter
+			for transporter in transporters:
+				cofactors_sets = rate_law_configuration[transporter]["reaction_cofactors"][reaction_id]
+				partition = rate_law_configuration[transporter]["partition"]
 
-		rate_law = construct_convenience_rate_law(
-			stoichiometry,
-			transporter,
-			cofactors_sets,
-			partition,
-			kinetic_parameters[reaction_id][transporter]
-		)
+				rate_law = construct_convenience_rate_law(
+					stoichiometry,
+					transporter,
+					cofactors_sets,
+					partition,
+					kinetic_parameters[reaction_id][transporter]
+				)
 
-		# save the rate law for each transporter in this reaction
-		rate_laws[reaction_id][transporter] = rate_law
+				# save the rate law for each transporter in this reaction
+				rate_laws[reaction_id][transporter] = rate_law
 
 	return rate_laws
 
