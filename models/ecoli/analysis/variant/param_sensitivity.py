@@ -10,6 +10,7 @@ from __future__ import division
 
 import cPickle
 from matplotlib import pyplot as plt
+from multiprocessing import Pool
 import numpy as np
 import os
 
@@ -17,8 +18,83 @@ from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
+from wholecell.utils import filepath, parallelization
 
+
+def analyze_variant((variant, ap)):
+	'''
+
+	'''
+
+	with open(ap.get_variant_kb(variant), 'rb') as f:
+		sim_data = cPickle.load(f)
+
+	rna_deg_increase_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+	rna_deg_decrease_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+	rna_deg_increase_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+	rna_deg_decrease_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+	protein_deg_increase_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
+	protein_deg_decrease_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
+	protein_deg_increase_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
+	protein_deg_decrease_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
+	trans_eff_increase_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
+	trans_eff_decrease_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
+	trans_eff_increase_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
+	trans_eff_decrease_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
+	synth_prob_increase_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+	synth_prob_decrease_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+	synth_prob_increase_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+	synth_prob_decrease_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+
+	# TODO: save indices separately from sim_data for faster load
+	rna_deg_increase_indices = sim_data.increase_rna_deg_indices
+	protein_deg_increase_indices = sim_data.increase_protein_deg_indices
+	trans_eff_increase_indices = sim_data.increase_trans_eff_indices
+	synth_prob_increase_indices = sim_data.increase_synth_prob_indices
+	rna_deg_decrease_indices = sim_data.decrease_rna_deg_indices
+	protein_deg_decrease_indices = sim_data.decrease_protein_deg_indices
+	trans_eff_decrease_indices = sim_data.decrease_trans_eff_indices
+	synth_prob_decrease_indices = sim_data.decrease_synth_prob_indices
+
+	for sim_dir in ap.get_cells(variant=[variant]):
+		simOutDir = os.path.join(sim_dir, "simOut")
+
+		# Listeners used
+		try:
+			main_reader = TableReader(os.path.join(simOutDir, 'Main'))
+			mass_reader = TableReader(os.path.join(simOutDir, 'Mass'))
+
+			# Load data
+			time = main_reader.readColumn('time')
+			cell_mass = mass_reader.readColumn('cellMass')
+			growth_rate = np.nanmean(mass_reader.readColumn('instantaniousGrowthRate'))
+
+			mass_diff = (cell_mass[-1] - cell_mass[0]) / (time[-1] - time[0])
+
+		except:
+			continue
+
+		rna_deg_increase_growth_rate[rna_deg_increase_indices] += growth_rate
+		rna_deg_decrease_growth_rate[rna_deg_decrease_indices] += growth_rate
+		rna_deg_increase_counts[rna_deg_increase_indices] += 1
+		rna_deg_decrease_counts[rna_deg_decrease_indices] += 1
+		protein_deg_increase_growth_rate[protein_deg_increase_indices] += growth_rate
+		protein_deg_decrease_growth_rate[protein_deg_decrease_indices] += growth_rate
+		protein_deg_increase_counts[protein_deg_increase_indices] += 1
+		protein_deg_decrease_counts[protein_deg_decrease_indices] += 1
+		trans_eff_increase_growth_rate[trans_eff_increase_indices] += growth_rate
+		trans_eff_decrease_growth_rate[trans_eff_decrease_indices] += growth_rate
+		trans_eff_increase_counts[trans_eff_increase_indices] += 1
+		trans_eff_decrease_counts[trans_eff_decrease_indices] += 1
+		synth_prob_increase_growth_rate[synth_prob_increase_indices] += growth_rate
+		synth_prob_decrease_growth_rate[synth_prob_decrease_indices] += growth_rate
+		synth_prob_increase_counts[synth_prob_increase_indices] += 1
+		synth_prob_decrease_counts[synth_prob_decrease_indices] += 1
+
+	return (rna_deg_increase_growth_rate, rna_deg_decrease_growth_rate, rna_deg_increase_counts, rna_deg_decrease_counts,
+		protein_deg_increase_growth_rate, protein_deg_decrease_growth_rate, protein_deg_increase_counts, protein_deg_decrease_counts,
+		trans_eff_increase_growth_rate, trans_eff_decrease_growth_rate, trans_eff_increase_counts, trans_eff_decrease_counts,
+		synth_prob_increase_growth_rate, synth_prob_decrease_growth_rate, synth_prob_increase_counts, synth_prob_decrease_counts)
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -33,76 +109,71 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		ap = AnalysisPaths(inputDir, variant_plot=True)
 		variants = ap.get_variants()
+		n_variants = len(variants)
 
-		initialize_from_sim_data = True
-		for variant in variants:
-			with open(ap.get_variant_kb(variant), 'rb') as f:
-				sim_data = cPickle.load(f)
+		pool = Pool(processes=min(8, parallelization.plotter_cpus()))
+		args = zip(
+			variants,
+			[ap] * n_variants,
+			)
+		results = pool.map(analyze_variant, args)
+		pool.close()
+		pool.join()
+		initialize = True
+		for i, result in enumerate(results):
+			(_rna_deg_increase_growth_rate,
+				_rna_deg_decrease_growth_rate,
+				_rna_deg_increase_counts,
+				_rna_deg_decrease_counts,
+				_protein_deg_increase_growth_rate,
+				_protein_deg_decrease_growth_rate,
+				_protein_deg_increase_counts,
+				_protein_deg_decrease_counts,
+				_trans_eff_increase_growth_rate,
+				_trans_eff_decrease_growth_rate,
+				_trans_eff_increase_counts,
+				_trans_eff_decrease_counts,
+				_synth_prob_increase_growth_rate,
+				_synth_prob_decrease_growth_rate,
+				_synth_prob_increase_counts,
+				_synth_prob_decrease_counts) = result
 
-			# Populate values from the first sim_data object read
-			if initialize_from_sim_data:
-				initialize_from_sim_data = False
-				rna_deg_increase_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-				rna_deg_decrease_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-				rna_deg_increase_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-				rna_deg_decrease_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-				protein_deg_increase_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-				protein_deg_decrease_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-				protein_deg_increase_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-				protein_deg_decrease_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-				trans_eff_increase_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-				trans_eff_decrease_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-				trans_eff_increase_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-				trans_eff_decrease_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-				synth_prob_increase_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-				synth_prob_decrease_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-				synth_prob_increase_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-				synth_prob_decrease_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+			if initialize:
+				initialize = False
+				rna_deg_increase_growth_rate = _rna_deg_increase_growth_rate
+				rna_deg_decrease_growth_rate = _rna_deg_decrease_growth_rate
+				rna_deg_increase_counts = _rna_deg_increase_counts
+				rna_deg_decrease_counts = _rna_deg_decrease_counts
+				protein_deg_increase_growth_rate = _protein_deg_increase_growth_rate
+				protein_deg_decrease_growth_rate = _protein_deg_decrease_growth_rate
+				protein_deg_increase_counts = _protein_deg_increase_counts
+				protein_deg_decrease_counts = _protein_deg_decrease_counts
+				trans_eff_increase_growth_rate = _trans_eff_increase_growth_rate
+				trans_eff_decrease_growth_rate = _trans_eff_decrease_growth_rate
+				trans_eff_increase_counts = _trans_eff_increase_counts
+				trans_eff_decrease_counts = _trans_eff_decrease_counts
+				synth_prob_increase_growth_rate = _synth_prob_increase_growth_rate
+				synth_prob_decrease_growth_rate = _synth_prob_decrease_growth_rate
+				synth_prob_increase_counts = _synth_prob_increase_counts
+				synth_prob_decrease_counts = _synth_prob_decrease_counts
+			else:
+				rna_deg_increase_growth_rate += _rna_deg_increase_growth_rate
+				rna_deg_decrease_growth_rate += _rna_deg_decrease_growth_rate
+				rna_deg_increase_counts += _rna_deg_increase_counts
+				rna_deg_decrease_counts += _rna_deg_decrease_counts
+				protein_deg_increase_growth_rate += _protein_deg_increase_growth_rate
+				protein_deg_decrease_growth_rate += _protein_deg_decrease_growth_rate
+				protein_deg_increase_counts += _protein_deg_increase_counts
+				protein_deg_decrease_counts += _protein_deg_decrease_counts
+				trans_eff_increase_growth_rate += _trans_eff_increase_growth_rate
+				trans_eff_decrease_growth_rate += _trans_eff_decrease_growth_rate
+				trans_eff_increase_counts += _trans_eff_increase_counts
+				trans_eff_decrease_counts += _trans_eff_decrease_counts
+				synth_prob_increase_growth_rate += _synth_prob_increase_growth_rate
+				synth_prob_decrease_growth_rate += _synth_prob_decrease_growth_rate
+				synth_prob_increase_counts += _synth_prob_increase_counts
+				synth_prob_decrease_counts += _synth_prob_decrease_counts
 
-			# TODO: save indices separately from sim_data for faster load
-			rna_deg_increase_indices = sim_data.increase_rna_deg_indices
-			protein_deg_increase_indices = sim_data.increase_protein_deg_indices
-			trans_eff_increase_indices = sim_data.increase_trans_eff_indices
-			synth_prob_increase_indices = sim_data.increase_synth_prob_indices
-			rna_deg_decrease_indices = sim_data.decrease_rna_deg_indices
-			protein_deg_decrease_indices = sim_data.decrease_protein_deg_indices
-			trans_eff_decrease_indices = sim_data.decrease_trans_eff_indices
-			synth_prob_decrease_indices = sim_data.decrease_synth_prob_indices
-
-			for sim_dir in ap.get_cells(variant=[variant]):
-				simOutDir = os.path.join(sim_dir, "simOut")
-
-				# Listeners used
-				try:
-					main_reader = TableReader(os.path.join(simOutDir, 'Main'))
-					mass_reader = TableReader(os.path.join(simOutDir, 'Mass'))
-
-					# Load data
-					time = main_reader.readColumn('time')
-					cell_mass = mass_reader.readColumn('cellMass')
-					growth_rate = np.nanmean(mass_reader.readColumn('instantaniousGrowthRate'))
-
-					mass_diff = (cell_mass[-1] - cell_mass[0]) / (time[-1] - time[0])
-
-				except:
-					continue
-
-				rna_deg_increase_growth_rate[rna_deg_increase_indices] += growth_rate
-				rna_deg_decrease_growth_rate[rna_deg_decrease_indices] += growth_rate
-				rna_deg_increase_counts[rna_deg_increase_indices] += 1
-				rna_deg_decrease_counts[rna_deg_decrease_indices] += 1
-				protein_deg_increase_growth_rate[protein_deg_increase_indices] += growth_rate
-				protein_deg_decrease_growth_rate[protein_deg_decrease_indices] += growth_rate
-				protein_deg_increase_counts[protein_deg_increase_indices] += 1
-				protein_deg_decrease_counts[protein_deg_decrease_indices] += 1
-				trans_eff_increase_growth_rate[trans_eff_increase_indices] += growth_rate
-				trans_eff_decrease_growth_rate[trans_eff_decrease_indices] += growth_rate
-				trans_eff_increase_counts[trans_eff_increase_indices] += 1
-				trans_eff_decrease_counts[trans_eff_decrease_indices] += 1
-				synth_prob_increase_growth_rate[synth_prob_increase_indices] += growth_rate
-				synth_prob_decrease_growth_rate[synth_prob_decrease_indices] += growth_rate
-				synth_prob_increase_counts[synth_prob_increase_indices] += 1
-				synth_prob_decrease_counts[synth_prob_decrease_indices] += 1
 
 		plt.figure()
 
