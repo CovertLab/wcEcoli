@@ -52,10 +52,11 @@ def modify_params(sim_data, indices, factor):
 	cutoff2 = cutoff1 + n_protein_deg_rates
 	cutoff3 = cutoff2 + n_translation_efficiencies
 
-	rna_deg_indices = indices[np.where(indices < cutoff1)]
-	protein_deg_indices = indices[np.where((indices >= cutoff1) & (indices < cutoff2))] - cutoff1
-	trans_eff_indices = indices[np.where((indices >= cutoff2) & (indices < cutoff3))] - cutoff2
-	synth_prob_indices = indices[np.where(indices >= cutoff3)] - cutoff3
+	rna_deg_indices = list(indices[np.where(indices < cutoff1)])
+	protein_deg_indices = list(indices[np.where((indices >= cutoff1) & (indices < cutoff2))] - cutoff1)
+	trans_eff_indices = list(indices[np.where((indices >= cutoff2) & (indices < cutoff3))] - cutoff2)
+	synth_prob_indices = list(indices[np.where(indices >= cutoff3)] - cutoff3)
+
 	synth_prob_set = set(synth_prob_indices)
 	recruitment_mask = np.array([hi in synth_prob_set for hi in sim_data.process.transcription_regulation.recruitmentData['hI']])
 
@@ -76,14 +77,14 @@ def param_sensitivity_indices(sim_data):
 def param_sensitivity(sim_data, index):
 	# No modifications for first index as control
 	if index == 0:
-		sim_data.increase_rna_deg_indices = np.array([])
-		sim_data.increase_protein_deg_indices = np.array([])
-		sim_data.increase_trans_eff_indices = np.array([])
-		sim_data.increase_synth_prob_indices = np.array([])
-		sim_data.decrease_rna_deg_indices = np.array([])
-		sim_data.decrease_protein_deg_indices = np.array([])
-		sim_data.decrease_trans_eff_indices = np.array([])
-		sim_data.decrease_synth_prob_indices = np.array([])
+		sim_data.increase_rna_deg_indices = []
+		sim_data.increase_protein_deg_indices = []
+		sim_data.increase_trans_eff_indices = []
+		sim_data.increase_synth_prob_indices = []
+		sim_data.decrease_rna_deg_indices = []
+		sim_data.decrease_protein_deg_indices = []
+		sim_data.decrease_trans_eff_indices = []
+		sim_data.decrease_synth_prob_indices = []
 		return dict(
 			shortName = "control",
 			desc = "Control simulation"

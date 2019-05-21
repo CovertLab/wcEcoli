@@ -61,8 +61,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# sim_data.decrease_protein_deg_indices
 			trans_eff_decrease_indices = sim_data.decrease_trans_eff_indices
 			# sim_data.decrease_synth_prob_indices
-			if len(rna_deg_increase_indices) == 0:
-				continue
 
 			for sim_dir in ap.get_cells(variant=[variant]):
 				simOutDir = os.path.join(sim_dir, "simOut")
