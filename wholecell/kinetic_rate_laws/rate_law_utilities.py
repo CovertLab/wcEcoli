@@ -342,14 +342,14 @@ class RateLawUtilities(object):
 	def __init__(self):
 
 		parser = argparse.ArgumentParser(description='analyze rate laws')
-		self.parser = self.add_arguments(parser)
-		self.args = self.parser.parse_args()
+		parser = self.add_arguments(parser)
+		args = parser.parse_args()
 
 		# load all reactions
 		self.all_reactions = load_reactions()
 
 		# load dict of saved parameters
-		parameter_file = self.args.path
+		parameter_file = args.path
 		with open(parameter_file, 'r') as fp:
 			kinetic_parameters = json.load(fp)
 
@@ -368,17 +368,17 @@ class RateLawUtilities(object):
 
 		# make look up object and get saved concentrations from wcm (mmol/L)
 		self.look_up = LookUp()
-		self.concentrations = self.look_up.look_up('average', self.args.media, self.molecule_ids)
+		self.concentrations = self.look_up.look_up('average', args.media, self.molecule_ids)
 
-		if self.args.analyze:
+		if args.analyze:
 			self.run_analysis()
 
-		if self.args.template:
-			reactions_list = self.args.template.split(',')
+		if args.template:
+			reactions_list = args.template.split(',')
 			self.template_from_reactions(reactions_list)
 
-		if self.args.exchange_template:
-			molecule_list = self.args.exchange_template.split(',')
+		if args.exchange_template:
+			molecule_list = args.exchange_template.split(',')
 			self.template_from_exchange(molecule_list)
 
 	def add_arguments(self, parser):
