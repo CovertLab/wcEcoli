@@ -1,5 +1,5 @@
 '''
-Kinetic rate law generation using the Convenience Kinetics formulation of Michaelis Menten kinetics
+Kinetic rate law generation using the Convenience Kinetics formulation of Michaelis-Menten kinetics
 
 '''
 
@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 
+# Helper functions
 def make_configuration(reactions):
 	'''
 	Make the rate law configuration, which tells the parameters where to be placed.
@@ -86,7 +87,7 @@ def get_molecules(reactions):
 	return list(set(molecule_ids))
 
 
-## Make rate laws
+# Make rate laws
 def make_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
 	'''
 	Make a rate law for each reaction
@@ -157,9 +158,12 @@ def construct_convenience_rate_law(stoichiometry, transporter, cofactors_sets, p
 	Make a convenience kinetics rate law for one transporter
 
 	Args:
-		cofactors: a list with the required cofactors, each pair needs a kcat.
+		stoichiometry (dict): the stoichiometry for the given reaction
+		transporter (str): the current transporter
+		cofactors_sets: a list of lists with the required cofactors, grouped by [[cofactor set 1], [cofactor set 2]], each pair needs a kcat.
 		partition: a list of lists. each sublist is the set of cofactors for a given partition.
-			[[C1, C2],[C3, C4], [C5]
+			[[C1, C2],[C3, C4], [C5]]
+		parameters (dict): all the parameters with {parameter_id: value}
 
 	Returns:
 		a kinetic rate law for the reaction, with arguments for concentrations and parameters,
@@ -226,20 +230,23 @@ def construct_convenience_rate_law(stoichiometry, transporter, cofactors_sets, p
 
 	return rate_law
 
+
 class KineticFluxModel(object):
 	'''
-	Args:
-		kinetic_parameters (dict): a dictionary of parameters a nested format:
-			{reaction_id: {
-				transporter_id : {
-					param_id: param_value}}}
+	A kinetic rate law class
 
-		all_reactions (dict): all metabolic reactions, with
+	Args:
+		all_reactions (dict): all metabolic reactions, with:
 			{reaction_id: {
 				'catalyzed by': list,
 				'is reversible': bool,
 				'stoichiometry': dict,
 				}}
+
+		kinetic_parameters (dict): a dictionary of parameters a nested format:
+			{reaction_id: {
+				transporter_id : {
+					param_id: param_value}}}
 
 	Attributes:
 		rate_laws: a dict, with a key for each reaction id, and then subdictionaries with each reaction's transporters
