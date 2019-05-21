@@ -10,8 +10,6 @@ import numpy as np
 class KineticFluxModel(object):
 	'''
 	Args:
-		make_reactions (list): these are the reactions that will be parameterized
-
 		kinetic_parameters (dict): a dictionary of parameters a nested format:
 			{reaction_id: {
 				transporter_id : {
@@ -49,8 +47,8 @@ class KineticFluxModel(object):
 		Use rate law functions to calculate flux
 
 		Args:
-			concentrations_dict (dict) {molecule_id: concentration} - a dictionary of all relevant
-		molecules and their concentrations, in mmol/L.
+			concentrations_dict (dict): all relevant molecules and their concentrations, in mmol/L.
+				{molecule_id: concentration}
 
 		Returns:
 			reaction_fluxes (dict) - with fluxes for all reactions
@@ -72,10 +70,10 @@ def make_configuration(reactions):
 	Make the rate law configuration, which tells the parameters where to be placed.
 
 	Args:
-		reactions: A dictionary with all reactions that will be made into rate laws.
+		reactions (dict): all reactions that will be made into rate laws, in the same format as all_reactions (above).
 
 	Returns:
-		rate_law_configuration: a dictionary with partition and reaction_cofactor entries for each reaction
+		rate_law_configuration (dict): includes partition and reaction_cofactor entries for each reaction
 	'''
 
 	rate_law_configuration = {}
@@ -126,10 +124,12 @@ def make_configuration(reactions):
 
 def get_molecules(reactions):
 	'''
-	Inputs:
-		   reaction_ids - a list of all reaction ids that will be used by transport
+	Get a list of all molecules used by reactions
+
+	Args:
+		   reaction (dict): all reactions that will be used by transport
 	Returns:
-		   self.molecule_ids - a list of all molecules used by these reactions
+		   self.molecule_ids (list): all molecules used by these reactions
 	'''
 	molecule_ids = []
 	for reaction_id, specs in reactions.iteritems():
@@ -144,7 +144,37 @@ def get_molecules(reactions):
 
 ## Make rate laws
 def make_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
-	# make rate law for each reaction
+	'''
+	Make a rate law for each reaction
+
+	Args:
+		reactions (dict): in the same format as all_reactions, described above
+
+		rate_law_configuration (dict): with an embedded structure:
+			{transporter_id: {
+				'reaction_cofactors': {
+					reaction_id: [cofactors list]
+					}
+				'partition': [partition list]
+				}
+			}
+
+		kinetic_parameters (dict): with an embedded structure:
+			{reaction_id: {
+				'transporter_id': {
+					parameter_id: value
+					}
+				}
+			}
+
+	Returns:
+		rate_laws (dict): each reaction_id is a key and has sub-dictionary for each relevant transporter,
+			with kinetic rate law functions as their values
+
+	'''
+
+	import ipdb; ipdb.set_trace()
+
 	rate_laws = {reaction_id: {} for reaction_id in reactions.iterkeys()}
 	for reaction_id, specs in reactions.iteritems():
 		stoichiometry = specs.get('stoichiometry')
@@ -186,7 +216,7 @@ def construct_convenience_rate_law(stoichiometry, transporter, cofactors_sets, p
 	Make a convenience kinetics rate law for one transporter
 
 	Args:
-		cofactors: a list with the required cofactors , each pair needs a kcat.
+		cofactors: a list with the required cofactors, each pair needs a kcat.
 		partition: a list of lists. each sublist is the set of cofactors for a given partition.
 			[[C1, C2],[C3, C4], [C5]
 
