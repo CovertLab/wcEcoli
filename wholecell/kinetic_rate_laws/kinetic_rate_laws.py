@@ -151,22 +151,21 @@ def make_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
 		# reversible = specs.get('is reversible') # TODO (eran) -- add reversibility based on specs
 		transporters = specs.get('catalyzed by')
 
-		if transporters:
-			# rate law for each transporter
-			for transporter in transporters:
-				cofactors_sets = rate_law_configuration[transporter]["reaction_cofactors"][reaction_id]
-				partition = rate_law_configuration[transporter]["partition"]
+		# rate law for each transporter
+		for transporter in transporters:
+			cofactors_sets = rate_law_configuration[transporter]["reaction_cofactors"][reaction_id]
+			partition = rate_law_configuration[transporter]["partition"]
 
-				rate_law = construct_convenience_rate_law(
-					stoichiometry,
-					transporter,
-					cofactors_sets,
-					partition,
-					kinetic_parameters[reaction_id][transporter]
-				)
+			rate_law = construct_convenience_rate_law(
+				stoichiometry,
+				transporter,
+				cofactors_sets,
+				partition,
+				kinetic_parameters[reaction_id][transporter]
+			)
 
-				# save the rate law for each transporter in this reaction
-				rate_laws[reaction_id][transporter] = rate_law
+			# save the rate law for each transporter in this reaction
+			rate_laws[reaction_id][transporter] = rate_law
 
 	return rate_laws
 
