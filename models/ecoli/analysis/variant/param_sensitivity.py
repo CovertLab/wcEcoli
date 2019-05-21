@@ -46,21 +46,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				rna_deg_decrease_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
 				rna_deg_increase_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
 				rna_deg_decrease_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+				protein_deg_increase_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
+				protein_deg_decrease_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
+				protein_deg_increase_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
+				protein_deg_decrease_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
 				trans_eff_increase_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
 				trans_eff_decrease_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
 				trans_eff_increase_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
 				trans_eff_decrease_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-				protein_deg_growth_rate = None
+				synth_prob_increase_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+				synth_prob_decrease_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+				synth_prob_increase_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+				synth_prob_decrease_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
 
 			# TODO: save indices separately from sim_data for faster load
 			rna_deg_increase_indices = sim_data.increase_rna_deg_indices
-			# sim_data.increase_protein_deg_indices
+			protein_deg_increase_indices = sim_data.increase_protein_deg_indices
 			trans_eff_increase_indices = sim_data.increase_trans_eff_indices
-			# sim_data.increase_synth_prob_indices
+			synth_prob_increase_indices = sim_data.increase_synth_prob_indices
 			rna_deg_decrease_indices = sim_data.decrease_rna_deg_indices
-			# sim_data.decrease_protein_deg_indices
+			protein_deg_decrease_indices = sim_data.decrease_protein_deg_indices
 			trans_eff_decrease_indices = sim_data.decrease_trans_eff_indices
-			# sim_data.decrease_synth_prob_indices
+			synth_prob_decrease_indices = sim_data.decrease_synth_prob_indices
 
 			for sim_dir in ap.get_cells(variant=[variant]):
 				simOutDir = os.path.join(sim_dir, "simOut")
@@ -74,30 +81,42 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					time = main_reader.readColumn('time')
 					cell_mass = mass_reader.readColumn('cellMass')
 					growth_rate = np.nanmean(mass_reader.readColumn('instantaniousGrowthRate'))
+
+					mass_diff = (cell_mass[-1] - cell_mass[0]) / (time[-1] - time[0])
+
 				except:
 					continue
-
-				mass_diff = (cell_mass[-1] - cell_mass[0]) / (time[-1] - time[0])
 
 				rna_deg_increase_growth_rate[rna_deg_increase_indices] += growth_rate
 				rna_deg_decrease_growth_rate[rna_deg_decrease_indices] += growth_rate
 				rna_deg_increase_counts[rna_deg_increase_indices] += 1
 				rna_deg_decrease_counts[rna_deg_decrease_indices] += 1
+				protein_deg_increase_growth_rate[protein_deg_increase_indices] += growth_rate
+				protein_deg_decrease_growth_rate[protein_deg_decrease_indices] += growth_rate
+				protein_deg_increase_counts[protein_deg_increase_indices] += 1
+				protein_deg_decrease_counts[protein_deg_decrease_indices] += 1
 				trans_eff_increase_growth_rate[trans_eff_increase_indices] += growth_rate
 				trans_eff_decrease_growth_rate[trans_eff_decrease_indices] += growth_rate
 				trans_eff_increase_counts[trans_eff_increase_indices] += 1
 				trans_eff_decrease_counts[trans_eff_decrease_indices] += 1
+				synth_prob_increase_growth_rate[synth_prob_increase_indices] += growth_rate
+				synth_prob_decrease_growth_rate[synth_prob_decrease_indices] += growth_rate
+				synth_prob_increase_counts[synth_prob_increase_indices] += 1
+				synth_prob_decrease_counts[synth_prob_decrease_indices] += 1
 
 		plt.figure()
 
 		### Create Plot ###
 
 		rna_deg_growth_rate = rna_deg_increase_growth_rate / rna_deg_increase_counts - rna_deg_decrease_growth_rate / rna_deg_decrease_counts
+		protein_deg_growth_rate = protein_deg_increase_growth_rate / protein_deg_increase_counts - protein_deg_decrease_growth_rate / protein_deg_decrease_counts
 		trans_eff_growth_rate = trans_eff_increase_growth_rate / trans_eff_increase_counts - trans_eff_decrease_growth_rate / trans_eff_decrease_counts
+		synth_prob_growth_rate = synth_prob_increase_growth_rate / synth_prob_increase_counts - synth_prob_decrease_growth_rate / synth_prob_decrease_counts
 
-		data = trans_eff_growth_rate
-		mean = data.mean()
-		std = data.std()
+
+		data = np.hstack((rna_deg_growth_rate, protein_deg_growth_rate, trans_eff_growth_rate, synth_prob_growth_rate))
+		mean = data[np.isfinite(data)].mean()
+		std = data[np.isfinite(data)].std()
 
 		plt.bar(range(len(data)), np.sort(data))
 		plt.axhline(mean + 3*std, color='r')
@@ -106,11 +125,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 		sorted_idx = np.argsort(data)
-		ids = sim_data.process.translation.monomerData['id']
+		# ids = sim_data.process.translation.monomerData['id']
+		ids = sim_data.process.transcription.rnaData['id']
 		print(np.sum(data > mean + 3*std))
 		print(np.sum(data < mean - 3*std))
-		print(ids[sorted_idx[:10]])
-		print(ids[sorted_idx[-10:]])
+		# print(ids[sorted_idx[:10]])
+		# print(ids[sorted_idx[-10:]])
 		import ipdb; ipdb.set_trace()
 
 		plt.close('all')
