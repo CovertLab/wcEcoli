@@ -16,6 +16,7 @@ import os
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from models.ecoli.sim.variants.param_sensitivity import number_params, param_indices, split_indices
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath, parallelization
@@ -26,35 +27,37 @@ def analyze_variant((variant, ap)):
 
 	'''
 
-	with open(ap.get_variant_kb(variant), 'rb') as f:
-		sim_data = cPickle.load(f)
+	increase_indices, decrease_indices = split_indices(sim_data, variant)
+	(rna_deg_increase_indices,
+		protein_deg_increase_indices,
+		trans_eff_increase_indices,
+		synth_prob_increase_indices) = param_indices(sim_data, increase_indices)
+	(rna_deg_decrease_indices,
+		protein_deg_decrease_indices,
+		trans_eff_decrease_indices,
+		synth_prob_decrease_indices) = param_indices(sim_data, decrease_indices)
 
-	rna_deg_increase_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-	rna_deg_decrease_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-	rna_deg_increase_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-	rna_deg_decrease_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-	protein_deg_increase_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-	protein_deg_decrease_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-	protein_deg_increase_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-	protein_deg_decrease_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-	trans_eff_increase_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-	trans_eff_decrease_growth_rate = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-	trans_eff_increase_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-	trans_eff_decrease_counts = np.zeros(len(sim_data.process.translation.translationEfficienciesByMonomer))
-	synth_prob_increase_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-	synth_prob_decrease_growth_rate = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-	synth_prob_increase_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
-	synth_prob_decrease_counts = np.zeros(len(sim_data.process.transcription.rnaData['degRate']))
+	(n_rna_deg_rates,
+		n_protein_deg_rates,
+		n_translation_efficiencies,
+		n_synth_prob) = number_params(sim_data)
 
-	# TODO: save indices separately from sim_data for faster load
-	rna_deg_increase_indices = sim_data.increase_rna_deg_indices
-	protein_deg_increase_indices = sim_data.increase_protein_deg_indices
-	trans_eff_increase_indices = sim_data.increase_trans_eff_indices
-	synth_prob_increase_indices = sim_data.increase_synth_prob_indices
-	rna_deg_decrease_indices = sim_data.decrease_rna_deg_indices
-	protein_deg_decrease_indices = sim_data.decrease_protein_deg_indices
-	trans_eff_decrease_indices = sim_data.decrease_trans_eff_indices
-	synth_prob_decrease_indices = sim_data.decrease_synth_prob_indices
+	rna_deg_increase_growth_rate = np.zeros(n_rna_deg_rates)
+	rna_deg_decrease_growth_rate = np.zeros(n_rna_deg_rates)
+	rna_deg_increase_counts = np.zeros(n_rna_deg_rates)
+	rna_deg_decrease_counts = np.zeros(n_rna_deg_rates)
+	protein_deg_increase_growth_rate = np.zeros(n_protein_deg_rates)
+	protein_deg_decrease_growth_rate = np.zeros(n_protein_deg_rates)
+	protein_deg_increase_counts = np.zeros(n_protein_deg_rates)
+	protein_deg_decrease_counts = np.zeros(n_protein_deg_rates)
+	trans_eff_increase_growth_rate = np.zeros(n_translation_efficiencies)
+	trans_eff_decrease_growth_rate = np.zeros(n_translation_efficiencies)
+	trans_eff_increase_counts = np.zeros(n_translation_efficiencies)
+	trans_eff_decrease_counts = np.zeros(n_translation_efficiencies)
+	synth_prob_increase_growth_rate = np.zeros(n_synth_prob)
+	synth_prob_decrease_growth_rate = np.zeros(n_synth_prob)
+	synth_prob_increase_counts = np.zeros(n_synth_prob)
+	synth_prob_decrease_counts = np.zeros(n_synth_prob)
 
 	for sim_dir in ap.get_cells(variant=[variant]):
 		simOutDir = os.path.join(sim_dir, "simOut")
@@ -110,6 +113,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ap = AnalysisPaths(inputDir, variant_plot=True)
 		variants = ap.get_variants()
 		n_variants = len(variants)
+
+		# Load one instance of sim_data to get number of parameters and ids
+		global sim_data
+		with open(ap.get_variant_kb(variants[0])) as f:
+			sim_data = cPickle.load(f)
 
 		pool = Pool(processes=min(8, parallelization.plotter_cpus()))
 		args = zip(

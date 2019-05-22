@@ -27,7 +27,17 @@ SPLIT = 3
 
 def number_params(sim_data):
 	'''
+	Determines the number of parameters for each class of parameter that will
+	be adjusted.
 
+	Args:
+		sim_data (SimulationData object)
+
+	Returns:
+		int: number of RNA degradation rates
+		int: number of protein degradation rates
+		int: number of translation efficiencies
+		int: number of synthesis probabilities
 	'''
 
 	n_rna_deg_rates = len(sim_data.process.transcription.rnaData['degRate'])
@@ -38,9 +48,49 @@ def number_params(sim_data):
 
 	return n_rna_deg_rates, n_protein_deg_rates, n_translation_efficiencies, n_synth_prob
 
-def modify_params(sim_data, indices, factor):
+def split_indices(sim_data, seed, split=SPLIT):
+	'''
+	Determine overall parameter indices to increase and decrease.
+
+	Args:
+		sim_data (SimulationData object)
+		seed (int): numpy random seed (should be variant # to get different
+			indices for each variant)
+		split (float): factor to split the total number of parameters for
+			increasing and decreasing. For 100 params, split=5 would
+			increase 20 (100/5), decrease 20 (100/5) and keep the rest constant
+
+	Returns:
+		ndarray[int]: indices into total parameter array to increase parameter value
+		ndarray[int]: indices into total parameter array to decrease parameter value
 	'''
 
+	total_params = np.sum(number_params(sim_data))
+	param_split = total_params // split
+
+	# Determine indices to change
+	indices = np.arange(total_params)
+	np.random.seed(seed)
+	np.random.shuffle(indices)
+	increase_indices = indices[:param_split]
+	decrease_indices = indices[-param_split:]
+
+	return increase_indices, decrease_indices
+
+def param_indices(sim_data, indices):
+	'''
+	Get relative indices for individual parameter sets based on indices into
+	the total number of parameters.
+
+	Args:
+		sim_data (SimulationData object)
+		indices (ndarray[int]): indices for total parameter array
+
+	Returns:
+		ndarray[int]: indices for RNA degradation rates that will change
+		ndarray[int]: indices for protein degradation rates that will change
+		ndarray[int]: indices for translation efficiencies that will change
+		ndarray[int]: indices for synthesis probabilities that will change
 	'''
 
 	(n_rna_deg_rates,
@@ -57,6 +107,24 @@ def modify_params(sim_data, indices, factor):
 	trans_eff_indices = list(indices[np.where((indices >= cutoff2) & (indices < cutoff3))] - cutoff2)
 	synth_prob_indices = list(indices[np.where(indices >= cutoff3)] - cutoff3)
 
+	return rna_deg_indices, protein_deg_indices, trans_eff_indices, synth_prob_indices
+
+def modify_params(sim_data, indices, factor):
+	'''
+	Modify parameters in sim_data specified by indices (total parameter array)
+	by a given factor.
+
+	Args:
+		sim_data (SimulationData object)
+		indices (ndarray[int]): indices in the total parameter array to modify
+		factor (float): factor to multiply by current parameter to get updated value
+	'''
+
+	(rna_deg_indices,
+		protein_deg_indices,
+		trans_eff_indices,
+		synth_prob_indices) = param_indices(sim_data, indices)
+
 	synth_prob_set = set(synth_prob_indices)
 	recruitment_mask = np.array([hi in synth_prob_set for hi in sim_data.process.transcription_regulation.recruitmentData['hI']])
 
@@ -68,8 +136,6 @@ def modify_params(sim_data, indices, factor):
 	for exp in sim_data.process.transcription.rnaExpression.values():
 		exp[synth_prob_indices] *= factor
 	sim_data.process.transcription_regulation.recruitmentData['hV'][recruitment_mask] *= factor
-
-	return rna_deg_indices, protein_deg_indices, trans_eff_indices, synth_prob_indices
 
 def param_sensitivity_indices(sim_data):
 	return 0
@@ -91,15 +157,7 @@ def param_sensitivity(sim_data, index):
 			), sim_data
 
 	# Get number of params
-	total_params = np.sum(number_params(sim_data))
-	param_split = total_params // 3
-
-	# Determine indices to change
-	indices = np.arange(total_params)
-	np.random.seed(index)
-	np.random.shuffle(indices)
-	increase_indices = indices[:param_split]
-	decrease_indices = indices[-param_split:]
+	increase_indices, decrease_indices = split_indices(sim_data, index)
 
 	# Update parameters
 	# TODO kinetic params
@@ -111,11 +169,14 @@ def param_sensitivity(sim_data, index):
 	(sim_data.increase_rna_deg_indices,
 		sim_data.increase_protein_deg_indices,
 		sim_data.increase_trans_eff_indices,
-		sim_data.increase_synth_prob_indices) = modify_params(sim_data, increase_indices, SCALE_FACTOR)
+		sim_data.increase_synth_prob_indices) = param_indices(sim_data, increase_indices)
 	(sim_data.decrease_rna_deg_indices,
 		sim_data.decrease_protein_deg_indices,
 		sim_data.decrease_trans_eff_indices,
-		sim_data.decrease_synth_prob_indices) = modify_params(sim_data, decrease_indices, 1/SCALE_FACTOR)
+		sim_data.decrease_synth_prob_indices) = param_indices(sim_data, decrease_indices)
+
+	modify_params(sim_data, increase_indices, SCALE_FACTOR)
+	modify_params(sim_data, decrease_indices, 1 / SCALE_FACTOR)
 	# print(sim_data.process.transcription.rnaData['degRate'][:30])
 	# print(sim_data.process.translation.monomerData['degRate'][:30])
 	# print(sim_data.process.translation.translationEfficienciesByMonomer[:30])
