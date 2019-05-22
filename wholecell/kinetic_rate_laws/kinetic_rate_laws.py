@@ -125,6 +125,9 @@ def make_rate_laws(reactions, rate_law_configuration, kinetic_parameters):
 
 		# rate law for each transporter
 		for transporter in transporters:
+			if transporter not in kinetic_parameters[reaction_id]:
+				continue
+
 			cofactors_sets = rate_law_configuration[transporter]["reaction_cofactors"][reaction_id]
 			partition = rate_law_configuration[transporter]["partition"]
 
@@ -194,10 +197,11 @@ def construct_convenience_rate_law(stoichiometry, transporter, cofactors_sets, p
 		for cofactors in cofactors_sets:
 			# if reversible, determine direction by looking at stoichiometry
 			if kcat_r:
-				coeffs = [stoichiometry[mol] for mol in cofactors]  # coeffs should be of the same sign
-				if coeffs[0] > 0:
+				coeff = [stoichiometry[mol] for mol in cofactors]
+				positive_coeff = [c > 0 for c in coeff]
+				if all(c == True for c in positive_coeff):  # if all coeffs are positive
 					kcat = -kcat_r  # use reverse rate
-				else:
+				elif all(c == False for c in positive_coeff):  # if all coeffs are negative
 					kcat = kcat_f
 			else:
 				kcat = kcat_f

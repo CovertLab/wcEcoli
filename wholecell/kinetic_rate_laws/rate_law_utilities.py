@@ -38,7 +38,7 @@ KINETIC_PARAMETERS_PATH = os.path.join('wholecell', 'kinetic_rate_laws', 'parame
 OUTPUT_DIR = os.path.join('wholecell', 'kinetic_rate_laws', 'out')
 
 
-def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
+def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations, output_filename):
 	'''
 	Args:
 		kinetic_rate_laws (object): a configured kinetic_rate_law object
@@ -49,6 +49,7 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 
 	'''
 
+	plot_text = True
 	test_transporter = True
 	test_cofactor = True
 	test_competitor = True
@@ -58,19 +59,26 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 	rate_law_configuration = kinetic_rate_laws.rate_law_configuration
 
 	## Plot analysis
-
-	columns = 1 + sum([test_transporter, test_cofactor, test_competitor])
 	n_samples = 100
 	n_samples_shown = 10
 	n_rxns = len(reactions)
-	rows = 2*n_rxns + 2  # extra row for each reaction header
+
+	# get concentrations array for testing and plotting
+	conc_samples = np.logspace(-8, 1, num=n_samples, endpoint=True, base=10)
+	conc_shown = np.flip(np.logspace(-8, 1, num=n_samples_shown, endpoint=True, base=10), 0) # use reverse ordering for legend order
+	transporter_concs_shown = np.flip(np.logspace(-4, 1, num=n_samples_shown, endpoint=True, base=10), 0) # use reverse ordering for legend order
+
+	# TODO -- should count number of transporters in each, because each gets an extra row
+	rows = sum([plot_text, test_cofactor, test_transporter, test_competitor]) * n_rxns + n_rxns
+	columns = 3
+
 
 	cmap = plt.cm.get_cmap('Spectral')
-	colors = [cmap(float(idx) / n_samples_shown) for idx in range(n_samples_shown)]
+	colors = [cmap(float(idx) / n_samples_shown) for idx in reversed(range(n_samples_shown))]  # use reverse ordering for legend order
 
 	plt.figure(figsize=(6*columns, 3*rows))
-	plot_number = 1
 	row_number = 0
+	col_number = 0
 
 	for reaction_id, specs in reactions.iteritems():
 		transporters = specs.get('catalyzed by')
@@ -80,167 +88,191 @@ def analyze_rate_laws(kinetic_rate_laws, baseline_concentrations):
 		reactants = [mol for mol, coeff in stoich.iteritems() if coeff < 0]
 		products = [mol for mol, coeff in stoich.iteritems() if coeff > 0]
 
-		plt.subplot(rows, columns, plot_number)
-		plt.text(0.02, 0.6, 'reaction: ' + reaction_id, weight='bold')
-		plt.text(0.02, 0.45, 'reactants: %s' % reactants)
-		plt.text(0.02, 0.3, 'products: %s' % products)
-		plt.text(0.02, 0.15, 'transporters: %s' % transporters)
-		plt.text(0.02, 0.0, 'parameters: %s' % parameters)
-		plt.axis('off')
-		plot_number += columns
-		row_number += 1
+		if plot_text:
+			plt.subplot(rows, columns, row_number * columns + col_number + 1)
+			plt.text(0.02, 0.6, 'reaction: %s' % reaction_id, weight='bold', fontsize=14)
+			plt.text(0.02, 0.45, 'reactants: %s' % reactants, fontsize=14)
+			plt.text(0.02, 0.3, 'products: %s' % products, fontsize=14)
+			plt.text(0.02, 0.15, 'transporters: %s' % transporters, fontsize=14)
+			plt.text(0.02, 0.0, 'parameters: %s' % parameters, fontsize=14, wrap=True)
+			plt.axis('off')
 
-		# test michaelis menten by sampling substrate concentrations
+			row_number += 1
+
+		# test rate law by sampling substrate concentrations
 		for transporter in transporters:
+			if transporter not in parameters:
+				continue
 
-			# TODO select the example molecule more smartly
+			# get cofactors list
+			analyze_cofactors = []
 			for reactant in reactants:
 				if parameters[transporter][reactant] is not None:
-					a1 = reactant
+					analyze_cofactors.append(reactant)
 
-			# get cofactor
-			b1 = None
-			if len(reactants) > 1:
-				for reactant in reactants:
-					if parameters[transporter][reactant] is not None and reactant is not a1:
-						b1 = reactant
+			# use first listed cofactor as basal TODO -- pass in cofactor of interest
+			a1 = analyze_cofactors[0]
 
-			concentrations = baseline_concentrations.copy()
-			conc_samples = np.logspace(-9, 0, num=n_samples, endpoint=True, base=10)
+			# get competitors list
+			rxns_transporter = rate_law_configuration[transporter]['reaction_cofactors'].keys()
+			competing_rxns = [trpr for trpr in rxns_transporter if trpr not in reaction_id]
 
-			flux_values = np.empty_like(conc_samples)
-			for idx, conc in enumerate(conc_samples):
-				concentrations[a1] = conc
-				reaction_fluxes = kinetic_rate_laws.get_fluxes(concentrations)
-				flux_values[idx] = reaction_fluxes[reaction_id]
+			analyze_competitors = []
+			for rx in competing_rxns:
+				competitor_candidates = rate_law_configuration[transporter]['reaction_cofactors'][rx]
+				competing_mols = [mol for mol in competitor_candidates[0] if mol not in analyze_cofactors]
+				analyze_competitors.extend(competing_mols)
 
-			# plot M-M curve for this reaction
-			plt.subplot(rows, columns, plot_number)
-			plt.plot(conc_samples, flux_values)
+			if test_cofactor:
+				for cofactor in analyze_cofactors:
 
-			# plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-			plt.xscale('log')
-			plt.xlabel(a1 + ' concentration (M)')
-			plt.ylabel('flux (M/s)')
-			plt.title('transporter: %s' % transporter)
+					concentrations = baseline_concentrations.copy()
 
-			plot_number += 1
+					if cofactor is a1:
+						# plot a1 alone
+
+						flux_values = scan_conc(kinetic_rate_laws, concentrations, reaction_id, a1, conc_samples)
+
+						# plot M-M curve for this reaction
+						plt.subplot(rows, columns, row_number * columns + col_number + 1)
+						plt.plot(conc_samples, flux_values)
+
+						plt.xscale('log')
+						plt.xlabel('%s concentration (M)' % cofactor)
+						plt.ylabel('flux (M/s)')
+						plt.title('cofactor: %s' % cofactor)
+
+						col_number += 1
+
+					else:
+						# plot affect on a1 of varying cofactor
+						plt.subplot(rows, columns, row_number * columns + col_number + 1)
+						for index, cofactor_conc in enumerate(conc_shown):
+							concentrations[cofactor] = cofactor_conc
+							flux_values = scan_conc(kinetic_rate_laws, concentrations, reaction_id, a1, conc_samples)
+
+							# plot M-M curve for this reaction
+							plt.plot(conc_samples, flux_values,
+								 color=colors[index],
+								 label=('%.2e' % (cofactor_conc)))
+
+						plt.legend(loc='center left', title=cofactor, bbox_to_anchor=(1.15, 0.5), prop={'size': 7})
+						plt.xscale('log')
+						plt.xlabel('%s concentration (M)' % a1)
+						plt.ylabel('flux (M/s)')
+						plt.title('cofactor: %s' % cofactor)
+
+						col_number += 1
+
+				col_number = 0
+				row_number += 1
+
 
 			if test_transporter:
 				concentrations = baseline_concentrations.copy()
-				conc_samples = np.logspace(-8, 1, num=n_samples, endpoint=True, base=10)
-				transporter_concs = np.logspace(-4, 1, num=n_samples_shown, endpoint=True, base=10)
 
-				plt.subplot(rows, columns, plot_number)
-				for index, transporter_conc in enumerate(transporter_concs):
+				plt.subplot(rows, columns, row_number * columns + col_number + 1)
+				for index, transporter_conc in enumerate(transporter_concs_shown):
 					concentrations[transporter] = transporter_conc
-
-					flux_values = np.empty_like(conc_samples)
-					for idx, conc in enumerate(conc_samples):
-
-						concentrations[a1] = conc
-						reaction_fluxes = kinetic_rate_laws.get_fluxes(concentrations)
-						flux_values[idx] = reaction_fluxes[reaction_id]
+					flux_values = scan_conc(kinetic_rate_laws, concentrations, reaction_id, a1, conc_samples)
 
 					# plot M-M curve for this reaction
 					plt.plot(conc_samples, flux_values,
 						color = colors[index],
-						label = ('conc = %.2e' % (transporter_conc)),
-						)
+						label = ('%.2e' % (transporter_conc)))
 
-				plt.legend(loc='center left', title=transporter, bbox_to_anchor=(1.15, 0.5))
+				plt.legend(loc='center left', title=transporter, bbox_to_anchor=(1.15, 0.5), prop={'size': 7})
 				plt.xscale('log')
-				plt.xlabel(a1 + ' concentration (M)')
+				plt.xlabel('%s concentration (M)' % a1)
 				plt.ylabel('flux (M/s)')
-				plt.title('test transporter')
+				plt.title('transporter: %s' % transporter)
 
-				plot_number += 1
+				col_number += 1
 
-			if test_cofactor:
 
+				# Test kcat
+				kcat_f = parameters[transporter].get('kcat_f')
+
+				# set concentrations
 				concentrations = baseline_concentrations.copy()
-				conc_samples = np.logspace(-8, 1, num=n_samples, endpoint=True, base=10)
-				cofactor_concs = np.logspace(-8, 1, num=n_samples_shown, endpoint=True, base=10)
+				concentrations[transporter] = 1
 
-				if b1 is not None:
-					plt.subplot(rows, columns, plot_number)
-					for index, cofactor_conc in enumerate(cofactor_concs):
-						concentrations[b1] = cofactor_conc
+				cofactor_rel_conc_kms = [1, 2, 100]
 
-						flux_values = np.empty_like(conc_samples)
-						for idx, conc in enumerate(conc_samples):
+				plt.subplot(rows, columns, row_number * columns + col_number + 1)
+				for rel_conc in cofactor_rel_conc_kms:
 
-							concentrations[a1] = conc
-							reaction_fluxes = kinetic_rate_laws.get_fluxes(concentrations)
-							flux_values[idx] = reaction_fluxes[reaction_id]
+					for mol_index, mol_id in enumerate(analyze_cofactors):
+						km = parameters[transporter].get(mol_id)
+						concentrations[mol_id] = km * rel_conc  # cofactors set at km * rel_conc
 
-						# plot M-M curve for this reaction
-						plt.plot(conc_samples, flux_values,
-										color = colors[index],
-										label = ('conc = %.2e' % (cofactor_conc)),
-										)
+					for mol_id in analyze_competitors:
+						concentrations[mol_id] = 0  # remove competitors
 
-					plt.legend(loc='center left', title=b1, bbox_to_anchor=(1.15, 0.5))
-					plt.xscale('log')
-					plt.xlabel(a1 + ' concentration (M)')
-					plt.ylabel('flux (M/s)')
-					plt.title('test cofactor')
+					reaction_fluxes = kinetic_rate_laws.get_fluxes(concentrations)
+					flux_value = reaction_fluxes[reaction_id]
+					plt.axhline(y=flux_value, color=np.random.rand(3,), label='[cofactors] = %i*k_m' % (rel_conc))
 
-				plot_number += 1
+				plt.axhline(y=kcat_f, color='r', linestyle='dashed', label='k_cat = %.6e' % kcat_f)
+				plt.legend(loc='center left', title=transporter, bbox_to_anchor=(1.15, 0.5), prop={'size': 7})
+				plt.ylim((0, 2*kcat_f))
+				plt.title('[%s] = 1' % transporter)
+				plt.tick_params(
+					axis='x',  # changes apply to the x-axis
+					which='both',  # both major and minor ticks are affected
+					bottom=False,  # ticks along the bottom edge are off
+					top=False,  # ticks along the top edge are off
+					labelbottom=False)  # labels along the bottom edge are off
+
+				col_number = 0
+				row_number += 1
 
 			if test_competitor:
-				# get competitor
-				rxns_transporter = rate_law_configuration[transporter]['reaction_cofactors'].keys()
-				competing_rxns = [trpr for trpr in rxns_transporter if trpr not in reaction_id]
-				competitor = None
 
-				for rx in competing_rxns:
-					competitor_candidates = rate_law_configuration[transporter]['reaction_cofactors'][rx]
-					competitors = [mol for mol in competitor_candidates[0] if mol != a1 and mol != b1]
-					if competitors:
-						competitor = competitors[0]
-
-				if competitor is not None:
+				for competitor in analyze_competitors:
 					concentrations = baseline_concentrations.copy()
-					conc_samples = np.logspace(-8, 1, num=n_samples, endpoint=True, base=10)
-					competitor_concs = np.logspace(-8, 1, num=n_samples_shown, endpoint=True, base=10)
 
-					plt.subplot(rows, columns, plot_number)
-					for index, competitor_conc in enumerate(competitor_concs):
+					plt.subplot(rows, columns, row_number * columns + col_number + 1)
+					for index, competitor_conc in enumerate(conc_shown):
 						concentrations[competitor] = competitor_conc
-
-						flux_values = np.empty_like(conc_samples)
-						for idx, conc in enumerate(conc_samples):
-
-							concentrations[a1] = conc
-							reaction_fluxes = kinetic_rate_laws.get_fluxes(concentrations)
-							flux_values[idx] = reaction_fluxes[reaction_id]
+						flux_values = scan_conc(kinetic_rate_laws, concentrations, reaction_id,	a1,	conc_samples)
 
 						# plot M-M curve for this reaction
 						plt.plot(conc_samples, flux_values,
-												color = colors[index],
-												label = ('conc = %.2e' % (competitor_conc)),
-												)
+							color = colors[index],
+							label = ('%.2e' % (competitor_conc)))
 
-					plt.legend(loc='center left', title=competitor, bbox_to_anchor=(1.15, 0.5))
+					plt.legend(loc='center left', title=competitor, bbox_to_anchor=(1.15, 0.5), prop={'size': 7})
 					plt.xscale('log')
 					plt.xlabel(a1 + ' concentration (M)')
 					plt.ylabel('flux (M/s)')
-					plt.title('test competitor')
+					plt.title('competitor: %s' % competitor)
 
-				plot_number += 1
+					col_number += 1
 
-			row_number += 1
+				if analyze_competitors:
+					row_number += 1
 
-		plot_number = row_number * columns + 1
+			col_number = 0
 
 	plt.subplots_adjust(hspace=0.8, wspace=1.1)
 
 	if not os.path.exists(OUTPUT_DIR):
 		os.mkdir(OUTPUT_DIR)
-	plt.savefig(os.path.join(OUTPUT_DIR, 'rate_law_analysis'), bbox_inches='tight')
+	plt.savefig(os.path.join(OUTPUT_DIR, output_filename), bbox_inches='tight')
 
 	print('rate law analysis plot saved')
+
+
+def scan_conc(rate_law, concentrations, reaction_id, molecule_id, conc_samples):
+	# scan the concentrations of molecule_id for a given rate law, and return flux values for the given reaction_id
+	flux_values = np.empty_like(conc_samples)
+	for idx, conc in enumerate(conc_samples):
+		concentrations[molecule_id] = conc
+		reaction_fluxes = rate_law.get_fluxes(concentrations)
+		flux_values[idx] = reaction_fluxes[reaction_id]
+
+	return flux_values
 
 def load_reactions():
 	'''
@@ -348,10 +380,11 @@ class RateLawUtilities(object):
 		# load all reactions
 		self.all_reactions = load_reactions()
 
-		# load dict of saved parameters
+		# load dict of saved parameters and save parameter file name as param_id
 		parameter_file = args.path
 		with open(parameter_file, 'r') as fp:
 			kinetic_parameters = json.load(fp)
+		self.param_id = parameter_file.split(os.path.sep)[-1].split(".")[0]
 
 		# make a dict of reactions that will be configured with the parameters
 		make_reaction_ids = kinetic_parameters.keys()
@@ -418,7 +451,7 @@ class RateLawUtilities(object):
 	def run_analysis(self):
 
 		# run analyses and save output
-		analyze_rate_laws(self.kinetic_rate_laws, self.concentrations)
+		analyze_rate_laws(self.kinetic_rate_laws, self.concentrations, self.param_id)
 
 	def template_from_exchange(self, exchange_molecules):
 		'''
