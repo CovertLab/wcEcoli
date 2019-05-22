@@ -99,6 +99,23 @@ def analyze_variant((variant, ap)):
 		trans_eff_increase_growth_rate, trans_eff_decrease_growth_rate, trans_eff_increase_counts, trans_eff_decrease_counts,
 		synth_prob_increase_growth_rate, synth_prob_decrease_growth_rate, synth_prob_increase_counts, synth_prob_decrease_counts)
 
+def rna_mapping(sim_data, monomer_to_gene):
+	'''
+
+	'''
+
+	gene_data = sim_data.process.replication.geneData
+	rna_data = sim_data.process.transcription.rnaData
+	monomer_data = sim_data.process.translation.monomerData
+
+	rna_to_monomer = {rna: monomer for rna, monomer in zip(monomer_data['rnaId'], monomer_data['id'])}
+	rna_to_gene_name = {rna: gene for rna, gene in zip(gene_data['rnaId'], gene_data['name'])}
+
+	return {rna: monomer_to_gene.get(rna_to_monomer.get(rna, '')[:-3],
+		rna_to_gene_name.get(rna[:-3], rna))
+		for rna in rna_data['id']}
+
+
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		if metadata.get('variant', '') != 'param_sensitivity':
@@ -192,7 +209,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		trans_eff_growth_rate = trans_eff_increase_growth_rate / trans_eff_increase_counts - trans_eff_decrease_growth_rate / trans_eff_decrease_counts
 		synth_prob_growth_rate = synth_prob_increase_growth_rate / synth_prob_increase_counts - synth_prob_decrease_growth_rate / synth_prob_decrease_counts
 
-
 		data = np.hstack((rna_deg_growth_rate, protein_deg_growth_rate, trans_eff_growth_rate, synth_prob_growth_rate))
 		mean = data[np.isfinite(data)].mean()
 		std = data[np.isfinite(data)].std()
@@ -202,17 +218,49 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.axhline(mean - 3*std, color='r')
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		plt.close('all')
+
+		upper_threshold = mean + 3*std
+		lower_threshold = mean - 3*std
+		print('Number of params above threshold: {}'.format(np.sum(data > upper_threshold)))
+		print('Number of params above threshold: {}'.format(np.sum(data < lower_threshold)))
 
 		sorted_idx = np.argsort(data)
-		# ids = sim_data.process.translation.monomerData['id']
-		ids = sim_data.process.transcription.rnaData['id']
-		print(np.sum(data > mean + 3*std))
-		print(np.sum(data < mean - 3*std))
-		# print(ids[sorted_idx[:10]])
-		# print(ids[sorted_idx[-10:]])
-		import ipdb; ipdb.set_trace()
+		rna_ids = sim_data.process.transcription.rnaData['id']
+		monomer_ids = sim_data.process.translation.monomerData['id']
 
-		plt.close('all')
+		monomer_to_gene = sim_data.moleculeGroups.frameIDGeneSymbol_Dict
+		rna_to_gene = rna_mapping(sim_data, monomer_to_gene)  # TODO: create dict in sim_data from raw_data
+
+		print('Positive correlation between RNA deg and growth:')
+		for rna_id in rna_ids[rna_deg_growth_rate > upper_threshold]:
+			print('\t{}'.format(rna_to_gene.get(rna_id, rna_id)))
+		print('Negative correlation between RNA deg and growth:')
+		for rna_id in rna_ids[rna_deg_growth_rate < lower_threshold]:
+			print('\t{}'.format(rna_to_gene.get(rna_id, rna_id)))
+
+		print('Positive correlation between protein deg and growth:')
+		for monomer_id in monomer_ids[protein_deg_growth_rate > upper_threshold]:
+			print('\t{}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id)))
+		print('Negative correlation between protein deg and growth:')
+		for monomer_id in monomer_ids[protein_deg_growth_rate < lower_threshold]:
+			print('\t{}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id)))
+
+		print('Positive correlation between translation efficiency and growth:')
+		for monomer_id in monomer_ids[trans_eff_growth_rate > upper_threshold]:
+			print('\t{}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id)))
+		print('Negative correlation between translation efficiency and growth:')
+		for monomer_id in monomer_ids[trans_eff_growth_rate < lower_threshold]:
+			print('\t{}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id)))
+
+		print('Positive correlation between synthesis probability and growth:')
+		for rna_id in rna_ids[synth_prob_growth_rate > upper_threshold]:
+			print('\t{}'.format(rna_to_gene.get(rna_id, rna_id)))
+		print('Negative correlation between synthesis probability and growth:')
+		for rna_id in rna_ids[synth_prob_growth_rate < lower_threshold]:
+			print('\t{}'.format(rna_to_gene.get(rna_id, rna_id)))
+
+		import ipdb; ipdb.set_trace()
 
 
 if __name__ == "__main__":
