@@ -233,32 +233,40 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		rna_to_gene = rna_mapping(sim_data, monomer_to_gene)  # TODO: create dict in sim_data from raw_data
 
 		print('Positive correlation between RNA deg and growth:')
-		for rna_id in rna_ids[rna_deg_growth_rate > upper_threshold]:
-			print('\t{}'.format(rna_to_gene.get(rna_id, rna_id)))
+		mask = rna_deg_growth_rate > upper_threshold
+		for rna_id, effect in zip(rna_ids[mask], rna_deg_growth_rate[mask]):
+			print('\t{}: {:.2f}'.format(rna_to_gene.get(rna_id, rna_id), (effect - mean) / std))
 		print('Negative correlation between RNA deg and growth:')
-		for rna_id in rna_ids[rna_deg_growth_rate < lower_threshold]:
-			print('\t{}'.format(rna_to_gene.get(rna_id, rna_id)))
+		mask = rna_deg_growth_rate < lower_threshold
+		for rna_id, effect in zip(rna_ids[mask], rna_deg_growth_rate[mask]):
+			print('\t{}: {:.2f}'.format(rna_to_gene.get(rna_id, rna_id), (effect - mean) / std))
 
 		print('Positive correlation between protein deg and growth:')
-		for monomer_id in monomer_ids[protein_deg_growth_rate > upper_threshold]:
-			print('\t{}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id)))
+		mask = protein_deg_growth_rate > upper_threshold
+		for monomer_id, effect in zip(monomer_ids[mask], protein_deg_growth_rate[mask]):
+			print('\t{}: {:.2f}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id), (effect - mean) / std))
 		print('Negative correlation between protein deg and growth:')
-		for monomer_id in monomer_ids[protein_deg_growth_rate < lower_threshold]:
-			print('\t{}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id)))
+		mask = protein_deg_growth_rate < lower_threshold
+		for monomer_id, effect in zip(monomer_ids[mask], protein_deg_growth_rate[mask]):
+			print('\t{}: {:.2f}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id), (effect - mean) / std))
 
 		print('Positive correlation between translation efficiency and growth:')
-		for monomer_id in monomer_ids[trans_eff_growth_rate > upper_threshold]:
-			print('\t{}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id)))
+		mask = trans_eff_growth_rate > upper_threshold
+		for monomer_id, effect in zip(monomer_ids[mask], trans_eff_growth_rate[mask]):
+			print('\t{}: {:.2f}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id), (effect - mean) / std))
 		print('Negative correlation between translation efficiency and growth:')
-		for monomer_id in monomer_ids[trans_eff_growth_rate < lower_threshold]:
-			print('\t{}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id)))
+		mask = trans_eff_growth_rate < lower_threshold
+		for monomer_id, effect in zip(monomer_ids[mask], trans_eff_growth_rate[mask]):
+			print('\t{}: {:.2f}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id), (effect - mean) / std))
 
 		print('Positive correlation between synthesis probability and growth:')
-		for rna_id in rna_ids[synth_prob_growth_rate > upper_threshold]:
-			print('\t{}'.format(rna_to_gene.get(rna_id, rna_id)))
+		mask = synth_prob_growth_rate > upper_threshold
+		for rna_id, effect in zip(rna_ids[mask], synth_prob_growth_rate[mask]):
+			print('\t{}: {:.2f}'.format(rna_to_gene.get(rna_id, rna_id), (effect - mean) / std))
 		print('Negative correlation between synthesis probability and growth:')
-		for rna_id in rna_ids[synth_prob_growth_rate < lower_threshold]:
-			print('\t{}'.format(rna_to_gene.get(rna_id, rna_id)))
+		mask = synth_prob_growth_rate < lower_threshold
+		for rna_id, effect in zip(rna_ids[mask], synth_prob_growth_rate[mask]):
+			print('\t{}: {:.2f}'.format(rna_to_gene.get(rna_id, rna_id), (effect - mean) / std))
 
 		import ipdb; ipdb.set_trace()
 
