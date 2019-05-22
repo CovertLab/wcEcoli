@@ -44,12 +44,18 @@ def make_collection():
 
 	#look for instances where rnas do not have an assigned monomerId
 	#replace with a empty list, else put monomerId(s) into a list.
+	#Do the same for GeneIDs
 
 	for rna_row in rna_info:
 		if not rna_row['monomerId']:
 			rna_row['monomerId'] = []
 		else:
 			rna_row['monomerId'] = [rna_row['monomerId']]
+
+		if not rna_row['geneId']:
+			rna_row['geneId'] = []
+		else:
+			rna_row['geneId'] = [rna_row['geneId']]
 
 	with open(output_file, "w") as f:
 		writer = JsonWriter(f, fieldnames)
