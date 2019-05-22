@@ -24,7 +24,17 @@ from wholecell.utils import filepath, parallelization
 
 def analyze_variant((variant, ap)):
 	'''
+	Method to map each variant to for parallel analysis.
 
+	Args:
+		variant (int): variant index
+		ap (AnalysisPaths object): variant plot analysis paths object to get
+			simulation output directories for the variant
+
+	Returns:
+		16 ndarray[float]: growth rate sums associated to a parameter being increased
+			or decreased and count of number of times each parameter was increased
+			or decreased
 	'''
 
 	increase_indices, decrease_indices = split_indices(sim_data, variant)
@@ -62,19 +72,14 @@ def analyze_variant((variant, ap)):
 	for sim_dir in ap.get_cells(variant=[variant]):
 		simOutDir = os.path.join(sim_dir, "simOut")
 
-		# Listeners used
 		try:
-			main_reader = TableReader(os.path.join(simOutDir, 'Main'))
+			# Listeners used
 			mass_reader = TableReader(os.path.join(simOutDir, 'Mass'))
 
 			# Load data
-			time = main_reader.readColumn('time')
-			cell_mass = mass_reader.readColumn('cellMass')
-			growth_rate = np.nanmean(mass_reader.readColumn('instantaniousGrowthRate'))
-
-			mass_diff = (cell_mass[-1] - cell_mass[0]) / (time[-1] - time[0])
-
+			growth_rate = np.nanmean(mass_reader.readColumn('instantaniousGrowthRate')[-5:])
 		except:
+			# Exclude failed sims
 			continue
 
 		rna_deg_increase_growth_rate[rna_deg_increase_indices] += growth_rate
@@ -101,7 +106,16 @@ def analyze_variant((variant, ap)):
 
 def rna_mapping(sim_data, monomer_to_gene):
 	'''
+	Maps RNA ids to gene symbols.
 
+	Args:
+		sim_data (SimulationData object)
+		monomer_to_gene ({monomer id (str): gene id (str)}: mapping of monomer
+			id to gene id, with no location tags for keys and values
+
+	Returns:
+		{rna with location tag (str): gene symbol without location tag (str)}:
+			mapping of RNA to gene symbol
 	'''
 
 	gene_data = sim_data.process.replication.geneData
@@ -200,10 +214,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				synth_prob_decrease_counts += _synth_prob_decrease_counts
 
 
-		plt.figure()
-
-		### Create Plot ###
-
 		rna_deg_growth_rate = rna_deg_increase_growth_rate / rna_deg_increase_counts - rna_deg_decrease_growth_rate / rna_deg_decrease_counts
 		protein_deg_growth_rate = protein_deg_increase_growth_rate / protein_deg_increase_counts - protein_deg_decrease_growth_rate / protein_deg_decrease_counts
 		trans_eff_growth_rate = trans_eff_increase_growth_rate / trans_eff_increase_counts - trans_eff_decrease_growth_rate / trans_eff_decrease_counts
@@ -213,19 +223,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		mean = data[np.isfinite(data)].mean()
 		std = data[np.isfinite(data)].std()
 
+		n_std = 4
+		upper_threshold = mean + n_std*std
+		lower_threshold = mean - n_std*std
+
+		plt.figure()
+
 		plt.bar(range(len(data)), np.sort(data))
-		plt.axhline(mean + 3*std, color='r')
-		plt.axhline(mean - 3*std, color='r')
+		plt.axhline(upper_threshold , color='r')
+		plt.axhline(lower_threshold, color='r')
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
 
-		upper_threshold = mean + 3*std
-		lower_threshold = mean - 3*std
 		print('Number of params above threshold: {}'.format(np.sum(data > upper_threshold)))
-		print('Number of params above threshold: {}'.format(np.sum(data < lower_threshold)))
+		print('Number of params below threshold: {}'.format(np.sum(data < lower_threshold)))
 
-		sorted_idx = np.argsort(data)
 		rna_ids = sim_data.process.transcription.rnaData['id']
 		monomer_ids = sim_data.process.translation.monomerData['id']
 
@@ -267,8 +280,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		mask = synth_prob_growth_rate < lower_threshold
 		for rna_id, effect in zip(rna_ids[mask], synth_prob_growth_rate[mask]):
 			print('\t{}: {:.2f}'.format(rna_to_gene.get(rna_id, rna_id), (effect - mean) / std))
-
-		import ipdb; ipdb.set_trace()
 
 
 if __name__ == "__main__":

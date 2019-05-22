@@ -161,11 +161,6 @@ def param_sensitivity(sim_data, index):
 
 	# Update parameters
 	# TODO kinetic params
-	# print(sim_data.process.transcription.rnaData['degRate'][:30])
-	# print(sim_data.process.translation.monomerData['degRate'][:30])
-	# print(sim_data.process.translation.translationEfficienciesByMonomer[:30])
-	# print(sim_data.process.transcription.rnaSynthProb[sim_data.process.transcription.rnaSynthProb.keys()[0]][:30])
-	# print(sim_data.process.transcription_regulation.recruitmentData['hV'][:30])
 	(sim_data.increase_rna_deg_indices,
 		sim_data.increase_protein_deg_indices,
 		sim_data.increase_trans_eff_indices,
@@ -177,12 +172,6 @@ def param_sensitivity(sim_data, index):
 
 	modify_params(sim_data, increase_indices, SCALE_FACTOR)
 	modify_params(sim_data, decrease_indices, 1 / SCALE_FACTOR)
-	# print(sim_data.process.transcription.rnaData['degRate'][:30])
-	# print(sim_data.process.translation.monomerData['degRate'][:30])
-	# print(sim_data.process.translation.translationEfficienciesByMonomer[:30])
-	# print(sim_data.process.transcription.rnaSynthProb[sim_data.process.transcription.rnaSynthProb.keys()[0]][:30])
-	# print(sim_data.process.transcription_regulation.recruitmentData['hV'][:30])
-	# print(sim_data.process.transcription_regulation.recruitmentData['hI'][:30])
 
 	# Renormalize parameters
 	for synth_prob in sim_data.process.transcription.rnaSynthProb.values():
