@@ -1,6 +1,8 @@
 #! /bin/bash
 # Script to run many variants in parallel for parameter sensitivity analysis.
 # Fireworks is too slow and checks too many task dependencies for this scale.
+# Also removes variant sim_data objects to save space since affected parameters
+# can be recalculated in the analysis script.
 
 # Usage (from wcEcoli home directory):
 #   runscripts/paper/sensitivity.sh [output dir] [start variant] [final variant]
@@ -27,5 +29,8 @@ python runscripts/manual/runFitter.py --disable-ribosome-fitting --disable-rnapo
 
 # Run simulation variants in parallel
 seq $start_var $end_var | parallel simulation $out_dir
+
+# Run analysis script
+python models/ecoli/analysis/variant/param_sensitivity.py $out_dir
 
 date

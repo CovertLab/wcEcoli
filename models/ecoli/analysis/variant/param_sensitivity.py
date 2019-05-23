@@ -19,7 +19,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.sim.variants.param_sensitivity import number_params, param_indices, split_indices
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath, parallelization
+from wholecell.utils import constants, filepath, parallelization
 
 
 def analyze_variant((variant, ap)):
@@ -147,10 +147,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Load one instance of sim_data to get number of parameters and ids
 		global sim_data
-		with open(ap.get_variant_kb(variants[0])) as f:
+		with open(os.path.join(inputDir, 'kb', constants.SERIALIZED_FIT1_FILENAME)) as f:
 			sim_data = cPickle.load(f)
 
-		pool = Pool(processes=min(8, parallelization.plotter_cpus()))
+		pool = Pool(processes=parallelization.plotter_cpus())
 		args = zip(
 			variants,
 			[ap] * n_variants,
