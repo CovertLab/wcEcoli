@@ -204,7 +204,7 @@ with open(os.path.join(METADATA_DIRECTORY, constants.SERIALIZED_METADATA_FILE), 
 
 # Create launchpad
 with open(LAUNCHPAD_FILE) as f:
-	lpad = LaunchPad(**yaml.load(f))
+	lpad = LaunchPad(**yaml.safe_load(f))
 
 # Store list of FireWorks
 wf_fws = []
