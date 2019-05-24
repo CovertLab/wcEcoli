@@ -80,7 +80,6 @@ def fitSimData_1(
 		disable_ribosome_capacity_fitting=False,
 		disable_rnapoly_capacity_fitting=False,
 		disable_rnapoly_active_fraction_fitting=False,
-		disable_ribosome_active_fraction_fitting=False,
 		flat_elongation=False,
 		adjust_rna_and_protein_parameters=True,
 		alternate_mass_fraction=None,
@@ -104,8 +103,6 @@ def fitSimData_1(
 			expression is not fit to protein synthesis demands
 		disable_rnapoly_active_fraction_fitting (bool) - if True, RNA polymerase
 			active fraction is not fit to RNA / protein synthesis demands
-		disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
-			active fraction is not fit to protein synthesis demands
 		adjust_rna_and_protein_parameters (bool) - if True, some RNA and protein
 			expression parameters will be adjusted to get expression
 		alternate_mass_fraction (str) - describes which alternate mass fraction
@@ -161,7 +158,6 @@ def fitSimData_1(
 		disable_ribosome_capacity_fitting,
 		disable_rnapoly_capacity_fitting,
 		disable_rnapoly_active_fraction_fitting,
-		disable_ribosome_active_fraction_fitting,
 		flat_elongation,
 		)
 
@@ -188,7 +184,6 @@ def fitSimData_1(
 				 disable_ribosome_capacity_fitting,
 				 disable_rnapoly_capacity_fitting,
 				 disable_rnapoly_active_fraction_fitting,
-				 disable_ribosome_active_fraction_fitting,
 				 ))
 			for tf in conds
 			]
@@ -206,7 +201,6 @@ def fitSimData_1(
 				disable_ribosome_capacity_fitting,
 				disable_rnapoly_capacity_fitting,
 				disable_rnapoly_active_fraction_fitting,
-				disable_ribosome_active_fraction_fitting,
 				flat_elongation,
 				))
 
@@ -223,7 +217,6 @@ def fitSimData_1(
 		disable_ribosome_capacity_fitting,
 		disable_rnapoly_capacity_fitting,
 		disable_rnapoly_active_fraction_fitting,
-		disable_ribosome_active_fraction_fitting,
 		flat_elongation,
 		)
 
@@ -236,9 +229,8 @@ def fitSimData_1(
 	sim_data.process.translation.ribosomeElongationRateDict = {}
 	sim_data.process.translation.ribosomeFractionActiveDict = {}
 
-	# Set active fractions of minimal media to those computed for basal cell
+	# Set active fraction of minimal media to those computed for basal cell
 	sim_data.process.transcription.rnapFractionActiveDict["minimal"] = cellSpecs["basal"]["rnapActiveFraction"]
-	sim_data.process.translation.ribosomeFractionActiveDict["minimal"] = cellSpecs["basal"]["ribosomeActiveFraction"]
 
 	if cpus > 1:
 		print "Start parallel processing with %i processes" % (cpus,)
@@ -321,10 +313,8 @@ def fitSimData_1(
 				sim_data.process.translation.ribosomeElongationRateDict[nutrients] = rate
 
 			if nutrients not in sim_data.process.translation.ribosomeFractionActiveDict:
-				sim_data.process.translation.ribosomeFractionActiveDict[nutrients] = cellSpecs[condition_label]["ribosomeActiveFraction"]
-				# Note: The value stored in cellSpecs defaults to return from
-				# sim_data.growthRateParameters.getFractionActiveRibosome(doubling_time)
-				# if ribosome active fraction is disabled. See expressionConverge().
+				frac = sim_data.growthRateParameters.getFractionActiveRibosome(spec["doubling_time"])
+				sim_data.process.translation.ribosomeFractionActiveDict[nutrients] = frac
 
 	calculateRnapRecruitment(sim_data, rVector)
 
@@ -336,7 +326,6 @@ def buildBasalCellSpecifications(
 		disable_ribosome_capacity_fitting=False,
 		disable_rnapoly_capacity_fitting=False,
 		disable_rnapoly_active_fraction_fitting=False,
-		disable_ribosome_active_fraction_fitting=False,
 		flat_elongation=False,
 		):
 	"""
@@ -351,8 +340,6 @@ def buildBasalCellSpecifications(
 	expression is not fit
 	- disable_rnapoly_active_fraction_fitting (bool) - if True, RNA polymerase
 		active fraction is not fit to RNA / protein synthesis demands
-	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
-		active fraction is not fit to protein synthesis demands
 
 	Requires
 	--------
@@ -394,7 +381,7 @@ def buildBasalCellSpecifications(
 		}
 
 	# Determine expression and synthesis probabilities
-	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _, rnapActiveFraction, ribosomeActiveFraction = expressionConverge(
+	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _, rnapActiveFraction = expressionConverge(
 		sim_data,
 		cellSpecs["basal"]["expression"],
 		cellSpecs["basal"]["concDict"],
@@ -402,7 +389,6 @@ def buildBasalCellSpecifications(
 		disable_ribosome_capacity_fitting=disable_ribosome_capacity_fitting,
 		disable_rnapoly_capacity_fitting=disable_rnapoly_capacity_fitting,
 		disable_rnapoly_active_fraction_fitting=disable_rnapoly_active_fraction_fitting,
-		disable_ribosome_active_fraction_fitting=disable_ribosome_active_fraction_fitting,
 		flat_elongation=flat_elongation,
 		)
 
@@ -413,7 +399,6 @@ def buildBasalCellSpecifications(
 	cellSpecs["basal"]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 	cellSpecs["basal"]["bulkContainer"] = bulkContainer
 	cellSpecs["basal"]["rnapActiveFraction"] = rnapActiveFraction
-	cellSpecs["basal"]["ribosomeActiveFraction"] = ribosomeActiveFraction
 
 	# Modify sim_data mass
 	sim_data.mass.avgCellDryMassInit = avgCellDryMassInit
@@ -433,7 +418,6 @@ def buildTfConditionCellSpecifications(
 		disable_ribosome_capacity_fitting=False,
 		disable_rnapoly_capacity_fitting=False,
 		disable_rnapoly_active_fraction_fitting=False,
-		disable_ribosome_active_fraction_fitting=False,
 		flat_elongation=False,
 		):
 	"""
@@ -452,8 +436,6 @@ def buildTfConditionCellSpecifications(
 	expression is not fit
 	- disable_rnapoly_active_fraction_fitting (bool) - if True, RNA polymerase
 	active fraction is not fit to RNA / protein synthesis demands
-	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
-	active fraction is not fit to protein synthesis demands
 
 	Requires
 	--------
@@ -518,7 +500,7 @@ def buildTfConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActiveFraction, ribosomeActiveFraction = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActiveFraction = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
@@ -527,7 +509,6 @@ def buildTfConditionCellSpecifications(
 			disable_ribosome_capacity_fitting=disable_ribosome_capacity_fitting,
 			disable_rnapoly_capacity_fitting=disable_rnapoly_capacity_fitting,
 			disable_rnapoly_active_fraction_fitting=disable_rnapoly_active_fraction_fitting,
-			disable_ribosome_active_fraction_fitting=disable_ribosome_active_fraction_fitting,
 			flat_elongation=flat_elongation,
 			)
 
@@ -538,7 +519,6 @@ def buildTfConditionCellSpecifications(
 		cellSpecs[conditionKey]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 		cellSpecs[conditionKey]["bulkContainer"] = bulkContainer
 		cellSpecs[conditionKey]["rnapActiveFraction"] = rnapActiveFraction
-		cellSpecs[conditionKey]["ribosomeActiveFraction"] = ribosomeActiveFraction
 
 	return cellSpecs
 
@@ -548,7 +528,6 @@ def buildCombinedConditionCellSpecifications(
 		disable_ribosome_capacity_fitting=False,
 		disable_rnapoly_capacity_fitting=False,
 		disable_rnapoly_active_fraction_fitting=False,
-		disable_ribosome_active_fraction_fitting=False,
 		flat_elongation=False,
 		):
 	"""
@@ -566,8 +545,6 @@ def buildCombinedConditionCellSpecifications(
 	expression is not fit
 	- disable_rnapoly_active_fraction_fitting (bool) - if True, RNA polymerase
 	active fraction is not fit to RNA / protein synthesis demands
-	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
-	active fraction is not fit to protein synthesis demands
 
 	Requires
 	--------
@@ -627,7 +604,7 @@ def buildCombinedConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActiveFraction, ribosomeActiveFraction = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActiveFraction = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
@@ -636,7 +613,6 @@ def buildCombinedConditionCellSpecifications(
 			disable_ribosome_capacity_fitting=disable_ribosome_capacity_fitting,
 			disable_rnapoly_capacity_fitting=disable_rnapoly_capacity_fitting,
 			disable_rnapoly_active_fraction_fitting=disable_rnapoly_active_fraction_fitting,
-			disable_ribosome_active_fraction_fitting=disable_ribosome_active_fraction_fitting,
 			flat_elongation=flat_elongation,
 			)
 
@@ -647,7 +623,6 @@ def buildCombinedConditionCellSpecifications(
 		cellSpecs[conditionKey]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 		cellSpecs[conditionKey]["bulkContainer"] = bulkContainer
 		cellSpecs[conditionKey]["rnapActiveFraction"] = rnapActiveFraction
-		cellSpecs[conditionKey]["ribosomeActiveFraction"] = ribosomeActiveFraction
 
 		# Modify sim_data expression
 		sim_data.process.transcription.rnaExpression[conditionKey] = cellSpecs[conditionKey]["expression"]
@@ -662,7 +637,6 @@ def expressionConverge(
 		disable_ribosome_capacity_fitting=False,
 		disable_rnapoly_capacity_fitting=False,
         disable_rnapoly_active_fraction_fitting=False,
-		disable_ribosome_active_fraction_fitting=False,
 		flat_elongation=False,
 		):
 	"""
@@ -685,8 +659,6 @@ def expressionConverge(
 	expression is not fit
 	- disable_rnapoly_active_fraction_fitting (bool) - if True, RNA polymerase
 		active fraction is not fit to RNA / protein synthesis demands
-	- disable_ribosome_active_fraction_fitting (bool) - if True, ribosome
-		active fraction is not fit to protein synthesis demands
 
 	Requires
 	--------
@@ -709,10 +681,9 @@ def expressionConverge(
 	"""
 
 	if VERBOSE > 0:
-		print("Fitting RNA synthesis probabilities and/or polymerase active fractions.")
+		print("Fitting RNA synthesis probabilities.")
 
 	rnapActiveFraction = sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
-	ribosomeActiveFraction = sim_data.growthRateParameters.getFractionActiveRibosome(doubling_time)
 
 	for iteration in xrange(MAX_FITTING_ITERATIONS):
 		if VERBOSE > 1:
@@ -720,7 +691,6 @@ def expressionConverge(
 
 		initialExpression = expression.copy()
 		initialRnapActiveFraction = copy.copy(rnapActiveFraction)
-		initialRibosomeActiveFraction = copy.copy(ribosomeActiveFraction)
 
 		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
 		bulkContainer = createBulkContainer(sim_data, expression, doubling_time)
@@ -729,11 +699,8 @@ def expressionConverge(
 		if not disable_rnapoly_active_fraction_fitting:
 			rnapActiveFraction = getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation)
 
-		if not disable_ribosome_active_fraction_fitting:
-			ribosomeActiveFraction = getRibosomeActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation)
-
 		if not disable_ribosome_capacity_fitting:
-			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, ribosomeActiveFraction, disable_ribosome_active_fraction_fitting, flat_elongation)
+			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation)
 
 		if not disable_rnapoly_capacity_fitting:
 			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, rnapActiveFraction, Km, flat_elongation)
@@ -743,13 +710,11 @@ def expressionConverge(
 
 		degreeOfFitExpression = np.sqrt(np.mean(np.square(initialExpression - expression)))
 		degreeOfFitRnapActiveFraction =  np.sqrt(np.mean(np.square(initialRnapActiveFraction - rnapActiveFraction)))
-		degreeOfFitRibosomeActiveFraction = np.sqrt(np.mean(np.square(initialRibosomeActiveFraction - ribosomeActiveFraction)))
-		degreeOfFit = sum([degreeOfFitExpression, degreeOfFitRnapActiveFraction, degreeOfFitRibosomeActiveFraction])
+		degreeOfFit = sum([degreeOfFitExpression, degreeOfFitRnapActiveFraction])
 
 		if VERBOSE > 1:
 			print('\tdegree of fit: {}'.format(degreeOfFit))
 			print('\tRNAP active fraction:\t\t{:.2f}'.format(rnapActiveFraction))
-			print('\tRibosome active fraction:\t{:.2f}'.format(ribosomeActiveFraction))
 
 		if degreeOfFit < FITNESS_THRESHOLD:
 			break
@@ -757,7 +722,7 @@ def expressionConverge(
 	else:
 		raise Exception("Fitting did not converge")
 
-	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActiveFraction, ribosomeActiveFraction
+	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActiveFraction
 
 def fitCondition(sim_data, spec, condition):
 	"""
@@ -1296,7 +1261,7 @@ def createBulkContainer(sim_data, expression, doubling_time):
 
 	return bulkContainer
 
-def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, ribosomeActiveFraction, disable_ribosome_active_fraction_fitting, flat_elongation=False):
+def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation=False):
 	"""
 	Set counts of ribosomal subunits based on three constraints:
 	(1) Expected protein distribution doubles in one cell cycle
@@ -1344,11 +1309,6 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 		netLossRate_protein,
 		proteinCounts)
 
-	# To match calculations in the release-paper branch, ribosome active
-	# fraction is incorporated into the estimation of the number of ribosomes
-	# needed only if the ribosome active fraction is being fit.
-	if not disable_ribosome_active_fraction_fitting:
-		nRibosomesNeeded /= ribosomeActiveFraction
 
 	# Minimum number of ribosomes needed
 	constraint1_ribosome30SCounts = (
@@ -1555,94 +1515,6 @@ def getRNAPActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubli
 
 	# Get required RNA polymerase active fraction
 	activeFractionNeeded = nActiveRnapNeeded / np.min(rnapCounts)
-
-	return activeFractionNeeded
-
-def getRibosomeActiveFractionConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation=False):
-	"""
-	Get active fraction of ribosomes required to achieve steady-state doubling
-	of proteins. Ribosome demand is estimated from the expectation that the
-	protein distribution doubles in one cell cycle.
-
-	Ribosome supply is estimated from two considerations: the expected
-	ribosomal subunit counts based on:
-	(1) RNA expression data
-	(2) measured rRNA mass fractions
-
-
-	Requires
-	--------
-	- FRACTION_INCREASE_RIBOSOMAL_PROTEINS (float) - factor to increase number
-	  of ribosomes needed (used in computing constraint (1))
-
-	Inputs
-	------
-	- bulkContainer (BulkObjectsContainer object) - counts of bulk molecules
-	- doubling_time (float with units of time) - doubling time given the
-	  condition
-
-	Returns
-	--------
-	- activeFractionNeeded (float) - active fraction of ribosome required to
-	  achieve steady-state doubling of ribosomes
-	"""
-
-	# Get IDs and stoichiometry of ribosome subunits
-	ribosome30SSubunits = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.s30_fullComplex)['subunitIds']
-	ribosome50SSubunits = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.s50_fullComplex)['subunitIds']
-	ribosome30SStoich = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.s30_fullComplex)['subunitStoich']
-	ribosome50SStoich = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.s50_fullComplex)['subunitStoich']
-
-	# -- DEMAND: Expected protein distribution doubling -- #
-	## Calculate minimum number of 30S and 50S subunits required in order to
-	## double the expected protein distribution in one cell cycle
-	proteinLengths = units.sum(sim_data.process.translation.monomerData['aaCounts'], axis=1)
-	proteinDegradationRates = sim_data.process.translation.monomerData["degRate"]
-	proteinCounts = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-
-	netLossRate_protein = netLossRateFromDilutionAndDegradationProtein(
-		doubling_time,
-		proteinDegradationRates,
-	)
-
-	# Minimum number of ribosomes needed
-	base = sim_data.growthRateParameters.getRibosomeElongationRate(doubling_time).asNumber(units.aa / units.s)
-	elongation_rates = sim_data.process.translation.make_elongation_rates(base, flat_elongation=flat_elongation)
-	nRibosomesNeeded = calculateMinPolymerizingEnzymeByProductDistribution(
-		proteinLengths,
-		elongation_rates * (units.aa / units.s),
-		netLossRate_protein,
-		proteinCounts,
-	)
-	nRibosomeDemand = nRibosomesNeeded
-
-	# -- SUPPLY 1: Measured rRNA mass fraction -- #
-	## Calculate exact number of 30S and 50S subunits based on measured mass
-	## fractions of 16S, 23S, and 5S rRNA.
-	## Note: 1 of each rRNA per active ribosome.
-	rRna23SCounts = bulkContainer.counts(sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna23S"]])
-	rRna16SCounts = bulkContainer.counts(sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna16S"]])
-	rRna5SCounts = bulkContainer.counts(sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna5S"]])
-
-	## 16S rRNA is in the 30S subunit
-	massFracPredicted_30SCount = rRna16SCounts.sum()
-	## 23S and 5S rRNA are in the 50S subunit
-	massFracPredicted_50SCount = min(rRna23SCounts.sum(), rRna5SCounts.sum())
-
-	nRibosomeSupply1 = min(massFracPredicted_30SCount, massFracPredicted_50SCount)
-
-	# -- SUPPLY 2: Expected ribosomal subunit counts based expression
-	## Calculate fundamental ribosomal subunit count distribution based on RNA
-	## expression data. Already calculated and stored in bulkContainer.
-	ribosome30SCounts = bulkContainer.counts(ribosome30SSubunits)
-	ribosome50SCounts = bulkContainer.counts(ribosome50SSubunits)
-	nRibosomeSupply2 = np.min([
-		np.min(ribosome30SCounts / ribosome30SStoich),
-		np.min(ribosome50SCounts / ribosome50SStoich)])
-
-	# -- GET ACTIVE FRACTION REQUIRED -- #
-	nRibosomeSupply = min(nRibosomeSupply1, nRibosomeSupply2)
-	activeFractionNeeded = 1. if nRibosomeDemand >= nRibosomeSupply else nRibosomeDemand / nRibosomeSupply
 
 	return activeFractionNeeded
 
