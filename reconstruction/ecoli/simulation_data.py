@@ -39,7 +39,9 @@ class SimulationDataEcoli(object):
 	def initialize(self, raw_data,
 	               basal_expression_condition="M9 Glucose minus AAs",
 	               alternate_mass=None,
-	               alternate_rna=None):
+	               alternate_rna=None,
+	               alternate_rna_half_life=None,
+	               ):
 
 		self.external_state = ExternalState(raw_data, self)
 
@@ -67,7 +69,7 @@ class SimulationDataEcoli(object):
 
 		# Data classes (can depend on helper functions)
 		# Data classes cannot depend on each other
-		self.process = Process(raw_data, self, alternate_rna)
+		self.process = Process(raw_data, self, alternate_rna, alternate_rna_half_life)
 		self.internal_state = InternalState(raw_data, self)
 
 		# Relations between data classes (can depend on data classes)

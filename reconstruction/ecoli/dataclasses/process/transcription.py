@@ -20,16 +20,21 @@ RNA_SEQ_ANALYSIS = "rsem_tpm"
 class Transcription(object):
 	""" Transcription """
 
-	def __init__(self, raw_data, sim_data, alternate_rna):
-		self._buildRnaData(raw_data, sim_data, alternate_rna)
+	def __init__(self, raw_data, sim_data, alternate_rna, alternate_rna_half_life):
+		self._buildRnaData(raw_data, sim_data, alternate_rna, alternate_rna_half_life)
 		self._buildTranscription(raw_data, sim_data)
 
 		self._build_elongation_rates(raw_data, sim_data)
 
-	def _buildRnaData(self, raw_data, sim_data, alternate_rna):
+	def _buildRnaData(self, raw_data, sim_data, alternate_rna, alternate_rna_half_life):
 		assert all([len(rna['location']) == 1 for rna in raw_data.rnas])
 		rnaIds = ['{}[{}]'.format(rna['id'], rna['location'][0]) for rna in raw_data.rnas if len(rna['location']) == 1]
-		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in raw_data.rnas]) # TODO: units
+
+		# Load rna half lives
+		rna_half_life_file = "raw_data.rnas"
+		if alternate_rna_half_life != None:
+			rna_half_life_file += "_alternate_half_lives_{}".format(alternate_rna_half_life)
+		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in eval(rna_half_life_file)])  # seconds
 		rnaLens = np.array([len(rna['seq']) for rna in raw_data.rnas])
 		ntCounts = np.array([
 			(rna['seq'].count('A'), rna['seq'].count('C'),

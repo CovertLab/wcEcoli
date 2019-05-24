@@ -117,6 +117,10 @@ def fitSimData_1(
 			use for fitting RNA expression. One of the following: 'Covert',
 			'Cho', or 'Dong'. Default value of None results in original RNA-seq
 			input.
+		alternate_rna_half_life (str) - describes which alternate RNA half life
+			dataset to use. One of the following: 'with_kas' or 'without_kas'.
+			Default value of None results in using original RNA half lives
+			described in reconstruction.
 	"""
 
 	sim_data = SimulationDataEcoli()
