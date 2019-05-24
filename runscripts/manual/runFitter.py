@@ -87,6 +87,10 @@ class RunFitter(scriptBase.ScriptBase):
 			'--alternate-rna-seq', type=str,
 			help="Alternate RNA-seq input - one of the following: 'Covert', 'Cho', or 'Dong'. Default = None."
 			)
+		parser.add_argument(
+			'--alternate-rna-half-life', type=str,
+			help="Alternate RNA half life input - one of the following: 'with_kas', or 'without_kas'. Default = None."
+		)
 
 	def parse_args(self):
 		args = super(RunFitter, self).parse_args()
@@ -135,6 +139,7 @@ class RunFitter(scriptBase.ScriptBase):
 				alternate_mass_fraction=args.alternate_mass_fraction,
 				alternate_r_protein_degradation=args.alternate_r_protein_degradation,
 				alternate_rna_seq=args.alternate_rna_seq,
+				alternate_rna_half_life=args.alternate_rna_half_life,
 				),
 
 			SymlinkTask(

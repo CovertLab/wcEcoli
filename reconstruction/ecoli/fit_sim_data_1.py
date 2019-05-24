@@ -86,6 +86,7 @@ def fitSimData_1(
 		alternate_mass_fraction=None,
 		alternate_r_protein_degradation=False,
 		alternate_rna_seq=None,
+		alternate_rna_half_life=None,
 		):
 	"""
 	Fits parameters necessary for the simulation based on the knowledge base
@@ -124,6 +125,7 @@ def fitSimData_1(
 		basal_expression_condition = BASAL_EXPRESSION_CONDITION,
 		alternate_mass = alternate_mass_fraction,
 		alternate_rna = alternate_rna_seq,
+		alternate_rna_half_life=alternate_rna_half_life,
 		)
 
 	# Limit the number of conditions that are being fit so that execution time decreases
