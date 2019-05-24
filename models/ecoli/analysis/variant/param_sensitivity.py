@@ -19,7 +19,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.sim.variants.param_sensitivity import number_params, param_indices, split_indices
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import constants, filepath, parallelization
+from wholecell.utils import constants, filepath, parallelization, sparkline
 
 
 def analyze_variant((variant, ap)):
@@ -222,20 +222,32 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		data = np.hstack((rna_deg_growth_rate, protein_deg_growth_rate, trans_eff_growth_rate, synth_prob_growth_rate))
 		mean = data[np.isfinite(data)].mean()
 		std = data[np.isfinite(data)].std()
+		z_score = (data - mean) / std
 
-		n_std = 4
-		upper_threshold = mean + n_std*std
-		lower_threshold = mean - n_std*std
-
+		# Plot figure
 		plt.figure()
 
-		plt.bar(range(len(data)), np.sort(data))
-		plt.axhline(upper_threshold , color='r')
-		plt.axhline(lower_threshold, color='r')
+		## Plot data
+		n_std = 4
+		plt.bar(range(len(z_score)), np.sort(z_score))
+		plt.axhline(n_std , color='r')
+		plt.axhline(-n_std, color='r')
 
+		## Format axes
+		sparkline.whitePadSparklineAxis(plt.gca(), xAxis=False)
+		plt.xticks([])
+		plt.yticks([-n_std, 0, n_std])
+		plt.xlabel('Sorted Parameters')
+		plt.ylabel('Z score\nparameter effect on growth rate')
+
+		## Save figure
+		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
 
+		# Print analysis summary
+		upper_threshold = mean + n_std*std
+		lower_threshold = mean - n_std*std
 		print('Number of params above threshold: {}'.format(np.sum(data > upper_threshold)))
 		print('Number of params below threshold: {}'.format(np.sum(data < lower_threshold)))
 
