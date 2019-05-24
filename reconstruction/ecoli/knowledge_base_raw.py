@@ -34,6 +34,7 @@ LIST_OF_DICT_FILENAMES = (
 	"foldChanges.tsv",
 	"genes.tsv",
 	"growthRateDependentParameters.tsv",
+	"growthRateDependentParameters_alternateRibosomeActivity.tsv",
 	"massAtReplicationInitiation.tsv",
 	"metabolites.tsv",
 	"metaboliteConcentrations.tsv",
