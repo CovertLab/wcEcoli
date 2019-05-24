@@ -1312,6 +1312,8 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 		netLossRate_protein,
 		proteinCounts)
 
+	# Scale estimation of ribosome demand by the active fraction.
+	nRibosomesNeeded /= sim_data.growthRateParameters.getFractionActiveRibosome(doubling_time)
 
 	# Minimum number of ribosomes needed
 	constraint1_ribosome30SCounts = (
