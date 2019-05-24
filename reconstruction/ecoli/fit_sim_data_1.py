@@ -129,6 +129,7 @@ def fitSimData_1(
 		alternate_mass = alternate_mass_fraction,
 		alternate_rna = alternate_rna_seq,
 		alternate_rna_half_life=alternate_rna_half_life,
+		alternate_ribosome_activity=alternate_ribosome_activity,
 		)
 
 	# Limit the number of conditions that are being fit so that execution time decreases

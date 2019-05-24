@@ -438,13 +438,21 @@ class GrowthRateParameters(object):
 	GrowthRateParameters
 	"""
 
-	def __init__(self, raw_data, sim_data):
+	def __init__(self, raw_data, sim_data, alternate_ribosome_activity):
 		self._doubling_time = sim_data.doubling_time
-		_loadTableIntoObjectGivenDoublingTime(self, raw_data.growthRateDependentParameters)
-		self.ribosomeElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "ribosomeElongationRate")
-		self.rnaPolymeraseElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "rnaPolymeraseElongationRate")
-		self.fractionActiveRnapParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRnap")
-		self.fractionActiveRibosomeParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRibosome")
+
+		if alternate_ribosome_activity:
+			_loadTableIntoObjectGivenDoublingTime(self, raw_data.growthRateDependentParameters_alternateRibosomeActivity)
+			self.ribosomeElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters_alternateRibosomeActivity, "ribosomeElongationRate")
+			self.rnaPolymeraseElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters_alternateRibosomeActivity, "rnaPolymeraseElongationRate")
+			self.fractionActiveRnapParams = _getFitParameters(raw_data.growthRateDependentParameters_alternateRibosomeActivity, "fractionActiveRnap")
+			self.fractionActiveRibosomeParams = _getFitParameters(raw_data.growthRateDependentParameters_alternateRibosomeActivity, "fractionActiveRibosome")
+		else:
+			_loadTableIntoObjectGivenDoublingTime(self, raw_data.growthRateDependentParameters)
+			self.ribosomeElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "ribosomeElongationRate")
+			self.rnaPolymeraseElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "rnaPolymeraseElongationRate")
+			self.fractionActiveRnapParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRnap")
+			self.fractionActiveRibosomeParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRibosome")
 
 		self.c_period = units.min * 40.
 		self.d_period = units.min * 20.
