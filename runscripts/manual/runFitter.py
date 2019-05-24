@@ -85,12 +85,12 @@ class RunFitter(scriptBase.ScriptBase):
 		parser.add_argument(
 			'--alternate-rna-half-life', type=str,
 			help="Alternate RNA half life input - one of the following: 'with_kas', or 'without_kas'. Default = None."
-		)
+			)
 		parser.add_argument(
 			'--alternate-ribosome-activity',
 			action='store_true',
-			help="Alternate ribosome active fraction: 85% active. Default = 80% active."
-		)
+			help="Alternate ribosome active fraction: 85 percent active. Default = 80 percent active."
+			)
 
 	def parse_args(self):
 		args = super(RunFitter, self).parse_args()
