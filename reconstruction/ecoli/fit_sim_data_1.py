@@ -86,6 +86,7 @@ def fitSimData_1(
 		alternate_r_protein_degradation=False,
 		alternate_rna_seq=None,
 		alternate_rna_half_life=None,
+		alternate_ribosome_activity=None,
 		):
 	"""
 	Fits parameters necessary for the simulation based on the knowledge base
@@ -118,8 +119,9 @@ def fitSimData_1(
 			dataset to use. One of the following: 'with_kas' or 'without_kas'.
 			Default value of None results in using original RNA half lives
 			described in reconstruction.
+		alternate_ribosome_activity (bool) - if True, ribosome activity is set
+			to 85%.
 	"""
-
 	sim_data = SimulationDataEcoli()
 	sim_data.initialize(
 		raw_data = raw_data,
