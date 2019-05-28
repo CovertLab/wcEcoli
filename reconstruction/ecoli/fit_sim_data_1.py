@@ -312,7 +312,7 @@ def fitSimData_1(
 
 	calculateRnapRecruitment(sim_data, rVector)
 
-	return sim_data
+	return sim_data, cellSpecs
 
 
 def buildBasalCellSpecifications(

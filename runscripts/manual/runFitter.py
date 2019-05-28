@@ -91,6 +91,11 @@ class RunFitter(scriptBase.ScriptBase):
 			help="Alternate ribosome active fraction: between 0 and 1. Defaults"
 			     "to active fraction described in growth rate parameters."
 		)
+		parser.add_argument(
+			'--save-cell-specs',
+			action='store_true',
+			help="If set, saves cell specs."
+		)
 
 	def parse_args(self):
 		args = super(RunFitter, self).parse_args()
@@ -102,6 +107,7 @@ class RunFitter(scriptBase.ScriptBase):
 		kb_directory = filepath.makedirs(args.sim_path, "kb")
 		raw_data_file = os.path.join(kb_directory, constants.SERIALIZED_RAW_DATA)
 		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_FIT1_FILENAME)
+		cell_specs_file = os.path.join(kb_directory, constants.SERIALIZED_CELL_SPECS)
 		cached_sim_data_file = os.path.join(
 			scriptBase.ROOT_PATH, 'cached', constants.SERIALIZED_FIT1_FILENAME)
 		most_fit_filename = os.path.join(
@@ -140,6 +146,8 @@ class RunFitter(scriptBase.ScriptBase):
 				alternate_rna_half_life=args.alternate_rna_half_life,
 				alternate_ribosome_activity=args.alternate_ribosome_activity,
 				alternate_rnap_activity=args.alternate_rnap_activity,
+				save_cell_specs=args.save_cell_specs,
+				cell_specs_file=cell_specs_file,
 				),
 
 			SymlinkTask(

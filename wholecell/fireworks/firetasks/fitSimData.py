@@ -28,6 +28,8 @@ class FitSimDataTask(FireTaskBase):
 		"alternate_rna_half_life",
 		"alternate_ribosome_activity",
 		"alternate_rnap_activity",
+		"save_cell_specs",
+		"cell_specs_file",
 		]
 
 	def run_task(self, fw_spec):
@@ -52,7 +54,7 @@ class FitSimDataTask(FireTaskBase):
 			with open(self["input_data"], "rb") as f:
 				raw_data = cPickle.load(f)
 
-			sim_data = fitSimData_1(
+			sim_data, cell_specs = fitSimData_1(
 				raw_data, cpus=self["cpus"], debug=self["debug"],
 				disable_ribosome_capacity_fitting=self['disable_ribosome_capacity_fitting'],
 				disable_rnapoly_capacity_fitting=self['disable_rnapoly_capacity_fitting'],
@@ -69,6 +71,10 @@ class FitSimDataTask(FireTaskBase):
 			sys.setrecursionlimit(4000) #limit found manually
 			with open(self["output_data"], "wb") as f:
 				cPickle.dump(sim_data, f, protocol = cPickle.HIGHEST_PROTOCOL)
+
+			if self["save_cell_specs"]:
+				with open(self["cell_specs_file"], "wb") as f:
+					cPickle.dump(cell_specs, f, protocol = cPickle.HIGHEST_PROTOCOL)
 
 		# TODO: Get rid of this if not used
 		if self["fit_level"] == 2:
