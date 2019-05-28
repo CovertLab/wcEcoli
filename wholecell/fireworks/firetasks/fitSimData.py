@@ -27,6 +27,7 @@ class FitSimDataTask(FireTaskBase):
 		"alternate_rna_seq",
 		"alternate_rna_half_life",
 		"alternate_ribosome_activity",
+		"alternate_rnap_activity",
 		]
 
 	def run_task(self, fw_spec):
@@ -62,6 +63,7 @@ class FitSimDataTask(FireTaskBase):
 				alternate_rna_seq=self['alternate_rna_seq'],
 				alternate_rna_half_life=self['alternate_rna_half_life'],
 				alternate_ribosome_activity=self['alternate_ribosome_activity'],
+				alternate_rnap_activity=self['alternate_rnap_activity'],
 				)
 
 			sys.setrecursionlimit(4000) #limit found manually

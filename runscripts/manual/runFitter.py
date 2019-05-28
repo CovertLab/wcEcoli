@@ -86,6 +86,11 @@ class RunFitter(scriptBase.ScriptBase):
 			action='store_true',
 			help="Alternate ribosome active fraction: 85 percent active. Default = 80 percent active."
 			)
+		parser.add_argument(
+			'--alternate-rnap-activity', type=str,
+			help="Alternate ribosome active fraction: between 0 and 1. Defaults"
+			     "to active fraction described in growth rate parameters."
+		)
 
 	def parse_args(self):
 		args = super(RunFitter, self).parse_args()
@@ -134,6 +139,7 @@ class RunFitter(scriptBase.ScriptBase):
 				alternate_rna_seq=args.alternate_rna_seq,
 				alternate_rna_half_life=args.alternate_rna_half_life,
 				alternate_ribosome_activity=args.alternate_ribosome_activity,
+				alternate_rnap_activity=args.alternate_rnap_activity,
 				),
 
 			SymlinkTask(

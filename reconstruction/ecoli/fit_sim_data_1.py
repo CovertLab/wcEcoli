@@ -86,6 +86,7 @@ def fitSimData_1(
 		alternate_rna_seq=None,
 		alternate_rna_half_life=None,
 		alternate_ribosome_activity=None,
+		alternate_rnap_activity=None,
 		):
 	"""
 	Fits parameters necessary for the simulation based on the knowledge base
@@ -118,6 +119,7 @@ def fitSimData_1(
 			described in reconstruction.
 		alternate_ribosome_activity (bool) - if True, ribosome activity is set
 			to 85%.
+		alternate_rnap_activity (str) - describes alternate rnap activity.
 	"""
 	sim_data = SimulationDataEcoli()
 	sim_data.initialize(
