@@ -438,7 +438,7 @@ class GrowthRateParameters(object):
 	GrowthRateParameters
 	"""
 
-	def __init__(self, raw_data, sim_data, alternate_ribosome_activity):
+	def __init__(self, raw_data, sim_data, alternate_ribosome_activity, alternate_rnap_activity):
 		self._doubling_time = sim_data.doubling_time
 
 		if alternate_ribosome_activity:
@@ -451,8 +451,11 @@ class GrowthRateParameters(object):
 			_loadTableIntoObjectGivenDoublingTime(self, raw_data.growthRateDependentParameters)
 			self.ribosomeElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "ribosomeElongationRate")
 			self.rnaPolymeraseElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "rnaPolymeraseElongationRate")
-			self.fractionActiveRnapParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRnap")
+			self.fractionActiveRnapParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRnap", alternate_rnap_activity)
 			self.fractionActiveRibosomeParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRibosome")
+
+			# Replace alternate values
+			self.fractionActiveRnap = self.getFractionActiveRnap(self._doubling_time)
 
 		self.c_period = units.min * 40.
 		self.d_period = units.min * 20.
@@ -476,10 +479,12 @@ class GrowthRateParameters(object):
 	def getFractionIncreaseRnapProteins(self, doubling_time):
 		return FRACTION_INCREASE_RNAP_PROTEINS.get(doubling_time.asNumber(units.min), FRACTION_INCREASE_RNAP_PROTEINS[44])
 
-def _getFitParameters(list_of_dicts, key):
+def _getFitParameters(list_of_dicts, key, y_replacement=None):
 	# Load rows of data
 	x = _loadRow('doublingTime', list_of_dicts)
 	y = _loadRow(key, list_of_dicts)
+	if y_replacement != None:
+		y = np.ones(shape=y.shape) * float(y_replacement)
 
 	# Save and strip units
 	y_units = 1

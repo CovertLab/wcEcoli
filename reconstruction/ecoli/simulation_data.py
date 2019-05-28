@@ -42,6 +42,7 @@ class SimulationDataEcoli(object):
 	               alternate_rna=None,
 	               alternate_rna_half_life=None,
 	               alternate_ribosome_activity=None,
+	               alternate_rnap_activity=None,
 	               ):
 
 		self.external_state = ExternalState(raw_data, self)
@@ -65,7 +66,7 @@ class SimulationDataEcoli(object):
 		self.constants = Constants(raw_data, self)
 
 		# Growth rate dependent parameters are set first
-		self.growthRateParameters = GrowthRateParameters(raw_data, self, alternate_ribosome_activity)
+		self.growthRateParameters = GrowthRateParameters(raw_data, self, alternate_ribosome_activity, alternate_rnap_activity)
 		self.mass = Mass(raw_data, self, alternate_mass)
 
 		# Data classes (can depend on helper functions)
