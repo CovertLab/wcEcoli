@@ -185,6 +185,7 @@ def fitSimData_1(
 				(sim_data, tf,
 				 disable_ribosome_capacity_fitting,
 				 disable_rnapoly_capacity_fitting,
+				 flat_elongation,
 				 ))
 			for tf in conds
 			]
