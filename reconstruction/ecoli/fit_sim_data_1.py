@@ -1270,14 +1270,14 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 
 	base = sim_data.growthRateParameters.getRibosomeElongationRate(doubling_time).asNumber(units.aa / units.s)
 	elongation_rates = sim_data.process.translation.make_elongation_rates(base, flat_elongation=flat_elongation)
-	nRibosomesNeeded = calculateMinPolymerizingEnzymeByProductDistribution(
+	nActiveRibosomesNeeded = calculateMinPolymerizingEnzymeByProductDistribution(
 		proteinLengths,
 		elongation_rates * (units.aa / units.s),
 		netLossRate_protein,
 		proteinCounts)
 
 	# Scale estimation of ribosome demand by the active fraction.
-	nRibosomesNeeded /= sim_data.growthRateParameters.getFractionActiveRibosome(doubling_time)
+	nRibosomesNeeded = nActiveRibosomesNeeded / sim_data.growthRateParameters.getFractionActiveRibosome(doubling_time)
 
 	# Minimum number of ribosomes needed
 	constraint1_ribosome30SCounts = (
