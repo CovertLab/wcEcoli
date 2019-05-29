@@ -107,7 +107,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		# Polymerize transcripts based on sequences and available nucleotides
 		reactionLimit = ntpCounts.sum()
-		result = polymerize(sequences, ntpCounts, reactionLimit, self.randomState)
+		active_elongation_rates = self.elongation_rates[rnaIndexes]
+		result = polymerize(sequences, ntpCounts, reactionLimit, self.randomState, active_elongation_rates)
 		sequenceElongations = result.sequenceElongation
 		ntpsUsed = result.monomerUsages
 		nElongations = result.nReactions

@@ -205,12 +205,13 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# elongations each "polymerase" catalyzes
 		reactionLimit = dNtpCounts.sum()
 
+		active_elongation_rates = self.elongation_rates[sequenceIdx]
 		result = polymerize(
 			sequences,
 			dNtpCounts,
 			reactionLimit,
-			self.randomState
-			)
+			self.randomState,
+			active_elongation_rates)
 
 		sequenceElongations = result.sequenceElongation
 		dNtpsUsed = result.monomerUsages

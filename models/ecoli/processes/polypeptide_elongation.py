@@ -209,12 +209,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Using polymerization algorithm elongate each ribosome up to the limits
 		# of amino acids, sequence, and GTP
+		active_elongation_rates = self.elongation_rates[proteinIndexes]
 		result = polymerize(
 			sequences,
 			aaCounts,
 			10000000, # Set to a large number, the limit is now taken care of in metabolism
-			self.randomState
-			)
+			self.randomState,
+			active_elongation_rates)
 
 		sequenceElongations = result.sequenceElongation
 		aasUsed = result.monomerUsages
