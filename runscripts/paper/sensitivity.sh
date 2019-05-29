@@ -4,10 +4,13 @@
 # Also removes variant sim_data objects to save space since affected parameters
 # can be recalculated in the analysis script.
 
+# Note: if parallel is not installed, simulations will be run sequentially,
+#   to install on Linux: sudo apt install parallel
+
 # Usage (from wcEcoli home directory):
 #   runscripts/paper/sensitivity.sh [output dir] [start variant] [final variant]
 
-set -eu
+set -u
 
 # Required arguments
 out_dir=$1
@@ -25,12 +28,22 @@ export -f simulation
 # Create sim_data
 python runscripts/manual/runFitter.py --disable-ribosome-fitting --disable-rnapoly-fitting $out_dir
 
-# Run simulation variants in parallel
+# Run simulation variants
 log_dir=out/$out_dir/log
 if [ ! -e $log_dir ]; then
 	mkdir $log_dir
 fi
-seq $start_var $end_var | parallel simulation $out_dir $log_dir
+## Use parallel if it exists
+if [ -n "$(type -t parallel)" ]; then
+    seq $start_var $end_var | parallel simulation $out_dir $log_dir
+## Otherwise run sequentially
+else
+    echo "Running sequentially...try installing 'parallel' to speed up simulations"
+    for i in $(seq $start_var $end_var); do
+	simulation $out_dir $log_dir $i
+    done
+fi
+
 
 # Run analysis script
 python models/ecoli/analysis/variant/param_sensitivity.py $out_dir
