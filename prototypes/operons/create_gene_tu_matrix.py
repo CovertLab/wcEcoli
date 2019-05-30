@@ -113,36 +113,19 @@ def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 	tu_counts_vector = np.linalg.lstsq(gene_tu_matrix, rna_seq_counts_vector)[0]
 	tu_ids = []
 	counter = 0
-	#for count in range(0,len(rna_seq_counts_vector)):
 	for count in rna_seq_counts_vector:
 		if tu_counts_vector[counter] == 0.:
 			tu_counts_vector[counter] = count
-			#tu_ids.append(tu_info[counter]['geneId'])
 			counter += 1
 		else:
 			tu_counts_vector[counter + 1] = count
-			#tu_ids.append(tu_info[counter]['geneId'])
 			counter += 2
-
-	#tu_gene_ids = {
-		#row['geneId']: tu_ids[num]
-		#for row in enumerate(tu_info)}	
-
-	#tu_ids_counts = {}
-	#row_num = 0
-	#for row in tu_info:
-		#tu_ids_counts.update({row['geneId']: tu_counts_vector[row_num]})
-		#row_num += 1
-
 
 	tu_gene_order = [row['geneId'] for row in tu_info]
 	tu_genes_counts = []
 	for i in range(0, len(tu_gene_order)):
 		tu_genes_counts.append({'tu_id': tu_gene_order[i], 'tu_count': tu_counts_vector[i]})
 
-
-	#tu_counts = zip(tu_ids, tu_counts_vector)
-	#import ipdb; ipdb.set_trace()
 	tu_genes_counts
 	return tu_genes_counts
 
@@ -152,9 +135,6 @@ def calculate_tu_counts_vector():
 	tu_info = parse_tsv(TU_FILE)
 	gene_tu_matrix, rnas_gene_order = create_gene_to_tu_matrix(rna_info, tu_info)
 	rna_seq_counts_vector = create_rnaseq_count_vector(rnas_gene_order)
-	#returns 0's for anything that is not in a TU.
-	#do i need to make a new vector contining the rna seq counts with tu_counts_soln?
-	#tu_counts_vector = np.linalg.lstsq(gene_tu_matrix, rna_seq_counts_vector)[0]
 	tu_counts = create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info)
 	fieldnames = ['tu_id', 'tu_count']
 	with open(output_file, "w") as f:
@@ -162,17 +142,7 @@ def calculate_tu_counts_vector():
 		writer.writeheader()
 		for tu_count in tu_counts:
 			writer.writerow(tu_count)
-
-	'''
-	with open(output_file, "w") as f:
-		writer = csv.writer(f, delimiter='\t')
-		writer.writerow(['tu_id', 'tu_counts'])
-		for tu_count in tu_counts:
-			writer.writerow([tu_count])
-'''
-	
-
-	return tu_counts
+	#return tu_counts
 
 
 if __name__ == "__main__":
