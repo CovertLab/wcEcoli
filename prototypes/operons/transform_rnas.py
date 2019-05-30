@@ -21,7 +21,7 @@ FLAT_DIR = os.path.join("reconstruction", "ecoli", "flat")
 RNA_FILE = os.path.join(FLAT_DIR, "rnas.tsv")
 #saving to a new file for now so that all manually input TUs in 
 #operon_rnas.tsv are not overwritten.
-output_file = os.path.join(FLAT_DIR, "operon_rnas_2.tsv")
+output_file = os.path.join(FLAT_DIR, "operon_rnas_3.tsv")
 
 
 def parse_tsv(tsv_file):
@@ -52,10 +52,10 @@ def make_collection():
 		else:
 			rna_row['monomerId'] = [rna_row['monomerId']]
 
-		if not rna_row['geneId']:
-			rna_row['geneId'] = []
-		else:
-			rna_row['geneId'] = [rna_row['geneId']]
+		#if not rna_row['geneId']:
+			#rna_row['geneId'] = []
+		#else:
+			#rna_row['geneId'] = [rna_row['geneId']]
 
 	with open(output_file, "w") as f:
 		writer = JsonWriter(f, fieldnames)
