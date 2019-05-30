@@ -1,5 +1,8 @@
 """
-Analyzes parameters sensitivity from running variant param_sensitivity
+Analyzes parameters sensitivity from running variant param_sensitivity.
+Outputs two plots showing sorted z score for each parameter's effect
+on each output measure and individual parameter values for the most
+significant parameters for each output measure.
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 5/17/19
@@ -26,7 +29,8 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, parallelization, sparkline, units
 
 
-CONTROL_VARIANT = 0
+CONTROL_VARIANT = 0  # variant number for control simulation
+N_STDS = 4  # number of standard deviations from the mean to highlight
 
 
 def analyze_variant((variant, total_params)):
@@ -82,7 +86,7 @@ def analyze_variant((variant, total_params)):
 
 			# Load data
 			## Growth rate
-			growth_rate = np.nanmean(mass_reader.readColumn('instantaniousGrowthRate')[-5:])
+			growth_rate = np.nanmean(mass_reader.readColumn('instantaniousGrowthRate')[-5:]) * 3600  # 1/hr
 
 			## Central carbon flux
 			dry_mass = mass_reader.readColumn('dryMass')[-5:]
@@ -240,52 +244,104 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'growth rate',
 			'flux correlation',
 			]
-		data = np.vstack((
-			increase_params_growth_rate / increase_params_counts - decrease_params_growth_rate / decrease_params_counts,
-			increase_params_flux_correlation / increase_params_counts - decrease_params_flux_correlation / decrease_params_counts,
+		increase_params_data = np.vstack((
+			increase_params_growth_rate / increase_params_counts,
+			increase_params_flux_correlation / increase_params_counts,
 			))
+		decrease_params_data = np.vstack((
+			decrease_params_growth_rate / decrease_params_counts,
+			decrease_params_flux_correlation / decrease_params_counts,
+			))
+		data_diff = increase_params_data - decrease_params_data
 
-		z_score = np.zeros_like(data)
-		for i, d in enumerate(data):
-			mean = d[np.isfinite(d)].mean()
-			std = d[np.isfinite(d)].std()
-			z_score[i, :] = (d - mean) / std
+		mean = np.nanmean(data_diff, axis=1).reshape(-1, 1)
+		std = np.nanstd(data_diff, axis=1).reshape(-1, 1)
+		z_score = (data_diff - mean) / std
+		n_outputs = z_score.shape[0]
 
-		# Plot figure
-		n_std = 4
-		n_plots = z_score.shape[0]
-		plt.figure(figsize=(5, 4*n_plots))
+		# Get control data
+		if use_control:
+			control_counts, _, control_growth_rate, _, control_flux_correlation, _ = analyze_variant((CONTROL_VARIANT, total_params))
+			control_data = [
+				control_growth_rate[0] / control_counts[0],
+				control_flux_correlation[0] / control_counts[0],
+				]
+		else:
+			control_data = [None] * n_outputs
+
+		# Plot histogram
+		plt.figure(figsize=(5, 4*n_outputs))
 
 		for i, z in enumerate(z_score):
-			plt.subplot(n_plots, 1, i + 1)
+			plt.subplot(n_outputs, 1, i + 1)
 
 			## Plot data
 			plt.bar(range(len(z)), np.sort(z))
-			plt.axhline(n_std , color='r')
-			plt.axhline(-n_std, color='r')
+			plt.axhline(N_STDS , color='r')
+			plt.axhline(-N_STDS, color='r')
 
 			## Format axes
 			sparkline.whitePadSparklineAxis(plt.gca(), xAxis=False)
 			plt.xticks([])
-			plt.yticks([-n_std, 0, n_std])
+			plt.yticks([-N_STDS, 0, N_STDS])
 			lim = np.max(np.abs(plt.ylim()))
 			plt.ylim([-lim, lim])
-			if i == n_plots - 1:
+			if i == n_outputs - 1:
 				plt.xlabel('Sorted Parameters')
 			plt.ylabel('Z score\nparameter effect on {}'.format(labels[i]))
 
 		## Save figure
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
+		# Plot individual parameters
+		individual_indices = [
+			np.nanargmax(z_score[0, :]),
+			np.nanargmin(z_score[0, :]),
+			np.nanargmax(z_score[1, :]),
+			np.nanargmin(z_score[1, :]),
+			]
+		n_individual = len(individual_indices)
+		x_values = [-1, 0, 1]
+		plt.figure()
+
+		for i, label in enumerate(labels):
+			shared_ax = None
+			for j, idx in enumerate(individual_indices):
+				## Shared y axis for each row
+				ax = plt.subplot(n_outputs, n_individual, i*n_individual + j + 1, sharey=shared_ax)
+				if shared_ax is None:
+					shared_ax = ax
+
+				## Plot data
+				plt.plot(x_values, [decrease_params_data[i, idx], control_data[i], increase_params_data[i, idx]], 'x')
+
+				## Format axes
+				plt.xticks(x_values, ['Decrease', 'Control', 'Increase'])
+				ax.tick_params(labelsize=6)
+				ax.spines['right'].set_visible(False)
+				ax.spines['top'].set_visible(False)
+				if i < n_outputs - 1:
+					ax.tick_params(labelbottom=False)
+				if j > 0:
+					ax.tick_params(labelleft=False)
+				if i == 0:
+					plt.title(param_ids[idx], fontsize=8)
+				if j == 0:
+					plt.ylabel(label, fontsize=7)
+
+		## Save figure
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, '{}_individual'.format(plotOutFileName, metadata))
 		plt.close('all')
 
 		# Print analysis summary
 		for label, z in zip(labels, z_score):
 			print('Summary for {}:'.format(label))
-			print('\tNumber of params above threshold: {}'.format(np.sum(z > n_std)))
-			print('\tNumber of params below threshold: {}'.format(np.sum(z < -n_std)))
+			print('\tNumber of params above threshold: {}'.format(np.sum(z > N_STDS)))
+			print('\tNumber of params below threshold: {}'.format(np.sum(z < -N_STDS)))
 
-			mask = (z > n_std) | (z < -n_std)
+			mask = (z > N_STDS) | (z < -N_STDS)
 			print('\tSignificant correlation between parameter and {}:'.format(label))
 			for param_id, z_sig in sorted(zip(param_ids[mask], z[mask]), key=lambda v: v[1], reverse=True):
 				print('\t\t{}: {:.2f}'.format(param_id, z_sig))
