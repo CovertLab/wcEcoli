@@ -81,7 +81,9 @@ def fitSimData_1(
 		disable_rnapoly_capacity_fitting=False,
 		flat_elongation=False,
 		adjust_rna_and_protein_parameters=True,
-		alternate_mass_fraction=None,
+		alternate_mass_fraction_protein=False,
+		alternate_mass_fraction_rna=False,
+		alternate_mass_fraction_mrna=False,
 		alternate_r_protein_degradation=False,
 		alternate_rna_seq=None,
 		alternate_rna_half_life=None,
@@ -105,9 +107,12 @@ def fitSimData_1(
 			expression is not fit to protein synthesis demands
 		adjust_rna_and_protein_parameters (bool) - if True, some RNA and protein
 			expression parameters will be adjusted to get expression
-		alternate_mass_fraction (str) - describes which alternate mass fraction
-			to use (one of the following: 'protein', 'rna', or 'mrna'. Default
-			value of None results in original mass fractions.
+		alternate_mass_fraction_protein (bool) - if True, allocates larger
+			mass fraction for protein.
+		alternate_mass_fraction_rna (bool) - if True, allocates smaller mass
+			fraction for rna.
+		alternate_mass_fraction_mrna (bool) - if True, allocates smaller mass
+			fraction for mrna.
 		alternate_r_protein_degradation (bool) - if True, r-proteins are
 			degraded at fast rate.
 		alternate_rna_seq (str) - describes which alternate RNA-seq dataset to
@@ -126,10 +131,12 @@ def fitSimData_1(
 	"""
 	sim_data = SimulationDataEcoli()
 	sim_data.initialize(
-		raw_data = raw_data,
-		basal_expression_condition = BASAL_EXPRESSION_CONDITION,
-		alternate_mass = alternate_mass_fraction,
-		alternate_rna = alternate_rna_seq,
+		raw_data=raw_data,
+		basal_expression_condition=BASAL_EXPRESSION_CONDITION,
+		alternate_mass_fraction_protein=alternate_mass_fraction_protein,
+		alternate_mass_fraction_rna=alternate_mass_fraction_rna,
+		alternate_mass_fraction_mrna=alternate_mass_fraction_mrna,
+		alternate_rna=alternate_rna_seq,
 		alternate_rna_half_life=alternate_rna_half_life,
 		alternate_ribosome_activity=alternate_ribosome_activity,
 		alternate_rnap_activity=alternate_rnap_activity,

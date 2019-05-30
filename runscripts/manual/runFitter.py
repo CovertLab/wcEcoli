@@ -65,9 +65,20 @@ class RunFitter(scriptBase.ScriptBase):
 			help= "If set, some RNA and protein expression parameters will not be adjusted."
 			)
 		parser.add_argument(
-			'--alternate-mass-fraction', type=str,
-			help="Alternate mass fractions - one of the following: 'protein', 'rna', or 'mrna'. Default = None."
+			'--alternate-mass-fraction-protein',
+			action='store_true',
+			help="If set, allocates larger mass fraction for protein."
 			)
+		parser.add_argument(
+			'--alternate-mass-fraction-rna',
+			action='store_true',
+			help="If set, allocates smaller mass fraction for RNA."
+		)
+		parser.add_argument(
+			'--alternate-mass-fraction-mrna',
+			action='store_true',
+			help="If set, allocates smaller mass fraction for mRNA."
+		)
 		parser.add_argument(
 			'--alternate-r-protein-degradation',
 			action='store_true',
@@ -145,7 +156,9 @@ class RunFitter(scriptBase.ScriptBase):
 				disable_rnapoly_capacity_fitting=args.disable_rnapoly_fitting,
 				flat_elongation=args.flat_elongation,
 				adjust_rna_and_protein_parameters=args.no_expression_adjustment,
-				alternate_mass_fraction=args.alternate_mass_fraction,
+				alternate_mass_fraction_protein=args.alternate_mass_fraction_protein,
+				alternate_mass_fraction_rna=args.alternate_mass_fraction_rna,
+				alternate_mass_fraction_mrna=args.alternate_mass_fraction_mrna,
 				alternate_r_protein_degradation=args.alternate_r_protein_degradation,
 				alternate_rna_seq=args.alternate_rna_seq,
 				alternate_rna_half_life=args.alternate_rna_half_life,

@@ -38,7 +38,9 @@ class SimulationDataEcoli(object):
 
 	def initialize(self, raw_data,
 	               basal_expression_condition="M9 Glucose minus AAs",
-	               alternate_mass=None,
+	               alternate_mass_fraction_protein=False,
+	               alternate_mass_fraction_rna=False,
+	               alternate_mass_fraction_mrna=False,
 	               alternate_rna=None,
 	               alternate_rna_half_life=None,
 	               alternate_ribosome_activity=None,
@@ -67,7 +69,7 @@ class SimulationDataEcoli(object):
 
 		# Growth rate dependent parameters are set first
 		self.growthRateParameters = GrowthRateParameters(raw_data, self, alternate_ribosome_activity, alternate_rnap_activity)
-		self.mass = Mass(raw_data, self, alternate_mass)
+		self.mass = Mass(raw_data, self, alternate_mass_fraction_protein, alternate_mass_fraction_rna, alternate_mass_fraction_mrna)
 
 		# Data classes (can depend on helper functions)
 		# Data classes cannot depend on each other
