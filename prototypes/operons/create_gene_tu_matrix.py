@@ -21,7 +21,7 @@ RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv'
 CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
 
-output_file = os.path.join(FLAT_DIR, "tu_counts_vector.tsv")
+output_file = os.path.join(FLAT_DIR, "transcription_units.tsv")
 
 def parse_tsv(tsv_file):
 	'''
