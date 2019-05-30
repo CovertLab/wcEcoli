@@ -55,13 +55,22 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 	PAD_VALUE = -1
 
-	def __init__(self, sequences, monomerLimits, reactionLimit, randomState, elongation_rates):
+	def __init__(
+			self,
+			sequences,
+			monomerLimits,
+			reactionLimit,
+			randomState,
+			elongation_rates,
+			variable_elongation=False):
+
 		# Gather inputs
 		self._sequences = sequences
 		self._monomerLimits = monomerLimits
 		self._reactionLimit = reactionLimit
 		self._randomState = randomState
 		self.elongation_rates = elongation_rates / np.max(elongation_rates)
+		self.variable_elongation = variable_elongation
 
 		# Prepare for iteration
 		self._setup()
@@ -197,14 +206,16 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 		# advance one step at a time until a sequence is limited
 		while notLimited and projectionIndex < self._maxElongation:
-			step = self._currentStep + projectionIndex
+			if self.variable_elongation:
+				step = self._currentStep + projectionIndex
+				level = self.elongation_rates * (step + 1)
+				last_unit = (level - np.floor(level))
+				elongating = np.where(self.elongation_rates > last_unit)[0]
+				active = np.intersect1d(self._activeSequencesIndexes, elongating)
+			else:
+				active = self._activeSequencesIndexes
+
 			index = self._progress + advancementIndex
-			level = self.elongation_rates * (step + 1)
-			last_unit = (level - np.floor(level))
-			elongating = np.union1d(
-				np.where(self.elongation_rates > last_unit)[0],
-				np.where(last_unit == 0.0)[0])
-			active = np.intersect1d(self._activeSequencesIndexes, elongating)
 
 			monomerStep = sum_monomers(
 				self._sequenceMonomers[:, :],
@@ -267,7 +278,11 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		# selecting active sequences to cull, initially the ones that finished
 		# by currentStep.
 
-		active_elongation = self.sequenceElongation[self._activeSequencesIndexes]
+		if self.variable_elongation:
+			active_elongation = self.sequenceElongation[self._activeSequencesIndexes]
+		else:
+			active_elongation = self._currentStep
+
 		sequencesToCull = ~self._sequenceReactions[self._activeSequencesIndexes, active_elongation]
 
 		# Find and finalize monomer-limiting sequences
@@ -326,28 +341,33 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		sequences remain.
 		'''
 
-		self._maxElongation = self._sequenceLength - self._currentStep
-
 		# totalReactions: ndarray of integer, shape (num_steps - currentStep,),
 		#     the cumulative number of reactions in currentStep to the end for
 		#     currently active sequences, ignoring limiting factors.
 
-		totalReactions = np.zeros((self._maxElongation,), np.int64)
-		advancementIndex = np.zeros(self._nSequences, np.int64)
+		if self.variable_elongation:
+			self._maxElongation = self._sequenceLength - self._currentStep
 
-		for step in np.arange(self._currentStep, self._sequenceLength):
-			index = self._progress + advancementIndex
-			level = self.elongation_rates * (step + 1)
-			last_unit = (level - np.floor(level))
-			elongating = np.union1d(
-				np.where(self.elongation_rates > last_unit)[0],
-				np.where(last_unit == 0.0)[0])
-			active = np.intersect1d(self._activeSequencesIndexes, elongating)
-			reactions = self._sequenceReactions[active, index[active]].sum()
-			totalReactions[step - self._currentStep] = reactions
-			advancementIndex[active] += 1
+			totalReactions = np.zeros((self._maxElongation,), np.int64)
+			advancementIndex = np.zeros(self._nSequences, np.int64)
 
-		self._totalReactions = totalReactions.cumsum(axis=0)
+			for step in np.arange(self._currentStep, self._sequenceLength):
+				index = self._progress + advancementIndex
+				level = self.elongation_rates * (step + 1)
+				last_unit = (level - np.floor(level))
+				elongating = np.where(self.elongation_rates > last_unit)[0]
+				active = np.intersect1d(self._activeSequencesIndexes, elongating)
+				reactions = self._sequenceReactions[active, index[active]].sum()
+				totalReactions[step - self._currentStep] = reactions
+				advancementIndex[active] += 1
+
+			self._totalReactions = totalReactions.cumsum(axis=0)
+
+		else:
+			self._totalReactions = self._sequenceReactions[
+				self._activeSequencesIndexes,
+				self._currentStep:].sum(axis = 0).cumsum(axis = 0)
+
 		self._maxElongation = self._sequenceLength - self._currentStep
 
 	# Finalization subroutines
