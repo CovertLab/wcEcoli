@@ -44,6 +44,5 @@ else
     done
 fi
 
-
 # Run analysis script
 python models/ecoli/analysis/variant/param_sensitivity.py $out_dir

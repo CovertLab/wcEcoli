@@ -64,57 +64,58 @@ def analyze_variant((variant, total_params)):
 	toya_reactions = validation_data.reactionFlux.toya2010fluxes["reactionID"]
 	toya_fluxes = [f.asNumber(flux_units) for f in validation_data.reactionFlux.toya2010fluxes["reactionFlux"]]
 
-	for sim_dir in ap.get_cells(variant=[variant]):
-		simOutDir = os.path.join(sim_dir, "simOut")
+	if variant > 0:  # exclude control with no parameters changed
+		for sim_dir in ap.get_cells(variant=[variant]):
+			simOutDir = os.path.join(sim_dir, "simOut")
 
-		try:
-			# Listeners used
-			mass_reader = TableReader(os.path.join(simOutDir, 'Mass'))
-			fba_results_reader = TableReader(os.path.join(simOutDir, "FBAResults"))
+			try:
+				# Listeners used
+				mass_reader = TableReader(os.path.join(simOutDir, 'Mass'))
+				fba_results_reader = TableReader(os.path.join(simOutDir, "FBAResults"))
 
-			# Load data
-			## Growth rate
-			growth_rate = np.nanmean(mass_reader.readColumn('instantaniousGrowthRate')[-5:])
+				# Load data
+				## Growth rate
+				growth_rate = np.nanmean(mass_reader.readColumn('instantaniousGrowthRate')[-5:])
 
-			## Central carbon flux
-			dry_mass = mass_reader.readColumn('dryMass')[-5:]
-			cell_mass = mass_reader.readColumn('cellMass')[-5:]
-			coefficient = dry_mass / cell_mass * cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
+				## Central carbon flux
+				dry_mass = mass_reader.readColumn('dryMass')[-5:]
+				cell_mass = mass_reader.readColumn('cellMass')[-5:]
+				coefficient = dry_mass / cell_mass * cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
 
-			reaction_ids = np.array(fba_results_reader.readAttribute("reactionIDs"))
-			reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fba_results_reader.readColumn("reactionFluxes")[-5:].T / coefficient).T
-		# Exclude failed sims
-		except Exception as e:
-			print(e)
-			continue
+				reaction_ids = np.array(fba_results_reader.readAttribute("reactionIDs"))
+				reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fba_results_reader.readColumn("reactionFluxes")[-5:].T / coefficient).T
+			# Exclude failed sims
+			except Exception as e:
+				print(e)
+				continue
 
-		# Extract fluxes in Toya data set from simulation output
-		model_fluxes = np.zeros_like(toya_fluxes)
-		for i, toya_reaction in enumerate(toya_reactions):
-			flux_time_course = []
+			# Extract fluxes in Toya data set from simulation output
+			model_fluxes = np.zeros_like(toya_fluxes)
+			for i, toya_reaction in enumerate(toya_reactions):
+				flux_time_course = []
 
-			for rxn in reaction_ids:
-				if re.findall(toya_reaction, rxn):
-					reverse = 1
-					if re.findall("(reverse)", rxn):
-						reverse = -1
+				for rxn in reaction_ids:
+					if re.findall(toya_reaction, rxn):
+						reverse = 1
+						if re.findall("(reverse)", rxn):
+							reverse = -1
 
-					if len(flux_time_course):
-						flux_time_course += reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
-					else:
-						flux_time_course = reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
+						if len(flux_time_course):
+							flux_time_course += reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
+						else:
+							flux_time_course = reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
 
-			if len(flux_time_course):
-				model_fluxes[i] = np.mean(flux_time_course).asNumber(flux_units)
+				if len(flux_time_course):
+					model_fluxes[i] = np.mean(flux_time_course).asNumber(flux_units)
 
-		flux_r, _ = stats.pearsonr(toya_fluxes, model_fluxes)
+			flux_r, _ = stats.pearsonr(toya_fluxes, model_fluxes)
 
-		increase_params_counts[increase_indices] += 1
-		decrease_params_counts[decrease_indices] += 1
-		increase_params_growth_rate[increase_indices] += growth_rate
-		decrease_params_growth_rate[decrease_indices] += growth_rate
-		increase_params_flux_correlation[increase_indices] += flux_r
-		decrease_params_flux_correlation[decrease_indices] += flux_r
+			increase_params_counts[increase_indices] += 1
+			decrease_params_counts[decrease_indices] += 1
+			increase_params_growth_rate[increase_indices] += growth_rate
+			decrease_params_growth_rate[decrease_indices] += growth_rate
+			increase_params_flux_correlation[increase_indices] += flux_r
+			decrease_params_flux_correlation[decrease_indices] += flux_r
 
 	return (increase_params_counts, decrease_params_counts,
 		increase_params_growth_rate, decrease_params_growth_rate,
