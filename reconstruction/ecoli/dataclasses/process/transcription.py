@@ -55,9 +55,7 @@ class Transcription(object):
 		expression = []
 		
 		for rna in raw_data.operon_rnas:
-			if len(rna['geneId']) > 1:
-				print(rna['geneId'])
-				import ipdb; ipdb.set_trace()
+			import ipdb; ipdb.set_trace()
 			arb_exp = [x[sim_data.basal_expression_condition]
                 for x in eval("raw_data.rna_seq_data.rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS))
                 if x['Gene'] == rna['geneId']]
