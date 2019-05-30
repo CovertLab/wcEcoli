@@ -86,7 +86,7 @@ def analyze_variant((variant, total_params)):
 				reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fba_results_reader.readColumn("reactionFluxes")[-5:].T / coefficient).T
 			# Exclude failed sims
 			except Exception as e:
-				print(e)
+				print('Variant {} exception: {}'.format(variant, e))
 				continue
 
 			# Extract fluxes in Toya data set from simulation output
@@ -119,7 +119,8 @@ def analyze_variant((variant, total_params)):
 
 	return (increase_params_counts, decrease_params_counts,
 		increase_params_growth_rate, decrease_params_growth_rate,
-		increase_params_flux_correlation, decrease_params_flux_correlation)
+		increase_params_flux_correlation, decrease_params_flux_correlation,
+		)
 
 def rna_mapping(sim_data, monomer_to_gene):
 	'''
@@ -202,7 +203,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				_increase_params_growth_rate,
 				_decrease_params_growth_rate,
 				_increase_params_flux_correlation,
-				_decrease_params_flux_correlation) = result
+				_decrease_params_flux_correlation,
+				) = result
 
 			if initialize:
 				initialize = False
@@ -220,26 +222,44 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				increase_params_flux_correlation += _increase_params_flux_correlation
 				decrease_params_flux_correlation += _decrease_params_flux_correlation
 
-		data = increase_params_growth_rate / increase_params_counts - decrease_params_growth_rate / decrease_params_counts
-		mean = data[np.isfinite(data)].mean()
-		std = data[np.isfinite(data)].std()
-		z_score = (data - mean) / std
+		# Calculate effect and z score
+		labels = [
+			'growth rate',
+			'flux correlation',
+			]
+		data = np.vstack((
+			increase_params_growth_rate / increase_params_counts - decrease_params_growth_rate / decrease_params_counts,
+			increase_params_flux_correlation / increase_params_counts - decrease_params_flux_correlation / decrease_params_counts,
+			))
+
+		z_score = np.zeros_like(data)
+		for i, d in enumerate(data):
+			mean = d[np.isfinite(d)].mean()
+			std = d[np.isfinite(d)].std()
+			z_score[i, :] = (d - mean) / std
 
 		# Plot figure
-		plt.figure()
-
-		## Plot data
 		n_std = 4
-		plt.bar(range(len(z_score)), np.sort(z_score))
-		plt.axhline(n_std , color='r')
-		plt.axhline(-n_std, color='r')
+		n_plots = z_score.shape[0]
+		plt.figure(figsize=(5, 4*n_plots))
 
-		## Format axes
-		sparkline.whitePadSparklineAxis(plt.gca(), xAxis=False)
-		plt.xticks([])
-		plt.yticks([-n_std, 0, n_std])
-		plt.xlabel('Sorted Parameters')
-		plt.ylabel('Z score\nparameter effect on growth rate')
+		for i, z in enumerate(z_score):
+			plt.subplot(n_plots, 1, i + 1)
+
+			## Plot data
+			plt.bar(range(len(z)), np.sort(z))
+			plt.axhline(n_std , color='r')
+			plt.axhline(-n_std, color='r')
+
+			## Format axes
+			sparkline.whitePadSparklineAxis(plt.gca(), xAxis=False)
+			plt.xticks([])
+			plt.yticks([-n_std, 0, n_std])
+			lim = np.max(np.abs(plt.ylim()))
+			plt.ylim([-lim, lim])
+			if i == n_plots - 1:
+				plt.xlabel('Sorted Parameters')
+			plt.ylabel('Z score\nparameter effect on {}'.format(labels[i]))
 
 		## Save figure
 		plt.tight_layout()
@@ -247,15 +267,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.close('all')
 
 		# Print analysis summary
-		upper_threshold = mean + n_std*std
-		lower_threshold = mean - n_std*std
-		print('Number of params above threshold: {}'.format(np.sum(data > upper_threshold)))
-		print('Number of params below threshold: {}'.format(np.sum(data < lower_threshold)))
+		for label, z in zip(labels, z_score):
+			print('Summary for {}:'.format(label))
+			print('\tNumber of params above threshold: {}'.format(np.sum(z > n_std)))
+			print('\tNumber of params below threshold: {}'.format(np.sum(z < -n_std)))
 
-		mask = (data > upper_threshold) | (data < lower_threshold)
-		print('Significant correlation between parameter and growth rate:')
-		for param_id, z in sorted(zip(param_ids[mask], z_score[mask]), key=lambda v: v[1], reverse=True):
-			print('\t{}: {:.2f}'.format(param_id, z))
+			mask = (z > n_std) | (z < -n_std)
+			print('\tSignificant correlation between parameter and {}:'.format(label))
+			for param_id, z_sig in sorted(zip(param_ids[mask], z[mask]), key=lambda v: v[1], reverse=True):
+				print('\t\t{}: {:.2f}'.format(param_id, z_sig))
 
 
 if __name__ == "__main__":
