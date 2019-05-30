@@ -16,58 +16,35 @@ import os
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from models.ecoli.sim.variants.param_sensitivity import number_params, param_indices, split_indices
+from models.ecoli.sim.variants.param_sensitivity import number_params, split_indices
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, parallelization, sparkline
 
 
-def analyze_variant((variant, ap)):
+def analyze_variant((variant, total_params, ap)):
 	'''
 	Method to map each variant to for parallel analysis.
 
 	Args:
 		variant (int): variant index
+		total_params (int): total number of parameters that are changed
 		ap (AnalysisPaths object): variant plot analysis paths object to get
 			simulation output directories for the variant
 
 	Returns:
-		16 ndarray[float]: growth rate sums associated to a parameter being increased
-			or decreased and count of number of times each parameter was increased
-			or decreased
+		ndarray[float]: number of times each parameter was increased
+		ndarray[float]: number of times each parameter was decreased
+		ndarray[float]: average growth rate for each parameter when increaed
+		ndarray[float]: average growth rate for each parameter when decreased
 	'''
 
 	increase_indices, decrease_indices = split_indices(sim_data, variant)
-	(rna_deg_increase_indices,
-		protein_deg_increase_indices,
-		trans_eff_increase_indices,
-		synth_prob_increase_indices) = param_indices(sim_data, increase_indices)
-	(rna_deg_decrease_indices,
-		protein_deg_decrease_indices,
-		trans_eff_decrease_indices,
-		synth_prob_decrease_indices) = param_indices(sim_data, decrease_indices)
 
-	(n_rna_deg_rates,
-		n_protein_deg_rates,
-		n_translation_efficiencies,
-		n_synth_prob) = number_params(sim_data)
-
-	rna_deg_increase_growth_rate = np.zeros(n_rna_deg_rates)
-	rna_deg_decrease_growth_rate = np.zeros(n_rna_deg_rates)
-	rna_deg_increase_counts = np.zeros(n_rna_deg_rates)
-	rna_deg_decrease_counts = np.zeros(n_rna_deg_rates)
-	protein_deg_increase_growth_rate = np.zeros(n_protein_deg_rates)
-	protein_deg_decrease_growth_rate = np.zeros(n_protein_deg_rates)
-	protein_deg_increase_counts = np.zeros(n_protein_deg_rates)
-	protein_deg_decrease_counts = np.zeros(n_protein_deg_rates)
-	trans_eff_increase_growth_rate = np.zeros(n_translation_efficiencies)
-	trans_eff_decrease_growth_rate = np.zeros(n_translation_efficiencies)
-	trans_eff_increase_counts = np.zeros(n_translation_efficiencies)
-	trans_eff_decrease_counts = np.zeros(n_translation_efficiencies)
-	synth_prob_increase_growth_rate = np.zeros(n_synth_prob)
-	synth_prob_decrease_growth_rate = np.zeros(n_synth_prob)
-	synth_prob_increase_counts = np.zeros(n_synth_prob)
-	synth_prob_decrease_counts = np.zeros(n_synth_prob)
+	increase_params_counts = np.zeros(total_params)
+	decrease_params_counts = np.zeros(total_params)
+	increase_params_growth_rate = np.zeros(total_params)
+	decrease_params_growth_rate = np.zeros(total_params)
 
 	for sim_dir in ap.get_cells(variant=[variant]):
 		simOutDir = os.path.join(sim_dir, "simOut")
@@ -82,27 +59,13 @@ def analyze_variant((variant, ap)):
 			# Exclude failed sims
 			continue
 
-		rna_deg_increase_growth_rate[rna_deg_increase_indices] += growth_rate
-		rna_deg_decrease_growth_rate[rna_deg_decrease_indices] += growth_rate
-		rna_deg_increase_counts[rna_deg_increase_indices] += 1
-		rna_deg_decrease_counts[rna_deg_decrease_indices] += 1
-		protein_deg_increase_growth_rate[protein_deg_increase_indices] += growth_rate
-		protein_deg_decrease_growth_rate[protein_deg_decrease_indices] += growth_rate
-		protein_deg_increase_counts[protein_deg_increase_indices] += 1
-		protein_deg_decrease_counts[protein_deg_decrease_indices] += 1
-		trans_eff_increase_growth_rate[trans_eff_increase_indices] += growth_rate
-		trans_eff_decrease_growth_rate[trans_eff_decrease_indices] += growth_rate
-		trans_eff_increase_counts[trans_eff_increase_indices] += 1
-		trans_eff_decrease_counts[trans_eff_decrease_indices] += 1
-		synth_prob_increase_growth_rate[synth_prob_increase_indices] += growth_rate
-		synth_prob_decrease_growth_rate[synth_prob_decrease_indices] += growth_rate
-		synth_prob_increase_counts[synth_prob_increase_indices] += 1
-		synth_prob_decrease_counts[synth_prob_decrease_indices] += 1
+		increase_params_counts[increase_indices] += 1
+		decrease_params_counts[decrease_indices] += 1
+		increase_params_growth_rate[increase_indices] += growth_rate
+		decrease_params_growth_rate[decrease_indices] += growth_rate
 
-	return (rna_deg_increase_growth_rate, rna_deg_decrease_growth_rate, rna_deg_increase_counts, rna_deg_decrease_counts,
-		protein_deg_increase_growth_rate, protein_deg_decrease_growth_rate, protein_deg_increase_counts, protein_deg_decrease_counts,
-		trans_eff_increase_growth_rate, trans_eff_decrease_growth_rate, trans_eff_increase_counts, trans_eff_decrease_counts,
-		synth_prob_increase_growth_rate, synth_prob_decrease_growth_rate, synth_prob_increase_counts, synth_prob_decrease_counts)
+	return (increase_params_counts, decrease_params_counts,
+		increase_params_growth_rate, decrease_params_growth_rate)
 
 def rna_mapping(sim_data, monomer_to_gene):
 	'''
@@ -150,9 +113,26 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		with open(os.path.join(inputDir, 'kb', constants.SERIALIZED_FIT1_FILENAME)) as f:
 			sim_data = cPickle.load(f)
 
+		# sim_data information
+		total_params = np.sum(number_params(sim_data))
+		monomer_to_gene = sim_data.moleculeGroups.frameIDGeneSymbol_Dict
+		rna_to_gene = rna_mapping(sim_data, monomer_to_gene)  # TODO: create dict in sim_data from raw_data
+		rna_ids = sim_data.process.transcription.rnaData['id']
+		monomer_ids = sim_data.process.translation.monomerData['id']
+
+		# IDs must match order from param_indices() from param_sensitivity.py variant
+		param_ids = np.array(
+			['{} RNA deg rate'.format(rna_to_gene[rna]) for rna in rna_ids]
+			+ ['{} protein deg rate'.format(monomer_to_gene[monomer[:-3]]) for monomer in monomer_ids]
+			+ ['{} translation eff'.format(monomer_to_gene[monomer[:-3]]) for monomer in monomer_ids]
+			+ ['{} synth prob'.format(rna_to_gene[rna]) for rna in rna_ids])
+		if len(param_ids) != total_params:
+			raise ValueError('Number of adjusted parameters and list of ids do not match.')
+
 		pool = Pool(processes=parallelization.plotter_cpus())
 		args = zip(
 			variants,
+			[total_params] * n_variants,
 			[ap] * n_variants,
 			)
 		results = pool.map(analyze_variant, args)
@@ -160,66 +140,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		pool.join()
 		initialize = True
 		for i, result in enumerate(results):
-			(_rna_deg_increase_growth_rate,
-				_rna_deg_decrease_growth_rate,
-				_rna_deg_increase_counts,
-				_rna_deg_decrease_counts,
-				_protein_deg_increase_growth_rate,
-				_protein_deg_decrease_growth_rate,
-				_protein_deg_increase_counts,
-				_protein_deg_decrease_counts,
-				_trans_eff_increase_growth_rate,
-				_trans_eff_decrease_growth_rate,
-				_trans_eff_increase_counts,
-				_trans_eff_decrease_counts,
-				_synth_prob_increase_growth_rate,
-				_synth_prob_decrease_growth_rate,
-				_synth_prob_increase_counts,
-				_synth_prob_decrease_counts) = result
+			(_increase_params_counts,
+				_decrease_params_counts,
+				_increase_params_growth_rate,
+				_decrease_params_growth_rate) = result
 
 			if initialize:
 				initialize = False
-				rna_deg_increase_growth_rate = _rna_deg_increase_growth_rate
-				rna_deg_decrease_growth_rate = _rna_deg_decrease_growth_rate
-				rna_deg_increase_counts = _rna_deg_increase_counts
-				rna_deg_decrease_counts = _rna_deg_decrease_counts
-				protein_deg_increase_growth_rate = _protein_deg_increase_growth_rate
-				protein_deg_decrease_growth_rate = _protein_deg_decrease_growth_rate
-				protein_deg_increase_counts = _protein_deg_increase_counts
-				protein_deg_decrease_counts = _protein_deg_decrease_counts
-				trans_eff_increase_growth_rate = _trans_eff_increase_growth_rate
-				trans_eff_decrease_growth_rate = _trans_eff_decrease_growth_rate
-				trans_eff_increase_counts = _trans_eff_increase_counts
-				trans_eff_decrease_counts = _trans_eff_decrease_counts
-				synth_prob_increase_growth_rate = _synth_prob_increase_growth_rate
-				synth_prob_decrease_growth_rate = _synth_prob_decrease_growth_rate
-				synth_prob_increase_counts = _synth_prob_increase_counts
-				synth_prob_decrease_counts = _synth_prob_decrease_counts
+				increase_params_counts = _increase_params_counts
+				decrease_params_counts = _decrease_params_counts
+				increase_params_growth_rate = _increase_params_growth_rate
+				decrease_params_growth_rate = _decrease_params_growth_rate
 			else:
-				rna_deg_increase_growth_rate += _rna_deg_increase_growth_rate
-				rna_deg_decrease_growth_rate += _rna_deg_decrease_growth_rate
-				rna_deg_increase_counts += _rna_deg_increase_counts
-				rna_deg_decrease_counts += _rna_deg_decrease_counts
-				protein_deg_increase_growth_rate += _protein_deg_increase_growth_rate
-				protein_deg_decrease_growth_rate += _protein_deg_decrease_growth_rate
-				protein_deg_increase_counts += _protein_deg_increase_counts
-				protein_deg_decrease_counts += _protein_deg_decrease_counts
-				trans_eff_increase_growth_rate += _trans_eff_increase_growth_rate
-				trans_eff_decrease_growth_rate += _trans_eff_decrease_growth_rate
-				trans_eff_increase_counts += _trans_eff_increase_counts
-				trans_eff_decrease_counts += _trans_eff_decrease_counts
-				synth_prob_increase_growth_rate += _synth_prob_increase_growth_rate
-				synth_prob_decrease_growth_rate += _synth_prob_decrease_growth_rate
-				synth_prob_increase_counts += _synth_prob_increase_counts
-				synth_prob_decrease_counts += _synth_prob_decrease_counts
+				increase_params_counts += _increase_params_counts
+				decrease_params_counts += _decrease_params_counts
+				increase_params_growth_rate += _increase_params_growth_rate
+				decrease_params_growth_rate += _decrease_params_growth_rate
 
-
-		rna_deg_growth_rate = rna_deg_increase_growth_rate / rna_deg_increase_counts - rna_deg_decrease_growth_rate / rna_deg_decrease_counts
-		protein_deg_growth_rate = protein_deg_increase_growth_rate / protein_deg_increase_counts - protein_deg_decrease_growth_rate / protein_deg_decrease_counts
-		trans_eff_growth_rate = trans_eff_increase_growth_rate / trans_eff_increase_counts - trans_eff_decrease_growth_rate / trans_eff_decrease_counts
-		synth_prob_growth_rate = synth_prob_increase_growth_rate / synth_prob_increase_counts - synth_prob_decrease_growth_rate / synth_prob_decrease_counts
-
-		data = np.hstack((rna_deg_growth_rate, protein_deg_growth_rate, trans_eff_growth_rate, synth_prob_growth_rate))
+		data = increase_params_growth_rate / increase_params_counts - decrease_params_growth_rate / decrease_params_counts
 		mean = data[np.isfinite(data)].mean()
 		std = data[np.isfinite(data)].std()
 		z_score = (data - mean) / std
@@ -251,47 +189,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		print('Number of params above threshold: {}'.format(np.sum(data > upper_threshold)))
 		print('Number of params below threshold: {}'.format(np.sum(data < lower_threshold)))
 
-		rna_ids = sim_data.process.transcription.rnaData['id']
-		monomer_ids = sim_data.process.translation.monomerData['id']
-
-		monomer_to_gene = sim_data.moleculeGroups.frameIDGeneSymbol_Dict
-		rna_to_gene = rna_mapping(sim_data, monomer_to_gene)  # TODO: create dict in sim_data from raw_data
-
-		print('Positive correlation between RNA deg and growth:')
-		mask = rna_deg_growth_rate > upper_threshold
-		for rna_id, effect in zip(rna_ids[mask], rna_deg_growth_rate[mask]):
-			print('\t{}: {:.2f}'.format(rna_to_gene.get(rna_id, rna_id), (effect - mean) / std))
-		print('Negative correlation between RNA deg and growth:')
-		mask = rna_deg_growth_rate < lower_threshold
-		for rna_id, effect in zip(rna_ids[mask], rna_deg_growth_rate[mask]):
-			print('\t{}: {:.2f}'.format(rna_to_gene.get(rna_id, rna_id), (effect - mean) / std))
-
-		print('Positive correlation between protein deg and growth:')
-		mask = protein_deg_growth_rate > upper_threshold
-		for monomer_id, effect in zip(monomer_ids[mask], protein_deg_growth_rate[mask]):
-			print('\t{}: {:.2f}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id), (effect - mean) / std))
-		print('Negative correlation between protein deg and growth:')
-		mask = protein_deg_growth_rate < lower_threshold
-		for monomer_id, effect in zip(monomer_ids[mask], protein_deg_growth_rate[mask]):
-			print('\t{}: {:.2f}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id), (effect - mean) / std))
-
-		print('Positive correlation between translation efficiency and growth:')
-		mask = trans_eff_growth_rate > upper_threshold
-		for monomer_id, effect in zip(monomer_ids[mask], trans_eff_growth_rate[mask]):
-			print('\t{}: {:.2f}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id), (effect - mean) / std))
-		print('Negative correlation between translation efficiency and growth:')
-		mask = trans_eff_growth_rate < lower_threshold
-		for monomer_id, effect in zip(monomer_ids[mask], trans_eff_growth_rate[mask]):
-			print('\t{}: {:.2f}'.format(monomer_to_gene.get(monomer_id[:-3], monomer_id), (effect - mean) / std))
-
-		print('Positive correlation between synthesis probability and growth:')
-		mask = synth_prob_growth_rate > upper_threshold
-		for rna_id, effect in zip(rna_ids[mask], synth_prob_growth_rate[mask]):
-			print('\t{}: {:.2f}'.format(rna_to_gene.get(rna_id, rna_id), (effect - mean) / std))
-		print('Negative correlation between synthesis probability and growth:')
-		mask = synth_prob_growth_rate < lower_threshold
-		for rna_id, effect in zip(rna_ids[mask], synth_prob_growth_rate[mask]):
-			print('\t{}: {:.2f}'.format(rna_to_gene.get(rna_id, rna_id), (effect - mean) / std))
+		mask = (data > upper_threshold) | (data < lower_threshold)
+		print('Significant correlation between parameter and growth rate:')
+		for param_id, z in sorted(zip(param_ids[mask], z_score[mask]), key=lambda v: v[1], reverse=True):
+			print('\t{}: {:.2f}'.format(param_id, z))
 
 
 if __name__ == "__main__":
