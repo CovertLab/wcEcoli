@@ -34,24 +34,30 @@ class Transcription(object):
 		"""
 		Build RNA-associated simulation data from raw data.
 		"""
-		assert all([len(rna['location']) == 1 for rna in raw_data.rnas])
+		assert all([len(rna['location']) == 1 for rna in raw_data.operon_rnas])
+
+		import ipdb; ipdb.set_trace()
+
 
 		# Loads RNA IDs, degradation rates, lengths, and nucleotide compositions
 		rnaIds = ['{}[{}]'.format(rna['id'], rna['location'][0])
-            for rna in raw_data.rnas]
-		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in raw_data.rnas]) # TODO: units
-		rnaLens = np.array([len(rna['seq']) for rna in raw_data.rnas])
+            for rna in raw_data.operon_rnas]
+		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in raw_data.operon_rnas]) # TODO: units
+		rnaLens = np.array([len(rna['seq']) for rna in raw_data.operon_rnas])
 
 		ntCounts = np.array([
 			(rna['seq'].count('A'), rna['seq'].count('C'),
 			rna['seq'].count('G'), rna['seq'].count('U'))
-			for rna in raw_data.rnas
+			for rna in raw_data.operon_rnas
 			])
 
 		# Load RNA expression from RNA-seq data
 		expression = []
-
-		for rna in raw_data.rnas:
+		
+		for rna in raw_data.operon_rnas:
+			if len(rna['geneId']) > 1:
+				print(rna['geneId'])
+				import ipdb; ipdb.set_trace()
 			arb_exp = [x[sim_data.basal_expression_condition]
                 for x in eval("raw_data.rna_seq_data.rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS))
                 if x['Gene'] == rna['geneId']]
@@ -68,7 +74,7 @@ class Transcription(object):
 				raise Exception('Unknown RNA {}'.format(rna['id']))
 
 		expression = np.array(expression)
-
+		
 		# Calculate synthesis probabilities from expression and normalize
 		synthProb = expression*(
 			np.log(2) / sim_data.doubling_time.asNumber(units.s)
@@ -104,6 +110,7 @@ class Transcription(object):
 			if rna["type"] == "rRNA" and rna["id"].startswith("RRF"):
 				is_5S[rnaIndex] = True
 				idx_5S.append(rnaIndex)
+
 
 		idx_23S = np.array(idx_23S)
 		idx_16S = np.array(idx_16S)
@@ -303,6 +310,7 @@ class Transcription(object):
 		# Create list of charged tRNAs
 		trna_names = self.rnaData['id'][self.rnaData['isTRna']]
 		charged_trnas = [x['modifiedForms'] for x in raw_data.rnas if x['id'] + '[c]' in trna_names]
+
 		filtered_charged_trna = []
 		for charged_list in charged_trnas:
 			for trna in charged_list:
