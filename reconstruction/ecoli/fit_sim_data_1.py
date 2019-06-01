@@ -76,21 +76,23 @@ MASS_UNITS = units.g
 TIME_UNITS = units.s
 
 def fitSimData_1(
-		raw_data, cpus=1, debug=False,
-		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False,
-		flat_elongation=False,
-		adjust_rna_and_protein_parameters=True,
-		alternate_mass_fraction_protein=False,
-		alternate_mass_fraction_rna=False,
-		alternate_mass_fraction_mrna=False,
-		alternate_r_protein_degradation=False,
-		alternate_rna_seq=None,
-		alternate_rna_half_life=None,
-		alternate_ribosome_activity=None,
-		alternate_rnap_activity=None,
-		disable_rnap_fraction_increase=False,
-		):
+		raw_data,
+		options):
+		# cpus=1, debug=False,
+		# disable_ribosome_capacity_fitting=False,
+		# disable_rnapoly_capacity_fitting=False,
+		# flat_elongation=False,
+		# adjust_rna_and_protein_parameters=True,
+		# alternate_mass_fraction_protein=False,
+		# alternate_mass_fraction_rna=False,
+		# alternate_mass_fraction_mrna=False,
+		# alternate_r_protein_degradation=False,
+		# alternate_rna_seq=None,
+		# alternate_rna_half_life=None,
+		# alternate_ribosome_activity=None,
+		# alternate_rnap_activity=None,
+		# disable_rnap_fraction_increase=False,
+		# ):
 	"""
 	Fits parameters necessary for the simulation based on the knowledge base
 
@@ -129,18 +131,20 @@ def fitSimData_1(
 		disable_rnap_fraction_increase (bool) - if True, disables doubling-time-
 			dependent RNA polymerase fraction increase.
 	"""
+	options['basal_expression_condition'] = BASAL_EXPRESSION_CONDITION
 	sim_data = SimulationDataEcoli()
 	sim_data.initialize(
 		raw_data=raw_data,
-		basal_expression_condition=BASAL_EXPRESSION_CONDITION,
-		alternate_mass_fraction_protein=alternate_mass_fraction_protein,
-		alternate_mass_fraction_rna=alternate_mass_fraction_rna,
-		alternate_mass_fraction_mrna=alternate_mass_fraction_mrna,
-		alternate_rna=alternate_rna_seq,
-		alternate_rna_half_life=alternate_rna_half_life,
-		alternate_ribosome_activity=alternate_ribosome_activity,
-		alternate_rnap_activity=alternate_rnap_activity,
-		)
+		options)
+		# basal_expression_condition=BASAL_EXPRESSION_CONDITION,
+		# alternate_mass_fraction_protein=alternate_mass_fraction_protein,
+		# alternate_mass_fraction_rna=alternate_mass_fraction_rna,
+		# alternate_mass_fraction_mrna=alternate_mass_fraction_mrna,
+		# alternate_rna=alternate_rna_seq,
+		# alternate_rna_half_life=alternate_rna_half_life,
+		# alternate_ribosome_activity=alternate_ribosome_activity,
+		# alternate_rnap_activity=alternate_rnap_activity,
+		# )
 
 	# Limit the number of conditions that are being fit so that execution time decreases
 	if debug:
@@ -149,7 +153,7 @@ def fitSimData_1(
 		sim_data.tfToActiveInactiveConds = {key: sim_data.tfToActiveInactiveConds[key]}
 
 	# Set fast monomer degradation rates for r-proteins
-	if alternate_r_protein_degradation:
+	if options['alternate_r_protein_degradation']:
 		translation = sim_data.process.translation
 		translation.monomerData["degRate"][translation.monomerData["isRProtein"]] = translation.fastRate
 
@@ -157,7 +161,7 @@ def fitSimData_1(
 	setRnaPolymeraseCodingRnaDegradationRates(sim_data)
 
 	# Make adjustments for metabolic enzymes
-	if adjust_rna_and_protein_parameters:
+	if options['adjust_rna_and_protein_parameters']:
 		setTranslationEfficiencies(sim_data)
 		setRNAExpression(sim_data)
 		setRNADegRates(sim_data)
@@ -168,11 +172,12 @@ def fitSimData_1(
 
 	cellSpecs = buildBasalCellSpecifications(
 		sim_data,
-		disable_ribosome_capacity_fitting,
-		disable_rnapoly_capacity_fitting,
-		flat_elongation,
-		disable_rnap_fraction_increase,
-		)
+		options)
+		# disable_ribosome_capacity_fitting,
+		# disable_rnapoly_capacity_fitting,
+		# flat_elongation,
+		# disable_rnap_fraction_increase,
+		# )
 
 	# Modify other properties
 
@@ -185,22 +190,22 @@ def fitSimData_1(
 	# ----- Growth associated maintenance -----
 	fitMaintenanceCosts(sim_data, cellSpecs["basal"]["bulkContainer"])
 
-	if cpus > 1:
-		cpus = min(cpus, parallelization.cpus())
+	if options['cpus'] > 1:
+		cpus = min(options['cpus'], parallelization.cpus())
 		print "Start parallel processing with %i processes" % (cpus,)
 		pool = Pool(processes = cpus)
 		conds = sorted(sim_data.tfToActiveInactiveConds)
 		results = [
 			pool.apply_async(
 				buildTfConditionCellSpecifications,
-				(sim_data, tf,
-				 disable_ribosome_capacity_fitting,
-				 disable_rnapoly_capacity_fitting,
-				 flat_elongation,
-				 disable_rnap_fraction_increase,
-				 ))
-			for tf in conds
-			]
+				(sim_data, tf, options))
+				 
+				 # disable_ribosome_capacity_fitting,
+				 # disable_rnapoly_capacity_fitting,
+				 # flat_elongation,
+				 # disable_rnap_fraction_increase,
+				 # ))
+			for tf in conds]
 		pool.close()
 		pool.join()
 		for result in results:
@@ -211,12 +216,12 @@ def fitSimData_1(
 	else:
 		for tf in sorted(sim_data.tfToActiveInactiveConds):
 			cellSpecs.update(buildTfConditionCellSpecifications(
-				sim_data, tf,
-				disable_ribosome_capacity_fitting,
-				disable_rnapoly_capacity_fitting,
-				flat_elongation,
-				disable_rnap_fraction_increase,
-				))
+				sim_data, tf, options))
+				# disable_ribosome_capacity_fitting,
+				# disable_rnapoly_capacity_fitting,
+				# flat_elongation,
+				# disable_rnap_fraction_increase,
+				# ))
 
 	for conditionKey in cellSpecs:
 		if conditionKey == "basal":
@@ -228,10 +233,11 @@ def fitSimData_1(
 	buildCombinedConditionCellSpecifications(
 		sim_data,
 		cellSpecs,
-		disable_ribosome_capacity_fitting,
-		disable_rnapoly_capacity_fitting,
-		flat_elongation,
-		)
+		options)
+		# disable_ribosome_capacity_fitting,
+		# disable_rnapoly_capacity_fitting,
+		# flat_elongation,
+		# )
 
 	sim_data.process.transcription.rnaSynthProbFraction = {}
 	sim_data.process.transcription.rnapFractionActiveDict = {}
@@ -242,7 +248,8 @@ def fitSimData_1(
 	sim_data.process.translation.ribosomeElongationRateDict = {}
 	sim_data.process.translation.ribosomeFractionActiveDict = {}
 
-	if cpus > 1:
+	if options['cpus'] > 1:
+		cpus = options['cpus']
 		print "Start parallel processing with %i processes" % (cpus,)
 		pool = Pool(processes = cpus)
 		results = [pool.apply_async(fitCondition, (sim_data, cellSpecs[condition], condition)) for condition in sorted(cellSpecs)]
