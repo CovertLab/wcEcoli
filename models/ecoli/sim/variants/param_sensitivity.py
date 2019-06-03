@@ -22,7 +22,7 @@ import numpy as np
 SCALE_FACTOR = 5
 # Factor to split the total number of parameters for increasing and decreasing
 # For 100 params, SPLIT=5 would increase 20, decrease 20 and keep the rest constant
-SPLIT = 3
+SPLIT = 10
 
 
 def number_params(sim_data):

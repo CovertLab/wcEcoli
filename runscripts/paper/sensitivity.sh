@@ -18,6 +18,7 @@ start_var=$2
 end_var=$3
 
 # Run simulation and remove sim_data to save space
+# Args: output directory, log directory, variant to run
 function simulation {
 	variant="param_sensitivity"
 	python runscripts/manual/runSim.py $1 --length_sec 10 --variant $variant $3 $3 > $2/$3.log 2>&1
@@ -35,12 +36,13 @@ if [ ! -e $log_dir ]; then
 fi
 ## Use parallel if it exists
 if [ -n "$(type -t parallel)" ]; then
+    echo "$(date): Running simulations in parallel"
     seq $start_var $end_var | parallel simulation $out_dir $log_dir
 ## Otherwise run sequentially
 else
-    echo "Running sequentially...try installing 'parallel' to speed up simulations"
+    echo "$(date): Running simulations sequentially...try installing 'parallel' to speed up simulations"
     for i in $(seq $start_var $end_var); do
-	simulation $out_dir $log_dir $i
+		simulation $out_dir $log_dir $i
     done
 fi
 
