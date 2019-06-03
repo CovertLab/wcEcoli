@@ -133,31 +133,6 @@ def analyze_variant((variant, total_params)):
 		increase_params_flux_correlation, decrease_params_flux_correlation,
 		)
 
-def rna_mapping(sim_data, monomer_to_gene):
-	'''
-	Maps RNA ids to gene symbols.
-
-	Args:
-		sim_data (SimulationData object)
-		monomer_to_gene ({monomer id (str): gene id (str)}: mapping of monomer
-			id to gene id, with no location tags for keys and values
-
-	Returns:
-		{rna with location tag (str): gene symbol without location tag (str)}:
-			mapping of RNA to gene symbol
-	'''
-
-	gene_data = sim_data.process.replication.geneData
-	rna_data = sim_data.process.transcription.rnaData
-	monomer_data = sim_data.process.translation.monomerData
-
-	rna_to_monomer = {rna: monomer for rna, monomer in zip(monomer_data['rnaId'], monomer_data['id'])}
-	rna_to_gene_name = {rna: gene for rna, gene in zip(gene_data['rnaId'], gene_data['name'])}
-
-	return {rna: monomer_to_gene.get(rna_to_monomer.get(rna, '')[:-3],
-		rna_to_gene_name.get(rna[:-3], rna))
-		for rna in rna_data['id']}
-
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -191,17 +166,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# sim_data information
 		total_params = np.sum(number_params(sim_data))
-		monomer_to_gene = sim_data.moleculeGroups.frameIDGeneSymbol_Dict
-		rna_to_gene = rna_mapping(sim_data, monomer_to_gene)  # TODO: create dict in sim_data from raw_data
+		rna_to_gene = {gene['rnaId']: gene['symbol'] for gene in sim_data.process.replication.geneData}
+		monomer_to_gene = {gene['monomerId']: gene['symbol'] for gene in sim_data.process.replication.geneData}
 		rna_ids = sim_data.process.transcription.rnaData['id']
 		monomer_ids = sim_data.process.translation.monomerData['id']
 
 		# IDs must match order from param_indices() from param_sensitivity.py variant
 		param_ids = np.array(
-			['{} RNA deg rate'.format(rna_to_gene[rna]) for rna in rna_ids]
+			['{} RNA deg rate'.format(rna_to_gene[rna[:-3]]) for rna in rna_ids]
 			+ ['{} protein deg rate'.format(monomer_to_gene[monomer[:-3]]) for monomer in monomer_ids]
 			+ ['{} translation eff'.format(monomer_to_gene[monomer[:-3]]) for monomer in monomer_ids]
-			+ ['{} synth prob'.format(rna_to_gene[rna]) for rna in rna_ids])
+			+ ['{} synth prob'.format(rna_to_gene[rna[:-3]]) for rna in rna_ids])
 		if len(param_ids) != total_params:
 			raise ValueError('Number of adjusted parameters and list of ids do not match.')
 
