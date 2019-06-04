@@ -13,6 +13,7 @@ import numpy as np
 from wholecell.utils import units
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
+from wholecell.utils.random import make_elongation_rates
 
 class Translation(object):
 	""" Translation """
@@ -227,13 +228,18 @@ class Translation(object):
 
 		self.elongation_rates[self.rprotein_indexes] = self.max_elongation_rate
 
-	def make_elongation_rates(self, base, flat_elongation=False):
-		rates = np.full(
+	def make_elongation_rates(
+			self,
+			random,
+			base,
+			time_step,
+			flat_elongation=False):
+
+		return make_elongation_rates(
+			random,
 			self.protein_ids.shape,
 			base,
-			dtype=np.int64)
-
-		if not flat_elongation:
-			rates[self.rprotein_indexes] = self.max_elongation_rate
-
-		return rates
+			self.rprotein_indexes,
+			self.max_elongation_rate,
+			time_step,
+			flat_elongation)

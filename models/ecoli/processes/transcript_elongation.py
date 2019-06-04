@@ -56,11 +56,12 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		# Calculate elongation rate based on the current nutrients
 		current_nutrients = self._external_states['Environment'].nutrients
 
-		self.rnapElongationRate = int(stochasticRound(self.randomState,
-			self.rnaPolymeraseElongationRateDict[current_nutrients].asNumber(units.nt / units.s) * self.timeStepSec()))
+		self.rnapElongationRate = self.rnaPolymeraseElongationRateDict[current_nutrients].asNumber(units.nt / units.s)
 
 		self.elongation_rates = self.transcription_data.make_elongation_rates(
+			self.randomState,
 			self.rnapElongationRate,
+			self.timeStepSec(),
 			self.flat_elongation)
 
 		# Request all active RNA polymerases
@@ -108,6 +109,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		# Polymerize transcripts based on sequences and available nucleotides
 		reactionLimit = ntpCounts.sum()
 		active_elongation_rates = self.elongation_rates[rnaIndexes]
+
 		result = polymerize(sequences, ntpCounts, reactionLimit, self.randomState, active_elongation_rates)
 		sequenceElongations = result.sequenceElongation
 		ntpsUsed = result.monomerUsages

@@ -103,22 +103,16 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		current_nutrients = self._external_states['Environment'].nutrients
 
 		if self.translationSupply:
-			noise = int(stochasticRound(
-				self.randomState,
-				self.maxRibosomeElongationRate * self.timeStepSec()))
-
-			self.ribosomeElongationRate = np.min([
-				self.maxRibosomeElongationRate,
-				noise]) # Will be set to maxRibosomeElongationRate if timeStepSec > 1.0s
+			self.ribosomeElongationRate = self.maxRibosomeElongationRate
 		else:
 			rate = self.ribosomeElongationRateDict[current_nutrients].asNumber(units.aa / units.s)
-			noise = int(stochasticRound(
-				self.randomState,
-				self.elngRateFactor * rate * self.timeStepSec()))
+			self.ribosomeElongationRate = self.elngRateFactor * rate
 
-			self.ribosomeElongationRate = np.min([22, noise])
-
-		self.elongation_rates = self.translation_data.make_elongation_rates(self.ribosomeElongationRate, self.flat_elongation)
+		self.elongation_rates = self.translation_data.make_elongation_rates(
+			self.randomState,
+			self.ribosomeElongationRate,
+			self.timeStepSec(),
+			self.flat_elongation)
 
 		# Request all active ribosomes
 		self.activeRibosomes.requestAll()
