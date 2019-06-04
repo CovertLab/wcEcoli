@@ -13,7 +13,7 @@ import numpy as np
 from wholecell.utils import units
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
-from wholecell.utils.random import make_elongation_rates
+from wholecell.utils.random import make_elongation_rates, make_elongation_rates_flat
 
 #RNA_SEQ_ANALYSIS = "seal_rpkm"
 RNA_SEQ_ANALYSIS = "rsem_tpm"
@@ -220,6 +220,14 @@ class Transcription(object):
 		self.RRNA_indexes = [
 			self.rna_indexes[rrna_id]
 			for rrna_id in self.RRNA_ids]
+
+	def make_elongation_rates_flat(self, base, flat_elongation=False):
+		return make_elongation_rates_flat(
+			self.transcriptionSequences.shape[0],
+			base,
+			self.RRNA_indexes,
+			self.max_elongation_rate,
+			flat_elongation)
 
 	def make_elongation_rates(self, random, base, time_step, flat_elongation=False):
 		return make_elongation_rates(

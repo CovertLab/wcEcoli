@@ -1235,7 +1235,8 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 		)
 
 	base = sim_data.growthRateParameters.getRibosomeElongationRate(doubling_time).asNumber(units.aa / units.s)
-	elongation_rates = sim_data.process.translation.make_elongation_rates(base, flat_elongation=options['flat_elongation'])
+	elongation_rates = sim_data.process.translation.make_elongation_rates_flat(
+		base, flat_elongation=options['flat_elongation_translation'])
 	nActiveRibosomesNeeded = calculateMinPolymerizingEnzymeByProductDistribution(
 		proteinLengths,
 		elongation_rates * (units.aa / units.s),
@@ -1380,7 +1381,7 @@ def setRNAPCountsConstrainedByPhysiology(
 
 	# Compute number of RNA polymerases required to maintain steady state of mRNA
 	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time).asNumber(units.nt / units.s)
-	elongation_rates = sim_data.process.transcription.make_elongation_rates(base, flat_elongation=options['flat_elongation'])
+	elongation_rates = sim_data.process.transcription.make_elongation_rates_flat(base, flat_elongation=options['flat_elongation_transcription'])
 	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
 		rnaLengths, elongation_rates * (units.nt / units.s), rnaLossRate)
 	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)

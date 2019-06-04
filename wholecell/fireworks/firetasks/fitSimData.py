@@ -20,7 +20,8 @@ class FitSimDataTask(FireTaskBase):
 		"sim_out_dir",
 		"disable_ribosome_capacity_fitting",
 		"disable_rnapoly_capacity_fitting",
-		"flat_elongation",
+		"flat_elongation_transcription",
+		"flat_elongation_translation",
 		"adjust_rna_and_protein_parameters",
 		"alternate_mass_fraction_protein",
 		"alternate_mass_fraction_rna",
@@ -62,7 +63,8 @@ class FitSimDataTask(FireTaskBase):
 				debug=self["debug"],
 				disable_ribosome_capacity_fitting=self['disable_ribosome_capacity_fitting'],
 				disable_rnapoly_capacity_fitting=self['disable_rnapoly_capacity_fitting'],
-				flat_elongation=self['flat_elongation'],
+				flat_elongation_transcription=self['flat_elongation_transcription'],
+				flat_elongation_translation=self['flat_elongation_translation'],
 				adjust_rna_and_protein_parameters=self['adjust_rna_and_protein_parameters'],
 				alternate_mass_fraction_protein=self['alternate_mass_fraction_protein'],
 				alternate_mass_fraction_rna=self['alternate_mass_fraction_rna'],
@@ -72,8 +74,7 @@ class FitSimDataTask(FireTaskBase):
 				alternate_rna_half_life=self['alternate_rna_half_life'],
 				alternate_ribosome_activity=self['alternate_ribosome_activity'],
 				alternate_rnap_activity=self['alternate_rnap_activity'],
-				disable_rnap_fraction_increase=self['disable_rnap_fraction_increase'],
-			)
+				disable_rnap_fraction_increase=self['disable_rnap_fraction_increase'])
 
 			sim_data, cell_specs = fitSimData_1(
 				raw_data,
