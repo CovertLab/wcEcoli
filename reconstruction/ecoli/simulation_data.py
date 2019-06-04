@@ -39,15 +39,6 @@ class SimulationDataEcoli(object):
 	def initialize(self,
 				   raw_data,
 				   options):
-	               # basal_expression_condition="M9 Glucose minus AAs",
-	               # alternate_mass_fraction_protein=False,
-	               # alternate_mass_fraction_rna=False,
-	               # alternate_mass_fraction_mrna=False,
-	               # alternate_rna=None,
-	               # alternate_rna_half_life=None,
-	               # alternate_ribosome_activity=None,
-	               # alternate_rnap_activity=None,
-	               # ):
 
 		self.external_state = ExternalState(raw_data, self)
 
