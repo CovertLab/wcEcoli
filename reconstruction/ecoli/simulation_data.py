@@ -36,16 +36,18 @@ class SimulationDataEcoli(object):
 		# Doubling time (used in fitting)
 		self.doubling_time = None
 
-	def initialize(self, raw_data,
-	               basal_expression_condition="M9 Glucose minus AAs",
-	               alternate_mass_fraction_protein=False,
-	               alternate_mass_fraction_rna=False,
-	               alternate_mass_fraction_mrna=False,
-	               alternate_rna=None,
-	               alternate_rna_half_life=None,
-	               alternate_ribosome_activity=None,
-	               alternate_rnap_activity=None,
-	               ):
+	def initialize(self,
+				   raw_data,
+				   options):
+	               # basal_expression_condition="M9 Glucose minus AAs",
+	               # alternate_mass_fraction_protein=False,
+	               # alternate_mass_fraction_rna=False,
+	               # alternate_mass_fraction_mrna=False,
+	               # alternate_rna=None,
+	               # alternate_rna_half_life=None,
+	               # alternate_ribosome_activity=None,
+	               # alternate_rnap_activity=None,
+	               # ):
 
 		self.external_state = ExternalState(raw_data, self)
 
@@ -56,7 +58,7 @@ class SimulationDataEcoli(object):
 		self.doubling_time = self.conditionToDoublingTime[self.condition]
 
 		# TODO: Check that media condition is valid
-		self.basal_expression_condition = basal_expression_condition
+		self.basal_expression_condition = options['basal_expression_condition']
 		# self.envDict, self.externalExchangeMolecules, self.nutrientExchangeMolecules, self.secretionExchangeMolecules = self._addEnvironments(raw_data)
 
 		self._addHardCodedAttributes()
@@ -68,12 +70,12 @@ class SimulationDataEcoli(object):
 		self.constants = Constants(raw_data, self)
 
 		# Growth rate dependent parameters are set first
-		self.growthRateParameters = GrowthRateParameters(raw_data, self, alternate_ribosome_activity, alternate_rnap_activity)
-		self.mass = Mass(raw_data, self, alternate_mass_fraction_protein, alternate_mass_fraction_rna, alternate_mass_fraction_mrna)
+		self.growthRateParameters = GrowthRateParameters(raw_data, self, options)
+		self.mass = Mass(raw_data, self, options)
 
 		# Data classes (can depend on helper functions)
 		# Data classes cannot depend on each other
-		self.process = Process(raw_data, self, alternate_rna, alternate_rna_half_life)
+		self.process = Process(raw_data, self, options) # alternate_rna, alternate_rna_half_life)
 		self.internal_state = InternalState(raw_data, self)
 
 		# Relations between data classes (can depend on data classes)

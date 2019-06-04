@@ -20,9 +20,7 @@ class Mass(object):
 	""" Mass """
 
 	def __init__(self, raw_data, sim_data,
-	             alternate_mass_fraction_protein,
-	             alternate_mass_fraction_rna,
-	             alternate_mass_fraction_mrna):
+				 options):
 		self._doubling_time = sim_data.doubling_time
 
 		self._buildConstants(raw_data, sim_data)
@@ -31,9 +29,9 @@ class Mass(object):
 
 		# Alternate masses for paper investigation
 		self._alternate_mass_fractions = {
-			"protein": alternate_mass_fraction_protein,
-			"rna": alternate_mass_fraction_rna,
-			"mrna": alternate_mass_fraction_mrna}
+			"protein": options['alternate_mass_fraction_protein'],
+			"rna": options['alternate_mass_fraction_rna'],
+			"mrna": options['alternate_mass_fraction_mrna']}
 		self._buildAlternateSubMasses(raw_data)
 
 		self.avgCellDryMass = self.getAvgCellDryMass(self._doubling_time)
@@ -467,10 +465,13 @@ class GrowthRateParameters(object):
 	GrowthRateParameters
 	"""
 
-	def __init__(self, raw_data, sim_data, alternate_ribosome_activity, alternate_rnap_activity):
+	def __init__(self,
+				 raw_data,
+				 sim_data,
+				 options):
 		self._doubling_time = sim_data.doubling_time
 
-		if alternate_ribosome_activity:
+		if options['alternate_ribosome_activity']:
 			_loadTableIntoObjectGivenDoublingTime(self, raw_data.growthRateDependentParameters_alternateRibosomeActivity)
 			self.ribosomeElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters_alternateRibosomeActivity, "ribosomeElongationRate")
 			self.rnaPolymeraseElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters_alternateRibosomeActivity, "rnaPolymeraseElongationRate")
@@ -480,7 +481,7 @@ class GrowthRateParameters(object):
 			_loadTableIntoObjectGivenDoublingTime(self, raw_data.growthRateDependentParameters)
 			self.ribosomeElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "ribosomeElongationRate")
 			self.rnaPolymeraseElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "rnaPolymeraseElongationRate")
-			self.fractionActiveRnapParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRnap", alternate_rnap_activity)
+			self.fractionActiveRnapParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRnap", options['alternate_rnap_activity'])
 			self.fractionActiveRibosomeParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRibosome")
 
 			# Replace alternate values

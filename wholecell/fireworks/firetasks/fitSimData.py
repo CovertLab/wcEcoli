@@ -57,8 +57,9 @@ class FitSimDataTask(FireTaskBase):
 			with open(self["input_data"], "rb") as f:
 				raw_data = cPickle.load(f)
 
-			sim_data, cell_specs = fitSimData_1(
-				raw_data, cpus=self["cpus"], debug=self["debug"],
+			options = dict(
+				cpus=self["cpus"],
+				debug=self["debug"],
 				disable_ribosome_capacity_fitting=self['disable_ribosome_capacity_fitting'],
 				disable_rnapoly_capacity_fitting=self['disable_rnapoly_capacity_fitting'],
 				flat_elongation=self['flat_elongation'],
@@ -72,7 +73,11 @@ class FitSimDataTask(FireTaskBase):
 				alternate_ribosome_activity=self['alternate_ribosome_activity'],
 				alternate_rnap_activity=self['alternate_rnap_activity'],
 				disable_rnap_fraction_increase=self['disable_rnap_fraction_increase'],
-				)
+			)
+
+			sim_data, cell_specs = fitSimData_1(
+				raw_data,
+				options)
 
 			sys.setrecursionlimit(4000) #limit found manually
 			with open(self["output_data"], "wb") as f:

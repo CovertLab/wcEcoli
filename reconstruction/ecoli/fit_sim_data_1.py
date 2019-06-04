@@ -78,27 +78,13 @@ TIME_UNITS = units.s
 def fitSimData_1(
 		raw_data,
 		options):
-		# cpus=1, debug=False,
-		# disable_ribosome_capacity_fitting=False,
-		# disable_rnapoly_capacity_fitting=False,
-		# flat_elongation=False,
-		# adjust_rna_and_protein_parameters=True,
-		# alternate_mass_fraction_protein=False,
-		# alternate_mass_fraction_rna=False,
-		# alternate_mass_fraction_mrna=False,
-		# alternate_r_protein_degradation=False,
-		# alternate_rna_seq=None,
-		# alternate_rna_half_life=None,
-		# alternate_ribosome_activity=None,
-		# alternate_rnap_activity=None,
-		# disable_rnap_fraction_increase=False,
-		# ):
 	"""
 	Fits parameters necessary for the simulation based on the knowledge base
 
 	Inputs:
-		raw_data (KnowledgeBaseEcoli) - knowledge base consisting of the
-			necessary raw data
+	  raw_data (KnowledgeBaseEcoli) - knowledge base consisting of the
+		  necessary raw data
+      options (dict) - The option keys include:
 		cpus (int) - number of processes to use (if >1 uses multiprocessing)
 		debug (bool) - if True, fit only one arbitrarily-chosen transcription
 			factor in order to speed up a debug cycle (should not be used for
@@ -134,20 +120,11 @@ def fitSimData_1(
 	options['basal_expression_condition'] = BASAL_EXPRESSION_CONDITION
 	sim_data = SimulationDataEcoli()
 	sim_data.initialize(
-		raw_data=raw_data,
+		raw_data,
 		options)
-		# basal_expression_condition=BASAL_EXPRESSION_CONDITION,
-		# alternate_mass_fraction_protein=alternate_mass_fraction_protein,
-		# alternate_mass_fraction_rna=alternate_mass_fraction_rna,
-		# alternate_mass_fraction_mrna=alternate_mass_fraction_mrna,
-		# alternate_rna=alternate_rna_seq,
-		# alternate_rna_half_life=alternate_rna_half_life,
-		# alternate_ribosome_activity=alternate_ribosome_activity,
-		# alternate_rnap_activity=alternate_rnap_activity,
-		# )
 
 	# Limit the number of conditions that are being fit so that execution time decreases
-	if debug:
+	if options['debug']:
 		print("Warning: running fitter in debug mode - not all conditions will be fit")
 		key = sim_data.tfToActiveInactiveConds.keys()[0]
 		sim_data.tfToActiveInactiveConds = {key: sim_data.tfToActiveInactiveConds[key]}
@@ -173,11 +150,6 @@ def fitSimData_1(
 	cellSpecs = buildBasalCellSpecifications(
 		sim_data,
 		options)
-		# disable_ribosome_capacity_fitting,
-		# disable_rnapoly_capacity_fitting,
-		# flat_elongation,
-		# disable_rnap_fraction_increase,
-		# )
 
 	# Modify other properties
 
@@ -199,12 +171,6 @@ def fitSimData_1(
 			pool.apply_async(
 				buildTfConditionCellSpecifications,
 				(sim_data, tf, options))
-				 
-				 # disable_ribosome_capacity_fitting,
-				 # disable_rnapoly_capacity_fitting,
-				 # flat_elongation,
-				 # disable_rnap_fraction_increase,
-				 # ))
 			for tf in conds]
 		pool.close()
 		pool.join()
@@ -217,11 +183,6 @@ def fitSimData_1(
 		for tf in sorted(sim_data.tfToActiveInactiveConds):
 			cellSpecs.update(buildTfConditionCellSpecifications(
 				sim_data, tf, options))
-				# disable_ribosome_capacity_fitting,
-				# disable_rnapoly_capacity_fitting,
-				# flat_elongation,
-				# disable_rnap_fraction_increase,
-				# ))
 
 	for conditionKey in cellSpecs:
 		if conditionKey == "basal":
@@ -234,10 +195,6 @@ def fitSimData_1(
 		sim_data,
 		cellSpecs,
 		options)
-		# disable_ribosome_capacity_fitting,
-		# disable_rnapoly_capacity_fitting,
-		# flat_elongation,
-		# )
 
 	sim_data.process.transcription.rnaSynthProbFraction = {}
 	sim_data.process.transcription.rnapFractionActiveDict = {}
@@ -338,11 +295,7 @@ def fitSimData_1(
 
 def buildBasalCellSpecifications(
 		sim_data,
-		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False,
-		flat_elongation=False,
-		disable_rnap_fraction_increase=False,
-		):
+		options):
 	"""
 	Creates cell specifications for the basal condition by fitting expression.
 	Relies on expressionConverge() to set the expression and update masses.
@@ -401,11 +354,8 @@ def buildBasalCellSpecifications(
 		cellSpecs["basal"]["expression"],
 		cellSpecs["basal"]["concDict"],
 		cellSpecs["basal"]["doubling_time"],
-		disable_ribosome_capacity_fitting=disable_ribosome_capacity_fitting,
-		disable_rnapoly_capacity_fitting=disable_rnapoly_capacity_fitting,
-		flat_elongation=flat_elongation,
-		disable_rnap_fraction_increase=disable_rnap_fraction_increase,
-		)
+		None,
+		options)
 
 	# Store calculated values
 	cellSpecs["basal"]["expression"] = expression
@@ -429,11 +379,7 @@ def buildBasalCellSpecifications(
 def buildTfConditionCellSpecifications(
 		sim_data,
 		tf,
-		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False,
-		flat_elongation=False,
-		disable_rnap_fraction_increase=False,
-		):
+		options):
 	"""
 	Creates cell specifications for a given transcription factor by
 	fitting expression. Will set for the active and inactive TF condition.
@@ -520,11 +466,7 @@ def buildTfConditionCellSpecifications(
 			cellSpecs[conditionKey]["concDict"],
 			cellSpecs[conditionKey]["doubling_time"],
 			sim_data.process.transcription.rnaData["KmEndoRNase"],
-			disable_ribosome_capacity_fitting=disable_ribosome_capacity_fitting,
-			disable_rnapoly_capacity_fitting=disable_rnapoly_capacity_fitting,
-			flat_elongation=flat_elongation,
-			disable_rnap_fraction_increase=disable_rnap_fraction_increase,
-			)
+			options)
 
 		# Store calculated values
 		cellSpecs[conditionKey]["expression"] = expression
@@ -538,11 +480,7 @@ def buildTfConditionCellSpecifications(
 def buildCombinedConditionCellSpecifications(
 		sim_data,
 		cellSpecs,
-		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False,
-		flat_elongation=False,
-		disable_rnap_fraction_increase=False,
-		):
+		options):
 	"""
 	Creates cell specifications for sets of transcription factors being active.
 	These sets include conditions like 'with_aa' or 'no_oxygen' where multiple
@@ -623,11 +561,7 @@ def buildCombinedConditionCellSpecifications(
 			cellSpecs[conditionKey]["concDict"],
 			cellSpecs[conditionKey]["doubling_time"],
 			sim_data.process.transcription.rnaData["KmEndoRNase"],
-			disable_ribosome_capacity_fitting=disable_ribosome_capacity_fitting,
-			disable_rnapoly_capacity_fitting=disable_rnapoly_capacity_fitting,
-			flat_elongation=flat_elongation,
-			disable_rnap_fraction_increase=disable_rnap_fraction_increase,
-			)
+			options)
 
 		# Modify cellSpecs for calculated values
 		cellSpecs[conditionKey]["expression"] = expression
@@ -645,12 +579,8 @@ def expressionConverge(
 		expression,
 		concDict,
 		doubling_time,
-		Km=None,
-		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False,
-		flat_elongation=False,
-		disable_rnap_fraction_increase=False
-		):
+		Km,
+		options):
 	"""
 	Iteratively fits synthesis probabilities for RNA. Calculates initial
 	expression based on gene expression data and makes adjustments to match
@@ -705,11 +635,11 @@ def expressionConverge(
 		bulkContainer = createBulkContainer(sim_data, expression, doubling_time)
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
 
-		if not disable_ribosome_capacity_fitting:
-			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation)
+		if not options['disable_ribosome_capacity_fitting']:
+			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, options)
 
-		if not disable_rnapoly_capacity_fitting:
-			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, flat_elongation, disable_rnap_fraction_increase)
+		if not options['disable_rnapoly_capacity_fitting']:
+			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, options)
 
 		# Normalize expression and write out changes
 		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
@@ -1264,7 +1194,7 @@ def createBulkContainer(sim_data, expression, doubling_time):
 
 	return bulkContainer
 
-def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, flat_elongation=False):
+def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, options):
 	"""
 	Set counts of ribosomal subunits based on three constraints:
 	(1) Expected protein distribution doubles in one cell cycle
@@ -1305,7 +1235,7 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 		)
 
 	base = sim_data.growthRateParameters.getRibosomeElongationRate(doubling_time).asNumber(units.aa / units.s)
-	elongation_rates = sim_data.process.translation.make_elongation_rates(base, flat_elongation=flat_elongation)
+	elongation_rates = sim_data.process.translation.make_elongation_rates(base, flat_elongation=options['flat_elongation'])
 	nActiveRibosomesNeeded = calculateMinPolymerizingEnzymeByProductDistribution(
 		proteinLengths,
 		elongation_rates * (units.aa / units.s),
@@ -1375,7 +1305,13 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 	bulkContainer.countsIs(rRna16SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna16S"]])
 	bulkContainer.countsIs(rRna5SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna5S"]])
 
-def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km=None, flat_elongation=False, disable_rnap_fraction_increase=False):
+def setRNAPCountsConstrainedByPhysiology(
+		sim_data,
+		bulkContainer,
+		doubling_time,
+		avgCellDryMassInit,
+		Km,
+		options):
 	"""
 	Set counts of RNA polymerase based on two constraints:
 	(1) Number of RNAP subunits required to maintain steady state of mRNAs
@@ -1444,7 +1380,7 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 
 	# Compute number of RNA polymerases required to maintain steady state of mRNA
 	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time).asNumber(units.nt / units.s)
-	elongation_rates = sim_data.process.transcription.make_elongation_rates(base, flat_elongation=flat_elongation)
+	elongation_rates = sim_data.process.transcription.make_elongation_rates(base, flat_elongation=options['flat_elongation'])
 	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
 		rnaLengths, elongation_rates * (units.nt / units.s), rnaLossRate)
 	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
@@ -1456,7 +1392,7 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 	rnapStoich = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitStoich']
 
 	minRnapSubunitCounts = nRnapsNeeded * rnapStoich # Subunit stoichiometry
-	if not disable_rnap_fraction_increase:
+	if not options['disable_rnap_fraction_increase']:
 		minRnapSubunitCounts *= (1 + sim_data.growthRateParameters.getFractionIncreaseRnapProteins(doubling_time))
 
 	# -- CONSTRAINT 2: Expected RNAP subunit counts based on distribution -- #
