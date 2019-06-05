@@ -10,9 +10,11 @@ significant parameters for each output measure.
 
 from __future__ import absolute_import
 from __future__ import division
+from future_builtins import zip
 
 import cPickle
 from multiprocessing import Pool
+import operator
 import os
 import re
 
@@ -30,7 +32,7 @@ from wholecell.utils import constants, filepath, parallelization, sparkline, uni
 
 
 CONTROL_VARIANT = 0  # variant number for control simulation
-N_STDS = 4  # number of standard deviations from the mean to highlight
+N_STDS = 3  # number of standard deviations from the mean to highlight
 
 
 def analyze_variant((variant, total_params)):
@@ -47,12 +49,13 @@ def analyze_variant((variant, total_params)):
 		total_params (int): total number of parameters that are changed
 
 	Returns:
-		ndarray[float]: number of times each parameter was increased
-		ndarray[float]: number of times each parameter was decreased
-		ndarray[float]: average growth rate for each parameter when increaed
-		ndarray[float]: average growth rate for each parameter when decreased
-		ndarray[float]: average flux correlation for each parameter when increaed
-		ndarray[float]: average flux correlation for each parameter when decreased
+		ndarray[float]: 2D array of results with each row corresponding to value below:
+			number of times each parameter was increased
+			number of times each parameter was decreased
+			average growth rate for each parameter when increaed
+			average growth rate for each parameter when decreased
+			average flux correlation for each parameter when increaed
+			average flux correlation for each parameter when decreased
 	'''
 
 	if variant == 0:
@@ -60,7 +63,6 @@ def analyze_variant((variant, total_params)):
 		decrease_indices = None
 	else:
 		increase_indices, decrease_indices = split_indices(sim_data, variant)
-
 
 	increase_params_counts = np.zeros(total_params)
 	decrease_params_counts = np.zeros(total_params)
@@ -128,10 +130,10 @@ def analyze_variant((variant, total_params)):
 		increase_params_flux_correlation[increase_indices] += flux_r
 		decrease_params_flux_correlation[decrease_indices] += flux_r
 
-	return (increase_params_counts, decrease_params_counts,
+	return np.vstack((increase_params_counts, decrease_params_counts,
 		increase_params_growth_rate, decrease_params_growth_rate,
 		increase_params_flux_correlation, decrease_params_flux_correlation,
-		)
+		))
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -185,34 +187,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			variants,
 			[total_params] * n_variants,
 			)
-		results = pool.map(analyze_variant, args)
+
+		results = pool.imap_unordered(analyze_variant, args)
+		(increase_params_counts,
+			decrease_params_counts,
+			increase_params_growth_rate,
+			decrease_params_growth_rate,
+			increase_params_flux_correlation,
+			decrease_params_flux_correlation) = reduce(operator.add, results)
 		pool.close()
 		pool.join()
-		initialize = True
-		for i, result in enumerate(results):
-			(_increase_params_counts,
-				_decrease_params_counts,
-				_increase_params_growth_rate,
-				_decrease_params_growth_rate,
-				_increase_params_flux_correlation,
-				_decrease_params_flux_correlation,
-				) = result
-
-			if initialize:
-				initialize = False
-				increase_params_counts = _increase_params_counts
-				decrease_params_counts = _decrease_params_counts
-				increase_params_growth_rate = _increase_params_growth_rate
-				decrease_params_growth_rate = _decrease_params_growth_rate
-				increase_params_flux_correlation = _increase_params_flux_correlation
-				decrease_params_flux_correlation = _decrease_params_flux_correlation
-			else:
-				increase_params_counts += _increase_params_counts
-				decrease_params_counts += _decrease_params_counts
-				increase_params_growth_rate += _increase_params_growth_rate
-				decrease_params_growth_rate += _decrease_params_growth_rate
-				increase_params_flux_correlation += _increase_params_flux_correlation
-				decrease_params_flux_correlation += _decrease_params_flux_correlation
 
 		# Calculate effects and z score
 		labels = [
