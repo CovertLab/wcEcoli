@@ -357,6 +357,17 @@ def buildBasalCellSpecifications(
 		None,
 		options)
 
+	protein_degradation = sim_data.process.translation.monomerData['degRate']
+	protein_loss = netLossRateFromDilutionAndDegradationProtein(doubling_time, protein_degradation)
+	protein_distribution = normalize(bulkContainer.counts())
+
+	translation_efficiencies = translationEfficienciesFromMrnaAndProtein(
+		protein_distribution,
+		cellSpecs["basal"]["expression"][sim_data.relation.rnaIndexToMonomerMapping],
+		protein_loss.asNumber())
+
+	# TODO: write out TE files
+
 	# Store calculated values
 	cellSpecs["basal"]["expression"] = expression
 	cellSpecs["basal"]["synthProb"] = synthProb
@@ -1874,6 +1885,77 @@ def mRNADistributionFromProtein(distribution_protein, translation_efficiencies, 
 	distributionNormed.checkNoUnit()
 
 	return distributionNormed.asNumber()
+
+def translationEfficienciesFromMrnaAndProtein(expression_distribution, protein_distribution, protein_loss):
+	efficiencies = protein_loss * protein_distribution / normalize(expression_distribution)
+	efficiencies[np.where(expression_distribution == 0)] = 0
+
+	return normalize(efficiencies)
+
+def calculate_translational_efficiencies(sim_data, condition, cellSpecs):
+	spec = cellSpecs[condition].copy()
+	original_expression = spec['expression']
+	doubling_time = spec['doubling_time']
+
+	protein_ids = sim_data.process.translation.monomerData['id']
+	protein_degradation = sim_data.process.translation.monomerData['degRate']
+	protein_loss = netLossRateFromDilutionAndDegradationProtein(doubling_time, protein_degradation)
+	translation_efficiencies_original = sim_data.process.translation.translationEfficienciesByMonomer
+
+	total_mass_protein = sim_data.mass.getFractionMass(doubling_time)["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	total_mass_RNA = sim_data.mass.getFractionMass(doubling_time)["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	individual_masses_protein = sim_data.process.translation.monomerData["mw"] / sim_data.constants.nAvogadro
+	individual_masses_RNA = sim_data.process.transcription.rnaData["mw"] / sim_data.constants.nAvogadro
+
+	pre_expression, pre_synthesis, pre_average_dry_mass, pre_average_molar_mass, pre_bulk = expressionConverge(
+		sim_data,
+		spec['expression'],
+		spec['concDict'],
+		spec['doubling_time'],
+		disable_ribosome_capacity_fitting = True,
+		disable_rnapoly_capacity_fitting = True)
+	pre_transcripts = pre_expression[sim_data.relation.rnaIndexToMonomerMapping]
+	pre_counts = pre_bulk.counts(sim_data.process.translation.monomerData['id'])
+	pre_protein = normalize(pre_counts)
+
+	post_expression, post_synthesis, post_average_dry_mass, post_average_molar_mass, post_bulk = expressionConverge(
+		sim_data,
+		spec['expression'],
+		spec['concDict'],
+		spec['doubling_time'],
+		disable_ribosome_capacity_fitting = False,
+		disable_rnapoly_capacity_fitting = False)
+	post_transcripts = post_expression[sim_data.relation.rnaIndexToMonomerMapping]
+	post_counts = post_bulk.counts(sim_data.process.translation.monomerData['id'])
+	post_protein = normalize(post_counts)
+
+	distribution_RNA = normalize(pre_expression)
+
+	total_count_RNA = totalCountFromMassesAndRatios(
+		total_mass_RNA,
+		individual_masses_RNA,
+		distribution_RNA)
+
+	translation_efficiencies = translationEfficienciesFromMrnaAndProtein(
+		post_protein,
+		original_expression[sim_data.relation.rnaIndexToMonomerMapping],
+		protein_loss.asNumber())
+
+	protein_scale, protein_ids, protein_distribution = totalCountIdDistributionProtein(
+		sim_data,
+		original_expression,
+		translation_efficiencies,
+		doubling_time)
+
+	import ipdb; ipdb.set_trace()
+
+	spec['expression'] = pre_expression
+	spec['synthProb'] = pre_synthesis
+	spec['avgCellDryMassInit'] = pre_average_dry_mass
+	spec['fitAvgSolubleTargetMolMass'] = pre_average_molar_mass
+	spec['bulkContainer'] = pre_bulk
+
+	return spec, translational_efficiencies
 
 def calculateMinPolymerizingEnzymeByProductDistribution(productLengths, elongationRates, netLossRate, productCounts):
 	"""
