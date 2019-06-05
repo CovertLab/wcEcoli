@@ -103,10 +103,8 @@ def fitSimData_1(
 			fraction for mrna.
 		alternate_r_protein_degradation (bool) - if True, r-proteins are
 			degraded at fast rate.
-		alternate_rna_seq (str) - describes which alternate RNA-seq dataset to
-			use for fitting RNA expression. One of the following: 'Covert',
-			'Cho', or 'Dong'. Default value of None results in original RNA-seq
-			input.
+		alternate_rna_seq (bool) - if True, alternate RNA-seq input
+			(Covert 2004) will be used.
 		alternate_rna_half_life (str) - describes which alternate RNA half life
 			dataset to use. One of the following: 'with_kas' or 'without_kas'.
 			Default value of None results in using original RNA half lives

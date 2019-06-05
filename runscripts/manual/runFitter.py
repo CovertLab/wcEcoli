@@ -90,8 +90,9 @@ class RunFitter(scriptBase.ScriptBase):
 			help= "If set, r-protein degradation will set to fast value."
 			)
 		parser.add_argument(
-			'--alternate-rna-seq', type=str,
-			help="Alternate RNA-seq input - one of the following: 'Covert', 'Cho', or 'Dong'. Default = None."
+			'--alternate-rna-seq',
+			action='store_true',
+			help="If set, alternate RNA-seq (Covert 2004) input will be used."
 			)
 		parser.add_argument(
 			'--alternate-rna-half-life', type=str,
