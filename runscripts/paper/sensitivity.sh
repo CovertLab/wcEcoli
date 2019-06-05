@@ -29,11 +29,13 @@ export -f simulation
 # Create sim_data
 python runscripts/manual/runFitter.py --disable-ribosome-fitting --disable-rnapoly-fitting $out_dir
 
-# Run simulation variants
+# Create log directory
 log_dir=out/$out_dir/log
 if [ ! -e $log_dir ]; then
 	mkdir $log_dir
 fi
+
+# Run simulation variants
 ## Use parallel if it exists
 if [ -n "$(type -t parallel)" ]; then
     echo "$(date): Running simulations in parallel"
@@ -47,4 +49,5 @@ else
 fi
 
 # Run analysis script
-python models/ecoli/analysis/variant/param_sensitivity.py $out_dir
+echo "$(date): Running analysis"
+python models/ecoli/analysis/variant/param_sensitivity.py $out_dir > $log_dir/analysis.log
