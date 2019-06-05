@@ -45,10 +45,10 @@ class Transcription(object):
 
 		# Load expression from RNA-seq data
 		rna_seq_file = "raw_data.rna_seq_data"
-		if options['alternate_rna_seq'] == None:
-			rna_seq_file += ".rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS)
+		if options['alternate_rna_seq']:
+			rna_seq_file += ".alternate_rna_seq"
 		else:
-			rna_seq_file += ".alternate_rna_seq_{}".format(options['alternate_rna_seq'])
+			rna_seq_file += ".rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS)
 
 		expression = []
 		for rna in raw_data.rnas:
@@ -60,7 +60,7 @@ class Transcription(object):
 			elif rna['type'] == 'rRNA' or rna['type'] == 'tRNA':
 				expression.append(0.)
 			else:
-				raise Exception('Unknonw RNA {}'.format(rna['id']))
+				raise Exception('Unknown RNA {}'.format(rna['id']))
 
 		expression = np.array(expression)
 		synthProb = expression * (
