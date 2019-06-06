@@ -2,7 +2,7 @@
 Analyzes parameters sensitivity from running variant param_sensitivity.
 Outputs two plots showing sorted z score for each parameter's effect
 on each output measure and individual parameter values for the most
-significant parameters for each output measure.
+significant parameters for each output difference measure.
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 5/17/19
@@ -20,6 +20,7 @@ import os
 import re
 
 from matplotlib import pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 import numpy as np
 from scipy import stats
 
@@ -258,35 +259,38 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sorted_idx = np.argsort(z_diff)
 
 			## Plot data
-			plt.subplot(n_outputs, 2, 2*i + 1)
+			ax = plt.subplot(n_outputs, 2, 2*i + 1)
+			plt.yscale('symlog', linthreshold=0.01)
 			plt.bar(range(total_params), z_diff[sorted_idx])
 			plt.axhline(N_STDS , color='k', linestyle='--')
 			plt.axhline(-N_STDS, color='k', linestyle='--')
 
 			## Format axes
-			sparkline.whitePadSparklineAxis(plt.gca(), xAxis=False)
+			sparkline.whitePadSparklineAxis(ax, xAxis=False)
 			plt.xticks([])
 			plt.yticks([-N_STDS, 0, N_STDS])
+			ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
 			lim = np.max(np.abs(plt.ylim()))
 			plt.ylim([-lim, lim])
 			if i == 0:
 				plt.title('Difference of Positive and Negative\nParameter Changes')
 			if i == n_outputs - 1:
 				plt.xlabel('Sorted Parameters')
-			plt.ylabel('Z score\nparameter effect on {}'.format(labels[i]))
+			plt.ylabel('Z score\nparameter effect on {}\n(log scale)'.format(labels[i]))
 
 			## Plot data
-			plt.subplot(n_outputs, 2, 2*i + 2)
+			ax = plt.subplot(n_outputs, 2, 2*i + 2)
+			plt.yscale('symlog', linthreshold=0.01)
 			plt.bar(range(total_params), z_increase[sorted_idx], color='g')
 			plt.bar(range(total_params), z_decrease[sorted_idx], color='r')
 			plt.axhline(N_STDS , color='k', linestyle='--')
 			plt.axhline(-N_STDS, color='k', linestyle='--')
 
 			## Format axes
-			sparkline.whitePadSparklineAxis(plt.gca(), xAxis=False)
+			sparkline.whitePadSparklineAxis(ax, xAxis=False)
 			plt.xticks([])
 			plt.yticks([-N_STDS, 0, N_STDS])
-			lim = np.max(np.abs(plt.ylim()))
+			ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
 			plt.ylim([-lim, lim])
 			if i == 0:
 				plt.title('Positive and Negative\nParameter Changes')
