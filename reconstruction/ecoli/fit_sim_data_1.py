@@ -10,6 +10,7 @@ from __future__ import division
 
 import numpy as np
 import os
+import csv
 import scipy.optimize
 import cPickle
 
@@ -338,13 +339,14 @@ def buildBasalCellSpecifications(
 	- TODO - sets sim_data attributes and returns values - change to only return values
 	"""
 
+	doubling_time = sim_data.conditionToDoublingTime['basal']
+
 	# Create dictionary for basal condition
 	cellSpecs = {}
 	cellSpecs["basal"] = {
 		"concDict": sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients("minimal"),
 		"expression": sim_data.process.transcription.rnaExpression["basal"].copy(),
-		"doubling_time": sim_data.conditionToDoublingTime["basal"],
-		}
+		"doubling_time": doubling_time}
 
 	# Determine expression and synthesis probabilities
 	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _ = expressionConverge(
@@ -355,16 +357,35 @@ def buildBasalCellSpecifications(
 		None,
 		options)
 
+	gene_ids = sim_data.process.translation.monomerData['rnaId']
+	protein_ids = sim_data.process.translation.monomerData['id']
 	protein_degradation = sim_data.process.translation.monomerData['degRate']
 	protein_loss = netLossRateFromDilutionAndDegradationProtein(doubling_time, protein_degradation)
-	protein_distribution = normalize(bulkContainer.counts())
+	protein_distribution = normalize(bulkContainer.counts(sim_data.process.translation.monomerData['id']))
 
 	translation_efficiencies = translationEfficienciesFromMrnaAndProtein(
-		protein_distribution,
 		cellSpecs["basal"]["expression"][sim_data.relation.rnaIndexToMonomerMapping],
+		protein_distribution,
 		protein_loss.asNumber())
 
-	# TODO: write out TE files
+	def abbreviate(s):
+		return ''.join([part[0] for part in s.split('_')])
+
+	parts = [
+		'{}-{}'.format(abbreviate(key), options[key])
+		for key in sorted(options.keys())]
+	suffix = '-'.join(parts)
+	filename = "translation-efficiencies-{}.tsv".format(suffix)
+	header = ['id', 'gene_id', 'protein_id', 'translation_efficiency']
+	rows = [
+		[index, gene_ids[index], protein_id, translation_efficiencies[index]]
+		for index, protein_id in enumerate(protein_ids)]
+
+	with open(filename, 'w') as outfile:
+		writer = csv.writer(outfile)
+		writer.writerow(header)
+		for row in rows:
+			writer.writerow(row)
 
 	# Store calculated values
 	cellSpecs["basal"]["expression"] = expression
@@ -1935,8 +1956,8 @@ def calculate_translational_efficiencies(sim_data, condition, cellSpecs):
 		distribution_RNA)
 
 	translation_efficiencies = translationEfficienciesFromMrnaAndProtein(
-		post_protein,
 		original_expression[sim_data.relation.rnaIndexToMonomerMapping],
+		post_protein,
 		protein_loss.asNumber())
 
 	protein_scale, protein_ids, protein_distribution = totalCountIdDistributionProtein(
