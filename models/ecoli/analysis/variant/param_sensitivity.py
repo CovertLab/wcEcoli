@@ -13,6 +13,7 @@ from __future__ import division
 from future_builtins import zip
 
 import cPickle
+import csv
 from multiprocessing import Pool
 import operator
 import os
@@ -135,6 +136,20 @@ def analyze_variant((variant, total_params)):
 		increase_params_flux_correlation, decrease_params_flux_correlation,
 		))
 
+def headers(labels, name):
+	'''
+	Creates headers for tsv file
+
+	Args:
+		labels (list[str]): labels for each output value
+		name (str): name of data type
+
+	Returns:
+		list[str]: combined names for header
+	'''
+
+	return ['{}\n{}'.format(name, label) for label in labels]
+
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -179,7 +194,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			+ ['{} protein deg rate'.format(monomer_to_gene[monomer[:-3]]) for monomer in monomer_ids]
 			+ ['{} translation eff'.format(monomer_to_gene[monomer[:-3]]) for monomer in monomer_ids]
 			+ ['{} synth prob'.format(rna_to_gene[rna[:-3]]) for rna in rna_ids])
-		growth_param_mask = np.array([len(re.findall('rp[s,m,l,o]', param)) > 0 for param in param_ids])  # r-protein and RNAP
 		if len(param_ids) != total_params:
 			raise ValueError('Number of adjusted parameters and list of ids do not match.')
 
@@ -212,12 +226,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			decrease_params_growth_rate / decrease_params_counts,
 			decrease_params_flux_correlation / decrease_params_counts,
 			))
-		data_diff = increase_params_data - decrease_params_data
+		n_outputs = len(labels)
 
-		mean = np.nanmean(data_diff, axis=1).reshape(-1, 1)
-		std = np.nanstd(data_diff, axis=1).reshape(-1, 1)
-		z_score = (data_diff - mean) / std
-		n_outputs = z_score.shape[0]
+		# Difference between effect when parameter increased vs decreased
+		data_diff = increase_params_data - decrease_params_data
+		mean_diff = np.nanmean(data_diff, axis=1).reshape(-1, 1)
+		std_diff = np.nanstd(data_diff, axis=1).reshape(-1, 1)
+		z_score_diff = (data_diff - mean_diff) / std_diff
+
+		# Individual increase or decrease effects to check asymmetric effects
+		all_data = np.hstack((increase_params_data, decrease_params_data))
+		mean = np.nanmean(all_data, axis=1).reshape(-1, 1)
+		std = np.nanstd(all_data, axis=1).reshape(-1, 1)
+		z_score_increase = (increase_params_data - mean) / std
+		z_score_decrease = (decrease_params_data - mean) / std
 
 		# Get control data
 		if use_control:
@@ -232,7 +254,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Plot histogram
 		plt.figure(figsize=(5, 4*n_outputs))
 
-		for i, z in enumerate(z_score):
+		for i, z in enumerate(z_score_diff):
 			plt.subplot(n_outputs, 1, i + 1)
 
 			## Plot data
@@ -256,10 +278,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Plot individual parameters
 		individual_indices = [
-			np.nanargmax(z_score[0, :]),
-			np.nanargmin(z_score[0, :]),
-			np.nanargmax(z_score[1, :]),
-			np.nanargmin(z_score[1, :]),
+			np.nanargmax(z_score_diff[0, :]),
+			np.nanargmin(z_score_diff[0, :]),
+			np.nanargmax(z_score_diff[1, :]),
+			np.nanargmin(z_score_diff[1, :]),
 			]
 		n_individual = len(individual_indices)
 		x_values = [-1, 0, 1]
@@ -295,21 +317,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		exportFigure(plt, plotOutDir, '{}_individual'.format(plotOutFileName, metadata))
 		plt.close('all')
 
-		# Print analysis summary
-		for label, z in zip(labels, z_score):
-			print('Summary for {}:'.format(label))
-			print('\tNumber of params above threshold: {}'.format(np.sum(z > N_STDS)))
-			print('\tNumber of params below threshold: {}'.format(np.sum(z < -N_STDS)))
+		# Save z scores to tsv
+		with open(os.path.join(plotOutDir, '{}.tsv'.format(plotOutFileName)), 'w') as f:
+			writer = csv.writer(f, delimiter='\t')
 
-			mask = (z > N_STDS) | (z < -N_STDS)
-			print('\tSignificant correlation between parameter and {}:'.format(label))
-			for param_id, z_sig in sorted(zip(param_ids[mask], z[mask]), key=lambda v: v[1], reverse=True):
-				print('\t\t{}: {:.2f}'.format(param_id, z_sig))
-
-			# Print r-protein and RNAP z-scores
-			print('\tr-protein and RNAP z-scores:')
-			for param_id, param_z in zip(param_ids[growth_param_mask], z[growth_param_mask]):
-				print('\t\t{}: {:.2f}'.format(param_id, param_z))
+			writer.writerow(
+				['Parameter']
+				+ headers(labels, 'Z-score, difference')
+				+ headers(labels, 'Z-score, increase')
+				+ headers(labels, 'Z-score, decrease')
+				+ headers(labels, 'Raw average, difference')
+				+ headers(labels, 'Raw average, increase')
+				+ headers(labels, 'Raw average, decrease')
+				)
+			writer.writerows(np.hstack((
+				param_ids.reshape(-1, 1),
+				z_score_diff.T,
+				z_score_increase.T,
+				z_score_decrease.T,
+				data_diff.T,
+				increase_params_data.T,
+				decrease_params_data.T
+				)))
 
 
 if __name__ == "__main__":
