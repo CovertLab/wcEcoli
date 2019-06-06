@@ -179,6 +179,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			+ ['{} protein deg rate'.format(monomer_to_gene[monomer[:-3]]) for monomer in monomer_ids]
 			+ ['{} translation eff'.format(monomer_to_gene[monomer[:-3]]) for monomer in monomer_ids]
 			+ ['{} synth prob'.format(rna_to_gene[rna[:-3]]) for rna in rna_ids])
+		growth_param_mask = np.array([len(re.findall('rp[s,m,l,o]', param)) > 0 for param in param_ids])  # r-protein and RNAP
 		if len(param_ids) != total_params:
 			raise ValueError('Number of adjusted parameters and list of ids do not match.')
 
@@ -304,6 +305,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			print('\tSignificant correlation between parameter and {}:'.format(label))
 			for param_id, z_sig in sorted(zip(param_ids[mask], z[mask]), key=lambda v: v[1], reverse=True):
 				print('\t\t{}: {:.2f}'.format(param_id, z_sig))
+
+			# Print r-protein and RNAP z-scores
+			print('\tr-protein and RNAP z-scores:')
+			for param_id, param_z in zip(param_ids[growth_param_mask], z[growth_param_mask]):
+				print('\t\t{}: {:.2f}'.format(param_id, param_z))
 
 
 if __name__ == "__main__":
