@@ -1,6 +1,6 @@
 '''
-Used for sensitivity analysis on parameters from the fitter.  Increases one third
-of parameters by 5x and decreases one third by 5x with one third held constant.
+Used for sensitivity analysis on parameters from the fitter.  Increases one tenth
+of parameters by a factor of 5 and decreases one tenth by 1/5 with 80% held constant.
 
 Useful with variant analysis script param_sensitivity.py.
 
