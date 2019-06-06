@@ -252,15 +252,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			control_data = [None] * n_outputs
 
 		# Plot histogram
-		plt.figure(figsize=(5, 4*n_outputs))
+		plt.figure(figsize=(10, 4*n_outputs))
 
-		for i, z in enumerate(z_score_diff):
-			plt.subplot(n_outputs, 1, i + 1)
+		for i, (z_diff, z_increase, z_decrease) in enumerate(zip(z_score_diff, z_score_increase, z_score_decrease)):
+			sorted_idx = np.argsort(z_diff)
 
 			## Plot data
-			plt.bar(range(len(z)), np.sort(z))
-			plt.axhline(N_STDS , color='r')
-			plt.axhline(-N_STDS, color='r')
+			plt.subplot(n_outputs, 2, 2*i + 1)
+			plt.bar(range(total_params), z_diff[sorted_idx])
+			plt.axhline(N_STDS , color='k', linestyle='--')
+			plt.axhline(-N_STDS, color='k', linestyle='--')
 
 			## Format axes
 			sparkline.whitePadSparklineAxis(plt.gca(), xAxis=False)
@@ -268,9 +269,29 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.yticks([-N_STDS, 0, N_STDS])
 			lim = np.max(np.abs(plt.ylim()))
 			plt.ylim([-lim, lim])
+			if i == 0:
+				plt.title('Difference of Positive and Negative\nParameter Changes')
 			if i == n_outputs - 1:
 				plt.xlabel('Sorted Parameters')
 			plt.ylabel('Z score\nparameter effect on {}'.format(labels[i]))
+
+			## Plot data
+			plt.subplot(n_outputs, 2, 2*i + 2)
+			plt.bar(range(total_params), z_increase[sorted_idx], color='g')
+			plt.bar(range(total_params), z_decrease[sorted_idx], color='r')
+			plt.axhline(N_STDS , color='k', linestyle='--')
+			plt.axhline(-N_STDS, color='k', linestyle='--')
+
+			## Format axes
+			sparkline.whitePadSparklineAxis(plt.gca(), xAxis=False)
+			plt.xticks([])
+			plt.yticks([-N_STDS, 0, N_STDS])
+			lim = np.max(np.abs(plt.ylim()))
+			plt.ylim([-lim, lim])
+			if i == 0:
+				plt.title('Positive and Negative\nParameter Changes')
+			if i == n_outputs - 1:
+				plt.xlabel('Sorted Parameters')
 
 		## Save figure
 		plt.tight_layout()
