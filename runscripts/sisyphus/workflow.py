@@ -52,6 +52,25 @@ class Task(object):
 		t2.inputs.update(self.outputs)
 		return t2
 
+	def _set_path_mapping(self, io_map, storage_prefix, *path_elements):
+		# type: (Dict[str, str], str, *str) -> None
+		path = os.path.join(*path_elements)
+		io_map[os.path.join(storage_prefix, path)] = path
+
+	def set_input_mapping(self, storage_prefix, *path_elements):
+		# type: (str, *str) -> None
+		"""Set an input mapping storage_prefix:path --> path.
+		NOTE: A path ending with '/' is treated as an entire directory.
+		"""
+		self._set_path_mapping(self.inputs, storage_prefix, *path_elements)
+
+	def set_output_mapping(self, storage_prefix, *path_elements):
+		# type: (str, *str) -> None
+		"""Set an input mapping storage_prefix:path <-- path.
+		NOTE: A path ending with '/' is treated as an entire directory.
+		"""
+		self._set_path_mapping(self.outputs, storage_prefix, *path_elements)
+
 	def task_doc(self):
 		# type: () -> Dict[str, Any]
 		"""Return the Sisyphus task document to run this Task."""

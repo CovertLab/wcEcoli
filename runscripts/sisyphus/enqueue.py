@@ -7,7 +7,6 @@ it to run.
 
 from __future__ import absolute_import, division, print_function
 
-from os import path as op
 from typing import Any, Dict, List
 
 from .workflow import Task, Workflow
@@ -31,8 +30,6 @@ def _add_options(tokens, args, *options):
 class WCM_Workflow(Workflow):
 	"""A Workflow builder for the wcEcoli Whole Cell Model."""
 
-	# TODO(jerry): Finish adding the I/O mappings.
-
 	def __init__(self):
 		# type: () -> None
 		super(WCM_Workflow, self).__init__()
@@ -45,25 +42,9 @@ class WCM_Workflow(Workflow):
 
 		self.sim_outdir = 'workflow'  # subdir of './out' in the container
 
-	def _set_path_mapping(self, args, key, *subdirs):
-		# type: (Dict[str, Any], str, *str) -> None
-		"""Set an I/O path mapping for the given `subdirs` of `sim_outdir`."""
-		path = op.join(self.sim_outdir, *subdirs)
-		args.setdefault(key, {})[op.join(self.storage_prefix, path)] = path
-
-	def _set_input_mapping(self, args, *subdirs):
-		# type: (Dict[str, Any], *str) -> None
-		"""Set an input path mapping for the given `subdirs` of `sim_outdir`."""
-		self._set_path_mapping(args, 'inputs', *subdirs)
-
-	def _set_output_mapping(self, args, *subdirs):
-		# type: (Dict[str, Any], *str) -> None
-		"""Set an output path mapping for the given `subdirs` of `sim_outdir`."""
-		self._set_path_mapping(args, 'outputs', *subdirs)
-
 	def add_python_task(self, python_args, *upstream_tasks, **kwargs):
 		# type: (List[str], *Task, **Any) -> Task
-		"""Add a Python task to the workflow and return it."""
+		"""Operator: Add a Python task to the workflow and return it."""
 		kwargs['image'] = self.image
 
 		# Sisyphus needs `-u` unbuffered output.
@@ -73,42 +54,35 @@ class WCM_Workflow(Workflow):
 
 	def add_parca_task(self, *upstream_tasks, **kwargs):
 		# type: (*Task, **Any) -> Task
+		"""Operator: Add a parameter-calc task to the workflow and return it."""
 		kwargs.setdefault('name', 'parca')
-
-		self._set_output_mapping(kwargs, 'kb')
 
 		tokens = ['runscripts/manual/runParca.py', self.sim_outdir]
 		_add_options(tokens, kwargs, 'ribosome_fitting', 'rnapoly_fitting')
 
-		return self.add_python_task(tokens, *upstream_tasks, **kwargs)
+		# Use `upstream_tasks` to set the inputs, then add the outputs.
+		task = self.add_python_task(tokens, *upstream_tasks, **kwargs)
+		task.set_output_mapping(self.storage_prefix, 'kb/')
+		return task
 
 	def add_variants_task(self, *upstream_tasks, **kwargs):
 		# type: (*Task, **Any) -> Task
+		"""Operator: Add a make-variants task to the workflow and return it."""
 		kwargs.setdefault('name', 'makeVariants')
-
-		# Set up the output directory mappings. `upstream_tasks` will add the
-		# input mappings.
-		# TODO(jerry): Compute all the requested variant paths.
-		# TODO(jerry): Make the make-variant code output to just one subdir?
-		self._set_output_mapping(kwargs, 'wildtype_000000', 'kb')
-		self._set_output_mapping(kwargs, 'wildtype_000000', 'metadata')
 
 		tokens = ['runscripts/manual/makeVariants.py', self.sim_outdir]
 		_add_options(tokens, kwargs, 'variant')
 
-		return self.add_python_task(tokens, *upstream_tasks, **kwargs)
+		# TODO(jerry): Compute the actual variant paths.
+		task = self.add_python_task(tokens, *upstream_tasks, **kwargs)
+		task.set_output_mapping(self.storage_prefix, 'wildtype_000000', 'kb/')
+		task.set_output_mapping(self.storage_prefix, 'wildtype_000000', 'metadata/')
+		return task
 
 	def add_sim_task(self, *upstream_tasks, **kwargs):
 		# type: (*Task, **Any) -> Task
+		"""Operator: Add a run-sim task to the workflow and return it."""
 		kwargs.setdefault('name', 'runSim')
-
-		# Set up the output directory mappings.
-		# TODO(jerry): Compute all the requested sim-dir paths.
-		#  f'{variant_type}_{i:06d}/{j:06d}/generation_{k:06d}/{l:06d}/simOut'
-		#  for variant index i, seed (cohort) j, gen k, daughter l.
-		#  Refactor that out from fw_queue, runSim, etc.
-		self._set_output_mapping(kwargs, 'wildtype_000000', '000000',
-			'generation_000000', '000000', 'simOut')
 
 		tokens = [
 			'runscripts/manual/runSim.py', self.sim_outdir,
@@ -119,7 +93,11 @@ class WCM_Workflow(Workflow):
 			'timestep_update_freq', 'mass_distribution', 'growth_rate_noise',
 			'd_period_division', 'translation_supply', 'trna_charging')
 
-		return self.add_python_task(tokens, *upstream_tasks, **kwargs)
+		# TODO(jerry): Compute the actual simOut paths.
+		task = self.add_python_task(tokens, *upstream_tasks, **kwargs)
+		task.set_output_mapping(self.storage_prefix, 'wildtype_000000',
+			'000000', 'generation_000000', '000000', 'simOut/')
+		return task
 
 
 def wc_ecoli_workflow(**kwargs):
