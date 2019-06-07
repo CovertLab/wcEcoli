@@ -103,7 +103,7 @@ class Workflow(object):
 		# type: (Task) -> Task
 		"""Add a task object. Return it for chaining."""
 		self._tasks[task.name] = task
-		self.log_info('Added task {}'.format(task.name))
+		self.log_info('    Added task: {}'.format(task.name))
 		return task
 
 	def as_dag(self):
@@ -124,5 +124,6 @@ class Workflow(object):
 		"""Construct a workflow and enqueue it on the work servers."""
 		json_dag = self.as_json()
 
-		# TODO(jerry): *** Send it to the workflow manager. How? ***
+		# TODO(jerry): *** POST it to the workflow manager via HTTP. ***
+		print()
 		print(json_dag)  # meanwhile, just to see something happen
