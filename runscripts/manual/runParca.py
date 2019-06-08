@@ -11,6 +11,7 @@ Set PYTHONPATH when running this.
 from __future__ import absolute_import, division, print_function
 
 import os
+from typing import Any, List
 
 from wholecell.fireworks.firetasks import FitSimDataTask
 from wholecell.fireworks.firetasks import InitRawDataTask
@@ -64,6 +65,12 @@ class RunParca(scriptBase.ScriptBase):
 
 		args.sim_path = fp.makedirs(fp.ROOT_PATH, "out", args.sim_outdir)
 		return args
+
+	@classmethod
+	def output_subdirs(cls, **kwargs):
+		# type: (**Any) -> List[str]
+		"""Return a list of the output subdirs (of simout)."""
+		return ['kb']
 
 	def run(self, args):
 		kb_directory = fp.makedirs(args.sim_path, "kb")

@@ -170,7 +170,7 @@ class RunSimulation(scriptBase.ScriptBase):
 		timestamp, description = parse_timestamp_description(args.sim_path)
 
 		variant_type = args.variant[0]
-		variants_to_run = xrange(int(args.variant[1]), int(args.variant[2]) + 1)
+		variant_spec = (variant_type, int(args.variant[1]), int(args.variant[2]))
 
 		cli_sim_args = data.select_keys(vars(args),
 			('timeline', 'length_sec', 'timestep_safety_frac', 'timestep_max',
@@ -188,7 +188,7 @@ class RunSimulation(scriptBase.ScriptBase):
 			time=timestamp,
 			analysis_type=None,
 			variant=variant_type,
-			total_variants=str(len(variants_to_run)),
+			total_variants=str(variant_spec[2] + 1 - variant_spec[1]),
 			)
 		metadata_dir = fp.makedirs(args.sim_path, 'metadata')
 		metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
@@ -196,8 +196,8 @@ class RunSimulation(scriptBase.ScriptBase):
 
 
 		# args.sim_path is called INDIV_OUT_DIRECTORY in fw_queue.
-		for i in variants_to_run:
-			variant_directory = os.path.join(args.sim_path, variant_type + "_%06d" % i)
+		for i, subdir in fp.iter_variants(*variant_spec):
+			variant_directory = os.path.join(args.sim_path, subdir)
 			variant_sim_data_directory = os.path.join(variant_directory, "kb")
 
 			variant_sim_data_modified_file = os.path.join(

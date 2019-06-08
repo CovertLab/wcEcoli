@@ -6,6 +6,8 @@ runSim will make the sim_data variants, which is handy until you want to launch
 multiple first-gen runSim runs in parallel without collisions writing the same
 `simData_Modified.cPickle` file.)
 
+See models/ecoli/sim/variants/*.py for the variant choices.
+
 Prerequisite: Run the parameter calculator (runParca.py).
 
 TODO(jerry): Write the SIM_PATH/metadata.json file here instead of in runSim?
@@ -20,10 +22,13 @@ Set PYTHONPATH when running this.
 from __future__ import absolute_import, division, print_function
 
 import os
+from typing import Any, Dict, Generator, List
 
 from wholecell.fireworks.firetasks import VariantSimDataTask
 from wholecell.utils import constants, scriptBase
 import wholecell.utils.filepath as fp
+
+DEFAULT_VARIANT = ['wildtype', '0', '0']
 
 
 class MakeVariants(scriptBase.ScriptBase):
@@ -39,25 +44,37 @@ class MakeVariants(scriptBase.ScriptBase):
 		super(MakeVariants, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)
 
-		parser.add_argument('-v', '--variant', nargs=3, default=['wildtype', '0', '0'],
+		parser.add_argument('-v', '--variant', nargs=3, default=DEFAULT_VARIANT,
 			metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'),
 			help='''The variant type name, first index, and last index to make.
 				See models/ecoli/sim/variants/__init__.py for the variant
 				type choices. Default = wildtype 0 0''')
+
+	@classmethod
+	def output_subdirs(cls, **kwargs):
+		# type: (**Any) -> List[List[str]]
+		"""Return a list (over the requested variant) of a list of the output
+		subdirs (of simout).
+		"""
+		variant_arg = kwargs.get('variant') or DEFAULT_VARIANT
+		variant_spec = (variant_arg[0], int(variant_arg[1]), int(variant_arg[2]))
+
+		return [[os.path.join(subdir, 'kb'), os.path.join(subdir, 'metadata')]
+			for i, subdir in fp.iter_variants(*variant_spec)]
 
 	def run(self, args):
 		kb_directory = os.path.join(args.sim_path, 'kb')
 		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_SIM_DATA_FILENAME)
 		fp.verify_file_exists(sim_data_file, 'Run runParca?')
 
-		variant_type = args.variant[0]
-		variants_to_run = xrange(int(args.variant[1]), int(args.variant[2]) + 1)
+		variant_arg = args.variant
+		variant_spec = (variant_arg[0], int(variant_arg[1]), int(variant_arg[2]))
+		variant_type = variant_spec[0]
 
 		# args.sim_path is called INDIV_OUT_DIRECTORY in fw_queue.
-		for i in variants_to_run:
-			variant_directory = fp.makedirs(args.sim_path, variant_type + "_%06d" % i)
-			variant_sim_data_directory = fp.makedirs(variant_directory, "kb")
-			variant_metadata_directory = fp.makedirs(variant_directory, "metadata")
+		for i, subdir in fp.iter_variants(*variant_spec):
+			variant_sim_data_directory = fp.makedirs(args.sim_path, subdir, "kb")
+			variant_metadata_directory = fp.makedirs(args.sim_path, subdir, "metadata")
 
 			variant_sim_data_modified_file = os.path.join(
 				variant_sim_data_directory, constants.SERIALIZED_SIM_DATA_MODIFIED)

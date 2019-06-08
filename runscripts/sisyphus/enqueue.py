@@ -8,24 +8,35 @@ it to run.
 from __future__ import absolute_import, division, print_function
 
 import argparse
+import getpass
+from itertools import chain
+import os
 import pprint as pp
 from typing import Any, Dict, List
 
+import wholecell.utils.filepath as fp
+from runscripts.manual.makeVariants import MakeVariants
+from runscripts.manual.runParca import RunParca
 from runscripts.sisyphus.workflow import Task, Workflow
 
 
 DOCKER_IMAGE = 'gcr.io/allen-discovery-center-mcovert/wcm-code:latest'
-STORAGE_PREFIX = 'sisyphus:data/'
+STORAGE_PREFIX_ROOT = 'sisyphus:data/'
 
 VARIANT_OPTION = 'variant'  # this unique option takes 3 args
 
 # CLI options for the workflow tasks.
+# TODO(jerry): Add these extra options? Parca parallel CPU count, debug
+#  Parca, plots-to-run tag, build Causality network, single daughters, leak
+#  detection in the analysis plots.
 PARCA_OPTIONS = {'ribosome_fitting', 'rnapoly_fitting'}
 MAKE_VARIANT_OPTIONS = {VARIANT_OPTION}
-SIM_OPTIONS = {VARIANT_OPTION, 'generations', 'total_gens', 'seed', 'init_sims',
+RUN_SIM_OPTIONS = {VARIANT_OPTION, 'generations', 'total_gens', 'seed', 'init_sims',
 	'timeline', 'length_sec', 'timestep_safety_frac', 'timestep_max',
 	'timestep_update_freq', 'mass_distribution', 'growth_rate_noise',
 	'd_period_division', 'translation_supply', 'trna_charging'}
+# + analysis options...
+ALL_OPTIONS = PARCA_OPTIONS | MAKE_VARIANT_OPTIONS | RUN_SIM_OPTIONS
 
 
 def _add_options(tokens, args, *options):
@@ -51,10 +62,13 @@ class WCM_Workflow(Workflow):
 		# TODO(jerry): A developer-specific Docker image with their code.
 		self.image = DOCKER_IMAGE
 
-		# TODO(jerry): A developer- and experiment-specific storage_prefix.
-		self.storage_prefix = STORAGE_PREFIX
+		username = getpass.getuser()
+		timestamp = fp.timestamp()
+		self.storage_prefix = os.path.join(
+			STORAGE_PREFIX_ROOT, username, timestamp, '')
+		self.log_info('Storage prefix: {}'.format(self.storage_prefix))
 
-		self.sim_outdir = 'workflow'  # subdir of './out' in the container
+		self.sim_outdir = 'worker'  # subdir of './out' in the container
 
 	def add_python_task(self, python_args, *upstream_tasks, **kwargs):
 		# type: (List[str], *Task, **Any) -> Task
@@ -76,7 +90,11 @@ class WCM_Workflow(Workflow):
 
 		# Use `upstream_tasks` to set the inputs, then add the outputs.
 		task = self.add_python_task(tokens, *upstream_tasks, **kwargs)
-		task.set_output_mapping(self.storage_prefix, 'kb/')
+
+		# TODO(jerry): Include self.sim_outdir. Decouple the storage path from
+		#  the local path.
+		for subdir in RunParca.output_subdirs(**kwargs):
+			task.set_output_mapping(self.storage_prefix, subdir, '')
 		return task
 
 	def add_variants_task(self, *upstream_tasks, **kwargs):
@@ -87,10 +105,15 @@ class WCM_Workflow(Workflow):
 		tokens = ['runscripts/manual/makeVariants.py', self.sim_outdir]
 		_add_options(tokens, kwargs, *MAKE_VARIANT_OPTIONS)
 
-		# TODO(jerry): Compute the actual variant paths.
 		task = self.add_python_task(tokens, *upstream_tasks, **kwargs)
-		task.set_output_mapping(self.storage_prefix, 'wildtype_000000', 'kb/')
-		task.set_output_mapping(self.storage_prefix, 'wildtype_000000', 'metadata/')
+
+		# Ask MakeVariants to list all its output dirs. Declare outputs and
+		# stash the list on the Task object to use incrementally.
+		# TODO(jerry): Include self.sim_outdir. Decouple the storage path from
+		#  the local path.
+		task.subdir_lists = MakeVariants.output_subdirs(**kwargs)
+		for subdir in chain.from_iterable(task.subdir_lists):
+			task.set_output_mapping(self.storage_prefix, subdir, '')
 		return task
 
 	def add_sim_task(self, *upstream_tasks, **kwargs):
@@ -101,9 +124,10 @@ class WCM_Workflow(Workflow):
 		tokens = [
 			'runscripts/manual/runSim.py', self.sim_outdir,
 			'--require_variants', '1']
-		_add_options(tokens, kwargs, *SIM_OPTIONS)
+		_add_options(tokens, kwargs, *RUN_SIM_OPTIONS)
 
-		# TODO(jerry): Compute the actual simOut paths.
+		# TODO(jerry): Compute the actual simOut paths. Include self.sim_outdir.
+		# TODO(jerry): Decouple the storage path from the local path.
 		task = self.add_python_task(tokens, *upstream_tasks, **kwargs)
 		task.set_output_mapping(self.storage_prefix, 'wildtype_000000',
 			'000000', 'generation_000000', '000000', 'simOut/')
@@ -112,11 +136,15 @@ class WCM_Workflow(Workflow):
 
 def wc_ecoli_workflow(args):
 	# type: (Dict[str, Any]) -> WCM_Workflow
-	"""Construct a workflow DAG for wcEcoli."""
+	"""===> Construct a workflow DAG for wcEcoli."""
 	wf = WCM_Workflow()
 
 	t_parca = wf.add_parca_task(**args)
+
 	t_variants = wf.add_variants_task(t_parca, **args)
+	# TODO(jerry): Make each downstream Tasks= depend on only its own variant,
+	#  using the relevant sublist from `t_variants.subdir_lists`. Bundle the
+	#  variant type and index with each sublist if needed.
 
 	# TODO(jerry): Loop over variants, seeds, & gens, adding sim & sim daughter
 	#  tasks. Change args in kwargs so runSim will only run one iteration and
@@ -139,7 +167,7 @@ class Default(object):
 		return 'default'
 
 
-def default(v):
+def _default(v):
 	return Default() if v is None else v
 
 
@@ -154,13 +182,11 @@ def cli():
 	parser.add_argument('--' + VARIANT_OPTION, nargs=3,
 		metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'))
 
-	options = (PARCA_OPTIONS | MAKE_VARIANT_OPTIONS | SIM_OPTIONS) - {
-		VARIANT_OPTION}
-	for option in options:
+	for option in ALL_OPTIONS - {VARIANT_OPTION}:
 		parser.add_argument('--' + option)
 
 	args = vars(parser.parse_args())
-	pp.pprint({'Arguments': {k: default(v) for k, v in args.viewitems()}})
+	pp.pprint({'Arguments': {k: _default(v) for k, v in args.viewitems()}})
 	print()
 
 	enqueue_workflow(args)

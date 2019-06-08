@@ -16,24 +16,16 @@ class Task(object):
 	def __init__(self, *upstream_tasks, **kwargs):
 		# type: (*Task, **Any) -> None
 		"""Construct a Workflow Task from the Task args: `name`, Docker `image`,
-		`inputs` (dependencies) and `outputs` path mappings, and `commands`.
+		`commands`, and [optional] `inputs` and `outputs` path mappings.
 
 		The `upstream_tasks` and the `>>` operator are just convenient ways to
 		add `inputs`.
-
-		If present, `kwargs['storage_prefix']` is a storage bucket:path to
-		prepend to all the remote input and output paths.
-		TODO(jerry): Keep the storage_prefix feature?
 		"""
-		prefix = kwargs.get('storage_prefix', '')
-		def fix(subpath):
-			return os.path.join(prefix, subpath)
-
-		self.name = kwargs['name']
-		self.image = kwargs['image']
-		self.inputs  = {fix(k): v for k, v in kwargs.get('inputs',  {}).viewitems()}
-		self.outputs = {fix(k): v for k, v in kwargs.get('outputs', {}).viewitems()}
-		self.commands = kwargs['commands']
+		self.name = kwargs['name']  # type: str
+		self.image = kwargs['image']  # type: str
+		self.inputs  = kwargs.get('inputs',  {})  # type: Dict[str, str]
+		self.outputs = kwargs.get('outputs', {})  # type: Dict[str, str]
+		self.commands = kwargs['commands']  # type: List[Dict[str, Any]]
 
 		# Sisyphus uses inputs and outputs to determine data flow dependencies.
 		# self.upstream_tasks is just for visualizing the DAG.
