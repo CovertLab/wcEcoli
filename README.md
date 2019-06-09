@@ -1,21 +1,20 @@
 # Whole Cell Model - *Escherichia coli*
 
-**Notice:** This repository contains a **release snapshot** of the [Covert Lab's](https://www.covert.stanford.edu/) Whole Cell Model for [*Escherichia coli*](https://en.wikipedia.org/wiki/Escherichia_coli). In contrast, our working repository is under continuous development so please contact us before embarking on any changes that you want to contribute. We do not plan to merge Pull Requests into this repository except documentation and installation fixes.
+**Notice:** This repository contains a **release snapshot** of the [Covert Lab's](https://www.covert.stanford.edu/) Whole Cell Model for [*Escherichia coli*](https://en.wikipedia.org/wiki/Escherichia_coli). In contrast, our working repository is under continuous development so please contact us before embarking on any changes that you want to contribute. We do **not** plan to merge Pull Requests into this repository except documentation and installation fixes.
 
 You can reach us at [AllenCenterCovertLab](mailto:allencentercovertlab@gmail.com).
 
 
 ## Setup
 
-See [docs/README.md](docs/README.md) for docs on how to set up and run the model. As a shortcut, the core setup instructions are in:
+See [docs/README.md](docs/README.md) for docs on how to set up and run the model.
 
-  1. [Required development tools](docs/dev-tools.md) to install the basic tools, then
-  2. [Creating the "pyenv" runtime environment](docs/create-pyenv.md) to set up the Python runtime environment for the model.
+In short, there are two alternative ways to set up to run the model: inside a Docker container vs. in a carefully constructed `pyenv` virtual environment.
 
 
 ## Quick start
 
-Before running this code, remember to:
+When running this code (whether in a Docker container or in a pyenv virtual environment) remember to:
 
 1. `cd` to the top level of your cloned `wcEcoli` directory, and
 2. set the `$PYTHONPATH`
