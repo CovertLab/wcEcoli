@@ -7,7 +7,7 @@ lpad reset
 make clean compile
 
 ## Parameter sensitivity analysis
-runscripts/paper/sensitivity.sh sensitivity 0 50000
+runscripts/paper/sensitivity.sh sensitivity 0 20000
 
 ## Set A - basal condition
 # Used for figure 4
