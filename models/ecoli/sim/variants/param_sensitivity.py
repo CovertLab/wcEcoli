@@ -4,13 +4,27 @@ of parameters by a factor of 5 and decreases one tenth by 1/5 with 80% held cons
 
 Useful with variant analysis script param_sensitivity.py.
 
-Looks at the following sim_data params:
+Modifies sim_data params:
 	sim_data.process.transcription.rnaData['degRate']
 	sim_data.process.translation.monomerData['degRate']
 	sim_data.process.translation.translationEfficienciesByMonomer
 	sim_data.process.transcription.rnaSynthProb: not actually used in sims
 	sim_data.process.transcription.rnaExpression: used in initial_conditions
 	sim_data.process.transcription_regulation.recruitmentData['hV']: used in initial_conditions and sims
+
+Adds sim_data attributes:
+	sim_data.increase_rna_deg_indices
+	sim_data.increase_protein_deg_indices
+	sim_data.increase_trans_eff_indices
+	sim_data.increase_synth_prob_indices
+	sim_data.decrease_rna_deg_indices
+	sim_data.decrease_protein_deg_indices
+	sim_data.decrease_trans_eff_indices
+	sim_data.decrease_synth_prob_indices
+
+Expected variant indices:
+	0 (control):
+	1+: random set of parameters is adjusted
 '''
 
 from __future__ import division
@@ -136,9 +150,6 @@ def modify_params(sim_data, indices, factor):
 	for exp in sim_data.process.transcription.rnaExpression.values():
 		exp[synth_prob_indices] *= factor
 	sim_data.process.transcription_regulation.recruitmentData['hV'][recruitment_mask] *= factor
-
-def param_sensitivity_indices(sim_data):
-	return 0
 
 def param_sensitivity(sim_data, index):
 	# No modifications for first index as control

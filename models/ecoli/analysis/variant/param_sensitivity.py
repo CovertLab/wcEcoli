@@ -53,9 +53,9 @@ def analyze_variant((variant, total_params)):
 		ndarray[float]: 2D array of results with each row corresponding to value below:
 			number of times each parameter was increased
 			number of times each parameter was decreased
-			average growth rate for each parameter when increaed
+			average growth rate for each parameter when increased
 			average growth rate for each parameter when decreased
-			average flux correlation for each parameter when increaed
+			average flux correlation for each parameter when increased
 			average flux correlation for each parameter when decreased
 	'''
 
