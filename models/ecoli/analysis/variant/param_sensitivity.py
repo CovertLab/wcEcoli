@@ -22,7 +22,7 @@ import re
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import numpy as np
-from scipy import stats
+from scipy import special, stats
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
@@ -34,7 +34,6 @@ from wholecell.utils import constants, filepath, parallelization, sparkline, uni
 
 
 CONTROL_VARIANT = 0  # variant number for control simulation
-N_STDS = 3  # number of standard deviations from the mean to highlight
 
 
 def analyze_variant((variant, total_params)):
@@ -252,6 +251,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		else:
 			control_data = [None] * n_outputs
 
+		# Multiple hypothesis adjustment for significance of each parameter.
+		# Solves Gaussian CDF for how many standard deviations are needed to
+		# include 1 - 0.05 / total_params of the data (test each parameter for p<0.05).
+		n_stds = special.erfinv(2 * (1 - 0.05 / total_params) - 1) * np.sqrt(2)
+
 		# Plot histogram
 		plt.figure(figsize=(10, 4*n_outputs))
 
@@ -262,14 +266,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax = plt.subplot(n_outputs, 2, 2*i + 1)
 			plt.yscale('symlog', linthreshold=0.01)
 			plt.bar(range(total_params), z_diff[sorted_idx])
-			plt.axhline(N_STDS , color='k', linestyle='--')
-			plt.axhline(-N_STDS, color='k', linestyle='--')
+			plt.axhline(n_stds , color='k', linestyle='--')
+			plt.axhline(-n_stds, color='k', linestyle='--')
 
 			## Format axes
 			sparkline.whitePadSparklineAxis(ax, xAxis=False)
 			plt.xticks([])
-			plt.yticks([-N_STDS, 0, N_STDS])
-			ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
+			plt.yticks([-n_stds, 0, n_stds])
+			ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 			lim = np.max(np.abs(plt.ylim()))
 			plt.ylim([-lim, lim])
 			if i == 0:
@@ -283,14 +287,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.yscale('symlog', linthreshold=0.01)
 			plt.bar(range(total_params), z_increase[sorted_idx], color='g')
 			plt.bar(range(total_params), z_decrease[sorted_idx], color='r')
-			plt.axhline(N_STDS , color='k', linestyle='--')
-			plt.axhline(-N_STDS, color='k', linestyle='--')
+			plt.axhline(n_stds , color='k', linestyle='--')
+			plt.axhline(-n_stds, color='k', linestyle='--')
 
 			## Format axes
 			sparkline.whitePadSparklineAxis(ax, xAxis=False)
 			plt.xticks([])
-			plt.yticks([-N_STDS, 0, N_STDS])
-			ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
+			plt.yticks([-n_stds, 0, n_stds])
+			ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 			plt.ylim([-lim, lim])
 			if i == 0:
 				plt.title('Positive and Negative\nParameter Changes')
