@@ -65,6 +65,7 @@ PROMOTER_SCALING = 10  # Multiplied to all matrices for numerical stability
 PROMOTER_NORM_TYPE = 1  # Matrix 1-norm
 PROMOTER_MAX_ITERATIONS = 100
 PROMOTER_CONVERGENCE_THRESHOLD = 1e-9
+PROMOTER_ABSTOL = 1e-7  # Default for ECOS solver
 
 BASAL_EXPRESSION_CONDITION = "M9 Glucose minus AAs"
 
@@ -210,6 +211,8 @@ def fitSimData_1(
 		if nutrients not in sim_data.translationSupplyRate.keys():
 			sim_data.translationSupplyRate[nutrients] = cellSpecs[condition_label]["translation_aa_supply"]
 
+	if VERBOSE > 0:
+		print('Fitting promoter binding')
 	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
 	fitLigandConcentrations(sim_data, cellSpecs)
 
@@ -1772,7 +1775,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 
 			nIters += 1
 			if nIters > 100:
-				raise Exception, "Equilibrium reactions are not converging!"
+				raise Exception("Equilibrium reactions are not converging!")
 
 		allMoleculeCounts[seed, :] = allMoleculesView.counts()
 
@@ -2694,6 +2697,33 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 			assert np.all(sim_data.process.transcription.rnaSynthProb[condition] >= 0)
 			sim_data.process.transcription.rnaSynthProb[condition] /= sim_data.process.transcription.rnaSynthProb[condition].sum()
 
+	def output_to_array(output, tol=PROMOTER_ABSTOL):
+		'''
+		Creates numpy array from cvxpy output and adjusts values that are within
+		solver tolerance of 0 and 1.
+
+		ECOS solver will provide solutions near 0 or 1 but within tolerance
+		so they need to be adjusted for proper probabilities. GLPK does not need
+		this adjustment if used.
+
+		Args:
+			output (cvxpy.Variable object): output variable after cvxpy problem
+				has been solved
+			tol (float): solver tolerance to adjust for
+		'''
+
+		ar = np.array(output.value).reshape(-1)
+
+		# Adjust values that should be 0.0
+		idx0 = np.where(np.abs(ar) < tol)[0]
+		ar[idx0] = 0
+
+		# Adjust values that should be 1.0
+		idx1 = np.where(np.abs(ar - 1) < tol)[0]
+		ar[idx1] = 1
+
+		return ar
+
 	# Initialize pPromoterBound using mean TF and ligand concentrations
 	pPromoterBound = calculatePromoterBoundProbability(sim_data, cellSpecs)
 	pInit0 = None
@@ -2740,13 +2770,13 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		# Solve optimization problem
 		prob_r = Problem(objective_r, constraint_r)
-		prob_r.solve(solver = "GLPK")
+		prob_r.solve(solver='ECOS', abstol=PROMOTER_ABSTOL)
 
 		if prob_r.status != "optimal":
-			raise Exception, "Solver could not find optimal value"
+			raise Exception("Solver could not find optimal value")
 
 		# Get optimal value of R
-		r = np.array(R.value).reshape(-1)
+		r = output_to_array(R)
 
 		# Use optimal value of R to construct matrix H and vector Pdiff
 		H, pInit, pAlphaIdxs, pNotAlphaIdxs, fixedTFIdxs, pPromoterBoundIdxs, colNamesH = build_matrix_H(
@@ -2796,13 +2826,13 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		# Solve optimization problem
 		prob_p = Problem(objective_p, constraint_p)
-		prob_p.solve(solver = "GLPK")
+		prob_p.solve(solver='ECOS', abstol=PROMOTER_ABSTOL)
 
 		if prob_p.status != "optimal":
-			raise Exception, "Solver could not find optimal value"
+			raise Exception("Solver could not find optimal value")
 
 		# Get optimal value of P
-		p = np.array(P.value).reshape(-1)
+		p = output_to_array(P)
 
 		# Update pPromoterBound with fit p
 		fromArray(p, pPromoterBound, pPromoterBoundIdxs)
