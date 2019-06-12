@@ -157,6 +157,45 @@ CompressVariantSimData (fw_this_variant_sim_data_compression)
 CompressSimulationOutput (fw_this_variant_this_gen_this_sim_compression)
 -------------------------------------------------
 
+without compression tasks
+
+||||||||||||||||||||||||||||||||||||||
+
+InitRawData (fw_init_raw_data)
+* FitSimData
+* InitRawValidationData
+
+InitRawValidationData (fw_raw_validation_data)
+* InitValidationData
+
+InitValidationData (fw_validation_data)
+
+FitSimData (fw_calculate_sim_data)
+* VariantSimData * VARIANTS_TO_RUN
+
+VariantSimData (fw_this_variant_sim_data)
+* Simulation/SimulationDaughter * N_INIT_SIMS
+
+Simulation/SimulationDaughter (fw_this_variant_this_gen_this_sim)
+* SimulationDaughter (* 2 if not SINGLE_DAUGHTERS) if GEN < N_GENS - 1
+* AnalysisSingle if RUN_AGGREGATE_ANALYSIS
+* AnalysisCohort if RUN_AGGREGATE_ANALYSIS and GEN == N_GENS - 1
+* AnalysisVariant if RUN_AGGREGATE_ANALYSIS and GEN == N_GENS - 1
+* AnalysisMultiGen if RUN_AGGREGATE_ANALYSIS and GEN == N_GENS - 1
+* BuildCausalityNetwork if BUILD_CAUSALITY_NETWORK
+
+AnalysisSingle (fw_this_variant_this_gen_this_sim_analysis)
+
+AnalysisVariant (fw_variant_analysis)
+
+AnalysisCohort (fw_this_variant_cohort_analysis)
+
+AnalysisMultiGen (fw_this_variant_this_seed_this_analysis)
+
+BuildCausalityNetwork (fw_this_variant_this_gen_this_sim_causality_network)
+
+||||||||||||||||||||||||||||||||||||||||||||||
+
 '''
 
 from __future__ import absolute_import, division, print_function
