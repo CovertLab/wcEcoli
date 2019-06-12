@@ -3,14 +3,16 @@
 #
 # To build this image from the wcEcoli/ project root directory:
 #
-#     > docker build -f container/runtime/Dockerfile -t wcm-runtime .
-
+#     > docker build -f cloud/docker/runtime/Dockerfile -t wcm-runtime .
+#
+# Add option `--build-arg from ABC` to build from a different base image but
 # DO NOT USE an alpine base since the simulation math comes out different!
-FROM python:2.7.16
+ARG from=python:2.7.16
+FROM ${from}
 
 RUN apt-get update \
     && apt-get install -y glpk-utils libglpk-dev glpk-doc swig python-cvxopt \
-        gfortran llvm cmake ncurses-dev libreadline7 libreadline-dev
+        gfortran llvm cmake ncurses-dev libreadline7 libreadline-dev nano
 
 RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc
 

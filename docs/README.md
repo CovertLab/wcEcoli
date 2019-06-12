@@ -6,13 +6,13 @@ These are the docs for a variety of topics on the Whole Cell Model.
 
 There are two alternative ways to set up to run the model:
 
-1. **Docker setup (recommended):** Install the [Docker Desktop software](https://www.docker.com/products/docker-desktop) then launch our Docker container image from the GitHub Package Registry or build it locally using the `runscripts/build/containers.sh` shell script.
+1. **Docker setup (recommended):** Install the [Docker Desktop software](https://www.docker.com/products/docker-desktop) then launch our Docker container image from the GitHub Package Registry or build it locally using the `cloud/build-containers.sh` shell script.
 
    You can then run the model inside the container.
 
-   This approach is straightforward and fully isolated from your computer's operating system, any versions of Python you have, binary libraries, and everything else installed.
+   A container takes one `docker build` command to build and is fully isolated from your computer's operating system, any versions of Python you have, binary libraries, and everything else installed.
 
-2. **pyenv setup:** Follow [Required development tools](docs/dev-tools.md) to install the development tools including pyenv, gcc, make, and git, then follow [Creating the "pyenv" runtime environment](docs/create-pyenv.md) to set up the Python runtime virtual environment for the model including binary libraries and Python packages.
+2. **pyenv setup:** Follow [Required development tools](dev-tools.md) to install the development tools including pyenv, gcc, make, and git, then follow [Creating the "pyenv" runtime environment](create-pyenv.md) to set up the Python runtime virtual environment for the model including binary libraries and Python packages.
 
    You can then run the model with this version of Python under `pyenv`.
    
