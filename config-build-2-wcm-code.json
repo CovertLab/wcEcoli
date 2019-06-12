@@ -4,6 +4,7 @@
         "name": "gcr.io/cloud-builders/docker",
         "args": [
             "build",
+            "--build-arg", "from=gcr.io/allen-discovery-center-mcovert/wcm-runtime",
             "-t", "gcr.io/$PROJECT_ID/wcm-code",
             "-f", "cloud/docker/wholecell/Dockerfile",
             "."
