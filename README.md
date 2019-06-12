@@ -14,20 +14,20 @@ In short, there are two alternative ways to set up to run the model: inside a Do
 
 ## Quick start
 
-When running this code (whether in a Docker container or in a pyenv virtual environment) remember to:
+When running this code, prepare with these steps (the wcm-code Docker container already prepares this for you):
 
-1. `cd` to the top level of your cloned `wcEcoli` directory, and
-2. set the `$PYTHONPATH`
+1. `cd` to the top level of your `wcEcoli` directory.
+2. Set the `$PYTHONPATH`:
 
    ```bash
-   export PYTHONPATH="/path/to/wcEcoli:$PYTHONPATH"
+   export PYTHONPATH="$PWD:$PYTHONPATH"
    ```
 
-In the `wcEcoli` directory, compile the Cython code:
+3. In the `wcEcoli` directory, compile the Cython code:
 
-```bash
-make clean compile
-```
+   ```bash
+   make clean compile
+   ```
 
 
 There are two ways to run the model:
