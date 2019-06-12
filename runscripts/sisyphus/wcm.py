@@ -30,7 +30,7 @@ class WcmWorkflow(object):
 
 		return spec
 
-	def self.paths_for(self, keys):
+	def paths_for(self, keys):
 		return {
 			key: self.paths[key]
 			for key in keys}
@@ -60,12 +60,13 @@ class WcmWorkflow(object):
 			self.paths_for(['raw-data']),
 			self.paths_for(['sim-data']))
 
-		sim_datas = [fit_sim_data]
+		variants = []
 
-		for index, variant in enumerate(sim_datas):
+		for index, variant in enumerate(variants):
 			key = 'sim-data-{}'.format(index)
 			self.paths[key] = os.path.join(self.root, key)
-			variant_sim_data.append(self.process(
+
+			variants.append(self.process(
 				key,
 				'variant-sim-data',
 				{'input-sim-data': self.paths['sim-data']},
@@ -76,7 +77,7 @@ class WcmWorkflow(object):
 		simulations = []
 
 		for simulation in simulations:
-			for variant, sim_data in enumerate(sim_datas):
+			for variant, sim_data in enumerate(variants):
 				for generation in generations:
 					branch = 0
 					key = 'simulation-{}-variant-{}-generation-{}-daughter-{}'.format(simulation, variant, generation, branch)
@@ -88,27 +89,28 @@ class WcmWorkflow(object):
 					self.paths[endow_b] = os.path.join(self.root, endow_b)
 
 					inputs = [{'sim-data': self.paths['sim-data-{}'.format(variant)]}]
-					base_var = {'sim-index': "{:06d}".format(simulation)
-						   'variant-index': "{:06d}".format(variant),
-						   'generation': "{:06d}".format(generation)}
+					base_var = {
+						'sim-index': "{:06d}".format(simulation)
+						'variant-index': "{:06d}".format(variant),
+						'generation': "{:06d}".format(generation)}
 
 					if generation > 0:
 						inputs[0]['inherited-state'] = self.paths[endow_a]
 						if options['branch']:
-							inputs.append(
-								{'sim-data': self.paths['sim-data-{}'.format(variant)],
-								 'inherited-state': self.paths[endow_b]})
+							inputs.append({
+								'sim-data': self.paths['sim-data-{}'.format(variant)],
+								'inherited-state': self.paths[endow_b]})
 
 					for branch, input in enumerate(inputs):
 						var = base_var
 						if generation > 0:
 							var = dict(var, 'branch' = "{:06d}".format(branch))
 
-						simulation_process = self.process(
+						simulations.append(self.process(
 							key,
 							'simulation' if generation == 0 else 'simulation-daughter'
 							inputs,
 							{'sim-out': self.paths[key],
 							 'daughter-a': self.paths[endow_a]
 							 'daughter-b': self.paths[endow_b]},
-							var)
+							var))
