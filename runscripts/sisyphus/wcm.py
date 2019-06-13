@@ -1,29 +1,30 @@
 import os
+import pprint
 
 class WcmWorkflow(object):
-	def __init__(self, root, options):
+	def __init__(self, root, options={}):
 		self.root = root
 		self.options = options
 		self.paths = self.rootify({
 			'raw-data': 'raw-data',
-			'raw-validation-data': 'raw-validation-data'
-			'validation-data': 'validation-data'
+			'raw-validation-data': 'raw-validation-data',
+			'validation-data': 'validation-data',
 			'sim-data': 'sim-data'})
 
 	def rootify(self, paths):
 		return {
 			key: os.path.join(self.root, path)
-			for key, path in paths}
+			for key, path in paths.iteritems()}
 
 	def process(self, key, command, inputs, outputs, var={}):
-		outputs = self.rootify(outputs)
+		outputs = outputs
 		spec = {
-			key: os.path.join(self.root, key),
-			command: command,
-			outputs: outputs}
+			'key': os.path.join(self.root, key),
+			'command': command,
+			'outputs': outputs}
 
 		if len(inputs) > 0:
-			inputs = self.rootify(inputs)
+			inputs = inputs
 			spec['inputs'] = inputs
 		if len(var) > 0:
 			spec['vars'] = var
@@ -35,7 +36,7 @@ class WcmWorkflow(object):
 			key: self.paths[key]
 			for key in keys}
 
-	def build_workflow(variants, simulations, generations, options):
+	def build_workflow(self, variants, simulations, generations, options={}):
 		init_raw_data = self.process(
 			'init-raw-data',
 			'init-raw-data',
@@ -60,57 +61,73 @@ class WcmWorkflow(object):
 			self.paths_for(['raw-data']),
 			self.paths_for(['sim-data']))
 
-		variants = []
+		variants_tasks = []
 
 		for index, variant in enumerate(variants):
 			key = 'sim-data-{}'.format(index)
 			self.paths[key] = os.path.join(self.root, key)
 
-			variants.append(self.process(
+			variants_tasks.append(self.process(
 				key,
 				'variant-sim-data',
 				{'input-sim-data': self.paths['sim-data']},
-				{'output-sim-data': self.paths[key]}
+				{'output-sim-data': self.paths[key]},
 				{'variant-function': variant,
 				 'variant-index': index}))
 
-		simulations = []
+		simulations_tasks = []
 
-		for simulation in simulations:
+		for simulation in range(simulations):
 			for variant, sim_data in enumerate(variants):
-				for generation in generations:
+				for generation in range(generations):
 					branch = 0
-					key = 'simulation-{}-variant-{}-generation-{}-daughter-{}'.format(simulation, variant, generation, branch)
-					endow_a = 'simulation-{}-variant-{}-generation-{}-daughter-{}-endow-{}'.format(simulation, variant, generation, branch, 0)
-					endow_b = 'simulation-{}-variant-{}-generation-{}-daughter-{}-endow-{}'.format(simulation, variant, generation, branch, 1)
+					key = 'simulation-{}-variant-{}-generation-{}-daughter-{}'.format(
+						simulation, variant, generation, branch)
+					endow_a = 'simulation-{}-variant-{}-generation-{}-daughter-{}-endow-{}'.format(
+						simulation, variant, generation, branch, 0)
+					endow_b = 'simulation-{}-variant-{}-generation-{}-daughter-{}-endow-{}'.format(
+						simulation, variant, generation, branch, 1)
 
 					self.paths[key] = os.path.join(self.root, key)
 					self.paths[endow_a] = os.path.join(self.root, endow_a)
 					self.paths[endow_b] = os.path.join(self.root, endow_b)
 
-					inputs = [{'sim-data': self.paths['sim-data-{}'.format(variant)]}]
+					variant_key = self.paths['sim-data-{}'.format(variant)]
+					inputs = [{'sim-data': variant_key}]
 					base_var = {
-						'sim-index': "{:06d}".format(simulation)
+						'sim-index': "{:06d}".format(simulation),
 						'variant-index': "{:06d}".format(variant),
 						'generation': "{:06d}".format(generation)}
 
 					if generation > 0:
+						# inherit_a = TODO: find inherited state
 						inputs[0]['inherited-state'] = self.paths[endow_a]
-						if options['branch']:
+						if options.get('branch'):
 							inputs.append({
-								'sim-data': self.paths['sim-data-{}'.format(variant)],
+								'sim-data': variant_key,
 								'inherited-state': self.paths[endow_b]})
 
 					for branch, input in enumerate(inputs):
 						var = base_var
 						if generation > 0:
-							var = dict(var, 'branch' = "{:06d}".format(branch))
+							var = dict(var, branch="{:06d}".format(branch))
 
-						simulations.append(self.process(
+						simulations_tasks.append(self.process(
 							key,
-							'simulation' if generation == 0 else 'simulation-daughter'
-							inputs,
+							'simulation' if generation == 0 else 'simulation-daughter',
+							inputs[branch],
 							{'sim-out': self.paths[key],
-							 'daughter-a': self.paths[endow_a]
+							 'daughter-a': self.paths[endow_a],
 							 'daughter-b': self.paths[endow_b]},
 							var))
+		return [
+			init_raw_data,
+			init_raw_validation_data,
+			init_validation_data,
+			fit_sim_data] + variants_tasks + simulations_tasks
+
+if __name__ == '__main__':
+	workflow = WcmWorkflow('sisyphus:base')
+	processes = workflow.build_workflow(['wildtype', 'other'], 2, 3)
+	pp = pprint.PrettyPrinter()
+	pp.pprint(processes)
