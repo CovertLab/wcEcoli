@@ -50,7 +50,7 @@ def test_solver(problem, output, solver):
 	sol = np.array(output.value).reshape(-1)
 
 	# Example indices for desired outputs, other indices can be checked
-	print(sol[114])  # Will be different locally vs sherlock
+	print(sol[114])  # Might be different locally vs sherlock with GLPK
 	print(sol[0])  # Should be 1.0
 	print(sol[21])  # Should be 0.0
 
