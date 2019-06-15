@@ -31,6 +31,7 @@ FROM ${from}
 
 LABEL application="Whole Cell Model of Escherichia coli" \
     email="allencentercovertlab@gmail.com" \
+    license="https://github.com/CovertLab/WholeCellEcoliRelease/blob/master/LICENSE.md" \
     organization="Covert Lab at Stanford" \
     website="https://www.covert.stanford.edu/"
 
