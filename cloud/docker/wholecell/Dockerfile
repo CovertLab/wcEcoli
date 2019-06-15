@@ -29,6 +29,11 @@
 ARG from=wcm-runtime:latest
 FROM ${from}
 
+LABEL application="Whole Cell Model of Escherichia coli" \
+    email="allencentercovertlab@gmail.com" \
+    organization="Covert Lab at Stanford" \
+    website="https://www.covert.stanford.edu/"
+
 COPY . /wcEcoli
 WORKDIR /wcEcoli
 
