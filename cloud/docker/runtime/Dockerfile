@@ -14,7 +14,7 @@ ARG from=python:2.7.16
 FROM ${from}
 
 RUN apt-get update \
-    && apt-get install -y glpk-utils libglpk-dev glpk-doc swig python-cvxopt \
+    && apt-get install -y swig python-cvxopt \
         gfortran llvm cmake ncurses-dev libreadline7 libreadline-dev nano
 
 RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc
