@@ -81,6 +81,7 @@ class WcmWorkflow(object):
 						'variant-index': index}})
 
 		simulations_tasks = []
+		analysis_tasks = []
 
 		for simulation in range(simulations):
 			for variant, indexes in variants.iteritems():
@@ -133,6 +134,14 @@ class WcmWorkflow(object):
 									'daughter-a': self.paths[endow_a],
 									'daughter-b': self.paths[endow_b]},
 								'vars': var})
+
+							# analysis_tasks.append({
+							# 	'key': self.add_root('{}-analysis-single'.format(key)),
+							# 	'command': 'analysis-single',
+							# 	'inputs': {
+							# 		'sim-data': variant_key,
+							# 		'validation-data': self.paths['validation-data'],
+							# 		'metadata': }})
 		return [
 			init_raw_data,
 			init_raw_validation_data,
