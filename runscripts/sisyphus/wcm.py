@@ -141,6 +141,6 @@ class WcmWorkflow(object):
 
 if __name__ == '__main__':
 	workflow = WcmWorkflow('sisyphus:base')
-	processes = workflow.build_workflow({'wildtype': [0], 'other': [11, 12]}, 2, 3)
+	processes = workflow.build_workflow({'wildtype': [0], 'other': [11, 12]}, 2, 3, {'branch': True})
 	pp = pprint.PrettyPrinter()
 	pp.pprint(processes)
