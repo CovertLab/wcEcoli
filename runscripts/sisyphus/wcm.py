@@ -95,14 +95,13 @@ class WcmWorkflow(object):
 							endow_a = '{}-endow-{}'.format(sim_out_key, 0)
 							endow_b = '{}-endow-{}'.format(sim_out_key, 1)
 							daughter = branch // 2
-							inherit = daughter % 2
 							inherit_key = 'simulation-{}-variant-{}-{}-generation-{}-daughter-{}-endow-{}'.format(
 								simulation,
 								variant,
 								variant_index,
 								generation-1,
-								branch // 2,
-								inherit)
+								daughter,
+								daughter % 2)
 						
 							self.add_path(sim_out_key)
 							self.add_path(endow_a)
@@ -119,7 +118,6 @@ class WcmWorkflow(object):
 								'generation': "{:06d}".format(generation)}
 
 							if generation > 0:
-								# inherit_a = TODO: find inherited state
 								inputs['inherited-state'] = self.paths[inherit_key]
 
 							var = base_var
