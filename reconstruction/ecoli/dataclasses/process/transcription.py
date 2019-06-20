@@ -10,6 +10,7 @@ TODO: add mapping of tRNA to charged tRNA if allowing more than one modified for
 from __future__ import division
 
 import numpy as np
+import re
 
 from wholecell.utils import units
 from wholecell.utils.unit_struct_array import UnitStructArray
@@ -36,12 +37,10 @@ class Transcription(object):
 		"""
 		assert all([len(rna['location']) == 1 for rna in raw_data.operon_rnas])
 
-		import ipdb; ipdb.set_trace()
-
-
 		# Loads RNA IDs, degradation rates, lengths, and nucleotide compositions
 		rnaIds = ['{}[{}]'.format(rna['id'], rna['location'][0])
-            for rna in raw_data.operon_rnas]
+			for rna in raw_data.operon_rnas]
+		#import ipdb; ipdb.set_trace()
 		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in raw_data.operon_rnas]) # TODO: units
 		rnaLens = np.array([len(rna['seq']) for rna in raw_data.operon_rnas])
 
@@ -55,13 +54,19 @@ class Transcription(object):
 		expression = []
 		
 		for rna in raw_data.operon_rnas:
-			import ipdb; ipdb.set_trace()
-			arb_exp = [x[sim_data.basal_expression_condition]
-                for x in eval("raw_data.rna_seq_data.rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS))
-                if x['Gene'] == rna['geneId']]
+			
+			arb_exp = [x['tu_count'] for x in raw_data.transcription_units
+						if x['tu_id'] == rna['geneId']]
+			
+			
+			
+			#arb_exp = [x[sim_data.basal_expression_condition]
+				#for x in eval("raw_data.rna_seq_data.rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS))
+				#if x['Gene'] == rna['geneId']]
+			
 
 			# If sequencing data is not found for rRNA or tRNA, initialize
-            # expression to zero. For other RNA types, raise exception.
+			# expression to zero. For other RNA types, raise exception.
 			if len(arb_exp) > 0:
 				expression.append(arb_exp[0])
 			elif rna['type'] == 'mRNA' or rna['type'] == 'miscRNA':
@@ -84,8 +89,8 @@ class Transcription(object):
 		Km = (KCAT_ENDO_RNASE*ESTIMATE_ENDO_RNASES/rnaDegRates) - expression
 
 		# Load molecular weights and gene IDs
-		mws = np.array([rna['mw'] for rna in raw_data.rnas]).sum(axis = 1)
-		geneIds = np.array([rna['geneId'] for rna in raw_data.rnas])
+		mws = np.array([rna['mw'] for rna in raw_data.operon_rnas]).sum(axis = 1)
+		geneIds = np.array([rna['geneId'] for rna in raw_data.operon_rnas])
 
 		# Construct boolean arrays and index arrays for each rRNA type
 		n_rnas = len(rnaIds)
@@ -96,7 +101,7 @@ class Transcription(object):
 		idx_16S = []
 		idx_5S = []
 
-		for rnaIndex, rna in enumerate(raw_data.rnas):
+		for rnaIndex, rna in enumerate(raw_data.operon_rnas):
 			if rna["type"] == "rRNA" and rna["id"].startswith("RRL"):
 				is_23S[rnaIndex] = True
 				idx_23S.append(rnaIndex)
@@ -115,11 +120,11 @@ class Transcription(object):
 		idx_5S = np.array(idx_5S)
 
 		# Load sequence data
-		sequences = [rna['seq'] for rna in raw_data.rnas]
+		sequences = [rna['seq'] for rna in raw_data.operon_rnas]
 		maxSequenceLength = max(len(sequence) for sequence in sequences)
 		
 		# Load IDs of protein monomers
-		monomerIds = [rna['monomerId'] for rna in raw_data.rnas]
+		monomerIds = [rna['monomerId'] for rna in raw_data.operon_rnas]
 
 		# Get index of gene corresponding to each RNA
 		gene_index = {gene["rnaId"]: i
@@ -144,15 +149,38 @@ class Transcription(object):
 			return replication_coordinate
 
 		# Location of transcription initiation relative to origin
+		'''
 		replicationCoordinate = [
 			get_replication_coordinate(coordinate_list[gene_index[rna["id"]]])
 			for rna in raw_data.rnas]
-
+			'''
 		# Direction of transcription
+		'''
 		direction = [
 			(direction_list[gene_index[rna["id"]]] == "+")
-			for rna in raw_data.rnas]
+			for rna in raw_data.operon_rnas]
+		'''
+		def get_first_rna_id(rna_id):
+			#move this to the top if we keep it
+			SPLIT_DELIMITER = '_'
+			#This solution will work for now, but will need to look for type and add the appropriate suffix
+			#There has to be an easier way, maybe store the first gene in the operon_rnas file.
+			rna_id = re.split(SPLIT_DELIMITER, rna_id)[0] + '_RNA'
+			return rna_id
 
+		replicationCoordinate = []
+		direction = []
+		for rna in raw_data.operon_rnas:
+			#only perform function on multi-gene tus.
+			if len(rna['monomerId']) > 1:
+				rna_id = get_first_rna_id(rna['id'])
+			else:
+				rna_id = rna['id']
+			# Location of transcription initiation relative to origin
+			replicationCoordinate.append(get_replication_coordinate(coordinate_list[gene_index[rna_id]]))
+			# Direction of transcription
+			direction.append((direction_list[gene_index[rna_id]] == "+"))
+		
 		# Set the lengths, nucleotide counts, molecular weights, and sequences
 		# of each type of rRNAs to be identical to those of the first rRNA
 		# operon. Later in the sim, transcription of all rRNA genes are set to
@@ -211,16 +239,16 @@ class Transcription(object):
 		rnaData['length'] = rnaLens
 		rnaData['countsACGU'] = ntCounts
 		rnaData['mw'] = mws
-		rnaData['isMRna'] = [rna["type"] == "mRNA" for rna in raw_data.rnas]
-		rnaData['isMiscRna'] = [rna["type"] == "miscRNA" for rna in raw_data.rnas]
-		rnaData['isRRna'] = [rna["type"] == "rRNA" for rna in raw_data.rnas]
-		rnaData['isTRna'] = [rna["type"] == "tRNA" for rna in raw_data.rnas]
+		rnaData['isMRna'] = [rna["type"] == "mRNA" for rna in raw_data.operon_rnas]
+		rnaData['isMiscRna'] = [rna["type"] == "miscRNA" for rna in raw_data.operon_rnas]
+		rnaData['isRRna'] = [rna["type"] == "rRNA" for rna in raw_data.operon_rnas]
+		rnaData['isTRna'] = [rna["type"] == "tRNA" for rna in raw_data.operon_rnas]
 		rnaData['isRProtein'] = [
-            "{}[c]".format(x) in sim_data.moleculeGroups.rProteins
-            for x in monomerIds]
+			"{}[c]".format(x) in sim_data.moleculeGroups.rProteins
+			for x in monomerIds]
 		rnaData['isRnap'] = [
-            "{}[c]".format(x) in sim_data.moleculeGroups.rnapIds
-            for x in monomerIds]
+			"{}[c]".format(x) in sim_data.moleculeGroups.rnapIds
+			for x in monomerIds]
 		rnaData['isRRna23S'] = is_23S
 		rnaData['isRRna16S'] = is_16S
 		rnaData['isRRna5S'] = is_5S
@@ -256,7 +284,7 @@ class Transcription(object):
 		self.rnaSynthProb = {}
 
 		# Set basal expression and synthesis probabilities - conditional values
-        # are set in the parca.
+		# are set in the parca.
 		self.rnaExpression["basal"] = expression / expression.sum()
 		self.rnaSynthProb["basal"] = synthProb / synthProb.sum()
 
@@ -294,7 +322,7 @@ class Transcription(object):
 			).asNumber(units.fg)
 
 		self.transcriptionEndWeight = ((sim_data.getter.getMass(["PPI[c]"])
-            / raw_data.constants['nAvogadro']).asNumber(units.fg))
+			/ raw_data.constants['nAvogadro']).asNumber(units.fg))
 
 	def _build_charged_trna(self, raw_data, sim_data):
 		'''
@@ -307,7 +335,7 @@ class Transcription(object):
 
 		# Create list of charged tRNAs
 		trna_names = self.rnaData['id'][self.rnaData['isTRna']]
-		charged_trnas = [x['modifiedForms'] for x in raw_data.rnas if x['id'] + '[c]' in trna_names]
+		charged_trnas = [x['modifiedForms'] for x in raw_data.operon_rnas if x['id'] + '[c]' in trna_names]
 
 		filtered_charged_trna = []
 		for charged_list in charged_trnas:

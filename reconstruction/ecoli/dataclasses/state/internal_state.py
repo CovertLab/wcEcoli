@@ -48,9 +48,9 @@ class InternalState(object):
 		self.bulkMolecules.addToBulkState(waterIds, waterMasses)
 
 		# Set RNA
-		rnaIds = stateFunctions.createIdsWithCompartments(raw_data.rnas)
+		rnaIds = stateFunctions.createIdsWithCompartments(raw_data.operon_rnas)
 		rnaMasses = (units.g/units.mol) * (
-			stateFunctions.createMassesByCompartments(raw_data.rnas))
+			stateFunctions.createMassesByCompartments(raw_data.operon_rnas))
 
 		self.bulkMolecules.addToBulkState(rnaIds, rnaMasses)
 
