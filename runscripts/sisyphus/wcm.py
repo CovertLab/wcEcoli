@@ -135,13 +135,17 @@ class WcmWorkflow(object):
 									'daughter-b': self.paths[endow_b]},
 								'vars': var})
 
-							# analysis_tasks.append({
-							# 	'key': self.add_root('{}-analysis-single'.format(key)),
-							# 	'command': 'analysis-single',
-							# 	'inputs': {
-							# 		'sim-data': variant_key,
-							# 		'validation-data': self.paths['validation-data'],
-							# 		'metadata': }})
+							analysis_tasks.append({
+								'key': self.add_root('{}-analysis-single'.format(key)),
+								'command': 'analysis-single',
+								'vars': {
+									# TODO(Ryan): add metadata from fw_queue.py
+									'metadata': {}},
+								'inputs': {
+									'sim-data': variant_key,
+									'validation-data': self.paths['validation-data'],
+									'sim-out': self.paths[sim_out_key]}})
+
 		return [
 			init_raw_data,
 			init_raw_validation_data,
