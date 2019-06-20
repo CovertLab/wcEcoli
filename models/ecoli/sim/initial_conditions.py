@@ -15,7 +15,6 @@ from arrow import StochasticSystem
 from wholecell.utils.fitting import normalize, countsFromMassAndExpression, masses_and_counts_for_homeostatic_target
 from wholecell.utils.polymerize import computeMassIncrease
 from wholecell.utils import units
-from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWithPrebuiltMatrices
 
 from wholecell.sim.divide_cell import load_inherited_state
 
@@ -240,11 +239,13 @@ def initializeComplexation(bulkMolCntr, sim_data, randomState):
 		complexation_result = system.evolve(duration, moleculeCounts)
 
 		updatedMoleculeCounts = complexation_result['outcome']
-		complexationEvents = complexation_result['occurrences']
 
 		bulkMolCntr.countsIs(
 			updatedMoleculeCounts,
 			moleculeNames)
+
+		if np.any(updatedMoleculeCounts < 0):
+			raise ValueError('Negative counts after complexation')
 
 		if not np.any(moleculeCounts - updatedMoleculeCounts):
 			break
@@ -325,6 +326,10 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 		# Remove replisome subunits from bulk molecules
 		bulkMolCntr.countsDec(3*n_replisome, sim_data.moleculeGroups.replisome_trimer_subunits)
 		bulkMolCntr.countsDec(n_replisome, sim_data.moleculeGroups.replisome_monomer_subunits)
+
+		if (np.any(bulkMolCntr.counts(sim_data.moleculeGroups.replisome_trimer_subunits) < 0)
+				or np.any(bulkMolCntr.counts(sim_data.moleculeGroups.replisome_monomer_subunits) < 0)):
+			raise ValueError('Negative counts after replisome formation')
 
 	# Initialize attributes of promoters
 	TU_index, promoter_coordinates, promoter_domain_index = [], [], []
