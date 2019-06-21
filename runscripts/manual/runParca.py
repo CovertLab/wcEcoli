@@ -11,13 +11,9 @@ Set PYTHONPATH when running this.
 from __future__ import absolute_import, division, print_function
 
 import os
-from typing import Any, List
 
-from wholecell.fireworks.firetasks import FitSimDataTask
-from wholecell.fireworks.firetasks import InitRawDataTask
-from wholecell.fireworks.firetasks import InitRawValidationDataTask
-from wholecell.fireworks.firetasks import InitValidationDataTask
-from wholecell.utils import constants, scriptBase
+from wholecell.fireworks.firetasks import ParcaTask
+from wholecell.utils import scriptBase
 from wholecell.utils import filepath as fp
 
 
@@ -39,10 +35,6 @@ class RunParca(scriptBase.ScriptBase):
 				 ' "Fast run" to "20190514.135600__Fast_run".')
 		parser.add_argument('-c', '--cpus', type=int, default=1,
 			help='The number of CPU processes to use. Default = 1.'
-			)
-		parser.add_argument('--cached', action='store_true',
-			help='Copy a cached "' + constants.SERIALIZED_SIM_DATA_FILENAME
-				 + '" file instead of generating it.'
 			)
 		parser.add_argument('-d', '--debug', action='store_true',
 			help="Enable Parca debugging: For a faster debug cycle, calculate"
@@ -66,59 +58,19 @@ class RunParca(scriptBase.ScriptBase):
 		args.sim_path = fp.makedirs(fp.ROOT_PATH, "out", args.sim_outdir)
 		return args
 
-	@classmethod
-	def output_subdirs(cls, **kwargs):
-		# type: (**Any) -> List[str]
-		"""Return a list of the output subdirs (of simout)."""
-		return ['kb']
-
 	def run(self, args):
-		kb_directory = fp.makedirs(args.sim_path, "kb")
-		raw_data_file = os.path.join(kb_directory, constants.SERIALIZED_RAW_DATA)
-		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_SIM_DATA_FILENAME)
-		cached_sim_data_file = os.path.join(
-			fp.ROOT_PATH, 'cached', constants.SERIALIZED_SIM_DATA_FILENAME)
-		raw_validation_data_file = os.path.join(
-			kb_directory, constants.SERIALIZED_RAW_VALIDATION_DATA)
-		validation_data_file = os.path.join(
-			kb_directory, constants.SERIALIZED_VALIDATION_DATA)
+		kb_directory = os.path.join(args.sim_path, ParcaTask.OUTPUT_SUBDIR)
 
-		if args.debug or args.cached:
-			print("{}{}Parca".format(
-				'DEBUG ' if args.debug else '',
-				'CACHED ' if args.cached else ''))
+		if args.debug:
+			print("{}Parca".format('DEBUG ' if args.debug else ''))
 
-		tasks = [
-			InitRawDataTask(
-				output=raw_data_file,
-				),
-
-			FitSimDataTask(
-				input_data=raw_data_file,
-				output_data=sim_data_file,
-				cached=args.cached,  # bool
-				cached_data=cached_sim_data_file,  # cached file to copy
-				cpus=args.cpus,
-				debug=args.debug,
-				disable_ribosome_capacity_fitting=not args.ribosome_fitting,
-				disable_rnapoly_capacity_fitting=not args.rnapoly_fitting
-				),
-
-			InitRawValidationDataTask(
-				output=raw_validation_data_file,
-				),
-
-			InitValidationDataTask(
-				validation_data_input=raw_validation_data_file,
-				knowledge_base_raw=raw_data_file,
-				output_data=validation_data_file,
-				),
-			]
-		for task in tasks:
-			task.run_task({})
-
-		print('\n\t'.join(['Wrote', raw_data_file, sim_data_file,
-			raw_validation_data_file, validation_data_file]))
+		task = ParcaTask(
+			output_directory=kb_directory,
+			ribosome_fitting=args.ribosome_fitting,
+			rnapoly_fitting=args.rnapoly_fitting,
+			cpus=args.cpus,
+			debug=args.debug)
+		task.run_task({})
 
 
 if __name__ == '__main__':
