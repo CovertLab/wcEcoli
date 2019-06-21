@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import pandas as pd
 import sys
 from datetime import date
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
@@ -99,11 +100,16 @@ non_zero_sum_rna_counts_all_gens = []
 non_zero_sum_protein_counts_all_gens = []
 time = []
 time_eachGen = []
+gen_num = []
+
 for i, sim_dir in enumerate(all_dir):
 	sim_out_dir = os.path.join(sim_dir, "simOut")
 	
 	time += TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()
 	time_eachGen.append(TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()[0])
+	num_timesteps = len(TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist())
+	gen_num = gen_num + [i+1]* num_timesteps
+	
 
 	# Read counts of transcripts
 	bulkMolecules = TableReader(os.path.join(sim_out_dir, "BulkMolecules"))
@@ -111,12 +117,22 @@ for i, sim_dir in enumerate(all_dir):
 		molecule_ids = bulkMolecules.readAttribute("objectNames")
 		rna_indices = np.array([molecule_ids.index(x) for x in rna_ids])
 		protein_indices = np.array([molecule_ids.index(x) for x in protein_ids])
-	rna_counts = bulkMolecules.readColumn("counts")[:, rna_indices]
-	protein_counts_all = bulkMolecules.readColumn("counts")[:, protein_indices]
+	try:
+		rna_counts
+	except NameError:
+		rna_counts = None
+
+	if rna_counts is None:
+		rna_counts = bulkMolecules.readColumn("counts")[:, rna_indices]
+		protein_counts = bulkMolecules.readColumn("counts")[:, protein_indices]
+	else:
+		
+		rna_counts = np.vstack((rna_counts, bulkMolecules.readColumn("counts")[:, rna_indices]))
+		protein_counts = np.vstack((protein_counts, bulkMolecules.readColumn("counts")[:, protein_indices]))
 	#I think i initially called this _all cause its different than how heejo classified protein ids.
 	bulkMolecules.close()
 
-
+'''
 	# Sum counts over timesteps
 	sum_rna_counts = rna_counts.sum(axis = 0)
 	sum_protein_counts = protein_counts_all.sum(axis = 0)
@@ -127,19 +143,36 @@ for i, sim_dir in enumerate(all_dir):
 	non_zero_sum_protein_counts = sum_protein_counts != 0
 	non_zero_sum_protein_counts_all_gens.append(non_zero_sum_protein_counts)
 
+'''
+#rna_ids_counts = np.vstack((rna_ids, rna_counts))
+#protein_ids_counts = np.vstack((protein_ids, protein_counts))
+#time_labeled = np.hstack((np.array('time'), np.array(time)))
+#gen_labeled = np.hstack((np.array('gen'), gen_num))
 
-rna_ids_counts = np.vstack((rna_ids, rna_counts))
-protein_ids_counts = np.vstack((protein_ids, protein_counts_all))
 
-combined_rna_protein_counts = np.hstack((rna_ids_counts, protein_ids_counts))
 
+
+# The file with all the data is too large to work with easily.
+# Am just taking every 100 timepoints to make it easier to work with.
+
+rna_ids_counts_subsampled = np.vstack((rna_ids, rna_counts[0::100].copy()))
+protein_ids_counts_subsampled = np.vstack((protein_ids, protein_counts[0::100].copy()))
+time_labeled_subsampled = np.hstack((np.array('time'), np.array(time)[0::100].copy()))
+gen_labeled_subsampled = np.hstack((np.array('gen'), np.array(gen_num)[0::100].copy()))
+#import ipdb; ipdb.set_trace()
+time_gen_stack = np.vstack((gen_labeled_subsampled, time_labeled_subsampled)).transpose()
+
+combined_rna_protein_counts = np.hstack((time_gen_stack, protein_ids_counts_subsampled, rna_ids_counts_subsampled))
+'''
 with open(os.path.join(output_dir, "multi_gen_rnacounts_ids.tsv"), 'wb') as fp:
 	np.savetxt(fp, rna_ids_counts, '%s','\t')
 with open(os.path.join(output_dir, "multi_gen_proteincounts_ids.tsv"), 'wb') as fp:
 	np.savetxt(fp, protein_ids_counts, '%s','\t')
+'''
 with open(os.path.join(output_dir, "multi_gen_rna_protein_counts_ids.tsv"), 'wb') as fp:
 	np.savetxt(fp, combined_rna_protein_counts, '%s','\t')
 
+'''
 # Average (mean) over generations
 non_zero_sum_rna_counts_all_gens = np.array(non_zero_sum_rna_counts_all_gens)
 avg_rna_counts = non_zero_sum_rna_counts_all_gens.mean(axis = 0)
@@ -165,3 +198,4 @@ with open(os.path.join(output_dir, "subgenerational_protein_ids.tsv"), 'wb') as 
 	np.savetxt(fp, subgen_monomer_ids_all, '%s','\t')
 
 # plot mRNA and 
+'''
