@@ -198,7 +198,8 @@ class RunSimulation(scriptBase.ScriptBase):
 		# args.sim_path is called INDIV_OUT_DIRECTORY in fw_queue.
 		for i, subdir in fp.iter_variants(*variant_spec):
 			variant_directory = os.path.join(args.sim_path, subdir)
-			variant_sim_data_directory = os.path.join(variant_directory, "kb")
+			variant_sim_data_directory = os.path.join(variant_directory,
+				VariantSimDataTask.OUTPUT_SUBDIR_KB)
 
 			variant_sim_data_modified_file = os.path.join(
 				variant_sim_data_directory, constants.SERIALIZED_SIM_DATA_MODIFIED)
@@ -207,9 +208,8 @@ class RunSimulation(scriptBase.ScriptBase):
 				fp.verify_file_exists(
 					variant_sim_data_modified_file, 'Run makeVariants?')
 			else:
-				fp.makedirs(variant_sim_data_directory)
-				variant_metadata_directory = fp.makedirs(variant_directory,
-					"metadata")
+				variant_metadata_directory = os.path.join(variant_directory,
+					VariantSimDataTask.OUTPUT_SUBDIR_METADATA)
 				task = VariantSimDataTask(
 					variant_function=variant_type,
 					variant_index=i,
