@@ -22,7 +22,6 @@ Set PYTHONPATH when running this.
 from __future__ import absolute_import, division, print_function
 
 import os
-from typing import Any, Dict, Generator, List
 
 from wholecell.fireworks.firetasks import VariantSimDataTask
 from wholecell.utils import constants, scriptBase
@@ -50,18 +49,6 @@ class MakeVariants(scriptBase.ScriptBase):
 				See models/ecoli/sim/variants/__init__.py for the variant
 				type choices. Default = wildtype 0 0''')
 
-	@classmethod
-	def output_subdirs(cls, **kwargs):
-		# type: (**Any) -> List[List[str]]
-		"""Return a list (over the requested variant) of a list of the output
-		subdirs (of simout).
-		"""
-		variant_arg = kwargs.get('variant') or DEFAULT_VARIANT
-		variant_spec = (variant_arg[0], int(variant_arg[1]), int(variant_arg[2]))
-
-		return [[os.path.join(subdir, 'kb'), os.path.join(subdir, 'metadata')]
-			for i, subdir in fp.iter_variants(*variant_spec)]
-
 	def run(self, args):
 		kb_directory = os.path.join(args.sim_path, 'kb')
 		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_SIM_DATA_FILENAME)
@@ -73,8 +60,10 @@ class MakeVariants(scriptBase.ScriptBase):
 
 		# args.sim_path is called INDIV_OUT_DIRECTORY in fw_queue.
 		for i, subdir in fp.iter_variants(*variant_spec):
-			variant_sim_data_directory = fp.makedirs(args.sim_path, subdir, "kb")
-			variant_metadata_directory = fp.makedirs(args.sim_path, subdir, "metadata")
+			variant_sim_data_directory = os.path.join(args.sim_path, subdir,
+				VariantSimDataTask.OUTPUT_SUBDIR_KB)
+			variant_metadata_directory = os.path.join(args.sim_path, subdir,
+				VariantSimDataTask.OUTPUT_SUBDIR_METADATA)
 
 			variant_sim_data_modified_file = os.path.join(
 				variant_sim_data_directory, constants.SERIALIZED_SIM_DATA_MODIFIED)
