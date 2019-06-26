@@ -32,6 +32,7 @@ class FitSimDataTask(FireTaskBase):
 		"alternate_ribosome_activity",
 		"alternate_rnap_activity",
 		"disable_rnap_fraction_increase",
+		"disable_ribosome_activity_fix",
 		"save_cell_specs",
 		"cell_specs_file",
 		]
@@ -74,7 +75,8 @@ class FitSimDataTask(FireTaskBase):
 				alternate_rna_half_life=self['alternate_rna_half_life'],
 				alternate_ribosome_activity=self['alternate_ribosome_activity'],
 				alternate_rnap_activity=self['alternate_rnap_activity'],
-				disable_rnap_fraction_increase=self['disable_rnap_fraction_increase'])
+				disable_rnap_fraction_increase=self['disable_rnap_fraction_increase'],
+				disable_ribosome_activity_fix=self['disable_ribosome_activity_fix'])
 
 			sim_data, cell_specs = fitSimData_1(
 				raw_data,

@@ -114,6 +114,11 @@ class RunFitter(scriptBase.ScriptBase):
 			help="If set, disables doubling-time-dependent RNAP fraction increase."
 		)
 		parser.add_argument(
+			'--disable-ribosome-activity-fix',
+			action='store_true',
+			help="If set, disables ribosome activity fix."
+		)
+		parser.add_argument(
 			'--save-cell-specs',
 			action='store_true',
 			help="If set, saves cell specs."
@@ -172,6 +177,7 @@ class RunFitter(scriptBase.ScriptBase):
 				alternate_ribosome_activity=args.alternate_ribosome_activity,
 				alternate_rnap_activity=args.alternate_rnap_activity,
 				disable_rnap_fraction_increase=args.disable_rnap_fraction_increase,
+				disable_ribosome_activity_fix=args.disable_ribosome_activity_fix,
 				save_cell_specs=args.save_cell_specs,
 				cell_specs_file=cell_specs_file,
 				),

@@ -115,6 +115,8 @@ def fitSimData_1(
 		alternate_rnap_activity (str) - describes alternate rnap activity.
 		disable_rnap_fraction_increase (bool) - if True, disables doubling-time-
 			dependent RNA polymerase fraction increase.
+		disable_ribosome_activity_fix (bool) - if True, disables ribosome
+			activity fix.
 	"""
 	options['basal_expression_condition'] = BASAL_EXPRESSION_CONDITION
 	sim_data = SimulationDataEcoli()
@@ -1274,7 +1276,10 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 		proteinCounts)
 
 	# Scale estimation of ribosome demand by the active fraction.
-	nRibosomesNeeded = nActiveRibosomesNeeded / sim_data.growthRateParameters.getFractionActiveRibosome(doubling_time)
+	if not options['disable_ribosome_activity_fix']:
+		nRibosomesNeeded = nActiveRibosomesNeeded / sim_data.growthRateParameters.getFractionActiveRibosome(doubling_time)
+	else:
+		nRibosomesNeeded = nActiveRibosomesNeeded
 
 	# Minimum number of ribosomes needed
 	constraint1_ribosome30SCounts = (
