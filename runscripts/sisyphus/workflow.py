@@ -1,81 +1,77 @@
-"""Workflow builder.
-
-TODO(jerry): Move this module to a Sisyphus Python client library.
-"""
+"""Generic Sisyphus/Gaia workflow builder."""
 
 from __future__ import absolute_import, division, print_function
 
-import json
-import os
-from typing import Any, Dict, List, Optional, Set
+import pprint as pp
+from typing import Any, Dict, Iterable, List, Optional
+
+
+def _keyify(paths):
+	# type: (Iterable[str]) -> Dict[str, str]
+	return {str(i): path for i, path in enumerate(paths)}
+
+def _re_keyify(old_prefix, new_prefix, paths):
+	# type: (str, str, Iterable[str]) -> Dict[str, str]
+	offset = len(old_prefix)
+	return _keyify([new_prefix + path[offset:] for path in paths])
 
 
 class Task(object):
-	"""An AST element."""
+	"""A workflow task builder."""
 
-	def __init__(self, *upstream_tasks, **kwargs):
-		# type: (*Task, **Any) -> None
-		"""Construct a Workflow Task from the Task args: `name`, Docker `image`,
-		`commands`, and [optional] `inputs` and `outputs` path mappings.
+	def __init__(self, upstream_tasks=(), **kwargs):
+		# type: (Iterable[Task], **Any) -> None
+		"""Construct a Workflow Task from the kwargs: key, image, commands,
+		inputs, and outputs.
 
-		The `upstream_tasks` and the `>>` operator are just convenient ways to
-		add `inputs`.
+		upstream_tasks and the `>>` operator are convenient ways to add inputs.
 		"""
-		self.name = kwargs['name']  # type: str
+		self.key = kwargs['key']  # type: str  # the task name
 		self.image = kwargs['image']  # type: str
-		self.inputs  = kwargs.get('inputs',  {})  # type: Dict[str, str]
-		self.outputs = kwargs.get('outputs', {})  # type: Dict[str, str]
-		self.commands = kwargs['commands']  # type: List[Dict[str, Any]]
-
-		# Sisyphus uses inputs and outputs to determine data flow dependencies.
-		# self.upstream_tasks is just for visualizing the DAG.
-		# TODO(jerry): Skip this? Keep a dict of input paths to Tasks instead?
-		self.upstream_tasks = set()  # type: Set[Task]
+		self.commands = kwargs['commands']  # type: List[Dict[str, List[str]]]
+		self.inputs  = list(kwargs.get('inputs',  []))  # type: List[str]
+		self.outputs = list(kwargs.get('outputs', []))  # type: List[str]
+		self.storage_prefix = kwargs.get('storage_prefix', '')
+		self.local_prefix = kwargs.get('local_prefix', '')
 
 		for task in upstream_tasks:
 			task >> self
 
 	def __rshift__(self, t2):
 		# type: (Task) -> Task
-		"""Set downstream: `t1 >> t2` makes `t2` depend on `t1`'s outputs.
+		"""Set downstream: `t1 >> t2` adds `t1`'s outputs to `t2`'s inputs.
 		Return `t2` for chaining.
 		"""
-		t2.upstream_tasks.add(self)
-		t2.inputs.update(self.outputs)
+		t2.inputs.extend(self.outputs)
 		return t2
 
-	def _set_path_mapping(self, io_map, storage_prefix, *path_elements):
-		# type: (Dict[str, str], str, *str) -> None
-		path = os.path.join(*path_elements)
-		io_map[os.path.join(storage_prefix, path)] = path
-
-	def set_input_mapping(self, storage_prefix, *path_elements):
-		# type: (str, *str) -> None
-		"""Set an input mapping storage_prefix:path --> path.
-		NOTE: A path ending with '/' is treated as an entire directory.
-		"""
-		self._set_path_mapping(self.inputs, storage_prefix, *path_elements)
-
-	def set_output_mapping(self, storage_prefix, *path_elements):
-		# type: (str, *str) -> None
-		"""Set an input mapping storage_prefix:path <-- path.
-		NOTE: A path ending with '/' is treated as an entire directory.
-		"""
-		self._set_path_mapping(self.outputs, storage_prefix, *path_elements)
-
-	def task_doc(self):
+	def get_command(self):
 		# type: () -> Dict[str, Any]
-		"""Return the Sisyphus task document to run this Task."""
-		fields = vars(self)
-		return {key: fields[key] for key in (
-			'name', 'image', 'inputs', 'outputs', 'commands')}
+		"""Return a Sisyphus Command to run this Task."""
+		return dict(
+			key=self.key,
+			image=self.image,
+			commands=self.commands,
+			inputs=_keyify(self.inputs),
+			outputs=_keyify(self.outputs),
+			vars={})
+
+	def get_process(self):
+		# type: () -> Dict[str, Any]
+		"""Return a Sisyphus Process to run this Task."""
+		return dict(
+			key=self.key,
+			command=self.key,
+			inputs=_re_keyify(self.local_prefix, self.storage_prefix, self.inputs),
+			outputs=_re_keyify(self.local_prefix, self.storage_prefix, self.outputs))
 
 
 class Workflow(object):
-	"""A Sisyphus workflow builder. It's essentially an AST."""
+	"""A workflow builder."""
 
-	def __init__(self, verbose_logging=True):
-		# type: (bool) -> None
+	def __init__(self, namespace, verbose_logging=True):
+		# type: (str, bool) -> None
+		self.namespace = namespace
 		self.verbose_logging = verbose_logging
 		self._tasks = {}  # type: Dict[str, Task]
 
@@ -83,39 +79,39 @@ class Workflow(object):
 		if self.verbose_logging:
 			print(message)
 
-	def get(self, task_name, default=None):
+	def get(self, task_key, default=None):
 		# type: (str, Optional[Task]) -> Optional[Task]
-		return self._tasks.get(task_name, default)
+		return self._tasks.get(task_key, default)
 
-	def __getitem__(self, task_name):
+	def __getitem__(self, task_key):
 		# type: (str) -> Task
-		return self._tasks[task_name]
+		return self._tasks[task_key]
 
 	def add_task(self, task):
 		# type: (Task) -> Task
 		"""Add a task object. Return it for chaining."""
-		self._tasks[task.name] = task
-		self.log_info('    Added task: {}'.format(task.name))
+		self._tasks[task.key] = task
+		self.log_info('    Added task: {}'.format(task.key))
 		return task
 
-	def as_dag(self):
-		# type: () -> List[Dict[str, Any]]
-		"""Return the workflow DAG as JSON-serializable data."""
-		return [task.task_doc() for task in self._tasks.viewvalues()]
+	def get_commands(self):
+		# type: () -> List[dict]
+		"""Build this workflow's Commands."""
+		return [task.get_command() for task in self._tasks.itervalues()]
 
-	def as_json(self):
-		# type: () -> str
-		"""Return the workflow DAG in JSON format."""
-		dag = self.as_dag()
-		result = json.dumps(dag, ensure_ascii=False, indent=4,
-			separators=(',', ': '), sort_keys=True) + '\n'
-		return result
+	def get_processes(self):
+		# type: () -> List[dict]
+		"""Build this workflow's Processes."""
+		return [task.get_process() for task in self._tasks.itervalues()]
 
-	def enqueue(self):  # TODO(jerry): "start()"? "run()"? "send()"?
+	def send(self):
 		# type: () -> None
-		"""Construct a workflow and enqueue it on the work servers."""
-		json_dag = self.as_json()
+		"""Build the workflow and send it to the work server."""
+		commands = self.get_commands()
+		processes = self.get_processes()
 
-		# TODO(jerry): *** POST it to the workflow manager via HTTP. ***
-		print()
-		print(json_dag)  # meanwhile, just to see something happen
+		# DEBUG
+		self.log_info('\n---Commands:\n' + pp.pformat(commands))
+		self.log_info('\n---Processes:\n' + pp.pformat(processes))
+
+		# TODO(jerry): *** Upload w/the namespace to the workflow manager. ***

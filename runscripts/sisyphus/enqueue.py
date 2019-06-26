@@ -7,190 +7,298 @@ it to run.
 
 from __future__ import absolute_import, division, print_function
 
-import argparse
-import getpass
-from itertools import chain
+import json
 import os
-import pprint as pp
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, Mapping
 
+from wholecell.fireworks.firetasks import ParcaTask, VariantSimDataTask
+from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
+from wholecell.utils import constants, parallelization, scriptBase
 import wholecell.utils.filepath as fp
-from runscripts.manual.makeVariants import MakeVariants
-from runscripts.manual.runParca import RunParca
+from runscripts.manual.analysisBase import AnalysisBase
 from runscripts.sisyphus.workflow import Task, Workflow
 
 
-DOCKER_IMAGE = 'gcr.io/allen-discovery-center-mcovert/wcm-code:latest'
+DOCKER_IMAGE = 'gcr.io/allen-discovery-center-mcovert/{}-wcm-code:latest'
 STORAGE_PREFIX_ROOT = 'sisyphus:data/'
 
-VARIANT_OPTION = 'variant'  # this unique option takes 3 args
-
-# CLI options for the workflow tasks.
-# TODO(jerry): Add these extra options? Parca parallel CPU count, debug
-#  Parca, plots-to-run tag, build Causality network, single daughters, leak
-#  detection in the analysis plots.
-PARCA_OPTIONS = {'ribosome_fitting', 'rnapoly_fitting'}
-MAKE_VARIANT_OPTIONS = {VARIANT_OPTION}
-RUN_SIM_OPTIONS = {VARIANT_OPTION, 'generations', 'total_gens', 'seed', 'init_sims',
-	'timeline', 'length_sec', 'timestep_safety_frac', 'timestep_max',
-	'timestep_update_freq', 'mass_distribution', 'growth_rate_noise',
-	'd_period_division', 'translation_supply', 'trna_charging'}
-# + analysis options...
-ALL_OPTIONS = PARCA_OPTIONS | MAKE_VARIANT_OPTIONS | RUN_SIM_OPTIONS
+DEFAULT_VARIANT = ['wildtype', '0', '0']
 
 
-def _add_options(tokens, args, *options):
-	# type: (List[str], Dict[str, Any], *str) -> None
-	"""Add the named options from `args` to command line `tokens`."""
-	for option_name in options:
-		value = args.get(option_name)
-		if value is not None:
-			if option_name == VARIANT_OPTION:
-				# `value` is [VARIANT_TYPE, FIRST_INDEX, LAST_INDEX]
-				assert int(value[1]) <= int(value[2])
-				tokens += ['--' + option_name] + [str(v) for v in value]
-			else:
-				tokens += ['--' + option_name, value]
+def select_keys(mapping, keys, **kwargs):
+	# type: (Mapping, Iterable, **str) -> dict
+	"""Return a dict of the mapping entries with the given keys plus the kwargs."""
+	result = {key: mapping[key] for key in keys if mapping[key] is not None}
+	result.update(**kwargs)
+	return result
 
-class WCM_Workflow(Workflow):
-	"""A Workflow builder for the wcEcoli Whole Cell Model."""
 
-	def __init__(self):
-		# type: () -> None
-		super(WCM_Workflow, self).__init__()
+class WcmWorkflow(Workflow):
+	"""A Workflow builder for the Whole Cell Model."""
 
-		# TODO(jerry): A developer-specific Docker image with their code.
-		self.image = DOCKER_IMAGE
+	def __init__(self, owner_id, timestamp):
+		# type: (str, str) -> None
+		namespace = 'WCM_{}_{}'.format(owner_id, timestamp)
+		super(WcmWorkflow, self).__init__(namespace, verbose_logging=True)  # TODO(jerry): Use args['verbose']
 
-		username = getpass.getuser()
-		timestamp = fp.timestamp()
+		self.owner_id = owner_id
+		self.timestamp = timestamp
+
+		self.image = DOCKER_IMAGE.format(self.owner_id)
 		self.storage_prefix = os.path.join(
-			STORAGE_PREFIX_ROOT, username, timestamp, '')
+			STORAGE_PREFIX_ROOT, self.owner_id, self.timestamp, '')
+		self.local_prefix = os.path.join('out', 'wf')
+
 		self.log_info('Storage prefix: {}'.format(self.storage_prefix))
 
-		self.sim_outdir = 'worker'  # subdir of './out' in the container
+	def local(self, *path_elements):
+		# type: (*str) -> str
+		"""Construct a local file path within the task's container."""
+		return os.path.join(self.local_prefix, *path_elements)
 
-	def add_python_task(self, python_args, *upstream_tasks, **kwargs):
-		# type: (List[str], *Task, **Any) -> Task
-		"""Operator: Add a Python task to the workflow and return it."""
-		kwargs['image'] = self.image
+	def remote(self, *path_elements):
+		# type: (*str) -> str
+		"""Construct a remote GCS storage path within the bucket."""
+		return os.path.join(self.storage_prefix, *path_elements)
 
-		# Sisyphus needs `-u` unbuffered output.
-		kwargs['commands'] = [{'command': ['python', '-u'] + python_args}]
+	def add_python_task(self, firetask, python_args, upstream_tasks=(), **kwargs):
+		# type: (str, Dict[str, Any], Iterable[Task], **Any) -> Task
+		"""Add a Python task to the workflow and return it."""
+		config = dict(
+			kwargs,
+			image=self.image,
+			commands=[{'command':
+				['python', '-u', '-m', 'wholecell.fireworks.runTask',
+					firetask, json.dumps(python_args)]}],
+			storage_prefix=self.storage_prefix,
+			local_prefix=self.local_prefix)
+		return self.add_task(Task(upstream_tasks, **config))
 
-		return self.add_task(Task(*upstream_tasks, **kwargs))
+	def build(self, args):
+		# type: (Dict[str, Any]) -> None
+		kb_dir = self.local(ParcaTask.OUTPUT_SUBDIR, '')
+		sim_data_file = os.path.join(kb_dir, constants.SERIALIZED_SIM_DATA_FILENAME)
+		validation_data_file = os.path.join(kb_dir, constants.SERIALIZED_VALIDATION_DATA)
 
-	def add_parca_task(self, *upstream_tasks, **kwargs):
-		# type: (*Task, **Any) -> Task
-		"""Operator: Add a parameter-calc task to the workflow and return it."""
-		kwargs.setdefault('name', 'parca')
+		variant_arg = args['variant']
+		variant_spec = (variant_arg[0], int(variant_arg[1]), int(variant_arg[2]))
+		variant_type = variant_spec[0]
 
-		tokens = ['runscripts/manual/runParca.py', self.sim_outdir]
-		_add_options(tokens, kwargs, *PARCA_OPTIONS)
+		metadata = select_keys(args,
+			('generations', 'mass_distribution', 'growth_rate_noise',
+			'd_period_division', 'translation_supply', 'trna_charging'),
+			git_hash=fp.run_cmdline("git rev-parse HEAD"),
+			git_branch=fp.run_cmdline("git symbolic-ref --short HEAD"),
+			description='Cloud',
+			time=self.timestamp,
+			variant=variant_type,
+			total_variants=str(variant_spec[2] + 1 - variant_spec[1]),
+			)
+		# TODO(jerry): Make a runtime task write metadata.json.
 
-		# Use `upstream_tasks` to set the inputs, then add the outputs.
-		task = self.add_python_task(tokens, *upstream_tasks, **kwargs)
+		python_args = select_keys(args,
+			('ribosome_fitting', 'rnapoly_fitting', 'cpus'),
+			output_directory=kb_dir)
+		parca_task = self.add_python_task('parca', python_args, (),
+			key='parca',
+			outputs=[kb_dir])
 
-		# TODO(jerry): Include self.sim_outdir. Decouple the storage path from
-		#  the local path.
-		for subdir in RunParca.output_subdirs(**kwargs):
-			task.set_output_mapping(self.storage_prefix, subdir, '')
-		return task
+		sim_args = select_keys(args,
+			('timeline', 'length_sec', 'timestep_safety_frac', 'timestep_max',
+			'timestep_update_freq', 'mass_distribution', 'growth_rate_noise',
+			'd_period_division', 'translation_supply', 'trna_charging'))
 
-	def add_variants_task(self, *upstream_tasks, **kwargs):
-		# type: (*Task, **Any) -> Task
-		"""Operator: Add a make-variants task to the workflow and return it."""
-		kwargs.setdefault('name', 'makeVariants')
+		for i, subdir in fp.iter_variants(*variant_spec):
+			variant_sim_data_dir = self.local(subdir,
+				VariantSimDataTask.OUTPUT_SUBDIR_KB, '')
+			variant_metadata_dir = self.local(subdir,
+				VariantSimDataTask.OUTPUT_SUBDIR_METADATA, '')
+			variant_sim_data_modified_file = os.path.join(
+				variant_sim_data_dir, constants.SERIALIZED_SIM_DATA_MODIFIED)
+			md_cohort = dict(metadata, variant_function=variant_type,
+				variant_index=i)
 
-		tokens = ['runscripts/manual/makeVariants.py', self.sim_outdir]
-		_add_options(tokens, kwargs, *MAKE_VARIANT_OPTIONS)
+			python_args = dict(
+				variant_function=variant_type,
+				variant_index=i,
+				input_sim_data=sim_data_file,
+				output_sim_data=variant_sim_data_modified_file,
+				variant_metadata_directory=variant_metadata_dir)
+			variant_task = self.add_python_task('variant_sim_data', python_args,
+				(parca_task,),
+				key='variant_{}_{}'.format(variant_type, i),
+				outputs=[variant_sim_data_dir, variant_metadata_dir])
 
-		task = self.add_python_task(tokens, *upstream_tasks, **kwargs)
+			for j in xrange(args['init_sims']):  # seed
+				seed_dir = self.local(subdir, '{:06d}'.format(j))
+				md_multigen = dict(md_cohort, seed=j)
 
-		# Ask MakeVariants to list all its output dirs. Declare outputs and
-		# stash the list on the Task object to use incrementally.
-		# TODO(jerry): Include self.sim_outdir. Decouple the storage path from
-		#  the local path.
-		task.subdir_lists = MakeVariants.output_subdirs(**kwargs)
-		for subdir in chain.from_iterable(task.subdir_lists):
-			task.set_output_mapping(self.storage_prefix, subdir, '')
-		return task
+				for k in xrange(args['generations']):
+					gen_dir = os.path.join(seed_dir, "generation_{:06d}".format(k))
+					md_single = dict(md_multigen, gen=k)
 
-	def add_sim_task(self, *upstream_tasks, **kwargs):
-		# type: (*Task, **Any) -> Task
-		"""Operator: Add a run-sim task to the workflow and return it."""
-		kwargs.setdefault('name', 'runSim')
+					# l is the daughter number among all of this generation's cells,
+					# in [0] for single-daughters or range(2**k) for dual daughters.
+					l = 0
+					cell_dir = os.path.join(gen_dir, '{:06d}'.format(l))
+					cell_sim_out_dir = os.path.join(cell_dir, 'simOut', '')
 
-		tokens = [
-			'runscripts/manual/runSim.py', self.sim_outdir,
-			'--require_variants', '1']
-		_add_options(tokens, kwargs, *RUN_SIM_OPTIONS)
+					python_args = dict(sim_args,
+						input_sim_data=variant_sim_data_modified_file,
+						output_directory=cell_sim_out_dir,
+						seed=j)
 
-		# TODO(jerry): Compute the actual simOut paths. Include self.sim_outdir.
-		# TODO(jerry): Decouple the storage path from the local path.
-		task = self.add_python_task(tokens, *upstream_tasks, **kwargs)
-		task.set_output_mapping(self.storage_prefix, 'wildtype_000000',
-			'000000', 'generation_000000', '000000', 'simOut/')
-		return task
+					if k == 0:
+						firetask = 'simulation'
+						inputs = []
+					else:
+						firetask = 'simulation_daughter'
+						parent_gen_dir = os.path.join(
+							seed_dir, 'generation_{:06d}'.format(k - 1))
+						parent_cell_dir = os.path.join(parent_gen_dir, '{:06d}'.format(l // 2))
+						parent_cell_sim_out_dir = os.path.join(parent_cell_dir, 'simOut', '')
+						daughter_state_path = os.path.join(
+							parent_cell_sim_out_dir,
+							constants.SERIALIZED_INHERITED_STATE % (l % 2 + 1))
+						python_args['daughter_state_path'] = daughter_state_path
+						inputs=[parent_cell_sim_out_dir]
+
+					sim_task = self.add_python_task(firetask, python_args,
+						(parca_task, variant_task),
+						key='simulation_var{}_seed{}_gen{}_cell{}'.format(i, j, k, l),
+						inputs=inputs,
+						outputs=[cell_sim_out_dir])
+
+					plot_dir = os.path.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
+					python_args = dict(
+						input_results_directory=cell_sim_out_dir,
+						input_sim_data=variant_sim_data_modified_file,
+						input_validation_data=validation_data_file,
+						output_plots_directory=plot_dir,
+						metadata=md_single,
+						plots_to_run=args['plot'],
+						cpus=args['cpus'])
+					analysis_single_task = self.add_python_task('analysis_single',
+						python_args,
+						(parca_task, variant_task, sim_task),
+						key='analysis_var{}_seed{}_gen{}_cell{}'.format(i, j, k, l),
+						outputs=[plot_dir])
+
+	# TODO(jerry): The remaining analyses...
 
 
 def wc_ecoli_workflow(args):
-	# type: (Dict[str, Any]) -> WCM_Workflow
-	"""===> Construct a workflow DAG for wcEcoli."""
-	wf = WCM_Workflow()
-
-	t_parca = wf.add_parca_task(**args)
-
-	t_variants = wf.add_variants_task(t_parca, **args)
-	# TODO(jerry): Make each downstream Tasks= depend on only its own variant,
-	#  using the relevant sublist from `t_variants.subdir_lists`. Bundle the
-	#  variant type and index with each sublist if needed.
-
-	# TODO(jerry): Loop over variants, seeds, & gens, adding sim & sim daughter
-	#  tasks. Change args in kwargs so runSim will only run one iteration and
-	#  get the seed, etc. Setup each sim's upstream tasks and simOut path.
-	t_sim = wf.add_sim_task(t_variants, **args)
-
-	# TODO(jerry): Add the analysis tasks...
-
+	# type: (Dict[str, Any]) -> WcmWorkflow
+	"""Build a workflow for wcEcoli."""
+	owner_id = os.environ.get('WF_ID', os.environ['USER'])
+	timestamp = fp.timestamp()
+	wf = WcmWorkflow(owner_id, timestamp)
+	wf.build(args)
 	return wf
 
-def enqueue_workflow(args):
-	# type: (Dict[str, Any]) -> None
-	"""Construct and enqueue a workflow."""
-	wf = wc_ecoli_workflow(args)
-	wf.enqueue()
 
+class RunWcm(scriptBase.ScriptBase):
+	"""Command line interpreter to run a WCM workflow."""
 
-class Default(object):
-	def __repr__(self):
-		return 'default'
+	def description(self):
+		return 'E. coli Whole Cell Model workflow'
 
+	def define_parameters(self, parser):
+		def add_option(name, key, datatype, help):
+			"""Add an option with the given name and datatype to the parser using
+			DEFAULT_SIMULATION_KWARGS[key] for the default value.
+			"""
+			default = DEFAULT_SIMULATION_KWARGS[key]
+			self.define_option(parser, name, datatype, default, help)
+		def add_bool_option(name, key, help):
+			"""Add a boolean option parameter with the given name to the parser
+			using DEFAULT_SIMULATION_KWARGS[key] for the default value. The CLI
+			input can be `--name`, `--no_name`, `--name true`, `--name false`,
+			`--name 1`, `--name 0`, `--name=true`, etc.
+			"""
+			self.define_parameter_bool(
+				parser, name, DEFAULT_SIMULATION_KWARGS[key], help)
 
-def _default(v):
-	return Default() if v is None else v
+		super(RunWcm, self).define_parameters(parser)
 
+		# Parca
+		parser.add_argument('-c', '--cpus', type=int, default=1,
+			help='The number of CPU processes to use. Default = 1.')
+		self.define_parameter_bool(parser, 'ribosome_fitting', True,
+			help="Fit ribosome expression to protein synthesis demands")
+		self.define_parameter_bool(parser, 'rnapoly_fitting', True,
+			help="Fit RNA polymerase expression to protein synthesis demands")
 
-def cli():
-	"""Command line interpreter."""
-	# This simple CLI parser passes the provided args to the runscripts,
-	# letting their CLIs handle parameter types and default values.
-	parser = argparse.ArgumentParser(description='''
-		Construct a wcEcoli Whole Cell Model workflow and [TODO] queue it up.
-		See runscripts/manual/*.py for help on the arguments and their defaults.
-		''')
-	parser.add_argument('--' + VARIANT_OPTION, nargs=3,
-		metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'))
+		# Variant
+		parser.add_argument('-v', '--variant', nargs=3, default=DEFAULT_VARIANT,
+			metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'),
+			help='''The variant type name, first index, and last index to make.
+				See models/ecoli/sim/variants/__init__.py for the variant
+				type choices. Default = wildtype 0 0''')
 
-	for option in ALL_OPTIONS - {VARIANT_OPTION}:
-		parser.add_argument('--' + option)
+		# Simulation
+		parser.add_argument('-g', '--generations', type=int, default=1,
+			help='Number of cell generations to run. (Single daughters only.)'
+				 ' Default = 1')
+		self.define_option(parser, 'init_sims', int, 1,
+			'Number of initial sims (seeds) per variant.')
+		parser.add_argument('-t', '--timeline', type=str, default='0 minimal',
+			help='set timeline. Default = "0 minimal". See'
+				 ' environment/condition/make_media.py, make_timeline() for'
+				 ' timeline formatting details')
+		add_option('length_sec', 'lengthSec', int,
+			help='The maximum simulation time, in seconds. Useful for short'
+				 ' simulations; not so useful for multiple generations.'
+				 ' Default is 3 hours')
+		add_option('timestep_safety_frac', 'timeStepSafetyFraction', float,
+			help='Scale the time step by this factor if conditions are'
+				 ' favorable, up the the limit of the max time step')
+		add_option('timestep_max', 'maxTimeStep', float,
+			help='the maximum time step, in seconds')
+		add_option('timestep_update_freq', 'updateTimeStepFreq', int,
+			help='frequency at which the time step is updated')
+		add_bool_option('mass_distribution', 'massDistribution',
+			help='If true, a mass coefficient is drawn from a normal distribution'
+				 ' centered on 1; otherwise it is set equal to 1')
+		add_bool_option('growth_rate_noise', 'growthRateNoise',
+			help='If true, a growth rate coefficient is drawn from a normal'
+				 ' distribution centered on 1; otherwise it is set equal to 1')
+		add_bool_option('d_period_division', 'dPeriodDivision',
+			help='If true, ends simulation once D period has occurred after'
+				 ' chromosome termination; otherwise simulation terminates once'
+				 ' a given mass has been added to the cell')
+		add_bool_option('translation_supply', 'translationSupply',
+			help='If true, the ribosome elongation rate is limited by the'
+				 ' condition specific rate of amino acid supply; otherwise the'
+				 ' elongation rate is set by condition')
+		add_bool_option('trna_charging', 'trna_charging',
+			help='if True, tRNA charging reactions are modeled and the ribosome'
+				 ' elongation rate is set by the amount of charged tRNA	present.'
+				 ' This option will override TRANSLATION_SUPPLY in the simulation.')
 
-	args = vars(parser.parse_args())
-	pp.pprint({'Arguments': {k: _default(v) for k, v in args.viewitems()}})
-	print()
+		# Analyses
+		parser.add_argument('-p', '--plot', nargs='+', default=[],
+			help='''Names the analysis plots to run, e.g. plot filenames
+				like "aaCounts.py" or "aaCounts" and tags like "METABOLISM"
+				as defined in the __init__.py files. If omitted, the default is
+				"CORE", which names the plots recommended for everyday
+				development. Use "ACTIVE" to run all active plots in this
+				category. You can name specific analysis files but any
+				analysis categories that don't have those files will print
+				error messages.''')
 
-	enqueue_workflow(args)
+		# TODO(jerry): BuildCausalityNetwork, dual daughters.
+
+	def parse_args(self):
+		args = super(RunWcm, self).parse_args()
+		args.cpus = parallelization.cpus(args.cpus)
+		return args
+
+	def run(self, args):
+		wf = wc_ecoli_workflow(vars(args))
+		wf.send()
 
 
 if __name__ == '__main__':
-	cli()
+	script = RunWcm()
+	script.cli()

@@ -13,7 +13,7 @@ from __future__ import absolute_import, division, print_function
 import os
 
 from wholecell.fireworks.firetasks import ParcaTask
-from wholecell.utils import scriptBase
+from wholecell.utils import parallelization, scriptBase
 from wholecell.utils import filepath as fp
 
 
@@ -51,6 +51,7 @@ class RunParca(scriptBase.ScriptBase):
 
 	def parse_args(self):
 		args = super(RunParca, self).parse_args()
+		args.cpus = parallelization.cpus(args.cpus)
 
 		if args.timestamp:
 			args.sim_outdir = fp.timestamp() + '__' + args.sim_outdir.replace(' ', '_')
