@@ -13,3 +13,4 @@ from .analysisCohort import AnalysisCohortTask
 from .analysisVariant import AnalysisVariantTask
 from .buildCausalityNetwork import BuildCausalityNetworkTask
 from .parca import ParcaTask
+from .writeJson import WriteJsonTask

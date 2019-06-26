@@ -12,6 +12,7 @@ from wholecell.fireworks.firetasks import AnalysisCohortTask
 from wholecell.fireworks.firetasks import AnalysisSingleTask
 from wholecell.fireworks.firetasks import AnalysisMultiGenTask
 from wholecell.fireworks.firetasks import BuildCausalityNetworkTask
+from wholecell.fireworks.firetasks import WriteJsonTask
 
 
 TASKS = {
@@ -23,10 +24,11 @@ TASKS = {
 	'analysis_cohort': AnalysisCohortTask,
 	'analysis_single': AnalysisSingleTask,
 	'analysis_multigen': AnalysisMultiGenTask,
-	'build_causality_network': BuildCausalityNetworkTask}
+	'build_causality_network': BuildCausalityNetworkTask,
+	'write_json': WriteJsonTask}
 
 if __name__ == '__main__':
-	# Run a named WCM Firetask with an argument dict provided in JSON format.
+	# Run the named WCM Firetask with the argument dict provided in JSON format.
 	task_name = sys.argv[1]
 	args = json.loads(sys.argv[2])
 	assert isinstance(args, dict)

@@ -2,18 +2,23 @@
 
 from __future__ import absolute_import, division, print_function
 
+from collections import OrderedDict
+import os
 import pprint as pp
 from typing import Any, Dict, Iterable, List, Optional
 
 
 def _keyify(paths):
 	# type: (Iterable[str]) -> Dict[str, str]
+	"""Map sequential keys to the given paths."""
 	return {str(i): path for i, path in enumerate(paths)}
 
 def _re_keyify(old_prefix, new_prefix, paths):
 	# type: (str, str, Iterable[str]) -> Dict[str, str]
-	offset = len(old_prefix)
-	return _keyify([new_prefix + path[offset:] for path in paths])
+	"""Map sequential keys to the paths with a replaced path prefix."""
+	return _keyify([
+		os.path.join(new_prefix, os.path.relpath(path, old_prefix))
+		for path in paths])
 
 
 class Task(object):
@@ -73,7 +78,7 @@ class Workflow(object):
 		# type: (str, bool) -> None
 		self.namespace = namespace
 		self.verbose_logging = verbose_logging
-		self._tasks = {}  # type: Dict[str, Task]
+		self._tasks = OrderedDict()  # type: Dict[str, Task]
 
 	def log_info(self, message):
 		if self.verbose_logging:

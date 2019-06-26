@@ -132,8 +132,11 @@ class ScriptBase(object):
 			`parser.add_argument('--verbose', action='store_true',
 			help='Enable verbose logging.')`.
 		"""
-		parser.add_argument('--verbose', action='store_true',
-			help='Enable verbose logging.')
+		try:
+			parser.add_argument('--verbose', action='store_true',
+				help='Enable verbose logging.')
+		except argparse.ArgumentError:
+			pass  # ignore the conflict
 
 	def define_parameter_bool(self, parser, name, default, help):
 		# type: (argparse.ArgumentParser, str, Any, str) -> None

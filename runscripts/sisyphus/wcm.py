@@ -26,7 +26,7 @@ DEFAULT_VARIANT = ['wildtype', '0', '0']
 
 
 def select_keys(mapping, keys, **kwargs):
-	# type: (Mapping, Iterable, **str) -> dict
+	# type: (Mapping[str, Any], Iterable[str], **Any) -> Dict[str, Any]
 	"""Return a dict of the mapping entries with the given keys plus the kwargs."""
 	result = {key: mapping[key] for key in keys if mapping[key] is not None}
 	result.update(**kwargs)
@@ -36,10 +36,10 @@ def select_keys(mapping, keys, **kwargs):
 class WcmWorkflow(Workflow):
 	"""A Workflow builder for the Whole Cell Model."""
 
-	def __init__(self, owner_id, timestamp):
-		# type: (str, str) -> None
+	def __init__(self, owner_id, timestamp, verbose_logging=True):
+		# type: (str, str, bool) -> None
 		namespace = 'WCM_{}_{}'.format(owner_id, timestamp)
-		super(WcmWorkflow, self).__init__(namespace, verbose_logging=True)  # TODO(jerry): Use args['verbose']
+		super(WcmWorkflow, self).__init__(namespace, verbose_logging)
 
 		self.owner_id = owner_id
 		self.timestamp = timestamp
@@ -84,6 +84,7 @@ class WcmWorkflow(Workflow):
 		variant_spec = (variant_arg[0], int(variant_arg[1]), int(variant_arg[2]))
 		variant_type = variant_spec[0]
 
+		metadata_file = self.local('metadata', constants.JSON_METADATA_FILE)
 		metadata = select_keys(args,
 			('generations', 'mass_distribution', 'growth_rate_noise',
 			'd_period_division', 'translation_supply', 'trna_charging'),
@@ -92,9 +93,12 @@ class WcmWorkflow(Workflow):
 			description='Cloud',
 			time=self.timestamp,
 			variant=variant_type,
-			total_variants=str(variant_spec[2] + 1 - variant_spec[1]),
-			)
-		# TODO(jerry): Make a runtime task write metadata.json.
+			total_variants=str(variant_spec[2] + 1 - variant_spec[1]))
+
+		python_args = dict(output_file=metadata_file, data=metadata)
+		metadata_task = self.add_python_task('write_json', python_args, (),
+			key='write_metadata',
+			outputs=[metadata_file])
 
 		python_args = select_keys(args,
 			('ribosome_fitting', 'rnapoly_fitting', 'cpus'),
@@ -192,7 +196,7 @@ def wc_ecoli_workflow(args):
 	"""Build a workflow for wcEcoli."""
 	owner_id = os.environ.get('WF_ID', os.environ['USER'])
 	timestamp = fp.timestamp()
-	wf = WcmWorkflow(owner_id, timestamp)
+	wf = WcmWorkflow(owner_id, timestamp, verbose_logging=args['verbose'])
 	wf.build(args)
 	return wf
 
@@ -219,11 +223,12 @@ class RunWcm(scriptBase.ScriptBase):
 			self.define_parameter_bool(
 				parser, name, DEFAULT_SIMULATION_KWARGS[key], help)
 
-		super(RunWcm, self).define_parameters(parser)
-
-		# Parca
+		self.define_parameter_bool(parser, 'verbose', True,
+			help='Verbose workflow builder logging')
 		parser.add_argument('-c', '--cpus', type=int, default=1,
 			help='The number of CPU processes to use. Default = 1.')
+
+		# Parca
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
 			help="Fit ribosome expression to protein synthesis demands")
 		self.define_parameter_bool(parser, 'rnapoly_fitting', True,
@@ -288,6 +293,8 @@ class RunWcm(scriptBase.ScriptBase):
 				error messages.''')
 
 		# TODO(jerry): BuildCausalityNetwork, dual daughters.
+
+		super(RunWcm, self).define_parameters(parser)
 
 	def parse_args(self):
 		args = super(RunWcm, self).parse_args()
