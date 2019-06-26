@@ -106,6 +106,7 @@ class WcmWorkflow(Workflow):
 		parca_task = self.add_python_task('parca', python_args, (),
 			key='parca',
 			outputs=[kb_dir])
+		variant_analysis_inputs = [kb_dir]
 
 		sim_args = select_keys(args,
 			('timeline', 'length_sec', 'timestep_safety_frac', 'timestep_max',
@@ -173,6 +174,7 @@ class WcmWorkflow(Workflow):
 						key='simulation_' + cell_id,
 						inputs=inputs,
 						outputs=[cell_sim_out_dir])
+					variant_analysis_inputs.append(cell_sim_out_dir)
 
 					plot_dir = os.path.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
 					python_args = dict(
@@ -189,7 +191,21 @@ class WcmWorkflow(Workflow):
 						key='analysis_' + cell_id,
 						outputs=[plot_dir])
 
-	# TODO(jerry): The remaining analyses...
+		# TODO(jerry): Cohort and Multigen analyses...
+
+		variant_plot_dir = self.local(AnalysisBase.OUTPUT_SUBDIR, '')
+		python_args = dict(
+			input_directory=self.local(''),
+			input_validation_data=validation_data_file,
+			output_plots_directory=variant_plot_dir,
+			plots_to_run=args['plot'],
+			cpus=args['cpus'],
+			metadata=metadata)
+		analysis_variant_task = self.add_python_task('analysis_variant',
+			python_args, (),
+			key='analysis_variant',
+			inputs=variant_analysis_inputs,
+			outputs=[variant_plot_dir])
 
 
 def wc_ecoli_workflow(args):
