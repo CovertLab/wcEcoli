@@ -167,9 +167,10 @@ class WcmWorkflow(Workflow):
 						python_args['daughter_state_path'] = daughter_state_path
 						inputs=[parent_cell_sim_out_dir]
 
+					cell_id = 'Var{}_Seed{}_Gen{}_Cell{}'.format(i, j, k, l)
 					sim_task = self.add_python_task(firetask, python_args,
 						(parca_task, variant_task),
-						key='simulation_var{}_seed{}_gen{}_cell{}'.format(i, j, k, l),
+						key='simulation_' + cell_id,
 						inputs=inputs,
 						outputs=[cell_sim_out_dir])
 
@@ -185,7 +186,7 @@ class WcmWorkflow(Workflow):
 					analysis_single_task = self.add_python_task('analysis_single',
 						python_args,
 						(parca_task, variant_task, sim_task),
-						key='analysis_var{}_seed{}_gen{}_cell{}'.format(i, j, k, l),
+						key='analysis_' + cell_id,
 						outputs=[plot_dir])
 
 	# TODO(jerry): The remaining analyses...
