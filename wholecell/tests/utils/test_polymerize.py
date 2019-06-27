@@ -193,6 +193,29 @@ class Test_polymerize(unittest.TestCase):
 
 	@noseAttrib.attr('polymerizeNew')
 	@noseAttrib.attr('smalltest')
+	def test_polymerize_testVariableElongation(self):
+		sequences = np.array([
+			[0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 1, 1],
+			[3] * 12,
+			[2] * 12,
+			[1, 1, 1] + [P] * 9])
+		baseAmounts = np.array([30] * 4)
+		energy = 20
+
+		rates = np.array([4, 3, 2, 1])
+		result = polymerize(
+			sequences,
+			baseAmounts,
+			energy,
+			np.random.RandomState(),
+			rates,
+			variable_elongation=True)
+
+		assert_equal(result.sequenceElongation, np.array([8, 6, 4, 2]))
+
+
+	@noseAttrib.attr('polymerizeNew')
+	@noseAttrib.attr('smalltest')
 	def test_buildSequences(self):
 		# Base case
 		padding = np.empty((20, 10))
