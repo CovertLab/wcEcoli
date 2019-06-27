@@ -150,57 +150,57 @@ class WcmWorkflow(Workflow):
 					gen_dir = os.path.join(seed_dir, "generation_{:06d}".format(k))
 					md_single = dict(md_multigen, gen=k)
 
-					# l is the daughter number among all of this generation's cells,
-					# in [0] for single-daughters or range(2**k) for dual daughters.
-					l = 0
-					cell_dir = os.path.join(gen_dir, '{:06d}'.format(l))
-					cell_sim_out_dir = os.path.join(cell_dir, 'simOut', '')
+					# l is the daughter number among all of this generation's cells.
+					# l in [0] for single daughters; l in range(2**k) for dual daughters.
+					for l in [0]:
+						cell_dir = os.path.join(gen_dir, '{:06d}'.format(l))
+						cell_sim_out_dir = os.path.join(cell_dir, 'simOut', '')
 
-					python_args = dict(sim_args,
-						input_sim_data=variant_sim_data_modified_file,
-						output_directory=cell_sim_out_dir,
-						seed=j)
+						python_args = dict(sim_args,
+							input_sim_data=variant_sim_data_modified_file,
+							output_directory=cell_sim_out_dir,
+							seed=j)
 
-					if k == 0:
-						firetask = 'simulation'
-						inputs = []
-					else:
-						firetask = 'simulation_daughter'
-						parent_gen_dir = os.path.join(
-							seed_dir, 'generation_{:06d}'.format(k - 1))
-						parent_cell_dir = os.path.join(parent_gen_dir, '{:06d}'.format(l // 2))
-						parent_cell_sim_out_dir = os.path.join(parent_cell_dir, 'simOut', '')
-						daughter_state_path = os.path.join(
-							parent_cell_sim_out_dir,
-							constants.SERIALIZED_INHERITED_STATE % (l % 2 + 1))
-						python_args['daughter_state_path'] = daughter_state_path
-						inputs=[parent_cell_sim_out_dir]
+						if k == 0:
+							firetask = 'simulation'
+							inputs = []
+						else:
+							firetask = 'simulation_daughter'
+							parent_gen_dir = os.path.join(
+								seed_dir, 'generation_{:06d}'.format(k - 1))
+							parent_cell_dir = os.path.join(parent_gen_dir, '{:06d}'.format(l // 2))
+							parent_cell_sim_out_dir = os.path.join(parent_cell_dir, 'simOut', '')
+							daughter_state_path = os.path.join(
+								parent_cell_sim_out_dir,
+								constants.SERIALIZED_INHERITED_STATE % (l % 2 + 1))
+							python_args['daughter_state_path'] = daughter_state_path
+							inputs=[parent_cell_sim_out_dir]
 
-					cell_id = 'Var{}_Seed{}_Gen{}_Cell{}'.format(i, j, k, l)
-					sim_task = self.add_python_task(firetask, python_args,
-						(parca_task, variant_task),
-						key='simulation_' + cell_id,
-						inputs=inputs,
-						outputs=[cell_sim_out_dir])
+						cell_id = 'Var{}_Seed{}_Gen{}_Cell{}'.format(i, j, k, l)
+						sim_task = self.add_python_task(firetask, python_args,
+							(parca_task, variant_task),
+							key='simulation_' + cell_id,
+							inputs=inputs,
+							outputs=[cell_sim_out_dir])
 
-					variant_analysis_inputs.append(cell_sim_out_dir)
-					this_variant_cohort_analysis_inputs.append(cell_sim_out_dir)
-					this_variant_this_seed_multigen_analysis_inputs.append(cell_sim_out_dir)
+						variant_analysis_inputs.append(cell_sim_out_dir)
+						this_variant_cohort_analysis_inputs.append(cell_sim_out_dir)
+						this_variant_this_seed_multigen_analysis_inputs.append(cell_sim_out_dir)
 
-					plot_dir = os.path.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
-					python_args = dict(
-						input_results_directory=cell_sim_out_dir,
-						input_sim_data=variant_sim_data_modified_file,
-						input_validation_data=validation_data_file,
-						output_plots_directory=plot_dir,
-						metadata=md_single,
-						plots_to_run=args['plot'],
-						cpus=args['cpus'])
-					analysis_single_task = self.add_python_task('analysis_single',
-						python_args,
-						(parca_task, variant_task, sim_task),
-						key='analysis_' + cell_id,
-						outputs=[plot_dir])
+						plot_dir = os.path.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
+						python_args = dict(
+							input_results_directory=cell_sim_out_dir,
+							input_sim_data=variant_sim_data_modified_file,
+							input_validation_data=validation_data_file,
+							output_plots_directory=plot_dir,
+							metadata=md_single,
+							plots_to_run=args['plot'],
+							cpus=args['cpus'])
+						analysis_single_task = self.add_python_task('analysis_single',
+							python_args,
+							(parca_task, variant_task, sim_task),
+							key='analysis_' + cell_id,
+							outputs=[plot_dir])
 
 				multigen_plot_dir = os.path.join(seed_dir, AnalysisBase.OUTPUT_SUBDIR, '')
 				python_args = dict(
