@@ -8,17 +8,33 @@ import pprint as pp
 from typing import Any, Dict, Iterable, List, Optional
 
 
+def _rebase(path, old_prefix, new_prefix):
+	# type: (str, str, str) -> str
+	"""Return a path starting with new_prefix in place of old_prefix."""
+	new_path = os.path.join(new_prefix, os.path.relpath(path, old_prefix))
+	if path.endswith(os.sep) and not new_path.endswith(os.sep):
+		new_path = os.path.join(new_path, '')
+	assert '..' not in new_path, "Rebasing a path that doesn't start with old_prefix?"
+	return new_path
+
 def _keyify(paths):
 	# type: (Iterable[str]) -> Dict[str, str]
 	"""Map sequential keys to the given paths."""
 	return {str(i): path for i, path in enumerate(paths)}
 
-def _re_keyify(old_prefix, new_prefix, paths):
-	# type: (str, str, Iterable[str]) -> Dict[str, str]
-	"""Map sequential keys to the paths with a replaced path prefix."""
-	return _keyify([
-		os.path.join(new_prefix, os.path.relpath(path, old_prefix))
-		for path in paths])
+def _re_keyify(paths, old_prefix, new_prefix):
+	# type: (Iterable[str], str, str) -> Dict[str, str]
+	"""Map sequential keys to rebased paths."""
+	return _keyify([_rebase(path, old_prefix, new_prefix) for path in paths])
+
+def _copy_list(value):
+	# type: (List[str]) -> List[str]
+	"""Copy a list. Also check that it's a list to catch a goof like
+	`outputs=plot_dir` instead of `outputs=[plot_dir]`.
+	"""
+	if isinstance(value, list):
+		return list(value)
+	raise ValueError('Expected a list, not {}'.format(repr(value)))
 
 
 class Task(object):
@@ -34,8 +50,8 @@ class Task(object):
 		self.key = kwargs['key']  # type: str  # the task name
 		self.image = kwargs['image']  # type: str
 		self.commands = kwargs['commands']  # type: List[Dict[str, List[str]]]
-		self.inputs  = list(kwargs.get('inputs',  []))  # type: List[str]
-		self.outputs = list(kwargs.get('outputs', []))  # type: List[str]
+		self.inputs  = _copy_list(kwargs.get('inputs',  []))  # type: List[str]
+		self.outputs = _copy_list(kwargs.get('outputs', []))  # type: List[str]
 		self.storage_prefix = kwargs.get('storage_prefix', '')
 		self.local_prefix = kwargs.get('local_prefix', '')
 
@@ -67,8 +83,8 @@ class Task(object):
 		return dict(
 			key=self.key,
 			command=self.key,
-			inputs=_re_keyify(self.local_prefix, self.storage_prefix, self.inputs),
-			outputs=_re_keyify(self.local_prefix, self.storage_prefix, self.outputs))
+			inputs=_re_keyify(self.inputs, self.local_prefix, self.storage_prefix),
+			outputs=_re_keyify(self.outputs, self.local_prefix, self.storage_prefix))
 
 
 class Workflow(object):

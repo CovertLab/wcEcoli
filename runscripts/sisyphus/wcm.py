@@ -76,6 +76,9 @@ class WcmWorkflow(Workflow):
 
 	def build(self, args):
 		# type: (Dict[str, Any]) -> None
+
+		# Joining with '' gets a path that ends with the path separator, which
+		# tells Sisyphus to copy/pack/unpack a directory.
 		kb_dir = self.local(ParcaTask.OUTPUT_SUBDIR, '')
 		sim_data_file = os.path.join(kb_dir, constants.SERIALIZED_SIM_DATA_FILENAME)
 		validation_data_file = os.path.join(kb_dir, constants.SERIALIZED_VALIDATION_DATA)
@@ -106,6 +109,7 @@ class WcmWorkflow(Workflow):
 		parca_task = self.add_python_task('parca', python_args, (),
 			key='parca',
 			outputs=[kb_dir])
+
 		variant_analysis_inputs = [kb_dir]
 
 		sim_args = select_keys(args,
@@ -133,6 +137,8 @@ class WcmWorkflow(Workflow):
 				(parca_task,),
 				key='variant_{}_{}'.format(variant_type, i),
 				outputs=[variant_sim_data_dir, variant_metadata_dir])
+
+			this_variant_cohort_analysis_inputs = [kb_dir, variant_sim_data_dir]
 
 			for j in xrange(args['init_sims']):  # seed
 				seed_dir = self.local(subdir, '{:06d}'.format(j))
@@ -174,7 +180,9 @@ class WcmWorkflow(Workflow):
 						key='simulation_' + cell_id,
 						inputs=inputs,
 						outputs=[cell_sim_out_dir])
+
 					variant_analysis_inputs.append(cell_sim_out_dir)
+					this_variant_cohort_analysis_inputs.append(cell_sim_out_dir)
 
 					plot_dir = os.path.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
 					python_args = dict(
@@ -191,7 +199,22 @@ class WcmWorkflow(Workflow):
 						key='analysis_' + cell_id,
 						outputs=[plot_dir])
 
-		# TODO(jerry): Cohort and Multigen analyses...
+				# TODO(jerry): Multigen analysis.
+
+			cohort_plot_dir = self.local(subdir, AnalysisBase.OUTPUT_SUBDIR, '')
+			python_args = dict(
+				input_variant_directory=self.local(subdir),
+				input_sim_data=variant_sim_data_modified_file,
+				input_validation_data=validation_data_file,
+				output_plots_directory=cohort_plot_dir,
+				plots_to_run=args['plot'],
+				cpus=args['cpus'],
+				metadata=md_cohort)
+			analysis_cohort_task = self.add_python_task('analysis_cohort',
+				python_args, (),
+				key='analysis_cohort_Var{}'.format(i),
+				inputs=this_variant_cohort_analysis_inputs,
+				outputs=[cohort_plot_dir])
 
 		variant_plot_dir = self.local(AnalysisBase.OUTPUT_SUBDIR, '')
 		python_args = dict(
