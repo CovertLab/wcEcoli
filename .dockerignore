@@ -1,6 +1,13 @@
+.git*
+.gcloudignore
+/.idea
+/docs
+/user
+
 # Compiled source #
 ###################
 *.pyc
+__pycache__
 
 # OS generated files #
 ######################
@@ -29,11 +36,7 @@ nosetests.*.xml
 
 # Output files #
 ################
-out
-out/*
-!out/out.txt
-!out/images.html
-!out/makeHtml.py
+/out
 
 # Cached sim data #
 ###################
@@ -44,11 +47,6 @@ cached
 fixtures/sim/*
 fixtures/kb/*
 fixtures/test/*
-
-# User files #
-################
-user/*
-!user/user.txt
 
 # C extensions #
 ################
@@ -72,6 +70,7 @@ user/*
 # kernprof.py output #
 ######################
 *.lprof
+*.prof
 
 # pyenv python version #
 ########################
@@ -79,8 +78,8 @@ user/*
 
 # files created from templates #
 ################################
-/my_launchpad*.yaml
-/my_qadapter*.yaml
+*my_launchpad*.yaml
+*my_qadapter*.yaml
 
 # Fireworks output #
 ####################
@@ -88,7 +87,7 @@ launcher_*
 block_*
 FW.json
 
-# Fitter output #
+# Parca output #
 #################
 reconstruction/ecoli/dataclasses/process/equilibrium_odes.py
 reconstruction/ecoli/dataclasses/process/two_component_system_odes.py
@@ -107,35 +106,15 @@ reconstruction/ecoli/dataclasses/process/two_component_system_odes_fitter.py
 *.pickle
 *.log
 *.hdf
+*.tar.gz
 /build/
 
-# PyCharm files #
-#################
-# User-specific stuff:
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/dictionaries
-.idea/vcs.xml
-.idea/jsLibraryMappings.xml
-.idea/libraries
-.idea/codeStyleSettings.xml
-.idea/codeStyles/codeStyleConfig.xml
+# LaTeX compilation files #
+###########################
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
 
-# Potentially OK if editing it to project-jdk-name="Python 2.7" works:
-.idea/misc.xml
-
-# Sensitive or high-churn files:
-.idea/dataSources/
-.idea/dataSources.ids
-.idea/dataSources.xml
-.idea/dataSources.local.xml
-.idea/sqlDataSources.xml
-.idea/dynamic.xml
-.idea/uiDesigner.xml
-
-# Gradle:
-.idea/gradle.xml
-.idea/libraries
-
-# Mongo Explorer plugin:
-.idea/mongoSettings.xml
