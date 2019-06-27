@@ -144,6 +144,8 @@ class WcmWorkflow(Workflow):
 				seed_dir = self.local(subdir, '{:06d}'.format(j))
 				md_multigen = dict(md_cohort, seed=j)
 
+				this_variant_this_seed_multigen_analysis_inputs = [kb_dir, variant_sim_data_dir]
+
 				for k in xrange(args['generations']):
 					gen_dir = os.path.join(seed_dir, "generation_{:06d}".format(k))
 					md_single = dict(md_multigen, gen=k)
@@ -183,6 +185,7 @@ class WcmWorkflow(Workflow):
 
 					variant_analysis_inputs.append(cell_sim_out_dir)
 					this_variant_cohort_analysis_inputs.append(cell_sim_out_dir)
+					this_variant_this_seed_multigen_analysis_inputs.append(cell_sim_out_dir)
 
 					plot_dir = os.path.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
 					python_args = dict(
@@ -199,7 +202,20 @@ class WcmWorkflow(Workflow):
 						key='analysis_' + cell_id,
 						outputs=[plot_dir])
 
-				# TODO(jerry): Multigen analysis.
+				multigen_plot_dir = os.path.join(seed_dir, AnalysisBase.OUTPUT_SUBDIR, '')
+				python_args = dict(
+					input_seed_directory=seed_dir,
+					input_sim_data=variant_sim_data_modified_file,
+					input_validation_data=validation_data_file,
+					output_plots_directory=multigen_plot_dir,
+					plots_to_run=args['plot'],
+					cpus=args['cpus'],
+					metadata=md_multigen)
+				analysis_multigen_task = self.add_python_task('analysis_multigen',
+					python_args, (),
+					key='analysis_multigen_Var{}_Seed{}'.format(i, j),
+					inputs=this_variant_this_seed_multigen_analysis_inputs,
+					outputs=[multigen_plot_dir])
 
 			cohort_plot_dir = self.local(subdir, AnalysisBase.OUTPUT_SUBDIR, '')
 			python_args = dict(
@@ -317,7 +333,7 @@ class RunWcm(scriptBase.ScriptBase):
 				 ' condition specific rate of amino acid supply; otherwise the'
 				 ' elongation rate is set by condition')
 		add_bool_option('trna_charging', 'trna_charging',
-			help='if True, tRNA charging reactions are modeled and the ribosome'
+			help='if true, tRNA charging reactions are modeled and the ribosome'
 				 ' elongation rate is set by the amount of charged tRNA	present.'
 				 ' This option will override TRANSLATION_SUPPLY in the simulation.')
 
@@ -339,6 +355,11 @@ class RunWcm(scriptBase.ScriptBase):
 	def parse_args(self):
 		args = super(RunWcm, self).parse_args()
 		args.cpus = parallelization.cpus(args.cpus)
+
+		assert args.generations > 0
+		assert args.init_sims > 0
+		assert args.length_sec > 0
+		assert args.cpus > 0
 		return args
 
 	def run(self, args):
