@@ -49,7 +49,7 @@ class WcmWorkflow(Workflow):
 			STORAGE_PREFIX_ROOT, self.owner_id, self.timestamp, '')
 		self.local_prefix = os.path.join('out', 'wf')
 
-		self.log_info('Storage prefix: {}'.format(self.storage_prefix))
+		self.log_info('\nStorage prefix: {}'.format(self.storage_prefix))
 
 	def local(self, *path_elements):
 		# type: (*str) -> str
@@ -299,10 +299,10 @@ class RunWcm(scriptBase.ScriptBase):
 
 		# Simulation
 		parser.add_argument('-g', '--generations', type=int, default=1,
-			help='Number of cell generations to run. (Single daughters only.)'
+			help='Number of cell generations to run. Default = 1')
+		parser.add_argument('-i', '--init_sims', type=int, default=1,
+			help='(int; 1) Number of initial sims (seeds) per variant.'
 				 ' Default = 1')
-		self.define_option(parser, 'init_sims', int, 1,
-			'Number of initial sims (seeds) per variant.')
 		parser.add_argument('-t', '--timeline', type=str, default='0 minimal',
 			help='set timeline. Default = "0 minimal". See'
 				 ' environment/condition/make_media.py, make_timeline() for'
@@ -336,6 +336,8 @@ class RunWcm(scriptBase.ScriptBase):
 			help='if true, tRNA charging reactions are modeled and the ribosome'
 				 ' elongation rate is set by the amount of charged tRNA	present.'
 				 ' This option will override TRANSLATION_SUPPLY in the simulation.')
+
+		# TODO(jerry): Single/dual daughters.
 
 		# Analyses
 		parser.add_argument('-p', '--plot', nargs='+', default=[],
