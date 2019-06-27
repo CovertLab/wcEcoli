@@ -210,7 +210,7 @@ def fitSimData_1(
 		cpus = options['cpus']
 		print "Start parallel processing with %i processes" % (cpus,)
 		pool = Pool(processes = cpus)
-		results = [pool.apply_async(fitCondition, (sim_data, cellSpecs[condition], condition)) for condition in sorted(cellSpecs)]
+		results = [pool.apply_async(fitCondition, (sim_data, cellSpecs[condition], condition, options)) for condition in sorted(cellSpecs)]
 		pool.close()
 		pool.join()
 		for result in results:
@@ -220,7 +220,7 @@ def fitSimData_1(
 		print "End parallel processing"
 	else:
 		for condition in sorted(cellSpecs):
-			cellSpecs.update(fitCondition(sim_data, cellSpecs[condition], condition))
+			cellSpecs.update(fitCondition(sim_data, cellSpecs[condition], condition, options))
 
 	for condition_label in sorted(cellSpecs):
 		nutrients = sim_data.conditions[condition_label]["nutrients"]
@@ -664,7 +664,7 @@ def expressionConverge(
 		initialExpression = expression.copy()
 
 		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
-		bulkContainer = createBulkContainer(sim_data, expression, doubling_time)
+		bulkContainer = createBulkContainer(sim_data, expression, doubling_time, options)
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
 
 		if not options['disable_ribosome_capacity_fitting']:
@@ -674,7 +674,7 @@ def expressionConverge(
 			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, options)
 
 		# Normalize expression and write out changes
-		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
+		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, options, Km)
 
 		degreeOfFit = np.sqrt(np.mean(np.square(initialExpression - expression)))
 
@@ -689,7 +689,7 @@ def expressionConverge(
 
 	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict
 
-def fitCondition(sim_data, spec, condition):
+def fitCondition(sim_data, spec, condition, options):
 	"""
 	Takes a given condition and returns the predicted bulk average, bulk deviation,
 	protein monomer average, protein monomer deviation, and amino acid supply to
@@ -725,6 +725,7 @@ def fitCondition(sim_data, spec, condition):
 		spec["concDict"],
 		spec["avgCellDryMassInit"],
 		spec["doubling_time"],
+		options,
 		)
 	spec["bulkAverageContainer"] = bulkAverageContainer
 	spec["bulkDeviationContainer"] = bulkDeviationContainer
@@ -1113,7 +1114,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 
 	return expression
 
-def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
+def totalCountIdDistributionProtein(sim_data, expression, doubling_time, options):
 	"""
 	Calculates the total counts of proteins from the relative expression of RNA,
 	individual protein mass, and total protein mass. Relies on the math functions
@@ -1145,11 +1146,18 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	netLossRate_protein = netLossRateFromDilutionAndDegradationProtein(doubling_time, degradationRates)
 
 	# Find the protein distribution
+	base = sim_data.growthRateParameters.getRibosomeElongationRate(doubling_time).asNumber(units.aa / units.s)
+	elongation_rates = sim_data.process.translation.make_elongation_rates_flat(
+		base, flat_elongation=options['flat_elongation_translation'])
+
+	protein_lengths = sim_data.process.translation.monomerData['length']
 	distribution_protein = proteinDistributionFrommRNA(
 		distribution_transcripts_by_protein,
 		translation_efficiencies_by_protein,
-		netLossRate_protein
-		)
+		netLossRate_protein,
+		elongation_rates,
+		protein_lengths,
+		flat_elongation=options['flat_elongation_translation'])
 
 	# Find total protein counts
 	total_count_protein = totalCountFromMassesAndRatios(
@@ -1192,7 +1200,7 @@ def totalCountIdDistributionRNA(sim_data, expression, doubling_time):
 
 	return total_count_RNA, ids_rnas, distribution_RNA
 
-def createBulkContainer(sim_data, expression, doubling_time):
+def createBulkContainer(sim_data, expression, doubling_time, options):
 	"""
 	Creates a container that tracks the counts of all bulk molecules. Relies on
 	totalCountIdDistributionRNA and totalCountIdDistributionProtein to set the
@@ -1210,7 +1218,7 @@ def createBulkContainer(sim_data, expression, doubling_time):
 	"""
 
 	total_count_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time)
-	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time)
+	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time, options)
 	ids_molecules = sim_data.internal_state.bulkMolecules.bulkData["id"]
 
 	# Construct bulk container
@@ -1444,7 +1452,7 @@ def setRNAPCountsConstrainedByPhysiology(
 
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
 
-def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km=None):
+def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, options, Km=None):
 	"""
 	Determines expression and synthesis probabilities for RNA molecules to fit
 	protein levels and RNA degradation rates. Assumes a steady state analysis
@@ -1506,9 +1514,19 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	mRnaExpressionView = rnaExpressionContainer.countsView(sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]])
 	mRnaExpressionFrac = np.sum(mRnaExpressionView.counts())
 
+	base = sim_data.growthRateParameters.getRibosomeElongationRate(doubling_time).asNumber(units.aa / units.s)
+	elongation_rates = sim_data.process.translation.make_elongation_rates_flat(
+		base, flat_elongation=options['flat_elongation_translation'])
+	protein_lengths = sim_data.process.translation.monomerData['length']
+
 	mRnaExpressionView.countsIs(
 		mRnaExpressionFrac * mRNADistributionFromProtein(
-			normalize(counts_protein), translation_efficienciesByProtein, netLossRate_protein
+			normalize(counts_protein),
+			translation_efficienciesByProtein,
+			netLossRate_protein,
+			elongation_rates,
+			protein_lengths,
+			flat_elongation=options['flat_elongation_translation']
 			)[sim_data.relation.monomerIndexToRnaMapping]
 		)
 
@@ -1625,7 +1643,7 @@ def fitMaintenanceCosts(sim_data, bulkContainer):
 
 	sim_data.constants.darkATP = darkATP
 
-def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassInit, doubling_time):
+def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassInit, doubling_time, options):
 	"""
 	Finds a distribution of copy numbers for macromolecules. While RNA and protein
 	expression can be approximated using well-described statistical	distributions,
@@ -1657,7 +1675,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 
 	# Ids
 	totalCount_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time)
-	totalCount_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time)
+	totalCount_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time, options)
 	ids_complex = sim_data.process.complexation.moleculeNames
 	ids_equilibrium = sim_data.process.equilibrium.moleculeNames
 	ids_twoComponentSystem = sim_data.process.two_component_system.moleculeNames
@@ -1835,7 +1853,13 @@ def totalCountFromMassesAndRatios(totalMass, individualMasses, distribution):
 	assert np.allclose(np.sum(distribution), 1)
 	return 1 / units.dot(individualMasses, distribution) * totalMass
 
-def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, netLossRate):
+def proteinDistributionFrommRNA(
+		distribution_mRNA,
+		translation_efficiencies,
+		netLossRate,
+		elongation_rates,
+		protein_lengths,
+		flat_elongation=False):
 	"""
 	dP_i / dt = k * M_i * e_i - P_i * Loss_i
 
@@ -1848,8 +1872,9 @@ def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, net
 	Substituting in:
 	P_i = k * f_i * e_i * M_total / Loss_i
 
-	Normalizing P_i by summing over all i cancels out k and M_total
-	assuming constant translation rate.
+	Normalizing P_i by summing over all i cancels out M_total.
+
+	If flat_elongation is True, assumes constant translation rate to cancel out k.
 
 	Inputs
 	------
@@ -1866,14 +1891,25 @@ def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, net
 
 	assert np.allclose(np.sum(distribution_mRNA), 1)
 	assert np.allclose(np.sum(translation_efficiencies), 1)
-	distributionUnnormed = 1 / netLossRate * distribution_mRNA * translation_efficiencies
+	if flat_elongation:
+		distributionUnnormed = 1 / netLossRate * distribution_mRNA * translation_efficiencies
+	else:
+		protein_lengths = np.array([float(x.asNumber()) for x in protein_lengths])
+		distributionUnnormed = 1 / netLossRate * elongation_rates.astype(float) / protein_lengths * distribution_mRNA * translation_efficiencies
+
 	distributionNormed = distributionUnnormed / units.sum(distributionUnnormed)
 	distributionNormed.normalize()
 	distributionNormed.checkNoUnit()
 
 	return distributionNormed.asNumber()
 
-def mRNADistributionFromProtein(distribution_protein, translation_efficiencies, netLossRate):
+def mRNADistributionFromProtein(
+		distribution_protein,
+		translation_efficiencies,
+		netLossRate,
+		elongation_rates,
+		protein_lengths,
+		flat_elongation=False):
 	"""
 	dP_i / dt = k * M_i * e_i - P_i * Loss_i
 
@@ -1886,8 +1922,9 @@ def mRNADistributionFromProtein(distribution_protein, translation_efficiencies, 
 	Substituting in:
 	M_i = Loss_i * f_i * P_total / (k * e_i)
 
-	Normalizing M_i by summing over all i cancels out k and P_total
-	assuming a constant translation rate.
+	Normalizing M_i by summing over all i cancels out P_total.
+
+	If flat_elongation is True, assumes constant translation rate to cancel out k.
 
 	Inputs
 	------
@@ -1903,7 +1940,12 @@ def mRNADistributionFromProtein(distribution_protein, translation_efficiencies, 
 	"""
 
 	assert np.allclose(np.sum(distribution_protein), 1)
-	distributionUnnormed = netLossRate * distribution_protein / translation_efficiencies
+	if flat_elongation:
+		distributionUnnormed = netLossRate * distribution_protein / translation_efficiencies
+	else:
+		protein_lengths = np.array([float(x.asNumber()) for x in protein_lengths])
+		distributionUnnormed = netLossRate * distribution_protein * protein_lengths / elongation_rates.astype(float) / translation_efficiencies
+
 	distributionNormed = distributionUnnormed / units.sum(distributionUnnormed)
 	distributionNormed.normalize()
 	distributionNormed.checkNoUnit()
@@ -1969,9 +2011,8 @@ def calculate_translational_efficiencies(sim_data, condition, cellSpecs):
 		sim_data,
 		original_expression,
 		translation_efficiencies,
-		doubling_time)
-
-	import ipdb; ipdb.set_trace()
+		doubling_time,
+		options)
 
 	spec['expression'] = pre_expression
 	spec['synthProb'] = pre_synthesis
