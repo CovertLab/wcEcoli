@@ -32,6 +32,12 @@ def select_keys(mapping, keys, **kwargs):
 	result.update(**kwargs)
 	return result
 
+def shell_quote(token):  # TODO(jerry): Ditch this after fixing Sisyphus
+	# type (str) -> str
+	"""Quote the shell token by putting it in 'quotes' amd replacing each
+	existing ' with '\'', that is: end-quote, escaped-quote, start-quote."""
+	return "'{}'".format(r"'\''".join(token.split("'")))
+
 
 class WcmWorkflow(Workflow):
 	"""A Workflow builder for the Whole Cell Model."""
@@ -39,7 +45,7 @@ class WcmWorkflow(Workflow):
 	def __init__(self, owner_id, timestamp, verbose_logging=True):
 		# type: (str, str, bool) -> None
 		namespace = 'WCM_{}_{}'.format(owner_id, timestamp)
-		super(WcmWorkflow, self).__init__(namespace, verbose_logging)
+		super(WcmWorkflow, self).__init__(namespace, verbose_logging=verbose_logging)
 
 		self.owner_id = owner_id
 		self.timestamp = timestamp
@@ -47,7 +53,7 @@ class WcmWorkflow(Workflow):
 		self.image = DOCKER_IMAGE.format(self.owner_id)
 		self.storage_prefix = os.path.join(
 			STORAGE_PREFIX_ROOT, self.owner_id, self.timestamp, '')
-		self.local_prefix = os.path.join('out', 'wf')
+		self.local_prefix = os.path.join(os.sep, 'wcEcoli', 'out', 'wf')
 
 		self.log_info('\nStorage prefix: {}'.format(self.storage_prefix))
 
@@ -69,7 +75,7 @@ class WcmWorkflow(Workflow):
 			image=self.image,
 			commands=[{'command':
 				['python', '-u', '-m', 'wholecell.fireworks.runTask',
-					firetask, json.dumps(python_args)]}],
+					firetask, shell_quote(json.dumps(python_args))]}],
 			storage_prefix=self.storage_prefix,
 			local_prefix=self.local_prefix)
 		return self.add_task(Task(upstream_tasks, **config))

@@ -7,6 +7,8 @@ import os
 import pprint as pp
 from typing import Any, Dict, Iterable, List, Optional
 
+from wholecell.utils import filepath as fp
+
 
 def _rebase(path, old_prefix, new_prefix):
 	# type: (str, str, str) -> str
@@ -111,6 +113,9 @@ class Workflow(object):
 	def add_task(self, task):
 		# type: (Task) -> Task
 		"""Add a task object. Return it for chaining."""
+		# TODO(jerry): Workaround until we can set a namespace on all commands and processes.
+		task.key = self.namespace + '-' + task.key
+
 		self._tasks[task.key] = task
 		self.log_info('    Added task: {}'.format(task.key))
 		return task
@@ -130,6 +135,10 @@ class Workflow(object):
 		"""Build the workflow and send it to the work server."""
 		commands = self.get_commands()
 		processes = self.get_processes()
+
+		self.log_info('Writing command and processe files')
+		fp.write_json_file('wcm-commands.json', commands)
+		fp.write_json_file('wcm-processes.json', processes)
 
 		# DEBUG
 		self.log_info('\n---Commands:\n' + pp.pformat(commands))
