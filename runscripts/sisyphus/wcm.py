@@ -32,12 +32,6 @@ def select_keys(mapping, keys, **kwargs):
 	result.update(**kwargs)
 	return result
 
-def shell_quote(token):  # TODO(jerry): Ditch this after fixing Sisyphus
-	# type (str) -> str
-	"""Quote the shell token by putting it in 'quotes' amd replacing each
-	existing ' with '\'', that is: end-quote, escaped-quote, start-quote."""
-	return "'{}'".format(r"'\''".join(token.split("'")))
-
 
 class WcmWorkflow(Workflow):
 	"""A Workflow builder for the Whole Cell Model."""
@@ -75,7 +69,7 @@ class WcmWorkflow(Workflow):
 			image=self.image,
 			commands=[{'command':
 				['python', '-u', '-m', 'wholecell.fireworks.runTask',
-					firetask, shell_quote(json.dumps(python_args))]}],
+					firetask, json.dumps(python_args)]}],
 			storage_prefix=self.storage_prefix,
 			local_prefix=self.local_prefix)
 		return self.add_task(Task(upstream_tasks, **config))
@@ -146,6 +140,7 @@ class WcmWorkflow(Workflow):
 				outputs=[variant_sim_data_dir, variant_metadata_dir])
 
 			this_variant_cohort_analysis_inputs = [kb_dir, variant_sim_data_dir]
+			variant_analysis_inputs.append(variant_sim_data_dir)
 
 			for j in xrange(args['init_sims']):  # seed
 				seed_dir = self.local(subdir, '{:06d}'.format(j))
