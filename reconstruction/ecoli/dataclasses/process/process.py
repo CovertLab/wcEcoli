@@ -30,7 +30,7 @@ class Process(object):
 		self.replication = Replication(raw_data, sim_data)
 		self.metabolism = Metabolism(raw_data, sim_data)
 		self.transcription = Transcription(raw_data, sim_data, options)
-		self.translation = Translation(raw_data, sim_data)
+		self.translation = Translation(raw_data, sim_data, options)
 		self.complexation = Complexation(raw_data, sim_data)
 		self.rna_decay = RnaDecay(raw_data, sim_data)
 		self.equilibrium = Equilibrium(raw_data, sim_data)
