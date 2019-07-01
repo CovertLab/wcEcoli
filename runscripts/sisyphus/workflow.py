@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, print_function
 
 from collections import OrderedDict
 import os
-import pprint as pp
 from typing import Any, Dict, Iterable, List, Optional
 
 from wholecell.utils import filepath as fp
@@ -136,12 +135,8 @@ class Workflow(object):
 		commands = self.get_commands()
 		processes = self.get_processes()
 
-		self.log_info('Writing command and processe files')
+		self.log_info('\nWriting wcm-commands.json, wcm-processes.json')
 		fp.write_json_file('wcm-commands.json', commands)
 		fp.write_json_file('wcm-processes.json', processes)
-
-		# DEBUG
-		self.log_info('\n---Commands:\n' + pp.pformat(commands))
-		self.log_info('\n---Processes:\n' + pp.pformat(processes))
 
 		# TODO(jerry): *** Upload w/the namespace to the workflow manager. ***
