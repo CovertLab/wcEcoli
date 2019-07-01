@@ -102,7 +102,8 @@ class WcmWorkflow(Workflow):
 			description='Cloud',
 			time=self.timestamp,
 			variant=variant_type,
-			total_variants=str(variant_spec[2] + 1 - variant_spec[1]))
+			total_variants=str(variant_spec[2] + 1 - variant_spec[1]),
+			total_gens=args['generations'])
 
 		python_args = dict(output_file=metadata_file, data=metadata)
 		metadata_task = self.add_python_task('write_json', python_args, (),
