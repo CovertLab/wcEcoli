@@ -31,7 +31,7 @@ ribosome_genes_file = os.path.join(
 output_plot = os.path.join(
 	root_dir, "paper", "investigation", "analyze_green.pdf")
 output_file = os.path.join(
-	root_dir, "reconstruction", "ecoli", "translationEfficiency_alternate.tsv")
+	root_dir, "reconstruction", "ecoli", "flat", "translationEfficiency_alternate.tsv")
 
 # Identify genes of interest to highlight
 rnap_genes = ["rpoA", "rpoB", "rpoC"]
