@@ -175,7 +175,7 @@ class WcmWorkflow(Workflow):
 							daughter_state_path = os.path.join(
 								parent_cell_sim_out_dir,
 								constants.SERIALIZED_INHERITED_STATE % (l % 2 + 1))
-							python_args['daughter_state_path'] = daughter_state_path
+							python_args['inherited_state_path'] = daughter_state_path
 							inputs=[parent_cell_sim_out_dir]
 
 						cell_id = 'Var{}_Seed{}_Gen{}_Cell{}'.format(i, j, k, l)
