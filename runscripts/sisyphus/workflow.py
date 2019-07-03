@@ -13,8 +13,13 @@ def _rebase(path, old_prefix, new_prefix):
 	# type: (str, str, str) -> str
 	"""Return a path starting with new_prefix in place of old_prefix."""
 	new_path = os.path.join(new_prefix, os.path.relpath(path, old_prefix))
-	if path.endswith(os.sep) and not new_path.endswith(os.sep):
-		new_path = os.path.join(new_path, '')
+
+	### Should new_prefix end with os.sep iff path does? relpath() drops the
+	### trailing os.sep. This `if` statement will reattach it but disable it
+	### until we figure out what to do.
+	# if path.endswith(os.sep) and not new_path.endswith(os.sep):
+	# 	new_path = os.path.join(new_path, '')
+
 	assert '..' not in new_path, "Rebasing a path that doesn't start with old_prefix?"
 	return new_path
 
