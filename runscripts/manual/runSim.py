@@ -134,7 +134,7 @@ class RunSimulation(scriptBase.ScriptBase):
 				 ' elongation rate is set by condition')
 		add_bool_option('flat_elongation', 'flat_elongation',
 			help='if True, all elongation rates are the same for each type.'
-				 'if False, elongation rates are faster for ribosomal proteins and transcripts')
+				 'if False, elongation rates are faster for ribosomal proteins and transcripts'
 				 ' elongation rate is set by condition')
 
 
