@@ -359,6 +359,7 @@ class GrowthRateParameters(object):
 		_loadTableIntoObjectGivenDoublingTime(self, raw_data.growthRateDependentParameters)
 		self.ribosomeElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "ribosomeElongationRate")
 		self.rnaPolymeraseElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "rnaPolymeraseElongationRate")
+		self.rnaPolymeraseElongationRateForStableRnaParams = _getFitParameters(raw_data.growthRateDependentParameters, "rnaPolymeraseElongationRateForStableRna")
 		self.fractionActiveRnapParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRnap")
 		self.fractionActiveRibosomeParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRibosome")
 
@@ -371,6 +372,9 @@ class GrowthRateParameters(object):
 
 	def getRnapElongationRate(self, doubling_time):
 		return _useFitParameters(doubling_time, **self.rnaPolymeraseElongationRateParams)
+
+	def getRnapElongationRateForStableRna(self, doubling_time):
+		return _useFitParameters(doubling_time, **self.rnaPolymeraseElongationRateForStableRnaParams)
 
 	def getFractionActiveRnap(self, doubling_time):
 		return _useFitParameters(doubling_time, **self.fractionActiveRnapParams)
