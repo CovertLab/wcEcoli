@@ -102,6 +102,8 @@ class WcmWorkflow(Workflow):
 		python_args = dict(output_file=metadata_file, data=metadata)
 		metadata_task = self.add_python_task('write_json', python_args, (),
 			key='write_metadata',
+			inputs=[kb_dir],  # TODO(jerry): TEMPORARY workaround to delay this
+				# task so its worker doesn't exit while the Parca runs.
 			outputs=[metadata_file])
 
 		python_args = select_keys(args,
@@ -284,7 +286,13 @@ class RunWcm(scriptBase.ScriptBase):
 		self.define_parameter_bool(parser, 'verbose', True,
 			help='Verbose workflow builder logging')
 		parser.add_argument('-c', '--cpus', type=int, default=1,
-			help='The number of CPU processes to use. Default = 1.')
+			help='The number of CPU processes to use in relevant tasks.'
+				 ' Default = 1.')
+		self.define_parameter_bool(parser, 'write', False,
+			help='Write the workflow Commands and Processes as files for review'
+				 ' instead of sending them to the Gaia workflow server.')
+		parser.add_argument('-w', '--workers', type=int, default=4,
+			help='(int, 4) The number of worker nodes to launch.')
 
 		# Parca
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
@@ -352,7 +360,7 @@ class RunWcm(scriptBase.ScriptBase):
 				analysis categories that don't have those files will print
 				error messages.''')
 
-		# TODO(jerry): BuildCausalityNetwork, dual daughters.
+		# TODO(jerry): BuildCausalityNetwork.
 
 		super(RunWcm, self).define_parameters(parser)
 
@@ -368,7 +376,10 @@ class RunWcm(scriptBase.ScriptBase):
 
 	def run(self, args):
 		wf = wc_ecoli_workflow(vars(args))
-		wf.send()
+		if args.write:
+			wf.write()
+		else:
+			wf.send(args.workers)
 
 
 if __name__ == '__main__':
