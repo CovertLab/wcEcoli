@@ -170,6 +170,13 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.writeToListener("RnapData", "rnaInitEvent", nNewRnas)
 
 	def _calculateActivationProb(self, fracActiveRnap, rnaLengths, rnaPolymeraseElongationRate, synthProb):
+		'''
+		Edge case: 100% RNA polymerase activity (relevant to paper investigations).
+		Return: 1
+		'''
+		if fracActiveRnap == 1:
+			return 1.
+
 		''' Calculate expected RNAP termination rate based on RNAP elongation rate
 		allTranscriptionTimes: Vector of times required to transcribe each transcript
 		allTranscriptionTimestepCounts: Vector of numbers of timesteps required to transcribe each transcript
