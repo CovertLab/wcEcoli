@@ -86,6 +86,10 @@ class WcmWorkflow(Workflow):
 		variant_arg = args['variant']
 		variant_spec = (variant_arg[0], int(variant_arg[1]), int(variant_arg[2]))
 		variant_type = variant_spec[0]
+		variant_count = variant_spec[2] + 1 - variant_spec[1]
+
+		if args['workers'] is None:
+			args['workers'] = variant_count * args['init_sims']
 
 		metadata_file = self.local('metadata', constants.JSON_METADATA_FILE)
 		metadata = select_keys(args,
@@ -96,7 +100,7 @@ class WcmWorkflow(Workflow):
 			description='Cloud',
 			time=self.timestamp,
 			variant=variant_type,
-			total_variants=str(variant_spec[2] + 1 - variant_spec[1]),
+			total_variants=str(variant_count),
 			total_gens=args['generations'])
 
 		python_args = dict(output_file=metadata_file, data=metadata)
@@ -291,10 +295,8 @@ class RunWcm(scriptBase.ScriptBase):
 		self.define_parameter_bool(parser, 'write', False,
 			help='Write the workflow Commands and Processes as files for review'
 				 ' instead of sending them to the Gaia workflow server.')
-		# TODO(jerry): If Gaia doesn't obviate this, default the value to
-		#  `generations * init_sims`.
-		parser.add_argument('-w', '--workers', type=int, default=4,
-			help='(int, 4) The number of worker nodes to launch.')
+		parser.add_argument('-w', '--workers', type=int,
+			help='The number of worker nodes to launch, with a smart default.')
 
 		# Parca
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
