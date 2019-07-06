@@ -3,7 +3,6 @@
 from __future__ import absolute_import, division, print_function
 
 from collections import OrderedDict
-import multiprocessing
 import os
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -56,9 +55,9 @@ def _copy_path_list(value):
 		assert os.path.isabs(path), 'Expected a absolute path, not {}'.format(path)
 	return list(value)
 
-def _launch_sisyphus(worker_name):
+def _launch_sisyphus(worker_names):
 	# type: (str) -> None
-	os.system("runscripts/sisyphus/launch-sisyphus.sh {}".format(worker_name))
+	os.system("runscripts/sisyphus/launch-sisyphus.sh {}".format(worker_names))
 
 
 class Task(object):
@@ -176,10 +175,8 @@ class Workflow(object):
 
 		self.log_info('\nLaunching {} worker node(s).'.format(count))
 		user = os.environ['USER']
-		names = ['{}-{}'.format(user, i) for i in range(count)]
-
-		pool = multiprocessing.Pool(10)
-		pool.map(_launch_sisyphus, names)
+		names = ' '.join('sisyphus-{}-{}'.format(user, i) for i in range(count))
+		_launch_sisyphus(names)
 
 	def send(self, worker_count=4):
 		# type: (int) -> None

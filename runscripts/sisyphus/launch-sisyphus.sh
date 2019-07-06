@@ -2,13 +2,14 @@
 
 set -eu
 
-NAME=$1
-FULL_NAME=sisyphus-$NAME
+NAMES=$@
 PROJECT=allen-discovery-center-mcovert
+
+# Could add --async option to return quickly if we needn't wait on successful creation.
 
 gcloud compute \
        --project=$PROJECT \
-       instances create $FULL_NAME \
+       instances create $NAMES \
        --zone=us-west1-b \
        --machine-type=n1-standard-2 \
        --subnet=default \
@@ -20,5 +21,5 @@ gcloud compute \
        --image-project=$PROJECT \
        --boot-disk-size=200GB \
        --boot-disk-type=pd-standard \
-       --boot-disk-device-name=$FULL_NAME \
+       --labels=role=sisyphus \
        --description='sisyphus worker'

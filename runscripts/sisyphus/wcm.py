@@ -291,6 +291,8 @@ class RunWcm(scriptBase.ScriptBase):
 		self.define_parameter_bool(parser, 'write', False,
 			help='Write the workflow Commands and Processes as files for review'
 				 ' instead of sending them to the Gaia workflow server.')
+		# TODO(jerry): If Gaia doesn't obviate this, default the value to
+		#  `generations * init_sims`.
 		parser.add_argument('-w', '--workers', type=int, default=4,
 			help='(int, 4) The number of worker nodes to launch.')
 
