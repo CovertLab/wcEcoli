@@ -56,12 +56,12 @@ class RunFitter(scriptBase.ScriptBase):
 			help= "If set, RNA polymerase expression will not be fit to protein synthesis demands."
 			)
 		parser.add_argument(
-			'--flat-elongation-transcription',
+			'--variable-elongation-transcription',
 			action='store_true',
 			help= "If set, one elongation rate will be used for transcription."
 			)
 		parser.add_argument(
-			'--flat-elongation-translation',
+			'--variable-elongation-translation',
 			action='store_true',
 			help= "If set, one elongation rate will be used for translation"
 			)
@@ -176,8 +176,8 @@ class RunFitter(scriptBase.ScriptBase):
 				debug=args.debug,
 				disable_ribosome_capacity_fitting=args.disable_ribosome_fitting,
 				disable_rnapoly_capacity_fitting=args.disable_rnapoly_fitting,
-				flat_elongation_transcription=args.flat_elongation_transcription,
-				flat_elongation_translation=args.flat_elongation_translation,
+				flat_elongation_transcription=not args.variable_elongation_transcription,
+				flat_elongation_translation=not args.variable_elongation_translation,
 				adjust_rna_and_protein_parameters=args.no_expression_adjustment,
 				alternate_mass_fraction_protein=args.alternate_mass_fraction_protein,
 				alternate_mass_fraction_rna=args.alternate_mass_fraction_rna,
