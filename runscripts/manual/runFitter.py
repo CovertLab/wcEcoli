@@ -100,6 +100,12 @@ class RunFitter(scriptBase.ScriptBase):
 			help="Alternate RNA half life input - one of the following: 'with_kas', or 'without_kas'. Default = None."
 			)
 		parser.add_argument(
+			'--alternate-translation-efficiency',
+			action='store_true',
+			help="Alternate translation efficiency described by Mohammad et"
+				 "al. 2019. Default = described by Li et al. 2014."
+		)
+		parser.add_argument(
 			'--alternate-ribosome-activity',
 			action='store_true',
 			help="Alternate ribosome active fraction: 85 percent active. Default = 80 percent active."
@@ -179,6 +185,7 @@ class RunFitter(scriptBase.ScriptBase):
 				alternate_r_protein_degradation=args.alternate_r_protein_degradation,
 				alternate_rna_seq=args.alternate_rna_seq,
 				alternate_rna_half_life=args.alternate_rna_half_life,
+				alternate_translation_efficiency=args.alternate_translation_efficiency,
 				alternate_ribosome_activity=args.alternate_ribosome_activity,
 				alternate_rnap_activity=args.alternate_rnap_activity,
 				disable_rnap_fraction_increase=args.disable_rnap_fraction_increase,

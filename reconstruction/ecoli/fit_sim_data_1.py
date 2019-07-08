@@ -110,6 +110,8 @@ def fitSimData_1(
 			dataset to use. One of the following: 'with_kas' or 'without_kas'.
 			Default value of None results in using original RNA half lives
 			described in reconstruction.
+		alternate_translation_efficiency (bool) if True, alternate translation
+			efficiency (Mohammad 2019) is used.
 		alternate_ribosome_activity (bool) - if True, ribosome activity is set
 			to 85%.
 		alternate_rnap_activity (str) - describes alternate rnap activity.

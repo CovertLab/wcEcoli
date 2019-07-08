@@ -3,6 +3,36 @@
 
 make clean compile
 
+## Set A0 - original WCM pre-fit
+#python runscripts/manual/runFitter.py \
+#--debug \
+#--disable-ribosome-fitting --disable-rnapoly-fitting \
+#--flat-elongation-transcription --flat-elongation-translation \
+#--disable-ribosome-activity-fix
+#--save-cell-specs A00
+
+## Set A1 - original WCM post-fit
+#python runscripts/manual/runFitter.py \
+#--debug \
+#--flat-elongation-transcription --flat-elongation-translation \
+#--save-cell-specs A01
+
+## Set A2 - ribosome activity fix
+python runscripts/manual/runFitter.py \
+--debug \
+--flat-elongation-transcription --flat-elongation-translation \
+--save-cell-specs A02
+
+## Set A3 - disable RNAP activity adjustment
+
+
+## Set A4 - ribosome activity fix and disabled RNAP activity adjustment
+python runscripts/manual/runFitter.py \
+--debug \
+--flat-elongation-transcription --flat-elongation-translation \
+--disable-rnap-fraction-increase
+--save-cell-specs A04
+
 ## Set B0 - RNA mass per cell
 python runscripts/manual/runFitter.py \
 --debug \
@@ -246,3 +276,11 @@ python runscripts/manual/runFitter.py \
 --flat-elongation-transcription --flat-elongation-translation \
 --alternate-ribosome-activity \
 --save-cell-specs B31
+
+## Set B32 - translation efficiency
+python runscripts/manual/runFitter.py \
+--debug \
+--disable-ribosome-fitting --disable-rnapoly-fitting \
+--flat-elongation-transcription --flat-elongation-translation \
+--alternate-translation-efficiency \
+--save-cell-specs B32

@@ -18,10 +18,10 @@ from wholecell.utils.random import make_elongation_rates, make_elongation_rates_
 class Translation(object):
 	""" Translation """
 
-	def __init__(self, raw_data, sim_data):
+	def __init__(self, raw_data, sim_data, options):
 		self._buildMonomerData(raw_data, sim_data)
 		self._buildTranslation(raw_data, sim_data)
-		self._buildTranslationEfficiency(raw_data, sim_data)
+		self._buildTranslationEfficiency(raw_data, sim_data, options['alternate_translation_efficiency'])
 
 		self.ribosomal_proteins = self._build_ribosomal_proteins(raw_data, sim_data)
 		self.elongation_rates = self._build_elongation_rates(raw_data, sim_data)
@@ -177,15 +177,24 @@ class Translation(object):
 
 		self.translationEndWeight = (sim_data.getter.getMass(["WATER[c]"]) / raw_data.constants['nAvogadro']).asNumber(units.fg)
 
-	def _buildTranslationEfficiency(self, raw_data, sim_data):
+	def _buildTranslationEfficiency(self, raw_data, sim_data, alternate_translation_efficiency):
 		"""
 		Since the translation efficiency data set from Li et al. 2014 does not
 		report a measurement for all genes, genes that do not have a measurement
 		are assigned the average translation efficiency.
+
+		If alternate_translation_efficiency is set to True, the translation
+		efficiency described by Mohammad et al. 2019 is used instead.
 		"""
 		monomerIds = [x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]" for x in raw_data.proteins]
 		monomerIdToGeneId = dict([(x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]", x["geneId"].encode("utf-8")) for x in raw_data.proteins])
-		geneIdToTrEff = dict([(x["geneId"].encode("utf-8"), x["translationEfficiency"]) for x in raw_data.translationEfficiency if type(x["translationEfficiency"]) == float])
+
+		if alternate_translation_efficiency:
+			geneIdToTrEff = dict(
+				[(x["geneId"].encode("utf-8"), x["translationEfficiency"]) for x in raw_data.translationEfficiency_alternate])
+		else:
+			geneIdToTrEff = dict([(x["geneId"].encode("utf-8"), x["translationEfficiency"]) for x in raw_data.translationEfficiency if type(x["translationEfficiency"]) == float])
+
 		trEffs = []
 		for monomerId in monomerIds:
 			geneId = monomerIdToGeneId[monomerId]
