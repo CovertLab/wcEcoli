@@ -56,7 +56,7 @@ Simulation parameters:
 		one daughter cell for each new generation rather than two, thus avoiding
 		an exponential increase in the number of simulations
 	TIMELINE (str, "0 minimal"): sets the timeline of events for the simulation.
-		See	environment/condition/make_media.py, make_timeline() for timeline
+		See	wholecell/utils/make_media.py, make_timeline() for timeline
 		formatting details.
 	WC_LENGTHSEC (int, "10800"): sets the maximum simulation time in seconds, useful
 		for short simulations (default is 3 hr)
@@ -87,7 +87,79 @@ Additional variables:
 
 Environment variables that matter when running the workflow:
 	DEBUG_GC (int, "0"): if nonzero, enable leak detection in the analysis plots
+
+
+-------------------------------------------------
+Current dependency network of existing FireTasks (each task has a list of its
+immediate downstream dependencies):
+
+InitRawData (fw_init_raw_data)
+* FitSimData
+* InitValidationData
+
+InitRawValidationData (fw_raw_validation_data)
+* InitValidationData
+
+InitValidationData (fw_validation_data)
+* CompressRawValidationData if COMPRESS_OUTPUT
+* CompressRawData if COMPRESS_OUTPUT
+
+FitSimData (fw_calculate_sim_data)
+* CompressRawData if COMPRESS_OUTPUT
+* VariantSimData * VARIANTS_TO_RUN
+
+VariantSimData (fw_this_variant_sim_data)
+* CompressFitSimData if COMPRESS_OUTPUT
+* Simulation/SimulationDaughter * N_INIT_SIMS
+
+Simulation/SimulationDaughter (fw_this_variant_this_gen_this_sim)
+* SimulationDaughter (* 2 if not SINGLE_DAUGHTERS) if GEN < N_GENS - 1
+* AnalysisSingle if RUN_AGGREGATE_ANALYSIS
+* AnalysisCohort if RUN_AGGREGATE_ANALYSIS and GEN == N_GENS - 1
+* AnalysisVariant if RUN_AGGREGATE_ANALYSIS and GEN == N_GENS - 1
+* AnalysisMultiGen if RUN_AGGREGATE_ANALYSIS and GEN == N_GENS - 1
+* BuildCausalityNetwork if BUILD_CAUSALITY_NETWORK
+
+AnalysisSingle (fw_this_variant_this_gen_this_sim_analysis)
+* CompressVariantSimData if COMPRESS_OUTPUT
+* CompressValidationData if COMPRESS_OUTPUT
+* CompressSimulationOutput if COMPRESS_OUTPUT
+
+AnalysisVariant (fw_variant_analysis)
+* CompressVariantSimData if COMPRESS_OUTPUT
+* CompressValidationData if COMPRESS_OUTPUT
+* CompressSimulationOutput if COMPRESS_OUTPUT
+
+AnalysisCohort (fw_this_variant_cohort_analysis)
+* CompressVariantSimData if COMPRESS_OUTPUT
+* CompressValidationData if COMPRESS_OUTPUT
+* CompressSimulationOutput if COMPRESS_OUTPUT
+
+AnalysisMultiGen (fw_this_variant_this_seed_this_analysis)
+* CompressVariantSimData if COMPRESS_OUTPUT
+* CompressValidationData if COMPRESS_OUTPUT
+* CompressSimulationOutput if COMPRESS_OUTPUT
+
+BuildCausalityNetwork (fw_this_variant_this_gen_this_sim_causality_network)
+* CompressVariantSimData if COMPRESS_OUTPUT
+* CompressSimulationOutput if COMPRESS_OUTPUT
+
+CompressValidationData (fw_validation_data_compression)
+
+CompressRawData (fw_raw_data_compression)
+
+CompressFitSimData (fw_sim_data_1_compression)
+
+CompressRawValidationData (fw_raw_validation_data_compression)
+
+CompressVariantSimData (fw_this_variant_sim_data_compression)
+
+CompressSimulationOutput (fw_this_variant_this_gen_this_sim_compression)
+-------------------------------------------------
+
 '''
+
+from __future__ import absolute_import, division, print_function
 
 import collections
 import os
@@ -98,7 +170,6 @@ from fireworks import Firework, LaunchPad, Workflow, ScriptTask
 from wholecell.fireworks.firetasks import InitRawDataTask
 from wholecell.fireworks.firetasks import InitRawValidationDataTask
 from wholecell.fireworks.firetasks import InitValidationDataTask
-from wholecell.fireworks.firetasks import SymlinkTask
 from wholecell.fireworks.firetasks import FitSimDataTask
 from wholecell.fireworks.firetasks import VariantSimDataTask
 from wholecell.fireworks.firetasks import SimulationTask
@@ -180,11 +251,16 @@ BUILD_CAUSALITY_NETWORK = bool(int(get_environment("BUILD_CAUSALITY_NETWORK", "0
 if not RUN_AGGREGATE_ANALYSIS:
 	COMPRESS_OUTPUT = False
 
+
+def log_info(message):
+	if VERBOSE_QUEUE:
+		print(message)
+
+
 ### Set path variables and create directories
 
-WC_ECOLI_DIRECTORY = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-OUT_DIRECTORY = filepath.makedirs(WC_ECOLI_DIRECTORY, "out")
-CACHED_SIM_DATA_DIRECTORY = os.path.join(WC_ECOLI_DIRECTORY, "cached")
+OUT_DIRECTORY = filepath.makedirs(filepath.ROOT_PATH, "out")
+CACHED_SIM_DATA_DIRECTORY = os.path.join(filepath.ROOT_PATH, "cached")
 
 # To run each analysis plot in a separate process, ask the analysis Firetasks
 # for several CPUs (it will clip to the number available) and allocate multiple
@@ -204,8 +280,7 @@ KB_DIRECTORY = filepath.makedirs(INDIV_OUT_DIRECTORY, "kb")
 METADATA_DIRECTORY = filepath.makedirs(INDIV_OUT_DIRECTORY, "metadata")
 
 
-if VERBOSE_QUEUE:
-	print "Building filestructure."
+log_info("Building filestructure.")
 
 for i in VARIANTS_TO_RUN:
 	VARIANT_DIRECTORY = filepath.makedirs(INDIV_OUT_DIRECTORY, VARIANT + "_%06d" % i)
@@ -265,12 +340,12 @@ wf_links = collections.defaultdict(list)
 ### Initialize KB
 
 filename_raw_data = constants.SERIALIZED_RAW_DATA
+filename_sim_data = constants.SERIALIZED_SIM_DATA_FILENAME
 filename_sim_data_modified = constants.SERIALIZED_SIM_DATA_MODIFIED
 
 fw_name = "InitRawData"
 
-if VERBOSE_QUEUE:
-	print "Queueing {}".format(fw_name)
+log_info("Queueing {}".format(fw_name))
 
 fw_init_raw_data = Firework(
 	InitRawDataTask(
@@ -284,21 +359,17 @@ wf_fws.append(fw_init_raw_data)
 
 ### Fit (Level 1)
 
-filename_sim_data_fit_1 = constants.SERIALIZED_FIT1_FILENAME
+fw_name = "CalculateSimData"
 
-fw_name = "FitSimDataTask_Level_1"
-
-if VERBOSE_QUEUE:
-	print "Queueing {}".format(fw_name)
+log_info("Queueing {}".format(fw_name))
 
 cpusForParca = 8 if PARALLEL_PARCA else 1
-fw_fit_level_1 = Firework(
+fw_calculate_sim_data = Firework(
 	FitSimDataTask(
-		fit_level = 1,
 		input_data = os.path.join(KB_DIRECTORY, filename_raw_data),
-		output_data = os.path.join(KB_DIRECTORY, filename_sim_data_fit_1),
+		output_data = os.path.join(KB_DIRECTORY, filename_sim_data),
 		cached = CACHED_SIM_DATA,
-		cached_data = os.path.join(CACHED_SIM_DATA_DIRECTORY, filename_sim_data_fit_1),
+		cached_data = os.path.join(CACHED_SIM_DATA_DIRECTORY, filename_sim_data),
 		cpus = cpusForParca,
 		debug = DEBUG_PARCA,
 		disable_ribosome_capacity_fitting = DISABLE_RIBOSOME_CAPACITY_FITTING,
@@ -308,16 +379,15 @@ fw_fit_level_1 = Firework(
 	spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": cpusForParca}, "_priority":1}
 	)
 
-wf_fws.append(fw_fit_level_1)
-wf_links[fw_init_raw_data].append(fw_fit_level_1)
+wf_fws.append(fw_calculate_sim_data)
+wf_links[fw_init_raw_data].append(fw_calculate_sim_data)
 
 # Unfit KB compression
 fw_raw_data_compression = None
 if COMPRESS_OUTPUT:
 	fw_name = "ScriptTask_compression_raw_data"
 
-	if VERBOSE_QUEUE:
-		print "Queueing {}".format(fw_name)
+	log_info("Queueing {}".format(fw_name))
 
 	fw_raw_data_compression = Firework(
 		ScriptTask(
@@ -328,48 +398,25 @@ if COMPRESS_OUTPUT:
 		)
 
 	wf_fws.append(fw_raw_data_compression)
-	wf_links[fw_fit_level_1].append(fw_raw_data_compression)
+	wf_links[fw_calculate_sim_data].append(fw_raw_data_compression)
 
 # Fit Level 1 KB compression
 
 fw_sim_data_1_compression = None
 if COMPRESS_OUTPUT:
-	fw_name = "ScriptTask_compression_sim_data_1"
+	fw_name = "ScriptTask_compression_sim_data"
 
-	if VERBOSE_QUEUE:
-		print "Queueing {}".format(fw_name)
+	log_info("Queueing {}".format(fw_name))
 
 	fw_sim_data_1_compression = Firework(
 		ScriptTask(
-			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_sim_data_fit_1)
+			script = "bzip2 -v " + os.path.join(KB_DIRECTORY, filename_sim_data)
 			),
 		name = fw_name,
 		spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
 		)
 
 	wf_fws.append(fw_sim_data_1_compression)
-
-## Create symlink to most fit KB
-# (when more fitting stages are implemented, move this down)
-
-fw_name = "SymlinkTask_KB_Most_Fit"
-
-if VERBOSE_QUEUE:
-	print "Queueing {}".format(fw_name)
-
-fw_symlink_most_fit = Firework(
-	SymlinkTask(
-		to = filename_sim_data_fit_1,
-		link = os.path.join(KB_DIRECTORY, constants.SERIALIZED_SIM_DATA_MOST_FIT_FILENAME),
-		overwrite_if_exists = True
-		),
-	name = fw_name,
-	spec = {"_queueadapter": {"job_name": fw_name}, "_priority":0}
-	)
-
-wf_fws.append(fw_symlink_most_fit)
-
-wf_links[fw_fit_level_1].append(fw_symlink_most_fit)
 
 
 ### Initialize validation data
@@ -379,8 +426,7 @@ filename_raw_validation_data = constants.SERIALIZED_RAW_VALIDATION_DATA
 
 fw_name = "InitValidationDataRaw"
 
-if VERBOSE_QUEUE:
-	print "Queueing {}".format(fw_name)
+log_info("Queueing {}".format(fw_name))
 
 fw_raw_validation_data = Firework(
 	InitRawValidationDataTask(
@@ -412,8 +458,7 @@ filename_validation_data = constants.SERIALIZED_VALIDATION_DATA
 
 fw_name = "InitValidationData"
 
-if VERBOSE_QUEUE:
-	print "Queueing {}".format(fw_name)
+log_info("Queueing {}".format(fw_name))
 
 fw_validation_data = Firework(
 	InitValidationDataTask(
@@ -434,8 +479,7 @@ fw_validation_data_compression = None
 if COMPRESS_OUTPUT:
 	fw_name = "ScriptTask_compression_validation_data"
 
-	if VERBOSE_QUEUE:
-		print "Queueing {}".format(fw_name)
+	log_info("Queueing {}".format(fw_name))
 
 	fw_validation_data_compression = Firework(
 		ScriptTask(
@@ -475,8 +519,7 @@ fw_this_variant_sim_data_compression = None
 fw_this_variant_this_gen_this_sim_compression = None
 
 for i in VARIANTS_TO_RUN:
-	if VERBOSE_QUEUE:
-		print "Queueing Variant {} {}".format(VARIANT, i)
+	log_info("Queueing Variant {} {}".format(VARIANT, i))
 	VARIANT_DIRECTORY = os.path.join(INDIV_OUT_DIRECTORY, VARIANT + "_%06d" % i)
 	VARIANT_SIM_DATA_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "kb")
 	VARIANT_METADATA_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "metadata")
@@ -488,7 +531,7 @@ for i in VARIANTS_TO_RUN:
 		VariantSimDataTask(
 			variant_function = VARIANT,
 			variant_index = i,
-			input_sim_data = os.path.join(KB_DIRECTORY, constants.SERIALIZED_SIM_DATA_MOST_FIT_FILENAME),
+			input_sim_data = os.path.join(KB_DIRECTORY, filename_sim_data),
 			output_sim_data = os.path.join(VARIANT_SIM_DATA_DIRECTORY, filename_sim_data_modified),
 			variant_metadata_directory = VARIANT_METADATA_DIRECTORY,
 			),
@@ -497,8 +540,7 @@ for i in VARIANTS_TO_RUN:
 		)
 
 	wf_fws.append(fw_this_variant_sim_data)
-
-	wf_links[fw_symlink_most_fit].append(fw_this_variant_sim_data)
+	wf_links[fw_calculate_sim_data].append(fw_this_variant_sim_data)
 
 	if COMPRESS_OUTPUT:
 		wf_links[fw_this_variant_sim_data].append(fw_sim_data_1_compression)
@@ -540,8 +582,7 @@ for i in VARIANTS_TO_RUN:
 	fw_this_variant_this_seed_this_analysis = None
 
 	for j in xrange(N_INIT_SIMS):
-		if VERBOSE_QUEUE:
-			print "\tQueueing Seed {}".format(j)
+		log_info("\tQueueing Seed {}".format(j))
 		SEED_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "%06d" % j)
 		SEED_PLOT_DIRECTORY = os.path.join(SEED_DIRECTORY, "plotOut")
 		md_multigen = dict(md_cohort, seed = j)
@@ -569,15 +610,13 @@ for i in VARIANTS_TO_RUN:
 		sims_this_seed = collections.defaultdict(list)
 
 		for k in xrange(N_GENS):
-			if VERBOSE_QUEUE:
-				print "\t\tQueueing Gen %02d." % (k,)
+			log_info("\t\tQueueing Gen %02d." % (k,))
 			GEN_DIRECTORY = os.path.join(SEED_DIRECTORY, "generation_%06d" % k)
 			md_single = dict(md_multigen, gen = k)
 
 			for l in (xrange(2**k) if not SINGLE_DAUGHTERS else [0]):
 
-				if VERBOSE_QUEUE:
-					print "\t\t\tQueueing Cell {}".format(l)
+				log_info("\t\t\tQueueing Cell {}".format(l))
 				CELL_DIRECTORY = os.path.join(GEN_DIRECTORY, "%06d" % l)
 				CELL_SIM_OUT_DIRECTORY = os.path.join(CELL_DIRECTORY, "simOut")
 				CELL_PLOT_OUT_DIRECTORY = os.path.join(CELL_DIRECTORY, "plotOut")
@@ -738,8 +777,7 @@ for i in VARIANTS_TO_RUN:
 						wf_links[fw_this_variant_this_gen_this_sim_causality_network].extend(compression_fws)
 
 ## Create workflow
-if VERBOSE_QUEUE:
-	print "Creating workflow."
+log_info("Creating workflow.")
 
 workflow = Workflow(wf_fws, links_dict = wf_links)
 

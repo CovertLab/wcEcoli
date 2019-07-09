@@ -10,7 +10,6 @@ from itertools import izip
 import scipy.sparse
 
 import numpy as np
-from arrow import StochasticSystem
 
 from wholecell.utils.fitting import normalize, countsFromMassAndExpression, masses_and_counts_for_homeostatic_target
 from wholecell.utils.polymerize import computeMassIncrease
@@ -227,24 +226,24 @@ def initializeComplexation(bulkMolCntr, sim_data, randomState):
 	rnaseCounts = bulkMolCntr.countsView(rnases).counts()
 	bulkMolCntr.countsIs(0, rnases)
 
-	stoichMatrix = sim_data.process.complexation.stoichMatrix().astype(np.int64)
-
-	duration = RAND_MAX
-	seed = randomState.randint(RAND_MAX)
-	complexation_rates = sim_data.process.complexation.rates
-	system = StochasticSystem(stoichMatrix.T, complexation_rates, random_seed=seed)
+	stoichMatrix = sim_data.process.complexation.stoichMatrix().astype(np.int64, order='F')
+	prebuiltMatrices = mccBuildMatrices(stoichMatrix)
 
 	# form complexes until no new complexes form (some complexes are complexes of complexes)
 	while True:
 		moleculeCounts = moleculeView.counts()
-		complexation_result = system.evolve(duration, moleculeCounts)
-
-		updatedMoleculeCounts = complexation_result['outcome']
-		complexationEvents = complexation_result['occurrences']
+		updatedMoleculeCounts, complexationEvents = mccFormComplexesWithPrebuiltMatrices(
+			moleculeCounts,
+			randomState.randint(1000),
+			stoichMatrix,
+			*prebuiltMatrices)
 
 		bulkMolCntr.countsIs(
 			updatedMoleculeCounts,
 			moleculeNames)
+
+		if np.any(updatedMoleculeCounts < 0):
+			raise ValueError('Negative counts after complexation')
 
 		if not np.any(moleculeCounts - updatedMoleculeCounts):
 			break
@@ -271,7 +270,6 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 	forks given the cell growth rate. This also initializes the gene dosage
 	bulk counts using the initial locations of the forks.
 	"""
-
 	# Determine the number and location of replication forks at the start of
 	# the cell cycle
 	# Get growth rate constants
@@ -283,9 +281,16 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 	genome_length = sim_data.process.replication.genome_length
 	replichore_length = np.ceil(0.5*genome_length) * units.nt
 
+	# Calculate the maximum number of replisomes that could be formed with
+	# the existing counts of replisome subunits
+	n_max_replisomes = np.min(np.concatenate(
+		(bulkMolCntr.counts(sim_data.moleculeGroups.replisome_trimer_subunits)//3,
+		bulkMolCntr.counts(sim_data.moleculeGroups.replisome_monomer_subunits))))
+
 	# Generate arrays specifying appropriate initial replication conditions
 	oric_state, replisome_state, domain_state = determine_chromosome_state(
-		C, D, tau, replichore_length, sim_data.process.replication.no_child_place_holder)
+		C, D, tau, replichore_length, n_max_replisomes,
+		sim_data.process.replication.no_child_place_holder)
 
 	n_oric = oric_state["domain_index"].size
 	n_replisome = replisome_state["domain_index"].size
@@ -326,72 +331,108 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 		bulkMolCntr.countsDec(3*n_replisome, sim_data.moleculeGroups.replisome_trimer_subunits)
 		bulkMolCntr.countsDec(n_replisome, sim_data.moleculeGroups.replisome_monomer_subunits)
 
-	# Initialize attributes of promoters
-	TU_index, promoter_coordinates, promoter_domain_index = [], [], []
-	replication_coordinate = sim_data.process.transcription.rnaData[
+	# Get coordinates of all promoters and DnaA boxes
+	all_promoter_coordinates = sim_data.process.transcription.rnaData[
 		"replicationCoordinate"]
+	all_DnaA_box_coordinates = sim_data.process.replication.motif_coordinates[
+		"DnaA_box"]
 
-	# Loop through all chromosome domains
-	for domain_idx in domain_state["domain_index"]:
 
-		# If the domain is the mother domain of the initial chromosome,
-		if domain_idx == 0:
-			if n_replisome == 0:
-				# No replisomes - all promoters should fall in this domain
-				TU_mask = np.ones_like(replication_coordinate, dtype=np.bool)
+	# Define function that initializes attributes of sequence motifs given the
+	# initial state of the chromosome
+	def get_motif_attributes(all_motif_coordinates):
+		"""
+		Using the initial positions of replication forks, calculate attributes
+		of unique molecules representing DNA motifs, given their positions on
+		the genome.
 
+		Args:
+			all_motif_coordinates (ndarray): Genomic coordinates of DNA motifs,
+			represented in a specific order
+
+		Returns:
+			motif_index: Indices of all motif copies, in the case where
+			different indexes imply a different functional role
+			motif_coordinates: Genomic coordinates of all motif copies
+			motif_domain_index: Domain indexes of the chromosome domain that
+			each motif copy belongs to
+		"""
+		motif_index, motif_coordinates, motif_domain_index = [], [], []
+
+		def in_bounds(coordinates, lb, ub):
+			return np.logical_and(coordinates < ub, coordinates > lb)
+
+		# Loop through all chromosome domains
+		for domain_idx in domain_state["domain_index"]:
+
+			# If the domain is the mother domain of the initial chromosome,
+			if domain_idx == 0:
+				if n_replisome == 0:
+					# No replisomes - all motifs should fall in this domain
+					motif_mask = np.ones_like(all_motif_coordinates, dtype=np.bool)
+
+				else:
+					# Get domain boundaries
+					domain_boundaries = replisome_state["coordinates"][
+						replisome_state["domain_index"] == 0]
+
+					# Add motifs outside of this boundary
+					motif_mask = np.logical_or(
+						all_motif_coordinates > domain_boundaries.max(),
+						all_motif_coordinates < domain_boundaries.min())
+
+			# If the domain contains the origin,
+			elif np.isin(domain_idx, oric_state["domain_index"]):
+				# Get index of the parent domain
+				parent_domain_idx = domain_state["domain_index"][
+					np.where(domain_state["child_domains"] == domain_idx)[0]]
+
+				# Get domain boundaries of the parent domain
+				parent_domain_boundaries = replisome_state["coordinates"][
+					replisome_state["domain_index"] == parent_domain_idx]
+
+				# Add motifs inside this boundary
+				motif_mask = in_bounds(all_motif_coordinates,
+					parent_domain_boundaries.min(),
+					parent_domain_boundaries.max())
+
+			# If the domain neither contains the origin nor the terminus,
 			else:
-				# Get domain boundaries
+				# Get index of the parent domain
+				parent_domain_idx = domain_state["domain_index"][
+					np.where(domain_state["child_domains"] == domain_idx)[0]]
+
+				# Get domain boundaries of the parent domain
+				parent_domain_boundaries = replisome_state["coordinates"][
+					replisome_state["domain_index"] == parent_domain_idx]
+
+				# Get domain boundaries of this domain
 				domain_boundaries = replisome_state["coordinates"][
-					replisome_state["domain_index"] == 0]
+					replisome_state["domain_index"] == domain_idx]
 
-				# Add promoters for transcription units outside of this boundary
-				TU_mask = np.logical_or(
-					replication_coordinate > domain_boundaries.max(),
-					replication_coordinate < domain_boundaries.min())
+				# Add motifs between the boundaries
+				motif_mask = np.logical_or(
+					in_bounds(all_motif_coordinates,
+						domain_boundaries.max(),
+						parent_domain_boundaries.max()),
+					in_bounds(all_motif_coordinates,
+						parent_domain_boundaries.min(),
+						domain_boundaries.min())
+					)
 
-		# If the domain contains the origin,
-		elif np.isin(domain_idx, oric_state["domain_index"]):
-			# Get index of the parent domain
-			parent_domain_idx = domain_state["domain_index"][
-				np.where(domain_state["child_domains"] == domain_idx)[0]]
+			# Append attributes to existing list
+			motif_index.extend(np.nonzero(motif_mask)[0])
+			motif_coordinates.extend(all_motif_coordinates[motif_mask])
+			motif_domain_index.extend(np.full(motif_mask.sum(), domain_idx))
 
-			# Get domain boundaries of the parent domain
-			parent_domain_boundaries = replisome_state["coordinates"][
-				replisome_state["domain_index"] == parent_domain_idx]
+		return motif_index, motif_coordinates, motif_domain_index
 
-			# Add promoters for transcription units inside this boundary
-			TU_mask = np.logical_and(
-				replication_coordinate < parent_domain_boundaries.max(),
-				replication_coordinate > parent_domain_boundaries.min())
 
-		# If the domain neither contains the origin nor the terminus,
-		else:
-			# Get index of the parent domain
-			parent_domain_idx = domain_state["domain_index"][
-				np.where(domain_state["child_domains"] == domain_idx)[0]]
-
-			# Get domain boundaries of the parent domain
-			parent_domain_boundaries = replisome_state["coordinates"][
-				replisome_state["domain_index"] == parent_domain_idx]
-
-			# Get domain boundaries of this domain
-			domain_boundaries = replisome_state["coordinates"][
-				replisome_state["domain_index"] == domain_idx]
-
-			# Add promoters for transcription units between the boundaries
-			TU_mask = np.logical_or(
-				np.logical_and(
-					replication_coordinate < parent_domain_boundaries.max(),
-					replication_coordinate > domain_boundaries.max()),
-				np.logical_and(
-					replication_coordinate > parent_domain_boundaries.min(),
-					replication_coordinate < domain_boundaries.min()))
-
-		# Append attributes to existing list
-		TU_index.extend(np.nonzero(TU_mask)[0])
-		promoter_coordinates.extend(replication_coordinate[TU_mask])
-		promoter_domain_index.extend(np.full(TU_mask.sum(), domain_idx))
+	# Use function to get attributes for promoters and DnaA boxes
+	TU_index, promoter_coordinates, promoter_domain_index = get_motif_attributes(
+		all_promoter_coordinates)
+	_, DnaA_box_coordinates, DnaA_box_domain_index = get_motif_attributes(
+		all_DnaA_box_coordinates)
 
 	# Add promoters as unique molecules and set attributes
 	n_promoter = len(TU_index)
@@ -403,6 +444,16 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 		coordinates=np.array(promoter_coordinates),
 		domain_index=np.array(promoter_domain_index),
 		bound_TF=np.zeros((n_promoter, n_tf), dtype=np.bool))
+
+	# Add DnaA boxes as unique molecules and set attributes
+	n_DnaA_box = len(DnaA_box_coordinates)
+
+	uniqueMolCntr.objectsNew(
+		'DnaA_box', n_DnaA_box,
+		coordinates=np.array(DnaA_box_coordinates),
+		domain_index=np.array(DnaA_box_domain_index),
+		DnaA_bound=np.zeros(n_DnaA_box, dtype=np.bool)
+		)
 
 
 def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
@@ -687,7 +738,8 @@ def setDaughterInitialConditions(sim, sim_data):
 	sim._initialTime = inherited_state['initial_time']
 
 
-def determine_chromosome_state(C, D, tau, replichore_length, place_holder):
+def determine_chromosome_state(C, D, tau, replichore_length, n_max_replisomes,
+		place_holder):
 	"""
 	Calculates the attributes of oriC's, replisomes, and chromosome domains on
 	the chromosomes at the beginning of the cell cycle.
@@ -699,6 +751,8 @@ def determine_chromosome_state(C, D, tau, replichore_length, place_holder):
 	- D: the D period of the cell, the length of time between completing
 	replication of the chromosome and division of the cell.
 	- tau: the doubling time of the cell
+	- n_max_replisomes: the maximum number of replisomes that can be formed
+	given the initial counts of replisome subunits
 	- replichore_length: the amount of DNA to be replicated per fork, usually
 	half of the genome, in base-pairs
 	- place_holder: placeholder value for chromosome domains without child
@@ -739,22 +793,28 @@ def determine_chromosome_state(C, D, tau, replichore_length, place_holder):
 	# cell divisions.
 	assert D.asNumber(units.min) < tau.asNumber(units.min), "The D period must be shorter than the doubling time tau."
 
+	# Calculate the maximum number of replication rounds given the maximum
+	# count of replisomes
+	n_max_rounds = int(np.log2(n_max_replisomes/2 + 1))
+
 	# Calculate the number of active replication rounds
-	n_round = int(np.floor(
-		(C.asNumber(units.min) + D.asNumber(units.min))/tau.asNumber(units.min)))
+	n_rounds = min(n_max_rounds,
+		int(np.floor(
+		(C.asNumber(units.min) + D.asNumber(units.min))/tau.asNumber(units.min)
+		)))
 
 	# Initialize arrays for replisomes
-	n_replisomes = 2*(2**n_round - 1)
+	n_replisomes = 2*(2**n_rounds - 1)
 	coordinates = np.zeros(n_replisomes, dtype=np.int64)
 	right_replichore_replisome = np.zeros(n_replisomes, dtype=np.bool)
 	domain_index_replisome = np.zeros(n_replisomes, dtype=np.int32)
 
 	# Initialize child domain array for chromosome domains
-	n_domains = 2**(n_round + 1) - 1
+	n_domains = 2**(n_rounds + 1) - 1
 	child_domains = np.full((n_domains, 2), place_holder, dtype=np.int32)
 
 	# Set domain_index attribute of oriC's and chromosome domains
-	domain_index_oric = np.arange(2**n_round - 1, 2**(n_round + 1) - 1, dtype=np.int32)
+	domain_index_oric = np.arange(2**n_rounds - 1, 2**(n_rounds + 1) - 1, dtype=np.int32)
 	domain_index_domains = np.arange(0, n_domains, dtype=np.int32)
 
 	def n_events_before_this_round(round_idx):
@@ -768,7 +828,7 @@ def determine_chromosome_state(C, D, tau, replichore_length, place_holder):
 
 	# Loop through active replication rounds, starting from the oldest round.
 	# If n_round = 0 skip loop entirely - no active replication round.
-	for round_idx in np.arange(n_round):
+	for round_idx in np.arange(n_rounds):
 		# Determine at which location (base) of the chromosome the replication
 		# forks should be initialized to
 		rel_location = 1.0 - (((round_idx + 1.0)*tau - D)/C)

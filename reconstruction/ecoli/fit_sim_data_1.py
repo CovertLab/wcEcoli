@@ -16,7 +16,6 @@ from itertools import izip
 
 from arrow import StochasticSystem
 
-import wholecell
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 
@@ -66,6 +65,7 @@ PROMOTER_SCALING = 10  # Multiplied to all matrices for numerical stability
 PROMOTER_NORM_TYPE = 1  # Matrix 1-norm
 PROMOTER_MAX_ITERATIONS = 100
 PROMOTER_CONVERGENCE_THRESHOLD = 1e-9
+ECOS_0_TOLERANCE = 1e-12  # Tolerance to adjust solver output to 0
 
 BASAL_EXPRESSION_CONDITION = "M9 Glucose minus AAs"
 
@@ -211,6 +211,8 @@ def fitSimData_1(
 		if nutrients not in sim_data.translationSupplyRate.keys():
 			sim_data.translationSupplyRate[nutrients] = cellSpecs[condition_label]["translation_aa_supply"]
 
+	if VERBOSE > 0:
+		print('Fitting promoter binding')
 	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
 	fitLigandConcentrations(sim_data, cellSpecs)
 
@@ -983,7 +985,6 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	ids_rRNA23S = sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna23S"]] # 23S rRNA
 	ids_rRNA16S = sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna16S"]] # 16S rRNA
 	ids_rRNA5S = sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna5S"]] # 5s rRNA
-	ids_tRNA = sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isTRna"]] # tRNAs
 	ids_mRNA = sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]] # mRNAs
 
 	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time)
@@ -1060,7 +1061,9 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	distribution_rRNA16S = normalize(n_avg_copy_rRNA16S)
 	distribution_rRNA5S = normalize(n_avg_copy_rRNA5S)
 
-	distribution_tRNA = normalize(sim_data.mass.getTrnaDistribution()['molar_ratio_to_16SrRNA'])
+	trna_distribution = sim_data.mass.getTrnaDistribution(doubling_time)
+	ids_tRNA = trna_distribution['id']
+	distribution_tRNA = normalize(trna_distribution['molar_ratio_to_16SrRNA'])
 	distribution_mRNA = normalize(expression[sim_data.process.transcription.rnaData['isMRna']])
 
 	# Construct bulk container
@@ -1773,7 +1776,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 
 			nIters += 1
 			if nIters > 100:
-				raise Exception, "Equilibrium reactions are not converging!"
+				raise Exception("Equilibrium reactions are not converging!")
 
 		allMoleculeCounts[seed, :] = allMoleculesView.counts()
 
@@ -2741,13 +2744,14 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		# Solve optimization problem
 		prob_r = Problem(objective_r, constraint_r)
-		prob_r.solve(solver = "GLPK")
+		prob_r.solve(solver='ECOS')
 
 		if prob_r.status != "optimal":
-			raise Exception, "Solver could not find optimal value"
+			raise Exception("Solver could not find optimal value")
 
 		# Get optimal value of R
 		r = np.array(R.value).reshape(-1)
+		r[np.abs(r) < ECOS_0_TOLERANCE] = 0  # Adjust to 0 for small values from solver tolerance
 
 		# Use optimal value of R to construct matrix H and vector Pdiff
 		H, pInit, pAlphaIdxs, pNotAlphaIdxs, fixedTFIdxs, pPromoterBoundIdxs, colNamesH = build_matrix_H(
@@ -2797,13 +2801,16 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		# Solve optimization problem
 		prob_p = Problem(objective_p, constraint_p)
-		prob_p.solve(solver = "GLPK")
+		prob_p.solve(solver='ECOS')
 
 		if prob_p.status != "optimal":
-			raise Exception, "Solver could not find optimal value"
+			raise Exception("Solver could not find optimal value")
 
 		# Get optimal value of P
 		p = np.array(P.value).reshape(-1)
+		# Adjust for solver tolerance over bounds to get proper probabilities
+		p[p < 0] = 0
+		p[p > 1] = 1
 
 		# Update pPromoterBound with fit p
 		fromArray(p, pPromoterBound, pPromoterBoundIdxs)
@@ -2888,6 +2895,9 @@ def fitLigandConcentrations(sim_data, cellSpecs):
 		p_inactive = pPromoterBound[inactiveKey][tf]
 
 		if negativeSignal:
+			if p_inactive == 0:
+				raise ValueError('Inf ligand concentration from p_inactive = 0.'
+					' Check results from fitPromoterBoundProbability and Kd values.')
 			if 1 - p_active < 1e-9:
 				kdNew = kd  # Concentration of metabolite-bound TF is negligible
 			else:
@@ -2898,6 +2908,9 @@ def fitLigandConcentrations(sim_data, cellSpecs):
 				(kdNew*(1 - p_inactive)/p_inactive)**(1./metaboliteCoeff)*(units.mol/units.L))
 
 		else:
+			if p_active == 1:
+				raise ValueError('Inf ligand concentration from p_active = 1.'
+					' Check results from fitPromoterBoundProbability and Kd values.')
 			if p_inactive < 1e-9:
 				kdNew = kd  # Concentration of metabolite-bound TF is negligible
 			else:
@@ -3058,8 +3071,8 @@ def calculateRnapRecruitment(sim_data, r):
 	deltaI, deltaJ, deltaV = np.array(deltaI), np.array(deltaJ), np.array(deltaV)
 	delta_shape = (len(all_TUs), len(all_tfs))
 
-	# Rescale basal probabilities such that there are no negative probabilities
-	basal_prob -= basal_prob.min()
+	# Adjust any negative basal probabilities to 0
+	basal_prob[basal_prob < 0] = 0
 
 	# Add basal_prob vector and delta_prob matrix to sim_data
 	sim_data.process.transcription_regulation.basal_prob = basal_prob
@@ -3220,11 +3233,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 			)
 
 	needToUpdate = False
-	fixturesDir = filepath.makedirs(
-			os.path.dirname(os.path.dirname(wholecell.__file__)),
-			"fixtures",
-			"endo_km"
-			)
+	fixturesDir = filepath.makedirs(filepath.ROOT_PATH, "fixtures", "endo_km")
 	km_filepath = os.path.join(fixturesDir, "km.cPickle")
 
 	if os.path.exists(km_filepath):

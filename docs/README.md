@@ -4,10 +4,28 @@ These are the docs for a variety of topics on the Whole Cell Model.
 
 ## setup
 
-* [Required development tools](dev-tools.md) -- installation and tips
-* [Creating the "pyenv" runtime environment](create-pyenv.md)
-* [Setting up to run FireWorks](../wholecell/fireworks/README.md) -- needed only to run a FireWorks workflow of cell simulations and analysis plots
-* [Set up Zookeeper and Kafka](../agent/README.md) -- needed only for multi-scale agents
+There are two alternative ways to set up to run the model:
+
+1. **Docker setup (recommended):** Install the [Docker Desktop software](https://www.docker.com/products/docker-desktop) then launch our Docker container image from the GitHub Package Registry or build it locally using the `cloud/build-containers.sh` shell script.
+
+   You can then run the model inside the container.
+
+   A container takes one `docker build` command to build and is fully isolated from your computer's operating system, any versions of Python you have, binary libraries, and everything else installed.
+   
+   **NOTE:** Docker Desktop for Windows is not currently compatible with VirtualBox.  If you use VirtualBox, try installing the legacy [Docker Toolbox](https://github.com/docker/toolbox/releases) instead.  You may also need to adjust the memory allocated to the VirtualBox VM (named 'default') that gets created.  In VirtualBox, select the 'default' VM and under system, change the base memory from 1 GB to 4 GB. 
+
+2. **pyenv setup:** Follow [Required development tools](dev-tools.md) to install the development tools including pyenv, gcc, make, and git, then follow [Creating the "pyenv" runtime environment](create-pyenv.md) to set up the Python runtime virtual environment for the model including binary libraries and Python packages.
+
+   You can then run the model with this version of Python under `pyenv`.
+   
+   If you have Anaconda installed, you might have to take it off the `$PATH` temporarily to run the Whole Cell Model.
+
+   This approach takes many careful steps that vary depending on your operating system. It will run ≈1 dB faster than inside a container.
+
+   * [Required development tools](dev-tools.md) -- installation and tips
+   * [Creating the "pyenv" runtime environment](create-pyenv.md)
+   * [Setting up to run FireWorks](../wholecell/fireworks/README.md) -- needed only to run a FireWorks workflow of cell simulations and analysis plots
+   * [Set up Zookeeper and Kafka](../agent/README.md) -- needed only for multi-scale agents
 
 ## running
 
