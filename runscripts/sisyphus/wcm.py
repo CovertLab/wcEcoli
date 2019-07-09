@@ -13,7 +13,7 @@ from typing import Any, Dict, Iterable, Mapping
 
 from wholecell.fireworks.firetasks import ParcaTask, VariantSimDataTask
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
-from wholecell.utils import constants, parallelization, scriptBase
+from wholecell.utils import constants, scriptBase
 import wholecell.utils.filepath as fp
 from runscripts.manual.analysisBase import AnalysisBase
 from runscripts.sisyphus.workflow import Task, Workflow
@@ -299,9 +299,9 @@ class RunWcm(scriptBase.ScriptBase):
 		parser.add_argument('-c', '--cpus', type=int, default=1,
 			help='The number of CPU processes to use in relevant tasks.'
 				 ' Default = 1.')
-		self.define_parameter_bool(parser, 'write', False,
-			help='Write the workflow Commands and Processes as files for review'
-				 ' instead of sending them to the Gaia workflow server.')
+		self.define_parameter_bool(parser, 'dump', False,
+			help='Dump the built workflow Commands and Processes to files for'
+				 ' review instead of sending them to the Gaia workflow server.')
 		parser.add_argument('-w', '--workers', type=int,
 			help='The number of worker nodes to launch, with a smart default.')
 
@@ -314,7 +314,7 @@ class RunWcm(scriptBase.ScriptBase):
 			help='Make Parca calculate only one arbitrarily-chosen transcription'
 				 ' factor condition when adjusting gene expression levels, leaving'
 				 ' the other TFs at their input levels for faster Parca debugging.'
-				 ' DO NOT USE THIS FOR AN ACTUAL SIMULATION.')
+				 ' DO NOT USE THIS FOR A MEANINGFUL SIMULATION.')
 
 		# Variant
 		parser.add_argument('-v', '--variant', nargs=3, default=DEFAULT_VARIANT,
@@ -384,7 +384,7 @@ class RunWcm(scriptBase.ScriptBase):
 
 	def parse_args(self):
 		args = super(RunWcm, self).parse_args()
-		args.cpus = parallelization.cpus(args.cpus)
+		args.cpus = max(args.cpus, 1)
 
 		assert args.generations > 0
 		assert args.init_sims > 0
@@ -394,7 +394,7 @@ class RunWcm(scriptBase.ScriptBase):
 
 	def run(self, args):
 		wf = wc_ecoli_workflow(vars(args))
-		if args.write:
+		if args.dump:
 			wf.write()
 		else:
 			wf.send(args.workers)
