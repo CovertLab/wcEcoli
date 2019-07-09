@@ -88,6 +88,8 @@ class WcmWorkflow(Workflow):
 		variant_type = variant_spec[0]
 		variant_count = variant_spec[2] + 1 - variant_spec[1]
 
+		run_analysis = args['run_analysis']
+
 		if args['workers'] is None:
 			args['workers'] = variant_count * args['init_sims']
 
@@ -112,6 +114,7 @@ class WcmWorkflow(Workflow):
 
 		python_args = select_keys(args,
 			('ribosome_fitting', 'rnapoly_fitting', 'cpus'),
+			debug=args['debug_parca'],
 			output_directory=kb_dir)
 		parca_task = self.add_python_task('parca', python_args, (),
 			key='parca',
@@ -195,64 +198,68 @@ class WcmWorkflow(Workflow):
 						this_variant_cohort_analysis_inputs.append(cell_sim_out_dir)
 						this_variant_this_seed_multigen_analysis_inputs.append(cell_sim_out_dir)
 
-						plot_dir = os.path.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
-						python_args = dict(
-							input_results_directory=cell_sim_out_dir,
-							input_sim_data=variant_sim_data_modified_file,
-							input_validation_data=validation_data_file,
-							output_plots_directory=plot_dir,
-							metadata=md_single,
-							plots_to_run=args['plot'],
-							cpus=args['cpus'])
-						analysis_single_task = self.add_python_task('analysis_single',
-							python_args,
-							(parca_task, variant_task, sim_task),
-							key='analysis_' + cell_id,
-							outputs=[plot_dir])
+						if run_analysis:
+							plot_dir = os.path.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
+							python_args = dict(
+								input_results_directory=cell_sim_out_dir,
+								input_sim_data=variant_sim_data_modified_file,
+								input_validation_data=validation_data_file,
+								output_plots_directory=plot_dir,
+								metadata=md_single,
+								plots_to_run=args['plot'],
+								cpus=args['cpus'])
+							analysis_single_task = self.add_python_task('analysis_single',
+								python_args,
+								(parca_task, variant_task, sim_task),
+								key='analysis_' + cell_id,
+								outputs=[plot_dir])
 
-				multigen_plot_dir = os.path.join(seed_dir, AnalysisBase.OUTPUT_SUBDIR, '')
+				if run_analysis:
+					multigen_plot_dir = os.path.join(seed_dir, AnalysisBase.OUTPUT_SUBDIR, '')
+					python_args = dict(
+						input_seed_directory=seed_dir,
+						input_sim_data=variant_sim_data_modified_file,
+						input_validation_data=validation_data_file,
+						output_plots_directory=multigen_plot_dir,
+						plots_to_run=args['plot'],
+						cpus=args['cpus'],
+						metadata=md_multigen)
+					analysis_multigen_task = self.add_python_task('analysis_multigen',
+						python_args, (),
+						key='analysis_multigen_Var{}_Seed{}'.format(i, j),
+						inputs=this_variant_this_seed_multigen_analysis_inputs,
+						outputs=[multigen_plot_dir])
+
+			if run_analysis:
+				cohort_plot_dir = self.local(subdir, AnalysisBase.OUTPUT_SUBDIR, '')
 				python_args = dict(
-					input_seed_directory=seed_dir,
+					input_variant_directory=self.local(subdir),
 					input_sim_data=variant_sim_data_modified_file,
 					input_validation_data=validation_data_file,
-					output_plots_directory=multigen_plot_dir,
+					output_plots_directory=cohort_plot_dir,
 					plots_to_run=args['plot'],
 					cpus=args['cpus'],
-					metadata=md_multigen)
-				analysis_multigen_task = self.add_python_task('analysis_multigen',
+					metadata=md_cohort)
+				analysis_cohort_task = self.add_python_task('analysis_cohort',
 					python_args, (),
-					key='analysis_multigen_Var{}_Seed{}'.format(i, j),
-					inputs=this_variant_this_seed_multigen_analysis_inputs,
-					outputs=[multigen_plot_dir])
+					key='analysis_cohort_Var{}'.format(i),
+					inputs=this_variant_cohort_analysis_inputs,
+					outputs=[cohort_plot_dir])
 
-			cohort_plot_dir = self.local(subdir, AnalysisBase.OUTPUT_SUBDIR, '')
+		if run_analysis:
+			variant_plot_dir = self.local(AnalysisBase.OUTPUT_SUBDIR, '')
 			python_args = dict(
-				input_variant_directory=self.local(subdir),
-				input_sim_data=variant_sim_data_modified_file,
+				input_directory=self.local(''),
 				input_validation_data=validation_data_file,
-				output_plots_directory=cohort_plot_dir,
+				output_plots_directory=variant_plot_dir,
 				plots_to_run=args['plot'],
 				cpus=args['cpus'],
-				metadata=md_cohort)
-			analysis_cohort_task = self.add_python_task('analysis_cohort',
+				metadata=metadata)
+			analysis_variant_task = self.add_python_task('analysis_variant',
 				python_args, (),
-				key='analysis_cohort_Var{}'.format(i),
-				inputs=this_variant_cohort_analysis_inputs,
-				outputs=[cohort_plot_dir])
-
-		variant_plot_dir = self.local(AnalysisBase.OUTPUT_SUBDIR, '')
-		python_args = dict(
-			input_directory=self.local(''),
-			input_validation_data=validation_data_file,
-			output_plots_directory=variant_plot_dir,
-			plots_to_run=args['plot'],
-			cpus=args['cpus'],
-			metadata=metadata)
-		analysis_variant_task = self.add_python_task('analysis_variant',
-			python_args, (),
-			key='analysis_variant',
-			inputs=variant_analysis_inputs,
-			outputs=[variant_plot_dir])
+				key='analysis_variant',
+				inputs=variant_analysis_inputs,
+				outputs=[variant_plot_dir])
 
 
 def wc_ecoli_workflow(args):
@@ -303,6 +310,11 @@ class RunWcm(scriptBase.ScriptBase):
 			help="Fit ribosome expression to protein synthesis demands")
 		self.define_parameter_bool(parser, 'rnapoly_fitting', True,
 			help="Fit RNA polymerase expression to protein synthesis demands")
+		self.define_parameter_bool(parser, 'debug_parca', False,
+			help='Make Parca calculate only one arbitrarily-chosen transcription'
+				 ' factor condition when adjusting gene expression levels, leaving'
+				 ' the other TFs at their input levels for faster Parca debugging.'
+				 ' DO NOT USE THIS FOR AN ACTUAL SIMULATION.')
 
 		# Variant
 		parser.add_argument('-v', '--variant', nargs=3, default=DEFAULT_VARIANT,
@@ -354,6 +366,8 @@ class RunWcm(scriptBase.ScriptBase):
 		# TODO(jerry): Single/dual daughters.
 
 		# Analyses
+		self.define_parameter_bool(parser, 'run_analysis', True,
+			help="Run the Variant, Cohort, Multigen, and Single analyses.")
 		parser.add_argument('-p', '--plot', nargs='+', default=[],
 			help='''Names the analysis plots to run, e.g. plot filenames
 				like "aaCounts.py" or "aaCounts" and tags like "METABOLISM"
