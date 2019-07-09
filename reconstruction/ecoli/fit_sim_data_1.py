@@ -76,6 +76,8 @@ VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 TIME_UNITS = units.s
 
+ECOS_0_TOLERANCE = 1e-12
+
 def fitSimData_1(
 		raw_data,
 		options):
@@ -2754,13 +2756,14 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		# Solve optimization problem
 		prob_r = Problem(objective_r, constraint_r)
-		prob_r.solve(solver = "GLPK")
+		prob_r.solve(solver = "ECOS")
 
 		if prob_r.status != "optimal":
 			raise Exception, "Solver could not find optimal value"
 
 		# Get optimal value of R
 		r = np.array(R.value).reshape(-1)
+		r[np.abs(r) < ECOS_0_TOLERANCE] = 0
 
 		# Use optimal value of R to construct matrix H and vector Pdiff
 		# TODO: separate the routine that gets pInit
@@ -2804,13 +2807,18 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		# Solve optimization problem
 		prob_p = Problem(objective_p, constraint_p)
-		prob_p.solve(solver = "GLPK")
+		prob_p.solve(solver = "ECOS")
 
 		if prob_p.status != "optimal":
 			raise Exception, "Solver could not find optimal value"
 
 		# Get optimal value of P
 		p = np.array(P.value).reshape(-1)
+
+		# Adjust for solver tolerance over bounds to get proper probabilities
+		p[p < 0] = 0
+		p[p > 1] = 1
+
 		fromArray(p, pPromoterBound, pPromoterBoundIdxs)  # Update pPromoterBound with fitted p
 
 		# Break from loop if parameters have converged
