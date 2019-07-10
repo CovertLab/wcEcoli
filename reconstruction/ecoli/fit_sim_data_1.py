@@ -94,6 +94,8 @@ def fitSimData_1(
 			is not fit to protein synthesis demands
 		disable_rnapoly_capacity_fitting (bool) - if True, RNA polymerase
 			expression is not fit to protein synthesis demands
+		disable_rnapoly_activity_fitting (bool) - if True, RNA polymerase
+			activity is not fit to transcription demands.
 		adjust_rna_and_protein_parameters (bool) - if True, some RNA and protein
 			expression parameters will be adjusted to get expression
 		alternate_mass_fraction_protein (bool) - if True, allocates larger
@@ -204,6 +206,7 @@ def fitSimData_1(
 	sim_data.process.transcription.rnaSynthProbRProtein = {}
 	sim_data.process.transcription.rnaSynthProbRnaPolymerase = {}
 	sim_data.process.transcription.rnaPolymeraseElongationRateDict = {}
+	sim_data.process.transcription.rnaPolymeraseActivityDict = {}
 	sim_data.expectedDryMassIncreaseDict = {}
 	sim_data.process.translation.ribosomeElongationRateDict = {}
 	sim_data.process.translation.ribosomeFractionActiveDict = {}
@@ -273,8 +276,8 @@ def fitSimData_1(
 				sim_data.process.transcription.rnaSynthProbRnaPolymerase[nutrients] = prob
 
 			if nutrients not in sim_data.process.transcription.rnapFractionActiveDict:
-				frac = sim_data.growthRateParameters.getFractionActiveRnap(spec["doubling_time"])
-				sim_data.process.transcription.rnapFractionActiveDict[nutrients] = frac
+				# frac = sim_data.growthRateParameters.getFractionActiveRnap(spec["doubling_time"])
+				sim_data.process.transcription.rnapFractionActiveDict[nutrients] = spec["rnapActivity"]
 
 			if nutrients not in sim_data.process.transcription.rnaPolymeraseElongationRateDict:
 				rate = sim_data.growthRateParameters.getRnapElongationRate(spec["doubling_time"])
@@ -353,7 +356,7 @@ def buildBasalCellSpecifications(
 		"doubling_time": doubling_time}
 
 	# Determine expression and synthesis probabilities
-	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _ = expressionConverge(
+	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _, rnapActivity = expressionConverge(
 		sim_data,
 		cellSpecs["basal"]["expression"],
 		cellSpecs["basal"]["concDict"],
@@ -397,6 +400,7 @@ def buildBasalCellSpecifications(
 	cellSpecs["basal"]["avgCellDryMassInit"] = avgCellDryMassInit
 	cellSpecs["basal"]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 	cellSpecs["basal"]["bulkContainer"] = bulkContainer
+	cellSpecs["basal"]["rnapActivity"] = rnapActivity
 
 	# Modify sim_data mass
 	sim_data.mass.avgCellDryMassInit = avgCellDryMassInit
@@ -494,7 +498,7 @@ def buildTfConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
@@ -508,6 +512,7 @@ def buildTfConditionCellSpecifications(
 		cellSpecs[conditionKey]["avgCellDryMassInit"] = avgCellDryMassInit
 		cellSpecs[conditionKey]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 		cellSpecs[conditionKey]["bulkContainer"] = bulkContainer
+		cellSpecs[conditionKey]["rnapActivity"] = rnapActivity
 
 	return cellSpecs
 
@@ -589,7 +594,7 @@ def buildCombinedConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
@@ -603,6 +608,7 @@ def buildCombinedConditionCellSpecifications(
 		cellSpecs[conditionKey]["avgCellDryMassInit"] = avgCellDryMassInit
 		cellSpecs[conditionKey]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 		cellSpecs[conditionKey]["bulkContainer"] = bulkContainer
+		cellSpecs[conditionKey]["rnapActivity"] = rnapActivity
 
 		# Modify sim_data expression
 		sim_data.process.transcription.rnaExpression[conditionKey] = cellSpecs[conditionKey]["expression"]
@@ -659,11 +665,13 @@ def expressionConverge(
 	if VERBOSE > 0:
 		print("Fitting RNA synthesis probabilities.")
 
+	rnapActivity = sim_data.growthRateParameters.getFractionActiveRnap(doubling_time).copy()
 	for iteration in xrange(MAX_FITTING_ITERATIONS):
 		if VERBOSE > 1:
 			print('Iteration: {}'.format(iteration))
 
 		initialExpression = expression.copy()
+		initialRnapActivity = rnapActivity.copy()
 
 		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
 		bulkContainer = createBulkContainer(sim_data, expression, doubling_time, options)
@@ -675,11 +683,17 @@ def expressionConverge(
 		if not options['disable_rnapoly_capacity_fitting']:
 			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, options)
 
+		if not options['disable_rnapoly_activity_fitting']:
+			rnapActivity = setRNAPActivityConstrainedByPhysiology(sim_data, bulkContainer,	doubling_time, avgCellDryMassInit, Km, options)
+
 		# Normalize expression and write out changes
 		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, options, Km)
 
-		degreeOfFit = np.sqrt(np.mean(np.square(initialExpression - expression)))
-
+		degreeOfFit = np.sqrt(np.mean(np.hstack((
+			np.square(initialExpression - expression),
+			np.square(initialRnapActivity - rnapActivity)))))
+		print("degreeOfFit:\t{}".format(degreeOfFit))
+		print("rnapActivity:\t{}".format(rnapActivity))
 		if VERBOSE > 1:
 			print('\tdegree of fit: {}'.format(degreeOfFit))
 
@@ -689,7 +703,7 @@ def expressionConverge(
 	else:
 		raise Exception("Fitting did not converge")
 
-	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict
+	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity
 
 def fitCondition(sim_data, spec, condition, options):
 	"""
@@ -1454,6 +1468,66 @@ def setRNAPCountsConstrainedByPhysiology(
 
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
 
+def setRNAPActivityConstrainedByPhysiology(
+		sim_data,
+		bulkContainer,
+		doubling_time,
+		avgCellDryMassInit,
+		Km,
+		options):
+	"""
+	Computes and returns the minimum RNA polymerase activity required to meet
+	demand for active RNA polymerases (as estimated by RNA doubling).
+	"""
+
+	# -- Expected RNA distribution doubling -- #
+	rnaLengths = units.sum(sim_data.process.transcription.rnaData['countsACGU'], axis = 1)
+	rnaLossRate = None
+
+	if Km is None:
+		# RNA loss rate is in units of counts/time, and computed by summing the
+		# contributions of degradation and dilution.
+		rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
+			doubling_time,
+			sim_data.process.transcription.rnaData["degRate"],
+			bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
+		)
+	else:
+		# Get constants to compute countsToMolar factor
+		cellDensity = sim_data.constants.cellDensity
+		cellVolume = avgCellDryMassInit / cellDensity / sim_data.mass.cellDryMassFraction
+		countsToMolar = 1 / (sim_data.constants.nAvogadro * cellVolume)
+
+		# Gompute input arguments for netLossRateFromDilutionAndDegradationRNA()
+		rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
+		endoRNaseConc = countsToMolar * bulkContainer.counts(sim_data.process.rna_decay.endoRnaseIds)
+		kcatEndoRNase = sim_data.process.rna_decay.kcats
+		totalEndoRnaseCapacity = units.sum(endoRNaseConc * kcatEndoRNase)
+
+		# RNA loss rate is in units of counts/time, and computed by accounting
+		# for the competitive inhibition of RNase by other RNA targets.
+		rnaLossRate = netLossRateFromDilutionAndDegradationRNA(
+			doubling_time,
+			(1 / countsToMolar) * totalEndoRnaseCapacity,
+			Km,
+			rnaConc,
+			countsToMolar,
+			)
+
+	# Compute number of RNA polymerases required to maintain steady state of mRNA
+	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time).asNumber(units.nt / units.s)
+	elongation_rates = sim_data.process.transcription.make_elongation_rates_flat(base, flat_elongation=options['flat_elongation_transcription'])
+	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
+		rnaLengths, elongation_rates * (units.nt / units.s), rnaLossRate)
+
+	# Get total number of RNA polymerases
+	rnapIds = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitIds']
+	rnapStoich = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitStoich']
+	nRnapTotal = min(bulkContainer.counts(rnapIds) / rnapStoich)
+
+	rnapActivity = min(1, nActiveRnapNeeded / nRnapTotal)
+	return rnapActivity
+
 def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, options, Km=None):
 	"""
 	Determines expression and synthesis probabilities for RNA molecules to fit
@@ -1975,7 +2049,7 @@ def calculate_translational_efficiencies(sim_data, condition, cellSpecs):
 	individual_masses_protein = sim_data.process.translation.monomerData["mw"] / sim_data.constants.nAvogadro
 	individual_masses_RNA = sim_data.process.transcription.rnaData["mw"] / sim_data.constants.nAvogadro
 
-	pre_expression, pre_synthesis, pre_average_dry_mass, pre_average_molar_mass, pre_bulk = expressionConverge(
+	pre_expression, pre_synthesis, pre_average_dry_mass, pre_average_molar_mass, pre_bulk, pre_rnapActivity = expressionConverge(
 		sim_data,
 		spec['expression'],
 		spec['concDict'],
@@ -1986,7 +2060,7 @@ def calculate_translational_efficiencies(sim_data, condition, cellSpecs):
 	pre_counts = pre_bulk.counts(sim_data.process.translation.monomerData['id'])
 	pre_protein = normalize(pre_counts)
 
-	post_expression, post_synthesis, post_average_dry_mass, post_average_molar_mass, post_bulk = expressionConverge(
+	post_expression, post_synthesis, post_average_dry_mass, post_average_molar_mass, post_bulk, post_rnapActivity = expressionConverge(
 		sim_data,
 		spec['expression'],
 		spec['concDict'],
@@ -2021,6 +2095,7 @@ def calculate_translational_efficiencies(sim_data, condition, cellSpecs):
 	spec['avgCellDryMassInit'] = pre_average_dry_mass
 	spec['fitAvgSolubleTargetMolMass'] = pre_average_molar_mass
 	spec['bulkContainer'] = pre_bulk
+	spec['rnapActivity'] = rnapActivity
 
 	return spec, translational_efficiencies
 
