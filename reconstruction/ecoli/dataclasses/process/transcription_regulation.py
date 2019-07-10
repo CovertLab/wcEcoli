@@ -22,7 +22,7 @@ class TranscriptionRegulation(object):
 
 		mRNASet = set(
 			[x["id"].encode("utf-8")
-			for x in raw_data.rnas
+			for x in raw_data.operon_rnas
 			if x["type"] != "rRNA" and x["type"] != "tRNA"]
 			)
 
@@ -80,7 +80,7 @@ class TranscriptionRegulation(object):
 		"""
 		geneIdToRnaId = dict(
 			[(x["geneId"].encode("utf-8"), x["id"].encode("utf-8"))
-			for x in raw_data.rnas]
+			for x in raw_data.operon_rnas]
 			)
 
 		self.abbrToRnaId = {}
