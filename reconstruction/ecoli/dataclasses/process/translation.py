@@ -34,7 +34,7 @@ class Translation(object):
 			rnaId = protein['rnaId']
 
 			rnaLocation = None
-			for rna in raw_data.rnas:
+			for rna in raw_data.operon_rnas:
 				if rna['id'] == rnaId:
 					assert len(rna['location']) == 1
 					rnaLocation = rna['location'][0]
