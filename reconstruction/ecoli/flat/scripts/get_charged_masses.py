@@ -34,7 +34,7 @@ with open(output_filename, 'w') as out:
 	writer = JsonWriter(out, ["id", "mw7.2", "location"], dialect = "excel-tab")
 
 	trnas = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']]
-	charged = [x['modifiedForms'] for x in raw_data.rnas if x['id']+'[c]' in trnas]
+	charged = [x['modifiedForms'] for x in raw_data.operon_rnas if x['id']+'[c]' in trnas]
 	filtered_charged = []
 	for c1 in charged:
 		for c2 in c1:
