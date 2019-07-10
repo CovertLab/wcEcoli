@@ -48,7 +48,7 @@ raw_data = KnowledgeBaseEcoli()
 
 modelRates = {}
 paperRates = {}
-for rna in raw_data.rnas:
+for rna in raw_data.operon_rnas:
 	geneID = rna["geneId"]
 	modelRates[geneID] = 60. / rna["halfLife"]
 	paperRates[geneID] = 0
