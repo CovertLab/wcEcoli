@@ -214,6 +214,23 @@ class WcmWorkflow(Workflow):
 								key='analysis_' + cell_id,
 								outputs=[plot_dir])
 
+						if args['build_causality_network']:
+							cell_series_out_dir = os.path.join(cell_dir, 'seriesOut', '')
+							# NOTE: This could reuse the Causality network over the variant. For
+							# Sisyphus it'd take moving that work from BuildCausalityNetworkTask
+							# to VariantSimDataTask, but it wouldn't save much space and time.
+							python_args = dict(
+								input_results_directory=cell_sim_out_dir,
+								input_sim_data=variant_sim_data_modified_file,
+								output_network_directory=cell_series_out_dir,
+								output_dynamics_directory=cell_series_out_dir,
+								metadata=md_single)
+							causality_task = self.add_python_task('build_causality_network',
+								python_args, (),
+								key='causality_' + cell_id,
+								inputs=[cell_sim_out_dir, variant_sim_data_dir],
+								outputs=[cell_series_out_dir])
+
 				if run_analysis:
 					multigen_plot_dir = os.path.join(seed_dir, AnalysisBase.OUTPUT_SUBDIR, '')
 					python_args = dict(
@@ -377,8 +394,8 @@ class RunWcm(scriptBase.ScriptBase):
 				category. You can name specific analysis files but any
 				analysis categories that don't have those files will print
 				error messages.''')
-
-		# TODO(jerry): BuildCausalityNetwork.
+		self.define_parameter_bool(parser, 'build_causality_network', False,
+			help="Build the Causality network files for each sim generation.")
 
 		super(RunWcm, self).define_parameters(parser)
 
