@@ -106,7 +106,7 @@ class MoleculeGroups(object):
 
 		bulkMoleculesBinomialDivision = createIdsWithCompartments(raw_data.metabolites)
 
-		bulkMoleculesBinomialDivision.extend(createIdsWithCompartments(raw_data.rnas))
+		bulkMoleculesBinomialDivision.extend(createIdsWithCompartments(raw_data.operon_rnas))
 		bulkMoleculesBinomialDivision.extend(createIdsWithCompartments(raw_data.proteins))
 		bulkMoleculesBinomialDivision.extend(createIdsWithCompartments(raw_data.proteinComplexes))
 		bulkMoleculesBinomialDivision.extend(createIdsWithCompartments(raw_data.modifiedForms))
