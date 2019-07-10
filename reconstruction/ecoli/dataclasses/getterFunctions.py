@@ -37,7 +37,7 @@ class getterFunctions(object):
 
 	def _buildAllMasses(self, raw_data, sim_data):
 		all_mass = {}
-		all_mass.update({x['id']: np.sum(x['mw']) for x in raw_data.rnas})
+		all_mass.update({x['id']: np.sum(x['mw']) for x in raw_data.operon_rnas})
 		all_mass.update({x['id']: np.sum(x['mw']) for x in raw_data.proteins})
 		all_mass.update({x['id']: np.sum(x['mw']) for x in raw_data.proteinComplexes})
 		all_mass.update({x['id']: np.sum(x['mw7.2']) for x in raw_data.metabolites})
@@ -52,7 +52,7 @@ class getterFunctions(object):
 
 	def _buildLocations(self, raw_data, sim_data):
 		locationDict = {}
-		for item in raw_data.rnas:
+		for item in raw_data.operon_rnas:
 			locationDict[item["id"]] = [x.encode("utf-8") for x in item["location"]]
 		for item in raw_data.proteins:
 			locationDict[item["id"]] = [x.encode("utf-8") for x in item["location"]]
