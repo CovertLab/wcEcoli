@@ -121,6 +121,13 @@ class RunFitter(scriptBase.ScriptBase):
 			     " to active fraction described in growth rate parameters."
 		)
 		parser.add_argument(
+			'--forward-discrepancy-to-translation-efficiencies',
+			action='store_true',
+			help="If set, forwards discrepancy between RNAP and Ribosome supply"
+			     "and demand to the translation efficiencies. Default = forwards"
+			     "discrepancy to mRNA expression."
+		)
+		parser.add_argument(
 			'--disable-rnap-fraction-increase',
 			action='store_true',
 			help="If set, disables doubling-time-dependent RNAP fraction increase."
@@ -194,6 +201,7 @@ class RunFitter(scriptBase.ScriptBase):
 				alternate_translation_efficiency=args.alternate_translation_efficiency,
 				alternate_ribosome_activity=args.alternate_ribosome_activity,
 				alternate_rnap_activity=args.alternate_rnap_activity,
+				forward_discrepancy_to_translation_efficiencies=args.forward_discrepancy_to_translation_efficiencies,
 				disable_rnap_fraction_increase=args.disable_rnap_fraction_increase,
 				disable_ribosome_activity_fix=args.disable_ribosome_activity_fix,
 				save_cell_specs=args.save_cell_specs,
