@@ -4,6 +4,11 @@ from __future__ import absolute_import, division, print_function
 
 from collections import OrderedDict
 import os
+import sys
+if os.name == 'posix' and sys.version_info[0] < 3:
+	import subprocess32 as subprocess
+else:
+	import subprocess
 from typing import Any, Dict, Iterable, List, Optional
 
 from gaia.client import Gaia
@@ -56,10 +61,10 @@ def _copy_path_list(value):
 	return list(value)
 
 def _launch_workers(worker_names):
-	# type: (str) -> None
+	# type: (List[str]) -> None
 	"""Launch Sisyphus worker nodes with the given names."""
 	path = os.path.join(fp.ROOT_PATH, 'runscripts', 'sisyphus', 'launch-workers.sh')
-	os.system('{} {}'.format(path, worker_names))
+	subprocess.call([path] + worker_names)
 
 
 class Task(object):
@@ -177,7 +182,7 @@ class Workflow(object):
 
 		self.log_info('\nLaunching {} worker node(s).'.format(count))
 		user = os.environ['USER']
-		names = ' '.join('sisyphus-{}-{}'.format(user, i) for i in range(count))
+		names = ['sisyphus-{}-{}'.format(user, i) for i in range(count)]
 		_launch_workers(names)
 
 	def send(self, worker_count=4):
