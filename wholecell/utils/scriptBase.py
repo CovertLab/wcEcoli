@@ -90,10 +90,17 @@ class ScriptBase(object):
 	VARIANT_DIR_PATTERN = re.compile(r'(.+)_(\d+)\Z')
 
 	def description(self):
+		# type: () -> str
 		"""Describe the command line program. This defaults to the class name."""
 		return type(self).__name__
 
+	def epilog(self):
+		# type: () -> Optional[str]
+		"""Return the epilog help text; None for none."""
+		return None
+
 	def help(self):
+		# type: () -> str
 		"""Return help text for the Command Line Interface. This defaults to a
 		string constructed around `self.description()`.
 		"""
@@ -236,7 +243,9 @@ class ScriptBase(object):
 		(A `Namespace` is an object with attributes and some methods like
 		`__repr__()` and `__eq__()`. Call `vars(args)` to turn it into a dict.)
 		"""
-		parser = argparse.ArgumentParser(description=self.help())
+		parser = argparse.ArgumentParser(
+			description=self.help(),
+			epilog=self.epilog())
 
 		self.define_parameters(parser)
 

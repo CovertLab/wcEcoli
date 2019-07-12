@@ -55,9 +55,11 @@ def _copy_path_list(value):
 		assert os.path.isabs(path), 'Expected a absolute path, not {}'.format(path)
 	return list(value)
 
-def _launch_sisyphus(worker_names):
+def _launch_workers(worker_names):
 	# type: (str) -> None
-	os.system("runscripts/sisyphus/launch-sisyphus.sh {}".format(worker_names))
+	"""Launch Sisyphus worker nodes with the given names."""
+	path = os.path.join(fp.ROOT_PATH, 'runscripts', 'sisyphus', 'launch-workers.sh')
+	os.system('{} {}'.format(path, worker_names))
 
 
 class Task(object):
@@ -91,7 +93,7 @@ class Task(object):
 
 	def get_command(self):
 		# type: () -> Dict[str, Any]
-		"""Return a Sisyphus Command to run this Task."""
+		"""Return a Gaia Command to run this Task."""
 		return dict(
 			key=self.key,
 			image=self.image,
@@ -102,7 +104,7 @@ class Task(object):
 
 	def get_process(self):
 		# type: () -> Dict[str, Any]
-		"""Return a Sisyphus Process to run this Task."""
+		"""Return a Gaia Process to run this Task."""
 		return dict(
 			key=self.key,
 			command=self.key,
@@ -176,13 +178,11 @@ class Workflow(object):
 		self.log_info('\nLaunching {} worker node(s).'.format(count))
 		user = os.environ['USER']
 		names = ' '.join('sisyphus-{}-{}'.format(user, i) for i in range(count))
-		_launch_sisyphus(names)
+		_launch_workers(names)
 
 	def send(self, worker_count=4):
 		# type: (int) -> None
 		"""Build the workflow and send it to the Gaia server to start running."""
-		# TODO(jerry): Gaia will soon launch the workers, maybe with a given
-		#  worker_count.
 		self.launch_workers(worker_count)
 
 		commands = self.get_commands()

@@ -295,6 +295,16 @@ class RunWcm(scriptBase.ScriptBase):
 	def description(self):
 		return 'E. coli Whole Cell Model workflow'
 
+	def epilog(self):
+		return '''Set the environment variable $WF_ID if you want to select the
+			Docker container image named "$WF_ID-wcm-code" for the workers.
+			$WF_ID defaults to $USER. This also determines the output storage
+			path prefix. Run `cloud/build-wcm.sh $WF_ID` to build the WCM
+			container image with that name.
+
+			The command line option names are long but you can use any
+			unambiguous prefix.'''
+
 	def define_parameters(self, parser):
 		def add_option(name, key, datatype, help):
 			"""Add an option with the given name and datatype to the parser using
