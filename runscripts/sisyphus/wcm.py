@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function
 
 import json
 import os
+import re
 from typing import Any, Dict, Iterable, Mapping
 
 from wholecell.fireworks.firetasks import ParcaTask, VariantSimDataTask
@@ -36,17 +37,18 @@ def select_keys(mapping, keys, **kwargs):
 class WcmWorkflow(Workflow):
 	"""A Workflow builder for the Whole Cell Model."""
 
-	def __init__(self, owner_id, timestamp, verbose_logging=True):
-		# type: (str, str, bool) -> None
+	def __init__(self, owner_id, timestamp, verbose_logging=True, description=''):
+		# type: (str, str, bool, str) -> None
 		namespace = 'WCM_{}_{}'.format(owner_id, timestamp)
 		super(WcmWorkflow, self).__init__(namespace, verbose_logging=verbose_logging)
 
 		self.owner_id = owner_id
 		self.timestamp = timestamp
-
 		self.image = DOCKER_IMAGE.format(self.owner_id)
+
+		subdir = self.timestamp + ('__' + description if description else '')
 		self.storage_prefix = os.path.join(
-			STORAGE_PREFIX_ROOT, self.owner_id, self.timestamp, '')
+			STORAGE_PREFIX_ROOT, self.owner_id, subdir, '')
 		self.local_prefix = os.path.join(os.sep, 'wcEcoli', 'out', 'wf')
 
 		self.log_info('\nStorage prefix: {}'.format(self.storage_prefix))
@@ -99,7 +101,7 @@ class WcmWorkflow(Workflow):
 			'd_period_division', 'translation_supply', 'trna_charging'),
 			git_hash=fp.run_cmdline("git rev-parse HEAD"),
 			git_branch=fp.run_cmdline("git symbolic-ref --short HEAD"),
-			description='Cloud',
+			description=args['description'] or 'WCM',
 			time=self.timestamp,
 			variant=variant_type,
 			total_variants=str(variant_count),
@@ -284,7 +286,15 @@ def wc_ecoli_workflow(args):
 	"""Build a workflow for wcEcoli."""
 	owner_id = os.environ.get('WF_ID', os.environ['USER'])
 	timestamp = fp.timestamp()
-	wf = WcmWorkflow(owner_id, timestamp, verbose_logging=args['verbose'])
+	description = args['description'].replace(' ', '_')
+
+	pattern = r'[-.\w]*$'
+	assert re.match(pattern, description), (
+		"description {!r} doesn't match the regex pattern {!r}.".format(
+			description, pattern))
+
+	wf = WcmWorkflow(owner_id, timestamp, verbose_logging=args['verbose'],
+		description=description)
 	wf.build(args)
 	return wf
 
@@ -321,6 +331,8 @@ class RunWcm(scriptBase.ScriptBase):
 			self.define_parameter_bool(
 				parser, name, DEFAULT_SIMULATION_KWARGS[key], help)
 
+		self.define_option(parser, 'description', str, '',
+			help='A simulation description to append to the output folder name.')
 		self.define_parameter_bool(parser, 'verbose', True,
 			help='Verbose workflow builder logging')
 		parser.add_argument('-c', '--cpus', type=int, default=1,
@@ -328,7 +340,8 @@ class RunWcm(scriptBase.ScriptBase):
 				 ' Default = 1.')
 		self.define_parameter_bool(parser, 'dump', False,
 			help='Dump the built workflow Commands and Processes to files for'
-				 ' review instead of sending them to the Gaia workflow server.')
+				 ' review *instead* of sending them to the Gaia workflow'
+				 ' server. This is useful for testing and debugging.')
 		parser.add_argument('-w', '--workers', type=int,
 			help='The number of worker nodes to launch, with a smart default.')
 

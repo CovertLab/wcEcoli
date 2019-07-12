@@ -169,7 +169,7 @@ class ScriptBase(object):
 		parser.add_argument('--' + name,
 			type=datatype,
 			default=default,
-			help='({}; {}) {}'.format(datatype.__name__, default, help)
+			help='({}; {!r}) {}'.format(datatype.__name__, default, help)
 			)
 
 	def define_parameter_sim_dir(self, parser):
