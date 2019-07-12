@@ -210,6 +210,7 @@ def fitSimData_1(
 	sim_data.expectedDryMassIncreaseDict = {}
 	sim_data.process.translation.ribosomeElongationRateDict = {}
 	sim_data.process.translation.ribosomeFractionActiveDict = {}
+	sim_data.process.translation.translationEffienciesDict = {}
 
 	if options['cpus'] > 1:
 		cpus = options['cpus']
@@ -294,6 +295,9 @@ def fitSimData_1(
 				frac = sim_data.growthRateParameters.getFractionActiveRibosome(spec["doubling_time"])
 				sim_data.process.translation.ribosomeFractionActiveDict[nutrients] = frac
 
+			if nutrients not in sim_data.process.translation.translationEffienciesDict:
+				sim_data.process.translation.translationEfficienciesDict[nutrients] = spec["translationEfficiencies"]
+
 	calculateRnapRecruitment(sim_data, rVector)
 
 	return sim_data, cellSpecs
@@ -356,7 +360,7 @@ def buildBasalCellSpecifications(
 		"doubling_time": doubling_time}
 
 	# Determine expression and synthesis probabilities
-	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _, rnapActivity = expressionConverge(
+	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _, rnapActivity, translationEfficiencies = expressionConverge(
 		sim_data,
 		cellSpecs["basal"]["expression"],
 		cellSpecs["basal"]["concDict"],
@@ -401,6 +405,7 @@ def buildBasalCellSpecifications(
 	cellSpecs["basal"]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 	cellSpecs["basal"]["bulkContainer"] = bulkContainer
 	cellSpecs["basal"]["rnapActivity"] = rnapActivity
+	cellSpecs["basal"]["translationEfficiencies"] = translationEfficiencies
 
 	# Modify sim_data mass
 	sim_data.mass.avgCellDryMassInit = avgCellDryMassInit
@@ -498,7 +503,7 @@ def buildTfConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity, translationEfficiencies = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
@@ -513,6 +518,7 @@ def buildTfConditionCellSpecifications(
 		cellSpecs[conditionKey]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 		cellSpecs[conditionKey]["bulkContainer"] = bulkContainer
 		cellSpecs[conditionKey]["rnapActivity"] = rnapActivity
+		cellSpecs[conditionKey]["translationEfficiencies"] = translationEfficiencies
 
 	return cellSpecs
 
@@ -594,7 +600,7 @@ def buildCombinedConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity, translationEfficiencies = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
@@ -609,6 +615,7 @@ def buildCombinedConditionCellSpecifications(
 		cellSpecs[conditionKey]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 		cellSpecs[conditionKey]["bulkContainer"] = bulkContainer
 		cellSpecs[conditionKey]["rnapActivity"] = rnapActivity
+		cellSpecs[conditionKey]["translationEfficiencies"] = translationEfficiencies
 
 		# Modify sim_data expression
 		sim_data.process.transcription.rnaExpression[conditionKey] = cellSpecs[conditionKey]["expression"]
@@ -665,20 +672,24 @@ def expressionConverge(
 	if VERBOSE > 0:
 		print("Fitting RNA synthesis probabilities.")
 
+	# Start iterative-solving from reported values
 	rnapActivity = sim_data.growthRateParameters.getFractionActiveRnap(doubling_time).copy()
+	translationEfficiencies = normalize(sim_data.process.translation.translationEfficienciesByMonomer.copy())
+
 	for iteration in xrange(MAX_FITTING_ITERATIONS):
 		if VERBOSE > 1:
 			print('Iteration: {}'.format(iteration))
 
 		initialExpression = expression.copy()
 		initialRnapActivity = rnapActivity.copy()
+		initialTranslationEfficiencies = translationEfficiencies.copy()
 
 		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
-		bulkContainer = createBulkContainer(sim_data, expression, doubling_time, options)
+		bulkContainer = createBulkContainer(sim_data, expression, doubling_time, translationEfficiencies, options)
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
 
 		if not options['disable_ribosome_capacity_fitting']:
-			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, options)
+			translationEfficiencies = setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, translationEfficiencies, options)
 
 		if not options['disable_rnapoly_capacity_fitting']:
 			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, options)
@@ -691,9 +702,9 @@ def expressionConverge(
 
 		degreeOfFit = np.sqrt(np.mean(np.hstack((
 			np.square(initialExpression - expression),
-			np.square(initialRnapActivity - rnapActivity)))))
-		print("degreeOfFit:\t{}".format(degreeOfFit))
-		print("rnapActivity:\t{}".format(rnapActivity))
+			np.square(initialRnapActivity - rnapActivity),
+			np.square(initialTranslationEfficiencies - translationEfficiencies)))))
+
 		if VERBOSE > 1:
 			print('\tdegree of fit: {}'.format(degreeOfFit))
 
@@ -703,7 +714,7 @@ def expressionConverge(
 	else:
 		raise Exception("Fitting did not converge")
 
-	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity
+	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity, translationEfficiencies
 
 def fitCondition(sim_data, spec, condition, options):
 	"""
@@ -1130,7 +1141,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 
 	return expression
 
-def totalCountIdDistributionProtein(sim_data, expression, doubling_time, options):
+def totalCountIdDistributionProtein(sim_data, expression, doubling_time, translation_efficiencies_by_protein, options):
 	"""
 	Calculates the total counts of proteins from the relative expression of RNA,
 	individual protein mass, and total protein mass. Relies on the math functions
@@ -1154,7 +1165,7 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time, options
 	total_mass_protein = sim_data.mass.getFractionMass(doubling_time)["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 	individual_masses_protein = sim_data.process.translation.monomerData["mw"] / sim_data.constants.nAvogadro
 	distribution_transcripts_by_protein = normalize(expression[sim_data.relation.rnaIndexToMonomerMapping])
-	translation_efficiencies_by_protein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
+	# translation_efficiencies_by_protein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 
 	degradationRates = sim_data.process.translation.monomerData["degRate"]
 
@@ -1216,7 +1227,7 @@ def totalCountIdDistributionRNA(sim_data, expression, doubling_time):
 
 	return total_count_RNA, ids_rnas, distribution_RNA
 
-def createBulkContainer(sim_data, expression, doubling_time, options):
+def createBulkContainer(sim_data, expression, doubling_time, translationEfficiencies, options):
 	"""
 	Creates a container that tracks the counts of all bulk molecules. Relies on
 	totalCountIdDistributionRNA and totalCountIdDistributionProtein to set the
@@ -1234,7 +1245,7 @@ def createBulkContainer(sim_data, expression, doubling_time, options):
 	"""
 
 	total_count_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time)
-	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time, options)
+	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time, translationEfficiencies, options)
 	ids_molecules = sim_data.internal_state.bulkMolecules.bulkData["id"]
 
 	# Construct bulk container
@@ -1250,7 +1261,7 @@ def createBulkContainer(sim_data, expression, doubling_time, options):
 
 	return bulkContainer
 
-def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, options):
+def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, translationEfficiencies, options):
 	"""
 	Set counts of ribosomal subunits based on three constraints:
 	(1) Expected protein distribution doubles in one cell cycle
@@ -1288,7 +1299,7 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 	netLossRate_protein = netLossRateFromDilutionAndDegradationProtein(
 		doubling_time,
 		proteinDegradationRates,
-		)
+	)
 
 	base = sim_data.growthRateParameters.getRibosomeElongationRate(doubling_time).asNumber(units.aa / units.s)
 	elongation_rates = sim_data.process.translation.make_elongation_rates_flat(
@@ -1306,13 +1317,8 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 		nRibosomesNeeded = nActiveRibosomesNeeded
 
 	# Minimum number of ribosomes needed
-	constraint1_ribosome30SCounts = (
-		nRibosomesNeeded * ribosome30SStoich
-		) * (1 + FRACTION_INCREASE_RIBOSOMAL_PROTEINS)
-
-	constraint1_ribosome50SCounts = (
-		nRibosomesNeeded * ribosome50SStoich
-		) * (1 + FRACTION_INCREASE_RIBOSOMAL_PROTEINS)
+	constraint1_ribosome30SCounts = (nRibosomesNeeded * ribosome30SStoich) * (1 + FRACTION_INCREASE_RIBOSOMAL_PROTEINS)
+	constraint1_ribosome50SCounts = (nRibosomesNeeded * ribosome50SStoich) * (1 + FRACTION_INCREASE_RIBOSOMAL_PROTEINS)
 
 
 	# -- CONSTRAINT 2: Measured rRNA mass fraction -- #
@@ -1337,33 +1343,51 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 	ribosome30SCounts = bulkContainer.counts(ribosome30SSubunits)
 	ribosome50SCounts = bulkContainer.counts(ribosome50SSubunits)
 
-	# -- SET RIBOSOME FUNDAMENTAL SUBUNIT COUNTS TO MAXIMUM CONSTRAINT -- #
-	constraint_names = np.array(["Insufficient to double protein counts", "Too small for mass fraction", "Current level OK"])
-	nRibosomesNeeded = nRibosomesNeeded * (1 + FRACTION_INCREASE_RIBOSOMAL_PROTEINS)
-	rib30lims = np.array([nRibosomesNeeded, massFracPredicted_30SCount, (ribosome30SCounts / ribosome30SStoich).min()])
-	rib50lims = np.array([nRibosomesNeeded, massFracPredicted_50SCount, (ribosome50SCounts / ribosome50SStoich).min()])
-	if VERBOSE > 1:
-		print '30S limit: {}'.format(constraint_names[np.where(rib30lims.max() == rib30lims)[0]][-1])
-		print '30S actual count: {}'.format((ribosome30SCounts / ribosome30SStoich).min())
-		print '30S count set to: {}'.format(rib30lims[np.where(rib30lims.max() == rib30lims)[0]][-1])
-		print '50S limit: {}'.format(constraint_names[np.where(rib50lims.max() == rib50lims)[0]][-1])
-		print '50S actual count: {}'.format((ribosome50SCounts / ribosome50SStoich).min())
-		print '50S count set to: {}'.format(rib50lims[np.where(rib50lims.max() == rib50lims)[0]][-1])
 
-	bulkContainer.countsIs(
-		np.fmax(np.fmax(ribosome30SCounts, constraint1_ribosome30SCounts), constraint2_ribosome30SCounts),
-		ribosome30SSubunits
-		)
+	# Estimate demand according to the most stringent constraint
+	demand_ribosome30s = np.fmax(np.fmax(ribosome30SCounts, constraint1_ribosome30SCounts), constraint2_ribosome30SCounts)
+	demand_ribosome50s = np.fmax(np.fmax(ribosome50SCounts, constraint1_ribosome50SCounts), constraint2_ribosome50SCounts)
 
-	bulkContainer.countsIs(
-		np.fmax(np.fmax(ribosome50SCounts, constraint1_ribosome50SCounts), constraint2_ribosome50SCounts),
-		ribosome50SSubunits
-		)
+	# Forward discrepancy to either translation efficiencies or mRNA expression (via bulkContainer).
+	if options['forward_discrepancy_to_translation_efficiencies']:
+		updated_protein_counts = proteinCounts.copy()
 
-	# Return rRNA counts to value in sim_data
-	bulkContainer.countsIs(rRna23SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna23S"]])
-	bulkContainer.countsIs(rRna16SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna16S"]])
-	bulkContainer.countsIs(rRna5SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna5S"]])
+		for ribosomeSubunits, demand_ribosome in zip([ribosome30SSubunits, ribosome50SSubunits], [demand_ribosome30s, demand_ribosome50s]):
+			for monomer_id, value in zip(ribosomeSubunits, demand_ribosome):
+
+				# Skip RNA subunits
+				if monomer_id not in sim_data.process.translation.monomerData['id']:
+					continue
+				monomer_index = np.where(sim_data.process.translation.monomerData['id'] == monomer_id)[0][0]
+				updated_protein_counts[monomer_index] = value
+
+		protein_distribution = normalize(updated_protein_counts)
+		expression_distribution = normalize(bulkContainer.counts(sim_data.process.transcription.rnaData['id'][sim_data.relation.rnaIndexToMonomerMapping]))
+		translationEfficiencies = translationEfficienciesFromMrnaAndProtein(expression_distribution, protein_distribution, netLossRate_protein)
+
+	else:
+		# -- SET RIBOSOME FUNDAMENTAL SUBUNIT COUNTS TO MAXIMUM CONSTRAINT -- #
+		constraint_names = np.array(["Insufficient to double protein counts", "Too small for mass fraction", "Current level OK"])
+		nRibosomesNeeded = nRibosomesNeeded * (1 + FRACTION_INCREASE_RIBOSOMAL_PROTEINS)
+		rib30lims = np.array([nRibosomesNeeded, massFracPredicted_30SCount, (ribosome30SCounts / ribosome30SStoich).min()])
+		rib50lims = np.array([nRibosomesNeeded, massFracPredicted_50SCount, (ribosome50SCounts / ribosome50SStoich).min()])
+		if VERBOSE > 1:
+			print '30S limit: {}'.format(constraint_names[np.where(rib30lims.max() == rib30lims)[0]][-1])
+			print '30S actual count: {}'.format((ribosome30SCounts / ribosome30SStoich).min())
+			print '30S count set to: {}'.format(rib30lims[np.where(rib30lims.max() == rib30lims)[0]][-1])
+			print '50S limit: {}'.format(constraint_names[np.where(rib50lims.max() == rib50lims)[0]][-1])
+			print '50S actual count: {}'.format((ribosome50SCounts / ribosome50SStoich).min())
+			print '50S count set to: {}'.format(rib50lims[np.where(rib50lims.max() == rib50lims)[0]][-1])
+
+		bulkContainer.countsIs(demand_ribosome30s, ribosome30SSubunits)
+		bulkContainer.countsIs(demand_ribosome50s, ribosome50SSubunits)
+
+		# Return rRNA counts to value in sim_data
+		bulkContainer.countsIs(rRna23SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna23S"]])
+		bulkContainer.countsIs(rRna16SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna16S"]])
+		bulkContainer.countsIs(rRna5SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna5S"]])
+
+	return translationEfficiencies
 
 def setRNAPCountsConstrainedByPhysiology(
 		sim_data,
@@ -2029,7 +2053,7 @@ def mRNADistributionFromProtein(
 	return distributionNormed.asNumber()
 
 def translationEfficienciesFromMrnaAndProtein(expression_distribution, protein_distribution, protein_loss):
-	efficiencies = protein_loss * protein_distribution / normalize(expression_distribution)
+	efficiencies = protein_loss.asNumber() * protein_distribution / normalize(expression_distribution)
 	efficiencies[np.where(expression_distribution == 0)] = 0
 
 	return normalize(efficiencies)
@@ -2049,7 +2073,7 @@ def calculate_translational_efficiencies(sim_data, condition, cellSpecs):
 	individual_masses_protein = sim_data.process.translation.monomerData["mw"] / sim_data.constants.nAvogadro
 	individual_masses_RNA = sim_data.process.transcription.rnaData["mw"] / sim_data.constants.nAvogadro
 
-	pre_expression, pre_synthesis, pre_average_dry_mass, pre_average_molar_mass, pre_bulk, pre_rnapActivity = expressionConverge(
+	pre_expression, pre_synthesis, pre_average_dry_mass, pre_average_molar_mass, pre_bulk, pre_rnapActivity, pre_translationEfficiencies = expressionConverge(
 		sim_data,
 		spec['expression'],
 		spec['concDict'],
@@ -2060,7 +2084,7 @@ def calculate_translational_efficiencies(sim_data, condition, cellSpecs):
 	pre_counts = pre_bulk.counts(sim_data.process.translation.monomerData['id'])
 	pre_protein = normalize(pre_counts)
 
-	post_expression, post_synthesis, post_average_dry_mass, post_average_molar_mass, post_bulk, post_rnapActivity = expressionConverge(
+	post_expression, post_synthesis, post_average_dry_mass, post_average_molar_mass, post_bulk, post_rnapActivity, post_translationEfficiencies = expressionConverge(
 		sim_data,
 		spec['expression'],
 		spec['concDict'],
