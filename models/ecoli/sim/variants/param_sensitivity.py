@@ -12,7 +12,7 @@ Modifies:
 	sim_data.process.transcription.rnaExpression: used in initial_conditions
 	sim_data.process.transcription_regulation.recruitmentData['hV']: used in initial_conditions and sims
 
-Expected variant indicies:
+Expected variant indices:
 	0: control
 	1+: modify random fraction of parameters
 '''
