@@ -190,7 +190,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# IDs must match order from param_indices() from param_sensitivity.py variant
 		param_ids = np.array(
-			['{} RNA deg rate'.format(rna_to_gene[rna[:-3]]) for rna in rna_ids]
+			['{} RNA deg Km'.format(rna_to_gene[rna[:-3]]) for rna in rna_ids]
 			+ ['{} protein deg rate'.format(monomer_to_gene[monomer[:-3]]) for monomer in monomer_ids]
 			+ ['{} translation eff'.format(monomer_to_gene[monomer[:-3]]) for monomer in monomer_ids]
 			+ ['{} synth prob'.format(rna_to_gene[rna[:-3]]) for rna in rna_ids])
