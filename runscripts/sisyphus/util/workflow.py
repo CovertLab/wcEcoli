@@ -72,18 +72,20 @@ class Task(object):
 
 	def __init__(self, upstream_tasks=(), **kwargs):
 		# type: (Iterable[Task], **Any) -> None
-		"""Construct a Workflow Task from the kwargs: key, image, commands,
+		"""Construct a Workflow Task from the kwargs: name, image, commands,
 		inputs, and outputs.
 
 		upstream_tasks and the `>>` operator are convenient ways to add inputs.
 		"""
-		self.key = kwargs['key']  # type: str  # the task name
+		self.name = kwargs['name']  # type: str
 		self.image = kwargs['image']  # type: str
 		self.commands = kwargs['commands']  # type: List[Dict[str, List[str]]]
 		self.inputs  = _copy_path_list(kwargs.get('inputs',  []))  # type: List[str]
 		self.outputs = _copy_path_list(kwargs.get('outputs', []))  # type: List[str]
 		self.storage_prefix = kwargs.get('storage_prefix', '')
 		self.local_prefix = kwargs.get('local_prefix', '')
+
+		assert self.name, 'Every task needs a name'
 
 		for task in upstream_tasks:
 			task >> self
@@ -96,23 +98,25 @@ class Task(object):
 		t2.inputs.extend(self.outputs)
 		return t2
 
-	def get_command(self):
+	def build_command(self):
 		# type: () -> Dict[str, Any]
-		"""Return a Gaia Command to run this Task."""
+		"""Build a Gaia Command to run this Task."""
 		return dict(
-			key=self.key,
+			key=self.name,  # TODO(jerry): Remove after Gaia switches to "name"
+			name=self.name,
 			image=self.image,
 			commands=self.commands,
 			inputs=_keyify(self.inputs),
 			outputs=_keyify(self.outputs),
 			vars={})
 
-	def get_process(self):
+	def build_step(self):
 		# type: () -> Dict[str, Any]
-		"""Return a Gaia Process to run this Task."""
+		"""Build a Gaia Step to run this Task."""
 		return dict(
-			key=self.key,
-			command=self.key,
+			key=self.name,  # TODO(jerry): Remove after Gaia switches to "name"
+			name=self.name,
+			command=self.name,
 			inputs=_re_keyify(self.inputs, self.local_prefix, self.storage_prefix),
 			outputs=_re_keyify(self.outputs, self.local_prefix, self.storage_prefix))
 
@@ -120,9 +124,9 @@ class Task(object):
 class Workflow(object):
 	"""A workflow builder."""
 
-	def __init__(self, namespace, verbose_logging=True):
+	def __init__(self, name, verbose_logging=True):
 		# type: (str, bool) -> None
-		self.namespace = namespace
+		self.name = name
 		self.verbose_logging = verbose_logging
 		self._tasks = OrderedDict()  # type: Dict[str, Task]
 
@@ -131,49 +135,46 @@ class Workflow(object):
 		if self.verbose_logging:
 			print(message)
 
-	def get(self, task_key, default=None):
+	def get(self, task_name, default=None):
 		# type: (str, Optional[Task]) -> Optional[Task]
-		return self._tasks.get(task_key, default)
+		return self._tasks.get(task_name, default)
 
-	def __getitem__(self, task_key):
+	def __getitem__(self, task_name):
 		# type: (str) -> Task
-		return self._tasks[task_key]
+		return self._tasks[task_name]
 
 	def add_task(self, task):
 		# type: (Task) -> Task
 		"""Add a task object. Return it for chaining."""
-		# TODO(jerry): Workaround until we can set a namespace on all commands and processes.
-		task.key = self.namespace + '-' + task.key
-
-		self._tasks[task.key] = task
-		self.log_info('    Added task: {}'.format(task.key))
+		self._tasks[task.name] = task
+		self.log_info('    Added task: {}'.format(task.name))
 		return task
 
-	def get_commands(self):
+	def build_commands(self):
 		# type: () -> List[dict]
 		"""Build this workflow's Commands."""
-		return [task.get_command() for task in self._tasks.itervalues()]
+		return [task.build_command() for task in self._tasks.itervalues()]
 
-	def get_processes(self):
+	def build_steps(self):
 		# type: () -> List[dict]
-		"""Build this workflow's Processes."""
-		return [task.get_process() for task in self._tasks.itervalues()]
+		"""Build this workflow's Steps."""
+		return [task.build_step() for task in self._tasks.itervalues()]
 
 	def write(self):
 		# type: () -> None
 		"""Build the workflow and write it as JSON files for debugging that can
 		be manually sent to the Gaia server.
 		"""
-		commands = self.get_commands()
-		processes = self.get_processes()
+		commands = self.build_commands()
+		steps = self.build_steps()
 
 		fp.makedirs('out')
 		commands_path = os.path.join('out', 'wcm-commands.json')
-		processes_path = os.path.join('out', 'wcm-processes.json')
+		steps_path = os.path.join('out', 'wcm-steps.json')
 
-		self.log_info('\nWriting {}, {}'.format(commands_path, processes_path))
+		self.log_info('\nWriting {}, {}'.format(commands_path, steps_path))
 		fp.write_json_file(commands_path, commands)
-		fp.write_json_file(processes_path, processes)
+		fp.write_json_file(steps_path, steps)
 
 	def launch_workers(self, count):
 		# type: (int) -> None
@@ -190,16 +191,16 @@ class Workflow(object):
 		"""Build the workflow and send it to the Gaia server to start running."""
 		self.launch_workers(worker_count)
 
-		commands = self.get_commands()
-		processes = self.get_processes()
+		commands = self.build_commands()
+		steps = self.build_steps()
 
 		gaia = Gaia(GAIA_CONFIG)
 
 		try:
-			self.log_info('\nUploading {} tasks to Gaia'.format(len(commands)))
-			gaia.command(commands)
-			gaia.merge('sisyphus', processes)
-			gaia.trigger('sisyphus')
+			self.log_info('\nUploading {} tasks to Gaia for workflow {}'.format(
+				len(commands), self.name))
+			gaia.command(self.name, commands)
+			gaia.merge(self.name, steps)
 		except ConnectionError as e:
 			print('\n*** Did you set up port forwarding for gaia-base and'
 				  ' zookeeper-prime? See runscripts/sisyphus/ssh-tunnel.sh ***\n')

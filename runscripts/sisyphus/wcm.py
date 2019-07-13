@@ -39,8 +39,8 @@ class WcmWorkflow(Workflow):
 
 	def __init__(self, owner_id, timestamp, verbose_logging=True, description=''):
 		# type: (str, str, bool, str) -> None
-		namespace = 'WCM_{}_{}'.format(owner_id, timestamp)
-		super(WcmWorkflow, self).__init__(namespace, verbose_logging=verbose_logging)
+		name = 'WCM_{}_{}'.format(owner_id, timestamp)
+		super(WcmWorkflow, self).__init__(name, verbose_logging=verbose_logging)
 
 		self.owner_id = owner_id
 		self.timestamp = timestamp
@@ -109,7 +109,7 @@ class WcmWorkflow(Workflow):
 
 		python_args = dict(output_file=metadata_file, data=metadata)
 		metadata_task = self.add_python_task('write_json', python_args, (),
-			key='write_metadata',
+			name='write_metadata',
 			inputs=[kb_dir],  # TODO(jerry): TEMPORARY workaround to delay this
 				# task so its worker doesn't exit while the Parca runs.
 			outputs=[metadata_file])
@@ -119,7 +119,7 @@ class WcmWorkflow(Workflow):
 			debug=args['debug_parca'],
 			output_directory=kb_dir)
 		parca_task = self.add_python_task('parca', python_args, (),
-			key='parca',
+			name='parca',
 			outputs=[kb_dir])
 
 		variant_analysis_inputs = [kb_dir]
@@ -147,7 +147,7 @@ class WcmWorkflow(Workflow):
 				variant_metadata_directory=variant_metadata_dir)
 			variant_task = self.add_python_task('variant_sim_data', python_args,
 				(parca_task,),
-				key='variant_{}_{}'.format(variant_type, i),
+				name='variant_{}_{}'.format(variant_type, i),
 				outputs=[variant_sim_data_dir, variant_metadata_dir])
 
 			this_variant_cohort_analysis_inputs = [kb_dir, variant_sim_data_dir]
@@ -192,7 +192,7 @@ class WcmWorkflow(Workflow):
 						cell_id = 'Var{}_Seed{}_Gen{}_Cell{}'.format(i, j, k, l)
 						sim_task = self.add_python_task(firetask, python_args,
 							(parca_task, variant_task),
-							key='simulation_' + cell_id,
+							name='simulation_' + cell_id,
 							inputs=inputs,
 							outputs=[cell_sim_out_dir])
 
@@ -213,7 +213,7 @@ class WcmWorkflow(Workflow):
 							analysis_single_task = self.add_python_task('analysis_single',
 								python_args,
 								(parca_task, variant_task, sim_task),
-								key='analysis_' + cell_id,
+								name='analysis_' + cell_id,
 								outputs=[plot_dir])
 
 						if args['build_causality_network']:
@@ -229,7 +229,7 @@ class WcmWorkflow(Workflow):
 								metadata=md_single)
 							causality_task = self.add_python_task('build_causality_network',
 								python_args, (),
-								key='causality_' + cell_id,
+								name='causality_' + cell_id,
 								inputs=[cell_sim_out_dir, variant_sim_data_dir],
 								outputs=[cell_series_out_dir])
 
@@ -245,7 +245,7 @@ class WcmWorkflow(Workflow):
 						metadata=md_multigen)
 					analysis_multigen_task = self.add_python_task('analysis_multigen',
 						python_args, (),
-						key='analysis_multigen_Var{}_Seed{}'.format(i, j),
+						name='analysis_multigen_Var{}_Seed{}'.format(i, j),
 						inputs=this_variant_this_seed_multigen_analysis_inputs,
 						outputs=[multigen_plot_dir])
 
@@ -261,7 +261,7 @@ class WcmWorkflow(Workflow):
 					metadata=md_cohort)
 				analysis_cohort_task = self.add_python_task('analysis_cohort',
 					python_args, (),
-					key='analysis_cohort_Var{}'.format(i),
+					name='analysis_cohort_Var{}'.format(i),
 					inputs=this_variant_cohort_analysis_inputs,
 					outputs=[cohort_plot_dir])
 
@@ -276,7 +276,7 @@ class WcmWorkflow(Workflow):
 				metadata=metadata)
 			analysis_variant_task = self.add_python_task('analysis_variant',
 				python_args, (),
-				key='analysis_variant',
+				name='analysis_variant',
 				inputs=variant_analysis_inputs,
 				outputs=[variant_plot_dir])
 
