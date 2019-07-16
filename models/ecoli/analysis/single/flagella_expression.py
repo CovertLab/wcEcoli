@@ -127,7 +127,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		plt.xlabel('time (s)')
 
 		# add second axes to display final counts
-		final_counts = counts[:, -1].tolist()
+		final_counts = counts[:, -1].astype(int).tolist()
 		final_counts.reverse()
 
 		ax2 = fig.add_subplot(111, sharex=ax, frameon=False)
@@ -139,7 +139,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax2.yaxis.set_label_position("right")
 		ax2.get_xaxis().set_visible(False)
 		ax2.set_ylabel('final counts')
-
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
