@@ -24,6 +24,41 @@ from wholecell.analysis.plotting_tools import CMAP_COLORS_255
 CMAP_COLORS = [[shade/255. for shade in color] for color in CMAP_COLORS_255]
 CMAP_OVER = [0, 1, 0.75]
 
+ordered_flagella_protein_ids = [
+    'G7028-MONOMER[i]',
+    'G378-MONOMER[s]',
+    'G377-MONOMER[i]',
+    'G370-MONOMER[i]',
+    'EG11977-MONOMER[s]',
+    'EG11976-MONOMER[s]',
+    'EG11975-MONOMER[s]',
+    'EG11656-MONOMER[s]',
+    'EG11224-MONOMER[s]',
+    'CPLX0-7451[s]',
+    'FLIN-FLAGELLAR-C-RING-SWITCH[s]',
+    'FLIM-FLAGELLAR-C-RING-SWITCH[s]',
+    'FLIG-FLAGELLAR-SWITCH-PROTEIN[s]',
+    'CPLX0-7450[s]',
+    'FLGH-FLAGELLAR-L-RING[s]',
+    'MOTA-FLAGELLAR-MOTOR-STATOR-PROTEIN[i]',
+    'MOTB-FLAGELLAR-MOTOR-STATOR-PROTEIN[i]',
+    'FLGB-FLAGELLAR-MOTOR-ROD-PROTEIN[s]',
+    'FLGC-FLAGELLAR-MOTOR-ROD-PROTEIN[s]',
+    'FLGF-FLAGELLAR-MOTOR-ROD-PROTEIN[s]',
+    'FLGG-FLAGELLAR-MOTOR-ROD-PROTEIN[s]',
+    'FLGI-FLAGELLAR-P-RING[s]',
+    'FLIF-FLAGELLAR-MS-RING[s]',
+    'EG11346-MONOMER[s]',
+    'EG10322-MONOMER[s]',
+    'FLAGELLAR-MOTOR-COMPLEX[s]',
+    'G361-MONOMER[s]',
+    'EG11967-MONOMER[s]',
+    'EG11545-MONOMER[s]',
+    'EG10321-MONOMER[s]',
+    'EG10841-MONOMER[s]',
+    'CPLX0-7452[s]',
+]
+
 flagella_proteins = {
     'G7028-MONOMER[i]': 'FlhB',
     'G378-MONOMER[s]': 'FliJ',
@@ -58,7 +93,6 @@ flagella_proteins = {
     'EG10841-MONOMER[s]': 'FliD',
     'CPLX0-7452[s]': 'Flagellum',
 }
-flagella_protein_ids = flagella_proteins.keys()
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -77,7 +111,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		initial_time = main_reader.readAttribute('initialTime')
 		time = main_reader.readColumn('time') - initial_time
 
-		(counts,) = read_bulk_molecule_counts(simOutDir, (flagella_protein_ids,))
+		(counts,) = read_bulk_molecule_counts(simOutDir, (ordered_flagella_protein_ids,))
 		counts = counts.astype(float).T
 
 		row_max = counts.max(axis=1)
@@ -89,9 +123,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 						  cmap='hot',
 						  interpolation='nearest',
 						  aspect='auto',
-						  extent=[initial_time,time[-1],len(flagella_protein_ids)-0.5,-0.5])
+						  extent=[initial_time,time[-1],len(ordered_flagella_protein_ids)-0.5,-0.5])
 		ax.set_yticks(np.arange(0, len(flagella_proteins), 1))
-		ax.set_yticklabels([flagella_proteins[mol_id] for mol_id in flagella_protein_ids], fontsize=8)
+		ax.set_yticklabels([flagella_proteins[mol_id] for mol_id in ordered_flagella_protein_ids], fontsize=8)
 		cbar = plt.colorbar(image, ax=ax)
 		cbar.ax.tick_params(labelsize=6)
 		cbar.set_label('normalized expression', rotation=270, labelpad=20)
