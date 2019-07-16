@@ -110,12 +110,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Load data
 		initial_time = main_reader.readAttribute('initialTime')
 		time = main_reader.readColumn('time') - initial_time
-
 		(counts,) = read_bulk_molecule_counts(simOutDir, (ordered_flagella_protein_ids,))
 		counts = counts.astype(float).T
 
 		row_max = counts.max(axis=1)
-		# row_sum = counts.sum(axis=1)
 		normalized_counts = counts / row_max[:, np.newaxis]
 
 		fig, ax = plt.subplots()
@@ -126,10 +124,22 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 						  extent=[initial_time,time[-1],len(ordered_flagella_protein_ids)-0.5,-0.5])
 		ax.set_yticks(np.arange(0, len(flagella_proteins), 1))
 		ax.set_yticklabels([flagella_proteins[mol_id] for mol_id in ordered_flagella_protein_ids], fontsize=8)
-		cbar = plt.colorbar(image, ax=ax)
-		cbar.ax.tick_params(labelsize=6)
-		cbar.set_label('normalized expression', rotation=270, labelpad=20)
 		plt.xlabel('time (s)')
+
+		# add second axes to display final counts
+		final_counts = counts[:, -1].tolist()
+		final_counts.reverse()
+
+		ax2 = fig.add_subplot(111, sharex=ax, frameon=False)
+		ax2.set_ylim([-0.5, len(ordered_flagella_protein_ids)-0.5])
+		ax2.set_yticks(np.arange(0, len(flagella_proteins), 1))
+		ax2.set_yticklabels(final_counts, fontsize=8)
+		ax2.tick_params(length=0)
+		ax2.yaxis.tick_right()
+		ax2.yaxis.set_label_position("right")
+		ax2.get_xaxis().set_visible(False)
+		ax2.set_ylabel('final counts')
+
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
