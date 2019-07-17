@@ -101,9 +101,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		filepath.makedirs(plotOutDir)
 
-		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
-
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
 
@@ -118,10 +115,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		fig, ax = plt.subplots()
 		image = ax.imshow(normalized_counts,
-						  cmap='hot',
-						  interpolation='nearest',
-						  aspect='auto',
-						  extent=[initial_time,time[-1],len(ordered_flagella_protein_ids)-0.5,-0.5])
+            cmap='hot',
+            interpolation='nearest',
+            aspect='auto',
+            extent=[time[0],time[-1],len(ordered_flagella_protein_ids)-0.5,-0.5])
 		ax.set_yticks(np.arange(0, len(flagella_proteins), 1))
 		ax.set_yticklabels([flagella_proteins[mol_id] for mol_id in ordered_flagella_protein_ids], fontsize=8)
 		plt.xlabel('time (s)')
