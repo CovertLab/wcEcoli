@@ -110,12 +110,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Function to compute reaction targets based on kinetic parameters and molecule concentrations
 		self.getKineticConstraints = sim_data.process.metabolism.getKineticConstraints
-
 		self.additional_disabled = sim_data.process.metabolism.additional_disabled
-		disabled_reactions = [
-			'ISOCITDEH-RXN',
-			'GLYOXYLATE-REDUCTASE-NADP+-RXN__CPLX0-235',
-			]
 
 		# Remove disabled reactions so they don't get included in the FBA problem setup
 		if hasattr(sim_data.process.metabolism, "kineticTargetShuffleRxns") and sim_data.process.metabolism.kineticTargetShuffleRxns != None:
@@ -123,7 +118,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.active_constraints_mask = np.ones(len(self.kineticsConstrainedReactions), dtype=bool)
 		else:
 			constrainedReactionList = sim_data.process.metabolism.constrainedReactionList
-			constraintsToDisable = [x for x in sim_data.process.metabolism.constraintsToDisable] + disabled_reactions + self.additional_disabled
+			constraintsToDisable = [x for x in sim_data.process.metabolism.constraintsToDisable] + self.additional_disabled
 			self.active_constraints_mask = np.array([(rxn not in constraintsToDisable) for rxn in constrainedReactionList])
 			self.kineticsConstrainedReactions = list(np.array(constrainedReactionList)[self.active_constraints_mask])
 
