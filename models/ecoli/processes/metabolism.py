@@ -16,6 +16,8 @@ TODO:
 
 from __future__ import division
 
+import os
+
 import numpy as np
 from scipy.sparse import csr_matrix
 
@@ -111,13 +113,33 @@ class Metabolism(wholecell.processes.process.Process):
 		# Function to compute reaction targets based on kinetic parameters and molecule concentrations
 		self.getKineticConstraints = sim_data.process.metabolism.getKineticConstraints
 
+		self.additional_disabled = sim_data.process.metabolism.additional_disabled
+
+		print('metabolism: disable {}'.format(str(self.additional_disabled)))
+
+		disabled_reactions = [
+			'ISOCITDEH-RXN',
+			'GLYOXYLATE-REDUCTASE-NADP+-RXN__CPLX0-235',
+			]
+
+		self.enabled_constraints = [
+			# 'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)',
+			# 'PSERTRANSAM-RXN',
+			# 'GLUTATHIONE-REDUCT-NADPH-RXN',
+			# 'GLYOXYLATE-REDUCTASE-NADP+-RXN__CPLX0-235',
+			# 'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.',
+			# 'XANPRIBOSYLTRAN-RXN',
+			# 'R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.',
+			# 'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.',
+			]
+
 		# Remove disabled reactions so they don't get included in the FBA problem setup
-		if hasattr(sim_data.process.metabolism, "kineticTargetShuffleRxns") and sim_data.process.metabolism.kineticTargetShuffleRxns is not None:
+		if hasattr(sim_data.process.metabolism, "kineticTargetShuffleRxns") and sim_data.process.metabolism.kineticTargetShuffleRxns != None:
 			self.kineticsConstrainedReactions = sim_data.process.metabolism.kineticTargetShuffleRxns
 			self.active_constraints_mask = np.ones(len(self.kineticsConstrainedReactions), dtype=bool)
 		else:
 			constrainedReactionList = sim_data.process.metabolism.constrainedReactionList
-			constraintsToDisable = sim_data.process.metabolism.constraintsToDisable
+			constraintsToDisable = [x for x in sim_data.process.metabolism.constraintsToDisable if x not in self.enabled_constraints] + disabled_reactions + self.additional_disabled
 			self.active_constraints_mask = np.array([(rxn not in constraintsToDisable) for rxn in constrainedReactionList])
 			self.kineticsConstrainedReactions = list(np.array(constrainedReactionList)[self.active_constraints_mask])
 
@@ -198,11 +220,11 @@ class Metabolism(wholecell.processes.process.Process):
 		self.AAs = [x[:-3] for x in sorted(sim_data.amino_acid_1_to_3_ordered.values())]
 
 		self.shuffleIdxs = None
-		if hasattr(sim_data.process.metabolism, "kineticTargetShuffleIdxs") and sim_data.process.metabolism.kineticTargetShuffleIdxs is not None:
+		if hasattr(sim_data.process.metabolism, "kineticTargetShuffleIdxs") and sim_data.process.metabolism.kineticTargetShuffleIdxs != None:
 			self.shuffleIdxs = sim_data.process.metabolism.kineticTargetShuffleIdxs
 
 		self.shuffleCatalyzedIdxs = None
-		if hasattr(sim_data.process.metabolism, "catalystShuffleIdxs") and sim_data.process.metabolism.catalystShuffleIdxs is not None:
+		if hasattr(sim_data.process.metabolism, "catalystShuffleIdxs") and sim_data.process.metabolism.catalystShuffleIdxs != None:
 			self.shuffleCatalyzedIdxs = sim_data.process.metabolism.catalystShuffleIdxs
 
 	def calculateRequest(self):
@@ -264,7 +286,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.fba.setInternalMoleculeLevels(metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS))
 
 		# Set external molecule levels
-		self._setExternalMoleculeLevels(externalMoleculeLevels, metaboliteConcentrations)
+		self._setExternalMoleculeLevels(self.fba, externalMoleculeLevels, metaboliteConcentrations)
 
 		# Change the ngam and polypeptide elongation energy penalty only if they are noticably different from the current value
 		ADJUSTMENT_RATIO = .01
@@ -333,6 +355,12 @@ class Metabolism(wholecell.processes.process.Process):
 		if self.use_kinetics and self.burnInComplete:
 			self.fba.setKineticTarget(self.kineticsConstrainedReactions, targets, raiseForReversible = False)
 
+		target_names = self.fba.getKineticTargetFluxNames()
+
+		list_dir = 'rxnlist'
+		if not os.path.exists(list_dir):
+			os.mkdir(list_dir)
+
 		# Solve FBA problem and update metabolite counts
 		deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.getOutputMoleculeLevelsChange())
 
@@ -345,6 +373,29 @@ class Metabolism(wholecell.processes.process.Process):
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
+
+		def convert(flux):
+			return ((COUNTS_UNITS / VOLUME_UNITS) * flux / coefficient).asNumber(units.mmol / units.g / units.h)
+
+		# for rxn in self.enabled_constraints:
+		# 	idx = target_names.index(rxn)
+		# 	print('{}: {:.3f} ({:.3f})'.format(rxn, convert(self.fba.getReactionFlux(rxn)[0]), convert(targets[idx])))
+		#
+		# print('succ-deh: {:.1f}'.format(((COUNTS_UNITS / VOLUME_UNITS) * self.fba.getReactionFluxes(succ_rxn)[0] / coefficient).asNumber(units.mmol / units.g / units.h)))
+		# print('fum-red: {:.3f}'.format(((COUNTS_UNITS / VOLUME_UNITS) * self.fba.getReactionFluxes(fum_rxn)[0] / coefficient).asNumber(units.mmol / units.g / units.h)))
+		# print('iso-deh: {:.3f}'.format(((COUNTS_UNITS / VOLUME_UNITS) * self.fba.getReactionFluxes(iso_rxn)[0] / coefficient).asNumber(units.mmol / units.g / units.h)))
+		#
+		# if succ_rxn in target_names:
+		# 	idx = target_names.index(succ_rxn)
+		# 	print('succ-deh target: {:.3f}'.format(((COUNTS_UNITS / VOLUME_UNITS) * targets[idx] / coefficient).asNumber(units.mmol / units.g / units.h)))
+		# if fum_rxn in target_names:
+		# 	idx = target_names.index(rum_rxn)
+		# 	print('fum-red target: {:.3f}'.format(((COUNTS_UNITS / VOLUME_UNITS) * targets[idx] / coefficient).asNumber(units.mmol / units.g / units.h)))
+		# if iso_rxn in target_names:
+		# 	idx = target_names.index(iso_rxn)
+		# 	print('iso-deh target: {:.3f}'.format(((COUNTS_UNITS / VOLUME_UNITS) * targets[idx] / coefficient).asNumber(units.mmol / units.g / units.h)))
+		#
+		# print('glc: {:.1f}'.format(exFluxes[27]))
 
 		# Write outputs to listeners
 		self.writeToListener("FBAResults", "deltaMetabolites", metaboliteCountsFinal - metaboliteCountsInit)
@@ -368,11 +419,11 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "reactionConstraint", reactionConstraint[self.active_constraints_mask])
 
 	# limit amino acid uptake to what is needed to meet concentration objective to prevent use as carbon source
-	def _setExternalMoleculeLevels(self, externalMoleculeLevels, metaboliteConcentrations):
+	def _setExternalMoleculeLevels(self, fba, externalMoleculeLevels, metaboliteConcentrations):
 		for aa in self.AAs:
-			if aa + "[p]" in self.fba.getExternalMoleculeIDs():
+			if aa + "[p]" in fba.getExternalMoleculeIDs():
 				idx = self.externalMoleculeIDs.index(aa + "[p]")
-			elif aa + "[c]" in self.fba.getExternalMoleculeIDs():
+			elif aa + "[c]" in fba.getExternalMoleculeIDs():
 				idx = self.externalMoleculeIDs.index(aa + "[c]")
 			else:
 				continue
@@ -384,4 +435,4 @@ class Metabolism(wholecell.processes.process.Process):
 			if externalMoleculeLevels[idx] > concDiff:
 				externalMoleculeLevels[idx] =  concDiff
 
-		self.fba.setExternalMoleculeLevels(externalMoleculeLevels)
+		fba.setExternalMoleculeLevels(externalMoleculeLevels)
