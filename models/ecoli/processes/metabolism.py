@@ -270,7 +270,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.fba.setInternalMoleculeLevels(metaboliteConcentrations.asNumber(COUNTS_UNITS / VOLUME_UNITS))
 
 		# Set external molecule levels
-		self._setExternalMoleculeLevels(self.fba, externalMoleculeLevels, metaboliteConcentrations)
+		self._setExternalMoleculeLevels(externalMoleculeLevels, metaboliteConcentrations)
 
 		# Change the ngam and polypeptide elongation energy penalty only if they are noticably different from the current value
 		ADJUSTMENT_RATIO = .01
@@ -339,12 +339,6 @@ class Metabolism(wholecell.processes.process.Process):
 		if self.use_kinetics and self.burnInComplete:
 			self.fba.setKineticTarget(self.kineticsConstrainedReactions, targets, raiseForReversible = False)
 
-		target_names = self.fba.getKineticTargetFluxNames()
-
-		list_dir = 'rxnlist'
-		if not os.path.exists(list_dir):
-			os.mkdir(list_dir)
-
 		# Solve FBA problem and update metabolite counts
 		deltaMetabolites = (1 / countsToMolar) * (COUNTS_UNITS / VOLUME_UNITS * self.fba.getOutputMoleculeLevelsChange())
 
@@ -357,7 +351,6 @@ class Metabolism(wholecell.processes.process.Process):
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
 		exFluxes = ((COUNTS_UNITS / VOLUME_UNITS) * self.fba.getExternalExchangeFluxes() / coefficient).asNumber(units.mmol / units.g / units.h)
-
 
 		# Write outputs to listeners
 		self.writeToListener("FBAResults", "deltaMetabolites", metaboliteCountsFinal - metaboliteCountsInit)
