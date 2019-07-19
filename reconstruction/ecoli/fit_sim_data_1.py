@@ -121,6 +121,8 @@ def fitSimData_1(
 			dependent RNA polymerase fraction increase.
 		disable_ribosome_activity_fix (bool) - if True, disables ribosome
 			activity fix.
+		write_translation_efficiencies (bool) - if True, writes out translation
+			efficiencies to a file uniquely named by the options dict.
 	"""
 	options['basal_expression_condition'] = BASAL_EXPRESSION_CONDITION
 	sim_data = SimulationDataEcoli()
@@ -374,24 +376,8 @@ def buildBasalCellSpecifications(
 		protein_distribution,
 		protein_loss.asNumber())
 
-	def abbreviate(s):
-		return ''.join([part[0] for part in s.split('_')])
-
-	parts = [
-		'{}-{}'.format(abbreviate(key), options[key])
-		for key in sorted(options.keys())]
-	suffix = '-'.join(parts)
-	filename = "translation-efficiencies-{}.tsv".format(suffix)
-	header = ['id', 'gene_id', 'protein_id', 'translation_efficiency']
-	rows = [
-		[index, gene_ids[index], protein_id, translation_efficiencies[index]]
-		for index, protein_id in enumerate(protein_ids)]
-
-	with open(filename, 'w') as outfile:
-		writer = csv.writer(outfile)
-		writer.writerow(header)
-		for row in rows:
-			writer.writerow(row)
+	if options['write_translation_efficiencies']:
+		write_translation_efficiencies(gene_ids, translation_efficiencies, options)
 
 	# Store calculated values
 	cellSpecs["basal"]["expression"] = expression
@@ -411,6 +397,30 @@ def buildBasalCellSpecifications(
 	sim_data.process.transcription.rnaSynthProb["basal"][:] = cellSpecs["basal"]["synthProb"]
 
 	return cellSpecs
+
+def write_translation_efficiencies(
+		gene_ids,
+		translation_efficiencies,
+		options):
+
+	def abbreviate(s):
+		return ''.join([part[0] for part in s.split('_')])
+
+	parts = [
+		'{}-{}'.format(abbreviate(key), options[key])
+		for key in sorted(options.keys())]
+	suffix = '-'.join(parts)
+	filename = "translation-efficiencies-{}.tsv".format(suffix)
+	header = ['id', 'gene_id', 'protein_id', 'translation_efficiency']
+	rows = [
+		[index, gene_ids[index], protein_id, translation_efficiencies[index]]
+		for index, protein_id in enumerate(protein_ids)]
+
+	with open(filename, 'w') as outfile:
+		writer = csv.writer(outfile)
+		writer.writerow(header)
+		for row in rows:
+			writer.writerow(row)
 
 def buildTfConditionCellSpecifications(
 		sim_data,

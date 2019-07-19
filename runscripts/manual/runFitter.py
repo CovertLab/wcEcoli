@@ -130,6 +130,11 @@ class RunFitter(scriptBase.ScriptBase):
 			action='store_true',
 			help="If set, saves cell specs."
 		)
+		parser.add_argument(
+			'--write-translation-efficiencies',
+			action='store_true',
+			help="If set, writes out translation efficiencies."
+		)
 
 	def parse_args(self):
 		args = super(RunFitter, self).parse_args()
