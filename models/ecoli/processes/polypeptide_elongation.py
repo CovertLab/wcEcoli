@@ -87,7 +87,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeIds.s50_fullComplex)
 
 		self.translationSupply = sim._translationSupply
-		self.flat_elongation = sim._flat_elongation
+		self.flat_elongation = not sim._variable_elongation
 
 		# I like how we multiply a bunch of things by this number
 		self.elngRateFactor = 1.

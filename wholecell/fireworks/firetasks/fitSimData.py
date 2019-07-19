@@ -36,6 +36,7 @@ class FitSimDataTask(FireTaskBase):
 		"disable_ribosome_activity_fix",
 		"save_cell_specs",
 		"cell_specs_file",
+		"write_translation_efficiencies"
 		]
 
 	def run_task(self, fw_spec):
@@ -78,7 +79,8 @@ class FitSimDataTask(FireTaskBase):
 				alternate_ribosome_activity=self['alternate_ribosome_activity'],
 				alternate_rnap_activity=self['alternate_rnap_activity'],
 				disable_rnap_fraction_increase=self['disable_rnap_fraction_increase'],
-				disable_ribosome_activity_fix=self['disable_ribosome_activity_fix'])
+				disable_ribosome_activity_fix=self['disable_ribosome_activity_fix'],
+				write_translation_efficiencies=self['write_translation_efficiencies'])
 
 			sim_data, cell_specs = fitSimData_1(
 				raw_data,

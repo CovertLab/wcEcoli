@@ -50,7 +50,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.ntps = self.bulkMoleculesView(["ATP[c]", "CTP[c]", "GTP[c]", "UTP[c]"])
 		self.ppi = self.bulkMoleculeView('PPI[c]')
 		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
-		self.flat_elongation = sim._flat_elongation
+		self.flat_elongation = not sim._variable_elongation
 
 	def calculateRequest(self):
 		# Calculate elongation rate based on the current nutrients

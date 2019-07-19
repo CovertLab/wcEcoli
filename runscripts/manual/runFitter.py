@@ -197,6 +197,7 @@ class RunFitter(scriptBase.ScriptBase):
 				disable_ribosome_activity_fix=args.disable_ribosome_activity_fix,
 				save_cell_specs=args.save_cell_specs,
 				cell_specs_file=cell_specs_file,
+				write_translation_efficiencies=args.write_translation_efficiencies
 				),
 
 			SymlinkTask(
