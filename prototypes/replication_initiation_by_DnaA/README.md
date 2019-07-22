@@ -1,5 +1,3 @@
-### Stochastic Gillespie simulation of DnaA-mediated replication initiation in *E. coli*
-
 This prototype model runs a stochastic simulation of DnaA-mediated replication initiation in *E. coli*. The model uses the Gillespie algorithm to simulate the stochastic binding and unbinding of DnaA-ATP complexes to DnaA boxes on the chromosome. The production of new DnaA-ATP molecules and DnaA boxes are currently assumed to occur deterministically. The contributions of DnaA-ADP molecules to this mechanism are assumed to be negligible. 
 
 The following reactions are assumed to occur stochastically, and are modeled by the Gillespie algorithm.
