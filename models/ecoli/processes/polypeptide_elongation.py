@@ -486,6 +486,17 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		charged_trna_conc = charged_trna_conc.asNumber(MICROMOLAR_UNITS)
 		aa_conc = aa_conc.asNumber(MICROMOLAR_UNITS)
 		ribosome_conc = ribosome_conc.asNumber(MICROMOLAR_UNITS)
+
+		# Remove SEL from calculations
+		n_total_aas = len(aa_conc)
+		mask = np.ones(n_total_aas, bool)
+		mask[19] = False  # TODO: better way to index SEL
+		synthetase_conc = synthetase_conc[mask]
+		uncharged_trna_conc = uncharged_trna_conc[mask]
+		charged_trna_conc = charged_trna_conc[mask]
+		aa_conc = aa_conc[mask]
+		f = f[mask]
+
 		n_aas = len(aa_conc)
 
 		# Integrate rates of charging and elongation
@@ -504,7 +515,12 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
 		v_rib = self.maxRibosomeElongationRate * ribosome_conc / numerator_ribosome
 
-		return fraction_charged, v_rib
+		# Replace SEL fraction charged with average
+		new_fraction_charged = np.zeros(n_total_aas)
+		new_fraction_charged[mask] = fraction_charged
+		new_fraction_charged[~mask] = fraction_charged.mean()
+
+		return new_fraction_charged, v_rib
 
 	def distribution_from_aa(self, n_aa, n_trna, limited=False):
 		'''
