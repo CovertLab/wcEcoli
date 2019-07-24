@@ -1,0 +1,10 @@
+# TO DO LIST TOXIN ANTITOXIN
+# * focus on mazEF
+# * figure out necessary initial conditions 
+# * figure out what will be effected 
+# * implement Fasani and Savageau 2013 model in prototypes
+# ** calculate changes for a given time step
+# * integrate this math into the whole cell model
+
+# * identify toxin/antitoxin pairs in e coli
+# * figure out which ones are in the model
