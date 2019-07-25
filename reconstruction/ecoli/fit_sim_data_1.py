@@ -1979,7 +1979,7 @@ def proteinDistributionFrommRNA(
 
 	assert np.allclose(np.sum(distribution_mRNA), 1)
 	assert np.allclose(np.sum(translation_efficiencies), 1)
-	if flat_elongation:
+	if flat_elongation or True:
 		distributionUnnormed = 1 / netLossRate * distribution_mRNA * translation_efficiencies
 	else:
 		protein_lengths = np.array([float(x.asNumber()) for x in protein_lengths])
@@ -2028,7 +2028,7 @@ def mRNADistributionFromProtein(
 	"""
 
 	assert np.allclose(np.sum(distribution_protein), 1)
-	if flat_elongation:
+	if flat_elongation or True:
 		distributionUnnormed = netLossRate * distribution_protein / translation_efficiencies
 	else:
 		protein_lengths = np.array([float(x.asNumber()) for x in protein_lengths])

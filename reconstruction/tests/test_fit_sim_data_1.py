@@ -70,7 +70,14 @@ class Test_fitkb1(unittest.TestCase):
 		# Test normal call
 		distribution_mRNA = np.array([0.5, 0.25, 0.25])
 		netLossRate = (1 / units.s) * np.array([1, 2, 3])
-		proteinDist = proteinDistributionFrommRNA(distribution_mRNA, np.ones(3) / 3, netLossRate)
+		elongationRates = np.array([20, 20, 20])
+		proteinLengths = np.array([30, 40, 50])
+		proteinDist = proteinDistributionFrommRNA(
+			distribution_mRNA,
+			np.ones(3) / 3,
+			netLossRate,
+			elongationRates,
+			proteinLengths)
 		distributionUnnormed = 1 / netLossRate * distribution_mRNA
 		expectedDistribution = (distributionUnnormed / units.sum(distributionUnnormed))
 		expectedDistribution.normalize()
@@ -80,7 +87,12 @@ class Test_fitkb1(unittest.TestCase):
 		# Test normal call with units
 		distribution_mRNA = np.array([0.5, 0.25, 0.25])
 		netLossRate = (1 / units.s) * np.array([1, 2, 3])
-		proteinDist = proteinDistributionFrommRNA(distribution_mRNA, np.ones(3) / 3, netLossRate)
+		proteinDist = proteinDistributionFrommRNA(
+			distribution_mRNA,
+			np.ones(3) / 3,
+			netLossRate,
+			elongationRates,
+			proteinLengths)
 		distributionUnnormed = 1 / netLossRate * distribution_mRNA
 		expectedDistribution = (distributionUnnormed / units.sum(distributionUnnormed))
 		expectedDistribution.normalize()
@@ -90,7 +102,7 @@ class Test_fitkb1(unittest.TestCase):
 		# Test assertion in function
 		distribution_mRNA = np.array([0.25, 0.25, 0.25])
 		netLossRate = (1 / units.s) * np.array([1, 2, 3])
-		self.assertRaises(AssertionError, proteinDistributionFrommRNA, distribution_mRNA, np.ones(3) / 3, netLossRate)
+		self.assertRaises(AssertionError, proteinDistributionFrommRNA, distribution_mRNA, np.ones(3) / 3, netLossRate, elongationRates, proteinLengths)
 
 	@noseAttrib.attr('smalltest')
 	@noseAttrib.attr('fitkb1test')
@@ -98,7 +110,14 @@ class Test_fitkb1(unittest.TestCase):
 		# Test normal call
 		distribution_mRNA = np.array([0.5, 0.25, 0.25])
 		netLossRate = (1 / units.s) * np.array([1, 2, 3])
-		proteinDist = mRNADistributionFromProtein(distribution_mRNA, np.ones(3) / 3, netLossRate)
+		elongationRates = np.array([20, 20, 20])
+		proteinLengths = np.array([30, 40, 50])
+		proteinDist = mRNADistributionFromProtein(
+			distribution_mRNA,
+			np.ones(3) / 3,
+			netLossRate,
+			elongationRates,
+			proteinLengths)
 		distributionUnnormed = netLossRate * distribution_mRNA
 		expectedDistribution = (distributionUnnormed / units.sum(distributionUnnormed))
 		expectedDistribution.normalize()
@@ -108,7 +127,12 @@ class Test_fitkb1(unittest.TestCase):
 		# Test normal call with units
 		distribution_mRNA = np.array([0.5, 0.25, 0.25])
 		netLossRate = (1 / units.s) * np.array([1, 2, 3])
-		proteinDist = mRNADistributionFromProtein(distribution_mRNA, np.ones(3) / 3, netLossRate)
+		proteinDist = mRNADistributionFromProtein(
+			distribution_mRNA,
+			np.ones(3) / 3,
+			netLossRate,
+			elongationRates,
+			proteinLengths)
 		distributionUnnormed = netLossRate * distribution_mRNA
 		expectedDistribution = (distributionUnnormed / units.sum(distributionUnnormed))
 		expectedDistribution.normalize()
@@ -118,7 +142,7 @@ class Test_fitkb1(unittest.TestCase):
 		# Test assertion in function
 		distribution_mRNA = np.array([0.25, 0.25, 0.25])
 		netLossRate = (1 / units.s) * np.array([1, 2, 3])
-		self.assertRaises(AssertionError, mRNADistributionFromProtein, distribution_mRNA, np.ones(3) / 3, netLossRate)
+		self.assertRaises(AssertionError, mRNADistributionFromProtein, distribution_mRNA, np.ones(3) / 3, netLossRate, elongationRates, proteinLengths)
 
 	@noseAttrib.attr('smalltest')
 	@noseAttrib.attr('fitkb1test')
@@ -129,7 +153,6 @@ class Test_fitkb1(unittest.TestCase):
 		productCounts = np.array([5,1,10])
 
 		nMin = calculateMinPolymerizingEnzymeByProductDistribution(productLengths, elongationRate, netLossRate, productCounts)
-		nMin.checkNoUnit()
 		self.assertEqual(nMin, 980)
 
 
