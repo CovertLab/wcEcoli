@@ -1,3 +1,7 @@
+"""
+factorial design experiments for testing kinetic constraints listed in REACTIONS
+@organization: Covert Lab, Department of Bioengineering, Stanford University
+"""
 
 REACTIONS = [
 	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)',
