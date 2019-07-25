@@ -87,13 +87,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeIds.s50_fullComplex)
 
 		self.translationSupply = sim._translationSupply
-		self.flat_elongation = not sim._variable_elongation
+		self.flat_elongation = not sim._variable_elongation_translation
 
 		# I like how we multiply a bunch of things by this number
 		self.elngRateFactor = 1.
 
 	def calculateRequest(self):
-		# Set ribosome elongation rate based on simulation medium environment and elongation rate
+		# Set ribosome elongation rate based on simulation medium environment and elongantion rate
 		# factor which is used to create single-cell variability in growth rate. The maximum number
 		# of amino acids that can be elongated in a single timestep is set to 22 intentionally as
 		# the minimum number of padding values on the protein sequence matrix is set to 22. If

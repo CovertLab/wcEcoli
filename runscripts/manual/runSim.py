@@ -132,9 +132,13 @@ class RunSimulation(scriptBase.ScriptBase):
 			help='If true, the ribosome elongation rate is limited by the'
 				 ' condition specific rate of amino acid supply; otherwise the'
 				 ' elongation rate is set by condition')
-		add_bool_option('variable_elongation', 'variable_elongation',
+		add_bool_option('variable_elongation_translation', 'variable_elongation_translation',
 			help='if True, all elongation rates are the same for each type.'
-				 'if False, elongation rates are faster for ribosomal proteins and transcripts'
+				 'if False, elongation rates are faster for ribosomal proteins'
+				 ' elongation rate is set by condition')
+		add_bool_option('variable_elongation_transcription', 'variable_elongation_transcription',
+			help='if True, all elongation rates are the same for each type.'
+				 'if False, elongation rates are faster for transcripts'
 				 ' elongation rate is set by condition')
 
 
@@ -174,7 +178,8 @@ class RunSimulation(scriptBase.ScriptBase):
 			'growth_rate_noise',
 			'd_period_division',
 			'translation_supply',
-			'variable_elongation'))
+			'variable_elongation_translation',
+			'variable_elongation_transcription'))
 
 		metadata = dict(cli_metadata_args,
 			git_hash=fp.run_cmdline("git rev-parse HEAD") or '--',
