@@ -335,6 +335,8 @@ class Metabolism(wholecell.processes.process.Process):
 		if self.use_kinetics and self.burnInComplete:
 			self.fba.setKineticTarget(self.kineticsConstrainedReactions, targets, raiseForReversible = False)
 
+		# Runs sensitivity if option is set
+		# Needs to be after all FBA problem setup but will not affect simulation
 		if self.run_flux_sensitivity:
 			self.flux_sensitivity(metaboliteConcentrations, externalMoleculeLevels, catalyzedReactionBounds, targets, coefficient)
 

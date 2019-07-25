@@ -125,7 +125,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		## Succinate dehydrogenase all fluxes
 		ax = plt.subplot(gs[0, 0])
-		plot_lows(ax, succ_fluxes, threshold, 'Succinate Dehydrogenase')
+		plot_lows(ax, succ_fluxes, threshold, 'succinate dehydrogenase')
 
 		## Succinate dehydrogenase fluxes over threshold
 		ax = plt.subplot(gs[0, 1])
@@ -133,7 +133,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		## Isocitrate dehydrogenase all fluxes
 		ax = plt.subplot(gs[1, 0])
-		plot_lows(ax, iso_fluxes, threshold, 'Isocitrate Dehydrogenase')
+		plot_lows(ax, iso_fluxes, threshold, 'isocitrate dehydrogenase')
 
 		## Isocitrate dehydrogenase fluxes over threshold
 		ax = plt.subplot(gs[1, 1])
