@@ -683,7 +683,7 @@ def expressionConverge(
 			print('Iteration: {}'.format(iteration))
 
 		initialExpression = expression.copy()
-		initialRnapActivity = rnapActivity.copy()
+		initialRnapActivity = copy.copy(rnapActivity)
 
 		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
 		bulkContainer = createBulkContainer(sim_data, expression, doubling_time, options)
