@@ -152,8 +152,8 @@ ALTERNATE_RNAP_ACTIVITY = bool(int(os.environ.get("ALTERNATE_RNAP_ACTIVITY", "0"
 DISABLE_RNAP_FRACTION_INCREASE = bool(int(os.environ.get("DISABLE_RNAP_FRACTION_INCREASE", "0")))
 DISABLE_RIBOSOME_ACTIVITY_FIX = bool(int(os.environ.get("DISABLE_RIBOSOME_ACTIVITY_FIX", "0")))
 SAVE_CELL_SPECS = bool(int(os.environ.get("SAVE_CELL_SPECS", "0")))
-CELL_SPECS_FILE = bool(int(os.environ.get("SPECS_FILE", "0")))
-WRITE_TRANSLATION_EFFICIENCIES = bool(int(os.environ.get("WRITE_TRANSLATION_EFFICIENCIE", "0")))
+CELL_SPECS_FILE = bool(int(os.environ.get("CELL_SPECS_FILE", "0")))
+WRITE_TRANSLATION_EFFICIENCIES = bool(int(os.environ.get("WRITE_TRANSLATION_EFFICIENCIES", "0")))
 
 if not RUN_AGGREGATE_ANALYSIS:
 	COMPRESS_OUTPUT = False
@@ -288,7 +288,7 @@ fw_fit_level_1 = Firework(
 		disable_rnap_fraction_increase = DISABLE_RNAP_FRACTION_INCREASE,
 		disable_ribosome_activity_fix = DISABLE_RIBOSOME_ACTIVITY_FIX,
 		save_cell_specs = SAVE_CELL_SPECS,
-		cell_specs_file = SPECS_FILE,
+		cell_specs_file = CELL_SPECS_FILE,
 		write_translation_efficiencies = WRITE_TRANSLATION_EFFICIENCIES
 		),
 	name = fw_name,
