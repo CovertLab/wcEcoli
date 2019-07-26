@@ -80,13 +80,22 @@ TIME_UNITS = units.s
 
 ECOS_0_TOLERANCE = 1e-12
 
+def numberize(x):
+	try:
+		return x.asNumber()
+	except:
+		try:
+			return np.array([y.asNumber() for y in x])
+		except:
+			return x
+
 def distribution_diagnostic(message, counts):
 	print(message)
 	print(counts)
 	print(np.max(counts))
 	print(np.min(counts))
-	print(np.where([math.isnan(x) for x in counts.asNumber()]))
-	print(np.linalg.norm(counts.asNumber(), 1))
+	print(np.where([math.isnan(x) for x in numberize(counts)]))
+	print(np.linalg.norm(numberize(counts), 1))
 
 def fitSimData_1(
 		raw_data,
@@ -106,7 +115,7 @@ def fitSimData_1(
 			is not fit to protein synthesis demands
 		disable_rnapoly_capacity_fitting (bool) - if True, RNA polymerase
 			expression is not fit to protein synthesis demands
-		disable_rnapoly_activity_fitting (bool) - if True, RNA polymerase
+		rnapoly_activity_fitting (bool) - if True, RNA polymerase
 			activity is not fit to transcription demands.
 		adjust_rna_and_protein_parameters (bool) - if True, some RNA and protein
 			expression parameters will be adjusted to get expression
@@ -718,7 +727,7 @@ def expressionConverge(
 			counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
 			distribution_diagnostic('BULK CONTAINER AFTER RNAP FIT', counts_protein)
 
-		if not options['disable_rnapoly_activity_fitting']:
+		if options['rnapoly_activity_fitting']:
 			rnapActivity = setRNAPActivityConstrainedByPhysiology(sim_data, bulkContainer,	doubling_time, avgCellDryMassInit, Km, options)
 			# todo: remove
 			print('GOT IN HERE')
@@ -1485,8 +1494,8 @@ def setRNAPCountsConstrainedByPhysiology(
 	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
 
 	distribution_diagnostic('elongation rates', elongation_rates)
-	distribution_diagnostic('number active rnap needed', nActiveRnapNeeded)
-	distribution_diagnostic('number rnap needed', nRnapsNeeded)
+	print('number active rnap needed', nActiveRnapNeeded)
+	print('number rnap needed', nRnapsNeeded)
 
 	# Convert nRnapsNeeded to the number of RNA polymerase subunits required
 	# Note: The return value from getFractionIncreaseRnapProteins() is
@@ -1616,9 +1625,6 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, op
 	diagnostic = {
 		'counts': counts_protein.tolist(),
 		'norm': norm_counts.tolist()}
-
-	with(open('/home/users/heejo/Code/wcEcoli/diagnostic.json', 'w')) as f:
-		f.write(json.dumps(diagnostic))
 
 	translation_efficienciesByProtein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 

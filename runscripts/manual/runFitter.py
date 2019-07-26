@@ -56,7 +56,7 @@ class RunFitter(scriptBase.ScriptBase):
 			help= "If set, RNA polymerase expression will not be fit to protein synthesis demands."
 			)
 		parser.add_argument(
-			'--disable-rnapoly-activity-fitting',
+			'--rnapoly-activity-fitting',
 			action='store_true',
 			help= "If set, RNA polymerase activity will not be fit to transcription demands."
 			)
@@ -189,7 +189,7 @@ class RunFitter(scriptBase.ScriptBase):
 				disable_rnapoly_capacity_fitting=args.disable_rnapoly_fitting,
 				variable_elongation_transcription=args.variable_elongation_transcription,
 				variable_elongation_translation=args.variable_elongation_translation,
-				disable_rnapoly_activity_fitting=args.disable_rnapoly_activity_fitting,
+				rnapoly_activity_fitting=args.rnapoly_activity_fitting,
 				adjust_rna_and_protein_parameters=args.no_expression_adjustment,
 				alternate_mass_fraction_protein=args.alternate_mass_fraction_protein,
 				alternate_mass_fraction_rna=args.alternate_mass_fraction_rna,
