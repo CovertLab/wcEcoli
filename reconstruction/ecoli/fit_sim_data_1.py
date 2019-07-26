@@ -85,8 +85,8 @@ def distribution_diagnostic(message, counts):
 	print(counts)
 	print(np.max(counts))
 	print(np.min(counts))
-	print(np.where([math.isnan(x) for x in counts]))
-	print(np.linalg.norm(counts, 1))
+	print(np.where([math.isnan(x) for x in counts.asNumber()]))
+	print(np.linalg.norm(counts.asNumber(), 1))
 
 def fitSimData_1(
 		raw_data,
