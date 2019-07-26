@@ -1501,6 +1501,8 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		normalize(view_RNA.counts())
 		)
 
+
+	import pdb; pdb.set_trace()
 	# Update mRNA expression to reflect monomer counts
 	assert np.all(
 		sim_data.process.translation.monomerData["rnaId"][sim_data.relation.monomerIndexToRnaMapping] == sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]]

@@ -177,7 +177,7 @@ class Transcription(object):
 			else:
 				rna_id = rna['id']
 			# Location of transcription initiation relative to origin
-			replicationCoordinate.append(get_replication_coordinate(coordinate_list[gene_index[rna_id]]))
+			replicationCoordinate.append(get_relative_coordinates(coordinate_list[gene_index[rna_id]]))
 			# Direction of transcription
 			direction.append((direction_list[gene_index[rna_id]] == "+"))
 		
