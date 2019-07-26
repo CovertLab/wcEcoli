@@ -2025,7 +2025,8 @@ def mRNADistributionFromProtein(
 	- array of floats for the distribution of each mRNA, normalized to 1
 	"""
 
-	assert np.allclose(np.sum(distribution_protein), 1)
+	if not np.allclose(np.sum(distribution_protein), 1):
+		distribution_protein = normalize(distribution_protein)
 	if flat_elongation or True:
 		distributionUnnormed = netLossRate * distribution_protein / translation_efficiencies
 	else:
