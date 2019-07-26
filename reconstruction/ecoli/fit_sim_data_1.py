@@ -124,6 +124,10 @@ def fitSimData_1(
 		write_translation_efficiencies (bool) - if True, writes out translation
 			efficiencies to a file uniquely named by the options dict.
 	"""
+
+	print('ALL OPTIONS')
+	print(options)
+
 	options['basal_expression_condition'] = BASAL_EXPRESSION_CONDITION
 	sim_data = SimulationDataEcoli()
 	sim_data.initialize(
@@ -2025,6 +2029,9 @@ def mRNADistributionFromProtein(
 	- array of floats for the distribution of each mRNA, normalized to 1
 	"""
 
+	print('protein distribution')
+	print(np.sum(distribution_protein))
+	print(np.where(distribution_protein == np.nan)[0])
 	assert np.allclose(np.sum(distribution_protein), 1)
 	if flat_elongation or True:
 		distributionUnnormed = netLossRate * distribution_protein / translation_efficiencies
