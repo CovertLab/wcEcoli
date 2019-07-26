@@ -117,11 +117,6 @@ class RunFitter(scriptBase.ScriptBase):
 			help="Alternate ribosome active fraction: 85 percent active. Default = 80 percent active."
 			)
 		parser.add_argument(
-			'--alternate-rnap-activity', type=str,
-			help="Alternate ribosome active fraction: between 0 and 1. Defaults"
-			     " to active fraction described in growth rate parameters."
-		)
-		parser.add_argument(
 			'--disable-rnap-fraction-increase',
 			action='store_true',
 			help="If set, disables doubling-time-dependent RNAP fraction increase."
@@ -199,7 +194,6 @@ class RunFitter(scriptBase.ScriptBase):
 				alternate_rna_half_life=args.alternate_rna_half_life,
 				alternate_translation_efficiency=args.alternate_translation_efficiency,
 				alternate_ribosome_activity=args.alternate_ribosome_activity,
-				alternate_rnap_activity=args.alternate_rnap_activity,
 				disable_rnap_fraction_increase=args.disable_rnap_fraction_increase,
 				disable_ribosome_activity_fix=args.disable_ribosome_activity_fix,
 				save_cell_specs=args.save_cell_specs,

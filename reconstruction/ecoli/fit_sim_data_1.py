@@ -135,7 +135,6 @@ def fitSimData_1(
 			efficiency (Mohammad 2019) is used.
 		alternate_ribosome_activity (bool) - if True, ribosome activity is set
 			to 85%.
-		alternate_rnap_activity (str) - describes alternate rnap activity.
 		disable_rnap_fraction_increase (bool) - if True, disables doubling-time-
 			dependent RNA polymerase fraction increase.
 		disable_ribosome_activity_fix (bool) - if True, disables ribosome
