@@ -85,7 +85,7 @@ def distribution_diagnostic(message, counts):
 	print(counts)
 	print(np.max(counts))
 	print(np.where([math.isnan(x) for x in counts]))
-	print(np.linarg.norm(counts, 1))
+	print(np.linalg.norm(counts, 1))
 
 def fitSimData_1(
 		raw_data,
@@ -1605,6 +1605,8 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, op
 
 	norm_counts = normalize(counts_protein)
 	distribution_diagnostic('NORM COUNTS', norm_counts)
+
+	
 
 	translation_efficienciesByProtein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 
