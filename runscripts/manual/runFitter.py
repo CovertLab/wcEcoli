@@ -101,8 +101,9 @@ class RunFitter(scriptBase.ScriptBase):
 			help="If set, alternate RNA-seq (Covert 2004) input will be used."
 			)
 		parser.add_argument(
-			'--alternate-rna-half-life', type=str,
-			help="Alternate RNA half life input - one of the following: 'with_kas', or 'without_kas'. Default = None."
+			'--alternate-rna-half-life',
+			action='store_true',
+			help="If set, alternate RNA half life input will be used."
 			)
 		parser.add_argument(
 			'--alternate-translation-efficiency',

@@ -34,7 +34,7 @@ class Transcription(object):
 		# Load rna half lives
 		rna_half_life_file = "raw_data.rnas"
 		if options['alternate_rna_half_life'] != None:
-			rna_half_life_file += "_alternate_half_lives_{}".format(options['alternate_rna_half_life'])
+			rna_half_life_file += "_alternate_half_lives_without_kas"
 		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in eval(rna_half_life_file)])  # seconds
 		rnaLens = np.array([len(rna['seq']) for rna in raw_data.rnas])
 		ntCounts = np.array([
