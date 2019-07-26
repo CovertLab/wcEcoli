@@ -84,6 +84,7 @@ def distribution_diagnostic(message, counts):
 	print(message)
 	print(counts)
 	print(np.max(counts))
+	print(np.min(counts))
 	print(np.where([math.isnan(x) for x in counts]))
 	print(np.linalg.norm(counts, 1))
 
@@ -1483,6 +1484,9 @@ def setRNAPCountsConstrainedByPhysiology(
 		rnaLengths, elongation_rates * (units.nt / units.s), rnaLossRate)
 	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
 
+	distribution_diagnostic('number active rnap needed', nActiveRnapNeeded)
+	distribution_diagnostic('number rnap needed', nRnapsNeeded)
+
 	# Convert nRnapsNeeded to the number of RNA polymerase subunits required
 	# Note: The return value from getFractionIncreaseRnapProteins() is
 	# determined in growthRateDependentParameters.py
@@ -1503,6 +1507,8 @@ def setRNAPCountsConstrainedByPhysiology(
 		print 'rnap limit: {}'.format(constraint_names[np.where(rnapLims.max() == rnapLims)[0]][0])
 		print 'rnap actual count: {}'.format((rnapCounts / rnapStoich).min())
 		print 'rnap counts set to: {}'.format(rnapLims[np.where(rnapLims.max() == rnapLims)[0]][0])
+
+	distribution_diagnostic('MIN RNAP SUBUNIT COUNTS', minRnapSubunitCounts)
 
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
 
@@ -2225,6 +2231,9 @@ def calculateMinPolymerizingEnzymeByProductDistributionRNA(productLengths, elong
 	nPolymerizingEnzymeNeeded = units.sum(
 		productLengths / elongationRates
 		* netLossRate)
+
+	distribution_diagnostic('product lengths', productLengths)
+	distribution_diagnostic('elongation rates', elongationRates)
 
 	return nPolymerizingEnzymeNeeded.asNumber()
 
