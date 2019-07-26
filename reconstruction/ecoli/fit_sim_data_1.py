@@ -1484,6 +1484,7 @@ def setRNAPCountsConstrainedByPhysiology(
 		rnaLengths, elongation_rates * (units.nt / units.s), rnaLossRate)
 	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
 
+	distribution_diagnostic('elongation rates', elongation_rates)
 	distribution_diagnostic('number active rnap needed', nActiveRnapNeeded)
 	distribution_diagnostic('number rnap needed', nRnapsNeeded)
 
