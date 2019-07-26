@@ -80,6 +80,13 @@ TIME_UNITS = units.s
 
 ECOS_0_TOLERANCE = 1e-12
 
+def distribution_diagnostic(message, counts):
+	print(message)
+	print(counts)
+	print(np.max(counts))
+	print(np.where([math.isnan(x) for x in counts]))
+	print(np.linarg.norm(counts, 1))
+
 def fitSimData_1(
 		raw_data,
 		options):
@@ -694,9 +701,7 @@ def expressionConverge(
 
 		# todo: remove
 		counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-		print('BULK CONTAINER INITIAL')
-		print(counts_protein)
-		print(np.where([math.isnan(x) for x in counts_protein]))
+		distribution_diagnostic('BULK CONTAINER INITIAL', counts_protein)
 
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
 
@@ -704,26 +709,20 @@ def expressionConverge(
 			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, options)
 			# todo: remove
 			counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-			print('BULK CONTAINER AFTER RIB FIT')
-			print(counts_protein)
-			print(np.where([math.isnan(x) for x in counts_protein]))
+			distribution_diagnostic('BULK CONTAINER AFTER RIB FIT', counts_protein)
 
 		if not options['disable_rnapoly_capacity_fitting']:
 			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, options)
 			# todo: remove
 			counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-			print('BULK CONTAINER AFTER RNAP FIT')
-			print(counts_protein)
-			print(np.where([math.isnan(x) for x in counts_protein]))
+			distribution_diagnostic('BULK CONTAINER AFTER RNAP FIT', counts_protein)
 
 		if not options['disable_rnapoly_activity_fitting']:
 			rnapActivity = setRNAPActivityConstrainedByPhysiology(sim_data, bulkContainer,	doubling_time, avgCellDryMassInit, Km, options)
 			# todo: remove
 			print('GOT IN HERE')
 			counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-			print('BULK CONTAINER AFTER RNAP FIT')
-			print(counts_protein)
-			print(np.where([math.isnan(x) for x in counts_protein]))
+			distribution_diagnostic('BULK CONTAINER AFTER RNAP ACTIVITY FIT', counts_protein)
 
 		# Normalize expression and write out changes
 		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, options, Km)
@@ -1602,16 +1601,10 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, op
 
 	view_RNA = bulkContainer.countsView(sim_data.process.transcription.rnaData["id"])
 	counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-
-	print('COUNTS PROTEIN')
-	print(counts_protein)
-	print(np.where([math.isnan(x) for x in counts_protein]))
+	distribution_diagnostic('COUNTS PROTEIN', counts_protein)
 
 	norm_counts = normalize(counts_protein)
-
-	print('NORM COUNTS')
-	print(norm_counts)
-	print(np.where([math.isnan(x) for x in norm_counts]))
+	distribution_diagnostic('NORM COUNTS', norm_counts)
 
 	translation_efficienciesByProtein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 
