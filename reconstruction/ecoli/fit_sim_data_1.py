@@ -1603,6 +1603,16 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, op
 	view_RNA = bulkContainer.countsView(sim_data.process.transcription.rnaData["id"])
 	counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
 
+	print('COUNTS PROTEIN')
+	print(counts_protein)
+	print(np.where([math.isnan(x) for x in counts_protein]))
+
+	norm_counts = normalize(counts_protein)
+
+	print('NORM COUNTS')
+	print(norm_counts)
+	print(np.where([math.isnan(x) for x in norm_counts]))
+
 	translation_efficienciesByProtein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 
 	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time)
