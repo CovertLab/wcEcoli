@@ -1936,7 +1936,7 @@ def totalCountFromMassesAndRatios(totalMass, individualMasses, distribution):
 	and documentation is only with units
 	"""
 
-	assert np.allclose(np.sum(distribution), 1):
+	assert np.allclose(np.sum(distribution), 1)
 	return 1 / units.dot(individualMasses, distribution) * totalMass
 
 def proteinDistributionFrommRNA(
@@ -1975,8 +1975,8 @@ def proteinDistributionFrommRNA(
 	- array of floats for the distribution of each protein, normalized to 1
 	"""
 
-	assert np.allclose(np.sum(distribution_mRNA), 1):
-	assert np.allclose(np.sum(translation_efficiencies), 1):
+	assert np.allclose(np.sum(distribution_mRNA), 1)
+	assert np.allclose(np.sum(translation_efficiencies), 1)
 	if flat_elongation or True:
 		distributionUnnormed = 1 / netLossRate * distribution_mRNA * translation_efficiencies
 	else:
@@ -2025,7 +2025,7 @@ def mRNADistributionFromProtein(
 	- array of floats for the distribution of each mRNA, normalized to 1
 	"""
 
-	assert np.allclose(np.sum(distribution_protein), 1):
+	assert np.allclose(np.sum(distribution_protein), 1)
 	if flat_elongation or True:
 		distributionUnnormed = netLossRate * distribution_protein / translation_efficiencies
 	else:
