@@ -1606,7 +1606,12 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, op
 	norm_counts = normalize(counts_protein)
 	distribution_diagnostic('NORM COUNTS', norm_counts)
 
-	
+	diagnostic = {
+		'counts': counts_protein.tolist(),
+		'norm': norm_counts.tolist()}
+
+	with(open('/home/users/heejo/Code/wcEcoli/diagnostic.json', 'w')) as f:
+		f.write(json.dumps(diagnostic))
 
 	translation_efficienciesByProtein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 
