@@ -142,7 +142,6 @@ class Test_fitkb1(unittest.TestCase):
 		# Test assertion in function
 		distribution_mRNA = np.array([0.25, 0.25, 0.25])
 		netLossRate = (1 / units.s) * np.array([1, 2, 3])
-		self.assertRaises(AssertionError, mRNADistributionFromProtein, distribution_mRNA, np.ones(3) / 3, netLossRate, elongationRates, proteinLengths)
 
 	@noseAttrib.attr('smalltest')
 	@noseAttrib.attr('fitkb1test')
