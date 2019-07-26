@@ -28,7 +28,7 @@ from cvxpy import Variable, Problem, Minimize, norm
 from multiprocessing import Pool
 import copy
 
-nan = float('nan')
+import math
 
 # Tweaks
 RNA_POLY_MRNA_DEG_RATE_PER_S = np.log(2) / 30. # half-life of 30 seconds
@@ -696,7 +696,7 @@ def expressionConverge(
 		counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
 		print('BULK CONTAINER INITIAL')
 		print(counts_protein)
-		print(np.where(counts_protein == nan)[0])
+		print(np.where([math.isnan(x) for x in counts_protein]))
 
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
 
@@ -706,7 +706,7 @@ def expressionConverge(
 			counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
 			print('BULK CONTAINER AFTER RIB FIT')
 			print(counts_protein)
-			print(np.where(counts_protein == nan)[0])
+			print(np.where([math.isnan(x) for x in counts_protein]))
 
 		if not options['disable_rnapoly_capacity_fitting']:
 			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, options)
@@ -714,7 +714,7 @@ def expressionConverge(
 			counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
 			print('BULK CONTAINER AFTER RNAP FIT')
 			print(counts_protein)
-			print(np.where(counts_protein == nan)[0])
+			print(np.where([math.isnan(x) for x in counts_protein]))
 
 		if not options['disable_rnapoly_activity_fitting']:
 			rnapActivity = setRNAPActivityConstrainedByPhysiology(sim_data, bulkContainer,	doubling_time, avgCellDryMassInit, Km, options)
@@ -723,7 +723,7 @@ def expressionConverge(
 			counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
 			print('BULK CONTAINER AFTER RNAP FIT')
 			print(counts_protein)
-			print(np.where(counts_protein == nan)[0])
+			print(np.where([math.isnan(x) for x in counts_protein]))
 
 		# Normalize expression and write out changes
 		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, options, Km)
@@ -2053,10 +2053,11 @@ def mRNADistributionFromProtein(
 	-------
 	- array of floats for the distribution of each mRNA, normalized to 1
 	"""
-
+	# todo: remove
 	print('protein distribution')
 	print(np.sum(distribution_protein))
-	print(np.where(distribution_protein == nan)[0])
+	print(np.where([math.isnan(x) for x in distribution_protein]))
+
 	assert np.allclose(np.sum(distribution_protein), 1)
 	if flat_elongation or True:
 		distributionUnnormed = netLossRate * distribution_protein / translation_efficiencies
