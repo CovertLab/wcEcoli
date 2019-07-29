@@ -80,23 +80,6 @@ TIME_UNITS = units.s
 
 ECOS_0_TOLERANCE = 1e-12
 
-def numberize(x):
-	try:
-		return x.asNumber()
-	except:
-		try:
-			return np.array([y.asNumber() for y in x])
-		except:
-			return x
-
-def distribution_diagnostic(message, counts):
-	print(message)
-	print(counts)
-	print(np.max(counts))
-	print(np.min(counts))
-	print(np.where([math.isnan(x) for x in numberize(counts)]))
-	print(np.linalg.norm(numberize(counts), 1))
-
 def fitSimData_1(
 		raw_data,
 		options):
@@ -142,9 +125,6 @@ def fitSimData_1(
 		write_translation_efficiencies (bool) - if True, writes out translation
 			efficiencies to a file uniquely named by the options dict.
 	"""
-
-	print('ALL OPTIONS')
-	print(options)
 
 	options['basal_expression_condition'] = BASAL_EXPRESSION_CONDITION
 	sim_data = SimulationDataEcoli()
@@ -300,7 +280,6 @@ def fitSimData_1(
 				sim_data.process.transcription.rnaSynthProbRnaPolymerase[nutrients] = prob
 
 			if nutrients not in sim_data.process.transcription.rnapFractionActiveDict:
-				# frac = sim_data.growthRateParameters.getFractionActiveRnap(spec["doubling_time"])
 				sim_data.process.transcription.rnapFractionActiveDict[nutrients] = spec["rnapActivity"]
 
 			if nutrients not in sim_data.process.transcription.rnaPolymeraseElongationRateDict:
@@ -708,30 +687,16 @@ def expressionConverge(
 		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
 		bulkContainer = createBulkContainer(sim_data, expression, doubling_time, options)
 
-		# todo: remove
-		counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-		distribution_diagnostic('BULK CONTAINER INITIAL', counts_protein)
-
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
 
 		if not options['disable_ribosome_capacity_fitting']:
 			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, options)
-			# todo: remove
-			counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-			distribution_diagnostic('BULK CONTAINER AFTER RIB FIT', counts_protein)
 
 		if not options['disable_rnapoly_capacity_fitting']:
 			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, options)
-			# todo: remove
-			counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-			distribution_diagnostic('BULK CONTAINER AFTER RNAP FIT', counts_protein)
 
 		if options['rnapoly_activity_fitting']:
 			rnapActivity = setRNAPActivityConstrainedByPhysiology(sim_data, bulkContainer,	doubling_time, avgCellDryMassInit, Km, options)
-			# todo: remove
-			print('GOT IN HERE')
-			counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-			distribution_diagnostic('BULK CONTAINER AFTER RNAP ACTIVITY FIT', counts_protein)
 
 		# Normalize expression and write out changes
 		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, options, Km)
@@ -1492,10 +1457,6 @@ def setRNAPCountsConstrainedByPhysiology(
 		rnaLengths, elongation_rates * (units.nt / units.s), rnaLossRate)
 	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
 
-	distribution_diagnostic('elongation rates', elongation_rates)
-	print('number active rnap needed', nActiveRnapNeeded)
-	print('number rnap needed', nRnapsNeeded)
-
 	# Convert nRnapsNeeded to the number of RNA polymerase subunits required
 	# Note: The return value from getFractionIncreaseRnapProteins() is
 	# determined in growthRateDependentParameters.py
@@ -1516,8 +1477,6 @@ def setRNAPCountsConstrainedByPhysiology(
 		print 'rnap limit: {}'.format(constraint_names[np.where(rnapLims.max() == rnapLims)[0]][0])
 		print 'rnap actual count: {}'.format((rnapCounts / rnapStoich).min())
 		print 'rnap counts set to: {}'.format(rnapLims[np.where(rnapLims.max() == rnapLims)[0]][0])
-
-	distribution_diagnostic('MIN RNAP SUBUNIT COUNTS', minRnapSubunitCounts)
 
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
 
@@ -1616,22 +1575,10 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, op
 
 	view_RNA = bulkContainer.countsView(sim_data.process.transcription.rnaData["id"])
 	counts_protein = bulkContainer.counts(sim_data.process.translation.monomerData["id"])
-	distribution_diagnostic('COUNTS PROTEIN', counts_protein)
-
-	norm_counts = normalize(counts_protein)
-	distribution_diagnostic('NORM COUNTS', norm_counts)
-
-	diagnostic = {
-		'counts': counts_protein.tolist(),
-		'norm': norm_counts.tolist()}
-
 	translation_efficienciesByProtein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
-
 	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time)
 	totalMass_RNA = avgCellFractionMass["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
-
 	degradationRates_protein = sim_data.process.translation.monomerData["degRate"]
-
 	netLossRate_protein = netLossRateFromDilutionAndDegradationProtein(doubling_time, degradationRates_protein)
 
 	### Modify sim_dataFit to reflect our bulk container ###
@@ -2075,10 +2022,6 @@ def mRNADistributionFromProtein(
 	-------
 	- array of floats for the distribution of each mRNA, normalized to 1
 	"""
-	# todo: remove
-	print('protein distribution')
-	print(np.sum(distribution_protein))
-	print(np.where([math.isnan(x) for x in distribution_protein]))
 
 	assert np.allclose(np.sum(distribution_protein), 1)
 	if flat_elongation or True:
@@ -2237,9 +2180,6 @@ def calculateMinPolymerizingEnzymeByProductDistributionRNA(productLengths, elong
 	nPolymerizingEnzymeNeeded = units.sum(
 		productLengths / elongationRates
 		* netLossRate)
-
-	distribution_diagnostic('product lengths', productLengths)
-	distribution_diagnostic('elongation rates', elongationRates)
 
 	return nPolymerizingEnzymeNeeded.asNumber()
 
