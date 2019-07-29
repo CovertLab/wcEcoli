@@ -35,7 +35,7 @@ def calc_z(data):
 	"""
 
 	rel_flux = (data[:, :-1] - data[:, -1:]) / data[:, -1:]
-	rel_mean = np.sort(rel_flux, axis=0)[:3, :].mean(axis=0)
+	rel_mean = np.sort(rel_flux, axis=0)[:5, :].mean(axis=0)
 	return (rel_mean - rel_mean.mean()) / rel_mean.std()
 
 def plot_lows(ax, data, threshold, label):
@@ -116,8 +116,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		succ_fluxes = []
 		iso_fluxes = []
 		for variant in variants:
-			if variant != 3:
-				continue
 			for sim_dir in ap.get_cells(variant=[variant]):
 				simOutDir = os.path.join(sim_dir, "simOut")
 
