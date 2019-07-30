@@ -103,6 +103,8 @@ def fitSimData_1(
 			expression parameters will be adjusted to get expression
 		adjust_rnase_expression (bool) - if True, adjusts the expression of all
 			RNase mRNA lower
+		disable_measured_protein_deg (bool) - if True, does not use any measured
+			protein degradation rates and defaults to the N-end rule
 		alternate_mass_fraction_protein (bool) - if True, allocates larger
 			mass fraction for protein.
 		alternate_mass_fraction_rna (bool) - if True, allocates smaller mass

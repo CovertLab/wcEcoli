@@ -81,6 +81,12 @@ class RunFitter(scriptBase.ScriptBase):
 			help= "If set, adjusts the expression of all RNase mRNA lower."
 			)
 		parser.add_argument(
+			'--disable-measured-protein-deg',
+			action='store_true',
+			help= "If set, does not use any measured protein degradation rates"
+				" and defaults to the N-end rule."
+			)
+		parser.add_argument(
 			'--alternate-mass-fraction-protein',
 			action='store_true',
 			help="If set, allocates larger mass fraction for protein."
@@ -192,6 +198,7 @@ class RunFitter(scriptBase.ScriptBase):
 				rnapoly_activity_fitting=args.rnapoly_activity_fitting,
 				adjust_rna_and_protein_parameters=args.no_expression_adjustment,
 				adjust_rnase_expression=args.adjust_rnase_expression,
+				disable_measured_protein_deg=args.disable_measured_protein_deg,
 				alternate_mass_fraction_protein=args.alternate_mass_fraction_protein,
 				alternate_mass_fraction_rna=args.alternate_mass_fraction_rna,
 				alternate_mass_fraction_mrna=args.alternate_mass_fraction_mrna,
