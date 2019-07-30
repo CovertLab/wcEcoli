@@ -46,6 +46,7 @@ LIST_OF_DICT_FILENAMES = (
 	"polymerized.tsv",
 	"previousBiomassFluxes.tsv",
 	"promoters.tsv",
+	"protein_half_lives.tsv",
 	"proteinComplexes.tsv",
 	"proteins.tsv",
 	"reactions.tsv",
