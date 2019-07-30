@@ -89,7 +89,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.translationSupply = sim._translationSupply
 		self.flat_elongation = not sim._variable_elongation_translation
 
-		# I like how we multiply a bunch of things by this number
+		# This gets set for daughters in initial_conditions.py
 		self.elngRateFactor = 1.
 
 	def calculateRequest(self):
