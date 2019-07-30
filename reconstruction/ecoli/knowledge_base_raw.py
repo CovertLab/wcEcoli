@@ -52,7 +52,6 @@ LIST_OF_DICT_FILENAMES = (
 	"reactions.tsv",
 	"ribosomal_protein_transcripts.tsv",
 	"rnas.tsv",
-	"rnas_alternate_half_lives_with_kas.tsv",
 	"rnas_alternate_half_lives_without_kas.tsv",
 	"secretions.tsv",
 	"terminators.tsv",
