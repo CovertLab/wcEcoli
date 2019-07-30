@@ -56,7 +56,7 @@ class RunFitter(scriptBase.ScriptBase):
 			help= "If set, RNA polymerase expression will not be fit to protein synthesis demands."
 			)
 		parser.add_argument(
-			'--disable-rnapoly-activity-fitting',
+			'--rnapoly-activity-fitting',
 			action='store_true',
 			help= "If set, RNA polymerase activity will not be fit to transcription demands."
 			)
@@ -116,11 +116,6 @@ class RunFitter(scriptBase.ScriptBase):
 			action='store_true',
 			help="Alternate ribosome active fraction: 85 percent active. Default = 80 percent active."
 			)
-		parser.add_argument(
-			'--alternate-rnap-activity', type=str,
-			help="Alternate ribosome active fraction: between 0 and 1. Defaults"
-			     " to active fraction described in growth rate parameters."
-		)
 		parser.add_argument(
 			'--disable-rnap-fraction-increase',
 			action='store_true',
@@ -189,7 +184,7 @@ class RunFitter(scriptBase.ScriptBase):
 				disable_rnapoly_capacity_fitting=args.disable_rnapoly_fitting,
 				variable_elongation_transcription=args.variable_elongation_transcription,
 				variable_elongation_translation=args.variable_elongation_translation,
-				disable_rnapoly_activity_fitting=args.disable_rnapoly_activity_fitting,
+				rnapoly_activity_fitting=args.rnapoly_activity_fitting,
 				adjust_rna_and_protein_parameters=args.no_expression_adjustment,
 				alternate_mass_fraction_protein=args.alternate_mass_fraction_protein,
 				alternate_mass_fraction_rna=args.alternate_mass_fraction_rna,
@@ -199,7 +194,6 @@ class RunFitter(scriptBase.ScriptBase):
 				alternate_rna_half_life=args.alternate_rna_half_life,
 				alternate_translation_efficiency=args.alternate_translation_efficiency,
 				alternate_ribosome_activity=args.alternate_ribosome_activity,
-				alternate_rnap_activity=args.alternate_rnap_activity,
 				disable_rnap_fraction_increase=args.disable_rnap_fraction_increase,
 				disable_ribosome_activity_fix=args.disable_ribosome_activity_fix,
 				save_cell_specs=args.save_cell_specs,

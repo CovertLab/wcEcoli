@@ -481,7 +481,7 @@ class GrowthRateParameters(object):
 			_loadTableIntoObjectGivenDoublingTime(self, raw_data.growthRateDependentParameters)
 			self.ribosomeElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "ribosomeElongationRate")
 			self.rnaPolymeraseElongationRateParams = _getFitParameters(raw_data.growthRateDependentParameters, "rnaPolymeraseElongationRate")
-			self.fractionActiveRnapParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRnap", options['alternate_rnap_activity'])
+			self.fractionActiveRnapParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRnap")
 			self.fractionActiveRibosomeParams = _getFitParameters(raw_data.growthRateDependentParameters, "fractionActiveRibosome")
 
 			# Replace alternate values
@@ -509,12 +509,10 @@ class GrowthRateParameters(object):
 	def getFractionIncreaseRnapProteins(self, doubling_time):
 		return FRACTION_INCREASE_RNAP_PROTEINS.get(doubling_time.asNumber(units.min), FRACTION_INCREASE_RNAP_PROTEINS[44])
 
-def _getFitParameters(list_of_dicts, key, y_replacement=None):
+def _getFitParameters(list_of_dicts, key):
 	# Load rows of data
 	x = _loadRow('doublingTime', list_of_dicts)
 	y = _loadRow(key, list_of_dicts)
-	if y_replacement != None:
-		y = np.ones(shape=y.shape) * float(y_replacement)
 
 	# Save and strip units
 	y_units = 1
