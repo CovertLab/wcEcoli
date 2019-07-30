@@ -1,167 +1,71 @@
 """
-factorial design experiments for testing kinetic constraints listed in REACTIONS
-@organization: Covert Lab, Department of Bioengineering, Stanford University
+Used for analysis kinteic constraint interaction effects on succinate and
+isocitrate dehydrogenase fluxes as well as glucose uptake rates.
+
+Useful with variant analysis scripts:
+	kinetic_objective_interactions.py
+	kinetic_objective_range_violin.py
+
+2 reactions have high simulation flux compared to Toya et al. 2010. fluxes when
+CONSTRAINTS_TO_DISABLE (including commented out constraints) are disabled:
+	SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.
+	ISOCITDEH-RXN
+
+Modifies:
+	sim_data.process.metabolism.constraintsToDisable
+
+Expected variant indices (depends on length of FACTORIAL_DESIGN_CONSTRAINTS):
+	0-255: different combinations of constraints are disabled,
+		2**len(FACTORIAL_DESIGN_CONSTRAINTS) combinations
 """
 
-REACTIONS = [
-	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)',
-	'PSERTRANSAM-RXN',
-	'GLUTATHIONE-REDUCT-NADPH-RXN',
-	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.',
-	'XANPRIBOSYLTRAN-RXN',
-	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.',
-	'R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.',
+
+# Commented out constraints are in the factorial design so removed here
+CONSTRAINTS_TO_DISABLE = [
+	# 'R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.',
+	# 'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.',
+	'ALANINE--TRNA-LIGASE-RXN-ALA-tRNAs/L-ALPHA-ALANINE/ATP/PROTON//Charged-ALA-tRNAs/AMP/PPI.64.',
+	'ARGININE--TRNA-LIGASE-RXN-ARG-tRNAs/ARG/ATP/PROTON//Charged-ARG-tRNAs/AMP/PPI.52.',
+	'ASPARAGINE--TRNA-LIGASE-RXN-ASN-tRNAs/ASN/ATP/PROTON//Charged-ASN-tRNAs/AMP/PPI.52.',
+	'ASPARTATE--TRNA-LIGASE-RXN-ASP-tRNAs/L-ASPARTATE/ATP/PROTON//Charged-ASP-tRNAs/AMP/PPI.60.',
+	'CYSTEINE--TRNA-LIGASE-RXN-CYS-tRNAs/CYS/ATP/PROTON//Charged-CYS-tRNAs/AMP/PPI.52.',
+	'GLUTAMINE--TRNA-LIGASE-RXN-GLN-tRNAs/GLN/ATP/PROTON//Charged-GLN-tRNAs/AMP/PPI.52.',
+	'HISTIDINE--TRNA-LIGASE-RXN-HIS-tRNAs/HIS/ATP/PROTON//Charged-HIS-tRNAs/AMP/PPI.52.',
+	'ISOLEUCINE--TRNA-LIGASE-RXN-ILE-tRNAs/ILE/ATP/PROTON//Charged-ILE-tRNAs/AMP/PPI.52.',
+	'LEUCINE--TRNA-LIGASE-RXN-LEU-tRNAs/LEU/ATP/PROTON//Charged-LEU-tRNAs/AMP/PPI.52.',
+	'LYSINE--TRNA-LIGASE-RXN-LYS/LYS-tRNAs/ATP/PROTON//Charged-LYS-tRNAs/AMP/PPI.52.__LYSS-CPLX',
+	'METHIONINE--TRNA-LIGASE-RXN-Elongation-tRNAMet/MET/ATP/PROTON//Charged-MET-tRNAs/AMP/PPI.61.',
+	'PHENYLALANINE--TRNA-LIGASE-RXN-PHE-tRNAs/PHE/ATP/PROTON//Charged-PHE-tRNAs/AMP/PPI.52.',
+	'PROLINE--TRNA-LIGASE-RXN-PRO-tRNAs/PRO/ATP/PROTON//Charged-PRO-tRNAs/AMP/PPI.52.',
+	'SERINE--TRNA-LIGASE-RXN-SER-tRNAs/SER/ATP/PROTON//Charged-SER-tRNAs/AMP/PPI.52.',
+	'THREONINE--TRNA-LIGASE-RXN-THR-tRNAs/THR/ATP/PROTON//Charged-THR-tRNAs/AMP/PPI.52.',
+	'TRYPTOPHAN--TRNA-LIGASE-RXN-TRP/TRP-tRNAs/ATP/PROTON//Charged-TRP-tRNAs/AMP/PPI.52.',
+	'TYROSINE--TRNA-LIGASE-RXN-TYR-tRNAs/TYR/ATP/PROTON//Charged-TYR-tRNAs/AMP/PPI.52.',
+	'VALINE--TRNA-LIGASE-RXN-VAL-tRNAs/VAL/ATP/PROTON//Charged-VAL-tRNAs/AMP/PPI.52.',
 	]
 
-# N, P GT, I, GX, X, F, SUC
-# +1 = disabled, -1 = enabled
-EXPERIMENTS = [
-	[-1, -1, -1, -1, -1, -1, -1],
-	[+1, -1, -1, -1, -1, -1, -1],
-	[-1, +1, -1, -1, -1, -1, -1],
-	[+1, +1, -1, -1, -1, -1, -1],
-	[-1, -1, +1, -1, -1, -1, -1],
-	[+1, -1, +1, -1, -1, -1, -1],
-	[-1, +1, +1, -1, -1, -1, -1],
-	[+1, +1, +1, -1, -1, -1, -1],
-	[-1, -1, -1, +1, -1, -1, -1],
-	[+1, -1, -1, +1, -1, -1, -1],
-	[-1, +1, -1, +1, -1, -1, -1],
-	[+1, +1, -1, +1, -1, -1, -1],
-	[-1, -1, +1, +1, -1, -1, -1],
-	[+1, -1, +1, +1, -1, -1, -1],
-	[-1, +1, +1, +1, -1, -1, -1],
-	[+1, +1, +1, +1, -1, -1, -1],
-	[-1, -1, -1, -1, +1, -1, -1],
-	[+1, -1, -1, -1, +1, -1, -1],
-	[-1, +1, -1, -1, +1, -1, -1],
-	[+1, +1, -1, -1, +1, -1, -1],
-	[-1, -1, +1, -1, +1, -1, -1],
-	[+1, -1, +1, -1, +1, -1, -1],
-	[-1, +1, +1, -1, +1, -1, -1],
-	[+1, +1, +1, -1, +1, -1, -1],
-	[-1, -1, -1, +1, +1, -1, -1],
-	[+1, -1, -1, +1, +1, -1, -1],
-	[-1, +1, -1, +1, +1, -1, -1],
-	[+1, +1, -1, +1, +1, -1, -1],
-	[-1, -1, +1, +1, +1, -1, -1],
-	[+1, -1, +1, +1, +1, -1, -1],
-	[-1, +1, +1, +1, +1, -1, -1],
-	[+1, +1, +1, +1, +1, -1, -1],
-	[-1, -1, -1, -1, -1, +1, -1],
-	[+1, -1, -1, -1, -1, +1, -1],
-	[-1, +1, -1, -1, -1, +1, -1],
-	[+1, +1, -1, -1, -1, +1, -1],
-	[-1, -1, +1, -1, -1, +1, -1],
-	[+1, -1, +1, -1, -1, +1, -1],
-	[-1, +1, +1, -1, -1, +1, -1],
-	[+1, +1, +1, -1, -1, +1, -1],
-	[-1, -1, -1, +1, -1, +1, -1],
-	[+1, -1, -1, +1, -1, +1, -1],
-	[-1, +1, -1, +1, -1, +1, -1],
-	[+1, +1, -1, +1, -1, +1, -1],
-	[-1, -1, +1, +1, -1, +1, -1],
-	[+1, -1, +1, +1, -1, +1, -1],
-	[-1, +1, +1, +1, -1, +1, -1],
-	[+1, +1, +1, +1, -1, +1, -1],
-	[-1, -1, -1, -1, +1, +1, -1],
-	[+1, -1, -1, -1, +1, +1, -1],
-	[-1, +1, -1, -1, +1, +1, -1],
-	[+1, +1, -1, -1, +1, +1, -1],
-	[-1, -1, +1, -1, +1, +1, -1],
-	[+1, -1, +1, -1, +1, +1, -1],
-	[-1, +1, +1, -1, +1, +1, -1],
-	[+1, +1, +1, -1, +1, +1, -1],
-	[-1, -1, -1, +1, +1, +1, -1],
-	[+1, -1, -1, +1, +1, +1, -1],
-	[-1, +1, -1, +1, +1, +1, -1],
-	[+1, +1, -1, +1, +1, +1, -1],
-	[-1, -1, +1, +1, +1, +1, -1],
-	[+1, -1, +1, +1, +1, +1, -1],
-	[-1, +1, +1, +1, +1, +1, -1],
-	[+1, +1, +1, +1, +1, +1, -1],
-	[-1, -1, -1, -1, -1, -1, +1],
-	[+1, -1, -1, -1, -1, -1, +1],
-	[-1, +1, -1, -1, -1, -1, +1],
-	[+1, +1, -1, -1, -1, -1, +1],
-	[-1, -1, +1, -1, -1, -1, +1],
-	[+1, -1, +1, -1, -1, -1, +1],
-	[-1, +1, +1, -1, -1, -1, +1],
-	[+1, +1, +1, -1, -1, -1, +1],
-	[-1, -1, -1, +1, -1, -1, +1],
-	[+1, -1, -1, +1, -1, -1, +1],
-	[-1, +1, -1, +1, -1, -1, +1],
-	[+1, +1, -1, +1, -1, -1, +1],
-	[-1, -1, +1, +1, -1, -1, +1],
-	[+1, -1, +1, +1, -1, -1, +1],
-	[-1, +1, +1, +1, -1, -1, +1],
-	[+1, +1, +1, +1, -1, -1, +1],
-	[-1, -1, -1, -1, +1, -1, +1],
-	[+1, -1, -1, -1, +1, -1, +1],
-	[-1, +1, -1, -1, +1, -1, +1],
-	[+1, +1, -1, -1, +1, -1, +1],
-	[-1, -1, +1, -1, +1, -1, +1],
-	[+1, -1, +1, -1, +1, -1, +1],
-	[-1, +1, +1, -1, +1, -1, +1],
-	[+1, +1, +1, -1, +1, -1, +1],
-	[-1, -1, -1, +1, +1, -1, +1],
-	[+1, -1, -1, +1, +1, -1, +1],
-	[-1, +1, -1, +1, +1, -1, +1],
-	[+1, +1, -1, +1, +1, -1, +1],
-	[-1, -1, +1, +1, +1, -1, +1],
-	[+1, -1, +1, +1, +1, -1, +1],
-	[-1, +1, +1, +1, +1, -1, +1],
-	[+1, +1, +1, +1, +1, -1, +1],
-	[-1, -1, -1, -1, -1, +1, +1],
-	[+1, -1, -1, -1, -1, +1, +1],
-	[-1, +1, -1, -1, -1, +1, +1],
-	[+1, +1, -1, -1, -1, +1, +1],
-	[-1, -1, +1, -1, -1, +1, +1],
-	[+1, -1, +1, -1, -1, +1, +1],
-	[-1, +1, +1, -1, -1, +1, +1],
-	[+1, +1, +1, -1, -1, +1, +1],
-	[-1, -1, -1, +1, -1, +1, +1],
-	[+1, -1, -1, +1, -1, +1, +1],
-	[-1, +1, -1, +1, -1, +1, +1],
-	[+1, +1, -1, +1, -1, +1, +1],
-	[-1, -1, +1, +1, -1, +1, +1],
-	[+1, -1, +1, +1, -1, +1, +1],
-	[-1, +1, +1, +1, -1, +1, +1],
-	[+1, +1, +1, +1, -1, +1, +1],
-	[-1, -1, -1, -1, +1, +1, +1],
-	[+1, -1, -1, -1, +1, +1, +1],
-	[-1, +1, -1, -1, +1, +1, +1],
-	[+1, +1, -1, -1, +1, +1, +1],
-	[-1, -1, +1, -1, +1, +1, +1],
-	[+1, -1, +1, -1, +1, +1, +1],
-	[-1, +1, +1, -1, +1, +1, +1],
-	[+1, +1, +1, -1, +1, +1, +1],
-	[-1, -1, -1, +1, +1, +1, +1],
-	[+1, -1, -1, +1, +1, +1, +1],
-	[-1, +1, -1, +1, +1, +1, +1],
-	[+1, +1, -1, +1, +1, +1, +1],
-	[-1, -1, +1, +1, +1, +1, +1],
-	[+1, -1, +1, +1, +1, +1, +1],
-	[-1, +1, +1, +1, +1, +1, +1],
-	[+1, +1, +1, +1, +1, +1, +1]]
+# Previously disabled constraints and constraints identified with flux_sensitivity variant
+FACTORIAL_DESIGN_CONSTRAINTS = [
+	'R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.',
+	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.',
+	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)',
+	'RXN-11832',
+	'CYTDEAM-RXN',
+	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.',
+	'PSERTRANSAM-RXN',
+	'GLUTATHIONE-REDUCT-NADPH-RXN',
+	]
 
 
 def metabolism_kinetic_objective_interactions_indices(sim_data):
-	return len(EXPERIMENTS)
+	return 0
 
 def metabolism_kinetic_objective_interactions(sim_data, index):
+	disable_constraints = [index // 2**i % 2 for i in range(len(FACTORIAL_DESIGN_CONSTRAINTS))]
+	additional_disabled = [rxn for rxn, disable in zip(FACTORIAL_DESIGN_CONSTRAINTS, disable_constraints) if disable]
+	sim_data.process.metabolism.constraintsToDisable = CONSTRAINTS_TO_DISABLE + additional_disabled
 
-	experiment = EXPERIMENTS[index]
-
-	# get disabled reactions by index
-	disabled_reactions = [REACTIONS[reaction_index] for reaction_index, disabled in enumerate(experiment) if disabled == +1]
-
-	print('variant {}: disable {}'.format(index, str(disabled_reactions)))
-
-	sim_data.process.metabolism.additional_disabled = disabled_reactions
-
-	experiment_str = str(disabled_reactions)
 	return dict(
-		shortName="disabled reactions = {}".format(experiment_str),
-		desc="Simulation with disabled kinetic targets for {}.".format(experiment_str)
+		shortName="reactions disabled: {}".format(disable_constraints),
+		desc="Simulation with disabled kinetic targets for {}.".format(additional_disabled)
 		), sim_data

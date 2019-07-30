@@ -426,7 +426,6 @@ class Metabolism(object):
 		self.catalysisMatrixV = catalysisMatrixV
 
 		# Properties for setting flux targets
-		self.additional_disabled = []
 		self.constraintIdList = constraintIdList
 		self.constrainedReactionList = constrainedReactionList
 		self.constraintToReactionMatrixI = constraintToReactionMatrixI
