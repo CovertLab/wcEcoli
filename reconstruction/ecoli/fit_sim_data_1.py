@@ -97,7 +97,7 @@ def fitSimData_1(
 		disable_rnapoly_capacity_fitting (bool) - if True, RNA polymerase
 			expression is not fit to protein synthesis demands
 		rnapoly_activity_fitting (bool) - if True, RNA polymerase
-			activity is not fit to transcription demands.
+			activity is fit to transcription demands.
 		adjust_rna_and_protein_parameters (bool) - if True, some RNA and protein
 			expression parameters will be adjusted to get expression
 		alternate_mass_fraction_protein (bool) - if True, allocates larger
@@ -702,10 +702,10 @@ def expressionConverge(
 		degreeOfFit = np.sqrt(np.mean(np.hstack((
 			np.square(initialExpression - expression),
 			np.square(initialRnapActivity - rnapActivity)))))
-		print("degreeOfFit:\t{}".format(degreeOfFit))
-		print("rnapActivity:\t{}".format(rnapActivity))
+
 		if VERBOSE > 1:
 			print('\tdegree of fit: {}'.format(degreeOfFit))
+			print('rnap activity:\t{}'.format(rnapActivity))
 
 		if degreeOfFit < FITNESS_THRESHOLD:
 			break

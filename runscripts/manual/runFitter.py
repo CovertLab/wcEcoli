@@ -58,7 +58,7 @@ class RunFitter(scriptBase.ScriptBase):
 		parser.add_argument(
 			'--rnapoly-activity-fitting',
 			action='store_true',
-			help= "If set, RNA polymerase activity will not be fit to transcription demands."
+			help= "If set, RNA polymerase activity will be fit to transcription demands."
 			)
 		parser.add_argument(
 			'--variable-elongation-transcription',
