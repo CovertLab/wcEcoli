@@ -26,12 +26,16 @@ LIST_OF_DICT_FILENAMES = (
 	"complexationReactions.tsv",
 	"disabledKineticReactions.tsv",
 	"dryMassComposition.tsv",
+	"dryMassComposition_alternateProtein.tsv",
+	"dryMassComposition_alternateProteinAndRna.tsv",
+	"dryMassComposition_alternateRna.tsv",
 	"endoRnases.tsv",
 	"enzymeKinetics.tsv",
 	"equilibriumReactions.tsv",
 	"foldChanges.tsv",
 	"genes.tsv",
 	"growthRateDependentParameters.tsv",
+	"growthRateDependentParameters_alternateRibosomeActivity.tsv",
 	"massAtReplicationInitiation.tsv",
 	"metabolites.tsv",
 	"metaboliteConcentrations.tsv",
@@ -46,13 +50,16 @@ LIST_OF_DICT_FILENAMES = (
 	"proteinComplexes.tsv",
 	"proteins.tsv",
 	"reactions.tsv",
+	"ribosomal_protein_transcripts.tsv",
 	"rnas.tsv",
+	"rnas_alternate_half_lives_without_kas.tsv",
 	"secretions.tsv",
 	"terminators.tsv",
 	"tfIds.tsv",
 	"tfOneComponentBound.tsv",
 	"transcriptionUnits.tsv",
 	"translationEfficiency.tsv",
+	"translationEfficiency_alternate.tsv",
 	"twoComponentSystemTemplates.tsv",
 	"twoComponentSystems.tsv",
 	"water.tsv",
@@ -72,6 +79,7 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("rna_seq_data","rnaseq_rsem_tpm_std.tsv"),
 	os.path.join("rna_seq_data","rnaseq_seal_rpkm_mean.tsv"),
 	os.path.join("rna_seq_data","rnaseq_seal_rpkm_std.tsv"),
+	os.path.join("rna_seq_data","alternate_rna_seq.tsv"),
 	os.path.join("condition", "tf_condition.tsv"),
 	os.path.join("condition", "condition_defs.tsv"),
 	os.path.join("condition", "nutrient", "minimal.tsv"),
@@ -124,7 +132,8 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("condition", "timeseries", "000026_add_and_cut_aa.tsv"),
 	)
 SEQUENCE_FILE = 'sequence.fasta'
-LIST_OF_PARAMETER_FILENAMES = ("parameters.tsv", "mass_parameters.tsv")
+LIST_OF_PARAMETER_FILENAMES = (
+	"parameters.tsv", "mass_parameters.tsv", "mass_parameters_alternate.tsv")
 CONSTANTS_FILENAME = "constants.tsv"
 
 class DataStore(object):
