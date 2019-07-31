@@ -57,12 +57,30 @@ FACTORIAL_DESIGN_CONSTRAINTS = [
 	]
 
 
+def get_disabled_constraints(index):
+	"""
+	Determines constraints in the factorial design list to disable for a given index.
+
+	Args:
+		index (int): variant index to use to generate the disabled reactions
+
+	Returns:
+		list[int]: mask corresponding to each constraint in the factorial design
+			(1 if constraint is disabled, 0 if not)
+		list[str]: reaction IDs for constraints in the factorial design that
+			will be disabled
+	"""
+
+	disable_constraints = [index // 2**i % 2 for i in range(len(FACTORIAL_DESIGN_CONSTRAINTS))]
+	additional_disabled = [rxn for rxn, disable in zip(FACTORIAL_DESIGN_CONSTRAINTS, disable_constraints) if disable]
+
+	return disable_constraints, additional_disabled
+
 def metabolism_kinetic_objective_interactions_indices(sim_data):
 	return 0
 
 def metabolism_kinetic_objective_interactions(sim_data, index):
-	disable_constraints = [index // 2**i % 2 for i in range(len(FACTORIAL_DESIGN_CONSTRAINTS))]
-	additional_disabled = [rxn for rxn, disable in zip(FACTORIAL_DESIGN_CONSTRAINTS, disable_constraints) if disable]
+	disable_constraints, additional_disabled = get_disabled_constraints(index)
 	sim_data.process.metabolism.constraintsToDisable = CONSTRAINTS_TO_DISABLE + additional_disabled
 
 	return dict(
