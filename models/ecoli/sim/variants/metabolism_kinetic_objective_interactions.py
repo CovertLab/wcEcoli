@@ -44,6 +44,12 @@ CONSTRAINTS_TO_DISABLE = [
 	'VALINE--TRNA-LIGASE-RXN-VAL-tRNAs/VAL/ATP/PROTON//Charged-VAL-tRNAs/AMP/PPI.52.',
 	]
 
+# Reactions identified with flux_sensitivity but disabled due to complex regulation
+NEWLY_DISABLED = [
+	'GLYOXYLATE-REDUCTASE-NADP+-RXN__CPLX0-235',
+	'ISOCITDEH-RXN',
+	]
+
 # Previously disabled constraints and constraints identified with flux_sensitivity variant
 FACTORIAL_DESIGN_CONSTRAINTS = [
 	'R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.',
@@ -81,7 +87,7 @@ def metabolism_kinetic_objective_interactions_indices(sim_data):
 
 def metabolism_kinetic_objective_interactions(sim_data, index):
 	disable_constraints, additional_disabled = get_disabled_constraints(index)
-	sim_data.process.metabolism.constraintsToDisable = CONSTRAINTS_TO_DISABLE + additional_disabled
+	sim_data.process.metabolism.constraintsToDisable = CONSTRAINTS_TO_DISABLE + NEWLY_DISABLED + additional_disabled
 
 	return dict(
 		shortName="reactions disabled: {}".format(disable_constraints),
