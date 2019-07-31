@@ -2,6 +2,7 @@
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
 	"adder_sizer.py",
+	"adjusted_deg_rate_proteome.py",
 	"conditionalFlux.py",
 	"distribution_cell_division_time.py",
 	"distribution_division_fluxome_proteome.py",
