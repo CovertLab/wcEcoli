@@ -19,14 +19,14 @@ class Translation(object):
 	""" Translation """
 
 	def __init__(self, raw_data, sim_data, options):
-		self._buildMonomerData(raw_data, sim_data)
+		self._buildMonomerData(raw_data, sim_data, options['disable_measured_protein_deg'])
 		self._buildTranslation(raw_data, sim_data)
 		self._buildTranslationEfficiency(raw_data, sim_data, options['alternate_translation_efficiency'])
 
 		self.ribosomal_proteins = self._build_ribosomal_proteins(raw_data, sim_data)
 		self.elongation_rates = self._build_elongation_rates(raw_data, sim_data)
 
-	def _buildMonomerData(self, raw_data, sim_data):
+	def _buildMonomerData(self, raw_data, sim_data, disable_measured_protein_deg):
 		assert all([len(protein['location']) == 1 for protein in raw_data.proteins])
 		ids = ['{}[{}]'.format(protein['id'], protein['location'][0]) for protein in raw_data.proteins]
 
@@ -102,10 +102,12 @@ class Translation(object):
 		ribosomalProteins.extend([x[:-3] for x in sim_data.moleculeGroups.s50_proteins])
 
 		# Get degradation rates from measured protein half lives
-		measured_deg_rates = {
-			p['id']: (np.log(2) / p['half life']).asNumber(deg_rate_units)
-			for p in raw_data.protein_half_lives
-			}
+		measured_deg_rates = {}
+		if not disable_measured_protein_deg:
+			measured_deg_rates.update({
+				p['id']: (np.log(2) / p['half life']).asNumber(deg_rate_units)
+				for p in raw_data.protein_half_lives
+				})
 
 		degRate = np.zeros(len(raw_data.proteins))
 		isRProtein = []

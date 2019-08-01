@@ -53,6 +53,7 @@ RNA_DEG_RATES_ADJUSTMENTS = {
 PROTEIN_DEG_RATES_ADJUSTMENTS = {
 	"EG12298-MONOMER[p]": 0.1, # yibQ, Predicted polysaccharide deacetylase; This protein is fit for the anaerobic condition
 	}
+RNASE_EXPRESSION_ADJUSTMENT = 0.2  # optional adjustment factor for all RNase mRNA expression
 
 # Fitting parameters
 FITNESS_THRESHOLD = 1e-9
@@ -87,7 +88,7 @@ def fitSimData_1(
 	Inputs:
 	  raw_data (KnowledgeBaseEcoli) - knowledge base consisting of the
 		  necessary raw data
-      options (dict) - The option keys include:
+	  options (dict) - The option keys include:
 		cpus (int) - number of processes to use (if >1 uses multiprocessing)
 		debug (bool) - if True, fit only one arbitrarily-chosen transcription
 			factor in order to speed up a debug cycle (should not be used for
@@ -100,6 +101,10 @@ def fitSimData_1(
 			activity is fit to transcription demands.
 		adjust_rna_and_protein_parameters (bool) - if True, some RNA and protein
 			expression parameters will be adjusted to get expression
+		adjust_rnase_expression (bool) - if True, adjusts the expression of all
+			RNase mRNA lower
+		disable_measured_protein_deg (bool) - if True, does not use any measured
+			protein degradation rates and defaults to the N-end rule
 		alternate_mass_fraction_protein (bool) - if True, allocates larger
 			mass fraction for protein.
 		alternate_mass_fraction_rna (bool) - if True, allocates smaller mass
@@ -150,6 +155,9 @@ def fitSimData_1(
 		setRNAExpression(sim_data)
 		setRNADegRates(sim_data)
 		setProteinDegRates(sim_data)
+
+	if options['adjust_rnase_expression']:
+		set_rnase_expression(sim_data)
 
 	# Set C-period
 	setCPeriod(sim_data)
@@ -905,6 +913,26 @@ def setRNADegRates(sim_data):
 	for rna in RNA_DEG_RATES_ADJUSTMENTS:
 		idx = np.where(sim_data.process.transcription.rnaData["id"] == rna)[0]
 		sim_data.process.transcription.rnaData.struct_array["degRate"][idx] *= RNA_DEG_RATES_ADJUSTMENTS[rna]
+
+def set_rnase_expression(sim_data):
+	"""
+	Adjust the expression of RNase mRNA 5x lower to test impact on growth rate
+	as identified in a parameter sensitivity analysis.
+
+	Requires
+	--------
+	- RNase expression adjustment factor (RNASE_EXPRESSION_ADJUSTMENT)
+
+	Modifies
+	--------
+	- RNA expression in the basal condition
+	"""
+
+	for rna in sim_data.moleculeGroups.endoRnase_RnaIDs:
+		idx = np.where(sim_data.process.transcription.rnaData["id"] == rna)[0]
+		sim_data.process.transcription.rnaExpression["basal"][idx] *= RNASE_EXPRESSION_ADJUSTMENT
+
+	sim_data.process.transcription.rnaExpression["basal"] /= sim_data.process.transcription.rnaExpression["basal"].sum()
 
 def setProteinDegRates(sim_data):
 	"""

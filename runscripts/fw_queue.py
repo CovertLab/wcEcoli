@@ -37,6 +37,10 @@ Workflow options:
 		expression is not fit to RNA synthesis demands
 	ADJUST_RNA_AND_PROTEIN_PARAMETERS (int, "1"): if nonzero, some RNA and
 		protein expression parameters will be adjusted to get expression
+	ADJUST_RNASE_EXPRESSION (int, "0"): if nonzero, adjusts the expression of all
+		RNase mRNA lower
+	DISABLE_MEASURED_PROTEIN_DEG (int, "0"): if nonzero, does not use any measured
+		protein degradation rates and defaults to the N-end rule
 
 Simulation parameters:
 	N_GENS (int, "1"): the number of generations to be simulated
@@ -139,6 +143,8 @@ DISABLE_RIBOSOME_CAPACITY_FITTING = bool(int(os.environ.get("DISABLE_RIBOSOME_CA
 DISABLE_RNAPOLY_CAPACITY_FITTING = bool(int(os.environ.get("DISABLE_RNAPOLY_CAPACITY_FITTING", "0")))
 RNAPOLY_ACTIVITY_FITTING = bool(int(os.environ.get("RNAPOLY_ACTIVITY_FITTING", "0")))
 ADJUST_RNA_AND_PROTEIN_PARAMETERS = bool(int(os.environ.get("ADJUST_RNA_AND_PROTEIN_PARAMETERS", "1")))
+ADJUST_RNASE_EXPRESSION = bool(int(os.environ.get("ADJUST_RNASE_EXPRESSION", "0")))
+DISABLE_MEASURED_PROTEIN_DEG = bool(int(os.environ.get("DISABLE_MEASURED_PROTEIN_DEG", "0")))
 VARIABLE_ELONGATION_TRANSCRIPTION = bool(int(os.environ.get("VARIABLE_ELONGATION_TRANSCRIPTION", "0")))
 VARIABLE_ELONGATION_TRANSLATION = bool(int(os.environ.get("VARIABLE_ELONGATION_TRANSLATION", "0")))
 ALTERNATE_MASS_FRACTION_PROTEIN = bool(int(os.environ.get("ALTERNATE_MASS_FRACTION_PROTEIN", "0")))
@@ -277,6 +283,8 @@ fw_fit_level_1 = Firework(
 		variable_elongation_transcription = VARIABLE_ELONGATION_TRANSCRIPTION,
 		variable_elongation_translation = VARIABLE_ELONGATION_TRANSLATION,
 		adjust_rna_and_protein_parameters = ADJUST_RNA_AND_PROTEIN_PARAMETERS,
+		adjust_rnase_expression = ADJUST_RNASE_EXPRESSION,
+		disable_measured_protein_deg = DISABLE_MEASURED_PROTEIN_DEG,
 		alternate_mass_fraction_protein = ALTERNATE_MASS_FRACTION_PROTEIN,
 		alternate_mass_fraction_rna = ALTERNATE_MASS_FRACTION_RNA,
 		alternate_mass_fraction_mrna = ALTERNATE_MASS_FRACTION_MRNA,
