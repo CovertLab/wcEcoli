@@ -89,7 +89,7 @@ python runscripts/fw_queue.py
 
 ## Set F - MenE expression
 # Used in figure S4
-DESC="SET_F 8 gens 8 seeds 9 menE expression values" \
+DESC="SET F 8 gens 8 seeds 9 menE expression values" \
 VARIANT=meneParams FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=8 \
 SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=8 \
 MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
@@ -103,6 +103,15 @@ MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
 ADJUST_RNA_AND_PROTEIN_PARAMETERS=0 DISABLE_MEASURED_PROTEIN_DEG=1 \
 python runscripts/fw_queue.py
 
+## Set H - setup for metabolism_kinetic_objective_interactions variant
+# Use python models/ecoli/analysis/variant/flux_sensitivity.py to identify
+# reactions for factorial design of experiments
+DESC="SET H 1 gen flux sensitivity" \
+VARIANT="flux_sensitivity" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+SINGLE_DAUGHTERS=1 N_GENS=1 N_INIT_SIMS=1 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=0 D_PERIOD_DIVISION=0 \
+RUN_AGGREGATE_ANALYSIS=0 WC_LENGTHSEC=10 \
+python runscripts/fw_queue.py
 
 ## Launch the fireworks created with fw_queue.py
 # Uncomment one method - rlaunch is interactive, qlaunch is distributed

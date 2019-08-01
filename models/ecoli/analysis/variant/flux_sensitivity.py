@@ -22,6 +22,22 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath, sparkline
 
 
+def calc_z(data):
+	"""
+	Calculates a z score for relative flux time series data.
+
+	Args:
+		data (ndarray[float]): 2D array (n time steps x m reactions) of fluxes
+			with the last column being the reference flux
+
+	Returns:
+		ndarray[float]: z score for each reaction
+	"""
+
+	rel_flux = (data[:, :-1] - data[:, -1:]) / data[:, -1:]
+	rel_mean = np.sort(rel_flux, axis=0)[:5, :].mean(axis=0)
+	return (rel_mean - rel_mean.mean()) / rel_mean.std()
+
 def plot_lows(ax, data, threshold, label):
 	"""
 	Plots the largest negative change for each reaction.
@@ -34,11 +50,9 @@ def plot_lows(ax, data, threshold, label):
 		label (str): reaction label for y axis
 	"""
 
-	min_change = (data[:, :-1] - data[:, -1:]).min(axis=0)
-
 	# Plot data
 	ax.set_yscale('symlog', threshold=0.01)
-	ax.fill_between(range(len(min_change)), sorted(min_change), color='b')
+	ax.fill_between(range(len(data)), sorted(data), color='b')
 	ax.axhline(threshold, color='k', linestyle='--', linewidth=0.5)
 
 	# Format axes
@@ -63,13 +77,12 @@ def plot_threshold(ax, data, threshold, reactions):
 		reactions (ndarray[str]): names for each reaction in data
 	"""
 
-	min_change = (data[:, :-1] - data[:, -1:]).min(axis=0)
-	sorted_idx = np.argsort(min_change)
-	below_idx = np.where(min_change[sorted_idx] < threshold)[0]
+	sorted_idx = np.argsort(data)
+	below_idx = np.where(data[sorted_idx] < threshold)[0]
 
 	# Plot data
 	ax.set_yscale('symlog', threshold=0.01)
-	ax.bar(below_idx, min_change[sorted_idx[below_idx]], color='b')
+	ax.bar(below_idx, data[sorted_idx[below_idx]], color='b')
 	ax.axhline(threshold, color='k', linestyle='--', linewidth=0.5)
 
 	# Format axes
@@ -117,7 +130,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		succ_fluxes = np.vstack(succ_fluxes)
 		iso_fluxes = np.vstack(iso_fluxes)
 
-		threshold = -0.5
+		succ_z = calc_z(succ_fluxes)
+		iso_z = calc_z(iso_fluxes)
+
+		threshold = -0.1
 
 		# Plot data
 		plt.figure()
@@ -125,19 +141,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		## Succinate dehydrogenase all fluxes
 		ax = plt.subplot(gs[0, 0])
-		plot_lows(ax, succ_fluxes, threshold, 'succinate dehydrogenase')
+		plot_lows(ax, succ_z, threshold, 'succinate dehydrogenase')
 
 		## Succinate dehydrogenase fluxes over threshold
 		ax = plt.subplot(gs[0, 1])
-		plot_threshold(ax, succ_fluxes, threshold, reactions)
+		plot_threshold(ax, succ_z, threshold, reactions)
 
 		## Isocitrate dehydrogenase all fluxes
 		ax = plt.subplot(gs[1, 0])
-		plot_lows(ax, iso_fluxes, threshold, 'isocitrate dehydrogenase')
+		plot_lows(ax, iso_z, threshold, 'isocitrate dehydrogenase')
 
 		## Isocitrate dehydrogenase fluxes over threshold
 		ax = plt.subplot(gs[1, 1])
-		plot_threshold(ax, iso_fluxes, threshold, reactions)
+		plot_threshold(ax, iso_z, threshold, reactions)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
