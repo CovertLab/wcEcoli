@@ -77,6 +77,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Load model data
 		model_counts = np.zeros((len(PROTEINS_WITH_HALF_LIFE), expected_n_variants))
+		model_std = np.zeros((len(PROTEINS_WITH_HALF_LIFE), expected_n_variants))
 		for i, variant in enumerate(variants):
 			if i >= expected_n_variants:
 				print('Skipping variant {} - only runs for {} variants.'.format(variant, expected_n_variants))
@@ -109,6 +110,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				variant_counts.append(protein_container.countsView(PROTEINS_WITH_HALF_LIFE).counts())
 			model_counts[:, i] = np.mean(variant_counts, axis=0)
+			model_std[:, i] = np.std(variant_counts, axis=0)
 
 		# Validation data
 		schmidt_ids = {m: i for i, m in enumerate(validation_data.protein.schmidt2015Data['monomerId'])}
@@ -117,18 +119,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Process data
 		model_log_counts = np.log10(model_counts)
+		model_log_lower_std = model_log_counts - np.log10(model_counts - model_std)
+		model_log_upper_std = np.log10(model_counts + model_std) - model_log_counts
 		validation_log_counts = np.log10(validation_counts)
 		r_before = stats.pearsonr(validation_log_counts, model_log_counts[:, 0])
 		r_after = stats.pearsonr(validation_log_counts, model_log_counts[:, 1])
 
 		# Scatter plot of model vs validation counts
-		max_counts = np.ceil(max(validation_log_counts.max(), model_log_counts.max()))
+		max_counts = np.ceil(max(validation_log_counts.max(), model_log_upper_std.max()))
 		limits = [0, max_counts]
 		plt.figure()
+		colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 		## Plot data
-		plt.plot(validation_log_counts, model_log_counts, 'o', alpha=0.5)
-		plt.plot(limits, limits, 'k--', linewidth=0.5)
+		for i in range(expected_n_variants):
+			plt.errorbar(validation_log_counts, model_log_counts[:, i],
+				yerr=np.vstack((model_log_lower_std[:, i], model_log_upper_std[:, i])),
+				fmt='o', color=colors[i], ecolor='k', capsize=3, alpha=0.5)
+		plt.plot(limits, limits, 'k--', linewidth=0.5, label='_nolegend_')
 
 		## Format axes
 		plt.xlabel('Validation Counts\n(log10(counts))')
