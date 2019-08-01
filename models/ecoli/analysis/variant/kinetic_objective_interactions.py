@@ -11,6 +11,7 @@ import cPickle
 import csv
 import os
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import pearsonr
 
@@ -18,6 +19,7 @@ from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from models.ecoli.sim.variants.metabolism_kinetic_objective_interactions import get_disabled_constraints
+from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, units
 
@@ -28,11 +30,21 @@ NADH_ID = 'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46.
 GLC_ID = 'GLC[p]'
 REACTIONS = [SUCC_ID, NADH_ID]
 EXCHANGES = [GLC_ID]
+HIGHLIGHTED_CONSTRAINTS = [
+	SUCC_ID,
+	NADH_ID,
+	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.',
+	'GLUTATHIONE-REDUCT-NADPH-RXN',
+	]
 
 # Flux units
 MODEL_FLUX_UNITS = COUNTS_UNITS / MASS_UNITS / TIME_UNITS
 OUTPUT_FLUX_UNITS = units.mmol / units.g / units.h
 FLUX_CONVERSION = MODEL_FLUX_UNITS.asNumber(OUTPUT_FLUX_UNITS)
+
+# Plot region cutoffs
+GLC_MAX = 11
+SUCC_DISTANCE = np.log2(5)
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -44,6 +56,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		ap = AnalysisPaths(inputDir, variant_plot=True)
 		variants = ap.get_variants()
+		n_variants = len(variants)
 
 		# Load sim_data
 		with open(os.path.join(inputDir, 'kb', constants.SERIALIZED_FIT1_FILENAME), 'rb') as f:
@@ -75,7 +88,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			writer = csv.DictWriter(f, delimiter='\t', fieldnames=fieldnames)
 			writer.writeheader()
 
-		for variant in variants:
+		glc_uptakes = np.zeros(n_variants)
+		log_ratio_succ = np.zeros(n_variants)
+		size_pearson = np.zeros(n_variants)
+		selected_indicies = np.zeros(n_variants, bool)
+		for v, variant in enumerate(variants):
 			# initialize kinetic flux comparison
 			target_fluxes = {entry: [] for entry in REACTIONS}
 			exchange_fluxes = {entry: [] for entry in EXCHANGES}
@@ -186,6 +203,36 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				writer = csv.writer(f, delimiter='\t')
 				writer.writerow(append_line)
 
+			# Save data for plotting
+			glc_uptakes[v] = -glc_avg_sim_flux
+			log_ratio_succ[v] = np.log2(succ_avg_sim_flux / succ_toya_flux)
+			size_pearson[v] = (rWithAll[0] * 8)**2
+			selected_indicies[v] = np.all([c not in constrainedReactions for c in HIGHLIGHTED_CONSTRAINTS])
+
+		# Plot scatterplot
+		plt.figure(figsize=(10, 10))
+
+		## Plot data
+		plt.scatter(glc_uptakes[~selected_indicies], log_ratio_succ[~selected_indicies],
+			color='blue', alpha=0.6, s=size_pearson[~selected_indicies])
+		plt.scatter(glc_uptakes[selected_indicies], log_ratio_succ[selected_indicies],
+			color='red', alpha=0.6, s=size_pearson[selected_indicies])
+
+		## Format axes
+		xlim = plt.xlim()
+		y_max = max(np.abs(plt.ylim()))
+		plt.axvspan(0, GLC_MAX, facecolor='g', alpha=0.1)
+		plt.axhspan(-SUCC_DISTANCE, SUCC_DISTANCE, facecolor='g', alpha=0.1)
+		plt.axhline(y=0, color='k', linestyle='--')
+		plt.ylabel('log2(model flux / Toya flux)')
+		plt.xlabel('glucose uptake (mmol / g DCW / hr)')
+		plt.xlim(xlim)
+		plt.ylim([-y_max, y_max])
+
+		## Save figure
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		plt.close('all')
 
 if __name__ == "__main__":
 	Plot().cli()
