@@ -64,7 +64,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.trpAIndex = np.where(proteinIds == "TRYPSYN-APROTEIN[c]")[0][0]
 
 		# Create view onto activly elongating 70S ribosomes
-		self.activeRibosomes = self.uniqueMoleculesView('activeRibosome')
+		self.active_ribosomes = self.uniqueMoleculesView('activeRibosome')
 
 		# Create views onto 30S and 70S ribosomal subunits for termination
 		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeIds.s30_fullComplex)
@@ -142,13 +142,12 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				self.elngRateFactor * self.ribosomeElongationRateDict[current_media_id].asNumber(units.aa / units.s) * self.timeStepSec()))])
 
 		# If there are no active ribosomes, return immediately
-		if self.activeRibosomes.total_counts()[0] == 0:
+		if self.active_ribosomes.total_counts()[0] == 0:
 			return
 
 		# Build sequences to request appropriate amount of amino acids to
 		# polymerize for next timestep
-		activeRibosomes = self.activeRibosomes.molecules_read_only()
-		proteinIndexes, peptideLengths = activeRibosomes.attrs(
+		proteinIndexes, peptideLengths = self.active_ribosomes.attrs(
 					'proteinIndex', 'peptideLength'
 					)
 
@@ -181,7 +180,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			aa_counts = self.aas.total_counts()
 			uncharged_trna_counts = np.dot(self.aa_from_trna, self.uncharged_trna.total_counts())
 			charged_trna_counts = np.dot(self.aa_from_trna, self.charged_trna.total_counts())
-			ribosome_counts = self.activeRibosomes.total_counts()[0]
+			ribosome_counts = self.active_ribosomes.total_counts()[0]
 
 			# Get concentration
 			f = aasInSequences / aasInSequences.sum()
@@ -249,6 +248,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# THis is set here for metabolism to use
 		self.gtpRequest = gtpsHydrolyzed
 
+		# Request full access to active ribosome molecules
+		self.active_ribosomes.request_edit_delete_access()
+
 	def evolveState(self):
 		self.new_count_diff = {}
 
@@ -257,15 +259,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("GrowthLimits", "aaAllocated", self.aas.counts())
 
 		# Get number of active ribosomes
-		activeRibosomes = self.activeRibosomes.molecules()
+		n_active_ribosomes = self.active_ribosomes.total_counts()[0]
+		self.writeToListener("GrowthLimits", "activeRibosomeAllocated", n_active_ribosomes)
 
-		self.writeToListener("GrowthLimits", "activeRibosomeAllocated", len(activeRibosomes))
-
-		if len(activeRibosomes) == 0:
+		if n_active_ribosomes == 0:
 			return
 
 		# Build amino acids sequences for each ribosome to polymerize
-		proteinIndexes, peptideLengths = activeRibosomes.attrs(
+		proteinIndexes, peptideLengths = self.active_ribosomes.attrs(
 			'proteinIndex', 'peptideLength'
 			)
 
@@ -317,12 +318,12 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		added_protein_mass[didInitialize] += self.endWeight
 
 		# Write current average elongation to listener
-		currElongRate = (sequenceElongations.sum() / len(activeRibosomes)) / self.timeStepSec()
+		currElongRate = (sequenceElongations.sum() / n_active_ribosomes) / self.timeStepSec()
 		self.writeToListener("RibosomeData", "effectiveElongationRate", currElongRate)
 
 		# Update active ribosomes, terminating if neccessary
-		activeRibosomes.attrIs(peptideLength = updatedLengths)
-		activeRibosomes.add_submass_by_name("protein", added_protein_mass)
+		self.active_ribosomes.attrIs(peptideLength = updatedLengths)
+		self.active_ribosomes.add_submass_by_name("protein", added_protein_mass)
 
 		# Ribosomes that reach the end of their sequences are terminated and
 		# dissociated into 30S and 50S subunits. The polypeptide that they are polymerizing
@@ -336,7 +337,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			minlength = self.proteinSequences.shape[0]
 			)
 
-		activeRibosomes.delByIndexes(np.where(didTerminate)[0])
+		self.active_ribosomes.delByIndexes(np.where(didTerminate)[0])
 		self.bulkMonomers.countsInc(terminatedProteins)
 
 		nTerminated = didTerminate.sum()
@@ -555,7 +556,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		if inputTimeStep > 1.0:
 			return False
 
-		activeRibosomes = float(self.activeRibosomes.total_counts()[0])
+		activeRibosomes = float(self.active_ribosomes.total_counts()[0])
 		self.gtpAvailable = float(self.gtp.total_counts()[0])
 
 		# Without an estimate on ribosome counts, require a short timestep until estimates available

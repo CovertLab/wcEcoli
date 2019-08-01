@@ -900,6 +900,14 @@ class _UniqueObjectSet(object):
 	# 	return self.attr("_uniqueId")
 
 
+	def set_access_level(self, access=Access.READ_ONLY):
+		"""
+		Resets the access permission to the underlying container given to the
+		UniqueObjectSet instance.
+		"""
+		self._access = access
+
+
 	def attr(self, attribute):
 		"""Return the named attribute for all objects in this collection."""
 		if self._globalIndexes.size == 0:
