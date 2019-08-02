@@ -8,7 +8,6 @@ variant metabolism_kinetic_objective_interactions.
 from __future__ import absolute_import, division, print_function
 
 import cPickle
-import csv
 import os
 
 import matplotlib.pyplot as plt
@@ -18,7 +17,6 @@ from scipy.stats import pearsonr
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
-from models.ecoli.sim.variants.metabolism_kinetic_objective_interactions import get_disabled_constraints
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, units
@@ -72,29 +70,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		toyaFluxesDict = dict(zip(toyaReactions, toyaFluxes))
 		toyaStdevDict = dict(zip(toyaReactions, toyaStdev))
 
-		save_output_file = os.path.join(plotOutDir, plotOutFileName + '.tsv')
-		with open(save_output_file, 'w') as f:
-			fieldnames = [
-				'variant',
-				'disabled reactions',
-				'succ avg sim flux (mmol/gDCW/h)',
-				'succ target avg (mmol/gDCW/h)',
-				'succ distance from toya (mmol/gDCW/h)',
-				'nadh avg sim flux (mmol/gDCW/h)',
-				'nadh target avg (mmol/gDCW/h)',
-				'glc avg sim flux (mmol/gDCW/h)',
-				'Pearson R Toya',
-				]
-			writer = csv.DictWriter(f, delimiter='\t', fieldnames=fieldnames)
-			writer.writeheader()
-
 		glc_uptakes = np.zeros(n_variants)
 		log_ratio_succ = np.zeros(n_variants)
 		size_pearson = np.zeros(n_variants)
 		selected_indicies = np.zeros(n_variants, bool)
 		for v, variant in enumerate(variants):
 			# initialize kinetic flux comparison
-			target_fluxes = {entry: [] for entry in REACTIONS}
 			exchange_fluxes = {entry: [] for entry in EXCHANGES}
 			reaction_fluxes = {entry: [] for entry in REACTIONS}
 
@@ -133,7 +114,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				## Read from EnzymeKinetics listener
 				constrainedReactions = {r: i for i, r in enumerate(enzymeKineticsReader.readAttribute("constrainedReactions"))}
-				targetFluxes = FLUX_CONVERSION * (enzymeKineticsReader.readColumn("targetFluxes") / coefficient)[1:, :]
 
 				## Append values for relevant reactions.
 				# append to exchanges
@@ -142,10 +122,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				# append to reaction fluxes
 				for entry in REACTIONS:
 					reaction_fluxes[entry].extend(list(reactionFluxes[:, reactionIDs[entry]]))
-					if entry in constrainedReactions:
-						target_fluxes[entry].extend(list(targetFluxes[:, constrainedReactions[entry]]))
-					else:
-						target_fluxes[entry].extend([0])
 
 				## get all Toya reactions, and corresponding simulated fluxes.
 				toya_idx = {r: [] for r in toyaReactions}
@@ -170,42 +146,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			toyaVsReactionAve = np.array(toyaVsReactionAve)
 			rWithAll = pearsonr(toyaVsReactionAve[:,0], toyaVsReactionAve[:,1])
-
-			succ_avg_sim_flux = toyaVsReactionAve[rxn_order.index(SUCC_ID), 0]
 			succ_toya_flux = toyaVsReactionAve[rxn_order.index(SUCC_ID), 1]
-			succ_difference = succ_avg_sim_flux - succ_toya_flux
-
-			# SUCC
-			succ_avg_sim_flux = np.mean(reaction_fluxes[SUCC_ID])
-			succ_target_avg = np.mean(target_fluxes[SUCC_ID])
-
-			# NADH
-			nadh_avg_sim_flux = np.mean(reaction_fluxes[NADH_ID])
-			nadh_target_avg = np.mean(target_fluxes[NADH_ID])
-
-			glc_avg_sim_flux = np.mean(exchange_fluxes[GLC_ID])
-
-			# list of 4-character strings, for each disabled reaction
-			additional_disabled_reduced = [c[:4] for c in get_disabled_constraints(variant)[1]]
-			with open(save_output_file, 'a') as f:
-				append_line = [
-					variant,
-					str(additional_disabled_reduced),
-					succ_avg_sim_flux,
-					succ_target_avg,
-					succ_difference,
-					nadh_avg_sim_flux,
-					nadh_target_avg,
-					glc_avg_sim_flux,
-					rWithAll,
-					]
-
-				writer = csv.writer(f, delimiter='\t')
-				writer.writerow(append_line)
 
 			# Save data for plotting
-			glc_uptakes[v] = -glc_avg_sim_flux
-			log_ratio_succ[v] = np.log2(succ_avg_sim_flux / succ_toya_flux)
+			glc_uptakes[v] = -np.mean(exchange_fluxes[GLC_ID])
+			log_ratio_succ[v] = np.log2(np.mean(reaction_fluxes[SUCC_ID]) / succ_toya_flux)
 			size_pearson[v] = (rWithAll[0] * 8)**2
 			selected_indicies[v] = np.all([c not in constrainedReactions for c in HIGHLIGHTED_CONSTRAINTS])
 
