@@ -1,3 +1,4 @@
+import numpy as np
 class TypeIIToxinAntitoxin(object):
 	def __init__(self, params):
 		pass
@@ -22,11 +23,21 @@ class TypeIIToxinAntitoxin(object):
 		rho = state['rho']
 		n = state['n'] 
 		sigma = state['sigma'] 
+		p = state['p']
 
+		umax = np.log(2)/tu
+		lambda_A = np.log(2)/ta
+		lambda_T = np.log(2)/tt
 
-		X1 = 1 + T2/kt1
+		X1 = 1 + T**2/kt1**2 #Hill equation, n = 2
+		X2 = 1 + T**2/kt2**2 #Hill equation, n = 2
+		Y = 1 + A2/kp1 + ((2 * A2 * T)/(kp2 * kh))**p + (A2 * T2)/(kp1 * kh)
 
-		state['X1'] = X1
+		state['dAdt'] = sigma * alpha /(Y * X2) - umax * A/X1 - lambda_A*A 
+		state['dTdt'] = alpha/(Y * X2) - umax * T/X1 - lambda_T*T
+
+		state['A'] = state['A'] + state['dAdt']
+		state['T'] = state['T'] + state['dTdt']
 		return state
 
 
@@ -45,6 +56,9 @@ class Integrator(object):
 		return state
 
 if __name__ == '__main__':
+	import matplotlib
+	matplotlib.use('Agg')
+	import matplotlib.pyplot as plt
 	system = TypeIIToxinAntitoxin({})
 	integrator = Integrator(system, {})
 	state = {
@@ -65,7 +79,31 @@ if __name__ == '__main__':
 		'alpha' : 1,
 		'rho' : 2,
 		'n' : 2,
-		'sigma' : 10, 
-		''} 
-	post = integrator.integrate(1.0, 20, state)
-	print(post)
+		'sigma' : 10,
+		'p' : 2,
+		'dAdt' : 0,
+		'dTdt' : 0} 
+	T = []
+	A = []
+	dAdt = []
+	dTdt = []	
+	time_vec = range(0,1000)
+	for t in time_vec:	
+		state = integrator.integrate(1.0, 2, state)
+		T.append(state['T'])
+		A.append(state['A'])
+		dAdt.append(state['dAdt'])
+		dTdt.append(state['dTdt'])
+
+	plt.plot(time_vec, T, label='T')
+	plt.plot(time_vec, A, label='A')
+	plt.legend()
+	plt.savefig('AT')
+	plt.clf()
+
+	plt.plot(time_vec, dAdt, label='dAdt')
+	plt.plot(time_vec, dTdt, label='dTdt')
+	plt.legend()
+	plt.savefig('AT_derivatives')
+
+	
