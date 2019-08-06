@@ -1,5 +1,5 @@
 """
-Used for analysis kinteic constraint interaction effects on succinate and
+Used for analysis kinetic constraint interaction effects on succinate and
 isocitrate dehydrogenase fluxes as well as glucose uptake rates.
 
 Useful with variant analysis scripts:
@@ -82,10 +82,10 @@ def get_disabled_constraints(index):
 
 	return disable_constraints, additional_disabled
 
-def metabolism_kinetic_objective_interactions_indices(sim_data):
+def kinetic_constraints_factorial_experiments_indices(sim_data):
 	return 0
 
-def metabolism_kinetic_objective_interactions(sim_data, index):
+def kinetic_constraints_factorial_experiments(sim_data, index):
 	disable_constraints, additional_disabled = get_disabled_constraints(index)
 	sim_data.process.metabolism.constraintsToDisable = CONSTRAINTS_TO_DISABLE + NEWLY_DISABLED + additional_disabled
 

@@ -47,8 +47,8 @@ from models.ecoli.sim.variants.metabolism_kinetic_objective_weight import metabo
 from models.ecoli.sim.variants.param_sensitivity import param_sensitivity
 from models.ecoli.sim.variants.param_sensitivity import param_sensitivity_indices
 
-from models.ecoli.sim.variants.metabolism_kinetic_objective_interactions import metabolism_kinetic_objective_interactions
-from models.ecoli.sim.variants.metabolism_kinetic_objective_interactions import metabolism_kinetic_objective_interactions_indices
+from models.ecoli.sim.variants.kinetic_constraints_factorial_experiments import kinetic_constraints_factorial_experiments
+from models.ecoli.sim.variants.kinetic_constraints_factorial_experiments import kinetic_constraints_factorial_experiments_indices
 
 nameToFunctionMapping = {
 	"geneKnockout": geneKnockout,
@@ -66,7 +66,7 @@ nameToFunctionMapping = {
 	"meneParams": meneParams,
 	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight,
 	"param_sensitivity": param_sensitivity,
-	"metabolism_kinetic_objective_interactions": metabolism_kinetic_objective_interactions,
+	"metabolism_kinetic_objective_interactions": kinetic_constraints_factorial_experiments,
 }
 
 nameToNumIndicesMapping = {
@@ -85,5 +85,5 @@ nameToNumIndicesMapping = {
 	"meneParams": meneParamsTotalIndices,
 	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight_indices,
 	"param_sensitivity": param_sensitivity_indices,
-	"metabolism_kinetic_objective_interactions": metabolism_kinetic_objective_interactions_indices,
+	"metabolism_kinetic_objective_interactions": kinetic_constraints_factorial_experiments_indices,
 }

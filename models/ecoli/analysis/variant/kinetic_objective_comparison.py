@@ -4,8 +4,7 @@ Violin plots for comparing 128 factorial analysis results with old measurements.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import cPickle
 from matplotlib import pyplot as plt
@@ -25,7 +24,7 @@ from wholecell.utils import units
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
 
 NEW_VARIANT = 45
-OLD_VARIANT = 0
+OLD_VARIANT = 0  # TODO (ERAN) -- what is the old variant number?
 COMPARE_VARIANTS = [NEW_VARIANT, OLD_VARIANT]
 
 REACTIONS = [
@@ -39,7 +38,6 @@ REACTIONS = [
 	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.',
 	'XANPRIBOSYLTRAN-RXN',
 	]
-
 
 OLD_MEASUREMENTS = {
 	'ISOCITDEH-RXN': {
@@ -60,7 +58,7 @@ OLD_MEASUREMENTS = {
 		'measurements': [187, 390, 390], 'temps': [25, 25, 25]},
 	'XANPRIBOSYLTRAN-RXN': {
 		'measurements': [150], 'temps': [25]},
-}
+	}
 
 NEW_MEASUREMENTS = {
 	'ISOCITDEH-RXN': {
@@ -81,12 +79,12 @@ NEW_MEASUREMENTS = {
 		'measurements': [42], 'temps': [25]},
 	'XANPRIBOSYLTRAN-RXN': {
 		'measurements': [], 'temps': []},
-}
+	}
 
 CSV_DIALECT = csv.excel_tab
 REACTIONS_FILE = os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv")
 
-# ignore data from metabolism burnin period
+# ignore data from first few timesteps
 START_TIME_STEP = 2
 
 def set_ticks(ax, labels):
@@ -200,6 +198,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						enzyme_concentrations[variant][enzyme_id_no_location].extend(list(conc_time_series))
 					else:
 						enzyme_concentrations[variant][enzyme_id_no_location] = list(conc_time_series)
+
+
+
+		import ipdb; ipdb.set_trace()
 
 		### Make figure ###
 		cols = 1
