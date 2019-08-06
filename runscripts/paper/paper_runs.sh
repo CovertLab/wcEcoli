@@ -63,7 +63,15 @@ DISABLE_RIBOSOME_CAPACITY_FITTING=0 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fw_queue.py
 
-DESC="SET D4 4 gens 256 seeds, unfit ribosome and rna poly expression" \
+DESC="SET D4 4 gens 256 seeds, unfit ribosome and rna poly expression, adjusted RNase expression" \
+VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+SINGLE_DAUGHTERS=1 N_GENS=4 N_INIT_SIMS=256 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
+DISABLE_RIBOSOME_CAPACITY_FITTING=1 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
+ADJUST_RNASE_EXPRESSION=1 RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fw_queue.py
+
+DESC="SET D5 4 gens 256 seeds, unfit ribosome and rna poly expression" \
 VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
 SINGLE_DAUGHTERS=1 N_GENS=4 N_INIT_SIMS=256 \
 MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
@@ -81,18 +89,28 @@ python runscripts/fw_queue.py
 
 ## Set F - MenE expression
 # Used in figure S4
-DESC="SET_F 8 gens 8 seeds 9 menE expression values" \
+DESC="SET F 8 gens 8 seeds 9 menE expression values" \
 VARIANT=meneParams FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=8 \
 SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=8 \
 MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
 python runscripts/fw_queue.py
 
-## Set G - no RNA and protein expression parameter adjustments
+## Set G - no RNA and protein parameter adjustments
 DESC="SET G 32 gens 8 seeds basal without parameter adjustments" \
 VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
 SINGLE_DAUGHTERS=1 N_GENS=32 N_INIT_SIMS=8 \
 MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
-ADJUST_RNA_AND_PROTEIN_PARAMETERS=0 \
+ADJUST_RNA_AND_PROTEIN_PARAMETERS=0 DISABLE_MEASURED_PROTEIN_DEG=1 \
+python runscripts/fw_queue.py
+
+## Set H - setup for metabolism_kinetic_objective_interactions variant
+# Use python models/ecoli/analysis/variant/flux_sensitivity.py to identify
+# reactions for factorial design of experiments
+DESC="SET H 1 gen flux sensitivity" \
+VARIANT="flux_sensitivity" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+SINGLE_DAUGHTERS=1 N_GENS=1 N_INIT_SIMS=1 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=0 D_PERIOD_DIVISION=0 \
+RUN_AGGREGATE_ANALYSIS=0 WC_LENGTHSEC=10 \
 python runscripts/fw_queue.py
 
 ## Set I - factorial design experiments for disabled kinetic constraints
