@@ -25,7 +25,7 @@ from models.ecoli.sim.variants.kinetic_constraints_factorial_experiments import 
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
 
-# define list of new disabled constraints that are to be compared to baseline
+# additional disabled constraints that are to be compared to baseline
 ADDITIONAL_DISABLED_CONSTRAINTS = [
 	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.',
 	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)',
