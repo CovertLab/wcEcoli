@@ -18,9 +18,7 @@ import numpy as np
 
 import wholecell.states.internal_state
 import wholecell.views.view
-from wholecell.containers.unique_objects_container import (
-	UniqueObjectsContainer, Access
-	)
+from wholecell.containers.unique_objects_container import UniqueObjectsContainer
 from wholecell.utils import units
 
 class UniqueMolecules(wholecell.states.internal_state.InternalState):
@@ -227,26 +225,19 @@ class UniqueMoleculesView(wholecell.views.view.View):
 		self._queryResult = self._state.container.objectsInCollection(
 			self._query,
 			process_index=self._processIndex,
-			access=Access.READ_ONLY
+			access=()
 			)
 
 		self._totalIs(len(self._queryResult))
 
 
-	def request_edit_access(self):
+	def request_access(self, access):
 		"""
-		Requests access permissions required to edit the attributes of the
-		unique molecules being viewed.
+		Requests access permissions required to edit or delete the attributes
+		of the unique molecules being viewed. Argument should be a tuple of
+		requested access permissions e.g. (Access.EDIT, Access.DELETE)
 		"""
-		self._queryResult.set_access_level(access=Access.READ_EDIT)
-
-
-	def request_edit_delete_access(self):
-		"""
-		Requests access permissions required to edit and delete the unique
-		molecules being viewed.
-		"""
-		self._queryResult.set_access_level(access=Access.READ_EDIT_DELETE)
+		self._queryResult.set_access_level(access=access)
 
 
 	# Wrappers for reading or manipulating queried molecules

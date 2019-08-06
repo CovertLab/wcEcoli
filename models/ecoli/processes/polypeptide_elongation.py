@@ -8,7 +8,6 @@ Translation elongation sub-model.
 TODO:
 - see the initiation process for more TODOs
 
-@author: Derek Macklin
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 4/30/14
 """
@@ -249,7 +248,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gtpRequest = gtpsHydrolyzed
 
 		# Request full access to active ribosome molecules
-		self.active_ribosomes.request_edit_delete_access()
+		self.active_ribosomes.request_access(self.EDIT_DELETE_ACCESS)
 
 	def evolveState(self):
 		self.new_count_diff = {}

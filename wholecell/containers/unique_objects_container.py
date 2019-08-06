@@ -24,7 +24,7 @@ ZLIB_LEVEL = 7
 
 _MAX_ID_SIZE = 40 # max length of the unique id assigned to objects
 
-Access = Enum('Access', 'READ_ONLY READ_EDIT READ_EDIT_DELETE')
+Access = Enum('Access', 'EDIT DELETE')
 
 class UniqueObjectsContainerException(Exception):
 	pass
@@ -345,7 +345,7 @@ class UniqueObjectsContainer(object):
 		obj._objectIndex = -1
 
 
-	def objects(self, access=Access.READ_ONLY, **operations):
+	def objects(self, access=(), **operations):
 		"""
 		Return a _UniqueObjectSet proxy for all objects (molecules) that
 		satisfy an optional attribute query. Querying every object is generally
@@ -374,7 +374,7 @@ class UniqueObjectsContainer(object):
 
 
 	def objectsInCollection(self, collectionName, process_index=None,
-			access=Access.READ_ONLY, **operations):
+			access=(), **operations):
 		"""
 		Return a _UniqueObjectSet proxy for all objects (molecules) belonging
 		to a named collection that satisfy an optional attribute query. The
@@ -394,7 +394,7 @@ class UniqueObjectsContainer(object):
 
 
 	def objectsInCollections(self, collectionNames, process_index=None,
-			access=Access.READ_ONLY, **operations):
+			access=(), **operations):
 		"""Return a _UniqueObjectSet proxy for all objects (molecules)
 		belonging to the given collection names that satisfy an optional
 		attribute query. The queried attributes must be in all the named
@@ -442,14 +442,14 @@ class UniqueObjectsContainer(object):
 		)
 
 
-	def objectsByGlobalIndex(self, globalIndexes, access=Access.READ_ONLY):
+	def objectsByGlobalIndex(self, globalIndexes, access=()):
 		"""Return a _UniqueObjectSet proxy for the objects (molecules) with the
 		given global indexes (that is, global over all named collections).
 		"""
 		return _UniqueObjectSet(self, globalIndexes, access=access)
 
 
-	def objectByGlobalIndex(self, globalIndex, access=Access.READ_ONLY):
+	def objectByGlobalIndex(self, globalIndex, access=()):
 		"""Return a _UniqueObject proxy for the object (molecule) with the
 		given global index (that is, global over all named collections).
 		"""
@@ -741,7 +741,7 @@ class _UniqueObject(object):
 	__slots__ = ("_container", "_globalIndex", "_collectionIndex", "_objectIndex", "_access")
 
 
-	def __init__(self, container, globalIndex, access=Access.READ_ONLY):
+	def __init__(self, container, globalIndex, access=()):
 		"""Construct a _UniqueObject proxy for the unique object (molecule) in
 		the given container with the given global index.
 		"""
@@ -779,9 +779,9 @@ class _UniqueObject(object):
 
 	def attrIs(self, **attributes):
 		"""Set named attributes of the unique object."""
-		if self._access == Access.READ_ONLY:
+		if Access.EDIT not in self._access:
 			raise UniqueObjectsPermissionException(
-				"Can't modify attributes of read-only objects."
+				"Can't edit attributes of read-only objects."
 			)
 
 		# Submass attributes must be edited through specialized methods.
@@ -833,13 +833,14 @@ class _UniqueObjectSet(object):
 	"""
 
 	def __init__(self, container, globalIndexes, process_index=None,
-			access=Access.READ_ONLY):
+			access=()):
 		"""
 		Construct a _UniqueObjectSet for unique objects (molecules) in the
 		given container with the given global indexes. The result is an
 		iterable, ordered sequence (not really a set). The access argument
 		determines the level of access permission this instance has to the
-		molecules in the container. If an instance is initialized from a
+		molecules in the container, with an empty tuple meaning that the
+		instance has read-only access. If an instance is initialized from a
 		process View, self._process_index is set to the index of the process.
 		In this case, attrIs(), add_submass_by_name(), and
 		add_submass_by_array() all submit an edit request to the container, and
@@ -900,7 +901,7 @@ class _UniqueObjectSet(object):
 	# 	return self.attr("_uniqueId")
 
 
-	def set_access_level(self, access=Access.READ_ONLY):
+	def set_access_level(self, access=()):
 		"""
 		Resets the access permission to the underlying container given to the
 		UniqueObjectSet instance.
@@ -998,9 +999,9 @@ class _UniqueObjectSet(object):
 		Set named attributes of all the unique objects in this sequence.
 		This is not permitted for read-only sets.
 		"""
-		if self._access == Access.READ_ONLY:
+		if Access.EDIT not in self._access:
 			raise UniqueObjectsPermissionException(
-				"Can't modify attributes of read-only objects."
+				"Can't edit attributes of read-only objects."
 			)
 
 		if self._globalIndexes.size == 0:
@@ -1037,10 +1038,10 @@ class _UniqueObjectSet(object):
 		- delta_mass (1D array, length equal to number of objects in set): mass
 		being added to each unique object
 		"""
-		if self._access == Access.READ_ONLY:
+		if Access.EDIT not in self._access:
 			raise UniqueObjectsPermissionException(
-				"Can't modify attributes of read-only objects."
-			)
+				"Can't edit attributes of read-only objects."
+				)
 
 		if self._globalIndexes.size == 0:
 			raise UniqueObjectsContainerException("Object set is empty")
@@ -1081,10 +1082,10 @@ class _UniqueObjectSet(object):
 			M: number of submass types)
 			: array of submasses being added to each object.
 		"""
-		if self._access == Access.READ_ONLY:
+		if Access.EDIT not in self._access:
 			raise UniqueObjectsPermissionException(
-				"Can't modify attributes of read-only objects."
-			)
+				"Can't edit attributes of read-only objects."
+				)
 
 		if self._globalIndexes.size == 0:
 			raise UniqueObjectsContainerException("Object set is empty")
@@ -1114,9 +1115,9 @@ class _UniqueObjectSet(object):
 		Submits a request to delete unique objects by indexes into this
 		sequence. This is not permitted for read-only sets.
 		"""
-		if self._access != Access.READ_EDIT_DELETE:
+		if Access.DELETE not in self._access:
 			raise UniqueObjectsPermissionException(
-				"Can't delete molecules from read-only or read-and-edit only objects."
+				"Can't delete molecules from this object without delete access."
 			)
 
 		# TODO(jerry): This could just call a delete method on all its

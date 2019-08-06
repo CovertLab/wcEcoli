@@ -82,7 +82,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
 	def test_delete_molecules(self):
 		molecules = self.container.objectsInCollection(
-			'RNA polymerase', access=Access.READ_EDIT_DELETE)
+			'RNA polymerase', access=(Access.EDIT, Access.DELETE))
 
 		self.container.objectsDel(molecules)
 
@@ -271,7 +271,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 	# Attribute access
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
 	def test_attribute_setting(self):
-		for molecule in self.container.objectsInCollection('RNA polymerase', access=Access.READ_EDIT):
+		for molecule in self.container.objectsInCollection('RNA polymerase', access=(Access.EDIT, )):
 			molecule.attrIs(
 				boundToChromosome = True,
 				chromosomeLocation = 100,
@@ -564,7 +564,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 	def test_objectSet_attribute_accessing(self):
 		objectSet = self.container.objects(
 			chromosomeLocation = ('>=', 0),
-			access=Access.READ_EDIT
+			access=(Access.EDIT, )
 			)
 
 		self.assertEqual(len(objectSet), 20)
@@ -628,7 +628,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
 	def test_read_only(self):
 		molecules = self.container.objectsInCollection(
-			'RNA polymerase', access=Access.READ_ONLY
+			'RNA polymerase', access=()
 			)
 		n_molecules = len(molecules)
 
@@ -637,7 +637,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 
 		self.assertEqual(
 			str(context.exception),
-			"Can't modify attributes of read-only objects."
+			"Can't edit attributes of read-only objects."
 			)
 
 		with self.assertRaises(UniqueObjectsPermissionException) as context:
@@ -645,13 +645,13 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 
 		self.assertEqual(
 			str(context.exception),
-			"Can't delete molecules from read-only or read-and-edit only objects."
+			"Can't delete molecules from this object without delete access."
 			)
 
 	@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
 	def test_read_edit(self):
 		molecules = self.container.objectsInCollection(
-			'RNA polymerase', access=Access.READ_EDIT
+			'RNA polymerase', access=(Access.EDIT, )
 			)
 		n_molecules = len(molecules)
 
@@ -660,7 +660,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 
 		self.assertEqual(
 			str(context.exception),
-			"Can't delete molecules from read-only or read-and-edit only objects."
+			"Can't delete molecules from this object without delete access."
 			)
 
 

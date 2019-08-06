@@ -106,8 +106,8 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		if self.criticalMassPerOriC >= 1.0:
 			self.replisome_trimers.requestIs(6*n_oric)
 			self.replisome_monomers.requestIs(2*n_oric)
-			self.oriCs.request_edit_access()
-			self.chromosome_domains.request_edit_access()
+			self.oriCs.request_access(self.EDIT_ACCESS)
+			self.chromosome_domains.request_access(self.EDIT_DELETE_ACCESS)
 
 		# If there are no active forks return
 		n_active_replisomes = self.active_replisomes.total_counts()[0]
@@ -138,11 +138,11 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			maxFractionalReactionLimit * sequenceComposition)
 
 		# Request access to relevant unique molecules
-		self.full_chromosomes.request_edit_access()
-		self.active_replisomes.request_edit_delete_access()
-		self.chromosome_domains.request_edit_delete_access()
-		self.promoters.request_edit_delete_access()
-		self.DnaA_boxes.request_edit_delete_access()
+		self.full_chromosomes.request_access(self.EDIT_ACCESS)
+		self.active_replisomes.request_access(self.EDIT_DELETE_ACCESS)
+		self.chromosome_domains.request_access(self.EDIT_DELETE_ACCESS)
+		self.promoters.request_access(self.EDIT_DELETE_ACCESS)
+		self.DnaA_boxes.request_access(self.EDIT_DELETE_ACCESS)
 
 	def evolveState(self):
 		## Module 1: Replication initiation

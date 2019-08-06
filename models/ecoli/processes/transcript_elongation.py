@@ -105,7 +105,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			maxFractionalReactionLimit * sequenceComposition)
 
 		# Request full access to active RNAPs
-		self.active_RNAPs.request_edit_delete_access()
+		self.active_RNAPs.request_access(self.EDIT_DELETE_ACCESS)
 
 
 	def evolveState(self):

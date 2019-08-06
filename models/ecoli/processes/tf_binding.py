@@ -92,7 +92,7 @@ class TfBinding(wholecell.processes.process.Process):
 			view.requestAll()
 
 		# Request edit access to promoter molecules
-		self.promoters.request_edit_access()
+		self.promoters.request_access(self.EDIT_ACCESS)
 
 
 	def evolveState(self):
