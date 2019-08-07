@@ -69,7 +69,7 @@ nameToFunctionMapping = {
 	"meneParams": meneParams,
 	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight,
 	"param_sensitivity": param_sensitivity,
-	"metabolism_kinetic_objective_interactions": kinetic_constraints_factorial_experiments,
+	"kinetic_constraints_factorial_experiments": kinetic_constraints_factorial_experiments,
 	"flux_sensitivity": flux_sensitivity,
 }
 
@@ -89,6 +89,6 @@ nameToNumIndicesMapping = {
 	"meneParams": meneParamsTotalIndices,
 	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight_indices,
 	"param_sensitivity": param_sensitivity_indices,
-	"metabolism_kinetic_objective_interactions": kinetic_constraints_factorial_experiments_indices,
+	"kinetic_constraints_factorial_experiments": kinetic_constraints_factorial_experiments_indices,
 	"flux_sensitivity": flux_sensitivity_indices,
 }
