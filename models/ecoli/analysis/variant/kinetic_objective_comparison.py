@@ -118,9 +118,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		new_variant = None
 		for v, variant in enumerate(variants):
 			disable_constraints, additional_disabled = get_disabled_constraints(variant)
-			if not additional_disabled:
+			if additional_disabled is None:
 				old_variant = variant
-			if set(ADDITIONAL_DISABLED_CONSTRAINTS) == set(additional_disabled):
+			elif set(ADDITIONAL_DISABLED_CONSTRAINTS) == set(additional_disabled):
 				new_variant = variant
 
 		# if the baseline variant or the new variant are missing, stop plotting
@@ -191,7 +191,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				concentrations = counts_to_millimolar * molecule_counts.T
 
 				# add concentration timeseries to enzyme_concentrations
-				# enzyme_concentrations_dict = dict(zip(enzyme_ids, concentrations))
 				for enzyme_id, conc_time_series in zip(enzyme_ids, concentrations):
 					if enzyme_id in enzyme_concentrations[variant]:
 						enzyme_concentrations[variant][enzyme_id].extend(list(conc_time_series))
@@ -224,9 +223,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			temps = reaction_measurements['temps']
 			new_adjusted_measurements = np.array([2**((37.-t)/10.)*m for (m, t) in zip(measurements, temps)])
 
+			# get effective kcat for GLUTATHIONE-REDUCT
 			if reaction_id == 'GLUTATHIONE-REDUCT-NADPH-RXN':
+				# saturated_fraction calculated from Smirnova, et al. (2005). "Effects of cystine and
+				# hydrogen peroxideon glutathione status and expression of	antioxidant	genes in Escherichia coli"
+				# Oxidized glutathione (GSSG in table 2) gives ~19 uM concentration (with 0.3 dry fraction and 1.1 g/mL density)
+				# With 61 uM Km for this reaction, that gives a saturated fraction of 0.238
 				saturated_fraction = 0.238
-				# get effective kcat
 				new_adjusted_measurements = adjusted_measurements * saturated_fraction
 
 			# Initialize subplots

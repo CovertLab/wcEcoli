@@ -15,7 +15,8 @@ Modifies:
 	sim_data.process.metabolism.constraintsToDisable
 
 Expected variant indices (depends on length of FACTORIAL_DESIGN_CONSTRAINTS):
-	0-255: different combinations of constraints are disabled,
+	0: control simulation with the old list of constraints.
+	1-256: different combinations of constraints are disabled,
 		2**len(FACTORIAL_DESIGN_CONSTRAINTS) combinations
 """
 
@@ -98,6 +99,10 @@ def kinetic_constraints_factorial_experiments_indices(sim_data):
 def kinetic_constraints_factorial_experiments(sim_data, index):
 	if index == 0:
 		sim_data.process.metabolism.constraintsToDisable = CONSTRAINTS_TO_DISABLE + NEWLY_ENABLED
+		return dict(
+			shortName="control",
+			desc="Simulation with old constraints list."
+			), sim_data
 	else:
 		disable_constraints, additional_disabled = get_disabled_constraints(index)
 		sim_data.process.metabolism.constraintsToDisable = CONSTRAINTS_TO_DISABLE + NEWLY_DISABLED + additional_disabled
