@@ -101,14 +101,14 @@ def main():
 	ax.plot([ax_min + 1, ax_max], [ax_min, ax_max - 1], "k--")
 
 	# Highlight genes that were investigated further experimentally
-	genesTested = ["gshA", "pnp", "carA", "dcuR", "bioD", "rph"]
-	colors = ["b", "b", "b", "r", "r", "r"]
+	genesTested = ["gshA", "pnp", "carA", "cdsA", "dcuR", "bioD", "rph"]
+	colors = ["b", "b", "b", "b", "r", "r", "r"]
 	geneName2Id = makeGeneName2EcoMacId()
 	for geneId, color in zip(genesTested, colors):
 		ecomacId = geneName2Id[geneId]
 		candidateIndex = np.where(1 + np.where(candidates)[0] == ecomacId)[0][0]
 		ax.scatter(x_vals[candidateIndex], y_vals[candidateIndex], c = color)
-		ax.text(x_vals[candidateIndex], y_vals[candidateIndex], geneId)
+		ax.text(x_vals[candidateIndex] + 0.05, y_vals[candidateIndex] - 0.05, geneId)
 
 	# Format and save
 	ax.set_xlim([ax_min, ax_max])
