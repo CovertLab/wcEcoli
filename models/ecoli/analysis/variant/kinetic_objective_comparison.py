@@ -10,16 +10,13 @@ import cPickle
 from matplotlib import pyplot as plt
 import numpy as np
 import os
-import re
 import csv
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
-from reconstruction.spreadsheets import JsonReader
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
-from wholecell.utils import units
+from wholecell.utils import constants, filepath, units
 
 from models.ecoli.sim.variants.kinetic_constraints_factorial_experiments import get_disabled_constraints
 
@@ -88,7 +85,6 @@ NEW_MEASUREMENTS = {
 	}
 
 CSV_DIALECT = csv.excel_tab
-REACTIONS_FILE = os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv")
 
 # ignore data from first time steps
 START_TIME_STEP = 2
@@ -113,6 +109,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ap = AnalysisPaths(inputDir, variant_plot=True)
 		variants = ap.get_variants()
 
+		# Load sim_data
+		with open(os.path.join(inputDir, 'kb', constants.SERIALIZED_FIT1_FILENAME), 'rb') as f:
+			sim_data = cPickle.load(f)
+
 		# scan all variants to find variant indexes for comparison
 		old_variant = None
 		new_variant = None
@@ -122,36 +122,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				old_variant = variant
 			if set(ADDITIONAL_DISABLED_CONSTRAINTS) == set(additional_disabled):
 				new_variant = variant
-		compared_variants = [new_variant, old_variant]
 
-		# make dict of reactions
-		all_reactions = {}
-		with open(REACTIONS_FILE, 'rU') as csvfile:
-			reader = JsonReader(csvfile, dialect=CSV_DIALECT)
-			for row in reader:
-				reaction_id = row["reaction id"]
-				stoichiometry = row["stoichiometry"]
-				reversible = row["is reversible"]
-				catalyzed = row["catalyzed by"]
-				all_reactions[reaction_id] = {
-					"stoichiometry": stoichiometry,
-					"is reversible": reversible,
-					"catalyzed by": catalyzed,
-				}
+		# if the baseline variant or the new variant are missing, stop plotting
+		if (old_variant is None) or (new_variant is None):
+			print('Variant simulations missing!')
+			return
 
-		# make map of reaction names to longer reaction names used by wcEcoli
-		reaction_id_map = {}
-		for reaction_id in REACTIONS:
-			for reaction_id2, specs in all_reactions.iteritems():
-				if reaction_id2 in reaction_id:
-					reaction_id_map[reaction_id] = reaction_id2
+		compared_variants = [old_variant, new_variant]
 
-		# get enzyme ids for all reactions, used to get concentrations
+		# get reactions from sim_data
+		reactionStoich = sim_data.process.metabolism.reactionStoich
+		reactionCatalysts = sim_data.process.metabolism.reactionCatalysts
+
 		reaction_enzymes = {}
 		for reaction_id in REACTIONS:
-			for reaction_id2, specs in all_reactions.iteritems():
+			for reaction_id2, specs in reactionStoich.iteritems():
 				if reaction_id2 in reaction_id:
-					reaction_enzymes[reaction_id] = all_reactions[reaction_id2]["catalyzed by"]
+					reaction_enzymes[reaction_id] = reactionCatalysts[reaction_id2]
+		enzymes = [mol_id for rxn in reaction_enzymes.values() for mol_id in rxn]
 
 		# initialize dictionaries for fluxes and concentrations
 		reaction_fluxes = {variant: {reaction_id: [] for reaction_id in REACTIONS}
@@ -192,10 +180,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				for reaction_id in REACTIONS:
 					reaction_fluxes[variant][reaction_id].extend(list(reaction_flux_dict[reaction_id]))
 
-				# get concentrations of enzymes
-				enzymes = [item + compartment for sublist in reaction_enzymes.values()
-					for item in sublist for compartment in ['[i]', '[c]', '[p]']]
-
 				# read from bulkMolecules reader
 				molecule_ids = bulkMolecules.readAttribute("objectNames")
 				enzyme_ids = np.array([enzymeId for enzymeId in enzymes if enzymeId in molecule_ids])
@@ -206,15 +190,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				# convert to millimolar concentrations
 				concentrations = counts_to_millimolar * molecule_counts.T
 
-				# put concentrations into a dict
-				enzyme_concentrations_dict = dict(zip(enzyme_ids, concentrations))
-
-				for enzyme_id, conc_time_series in enzyme_concentrations_dict.iteritems():
-					enzyme_id_no_location = re.sub("[\(\[].*?[\)\]]", "", enzyme_id)
-					if enzyme_id_no_location in enzyme_concentrations[variant]:
-						enzyme_concentrations[variant][enzyme_id_no_location].extend(list(conc_time_series))
+				# add concentration timeseries to enzyme_concentrations
+				# enzyme_concentrations_dict = dict(zip(enzyme_ids, concentrations))
+				for enzyme_id, conc_time_series in zip(enzyme_ids, concentrations):
+					if enzyme_id in enzyme_concentrations[variant]:
+						enzyme_concentrations[variant][enzyme_id].extend(list(conc_time_series))
 					else:
-						enzyme_concentrations[variant][enzyme_id_no_location] = list(conc_time_series)
+						enzyme_concentrations[variant][enzyme_id] = list(conc_time_series)
 
 		### Make figure ###
 		cols = 1
@@ -225,11 +207,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# new and old variant, and experimental measurements
 		for reaction_idx, reaction_id in enumerate(REACTIONS):
 
-			# reaction_id_2 can be used by all_reactions
-			reaction_id_2 = reaction_id_map[reaction_id]
-			reaction_specs = all_reactions[reaction_id_2]
-
-			enzyme_id = reaction_specs['catalyzed by']
+			enzyme_id = reaction_enzymes[reaction_id]
 
 			if 'CPLX0-235' in enzyme_id:
 				enzyme_id = ['CPLX0-235']  # remove 'G6539-MONOMER' from GLYOXYLATE-REDUCTASE-NADP+-RXN
@@ -258,17 +236,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			k_cat_distribution = {}
 			for variant in compared_variants:
 				## Get data
-				rxn_fluxes = np.array(reaction_fluxes[variant][reaction_id]) # mmol / L / s
-				enzyme_concs = np.array(enzyme_concentrations[variant][enzyme_id[0]])  # mmol / L
+				rxn_fluxes = np.array(reaction_fluxes[variant][reaction_id]) 			# mmol / L / s
+				enzyme_concs = np.array(enzyme_concentrations[variant][enzyme_id[0]])  	# mmol / L
 
-				# calculate k_cats
+				# calculate k_cats, remove zeros, save to this variant's distribution
 				k_cats = rxn_fluxes / enzyme_concs
+				k_cats =  np.array([value for value in k_cats if value != 0])
 				k_cat_distribution[variant] = k_cats
 
-			data = [k_cat_distribution[variant] for variant in compared_variants]
+			data = [k_cat_distribution[old_variant], k_cat_distribution[new_variant]]
 
 			# plot
-			violin_pos = [3, 1]	# position of violin plot [old, new]
+			violin_pos = [1, 3]	# position of violin plots [old, new]
 			measure_pos = 2  	# position of measurements
 			ax.violinplot(data, violin_pos, widths=1.0, showmeans=True, showextrema=True, showmedians=False)
 			ax.scatter(np.full_like(adjusted_measurements, measure_pos), adjusted_measurements, marker='*', color='Black')
