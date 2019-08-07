@@ -424,7 +424,6 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 
 	def test_objectSet_attribute_accessing(self):
 		objectSet = self.container.objects(
-			chromosomeLocation = ('>=', 0),
 			access=(Access.EDIT, )
 			)
 
