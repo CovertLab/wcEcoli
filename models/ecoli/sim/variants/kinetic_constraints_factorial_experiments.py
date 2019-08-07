@@ -44,6 +44,12 @@ CONSTRAINTS_TO_DISABLE = [
 	'VALINE--TRNA-LIGASE-RXN-VAL-tRNAs/VAL/ATP/PROTON//Charged-VAL-tRNAs/AMP/PPI.52.',
 	]
 
+# Reactions that were previously disabled and are now enabled
+NEWLY_ENABLED = [
+	'R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.',
+	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.',
+	]
+
 # Reactions identified with flux_sensitivity but disabled due to complex regulation
 NEWLY_DISABLED = [
 	'GLYOXYLATE-REDUCTASE-NADP+-RXN__CPLX0-235',
@@ -76,8 +82,12 @@ def get_disabled_constraints(index):
 		list[str]: reaction IDs for constraints in the factorial design that
 			will be disabled
 	"""
+	# index == 0 is for running the old constraints.
+	if index == 0:
+		return None, None
+	new_index = index - 1
 
-	disable_constraints = [index // 2**i % 2 for i in range(len(FACTORIAL_DESIGN_CONSTRAINTS))]
+	disable_constraints = [new_index // 2**i % 2 for i in range(len(FACTORIAL_DESIGN_CONSTRAINTS))]
 	additional_disabled = [rxn for rxn, disable in zip(FACTORIAL_DESIGN_CONSTRAINTS, disable_constraints) if disable]
 
 	return disable_constraints, additional_disabled
@@ -86,8 +96,11 @@ def kinetic_constraints_factorial_experiments_indices(sim_data):
 	return 0
 
 def kinetic_constraints_factorial_experiments(sim_data, index):
-	disable_constraints, additional_disabled = get_disabled_constraints(index)
-	sim_data.process.metabolism.constraintsToDisable = CONSTRAINTS_TO_DISABLE + NEWLY_DISABLED + additional_disabled
+	if index == 0:
+		sim_data.process.metabolism.constraintsToDisable = CONSTRAINTS_TO_DISABLE + NEWLY_ENABLED
+	else:
+		disable_constraints, additional_disabled = get_disabled_constraints(index)
+		sim_data.process.metabolism.constraintsToDisable = CONSTRAINTS_TO_DISABLE + NEWLY_DISABLED + additional_disabled
 
 	return dict(
 		shortName="reactions disabled: {}".format(disable_constraints),
