@@ -7,20 +7,19 @@ Violin plots to compare predicted k_cats of the new list of disabled constraints
 from __future__ import absolute_import, division, print_function
 
 import cPickle
+import os
+
 from matplotlib import pyplot as plt
 import numpy as np
-import os
-import csv
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
+from models.ecoli.sim.variants.kinetic_constraints_factorial_experiments import get_disabled_constraints
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, units
 
-from models.ecoli.sim.variants.kinetic_constraints_factorial_experiments import get_disabled_constraints
-
-from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
 
 # additional disabled constraints that are to be compared to baseline
 ADDITIONAL_DISABLED_CONSTRAINTS = [
@@ -28,18 +27,6 @@ ADDITIONAL_DISABLED_CONSTRAINTS = [
 	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)',
 	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.',
 	'GLUTATHIONE-REDUCT-NADPH-RXN',
-	]
-
-REACTIONS = [
-	'ISOCITDEH-RXN',
-	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.',
-	'R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.',
-	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)',
-	'PSERTRANSAM-RXN',
-	'GLUTATHIONE-REDUCT-NADPH-RXN',
-	'GLYOXYLATE-REDUCTASE-NADP+-RXN__CPLX0-235',
-	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.',
-	'XANPRIBOSYLTRAN-RXN',
 	]
 
 OLD_MEASUREMENTS = {
@@ -59,32 +46,20 @@ OLD_MEASUREMENTS = {
 		'measurements': [203], 'temps': [25]},
 	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.': {
 		'measurements': [187, 390, 390], 'temps': [25, 25, 25]},
-	'XANPRIBOSYLTRAN-RXN': {
-		'measurements': [150], 'temps': [25]},
+	'RXN-11832': {
+		'measurements': [103], 'temps': [30]},
+	'CYTDEAM-RXN': {
+		'measurements': [185, 165, 49.68 ,132 ,45], 'temps': [25, 37, 25, 30, 25]},
 	}
 
 NEW_MEASUREMENTS = {
-	'ISOCITDEH-RXN': {
-		'measurements': [], 'temps': []},
-	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.': {
-		'measurements': [], 'temps': []},
-	'R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.': {
-		'measurements': [], 'temps': []},
 	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)': {
 		'measurements': [600], 'temps': [30]},
-	'PSERTRANSAM-RXN': {
-		'measurements': [], 'temps': []},
-	'GLUTATHIONE-REDUCT-NADPH-RXN': {
-		'measurements': [], 'temps': []},
-	'GLYOXYLATE-REDUCTASE-NADP+-RXN__CPLX0-235': {
-		'measurements': [], 'temps': []},
 	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.': {
 		'measurements': [42], 'temps': [25]},
-	'XANPRIBOSYLTRAN-RXN': {
-		'measurements': [], 'temps': []},
 	}
 
-CSV_DIALECT = csv.excel_tab
+REACTIONS = sorted(OLD_MEASUREMENTS.keys())
 
 # ignore data from first time steps
 START_TIME_STEP = 2
@@ -109,10 +84,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ap = AnalysisPaths(inputDir, variant_plot=True)
 		variants = ap.get_variants()
 
-		# Load sim_data
-		with open(os.path.join(inputDir, 'kb', constants.SERIALIZED_FIT1_FILENAME), 'rb') as f:
-			sim_data = cPickle.load(f)
-
 		# scan all variants to find variant indexes for comparison
 		old_variant = None
 		new_variant = None
@@ -129,6 +100,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			return
 
 		compared_variants = [old_variant, new_variant]
+
+		# Load sim_data
+		with open(os.path.join(inputDir, 'kb', constants.SERIALIZED_FIT1_FILENAME), 'rb') as f:
+			sim_data = cPickle.load(f)
 
 		# get reactions from sim_data
 		reactionStoich = sim_data.process.metabolism.reactionStoich
@@ -205,11 +180,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# go through each reaction to show predicted k_cat distribution for the
 		# new and old variant, and experimental measurements
 		for reaction_idx, reaction_id in enumerate(REACTIONS):
-
 			enzyme_id = reaction_enzymes[reaction_id]
-
-			if 'CPLX0-235' in enzyme_id:
-				enzyme_id = ['CPLX0-235']  # remove 'G6539-MONOMER' from GLYOXYLATE-REDUCTASE-NADP+-RXN
 
 			# old measurements
 			reaction_measurements = OLD_MEASUREMENTS[reaction_id]
@@ -218,9 +189,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			adjusted_measurements = np.array([2**((37.-t)/10.)*m for (m, t) in zip(measurements, temps)])
 
 			# new measurements
-			reaction_measurements = NEW_MEASUREMENTS[reaction_id]
-			measurements = reaction_measurements['measurements']
-			temps = reaction_measurements['temps']
+			reaction_measurements = NEW_MEASUREMENTS.get(reaction_id, {})
+			measurements = reaction_measurements.get('measurements', [])
+			temps = reaction_measurements.get('temps', [])
 			new_adjusted_measurements = np.array([2**((37.-t)/10.)*m for (m, t) in zip(measurements, temps)])
 
 			# get effective kcat for GLUTATHIONE-REDUCT
@@ -244,7 +215,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				# calculate k_cats, remove zeros, save to this variant's distribution
 				k_cats = rxn_fluxes / enzyme_concs
-				k_cats =  np.array([value for value in k_cats if value != 0])
+				k_cats = k_cats[k_cats > 0]
 				k_cat_distribution[variant] = k_cats
 
 			data = [k_cat_distribution[old_variant], k_cat_distribution[new_variant]]
