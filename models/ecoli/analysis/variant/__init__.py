@@ -8,6 +8,8 @@ ACTIVE = [
 	"distribution_fluxome_correlation.py",
 	"distribution_proteome_correlation.py",
 	"doubling_time_histogram.py",
+	"kinetic_objective_comparison.py",
+	"kinetic_objective_interaction.py",
 	"param_sensitivity.py",
 	"parameterShuffle.py",
 	"parameterShuffleSplom.py",
