@@ -13,7 +13,7 @@ ACTIVE = [
 	"growth_condition_comparison_validation.py",
 	"growthConditionComparison.py",
 	"kinetic_objective_comparison.py",
-	"kinetic_objective_interaction.py",
+	"kinetic_objective_interactions.py",
 	"massFractionSummary.py",
 	"meneSensitivity.py",
 	"metabolism_kinetic_objective_weight.py",
