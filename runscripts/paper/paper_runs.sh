@@ -113,6 +113,14 @@ MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=0 D_PERIOD_DIVISION=0 \
 RUN_AGGREGATE_ANALYSIS=0 WC_LENGTHSEC=10 \
 python runscripts/fw_queue.py
 
+## Set I - factorial design experiments for disabled kinetic constraints
+DESC="SET I kinetic constraint factorial design" \
+VARIANT="kinetic_constraints_factorial_experiments" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=256 \
+SINGLE_DAUGHTERS=1 N_GENS=1 N_INIT_SIMS=4 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=0 D_PERIOD_DIVISION=0 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fw_queue.py
+
 ## Launch the fireworks created with fw_queue.py
 # Uncomment one method - rlaunch is interactive, qlaunch is distributed
 # rlaunch rapidfire

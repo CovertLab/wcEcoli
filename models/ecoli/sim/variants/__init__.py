@@ -47,6 +47,9 @@ from models.ecoli.sim.variants.metabolism_kinetic_objective_weight import metabo
 from models.ecoli.sim.variants.param_sensitivity import param_sensitivity
 from models.ecoli.sim.variants.param_sensitivity import param_sensitivity_indices
 
+from models.ecoli.sim.variants.kinetic_constraints_factorial_experiments import kinetic_constraints_factorial_experiments
+from models.ecoli.sim.variants.kinetic_constraints_factorial_experiments import kinetic_constraints_factorial_experiments_indices
+
 from models.ecoli.sim.variants.flux_sensitivity import flux_sensitivity
 from models.ecoli.sim.variants.flux_sensitivity import flux_sensitivity_indices
 
@@ -66,6 +69,7 @@ nameToFunctionMapping = {
 	"meneParams": meneParams,
 	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight,
 	"param_sensitivity": param_sensitivity,
+	"kinetic_constraints_factorial_experiments": kinetic_constraints_factorial_experiments,
 	"flux_sensitivity": flux_sensitivity,
 }
 
@@ -85,5 +89,6 @@ nameToNumIndicesMapping = {
 	"meneParams": meneParamsTotalIndices,
 	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight_indices,
 	"param_sensitivity": param_sensitivity_indices,
+	"kinetic_constraints_factorial_experiments": kinetic_constraints_factorial_experiments_indices,
 	"flux_sensitivity": flux_sensitivity_indices,
 }
