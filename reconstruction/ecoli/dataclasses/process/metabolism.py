@@ -22,11 +22,11 @@ import numpy as np
 import sympy as sp
 from copy import copy
 
-ILE_LEU_CONCENTRATION = 3.0e-4 # mmol/L
-ILE_FRACTION = 0.360 # the fraction of iso/leucine that is isoleucine; computed from our monomer data
+PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
+ILE_LEU_CONCENTRATION = 3.03e-4  # M, Bennett et al. 2009
+ILE_FRACTION = 0.360  # the fraction of iso/leucine that is isoleucine; computed from our monomer data
 ECOLI_PH = 7.2
-
-PPI_CONCENTRATION = 0.5e-3 # M, multiple sources
+METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
 
 USE_ALL_CONSTRAINTS = False # False will remove defined constraints from objective
 
@@ -82,7 +82,9 @@ class Metabolism(object):
 
 		metaboliteIDs = []
 		metaboliteConcentrations = []
-		metaboliteConcentrationData = dict((m["Metabolite"], m["Concentration"].asNumber(units.mol / units.L)) for m in raw_data.metaboliteConcentrations)
+		metaboliteConcentrationData = dict(
+			(m["Metabolite"], m["Concentration"].asNumber(METABOLITE_CONCENTRATION_UNITS))
+			for m in raw_data.metaboliteConcentrations)
 
 		wildtypeIDtoCompartment = {
 			wildtypeID[:-3] : wildtypeID[-3:]
@@ -166,12 +168,12 @@ class Metabolism(object):
 		# include metabolites that are part of biomass
 		for key, value in sim_data.mass.getBiomassAsConcentrations(sim_data.doubling_time).iteritems():
 			metaboliteIDs.append(key)
-			metaboliteConcentrations.append(value.asNumber(units.mol / units.L))
+			metaboliteConcentrations.append(value.asNumber(METABOLITE_CONCENTRATION_UNITS))
 
 		# save concentrations as class variables
 		self.concentrationUpdates = ConcentrationUpdates(dict(zip(
 			metaboliteIDs,
-			(units.mol / units.L) * np.array(metaboliteConcentrations)
+			METABOLITE_CONCENTRATION_UNITS * np.array(metaboliteConcentrations)
 			)),
 			raw_data.equilibriumReactions,
 			self.boundary.exchange_data_dict,
@@ -179,6 +181,13 @@ class Metabolism(object):
 		self.concDict = self.concentrationUpdates.concentrationsBasedOnNutrients("minimal")
 		self.nutrientsToInternalConc = {}
 		self.nutrientsToInternalConc["minimal"] = self.concDict.copy()
+
+		# Set at 10% of lowest concentration for minimal impact on AA supply
+		# TODO (Travis)
+		## Base on measured KI values
+		## Add impact from synthesis enzymes
+		## Different values for each AA
+		self.KI_aa_synthesis = 0.1 * aaSmallestConc * METABOLITE_CONCENTRATION_UNITS
 
 	def _buildMetabolism(self, raw_data, sim_data):
 		"""
