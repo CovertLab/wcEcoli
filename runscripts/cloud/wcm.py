@@ -403,10 +403,10 @@ class RunWcm(scriptBase.ScriptBase):
 				 ' a given mass has been added to the cell')
 		add_bool_option('variable_elongation_transcription', 'variable_elongation_transcription',
 			help='Use a different elongation rate for different transcripts'
-				 '(currently increases rates for RRNA)')
+				 ' (currently increases rates for RRNA)')
 		add_bool_option('variable_elongation_translation', 'variable_elongation_translation',
 			help='Use a different elongation rate for different polypeptides'
-				 '(currently increases rates for ribosomal proteins)')
+				 ' (currently increases rates for ribosomal proteins)')
 		add_bool_option('translation_supply', 'translationSupply',
 			help='If true, the ribosome elongation rate is limited by the'
 				 ' condition specific rate of amino acid supply; otherwise the'
