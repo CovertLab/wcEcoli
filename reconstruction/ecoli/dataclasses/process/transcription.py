@@ -172,7 +172,7 @@ class Transcription(object):
 		direction = []
 		for rna in raw_data.operon_rnas:
 			#only perform function on multi-gene tus.
-			if len(rna['monomerId']) > 1:
+			if len(rna['monomerSet']) > 1:
 				rna_id = get_first_rna_id(rna['id'])
 			else:
 				rna_id = rna['id']

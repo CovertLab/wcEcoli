@@ -22,7 +22,7 @@ class Relation(object):
 		self._buildRnaIndexToMonomerMapping(raw_data, sim_data)
 		self._buildMonomerIndexToRnaMapping(raw_data, sim_data)
 		#self._buildRnaIndexToGeneMapping(raw_data, sim_data)
-'''
+	'''
 	def make_individual_rna_ids(operon_rna_id):
 			#move this to the top if we keep it
 			SPLIT_DELIMITER = '_'
@@ -33,8 +33,7 @@ class Relation(object):
 			for rna_id in rna_ids:
 				split_rna_ids.append(rna_id + '_RNA')
 			return split_rna_ids
-'''
-
+	'''
 	def _buildRnaIndexToMonomerMapping(self, raw_data, sim_data):
 		#import pdb; pdb.set_trace()
 		self.rnaIndexToMonomerMapping = np.array([np.where(x == sim_data.process.transcription.rnaData["id"])[0][0] for x in sim_data.process.translation.monomerData["rnaId"]])
