@@ -191,7 +191,7 @@ class WcmWorkflow(Workflow):
 							python_args['inherited_state_path'] = daughter_state_path
 							inputs += [parent_cell_sim_out_dir]
 
-						cell_id = 'Var{}_Seed{}_Gen{}_Cell{}'.format(i, j, k, l)
+						cell_id = 'Var{:03d}_Seed{:03d}_Gen{:03d}_Cell{:03d}'.format(i, j, k, l)
 						sim_task = self.add_python_task(firetask, python_args,
 							name='simulation_' + cell_id,
 							inputs=inputs,
