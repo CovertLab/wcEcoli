@@ -182,12 +182,13 @@ class Metabolism(object):
 		self.nutrientsToInternalConc = {}
 		self.nutrientsToInternalConc["minimal"] = self.concDict.copy()
 
-		# Set at 10% of lowest concentration for minimal impact on AA supply
+		# Set at 1% of each expected concentration for minimal impact on AA supply
 		# TODO (Travis)
 		## Base on measured KI values
 		## Add impact from synthesis enzymes
-		## Different values for each AA
-		self.KI_aa_synthesis = 0.1 * aaSmallestConc * METABOLITE_CONCENTRATION_UNITS
+		aa_conc = np.array([self.concDict[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			for aa in sim_data.moleculeGroups.aaIDs])
+		self.KI_aa_synthesis = METABOLITE_CONCENTRATION_UNITS * 0.01 * aa_conc
 
 	def _buildMetabolism(self, raw_data, sim_data):
 		"""
