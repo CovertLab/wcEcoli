@@ -22,6 +22,7 @@ import numpy as np
 import sympy as sp
 from copy import copy
 
+MIN_AA_KI = 1e-6  # M, KI for aa_supply for low concentration AA species
 PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
 ILE_LEU_CONCENTRATION = 3.03e-4  # M, Bennett et al. 2009
 ILE_FRACTION = 0.360  # the fraction of iso/leucine that is isoleucine; computed from our monomer data
@@ -182,13 +183,15 @@ class Metabolism(object):
 		self.nutrientsToInternalConc = {}
 		self.nutrientsToInternalConc["minimal"] = self.concDict.copy()
 
-		# Set at 1% of each expected concentration for minimal impact on AA supply
+		# Set at 1% of each expected concentration (or MIN_AA_KI for low
+		# concentration amino acids) for minimal impact on AA supply
 		# TODO (Travis)
 		## Base on measured KI values
 		## Add impact from synthesis enzymes
 		aa_conc = np.array([self.concDict[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			for aa in sim_data.moleculeGroups.aaIDs])
-		self.KI_aa_synthesis = METABOLITE_CONCENTRATION_UNITS * 0.01 * aa_conc
+		self.KI_aa_synthesis = METABOLITE_CONCENTRATION_UNITS * np.fmax(
+			0.01 * aa_conc, MIN_AA_KI)
 
 	def _buildMetabolism(self, raw_data, sim_data):
 		"""
