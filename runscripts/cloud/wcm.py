@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 """
-Create a workflow DAG of Sisyphus tasks and specifies their links and enqueue
-it to run.
+Build a workflow for the Whole Cell Model then send it to the Gaia server in
+Google Cloud.
 """
 
 from __future__ import absolute_import, division, print_function
@@ -17,7 +17,7 @@ from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants, scriptBase
 import wholecell.utils.filepath as fp
 from runscripts.manual.analysisBase import AnalysisBase
-from runscripts.sisyphus.util.workflow import Task, Workflow
+from runscripts.cloud.util.workflow import Task, Workflow
 
 
 DOCKER_IMAGE = 'gcr.io/allen-discovery-center-mcovert/{}-wcm-code:latest'
@@ -63,18 +63,18 @@ class WcmWorkflow(Workflow):
 		"""Construct a remote GCS storage path within the bucket."""
 		return os.path.join(self.storage_prefix, *path_elements)
 
-	def add_python_task(self, firetask, python_args, upstream_tasks=(), name='',
-			inputs=(), outputs=()):
-		# type: (str, Dict[str, Any], Iterable[Task], str, Iterable[str], Iterable[str]) -> Task
-		"""Add a Python task to the workflow and return it."""
+	def add_python_task(self, firetask, python_args, name='', inputs=(), outputs=()):
+		# type: (str, Dict[str, Any], str, Iterable[str], Iterable[str]) -> Task
+		"""Add a Python task to the workflow and return it. Store its
+		stdout + stderr as storage_prefix/logs/name.log
+		"""
 		return self.add_task(Task(
-			upstream_tasks=upstream_tasks,
 			name=name,
 			image=self.image,
 			command=['python', '-u', '-m', 'wholecell.fireworks.runTask',
 					firetask, json.dumps(python_args)],
 			inputs=inputs,
-			outputs=outputs,
+			outputs=list(outputs) + ['>' + self.internal('logs', name + '.log')],
 			storage_prefix=self.storage_prefix,
 			internal_prefix=self.internal_prefix))
 
@@ -110,7 +110,7 @@ class WcmWorkflow(Workflow):
 			total_gens=args['generations'])
 
 		python_args = dict(output_file=metadata_file, data=metadata)
-		metadata_task = self.add_python_task('write_json', python_args, (),
+		metadata_task = self.add_python_task('write_json', python_args,
 			name='write_metadata',
 			inputs=[kb_dir],  # TODO(jerry): TEMPORARY workaround to delay this
 				# task so its worker doesn't exit while the Parca runs.
@@ -120,7 +120,7 @@ class WcmWorkflow(Workflow):
 			('ribosome_fitting', 'rnapoly_fitting', 'cpus'),
 			debug=args['debug_parca'],
 			output_directory=kb_dir)
-		parca_task = self.add_python_task('parca', python_args, (),
+		parca_task = self.add_python_task('parca', python_args,
 			name='parca',
 			outputs=[kb_dir])
 
@@ -148,8 +148,8 @@ class WcmWorkflow(Workflow):
 				output_sim_data=variant_sim_data_modified_file,
 				variant_metadata_directory=variant_metadata_dir)
 			variant_task = self.add_python_task('variant_sim_data', python_args,
-				(parca_task,),
 				name='variant_{}_{}'.format(variant_type, i),
+				inputs=[kb_dir],
 				outputs=[variant_sim_data_dir, variant_metadata_dir])
 
 			this_variant_cohort_analysis_inputs = [kb_dir, variant_sim_data_dir]
@@ -175,10 +175,10 @@ class WcmWorkflow(Workflow):
 							input_sim_data=variant_sim_data_modified_file,
 							output_directory=cell_sim_out_dir,
 							seed=j)
+						inputs = [kb_dir, variant_sim_data_dir]
 
 						if k == 0:
 							firetask = 'simulation'
-							inputs = []
 						else:
 							firetask = 'simulation_daughter'
 							parent_gen_dir = os.path.join(
@@ -189,11 +189,10 @@ class WcmWorkflow(Workflow):
 								parent_cell_sim_out_dir,
 								constants.SERIALIZED_INHERITED_STATE % (l % 2 + 1))
 							python_args['inherited_state_path'] = daughter_state_path
-							inputs=[parent_cell_sim_out_dir]
+							inputs += [parent_cell_sim_out_dir]
 
 						cell_id = 'Var{}_Seed{}_Gen{}_Cell{}'.format(i, j, k, l)
 						sim_task = self.add_python_task(firetask, python_args,
-							(parca_task, variant_task),
 							name='simulation_' + cell_id,
 							inputs=inputs,
 							outputs=[cell_sim_out_dir])
@@ -214,8 +213,8 @@ class WcmWorkflow(Workflow):
 								cpus=args['cpus'])
 							analysis_single_task = self.add_python_task('analysis_single',
 								python_args,
-								(parca_task, variant_task, sim_task),
 								name='analysis_' + cell_id,
+								inputs=[kb_dir, variant_sim_data_dir, cell_sim_out_dir],
 								outputs=[plot_dir])
 
 						if args['build_causality_network']:
@@ -230,7 +229,7 @@ class WcmWorkflow(Workflow):
 								output_dynamics_directory=cell_series_out_dir,
 								metadata=md_single)
 							causality_task = self.add_python_task('build_causality_network',
-								python_args, (),
+								python_args,
 								name='causality_' + cell_id,
 								inputs=[cell_sim_out_dir, variant_sim_data_dir],
 								outputs=[cell_series_out_dir])
@@ -246,7 +245,7 @@ class WcmWorkflow(Workflow):
 						cpus=args['cpus'],
 						metadata=md_multigen)
 					analysis_multigen_task = self.add_python_task('analysis_multigen',
-						python_args, (),
+						python_args,
 						name='analysis_multigen_Var{}_Seed{}'.format(i, j),
 						inputs=this_variant_this_seed_multigen_analysis_inputs,
 						outputs=[multigen_plot_dir])
@@ -262,7 +261,7 @@ class WcmWorkflow(Workflow):
 					cpus=args['cpus'],
 					metadata=md_cohort)
 				analysis_cohort_task = self.add_python_task('analysis_cohort',
-					python_args, (),
+					python_args,
 					name='analysis_cohort_Var{}'.format(i),
 					inputs=this_variant_cohort_analysis_inputs,
 					outputs=[cohort_plot_dir])
@@ -271,13 +270,14 @@ class WcmWorkflow(Workflow):
 			variant_plot_dir = self.internal(AnalysisBase.OUTPUT_SUBDIR, '')
 			python_args = dict(
 				input_directory=self.internal(''),
+				input_sim_data=sim_data_file,
 				input_validation_data=validation_data_file,
 				output_plots_directory=variant_plot_dir,
 				plots_to_run=args['plot'],
 				cpus=args['cpus'],
 				metadata=metadata)
 			analysis_variant_task = self.add_python_task('analysis_variant',
-				python_args, (),
+				python_args,
 				name='analysis_variant',
 				inputs=variant_analysis_inputs,
 				outputs=[variant_plot_dir])
@@ -327,8 +327,7 @@ class RunWcm(scriptBase.ScriptBase):
 		def add_bool_option(name, key, help):
 			"""Add a boolean option parameter with the given name to the parser
 			using DEFAULT_SIMULATION_KWARGS[key] for the default value. The CLI
-			input can be `--name`, `--no_name`, `--name true`, `--name false`,
-			`--name 1`, `--name 0`, `--name=true`, etc.
+			input can be `--name` or `--no_name`.
 			"""
 			self.define_parameter_bool(
 				parser, name, DEFAULT_SIMULATION_KWARGS[key], help)
@@ -337,9 +336,9 @@ class RunWcm(scriptBase.ScriptBase):
 			help='A simulation description to append to the output folder name.')
 		self.define_parameter_bool(parser, 'verbose', True,
 			help='Verbose workflow builder logging')
-		parser.add_argument('-c', '--cpus', type=int, default=1,
+		parser.add_argument('-c', '--cpus', type=int, default=2,
 			help='The number of CPU processes to use in the Parca and analysis'
-				 ' steps. Default = 1.')
+				 ' steps. Default = 2.')
 		self.define_parameter_bool(parser, 'dump', False,
 			help='Dump the built workflow to JSON files for'
 				 ' review *instead* of sending them to the Gaia workflow'
@@ -364,7 +363,10 @@ class RunWcm(scriptBase.ScriptBase):
 			metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'),
 			help='''The variant type name, first index, and last index to make.
 				See models/ecoli/sim/variants/__init__.py for the variant
-				type choices. Default = wildtype 0 0''')
+				type choices and their supported index ranges, e.g.: wildtype,
+				condition, meneParams, metabolism_kinetic_objective_weight,
+				nutrientTimeSeries, and param_sensitivity.
+				Default = wildtype 0 0''')
 
 		# Simulation
 		parser.add_argument('-g', '--generations', type=int, default=1,
@@ -399,6 +401,12 @@ class RunWcm(scriptBase.ScriptBase):
 			help='If true, ends simulation once D period has occurred after'
 				 ' chromosome termination; otherwise simulation terminates once'
 				 ' a given mass has been added to the cell')
+		add_bool_option('variable_elongation_transcription', 'variable_elongation_transcription',
+			help='Use a different elongation rate for different transcripts'
+				 '(currently increases rates for RRNA)')
+		add_bool_option('variable_elongation_translation', 'variable_elongation_translation',
+			help='Use a different elongation rate for different polypeptides'
+				 '(currently increases rates for ribosomal proteins)')
 		add_bool_option('translation_supply', 'translationSupply',
 			help='If true, the ribosome elongation rate is limited by the'
 				 ' condition specific rate of amino acid supply; otherwise the'
