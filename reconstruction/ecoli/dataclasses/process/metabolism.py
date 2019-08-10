@@ -22,7 +22,7 @@ import numpy as np
 import sympy as sp
 from copy import copy
 
-MIN_AA_KI = 1e-6  # M, KI for aa_supply for low concentration AA species
+MIN_AA_KI = 5.0e-7  # M, KI for aa_supply for low concentration AA species
 PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
 ILE_LEU_CONCENTRATION = 3.03e-4  # M, Bennett et al. 2009
 ILE_FRACTION = 0.360  # the fraction of iso/leucine that is isoleucine; computed from our monomer data
