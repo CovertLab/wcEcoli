@@ -103,6 +103,9 @@ class Simulation(CellSimulation):
 
 			setattr(self, "_" + attrName, value)
 
+		if self._seed == 28:  # temp workaround for bug #635
+			self._seed += 200
+
 		unknownKeywords = kwargs.viewkeys() - DEFAULT_SIMULATION_KWARGS.viewkeys()
 
 		if any(unknownKeywords):
