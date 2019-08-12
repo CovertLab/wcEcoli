@@ -133,12 +133,12 @@ class RunSimulation(scriptBase.ScriptBase):
 				 ' condition specific rate of amino acid supply; otherwise the'
 				 ' elongation rate is set by condition')
 		add_bool_option('variable_elongation_translation', 'variable_elongation_translation',
-			help='if True, all elongation rates are the same for each type.'
-				 'if False, elongation rates are faster for ribosomal proteins'
+			help='if False, all elongation rates are the same for each type.'
+				 'if True, elongation rates are faster for ribosomal proteins'
 				 ' elongation rate is set by condition')
 		add_bool_option('variable_elongation_transcription', 'variable_elongation_transcription',
-			help='if True, all elongation rates are the same for each type.'
-				 'if False, elongation rates are faster for transcripts'
+			help='if False, all elongation rates are the same for each type.'
+				 'if True, elongation rates are faster for transcripts'
 				 ' elongation rate is set by condition')
 
 
