@@ -23,6 +23,15 @@ from wholecell.io.tablereader import TableReader
 
 subsample = True
 subsample_degree = 100 #subsamples every 100 timepoints
+data_on_cloud = False
+
+'''
+Need to change where the outputs are stored, since we dont want to write 
+to google cloud.
+
+Put in a cloud True/False Argument.
+
+'''
 
 def get_todays_date():
 	"""
@@ -61,7 +70,7 @@ def get_input_paths(argument):
 	else:
 		sim_data_path = argument[-1]
 		sim_data_path_all_sims = os.path.join(sim_data_path, 'wildtype_000000')
-		sim_data_path_gen = os.path.join(sim_data_path_all_sims '000000')
+		sim_data_path_gen = os.path.join(sim_data_path_all_sims, '000000')
 		#check that parent path is in fact a directory:
 		if not os.path.isdir(sim_data_path):
 			raise Exception, "input_data_parent_dir does not currently " \
@@ -75,6 +84,7 @@ def get_input_paths(argument):
 	return sim_data_path, sim_data_path_all_sims, sim_data_path_gen, sim_data_file 
 
 simulation_data_path, sim_data_path_all_sims, simulation_data_path_gen, simulation_data_file = get_input_paths(sys.argv)
+#need to get into each gen first, put the loop out here.
 sim_data = load_simulation_data(simulation_data_file)
 output_dir = make_output_dirs(simulation_data_path)
 
@@ -92,7 +102,7 @@ non_zero_sum_protein_counts_all_gens = []
 time = []
 time_eachGen = []
 gen_num = []
-
+import pdb; pdb.set_trace()
 for i, sim_dir in enumerate(all_dir):
 	sim_out_dir = os.path.join(sim_dir, "simOut")
 	
