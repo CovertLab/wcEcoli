@@ -58,6 +58,11 @@ def demo(worker_count=0, dump=False):
 		outputs=['>/tmp/error-test.log'],
 		command=['wc', lines_filename])
 
+	add_task(
+		name='index_exception',
+		outputs=['>/tmp/index_exception.log'],
+		command=['python', '-u', '-c', "()[1]"])
+
 	# Dump or run the workflow.
 	if dump:
 		wf.write()
