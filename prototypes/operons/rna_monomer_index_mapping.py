@@ -5,6 +5,10 @@ from reconstruction import spreadsheets
 from prototypes.operons.transform_rnas import parse_tsv
 import csv
 
+'''
+TODO: Make it so it will run in the ParCa.
+'''
+
 DIALECT = "excel-tab"
 JsonReader = partial(spreadsheets.JsonReader, dialect = DIALECT)
 JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
@@ -32,7 +36,7 @@ def buildMonomerIndexToRnaMapping(self, raw_data, sim_data):
 
 
 
-#need to pull in the RNA file and
+
 
 '''
 from __future__ import division
