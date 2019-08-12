@@ -138,7 +138,7 @@ class RunSimulation(scriptBase.ScriptBase):
 				 ' elongation rate is set by condition')
 		add_bool_option('variable_elongation_transcription', 'variable_elongation_transcription',
 			help='if False, all elongation rates are the same for each type.'
-				 'if True, elongation rates are faster for transcripts'
+				 'if True, elongation rates are faster for RRNA transcripts'
 				 ' elongation rate is set by condition')
 
 
