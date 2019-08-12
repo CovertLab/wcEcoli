@@ -60,20 +60,21 @@ def get_input_paths(argument):
 		raise Exception, "Oops you didn't provide a path to the data!"
 	else:
 		sim_data_path = argument[-1]
-		sim_data_path_gen = os.path.join(sim_data_path, 'wildtype_000000', '000000')
+		sim_data_path_all_sims = os.path.join(sim_data_path, 'wildtype_000000')
+		sim_data_path_gen = os.path.join(sim_data_path_all_sims '000000')
 		#check that parent path is in fact a directory:
 		if not os.path.isdir(sim_data_path):
 			raise Exception, "input_data_parent_dir does not currently " \
 				"exist as a directory"
-		sim_data_file = os.path.join(sim_data_path, 'wildtype_000000', 'kb', 
+		sim_data_file = os.path.join(sim_data_path_all_sims,'kb', 
 			'simData_Modified.cPickle')
 		if not os.path.isfile(sim_data_file):
 			raise Exception, "There is something wrong with the data path " \
 				"provided. Make sure you are pointing to the main sim output " \
 				"directory."
-	return sim_data_path, sim_data_path_gen, sim_data_file 
+	return sim_data_path, sim_data_path_all_sims, sim_data_path_gen, sim_data_file 
 
-simulation_data_path, simulation_data_path_gen, simulation_data_file = get_input_paths(sys.argv)
+simulation_data_path, sim_data_path_all_sims, simulation_data_path_gen, simulation_data_file = get_input_paths(sys.argv)
 sim_data = load_simulation_data(simulation_data_file)
 output_dir = make_output_dirs(simulation_data_path)
 
