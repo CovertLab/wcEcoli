@@ -7,37 +7,29 @@ class TypeIIToxinAntitoxin(object):
 	def evolve_state(self, time_step, state):
 		A = state['A']
 		T = state['T']
-		T2 = state['T2']
-		A2 = state['A2']
-		A2T = state['A2T']
-		A2T2 = state['A2T2']
 		kt1 = state['kt1']
 		kt2 = state['kt2']
-		kp1 = state['kp1']
+		kp1 = state['kp1'] 
 		kp2 = state['kp2'] 
 		kh = state['kh']
-		tu = state['tu']
-		ta = state['ta'] 
-		tt = state['tt']
+		umax = state['umax']
+		lambda_A = state['lambda_A'] 
+		lambda_T = state['lambda_T']
 		alpha = state['alpha']
-		rho = state['rho']
 		n = state['n'] 
 		sigma = state['sigma'] 
 		p = state['p']
+		d = state['d']
 
-		umax = np.log(2)/tu
-		lambda_A = np.log(2)/ta
-		lambda_T = np.log(2)/tt
+		X1 = 1 + T**n/kt1**n #Hill equation
+		X2 = 1 + T**n/kt2**n #Hill equation
+		Y = 1 + A**2/kp1**2 + ((2 * A**2 * T)/(kp2**2 * kh))**p + (A**2 * T**2)/(kp1**2 * kh**2)
 
-		X1 = 1 + T**2/kt1**2 #Hill equation, n = 2
-		X2 = 1 + T**2/kt2**2 #Hill equation, n = 2
-		Y = 1 + A2/kp1 + ((2 * A2 * T)/(kp2 * kh))**p + (A2 * T2)/(kp1 * kh)
+		dAdt = sigma * alpha /(Y * X2) - umax * A/X1 - lambda_A*A + d * np.random.normal(0,np.sqrt(time_step)) 
+		dTdt = alpha/(Y * X2) - umax * T/X1 - lambda_T*T + d * np.random.normal(0,np.sqrt(time_step)) 
 
-		state['dAdt'] = sigma * alpha /(Y * X2) - umax * A/X1 - lambda_A*A 
-		state['dTdt'] = alpha/(Y * X2) - umax * T/X1 - lambda_T*T
-
-		state['A'] = state['A'] + state['dAdt']
-		state['T'] = state['T'] + state['dTdt']
+		state['A'] = A + dAdt * time_step 
+		state['T'] = T + dTdt * time_step
 		return state
 
 
@@ -56,54 +48,58 @@ class Integrator(object):
 		return state
 
 if __name__ == '__main__':
+	import numpy as np
 	import matplotlib
 	matplotlib.use('Agg')
 	import matplotlib.pyplot as plt
+	import copy
+
 	system = TypeIIToxinAntitoxin({})
 	integrator = Integrator(system, {})
 	state = {
-		'A' : 100,
-		'T' : 100,
-		'T2' : 10,
-		'A2' : 10,
-		'A2T' : 10,
-		'A2T2' : 10,
+		'A' : 7,
+		'T' : 7,
 		'kt1' : 10,
 		'kt2' : 100,
-		'kp1' : 1,
+		'kp1' : 1000,  # 1uM = 1000 nM
 		'kp2' : 10,
 		'kh' : 100,
-		'tu' : 30,
-		'ta' : 60,
-		'tt' : 48,
-		'alpha' : 1,
-		'rho' : 2,
-		'n' : 2,
+		'umax' : np.log(2)/30,  # tu = 30 min
+		'lambda_A' : np.log(2)/60,  # ta = 60 min
+		'lambda_T' : np.log(2)/2880, # tt = 48hrs = 2880 min
+		'alpha' : 1, # 1 nM/min
+		'n' : 2.5,  # hill coeff 
 		'sigma' : 10,
 		'p' : 2,
-		'dAdt' : 0,
-		'dTdt' : 0} 
-	T = []
-	A = []
-	dAdt = []
-	dTdt = []	
-	time_vec = range(0,1000)
-	for t in time_vec:	
-		state = integrator.integrate(1.0, 2, state)
-		T.append(state['T'])
-		A.append(state['A'])
-		dAdt.append(state['dAdt'])
-		dTdt.append(state['dTdt'])
+		'd' : 0.2}  # noise magnitude
 
-	plt.plot(time_vec, T, label='T')
-	plt.plot(time_vec, A, label='A')
-	plt.legend()
-	plt.savefig('AT')
-	plt.clf()
+	# T = []
+	# A = []
+	# time_vec = range(0,100)
+	# evolved_state = state
+	# for t in time_vec:	
+	# 	evolved_state = integrator.integrate(1.0, 60, evolved_state)
+	# 	T.append(evolved_state['T'])
+	# 	A.append(evolved_state['A'])
 
-	plt.plot(time_vec, dAdt, label='dAdt')
-	plt.plot(time_vec, dTdt, label='dTdt')
-	plt.legend()
-	plt.savefig('AT_derivatives')
+	# plt.plot(time_vec, T, label='T', color='r')
+	# plt.plot(time_vec, A, label='A', color='b')
+	# plt.xlabel('Time (hrs)')
+	# plt.legend()
+	# plt.savefig('AT')
+	# plt.clf()
 
-	
+
+
+	time_vec = range(0,200)
+	num_sims = range(0,1000)
+	for n in num_sims:
+		evolved_state = copy.deepcopy(state)
+		T = [evolved_state['T']]
+		for t in time_vec[1:]:	
+			evolved_state = integrator.integrate(1, 60, evolved_state)
+			T.append(evolved_state['T'])
+
+		plt.plot(time_vec,T, alpha=0.2, color=[0.5,0.5,0.5])
+	plt.savefig('stochastic_sims')
+
