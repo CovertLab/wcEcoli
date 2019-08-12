@@ -54,6 +54,8 @@ SIM_KEYS = (
 	'translation_supply',
 	'trna_charging')
 
+BAD_SEEDS = [28, 1028]
+
 
 def select_keys(mapping, keys, **kwargs):
 	# type: (Mapping[str, Any], Iterable[str], **Any) -> Dict[str, Any]
@@ -183,6 +185,9 @@ class WcmWorkflow(Workflow):
 			variant_analysis_inputs.append(variant_sim_data_dir)
 
 			for j in xrange(args['init_sims']):  # seed
+				while j in BAD_SEEDS:
+					j += args['init_sims']
+
 				seed_dir = self.internal(subdir, '{:06d}'.format(j))
 				md_multigen = dict(md_cohort, seed=j)
 
