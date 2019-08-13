@@ -1,0 +1,15 @@
+#! /usr/bin/env bash
+# Run make compile and check requirements to maintain proper environment for wcm
+
+echo
+echo "Running make compile..."
+make compile
+
+if [ -e requirements.txt ]; then
+    echo
+    echo "Requirements diff (requirements.txt vs current pips):"
+    diff <(sed 's/#.*//' requirements.txt) <(pip freeze 2>/dev/null) -yBZ --suppress-common-lines
+fi
+
+# Exit normally so git rebase works even if diff finds a diff (error exit code)
+exit 0
