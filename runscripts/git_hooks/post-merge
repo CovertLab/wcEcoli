@@ -1,4 +1,4 @@
 #! /usr/bin/env bash
-# Run make compile and check requirements to maintain proper environment for wcm
+# Maintain proper environment for wcm
 
 "$(git rev-parse --git-path hooks)/wcm-env-check.sh"
