@@ -1,6 +1,11 @@
 # Git hooks
 This directory contains useful git hooks for developing in the repo on Linux and Mac systems.  Copy the scripts in this directory to your git hooks directory (likely `wcEcoli/.git/hooks/`).  Ensure that the hooks have execution permissions.
 
+From the `wcEcoli/` directory, run the following command to copy the scripts:
+```
+cp runscripts/git_hooks/*[^.md] .git/hooks/
+```
+
 ## Hooks
 
 * `post-checkout`: Runs when performing `git checkout` to a different branch
