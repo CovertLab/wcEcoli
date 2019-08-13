@@ -3,7 +3,7 @@
 # to maintain proper environment for wcm.
 
 echo -e "\nRemoving *.pyc..."
-find . -not \( -path ./out -prune \) -not \( -path ./.git -prune \) -name "*.pyc" -exec rm -v {} \;
+find . -not \( -path ./out -prune \) -not \( -path ./.git -prune \) -name "*.pyc" -exec rm {} \;
 
 echo "Running make compile..."
 make compile
