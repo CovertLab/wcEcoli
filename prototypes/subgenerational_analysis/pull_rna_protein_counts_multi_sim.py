@@ -120,7 +120,7 @@ for data_path in simulation_data_path_gen:
 	ap = AnalysisPaths(data_path, multi_gen_plot = True)
 	all_dir = ap.get_cells()
 
-	import pdb; pdb.set_trace()
+
 	rna_ids = sim_data.process.transcription.rnaData["id"]
 	gene_ids = sim_data.process.transcription.rnaData["geneId"]
 	protein_ids = sim_data.process.translation.monomerData["id"]
