@@ -88,7 +88,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		unique_molecule_ids = self.uniqueMolecules.container.objectNames()
 		self.ribosome_idx = unique_molecule_ids.index("activeRibosome")
 		self.rnap_idx = unique_molecule_ids.index("activeRnaPoly")
-		self.replisome_idx = unique_molecule_ids.index("activeReplisome")
+		self.replisome_idx = unique_molecule_ids.index("active_replisome")
 
 	def allocate(self):
 		super(MonomerCounts, self).allocate()
@@ -127,9 +127,12 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx]
 
 	def tableCreate(self, tableWriter):
+		subcolumns = {
+			'monomerCounts': 'monomerIds'}
+
 		tableWriter.writeAttributes(
-			monomerIds = self.monomer_ids
-			)
+			monomerIds = self.monomer_ids,
+			subcolumns = subcolumns)
 
 	def tableAppend(self, tableWriter):
 		tableWriter.append(

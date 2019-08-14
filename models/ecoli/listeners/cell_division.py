@@ -17,6 +17,7 @@ import numpy as np
 
 import wholecell.listeners.listener
 from wholecell.utils import units
+from wholecell.containers.unique_objects_container import Access
 
 class CellDivision(wholecell.listeners.listener.Listener):
 	""" CellDivision """
@@ -83,27 +84,47 @@ class CellDivision(wholecell.listeners.listener.Listener):
 			self.setInitial = True
 			self.dryMassInitial = self.dryMass
 
-		# Ends simulation once D period has occurred after chromosome termination
+		# If D_PERIOD_DIVISION is set to True, the cell should divide after a
+		# fixed length of time (D period) has passed after the completion of
+		# chromosome replication. At completion of replication, we calculate
+		# this division time by adding the D period length to the current time,
+		# and storing this value as an attribute of the full_chromosome
+		# molecule that gets formed at termination of replication. It is
+		# possible for one more round of replication to be completed before
+		# the cell divides if the cell is growing fast - so we take the minimum
+		# division_time value from all existing full chromosomes, and mark the
+		# chromosome if the chromosome has already induced division to avoid
+		# double counting.
 		if self.d_period_division:
 			# Get all existing full chromosomes
-			full_chromosomes = self.uniqueMoleculeContainer.objectsInCollection("fullChromosome")
+			full_chromosomes = self.uniqueMoleculeContainer.objectsInCollection(
+				"fullChromosome", access=[Access.EDIT])
 
 			# If there are two or more full chromosomes,
 			if len(full_chromosomes) >= 2:
 				# Extract attributes from existing full chromosomes
-				division_time, chromosomeIndex = full_chromosomes.attrs(
-					"division_time", "chromosomeIndex"
+				division_time, has_induced_division = full_chromosomes.attrs(
+					"division_time", "has_induced_division"
 					)
 
-				# Set division time to be the time set by the chromosome with
-				# index 1
-				divide_at_time = division_time[chromosomeIndex == 1][0]
+				# Set division time to be the minimum division_time of the
+				# chromosome that have not yet induced cell division
+				divide_at_time = division_time[~has_induced_division].min()
 
 				if self.time() >= divide_at_time:
 					self._sim.cellCycleComplete()
+
+					# Mark the chromosome that induced division
+					divide_at_time_index = np.where(
+						division_time == divide_at_time)[0][0]
+					has_induced_division[divide_at_time_index] = True
+					full_chromosomes.attrIs(
+						has_induced_division=has_induced_division
+						)
+
 		else:
 			# End simulation once the mass of an average cell is
 			# added to current cell.
-			current_nutrients = self._external_states['Environment'].nutrients
-			if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncreaseDict[current_nutrients].asNumber(units.fg) * self.divisionMassMultiplier:
+			current_media_id = self._external_states['Environment'].current_media_id
+			if self.dryMass - self.dryMassInitial >= self.expectedDryMassIncreaseDict[current_media_id].asNumber(units.fg) * self.divisionMassMultiplier:
 				self._sim.cellCycleComplete()

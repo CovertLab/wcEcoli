@@ -3,9 +3,8 @@
 """
 ReplicationData
 
-Replication fork position listener. Represents position of replication forks over time.
+Replication listener. Records dynamics related to replication.
 
-@author: Nick Ruggero
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 5/13/2014
 """
@@ -15,8 +14,6 @@ from __future__ import division
 import numpy as np
 
 import wholecell.listeners.listener
-
-PLACE_HOLDER = -1
 
 class ReplicationData(wholecell.listeners.listener.Listener):
 	""" ReplicationData """
@@ -38,43 +35,37 @@ class ReplicationData(wholecell.listeners.listener.Listener):
 	def allocate(self):
 		super(ReplicationData, self).allocate()
 
-		self.sequenceIdx = np.zeros(75, np.int64)
-		self.sequenceIdx.fill(PLACE_HOLDER)
-		self.sequenceLength = np.zeros(75, np.float64)
-		self.sequenceLength.fill(PLACE_HOLDER)
+		self.fork_coordinates = np.full(75, np.nan, np.float64)
 
 		self.numberOfOric = np.nan
 		self.criticalMassPerOriC = 0.
 		self.criticalInitiationMass = 0.
 
+		self.free_DnaA_boxes = 0
+		self.total_DnaA_boxes = 0
+
 
 	def update(self):
-		dnaPolymerases = self.uniqueMolecules.container.objectsInCollection('dnaPolymerase')
+		active_replisomes = self.uniqueMolecules.container.objectsInCollection('active_replisome')
 		oriCs = self.uniqueMolecules.container.objectsInCollection('originOfReplication')
 
 		self.numberOfOric = len(oriCs)
 
-		if len(dnaPolymerases) > 0:
-			sequenceIdx, sequenceLength = dnaPolymerases.attrs(
-				"sequenceIdx", "sequenceLength"
-				)
-			self.sequenceIdx[:] = PLACE_HOLDER
-			self.sequenceIdx[:sequenceIdx.size] = sequenceIdx
-			self.sequenceLength[:] = np.NAN
-			self.sequenceLength[:sequenceLength.size] = sequenceLength
-		elif len(dnaPolymerases) == 0:
-			self.sequenceIdx[:] = PLACE_HOLDER
-			self.sequenceLength[:] = PLACE_HOLDER
+		self.fork_coordinates[:] = np.nan
+		if len(active_replisomes) > 0:
+			fork_coordinates = active_replisomes.attr("coordinates")
+			self.fork_coordinates[:fork_coordinates.size] = fork_coordinates
+
 
 	def tableCreate(self, tableWriter):
 		pass
 
-
 	def tableAppend(self, tableWriter):
 		tableWriter.append(
-			sequenceIdx = self.sequenceIdx,
-			sequenceLength = self.sequenceLength,
+			fork_coordinates = self.fork_coordinates,
 			numberOfOric = self.numberOfOric,
 			criticalMassPerOriC = self.criticalMassPerOriC,
 			criticalInitiationMass = self.criticalInitiationMass,
+			free_DnaA_boxes = self.free_DnaA_boxes,
+			total_DnaA_boxes = self.total_DnaA_boxes,
 			)

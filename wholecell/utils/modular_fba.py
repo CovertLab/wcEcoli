@@ -4,8 +4,7 @@
 @date: Created 7/14/2014
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 from itertools import izip
 import warnings
@@ -35,6 +34,9 @@ SOLVERS = {}
 try:
 	from ._netflow.nf_cplex import NetworkFlowCPLEX
 except ImportError:
+	# NOTE: nf_cplex assumes callers catch the ImportError if IBM CPLEX is not
+	# installed. To use it, install the CPLEX binary library from IBM (it's
+	# free for students) and do `pip install cplex>=12.8.0.0`.
 	pass
 else:
 	SOLVERS[S_CPLEX_QUAD] = NetworkFlowCPLEX
@@ -956,7 +958,7 @@ class FluxBalanceAnalysis(object):
 			flowID = self._generatedID_externalExchange.format(moleculeID)
 
 			if level < 0:
-				print "Setting a negative external molecule level - be sure this is intended behavior."
+				print("Setting a negative external molecule level - be sure this is intended behavior.")
 
 				self._solver.setFlowBounds(
 					flowID,
@@ -1054,23 +1056,32 @@ class FluxBalanceAnalysis(object):
 				lowerBound=lb,
 				)
 
-	def setMoleculeSetpoint(self, moleculeID, coeff):
-		if moleculeID not in self._outputMoleculeIDs:
-			raise FBAError(
-				"setpointIs() only allows for modification of setpoint values, " +
-				"not adding new ones. %s is an unrecognized molecule" % moleculeID
+	def update_homeostatic_targets(self, objective):
+		'''
+		Sets the homeostatic objective target values.
+
+		Args:
+			objective (dict): targets for each molecule
+				{molecule (str): target (float)}
+		'''
+
+		for molecule_id, coeff in objective.items():
+			if molecule_id not in self._outputMoleculeIDs:
+				raise FBAError(
+					"This function only allows for modification of setpoint values, " +
+					"not adding new ones. %s is an unrecognized molecule" % moleculeID
+					)
+
+			pseudo_flux_id = self._generatedID_moleculesToEquivalents.format(molecule_id)
+
+			self._solver.setFlowMaterialCoeff(
+				pseudo_flux_id,
+				molecule_id,
+				-coeff
 				)
 
-		pseudoFluxID = self._generatedID_moleculesToEquivalents.format(moleculeID)
-
-		self._solver.setFlowMaterialCoeff(
-			pseudoFluxID,
-			moleculeID,
-			-coeff
-			)
-
-		i = self._outputMoleculeIDs.index(moleculeID)
-		self._outputMoleculeCoeffs[i][pseudoFluxID] = -coeff
+			i = self._outputMoleculeIDs.index(molecule_id)
+			self._outputMoleculeCoeffs[i][pseudo_flux_id] = -coeff
 
 	def setMaxMassAccumulated(self, maxAccumulation):
 		self._solver.setFlowBounds(
@@ -1193,6 +1204,10 @@ class FluxBalanceAnalysis(object):
 
 		if reactionIDs is None:
 			reactionIDs = self.getKineticTargetFluxNames()
+
+		if not reactionIDs:
+			return np.array([])
+
 		values = np.zeros(len(reactionIDs))
 
 		# Get all reaction fluxes at once for faster performance
@@ -1269,8 +1284,8 @@ class FluxBalanceAnalysis(object):
 			reactionIDs = [reactionIDs]
 
 		# If no reactions specified, enable all kinetic reactions
-		if reactionIDs == None:
-			print "enabled kinetic rates"
+		if reactionIDs is None:
+			print("enabled kinetic rates")
 			reactionIDs = self.getKineticTargetFluxNames()
 
 		for reactionID in reactionIDs:
@@ -1302,8 +1317,8 @@ class FluxBalanceAnalysis(object):
 			reactionIDs = [reactionIDs]
 
 		# If no reactions specified, disable all kinetic reactions
-		if reactionIDs == None:
-			print "disabled kinetic rates"
+		if reactionIDs is None:
+			print("disabled kinetic rates")
 			reactionIDs = self.getKineticTargetFluxNames()
 
 		for reactionID in reactionIDs:
@@ -1340,12 +1355,12 @@ class FluxBalanceAnalysis(object):
 
 	def getArrayBasedModel(self):
 		return {
-		"S_matrix": self._solver.getSMatrix(),
-		"Reactions": self._solver.getFlowNames(),
-		"Metabolites": self._solver.getMaterialNames(),
-		"Upper bounds": self._solver.getUpperBounds(),
-		"Lower bounds": self._solver.getLowerBounds(),
-		"Objective": self._solver.getObjective(),
+			"S_matrix": self._solver.getSMatrix(),
+			"Reactions": self._solver.getFlowNames(),
+			"Metabolites": self._solver.getMaterialNames(),
+			"Upper bounds": self._solver.getUpperBounds(),
+			"Lower bounds": self._solver.getLowerBounds(),
+			"Objective": self._solver.getObjective(),
 		}
 
 	def getMassAccumulated(self):
@@ -1358,5 +1373,5 @@ class FluxBalanceAnalysis(object):
 			try:
 				self._solver._solve()
 			except Exception as inst:
-				print "Warning: {} error while solving FBA - repeating FBA solve".format(inst)
+				print("Warning: {} error while solving FBA - repeating FBA solve".format(inst))
 				self.solve(iterations - 1)

@@ -13,6 +13,7 @@ import numpy as np
 from wholecell.utils import units
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
+from wholecell.utils.random import make_elongation_rates
 
 MAX_TIMESTEP_LEN = 2
 
@@ -23,6 +24,7 @@ class Translation(object):
 		self._buildMonomerData(raw_data, sim_data)
 		self._buildTranslation(raw_data, sim_data)
 		self._buildTranslationEfficiency(raw_data, sim_data)
+		self.elongation_rates = self._build_elongation_rates(raw_data, sim_data)
 
 	def _buildMonomerData(self, raw_data, sim_data):
 		assert all([len(protein['location']) == 1 for protein in raw_data.proteins])
@@ -73,8 +75,9 @@ class Translation(object):
 
 		# Calculate degradation rates based on N-rule
 		# TODO: citation
-		fastRate = (np.log(2) / (2*units.min)).asUnit(1 / units.s)
-		slowRate = (np.log(2) / (10*60*units.min)).asUnit(1 / units.s)
+		deg_rate_units = 1 / units.s
+		fastRate = (np.log(2) / (2*units.min)).asNumber(deg_rate_units)
+		slowRate = (np.log(2) / (10*60*units.min)).asNumber(deg_rate_units)
 
 		fastAAs = ["R", "K", "F", "L", "W", "Y"]
 		slowAAs = ["H", "I", "D", "E", "N", "Q", "C", "A", "S", "T", "G", "V", "M"]
@@ -97,12 +100,20 @@ class Translation(object):
 		ribosomalProteins.extend([x[:-3] for x in sim_data.moleculeGroups.s30_proteins])
 		ribosomalProteins.extend([x[:-3] for x in sim_data.moleculeGroups.s50_proteins])
 
+		# Get degradation rates from measured protein half lives
+		measured_deg_rates = {
+			p['id']: (np.log(2) / p['half life']).asNumber(deg_rate_units)
+			for p in raw_data.protein_half_lives
+			}
+
 		degRate = np.zeros(len(raw_data.proteins))
 		for i,m in enumerate(raw_data.proteins):
-			if m['id'] not in ribosomalProteins:
-				degRate[i] = NruleDegRate[m['seq'][0]].asNumber()
+			if m['id'] in measured_deg_rates:
+				degRate[i] = measured_deg_rates[m['id']]
+			elif m['id'] not in ribosomalProteins:
+				degRate[i] = NruleDegRate[m['seq'][0]]
 			else:
-				degRate[i] = slowRate.asNumber()
+				degRate[i] = slowRate
 
 		monomerData = np.zeros(
 			size,
@@ -128,7 +139,7 @@ class Translation(object):
 		field_units = {
 			'id'		:	None,
 			'rnaId'		:	None,
-			'degRate'	:	1 / units.s,
+			'degRate'	:	deg_rate_units,
 			'length'	:	units.aa,
 			'aaCounts'	:	units.aa,
 			'mw'		:	units.g / units.mol,
@@ -182,3 +193,46 @@ class Translation(object):
 
 		self.translationEfficienciesByMonomer = np.array(trEffs)
 		self.translationEfficienciesByMonomer[np.isnan(self.translationEfficienciesByMonomer)] = np.nanmean(self.translationEfficienciesByMonomer)
+
+
+	def _build_elongation_rates(self, raw_data, sim_data):
+		self.protein_ids = self.monomerData['id']
+		self.ribosomal_protein_ids = sim_data.moleculeGroups.rProteins
+
+		self.protein_indexes = {
+			protein: index
+			for index, protein in enumerate(self.protein_ids)}
+
+		self.ribosomal_proteins = {
+			rprotein: self.protein_indexes.get(rprotein, -1)
+			for rprotein in self.ribosomal_protein_ids}
+
+		self.rprotein_indexes = np.array([
+			index
+			for index in self.ribosomal_proteins.values()
+			if index >= 0], dtype=np.int64)
+
+		self.basal_elongation_rate = sim_data.constants.ribosomeElongationRateBasal.asNumber(units.aa / units.s)
+		self.max_elongation_rate = sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s)
+		self.elongation_rates = np.full(
+			self.protein_ids.shape,
+			self.basal_elongation_rate,
+			dtype=np.int64)
+
+		self.elongation_rates[self.rprotein_indexes] = self.max_elongation_rate
+
+	def make_elongation_rates(
+			self,
+			random,
+			base,
+			time_step,
+			variable_elongation=False):
+
+		return make_elongation_rates(
+			random,
+			self.protein_ids.shape,
+			base,
+			self.rprotein_indexes,
+			self.max_elongation_rate,
+			time_step,
+			variable_elongation)

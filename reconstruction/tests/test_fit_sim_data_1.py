@@ -6,18 +6,14 @@ Test fitkb1.py
 @date: Created 9/23/2014
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import unittest
-import warnings
 
-import cPickle
-import os
-
-import wholecell.utils.constants
 from reconstruction.ecoli.fit_sim_data_1 import (totalCountFromMassesAndRatios,
-proteinDistributionFrommRNA, mRNADistributionFromProtein,
-calculateMinPolymerizingEnzymeByProductDistribution, netLossRateFromDilutionAndDegradationProtein)
+	proteinDistributionFrommRNA, mRNADistributionFromProtein,
+	calculateMinPolymerizingEnzymeByProductDistribution,
+	netLossRateFromDilutionAndDegradationProtein)
 
 import numpy as np
 from wholecell.utils import units
@@ -25,20 +21,6 @@ from wholecell.utils import units
 import nose.plugins.attrib as noseAttrib
 
 class Test_fitkb1(unittest.TestCase):
-
-	@classmethod
-	def setUpClass(cls):
-		pass
-
-	@classmethod
-	def tearDownClass(cls):
-		pass
-
-	def setUp(self):
-		pass
-
-	def tearDown(self):
-		pass
 
 	@noseAttrib.attr('smalltest')
 	@noseAttrib.attr('fitkb1test')
@@ -75,7 +57,7 @@ class Test_fitkb1(unittest.TestCase):
 		expectedDistribution = (distributionUnnormed / units.sum(distributionUnnormed))
 		expectedDistribution.normalize()
 		expectedDistribution.checkNoUnit()
-		self.assertEqual(proteinDist.tolist(), expectedDistribution.asNumber().tolist())
+		np.testing.assert_array_almost_equal_nulp(expectedDistribution.asNumber(), proteinDist)
 
 		# Test normal call with units
 		distribution_mRNA = np.array([0.5, 0.25, 0.25])
@@ -85,7 +67,7 @@ class Test_fitkb1(unittest.TestCase):
 		expectedDistribution = (distributionUnnormed / units.sum(distributionUnnormed))
 		expectedDistribution.normalize()
 		expectedDistribution.checkNoUnit()
-		self.assertEqual(proteinDist.tolist(), expectedDistribution.asNumber().tolist())
+		np.testing.assert_array_almost_equal_nulp(expectedDistribution.asNumber(), proteinDist)
 
 		# Test assertion in function
 		distribution_mRNA = np.array([0.25, 0.25, 0.25])
@@ -122,13 +104,13 @@ class Test_fitkb1(unittest.TestCase):
 
 	@noseAttrib.attr('smalltest')
 	@noseAttrib.attr('fitkb1test')
-	def test_calculateMinPolymerizingEnzymeByProductDistribution(self):
-		productLengths = units.nt * np.array([1000, 2000, 3000])
-		elongationRate = 50 * units.nt / units.s
+	def test_calculateMinPolymerizingEnzymeByProductDistributionRNA(self):
+		productLengths = units.aa * np.array([1000, 2000, 3000])
+		elongationRates = units.aa / units.s * np.full(3, 50)
 		netLossRate = (1 / units.s) * np.array([3, 2, 1])
 		productCounts = np.array([5,1,10])
 
-		nMin = calculateMinPolymerizingEnzymeByProductDistribution(productLengths, elongationRate, netLossRate, productCounts)
+		nMin = calculateMinPolymerizingEnzymeByProductDistribution(productLengths, elongationRates, netLossRate, productCounts)
 		nMin.checkNoUnit()
 		self.assertEqual(nMin, 980)
 

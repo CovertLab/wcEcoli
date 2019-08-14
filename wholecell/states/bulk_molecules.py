@@ -47,7 +47,7 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 		self._processIDs = None
 		self._submassNameToIndex = None
 		self._processPriorities = None
-		self.divisionIds = {}
+		self.division_mode = {}
 
 
 	def initialize(self, sim, sim_data):
@@ -70,11 +70,9 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 		self._processPriorities.fill(REQUEST_PRIORITY_DEFAULT)
 
 		# Set up ids for division into daughter cells
-		self.divisionIds = {}
-		self.divisionIds['binomial'] = sim_data.moleculeGroups.bulkMoleculesBinomialDivision
-		self.divisionIds['equally'] = sim_data.moleculeGroups.bulkMoleculesEqualDivision
-		self.divisionIds['geneCopyNumber'] = sim_data.moleculeGroups.bulkMoleculesGeneCopyNumberDivision
-		self.divisionIds['boundTF'] = sim_data.moleculeGroups.bulkMoleculesBoundTFDivision
+		self.division_mode = {}
+		self.division_mode['binomial'] = sim_data.moleculeGroups.bulkMoleculesBinomialDivision
+		self.division_mode['equally'] = sim_data.moleculeGroups.bulkMoleculesEqualDivision
 
 	def processRequestPriorityIs(self, processIndex, priorityLevel):
 		self._processPriorities[processIndex] = priorityLevel
@@ -200,9 +198,13 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)
+		objectNames = self.container.objectNames()
+		subcolumns = {
+			'counts': 'objectNames'}
+
 		tableWriter.writeAttributes(
 			processNames = self._processIDs,
-			)
+			subcolumns = subcolumns)
 
 	def tableAppend(self, tableWriter):
 		# self.container.tableAppend(tableWriter)
@@ -278,6 +280,13 @@ class BulkMoleculesViewBase(wholecell.views.view.View):
 
 		values = np.asarray(values, dtype=self._containerIndexes.dtype)
 		self._state._countsAllocatedFinal[self._containerIndexes, self._processIndex] -= values
+
+	# Request
+	def requestIs(self, value):
+		self._requestedCount[:] = value
+
+	def requestAll(self):
+		self._requestedCount[:] = self._totalCount
 
 
 class BulkMoleculesView(BulkMoleculesViewBase):

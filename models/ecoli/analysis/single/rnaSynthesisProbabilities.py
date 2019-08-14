@@ -17,7 +17,6 @@ import numpy as np
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
-from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath
 
@@ -39,7 +38,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		nutrients = sim_data.conditions[sim_data.condition]["nutrients"]
 		synth_prob_fractions = sim_data.process.transcription.rnaSynthProbFraction[nutrients]
 
-		# Get "average" synthesis probability fractions set by the fitter
+		# Get "average" synthesis probability fractions set by the parca
 		mrna_avg_synth_prob = synth_prob_fractions["mRna"]
 		trna_avg_synth_prob = synth_prob_fractions["tRna"]
 		rrna_avg_synth_prob = synth_prob_fractions["rRna"]

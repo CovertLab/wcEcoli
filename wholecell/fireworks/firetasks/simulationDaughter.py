@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+
 import time
 import cPickle
 
@@ -10,14 +12,14 @@ class SimulationDaughterTask(FireTaskBase):
 
 	_fw_name = "SimulationDaughterTask"
 	required_params = ["input_sim_data", "output_directory", "inherited_state_path"]
-	optional_params = ["seed", "length_sec", "timestep_safety_frac", "timestep_max", "timestep_update_freq", "log_to_shell", "log_to_disk_every", "mass_distribution", "growth_rate_noise", "d_period_division", "translation_supply", "trna_charging"]
+	optional_params = ["seed", "timeline", "length_sec", "timestep_safety_frac", "timestep_max", "timestep_update_freq", "log_to_shell", "log_to_disk_every", "mass_distribution", "growth_rate_noise", "d_period_division", "translation_supply", "trna_charging"]
 
 	def run_task(self, fw_spec):
 
-		print "%s: Running simulation" % time.ctime()
+		print("%s: Running simulation" % time.ctime())
 
-		# load the sim_data from the output of the fitter
-		# TODO(spanglry): make the fitter output JSON and this load from JSON instead
+		# load the sim_data from the output of the parameter calculator (parca)
+		# TODO(spanglry): make the parca output JSON and this load from JSON instead
 		with open(self["input_sim_data"], "rb") as input_sim_data:
 			sim_data = cPickle.load(input_sim_data)
 
@@ -30,6 +32,7 @@ class SimulationDaughterTask(FireTaskBase):
 		options["inheritedStatePath"] = self["inherited_state_path"]
 
 		options["seed"] = int(self.get("seed", DEFAULT_SIMULATION_KWARGS["seed"]))
+		options["timeline"] = self.get("timeline", DEFAULT_SIMULATION_KWARGS["timeline"])
 		options["lengthSec"] = self.get("length_sec", DEFAULT_SIMULATION_KWARGS["lengthSec"])
 		options["timeStepSafetyFraction"] = self.get("timestep_safety_frac", DEFAULT_SIMULATION_KWARGS["timeStepSafetyFraction"])
 		options["maxTimeStep"] = self.get("timestep_max", DEFAULT_SIMULATION_KWARGS["maxTimeStep"])

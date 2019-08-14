@@ -18,6 +18,7 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.utils import units
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS
 from wholecell.analysis.analysis_tools import exportFigure
+from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from models.ecoli.analysis import multigenAnalysisPlot
 
 FONTSIZE = 6
@@ -60,12 +61,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 		cellDensity = sim_data.constants.cellDensity
-		nAvogadro = sim_data.constants.nAvogadro
 
 		rnaIds = sim_data.process.transcription.rnaData["id"]
-		isMRna = sim_data.process.transcription.rnaData["isMRna"]
-		mRnaIndexes = np.where(isMRna)[0]
-		mRnaIds = np.array([rnaIds[x] for x in mRnaIndexes])
 
 		simOutDir = os.path.join(allDir[0], "simOut")
 		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
@@ -95,11 +92,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		for gen, simDir in enumerate(allDir):
 			simOutDir = os.path.join(simDir, "simOut")
 
-			time += TableReader(os.path.join(simOutDir, "Main")).readColumn("time").tolist()
+			main_reader = TableReader(os.path.join(simOutDir, "Main"))
+			time += main_reader.readColumn("time").tolist()
 			generationTicks.append(time[-1])
-			timeStepSec += TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec").tolist()
-			cellMass += TableReader(os.path.join(simOutDir, "Mass")).readColumn("cellMass").tolist()
-			dryMass += TableReader(os.path.join(simOutDir, "Mass")).readColumn("dryMass").tolist()
+			timeStepSec += main_reader.readColumn("timeStepSec").tolist()
+
+			mass = TableReader(os.path.join(simOutDir, "Mass"))
+			cellMass += mass.readColumn("cellMass").tolist()
+			dryMass += mass.readColumn("dryMass").tolist()
 
 			bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 			moleculeCounts = bulkMolecules.readColumn("counts")
@@ -131,7 +131,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		time = np.array(time)
 
-		cellVolume = units.g * np.array(cellMass) / cellDensity
 		coefficient = (units.fg * np.array(dryMass)) / (units.fg * np.array(cellMass)) * cellDensity * (timeStepSec * units.s)
 		enzymeFluxes = (((COUNTS_UNITS / VOLUME_UNITS) * enzymeFluxes) / coefficient).asNumber(units.mmol / units.g / units.h)
 
@@ -241,23 +240,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			enzymeIds = ["MENE-CPLX[c]", "CPLX0-7882[c]", "CPLX0-8128[c]", "DMK-MONOMER[i]", "2-OCTAPRENYL-METHOXY-BENZOQ-METH-MONOMER[c]"]
 			reactionIds = ["O-SUCCINYLBENZOATE-COA-LIG-RXN", "NAPHTHOATE-SYN-RXN", "RXN-9311", "DMK-RXN", "ADOMET-DMK-METHYLTRANSFER-RXN"]
 			reactantIds = ["CPD-12115[c]"]
-			enzymeIndexes = [moleculeIds.index(x) for x in enzymeIds]
-			reactantIndexes = [moleculeIds.index(x) for x in reactantIds]
 
 			for gen, simDir in enumerate(allDir):
 				simOutDir = os.path.join(simDir, "simOut")
 
-				time_ = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
-				timeStepSec = TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")
-				cellMass = TableReader(os.path.join(simOutDir, "Mass")).readColumn("cellMass")
-				dryMass = TableReader(os.path.join(simOutDir, "Mass")).readColumn("dryMass")
+				main_reader = TableReader(os.path.join(simOutDir, "Main"))
+				time_ = main_reader.readColumn("time")
+				timeStepSec = main_reader.readColumn("timeStepSec")
 
-				bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-				moleculeCounts = bulkMolecules.readColumn("counts")
-				enzymeCounts = moleculeCounts[:, enzymeIndexes]
-				metCounts = moleculeCounts[:, metaboliteIndexes[0]]
-				reactantCounts = moleculeCounts[:, reactantIndexes]
-				bulkMolecules.close()
+				mass = TableReader(os.path.join(simOutDir, "Mass"))
+				cellMass = mass.readColumn("cellMass")
+				dryMass = mass.readColumn("dryMass")
+
+				(enzymeCounts, metCounts, reactantCounts) = read_bulk_molecule_counts(
+					simOutDir, (enzymeIds, metaboliteIds[:1], reactantIds))
 
 				fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
 				reactionIDs = np.array(fbaResults.readAttribute("reactionIDs")).tolist()
@@ -266,7 +262,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				enzymeFluxes = reactionFluxes[:, reactionIndexes]
 				fbaResults.close()
 
-				cellVolume = units.g * np.array(cellMass) / cellDensity
 				coefficient = (units.fg * np.array(dryMass)) / (units.fg * np.array(cellMass)) * cellDensity * (units.s * timeStepSec)
 
 				for i, row in enumerate(xrange(0, 2 * len(enzymeIds), 2)):
@@ -277,7 +272,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					fluxAxis.plot(time_ / 3600., plotFlux, color = "b")
 				axesList[-2].plot(time_ / 3600., reactantCounts, color = "b")
 				axesList[-1].plot(time_ / 3600., metCounts, color = "b")
-				exportFigure(plt, plotOutDir, plotOutFileName + "__downstreamFluxes", metadata)
 
 			ylabels = ["menE", "menB", "menI", "menA", "ubiE", "CPD-12115", "Menaquinone"]
 			for i, axis in enumerate(axesList[::2]):

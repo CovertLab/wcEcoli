@@ -45,34 +45,27 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		rna_coordinates = sim_data.process.transcription.rnaData[
 			"replicationCoordinate"][rna_idx]
 
-		forward_sequence_length = sim_data.process.replication.sequence_lengths[0]
-		reverse_sequence_length = sim_data.process.replication.sequence_lengths[1]
+		forward_sequence_length = sim_data.process.replication.replichore_lengths[0]
+		reverse_sequence_length = sim_data.process.replication.replichore_lengths[1]
 
 		relative_positions = np.array([float(x)/forward_sequence_length
 			if x > 0 else float(-x)/reverse_sequence_length
 			for x in rna_coordinates])
 
-		all_fitter_synth_probs = sim_data.process.transcription.rnaSynthProb[sim_data.condition]
+		all_parca_synth_probs = sim_data.process.transcription.rnaSynthProb[sim_data.condition]
 
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
-		bulk_molecules_reader = TableReader(
-			os.path.join(simOutDir, "BulkMolecules"))
-		synth_prob_reader = TableReader(
-			os.path.join(simOutDir, "RnaSynthProb"))
+		synth_prob_reader = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
 
 		# Load data
 		time = main_reader.readColumn('time')
 
-		molecule_ids = bulk_molecules_reader.readAttribute("objectNames")
-		dosage_idx = [molecule_ids.index(x + "__alpha")
-			for x in RNA_ID_LIST]
-
-		gene_dosages = bulk_molecules_reader.readColumn(
-			"counts")[:, dosage_idx]
+		gene_copy_numbers = synth_prob_reader.readColumn(
+			"gene_copy_number")[:, rna_idx]
 		synth_probs = synth_prob_reader.readColumn(
 			"rnaSynthProb")[:, rna_idx]
-		fitter_synth_probs = all_fitter_synth_probs[rna_idx]
+		parca_synth_probs = all_parca_synth_probs[rna_idx]
 
 		n_plots = len(RNA_ID_LIST)
 
@@ -84,7 +77,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			ax1 = plt.subplot(gs[i, 0])
 			ax1.set_ylabel("Transcription probability")
 			ax1.plot(time, synth_probs[:, i], label="Transcription probability")
-			ax1.axhline(fitter_synth_probs[i],
+			ax1.axhline(parca_synth_probs[i],
 				linestyle="--", color='k', linewidth=3,
 				label="Fit transcription probability")
 			ax1.legend(loc=2)
@@ -94,7 +87,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			ax2.set_ylabel("Gene dosage (copy number)")
 			ax2.set_ylim([0, 10])
 			ax2.set_title("%s, position = %.2f" % (rna_id, rna_pos))
-			ax2.plot(time, gene_dosages[:, i], color='r', label="Gene dosage")
+			ax2.plot(time, gene_copy_numbers[:, i], color='r', label="Gene dosage")
 			ax2.legend(loc=1)
 
 		fig.tight_layout()

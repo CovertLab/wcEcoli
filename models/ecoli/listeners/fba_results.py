@@ -35,17 +35,17 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.objectiveValue = 0.0
 
 		self.metaboliteNamesFromNutrients = set()
-		for time, nutrientsLabel in sim_data.external_state.environment.nutrients_time_series[
-			sim_data.external_state.environment.nutrients_time_series_label
-			]:
 
+		for time, media_id in sim.external_states['Environment'].current_timeline:
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					nutrientsLabel, sim_data.process.metabolism.nutrientsToInternalConc
+					media_id, sim_data.process.metabolism.nutrientsToInternalConc
 					)
 				)
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
+		# exchange with environment
+		self.all_external_exchange_molecules = sim_data.process.metabolism.boundary.all_external_exchange_molecules
 
 	# Allocate memory
 	def allocate(self):
@@ -69,12 +69,23 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.targetConcentrations = np.zeros(len(self.homeostaticTargetMolecules))
 
 		# exchange with environment
-		self.externalExchangeMolecules = self.metabolism.all_external_exchange_molecules
-		self.import_constraint = self.metabolism.import_constraint
-		self.import_exchange = self.metabolism.import_exchange
+		self.import_constraint = [False] * len(self.all_external_exchange_molecules)
+		self.import_exchange = [False] * len(self.all_external_exchange_molecules)
 
 
 	def tableCreate(self, tableWriter):
+		subcolumns = {
+			'reactionFluxes': 'reactionIDs',
+			'externalExchangeFluxes': 'externalMoleculeIDs',
+			'shadowPrices': 'outputMoleculeIDs',
+			'reducedCosts': 'reactionIDs',
+			'homeostaticObjectiveValues': 'homeostaticTargetMolecules',
+			'kineticObjectiveValues': 'kineticTargetFluxNames',
+			'deltaMetabolites': 'metaboliteNames',
+			'targetConcentrations': 'homeostaticTargetMolecules',
+			'importConstraint': 'all_external_exchange_molecules',
+			'importExchange': 'all_external_exchange_molecules'}
+
 		tableWriter.writeAttributes(
 			reactionIDs = list(self.reactionIDs),
 			externalMoleculeIDs = self.externalMoleculeIDs,
@@ -82,8 +93,8 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			homeostaticTargetMolecules = self.homeostaticTargetMolecules,
 			kineticTargetFluxNames = self.kineticTargetFluxNames,
 			metaboliteNames = self.metaboliteNamesFromNutrients,
-			externalExchangeMolecules = self.externalExchangeMolecules
-			)
+			all_external_exchange_molecules = self.all_external_exchange_molecules,
+			subcolumns = subcolumns)
 
 
 	def tableAppend(self, tableWriter):

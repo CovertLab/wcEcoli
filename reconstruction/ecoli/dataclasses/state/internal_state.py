@@ -97,19 +97,45 @@ class InternalState(object):
 		Add data (name, mass, and attribute data structure) for all classes of
 		unique molecules.
 		"""
+		# Initialize lists of molecule names for each division mode
+		sim_data.moleculeGroups.unique_molecules_active_ribosome_division = []
+		sim_data.moleculeGroups.unique_molecules_domain_index_division = []
 
 		# Add active RNA polymerase
+		# The attributes of active RNA polymerases are given as:
+		# - TU_index (64-bit int): Index of the transcription unit that the
+		# RNA polymerase is elongating. This determines the sequence and the
+		# length of the RNA that the polymerase is elongating.
+		# - transcript_length (64-bit int): The current length of the RNA that
+		# the RNAP is elongating.
+		# - domain_index (32-bit int): Domain index of the chromosome domain
+		# that the RNAP is bound to. This value is used to split the RNAPs at
+		# cell division.
+		# - coordinates (64-bit int): Location of the RNAP on the chromosome,
+		# in base pairs from origin.
+		# - direction (bool): True if RNAP is moving in the positive direction
+		# of the coordinate, False if RNAP is moving in the negative direction.
+		# This is determined by the orientation of the gene that the RNAP is
+		# transcribing.
 		rnaPolyComplexMass = self.bulkMolecules.bulkData["mass"][
 			self.bulkMolecules.bulkData["id"] == sim_data.moleculeIds.rnapFull]
 		rnaPolyAttributes = {
-			"rnaIndex": "i8",
-			"transcriptLength": "i8"
+			"TU_index": "i8",
+			"transcript_length": "i8",
+			"domain_index": "i4",
+			"coordinates": "i8",
+			"direction": "?",
 			}
 
 		self.uniqueMolecules.addToUniqueState('activeRnaPoly', rnaPolyAttributes, rnaPolyComplexMass)
 
+		# RNAPs are divided based on the index of the chromosome domain they
+		# are bound to
+		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(
+			'activeRnaPoly')
+
 		# Add active ribosome
-		# TODO: This is a bad hack that works because in the fitter
+		# TODO: This is a bad hack that works because in the parca
 		# I have forced expression to be these subunits only
 		ribosome30SMass = self.bulkMolecules.bulkData["mass"][
 			self.bulkMolecules.bulkData["id"] == sim_data.moleculeIds.s30_fullComplex]
@@ -121,6 +147,57 @@ class InternalState(object):
 			"peptideLength": "i8",
 			}
 		self.uniqueMolecules.addToUniqueState("activeRibosome", ribosomeAttributes, ribosomeMass)
+
+		# Active ribosomes are currently divided binomially, but the ribosome
+		# elongation rates of daughter cells are set in such a way that the two
+		# daughters have identical translational capacities.
+		sim_data.moleculeGroups.unique_molecules_active_ribosome_division.append(
+			'activeRibosome')
+
+		# Add full chromosomes
+		# One full chromosome molecule is added when chromosome replication is
+		# complete, and sets cell division to happen after a length of time
+		# specified by the D period (if D_PERIOD_DIVISION is set to True).
+		# The "has_induced_division" attribute is initially set to False, and
+		# is reset to True when division_time was reached and the cell has
+		# divided. The "domain_index" keeps track of the index of the oldest
+		# chromosome domain that is part of the full chromosome.
+		fullChromosomeMass = (units.g/units.mol) * (
+			stateFunctions.createMassesByCompartments(raw_data.full_chromosome))
+		fullChromosomeAttributes = {
+			"division_time": "f8",
+			"has_induced_division": "?",
+			"domain_index": "i4",
+			}
+
+		self.uniqueMolecules.addToUniqueState('fullChromosome', fullChromosomeAttributes, fullChromosomeMass)
+
+		# Full chromosomes are divided based on their domain index
+		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(
+			'fullChromosome')
+
+
+		# Add chromosome domains
+		# Chromosome domains are zero-mass molecules that accounts for the
+		# structures of replicating chromosomes. Each replication initiation
+		# event creates two new chromosome domains that are given a unique
+		# integer "domain_index". These two new domains are child domains of
+		# the original domain that the origin belonged to.
+		chromosome_domain_mass = (units.g/units.mol) * np.zeros_like(rnaPolyComplexMass)
+		chromosome_domain_attributes = {
+			"domain_index": "i4",
+			"child_domains": ("i4", 2)
+			}
+
+		# Placeholder value for domains without children domains
+		sim_data.process.replication.no_child_place_holder = -1
+
+		self.uniqueMolecules.addToUniqueState('chromosome_domain', chromosome_domain_attributes, chromosome_domain_mass)
+
+		# Chromosome domains are divided based on their domain index
+		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(
+			'chromosome_domain')
+
 
 		# Add active replisomes
 		# Note that the replisome does not functionally replicate the
@@ -142,61 +219,98 @@ class InternalState(object):
 				3*np.sum(trimer_mass, axis=0) + np.sum(monomer_mass, axis=0))
 
 		replisomeAttributes = {
-			'replicationRound': 'i8',
-			'chromosomeIndex': 'i8',
+			"domain_index": "i4",
+			"right_replichore": "?",
+			"coordinates": "i8",
 			}
 
-		self.uniqueMolecules.addToUniqueState('activeReplisome', replisomeAttributes, replisomeMass)
+		self.uniqueMolecules.addToUniqueState('active_replisome', replisomeAttributes, replisomeMass)
 
-		# Add active DNA polymerase
-		# Note that active DNA polymerases are conceptual molecules and have
-		# zero mass. Two active DNA polymerases are assigned per replication
-		# fork, and these molecules functionally replicate the chromosome, one
-		# on the leading strand, and one on the lagging strand. This was done
-		# to simplify the process by which the polymerize function handles the
-		# elongation of DNA.
-		dnaPolyMass = (units.g/units.mol) * np.zeros_like(rnaPolyComplexMass)
-		dnaPolymeraseAttributes = {
-			"sequenceIdx": "i8",
-			"sequenceLength": "i8",
-			"replicationRound": "i8",
-			"chromosomeIndex": "i8",
-			}
+		# Active replisomes are divided based on their domain index
+		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(
+			'active_replisome')
 
-		self.uniqueMolecules.addToUniqueState('dnaPolymerase', dnaPolymeraseAttributes, dnaPolyMass)
 
 		# Add origins of replication
 		# Note that origins are conceptual molecules and have zero mass. The
 		# chromosomeIndexes of oriC's determine the chromosomeIndexes of the
-		# new DNA polymerases and replisomes initiated on the same oriC.
+		# new partial chromosomes and replisomes initiated on the same oriC.
 		originMass = (units.g/units.mol) * np.zeros_like(rnaPolyComplexMass)
 		originAttributes = {
-			"chromosomeIndex": "i8",
+			"domain_index": "i4",
 			}
 
 		self.uniqueMolecules.addToUniqueState('originOfReplication', originAttributes, originMass)
 
-		# Add full chromosomes
-		# One full chromosome molecule is added when chromosome replication is
-		# complete, and sets cell division to happen after a length of time
-		# specified by the D period (if D_PERIOD_DIVISION is set to True). The
-		# chromosomes are indexed in the order they are formed - thus, the
-		# "oldest" full chromosome that a cell inherited from its mother has
-		# the index of zero, and the chromosome that is initially replicated
-		# from this inherited chromosome gets the index of one. If more
-		# chromosomes are made during a single cycle, those chromosomes get
-		# indexes starting from two. The cell divides at the division time
-		# specified by the division_time attribute of the chromosome with index
-		# one.
-		fullChromosomeMass = (units.g/units.mol) * (
-			stateFunctions.createMassesByCompartments(raw_data.full_chromosome))
-		fullChromosomeAttributes = {
-			"division_time": "f8",
-			"chromosomeIndex": "i8",
+		# oriC's are divided based on their domain index
+		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(
+			'originOfReplication')
+
+		# Add promoters
+		# Promoters are sequences on the DNA where RNA polymerases bind to and
+		# initiate transcription. They can also be bound to transcription
+		# factors(TFs), if the transcription unit associated with the promoter
+		# is regulated by TFs. The promoter itself has zero mass but can hold
+		# the mass of the transcription factor that it is bound to. Its
+		# attributes are given as:
+		# - TU_index (64-bit int): Index of the transcription unit that
+		# the promoter is associated with. This determines which TFs the
+		# promoter can bind to, and how the transcription probability is
+		# calculated.
+		# - coordinates (64-bit int): Location of the promoter on the
+		# chromosome, in base pairs from origin. This value does not change
+		# after the molecule is initialized.
+		# - domain_index (32-bit int): Domain index of the chromosome domain
+		# that the promoter belongs to. This value is used to split the
+		# promoters at cell division.
+		# - bound_TF (boolean array of length n_tf): A boolean array that
+		# shows which TFs the promoter is bound to. Note that one promoter can
+		# bind to multiple TFs.
+		n_tf = len(sim_data.process.transcription_regulation.tf_ids)
+
+		promoter_mass = (units.g/units.mol) * np.zeros_like(rnaPolyComplexMass)
+		promoter_attributes = {
+			"TU_index": "i8",
+			"coordinates": "i8",
+			"domain_index": "i4",
+			"bound_TF": ("?", n_tf),
 			}
 
-		self.uniqueMolecules.addToUniqueState('fullChromosome', fullChromosomeAttributes, fullChromosomeMass)
+		self.uniqueMolecules.addToUniqueState("promoter", promoter_attributes, promoter_mass)
 
+		# Promoters are divided based on their domain index
+		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(
+			"promoter"
+			)
+
+		# Add DnaA boxes
+		# DnaA boxes are 9-base sequence motifs on the DNA that bind to the
+		# protein DnaA. Except for DnaA boxes close to the origin, these boxes
+		# serve no functional role in replication initiation, but can
+		# effectively titrate away free DnaA molecules and control its
+		# concentration. The molecule itself has zero mass but it can hold the
+		# mass of the DnaA protein that it is bound to. Its attributes are
+		# given as:
+		# - coordinates (64-bit int): Location of the middle base (5th base) of
+		# the DnaA box, in base pairs from origin. This value does not change
+		# after the molecule is initialized.
+		# - domain_index (32-bit int): Domain index of the chromosome domain
+		# that the DnaA box belongs to. This value is used to allocate DnaA
+		# boxes to the two daughter cells at cell division.
+		# - DnaA_bound (boolean): True if bound to a DnaA protein, False if not
+		DnaA_box_mass = (units.g/units.mol) * np.zeros_like(rnaPolyComplexMass)
+		DnaA_box_attributes = {
+			"coordinates": "i8",
+			"domain_index": "i4",
+			"DnaA_bound": "?",
+			}
+
+		self.uniqueMolecules.addToUniqueState('DnaA_box',
+			DnaA_box_attributes, DnaA_box_mass)
+
+		# DnaA boxes are divided based on their domain index
+		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(
+			'DnaA_box')
 
 	def _buildCompartments(self, raw_data, sim_data):
 		compartmentData = np.empty(len(raw_data.compartments),

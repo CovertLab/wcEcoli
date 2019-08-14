@@ -10,7 +10,8 @@ def raster(location, dx):
 def within(bounds, point):
 	''' determine whether the given point is within the provided bounding box '''
 
-	return point[0] >= 0 and point[1] >= 0 and point[0] < bounds[0] and point[1] < bounds[1]
+	return 0 <= point[0] < bounds[0] and 0 <= point[1] < bounds[1]
+
 
 def normalize(vector):
 	''' normalize the given vector based on its magnitude '''
@@ -66,7 +67,7 @@ class Shape(object):
 		    dx (float): resolution of the grid this shape will be applied to.
 
 		Returns:
-		    list(tuple(int, int)): a list of indexes into a grid of the given dx this shape occupies.
+		    List[Tuple[int, int]]: a list of indexes into a grid of the given dx this shape occupies.
 		'''
 
 		if dx not in self.renders:
@@ -82,7 +83,7 @@ class Shape(object):
 		    dx (float): resolution of the grid this shape will be applied to.
 
 		Returns:
-		    list(pair(int)): a list of indexes into a grid of the given dx this shape occupies.
+		    List[Tuple[int, int]]: a list of indexes into a grid of the given dx this shape occupies.
 		'''
 		return []
 
@@ -96,8 +97,8 @@ class Line(Shape):
 		Create a line with the given begin and end points.
 
 		Args:
-		    begin (pair(float)): A pair describing the begin point of the line.
-		    end (pair(float)): A pair describing the end point of the line.
+		    begin (Tuple[float, float]): A pair describing the begin point of the line.
+		    end (Tuple[float, float]): A pair describing the end point of the line.
 		'''
 		super(Line, self).__init__()
 
@@ -141,9 +142,9 @@ class Chain(Shape):
 	def __init__(self, points):
 		'''
 		Initialize a chain of lines with their endpoints.
-		
+
 		Args:
-		    points (list(pair(float))): A list of 2d points
+		    points (List[Tuple[float, float]]): A list of 2d points
 		'''
 		super(Chain, self).__init__()
 
@@ -188,8 +189,8 @@ class Rectangle(Shape):
 		Construct a rectangle from its dimension, location (midpoint) and orientation.
 
 		Args:
-		    dimension (pair(float)): The width and height of this rectangle
-		    location (pair(float)): The midpoint of this rectangle
+		    dimension (Tuple[float, float]): The width and height of this rectangle
+		    location (Tuple[float, float]): The midpoint of this rectangle
 		    orientation (float): The rotation angle of this rectangle
 		'''
 
@@ -207,7 +208,7 @@ class Rectangle(Shape):
 		Find the corners of this rectangle given its dimension, location and orientation
 
 		Returns:
-		    np.array(np.array(float)): A four element array with one point for each corner
+		    List[np.array[float]]: A four element list with one point for each corner
 		'''
 
 		cos = np.cos(self.orientation)
@@ -252,7 +253,7 @@ class Rectangle(Shape):
 			begin,
 			a if a[0] > b[0] else b,
 			end]).render(dx)
-		perimeter = [left, right]
+		# perimeter = [left, right]
 
 		indexes = np.concatenate([
 			map(lambda x: [x, left[1]],
@@ -281,7 +282,7 @@ class Grid(object):
 		Create a grid out of the given bounds with the given dx.
 
 		Args:
-		    bounds (pair(float)): The outer bounds of this grid. It is assumed the origin of the
+		    bounds (Tuple[float, float]): The outer bounds of this grid. It is assumed the origin of the
 		        grid is (0, 0). TODO (Ryan): generalize this to a grid of any bounds.
 		    dx (float): The resolution of the grid (the dimensions of the smallest area).
 		'''
@@ -372,7 +373,7 @@ class Grid(object):
 
 		Returns:
 		    overlap (int): Total overlap (value to be minimized)
-		    forces (dict(str, pair(float))): A dictionary from shape id to total force vector for
+		    forces (Dict[str, Tuple[float, float]]): A dictionary from shape id to total force vector for
 		        that shape.
 		'''
 

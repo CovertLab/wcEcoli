@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 from .gene_knockout import gene_knockout
 from .wildtype import wildtype
-from .nutrient_time_series import nutrient_time_series
+from .timelines import timelines
 from .tf_activity import tf_activity
 from .condition import condition
 from .transcription_initiation_shuffle_params import transcription_initiation_shuffle_params
@@ -14,7 +14,9 @@ from .kinetic_catalyst_shuffle_params import kinetic_catalyst_shuffle_params
 from .all_shuffle_params import all_shuffle_params
 from .mene_params import mene_params
 from .metabolism_kinetic_objective_weight import metabolism_kinetic_objective_weight
+from .param_sensitivity import param_sensitivity
 from .rna_deg_rate_shuffle_params import rna_deg_rate_shuffle_params
+from .rrna_orientation import rrna_orientation
 
 
 nameToFunctionMapping = {
@@ -27,8 +29,10 @@ nameToFunctionMapping = {
 	"mene_params": mene_params,
 	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight,
 	"monomer_deg_rate_shuffle_params": monomer_deg_rate_shuffle_params,
-	"nutrient_time_series": nutrient_time_series,
+	"param_sensitivity": param_sensitivity,
+	"timelines": timelines,
 	"rna_deg_rate_shuffle_params": rna_deg_rate_shuffle_params,
+	"rrna_orientation": rrna_orientation,
 	"tf_activity": tf_activity,
 	"transcription_initiation_shuffle_params": transcription_initiation_shuffle_params,
 	"translation_efficiencies_shuffle_params": translation_efficiencies_shuffle_params,
@@ -42,7 +46,7 @@ nameToFunctionMapping = {
 	"kineticTargetShuffleParams": kinetic_target_shuffle_params,
 	"meneParams": mene_params,
 	"monomerDegRateShuffleParams": monomer_deg_rate_shuffle_params,
-	"nutrientTimeSeries": nutrient_time_series,
+	"nutrientTimeSeries": timelines,
 	"tfActivity": tf_activity,
 	"transcriptionInitiationShuffleParams": transcription_initiation_shuffle_params,
 	"translationEfficienciesShuffleParams": translation_efficiencies_shuffle_params,

@@ -3,8 +3,7 @@ filepath.py
 File and filename path utilities.
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import datetime
 import errno
@@ -12,9 +11,19 @@ import json
 import io
 import os
 import subprocess
+from typing import Any, AnyStr, Generator, Iterable, Optional, Sequence, Tuple
 
+import wholecell
+
+
+# The wcEcoli/ project root path which contains wholecell/.
+ROOT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(wholecell.__file__)))
+
+# Regex for current and previous timestamp() formats: 'YYYYMMDD.HHMMSS[.uuuuuu]'.
+TIMESTAMP_PATTERN = r'\d{8}\.\d{6}(?:\.\d{6})?'
 
 def makedirs(path, *paths):
+	# type: (str, Iterable[str]) -> str
 	"""Join one or more path components, make that directory path (using the
 	default mode 0o0777), and return the full path.
 
@@ -33,19 +42,31 @@ def makedirs(path, *paths):
 	return full_path
 
 def timestamp(dt=None):
+	# type: (Optional[datetime.datetime]) -> str
 	"""Construct a datetime-timestamp from `dt` [default = `now()`], such as
 	we use to timestamp a simulation output directory.
 	"""
 	if not dt:
 		dt = datetime.datetime.now()
 
-	# TODO: Simplify to `format(datetime_value, '%Y%m%d.%H%M%S.%f')`?
-	return "%04d%02d%02d.%02d%02d%02d.%06d" % (
-		dt.year, dt.month, dt.day,
-		dt.hour, dt.minute, dt.second,
-		dt.microsecond)
+	return dt.strftime('%Y%m%d.%H%M%S')
+
+def verify_file_exists(file_path, message=''):
+	# type: (str, str) -> None
+	"""Raise an IOError if file_path isn't an existing file."""
+	if not os.path.isfile(file_path):
+		raise IOError(errno.ENOENT,
+			'Missing file "{}".  {}'.format(file_path, message))
+
+def verify_dir_exists(dir_path, message=''):
+	# type: (str, str) -> None
+	"""Raise an IOError if dir_path isn't an existing directory."""
+	if not os.path.isdir(dir_path):
+		raise IOError(errno.ENOENT,
+			'Missing dir "{}".  {}'.format(dir_path, message))
 
 def run_cmd(tokens, trim=True):
+	# type: (Sequence[str], bool) -> str
 	"""Run a shell command-line (in token list form) and return its output.
 	This does not expand filename patterns or environment variables or do other
 	shell processing steps.
@@ -54,9 +75,11 @@ def run_cmd(tokens, trim=True):
 	Sherlock needs the latter to find libcrypto.so to run `git`.
 
 	Args:
-		tokens (list): The command line as a list of string tokens.
-		trim (bool): Whether to trim off trailing whitespace. This is useful
+		tokens: The command line as a list of string tokens.
+		trim: Whether to trim off trailing whitespace. This is useful
 			because the subprocess output usually ends with a newline.
+	Returns:
+		The command's output string.
 	"""
 	environ = {
 		"PATH": os.environ["PATH"],
@@ -68,6 +91,7 @@ def run_cmd(tokens, trim=True):
 	return out
 
 def run_cmdline(line, trim=True):
+	# type: (str, bool) -> Optional[str]
 	"""Run a shell command-line string and return its output. This does not
 	expand filename patterns or environment variables or do other shell
 	processing steps.
@@ -76,18 +100,26 @@ def run_cmdline(line, trim=True):
 	Sherlock needs the latter to find libcrypto.so to run `git`.
 
 	Args:
-		line (str): The command line as a string.
-		trim (bool): Whether to trim off trailing whitespace. This is useful
+		line: The command line as a string.
+		trim: Whether to trim off trailing whitespace. This is useful
 			because the subprocess output usually ends with a newline.
+	Returns:
+		The command's output string, or None if it couldn't even run.
 	"""
-	return run_cmd(tokens=line.split(), trim=trim)
+	try:
+		return run_cmd(tokens=line.split(), trim=trim)
+	except StandardError as e:
+		print('failed to run command line {}: {}'.format(line, e))
+		return None
 
 def write_file(filename, content):
+	# type: (str, AnyStr) -> None
 	"""Write string `content` as a text file."""
 	with open(filename, "w") as f:
 		f.write(content)
 
 def write_json_file(filename, obj, indent=4):
+	# type: (str, Any, int) -> None
 	"""Write `obj` to a file in a pretty JSON format. This supports Unicode."""
 	# Indentation puts a newline after each ',' so suppress the space there.
 	message = json.dumps(obj, ensure_ascii=False, indent=indent,
@@ -95,6 +127,14 @@ def write_json_file(filename, obj, indent=4):
 	write_file(filename, message.encode('utf-8'))
 
 def read_json_file(filename):
+	# type: (str) -> Any
 	"""Read and parse JSON file. This supports Unicode."""
 	with io.open(filename, encoding='utf-8') as f:
 		return json.load(f)
+
+def iter_variants(variant_type, first_index, last_index):
+	# type: (str, int, int) -> Generator[Tuple[int, str], None, None]
+	"""Generate Variant subdirs (index, name) over [first .. last] inclusive."""
+	# TODO(jerry): Return a list instead of generating items?
+	for i in xrange(first_index, last_index + 1):
+		yield i, os.path.join('{}_{:06d}'.format(variant_type, i))

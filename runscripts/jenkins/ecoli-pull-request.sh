@@ -11,30 +11,23 @@ pyenv local wcEcoli2
 make clean
 make compile
 
-PYTHONPATH=$PWD:$PYTHONPATH nosetests -a 'smalltest' --with-xunit --with-coverage --cover-package=wholecell --cover-xml
+PYTHONPATH=$PWD:$PYTHONPATH nosetests --with-xunit --with-coverage --cover-package=wholecell --cover-xml
 
 sh runscripts/jenkins/fireworks-config.sh $HOST $NAME $PORT $PASSWORD
 
 echo y | lpad reset
 
-PYTHONPATH=$PWD DESC="2 generations completion test." WC_ANALYZE_FAST=1 SINGLE_DAUGHTERS=1 N_GENS=2 MASS_DISTRIBUTION=0 PARALLEL_FITTER=1 COMPRESS_OUTPUT=0 PLOTS=ACTIVE python runscripts/fireworks/fw_queue.py
+PYTHONPATH=$PWD DESC="2 generations completion test." WC_ANALYZE_FAST=1 SINGLE_DAUGHTERS=1 N_GENS=2 MASS_DISTRIBUTION=0 \
+	PARALLEL_PARCA=1 COMPRESS_OUTPUT=0 PLOTS=ACTIVE BUILD_CAUSALITY_NETWORK=1 python runscripts/fireworks/fw_queue.py
 
 PYTHONPATH=$PWD rlaunch rapidfire --nlaunches 0
 
 N_FAILS=$(lpad get_fws -s FIZZLED -d count)
 
+if [ $N_FAILS -gt 0 ]; then
+  mv out/2* /scratch/PI/mcovert/wc_ecoli/failed/
+fi
+
 test $N_FAILS = 0
 
-export TOP_DIR="$PWD"
-
-cd out/2*/wildtype_000000/000000/generation_000000/000000/plotOut/low_res_plots/
-
-curl -F file=@massFractionSummary.png -F channels=#jenkins -F token=xoxb-17787270916-3VkwrS6348nn9DJz8bDs6EYG https://slack.com/api/files.upload
-
-cd $TOP_DIR
-cd out/2*/wildtype_000000/000000/plotOut/low_res_plots/
-
-curl -F file=@massFractionSummary.png -F channels=#jenkins -F token=xoxb-17787270916-3VkwrS6348nn9DJz8bDs6EYG https://slack.com/api/files.upload
-
-cd $TOP_DIR
 rm -fr out/*

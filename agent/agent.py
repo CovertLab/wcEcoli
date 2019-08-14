@@ -12,8 +12,8 @@ import agent.event as event
 # Chunk header: type and size.
 # TODO(jerry): Move CHUNK_HEADER to a shared module.
 CHUNK_HEADER = struct.Struct('>4s I')
-JSON_CHUNK_TYPE = 'JSON'  # a JSON chunk contains a JSON dictionary message
-BLOB_CHUNK_TYPE = 'BLOB'  # a BLOB chunk contains a bytes
+JSON_CHUNK_TYPE = b'JSON'  # a JSON chunk contains a JSON dictionary message
+BLOB_CHUNK_TYPE = b'BLOB'  # a BLOB chunk contains a bytes
 
 BLOBS = 'blobs' # message dict key for a sequence of binary large objects
 				# (bytes), unsuitable for the JSON part of the payload, or to
@@ -107,7 +107,7 @@ class Agent(object):
 				'default.topic.config': {
 					'auto.offset.reset': 'latest'}})
 
-	def initialize(self):
+	def preinitialize(self):
 		"""
 		Initialize the Agent in the system.
 
@@ -129,7 +129,7 @@ class Agent(object):
 
 			self.poll()
 		else:
-			self.initialize()
+			self.preinitialize()
 			self.initialized = True
 
 	def poll(self):
@@ -150,7 +150,7 @@ class Agent(object):
 			# immediate responses to initialization sends. If `poll` is not called before an
 			# initialization message is sent then an immediate response could be missed.
 			if not self.initialized:
-				self.initialize()
+				self.preinitialize()
 				self.initialized = True
 
 			if raw is None:
@@ -198,13 +198,12 @@ class Agent(object):
 		if print_send:
 			self.print_message(topic, message, False)
 
-		self.producer.poll(0)
 		self.producer.produce(
 			topic,
 			payload,
 			callback=delivery_report)
 
-		self.producer.flush()
+		self.producer.flush(timeout=1.0)
 
 	def print_message(self, topic, message, incoming=True):
 		"""Print the incoming or outgoing message to the console/log, redacting
@@ -315,8 +314,7 @@ class Agent(object):
 		self.running = False
 		self.finalize()
 
-		self.producer.flush()
-		self.producer.poll(0)
+		self.producer.flush(timeout=1.0)
 
 		if self.consumer:
 			self.consumer.commit()

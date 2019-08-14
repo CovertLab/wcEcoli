@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import uuid
+import time
 
 import agent.event as event
 from agent.agent import Agent
@@ -11,9 +12,6 @@ class CellSimulation(object):
 
 	def time(self):
 		"""Return the current time according to this CellSimulation."""
-
-	def synchronize_state(self, state):
-		"""Receive any state from the environment, like current time step."""
 
 	def apply_outer_update(self, update):
 		"""Apply the update received from the environment to this simulation."""
@@ -51,7 +49,7 @@ class Inner(Agent):
 	an environmental simulation.
 	"""
 
-	def __init__(self, agent_id, outer_id, agent_type, agent_config, simulation):
+	def __init__(self, agent_id, outer_id, agent_type, agent_config, boot_config, sim_initialize):
 		"""
 		Construct the agent.
 
@@ -75,9 +73,13 @@ class Inner(Agent):
 		                associated outer agent (given by `outer_id`) and environmental simulation.
 		            * `shepherd_receive`: The topic this agent will send messages on for 
 		                adding agents to and removing agents from the environment.
-		    simulation (CellSimulation): The actual simulation which will perform the
-		        calculations.
+		    boot_config (dict): a dictionary of options for initializing the simulation
+		    sim_initialize: the function for initializing a simulation. Requires boot_config and synchronize_config to run
 		"""
+
+		self.sim_initialize = sim_initialize
+		self.boot_config = boot_config
+		self.generation = agent_config.get('generation', 0)
 
 		kafka_config = agent_config['kafka_config']
 		kafka_config['subscribe'].append(
@@ -86,13 +88,24 @@ class Inner(Agent):
 		super(Inner, self).__init__(agent_id, agent_type, agent_config)
 
 		self.outer_id = outer_id
-		self.simulation = simulation
 
-	def initialize(self):
+	def preinitialize(self):
+
+		time.sleep(1.0)
+
+		kafka_config = self.agent_config['kafka_config']
+		state = self.agent_config['state']
+		self.send(kafka_config['topics']['environment_receive'], {
+			'event': event.CELL_DECLARE,
+			'agent_id': self.outer_id,
+			'inner_id': self.agent_id,
+			'agent_config': self.agent_config,
+			'state': state})
+
+	def send_initialize(self):
 		"""
 		Initialization: Register this inner agent with the outer agent.
 		"""
-
 		now = self.simulation.time()
 		state = self.simulation.generate_inner_update()
 
@@ -143,11 +156,14 @@ class Inner(Agent):
 		"""
 		Perform agent cell division.
 
+		The generation count is increased and added to the daughter cells' agent_config.
+
 		This sends three messages to the agent shepherd: one `ADD_AGENT` for each new daughter cell,
 		and finally a `REMOVE_AGENT` for itself. These new agents will initialize and notify the 
 		outer agent, inheriting properties from their parent cell.
 		"""
 
+		generation = self.generation + 1
 		for daughter in division:
 			agent_id = daughter.get('id', str(uuid.uuid1()))
 
@@ -160,7 +176,11 @@ class Inner(Agent):
 			agent_config = dict(
 				daughter,
 				parent_id=self.agent_id,
-				outer_id=self.outer_id)
+				outer_id=self.outer_id,
+				generation=generation)
+
+			print('agent_type: ' + str(agent_type))
+			print('divide_config: ' + str(agent_config))
 
 			# Send the inherited state data as a blob instead of a file path.
 			inherited_state_path = agent_config.pop('inherited_state_path', None)
@@ -190,9 +210,7 @@ class Inner(Agent):
 		self.shutdown()
 
 	def finalize(self):
-		"""
-		Trigger any clean up the simulation needs to perform before exiting.
-		"""
+		"""Do any cleanup the simulation needs to perform before exiting."""
 
 		self.simulation.finalize()
 
@@ -223,7 +241,8 @@ class Inner(Agent):
 			message_event = message['event']
 
 			if message_event == event.ENVIRONMENT_SYNCHRONIZE:
-				self.simulation.synchronize_state(message['state'])
+				self.simulation = self.sim_initialize(self.boot_config, message['state'])
+				self.send_initialize()
 
 			elif message_event == event.ENVIRONMENT_UPDATE:
 				self.environment_update(message)

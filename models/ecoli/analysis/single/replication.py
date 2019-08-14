@@ -18,8 +18,6 @@ from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
 
-PLACE_HOLDER = -1
-
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		if not os.path.isdir(simOutDir):
@@ -31,36 +29,27 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Load KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 
-		oriC = sim_data.constants.oriCCenter.asNumber()
-		terC = sim_data.constants.terCCenter.asNumber()
 		genomeLength = len(sim_data.process.replication.genome_sequence)
 
 		# Load time
-		initialTime = TableReader(os.path.join(simOutDir, "Main")).readAttribute("initialTime")
-		time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") - initialTime
+		main_reader = TableReader(os.path.join(simOutDir, "Main"))
+		initialTime = main_reader.readAttribute("initialTime")
+		time = main_reader.readColumn("time") - initialTime
 
 		# Load replication data
-		dnaPolyFile = TableReader(os.path.join(simOutDir, "ReplicationData"))
-		sequenceIdx = dnaPolyFile.readColumn("sequenceIdx")
-		sequenceLength = dnaPolyFile.readColumn("sequenceLength")
-		numberOfOric = dnaPolyFile.readColumn("numberOfOric")
-		criticalMassPerOriC = dnaPolyFile.readColumn("criticalMassPerOriC")
-		criticalInitiationMass = dnaPolyFile.readColumn("criticalInitiationMass")
+		replication_data_file = TableReader(os.path.join(simOutDir, "ReplicationData"))
+		fork_coordinates = replication_data_file.readColumn("fork_coordinates")
+		numberOfOric = replication_data_file.readColumn("numberOfOric")
+		criticalMassPerOriC = replication_data_file.readColumn("criticalMassPerOriC")
+		criticalInitiationMass = replication_data_file.readColumn("criticalInitiationMass")
 
 		# Load dna mass data
 		massFile = TableReader(os.path.join(simOutDir, "Mass"))
 		totalMass = massFile.readColumn("cellMass")
 		dnaMass = massFile.readColumn("dnaMass")
 
-		# Setup elongation length data
-		reverseIdx = 1
-		reverseCompIdx = 3
-		reverseSequences = np.logical_or(sequenceIdx == reverseIdx, sequenceIdx == reverseCompIdx)
-		sequenceLength[reverseSequences] = -1 * sequenceLength[reverseSequences]
-		sequenceLength[sequenceLength == PLACE_HOLDER] = np.nan
-
 		# Count pairs of forks, initiation, and termination events
-		pairsOfForks = (sequenceIdx != PLACE_HOLDER).sum(axis = 1) / 4
+		pairsOfForks = np.logical_not(np.isnan(fork_coordinates)).sum(axis = 1)/2
 
 		# Count chromosome equivalents
 		chromMass = (sim_data.getter.getMass(['CHROM_FULL[c]'])[0] / sim_data.constants.nAvogadro).asNumber(units.fg)
@@ -82,11 +71,11 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		plt.figure(figsize = (8.5, 11))
 
 		ax = plt.subplot(7,1,1)
-		ax.plot(time / 60., sequenceLength, marker='.', markersize=1, linewidth=0)
+		ax.plot(time / 60., fork_coordinates, marker='.', markersize=1, linewidth=0)
 		ax.set_xticks([0, time.max() / 60])
 		ax.set_yticks([-1 * genomeLength / 2, 0, genomeLength / 2])
 		ax.set_yticklabels(['-terC', 'oriC', '+terC'])
-		ax.set_ylabel("DNA polymerase\nposition (nt)")
+		ax.set_ylabel("Fork\nposition (nt)")
 
 		ax = plt.subplot(7,1,2, sharex=ax)
 		ax.plot(time / 60., chromEquivalents, linewidth=2)

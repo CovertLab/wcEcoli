@@ -50,15 +50,8 @@ class View(object):
 
 	# Query
 
-	def total(self):
+	def total_counts(self):
 		return self._totalCount.copy()
 
-	# Request
-
-	def requestIs(self, value):
-		self._requestedCount[:] = value
-
-
-	def requestAll(self):
-		self._requestedCount[:] = self._totalCount
-
+	# TODO (ggsun): deprecated alias, should be deleted
+	total = total_counts

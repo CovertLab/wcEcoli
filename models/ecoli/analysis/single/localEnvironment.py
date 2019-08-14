@@ -10,12 +10,10 @@ from __future__ import print_function
 from __future__ import division
 
 import os
-import cPickle
 import math
 
 import numpy as np
 from matplotlib import pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import itertools
 
 from wholecell.io.tablereader import TableReader
@@ -27,7 +25,7 @@ from models.ecoli.analysis import singleAnalysisPlot
 
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 
-RANGE_THRESHOLD = 2
+RANGE_THRESHOLD = 1e-1
 MOVING_AVE_WINDOW_SIZE = 200
 
 # set upper end on time (sec). False disables this feature
@@ -62,20 +60,20 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		mass_labels = ['Protein', 'rRNA', 'tRNA', 'mRNA', 'DNA', 'Small Mol.s']
 
 		# Load time
-		initial_time = TableReader(os.path.join(simOutDir, 'Main')).readAttribute('initialTime')
-		time = TableReader(os.path.join(simOutDir, 'Main')).readColumn(
-			'time') - initial_time
+		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
+		initial_time = main_reader.readAttribute('initialTime')
+		time = main_reader.readColumn('time') - initial_time
 
 		# Load environment data
 		environment = TableReader(os.path.join(simOutDir, 'Environment'))
 		nutrient_names = environment.readAttribute('objectNames')
-		nutrient_concentrations = environment.readColumn('nutrientConcentrations')
-		nutrient_condition = environment.readColumn('nutrientCondition')
+		media_concentrations = environment.readColumn('media_concentrations')
+		media_id = environment.readColumn('media_id')
 		# environment_deltas = environment.readColumn('environmentDeltas')
 		environment.close()
 
 		# get times of nutrient shifts
-		nutrient_shift = list(nutrient_condition)
+		nutrient_shift = list(media_id)
 		nutrient_shift_indices = [0]
 		index = 1
 		i = 1
@@ -96,7 +94,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		fba_results = TableReader(os.path.join(simOutDir, 'FBAResults'))
 		reaction_ids = np.array(fba_results.readAttribute('reactionIDs'))
 		external_exchange_fluxes = np.array(fba_results.readColumn('externalExchangeFluxes'))
-		external_exchange_molecules = np.array(fba_results.readAttribute('externalExchangeMolecules'))
+		all_external_exchange_molecules = np.array(fba_results.readAttribute('all_external_exchange_molecules'))
 		import_constraints = np.array(fba_results.readColumn('importConstraint'))
 		import_exchanges = np.array(fba_results.readColumn('importExchange'))
 		fba_results.close()
@@ -140,7 +138,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax1_3.set_title('Import Exchange Molecules (boolean)')
 		ax1_3.set_xlabel('Time (sec)')
 		ax1_3.set_yticks(np.arange(len(import_exchanges.T)))
-		ax1_3.set_yticklabels(external_exchange_molecules, fontsize=8)
+		ax1_3.set_yticklabels(all_external_exchange_molecules, fontsize=8)
 
 		# exchange fluxes
 		for idx, (reaction_id, external_exchange_flux) in enumerate(zip(reaction_ids, external_exchange_fluxes.T)):
@@ -148,8 +146,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			meanNormFlux = running_mean_flux / np.mean(running_mean_flux)
 			flux_range = meanNormFlux.max() - meanNormFlux.min()
 
-			if flux_range > RANGE_THRESHOLD:
-				ax2_1.plot(time, external_exchange_flux, linewidth=2, label=reaction_id, color=rxn_id_to_color[reaction_id])
+			# if flux_range > RANGE_THRESHOLD:
+			ax2_1.plot(time, external_exchange_flux, linewidth=2) #, label=reaction_id, color=rxn_id_to_color[reaction_id])
 
 		ax2_1.set_yscale('symlog')
 		ax2_1.set_xlabel('Time (sec)')
@@ -162,9 +160,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# plot concentrations in environment
 		for idx, nutrient_name in enumerate(nutrient_names):
-			if (not math.isnan(nutrient_concentrations[0, idx]) and (np.mean(
-					nutrient_concentrations[:, idx]) != 0)) and (not math.isinf(nutrient_concentrations[0, idx])):
-				ax2_2.plot(time, nutrient_concentrations[:, idx], linewidth=2,
+			if (not math.isnan(media_concentrations[0, idx]) and (np.mean(
+					media_concentrations[:, idx]) != 0)) and (not math.isinf(media_concentrations[0, idx])):
+				ax2_2.plot(time, media_concentrations[:, idx], linewidth=2,
 					label=nutrient_name, color=id_to_color[nutrient_name])
 		ax2_2.set_yscale('symlog',linthreshy=10, linscaley=1)
 		ax2_2.set_title('Environment Concentrations')
@@ -217,8 +215,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# add text for nutrient shifts
 		ymin, ymax = ax1_1.get_ylim()
-		for idx, (nutrient_condition, time) in enumerate(zip(nutrient_shift, nutrient_shift_times)):
-			ax1_1.text(time, ymax+1, nutrient_condition, ha='left', va='bottom', rotation=45)
+		for idx, (media_id, time) in enumerate(zip(nutrient_shift, nutrient_shift_times)):
+			ax1_1.text(time, ymax+1, media_id, ha='left', va='bottom', rotation=45)
 
 
 		plt.subplots_adjust(wspace=0.2, hspace=0.4)

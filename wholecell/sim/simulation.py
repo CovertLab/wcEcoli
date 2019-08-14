@@ -26,6 +26,8 @@ import wholecell.loggers.disk
 
 
 DEFAULT_SIMULATION_KWARGS = dict(
+	timeline = '0 minimal',
+	boundary_reactions = [],
 	seed = 0,
 	lengthSec = 3*60*60, # 3 hours max
 	initialTime = 0.,
@@ -44,7 +46,8 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	logToDiskEvery = 1,
 	simData = None,
 	inheritedStatePath = None,
-	)
+	variable_elongation_translation = False,
+	variable_elongation_transcription = False)
 
 def _orderedAbstractionReference(iterableOfClasses):
 	return collections.OrderedDict(
@@ -117,7 +120,7 @@ class Simulation(CellSimulation):
 		# None) so catch it *before* running the simulation in case _logToDisk
 		# doesn't.
 		if os.path.isdir(self._outputDir):
-			shutil.rmtree(self._outputDir)
+			shutil.rmtree(self._outputDir, ignore_errors=True)
 		filepath.makedirs(self._outputDir)
 
 		sim_data = self._simData
@@ -139,13 +142,21 @@ class Simulation(CellSimulation):
 		self._isDead = False
 		self._finalized = False
 
-		for internal_state in self.internal_states.itervalues():
+		for state_name, internal_state in self.internal_states.iteritems():
+			# initialize random streams
+			internal_state.seed = self._seedFromName(state_name)
+			internal_state.randomState = np.random.RandomState(seed=internal_state.seed)
+
 			internal_state.initialize(self, sim_data)
 
 		for external_state in self.external_states.itervalues():
-			external_state.initialize(self, sim_data)
+			external_state.initialize(self, sim_data, self._timeline)
 
-		for process in self.processes.itervalues():
+		for process_name, process in self.processes.iteritems():
+			# initialize random streams
+			process.seed = self._seedFromName(process_name)
+			process.randomState = np.random.RandomState(seed=process.seed)
+
 			process.initialize(self, sim_data)
 
 		for listener in self.listeners.itervalues():
@@ -209,15 +220,18 @@ class Simulation(CellSimulation):
 		and then clean up.
 		"""
 
-		self.run_incremental(self._lengthSec + self.initialTime())
-		self.finalize()
+		try:
+			self.run_incremental(self._lengthSec + self.initialTime())
+			self.cellCycleComplete()
+		finally:
+			self.finalize()
 
 	def run_incremental(self, run_until):
 		"""
 		Run the simulation for a given amount of time.
 
 		Args:
-		    run_until (float): absolute time to run the simulation until. 
+		    run_until (float): absolute time to run the simulation until.
 		"""
 
 		# Simulate
@@ -236,8 +250,8 @@ class Simulation(CellSimulation):
 		"""
 		Clean up any details once the simulation has finished.
 		Specifically, this calls `finalize` in all hooks,
-		invokes the simulation's `_divideCellFunction` and then
-		shuts down all loggers
+		invokes the simulation's `_divideCellFunction` if the
+		cell cycle has completed and then shuts down all loggers.
 		"""
 
 		if not self._finalized:
@@ -246,7 +260,8 @@ class Simulation(CellSimulation):
 				hook.finalize(self)
 
 			# Divide mother into daughter cells
-			self.daughter_paths = self._divideCellFunction()
+			if self._cellCycleComplete:
+				self.daughter_paths = self._divideCellFunction()
 
 			# Finish logging
 			for logger in self.loggers.itervalues():
@@ -256,16 +271,6 @@ class Simulation(CellSimulation):
 
 	# Calculate temporal evolution
 	def _evolveState(self):
-
-		if self._simulationStep <= 1:
-			# Update randstreams
-			for stateName, state in self.internal_states.iteritems():
-				state.seed = self._seedFromName(stateName)
-				state.randomState = np.random.RandomState(seed = state.seed)
-
-			for processName, process in self.processes.iteritems():
-				process.seed = self._seedFromName(processName)
-				process.randomState = np.random.RandomState(seed = process.seed)
 
 		self._adjustTimeStep()
 
@@ -339,7 +344,6 @@ class Simulation(CellSimulation):
 
 	def _seedFromName(self, name):
 		return np.uint32((self._seed + hash(name)) % np.iinfo(np.uint64).max)
-		# return np.uint32((self._seed + self.simulationStep() + hash(name)) % np.iinfo(np.uint64).max)
 
 
 	def initialTime(self):
@@ -416,16 +420,22 @@ class Simulation(CellSimulation):
 
 	def apply_outer_update(self, update):
 		# concentrations are received as a dict
-		self.external_states['Environment'].set_local_environment(update['concentrations'])
+		self.external_states['Environment'].set_local_environment(update)
 
 	def daughter_config(self):
 		config = {
 			'start_time': self.time(),
 			'volume': self.listeners['Mass'].volume * 0.5}
 
-		daughters = map(
-			lambda path: dict(config, inherited_state_path=path),
-			self.daughter_paths)
+		daughters = []
+		for i, path in enumerate(self.daughter_paths):
+			# This uses primes to calculate seeds that diverge from small
+			# initial seeds and further in later generations. Like for process
+			# seeds, this depends only on _seed, not on randomState so it won't
+			# vary with simulation code details.
+			daughters.append(dict(config,
+				inherited_state_path=path,
+				seed=37 * self._seed + 47 * i + 997))
 
 		return daughters
 
@@ -435,11 +445,6 @@ class Simulation(CellSimulation):
 			'volume': self.listeners['Mass'].volume,
 			'division': self.daughter_config(),
 			'environment_change': self.external_states['Environment'].get_environment_change()}
-
-	def synchronize_state(self, state):
-		if 'time' in state:
-			self._initialTime = state['time']
-			self._timeTotal = state['time']
 
 	def divide(self):
 		self.cellCycleComplete()

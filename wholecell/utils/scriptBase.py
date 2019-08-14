@@ -17,26 +17,25 @@ import re
 import os
 import pprint as pp
 import time
+from typing import Any, Callable, List, Optional, Tuple
 
-import wholecell
-
-
-# The wcEcoli project root path.
-ROOT_PATH = os.path.dirname(os.path.dirname(os.path.abspath(wholecell.__file__)))
+import wholecell.utils.filepath as fp
 
 
 def default_wcecoli_out_subdir_path():
+	# type: () -> str
 	"""Return an absolute path to the most interesting subdirectory of
 	wcEcoli/out/: the subdirectory name that starts with the latest timestamp
 	or (if none) the one that's first alphabetically.
 	"""
-	out_dir = os.path.join(ROOT_PATH, 'out')
+	out_dir = os.path.join(fp.ROOT_PATH, 'out')
+	timestamped = re.compile(fp.TIMESTAMP_PATTERN)
 	fallback = None
 
 	for directory in sorted(os.listdir(out_dir), reverse=True):
 		path = os.path.join(out_dir, directory)
 		if os.path.isdir(path):
-			if directory[0].isdigit():
+			if timestamped.match(directory):
 				return path
 			fallback = path
 
@@ -44,9 +43,10 @@ def default_wcecoli_out_subdir_path():
 		return fallback
 
 	raise IOError(errno.ENOENT,
-		'"{}" has no subdirectories.  Run the Fitter?'.format(out_dir))
+		'"{}" has no subdirectories.  Run runParca?'.format(out_dir))
 
 def find_sim_path(directory=None):
+	# type: (Optional[str]) -> str
 	"""Find a simulation path, looking for the given directory name as an
 	absolute path, or as a subdirectory of wcEcoli/out/, or as a subdirectory
 	name that starts with out/, or (if None) call
@@ -57,15 +57,15 @@ def find_sim_path(directory=None):
 	elif os.path.isabs(directory):
 		input_dir = directory
 	elif directory.startswith('out/'):
-		input_dir = os.path.join(ROOT_PATH, directory)
+		input_dir = os.path.join(fp.ROOT_PATH, directory)
 	else:
-		input_dir = os.path.join(ROOT_PATH, 'out', directory)
+		input_dir = os.path.join(fp.ROOT_PATH, 'out', directory)
 
-	if not os.path.isdir(input_dir):
-		raise IOError(errno.ENOENT, '{} is not a simulation path'.format(input_dir))
+	fp.verify_dir_exists(input_dir, "Need a simulation dir.")
 	return input_dir
 
 def str_to_bool(s):
+	# type: (str) -> bool
 	"""Convert a string command line parameter value to a bool. This ignores
 	case, accepting true, false, 1, or 0.
 	"""
@@ -73,6 +73,9 @@ def str_to_bool(s):
 	if s not in {'true', 'false', '1', '0'}:
 		raise ValueError('Expected a bool, not %s' % s)
 	return s in {'true', '1'}
+
+def dashize(underscore):
+	return re.sub(r'_+', r'-', underscore)
 
 
 class ScriptBase(object):
@@ -87,19 +90,27 @@ class ScriptBase(object):
 
 	# Regex to match a variant directory name. In the resulting match
 	# object, group 1 is the variant_type and group 2 is the variant_index.
-	VARIANT_DIR_PATTERN = re.compile(r'([a-zA-Z_\d]+)_(\d+)\Z')
+	VARIANT_DIR_PATTERN = re.compile(r'(.+)_(\d+)\Z')
 
 	def description(self):
+		# type: () -> str
 		"""Describe the command line program. This defaults to the class name."""
 		return type(self).__name__
 
+	def epilog(self):
+		# type: () -> Optional[str]
+		"""Return the epilog help text; None for none."""
+		return None
+
 	def help(self):
+		# type: () -> str
 		"""Return help text for the Command Line Interface. This defaults to a
 		string constructed around `self.description()`.
 		"""
 		return 'Run {}.'.format(self.description())
 
 	def list_variant_dirs(self, sim_path):
+		# type: (str) -> List[Tuple[str, str, int]]
 		"""List the available variant subdirectories of the given sim_path,
 		in alphabetical order,
 		returning for each a tuple (subdir_name, variant_type, variant_index),
@@ -117,6 +128,7 @@ class ScriptBase(object):
 		return available
 
 	def define_parameters(self, parser):
+		# type: (argparse.ArgumentParser) -> None
 		"""Define command line parameters. This base method defines a --verbose
 		flag. Overrides should call super.
 
@@ -130,34 +142,45 @@ class ScriptBase(object):
 			`parser.add_argument('--verbose', action='store_true',
 			help='Enable verbose logging.')`.
 		"""
-		parser.add_argument('--verbose', action='store_true',
-			help='Enable verbose logging.')
+		try:
+			parser.add_argument('--verbose', action='store_true',
+				help='Enable verbose logging.')
+		except argparse.ArgumentError:
+			pass  # ignore the conflict
 
-	def define_parameter_bool(self, parser, name, default, help):
+	def define_parameter_bool(self, parser, underscore, default, help):
+		# type: (argparse.ArgumentParser, str, Any, str) -> None
 		"""Add a boolean option parameter to the parser. The CLI input can be
-		`--name`, `--no_name`, `--name true`, `--name false`, `--name 1`,
-		`--name 0`, `--name=true`, etc. The default can be True or False, and
+		`--name`, or its inverse `--no_name`. The default can be True or False, and
 		changing it won't affect any of those explicit input forms. This method
 		adds the default value to the help text.
 		"""
+		name = dashize(underscore)
 		default = bool(default)
-		examples = 'true or 1' if default else 'false or 0'
 		group = parser.add_mutually_exclusive_group()
-		group.add_argument('--' + name, nargs='?', default=default,
-			const='true',  # needed for nargs='?'
-			type=str_to_bool,
-			help='({}, {}) {}'.format('bool', examples, help))
-		group.add_argument('--no_' + name, dest=name, action='store_false')
+		group.add_argument(
+			'--' + name,
+			default=default,
+			action='store_true',
+			help='Default = {}. {}'.format(default, help))
+		group.add_argument(
+			'--no-' + name,
+			dest=underscore,
+			action='store_false',
+			help='Sets --{} to False'.format(name))
 
-	def define_option(self, parser, name, datatype, default, help):
-			"""Add an option with the given name and datatype to the parser."""
-			parser.add_argument('--' + name,
-				type=datatype,
-				default=default,
-				help='({}, {}) {}'.format(datatype.__name__, default, help)
-				)
+	def define_option(self, parser, underscore, datatype, default, help):
+		# type: (argparse.ArgumentParser, str, Callable, Any, str) -> None
+		"""Add an option with the given name and datatype to the parser."""
+		name = dashize(underscore)
+		parser.add_argument('--' + name,
+			type=datatype,
+			default=default,
+			help='({}; {!r}) {}'.format(datatype.__name__, default, help)
+			)
 
 	def define_parameter_sim_dir(self, parser):
+		# type: (argparse.ArgumentParser) -> None
 		"""Add a `sim_dir` parameter to the command line parser. parse_args()
 		will then use `args.sim_dir` to add `args.sim_path`.
 
@@ -175,6 +198,7 @@ class ScriptBase(object):
 				alphabetically.''')
 
 	def define_parameter_variant_index(self, parser):
+		# type: (argparse.ArgumentParser) -> None
 		"""Add a `variant_index` parameter to the command line parser.
 		parse_args() will then use the `variant_index` and `sim_path`
 		arguments, call find_variant_dir(), and set `args.variant_dir` to the
@@ -182,11 +206,13 @@ class ScriptBase(object):
 
 		Call this in overridden define_parameters() methods as needed.
 		"""
-		parser.add_argument('-v', '--variant_index', type=int,
+		int1 = int  # type: Callable
+		parser.add_argument('-v', '--variant-index', type=int1,
 			help='The simulation variant number (int), e.g. 1 to find a'
 				 ' subdirectory like "condition_000001".')
 
 	def find_variant_dir(self, sim_path, index=None):
+		# type: (str, Optional[int]) -> Tuple[str, str, int]
 		"""Find a simulation variant dir in the given `sim_path` for the given
 		`index`, returning a tuple (subdir_name, variant_type, variant_index)
 		or raising IOError. If `index` is None, return the first available
@@ -208,6 +234,7 @@ class ScriptBase(object):
 				sim_path))
 
 	def parse_args(self):
+		# type: () -> argparse.Namespace
 		"""Parse the command line args: Construct an ArgumentParser, call
 		`define_parameters()` to define parameters including subclass-specific
 		parameters, use it to parse the command line into an
@@ -223,7 +250,9 @@ class ScriptBase(object):
 		(A `Namespace` is an object with attributes and some methods like
 		`__repr__()` and `__eq__()`. Call `vars(args)` to turn it into a dict.)
 		"""
-		parser = argparse.ArgumentParser(description=self.help())
+		parser = argparse.ArgumentParser(
+			description=self.help(),
+			epilog=self.epilog())
 
 		self.define_parameters(parser)
 
@@ -240,6 +269,7 @@ class ScriptBase(object):
 
 	@abc.abstractmethod
 	def run(self, args):
+		# type: (argparse.Namespace) -> None
 		"""Run the operation with the given arguments. If args.verbose,
 		overrides can do verbose logging.
 		"""

@@ -14,6 +14,7 @@ import numpy as np
 from wholecell.utils import units
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
+from wholecell.utils.random import make_elongation_rates
 
 RNA_SEQ_ANALYSIS = "rsem_tpm"
 KCAT_ENDO_RNASE = 0.001
@@ -29,6 +30,7 @@ class Transcription(object):
 		self._build_rna_data(raw_data, sim_data)
 		self._build_transcription(raw_data, sim_data)
 		self._build_charged_trna(raw_data, sim_data)
+		self._build_elongation_rates(raw_data, sim_data)
 
 	def _build_rna_data(self, raw_data, sim_data):
 		"""
@@ -83,21 +85,31 @@ class Transcription(object):
 		mws = np.array([rna['mw'] for rna in raw_data.rnas]).sum(axis = 1)
 		geneIds = np.array([rna['geneId'] for rna in raw_data.rnas])
 
-		# Construct boolean arrays for rRNA types
+		# Construct boolean arrays and index arrays for each rRNA type
 		n_rnas = len(rnaIds)
-		is23S = np.zeros(n_rnas, dtype = np.bool)
-		is16S = np.zeros(n_rnas, dtype = np.bool)
-		is5S = np.zeros(n_rnas, dtype = np.bool)
+		is_23S = np.zeros(n_rnas, dtype = np.bool)
+		is_16S = np.zeros(n_rnas, dtype = np.bool)
+		is_5S = np.zeros(n_rnas, dtype = np.bool)
+		idx_23S = []
+		idx_16S = []
+		idx_5S = []
 
 		for rnaIndex, rna in enumerate(raw_data.rnas):
 			if rna["type"] == "rRNA" and rna["id"].startswith("RRL"):
-				is23S[rnaIndex] = True
+				is_23S[rnaIndex] = True
+				idx_23S.append(rnaIndex)
 
 			if rna["type"] == "rRNA" and rna["id"].startswith("RRS"):
-				is16S[rnaIndex] = True
+				is_16S[rnaIndex] = True
+				idx_16S.append(rnaIndex)
 
 			if rna["type"] == "rRNA" and rna["id"].startswith("RRF"):
-				is5S[rnaIndex] = True
+				is_5S[rnaIndex] = True
+				idx_5S.append(rnaIndex)
+
+		idx_23S = np.array(idx_23S)
+		idx_16S = np.array(idx_16S)
+		idx_5S = np.array(idx_5S)
 
 		# Load sequence data
 		sequences = [rna['seq'] for rna in raw_data.rnas]
@@ -106,23 +118,65 @@ class Transcription(object):
 		# Load IDs of protein monomers
 		monomerIds = [rna['monomerId'] for rna in raw_data.rnas]
 
+		# Get index of gene corresponding to each RNA
+		gene_index = {gene["rnaId"]: i
+			for i, gene in enumerate(raw_data.genes)}
+
+		# Get list of coordinates and directions for each gene
+		coordinate_list = [gene["coordinate"] for gene in raw_data.genes]
+		direction_list = [gene["direction"] for gene in raw_data.genes]
+
 		oric_coordinate = raw_data.parameters['oriCCenter'].asNumber()
 		terc_coordinate = raw_data.parameters['terCCenter'].asNumber()
 		genome_length = len(raw_data.genome_sequence)
 
-		def get_replication_coordinate(coordinate):
-			replication_coordinate = ((coordinate - terc_coordinate)
+		def get_relative_coordinates(coordinates):
+			relative_coordinates = ((coordinates - terc_coordinate)
 				% genome_length + terc_coordinate - oric_coordinate
 				)
 
-			if replication_coordinate < 0:
-				replication_coordinate += 1
+			if relative_coordinates < 0:
+				relative_coordinates += 1
 
-			return replication_coordinate
+			return relative_coordinates
 
+		# Location of transcription initiation relative to origin
 		replicationCoordinate = [
-			get_replication_coordinate(x["coordinate"])
-			for x in raw_data.rnas]
+			get_relative_coordinates(coordinate_list[gene_index[rna["id"]]])
+			for rna in raw_data.rnas]
+
+		# Direction of transcription
+		direction = [
+			(direction_list[gene_index[rna["id"]]] == "+")
+			for rna in raw_data.rnas]
+
+		# Set the lengths, nucleotide counts, molecular weights, and sequences
+		# of each type of rRNAs to be identical to those of the first rRNA
+		# operon. Later in the sim, transcription of all rRNA genes are set to
+		# produce the rRNAs of the first operon. This is done to simplify the
+		# complexation reactions that form ribosomes. In reality, all of these
+		# genes produce rRNA molecules with slightly different sequences and
+		# molecular weights.
+		rnaLens[idx_23S] = rnaLens[idx_23S[0]]
+		rnaLens[idx_16S] = rnaLens[idx_16S[0]]
+		rnaLens[idx_5S] = rnaLens[idx_5S[0]]
+
+		ntCounts[idx_23S, :] = ntCounts[idx_23S[0], :]
+		ntCounts[idx_16S, :] = ntCounts[idx_16S[0], :]
+		ntCounts[idx_5S, :] = ntCounts[idx_5S[0], :]
+
+		mws[idx_23S] = mws[idx_23S[0]]
+		mws[idx_16S] = mws[idx_16S[0]]
+		mws[idx_5S] = mws[idx_5S[0]]
+
+		for idx in idx_23S[1:]:
+			sequences[idx] = sequences[idx_23S[0]]
+
+		for idx in idx_16S[1:]:
+			sequences[idx] = sequences[idx_16S[0]]
+
+		for idx in idx_5S[1:]:
+			sequences[idx] = sequences[idx_5S[0]]
 
 		rnaData = np.zeros(
 			n_rnas,
@@ -145,6 +199,7 @@ class Transcription(object):
 				('geneId', 'a50'),
 				('KmEndoRNase', 'f8'),
 				('replicationCoordinate', 'int64'),
+				('direction', 'bool'),
 				]
 			)
 
@@ -163,13 +218,14 @@ class Transcription(object):
 		rnaData['isRnap'] = [
             "{}[c]".format(x) in sim_data.moleculeGroups.rnapIds
             for x in monomerIds]
-		rnaData['isRRna23S'] = is23S
-		rnaData['isRRna16S'] = is16S
-		rnaData['isRRna5S'] = is5S
+		rnaData['isRRna23S'] = is_23S
+		rnaData['isRRna16S'] = is_16S
+		rnaData['isRRna5S'] = is_5S
 		rnaData['sequence'] = sequences
 		rnaData['geneId'] = geneIds
 		rnaData['KmEndoRNase'] = Km
 		rnaData['replicationCoordinate'] = replicationCoordinate
+		rnaData['direction'] = direction
 
 		field_units = {
 			'id': None,
@@ -190,13 +246,14 @@ class Transcription(object):
 			'geneId': None,
 			'KmEndoRNase': units.mol / units.L,
 			'replicationCoordinate': None,
+			'direction': None,
 			}
 
 		self.rnaExpression = {}
 		self.rnaSynthProb = {}
 
 		# Set basal expression and synthesis probabilities - conditional values
-        # are set in the fitter.
+        # are set in the parca.
 		self.rnaExpression["basal"] = expression / expression.sum()
 		self.rnaSynthProb["basal"] = synthProb / synthProb.sum()
 
@@ -398,3 +455,16 @@ class Transcription(object):
 		out[self._stoich_matrix_i, self._stoich_matrix_j] = self._stoich_matrix_v
 
 		return out
+	def _build_elongation_rates(self, raw_data, sim_data):
+		self.max_elongation_rate = sim_data.constants.dnaPolymeraseElongationRateMax
+		self.RRNA_indexes = np.where(self.rnaData['isRRna'])[0]
+
+	def make_elongation_rates(self, random, base, time_step, variable_elongation=False):
+		return make_elongation_rates(
+			random,
+			self.transcriptionSequences.shape[0],
+			base,
+			self.RRNA_indexes,
+			self.max_elongation_rate,
+			time_step,
+			variable_elongation)
