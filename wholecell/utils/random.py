@@ -86,8 +86,14 @@ def make_elongation_rates(
 		time_step,
 		flat_elongation=False):
 
-	rates = make_elongation_rates_flat(size, base, amplified, ceiling)
-	rates = stochasticRound(random, rates * time_step)
+	if flat_elongation:
+		base = stochasticRound(random, base * time_step)
+
+	rates = make_elongation_rates_flat(size, base, amplified, ceiling, flat_elongation)
+
+	if not flat_elongation:
+		rates = stochasticRound(random, rates * time_step)
+
 	return np.array(rates, dtype=np.int64)
 
 def randomlySelectRows(randomState, mat, prob):
