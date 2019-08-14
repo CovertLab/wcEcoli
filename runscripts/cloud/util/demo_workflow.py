@@ -65,7 +65,8 @@ def demo(worker_count=0, dump=False):
 		outputs=['>' + exception_log],
 		command=['python', '-u', '-c', "()[1]"])
 
-	# A task that depends on error tasks tests that they don't keep retrying.
+	# A task that depends on error tasks to test that they don't keep retrying.
+	# This is a regression test.
 	two_logs = '/tmp/two.log'
 	add_task(
 		name='error_watcher',
