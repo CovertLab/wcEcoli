@@ -190,7 +190,8 @@ class Metabolism(object):
 		## Add impact from synthesis enzymes
 		aa_conc = np.array([self.concDict[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			for aa in sim_data.moleculeGroups.aaIDs])
-		self.KI_aa_synthesis = 0.01 * METABOLITE_CONCENTRATION_UNITS * aa_conc.min()
+		self.supply_fraction_inhibited = 0.1
+		self.KI_aa_synthesis = METABOLITE_CONCENTRATION_UNITS * self.supply_fraction_inhibited * aa_conc / (1 - self.supply_fraction_inhibited)
 
 	def _buildMetabolism(self, raw_data, sim_data):
 		"""

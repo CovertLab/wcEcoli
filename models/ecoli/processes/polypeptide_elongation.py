@@ -120,6 +120,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 
+		self.supply_fraction_inhibited = metabolism.supply_fraction_inhibited
 		self.KI_aa = metabolism.KI_aa_synthesis.asNumber(MICROMOLAR_UNITS)
 
 		# Dictionaries for homeostatic AA count updates in metabolism
@@ -225,7 +226,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			# Adjust aa_supply higher if amino acid concentrations are low
 			# Improves stability of charging and mimics amino acid inhibition
 			# TODO (Travis): add to listener?
-			aa_supply_scaling = 1 + 1 / (1 + aa_conc.asNumber(MICROMOLAR_UNITS) / self.KI_aa)
+			aa_supply_scaling = (1 - self.supply_fraction_inhibited) + 1 / (1 + aa_conc.asNumber(MICROMOLAR_UNITS) / self.KI_aa)
 			self.aa_supply *= aa_supply_scaling
 
 			# Only request molecules that will be consumed in the charging reactions
