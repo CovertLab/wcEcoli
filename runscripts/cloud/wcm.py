@@ -54,7 +54,7 @@ SIM_KEYS = (
 	'translation_supply',
 	'trna_charging')
 
-BAD_SEEDS = [28, 1028]
+BAD_SEEDS = [1028]
 
 
 def select_keys(mapping, keys, **kwargs):
