@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import os
 
 from wholecell.fireworks.firetasks import SimulationDaughterTask
-from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
 
@@ -35,19 +34,9 @@ class RunDaughter(scriptBase.ScriptBase):
 
 	def define_parameters(self, parser):
 		def add_option(name, key, datatype, help):
-			"""Add an option with the given name and datatype to the parser using
-			DEFAULT_SIMULATION_KWARGS[key] for the default value.
-			"""
-			default = DEFAULT_SIMULATION_KWARGS[key]
-			self.define_option(parser, name, datatype, default, help)
+			self.define_option(parser, name, datatype, help=help, default_key=key)
 		def add_bool_option(name, key, help):
-			"""Add a boolean option parameter with the given name to the parser
-			using DEFAULT_SIMULATION_KWARGS[key] for the default value. The CLI
-			input can be `--name`, `--no_name`, `--name true`, `--name false`,
-			`--name 1`, `--name 0`, `--name=true`, etc.
-			"""
-			self.define_parameter_bool(
-				parser, name, DEFAULT_SIMULATION_KWARGS[key], help)
+			self.define_parameter_bool(parser, name, help=help, default_key=key)
 
 		super(RunDaughter, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)

@@ -24,7 +24,6 @@ import os
 from typing import Tuple
 
 from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask
-from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
 
@@ -71,18 +70,9 @@ class RunSimulation(scriptBase.ScriptBase):
 
 	def define_parameters(self, parser):
 		def add_option(name, key, datatype, help):
-			"""Add an option with the given name and datatype to the parser using
-			DEFAULT_SIMULATION_KWARGS[key] for the default value.
-			"""
-			default = DEFAULT_SIMULATION_KWARGS[key]
-			self.define_option(parser, name, datatype, default, help)
+			self.define_option(parser, name, datatype, help=help, default_key=key)
 		def add_bool_option(name, key, help):
-			"""Add a boolean option parameter with the given name to the parser
-			using DEFAULT_SIMULATION_KWARGS[key] for the default value. The CLI
-			input can be `--name` or `--no_name`.
-			"""
-			self.define_parameter_bool(
-				parser, name, DEFAULT_SIMULATION_KWARGS[key], help)
+			self.define_parameter_bool(parser, name, help=help, default_key=key)
 
 		super(RunSimulation, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)
@@ -111,7 +101,7 @@ class RunSimulation(scriptBase.ScriptBase):
 			help='First cell simulation seed. Default = 0'
 			)
 		self.define_option(parser, 'init_sims', int, 1,
-			'Number of initial sims (seeds) per variant.')
+			'Number of initial sims (lineage seeds) per variant.')
 		parser.add_argument('-t', '--timeline', type=str, default='0 minimal',
 			help='set timeline. Default = "0 minimal". See'
 				 ' environment/condition/make_media.py, make_timeline() for'

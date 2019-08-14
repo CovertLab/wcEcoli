@@ -20,6 +20,7 @@ import time
 from typing import Any, Callable, List, Optional, Tuple
 
 import wholecell.utils.filepath as fp
+from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 
 
 def default_wcecoli_out_subdir_path():
@@ -75,6 +76,7 @@ def str_to_bool(s):
 	return s in {'true', '1'}
 
 def dashize(underscore):
+	# type: (str) -> str
 	return re.sub(r'_+', r'-', underscore)
 
 
@@ -148,15 +150,18 @@ class ScriptBase(object):
 		except argparse.ArgumentError:
 			pass  # ignore the conflict
 
-	def define_parameter_bool(self, parser, underscore, default, help):
-		# type: (argparse.ArgumentParser, str, Any, str) -> None
+	def define_parameter_bool(self, parser, underscore_name, default=False,
+			help='', default_key=None):
+		# type: (argparse.ArgumentParser, str, Any, str, Optional[str]) -> None
 		"""Add a boolean option parameter to the parser. The CLI input can be
 		`--name`, or its inverse `--no_name`. The default can be True or False, and
 		changing it won't affect any of those explicit input forms. This method
-		adds the default value to the help text.
+		adds the default value to the help text. Passing in `default_key` copies
+		the default from `DEFAULT_SIMULATION_KWARGS[default_key]`.
 		"""
-		name = dashize(underscore)
-		default = bool(default)
+		name = dashize(underscore_name)
+		default = bool(
+			DEFAULT_SIMULATION_KWARGS[default_key] if default_key else default)
 		group = parser.add_mutually_exclusive_group()
 		group.add_argument(
 			'--' + name,
@@ -165,14 +170,16 @@ class ScriptBase(object):
 			help='Default = {}. {}'.format(default, help))
 		group.add_argument(
 			'--no-' + name,
-			dest=underscore,
+			dest=underscore_name,
 			action='store_false',
 			help='Sets --{} to False'.format(name))
 
-	def define_option(self, parser, underscore, datatype, default, help):
-		# type: (argparse.ArgumentParser, str, Callable, Any, str) -> None
+	def define_option(self, parser, underscore_name, datatype, default=None,
+			help='', default_key=None):
+		# type: (argparse.ArgumentParser, str, Callable, Any, str, Optional[str]) -> None
 		"""Add an option with the given name and datatype to the parser."""
-		name = dashize(underscore)
+		name = dashize(underscore_name)
+		default = DEFAULT_SIMULATION_KWARGS[default_key] if default_key else default
 		parser.add_argument('--' + name,
 			type=datatype,
 			default=default,
