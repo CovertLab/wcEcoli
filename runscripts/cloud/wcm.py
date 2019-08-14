@@ -22,8 +22,6 @@ from runscripts.cloud.util.workflow import Task, Workflow
 DOCKER_IMAGE = 'gcr.io/allen-discovery-center-mcovert/{}-wcm-code:latest'
 STORAGE_PREFIX_ROOT = 'sisyphus:data/'
 
-DEFAULT_VARIANT = ['wildtype', '0', '0']
-
 METADATA_KEYS = (
 	'generations',
 	'mass_distribution',
@@ -180,8 +178,9 @@ class WcmWorkflow(Workflow):
 
 			this_variant_cohort_analysis_inputs = [kb_dir, variant_sim_data_dir]
 			variant_analysis_inputs.append(variant_sim_data_dir)
+			arg_seed = args['seed']
 
-			for j in xrange(args['init_sims']):  # seed
+			for j in xrange(arg_seed, arg_seed + args['init_sims']):  # init sim seeds
 				seed_dir = self.internal(subdir, '{:06d}'.format(j))
 				md_multigen = dict(md_cohort, seed=j)
 
@@ -344,11 +343,6 @@ class RunWcm(scriptBase.ScriptBase):
 			unambiguous prefix.'''
 
 	def define_parameters(self, parser):
-		def add_option(name, key, datatype, help):
-			self.define_option(parser, name, datatype, help=help, default_key=key)
-		def add_bool_option(name, key, help):
-			self.define_parameter_bool(parser, name, help=help, default_key=key)
-
 		self.define_option(parser, 'description', str, '',
 			help='A simulation description to append to the output folder name.')
 		self.define_parameter_bool(parser, 'verbose', True,
@@ -375,64 +369,9 @@ class RunWcm(scriptBase.ScriptBase):
 				 ' the other TFs at their input levels for faster Parca debugging.'
 				 ' DO NOT USE THIS FOR A MEANINGFUL SIMULATION.')
 
-		# Variant
-		parser.add_argument('-v', '--variant', nargs=3, default=DEFAULT_VARIANT,
-			metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'),
-			help='''The variant type name, first index, and last index to make.
-				See models/ecoli/sim/variants/__init__.py for the variant
-				type choices and their supported index ranges, e.g.: wildtype,
-				condition, meneParams, metabolism_kinetic_objective_weight,
-				nutrientTimeSeries, and param_sensitivity.
-				Default = wildtype 0 0''')
-
 		# Simulation
-		parser.add_argument('-g', '--generations', type=int, default=1,
-			help='Number of cell generations to run. Set it to 0 to just run'
-				 ' Parca and make-variants with no sim generations or analysis.'
-				 ' Default = 1')
-		self.define_option(parser, 'init_sims', int, 1,
-			'Number of initial sims (lineage seeds) per variant.')
-		parser.add_argument('-t', '--timeline', type=str, default='0 minimal',
-			help='set timeline. Default = "0 minimal". See'
-				 ' environment/condition/make_media.py, make_timeline() for'
-				 ' timeline formatting details')
-		add_option('length_sec', 'lengthSec', int,
-			help='The maximum simulation time, in seconds. Useful for short'
-				 ' simulations; not so useful for multiple generations.'
-				 ' Default is 3 hours')
-		add_option('timestep_safety_frac', 'timeStepSafetyFraction', float,
-			help='Scale the time step by this factor if conditions are'
-				 ' favorable, up the the limit of the max time step')
-		add_option('timestep_max', 'maxTimeStep', float,
-			help='the maximum time step, in seconds')
-		add_option('timestep_update_freq', 'updateTimeStepFreq', int,
-			help='frequency at which the time step is updated')
-		add_bool_option('mass_distribution', 'massDistribution',
-			help='If true, a mass coefficient is drawn from a normal distribution'
-				 ' centered on 1; otherwise it is set equal to 1')
-		add_bool_option('growth_rate_noise', 'growthRateNoise',
-			help='If true, a growth rate coefficient is drawn from a normal'
-				 ' distribution centered on 1; otherwise it is set equal to 1')
-		add_bool_option('d_period_division', 'dPeriodDivision',
-			help='If true, ends simulation once D period has occurred after'
-				 ' chromosome termination; otherwise simulation terminates once'
-				 ' a given mass has been added to the cell')
-		add_bool_option('variable_elongation_transcription', 'variable_elongation_transcription',
-			help='Use a different elongation rate for different transcripts'
-				 ' (currently increases rates for RRNA)')
-		add_bool_option('variable_elongation_translation', 'variable_elongation_translation',
-			help='Use a different elongation rate for different polypeptides'
-				 ' (currently increases rates for ribosomal proteins)')
-		add_bool_option('translation_supply', 'translationSupply',
-			help='If true, the ribosome elongation rate is limited by the'
-				 ' condition specific rate of amino acid supply; otherwise the'
-				 ' elongation rate is set by condition')
-		add_bool_option('trna_charging', 'trna_charging',
-			help='if true, tRNA charging reactions are modeled and the ribosome'
-				 ' elongation rate is set by the amount of charged tRNA	present.'
-				 ' This option will override TRANSLATION_SUPPLY in the simulation.')
-
-		# TODO(jerry): Single/dual daughters.
+		self.define_sim_loop_options(parser)
+		self.define_sim_options(parser)
 
 		# Analyses
 		self.define_parameter_bool(parser, 'run_analysis', True,

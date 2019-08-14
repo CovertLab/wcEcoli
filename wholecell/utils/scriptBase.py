@@ -23,6 +23,9 @@ import wholecell.utils.filepath as fp
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 
 
+DEFAULT_VARIANT = ['wildtype', '0', '0']
+
+
 def default_wcecoli_out_subdir_path():
 	# type: () -> str
 	"""Return an absolute path to the most interesting subdirectory of
@@ -156,8 +159,14 @@ class ScriptBase(object):
 		"""Add a boolean option parameter to the parser. The CLI input can be
 		`--name`, or its inverse `--no_name`. The default can be True or False, and
 		changing it won't affect any of those explicit input forms. This method
-		adds the default value to the help text. Passing in `default_key` copies
-		the default from `DEFAULT_SIMULATION_KWARGS[default_key]`.
+		adds the default value to the help text.
+
+		The parameter's `underscore_name` can contain underscores for easy
+		searching in the code. This converts them to dashes for CLI convention.
+		ArgumentParser does the reverse conversion when storing into `args`.
+
+		Setting `default_key` copies the default value from
+		`DEFAULT_SIMULATION_KWARGS[default_key]`.
 		"""
 		name = dashize(underscore_name)
 		default = bool(
@@ -175,12 +184,20 @@ class ScriptBase(object):
 			help='Sets --{} to False'.format(name))
 
 	def define_option(self, parser, underscore_name, datatype, default=None,
-			help='', default_key=None):
-		# type: (argparse.ArgumentParser, str, Callable, Any, str, Optional[str]) -> None
-		"""Add an option with the given name and datatype to the parser."""
-		name = dashize(underscore_name)
+			help='', default_key=None, flag=''):
+		# type: (argparse.ArgumentParser, str, Callable, Any, str, Optional[str], str) -> None
+		"""Add an option with the given name and datatype to the parser.
+
+		The parameter's `underscore_name` can contain underscores for easy
+		searching in the code. This converts them to dashes for CLI convention.
+		ArgumentParser does the reverse conversion when storing into `args`.
+
+		Setting `default_key` copies the default value from
+		`DEFAULT_SIMULATION_KWARGS[default_key]`.
+		"""
+		names = (('-' + flag,) if flag else ()) + (dashize('--' + underscore_name),)
 		default = DEFAULT_SIMULATION_KWARGS[default_key] if default_key else default
-		parser.add_argument('--' + name,
+		parser.add_argument(*names,
 			type=datatype,
 			default=default,
 			help='({}; {!r}) {}'.format(datatype.__name__, default, help)
@@ -239,6 +256,91 @@ class ScriptBase(object):
 			' sim_path {}'.format(
 				'(any)' if index is None else index,
 				sim_path))
+
+	def define_sim_loop_options(self, parser, manual_script=False):
+		# type: (argparse.ArgumentParser, bool) -> None
+		"""Define options for running a series of sims."""
+
+		# Variant
+		parser.add_argument('-v', '--variant', nargs=3, default=DEFAULT_VARIANT,
+			metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'),
+			help='''The variant type name, first index, and last index.
+				See models/ecoli/sim/variants/__init__.py for the variant
+				type choices and their supported index ranges, e.g.: wildtype,
+				condition, meneParams, metabolism_kinetic_objective_weight,
+				nutrientTimeSeries, and param_sensitivity.
+				Default = ''' + ' '.join(DEFAULT_VARIANT))
+		if manual_script:
+			self.define_parameter_bool(parser, 'require_variants', False,
+				help='''true => require the sim_data variant(s) specified by the
+					--variant option to already exist; false => make the variant(s).
+					Run makeVariants.py to make sim_data variants.''')
+
+		# Simulation
+		parser.add_argument('-g', '--generations', type=int, default=1,
+			help='Number of cell sim generations to run. (Single daughters only.)'
+				 ' Default = 1')
+		if manual_script:
+			parser.add_argument('--total_gens', type=int,
+				help='(int) Total number of generations to write into the'
+					 ' metadata.json file. Default = the value of --generations.')
+		parser.add_argument('-s', '--seed', type=int, default=0,
+			help="First cell lineage's simulation seed. Default = 0")
+
+		self.define_option(parser, 'init_sims', int, 1, flag='i',
+			help='Number of initial sims (lineage seeds) per variant.')
+
+	def define_sim_options(self, parser):
+		# type: (argparse.ArgumentParser) -> None
+		"""Define options for running a sim, with defaults from the sim code."""
+
+		def add_option(name, key, datatype, help):
+			self.define_option(parser, name, datatype, help=help, default_key=key)
+
+		def add_bool_option(name, key, help):
+			self.define_parameter_bool(parser, name, help=help, default_key=key)
+
+		self.define_option(parser, 'timeline', str, flag='t',
+			default_key='timeline',
+			help='The media timeline. See environment/condition/make_media.py,'
+				 ' make_timeline() for timeline formatting details')
+		add_option('length_sec', 'lengthSec', int,
+			help='The maximum simulation time, in seconds. Useful for short'
+				 ' simulations; not so useful for multiple generations.'
+				 ' Default is 3 hours')
+		add_option('timestep_safety_frac', 'timeStepSafetyFraction', float,
+			help='Scale the time step by this factor if conditions are'
+				 ' favorable, up the the limit of the max time step')
+		add_option('timestep_max', 'maxTimeStep', float,
+			help='the maximum time step, in seconds')
+		add_option('timestep_update_freq', 'updateTimeStepFreq', int,
+			help='frequency at which the time step is updated')
+
+		add_bool_option('mass_distribution', 'massDistribution',
+			help='If true, a mass coefficient is drawn from a normal distribution'
+				 ' centered on 1; otherwise it is set equal to 1')
+		add_bool_option('growth_rate_noise', 'growthRateNoise',
+			help='If true, a growth rate coefficient is drawn from a normal'
+				 ' distribution centered on 1; otherwise it is set equal to 1')
+		add_bool_option('d_period_division', 'dPeriodDivision',
+			help='If true, ends simulation once D period has occurred after'
+				 ' chromosome termination; otherwise simulation terminates once'
+				 ' a given mass has been added to the cell')
+		add_bool_option('variable_elongation_transcription', 'variable_elongation_transcription',
+			help='Use a different elongation rate for different transcripts'
+				 ' (currently increases rates for RRNA)')
+		add_bool_option('variable_elongation_translation', 'variable_elongation_translation',
+			help='Use a different elongation rate for different polypeptides'
+				 ' (currently increases rates for ribosomal proteins)')
+		add_bool_option('translation_supply', 'translationSupply',
+			help='If true, the ribosome elongation rate is limited by the'
+				 ' condition specific rate of amino acid supply; otherwise the'
+				 ' elongation rate is set by condition')
+		add_bool_option('trna_charging', 'trna_charging',
+			help='if true, tRNA charging reactions are modeled and the ribosome'
+				 ' elongation rate is set by the amount of charged tRNA	present.'
+				 ' This option will override TRANSLATION_SUPPLY in the simulation.')
+
 
 	def parse_args(self):
 		# type: () -> argparse.Namespace

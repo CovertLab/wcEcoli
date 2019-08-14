@@ -33,68 +33,18 @@ class RunDaughter(scriptBase.ScriptBase):
 				' unambiguous prefix.)'.format(self.description()))
 
 	def define_parameters(self, parser):
-		def add_option(name, key, datatype, help):
-			self.define_option(parser, name, datatype, help=help, default_key=key)
-		def add_bool_option(name, key, help):
-			self.define_parameter_bool(parser, name, help=help, default_key=key)
-
 		super(RunDaughter, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)
 		self.define_parameter_variant_index(parser)
 
 		parser.add_argument('-g', '--generation', type=int, default=1,
-			help='Generation number to run. Default = 1'
-			)
+			help='Generation number to run. Default = 1')
 		parser.add_argument('-s', '--seed', type=int, default=0,
-			help='Cell simulation seed. Default = 0'
-			)
+			help='Cell simulation seed. Default = 0')
 		parser.add_argument('-d', '--daughter', type=int, default=0,
-			help='Cell daughter number (only 0 if single_daughters). Default = 0'
-			)
-		parser.add_argument('-t', '--timeline', type=str, default='0 minimal',
-			help='set timeline. Default = "0 minimal". See'
-				 ' wholecell/utils/make_media.py, make_timeline() for'
-				 ' timeline formatting details'
-			)
-		add_option('length_sec', 'lengthSec', int,
-			help='The maximum simulation time, in seconds. Useful for short'
-				 ' simulations; not so useful for multiple generations.'
-				 ' Default is 3 hours'
-			)
-		add_option('timestep_safety_frac', 'timeStepSafetyFraction', float,
-			help='Scale the time step by this factor if conditions are'
-				 ' favorable, up the the limit of the max time step'
-			)
-		add_option('timestep_max', 'maxTimeStep', float,
-			help='the maximum time step, in seconds'
-			)
-		add_option('timestep_update_freq', 'updateTimeStepFreq', int,
-			help='frequency at which the time step is updated'  # TODO: explain
-			)
+			help='Cell daughter number (only 0 if single_daughters). Default = 0')
 
-		add_bool_option('mass_distribution', 'massDistribution',
-			help='If true, a mass coefficient is drawn from a normal distribution'
-				 ' centered on 1; otherwise it is set equal to 1'
-			)
-		add_bool_option('growth_rate_noise', 'growthRateNoise',
-			help='If true, a growth rate coefficient is drawn from a normal'
-				 ' distribution centered on 1; otherwise it is set equal to 1'
-			)
-		add_bool_option('d_period_division', 'dPeriodDivision',
-			help='If true, ends simulation once D period has occurred after'
-				 ' chromosome termination; otherwise simulation terminates once'
-				 ' a given mass has been added to the cell'
-			)
-		add_bool_option('translation_supply', 'translationSupply',
-			help='If true, the ribosome elongation rate is limited by the'
-				 ' condition specific rate of amino acid supply; otherwise the'
-				 ' elongation rate is set by condition'
-			)
-		add_bool_option('trna_charging', 'trna_charging',
-			help='if True, tRNA charging reactions are modeled and the ribosome'
-				 ' elongation rate is set by the amount of charged tRNA	present.'
-				 ' This option will override TRANSLATION_SUPPLY in the simulation.'
-			)
+		self.define_sim_options(parser)
 
 	def parse_args(self):
 		args = super(RunDaughter, self).parse_args()
@@ -110,10 +60,19 @@ class RunDaughter(scriptBase.ScriptBase):
 		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_SIM_DATA_FILENAME)
 		fp.verify_file_exists(sim_data_file, 'Run runParca?')
 
-		cli_sim_args = data.select_keys(vars(args),
-			('timeline', 'length_sec', 'timestep_safety_frac', 'timestep_max',
-			'timestep_update_freq', 'mass_distribution', 'growth_rate_noise',
-			'd_period_division', 'translation_supply', 'trna_charging'))
+		cli_sim_args = data.select_keys(vars(args), (
+			'timeline',
+			'length_sec',
+			'timestep_safety_frac',
+			'timestep_max',
+			'timestep_update_freq',
+			'mass_distribution',
+			'growth_rate_noise',
+			'd_period_division',
+			'variable_elongation_transcription',
+			'variable_elongation_translation',
+			'translation_supply',
+			'trna_charging'))
 
 		j = args.seed
 		k = args.generation
