@@ -363,9 +363,9 @@ class RunWcm(scriptBase.ScriptBase):
 			help='A simulation description to append to the output folder name.')
 		self.define_parameter_bool(parser, 'verbose', True,
 			help='Verbose workflow builder logging')
-		parser.add_argument('-c', '--cpus', type=int, default=2,
+		parser.add_argument('-c', '--cpus', type=int, default=1,
 			help='The number of CPU processes to use in the Parca and analysis'
-				 ' steps. Default = 2.')
+				 ' steps. Default = 1.')
 		self.define_parameter_bool(parser, 'dump', False,
 			help='Dump the built workflow to JSON files for'
 				 ' review *instead* of sending them to the Gaia workflow'
