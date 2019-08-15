@@ -11,6 +11,7 @@ from __future__ import absolute_import
 
 import os
 import cPickle
+from datetime import datetime
 import numpy as np
 import matplotlib
 matplotlib.use('TkAgg')
@@ -24,8 +25,11 @@ import csv
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 
-subsample = True
+startTime = datetime.now()
+
+subsample = False
 subsample_degree = 100 #subsamples every 100 timepoints
+print_runtime = True #Prints to screen the amount of time it took to run the analysis
 
 DIALECT = "excel-tab"
 JsonReader = partial(spreadsheets.JsonReader, dialect = DIALECT)
@@ -85,12 +89,10 @@ def extract_protein_rna_ids(protein_data, rna_data):
 	of from sim_data is that since we only need this data, we dont want to 
 	pay money to download the sim_data file from the cloud.
 	'''
+	protein_ids = np.asarray([x['id'] + '[' + str(x['location'][0]) + ']' for x in protein_data], dtype = 'S50')
+	rna_ids = np.asarray([x['id'] + '[' + str(x['location'][0]) + ']' for x in rna_data], dtype='S50')
 
-	protein_ids = np.asarray([x['id'] for x in protein_data], dtype='S50')
-	gene_ids = np.asarray([x['geneId'] for x in rna_data], dtype='S50')
-	rna_ids = np.asarray([x['id'] for x in rna_data], dtype='S50')
-
-	return protein_ids, gene_ids, rna_ids
+	return protein_ids, rna_ids
 
 
 #assumes sys.argv[1] goes straight to the seed folder.
@@ -98,13 +100,8 @@ data_path = sys.argv[1]
 output_dir = make_output_dirs()
 seed_name = data_path.split('/')[-1]
 
-sim_data_file = '/Users/mialydefelice/Documents/code_repositories/data_sets/fathom_data_sets/013019/32_gen_sim/wildtype_000000/kb/simData_Modified.cPickle'
-import pdb; pdb.set_trace()
-sim_data = load_simulation_data(sim_data_file)
-rna_ids_sim = sim_data.process.transcription.rnaData["id"]
-
 protein_info, rna_info = import_proteins_rnas_tsv()
-protein_ids, gene_ids, rna_ids = extract_protein_rna_ids(protein_info, rna_info)
+protein_ids, rna_ids = extract_protein_rna_ids(protein_info, rna_info)
 #
 #get all cells
 ap = AnalysisPaths(data_path, multi_gen_plot = True)
@@ -127,9 +124,10 @@ for i, sim_dir in enumerate(all_dir):
 
 	# Read counts of transcripts
 	bulkMolecules = TableReader(os.path.join(sim_out_dir, "BulkMolecules"))
-	import pdb; pdb.set_trace()
+	
 	if i == 0:
 		molecule_ids = bulkMolecules.readAttribute("objectNames")
+		#import pdb; pdb.set_trace()
 		rna_indices = np.array([molecule_ids.index(x) for x in rna_ids])
 		protein_indices = np.array([molecule_ids.index(x) for x in protein_ids])
 	try:
@@ -141,7 +139,6 @@ for i, sim_dir in enumerate(all_dir):
 		rna_counts = bulkMolecules.readColumn("counts")[:, rna_indices]
 		protein_counts = bulkMolecules.readColumn("counts")[:, protein_indices]
 	else:
-		
 		rna_counts = np.vstack((rna_counts, bulkMolecules.readColumn("counts")[:, rna_indices]))
 		protein_counts = np.vstack((protein_counts, bulkMolecules.readColumn("counts")[:, protein_indices]))
 	bulkMolecules.close()
@@ -165,3 +162,6 @@ combined_rna_protein_counts = np.hstack((time_gen_stack, protein_ids_counts, rna
 
 with open(os.path.join(output_dir, save_file_name), 'wb') as fp:
 	np.savetxt(fp, combined_rna_protein_counts, '%s','\t')
+
+if print_runtime:
+	print datetime.now() - startTime 
