@@ -10,10 +10,10 @@ from __future__ import absolute_import, division, print_function
 import json
 import os
 import re
-from typing import Any, Dict, Iterable, Mapping
+from typing import Any, Dict, Iterable
 
 from wholecell.fireworks.firetasks import ParcaTask, VariantSimDataTask
-from wholecell.utils import constants, scriptBase
+from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
 from runscripts.manual.analysisBase import AnalysisBase
 from runscripts.cloud.util.workflow import Task, Workflow
@@ -21,43 +21,6 @@ from runscripts.cloud.util.workflow import Task, Workflow
 
 DOCKER_IMAGE = 'gcr.io/allen-discovery-center-mcovert/{}-wcm-code:latest'
 STORAGE_PREFIX_ROOT = 'sisyphus:data/'
-
-METADATA_KEYS = (
-	'generations',
-	'mass_distribution',
-	'growth_rate_noise',
-	'd_period_division',
-	'variable_elongation_transcription',
-	'variable_elongation_translation',
-	'translation_supply',
-	'trna_charging')
-
-PARCA_KEYS = (
-	'ribosome_fitting',
-	'rnapoly_fitting',
-	'cpus',
-	'variable_elongation_transcription',
-	'variable_elongation_translation')
-
-SIM_KEYS = (
-	'timeline',
-	'length_sec',
-	'timestep_safety_frac',
-	'timestep_max',
-	'timestep_update_freq',
-	'mass_distribution',
-	'growth_rate_noise',
-	'd_period_division',
-	'translation_supply',
-	'trna_charging')
-
-
-def select_keys(mapping, keys, **kwargs):
-	# type: (Mapping[str, Any], Iterable[str], **Any) -> Dict[str, Any]
-	"""Return a dict of the mapping entries with the given keys plus the kwargs."""
-	result = {key: mapping[key] for key in keys if mapping[key] is not None}
-	result.update(**kwargs)
-	return result
 
 
 class WcmWorkflow(Workflow):
@@ -124,9 +87,9 @@ class WcmWorkflow(Workflow):
 			args['workers'] = variant_count * args['init_sims']
 
 		metadata_file = self.internal('metadata', constants.JSON_METADATA_FILE)
-		metadata = select_keys(
+		metadata = data.select_keys(
 			args,
-			METADATA_KEYS,
+			scriptBase.METADATA_KEYS,
 			git_hash=fp.run_cmdline("git rev-parse HEAD"),
 			git_branch=fp.run_cmdline("git symbolic-ref --short HEAD"),
 			description=args['description'] or 'WCM',
@@ -142,9 +105,9 @@ class WcmWorkflow(Workflow):
 				# task so its worker doesn't exit while the Parca runs.
 			outputs=[metadata_file])
 
-		python_args = select_keys(
+		python_args = data.select_keys(
 			args,
-			PARCA_KEYS,
+			scriptBase.PARCA_KEYS,
 			debug=args['debug_parca'],
 			output_directory=kb_dir)
 		parca_task = self.add_python_task('parca', python_args,
@@ -153,7 +116,7 @@ class WcmWorkflow(Workflow):
 
 		variant_analysis_inputs = [kb_dir]
 
-		sim_args = select_keys(args, SIM_KEYS)
+		sim_args = data.select_keys(args, scriptBase.SIM_KEYS)
 
 		for i, subdir in fp.iter_variants(*variant_spec):
 			variant_sim_data_dir = self.internal(subdir,
@@ -359,19 +322,15 @@ class RunWcm(scriptBase.ScriptBase):
 			help='The number of worker nodes to launch, with a smart default.')
 
 		# Parca
-		self.define_parameter_bool(parser, 'ribosome_fitting', True,
-			help="Fit ribosome expression to protein synthesis demands")
-		self.define_parameter_bool(parser, 'rnapoly_fitting', True,
-			help="Fit RNA polymerase expression to protein synthesis demands")
-		self.define_parameter_bool(parser, 'debug_parca', False,
-			help='Make Parca calculate only one arbitrarily-chosen transcription'
-				 ' factor condition when adjusting gene expression levels, leaving'
-				 ' the other TFs at their input levels for faster Parca debugging.'
-				 ' DO NOT USE THIS FOR A MEANINGFUL SIMULATION.')
+		self.define_parca_options(parser)
 
 		# Simulation
 		self.define_sim_loop_options(parser)
 		self.define_sim_options(parser)
+
+		# For Parca and Sim. define_parca_options() and define_sim_options()
+		# can't both call this since ArgumentParser would raise an error.
+		self.define_elongation_options(parser)
 
 		# Analyses
 		self.define_parameter_bool(parser, 'run_analysis', True,

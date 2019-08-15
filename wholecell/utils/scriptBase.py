@@ -23,6 +23,38 @@ import wholecell.utils.filepath as fp
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 
 
+METADATA_KEYS = (
+	'timeline',
+	'generations',
+	'mass_distribution',
+	'growth_rate_noise',
+	'd_period_division',
+	'variable_elongation_transcription',
+	'variable_elongation_translation',
+	'translation_supply',
+	'trna_charging')
+
+PARCA_KEYS = (
+	'ribosome_fitting',
+	'rnapoly_fitting',
+	'cpus',
+	'variable_elongation_transcription',
+	'variable_elongation_translation')
+
+SIM_KEYS = (
+	'timeline',
+	'length_sec',
+	'timestep_safety_frac',
+	'timestep_max',
+	'timestep_update_freq',
+	'mass_distribution',
+	'growth_rate_noise',
+	'd_period_division',
+	'variable_elongation_transcription',
+	'variable_elongation_translation',
+	'translation_supply',
+	'trna_charging')
+
 DEFAULT_VARIANT = ['wildtype', '0', '0']
 
 
@@ -257,6 +289,37 @@ class ScriptBase(object):
 				'(any)' if index is None else index,
 				sim_path))
 
+	def define_elongation_options(self, parser):
+		# type: (argparse.ArgumentParser) -> None
+		"""Define the variable-elongation options for both Parca and Sim."""
+
+		def add_bool_option(name, key, help):
+			self.define_parameter_bool(parser, name, help=help, default_key=key)
+
+		add_bool_option('variable_elongation_transcription', 'variable_elongation_transcription',
+			help='Use a different elongation rate for different transcripts'
+				 ' (currently increases rates for rRNA).'
+				 ' Usually set this consistently between runParca and runSim.')
+		add_bool_option('variable_elongation_translation', 'variable_elongation_translation',
+			help='Use a different elongation rate for different polypeptides'
+				 ' (currently increases rates for ribosomal proteins).'
+				 ' Usually set this consistently between runParca and runSim.')
+
+	def define_parca_options(self, parser):
+		# type: (argparse.ArgumentParser) -> None
+		"""Define Parca task options EXCEPT the elongation options."""
+
+		self.define_parameter_bool(parser, 'ribosome_fitting', True,
+			help="Fit ribosome expression to protein synthesis demands.")
+		self.define_parameter_bool(parser, 'rnapoly_fitting', True,
+			help="Fit RNA polymerase expression to protein synthesis demands.")
+
+		self.define_parameter_bool(parser, 'debug_parca', False,
+			help='Make Parca calculate only one arbitrarily-chosen transcription'
+				 ' factor condition when adjusting gene expression levels, leaving'
+				 ' the other TFs at their input levels for faster Parca debugging.'
+				 ' DO NOT USE THIS FOR A MEANINGFUL SIMULATION.')
+
 	def define_sim_loop_options(self, parser, manual_script=False):
 		# type: (argparse.ArgumentParser, bool) -> None
 		"""Define options for running a series of sims."""
@@ -292,7 +355,9 @@ class ScriptBase(object):
 
 	def define_sim_options(self, parser):
 		# type: (argparse.ArgumentParser) -> None
-		"""Define options for running a sim, with defaults from the sim code."""
+		"""Define sim task options EXCEPT the elongation options, with defaults
+		from the sim class.
+		"""
 
 		def add_option(name, key, datatype, help):
 			self.define_option(parser, name, datatype, help=help, default_key=key)
@@ -326,12 +391,6 @@ class ScriptBase(object):
 			help='If true, ends simulation once D period has occurred after'
 				 ' chromosome termination; otherwise simulation terminates once'
 				 ' a given mass has been added to the cell')
-		add_bool_option('variable_elongation_transcription', 'variable_elongation_transcription',
-			help='Use a different elongation rate for different transcripts'
-				 ' (currently increases rates for RRNA)')
-		add_bool_option('variable_elongation_translation', 'variable_elongation_translation',
-			help='Use a different elongation rate for different polypeptides'
-				 ' (currently increases rates for ribosomal proteins)')
 		add_bool_option('translation_supply', 'translationSupply',
 			help='If true, the ribosome elongation rate is limited by the'
 				 ' condition specific rate of amino acid supply; otherwise the'

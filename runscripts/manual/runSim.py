@@ -73,14 +73,7 @@ class RunSimulation(scriptBase.ScriptBase):
 		self.define_parameter_sim_dir(parser)
 		self.define_sim_loop_options(parser, manual_script=True)
 		self.define_sim_options(parser)
-
-	def parse_args(self):
-		args = super(RunSimulation, self).parse_args()
-
-		if args.total_gens is None:
-			args.total_gens = args.generations
-
-		return args
+		self.define_elongation_options(parser)
 
 	def run(self, args):
 		kb_directory = os.path.join(args.sim_path, 'kb')
@@ -92,25 +85,12 @@ class RunSimulation(scriptBase.ScriptBase):
 		variant_type = args.variant[0]
 		variant_spec = (variant_type, int(args.variant[1]), int(args.variant[2]))
 
-		cli_sim_args = data.select_keys(vars(args), (
-			'timeline',
-			'length_sec',
-			'timestep_safety_frac',
-			'timestep_max',
-			'timestep_update_freq',
-			'mass_distribution',
-			'growth_rate_noise',
-			'd_period_division',
-			'variable_elongation_transcription',
-			'variable_elongation_translation',
-			'translation_supply',
-			'trna_charging'))
+		cli_sim_args = data.select_keys(vars(args), scriptBase.SIM_KEYS)
 
 		# Write the metadata file.
-		cli_metadata_args = data.select_keys(vars(args),
-			('total_gens', 'timeline', 'mass_distribution', 'growth_rate_noise',
-			'd_period_division', 'translation_supply', 'trna_charging'))
-		metadata = dict(cli_metadata_args,
+		metadata = data.select_keys(
+			vars(args),
+			scriptBase.METADATA_KEYS,
 			git_hash=fp.run_cmdline("git rev-parse HEAD") or '--',
 			git_branch=fp.run_cmdline("git symbolic-ref --short HEAD") or '--',
 			description=description,
@@ -118,7 +98,7 @@ class RunSimulation(scriptBase.ScriptBase):
 			analysis_type=None,
 			variant=variant_type,
 			total_variants=str(variant_spec[2] + 1 - variant_spec[1]),
-			)
+			total_gens=args.total_gens or args.generations)
 		metadata_dir = fp.makedirs(args.sim_path, 'metadata')
 		metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 		fp.write_json_file(metadata_path, metadata)

@@ -45,6 +45,7 @@ class RunDaughter(scriptBase.ScriptBase):
 			help='Cell daughter number (only 0 if single_daughters). Default = 0')
 
 		self.define_sim_options(parser)
+		self.define_elongation_options(parser)
 
 	def parse_args(self):
 		args = super(RunDaughter, self).parse_args()
@@ -60,19 +61,7 @@ class RunDaughter(scriptBase.ScriptBase):
 		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_SIM_DATA_FILENAME)
 		fp.verify_file_exists(sim_data_file, 'Run runParca?')
 
-		cli_sim_args = data.select_keys(vars(args), (
-			'timeline',
-			'length_sec',
-			'timestep_safety_frac',
-			'timestep_max',
-			'timestep_update_freq',
-			'mass_distribution',
-			'growth_rate_noise',
-			'd_period_division',
-			'variable_elongation_transcription',
-			'variable_elongation_translation',
-			'translation_supply',
-			'trna_charging'))
+		cli_sim_args = data.select_keys(vars(args), scriptBase.SIM_KEYS)
 
 		j = args.seed
 		k = args.generation
