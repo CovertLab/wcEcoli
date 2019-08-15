@@ -51,7 +51,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.translation_data = sim_data.process.translation
 		self.ribosomeElongationRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 
-		self.maxRibosomeElongationRate = float(sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
 		self.base_elongation_rate = float(sim_data.constants.ribosomeElongationRateBase.asNumber(units.aa / units.s))
 
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
@@ -103,7 +102,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		current_nutrients = self._external_states['Environment'].nutrients
 
 		if self.translationSupply:
-			self.ribosomeElongationRate = self.maxRibosomeElongationRate
+			self.ribosomeElongationRate = self.base_elongation_rate
 		else:
 			rate = self.ribosomeElongationRateDict[current_nutrients].asNumber(units.aa / units.s)
 			self.ribosomeElongationRate = self.elngRateFactor * rate
