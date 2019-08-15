@@ -22,7 +22,6 @@ import numpy as np
 import sympy as sp
 from copy import copy
 
-MIN_AA_KI = 2.0e-7  # M, KI for aa_supply for low concentration AA species
 PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
 ILE_LEU_CONCENTRATION = 3.03e-4  # M, Bennett et al. 2009
 ILE_FRACTION = 0.360  # the fraction of iso/leucine that is isoleucine; computed from our monomer data
@@ -182,16 +181,6 @@ class Metabolism(object):
 		self.concDict = self.concentrationUpdates.concentrationsBasedOnNutrients("minimal")
 		self.nutrientsToInternalConc = {}
 		self.nutrientsToInternalConc["minimal"] = self.concDict.copy()
-
-		# Set at 1% of each expected concentration (or MIN_AA_KI for low
-		# concentration amino acids) for minimal impact on AA supply
-		# TODO (Travis)
-		## Base on measured KI values
-		## Add impact from synthesis enzymes
-		aa_conc = np.array([self.concDict[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
-			for aa in sim_data.moleculeGroups.aaIDs])
-		self.supply_fraction_inhibited = 0.05
-		self.KI_aa_synthesis = METABOLITE_CONCENTRATION_UNITS * self.supply_fraction_inhibited * aa_conc / (1 - self.supply_fraction_inhibited)
 
 	def _buildMetabolism(self, raw_data, sim_data):
 		"""
@@ -523,8 +512,54 @@ class Metabolism(object):
 
 		return externalMoleculeLevels, newObjective
 
+	def set_supply_inhibition(self, sim_data):
+		"""
 
-# Class used to update metabolite concentrations based on the current nutrient conditions
+		"""
+
+		# Set at 1% of each expected concentration (or MIN_AA_KI for low
+		# concentration amino acids) for minimal impact on AA supply
+		# TODO (Travis)
+		## Base on measured KI values
+		## Add impact from synthesis enzymes
+		aa_ids = sim_data.moleculeGroups.aaIDs
+		conc = self.concentrationUpdates.concentrationsBasedOnNutrients
+
+		aa_conc_basal = np.array([
+			conc('minimal')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			for aa in aa_ids])
+		aa_conc_aa_media = np.array([
+			conc('minimal_plus_amino_acids')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			for aa in aa_ids])
+
+		f_inhibited = 0.1
+		f_exported = 0.1
+		self.fraction_supply_rate = 1 - f_inhibited
+		self.fraction_import_rate = f_inhibited + f_exported
+
+		# Assumed units of METABOLITE_CONCENTRATION_UNITS for KI and KM
+		self.KI_aa_synthesis = f_inhibited * aa_conc_basal / (1 - f_inhibited)
+		self.KM_aa_export = (1 / f_exported - 1) * (aa_conc_aa_media - aa_conc_basal)
+		self.base_aa_conc = aa_conc_basal
+
+	def aa_supply_scaling(self, aa_conc, aa_present):
+		"""
+
+		"""
+
+		aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
+
+		aa_supply = self.fraction_supply_rate
+		aa_import = aa_present * self.fraction_import_rate
+		aa_synthesis = 1 / (1 + aa_conc / self.KI_aa_synthesis)
+		aa_diff = aa_conc - self.base_aa_conc
+		aa_export = aa_diff / (self.KM_aa_export + aa_diff)
+		supply_scaling = aa_supply + aa_import + aa_synthesis - aa_export
+
+		return supply_scaling
+
+
+	# Class used to update metabolite concentrations based on the current nutrient conditions
 class ConcentrationUpdates(object):
 	def __init__(self, concDict, equilibriumReactions, exchange_data_dict):
 		self.units = units.getUnit(concDict.values()[0])

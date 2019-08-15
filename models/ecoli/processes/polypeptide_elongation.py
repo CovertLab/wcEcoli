@@ -120,8 +120,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 
-		self.supply_fraction_inhibited = metabolism.supply_fraction_inhibited
-		self.KI_aa = metabolism.KI_aa_synthesis.asNumber(MICROMOLAR_UNITS)
+		self.KD_RelA = constants.KD_RelA_ribosome.asNumber(MICROMOLAR_UNITS)
+		self.k_RelA = constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s)
+		self.k_SpoT_syn = constants.k_SpoT_ppGpp_synthesis.asNumber(MICROMOLAR_UNITS / units.s)
+		self.k_SpoT_deg = constants.k_SpoT_ppGpp_degradation.asNumber(1 / units.s)
+		self.aa_supply_scaling = metabolism.aa_supply_scaling
 
 		# Dictionaries for homeostatic AA count updates in metabolism
 		self.aa_count_diff = {}  # attribute to be read by metabolism
@@ -224,10 +227,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			total_charging_reactions = np.dot(aa_counts_for_translation, self.aa_from_trna) * fraction_trna_per_aa + uncharged_trna_request
 
 			# Adjust aa_supply higher if amino acid concentrations are low
-			# Improves stability of charging and mimics amino acid inhibition
+			# Improves stability of charging and mimics amino acid synthesis
+			# inhibition and export
+			# TODO (Travis): pull from external_state
+			if current_media_id == 'minimal_plus_amino_acids':
+				aa_in_media = np.ones(len(aa_conc))
+			else:
+				aa_in_media = np.zeros(len(aa_conc))
 			# TODO (Travis): add to listener?
-			aa_supply_scaling = (1 - self.supply_fraction_inhibited) + 1 / (1 + aa_conc.asNumber(MICROMOLAR_UNITS) / self.KI_aa)
-			self.aa_supply *= aa_supply_scaling
+			self.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
 
 			# Only request molecules that will be consumed in the charging reactions
 			requested_molecules = -np.dot(self.charging_stoich_matrix, total_charging_reactions)

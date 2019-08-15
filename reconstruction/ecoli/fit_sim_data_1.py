@@ -279,6 +279,7 @@ def fitSimData_1(
 				sim_data.process.translation.ribosomeFractionActiveDict[nutrients] = frac
 
 	calculateRnapRecruitment(sim_data, rVector)
+	sim_data.process.metabolism.set_supply_inhibition(sim_data)
 
 	return sim_data
 
