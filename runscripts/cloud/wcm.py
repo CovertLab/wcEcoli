@@ -184,7 +184,7 @@ class WcmWorkflow(Workflow):
 			this_variant_cohort_analysis_inputs = [kb_dir, variant_sim_data_dir]
 			variant_analysis_inputs.append(variant_sim_data_dir)
 
-			for j in xrange(args['init_sims']):  # seed
+			for j in xrange(args['starting_seed'], args['starting_seed'] + args['init_sims']):  # seed
 				while j in BAD_SEEDS:
 					j += args['init_sims']
 
@@ -318,8 +318,8 @@ class WcmWorkflow(Workflow):
 def wc_ecoli_workflow(args):
 	# type: (Dict[str, Any]) -> WcmWorkflow
 	"""Build a workflow for wcEcoli."""
-	owner_id = os.environ.get('WF_ID', os.environ['USER'])
-	timestamp = fp.timestamp()
+	owner_id = args['owner'] or os.environ.get('WF_ID', os.environ['USER'])
+	timestamp = args['timestamp'] or fp.timestamp()
 	description = args['description'].replace(' ', '_')
 
 	pattern = r'[-.\w]*$'
@@ -364,20 +364,35 @@ class RunWcm(scriptBase.ScriptBase):
 			self.define_parameter_bool(
 				parser, name, DEFAULT_SIMULATION_KWARGS[key], help)
 
-		self.define_option(parser, 'description', str, '',
+		self.define_option(
+			parser, 'description', str, '',
 			help='A simulation description to append to the output folder name.')
-		self.define_parameter_bool(parser, 'verbose', True,
+		self.define_parameter_bool(
+			parser, 'verbose', True,
 			help='Verbose workflow builder logging')
-		parser.add_argument('-c', '--cpus', type=int, default=2,
+		parser.add_argument(
+			'-c', '--cpus', type=int, default=2,
 			help='The number of CPU processes to use in the Parca and analysis'
 				 ' steps. Default = 2.')
-		self.define_parameter_bool(parser, 'dump', False,
+		self.define_parameter_bool(
+			parser, 'dump', False,
 			help='Dump the built workflow to JSON files for'
 				 ' review *instead* of sending them to the Gaia workflow'
 				 ' server. This is useful for testing and debugging. You can'
 				 ' upload them manually or re-run this program without `--dump`.')
-		parser.add_argument('-w', '--workers', type=int,
+		parser.add_argument(
+			'-w', '--workers', type=int,
 			help='The number of worker nodes to launch, with a smart default.')
+		parser.add_argument(
+			'--owner', type=str,
+			help='The owner of this workflow. Defaults to $WF_ID then $USER')
+		parser.add_argument(
+			'--timestamp', type=str,
+			help='Use a provided timestamp instead of the automatically generated one')
+		parser.add_argument(
+			'--starting-seed', type=int, default=0,
+			help='Which seed to start with')
+
 
 		# Parca
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
@@ -401,14 +416,17 @@ class RunWcm(scriptBase.ScriptBase):
 				Default = wildtype 0 0''')
 
 		# Simulation
-		parser.add_argument('-g', '--generations', type=int, default=1,
+		parser.add_argument(
+			'-g', '--generations', type=int, default=1,
 			help='Number of cell generations to run. Set it to 0 to just run'
 				 ' Parca and make-variants with no sim generations or analysis.'
 				 ' Default = 1')
-		parser.add_argument('-i', '--{}'.format(scriptBase.dashize('init_sims')), type=int, default=1,
+		parser.add_argument(
+			'-i', '--{}'.format(scriptBase.dashize('init_sims')), type=int, default=1,
 			help='(int; 1) Number of initial sims (seeds) per variant.'
 				 ' Default = 1')
-		parser.add_argument('-t', '--timeline', type=str, default='0 minimal',
+		parser.add_argument(
+			'-t', '--timeline', type=str, default='0 minimal',
 			help='set timeline. Default = "0 minimal". See'
 				 ' environment/condition/make_media.py, make_timeline() for'
 				 ' timeline formatting details')
