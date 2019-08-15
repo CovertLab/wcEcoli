@@ -281,7 +281,7 @@ class ScriptBase(object):
 			help='Number of cell sim generations to run. (Single daughters only.)'
 				 ' Default = 1')
 		if manual_script:
-			parser.add_argument('--total_gens', type=int,
+			parser.add_argument(dashize('--total_gens'), type=int,
 				help='(int) Total number of generations to write into the'
 					 ' metadata.json file. Default = the value of --generations.')
 		parser.add_argument('-s', '--seed', type=int, default=0,
@@ -302,7 +302,7 @@ class ScriptBase(object):
 
 		self.define_option(parser, 'timeline', str, flag='t',
 			default_key='timeline',
-			help='The media timeline. See environment/condition/make_media.py,'
+			help='The media timeline. See wholecell/utils/make_media.py,'
 				 ' make_timeline() for timeline formatting details')
 		add_option('length_sec', 'lengthSec', int,
 			help='The maximum simulation time, in seconds. Useful for short'
