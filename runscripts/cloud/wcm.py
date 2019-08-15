@@ -275,7 +275,7 @@ def wc_ecoli_workflow(args):
 	# type: (Dict[str, Any]) -> WcmWorkflow
 	"""Build a workflow for wcEcoli."""
 	owner_id = os.environ.get('WF_ID', os.environ['USER'])
-	timestamp = fp.timestamp()
+	timestamp = args['timestamp']
 	description = args['description'].replace(' ', '_')
 
 	pattern = r'[-.\w]*$'
@@ -302,12 +302,16 @@ class RunWcm(scriptBase.ScriptBase):
 			path prefix. Run `cloud/build-wcm.sh $WF_ID` to build the WCM
 			container image with that name.
 
-			The command line option names are long but you can use any
-			unambiguous prefix.'''
+			(The command line option names are long but you can use any
+			unambiguous prefix.)'''
 
 	def define_parameters(self, parser):
 		self.define_option(parser, 'description', str, '',
 			help='A simulation description to append to the output folder name.')
+		self.define_option(parser, 'timestamp', str, fp.timestamp(),
+			help='Timestamp for this workflow. It gets combined with the $WF_ID'
+				 ' to form the workflow name. Set this if you want to upload'
+				 ' new steps for an existing workflow.')
 		self.define_parameter_bool(parser, 'verbose', True,
 			help='Verbose workflow builder logging')
 		parser.add_argument('-c', '--cpus', type=int, default=1,
