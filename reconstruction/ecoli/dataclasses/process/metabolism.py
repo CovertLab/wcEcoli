@@ -558,10 +558,9 @@ class Metabolism(object):
 
 		# Assumed units of METABOLITE_CONCENTRATION_UNITS for KI and KM
 		self.KI_aa_synthesis = f_inhibited * aa_conc_basal / (1 - f_inhibited)
-		self.KM_aa_export = (1 / f_exported - 1) * (aa_conc_aa_media - aa_conc_basal)
-		self.fraction_supply_rate = 1 - f_inhibited
-		self.fraction_import_rate = 1 / (1 + aa_conc_basal / self.KI_aa_synthesis) + f_exported
-		self.base_aa_conc = aa_conc_basal
+		self.KM_aa_export = (1 / f_exported - 1) * aa_conc_aa_media
+		self.fraction_supply_rate = 1 - f_inhibited + aa_conc_basal / (self.KM_aa_export + aa_conc_basal)
+		self.fraction_import_rate = 1 - (self.fraction_supply_rate + 1 / (1 + aa_conc_aa_media / self.KI_aa_synthesis) - aa_conc_aa_media / (self.KM_aa_export + aa_conc_aa_media))
 
 	def aa_supply_scaling(self, aa_conc, aa_present):
 		"""
@@ -584,8 +583,7 @@ class Metabolism(object):
 		aa_supply = self.fraction_supply_rate
 		aa_import = aa_present * self.fraction_import_rate
 		aa_synthesis = 1 / (1 + aa_conc / self.KI_aa_synthesis)
-		aa_diff = aa_conc - self.base_aa_conc
-		aa_export = aa_diff / (self.KM_aa_export + aa_diff)
+		aa_export = aa_conc / (self.KM_aa_export + aa_conc)
 		supply_scaling = aa_supply + aa_import + aa_synthesis - aa_export
 
 		return supply_scaling
