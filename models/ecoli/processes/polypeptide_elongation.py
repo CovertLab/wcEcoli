@@ -62,7 +62,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosomeElongationRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 		self.ribosomeElongationRateDict = translation.ribosomeElongationRateDict
 
+		# Amino acid supply calculations
 		self.translation_aa_supply = sim_data.translationSupplyRate
+		self.aa_supply_scaling = metabolism.aa_supply_scaling
+		self.exchange_from_media = metabolism.boundary.exchangeDataFromMedia
+		self.aa_in_media = {}
 
 		# Used for figure in publication
 		self.trpAIndex = np.where(proteinIds == "TRYPSYN-APROTEIN[c]")[0][0]
@@ -124,7 +128,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.k_RelA = constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s)
 		self.k_SpoT_syn = constants.k_SpoT_ppGpp_synthesis.asNumber(MICROMOLAR_UNITS / units.s)
 		self.k_SpoT_deg = constants.k_SpoT_ppGpp_degradation.asNumber(1 / units.s)
-		self.aa_supply_scaling = metabolism.aa_supply_scaling
 
 		# Dictionaries for homeostatic AA count updates in metabolism
 		self.aa_count_diff = {}  # attribute to be read by metabolism
@@ -229,11 +232,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			# Adjust aa_supply higher if amino acid concentrations are low
 			# Improves stability of charging and mimics amino acid synthesis
 			# inhibition and export
-			# TODO (Travis): pull from external_state
-			if current_media_id == 'minimal_plus_amino_acids':
-				aa_in_media = np.ones(len(aa_conc))
-			else:
-				aa_in_media = np.zeros(len(aa_conc))
+			# TODO: environmentView should handle this especially if external concentrations
+			#   are changing and not using a predefined media
+			aa_in_media = self.aa_in_media.get(current_media_id, None)
+			if aa_in_media is None:
+				imports = set([mol[:-3] for
+					mol in self.exchange_from_media(current_media_id)['importExchangeMolecules']])
+				aa_in_media = np.array([aa[:-3] in imports for aa in self.aaNames])
+				self.aa_in_media[current_media_id] = aa_in_media
 			# TODO (Travis): add to listener?
 			self.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
 
