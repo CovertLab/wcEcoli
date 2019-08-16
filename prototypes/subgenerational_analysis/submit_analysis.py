@@ -5,7 +5,10 @@ def analysis_command(num_gens):
 	for generation in range(num_gens):
 		generation_key = format(generation, '06')
 		inputs['counts_{}'.format(generation_key)] = '/wcEcoli/out/counts/wildtype_000000/{{seed}}/generation_'+generation_key+'/000000/simOut/BulkMolecules/counts'
+		inputs['counts_attr_{}'.format(generation_key)] = '/wcEcoli/out/counts/wildtype_000000/{{seed}}/generation_'+generation_key+'/000000/simOut/BulkMolecules/attributes.json'
 		inputs['main_{}'.format(generation_key)] = '/wcEcoli/out/counts/wildtype_000000/{{seed}}/generation_'+generation_key+'/000000/simOut/Main/time'
+		inputs['main_attr_{}'.format(generation_key)] = '/wcEcoli/out/counts/wildtype_000000/{{seed}}/generation_'+generation_key+'/000000/simOut/Main/attributes.json'
+
 	command = {
 		'name': 'pull_rna_protein_counts_cloud',
 		'vars': {
@@ -27,7 +30,9 @@ def analysis_step(seed, num_gens):
 	for generation in range(num_gens):
 		generation_key = format(generation, '06')
 		inputs['counts_{}'.format(generation_key)] = 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/wildtype_000000/'+seed_key+'/generation_'+generation_key+'/000000/simOut/BulkMolecules/counts'
+		inputs['counts_attr_{}'.format(generation_key)] = 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/wildtype_000000/'+seed_key+'/generation_'+generation_key+'/000000/simOut/BulkMolecules/attributes.json'
 		inputs['main_{}'.format(generation_key)] = 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/wildtype_000000/'+seed_key+'/generation_'+generation_key+'/000000/simOut/Main/time'
+		inputs['main_attr_{}'.format(generation_key)] = 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/wildtype_000000/'+seed_key+'/generation_'+generation_key+'/000000/simOut/Main/attributes.json'
 	step = {
 		'name': 'pull_rna_protein_counts_cloud_{}'.format(seed_key),
 		'command': 'pull_rna_protein_counts_cloud',
