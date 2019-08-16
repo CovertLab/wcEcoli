@@ -114,14 +114,13 @@ class Translation(object):
 		for i,m in enumerate(raw_data.proteins):
 			if m['id'] in measured_deg_rates:
 				degRate[i] = measured_deg_rates[m['id']]
-				isRProtein.append(m['id'] not in ribosomalProteins)
-			elif m['id'] not in ribosomalProteins:
-				degRate[i] = NruleDegRate[m['seq'][0]]
-				isRProtein.append(False)
-			else:
+				isRProtein.append(m['id'] in ribosomalProteins)
+			elif m['id'] in ribosomalProteins:
 				degRate[i] = slowRate
 				isRProtein.append(True)
-
+			else:
+				degRate[i] = NruleDegRate[m['seq'][0]]
+				isRProtein.append(False)
 		monomerData = np.zeros(
 			size,
 			dtype = [
