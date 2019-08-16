@@ -26,7 +26,7 @@ def analysis_step(seed, num_gens):
 	inputs = {}
 	for generation in range(num_gens):
 		generation_key = format(generation, '06')
-		inputs['counts_{}'.format(generation_key)] = 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/wildtype_000000/'+seed_key+'/generation_'+generation_key+'/000000/simOut/BulkMolecules/counts',
+		inputs['counts_{}'.format(generation_key)] = 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/wildtype_000000/'+seed_key+'/generation_'+generation_key+'/000000/simOut/BulkMolecules/counts'
 		inputs['main_{}'.format(generation_key)] = 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/wildtype_000000/'+seed_key+'/generation_'+generation_key+'/000000/simOut/Main/time'
 	step = {
 		'name': 'pull_rna_protein_counts_cloud_{}'.format(seed_key),
