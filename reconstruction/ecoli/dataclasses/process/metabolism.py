@@ -27,6 +27,8 @@ ILE_LEU_CONCENTRATION = 3.03e-4  # M, Bennett et al. 2009
 ILE_FRACTION = 0.360  # the fraction of iso/leucine that is isoleucine; computed from our monomer data
 ECOLI_PH = 7.2
 METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
+FRACTION_SUPPLY_INHIBITED = 0.1  # Fraction of AA supply that will be inhibited at target conc
+FRACTION_SUPPLY_EXPORTED = 0.1  # Fraction of AA supply that will be exported at target conc
 
 USE_ALL_CONSTRAINTS = False # False will remove defined constraints from objective
 
@@ -512,16 +514,35 @@ class Metabolism(object):
 
 		return externalMoleculeLevels, newObjective
 
-	def set_supply_inhibition(self, sim_data):
+	def set_supply_constants(self, sim_data):
+		"""
+		Sets constants to determine amino acid supply during translation.
+
+		Args:
+			sim_data (SimulationData object)
+
+		Sets class attributes:
+			KI_aa_synthesis (ndarray[float]): KI for each AA for synthesis
+				portion of supply (in units of METABOLITE_CONCENTRATION_UNITS)
+			KM_aa_export (ndarray[float]): KM for each AA for export portion
+				of supply (in units of METABOLITE_CONCENTRATION_UNITS)
+			fraction_supply_rate (float): fraction of AA supply that comes from
+				a base synthesis rate
+			fraction_import_rate (ndarray[float]): fraction of AA supply that
+				comes from AA import if nutrients are present
+			base_aa_conc (ndarray[float]): expected AA conc in basal condition
+				(in units of METABOLITE_CONCENTRATION_UNITS)
+
+		Notes:
+			- KM calculation assumes each internal amino acid concentration in
+			'minimal_plus_amino_acids' media is higher than in 'minimal' media
+
+		TODO (Travis):
+			Base on measured KI and KM values.
+			Add impact from synthesis enzymes and transporters.
+			Get fractions from flat file or set as class attribute?
 		"""
 
-		"""
-
-		# Set at 1% of each expected concentration (or MIN_AA_KI for low
-		# concentration amino acids) for minimal impact on AA supply
-		# TODO (Travis)
-		## Base on measured KI values
-		## Add impact from synthesis enzymes
 		aa_ids = sim_data.moleculeGroups.aaIDs
 		conc = self.concentrationUpdates.concentrationsBasedOnNutrients
 
@@ -532,19 +553,30 @@ class Metabolism(object):
 			conc('minimal_plus_amino_acids')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			for aa in aa_ids])
 
-		f_inhibited = 0.1
-		f_exported = 0.1
-		self.fraction_supply_rate = 1 - f_inhibited
-		self.fraction_import_rate = f_inhibited + f_exported
+		f_inhibited = FRACTION_SUPPLY_INHIBITED
+		f_exported = FRACTION_SUPPLY_EXPORTED
 
 		# Assumed units of METABOLITE_CONCENTRATION_UNITS for KI and KM
 		self.KI_aa_synthesis = f_inhibited * aa_conc_basal / (1 - f_inhibited)
 		self.KM_aa_export = (1 / f_exported - 1) * (aa_conc_aa_media - aa_conc_basal)
+		self.fraction_supply_rate = 1 - f_inhibited
+		self.fraction_import_rate = 1 / (1 + aa_conc_basal / self.KI_aa_synthesis) + f_exported
 		self.base_aa_conc = aa_conc_basal
 
 	def aa_supply_scaling(self, aa_conc, aa_present):
 		"""
+		Determine amino acid supply rate scaling based on current amino acid
+		concentrations.
 
+		Args:
+			aa_conc (ndarray[float] with mol / volume units): internal
+				concentration for each amino acid
+			aa_present (ndarray[bool]): whether each amino acid is in the
+				external environment or not
+
+		Returns:
+			ndarray[float]: scaling for the supply of each amino acid with
+				higher supply rate if >1, lower supply rate if <1
 		"""
 
 		aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
@@ -559,7 +591,7 @@ class Metabolism(object):
 		return supply_scaling
 
 
-	# Class used to update metabolite concentrations based on the current nutrient conditions
+# Class used to update metabolite concentrations based on the current nutrient conditions
 class ConcentrationUpdates(object):
 	def __init__(self, concDict, equilibriumReactions, exchange_data_dict):
 		self.units = units.getUnit(concDict.values()[0])
