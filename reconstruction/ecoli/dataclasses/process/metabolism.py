@@ -28,7 +28,7 @@ ILE_FRACTION = 0.360  # the fraction of iso/leucine that is isoleucine; computed
 ECOLI_PH = 7.2
 METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
 FRACTION_SUPPLY_INHIBITED = 0.1  # Fraction of AA supply that will be inhibited at target conc
-FRACTION_SUPPLY_EXPORTED = 0.1  # Fraction of AA supply that will be exported at target conc
+FRACTION_SUPPLY_EXPORTED = 0.01  # Fraction of AA supply that will be exported at target conc
 
 USE_ALL_CONSTRAINTS = False # False will remove defined constraints from objective
 
