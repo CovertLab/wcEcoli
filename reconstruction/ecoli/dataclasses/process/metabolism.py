@@ -15,12 +15,12 @@ TODO:
 
 from __future__ import division
 
-from wholecell.utils import units
-import wholecell
-import os
+from copy import copy
+
 import numpy as np
 import sympy as sp
-from copy import copy
+
+from wholecell.utils import units
 
 PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
 ILE_LEU_CONCENTRATION = 3.03e-4  # M, Bennett et al. 2009
@@ -533,14 +533,15 @@ class Metabolism(object):
 			base_aa_conc (ndarray[float]): expected AA conc in basal condition
 				(in units of METABOLITE_CONCENTRATION_UNITS)
 
-		Notes:
-			- KM calculation assumes each internal amino acid concentration in
-			'minimal_plus_amino_acids' media is higher than in 'minimal' media
+		Assumptions:
+			- Each internal amino acid concentration in 'minimal_plus_amino_acids'
+			media is not lower than in 'minimal' media
 
 		TODO (Travis):
 			Base on measured KI and KM values.
 			Add impact from synthesis enzymes and transporters.
 			Get fractions from flat file or set as class attribute?
+			Better handling of concentration assumption
 		"""
 
 		aa_ids = sim_data.moleculeGroups.aaIDs
@@ -553,6 +554,13 @@ class Metabolism(object):
 			conc('minimal_plus_amino_acids')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			for aa in aa_ids])
 
+		# Lower concentrations might produce strange rates (excess supply or
+		# negative import when present externally) and constants so raise
+		# to double check the implementation
+		if not np.all(aa_conc_basal <= aa_conc_aa_media):
+			aas = np.array(aa_ids)[np.where(aa_conc_basal > aa_conc_aa_media)]
+			raise ValueError('Check that amino acid concentrations should be lower in amino acid media for {}'.format(aas))
+
 		f_inhibited = FRACTION_SUPPLY_INHIBITED
 		f_exported = FRACTION_SUPPLY_EXPORTED
 
@@ -560,10 +568,11 @@ class Metabolism(object):
 		self.KI_aa_synthesis = f_inhibited * aa_conc_basal / (1 - f_inhibited)
 		self.KM_aa_export = (1 / f_exported - 1) * aa_conc_aa_media
 		self.fraction_supply_rate = 1 - f_inhibited + aa_conc_basal / (self.KM_aa_export + aa_conc_basal)
-		self.fraction_import_rate = 1 - (self.fraction_supply_rate + 1 / (1 + aa_conc_aa_media / self.KI_aa_synthesis) - aa_conc_aa_media / (self.KM_aa_export + aa_conc_aa_media))
+		self.fraction_import_rate = 1 - (self.fraction_supply_rate + 1 / (1 + aa_conc_aa_media / self.KI_aa_synthesis) - f_exported)
 
 	def aa_supply_scaling(self, aa_conc, aa_present):
 		"""
+		Called during polypeptide_elongation process
 		Determine amino acid supply rate scaling based on current amino acid
 		concentrations.
 
