@@ -4,7 +4,7 @@ def analysis_command(num_gens):
 	inputs = {}
 	for generation in range(num_gens):
 		generation_key = format(generation, '06')
-		inputs['counts_{}'.format(generation_key)] = '/wcEcoli/out/counts/wildtype_000000/{{seed}}/generation_'+generation_key+'/000000/simOut/BulkMolecules/counts',
+		inputs['counts_{}'.format(generation_key)] = '/wcEcoli/out/counts/wildtype_000000/{{seed}}/generation_'+generation_key+'/000000/simOut/BulkMolecules/counts'
 		inputs['main_{}'.format(generation_key)] = '/wcEcoli/out/counts/wildtype_000000/{{seed}}/generation_'+generation_key+'/000000/simOut/Main/time'
 	command = {
 		'name': 'pull_rna_protein_counts_cloud',
