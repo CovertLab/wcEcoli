@@ -692,6 +692,7 @@ class Boundary(object):
 	'''
 	def __init__(self, raw_data, sim_data):
 
+		self.import_constraint_treshold = IMPORT_CONSTRAINT_THRESHOLD
 		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
 
 		# lists of molecules whose presence modifies glc's upper bound for FBA import constraint, whose default is 20 (mmol/g DCW/hr).
@@ -803,7 +804,7 @@ class Boundary(object):
 			if molecule_id != 'GLC[p]' and concentration == 0:
 				continue
 
-			elif concentration < IMPORT_CONSTRAINT_THRESHOLD:
+			elif concentration < self.import_constraint_treshold:
 				importConstrainedExchangeMolecules[molecule_id] = 0 * (units.mmol / units.g / units.h)
 
 			# The logic below is used to change GLC's upper bound flux based on what nutrients are present in the environment.
