@@ -198,7 +198,8 @@ class WcmWorkflow(Workflow):
 								output_plots_directory=plot_dir,
 								metadata=md_single,
 								plots_to_run=args['plot'],
-								cpus=args['cpus'])
+								cpus=args['cpus'],
+								compile=args['compile'])
 							analysis_single_task = self.add_python_task('analysis_single',
 								python_args,
 								name='analysis_' + cell_id,
@@ -231,6 +232,7 @@ class WcmWorkflow(Workflow):
 						output_plots_directory=multigen_plot_dir,
 						plots_to_run=args['plot'],
 						cpus=args['cpus'],
+						compile=args['compile'],
 						metadata=md_multigen)
 					analysis_multigen_task = self.add_python_task('analysis_multigen',
 						python_args,
@@ -247,6 +249,7 @@ class WcmWorkflow(Workflow):
 					output_plots_directory=cohort_plot_dir,
 					plots_to_run=args['plot'],
 					cpus=args['cpus'],
+					compile=args['compile'],
 					metadata=md_cohort)
 				analysis_cohort_task = self.add_python_task('analysis_cohort',
 					python_args,
@@ -263,6 +266,7 @@ class WcmWorkflow(Workflow):
 				output_plots_directory=variant_plot_dir,
 				plots_to_run=args['plot'],
 				cpus=args['cpus'],
+				compile=args['compile'],
 				metadata=metadata)
 			analysis_variant_task = self.add_python_task('analysis_variant',
 				python_args,
@@ -348,6 +352,8 @@ class RunWcm(scriptBase.ScriptBase):
 				category. You can name specific analysis files but any
 				analysis categories that don't have those files will print
 				error messages.''')
+		self.define_parameter_bool(parser, 'compile', False,
+			'Compiles output images into one file (only for .png).')
 		self.define_parameter_bool(parser, 'build_causality_network', False,
 			help="Build the Causality network files for each sim generation.")
 

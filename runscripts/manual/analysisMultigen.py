@@ -51,6 +51,7 @@ class AnalysisMultigen(AnalysisBase):
 			plots_to_run=args.plot,
 			output_filename_prefix=args.output_prefix,
 			cpus=args.cpus,
+			compile=args.compile,
 			)
 		task.run_task({})
 

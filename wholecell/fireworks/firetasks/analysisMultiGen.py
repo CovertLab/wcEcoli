@@ -28,6 +28,7 @@ class AnalysisMultiGenTask(AnalysisBase):
 		"plots_to_run",  # absent or empty => run all active analysis plots
 		"output_filename_prefix",
 		"cpus",
+		"compile",
 		]
 	MODULE_PATH = 'models.ecoli.analysis.multigen'
 	TAGS = models.ecoli.analysis.multigen.TAGS

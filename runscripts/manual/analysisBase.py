@@ -65,6 +65,9 @@ class AnalysisBase(scriptBase.ScriptBase):
 			help='The number of CPU processes to use. The given value will be'
 				 ' limited to the available number of CPU cores. Default = 1.')
 
+		self.define_parameter_bool(parser, 'compile', False,
+			'Compiles output images into one file (only for .png).')
+
 	def parse_args(self):
 		"""Parse the command line args into an `argparse.Namespace`, including
 		the `sim_dir` and `sim_path` args; sanitize args.plot; attach the
