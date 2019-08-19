@@ -41,6 +41,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		constants = sim_data.constants
 		translation = sim_data.process.translation
 		transcription = sim_data.process.transcription
+		metabolism = sim_data.process.metabolism
 
 		# Load parameters
 		self.nAvogadro = constants.nAvogadro
@@ -123,11 +124,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.KMaa = constants.Km_synthetase_amino_acid.asNumber(MICROMOLAR_UNITS)
 		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
 		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
-
-		self.KD_RelA = constants.KD_RelA_ribosome.asNumber(MICROMOLAR_UNITS)
-		self.k_RelA = constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s)
-		self.k_SpoT_syn = constants.k_SpoT_ppGpp_synthesis.asNumber(MICROMOLAR_UNITS / units.s)
-		self.k_SpoT_deg = constants.k_SpoT_ppGpp_degradation.asNumber(1 / units.s)
+		aa_removed_from_charging = set(['L-SELENOCYSTEINE[c]'])
+		self.aa_charging_mask = np.array([aa not in aa_removed_from_charging for aa in self.aaNames])
 
 		# Dictionaries for homeostatic AA count updates in metabolism
 		self.aa_count_diff = {}  # attribute to be read by metabolism
@@ -430,7 +428,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("RibosomeData", "processElongationRate", self.ribosomeElongationRate / self.timeStepSec())
 
-	def calculate_trna_charging(self, synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, time_limit=1000):
+	def calculate_trna_charging(self, synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, time_limit=1000, use_disabled_aas=False):
 		'''
 		Calculates the steady state value of tRNA based on charging and incorporation through polypeptide elongation.
 		The fraction of charged/uncharged is also used to determine how quickly the ribosome is elongating.
@@ -446,6 +444,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			ribosome_conc (float with concentration units) - concentration of active ribosomes
 			f (array of floats) - fraction of each amino acid to be incorporated to total amino acids incorporated
 			time_limit (float) - time limit to reach steady state
+			use_disabled_aas (bool) - if True, all amino acids will be used for charging calculations,
+				if False, some will be excluded as determined in initialize
 
 		Returns:
 			fraction_charged (array of floats) - fraction of total tRNA that is charged for each tRNA species
@@ -506,8 +506,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Remove SEL from calculations
 		n_total_aas = len(aa_conc)
-		mask = np.ones(n_total_aas, bool)
-		mask[19] = False  # TODO: better way to index SEL
+		if use_disabled_aas:
+			mask = np.ones(n_total_aas, bool)
+		else:
+			mask = self.aa_charging_mask
 		synthetase_conc = synthetase_conc[mask]
 		uncharged_trna_conc = uncharged_trna_conc[mask]
 		charged_trna_conc = charged_trna_conc[mask]
