@@ -19,8 +19,8 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWithPrebuiltMatrices
 
-from wholecell.utils import filepath, parallelization
-from wholecell.utils import units
+from wholecell.utils import filepath, parallelization, units
+from unum import uarray
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
 
 from cvxpy import Variable, Problem, Minimize, norm
@@ -144,7 +144,9 @@ def fitSimData_1(
 	# Set fast monomer degradation rates for r-proteins
 	if options['alternate_r_protein_degradation']:
 		translation = sim_data.process.translation
-		translation.monomerData["degRate"][translation.monomerData["isRProtein"]] = translation.fastRate
+		deg_rates_no_units = np.array([deg_rate.asNumber(1/units.s) for deg_rate in translation.monomerData["degRate"]])
+		deg_rates_no_units[translation.monomerData["isRProtein"]] = translation.fastRate
+		translation.monomerData["degRate"] = uarray(deg_rates_no_units) / units.s
 
 	# Increase RNA poly mRNA deg rates
 	setRnaPolymeraseCodingRnaDegradationRates(sim_data)
