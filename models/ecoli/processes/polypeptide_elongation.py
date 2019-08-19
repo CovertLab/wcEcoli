@@ -66,7 +66,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.translation_aa_supply = sim_data.translationSupplyRate
 		self.aa_supply_scaling = metabolism.aa_supply_scaling
 		self.aa_environment = self.environmentView([aa[:-3] for aa in self.aaNames])
-		self.import_threshold = metabolism.boundary.import_constraint_treshold
+		self.import_threshold = metabolism.boundary.import_constraint_threshold
 
 		# Used for figure in publication
 		self.trpAIndex = np.where(proteinIds == "TRYPSYN-APROTEIN[c]")[0][0]

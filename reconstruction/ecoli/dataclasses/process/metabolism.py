@@ -28,7 +28,7 @@ ILE_FRACTION = 0.360  # the fraction of iso/leucine that is isoleucine; computed
 ECOLI_PH = 7.2
 METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
 FRACTION_SUPPLY_INHIBITED = 0.1  # Fraction of AA supply that will be inhibited at target conc
-FRACTION_SUPPLY_EXPORTED = 0.01  # Fraction of AA supply that will be exported at target conc
+FRACTION_SUPPLY_EXPORTED = 0.1  # Fraction of AA supply that will be exported at target conc
 
 USE_ALL_CONSTRAINTS = False # False will remove defined constraints from objective
 
@@ -692,7 +692,7 @@ class Boundary(object):
 	'''
 	def __init__(self, raw_data, sim_data):
 
-		self.import_constraint_treshold = IMPORT_CONSTRAINT_THRESHOLD
+		self.import_constraint_threshold = IMPORT_CONSTRAINT_THRESHOLD
 		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
 
 		# lists of molecules whose presence modifies glc's upper bound for FBA import constraint, whose default is 20 (mmol/g DCW/hr).
@@ -804,7 +804,7 @@ class Boundary(object):
 			if molecule_id != 'GLC[p]' and concentration == 0:
 				continue
 
-			elif concentration < self.import_constraint_treshold:
+			elif concentration < self.import_constraint_threshold:
 				importConstrainedExchangeMolecules[molecule_id] = 0 * (units.mmol / units.g / units.h)
 
 			# The logic below is used to change GLC's upper bound flux based on what nutrients are present in the environment.
