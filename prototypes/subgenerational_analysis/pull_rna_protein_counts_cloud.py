@@ -25,6 +25,13 @@ import csv
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 
+#Using memory_profiler for optimization purposes
+from memory_profiler import profile
+
+'''
+Other idea to save time, export to lists instead of arrays?
+'''
+
 startTime = datetime.now()
 
 subsample = False
@@ -35,11 +42,11 @@ DIALECT = "excel-tab"
 JsonReader = partial(spreadsheets.JsonReader, dialect = DIALECT)
 JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
 
-def make_output_dirs():
+def make_output_dirs(seed):
 	"""
 	Make output directory, by assuming the cwd is the base wcEcoli folder.
 	"""
-	output_dir = os.path.join('out', 'counts', 'wildtype_000000', 'count_out')
+	output_dir = os.path.join('out', 'counts', 'wildtype_000000', 'count_out', seed)
 	
 	if not os.path.exists(output_dir):
 		os.makedirs(output_dir)
@@ -95,14 +102,54 @@ def extract_protein_rna_ids(protein_data, rna_data):
 	return protein_ids, rna_ids
 
 
+def compile_protein_rna_counts(rna_counts, protein_counts):
+	rna_counts = np.vstack((rna_counts, bulkMolecules.readColumn("counts")[:, rna_indices]))
+	protein_counts = np.vstack((protein_counts, bulkMolecules.readColumn("counts")[:, protein_indices]))
+	return rna_counts, protein_counts
+def merge_rna_ids_counts(rna_ids, rna_counts):
+	rna_ids_counts = np.vstack((rna_ids, rna_counts))
+	return rna_ids_counts
+@profile
+def gather_time_info(sim_out_dir, TableReader, time, time_eachGen, gen_num):
+	time += TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()
+	time_eachGen.append(TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()[0])
+	num_timesteps = len(TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist())
+	gen_num = gen_num + [i+1]* num_timesteps
+	return time, time_eachGen, num_timesteps, gen_num
+def initialize_ids(bulkMolecules):
+	molecule_ids = bulkMolecules.readAttribute("objectNames")
+	rna_indices = np.array([molecule_ids.index(x) for x in rna_ids])
+	protein_indices = np.array([molecule_ids.index(x) for x in protein_ids])
+	return molecule_ids, rna_indices, protein_indices
+
+def extract_rna_protein_counts(bulkMolecules, rna_indices, protein_indices):
+	rna_counts = bulkMolecules.readColumn("counts")[:, rna_indices]
+	protein_counts = bulkMolecules.readColumn("counts")[:, protein_indices]
+	return rna_counts, protein_counts
+
+def save_counts_per_gen(i, rna_counts, protein_counts, output_dir):
+	file_name_per_gen_protein = seed_name + '_' + format(i, '02') + '_gen_data_protein.tsv'
+	file_name_per_gen_rna = seed_name + '_'+ format(i, '02') + '_gen_data_rna.tsv'
+
+	with open(os.path.join(output_dir, file_name_per_gen_protein), 'wb') as fp:
+		np.savetxt(fp, protein_counts, '%s','\t')
+	with open(os.path.join(output_dir, file_name_per_gen_rna), 'wb') as fp:
+		np.savetxt(fp, rna_counts, '%s','\t')
+	return
+def save_seed_level_files(filenames, data_to_save, output_dir):
+	for i in range(0, len(filenames)):
+		with open(os.path.join(output_dir, filenames[i]), 'wb') as fp:
+			np.savetxt(fp, data_to_save[i], '%s','\t')
+	return
 #assumes sys.argv[1] goes straight to the seed folder.
 data_path = sys.argv[1]
-output_dir = make_output_dirs()
 seed_name = data_path.split('/')[-1]
+output_dir = make_output_dirs(seed_name)
 
 protein_info, rna_info = import_proteins_rnas_tsv()
 protein_ids, rna_ids = extract_protein_rna_ids(protein_info, rna_info)
-#
+
+
 #get all cells
 ap = AnalysisPaths(data_path, multi_gen_plot = True)
 all_dir = ap.get_cells()
@@ -115,34 +162,22 @@ time_eachGen = []
 gen_num = []
 
 for i, sim_dir in enumerate(all_dir):
+	print 'Start of ' + str(i) 
+	print datetime.now() - startTime
 	sim_out_dir = os.path.join(sim_dir, "simOut")
-	
-	time += TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()
-	time_eachGen.append(TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()[0])
-	num_timesteps = len(TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist())
-	gen_num = gen_num + [i+1]* num_timesteps
-
-	# Read counts of transcripts
+	time, time_eachGen, num_timesteps, gen_num = gather_time_info(sim_out_dir, TableReader, time, time_eachGen, gen_num)
 	bulkMolecules = TableReader(os.path.join(sim_out_dir, "BulkMolecules"))
-	
 	if i == 0:
-		molecule_ids = bulkMolecules.readAttribute("objectNames")
-		#import pdb; pdb.set_trace()
-		rna_indices = np.array([molecule_ids.index(x) for x in rna_ids])
-		protein_indices = np.array([molecule_ids.index(x) for x in protein_ids])
-	try:
-		rna_counts
-	except NameError:
-		rna_counts = None
-
-	if rna_counts is None:
-		rna_counts = bulkMolecules.readColumn("counts")[:, rna_indices]
-		protein_counts = bulkMolecules.readColumn("counts")[:, protein_indices]
-	else:
-		rna_counts = np.vstack((rna_counts, bulkMolecules.readColumn("counts")[:, rna_indices]))
-		protein_counts = np.vstack((protein_counts, bulkMolecules.readColumn("counts")[:, protein_indices]))
+		molecule_ids, rna_indices, protein_indices = initialize_ids (bulkMolecules)
+	rna_counts, protein_counts = extract_rna_protein_counts(bulkMolecules, rna_indices, protein_indices)
+	save_counts_per_gen(i, rna_counts, protein_counts, output_dir)
 	bulkMolecules.close()
+	print 'End of ' + str(i) 
+	print datetime.now() - startTime
 
+
+'''
+rewrite subsampling to move it into the main function!
 if subsample:
 	rna_counts = rna_counts[0::subsample_degree].copy()
 	protein_counts = protein_counts[0::subsample_degree].copy()
@@ -151,17 +186,16 @@ if subsample:
 	save_file_name = seed_name + '_multi_gen_rna_protein_counts_ids_subsampled.tsv'
 else:
 	save_file_name = seed_name + '_multi_gen_rna_protein_counts_ids.tsv'
+'''	
 
-rna_ids_counts = np.vstack((rna_ids, rna_counts))
-protein_ids_counts = np.vstack((protein_ids, protein_counts))
-time_labeled = np.hstack((np.array('time'), np.array(time)))
-gen_labeled = np.hstack((np.array('gen'), gen_num))
-#import ipdb; ipdb.set_trace()
-time_gen_stack = np.vstack((gen_labeled, time_labeled)).transpose()
-combined_rna_protein_counts = np.hstack((time_gen_stack, protein_ids_counts, rna_ids_counts))
+save_file_name_ids_rna = 'ids_rnas.tsv'
+save_file_name_ids_protein = 'ids_proteins.tsv'
+save_file_name_time = 'time_info.tsv'
+save_file_name_gen = 'gen_info.tsv'
 
-with open(os.path.join(output_dir, save_file_name), 'wb') as fp:
-	np.savetxt(fp, combined_rna_protein_counts, '%s','\t')
+seed_level_filenames = [save_file_name_ids_rna, save_file_name_ids_protein, save_file_name_time, save_file_name_gen]
+seed_level_data = [rna_ids, protein_ids, np.array(time), gen_num]
+save_seed_level_files(seed_level_filenames, seed_level_data, output_dir)
 
 if print_runtime:
 	print datetime.now() - startTime 
