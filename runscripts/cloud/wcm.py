@@ -191,15 +191,13 @@ class WcmWorkflow(Workflow):
 
 						if run_analysis:
 							plot_dir = os.path.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
-							python_args = dict(
+							python_args = data.select_keys(
+								args, scriptBase.ANALYSIS_KEYS,
 								input_results_directory=cell_sim_out_dir,
 								input_sim_data=variant_sim_data_modified_file,
 								input_validation_data=validation_data_file,
 								output_plots_directory=plot_dir,
-								metadata=md_single,
-								plots_to_run=args['plot'],
-								cpus=args['cpus'],
-								compile=args['compile'])
+								metadata=md_single)
 							analysis_single_task = self.add_python_task('analysis_single',
 								python_args,
 								name='analysis_' + cell_id,
@@ -225,14 +223,12 @@ class WcmWorkflow(Workflow):
 
 				if run_analysis:
 					multigen_plot_dir = os.path.join(seed_dir, AnalysisBase.OUTPUT_SUBDIR, '')
-					python_args = dict(
+					python_args = data.select_keys(
+						args, scriptBase.ANALYSIS_KEYS,
 						input_seed_directory=seed_dir,
 						input_sim_data=variant_sim_data_modified_file,
 						input_validation_data=validation_data_file,
 						output_plots_directory=multigen_plot_dir,
-						plots_to_run=args['plot'],
-						cpus=args['cpus'],
-						compile=args['compile'],
 						metadata=md_multigen)
 					analysis_multigen_task = self.add_python_task('analysis_multigen',
 						python_args,
@@ -242,14 +238,12 @@ class WcmWorkflow(Workflow):
 
 			if run_analysis:
 				cohort_plot_dir = self.internal(subdir, AnalysisBase.OUTPUT_SUBDIR, '')
-				python_args = dict(
+				python_args = data.select_keys(
+					args, scriptBase.ANALYSIS_KEYS,
 					input_variant_directory=self.internal(subdir),
 					input_sim_data=variant_sim_data_modified_file,
 					input_validation_data=validation_data_file,
 					output_plots_directory=cohort_plot_dir,
-					plots_to_run=args['plot'],
-					cpus=args['cpus'],
-					compile=args['compile'],
 					metadata=md_cohort)
 				analysis_cohort_task = self.add_python_task('analysis_cohort',
 					python_args,
@@ -259,14 +253,12 @@ class WcmWorkflow(Workflow):
 
 		if run_analysis:
 			variant_plot_dir = self.internal(AnalysisBase.OUTPUT_SUBDIR, '')
-			python_args = dict(
+			python_args = data.select_keys(
+				args, scriptBase.ANALYSIS_KEYS,
 				input_directory=self.internal(''),
 				input_sim_data=sim_data_file,
 				input_validation_data=validation_data_file,
 				output_plots_directory=variant_plot_dir,
-				plots_to_run=args['plot'],
-				cpus=args['cpus'],
-				compile=args['compile'],
 				metadata=metadata)
 			analysis_variant_task = self.add_python_task('analysis_variant',
 				python_args,

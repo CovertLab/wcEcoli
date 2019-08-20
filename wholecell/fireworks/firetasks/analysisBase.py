@@ -46,7 +46,7 @@ class AnalysisBase(FiretaskBase):
 		MODULE_PATH = the module pathname for loading this subclass's analysis
 			plots.
 
-	Optional params include plots_to_run, output_filename_prefix, cpus.
+	Optional params include plot, output_filename_prefix, cpus.
 	"""
 
 	@abc.abstractmethod
@@ -126,7 +126,7 @@ class AnalysisBase(FiretaskBase):
 		print("\n{}: --- Starting {} ---".format(
 			time.ctime(startTime), type(self).__name__))
 
-		plot_names = self.get("plots_to_run", [])
+		plot_names = self.get("plot", [])
 		fileList = self.list_plot_files(plot_names)
 
 		self['output_filename_prefix'] = self.get('output_filename_prefix', '')
