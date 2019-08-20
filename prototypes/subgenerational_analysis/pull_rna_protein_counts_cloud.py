@@ -26,7 +26,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 
 #Using memory_profiler for optimization purposes
-#from memory_profiler import profile
+from memory_profiler import profile
 
 '''
 Other idea to save time, export to lists instead of arrays?
@@ -34,8 +34,9 @@ Other idea to save time, export to lists instead of arrays?
 
 startTime = datetime.now()
 
-subsample = False
-subsample_degree = 100 #subsamples every 100 timepoints
+#subsampling is currenty not avaialable.
+#subsample = False
+#subsample_degree = 100 #subsamples every 100 timepoints
 print_runtime = True #Prints to screen the amount of time it took to run the analysis
 
 DIALECT = "excel-tab"
@@ -47,10 +48,8 @@ def make_output_dirs(seed):
 	Make output directory, by assuming the cwd is the base wcEcoli folder.
 	"""
 	output_dir = os.path.join('out', 'counts', 'wildtype_000000', 'count_out', seed)
-	
 	if not os.path.exists(output_dir):
 		os.makedirs(output_dir)
-	
 	return output_dir
 
 def parse_tsv(tsv_file):
@@ -103,6 +102,10 @@ def extract_protein_rna_ids(protein_data, rna_data):
 
 
 def compile_protein_rna_counts(rna_counts, protein_counts):
+	'''
+	This was used to concatenate the stacks so all the data across all the gens was saved in a single file. 
+	This is no longer being used.
+	'''
 	rna_counts = np.vstack((rna_counts, bulkMolecules.readColumn("counts")[:, rna_indices]))
 	protein_counts = np.vstack((protein_counts, bulkMolecules.readColumn("counts")[:, protein_indices]))
 	return rna_counts, protein_counts
@@ -110,7 +113,7 @@ def compile_protein_rna_counts(rna_counts, protein_counts):
 def merge_rna_ids_counts(rna_ids, rna_counts):
 	rna_ids_counts = np.vstack((rna_ids, rna_counts))
 	return rna_ids_counts
-
+@profile
 def gather_time_info(sim_out_dir, TableReader, time, time_eachGen, gen_num):
 	time += TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()
 	time_eachGen.append(TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()[0])
@@ -122,15 +125,15 @@ def initialize_ids(bulkMolecules):
 	rna_indices = np.array([molecule_ids.index(x) for x in rna_ids])
 	protein_indices = np.array([molecule_ids.index(x) for x in protein_ids])
 	return molecule_ids, rna_indices, protein_indices
-
+@profile
 def extract_rna_protein_counts(bulkMolecules, rna_indices, protein_indices):
 	rna_counts = bulkMolecules.readColumn("counts")[:, rna_indices]
 	protein_counts = bulkMolecules.readColumn("counts")[:, protein_indices]
 	return rna_counts, protein_counts
-
+@profile
 def save_counts_per_gen(i, rna_counts, protein_counts, output_dir):
-	file_name_per_gen_protein = seed_name + '_' + format(i, '02') + '_gen_data_protein.tsv'
-	file_name_per_gen_rna = seed_name + '_'+ format(i, '02') + '_gen_data_rna.tsv'
+	file_name_per_gen_protein = format(i, '02') + '_gen_data_protein.tsv'
+	file_name_per_gen_rna = format(i, '02') + '_gen_data_rna.tsv'
 
 	with open(os.path.join(output_dir, file_name_per_gen_protein), 'wb') as fp:
 		np.savetxt(fp, protein_counts, '%s','\t')
@@ -164,8 +167,8 @@ time_eachGen = []
 gen_num = []
 
 for i, sim_dir in enumerate(all_dir):
-	#print 'Start of ' + str(i) 
-	#print datetime.now() - startTime
+	print 'Start of ' + str(i) 
+	print datetime.now() - startTime
 	sim_out_dir = os.path.join(sim_dir, "simOut")
 	time, time_eachGen, num_timesteps, gen_num = gather_time_info(sim_out_dir, TableReader, time, time_eachGen, gen_num)
 	bulkMolecules = TableReader(os.path.join(sim_out_dir, "BulkMolecules"))
@@ -174,8 +177,8 @@ for i, sim_dir in enumerate(all_dir):
 	rna_counts, protein_counts = extract_rna_protein_counts(bulkMolecules, rna_indices, protein_indices)
 	save_counts_per_gen(i, rna_counts, protein_counts, output_dir)
 	bulkMolecules.close()
-	#print 'End of ' + str(i) 
-	#print datetime.now() - startTime
+	print 'End of ' + str(i) 
+	print datetime.now() - startTime
 
 
 '''
