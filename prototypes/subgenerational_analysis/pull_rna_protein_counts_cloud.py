@@ -28,10 +28,6 @@ from wholecell.io.tablereader import TableReader
 #Using memory_profiler for optimization purposes
 #from memory_profiler import profile
 
-'''
-Other idea to save time, export to lists instead of arrays?
-'''
-
 startTime = datetime.now()
 
 #subsampling is currenty not avaialable.
@@ -101,19 +97,6 @@ def extract_protein_rna_ids(protein_data, rna_data):
 
 	return protein_ids, rna_ids
 
-
-def compile_protein_rna_counts(rna_counts, protein_counts):
-	'''
-	This was used to concatenate the stacks so all the data across all the gens was saved in a single file. 
-	This is no longer being used.
-	'''
-	rna_counts = np.vstack((rna_counts, bulkMolecules.readColumn("counts")[:, rna_indices]))
-	protein_counts = np.vstack((protein_counts, bulkMolecules.readColumn("counts")[:, protein_indices]))
-	return rna_counts, protein_counts
-
-def merge_rna_ids_counts(rna_ids, rna_counts):
-	rna_ids_counts = np.vstack((rna_ids, rna_counts))
-	return rna_ids_counts
 #@profile
 def gather_time_info(sim_out_dir, TableReader, time, time_eachGen, gen_num):
 	time += TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()
@@ -184,7 +167,10 @@ for i, sim_dir in enumerate(all_dir):
 
 
 '''
-rewrite subsampling to move it into the main function!
+TO DO:rewrite subsampling to move it into the main function!
+This was originally written to take in the full concatenated data set. Now need to break it up per gen.
+'''
+'''
 if subsample:
 	rna_counts = rna_counts[0::subsample_degree].copy()
 	protein_counts = protein_counts[0::subsample_degree].copy()
@@ -195,6 +181,8 @@ else:
 	save_file_name = seed_name + '_multi_gen_rna_protein_counts_ids.tsv'
 '''	
 
+
+#save the remainder of collected information:
 save_file_name_ids_rna = 'ids_rnas.tsv'
 save_file_name_ids_protein = 'ids_proteins.tsv'
 save_file_name_time = 'time_info.tsv'

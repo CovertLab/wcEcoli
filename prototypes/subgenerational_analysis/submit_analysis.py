@@ -43,7 +43,7 @@ def analysis_step(seed, num_gens):
 		'vars': {
 			'seed': seed_key},
 		'outputs': {
-			'output': 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/out/{}_multi_gen_rna_protein_counts_ids.tsv'.format(seed_key)},
+			'output': 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/out/{}'.format(seed_key)},
 		'inputs': inputs}
 	return step
 
