@@ -85,7 +85,7 @@ class AnalysisBase(FiretaskBase):
 		return name_dict.keys()
 
 	def compile_images(self, file_list, extension='.png'):
-		# type: (List[str], Optional[str]) -> None
+		# type: (List[str], str) -> None
 		"""
 		Compiles images into a single file.
 
@@ -109,6 +109,8 @@ class AnalysisBase(FiretaskBase):
 		# Load images and data
 		image_files = [os.path.join(output_dir, base + extension) for base in output_bases]
 		images = [Image.open(f) for f in image_files if os.path.exists(f)]
+		if not images:
+			return
 		widths, heights = zip(*(i.size for i in images))
 
 		# Create and save compiled image
