@@ -1,5 +1,9 @@
 import json
 import sys
+
+# SEEDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 29, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 50, 51, 52, 53, 54, 55, 56, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 75, 76, 77, 78, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 95, 96, 97, 98, 99, 128, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309]
+SEEDS = [0]
+
 def analysis_command(num_gens):
 	inputs = {}
 	for generation in range(num_gens):
@@ -44,9 +48,8 @@ def analysis_step(seed, num_gens):
 	return step
 
 if __name__ == '__main__':
-	seeds = [0]
 	num_gens = int(sys.argv[1])
 	commands =  [analysis_command(num_gens)]
-	steps = [analysis_step(seed, num_gens) for seed in seeds]
+	steps = [analysis_step(seed, num_gens) for seed in SEEDS]
 	json.dump(commands, open('out/analysis-commands.json', 'w'), sort_keys=True, indent=4, separators=(',', ': '))
 	json.dump(steps, open('out/analysis-steps.json', 'w'), sort_keys=True, indent=4, separators=(',', ': '))
