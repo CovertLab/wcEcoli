@@ -48,6 +48,7 @@ def make_output_dirs(seed):
 	Make output directory, by assuming the cwd is the base wcEcoli folder.
 	"""
 	output_dir = os.path.join('out', 'counts', 'wildtype_000000', 'count_out', seed)
+	print(output_dir)
 	if not os.path.exists(output_dir):
 		os.makedirs(output_dir)
 	return output_dir
@@ -167,9 +168,10 @@ time_eachGen = []
 gen_num = []
 
 for i, sim_dir in enumerate(all_dir):
-	#print 'Start of ' + str(i) 
-	#print datetime.now() - startTime
+	print 'Start of ' + str(i) 
+	print datetime.now() - startTime
 	sim_out_dir = os.path.join(sim_dir, "simOut")
+	print(sim_out_dir)
 	time, time_eachGen, num_timesteps, gen_num = gather_time_info(sim_out_dir, TableReader, time, time_eachGen, gen_num)
 	bulkMolecules = TableReader(os.path.join(sim_out_dir, "BulkMolecules"))
 	if i == 0:
@@ -177,8 +179,8 @@ for i, sim_dir in enumerate(all_dir):
 	rna_counts, protein_counts = extract_rna_protein_counts(bulkMolecules, rna_indices, protein_indices)
 	save_counts_per_gen(i, rna_counts, protein_counts, output_dir)
 	bulkMolecules.close()
-	#print 'End of ' + str(i) 
-	#print datetime.now() - startTime
+	print 'End of ' + str(i) 
+	print datetime.now() - startTime
 
 
 '''
