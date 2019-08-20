@@ -24,7 +24,7 @@ def analysis_command(num_gens):
 			'out/counts/wildtype_000000/{{seed}}'],
 		'image': 'gcr.io/allen-discovery-center-mcovert/mialydefelice-wcm-code:latest',
 		'outputs': {
-			'output': '/wcEcoli/out/counts/wildtype_000000/count_out/{{seed}}_multi_gen_rna_protein_counts_ids.tsv'},
+			'output': '/wcEcoli/out/counts/wildtype_000000/count_out/{{seed}}'},
 		'inputs': inputs}
 	return command
 
