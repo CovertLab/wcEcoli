@@ -26,7 +26,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 
 #Using memory_profiler for optimization purposes
-from memory_profiler import profile
+#from memory_profiler import profile
 
 '''
 Other idea to save time, export to lists instead of arrays?
