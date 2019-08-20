@@ -106,10 +106,11 @@ def compile_protein_rna_counts(rna_counts, protein_counts):
 	rna_counts = np.vstack((rna_counts, bulkMolecules.readColumn("counts")[:, rna_indices]))
 	protein_counts = np.vstack((protein_counts, bulkMolecules.readColumn("counts")[:, protein_indices]))
 	return rna_counts, protein_counts
+
 def merge_rna_ids_counts(rna_ids, rna_counts):
 	rna_ids_counts = np.vstack((rna_ids, rna_counts))
 	return rna_ids_counts
-@profile
+
 def gather_time_info(sim_out_dir, TableReader, time, time_eachGen, gen_num):
 	time += TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()
 	time_eachGen.append(TableReader(os.path.join(sim_out_dir, "Main")).readColumn("time").tolist()[0])
@@ -136,6 +137,7 @@ def save_counts_per_gen(i, rna_counts, protein_counts, output_dir):
 	with open(os.path.join(output_dir, file_name_per_gen_rna), 'wb') as fp:
 		np.savetxt(fp, rna_counts, '%s','\t')
 	return
+
 def save_seed_level_files(filenames, data_to_save, output_dir):
 	for i in range(0, len(filenames)):
 		with open(os.path.join(output_dir, filenames[i]), 'wb') as fp:
@@ -162,8 +164,8 @@ time_eachGen = []
 gen_num = []
 
 for i, sim_dir in enumerate(all_dir):
-	print 'Start of ' + str(i) 
-	print datetime.now() - startTime
+	#print 'Start of ' + str(i) 
+	#print datetime.now() - startTime
 	sim_out_dir = os.path.join(sim_dir, "simOut")
 	time, time_eachGen, num_timesteps, gen_num = gather_time_info(sim_out_dir, TableReader, time, time_eachGen, gen_num)
 	bulkMolecules = TableReader(os.path.join(sim_out_dir, "BulkMolecules"))
@@ -172,8 +174,8 @@ for i, sim_dir in enumerate(all_dir):
 	rna_counts, protein_counts = extract_rna_protein_counts(bulkMolecules, rna_indices, protein_indices)
 	save_counts_per_gen(i, rna_counts, protein_counts, output_dir)
 	bulkMolecules.close()
-	print 'End of ' + str(i) 
-	print datetime.now() - startTime
+	#print 'End of ' + str(i) 
+	#print datetime.now() - startTime
 
 
 '''
