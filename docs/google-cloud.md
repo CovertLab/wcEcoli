@@ -280,11 +280,9 @@ default to `$USER`.
 * Document how to set up and update the Gaia, Sisyphus, RabbitMQ, and Kafka
 servers on GCE.
   * Periodically apply security updates and apt-get upgrades.
-  * Occasionally pull new Docker images to the Sisyphus server disk image and
-  delete old ones.
-  * Occasionally trim journalctl.
+  * See [How to update the Sisyphus server's disk Image](update-sisyphus-server.md).
   * Sisyphus disk images are in an "image family" so new ones supersede older
   ones and we can revert back if a new one doesn't work. Do the same with the
   other server types. 
 * Test other ways to open a secure connection to the Gaia workflow server.
-* A web UI for the Gaia workflow server to monitor and modify workflow runs.
+* Build a web UI for the Gaia workflow server to monitor and modify workflow runs.
