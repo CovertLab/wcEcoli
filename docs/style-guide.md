@@ -267,6 +267,242 @@ See https://google.github.io/styleguide/pyguide.html
 
 * Prefer `format_string.format(...)` over `format_string % ...` because [printf-style % formatting has](https://docs.python.org/3/library/stdtypes.html?highlight=sprintf#printf-style-string-formatting) "a variety of quirks that lead to a number of common errors (such as failing to display tuples and dictionaries correctly)". `.format()` is a bit more readable and it offers some nice additional features. (See: More info on [the 4 ways to format strings in Python](https://dbader.org/blog/python-string-formatting).)
 
+
+# Type hints
+
+Python type hints can help catch bugs, improve code documentation (what does this variable hold???),
+and aid development tools such as PyCharm code completion and refactoring. They can also provide input to
+foreign language bridges like Jython to Java, DB query mapping, and RPC parameter marshalling. Reports
+are that developers love it.
+
+The key advice is to use them to tease apart bytes vs. unicode since that's the core gotcha in the
+transition to Python 3.
+
+This is a good place to apply the 80/20 rule. Roughly speaking, do the easy 20% of the work to find 80% of
+the type bugs. Complicated typing cases can get very complicated in programming languages. So mainly put
+type hints on functions and occasionally on variables when the type checker can't figure it out, e.g. mypy
+can't infer the element type when you create an empty collection, but pytype can figure it out by looking
+ahead to the code that adds elements. In a difficult case, you can punt by using type `Any` which can
+assign to or from anything.
+
+See [these Google Slides](https://docs.google.com/presentation/d/1xwVHjpQsRTGLdaIpPDNjKPQFtp7mBNfn7oTWK4Kct30/edit?usp=drivesdk)
+for our plan overview for migrating to Python 3 and adding type hints.
+
+Until we finish the transition to Python 3, use Python 2+3 compatible type hint syntax like this:
+
+
+## Examples
+
+```python
+def emphasize(message, suffix=''):
+  # type: (str, str) -> str
+  """Construct an emphatic message. Docstring comes after the function type hint."""
+  return message + '!' + suffix
+```
+
+In the example above, `suffix` is an optional argument to the caller but it's always a `str` to the
+type checker, so we declare it as an ordinary `str` here. `Optional[str]` means "str or None" as in
+the following example:
+
+```python
+from typing import Optional
+
+def title(name, suffix=None):
+  # type: (str, Optional[str]) -> str
+  """Construct an emphatic message."""
+  return name + ('' if suffix is None else ' ' + suffix)
+```
+
+```python
+from typing import Dict
+
+def headline(
+        text,           # type: str
+        width=80,       # type: int
+        fill_char="-",  # type: str
+    ):                  # type: (...) -> str
+    for x, y in points:  # type: float, float
+        something = g(x, y)  # type: ignore
+    return "This is a way to handle lots of arguments."
+
+def f(x, *args, **kwargs):
+    # type: (str, *float, **str) -> Dict[str]
+    """For *args and **kwargs, give the type of an arg value, not the tuple/dict."""
+    return args
+
+class C(object):
+    foo = None  # type: object
+    def __init__(self, p):
+        self.foo = p
+    def circumference(self, radius):
+        # type: (float) -> float  # account for all args _except_ `self` or `cls`
+        version = (2, 7, 14)  # type: tuple
+        return 2 * math.pi * radius
+```
+
+
+## The Typing module
+
+To retrofit static typing tools into existing versions of Python 2, the designers added this type hint
+comment syntax and the `typing` pip containing types like `Optional`, `List`, and `Dict` with uppercase
+names so there's no modifications to existing classes like `list` and `dict`.
+
+You can use class names like `dict`, `list`, and `tuple`, but that won't specify the content types.
+
+* `None`: the value None (this is easier than writing `NoneType`)
+* `Any`: any type; assigns to or from anything
+* `Dict[str, float]`: a dict of str to float, that is floats keyed with strings
+* `List[int]`: a list of int values
+* `Tuple[int, int, int]`: a tuple containing 3 integers
+* `Optional[str]`: a str or None
+* `Callable[[str, List[int]], int]`: a function or anything else you can call given a str and a
+list of ints, returning an int
+* `Callable[..., int]`: (with a literal ellipsis) to specify the return type without specifying the
+arg types, which is useful for `Any` *args and **kwargs
+* `Union[str, int]`: accepts either a str or an int
+* `Sequence[t]`: any object with `.__len__()` and `.__getitem__()`
+
+[Typeshed](https://github.com/python/typeshed) is a repository for "stub" files that associate type
+definitions with existing libraries. It's bundled with PyCharm, mypy, and pytype. It does not have
+types for Numpy.
+
+
+## Tools
+
+[PyCharm](https://www.jetbrains.com/help/pycharm/type-hinting-in-product.html) checks types interactively
+while you edit. You don't need any other tools to check types. See
+[Python Type Checking (Guide)](https://realpython.com/python-type-checking/).
+
+[mypy](https://github.com/python/mypy/) and [pytype](https://github.com/google/pytype) are
+batch programs to check types, particularly for Continuous Integration builds. pytype runs in Python 2 or 3,
+while mypy only runs in Python 3 whether it's checking Python 2 or Python 3 code. pytype also goes
+further with type inference, which reduces the number of type hints to write, and it does other static
+checks.
+
+pytype has features to generate type annotations in standalone .pyi files and to merge them into the
+Python source code. You need to review the tool's output and re-run to ensure the types are correct.
+
+`PyAnnotate` (Py2.7) or `MonkeyType` (Py3) will trace types at runtime.
+
+
+## Types for Numpy
+
+1. There are experimental type stubs in the numpy repo [numpy-stubs](https://github.com/numpy/numpy-stubs) that define types for `dtype` and `ndarray`.
+
+   ```python
+   def array(
+       object: object,
+       dtype: _DtypeLike = ...,
+       copy: bool = ...,
+       subok: bool = ...,
+       ndmin: int = ...,
+   ) -> ndarray: ...
+   ```
+
+2. There's an older numpy stub [numpy-mypy](https://github.com/machinalis/mypy-data/tree/master/numpy-mypy). It provides types for `class ndarray` that supports an element type parameter (that is, `ndarray` is a generic type), and functions such as `np.array`:
+
+   ```python
+   def array(object: Any, dtype: Any=None, copy: bool=True,
+             order: str=None, subok: bool=False,
+             ndmin: int=0) -> ndarray[Any]: ...
+   ```
+
+To install more stub files:
+1. Copy them into a `stubs/` directory in the project.
+2. Mark the `stubs/` directory as a source root in PyCharm by choosing **Mark Directory as | Sources Root**
+from the directory's context menu.
+
+
+## Tips
+
+* When a subclass overrides a superclass method, it inherits the type annotations. You don't need to
+repeat them but if you do, they must match.
+* Call `reveal_type(xxx)` to ask the type checker to print its inferences.
+* Escape hatches: `Any`, `cast()`, `# type: ignore`, and `.pyi` stub files (esp. for C extensions).
+* Gradually add types to code, one file at a time, starting with the most heavily used code.
+* Run the type checker in development and in Continuous Integration. Fix its warnings to defend progress.
+We can tell mypy to disallow untyped functions in particular modules.
+* The config setting `check_untyped_defs = True` will also check the contents of functions that don't
+have types hints. It might find actual bugs.
+* Lambdas don't support annotations, so use a `def` when you want typing.
+
+
+## Terminology
+
+* Type A is a _subtype_ of B if it has a subset of the values (classification) **and** a superset of the
+methods. A value of a subtype can act like a value from its supertypes.
+* In Python, the type T _is consistent with_ (assignable to a variable of) type U if T is a subtype of
+U _or_ either T or U is `Any`.
+* The type checker only complains about _inconsistent_ types. It does nothing at runtime.
+* _Type hints_ just enable offline tools: docs, type checks, IDE completions, etc.
+* Type _annotations_ do the same job, but only in Python 3.
+They are available at runtime via the `__annotations__` attribute.
+* _Gradual typing_ means adding type hints to existing code, freely mixing static and dynamic typed code.
+* The type checker can _infer the types_ of local variables.
+* _Nominal typing_ is based on class **names**. Python types are mostly nominal.
+* _Structural typing_ is based on structure, such as a duck-type protocol like `Sized` (in the
+`typing` module) which means it has a `.__len__()` method.
+* Type information in instances is _erased_ at runtime.
+
+
+## Covariant and Contravariant types
+
+This goes beyond the 80/20 limit but you might need to know about it. See
+[The Ultimate Guide to Python Type Checking](https://realpython.com/python-type-checking/) for a
+good tutorial that includes this stuff.
+
+Some generic types (_sources_ like Tuple[t1, t2] and FrozenSet[t]) are _covariant_, some are _contravariant_
+(_sinks_ like Callable[[t1], …]), and some are _invariant_ (like List[t]).
+
+   * `bool` is a subtype (and a subclass) of `int`.
+   * `Tuple[bool]` is a subtype of `Tuple[int]`. It's _covariant_ with the element type.
+   * `Callable[[bool], None]` is a supertype of `Callable[[int], None]`. It's _contravariant_.
+   * `List[bool]` is _invariant_ with `List[int]`. It might look like a subtype but `mylist.append(10)`
+   would make it not a `List[bool]`.
+   * `T = TypeVar('T', covariant=True)` declares covariance for a generic via its type variables.
+   * `T = TypeVar('T', contravariant=True)` types are invariant by default.
+
+
+
+## Advanced topics
+
+* `Protocol`, `Iterable[t]`, `Sized`, `Container`, `Awaitable`, `ContextManager`
+* `Generic[t, …]`
+* `Literal['rb']`
+* `NoReturn`: never returns normally, e.g. always raises an exception or loops forever
+* `DefaultDict[]`, `Deque[]`
+* `Text`, `Type[t]`, `Final[T]`, `@final`, `@runtime`, `Coroutine`
+* `io.IO[AnyStr]`, `io.TextIO` ~ `io.IO[str]`, `io.BinaryIO` ~ `io.IO[bytes]`
+* `X = TypeVar('X')`
+
+
+## References
+
+[PEP 484: Type Hints](https://www.python.org/dev/peps/pep-0484/). Parts of this PEP are worth reading.
+* Python will remain dynamically typed. Type hints will not become mandatory even by convention.
+* Python terminology: "type" is for type checking, variable annotations, and function annotations;
+"class" is a runtime thing. Every class acts like a type, and there are additional types like
+`Union[str, int]` which you can't use as classes.
+* Type checkers are expected to infer as much type info as necessary, at least for `@property`, `@staticmethod`, and `@classmethod`.
+* Functions without type annotations or with an `@no_type_check` decorator are treated as having the
+most general type possible, i.e. each arg type is `Any` (except a method's `self` or `cls` arg) and the
+result is `Any`. For `__init__()` write `(arg, arg, arg) -> None`.
+
+[Python type checking tools](https://python-type-checking.readthedocs.io/en/latest/tools.html)
+   * mypy [overview](http://mypy-lang.org/), [docs](http://mypy.readthedocs.org),
+   [blog](http://mypy-lang.blogspot.com), [github](github.com/python/mypy).
+   * PyCharm
+     * It can help [add type hints for you](https://www.jetbrains.com/help/pycharm/type-hinting-in-product.html):
+     Press Opt-Return (or click the "intention" lightbulb icon) then "Add type hint for ..."
+     * [Type Hinting in PyCharm](https://www.jetbrains.com/help/pycharm/type-hinting-in-product.html)
+     shows how to use PyCharm features to quickly add type hints, validate them, and eventually convert
+     comment-based type hints to Py3.6 variable annotations once we leave Py2 behind.
+   * [pytype](https://github.com/google/pytype) Google's static analyzer checks types, attribute names, and more.
+   * [Pyre](github.com/facebook/pyre-check) Facebook's static checker is faster on large code bases than mypy
+   * [pyannotate](github.com/dropbox/pyannotate) runtime type info collector
+   * [MonkeyType](github.com/Instagram/MonkeyType) runtime type info collector
+
+
 # Performance Tips
 
 [Summarized from sources like [PythonSpeed](https://wiki.python.org/moin/PythonSpeed).]
