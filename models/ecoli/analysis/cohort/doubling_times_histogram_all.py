@@ -28,6 +28,7 @@ from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
 
 THROW_ON_BAD_SIMULATION_OUTPUT = False
+GENERATE_SUPPLEMENT_FIGURE = False
 
 # First generation (counting from zero) from which to gather doubling time
 # values.  If fewer generations were run, this script quits early without
@@ -35,8 +36,11 @@ THROW_ON_BAD_SIMULATION_OUTPUT = False
 FIRST_GENERATION = 2
 
 DOUBLING_TIME_BOUNDS_MINUTES = [0, 170]
+SUPP_DOUBLING_TIME_BOUNDS_MINUTES = [0, 200]
 N_BINS = 30
 FREQUENCY_MAX = 350
+SUPP_FREQUENCY_MAX = 14
+
 
 FIGSIZE = (3.5, 3.5)
 
@@ -148,6 +152,37 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# TODO (John): plt.tight_layout()?
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
+		# Export version for supplemental figure
+		if GENERATE_SUPPLEMENT_FIGURE:
+			plt.cla()
+
+			plt.hist(doubling_times_minutes,
+				bins = np.linspace(
+					SUPP_DOUBLING_TIME_BOUNDS_MINUTES[0],
+					SUPP_DOUBLING_TIME_BOUNDS_MINUTES[1],
+					N_BINS + 1)) # +1 because we need n+1 bin bounds for n bins
+
+			plt.axvline(
+				np.median(doubling_times_minutes), color='k', lw=2, linestyle='--')
+
+			plt.axvline(
+				sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.min),
+				color=color_cycle[2], lw=2)
+
+			plt.title('n = {}'.format(len(doubling_times_minutes)))
+			plt.xlim(*SUPP_DOUBLING_TIME_BOUNDS_MINUTES)
+			plt.ylim(0, SUPP_FREQUENCY_MAX)
+			plt.xlabel('Doubling time (minutes)')
+			exportFigure(plt, plotOutDir, "{}__supplement".format(plotOutFileName), metadata)
+
+			plt.title('')
+			plt.xlabel('')
+			xloc, xlabels = plt.xticks()
+			plt.xticks(xloc, ['']*len(xlabels))
+			yloc, ylabels = plt.yticks()
+			plt.yticks(yloc, ['']*len(ylabels))
+			exportFigure(plt, plotOutDir, "{}__supplement__clean".format(plotOutFileName), metadata)
 
 		plt.close("all")
 
