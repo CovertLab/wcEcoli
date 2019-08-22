@@ -20,6 +20,7 @@ ACTIVE = [
 	"proteinCopyNumberDistribution.py",
 	"replication.py",
 	"rnaCopyNumberDistribution.py",
+	# "rnapoly_ribosome_validation.py",
 	# "transcriptFrequency.py",
 	# "transcriptionGenomeCoverage.py",
 	# "transcriptionGenomeCoverageSecondHalf.py",
