@@ -69,14 +69,20 @@ class TestWorkflow(WorkflowCLI):
 			outputs=(output_dir,),
 			command=['python', '-u', '-c', code])
 
-		# Input, overwrite, and output a file written by a previous Task.
+		# Download and overwrite a file written by a previous Task to test file
+		# permissions, e.g. not owned by root. It wouldn't fit Gaia's functional
+		# data flow model to upload a file back to Gaia since that means
+		# ambiguous responsibility for creating it. This test skirts that by
+		# uploading stdout, not the overwritten file.
 		code = ("fn = '" + output_dir + "1.txt'\n"
 			"with open(fn, 'a') as f:\n"
-			"  f.write('This is still file 1\\n')\n")
+			"  f.write('This is still file 1\\n')\n"
+			"with open(fn, 'r') as f:\n"
+			"  print(f.read())\n")
 		self.add_task(
 			name='overwrite',
 			inputs=(output_dir,),
-			outputs=(output_dir,),
+			outputs=['>/tmp/overwrite.log'],
 			command=['python', '-u', '-c', code])
 
 
