@@ -35,6 +35,11 @@ def _rebase(path, internal_prefix, storage_prefix):
 	"""Return a path rebased from internal_prefix to storage_prefix."""
 	new_path = os.path.join(storage_prefix, os.path.relpath(path, internal_prefix))
 
+	# os.path.relpath removes a trailing slash if it exists.
+	#   TODO(Ryan): find a more elegant way to do this?
+	if path[-1] == '/':
+		new_path = os.path.join(new_path, '')
+
 	assert '..' not in new_path, (
 		'''Can't rebase path "{}" that doesn't start with internal_prefix "{}"'''
 			.format(path, internal_prefix))
