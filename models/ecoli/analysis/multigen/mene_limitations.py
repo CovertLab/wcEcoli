@@ -22,7 +22,6 @@ from models.ecoli.analysis import multigenAnalysisPlot
 
 FONTSIZE = 6
 LABELSIZE = 6
-PLOT_DOWNSTREAM = False
 
 ENZYME_COMPLEX_ID = "MENE-CPLX[c]"
 ENZYME_MONOMER_ID = "O-SUCCINYLBENZOATE-COA-LIG-MONOMER[c]"
@@ -219,70 +218,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		metAxis.set_xlabel("")
 		exportFigure(plt, plotOutDir, plotOutFileName + "__clean", "")
 		plt.close("all")
-
-		if PLOT_DOWNSTREAM:
-			fig, axesList = plt.subplots(12, figsize = (11, 8.5))
-			plt.subplots_adjust(hspace = 0.5, right = 0.95, bottom = 0.05, left = 0.15, top = 0.95)
-			enzymeIds = ["MENE-CPLX[c]", "CPLX0-7882[c]", "CPLX0-8128[c]", "DMK-MONOMER[i]", "2-OCTAPRENYL-METHOXY-BENZOQ-METH-MONOMER[c]"]
-			reactionIds = ["O-SUCCINYLBENZOATE-COA-LIG-RXN", "NAPHTHOATE-SYN-RXN", "RXN-9311", "DMK-RXN", "ADOMET-DMK-METHYLTRANSFER-RXN"]
-			reactantIds = ["CPD-12115[c]"]
-			enzymeIndexes = [moleculeIDs.index(x) for x in enzymeIds]
-			reactantIndexes = [moleculeIDs.index(x) for x in reactantIds]
-
-			for gen, simDir in enumerate(allDir):
-				simOutDir = os.path.join(simDir, "simOut")
-
-				time_ = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
-				timeStepSec = TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")
-				cellMass = TableReader(os.path.join(simOutDir, "Mass")).readColumn("cellMass")
-				dryMass = TableReader(os.path.join(simOutDir, "Mass")).readColumn("dryMass")
-
-				bulk_molecules_reader = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-				molecule_counts = bulk_molecules_reader.readColumn("counts")
-				enzymeCounts = molecule_counts[:, enzymeIndexes]
-				metCounts = molecule_counts[:, metabolite_indexes[0]]
-				reactantCounts = molecule_counts[:, reactantIndexes]
-				bulk_molecules_reader.close()
-
-				fba_results_reader = TableReader(os.path.join(simOutDir, "FBAResults"))
-				reactionIDs = np.array(fba_results_reader.readAttribute("reactionIDs")).tolist()
-				reactionIndexes = [reactionIDs.index(x) for x in reactionIds]
-				reactionFluxes = np.array(fba_results_reader.readColumn("reactionFluxes"))
-				enzyme_fluxes = reactionFluxes[:, reactionIndexes]
-				fba_results_reader.close()
-
-				coefficient = (units.fg * np.array(dryMass)) / (units.fg * np.array(cellMass)) * cellDensity * (units.s * timeStepSec)
-
-				for i, row in enumerate(xrange(0, 2 * len(enzymeIds), 2)):
-					countAxis = axesList[row]
-					fluxAxis = axesList[row + 1]
-					plotFlux = (((COUNTS_UNITS / VOLUME_UNITS) * enzyme_fluxes[:, i]) / coefficient).asNumber(units.mmol / units.g / units.h)
-					countAxis.plot(time_ / 3600., enzymeCounts[:, i], color = "b")
-					fluxAxis.plot(time_ / 3600., plotFlux, color = "b")
-				axesList[-2].plot(time_ / 3600., reactantCounts, color = "b")
-				axesList[-1].plot(time_ / 3600., metCounts, color = "b")
-
-			ylabels = ["menE", "menB", "menI", "menA", "ubiE", "CPD-12115", "Menaquinone"]
-			for i, axis in enumerate(axesList[::2]):
-				axis.set_xlim([0, time_[-1] / 3600.])
-				axis.set_ylabel("%s" % ylabels[i], rotation = 0)
-				whitePadSparklineAxis(axis, False)
-			for axis in axesList[1::2]:
-				axis.set_xlim([0, time_[-1] / 3600.])
-				whitePadSparklineAxis(axis)
-			axesList[-1].set_ylabel(ylabels[-1], rotation = 0)
-
-			for axis in axesList:
-				for i in xrange(len(patchStart)):
-					width = time[patchEnd[i]] / 3600. - time[patchStart[i]] / 3600.
-					if width <= 0.1:
-						continue
-
-					height = axis.get_ylim()[1] - axis.get_ylim()[0]
-					axis.add_patch(patches.Rectangle((time[patchStart[i]] / 3600., axis.get_ylim()[0]), width, height, alpha = 0.25, color = "gray", linewidth = 0.))
-
-			plt.subplots_adjust(hspace = 0.5, right = 0.95, bottom = 0.05, left = 0.11, top = 0.95)
-			exportFigure(plt, plotOutDir, plotOutFileName + "__downstreamFluxes", metadata)
 
 
 if __name__ == "__main__":
