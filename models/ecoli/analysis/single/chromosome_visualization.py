@@ -1,5 +1,6 @@
 """
-Generates .json file containing locations of molecules on the chromosome.
+Generates a .json file containing the dynamic locations of molecules bound to
+the chromosome.
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 2/2/19
@@ -44,18 +45,18 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Load replisome attributes
 		fork_coordinates = replication_data_reader.readColumn("fork_coordinates")
 		domain_indexes = replication_data_reader.readColumn("fork_domains")
-		fork_global_index = replication_data_reader.readColumn("fork_global_index")
+		fork_unique_index = replication_data_reader.readColumn("fork_unique_index")
 
-		# Get unique global indexes
-		unique_global_indexes = np.unique(fork_global_index[~np.isnan(fork_global_index)])
-		n_replisomes = len(unique_global_indexes)
+		# Get unique indexes of each fork
+		all_unique_indexes = np.unique(fork_unique_index[~np.isnan(fork_unique_index)])
+		n_replisomes = len(all_unique_indexes)
 
 		# Parse data such that one column corresponds to one unique replisome
 		fork_coordinates_parsed = np.zeros((fork_coordinates.shape[0], n_replisomes))
 		domain_indexes_parsed = np.zeros(n_replisomes, dtype=np.int64)
 
-		for mol_idx, global_idx in enumerate(unique_global_indexes):
-			rows, cols = np.where(fork_global_index == global_idx)
+		for mol_idx, unique_idx in enumerate(all_unique_indexes):
+			rows, cols = np.where(fork_unique_index == unique_idx)
 			fork_coordinates_parsed[rows, mol_idx] = fork_coordinates[rows, cols]
 			domain_indexes_parsed[mol_idx] = domain_indexes[rows[0], cols[0]]
 
