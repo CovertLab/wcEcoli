@@ -193,6 +193,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		flux_axis.set_ylabel("PABASYN-RXN flux\n(mmol/gDCW/hour)", fontsize = FONTSIZE, rotation = 0)
 		flux_axis.yaxis.set_label_coords(-.1, 0.25)
 		whitePadSparklineAxis(flux_axis, xAxis = False)
+		flux_axis.set_yscale("symlog", linthreshy=0.002)
 		flux_axis.set_yticks([np.min(enzyme_fluxes), np.max(enzyme_fluxes)])
 
 		met_axis.plot(time_hours, metabolite_counts, color=post_merge_color)
