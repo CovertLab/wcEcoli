@@ -504,7 +504,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		aa_conc = aa_conc.asNumber(MICROMOLAR_UNITS)
 		ribosome_conc = ribosome_conc.asNumber(MICROMOLAR_UNITS)
 
-		# Remove SEL from calculations
+		# Remove disabled amino acids from calculations
 		n_total_aas = len(aa_conc)
 		if use_disabled_aas:
 			mask = np.ones(n_total_aas, bool)

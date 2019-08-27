@@ -27,8 +27,6 @@ ILE_LEU_CONCENTRATION = 3.03e-4  # M, Bennett et al. 2009
 ILE_FRACTION = 0.360  # the fraction of iso/leucine that is isoleucine; computed from our monomer data
 ECOLI_PH = 7.2
 METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
-FRACTION_SUPPLY_INHIBITED = 0.1  # Fraction of AA supply that will be inhibited at target conc
-FRACTION_SUPPLY_EXPORTED = 0.1  # Fraction of AA supply that will be exported at target conc
 
 USE_ALL_CONSTRAINTS = False # False will remove defined constraints from objective
 
@@ -561,8 +559,8 @@ class Metabolism(object):
 			aas = np.array(aa_ids)[np.where(aa_conc_basal > aa_conc_aa_media)]
 			raise ValueError('Check that amino acid concentrations should be lower in amino acid media for {}'.format(aas))
 
-		f_inhibited = FRACTION_SUPPLY_INHIBITED
-		f_exported = FRACTION_SUPPLY_EXPORTED
+		f_inhibited = sim_data.constants.fraction_supply_inhibited
+		f_exported = sim_data.constants.fraction_supply_exported
 
 		# Assumed units of METABOLITE_CONCENTRATION_UNITS for KI and KM
 		self.KI_aa_synthesis = f_inhibited * aa_conc_basal / (1 - f_inhibited)
