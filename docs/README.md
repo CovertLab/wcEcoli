@@ -35,7 +35,11 @@ There are two alternative ways to set up to run the model:
    * [Creating the "pyenv" runtime environment](create-pyenv.md)
    * [Setting up to run FireWorks](../wholecell/fireworks/README.md) -- needed only to run a FireWorks workflow of cell simulations and analysis plots
    * [Set up Zookeeper and Kafka](../agent/README.md) -- needed only for multi-scale agents
-   * [Copy git hooks](../runscripts/git_hooks/README.md) -- useful to maintain an up to date environment while doing development
+
+Once done setting up the environment, copy the git hooks from the repo ([git hooks](../runscripts/git_hooks/README.md)) to your `.git` directory to maintain an up to date environment while doing development:
+```
+cp runscripts/git_hooks/*[^.md] .git/hooks/
+```
 
 ## running
 
