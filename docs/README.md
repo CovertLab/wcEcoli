@@ -15,6 +15,7 @@ There are two alternative ways to set up to run the model:
    (PyCharm should support debugging into a Docker container but we haven't tested that.)
 
    If you want to run the Docker container and link your local directory to the one inside the Docker container (`<local wcEcoli>` denotes the local path to your cloned repo), use:
+   
    ```docker run --name=wcm -v <local wcEcoli>:/wcEcoli -it wcm-code```
 
    By doing so, the output files in the Docker folder (`/wcEcoli/out`) will also be linked to a corresponding folder in your computer (`<local wcEcoli>/out`).
