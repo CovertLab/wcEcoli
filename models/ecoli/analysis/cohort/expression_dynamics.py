@@ -216,6 +216,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		firstLineInit_burst = None
 		firstLineInitRna_burst = None
 
+		plt.style.use('seaborn-deep')
+		color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+		exponential_color = color_cycle[2]
+		subgen_color = color_cycle[0]
+
 		time_eachGen = []
 		for gen_idx, simDir in enumerate(allDir):
 			simOutDir = os.path.join(simDir, "simOut")
@@ -266,9 +271,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			time_minutes = time / 60.
 
-			EXP_COLOR = 'red'
-			BURST_COLOR = 'blue'
-
 			axes = (
 				expProtein_axis,
 				burstProtein_axis,
@@ -282,10 +284,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx_burst]
 				)
 			line_color = (
-				EXP_COLOR,
-				BURST_COLOR,
-				EXP_COLOR,
-				BURST_COLOR,
+				exponential_color,
+				subgen_color,
+				exponential_color,
+				subgen_color,
 				)
 			count_min = ( # better to acquire programatically, but would require loading data twice
 				600,
