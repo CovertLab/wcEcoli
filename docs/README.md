@@ -13,6 +13,11 @@ There are two alternative ways to set up to run the model:
 
    You can then run the model inside the container.
    (PyCharm should support debugging into a Docker container but we haven't tested that.)
+
+   If you want to run the Docker container and link your local directory to the one inside the Docker container (`<local wcEcoli>` denotes the local path to your cloned repo), use:
+   `docker run --name=wcm -v <local wcEcoli>:/wcEcoli -it wcm-code`
+
+   By doing so, the output files in the Docker folder (`/wcEcoli/out`) will also be linked to a corresponding folder in your computer (`<local wcEcoli>/out`).
    
    **NOTE:** Docker Desktop for Windows is not currently compatible with VirtualBox.  If you use VirtualBox, try installing the legacy [Docker Toolbox](https://github.com/docker/toolbox/releases) instead.  You may also need to adjust the memory allocated to the VirtualBox VM (named 'default') that gets created.  In VirtualBox, select the 'default' VM and under system, change the base memory from 1 GB to 4 GB. 
 
