@@ -23,6 +23,7 @@ ACTIVE = [
 	"massFractionToUnity.py",
 	"massShift.py",
 	"mene_limitations.py",
+	"pabx_limitations.py",
 	# "probProteinExistAndDouble.py",
 	"proteinAvgCountVsBurstSize.py",
 	"proteinConcentrations.py",
