@@ -99,9 +99,9 @@ python models/ecoli/analysis/multigen/functionalUnits_new.py \
 --seed 0
 
 # panel F
-python models/ecoli/analysis/multigen/mene_limitations.py \
+python models/ecoli/analysis/multigen/pabx_limitations.py \
 /scratch/PI/mcovert/wc_ecoli/paper/SET_A/20180809.155239.564816__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/ \
---seed 0
+--seed 2
 
 
 ## Figure 5
