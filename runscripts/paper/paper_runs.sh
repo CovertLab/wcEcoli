@@ -87,12 +87,13 @@ SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=8 \
 MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=0 D_PERIOD_DIVISION=0 \
 python runscripts/fw_queue.py
 
-## Set F - MenE expression
+## Set F - pabB expression
 # Used in figure S4
-DESC="SET F 8 gens 8 seeds 9 menE expression values" \
-VARIANT=meneParams FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=8 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=8 \
+DESC="SET F 16 gens 8 seeds 9 pabB expression values" \
+VARIANT=subgen_expression FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=8 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=8 \
 MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
+RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fw_queue.py
 
 ## Set G - no RNA and protein parameter adjustments
