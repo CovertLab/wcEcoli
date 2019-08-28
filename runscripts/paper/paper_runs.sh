@@ -222,6 +222,17 @@ DISABLE_RIBOSOME_CAPACITY_FITTING=1 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
 ALTERNATE_RIBOSOME_ACTIVITY=1 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fw_queue.py
 
+## Set L - comparison of RNA/protein ratios with Scott et al. before changes
+# to RNAP and ribosome expression
+# Used for Figure S2
+# SET D5 is used for condition 0 (basal)
+DESC="SET L 4 gens 256 seeds 3 conditions unfit ribosome and rna poly expression" \
+VARIANT="condition" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=2 \
+SINGLE_DAUGHTERS=1 N_GENS=4 N_INIT_SIMS=256 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
+DISABLE_RIBOSOME_CAPACITY_FITTING=1 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fw_queue.py
 
 ## Launch the fireworks created with fw_queue.py
 # Uncomment one method - rlaunch is interactive, qlaunch is distributed
