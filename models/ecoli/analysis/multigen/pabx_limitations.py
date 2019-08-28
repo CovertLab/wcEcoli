@@ -29,8 +29,10 @@ LABELSIZE = 6
 ENZYME_RNA_IDS = ["EG10682_RNA[c]", "EG10683_RNA[c]"]
 ENZYME_MONOMER_IDS = ["PABASYN-COMPII-MONOMER[c]", "PABASYN-COMPI-MONOMER[c]"]
 ENZYME_COMPLEX_ID = "PABSYNMULTI-CPLX[c]"
-ENZYME_REACTION_ID = "PABASYN-RXN"
+ENZYME_REACTION_IDS = ["PABASYN-RXN__PABASYN-CPLX (reverse)", "PABASYN-RXN__PABSYNMULTI-CPLX (reverse)"]
 METABOLITE_ID = "METHYLENE-THF[c]"
+
+FLUX_LINEAR_THRESHOLD = 1e-4  # Flux values below this threshold will be plotted linearly
 
 def clearLabels(axis):
 	axis.set_yticklabels([])
@@ -73,7 +75,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			for enzyme_monomer_id in ENZYME_MONOMER_IDS
 			])
 		enzyme_complex_index = moleculeIDs.index(ENZYME_COMPLEX_ID)
-		reaction_index = np.where(reactionIDs == ENZYME_REACTION_ID)[0][0]
+		reaction_indexes = np.array([
+			np.where(reactionIDs == reaction_id)[0][0]
+			for reaction_id in ENZYME_REACTION_IDS
+			])
 		metabolite_index = moleculeIDs.index(METABOLITE_ID)
 
 		# Initialize arrays
@@ -82,7 +87,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		enzyme_rna_counts = np.empty((0, len(ENZYME_RNA_IDS)))
 		enzyme_monomer_counts = np.empty((0, len(ENZYME_RNA_IDS)))
 		enzyme_complex_counts = []
-		enzyme_fluxes = []
+		enzyme_fluxes = np.empty((0, len(ENZYME_REACTION_IDS)))
 		metabolite_counts = []
 
 		cellMass = []
@@ -132,10 +137,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			metabolite_counts.extend(molecule_counts[:, metabolite_index])
 
 			reactionFluxes = np.array(fba_results_reader.readColumn("reactionFluxes"))
-			enzyme_fluxes.extend(reactionFluxes[:, reaction_index].tolist())
+			enzyme_fluxes = np.vstack((
+				enzyme_fluxes, reactionFluxes[:, reaction_indexes]))
 
+		# Sum reaction fluxes and convert units
 		flux_conversion_coeff = (units.fg * np.array(dryMass)) / (units.fg * np.array(cellMass)) * (timeStepSec * units.s) * cellDensity
-		enzyme_fluxes = (((COUNTS_UNITS / VOLUME_UNITS) * enzyme_fluxes) / flux_conversion_coeff).asNumber(units.mmol / units.g / units.h)
+		enzyme_fluxes = (((COUNTS_UNITS / VOLUME_UNITS) * enzyme_fluxes.sum(axis=1)) / flux_conversion_coeff).asNumber(units.mmol / units.g / units.h)
 
 		# Convert time to hours
 		time = np.array(time)
@@ -163,42 +170,47 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		rna_init_axis.set_prop_cycle(color=pre_merge_colors)
 		rna_init_axis.plot(time_hours, enzyme_rna_init_events)
 		rna_init_axis.set_ylabel("Transcription\nevents", fontsize = FONTSIZE, rotation = 0)
-		rna_init_axis.legend(["pabA", "pabB"], prop={'size': FONTSIZE})
-		rna_init_axis.yaxis.set_label_coords(-.1, 0.25)
+		rna_init_axis.legend(
+			["pabA", "pabB"], prop={'size': FONTSIZE},
+			loc='center left', bbox_to_anchor=(1.02, 0.5))
+		rna_init_axis.yaxis.set_label_coords(-.12, 0.25)
 		rna_init_axis.set_xlim([time_hours[0], time_hours[-1]])
+		rna_init_axis.set_ylim([0, 1])
 		whitePadSparklineAxis(rna_init_axis, xAxis = False)
-		rna_init_axis.set_yticks([0, 1])
 
 		rna_axis.set_prop_cycle(color=pre_merge_colors)
 		rna_axis.plot(time_hours, enzyme_rna_counts)
 		rna_axis.set_ylabel("mRNA\ncounts", fontsize = FONTSIZE, rotation = 0)
-		rna_axis.yaxis.set_label_coords(-.1, 0.25)
+		rna_axis.yaxis.set_label_coords(-.12, 0.25)
+		rna_axis.set_ylim([0, np.max(enzyme_rna_counts)])
 		whitePadSparklineAxis(rna_axis, xAxis = False)
-		rna_axis.set_yticks([0, np.max(enzyme_rna_counts)])
 
 		monomer_axis.set_prop_cycle(color=pre_merge_colors)
 		monomer_axis.plot(time_hours, enzyme_monomer_counts)
 		monomer_axis.set_ylabel("Protein monomer\ncounts", fontsize = FONTSIZE, rotation = 0)
-		monomer_axis.yaxis.set_label_coords(-.1, 0.25)
+		monomer_axis.yaxis.set_label_coords(-.12, 0.25)
+		monomer_axis.set_ylim([0, np.max(enzyme_monomer_counts)])
 		whitePadSparklineAxis(monomer_axis, xAxis = False)
-		monomer_axis.set_yticks([0, np.max(enzyme_monomer_counts)])
 
 		complex_axis.plot(time_hours, enzyme_complex_counts, color=post_merge_color)
 		complex_axis.set_ylabel("Protein complex\ncounts", fontsize = FONTSIZE, rotation = 0)
-		complex_axis.yaxis.set_label_coords(-.1, 0.25)
+		complex_axis.yaxis.set_label_coords(-.12, 0.25)
+		complex_axis.set_ylim([0, max(enzyme_complex_counts)])
 		whitePadSparklineAxis(complex_axis, xAxis = False)
-		complex_axis.set_yticks([0, max(enzyme_complex_counts)])
 
 		flux_axis.plot(time_hours, enzyme_fluxes, color=post_merge_color)
-		flux_axis.set_ylabel("PABASYN-RXN flux\n(mmol/gDCW/hour)", fontsize = FONTSIZE, rotation = 0)
-		flux_axis.yaxis.set_label_coords(-.1, 0.25)
-		whitePadSparklineAxis(flux_axis, xAxis = False)
-		flux_axis.set_yscale("symlog", linthreshy=0.002)
-		flux_axis.set_yticks([np.min(enzyme_fluxes), np.max(enzyme_fluxes)])
+		flux_axis.set_yscale("symlog", linthreshy=FLUX_LINEAR_THRESHOLD)
+		flux_axis.set_ylabel("PABASYN-RXN\n(reverse)\ntotal flux\n(mmol/gDCW/hour)", fontsize = FONTSIZE, rotation = 0)
+		flux_axis.yaxis.set_label_coords(-.12, 0.25)
+		flux_axis.set_ylim([0, np.max(enzyme_fluxes)])
+		whitePadSparklineAxis(flux_axis, xAxis=False)
+		flux_axis.get_yaxis().set_tick_params(which='minor', size=0)
+		flux_axis.get_xaxis().set_tick_params(which='minor', width=0)
+		flux_axis.set_yticklabels(["0", "%.2f" % flux_axis.get_ylim()[1]])
 
 		met_axis.plot(time_hours, metabolite_counts, color=post_merge_color)
 		met_axis.set_ylabel("End product\ncounts", fontsize = FONTSIZE, rotation = 0)
-		met_axis.yaxis.set_label_coords(-.1, 0.25)
+		met_axis.yaxis.set_label_coords(-.12, 0.25)
 		met_axis.set_xlabel("Time (hour)\ntickmarks at each new generation", fontsize = FONTSIZE)
 		met_axis.set_ylim([met_axis.get_ylim()[0] * 0.2, met_axis.get_ylim()[1]])
 		met_axis.set_xlim([time_hours[0], time_hours[-1]])
