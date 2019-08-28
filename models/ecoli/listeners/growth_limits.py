@@ -35,7 +35,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		# Computed, saved attributes
 		self.aaIds = sim_data.moleculeGroups.aaIDs
 		self.ntpIds = sim_data.moleculeGroups.ntpIds
-		self.uncharged_trna_ids = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']]
+		self.uncharged_trna_ids = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']].tolist()
 		self.charged_trna_ids = sim_data.process.transcription.charged_trna_names
 
 	# Allocate memory
