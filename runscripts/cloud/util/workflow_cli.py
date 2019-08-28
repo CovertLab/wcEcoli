@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import argparse
 import os
+from typing import Iterable
 
 import wholecell.utils.filepath as fp
 from wholecell.utils import scriptBase
@@ -13,12 +14,13 @@ from runscripts.cloud.util.workflow import Task, Workflow
 
 
 class WorkflowCLI(scriptBase.ScriptBase):
-	"""Command line utility for a workflow."""
+	"""Abstract base class for a Command Line Interface to build a workflow."""
 
 	DOCKER_IMAGE = 'python:2.7.16'
 	STORAGE_PREFIX_ROOT = 'sisyphus:data/'
 
 	def __init__(self):
+		# type: () -> None
 		basename = type(self).__name__
 		owner_id = os.environ['USER']
 		timestamp = fp.timestamp()
@@ -28,6 +30,7 @@ class WorkflowCLI(scriptBase.ScriptBase):
 		self.wf = Workflow(name)
 
 	def add_task(self, name='', inputs=(), outputs=(), command=()):
+		# type: (str, Iterable[str], Iterable[str], Iterable[str]) -> Task
 		task = Task(
 			name=name,
 			image=self.DOCKER_IMAGE,
