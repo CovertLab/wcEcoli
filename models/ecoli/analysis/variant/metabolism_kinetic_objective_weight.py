@@ -37,25 +37,6 @@ OUTLIER_REACTIONS = [
 	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.',
 	]
 
-def rescale(data, minimize=False):
-	'''
-	Rescales data to use in an objective so that the minimum is given a value
-	of 0 and maximum a value of 1 (switched if minimize is True).
-
-	Args:
-		data (ndarray[float]): data to rescale
-		minimize (bool): if True, max value rescaled to 0 and min value to 1,
-			if False, max value rescaled to 1 and min value to 0
-
-	Returns:
-		ndarray[float]: rescaled data between 0 and 1
-	'''
-
-	if minimize:
-		data = data * -1
-
-	data = data - data.min()
-	return data / data.max()
 
 def analyze_variant((variant, ap, toya_reactions, toya_fluxes, outlier_filter)):
 	'''
@@ -221,6 +202,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ap = AnalysisPaths(inputDir, variant_plot=True)
 		variants = ap.get_variants()
 		n_variants = len(variants)
+		total_sims = ap.n_seed * ap.n_generation
 
 		if n_variants <= 1:
 			print('This plot only runs for multiple variants'.format(__name__))
@@ -287,16 +269,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		scaled_growth_rate = growth_rates / growth_rates[0]
 		scaled_growth_rate[scaled_growth_rate > 1] = 1
 		objective = (
-			rescale(n_sims)
-			+ rescale(scaled_growth_rate)
+			n_sims / total_sims
+			+ scaled_growth_rate
 			+ conc_correlation
-			+ rescale(n_conc_off_axis, minimize=True)
+			+ (1 - n_conc_off_axis / n_metabolites)
 			+ flux_correlation
-			+ rescale(n_flux_off_axis, minimize=True)
+			+ (1 - n_flux_off_axis / n_fluxes)
 			+ nonzero_flux_correlation
-			+ rescale(n_flux_above_0)
+			+ n_flux_above_0 / n_fluxes
 			+ correlation_coefficient
 		)
+		max_objective_index = np.argmax(objective)
 
 		tick_labels = [r'$10^{%i}$' % (np.log10(x),) if x != 0 else '0' for x in lambdas]
 		lambdas = [np.log10(x) if x != 0 else np.nanmin(np.log10(lambdas[lambdas != 0]))-1 for x in lambdas]
@@ -363,6 +346,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Lambda objective
 		ax = plt.subplot(subplots, 1, 9)
 		plt.bar(lambdas, objective, align='center')
+		plt.text(lambdas[max_objective_index], objective[max_objective_index], '*', ha='center')
 		plt.ylabel('Combined output objective')
 		whitePadSparklineAxis(ax)
 		plt.xticks(lambdas, tick_labels)
