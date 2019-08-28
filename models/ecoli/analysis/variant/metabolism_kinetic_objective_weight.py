@@ -292,7 +292,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			+ conc_correlation
 			+ rescale(n_conc_off_axis, minimize=True)
 			+ flux_correlation
-			+ rescale(n_flux_off_axis)
+			+ rescale(n_flux_off_axis, minimize=True)
 			+ nonzero_flux_correlation
 			+ rescale(n_flux_above_0)
 			+ correlation_coefficient
