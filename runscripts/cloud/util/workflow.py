@@ -36,8 +36,7 @@ def _rebase(path, internal_prefix, storage_prefix):
 	new_path = os.path.join(storage_prefix, os.path.relpath(path, internal_prefix))
 
 	# os.path.relpath removes a trailing slash if it exists.
-	#   TODO(Ryan): find a more elegant way to do this?
-	if path[-1] == '/':
+	if path.endswith(os.sep):
 		new_path = os.path.join(new_path, '')
 
 	assert '..' not in new_path, (
