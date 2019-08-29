@@ -538,7 +538,6 @@ class Metabolism(object):
 		TODO (Travis):
 			Base on measured KI and KM values.
 			Add impact from synthesis enzymes and transporters.
-			Get fractions from flat file or set as class attribute?
 			Better handling of concentration assumption
 		"""
 
