@@ -38,36 +38,46 @@ python models/ecoli/analysis/variant/growth_condition_comparison_validation.py \
 /scratch/PI/mcovert/wc_ecoli/paper/SET_C/20190821.000038__SET_C_4_gens_256_seeds_3_conditions_with_growth_noise_and_D_period/
 
 
-
 ## Figure 3
-# panel A and D
-python models/ecoli/analysis/variant/metabolism_kinetic_objective_weight.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/
+# panel A
+# ???
 
-# panel B
-python models/ecoli/analysis/single/massFractionSummary.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 3 --generation 0 --seed 0
-
-# panel C
-python models/ecoli/analysis/single/massFractionSummary.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 6 --generation 0 --seed 0
+# panel B-D: experimental data
 
 # panel E
-python models/ecoli/analysis/cohort/kinetics_flux_comparison.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 0
+# ???
 
 # panel F
-python models/ecoli/analysis/cohort/kinetics_flux_comparison.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 3
+python models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py \
+/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
+--variant 0
 
 # panel G
+python models/ecoli/analysis/variant/flux_sensitivity.py \
+/scratch/groups/mcovert/wc_ecoli/paper/SET_H/20190822.204306__SET_H_1_gen_flux_sensitivity/
+
+# panel H
+python models/ecoli/analysis/variant/kinetic_objective_interactions.py \
+/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/
+
+# panel I
+python models/ecoli/analysis/variant/kinetic_objective_comparison.py \
+/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/
+
+# panel J
+python models/ecoli/analysis/single/massFractionSummary.py \
+/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
+--variant 167 --seed 0 --gen 0
+
+# panel K
 python models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 3
+/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
+--variant 167
+
+# panel L
+python models/ecoli/analysis/cohort/kinetics_flux_comparison.py \
+/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
+--variant 167
 
 
 ## Figure 4
