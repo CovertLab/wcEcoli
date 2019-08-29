@@ -81,7 +81,7 @@ This page goes through the Python environment setup steps in more detail and wit
       brew install openblas
       ```
 
-   _or_ use the following steps to download and build it from source. (In the "make install" step, note that OpenBLAS does not usually belong on the compiler _include_ path or the linker _library_ path.)
+   _or_ use the following steps to download and build it from source. (In the "make install" step, note that OpenBLAS does not usually belong on the compiler _include_ path or the linker _library_ path.) (Please do not install it twice.)
 
       ```bash
       brew install gcc  # if you don't have a gfortran compiler
