@@ -39,11 +39,11 @@
 #    library_dirs = /usr/local/opt/openblas/lib
 #    include_dirs = /usr/local/opt/openblas/include
 #
-## Install NumPy and SciPy, linked to this OpenBLAS thanks to ~/.numpy-site.cfg:
-#   pip install numpy==1.14.6 scipy==1.0.1 --no-binary numpy,scipy --force-reinstall
+## Install NumPy linked to this OpenBLAS thanks to ~/.numpy-site.cfg:
+#   pip install numpy==1.14.6 --no-binary numpy --force-reinstall
 #
-## Install the packages listed in this file:
-#   CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary numpy,scipy,cvxopt
+## Install the packages listed in this file (SciPy will also use ~/.numpy-site.cfg):
+#   CVXOPT_BUILD_GLPK=1 pip install -r requirements.txt --no-binary numpy,scipy
 #   pyenv rehash
 #
 ## Configure the installed matplotlib per the instructions in docs/create-pyenv.md
