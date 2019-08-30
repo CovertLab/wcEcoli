@@ -38,8 +38,8 @@ from models.ecoli.sim.variants.kineticCatalystShuffleParams import kineticCataly
 from models.ecoli.sim.variants.allShuffleParams import allShuffleParams
 from models.ecoli.sim.variants.allShuffleParams import allShuffleParamsTotalIndices
 
-from models.ecoli.sim.variants.meneParams import meneParams
-from models.ecoli.sim.variants.meneParams import meneParamsTotalIndices
+from models.ecoli.sim.variants.subgen_expression import subgen_expression
+from models.ecoli.sim.variants.subgen_expression import subgen_expression_total_indices
 
 from models.ecoli.sim.variants.metabolism_kinetic_objective_weight import metabolism_kinetic_objective_weight
 from models.ecoli.sim.variants.metabolism_kinetic_objective_weight import metabolism_kinetic_objective_weight_indices
@@ -66,7 +66,7 @@ nameToFunctionMapping = {
 	"monomerDegRateShuffleParams": monomerDegRateShuffleParams,
 	"kineticCatalystShuffleParams": kineticCatalystShuffleParams,
 	"allShuffleParams": allShuffleParams,
-	"meneParams": meneParams,
+	"subgen_expression": subgen_expression,
 	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight,
 	"param_sensitivity": param_sensitivity,
 	"kinetic_constraints_factorial_experiments": kinetic_constraints_factorial_experiments,
@@ -86,7 +86,7 @@ nameToNumIndicesMapping = {
 	"monomerDegRateShuffleParams": monomerDegRateShuffleParamsTotalIndices,
 	"kineticCatalystShuffleParams": kineticCatalystShuffleParamsTotalIndices,
 	"allShuffleParams": allShuffleParamsTotalIndices,
-	"meneParams": meneParamsTotalIndices,
+	"subgen_expression": subgen_expression_total_indices,
 	"metabolism_kinetic_objective_weight": metabolism_kinetic_objective_weight_indices,
 	"param_sensitivity": param_sensitivity_indices,
 	"kinetic_constraints_factorial_experiments": kinetic_constraints_factorial_experiments_indices,
