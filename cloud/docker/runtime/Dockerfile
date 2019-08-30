@@ -17,22 +17,23 @@ RUN apt-get update \
     && apt-get install -y swig gfortran llvm cmake ncurses-dev \
         libreadline7 libreadline-dev nano
 
-RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc
+RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc \
+    echo "alias ll='ls -l'" >> ~/.bashrc
 
-# Install openblas v0.3.5 (not the buggy v0.3.3 nor v0.3.6).
+# Install openblas v0.3.5 (0.3.5 is OK; not 0.3.3, 0.3.6, 0.3.7).
 # Future: `apt-get install libopenblas-dev` but currently that gets v0.2.19.
 RUN (mkdir -p openblas && cd openblas \
     && curl -SL https://github.com/xianyi/OpenBLAS/archive/v0.3.5.tar.gz | tar -xz \
     && cd OpenBLAS* \
     && make FC=gfortran \
-    && make PREFIX=/usr install) \
+    && make PREFIX=/usr/local install) \
     && rm -r openblas
 
 ENV OPENBLAS_NUM_THREADS=1
 
 # Install all the pips within one Docker layer and don't cache the downloads.
 COPY requirements.txt /
-RUN pip install --no-cache-dir 'numpy==1.14.6' --no-binary numpy \
-    && pip install --no-cache-dir -r requirements.txt --no-binary numpy,scipy
+RUN pip install --no-cache-dir 'numpy==1.14.6' \
+    && pip install --no-cache-dir -r requirements.txt
 
 CMD ["/bin/bash"]
