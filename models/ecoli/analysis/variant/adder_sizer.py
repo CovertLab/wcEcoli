@@ -20,6 +20,10 @@ from scipy.stats import linregress
 FONT_SIZE=9
 trim = 0.05
 
+INIT_MASS_LOWER_LIM = 0
+INIT_MASS_UPPER_LIM = 3
+ADDED_MASS_LOWER_LIM = 0
+ADDED_MASS_UPPER_LIM = 3
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -94,7 +98,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_scaled_initial_masses = initial_masses / initial_masses.mean()
 			all_scaled_added_masses = added_masses / added_masses.mean()
 
-			idxs_to_keep = np.where((0.6 < all_scaled_initial_masses) & (all_scaled_initial_masses < 1.25) & (0.45 < all_scaled_added_masses) & (all_scaled_added_masses < 1.5))
+			idxs_to_keep = np.where((INIT_MASS_LOWER_LIM < all_scaled_initial_masses) & (all_scaled_initial_masses < INIT_MASS_UPPER_LIM) & (ADDED_MASS_LOWER_LIM < all_scaled_added_masses) & (all_scaled_added_masses < ADDED_MASS_UPPER_LIM))
 
 			scaled_initial_masses = all_scaled_initial_masses[idxs_to_keep]
 			scaled_added_masses = all_scaled_added_masses[idxs_to_keep]
@@ -122,8 +126,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				"p-value=%0.2g" % p_value,
 				fontsize=FONT_SIZE)
 
-			ax.set_xlim([0.6, 1.25])
-			ax.set_ylim([0.45, 1.5])
+			ax.set_xlim([INIT_MASS_LOWER_LIM, INIT_MASS_UPPER_LIM])
+			ax.set_ylim([ADDED_MASS_LOWER_LIM, ADDED_MASS_UPPER_LIM])
 			ax.get_yaxis().get_major_formatter().set_useOffset(False)
 			ax.get_xaxis().get_major_formatter().set_useOffset(False)
 
@@ -149,7 +153,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.set_title(title_list[varIdx] + ", n=%d, n*=%d"% (len(all_cells) - fail, len(scaled_initial_masses)), fontsize=FONT_SIZE)
 			ax.plot(scaled_initial_masses, slope * scaled_initial_masses + intercept, color = 'k')
 
-			ax.set_ylim([0.45, 1.5])
+			ax.set_xlim([INIT_MASS_LOWER_LIM, INIT_MASS_UPPER_LIM])
+			ax.set_ylim([ADDED_MASS_LOWER_LIM, ADDED_MASS_UPPER_LIM])
 
 			ax.get_yaxis().get_major_formatter().set_useOffset(False)
 			ax.get_xaxis().get_major_formatter().set_useOffset(False)
@@ -161,15 +166,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.tick_params(
 				axis='x',
 				which='both',
-				bottom='off',
-				top='off',
-				labelbottom='off')
+				bottom=False,
+				top=False,
+				labelbottom=False)
 			ax.tick_params(
 				axis='y',
 				which='both',
-				left='off',
-				right='off',
-				labelleft='off')
+				left=False,
+				right=False,
+				labelleft=False)
 
 			ax.set_xlabel("")
 			ax.set_ylabel("")
@@ -184,9 +189,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax = plt.subplot2grid((1,3), (0,plotIdx))
 			ax.hist(all_scaled_initial_masses, bins, color=color_cycle[0])
 
-			ax.axvline(x = 0.6, color = "k", linestyle = "--")
-			ax.axvline(x = 1.25, color = "k", linestyle = "--")
-			ax.set_title(title_list[varIdx] + "\n" + "[0.6, 1.25]", fontsize = FONT_SIZE)
+			ax.axvline(x = INIT_MASS_LOWER_LIM, color = "k", linestyle = "--")
+			ax.axvline(x = INIT_MASS_UPPER_LIM, color = "k", linestyle = "--")
+			ax.set_title(title_list[varIdx] + "\n" + "[%f, %f]"%(INIT_MASS_LOWER_LIM, INIT_MASS_UPPER_LIM), fontsize = FONT_SIZE)
 			ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
 			ax.set_xlabel("Normed initial mass", fontsize = FONT_SIZE)
@@ -205,9 +210,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax = plt.subplot2grid((1,3), (0,plotIdx))
 			ax.hist(all_scaled_added_masses, bins, color=color_cycle[0])
 
-			ax.axvline(x = 0.45, color = "k", linestyle = "--")
-			ax.axvline(x = 1.5, color = "k", linestyle = "--")
-			ax.set_title(title_list[varIdx] + "\n" + "[0.45, 1.5]", fontsize = FONT_SIZE)
+			ax.axvline(x = ADDED_MASS_LOWER_LIM, color = "k", linestyle = "--")
+			ax.axvline(x = ADDED_MASS_UPPER_LIM, color = "k", linestyle = "--")
+			ax.set_title(title_list[varIdx] + "\n" + "[%f, %f]"%(ADDED_MASS_LOWER_LIM, ADDED_MASS_UPPER_LIM), fontsize = FONT_SIZE)
 			ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
 			ax.set_xlabel("Normed added mass", fontsize = FONT_SIZE)
