@@ -31,7 +31,7 @@ DESC="SET C 4 gens 256 seeds 3 conditions with growth noise and D period" \
 VARIANT="condition" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=2 \
 SINGLE_DAUGHTERS=1 N_GENS=4 N_INIT_SIMS=256 \
 MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
-RUN_AGGREGATE_ANALYSIS=0 \
+RUN_AGGREGATE_ANALYSIS=0 WC_LENGTHSEC=14400 \
 python runscripts/fw_queue.py
 
 ## Set D - changes to RNAP and ribosome expression
