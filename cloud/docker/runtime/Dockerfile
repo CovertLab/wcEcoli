@@ -21,19 +21,23 @@ RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc \
     echo "alias ll='ls -l'" >> ~/.bashrc
 
 # Install openblas v0.3.5 (0.3.5 is OK; not 0.3.3, 0.3.6, 0.3.7).
-# Future: `apt-get install libopenblas-dev` but currently that gets v0.2.19.
+# Someday `apt-get install libopenblas-dev=0.3.5` will work.
 RUN (mkdir -p openblas && cd openblas \
     && curl -SL https://github.com/xianyi/OpenBLAS/archive/v0.3.5.tar.gz | tar -xz \
     && cd OpenBLAS* \
     && make FC=gfortran \
-    && make PREFIX=/usr/local install) \
+    && make PREFIX=/usr install) \
     && rm -r openblas
 
 ENV OPENBLAS_NUM_THREADS=1
 
 # Install all the pips within one Docker layer and don't cache the downloads.
 COPY requirements.txt /
-RUN pip install --no-cache-dir 'numpy==1.14.6' \
-    && pip install --no-cache-dir -r requirements.txt
+RUN (echo "[openblas]" \
+    && echo "libraries = openblas" \
+    && echo "library_dirs = /usr/lib" \
+    && echo "include_dirs = /usr/include") > ~/.numpy-site.cfg
+RUN pip install --no-cache-dir pip setuptools numpy==1.14.6 --no-binary numpy \
+    && pip install --no-cache-dir -r requirements.txt --no-binary numpy,scipy
 
 CMD ["/bin/bash"]
