@@ -16,7 +16,7 @@ There are two alternative ways to set up to run the model:
 
    If you want to run the Docker container and link your local directory to the one inside the Docker container (`<local wcEcoli>` denotes the local path to your cloned repo), use:
 
-   ```docker run --name=wcm -v <local wcEcoli>:/wcEcoli -it wcm-code```
+   ```docker run --name=wcm -v <local wcEcoli>:/wcEcoli -it --rm wcm-code```
 
    By doing so, the output files in the Docker folder (`/wcEcoli/out`) will also be linked to a corresponding folder in your computer (`<local wcEcoli>/out`). Until the model can be run as a user other than `root`, the files will be owned by `root` user so you might need to `chmod`/`chgrp` if you have permissions issues.
 

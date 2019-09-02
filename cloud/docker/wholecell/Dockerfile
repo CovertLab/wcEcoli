@@ -16,11 +16,11 @@
 #
 # After building locally you can start up a new container from the image:
 #
-#     > docker run --name wholecelltest -it wcm-code
+#     > docker run --name wholecelltest -it --rm wcm-code
 #
 # or if you used build.sh or build-wcm.sh to build using Cloud Build:
 #
-#     > docker run --name wholecelltest -it gcr.io/allen-discovery-center-mcovert/$USER-wcm-code
+#     > docker run --name wholecelltest -it --rm gcr.io/allen-discovery-center-mcovert/$USER-wcm-code
 #
 # It will start a shell where you can execute commands:
 #

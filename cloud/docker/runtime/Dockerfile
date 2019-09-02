@@ -26,7 +26,7 @@ RUN apt-get update \
         libreadline7 libreadline-dev nano
 
 RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc \
-    echo "alias ll='ls -l'" >> ~/.bashrc
+    && echo "alias ll='ls -l'" >> ~/.bashrc
 
 # Install openblas (0.3.5 is OK; 0.3.3 is not; 0.3.6 and 0.3.7 need "NO_AVX2=1"
 # to produce correct results in macOS Docker).
@@ -40,14 +40,17 @@ RUN (mkdir -p openblas && cd openblas \
 
 ENV OPENBLAS_NUM_THREADS=1
 
-# Install all the pips within one Docker layer and don't cache the downloads.
+# Install all the pips within one Docker layer, make them world-writeable so
+# Theano can write into its site package, and don't cache the downloads.
 # Link numpy and scipy to the installed OpenBLAS.
 COPY requirements.txt /
 RUN (echo "[openblas]" \
     && echo "libraries = openblas" \
     && echo "library_dirs = /usr/lib" \
     && echo "include_dirs = /usr/include") > ~/.numpy-site.cfg
-RUN pip install --no-cache-dir pip setuptools numpy==1.14.6 --no-binary numpy \
-    && pip install --no-cache-dir -r requirements.txt --no-binary numpy,scipy
+RUN (pip install --no-cache-dir --upgrade pip setuptools \
+    && umask 000 \
+    && pip install --no-cache-dir numpy==1.14.6 --no-binary numpy \
+    && pip install --no-cache-dir -r requirements.txt --no-binary numpy,scipy)
 
 CMD ["/bin/bash"]
