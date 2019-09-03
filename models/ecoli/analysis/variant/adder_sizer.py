@@ -52,7 +52,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.style.use('seaborn-deep')
 		color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-		title_list = ["Glucose minimal, " + r"$\tau = $" + "44 min", "Glucose minimal anaerobic, " + r"$\tau = $" + "100 min", "Glucose minimal + 20 amino acids, " + r"$\tau = $" + "22 min"]
+		title_list = ["Glucose minimal, " + r"$\tau = $" + "44 min", "Glucose minimal anaerobic, " + r"$\tau = $" + "100 min", "Glucose minimal + 20 amino acids, " + r"$\tau = $" + "25 min"]
 
 		for varIdx in ap.get_variants():
 
