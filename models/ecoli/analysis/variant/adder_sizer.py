@@ -41,18 +41,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		allScatter.set_figwidth(11)
 		allScatter.set_figheight(6)
 
-		xHist = plt.figure()
-		xHist.set_figwidth(11)
-		xHist.set_figheight(6)
-
-		yHist = plt.figure()
-		yHist.set_figwidth(11)
-		yHist.set_figheight(6)
-
 		plt.style.use('seaborn-deep')
 		color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-		title_list = ["Glucose minimal, " + r"$\tau = $" + "44 min", "Glucose minimal anaerobic, " + r"$\tau = $" + "100 min", "Glucose minimal + 20 amino acids, " + r"$\tau = $" + "22 min"]
+		title_list = [r"Glucose minimal, $\tau = $44 min", r"Glucose minimal anaerobic, $\tau = $100 min", r"Glucose minimal + 20 amino acids, $\tau = $22 min"]
 
 		for varIdx in ap.get_variants():
 
@@ -154,8 +146,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.tick_params(which='both', bottom=True, left=True,
 				top=False, right=False, labelbottom=True, labelleft=True,
 				labelsize=FONT_SIZE)
-			#ax.tick_params(axis='y', which='both', left=False,
-			#	right=False, labelleft=True, labelsize=FONT_SIZE)
 
 			ax.set_xlabel("")
 			ax.set_ylabel("")
