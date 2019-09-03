@@ -50,6 +50,7 @@ RUN (echo "[openblas]" \
     && echo "include_dirs = /usr/include") > ~/.numpy-site.cfg
 RUN (pip install --no-cache-dir --upgrade pip setuptools \
     && umask 000 \
+    && mkdir -p /.theano \
     && pip install --no-cache-dir numpy==1.14.6 --no-binary numpy \
     && pip install --no-cache-dir -r requirements.txt --no-binary numpy,scipy)
 

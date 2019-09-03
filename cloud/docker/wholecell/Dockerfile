@@ -45,6 +45,8 @@ WORKDIR /wcEcoli
 RUN make clean compile
 ENV PYTHONPATH=/wcEcoli
 
+RUN (umask 000 && mkdir -p /.theano /wcEcoli/fixtures)
+
 RUN echo 'cat cloud/docker/welcome.txt' >> $HOME/.bashrc
 
 CMD ["/bin/bash"]
