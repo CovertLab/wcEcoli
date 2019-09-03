@@ -5,7 +5,6 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.ticker import MaxNLocator
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
@@ -17,13 +16,12 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from scipy.stats import linregress
 
 
-FONT_SIZE=9
-trim = 0.05
+FONT_SIZE=5
 
-INIT_MASS_LOWER_LIM = 0
-INIT_MASS_UPPER_LIM = 3
+INIT_MASS_LOWER_LIM = 0.6
+INIT_MASS_UPPER_LIM = 1.6
 ADDED_MASS_LOWER_LIM = 0
-ADDED_MASS_UPPER_LIM = 3
+ADDED_MASS_UPPER_LIM = 1.7
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -54,9 +52,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.style.use('seaborn-deep')
 		color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-		title_list = ["Glucose minimal\n" + r"$\tau = $" + "44 min", "Glucose minimal anaerobic\n" + r"$\tau = $" + "100 min", "Glucose minimal + 20 amino acids\n" + r"$\tau = $" + "22 min"]
-
-		plot = False
+		title_list = ["Glucose minimal, " + r"$\tau = $" + "44 min", "Glucose minimal anaerobic, " + r"$\tau = $" + "100 min", "Glucose minimal + 20 amino acids, " + r"$\tau = $" + "22 min"]
 
 		for varIdx in ap.get_variants():
 
@@ -78,7 +74,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_cells = ap.get_cells(generation=gen, variant=[varIdx])
 			if len(all_cells) == 0:
 				continue
-			plot = True
 
 			fail = 0
 			for simDir in all_cells:
@@ -95,13 +90,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			added_masses = final_masses - initial_masses
 
-			all_scaled_initial_masses = initial_masses / initial_masses.mean()
-			all_scaled_added_masses = added_masses / added_masses.mean()
-
-			idxs_to_keep = np.where((INIT_MASS_LOWER_LIM < all_scaled_initial_masses) & (all_scaled_initial_masses < INIT_MASS_UPPER_LIM) & (ADDED_MASS_LOWER_LIM < all_scaled_added_masses) & (all_scaled_added_masses < ADDED_MASS_UPPER_LIM))
-
-			scaled_initial_masses = all_scaled_initial_masses[idxs_to_keep]
-			scaled_added_masses = all_scaled_added_masses[idxs_to_keep]
+			scaled_initial_masses = initial_masses / initial_masses.mean()
+			scaled_added_masses = added_masses / added_masses.mean()
 
 			nbins = 5
 
@@ -121,7 +111,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.plot(scaled_initial_masses, slope * scaled_initial_masses + intercept, color = "blue")
 
 			ax.set_title(
-				title_list[varIdx] + ", n=%d, n*=%d" % ((len(all_cells) - fail), len(scaled_initial_masses)) + "\n" +
+				title_list[varIdx] + ", n=%d" % ((len(all_cells) - fail), ) + "\n" +
 				r"$m_{add}$=%.3f$\times$$m_{init}$ + %.3f" % (slope,intercept) + "\n" +
 				"p-value=%0.2g" % p_value,
 				fontsize=FONT_SIZE)
@@ -146,11 +136,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# plot stripped figure
 			fig = plt.figure()
-			fig.set_figwidth(1.73)
-			fig.set_figheight(1.18)
+			fig.set_figwidth(3)
+			fig.set_figheight(2)
 			ax = plt.subplot2grid((1,1), (0,0))
-			ax.plot(scaled_initial_masses, scaled_added_masses, '.', color = color_cycle[0], alpha = 0.2, zorder=1, markeredgewidth = 0.0)
-			ax.set_title(title_list[varIdx] + ", n=%d, n*=%d"% (len(all_cells) - fail, len(scaled_initial_masses)), fontsize=FONT_SIZE)
+			ax.plot(scaled_initial_masses, scaled_added_masses, '.', color = color_cycle[0], alpha = 0.25, ms=6, zorder=1, markeredgewidth = 0.0)
+			ax.set_title(title_list[varIdx] + ", n=%d"% (len(all_cells) - fail, ), fontsize=FONT_SIZE)
 			ax.plot(scaled_initial_masses, slope * scaled_initial_masses + intercept, color = 'k')
 
 			ax.set_xlim([INIT_MASS_LOWER_LIM, INIT_MASS_UPPER_LIM])
@@ -159,80 +149,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.get_yaxis().get_major_formatter().set_useOffset(False)
 			ax.get_xaxis().get_major_formatter().set_useOffset(False)
 
-			plt.subplots_adjust(bottom = 0.2)
-
 			whitePadSparklineAxis(ax)
 
-			ax.tick_params(
-				axis='x',
-				which='both',
-				bottom=False,
-				top=False,
-				labelbottom=False)
-			ax.tick_params(
-				axis='y',
-				which='both',
-				left=False,
-				right=False,
-				labelleft=False)
+			ax.tick_params(which='both', bottom=True, left=True,
+				top=False, right=False, labelbottom=True, labelleft=True,
+				labelsize=FONT_SIZE)
+			#ax.tick_params(axis='y', which='both', left=False,
+			#	right=False, labelleft=True, labelsize=FONT_SIZE)
 
 			ax.set_xlabel("")
 			ax.set_ylabel("")
 
-			plt.subplots_adjust(top = 0.95, bottom = 3 * trim, left = 2 * trim, right = 0.95, hspace = 0, wspace = 0)
-
+			plt.tight_layout()
 			exportFigure(plt, plotOutDir, plotOutFileName + str(varIdx) + "_stripped", metadata, transparent = True)
 
-			# plot histogram for x-axis
-			plt.figure(xHist.number)
-			bins = 25
-			ax = plt.subplot2grid((1,3), (0,plotIdx))
-			ax.hist(all_scaled_initial_masses, bins, color=color_cycle[0])
+		plt.figure(allScatter.number)
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
-			ax.axvline(x = INIT_MASS_LOWER_LIM, color = "k", linestyle = "--")
-			ax.axvline(x = INIT_MASS_UPPER_LIM, color = "k", linestyle = "--")
-			ax.set_title(title_list[varIdx] + "\n" + "[%f, %f]"%(INIT_MASS_LOWER_LIM, INIT_MASS_UPPER_LIM), fontsize = FONT_SIZE)
-			ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-
-			ax.set_xlabel("Normed initial mass", fontsize = FONT_SIZE)
-
-			plt.subplots_adjust(bottom = 0.2)
-
-			whitePadSparklineAxis(ax)
-
-			for tick in ax.yaxis.get_major_ticks():
-				tick.label.set_fontsize(FONT_SIZE)
-			for tick in ax.xaxis.get_major_ticks():
-				tick.label.set_fontsize(FONT_SIZE)
-
-			# plot histogram for y-axis
-			plt.figure(yHist.number)
-			ax = plt.subplot2grid((1,3), (0,plotIdx))
-			ax.hist(all_scaled_added_masses, bins, color=color_cycle[0])
-
-			ax.axvline(x = ADDED_MASS_LOWER_LIM, color = "k", linestyle = "--")
-			ax.axvline(x = ADDED_MASS_UPPER_LIM, color = "k", linestyle = "--")
-			ax.set_title(title_list[varIdx] + "\n" + "[%f, %f]"%(ADDED_MASS_LOWER_LIM, ADDED_MASS_UPPER_LIM), fontsize = FONT_SIZE)
-			ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-
-			ax.set_xlabel("Normed added mass", fontsize = FONT_SIZE)
-
-			plt.subplots_adjust(bottom = 0.2)
-
-			whitePadSparklineAxis(ax)
-
-			for tick in ax.yaxis.get_major_ticks():
-				tick.label.set_fontsize(FONT_SIZE)
-			for tick in ax.xaxis.get_major_ticks():
-				tick.label.set_fontsize(FONT_SIZE)
-
-		if plot:
-			plt.figure(allScatter.number)
-			exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-			plt.figure(xHist.number)
-			exportFigure(plt, plotOutDir, plotOutFileName + "_histogram_scaled_initial_mass" ,metadata, transparent = True)
-			plt.figure(yHist.number)
-			exportFigure(plt, plotOutDir, plotOutFileName + "_histogram_scaled_added_mass" ,metadata, transparent = True)
 		plt.close("all")
 
 
