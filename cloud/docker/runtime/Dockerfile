@@ -40,18 +40,17 @@ RUN (mkdir -p openblas && cd openblas \
 
 ENV OPENBLAS_NUM_THREADS=1
 
-# Install all the pips within one Docker layer, make them world-writeable so
-# Theano can write into its site package, and don't cache the downloads.
-# Link numpy and scipy to the installed OpenBLAS.
+# Install all the pips within one Docker layer, don't cache the downloads, link
+# numpy and scipy to the installed OpenBLAS, and enable Theano to write into
+# the data dir it uses when running as a user with no home dir.
 COPY requirements.txt /
 RUN (echo "[openblas]" \
     && echo "libraries = openblas" \
     && echo "library_dirs = /usr/lib" \
     && echo "include_dirs = /usr/include") > ~/.numpy-site.cfg
 RUN (pip install --no-cache-dir --upgrade pip setuptools \
-    && umask 000 \
-    && mkdir -p /.theano \
     && pip install --no-cache-dir numpy==1.14.6 --no-binary numpy \
-    && pip install --no-cache-dir -r requirements.txt --no-binary numpy,scipy)
+    && pip install --no-cache-dir -r requirements.txt --no-binary numpy,scipy \
+    && umask 000 && mkdir -p /.theano)
 
 CMD ["/bin/bash"]
