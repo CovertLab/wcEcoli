@@ -195,7 +195,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		complex_axis.plot(time_hours, enzyme_complex_counts, color=post_merge_color)
 		complex_axis.set_ylabel("Protein complex\ncounts", fontsize = FONTSIZE, rotation = 0)
 		complex_axis.yaxis.set_label_coords(-.12, 0.25)
-		complex_axis.set_ylim([0, max(enzyme_complex_counts)])
+		complex_axis.set_ylim([0, np.max(enzyme_complex_counts)])
 		whitePadSparklineAxis(complex_axis, xAxis = False)
 
 		flux_axis.plot(time_hours, enzyme_fluxes, color=post_merge_color)
@@ -212,10 +212,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		met_axis.set_ylabel("End product\ncounts", fontsize = FONTSIZE, rotation = 0)
 		met_axis.yaxis.set_label_coords(-.12, 0.25)
 		met_axis.set_xlabel("Time (hour)\ntickmarks at each new generation", fontsize = FONTSIZE)
-		met_axis.set_ylim([met_axis.get_ylim()[0] * 0.2, met_axis.get_ylim()[1]])
+		met_axis.set_ylim([0, np.max(metabolite_counts)])
 		met_axis.set_xlim([time_hours[0], time_hours[-1]])
 		whitePadSparklineAxis(met_axis)
-		met_axis.set_yticklabels(["%0.1e" % met_axis.get_ylim()[0], "%0.1e" % met_axis.get_ylim()[1]])
+		met_axis.set_yticklabels([0, "%0.1e" % met_axis.get_ylim()[1]])
 		met_axis.set_xticks(np.array(generationTicks) / 3600.)
 		xticklabels = np.repeat("     ", len(generationTicks))
 		xticklabels[0] = "0"
