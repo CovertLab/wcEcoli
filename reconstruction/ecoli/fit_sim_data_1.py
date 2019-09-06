@@ -36,19 +36,12 @@ FRACTION_INCREASE_RIBOSOMAL_PROTEINS = 0.0  # reduce stochasticity from protein 
 
 # Adjustments to get protein expression for certain enzymes required for metabolism
 TRANSLATION_EFFICIENCIES_ADJUSTMENTS = {
-	"ADCLY-MONOMER[c]": 5,  # pabC, aminodeoxychorismate lyase
-	"EG12438-MONOMER[c]": 5,  # menH, 2-succinyl-6-hydroxy-2,4-cyclohexadiene-1-carboxylate synthetase
 	"EG12298-MONOMER[p]": 5,  # yibQ, Predicted polysaccharide deacetylase; This RNA is fit for the anaerobic condition viability
 	"ACETYL-COA-ACETYLTRANSFER-MONOMER[c]": 5,  # atoB; This RNA is fit for the anaerobic condition viability
 	}
 RNA_EXPRESSION_ADJUSTMENTS = {
-	"EG11493_RNA[c]": 10,  # pabC, aminodeoxychorismate lyase
-	"EG12438_RNA[c]": 10,  # menH, 2-succinyl-6-hydroxy-2,4-cyclohexadiene-1-carboxylate synthetase
 	"EG12298_RNA[c]": 10,  # yibQ, Predicted polysaccharide deacetylase; This RNA is fit for the anaerobic condition viability
 	"EG11672_RNA[c]": 10,  # atoB, acetyl-CoA acetyltransferase; This RNA is fit for the anaerobic condition viability
-	}
-RNA_DEG_RATES_ADJUSTMENTS = {
-	"EG11493_RNA[c]": 2,  # pabC, aminodeoxychorismate lyase
 	}
 PROTEIN_DEG_RATES_ADJUSTMENTS = {
 	"EG12298-MONOMER[p]": 0.1, # yibQ, Predicted polysaccharide deacetylase; This protein is fit for the anaerobic condition
@@ -155,7 +148,6 @@ def fitSimData_1(
 	if options['adjust_rna_and_protein_parameters']:
 		setTranslationEfficiencies(sim_data)
 		setRNAExpression(sim_data)
-		setRNADegRates(sim_data)
 		setProteinDegRates(sim_data)
 
 	if options['adjust_rnase_expression']:
@@ -895,26 +887,6 @@ def setRNAExpression(sim_data):
 		sim_data.process.transcription.rnaExpression["basal"][idx] *= RNA_EXPRESSION_ADJUSTMENTS[rna]
 
 	sim_data.process.transcription.rnaExpression["basal"] /= sim_data.process.transcription.rnaExpression["basal"].sum()
-
-def setRNADegRates(sim_data):
-	"""
-	This function's goal is to set the degradation rates for a subset of metabolic RNA's.
-	It first gathers the index of the RNA's it wants to modify, then changes the degradation
-	rates of those RNAs. These adjustments were made so that the simulation could run.
-
-	Requires
-	--------
-	- For each RNA that needs to be modified, it takes in a hard coded adjustment factor
-
-	Modifies
-	--------
-	- This function modifies the RNA degradation rates for the chosen RNAs in sim_data.
-	It takes their current degradation rate and multiplies them by the factor specified in adjustments.
-	"""
-
-	for rna in RNA_DEG_RATES_ADJUSTMENTS:
-		idx = np.where(sim_data.process.transcription.rnaData["id"] == rna)[0]
-		sim_data.process.transcription.rnaData.struct_array["degRate"][idx] *= RNA_DEG_RATES_ADJUSTMENTS[rna]
 
 def set_rnase_expression(sim_data):
 	"""
