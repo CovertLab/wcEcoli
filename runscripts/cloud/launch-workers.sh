@@ -5,7 +5,8 @@
 set -eu
 
 NAMES=$@
-PROJECT=allen-discovery-center-mcovert
+PROJECT="$(gcloud config get-value core/project)"
+METADATA="workflow=${WORKFLOW:?}"
 
 # Could add --async option to return quickly if we needn't wait on successful creation.
 
@@ -23,5 +24,6 @@ gcloud compute \
        --image-project=$PROJECT \
        --boot-disk-size=200GB \
        --boot-disk-type=pd-standard \
+       --metadata $METADATA \
        --labels=role=sisyphus \
        --description='sisyphus worker'

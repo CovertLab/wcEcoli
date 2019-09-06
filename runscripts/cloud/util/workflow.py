@@ -72,11 +72,12 @@ def _copy_path_list(value):
 		assert os.path.isabs(path), 'Expected an absolute path, not {}'.format(path)
 	return result
 
-def _launch_workers(worker_names):
-	# type: (List[str]) -> None
+def _launch_workers(worker_names, workflow=''):
+	# type: (List[str], str) -> None
 	"""Launch Sisyphus worker nodes with the given names."""
 	path = os.path.join(fp.ROOT_PATH, 'runscripts', 'cloud', 'launch-workers.sh')
-	subprocess.call([path] + worker_names)
+	subprocess.call([path] + worker_names,
+		env=dict(os.environ, WORKFLOW=workflow))
 
 
 class Task(object):
@@ -207,7 +208,7 @@ class Workflow(object):
 		self.log_info('\nLaunching {} worker node(s).'.format(count))
 		user = os.environ['USER']
 		names = ['sisyphus-{}-{}'.format(user, i) for i in range(count)]
-		_launch_workers(names)
+		_launch_workers(names, workflow=self.name)
 
 	def send(self, worker_count=4):
 		# type: (int) -> None
