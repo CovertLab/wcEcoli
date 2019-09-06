@@ -28,7 +28,7 @@ LABELSIZE = 6
 
 ENZYME_RNA_IDS = ["EG10682_RNA[c]", "EG10683_RNA[c]"]
 ENZYME_MONOMER_IDS = ["PABASYN-COMPII-MONOMER[c]", "PABASYN-COMPI-MONOMER[c]"]
-ENZYME_COMPLEX_ID = "PABSYNMULTI-CPLX[c]"
+ENZYME_COMPLEX_IDS = ["PABASYN-CPLX[c]", "PABSYNMULTI-CPLX[c]"]
 ENZYME_REACTION_IDS = ["PABASYN-RXN__PABASYN-CPLX (reverse)", "PABASYN-RXN__PABSYNMULTI-CPLX (reverse)"]
 METABOLITE_ID = "METHYLENE-THF[c]"
 
@@ -74,7 +74,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			moleculeIDs.index(enzyme_monomer_id)
 			for enzyme_monomer_id in ENZYME_MONOMER_IDS
 			])
-		enzyme_complex_index = moleculeIDs.index(ENZYME_COMPLEX_ID)
+		enzyme_complex_indexes = np.array([
+			moleculeIDs.index(enzyme_complex_id)
+			for enzyme_complex_id in ENZYME_COMPLEX_IDS
+			])
 		reaction_indexes = np.array([
 			np.where(reactionIDs == reaction_id)[0][0]
 			for reaction_id in ENZYME_REACTION_IDS
@@ -86,7 +89,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		enzyme_rna_init_events = np.empty((0, len(ENZYME_RNA_IDS)))
 		enzyme_rna_counts = np.empty((0, len(ENZYME_RNA_IDS)))
 		enzyme_monomer_counts = np.empty((0, len(ENZYME_RNA_IDS)))
-		enzyme_complex_counts = []
+		enzyme_complex_counts = np.empty((0, len(ENZYME_COMPLEX_IDS)))
 		enzyme_fluxes = np.empty((0, len(ENZYME_REACTION_IDS)))
 		metabolite_counts = []
 
@@ -96,7 +99,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		generationTicks = [0.]
 
 		n_transcription_init_events_per_gen = []
-		enzyme_complex_avg_counts = []
 
 		for simDir in allDir:
 			simOutDir = os.path.join(simDir, "simOut")
@@ -130,9 +132,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				enzyme_monomer_counts,
 				molecule_counts[:, enzyme_monomer_indexes]))
 
-			enzyme_complex_counts_this_gen = molecule_counts[:, enzyme_complex_index]
-			enzyme_complex_counts.extend(enzyme_complex_counts_this_gen.tolist())
-			enzyme_complex_avg_counts.append(np.mean(enzyme_complex_counts_this_gen))
+			enzyme_complex_counts_this_gen = molecule_counts[:, enzyme_complex_indexes]
+			enzyme_complex_counts = np.vstack((
+				enzyme_complex_counts,
+				enzyme_complex_counts_this_gen))
 
 			metabolite_counts.extend(molecule_counts[:, metabolite_index])
 
@@ -192,7 +195,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		monomer_axis.set_ylim([0, np.max(enzyme_monomer_counts)])
 		whitePadSparklineAxis(monomer_axis, xAxis = False)
 
-		complex_axis.plot(time_hours, enzyme_complex_counts, color=post_merge_color)
+		complex_axis.plot(time_hours, enzyme_complex_counts.sum(axis=1), color=post_merge_color)
 		complex_axis.set_ylabel("Protein complex\ncounts", fontsize = FONTSIZE, rotation = 0)
 		complex_axis.yaxis.set_label_coords(-.12, 0.25)
 		complex_axis.set_ylim([0, np.max(enzyme_complex_counts)])
@@ -223,7 +226,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		met_axis.set_xticklabels(xticklabels)
 
 		# Add patches to indicate absence of complexes
-		noComplexIndexes = np.where(np.array(enzyme_complex_counts) == 0)[0]
+		noComplexIndexes = np.where(np.array(enzyme_complex_counts.sum(axis=1)) == 0)[0]
 		patchStart = []
 		patchEnd = []
 		if len(noComplexIndexes):
