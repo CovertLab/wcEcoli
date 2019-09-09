@@ -6,9 +6,6 @@
 lpad reset
 make clean compile
 
-## Parameter sensitivity analysis
-runscripts/paper/sensitivity.sh sensitivity 0 20000
-
 ## Set A - basal condition
 # Used for figure 4
 DESC="SET A 32 gens 8 seeds basal with growth noise and D period" \
@@ -36,7 +33,6 @@ python runscripts/fw_queue.py
 
 ## Set D - changes to RNAP and ribosome expression
 # Used for figure 2
-# Misc. options consistent with Set C
 
 # This subset of simulations is redundant with the first variant of Set C
 DESC="SET D1 4 gens 256 seeds" \
@@ -71,6 +67,7 @@ DISABLE_RIBOSOME_CAPACITY_FITTING=1 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
 ADJUST_RNASE_EXPRESSION=1 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fw_queue.py
 
+# This subset of simulations is redundant with the first variant of Set L
 DESC="SET D5 4 gens 256 seeds, unfit ribosome and rna poly expression" \
 VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
 SINGLE_DAUGHTERS=1 N_GENS=4 N_INIT_SIMS=256 \
@@ -223,12 +220,14 @@ DISABLE_RIBOSOME_CAPACITY_FITTING=1 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
 ALTERNATE_RIBOSOME_ACTIVITY=1 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fw_queue.py
 
+## Set K - parameter sensitivity analysis
+runscripts/paper/sensitivity.sh "SET_K_sensitivity" 0 20000
+
 ## Set L - comparison of RNA/protein ratios with Scott et al. before changes
 # to RNAP and ribosome expression
 # Used for Figure S2
-# SET D5 is used for condition 0 (basal)
 DESC="SET L 4 gens 256 seeds 3 conditions unfit ribosome and rna poly expression" \
-VARIANT="condition" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=2 \
+VARIANT="condition" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=2 \
 SINGLE_DAUGHTERS=1 N_GENS=4 N_INIT_SIMS=256 \
 MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=1 D_PERIOD_DIVISION=1 \
 DISABLE_RIBOSOME_CAPACITY_FITTING=1 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
