@@ -7,10 +7,12 @@ Set PYTHONPATH when running this.
 
 from __future__ import absolute_import, division, print_function
 
+import argparse
 import os
 import sys
 
-from wholecell.utils import constants, scriptBase, parallelization, filepath
+from typing import Any, Dict
+from wholecell.utils import constants, data, scriptBase, parallelization, filepath
 
 
 class AnalysisBase(scriptBase.ScriptBase):
@@ -57,13 +59,21 @@ class AnalysisBase(scriptBase.ScriptBase):
 					for everyday development. Use "ACTIVE" to run all active
 					plots in this category.''')
 
-		parser.add_argument('-o', '--output_prefix', default='',
+		parser.add_argument('-o', scriptBase.dashize('--output_prefix'),
+			default='',
 			help='Prefix for all the output plot filenames.')
 
 		parser.add_argument('-c', '--cpus', type=int, default=1,
 			help='The number of CPU processes to use. The given value will be'
-				 ' limited to the available number of CPU cores. Default = 1.'
-			)
+				 ' limited to the available number of CPU cores. Default = 1.')
+
+		self.define_parameter_bool(parser, 'compile', False,
+			'Compiles output images into one file (only for .png).')
+
+	def select_analysis_keys(self, args):
+		# type: (argparse.Namespace) -> Dict[str, Any]
+		"""Select key/value pairs specific to analysis tasks"""
+		return data.select_keys(vars(args), scriptBase.ANALYSIS_KEYS)
 
 	def parse_args(self):
 		"""Parse the command line args into an `argparse.Namespace`, including
