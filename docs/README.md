@@ -13,7 +13,19 @@ There are two alternative ways to set up to run the model:
 
    You can then run the model inside the container.
    (PyCharm should support debugging into a Docker container but we haven't tested that.)
-   
+
+   You can share a local directory with the code inside the Docker container, either just the model's output directory `/wcEcoli/out` in order to preserve its output files outside the container, (here, `<local wcEcoli>` denotes the local path to your cloned repo):
+
+   ```docker run --name=wcm -v <local wcEcoli>/out:/wcEcoli/out --user "$(id -u):$(id -g)" -it --rm wcm-code```
+
+   or share the entire `/wcEcoli` directory to also substitute the model's code inside the container with the code in your local wcEcoli directory.
+
+   ```docker run --name=wcm -v <local wcEcoli>:/wcEcoli --user "$(id -u):$(id -g)" -it --rm wcm-code```
+
+   The `--user "$(id -u):$(id -g)"` option runs the model inside the container as your user and group in the host computer so the output files will be owned by you.
+
+   **NOTE:** If you encounter memory issues while using Docker Desktop (the default allocated memory is 2GB) and the simulation processes get killed midway, click the Docker icon > Preferences > Advanced > adjust memory to 4GB.
+
    **NOTE:** Docker Desktop for Windows is not currently compatible with VirtualBox.  If you use VirtualBox, try installing the legacy [Docker Toolbox](https://github.com/docker/toolbox/releases) instead.  You may also need to adjust the memory allocated to the VirtualBox VM (named 'default') that gets created.  In VirtualBox, select the 'default' VM and under system, change the base memory from 1 GB to 4 GB. 
 
 2. **pyenv setup:** Follow [Required development tools](dev-tools.md) to install the development tools including pyenv, gcc, make, and git, then follow [Creating the "pyenv" runtime environment](create-pyenv.md) to set up the Python runtime virtual environment for the model including binary libraries and Python packages.
@@ -30,10 +42,16 @@ There are two alternative ways to set up to run the model:
    * [Setting up to run FireWorks](../wholecell/fireworks/README.md) -- needed only to run a FireWorks workflow of cell simulations and analysis plots
    * [Set up Zookeeper and Kafka](../agent/README.md) -- needed only for multi-scale agents
 
+Once done setting up the environment, copy the git hooks from the repo ([git hooks](../runscripts/git_hooks/README.md)) to your `.git` directory to maintain an up to date environment while doing development:
+```
+cp runscripts/git_hooks/*[^.md] .git/hooks/
+```
+
 ## running
 
 * [How to run the Whole Cell Model](run.md) (actually the top level [README](../README.md) is more informative)
 * [How to run the Whole Cell Model on the Google Cloud Platform](google-cloud.md)
+  * [How to update the Sisyphus server's disk Image](update-sisyphus-server.md)
 * [How to run the Causality visualization tool](https://github.com/CovertLab/causality)
 * [How to run multi-scale agents](../environment/README.md)
 

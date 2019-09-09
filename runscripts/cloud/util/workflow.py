@@ -25,7 +25,7 @@ from wholecell.utils import filepath as fp
 # runscripts/cloud/ssh-tunnel.sh.
 GAIA_CONFIG = {'gaia_host': 'localhost:24442'}
 
-STDOUT_PATH = 'STDOUT'  # special pathname that captures stdout + stderror
+STDOUT_PATH = '>'  # special pathname that captures stdout + stderror
 
 MAX_WORKERS = 500  # don't launch more than this many worker nodes at a time
 
@@ -34,6 +34,10 @@ def _rebase(path, internal_prefix, storage_prefix):
 	# type: (str, str, str) -> str
 	"""Return a path rebased from internal_prefix to storage_prefix."""
 	new_path = os.path.join(storage_prefix, os.path.relpath(path, internal_prefix))
+
+	# os.path.relpath removes a trailing slash if it exists.
+	if path.endswith(os.sep):
+		new_path = os.path.join(new_path, '')
 
 	assert '..' not in new_path, (
 		'''Can't rebase path "{}" that doesn't start with internal_prefix "{}"'''
@@ -83,8 +87,11 @@ class Task(object):
 		# type: (str, str, Iterable[str], Iterable[str], Iterable[str], str, str) -> None
 		"""Construct a Workflow Task.
 
-		input and output paths are internal to the worker container and get
-		rebased from internal_prefix to storage_prefix for the storage paths.
+		Input and output paths are internal to the worker's Docker container.
+		Task will rebase them from internal_prefix to storage_prefix to construct
+		the corresponding storage paths. An internal path ending with '/' will
+		upload or download a directory tree, and its corresponding storage path
+		will not end with '/'.
 
 		An output path that starts with '>' will capture a log from stdout +
 		stderr. The rest of the path will get rebased to a storage path.

@@ -109,7 +109,7 @@ This page goes through the Python environment setup steps in more detail and wit
       brew install openblas
       ```
 
-   _or_ use the following steps to download and build it from source. (In the "make install" step, note that OpenBLAS does not usually belong on the compiler _include_ path or the linker _library_ path.)
+   _or_ use the following steps to download and build it from source. (In the "make install" step, note that OpenBLAS does not usually belong on the compiler _include_ path or the linker _library_ path.) (Please do not install it twice.)
 
       ```bash
       brew install gcc  # if you don't have a gfortran compiler
@@ -139,12 +139,19 @@ This page goes through the Python environment setup steps in more detail and wit
       include_dirs = /usr/local/opt/openblas/include
       ```
 
-5. Install NumPy and SciPy, linked to this OpenBLAS thanks to `~/.numpy-site.cfg`:
+5. Install NumPy linked to this OpenBLAS thanks to `~/.numpy-site.cfg`:
 
       ```bash
       cd wcEcoli
-      pip install numpy==1.14.5 scipy==1.0.1 --no-binary numpy,scipy --force-reinstall
+      pip install numpy==1.14.6 --no-binary numpy --force-reinstall
       ```
+
+6. Install the packages listed in `requirements.txt` (SciPy will also use `~/.numpy-site.cfg`):
+
+   ```bash
+   pip install -r requirements.txt --no-binary numpy,scipy
+   pyenv rehash
+   ```
 
 6. Test the NumPy and SciPy installation
 
@@ -160,13 +167,6 @@ This page goes through the Python environment setup steps in more detail and wit
           define_macros = [('HAVE_CBLAS', None)]
           language = c
       ```
-
-7. Install the packages listed in `requirements.txt`:
-
-   ```bash
-   pip install -r requirements.txt --no-binary numpy,scipy
-   pyenv rehash
-   ```
 
 8. Test Theano:
 
