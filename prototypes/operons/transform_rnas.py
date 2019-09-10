@@ -3,6 +3,24 @@ from functools import partial
 from reconstruction import spreadsheets
 import csv
 
+'''
+Purpose:
+This file adds an additional column to operon_rnas.tsv that accounts
+for all the monomers assigned to a specific rna, in a list.
+Right now operon monomersets are being manually added since they are not in
+the original rnas.tsv file.
+
+Currently saves to a new filename. This filename is manually changed after 
+it has been verified to be generating the correct information, to prevent
+overwriting the original data.
+
+TODO:
+Generate operon_rnas.tsv automatically rather than only semi-automatically.
+-From a file of operons to add, update, the halflife, protein sequence, 
+rnaID, monomerID, monomerSets...
+
+'''
+
 DIALECT = "excel-tab"
 JsonReader = partial(spreadsheets.JsonReader, dialect = DIALECT)
 JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
