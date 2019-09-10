@@ -24,6 +24,13 @@ class Relation(object):
 		#self._buildRnaIndexToGeneMapping(raw_data, sim_data)
 	
 	def _buildRnaIndexToMonomerMapping(self, raw_data, sim_data):
+		'''
+		Rewriting this from the original to pull the relationships from operon_rnas.tsv
+		rather than from rnas.tsv and proteins.tsv
+
+		Will go through all protein monomers and will spit out all the relevant RNA indices within a list.
+		Go into RNA
+		'''
 		#import pdb; pdb.set_trace()
 		self.rnaIndexToMonomerMapping = np.array([
 			np.where(x == sim_data.process.transcription.rnaData["id"])[0][0] 
