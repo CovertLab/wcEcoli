@@ -31,10 +31,25 @@ class Relation(object):
 		Will go through all protein monomers and will spit out all the relevant RNA indices within a list.
 		Go into RNA
 		'''
-		#import pdb; pdb.set_trace()
-		self.rnaIndexToMonomerMapping = np.array([
-			np.where(x == sim_data.process.transcription.rnaData["id"])[0][0] 
-			for x in sim_data.process.translation.monomerData["rnaId"]])
+		
+		#returns a dictionary where the keys are the RNA_ids and the values are the indices
+		#where that ID appears in operon_rnas.tsv
+		rnaData_id_index = {}
+		for idx, row in enumerate(sim_data.process.transcription.rnaData):
+			rnaData_id_index[row['id']] = idx
+
+		
+		import pdb; pdb.set_trace()
+		#{rnaData_id_index[row['id']] = idx for idx, row in enumerate(sim_data.process.transcription.rnaData)}
+		self.rnaIndexToMonomerMapping = []
+		for protein_row in sim_data.process.translation.monomerData:
+			set_indices = []
+			for rna_id in protein_row['rnaSet']:
+				set_indices.append(rnaData_id_index[rna_id])
+			rnaData_id_index.append(set_indices)
+		
+
+		#self.rnaIndexToMonomerMapping = np.array([np.where(x == sim_data.process.transcription.rnaData["id"])[0][0] for x in sim_data.process.translation.monomerData["rnaId"]])
 
 	def _buildMonomerIndexToRnaMapping(self, raw_data, sim_data):
 		self.monomerIndexToRnaMapping = np.array([

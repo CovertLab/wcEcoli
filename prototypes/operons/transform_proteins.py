@@ -33,7 +33,7 @@ JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
 
 FLAT_DIR = os.path.join("reconstruction", "ecoli", "flat")
 RNA_FILE = os.path.join(FLAT_DIR, "operon_rnas.tsv")
-PROTEIN_FILE = os.path.join(FLAT_DIR, "proteins.tsv")
+PROTEIN_FILE = os.path.join(FLAT_DIR, "proteins_old.tsv")
 #saving to a new file for now so that all manually input TUs in 
 #operon_rnas.tsv are not overwritten.
 output_file = os.path.join(FLAT_DIR, "proteins_1.tsv")
@@ -62,22 +62,16 @@ def make_collection():
 	#those lists then find the corresponding monomer in proteins.tsv.
 	#Add the id from operon_rnas to the rnaSet list
 
-	#Create empty lists that will be filled later with appropriate RNAs
+	protein_index = {}
 	for protein_row in protein_info:
-			protein_row['rnaSet'] = []
+		protein_row['rnaSet'] = []
+		protein_index[protein_row['id']] = protein_row
 
-	#This works, but its not the most efficient. 
-	#What is a better way of writing all these nested for loops.
-
+	
 	for rna_row in rna_info:
 		for monomer in rna_row['monomerSet']:
-			for protein_row in protein_info:
-				if protein_row['id'] == monomer:
-					protein_row['rnaSet'].append(rna_row['id'])
-	#import pdb; pdb.set_trace()
-	
-
-
+			protein_row = protein_index[monomer]
+			protein_row['rnaSet'].append(rna_row['id'])	
 
 	
 	#add fieldname for 'monomersets'

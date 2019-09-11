@@ -57,10 +57,9 @@ class Transcription(object):
 		
 		for rna in raw_data.operon_rnas:
 			
+			#taking counts from extrapolated transcription_unit counts.
 			arb_exp = [x['tu_count'] for x in raw_data.transcription_units
-						if x['tu_id'] == rna['geneId']]
-			
-			
+				if x['tu_id'] == rna['geneId']]
 			
 			#arb_exp = [x[sim_data.basal_expression_condition]
 				#for x in eval("raw_data.rna_seq_data.rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS))
@@ -127,6 +126,9 @@ class Transcription(object):
 		
 		# Load IDs of protein monomers
 		monomerIds = [rna['monomerId'] for rna in raw_data.operon_rnas]
+
+		# Load lists of all monomers that can be transcribed by the operon.
+		monomerSets = [rna['monomerSet'] for rna in raw_data.operon_rnas]
 
 		# Get index of gene corresponding to each RNA
 		gene_index = {gene["rnaId"]: i
@@ -233,6 +235,7 @@ class Transcription(object):
 				('KmEndoRNase', 'f8'),
 				('replicationCoordinate', 'int64'),
 				('direction', 'bool'),
+				('monomerSet', 'a50')
 				]
 			)
 
@@ -259,6 +262,7 @@ class Transcription(object):
 		rnaData['KmEndoRNase'] = Km
 		rnaData['replicationCoordinate'] = replicationCoordinate
 		rnaData['direction'] = direction
+		rnaData['monomerSet'] = monomerSets
 
 		field_units = {
 			'id': None,
@@ -280,6 +284,7 @@ class Transcription(object):
 			'KmEndoRNase': units.mol / units.L,
 			'replicationCoordinate': None,
 			'direction': None,
+			'monomerSet': None,
 			}
 
 		self.rnaExpression = {}
