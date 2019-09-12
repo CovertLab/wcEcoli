@@ -25,37 +25,59 @@ class Relation(object):
 	
 	def _buildRnaIndexToMonomerMapping(self, raw_data, sim_data):
 		'''
-		Rewriting this from the original to pull the relationships from operon_rnas.tsv
-		rather than from rnas.tsv and proteins.tsv
+		Input:
+		sim_data.process.transcription.rnaData and sim_data.process.monomerData.
+		Output:
+		np.ndarray, where each element index corresponds to the index of a monomer in monomerData, containing a list
+		of the indices where the RNA's that can be used to make that monomer are located within rnaData.
 
-		Will go through all protein monomers and will spit out all the relevant RNA indices within a list.
-		Go into RNA
+		Example:
+		self.rnaIndexToMonomerMapping[1454] = [2099, 2100]
+		The monomer is: EG12197-MONOMER
+		The RNA's are: "EG12197_RNA" and "EG12197_EG12144_RNA"
 		'''
-		
-		#returns a dictionary where the keys are the RNA_ids and the values are the indices
-		#where that ID appears in operon_rnas.tsv
+
 		rnaData_id_index = {}
 		for idx, row in enumerate(sim_data.process.transcription.rnaData):
 			rnaData_id_index[row['id']] = idx
 
-		
-		import pdb; pdb.set_trace()
-		#{rnaData_id_index[row['id']] = idx for idx, row in enumerate(sim_data.process.transcription.rnaData)}
 		self.rnaIndexToMonomerMapping = []
 		for protein_row in sim_data.process.translation.monomerData:
 			set_indices = []
 			for rna_id in protein_row['rnaSet']:
 				set_indices.append(rnaData_id_index[rna_id])
-			rnaData_id_index.append(set_indices)
-		
+			self.rnaIndexToMonomerMapping.append(set_indices)
+		self.rnaIndexToMonomerMapping = np.array(self.rnaIndexToMonomerMapping)
 
-		#self.rnaIndexToMonomerMapping = np.array([np.where(x == sim_data.process.transcription.rnaData["id"])[0][0] for x in sim_data.process.translation.monomerData["rnaId"]])
+		self.rnaIndexToMonomerMapping_old = np.array(
+			[np.where(x == sim_data.process.transcription.rnaData["id"])[0][0] 
+			for x in sim_data.process.translation.monomerData["rnaId"]])
 
 	def _buildMonomerIndexToRnaMapping(self, raw_data, sim_data):
-		self.monomerIndexToRnaMapping = np.array([
-			np.where(x == sim_data.process.translation.monomerData["rnaId"])[0][0] 
-			for x in sim_data.process.transcription.rnaData["id"] 
-			if len(np.where(x == sim_data.process.translation.monomerData["rnaId"])[0])])
+		'''
+		Input:
+		sim_data.process.transcription.rnaData and sim_data.process.monomerData.
 
+		Output:
+
+		'''
+		monomerData_id_index = {}
+		for idx, row in enumerate(sim_data.process.translation.monomerData):
+			monomerData_id_index[row['id']] = idx
+
+		self.monomerIndexToRnaMapping_all = []
+		for rna_row in sim_data.process.transcription.rnaData:
+			set_indices = []
+			for monomer_id in rna_row['monomerSet']:
+				set_indices.append(monomerData_id_index[monomer_id])
+			self.monomerIndexToRnaMapping_all.append(set_indices)
+		#remove all empty lists.
+		self.monomerIndexToRnaMapping = [x for x in self.monomerIndexToRnaMapping_all if x != []]
+		self.monomerIndexToRnaMapping = np.array(self.monomerIndexToRnaMapping)
+
+		self.monomerIndexToRnaMapping_old = np.array([np.where(x == sim_data.process.translation.monomerData["rnaId"])[0][0] for x in sim_data.process.transcription.rnaData["id"] if len(np.where(x == sim_data.process.translation.monomerData["rnaId"])[0])])
+		#self.monomerIndexToRnaMapping_old_no_if = np.array([np.where(x == sim_data.process.translation.monomerData["rnaId"])[0][0] for x in sim_data.process.transcription.rnaData["id"]])
+
+		import pdb; pdb.set_trace()
 	#def _buildRnaIndexToGeneMapping(self, raw_data, sim_data):
 	#	self.rnaIndexToGeneMapping = np.array([np.where(x + "[c]" == sim_data.process.transcription.rnaData["id"])[0][0] for x in sim_data.process.replication.geneData["rnaId"]])
