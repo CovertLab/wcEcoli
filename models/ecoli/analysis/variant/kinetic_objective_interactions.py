@@ -182,8 +182,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		in_region = (glc_uptakes < GLC_MAX) & (np.abs(log_ratio_succ) < SUCC_DISTANCE)
 		selected_in = in_region & selected_indicies
 		not_selected_in = in_region & ~selected_indicies
-		selected_out = ~in_region & selected_indicies
-		not_selected_out = ~in_region & ~selected_indicies
 		constraint_labels = np.array([
 			[c[:4] for c in constraints] if constraints is not None else []
 			for _, constraints in map(get_disabled_constraints, variants)
@@ -200,16 +198,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		y_min = np.floor(min(y_min, 0))
 		plt.axvspan(x_min, GLC_MAX, facecolor='g', alpha=0.1)
 		plt.axhspan(y_min, SUCC_DISTANCE, facecolor='g', alpha=0.1)
-		_, x_max = plt.xlim()
-		_, y_max = plt.ylim()
-		plt.scatter(glc_uptakes[not_selected_out], log_ratio_succ[not_selected_out],
-			color='blue', alpha=0.6, s=size_pearson[not_selected_out])
-		plt.scatter(glc_uptakes[selected_out], log_ratio_succ[selected_out],
-			color='red', alpha=0.6, s=size_pearson[selected_out])
 
 		## Format axes
-		plt.xlim([x_min, x_max])
-		plt.ylim([y_min, y_max])
+		plt.xlim([x_min, GLC_MAX])
+		plt.ylim([y_min, SUCC_DISTANCE])
 		plt.ylabel('log2(model flux / Toya flux)')
 		plt.xlabel('glucose uptake (mmol / g DCW / hr)')
 		plt.title('Highlighted region only', fontsize=10)
