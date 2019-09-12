@@ -28,13 +28,19 @@ class Translation(object):
 
 	def _buildMonomerData(self, raw_data, sim_data):
 		assert all([len(protein['location']) == 1 for protein in raw_data.proteins])
+		#Feel like a lot of this looping through raw_data.proteins can be combined.
+
+		#adding location tag to all protein ids
 		ids = ['{}[{}]'.format(protein['id'], protein['location'][0]) for protein in raw_data.proteins]
 
-		rnaIds = []
 
+		
+
+
+		#add location tag to all rnaids.
+		rnaIds = []
 		for protein in raw_data.proteins:
 			rnaId = protein['rnaId']
-
 			rnaLocation = None
 			for rna in raw_data.operon_rnas:
 				if rna['id'] == rnaId:
@@ -46,6 +52,26 @@ class Translation(object):
 				rnaId,
 				rnaLocation
 				))
+
+		#create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
+		rna_location = {}
+		rnaLocation = None
+		for rna in raw_data.operon_rnas:
+			assert len(rna['location']) == 1
+			rnaLocation = rna['location'][0]
+			rna_location[rna['id']] = rnaLocation
+
+
+		#add location tag to all rnaIds within rnaSet.
+		#remember to export rna_set_ids as rnaSet
+		rnaSets = []
+		for protein in raw_data.proteins:
+			rna_id_set = []
+			rna_loc = None
+			for rna_id in protein['rnaSet']:
+				rna_loc = rna_location[rna_id]
+				rna_id_set.append('{}[{}]'.format(rna_id, rna_loc))
+			rnaSets.append(rna_id_set)
 
 		lengths = []
 		aaCounts = []
@@ -125,6 +151,7 @@ class Translation(object):
 				('aaCounts', '{}i8'.format(nAAs)),
 				('mw', 'f8'),
 				('sequence', 'a{}'.format(maxSequenceLength)),
+				('rnaSet', 'object')
 				]
 			)
 
@@ -135,6 +162,7 @@ class Translation(object):
 		monomerData['aaCounts'] = aaCounts
 		monomerData['mw'] = mws
 		monomerData['sequence'] = sequences
+		monomerData['rnaSet'] = rnaSets
 
 		field_units = {
 			'id'		:	None,
@@ -143,7 +171,8 @@ class Translation(object):
 			'length'	:	units.aa,
 			'aaCounts'	:	units.aa,
 			'mw'		:	units.g / units.mol,
-			'sequence'  :   None
+			'sequence'  :   None,
+			'rnaSet'	: 	None
 			}
 
 		self.monomerData = UnitStructArray(monomerData, field_units)

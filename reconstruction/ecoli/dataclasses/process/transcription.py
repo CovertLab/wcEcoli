@@ -128,7 +128,25 @@ class Transcription(object):
 		monomerIds = [rna['monomerId'] for rna in raw_data.operon_rnas]
 
 		# Load lists of all monomers that can be transcribed by the operon.
-		monomerSets = [rna['monomerSet'] for rna in raw_data.operon_rnas]
+		# Create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
+		monomer_location = {}
+		monomerLocation = None
+		for monomer in raw_data.proteins:
+			assert len(monomer['location']) == 1
+			monomerLocation = monomer['location'][0]
+			monomer_location[monomer['id']] = monomerLocation
+
+
+		#add location tag to all rnaIds within rnaSet.
+		#remember to export rna_set_ids as rnaSet
+		monomerSets = []
+		for rna in raw_data.operon_rnas:
+			monomer_id_set = []
+			monomer_loc = None
+			for monomer_id in rna['monomerSet']:
+				monomer_loc = monomer_location[monomer_id]
+				monomer_id_set.append('{}[{}]'.format(monomer_id, monomer_loc))
+			monomerSets.append(monomer_id_set)
 
 		# Get index of gene corresponding to each RNA
 		gene_index = {gene["rnaId"]: i
@@ -235,7 +253,7 @@ class Transcription(object):
 				('KmEndoRNase', 'f8'),
 				('replicationCoordinate', 'int64'),
 				('direction', 'bool'),
-				('monomerSet', 'a50')
+				('monomerSet', 'object')
 				]
 			)
 
