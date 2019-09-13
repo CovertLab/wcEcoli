@@ -32,24 +32,24 @@ ADDITIONAL_DISABLED_CONSTRAINTS = {
 OLD_MEASUREMENTS = {
 	'ISOCITDEH-RXN': {
 		'measurements': [106.3, 88.1], 'temps': [40, 40]},
-	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.': {
-		'measurements': [78, 110, 24, 85], 'temps': [30, 30, 30, 30]},
-	'R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.': {
-		'measurements': [1128, 177, 250, 230], 'temps': [38, 30, 30, 30]},
-	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)': {
-		'measurements': [26], 'temps': [30]},
-	'PSERTRANSAM-RXN': {
-		'measurements': [1.75], 'temps': [37]},
-	'GLUTATHIONE-REDUCT-NADPH-RXN': {
-		'measurements': [733.3], 'temps': [30]},
 	'GLYOXYLATE-REDUCTASE-NADP+-RXN__CPLX0-235': {
 		'measurements': [203], 'temps': [25]},
+	'R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.': {
+		'measurements': [1128, 177, 250, 230], 'temps': [38, 30, 30, 30]},
+	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.': {
+		'measurements': [78, 110, 24, 85], 'temps': [30, 30, 30, 30]},
+	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)': {
+		'measurements': [26], 'temps': [30]},
 	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.': {
 		'measurements': [187, 390, 390], 'temps': [25, 25, 25]},
-	'RXN-11832': {
-		'measurements': [103], 'temps': [30]},
 	'CYTDEAM-RXN': {
 		'measurements': [185, 165, 49.68 ,132 ,45], 'temps': [25, 37, 25, 30, 25]},
+	'GLUTATHIONE-REDUCT-NADPH-RXN': {
+		'measurements': [733.3], 'temps': [30]},
+	'PSERTRANSAM-RXN': {
+		'measurements': [1.75], 'temps': [37]},
+	'CITSYN-RXN__CITRATE-SI-SYNTHASE': {
+		'measurements': [81], 'temps': [25]},
 	}
 
 NEW_MEASUREMENTS = {
@@ -57,6 +57,25 @@ NEW_MEASUREMENTS = {
 		'measurements': [600], 'temps': [30]},
 	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.': {
 		'measurements': [42], 'temps': [25]},
+	}
+
+# Taken from paper/kinetic_constraints.tsv
+# KM in units of uM
+SIMULATION_KMS = {
+	'ISOCITDEH-RXN': {
+		'metabolite': 'NADP[c]', 'KM': 39.2, 'constraint_index': 188},
+	'R601-RXN-FUM/REDUCED-MENAQUINONE//SUC/CPD-9728.38.': {
+		'metabolite': 'FUM[c]', 'KM': 4, 'constraint_index': 262},
+	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.': {
+		'metabolite': 'SUC[c]', 'KM': 2, 'constraint_index': 394},
+	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)': {
+		'metabolite': 'NADH[c]', 'KM': 13, 'constraint_index': 222},
+	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.': {
+		'metabolite': 'PPI[c]', 'KM': 0.13, 'constraint_index': 183},
+	'CYTDEAM-RXN': {
+		'metabolite': 'CYTOSINE[c]', 'KM': 200, 'constraint_index': 87},
+	'CITSYN-RXN__CITRATE-SI-SYNTHASE': {
+		'metabolite': 'ACETYL-COA[c]', 'KM': 120, 'constraint_index': 81},
 	}
 
 REACTIONS = sorted(OLD_MEASUREMENTS.keys())
@@ -110,13 +129,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		reaction_to_enzyme = {r: reactionCatalysts[r][0] for r in REACTIONS}
 		enzyme_names = reaction_to_enzyme.values()
+		reactions_with_km = sorted(SIMULATION_KMS)
+		km_metabolites = [SIMULATION_KMS[r]['metabolite'] for r in reactions_with_km]
+		kms = np.array([SIMULATION_KMS[r]['KM'] for r in reactions_with_km])
+		km_constraint_indices = [SIMULATION_KMS[r]['constraint_index'] for r in reactions_with_km]
 
 		# initialize dictionaries for fluxes and concentrations
 		all_reaction_fluxes = {}
 		all_enzyme_concentrations = {}
+		all_km_adjustments = {}
 		for variant in compared_variants:
 			reaction_fluxes = {r: [] for r in REACTIONS}
 			enzyme_concentrations = {e: [] for e in enzyme_names}
+			km_adjustments = {r: [] for r in reactions_with_km}
 			for sim_dir in ap.get_cells(variant=[variant]):
 				simOutDir = os.path.join(sim_dir, "simOut")
 
@@ -130,8 +155,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				# read from kinetics listener
 				counts_to_molar = ((COUNTS_UNITS / VOLUME_UNITS)
-					* kinetics_reader.readColumn("countsToMolar")[START_TIME_STEP:].reshape(-1, 1)
-					).asNumber(units.mmol / units.L)
+					* kinetics_reader.readColumn('countsToMolar')[START_TIME_STEP:].reshape(-1, 1)
+					)
+				all_constraints_used = kinetics_reader.readColumn('reactionConstraint')[START_TIME_STEP:]
 
 				# Store fluxes
 				reactionIDs = np.array(fbaResults.readAttribute("reactionIDs"))
@@ -141,16 +167,25 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					reaction_fluxes[reaction_id].extend(list(reaction_flux_dict[reaction_id]))
 
 				# Store enzyme concentrations
-				enzyme_counts, = read_bulk_molecule_counts(simOutDir, enzyme_names)
-				enzyme_conc = counts_to_molar * enzyme_counts[START_TIME_STEP:, :]
+				enzyme_counts, met_counts = read_bulk_molecule_counts(simOutDir, (enzyme_names, km_metabolites))
+				enzyme_conc = counts_to_molar.asNumber(COUNTS_UNITS / VOLUME_UNITS) * enzyme_counts[START_TIME_STEP:, :]
+				met_conc = counts_to_molar.asNumber(units.umol / units.L) * met_counts[START_TIME_STEP:, :]
 				for enzyme_id, conc_time_series in zip(enzyme_names, enzyme_conc.T):
 					enzyme_concentrations[enzyme_id].extend(list(conc_time_series))
 
-				# TODO: calc adjusted kcat with enzyme conc and km
-				# TODO: only store kcat
+				# Calculate enzyme saturation for reactions with KM values
+				adjust_km = np.zeros((len(counts_to_molar), len(km_constraint_indices)), bool)
+				for i, idx in enumerate(km_constraint_indices):
+					constraint_used, _ = np.where(all_constraints_used == idx)
+					adjust_km[constraint_used, i] = True
+				enzyme_saturation = met_conc / (met_conc + kms)
+				enzyme_saturation[~adjust_km] = 1
+				for rxn, saturation in zip(reactions_with_km, enzyme_saturation.T):
+					km_adjustments[rxn].extend(list(saturation))
 
 			all_reaction_fluxes[variant] = reaction_fluxes
 			all_enzyme_concentrations[variant] = enzyme_concentrations
+			all_km_adjustments[variant] = km_adjustments
 
 		### Make figure ###
 		cols = 1
@@ -192,9 +227,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				## Get data
 				rxn_fluxes = np.array(all_reaction_fluxes[variant][reaction_id]) 			# mmol / L / s
 				enzyme_concs = np.array(all_enzyme_concentrations[variant][enzyme_id])  	# mmol / L
+				saturation = np.array(all_km_adjustments[variant].get(reaction_id, [1] * len(rxn_fluxes)))
 
-				# calculate k_cats, remove zeros, save to this variant's distribution
-				k_cats = rxn_fluxes / enzyme_concs
+				# calculate k_cats (adjusted for saturation in the sim), remove zeros, save to this variant's distribution
+				k_cats = rxn_fluxes / enzyme_concs / saturation
 				k_cats = k_cats[k_cats > 0]
 				k_cat_distribution[variant] = k_cats
 
