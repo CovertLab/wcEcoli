@@ -14,20 +14,20 @@ import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
+from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS
 from models.ecoli.sim.variants.kinetic_constraints_factorial_experiments import get_disabled_constraints
-from wholecell.analysis.analysis_tools import exportFigure
+from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, units
 
 
 # additional disabled constraints that are to be compared to baseline
-ADDITIONAL_DISABLED_CONSTRAINTS = [
+ADDITIONAL_DISABLED_CONSTRAINTS = {
 	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.',
 	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)',
 	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.',
 	'GLUTATHIONE-REDUCT-NADPH-RXN',
-	]
+	}
 
 OLD_MEASUREMENTS = {
 	'ISOCITDEH-RXN': {
@@ -91,7 +91,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			disable_constraints, additional_disabled = get_disabled_constraints(variant)
 			if additional_disabled is None:
 				old_variant = variant
-			elif set(ADDITIONAL_DISABLED_CONSTRAINTS) == set(additional_disabled):
+			elif ADDITIONAL_DISABLED_CONSTRAINTS == set(additional_disabled):
 				new_variant = variant
 
 		# if the baseline variant or the new variant are missing, stop plotting
@@ -106,81 +106,61 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sim_data = cPickle.load(f)
 
 		# get reactions from sim_data
-		reactionStoich = sim_data.process.metabolism.reactionStoich
 		reactionCatalysts = sim_data.process.metabolism.reactionCatalysts
 
-		reaction_enzymes = {}
-		for reaction_id in REACTIONS:
-			for reaction_id2, specs in reactionStoich.iteritems():
-				if reaction_id2 in reaction_id:
-					reaction_enzymes[reaction_id] = reactionCatalysts[reaction_id2]
-		enzymes = [mol_id for rxn in reaction_enzymes.values() for mol_id in rxn]
+		reaction_to_enzyme = {r: reactionCatalysts[r][0] for r in REACTIONS}
+		enzyme_names = reaction_to_enzyme.values()
 
 		# initialize dictionaries for fluxes and concentrations
-		reaction_fluxes = {variant: {reaction_id: [] for reaction_id in REACTIONS}
-			for variant in compared_variants}
-		enzyme_concentrations = {variant: {} for variant in compared_variants}
-
+		all_reaction_fluxes = {}
+		all_enzyme_concentrations = {}
 		for variant in compared_variants:
-			with open(ap.get_variant_kb(variant), 'rb') as f:
-				sim_data = cPickle.load(f)
-
-			cellDensity = sim_data.constants.cellDensity
-			nAvogadro = sim_data.constants.nAvogadro
-
+			reaction_fluxes = {r: [] for r in REACTIONS}
+			enzyme_concentrations = {e: [] for e in enzyme_names}
 			for sim_dir in ap.get_cells(variant=[variant]):
 				simOutDir = os.path.join(sim_dir, "simOut")
 
 				# Listeners used
 				try:
-					massListener = TableReader(os.path.join(simOutDir, "Mass"))
+					kinetics_reader = TableReader(os.path.join(simOutDir, 'EnzymeKinetics'))
 					fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-					bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 				except Exception as e:
 					print(e)
 					continue
 
-				# read from mass listener
-				cellMass = massListener.readColumn("cellMass")[START_TIME_STEP:]  # units.fg
-				cell_volume = np.array([mass * units.fg / cellDensity for mass in cellMass])
-				counts_to_millimolar = np.array([1 / (vol.asNumber(VOLUME_UNITS) * nAvogadro.asNumber(1/COUNTS_UNITS))
-					for vol in cell_volume])
+				# read from kinetics listener
+				counts_to_molar = ((COUNTS_UNITS / VOLUME_UNITS)
+					* kinetics_reader.readColumn("countsToMolar")[START_TIME_STEP:].reshape(-1, 1)
+					).asNumber(units.mmol / units.L)
 
-				# read from FBA listener
+				# Store fluxes
 				reactionIDs = np.array(fbaResults.readAttribute("reactionIDs"))
-				reactionFluxes = (COUNTS_UNITS / TIME_UNITS) * fbaResults.readColumn("reactionFluxes")[START_TIME_STEP:,:]
-				reaction_flux_dict = dict(zip(reactionIDs, reactionFluxes.asNumber(COUNTS_UNITS / TIME_UNITS).T))
-
-				# append values to reaction_fluxes
+				reactionFluxes = fbaResults.readColumn("reactionFluxes")[START_TIME_STEP:, :]
+				reaction_flux_dict = dict(zip(reactionIDs, reactionFluxes.T))
 				for reaction_id in REACTIONS:
-					reaction_fluxes[variant][reaction_id].extend(list(reaction_flux_dict[reaction_id]))
+					reaction_fluxes[reaction_id].extend(list(reaction_flux_dict[reaction_id]))
 
-				# read from bulkMolecules reader
-				molecule_ids = bulkMolecules.readAttribute("objectNames")
-				enzyme_ids = np.array([enzymeId for enzymeId in enzymes if enzymeId in molecule_ids])
-				enzyme_indexes = np.array([molecule_ids.index(enzymeId)
-					for enzymeId in enzymes if enzymeId in molecule_ids], np.int)
-				molecule_counts = bulkMolecules.readColumn("counts")[START_TIME_STEP:, enzyme_indexes]
+				# Store enzyme concentrations
+				enzyme_counts, = read_bulk_molecule_counts(simOutDir, enzyme_names)
+				enzyme_conc = counts_to_molar * enzyme_counts[START_TIME_STEP:, :]
+				for enzyme_id, conc_time_series in zip(enzyme_names, enzyme_conc.T):
+					enzyme_concentrations[enzyme_id].extend(list(conc_time_series))
 
-				# convert to millimolar concentrations
-				concentrations = counts_to_millimolar * molecule_counts.T
+				# TODO: calc adjusted kcat with enzyme conc and km
+				# TODO: only store kcat
 
-				# add concentration timeseries to enzyme_concentrations
-				for enzyme_id, conc_time_series in zip(enzyme_ids, concentrations):
-					if enzyme_id in enzyme_concentrations[variant]:
-						enzyme_concentrations[variant][enzyme_id].extend(list(conc_time_series))
-					else:
-						enzyme_concentrations[variant][enzyme_id] = list(conc_time_series)
+			all_reaction_fluxes[variant] = reaction_fluxes
+			all_enzyme_concentrations[variant] = enzyme_concentrations
 
 		### Make figure ###
 		cols = 1
 		rows = len(REACTIONS)
-		fig = plt.figure(figsize=(cols * 5, rows * 3))
+		plt.figure(figsize=(cols * 5, rows * 3))
 
 		# go through each reaction to show predicted k_cat distribution for the
 		# new and old variant, and experimental measurements
 		for reaction_idx, reaction_id in enumerate(REACTIONS):
-			enzyme_id = reaction_enzymes[reaction_id]
+			enzyme_id = reaction_to_enzyme[reaction_id]
 
 			# old measurements
 			reaction_measurements = OLD_MEASUREMENTS[reaction_id]
@@ -210,8 +190,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			k_cat_distribution = {}
 			for variant in compared_variants:
 				## Get data
-				rxn_fluxes = np.array(reaction_fluxes[variant][reaction_id]) 			# mmol / L / s
-				enzyme_concs = np.array(enzyme_concentrations[variant][enzyme_id[0]])  	# mmol / L
+				rxn_fluxes = np.array(all_reaction_fluxes[variant][reaction_id]) 			# mmol / L / s
+				enzyme_concs = np.array(all_enzyme_concentrations[variant][enzyme_id])  	# mmol / L
 
 				# calculate k_cats, remove zeros, save to this variant's distribution
 				k_cats = rxn_fluxes / enzyme_concs
