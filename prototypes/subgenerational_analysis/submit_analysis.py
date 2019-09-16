@@ -14,13 +14,13 @@ def analysis_command(num_gens):
 		inputs['main_attr_{}'.format(generation_key)] = '/wcEcoli/out/counts/wildtype_000000/{{seed}}/generation_'+generation_key+'/000000/simOut/Main/attributes.json'
 
 	command = {
-		'name': 'pull_rna_protein_counts_cloud',
+		'name': 'pull_complex_counts_cloud',
 		'vars': {
 			'seed': '000000'},
 		'command': [
 			'python', 
 			'-u', 
-			'prototypes/subgenerational_analysis/pull_rna_protein_counts_cloud.py', 
+			'prototypes/subgenerational_analysis/pull_complex_counts_cloud.py', 
 			'out/counts/wildtype_000000/{{seed}}'],
 		'image': 'gcr.io/allen-discovery-center-mcovert/mialydefelice-wcm-code:latest',
 		'outputs': {
