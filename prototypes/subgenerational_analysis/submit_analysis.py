@@ -38,8 +38,8 @@ def analysis_step(seed, num_gens):
 		inputs['main_{}'.format(generation_key)] = 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/wildtype_000000/'+seed_key+'/generation_'+generation_key+'/000000/simOut/Main/time'
 		inputs['main_attr_{}'.format(generation_key)] = 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/wildtype_000000/'+seed_key+'/generation_'+generation_key+'/000000/simOut/Main/attributes.json'
 	step = {
-		'name': 'pull_rna_protein_counts_cloud_{}'.format(seed_key),
-		'command': 'pull_rna_protein_counts_cloud',
+		'name': 'pull_complex_counts_cloud{}'.format(seed_key),
+		'command': 'pull_complex_counts_cloud',
 		'vars': {
 			'seed': seed_key},
 		'outputs': {
