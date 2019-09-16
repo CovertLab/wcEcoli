@@ -113,7 +113,7 @@ def extract_rna_protein_counts(bulkMolecules, complex_indices):
 #@profile
 def save_counts_per_gen(i, complex_counts, output_dir):
 	file_name_per_gen_complex = format(i, '02') + '_gen_data_complex.tsv'
-	with open(os.path.join(output_dir, file_name_per_gen_complex), 'wb') as fp:
+	with open(os.path.join(output_dir, 'complex', file_name_per_gen_complex), 'wb') as fp:
 		np.savetxt(fp, complex_counts, '%s','\t')
 	return
 
