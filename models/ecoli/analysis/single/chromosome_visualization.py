@@ -60,19 +60,19 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			fork_unique_indexes[~np.isnan(fork_unique_indexes)])
 		n_unique_replisomes = len(fork_unique_index_list)
 
-		# Parse data such that one row of data corresponds to one unique
+		# Parse data such that one row of column corresponds to one unique
 		# replisome. The active mask boolean array is set to True if the
-		# corresponding replisome (row) is active at the given timestep
-		# (column).
-		fork_coordinates_parsed = np.zeros((n_unique_replisomes, n_timesteps))
+		# corresponding replisome (column) is active at the given timestep
+		# (row).
+		fork_coordinates_parsed = np.zeros((n_timesteps, n_unique_replisomes))
 		fork_active_mask_parsed = np.zeros(
-			(n_unique_replisomes, n_timesteps), dtype=np.bool)
+			(n_timesteps, n_unique_replisomes), dtype=np.bool)
 		fork_domain_indexes_parsed = np.zeros(n_unique_replisomes, dtype=np.int64)
 
 		for mol_idx, unique_idx in enumerate(fork_unique_index_list):
 			time_index, col_index = np.where(fork_unique_indexes == unique_idx)
-			fork_coordinates_parsed[mol_idx, time_index] = fork_coordinates[time_index, col_index]
-			fork_active_mask_parsed[mol_idx, time_index] = True
+			fork_coordinates_parsed[time_index, mol_idx] = fork_coordinates[time_index, col_index]
+			fork_active_mask_parsed[time_index, mol_idx] = True
 
 			# Domain indexes are static - just take the first value
 			fork_domain_indexes_parsed[mol_idx] = fork_domain_indexes[
