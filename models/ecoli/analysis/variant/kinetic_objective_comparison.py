@@ -89,7 +89,7 @@ def set_ticks(ax, labels):
 	ax.get_xaxis().set_tick_params(direction='out')
 	ax.xaxis.set_ticks_position('bottom')
 	ax.set_xticks(np.arange(1, len(labels) + 1))
-	ax.set_xticklabels(labels)
+	ax.set_xticklabels(labels, fontsize=8)
 	ax.set_xlim(0.25, len(labels) + 0.75)
 
 
@@ -190,7 +190,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		### Make figure ###
 		cols = 1
 		rows = len(REACTIONS)
-		plt.figure(figsize=(cols * 5, rows * 3))
+		plt.figure(figsize=(cols * 3, rows * 5))
 
 		# go through each reaction to show predicted k_cat distribution for the
 		# new and old variant, and experimental measurements
@@ -246,9 +246,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# format
 			rxn_id_length = 25
 			text_reaction_id = ('reaction: %s' % reaction_id[:rxn_id_length])
-			labels = ['Model Predicted\n(Old Constraints)', 'Measured', 'Model Predicted\n(New Constraints)']
-			ax.set_title(text_reaction_id, fontsize=12)
-			ax.set_ylabel('$k_{cat}$ (1/s)', fontsize=12)
+			labels = ['\nModel Predicted\n(Old Constraints)', 'Measured', '\nModel Predicted\n(New Constraints)']
+			ax.set_title(text_reaction_id, fontsize=8)
+			ax.set_ylabel('$k_{cat}$ (1/s)', fontsize=8)
 			set_ticks(ax, labels)
 			ax.set_yscale('log')
 
