@@ -48,35 +48,38 @@ python models/ecoli/analysis/variant/growth_condition_comparison_validation.py \
 # ???
 
 # panel F
+# TODO: run with multiple gens?
 python models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py \
-/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
 --variant 0
 
 # panel G
 python models/ecoli/analysis/variant/flux_sensitivity.py \
-/scratch/groups/mcovert/wc_ecoli/paper/SET_H/20190906.115628__SET_H_1_gen_flux_sensitivity/
+/scratch/PI/mcovert/wc_ecoli/paper/SET_H/20190906.115628__SET_H_1_gen_flux_sensitivity/
 
 # panel H
 python models/ecoli/analysis/variant/kinetic_objective_interactions.py \
-/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/
+/scratch/PI/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/
 
 # panel I
 python models/ecoli/analysis/variant/kinetic_objective_comparison.py \
-/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/
+/scratch/PI/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/
 
 # panel J
 python models/ecoli/analysis/single/massFractionSummary.py \
-/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
 --variant 47 --seed 0 --gen 0
 
 # panel K
+# TODO: run with multiple gens?
 python models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py \
-/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
 --variant 47
 
 # panel L
+# TODO: run with multiple gens?
 python models/ecoli/analysis/cohort/kinetics_flux_comparison.py \
-/scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
 --variant 47
 
 
