@@ -46,8 +46,8 @@ class Relation(object):
 			set_indices = []
 			for rna_id in protein_row['rnaSet']:
 				set_indices.append(rnaData_id_index[rna_id])
-			self.rnaIndexToMonomerMapping.append(set_indices)
-		self.rnaIndexToMonomerMapping_new = np.array(self.rnaIndexToMonomerMapping)
+			self.rnaIndexToMonomerMapping_new.append(set_indices)
+		self.rnaIndexToMonomerMapping_new = np.array(self.rnaIndexToMonomerMapping_new)
 
 		self.rnaIndexToMonomerMapping = np.array(
 			[np.where(x == sim_data.process.transcription.rnaData["id"])[0][0] 
@@ -73,7 +73,7 @@ class Relation(object):
 			self.monomerIndexToRnaMapping_all.append(set_indices)
 		#remove all empty lists.
 		self.monomerIndexToRnaMapping_new = [x for x in self.monomerIndexToRnaMapping_all if x != []]
-		self.monomerIndexToRnaMapping_new = np.array(self.monomerIndexToRnaMapping)
+		self.monomerIndexToRnaMapping_new = np.array(self.monomerIndexToRnaMapping_new)
 
 		#new and old mapping does not match here!
 		#new mapping maps directly from rnas to proteins. mimics the functioning of _buildRnaIndexToMonomerMapping

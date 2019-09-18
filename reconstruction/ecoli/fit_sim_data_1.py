@@ -1539,8 +1539,8 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		normalize(view_RNA.counts())
 		)
 
+	import ipdb; ipdb.set_trace()
 
-	import pdb; pdb.set_trace()
 	# Update mRNA expression to reflect monomer counts
 	assert np.all(
 		sim_data.process.translation.monomerData["rnaId"][sim_data.relation.monomerIndexToRnaMapping] == sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]]
@@ -1549,11 +1549,13 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	mRnaExpressionView = rnaExpressionContainer.countsView(sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]])
 	mRnaExpressionFrac = np.sum(mRnaExpressionView.counts())
 
+	mRnaDistribution = mRNADistributionFromProtein(
+		normalize(counts_protein),
+		translation_efficienciesByProtein,
+		netLossRate_protein)
+
 	mRnaExpressionView.countsIs(
-		mRnaExpressionFrac * mRNADistributionFromProtein(
-			normalize(counts_protein), translation_efficienciesByProtein, netLossRate_protein
-			)[sim_data.relation.monomerIndexToRnaMapping]
-		)
+		mRnaExpressionFrac * mRnaDistribution[sim_data.relation.monomerIndexToRnaMapping])
 
 	expression = rnaExpressionContainer.counts()
 
@@ -1561,8 +1563,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	nRnas = totalCountFromMassesAndRatios(
 		totalMass_RNA,
 		sim_data.process.transcription.rnaData["mw"] / sim_data.constants.nAvogadro,
-		expression
-		)
+		expression)
 
 	view_RNA.countsIs(nRnas * expression)
 
