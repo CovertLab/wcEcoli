@@ -54,7 +54,7 @@ python models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py \
 
 # panel G
 python models/ecoli/analysis/variant/flux_sensitivity.py \
-/scratch/groups/mcovert/wc_ecoli/paper/SET_H/20190822.204306__SET_H_1_gen_flux_sensitivity/
+/scratch/groups/mcovert/wc_ecoli/paper/SET_H/20190906.115628__SET_H_1_gen_flux_sensitivity/
 
 # panel H
 python models/ecoli/analysis/variant/kinetic_objective_interactions.py \
