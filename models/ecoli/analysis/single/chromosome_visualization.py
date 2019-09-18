@@ -19,6 +19,10 @@ from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath
 
+# Flags to indicate replisome status
+NOT_INITIATED = 0
+ELONGATING = 1
+HAS_TERMINATED = 2
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -61,27 +65,32 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		n_unique_replisomes = len(fork_unique_index_list)
 
 		# Parse data such that one row of column corresponds to one unique
-		# replisome. The active mask boolean array is set to True if the
-		# corresponding replisome (column) is active at the given timestep
-		# (row).
+		# replisome. The status array is set to the appropriate flag values
+		# depending on the status of the corresponding replisome (column)
+		# at the given timestep (row).
 		fork_coordinates_parsed = np.zeros((n_timesteps, n_unique_replisomes))
-		fork_active_mask_parsed = np.zeros(
-			(n_timesteps, n_unique_replisomes), dtype=np.bool)
+		fork_status = np.zeros((n_timesteps, n_unique_replisomes), dtype=np.int64)
 		fork_domain_indexes_parsed = np.zeros(n_unique_replisomes, dtype=np.int64)
 
 		for mol_idx, unique_idx in enumerate(fork_unique_index_list):
 			time_index, col_index = np.where(fork_unique_indexes == unique_idx)
 			fork_coordinates_parsed[time_index, mol_idx] = fork_coordinates[time_index, col_index]
-			fork_active_mask_parsed[time_index, mol_idx] = True
+			fork_status[time_index, mol_idx] = ELONGATING
 
 			# Domain indexes are static - just take the first value
 			fork_domain_indexes_parsed[mol_idx] = fork_domain_indexes[
 				time_index[0], col_index[0]]
 
+		for i in range(fork_status.shape[1]):
+			elongating_timesteps = np.where(fork_status[:, i] == ELONGATING)[0]
+			fork_status[:elongating_timesteps[0], i] = NOT_INITIATED
+			fork_status[(elongating_timesteps[-1] + 1):, i] = HAS_TERMINATED
+
 		# Crop out full columns of NaNs and replace NaNs to zeros for RNAP data
 		rnap_isnan = np.isnan(rnap_coordinates)
 		n_nan_columns = (rnap_isnan.sum(axis=0) == n_timesteps).sum()
 
+		rnap_status = np.logical_not(rnap_isnan[:, :-n_nan_columns])
 		rnap_coordinates_cropped = np.nan_to_num(rnap_coordinates[:, :-n_nan_columns])
 		rnap_domain_indexes_cropped = np.nan_to_num(rnap_domain_indexes[:, :-n_nan_columns])
 		rnap_unique_indexes_cropped = np.nan_to_num(rnap_unique_indexes[:, :-n_nan_columns])
@@ -93,16 +102,18 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			"right_replichore_len": replichore_lengths[0],
 			"left_replichore_len": replichore_lengths[1],
 			"replisomes": {
-				"active": fork_active_mask_parsed.tolist(),
-				"counts": n_unique_replisomes,
 				"coordinates": fork_coordinates_parsed.tolist(),
-				"domain_indexes": fork_domain_indexes_parsed.tolist()
+				"domain_indexes": fork_domain_indexes_parsed.tolist(),
+				"flag_not_initiated": NOT_INITIATED,
+				"flag_elongating": ELONGATING,
+				"flag_has_terminated": HAS_TERMINATED,
+				"status": fork_status.tolist(),
 				},
 			"active_RNAPs": {
-				"active": np.logical_not(rnap_isnan).tolist(),
 				"coordinates": rnap_coordinates_cropped.tolist(),
 				"domain_indexes": rnap_domain_indexes_cropped.tolist(),
-				"unique_indexes": rnap_unique_indexes_cropped.tolist()
+				"status": rnap_status.tolist(),
+				"unique_indexes": rnap_unique_indexes_cropped.tolist(),
 				}
 			}
 
