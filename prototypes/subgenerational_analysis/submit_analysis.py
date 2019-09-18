@@ -43,7 +43,7 @@ def analysis_step(seed, num_gens):
 		'vars': {
 			'seed': seed_key},
 		'outputs': {
-			'output': 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/out/{}'.format(seed_key)},
+			'output': 'sisyphus:data/mialydefelice/20190812.122845__Test_32gen_100seeds_basal/out/{}/complex'.format(seed_key)},
 		'inputs': inputs}
 	return step
 
@@ -51,5 +51,5 @@ if __name__ == '__main__':
 	num_gens = int(sys.argv[1])
 	commands =  [analysis_command(num_gens)]
 	steps = [analysis_step(seed, num_gens) for seed in SEEDS]
-	json.dump(commands, open('out/analysis-commands.json', 'w'), sort_keys=True, indent=4, separators=(',', ': '))
-	json.dump(steps, open('out/analysis-steps.json', 'w'), sort_keys=True, indent=4, separators=(',', ': '))
+	json.dump(commands, open('out/complex-commands.json', 'w'), sort_keys=True, indent=4, separators=(',', ': '))
+	json.dump(steps, open('out/complex-steps.json', 'w'), sort_keys=True, indent=4, separators=(',', ': '))

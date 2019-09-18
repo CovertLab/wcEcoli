@@ -43,7 +43,7 @@ def make_output_dirs(seed):
 	"""
 	Make output directory, by assuming the cwd is the base wcEcoli folder.
 	"""
-	output_dir = os.path.join('out', 'counts', 'wildtype_000000', 'count_out', seed)
+	output_dir = os.path.join('out', 'counts', 'wildtype_000000', 'count_out', seed, 'complex')
 	print(output_dir)
 	if not os.path.exists(output_dir):
 		os.makedirs(output_dir)
@@ -113,7 +113,7 @@ def extract_rna_protein_counts(bulkMolecules, complex_indices):
 #@profile
 def save_counts_per_gen(i, complex_counts, output_dir):
 	file_name_per_gen_complex = format(i, '02') + '_gen_data_complex.tsv'
-	with open(os.path.join(output_dir, 'complex', file_name_per_gen_complex), 'wb') as fp:
+	with open(os.path.join(output_dir, file_name_per_gen_complex), 'wb') as fp:
 		np.savetxt(fp, complex_counts, '%s','\t')
 	return
 
