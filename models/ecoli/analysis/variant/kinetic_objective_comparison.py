@@ -241,14 +241,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			measure_pos = 2  	# position of measurements
 			ax.violinplot(data, violin_pos, widths=1.0, showmeans=True, showextrema=True, showmedians=False)
 			ax.scatter(np.full_like(adjusted_measurements, measure_pos), adjusted_measurements, marker='*', color='Black')
-			ax.scatter(np.full_like(new_adjusted_measurements, measure_pos+0.05), new_adjusted_measurements, marker='*', color='Red')
+			ax.scatter(np.full_like(new_adjusted_measurements, measure_pos), new_adjusted_measurements, marker='*', color='Red')
 
 			# format
 			rxn_id_length = 25
 			text_reaction_id = ('reaction: %s' % reaction_id[:rxn_id_length])
-			labels = ['old', 'measured', 'new']
+			labels = ['Model Predicted\n(Old Constraints)', 'Measured', 'Model Predicted\n(New Constraints)']
 			ax.set_title(text_reaction_id, fontsize=12)
-			ax.set_ylabel('$k_{cat}$', fontsize=12)
+			ax.set_ylabel('$k_{cat}$ (1/s)', fontsize=12)
 			set_ticks(ax, labels)
 			ax.set_yscale('log')
 
