@@ -67,17 +67,17 @@ python models/ecoli/analysis/variant/kinetic_objective_comparison.py \
 # panel J
 python models/ecoli/analysis/single/massFractionSummary.py \
 /scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
---variant 167 --seed 0 --gen 0
+--variant 47 --seed 0 --gen 0
 
 # panel K
 python models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py \
 /scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
---variant 167
+--variant 47
 
 # panel L
 python models/ecoli/analysis/cohort/kinetics_flux_comparison.py \
 /scratch/groups/mcovert/wc_ecoli/paper/SET_I/20190910.155355__SET_I_kinetic_constraint_factorial_design/ \
---variant 167
+--variant 47
 
 
 ## Figure 4
