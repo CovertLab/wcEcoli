@@ -11,6 +11,7 @@ import cPickle
 import os
 
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 import numpy as np
 from scipy.stats import pearsonr
 
@@ -156,10 +157,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			selected_indicies[v] = np.all([c not in constrainedReactions for c in HIGHLIGHTED_CONSTRAINTS])
 
 		# Plot scatterplot
-		plt.figure(figsize=(5, 10))
+		fig = plt.figure(figsize=(5, 5))
+		gs = gridspec.GridSpec(20, 20)
 
 		## Plot full data
-		plt.subplot(2, 1, 1)
 		plt.scatter(glc_uptakes[~selected_indicies], log_ratio_succ[~selected_indicies],
 			color='blue', alpha=0.6, s=size_pearson[~selected_indicies])
 		plt.scatter(glc_uptakes[selected_indicies], log_ratio_succ[selected_indicies],
@@ -175,23 +176,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.xlabel('glucose uptake (mmol / g DCW / hr)')
 		plt.xlim([np.floor(min(x_min, 10)), np.ceil(x_max)])
 		plt.ylim([-y_max, y_max])
-		plt.title('Full Dataset', fontsize=10)
 
 		## Plot highlighted region data
-		plt.subplot(2, 1, 2)
+		fig.add_subplot(gs[1:9, -9:-1])
 		in_region = (glc_uptakes < GLC_MAX) & (np.abs(log_ratio_succ) < SUCC_DISTANCE)
 		selected_in = in_region & selected_indicies
 		not_selected_in = in_region & ~selected_indicies
 		constraint_labels = np.array([
-			[c[:4] for c in constraints] if constraints is not None else []
+			[c[:2] for c in constraints] if constraints is not None else []
 			for _, constraints in map(get_disabled_constraints, variants)
 			])
 		plt.scatter(glc_uptakes[not_selected_in], log_ratio_succ[not_selected_in],
-			color='blue', alpha=0.6, s=5*size_pearson[not_selected_in])
+			color='blue', alpha=0.6, s=size_pearson[not_selected_in])
 		plt.scatter(glc_uptakes[selected_in], log_ratio_succ[selected_in],
-			color='red', alpha=0.6, s=5*size_pearson[selected_in])
+			color='red', alpha=0.6, s=size_pearson[selected_in])
 		for x, y, label in zip(glc_uptakes[in_region], log_ratio_succ[in_region], constraint_labels[in_region]):
-			plt.text(x, y, label, ha='center', va='top')
+			plt.text(x, y, ', '.join(label), ha='center', va='top', fontsize=6)
 		x_min, _ = plt.xlim()
 		y_min, _ = plt.ylim()
 		x_min = np.floor(min(x_min, 10))
@@ -202,9 +202,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		## Format axes
 		plt.xlim([x_min, GLC_MAX])
 		plt.ylim([y_min, SUCC_DISTANCE])
-		plt.ylabel('log2(model flux / Toya flux)')
-		plt.xlabel('glucose uptake (mmol / g DCW / hr)')
-		plt.title('Highlighted region only', fontsize=10)
 
 		## Save figure
 		plt.tight_layout()
