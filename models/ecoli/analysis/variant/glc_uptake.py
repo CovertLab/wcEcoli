@@ -1,23 +1,24 @@
 """
-Template for variant analysis plots
+Glucose mass yield distributions.
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 8/2/18
+@date: Created 9/19/19
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import cPickle
+import os
+
 from matplotlib import pyplot as plt
 import numpy as np
-import os
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, units
+from wholecell.utils.sparkline import whitePadSparklineAxis
 
 
 GLUCOSE_ID = 'GLC[p]'
@@ -42,10 +43,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sim_data = cPickle.load(f)
 
 		all_yields = []
-		time_series = {}
 		for variant in variants:
 			yields = []
-			trace = {}
 
 			for sim_dir in ap.get_cells(variant=[variant]):
 				sim_out_dir = os.path.join(sim_dir, 'simOut')
@@ -56,7 +55,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				mass_reader = TableReader(os.path.join(sim_out_dir, 'Mass'))
 
 				# Load data
-				time = main_reader.readColumn('time') - main_reader.readAttribute('initialTime')
 				time_step_sec = main_reader.readColumn('timeStepSec')
 
 				external_fluxes = fba_reader.readColumn('externalExchangeFluxes')
@@ -65,31 +63,30 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				dry_mass = MASS_UNITS * mass_reader.readColumn('dryMass')
 				growth = GROWTH_UNITS * mass_reader.readColumn('growth') / time_step_sec
 
+				# Calculate growth yield on glucose
 				glc_idx = external_molecules.index(GLUCOSE_ID)
 				glc_flux = FLUX_UNITS * external_fluxes[:, glc_idx]
 				glc_mw = sim_data.getter.getMass([GLUCOSE_ID])[0]
 				glc_mass_flux = glc_flux * glc_mw * dry_mass
 				glc_mass_yield = growth / -glc_mass_flux
 
-				yields += [np.nanmean(glc_mass_yield.asNumber())]
-				trace['time'] = time
-				trace['yield'] = glc_mass_yield.asNumber()
+				yields += list(glc_mass_yield[1:].asNumber())
 
 			all_yields += [yields]
-			time_series[variant] = trace
 
-		all_yields = np.vstack(all_yields).T
-		means = all_yields.mean(axis=0)
-		std = all_yields.std(axis=0)
-		n_cells = all_yields.shape[0]
+		# Calculate averages for each variant
+		mean = np.array([np.mean(y) for y in all_yields])
+		std = np.array([np.std(y) for y in all_yields])
 
 		plt.figure()
 
-		plt.errorbar(range(n_variants), means, yerr=std, fmt='o')
-		# plt.plot(range(n_cells), all_yields, 'x')
+		# Plot data
+		plt.errorbar(range(n_variants), mean, yerr=std, fmt='o', ecolor='k')
 
-		# for v, data in time_series.items():
-		# 	plt.plot(data['time'], data['yield'])
+		# Format axes
+		plt.ylim([0, np.ceil(plt.ylim()[1] * 10) / 10])
+		whitePadSparklineAxis(plt.gca(), xAxis=False, limits=False)
+		plt.ylabel('Average Glc Yield')
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
