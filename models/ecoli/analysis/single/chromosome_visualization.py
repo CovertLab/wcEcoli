@@ -24,6 +24,9 @@ NOT_INITIATED = 0
 ELONGATING = 1
 HAS_TERMINATED = 2
 
+# Flag to indicate RNAP is terminated at this timestep
+LAST_TIMESTEP = -1
+
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		if not os.path.isdir(simOutDir):
@@ -91,9 +94,28 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		n_nan_columns = (rnap_isnan.sum(axis=0) == n_timesteps).sum()
 
 		rnap_status = np.logical_not(rnap_isnan[:, :-n_nan_columns])
-		rnap_coordinates_cropped = np.nan_to_num(rnap_coordinates[:, :-n_nan_columns])
-		rnap_domain_indexes_cropped = np.nan_to_num(rnap_domain_indexes[:, :-n_nan_columns])
-		rnap_unique_indexes_cropped = np.nan_to_num(rnap_unique_indexes[:, :-n_nan_columns])
+		rnap_coordinates = np.nan_to_num(rnap_coordinates[:, :-n_nan_columns])
+		rnap_domain_indexes = np.nan_to_num(rnap_domain_indexes[:, :-n_nan_columns])
+		rnap_unique_indexes = np.nan_to_num(rnap_unique_indexes[:, :-n_nan_columns])
+
+		# Build array for quick indexing into the identical RNAP molecule that
+		# shares the same unique ID in the next timestep.
+		# Index is set to -1 if the RNAP does not exist at that timestep, or
+		# is removed from the simulation at the next timestep.
+		rnap_next_indexes = np.empty_like(rnap_coordinates, dtype=np.int64)
+		rnap_next_indexes.fill(LAST_TIMESTEP)
+
+		for i in range(rnap_next_indexes.shape[0] - 1):
+			for j in range(rnap_next_indexes.shape[1]):
+				if not rnap_status[i, j]:
+					continue  # RNAP does not exist in this timestep
+				next_index = np.where(
+					rnap_unique_indexes[i, j] == rnap_unique_indexes[i + 1, :]
+					)[0]
+				if len(next_index) == 0:
+					continue  # RNAP is removed at next timestep
+				else:
+					rnap_next_indexes[i, j] = next_index[0]
 
 		# Build dictionary of chromosome data
 		chromosome_data = {
@@ -110,10 +132,11 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				"status": fork_status.tolist(),
 				},
 			"active_RNAPs": {
-				"coordinates": rnap_coordinates_cropped.tolist(),
-				"domain_indexes": rnap_domain_indexes_cropped.tolist(),
+				"coordinates": rnap_coordinates.tolist(),
+				"domain_indexes": rnap_domain_indexes.tolist(),
+				"flag_last_timestep": LAST_TIMESTEP,
+				"next_indexes": rnap_next_indexes.tolist(),
 				"status": rnap_status.tolist(),
-				"unique_indexes": rnap_unique_indexes_cropped.tolist(),
 				}
 			}
 
