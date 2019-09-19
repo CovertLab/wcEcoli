@@ -16,7 +16,7 @@ JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
 
 FLAT_DIR = os.path.join('reconstruction', 'ecoli', 'flat')
 RNA_FILE = os.path.join(FLAT_DIR, 'rnas.tsv')
-TU_FILE = os.path.join(FLAT_DIR, 'operon_rnas_3.tsv')
+TU_FILE = os.path.join(FLAT_DIR, 'operon_rnas.tsv')
 RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv')
 CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
@@ -86,7 +86,6 @@ def create_gene_to_tu_matrix(rna_info, tu_info):
 			gene_index = reverse_index[gene]
 			gene_to_tu_matrix[gene_index, index] = 1
 
-	#import ipdb; ipdb.set_trace()
 	return gene_to_tu_matrix, rnas_gene_order
 
 def create_rnaseq_count_vector(rnas_gene_order):
@@ -112,21 +111,21 @@ def create_rnaseq_count_vector(rnas_gene_order):
 def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 	tu_counts_vector = np.linalg.lstsq(gene_tu_matrix, rna_seq_counts_vector)[0]
 	tu_ids = []
+
 	counter = 0
 	for count in rna_seq_counts_vector:
-		if tu_counts_vector[counter] == 0.:
-			tu_counts_vector[counter] = count
+		if tu_counts_vector[counter] > 0.:
 			counter += 1
-		else:
-			tu_counts_vector[counter + 1] = count
-			counter += 2
+
+		tu_counts_vector[counter] = count
+		counter += 1
 
 	tu_gene_order = [row['geneId'] for row in tu_info]
 	tu_genes_counts = []
+
 	for i in range(0, len(tu_gene_order)):
 		tu_genes_counts.append({'tu_id': tu_gene_order[i], 'tu_count': tu_counts_vector[i]})
 
-	tu_genes_counts
 	return tu_genes_counts
 
 
@@ -137,11 +136,15 @@ def calculate_tu_counts_vector():
 	rna_seq_counts_vector = create_rnaseq_count_vector(rnas_gene_order)
 	tu_counts = create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info)
 	fieldnames = ['tu_id', 'tu_count']
+
+	import ipdb; ipdb.set_trace()
+
 	with open(output_file, "w") as f:
 		writer = JsonWriter(f, fieldnames)
 		writer.writeheader()
 		for tu_count in tu_counts:
 			writer.writerow(tu_count)
+
 	#return tu_counts
 
 

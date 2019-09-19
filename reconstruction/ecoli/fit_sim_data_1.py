@@ -1549,10 +1549,13 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	mRnaExpressionView = rnaExpressionContainer.countsView(sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]])
 	mRnaExpressionFrac = np.sum(mRnaExpressionView.counts())
 
-	mRnaDistribution = mRNADistributionFromProtein(
+	transcriptDistribution = mRNADistributionFromProtein(
 		normalize(counts_protein),
 		translation_efficienciesByProtein,
 		netLossRate_protein)
+
+	# Translate the transcript distribution into the mrna distribution
+	mRnaDistribution = transcriptDistribution
 
 	mRnaExpressionView.countsIs(
 		mRnaExpressionFrac * mRnaDistribution[sim_data.relation.monomerIndexToRnaMapping])
