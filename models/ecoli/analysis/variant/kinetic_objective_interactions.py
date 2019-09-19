@@ -156,7 +156,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			selected_indicies[v] = np.all([c not in constrainedReactions for c in HIGHLIGHTED_CONSTRAINTS])
 
 		# Plot scatterplot
-		plt.figure(figsize=(10, 20))
+		plt.figure(figsize=(5, 10))
 
 		## Plot full data
 		plt.subplot(2, 1, 1)
@@ -187,11 +187,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			for _, constraints in map(get_disabled_constraints, variants)
 			])
 		plt.scatter(glc_uptakes[not_selected_in], log_ratio_succ[not_selected_in],
-			color='blue', alpha=0.6, s=size_pearson[not_selected_in])
+			color='blue', alpha=0.6, s=5*size_pearson[not_selected_in])
 		plt.scatter(glc_uptakes[selected_in], log_ratio_succ[selected_in],
-			color='red', alpha=0.6, s=size_pearson[selected_in])
+			color='red', alpha=0.6, s=5*size_pearson[selected_in])
 		for x, y, label in zip(glc_uptakes[in_region], log_ratio_succ[in_region], constraint_labels[in_region]):
-			plt.text(x, y, label, ha='center')
+			plt.text(x, y, label, ha='center', va='top')
 		x_min, _ = plt.xlim()
 		y_min, _ = plt.ylim()
 		x_min = np.floor(min(x_min, 10))
