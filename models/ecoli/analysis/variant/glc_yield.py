@@ -15,6 +15,7 @@ import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from models.ecoli.sim.variants.kinetic_constraints_factorial_experiments import get_disabled_constraints
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, units
@@ -25,7 +26,14 @@ GLUCOSE_ID = 'GLC[p]'
 FLUX_UNITS = units.mmol / units.g / units.h
 MASS_UNITS = units.fg
 GROWTH_UNITS = units.fg / units.s
-
+ADDITIONAL_DISABLED_CONSTRAINTS = {
+	'SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN-SUC/UBIQUINONE-8//FUM/CPD-9956.31.',
+	'NADH-DEHYDROG-A-RXN-NADH/UBIQUINONE-8/PROTON//NAD/CPD-9956/PROTON.46. (reverse)',
+	'INORGPYROPHOSPHAT-RXN[CCO-CYTOSOL]-PPI/WATER//Pi/PROTON.34.',
+	'GLUTATHIONE-REDUCT-NADPH-RXN',
+	}
+VARIANT_LABELS = ['Succ/Fum\nDisabled', 'Succ/Fum\nEnabled', 'New Constraints']
+N_VARIANTS = len(VARIANT_LABELS)
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -35,9 +43,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		filepath.makedirs(plotOutDir)
 
 		ap = AnalysisPaths(inputDir, variant_plot=True)
-		variants = ap.get_variants()
-		# TODO: select variants of interest
-		n_variants = len(variants)
+		all_variants = ap.get_variants()
+		variants = -np.ones(N_VARIANTS)
+		for v, variant in enumerate(all_variants):
+			disable_constraints, additional_disabled = get_disabled_constraints(variant)
+			if additional_disabled is None:
+				variants[0] = variant
+			elif len(additional_disabled) == 0:
+				variants[1] = variant
+			elif ADDITIONAL_DISABLED_CONSTRAINTS == set(additional_disabled):
+				variants[2] = variant
+
+		if np.any(variants < 0):
+			print('Not enough variants to analyze')
+			return
 
 		with open(os.path.join(inputDir, 'kb', constants.SERIALIZED_FIT1_FILENAME), 'rb') as f:
 			sim_data = cPickle.load(f)
@@ -78,18 +97,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		mean = np.array([np.mean(y) for y in all_yields])
 		std = np.array([np.std(y) for y in all_yields])
 
-		plt.figure()
+		plt.figure(figsize=(4, 4))
 
 		# Plot data
-		plt.errorbar(range(n_variants), mean, yerr=std, fmt='o', ecolor='k')
+		plt.errorbar(range(N_VARIANTS), mean, yerr=std, fmt='o', ecolor='k')
 
 		# Format axes
 		plt.ylim([0, np.ceil(plt.ylim()[1] * 10) / 10])
-		whitePadSparklineAxis(plt.gca(), xAxis=False, limits=False)
-		plt.ylabel('Average Glc Yield')
+		whitePadSparklineAxis(plt.gca())
+		plt.xticks(range(N_VARIANTS), VARIANT_LABELS)
+		plt.ylabel('Average Glucose Yield\n(g cell / g glucose)')
 
+		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-
 		plt.close('all')
 
 

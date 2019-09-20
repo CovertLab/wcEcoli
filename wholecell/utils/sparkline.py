@@ -6,21 +6,19 @@ Utility functions for generating sparkline plots
 
 import numpy as np
 
-def whitePadSparklineAxis(axis, xAxis=True, limits=True):
+def whitePadSparklineAxis(axis, xAxis = True):
 	axis.spines["right"].set_visible(False)
 	axis.spines["top"].set_visible(False)
 	axis.spines["left"].set_position(("outward", 10))
 	axis.spines["bottom"].set_position(("outward", 10))
-	axis.tick_params(which="both", direction="out", right=False, top=False)
-
-	if limits:
-		axis.set_yticks(axis.get_ylim())
-		axis.set_xticks(axis.get_xlim())
+	axis.set_yticks(axis.get_ylim())
+	axis.set_xticks(axis.get_xlim())
+	axis.tick_params(which = "both", direction = "out", right = False, top = False)
 
 	if not xAxis:
 		axis.spines["bottom"].set_visible(False)
-		axis.tick_params(bottom=False)
-		axis.tick_params(axis="x", labelbottom=False)
+		axis.tick_params(bottom = False)
+		axis.tick_params(axis = "x", labelbottom=False)
 
 def simpleSparklineAxis(axis):
 	axis.spines['top'].set_visible(False)
