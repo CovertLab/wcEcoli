@@ -15,7 +15,7 @@ import numpy as np
 
 import wholecell.listeners.listener
 
-MAX_ACTIVE_REPLISOMES = 75
+MAX_ACTIVE_REPLISOMES = 32
 
 class ReplicationData(wholecell.listeners.listener.Listener):
 	""" ReplicationData """
