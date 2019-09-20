@@ -137,8 +137,6 @@ def calculate_tu_counts_vector():
 	tu_counts = create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info)
 	fieldnames = ['tu_id', 'tu_count']
 
-	import ipdb; ipdb.set_trace()
-
 	with open(output_file, "w") as f:
 		writer = JsonWriter(f, fieldnames)
 		writer.writeheader()
