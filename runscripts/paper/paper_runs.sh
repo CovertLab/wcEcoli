@@ -234,6 +234,22 @@ DISABLE_RIBOSOME_CAPACITY_FITTING=1 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fw_queue.py
 
+## Set M - larger sims to compare kinetic constraints
+# Used for Figure 3
+DESC="SET M1 old kinetic constraints" \
+VARIANT="kinetic_constraints_factorial_experiments" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=8 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=0 D_PERIOD_DIVISION=0 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fw_queue.py
+
+DESC="SET M2 new kinetic constraints" \
+VARIANT="kinetic_constraints_factorial_experiments" FIRST_VARIANT_INDEX=47 LAST_VARIANT_INDEX=47 \
+SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=8 \
+MASS_DISTRIBUTION=1 GROWTH_RATE_NOISE=0 D_PERIOD_DIVISION=0 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fw_queue.py
+
 ## Launch the fireworks created with fw_queue.py
 # Uncomment one method - rlaunch is interactive, qlaunch is distributed
 # rlaunch rapidfire
