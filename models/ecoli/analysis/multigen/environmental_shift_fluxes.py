@@ -232,13 +232,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			]
 
 		fullReactants = [
-			"2-KETOGLUTARATE[c]",
+			"SUC[c]",
 			"L-DELTA1-PYRROLINE_5-CARBOXYLATE[c]",
 			"DADP[c]",
 		]
 
 		fullProducts = [
-			"SUC-COA[c]",
+			"FUM[c]",
 			"PRO[c]",
 			"DATP[c]",
 		]
