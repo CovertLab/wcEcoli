@@ -34,7 +34,10 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		import ipdb; ipdb.set_trace()
 
 		# Load parameters
-		mrnaIds = sim_data.process.translation.monomerData["rnaId"]
+		# mrnaIds = sim_data.process.translation.monomerData["rnaId"]
+		mrnaIds = sim_data.relation.mrna_data['id']
+		self.mrnaToMonomerTransform = sim_data.relation.mrnaToMonomerTransform
+
 		self.proteinLengths = sim_data.process.translation.monomerData["length"].asNumber()
 		self.translationEfficiencies = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 		self.fracActiveRibosomeDict = sim_data.process.translation.ribosomeFractionActiveDict
@@ -91,10 +94,16 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Calculate initiation probabilities for ribosomes based on mRNA counts and associated
 		# mRNA translational efficiencies
-		proteinInitProb = normalize(
-			self.mRnas.counts() * self.translationEfficiencies
-			)
 
+		# TODO(Ryan): Is the relative ordering of these indexes correct?
+		# TODO(Ryan): Is it justified to leap directly to proteins here, or does this whole process
+		#     need to be rewritten to consider transcripts directly until the point the proteins
+		#     are complete? 
+		monomer_counts = np.matmul(self.mRnas.counts(), self.mrnaToMonomerTransform)
+		proteinInitProb = normalize(monomer_counts * self.translationEfficiencies)
+
+		# proteinInitProb = normalize(
+		# 	self.mRnas.counts() * self.translationEfficiencies)
 
 		# Calculate actual number of ribosomes that should be activated based on probabilities
 		self.activationProb = self._calculateActivationProb(
@@ -130,6 +139,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			startIndex += counts
 
 		# Create active 70S ribosomes and assign their protein indexes calculated above
+		# TODO(Ryan): replace `proteinIndex` with `transcriptIndex`, as `proteinIndex` is a lie.
 		self.activeRibosomes.moleculesNew(
 			ribosomeToActivate,
 			proteinIndex = proteinIndexes

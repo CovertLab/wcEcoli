@@ -19,6 +19,9 @@ class Relation(object):
 	""" Relation """
 
 	def __init__(self, raw_data, sim_data):
+		self.mrna_data = sim_data.process.transcription.rnaData[
+			np.where(sim_data.process.transcription.rnaData['isMRna'])[0]]
+
 		self._buildRnaIndexToMonomerMapping(raw_data, sim_data)
 		self._buildMonomerIndexToRnaMapping(raw_data, sim_data)
 		#self._buildRnaIndexToGeneMapping(raw_data, sim_data)
@@ -64,7 +67,7 @@ class Relation(object):
 
 		mrna = sim_data.process.transcription.rnaData[
 			np.where(sim_data.process.transcription.rnaData['isMRna'])[0]]
-		tu_count = len(mrna)
+		tu_count = len(self.mrna_data)
 		monomer_count = len(sim_data.process.translation.monomerData)
 
 		# This matrix is a transform from monomer space to mrna space.
@@ -77,7 +80,7 @@ class Relation(object):
 		for idx, row in enumerate(sim_data.process.translation.monomerData):
 			monomer_id_indexes[row['id']] = idx
 
-		for mrna_index, mrna_data in enumerate(mrna):
+		for mrna_index, mrna_data in enumerate(self.mrna_data):
 			monomer_set = mrna_data['monomerSet']
 
 			# TODO(Ryan): this number should be based on data
@@ -87,6 +90,8 @@ class Relation(object):
 				monomer_index = monomer_id_indexes[monomer_id]
 				self.monomerToMrnaTransform[monomer_index][mrna_index] = value
 
+		self.mrnaToMonomerTransform = self.monomerToMrnaTransform.T
+
 		# this mapping is a vector like the old one
 		self.monomerIndexToRnaMapping_all = []
 		for rna_row in sim_data.process.transcription.rnaData:
@@ -94,6 +99,7 @@ class Relation(object):
 			for monomer_id in rna_row['monomerSet']:
 				set_indices.append(monomer_id_indexes[monomer_id])
 			self.monomerIndexToRnaMapping_all.append(set_indices)
+
 		#remove all empty lists.
 		self.monomerIndexToRnaMapping_new = [x for x in self.monomerIndexToRnaMapping_all if x != []]
 		self.monomerIndexToRnaMapping_new = np.array(self.monomerIndexToRnaMapping_new)

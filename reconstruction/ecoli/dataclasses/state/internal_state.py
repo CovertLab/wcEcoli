@@ -143,6 +143,7 @@ class InternalState(object):
 			self.bulkMolecules.bulkData["id"] == sim_data.moleculeIds.s50_fullComplex]
 		ribosomeMass = ribosome30SMass + ribosome50SMass
 		ribosomeAttributes = {
+			"mrnaIndex": "i8",
 			"proteinIndex": "i8",
 			"peptideLength": "i8",
 			}

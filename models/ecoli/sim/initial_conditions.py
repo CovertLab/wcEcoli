@@ -681,6 +681,7 @@ def initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	nNewProteins = randomState.multinomial(ribosomeToActivate, probNormalized)
 
 	# protein Indices
+	# TODO(Ryan): replace these protein indexes with transcript indexes
 	proteinIndices = np.empty(ribosomeToActivate, np.int64)
 	startIndex = 0
 	nonzeroCount = (nNewProteins > 0)
