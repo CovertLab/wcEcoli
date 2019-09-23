@@ -61,15 +61,38 @@ class Relation(object):
 		Output:
 
 		'''
-		monomerData_id_index = {}
-		for idx, row in enumerate(sim_data.process.translation.monomerData):
-			monomerData_id_index[row['id']] = idx
 
+		mrna = sim_data.process.transcription.rnaData[
+			np.where(sim_data.process.transcription.rnaData['isMRna'])[0]]
+		tu_count = len(mrna)
+		monomer_count = len(sim_data.process.translation.monomerData)
+
+		# This matrix is a transform from monomer space to mrna space.
+		# It can be applied by writing:
+		#     np.matmul(monomer_vector, self.monomerToRnaTransform)
+		# which returns a vector of len(mrna)
+		self.monomerToMrnaTransform = np.zeros((monomer_count, tu_count))
+
+		monomer_id_indexes = {}
+		for idx, row in enumerate(sim_data.process.translation.monomerData):
+			monomer_id_indexes[row['id']] = idx
+
+		for mrna_index, mrna_data in enumerate(mrna):
+			monomer_set = mrna_data['monomerSet']
+
+			# TODO(Ryan): this number should be based on data
+			value = 1.0 / len(monomer_set)
+
+			for monomer_id in monomer_set:
+				monomer_index = monomer_id_indexes[monomer_id]
+				self.monomerToMrnaTransform[monomer_index][mrna_index] = value
+
+		# this mapping is a vector like the old one
 		self.monomerIndexToRnaMapping_all = []
 		for rna_row in sim_data.process.transcription.rnaData:
 			set_indices = []
 			for monomer_id in rna_row['monomerSet']:
-				set_indices.append(monomerData_id_index[monomer_id])
+				set_indices.append(monomer_id_indexes[monomer_id])
 			self.monomerIndexToRnaMapping_all.append(set_indices)
 		#remove all empty lists.
 		self.monomerIndexToRnaMapping_new = [x for x in self.monomerIndexToRnaMapping_all if x != []]

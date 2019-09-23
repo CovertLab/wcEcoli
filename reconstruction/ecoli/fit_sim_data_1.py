@@ -1539,12 +1539,10 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		normalize(view_RNA.counts())
 		)
 
-	import ipdb; ipdb.set_trace()
-
-	# Update mRNA expression to reflect monomer counts
-	assert np.all(
-		sim_data.process.translation.monomerData["rnaId"][sim_data.relation.monomerIndexToRnaMapping] == sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]]
-		), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests
+	# # Update mRNA expression to reflect monomer counts
+	# assert np.all(
+	# 	sim_data.process.translation.monomerData["rnaId"][sim_data.relation.monomerIndexToRnaMapping] == sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]]
+	# 	), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests
 
 	mRnaExpressionView = rnaExpressionContainer.countsView(sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]])
 	mRnaExpressionFrac = np.sum(mRnaExpressionView.counts())
@@ -1555,10 +1553,12 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		netLossRate_protein)
 
 	# Translate the transcript distribution into the mrna distribution
-	mRnaDistribution = transcriptDistribution
+	mRnaDistribution = np.matmul(
+		transcriptDistribution,
+		sim_data.relation.monomerToMrnaTransform)
 
 	mRnaExpressionView.countsIs(
-		mRnaExpressionFrac * mRnaDistribution[sim_data.relation.monomerIndexToRnaMapping])
+		mRnaExpressionFrac * mRnaDistribution)
 
 	expression = rnaExpressionContainer.counts()
 
