@@ -12,6 +12,7 @@ import os
 
 from matplotlib import pyplot as plt
 import numpy as np
+from scipy import stats
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
@@ -93,20 +94,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			all_yields += [yields]
 
-		# Calculate averages for each variant
-		mean = np.array([np.mean(y) for y in all_yields])
-		std = np.array([np.std(y) for y in all_yields])
+		for i, v1 in enumerate(variants):
+			for j, v2 in enumerate(variants[i+1:]):
+				t, p = stats.ttest_ind(all_yields[i], all_yields[i+j+1], equal_var=False)
+				print('p={:.2e} for variant {} vs variant {}'.format(p, v1, v2))
 
 		plt.figure(figsize=(4, 4))
+		xticks = range(N_VARIANTS)
 
 		# Plot data
-		plt.errorbar(range(N_VARIANTS), mean, yerr=std, fmt='o', ecolor='k')
+		plt.violinplot(all_yields, xticks)
 
 		# Format axes
-		plt.ylim([0, np.ceil(plt.ylim()[1] * 10) / 10])
-		whitePadSparklineAxis(plt.gca())
-		plt.xticks(range(N_VARIANTS), VARIANT_LABELS)
-		plt.ylabel('Average Glucose Yield\n(g cell / g glucose)')
+		ax = plt.gca()
+		ax.spines['top'].set_visible(False)
+		ax.spines['right'].set_visible(False)
+		plt.xticks(xticks, VARIANT_LABELS)
+		plt.ylabel('Glucose Yield\n(g cell / g glucose)')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
