@@ -142,6 +142,8 @@ class InternalState(object):
 		ribosome50SMass = self.bulkMolecules.bulkData["mass"][
 			self.bulkMolecules.bulkData["id"] == sim_data.moleculeIds.s50_fullComplex]
 		ribosomeMass = ribosome30SMass + ribosome50SMass
+
+		# expand state to include transcription unit structure
 		ribosomeAttributes = {
 			"mrnaIndex": "i8",
 			"proteinIndex": "i8",

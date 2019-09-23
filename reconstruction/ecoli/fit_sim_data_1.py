@@ -784,6 +784,8 @@ def setRnaPolymeraseCodingRnaDegradationRates(sim_data):
 
 	rnaPolySubunits = sim_data.process.complexation.getMonomers("APORNAP-CPLX[c]")["subunitIds"] # APORNAP-CPLX[c] is the RNA polymerase complex
 	subunitIndexes = np.array([np.where(sim_data.process.translation.monomerData["id"] == id_)[0].item() for id_ in rnaPolySubunits]) # there has to be a better way...
+
+	# TODO(Ryan): check to see if this needs to be updated
 	mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[subunitIndexes]
 
 	# Modifies

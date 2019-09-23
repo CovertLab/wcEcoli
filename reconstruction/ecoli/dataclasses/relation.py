@@ -67,14 +67,14 @@ class Relation(object):
 
 		mrna = sim_data.process.transcription.rnaData[
 			np.where(sim_data.process.transcription.rnaData['isMRna'])[0]]
-		tu_count = len(self.mrna_data)
+		mrna_tu_count = len(self.mrna_data)
 		monomer_count = len(sim_data.process.translation.monomerData)
 
 		# This matrix is a transform from monomer space to mrna space.
 		# It can be applied by writing:
 		#     np.matmul(monomer_vector, self.monomerToRnaTransform)
 		# which returns a vector of len(mrna)
-		self.monomerToMrnaTransform = np.zeros((monomer_count, tu_count))
+		self.monomerToMrnaTransform = np.zeros((monomer_count, mrna_tu_count))
 
 		monomer_id_indexes = {}
 		for idx, row in enumerate(sim_data.process.translation.monomerData):
@@ -90,6 +90,7 @@ class Relation(object):
 				monomer_index = monomer_id_indexes[monomer_id]
 				self.monomerToMrnaTransform[monomer_index][mrna_index] = value
 
+		# TODO(Ryan): check to see if this is a legit way to find the inverse mapping?
 		self.mrnaToMonomerTransform = self.monomerToMrnaTransform.T
 
 		# this mapping is a vector like the old one
