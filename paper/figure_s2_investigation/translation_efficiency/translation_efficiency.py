@@ -1,6 +1,29 @@
 """
-Compare ribosome density: Mohammad vs Li
-Compare translation efficiency: Mohammad scaled by Li or this study
+This file compares the Mohammad 2019 ribosome density dataset with the Li 2014
+translation efficiency dataset which is used in this study (correlation plot
+reported in Figure S2).
+
+Optional: This file also prepares the Mohammad 2019 ribosome density dataset
+for use in the whole-cell framework. The output of this file ("translationEfficiency_alternate.tsv") can be relocated to
+reconstruction/ecoli/flat/translationEfficiency_alternate.tsv, and the
+alternate-translation-efficiency option can be set when running the fitter by
+either:
+
+python runscripts/manual/runFitter.py --alternate-translation-efficiency
+
+or
+
+DESC="Simulation description" \
+DISABLE_RIBOSOME_CAPACITY_FITTING=1 DISABLE_RNAPOLY_CAPACITY_FITTING=1 \
+ALTERNATE_TRANSLATION_EFFICIENCY=1 python runscripts/fw_queue.py
+
+Sources:
+Mohammad et al. "A systematically-revised ribosome profiling method for bacteria
+reveals pauses at single-codon resolution". 2019.
+https://github.com/greenlabjhmi/2018_Bacterial_Pipeline_riboseq
+
+Li et al. "Quantifying Absolute Protein Synthesis Rates Reveals Principles
+Underlying Allocation of Cellular Resources". 2014. Table S4.
 """
 
 import os
@@ -8,28 +31,23 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 def open_file(filename, delimiter):
 	with open(filename, "r") as f:
 		reader = csv.reader(f, delimiter=delimiter)
 		data = np.array([x for x in reader])
 	return data
 
-
 # Describe paths
-root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-mohammad_data_file = os.path.join(
-	root_dir, "paper", "investigation", "SRR7759814_pass.fastq.gz_genelist.csv")
-li_data_file = os.path.join(
-	root_dir, "paper", "investigation", "li_table_s4.tsv")
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+this_dir = os.path.dirname(os.path.abspath(__file__))
+mohammad_data_file = os.path.join(this_dir, "SRR7759814_pass.fastq.gz_genelist.csv")
+li_data_file = os.path.join(this_dir, "li_table_s4.tsv")
 wcm_data_file = os.path.join(
 	root_dir, "reconstruction", "ecoli", "flat", "rna_seq_data", "rnaseq_seal_rpkm_mean.tsv")
 wcm_genes_file = os.path.join(
 	root_dir, "reconstruction", "ecoli", "flat", "genes.tsv")
-ribosome_genes_file = os.path.join(
-	root_dir, "paper", "investigation", "ribosome_genes.tsv")
-output_plot = os.path.join(
-	root_dir, "paper", "investigation", "analyze_green.pdf")
+ribosome_genes_file = os.path.join(this_dir, "ribosome_genes.tsv")
+output_plot = os.path.join(this_dir, "compare_translation_efficiency.pdf")
 output_file = os.path.join(
 	root_dir, "reconstruction", "ecoli", "flat", "translationEfficiency_alternate.tsv")
 
@@ -103,29 +121,23 @@ def plot(ax, x_genes, x_data, y_genes, y_data):
 		y_value = y_data[y_genes.index(x_gene)]
 
 		color = "tab:orange" if x_gene in rnap_genes else "tab:green" if x_gene in ribosome_genes else "none"
-		ax.scatter(x_value, y_value, c=color, edgecolors="tab:blue" if color is "none" else color)
-	ax.plot([0, min(ax.get_xlim()[1], ax.get_ylim()[1])], [0, min(ax.get_xlim()[1], ax.get_ylim()[1])], "k")
+		if color == "none":
+			continue
+		ax.scatter(
+			np.log10(x_value),
+			np.log10(y_value), 
+			c=color, edgecolors="tab:blue" if color is "none" else color)
+	ax.plot(
+		[min(ax.get_xlim()[0], ax.get_ylim()[0]), max(ax.get_xlim()[1], ax.get_ylim()[1])],
+		[min(ax.get_xlim()[0], ax.get_ylim()[0]), max(ax.get_xlim()[1], ax.get_ylim()[1])], "k")
 	return
 
 
-fig, axes_list = plt.subplots(2, 2, figsize=(11, 8.5))
-axes_list = axes_list.reshape(-1)
+fig, ax = plt.subplots(1, 1, figsize=(12, 12))
 
-plot(axes_list[0], li_genes, li_ribosome_density, mohammad_genes.tolist(), mohammad_ribosome_density)
-axes_list[0].set_xlabel("Li ribosome density")
-axes_list[0].set_ylabel("Mohammad ribosome density")
-
-plot(axes_list[1], li_genes, li_translation_efficiency, derived_with_this_study_genes, derived_with_this_study_translation_efficiency)
-axes_list[1].set_xlabel("Li translation efficiency")
-axes_list[1].set_ylabel("Derived translation efficiency\n(Mohammad scaled by this study)")
-
-plot(axes_list[2], li_genes, li_mrna, wcm_genes, wcm_rna)
-axes_list[2].set_xlabel("Li RNA (RPKM)")
-axes_list[2].set_ylabel("This study RNA (RPKM)")
-
-plot(axes_list[3], li_genes, li_translation_efficiency, derived_with_li_genes, derived_with_li_translation_efficiency)
-axes_list[3].set_xlabel("Li translation efficiency")
-axes_list[3].set_ylabel("Derived translation efficiency\n(Mohammad scaled by Li)")
+plot(ax, li_genes, li_ribosome_density, mohammad_genes.tolist(), mohammad_ribosome_density)
+ax.set_xlabel("log10 Li ribosome density")
+ax.set_ylabel("log10 Mohammad ribosome density")
 
 plt.savefig(output_plot)
 plt.close("all")
@@ -139,7 +151,6 @@ for gene, value in zip(derived_with_li_genes, derived_with_li_translation_effici
 	egnumber = name_to_egnumber.get(gene)
 	if egnumber is None:
 		continue
-		# todo: look up synonyms
 
 	out.append('"{}"\t"{}"\t{}'.format(egnumber, gene, value))
 
