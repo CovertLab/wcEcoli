@@ -90,34 +90,42 @@ def fitSimData_1(
 			is not fit to protein synthesis demands
 		disable_rnapoly_capacity_fitting (bool) - if True, RNA polymerase
 			expression is not fit to protein synthesis demands
-		rnapoly_activity_fitting (bool) - if True, RNA polymerase
-			activity is fit to transcription demands.
 		adjust_rna_and_protein_parameters (bool) - if True, some RNA and protein
 			expression parameters will be adjusted to get expression
 		adjust_rnase_expression (bool) - if True, adjusts the expression of all
 			RNase mRNA lower
-		disable_measured_protein_deg (bool) - if True, does not use any measured
-			protein degradation rates and defaults to the N-end rule
+		alternate_mass_fraction_mrna (bool) - if True, allocates smaller mass
+			fraction for mrna.
 		alternate_mass_fraction_protein (bool) - if True, allocates larger
 			mass fraction for protein.
 		alternate_mass_fraction_rna (bool) - if True, allocates smaller mass
 			fraction for rna.
-		alternate_mass_fraction_mrna (bool) - if True, allocates smaller mass
-			fraction for mrna.
 		alternate_r_protein_degradation (bool) - if True, r-proteins are
 			degraded at fast rate.
-		alternate_rna_seq (bool) - if True, alternate RNA-seq input
-			(Covert 2004) will be used.
-		alternate_rna_half_life (bool) - if True, alternate rna half live input
-			will be used.
-		alternate_translation_efficiency (bool) if True, alternate translation
-			efficiency (Mohammad 2019) is used.
 		alternate_ribosome_activity (bool) - if True, ribosome activity is set
 			to 85%.
-		disable_rnap_fraction_increase (bool) - if True, disables doubling-time-
-			dependent RNA polymerase fraction increase.
+		alternate_rna_half_life (bool) - if True, alternate rna half live input
+			will be used.
+		alternate_rna_seq (bool) - if True, alternate RNA-seq input
+			(Covert 2004) will be used.
+		alternate_translation_efficiency (bool) if True, alternate translation
+			efficiency (Mohammad 2019) is used.
+		disable_measured_protein_deg (bool) - if True, does not use any measured
+			protein degradation rates and defaults to the N-end rule
 		disable_ribosome_activity_fix (bool) - if True, disables ribosome
 			activity fix.
+		disable_rnap_fraction_increase (bool) - if True, disables doubling-time-
+			dependent RNA polymerase fraction increase.
+		flat_elongation_transcription (bool) - if True, a single elongation rate
+		    is used for all transcripts.
+		flat_elongation_translation (bool) - if True, a single elongation rate
+		    is used for all polypeptides.
+		max_rnap_activity - if True,, RNA polymerase active fraction will be set
+		    to 100%.
+		mrna_half_life_fitting (bool) - if True, mRNA half lives will be fit to
+		    transcription demands.
+		rnapoly_activity_fitting (bool) - if True, RNA polymerase
+			activity is fit to transcription demands.
 		write_translation_efficiencies (bool) - if True, writes out translation
 			efficiencies to a file uniquely named by the options dict.
 	"""
@@ -207,6 +215,7 @@ def fitSimData_1(
 
 	sim_data.process.transcription.rnaSynthProbFraction = {}
 	sim_data.process.transcription.rnapFractionActiveDict = {}
+	sim_data.process.transcription.rnaDegRateDict = {}
 	sim_data.process.transcription.rnaSynthProbRProtein = {}
 	sim_data.process.transcription.rnaSynthProbRnaPolymerase = {}
 	sim_data.process.transcription.rnaPolymeraseElongationRateDict = {}
@@ -281,6 +290,16 @@ def fitSimData_1(
 
 			if nutrients not in sim_data.process.transcription.rnapFractionActiveDict:
 				sim_data.process.transcription.rnapFractionActiveDict[nutrients] = spec["rnapActivity"]
+
+			if nutrients not in sim_data.process.transcription.rnaDegRateDict:
+				sim_data.process.transcription.rnaDegRateDict[nutrients] = spec["rnaDegRate"]
+				# Note: The primary purpose of nutrient-dependent RNA degradation rates is to
+				# record fitting outcomes when options['mrna_half_life_fitting'] is set to True,
+				# which is currently a Parca-only investigation. To use these RNA degradation
+				# rates in the simulation, models/ecoli/processes/rna_degradation.py must be
+				# changed to utilize the degradation rates stored in this dict
+				# (sim_data.process.transcription.rnaDegRateDict).
+				# Exception: basal cell (see buildBasalCellSpecifications).
 
 			if nutrients not in sim_data.process.transcription.rnaPolymeraseElongationRateDict:
 				rate = sim_data.growthRateParameters.getRnapElongationRate(spec["doubling_time"])
@@ -359,7 +378,7 @@ def buildBasalCellSpecifications(
 		"doubling_time": doubling_time}
 
 	# Determine expression and synthesis probabilities
-	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _, rnapActivity = expressionConverge(
+	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _, rnapActivity, mrnaDegRate = expressionConverge(
 		sim_data,
 		cellSpecs["basal"]["expression"],
 		cellSpecs["basal"]["concDict"],
@@ -388,6 +407,7 @@ def buildBasalCellSpecifications(
 	cellSpecs["basal"]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 	cellSpecs["basal"]["bulkContainer"] = bulkContainer
 	cellSpecs["basal"]["rnapActivity"] = rnapActivity
+	cellSpecs["basal"]["rnaDegRate"] = mrnaDegRate
 
 	# Modify sim_data mass
 	sim_data.mass.avgCellDryMassInit = avgCellDryMassInit
@@ -398,6 +418,11 @@ def buildBasalCellSpecifications(
 	# Modify sim_data expression
 	sim_data.process.transcription.rnaExpression["basal"][:] = cellSpecs["basal"]["expression"]
 	sim_data.process.transcription.rnaSynthProb["basal"][:] = cellSpecs["basal"]["synthProb"]
+
+	# If mRNA degradation option is set to True, modify sim_data rna deg rate
+	# so that the fitted mRNA degradation rates can be used in the simulation.
+	if options['mrna_half_life_fitting']:
+		sim_data.process.transcription.rnaData['degRate'] = mrnaDegRate
 
 	return cellSpecs
 
@@ -509,7 +534,7 @@ def buildTfConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity, mrnaDegRate = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
@@ -524,6 +549,7 @@ def buildTfConditionCellSpecifications(
 		cellSpecs[conditionKey]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 		cellSpecs[conditionKey]["bulkContainer"] = bulkContainer
 		cellSpecs[conditionKey]["rnapActivity"] = rnapActivity
+		cellSpecs[conditionKey]["rnaDegRate"] = mrnaDegRate
 
 	return cellSpecs
 
@@ -605,7 +631,7 @@ def buildCombinedConditionCellSpecifications(
 			}
 
 		# Determine expression and synthesis probabilities
-		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity = expressionConverge(
+		expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity, mrnaDegRate = expressionConverge(
 			sim_data,
 			cellSpecs[conditionKey]["expression"],
 			cellSpecs[conditionKey]["concDict"],
@@ -620,6 +646,7 @@ def buildCombinedConditionCellSpecifications(
 		cellSpecs[conditionKey]["fitAvgSolubleTargetMolMass"] = fitAvgSolubleTargetMolMass
 		cellSpecs[conditionKey]["bulkContainer"] = bulkContainer
 		cellSpecs[conditionKey]["rnapActivity"] = rnapActivity
+		cellSpecs[conditionKey]["rnaDegRate"] = mrnaDegRate
 
 		# Modify sim_data expression
 		sim_data.process.transcription.rnaExpression[conditionKey] = cellSpecs[conditionKey]["expression"]
@@ -677,12 +704,22 @@ def expressionConverge(
 		print("Fitting RNA synthesis probabilities.")
 
 	rnapActivity = sim_data.growthRateParameters.getFractionActiveRnap(doubling_time).copy()
+	if options['max_rnap_activity']:
+		# Set RNA Polymerase active fraction to 100%
+		rnapActivity = 1.
+
+	mrnaDegRate = sim_data.process.transcription.rnaData["degRate"]
+	is_ribosome_or_rnap = np.logical_or(
+		sim_data.process.transcription.rnaData['isRProtein'],
+		sim_data.process.transcription.rnaData['isRnap'])
+
 	for iteration in xrange(MAX_FITTING_ITERATIONS):
 		if VERBOSE > 1:
 			print('Iteration: {}'.format(iteration))
 
 		initialExpression = expression.copy()
 		initialRnapActivity = copy.copy(rnapActivity)
+		initialMrnaDegRate = copy.copy(mrnaDegRate)
 
 		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
 		bulkContainer = createBulkContainer(sim_data, expression, doubling_time, options)
@@ -693,21 +730,25 @@ def expressionConverge(
 			setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, options)
 
 		if not options['disable_rnapoly_capacity_fitting']:
-			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, options)
+			setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, mrnaDegRate, rnapActivity, options)
 
 		if options['rnapoly_activity_fitting']:
-			rnapActivity = setRNAPActivityConstrainedByPhysiology(sim_data, bulkContainer,	doubling_time, avgCellDryMassInit, Km, options)
+			rnapActivity = setRNAPActivityConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, mrnaDegRate, options)
+
+		if options['mrna_half_life_fitting']:
+			mrnaDegRate = setMrnaDegRateConstrainedByRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rnapActivity, mrnaDegRate, options)
 
 		# Normalize expression and write out changes
-		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, options, Km)
+		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, mrnaDegRate, options, Km)
 
 		degreeOfFit = np.sqrt(np.mean(np.hstack((
 			np.square(initialExpression - expression),
-			np.square(initialRnapActivity - rnapActivity)))))
+			np.square(initialRnapActivity - rnapActivity),
+			np.square(initialMrnaDegRate[is_ribosome_or_rnap].asNumber(1 / units.s) - mrnaDegRate[is_ribosome_or_rnap].asNumber(1 / units.s))))))
 
 		if VERBOSE > 1:
-			print('\tdegree of fit: {}'.format(degreeOfFit))
-			print('rnap activity:\t{}'.format(rnapActivity))
+			print('\tdegree of fit:\t{}'.format(degreeOfFit))
+			print('\trnap activity:\t{}'.format(rnapActivity))
 
 		if degreeOfFit < FITNESS_THRESHOLD:
 			break
@@ -715,7 +756,7 @@ def expressionConverge(
 	else:
 		raise Exception("Fitting did not converge")
 
-	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity
+	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict, rnapActivity, mrnaDegRate
 
 def fitCondition(sim_data, spec, condition, options):
 	"""
@@ -1377,47 +1418,46 @@ def setRibosomeCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_t
 	bulkContainer.countsIs(rRna16SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna16S"]])
 	bulkContainer.countsIs(rRna5SCounts, sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna5S"]])
 
-def setRNAPCountsConstrainedByPhysiology(
-		sim_data,
-		bulkContainer,
-		doubling_time,
-		avgCellDryMassInit,
-		Km,
-		options):
+def getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options):
 	"""
-	Set counts of RNA polymerase based on two constraints:
-	(1) Number of RNAP subunits required to maintain steady state of mRNAs
-	(2) Expected RNAP subunit counts based on (mRNA) distribution recorded in
-		bulkContainer
+	Estimate demand for active RNA polymerases by calculating the number of
+	active RNA Polymerases required to maintain steady state levels of RNA.
+
+	Equation describing the rate of change of RNA:
+	dRNA/dt = (elongation_rate / rna_lengths * active_RNAP) - k_loss
+
+	At steady state:
+	dRNA/dt = 0
+
+	Solving for active RNA polymerases:
+	active_RNAP = k_loss * rna_lengths / elongation_rate
+
+	Called by:
+	  setRNAPCountsConstrainedByPhysiology()
+	  setRNAPActivityConstrainedByPhysiology()
+	  setMrnaDegRateConstrainedByRNAPDemand()
 
 	Requires
 	--------
 	- the return value from getFractionIncreaseRnapProteins(doubling_time),
-	described in growthRateDependentParameters.py
+	  described in growthRateDependentParameters.py
 
 	Inputs
 	------
 	- bulkContainer (BulkObjectsContainer object) - counts of bulk molecules
 	- doubling_time (float with units of time) - doubling time given the condition
 	- avgCellDryMassInit (float with units of mass) - expected initial dry cell mass
-	- Km (array of floats with units of mol/volume) - Km for each RNA associated
-	with RNases
-	- disable_rnap_fraction_increase (bool) - if True, disables doubling-time-
-	dependent RNA polymerase fraction increase.
+	- Km (array of floats with units of mol/volume) - Km for each RNA associated with RNases
+	- options (dict of strings to bool) - describes settings described in the
+	  docstring at the top of this file
 
-	Modifies
+	Returns
 	--------
-	- bulkContainer (BulkObjectsContainer object) - the counts of RNA polymerase
-	subunits are set according to Constraint 1
-
-	Notes
-	-----
-	- Constraint 2 is not being used -- see final line of this function.
+	- nActiveRnapNeeded (numpy array of floats) - number of RNA polymerase
+	  molecules required by each RNA
 	"""
 
-	# -- CONSTRAINT 1: Expected RNA distribution doubling -- #
 	rnaLengths = units.sum(sim_data.process.transcription.rnaData['countsACGU'], axis = 1)
-
 	rnaLossRate = None
 
 	if Km is None:
@@ -1425,7 +1465,7 @@ def setRNAPCountsConstrainedByPhysiology(
 		# contributions of degradation and dilution.
 		rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
 			doubling_time,
-			sim_data.process.transcription.rnaData["degRate"],
+			rna_deg_rate,
 			bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
 		)
 	else:
@@ -1434,7 +1474,7 @@ def setRNAPCountsConstrainedByPhysiology(
 		cellVolume = avgCellDryMassInit / cellDensity / sim_data.mass.cellDryMassFraction
 		countsToMolar = 1 / (sim_data.constants.nAvogadro * cellVolume)
 
-		# Gompute input arguments for netLossRateFromDilutionAndDegradationRNA()
+		# Compute input arguments for netLossRateFromDilutionAndDegradationRNA()
 		rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
 		endoRNaseConc = countsToMolar * bulkContainer.counts(sim_data.process.rna_decay.endoRnaseIds)
 		kcatEndoRNase = sim_data.process.rna_decay.kcats
@@ -1450,12 +1490,52 @@ def setRNAPCountsConstrainedByPhysiology(
 			countsToMolar,
 			)
 
-	# Compute number of RNA polymerases required to maintain steady state of mRNA
+	# Get transcription elongation rate
 	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time).asNumber(units.nt / units.s)
-	elongation_rates = sim_data.process.transcription.make_elongation_rates_flat(base, flat_elongation=options['flat_elongation_transcription'])
-	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
-		rnaLengths, elongation_rates * (units.nt / units.s), rnaLossRate)
-	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
+	elongation_rates = units.nt / units.s * sim_data.process.transcription.make_elongation_rates_flat(
+		base, flat_elongation=options['flat_elongation_transcription'])
+
+	# Compute number of RNA polymerases required to maintain steady state of mRNA
+	nActiveRnapNeeded = rnaLengths / elongation_rates * rnaLossRate
+	return np.array([x.asNumber() for x in nActiveRnapNeeded])
+
+def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, rnap_activity, options):
+	"""
+	Set counts of RNA polymerase based on two constraints:
+	(1) Number of RNAP subunits required to maintain steady state of mRNAs
+	(2) Expected RNAP subunit counts based on (mRNA) distribution recorded in
+		bulkContainer
+
+	Requires
+	--------
+	- the return value from getFractionIncreaseRnapProteins(doubling_time),
+	described in growthRateDependentParameters.py
+	- getActiveRNAPDemand()
+
+	Inputs
+	------
+	- bulkContainer (BulkObjectsContainer object) - counts of bulk molecules
+	- doubling_time (float with units of time) - doubling time given the condition
+	- avgCellDryMassInit (float with units of mass) - expected initial dry cell mass
+	- Km (array of floats with units of mol/volume) - Km for each RNA associated
+	with RNases
+	- rna_deg_rate (unum array of floats) - RNA degradation rates
+	- options (dict of strings to bool) - describes settings described in the
+	  docstring at the top of this file
+
+	Modifies
+	--------
+	- bulkContainer (BulkObjectsContainer object) - the counts of RNA polymerase
+	subunits are set according to Constraint 1
+
+	Notes
+	-----
+	- Constraint 2 is not being used currently -- see final line of this function.
+	"""
+
+	# -- CONSTRAINT 1: Expected RNA distribution doubling -- #
+	nActiveRnapNeeded = getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options).sum()
+	nRnapsNeeded = nActiveRnapNeeded / rnap_activity
 
 	# Convert nRnapsNeeded to the number of RNA polymerase subunits required
 	# Note: The return value from getFractionIncreaseRnapProteins() is
@@ -1467,7 +1547,8 @@ def setRNAPCountsConstrainedByPhysiology(
 	if not options['disable_rnap_fraction_increase']:
 		minRnapSubunitCounts *= (1 + sim_data.growthRateParameters.getFractionIncreaseRnapProteins(doubling_time))
 
-	# -- CONSTRAINT 2: Expected RNAP subunit counts based on distribution -- #
+	# -- CONSTRAINT 2: Expected RNAP subunit counts based on RNA distribution -- #
+	# This value is already stored in bulkContainer
 	rnapCounts = bulkContainer.counts(rnapIds)
 
 	## -- SET RNAP COUNTS TO MAXIMUM CONSTRAINTS -- #
@@ -1480,67 +1561,103 @@ def setRNAPCountsConstrainedByPhysiology(
 
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
 
-def setRNAPActivityConstrainedByPhysiology(
-		sim_data,
-		bulkContainer,
-		doubling_time,
-		avgCellDryMassInit,
-		Km,
-		options):
+def setRNAPActivityConstrainedByPhysiology(sim_data, bulkContainer,	doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options):
 	"""
 	Computes and returns the minimum RNA polymerase activity required to meet
 	demand for active RNA polymerases (as estimated by RNA doubling).
+
+	Requires
+	--------
+	- getActiveRNAPDemand()
+
+	Inputs
+	------
+	- bulkContainer (BulkObjectsContainer object) - counts of bulk molecules
+	- doubling_time (float with units of time) - doubling time given the condition
+	- avgCellDryMassInit (float with units of mass) - expected initial dry cell mass
+	- Km (array of floats with units of mol/volume) - Km for each RNA associated
+	with RNases
+	- disable_rnap_fraction_increase (bool) - if True, disables doubling-time-
+	dependent RNA polymerase fraction increase.
+
+	Returns
+	--------
+	- rnapActivityNeeded (float) - RNA polymerase active fraction required
 	"""
 
-	# -- Expected RNA distribution doubling -- #
-	rnaLengths = units.sum(sim_data.process.transcription.rnaData['countsACGU'], axis = 1)
-	rnaLossRate = None
-
-	if Km is None:
-		# RNA loss rate is in units of counts/time, and computed by summing the
-		# contributions of degradation and dilution.
-		rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
-			doubling_time,
-			sim_data.process.transcription.rnaData["degRate"],
-			bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
-		)
-	else:
-		# Get constants to compute countsToMolar factor
-		cellDensity = sim_data.constants.cellDensity
-		cellVolume = avgCellDryMassInit / cellDensity / sim_data.mass.cellDryMassFraction
-		countsToMolar = 1 / (sim_data.constants.nAvogadro * cellVolume)
-
-		# Gompute input arguments for netLossRateFromDilutionAndDegradationRNA()
-		rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
-		endoRNaseConc = countsToMolar * bulkContainer.counts(sim_data.process.rna_decay.endoRnaseIds)
-		kcatEndoRNase = sim_data.process.rna_decay.kcats
-		totalEndoRnaseCapacity = units.sum(endoRNaseConc * kcatEndoRNase)
-
-		# RNA loss rate is in units of counts/time, and computed by accounting
-		# for the competitive inhibition of RNase by other RNA targets.
-		rnaLossRate = netLossRateFromDilutionAndDegradationRNA(
-			doubling_time,
-			(1 / countsToMolar) * totalEndoRnaseCapacity,
-			Km,
-			rnaConc,
-			countsToMolar,
-			)
-
-	# Compute number of RNA polymerases required to maintain steady state of mRNA
-	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time).asNumber(units.nt / units.s)
-	elongation_rates = sim_data.process.transcription.make_elongation_rates_flat(base, flat_elongation=options['flat_elongation_transcription'])
-	nActiveRnapNeeded = calculateMinPolymerizingEnzymeByProductDistributionRNA(
-		rnaLengths, elongation_rates * (units.nt / units.s), rnaLossRate)
+	nActiveRnapNeeded = getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options).sum()
 
 	# Get total number of RNA polymerases
 	rnapIds = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitIds']
 	rnapStoich = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitStoich']
 	nRnapTotal = min(bulkContainer.counts(rnapIds) / rnapStoich)
+	rnapActivityNeeded = min(1, nActiveRnapNeeded / nRnapTotal)
+	return rnapActivityNeeded
 
-	rnapActivity = min(1, nActiveRnapNeeded / nRnapTotal)
-	return rnapActivity
+def setMrnaDegRateConstrainedByRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rnap_activity, rna_deg_rate, options):
+	"""
+	Computes and returns the mRNA degradation rate of ribosome proteins and RNA
+	polymerase subunits	required to approach a more balanced demand for active
+	RNA polymerases (as estimated by RNA doubling) for the available supply.
 
-def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, options, Km=None):
+	Equation describing the rate of change of RNA:
+	dRNA/dt = (elongation_rate / rna_lengths * active_RNAP) - (ln2 / tau + k_deg) * RNA
+
+	where   k_deg = ln2 / rna_half_lives
+			tau = doubling time
+
+	At steady state:
+	dRNA/dt = 0
+
+	Solving for k_deg:
+	k_deg = elongation_rate / rna_lengths / RNA * active_RNAP - (ln2 / tau)
+
+	Note: This function is only called when options[]
+	"""
+
+	transcription = sim_data.process.transcription
+	rnap_ids = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitIds']
+	rnap_stoich = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitStoich']
+	rna_counts = bulkContainer.counts(transcription.rnaData['id'])
+
+	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time).asNumber(units.nt / units.s)
+	elongation_rates = units.nt / units.s * transcription.make_elongation_rates_flat(base, flat_elongation=options['flat_elongation_transcription'])
+	rna_lengths = units.sum(transcription.rnaData['countsACGU'], axis=1)
+
+	is_gene_of_interest = np.logical_or(transcription.rnaData['isRProtein'], transcription.rnaData['isRnap'])
+
+	# Estimate active RNAP demand and supply
+	n_active_rnap_demand = getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options)
+	n_active_rnap_supply = min(bulkContainer.counts(rnap_ids) / rnap_stoich) * rnap_activity
+
+	# Distribute supply to each RNA proportional to their demand for active RNAP
+	n_active_rnap_supply_per_rna = n_active_rnap_supply * (n_active_rnap_demand / n_active_rnap_demand.sum())
+
+	# Estimate new rna deg rates (see docstring for equation)
+	new_rna_deg_rate = (n_active_rnap_supply_per_rna[is_gene_of_interest] / rna_lengths[is_gene_of_interest]
+	                    / rna_counts[is_gene_of_interest] * elongation_rates[is_gene_of_interest]
+	                    ) - (np.log(2) / doubling_time.asUnit(units.s))
+	new_rna_deg_rate = np.array([x.asNumber(1 / units.s) for x in new_rna_deg_rate])
+
+	# Negative rates may occur during fitting iterations, force to 0
+	new_rna_deg_rate[new_rna_deg_rate < 0] = 0
+
+	# Back to full shape
+	new_rna_deg_rate_full = copy.copy(rna_deg_rate.asNumber(1/units.s))
+	new_rna_deg_rate_full[is_gene_of_interest] = new_rna_deg_rate
+
+	if VERBOSE > 1:
+		degree_of_fit = np.sqrt(np.mean(np.square(rna_deg_rate.asNumber(1 / units.s) - new_rna_deg_rate_full)))
+		print('\nmRNA degradation rate fitting of R-proteins and RNA Polymerase subunits')
+		print('\tActive RNA Polymerase demand: {}'.format(n_active_rnap_demand.sum()))
+		print('\tActive RNA Polymerase supply: {}'.format(n_active_rnap_supply))
+		print('\tDegree of fit: {}'.format(degree_of_fit))
+
+	# Add units
+	new_rna_deg_rate_full = (1/units.s) * new_rna_deg_rate_full
+	return new_rna_deg_rate_full
+
+def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, rna_deg_rate, options, Km=None):
 	"""
 	Determines expression and synthesis probabilities for RNA molecules to fit
 	protein levels and RNA degradation rates. Assumes a steady state analysis
@@ -1629,7 +1746,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, op
 	if Km is None:
 		rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
 			doubling_time,
-			sim_data.process.transcription.rnaData["degRate"],
+			rna_deg_rate,
 			bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
 		)
 	else:
@@ -2042,7 +2159,7 @@ def translationEfficienciesFromMrnaAndProtein(expression_distribution, protein_d
 
 	return normalize(efficiencies)
 
-def calculate_translational_efficiencies(sim_data, condition, cellSpecs):
+def calculate_translational_efficiencies(sim_data, condition, cellSpecs, options):
 	spec = cellSpecs[condition].copy()
 	original_expression = spec['expression']
 	doubling_time = spec['doubling_time']
@@ -2057,24 +2174,25 @@ def calculate_translational_efficiencies(sim_data, condition, cellSpecs):
 	individual_masses_protein = sim_data.process.translation.monomerData["mw"] / sim_data.constants.nAvogadro
 	individual_masses_RNA = sim_data.process.transcription.rnaData["mw"] / sim_data.constants.nAvogadro
 
-	pre_expression, pre_synthesis, pre_average_dry_mass, pre_average_molar_mass, pre_bulk, pre_rnapActivity = expressionConverge(
+	pre_expression, pre_synthesis, pre_average_dry_mass, pre_average_molar_mass, pre_bulk, pre_concDict, pre_rnapActivity, pre_mrnaDegRate = expressionConverge(
 		sim_data,
 		spec['expression'],
 		spec['concDict'],
 		spec['doubling_time'],
-		disable_ribosome_capacity_fitting = True,
-		disable_rnapoly_capacity_fitting = True)
+		None,
+		options)
+
 	pre_transcripts = pre_expression[sim_data.relation.rnaIndexToMonomerMapping]
 	pre_counts = pre_bulk.counts(sim_data.process.translation.monomerData['id'])
 	pre_protein = normalize(pre_counts)
 
-	post_expression, post_synthesis, post_average_dry_mass, post_average_molar_mass, post_bulk, post_rnapActivity = expressionConverge(
+	post_expression, post_synthesis, post_average_dry_mass, post_average_molar_mass, post_bulk, post_concDict, post_rnapActivity, post_mrnaDegRate = expressionConverge(
 		sim_data,
 		spec['expression'],
 		spec['concDict'],
 		spec['doubling_time'],
-		disable_ribosome_capacity_fitting = False,
-		disable_rnapoly_capacity_fitting = False)
+		None,
+		options)
 	post_transcripts = post_expression[sim_data.relation.rnaIndexToMonomerMapping]
 	post_counts = post_bulk.counts(sim_data.process.translation.monomerData['id'])
 	post_protein = normalize(post_counts)

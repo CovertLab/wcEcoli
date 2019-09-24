@@ -56,11 +56,6 @@ class RunFitter(scriptBase.ScriptBase):
 			help= "If set, RNA polymerase expression will not be fit to protein synthesis demands."
 			)
 		parser.add_argument(
-			'--rnapoly-activity-fitting',
-			action='store_true',
-			help= "If set, RNA polymerase activity will be fit to transcription demands."
-			)
-		parser.add_argument(
 			'--variable-elongation-transcription',
 			action='store_true',
 			help= "If set, one elongation rate will be used for transcription."
@@ -81,11 +76,10 @@ class RunFitter(scriptBase.ScriptBase):
 			help= "If set, adjusts the expression of all RNase mRNA lower."
 			)
 		parser.add_argument(
-			'--disable-measured-protein-deg',
+			'--alternate-mass-fraction-mrna',
 			action='store_true',
-			help= "If set, does not use any measured protein degradation rates"
-				" and defaults to the N-end rule."
-			)
+			help="If set, allocates smaller mass fraction for mRNA."
+		)
 		parser.add_argument(
 			'--alternate-mass-fraction-protein',
 			action='store_true',
@@ -97,24 +91,24 @@ class RunFitter(scriptBase.ScriptBase):
 			help="If set, allocates smaller mass fraction for RNA."
 		)
 		parser.add_argument(
-			'--alternate-mass-fraction-mrna',
-			action='store_true',
-			help="If set, allocates smaller mass fraction for mRNA."
-		)
-		parser.add_argument(
 			'--alternate-r-protein-degradation',
 			action='store_true',
 			help= "If set, r-protein degradation will set to fast value."
 			)
 		parser.add_argument(
-			'--alternate-rna-seq',
+			'--alternate-ribosome-activity',
 			action='store_true',
-			help="If set, alternate RNA-seq (Covert 2004) input will be used."
-			)
+			help="Alternate ribosome active fraction: 85 percent active. Default = 80 percent active."
+		)
 		parser.add_argument(
 			'--alternate-rna-half-life',
 			action='store_true',
 			help="If set, alternate RNA half life input will be used."
+		)
+		parser.add_argument(
+			'--alternate-rna-seq',
+			action='store_true',
+			help="If set, alternate RNA-seq (Covert 2004) input will be used."
 			)
 		parser.add_argument(
 			'--alternate-translation-efficiency',
@@ -123,19 +117,35 @@ class RunFitter(scriptBase.ScriptBase):
 				 "al. 2019. Default = described by Li et al. 2014."
 		)
 		parser.add_argument(
-			'--alternate-ribosome-activity',
+			'--disable-measured-protein-deg',
 			action='store_true',
-			help="Alternate ribosome active fraction: 85 percent active. Default = 80 percent active."
-			)
+			help="If set, does not use any measured protein degradation rates"
+			     " and defaults to the N-end rule."
+		)
+		parser.add_argument(
+			'--disable-ribosome-activity-fix',
+			action='store_true',
+			help="If set, disables ribosome activity fix."
+		)
 		parser.add_argument(
 			'--disable-rnap-fraction-increase',
 			action='store_true',
 			help="If set, disables doubling-time-dependent RNAP fraction increase."
 		)
 		parser.add_argument(
-			'--disable-ribosome-activity-fix',
+			'--max-rnap-activity',
 			action='store_true',
-			help="If set, disables ribosome activity fix."
+			help="If set, RNA polymerase activity will be set to 100 percent."
+		)
+		parser.add_argument(
+			'--mrna-half-life-fitting',
+			action='store_true',
+			help="If set, mRNA half lives will be fit to transcription demands."
+		)
+		parser.add_argument(
+			'--rnapoly-activity-fitting',
+			action='store_true',
+			help="If set, RNA polymerase activity will be fit to transcription demands."
 		)
 		parser.add_argument(
 			'--save-cell-specs',
@@ -196,6 +206,8 @@ class RunFitter(scriptBase.ScriptBase):
 				variable_elongation_transcription=args.variable_elongation_transcription,
 				variable_elongation_translation=args.variable_elongation_translation,
 				rnapoly_activity_fitting=args.rnapoly_activity_fitting,
+				mrna_half_life_fitting=args.mrna_half_life_fitting,
+				max_rnap_activity=args.max_rnap_activity,
 				adjust_rna_and_protein_parameters=args.no_expression_adjustment,
 				adjust_rnase_expression=args.adjust_rnase_expression,
 				disable_measured_protein_deg=args.disable_measured_protein_deg,
