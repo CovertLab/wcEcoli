@@ -31,12 +31,16 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(PolypeptideInitiation, self).initialize(sim, sim_data)
 
+
 		# Load parameters
 		mrnaIds = sim_data.process.translation.monomerData["rnaId"]
 		self.proteinLengths = sim_data.process.translation.monomerData["length"].asNumber()
 		self.translationEfficiencies = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 		self.fracActiveRibosomeDict = sim_data.process.translation.ribosomeFractionActiveDict
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
+		# TODO(taryn): find actual rate
+		self.mazFCleavageRate = 0.1 
+		self.mazFdimer = self.bulkMoleculeView('CPLX0-1241[c]')
 
 		# Determine changes from parameter shuffling variant
 		shuffleIdxs = None
@@ -55,11 +59,17 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.mRnas = self.bulkMoleculesView(mrnaIds)
 
 	def calculateRequest(self):
+		# convert to concentrations
+		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
+		cell_volume = cell_mass / self.cellDensity
+		self.counts_to_molar = 1 / (self.nAvogadro * cell_volume)
+
 		current_media_id = self._external_states['Environment'].current_media_id
 
 		self.ribosome30S.requestAll()
 		self.ribosome50S.requestAll()
 		self.mRnas.requestAll()
+		self.mazFdimer.requestAll()
 
 		self.fracActiveRibosome = self.fracActiveRibosomeDict[current_media_id]
 
@@ -71,10 +81,17 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			self.ribosomeElongationRate = self.ribosomeElongationRateDict[current_media_id].asNumber(units.aa / units.s)
 
 	def evolveState(self):
+		ribosome30S_counts = self.ribosome30S.count().sum()
+		mazF_counts = self.mazFdimer.count()
+
+		cleaved_ribosome30S = (ribosome30S_counts * self.counts_to_molar) * (mazF_counts * self.counts_to_molar) \
+								* self.mazFCleavageRate / self.counts_to_molar
+		ribosome30S_counts -= cleaved_ribosome30S
+		
 		# Calculate number of ribosomes that could potentially be initalized based on
 		# counts of free 30S and 50S subunits
 		inactiveRibosomeCount = np.min([
-			self.ribosome30S.count().sum(),
+			ribosome30S_counts,
 			self.ribosome50S.count().sum(),
 			])
 

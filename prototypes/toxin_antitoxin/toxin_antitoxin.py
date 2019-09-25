@@ -77,21 +77,21 @@ if __name__ == '__main__':
 	system = TypeIIToxinAntitoxin({})
 	integrator = Integrator(system, {})
 	state = {
-		'A' : 100.0,
-		'T' : 155.0,
+		'A' : 7.0,
+		'T' : 7.0,
 		'kt1' : 10.0,
-		'kt2' : 10.0,
+		'kt2' : 100.0,
 		'kp1' : 1000.0,  # 1uM = 1000 nM
 		'kp2' : 10.0,
 		'kh' : 100.0,
-		'umax' : np.log(2)/30,  # tu = 30 min
+		'umax' : 0.75*np.log(2)/30,  # tu = 30 min
 		'lambda_A' : np.log(2)/60,  # ta = 60 min
 		'lambda_T' : np.log(2)/2880, # tt = 48hrs = 2880 min
 		'alpha' : 1.0, # 1 nM/min
-		'n' : 2,  # hill coeff 
+		'n' : 2.5,  # hill coeff 
 		'sigma' : 10.0,
 		'p' : 2,
-		'd' : 0.5}  # noise magnitude
+		'd' : 0.2}  # noise magnitude
 
 	# T = []
 	# A = []
@@ -111,16 +111,16 @@ if __name__ == '__main__':
 
 
 
-	max_time = 2000
-	t_step = 0.1
-	num_sims = range(0,10)
+	max_time = 120000
+	t_step = 1
+	num_sims = range(0,500)
 	for n in num_sims:
 		evolved_state = copy.deepcopy(state)
 
 		evolved_state, series, t_vec = integrator.integrate(t_step, max_time, evolved_state,['T'])
-		plt.plot(t_vec,series['T'], alpha=0.2, color=[0.5,0.5,0.5])
+		plt.plot(t_vec,series['T'], alpha=0.2, color=[0.5,0.5,0.5], linewidth=0.5)
 	
-	plt.savefig('stochastic_sims')
+	plt.savefig('stochastic_sims_lowstate')
 
 
 # #--------------  PARAMETER SHIFTING  ------------------------

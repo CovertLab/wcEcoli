@@ -1,10 +1,40 @@
 # TO DO LIST TOXIN ANTITOXIN
+
+# * integrate this math into the whole cell model
+# ** first, need to implement A and T transcription from an operon
+# ** how to model the impact on translation? Start with simple linear modifier?
+# *** model cleavage of 16S mRNA on 70S
+# *** remove 16S mRNA and add 2 new cleaved isoforms
+
+# ** transcription repression by AT complex
+
+# ** replace N-end rule deg rates with measured deg rates
+# *** add to PROTEIN_DEG_RATES_ADJUSTMENTS in fit_sim_data_1
+
+# * identify toxin/antitoxin pairs in e coli
+# * figure out which ones are in the model
+
+# * implement leaderless mRNA translation by cleaved 16S rRNA containing ribosomes
+# * add mazEF to transcription factor flat file 
+
+# * create new bulk molecule type for MazF cleaved 30S
+# * add attribute to activeRibosome unique molecule to signify cleavage
+# * deal with cleaved 43nt bit from mazF cleavage : preserve mass balance
+
+# * figure out which mRNAs are leaderless and do they exist in model?
+# * modified 70S ribosome doesn't translate normal mRNAs
+
+# * can we also model mazF cleavage of other mRNA
+
+# DONE
+# ** A and T concentrations can feed in from protein counts
+# ** need to model complexation of AT
+# *** need to add complexation reactions for each AT species to sim_data.process.complexation.stoichMatrix()
+# *** add AT complex names to sim_data.process.complexation.moleculeNames
+# *** get masses of A and T
+# *** get keys for A and T
 # * focus on mazEF
 # * figure out necessary initial conditions 
 # * figure out what will be effected 
 # * implement Fasani and Savageau 2013 model in prototypes
 # ** calculate changes for a given time step
-# * integrate this math into the whole cell model
-
-# * identify toxin/antitoxin pairs in e coli
-# * figure out which ones are in the model

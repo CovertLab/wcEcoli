@@ -178,7 +178,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		promoters = self.promoters.molecules_read_only()
 		TU_index, coordinates_promoters, domain_index_promoters, bound_TF = promoters.attrs(
 			"TU_index", "coordinates", "domain_index", "bound_TF")
-		
 		# Construct matrix that maps promoters to transcription units
 		n_promoters = len(TU_index)
 		TU_to_promoter = scipy.sparse.csr_matrix(

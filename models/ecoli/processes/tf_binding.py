@@ -141,7 +141,7 @@ class TfBinding(wholecell.processes.process.Process):
 		nPromotersBound = np.zeros(self.n_TF, dtype=np.float64)
 		nActualBound = np.zeros(self.n_TF, dtype=np.float64)
 		n_bound_TF_per_TU = np.zeros((self.n_TU, self.n_TF), dtype=np.int16)
-
+		import ipdb; ipdb.set_trace()
 		for tf_idx, tf_id in enumerate(self.tf_ids):
 			# Get counts of transcription factors
 			active_tf_counts = self.active_tf_view[tf_id].count()

@@ -74,7 +74,7 @@ if __name__ == '__main__':
 	system = TypeIIToxinAntitoxin({})
 	integrator = Integrator(system, {})
 
-# ---------------------- ORIGINAL PARAMS
+
 	state = {
 			'A' : 100.0,
 			'T' : 100.0,
@@ -90,7 +90,12 @@ if __name__ == '__main__':
 			'p' : 2.0,
 			'n' : 2.5,
 			'umax' : 0.75*(np.log(2)/30)} # umax/umax0 = 0.75
+# ---------------------- reproduce figure 3 from 2013 paper
 
+
+
+
+# ---------------------- ORIGINAL PARAMS
 	time_step = 0.1
 	duration = 2000
 	n_sims = 1
