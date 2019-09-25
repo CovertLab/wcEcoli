@@ -158,7 +158,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Plot scatterplot
 		fig = plt.figure(figsize=(5, 5))
-		gs = gridspec.GridSpec(20, 20)
+		gs = gridspec.GridSpec(40, 40)
 
 		## Plot full data
 		plt.scatter(glc_uptakes[~selected_indicies], log_ratio_succ[~selected_indicies],
@@ -178,7 +178,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.ylim([-y_max, y_max])
 
 		## Plot highlighted region data
-		fig.add_subplot(gs[1:9, -9:-1])
+		fig.add_subplot(gs[1:28, -20:-1])
 		in_region = (glc_uptakes < GLC_MAX) & (np.abs(log_ratio_succ) < SUCC_DISTANCE)
 		selected_in = in_region & selected_indicies
 		not_selected_in = in_region & ~selected_indicies
@@ -193,15 +193,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for x, y, label in zip(glc_uptakes[in_region], log_ratio_succ[in_region], constraint_labels[in_region]):
 			plt.text(x, y, ', '.join(label), ha='center', va='top', fontsize=6)
 		x_min, _ = plt.xlim()
-		y_min, _ = plt.ylim()
 		x_min = np.floor(min(x_min, 10))
-		y_min = np.floor(min(y_min, 0))
 		plt.axvspan(x_min, GLC_MAX, facecolor='g', alpha=0.1)
-		plt.axhspan(y_min, SUCC_DISTANCE, facecolor='g', alpha=0.1)
+		plt.axhspan(-SUCC_DISTANCE, SUCC_DISTANCE, facecolor='g', alpha=0.1)
 
 		## Format axes
 		plt.xlim([x_min, GLC_MAX])
-		plt.ylim([y_min, SUCC_DISTANCE])
+		plt.ylim([-SUCC_DISTANCE, SUCC_DISTANCE])
 
 		## Save figure
 		plt.tight_layout()
