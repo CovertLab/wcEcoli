@@ -1534,7 +1534,45 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 	"""
 
 	# -- CONSTRAINT 1: Expected RNA distribution doubling -- #
-	nActiveRnapNeeded = getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options).sum()
+	rnaLengths = units.sum(sim_data.process.transcription.rnaData['countsACGU'], axis = 1)
+	rnaLossRate = None
+
+	if Km is None:
+		# RNA loss rate is in units of counts/time, and computed by summing the
+		# contributions of degradation and dilution.
+		rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
+			doubling_time,
+			rna_deg_rate,
+			bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
+		)
+	else:
+		# Get constants to compute countsToMolar factor
+		cellDensity = sim_data.constants.cellDensity
+		cellVolume = avgCellDryMassInit / cellDensity / sim_data.mass.cellDryMassFraction
+		countsToMolar = 1 / (sim_data.constants.nAvogadro * cellVolume)
+
+		# Compute input arguments for netLossRateFromDilutionAndDegradationRNA()
+		rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
+		endoRNaseConc = countsToMolar * bulkContainer.counts(sim_data.process.rna_decay.endoRnaseIds)
+		kcatEndoRNase = sim_data.process.rna_decay.kcats
+		totalEndoRnaseCapacity = units.sum(endoRNaseConc * kcatEndoRNase)
+
+		# RNA loss rate is in units of counts/time, and computed by accounting
+		# for the competitive inhibition of RNase by other RNA targets.
+		rnaLossRate = netLossRateFromDilutionAndDegradationRNA(
+			doubling_time,
+			(1 / countsToMolar) * totalEndoRnaseCapacity,
+			Km,
+			rnaConc,
+			countsToMolar,
+			)
+	# Get transcription elongation rate
+	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time).asNumber(units.nt / units.s)
+	elongation_rates = sim_data.process.transcription.make_elongation_rates_flat(
+		base, flat_elongation=options['flat_elongation_transcription']) * units.nt / units.s
+
+	# Compute number of RNA polymerases required to maintain steady state of mRNA
+	nActiveRnapNeeded = units.sum(rnaLengths / elongation_rates * rnaLossRate).asNumber()
 	nRnapsNeeded = nActiveRnapNeeded / rnap_activity
 
 	# Convert nRnapsNeeded to the number of RNA polymerase subunits required
