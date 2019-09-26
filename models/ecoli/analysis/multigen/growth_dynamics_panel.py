@@ -191,6 +191,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			m = m.reshape(sequenceLength.shape)
 			sequenceLength[~m] = np.nan
 
+			dnap_times = []
+			dnap_positions = []
+			for t, pos in zip(time, sequenceLength)[::10]:
+				for p in pos[np.isfinite(pos)]:
+					dnap_times += [t]
+					dnap_positions += [p]
+			dnap_times = np.array(dnap_times)
+			dnap_positions = np.array(dnap_positions)
+
 			# Relative Rate of dNTP polymerization
 			relative_rate_dNTP_poly = (sequenceIdx != -1).sum(axis = 1) / 4
 
@@ -255,7 +264,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			##############################################################
 			# Plot DNA Polymerase Position
 			ax4 = plt.subplot(nRows, nCols, 4)
-			ax4.plot(time, sequenceLength, marker='o', markersize=1,
+			ax4.plot(dnap_times, dnap_positions, marker='o', markersize=1,
 				linewidth=0, color = plot_line_color)
 			plt.ylabel("DNA polymerase\nposition", fontsize = plot_font_size)
 			ax4.set_yticks([-1 * genomeLength / 2, 0, genomeLength / 2])
