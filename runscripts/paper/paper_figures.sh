@@ -97,7 +97,8 @@ python models/ecoli/analysis/multigen/pabx_limitations.py \
 
 
 ## Figure 5
-# panel A: made by JC in repo EcoliFoldChanges
+# panel A:
+python paper/steadyStateAnalysis/main.py
 
 # panel B: made by JC from his experimental results
 
