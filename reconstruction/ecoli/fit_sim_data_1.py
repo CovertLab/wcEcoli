@@ -1492,8 +1492,8 @@ def getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassIn
 
 	# Get transcription elongation rate
 	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time).asNumber(units.nt / units.s)
-	elongation_rates = units.nt / units.s * sim_data.process.transcription.make_elongation_rates_flat(
-		base, flat_elongation=options['flat_elongation_transcription'])
+	elongation_rates = sim_data.process.transcription.make_elongation_rates_flat(
+		base, flat_elongation=options['flat_elongation_transcription']) * units.nt / units.s
 
 	# Compute number of RNA polymerases required to maintain steady state of mRNA
 	nActiveRnapNeeded = rnaLengths / elongation_rates * rnaLossRate
