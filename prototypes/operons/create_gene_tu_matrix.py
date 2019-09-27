@@ -77,9 +77,6 @@ def create_gene_to_tu_matrix(rna_info, tu_info):
 			for gene in genes_in_tu:
 				gene_index = reverse_index[gene]
 				gene_to_tu_matrix[gene_index, index] = 1
-		
-	
-
 
 	return gene_to_tu_matrix, rnas_gene_order
 
