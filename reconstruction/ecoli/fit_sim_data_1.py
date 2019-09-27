@@ -1633,7 +1633,9 @@ def setMrnaDegRateConstrainedByRNAPDemand(sim_data, bulkContainer, doubling_time
 	# Estimate active RNAP demand and supply
 	rnap_demand_per_transcript = getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options)
 	n_active_rnap_demand = units.sum(rnap_demand_per_transcript).asNumber()
-	unitless_rnap_demand = np.array([demand.asNumber() for demand in rnap_demand_per_transcript])
+	unitless_rnap_demand = np.array([
+		demand.asNumber()
+		for demand in rnap_demand_per_transcript.asNumber()])
 
 	n_active_rnap_supply = min(bulkContainer.counts(rnap_ids) / rnap_stoich) * rnap_activity
 
