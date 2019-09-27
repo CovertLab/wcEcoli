@@ -21,7 +21,8 @@ RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv'
 CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
 
-output_file = os.path.join(FLAT_DIR, "transcription_units.tsv")
+output_tu_counts = os.path.join(FLAT_DIR, "transcription_units.tsv")
+output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix.tsv")
 
 def parse_tsv(tsv_file):
 	'''
@@ -35,24 +36,10 @@ def parse_tsv(tsv_file):
 			tsv_list.append(row)
 	return tsv_list
 
-def find_tu_indices(tu_info):
-	'''
-	Input:
-	A list of dicts containing all the information found in the TU_FILE.
-	Do:
-	Find all the TU's (based on the presence of the '_' dividing them.
-	Retreive the 'index', based on count down the file.
-	Return:
-	A list containin the indices of all the TUs.
-	Preserves order.
-	TODO: Add another column to the operon_rnas.tsv file to assign a type as
-	a TU.
-	'''
+def map_genes_to_tu(gene, index, reverse_index, gene_to_tu_matrix):
 
-	return [
-		count 
-		for count, row in enumerate(tu_info) 
-		if SPLIT_DELIMITER in row['geneId']]
+	return gene_to_tu_matrix
+
 
 def create_gene_to_tu_matrix(rna_info, tu_info):
 	'''
@@ -72,19 +59,27 @@ def create_gene_to_tu_matrix(rna_info, tu_info):
 	num_tus = len(tu_info)
 
 	gene_to_tu_matrix = np.zeros((num_rnas, num_tus))
-	tu_index = find_tu_indices(tu_info)
 
 	rnas_gene_order = [row['geneId'] for row in rna_info]
-
+	#import pdb; pdb.set_trace()
 	reverse_index = {
 		row['geneId']: gene_index 
 		for gene_index, row in enumerate(rna_info)}
 
-	for index in tu_index:
-		genes_in_tu = re.split(SPLIT_DELIMITER, tu_info[index]['geneId'])
-		for gene in genes_in_tu:
+
+	for index, tu in enumerate(tu_info):
+		if not SPLIT_DELIMITER in tu['geneId']:
+			gene = tu['geneId']
 			gene_index = reverse_index[gene]
 			gene_to_tu_matrix[gene_index, index] = 1
+		else:
+			genes_in_tu = re.split(SPLIT_DELIMITER, tu['geneId'])
+			for gene in genes_in_tu:
+				gene_index = reverse_index[gene]
+				gene_to_tu_matrix[gene_index, index] = 1
+		
+	
+
 
 	return gene_to_tu_matrix, rnas_gene_order
 
@@ -110,16 +105,9 @@ def create_rnaseq_count_vector(rnas_gene_order):
 
 def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 	tu_counts_vector = np.linalg.lstsq(gene_tu_matrix, rna_seq_counts_vector)[0]
-	tu_ids = []
 
-	counter = 0
-	for count in rna_seq_counts_vector:
-		if tu_counts_vector[counter] > 0.:
-			counter += 1
-
-		tu_counts_vector[counter] = count
-		counter += 1
-
+	#import pdb; pdb.set_trace()	
+	
 	tu_gene_order = [row['geneId'] for row in tu_info]
 	tu_genes_counts = []
 
@@ -137,11 +125,18 @@ def calculate_tu_counts_vector():
 	tu_counts = create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info)
 	fieldnames = ['tu_id', 'tu_count']
 
-	with open(output_file, "w") as f:
+
+
+	with open(output_tu_counts, "w") as f:
 		writer = JsonWriter(f, fieldnames)
 		writer.writeheader()
 		for tu_count in tu_counts:
 			writer.writerow(tu_count)
+
+	with open(output_gene_tu_matrix, "w") as f:
+		writer = csv.writer(f, delimiter=' ')
+		for row in gene_tu_matrix:
+			writer.writerow(row)
 
 	#return tu_counts
 
