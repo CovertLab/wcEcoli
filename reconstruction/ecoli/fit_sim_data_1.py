@@ -1497,7 +1497,7 @@ def getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassIn
 
 	# Compute number of RNA polymerases required to maintain steady state of mRNA
 	nActiveRnapNeeded = rnaLengths / elongation_rates * rnaLossRate
-	return np.array([x.asNumber() for x in nActiveRnapNeeded])
+	return nActiveRnapNeeded
 
 def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, rnap_activity, options):
 	"""
@@ -1534,45 +1534,10 @@ def setRNAPCountsConstrainedByPhysiology(sim_data, bulkContainer, doubling_time,
 	"""
 
 	# -- CONSTRAINT 1: Expected RNA distribution doubling -- #
-	rnaLengths = units.sum(sim_data.process.transcription.rnaData['countsACGU'], axis = 1)
-	rnaLossRate = None
-
-	if Km is None:
-		# RNA loss rate is in units of counts/time, and computed by summing the
-		# contributions of degradation and dilution.
-		rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
-			doubling_time,
-			rna_deg_rate,
-			bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
-		)
-	else:
-		# Get constants to compute countsToMolar factor
-		cellDensity = sim_data.constants.cellDensity
-		cellVolume = avgCellDryMassInit / cellDensity / sim_data.mass.cellDryMassFraction
-		countsToMolar = 1 / (sim_data.constants.nAvogadro * cellVolume)
-
-		# Compute input arguments for netLossRateFromDilutionAndDegradationRNA()
-		rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
-		endoRNaseConc = countsToMolar * bulkContainer.counts(sim_data.process.rna_decay.endoRnaseIds)
-		kcatEndoRNase = sim_data.process.rna_decay.kcats
-		totalEndoRnaseCapacity = units.sum(endoRNaseConc * kcatEndoRNase)
-
-		# RNA loss rate is in units of counts/time, and computed by accounting
-		# for the competitive inhibition of RNase by other RNA targets.
-		rnaLossRate = netLossRateFromDilutionAndDegradationRNA(
-			doubling_time,
-			(1 / countsToMolar) * totalEndoRnaseCapacity,
-			Km,
-			rnaConc,
-			countsToMolar,
-			)
-	# Get transcription elongation rate
-	base = sim_data.growthRateParameters.getRnapElongationRate(doubling_time).asNumber(units.nt / units.s)
-	elongation_rates = sim_data.process.transcription.make_elongation_rates_flat(
-		base, flat_elongation=options['flat_elongation_transcription']) * units.nt / units.s
 
 	# Compute number of RNA polymerases required to maintain steady state of mRNA
-	nActiveRnapNeeded = units.sum(rnaLengths / elongation_rates * rnaLossRate).asNumber()
+	activeRnapDemand = getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options)
+	nActiveRnapNeeded = units.sum(activeRnapDemand).asNumber()
 	nRnapsNeeded = nActiveRnapNeeded / rnap_activity
 
 	# Convert nRnapsNeeded to the number of RNA polymerase subunits required
@@ -1623,7 +1588,8 @@ def setRNAPActivityConstrainedByPhysiology(sim_data, bulkContainer,	doubling_tim
 	- rnapActivityNeeded (float) - RNA polymerase active fraction required
 	"""
 
-	nActiveRnapNeeded = getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options).sum()
+	activeRnapDemand = getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options)
+	nActiveRnapNeeded = units.sum(activeRnapDemand).asNumber()
 
 	# Get total number of RNA polymerases
 	rnapIds = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitIds']
@@ -1665,11 +1631,14 @@ def setMrnaDegRateConstrainedByRNAPDemand(sim_data, bulkContainer, doubling_time
 	is_gene_of_interest = np.logical_or(transcription.rnaData['isRProtein'], transcription.rnaData['isRnap'])
 
 	# Estimate active RNAP demand and supply
-	n_active_rnap_demand = getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options)
+	rnap_demand_per_transcript = getActiveRNAPDemand(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km, rna_deg_rate, options)
+	n_active_rnap_demand = units.sum(activeRnapDemand).asNumber()
+	unitless_rnap_demand = np.array([demand.asNumber() for demand in rnap_demand_per_transcript])
+
 	n_active_rnap_supply = min(bulkContainer.counts(rnap_ids) / rnap_stoich) * rnap_activity
 
 	# Distribute supply to each RNA proportional to their demand for active RNAP
-	n_active_rnap_supply_per_rna = n_active_rnap_supply * (n_active_rnap_demand / n_active_rnap_demand.sum())
+	n_active_rnap_supply_per_rna = n_active_rnap_supply * (unitless_rnap_demand / n_active_rnap_demand)
 
 	# Estimate new rna deg rates (see docstring for equation)
 	new_rna_deg_rate = (n_active_rnap_supply_per_rna[is_gene_of_interest] / rna_lengths[is_gene_of_interest]
@@ -1687,7 +1656,7 @@ def setMrnaDegRateConstrainedByRNAPDemand(sim_data, bulkContainer, doubling_time
 	if VERBOSE > 1:
 		degree_of_fit = np.sqrt(np.mean(np.square(rna_deg_rate.asNumber(1 / units.s) - new_rna_deg_rate_full)))
 		print('\nmRNA degradation rate fitting of R-proteins and RNA Polymerase subunits')
-		print('\tActive RNA Polymerase demand: {}'.format(n_active_rnap_demand.sum()))
+		print('\tActive RNA Polymerase demand: {}'.format(n_active_rnap_demand))
 		print('\tActive RNA Polymerase supply: {}'.format(n_active_rnap_supply))
 		print('\tDegree of fit: {}'.format(degree_of_fit))
 
