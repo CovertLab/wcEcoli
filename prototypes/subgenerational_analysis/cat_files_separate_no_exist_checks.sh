@@ -4,40 +4,62 @@
 Author: Mialy DeFelice
 Date: 082119
 Function:
-Yay this is my first bash script!
 Basically will take outputs downloaded from the cloud and merge them all together.
-The way I did this was to save as much data as possible and to avoid overwriting
-anything, to be safe. But would be more space efficient to overwrite many of the files
-or delete them in the end.
-Its also longer than it needs to be, so I can put in some print statements, and do 
-	a lot of gratitious checks.
-TODO:
--Take base_output_dir as an argument?
-'
-base_output_dir="/Users/taryn/operons/2019-08-22_100seed_subgen/082119"
-save_dir="/Users/taryn/operons/2019-08-22_100seed_subgen/cat_files_new/"
+There are no checks to make sure the file exists due to a problem with incomplete files not being rewritten.
 
+Add in additional checks to make sure the vectors and matrices are of the proper length before proceeding.
+'
+base_output_dir="/Users/mialydefelice/Documents/code_repositories/wcEcoli/out/counts/wildtype_000000/count_out_2"
+save_dir="/Users/mialydefelice/Documents/code_repositories/wcEcoli/out/counts/wildtype_000000/count_out_concatenated/"
+
+concatenate_data_files () {
+	echo "Making $2"
+	cat $(ls $(find "$i" -iname $1 | sort -V)) > $2
+}
+	
 for i in $(find "${base_output_dir}"* -depth 1 -type d); do
 	base=`basename $i`
-	echo "printing i $i"
+	num_timepoints=$(cat $"$i/time_info.tsv" | wc -l)
 	# Merge counts data from multiple generations into single files
-	# For RNA and protein
+	# For RNA, protein and complexes
+	
+	#num_files_to_merge=$(find "$i" -maxdepth 1 -name '*_gen_data_rna.tsv' | wc -l)
+	#echo $num_files_to_merge
 
 	for j in $(find "${i}"* -maxdepth 1 -type d); do
 		#create multigen merge of data for protein and rna
-		#only if it doesnt already exist.
-	
-		echo "Making $j/merged_rna_counts.tsv"
-		cat $(ls $(find "$i" -iname '*_gen_data_rna.tsv' | sort -V)) > "$j/merged_rna_counts.tsv";
-			
-		echo "Making $j/merged_protein_counts.tsv"
-		cat $(ls $(find "$i" -iname '*_gen_data_protein.tsv' | sort -V)) > "$j/merged_protein_counts.tsv";
-	
-		echo "Making $j/merged_complex_counts.tsv"
-		cat $(ls $(find "$i" -iname '*_gen_data_complex.tsv' | sort -V)) > "$j/merged_complex_counts.tsv";
-	
-	done;
+		#check if the merged file is the correct length, if its not run till its made.
+		#Note this can be dangerous, so run while watching after it.
 
+		# --- RNA --- 
+		concatenate_data_files '*_gen_data_rna.tsv' "$j/merged_rna_counts.tsv"
+		# The following is a check to ensure the concatenation file made is the correct lenght.
+		while [ $(cat $"$j/merged_rna_counts.tsv" | wc -l) != $num_timepoints ]; do
+			echo "WARNING: There was an issue making $j/merged_rna_counts.tsv, reconcatenating this file now!"
+			concatenate_data_files '*_gen_data_rna.tsv' "$j/merged_rna_counts.tsv"
+		done;
+
+		echo "$j/merged_rna_counts.tsv file successfully made"
+
+		# --- Protein --- 
+		concatenate_data_files '*_gen_data_protein.tsv' "$j/merged_protein_counts.tsv"
+		while [ $(cat $"$j/merged_protein_counts.tsv" | wc -l) != $num_timepoints ]; do
+			echo "WARNING: There was an issue making $j/merged_protein_counts.tsv, reconcatenating this file now!"
+			concatenate_data_files '*_gen_data_protein.tsv' "$j/merged_protein_counts.tsv"
+		done;
+
+		echo "$j/merged_protein_counts.tsv file successfully made"
+		
+		# --- Complexes --- 
+		concatenate_data_files '*_gen_data_complex.tsv' "$j/merged_complex_counts.tsv"
+		while [ $(cat $"$j/merged_complex_counts.tsv" | wc -l) != $num_timepoints ]; do
+			echo "WARNING: There was an issue making $j/merged_complex_counts.tsv, reconcatenating this file now!"
+			concatenate_data_files '*_gen_data_complex.tsv' "$j/merged_complex_counts.tsv"
+		done;
+
+		echo "$j/merged_complex_counts.tsv file successfully made"
+		
+	done;
 
 #----- Add a header to time_info file (assumes one does not exist)
 	echo "Making $i/gen_info_w_header.tsv"
@@ -111,26 +133,26 @@ output_all_complex_data=""$save_dir${base}_all_complex_data.tsv""
 	paste "$i/time_info_w_header.tsv" "$i/gen_info_w_header.tsv" "$i/complex_ids_and_counts.tsv" >> $output_all_complex_data 
 
 
-	#---- To save space, remove some precursor files.
-	if [ -f $output_file_rna_id ]; then
-		rm $output_file_rna_id
-	else
-		echo "$output_file_rna_id does not exist"
-	fi
+#---- To save space, remove some precursor files.
+if [ -f $output_file_rna_id ]; then
+	rm $output_file_rna_id
+else
+	echo "$output_file_rna_id does not exist"
+fi
 
-	#---- To save space, remove some precursor files.
-	if [ -f $output_file_protein_id ]; then
-		rm $output_file_protein_id
-	else
-		echo "$output_file_protein_id does not exist"
-	fi
+#---- To save space, remove some precursor files.
+if [ -f $output_file_protein_id ]; then
+	rm $output_file_protein_id
+else
+	echo "$output_file_protein_id does not exist"
+fi
 
-	#---- To save space, remove some precursor files.
-	if [ -f $output_file_complex_id ]; then
-		rm $output_file_complex_id
-	else
-		echo "$output_file_complex_id does not exist"
-	fi
+#---- To save space, remove some precursor files.
+if [ -f $output_file_complex_id ]; then
+	rm $output_file_complex_id
+else
+	echo "$output_file_complex_id does not exist"
+fi
 
 	#---- Use for checking file dimensions
 
