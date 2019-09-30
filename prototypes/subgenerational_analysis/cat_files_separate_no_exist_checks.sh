@@ -23,8 +23,7 @@ for i in $(find "${base_output_dir}"* -depth 1 -type d); do
 	# Merge counts data from multiple generations into single files
 	# For RNA, protein and complexes
 	
-	#num_files_to_merge=$(find "$i" -maxdepth 1 -name '*_gen_data_rna.tsv' | wc -l)
-	#echo $num_files_to_merge
+	
 
 	for j in $(find "${i}"* -maxdepth 1 -type d); do
 		#create multigen merge of data for protein and rna
@@ -154,10 +153,16 @@ else
 	echo "$output_file_complex_id does not exist"
 fi
 
-	#---- Use for checking file dimensions
+	
 
 	: '
+	In the following note double single quotes, will need to remove if want to use.
 	
+	#---- Count the number of files that match wildcard name
+	#num_files_to_merge=$(find "$i" -maxdepth 1 -name ''*_gen_data_rna.tsv'' | wc -l)
+	#echo $num_files_to_merge
+
+	#---- Use for checking file dimensions
 	echo "rows and columns of merged rna counts id file"
 	echo $(cat $"$i/merged_rna_ids.tsv" | wc -l)
 	echo $(head -1 $"$i/merged_rna_ids.tsv" | sed ''s/,/\t/g'' | wc -w)
