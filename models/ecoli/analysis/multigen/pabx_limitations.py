@@ -26,13 +26,16 @@ from models.ecoli.analysis import multigenAnalysisPlot
 FONTSIZE = 6
 LABELSIZE = 6
 
+START_GEN = 16
+END_GEN = 31
+
 ENZYME_RNA_IDS = ["EG10682_RNA[c]", "EG10683_RNA[c]"]
 ENZYME_MONOMER_IDS = ["PABASYN-COMPII-MONOMER[c]", "PABASYN-COMPI-MONOMER[c]"]
 ENZYME_COMPLEX_IDS = ["PABASYN-CPLX[c]", "PABSYNMULTI-CPLX[c]"]
 ENZYME_REACTION_IDS = ["PABASYN-RXN__PABASYN-CPLX (reverse)", "PABASYN-RXN__PABSYNMULTI-CPLX (reverse)"]
 METABOLITE_ID = "METHYLENE-THF[c]"
 
-FLUX_LINEAR_THRESHOLD = 1e-4  # Flux values below this threshold will be plotted linearly
+FLUX_LINEAR_THRESHOLD = 1e-3  # Flux values below this threshold will be plotted linearly
 
 def clearLabels(axis):
 	axis.set_yticklabels([])
@@ -96,11 +99,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		cellMass = []
 		dryMass = []
 		timeStepSec = []
-		generationTicks = [0.]
+		generationTicks = []
+
+		first_gen = True
 
 		n_transcription_init_events_per_gen = []
 
-		for simDir in allDir:
+		for simDir in allDir[START_GEN:(END_GEN + 1)]:
 			simOutDir = os.path.join(simDir, "simOut")
 
 			main_reader = TableReader(os.path.join(simOutDir, "Main"))
@@ -111,7 +116,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			rnap_data_reader = TableReader(os.path.join(simOutDir, "RnapData"))
 
 			time.extend(main_reader.readColumn("time").tolist())
-			generationTicks.append(time[-1])
+
+			if first_gen:
+				generationTicks.extend([time[0], time[-1]])
+				first_gen = False
+			else:
+				generationTicks.append(time[-1])
 
 			timeStepSec.extend(main_reader.readColumn("timeStepSec").tolist())
 			cellMass.extend(mass_reader.readColumn("cellMass").tolist())
@@ -198,7 +208,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		complex_axis.plot(time_hours, enzyme_complex_counts.sum(axis=1), color=post_merge_color)
 		complex_axis.set_ylabel("Protein complex\ncounts", fontsize = FONTSIZE, rotation = 0)
 		complex_axis.yaxis.set_label_coords(-.12, 0.25)
-		complex_axis.set_ylim([0, np.max(enzyme_complex_counts)])
+		complex_axis.set_ylim([0, np.max(enzyme_complex_counts.sum(axis=1))])
 		whitePadSparklineAxis(complex_axis, xAxis = False)
 
 		flux_axis.plot(time_hours, enzyme_fluxes, color=post_merge_color)
@@ -209,7 +219,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		whitePadSparklineAxis(flux_axis, xAxis=False)
 		flux_axis.get_yaxis().set_tick_params(which='minor', size=0)
 		flux_axis.get_xaxis().set_tick_params(which='minor', width=0)
-		flux_axis.set_yticklabels(["0", "%.2f" % flux_axis.get_ylim()[1]])
+		flux_max = flux_axis.get_ylim()[1]
+		flux_axis.set_yticks([0, FLUX_LINEAR_THRESHOLD, flux_max])
+		flux_axis.set_yticklabels(["0", "%0.0e"%(FLUX_LINEAR_THRESHOLD, ), "%.2f"%(flux_max, )])
 
 		met_axis.plot(time_hours, metabolite_counts, color=post_merge_color)
 		met_axis.set_ylabel("End product\ncounts", fontsize = FONTSIZE, rotation = 0)
@@ -221,7 +233,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		met_axis.set_yticklabels([0, "%0.1e" % met_axis.get_ylim()[1]])
 		met_axis.set_xticks(np.array(generationTicks) / 3600.)
 		xticklabels = np.repeat("     ", len(generationTicks))
-		xticklabels[0] = "0"
+		xticklabels[0] = "%0.2f" % (time_hours[0])
 		xticklabels[-1] = "%0.2f" % (time_hours[-1])
 		met_axis.set_xticklabels(xticklabels)
 

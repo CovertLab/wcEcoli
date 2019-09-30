@@ -73,27 +73,27 @@ python models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py \
 ## Figure 4
 # panel A
 python models/ecoli/analysis/multigen/proteinCountsValidation.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_A/20190819.181225__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/ \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_A/20190910.135308__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/ \
 --seed 0
 
 # panel B
 python models/ecoli/analysis/cohort/expression_dynamics.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_A/20190819.181225__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/
+/scratch/PI/mcovert/wc_ecoli/paper/SET_A/20190910.135308__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/
 
 # panel C and D
 python models/ecoli/analysis/multigen/subgenerational_transcription.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_A/20190819.181225__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/ \
---seed 2
+/scratch/PI/mcovert/wc_ecoli/paper/SET_A/20190910.135308__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/ \
+--seed 0
 
 # panel E
 python models/ecoli/analysis/multigen/functionalUnits.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_A/20190819.181225__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/ \
---seed 2
+/scratch/PI/mcovert/wc_ecoli/paper/SET_A/20190910.135308__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/ \
+--seed 0
 
 # panel F
 python models/ecoli/analysis/multigen/pabx_limitations.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_A/20190819.181225__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/ \
---seed 2
+/scratch/PI/mcovert/wc_ecoli/paper/SET_A/20190910.135308__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/ \
+--seed 5
 
 
 ## Figure 5

@@ -223,7 +223,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.close("all")
 
 		# Plot unlabeled version of final panel for Fig. 4E
-		fig, ax = plt.subplots(1, 1, figsize = (8.5, 11))
+		fig, ax = plt.subplots(1, 1, figsize = (5, 10))
 		notAlwaysPresent = zeroAtLeastOnce.sum()
 		alwaysPresent = len(proteinIds) - notAlwaysPresent
 		notAlwaysPresentEssential = np.logical_and(zeroAtLeastOnce, essential).sum()
@@ -239,7 +239,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		axRight = ax.twinx()
 		axRight.set_ylim(ax.get_ylim())
-		axRight.set_yticks([x[1].get_height() for x in [barAll, barEssential]])
+		axRight.set_yticks([0] + [x[1].get_height() for x in [barAll, barEssential]])
 
 		axRight.spines["left"].set_visible(False)
 		axRight.spines["top"].set_visible(False)
