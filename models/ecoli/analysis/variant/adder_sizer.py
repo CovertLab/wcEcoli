@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-
 import os
 
 import numpy as np
@@ -16,7 +15,7 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from scipy.stats import linregress
 
 
-FONT_SIZE=5
+FONT_SIZE = 5
 
 INIT_MASS_LOWER_LIM = 0.6
 INIT_MASS_UPPER_LIM = 1.6
@@ -131,8 +130,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			fig.set_figwidth(3)
 			fig.set_figheight(2)
 			ax = plt.subplot2grid((1,1), (0,0))
-			ax.plot(scaled_initial_masses, scaled_added_masses, '.', color = color_cycle[0], alpha = 0.25, ms=6, zorder=1, markeredgewidth = 0.0)
-			ax.set_title(title_list[varIdx] + ", n=%d"% (len(all_cells) - fail, ), fontsize=FONT_SIZE)
+			ax.plot(scaled_initial_masses, scaled_added_masses, '.', color = color_cycle[0], alpha = 0.25, ms=6, zorder=1, markeredgewidth = 0.0, clip_on=False)
 			ax.plot(scaled_initial_masses, slope * scaled_initial_masses + intercept, color = 'k')
 
 			ax.set_xlim([INIT_MASS_LOWER_LIM, INIT_MASS_UPPER_LIM])
