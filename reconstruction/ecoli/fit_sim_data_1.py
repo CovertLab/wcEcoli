@@ -793,8 +793,6 @@ def setRnaPolymeraseCodingRnaDegradationRates(sim_data):
 
 	for mRNA_index in mRNA_indexes:
 		sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_index] = RNA_POLY_MRNA_DEG_RATE_PER_S
-	import pdb; pdb.set_trace()
-	#sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = RNA_POLY_MRNA_DEG_RATE_PER_S
 
 def setTranslationEfficiencies(sim_data):
 	"""
