@@ -785,11 +785,16 @@ def setRnaPolymeraseCodingRnaDegradationRates(sim_data):
 	rnaPolySubunits = sim_data.process.complexation.getMonomers("APORNAP-CPLX[c]")["subunitIds"] # APORNAP-CPLX[c] is the RNA polymerase complex
 	subunitIndexes = np.array([np.where(sim_data.process.translation.monomerData["id"] == id_)[0].item() for id_ in rnaPolySubunits]) # there has to be a better way...
 
-	# TODO(Ryan): check to see if this needs to be updated
-	mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping[subunitIndexes]
+	# TODO(Mialy): This mapping works currently for rnaPolySubunits, but would not work for anything where its in 
+	# a TU. This would be a potential problem later if the RNA polymerases were put into a TU.
+	mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping_new[subunitIndexes]
 
 	# Modifies
-	sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = RNA_POLY_MRNA_DEG_RATE_PER_S
+
+	for mRNA_index in mRNA_indexes:
+		sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_index] = RNA_POLY_MRNA_DEG_RATE_PER_S
+	import pdb; pdb.set_trace()
+	#sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = RNA_POLY_MRNA_DEG_RATE_PER_S
 
 def setTranslationEfficiencies(sim_data):
 	"""
