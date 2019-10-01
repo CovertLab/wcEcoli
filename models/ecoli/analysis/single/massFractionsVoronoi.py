@@ -111,14 +111,14 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		lipid = np.dot(lipidCounts, lipidsMW)/nAvogadro*(10**15)
 
 		# LPS
-		lpsIds = sim_data.moleculeGroups.LPS
+		lpsIds = sim_data.moleculeIds.LPS
 		lpsIndexes = np.array([bulk_molecule_ids.index(lps) for lps in lpsIds], np.int)
 		lpsCounts = bulkMoleculeCounts[:, lpsIndexes]
 		lpsMW = sim_data.getter.getMass(lpsIds).asNumber(units.g / units.mol)
 		lps = np.dot(lpsCounts, lpsMW)/nAvogadro*(10**15)
 
 		# peptidoglycans
-		mureinIds = sim_data.moleculeGroups.murein
+		mureinIds = sim_data.moleculeIds.murein
 		mureinIndexes = np.array([bulk_molecule_ids.index(murein) for murein in mureinIds], np.int)
 		mureinCounts = bulkMoleculeCounts[:, mureinIndexes]
 		mureinMW = sim_data.getter.getMass(mureinIds).asNumber(units.g / units.mol)
@@ -132,7 +132,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		polyamines = np.dot(polyaminesCounts, polyaminesMW)/nAvogadro*(10**15)
 
 		# glycogen
-		glycogenIds = sim_data.moleculeGroups.glycogen
+		glycogenIds = sim_data.moleculeIds.glycogen
 		glycogenIndexes = np.array([bulk_molecule_ids.index(glycogen) for glycogen in glycogenIds], np.int)
 		glycogenCounts = bulkMoleculeCounts[:, glycogenIndexes]
 		glycogenMW = sim_data.getter.getMass(glycogenIds).asNumber(units.g / units.mol)

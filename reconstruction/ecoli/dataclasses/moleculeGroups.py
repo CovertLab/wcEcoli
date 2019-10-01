@@ -58,11 +58,10 @@ class MoleculeGroups(object):
 				'RRLD-RRNA[c]', 'RRLE-RRNA[c]', 'RRLG-RRNA[c]', 'RRLH-RRNA[c]'],
 			's50_5sRRNA': ['RRFA-RRNA[c]', 'RRFB-RRNA[c]', 'RRFC-RRNA[c]',
 				'RRFD-RRNA[c]', 'RRFE-RRNA[c]', 'RRFG-RRNA[c]', 'RRFH-RRNA[c]'],
+
 			'lipids': ['CPD-8260[c]', 'CPD-12819[c]', 'CPD-12824[c]'],
-			'LPS': ['CPD0-939[c]'],
-			'murein': ['CPD-12261[p]'],
 			'polyamines': ['GAMMA-GLUTAMYL-PUTRESCINE[c]','PUTRESCINE[c]','GLUTATHIONYLSPERMIDINE[c]','SPERMIDINE[c]','N1-ACETYLSPERMINE[c]','SPERMINE[c]'],
-			'glycogen': ['glycogen-monomer[c]'],
+			
 			# TODO: 'EG10245-MONOMER[c]' (DNAP III subunit tau) should be added
 			# to the list of trimer subunits once frame-shifting proteins are
 			# produced.

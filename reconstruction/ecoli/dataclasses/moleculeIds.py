@@ -22,7 +22,10 @@ class MoleculeIds(object):
 			's30_fullComplex': 'CPLX0-3953[c]',
 			's50_fullComplex': 'CPLX0-3962[c]',
 			'DnaA': 'PD03831[c]',
-			'DnaA_ATP_complex': 'MONOMER0-160[c]'
+			'DnaA_ATP_complex': 'MONOMER0-160[c]',
+			'LPS': ['CPD0-939[c]'],
+			'murein': ['CPD-12261[p]'],
+			'glycogen': ['glycogen-monomer[c]']
 		}
 
 		self.__dict__.update(moleculeIds)
