@@ -26,9 +26,6 @@ from models.ecoli.analysis import multigenAnalysisPlot
 FONTSIZE = 6
 LABELSIZE = 6
 
-START_GEN = 16
-END_GEN = 31
-
 ENZYME_RNA_IDS = ["EG10682_RNA[c]", "EG10683_RNA[c]"]
 ENZYME_MONOMER_IDS = ["PABASYN-COMPII-MONOMER[c]", "PABASYN-COMPI-MONOMER[c]"]
 ENZYME_COMPLEX_IDS = ["PABASYN-CPLX[c]", "PABSYNMULTI-CPLX[c]"]
@@ -105,7 +102,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		n_transcription_init_events_per_gen = []
 
-		for simDir in allDir[START_GEN:(END_GEN + 1)]:
+		for simDir in allDir:
 			simOutDir = os.path.join(simDir, "simOut")
 
 			main_reader = TableReader(os.path.join(simOutDir, "Main"))
