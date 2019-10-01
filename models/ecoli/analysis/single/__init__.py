@@ -29,6 +29,7 @@ ACTIVE = [
 	"mRnaHalfLives.py",
 	"massFractionSummary.py",
 	"massFractions.py",
+	"massFractionsVoronoi.py"
 	"metaboliteComparison.py",
 	"metabolites.py",
 	"mrnaCounts.py",
@@ -65,6 +66,7 @@ TAGS = {
 		"evaluationTime.py",
 		"glucoseAndOxygenExchangeFluxes.py",
 		"massFractionSummary.py",
+		"massFractionsVoronoi.py"
 		"mrnaCounts.py",
 		"ntpCounts.py",
 		"processMassBalance.py",
