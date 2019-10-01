@@ -19,8 +19,8 @@ class Relation(object):
 	""" Relation """
 
 	def __init__(self, raw_data, sim_data):
-		self.mrna_data = sim_data.process.transcription.rnaData[
-			np.where(sim_data.process.transcription.rnaData['isMRna'])[0]]
+		self.is_mrna = np.where(sim_data.process.transcription.rnaData['isMRna'])[0]
+		self.mrna_data = sim_data.process.transcription.rnaData[self.is_mrna]
 
 		self._buildRnaIndexToMonomerMapping(raw_data, sim_data)
 		self._buildMonomerIndexToRnaMapping(raw_data, sim_data)

@@ -35,6 +35,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Load parameters
 		# mrnaIds = sim_data.process.translation.monomerData["rnaId"]
+
 		# TODO(Ryan): This will now be in the wrong order (convert to transcript space, 
 		# then convert to monomer order at the end)
 		mrnaIds = sim_data.relation.mrna_data['id']
@@ -98,9 +99,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# mRNA translational efficiencies
 
 		# TODO(Ryan): Is the relative ordering of these indexes correct?
-		# TODO(Ryan): Is it justified to leap directly to proteins here, or does this whole process
-		#     need to be rewritten to consider transcripts directly until the point the proteins
-		#     are complete? 
 		monomer_counts = np.matmul(self.mRnas.counts(), self.mrnaToMonomerTransform)
 		proteinInitProb = normalize(monomer_counts * self.translationEfficiencies)
 

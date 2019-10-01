@@ -1175,8 +1175,15 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	total_mass_protein = sim_data.mass.getFractionMass(doubling_time)["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 	individual_masses_protein = sim_data.process.translation.monomerData["mw"] / sim_data.constants.nAvogadro
 
-	# TODO(Ryan): replace this mapping with a matrix transform from mrna space to monomer space
-	distribution_transcripts_by_protein = normalize(expression[sim_data.relation.rnaIndexToMonomerMapping])
+	# TODO(Ryan): make sure the transpose of the monomerToMrnaTransform matrix works
+	#   as an inverse mapping
+	mrna_expression = normalize(expression[sim_data.relation.is_mrna])
+	distribution_transcripts_by_protein = np.matmul(
+		mrna_expression,
+		sim_data.relation.mrnaToMonomerTransform)
+
+	# distribution_transcripts_by_protein = normalize(expression[sim_data.relation.rnaIndexToMonomerMapping])
+
 	translation_efficiencies_by_protein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 
 	degradationRates = sim_data.process.translation.monomerData["degRate"]
