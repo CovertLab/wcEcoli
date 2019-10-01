@@ -35,7 +35,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Load parameters
 		# mrnaIds = sim_data.process.translation.monomerData["rnaId"]
-		# TODO(Ryan): This will now be in the wrong order
+		# TODO(Ryan): This will now be in the wrong order (convert to transcript space, 
+		# then convert to monomer order at the end)
 		mrnaIds = sim_data.relation.mrna_data['id']
 		self.mrnaToMonomerTransform = sim_data.relation.mrnaToMonomerTransform
 
