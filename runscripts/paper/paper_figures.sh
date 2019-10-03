@@ -116,14 +116,14 @@ python models/ecoli/analysis/multigen/environmental_shift_fluxes.py \
 python models/ecoli/analysis/variant/adder_sizer.py \
 /scratch/PI/mcovert/wc_ecoli/paper/SET_C/20190906.151026__SET_C_4_gens_256_seeds_3_conditions_with_growth_noise_and_D_period/
 
+python models/ecoli/analysis/variant/adder_sizer_comparison.py \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_C/20190906.151026__SET_C_4_gens_256_seeds_3_conditions_with_growth_noise_and_D_period/
+
 python models/ecoli/analysis/variant/rna_protein_ratio_comparison.py \
 /scratch/PI/mcovert/wc_ecoli/paper/SET_C/20190906.151026__SET_C_4_gens_256_seeds_3_conditions_with_growth_noise_and_D_period/
 
 python models/ecoli/analysis/variant/rna_protein_ratio_comparison.py \
 /scratch/PI/mcovert/wc_ecoli/paper/SET_L/20190910.155143__SET_L_4_gens_256_seeds_3_conditions_unfit_ribosome_and_rna_poly_expression/
-
-python models/ecoli/analysis/variant/adder_sizer_comparison.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_C/20190906.151026__SET_C_4_gens_256_seeds_3_conditions_with_growth_noise_and_D_period/
 
 
 ## Supplemental figure 3

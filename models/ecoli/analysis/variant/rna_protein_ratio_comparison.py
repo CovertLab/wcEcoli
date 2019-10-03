@@ -24,7 +24,7 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 # anything.
 FIRST_GENERATION = 2
 
-FIGSIZE = (7.5, 7.5)
+FIGSIZE = (4, 4)
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):

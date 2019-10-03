@@ -75,20 +75,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.style.use('seaborn-deep')
 		color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-		plt.figure(figsize=(5, 5))
+		plt.figure(figsize=(4, 4))
 		ax = plt.subplot2grid((1, 1), (0, 0))
 
 		options = {
-			"edgecolors": color_cycle[0], "alpha": 0.2, "s": 20, "clip_on": False
+			"edgecolors": color_cycle[0], "alpha": 0.2, "s": 50, "clip_on": False
 			}
-		labels = ["minimal", "anaerobic", "+AA"]
+		labels = ["minimal", "anaerobic", "minimal + AA"]
 
+		ax.scatter(initial_volumes[2], added_volumes[2],
+			marker="x", label=labels[2], **options)
 		ax.scatter(initial_volumes[0], added_volumes[0],
 			facecolors="none", marker="o", label=labels[0], **options)
 		ax.scatter(initial_volumes[1], added_volumes[1],
 			facecolors="none", marker="^", label=labels[1], **options)
-		ax.scatter(initial_volumes[2], added_volumes[2],
-			marker="x", label=labels[2], **options)
 
 		ax.set_xlim([0, 4])
 		ax.set_ylim([0, 4])
@@ -112,7 +112,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.set_ylabel("")
 		ax.set_yticklabels([])
 		ax.set_xticklabels([])
-		ax.get_legend().remove()
 		exportFigure(plt, plotOutDir, plotOutFileName + "_clean", metadata)
 
 		plt.close("all")
