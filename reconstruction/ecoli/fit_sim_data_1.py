@@ -341,6 +341,8 @@ def buildBasalCellSpecifications(
 		"doubling_time": sim_data.conditionToDoublingTime["basal"],
 		}
 
+	import ipdb; ipdb.set_trace()
+
 	# Determine expression and synthesis probabilities
 	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _ = expressionConverge(
 		sim_data,
@@ -793,7 +795,6 @@ def setRnaPolymeraseCodingRnaDegradationRates(sim_data):
 
 	for mRNA_index in mRNA_indexes:
 		sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_index] = RNA_POLY_MRNA_DEG_RATE_PER_S
-	import pdb; pdb.set_trace()
 	#sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_indexes] = RNA_POLY_MRNA_DEG_RATE_PER_S
 
 def setTranslationEfficiencies(sim_data):
@@ -842,6 +843,7 @@ def setRNAExpression(sim_data):
 	for rna in RNA_EXPRESSION_ADJUSTMENTS:
 		idx = np.where(sim_data.process.transcription.rnaData["id"] == rna)[0]
 		sim_data.process.transcription.rnaExpression["basal"][idx] *= RNA_EXPRESSION_ADJUSTMENTS[rna]
+
 
 	sim_data.process.transcription.rnaExpression["basal"] /= sim_data.process.transcription.rnaExpression["basal"].sum()
 
@@ -1572,6 +1574,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	mRnaDistribution = np.matmul(
 		transcriptDistribution,
 		sim_data.relation.monomerToMrnaTransform)
+	mRnaDistribution /= mRnaDistribution.sum()
 
 	mRnaExpressionView.countsIs(
 		mRnaExpressionFrac * mRnaDistribution)
@@ -1893,7 +1896,8 @@ def totalCountFromMassesAndRatios(totalMass, individualMasses, distribution):
 	and documentation is only with units
 	"""
 
-	assert np.allclose(np.sum(distribution), 1)
+	if not(np.allclose(np.sum(distribution), 1)):
+		import ipdb; ipdb.set_trace()
 	return 1 / units.dot(individualMasses, distribution) * totalMass
 
 def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, netLossRate):

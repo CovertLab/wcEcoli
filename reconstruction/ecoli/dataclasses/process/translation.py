@@ -250,6 +250,30 @@ class Translation(object):
 
 		self.elongation_rates[self.rprotein_indexes] = self.max_elongation_rate
 
+		# # provide transcript view on elongation rates
+		# is_mrna = np.where(sim_data.process.transcription.rnaData['isMRna'])[0]
+		# self.mrna_data = sim_data.process.transcription.rnaData[self.is_mrna]
+		# self.mrna_ids = self.mrna_data['id']
+
+		self.mrna_count = len([True for rna in raw_data.operon_rnas if rna["type"] == "mRNA"])
+
+
+	def make_transcript_elongation_rates(
+			self,
+			random,
+			base,
+			time_step,
+			variable_elongation=False):
+
+		return make_elongation_rates(
+			random,
+			self.mrna_count,
+			base * 3,
+			[], # TODO(Ryan): replace with indexes for rprotein transcripts
+			self.max_elongation_rate * 3,
+			time_step,
+			variable_elongation)
+
 	def make_elongation_rates(
 			self,
 			random,
