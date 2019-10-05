@@ -16,9 +16,9 @@ from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.utils import units
-from wholecell.utils import VoronoiPlotMain
+from wholecell.utils.voronoiPlotMain import PolygonClass, VoronoiClass, LineClass, RayClass, VoronoiMaster
 
-VM = VoronoiPlotMain.VoronoiMaster()
+VM = VoronoiMaster()
 CANVAS = np.array([[0, 0], [4, 0], [4, 4], [0, 4]]) #the overall shape of the plot
 I_MAX = 75 #the number of iterations for optimizing the Voronoi diagram
 ERR_THRES = 1E-6 #the error threshold set to break from optimizing process

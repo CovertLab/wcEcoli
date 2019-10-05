@@ -85,6 +85,9 @@ plt.title("YOUR TITLE")
 exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 plt.close("all")
 
+(3)Please note that there is a possibility of being trapped in an infinite loop because we set the error
+tolerance to be 0.15. If a program takes unreasonably long time to run, please just stop it and try for
+another random seed.
 """
 
 import os
@@ -120,7 +123,7 @@ COLORS = [[colorValue/255. for colorValue in color] for color in COLORS_256]
 """
 Classes
 """
-class POLYGON(object):
+class PolygonClass(object):
     def __init__(self, xy):
 
         def reorder_points(corners):
@@ -247,7 +250,7 @@ class POLYGON(object):
         distance_border = min(min_dist_list);
         return distance_border
             
-class VORONOI(object):
+class VoronoiClass(object):
     def __init__(self, polygons, sites, weights, values, canvas_obj):
         self.polygons = polygons;
         self.n_sites = len(polygons);
@@ -415,7 +418,7 @@ class VORONOI(object):
         error = error/(2*self.canvas_obj.area)
         return error
 
-class LINE(object):
+class LineClass(object):
     def __init__(self, x_col, y_col, weights):
         #store in a form of : Dx+Ey = F
         #formula = 2(x1-x2)x + 2(y1-y2)y = (x1^2+y1^2-w1) - (x2^2+y2^2-w2)
@@ -487,7 +490,7 @@ class LINE(object):
 
         return edge
 
-class RAY(object):
+class RayClass(object):
     def __init__(self, origin, tangent, main_sites, adjunct_site):
         #ray: origin + a*tangent, a>=0;
         self.origin = origin;
@@ -694,7 +697,7 @@ class VoronoiMaster():
         df = df.sort_index();
         index = df.index;
         n_layers = len(index[0]);
-        canvas_obj = POLYGON(canvas);
+        canvas_obj = PolygonClass(canvas);
         for i_level in np.arange(n_layers + 1):
             if i_level == 0:
                 values_0 = list(df.sum(level=0)['values']);
@@ -749,23 +752,17 @@ class VoronoiMaster():
         error = float("inf");
         i_max = 75;
         voronoi, error = self.voronoi_treemap(canvas_obj, points, values, i_max, err_thres);
-        print(error);
         while (error > 0.15)|(error == 0):
-            print('error > 0.15:', error > 0.15)
             voronoi, error_new = self.voronoi_treemap_recal(voronoi, i_max, err_thres);
-            print(error_new);
             if error_new <= 0.15:
                 error = error_new;
                 break;
             else:
                 if (error_new >= error):
-                    print('error_new >= error');
                     voronoi, error_new = self.voronoi_treemap(
                         canvas_obj, points, values, i_max, err_thres);
-                    print(error_new);
             error = error_new; 
         elapsed = time.time() - t
-        print("Elapsed time: %f seconds.\n" %elapsed)
         return voronoi, error
 
     def layered_voronoi_plot(self, voronoi_0, voronoi_1_all, voronoi_2_all):
@@ -818,7 +815,7 @@ class VoronoiMaster():
                         fontsize = 8, horizontalalignment = 'center', verticalalignment = 'center');
 
         error = error/(2*voronoi_0.canvas_obj.area);
-        print('error of the whole voronoi diagram:', error);
+        print('The error in the area representation of the whole voronoi diagram:', error);
         p = PatchCollection(patches, facecolors = colors_all, alpha = 1)
         ax.add_collection(p)
         ax.set_aspect('equal');
@@ -839,7 +836,7 @@ class VoronoiMaster():
 
         if n_points == 1:
             # if there is only 1 point, we don't need to compute the diagram
-            voronoi = VORONOI([canvas_obj], (canvas_obj.xy).mean(axis = 0).reshape((-1, 2)), 
+            voronoi = VoronoiClass([canvas_obj], (canvas_obj.xy).mean(axis = 0).reshape((-1, 2)), 
                 canvas_obj.area, values, canvas_obj);
             error = 0.0000001;
             voronoi.points = points;
@@ -900,14 +897,14 @@ class VoronoiMaster():
             #directly compute by intersecting the bisectors
             if n_polygon == 2:
                 x_col = sites[:, 0].reshape((-1, 1)); y_col = sites[:, 1].reshape((-1, 1));
-                bisector = LINE(x_col, y_col, weights);
+                bisector = LineClass(x_col, y_col, weights);
 
                 #find intersect point with canvas
                 edge_new = bisector.find_intersect_with_canvas(canvas_obj);
                 while len(edge_new) == 0: 
                     sites = canvas_obj.random_points_in_canvas(n_polygon);
                     x_col = sites[:, 0].reshape((-1, 1)); y_col = sites[:, 1].reshape((-1, 1));
-                    bisector = LINE(x_col, y_col, weights); 
+                    bisector = LineClass(x_col, y_col, weights); 
                     edge_new = bisector.find_intersect_with_canvas(canvas_obj);    
                 polygons_all = self.divide_polygons(sites, canvas_obj, edge_new);
 
@@ -943,7 +940,7 @@ class VoronoiMaster():
 
         # convert to object & 
         # find the site with largest area_target/area_current ratio, which will displace its neighbor
-        voronoi = VORONOI(polygons_all, sites, weights, values, canvas_obj); 
+        voronoi = VoronoiClass(polygons_all, sites, weights, values, canvas_obj); 
         voronoi.find_sites_causing_displacement();
         return voronoi
 
@@ -956,14 +953,14 @@ class VoronoiMaster():
             #directly compute by intersecting the bisectors
             if voronoi.n_sites == 2:
                 x_col = sites[:, 0].reshape((-1, 1)); y_col = sites[:, 1].reshape((-1, 1));
-                bisector = LINE(x_col, y_col, weights);
+                bisector = LineClass(x_col, y_col, weights);
 
                 #find intersect point with canvas
                 edge_new = bisector.find_intersect_with_canvas(voronoi.canvas_obj);
                 while len(edge_new) == 0: 
                     sites =  voronoi.canvas_obj.random_points_in_canvas(voronoi.n_sites);
                     x_col = sites[:, 0].reshape((-1, 1)); y_col = sites[:, 1].reshape((-1, 1));
-                    bisector = LINE(x_col, y_col, weights);
+                    bisector = LineClass(x_col, y_col, weights);
                     edge_new = bisector.find_intersect_with_canvas(voronoi.canvas_obj);    
 
                 polygons_all = self.divide_polygons(sites, voronoi.canvas_obj, edge_new);
@@ -1000,7 +997,7 @@ class VoronoiMaster():
 
         # convert to object & 
         # find the site with largest area_target/area_current ratio, which will displace its neighbor
-        voronoi = VORONOI(polygons_all, sites, weights, voronoi.values, voronoi.canvas_obj); 
+        voronoi = VoronoiClass(polygons_all, sites, weights, voronoi.values, voronoi.canvas_obj); 
         voronoi.find_sites_causing_displacement();
 
         return voronoi
@@ -1029,7 +1026,7 @@ class VoronoiMaster():
                     corner_polygon = np.vstack([corner_polygon, edge]);
                     corner_polygon = (corner_polygon*(10**9)).astype(int)/(10.**9);
                     corner_polygon = np.unique(corner_polygon, axis = 0);
-                    polygon = POLYGON(corner_polygon);
+                    polygon = PolygonClass(corner_polygon);
                     polygons_all.append(polygon);  
 
         elif n_sites == 3:
@@ -1073,7 +1070,7 @@ class VoronoiMaster():
                 if len(corner_polygon) >= 3 :
                     corner_polygon = (corner_polygon*(10**9)).astype(int)/(10.**9);
                     corner_polygon = np.unique(corner_polygon, axis = 0);
-                    polygon = POLYGON(corner_polygon);
+                    polygon = PolygonClass(corner_polygon);
                     polygons_all[i] = polygon;
 
         else:
@@ -1154,7 +1151,7 @@ class VoronoiMaster():
 
                     #2-6. create and store the polygon object for each site
                     if len(corner_polygon_all[k]) >= 3:
-                        polygon = POLYGON(corner_polygon_all[k]);
+                        polygon = PolygonClass(corner_polygon_all[k]);
                         polygons_all[k] = polygon;
 
         return polygons_all
@@ -1215,7 +1212,7 @@ class VoronoiMaster():
                 if np.dot(t_bisector,(sites[k,:] - ipoint)) > 0:
                     t_bisector = - t_bisector;
                 ray_obj_all.append(
-                    RAY(ipoint, t_bisector,[site_label[tag1],site_label[tag2]],site_label[k]));
+                    RayClass(ipoint, t_bisector,[site_label[tag1],site_label[tag2]],site_label[k]));
 
         else:
             #if the ipoint is not within the triangle formed by 3 sites, the positive direction is 
@@ -1231,12 +1228,12 @@ class VoronoiMaster():
                     if np.dot(t_bisector,(sites[k, :] - ipoint)) > 0:
                         t_bisector = - t_bisector;
                     ray_obj_all.append(
-                        RAY(ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k]));     
+                        RayClass(ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k]));     
                 else:
                     if np.dot(t_bisector,(com_line[k, :] - ipoint)) < 0:
                         t_bisector = - t_bisector;
                     ray_obj_all.append(
-                        RAY(ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k]));
+                        RayClass(ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k]));
 
         return sites, ray_obj_all
 
@@ -1265,7 +1262,7 @@ class VoronoiMaster():
                         2*(x_col_temp[tag1][0] - x_col_temp[tag2][0])]);
                     if np.dot(t_bisector, (sites_temp[k, :] - ipoint)) > 0:
                         t_bisector = - t_bisector;
-                    ray_obj = RAY(
+                    ray_obj = RayClass(
                         ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k]);
                     ray_obj.index_ip = i; ray_obj.index_ray = k;
                     ray_obj_ipoint.append(ray_obj);
@@ -1281,14 +1278,14 @@ class VoronoiMaster():
                     if k == point_opposite:
                         if np.dot(t_bisector, (sites_temp[k, :] - ipoint)) > 0:
                             t_bisector = - t_bisector;
-                        ray_obj = RAY(
+                        ray_obj = RayClass(
                             ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k]);
                         ray_obj.index_ip = i; ray_obj.index_ray = k;
                         ray_obj_ipoint.append(ray_obj);     
                     else:
                         if np.dot(t_bisector, (com_line[k, :] - ipoint)) < 0:
                             t_bisector = - t_bisector;
-                        ray_obj = RAY(
+                        ray_obj = RayClass(
                             ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k]);
                         ray_obj.index_ip = i; ray_obj.index_ray = k;
                         ray_obj_ipoint.append(ray_obj);
