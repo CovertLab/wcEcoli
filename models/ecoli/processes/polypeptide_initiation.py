@@ -86,7 +86,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# If the ribosome elongation rate is zero (which is always the case for the first timestep), set ribosome elongation rate to one in dictionary
 		if self.ribosomeElongationRate == 0:
 			self.ribosomeElongationRate = self.ribosomeElongationRateDict[current_media_id].asNumber(units.aa / units.s)
-		self.elongation_rates = self.make_elongation_rates(
+		self.elongation_rates = self.make_transcript_elongation_rates(
 			self.randomState,
 			self.ribosomeElongationRate,
 			1,  # want elongation rate, not lengths adjusted for time step
