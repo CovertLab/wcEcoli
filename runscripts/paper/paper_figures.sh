@@ -97,10 +97,12 @@ python models/ecoli/analysis/multigen/pabx_limitations.py \
 
 
 ## Figure 5
-# panel A:
+# panel A
 python paper/steadyStateAnalysis/main.py
 
-# panel B: made by JC from his experimental results
+# panel B - experimental results
+
+# panel C - experimental results
 
 
 ## Supplemental figure 1
@@ -177,5 +179,4 @@ python models/ecoli/analysis/variant/meneSensitivity.py \
 /scratch/PI/mcovert/wc_ecoli/paper/SET_F/20180814.113407.723416__SET_F_8_gens_8_seeds_9_menE_expression_values
 
 
-## Supplemental figure 5
-# made by JC from his experimental results
+## Supplemental figure 5 - experimental results
