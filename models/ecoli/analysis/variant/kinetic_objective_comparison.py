@@ -231,7 +231,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				# calculate k_cats (adjusted for saturation in the sim), remove zeros, save to this variant's distribution
 				k_cats = rxn_fluxes / enzyme_concs / saturation
-				k_cats = k_cats[k_cats > 0]
+				k_cats = k_cats[k_cats > 1e-10]
 				k_cat_distribution[variant] = k_cats
 
 			data = [k_cat_distribution[old_variant], k_cat_distribution[new_variant]]
@@ -239,9 +239,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# plot
 			violin_pos = [1, 3]	# position of violin plots [old, new]
 			measure_pos = 2  	# position of measurements
-			ax.violinplot(data, violin_pos, widths=1.0, showmeans=True, showextrema=True, showmedians=False)
-			ax.scatter(np.full_like(adjusted_measurements, measure_pos), adjusted_measurements, marker='*', color='Black')
-			ax.scatter(np.full_like(new_adjusted_measurements, measure_pos), new_adjusted_measurements, marker='*', color='Red')
+			ax.violinplot(data, violin_pos, widths=1.0, showmeans=False, showextrema=False, showmedians=False)
+			ax.scatter(np.full_like(adjusted_measurements, measure_pos), adjusted_measurements, marker='o', color='#eb7037', s=50, alpha=0.7)
+			ax.scatter(np.full_like(new_adjusted_measurements, measure_pos), new_adjusted_measurements, marker='o', color='#eb7037', s=50, alpha=0.7)
 
 			# format
 			rxn_id_length = 25
@@ -254,7 +254,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		### Create Plot ###
 		plt.tight_layout()
-		plt.subplots_adjust(hspace=1.0)
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
 
