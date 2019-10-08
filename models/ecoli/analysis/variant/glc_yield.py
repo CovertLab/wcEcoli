@@ -35,6 +35,9 @@ ADDITIONAL_DISABLED_CONSTRAINTS = {
 	}
 VARIANT_LABELS = ['Succ/Fum\nDisabled', 'Succ/Fum\nEnabled', 'New Constraints']
 N_VARIANTS = len(VARIANT_LABELS)
+# Senior. Regulation of Nitrogen Metabolism in Escherichia coli and Klebsiella aerogenes:
+# Studies with the Continuous-Culture Technique. 1975. Table 2 at growth rate of 0.9/hr (46 min doubling time)
+VALIDATION_YIELD = 0.46
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -103,7 +106,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		xticks = range(N_VARIANTS)
 
 		# Plot data
-		plt.violinplot(all_yields, xticks)
+		plt.violinplot(all_yields, xticks, showmeans=False, showextrema=False)
+		plt.axhline(VALIDATION_YIELD, linestyle='--', color='#eb7037')
 
 		# Format axes
 		ax = plt.gca()
