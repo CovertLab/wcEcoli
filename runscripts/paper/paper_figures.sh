@@ -151,21 +151,12 @@ python models/ecoli/analysis/cohort/kinetics_flux_comparison.py \
 python models/ecoli/analysis/variant/metabolism_kinetic_objective_weight.py \
 /scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190917.224926__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/
 
-# panel G
-python models/ecoli/analysis/single/massFractionSummary.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190917.224926__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 3 --generation 0 --seed 0
+# panel G - experimental results
 
-# panel H
-python models/ecoli/analysis/cohort/kinetics_flux_comparison.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190917.224926__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 3
-
-# panel I - experimental results
-
-# panel J - same as figure 3D
+# panel H - same as figure 3D
 python models/ecoli/analysis/variant/flux_sensitivity.py \
 /scratch/PI/mcovert/wc_ecoli/paper/SET_H/20190906.115628__SET_H_1_gen_flux_sensitivity/
+
 
 
 ## Supplemental figure 4
