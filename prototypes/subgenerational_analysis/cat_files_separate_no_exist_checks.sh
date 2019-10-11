@@ -8,9 +8,10 @@ Basically will take outputs downloaded from the cloud and merge them all togethe
 There are no checks to make sure the file exists due to a problem with incomplete files not being rewritten.
 
 Add in additional checks to make sure the vectors and matrices are of the proper length before proceeding.
+TODO (10/10 added by TG) : add check for .gstmp files created by gsutil error
 '
-base_output_dir="/Users/mialydefelice/Documents/code_repositories/wcEcoli/out/counts/wildtype_000000/count_out_2"
-save_dir="/Users/mialydefelice/Documents/code_repositories/wcEcoli/out/counts/wildtype_000000/count_out_concatenated/"
+base_output_dir="/Users/taryn/operons/2019-08-22_100seed_subgen/redo"
+save_dir="/Users/taryn/operons/2019-08-22_100seed_subgen/redo_out/"
 
 concatenate_data_files () {
 	echo "Making $2"
