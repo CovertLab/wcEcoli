@@ -10,6 +10,7 @@ from __future__ import absolute_import, division, print_function
 import multiprocessing as mp
 import numpy as np
 import os
+import json
 import scipy.optimize
 import cPickle
 from itertools import izip
@@ -217,7 +218,8 @@ def fitSimData_1(
 
 	if VERBOSE > 0:
 		print('Fitting promoter binding')
-	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
+	# rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
+	rVector = np.array(json.load(open('rvector.json')))
 	fitLigandConcentrations(sim_data, cellSpecs)
 
 	for condition_label in sorted(cellSpecs):
@@ -3308,7 +3310,10 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		# R_aux calculates the difference of the degradation rate based on these
 		# Km values and the expected rate so this sum seems like a reliable test of
 		# whether the cache fits current input data.
-		if np.sum(np.abs(R_aux(KmcountsCached))) > 1e-15:
+		try:
+			if np.sum(np.abs(R_aux(KmcountsCached))) > 1e-15:
+				needToUpdate = True
+		except ValueError:
 			needToUpdate = True
 	else:
 		needToUpdate = True
