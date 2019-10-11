@@ -54,15 +54,15 @@ This page goes through the Python environment setup steps in more detail and wit
    ```
 
 
-## Create the "wcEcoli2" python virtual environment
+## Create the "wcEcoli-paper" python virtual environment
 
 1. Create a pyenv virtualenv and select it for your project directory.
 
    ```bash
    cd ~/dev/wcEcoli  # or wherever you cloned the `wcEcoli` project to
    pyenv local 2.7.16
-   pyenv virtualenv wcEcoli2
-   pyenv local wcEcoli2
+   pyenv virtualenv wcEcoli-paper
+   pyenv local wcEcoli-paper
    ```
 
 2. Upgrade this virtual environment's installers.
@@ -168,10 +168,10 @@ This page goes through the Python environment setup steps in more detail and wit
    **Workaround:** After installing or updating `matplotlib`, test if it can import pyplot:
 
       1. `cd` to a directory that does not have a `matplotlibrc` file, e.g. `wcEcoli/docs/`.
-      1. Run the `pyenv version` shell command to verify that the pyenv `wcEcoli2` is active. (It should be if the current directory is a subdirectory of `wcEcoli/` and if `wcEcoli/` has a `.python-version` file that was set by `pyenv local wcEcoli2`.)
+      1. Run the `pyenv version` shell command to verify that the pyenv `wcEcoli-paper` is active. (It should be if the current directory is a subdirectory of `wcEcoli/` and if `wcEcoli/` has a `.python-version` file that was set by `pyenv local wcEcoli-paper`.)
       1. Start a python shell and type `import matplotlib.pyplot`
          * If it raised `ImportError: No module named _tkinter` or `RuntimeError: Python is not installed as a framework`, then matplotlib couldn't load its backend.  
-           The workaround is to edit the relevant `site-packages/matplotlib/mpl-data/matplotlibrc` file, probably the one in `$PYENV_ROOT/versions/wcEcoli2/lib/python2.7/`.   
+           The workaround is to edit the relevant `site-packages/matplotlib/mpl-data/matplotlibrc` file, probably the one in `$PYENV_ROOT/versions/wcEcoli-paper/lib/python2.7/`.   
            Comment out the line `backend : TkAgg` or `backend : macosx`, then retest.
          * If it didn't raise an error, run `matplotlib.get_backend()` and check that it returns `'agg'` or similar.
 

@@ -15,12 +15,12 @@
 ## a shared library:
 #   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.16
 #
-## Create the "wcEcoli2" python virtual environment and select it for your project
+## Create the "wcEcoli-paper" python virtual environment and select it for your project
 ## directory (adjust this for where you keep your git repo clones, e.g. ~/dev/):
 #   cd ~/dev/wcEcoli
 #   pyenv local 2.7.16
-#   pyenv virtualenv wcEcoli2
-#   pyenv local wcEcoli2
+#   pyenv virtualenv wcEcoli-paper
+#   pyenv local wcEcoli-paper
 #
 ## Upgrade this virtual environment's installers:
 #   pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
