@@ -219,6 +219,7 @@ def fitSimData_1(
 	if VERBOSE > 0:
 		print('Fitting promoter binding')
 	# rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
+	sim_data.pPromoterBound = json.load(open('promoter-bound.json'))
 	rVector = np.array(json.load(open('rvector.json')))
 	fitLigandConcentrations(sim_data, cellSpecs)
 
