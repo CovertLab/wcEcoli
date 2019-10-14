@@ -87,7 +87,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		sim_dirs = analysis_paths.get_cells(
-			generation=range(FIRST_GENERATION, n_gens), seed = range(8),)
+			generation=range(FIRST_GENERATION, n_gens), seed = range(8))
 
 		sim_data = cPickle.load(open(simDataFile, 'rb'))
 
