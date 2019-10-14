@@ -31,6 +31,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
+COLOR_HIGHLIGHT = "tab:orange"
 PLOT_ALL_GENES = False
 
 GENES_RNAP = ["rpoA", "rpoB", "rpoC"]
@@ -192,7 +193,7 @@ bernstein_2002_file = os.path.join(this_dir, "Bernstein_2002.tsv")
 rnas_file = os.path.join(root_dir, "reconstruction", "ecoli", "flat", "rnas.tsv")
 genes_file = os.path.join(root_dir, "reconstruction", "ecoli", "flat", "genes.tsv")
 synonyms_file = os.path.join(root_dir, "validation", "ecoli", "flat", "geneIDs.tsv")
-output_plot_file = os.path.join(this_dir, "compare_mrna_half_lives.{}")
+output_plot_file = os.path.join(this_dir, "compare_mrna_half_lives{}.{}")
 output_data_file = os.path.join(this_dir, "rnas_alternate_half_lives_without_kas.tsv")
 
 # Get data
@@ -298,7 +299,7 @@ for i, gene_id in enumerate(gene_ids_moffitt_2016):
 gene_ids = list(set(gene_ids_moffitt_2016).intersection(set(gene_ids_bernstein_2002)))
 
 # Compare datasets
-fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+fig, ax = plt.subplots(1, 1, figsize=(5, 5))
 for gene_id in gene_ids:
 	moffitt_2016_val = half_lives_moffitt_2016[np.where(gene_ids_moffitt_2016 == gene_id)[0][0]]
 	bernstein_2002_val = half_lives_bernstein_2002[np.where(gene_ids_bernstein_2002 == gene_id)[0][0]]
@@ -307,31 +308,49 @@ for gene_id in gene_ids:
 		continue
 
 	if gene_id in GENES_RNAP:
-		ax.plot(np.log2(moffitt_2016_val), np.log2(bernstein_2002_val), "ro")
+		ax.plot(np.log10(moffitt_2016_val), np.log10(bernstein_2002_val),
+		        color=COLOR_HIGHLIGHT, marker="o", markersize=10)
 		print(gene_id)
 	elif gene_id in GENES_RIBO:
-		ax.plot(np.log2(moffitt_2016_val), np.log2(bernstein_2002_val), "go")
+		ax.plot(np.log10(moffitt_2016_val), np.log10(bernstein_2002_val),
+		        color="tab:blue", marker="o", markersize=10)
 	else:
 		if PLOT_ALL_GENES:
-			ax.plot(np.log2(moffitt_2016_val), np.log2(bernstein_2002_val), "bo", alpha=0.2)
+			ax.plot(np.log10(moffitt_2016_val), np.log10(bernstein_2002_val),
+			        color="tab:green", marker="o", alpha=0.2, markersize=10)
 		else:
 			pass
 
-range_min = min(ax.get_xlim()[0], ax.get_ylim()[0])
-range_max = max(ax.get_xlim()[1], ax.get_ylim()[1])
+range_min = np.floor(min(ax.get_xlim()[0], ax.get_ylim()[0]) * 10)/10.
+range_max = np.ceil(max(ax.get_xlim()[1], ax.get_ylim()[1]) * 10)/10.
+ax.plot(
+		[range_min, range_max],
+		[range_min, range_max], "k")
 ax.set_xlim(range_min, range_max)
 ax.set_ylim(range_min, range_max)
-ax.set_xlabel("log2 Moffitt et al. 2016 (min)")
-ax.set_ylabel("log2 Bernstein et al. 2002 (min)")
+ax.set_xticks([range_min, range_max])
+ax.set_yticks([range_min, range_max])
+ax.set_xticklabels([])
+ax.set_yticklabels([])
+plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)
+plt.savefig(output_plot_file.format("__clean", "pdf"))
+
+ax.set_xticklabels(ax.get_xticks())
+ax.set_yticklabels(ax.get_yticks())
+from matplotlib.ticker import FormatStrFormatter
+ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+ax.set_xlabel("log10 Moffitt et al. 2016 (min)")
+ax.set_ylabel("log10 Bernstein et al. 2002 (min)")
 plt.legend(
 	handles=[
-		mlines.Line2D([], [], color="red", linewidth=0., marker=".", label="RNA polymerase"),
-		mlines.Line2D([], [], color="green", linewidth=0., marker=".", label="Ribosome")],
+		mlines.Line2D([], [], color="tab:red", linewidth=0., marker=".", label="RNA polymerase"),
+		mlines.Line2D([], [], color="tab:blue", linewidth=0., marker=".", label="Ribosome")],
 	loc="best")
-
-plt.savefig(output_plot_file.format("pdf"))
-plt.savefig(output_plot_file.format("png"))
+plt.subplots_adjust(left=0.25, bottom=0.25, right=0.75, top=0.75)
+plt.savefig(output_plot_file.format("", "pdf"))
 plt.close("all")
+
 # Prepare Moffitt 2016 mRNA half lives dataset for wcEcoli
 # Note: stable RNA half lives are unchanged (ie. from Bernstein 2002)
 

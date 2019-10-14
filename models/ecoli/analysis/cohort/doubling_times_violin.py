@@ -34,7 +34,7 @@ THROW_ON_BAD_SIMULATION_OUTPUT = False
 FIRST_GENERATION = 2
 
 DOUBLING_TIME_BOUNDS_MINUTES = [0, 200]
-FIGSIZE = (5, 5)
+FIGSIZE = (2.5, 5)
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -120,15 +120,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ax.violinplot(doubling_times_minutes)
 		ax.axhline(
 			sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.min),
-			color='r', lw=2)
+			color='r', lw=1)
 		ax.set_ylim(*DOUBLING_TIME_BOUNDS_MINUTES)
+		ax.set_xlim([0.5, 1.5])
 		ax.set_xticks([])
+		y_ticks = ax.get_yticks()
 		ax.set_yticklabels([])
-		exportFigure(plt, plotOutDir, '{}__clean'.format(plotOutFileName), metadata)
+		ax.spines['right'].set_visible(False)
+		exportFigure(plt, plotOutDir, '{}__clean'.format(plotOutFileName), None)
 
 		ax.set_title('n = {}'.format(len(doubling_times_minutes)))
 		ax.set_ylabel('Doubling time (minutes)')
-		ax.set_yticklabels(ax.get_yticks())
+		ax.set_yticks(y_ticks)
+		ax.spines['right'].set_visible(True)
+		ax.spines['left'].set_visible(True)
 		plt.subplots_adjust(left=0.2, bottom=0.2, right=0.8, top=0.8)
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
