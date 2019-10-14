@@ -170,8 +170,8 @@ python models/ecoli/analysis/variant/flux_sensitivity.py \
 
 
 ## Supplemental figure 4
-python models/ecoli/analysis/variant/meneSensitivity.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_F/20180814.113407.723416__SET_F_8_gens_8_seeds_9_menE_expression_values
+python models/ecoli/analysis/variant/subgen_expression.py \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_F/20190918.093118__SET_F_16_gens_8_seeds_9_pabB_expression_values/
 
 
 ## Supplemental figure 5
