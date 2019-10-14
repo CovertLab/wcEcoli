@@ -10,6 +10,7 @@ ACTIVE = [
 	"distribution_proteome_correlation.py",
 	"doubling_time_histogram.py",
 	"flux_sensitivity.py",
+	"glc_yield.py",
 	"growth_condition_comparison_validation.py",
 	"growthConditionComparison.py",
 	"kinetic_objective_comparison.py",

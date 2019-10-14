@@ -11,12 +11,14 @@ import cPickle
 import os
 
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 import numpy as np
 from scipy.stats import pearsonr
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
+from models.ecoli.sim.variants.kinetic_constraints_factorial_experiments import get_disabled_constraints
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, units
@@ -41,8 +43,8 @@ OUTPUT_FLUX_UNITS = units.mmol / units.g / units.h
 FLUX_CONVERSION = MODEL_FLUX_UNITS.asNumber(OUTPUT_FLUX_UNITS)
 
 # Plot region cutoffs
-GLC_MAX = 11
-SUCC_DISTANCE = np.log2(5)
+GLC_MAX = 11.5
+SUCC_DISTANCE = np.log2(2)
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -155,24 +157,49 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			selected_indicies[v] = np.all([c not in constrainedReactions for c in HIGHLIGHTED_CONSTRAINTS])
 
 		# Plot scatterplot
-		plt.figure(figsize=(10, 10))
+		fig = plt.figure(figsize=(5, 5))
+		gs = gridspec.GridSpec(40, 40)
 
-		## Plot data
+		## Plot full data
 		plt.scatter(glc_uptakes[~selected_indicies], log_ratio_succ[~selected_indicies],
 			color='blue', alpha=0.6, s=size_pearson[~selected_indicies])
 		plt.scatter(glc_uptakes[selected_indicies], log_ratio_succ[selected_indicies],
 			color='red', alpha=0.6, s=size_pearson[selected_indicies])
-
-		## Format axes
-		xlim = plt.xlim()
+		x_min, x_max = plt.xlim()
 		y_max = max(np.abs(plt.ylim()))
 		plt.axvspan(0, GLC_MAX, facecolor='g', alpha=0.1)
 		plt.axhspan(-SUCC_DISTANCE, SUCC_DISTANCE, facecolor='g', alpha=0.1)
 		plt.axhline(y=0, color='k', linestyle='--')
+
+		## Format axes
 		plt.ylabel('log2(model flux / Toya flux)')
 		plt.xlabel('glucose uptake (mmol / g DCW / hr)')
-		plt.xlim(xlim)
+		plt.xlim([np.floor(min(x_min, 10)), np.ceil(x_max)])
 		plt.ylim([-y_max, y_max])
+
+		## Plot highlighted region data
+		fig.add_subplot(gs[1:28, -20:-1])
+		in_region = (glc_uptakes < GLC_MAX) & (np.abs(log_ratio_succ) < SUCC_DISTANCE)
+		selected_in = in_region & selected_indicies
+		not_selected_in = in_region & ~selected_indicies
+		constraint_labels = np.array([
+			[c[:2] for c in constraints] if constraints is not None else []
+			for _, constraints in map(get_disabled_constraints, variants)
+			])
+		plt.scatter(glc_uptakes[not_selected_in], log_ratio_succ[not_selected_in],
+			color='blue', alpha=0.6, s=size_pearson[not_selected_in])
+		plt.scatter(glc_uptakes[selected_in], log_ratio_succ[selected_in],
+			color='red', alpha=0.6, s=size_pearson[selected_in])
+		for x, y, label in zip(glc_uptakes[in_region], log_ratio_succ[in_region], constraint_labels[in_region]):
+			plt.text(x, y, ', '.join(label), ha='center', va='top', fontsize=6)
+		x_min, _ = plt.xlim()
+		x_min = np.floor(min(x_min, 10))
+		plt.axvspan(x_min, GLC_MAX, facecolor='g', alpha=0.1)
+		plt.axhspan(-SUCC_DISTANCE, SUCC_DISTANCE, facecolor='g', alpha=0.1)
+
+		## Format axes
+		plt.xlim([x_min, GLC_MAX])
+		plt.ylim([-SUCC_DISTANCE, SUCC_DISTANCE])
 
 		## Save figure
 		plt.tight_layout()
