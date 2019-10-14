@@ -300,18 +300,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Flux target comparisons
 		ax = plt.subplot(subplots, 1, 2)
 		plt.bar(lambdas, nonzero_flux_correlation, align='center')
+		for lam, val in zip(lambdas, nonzero_flux_correlation):
+			plt.text(lam, val, '{:.3f}'.format(val), ha='center')
 		plt.ylim([0, 1])
 		plt.ylabel('Kinetic target flux PCC')
 		whitePadSparklineAxis(ax, xAxis=False)
 
 		ax = plt.subplot(subplots, 1, 3)
 		plt.bar(lambdas, n_flux_above_0 / n_fluxes, align='center')
+		for lam, val in zip(lambdas, n_flux_above_0):
+			plt.text(lam, val / n_fluxes, '{:.0f}/{:.0f}'.format(val, n_fluxes), ha='center')
 		plt.ylim([0, 1])
 		plt.ylabel('Fraction of fluxes\nabove 0')
 		whitePadSparklineAxis(ax, xAxis=False)
 
 		ax = plt.subplot(subplots, 1, 4)
 		plt.bar(lambdas, n_flux_off_axis / n_fluxes, align='center')
+		for lam, val in zip(lambdas, n_flux_off_axis):
+			plt.text(lam, val / n_fluxes, '{:.0f}/{:.0f}'.format(val, n_fluxes), ha='center')
 		plt.ylim([0, 1])
 		plt.ylabel('Fraction of fluxes\noff axis (>{:.0f}%)'.format(FRAC_FLUX_OFF_AXIS*100))
 		whitePadSparklineAxis(ax, xAxis=False)
@@ -319,12 +325,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Metabolite comparisons
 		ax = plt.subplot(subplots, 1, 5)
 		plt.bar(lambdas, conc_correlation, align='center')
+		for lam, val in zip(lambdas, conc_correlation):
+			plt.text(lam, val, '{:.3f}'.format(val), ha='center')
 		plt.ylim([0, 1])
 		plt.ylabel('Concentration PCC')
 		whitePadSparklineAxis(ax, xAxis=False)
 
 		ax = plt.subplot(subplots, 1, 6)
 		plt.bar(lambdas, n_conc_off_axis / n_metabolites, align='center')
+		for lam, val in zip(lambdas, n_conc_off_axis):
+			plt.text(lam, val / n_metabolites, '{:.0f}/{:.0f}'.format(val, n_metabolites), ha='center')
 		plt.ylim([0, 1])
 		plt.ylabel('Fraction of concentrations\noff axis (>{:.0f}%)'.format(FRAC_CONC_OFF_AXIS*100))
 		whitePadSparklineAxis(ax, xAxis=False)
@@ -332,6 +342,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Toya comparison
 		ax = plt.subplot(subplots, 1, 7)
 		plt.bar(lambdas, filtered_correlation_coefficient, align='center')
+		for lam, val in zip(lambdas, filtered_correlation_coefficient):
+			plt.text(lam, val, '{:.3f}'.format(val), ha='center')
 		plt.ylim([0, 1])
 		plt.ylabel('Central carbon flux PCC')
 		whitePadSparklineAxis(ax, xAxis=False)
@@ -339,14 +351,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Viable sims
 		ax = plt.subplot(subplots, 1, 8)
 		plt.bar(lambdas, n_sims, align='center')
+		for lam, val in zip(lambdas, n_sims):
+			plt.text(lam, val, '{:.0f}'.format(val), ha='center')
 		plt.ylabel('Number of sims\nwith data')
 		whitePadSparklineAxis(ax, xAxis=False)
-		plt.xticks(lambdas, tick_labels)
 
 		# Lambda objective
 		ax = plt.subplot(subplots, 1, 9)
 		plt.bar(lambdas, objective, align='center')
-		plt.text(lambdas[max_objective_index], objective[max_objective_index], '*', ha='center')
+		for lam, val in zip(lambdas, objective):
+			plt.text(lam, val, '{:.3f}'.format(val), ha='center')
 		plt.ylabel('Combined output objective')
 		whitePadSparklineAxis(ax)
 		plt.xticks(lambdas, tick_labels)

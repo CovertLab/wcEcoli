@@ -139,46 +139,34 @@ python models/ecoli/analysis/variant/adder_sizer_comparison.py \
 ## Supplemental figure 3
 # panel A
 python models/ecoli/analysis/single/massFractionSummary.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190917.224926__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
 --variant_index 0 --generation 0 --seed 0
-
-python models/ecoli/analysis/cohort/kinetics_flux_comparison.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 0
-
-python models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 0
 
 # panel B
 python models/ecoli/analysis/single/massFractionSummary.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 3 --generation 0 --seed 0
-
-python models/ecoli/analysis/cohort/kinetics_flux_comparison.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 3
-
-python models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 3
-
-# panel C
-python models/ecoli/analysis/single/massFractionSummary.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190917.224926__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
 --variant_index 6 --generation 0 --seed 0
 
+# panel C
 python models/ecoli/analysis/cohort/kinetics_flux_comparison.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190917.224926__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
+--variant_index 0
+
+# panel D
+python models/ecoli/analysis/cohort/kinetics_flux_comparison.py \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190917.224926__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
 --variant_index 6
 
-python models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/ \
---variant_index 6
-
-# panels D, E and F
+# panels E and F
 python models/ecoli/analysis/variant/metabolism_kinetic_objective_weight.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190826.093027__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/
+/scratch/PI/mcovert/wc_ecoli/paper/SET_E/20190917.224926__SET_E_8_gens_8_seeds_10_metabolism_weighting_values/
+
+# panel G - experimental results
+
+# panel H - same as figure 3D
+python models/ecoli/analysis/variant/flux_sensitivity.py \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_H/20190906.115628__SET_H_1_gen_flux_sensitivity/
+
 
 
 ## Supplemental figure 4
