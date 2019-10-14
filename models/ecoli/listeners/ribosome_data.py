@@ -32,6 +32,9 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.monomerIds = sim_data.process.translation.monomerData['id'].tolist()
 		self.nMonomers = len(self.monomerIds)
 
+		self.mrnaIds = sim_data.relation.mrna_data['id']
+		self.nTranscripts = len(self.mrnaIds)
+
 
 	# Allocate memory
 	def allocate(self):
@@ -57,7 +60,8 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.processElongationRate = 0.
 		self.translationSupply = np.zeros(21, np.float64)
 		self.numTrpATerminated = 0.
-		self.probTranslationPerTranscript = np.zeros(self.nMonomers, np.float64)
+		self.probTranslationPerTranscript = np.zeros(self.nTranscripts, np.float64)
+		# self.probTranslationPerTranscript = np.zeros(self.nMonomers, np.float64)
 
 
 	def update(self):
@@ -65,10 +69,14 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
-			'probTranslationPerTranscript': 'monomerIds'}
+			'probTranslationPerTranscript': 'mrnaIds'}
+
+		# subcolumns = {
+		# 	'probTranslationPerTranscript': 'monomerIds'}
 
 		tableWriter.writeAttributes(
 			monomerIds = self.monomerIds,
+			mrnaIds = self.mrnaIds,
 			subcolumns = subcolumns)
 
 	def tableAppend(self, tableWriter):

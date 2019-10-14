@@ -31,8 +31,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(PolypeptideInitiation, self).initialize(sim, sim_data)
 
-		import ipdb; ipdb.set_trace()
-
 		# Load parameters
 		# mrnaIds = sim_data.process.translation.monomerData["rnaId"]
 
@@ -54,7 +52,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.fracActiveRibosomeDict = sim_data.process.translation.ribosomeFractionActiveDict
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
 		self.variable_elongation = sim._variable_elongation_translation
-		self.make_elongation_rates = sim_data.process.translation.make_elongation_rates
+		self.make_elongation_rates = sim_data.process.translation.make_transcript_elongation_rates
 
 		# Determine changes from parameter shuffling variant
 		shuffleIdxs = None
@@ -86,7 +84,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# If the ribosome elongation rate is zero (which is always the case for the first timestep), set ribosome elongation rate to one in dictionary
 		if self.ribosomeElongationRate == 0:
 			self.ribosomeElongationRate = self.ribosomeElongationRateDict[current_media_id].asNumber(units.aa / units.s)
-		self.elongation_rates = self.make_transcript_elongation_rates(
+		self.elongation_rates = self.make_elongation_rates(
 			self.randomState,
 			self.ribosomeElongationRate,
 			1,  # want elongation rate, not lengths adjusted for time step
@@ -176,15 +174,15 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# 	startIndex += counts
 
 		# Create active 70S ribosomes and assign their protein indexes calculated above
-		# TODO(Ryan): replace `proteinIndex` with `transcriptIndex`, as `proteinIndex` is a lie.
+		# TODO(Ryan): replace `proteinIndex` with `mrnaIndex`, as `proteinIndex` is a lie.
 		self.activeRibosomes.moleculesNew(
 			ribosomeToActivate,
-			transcriptIndex = mrnaIndexes)
+			mrnaIndex = mrnaIndexes)
 			# proteinIndex = proteinIndexes)
 
 		# Decrement free 30S and 70S ribosomal subunit counts
-		self.ribosome30S.countDec(nNewProteins.sum())
-		self.ribosome50S.countDec(nNewProteins.sum())
+		self.ribosome30S.countDec(nNewTranscripts.sum())
+		self.ribosome50S.countDec(nNewTranscripts.sum())
 
 		# Write number of initalized ribosomes to listener
 		self.writeToListener("RibosomeData", "didInitialize", nNewTranscripts.sum())
