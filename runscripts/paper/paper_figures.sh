@@ -4,10 +4,10 @@
 
 
 ## Figure 1
-#Bottom Simulations Left to Right, Top to bottom:
- python models/ecoli/analysis/multigen/growth_dynamics_grid.py \
- /scratch/PI/mcovert/wc_ecoli/paper/SET_B/20190825.220728__SET_B_9_gens_8_seeds_shift_to_plus_AA_without_growth_noise_with_D_period/ \
- --variant_index 2 --seed 7
+# Bottom Simulations Left to Right, Top to bottom:
+python models/ecoli/analysis/multigen/growth_dynamics_grid.py \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_B/20190908.151927__SET_B_9_gens_8_seeds_shift_to_plus_AA_without_growth_noise_with_D_period/ \
+--seed 0
 
 
 ## Figure 2
@@ -116,13 +116,15 @@ python paper/steadyStateAnalysis/main.py
 
 
 ## Supplemental figure 1
+# panel A
 python models/ecoli/analysis/multigen/growth_dynamics_panel.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_B/20190825.220728__SET_B_9_gens_8_seeds_shift_to_plus_AA_without_growth_noise_with_D_period/ \
---variant_index 2 --seed 7
+/scratch/PI/mcovert/wc_ecoli/paper/SET_B/20190908.151927__SET_B_9_gens_8_seeds_shift_to_plus_AA_without_growth_noise_with_D_period/ \
+--seed 0
 
+# panels B and C
 python models/ecoli/analysis/multigen/environmental_shift_fluxes.py \
-/scratch/PI/mcovert/wc_ecoli/paper/SET_B/20190825.220728__SET_B_9_gens_8_seeds_shift_to_plus_AA_without_growth_noise_with_D_period/ \
---seed 7
+/scratch/PI/mcovert/wc_ecoli/paper/SET_B/20190908.151927__SET_B_9_gens_8_seeds_shift_to_plus_AA_without_growth_noise_with_D_period/ \
+--seed 0
 
 
 ## Supplemental figure 2
