@@ -102,6 +102,8 @@ def fitSimData_1(
 	"""
 
 	sim_data = SimulationDataEcoli()
+	
+	# TODO(Ryan): Make sure new transcripts have counts set properly
 	sim_data.initialize(
 		raw_data = raw_data,
 		basal_expression_condition = BASAL_EXPRESSION_CONDITION,
