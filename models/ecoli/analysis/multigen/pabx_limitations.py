@@ -88,7 +88,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		time = []
 		enzyme_rna_init_events = np.empty((0, len(ENZYME_RNA_IDS)))
 		enzyme_rna_counts = np.empty((0, len(ENZYME_RNA_IDS)))
-		enzyme_monomer_counts = np.empty((0, len(ENZYME_RNA_IDS)))
+		enzyme_total_monomer_counts = np.empty((0, len(ENZYME_RNA_IDS)))
 		enzyme_complex_counts = np.empty((0, len(ENZYME_COMPLEX_IDS)))
 		enzyme_fluxes = np.empty((0, len(ENZYME_REACTION_IDS)))
 		metabolite_counts = []
@@ -98,9 +98,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		timeStepSec = []
 		generationTicks = []
 
-		first_gen = True
+		proteins_produced_per_gen = np.empty((0, len(ENZYME_RNA_IDS)))
+		average_complex_counts_per_gen = []
 
-		n_transcription_init_events_per_gen = []
+		first_gen = True
 
 		for simDir in allDir:
 			simOutDir = os.path.join(simDir, "simOut")
@@ -128,21 +129,33 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				"rnaInitEvent")[:, enzyme_rna_transcription_indexes]
 			enzyme_rna_init_events = np.vstack((
 				enzyme_rna_init_events, rna_init_events_this_gen))
-			n_transcription_init_events_per_gen.append(
-				np.sum(rna_init_events_this_gen))
 
 			molecule_counts = bulk_molecules_reader.readColumn("counts")
+
 			enzyme_rna_counts = np.vstack((
 				enzyme_rna_counts,
 				molecule_counts[:, enzyme_rna_count_indexes]))
-			enzyme_monomer_counts = np.vstack((
-				enzyme_monomer_counts,
-				molecule_counts[:, enzyme_monomer_indexes]))
 
+			enzyme_monomer_counts_this_gen = molecule_counts[:, enzyme_monomer_indexes]
 			enzyme_complex_counts_this_gen = molecule_counts[:, enzyme_complex_indexes]
+
+			enzyme_total_monomer_counts_this_gen = (
+					enzyme_monomer_counts_this_gen +
+					enzyme_complex_counts_this_gen.sum(axis=1)[:, None])
+
+			enzyme_total_monomer_counts = np.vstack((
+				enzyme_total_monomer_counts,
+				enzyme_total_monomer_counts_this_gen))
 			enzyme_complex_counts = np.vstack((
 				enzyme_complex_counts,
 				enzyme_complex_counts_this_gen))
+			proteins_produced_per_gen = np.vstack((
+				proteins_produced_per_gen,
+				(enzyme_total_monomer_counts_this_gen[-1, :] -
+					enzyme_total_monomer_counts_this_gen[0, :])
+				))
+			average_complex_counts_per_gen.append(
+				enzyme_complex_counts_this_gen.sum(axis=1).mean())
 
 			metabolite_counts.extend(molecule_counts[:, metabolite_index])
 
@@ -158,8 +171,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		time = np.array(time)
 		time_hours = time / 3600.
 
+		# Add counts of complexed monomers to monomer counts
+		enzyme_total_monomer_counts += enzyme_complex_counts.sum(axis=1)[:, None]
+
 		# Plot
-		plt.figure(figsize = (11, 8.5))
+		plt.figure(figsize = (14, 8.5))
 		plt.style.use('seaborn-deep')
 		color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 		plt.suptitle(
@@ -180,13 +196,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		rna_init_axis.set_prop_cycle(color=pre_merge_colors)
 		rna_init_axis.plot(time_hours, enzyme_rna_init_events)
 		rna_init_axis.set_ylabel("Transcription\nevents", fontsize = FONTSIZE, rotation = 0)
-		rna_init_axis.legend(
-			["pabA", "pabB"], prop={'size': FONTSIZE},
-			loc='center left', bbox_to_anchor=(1.02, 0.5))
 		rna_init_axis.yaxis.set_label_coords(-.12, 0.25)
 		rna_init_axis.set_xlim([time_hours[0], time_hours[-1]])
 		rna_init_axis.set_ylim([0, 1])
 		whitePadSparklineAxis(rna_init_axis, xAxis = False)
+
+		# Print average transcription frequency of each gene
+		for rna_id, prob in zip(ENZYME_RNA_IDS,
+				enzyme_rna_init_events.sum(axis=0)/len(proteins_produced_per_gen)):
+			print("%s transcription frequency: %.3f"%(rna_id, prob))
 
 		rna_axis.set_prop_cycle(color=pre_merge_colors)
 		rna_axis.plot(time_hours, enzyme_rna_counts)
@@ -196,17 +214,26 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		whitePadSparklineAxis(rna_axis, xAxis = False)
 
 		monomer_axis.set_prop_cycle(color=pre_merge_colors)
-		monomer_axis.plot(time_hours, enzyme_monomer_counts)
+		monomer_axis.plot(time_hours, enzyme_total_monomer_counts)
 		monomer_axis.set_ylabel("Protein monomer\ncounts", fontsize = FONTSIZE, rotation = 0)
 		monomer_axis.yaxis.set_label_coords(-.12, 0.25)
-		monomer_axis.set_ylim([0, np.max(enzyme_monomer_counts)])
+		monomer_axis.set_ylim([0, np.max(enzyme_total_monomer_counts)])
 		whitePadSparklineAxis(monomer_axis, xAxis = False)
+
+		# Print average number of protein produced per generation
+		for rna_id, count in zip(ENZYME_RNA_IDS,
+				proteins_produced_per_gen.mean(axis=0)):
+			print("%s average proteins produced per gen: %.2f" % (rna_id, count))
 
 		complex_axis.plot(time_hours, enzyme_complex_counts.sum(axis=1), color=post_merge_color)
 		complex_axis.set_ylabel("Protein complex\ncounts", fontsize = FONTSIZE, rotation = 0)
 		complex_axis.yaxis.set_label_coords(-.12, 0.25)
 		complex_axis.set_ylim([0, np.max(enzyme_complex_counts.sum(axis=1))])
 		whitePadSparklineAxis(complex_axis, xAxis = False)
+
+		# Print mean and std of average complex counts in each gen
+		print("Complex counts average: %.2f" % (np.array(average_complex_counts_per_gen).mean(),))
+		print("Complex counts std: %.2f" % (np.array(average_complex_counts_per_gen).std(),))
 
 		flux_axis.plot(time_hours, enzyme_fluxes, color=post_merge_color)
 		flux_axis.set_yscale("symlog", linthreshy=FLUX_LINEAR_THRESHOLD)
