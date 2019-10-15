@@ -14,9 +14,8 @@ from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.utils import units
-from wholecell.utils.voronoiPlotMain import PolygonClass, VoronoiClass, LineClass, RayClass, VoronoiMaster
+from wholecell.utils.voronoiPlotMain import VoronoiMaster
 
-VM = VoronoiMaster()
 SEED = 0 # random seed
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
@@ -117,7 +116,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		rna = mass.readColumn("rnaMass")
 		tRna = mass.readColumn("tRnaMass")
 		rRna = mass.readColumn("rRnaMass")
-		assert np.array_equal(np.round(rRna, 10), np.round(rRna_16s + rRna_23s + rRna_5s, 10))
+		assert np.allclose(rRna, (rRna_16s + rRna_23s + rRna_5s), rtol=1e-10)
 		mRna = mass.readColumn("mRnaMass")
 		miscRna = rna - (tRna + rRna + mRna)
 		dna = mass.readColumn("dnaMass")
@@ -126,27 +125,55 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# create dictionary
 		dic = {
-		'metabolites': {'LPS': {'LPS': lps[-1]},
-						'glycogen': {'glycogen': glycogen[-1]},
-						'lipid': {'lipid': lipid[-1]},
-						'metabolites': {'metabolites': metabolites[-1]},
-						'peptidoglycan': {'peptidoglycan': murein[-1]}, 
-						'polyamines': {'polyamines': polyamines[-1]}, 
-						},
-		'nucleic_acid': {'DNA': {'DNA': dna[-1]}, 
-						'mRNA': {'mRNA': mRna[-1]},
-						'miscRNA': {'miscRNA': miscRna[-1]},
-						'rRNA': {'16srRNA': rRna_16s[-1], 
-								'23srRNA': rRna_23s[-1],
-								'5srRNA': rRna_5s[-1],
-								},
-						'tRNA': {'tRNA': tRna[-1]},
-						},
-		'protein': {'protein': {'protein': protein[-1]}},
+			'metabolites': {
+				'LPS': {
+					'LPS': lps[-1]
+					},
+				'glycogen': {
+					'glycogen': glycogen[-1]
+					},
+				'lipid': {
+					'lipid': lipid[-1]
+					},
+				'metabolites': {
+					'metabolites': metabolites[-1]
+					},
+				'peptidoglycan': {
+					'peptidoglycan': murein[-1]
+					},
+				'polyamines': {
+					'polyamines': polyamines[-1]
+					},
+				},
+			'nucleic_acid': {
+				'DNA': {
+					'DNA': dna[-1]
+					},
+				'mRNA': {
+					'mRNA': mRna[-1]
+					},
+				'miscRNA': {
+					'miscRNA': miscRna[-1]
+					},
+				'rRNA': {
+					'16srRNA': rRna_16s[-1],
+					'23srRNA': rRna_23s[-1],
+					'5srRNA': rRna_5s[-1],
+					},
+				'tRNA': {
+					'tRNA': tRna[-1]
+					},
+				},
+			'protein': {
+				'protein': {
+					'protein': protein[-1]
+					}
+				},
 		}
 
 		# create the plot (layered)
-		error_all = VM.layered_voronoi_master(dic)
+		vm = VoronoiMaster()
+		error_all = vm.layered_voronoi_master(dic)
 
 		# save the plot
 		plt.title("Biomass components")

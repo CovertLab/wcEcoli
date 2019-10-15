@@ -90,7 +90,7 @@ def multiply(a, b):
 		b_units = getUnit(b)
 		b = b.asNumber()
 
-	return a_units * b_units * a * b
+	return a_units * b_units * np.multiply(a, b)
 
 def floor(x):
 	if not hasUnit(x):

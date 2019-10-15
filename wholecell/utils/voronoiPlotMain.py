@@ -48,18 +48,19 @@ and "layered_voronoi" to accomplish this need.
 If you want to implement the functions that are created here and make a new voronoi plot with your own
 dataset, please read the following instructions:
 (1)Place this in the heading, or other ways that can import every function in this file.
-from wholecell.utils.voronoiPlotMain import PolygonClass, VoronoiClass, LineClass, RayClass, VoronoiMaster
-VM = VoronoiMaster()
+from wholecell.utils.voronoiPlotMain import VoronoiMaster
 
 (2)Determine whether your data is layered/hiearchical or not.
 - If your data is not layered/hiearchical, please appropriately modify the following code to meet your 
 needs:
+from wholecell.utils.voronoiPlotMain import PolygonClass
 
+vm = VoronoiMaster()
 canvas = np.array([[0, 0], [4, 0], [4, 4], [0, 4]])
 canvas_obj = PolygonClass(canvas)
 points = [THE IDS OF YOUR DATA POINTS]
 values = [THE values OF EACH DATA POINTS, IT COULD BE ABUNDANCE, ENERGY COST, FLUX,...]
-voronoi, error = VM.voronoi_main_function(points, values, canvas_obj)
+voronoi, error = vm.voronoi_main_function(points, values, canvas_obj)
 voronoi.voronoi_treemap_plot()
 plt.title("YOUR TITLE")
 exportFigure(plt, plotOutDir, plotOutFileName, metadata)
@@ -67,8 +68,8 @@ plt.close("all")
 
 - If your data is layered/hiearchical, please store your data into a 3-layered dictionary, and appropriately
 modify the following code to meet your needs:
-
-error_all = VM.layered_voronoi_master(dic)
+vm = VoronoiMaster()
+error_all = vm.layered_voronoi_master(dic)
 plt.title("YOUR TITLE")
 exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 plt.close("all")
