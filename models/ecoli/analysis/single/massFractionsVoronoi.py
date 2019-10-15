@@ -4,14 +4,12 @@ Plot the Voronoi diagram of mass fractions
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 09/27/2019
 """
-from __future__ import absolute_import
 
+from __future__ import absolute_import, division, print_function
 import os
 import cPickle
 import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
-
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
@@ -19,9 +17,7 @@ from wholecell.utils import units
 from wholecell.utils.voronoiPlotMain import PolygonClass, VoronoiClass, LineClass, RayClass, VoronoiMaster
 
 VM = VoronoiMaster()
-CANVAS = np.array([[0, 0], [4, 0], [4, 4], [0, 4]]) #the overall shape of the plot
-I_MAX = 75 #the number of iterations for optimizing the Voronoi diagram
-ERR_THRES = 1E-6 #the error threshold set to break from optimizing process
+SEED = 0 # random seed
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -34,8 +30,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
-		# Random seed
-		np.random.seed(1)
+		np.random.seed(SEED)
 
 		# Load data
 		mass = TableReader(os.path.join(simOutDir, "Mass"))
@@ -43,43 +38,25 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		bulk_molecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
 		bulk_molecule_counts = bulk_molecules.readColumn("counts")
 		bulk_molecule_ids = bulk_molecules.readAttribute("objectNames")
-
-		# Count free rRNAs
-		rrna_ids_16s = sim_data.moleculeGroups.s30_16sRRNA
-		rrna_ids_23s = sim_data.moleculeGroups.s50_23sRRNA
-		rrna_ids_5s = sim_data.moleculeGroups.s50_5sRRNA
-		rrna_indexes_16s = np.array(
-			[bulk_molecule_ids.index(rRna) for rRna in rrna_ids_16s], np.int64)
-		rrna_indexes_23s = np.array(
-			[bulk_molecule_ids.index(rRna) for rRna in rrna_ids_23s], np.int64)
-		rrna_indexes_5s = np.array(
-			[bulk_molecule_ids.index(rRna) for rRna in rrna_ids_5s], np.int64)
-		free_rrna_counts_16s = bulk_molecule_counts[:, rrna_indexes_16s]
-		free_rrna_counts_23s = bulk_molecule_counts[:, rrna_indexes_23s]
-		free_rrna_counts_5s = bulk_molecule_counts[:, rrna_indexes_5s]
+		nAvogadro = sim_data.constants.nAvogadro
 
 		# Get the stoichiometry matrix of 50s & 30s subunits
 		ribosome_50s_subunits = sim_data.process.complexation.getMonomers(
 			sim_data.moleculeIds.s50_fullComplex)
 		ribosome_30s_subunits = sim_data.process.complexation.getMonomers(
 			sim_data.moleculeIds.s30_fullComplex)
-		ribosome_stoich = np.hstack((ribosome_50s_subunits["subunitStoich"]
-			, ribosome_30s_subunits["subunitStoich"]))
+		ribosome_composition_count = np.hstack((ribosome_50s_subunits["subunitStoich"], 
+			ribosome_30s_subunits["subunitStoich"]))
 
 		# Count 50s & 30s subunits
-		complex_ids = [sim_data.moleculeIds.s50_fullComplex]
-		complex_indexes = np.array(
-			[bulk_molecule_ids.index(comp) for comp in complex_ids], np.int64)
-		[complex_50s_Counts] = bulk_molecule_counts[:, complex_indexes].T
-		complex_ids = [sim_data.moleculeIds.s30_fullComplex]
-		complex_indexes = np.array(
-			[bulk_molecule_ids.index(comp) for comp in complex_ids], np.int64)
-		[complex_30s_Counts] = bulk_molecule_counts[:, complex_indexes].T
-		n_50s_stoich = np.tensordot(complex_50s_Counts, 
-			ribosome_50s_subunits["subunitStoich"], axes = 0)
-		n_30s_stoich = np.tensordot(complex_30s_Counts, 
-			ribosome_50s_subunits["subunitStoich"], axes = 0)
-		n_subunit_ribosome_stoich = np.hstack((n_50s_stoich, n_30s_stoich))
+		complex_indexes = bulk_molecule_ids.index(sim_data.moleculeIds.s50_fullComplex)
+		complex_50s_counts = bulk_molecule_counts[:, complex_indexes]
+		complex_indexes = bulk_molecule_ids.index(sim_data.moleculeIds.s30_fullComplex)
+		complex_30s_counts = bulk_molecule_counts[:, complex_indexes]
+
+		n_50s_subunits = np.outer(complex_50s_counts, ribosome_50s_subunits["subunitStoich"])
+		n_30s_subunits = np.outer(complex_30s_counts, ribosome_30s_subunits["subunitStoich"])
+		n_ribosome_subunits = np.hstack((n_50s_subunits, n_30s_subunits))
 
 		# Count active ribosomes
 		ribosome_subunit_ids = (ribosome_50s_subunits["subunitIds"].tolist() 
@@ -87,106 +64,89 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		unique_molecule_ids = unique_molecule_counts.readAttribute("objectNames")
 		ribosome_idx = unique_molecule_ids.index("activeRibosome")
 		n_active_ribosome = unique_molecule_counts.readColumn("uniqueMoleculeCounts")[:, ribosome_idx]
-		n_active_ribosome_stoich = np.tensordot(n_active_ribosome, ribosome_stoich, axes = 0)
+		n_active_ribosome_subunits = np.outer(n_active_ribosome, ribosome_composition_count)
 
-		# Include the rRNAs already in active ribosomes & ribosome subunits
-		for i in range(len(ribosome_subunit_ids)):
-			rRna = ribosome_subunit_ids[i]
-			if (rRna in rrna_ids_16s):
-				rrna_index = rrna_ids_16s.index(rRna)
-				free_rrna_counts_16s[:, rrna_index] = (free_rrna_counts_16s[:, rrna_index] 
-					+ n_active_ribosome_stoich[:, i])
-				free_rrna_counts_16s[:, rrna_index] = (free_rrna_counts_16s[:, rrna_index] 
-					+ n_subunit_ribosome_stoich[:, i])
-			elif (rRna in rrna_ids_23s):
-				rrna_index = rrna_ids_23s.index(rRna)
-				free_rrna_counts_23s[:, rrna_index] = (free_rrna_counts_23s[:, rrna_index] 
-					+ n_active_ribosome_stoich[:, i])
-				free_rrna_counts_23s[:, rrna_index] = (free_rrna_counts_23s[:, rrna_index] 
-					+ n_subunit_ribosome_stoich[:, i])
-			elif (rRna in rrna_ids_5s):
-				rrna_index = rrna_ids_5s.index(rRna)
-				free_rrna_counts_5s[:, rrna_index] = (free_rrna_counts_5s[:, rrna_index] 
-					+ n_active_ribosome_stoich[:, i])
-				free_rrna_counts_5s[:, rrna_index] = (free_rrna_counts_5s[:, rrna_index] 
-					+ n_subunit_ribosome_stoich[:, i])
+		def find_mass_rRna(rRna_id):
+			# Count free rRNAs
+			rRna_ids = getattr(sim_data.moleculeGroups, str(rRna_id))
+			rRna_indexes = np.array(
+				[bulk_molecule_ids.index(rRna) for rRna in rRna_ids])
+			free_rRna_counts = bulk_molecule_counts[:, rRna_indexes]
 
-		# Load molecular weights
-		rrna_16s_mw = sim_data.getter.getMass(rrna_ids_16s).asNumber(units.g/units.mol)
-		rrna_23s_mw = sim_data.getter.getMass(rrna_ids_23s).asNumber(units.g/units.mol)
-		rrna_5s_mw = sim_data.getter.getMass(rrna_ids_5s).asNumber(units.g/units.mol)
-		nAvogadro = sim_data.constants.nAvogadro.asNumber(1/units.mol)
+			# Include the rRNAs already in active ribosomes & ribosome subunits
+			total_rRna_counts = free_rRna_counts.astype(float)
+			for i, subunit_id in enumerate(ribosome_subunit_ids):
+				if subunit_id in rRna_ids:
+					rRna_index = rRna_ids.index(subunit_id)
+					total_rRna_counts[:, rRna_index] += n_active_ribosome_subunits[:, i]
+					total_rRna_counts[:, rRna_index] += n_ribosome_subunits[:, i]
 
-		# Convert to mass
-		rRna_16s = np.dot(free_rrna_counts_16s, rrna_16s_mw)/nAvogadro*(10**15)
-		rRna_23s = np.dot(free_rrna_counts_23s, rrna_23s_mw)/nAvogadro*(10**15)
-		rRna_5s = np.dot(free_rrna_counts_5s, rrna_5s_mw)/nAvogadro*(10**15)
+			# Load molecular weights and convert to mass
+			rRna_mw = sim_data.getter.getMass(rRna_ids)
+			return (units.dot(total_rRna_counts, rRna_mw)/nAvogadro).asNumber(units.fg)
 
-		# lipids
-		lipid_ids = sim_data.moleculeGroups.lipids
-		lipid_indexes = np.array([bulk_molecule_ids.index(lipid) for lipid in lipid_ids], np.int64)
-		lipid_counts = bulk_molecule_counts[:, lipid_indexes]
-		lipids_mw = sim_data.getter.getMass(lipid_ids).asNumber(units.g/units.mol)
-		lipid = np.dot(lipid_counts, lipids_mw)/nAvogadro*(10**15)
+		rRna_16s = find_mass_rRna('s30_16sRRNA')
+		rRna_23s = find_mass_rRna('s50_23sRRNA')
+		rRna_5s = find_mass_rRna('s50_5sRRNA')
 
-		# LPS
-		lps_id = sim_data.moleculeIds.LPS
-		lps_index = np.int64(bulk_molecule_ids.index(lps_id))
-		lps_counts = bulk_molecule_counts[:, lps_index]
-		lps_mw = sim_data.getter.getMass([lps_id]).asNumber(units.g/units.mol)
-		lps = lps_counts*lps_mw/nAvogadro*(10**15)
+		# lipids and polyamines
+		def find_mass_molecule_group(group_id):
+			temp_ids = getattr(sim_data.moleculeGroups, str(group_id))
+			temp_indexes = np.array([bulk_molecule_ids.index(temp) for temp in temp_ids])
+			temp_counts = bulk_molecule_counts[:, temp_indexes]
+			temp_mw = sim_data.getter.getMass(temp_ids)
+			return (units.dot(temp_counts, temp_mw)/nAvogadro).asNumber(units.fg)
 
-		# peptidoglycans
-		murein_id = sim_data.moleculeIds.murein
-		murein_index = np.int64(bulk_molecule_ids.index(murein_id))
-		murein_counts = bulk_molecule_counts[:, murein_index]
-		murein_mw = sim_data.getter.getMass([murein_id]).asNumber(units.g/units.mol)
-		murein = murein_counts*murein_mw/nAvogadro*(10**15)
+		lipid = find_mass_molecule_group('lipids')
+		polyamines = find_mass_molecule_group('polyamines')
 
-		# polyamines
-		polyamines_ids = sim_data.moleculeGroups.polyamines
-		polyamines_indexes = np.array(
-			[bulk_molecule_ids.index(polyamine) for polyamine in polyamines_ids],
-			np.int64)
-		polyamines_counts = bulk_molecule_counts[:, polyamines_indexes]
-		polyamines_mw = sim_data.getter.getMass(polyamines_ids).asNumber(units.g/units.mol)
-		polyamines = np.dot(polyamines_counts, polyamines_mw)/nAvogadro*(10**15)
+		# LPS, murein, and glycogen
+		def find_mass_single_molecule(molecule_id):
+			temp_id = getattr(sim_data.moleculeIds, str(molecule_id))
+			temp_index = bulk_molecule_ids.index(temp_id)
+			temp_counts = bulk_molecule_counts[:, temp_index]
+			temp_mw = sim_data.getter.getMass([temp_id])
+			return (units.multiply(temp_counts, temp_mw)/nAvogadro).asNumber(units.fg)
 
-		# glycogen
-		glycogen_id = sim_data.moleculeIds.glycogen
-		glycogen_index = np.int64(bulk_molecule_ids.index(glycogen_id))
-		glycogen_counts = bulk_molecule_counts[:, glycogen_index]
-		glycogen_mw = sim_data.getter.getMass([glycogen_id]).asNumber(units.g/units.mol)
-		glycogen = glycogen_counts*glycogen_mw/nAvogadro*(10**15)
+		lps = find_mass_single_molecule('LPS')
+		murein = find_mass_single_molecule('murein')
+		glycogen = find_mass_single_molecule('glycogen')
 
 		# other cell components
 		protein = mass.readColumn("proteinMass")
 		rna = mass.readColumn("rnaMass")
 		tRna = mass.readColumn("tRnaMass")
 		rRna = mass.readColumn("rRnaMass")
+		assert np.array_equal(np.round(rRna, 10), np.round(rRna_16s + rRna_23s + rRna_5s, 10))
 		mRna = mass.readColumn("mRnaMass")
 		miscRna = rna - (tRna + rRna + mRna)
 		dna = mass.readColumn("dnaMass")
 		smallMolecules = mass.readColumn("smallMoleculeMass")
 		metabolites = smallMolecules - (lipid + lps + murein + polyamines + glycogen)
 
-		# create dataframe
-		mass_final = np.array([protein[-1], 
-			dna[-1], mRna[-1], tRna[-1], rRna_16s[-1], rRna_23s[-1], rRna_5s[-1], miscRna[-1], 
-			murein[-1], lps[-1], lipid[-1], polyamines[-1], glycogen[-1], metabolites[-1]])
-		ids = ['protein',
-			'DNA', 'mRNA', 'tRNA', '16srRNA', '23srRNA', '5srRNA', 'miscRNA',
-			'peptidoglycan', 'LPS', 'lipid', 'polyamines', 'glycogen', 'metabolites']
-		index1 = ['protein',
-			'DNA', 'mRNA', 'tRNA', 'rRNA', 'rRNA', 'rRNA', 'miscRNA',
-			'peptidoglycan', 'LPS', 'lipid', 'polyamines', 'glycogen', 'metabolites']
-		index0 = ['protein']*1 + ['nucleic_acid']*7 + ['metabolites']*6
-		df = pd.DataFrame(mass_final.reshape((-1,1)), index = [index0, index1, ids], columns = ['values'])
-		df = df.sort_index()
+		# create dictionary
+		dic = {
+		'metabolites': {'LPS': {'LPS': lps[-1]},
+						'glycogen': {'glycogen': glycogen[-1]},
+						'lipid': {'lipid': lipid[-1]},
+						'metabolites': {'metabolites': metabolites[-1]},
+						'peptidoglycan': {'peptidoglycan': murein[-1]}, 
+						'polyamines': {'polyamines': polyamines[-1]}, 
+						},
+		'nucleic_acid': {'DNA': {'DNA': dna[-1]}, 
+						'mRNA': {'mRNA': mRna[-1]},
+						'miscRNA': {'miscRNA': miscRna[-1]},
+						'rRNA': {'16srRNA': rRna_16s[-1], 
+								'23srRNA': rRna_23s[-1],
+								'5srRNA': rRna_5s[-1],
+								},
+						'tRNA': {'tRNA': tRna[-1]},
+						},
+		'protein': {'protein': {'protein': protein[-1]}},
+		}
 
 		# create the plot (layered)
-		voronoi_0, voronoi_1_all, voronoi_2_all = VM.layered_voronoi(df, CANVAS, I_MAX, ERR_THRES)
-		error_all = VM.layered_voronoi_plot(voronoi_0, voronoi_1_all, voronoi_2_all)
+		error_all = VM.layered_voronoi_master(dic)
 
 		# save the plot
 		plt.title("Biomass components")
@@ -195,4 +155,3 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		
 if __name__ == "__main__":
 	Plot().cli()
-	

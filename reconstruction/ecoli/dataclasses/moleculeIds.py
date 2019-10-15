@@ -25,7 +25,7 @@ class MoleculeIds(object):
 			'DnaA_ATP_complex': 'MONOMER0-160[c]',
 			'LPS': 'CPD0-939[c]',
 			'murein': 'CPD-12261[p]',
-			'glycogen': 'glycogen-monomer[c]'
+			'glycogen': 'glycogen-monomer[c]',
 		}
 
 		self.__dict__.update(moleculeIds)
