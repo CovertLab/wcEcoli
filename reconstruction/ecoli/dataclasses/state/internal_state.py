@@ -145,6 +145,7 @@ class InternalState(object):
 		ribosomeAttributes = {
 			"proteinIndex": "i8",
 			"peptideLength": "i8",
+			"cleaved16S" : "?",
 			}
 		self.uniqueMolecules.addToUniqueState("activeRibosome", ribosomeAttributes, ribosomeMass)
 
