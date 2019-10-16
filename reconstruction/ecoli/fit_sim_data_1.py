@@ -1186,6 +1186,10 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 
 	# TODO(Ryan): make sure the transpose of the monomerToMrnaTransform matrix works
 	#   as an inverse mapping
+	# TODO(Ryan):
+	#   * leave expression alone (in mrna indexing order)
+	#   * don't do this matrix multiplication here, wait until we have the transcript distribution
+	#   * convert translation efficiencies to be by transcript
 	mrna_expression = normalize(expression[sim_data.relation.is_mrna])
 	distribution_transcripts_by_protein = np.matmul(
 		mrna_expression,
@@ -1201,6 +1205,8 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	netLossRate_protein = netLossRateFromDilutionAndDegradationProtein(doubling_time, degradationRates)
 
 	# Find the protein distribution
+	# TODO(Ryan): call this with mRNA distribution and translation efficiencies in mRNA indexing order,
+	#   then apply the mrnaToMonomerTransform to get the protein distribution
 	distribution_protein = proteinDistributionFrommRNA(
 		distribution_transcripts_by_protein,
 		translation_efficiencies_by_protein,
