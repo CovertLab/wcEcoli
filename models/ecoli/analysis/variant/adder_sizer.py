@@ -104,6 +104,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.set_title(
 				title_list[varIdx] + ", n=%d" % ((len(all_cells) - fail), ) + "\n" +
 				r"$m_{add}$=%.3f$\times$$m_{init}$ + %.3f" % (slope,intercept) + "\n" +
+				"r-value=%0.2g" % r_value + "\n" +
 				"p-value=%0.2g" % p_value,
 				fontsize=FONT_SIZE)
 
