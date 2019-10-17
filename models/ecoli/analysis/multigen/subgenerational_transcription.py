@@ -143,7 +143,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			sometimesTranscriptionEvents.append(v)
 
 		# Plot
-		plt.figure(figsize = (16, 8))
+		plt.figure(figsize = (11, 8))
 		scatterAxis = plt.subplot2grid((2, 4), (0, 0), colspan = 3, rowspan = 2)
 		histAxis = plt.subplot2grid((2, 4), (0, 3), colspan = 1, rowspan = 2, sharey = scatterAxis)
 
@@ -157,7 +157,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.setp(patches[i], facecolor = "none", edgecolor = color_subgen)
 		plt.setp(patches[0], facecolor = "none", edgecolor = color_never)
 		plt.setp(patches[-1], facecolor = "none", edgecolor = color_always)
-		histAxis.set_xscale("log")
 		whitePadSparklineAxis(histAxis)
 		histAxis.xaxis.tick_bottom()
 		histXmin, histXmax = histAxis.get_xlim()
@@ -165,6 +164,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		scatterAxis.set_ylim([-.01, 1.01])
 		scatterAxis.set_yticklabels([])
 		scatterAxis.set_xticklabels([])
+		histAxis.set_xscale("log")
+		histAxis.set_xlim([10, 2000])
 		histAxis.set_yticklabels([])
 		histAxis.set_xticklabels([])
 
@@ -190,16 +191,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		plt.suptitle("Frequency of observing at least 1 transcript per generation", fontsize = 14)
 		scatterAxis.set_xlabel("Genes ordered by simulated synthesis probability", fontsize = 12)
-		histAxis.text(histAxis.get_xlim()[1] * 1.6, 0, "%s genes\n(%0.1f%%)" % (len(never), 100. * (len(never) / float(len(transcribedBoolOrdered)))), fontsize = 14, verticalalignment = "center", color = color_never)
-		histAxis.text(histAxis.get_xlim()[1] * 1.6, 1, "%s genes\n(%0.1f%%)" % (len(always), 100. * (len(always) / float(len(transcribedBoolOrdered)))), fontsize = 14, verticalalignment = "center", color = color_always)
-		histAxis.text(histAxis.get_xlim()[1] * 1.6, 0.5, "%s genes\n(%0.1f%%)" % (len(sometimes), 100. * (len(sometimes) / float(len(transcribedBoolOrdered)))), fontsize = 14, verticalalignment = "center", color = color_subgen)
+		histAxis.text(histXmax * 1.6, 0, "%s genes\n(%0.1f%%)" % (len(never), 100. * (len(never) / float(len(transcribedBoolOrdered)))), fontsize = 14, verticalalignment = "center", color = color_never)
+		histAxis.text(histXmax * 1.6, 1, "%s genes\n(%0.1f%%)" % (len(always), 100. * (len(always) / float(len(transcribedBoolOrdered)))), fontsize = 14, verticalalignment = "center", color = color_always)
+		histAxis.text(histXmax * 1.6, 0.5, "%s genes\n(%0.1f%%)" % (len(sometimes), 100. * (len(sometimes) / float(len(transcribedBoolOrdered)))), fontsize = 14, verticalalignment = "center", color = color_subgen)
 		scatterAxis.set_yticklabels([0, 1])
 		scatterAxis.set_xticklabels([0, len(transcribedBoolOrdered)])
+		histAxis.set_xticks([10, 2000])
+		histAxis.set_xticklabels([10, 2000])
 		histAxis.set_yticklabels([0, 1])
-		histAxis.set_xticklabels([histXmin, histXmax])
 		exportFigure(plt, plotOutDir, plotOutFileName + "_frequency_histogram", metadata)
 		plt.close("all")
-
 
 		plt.figure(figsize = (16, 8))
 		alwaysAxis = plt.subplot(2, 1, 1)
