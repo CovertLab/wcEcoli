@@ -166,7 +166,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		subgenMonomerIdToComplexIds = {}
 		for complexId in subgenComplexIds:
 			subunitIds = sim_data.process.complexation.getMonomers(complexId)["subunitIds"]
-			isEssential = np.all([x in essentialGenes_monomers for x in subunitIds])
+			isEssential = np.any([x in essentialGenes_monomers for x in subunitIds])
 
 			if isEssential:
 				complexIndex = proteinIds.index(complexId)
