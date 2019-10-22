@@ -135,7 +135,7 @@ class TfBinding(wholecell.processes.process.Process):
 		# Initialize new bound_TF array
 		bound_TF_new = np.zeros_like(bound_TF, dtype=np.bool)
 		bound_TF_new[collision_mask, :] = bound_TF[collision_mask, :]
-
+		import ipdb; ipdb.set_trace()
 		# Create vectors for storing values
 		pPromotersBound = np.zeros(self.n_TF, dtype=np.float64)
 		nPromotersBound = np.zeros(self.n_TF, dtype=np.float64)

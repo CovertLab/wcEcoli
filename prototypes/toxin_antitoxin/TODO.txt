@@ -19,6 +19,9 @@
 
 # * transcription repression by AT complex
 # ** add mazEF to transcription factor flat file 
+# >> TF effects seem to be in foldChanges.tsv
+# ?? does it need to be in tfOneComponentBound.tsv? > no? Because the TF will be a complex not a metabolite bound form.
+# >> tf binding happens here: reconstruction/ecoli/dataclasses/process/transcription_regulation.py
 
 # * need to implement A and T transcription from an operon
 
@@ -31,9 +34,10 @@
 # * find leaderless mRNAs
 # * implement leaderless mRNA translation by cleaved 16S rRNA containing ribosomes
 # ?? figure out which mRNAs are leaderless and do they exist in model?
+# *** important leaderless prots mentioned in Vesper 2011 (in model Y/N): yfiD/EG11784 (Y), yfbU/G7188 (Y), deoC/EG10221 (Y), rsuA/EG12044 (Y) 
 # ?? does modified 70S ribosome translate normal mRNAs?
 
-# * identify toxin/antitoxin pairs in e coli
+# * identify toxin/antitoxin pairs in e coli (there are 7)
 # ** figure out which ones are in the model
 
 

@@ -423,12 +423,15 @@ def buildTfConditionCellSpecifications(
 			fcDataTmp = sim_data.tfToFC[tf].copy()
 			for key, value in fcDataTmp.iteritems():
 				fcData[key] = 1. / value
-		expression = expressionFromConditionAndFoldChange(
-			sim_data.process.transcription.rnaData["id"],
-			sim_data.process.transcription.rnaExpression["basal"],
-			conditionValue["perturbations"],
-			fcData,
-			)
+		try:
+			expression = expressionFromConditionAndFoldChange(
+				sim_data.process.transcription.rnaData["id"],
+				sim_data.process.transcription.rnaExpression["basal"],
+				conditionValue["perturbations"],
+				fcData,
+				)
+		except:
+			import ipdb; ipdb.set_trace()
 
 		# Get metabolite concentrations for the condition
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(

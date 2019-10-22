@@ -21,3 +21,5 @@
 "basR"	"PHOSPHO-BASR"	"minimal_plus_ferric"	{}	"minimal"	{}	"2CS"
 "dcuR"	"PHOSPHO-DCUR"	"minimal_succinate"	{}	"minimal"	{}	"2CS"
 "narL"	"PHOSPHO-NARL"	"minimal_plus_nitrate"	{}	"minimal"	{}	"2CS"
+"mazE"	"CPLX0-841"	"minimal"	{}	"minimal"	{}	"0CS"
+"mazF"	"CPLX0-1242"	"minimal"	{}	"minimal"	{}	"0CS"
