@@ -346,8 +346,6 @@ def buildBasalCellSpecifications(
 		"doubling_time": sim_data.conditionToDoublingTime["basal"],
 		}
 
-	import ipdb; ipdb.set_trace()
-
 	# Determine expression and synthesis probabilities
 	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _ = expressionConverge(
 		sim_data,
@@ -1190,14 +1188,18 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	#   * leave expression alone (in mrna indexing order)
 	#   * don't do this matrix multiplication here, wait until we have the transcript distribution
 	#   * convert translation efficiencies to be by transcript
-	mrna_expression = normalize(expression[sim_data.relation.is_mrna])
-	distribution_transcripts_by_protein = np.matmul(
-		mrna_expression,
-		sim_data.relation.mrnaToMonomerTransform)
+	# mrna_expression = normalize(expression[sim_data.relation.is_mrna])
+	# distribution_transcripts_by_protein = np.matmul(
+	# 	mrna_expression,
+	# 	sim_data.relation.mrnaToMonomerTransform)
 
 	# distribution_transcripts_by_protein = normalize(expression[sim_data.relation.rnaIndexToMonomerMapping])
 
-	translation_efficiencies_by_protein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
+	# translation_efficiencies_by_protein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
+
+	mrna_expression = normalize(expression[sim_data.relation.is_mrna])
+	translation_efficiencies = normalize(sim_data.process.transcription.translation_efficiencies[sim_data.relation.is_mrna])
+	net_loss_rate = np.full(mrna_expression.shape, 1.0)
 
 	degradationRates = sim_data.process.translation.monomerData["degRate"]
 
@@ -1207,11 +1209,23 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	# Find the protein distribution
 	# TODO(Ryan): call this with mRNA distribution and translation efficiencies in mRNA indexing order,
 	#   then apply the mrnaToMonomerTransform to get the protein distribution
-	distribution_protein = proteinDistributionFrommRNA(
-		distribution_transcripts_by_protein,
-		translation_efficiencies_by_protein,
-		netLossRate_protein
-		)
+	# distribution_protein = proteinDistributionFrommRNA(
+	# 	distribution_transcripts_by_protein,
+	# 	translation_efficiencies_by_protein,
+	# 	netLossRate_protein
+	# 	)
+
+	distribution_monomers = proteinDistributionFrommRNA(
+		mrna_expression,
+		translation_efficiencies,
+		net_loss_rate)
+
+	distribution_protein = np.matmul(
+		distribution_monomers,
+		sim_data.relation.mrnaToMonomerTransform)
+
+	distribution_protein /= netLossRate_protein.asNumber(1/units.min)
+	distribution_protein = normalize(distribution_protein)
 
 	# Find total protein counts
 	total_count_protein = totalCountFromMassesAndRatios(
@@ -1942,12 +1956,15 @@ def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, net
 
 	assert np.allclose(np.sum(distribution_mRNA), 1)
 	assert np.allclose(np.sum(translation_efficiencies), 1)
-	distributionUnnormed = 1 / netLossRate * distribution_mRNA * translation_efficiencies
-	distributionNormed = distributionUnnormed / units.sum(distributionUnnormed)
-	distributionNormed.normalize()
-	distributionNormed.checkNoUnit()
+	distribution_unnormed = 1 / netLossRate * distribution_mRNA * translation_efficiencies
+	distribution_normed = distribution_unnormed / distribution_unnormed.sum()
+	return distribution_normed
 
-	return distributionNormed.asNumber()
+	# distributionNormed = distributionUnnormed / units.sum(distributionUnnormed)
+	# distributionNormed.normalize()
+	# distributionNormed.checkNoUnit()
+
+	# return distributionNormed.asNumber()
 
 def mRNADistributionFromProtein(distribution_protein, translation_efficiencies, netLossRate):
 	"""

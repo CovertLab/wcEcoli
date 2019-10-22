@@ -29,6 +29,7 @@ class Transcription(object):
 
 	def __init__(self, raw_data, sim_data):
 		self._build_rna_data(raw_data, sim_data)
+		self._build_translation_efficiencies(raw_data, sim_data)
 		self._build_transcription(raw_data, sim_data)
 		self._build_charged_trna(raw_data, sim_data)
 		self._build_elongation_rates(raw_data, sim_data)
@@ -315,6 +316,18 @@ class Transcription(object):
 
 		self.rnaData = UnitStructArray(rnaData, field_units)
 
+	def _build_translation_efficiencies(self, raw_data, sim_data):
+		gene_to_efficiency = dict([
+			(x["geneId"], x["translationEfficiency"])
+			for x in raw_data.translationEfficiency
+			if type(x["translationEfficiency"]) == float])
+
+		efficiencies = [
+			gene_to_efficiency.get(rna_data['geneId'], np.nan)
+			for rna_data in raw_data.operon_rnas]
+
+		self.translation_efficiencies = np.array(efficiencies)
+		self.translation_efficiencies[np.isnan(self.translation_efficiencies)] = np.nanmean(self.translation_efficiencies)
 
 	def _build_transcription(self, raw_data, sim_data):
 		"""
