@@ -17,7 +17,7 @@ class DemoWorkflow(WorkflowCLI):
 			"    print 'hello', i")
 		self.add_task(
 			name='lines',
-			outputs=[lines_filename],
+			outputs=[lines_filename, '>/tmp/lines.log'],
 			command=['python', '-u', '-c', code])
 
 		self.add_task(
