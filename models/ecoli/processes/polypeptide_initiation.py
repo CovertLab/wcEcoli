@@ -36,10 +36,14 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# TODO(Ryan): This will now be in the wrong order (convert to transcript space, 
 		# then convert to monomer order at the end)
-		mrnaIds = sim_data.relation.mrna_data['id']
+		self.mrna_data = sim_data.relation.mrna_data
+		mrnaIds = self.mrna_data['id']
 		self.monomerToMrnaTransform = sim_data.relation.monomerToMrnaTransform
 		self.mrnaToMonomerTransform = sim_data.relation.mrnaToMonomerTransform
 
+		self.proteinIdToIndex = {
+			protein_id: index
+			for index, protein_id in enumerate(sim_data.process.translation.monomerData['id'])}
 		self.proteinLengths = sim_data.process.translation.monomerData["length"].asNumber()
 		self.translationEfficienciesByMonomer = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 
@@ -155,6 +159,12 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			mrnaIndexes[startIndex:startIndex+counts] = mrnaIndex
 			startIndex += counts
 
+		proteinIndexes = np.array([
+			self.proteinIdToIndex[monomers[0]]
+			for monomers in self.mrna_data[mrnaIndexes]['monomerSet']])
+
+		monomerIndexes = np.full(proteinIndexes.shape, 0)
+
 		# # Each ribosome is assigned a protein index for the protein that corresponds to the
 		# # polypeptide it will polymerize. This is done in blocks of protein ids for efficiency.
 		# proteinIndexes = np.empty(ribosomeToActivate, np.int64)
@@ -169,11 +179,11 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# 	startIndex += counts
 
 		# Create active 70S ribosomes and assign their protein indexes calculated above
-		# TODO(Ryan): replace `proteinIndex` with `mrnaIndex`, as `proteinIndex` is a lie.
 		self.activeRibosomes.moleculesNew(
 			ribosomeToActivate,
-			mrnaIndex = mrnaIndexes)
-			# proteinIndex = proteinIndexes)
+			mrnaIndex = mrnaIndexes,
+			monomerIndex = monomerIndexes,
+			proteinIndex = proteinIndexes)
 
 		# Decrement free 30S and 70S ribosomal subunit counts
 		self.ribosome30S.countDec(nNewTranscripts.sum())

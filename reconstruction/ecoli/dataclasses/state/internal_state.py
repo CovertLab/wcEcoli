@@ -146,9 +146,10 @@ class InternalState(object):
 		# expand state to include transcription unit structure
 		ribosomeAttributes = {
 			"mrnaIndex": "i8",
+			"monomerIndex": "i8",
 			"proteinIndex": "i8",
-			"peptideLength": "i8",
-			}
+			"peptideLength": "i8"}
+
 		self.uniqueMolecules.addToUniqueState("activeRibosome", ribosomeAttributes, ribosomeMass)
 
 		# Active ribosomes are currently divided binomially, but the ribosome

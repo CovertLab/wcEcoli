@@ -43,6 +43,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		transcription = sim_data.process.transcription
 		metabolism = sim_data.process.metabolism
 
+		self.mrna_data = sim_data.relation.mrna_data
+
 		# Load parameters
 		self.nAvogadro = constants.nAvogadro
 		self.cellDensity = constants.cellDensity
@@ -160,8 +162,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Build sequences to request appropriate amount of amino acids to
 		# polymerize for next timestep
 		proteinIndexes, peptideLengths = self.active_ribosomes.attrs(
-					'proteinIndex', 'peptideLength'
-					)
+			'proteinIndex',
+			'peptideLength')
 
 		self.elongation_rates = self.make_elongation_rates(
 			self.randomState,
@@ -329,15 +331,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		added_protein_mass = computeMassIncrease(
 			sequences,
 			sequenceElongations,
-			self.aaWeightsIncorporated
-			)
+			self.aaWeightsIncorporated)
 
 		updatedLengths = peptideLengths + sequenceElongations
 
 		didInitialize = (
 			(sequenceElongations > 0) &
-			(peptideLengths == 0)
-			)
+			(peptideLengths == 0))
 
 		added_protein_mass[didInitialize] += self.endWeight
 
@@ -358,8 +358,19 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		terminatedProteins = np.bincount(
 			proteinIndexes[didTerminate],
-			minlength = self.proteinSequences.shape[0]
-			)
+			minlength = self.proteinSequences.shape[0])
+
+		mrna_indexes, monomer_indexes = self.active_ribosomes.attrs('mrnaIndex', 'monomerIndex')
+		monomer_indexes[didTerminate] += 1
+		self.active_ribosomes.attrIs(monomerIndex=monomer_indexes)
+
+		next_monomers = np.array([
+			monomer_set[monomer_index] if len(monomer_set) > monomer_index else None
+			for monomer_index, monomer_set in zip(monomer_indexes, self.mrna_data[mrna_indexes]['monomerSet'])])
+
+		
+
+		import ipdb; ipdb.set_trace()
 
 		self.active_ribosomes.delByIndexes(np.where(didTerminate)[0])
 		self.bulkMonomers.countsInc(terminatedProteins)
