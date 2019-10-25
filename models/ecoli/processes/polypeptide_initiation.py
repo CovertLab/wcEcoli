@@ -104,13 +104,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# Calculate initiation probabilities for ribosomes based on mRNA counts and associated
 		# mRNA translational efficiencies
 
-		# # # Old way
-		# # proteinInitProb = normalize(
-		# # 	self.mRnas.counts() * self.translationEfficiencies)
-
-		# # TODO(Ryan): Translate to mrna space
-		# monomer_counts = np.matmul(self.mRnas.counts(), self.mrnaToMonomerTransform)
-		# proteinInitProb = normalize(monomer_counts * self.translationEfficiencies)
+		# proteinInitProb = normalize(
+		# 	self.mRnas.counts() * self.translationEfficiencies)
 
 		transcriptInitProb = self.mRnas.counts() * self.translationEfficienciesByTranscript
 
