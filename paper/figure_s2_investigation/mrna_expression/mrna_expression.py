@@ -25,6 +25,7 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+from scipy.stats import pearsonr
 
 from reconstruction.ecoli.dataclasses.process.transcription import RNA_SEQ_ANALYSIS
 
@@ -89,6 +90,8 @@ covert_2004_avgs = {
 	"miscRNA": rna_seq_covert_2004[covert_2004_rna_type == "miscRNA", 1:].astype(float).mean(axis=1).mean(axis=0)}
 
 out = ['"Gene"\t"{}"'.format(BASAL_CONDITION)]
+x_values = []
+y_values = []
 fig, ax = plt.subplots(1, 1, figsize=(5, 5))
 
 for i, gene_eg in enumerate(rna_seq_this_study[1:, 0]):
@@ -129,8 +132,13 @@ for i, gene_eg in enumerate(rna_seq_this_study[1:, 0]):
 				np.log10(covert_2004_avg_exp),
 				color=COLOR_RNAP if gene_eg in GENES_RNAP else COLOR_RIBOSOME,
 				marker="o", markersize=10)
+			x_values.append(np.log10(rna_seq_this_study[i +1, 1].astype(float)))
+			y_values.append(np.log10(covert_2004_avg_exp))
 
 	out.append('"{}"\t{}'.format(gene_eg, covert_2004_avg_exp))
+
+# Compute pearsonr
+r_value, p_value = pearsonr(x_values, y_values)
 
 # Save output
 with open(output_data_file, "w") as f:
@@ -161,6 +169,7 @@ plt.legend(	handles=[
 	mlines.Line2D([], [], color=COLOR_RIBOSOME, linewidth=0., marker="o", label="Ribosome"),
 	mlines.Line2D([], [], color=COLOR_RNAP, linewidth=0., marker="o", label="RNA Polymerase")],
 	loc="best")
+plt.title("r = {}\nR^2 = {}\np-value = {}".format(r_value, r_value**2, p_value))
 plt.subplots_adjust(left=0.25, bottom=0.25, right=0.75, top=0.75)
 plt.savefig(output_plot_file.format("", "pdf"))
 plt.close("all")
