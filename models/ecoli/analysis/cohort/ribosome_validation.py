@@ -16,6 +16,7 @@ from __future__ import absolute_import
 
 import os
 import cPickle
+from scipy import interpolate
 from multiprocessing import Pool
 from matplotlib import pyplot as plt
 
@@ -33,8 +34,10 @@ from models.ecoli.analysis import cohortAnalysisPlot
 FIRST_GENERATION = 2
 
 CELL_CYCLE_FRACTION = 0.44 # Average cell is 44% along its cell cycle length
-RIBO_VALIDATION = [26e3, 15e3] # Bremer & Dennis 2008, Table 3
-FIGSIZE = (5, 5)
+RIBO_VALIDATION = {        # Bremer & Dennis 2008, Table 3
+	'doubling_time': [20, 24, 30, 40, 60, 100],
+    'ribosome_abundance': [73e3, 61e3, 44e3, 26e3, 15e3, 8e3]}
+FIGSIZE = (2.5, 5)
 COUNTS_BOUNDS = [0, 3e4]
 
 
@@ -84,7 +87,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		sim_dirs = analysis_paths.get_cells(
-			generation=range(FIRST_GENERATION, n_gens))
+			generation=range(FIRST_GENERATION, n_gens), seed = range(8))
 
 		sim_data = cPickle.load(open(simDataFile, 'rb'))
 
@@ -107,19 +110,29 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		# Plot
+		doubling_time = sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.min)
+		params = interpolate.splrep(
+			RIBO_VALIDATION['doubling_time'],
+			RIBO_VALIDATION['ribosome_abundance'])
+		ribosome_abundance_fit = interpolate.splev(doubling_time, params)
+
 		fig, ax = plt.subplots(1, 1, figsize=FIGSIZE)
 		ax.violinplot(ribosome_counts)
-		for val in RIBO_VALIDATION:
-			ax.axhline(val, color='r', lw=2)
+		ax.axhline(ribosome_abundance_fit, color='tab:orange', lw=1)
 		ax.set_ylim(*COUNTS_BOUNDS)
+		ax.set_xlim([0.5, 1.5])
 		ax.set_xticks([])
+		y_ticks = ax.get_yticks()
 		ax.set_yticklabels([])
-		exportFigure(plt, plotOutDir, '{}__clean'.format(plotOutFileName), metadata)
+		ax.spines['right'].set_visible(False)
+		exportFigure(plt, plotOutDir, '{}__clean'.format(plotOutFileName), None)
 
 		ax.set_title('n = {}'.format(len(ribosome_counts)))
 		ax.set_ylabel('Molecule abundance (counts)')
-		ax.set_yticklabels(ax.get_yticks())
-		plt.subplots_adjust(left=0.2, bottom=0.2, right=0.8, top=0.8)
+		ax.set_yticks(y_ticks)
+		ax.spines['right'].set_visible(True)
+		ax.spines['left'].set_visible(True)
+		plt.subplots_adjust(left=0.4, bottom=0.2, right=0.6, top=0.8)
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
 

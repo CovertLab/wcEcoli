@@ -25,6 +25,7 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+from scipy.stats import pearsonr
 
 from reconstruction.ecoli.dataclasses.process.transcription import RNA_SEQ_ANALYSIS
 
@@ -43,6 +44,9 @@ GENES_RIBO = ["EG10912", "EG10916", "EG10920", "EG10914", "EG10909", "EG10903",
 			"EG10881", "EG10865", "EG10868", "EG10880", "EG10867", "EG10873",
 			"EG10866"]
 
+COLOR_RIBOSOME = "tab:blue"
+COLOR_RNAP = "tab:orange"
+
 def openfile(filename):
 	with open(filename, "r") as f:
 		reader = csv.reader(f, delimiter="\t")
@@ -58,7 +62,7 @@ rna_seq_this_study_file = os.path.join(root_dir, "reconstruction", "ecoli", "fla
 rna_seq_covert_2004_file = os.path.join(this_dir, "Covert_2004.tsv")
 gene_ids_file = os.path.join(this_dir, "gene_ids.tsv") #todo: use validation synonyms
 rnas_file = os.path.join(root_dir, "reconstruction", "ecoli", "flat", "rnas.tsv")
-output_plot_file = os.path.join(this_dir, "compare_mrna_expression.{}")
+output_plot_file = os.path.join(this_dir, "compare_mrna_expression{}.{}")
 output_data_file = os.path.join(this_dir, "alternate_rna_seq.tsv")
 
 # Get data
@@ -86,7 +90,9 @@ covert_2004_avgs = {
 	"miscRNA": rna_seq_covert_2004[covert_2004_rna_type == "miscRNA", 1:].astype(float).mean(axis=1).mean(axis=0)}
 
 out = ['"Gene"\t"{}"'.format(BASAL_CONDITION)]
-fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+x_values = []
+y_values = []
+fig, ax = plt.subplots(1, 1, figsize=(5, 5))
 
 for i, gene_eg in enumerate(rna_seq_this_study[1:, 0]):
 	gene_b = eg_to_b.get(gene_eg)
@@ -105,49 +111,65 @@ for i, gene_eg in enumerate(rna_seq_this_study[1:, 0]):
 					ax.plot(
 					np.log10(rna_seq_this_study[i +1, 1].astype(float)),
 					np.log10(covert_2004_avg_exp),
-					"ro")
+					color=COLOR_RNAP, marker="o")
 
 				elif gene_eg in GENES_RIBO:
 					ax.plot(
 					np.log10(rna_seq_this_study[i +1, 1].astype(float)),
 					np.log10(covert_2004_avg_exp),
-					"go")
+					color=COLOR_RIBOSOME, marker="o")
 
 				else:
 					ax.plot(
 					np.log10(rna_seq_this_study[i +1, 1].astype(float)),
 					np.log10(covert_2004_avg_exp),
-					"bo", alpha = 0.2)
+					color="k", marker="o", alpha=0.2)
 
 
 		if gene_eg in GENES_RNAP or gene_eg in GENES_RIBO:
 			ax.plot(
 				np.log10(rna_seq_this_study[i +1, 1].astype(float)),
 				np.log10(covert_2004_avg_exp),
-				"ro" if gene_eg in GENES_RNAP else "go")
+				color=COLOR_RNAP if gene_eg in GENES_RNAP else COLOR_RIBOSOME,
+				marker="o", markersize=10)
+			x_values.append(np.log10(rna_seq_this_study[i +1, 1].astype(float)))
+			y_values.append(np.log10(covert_2004_avg_exp))
 
 	out.append('"{}"\t{}'.format(gene_eg, covert_2004_avg_exp))
+
+# Compute pearsonr
+r_value, p_value = pearsonr(x_values, y_values)
 
 # Save output
 with open(output_data_file, "w") as f:
 	f.write("\n".join(out))
 
-range_min = min(ax.get_xlim()[0], ax.get_ylim()[0])
-range_max = max(ax.get_xlim()[1], ax.get_ylim()[1])
+range_min = np.floor(min(ax.get_xlim()[0], ax.get_ylim()[0]) * 10)/10.
+range_max = np.ceil(max(ax.get_xlim()[1], ax.get_ylim()[1]) * 10)/10.
+ax.plot(
+		[range_min, range_max],
+		[range_min, range_max], "k")
 ax.set_xlim(range_min, range_max)
 ax.set_ylim(range_min, range_max)
-ax.set_xlabel("This Study (Macklin et al. 2019)")
-ax.set_ylabel("Covert et al. 2004")
-plt.legend(
-	handles=[
-	mlines.Line2D([], [], color="red", linewidth=0., marker=".", label="RNA polymerase"),
-	mlines.Line2D([], [], color="green", linewidth=0., marker=".", label="Ribosome")],
+ax.set_xticks([range_min, range_max])
+ax.set_yticks([range_min, range_max])
+ax.set_xticklabels([])
+ax.set_yticklabels([])
+plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)
+plt.savefig(output_plot_file.format("__clean", "pdf"))
+
+ax.set_xticklabels(ax.get_xticks())
+ax.set_yticklabels(ax.get_yticks())
+from matplotlib.ticker import FormatStrFormatter
+ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+ax.set_xlabel("log10 This Study (Macklin et al. 2019)")
+ax.set_ylabel("log10 Covert et al. 2004")
+plt.legend(	handles=[
+	mlines.Line2D([], [], color=COLOR_RIBOSOME, linewidth=0., marker="o", label="Ribosome"),
+	mlines.Line2D([], [], color=COLOR_RNAP, linewidth=0., marker="o", label="RNA Polymerase")],
 	loc="best")
-
-plt.savefig(output_plot_file.format("pdf"))
-plt.savefig(output_plot_file.format("png"))
+plt.title("r = {}\nR^2 = {}\np-value = {}".format(r_value, r_value**2, p_value))
+plt.subplots_adjust(left=0.25, bottom=0.25, right=0.75, top=0.75)
+plt.savefig(output_plot_file.format("", "pdf"))
 plt.close("all")
-
-row, col = np.where(rna_seq_this_study == "0.0")
-genes = [rna_seq_this_study[row[i], 0] for i in range(len(row)) if col[i] == 1]
-

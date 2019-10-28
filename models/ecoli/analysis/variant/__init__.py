@@ -12,6 +12,7 @@ ACTIVE = [
 	"flux_sensitivity.py",
 	"glc_yield.py",
 	"growth_condition_comparison_validation.py",
+	# "growth_condition_comparison_validation_parallel.py",
 	"growthConditionComparison.py",
 	"kinetic_objective_comparison.py",
 	"kinetic_objective_interactions.py",

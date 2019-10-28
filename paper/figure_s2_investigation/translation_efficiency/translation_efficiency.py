@@ -31,6 +31,8 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
+COLOR_HIGHLIGHT = "tab:orange"
+
 def open_file(filename, delimiter):
 	with open(filename, "r") as f:
 		reader = csv.reader(f, delimiter=delimiter)
@@ -47,7 +49,7 @@ wcm_data_file = os.path.join(
 wcm_genes_file = os.path.join(
 	root_dir, "reconstruction", "ecoli", "flat", "genes.tsv")
 ribosome_genes_file = os.path.join(this_dir, "ribosome_genes.tsv")
-output_plot = os.path.join(this_dir, "compare_translation_efficiency.pdf")
+output_plot = os.path.join(this_dir, "compare_translation_efficiency{}.pdf")
 output_file = os.path.join(
 	root_dir, "reconstruction", "ecoli", "flat", "translationEfficiency_alternate.tsv")
 
@@ -120,26 +122,43 @@ def plot(ax, x_genes, x_data, y_genes, y_data):
 
 		y_value = y_data[y_genes.index(x_gene)]
 
-		color = "tab:orange" if x_gene in rnap_genes else "tab:green" if x_gene in ribosome_genes else "none"
+		color = COLOR_HIGHLIGHT if x_gene in rnap_genes else "tab:blue" if x_gene in ribosome_genes else "none"
 		if color == "none":
 			continue
 		ax.scatter(
 			np.log10(x_value),
-			np.log10(y_value), 
-			c=color, edgecolors="tab:blue" if color is "none" else color)
-	ax.plot(
-		[min(ax.get_xlim()[0], ax.get_ylim()[0]), max(ax.get_xlim()[1], ax.get_ylim()[1])],
-		[min(ax.get_xlim()[0], ax.get_ylim()[0]), max(ax.get_xlim()[1], ax.get_ylim()[1])], "k")
+			np.log10(y_value),
+			s=90, c=color)
+			# , edgecolors="tab:blue" if color is "none" else color)
 	return
 
 
-fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+fig, ax = plt.subplots(1, 1, figsize=(5, 5))
 
 plot(ax, li_genes, li_ribosome_density, mohammad_genes.tolist(), mohammad_ribosome_density)
+range_min = np.floor(min(ax.get_xlim()[0], ax.get_ylim()[0]) * 10)/10.
+range_max = np.ceil(max(ax.get_xlim()[1], ax.get_ylim()[1]) * 10)/10.
+ax.set_xlim([range_min, range_max])
+ax.set_ylim([range_min, range_max])
+ax.plot(
+		[range_min, range_max],
+		[range_min, range_max], "k")
+ax.set_xticks([range_min, range_max])
+ax.set_yticks([range_min, range_max])
+ax.set_xticklabels([])
+ax.set_yticklabels([])
+plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)
+plt.savefig(output_plot.format("__clean"))
+
+ax.set_xticklabels(ax.get_xticks())
+ax.set_yticklabels(ax.get_yticks())
+from matplotlib.ticker import FormatStrFormatter
+ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 ax.set_xlabel("log10 Li ribosome density")
 ax.set_ylabel("log10 Mohammad ribosome density")
-
-plt.savefig(output_plot)
+plt.subplots_adjust(left=0.25, bottom=0.25, right=0.75, top=0.75)
+plt.savefig(output_plot.format(""))
 plt.close("all")
 
 

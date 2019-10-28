@@ -17,13 +17,14 @@ from __future__ import absolute_import
 
 import os
 import cPickle
+import numpy as np
+from scipy import interpolate
 from multiprocessing import Pool
 from matplotlib import pyplot as plt
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
-from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.utils import units, parallelization
 
 from models.ecoli.analysis import cohortAnalysisPlot
@@ -34,8 +35,12 @@ from models.ecoli.analysis import cohortAnalysisPlot
 FIRST_GENERATION = 2
 
 CELL_CYCLE_FRACTION = 0.44 # Average cell is 44% along its cell cycle length
-RNAP_VALIDATION = [5.7e3, 3.5e3] # Bremer & Dennis 2008, Table 3
-FIGSIZE = (5, 5)
+RNAP_VALIDATION = {        # Bremer & Dennis 2008, Table 3
+	'doubling_time': [20, 24, 30, 40, 60, 100],
+    'rnap_abundance': [10.2e3, 10.0e3, 8.4e3, 5.7e3, 3.5e3, 1.8e3]}
+
+
+FIGSIZE = (2.5, 5)
 COUNTS_BOUNDS = [0, 7e3]
 
 
@@ -44,11 +49,9 @@ def mp_worker(sim_dir):
 	rnap_count_avg_cell = None
 
 	try:
-		# (rnap_count,) = read_bulk_molecule_counts(sim_out_dir, ([rnap_id]))
 		bulk_molecule_reader = TableReader(os.path.join(sim_out_dir, 'BulkMolecules'))
 		index_rnap = bulk_molecule_reader.readAttribute('objectNames').index(rnap_id)
-		rnap_count = bulk_molecule_reader.readColumn('counts')[:, index_rnap]
-		bulk_molecule_reader.close()
+		rnap_count = bulk_molecule_reader.readColumn('counts', np.array([index_rnap]))
 
 		unique_molecule_reader = TableReader(os.path.join(sim_out_dir, 'UniqueMoleculeCounts'))
 		unique_molecule_ids = unique_molecule_reader.readAttribute('uniqueMoleculeIds')
@@ -84,7 +87,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		sim_dirs = analysis_paths.get_cells(
-			generation=range(FIRST_GENERATION, n_gens))
+			generation=range(FIRST_GENERATION, n_gens), seed = range(8))
 
 		sim_data = cPickle.load(open(simDataFile, 'rb'))
 
@@ -104,19 +107,29 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		# Plot
+		doubling_time = sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.min)
+		params = interpolate.splrep(
+			RNAP_VALIDATION['doubling_time'],
+			RNAP_VALIDATION['rnap_abundance'])
+		rnap_abundance_fit = interpolate.splev(doubling_time, params)
+
 		fig, ax = plt.subplots(1, 1, figsize=FIGSIZE)
 		ax.violinplot(rnap_counts)
-		for val in RNAP_VALIDATION:
-			ax.axhline(val, color='r', lw=2)
+		ax.axhline(rnap_abundance_fit, color='tab:orange', lw=1)
 		ax.set_ylim(*COUNTS_BOUNDS)
+		ax.set_xlim([0.5, 1.5])
 		ax.set_xticks([])
+		y_ticks = ax.get_yticks()
 		ax.set_yticklabels([])
-		exportFigure(plt, plotOutDir, '{}__clean'.format(plotOutFileName), metadata)
+		ax.spines['right'].set_visible(False)
+		exportFigure(plt, plotOutDir, '{}__clean'.format(plotOutFileName), None)
 
 		ax.set_title('n = {}'.format(len(rnap_counts)))
 		ax.set_ylabel('Molecule abundance (counts)')
-		ax.set_yticklabels(ax.get_yticks())
-		plt.subplots_adjust(left=0.2, bottom=0.2, right=0.8, top=0.8)
+		ax.set_yticks(y_ticks)
+		ax.spines['right'].set_visible(True)
+		ax.spines['left'].set_visible(True)
+		plt.subplots_adjust(left=0.4, bottom=0.2, right=0.6, top=0.8)
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
 
