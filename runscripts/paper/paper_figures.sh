@@ -16,7 +16,8 @@ python models/ecoli/analysis/cohort/doubling_times_histogram_all.py \
 /scratch/PI/mcovert/wc_ecoli/paper/SET_L/20190910.155143__SET_L_4_gens_256_seeds_3_conditions_unfit_ribosome_and_rna_poly_expression/
 
 # Panel B
-
+python models/ecoli/analysis/variant/param_sensitivity.py \
+/scratch/PI/mcovert/wc_ecoli/paper/SET_K/SET_K_sensitivity/
 
 # Panel C
 python models/ecoli/analysis/cohort/doubling_times_histogram_all.py \
