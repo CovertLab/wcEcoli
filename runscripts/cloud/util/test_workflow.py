@@ -8,13 +8,15 @@ from runscripts.cloud.util.workflow_cli import WorkflowCLI
 class TestWorkflow(WorkflowCLI):
 	"""A test workflow for integration and regression tests of the workflow software."""
 
+	DEFAULT_TIMEOUT = 30  # in seconds
+
 	def build(self, args):
-		# Build the workflow.
+		"""Build the workflow."""
 		lines_filename = '/tmp/lines.txt'
 		code = ("with open('" + lines_filename + "', 'w') as f:\n"
 			"  for i in range(10):\n"
 			"    f.write('This is line {}\\n'.format(i))\n"
-			"    print 'hello', i")
+			"    print('line {}'.format(i))")
 		self.add_task(
 			name='lines',
 			outputs=[lines_filename],
@@ -27,7 +29,7 @@ class TestWorkflow(WorkflowCLI):
 			command=['wc', lines_filename])
 
 		# Expected:  wc: /tmp/lines.txt: No such file or directory
-		# because we "forgot" to download the input file.
+		# because this task spec didn't request the input file.
 		error_test_log = '/tmp/error-test.log'
 		self.add_task(
 			name='error_test',
@@ -42,7 +44,7 @@ class TestWorkflow(WorkflowCLI):
 			outputs=['>' + exception_log],
 			command=['python', '-u', '-c', "()[1]"])
 
-		# This task depends on error tasks to test that they don't keep retrying.
+		# This task depends on error tasks in order to test they don't keep retrying.
 		# Expected:  Normal output concatenating the two input logs with exceptions.
 		# This is a regression test.
 		two_logs = '/tmp/two.log'
@@ -60,7 +62,7 @@ class TestWorkflow(WorkflowCLI):
 		output_dir = '/tmp/output/dir/'
 		code = ("for i in range(4):\n"
 			"  name = '" + output_dir + "{}.txt'.format(i)\n"
-			"  print name\n"
+			"  print(name)\n"
 			"  with open(name, 'w') as f:\n"
 			"    f.write('This is file {}\\n'.format(i))\n")
 		self.add_task(
@@ -84,6 +86,18 @@ class TestWorkflow(WorkflowCLI):
 			inputs=(output_dir,),
 			outputs=['>/tmp/overwrite.log'],
 			command=['python', '-u', '-c', code])
+
+		# test a timeout
+		code = ("from time import sleep\n"
+			"for i in range(100):\n"
+			"  sleep(1)\n"
+			"  print('{:3} seconds'.format(i))")
+		self.add_task(
+			name='timeout',
+			timeout=8,
+			outputs=['>/tmp/timeout.log'],
+			command=['python', '-u', '-c', code])
+
 
 
 if __name__ == '__main__':

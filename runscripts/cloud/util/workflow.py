@@ -83,9 +83,12 @@ def _launch_workers(worker_names, workflow=''):
 class Task(object):
 	"""A workflow task builder."""
 
+	DEFAULT_TIMEOUT = 60 * 60  # in seconds
+
 	def __init__(self, name='', image='', command=(),
-			inputs=(), outputs=(), storage_prefix='', internal_prefix=''):
-		# type: (str, str, Iterable[str], Iterable[str], Iterable[str], str, str) -> None
+			inputs=(), outputs=(), storage_prefix='', internal_prefix='',
+			timeout=0):
+		# type: (str, str, Iterable[str], Iterable[str], Iterable[str], str, str, int) -> None
 		"""Construct a Workflow Task.
 
 		Input and output paths are internal to the worker's Docker container.
@@ -110,6 +113,7 @@ class Task(object):
 		self.outputs = _copy_path_list(outputs)
 		self.storage_prefix = storage_prefix
 		self.internal_prefix = internal_prefix
+		self.timeout = timeout if timeout > 0 else self.DEFAULT_TIMEOUT
 
 	def build_command(self):
 		# type: () -> Dict[str, Any]
@@ -137,7 +141,8 @@ class Task(object):
 			name=self.name,
 			command=self.name,
 			inputs=_keyify(self.inputs, rebase),
-			outputs=_keyify(self.outputs, rebase))
+			outputs=_keyify(self.outputs, rebase),
+			timeout=self.timeout)
 
 
 class Workflow(object):

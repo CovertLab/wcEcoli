@@ -18,6 +18,7 @@ class WorkflowCLI(scriptBase.ScriptBase):
 
 	DOCKER_IMAGE = 'python:2.7.16'
 	STORAGE_PREFIX_ROOT = 'sisyphus:data/'
+	DEFAULT_TIMEOUT = Task.DEFAULT_TIMEOUT  # in seconds; subclasses can override
 
 	def __init__(self):
 		# type: () -> None
@@ -29,8 +30,8 @@ class WorkflowCLI(scriptBase.ScriptBase):
 			basename, timestamp, '')
 		self.wf = Workflow(name)
 
-	def add_task(self, name='', inputs=(), outputs=(), command=()):
-		# type: (str, Iterable[str], Iterable[str], Iterable[str]) -> Task
+	def add_task(self, name='', inputs=(), outputs=(), command=(), timeout=0):
+		# type: (str, Iterable[str], Iterable[str], Iterable[str], int) -> Task
 		task = Task(
 			name=name,
 			image=self.DOCKER_IMAGE,
@@ -38,7 +39,8 @@ class WorkflowCLI(scriptBase.ScriptBase):
 			outputs=outputs,
 			storage_prefix=self.storage_prefix,
 			internal_prefix='/tmp',
-			command=command)
+			command=command,
+			timeout=timeout if timeout > 0 else self.DEFAULT_TIMEOUT)
 		return self.wf.add_task(task)
 
 	def define_parameters(self, parser):

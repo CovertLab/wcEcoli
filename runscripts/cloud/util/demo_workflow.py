@@ -8,13 +8,15 @@ from runscripts.cloud.util.workflow_cli import WorkflowCLI
 class DemoWorkflow(WorkflowCLI):
 	"""A demo workflow for quick demonstration of how to build a workflow."""
 
+	DEFAULT_TIMEOUT = 10  # in seconds
+
 	def build(self, args):
 		"""Build the workflow."""
 		lines_filename = '/tmp/lines.txt'
 		code = ("with open('" + lines_filename + "', 'w') as f:\n"
 			"  for i in range(100):\n"
 			"    f.write('This is line {}\\n'.format(i))\n"
-			"    print 'hello', i")
+			"    print('hello {}'.format(i))")
 		self.add_task(
 			name='lines',
 			outputs=[lines_filename, '>/tmp/lines.log'],
