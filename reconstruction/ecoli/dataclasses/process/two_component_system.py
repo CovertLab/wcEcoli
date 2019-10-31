@@ -436,10 +436,20 @@ class TwoComponentSystem(object):
 			)
 
 		# Calculate changes in molecule counts for all molecules
-		allMoleculesChanges = np.dot(
-			self.dependencyMatrix, independentMoleculesCounts)
+		allMoleculesChanges = self.dependencyMatrix.dot(independentMoleculesCounts)
 
-		moleculesNeeded = np.negative(allMoleculesChanges).clip(min=0)
+		# Calculate molecules needed by assuming other molecules that would produce necessary
+		# phosphate won't be allocated
+		negative = independentMoleculesCounts.copy()
+		negative[negative > 0] = 0
+		negative[self.independentMoleculesAtpIndex] = (
+			negative[:self.independentMoleculesAtpIndex].sum()
+			+ negative[(self.independentMoleculesAtpIndex + 1):].sum()
+			)
+		moleculesNeeded = self.dependencyMatrix.dot(-negative).clip(min=0)
+		positive = independentMoleculesCounts.copy()
+		positive[positive < 0] = 0
+		moleculesNeeded += self.dependencyMatrix.dot(-positive).clip(min=0)
 
 		# Adjust molecules to prevent using more than allocated
 		iteration = 0
