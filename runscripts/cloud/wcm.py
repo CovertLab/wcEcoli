@@ -107,7 +107,7 @@ class WcmWorkflow(Workflow):
 			inputs=[kb_dir],  # TODO(jerry): TEMPORARY workaround to delay this
 				# task so its worker doesn't exit while the Parca runs.
 			outputs=[metadata_file],
-			timeout=300)
+			timeout=90)
 
 		python_args = data.select_keys(
 			args,
@@ -142,7 +142,7 @@ class WcmWorkflow(Workflow):
 				name='variant_{}_{}'.format(variant_type, i),
 				inputs=[kb_dir],
 				outputs=[variant_sim_data_dir, variant_metadata_dir],
-				timeout=300)
+				timeout=90)
 
 			this_variant_cohort_analysis_inputs = [kb_dir, variant_sim_data_dir]
 			variant_analysis_inputs.append(variant_sim_data_dir)

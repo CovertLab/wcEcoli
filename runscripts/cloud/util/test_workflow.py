@@ -6,7 +6,12 @@ from runscripts.cloud.util.workflow_cli import WorkflowCLI
 
 
 class TestWorkflow(WorkflowCLI):
-	"""A test workflow for integration and regression tests of the workflow software."""
+	"""A test workflow for integration and regression tests of the cloud
+	workflow software.
+
+	The run will never reach "WORKFLOW COMPLETE" since some tasks intentionally
+	fail and another task will never run for lack of inputs from failed tasks.
+	"""
 
 	DEFAULT_TIMEOUT = 30  # in seconds
 
@@ -48,7 +53,7 @@ class TestWorkflow(WorkflowCLI):
 		# that the workflow engine doesn't keep retrying any of them.
 		# Expected:  This task never runs since its inputs never arrive.
 		self.add_task(
-			name='error_watcher',
+			name='expected_to_never_run',
 			inputs=[error_no_such_file_out, index_error_out],
 			command=['cat', error_no_such_file_out, index_error_out])
 
