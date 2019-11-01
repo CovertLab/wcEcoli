@@ -1,12 +1,15 @@
 """Generic Sisyphus/Gaia/Google Cloud workflow builder."""
 
-# TODO(jerry): Use different utilities than os.path functions to construct
-#  paths to use inside the linux containers when the builder runs on Windows.
+# TODO(jerry): For Windows: This code uses posixpath to construct paths to use
+#  on linux servers (and os.path for local file I/O).
+#  To finish the job, either make callers do likewise or replace os.sep with
+#  posixpath.sep in argument paths, deal with isabs(), and test out on Windows.
 
 from __future__ import absolute_import, division, print_function
 
 from collections import OrderedDict
 import os
+import posixpath
 import sys
 if os.name == 'posix' and sys.version_info[0] < 3:
 	import subprocess32 as subprocess
@@ -25,7 +28,8 @@ from wholecell.utils import filepath as fp
 # runscripts/cloud/ssh-tunnel.sh.
 GAIA_CONFIG = {'gaia_host': 'localhost:24442'}
 
-STDOUT_PATH = '>'  # special pathname that captures stdout + stderror
+STDOUT_PATH = '>'    # special path that captures stdout + stderror
+LOG_OUT_PATH = '>>'  # special path for a fuller log; written even on task failure
 
 MAX_WORKERS = 500  # don't launch more than this many worker nodes at a time
 
@@ -33,11 +37,11 @@ MAX_WORKERS = 500  # don't launch more than this many worker nodes at a time
 def _rebase(path, internal_prefix, storage_prefix):
 	# type: (str, str, str) -> str
 	"""Return a path rebased from internal_prefix to storage_prefix."""
-	new_path = os.path.join(storage_prefix, os.path.relpath(path, internal_prefix))
+	new_path = posixpath.join(storage_prefix, posixpath.relpath(path, internal_prefix))
 
-	# os.path.relpath removes a trailing slash if it exists.
-	if path.endswith(os.sep):
-		new_path = os.path.join(new_path, '')
+	# posixpath.relpath removes a trailing slash if it exists.
+	if path.endswith(posixpath.sep):
+		new_path = posixpath.join(new_path, '')
 
 	assert '..' not in new_path, (
 		'''Can't rebase path "{}" that doesn't start with internal_prefix "{}"'''
@@ -69,7 +73,7 @@ def _copy_path_list(value):
 	result = _copy_as_list(value)
 	for path in result:
 		path = path.lstrip('>')
-		assert os.path.isabs(path), 'Expected an absolute path, not {}'.format(path)
+		assert posixpath.isabs(path), 'Expected an absolute path, not {}'.format(path)
 	return result
 
 def _launch_workers(worker_names, workflow=''):
@@ -87,8 +91,8 @@ class Task(object):
 
 	def __init__(self, name='', image='', command=(),
 			inputs=(), outputs=(), storage_prefix='', internal_prefix='',
-			timeout=0):
-		# type: (str, str, Iterable[str], Iterable[str], Iterable[str], str, str, int) -> None
+			timeout=0, store_log=True):
+		# type: (str, str, Iterable[str], Iterable[str], Iterable[str], str, str, int, bool) -> None
 		"""Construct a Workflow Task.
 
 		Input and output paths are internal to the worker's Docker container.
@@ -97,8 +101,14 @@ class Task(object):
 		upload or download a directory tree, and its corresponding storage path
 		will not end with '/'.
 
-		An output path that starts with '>' will capture a log from stdout +
-		stderr. The rest of the path will get rebased to a storage path.
+		An output path that starts with '>' will capture stdout + stderr (if the
+		task completes normally). The rest of the path will get rebased to a
+		storage path.
+
+		(An output path that starts with '>>' will capture a log of stdout +
+		stderr + other log messages like elapsed time and task exit code, for
+		for debugging, even if the task fails. Just default store_log=True to
+		save a log.)
 		"""
 		assert name, 'Every task needs a name'
 		assert image, 'Every task needs a Docker image name'
@@ -115,12 +125,18 @@ class Task(object):
 		self.internal_prefix = internal_prefix
 		self.timeout = timeout if timeout > 0 else self.DEFAULT_TIMEOUT
 
+		if store_log:
+			self.outputs[0:0] = [
+				LOG_OUT_PATH + posixpath.join(internal_prefix, 'logs', name + '.log')]
+
 	def build_command(self):
 		# type: () -> Dict[str, Any]
 		"""Build a Gaia Command to run this Task."""
 		def specialize(path):
 			# type: (str) -> str
-			return STDOUT_PATH if path.startswith('>') else path
+			return (LOG_OUT_PATH if path.startswith(LOG_OUT_PATH)
+					else STDOUT_PATH if path.startswith(STDOUT_PATH)
+					else path)
 
 		return dict(
 			name=self.name,

@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function
 
 import json
 import os
+import posixpath
 import re
 from typing import Any, Dict, Iterable
 
@@ -36,24 +37,25 @@ class WcmWorkflow(Workflow):
 		self.image = DOCKER_IMAGE.format(self.owner_id)
 
 		subdir = self.timestamp + ('__' + description if description else '')
-		self.storage_prefix = os.path.join(
+		self.storage_prefix = posixpath.join(
 			STORAGE_PREFIX_ROOT, self.owner_id, subdir, '')
-		self.internal_prefix = os.path.join(os.sep, 'wcEcoli', 'out', 'wf')
+		self.internal_prefix = posixpath.join(posixpath.sep, 'wcEcoli', 'out', 'wf')
 
 		self.log_info('\nStorage prefix: {}'.format(self.storage_prefix))
 
 	def internal(self, *path_elements):
 		# type: (*str) -> str
 		"""Construct a file path that's internal to the task's container."""
-		return os.path.join(self.internal_prefix, *path_elements)
+		return posixpath.join(self.internal_prefix, *path_elements)
 
 	def remote(self, *path_elements):
 		# type: (*str) -> str
 		"""Construct a remote GCS storage path within the bucket."""
-		return os.path.join(self.storage_prefix, *path_elements)
+		return posixpath.join(self.storage_prefix, *path_elements)
 
-	def add_python_task(self, firetask, python_args, name='', inputs=(), outputs=()):
-		# type: (str, Dict[str, Any], str, Iterable[str], Iterable[str]) -> Task
+	def add_python_task(self, firetask, python_args, name='', inputs=(),
+			outputs=(), timeout=0):
+		# type: (str, Dict[str, Any], str, Iterable[str], Iterable[str], int) -> Task
 		"""Add a Python task to the workflow and return it. Store its
 		stdout + stderr as storage_prefix/logs/name.log
 		"""
@@ -63,9 +65,10 @@ class WcmWorkflow(Workflow):
 			command=['python', '-u', '-m', 'wholecell.fireworks.runTask',
 					firetask, json.dumps(python_args)],
 			inputs=inputs,
-			outputs=list(outputs) + ['>' + self.internal('logs', name + '.log')],
+			outputs=outputs,
 			storage_prefix=self.storage_prefix,
-			internal_prefix=self.internal_prefix))
+			internal_prefix=self.internal_prefix,
+			timeout=timeout))
 
 	def build(self, args):
 		# type: (Dict[str, Any]) -> None
@@ -73,8 +76,8 @@ class WcmWorkflow(Workflow):
 		# Joining with '' gets a path that ends with the path separator, which
 		# tells Sisyphus to pull or push an entire directory tree.
 		kb_dir = self.internal(ParcaTask.OUTPUT_SUBDIR, '')
-		sim_data_file = os.path.join(kb_dir, constants.SERIALIZED_SIM_DATA_FILENAME)
-		validation_data_file = os.path.join(kb_dir, constants.SERIALIZED_VALIDATION_DATA)
+		sim_data_file = posixpath.join(kb_dir, constants.SERIALIZED_SIM_DATA_FILENAME)
+		validation_data_file = posixpath.join(kb_dir, constants.SERIALIZED_VALIDATION_DATA)
 
 		variant_arg = args['variant']
 		variant_spec = (variant_arg[0], int(variant_arg[1]), int(variant_arg[2]))
@@ -103,7 +106,8 @@ class WcmWorkflow(Workflow):
 			name='write_metadata',
 			inputs=[kb_dir],  # TODO(jerry): TEMPORARY workaround to delay this
 				# task so its worker doesn't exit while the Parca runs.
-			outputs=[metadata_file])
+			outputs=[metadata_file],
+			timeout=300)
 
 		python_args = data.select_keys(
 			args,
@@ -123,7 +127,7 @@ class WcmWorkflow(Workflow):
 				VariantSimDataTask.OUTPUT_SUBDIR_KB, '')
 			variant_metadata_dir = self.internal(subdir,
 				VariantSimDataTask.OUTPUT_SUBDIR_METADATA, '')
-			variant_sim_data_modified_file = os.path.join(
+			variant_sim_data_modified_file = posixpath.join(
 				variant_sim_data_dir, constants.SERIALIZED_SIM_DATA_MODIFIED)
 			md_cohort = dict(metadata, variant_function=variant_type,
 				variant_index=i)
@@ -137,7 +141,8 @@ class WcmWorkflow(Workflow):
 			variant_task = self.add_python_task('variant_sim_data', python_args,
 				name='variant_{}_{}'.format(variant_type, i),
 				inputs=[kb_dir],
-				outputs=[variant_sim_data_dir, variant_metadata_dir])
+				outputs=[variant_sim_data_dir, variant_metadata_dir],
+				timeout=300)
 
 			this_variant_cohort_analysis_inputs = [kb_dir, variant_sim_data_dir]
 			variant_analysis_inputs.append(variant_sim_data_dir)
@@ -150,14 +155,14 @@ class WcmWorkflow(Workflow):
 				this_variant_this_seed_multigen_analysis_inputs = [kb_dir, variant_sim_data_dir]
 
 				for k in xrange(args['generations']):
-					gen_dir = os.path.join(seed_dir, "generation_{:06d}".format(k))
+					gen_dir = posixpath.join(seed_dir, "generation_{:06d}".format(k))
 					md_single = dict(md_multigen, gen=k)
 
 					# l is the daughter number among all of this generation's cells.
 					# l in [0] for single daughters; l in range(2**k) for dual daughters.
 					for l in [0]:
-						cell_dir = os.path.join(gen_dir, '{:06d}'.format(l))
-						cell_sim_out_dir = os.path.join(cell_dir, 'simOut', '')
+						cell_dir = posixpath.join(gen_dir, '{:06d}'.format(l))
+						cell_sim_out_dir = posixpath.join(cell_dir, 'simOut', '')
 
 						python_args = dict(sim_args,
 							input_sim_data=variant_sim_data_modified_file,
@@ -169,11 +174,11 @@ class WcmWorkflow(Workflow):
 							firetask = 'simulation'
 						else:
 							firetask = 'simulation_daughter'
-							parent_gen_dir = os.path.join(
+							parent_gen_dir = posixpath.join(
 								seed_dir, 'generation_{:06d}'.format(k - 1))
-							parent_cell_dir = os.path.join(parent_gen_dir, '{:06d}'.format(l // 2))
-							parent_cell_sim_out_dir = os.path.join(parent_cell_dir, 'simOut', '')
-							daughter_state_path = os.path.join(
+							parent_cell_dir = posixpath.join(parent_gen_dir, '{:06d}'.format(l // 2))
+							parent_cell_sim_out_dir = posixpath.join(parent_cell_dir, 'simOut', '')
+							daughter_state_path = posixpath.join(
 								parent_cell_sim_out_dir,
 								constants.SERIALIZED_INHERITED_STATE % (l % 2 + 1))
 							python_args['inherited_state_path'] = daughter_state_path
@@ -191,7 +196,7 @@ class WcmWorkflow(Workflow):
 						this_variant_this_seed_multigen_analysis_inputs.append(cell_sim_out_dir)
 
 						if run_analysis:
-							plot_dir = os.path.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
+							plot_dir = posixpath.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
 							python_args = data.select_keys(
 								args, scriptBase.ANALYSIS_KEYS,
 								input_results_directory=cell_sim_out_dir,
@@ -206,7 +211,7 @@ class WcmWorkflow(Workflow):
 								outputs=[plot_dir])
 
 						if args['build_causality_network']:
-							cell_series_out_dir = os.path.join(cell_dir, 'seriesOut', '')
+							cell_series_out_dir = posixpath.join(cell_dir, 'seriesOut', '')
 							# NOTE: This could reuse the Causality network over the variant. For
 							# Sisyphus it'd take moving that work from BuildCausalityNetworkTask
 							# to VariantSimDataTask, but it wouldn't save much space and time.
@@ -223,7 +228,7 @@ class WcmWorkflow(Workflow):
 								outputs=[cell_series_out_dir])
 
 				if run_analysis:
-					multigen_plot_dir = os.path.join(seed_dir, AnalysisBase.OUTPUT_SUBDIR, '')
+					multigen_plot_dir = posixpath.join(seed_dir, AnalysisBase.OUTPUT_SUBDIR, '')
 					python_args = data.select_keys(
 						args, scriptBase.ANALYSIS_KEYS,
 						input_seed_directory=seed_dir,

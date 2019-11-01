@@ -13,7 +13,8 @@ class TestWorkflow(WorkflowCLI):
 	def build(self, args):
 		"""Build the workflow."""
 		lines_filename = '/tmp/lines.txt'
-		code = ("with open('" + lines_filename + "', 'w') as f:\n"
+		code = (
+			"with open('" + lines_filename + "', 'w') as f:\n"
 			"  for i in range(10):\n"
 			"    f.write('This is line {}\\n'.format(i))\n"
 			"    print('line {}'.format(i))")
@@ -25,44 +26,43 @@ class TestWorkflow(WorkflowCLI):
 		self.add_task(
 			name='count',
 			inputs=[lines_filename],
-			outputs=['>/tmp/count.log'],
 			command=['wc', lines_filename])
 
-		# Expected:  wc: /tmp/lines.txt: No such file or directory
+		# Expected:  "wc: /tmp/lines.txt: No such file or directory"
 		# because this task spec didn't request the input file.
-		error_test_log = '/tmp/error-test.log'
+		error_no_such_file_out = '/tmp/expected_no_such_file.txt'
 		self.add_task(
-			name='error_test',
+			name='expected_no_such_file',
 			inputs=[],
-			outputs=['>' + error_test_log],
+			outputs=['>' + error_no_such_file_out],
 			command=['wc', lines_filename])
 
-		# Expected:  IndexError: tuple index out of range
-		exception_log = '/tmp/index_exception.log'
+		# Expected:  "IndexError: tuple index out of range"
+		index_error_out = '/tmp/expected_index_out_of_range.txt'
 		self.add_task(
-			name='index_exception',
-			outputs=['>' + exception_log],
+			name='expected_index_out_of_range',
+			outputs=['>' + index_error_out],
 			command=['python', '-u', '-c', "()[1]"])
 
-		# This task depends on error tasks in order to test they don't keep retrying.
-		# Expected:  Normal output concatenating the two input logs with exceptions.
-		# This is a regression test.
-		two_logs = '/tmp/two.log'
+		# This task depends on error task outputs as a regression test to check
+		# that the workflow engine doesn't keep retrying any of them.
+		# Expected:  This task never runs since its inputs never arrive.
 		self.add_task(
 			name='error_watcher',
-			inputs=[error_test_log, exception_log],
-			outputs=['>' + two_logs],
-			command=['cat', error_test_log, exception_log])
+			inputs=[error_no_such_file_out, index_error_out],
+			command=['cat', error_no_such_file_out, index_error_out])
 
 		# This task writes files into an output dir to test the file ownership
-		# of files created inside the Docker container, not by the Sisyphus
-		# worker (which creates named input and output files and directories).
+		# of files created by the process inside the Docker container, not by
+		# the Sisyphus worker (which creates files and directories explicitly
+		# named in task `inputs` and `outputs`).
 		# Expected:  The text files on the worker server have ordinary user and
 		# group ownership, not root, so the worker can delete them without error.
 		output_dir = '/tmp/output/dir/'
-		code = ("for i in range(4):\n"
+		code = (
+			"for i in range(4):\n"
 			"  name = '" + output_dir + "{}.txt'.format(i)\n"
-			"  print(name)\n"
+			"  print('Wrote ' + name)\n"
 			"  with open(name, 'w') as f:\n"
 			"    f.write('This is file {}\\n'.format(i))\n")
 		self.add_task(
@@ -71,12 +71,15 @@ class TestWorkflow(WorkflowCLI):
 			outputs=(output_dir,),
 			command=['python', '-u', '-c', code])
 
-		# Download and overwrite a file written by a previous Task to test file
-		# permissions, e.g. not owned by root. It wouldn't fit Gaia's functional
-		# data flow model to upload a file back to Gaia since that means
-		# ambiguous responsibility for creating it. This test skirts that by
-		# uploading stdout, not the overwritten file.
-		code = ("fn = '" + output_dir + "1.txt'\n"
+		# Download and append to a file written by a previous Task to test file
+		# permissions, e.g. it's not owned by root so the task can overwrite it.
+		# It wouldn't fit Gaia's functional data flow model to output a file
+		# back to storage with an input's filename since that means ambiguous
+		# responsibility for which task creates it. This test skirts that by
+		# printing the appended file and uploading stdout to prove that it
+		# succeeded.
+		code = (
+			"fn = '" + output_dir + "1.txt'\n"
 			"with open(fn, 'a') as f:\n"
 			"  f.write('This is still file 1\\n')\n"
 			"with open(fn, 'r') as f:\n"
@@ -84,20 +87,19 @@ class TestWorkflow(WorkflowCLI):
 		self.add_task(
 			name='overwrite',
 			inputs=(output_dir,),
-			outputs=['>/tmp/overwrite.log'],
+			outputs=['>/tmp/overwrite.txt'],
 			command=['python', '-u', '-c', code])
 
 		# test a timeout
-		code = ("from time import sleep\n"
+		code = (
+			"from time import sleep\n"
 			"for i in range(100):\n"
 			"  sleep(1)\n"
 			"  print('{:3} seconds'.format(i))")
 		self.add_task(
-			name='timeout',
+			name='expected_timeout',
 			timeout=8,
-			outputs=['>/tmp/timeout.log'],
 			command=['python', '-u', '-c', code])
-
 
 
 if __name__ == '__main__':

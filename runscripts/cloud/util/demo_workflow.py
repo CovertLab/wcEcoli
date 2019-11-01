@@ -19,13 +19,13 @@ class DemoWorkflow(WorkflowCLI):
 			"    print('hello {}'.format(i))")
 		self.add_task(
 			name='lines',
-			outputs=[lines_filename, '>/tmp/lines.log'],
+			outputs=[lines_filename],
 			command=['python', '-u', '-c', code])
 
 		self.add_task(
 			name='count',
 			inputs=[lines_filename],
-			outputs=['>/tmp/count.log'],
+			outputs=['>/tmp/count.txt'],
 			command=['wc', lines_filename])
 
 
