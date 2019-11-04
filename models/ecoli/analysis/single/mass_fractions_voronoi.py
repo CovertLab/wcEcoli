@@ -14,7 +14,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.utils import units
-from wholecell.utils.voronoiPlotMain import VoronoiMaster
+from wholecell.utils.voronoi_plot_main import VoronoiMaster
 
 SEED = 0 # random seed
 
@@ -125,55 +125,31 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# create dictionary
 		dic = {
-			'metabolites': {
-				'LPS': {
-					'LPS': lps[-1]
-					},
-				'glycogen': {
-					'glycogen': glycogen[-1]
-					},
-				'lipid': {
-					'lipid': lipid[-1]
-					},
-				'metabolites': {
-					'metabolites': metabolites[-1]
-					},
-				'peptidoglycan': {
-					'peptidoglycan': murein[-1]
-					},
-				'polyamines': {
-					'polyamines': polyamines[-1]
-					},
-				},
 			'nucleic_acid': {
-				'DNA': {
-					'DNA': dna[-1]
-					},
-				'mRNA': {
-					'mRNA': mRna[-1]
-					},
-				'miscRNA': {
-					'miscRNA': miscRna[-1]
-					},
+				'DNA': dna[-1],
+				'mRNA': mRna[-1],
+				'miscRNA': miscRna[-1],
 				'rRNA': {
 					'16srRNA': rRna_16s[-1],
 					'23srRNA': rRna_23s[-1],
 					'5srRNA': rRna_5s[-1],
-					},
-				'tRNA': {
-					'tRNA': tRna[-1]
-					},
 				},
-			'protein': {
-				'protein': {
-					'protein': protein[-1]
-					}
-				},
+				'tRNA': tRna[-1],
+			},
+			'metabolites': {
+				'LPS': lps[-1],
+				'glycogen': glycogen[-1],
+				'lipid': lipid[-1],
+				'metabolites': metabolites[-1],
+				'peptidoglycan': murein[-1],
+				'polyamines': polyamines[-1],
+			},
+			'protein': protein[-1],
 		}
 
-		# create the plot (layered)
+		# create the plot
 		vm = VoronoiMaster()
-		error_all = vm.layered_voronoi_master(dic)
+		vm.layered_voronoi_master(dic)
 
 		# save the plot
 		plt.title("Biomass components")
