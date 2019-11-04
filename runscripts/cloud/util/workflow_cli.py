@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import argparse
 import os
+import posixpath
 from typing import Iterable
 
 import wholecell.utils.filepath as fp
@@ -16,9 +17,9 @@ from runscripts.cloud.util.workflow import Task, Workflow
 class WorkflowCLI(scriptBase.ScriptBase):
 	"""Abstract base class for a Command Line Interface to build a workflow."""
 
+	# Subclasses can override these:
 	DOCKER_IMAGE = 'python:2.7.16'
-	STORAGE_PREFIX_ROOT = 'sisyphus:data/'
-	DEFAULT_TIMEOUT = Task.DEFAULT_TIMEOUT  # in seconds; subclasses can override
+	DEFAULT_TIMEOUT = Task.DEFAULT_TIMEOUT  # in seconds
 
 	def __init__(self):
 		# type: () -> None
@@ -26,8 +27,8 @@ class WorkflowCLI(scriptBase.ScriptBase):
 		owner_id = os.environ['USER']
 		timestamp = fp.timestamp()
 		name = '{}_{}_{}'.format(basename, owner_id, timestamp)
-		self.storage_prefix = os.path.join(self.STORAGE_PREFIX_ROOT, owner_id,
-			basename, timestamp, '')
+		self.storage_prefix = posixpath.join(
+			Workflow.storage_root(), basename, timestamp, '')
 		self.wf = Workflow(name)
 
 	def add_task(self, name='', inputs=(), outputs=(), command=(), timeout=0):

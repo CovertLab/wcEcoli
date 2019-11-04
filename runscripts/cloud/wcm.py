@@ -21,7 +21,6 @@ from runscripts.cloud.util.workflow import Task, Workflow
 
 
 DOCKER_IMAGE = 'gcr.io/allen-discovery-center-mcovert/{}-wcm-code:latest'
-STORAGE_PREFIX_ROOT = 'sisyphus:data/'
 
 
 class WcmWorkflow(Workflow):
@@ -38,7 +37,7 @@ class WcmWorkflow(Workflow):
 
 		subdir = self.timestamp + ('__' + description if description else '')
 		self.storage_prefix = posixpath.join(
-			STORAGE_PREFIX_ROOT, self.owner_id, subdir, '')
+			self.storage_root(), 'WCM', subdir, '')
 		self.internal_prefix = posixpath.join(posixpath.sep, 'wcEcoli', 'out', 'wf')
 
 		self.log_info('\nStorage prefix: {}'.format(self.storage_prefix))

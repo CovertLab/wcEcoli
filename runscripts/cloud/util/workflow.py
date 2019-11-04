@@ -10,6 +10,7 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 import os
 import posixpath
+import re
 import sys
 if os.name == 'posix' and sys.version_info[0] < 3:
 	import subprocess32 as subprocess
@@ -31,13 +32,16 @@ GAIA_CONFIG = {'gaia_host': 'localhost:24442'}
 STDOUT_PATH = '>'    # special path that captures stdout + stderror
 LOG_OUT_PATH = '>>'  # special path for a fuller log; written even on task failure
 
+STORAGE_ROOT_ENV_VAR = 'WORKFLOW_STORAGE_ROOT'
 MAX_WORKERS = 500  # don't launch more than this many worker nodes at a time
 
 
 def _rebase(path, internal_prefix, storage_prefix):
 	# type: (str, str, str) -> str
-	"""Return a path rebased from internal_prefix to storage_prefix."""
-	new_path = posixpath.join(storage_prefix, posixpath.relpath(path, internal_prefix))
+	"""Return a path rebased from internal_prefix to storage_prefix and switch
+	to "bucket:path" format for Gaia/Sisyphus."""
+	relpath = posixpath.relpath(path, internal_prefix)
+	new_path = posixpath.join(storage_prefix, relpath).replace('/', ':', 1)
 
 	# posixpath.relpath removes a trailing slash if it exists.
 	if path.endswith(posixpath.sep):
@@ -83,6 +87,52 @@ def _launch_workers(worker_names, workflow=''):
 	subprocess.call([path] + worker_names,
 		env=dict(os.environ, WORKFLOW=workflow))
 
+def _to_create_bucket(prefix):
+	# type: (str) -> str
+	return ('{0}'
+			' Create your own Google Cloud Storage bucket if needed. This'
+			' supports usage tracking, cleanup, and ACLs.'
+			' Pick a name like "sisyphus-{2}" [it has to be globally unique;'
+			' BEWARE that it\'s publicly visible so don\'t include login IDs,'
+			' email addresses, project names, project numbers, or personally'
+			' identifiable information (PII)], the same Region used with'
+			' Compute Engine (run `gcloud info` for info), Standard storage'
+			' class, and default access control.'
+			' Then store it an environment variable in your shell profile and'
+			' in this shell, e.g. `export {1}="sisyphus-{2}"`.'
+				.format(prefix, STORAGE_ROOT_ENV_VAR, os.environ['USER']))
+
+def bucket_from_path(storage_path):
+	# type: (str) -> str
+	"""Extract the bucket name (the first component) from a Google Cloud
+	Storage path such as 'sisyphus-crick', 'sisyphus-crick/', or
+	'sisyphus/data/crick'.
+	"""
+	return storage_path.split('/', 1)[0]
+
+def validate_gcs_bucket(bucket_name):
+	# type: (str) -> None
+	"""Raise an exception if the Google Cloud Storage bucket name is malformed,
+	doesn't exist, or inaccessible.
+	"""
+	pattern = r'[a-z0-9][-_a-z0-9]{1,61}[a-z0-9]$'  # no uppercase; dots require DNS approval
+	if not re.match(pattern, bucket_name):
+		raise ValueError('Storage bucket name "{}" doesn\'t match the required'
+						 ' regex pattern "{}".'.format(bucket_name, pattern))
+
+	completion = subprocess.run(
+		["gsutil", "ls", "-b", "gs://" + bucket_name],  # bucket list!
+		stdout=subprocess.PIPE,
+		stderr=subprocess.PIPE,
+		universal_newlines=True,
+		timeout=60)
+	if completion.returncode:
+		message = _to_create_bucket(
+			'Couldn\'t access the Google Cloud Storage bucket "{0}" [{1}].'
+				.format(bucket_name, completion.stderr.strip()))
+		raise ValueError(message)
+	# else completion.stdout.strip() should == 'gs://' + bucket_name + '/'
+
 
 class Task(object):
 	"""A workflow task builder."""
@@ -95,11 +145,11 @@ class Task(object):
 		# type: (str, str, Iterable[str], Iterable[str], Iterable[str], str, str, int, bool) -> None
 		"""Construct a Workflow Task.
 
-		Input and output paths are internal to the worker's Docker container.
+		The inputs and outputs are absolute paths internal to the worker's
+		Docker container.
 		Task will rebase them from internal_prefix to storage_prefix to construct
 		the corresponding storage paths. An internal path ending with '/' will
-		upload or download a directory tree, and its corresponding storage path
-		will not end with '/'.
+		upload or download a directory tree.
 
 		An output path that starts with '>' will capture stdout + stderr (if the
 		task completes normally). The rest of the path will get rebased to a
@@ -114,7 +164,11 @@ class Task(object):
 		assert image, 'Every task needs a Docker image name'
 		assert command, 'Every task needs a command list of tokens'
 		assert storage_prefix, 'Every task needs a storage_prefix'
+		assert not storage_prefix.startswith('/'), (
+			'storage_prefix must not start with "/": {}'.format(storage_prefix))
 		assert internal_prefix, 'Every task needs an internal_prefix'
+		assert posixpath.isabs(internal_prefix), (
+			'internal_prefix must be an absolute path, not {}'.format(internal_prefix))
 
 		self.name = name
 		self.image = image
@@ -169,6 +223,31 @@ class Workflow(object):
 		self.name = name
 		self.verbose_logging = verbose_logging
 		self._tasks = OrderedDict()  # type: Dict[str, Task]
+
+	@classmethod
+	def storage_root(cls):
+		# type: () -> str
+		"""Get and validate the user's configured workflow storage root, or
+		raise an exception with instructions to set it up.
+
+		BEST PRACTICE is a storage bucket per user like like 'sisyphus-crick'
+		to support usage tracking, cleanup, and ACLs, but as a fallback use a
+		subdirectory of the 'sisyphus' bucket, e.g. 'sisyphus/data/crick'.
+		"""
+		try:
+			root = os.environ[STORAGE_ROOT_ENV_VAR]
+		except KeyError:
+			message = _to_create_bucket(
+				'Environment variable ${} not found.'.format(STORAGE_ROOT_ENV_VAR))
+			raise KeyError(STORAGE_ROOT_ENV_VAR, message)
+
+		bucket = bucket_from_path(root)
+		assert bucket, _to_create_bucket(
+			'${} "{}" doesn\'t begin with a storage bucket name.'.format(
+				STORAGE_ROOT_ENV_VAR, root))
+		validate_gcs_bucket(bucket)
+
+		return root
 
 	def log_info(self, message):
 		# type: (str) -> None
@@ -227,8 +306,8 @@ class Workflow(object):
 		count = min(count, MAX_WORKERS)
 
 		self.log_info('\nLaunching {} worker node(s).'.format(count))
-		user = os.environ['USER']
-		names = ['sisyphus-{}-{}'.format(user, i) for i in range(count)]
+		sanitized = re.sub('[^-a-z\d]', '-', self.name.lower()).replace('workflow', '')
+		names = ['sisyphus-{}-{}'.format(sanitized, i) for i in range(count)]
 		_launch_workers(names, workflow=self.name)
 
 	def send(self, worker_count=4):
