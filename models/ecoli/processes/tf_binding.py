@@ -135,13 +135,11 @@ class TfBinding(wholecell.processes.process.Process):
 		# Initialize new bound_TF array
 		bound_TF_new = np.zeros_like(bound_TF, dtype=np.bool)
 		bound_TF_new[collision_mask, :] = bound_TF[collision_mask, :]
-		import ipdb; ipdb.set_trace()
 		# Create vectors for storing values
 		pPromotersBound = np.zeros(self.n_TF, dtype=np.float64)
 		nPromotersBound = np.zeros(self.n_TF, dtype=np.float64)
 		nActualBound = np.zeros(self.n_TF, dtype=np.float64)
 		n_bound_TF_per_TU = np.zeros((self.n_TU, self.n_TF), dtype=np.int16)
-		import ipdb; ipdb.set_trace()
 		for tf_idx, tf_id in enumerate(self.tf_ids):
 			# Get counts of transcription factors
 			active_tf_counts = self.active_tf_view[tf_id].count()

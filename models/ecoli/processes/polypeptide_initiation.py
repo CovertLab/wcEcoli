@@ -33,14 +33,18 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 
 		# Load parameters
+		constants = sim_data.constants
 		mrnaIds = sim_data.process.translation.monomerData["rnaId"]
 		self.proteinLengths = sim_data.process.translation.monomerData["length"].asNumber()
 		self.translationEfficiencies = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 		self.fracActiveRibosomeDict = sim_data.process.translation.ribosomeFractionActiveDict
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
+		self.cellDensity = constants.cellDensity
+		self.nAvogadro = constants.nAvogadro
 		# TODO(taryn): find actual rate
-		self.mazFCleavageRate = 0.1 
+		self.mazFCleavageRate = .9 
 		self.mazFdimer = self.bulkMoleculeView('CPLX0-1241[c]')
+		self.mazFmonomer = self.bulkMoleculeView('EG11249-MONOMER[c]')
 
 		# Determine changes from parameter shuffling variant
 		shuffleIdxs = None
@@ -54,6 +58,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# Create views onto bulk 30S and 50S ribosomal subunits
 		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeIds.s30_fullComplex)
 		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeIds.s50_fullComplex)
+		self.ribosome30Scleaved = self.bulkMoleculeView("ribosome-30S-cleaved-16S[c]")
 
 		# Create view onto bulk mRNAs
 		self.mRnas = self.bulkMoleculesView(mrnaIds)
@@ -82,11 +87,15 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 	def evolveState(self):
 		ribosome30S_counts = self.ribosome30S.count().sum()
-		mazF_counts = self.mazFdimer.count()
+		# mazF_counts = self.mazFdimer.count()
+		mazF_counts = self.mazFmonomer.count()
 
-		cleaved_ribosome30S = (ribosome30S_counts * self.counts_to_molar) * (mazF_counts * self.counts_to_molar) \
-								* self.mazFCleavageRate / self.counts_to_molar
+		# cleaved_ribosome30S = (ribosome30S_counts * self.counts_to_molar) * (mazF_counts * self.counts_to_molar) \
+		# 						* self.mazFCleavageRate / self.counts_to_molar
+		cleaved_ribosome30S = np.floor(ribosome30S_counts * mazF_counts * self.mazFCleavageRate)
+
 		ribosome30S_counts -= cleaved_ribosome30S
+
 		
 		# Calculate number of ribosomes that could potentially be initalized based on
 		# counts of free 30S and 50S subunits
@@ -138,6 +147,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# Decrement free 30S and 70S ribosomal subunit counts
 		self.ribosome30S.countDec(nNewProteins.sum())
 		self.ribosome50S.countDec(nNewProteins.sum())
+		self.ribosome30Scleaved.countInc(cleaved_ribosome30S)
 
 		# Write number of initalized ribosomes to listener
 		self.writeToListener("RibosomeData", "didInitialize", nNewProteins.sum())

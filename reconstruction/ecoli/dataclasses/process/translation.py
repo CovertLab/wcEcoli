@@ -97,9 +97,14 @@ class Translation(object):
 		ribosomalProteins.extend([x[:-3] for x in sim_data.moleculeGroups.s30_proteins])
 		ribosomalProteins.extend([x[:-3] for x in sim_data.moleculeGroups.s50_proteins])
 
+		known_deg_rates = {rate['id'] : rate['degRate'] for rate in raw_data.protein_deg_rate}
+
+
 		degRate = np.zeros(len(raw_data.proteins))
 		for i,m in enumerate(raw_data.proteins):
-			if m['id'] not in ribosomalProteins:
+			if m['id'] in known_deg_rates:
+				degRate[i] = known_deg_rates[m['id']]
+			elif m['id'] not in ribosomalProteins:
 				degRate[i] = NruleDegRate[m['seq'][0]].asNumber()
 			else:
 				degRate[i] = slowRate.asNumber()

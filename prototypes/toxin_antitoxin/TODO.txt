@@ -15,7 +15,6 @@
 # **** when modified active ribosome decomplexes release modified 16S mRNA (missing 43nt)
 # *** deal with cleaved 43nt bit from mazF cleavage : preserve mass balance
 
-# ?? can we also model mazF cleavage of other mRNA
 
 # * transcription repression by AT complex
 # ** add mazEF to transcription factor flat file 
@@ -30,6 +29,8 @@
 # ** add to PROTEIN_DEG_RATES_ADJUSTMENTS in fit_sim_data_1
 # ?? no good measurements of deg rates, could measure it experimentally.
 
+# ------------------------------------------------------------------
+# ?? can we also model mazF cleavage of other mRNA
 
 # * find leaderless mRNAs
 # * implement leaderless mRNA translation by cleaved 16S rRNA containing ribosomes
@@ -43,6 +44,7 @@
 
 
 # DONE
+# ** check translation efficiencies used in model - mazE: 1.01 mazF: 0.39
 # ** A and T concentrations can feed in from protein counts
 # ** need to model complexation of AT
 # *** need to add complexation reactions for each AT species to sim_data.process.complexation.stoichMatrix()

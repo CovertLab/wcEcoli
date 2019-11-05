@@ -42,6 +42,7 @@ LIST_OF_DICT_FILENAMES = (
 	"promoters.tsv",
 	"proteinComplexes.tsv",
 	"proteins.tsv",
+	"protein_deg_rate.tsv",
 	"reactions.tsv",
 	"rnas.tsv",
 	"secretions.tsv",
