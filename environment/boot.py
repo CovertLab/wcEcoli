@@ -86,7 +86,7 @@ def ecoli_boot_config(agent_config):
 	seed = agent_config.get('seed', 0)
 	volume = agent_config.get('volume', 1.0)
 	index = agent_config.get('index', 0)
-	tagged_molecules = agent_config.get('tagged_molecules', ['cdsA'])
+	tagged_molecules = agent_config.get('tagged_molecules', ['CDPDIGLYSYN-MONOMER[i]']) # default tag cdsA protein
 	emitter_config = agent_config.get('emitter_config', DEFAULT_EMITTER)
 
 	# initialize state

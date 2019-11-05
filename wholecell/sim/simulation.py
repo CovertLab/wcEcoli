@@ -15,6 +15,7 @@ import shutil
 import time
 import uuid
 import lens
+from lens.actor.emitter import get_emitter
 
 import numpy as np
 
@@ -145,7 +146,7 @@ class Simulation(lens.actor.inner.Simulation):
 		self._cellCycleComplete = False
 		self._isDead = False
 		self._finalized = False
-		self.emitter = lens.actor.emitter.get_emitter(self.emitter_config)
+		self.emitter = get_emitter(self._emitter_config)['object']  # get the emitter object
 
 		for state_name, internal_state in self.internal_states.iteritems():
 			# initialize random streams
@@ -469,7 +470,15 @@ class Simulation(lens.actor.inner.Simulation):
 		return self.daughter_config()
 
 	def emit(self):
-		if self.tagged_molecules:
-			counts = self.internal_states['BulkMolecules'].container.counts(self.tagged_molecules)
-			data = {mol_id: count for mol_id, count in zip(self.tagged_molecules, counts)}
-			self.emitter(data)
+		if self._tagged_molecules:
+			counts = self.internal_states['BulkMolecules'].container.counts(self._tagged_molecules)
+			data = {mol_id: count for mol_id, count in zip(self._tagged_molecules, counts)}
+			emit_config = {
+				'table': 'history',
+				'data': {
+					'type': 'compartment',
+					'time': self.time()},
+					'cell': data,
+				}
+
+			self.emitter.emit(emit_config)
