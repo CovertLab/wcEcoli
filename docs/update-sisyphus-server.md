@@ -93,7 +93,7 @@ server to view the service logs
 * Pull the latest Docker images `wcm-runtime` and `python:2.7.16`
 
       docker pull python:2.7.16
-      docker pull gcr.io/allen-discovery-center-mcovert/wcm-runtime:latest
+      docker pull gcr.io/allen-discovery-center-mcovert/wcm-runtime
 
 * Pull the latest Sisyphus git source code from master
 

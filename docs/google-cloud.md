@@ -18,8 +18,8 @@
       personally identifiable information (PII).]
    3. Pick the same Region used with Compute Engine (run `gcloud info` for info),
       Standard storage class, and default access control.
-   4. Store the name an environment variable in your shell profile and in your
-      current shell, e.g.:  
+   4. Store the name in an environment variable in your shell profile and
+      update your current shell, e.g.:  
       `export WORKFLOW_STORAGE_ROOT="sisyphus-crick"`
    5. If you don't have access to create a storage bucket, ask a gcloud project
       administrator. As a fallback, you can use a subdirectory of the 'sisyphus'
@@ -262,7 +262,7 @@ When a new branch needs a new `wcm-runtime` image, pick a name for the new runti
    python runscripts/cloud/wcm.py
    ```
 
-or setting a workflow user ID to do a CI PR build:
+or set a "workflow user ID" in a CI PR build:
 
    ```sh
    cloud/build-runtime.sh wcm-runtime:pr1234
@@ -270,9 +270,15 @@ or setting a workflow user ID to do a CI PR build:
    WF_ID=PR1234 python runscripts/cloud/wcm.py
    ```
 
-Q. After merging that PR into master, should we then build a new `wcm-runtime:latest` image,
-changing the meaning of that default name for future `wcm-code` image builds? Or enshrine a
-`:version` ID into the scripts?
+**CAUTION:** When using a Docker image name with no :tag, Docker applies the default
+tag "`:latest`".
+**[It does not mean the "latest version"](https://vsupalov.com/docker-latest-tag/)!**
+It's just a default tag name. Pulling with the default tag or with `:latest` (same
+thing) will pull the latest image that has the tag `:latest`, as with any tag.
+It won't pull an image (more recent or not) that has a different tag.
+
+After merging that PR into master, build a new `wcm-runtime` Docker image, changing
+the default (`:latest`) image for future `wcm-code` image builds.
 
 Optimization: The Sisyphus Compute Engine disk image has a copy of the `wcm-runtime` Docker
 image to save tens of seconds in startup time. After creating a new `wcm-runtime` Docker image,

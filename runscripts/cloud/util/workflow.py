@@ -98,8 +98,8 @@ def _to_create_bucket(prefix):
 			' identifiable information (PII)], the same Region used with'
 			' Compute Engine (run `gcloud info` for info), Standard storage'
 			' class, and default access control.'
-			' Then store it an environment variable in your shell profile and'
-			' in this shell, e.g. `export {1}="sisyphus-{2}"`.'
+			' Then store it in an environment variable in your shell profile'
+			' and update your current shell, e.g. `export {1}="sisyphus-{2}"`.'
 				.format(prefix, STORAGE_ROOT_ENV_VAR, os.environ['USER']))
 
 def bucket_from_path(storage_path):
