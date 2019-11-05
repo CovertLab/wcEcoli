@@ -133,7 +133,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		current_media_id = self._external_states['Environment'].current_media_id
 
 		# MODEL SPECIFIC: get ribosome elongation rate
-		self.ribosomeElongationRate = self.elongation_model.get_elongation_rate(current_media_id)
+		self.ribosomeElongationRate = self.elongation_model.elongation_rate(current_media_id)
 
 		# If there are no active ribosomes, return immediately
 		if self.active_ribosomes.total_counts()[0] == 0:
@@ -221,7 +221,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		total_aa_counts = self.aas.counts()
 
 		# MODEL SPECIFIC: Get amino acid counts
-		aa_counts_for_translation = self.elongation_model.get_amino_acid_counts_for_evolve_state(total_aa_counts)
+		aa_counts_for_translation = self.elongation_model.final_amino_acids(total_aa_counts)
 
 		# Using polymerization algorithm elongate each ribosome up to the limits
 		# of amino acids, sequence, and GTP
@@ -282,7 +282,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome50S.countInc(nTerminated)
 
 		# MODEL SPECIFIC: evolve
-		net_charged = self.elongation_model.evolve(total_aa_counts, aas_used, nElongations, nInitialized)
+		net_charged, self.new_count_diff = self.elongation_model.evolve(total_aa_counts, aas_used, nElongations, nInitialized)
 
 		# Write data to listeners
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
@@ -352,16 +352,16 @@ class BaseElongationModel(object):
 		self.proton = self.process.bulkMoleculeView("PROTON[c]")
 		self.water = self.process.bulkMoleculeView('WATER[c]')
 
-	def get_elongation_rate(self, current_media_id):
+	def elongation_rate(self, current_media_id):
 		rate = self.process.elngRateFactor * self.ribosomeElongationRateDict[
 			current_media_id].asNumber(units.aa / units.s)
 		return np.min([self.basal_elongation_rate, rate])
 
-	def get_amino_acid_counts(self, aasInSequences):
+	def amino_acid_counts(self, aasInSequences):
 		return aasInSequences
 
 	def request(self, aasInSequences):
-		aa_counts_for_translation = self.get_amino_acid_counts(aasInSequences)
+		aa_counts_for_translation = self.amino_acid_counts(aasInSequences)
 
 		self.process.aas.requestIs(aa_counts_for_translation)
 
@@ -370,7 +370,7 @@ class BaseElongationModel(object):
 
 		return fraction_charged, aa_counts_for_translation
 
-	def get_amino_acid_counts_for_evolve_state(self, total_aa_counts):
+	def final_amino_acids(self, total_aa_counts):
 		return total_aa_counts
 
 	def evolve(self, total_aa_counts, aas_used, nElongations, nInitialized):
@@ -379,7 +379,7 @@ class BaseElongationModel(object):
 		self.water.countInc(nElongations - nInitialized)
 		net_charged = np.zeros(len(self.uncharged_trna_names))
 
-		return net_charged
+		return net_charged, {}
 
 class TranslationSupplyElongationModel(BaseElongationModel):
 	"""
@@ -391,10 +391,10 @@ class TranslationSupplyElongationModel(BaseElongationModel):
 	def __init__(self, sim_data, process):
 		super(TranslationSupplyElongationModel, self).__init__(sim_data, process)
 
-	def get_elongation_rate(self, current_media_id):
+	def elongation_rate(self, current_media_id):
 		return self.basal_elongation_rate
 
-	def get_amino_acid_counts(self, aasInSequences):
+	def amino_acid_counts(self, aasInSequences):
 		return np.fmin(self.process.aa_supply, aasInSequences)  # Check if this is required. It is a better request but there may be fewer elongations.
 
 class SteadyStateElongationModel(TranslationSupplyElongationModel):
@@ -473,7 +473,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			f,
 			self.process.timeStepSec())
 
-		aa_counts_for_translation = v_rib * f * self.process._sim.timeStepSec() / self.counts_to_molar.asNumber(MICROMOLAR_UNITS)
+		aa_counts_for_translation = v_rib * f * self.process.timeStepSec() / self.counts_to_molar.asNumber(MICROMOLAR_UNITS)
 
 		total_trna = self.charged_trna.total_counts() + self.uncharged_trna.total_counts()
 		final_charged_trna = np.dot(fraction_charged, self.process.aa_from_trna * total_trna)
@@ -514,7 +514,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		return fraction_charged, aa_counts_for_translation
 
-	def get_amino_acid_counts_for_evolve_state(self, total_aa_counts):
+	def final_amino_acids(self, total_aa_counts):
 		return np.fmin(total_aa_counts, self.aa_counts_for_translation)
 
 	def evolve(self, total_aa_counts, aas_used, nElongations, nInitialized):
@@ -550,9 +550,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# and current DCW and AA used to charge tRNA to update the concentration target
 		# in metabolism during the next time step
 		aa_diff = self.process.aa_supply - np.dot(self.process.aa_from_trna, total_charging_reactions)
-		self.process.new_count_diff = {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
 
-		return net_charged
+		return net_charged, {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
 
 	def calculate_trna_charging(self, synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, time_limit=1000, use_disabled_aas=False):
 		'''
