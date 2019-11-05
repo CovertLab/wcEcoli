@@ -319,18 +319,12 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Without an estimate on ribosome counts, require a short timestep until estimates available
 		if activeRibosomes == 0:
-			if inputTimeStep <= .2:
-				return True
-			else:
-				return False
+			return inputTimeStep <= .2
 
 		dt = inputTimeStep * timeStepSafetyFraction
 		gtpExpectedUsage = activeRibosomes * self.ribosomeElongationRate * self.gtpPerElongation * dt
 
-		if gtpExpectedUsage < self.gtpAvailable:
-			return True
-		else:
-			return False
+		return gtpExpectedUsage < self.gtpAvailable
 
 	def wasTimeStepShortEnough(self):
 		"""
@@ -341,10 +335,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		if self.gtpAvailable == 0 and self.timeStepSec() <= .2:
 			self.gtpAvailable = self.gtp.total_counts()[0]
 
-		if (self.gtpAvailable * .9) < self.gtpUsed:
-			return False
-		else:
-			return True
+		return (self.gtpAvailable * .9) >= self.gtpUsed
 
 
 class BaseElongationModel(object):
