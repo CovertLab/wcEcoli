@@ -49,6 +49,8 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	variable_elongation_translation = False,
 	variable_elongation_transcription = False,
 	raise_on_time_limit = False,
+	tagged_molecules = [],
+	emitter_config = {},
 )
 
 def _orderedAbstractionReference(iterableOfClasses):
@@ -143,6 +145,7 @@ class Simulation(lens.actor.inner.Simulation):
 		self._cellCycleComplete = False
 		self._isDead = False
 		self._finalized = False
+		self.emitter = lens.actor.emitter.get_emitter(self.emitter_config)
 
 		for state_name, internal_state in self.internal_states.iteritems():
 			# initialize random streams
@@ -251,6 +254,8 @@ class Simulation(lens.actor.inner.Simulation):
 			self._timeTotal += self._timeStepSec
 
 			self._evolveState()
+
+			self.emit()
 
 	def finalize(self):
 		"""
@@ -462,3 +467,9 @@ class Simulation(lens.actor.inner.Simulation):
 		self.finalize()
 
 		return self.daughter_config()
+
+	def emit(self):
+		if self.tagged_molecules:
+			counts = self.internal_states['BulkMolecules'].container.counts(self.tagged_molecules)
+			data = {mol_id: count for mol_id, count in zip(self.tagged_molecules, counts)}
+			self.emitter(data)

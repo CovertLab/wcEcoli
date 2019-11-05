@@ -13,6 +13,11 @@ from wholecell.utils import constants
 import wholecell.utils.filepath as fp
 from models.ecoli.sim.variants import apply_variant
 
+DEFAULT_EMITTER = {
+	'type': 'database',
+	'url': 'localhost:27017',
+	'database': 'simulations',
+	}
 
 def initialize_ecoli(config):
 	'''
@@ -81,6 +86,8 @@ def ecoli_boot_config(agent_config):
 	seed = agent_config.get('seed', 0)
 	volume = agent_config.get('volume', 1.0)
 	index = agent_config.get('index', 0)
+	tagged_molecules = agent_config.get('tagged_molecules', ['cdsA'])
+	emitter_config = agent_config.get('emitter_config', DEFAULT_EMITTER)
 
 	# initialize state
 	state = {
@@ -121,7 +128,9 @@ def ecoli_boot_config(agent_config):
 		"massDistribution":       True,
 		"growthRateNoise":        False,
 		"dPeriodDivision":        False,
-		"translationSupply":      True}
+		"translationSupply":      True,
+		"tagged_molecules":       tagged_molecules,
+		"emitter_config":         emitter_config}
 
 	# Write a metadata file to aid analysis plots.
 	metadata = {
