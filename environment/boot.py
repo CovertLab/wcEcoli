@@ -102,6 +102,10 @@ def ecoli_boot_config(agent_config):
 	generation_id = 'generation_%06d' % generation
 	cell_id = '%06d' % index # analysis scripts require starting with 0
 
+	# add experiment_id and simulation_id to emitter config (as in lattice_compartment)
+	emitter_config['experiment_id'] = outer_id
+	emitter_config['simulation_id'] = cell_id
+
 	# make options for boot config
 	sim_out_path = fp.makedirs(working_dir, 'out')
 	output_dir = os.path.join(sim_out_path, 'agent', outer_id, cohort_id, generation_id, cell_id, 'simOut')
