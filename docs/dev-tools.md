@@ -69,8 +69,8 @@ _pyenv_ and _virtualenv_ are tools to install versions of Python and switch betw
    source ~/.bash_profile
    ```
 
-2. Set your shell login script (`.bash_profile` on Linux; `.profile` or `.bash_profile` on macOS, etc.) to initialize `pyenv` and optionally `pyenv-virtualenv` for each shell. To do this, follow the steps below or the more intricate instructions under "Add pyenv init to your shell" in [pyenv Installation](https://github.com/pyenv/pyenv#installation).
-   - Example `.profile` or `.bash_profile` lines for macOS:
+2. Set your shell login script (`~/.bash_profile` on Linux; `~/.profile` or `~/.bash_profile` on macOS, etc.) to initialize `pyenv` and optionally `pyenv-virtualenv` for each shell. To do this, follow the steps below or the more intricate instructions under "Add pyenv init to your shell" in [pyenv Installation](https://github.com/pyenv/pyenv#installation).
+   - Example `~/.profile` or `~/.bash_profile` lines for macOS:
 
    ```bash
    export PYENV_ROOT=/usr/local/var/pyenv
@@ -79,7 +79,7 @@ _pyenv_ and _virtualenv_ are tools to install versions of Python and switch betw
    ## -- Do this *before* sourcing iterm2_shell_integration
    ```
 
-   - Example `.bash_profile` lines for Stanford's "Sherlock" compute cluster, and note the `module load` command (more info at [setup_getting_started.md](https://github.com/CovertLab/ComputationalResources/blob/master/_sherlock/setup_getting_started.md), but that doc is out of date):
+   - Example `~/.bash_profile` lines for Stanford's "Sherlock" compute cluster, and note the `module load` command (more info at [setup_getting_started.md](https://github.com/CovertLab/ComputationalResources/blob/master/_sherlock/setup_getting_started.md), but that doc is out of date):
 
    ```bash
    module load wcEcoli/sherlock2
@@ -94,6 +94,24 @@ _pyenv_ and _virtualenv_ are tools to install versions of Python and switch betw
    ```
 
 3. Open a new shell so it runs the updated profile.
+
+   - On macOS, If you use normally use an account that does not have
+     write access to `/usr/local/` (this is sometimes done to protect
+     your Homebrew installation) you may see this error:
+
+     ```
+     mkdir: /usr/local/var/pyenv/shims: Permission denied
+     mkdir: /usr/local/var/pyenv/versions: Permission denied
+     ```
+
+     You may want to consider changing your `~/.bash_profile` to read:
+
+     ```bash
+     export PYENV_ROOT="$HOME/.pyenv"
+     ```
+
+     to store your pyenv environments at `~/.pyenv/` instead of at
+     `/usr/local/var/pyenv` as the above instructions do.
 
 4. You'll need to put the project on the `PYTHONPATH` when working on it. Consider adding this to your profile _or_ creating a shell alias to do it when you work on wcEcoli:
 

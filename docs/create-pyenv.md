@@ -57,7 +57,9 @@ This page goes through the Python environment setup steps in more detail and wit
 
 ## Install Python
 
-1. **Sherlock only:** The step after this will install a version of Python. Skip that if it's already installed. Before installing a new version of Python on Sherlock, you might need to do these steps:
+### On Sherlock
+
+1. The step after this will install a version of Python. Skip that if it's already installed. Before installing a new version of Python on Sherlock, you might need to do these steps:
 
    ```bash
    module load readline/7.0
@@ -81,6 +83,13 @@ This page goes through the Python environment setup steps in more detail and wit
    PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.16
    ```
 
+### On macOS
+
+1. Install Python using `pyenv`:
+
+   ```bash
+   pyenv install 2.7.16 
+   ```
 
 ## Create the "wcEcoli2" python virtual environment
 
@@ -109,7 +118,7 @@ This page goes through the Python environment setup steps in more detail and wit
       brew install openblas
       ```
 
-   _or_ use the following steps to download and build it from source. (In the "make install" step, note that OpenBLAS does not usually belong on the compiler _include_ path or the linker _library_ path.)
+   _or_ use the following steps to download and build it from source. (In the "make install" step, note that OpenBLAS does not usually belong on the compiler _include_ path or the linker _library_ path.) (Please do not install it twice.)
 
       ```bash
       brew install gcc  # if you don't have a gfortran compiler
@@ -139,12 +148,20 @@ This page goes through the Python environment setup steps in more detail and wit
       include_dirs = /usr/local/opt/openblas/include
       ```
 
-5. Install NumPy and SciPy, linked to this OpenBLAS thanks to `~/.numpy-site.cfg`:
+5. Install NumPy linked to this OpenBLAS thanks to `~/.numpy-site.cfg`
+(It won't work to install numpy and scipy at the same time into Python 2.7.):
 
       ```bash
       cd wcEcoli
-      pip install numpy==1.14.5 scipy==1.0.1 --no-binary numpy,scipy --force-reinstall
+      pip install numpy==1.14.6 --no-binary numpy --force-reinstall
       ```
+
+6. Install the packages listed in `requirements.txt` (SciPy will also use `~/.numpy-site.cfg`):
+
+   ```bash
+   pip install -r requirements.txt --no-binary numpy,scipy
+   pyenv rehash
+   ```
 
 6. Test the NumPy and SciPy installation
 
@@ -160,13 +177,6 @@ This page goes through the Python environment setup steps in more detail and wit
           define_macros = [('HAVE_CBLAS', None)]
           language = c
       ```
-
-7. Install the packages listed in `requirements.txt`:
-
-   ```bash
-   pip install -r requirements.txt --no-binary numpy,scipy
-   pyenv rehash
-   ```
 
 8. Test Theano:
 
@@ -184,7 +194,10 @@ This page goes through the Python environment setup steps in more detail and wit
 
    naming the library_dirs that you set above.
 
-9. **General preface that's important to know:** The wcEcoli software expects to run with `wcEcoli/` as both the current working directory and on the `$PYTHONPATH`.
+9. Configure matplotlib.
+
+   Note: The wcEcoli software expects to run with `wcEcoli/` as both the current working directory and on the `$PYTHONPATH` to
+   make the code and `matplotlibrc` available.
 
    **Issue [#161](https://github.com/CovertLab/wcEcoli/issues/161):** The matplotlib rendering "backend" might need to be changed from what its installer configures to `agg` (which in fact is what matplotlib will pick at runtime if not configured otherwise).
 

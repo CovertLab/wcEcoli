@@ -61,7 +61,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.idx_5Srrna = np.where(sim_data.process.transcription.rnaData['isRRna5S'])[0]
 
 		# Views
-		self.activeRnaPolys = self.uniqueMoleculesView('activeRnaPoly')
+		self.active_RNAPs = self.uniqueMoleculesView('activeRnaPoly')
 		self.bulkRnas = self.bulkMoleculesView(self.rnaIds)
 		self.ntps = self.bulkMoleculesView(["ATP[c]", "CTP[c]", "GTP[c]", "UTP[c]"])
 		self.ppi = self.bulkMoleculeView('PPI[c]')
@@ -69,27 +69,36 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.active_replisomes = self.uniqueMoleculesView("active_replisome")
 		self.fragmentBases = self.bulkMoleculesView(
 			[id_ + "[c]" for id_ in sim_data.moleculeGroups.fragmentNT_IDs])
+		self.variable_elongation = sim._variable_elongation_transcription
+		self.make_elongation_rates = sim_data.process.transcription.make_elongation_rates
 
 
 	def calculateRequest(self):
 		# Calculate elongation rate based on the current media
 		current_media_id = self._external_states['Environment'].current_media_id
 
-		self.rnapElngRate = int(stochasticRound(self.randomState,
-			self.rnaPolymeraseElongationRateDict[current_media_id].asNumber(units.nt / units.s) * self.timeStepSec()))
+		self.rnapElongationRate = self.rnaPolymeraseElongationRateDict[current_media_id].asNumber(units.nt / units.s)
+
+		self.elongation_rates = self.make_elongation_rates(
+			self.randomState,
+			self.rnapElongationRate,
+			self.timeStepSec(),
+			self.variable_elongation)
 
 		# If there are no active RNA polymerases, return immediately
-		if self.activeRnaPolys.total_counts()[0] == 0:
+		if self.active_RNAPs.total_counts()[0] == 0:
 			return
 
 		# Determine total possible sequences of nucleotides that can be
 		# transcribed in this time step for each polymerase
-		activeRnaPolys = self.activeRnaPolys.molecules_read_only()
-		TU_indexes, transcript_lengths = activeRnaPolys.attrs(
+		TU_indexes, transcript_lengths = self.active_RNAPs.attrs(
 			'TU_index', 'transcript_length')
 		sequences = buildSequences(
-			self.rnaSequences, TU_indexes, transcript_lengths,
-			self.rnapElngRate)
+			self.rnaSequences,
+			TU_indexes,
+			transcript_lengths,
+			self.elongation_rates)
+
 		sequenceComposition = np.bincount(
 			sequences[sequences != polymerize.PAD_VALUE], minlength = 4)
 
@@ -105,26 +114,34 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			"GrowthLimits", "ntpRequestSize",
 			maxFractionalReactionLimit * sequenceComposition)
 
+		# Request full access to active RNAPs
+		self.active_RNAPs.request_access(self.EDIT_DELETE_ACCESS)
+
 
 	def evolveState(self):
 		ntpCounts = self.ntps.counts()
 		self.writeToListener("GrowthLimits", "ntpAllocated", ntpCounts)
 
-		activeRnaPolys = self.activeRnaPolys.molecules()
-		if len(activeRnaPolys) == 0:
+		if self.active_RNAPs.total_counts()[0] == 0:
 			return
 
 		# Determine sequences that can be elongated
-		TU_indexes, transcript_lengths, coordinates, domain_index, direction = activeRnaPolys.attrs(
+		TU_indexes, transcript_lengths, coordinates, domain_index, direction = self.active_RNAPs.attrs(
 			'TU_index', 'transcript_length', 'coordinates', 'domain_index', 'direction')
 		sequences = buildSequences(
-			self.rnaSequences, TU_indexes, transcript_lengths,
-			self.rnapElngRate)
+			self.rnaSequences,
+			TU_indexes,
+			transcript_lengths,
+			self.elongation_rates)
 
 		# Polymerize transcripts based on sequences and available nucleotides
 		reactionLimit = ntpCounts.sum()
 		result = polymerize(
-			sequences, ntpCounts, reactionLimit, self.randomState)
+			sequences,
+			ntpCounts,
+			reactionLimit,
+			self.randomState,
+			self.elongation_rates[TU_indexes])
 		sequenceElongations = result.sequenceElongation
 		ntpsUsed = result.monomerUsages
 
@@ -141,9 +158,6 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		updated_coordinates = coordinates + np.multiply(
 			direction_converted, sequenceElongations)
 
-		# Get attributes of replisomes
-		replisomes = self.active_replisomes.molecules_read_only()
-
 		# If there are active replisomes, construct mask for RNAPs that are
 		# expected to collide with replisomes in the current timestep. If the
 		# sign of the differences between the updated coordinates of replisomes
@@ -155,8 +169,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		all_collisions = np.zeros_like(coordinates, dtype=np.bool)
 		headon_collisions = np.zeros_like(coordinates, dtype=np.bool)
 
-		if len(replisomes) > 0:
-			domain_index_replisome, right_replichore, coordinates_replisome = replisomes.attrs(
+		if self.active_replisomes.total_counts()[0] > 0:
+			domain_index_replisome, right_replichore, coordinates_replisome = self.active_replisomes.attrs(
 				"domain_index", "right_replichore", "coordinates")
 
 			elongation_length = np.ceil(
@@ -212,14 +226,14 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		added_rna_mass[didInitialize] += self.endWeight
 
 		# Update attributes and submasses of active RNAPs
-		activeRnaPolys.attrIs(
+		self.active_RNAPs.attrIs(
 			transcript_length=updated_lengths,
 			coordinates=updated_coordinates)
-		activeRnaPolys.add_submass_by_name("RNA", added_rna_mass)
+		self.active_RNAPs.add_submass_by_name("RNA", added_rna_mass)
 
 		if n_total_collisions > 0:
 			# Remove polymerases that are projected to collide with replisomes
-			activeRnaPolys.delByIndexes(np.where(all_collisions)[0])
+			self.active_RNAPs.delByIndexes(np.where(all_collisions)[0])
 
 			# Increment counts of inactive RNA polymerases
 			self.inactiveRnaPolys.countInc(n_total_collisions)
@@ -230,9 +244,10 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 			# Increment counts of bases in incomplete transcripts
 			incomplete_sequences = buildSequences(
-				self.rnaSequences, TU_indexes[all_collisions],
+				self.rnaSequences,
+				TU_indexes[all_collisions],
 				np.zeros(n_total_collisions, dtype=np.int64),
-				incomplete_sequence_lengths.max())
+				np.full(n_total_collisions, incomplete_sequence_lengths.max()))
 
 			base_counts = np.zeros(4, dtype=np.int64)
 
@@ -266,7 +281,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		# Remove polymerases that have finished transcription from unique
 		# molecules
-		activeRnaPolys.delByIndexes(np.where(didTerminate)[0])
+		self.active_RNAPs.delByIndexes(np.where(didTerminate)[0])
 
 		nTerminated = didTerminate.sum()
 		nInitialized = didInitialize.sum()

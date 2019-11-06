@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+
+from __future__ import absolute_import, division, print_function
+
+from runscripts.cloud.util.workflow_cli import WorkflowCLI
+
+
+class DemoWorkflow(WorkflowCLI):
+	"""A demo workflow for quick demonstration of how to build a workflow."""
+
+	def build(self, args):
+		"""Build the workflow."""
+		lines_filename = '/tmp/lines.txt'
+		code = ("with open('" + lines_filename + "', 'w') as f:\n"
+			"  for i in range(100):\n"
+			"    f.write('This is line {}\\n'.format(i))\n"
+			"    print 'hello', i")
+		self.add_task(
+			name='lines',
+			outputs=[lines_filename],
+			command=['python', '-u', '-c', code])
+
+		self.add_task(
+			name='count',
+			inputs=[lines_filename],
+			outputs=['>/tmp/count.log'],
+			command=['wc', lines_filename])
+
+
+if __name__ == '__main__':
+	DemoWorkflow().cli()

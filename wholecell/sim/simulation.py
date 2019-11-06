@@ -13,10 +13,10 @@ import collections
 import os.path
 import shutil
 import time
+import uuid
+import lens
 
 import numpy as np
-
-from agent.inner import CellSimulation
 
 from wholecell.listeners.evaluation_time import EvaluationTime
 from wholecell.utils import filepath
@@ -35,7 +35,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	dPeriodDivision = False,
 	growthRateNoise = False,
 	translationSupply = True,
-	trna_charging = False,
+	trna_charging = True,
 	timeStepSafetyFraction = 1.3,
 	maxTimeStep = 0.9,#2.0, # TODO: Reset to 2 once we update PopypeptideElongation
 	updateTimeStepFreq = 5,
@@ -46,7 +46,10 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	logToDiskEvery = 1,
 	simData = None,
 	inheritedStatePath = None,
-	)
+	variable_elongation_translation = False,
+	variable_elongation_transcription = False,
+	raise_on_time_limit = False,
+)
 
 def _orderedAbstractionReference(iterableOfClasses):
 	return collections.OrderedDict(
@@ -63,7 +66,7 @@ DEFAULT_LISTENER_CLASSES = (
 	EvaluationTime,
 	)
 
-class Simulation(CellSimulation):
+class Simulation(lens.actor.inner.Simulation):
 	""" Simulation """
 
 	# Attributes that must be set by a subclass
@@ -105,7 +108,7 @@ class Simulation(CellSimulation):
 		unknownKeywords = kwargs.viewkeys() - DEFAULT_SIMULATION_KWARGS.viewkeys()
 
 		if any(unknownKeywords):
-			raise SimulationException("Unknown keyword arguments: {}".format(unknownKeywords))
+			print("Unknown keyword arguments: {}".format(unknownKeywords))
 
 		# Set time variables
 		self._simulationStep = 0
@@ -221,7 +224,8 @@ class Simulation(CellSimulation):
 
 		try:
 			self.run_incremental(self._lengthSec + self.initialTime())
-			self.cellCycleComplete()
+			if not self._raise_on_time_limit:
+				self.cellCycleComplete()
 		finally:
 			self.finalize()
 
@@ -235,6 +239,9 @@ class Simulation(CellSimulation):
 
 		# Simulate
 		while self.time() < run_until and not self._isDead:
+			if self.time() > self.initialTime() + self._lengthSec:
+				self.cellCycleComplete()
+
 			if self._cellCycleComplete:
 				self.finalize()
 				break
@@ -267,6 +274,9 @@ class Simulation(CellSimulation):
 				logger.finalize(self)
 
 			self._finalized = True
+
+		if self._raise_on_time_limit and not self._cellCycleComplete:
+			raise SimulationException('Simulation time limit reached without cell division')
 
 	# Calculate temporal evolution
 	def _evolveState(self):
@@ -432,7 +442,9 @@ class Simulation(CellSimulation):
 			# initial seeds and further in later generations. Like for process
 			# seeds, this depends only on _seed, not on randomState so it won't
 			# vary with simulation code details.
-			daughters.append(dict(config,
+			daughters.append(dict(
+				config,
+				id=str(uuid.uuid1()),
 				inherited_state_path=path,
 				seed=37 * self._seed + 47 * i + 997))
 

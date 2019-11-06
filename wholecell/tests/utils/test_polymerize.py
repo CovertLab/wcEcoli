@@ -16,11 +16,13 @@ import numpy as np
 from numpy.testing import assert_equal
 
 import nose.plugins.attrib as noseAttrib
-import nose.tools as noseTools
 import unittest
 
 P = polymerize.PAD_VALUE
 
+
+@noseAttrib.attr('polymerizeNew')
+@noseAttrib.attr('smalltest')
 class Test_polymerize(unittest.TestCase):
 
 	@classmethod
@@ -53,8 +55,6 @@ class Test_polymerize(unittest.TestCase):
 			self.sequenceMonomers[monomerIndex, ...] = (sequences == monomerIndex)
 		self.activeSequences = np.array(xrange(self.nSequences))
 
-	@noseAttrib.attr('polymerizeNew')
-	@noseAttrib.attr('smalltest')
 	def test_sum_monomers(self):
 		sequences = np.array([
 			[0, 0, 0, 0, P],
@@ -64,15 +64,14 @@ class Test_polymerize(unittest.TestCase):
 		self.makeSequenceMonomers(sequences)
 		immediate = np.array([2, 0, 0, 1])
 
-		tot = sum_monomers(self.sequenceMonomers[:, :, 0], self.activeSequences)
+		indexes = np.full(self.activeSequences.shape, 0)
+		tot = sum_monomers(self.sequenceMonomers[:, :], indexes, self.activeSequences)
 		assert_equal(tot, immediate)
 
 		tot2 = sum_monomers_reference_implementation(self.sequenceMonomers[:, :, 0],
 			self.activeSequences)
 		assert_equal(tot2, immediate)
 
-	@noseAttrib.attr('polymerizeNew')
-	@noseAttrib.attr('smalltest')
 	def test_partial_sum_monomers(self):
 		sequences = np.array([
 			[0, 0, 0, 0, P],
@@ -85,15 +84,17 @@ class Test_polymerize(unittest.TestCase):
 		currentStep = 2
 		immediate = np.array([2, 0, 0, 0])
 
-		tot = sum_monomers(self.sequenceMonomers[:, :, currentStep], self.activeSequences)
+		indexes = np.full(self.activeSequences.shape, currentStep)
+		tot = sum_monomers(
+			self.sequenceMonomers[:, :],
+			indexes,
+			self.activeSequences)
 		assert_equal(tot, immediate)
 
 		tot2 = sum_monomers_reference_implementation(self.sequenceMonomers[:, :, currentStep],
 			self.activeSequences)
 		assert_equal(tot2, immediate)
 
-	@noseAttrib.attr('polymerizeNew')
-	@noseAttrib.attr('smalltest')
 	def test_polymerize_functionCall(self):
 		sequences = np.array([
 			[0, 1, 0, 1],
@@ -103,12 +104,12 @@ class Test_polymerize(unittest.TestCase):
 		baseAmounts = np.array([9, 9, 9, 9])
 		energy = 100
 
+		rates = np.full(sequences.shape[0], 1)
+
 		# Good calls test
-		polymerize(sequences, baseAmounts, energy, np.random.RandomState())
+		polymerize(sequences, baseAmounts, energy, np.random.RandomState(), rates)
 
-
-	@noseAttrib.attr('polymerizeNew')
-	@noseAttrib.attr('smalltest')
+	@noseAttrib.attr('energyLimited')
 	def test_polymerize_testEnergyLimited(self):
 		sequences = np.array([
 			[0, 1, 0, 1],
@@ -117,15 +118,13 @@ class Test_polymerize(unittest.TestCase):
 		baseAmounts = np.array([9, 9])
 		energy = 6
 
-		result = polymerize(sequences, baseAmounts, energy, np.random.RandomState())
+		rates = np.full(sequences.shape[0], 1)
+		result = polymerize(sequences, baseAmounts, energy, np.random.RandomState(), rates)
 
 		assert_equal(result.sequenceElongation, np.array([3, 3]))
 		assert_equal(result.monomerUsages, np.array([2, 4]))
 		self.assertEqual(6, result.nReactions)
 
-
-	@noseAttrib.attr('polymerizeNew')
-	@noseAttrib.attr('smalltest')
 	def test_polymerize_testFairness(self):
 		sequences = np.array([
 			[0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
@@ -136,15 +135,14 @@ class Test_polymerize(unittest.TestCase):
 		baseAmountsOriginal = baseAmounts.copy()
 		energy = 30
 
-		result = polymerize(sequences, baseAmounts, energy, np.random.RandomState())
+		rates = np.full(sequences.shape[0], 1)
+		result = polymerize(sequences, baseAmounts, energy, np.random.RandomState(), rates)
 
 		assert_equal(result.sequenceElongation, np.array([10, 9, 9, 0]))
 		assert_equal(result.monomerUsages, np.array([3, 3, 11, 11]))
 		self.assertEqual(28, result.nReactions)
 		self.assertTrue((baseAmounts == baseAmountsOriginal).all(), 'should not modify monomerLimits')
 
-	@noseAttrib.attr('polymerizeNew')
-	@noseAttrib.attr('smalltest')
 	def test_polymerize_testAllAvailableBases(self):
 		sequences = np.array([
 			[0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 1, 1],
@@ -155,15 +153,13 @@ class Test_polymerize(unittest.TestCase):
 		baseAmounts = np.array([11] * 4)
 		energy = 30
 
-		result = polymerize(sequences, baseAmounts, energy, np.random.RandomState())
+		rates = np.full(sequences.shape[0], 1)
+		result = polymerize(sequences, baseAmounts, energy, np.random.RandomState(), rates)
 
 		assert_equal(result.sequenceElongation, np.array([12,9,9,0]))
 		assert_equal(result.monomerUsages, np.array([3,5,11,11]))
 		self.assertEqual(30, result.nReactions)
 
-
-	@noseAttrib.attr('polymerizeNew')
-	@noseAttrib.attr('smalltest')
 	def test_polymerize_testVariableSequenceLength(self):
 		sequences = np.array([
 			[0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 1, 1],
@@ -174,13 +170,31 @@ class Test_polymerize(unittest.TestCase):
 		baseAmounts = np.array([30] * 4)
 		energy = 50
 
-		result = polymerize(sequences, baseAmounts, energy, np.random.RandomState())
+		rates = np.full(sequences.shape[0], 1)
+		result = polymerize(sequences, baseAmounts, energy, np.random.RandomState(), rates)
 
 		assert_equal(result.sequenceElongation, np.array([12, 12, 12, 3]))
 
+	def test_polymerize_testVariableElongation(self):
+		sequences = np.array([
+			[0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 1, 1],
+			[3] * 12,
+			[2] * 12,
+			[1, 1, 1] + [P] * 9])
+		baseAmounts = np.array([30] * 4)
+		energy = 20
 
-	@noseAttrib.attr('polymerizeNew')
-	@noseAttrib.attr('smalltest')
+		rates = np.array([4, 3, 2, 1])
+		result = polymerize(
+			sequences,
+			baseAmounts,
+			energy,
+			np.random.RandomState(),
+			rates,
+			variable_elongation=True)
+
+		assert_equal(result.sequenceElongation, np.array([8, 6, 4, 2]))
+
 	def test_buildSequences(self):
 		# Base case
 		padding = np.empty((20, 10))
@@ -192,36 +206,38 @@ class Test_polymerize(unittest.TestCase):
 			).astype(np.int8, copy = False)
 		sequenceIndexes = np.array([0, 5, 8])
 		polymerizedLengths = np.array([0, 4, 9])
-		elngRate = 5
+		elongationRate = 5
+		rates = np.full(allSequences.shape[0], elongationRate)
 
 		sequences = buildSequences(
 			allSequences,
 			sequenceIndexes,
 			polymerizedLengths,
-			elngRate
-			)
+			rates)
 
-		comparison_sequence = np.empty((3, elngRate))
-		comparison_sequence[0, :] = allSequences[0, 0:elngRate]
-		comparison_sequence[1, :] = allSequences[5, 4:(4+elngRate)]
-		comparison_sequence[2, :] = allSequences[8, 9:(9+elngRate)]
+		comparison_sequence = np.empty((3, elongationRate))
+		comparison_sequence[0, :] = allSequences[0, 0:elongationRate]
+		comparison_sequence[1, :] = allSequences[5, 4:(4+elongationRate)]
+		comparison_sequence[2, :] = allSequences[8, 9:(9+elongationRate)]
 
 		assert_equal(sequences, comparison_sequence)
+
+		rates[-1] += 1000
+		self.assertRaises(
+			IndexError,
+			buildSequences, allSequences, sequenceIndexes, polymerizedLengths, rates)
 
 		# Un-padded case should throw exception
 		allSequences = np.random.randint(3, size = (20, 10)).astype(np.int8, copy = False)
 		sequenceIndexes = np.array([0, 5, 8])
 		polymerizedLengths = np.array([0, 4, 9])
-		elngRate = 5
+		elongationRate = 5
 
-		# TODO: Define an exeption subclass if you want to check the real message
 		self.assertRaises(
-			Exception,
-			buildSequences, allSequences, sequenceIndexes, polymerizedLengths, elngRate
+			TypeError,
+			buildSequences, allSequences, sequenceIndexes, polymerizedLengths, elongationRate
 			)
 
-	@noseAttrib.attr('polymerizeNew')
-	@noseAttrib.attr('smalltest')
 	def test_computeMassIncrease(self):
 		sequences = np.random.randint(4, size = (20, 10)).astype(np.int8, copy = False)
 		sequenceElongations = np.random.randint(10, size = (20,)).astype(np.int64, copy = False)

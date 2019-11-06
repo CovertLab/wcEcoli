@@ -12,6 +12,7 @@ from . import FitSimDataTask
 from wholecell.utils import constants
 from wholecell.utils import filepath as fp
 
+from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 
 @explicit_serialize
 class ParcaTask(FireTaskBase):
@@ -24,7 +25,11 @@ class ParcaTask(FireTaskBase):
 		'output_directory',  # e.g. 'out/manual/kb'
 		'ribosome_fitting',
 		'rnapoly_fitting']
-	optional_params = ['cpus', 'debug']
+	optional_params = [
+		'cpus',
+		'debug',
+		'variable_elongation_transcription',
+		'variable_elongation_translation']
 
 	OUTPUT_SUBDIR = 'kb'  # the task's recommended output directory
 
@@ -47,6 +52,8 @@ class ParcaTask(FireTaskBase):
 				cached=False,
 				cpus=self.get('cpus', 1),
 				debug=self.get('debug', False),
+				variable_elongation_transcription=self.get('variable_elongation_transcription', DEFAULT_SIMULATION_KWARGS['variable_elongation_transcription']),
+				variable_elongation_translation=self.get('variable_elongation_translation', DEFAULT_SIMULATION_KWARGS['variable_elongation_translation']),
 				disable_ribosome_capacity_fitting=not self['ribosome_fitting'],
 				disable_rnapoly_capacity_fitting=not self['rnapoly_fitting']),
 

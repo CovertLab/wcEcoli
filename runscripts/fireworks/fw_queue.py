@@ -48,6 +48,8 @@ Workflow options:
 		process
 	BUILD_CAUSALITY_NETWORK (int, "0"): if nonzero, causality network files are
 		generated from simulation output
+	RAISE_ON_TIME_LIMIT (int, "0"), if nonzero, the simulation raises an error
+		if the time limit (WC_LENGTHSEC) is reached before division
 
 Simulation parameters:
 	N_GENS (int, "1"): the number of generations to be simulated
@@ -56,7 +58,7 @@ Simulation parameters:
 		one daughter cell for each new generation rather than two, thus avoiding
 		an exponential increase in the number of simulations
 	TIMELINE (str, "0 minimal"): sets the timeline of events for the simulation.
-		See	wholecell/utils/make_media.py, make_timeline() for timeline
+		See wholecell/utils/make_media.py, make_timeline() for timeline
 		formatting details.
 	WC_LENGTHSEC (int, "10800"): sets the maximum simulation time in seconds, useful
 		for short simulations (default is 3 hr)
@@ -76,7 +78,7 @@ Modeling options:
 	TRANSLATION_SUPPLY (int, "1"): if nonzero, the ribosome elongation rate is
 		limited by the condition specific rate of amino acid supply; otherwise
 		the elongation rate is set by condition
-	TRNA_CHARGING (int, "0"): if nonzero, tRNA charging reactions are modeled
+	TRNA_CHARGING (int, "1"): if nonzero, tRNA charging reactions are modeled
 		and the ribosome elongation rate is set by the amount of charged tRNA
 		present.  This option will override TRANSLATION_SUPPLY in the simulation.
 
@@ -232,6 +234,7 @@ GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULA
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))
 TRNA_CHARGING = bool(int(get_environment("TRNA_CHARGING", DEFAULT_SIMULATION_KWARGS["trna_charging"])))
+RAISE_ON_TIME_LIMIT = bool(int(get_environment("RAISE_ON_TIME_LIMIT", DEFAULT_SIMULATION_KWARGS["raise_on_time_limit"])))
 N_INIT_SIMS = int(get_environment("N_INIT_SIMS", "1"))
 N_GENS = int(get_environment("N_GENS", "1"))
 SINGLE_DAUGHTERS = bool(int(get_environment("SINGLE_DAUGHTERS", "1")))
@@ -503,9 +506,10 @@ if RUN_AGGREGATE_ANALYSIS:
 	fw_variant_analysis = Firework(
 		AnalysisVariantTask(
 			input_directory = os.path.join(INDIV_OUT_DIRECTORY),
+			input_sim_data = os.path.join(KB_DIRECTORY, filename_sim_data),
 			input_validation_data = os.path.join(KB_DIRECTORY, filename_validation_data),
 			output_plots_directory = VARIANT_PLOT_DIRECTORY,
-			plots_to_run = PLOTS,
+			plot = PLOTS,
 			cpus = analysis_cpus,
 			metadata = metadata,
 			),
@@ -570,7 +574,7 @@ for i in VARIANTS_TO_RUN:
 				input_sim_data = os.path.join(VARIANT_SIM_DATA_DIRECTORY, filename_sim_data_modified),
 				input_validation_data = os.path.join(KB_DIRECTORY, filename_validation_data),
 				output_plots_directory = COHORT_PLOT_DIRECTORY,
-				plots_to_run = PLOTS,
+				plot = PLOTS,
 				cpus = analysis_cpus,
 				metadata = md_cohort,
 				),
@@ -595,7 +599,7 @@ for i in VARIANTS_TO_RUN:
 					input_sim_data = os.path.join(VARIANT_SIM_DATA_DIRECTORY, filename_sim_data_modified),
 					input_validation_data = os.path.join(KB_DIRECTORY, filename_validation_data),
 					output_plots_directory = SEED_PLOT_DIRECTORY,
-					plots_to_run = PLOTS,
+					plot = PLOTS,
 					cpus = analysis_cpus,
 					metadata = md_multigen,
 					),
@@ -642,6 +646,7 @@ for i in VARIANTS_TO_RUN:
 							d_period_division = D_PERIOD_DIVISION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
+							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,
 						spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": 1}, "_priority":10}
@@ -669,6 +674,7 @@ for i in VARIANTS_TO_RUN:
 							d_period_division = D_PERIOD_DIVISION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
+							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,
 						spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": 1}, "_priority":11}
@@ -718,7 +724,7 @@ for i in VARIANTS_TO_RUN:
 							input_sim_data = os.path.join(VARIANT_SIM_DATA_DIRECTORY, filename_sim_data_modified),
 							input_validation_data = os.path.join(KB_DIRECTORY, filename_validation_data),
 							output_plots_directory = CELL_PLOT_OUT_DIRECTORY,
-							plots_to_run = PLOTS,
+							plot = PLOTS,
 							cpus = analysis_cpus,
 							metadata = md_single,
 							),

@@ -40,6 +40,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.fracActiveRnapDict = sim_data.process.transcription.rnapFractionActiveDict
 		self.rnaLengths = sim_data.process.transcription.rnaData["length"]
 		self.rnaPolymeraseElongationRateDict = sim_data.process.transcription.rnaPolymeraseElongationRateDict
+		self.variable_elongation = sim._variable_elongation_transcription
+		self.make_elongation_rates = sim_data.process.transcription.make_elongation_rates
 
 		# Initialize matrices used to calculate synthesis probabilities
 		self.basal_prob = sim_data.process.transcription_regulation.basal_prob
@@ -50,9 +52,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			(delta_prob['deltaI'], delta_prob['deltaJ'])),
 			shape=delta_prob['shape']
 			).toarray()
-
-		self.maxRibosomeElongationRate = float(
-			sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s))
 
 		# Get DNA polymerase elongation rate (used to mask out transcription
 		# units that are expected to be replicated in the current timestep)
@@ -112,14 +111,13 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# Get all inactive RNA polymerases
 		self.inactiveRnaPolys.requestAll()
 
-		# Get attributes of promoters
-		promoters = self.promoters.molecules_read_only()
-		TU_index, bound_TF = promoters.attrs("TU_index", "bound_TF")
-
 		# Read current environment
 		current_media_id = self._external_states['Environment'].current_media_id
 
 		if self.full_chromosomes.total_counts()[0] > 0:
+			# Get attributes of promoters
+			TU_index, bound_TF = self.promoters.attrs("TU_index", "bound_TF")
+
 			# Calculate probabilities of the RNAP binding to each promoter
 			self.promoter_init_probs = (self.basal_prob[TU_index] +
 				np.multiply(self.delta_prob_matrix[TU_index, :], bound_TF).sum(axis=1))
@@ -167,19 +165,30 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		# If there are no chromosomes in the cell, set all probs to zero
 		else:
-			self.promoter_init_probs = np.zeros(len(TU_index))
+			self.promoter_init_probs = np.zeros(self.promoters.total_counts())
 
 		self.fracActiveRnap = self.fracActiveRnapDict[current_media_id]
 		self.rnaPolymeraseElongationRate = self.rnaPolymeraseElongationRateDict[current_media_id]
+		self.elongation_rates = self.make_elongation_rates(
+			self.randomState,
+			self.rnaPolymeraseElongationRate.asNumber(units.nt / units.s),
+			1,  # want elongation rate, not lengths adjusted for time step
+			self.variable_elongation)
 
 
 	def evolveState(self):
+		# no synthesis if no chromosome
+		if self.full_chromosomes.total_counts()[0] == 0:
+			self.writeToListener(
+				"RnaSynthProb", "rnaSynthProb", np.zeros(self.n_TUs))
+			return
+
 		# Get attributes of promoters
-		promoters = self.promoters.molecules_read_only()
-		TU_index, coordinates_promoters, domain_index_promoters, bound_TF = promoters.attrs(
+		TU_index, coordinates_promoters, domain_index_promoters, bound_TF = self.promoters.attrs(
 			"TU_index", "coordinates", "domain_index", "bound_TF")
+
 		# Construct matrix that maps promoters to transcription units
-		n_promoters = len(TU_index)
+		n_promoters = self.promoters.total_counts()
 		TU_to_promoter = scipy.sparse.csr_matrix(
 			(np.ones(n_promoters), (TU_index, np.arange(n_promoters))),
 			shape = (self.n_TUs, n_promoters))
@@ -197,14 +206,12 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 				TU_synth_probs[self.shuffleIdxs],
 				TU_index)
 
-		# no synthesis if no chromosome
-		if self.full_chromosomes.total_counts()[0] == 0:
-			return
-
 		# Calculate RNA polymerases to activate based on probabilities
 		self.activationProb = self._calculateActivationProb(
-			self.fracActiveRnap, self.rnaLengths,
-			self.rnaPolymeraseElongationRate, TU_synth_probs)
+			self.fracActiveRnap,
+			self.rnaLengths,
+			(units.nt / units.s) * self.elongation_rates,
+			TU_synth_probs)
 		n_activated_rnap = np.int64(
 			self.activationProb * self.inactiveRnaPolys.count())
 
@@ -218,9 +225,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		n_initiations = self.randomState.multinomial(
 			n_activated_rnap, self.promoter_init_probs)
 
-		# Get attributes of replisomes
-		replisomes = self.active_replisomes.molecules_read_only()
-
 		# If there are active replisomes, construct mask for promoters that are
 		# expected to be replicated in the current timestep.
 		# Assuming the replisome knocks off all RNAPs that it collides with,
@@ -229,8 +233,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# 	Ideally this should be done in the reconciler.
 		collision_mask = np.zeros_like(TU_index, dtype=np.bool)
 
-		if len(replisomes) > 0:
-			domain_index_replisome, right_replichore, coordinates_replisome = replisomes.attrs(
+		if self.active_replisomes.total_counts()[0] > 0:
+			domain_index_replisome, right_replichore, coordinates_replisome = self.active_replisomes.attrs(
 				"domain_index", "right_replichore", "coordinates")
 
 			elongation_length = np.ceil(
@@ -305,7 +309,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			"RnapData", "n_aborted_initiations", n_aborted_initiations)
 
 
-	def _calculateActivationProb(self, fracActiveRnap, rnaLengths, rnaPolymeraseElongationRate, synthProb):
+	def _calculateActivationProb(self, fracActiveRnap, rnaLengths, rnaPolymeraseElongationRates, synthProb):
 		"""
 		Calculate expected RNAP termination rate based on RNAP elongation rate
 		- allTranscriptionTimes: Vector of times required to transcribe each
@@ -318,10 +322,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		- expectedTerminationRate: Average number of terminations in one
 		timestep for one transcript
 		"""
-		allTranscriptionTimes = 1. / rnaPolymeraseElongationRate * rnaLengths
-		allTranscriptionTimestepCounts = np.ceil(
-			(1. / (self.timeStepSec() * units.s) * allTranscriptionTimes).asNumber()
-			)
+		allTranscriptionTimes = 1. / rnaPolymeraseElongationRates * rnaLengths
+		timesteps = (1. / (self.timeStepSec() * units.s) * allTranscriptionTimes).asNumber()
+		allTranscriptionTimestepCounts = np.ceil(timesteps)
 		averageTranscriptionTimestepCounts = np.dot(
 			synthProb, allTranscriptionTimestepCounts)
 		expectedTerminationRate = 1. / averageTranscriptionTimestepCounts
