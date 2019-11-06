@@ -92,7 +92,10 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# cleaved_ribosome30S = (ribosome30S_counts * self.counts_to_molar) * (mazF_counts * self.counts_to_molar) \
 		# 						* self.mazFCleavageRate / self.counts_to_molar
-		cleaved_ribosome30S = np.floor(ribosome30S_counts * mazF_counts * self.mazFCleavageRate)
+		# cleaved_ribosome30S = np.floor(ribosome30S_counts * mazF_counts * self.mazFCleavageRate)
+
+		cleave_percentage_ribosomes = 0.005
+		cleaved_ribosome30S = cleave_percentage_ribosomes * ribosome30S_counts
 
 		ribosome30S_counts -= cleaved_ribosome30S
 
