@@ -472,13 +472,13 @@ class Simulation(lens.actor.inner.Simulation):
 	def emit(self):
 		if self._tagged_molecules:
 			counts = self.internal_states['BulkMolecules'].container.counts(self._tagged_molecules)
-			data = {mol_id: count for mol_id, count in zip(self._tagged_molecules, counts)}
+			cell_data = {mol_id: count for mol_id, count in zip(self._tagged_molecules, counts)}
 			emit_config = {
 				'table': 'history',
 				'data': {
 					'type': 'compartment',
-					'time': self.time()},
-					'cell': data,
+					'time': self.time(),
+					'cell': cell_data}
 				}
 
 			self.emitter.emit(emit_config)
