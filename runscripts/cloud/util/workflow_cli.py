@@ -11,7 +11,7 @@ from typing import Iterable
 
 import wholecell.utils.filepath as fp
 from wholecell.utils import scriptBase
-from runscripts.cloud.util.workflow import Task, Workflow
+from runscripts.cloud.util.workflow import STORAGE_ROOT_ENV_VAR, Task, Workflow
 
 
 class WorkflowCLI(scriptBase.ScriptBase):
@@ -22,14 +22,8 @@ class WorkflowCLI(scriptBase.ScriptBase):
 	DEFAULT_TIMEOUT = Task.DEFAULT_TIMEOUT  # in seconds
 
 	def __init__(self):
-		# type: () -> None
-		basename = type(self).__name__
-		owner_id = os.environ['USER']
-		timestamp = fp.timestamp()
-		name = '{}_{}_{}'.format(basename, owner_id, timestamp)
-		self.storage_prefix = posixpath.join(
-			Workflow.storage_root(), basename, timestamp, '')
-		self.wf = Workflow(name)
+		self.storage_prefix = None
+		self.wf = None
 
 	def add_task(self, name='', inputs=(), outputs=(), command=(), timeout=0):
 		# type: (str, Iterable[str], Iterable[str], Iterable[str], int) -> Task
@@ -46,6 +40,10 @@ class WorkflowCLI(scriptBase.ScriptBase):
 
 	def define_parameters(self, parser):
 		super(WorkflowCLI, self).define_parameters(parser)
+		self.define_option(parser, 'storage_root', str,
+			help='The cloud storage root for the output files, usually a GCS'
+				 ' bucket name like "sisyphus-crick". Default = ${}'
+				 ' environment variable.'.format(STORAGE_ROOT_ENV_VAR))
 		parser.add_argument('-w', '--workers', type=int, default=1,
 			help='number of worker nodes to launch; default = 1')
 		parser.add_argument('--dump', action='store_true',
@@ -68,5 +66,16 @@ class WorkflowCLI(scriptBase.ScriptBase):
 			self.wf.send(worker_count=args.workers)
 
 	def run(self, args):
+		# type: (argparse.Namespace) -> None
+		basename = type(self).__name__
+		owner_id = os.environ['USER']
+		timestamp = fp.timestamp()
+		name = '{}_{}_{}'.format(basename, owner_id, timestamp)
+		self.storage_prefix = posixpath.join(
+			Workflow.storage_root(args.storage_root), basename, timestamp, '')
+		self.wf = Workflow(name)
+
+		self.wf.log_info('\nStorage prefix: {}'.format(self.storage_prefix))
+
 		self.build(args)
 		self.dumpOrRun(args)

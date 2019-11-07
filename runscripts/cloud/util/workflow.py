@@ -225,17 +225,18 @@ class Workflow(object):
 		self._tasks = OrderedDict()  # type: Dict[str, Task]
 
 	@classmethod
-	def storage_root(cls):
-		# type: () -> str
-		"""Get and validate the user's configured workflow storage root, or
-		raise an exception with instructions to set it up.
+	def storage_root(cls, cli_arg=None):
+		# type: (Optional[str]) -> str
+		"""Validate the workflow cloud storage root from the given CLI argument
+		or else an environment variable that's usually configured via shell
+		profile. If invalid, raise an exception with instructions to set it up.
 
-		BEST PRACTICE is a storage bucket per user like like 'sisyphus-crick'
-		to support usage tracking, cleanup, and ACLs, but as a fallback use a
+		BEST PRACTICE is a storage bucket per user like 'sisyphus-crick'. That
+		supports usage tracking, cleanup, and ACLs. But as a fallback, use a
 		subdirectory of the 'sisyphus' bucket, e.g. 'sisyphus/data/crick'.
 		"""
 		try:
-			root = os.environ[STORAGE_ROOT_ENV_VAR]
+			root = cli_arg or os.environ[STORAGE_ROOT_ENV_VAR]
 		except KeyError:
 			message = _to_create_bucket(
 				'Environment variable ${} not found.'.format(STORAGE_ROOT_ENV_VAR))
@@ -294,7 +295,8 @@ class Workflow(object):
 		commands_path = os.path.join('out', 'workflow-commands.json')
 		steps_path = os.path.join('out', 'workflow-steps.json')
 
-		self.log_info('\nWriting {} {}'.format(commands_path, steps_path))
+		self.log_info('\nWorkflow {} writing {} {}'.format(
+			self.name, commands_path, steps_path))
 		fp.write_json_file(commands_path, commands)
 		fp.write_json_file(steps_path, steps)
 
@@ -306,7 +308,9 @@ class Workflow(object):
 		count = min(count, MAX_WORKERS)
 
 		self.log_info('\nLaunching {} worker node(s).'.format(count))
-		sanitized = re.sub('[^-a-z\d]', '-', self.name.lower()).replace('workflow', '')
+
+		# Convert the workflow name to valid GCE VM names.
+		sanitized = re.sub('[^-a-z0-9]', '-', self.name.lower()).replace('workflow', '')
 		names = ['sisyphus-{}-{}'.format(sanitized, i) for i in range(count)]
 		_launch_workers(names, workflow=self.name)
 

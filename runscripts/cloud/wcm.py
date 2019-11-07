@@ -11,13 +11,13 @@ import json
 import os
 import posixpath
 import re
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, Optional
 
 from wholecell.fireworks.firetasks import ParcaTask, VariantSimDataTask
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
 from runscripts.manual.analysisBase import AnalysisBase
-from runscripts.cloud.util.workflow import Task, Workflow
+from runscripts.cloud.util.workflow import STORAGE_ROOT_ENV_VAR, Task, Workflow
 
 
 DOCKER_IMAGE = 'gcr.io/allen-discovery-center-mcovert/{}-wcm-code:latest'
@@ -26,8 +26,9 @@ DOCKER_IMAGE = 'gcr.io/allen-discovery-center-mcovert/{}-wcm-code:latest'
 class WcmWorkflow(Workflow):
 	"""A Workflow builder for the Whole Cell Model."""
 
-	def __init__(self, owner_id, timestamp, verbose_logging=True, description=''):
-		# type: (str, str, bool, str) -> None
+	def __init__(self, owner_id, timestamp, verbose_logging=True,
+			description='', cli_storage_root=None):
+		# type: (str, str, bool, str, Optional[str]) -> None
 		name = 'WCM_{}_{}'.format(owner_id, timestamp)
 		super(WcmWorkflow, self).__init__(name, verbose_logging=verbose_logging)
 
@@ -37,7 +38,7 @@ class WcmWorkflow(Workflow):
 
 		subdir = self.timestamp + ('__' + description if description else '')
 		self.storage_prefix = posixpath.join(
-			self.storage_root(), 'WCM', subdir, '')
+			self.storage_root(cli_storage_root), 'WCM', subdir, '')
 		self.internal_prefix = posixpath.join(posixpath.sep, 'wcEcoli', 'out', 'wf')
 
 		self.log_info('\nStorage prefix: {}'.format(self.storage_prefix))
@@ -275,7 +276,7 @@ class WcmWorkflow(Workflow):
 def wc_ecoli_workflow(args):
 	# type: (Dict[str, Any]) -> WcmWorkflow
 	"""Build a workflow for wcEcoli."""
-	owner_id = os.environ.get('WF_ID', os.environ['USER'])
+	owner_id = args['id'] or os.environ.get('WF_ID', os.environ['USER'])
 	timestamp = args['timestamp']
 	description = args['description'].replace(' ', '_')
 
@@ -285,7 +286,7 @@ def wc_ecoli_workflow(args):
 			description, pattern))
 
 	wf = WcmWorkflow(owner_id, timestamp, verbose_logging=args['verbose'],
-		description=description)
+		description=description, cli_storage_root=args['storage_root'])
 	wf.build(args)
 	return wf
 
@@ -309,10 +310,20 @@ class RunWcm(scriptBase.ScriptBase):
 	def define_parameters(self, parser):
 		self.define_option(parser, 'description', str, '',
 			help='A simulation description to append to the output folder name.')
+		self.define_option(parser, 'id', str, default=None,
+			help='Workflow ID or owner ID such as a user name or a CI build'
+				 ' name to combine with the timestamp to form the unique'
+				 ' workflow name. Default = $WF_ID environment variable or'
+				 ' else the $USER environment variable.')
 		self.define_option(parser, 'timestamp', str, fp.timestamp(),
-			help='Timestamp for this workflow. It gets combined with the $WF_ID'
-				 ' to form the workflow name. Set this if you want to upload'
-				 ' new steps for an existing workflow.')
+			help='Timestamp for this workflow. It gets combined with the'
+				 ' Workflow ID to form the workflow name. Set this if you want'
+				 ' to upload new steps for an existing workflow. Default ='
+				 ' the current local date-time.')
+		self.define_option(parser, 'storage_root', str,
+			help='The cloud storage root for the output files, usually a GCS'
+				 ' bucket name like "sisyphus-crick". Default = ${}'
+				 ' environment variable.'.format(STORAGE_ROOT_ENV_VAR))
 		self.define_parameter_bool(parser, 'verbose', True,
 			help='Verbose workflow builder logging')
 		parser.add_argument('-c', '--cpus', type=int, default=1,
