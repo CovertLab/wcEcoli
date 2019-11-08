@@ -7,3 +7,5 @@
 "EG10743-MONOMER"	16.2	"Pnp"
 "GLUTCYSLIG-MONOMER"	39.7	"GshA"
 "CDPDIGLYSYN-MONOMER"	10.0	"CdsA, unable to measure exactly but measured as longer than expected 2 min from N-end rule so default to 10 hr from N-end rule"
+"EG11249-MONOMER"	10.0	"MazF toxin"
+"EG10571-MONOMER"	0.5	"MazE antitoxin"

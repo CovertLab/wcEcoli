@@ -62,6 +62,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeIds.s50_fullComplex)
 		self.ribosome30Scleaved = self.bulkMoleculeView("ribosome-30S-cleaved-16S[c]")
 
+
 		# Create view onto bulk mRNAs
 		self.mRnas = self.bulkMoleculesView(mrnaIds)
 
@@ -103,16 +104,17 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# 						* self.mazFCleavageRate / self.counts_to_molar
 		# cleaved_ribosome30S = np.floor(ribosome30S_counts * mazF_counts * self.mazFCleavageRate)
 
-		cleave_percentage_ribosomes = 0.005
+		cleave_percentage_ribosomes = 0.0
 		cleaved_ribosome30S = cleave_percentage_ribosomes * ribosome30S_counts
 
-		ribosome30S_counts -= cleaved_ribosome30S
+		self.ribosome30S.countDec(cleaved_ribosome30S)
+		self.ribosome30Scleaved.countInc(cleaved_ribosome30S)
 
 		
 		# Calculate number of ribosomes that could potentially be initalized based on
 		# counts of free 30S and 50S subunits
 		inactiveRibosomeCount = np.min([
-			ribosome30S_counts,
+			self.ribosome30S.count().sum(),
 			self.ribosome50S.count().sum(),
 			])
 
@@ -165,7 +167,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# Decrement free 30S and 70S ribosomal subunit counts
 		self.ribosome30S.countDec(nNewProteins.sum())
 		self.ribosome50S.countDec(nNewProteins.sum())
-		self.ribosome30Scleaved.countInc(cleaved_ribosome30S)
+		
 
 		# Write number of initalized ribosomes to listener
 		self.writeToListener("RibosomeData", "didInitialize", nNewProteins.sum())
