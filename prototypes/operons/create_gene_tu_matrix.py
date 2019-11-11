@@ -22,7 +22,7 @@ CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
 
 output_tu_counts = os.path.join(FLAT_DIR, "transcription_units.tsv")
-output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix.tsv")
+output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix_lac.tsv")
 
 def parse_tsv(tsv_file):
 	'''
@@ -102,9 +102,6 @@ def create_rnaseq_count_vector(rnas_gene_order):
 
 def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 	tu_counts_vector = np.linalg.lstsq(gene_tu_matrix, rna_seq_counts_vector)[0]
-
-	#import pdb; pdb.set_trace()	
-	
 	tu_gene_order = [row['geneId'] for row in tu_info]
 	tu_genes_counts = []
 

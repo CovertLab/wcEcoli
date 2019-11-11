@@ -77,6 +77,9 @@ class TranscriptionRegulation(object):
 		"""
 		Builds dictionaries for mapping transcription factor abbreviations to
 		their RNA IDs, and to their active form.
+
+		Note: May have issues with this in the future if the Transcription factors 
+		are only present in many TUS.
 		"""
 		geneIdToRnaId = dict(
 			[(x["geneId"].encode("utf-8"), x["id"].encode("utf-8"))

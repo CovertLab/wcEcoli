@@ -1566,6 +1566,8 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 
 	translation_efficienciesByProtein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 
+
+
 	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time)
 	totalMass_RNA = avgCellFractionMass["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 
@@ -1594,7 +1596,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		normalize(counts_protein),
 		translation_efficienciesByProtein,
 		netLossRate_protein)
-
+	
 	# Translate the transcript distribution into the mrna distribution
 	mRnaDistribution = np.matmul(
 		transcriptDistribution,
@@ -2000,6 +2002,7 @@ def mRNADistributionFromProtein(distribution_protein, translation_efficiencies, 
 	distributionNormed = distributionUnnormed / units.sum(distributionUnnormed)
 	distributionNormed.normalize()
 	distributionNormed.checkNoUnit()
+
 
 	return distributionNormed.asNumber()
 

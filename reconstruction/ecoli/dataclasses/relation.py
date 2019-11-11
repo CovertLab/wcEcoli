@@ -24,6 +24,8 @@ class Relation(object):
 
 		self._buildRnaIndexToMonomerMapping(raw_data, sim_data)
 		self._buildMonomerIndexToRnaMapping(raw_data, sim_data)
+		#self._check_if_monomer_in_multiple_tus(tu_dict, monomer)
+
 		#self._buildRnaIndexToGeneMapping(raw_data, sim_data)
 	
 	def _buildRnaIndexToMonomerMapping(self, raw_data, sim_data):
@@ -51,10 +53,28 @@ class Relation(object):
 				set_indices.append(rnaData_id_index[rna_id])
 			self.rnaIndexToMonomerMapping_new.append(set_indices)
 		self.rnaIndexToMonomerMapping_new = np.array(self.rnaIndexToMonomerMapping_new)
-
+		'''
 		self.rnaIndexToMonomerMapping = np.array(
 			[np.where(x == sim_data.process.transcription.rnaData["id"])[0][0] 
 			for x in sim_data.process.translation.monomerData["rnaId"]])
+		'''
+	def check_if_monomer_in_multiple_tus(self, tu_dict, monomer):
+		all_overlapping_tus = []
+		for key, value in tu_dict.items():
+			overlapping_tu = []
+			if monomer in key:
+				print monomer + " is in the tu " + key
+				overlapping_tu.append(key)
+			if overlapping_tu:
+				all_overlapping_tus.append(overlapping_tu)
+			#if monomer in key:
+				#print key, monomer
+		if all_overlapping_tus:
+			print "Overlapping TUS are" 
+			for tu in all_overlapping_tus:
+				print tu
+		return
+
 
 	def _buildMonomerIndexToRnaMapping(self, raw_data, sim_data):
 		'''
@@ -76,6 +96,61 @@ class Relation(object):
 		# which returns a vector of len(mrna)
 		self.monomerToMrnaTransform = np.zeros((monomer_count, mrna_tu_count))
 
+		#Pull in transcription unit data and convert to a dictionary for quicker access.
+		#tu_counts = raw_data.transcription_units
+
+		
+
+		tu_dict = {tu['tu_id'] : tu['tu_count'] for tu in raw_data.transcription_units}
+
+		
+
+		tu_count_update = {}
+		for key, value in tu_dict.items():
+			if '_' in key:
+				polycistronic_tu_count = value
+				monocistronic_tu_in_poly = str(key).split('_')
+				#first draft of this assumed the polycistronic mRNA would be the only one..
+				#but in the full set of data there might be a ton of polys that encode for the 
+				#same mRNA. Need to look for all the overlaps.
+				print "Working on TU " + key 
+				#look for the union in a list.
+				fraction_count_poly = []
+				#work on this once the simpler version is working.
+				#look if the mono is actually present as a TU, if its not, move on.
+				for mono in monocistronic_tu_in_poly:
+					print "Looking for monomer " + mono
+					self.check_if_monomer_in_multiple_tus(tu_dict, mono)
+					
+					#check if components of the TU are present in other TUS.
+					
+					if mono in tu_dict:
+						print "Mono " + mono + " in tu_dict"
+						fraction_count_mono = tu_dict[mono] / (value + tu_dict[mono])
+						fraction_count_poly.append(value / (value + tu_dict[mono]))
+						tu_count_update.update({mono:fraction_count_mono})
+						tu_count_update.update({str(key):fraction_count_poly})
+				# put something to check if monomers are present in multiple tus
+				#if key not in tu_count_update:
+					#tu_count_update.update({key: value})
+
+		import pdb; pdb.set_trace()
+			#print key
+		y = []
+		for x in self.mrna_data['monomerSet']:
+			if len(x) > 1:
+				y.append(x)
+
+		for gene in y:
+			#import pdb; pdb.set_trace()
+			overlapping_tus = set(gene).intersection(list(self.mrna_data['monomerSet'])) 
+
+			
+		
+
+				
+
+
 		monomer_id_indexes = {}
 		for idx, row in enumerate(sim_data.process.translation.monomerData):
 			monomer_id_indexes[row['id']] = idx
@@ -88,11 +163,15 @@ class Relation(object):
 
 			for monomer_id in monomer_set:
 				monomer_index = monomer_id_indexes[monomer_id]
+				
 				self.monomerToMrnaTransform[monomer_index][mrna_index] = value
 
 		# TODO(Ryan): check to see if this is a legit way to find the inverse mapping?
 		self.mrnaToMonomerTransform = self.monomerToMrnaTransform.T
 
+
+		# ---------------------
+		# This part is not used right now, mapping that Mialy added.
 		# this mapping is a vector like the old one
 		self.monomerIndexToRnaMapping_all = []
 		for rna_row in sim_data.process.transcription.rnaData:
@@ -104,7 +183,7 @@ class Relation(object):
 		#remove all empty lists.
 		self.monomerIndexToRnaMapping_new = [x for x in self.monomerIndexToRnaMapping_all if x != []]
 		self.monomerIndexToRnaMapping_new = np.array(self.monomerIndexToRnaMapping_new)
-
+		
 		#new and old mapping does not match here!
 		#new mapping maps directly from rnas to proteins. mimics the functioning of _buildRnaIndexToMonomerMapping
 		#old mapping takes out all non-monomers from the indexing, so the indexing does not directly match 

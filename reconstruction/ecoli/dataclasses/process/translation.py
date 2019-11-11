@@ -61,7 +61,6 @@ class Translation(object):
 			rnaLocation = rna['location'][0]
 			rna_location[rna['id']] = rnaLocation
 
-
 		#add location tag to all rnaIds within rnaSet.
 		#remember to export rna_set_ids as rnaSet
 		rnaSets = []
