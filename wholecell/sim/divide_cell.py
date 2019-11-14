@@ -51,7 +51,7 @@ def divide_cell(sim):
 
 	# Check if the cell is dead
 	isDead = False
-	if uniqueMolecules.container.counts(["fullChromosome"])[0] == 0 and (
+	if uniqueMolecules.container.counts(['full_chromosome'])[0] == 0 and (
 			sim.time() - sim.initialTime()) > sim.lengthSec():
 		# If the cell does not have any full chromosomes at the end of its
 		# maximal simulation duration, the cell is considered dead
@@ -117,7 +117,7 @@ def chromosomeDivision(uniqueMolecules, randomState, no_child_place_holder):
 	cells are not performed in this function.
 	"""
 	# Read attributes of full chromosomes and chromosome domains
-	full_chromosomes = uniqueMolecules.container.objectsInCollection("fullChromosome")
+	full_chromosomes = uniqueMolecules.container.objectsInCollection('full_chromosome')
 	domain_index_full_chroms = full_chromosomes.attr("domain_index")
 
 	chromosome_domains = uniqueMolecules.container.objectsInCollection("chromosome_domain")

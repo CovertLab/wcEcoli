@@ -61,11 +61,11 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.idx_5Srrna = np.where(sim_data.process.transcription.rnaData['isRRna5S'])[0]
 
 		# Views
-		self.active_RNAPs = self.uniqueMoleculesView('activeRnaPoly')
+		self.active_RNAPs = self.uniqueMoleculesView('active_RNAP')
 		self.bulkRnas = self.bulkMoleculesView(self.rnaIds)
 		self.ntps = self.bulkMoleculesView(["ATP[c]", "CTP[c]", "GTP[c]", "UTP[c]"])
 		self.ppi = self.bulkMoleculeView('PPI[c]')
-		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
+		self.inactive_RNAPs = self.bulkMoleculeView("APORNAP-CPLX[c]")
 		self.active_replisomes = self.uniqueMoleculesView("active_replisome")
 		self.fragmentBases = self.bulkMoleculesView(
 			[id_ + "[c]" for id_ in sim_data.moleculeGroups.fragmentNT_IDs])
@@ -236,7 +236,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			self.active_RNAPs.delByIndexes(np.where(all_collisions)[0])
 
 			# Increment counts of inactive RNA polymerases
-			self.inactiveRnaPolys.countInc(n_total_collisions)
+			self.inactive_RNAPs.countInc(n_total_collisions)
 
 			# Get lengths of transcripts that were terminated prematurely as a
 			# result of the collision
@@ -290,7 +290,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		# Update bulk molecule counts
 		self.ntps.countsDec(ntpsUsed)
 		self.bulkRnas.countsInc(terminatedRnas)
-		self.inactiveRnaPolys.countInc(nTerminated)
+		self.inactive_RNAPs.countInc(nTerminated)
 		self.ppi.countInc(nElongations - nInitialized)
 
 		# Write outputs to listeners

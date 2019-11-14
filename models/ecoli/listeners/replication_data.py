@@ -55,7 +55,7 @@ class ReplicationData(wholecell.listeners.listener.Listener):
 		self.fork_unique_index[:] = np.nan
 
 		active_replisomes = self.uniqueMolecules.container.objectsInCollection('active_replisome')
-		oriCs = self.uniqueMolecules.container.objectsInCollection('originOfReplication')
+		oriCs = self.uniqueMolecules.container.objectsInCollection('oriC')
 
 		self.numberOfOric = len(oriCs)
 

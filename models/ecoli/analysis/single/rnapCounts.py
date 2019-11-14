@@ -42,7 +42,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
 
-		rnapIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRnaPoly")
+		rnapIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index('active_RNAP')
 
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))
 		initialTime = main_reader.readAttribute("initialTime")

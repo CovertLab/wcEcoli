@@ -79,9 +79,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			sim_data.process.transcription, "initiationShuffleIdxs", None)
 
 		# Views
-		self.activeRnaPolys = self.uniqueMoleculesView('activeRnaPoly')
-		self.inactiveRnaPolys = self.bulkMoleculeView("APORNAP-CPLX[c]")
-		self.full_chromosomes = self.uniqueMoleculesView('fullChromosome')
+		self.active_RNAPs = self.uniqueMoleculesView('active_RNAP')
+		self.inactive_RNAPs = self.bulkMoleculeView("APORNAP-CPLX[c]")
+		self.full_chromosomes = self.uniqueMoleculesView('full_chromosome')
 		self.active_replisomes = self.uniqueMoleculesView("active_replisome")
 		self.promoters = self.uniqueMoleculesView('promoter')
 
@@ -109,7 +109,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 	def calculateRequest(self):
 		# Get all inactive RNA polymerases
-		self.inactiveRnaPolys.requestAll()
+		self.inactive_RNAPs.requestAll()
 
 		# Read current environment
 		current_media_id = self._external_states['Environment'].current_media_id
@@ -213,7 +213,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			(units.nt / units.s) * self.elongation_rates,
 			TU_synth_probs)
 		n_activated_rnap = np.int64(
-			self.activationProb * self.inactiveRnaPolys.count())
+			self.activationProb * self.inactive_RNAPs.count())
 
 		if n_activated_rnap == 0:
 			return
@@ -269,7 +269,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		direction = self.transcription_direction[TU_index_rnap]
 
 		# Create the active RNA polymerases
-		self.activeRnaPolys.moleculesNew(
+		self.active_RNAPs.moleculesNew(
 			n_activated_rnap,
 			TU_index = TU_index_rnap,
 			domain_index = domain_index_rnap,
@@ -277,7 +277,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			direction = direction)
 
 		# Decrement counts of inactive RNAPs
-		self.inactiveRnaPolys.countDec(n_initiations.sum())
+		self.inactive_RNAPs.countDec(n_initiations.sum())
 
 		# Create masks for ribosomal RNAs
 		is_5Srrna = np.isin(TU_index, self.idx_5Srrna)
