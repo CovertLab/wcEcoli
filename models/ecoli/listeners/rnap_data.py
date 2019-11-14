@@ -74,7 +74,7 @@ class RnapData(wholecell.listeners.listener.Listener):
 		self.active_rnap_unique_indexes[:] = np.nan
 
 		active_rnaps = self.uniqueMolecules.container.objectsInCollection(
-			'activeRnaPoly')
+			'active_RNAP')
 
 		# Read coordinates of all active RNAPs
 		if len(active_rnaps) > 0:

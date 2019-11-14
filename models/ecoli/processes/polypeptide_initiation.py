@@ -47,7 +47,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			self.translationEfficiencies = self.translationEfficiencies[shuffleIdxs]
 
 		# Create view on to active 70S ribosomes
-		self.activeRibosomes = self.uniqueMoleculesView('activeRibosome')
+		self.activeRibosomes = self.uniqueMoleculesView('active_ribosome')
 
 		# Create views onto bulk 30S and 50S ribosomal subunits
 		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeIds.s30_fullComplex)

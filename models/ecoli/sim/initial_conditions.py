@@ -109,7 +109,7 @@ def initialize_trna_charging(sim_data, states, calc_charging):
 	uncharged_trna = bulk_molecules.countsView(transcription.rnaData['id'][transcription.rnaData['isTRna']])
 	charged_trna = bulk_molecules.countsView(transcription.charged_trna_names)
 	aas = bulk_molecules.countsView(sim_data.moleculeGroups.aaIDs)
-	ribosome_counts = states['UniqueMolecules'].container.counts(['activeRibosome'])
+	ribosome_counts = states['UniqueMolecules'].container.counts(['active_ribosome'])
 
 	synthetase_conc = counts_to_molar * np.dot(aa_from_synthetase, synthetases.counts())
 	uncharged_trna_conc = counts_to_molar * np.dot(aa_from_trna, uncharged_trna.counts())
@@ -259,7 +259,7 @@ def initializeFullChromosome(bulkMolCntr, uniqueMolCntr, sim_data):
 	this initial chromosome is set to be zero for consistency.
 	"""
 	uniqueMolCntr.objectsNew(
-		"fullChromosome", 1,
+		'full_chromosome', 1,
 		division_time=0.0,
 		has_induced_division=True,
 		domain_index=0,
@@ -300,7 +300,7 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 
 	# Add OriC molecules with the proposed attributes
 	uniqueMolCntr.objectsNew(
-		'originOfReplication', n_oric,
+		'oriC', n_oric,
 		domain_index=oric_state["domain_index"])
 
 	# Add chromosome domain molecules with the proposed attributes
@@ -472,7 +472,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	rnaLengths = sim_data.process.transcription.rnaData['length'].asNumber()
 	current_media_id = sim_data.conditions[sim_data.condition]['nutrients']
 	fracActiveRnap = sim_data.process.transcription.rnapFractionActiveDict[current_media_id]
-	inactiveRnaPolyCounts = bulkMolCntr.countsView(['APORNAP-CPLX[c]']).counts()[0]
+	inactive_RNAP_counts = bulkMolCntr.countsView(['APORNAP-CPLX[c]']).counts()[0]
 	rnaSequences = sim_data.process.transcription.transcriptionSequences
 	ntWeights = sim_data.process.transcription.transcriptionMonomerWeights
 	endWeight = sim_data.process.transcription.transcriptionEndWeight
@@ -480,7 +480,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	chromosome_length = replichore_lengths.sum()
 
 	# Number of rnaPoly to activate
-	rnaPolyToActivate = np.int64(fracActiveRnap * inactiveRnaPolyCounts)
+	rnaPolyToActivate = np.int64(fracActiveRnap * inactive_RNAP_counts)
 
 	# Parameters for rnaSynthProb
 	basal_prob = sim_data.process.transcription_regulation.basal_prob
@@ -638,7 +638,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# update molecules. Attributes include which rnas are being transcribed,
 	# and the position (length)
 	uniqueMolCntr.objectsNew(
-		'activeRnaPoly', rnaPolyToActivate,
+		'active_RNAP', rnaPolyToActivate,
 		TU_index=TU_index_rnap,
 		domain_index=domain_index_rnap,
 		transcript_length=updated_lengths,
@@ -646,7 +646,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		direction=direction,
 		massDiff_RNA=massIncreaseRna)
 
-	bulkMolCntr.countsIs(inactiveRnaPolyCounts - rnaPolyToActivate, ['APORNAP-CPLX[c]'])
+	bulkMolCntr.countsIs(inactive_RNAP_counts - rnaPolyToActivate, ['APORNAP-CPLX[c]'])
 
 
 def initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
@@ -703,7 +703,7 @@ def initializeRibosomes(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	# Create active 70S ribosomes and assign their protein Indices calculated above
 	uniqueMolCntr.objectsNew(
-		'activeRibosome', ribosomeToActivate,
+		'active_ribosome', ribosomeToActivate,
 		proteinIndex=proteinIndices,
 		peptideLength=updatedLengths,
 		massDiff_protein=massIncreaseProtein,

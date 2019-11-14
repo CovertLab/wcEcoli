@@ -117,15 +117,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			# Unique molecules
 			uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
-			ribosomeIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRibosome")
-			rnaPolyIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRnaPoly")
+			ribosomeIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index('active_ribosome')
+			active_RNAP_index = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index('active_RNAP')
 			nActiveRibosome = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, ribosomeIndex]
-			nActiveRnaPoly = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, rnaPolyIndex]
+			n_active_RNAP = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, active_RNAP_index]
 			uniqueMoleculeCounts.close()
 
 			# Account for unique molecules
 			bulkContainer.countsInc(nActiveRibosome.mean(), [sim_data.moleculeIds.s30_fullComplex, sim_data.moleculeIds.s50_fullComplex])
-			bulkContainer.countsInc(nActiveRnaPoly.mean(), [sim_data.moleculeIds.rnapFull])
+			bulkContainer.countsInc(n_active_RNAP.mean(), [sim_data.moleculeIds.rnapFull])
 
 			# Account for small-molecule bound complexes
 			view_equilibrium.countsInc(np.dot(sim_data.process.equilibrium.stoichMatrixMonomers(), view_equilibrium_complexes.counts() * -1))

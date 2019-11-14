@@ -63,7 +63,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.trpAIndex = np.where(proteinIds == "TRYPSYN-APROTEIN[c]")[0][0]
 
 		# Create view onto activly elongating 70S ribosomes
-		self.active_ribosomes = self.uniqueMoleculesView('activeRibosome')
+		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
 
 		# Create views onto 30S and 70S ribosomal subunits for termination
 		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeIds.s30_fullComplex)

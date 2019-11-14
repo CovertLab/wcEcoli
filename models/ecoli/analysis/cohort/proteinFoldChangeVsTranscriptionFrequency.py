@@ -99,15 +99,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# Load unique molecule data for RNAP and ribosomes
 			uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
-			ribosomeIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRibosome")
-			rnaPolyIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index("activeRnaPoly")
+			ribosomeIndex = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index('active_ribosome')
+			active_RNAP_index = uniqueMoleculeCounts.readAttribute("uniqueMoleculeIds").index('active_RNAP')
 			nActiveRibosome = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, ribosomeIndex]
-			nActiveRnaPoly = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, rnaPolyIndex]
+			n_active_RNAP = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, active_RNAP_index]
 			uniqueMoleculeCounts.close()
 
 			# Add subunits from RNAP and ribosomes
 			ribosomeSubunitCounts = (nActiveRibosome.reshape((nActiveRibosome.size,1)) * ribosome_subunit_stoich.reshape((1,ribosome_subunit_stoich.size)))
-			rnapSubunitCounts = (nActiveRnaPoly.reshape((nActiveRnaPoly.size,1)) * rnap_subunit_stoich.reshape((1,rnap_subunit_stoich.size)))
+			rnapSubunitCounts = (n_active_RNAP.reshape((n_active_RNAP.size,1)) * rnap_subunit_stoich.reshape((1,rnap_subunit_stoich.size)))
 
 			bulkCounts[:, ribosomeIdx] += ribosomeSubunitCounts
 			bulkCounts[:, rnapIdx] += rnapSubunitCounts
