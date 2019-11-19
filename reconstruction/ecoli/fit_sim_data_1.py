@@ -1222,7 +1222,7 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 
 	distribution_protein = np.matmul(
 		distribution_monomers,
-		sim_data.relation.mrnaToMonomerTransform)
+		sim_data.relation.mrna_to_monomer_transform)
 
 	distribution_protein /= netLossRate_protein.asNumber(1/units.min)
 	distribution_protein = normalize(distribution_protein)
@@ -1600,7 +1600,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	# Translate the transcript distribution into the mrna distribution
 	mRnaDistribution = np.matmul(
 		transcriptDistribution,
-		sim_data.relation.monomerToMrnaTransform)
+		sim_data.relation.monomer_to_mrna_transform)
 	mRnaDistribution /= mRnaDistribution.sum()
 
 	mRnaExpressionView.countsIs(
