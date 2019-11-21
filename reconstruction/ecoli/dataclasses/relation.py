@@ -19,8 +19,11 @@ class Relation(object):
 	""" Relation """
 
 	def __init__(self, raw_data, sim_data):
+
+		# pull mrna and monomer data
 		self.is_mrna = np.where(sim_data.process.transcription.rnaData['isMRna'])[0]
-		self.mrna_data = sim_data.process.transcription.rnaData[self.is_mrna]
+		self.mrna = sim_data.process.transcription.rnaData[self.is_mrna]
+		self.monomer = sim_data.process.translation.monomerData
 
 		self._buildRnaIndexToMonomerMapping(raw_data, sim_data)
 		self._buildMonomerIndexToRnaMapping(raw_data, sim_data)
@@ -182,14 +185,18 @@ class Relation(object):
 		# Initialize the matrices with a 1:1 mapping for all monocistronic mRNA's
 		# from monomer indexing, to the corresponding monocistronic transcription
 		# unit.
+
+		mrna_tu_count = len(self.mrna)
+		monomer_count = len(self.monomer)
+	
+		monomer_to_mrna_transform = np.zeros((monomer_count, mrna_tu_count))
+		mrna_to_monomer_transform = np.zeros((mrna_tu_count, monomer_count))
+
 		for monocistron, moncistron_index in monomer_id_index_dict.items():
 			for tu, tu_index in mrna_id_index_dict.items():
-				if monocistron == tu:
-					self.monomer_to_mrna_transform[moncistron_index, tu_index] = 1
-					self.mrna_to_monomer_transform[tu_index ,moncistron_index] = 1
-				elif monocistron[:-3] + '[None]' == tu:
-					self.monomer_to_mrna_transform[moncistron_index, tu_index] = 1
-					self.mrna_to_monomer_transform[tu_index, moncistron_index] = 1
+				if monocistron == tu or monocistron[:-3] + '[None]' == tu:
+					monomer_to_mrna_transform[moncistron_index, tu_index] = 1
+					mrna_to_monomer_transform[tu_index ,moncistron_index] = 1
 
 		# -For monomer_to_mrna_transform, add the fractions of each overlapping 
 		# transcription unit that can be expected to represent each monomer.
@@ -207,12 +214,12 @@ class Relation(object):
 			#mono-cistron according to the mRNA indexing.
 			for tu in transcription_units:
 				if tu in mrna_id_index_dict:
+					fraction = overlapping_tu_fractions[monocistron][tu]
 					tu_index = mrna_id_index_dict[tu]
-					self.monomer_to_mrna_transform[
-						monocistron_index, tu_index] = overlapping_tu_fractions[
-							monocistron][tu]
-					self.mrna_to_monomer_transform[tu_index, monocistron_index] = 1
-		return 	self.monomer_to_mrna_transform, self.mrna_to_monomer_transform
+					monomer_to_mrna_transform[
+						monocistron_index, tu_index] = fraction
+					mrna_to_monomer_transform[tu_index, monocistron_index] = 1
+		return 	monomer_to_mrna_transform, mrna_to_monomer_transform
 
 	def check_monomer_to_mrna_transformation_matrix(self, monomer_to_mrna_transform):
 		'''
@@ -255,31 +262,20 @@ class Relation(object):
 			rounding 'error'. Do not know yet if this will negatively impact anything.
 		'''
 		# Read above for description of this boolean.
-		check_matrix = False
-
-		# Pull mRNA and monomer data
-		mrna = sim_data.process.transcription.rnaData[
-			np.where(sim_data.process.transcription.rnaData['isMRna'])[0]]
-		monomer = sim_data.process.translation.monomerData
+		check_matrix = True
 
 		# Create dictionaries of mRNA IDs attached to their indexes from both the transcription 
 		# unit and monomer space.
 		mrna_id_index_dict = {mrna_id: index 
-			for index, mrna_id in enumerate(mrna['id'])}
+			for index, mrna_id in enumerate(self.mrna['id'])}
 		monomer_id_index_dict = {rnaId: index 
-			for index, rnaId in enumerate(monomer['rnaId'])}
+			for index, rnaId in enumerate(self.monomer['rnaId'])}
 
 		# tu_dict: Contains all the TU's as keys (str), and their counts as values
 		tu_dict = {tu['tu_id']: tu['tu_count'] 
 			for tu in raw_data.transcription_units}
 		overlapping_tu_dict = self.find_overlapping_tus(tu_dict)
-
-		mrna_tu_count = len(self.mrna_data)
-		monomer_count = len(sim_data.process.translation.monomerData)
-
-		self.monomer_to_mrna_transform = np.zeros((monomer_count, mrna_tu_count))
-		self.mrna_to_monomer_transform = np.zeros((mrna_tu_count, monomer_count))
-
+	
 		overlapping_tu_fractions = self.find_overlapping_tu_fractions(
 			overlapping_tu_dict, tu_dict)
 		self.monomer_to_mrna_transform, self.mrna_to_monomer_transform = self.create_transformation_matrices(
