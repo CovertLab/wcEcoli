@@ -305,9 +305,20 @@ class UniqueObjectsContainer(object):
 		"""
 		Add nObjects new objects/molecules of the named type, all with the
 		given attributes. The objects added here do not wait for merge and are
-		added immediately.
+		added immediately. Return the unique indexes of the newly added
+		molecules.
 		"""
+		# Add unique index to dict of attributes
+		unique_indexes = np.arange(
+			self._next_unique_index, self._next_unique_index + nObjects)
+		attributes['_uniqueIndex'] = unique_indexes
+
+		# Increment value for next available unique index
+		self._next_unique_index += nObjects
+
+		# Add molecules and return unique indexes
 		self._add_new_objects(collectionName, nObjects, attributes)
+		return unique_indexes
 
 
 	def objectNew(self, collectionName, **attributes):
@@ -519,9 +530,28 @@ class UniqueObjectsContainer(object):
 		"""
 		Adds a request made from a _UniqueObjectSet instance to the list of
 		requests to handle. fields["type"] can be "edit", "submass", "delete",
-		or "new_molecule".
+		or "new_molecule". If the request type is "new_molecule", adds unique
+		indexes to the attributes of the new molecules, and returns the
+		indexes.
 		"""
-		self._requests.append(fields)
+		if fields['type'] == 'new_molecule':
+			# Add unique index to dict of attributes
+			unique_indexes = np.arange(
+				self._next_unique_index,
+				self._next_unique_index + fields['nObjects'])
+			fields['attributes']['_uniqueIndex'] = unique_indexes
+
+			# Increment value for next available unique index
+			self._next_unique_index += fields['nObjects']
+
+			# Append request and return unique indexes
+			self._requests.append(fields)
+			return unique_indexes
+
+		else:
+			# Append request and return None
+			self._requests.append(fields)
+			return None
 
 
 	def _add_new_objects(self, collectionName, nObjects, attributes):
@@ -538,11 +568,6 @@ class UniqueObjectsContainer(object):
 		# then set the Index columns?
 		collection["_entryState"][objectIndexes] = self._entryActive
 		collection["_globalIndex"][objectIndexes] = globalIndexes
-		collection["_uniqueIndex"][objectIndexes] = np.arange(
-			self._next_unique_index, self._next_unique_index + nObjects)
-
-		# Increment value for next available unique index
-		self._next_unique_index += nObjects
 
 		for attrName, attrValue in attributes.viewitems():
 			collection[attrName][objectIndexes] = attrValue

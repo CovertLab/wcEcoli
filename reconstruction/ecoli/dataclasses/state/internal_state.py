@@ -97,18 +97,8 @@ class InternalState(object):
 		Add data (name, mass, and attribute data structure) for all classes of
 		unique molecules.
 		"""
-		# Initialize lists of molecule names for each division mode
-		sim_data.moleculeGroups.unique_molecules_active_ribosome_division = []
-		sim_data.moleculeGroups.unique_molecules_mRNA_division = []
-		sim_data.moleculeGroups.unique_molecules_domain_index_division = []
-
 		# Add active RNA polymerase
 		# The attributes of active RNA polymerases are given as:
-		# - TU_index (64-bit int): Index of the transcription unit that the
-		# RNA polymerase is elongating. This determines the sequence and the
-		# length of the RNA that the polymerase is elongating.
-		# - transcript_length (64-bit int): The current length of the RNA that
-		# the RNAP is elongating.
 		# - domain_index (32-bit int): Domain index of the chromosome domain
 		# that the RNAP is bound to. This value is used to split the RNAPs at
 		# cell division.
@@ -121,8 +111,6 @@ class InternalState(object):
 		RNAP_mass = self.bulkMolecules.bulkData['mass'][
 			self.bulkMolecules.bulkData['id'] == sim_data.moleculeIds.rnapFull]
 		RNAP_attributes = {
-			'TU_index': 'i8',
-			'transcript_length': 'i8',
 			'domain_index': 'i4',
 			'coordinates': 'i8',
 			'direction': '?',
@@ -135,7 +123,50 @@ class InternalState(object):
 		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(
 			'active_RNAP')
 
-		# Add active ribosome
+		# Add RNAs
+		# This molecule represents all RNAs that should be represented as a
+		# unique molecule. These RNAs include all partially transcribed RNAs
+		# and fully transcribed mRNAs. The attributes of RNAs are given as:
+		# - TU_index (64-bit int): Index of the transcription unit that the
+		# RNA molecule is representing. Determines the sequence and the length
+		# of the fully elongated RNA.
+		# - transcript_length (64-bit int): Current length of the RNA.
+		# - is_mRNA (bool): True if RNA represents an mRNA molecule.
+		# - is_full_transcript (bool): True if RNA is fully transcribed and
+		# released from the RNA polymerase, False if RNA is being actively
+		# transcribed. This cannot be True if 'is_mRNA' is False, since all
+		# non-mRNAs are represented as bulk molecules when they are fully
+		# transcribed.
+		# - RNAP_index (64-bit int): Unique index of the RNA polymerase that is
+		# synthesizing the RNA or have synthesized the mRNA. For fully
+		# transcribed mRNAs that are added at initialization, this attribute
+		# is set to -1.
+		RNA_mass = (units.g/units.mol) * np.zeros_like(RNAP_mass)
+		RNA_attributes = {
+			'TU_index': 'i8',
+			'transcript_length': 'i8',
+			'is_mRNA': '?',
+			'is_full_transcript': '?',
+			'RNAP_index': 'i8',
+			}
+
+		self.uniqueMolecules.addToUniqueState('RNA', RNA_attributes, RNA_mass)
+
+		# Fully transcribed mRNAs are divided binomially, partial transcripts
+		# are divided based on which chromosome domains their associated RNAPs
+		# are bound to
+		sim_data.moleculeGroups.unique_molecules_RNA_division.append('RNA')
+
+		# Add active ribosomes
+		# The attributes of active ribosomes are given as:
+		# - protein_index (64-bit int): Index of the protein monomer that the
+		# ribosome is translating
+		# - peptide_length (64-bit int): Current length of the polypeptide that
+		# the ribosome is translating, in number of amino acids
+		# - mRNA_index (64-bit int): Unique index of the mRNA that the ribosome
+		# is bound to
+		# - pos_on_mRNA (64-bit int): Location of the ribosome on the bound
+		# mRNA, in number of bases from the transcription start site
 		# TODO: This is a bad hack that works because in the parca
 		# I have forced expression to be these subunits only
 		ribosome_30S_mass = self.bulkMolecules.bulkData['mass'][
@@ -144,14 +175,15 @@ class InternalState(object):
 			self.bulkMolecules.bulkData['id'] == sim_data.moleculeIds.s50_fullComplex]
 		ribosome_mass = ribosome_30S_mass + ribosome_50S_mass
 		ribosome_attributes = {
-			'proteinIndex': 'i8',
-			'peptideLength': 'i8',
+			'protein_index': 'i8',
+			'peptide_length': 'i8',
+			'mRNA_index': 'i8',
+			'pos_on_mRNA': 'i8',
 			}
 		self.uniqueMolecules.addToUniqueState('active_ribosome', ribosome_attributes, ribosome_mass)
 
-		# Active ribosomes are currently divided binomially, but the ribosome
-		# elongation rates of daughter cells are set in such a way that the two
-		# daughters have identical translational capacities.
+		# Active ribosomes are divided such that they always follow the mRNA
+		# molecule they are bound to
 		sim_data.moleculeGroups.unique_molecules_active_ribosome_division.append(
 			'active_ribosome')
 
@@ -189,9 +221,6 @@ class InternalState(object):
 			'domain_index': 'i4',
 			'child_domains': ('i4', 2)
 			}
-
-		# Placeholder value for domains without children domains
-		sim_data.process.replication.no_child_place_holder = -1
 
 		self.uniqueMolecules.addToUniqueState('chromosome_domain', chromosome_domain_attributes, chromosome_domain_mass)
 

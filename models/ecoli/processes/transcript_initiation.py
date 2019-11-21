@@ -84,14 +84,15 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.full_chromosomes = self.uniqueMoleculesView('full_chromosome')
 		self.active_replisomes = self.uniqueMoleculesView("active_replisome")
 		self.promoters = self.uniqueMoleculesView('promoter')
+		self.RNAs = self.uniqueMoleculesView('RNA')
 
 		# ID Groups
-		self.idx_16Srrna = np.where(sim_data.process.transcription.rnaData['isRRna16S'])[0]
-		self.idx_23Srrna = np.where(sim_data.process.transcription.rnaData['isRRna23S'])[0]
-		self.idx_5Srrna = np.where(sim_data.process.transcription.rnaData['isRRna5S'])[0]
-		self.idx_rrna = np.where(sim_data.process.transcription.rnaData['isRRna'])[0]
-		self.idx_mrna = np.where(sim_data.process.transcription.rnaData["isMRna"])[0]
-		self.idx_trna = np.where(sim_data.process.transcription.rnaData["isTRna"])[0]
+		self.idx_16SrRNA = np.where(sim_data.process.transcription.rnaData['isRRna16S'])[0]
+		self.idx_23SrRNA = np.where(sim_data.process.transcription.rnaData['isRRna23S'])[0]
+		self.idx_5SrRNA = np.where(sim_data.process.transcription.rnaData['isRRna5S'])[0]
+		self.idx_rRNA = np.where(sim_data.process.transcription.rnaData['isRRna'])[0]
+		self.idx_mRNA = np.where(sim_data.process.transcription.rnaData["isMRna"])[0]
+		self.idx_tRNA = np.where(sim_data.process.transcription.rnaData["isTRna"])[0]
 		self.idx_rprotein = np.where(sim_data.process.transcription.rnaData['isRProtein'])[0]
 		self.idx_rnap = np.where(sim_data.process.transcription.rnaData['isRnap'])[0]
 
@@ -136,9 +137,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			synthProbFractions = self.rnaSynthProbFractions[current_media_id]
 
 			# Create masks for different types of RNAs
-			is_mrna = np.isin(TU_index, self.idx_mrna)
-			is_trna = np.isin(TU_index, self.idx_trna)
-			is_rrna = np.isin(TU_index, self.idx_rrna)
+			is_mrna = np.isin(TU_index, self.idx_mRNA)
+			is_trna = np.isin(TU_index, self.idx_tRNA)
+			is_rrna = np.isin(TU_index, self.idx_rRNA)
 			is_rprotein = np.isin(TU_index, self.idx_rprotein)
 			is_rnap = np.isin(TU_index, self.idx_rnap)
 			is_fixed = is_trna | is_rrna | is_rprotein | is_rnap
@@ -212,10 +213,10 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			self.rnaLengths,
 			(units.nt / units.s) * self.elongation_rates,
 			TU_synth_probs)
-		n_activated_rnap = np.int64(
+		n_RNAPs_to_activate = np.int64(
 			self.activationProb * self.inactive_RNAPs.count())
 
-		if n_activated_rnap == 0:
+		if n_RNAPs_to_activate == 0:
 			return
 
 		#### Growth control code ####
@@ -223,7 +224,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# Sample a multinomial distribution of initiation probabilities to
 		# determine what promoters are initialized
 		n_initiations = self.randomState.multinomial(
-			n_activated_rnap, self.promoter_init_probs)
+			n_RNAPs_to_activate, self.promoter_init_probs)
 
 		# If there are active replisomes, construct mask for promoters that are
 		# expected to be replicated in the current timestep.
@@ -258,20 +259,20 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# Set the number of initiations for these promoters to zero.
 		n_aborted_initiations = n_initiations[collision_mask].sum()
 		n_initiations[collision_mask] = 0
-		n_activated_rnap -= n_aborted_initiations
+		n_RNAPs_to_activate -= n_aborted_initiations
 
-		# Build list of transcription unit indexes and domain indexes for RNAPs
-		TU_index_rnap = np.repeat(TU_index, n_initiations)
+		# Build array of transcription unit indexes for partially transcribed
+		# RNAs and domain indexes for RNAPs
+		TU_index_partial_RNAs = np.repeat(TU_index, n_initiations)
 		domain_index_rnap = np.repeat(domain_index_promoters, n_initiations)
 
-		# Build list of starting coordinates and transcription directions
-		coordinates = self.replication_coordinate[TU_index_rnap]
-		direction = self.transcription_direction[TU_index_rnap]
+		# Build arrays of starting coordinates and transcription directions
+		coordinates = self.replication_coordinate[TU_index_partial_RNAs]
+		direction = self.transcription_direction[TU_index_partial_RNAs]
 
-		# Create the active RNA polymerases
-		self.active_RNAPs.moleculesNew(
-			n_activated_rnap,
-			TU_index = TU_index_rnap,
+		# Create the active RNA polymerases and get their unique indexes
+		RNAP_indexes = self.active_RNAPs.moleculesNew(
+			n_RNAPs_to_activate,
 			domain_index = domain_index_rnap,
 			coordinates = coordinates,
 			direction = direction)
@@ -279,10 +280,19 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# Decrement counts of inactive RNAPs
 		self.inactive_RNAPs.countDec(n_initiations.sum())
 
+		# Add partially transcribed RNAs
+		self.RNAs.moleculesNew(
+			n_RNAPs_to_activate,
+			TU_index=TU_index_partial_RNAs,
+			transcript_length=np.zeros(n_RNAPs_to_activate),
+			is_mRNA=np.isin(TU_index_partial_RNAs, self.idx_mRNA),
+			is_full_transcript=np.zeros(n_RNAPs_to_activate, dtype=np.bool),
+			RNAP_index=RNAP_indexes)
+
 		# Create masks for ribosomal RNAs
-		is_5Srrna = np.isin(TU_index, self.idx_5Srrna)
-		is_16Srrna = np.isin(TU_index, self.idx_16Srrna)
-		is_23Srrna = np.isin(TU_index, self.idx_23Srrna)
+		is_5Srrna = np.isin(TU_index, self.idx_5SrRNA)
+		is_16Srrna = np.isin(TU_index, self.idx_16SrRNA)
+		is_23Srrna = np.isin(TU_index, self.idx_23SrRNA)
 
 		# Write outputs to listeners
 		self.writeToListener(
@@ -294,15 +304,15 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.writeToListener(
 			"RibosomeData", "rrn16S_init_prob",
-			n_initiations[is_16Srrna].sum() / float(n_activated_rnap))
+			n_initiations[is_16Srrna].sum() / float(n_RNAPs_to_activate))
 		self.writeToListener(
 			"RibosomeData", "rrn23S_init_prob",
-			n_initiations[is_23Srrna].sum() / float(n_activated_rnap))
+			n_initiations[is_23Srrna].sum() / float(n_RNAPs_to_activate))
 		self.writeToListener("RibosomeData", "rrn5S_init_prob",
-			n_initiations[is_5Srrna].sum() / float(n_activated_rnap))
-		self.writeToListener("RibosomeData", "total_rna_init", n_activated_rnap)
+			n_initiations[is_5Srrna].sum() / float(n_RNAPs_to_activate))
+		self.writeToListener("RibosomeData", "total_rna_init", n_RNAPs_to_activate)
 
-		self.writeToListener("RnapData", "didInitialize", n_activated_rnap)
+		self.writeToListener("RnapData", "didInitialize", n_RNAPs_to_activate)
 		self.writeToListener("RnapData", "rnaInitEvent", TU_to_promoter.dot(n_initiations))
 
 		self.writeToListener(
