@@ -61,6 +61,11 @@ class Metabolism(wholecell.processes.process.Process):
 		self._getBiomassAsConcentrations = sim_data.mass.getBiomassAsConcentrations
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 
+		# Include ppGpp concentration target in objective if not handled kinetically in other processes
+		self.include_ppgpp = not True  # TODO: read from sim
+		self.ppgpp_id = sim_data.moleculeIds.ppGpp
+		self.getppGppConc = sim_data.growthRateParameters.getppGppConc
+
 		# create boundary object
 		self.boundary = Boundary(
 			sim_data.external_state.environment,
@@ -71,6 +76,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# go through all media in the timeline and add to metaboliteNames
 		self.metaboliteNamesFromNutrients = set()
+		if self.include_ppgpp:
+			self.metaboliteNamesFromNutrients.add(self.ppgpp_id)
 		for time, media_id in self.boundary.current_timeline:
 			self.metaboliteNamesFromNutrients.update(
 				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
@@ -82,10 +89,15 @@ class Metabolism(wholecell.processes.process.Process):
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 			self.boundary.current_media
 			)
+		doubling_time = sim_data.conditionToDoublingTime[sim_data.condition]
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
-			sim_data.conditionToDoublingTime[sim_data.condition]
+			doubling_time
 			)
 		concDict.update(self.concModificationsBasedOnCondition)
+
+		if self.include_ppgpp:
+			concDict[self.ppgpp_id] = self.getppGppConc(doubling_time)
+
 		self.homeostaticObjective = dict((key, concDict[key].asNumber(CONC_UNITS)) for key in concDict)
 
 		# Load initial mass
@@ -245,12 +257,13 @@ class Metabolism(wholecell.processes.process.Process):
 		# make sure there are no new flux targets from the boundary
 		assert set(self.boundary.transport_fluxes.keys()).issubset(self.all_constrained_reactions)
 
-		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
-			self.nutrientToDoublingTime.get(current_media, self.nutrientToDoublingTime["minimal"])
-			)
+		doubling_time = self.nutrientToDoublingTime.get(current_media, self.nutrientToDoublingTime["minimal"])
+		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(doubling_time)
 
 		if self.use_trna_charging:
 			self.concModificationsBasedOnCondition.update(self.update_amino_acid_targets(countsToMolar))
+		if self.include_ppgpp:
+			self.concModificationsBasedOnCondition[self.ppgpp_id] = self.getppGppConc(doubling_time)
 
 		# Set external molecule levels
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(

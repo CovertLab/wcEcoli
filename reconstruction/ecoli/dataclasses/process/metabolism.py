@@ -59,6 +59,7 @@ class Metabolism(object):
 
 		self._buildBiomass(raw_data, sim_data)
 		self._buildMetabolism(raw_data, sim_data)
+		self._build_ppgpp_reactions(raw_data, sim_data)
 
 	def _buildBiomass(self, raw_data, sim_data):
 		wildtypeIDs = set(entry["molecule id"] for entry in raw_data.biomass)
@@ -452,6 +453,55 @@ class Metabolism(object):
 		self.constraintIsKcatOnly = constraintIsKcatOnly
 		self.useAllConstraints = USE_ALL_CONSTRAINTS
 		self.constraintsToDisable = [rxn["disabled reaction"] for rxn in raw_data.disabledKineticReactions]
+
+	def _build_ppgpp_reactions(self, raw_data, sim_data):
+		'''
+		Creates structures for ppGpp reactions for use in polypeptide_elongation.
+
+		Adds the following attributes to the class:
+			ppgpp_reaction_names (list[str]) - names of reaction involved in ppGpp
+			ppgpp_reaction_metabolites (list[str]) - names of metabolites in
+				ppGpp reactions
+			ppgpp_reaction_stoich (array[int]) - 2D array with metabolites on rows
+				and reactions on columns containing the stoichiometric coefficient
+		'''
+
+		self.ppgpp_synthesis_reaction = 'GDPPYPHOSKIN-RXN'
+		self.ppgpp_degradation_reaction = 'PPGPPSYN-RXN'
+
+		self.ppgpp_reaction_names = [
+			self.ppgpp_synthesis_reaction,
+			self.ppgpp_degradation_reaction,
+			]
+
+		self.ppgpp_reaction_metabolites = []
+
+		# Indices (i: metabolite, j: reaction) and values (v: stoichiometry)
+		# for sparse reaction matrix
+		metabolite_indices = {}
+		new_index = 0
+		rxn_i = []
+		rxn_j = []
+		rxn_v = []
+
+		# Record sparse indices in the matrix
+		for j, rxn in enumerate(self.ppgpp_reaction_names):
+			for met, stoich in self.reactionStoich[rxn].items():
+				idx = metabolite_indices.get(met, new_index)
+
+				if idx == new_index:
+					metabolite_indices[met] = new_index
+					self.ppgpp_reaction_metabolites.append(met)
+					new_index += 1
+
+				rxn_i.append(idx)
+				rxn_j.append(j)
+				rxn_v.append(stoich)
+
+		# Assemble matrix based on indices
+		# new_index is number of metabolites, j+1 is number of reactions
+		self.ppgpp_reaction_stoich = np.zeros((new_index, j+1), dtype=np.int32)
+		self.ppgpp_reaction_stoich[rxn_i, rxn_j] = rxn_v
 
 	def getKineticConstraints(self, enzymes, substrates):
 		'''
