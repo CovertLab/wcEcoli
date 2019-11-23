@@ -61,8 +61,10 @@ class Metabolism(wholecell.processes.process.Process):
 		self._getBiomassAsConcentrations = sim_data.mass.getBiomassAsConcentrations
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 
+		self.use_trna_charging = sim._trna_charging
+
 		# Include ppGpp concentration target in objective if not handled kinetically in other processes
-		self.include_ppgpp = not True  # TODO: read from sim
+		self.include_ppgpp = not sim._ppgpp_regulation or not self.use_trna_charging
 		self.ppgpp_id = sim_data.moleculeIds.ppGpp
 		self.getppGppConc = sim_data.growthRateParameters.getppGppConc
 
@@ -225,7 +227,6 @@ class Metabolism(wholecell.processes.process.Process):
 			self.shuffleCatalyzedIdxs = sim_data.process.metabolism.catalystShuffleIdxs
 
 		# Track updated AA concentration targets with tRNA charging
-		self.use_trna_charging = sim._trna_charging
 		self.aa_targets = {}
 		self.aa_targets_not_updated = set(['L-SELENOCYSTEINE[c]', 'GLT[c]'])
 		self.aa_names = sim_data.moleculeGroups.aaIDs

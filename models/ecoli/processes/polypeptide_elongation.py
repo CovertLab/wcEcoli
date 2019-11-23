@@ -97,6 +97,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.elongation_model = TranslationSupplyElongationModel(sim_data, self)
 		else:
 			self.elongation_model = BaseElongationModel(sim_data, self)
+		self.ppgpp_regulation = sim._ppgpp_regulation
 
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
@@ -384,7 +385,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 	"""
 	def __init__(self, sim_data, process):
 		super(SteadyStateElongationModel, self).__init__(sim_data, process)
-		self.ppgpp_regulation = True  # TODO: pass option to simulation
 		constants = sim_data.constants
 		transcription = sim_data.process.transcription
 		metabolism = sim_data.process.metabolism
@@ -512,7 +512,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.water.requestIs(aa_counts_for_translation.sum())
 
 		# ppGpp reactions based on charged tRNA
-		if self.ppgpp_regulation:
+		if self.process.ppgpp_regulation:
 			total_trna_conc = self.counts_to_molar * (uncharged_trna_counts + charged_trna_counts)
 			updated_charged_trna_conc = total_trna_conc * fraction_charged
 			updated_uncharged_trna_conc = total_trna_conc - updated_charged_trna_conc
@@ -557,7 +557,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		# Create ppGpp
 		## Concentrations of interest
-		if self.ppgpp_regulation:
+		if self.process.ppgpp_regulation:
 			ribosome_conc = self.counts_to_molar * self.process.active_ribosomes.total_counts()[0]
 			updated_uncharged_trna_counts = self.uncharged_trna.total_counts() + self.uncharged_trna.counts() - uncharged_trna  # - total_charging_reactions + charged_and_elongated
 			updated_charged_trna_counts = self.charged_trna.total_counts() + self.charged_trna.counts() - charged_trna  # total_charging_reactions - charged_and_elongated
