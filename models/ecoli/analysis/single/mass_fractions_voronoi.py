@@ -124,7 +124,29 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		metabolites = smallMolecules - (lipid + lps + murein + polyamines + glycogen)
 
 		# create dictionary
-		dic = {
+		dic_initial = {
+			'nucleic_acid': {
+				'DNA': dna[0],
+				'mRNA': mRna[0],
+				'miscRNA': miscRna[0],
+				'rRNA': {
+					'16srRNA': rRna_16s[0],
+					'23srRNA': rRna_23s[0],
+					'5srRNA': rRna_5s[0],
+				},
+				'tRNA': tRna[0],
+			},
+			'metabolites': {
+				'LPS': lps[0],
+				'glycogen': glycogen[0],
+				'lipid': lipid[0],
+				'metabolites': metabolites[0],
+				'peptidoglycan': murein[0],
+				'polyamines': polyamines[0],
+			},
+			'protein': protein[0],
+		}
+		dic_final = {
 			'nucleic_acid': {
 				'DNA': dna[-1],
 				'mRNA': mRna[-1],
@@ -149,10 +171,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# create the plot
 		vm = VoronoiMaster()
-		vm.layered_voronoi_master(dic)
+		vm.plot((dic_initial, dic_final), title = ("Initial biomass components", "Final biomass components"))
 
 		# save the plot
-		plt.title("Biomass components")
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
 		

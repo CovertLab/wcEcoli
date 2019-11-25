@@ -46,8 +46,7 @@ from wholecell.utils.voronoiPlotMain import VoronoiMaster
 
 (2)Copy the following code and modify it appropriately:
 vm = VoronoiMaster()
-vm.layered_voronoi_master(dic)
-plt.title("YOUR TITLE")
+vm.layered_voronoi_master(dic, title = "YOUR TITLE")
 exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 plt.close("all")
 
@@ -610,33 +609,93 @@ class VoronoiMaster():
         self.i_max = i_max
         self.err_thres = err_thres
 
-    def layered_voronoi_master(self, dic, side_length = (4, 4)):
+    def plot(self, dic, side_length = (4, 4), custom_shape_vertices = None,
+             font_size = 8, title = "Biomass components"):
         '''
-        Master function of generating layered or nonlayered voronoi plot from a dictionary.
+        Master function of generating layered or non-layered voronoi plot from a dictionary.
+        gross_error = \sum_{i} |Area(i) - Expected Area(i)|
+        error_all = \sum_{i} |Area(i) - Expected Area(i)|/(2 * total area)
+        The factor 2 in the error formula is to correct the repeated calculation in area error.
+        Args:
+            dic: Layered dictionary which contains the labels and the values you intend to represent
+                in a voronoi diagram. This can be a single dictionary or a tuple of 2 dictionary.
+            side_length: The side length of whole voronoi diagram. The whole diagram is defaulted to
+                be rectangular.
+            custom_shape_vertices: If you want a custom shaped voronoi diagram, enter the vertices of
+                the voronoi diagram in a nested np array like this:
+                np.array([[0, 0], [4, 0], [4, 1], [1.5, 3], [0, 2]])
+                The shape of the whole voronoi diagram will then become a pentagon with vertices [0, 0]
+                , [4, 0], [4, 1], [1.5, 3], [0, 2].
+            font_size: The font size of the labeling on the voronoi diagram.
+            title: The title of the plot. This can be a single title or a tuple of 2 titles.
+
+        Returns:
+            error_all: the error in total area representation.
         '''
-        voronoi_struc, polygon_struc, label_struc, value_struc, site_struc = self._layered_voronoi(
-            dic, side_length)
+        if isinstance(dic, tuple):
+            dic_init, dic_final = dic
+            voronoi_list_init, polygon_value_list_init, label_site_list_init = self._compute_boundaries(
+                dic_init, side_length, custom_shape_vertices)
+            voronoi_list_final, polygon_value_list_final, label_site_list_final = self._compute_boundaries(
+                dic_final, side_length, custom_shape_vertices)
+            fig, axes = plt.subplots(nrows = 1, ncols = 2,
+                               figsize = (2*side_length[0], side_length[1] + 1), dpi = 200)
+            plt.tight_layout()
 
-        fig = plt.figure(figsize = (5, 5), dpi = 200)
-        ax = fig.add_axes([0, 0, 1, 1])
-        ax.set_aspect('equal')
-        plt.axis('off')
-        self._layered_voronoi_plot(voronoi_struc, ax)
+            axes[0].set_aspect('equal')
+            axes[0].axis('off')
+            axes[0].title.set_text(title[0])
+            self._generate_plot(voronoi_list_init, axes[0])
+            total_value_init = sum(voronoi_list_init[0].values)
+            total_area_init = voronoi_list_init[0].canvas_obj.area
+            self._add_labels(label_site_list_init, font_size, axes[0])
+            gross_error_init = self._compute_error(polygon_value_list_init, total_value_init, total_area_init)
+            error_all_init = gross_error_init / (2 * voronoi_list_init[0].canvas_obj.area)
+            print('The error in the area representation of the whole voronoi diagram (initial): %.4f'
+                  % (error_all_init,))
 
-        gross_error = self._layered_voronoi_label(
-            polygon_struc, label_struc, value_struc, site_struc, voronoi_struc)
-        error_all = gross_error / (2 * voronoi_struc[0].canvas_obj.area)
-        print('The error in the area representation of the whole voronoi diagram:', error_all)
+            axes[1].set_aspect('equal')
+            axes[1].axis('off')
+            axes[1].title.set_text(title[1])
+            self._generate_plot(voronoi_list_final, axes[1])
+            total_value_final = sum(voronoi_list_final[0].values)
+            total_area_final = voronoi_list_final[0].canvas_obj.area
+            self._add_labels(label_site_list_final, font_size, axes[1])
+            gross_error_final = self._compute_error(polygon_value_list_final, total_value_final, total_area_final)
+            error_all_final = gross_error_final / (2 * voronoi_list_final[0].canvas_obj.area)
+            print('The error in the area representation of the whole voronoi diagram (final): %.4f'
+                  % (error_all_final,))
+
+            error_all = (error_all_init, error_all_final)
+
+        else:
+            voronoi_list, polygon_value_list, label_site_list = self._compute_boundaries(
+                dic, side_length, custom_shape_vertices)
+
+            fig = plt.figure(figsize = (side_length[0], side_length[1] + 1), dpi = 200)
+            ax = fig.add_axes([0, 0, 1, 1])
+            ax.set_aspect('equal')
+            plt.axis('off')
+            self._generate_plot(voronoi_list, ax)
+
+            total_value = sum(voronoi_list[0].values)
+            total_area = voronoi_list[0].canvas_obj.area
+
+            self._add_labels(label_site_list, font_size, ax)
+            gross_error = self._compute_error(polygon_value_list, total_value, total_area)
+            error_all = gross_error / (2 * voronoi_list[0].canvas_obj.area)
+            print('The error in the area representation of the whole voronoi diagram: %.4f' % (error_all,))
+            plt.title(title)
 
         return error_all
 
-    def _layered_voronoi_plot(self, voronoi_struc, ax, counter = 0):
+    def _generate_plot(self, voronoi_list, ax, counter = 0):
         """
         Generate the layered voronoi diagram from the output of _layered_voronoi.
         """
-        for voronoi in voronoi_struc:
+        for voronoi in voronoi_list:
             if isinstance(voronoi, list):
-                ax, counter = self._layered_voronoi_plot(voronoi, ax, counter = counter + 1)
+                ax, counter = self._generate_plot(voronoi, ax, counter = counter + 1)
 
             else:
                 canvas_obj = voronoi.canvas_obj
@@ -647,17 +706,15 @@ class VoronoiMaster():
                             'black', lw = 1.5, solid_capstyle = 'round', zorder = 2)
 
                 # plot polygons
-                n_polygons = len(voronoi.polygons)
                 patches = []
                 colors_all = []
-                for i in range(n_polygons):
-                    polygon = voronoi.polygons[i]
+                for polygon in voronoi.polygons:
                     polygon_plot_obj = Polygon(polygon.xy, True)
                     ax.plot(polygon.xy[:, 0], polygon.xy[:, 1],
                             color = 'black', alpha = 1, linewidth = 1,
                             solid_capstyle = 'round', zorder = 2)
                     patches.append(polygon_plot_obj)
-                    colors = COLORS[counter] + list(np.random.rand(1, 3) / 5)[0]
+                    colors = COLORS[counter] + np.random.rand(3) / 5
                     if max(colors) >= 1:
                         colors = colors / max(colors)
                     colors_all.append(colors)
@@ -666,22 +723,30 @@ class VoronoiMaster():
 
         return ax, counter
 
-    def _layered_voronoi_label(self, polygon_struc, label_struc, value_struc, site_struc, voronoi_struc):
+    def _add_labels(self, label_site_list, font_size, ax):
         '''
-        Create the label and compute the error of the Voronoi plot.
+        Create the label of the Voronoi plot.
+        '''
+        for element in label_site_list:
+            if isinstance(element, list):
+                self._add_labels(element, font_size, ax)
+            else:
+                ax.text(element[1][0], element[1][1], element[0], fontsize = font_size,
+                         horizontalalignment = 'center', verticalalignment = 'center')
+        return
+
+    def _compute_error(self, polygon_value_list, total_value, total_area):
+        '''
+        compute the gross error of the Voronoi plot.
         '''
         gross_error = 0
-        total_value = sum(voronoi_struc[0].values)
-        total_area = voronoi_struc[0].canvas_obj.area
-        for i, element in enumerate(label_struc):
+        for element in polygon_value_list:
             if isinstance(element, list):
-                gross_error += self._layered_voronoi_label(
-                    polygon_struc[i], label_struc[i], value_struc[i], site_struc[i], voronoi_struc)
+                gross_error += self._compute_error(
+                    element, total_value, total_area)
             else:
-                plt.text(site_struc[i][0], site_struc[i][1], label_struc[i],
-                         fontsize = 8, horizontalalignment = 'center', verticalalignment = 'center')
-                gross_error += abs(polygon_struc[i].area -
-                                   total_area * value_struc[i] / total_value)
+                gross_error += abs(element[0].area -
+                                   total_area * element[1] / total_value)
         return gross_error
 
     def _find_total(self, dct):
@@ -699,42 +764,36 @@ class VoronoiMaster():
                     total += self._find_total(value)
         return total
 
-    def _layered_voronoi(self, dic, side_length = (4, 4), custom_shape = False,
-                        canvas = np.array([[0, 0], [4, 0], [4, 4], [0, 4]])):
+    def _compute_boundaries(self, dic, side_length = (4, 4), custom_shape_vertices = None):
         """
         Main function used for computing layered voronoi diagram. This function takes a dictionary
         and canvas as input and generate a layered voronoi diagram.
         """
-        if custom_shape:
-            canvas_obj = PolygonClass(canvas)
-        else:
-            canvas = np.array(
+        if custom_shape_vertices is None:
+            canvas_vertices = np.array(
                 [[0, 0], [side_length[0], 0], [side_length[0], side_length[1]], [0, side_length[1]]])
-            canvas_obj = PolygonClass(canvas)
+            canvas_obj = PolygonClass(canvas_vertices)
+        else:
+            canvas_obj = PolygonClass(custom_shape_vertices)
 
-        points_0 = list(dic.keys())
-        values_0 = [self._find_total(dic[key]) for key in dic]
-        voronoi_0, error_0 = self._voronoi_main_function(points_0, values_0, canvas_obj)
-        voronoi_struc = [voronoi_0]
-        polygon_struc = [[] for _ in range(len(dic.keys()))]
-        label_struc = [[] for _ in range(len(dic.keys()))]
-        value_struc = [[] for _ in range(len(dic.keys()))]
-        site_struc = [[] for _ in range(len(dic.keys()))]
+        labels = list(dic.keys())
+        values = [self._find_total(dic[key]) for key in dic]
+        voronoi_out, error_0 = self._voronoi_main_function(labels, values, canvas_obj)
+        voronoi_list = [voronoi_out]
+        polygon_value_list = [[] for _ in dic]
+        label_site_list = [[] for _ in dic]
 
         for i, value in enumerate(dic.values()):
             if isinstance(value, float) or isinstance(value, int):
-                polygon_struc[i] = voronoi_0.polygons[i]
-                label_struc[i] = points_0[i]
-                value_struc[i] = values_0[i]
-                site_struc[i] = voronoi_0.sites[i]
+                polygon_value_list[i] = (voronoi_out.polygons[i], values[i])
+                label_site_list[i] = (labels[i], voronoi_out.sites[i])
 
             elif isinstance(value, dict):
-                new_voronoi, polygon_struc[i], label_struc[i], value_struc[i], site_struc[
-                    i] = self._layered_voronoi(
-                    value, canvas = voronoi_0.polygons[i].xy, custom_shape = True)
-                voronoi_struc.append(new_voronoi)
+                new_voronoi, polygon_value_list[i], label_site_list[i] = self._compute_boundaries(
+                    value, custom_shape_vertices = voronoi_out.polygons[i].xy)
+                voronoi_list.append(new_voronoi)
 
-        return voronoi_struc, polygon_struc, label_struc, value_struc, site_struc
+        return voronoi_list, polygon_value_list, label_site_list
 
     def _voronoi_main_function(self, points, values, canvas_obj):
         """ 
