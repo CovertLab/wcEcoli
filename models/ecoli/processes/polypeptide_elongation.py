@@ -559,10 +559,12 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		## Concentrations of interest
 		if self.process.ppgpp_regulation:
 			ribosome_conc = self.counts_to_molar * self.process.active_ribosomes.total_counts()[0]
-			updated_uncharged_trna_counts = self.uncharged_trna.total_counts() + self.uncharged_trna.counts() - uncharged_trna  # - total_charging_reactions + charged_and_elongated
-			updated_charged_trna_counts = self.charged_trna.total_counts() + self.charged_trna.counts() - charged_trna  # total_charging_reactions - charged_and_elongated
-			uncharged_trna_conc = self.counts_to_molar * np.dot(self.process.aa_from_trna, updated_uncharged_trna_counts)
-			charged_trna_conc = self.counts_to_molar * np.dot(self.process.aa_from_trna, updated_charged_trna_counts)
+			updated_uncharged_trna_counts = self.uncharged_trna.total_counts() - net_charged
+			updated_charged_trna_counts = self.charged_trna.total_counts() + net_charged
+			uncharged_trna_conc = self.counts_to_molar * np.dot(
+				self.process.aa_from_trna, updated_uncharged_trna_counts)
+			charged_trna_conc = self.counts_to_molar * np.dot(
+				self.process.aa_from_trna, updated_charged_trna_counts)
 			ppgpp_conc = self.counts_to_molar * self.ppgpp.total_counts()[0]
 			rela_conc = self.counts_to_molar * self.rela.total_counts()[0]
 			spot_conc = self.counts_to_molar * self.spot.total_counts()[0]
@@ -808,14 +810,14 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
 		ribosomes_bound_to_uncharged = ribosome_conc * (f * uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf) / numerator_ribosome
 
-		# Handle cases when tRNA concentrations are 0
-		## Can result in inf and nan - assume a fraction of ribosomes bind to the
-		## uncharged tRNA if any tRNA are present
+		# Handle rare cases when tRNA concentrations are 0
+		# Can result in inf and nan so assume a fraction of ribosomes
+		# bind to the uncharged tRNA if any tRNA are present or 0 if not
 		mask = ~np.isfinite(ribosomes_bound_to_uncharged)
-		ribosomes_bound_to_uncharged[mask] = f[mask] * np.array(
+		ribosomes_bound_to_uncharged[mask] = ribosome_conc * f[mask] * np.array(
 			uncharged_trna_conc[mask] + charged_trna_conc[mask] > 0)
 
-		# Calculate rates
+		# Calculate rates for synthesis and degradation
 		frac_rela = 1 / (1 + self.KD_RelA / ribosomes_bound_to_uncharged.sum())
 		v_rela_syn = self.k_RelA * rela_conc * frac_rela
 		v_spot_syn = self.k_SpoT_syn * spot_conc
@@ -826,7 +828,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		n_syn_reactions = stochasticRound(self.process.randomState, v_syn * self.process.timeStepSec() / counts_to_micromolar)[0]
 		n_deg_reactions = stochasticRound(self.process.randomState, v_deg * self.process.timeStepSec() / counts_to_micromolar)[0]
 
-		# Only look at reactant stoichiometry if using for requesting molecules
+		# Only look at reactant stoichiometry if requesting molecules to use
 		if request:
 			ppgpp_reaction_stoich = np.zeros_like(self.ppgpp_reaction_stoich)
 			reactants = self.ppgpp_reaction_stoich < 0
@@ -835,6 +837,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			ppgpp_reaction_stoich = self.ppgpp_reaction_stoich
 
 		# Calculate the change in metabolites and adjust to limits if provided
+		# Possible reactions are adjusted down to limits if the change in any
+		# metabolites would result in negative counts
 		old_counts = None
 		while True:
 			delta_metabolites = (ppgpp_reaction_stoich[:, self.synthesis_index] * n_syn_reactions

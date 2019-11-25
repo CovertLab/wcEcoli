@@ -190,7 +190,7 @@ class Metabolism(object):
 		"""
 
 		# Initialize variables to store reaction information
-		reactionStoich = {}			# dict with reactions as keys and dict with reaction stoich as values 
+		reactionStoich = {}			# dict with reactions as keys and dict with reaction stoich as values
 		reversibleReactions = []
 		reactionCatalysts = {}		# dict with reactions as keys and list of catalysts as values
 		catalystsList = []
@@ -303,7 +303,7 @@ class Metabolism(object):
 				constraint["reactionID"] = reverseReactionString.format(constraint["reactionID"])
 
 			# Get rid of constraints for reverse reactions that the FBA reconstruction says should not exist
-			# (i.e., if the FBA reconstruction says the reaction is irreversible but we have a constraint on 
+			# (i.e., if the FBA reconstruction says the reaction is irreversible but we have a constraint on
 			#  the reverse reaction, drop the constraint)
 			if constraint["reactionID"] not in reactionStoich:
 				continue
@@ -459,10 +459,14 @@ class Metabolism(object):
 		Creates structures for ppGpp reactions for use in polypeptide_elongation.
 
 		Adds the following attributes to the class:
-			ppgpp_reaction_names (list[str]) - names of reaction involved in ppGpp
-			ppgpp_reaction_metabolites (list[str]) - names of metabolites in
+			ppgpp_synthesis_reaction (str): reaction ID for ppGpp synthesis
+				(catalyzed by RelA and SpoT)
+			ppgpp_degradation_reaction (str): reaction ID for ppGpp degradation
+				(catalyzed by SpoT)
+			ppgpp_reaction_names (list[str]): names of reaction involved in ppGpp
+			ppgpp_reaction_metabolites (list[str]): names of metabolites in
 				ppGpp reactions
-			ppgpp_reaction_stoich (array[int]) - 2D array with metabolites on rows
+			ppgpp_reaction_stoich (array[int]): 2D array with metabolites on rows
 				and reactions on columns containing the stoichiometric coefficient
 		'''
 
