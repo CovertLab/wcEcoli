@@ -1,20 +1,47 @@
 # TO DO LIST TOXIN ANTITOXIN
 
+# get distribution of gillespie times from sim without decomplexation and use it to set time step 
+
+# how does mRNA get produced when init_prob is 0? - figure out where mRNA count is added
+
+# ?? how to model the impact on translation? Start with simple linear modifier? - ask Eran
+
+# UNITS! michaelis menten constants etc
+# * convert ribosome concentrations back to counts.
+
+# pull mazF km and kcat from a param flat file
+
+# de-complexation 
+# * add reverse reactions to gillespie with low rates
+# ** check if clpAP can act on the complex
+
+# active degradation of mazE by ClpAP protease
+# * check if clpAP is in bulk molecules
+# * add into protein_degradation process
+
+# toxin cleavage of own mRNA
+
+# do perturbations such as "antibiotics" via ribosome inhibition or transcription inhibition
 
 
 
-# * integrate this math into the whole cell model
-# ?? how to model the impact on translation? Start with simple linear modifier?
 
+# * toxin cleavage of mRNA - implement in existing endoRnase structure?
 
-# * toxin cleavage of mRNA
+# ALTERNATE TRANSCRIPTIONAL PROGRAM
 # ** model cleavage of 16S rRNA on both 30S and 70S
-# *** create new bulk molecule type for MazF cleaved 30S
-# **** modify new 30S cleaved form molecular weight in reconstruction/ecoli/flat/modifiedForms.tsv
 # *** add attribute to activeRibosome unique molecule to signify cleavage
 # **** when modified active ribosome decomplexes release modified 16S mRNA (missing 43nt)
 # *** deal with cleaved 43nt bit from mazF cleavage : preserve mass balance
 
+
+# * need to implement A and T transcription from an operon
+
+
+# ?? no good measurements of deg rates, could measure it experimentally.
+
+# ------------------------------------------------------------------
+# * integrate this math into the whole cell model
 
 # * transcription repression by AT complex
 # ** add mazEF to transcription factor flat file 
@@ -22,14 +49,13 @@
 # ?? does it need to be in tfOneComponentBound.tsv? > no? Because the TF will be a complex not a metabolite bound form.
 # >> tf binding happens here: reconstruction/ecoli/dataclasses/process/transcription_regulation.py
 
-# * need to implement A and T transcription from an operon
+# *** create new bulk molecule type for MazF cleaved 30S
+# **** modify new 30S cleaved form molecular weight in reconstruction/ecoli/flat/modifiedForms.tsv
 
 
 # * replace N-end rule deg rates with measured deg rates
 # ** add to PROTEIN_DEG_RATES_ADJUSTMENTS in fit_sim_data_1
-# ?? no good measurements of deg rates, could measure it experimentally.
 
-# ------------------------------------------------------------------
 # ?? can we also model mazF cleavage of other mRNA
 
 # * find leaderless mRNAs

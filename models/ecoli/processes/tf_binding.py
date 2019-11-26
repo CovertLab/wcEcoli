@@ -212,7 +212,6 @@ class TfBinding(wholecell.processes.process.Process):
 
 		# Add mass_diffs array to promoter submass
 		self.promoters.add_submass_by_array(mass_diffs)
-
 		# Write values to listeners
 		self.writeToListener("RnaSynthProb", "pPromoterBound", pPromotersBound)
 		self.writeToListener("RnaSynthProb", "nPromoterBound", nPromotersBound)

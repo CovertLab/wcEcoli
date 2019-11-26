@@ -121,6 +121,7 @@ class Transcription(object):
 		# Get index of gene corresponding to each RNA
 		gene_index = {gene["rnaId"]: i
 			for i, gene in enumerate(raw_data.genes)}
+		# import ipdb; ipdb.set_trace()
 
 		# Get list of coordinates and directions for each gene
 		coordinate_list = [gene["coordinate"] for gene in raw_data.genes]

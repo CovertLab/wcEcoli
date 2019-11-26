@@ -42,9 +42,12 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.cellDensity = constants.cellDensity
 		self.nAvogadro = constants.nAvogadro
 		# TODO(taryn): find actual rate
-		self.mazFCleavageRate = .9 
+		# TODO (taryn): put these constants in flat file
+		self.mazF_km =  1 * 10**(-6) * units.mol / units.L
+		self.mazF_kcat = 1 #/ units.s
 		self.mazFdimer = self.bulkMoleculeView('CPLX0-1241[c]')
 		self.mazFmonomer = self.bulkMoleculeView('EG11249-MONOMER[c]')
+
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = sim_data.process.translation.make_elongation_rates
 
@@ -96,19 +99,22 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.elongation_rates = np.fmax(self.elongation_rates, 1)
 
 	def evolveState(self):
-		ribosome30S_counts = self.ribosome30S.count().sum()
-		# mazF_counts = self.mazFdimer.count()
-		mazF_counts = self.mazFmonomer.count()
+		# import ipdb; ipdb.set_trace()
+		ribosome30S_conc = self.ribosome30S.count().sum() * self.counts_to_molar
+		mazF_dimer_conc = self.mazFdimer.count() *  self.counts_to_molar
+		# mazF_counts = self.mazFmonomer.count()
+		frac_cleaved_30S =  (self.mazF_kcat * mazF_dimer_conc * ribosome30S_conc) / (self.mazF_km + ribosome30S_conc) / ribosome30S_conc
 
-		# cleaved_ribosome30S = (ribosome30S_counts * self.counts_to_molar) * (mazF_counts * self.counts_to_molar) \
-		# 						* self.mazFCleavageRate / self.counts_to_molar
-		# cleaved_ribosome30S = np.floor(ribosome30S_counts * mazF_counts * self.mazFCleavageRate)
+		cleaved_ribosome30S = self.ribosome30S.count().sum() * frac_cleaved_30S
 
-		cleave_percentage_ribosomes = 0.0
-		cleaved_ribosome30S = cleave_percentage_ribosomes * ribosome30S_counts
 
-		self.ribosome30S.countDec(cleaved_ribosome30S)
-		self.ribosome30Scleaved.countInc(cleaved_ribosome30S)
+		# cleaved_ribosome30S = np.ceil(ribosome30S_counts * mazF_counts * self.mazFCleavageRate)
+
+
+		# cleave_percentage_ribosomes = 0.0
+		# cleaved_ribosome30S = cleave_percentage_ribosomes * ribosome30S_counts
+		self.ribosome30S.countDec(cleaved_ribosome30S.asNumber())
+		self.ribosome30Scleaved.countInc(cleaved_ribosome30S.asNumber())
 
 		
 		# Calculate number of ribosomes that could potentially be initalized based on

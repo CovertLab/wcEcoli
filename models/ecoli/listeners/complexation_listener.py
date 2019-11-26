@@ -30,13 +30,15 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 
 		self.complexIDs = sim_data.process.complexation.ids_complexes
 		self.reactionIDs = sim_data.process.complexation.ids_reactions
+		self.moleculeNames = sim_data.process.complexation.moleculeNames
 
 
 	# Allocate memory
 	def allocate(self):
 		super(ComplexationListener, self).allocate()
 
-		self.complexationEvents = np.zeros(len(self.reactionIDs), np.int64)
+		self.complexationEvents = np.zeros(len(self.reactionIDs*2), np.int64)
+		self.gillespieTime = np.zeros(1)
 
 
 	def tableCreate(self, tableWriter):
@@ -46,6 +48,7 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 		tableWriter.writeAttributes(
 			complexIDs = self.complexIDs,
 			reactionIDs = self.reactionIDs,
+			moleculeNames = self.moleculeNames,
 			subcolumns = subcolumns)
 
 
@@ -54,4 +57,5 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 			time = self.time(),
 			simulationStep = self.simulationStep(),
 			complexationEvents = self.complexationEvents,
+			gillespieTime = self.gillespieTime
 			)

@@ -533,13 +533,16 @@ def buildCombinedConditionCellSpecifications(
 			sim_data.process.transcription.rnaData["id"],
 			sim_data.process.transcription.rnaExpression["basal"],
 			conditionValue["perturbations"],
-			fcData,
+			fcData
 			)
 
 		# Get metabolite concentrations for the condition
-		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			conditionValue["nutrients"]
-			)
+		try:
+			concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
+				conditionValue["nutrients"]
+				)
+		except:
+			import ipdb; ipdb.set_trace()
 		concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[conditionKey]))
 
 		# Create dictionary for the condition
@@ -2127,30 +2130,34 @@ def expressionFromConditionAndFoldChange(rnaIds, basalExpression, condPerturbati
 	included in tfFCs
 	"""
 
-	expression = basalExpression.copy()
+	try:
+		expression = basalExpression.copy()
 
-	# Gather RNA indices and fold changes for each RNA that will be adjusted
-	rnaIdxs = []
-	fcs = []
-	for key in sorted(condPerturbations):
-		value = condPerturbations[key]
-		rnaIdxs.append(np.where(rnaIds == key)[0][0])
-		fcs.append(value)
-	for key in sorted(tfFCs):
-		rnaIdxs.append(np.where(rnaIds == key + "[c]")[0][0])
-		fcs.append(tfFCs[key])
+		# Gather RNA indices and fold changes for each RNA that will be adjusted
+		rnaIdxs = []
+		fcs = []
+		for key in sorted(condPerturbations):
+			value = condPerturbations[key]
+			rnaIdxs.append(np.where(rnaIds == key)[0][0])
+			fcs.append(value)
+		for key in sorted(tfFCs):
+			rnaIdx = np.where(rnaIds == key + "[c]")[0][0]
+			rnaIdxs.append(rnaIdx)
+			fcs.append(tfFCs[key])
 
-	# Sort fold changes and indices for the bool array indexing to work properly
-	fcs = [fc for (rnaIdx, fc) in sorted(zip(rnaIdxs, fcs), key = lambda pair: pair[0])]
-	rnaIdxs = [rnaIdx for (rnaIdx, fc) in sorted(zip(rnaIdxs, fcs), key = lambda pair: pair[0])]
+		# Sort fold changes and indices for the bool array indexing to work properly
+		fcs = [fc for (rnaIdx, fc) in sorted(zip(rnaIdxs, fcs), key = lambda pair: pair[0])]
+		rnaIdxs = [rnaIdx for (rnaIdx, fc) in sorted(zip(rnaIdxs, fcs), key = lambda pair: pair[0])]
 
-	# Adjust expression based on fold change and normalize
-	rnaIdxsBool = np.zeros(len(rnaIds), dtype = np.bool)
-	rnaIdxsBool[rnaIdxs] = 1
-	fcs = np.array(fcs)
-	scaleTheRestBy = (1. - (expression[rnaIdxs] * fcs).sum()) / (1. - (expression[rnaIdxs]).sum())
-	expression[rnaIdxsBool] *= fcs
-	expression[~rnaIdxsBool] *= scaleTheRestBy
+		# Adjust expression based on fold change and normalize
+		rnaIdxsBool = np.zeros(len(rnaIds), dtype = np.bool)
+		rnaIdxsBool[rnaIdxs] = 1
+		fcs = np.array(fcs)
+		scaleTheRestBy = (1. - (expression[rnaIdxs] * fcs).sum()) / (1. - (expression[rnaIdxs]).sum())
+		expression[rnaIdxsBool] *= fcs
+		expression[~rnaIdxsBool] *= scaleTheRestBy
+	except:
+		import ipdb; ipdb.set_trace()
 
 	return expression
 
@@ -3073,6 +3080,7 @@ def calculateRnapRecruitment(sim_data, r):
 	deltaI, deltaJ, deltaV = [], [], []
 
 	for rna_idx, rnaId in enumerate(all_TUs):
+
 		rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
 		tfs = sim_data.process.transcription_regulation.targetTf.get(rnaIdNoLoc, [])
@@ -3110,7 +3118,6 @@ def calculateRnapRecruitment(sim_data, r):
 	# Convert to arrays
 	deltaI, deltaJ, deltaV = np.array(deltaI), np.array(deltaJ), np.array(deltaV)
 	delta_shape = (len(all_TUs), len(all_tfs))
-
 	# Adjust any negative basal probabilities to 0
 	basal_prob[basal_prob < 0] = 0
 
@@ -3122,6 +3129,7 @@ def calculateRnapRecruitment(sim_data, r):
 		"deltaV": deltaV,
 		"shape": delta_shape,
 		}
+
 
 
 def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):

@@ -84,6 +84,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.full_chromosomes = self.uniqueMoleculesView('fullChromosome')
 		self.active_replisomes = self.uniqueMoleculesView("active_replisome")
 		self.promoters = self.uniqueMoleculesView('promoter')
+		self.mazEF = self.bulkMoleculeView('CPLX0-1242[c]')
+		self.mazE = self.bulkMoleculeView('CPLX0-841[c]')
 
 		# ID Groups
 		self.idx_16Srrna = np.where(sim_data.process.transcription.rnaData['isRRna16S'])[0]
@@ -94,6 +96,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.idx_trna = np.where(sim_data.process.transcription.rnaData["isTRna"])[0]
 		self.idx_rprotein = np.where(sim_data.process.transcription.rnaData['isRProtein'])[0]
 		self.idx_rnap = np.where(sim_data.process.transcription.rnaData['isRnap'])[0]
+
+		self.idx_mazF = np.where(sim_data.process.transcription.rnaData['id'] == 'EG11249_RNA[c]')
+		self.idx_mazE = np.where(sim_data.process.transcription.rnaData['id'] == 'EG10571_RNA[c]')
 
 		# Synthesis probabilities for different categories of genes
 		self.rnaSynthProbFractions = sim_data.process.transcription.rnaSynthProbFraction
@@ -110,6 +115,10 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 	def calculateRequest(self):
 		# Get all inactive RNA polymerases
 		self.inactiveRnaPolys.requestAll()
+		# Get all mazEF and mazE
+		self.mazEF.requestAll()
+		self.mazE.requestAll()
+
 
 		# Read current environment
 		current_media_id = self._external_states['Environment'].current_media_id
@@ -122,11 +131,38 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			self.promoter_init_probs = (self.basal_prob[TU_index] +
 				np.multiply(self.delta_prob_matrix[TU_index, :], bound_TF).sum(axis=1))
 
+			# (Taryn) add in autoregulation for mazEF
+			basal_TU_vals = self.basal_prob[TU_index]
+			mazEF = self.mazEF.count()
+			mazE = self.mazE.count()
+
+			rnaIdxs = [self.idx_mazE[0][0], self.idx_mazF[0][0]]
+			if (mazEF + mazE) > 0: # if neither mazEF or mazE is expressed, don't adjust probs
+
+				# fc = 1.0/(min(1,mazEF) * 3.3 + min(1, mazE) * 1.0) #scale by sum of fold change
+				fc = 1.0 / (mazEF * 3.3 +  mazE * 1.0) # scale by sum of fold change
+				fcs = [fc, fc]
+
+				rnaIdxsBool = np.zeros(len(basal_TU_vals), dtype=np.bool)
+				rnaIdxsBool[rnaIdxs] = 1
+
+				scaleTheRestBy = (1. - (self.promoter_init_probs[rnaIdxs] * fcs).sum()) / (1. - (self.promoter_init_probs[rnaIdxs]).sum())
+				# self.promoter_init_probs[rnaIdxsBool] = basal_TU_vals[rnaIdxsBool] * fcs
+				self.promoter_init_probs[rnaIdxsBool] = self.promoter_init_probs[rnaIdxsBool] * fcs
+				self.promoter_init_probs[~rnaIdxsBool] *= scaleTheRestBy
+				# import ipdb; ipdb.set_trace()
+
+
+
+
+
+
 			if len(self.genetic_perturbations) > 0:
 				self._rescale_initiation_probs(
 					self.genetic_perturbations["fixedRnaIdxs"],
 					self.genetic_perturbations["fixedSynthProbs"],
 					TU_index)
+			# import ipdb; ipdb.set_trace()
 
 			# Adjust probabilities to not be negative
 			self.promoter_init_probs[self.promoter_init_probs < 0] = 0.0
@@ -142,7 +178,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			is_rprotein = np.isin(TU_index, self.idx_rprotein)
 			is_rnap = np.isin(TU_index, self.idx_rnap)
 			is_fixed = is_trna | is_rrna | is_rprotein | is_rnap
-
+			# import ipdb; ipdb.set_trace()
 			# Rescale initiation probabilities based on type of RNA
 			self.promoter_init_probs[is_mrna] *= synthProbFractions["mRna"] / self.promoter_init_probs[is_mrna].sum()
 			self.promoter_init_probs[is_trna] *= synthProbFractions["tRna"] / self.promoter_init_probs[is_trna].sum()
@@ -195,6 +231,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		# Compute synthesis probabilities of each transcription unit
 		TU_synth_probs = TU_to_promoter.dot(self.promoter_init_probs)
+		# import ipdb; ipdb.set_trace()
 		self.writeToListener("RnaSynthProb", "rnaSynthProb", TU_synth_probs)
 
 		# Shuffle synthesis probabilities if we're running the variant that
