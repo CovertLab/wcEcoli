@@ -40,7 +40,7 @@ class RunParca(scriptBase.ScriptBase):
 
 	def parse_args(self):
 		args = super(RunParca, self).parse_args()
-		args.cpus = parallelization.cpus(args.cpus)
+		args.cpus = parallelization.cpus(args.cpus, advice='mac override')
 
 		if args.timestamp:
 			args.sim_outdir = fp.timestamp() + '__' + args.sim_outdir.replace(' ', '_')
