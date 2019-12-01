@@ -19,10 +19,13 @@ from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import make_elongation_rates
 
+
 RNA_SEQ_ANALYSIS = "rsem_tpm"
 KCAT_ENDO_RNASE = 0.001
 ESTIMATE_ENDO_RNASES = 5000
 MAX_TIMESTEP_LEN = 2  # Determines length of padding values to add to transcript sequence matrix
+PPGPP_CONC_UNITS = units.umol / units.L
+
 
 class Transcription(object):
 	"""
@@ -566,6 +569,8 @@ class Transcription(object):
 			exp_free (ndarray[float]): expression for each gene when RNAP
 				is not bound to ppGpp
 			ppgpp_km (float with units of mol / vol): KM for ppGpp binding to RNAP
+			ppgpp_km_squared (float): squared and unitless version of KM for
+				faster computation in other functions
 		"""
 
 		# TODO: calculate based on growth data
@@ -587,6 +592,7 @@ class Transcription(object):
 		self.exp_free[self.exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes
 		self.ppgpp_km = (units.umol / units.g * np.sqrt(km)
 			* sim_data.constants.cellDensity * sim_data.mass.cellDryMassFraction)  # umol / L
+		self._ppgpp_km_squared = self.ppgpp_km.asNumber(PPGPP_CONC_UNITS)**2  # save computation
 
 	def adjust_polymerizing_ppgpp_expression(self):
 		"""
@@ -634,9 +640,63 @@ class Transcription(object):
 		exp_ppgpp[~ppgpp_regulated] *= scale_ppgpp_by
 		assert(scale_ppgpp_by > 0)
 
+	def fraction_rnap_bound_ppgpp(self, ppgpp):
+		"""
+		Calculates the fraction of RNAP expected to be bound to ppGpp
+		at a given concentration of ppGpp.
+
+		Args:
+			ppgpp (float with or without mol / volume units): concentration of ppGpp,
+				if unitless, should represent the concentration of PPGPP_CONC_UNITS
+
+		Returns:
+			float: fraction of RNAP that will be bound to ppGpp
+		"""
+
+		if units.hasUnit(ppgpp):
+			ppgpp = ppgpp.asNumber(PPGPP_CONC_UNITS)
+
+		return ppgpp**2 / (self._ppgpp_km_squared + ppgpp**2)
+
+
+
+	def expression_from_ppgpp(self, ppgpp):
+		"""
+		Calculates the expression of each gene at a given concentration of ppGpp.
+
+		Args:
+			ppgpp (float with or without mol / volume units): concentration of ppGpp,
+				if unitless, should represent the concentration of PPGPP_CONC_UNITS
+
+		Returns:
+			ndarray[float]: normalized expression for each gene
+		"""
+
+		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
+		return normalize(self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp)
+
+
 	def synth_prob_from_ppgpp(self, ppgpp, copy_number):
-		ppgpp = ppgpp.asNumber(units.umol / units.L)
-		f_ppgpp = ppgpp**2 / (self.ppgpp_km.asNumber(units.umol / units.L)**2 + ppgpp**2)
+		"""
+		Calculates the synthesis probability of each gene at a given concentration
+		of ppGpp.
+
+		Args:
+			ppgpp (float with mol / volume units): concentration of ppGpp
+			copy_number (Callable[float, int]): function that gives the expected copy
+				number given a doubling time and gene replication coordinate
+
+		Returns
+			ndarray[float]: normalized synthesis probability for each gene
+
+		Note:
+			copy_number should be sim_data.process.replication.get_average_copy_number
+			but saving the functino handle as a clasa attribute prevents pickling of sim_data
+			without additional handling
+		"""
+
+		ppgpp = ppgpp.asNumber(PPGPP_CONC_UNITS)
+		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 
 		growth = max(interpolate.splev(ppgpp, self.ppgpp_growth_parameters), 0)
 		tau = np.log(2) / growth / 60
@@ -644,6 +704,4 @@ class Transcription(object):
 
 		n_avg_copy = copy_number(tau, self.rnaData['replicationCoordinate'])
 
-		prob = normalize((self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp) * loss / n_avg_copy)
-
-		return prob
+		return normalize((self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp) * loss / n_avg_copy)

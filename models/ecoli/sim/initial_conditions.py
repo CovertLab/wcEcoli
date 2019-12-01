@@ -140,14 +140,8 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppg
 	# again (look at the calcProteinCounts function)
 
 	if ppgpp_regulation:
-		# TODO: functionalize in transcription
-		transcription = sim_data.process.transcription
-		ppgpp_km = transcription.ppgpp_km.asNumber(units.umol / units.L)**2
-		free_rates = transcription.exp_free
-		ppgpp_rates = transcription.exp_ppgpp
-		ppgpp = sim_data.growthRateParameters.getppGppConc(sim_data.conditionToDoublingTime[sim_data.condition]).asNumber(units.umol / units.L)**2
-		f_ppgpp = ppgpp / (ppgpp_km + ppgpp)
-		rnaExpression = normalize(free_rates * (1 - f_ppgpp) + ppgpp_rates * f_ppgpp)
+		ppgpp = sim_data.growthRateParameters.getppGppConc(sim_data.conditionToDoublingTime[sim_data.condition])
+		rnaExpression = sim_data.process.transcription.expression_from_ppgpp(ppgpp)
 	else:
 		rnaExpression = sim_data.process.transcription.rnaExpression[sim_data.condition]
 
@@ -174,14 +168,8 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 	rnaMass = massCoeff * sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
 
 	if ppgpp_regulation:
-		# TODO: functionalize in transcription
-		transcription = sim_data.process.transcription
-		ppgpp_km = transcription.ppgpp_km.asNumber(units.umol / units.L)**2
-		free_rates = transcription.exp_free
-		ppgpp_rates = transcription.exp_ppgpp
-		ppgpp = sim_data.growthRateParameters.getppGppConc(sim_data.conditionToDoublingTime[sim_data.condition]).asNumber(units.umol / units.L)**2
-		f_ppgpp = ppgpp / (ppgpp_km + ppgpp)
-		rnaExpression = normalize(free_rates * (1 - f_ppgpp) + ppgpp_rates * f_ppgpp)
+		ppgpp = sim_data.growthRateParameters.getppGppConc(sim_data.conditionToDoublingTime[sim_data.condition])
+		rnaExpression = sim_data.process.transcription.expression_from_ppgpp(ppgpp)
 	else:
 		rnaExpression = normalize(sim_data.process.transcription.rnaExpression[sim_data.condition])
 
