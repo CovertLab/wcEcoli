@@ -66,8 +66,10 @@ TAGS = {
 		],
 	'GROWTH': [
 		"aa_conc.py",
+		"cellCycleLength.py",
 		"charging_molecules.py",
 		"growthAffectingPolymerases.py",
+		"massFractionSummary.py",
 		"ppgpp_regulation.py",
 		],
 	'METABOLISM': [
