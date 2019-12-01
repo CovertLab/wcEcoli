@@ -12,6 +12,7 @@ from __future__ import division
 
 import numpy as np
 from scipy import interpolate
+import sympy as sp
 
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize
@@ -43,12 +44,23 @@ class Transcription(object):
 		"""
 		Determine which genes are regulated by ppGpp and store the fold
 		change in expression associated with each RNA.
+
+		Attributes set:
+			ppgpp_regulated_genes (ndarray[str]): RNA ID of regulated
+				genes (no compartment tag)
+			ppgpp_fold_changes (ndarray[float]): log2 fold change for
+				each gene in ppgpp_regulated_genes
+			_ppgpp_growth_parameters: parameters for interpolate.splev
+				to estimate growth rate from ppGpp concentration
 		"""
 
 		def read_value(d, k):
 			"""Handle empty values from raw_data as 0"""
 			val = d[k]
 			return 0 if val == '' else val
+
+		# Determine KM for ppGpp binding to RNAP
+		self._solve_ppgpp_km(raw_data, sim_data)
 
 		# Read regulation data from raw_data
 		# Treats ppGpp and DksA-ppGpp regulation the same
@@ -113,13 +125,11 @@ class Transcription(object):
 		fold_changes[(fold_changes == 0) & (regulation_direction > 0)] = average_positive_fc
 		self.ppgpp_fold_changes = fold_changes
 
-		self.ppgpp_km = 0.024  # TODO: use solve_km script here to explicitly solve or use max fold change
-
 		# Predict growth rate from ppGpp level
-		per_dry_mass_to_per_volume = sim_data.constants.cellDensity * (1. - raw_data.mass_parameters['cellWaterMassFraction'])
+		per_dry_mass_to_per_volume = sim_data.constants.cellDensity * sim_data.mass.cellDryMassFraction
 		growth_rates = np.log(2) / np.array([d['doublingTime'].asNumber(units.s) for d in raw_data.growthRateDependentParameters])
 		ppgpp = np.array([d['ppGpp_conc'].asNumber(units.umol / units.g) for d in raw_data.growthRateDependentParameters]) * per_dry_mass_to_per_volume.asNumber(units.g / units.L)
-		self.ppgpp_growth_parameters = interpolate.splrep(ppgpp[::-1], growth_rates[::-1], k=1)
+		self._ppgpp_growth_parameters = interpolate.splrep(ppgpp[::-1], growth_rates[::-1], k=1)
 
 	def _build_rna_data(self, raw_data, sim_data):
 		"""
@@ -544,6 +554,7 @@ class Transcription(object):
 		out[self._stoich_matrix_i, self._stoich_matrix_j] = self._stoich_matrix_v
 
 		return out
+
 	def _build_elongation_rates(self, raw_data, sim_data):
 		self.max_elongation_rate = sim_data.constants.dnaPolymeraseElongationRateMax
 		self.RRNA_indexes = np.where(self.rnaData['isRRna'])[0]
@@ -557,6 +568,97 @@ class Transcription(object):
 			self.max_elongation_rate,
 			time_step,
 			variable_elongation)
+
+	def _solve_ppgpp_km(self, raw_data, sim_data):
+		"""
+		Solves for general expression rates for bound and free RNAP and
+		a KM for ppGpp to RNAP based on global cellular measurements.
+		Parameters are solved for at different doubling times using a
+		gradient descent method to minimize the difference in expression
+		of stable RNA compared to the measured RNA in a cell.
+		Assumes a Hill coefficient of 2 for ppGpp binding to RNAP.
+
+		Attributes set:
+			_fit_ppgpp_fc (float): log2 fold change in expression from
+				a fast doubling time to a slow doubling time based on the
+				rates of bound and free RNAP expression found
+			_ppgpp_km_squared (float): squared and unitless KM value for
+				to limit computation needed for fraction bound
+			ppgpp_km (float with mol / volume units): KM for ppGpp binding
+				to RNAP
+
+		TODO:
+			- use _fit_ppgpp_fc elsewhere as an estimate of unmeasured
+			stable RNA fold changes
+		"""
+
+		# Data for different doubling times (100, 60, 40, 30, 24 min)
+		per_dry_mass_to_per_volume = sim_data.constants.cellDensity * sim_data.mass.cellDryMassFraction
+		ppgpp = np.array(
+			[(d['ppGpp_conc'] * per_dry_mass_to_per_volume).asNumber(PPGPP_CONC_UNITS)
+			for d in raw_data.growthRateDependentParameters])**2
+		rna = np.array([d['rnaMassFraction']
+			for d in raw_data.dryMassComposition])
+		mass_per_cell = np.array([d['averageDryMass'].asNumber(units.fg)
+			for d in raw_data.dryMassComposition])
+		rnap_per_cell = np.array([d['RNAP_per_cell']
+			for d in raw_data.growthRateDependentParameters])
+
+		# Variables for the objective
+		## a1: rate of RNA production from free RNAP
+		## a2: rate of RNA production from RNAP bound to ppGpp
+		## km: KM of ppGpp binding to RNAP
+		a1s, a2s, kms = sp.symbols('a1 a2 km')
+
+		# Create objective to minimize
+		## Objective is squared difference between RNA created with different rates for RNAP bound
+		## to ppGpp and free RNAP compared to measured RNA in the cell for each measured doubling time.
+		## Use sp.exp to prevent negative parameter values, also improves stability for larger step size.
+		difference = rnap_per_cell / mass_per_cell * (sp.exp(a1s)*(1 - ppgpp/(sp.exp(kms) + ppgpp))
+			+ sp.exp(a2s)*ppgpp/(sp.exp(kms) + ppgpp)) - rna
+		J = difference.dot(difference)
+
+		# Convert to functions for faster performance
+		dJda1 = sp.lambdify((a1s, a2s, kms), J.diff(a1s))
+		dJda2 = sp.lambdify((a1s, a2s, kms), J.diff(a2s))
+		dJdkm = sp.lambdify((a1s, a2s, kms), J.diff(kms))
+		J = sp.lambdify((a1s, a2s, kms), J)
+
+		# Initial parameters
+		a1 = np.log(0.02)
+		a2 = np.log(0.01)
+		km = np.log(575)
+		step_size = 1.
+
+		# Use gradient descent to find
+		obj = J(a1, a2, km)
+		old_obj = 100
+		step = 0
+		max_step = 1e5
+		tol = 1e-6
+		rel_tol = 1e-9
+		while obj > tol and 1 - obj / old_obj > rel_tol:
+			a1 -= dJda1(a1, a2, km) * step_size
+			a2 -= dJda2(a1, a2, km) * step_size
+			km -= dJdkm(a1, a2, km) * step_size
+
+			old_obj = obj
+			obj = J(a1, a2, km)
+
+			step += 1
+			if step > max_step:
+				raise RuntimeError('Fitting ppGpp binding KM failed to converge.'
+					' Check tolerances or maximum number of steps.')
+
+		a1 = np.exp(a1)
+		a2 = np.exp(a2)
+		km = np.exp(km)
+		f_low = ppgpp[-1] / (km + ppgpp[-1])
+		fc = np.log2(a2 / (a1*(1 - f_low) + a2*f_low))
+
+		self._fit_ppgpp_fc = fc
+		self._ppgpp_km_squared = km
+		self.ppgpp_km = np.sqrt(km) * PPGPP_CONC_UNITS
 
 	def set_ppgpp_expression(self, sim_data):
 		"""
@@ -573,13 +675,12 @@ class Transcription(object):
 				faster computation in other functions
 		"""
 
-		# TODO: calculate based on growth data
-		km = 0.079**2
-		ppgpp_aa = 0.058**2
-		ppgpp_basal = 0.13**2
-		# TODO: create function to determine
-		f_ppgpp_aa = ppgpp_aa / (km + ppgpp_aa)
-		f_ppgpp_basal = ppgpp_basal / (km + ppgpp_basal)
+		ppgpp_aa = sim_data.growthRateParameters.getppGppConc(
+			sim_data.conditionToDoublingTime['with_aa'])
+		ppgpp_basal = sim_data.growthRateParameters.getppGppConc(
+			sim_data.conditionToDoublingTime['basal'])
+		f_ppgpp_aa = self.fraction_rnap_bound_ppgpp(ppgpp_aa)
+		f_ppgpp_basal = self.fraction_rnap_bound_ppgpp(ppgpp_basal)
 
 		rna_idx = {r[:-3]: i for i, r in enumerate(self.rnaData['id'])}
 		fcs = np.zeros(len(self.rnaData))
@@ -589,12 +690,9 @@ class Transcription(object):
 		self.exp_ppgpp = ((2**fcs * exp * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))
 			/ (1 - 2**fcs * (f_ppgpp_aa - f_ppgpp_basal * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))))
 		self.exp_free = (exp - self.exp_ppgpp*f_ppgpp_basal) / (1 - f_ppgpp_basal)
-		self.exp_free[self.exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes
-		self.ppgpp_km = (units.umol / units.g * np.sqrt(km)
-			* sim_data.constants.cellDensity * sim_data.mass.cellDryMassFraction)  # umol / L
-		self._ppgpp_km_squared = self.ppgpp_km.asNumber(PPGPP_CONC_UNITS)**2  # save computation
+		self.exp_free[self.exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes\
 
-	def adjust_polymerizing_ppgpp_expression(self):
+	def adjust_polymerizing_ppgpp_expression(self, sim_data):
 		"""
 		Adjust ppGpp expression based on fit for ribosome and RNAP physiological constraints
 		using least squares fit for 3 conditions with different growth rates/ppGpp.
@@ -608,36 +706,36 @@ class Transcription(object):
 				expression, normalized to 1
 		"""
 
-		rna_data = self.rnaData
-		exp_free = self.exp_free
-		exp_ppgpp = self.exp_ppgpp
+		# Fraction RNAP bound to ppGpp in different conditions
+		ppgpp_aa = sim_data.growthRateParameters.getppGppConc(
+			sim_data.conditionToDoublingTime['with_aa'])
+		ppgpp_basal = sim_data.growthRateParameters.getppGppConc(
+			sim_data.conditionToDoublingTime['basal'])
+		ppgpp_anaerobic = sim_data.growthRateParameters.getppGppConc(
+			sim_data.conditionToDoublingTime['basal'])
+		f_ppgpp_aa = self.fraction_rnap_bound_ppgpp(ppgpp_aa)
+		f_ppgpp_basal = self.fraction_rnap_bound_ppgpp(ppgpp_basal)
+		f_ppgpp_anaerobic = self.fraction_rnap_bound_ppgpp(ppgpp_anaerobic)
 
-		# TODO: don't have hardcoded
-		km = 0.079**2
-		ppgpp_aa = 0.058**2
-		ppgpp_basal = 0.13**2
-		ppgpp_an = 0.316**2
-		f_ppgpp_aa = ppgpp_aa / (km + ppgpp_aa)
-		f_ppgpp_basal = ppgpp_basal / (km + ppgpp_basal)
-		f_ppgpp_an = ppgpp_an / (km + ppgpp_an)
-
-		adjusted_mask = rna_data['isRnap'] | rna_data['isRProtein'] | rna_data['isRRna']
-		F = np.array([[1- f_ppgpp_aa, f_ppgpp_aa], [1 - f_ppgpp_basal, f_ppgpp_basal], [1 - f_ppgpp_an, f_ppgpp_an]])
+		# Solve least squares fit for expression of each component of RNAP and ribosomes
+		adjusted_mask = self.rnaData['isRnap'] | self.rnaData['isRProtein'] | self.rnaData['isRRna']
+		F = np.array([[1- f_ppgpp_aa, f_ppgpp_aa], [1 - f_ppgpp_basal, f_ppgpp_basal], [1 - f_ppgpp_anaerobic, f_ppgpp_anaerobic]])
 		Flst = np.linalg.inv(F.T.dot(F)).dot(F.T)
-		exp = np.array([
+		expression = np.array([
 			self.rnaExpression['with_aa'],
 			self.rnaExpression['basal'],
 			self.rnaExpression['no_oxygen']])
-		adjusted_free, adjusted_ppgpp = Flst.dot(exp)
-		exp_free[adjusted_mask] = adjusted_free[adjusted_mask]
-		exp_ppgpp[adjusted_mask] = adjusted_ppgpp[adjusted_mask]
+		adjusted_free, adjusted_ppgpp = Flst.dot(expression)
+		self.exp_free[adjusted_mask] = adjusted_free[adjusted_mask]
+		self.exp_ppgpp[adjusted_mask] = adjusted_ppgpp[adjusted_mask]
 
-		ppgpp_regulated = np.array([g[:-3] in self.ppgpp_regulated_genes for g in rna_data['id']])
-		scale_free_by = (1 - exp_free[ppgpp_regulated].sum()) / exp_free[~ppgpp_regulated].sum()
-		exp_free[~ppgpp_regulated] *= scale_free_by
+		# Rescale expression of genes that are not regulated so expression sums to 1
+		ppgpp_regulated = np.array([g[:-3] in self.ppgpp_regulated_genes for g in self.rnaData['id']])
+		scale_free_by = (1 - self.exp_free[ppgpp_regulated].sum()) / self.exp_free[~ppgpp_regulated].sum()
+		self.exp_free[~ppgpp_regulated] *= scale_free_by
 		assert(scale_free_by > 0)
-		scale_ppgpp_by = (1 - exp_ppgpp[ppgpp_regulated].sum()) / exp_ppgpp[~ppgpp_regulated].sum()
-		exp_ppgpp[~ppgpp_regulated] *= scale_ppgpp_by
+		scale_ppgpp_by = (1 - self.exp_ppgpp[ppgpp_regulated].sum()) / self.exp_ppgpp[~ppgpp_regulated].sum()
+		self.exp_ppgpp[~ppgpp_regulated] *= scale_ppgpp_by
 		assert(scale_ppgpp_by > 0)
 
 	def fraction_rnap_bound_ppgpp(self, ppgpp):
@@ -658,8 +756,6 @@ class Transcription(object):
 
 		return ppgpp**2 / (self._ppgpp_km_squared + ppgpp**2)
 
-
-
 	def expression_from_ppgpp(self, ppgpp):
 		"""
 		Calculates the expression of each gene at a given concentration of ppGpp.
@@ -674,7 +770,6 @@ class Transcription(object):
 
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 		return normalize(self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp)
-
 
 	def synth_prob_from_ppgpp(self, ppgpp, copy_number):
 		"""
@@ -698,7 +793,7 @@ class Transcription(object):
 		ppgpp = ppgpp.asNumber(PPGPP_CONC_UNITS)
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 
-		growth = max(interpolate.splev(ppgpp, self.ppgpp_growth_parameters), 0)
+		growth = max(interpolate.splev(ppgpp, self._ppgpp_growth_parameters), 0)
 		tau = np.log(2) / growth / 60
 		loss = growth + self.rnaData['degRate'].asNumber(1 / units.s)
 

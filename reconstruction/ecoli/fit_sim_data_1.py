@@ -226,7 +226,7 @@ def fitSimData_1(
 	fitLigandConcentrations(sim_data, cellSpecs)
 
 	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints
-	sim_data.process.transcription.adjust_polymerizing_ppgpp_expression()
+	sim_data.process.transcription.adjust_polymerizing_ppgpp_expression(sim_data)
 
 	for condition_label in sorted(cellSpecs):
 		condition = sim_data.conditions[condition_label]
