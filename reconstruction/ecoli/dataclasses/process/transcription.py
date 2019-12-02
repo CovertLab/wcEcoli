@@ -119,16 +119,17 @@ class Transcription(object):
 
 		# Replace fold changes without data with the average
 		fold_changes = np.array(fold_changes)
-		average_negative_fc = fold_changes[fold_changes < 0].mean()
 		average_positive_fc = fold_changes[fold_changes > 0].mean()
-		fold_changes[(fold_changes == 0) & (regulation_direction < 0)] = -0.9316  # from solve_km.py
+		fold_changes[(fold_changes == 0) & (regulation_direction < 0)] = self._fit_ppgpp_fc
 		fold_changes[(fold_changes == 0) & (regulation_direction > 0)] = average_positive_fc
 		self.ppgpp_fold_changes = fold_changes
 
 		# Predict growth rate from ppGpp level
 		per_dry_mass_to_per_volume = sim_data.constants.cellDensity * sim_data.mass.cellDryMassFraction
-		growth_rates = np.log(2) / np.array([d['doublingTime'].asNumber(units.s) for d in raw_data.growthRateDependentParameters])
-		ppgpp = np.array([d['ppGpp_conc'].asNumber(units.umol / units.g) for d in raw_data.growthRateDependentParameters]) * per_dry_mass_to_per_volume.asNumber(units.g / units.L)
+		ppgpp = np.array([(d['ppGpp_conc'] * per_dry_mass_to_per_volume).asNumber(PPGPP_CONC_UNITS)
+			for d in raw_data.growthRateDependentParameters])
+		growth_rates = np.log(2) / np.array([d['doublingTime'].asNumber(units.s)
+			for d in raw_data.growthRateDependentParameters])
 		self._ppgpp_growth_parameters = interpolate.splrep(ppgpp[::-1], growth_rates[::-1], k=1)
 
 	def _build_rna_data(self, raw_data, sim_data):
