@@ -580,17 +580,13 @@ class Transcription(object):
 		Assumes a Hill coefficient of 2 for ppGpp binding to RNAP.
 
 		Attributes set:
-			_fit_ppgpp_fc (float): log2 fold change in expression from
-				a fast doubling time to a slow doubling time based on the
-				rates of bound and free RNAP expression found
+			_fit_ppgpp_fc (float): log2 fold change in stable RNA expression
+				from a fast doubling time to a slow doubling time based on
+				the rates of bound and free RNAP expression found
 			_ppgpp_km_squared (float): squared and unitless KM value for
 				to limit computation needed for fraction bound
 			ppgpp_km (float with mol / volume units): KM for ppGpp binding
 				to RNAP
-
-		TODO:
-			- use _fit_ppgpp_fc elsewhere as an estimate of unmeasured
-			stable RNA fold changes
 		"""
 
 		# Data for different doubling times (100, 60, 40, 30, 24 min)
