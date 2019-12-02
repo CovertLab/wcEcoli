@@ -787,7 +787,7 @@ class Transcription(object):
 
 		Note:
 			copy_number should be sim_data.process.replication.get_average_copy_number
-			but saving the functino handle as a clasa attribute prevents pickling of sim_data
+			but saving the function handle as a class attribute prevents pickling of sim_data
 			without additional handling
 		"""
 
