@@ -687,7 +687,7 @@ class Transcription(object):
 		self.exp_ppgpp = ((2**fcs * exp * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))
 			/ (1 - 2**fcs * (f_ppgpp_aa - f_ppgpp_basal * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))))
 		self.exp_free = (exp - self.exp_ppgpp*f_ppgpp_basal) / (1 - f_ppgpp_basal)
-		self.exp_free[self.exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes\
+		self.exp_free[self.exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes
 
 	def adjust_polymerizing_ppgpp_expression(self, sim_data):
 		"""
