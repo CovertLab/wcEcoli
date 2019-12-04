@@ -775,7 +775,7 @@ class Boundary(object):
 			else:
 				secretionExchangeMolecules.append(secretion["molecule id"])
 
-		return secretionExchangeMolecules
+		return sorted(secretionExchangeMolecules)
 
 	def _getExchangeDataDict(self, sim_data):
 		'''
@@ -880,10 +880,10 @@ class Boundary(object):
 		externalExchangeMolecules.update(secretionExchangeMolecules)
 
 		return {
-			"externalExchangeMolecules": list(externalExchangeMolecules),
-			"importExchangeMolecules": list(importExchangeMolecules),
+			"externalExchangeMolecules": sorted(externalExchangeMolecules),
+			"importExchangeMolecules": sorted(importExchangeMolecules),
 			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
-			"importUnconstrainedExchangeMolecules": list(importUnconstrainedExchangeMolecules),
+			"importUnconstrainedExchangeMolecules": sorted(importUnconstrainedExchangeMolecules),
 			"secretionExchangeMolecules": secretionExchangeMolecules,
 		}
 
