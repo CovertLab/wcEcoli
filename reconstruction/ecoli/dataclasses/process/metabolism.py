@@ -15,7 +15,7 @@ TODO:
 from __future__ import division
 
 from copy import copy
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 import numpy as np
 import sympy as sp
@@ -540,12 +540,10 @@ class Metabolism(object):
 		Returns levels for external molecules available to exchange based on the current nutrients
 		"""
 
-		newObjective = None
+		unconstrained_exchange_molecules = exchange_data["importUnconstrainedExchangeMolecules"]
+		constrained_exchange_molecules = exchange_data["importConstrainedExchangeMolecules"]
 
-		self._unconstrainedExchangeMolecules = exchange_data["importUnconstrainedExchangeMolecules"]
-		self._constrainedExchangeMolecules = exchange_data["importConstrainedExchangeMolecules"]
-
-		concDict = self.concentrationUpdates.concentrationsBasedOnNutrients(currentNutrients, self.nutrientsToInternalConc)
+		concDict = self.concentrationUpdates.concentrationsBasedOnNutrients(currentNutrients)
 		if concModificationsBasedOnCondition is not None:
 			concDict.update(concModificationsBasedOnCondition)
 
@@ -555,11 +553,11 @@ class Metabolism(object):
 		externalMoleculeLevels = np.zeros(len(exchangeIDs), np.float64)
 
 		for index, moleculeID in enumerate(exchangeIDs):
-			if moleculeID in self._unconstrainedExchangeMolecules:
+			if moleculeID in unconstrained_exchange_molecules:
 				externalMoleculeLevels[index] = np.inf
-			elif moleculeID in self._constrainedExchangeMolecules.viewkeys():
+			elif moleculeID in constrained_exchange_molecules:
 				externalMoleculeLevels[index] = (
-					self._constrainedExchangeMolecules[moleculeID] * coefficient
+					constrained_exchange_molecules[moleculeID] * coefficient
 					).asNumber(targetUnits)
 			else:
 				externalMoleculeLevels[index] = 0.
@@ -654,7 +652,7 @@ class ConcentrationUpdates(object):
 	def __init__(self, concDict, equilibriumReactions, exchange_data_dict):
 		self.units = units.getUnit(concDict.values()[0])
 		self.defaultConcentrationsDict = dict((key, concDict[key].asNumber(self.units)) for key in concDict)
-		self.exchange_data_dict = exchange_data_dict
+		self.exchange_fluxes = self._exchange_flux_present(exchange_data_dict)
 
 		# factor of internal amino acid increase if amino acids present in nutrients
 		self.moleculeScaleFactors = {
@@ -684,39 +682,54 @@ class ConcentrationUpdates(object):
 		self.moleculeSetAmounts = self._addMoleculeAmounts(equilibriumReactions, self.defaultConcentrationsDict)
 
 	# return adjustments to concDict based on nutrient conditions
-	def concentrationsBasedOnNutrients(self, media_id = None, nutrientsToInternalConc = None):
+	def concentrationsBasedOnNutrients(self, media_id=None):
 		concentrationsDict = self.defaultConcentrationsDict.copy()
 
 		metaboliteTargetIds = sorted(concentrationsDict.keys())
 		concentrations = self.units * np.array([concentrationsDict[k] for k in metaboliteTargetIds])
-
-		if media_id == None:
-			return dict(zip(metaboliteTargetIds, concentrations))
-
-		nutrientFluxes = {
-			"importConstrainedExchangeMolecules": self.exchange_data_dict["importConstrainedExchangeMolecules"][media_id],
-			"importUnconstrainedExchangeMolecules": self.exchange_data_dict["importUnconstrainedExchangeMolecules"][media_id],
-		}
-
 		concDict = dict(zip(metaboliteTargetIds, concentrations))
 
-		for moleculeName, setAmount in self.moleculeSetAmounts.iteritems():
-			if self._isNutrientExchangePresent(nutrientFluxes, moleculeName) and (moleculeName[:-3] + "[c]" not in self.moleculeScaleFactors or moleculeName == "L-SELENOCYSTEINE[c]"):
-				concDict[moleculeName] = setAmount
-			if moleculeName in self.moleculeScaleFactors and self._isNutrientExchangePresent(nutrientFluxes, moleculeName[:-3] + "[p]"):
-				concDict[moleculeName] = setAmount
+		if media_id is not None:
+			exchanges = self.exchange_fluxes[media_id]
+			for moleculeName, setAmount in self.moleculeSetAmounts.iteritems():
+				if ((moleculeName in exchanges and (moleculeName[:-3] + "[c]" not in self.moleculeScaleFactors or moleculeName == "L-SELENOCYSTEINE[c]"))
+						or (moleculeName in self.moleculeScaleFactors and moleculeName[:-3] + "[p]" in exchanges)):
+					concDict[moleculeName] = setAmount
 
 		return concDict
 
-	def _isNutrientExchangePresent(self, nutrientFluxes, molecule):
-		if molecule in nutrientFluxes["importUnconstrainedExchangeMolecules"]:
-			return True
+	def _exchange_flux_present(self, exchange_data):
+		# type: (Dict[str, Any]) -> Dict[str, Set[str]]
+		"""
+		Caches the presence of exchanges in each media condition based on
+		exchange_data to set concentrations in concentrationsBasedOnNutrients().
 
-		if molecule in nutrientFluxes["importConstrainedExchangeMolecules"]:
-			if nutrientFluxes["importConstrainedExchangeMolecules"][molecule].asNumber() > 0:
-				return True
+		Args:
+			exchange_data: dictionary of exchange data for all media conditions with keys:
+				importUnconstrainedExchangeMolecules (dict[str, set[str]]): for each media ID key,
+					exchange molecules (with location tag) that do not have an upper bound on their flux
+				importConstrainedExchangeMolecules (dict[str, dict[str, float with mol/mass/time units]]):
+					for each media ID key, constrained molecules (with location tag)
+					with upper bound flux constraints
 
-		return False
+		Returns:
+			sets of molecules IDs (with location tags) that can be imported for each
+			media ID
+		"""
+
+		exchange_fluxes = {}
+
+		all_unconstrained = exchange_data['importUnconstrainedExchangeMolecules']
+		all_constrained = exchange_data['importConstrainedExchangeMolecules']
+
+		for media in all_unconstrained:
+			fluxes = set(all_unconstrained[media])
+			fluxes.update([molecule
+				for molecule, conc in all_constrained[media].items()
+				if conc.asNumber() > 0])
+			exchange_fluxes[media] = fluxes
+
+		return exchange_fluxes
 
 	def _addMoleculeAmounts(self, equilibriumReactions, concDict):
 		moleculeSetAmounts = {}

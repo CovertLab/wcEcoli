@@ -82,9 +82,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.metaboliteNamesFromNutrients.add(self.ppgpp_id)
 		for time, media_id in self.boundary.current_timeline:
 			self.metaboliteNamesFromNutrients.update(
-				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					media_id, sim_data.process.metabolism.nutrientsToInternalConc
-					)
+				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(media_id)
 				)
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
