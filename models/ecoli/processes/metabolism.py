@@ -166,20 +166,20 @@ class Metabolism(wholecell.processes.process.Process):
 		# Set up FBA solver
 		# reactionRateTargets value is just for initialization, it gets reset each timestep during evolveState
 		self.fbaObjectOptions = {
-			"reactionStoich" : sim_data.process.metabolism.reactionStoich,
-			"externalExchangedMolecules" : sorted(self.boundary.exchange_data['externalExchangeMolecules']),
-			"objective" : self.homeostaticObjective,
-			"objectiveType" : "homeostatic_kinetics_mixed",
-			"objectiveParameters" : {
-					"kineticObjectiveWeight" : kinetic_objective_weight,
-					"reactionRateTargets" : {reaction: 1 for reaction in self.all_constrained_reactions},
-					"oneSidedReactionTargets" : [],
+			"reactionStoich": sim_data.process.metabolism.reactionStoich,
+			"externalExchangedMolecules": sorted(self.boundary.exchange_data['externalExchangeMolecules']),
+			"objective": self.homeostaticObjective,
+			"objectiveType": "homeostatic_kinetics_mixed",
+			"objectiveParameters": {
+					"kineticObjectiveWeight": kinetic_objective_weight,
+					"reactionRateTargets": {reaction: 1 for reaction in self.all_constrained_reactions},
+					"oneSidedReactionTargets": [],
 					},
-			"moleculeMasses" : moleculeMasses,
-			"secretionPenaltyCoeff" : sim_data.constants.secretion_penalty_coeff, # The "inconvenient constant"--limit secretion (e.g., of CO2)
-			"solver" : solver,
-			"maintenanceCostGAM" : energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
-			"maintenanceReaction" : sim_data.process.metabolism.maintenanceReaction,
+			"moleculeMasses": moleculeMasses,
+			"secretionPenaltyCoeff": sim_data.constants.secretion_penalty_coeff, # The "inconvenient constant"--limit secretion (e.g., of CO2)
+			"solver": solver,
+			"maintenanceCostGAM": energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
+			"maintenanceReaction": sim_data.process.metabolism.maintenanceReaction,
 		}
 		if not self.use_kinetics:
 			self.fbaObjectOptions["objectiveType"] = "homeostatic"
