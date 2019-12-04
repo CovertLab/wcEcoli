@@ -765,7 +765,7 @@ class Boundary(object):
 	def _getSecretionExchangeMolecules(self, raw_data):
 		'''
 		Returns:
-			list[str]: all secretion exchange molecules
+			set[str]: all secretion exchange molecules
 		'''
 		secretionExchangeMolecules = []
 		for secretion in raw_data.secretions:
@@ -775,24 +775,24 @@ class Boundary(object):
 			else:
 				secretionExchangeMolecules.append(secretion["molecule id"])
 
-		return sorted(secretionExchangeMolecules)
+		return set(secretionExchangeMolecules)
 
 	def _getExchangeDataDict(self, sim_data):
 		'''
 		Returns:
 			dict[str, Any]: keys are the five exchange_data variables with the following keys:
-				externalExchangeMolecules (dict[str, list[str]]): for each media ID key,
+				externalExchangeMolecules (dict[str, set[str]]): for each media ID key,
 					all exchange molecules (with location tag), includes both import
 					and secretion exchanged molecules
-				importExchangeMolecules (dict[str, list[str]]): for each media ID key,
+				importExchangeMolecules (dict[str, set[str]]): for each media ID key,
 					molecules (with location tag) that can be imported from the
 					environment into the cell
 				importConstrainedExchangeMolecules (dict[str, dict[str, float with mol/mass/time units]]):
 					for each media ID key, constrained molecules (with location tag)
 					with upper bound flux constraints
-				importUnconstrainedExchangeMolecules (dict[str, list[str]]): for each media ID key,
+				importUnconstrainedExchangeMolecules (dict[str, set[str]]): for each media ID key,
 					exchange molecules (with location tag) that do not have an upper bound on their flux
-				secretionExchangeMolecules (list[str]): molecules (with location tag)
+				secretionExchangeMolecules (set[str]): molecules (with location tag)
 					that can be secreted by the cell into the environment
 		'''
 
@@ -836,15 +836,15 @@ class Boundary(object):
 				concentration can be inf
 
 		Returns dict with the following keys:
-			externalExchangeMolecules (list[str]): all exchange molecules (with
+			externalExchangeMolecules (set[str]): all exchange molecules (with
 				location tag), includes both import and secretion exchanged molecules
-			importExchangeMolecules (list[str]): molecules (with location tag) that
+			importExchangeMolecules (set[str]): molecules (with location tag) that
 				can be imported from the environment into the cell
 			importConstrainedExchangeMolecules (dict[str, float with mol/mass/time units]):
 				constrained molecules (with location tag) with upper bound flux constraints
-			importUnconstrainedExchangeMolecules (list[str]): exchange molecules
+			importUnconstrainedExchangeMolecules (set[str]): exchange molecules
 				(with location tag) that do not have an upper bound on their flux
-			secretionExchangeMolecules (list[str]): molecules (with location tag)
+			secretionExchangeMolecules (set[str]): molecules (with location tag)
 				that can be secreted by the cell into the environment
 		'''
 
@@ -880,10 +880,10 @@ class Boundary(object):
 		externalExchangeMolecules.update(secretionExchangeMolecules)
 
 		return {
-			"externalExchangeMolecules": sorted(externalExchangeMolecules),
-			"importExchangeMolecules": sorted(importExchangeMolecules),
+			"externalExchangeMolecules": externalExchangeMolecules,
+			"importExchangeMolecules": importExchangeMolecules,
 			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
-			"importUnconstrainedExchangeMolecules": sorted(importUnconstrainedExchangeMolecules),
+			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
 			"secretionExchangeMolecules": secretionExchangeMolecules,
 		}
 

@@ -107,8 +107,9 @@ class Metabolism(wholecell.processes.process.Process):
 		initDryMass = sim_data.mass.avgCellDryMassInit
 		initCellMass = initWaterMass + initDryMass
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
-		moleculeMasses = dict(zip(self.boundary.exchange_data['externalExchangeMolecules'],
-			sim_data.getter.getMass(self.boundary.exchange_data['externalExchangeMolecules']).asNumber(MASS_UNITS / COUNTS_UNITS)))
+		exchange_molecules = list(self.boundary.exchange_data['externalExchangeMolecules'])
+		moleculeMasses = dict(zip(exchange_molecules,
+			sim_data.getter.getMass(exchange_molecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
 
 		# Data structures to compute reaction bounds based on enzyme presence/absence
 		self.catalystsList = sim_data.process.metabolism.catalystsList
@@ -166,7 +167,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# reactionRateTargets value is just for initialization, it gets reset each timestep during evolveState
 		self.fbaObjectOptions = {
 			"reactionStoich" : sim_data.process.metabolism.reactionStoich,
-			"externalExchangedMolecules" : self.boundary.exchange_data['externalExchangeMolecules'],
+			"externalExchangedMolecules" : sorted(self.boundary.exchange_data['externalExchangeMolecules']),
 			"objective" : self.homeostaticObjective,
 			"objectiveType" : "homeostatic_kinetics_mixed",
 			"objectiveParameters" : {
