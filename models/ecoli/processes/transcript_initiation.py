@@ -97,8 +97,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.idx_rprotein = np.where(sim_data.process.transcription.rnaData['isRProtein'])[0]
 		self.idx_rnap = np.where(sim_data.process.transcription.rnaData['isRnap'])[0]
 
-		self.idx_mazF = np.where(sim_data.process.transcription.rnaData['id'] == 'EG11249_RNA[c]')
-		self.idx_mazE = np.where(sim_data.process.transcription.rnaData['id'] == 'EG10571_RNA[c]')
+		self.idx_mazF = np.where(sim_data.process.transcription.rnaData['id'] == 'EG11249_RNA[c]')[0]
+		self.idx_mazE = np.where(sim_data.process.transcription.rnaData['id'] == 'EG10571_RNA[c]')[0]
 
 		# Synthesis probabilities for different categories of genes
 		self.rnaSynthProbFractions = sim_data.process.transcription.rnaSynthProbFraction
@@ -130,32 +130,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			# Calculate probabilities of the RNAP binding to each promoter
 			self.promoter_init_probs = (self.basal_prob[TU_index] +
 				np.multiply(self.delta_prob_matrix[TU_index, :], bound_TF).sum(axis=1))
-
-			# (Taryn) add in autoregulation for mazEF
-			basal_TU_vals = self.basal_prob[TU_index]
-			mazEF = self.mazEF.count()
-			mazE = self.mazE.count()
-
-			rnaIdxs = [self.idx_mazE[0][0], self.idx_mazF[0][0]]
-			if (mazEF + mazE) > 0: # if neither mazEF or mazE is expressed, don't adjust probs
-
-				# fc = 1.0/(min(1,mazEF) * 3.3 + min(1, mazE) * 1.0) #scale by sum of fold change
-				fc = 1.0 / (mazEF * 3.3 +  mazE * 1.0) # scale by sum of fold change
-				fcs = [fc, fc]
-
-				rnaIdxsBool = np.zeros(len(basal_TU_vals), dtype=np.bool)
-				rnaIdxsBool[rnaIdxs] = 1
-
-				scaleTheRestBy = (1. - (self.promoter_init_probs[rnaIdxs] * fcs).sum()) / (1. - (self.promoter_init_probs[rnaIdxs]).sum())
-				# self.promoter_init_probs[rnaIdxsBool] = basal_TU_vals[rnaIdxsBool] * fcs
-				self.promoter_init_probs[rnaIdxsBool] = self.promoter_init_probs[rnaIdxsBool] * fcs
-				self.promoter_init_probs[~rnaIdxsBool] *= scaleTheRestBy
-				# import ipdb; ipdb.set_trace()
-
-
-
-
-
 
 			if len(self.genetic_perturbations) > 0:
 				self._rescale_initiation_probs(
@@ -198,6 +172,27 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			# Scale remaining synthesis probabilities accordingly
 			scaleTheRestBy = (1. - self.promoter_init_probs[is_fixed].sum()) / self.promoter_init_probs[~is_fixed].sum()
 			self.promoter_init_probs[~is_fixed] *= scaleTheRestBy
+	# ------------------------------------------------------------------------------------
+			# (Taryn) add in autoregulation for mazEF
+			basal_TU_vals = self.basal_prob[TU_index]
+			mazEF = self.mazEF.count()
+			mazE = self.mazE.count()
+
+			rnaIdxs = np.append(np.where(TU_index == self.idx_mazE[0]), np.where(TU_index == self.idx_mazF[0]))
+			if (mazEF + mazE) > 0: # if neither mazEF or mazE is expressed, don't adjust probs
+
+				# fc = 1.0/(min(1,mazEF) * 3.3 + min(1, mazE) * 1.0) #scale by sum of fold change
+				fc = 0 #1.0 / (mazEF * 3.3 +  mazE * 1.0) # scale by sum of fold change
+				fcs = np.repeat(fc, len(rnaIdxs))
+
+				rnaIdxsBool = np.zeros(len(TU_index), dtype=np.bool)
+				rnaIdxsBool[rnaIdxs] = 1
+
+				scaleTheRestBy = (1. - (self.promoter_init_probs[rnaIdxs] * fcs).sum()) / (1. - (self.promoter_init_probs[rnaIdxs]).sum())
+				# self.promoter_init_probs[rnaIdxsBool] = basal_TU_vals[rnaIdxsBool] * fcs
+				self.promoter_init_probs[rnaIdxsBool] = self.promoter_init_probs[rnaIdxsBool] * fcs
+				self.promoter_init_probs[~rnaIdxsBool] *= scaleTheRestBy
+				# import ipdb; ipdb.set_trace()
 
 		# If there are no chromosomes in the cell, set all probs to zero
 		else:
@@ -231,7 +226,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		# Compute synthesis probabilities of each transcription unit
 		TU_synth_probs = TU_to_promoter.dot(self.promoter_init_probs)
-		# import ipdb; ipdb.set_trace()
 		self.writeToListener("RnaSynthProb", "rnaSynthProb", TU_synth_probs)
 
 		# Shuffle synthesis probabilities if we're running the variant that
@@ -259,6 +253,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		# Sample a multinomial distribution of initiation probabilities to
 		# determine what promoters are initialized
+
 		n_initiations = self.randomState.multinomial(
 			n_activated_rnap, self.promoter_init_probs)
 

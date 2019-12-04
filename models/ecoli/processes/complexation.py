@@ -38,7 +38,7 @@ class Complexation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(Complexation, self).initialize(sim, sim_data)
 
-		self.gillespie_time_step = 0.01 # instead of self._sim.timeStepSec()
+		self.gillespie_time_step = 0.001 # instead of self._sim.timeStepSec()
 
 		# Create matrices and vectors that describe reaction stoichiometries 
 		complexation_forward_matrix = sim_data.process.complexation.stoichMatrix().astype(np.int64)
@@ -47,7 +47,7 @@ class Complexation(wholecell.processes.process.Process):
 
 		# semi-quantitative rate constants
 		forward_rates = sim_data.process.complexation.rates
-		reverse_rates = np.repeat(5, len(forward_rates))
+		reverse_rates = np.repeat(100, len(forward_rates))
 		self.rates = np.append(forward_rates, reverse_rates)
 		# import ipdb; ipdb.set_trace()
 

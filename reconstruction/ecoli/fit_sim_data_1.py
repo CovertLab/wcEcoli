@@ -146,7 +146,6 @@ def fitSimData_1(
 	# use threads and other resources which don't play well with `fork`.
 	# See Issue #392.
 	cpus = parallelization.cpus(cpus, advice='mac override')
-
 	if cpus > 1:
 		print("Starting {} Parca processes".format(cpus))
 		pool = mp.Pool(processes = cpus)

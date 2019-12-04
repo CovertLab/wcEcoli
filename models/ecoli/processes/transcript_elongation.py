@@ -59,6 +59,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.idx_16Srrna = np.where(sim_data.process.transcription.rnaData['isRRna16S'])[0]
 		self.idx_23Srrna = np.where(sim_data.process.transcription.rnaData['isRRna23S'])[0]
 		self.idx_5Srrna = np.where(sim_data.process.transcription.rnaData['isRRna5S'])[0]
+		self.idx_mazE = np.where(sim_data.process.transcription.rnaData['id'] == 'EG10571_RNA[c]')
 
 		# Views
 		self.active_RNAPs = self.uniqueMoleculesView('activeRnaPoly')
@@ -98,6 +99,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			TU_indexes,
 			transcript_lengths,
 			self.elongation_rates)
+
 
 		sequenceComposition = np.bincount(
 			sequences[sequences != polymerize.PAD_VALUE], minlength = 4)
