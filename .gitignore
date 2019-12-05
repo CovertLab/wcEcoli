@@ -153,3 +153,6 @@ reconstruction/ecoli/dataclasses/process/two_component_system_odes_fitter.py
 *.fls
 *.synctex.gz
 
+# VENV files #
+##############
+venv/*

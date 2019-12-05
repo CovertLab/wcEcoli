@@ -64,11 +64,22 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 		# Load protein length
 		self.proteinLengths = sim_data.process.translation.monomerData['length']
+		self.proteinLengths = self.proteinLengths.asNumber()
 
 		# Build S matrix
 		self.proteinDegSMatrix = np.zeros((len(metaboliteIds), len(proteinIds)), np.int64)
 		self.proteinDegSMatrix[aaIdxs, :] = np.transpose(sim_data.process.translation.monomerData["aaCounts"].asNumber())
 		self.proteinDegSMatrix[h2oIdx, :]  = -(np.sum(self.proteinDegSMatrix[aaIdxs, :], axis = 0) - 1)
+
+		# (taryn) hacking mazE dimer into degradation
+		mazE_mono_idx = np.where(sim_data.process.translation.monomerData['id'] == 'EG10571-MONOMER[c]')[0][0]
+		# append necessary data to arrays for mazE dimer (mazE monomer * 2)
+		self.rawDegRate = np.append(self.rawDegRate, self.rawDegRate[mazE_mono_idx])
+		self.proteinLengths = np.append(self.proteinLengths, self.proteinLengths[mazE_mono_idx]*2)
+
+		mazE_dimer_AAs = self.proteinDegSMatrix[:,mazE_mono_idx].reshape(22,1)*2
+		self.proteinDegSMatrix = np.append(self.proteinDegSMatrix, mazE_dimer_AAs, axis=1)
+		proteinIds = np.append(proteinIds, ['CPLX0-841[c]']) # add mazE dimer to list
 
 		# Build Views
 		self.metabolites = self.bulkMoleculesView(metaboliteIds)
@@ -78,7 +89,6 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
 	def calculateRequest(self):
-
 		# Determine how many proteins to degrade based on the degradation rates and counts of each protein
 		nProteinsToDegrade = np.fmin(
 			self.randomState.poisson(self._proteinDegRates() * self.proteins.total_counts()),
@@ -86,7 +96,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 			)
 
 		# Determine the number of hydrolysis reactions
-		nReactions = np.dot(self.proteinLengths.asNumber(), nProteinsToDegrade)
+		nReactions = np.dot(self.proteinLengths, nProteinsToDegrade)
 
 		# Determine the amount of water required to degrade the selected proteins
 		# Assuming one N-1 H2O is required per peptide chain length N

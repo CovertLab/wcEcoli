@@ -47,7 +47,7 @@ class Complexation(wholecell.processes.process.Process):
 
 		# semi-quantitative rate constants
 		forward_rates = sim_data.process.complexation.rates
-		reverse_rates = np.repeat(100, len(forward_rates))
+		reverse_rates = np.repeat(10, len(forward_rates))
 		self.rates = np.append(forward_rates, reverse_rates)
 		# import ipdb; ipdb.set_trace()
 
