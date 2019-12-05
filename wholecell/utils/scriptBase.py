@@ -64,6 +64,7 @@ ANALYSIS_KEYS = (
 	'cpus',
 	'compile')
 
+# Mapping of args that take a range and the args they will replace
 RANGE_ARGS = {
 	'variant_range': 'variant_index',
 	'generation_range': 'generation',
@@ -482,7 +483,7 @@ class ScriptBase(object):
 
 		Returns:
 			lists of possible values that each argument with a range can take,
-			ordered according to self.range_option
+			ordered according to self.range_options
 		"""
 
 		range_args = []
