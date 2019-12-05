@@ -9,15 +9,18 @@ Expected variant indices (dependent on sorted order from reconstruction/ecoli/fl
 	0-26
 """
 
+from __future__ import absolute_import, division, print_function
+
+
 def timelines(sim_data, index):
-	timelines = sim_data.external_state.environment.saved_timelines
-	timeline_ids = sorted(timelines)
+	saved_timelines = sim_data.external_state.environment.saved_timelines
+	timeline_ids = sorted(saved_timelines)
 	current_timeline_id = timeline_ids[index]
 	sim_data.external_state.environment.current_timeline_id = current_timeline_id
 
 	# Get possible condition from starting nutrients for proper initialization
 	# Not guaranteed to map to any condition or could map to multiple conditions
-	nutrients = timelines[current_timeline_id][0][1]
+	nutrients = saved_timelines[current_timeline_id][0][1]
 	conditions = [cond for cond in sim_data.conditionActiveTfs
 		if sim_data.conditions[cond]['nutrients'] == nutrients]
 	if len(conditions) == 1:
