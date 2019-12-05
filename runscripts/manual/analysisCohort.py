@@ -19,10 +19,10 @@ class AnalysisCohort(AnalysisBase):
 	def define_parameters(self, parser):
 		super(AnalysisCohort, self).define_parameters(parser)
 		self.define_parameter_variant_index(parser)
+		self.define_range_options(parser, 'variant')
 
-	def parse_args(self):
-		args = super(AnalysisCohort, self).parse_args()
-		return args
+	def update_args(self, args):
+		super(AnalysisCohort, self).update_args(args)
 
 	def run(self, args):
 		sim_path = args.sim_path
