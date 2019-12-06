@@ -221,5 +221,5 @@ class Replication(object):
 		relative_pos[coords < 0] = -relative_pos[coords < 0] / left_replichore_length
 
 		# Return the predicted average copy number
-		n_avg_copy = 2**(((1 - relative_pos)*self._c_period + self._d_period) / tau)
+		n_avg_copy = 2**(((1 - relative_pos) * self._c_period + self._d_period) / tau)
 		return n_avg_copy

@@ -83,9 +83,11 @@ class Transcription(object):
 			regulation[rna] = regulation.get(rna, 0) + direction
 
 		# Read fold change data from raw_data
-		valid_categories = {'A', 'B', 'C', 'D'}  # FC data is significant
-		sample_time = 5  # Could also be 10
-		sample_id = '1+2+ {} min'.format(sample_time)
+		## Categories A-D are statistically significant fold changes
+		## Categories E-G are not significant or data is not usable
+		valid_categories = {'A', 'B', 'C', 'D'}
+		sample_time = 5  # Could also be 10 (5 min minimizes downstream regulation impacts)
+		sample_id = '1+2+ {} min'.format(sample_time)  # Column contains FC data for given time
 		rna_fold_changes = {}
 		for fc in raw_data.ppgpp_fc:
 			# Convert to regulated RNA
