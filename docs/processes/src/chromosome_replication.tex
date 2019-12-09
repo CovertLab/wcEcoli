@@ -1,5 +1,6 @@
 \documentclass[12pt]{article}
 \usepackage[ruled,vlined,noresetcount]{algorithm2e}
+\usepackage{float}
 
 \topmargin 0.0cm
 \oddsidemargin 0.2cm
@@ -12,7 +13,6 @@
 \baselineskip24pt
 
 \paragraph{Chromosome replication}
-\label{sec:chrom-rep}
 
 \subparagraph{Model implementation.}
 Chromosome replication occurs through three steps that are implemented in the \texttt{ChromosomeFormation} and \texttt{ChromosomeElongation} processes. First, a round of replication is initiated at a fixed cell mass per origin of replication and generally occurs once per cell cycle (see Algorithm~\ref{replication_init_algorithm}). This is in contrast to the DnaA based mechanistic model included in the \textit{M. genitalium} model but allows for stable replication over multiple generations and in different growth conditions. Second, replication forks are elongated up to the maximal expected elongation rate, dNTP resource limitations, and template strand sequence but elongation does not take into account the action of topoisomerases or the enzymes in the replisome (see Algorithm~\ref{dna_replication_elongation_algorithm}). Finally, replication forks terminate once they reach the end of their template strand and the chromosome immediately decatenates forming two separate chromosome molecules  (see Algorithm~\ref{dna_replication_termination_algorithm}).\\

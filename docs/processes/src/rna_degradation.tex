@@ -1,6 +1,7 @@
 \documentclass[12pt]{article}
 \usepackage[ruled,vlined,noresetcount]{algorithm2e}
 \usepackage{amsmath}
+\usepackage{caption}
 
 \topmargin 0.0cm
 \oddsidemargin 0.2cm
@@ -45,7 +46,7 @@ During simulations, individual RNA counts are low so $r_i$ from Eq. \ref{endorna
 \noindent where \textbf{1}$_{i\in group}$ is an indicator function that is 1 if $i$ in in $group$ and 0 otherwise.
 
 \subparagraph{Exo-nucleolytic Digestion.}
-Endo-nucleolytic cleavage produces non-functional RNA fragments, which are then degraded to individual nucleotides via nine different exoRNases. Once degraded, these nucleotides can be recycled by the \textt{Metabolism} process.  ExoRNase capacity is determined as the following:
+Endo-nucleolytic cleavage produces non-functional RNA fragments, which are then degraded to individual nucleotides via nine different exoRNases. Once degraded, these nucleotides can be recycled by the \texttt{Metabolism} process.  ExoRNase capacity is determined as the following:
 \begin{equation}
     R_{exo} = k_{cat,exo} \cdot c_{exo} \cdot \Delta t
 \end{equation}

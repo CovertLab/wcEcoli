@@ -1,6 +1,7 @@
 \documentclass[12pt]{article}
 \usepackage[ruled,vlined,noresetcount]{algorithm2e}
 \usepackage{amsmath}
+\usepackage{float}
 
 \topmargin 0.0cm
 \oddsidemargin 0.2cm
@@ -292,5 +293,8 @@ Fold-change gene expression & $FC$ & $log_{2}(a.u.)$ & [-10.48, 9.73] & See GitH
 \label{sec:references}
 \bibliographystyle{plain}
 \bibliography{references}
+% Need for compiler error: I found no \citation commands---while reading file transcription_regulation.aux
+% Remove if a citation is included in this tex file
+\nocite{empty}
 
 \end{document}
