@@ -77,7 +77,7 @@ class AnalysisBase(scriptBase.ScriptBase):
 
 	def update_args(self, args):
 		# type: (argparse.Namespace) -> None
-		"""Parse the command line args into an `argparse.Namespace`, including
+		"""Update the command line args in an `argparse.Namespace`, including
 		the `sim_dir` and `sim_path` args; sanitize args.plot; attach the
 		`args.input_validation_data` path, the `args.metadata_path` path
 		"<sim_path>/metadata/metadata.json", and the `args.metadata` dict

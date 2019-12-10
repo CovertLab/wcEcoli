@@ -21,9 +21,6 @@ class AnalysisCohort(AnalysisBase):
 		self.define_parameter_variant_index(parser)
 		self.define_range_options(parser, 'variant')
 
-	def update_args(self, args):
-		super(AnalysisCohort, self).update_args(args)
-
 	def run(self, args):
 		sim_path = args.sim_path
 		variant_dir_name = args.variant_dir_name
