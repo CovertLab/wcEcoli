@@ -347,6 +347,7 @@ class Workflow(object):
 
 		commands = self.build_commands()
 		steps = self.build_steps()
+		self.properties['requested-worker-count'] = worker_count
 
 		gaia = Gaia(GAIA_CONFIG)
 
