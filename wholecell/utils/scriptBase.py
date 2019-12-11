@@ -525,8 +525,8 @@ class ScriptBase(object):
 		for params in itertools.product(*range_args):
 			# Start with original args for each iteration since update_args
 			# overwrites some args and might handle undefined values differently
-			# with different inputs. There is not a good way to copy the
-			# unmodified Namespace without using copy.deepcopy().
+			# with different values from ranges. There is not a good way to copy
+			# the unmodified Namespace without using copy.deepcopy().
 			args = self.parse_args()
 			self.set_range_args(args, params)
 			self.update_args(args)
