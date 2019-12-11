@@ -659,6 +659,24 @@ class Transcription(object):
 		self._ppgpp_km_squared = km
 		self.ppgpp_km = np.sqrt(km) * PPGPP_CONC_UNITS
 
+	def get_rna_fractions(self, ppgpp):
+		"""
+		Calculates expected RNA mass fractions based on ppGpp concentration.
+
+
+		"""
+
+		exp = self.expression_from_ppgpp(ppgpp)
+		mass = self.rnaData['mw'] * exp
+		mass = (mass / units.sum(mass)).asNumber()
+		return {
+			'23S': mass[self.rnaData['isRRna23S']].sum(),
+			'16S': mass[self.rnaData['isRRna16S']].sum(),
+			'5S': mass[self.rnaData['isRRna5S']].sum(),
+			'trna': mass[self.rnaData['isTRna']].sum(),
+			'mrna': mass[self.rnaData['isMRna']].sum(),
+			}
+
 	def set_ppgpp_expression(self, sim_data):
 		"""
 		Called during the parca to determine expression of each gene for ppGpp
