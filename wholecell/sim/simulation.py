@@ -13,10 +13,11 @@ import collections
 import os.path
 import shutil
 import time
+import uuid
+import lens
+from lens.actor.emitter import get_emitter
 
 import numpy as np
-
-from agent.inner import CellSimulation
 
 from wholecell.listeners.evaluation_time import EvaluationTime
 from wholecell.utils import filepath
@@ -35,7 +36,8 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	dPeriodDivision = False,
 	growthRateNoise = False,
 	translationSupply = True,
-	trna_charging = False,
+	trna_charging = True,
+	ppgpp_regulation = False,
 	timeStepSafetyFraction = 1.3,
 	maxTimeStep = 0.9,#2.0, # TODO: Reset to 2 once we update PopypeptideElongation
 	updateTimeStepFreq = 5,
@@ -49,6 +51,8 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	variable_elongation_translation = False,
 	variable_elongation_transcription = False,
 	raise_on_time_limit = False,
+	tagged_molecules = [],
+	emitter_config = {},
 )
 
 def _orderedAbstractionReference(iterableOfClasses):
@@ -66,7 +70,7 @@ DEFAULT_LISTENER_CLASSES = (
 	EvaluationTime,
 	)
 
-class Simulation(CellSimulation):
+class Simulation(lens.actor.inner.Simulation):
 	""" Simulation """
 
 	# Attributes that must be set by a subclass
@@ -108,7 +112,7 @@ class Simulation(CellSimulation):
 		unknownKeywords = kwargs.viewkeys() - DEFAULT_SIMULATION_KWARGS.viewkeys()
 
 		if any(unknownKeywords):
-			raise SimulationException("Unknown keyword arguments: {}".format(unknownKeywords))
+			print("Unknown keyword arguments: {}".format(unknownKeywords))
 
 		# Set time variables
 		self._simulationStep = 0
@@ -143,6 +147,7 @@ class Simulation(CellSimulation):
 		self._cellCycleComplete = False
 		self._isDead = False
 		self._finalized = False
+		self.emitter = get_emitter(self._emitter_config)['object']  # get the emitter object
 
 		for state_name, internal_state in self.internal_states.iteritems():
 			# initialize random streams
@@ -239,6 +244,9 @@ class Simulation(CellSimulation):
 
 		# Simulate
 		while self.time() < run_until and not self._isDead:
+			if self.time() > self.initialTime() + self._lengthSec:
+				self.cellCycleComplete()
+
 			if self._cellCycleComplete:
 				self.finalize()
 				break
@@ -248,6 +256,8 @@ class Simulation(CellSimulation):
 			self._timeTotal += self._timeStepSec
 
 			self._evolveState()
+
+			self.emit()
 
 	def finalize(self):
 		"""
@@ -439,7 +449,9 @@ class Simulation(CellSimulation):
 			# initial seeds and further in later generations. Like for process
 			# seeds, this depends only on _seed, not on randomState so it won't
 			# vary with simulation code details.
-			daughters.append(dict(config,
+			daughters.append(dict(
+				config,
+				id=str(uuid.uuid1()),
 				inherited_state_path=path,
 				seed=37 * self._seed + 47 * i + 997))
 
@@ -457,3 +469,17 @@ class Simulation(CellSimulation):
 		self.finalize()
 
 		return self.daughter_config()
+
+	def emit(self):
+		if self._tagged_molecules:
+			counts = self.internal_states['BulkMolecules'].container.counts(self._tagged_molecules)
+			cell_data = {mol_id: count for mol_id, count in zip(self._tagged_molecules, counts)}
+			emit_config = {
+				'table': 'history',
+				'data': {
+					'type': 'compartment',
+					'time': self.time(),
+					'cell': cell_data}
+				}
+
+			self.emitter.emit(emit_config)

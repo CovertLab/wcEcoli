@@ -15,18 +15,18 @@ TODO:
 
 from __future__ import division
 
-from wholecell.utils import units
-import wholecell
-import os
-import numpy as np
-import sympy as sp
 from copy import copy
 
-ILE_LEU_CONCENTRATION = 3.0e-4 # mmol/L
-ILE_FRACTION = 0.360 # the fraction of iso/leucine that is isoleucine; computed from our monomer data
-ECOLI_PH = 7.2
+import numpy as np
+import sympy as sp
 
-PPI_CONCENTRATION = 0.5e-3 # M, multiple sources
+from wholecell.utils import units
+
+PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
+ILE_LEU_CONCENTRATION = 3.03e-4  # M, Bennett et al. 2009
+ILE_FRACTION = 0.360  # the fraction of iso/leucine that is isoleucine; computed from our monomer data
+ECOLI_PH = 7.2
+METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
 
 USE_ALL_CONSTRAINTS = False # False will remove defined constraints from objective
 
@@ -34,8 +34,8 @@ reverseReactionString = "{} (reverse)"
 
 # threshold (units.mmol / units.L) separates concentrations that are import constrained with
 # max flux = 0 from unconstrained molecules.
-# TODO (Eran) remove this once a transport kinetics process is operating
-IMPORT_CONSTRAINT_THRESHOLD =  0.01
+IMPORT_CONSTRAINT_THRESHOLD =  1e-5
+
 
 class Metabolism(object):
 	""" Metabolism """
@@ -59,6 +59,7 @@ class Metabolism(object):
 
 		self._buildBiomass(raw_data, sim_data)
 		self._buildMetabolism(raw_data, sim_data)
+		self._build_ppgpp_reactions(raw_data, sim_data)
 
 	def _buildBiomass(self, raw_data, sim_data):
 		wildtypeIDs = set(entry["molecule id"] for entry in raw_data.biomass)
@@ -82,7 +83,9 @@ class Metabolism(object):
 
 		metaboliteIDs = []
 		metaboliteConcentrations = []
-		metaboliteConcentrationData = dict((m["Metabolite"], m["Concentration"].asNumber(units.mol / units.L)) for m in raw_data.metaboliteConcentrations)
+		metaboliteConcentrationData = dict(
+			(m["Metabolite"], m["Concentration"].asNumber(METABOLITE_CONCENTRATION_UNITS))
+			for m in raw_data.metaboliteConcentrations)
 
 		wildtypeIDtoCompartment = {
 			wildtypeID[:-3] : wildtypeID[-3:]
@@ -166,12 +169,12 @@ class Metabolism(object):
 		# include metabolites that are part of biomass
 		for key, value in sim_data.mass.getBiomassAsConcentrations(sim_data.doubling_time).iteritems():
 			metaboliteIDs.append(key)
-			metaboliteConcentrations.append(value.asNumber(units.mol / units.L))
+			metaboliteConcentrations.append(value.asNumber(METABOLITE_CONCENTRATION_UNITS))
 
 		# save concentrations as class variables
 		self.concentrationUpdates = ConcentrationUpdates(dict(zip(
 			metaboliteIDs,
-			(units.mol / units.L) * np.array(metaboliteConcentrations)
+			METABOLITE_CONCENTRATION_UNITS * np.array(metaboliteConcentrations)
 			)),
 			raw_data.equilibriumReactions,
 			self.boundary.exchange_data_dict,
@@ -187,7 +190,7 @@ class Metabolism(object):
 		"""
 
 		# Initialize variables to store reaction information
-		reactionStoich = {}			# dict with reactions as keys and dict with reaction stoich as values 
+		reactionStoich = {}			# dict with reactions as keys and dict with reaction stoich as values
 		reversibleReactions = []
 		reactionCatalysts = {}		# dict with reactions as keys and list of catalysts as values
 		catalystsList = []
@@ -300,7 +303,7 @@ class Metabolism(object):
 				constraint["reactionID"] = reverseReactionString.format(constraint["reactionID"])
 
 			# Get rid of constraints for reverse reactions that the FBA reconstruction says should not exist
-			# (i.e., if the FBA reconstruction says the reaction is irreversible but we have a constraint on 
+			# (i.e., if the FBA reconstruction says the reaction is irreversible but we have a constraint on
 			#  the reverse reaction, drop the constraint)
 			if constraint["reactionID"] not in reactionStoich:
 				continue
@@ -451,6 +454,59 @@ class Metabolism(object):
 		self.useAllConstraints = USE_ALL_CONSTRAINTS
 		self.constraintsToDisable = [rxn["disabled reaction"] for rxn in raw_data.disabledKineticReactions]
 
+	def _build_ppgpp_reactions(self, raw_data, sim_data):
+		'''
+		Creates structures for ppGpp reactions for use in polypeptide_elongation.
+
+		Adds the following attributes to the class:
+			ppgpp_synthesis_reaction (str): reaction ID for ppGpp synthesis
+				(catalyzed by RelA and SpoT)
+			ppgpp_degradation_reaction (str): reaction ID for ppGpp degradation
+				(catalyzed by SpoT)
+			ppgpp_reaction_names (list[str]): names of reaction involved in ppGpp
+			ppgpp_reaction_metabolites (list[str]): names of metabolites in
+				ppGpp reactions
+			ppgpp_reaction_stoich (array[int]): 2D array with metabolites on rows
+				and reactions on columns containing the stoichiometric coefficient
+		'''
+
+		self.ppgpp_synthesis_reaction = 'GDPPYPHOSKIN-RXN'
+		self.ppgpp_degradation_reaction = 'PPGPPSYN-RXN'
+
+		self.ppgpp_reaction_names = [
+			self.ppgpp_synthesis_reaction,
+			self.ppgpp_degradation_reaction,
+			]
+
+		self.ppgpp_reaction_metabolites = []
+
+		# Indices (i: metabolite, j: reaction) and values (v: stoichiometry)
+		# for sparse reaction matrix
+		metabolite_indices = {}
+		new_index = 0
+		rxn_i = []
+		rxn_j = []
+		rxn_v = []
+
+		# Record sparse indices in the matrix
+		for j, rxn in enumerate(self.ppgpp_reaction_names):
+			for met, stoich in self.reactionStoich[rxn].items():
+				idx = metabolite_indices.get(met, new_index)
+
+				if idx == new_index:
+					metabolite_indices[met] = new_index
+					self.ppgpp_reaction_metabolites.append(met)
+					new_index += 1
+
+				rxn_i.append(idx)
+				rxn_j.append(j)
+				rxn_v.append(stoich)
+
+		# Assemble matrix based on indices
+		# new_index is number of metabolites, j+1 is number of reactions
+		self.ppgpp_reaction_stoich = np.zeros((new_index, j+1), dtype=np.int32)
+		self.ppgpp_reaction_stoich[rxn_i, rxn_j] = rxn_v
+
 	def getKineticConstraints(self, enzymes, substrates):
 		'''
 		Allows for dynamic code generation for kinetic constraint calculation
@@ -509,6 +565,88 @@ class Metabolism(object):
 				externalMoleculeLevels[index] = 0.
 
 		return externalMoleculeLevels, newObjective
+
+	def set_supply_constants(self, sim_data):
+		"""
+		Sets constants to determine amino acid supply during translation.
+
+		Args:
+			sim_data (SimulationData object)
+
+		Sets class attributes:
+			KI_aa_synthesis (ndarray[float]): KI for each AA for synthesis
+				portion of supply (in units of METABOLITE_CONCENTRATION_UNITS)
+			KM_aa_export (ndarray[float]): KM for each AA for export portion
+				of supply (in units of METABOLITE_CONCENTRATION_UNITS)
+			fraction_supply_rate (float): fraction of AA supply that comes from
+				a base synthesis rate
+			fraction_import_rate (ndarray[float]): fraction of AA supply that
+				comes from AA import if nutrients are present
+			base_aa_conc (ndarray[float]): expected AA conc in basal condition
+				(in units of METABOLITE_CONCENTRATION_UNITS)
+
+		Assumptions:
+			- Each internal amino acid concentration in 'minimal_plus_amino_acids'
+			media is not lower than in 'minimal' media
+
+		TODO (Travis):
+			Base on measured KI and KM values.
+			Add impact from synthesis enzymes and transporters.
+			Better handling of concentration assumption
+		"""
+
+		aa_ids = sim_data.moleculeGroups.aaIDs
+		conc = self.concentrationUpdates.concentrationsBasedOnNutrients
+
+		aa_conc_basal = np.array([
+			conc('minimal')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			for aa in aa_ids])
+		aa_conc_aa_media = np.array([
+			conc('minimal_plus_amino_acids')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			for aa in aa_ids])
+
+		# Lower concentrations might produce strange rates (excess supply or
+		# negative import when present externally) and constants so raise
+		# to double check the implementation
+		if not np.all(aa_conc_basal <= aa_conc_aa_media):
+			aas = np.array(aa_ids)[np.where(aa_conc_basal > aa_conc_aa_media)]
+			raise ValueError('Check that amino acid concentrations should be lower in amino acid media for {}'.format(aas))
+
+		f_inhibited = sim_data.constants.fraction_supply_inhibited
+		f_exported = sim_data.constants.fraction_supply_exported
+
+		# Assumed units of METABOLITE_CONCENTRATION_UNITS for KI and KM
+		self.KI_aa_synthesis = f_inhibited * aa_conc_basal / (1 - f_inhibited)
+		self.KM_aa_export = (1 / f_exported - 1) * aa_conc_aa_media
+		self.fraction_supply_rate = 1 - f_inhibited + aa_conc_basal / (self.KM_aa_export + aa_conc_basal)
+		self.fraction_import_rate = 1 - (self.fraction_supply_rate + 1 / (1 + aa_conc_aa_media / self.KI_aa_synthesis) - f_exported)
+
+	def aa_supply_scaling(self, aa_conc, aa_present):
+		"""
+		Called during polypeptide_elongation process
+		Determine amino acid supply rate scaling based on current amino acid
+		concentrations.
+
+		Args:
+			aa_conc (ndarray[float] with mol / volume units): internal
+				concentration for each amino acid
+			aa_present (ndarray[bool]): whether each amino acid is in the
+				external environment or not
+
+		Returns:
+			ndarray[float]: scaling for the supply of each amino acid with
+				higher supply rate if >1, lower supply rate if <1
+		"""
+
+		aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
+
+		aa_supply = self.fraction_supply_rate
+		aa_import = aa_present * self.fraction_import_rate
+		aa_synthesis = 1 / (1 + aa_conc / self.KI_aa_synthesis)
+		aa_export = aa_conc / (self.KM_aa_export + aa_conc)
+		supply_scaling = aa_supply + aa_import + aa_synthesis - aa_export
+
+		return supply_scaling
 
 
 # Class used to update metabolite concentrations based on the current nutrient conditions
@@ -605,6 +743,7 @@ class Boundary(object):
 	'''
 	def __init__(self, raw_data, sim_data):
 
+		self.import_constraint_threshold = IMPORT_CONSTRAINT_THRESHOLD
 		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
 
 		# lists of molecules whose presence modifies glc's upper bound for FBA import constraint, whose default is 20 (mmol/g DCW/hr).
@@ -708,7 +847,9 @@ class Boundary(object):
 
 		#remove molecules with low concentration
 		exchange_molecules = {self.env_to_exchange_map[mol]: conc for mol, conc in molecules.iteritems()}
-		nonzero_molecules = {molecule_id:concentration for molecule_id, concentration in exchange_molecules.items() if concentration >= 0.00001}
+		nonzero_molecules = {molecule_id:concentration
+							 for molecule_id, concentration in exchange_molecules.items()
+							 if concentration >= self.import_constraint_threshold}
 
 		for molecule_id, concentration in nonzero_molecules.iteritems():
 
@@ -716,7 +857,7 @@ class Boundary(object):
 			if molecule_id != 'GLC[p]' and concentration == 0:
 				continue
 
-			elif concentration < IMPORT_CONSTRAINT_THRESHOLD:
+			elif concentration < self.import_constraint_threshold:
 				importConstrainedExchangeMolecules[molecule_id] = 0 * (units.mmol / units.g / units.h)
 
 			# The logic below is used to change GLC's upper bound flux based on what nutrients are present in the environment.

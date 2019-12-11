@@ -26,6 +26,9 @@ class MoleculeIds(object):
 			'LPS': 'CPD0-939[c]',
 			'murein': 'CPD-12261[p]',
 			'glycogen': 'glycogen-monomer[c]',
+			'ppGpp': 'GUANOSINE-5DP-3DP[c]',
+			'RelA': 'RELA-MONOMER[c]',
+			'SpoT': 'SPOT-MONOMER[c]',
 		}
 
 		self.__dict__.update(moleculeIds)

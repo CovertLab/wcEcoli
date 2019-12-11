@@ -17,6 +17,7 @@ from wholecell.utils import units
 from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWithPrebuiltMatrices
 
 from wholecell.sim.divide_cell import load_inherited_state
+from models.ecoli.processes.polypeptide_elongation import SteadyStateElongationModel
 
 RAND_MAX = 2**31
 
@@ -46,7 +47,8 @@ def calcInitialConditions(sim, sim_data):
 	# Must be called after unique and bulk molecules are initialized to get
 	# concentrations for ribosomes, tRNA, synthetases etc from cell volume
 	if sim._trna_charging:
-		initialize_trna_charging(sim_data, sim.internal_states, sim.processes['PolypeptideElongation'].calculate_trna_charging)
+		elongation_model = SteadyStateElongationModel(sim_data, sim.processes['PolypeptideElongation'])
+		initialize_trna_charging(sim_data, sim.internal_states, elongation_model.calculate_trna_charging)
 
 def initializeBulkMolecules(bulkMolCntr, sim_data, current_media_id, randomState, massCoeff):
 
@@ -193,14 +195,16 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff):
 # TODO: remove checks for zero concentrations (change to assertion)
 # TODO: move any rescaling logic to KB/fitting
 def initializeSmallMolecules(bulkMolCntr, sim_data, current_media_id, randomState, massCoeff):
-	avgCellFractionMass = sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])
+	doubling_time = sim_data.conditionToDoublingTime[sim_data.condition]
+	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time)
 
 	mass = massCoeff * (avgCellFractionMass["proteinMass"] + avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"]) / sim_data.mass.avgCellToInitialCellConvFactor
 
 	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
 		current_media_id
 		)
-	concDict.update(sim_data.mass.getBiomassAsConcentrations(sim_data.conditionToDoublingTime[sim_data.condition]))
+	concDict.update(sim_data.mass.getBiomassAsConcentrations(doubling_time))
+	concDict[sim_data.moleculeIds.ppGpp] = sim_data.growthRateParameters.getppGppConc(doubling_time)
 	moleculeIds = sorted(concDict)
 	moleculeConcentrations = (units.mol / units.L) * np.array([concDict[key].asNumber(units.mol / units.L) for key in moleculeIds])
 
@@ -491,7 +495,8 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# Get attributes of promoters
 	promoters = uniqueMolCntr.objectsInCollection("promoter")
 	n_promoters = len(promoters)
-	TU_index, bound_TF = promoters.attrs("TU_index", "bound_TF")
+	TU_index, bound_TF, domain_index_promoters = promoters.attrs(
+		"TU_index", "bound_TF", "domain_index")
 
 	# Construct matrix that maps promoters to transcription units
 	TU_to_promoter = scipy.sparse.csr_matrix(
@@ -596,8 +601,9 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	n_initiations = randomState.multinomial(
 		rnaPolyToActivate, init_prob_normalized)
 
-	# RNA Indices
+	# Build list of transcription unit indexes and domain indexes for RNAPs
 	TU_index_rnap = np.repeat(TU_index, n_initiations)
+	domain_index_rnap = np.repeat(domain_index_promoters, n_initiations)
 
 	# Build list of starting coordinates and transcription directions
 	starting_coordinates = replication_coordinate[TU_index_rnap]
@@ -636,6 +642,7 @@ def initializeRNApolymerase(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	uniqueMolCntr.objectsNew(
 		'activeRnaPoly', rnaPolyToActivate,
 		TU_index=TU_index_rnap,
+		domain_index=domain_index_rnap,
 		transcript_length=updated_lengths,
 		coordinates=updated_coordinates,
 		direction=direction,

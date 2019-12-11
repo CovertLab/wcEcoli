@@ -28,7 +28,6 @@ import wholecell.views.view
 from wholecell.utils import units
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-from wholecell.utils.make_media import Media
 
 COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
@@ -64,7 +63,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		self._nAvogadro = sim_data.constants.nAvogadro
 
 		# make media object
-		make_media = Media()
+		make_media = sim_data.external_state.make_media
 
 		# if current_timeline_id is specified by a variant in sim_data, look it up in saved_timelines.
 		# else, construct the timeline given to initialize
@@ -76,12 +75,12 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 		self.saved_media = sim_data.external_state.environment.saved_media
 		self.current_media_id = self.current_timeline[0][1]
-		self.current_media = self.saved_media[self.current_media_id]
+		current_media = self.saved_media[self.current_media_id]
 		self._times = [t[0] for t in self.current_timeline]
 
 		# initialize molecule IDs and concentrations based on initial environment
-		self._moleculeIDs = [molecule_id for molecule_id, concentration in self.current_media.iteritems()]
-		self._concentrations = np.array([concentration for molecule_id, concentration in self.current_media.iteritems()])
+		self._moleculeIDs = [molecule_id for molecule_id, concentration in current_media.iteritems()]
+		self._concentrations = np.array([current_media[molecule_id] for molecule_id in self._moleculeIDs])
 		self._env_delta_counts = dict((molecule_id, 0) for molecule_id in self._moleculeIDs)
 
 		# create bulk container for molecule concentrations. This uses concentrations instead of counts.
@@ -99,7 +98,8 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 		if self.current_media_id != self.current_timeline[current_index][1]:
 			self.current_media_id = self.current_timeline[current_index][1]
-			self._concentrations = np.array([concentration for id, concentration in self.saved_media[self.current_media_id].iteritems()])
+			current_media = self.saved_media[self.current_media_id]
+			self._concentrations = np.array([current_media[molecule_id] for molecule_id in self._moleculeIDs])
 			self.container.countsIs(self._concentrations)
 			print('update media: {}'.format(self.current_media_id))
 
@@ -193,10 +193,5 @@ class EnvironmentView(EnvironmentViewBase):
 
 
 	def countsInc(self, molecule_ids, counts):
-		# self._state._environment_deltas = counts
-
 		self._state.accumulate_deltas(molecule_ids, counts)
-		#TODO (Eran) save deltas for external environment dict(zip(molecule_ids, counts))
-		#TODO (Eran) deltas size varies because of changing importExchange.  This will need to be fixed for a listener to save these
-
 		return

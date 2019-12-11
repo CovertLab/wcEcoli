@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 
 '''
 Direct port of Bosdriesz from mathematica file
@@ -297,7 +297,7 @@ def parse():
 		help='Output filename for plot and sensitivity analysis (default: ppgpp)')
 	parser.add_argument('-s', '--shift', type=int, default=0,
 		help='Shift direction (0 (default): no shift, positive: upshift, negative: downshift)')
-	parser.add_argument('-m', '--method', default='adams',
+	parser.add_argument('-m', '--method', default='lsoda',
 		help='ODE solver method (adams (default, forward), bdf (backward), lsoda (adaptive)')
 	parser.add_argument('--order', type=int, default=2,
 		help='Order of solver method (default: 2), <= 12 for adams, <= 5 for bdf, not implemented for lsoda')

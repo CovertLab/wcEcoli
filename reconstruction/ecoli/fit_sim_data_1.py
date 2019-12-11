@@ -46,8 +46,11 @@ RNA_EXPRESSION_ADJUSTMENTS = {
 	}
 RNA_DEG_RATES_ADJUSTMENTS = {
 	"EG11493_RNA[c]": 2,  # pabC, aminodeoxychorismate lyase
+	"EG10709_RNA[c]": 2,  # pheS, phenylalanine synthetase subunit; for tRNA charging in anaerobic condition
+	"EG10710_RNA[c]": 2,  # pheT, phenylalanine synthetase subunit; for tRNA charging in anaerobic condition
 	}
 PROTEIN_DEG_RATES_ADJUSTMENTS = {
+	"SPOT-MONOMER[c]": 2. / 600,  # SpoT, ppGpp phosphatase; convert from 2 min to 10 hr half life to better match expected protein counts
 	"EG12298-MONOMER[p]": 0.1, # yibQ, Predicted polysaccharide deacetylase; This protein is fit for the anaerobic condition
 	}
 
@@ -279,6 +282,7 @@ def fitSimData_1(
 				sim_data.process.translation.ribosomeFractionActiveDict[nutrients] = frac
 
 	calculateRnapRecruitment(sim_data, rVector)
+	sim_data.process.metabolism.set_supply_constants(sim_data)
 
 	return sim_data
 
