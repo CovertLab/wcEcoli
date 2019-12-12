@@ -143,7 +143,7 @@ class Transcription(object):
 		Build RNA-associated simulation data from raw data.
 		"""
 
-		self._basal_rna_fractions = sim_data.mass.get_basal_rna_fractions
+		self._basal_rna_fractions = sim_data.mass.get_basal_rna_fractions()
 
 		assert all([len(rna['location']) == 1 for rna in raw_data.rnas])
 
