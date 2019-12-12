@@ -1090,6 +1090,8 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 		distribution_rRNA5S
 		)
 
+	# Mass weighted average rRNA count to set rRNA subunit counts equal to each
+	# other but keep the same expected total rRNA mass
 	mass_weighting_rRNA23S = individual_masses_rRNA23S * distribution_rRNA23S
 	mass_weighting_rRNA16S = individual_masses_rRNA16S * distribution_rRNA16S
 	mass_weighting_rRNA5S = individual_masses_rRNA5S * distribution_rRNA5S

@@ -150,6 +150,7 @@ class Mass(object):
 		Measured RNA subgroup mass fractions. Fractions should change in other
 		conditions with growth rate (see transcription.get_rna_fractions()).
 		"""
+
 		return {
 			'23S': self._rrna23s_mass_sub_fraction,
 			'16S': self._rrna16s_mass_sub_fraction,
