@@ -59,6 +59,10 @@ class Transcription(object):
 			val = d[k]
 			return 0 if val == '' else val
 
+		# Flag to check when ppGpp regulated expression has been set
+		# see set_ppgpp_expression()
+		self._ppgpp_expression_set = False
+
 		# Determine KM for ppGpp binding to RNAP
 		self._solve_ppgpp_km(raw_data, sim_data)
 
@@ -138,6 +142,9 @@ class Transcription(object):
 		"""
 		Build RNA-associated simulation data from raw data.
 		"""
+
+		self._basal_rna_fractions = sim_data.mass.get_basal_rna_fractions
+
 		assert all([len(rna['location']) == 1 for rna in raw_data.rnas])
 
 		# Loads RNA IDs, degradation rates, lengths, and nucleotide compositions
@@ -661,21 +668,33 @@ class Transcription(object):
 
 	def get_rna_fractions(self, ppgpp):
 		"""
-		Calculates expected RNA mass fractions based on ppGpp concentration.
+		Calculates expected RNA subgroup mass fractions based on ppGpp
+		concentration. If ppGpp expression has not been set yet, uses default
+		measured fractions.
 
+		Args:
+			ppgpp (float with or without mol / volume units): concentration of ppGpp,
+				if unitless, should represent the concentration of PPGPP_CONC_UNITS
 
+		Returns:
+			dict[str, float]: mass fraction for each subgroup mass, values sum to 1
 		"""
 
-		exp = self.expression_from_ppgpp(ppgpp)
-		mass = self.rnaData['mw'] * exp
-		mass = (mass / units.sum(mass)).asNumber()
-		return {
-			'23S': mass[self.rnaData['isRRna23S']].sum(),
-			'16S': mass[self.rnaData['isRRna16S']].sum(),
-			'5S': mass[self.rnaData['isRRna5S']].sum(),
-			'trna': mass[self.rnaData['isTRna']].sum(),
-			'mrna': mass[self.rnaData['isMRna']].sum(),
-			}
+		if self._ppgpp_expression_set:
+			exp = self.expression_from_ppgpp(ppgpp)
+			mass = self.rnaData['mw'] * exp
+			mass = (mass / units.sum(mass)).asNumber()
+			fractions =  {
+				'23S': mass[self.rnaData['isRRna23S']].sum(),
+				'16S': mass[self.rnaData['isRRna16S']].sum(),
+				'5S': mass[self.rnaData['isRRna5S']].sum(),
+				'trna': mass[self.rnaData['isTRna']].sum(),
+				'mrna': mass[self.rnaData['isMRna']].sum(),
+				}
+		else:
+			fractions = self._basal_rna_fractions
+
+		return fractions
 
 	def set_ppgpp_expression(self, sim_data):
 		"""
@@ -708,6 +727,8 @@ class Transcription(object):
 			/ (1 - 2**fcs * (f_ppgpp_aa - f_ppgpp_basal * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))))
 		self.exp_free = (exp - self.exp_ppgpp*f_ppgpp_basal) / (1 - f_ppgpp_basal)
 		self.exp_free[self.exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes
+
+		self._ppgpp_expression_set = True
 
 	def adjust_polymerizing_ppgpp_expression(self, sim_data):
 		"""

@@ -1006,7 +1006,6 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 
 	# Load from sim_data
 	n_avogadro = sim_data.constants.nAvogadro
-	initial_conversion = sim_data.mass.avgCellToInitialCellConvFactor
 	rna_data = sim_data.process.transcription.rnaData
 	get_average_copy_number = sim_data.process.replication.get_average_copy_number
 	rna_mw = rna_data['mw']
@@ -1027,12 +1026,10 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	ids_mRNA = ids_rnas[is_mRNA]
 
 	## Mass fractions
-	initial_rna_mass = sim_data.mass.getFractionMass(doubling_time)['rnaMass'] / initial_conversion
-	if doubling_time == sim_data.conditionToDoublingTime['basal']:
-		rna_fractions = sim_data.mass.get_basal_rna_fractions()
-	else:
-		ppgpp = sim_data.growthRateParameters.getppGppConc(doubling_time)
-		rna_fractions = sim_data.process.transcription.get_rna_fractions(ppgpp)
+	initial_rna_mass = (sim_data.mass.getFractionMass(doubling_time)['rnaMass']
+		/ sim_data.mass.avgCellToInitialCellConvFactor)
+	ppgpp = sim_data.growthRateParameters.getppGppConc(doubling_time)
+	rna_fractions = sim_data.process.transcription.get_rna_fractions(ppgpp)
 	total_mass_rRNA23S = initial_rna_mass * rna_fractions['23S']
 	total_mass_rRNA16S = initial_rna_mass * rna_fractions['16S']
 	total_mass_rRNA5S = initial_rna_mass * rna_fractions['5S']
