@@ -4,49 +4,57 @@ Plot voronoi diagram
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 09/27/2019
 
-Algorithm Reference: A. Nocaj and U. Brandes, "Computing voronoi Treemaps: Faster, Simpler, and 
-Resolution-independent, Computer Graphics Forum, vol. 31, no. 31, pp. 855-864, 2012. 
-Available: 10.1111/j.1467-8659.2012.03078.x.
+Algorithm Reference: A. Nocaj and U. Brandes, "Computing voronoi Treemaps:
+Faster, Simpler, and Resolution-independent, Computer Graphics Forum,
+vol. 31, no. 31, pp. 855-864, 2012. Available: 10.1111/j.1467-8659.2012.03078.x.
 
-This program generate a voronoi diagram, in which the canvas of a plot is divided in to n polygons.
-Each data point (or "Points" in this program) corresponds to one polygon, and the centroid of each
-polygon is called a "site". The area of each polygon is proportional to the value each point wants 
-to represent. For example, it can be the mass compositions of a cell, the relative abundance of 
-different proteins, or the energy cost of different cellular processes.
+This program generate a voronoi diagram, in which the canvas of a plot is
+divided in to n polygons. Each data point (or "Points" in this program)
+corresponds to one polygon, and the centroid of each polygon is called a "site".
+The area of each polygon is proportional to the value each point wants to
+represent. For example, it can be the mass compositions of a cell, the relative
+abundance of  different proteins, or the energy cost of different cellular
+processes.
 
-Dividing a canvas (in this program we use np.array([[0,0],[4,0],[4,4],[0,4]])) into multiple polygons
-is a complicated computational geometry problem. The main working horse of this task is the function
-"_voronoi_treemap". In "_voronoi_treemap", we did the following things:
-(1) initialize random sites within the canvas (using "random_points_in_canvas") and assign an initial
-weight to each site. The initial weights of each site are set equal so that it will be easier to 
-compute a draft.
-(2) compute the draft of our voronoi diagram, which is called "Power Diagram" following the notation
-of our algorithm reference. (using "_compute_power_diagram")
-(3) adjust the positions of each site and the weights of each site until the program reaches the
-maximum iterations (i_max = 75) or until error < err_thres.
+Dividing a canvas (in this program we use np.array([[0,0],[4,0],[4,4],[0,4]]))
+into multiple polygons is a complicated computational geometry problem. The main
+working horse of this task is the function "_voronoi_treemap".
+In "_voronoi_treemap", we did the following things:
+(1) initialize random sites within the canvas (using "random_points_in_canvas")
+and assign an initial weight to each site. The initial weights of each site are
+set equal so that it will be easier to compute a draft.
+(2) compute the draft of our voronoi diagram, which is called "Power Diagram"
+following the notation of our algorithm reference.
+(using "_compute_power_diagram")
+(3) adjust the positions of each site and the weights of each site until the
+program reaches the maximum iterations (i_max = 75) or until error < err_thres.
 (4) return the final error of the whole voronoi diagram.
 
-In voronoi diagram, certain amount of error in area representation is expected. According to the 
-analysis in our algorithm reference, an error between 5~23% is expected. However, an error up to 20%
-can severely distort the diagram. We therefore set a stricter limit (15%) on our error in the function
-"_voronoi_main_function". If the newly computed voronoi diagram has a lower error compared to the
-previous one, it will continuously increase the number of iterations until the error falls below 15%.
-However, if the error of a newly computed diagram is greater than the previous one, the program will
-plot the diagram all over again. Generally, a final error <=10% will give you a nice representation.
+In voronoi diagram, certain amount of error in area representation is expected.
+According to the analysis in our algorithm reference, an error between 5~23% is
+expected. However, an error up to 20% can severely distort the diagram. We
+therefore set a stricter limit (15%) on our error in the function
+"_voronoi_main_function". If the newly computed voronoi diagram has a lower
+error compared to the previous one, it will continuously increase the number of
+iterations until the error falls below 15%. However, if the error of a newly
+computed diagram is greater than the previous one, the program will plot the
+diagram all over again. Generally, a final error <=10% will give you a nice
+representation.
 
-Using this algorithm, the program is capable of dividing 32 polygons in 10 seconds, and the program 
-scales with O(n*log(n)). As a result, it would be preferable to introduce layered structure if the number
-of polygons are more than 50. To fulfill this need, we use function "_layered_voronoi" to accomplish this
-need.
+Using this algorithm, the program is capable of dividing 32 polygons in 10
+seconds, and the program scales with O(n*log(n)). As a result, it would be
+preferable to introduce layered structure if the number of polygons are more
+than 50.
 
-If you want to implement the functions that are created here and make a new voronoi plot with your own
-data, please read the following instructions:
-(1)Place this in the heading, or other ways that can import every function in this file.
+If you want to implement the functions that are created here and make a new
+voronoi plot with your own data, please read the following instructions:
+(1)Place this in the heading, or other ways that can import every function in
+this file.
 from wholecell.utils.voronoiPlotMain import VoronoiMaster
 
 (2)Copy the following code and modify it appropriately:
 vm = VoronoiMaster()
-vm.layered_voronoi_master(dic, title = "YOUR TITLE")
+vm.plot("YOUR DICTIONARY", title = "YOUR TITLE")
 exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 plt.close("all")
 
@@ -59,7 +67,6 @@ from scipy.spatial import ConvexHull
 from matplotlib.patches import Circle, Wedge, Polygon
 from matplotlib.collections import PatchCollection
 import matplotlib.pyplot as plt
-import time
 
 
 COLORS_256 = [
@@ -75,19 +82,62 @@ COLORS_256 = [
 COLORS = [[colorValue/255. for colorValue in color] for color in COLORS_256]
 
 
+def angle(v1, v2):
+    def dot_product(v1, v2):
+        return sum((a * b) for a, b in zip(v1, v2))
+
+    cosine = dot_product(v1, v2) / (
+            math.hypot(v1[0], v1[1]) * math.hypot(v2[0], v2[1]))
+    if (cosine > 1) or (cosine < -1):
+        return 100
+    else:
+        return math.acos(cosine)
+
+def is_on_segment(p, edge):
+    """
+    Determine whether a point is on a segment by checking if Ax+By-C == 0
+    and falls between the two corners which define the edge.
+    """
+    [[x1, y1], [x2, y2]] = edge
+    [x, y] = p
+    # convert to ax + by = c
+    a = (y2 - y1)
+    b = - (x2 - x1)
+    c = x1*(y2 - y1) - y1*(x2 - x1)
+    if (a**2 + b**2) == 0:
+        result = (x == x1) and (y == y1)
+
+    else:
+        test = (a*x + b*y - c)
+        if int(test*(10**9))/(10.**9) == 0:
+            x = int(x*(10**9) + 0.5)/(10.**9)
+            x1 = int(x1*(10**9) + 0.5)/(10.**9)
+            x2 = int(x2*(10**9) + 0.5)/(10.**9)
+            y = int(y*(10**9) + 0.5)/(10.**9)
+            y1 = int(y1*(10**9) + 0.5)/(10.**9)
+            y2 = int(y2*(10**9) + 0.5)/(10.**9)
+            result = ((x >= min(x1, x2)) and (x <= max(x1, x2))
+                and (y >= min(y1, y2)) and (y <= max(y1, y2)))
+        else:
+            result = False
+
+    return result
+
 class PolygonClass(object):
     def __init__(self, xy):
         '''
-        A polygon object stores the coordinates of the corners, the edges, and the area of the polygon.
+        A polygon object stores the coordinates of the corners, the edges, and
+        the area of the polygon.
         '''
         def _reorder_points(corners):
             """
-            This function reorders the corners of a polygon in a counterclockwise manner.
-            The input should be a numpy array of nx2.
+            This function reorders the corners of a polygon in a
+            counterclockwise manner. The input should be a numpy array of nx2.
             """
             ordered_points = corners
             com = ordered_points.mean(axis = 0) # find center of mass
-            ordered_points = ordered_points[np.argsort(np.arctan2((ordered_points - com)[:, 1], 
+            ordered_points = ordered_points[
+                np.argsort(np.arctan2((ordered_points - com)[:, 1],
                 (ordered_points - com)[:, 0]))]
             return ordered_points
 
@@ -101,7 +151,8 @@ class PolygonClass(object):
     def _polygon_area(self, corners):
         """
         Calculate polygon area using shoelace formula.
-        Please make sure that the corners are reordered before calling polygon_area function!
+        Please make sure that the corners are reordered before calling
+        _polygon_area function!
         """
         n = len(corners)
         area = 0.0
@@ -114,7 +165,8 @@ class PolygonClass(object):
 
     def random_points_in_canvas(self, n_points):
         """
-        This function assigns n random points within the canvas. The algorithm is as followed:
+        This function assigns n random points within the canvas. The algorithm
+        is as followed:
         (1) divide the canvas into multiple triangels
         (2) weight each triangle according to the area
         (3) randomly placed points within the triangles
@@ -125,9 +177,11 @@ class PolygonClass(object):
         area_triangle = np.zeros(n_triangle)
 
         for i in range(n_triangle):
-            area_triangle[i] = self._polygon_area(np.vstack([[0, 0], vec_all[i], vec_all[i+1]]))
+            area_triangle[i] = self._polygon_area(
+                np.vstack([[0, 0], vec_all[i], vec_all[i+1]]))
         rand_scale = np.sum(np.tril(area_triangle), axis = 1)/sum(area_triangle)
-        rand_num = np.hstack([np.random.rand(n_points, 3), np.zeros([n_points, 1])])
+        rand_num = np.hstack(
+            [np.random.rand(n_points, 3), np.zeros([n_points, 1])])
 
         sites = np.zeros([n_points, 2])
         for i in range(n_triangle):
@@ -145,8 +199,9 @@ class PolygonClass(object):
 
     def point_is_within_canvas(self, p):
         """
-        Check if a point is within canvas by computing the sum of the angle formed by adjacent corners
-        and the point. If a point is within canvas, the sum of the angle should be 2*pi.
+        Check if a point is within canvas by computing the sum of the angle
+        formed by adjacent corners and the point. If a point is within canvas,
+        the sum of the angle should be 2*pi.
         """
         def _point_is_on_corner_of_canvas(self, p):
             """
@@ -163,7 +218,7 @@ class PolygonClass(object):
             sum_angle = 0
             for edge_canvas in self.edges:
                 a = edge_canvas - p
-                sum_angle += vm.angle(a[0, :], a[1, :])
+                sum_angle += angle(a[0, :], a[1, :])
 
             if not math.isnan(sum_angle):
                 result = int((sum_angle - 2*math.pi)*(10**9))/(10.**9) == 0
@@ -178,7 +233,8 @@ class PolygonClass(object):
         """
         def _find_min_dist_to_edge(site, edge):
             """
-            find the minimum distance of the site to one specific edge of a polygon.
+            find the minimum distance of the site to one specific edge of a
+            polygon.
             """
             [[x1, y1],[x2, y2]] = edge
             [xs, ys] = site
@@ -189,7 +245,7 @@ class PolygonClass(object):
             dist_perp = abs(a*xs + b*ys + c)/math.sqrt(a**2 + b**2)
             xp = (b*(b*xs - a*ys) - a*c)/(a**2 + b**2)
             yp = (a*(- b*xs + a*ys) - b*c)/(a**2 + b**2)
-            if vm.is_on_segment([xp, yp], edge):
+            if is_on_segment([xp, yp], edge):
                 min_dist = dist_perp
 
             else:
@@ -207,8 +263,9 @@ class PolygonClass(object):
 class VoronoiClass(object):
     def __init__(self, polygons, sites, weights, values, canvas_obj):
         '''
-        A voronoi object stores all the polygons of a voronoi diagram, the coordinates/weights/values
-        of each site, and the canvas of the whole plot.
+        A voronoi object stores all the polygons of a voronoi diagram, the
+        coordinates/weights/values of each site, and the canvas of the whole
+        plot.
         '''
         self.polygons = polygons
         self.n_sites = len(polygons)
@@ -219,9 +276,10 @@ class VoronoiClass(object):
 
     def find_sites_causing_displacement(self):
         """
-        If a site need to expand its area greatly in the next round, the other sites surrounding
-        it should be displaced a little bit in order to facilitate the process of optimizing the 
-        voronoi diagram. This is part of the speed-up heuristic.
+        If a site need to expand its area greatly in the next round, the other
+        sites surrounding it should be displaced a little bit in order to
+        facilitate the process of optimizing the voronoi diagram. This is part
+        of the speed-up heuristic.
         """
         self.sites_area_ratio = [[] for _ in range(self.n_sites)]
         self.move_me = [True for _ in range(self.n_sites)]
@@ -248,56 +306,66 @@ class VoronoiClass(object):
 
     def adapt_positions_weights(self):
         """
-        Adapt the positions and weights of each site within an existing voronoi diagram.
-        This algorithm also considers the point with largest Area_{target}/Area_{current} ratio
-        and displace its neighbor in order to speed up the optimization process.
+        Adapt the positions and weights of each site within an existing voronoi
+        diagram. This algorithm also considers the point with largest
+        Area_{target}/Area_{current} ratio and displace its neighbor in order to
+        speed up the optimization process.
         """
 
-        # 1. move the location of each site to the centroid of each polygon. If there is no closed
-        # polygon for that site, randomly reassign a location for that site in order to rescue it.
+        # 1. move the location of each site to the centroid of each polygon.
+        # If there is no closed polygon for that site, randomly reassign a
+        # location for that site in order to rescue it.
         for i in range(self.n_sites):
             if not self.polygons[i]: #rescue the sites
                 self.sites[i, :] = self.canvas_obj.random_points_in_canvas(1)
                 self.weights[i] = self.canvas_obj.area/self.n_sites
 
             else: # adapt the position to the centroid
-                self.sites[i, :] = (self.polygons[i].xy).mean(axis = 0)
+                self.sites[i, :] = self.polygons[i].xy.mean(axis = 0)
 
-        # 2. speed up heuristic: if a site is expected to expand its area greatly, its neighbor 
-        # should be displaced in advance in order to speed up the optimization process. 
+        # 2. speed up heuristic: if a site is expected to expand its area
+        # greatly, its neighbor should be displaced in advance in order to speed
+        # up the optimization process.
         for i in range(self.n_sites):
             if self.polygons[i]:
                 if self.move_me[i]: #speed-up heuristic#
-                    dist_vec = self.sites[i, :] - self.sites[self.site_causing_disp, :]
+                    dist_vec = (self.sites[i, :]
+                                - self.sites[self.site_causing_disp, :])
                     dist_abs = math.sqrt(dist_vec[0]**2 + dist_vec[1]**2)
                     if dist_abs > 0:
-                        ds_abs = (math.sqrt(self.polygons[i].area/math.pi))**2/(5*dist_abs)
+                        ds_abs = (math.sqrt(
+                            self.polygons[i].area/math.pi))**2/(5*dist_abs)
                         site_new = self.sites[i, :] + dist_vec*ds_abs/dist_abs
                         if self.polygons[i].point_is_within_canvas(site_new):
                             self.sites[i, :] = site_new
 
-        # 3. if the square root of weights exceed the minimum distance from the site to the current border
-        # of the polygon, the weight should be decreased. 
-                distance_border = self.polygons[i].find_min_dist_to_border(self.sites[i, :])
-                self.weights[i] = (np.nanmin([math.sqrt(self.weights[i]), distance_border]))**2
+        # 3. if the square root of weights exceed the minimum distance from the
+        # site to the current border of the polygon, the weight should be
+        # decreased.
+                distance_border = self.polygons[i].find_min_dist_to_border(
+                    self.sites[i, :])
+                self.weights[i] = (
+                    np.nanmin([math.sqrt(self.weights[i]), distance_border]))**2
 
         return
 
     def adapt_weights(self):
         """
-        Adapt the weight of each site. increase the weight if current area is different from the targeted
-        area of each site. However, if the weight is too big such that the site is encroaching its neighbor,
-        The weight should be decreased.
+        Adapt the weight of each site. increase the weight if current area is
+        different from the targeted area of each site. However, if the weight is
+        too big such that the site is encroaching its neighbor, the weight
+        should be decreased.
         """
 
         def _nearest_neighbor(self):
             """
-            find the nearest neighbor of each site and return the DISTANCE (rather than the index) between
-            each site and its nearest neighbor
+            find the nearest neighbor of each site and return the DISTANCE
+            (rather than the index) between each site and its nearest neighbor
             """
-            nn_dist = np.nanmin(
-                distance_matrix(self.sites, self.sites) + np.diag([np.nan]*self.n_sites), axis = 0)
-            return nn_dist
+            nn_dist_cal = np.nanmin(
+                distance_matrix(self.sites, self.sites)
+                + np.diag([np.nan]*self.n_sites), axis = 0)
+            return nn_dist_cal
 
         nn_dist = _nearest_neighbor(self)
         epsilon = self.canvas_obj.area/1000 # minimum weight of each site
@@ -328,7 +396,7 @@ class VoronoiClass(object):
             if not self.polygons[i]: # rescue the sites if the polygon is empty
                 self.sites[i, :] = self.canvas_obj.random_points_in_canvas(1)
                 self.weights[i] = self.canvas_obj.area/self.n_sites
-                error += 100
+                error += np.inf
             else:
                 error += abs(self.polygons[i].area - 
                     self.canvas_obj.area*self.values[i]/total_value)
@@ -338,8 +406,9 @@ class VoronoiClass(object):
 class LineClass(object):
     def __init__(self, x_col, y_col, weights):
         '''
-        A line object store the information of a line in this format of "dx + ey = f"
-        using formula : 2(x1-x2)x + 2(y1-y2)y = (x1^2+y1^2-w1) - (x2^2+y2^2-w2)
+        A line object store the information of a line in this format of
+        "dx + ey = f", using formula:
+        2(x1-x2)x + 2(y1-y2)y = (x1^2+y1^2-w1) - (x2^2+y2^2-w2)
         '''
         [[x1], [x2]] = x_col
         [[y1], [y2]] = y_col
@@ -366,7 +435,8 @@ class LineClass(object):
             det_x = c*self.e - self.f*b
             det_y = a*self.f - c*self.d 
 
-            # if their slopes are the same but they don't intersect, they are parallel
+            # if their slopes are the same but they don't intersect,
+            # they are parallel
             if det == 0:
                 if (det_x == 0) and (det_y == 0):
                     result = True
@@ -377,7 +447,7 @@ class LineClass(object):
             else:
                 x_int = det_x/det
                 y_int = det_y/det
-                if vm.is_on_segment([x_int, y_int], edge_canvas):
+                if is_on_segment([x_int, y_int], edge_canvas):
                     result = True
                     intersect_point = np.array([x_int, y_int])
                 else:
@@ -396,13 +466,16 @@ class LineClass(object):
                     if len(intersect_coordinates) == 0:
                         intersect_coordinates = intersect_point
                     else:
-                        intersect_coordinates = np.vstack([intersect_coordinates, intersect_point])
+                        intersect_coordinates = np.vstack(
+                            [intersect_coordinates, intersect_point])
 
         edge = []
         if len(intersect_coordinates) > 0:
             intersect_coordinates = intersect_coordinates.reshape((-1, 2))
-            intersect_coordinates = (intersect_coordinates*(10**9)).astype(int)/(10.**9)
-            unique_intersect_coordinate = np.unique(intersect_coordinates, axis = 0)
+            intersect_coordinates = (
+                            intersect_coordinates*(10**9)).astype(int)/(10.**9)
+            unique_intersect_coordinate = np.unique(
+                intersect_coordinates, axis = 0)
             if len(unique_intersect_coordinate) == 2:
                 edge = unique_intersect_coordinate
 
@@ -411,8 +484,8 @@ class LineClass(object):
 class RayClass(object):
     def __init__(self, origin, tangent, main_sites, adjunct_site):
         '''
-        A ray object stores the origin and the tangent vector of a ray, and the site it represents.
-        It is store in this format:
+        A ray object stores the origin and the tangent vector of a ray, and
+        the site it represents. It is store in this format:
         ~ origin + a*tangent, a>=0
         ~ a_r*x + b_r*y + c_r = 0
         ~ t_y*x - t_x*y + (t_x*y_int - t_y*x_int) = 0
@@ -427,8 +500,9 @@ class RayClass(object):
 
     def is_on_ray(self, p):
         """
-        Determine whether a point is on a ray by checking if Ax+By-C == 0 and its relative position with
-        respect to the origin is on the same direction as the tangent vector of the ray.
+        Determine whether a point is on a ray by checking if Ax+By-C == 0 and
+        its relative position with respect to the origin is on the same
+        direction as the tangent vector of the ray.
         """
         t_x = self.tangent[0]
         t_y = self.tangent[1]
@@ -469,12 +543,12 @@ class RayClass(object):
             else: # (det == 0) and (det_x == 0) and (det_y == 0)
                 p1_is_on_ray = self.is_on_ray(p1)
                 p2_is_on_ray = self.is_on_ray(p2)
-                origin_is_on_seg = vm.is_on_segment(self.origin, edge_canvas)
                 if p1_is_on_ray and p2_is_on_ray:
                     result = True
                     intersect_point = [np.inf]
                 elif p1_is_on_ray != p2_is_on_ray:
-                    if np.array_equal(p1, self.origin) or np.array_equal(p2, self.origin):
+                    if (np.array_equal(p1, self.origin)
+                        or np.array_equal(p2, self.origin)):
                         result = True
                         intersect_point = (p1*np.array_equal(p1, self.origin) 
                             + p2*np.array_equal(p2, self.origin))
@@ -487,13 +561,10 @@ class RayClass(object):
         else:
             x_int = det_x/det
             y_int = det_y/det
-            if vm.is_on_segment([x_int, y_int], edge_canvas):
-                if self.is_on_ray(np.array([x_int, y_int])):
-                    result = True
-                    intersect_point = np.array([x_int, y_int])
-                else:
-                    result = False 
-                    intersect_point = []
+            if (is_on_segment([x_int, y_int], edge_canvas)
+                    and self.is_on_ray(np.array([x_int, y_int]))):
+                result = True
+                intersect_point = np.array([x_int, y_int])
             else:
                 result = False
                 intersect_point = []
@@ -507,16 +578,18 @@ class RayClass(object):
         """
         n_candidates = len(intersect_coordinates)
         # find candidates with shortest distance from the origin
-        dist = np.sum((intersect_coordinates - np.tile(self.origin,(n_candidates, 1)))**2, axis = 1)
+        dist = np.sum((intersect_coordinates
+                       - np.tile(self.origin,(n_candidates, 1)))**2, axis = 1)
         dist = (dist*(10**9)).astype(int)/(10.**9)
-        dist[dist == 0] = np.inf # avoid the intersection point that is the origin itself
+        # avoid the intersection point that is the origin itself
+        dist[dist == 0] = np.inf
         intersect_coordinates = intersect_coordinates[np.argmin(dist), :]
         return intersect_coordinates
 
     def find_ray_intersect_with_canvas(self, canvas_obj):
         """
-        This function finc the point where a ray object is intersected with canvas by checking the 
-        intersection with every edge of the canvas.
+        This function finc the point where a ray object is intersected with
+        canvas by checking the intersection with every edge of the canvas.
         """
         intersect_TF_list = []
         intersect_coordinates = []
@@ -528,25 +601,30 @@ class RayClass(object):
                     if len(intersect_coordinates) == 0:
                         intersect_coordinates = intersect_point
                     else:
-                        intersect_coordinates = np.vstack([intersect_coordinates, intersect_point])
+                        intersect_coordinates = np.vstack(
+                            [intersect_coordinates, intersect_point])
 
         if len(intersect_coordinates) == 0:
             intersect_coordinates = self.origin
         else:
-            intersect_coordinates = np.vstack([intersect_coordinates, self.origin])
+            intersect_coordinates = np.vstack(
+                [intersect_coordinates, self.origin])
 
         edge = []
         if len(intersect_coordinates) > 0:
             intersect_coordinates = intersect_coordinates.reshape((-1, 2))
-            intersect_coordinates = (intersect_coordinates*(10**9)).astype(int)/(10.**9)
-            unique_intersect_coordinate = np.unique(intersect_coordinates, axis = 0)
+            intersect_coordinates = (
+                            intersect_coordinates*(10**9)).astype(int)/(10.**9)
+            unique_intersect_coordinate = np.unique(
+                intersect_coordinates, axis = 0)
             if len(unique_intersect_coordinate) == 2:
                 edge = unique_intersect_coordinate
 
         self.edge = edge
         return
 
-    def find_ray_intersect_with_canvas_and_ipoints(self, canvas_obj, ipoints, simplices_prune):
+    def find_ray_intersect_with_canvas_and_ipoints(self, canvas_obj, ipoints,
+                                                   simplices_prune):
         """
         This function finds the terminal of each ray object.
         """
@@ -565,39 +643,47 @@ class RayClass(object):
                 if len(intersect_coordinates) == 0:
                     intersect_coordinates = ipoint
                 else:
-                    intersect_coordinates = np.vstack([intersect_coordinates, ipoint])
+                    intersect_coordinates = np.vstack(
+                        [intersect_coordinates, ipoint])
 
-        # 2. if the ray is not intersected with any ipoints, find its intersection with canvas
+        # 2. if the ray is not intersected with any ipoints, find its
+        # intersection with canvas
         if len(intersect_coordinates) == 0:
             intersect_TF_list = []
             for edge_canvas in canvas_obj.edges:
-                result, intersect_point = self.ray_intersect_with_edge(edge_canvas)
+                result, intersect_point = self.ray_intersect_with_edge(
+                    edge_canvas)
                 intersect_TF_list.append(result)
                 if result == True :
                     if len(intersect_point) == 2 :
                         if len(intersect_coordinates) == 0:
                             intersect_coordinates = intersect_point
                         else:
-                            intersect_coordinates = np.vstack([intersect_coordinates, intersect_point])
+                            intersect_coordinates = np.vstack(
+                                [intersect_coordinates, intersect_point])
 
         # 3. only keep the nearest point to the origin of that ray
         if len(intersect_coordinates) > 0:
             intersect_coordinates = intersect_coordinates.reshape((-1, 2))
         if len(intersect_coordinates) > 1:
-            intersect_coordinates = self.keep_nearest_point_on_ray(intersect_coordinates)
+            intersect_coordinates = self.keep_nearest_point_on_ray(
+                intersect_coordinates)
 
         # 4. append origin and create an edge
         if len(intersect_coordinates) == 0:
             intersect_coordinates = self.origin
         else:
-            intersect_coordinates = np.vstack([intersect_coordinates, self.origin])
+            intersect_coordinates = np.vstack(
+                [intersect_coordinates, self.origin])
 
         # 5. round and leave only the unique point
         intersect_coordinates = intersect_coordinates.reshape((-1, 2))
         edge = []
         if len(intersect_coordinates) > 0:
-            intersect_coordinates = (intersect_coordinates*(10**9)).astype(int)/(10.**9)
-            unique_intersect_coordinate = np.unique(intersect_coordinates, axis = 0)
+            intersect_coordinates = (
+                            intersect_coordinates*(10**9)).astype(int)/(10.**9)
+            unique_intersect_coordinate = np.unique(
+                intersect_coordinates, axis = 0)
             if len(unique_intersect_coordinate) == 2:
                 edge = unique_intersect_coordinate
 
@@ -610,69 +696,124 @@ class VoronoiMaster():
         self.err_thres = err_thres
 
     def plot(self, dic, side_length = (4, 4), custom_shape_vertices = None,
-             font_size = 8, title = "Biomass components"):
+             font_size = 8, title = None, ax_shape = None, chained = None):
         '''
-        Master function of generating layered or non-layered voronoi plot from a dictionary.
+        Master function of generating layered or non-layered voronoi plot from a
+        dictionary.
         gross_error = \sum_{i} |Area(i) - Expected Area(i)|
         error_all = \sum_{i} |Area(i) - Expected Area(i)|/(2 * total area)
-        The factor 2 in the error formula is to correct the repeated calculation in area error.
+        The factor 2 in the error formula is to correct the repeated calculation
+        in area error.
         Args:
-            dic: Layered dictionary which contains the labels and the values you intend to represent
-                in a voronoi diagram. This can be a single dictionary or a tuple of 2 dictionary.
-            side_length: The side length of whole voronoi diagram. The whole diagram is defaulted to
-                be rectangular.
-            custom_shape_vertices: If you want a custom shaped voronoi diagram, enter the vertices of
-                the voronoi diagram in a nested np array like this:
-                np.array([[0, 0], [4, 0], [4, 1], [1.5, 3], [0, 2]])
-                The shape of the whole voronoi diagram will then become a pentagon with vertices [0, 0]
-                , [4, 0], [4, 1], [1.5, 3], [0, 2].
+            dic: Layered dictionary which contains the labels and the values you
+                intend to represent in a voronoi diagram. This can be a single
+                dictionary or multiple dictionaries in a nested list. The shape
+                of the list should be the same as the layout of the subplots.
+            side_length: The side length of whole voronoi diagram. The whole
+                diagram is defaulted to be rectangular.
+            custom_shape_vertices: If you want a custom shaped voronoi diagram,
+                enter the vertices of the voronoi diagram in a nested np array
+                like this: np.array([[0, 0], [4, 0], [4, 1], [1.5, 3], [0, 2]])
+                The shape of the whole voronoi diagram will then become a
+                pentagon with vertices [0, 0], [4, 0], [4, 1], [1.5, 3], [0, 2].
             font_size: The font size of the labeling on the voronoi diagram.
-            title: The title of the plot. This can be a single title or a tuple of 2 titles.
+            title: The title of the plot. This can be a single title or a nested
+                list of titles.
+            ax_shape: the shape of the subplot, in (nrows, ncols)
+            chained: whether the new subplot should be based on the previous
+                subplot or not.
 
         Returns:
             error_all: the error in total area representation.
         '''
-        if isinstance(dic, tuple):
-            dic_init, dic_final = dic
-            voronoi_list_init, polygon_value_list_init, label_site_list_init = self._compute_boundaries(
-                dic_init, side_length, custom_shape_vertices)
-            voronoi_list_final, polygon_value_list_final, label_site_list_final = self._compute_boundaries(
-                dic_final, side_length, custom_shape_vertices)
-            fig, axes = plt.subplots(nrows = 1, ncols = 2,
-                               figsize = (2*side_length[0], side_length[1] + 1), dpi = 200)
+        if ax_shape is not None:
+            error_all = []
+            nrows, ncols = ax_shape
+            fig, axes = plt.subplots(
+                nrows=nrows, ncols=ncols,
+                figsize = (ncols*side_length[0], nrows*side_length[1]+1),
+                dpi=200)
+            axes = axes.reshape(ax_shape)
             plt.tight_layout()
+            for i in range(nrows):
+                for j in range(ncols):
+                    if i == 0 and j == 0:
+                        dic_current = dic[i][j]
+                        voronoi_list_old, polygon_value_list_old, \
+                        label_site_list_old = self._compute_boundaries(
+                            dic_current, side_length, custom_shape_vertices)
+                        axes[i][j].set_aspect('equal')
+                        axes[i][j].axis('off')
+                        axes[i][j].title.set_text(title[i][j])
 
-            axes[0].set_aspect('equal')
-            axes[0].axis('off')
-            axes[0].title.set_text(title[0])
-            self._generate_plot(voronoi_list_init, axes[0])
-            total_value_init = sum(voronoi_list_init[0].values)
-            total_area_init = voronoi_list_init[0].canvas_obj.area
-            self._add_labels(label_site_list_init, font_size, axes[0])
-            gross_error_init = self._compute_error(polygon_value_list_init, total_value_init, total_area_init)
-            error_all_init = gross_error_init / (2 * voronoi_list_init[0].canvas_obj.area)
-            print('The error in the area representation of the whole voronoi diagram (initial): %.4f'
-                  % (error_all_init,))
+                        self._generate_plot(voronoi_list_old, axes[i][j])
+                        total_value_old = sum(voronoi_list_old[0].values)
+                        total_area_old = voronoi_list_old[0].canvas_obj.area
+                        self._add_labels(
+                            label_site_list_old, font_size, axes[i][j])
+                        gross_error_old = self._compute_error(
+                            polygon_value_list_old, total_value_old, total_area_old)
+                        error_all_old = gross_error_old / (
+                                2 * voronoi_list_old[0].canvas_obj.area)
+                        print('The error in the area representation of the whole '
+                              'voronoi diagram (0, 0): %.4f' % (error_all_old,))
+                        error_all.append(error_all_old)
+                    else:
+                        if chained is None:
+                            dic_current = dic[i][j]
+                            voronoi_list_old, polygon_value_list_old, \
+                            label_site_list_old = self._compute_boundaries(
+                                dic_current, side_length, custom_shape_vertices)
+                            axes[i][j].set_aspect('equal')
+                            axes[i][j].axis('off')
+                            axes[i][j].title.set_text(title[i][j])
 
-            axes[1].set_aspect('equal')
-            axes[1].axis('off')
-            axes[1].title.set_text(title[1])
-            self._generate_plot(voronoi_list_final, axes[1])
-            total_value_final = sum(voronoi_list_final[0].values)
-            total_area_final = voronoi_list_final[0].canvas_obj.area
-            self._add_labels(label_site_list_final, font_size, axes[1])
-            gross_error_final = self._compute_error(polygon_value_list_final, total_value_final, total_area_final)
-            error_all_final = gross_error_final / (2 * voronoi_list_final[0].canvas_obj.area)
-            print('The error in the area representation of the whole voronoi diagram (final): %.4f'
-                  % (error_all_final,))
+                            self._generate_plot(voronoi_list_old, axes[i][j])
+                            total_value_old = sum(voronoi_list_old[0].values)
+                            total_area_old = voronoi_list_old[0].canvas_obj.area
+                            self._add_labels(
+                                label_site_list_old, font_size, axes[i][j])
+                            gross_error_old = self._compute_error(
+                                polygon_value_list_old, total_value_old,
+                                total_area_old)
+                            error_all_old = gross_error_old / (
+                                    2 * voronoi_list_old[0].canvas_obj.area)
+                            print('The error in the area representation of the '
+                                  'whole voronoi diagram (%i, %i): %.4f'
+                                  % (i, j, error_all_old,))
+                            error_all.append(error_all_old)
+                        else:
+                            dic_current = dic[i][j]
+                            voronoi_list_new, polygon_value_list_new, \
+                            label_site_list_new = self._compute_boundaries_chained(
+                                dic_current, voronoi_list_old, side_length,
+                                custom_shape_vertices)
+                            axes[i][j].set_aspect('equal')
+                            axes[i][j].axis('off')
+                            axes[i][j].title.set_text(title[i][j])
 
-            error_all = (error_all_init, error_all_final)
-
+                            self._generate_plot(voronoi_list_new, axes[i][j])
+                            total_value_new = sum(voronoi_list_new[0].values)
+                            total_area_new = voronoi_list_new[0].canvas_obj.area
+                            self._add_labels(
+                                label_site_list_new, font_size, axes[i][j])
+                            gross_error_new = self._compute_error(
+                                polygon_value_list_new, total_value_new,
+                                total_area_new)
+                            error_all_new = gross_error_new / (
+                                    2 * voronoi_list_new[0].canvas_obj.area)
+                            print('The error in the area representation of the '
+                                  'whole voronoi diagram (%i, %i): %.4f'
+                                  % (i, j, error_all_new,))
+                            error_all.append(error_all_new)
+                            voronoi_list_old = voronoi_list_new
         else:
-            voronoi_list, polygon_value_list, label_site_list = self._compute_boundaries(
+            voronoi_list, polygon_value_list, \
+            label_site_list = self._compute_boundaries(
                 dic, side_length, custom_shape_vertices)
 
-            fig = plt.figure(figsize = (side_length[0], side_length[1] + 1), dpi = 200)
+            fig = plt.figure(figsize=(side_length[0], side_length[1] + 1),
+                             dpi=200)
             ax = fig.add_axes([0, 0, 1, 1])
             ax.set_aspect('equal')
             plt.axis('off')
@@ -682,20 +823,23 @@ class VoronoiMaster():
             total_area = voronoi_list[0].canvas_obj.area
 
             self._add_labels(label_site_list, font_size, ax)
-            gross_error = self._compute_error(polygon_value_list, total_value, total_area)
+            gross_error = self._compute_error(
+                polygon_value_list, total_value, total_area)
             error_all = gross_error / (2 * voronoi_list[0].canvas_obj.area)
-            print('The error in the area representation of the whole voronoi diagram: %.4f' % (error_all,))
+            print('The error in the area representation of the whole voronoi '
+                  'diagram: %.4f' % (error_all,))
             plt.title(title)
 
         return error_all
 
     def _generate_plot(self, voronoi_list, ax, counter = 0):
         """
-        Generate the layered voronoi diagram from the output of _layered_voronoi.
+        Generate the layered voronoi diagram.
         """
         for voronoi in voronoi_list:
             if isinstance(voronoi, list):
-                ax, counter = self._generate_plot(voronoi, ax, counter = counter + 1)
+                ax, counter = self._generate_plot(
+                    voronoi, ax, counter = counter + 1)
 
             else:
                 canvas_obj = voronoi.canvas_obj
@@ -703,7 +847,8 @@ class VoronoiMaster():
                 # plot canvas
                 for edge_canvas in canvas_obj.edges:
                     ax.plot(edge_canvas[:, 0], edge_canvas[:, 1],
-                            'black', lw = 1.5, solid_capstyle = 'round', zorder = 2)
+                            'black', lw = 1.5, solid_capstyle = 'round',
+                            zorder = 2)
 
                 # plot polygons
                 patches = []
@@ -731,8 +876,9 @@ class VoronoiMaster():
             if isinstance(element, list):
                 self._add_labels(element, font_size, ax)
             else:
-                ax.text(element[1][0], element[1][1], element[0], fontsize = font_size,
-                         horizontalalignment = 'center', verticalalignment = 'center')
+                ax.text(element[1][0], element[1][1], element[0],
+                        fontsize = font_size, horizontalalignment = 'center',
+                        verticalalignment = 'center')
         return
 
     def _compute_error(self, polygon_value_list, total_value, total_area):
@@ -764,21 +910,27 @@ class VoronoiMaster():
                     total += self._find_total(value)
         return total
 
-    def _compute_boundaries(self, dic, side_length = (4, 4), custom_shape_vertices = None):
+    def _compute_boundaries_chained(self, dic, voronoi_list_old,
+                                    side_length = (4, 4),
+                                    custom_shape_vertices = None):
         """
-        Main function used for computing layered voronoi diagram. This function takes a dictionary
-        and canvas as input and generate a layered voronoi diagram.
+        Main function used for computing layered voronoi diagram based on
+        existing voronoi diagram to ensure the location of each block stays
+        the same.
         """
         if custom_shape_vertices is None:
             canvas_vertices = np.array(
-                [[0, 0], [side_length[0], 0], [side_length[0], side_length[1]], [0, side_length[1]]])
+                [[0, 0], [side_length[0], 0],
+                 [side_length[0], side_length[1]], [0, side_length[1]]])
             canvas_obj = PolygonClass(canvas_vertices)
         else:
             canvas_obj = PolygonClass(custom_shape_vertices)
 
+        voronoi_old = voronoi_list_old[0]
         labels = list(dic.keys())
         values = [self._find_total(dic[key]) for key in dic]
-        voronoi_out, error_0 = self._voronoi_main_function(labels, values, canvas_obj)
+        voronoi_out, error_0 = self._voronoi_main_function(
+            labels, values, canvas_obj, voronoi_old = voronoi_old)
         voronoi_list = [voronoi_out]
         polygon_value_list = [[] for _ in dic]
         label_site_list = [[] for _ in dic]
@@ -789,60 +941,127 @@ class VoronoiMaster():
                 label_site_list[i] = (labels[i], voronoi_out.sites[i])
 
             elif isinstance(value, dict):
-                new_voronoi, polygon_value_list[i], label_site_list[i] = self._compute_boundaries(
+                voronoi_old = voronoi_list_old[1]
+                voronoi_list_old.pop(0)
+                new_voronoi, polygon_value_list[i], \
+                label_site_list[i] = self._compute_boundaries_chained(
+                    value, voronoi_old,
+                    custom_shape_vertices = voronoi_out.polygons[i].xy)
+                voronoi_list.append(new_voronoi)
+
+        return voronoi_list, polygon_value_list, label_site_list
+
+    def _compute_boundaries(self, dic, side_length = (4, 4),
+                            custom_shape_vertices = None):
+        """
+        Main function used for computing layered voronoi diagram. This function
+        takes a dictionary and canvas as input and generate a layered voronoi
+        diagram.
+        """
+        if custom_shape_vertices is None:
+            canvas_vertices = np.array(
+                [[0, 0], [side_length[0], 0],
+                 [side_length[0], side_length[1]], [0, side_length[1]]])
+            canvas_obj = PolygonClass(canvas_vertices)
+        else:
+            canvas_obj = PolygonClass(custom_shape_vertices)
+
+        labels = list(dic.keys())
+        values = [self._find_total(dic[key]) for key in dic]
+        voronoi_out, error_0 = self._voronoi_main_function(
+            labels, values, canvas_obj)
+        voronoi_list = [voronoi_out]
+        polygon_value_list = [[] for _ in dic]
+        label_site_list = [[] for _ in dic]
+
+        for i, value in enumerate(dic.values()):
+            if isinstance(value, float) or isinstance(value, int):
+                polygon_value_list[i] = (voronoi_out.polygons[i], values[i])
+                label_site_list[i] = (labels[i], voronoi_out.sites[i])
+
+            elif isinstance(value, dict):
+                new_voronoi, polygon_value_list[i], \
+                label_site_list[i] = self._compute_boundaries(
                     value, custom_shape_vertices = voronoi_out.polygons[i].xy)
                 voronoi_list.append(new_voronoi)
 
         return voronoi_list, polygon_value_list, label_site_list
 
-    def _voronoi_main_function(self, points, values, canvas_obj):
+    def _voronoi_main_function(self, points, values, canvas_obj,
+                               voronoi_old = None):
         """ 
-        Call voronoi_treemap to compute the voronoi diagram, with baseline number of iterations = 75. 
-        If the computed voronoi diagram has error >= 0.15, increase the iterations to 150 and so on
-        until the error < 0.15. If the error increases after increasing the number of iterations, 
-        recompute the whole voronoi diagram all over again.
+        Call voronoi_treemap to compute the voronoi diagram, with baseline
+        number of iterations = 75. If the computed voronoi diagram has error
+        >= 0.15, increase the iterations to 150 and so on until the error
+        < 0.15. If the error increases after increasing the number of iterations
+        , recompute the whole voronoi diagram all over again.
 
-        Please be careful when interpreting the error output. An error between 0.5~0.15 is expected.
-        If the error = 0, that means the whole voronoi diagram is not properly generated.
+        Please be careful when interpreting the error output. An error between
+        0.5~0.15 is expected. If the error = 0, that means the whole voronoi
+        diagram is not properly generated.
         """
-        t = time.time()
-        error = float("inf")
-        voronoi, error = self._voronoi_treemap(canvas_obj, points, values)
-        counter = 0
-        while (error > 0.15) or (error == 0):
-            voronoi, error_new = self._voronoi_treemap_recal(voronoi)
-            if error_new <= 0.15:
+        if voronoi_old is None:
+            voronoi, error = self._voronoi_treemap(canvas_obj, points, values)
+            counter = 0
+            while error > 0.15:
+                voronoi, error_new = self._voronoi_treemap_recal(voronoi)
+                if error_new <= 0.15:
+                    error = error_new
+                    break
+                else:
+                    if error_new >= error:
+                        voronoi, error_new = self._voronoi_treemap(
+                            canvas_obj, points, values)
                 error = error_new
-                break
-            else:
-                if (error_new >= error):
-                    voronoi, error_new = self._voronoi_treemap(canvas_obj, points, values)
-            error = error_new
-            counter += 1
-            if counter >= 50:
-                print('This random seed is not able to produce an error less than 0.15.'+ 
-                    ' Please choose another random seed instead.')
-                break
-        elapsed = time.time() - t
+                counter += 1
+                if counter >= 50:
+                    print('This random seed is not able to produce an error less '
+                          'than 0.15. Please choose another random seed instead.')
+                    break
+        else:
+            voronoi_merge = voronoi_old
+            voronoi_merge.values = values
+            voronoi_merge.canvas_obj = canvas_obj
+            voronoi, error = self._voronoi_treemap_recal(voronoi_merge)
+            counter = 0
+            while error > 0.15:
+                voronoi, error_new = self._voronoi_treemap_recal(voronoi)
+                if error_new <= 0.15:
+                    error = error_new
+                    break
+                else:
+                    if error_new >= error:
+                        voronoi, error_new = self._voronoi_treemap(
+                            canvas_obj, points, values)
+                error = error_new
+                counter += 1
+                if counter >= 50:
+                    print('This random seed is not able to produce an error less '
+                          'than 0.15. Please choose another random seed instead.')
+                    break
         return voronoi, error
 
     def _voronoi_treemap(self, canvas_obj, points, values):
         """
-        The main working horse of the whole function. This function compute the initial voronoi diagram,
-        adapt the location of each site and the weight of each site, re-compute the voronoi diagram, and
-        compute the error of the voronoi diagram. If the error is too high, repeat this process until the
-        error falls below error threshold or the number of iteration exceeds i_max(= 75).
+        The main working horse of the whole function. This function compute the
+        initial voronoi diagram, adapt the location of each site and the weight
+        of each site, re-compute the voronoi diagram, and compute the error of
+        the voronoi diagram. If the error is too high, repeat this process until
+        the error falls below error threshold or the number of iteration exceeds
+        i_max(= 75).
 
-        Certain amount of error is intrinsic to this plot. Therefore, blindly increasing the number of 
-        maximum iteration does not guarantee a decrease in error.
+        Certain amount of error is intrinsic to this plot. Therefore, blindly
+        increasing the number of maximum iteration does not guarantee a decrease
+        in error.
         """
         n_points = len(points)
 
         if n_points == 1:
             # if there is only 1 point, we don't need to compute the diagram
-            voronoi = VoronoiClass([canvas_obj], (canvas_obj.xy).mean(axis = 0).reshape((-1, 2)), 
-                canvas_obj.area, values, canvas_obj)
-            error = 0.0000001
+            voronoi = VoronoiClass([canvas_obj],
+                                   canvas_obj.xy.mean(axis = 0).reshape((-1, 2)),
+                                   canvas_obj.area, values, canvas_obj)
+            error = 0
             voronoi.points = points
             return voronoi, error
 
@@ -853,7 +1072,8 @@ class VoronoiMaster():
             error = float("inf")
 
             # calculate initial voronoi plot
-            voronoi = self._compute_power_diagram(canvas_obj, sites, weights, values)
+            voronoi = self._compute_power_diagram(
+                canvas_obj, sites, weights, values)
 
             # adjust position and weight until error becomes acceptable
             i = 0
@@ -872,8 +1092,9 @@ class VoronoiMaster():
 
     def _voronoi_treemap_recal(self, voronoi):
         """
-        Basically the same function as _voronoi_treemap but skip the initialization part. This ensures
-        the new plot is built on previous results and the previous iterations are not wasted.
+        Basically the same function as _voronoi_treemap but skip the
+        initialization part. This ensures the new plot is built on previous
+        results and the previous iterations are not wasted.
         """
         points = voronoi.points
         i = 0
@@ -892,10 +1113,11 @@ class VoronoiMaster():
 
     def _compute_power_diagram(self, canvas_obj, sites, weights, values):
         """
-        Compute the draft of the voronoi diagram, or the power diagram following the nomeclature of our
-        code reference. This function seperate the cases for n = 2, 3, 4 and above. For n=2, since there
-        should always be a solution, the function will rescue itself by resetting the initial sites until
-        a solution is found.
+        Compute the draft of the voronoi diagram, or the power diagram following
+        the nomeclature of our code reference. This function seperate the cases
+        for n = 2, 3, 4 and above. For n = 2, since there should always be a
+        solution, the function will rescue itself by resetting the initial sites
+        until a solution is found.
         """
         n_polygon = len(weights)
         if n_polygon < 4:
@@ -913,47 +1135,53 @@ class VoronoiMaster():
                     y_col = sites[:, 1].reshape((-1, 1))
                     bisector = LineClass(x_col, y_col, weights)
                     edge_new = bisector.find_intersect_with_canvas(canvas_obj)
-                polygons_all = self._divide_polygons(sites, canvas_obj, edge_new)
+                polygons_all = self._divide_polygons(
+                    sites, canvas_obj, edge_new)
 
             else:
                 # n_polygon = 3
                 site_label = [0, 1, 2]
                 sites, ray_obj_all = self._find_bisector_positive_ray(
                     sites, weights, site_label, canvas_obj)
-                polygons_all = self._divide_polygons(sites, canvas_obj, ray_obj_all)
+                polygons_all = self._divide_polygons(
+                    sites, canvas_obj, ray_obj_all)
 
         else:
             x_col = sites[:, 0].reshape((-1, 1))
             y_col = sites[:, 1].reshape((-1, 1))
 
             # 1. map sites into dual space
-            dual_sites = np.hstack((x_col, y_col, x_col**2 + y_col**2 - weights.reshape(-1, 1)))
+            dual_sites = np.hstack(
+                (x_col, y_col, x_col**2 + y_col**2 - weights.reshape(-1, 1)))
 
             # 2. find the convex hull of the points in dual space
             faces = ConvexHull(dual_sites)
             simplices = faces.simplices
 
             # 3. select only the lower convex hull
-            # and convert the triangle in dual space into the intersection points(ipoints) in normal space
+            # and convert the triangle in dual space into the intersection
+            # points(ipoints) in normal space
             ipoints, simplices_prune = self._prune_and_convert_to_ipoints(
                 dual_sites, simplices, canvas_obj)
             
             # 4. compute the ray objects of each ipoints
-            ray_obj_all = self._find_multiple_positive_ray(sites, ipoints, simplices_prune)
+            ray_obj_all = self._find_multiple_positive_ray(
+                sites, ipoints, simplices_prune)
             
             # 5. compute the coordinate of each polygon
             polygons_all = self._divide_polygons(
                 sites, canvas_obj, (ray_obj_all, simplices_prune, ipoints))  
 
-        # convert to object and 
-        # find the site with largest area_target/area_current ratio, which will displace its neighbor
+        # convert to object and find the site with largest
+        # area_target/area_current ratio, which will displace its neighbor
         voronoi = VoronoiClass(polygons_all, sites, weights, values, canvas_obj)
         voronoi.find_sites_causing_displacement()
         return voronoi
 
     def _recompute_power_diagram(self, voronoi):
         """
-        the same function as _compute_power_diagram but accept an exisiting voronoi object as input.
+        the same function as _compute_power_diagram but accept an existing
+        voronoi object as input.
         """
         sites = voronoi.sites
         weights = voronoi.weights
@@ -965,49 +1193,58 @@ class VoronoiMaster():
                 bisector = LineClass(x_col, y_col, weights)
 
                 # find intersect point with canvas
-                edge_new = bisector.find_intersect_with_canvas(voronoi.canvas_obj)
+                edge_new = bisector.find_intersect_with_canvas(
+                    voronoi.canvas_obj)
                 while len(edge_new) == 0: 
-                    sites =  voronoi.canvas_obj.random_points_in_canvas(voronoi.n_sites)
+                    sites =  voronoi.canvas_obj.random_points_in_canvas(
+                        voronoi.n_sites)
                     x_col = sites[:, 0].reshape((-1, 1))
                     y_col = sites[:, 1].reshape((-1, 1))
                     bisector = LineClass(x_col, y_col, weights)
-                    edge_new = bisector.find_intersect_with_canvas(voronoi.canvas_obj) 
+                    edge_new = bisector.find_intersect_with_canvas(
+                        voronoi.canvas_obj)
 
-                polygons_all = self._divide_polygons(sites, voronoi.canvas_obj, edge_new)
+                polygons_all = self._divide_polygons(
+                    sites, voronoi.canvas_obj, edge_new)
 
             else:
                 # n_polygon = 3
                 site_label = [0, 1, 2]
                 sites, ray_obj_all = self._find_bisector_positive_ray(
                     sites, weights, site_label, voronoi.canvas_obj)
-                polygons_all = self._divide_polygons(sites, voronoi.canvas_obj, ray_obj_all)
+                polygons_all = self._divide_polygons(
+                    sites, voronoi.canvas_obj, ray_obj_all)
 
         else:
             x_col = sites[:, 0].reshape((-1, 1))
             y_col = sites[:, 1].reshape((-1, 1))
 
             # 1. map sites into dual space
-            dual_sites = np.hstack((x_col, y_col, x_col**2 + y_col**2 - weights.reshape(-1, 1)))
+            dual_sites = np.hstack(
+                (x_col, y_col, x_col**2 + y_col**2 - weights.reshape(-1, 1)))
 
             # 2. find the convex hull of the points in dual space
             faces = ConvexHull(dual_sites)
             simplices = faces.simplices
 
-            # 3. select only the lower convex hull
-            # and convert the triangle in dual space into the intersection points(ipoints) in normal space
+            # 3. select only the lower convex hull and convert the triangle in
+            # dual space into the intersection points(ipoints) in normal space
             ipoints, simplices_prune = self._prune_and_convert_to_ipoints(
                 dual_sites, simplices, voronoi.canvas_obj)
 
             # 4. compute the ray objects of each ipoints
-            ray_obj_all = self._find_multiple_positive_ray(sites, ipoints, simplices_prune)
+            ray_obj_all = self._find_multiple_positive_ray(
+                sites, ipoints, simplices_prune)
 
             # 5. compute the coordinate of each polygon
             polygons_all = self._divide_polygons(
-                sites, voronoi.canvas_obj, (ray_obj_all, simplices_prune, ipoints))  
+                sites, voronoi.canvas_obj,
+                (ray_obj_all, simplices_prune, ipoints))
 
-        # convert to object and
-        # find the site with largest area_target/area_current ratio, which will displace its neighbor
-        voronoi = VoronoiClass(polygons_all, sites, weights, voronoi.values, voronoi.canvas_obj)
+        # convert to object and find the site with largest
+        # area_target/area_current ratio, which will displace its neighbor
+        voronoi = VoronoiClass(
+            polygons_all, sites, weights, voronoi.values, voronoi.canvas_obj)
         voronoi.find_sites_causing_displacement()
 
         return voronoi
@@ -1024,19 +1261,23 @@ class VoronoiMaster():
             b = - (x2 - x1)
             c = x1*(y2 - y1) - y1*(x2 - x1)
 
-            # 2. calculate for each site and each corner of the canvas, ax + by - c >0 or <0
-            # to determine if they are on the same side to the edge.
+            # 2. calculate for each site and each corner of the canvas,
+            # ax + by - c > 0 or < 0 to determine if they are on the same side
+            # to the edge.
             above_below_sites = (np.dot(sites, np.array([a, b])) - c) >= 0
-            above_below_corners = (np.dot(canvas_obj.xy, np.array([a, b])) - c) >= 0
+            above_below_corners = (np.dot(
+                canvas_obj.xy, np.array([a, b])) - c) >= 0
             polygons_all = []
 
-            # 3. assign the corners which is on the same side as each site, and determine the final
-            # coordinates of the 2 polygons.
+            # 3. assign the corners which is on the same side as each site, and
+            # determine the final coordinates of the 2 polygons.
             if above_below_sites[0] != above_below_sites[1]:
                 for i in range(n_sites):
-                    corner_polygon = canvas_obj.xy[above_below_corners == above_below_sites[i]]
+                    corner_polygon = canvas_obj.xy[
+                        above_below_corners == above_below_sites[i]]
                     corner_polygon = np.vstack([corner_polygon, edge])
-                    corner_polygon = (corner_polygon*(10**9)).astype(int)/(10.**9)
+                    corner_polygon = (
+                        corner_polygon*(10**9)).astype(int)/(10.**9)
                     corner_polygon = np.unique(corner_polygon, axis = 0)
                     polygon = PolygonClass(corner_polygon)
                     polygons_all.append(polygon)
@@ -1045,33 +1286,39 @@ class VoronoiMaster():
             ray_obj_all = args
 
             # 0. convert each ray to a_r1*x + b_r1*y + c_r1 = 0
-            a_r1, a_r2, a_r3 = ray_obj_all[0].a_r, ray_obj_all[1].a_r, ray_obj_all[2].a_r
-            b_r1, b_r2, b_r3 = ray_obj_all[0].b_r, ray_obj_all[1].b_r, ray_obj_all[2].b_r
-            c_r1, c_r2, c_r3 = ray_obj_all[0].c_r, ray_obj_all[1].c_r, ray_obj_all[2].c_r
-            coefficient_matrix = np.array([[a_r1, a_r2, a_r3], [b_r1, b_r2, b_r3]])
+            a_r1, a_r2, a_r3 = ray_obj_all[0].a_r, ray_obj_all[1].a_r, \
+                               ray_obj_all[2].a_r
+            b_r1, b_r2, b_r3 = ray_obj_all[0].b_r, ray_obj_all[1].b_r, \
+                               ray_obj_all[2].b_r
+            c_r1, c_r2, c_r3 = ray_obj_all[0].c_r, ray_obj_all[1].c_r, \
+                               ray_obj_all[2].c_r
+            coefficient_matrix = np.array(
+                [[a_r1, a_r2, a_r3], [b_r1, b_r2, b_r3]])
             c_r_matrix = np.array([c_r1, c_r2, c_r3])
 
-            # 1. calculate the edge created by each ray by finding the intersection point of each ray 
-            # with canvas
+            # 1. calculate the edge created by each ray by finding the
+            # intersection point of each ray with canvas
             for i in range(3):
                 ray_obj_all[i].find_ray_intersect_with_canvas(canvas_obj)
             
-            # 2. determine if each site and each corner is above or below each ray by calculating 
-            # Ax+By+C >0 or <0 (AB table = above/below table)
+            # 2. determine if each site and each corner is above or below each
+            # ray by calculating Ax+By+C >0 or <0 (AB table = above/below table)
             above_below_corners = (np.dot(canvas_obj.xy, coefficient_matrix) 
                 + np.tile(c_r_matrix, (n_corners, 1)) >= 0)
             above_below_sites = (np.dot(sites, coefficient_matrix) 
                 + np.tile(c_r_matrix, (n_sites, 1)) >= 0)
 
-            # 3. group the corners, edges, intersection points that are on the same side as each site
-            # and form the coordinates of each polygon.
+            # 3. group the corners, edges, intersection points that are on the
+            # same side as each site and form the coordinates of each polygon.
             polygons_all = [[] for _ in range(3)]
             indices = np.arange(3)
             for i in range(3):
                 ab_corners_temp = above_below_corners[:,indices != i]
                 ab_site_temp = above_below_sites[i, indices != i]
-                target_corner = (np.equal(ab_corners_temp, ab_site_temp).sum(axis = 1) == 2)
-                corner_polygon = canvas_obj.xy[target_corner, :] #append the included corners by 2 rays
+                target_corner = (np.equal(
+                    ab_corners_temp, ab_site_temp).sum(axis = 1) == 2)
+                # append the included corners by 2 rays
+                corner_polygon = canvas_obj.xy[target_corner, :]
                 j_list = np.arange(3)
                 j_list = j_list[j_list != i]
                 for j in j_list:
@@ -1080,7 +1327,8 @@ class VoronoiMaster():
                             corner_polygon = ray_obj_all[j].edge
 
                         else:
-                            corner_polygon = np.vstack([corner_polygon, ray_obj_all[j].edge])
+                            corner_polygon = np.vstack(
+                                [corner_polygon, ray_obj_all[j].edge])
 
                 if len(corner_polygon) >= 3:
                     corner_polygon = (corner_polygon*(10**9)).astype(int)/(10.**9)
@@ -1094,17 +1342,24 @@ class VoronoiMaster():
             ipoints = args[2]
             n_ipoints = len(simplices_prune)
 
-            # 1. for all the intersection points, we first determine whether each site and each corners are 
-            # above or below each ray.
+            # 1. for all the intersection points, we first determine whether
+            # each site and each corners are above or below each ray.
             ab_corners_table = [[] for _ in range(n_ipoints)]
             ab_sites_table = [[] for _ in range(n_ipoints)]
             for i in range(n_ipoints):
                 if ray_obj_all[i]:
                     # 1-1. convert each ray to a_r1*x + b_r1*y + c_r1 = 0
-                    a_r1, a_r2, a_r3 = ray_obj_all[i][0].a_r, ray_obj_all[i][1].a_r, ray_obj_all[i][2].a_r
-                    b_r1, b_r2, b_r3 = ray_obj_all[i][0].b_r, ray_obj_all[i][1].b_r, ray_obj_all[i][2].b_r
-                    c_r1, c_r2, c_r3 = ray_obj_all[i][0].c_r, ray_obj_all[i][1].c_r, ray_obj_all[i][2].c_r
-                    coefficient_matrix = np.array([[a_r1, a_r2, a_r3], [b_r1, b_r2, b_r3]])
+                    a_r1, a_r2, a_r3 = ray_obj_all[i][0].a_r, \
+                                       ray_obj_all[i][1].a_r, \
+                                       ray_obj_all[i][2].a_r
+                    b_r1, b_r2, b_r3 = ray_obj_all[i][0].b_r, \
+                                       ray_obj_all[i][1].b_r, \
+                                       ray_obj_all[i][2].b_r
+                    c_r1, c_r2, c_r3 = ray_obj_all[i][0].c_r, \
+                                       ray_obj_all[i][1].c_r, \
+                                       ray_obj_all[i][2].c_r
+                    coefficient_matrix = np.array(
+                        [[a_r1, a_r2, a_r3], [b_r1, b_r2, b_r3]])
                     c_r_matrix = np.array([c_r1, c_r2, c_r3])
 
                     # 1-2. calculate the edge created by each ray
@@ -1124,17 +1379,21 @@ class VoronoiMaster():
             corner_polygon_all = [[] for _ in range(n_sites)]
             indices = np.arange(3)
             for k in range(n_sites):
-                iP_index_required = np.where(np.sum((simplices_prune == k), axis = 1) == 1)[0]
+                iP_index_required = np.where(
+                    np.sum((simplices_prune == k), axis = 1) == 1)[0]
                 target_corner_test = []
                 for m in iP_index_required:
                     if ray_obj_all[m]:
                         simplex = simplices_prune[m]
                         [loc_012] = np.where(simplex == k)[0]
-                        # 2-1. find the potential corners if they are on the same side as each site:
+                        # 2-1. find the potential corners if they are on the
+                        # same side as each site:
                         ab_corners_temp = ab_corners_table[m][:, indices != loc_012]
                         ab_site_temp = ab_sites_table[m][k, indices != loc_012]
                         target_corner_test.append(
-                            set(np.where(np.equal(ab_corners_temp, ab_site_temp).sum(axis = 1) == 2)[0]))
+                            set(np.where(
+                                np.equal(
+                                    ab_corners_temp, ab_site_temp).sum(axis = 1) == 2)[0]))
 
                         # 2-2. append the edges formed by nearby rays.
                         n_list = np.arange(3)
@@ -1147,26 +1406,33 @@ class VoronoiMaster():
                                     corner_polygon_all[k] = np.vstack(
                                         [corner_polygon_all[k], ray_obj_all[m][n].edge])
 
-                # 2-3. reconcile the potential corners across different ipoints, find target_corner
-                # (some corners may be on the same side as the site with respect to one ipoint, but 
-                # not other nearby ipoints. We have to make sure that the final corners included are
-                # on the same side as each site with respect to all ipoints nearby.)
+                # 2-3. reconcile the potential corners across different ipoints,
+                # find target_corner (some corners may be on the same side as
+                # the site with respect to one ipoint, but not other nearby
+                # ipoints. We have to make sure that the final corners included
+                # are on the same side as each site with respect to all ipoints
+                # nearby.)
                 if not len(target_corner_test) == 0:
                     for p in range(1, len(target_corner_test)):
-                        target_corner_test[0] = target_corner_test[0].intersection(target_corner_test[p]) 
+                        target_corner_test[0] = target_corner_test[0].intersection(
+                            target_corner_test[p])
 
                 # 2-4. append the target corners
                 if not len(target_corner_test) == 0:
                     if len(corner_polygon_all[k]) == 0:
-                        corner_polygon_all[k] = canvas_obj.xy[list(target_corner_test[0]), :]
+                        corner_polygon_all[k] = canvas_obj.xy[
+                                                list(target_corner_test[0]), :]
                     else:
                         corner_polygon_all[k] = np.vstack(
-                            [corner_polygon_all[k], canvas_obj.xy[list(target_corner_test[0]), :]])
+                            [corner_polygon_all[k], canvas_obj.xy[
+                                                    list(target_corner_test[0]), :]])
 
                 if not len(corner_polygon_all[k]) == 0:
                     # 2-5. remove redundant corners of each polygon
-                    corner_polygon_all[k] = (corner_polygon_all[k]*(10**9)).astype(int)/(10.**9)
-                    corner_polygon_all[k] = np.unique(corner_polygon_all[k], axis = 0)
+                    corner_polygon_all[k] = (
+                        corner_polygon_all[k]*(10**9)).astype(int)/(10.**9)
+                    corner_polygon_all[k] = np.unique(
+                        corner_polygon_all[k], axis = 0)
 
                     # 2-6. create and store the polygon object for each site
                     if len(corner_polygon_all[k]) >= 3:
@@ -1175,11 +1441,12 @@ class VoronoiMaster():
 
         return polygons_all
 
-    def _find_bisector_positive_ray(self, sites, weights, site_label, canvas_obj):
+    def _find_bisector_positive_ray(self, sites, weights, site_label,
+                                    canvas_obj):
         """
-        This function is designed for n=3. This function compute the 3 bisectors among 3 sites,
-        find the intersect point (ipoint) of these 3 bisectors, and define the positive direction
-        of each ray.
+        This function is designed for n=3. This function compute the 3 bisectors
+        among 3 sites, find the intersect point (ipoint) of these 3 bisectors,
+        and define the positive direction of each ray.
         """
         def _compute_determinant(x_col, y_col, weights):
             [[x0], [x1], [x2]] = x_col
@@ -1196,15 +1463,16 @@ class VoronoiMaster():
             d3 = -(x2**2 + y2**2 - w2)
             det = - a1*b2 - a2*b3 - a3*b1 + a3*b2 + a1*b3 + a2*b1
             if det == 0:
-                x_int = -100
-                y_int = -100
+                x_int = np.nan
+                y_int = np.nan
             else:
                 x_int = (- d1*b2 - d2*b3 - d3*b1 + d3*b2 + d1*b3 + d2*b1)/(- det)
                 y_int = (- a1*d2 - a2*d3 - a3*d1 + a3*d2 + a1*d3 + a2*d1)/(- det)
             return det, x_int, y_int
 
         # 1. Find the 3 bisectors and the ipoint
-        # If no solution is possible, reset the location of sites until there is a solution
+        # If no solution is possible, reset the location of sites until there
+        # is a solution
         x_col = sites[:, 0].reshape((-1, 1))
         y_col = sites[:, 1].reshape((-1, 1))
         det, x_int, y_int = _compute_determinant(x_col, y_col, weights)
@@ -1232,25 +1500,31 @@ class VoronoiMaster():
         # 2. find the positive direction of the 3 rays.
         ray_obj_all = []
         if self._point_is_within_triangle(ipoint, sites):
-            # if the ipoint is within the triangle formed by 3 sites, the positive direction of the ray 
-            # is the one that moves away from the opposite site.
+            # if the ipoint is within the triangle formed by 3 sites, the
+            # positive direction of the ray is the one that moves away from the
+            # opposite site.
             for k in range(3):
                 site_remain = np.arange(3)
                 site_remain = site_remain[site_remain != k]
                 tag1 = site_remain[0]
                 tag2 = site_remain[1]
                 t_bisector = np.array(
-                    [2*(y_col[tag2][0] - y_col[tag1][0]), 2*(x_col[tag1][0] - x_col[tag2][0])])
+                    [2*(y_col[tag2][0] - y_col[tag1][0]),
+                     2*(x_col[tag1][0] - x_col[tag2][0])])
                 if np.dot(t_bisector,(sites[k, :] - ipoint)) > 0:
                     t_bisector = - t_bisector
                 ray_obj_all.append(
-                    RayClass(ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k]))
+                    RayClass(ipoint, t_bisector,
+                             [site_label[tag1], site_label[tag2]],
+                             site_label[k]))
 
         else:
-            # if the ipoint is not within the triangle formed by 3 sites, the positive direction is 
-            # defined in a way that can divide the canvas into 3 polygons and each polygon contains 1 site.
+            # if the ipoint is not within the triangle formed by 3 sites, the
+            # positive direction is defined in a way that can divide the canvas
+            # into 3 polygons and each polygon contains 1 site.
             com_line = (sites[[1, 2, 0], :] + sites[[2, 0, 1], :])/2
-            point_opposite = np.argmin((com_line - ipoint)[:, 0]**2 + (com_line - ipoint)[:, 1]**2)
+            point_opposite = np.argmin(
+                (com_line - ipoint)[:, 0]**2 + (com_line - ipoint)[:, 1]**2)
             for k in range(3):
                 site_remain = np.arange(3)
                 site_remain = site_remain[site_remain != k]
@@ -1262,19 +1536,24 @@ class VoronoiMaster():
                     if np.dot(t_bisector,(sites[k, :] - ipoint)) > 0:
                         t_bisector = - t_bisector
                     ray_obj_all.append(
-                        RayClass(ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k]))     
+                        RayClass(ipoint, t_bisector,
+                                 [site_label[tag1], site_label[tag2]],
+                                 site_label[k]))
                 else:
                     if np.dot(t_bisector,(com_line[k, :] - ipoint)) < 0:
                         t_bisector = - t_bisector
                     ray_obj_all.append(
-                        RayClass(ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k]))
+                        RayClass(ipoint, t_bisector,
+                                 [site_label[tag1], site_label[tag2]],
+                                 site_label[k]))
 
         return sites, ray_obj_all
 
     def _find_multiple_positive_ray(self, sites, ipoints, simplices_prune):
         """
-        This function is designed for n>=4. This function define the positive direction of each ray
-        in a way that is the same as _find_bisector_positive_ray.
+        This function is designed for n>=4. This function define the positive
+        direction of each ray in a way that is the same as
+        _find_bisector_positive_ray.
         """    
         n_ipoints = len(simplices_prune)
         ray_obj_all = [[] for _ in range(n_ipoints)]
@@ -1293,31 +1572,36 @@ class VoronoiMaster():
                     site_remain = site_remain[site_remain != k]
                     tag1 = site_remain[0]
                     tag2 = site_remain[1]
-                    t_bisector = np.array([2*(y_col_temp[tag2][0] - y_col_temp[tag1][0]), 
+                    t_bisector = np.array(
+                        [2*(y_col_temp[tag2][0] - y_col_temp[tag1][0]),
                         2*(x_col_temp[tag1][0] - x_col_temp[tag2][0])])
                     if np.dot(t_bisector, (sites_temp[k, :] - ipoint)) > 0:
                         t_bisector = - t_bisector
                     ray_obj = RayClass(
-                        ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k])
+                        ipoint, t_bisector,
+                        [site_label[tag1], site_label[tag2]], site_label[k])
                     ray_obj.index_ip = i
                     ray_obj.index_ray = k
                     ray_obj_ipoint.append(ray_obj)
 
             else:
                 com_line = (sites_temp[[1, 2, 0], :] + sites_temp[[2, 0, 1], :])/2
-                point_opposite = np.argmin((com_line - ipoint)[:, 0]**2 + (com_line - ipoint)[:, 1]**2)
+                point_opposite = np.argmin(
+                    (com_line - ipoint)[:, 0]**2 + (com_line - ipoint)[:, 1]**2)
                 for k in range(3):
                     site_remain = np.arange(3)
                     site_remain = site_remain[site_remain != k]
                     tag1 = site_remain[0]
                     tag2 = site_remain[1]
-                    t_bisector = np.array([2*(y_col_temp[tag2][0] - y_col_temp[tag1][0]), 
+                    t_bisector = np.array(
+                        [2*(y_col_temp[tag2][0] - y_col_temp[tag1][0]),
                         2*(x_col_temp[tag1][0] - x_col_temp[tag2][0])])
                     if k == point_opposite:
                         if np.dot(t_bisector, (sites_temp[k, :] - ipoint)) > 0:
                             t_bisector = - t_bisector
                         ray_obj = RayClass(
-                            ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k])
+                            ipoint, t_bisector,
+                            [site_label[tag1], site_label[tag2]], site_label[k])
                         ray_obj.index_ip = i
                         ray_obj.index_ray = k
                         ray_obj_ipoint.append(ray_obj)
@@ -1325,7 +1609,8 @@ class VoronoiMaster():
                         if np.dot(t_bisector, (com_line[k, :] - ipoint)) < 0:
                             t_bisector = - t_bisector
                         ray_obj = RayClass(
-                            ipoint, t_bisector, [site_label[tag1], site_label[tag2]], site_label[k])
+                            ipoint, t_bisector,
+                            [site_label[tag1], site_label[tag2]], site_label[k])
                         ray_obj.index_ip = i
                         ray_obj.index_ray = k
                         ray_obj_ipoint.append(ray_obj)
@@ -1336,7 +1621,8 @@ class VoronoiMaster():
     def _prune_and_convert_to_ipoints(self, dual_sites, simplices, canvas_obj):
         """
         This function determines which ipoints should be kept. 
-        Only the ipoints that (1) belong to the lower convex hull and (2) locate within canvas will be kept.
+        Only the ipoints that (1) belong to the lower convex hull and
+        (2) locate within canvas will be kept.
         """
         com_dualsites = (dual_sites).mean(axis = 0)
         simplices_prune = simplices
@@ -1360,7 +1646,8 @@ class VoronoiMaster():
 
                 # (2) determine if the ipoint is within canvas
                 if canvas_obj.point_is_within_canvas(np.array([a/2, b/2])):
-                    ipoints = np.append(ipoints, np.array([a/2, b/2, -c]), axis = 0)
+                    ipoints = np.append(
+                        ipoints, np.array([a/2, b/2, -c]), axis = 0)
                 else:
                     prune_list.append(i)
             else:
@@ -1370,40 +1657,11 @@ class VoronoiMaster():
         simplices_prune = np.delete(simplices_prune, prune_list, axis = 0)
         return ipoints, simplices_prune
 
-    def is_on_segment(self, p, edge):
-        """
-        Determine whether a point is on a segment by checking if Ax+By-C == 0 and falls between the two
-        corners which define the edge.
-        """
-        [[x1, y1], [x2, y2]] = edge
-        [x, y] = p
-        # convert to ax + by = c
-        a = (y2 - y1)
-        b = - (x2 - x1)
-        c = x1*(y2 - y1) - y1*(x2 - x1)
-        if (a**2 + b**2) == 0:
-            result = (x == x1) and (y == y1)
-
-        else:
-            test = (a*x + b*y - c)
-            if int(test*(10**9))/(10.**9) == 0:
-                x = int(x*(10**9) + 0.5)/(10.**9)
-                x1 = int(x1*(10**9) + 0.5)/(10.**9)
-                x2 = int(x2*(10**9) + 0.5)/(10.**9)
-                y = int(y*(10**9) + 0.5)/(10.**9)
-                y1 = int(y1*(10**9) + 0.5)/(10.**9)
-                y2 = int(y2*(10**9) + 0.5)/(10.**9)
-                result = ((x >= min(x1, x2)) and (x <= max(x1, x2)) 
-                    and (y >= min(y1, y2)) and (y <= max(y1, y2)))
-            else:
-                result = False
-
-        return result
-
     def _point_is_within_triangle(self, p, triangle):
         """
-        Check if a point is within a triangle. The algorithm used is the same as point_is_within_canvas.
-        However, this function does not require the input to be a POLYGON object.
+        Check if a point is within a triangle. The algorithm used is the same as
+        point_is_within_canvas. However, this function does not require the
+        input to be a POLYGON object.
         """
         a = (triangle == p)
         if len(np.nonzero(a[:, 0] * a[:, 1])[0]) == 1:
@@ -1414,7 +1672,7 @@ class VoronoiMaster():
             for i in range(3):
                 edge = triangle[[i-1, i], :]
                 a = edge - p
-                sum_angle += self.angle(a[0, :], a[1, :])
+                sum_angle += angle(a[0, :], a[1, :])
 
             if not math.isnan(sum_angle):
                 result = int((sum_angle - 2*math.pi)*(10**9))/(10.**9) == 0
@@ -1423,15 +1681,3 @@ class VoronoiMaster():
                 result = False
 
         return result
-
-    def angle(self, v1, v2):
-        def _dot_product(v1, v2):
-            return sum((a*b) for a, b in zip(v1, v2))
-
-        cosine = _dot_product(v1, v2) / (math.hypot(v1[0], v1[1]) * math.hypot(v2[0], v2[1]))
-        if (cosine > 1) or (cosine < -1):
-            return 100
-        else:
-            return math.acos(cosine)
-
-vm = VoronoiMaster()

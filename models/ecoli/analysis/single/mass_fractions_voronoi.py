@@ -171,7 +171,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# create the plot
 		vm = VoronoiMaster()
-		vm.plot((dic_initial, dic_final), title = ("Initial biomass components", "Final biomass components"))
+		vm.plot([[dic_initial, dic_final]],
+				title = [["Initial biomass components", "Final biomass components"]],
+				ax_shape = (1, 2), chained = True)
 
 		# save the plot
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
