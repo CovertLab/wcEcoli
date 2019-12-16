@@ -737,76 +737,36 @@ class VoronoiMaster():
             plt.tight_layout()
             for i in range(nrows):
                 for j in range(ncols):
+                    dic_current = dic[i][j]
+
                     if i == 0 and j == 0:
-                        dic_current = dic[i][j]
-                        voronoi_list_old, polygon_value_list_old, \
-                        label_site_list_old = self._compute_boundaries(
+                        voronoi_list_new, polygon_value_list_new, label_site_list_new = self._compute_boundaries(
                             dic_current, side_length, custom_shape_vertices)
-                        axes[i][j].set_aspect('equal')
-                        axes[i][j].axis('off')
-                        axes[i][j].title.set_text(title[i][j])
-
-                        self._generate_plot(voronoi_list_old, axes[i][j])
-                        total_value_old = sum(voronoi_list_old[0].values)
-                        total_area_old = voronoi_list_old[0].canvas_obj.area
-                        self._add_labels(
-                            label_site_list_old, font_size, axes[i][j])
-                        gross_error_old = self._compute_error(
-                            polygon_value_list_old, total_value_old, total_area_old)
-                        error_all_old = gross_error_old / (
-                                2 * voronoi_list_old[0].canvas_obj.area)
-                        print('The error in the area representation of the whole '
-                              'voronoi diagram (0, 0): %.4f' % (error_all_old,))
-                        error_all.append(error_all_old)
+                    elif chained is None:
+                        voronoi_list_new, polygon_value_list_new, label_site_list_new = self._compute_boundaries(
+                            dic_current, side_length, custom_shape_vertices)
                     else:
-                        if chained is None:
-                            dic_current = dic[i][j]
-                            voronoi_list_old, polygon_value_list_old, \
-                            label_site_list_old = self._compute_boundaries(
-                                dic_current, side_length, custom_shape_vertices)
-                            axes[i][j].set_aspect('equal')
-                            axes[i][j].axis('off')
-                            axes[i][j].title.set_text(title[i][j])
+                        voronoi_list_new, polygon_value_list_new, label_site_list_new = self._compute_boundaries(
+                            dic_current, side_length, custom_shape_vertices,
+                            voronoi_list_old = voronoi_list_old)
 
-                            self._generate_plot(voronoi_list_old, axes[i][j])
-                            total_value_old = sum(voronoi_list_old[0].values)
-                            total_area_old = voronoi_list_old[0].canvas_obj.area
-                            self._add_labels(
-                                label_site_list_old, font_size, axes[i][j])
-                            gross_error_old = self._compute_error(
-                                polygon_value_list_old, total_value_old,
-                                total_area_old)
-                            error_all_old = gross_error_old / (
-                                    2 * voronoi_list_old[0].canvas_obj.area)
-                            print('The error in the area representation of the '
-                                  'whole voronoi diagram (%i, %i): %.4f'
-                                  % (i, j, error_all_old,))
-                            error_all.append(error_all_old)
-                        else:
-                            dic_current = dic[i][j]
-                            voronoi_list_new, polygon_value_list_new, \
-                            label_site_list_new = self._compute_boundaries_chained(
-                                dic_current, voronoi_list_old, side_length,
-                                custom_shape_vertices)
-                            axes[i][j].set_aspect('equal')
-                            axes[i][j].axis('off')
-                            axes[i][j].title.set_text(title[i][j])
-
-                            self._generate_plot(voronoi_list_new, axes[i][j])
-                            total_value_new = sum(voronoi_list_new[0].values)
-                            total_area_new = voronoi_list_new[0].canvas_obj.area
-                            self._add_labels(
-                                label_site_list_new, font_size, axes[i][j])
-                            gross_error_new = self._compute_error(
-                                polygon_value_list_new, total_value_new,
-                                total_area_new)
-                            error_all_new = gross_error_new / (
-                                    2 * voronoi_list_new[0].canvas_obj.area)
-                            print('The error in the area representation of the '
-                                  'whole voronoi diagram (%i, %i): %.4f'
-                                  % (i, j, error_all_new,))
-                            error_all.append(error_all_new)
-                            voronoi_list_old = voronoi_list_new
+                    axes[i][j].set_aspect('equal')
+                    axes[i][j].axis('off')
+                    axes[i][j].title.set_text(title[i][j])
+                    self._generate_plot(voronoi_list_new, axes[i][j])
+                    total_value = sum(voronoi_list_new[0].values)
+                    total_area = voronoi_list_new[0].canvas_obj.area
+                    self._add_labels(
+                        label_site_list_new, font_size, axes[i][j])
+                    gross_error = self._compute_error(
+                        polygon_value_list_new, total_value, total_area)
+                    error_new = gross_error / (
+                            2 * voronoi_list_new[0].canvas_obj.area)
+                    print('The error in the area representation of the whole '
+                          'voronoi diagram (%i, %i): %.4f'
+                          % (i, j, error_new,))
+                    error_all.append(error_new)
+                    voronoi_list_old = voronoi_list_new
         else:
             voronoi_list, polygon_value_list, \
             label_site_list = self._compute_boundaries(
@@ -910,9 +870,10 @@ class VoronoiMaster():
                     total += self._find_total(value)
         return total
 
-    def _compute_boundaries_chained(self, dic, voronoi_list_old,
-                                    side_length = (4, 4),
-                                    custom_shape_vertices = None):
+    def _compute_boundaries(self, dic,
+                            side_length = (4, 4),
+                            custom_shape_vertices = None,
+                            voronoi_list_old = None):
         """
         Main function used for computing layered voronoi diagram based on
         existing voronoi diagram to ensure the location of each block stays
@@ -926,50 +887,15 @@ class VoronoiMaster():
         else:
             canvas_obj = PolygonClass(custom_shape_vertices)
 
-        voronoi_old = voronoi_list_old[0]
         labels = list(dic.keys())
         values = [self._find_total(dic[key]) for key in dic]
-        voronoi_out, error_0 = self._voronoi_main_function(
-            labels, values, canvas_obj, voronoi_old = voronoi_old)
-        voronoi_list = [voronoi_out]
-        polygon_value_list = [[] for _ in dic]
-        label_site_list = [[] for _ in dic]
-
-        for i, value in enumerate(dic.values()):
-            if isinstance(value, float) or isinstance(value, int):
-                polygon_value_list[i] = (voronoi_out.polygons[i], values[i])
-                label_site_list[i] = (labels[i], voronoi_out.sites[i])
-
-            elif isinstance(value, dict):
-                voronoi_old = voronoi_list_old[1]
-                voronoi_list_old.pop(0)
-                new_voronoi, polygon_value_list[i], \
-                label_site_list[i] = self._compute_boundaries_chained(
-                    value, voronoi_old,
-                    custom_shape_vertices = voronoi_out.polygons[i].xy)
-                voronoi_list.append(new_voronoi)
-
-        return voronoi_list, polygon_value_list, label_site_list
-
-    def _compute_boundaries(self, dic, side_length = (4, 4),
-                            custom_shape_vertices = None):
-        """
-        Main function used for computing layered voronoi diagram. This function
-        takes a dictionary and canvas as input and generate a layered voronoi
-        diagram.
-        """
-        if custom_shape_vertices is None:
-            canvas_vertices = np.array(
-                [[0, 0], [side_length[0], 0],
-                 [side_length[0], side_length[1]], [0, side_length[1]]])
-            canvas_obj = PolygonClass(canvas_vertices)
+        if voronoi_list_old is not None:
+            voronoi_old = voronoi_list_old[0]
+            voronoi_out, error_0 = self._voronoi_main_function(
+                labels, values, canvas_obj, voronoi_old = voronoi_old)
         else:
-            canvas_obj = PolygonClass(custom_shape_vertices)
-
-        labels = list(dic.keys())
-        values = [self._find_total(dic[key]) for key in dic]
-        voronoi_out, error_0 = self._voronoi_main_function(
-            labels, values, canvas_obj)
+            voronoi_out, error_0 = self._voronoi_main_function(
+                labels, values, canvas_obj)
         voronoi_list = [voronoi_out]
         polygon_value_list = [[] for _ in dic]
         label_site_list = [[] for _ in dic]
@@ -980,9 +906,15 @@ class VoronoiMaster():
                 label_site_list[i] = (labels[i], voronoi_out.sites[i])
 
             elif isinstance(value, dict):
-                new_voronoi, polygon_value_list[i], \
-                label_site_list[i] = self._compute_boundaries(
-                    value, custom_shape_vertices = voronoi_out.polygons[i].xy)
+                if voronoi_list_old is not None:
+                    voronoi_old = voronoi_list_old[1]
+                    voronoi_list_old.pop(0)
+                    new_voronoi, polygon_value_list[i], label_site_list[i] = self._compute_boundaries(
+                        value, voronoi_list_old = voronoi_old,
+                        custom_shape_vertices = voronoi_out.polygons[i].xy)
+                else:
+                    new_voronoi, polygon_value_list[i], label_site_list[i] = self._compute_boundaries(
+                        value, custom_shape_vertices = voronoi_out.polygons[i].xy)
                 voronoi_list.append(new_voronoi)
 
         return voronoi_list, polygon_value_list, label_site_list
