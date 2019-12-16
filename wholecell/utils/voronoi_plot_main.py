@@ -739,10 +739,7 @@ class VoronoiMaster():
                 for j in range(ncols):
                     dic_current = dic[i][j]
 
-                    if i == 0 and j == 0:
-                        voronoi_list_new, polygon_value_list_new, label_site_list_new = self._compute_boundaries(
-                            dic_current, side_length, custom_shape_vertices)
-                    elif chained is None:
+                    if (i == 0 and j == 0) or (chained is None):
                         voronoi_list_new, polygon_value_list_new, label_site_list_new = self._compute_boundaries(
                             dic_current, side_length, custom_shape_vertices)
                     else:
