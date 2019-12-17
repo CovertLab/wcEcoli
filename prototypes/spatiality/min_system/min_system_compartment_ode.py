@@ -157,13 +157,15 @@ class MinODEMaster():
             dv_vec, _ = self._compute_cytoplasm_volume(l)
             y_extra = np.ones((self.n + 2, 5))
             y_extra[1:-1, :] *= dv_vec.reshape((-1, 1))
+            y_extra[(0, -1), :] = 0
+            y_extra[:, (2, 4)] = 0
+            y_extra[:, (0, 1)] *= extra_min_d / sum(sum(y_extra[:, (0, 1)]))
+            y_extra[:, 3] *= extra_min_e / sum(y_extra[:, 3])
         else:
-            y_extra = np.random.rand(self.n + 2, 5)
-
-        y_extra[(0, -1), :] = 0
-        y_extra[:, (2, 4)] = 0
-        y_extra[:, (0, 1)] *= extra_min_d/sum(sum(y_extra[:, (0, 1)]))
-        y_extra[:, 3] *= extra_min_e/sum(y_extra[:, 3])
+            y_extra = np.zeros((self.n + 2, 5))
+            y_extra[:, (0, 1)] = extra_min_d / (2 * self.n)
+            y_extra[:, 3] = extra_min_e / self.n
+            y_extra[(0, -1), :] = 0
 
         return y_extra.flatten()
 
