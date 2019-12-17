@@ -155,9 +155,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 				synthProbFractions = self.rnaSynthProbFractions[current_media_id]
 
 				# Create masks for different types of RNAs
-				is_mrna = np.isin(TU_index, self.idx_mrna)
-				is_trna = np.isin(TU_index, self.idx_trna)
-				is_rrna = np.isin(TU_index, self.idx_rrna)
+				is_mrna = np.isin(TU_index, self.idx_mRNA)
+				is_trna = np.isin(TU_index, self.idx_tRNA)
+				is_rrna = np.isin(TU_index, self.idx_rRNA)
 				is_rprotein = np.isin(TU_index, self.idx_rprotein)
 				is_rnap = np.isin(TU_index, self.idx_rnap)
 				is_fixed = is_trna | is_rrna | is_rprotein | is_rnap

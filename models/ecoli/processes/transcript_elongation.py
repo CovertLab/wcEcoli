@@ -158,7 +158,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			ntpCounts,
 			reactionLimit,
 			self.randomState,
-			self.elongation_rates[TU_index_all_RNAs])
+			self.elongation_rates[TU_index_partial_RNAs])
+
 		sequence_elongations = result.sequenceElongation
 		ntps_used = result.monomerUsages
 
@@ -173,7 +174,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		# Get attributes of active RNAPs
 		coordinates, domain_index, direction, RNAP_unique_index = self.active_RNAPs.attrs(
-			'coordinates', 'domain_index', 'direction', '_uniqueIndex')
+			'coordinates', 'domain_index', 'direction', 'unique_index')
 
 		# Active RNAP count should equal partial transcript count
 		assert len(RNAP_unique_index) == len(RNAP_index_partial_RNAs)

@@ -19,8 +19,6 @@ BINOMIAL_COEFF = 0.5
 
 def zero_elongation_rate():
 	return {
-		"d1_elng_rate": 0.,
-		"d2_elng_rate": 0.,
 		"d1_elng_rate_factor": 0.,
 		"d2_elng_rate_factor": 0.,
 		}
@@ -39,9 +37,6 @@ def divide_cell(sim):
 	uniqueMolecules = sim.internal_states['UniqueMolecules']
 
 	sim_data = sim.get_sim_data()
-
-	# TODO (Eran): division should be based on both nutrient and gene perturbation condition
-	current_media_id = sim.external_states['Environment'].current_media_id
 
 	# Create the output directory
 	sim_out_dir = filepath.makedirs(sim._outputDir)
@@ -77,9 +72,8 @@ def divide_cell(sim):
 		# Create divided containers
 		d1_bulkMolCntr, d2_bulkMolCntr = divideBulkMolecules(
 			bulkMolecules, randomState)
-		d1_uniqueMolCntr, d2_uniqueMolCntr, daughter_elng_rates = (
-			divideUniqueMolecules(uniqueMolecules, randomState,
-				chromosome_division_results, current_media_id, sim))
+		d1_uniqueMolCntr, d2_uniqueMolCntr, daughter_elng_rates = divideUniqueMolecules(
+			uniqueMolecules, randomState, chromosome_division_results, sim)
 
 	# Save the daughter initialization state.
 	# TODO(jerry): Include the variant_type and variant_index? The seed?
@@ -88,7 +82,6 @@ def divide_cell(sim):
 		d1_path,
 		is_dead=isDead,
 		initial_time=initial_time,
-		elng_rate=daughter_elng_rates["d1_elng_rate"],
 		elng_rate_factor=daughter_elng_rates["d1_elng_rate_factor"],
 		bulk_molecules=d1_bulkMolCntr,
 		unique_molecules=d1_uniqueMolCntr,
@@ -97,7 +90,6 @@ def divide_cell(sim):
 		d2_path,
 		is_dead=isDead,
 		initial_time=initial_time,
-		elng_rate=daughter_elng_rates["d2_elng_rate"],
 		elng_rate_factor=daughter_elng_rates["d2_elng_rate_factor"],
 		bulk_molecules=d2_bulkMolCntr,
 		unique_molecules=d2_uniqueMolCntr,
@@ -183,8 +175,8 @@ def divideBulkMolecules(bulkMolecules, randomState):
 	return d1_bulk_molecules_container, d2_bulk_molecules_container
 
 
-def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_results,
-		current_media_id, sim):
+def divideUniqueMolecules(uniqueMolecules, randomState,
+		chromosome_division_results, sim):
 	"""
 	Divides unique molecules of the mother cell to the two daughter cells.
 	There are currently three different "division modes" by which unique
@@ -245,7 +237,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 
 				if molecule_name == 'active_RNAP':
 					# If molecule is RNA polymerase, save data for future use
-					RNAP_unique_index = molecule_set.attr("_uniqueIndex")
+					RNAP_unique_index = molecule_set.attr("unique_index")
 					RNAP_d1_indexes = RNAP_unique_index[d1_bool]
 					RNAP_d2_indexes = RNAP_unique_index[d2_bool]
 			else:
@@ -261,7 +253,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 			# polymerase molecule is bound to.
 			if n_molecules > 0:
 				is_full_transcript, RNAP_index, RNA_unique_index = molecule_set.attrs(
-					"is_full_transcript", "RNAP_index", "_uniqueIndex")
+					"is_full_transcript", "RNAP_index", "unique_index")
 
 				d1_bool = np.zeros(n_molecules, dtype=np.bool)
 				d2_bool = np.zeros(n_molecules, dtype=np.bool)
@@ -311,12 +303,6 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 			daughter_elng_rates = zero_elongation_rate()
 
 			if n_molecules > 0:
-				# Read the expected ribosome elongation rate for this
-				# environment
-				sim_data = sim.get_sim_data()
-				elng_rate = np.min([sim_data.process.translation.ribosomeElongationRateDict[
-					current_media_id].asNumber(units.aa / units.s), 21.])
-
 				# If growth rate noise is set to True, multiply noise parameter
 				# to translation capacity
 				noiseMultiplier = 1.
@@ -324,8 +310,6 @@ def divideUniqueMolecules(uniqueMolecules, randomState, chromosome_division_resu
 					noiseMultiplier = randomState.normal(1, 0.25)
 
 				daughter_elng_rates = {
-					"d1_elng_rate": elng_rate,
-					"d2_elng_rate": elng_rate,
 					"d1_elng_rate_factor": noiseMultiplier,
 					"d2_elng_rate_factor": noiseMultiplier,
 					}

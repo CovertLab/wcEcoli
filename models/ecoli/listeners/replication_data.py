@@ -61,7 +61,7 @@ class ReplicationData(wholecell.listeners.listener.Listener):
 
 		if len(active_replisomes) > 0:
 			fork_coordinates, fork_domains, fork_unique_index = active_replisomes.attrs(
-				"coordinates", "domain_index", "_uniqueIndex"
+				"coordinates", "domain_index", "unique_index"
 				)
 
 			self.fork_coordinates[:fork_coordinates.size] = fork_coordinates

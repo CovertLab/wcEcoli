@@ -5,7 +5,6 @@ PolypeptideInitiation
 
 Polypeptide initiation sub-model.
 
-@author: Derek Macklin
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 4/30/14
 """
@@ -40,7 +39,10 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = sim_data.process.translation.make_elongation_rates
 
-		# Build mappings between mRNAs and transcription units
+		# Get indexes from proteins to transcription units
+		self.protein_index_to_TU_index = sim_data.relation.rnaIndexToMonomerMapping
+
+		# Build matrix to convert transcription unit counts to mRNA counts
 		all_TU_ids = sim_data.process.transcription.rnaData['id']
 		all_mRNA_ids = sim_data.process.translation.monomerData['rnaId']
 		self.n_TUs = len(all_TU_ids)
@@ -48,17 +50,12 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		self.TU_counts_to_mRNA_counts = np.zeros(
 			(self.n_mRNAs, self.n_TUs), dtype=np.int64)
-		self.protein_index_to_TU_index = {}
-		self.TU_index_to_protein_index = {}
 
 		TU_id_to_index = {TU_id: i for i, TU_id in enumerate(all_TU_ids)}
 		for i, mRNA_id in enumerate(all_mRNA_ids):
 			self.TU_counts_to_mRNA_counts[i, TU_id_to_index[mRNA_id]] = 1
-			self.protein_index_to_TU_index[i] = TU_id_to_index[mRNA_id]
-			self.TU_index_to_protein_index[TU_id_to_index[mRNA_id]] = i
 
 		# Determine changes from parameter shuffling variant
-		shuffleIdxs = None
 		if (hasattr(sim_data.process.translation, "translationEfficienciesShuffleIdxs")
 				and sim_data.process.translation.translationEfficienciesShuffleIdxs is not None):
 			shuffleIdxs = sim_data.process.translation.translationEfficienciesShuffleIdxs
@@ -110,7 +107,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Get attributes of mRNAs
 		TU_index_all_RNAs, is_mRNA, unique_index_all_RNAs = self.RNAs.attrs(
-			'TU_index', 'is_mRNA', '_uniqueIndex')
+			'TU_index', 'is_mRNA', 'unique_index')
 		TU_index_mRNAs = TU_index_all_RNAs[is_mRNA]
 		unique_index_mRNAs = unique_index_all_RNAs[is_mRNA]
 

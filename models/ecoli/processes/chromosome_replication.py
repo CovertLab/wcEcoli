@@ -293,14 +293,14 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# elongations each fork catalyzes
 		reactionLimit = dNtpCounts.sum()
 
-		# active_elongation_rates = self.elongation_rates[sequence_indexes]
+		active_elongation_rates = self.elongation_rates[sequence_indexes]
+
 		result = polymerize(
 			sequences,
 			dNtpCounts,
 			reactionLimit,
 			self.randomState,
-			self.elongation_rates)
-			# active_elongation_rates)
+			active_elongation_rates)
 
 		sequenceElongations = result.sequenceElongation
 		dNtpsUsed = result.monomerUsages

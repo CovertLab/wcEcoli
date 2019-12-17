@@ -734,7 +734,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# Get attributes of RNAs
 	all_RNAs = uniqueMolCntr.objectsInCollection('RNA')
 	TU_index_all_RNAs, length_all_RNAs, is_mRNA, unique_index_all_RNAs = all_RNAs.attrs(
-		'TU_index', 'transcript_length', 'is_mRNA', '_uniqueIndex')
+		'TU_index', 'transcript_length', 'is_mRNA', 'unique_index')
 	TU_index_mRNAs = TU_index_all_RNAs[is_mRNA]
 	length_mRNAs = length_all_RNAs[is_mRNA]
 	unique_index_mRNAs = unique_index_all_RNAs[is_mRNA]

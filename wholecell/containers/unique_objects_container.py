@@ -136,7 +136,7 @@ class UniqueObjectsContainer(object):
 	_defaultSpecification = {
 		"_entryState": np.int8,  # See state descriptions above
 		"_globalIndex": np.int64,  # Index of object in the _globalReference array (collection)
-		"_uniqueIndex": np.int64,  # Unique index assigned to each object
+		"unique_index": np.int64,  # Unique index assigned to each object
 		}
 
 	_globalReferenceDtype = {
@@ -311,7 +311,7 @@ class UniqueObjectsContainer(object):
 		# Add unique index to dict of attributes
 		unique_indexes = np.arange(
 			self._next_unique_index, self._next_unique_index + nObjects)
-		attributes['_uniqueIndex'] = unique_indexes
+		attributes['unique_index'] = unique_indexes
 
 		# Increment value for next available unique index
 		self._next_unique_index += nObjects
@@ -539,7 +539,7 @@ class UniqueObjectsContainer(object):
 			unique_indexes = np.arange(
 				self._next_unique_index,
 				self._next_unique_index + fields['nObjects'])
-			fields['attributes']['_uniqueIndex'] = unique_indexes
+			fields['attributes']['unique_index'] = unique_indexes
 
 			# Increment value for next available unique index
 			self._next_unique_index += fields['nObjects']
