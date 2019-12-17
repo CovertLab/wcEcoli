@@ -37,6 +37,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		self.ntpIds = sim_data.moleculeGroups.ntpIds
 		self.uncharged_trna_ids = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']].tolist()
 		self.charged_trna_ids = sim_data.process.transcription.charged_trna_names
+		self.n_aas = len(self.aaIds)
 
 	# Allocate memory
 	def allocate(self):
@@ -66,6 +67,10 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		self.ntpRequestSize = np.zeros(n_ntp, np.float64)
 		self.ntpAllocated = np.zeros(n_ntp, np.float64)
 		self.ntpUsed = np.zeros(n_ntp, np.float64)
+
+		self.rela_syn = 0.
+		self.spot_syn = 0.
+		self.spot_deg = 0.
 
 	def update(self):
 		pass
@@ -110,4 +115,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			ntpRequestSize = self.ntpRequestSize,
 			ntpAllocated = self.ntpAllocated,
 			ntpUsed = self.ntpUsed,
+			rela_syn = self.rela_syn,
+			spot_syn = self.spot_syn,
+			spot_deg = self.spot_deg,
 			)

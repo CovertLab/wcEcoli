@@ -61,6 +61,13 @@ class Metabolism(wholecell.processes.process.Process):
 		self._getBiomassAsConcentrations = sim_data.mass.getBiomassAsConcentrations
 		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
 
+		self.use_trna_charging = sim._trna_charging
+
+		# Include ppGpp concentration target in objective if not handled kinetically in other processes
+		self.include_ppgpp = not sim._ppgpp_regulation or not self.use_trna_charging
+		self.ppgpp_id = sim_data.moleculeIds.ppGpp
+		self.getppGppConc = sim_data.growthRateParameters.getppGppConc
+
 		# create boundary object
 		self.boundary = Boundary(
 			sim_data.external_state.environment,
@@ -71,21 +78,26 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# go through all media in the timeline and add to metaboliteNames
 		self.metaboliteNamesFromNutrients = set()
+		if self.include_ppgpp:
+			self.metaboliteNamesFromNutrients.add(self.ppgpp_id)
 		for time, media_id in self.boundary.current_timeline:
 			self.metaboliteNamesFromNutrients.update(
-				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-					media_id, sim_data.process.metabolism.nutrientsToInternalConc
-					)
+				sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(media_id)
 				)
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
 		concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			self.boundary.current_media
+			self.boundary.current_media_id
 			)
+		doubling_time = sim_data.conditionToDoublingTime[sim_data.condition]
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
-			sim_data.conditionToDoublingTime[sim_data.condition]
+			doubling_time
 			)
 		concDict.update(self.concModificationsBasedOnCondition)
+
+		if self.include_ppgpp:
+			concDict[self.ppgpp_id] = self.getppGppConc(doubling_time)
+
 		self.homeostaticObjective = dict((key, concDict[key].asNumber(CONC_UNITS)) for key in concDict)
 
 		# Load initial mass
@@ -93,8 +105,9 @@ class Metabolism(wholecell.processes.process.Process):
 		initDryMass = sim_data.mass.avgCellDryMassInit
 		initCellMass = initWaterMass + initDryMass
 		energyCostPerWetMass = sim_data.constants.darkATP * initDryMass / initCellMass
-		moleculeMasses = dict(zip(self.boundary.exchange_data['externalExchangeMolecules'],
-			sim_data.getter.getMass(self.boundary.exchange_data['externalExchangeMolecules']).asNumber(MASS_UNITS / COUNTS_UNITS)))
+		exchange_molecules = list(self.boundary.exchange_data['externalExchangeMolecules'])
+		moleculeMasses = dict(zip(exchange_molecules,
+			sim_data.getter.getMass(exchange_molecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
 
 		# Data structures to compute reaction bounds based on enzyme presence/absence
 		self.catalystsList = sim_data.process.metabolism.catalystsList
@@ -151,20 +164,20 @@ class Metabolism(wholecell.processes.process.Process):
 		# Set up FBA solver
 		# reactionRateTargets value is just for initialization, it gets reset each timestep during evolveState
 		self.fbaObjectOptions = {
-			"reactionStoich" : sim_data.process.metabolism.reactionStoich,
-			"externalExchangedMolecules" : self.boundary.exchange_data['externalExchangeMolecules'],
-			"objective" : self.homeostaticObjective,
-			"objectiveType" : "homeostatic_kinetics_mixed",
-			"objectiveParameters" : {
-					"kineticObjectiveWeight" : kinetic_objective_weight,
-					"reactionRateTargets" : {reaction: 1 for reaction in self.all_constrained_reactions},
-					"oneSidedReactionTargets" : [],
+			"reactionStoich": sim_data.process.metabolism.reactionStoich,
+			"externalExchangedMolecules": sorted(self.boundary.exchange_data['externalExchangeMolecules']),
+			"objective": self.homeostaticObjective,
+			"objectiveType": "homeostatic_kinetics_mixed",
+			"objectiveParameters": {
+					"kineticObjectiveWeight": kinetic_objective_weight,
+					"reactionRateTargets": {reaction: 1 for reaction in self.all_constrained_reactions},
+					"oneSidedReactionTargets": [],
 					},
-			"moleculeMasses" : moleculeMasses,
-			"secretionPenaltyCoeff" : sim_data.constants.secretion_penalty_coeff, # The "inconvenient constant"--limit secretion (e.g., of CO2)
-			"solver" : solver,
-			"maintenanceCostGAM" : energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
-			"maintenanceReaction" : sim_data.process.metabolism.maintenanceReaction,
+			"moleculeMasses": moleculeMasses,
+			"secretionPenaltyCoeff": sim_data.constants.secretion_penalty_coeff, # The "inconvenient constant"--limit secretion (e.g., of CO2)
+			"solver": solver,
+			"maintenanceCostGAM": energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
+			"maintenanceReaction": sim_data.process.metabolism.maintenanceReaction,
 		}
 		if not self.use_kinetics:
 			self.fbaObjectOptions["objectiveType"] = "homeostatic"
@@ -213,7 +226,6 @@ class Metabolism(wholecell.processes.process.Process):
 			self.shuffleCatalyzedIdxs = sim_data.process.metabolism.catalystShuffleIdxs
 
 		# Track updated AA concentration targets with tRNA charging
-		self.use_trna_charging = sim._trna_charging
 		self.aa_targets = {}
 		self.aa_targets_not_updated = set(['L-SELENOCYSTEINE[c]', 'GLT[c]'])
 		self.aa_names = sim_data.moleculeGroups.aaIDs
@@ -239,25 +251,26 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# get boundary conditions
 		self.boundary.updateBoundary()
-		current_media = self.boundary.current_media
+		current_media_id = self.boundary.current_media_id
 		exchange_data = self.boundary.exchange_data
 
 		# make sure there are no new flux targets from the boundary
 		assert set(self.boundary.transport_fluxes.keys()).issubset(self.all_constrained_reactions)
 
-		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
-			self.nutrientToDoublingTime.get(current_media, self.nutrientToDoublingTime["minimal"])
-			)
+		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
+		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(doubling_time)
 
 		if self.use_trna_charging:
 			self.concModificationsBasedOnCondition.update(self.update_amino_acid_targets(countsToMolar))
+		if self.include_ppgpp:
+			self.concModificationsBasedOnCondition[self.ppgpp_id] = self.getppGppConc(doubling_time)
 
 		# Set external molecule levels
 		externalMoleculeLevels, newObjective = self.exchangeConstraints(
 			self.externalMoleculeIDs,
 			coefficient,
 			CONC_UNITS,
-			current_media,
+			current_media_id,
 			exchange_data,
 			self.concModificationsBasedOnCondition,
 			)
@@ -480,7 +493,7 @@ class Boundary(object):
 	'''
 
 	def __init__(self, sim_data_environment, sim_data_boundary, external_state, environmentView):
-		self.external_state = external_state
+		self.environment = external_state['Environment']
 
 		# get maps between environment and exchange molecules
 		self.env_to_exchange_map = sim_data_environment.env_to_exchange_map
@@ -492,14 +505,14 @@ class Boundary(object):
 		self.getImportConstraints = sim_data_boundary.getImportConstraints
 
 		# get variables from environment
-		self.current_timeline = self.external_state['Environment'].current_timeline
+		self.current_timeline = self.environment.current_timeline
 
 		# views on environment
-		self.environment_molecule_ids = self.external_state['Environment']._moleculeIDs
+		self.environment_molecule_ids = self.environment._moleculeIDs
 		self.environment_molecules = environmentView(self.environment_molecule_ids)
 
 		# transport fluxes from the external state
-		self.transport_fluxes = self.external_state['Environment'].transport_fluxes
+		self.transport_fluxes = self.environment.transport_fluxes
 
 		self.updateBoundary()
 
@@ -508,12 +521,13 @@ class Boundary(object):
 		update all boundary variables for the current environment
 		'''
 
-		self.current_media = self.external_state['Environment'].current_media_id
+		self.current_media_id = self.environment.current_media_id
 		current_concentrations = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
+
 		self.exchange_data = self.exchangeDataFromConcentrations(current_concentrations)
 
 		# transport fluxes from the external state
-		self.transport_fluxes = self.external_state['Environment'].transport_fluxes
+		self.transport_fluxes = self.environment.transport_fluxes
 
 	def updateEnvironment(self, external_exchange_molecule_ids, delta_nutrients):
 		'''
