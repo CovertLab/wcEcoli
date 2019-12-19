@@ -413,12 +413,13 @@ class MinODEMaster():
 
         return
 
-l_0 = 4 # unit: um
-n = 6 # number of compartments in the beginning
-min_ode_master = MinODEMaster(n, l_0)
-if CHANGE_SIZE:
-    dl_dt = 6 / 2400
-else:
-    dl_dt = 0
-t_max = 500
-sol = min_ode_master.min_master(dl_dt, t_max)
+if __name__ == "__main__":
+    l_0 = 4 # unit: um
+    n = 6 # number of compartments in the beginning
+    min_ode_master = MinODEMaster(n, l_0)
+    if CHANGE_SIZE:
+        dl_dt = 6 / 2400
+    else:
+        dl_dt = 0
+    t_max = 500
+    sol = min_ode_master.min_master(dl_dt, t_max)
