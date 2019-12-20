@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 PolypeptideInitiation
 
@@ -17,7 +16,6 @@ import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize
 
-import itertools
 
 class PolypeptideInitiation(wholecell.processes.process.Process):
 	""" PolypeptideInitiation """
@@ -106,13 +104,13 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			])
 
 		# Get attributes of mRNAs
-		TU_index_all_RNAs, is_mRNA, unique_index_all_RNAs = self.RNAs.attrs(
-			'TU_index', 'is_mRNA', 'unique_index')
-		TU_index_mRNAs = TU_index_all_RNAs[is_mRNA]
-		unique_index_mRNAs = unique_index_all_RNAs[is_mRNA]
+		TU_index_all_RNAs, is_full_transcript, unique_index_all_RNAs = self.RNAs.attrs(
+			'TU_index', 'is_full_transcript', 'unique_index')
+		TU_index_full_transcripts = TU_index_all_RNAs[is_full_transcript]
+		unique_index_full_transcripts = unique_index_all_RNAs[is_full_transcript]
 
-		# Get counts of each translatable mRNA
-		TU_counts = np.bincount(TU_index_mRNAs, minlength=self.n_TUs)
+		# Get counts of each full mRNA
+		TU_counts = np.bincount(TU_index_full_transcripts, minlength=self.n_TUs)
 		mRNA_counts = self.TU_counts_to_mRNA_counts.dot(TU_counts)
 
 		# Calculate initiation probabilities for ribosomes based on mRNA counts
@@ -158,7 +156,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			protein_indexes[start_index:start_index+counts] = protein_index
 
 			# Get mask for mRNA molecules that produce this protein
-			mask = (TU_index_mRNAs == self.protein_index_to_TU_index[protein_index])
+			mask = (TU_index_full_transcripts == self.protein_index_to_TU_index[protein_index])
 			n_mRNAs = mask.sum()
 
 			# Distribute ribosomes among these mRNAs
@@ -167,7 +165,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 			# Get unique indexes of each mRNA
 			mRNA_indexes[start_index:start_index + counts] = np.repeat(
-				unique_index_mRNAs[mask], n_ribosomes_per_RNA)
+				unique_index_full_transcripts[mask], n_ribosomes_per_RNA)
 
 			start_index += counts
 
