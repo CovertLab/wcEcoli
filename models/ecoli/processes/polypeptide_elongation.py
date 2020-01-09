@@ -777,7 +777,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			ppgpp_conc (float with concentration units): concentration of ppGpp
 			counts_to_molar (float with concentration units): conversion factor
 				from counts to molarity
-			v_rib ():
+			v_rib (float): rate of amino acid incorporation at the ribosome,
+				in units of uM/s
 			request (bool): if True, only considers reactant stoichiometry,
 				otherwise considers reactants and products. For use in
 				calculateRequest. GDP appears as both a reactant and product
@@ -805,15 +806,11 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		ppgpp_conc = ppgpp_conc.asNumber(MICROMOLAR_UNITS)
 		counts_to_micromolar = counts_to_molar.asNumber(MICROMOLAR_UNITS)
 
-		numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
-		ribosomes_bound_to_uncharged = ribosome_conc * (f * uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf) / numerator_ribosome
-
-		saturated = charged_trna_conc / self.krta / (1 + charged_trna_conc / self.krta + uncharged_trna_conc / self.krtf)
-		fraction_a_site = f * v_rib / (saturated * self.maxRibosomeElongationRate * ribosome_conc)
-		uncharged_total = ribosome_conc * fraction_a_site * uncharged_trna_conc / self.krtf / (1 + charged_trna_conc / self.krta + uncharged_trna_conc / self.krtf)
-
-		print(uncharged_total.sum())
-		print(ribosomes_bound_to_uncharged.sum())
+		numerator = 1 + charged_trna_conc / self.krta + uncharged_trna_conc / self.krtf
+		saturated_charged = charged_trna_conc / self.krta / numerator
+		saturated_uncharged = uncharged_trna_conc / self.krtf / numerator
+		fraction_a_site = f * v_rib / (saturated_charged * self.maxRibosomeElongationRate)
+		ribosomes_bound_to_uncharged = fraction_a_site * saturated_uncharged
 
 		# Handle rare cases when tRNA concentrations are 0
 		# Can result in inf and nan so assume a fraction of ribosomes
