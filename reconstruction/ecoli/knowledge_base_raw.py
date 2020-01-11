@@ -101,6 +101,8 @@ class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
 	def __init__(self):
+		import time; time.sleep(8000)
+
 		# Load raw data from TSV files
 		for filename in LIST_OF_DICT_FILENAMES:
 			self._load_tsv(FLAT_DIR, os.path.join(FLAT_DIR, filename))
