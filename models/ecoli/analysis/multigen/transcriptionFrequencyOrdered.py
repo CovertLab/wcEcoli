@@ -199,7 +199,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		neverAxis.text(neverAxis.get_xlim()[1] * 1.02, len(neverTranscriptionEvents_N) + len(neverTranscriptionEvents_E) * 0.5, "%s essential\ngenes" % len(neverTranscriptionEvents_E), fontsize = 10, verticalalignment = "center")
 
 		plt.subplots_adjust(wspace = 0.4, hspace = 0.4, right = 0.83, bottom = 0.05, left = 0.07, top = 0.95)
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
+		# Only save .png - vectorized formats (.pdf and .svg) are extremely slow
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata, extension='.png', dpi=600)
 		plt.close("all")
 
 

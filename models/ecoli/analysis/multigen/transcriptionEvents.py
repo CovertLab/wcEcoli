@@ -157,7 +157,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		plt.subplots_adjust(wspace = 0.4, hspace = 0, right = 0.9, bottom = 0.1, left = 0.1, top = 0.9)
 
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		# Only save .png - vectorized formats (.pdf and .svg) are extremely slow
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata, extension='.png', dpi=600)
 		plt.close("all")
 
 
