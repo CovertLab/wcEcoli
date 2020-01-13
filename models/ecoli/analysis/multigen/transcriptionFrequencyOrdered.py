@@ -1,12 +1,11 @@
 """
 Plots frequency of observing at least 1 transcript during a cell's life.
 
-@author: Heejo Choi
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 1/31/2017
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
 import cPickle
@@ -42,10 +41,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 		rnaIds = sim_data.process.transcription.rnaData["id"]
 		isMRna = sim_data.process.transcription.rnaData["isMRna"]
-		synthProb = sim_data.process.transcription.rnaSynthProb["basal"]
 		mRnaIndexes = np.where(isMRna)[0]
-
-		mRnaSynthProb = np.array([synthProb[x] for x in mRnaIndexes])
 		mRnaIds = np.array([rnaIds[x] for x in mRnaIndexes])
 
 		# Get whether or not mRNAs were transcribed
@@ -83,7 +79,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		indexingOrder = np.argsort(np.mean(simulatedSynthProbs, axis = 0))
 		transcribedBoolOrdered = np.mean(transcribedBool, axis = 0)[indexingOrder]
-		simulatedSynthProbsOrdered = np.mean(simulatedSynthProbs, axis = 0)[indexingOrder]
 		transcriptionEventsOrdered = transcriptionEvents[:, indexingOrder]
 		mRnaIdsOrdered = mRnaIds[indexingOrder]
 
@@ -97,8 +92,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Assemble data
 		alwaysTranscriptionEvents_E = []
 		alwaysTranscriptionEvents_N = []
-		alwaysId_E = []
-		alwaysId_N = []
 		for i in alwaysPresentIndexes:
 			v = (time[transcriptionEventsOrdered[:, i]] / 3600.).tolist()
 			if transcriptionEventsOrdered[:, i].sum() == 0:
