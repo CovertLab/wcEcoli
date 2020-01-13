@@ -19,7 +19,7 @@ import bokeh.io
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
-from wholecell.analysis.analysis_tools import exportFigure
+from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import multigenAnalysisPlot
 
 
@@ -56,11 +56,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			rnaSynthProb.close()
 			simulatedSynthProbs.append(simulatedSynthProb)
 
-			bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-			moleculeIds = bulkMolecules.readAttribute("objectNames")
-			mRnaIndexes = np.array([moleculeIds.index(x) for x in mRnaNames])
-			moleculeCounts = bulkMolecules.readColumn("counts")[:, mRnaIndexes]
-			bulkMolecules.close()
+			(moleculeCounts,) = read_bulk_molecule_counts(simOutDir, (mRnaNames,))
 
 			moleculeCountsSumOverTime = moleculeCounts.sum(axis = 0)
 			mRnasTranscribed = np.array([x != 0 for x in moleculeCountsSumOverTime])
