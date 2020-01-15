@@ -31,6 +31,7 @@ LIST_OF_DICT_FILENAMES = (
 	"genes.tsv",
 	"growthRateDependentParameters.tsv",
 	"massAtReplicationInitiation.tsv",
+	"metabolism_kinetics.tsv",
 	"metabolites.tsv",
 	"metaboliteConcentrations.tsv",
 	"modificationReactions.tsv",
