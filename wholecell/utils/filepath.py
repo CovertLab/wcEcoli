@@ -10,11 +10,17 @@ import errno
 import json
 import io
 import os
-import subprocess
+import sys
+if os.name == 'posix' and sys.version_info[0] < 3:
+	import subprocess32 as subprocess
+else:
+	import subprocess
 from typing import Any, AnyStr, Generator, Iterable, Optional, Sequence, Tuple
 
 import wholecell
 
+
+TIMEOUT = 60  # seconds
 
 # The wcEcoli/ project root path which contains wholecell/.
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(wholecell.__file__)))
@@ -25,7 +31,7 @@ MATPLOTLIBRC_FILE = os.path.join(ROOT_PATH, 'matplotlibrc')
 TIMESTAMP_PATTERN = r'\d{8}\.\d{6}(?:\.\d{6})?'
 
 def makedirs(path, *paths):
-	# type: (str, Iterable[str]) -> str
+	# type: (str, *str) -> str
 	"""Join one or more path components, make that directory path (using the
 	default mode 0o0777), and return the full path.
 
@@ -67,50 +73,47 @@ def verify_dir_exists(dir_path, message=''):
 		raise IOError(errno.ENOENT,
 			'Missing dir "{}".  {}'.format(dir_path, message))
 
-def run_cmd(tokens, trim=True):
-	# type: (Sequence[str], bool) -> str
+def run_cmd(tokens, trim=True, timeout=TIMEOUT):
+	# type: (Sequence[str], bool, Optional[int]) -> str
 	"""Run a shell command-line (in token list form) and return its output.
 	This does not expand filename patterns or environment variables or do other
 	shell processing steps.
-
-	This sets environment variables `PATH` and (if available) `LD_LIBRARY_PATH`.
-	Sherlock needs the latter to find libcrypto.so to run `git`.
 
 	Args:
 		tokens: The command line as a list of string tokens.
 		trim: Whether to trim off trailing whitespace. This is useful
 			because the subprocess output usually ends with a newline.
+		timeout: timeout in seconds; None for no timeout.
 	Returns:
 		The command's output string.
+	Raises:
+		OSError, subprocess.SubprocessError (TimeoutExpired or CalledProcessError)
 	"""
-	environ = {
-		"PATH": os.environ["PATH"],
-		"LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
-		}
-	out = subprocess.Popen(tokens, stdout = subprocess.PIPE, env=environ).communicate()[0]
+	out = subprocess.run(
+		tokens, stdout=subprocess.PIPE, check=True, universal_newlines=True,
+		timeout=timeout).stdout
 	if trim:
 		out = out.rstrip()
 	return out
 
-def run_cmdline(line, trim=True):
-	# type: (str, bool) -> Optional[str]
-	"""Run a shell command-line string and return its output. This does not
-	expand filename patterns or environment variables or do other shell
-	processing steps.
 
-	This sets environment variables `PATH` and (if available) `LD_LIBRARY_PATH`.
-	Sherlock needs the latter to find libcrypto.so to run `git`.
+def run_cmdline(line, trim=True, timeout=TIMEOUT):
+	# type: (str, bool, Optional[int]) -> Optional[str]
+	"""Run a shell command-line string and return its output, or None if it
+	failed. This does not expand filename patterns or environment variables or
+	do other shell processing steps like quoting.
 
 	Args:
-		line: The command line as a string.
+		line: The command line as a string to split.
 		trim: Whether to trim off trailing whitespace. This is useful
 			because the subprocess output usually ends with a newline.
+		timeout: timeout in seconds; None for no timeout.
 	Returns:
 		The command's output string, or None if it couldn't even run.
 	"""
 	try:
-		return run_cmd(tokens=line.split(), trim=trim)
-	except StandardError as e:
+		return run_cmd(tokens=line.split(), trim=trim, timeout=timeout)
+	except (OSError, subprocess.SubprocessError) as e:
 		print('failed to run command line {}: {}'.format(line, e))
 		return None
 
