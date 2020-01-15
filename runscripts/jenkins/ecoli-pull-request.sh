@@ -25,7 +25,7 @@ echo y | lpad reset
 
 PYTHONPATH=$PWD DESC="singleshot" VARIANT="condition" FIRST_VARIANT_INDEX=2 LAST_VARIANT_INDEX=2 SINGLE_DAUGHTERS=1 N_GENS=5 MASS_DISTRIBUTION=0 COMPRESS_OUTPUT=1 PLOTS=ACTIVE RAISE_ON_TIME_LIMIT=1 python runscripts/fireworks/fw_queue.py
 
-PYTHONPATH=$PWD python -c 'import reconstruction.ecoli.knowledge_base_raw as rd; rd.KnowledgeBaseEcoli()'  # test failure outside firetask
+# PYTHONPATH=$PWD python -c 'import reconstruction.ecoli.knowledge_base_raw as rd; rd.KnowledgeBaseEcoli()'  # no seg fault
 PYTHONPATH=$PWD python runscripts/manual/runParca.py  # Seg fault
 PYTHONPATH=$PWD rlaunch singleshot  # Seg fault with long raw_data load
 PYTHONPATH=$PWD rlaunch rapidfire --nlaunches 0  # Seg fault with many tasks executed together
