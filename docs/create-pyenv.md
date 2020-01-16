@@ -178,7 +178,7 @@ This page goes through the Python environment setup steps in more detail and wit
           language = c
       ```
 
-1. Add the following line to your bash profile.
+1. (Optional) Add the following line to your bash profile. This has been shown to improve performance significantly on linux machines.
     ```
     export OPENBLAS_NUM_THREADS=1
     ```
