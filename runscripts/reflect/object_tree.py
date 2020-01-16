@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import unum
 import numpy as np
 import re
+import sys
 import types
 import numbers
 import functools
@@ -113,6 +114,57 @@ def object_tree(obj, path='', debug=None):
 		tree['!type'] = type(obj)
 
 		return tree
+
+def size_tree(o, cutoff=100000):
+	"""
+	Find the differences between two trees or leaf nodes a and b. Return a
+	falsely value if the inputs match OR a truthy value that explains or
+	summarizes their differences, where each point in the tree where the inputs
+	differ will be a tuple (a's value, b's value, optional description).
+
+	Floating point numbers are compared with the tolerance set by the constant
+	NULP (Number of Units in the Last Place), allowing for NaN and infinite
+	values. (Adjust the tolerance level NULP if needed.)
+
+	This operation is symmetrical.
+	"""
+
+	def return_val(total, value):
+		if total > cutoff and value:
+			return total, value
+		else:
+			return total,
+
+	size = sys.getsizeof(o)
+
+	# if they are leafs (including strings) use python equality comparison
+	if is_leaf(o):
+		return size,
+
+	# if they are dictionaries then diff the value under each key
+	elif isinstance(o, collections.Mapping):
+		diff = {}
+		total_diff = size
+		for key, value in o.items():
+			subdiff = size_tree(value, cutoff)
+			total_diff += subdiff[0]
+			if subdiff[0] > cutoff:
+				diff[key] = subdiff
+		return return_val(total_diff, diff)
+
+	# if they are sequences then compare each element at each index
+	elif isinstance(o, collections.Sequence):
+		diff = []
+		total_diff = size
+		for value in o:
+			subdiff = size_tree(value, cutoff)
+			total_diff += subdiff[0]
+			if subdiff[0] > cutoff:
+				diff.append(subdiff)
+		return return_val(total_diff, diff)
+
+	else:
+		return size,
 
 def diff_trees(a, b):
 	"""

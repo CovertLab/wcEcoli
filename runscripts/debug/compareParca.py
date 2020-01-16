@@ -6,7 +6,7 @@ from pprint import pprint
 import sys
 
 from wholecell.utils import constants
-from runscripts.reflect.object_tree import object_tree, diff_trees
+from runscripts.reflect.object_tree import diff_trees, object_tree, size_tree
 
 
 def load_fit_tree(out_subdir):
@@ -43,5 +43,8 @@ the differences.'''.format(sys.argv[0]))
 
 	diffs = diff_trees(once, twice)
 	pprint(diffs, width=160)
+
+	sizes = size_tree(once, 100000)
+	pprint(sizes, width=160)
 
 	exit(3 if diffs else 0)
