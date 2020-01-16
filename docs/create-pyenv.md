@@ -134,6 +134,9 @@ This page goes through the Python environment setup steps in more detail and wit
    **Note:** If you get an `instruction not found` error while installing OpenBLAS, that probably means
    your old assembler is incompatible with the Fortran compiler. Figure out how to update the assembler
    or else install OpenBLAS 0.3.4 and suffer its threading bugs and inconsistent results.
+   
+   **Note:** OpenBLAS 0.3.7 (as installed by brew install openblas) works fine on macOS, but not inside
+   Docker on macOS unless you compile it with option `NO_AVX2=1`.
 
 1. Create `~/.numpy-site.cfg` pointing to _your OpenBLAS installation directory._
 
