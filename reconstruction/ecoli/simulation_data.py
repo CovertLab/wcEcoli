@@ -18,7 +18,7 @@ from reconstruction.ecoli.dataclasses.getterFunctions import getterFunctions
 from reconstruction.ecoli.dataclasses.moleculeGroups import MoleculeGroups
 from reconstruction.ecoli.dataclasses.moleculeIds import MoleculeIds
 from reconstruction.ecoli.dataclasses.constants import Constants
-from reconstruction.ecoli.dataclasses.getNames import GetNames
+from reconstruction.ecoli.dataclasses.common_names import CommonNames
 from reconstruction.ecoli.dataclasses.state.internal_state import InternalState
 from reconstruction.ecoli.dataclasses.state.external_state import ExternalState
 from reconstruction.ecoli.dataclasses.process.process import Process
@@ -79,7 +79,7 @@ class SimulationDataEcoli(object):
 		#### VARIANT CODE ####
 
 		# Mappings from element IDs to common names
-		self.common_names = GetNames(raw_data, self)
+		self.common_names = CommonNames(raw_data, self)
 
 
 	def _addHardCodedAttributes(self):

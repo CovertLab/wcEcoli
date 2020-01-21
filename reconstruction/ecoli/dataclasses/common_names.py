@@ -15,7 +15,7 @@ cases they were selected by hand.
 
 from __future__ import absolute_import, division, print_function
 
-class GetNames(object):
+class CommonNames(object):
 	""" GetNames """
 
 	def __init__(self, raw_data, sim_data):
