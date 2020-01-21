@@ -22,18 +22,20 @@ class GetNames(object):
 		self._getNamesDict(raw_data, sim_data)
 
 	def _getNamesDict(self, raw_data, sim_data):
-
 		# create dictionaries of common names
+		names = {}
+
 		for label in dir(raw_data.common_names):
 			if label.startswith("__"):
 				continue
 
-			names = {}
+			label_names = {}
 			file = getattr(raw_data.common_names, label)
 			for row in file:
-				if row['Display Name']:
-					names[row['Object ID']] = (
-						row['Display Name'],
-						row['Synonyms'])
+				label_names[row['Object ID']] = (
+					row['Primary Name'],
+					row['Synonyms'][1:-1].split(', '))
 
-			eval('self.%s = names' % (label,))
+			names[label] = label_names
+
+		self.__dict__.update(names)

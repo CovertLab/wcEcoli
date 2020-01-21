@@ -81,7 +81,6 @@ class SimulationDataEcoli(object):
 		# Mappings from element IDs to common names
 		self.common_names = GetNames(raw_data, self)
 
-		import ipdb; ipdb.set_trace()
 
 	def _addHardCodedAttributes(self):
 		self.molecular_weight_keys = [
