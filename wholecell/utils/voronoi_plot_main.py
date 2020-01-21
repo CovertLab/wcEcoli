@@ -723,6 +723,8 @@ class VoronoiMaster():
             ax_shape: the shape of the subplot, in (nrows, ncols)
             chained: whether the new subplot should be based on the previous
                 subplot or not.
+            verbose: If true, print the magnitude of the error in the areas
+                represented by the plot
 
         Returns:
             error_all: the error in total area representation.
