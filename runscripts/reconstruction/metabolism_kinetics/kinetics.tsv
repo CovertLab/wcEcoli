@@ -258,7 +258,7 @@ Pubmed ID	reactionID	enzymeIDs	substrateIDs	Temp	rateEquationType	direction	kcat
 9748544	"ARGININE--TRNA-LIGASE-RXN"	["ARGS-MONOMER"]	["ATP","ARG-tRNAs","ARG"]		"standard"		[26]	[900,2.5,12]	[]	null	null	null	null	null	ecocyc kinetics	done!		['ARG-tRNAs']				
 9765987	"7KAPSYN-RXN"	["7KAPSYN-CPLX"]	["L-ALPHA-ALANINE","CPD-558"]		"standard"		[0.05]	[900,70]	[]	null	null	null	null	null		done!						
 9772162	"GKI-RXN"	["GKI-MONOMER"]	["ATP","GLYCERATE"]	22	"standard"		[2.5]	[61,51]	[]	null	null	null	null	null	ecocyc new	done!						
-9772162	"TSA-REDUCT-RXN"	["TSA-REDUCT-MONOMER"]	["TARTRONATE-S-ALD"]	22	"standard"		[23]	[]	[]	null	null	null	null	null	ecocyc new	done!		["TARTRONATE-S-ALD"]				
+9772162	"TSA-REDUCT-RXN-GLYCERATE/NAD//TARTRONATE-S-ALD/NADH/PROTON.44."	["TSA-REDUCT-MONOMER"]	["TARTRONATE-S-ALD"]	22	"standard"		[23]	[]	[]	null	null	null	null	null	ecocyc new	done!		["TARTRONATE-S-ALD"]	"TSA-REDUCT-RXN"			
 9772162	"GALACTARDEHYDRA-RXN"	["GALACTARDEHYDRA-MONOMER"]	["D-GALACTARATE"]	22	"standard"		[22]	[800]	[]	null	null	null	null	null	ecocyc new	done!		["D-GALACTARATE"]				
 9772162	"KDGALDOL-RXN"	["CPLX0-7615"]	["5-KETO-4-DEOXY-D-GLUCARATE"]	22	"standard"		[27.3]	[65]	[]	null	null	null	null	null	ecocyc new	done!		["5-KETO-4-DEOXY-D-GLUCARATE"]				
 9772162	"GLUCARDEHYDRA-RXN"	["GLUCARDEHYDRA-MONOMER"]	["D-GLUCARATE"]	22	"standard"		[20]	[60]	[]	null	null	null	null	null	ecocyc new	done!		["D-GLUCARATE"]				
@@ -351,7 +351,7 @@ Pubmed ID	reactionID	enzymeIDs	substrateIDs	Temp	rateEquationType	direction	kcat
 10831428	"TREHALOSE6PSYN-RXN"	["TREHALOSE6PSYN-MONOMER"]	["ALPHA-GLC-6-P"]	30	"standard"		[6.7]	[3700]	[]	null	null	null	null	null		done!						
 10831428	"TREHALOSEPHOSPHA-RXN"	["TREHALOSEPHOSPHASYN-MONOMER"]	["TREHALOSE-6P"]	30	"standard"		[14.6]	[2600]	[]	null	null	null	null	null		done!						
 10841550	"2.7.7.60-RXN"	["CPLX0-234"]	["CTP","2-C-METHYL-D-ERYTHRITOL-4-PHOSPHATE"]	37	"standard"		[9]	[3,131]	[]	null	null	null	null	null	ecocyc new	done!		["2-C-METHYL-D-ERYTHRITOL-4-PHOSPHATE"]				
-10858298	"GLYOHMETRANS-RXN"	["GLYOHMETRANS-CPLX"]	["SER"]	30	"standard"		[0.217]	[]	[]	null	null	null	null	null	ecocyc new	done!						
+10858298	"GLYOHMETRANS-RXN-SER/THF//GLY/METHYLENE-THF/WATER.33."	["GLYOHMETRANS-CPLX"]	["SER"]	30	"standard"		[0.217]	[]	[]	null	null	null	null	null	ecocyc new	done!			"GLYOHMETRANS-RXN"			
 10858298	"RXN0-5240"	["GLYOHMETRANS-CPLX"]	["D-ALANINE"]	30	"standard"		[0.00055]	[30000]	[]	null	null	null	null	null	ecocyc new	done!		["D-ALANINE"]				
 10858298	"RXN0-5240"	["GLYOHMETRANS-CPLX"]	["L-ALPHA-ALANINE"]	30	"standard"		[0.0002]	[28000]	[]	null	null	null	null	null	ecocyc new	done!		["L-ALANINE"]				
 10858298	"RXN0-5234"	["GLYOHMETRANS-CPLX"]	["L-ALLO-THREONINE"]	30	"standard"		[0.5]	[1500]	[]	null	null	null	null	null	ecocyc new	done!		[ALLO-THR"]				
@@ -455,7 +455,7 @@ Pubmed ID	reactionID	enzymeIDs	substrateIDs	Temp	rateEquationType	direction	kcat
 11985492	"AMINEPHEN-RXN"	["AMINEOXID-CPLX"]	["PHENYLETHYLAMINE"]		"standard"		[14.32]	[1.7]	[]	null	null	null	null	null		temperature not reported, chose pH 7.5						
 12021453	"FUMHYDR-RXN"	["FUMARASE-C"]	["MAL"]		"standard"		[595.2]	[857]	[]	null	null	null	null	null		temperature not reported, should be a complex						
 12021453	"FUMHYDR-RXN"	["FUMARASE-C"]	["FUM"]		"standard"		[1149]	[207]	[]	null	null	null	null	null		temperature not reported, should be a complex						
-12034706	"ACYLCOASYN-RXN"	["ACYLCOASYN-CPLX"]	["ATP"]	37	"standard"		[0.029]	[130]	[]	null	null	null	null	null	ecocyc kinetics	done!						
+12034706	"ACYLCOASYN-RXN"	["ACYLCOASYN-CPLX"]	["ATP"]	37	"standard"		[0.029]	[130]	[]	null	null	null	null	null	ecocyc kinetics	done! - for production of oleoyl-CoA						
 12097643	"TYROSINE--TRNA-LIGASE-RXN"	["TYRS-CPLX"]	["TYR"]	37	"standard"		[12]	[5.3]	[]	null	null	null	null	null	ecocyc kinetics	done!						
 12130657	"PROLINE--TRNA-LIGASE-RXN"	["PROS-CPLX"]	["PRO"]	37	"standard"		[14]	[290]	[]	null	null	null	null	null	ecocyc new	37 deg						
 12130657	"CYSTEINE--TRNA-LIGASE-RXN"	["PROS-CPLX"]	["CYS"]	37	"standard"		[0.022]	[170]	[]	null	null	null	null	null	ecocyc new	37 deg						
@@ -482,7 +482,7 @@ Pubmed ID	reactionID	enzymeIDs	substrateIDs	Temp	rateEquationType	direction	kcat
 12482597	"TRYPTOPHAN--TRNA-LIGASE-RXN"	["TRPS-CPLX"]	["TRP","TRP-tRNAs"]		"standard"		[150.6,13.9]	[16.81,0.62]	[]	null	null	null	null	null	synthetase	done!		['TRP-tRNAs']				
 12517338	"RIB5PISOM-RXN"	["RIB5PISOMA-CPLX"]	["RIBOSE-5P"]	37	"standard"		[2100]	[3100]	[]	null	null	null	null	null	ecocyc kinetics	done!		['RIBOSE-5P']				
 12531904	"GCVMULTI-RXN"	["GCVMULTI-CPLX"]	["METHYLENE-THF"]		"standard"		[18.4]	[88.1]	[]	null	null	null	null	null	ecocyc new	37 deg		["METHYLENE-THF-GLU-N", "AMMONIUM"]				
-12531904	"GCVMULTI-RXN"	["GCVMULTI-CPLX"]	["AMMONIUM"]		"standard"		[20.9]	[65400]	[]	null	null	null	null	null	ecocyc new	37 deg		["METHYLENE-THF-GLU-N", "AMMONIUM"]				
+12531904	"GCVMULTI-RXN-GLY/THF/NAD//METHYLENE-THF/AMMONIUM/CARBON-DIOXIDE/NADH.56."	["GCVMULTI-CPLX"]	["AMMONIUM"]		"standard"		[20.9]	[65400]	[]	null	null	null	null	null	ecocyc new	37 deg		["METHYLENE-THF-GLU-N", "AMMONIUM"]	"GCVMULTI-RXN"			
 12533518	"RXN0-1342"	["EG10812-MONOMER"]	["S-ADENOSYLMETHIONINE","tRNA-with-7-aminomethyl-7-deazaguanine"]	37	"standard"		[0.042]	[101.4,1.5]	[]	null	null	null	null	null	ecocyc kinetics	tRNA was TYR in this case.		['tRNA-with-7-aminomethyl-7-deazaguanine']				
 12535615	"RXN0-2201"	["CPLX0-1962"]	["SER","NADP"]	30	"standard"		[4.2]	[40000,540]	[]	null	null	null	null	null	EC1	D-serine, D-threonine, L- and D-glycerate, L- and D-3-hydroxyisobutyrate are also listed.						
 12535615	"RXN-16000"	["CPLX0-1962"]	["L-ALLO-THREONINE"]	30	"standard"		[5.76]	[]	[]	null	null	null	null	null	EC1	D-serine, D-threonine, L- and D-glycerate, L- and D-3-hydroxyisobutyrate are also listed.		['L-ALLO-THREONINE']				
@@ -640,7 +640,7 @@ Pubmed ID	reactionID	enzymeIDs	substrateIDs	Temp	rateEquationType	direction	kcat
 15596430	"RXN-7968"	["CPLX0-7462"]	["SHIKIMATE"]	20	"standard"		[0.091]	[2.9]	[]	null	null	null	null	null	EC1	20 deg C						
 15596430	"RXN-7968"	["CPLX0-7462"]	["NAD"]	20	"standard"		[0.105]	[12.2]	[]	null	null	null	null	null	EC1	20 deg C						
 15596430	"RXN-7967"	["CPLX0-7462"]	["NAD"]	20	"standard"		[0.142]	[18.4]	[]	null	null	null	null	null	EC1	20 deg C		['QUINATE']				
-15596430	"RXN-7967"	["CPLX0-7462"]	["QUINATE"]	20	"standard"		[0.113]	[9.1]	[]	null	null	null	null	null	EC1	20 deg C		['QUINATE']				
+15596430	"RXN-7967-QUINATE/NAD//DEHYDROQUINATE/NADH/PROTON.40."	["CPLX0-7462"]	["QUINATE"]	20	"standard"		[0.113]	[9.1]	[]	null	null	null	null	null	EC1	20 deg C		['QUINATE']	"RXN-7967"			
 15606764	"2.1.1.79-RXN"	["CFA-CPLX"]	["S-ADENOSYLMETHIONINE"]		"standard"		[2.2]	[90]	[]	null	null	null	null	null	ecocyc kinetics	done!						
 15640355	"ACETOLACTSYN-RXN"	["ACETOLACTSYNII-CPLX"]	["PYRUVATE"]	37	"standard"		[23.3]	[5200]	[]	null	null	null	null	null		done!						
 15642479	"RXN0-947"	["EG11591-MONOMER"]	["Octanoyl-ACPs","Gcv-H"]	37	"standard"		[0.2]	[10.2,13.2]	[]	null	null	null	null	null		done!						
@@ -1060,14 +1060,14 @@ Pubmed ID	reactionID	enzymeIDs	substrateIDs	Temp	rateEquationType	direction	kcat
 21046341	"PHOSACETYLTRANS-RXN"	["PHOSACETYLTRANS-CPLX"]	["ACETYL-P","CO-A"]	30	"standard"		[227.6]	[900,67.2]	[]	null	null	null	null	null		cited						
 21046341	"PHOSACETYLTRANS-RXN"	["PHOSACETYLTRANS-CPLX"]	["ACETYL-COA"]	30	"standard"		[29.6]	[44.9]	[]	null	null	null	null	null		cited						
 21058398	"MANNPISOM-RXN"	["MANNPISOM-MONOMER"]	["MANNOSE-6P"]	25	"standard"		[23]	[330]	[]	null	null	null	null	null		done!						
-21059411	"GLYOHMETRANS-RXN"	["GLYOHMETRANS-CPLX"]	["SER"]	30	"standard"		[10.67]	[300]	[]	null	null	null	null	null		cited, temp not reported						
+21059411	"GLYOHMETRANS-RXN-SER/THF//GLY/METHYLENE-THF/WATER.33."	["GLYOHMETRANS-CPLX"]	["SER"]	30	"standard"		[10.67]	[300]	[]	null	null	null	null	null		cited, temp not reported			"GLYOHMETRANS-RXN"			
 21059411	"LTAA-RXN"	["GLYOHMETRANS-CPLX"]	["L-ALLO-THREONINE"]	30	"standard"		[0.5]	[1500]	[]	null	null	null	null	null		cited, temp not reported						
 21059411	"RXN0-5240"	["GLYOHMETRANS-CPLX"]	["D-ALANINE"]	37	"standard"		[0.000633]	[30000]	[]	null	null	null	null	null		cited, temp not reported						
 21059411	"LTAA-RXN"	["LTAA-CPLX"]	["L-ALLO-THREONINE"]	30	"standard"		[6.27]	[190]	[]	null	null	null	null	null		cited, temp not reported						
 21059411	"THREONINE-ALDOLASE-RXN"	["LTAA-CPLX"]	["THR"]	30	"standard"		[1.033]	[10000]	[]	null	null	null	null	null		cited, temp not reported						
 21059411	"THREONINE-ALDOLASE-RXN"	["GLYOHMETRANS-CPLX"]	["THR"]	30	"standard"		[0.7167]	[43000]	[]	null	null	null	null	null		cited, temp not reported						
 21059411	"RXN0-5240"	["LTAA-CPLX"]	["D-ALANINE"]	37	"standard"		[0.00182]	[77000]	[]	null	null	null	null	null		cited, temp not reported						
-21059411	"GLYOHMETRANS-RXN"	["LTAA-CPLX"]	["SER"]	30	"standard"		[0.0317]	[16000]	[]	null	null	null	null	null		cited, temp not reported						
+21059411	"GLYOHMETRANS-RXN-SER/THF//GLY/METHYLENE-THF/WATER.33."	["LTAA-CPLX"]	["SER"]	30	"standard"		[0.0317]	[16000]	[]	null	null	null	null	null		cited, temp not reported			"GLYOHMETRANS-RXN"			
 21081107	"RXN-15578"	["TRYPTOPHAN-CPLX"]	["TRP"]	25	"standard"		[6.8]	[227]	[]	null	null	null	null	null		cited						
 21119630	"RXN0-6562"	["EG12693-MONOMER"]	["3-P-HYDROXYPYRUVATE"]	37	"standard"		[5.7]	[]	[]	null	null	null	null	null		done!						
 21119630	"DXS-RXN"	["CPLX0-743"]	["PYRUVATE","GAP"]	37	"standard"		[345]	[96,240]	[]	null	null	null	null	null		should be a complex						
@@ -1119,7 +1119,7 @@ Pubmed ID	reactionID	enzymeIDs	substrateIDs	Temp	rateEquationType	direction	kcat
 21998098	"ADENINE-DEAMINASE-RXN"	["CPLX0-1683"]	["ADENINE"]	30	"standard"		[200]	[400]	[]	null	null	null	null	null	ecocyc new	done!						
 22017312	"RXN-9535"	["FABB-CPLX"]	["MALONYL-ACP"]	25	"standard"		[0.11]	[11.5]	[]	null	null	null	null	null	ecocyc kinetics	For FabB, we have a lauroyl-ACP donor and malonyl-CoA acceptor reaction (malonyl varied, kcat 7.1/min, Km 153 uM); a lauroyl-CoA donor and malonyl-ACP acceptor reaction (lauroyl varied, kcat 4.4/min, Km 58.6 uM); and a lauroyl-ACP donor with a malonyl-CoA acceptor (lauroyl varied, kcat 2.0/min, Km 3.9 uM).		["MALONYL-ACP"]	"RXN-9535"			
 22017312	"RXN-9535"	["FABB-CPLX"]	["Dodecanoyl-ACPs"]	25	"standard"		[0.0567]	[3.2]	[]	null	null	null	null	null	ecocyc kinetics	For FabB, we have a lauroyl-ACP donor and malonyl-CoA acceptor reaction (malonyl varied, kcat 7.1/min, Km 153 uM); a lauroyl-CoA donor and malonyl-ACP acceptor reaction (lauroyl varied, kcat 4.4/min, Km 58.6 uM); and a lauroyl-ACP donor with a malonyl-CoA acceptor (lauroyl varied, kcat 2.0/min, Km 3.9 uM).		["MALONYL-ACP"]	"RXN-9535"			
-22017312	"3-OXOACYL-ACP-SYNTH-RXN"	["3-OXOACYL-ACP-SYNTHII-CPLX"]	["MALONYL-ACP"]	25	"standard"		[0.137]	[8.2]	[]	null	null	null	null	null	ecocyc kinetics	For FabF, we have a lauroyl-CoA donor and malonyl-CoA acceptor reaction (kcat 2.5/min, Km 510 uM); and another measurement for the lauroyl-CoA donor and malonyl-CoA acceptor reaction, in which the lauroyl substrate is varied instead of the malonyl (all others vary the malonyl substrate) (kcat 2.8/min, Km 53.7 uM).		["MALONYL-ACP"]	"3-OXOACYL-ACP-SYNTH-RXN"			
+22017312	"3-OXOACYL-ACP-SYNTH-RXN-MALONYL-ACP/Dodecanoyl-ACPs/PROTON//ACP/3-oxo-myristoyl-ACPs/CARBON-DIOXIDE.76."	["3-OXOACYL-ACP-SYNTHII-CPLX"]	["MALONYL-ACP"]	25	"standard"		[0.029]	[8.2]	[]	null	null	null	null	null	ecocyc kinetics	For FabF, we have a lauroyl-CoA donor and malonyl-CoA acceptor reaction (kcat 2.5/min, Km 510 uM); and another measurement for the lauroyl-CoA donor and malonyl-CoA acceptor reaction, in which the lauroyl substrate is varied instead of the malonyl (all others vary the malonyl substrate) (kcat 2.8/min, Km 53.7 uM).		["MALONYL-ACP"]	"3-OXOACYL-ACP-SYNTH-RXN"			
 22059588	"RXN0-5118"	["EG11189-MONOMER"]	["KDO2-LIPID-A"]	37	"standard"		[4.7]	[9]	[]	null	null	null	null	null	ecocyc kinetics	The values here are taken when Triton-X is present as well.  Without Triton-X we have Kdo2-Lipid A (kcat 6.6/s, Km 29 uM), O-deacylated Kdo2-Lipid A (kcat 1.06/s, Km 0.9 uM), and fully deacylated Kdo2-LipidA (kcat 0.76/s, Km 0.28 uM)		["KDO2-LIPID-A"]	"RXN0-5118"			
 22089136	"RXN0-6733"	["EG10722-MONOMER"]	["CPD0-2479"]	30	"standard"		[6.4]	[56]	[]	null	null	null	null	null	ecocyc new	30 deg		["CPD0-2479"]	"RXN0-6733"			
 22089136	"RXN0-6733"	["EG10722-MONOMER"]	["RIBOSE-TRIPHOSPHATE"]	30	"standard"		[6]	[98]	[]	null	null	null	null	null	ecocyc new	30 deg		["RIBOSE-TRIPHOSPHATE"]	"RXN0-6733"			
