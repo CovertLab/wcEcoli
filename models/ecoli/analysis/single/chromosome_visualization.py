@@ -62,6 +62,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			os.path.join(simOutDir, "ReplicationData"))
 		rnap_data_reader = TableReader(
 			os.path.join(simOutDir, "RnapData"))
+		rna_synth_prob_reader = TableReader(
+			os.path.join(simOutDir, "RnaSynthProb"))
 
 		# Load time data
 		initial_time = main_reader.readAttribute('initialTime')
@@ -77,6 +79,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		rnap_coordinates = rnap_data_reader.readColumn("active_rnap_coordinates")
 		rnap_domain_indexes = rnap_data_reader.readColumn("active_rnap_domain_indexes")
 		rnap_unique_indexes = rnap_data_reader.readColumn("active_rnap_unique_indexes")
+
+		# Load bound TF attributes
+		bound_TF_coordinates = rna_synth_prob_reader.readColumn("bound_TF_coordinates")
+		bound_TF_domain_indexes = rna_synth_prob_reader.readColumn("bound_TF_domains")
 
 		# Get list of unique indexes of each replisome
 		fork_unique_index_list = np.unique(
@@ -133,6 +139,33 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				else:
 					rnap_next_indexes[i, j] = next_index[0]
 
+		# Identify all promoter sites that bind to TFs
+		mask_nan = np.logical_not(np.isnan(bound_TF_domain_indexes))
+		all_TF_domain_indexes = bound_TF_domain_indexes[mask_nan].astype(np.int64)
+		all_TF_coordinates = bound_TF_coordinates[mask_nan].astype(np.int64)
+		time_index = np.where(mask_nan)[0]
+
+		# Build a boolean array for whether each promoter site is bound to a
+		# transcription factor at each timestep
+		all_unique_TF_sites, site_indexes = np.unique(
+			np.vstack((all_TF_domain_indexes, all_TF_coordinates)).T,
+			axis=0, return_inverse=True)
+		TF_domain_indexes = all_unique_TF_sites[:, 0]
+		TF_coordinates = all_unique_TF_sites[:, 1]
+
+		site_index_to_original_index = {}
+		for original_index, site_index in enumerate(site_indexes):
+			if site_index in site_index_to_original_index:
+				site_index_to_original_index[site_index].append(original_index)
+			else:
+				site_index_to_original_index[site_index] = [original_index]
+
+		TF_bound = np.zeros(
+			(all_unique_TF_sites.shape[0], n_timesteps), dtype=np.bool)
+
+		for site_index, original_indexes in site_index_to_original_index.items():
+			TF_bound[site_index, time_index[original_indexes]] = True
+
 		# Build dictionary of chromosome data
 		chromosome_data = {
 			"metadata": metadata,
@@ -156,7 +189,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				"flag_last_timestep": LAST_TIMESTEP,
 				"next_indexes": rnap_next_indexes.tolist(),
 				"status": rnap_status.tolist(),
-				}
+				},
+			"transcription_factors": {
+				"coordinates": TF_coordinates.tolist(),
+				"domain_indexes": TF_domain_indexes.tolist(),
+				"bound": TF_bound.tolist(),
+				},
 			}
 
 		# Output dictionary to json file
