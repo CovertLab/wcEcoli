@@ -17,7 +17,7 @@ import numpy as np
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
+from wholecell.utils import filepath, units
 
 # Flags to indicate replisome status
 NOT_INITIATED = 0
@@ -39,6 +39,22 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Read replichore lengths from sim_data
 		replichore_lengths = sim_data.process.replication.replichore_lengths
+
+		# Read gene coordinates from sim_data
+		gene_start_coordinates = sim_data.process.transcription.rnaData['replicationCoordinate']
+		gene_direction = sim_data.process.transcription.rnaData['direction']
+		gene_direction_rescaled = (2 * (gene_direction - 0.5)).astype(np.int64)
+		gene_length = sim_data.process.transcription.rnaData['length'].asNumber(units.nt)
+		gene_end_coordinates = gene_start_coordinates + np.multiply(
+			gene_direction_rescaled, gene_length)
+
+		# Get common names of genes
+		gene_names = []
+		for gene_id in sim_data.process.transcription.rnaData['geneId']:
+			if gene_id in sim_data.common_names.genes:
+				gene_names.append(sim_data.common_names.genes[gene_id][0])
+			else:
+				gene_names.append(gene_id)
 
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
@@ -123,6 +139,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			"time": [round(t, 2) for t in time],
 			"right_replichore_len": replichore_lengths[0],
 			"left_replichore_len": replichore_lengths[1],
+			"gene_names": gene_names,
+			"gene_start_coordinates": gene_start_coordinates.tolist(),
+			"gene_end_coordinates": gene_end_coordinates.tolist(),
 			"replisomes": {
 				"coordinates": fork_coordinates_parsed.tolist(),
 				"domain_indexes": fork_domain_indexes_parsed.tolist(),
