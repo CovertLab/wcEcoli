@@ -15,7 +15,11 @@ import numpy as np
 
 import wholecell.listeners.listener
 
-MAX_BOUND_TFS = 1000
+# This number needs to be greater than the maximum number of chromosome-bound
+# transcription factors in a single timestep - currently this number is around
+# 1400 in +AA conditions.
+MAX_BOUND_TFS = 1750
+
 
 class RnaSynthProb(wholecell.listeners.listener.Listener):
 	""" RnaSynthProb """
