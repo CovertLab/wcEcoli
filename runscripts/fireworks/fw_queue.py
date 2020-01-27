@@ -220,10 +220,27 @@ print('Parsed environmental variables:')
 VARIANT = get_environment("VARIANT", "wildtype")
 FIRST_VARIANT_INDEX = int(get_environment("FIRST_VARIANT_INDEX", "0"))
 LAST_VARIANT_INDEX = int(get_environment("LAST_VARIANT_INDEX", "0"))
+VARIANT_LIST_INPUT = get_environment("VARIANT_LIST","")
+if VARIANT_LIST_INPUT.endswith(".csv"):
+	# read csv and convert
+	VARIANT_LIST = []
+	reader = csv.reader(VARIANT_LIST_INPUT)
+	with open(VARIANT_LIST_INPUT) as csvfile:
+		csvreader = csv.reader(VARIANT_LIST, delimiter=",")
+		for line in csvreader:
+			VARIANT_LIST.append(line)
+	print("csv not yet supported")
+else:
+	VARIANT_LIST = list(map(int, VARIANT_LIST_INPUT.split(",")))
+	#VARIANT_LIST = list(map(int(VARIANT_LIST_INPUT)))
 
 # This variable gets iterated over in multiple places
 # So be careful if you change it to xrange
-VARIANTS_TO_RUN = range(FIRST_VARIANT_INDEX, LAST_VARIANT_INDEX + 1)
+if VARIANT_LIST == '':
+	VARIANTS_TO_RUN = range(FIRST_VARIANT_INDEX, LAST_VARIANT_INDEX + 1)
+else:
+	#VARIANTS_TO_RUN = VARIANT_LIST
+	VARIANTS_TO_RUN = VARIANT_LIST[0:4]
 
 ### Set other simulation parameters
 
