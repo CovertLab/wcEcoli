@@ -13,6 +13,7 @@ import sys
 
 from runscripts.reflect.object_tree import diff_trees, load_fit_tree
 
+
 if __name__ == '__main__':
 	if len(sys.argv) < 3:
 		print('''Usage: {} SIMDIR1 SIMDIR2

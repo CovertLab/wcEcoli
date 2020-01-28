@@ -118,7 +118,7 @@ def object_tree(obj, path='', debug=None):
 
 		return tree
 
-def size_tree(o, cutoff=100000):
+def size_tree(o, cutoff=0.1):
 	"""
 	Find the differences between two trees or leaf nodes a and b. Return a
 	falsely value if the inputs match OR a truthy value that explains or
@@ -138,7 +138,7 @@ def size_tree(o, cutoff=100000):
 		else:
 			return total,
 
-	size = sys.getsizeof(o)
+	size = sys.getsizeof(o) / 2**20  # convert to MB
 
 	# if they are leafs (including strings) use python equality comparison
 	if is_leaf(o):
@@ -152,7 +152,12 @@ def size_tree(o, cutoff=100000):
 			subdiff = size_tree(value, cutoff)
 			total_diff += subdiff[0]
 			if subdiff[0] > cutoff:
-				diff[key] = subdiff
+				formatted = float('{:.2f}'.format(subdiff[0]))
+				if len(subdiff) == 1:
+					val = formatted
+				else:
+					val = (formatted, subdiff[1])
+				diff[key] = val
 		return return_val(total_diff, diff)
 
 	# if they are sequences then compare each element at each index
@@ -163,7 +168,12 @@ def size_tree(o, cutoff=100000):
 			subdiff = size_tree(value, cutoff)
 			total_diff += subdiff[0]
 			if subdiff[0] > cutoff:
-				diff.append(subdiff)
+				formatted = float('{:.2f}'.format(subdiff[0]))
+				if len(subdiff) == 1:
+					val = formatted
+				else:
+					val = (formatted, subdiff[1])
+				diff.append(val)
 		return return_val(total_diff, diff)
 
 	else:
