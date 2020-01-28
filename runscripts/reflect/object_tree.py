@@ -1,18 +1,21 @@
 from __future__ import absolute_import, division, print_function
 
-import unum
-import numpy as np
+import collections
+import cPickle
+import functools
+import numbers
+import os
 import re
 import sys
 import types
-import numbers
-import functools
-import collections
 
+import Bio.Seq
+import numpy as np
 import sympy
 from sympy.matrices import dense
-import Bio.Seq
+import unum
 
+from wholecell.utils import constants
 import wholecell.utils.unit_struct_array
 
 NULP = 0  # float comparison tolerance, in Number of Units in the Last Place
@@ -279,3 +282,19 @@ def compare_ndarrays(array1, array2):
 		return ()
 	except AssertionError as e:
 		return simplify_error_message(e.message)
+
+def load_fit_tree(out_subdir):
+	'''Load the parameter calculator's (Parca's) output as an object_tree.'''
+	# For convenience, optionally add the prefix 'out/'.
+	if not os.path.isabs(out_subdir) and not os.path.isdir(out_subdir):
+		out_subdir = os.path.join('out', out_subdir)
+
+	path = os.path.join(
+		out_subdir,
+		'kb',
+		constants.SERIALIZED_SIM_DATA_FILENAME)
+
+	with open(path, "rb") as f:
+		sim_data = cPickle.load(f)
+
+	return object_tree(sim_data)
