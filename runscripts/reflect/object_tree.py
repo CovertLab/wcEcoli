@@ -120,16 +120,10 @@ def object_tree(obj, path='', debug=None):
 
 def size_tree(o, cutoff=0.1):
 	"""
-	Find the differences between two trees or leaf nodes a and b. Return a
-	falsely value if the inputs match OR a truthy value that explains or
-	summarizes their differences, where each point in the tree where the inputs
-	differ will be a tuple (a's value, b's value, optional description).
-
-	Floating point numbers are compared with the tolerance set by the constant
-	NULP (Number of Units in the Last Place), allowing for NaN and infinite
-	values. (Adjust the tolerance level NULP if needed.)
-
-	This operation is symmetrical.
+	Find the size of attributes in an object tree. Sizes greater than the cutoff
+	(in MB) will be returned for displaying. Sizes include all values contained
+	within an attribute (eg. a Dict will be represented by the size of all keys
+	and values in addition to the Dict size itself).
 	"""
 
 	def return_val(total, value):
@@ -138,43 +132,47 @@ def size_tree(o, cutoff=0.1):
 		else:
 			return total,
 
-	size = sys.getsizeof(o) / 2**20  # convert to MB
+	def get_size(o):
+		return sys.getsizeof(o) / 2**20  # convert to MB
 
-	# if they are leafs (including strings) use python equality comparison
+	size = get_size(o)
+
+	# if it is a leaf, just return the size
 	if is_leaf(o):
 		return size,
 
-	# if they are dictionaries then diff the value under each key
+	# if it is a dictionary, then get the size of keys and values
 	elif isinstance(o, collections.Mapping):
-		diff = {}
-		total_diff = size
+		sizes = {}
+		total_size = size
 		for key, value in o.items():
-			subdiff = size_tree(value, cutoff)
-			total_diff += subdiff[0]
-			if subdiff[0] > cutoff:
-				formatted = float('{:.2f}'.format(subdiff[0]))
-				if len(subdiff) == 1:
+			subsizes = size_tree(value, cutoff)
+			entry_size = subsizes[0] + get_size(key)
+			total_size += entry_size
+			if entry_size > cutoff:
+				formatted = float('{:.2f}'.format(entry_size))
+				if len(subsizes) == 1:
 					val = formatted
 				else:
-					val = (formatted, subdiff[1])
-				diff[key] = val
-		return return_val(total_diff, diff)
+					val = (formatted, subsizes[1])
+				sizes[key] = val
+		return return_val(total_size, sizes)
 
-	# if they are sequences then compare each element at each index
+	# if it is a sequence, then get the size of each element
 	elif isinstance(o, collections.Sequence):
-		diff = []
-		total_diff = size
+		sizes = []
+		total_size = size
 		for value in o:
-			subdiff = size_tree(value, cutoff)
-			total_diff += subdiff[0]
-			if subdiff[0] > cutoff:
-				formatted = float('{:.2f}'.format(subdiff[0]))
-				if len(subdiff) == 1:
+			subsizes = size_tree(value, cutoff)
+			total_size += subsizes[0]
+			if subsizes[0] > cutoff:
+				formatted = float('{:.2f}'.format(subsizes[0]))
+				if len(subsizes) == 1:
 					val = formatted
 				else:
-					val = (formatted, subdiff[1])
-				diff.append(val)
-		return return_val(total_diff, diff)
+					val = (formatted, subsizes[1])
+				sizes.append(val)
+		return return_val(total_size, sizes)
 
 	else:
 		return size,
