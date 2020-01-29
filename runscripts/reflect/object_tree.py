@@ -137,8 +137,28 @@ def size_tree(o, cutoff=0.1):
 
 	size = get_size(o)
 
+	# special handling of leaf to get size of defining attributes
+	if isinstance(o, unum.Unum):
+		size += size_tree(o._unit)[0]
+		size += get_size(o._value)
+		return size,
+
+	# special handling of leaf to get size of str sequence
+	elif isinstance(o, Bio.Seq.Seq):
+		size += get_size(o._data)
+		return size,
+
+	# special handling of leaf, each entry is allocated the same amount of space
+	elif isinstance(o, wholecell.utils.unit_struct_array.UnitStructArray):
+		size += size_tree(o.units)[0]
+		n_entries = len(o.struct_array)
+		if n_entries:
+			size += get_size(o.struct_array[0]) * n_entries
+		return size,
+
 	# if it is a leaf, just return the size
-	if is_leaf(o):
+	# TODO: any special handling for types that are not already accounted for above
+	elif is_leaf(o):
 		return size,
 
 	# if it is a dictionary, then get the size of keys and values
