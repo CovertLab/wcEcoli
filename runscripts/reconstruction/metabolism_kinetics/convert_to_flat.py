@@ -41,7 +41,7 @@ if __name__ == '__main__':
 		reader = csv.reader(f, delimiter='\t', quotechar="'")
 		header = reader.next()
 
-		n_cols = header.index(LAST_COLUMN)  # number of columns to keep
+		n_cols = header.index(LAST_COLUMN) + 1  # number of columns to keep
 		header = header[:n_cols]
 		for row in reader:
 			data.append(['' if entry=='null' else entry for entry in row[:n_cols]])
