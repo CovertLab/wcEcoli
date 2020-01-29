@@ -124,6 +124,8 @@ def size_tree(o, cutoff=0.1):
 	(in MB) will be returned for displaying. Sizes include all values contained
 	within an attribute (eg. a Dict will be represented by the size of all keys
 	and values in addition to the Dict size itself).
+
+	TODO: double check total size vs disk size - might be missing some types
 	"""
 
 	def return_val(total, value):
