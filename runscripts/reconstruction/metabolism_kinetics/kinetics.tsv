@@ -1,4 +1,4 @@
-Pubmed ID	reactionID	enzymeIDs	substrateIDs	Temp	rateEquationType	direction	kcat (1/s)	kM (uM)	kI (uM)	customRateEquation	customParameters	customParameterConstants	customParameterConstantValues	customParameterVariables	Checked?	Notes	Exclude	Substrates Unrecognized	ReactionClassID	checked by		
+Pubmed ID	reactionID	enzymeID	substrateIDs	Temp	rateEquationType	direction	kcat (1/s)	kM (uM)	kI (uM)	customRateEquation	customParameters	customParameterConstants	customParameterConstantValues	customParameterVariables	Checked?	Notes	Exclude	Substrates Unrecognized	ReactionClassID	checked by		
 9387	"DAHPSYN-RXN"	["AROG-CPLX"]	["PHOSPHO-ENOL-PYRUVATE","ERYTHROSE-4P"]	37	"standard"		[122]	[5.8,96.5]	[]	null	null	null	null	null	ecocyc kinetics	done!		['ERYTHROSE-4P']				
 346589	"DUTP-PYROP-RXN"	["DUTP-PYROP-CPLX"]	["DUTP"]	30	"standard"		[58.33]	[12]	[]	null	null	null	null	null		done!		['DUTP']				
 357906	"ADENPRIBOSYLTRAN-RXN"	["ADENPRIBOSYLTRAN-CPLX"]	["ADENINE","PRPP"]	37	"standard"		[9.33]	[20,125]	[]	null	null	null	null	null	ecocyc kinetics	done!		['PRPP']				
