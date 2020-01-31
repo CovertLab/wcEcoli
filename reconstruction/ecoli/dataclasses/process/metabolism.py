@@ -382,6 +382,90 @@ class Metabolism(object):
 
 			return '1/({})'.format(')*('.join(terms))
 
+		def extract_custom_constraint(constraint):
+			# type: (Dict[str, Any]) -> (Optional[np.ndarray[float]], List[str])
+			"""
+			Args:
+				constraint: values defining a kinetic constraint with key:
+					'customRateEquation' (str): mathematical representation of
+						rate, must contain 'kcat*E'
+					'customParameterVariables' (Dict[str, str]): mapping of
+						variable names in the rate equation to metabolite IDs
+						without location tags, must contain key 'E' (enzyme)
+					'customParameterConstants' (List[str]): constant strings
+						in the rate equation that correspond to values, must
+						contain 'kcat'
+					'customParameterConstantValues' (List[float]): values for
+						each of the constant strings
+					'Temp' (float or ''): temperature of measurement
+
+			Returns:
+				kcats: temperature adjusted kcat value, in units of 1/s
+				saturation: saturation equation with metabolites to replace
+					delimited by double quote (eg. "metabolite")
+			"""
+
+			equation = constraint['customRateEquation']
+			variables = constraint['customParameterVariables']
+			constant_keys = constraint['customParameterConstants']
+			constant_values = constraint['customParameterConstantValues']
+			temp = constraint['Temp']
+
+			# Need to have these in the constraint
+			kcat_str = 'kcat'
+			enzyme_str = 'E'
+			capacity_str = '{}*{}'.format(kcat_str, enzyme_str)
+
+			# Make sure kcat exists
+			if kcat_str not in constant_keys:
+				if VERBOSE:
+					print('Missing {} in custom constants: {}'.format(
+						kcat_str, constant_keys))
+				return None, []
+
+			custom_kcat = 1 / units.s * np.array([constant_values[constant_keys.index(kcat_str)]])
+			kcats = temperature_adjusted_kcat(custom_kcat, temp)
+
+			# Make sure equation can be parsed, otherwise just return kcat
+			if enzyme_str not in variables:
+				if VERBOSE:
+					print('Missing enzyme key ({}) in custom variables: {}'.format(
+						enzyme_str, variables))
+				return kcats, []
+			if not capacity_str in equation:
+				if VERBOSE:
+					print('Expected to find {} in custom equation: {}'.format(
+						capacity_str, equation))
+				return kcats, []
+			if len(constant_keys) != len(constant_values):
+				if VERBOSE:
+					print('Mismatch between constants: {} {}'.format(
+						constant_keys, constant_values))
+				return kcats, []
+
+			# Substitute values into custom equations
+			## Remove capacity to get only saturation
+			new_equation = equation.replace(capacity_str, '1')
+
+			## Tokenize equation to terms and symbols
+			parsed_variables = re.findall('\w*', new_equation)[:-1]  # Remove trailing empty match
+			parsed_symbols = re.findall('\W', new_equation)
+			tokenized_equation = np.array(parsed_variables)
+			tokenized_equation[tokenized_equation == ''] = parsed_symbols
+			if ''.join(tokenized_equation) != new_equation:
+				if VERBOSE:
+					print('Error parsing custom equation: {}'.format(equation))
+				return kcats, []
+
+			## Replace terms with known constant values or sim molecule IDs
+			custom_subs = {k: str(v) for k, v in zip(constant_keys, constant_values)}
+			custom_subs.update({k: '"{}"'.format(v) for k, v in variables.items()})
+
+			# Reconstruct saturation equation with replacements
+			saturation = [''.join([custom_subs.get(token, token) for token in tokenized_equation])]
+
+			return kcats, saturation
+
 		constraints = {}
 		for constraint in raw_data.metabolism_kinetics:
 			rxn = constraint['reactionID']
@@ -409,60 +493,9 @@ class Metabolism(object):
 					for m, km in zip(metabolites, kms)
 				]
 			elif custom:
-				equation = constraint['customRateEquation']
-				variables = constraint['customParameterVariables']
-				constant_keys = constraint['customParameterConstants']
-				constant_values = constraint['customParameterConstantValues']
-
-				# Need to have these in the constraint
-				kcat_str = 'kcat'
-				enzyme_str = 'E'
-				capacity_str = '{}*{}'.format(kcat_str, enzyme_str)
-
-				# Perform checks on custom parameters
-				if kcat_str not in constant_keys:
-					if VERBOSE:
-						print('Missing {} in custom constants: {}'.format(
-							kcat_str, constant_keys))
+				kcats, saturation = extract_custom_constraint(constraint)
+				if kcats is None:
 					continue
-				if enzyme_str not in variables:
-					if VERBOSE:
-						print('Missing enzyme ({}) in custom variables: {}'.format(
-							enzyme_str, variables))
-					continue
-				if not capacity_str in equation:
-					if VERBOSE:
-						print('Expected to find {} in custom equation: {}'.format(
-							capacity_str, equation))
-					continue
-				if len(constant_keys) != len(constant_values):
-					if VERBOSE:
-						print('Mismatch between constants: {} {}'.format(
-							constant_keys, constant_values))
-					continue
-
-				# Substitute values into custom equations
-				## Remove capacity to get only saturation
-				new_equation = equation.replace(capacity_str, '1')
-
-				## Tokenize equation to terms and symbols
-				parsed_variables = re.findall('\w*', new_equation)[:-1]  # Remove trailing empty match
-				parsed_symbols = re.findall('\W', new_equation)
-				tokenized_equation = np.array(parsed_variables)
-				tokenized_equation[tokenized_equation == ''] = parsed_symbols
-				if ''.join(tokenized_equation) != new_equation:
-					if VERBOSE:
-						print('Error parsing custom equation: {}'.format(equation))
-					continue
-
-				## Replace terms with known constant values or sim molecule IDs
-				custom_subs = {k: str(v) for k, v in zip(constant_keys, constant_values)}
-				custom_subs.update({k: '"{}"'.format(v) for k, v in variables.items()})
-
-				# Set constraint values to be added for reaction
-				custom_kcat = 1 / units.s * np.array([constant_values[constant_keys.index(kcat_str)]])
-				kcats = temperature_adjusted_kcat(custom_kcat, constraint['Temp'])
-				saturation = [''.join([custom_subs.get(token, token) for token in tokenized_equation])]
 			else:
 				saturation = [construct_default_saturation_equation(metabolites, kms, kis)]
 
