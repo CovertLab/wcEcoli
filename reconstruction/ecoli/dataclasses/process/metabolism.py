@@ -219,7 +219,9 @@ class Metabolism(object):
 					catalystsList.append(catalystWithLoc)
 				# If we don't have the catalyst in our reconstruction, drop it
 				except KeyError:
-					pass
+					if VERBOSE:
+						print('Skipping catalyst {} for {} since it is not in the model'
+							.format(catalyst, reactionID))
 
 			if len(catalystsForThisRxn) > 0:
 				reactionCatalysts[reactionID] = catalystsForThisRxn
@@ -243,7 +245,10 @@ class Metabolism(object):
 		kineticsSubstratesList = []
 		reactionsToConstraintsDict = {}
 
-		constraints = self.extract_kinetic_constraints(raw_data, reactionStoich)
+		constraints = self.extract_kinetic_constraints(raw_data, reactionStoich, reactionCatalysts)
+		# TODO: replace reactions with multiple enzymes
+		# TODO: check saturation with concentrations
+		# TODO: lambdify saturation
 
 		for constraint in raw_data.enzymeKinetics:
 			if constraint["rateEquationType"] == "custom":
@@ -653,8 +658,8 @@ class Metabolism(object):
 		return supply_scaling
 
 	@staticmethod
-	def extract_kinetic_constraints(raw_data, stoich):
-		# type: (KnowledgeBaseEcoli, Dict[str, Dict[str, int]]) -> Dict[Tuple[str], Dict[str, List[Any]]]
+	def extract_kinetic_constraints(raw_data, stoich, catalysts):
+		# type: (KnowledgeBaseEcoli, Dict[str, Dict[str, int]], Dict[str, List[str]]) -> Dict[Tuple[str], Dict[str, List[Any]]]
 		"""
 		Load and parse kinetic constraint information from raw_data
 
@@ -662,6 +667,9 @@ class Metabolism(object):
 			raw_data: knowledge base data
 			stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
 				stoichiometry of metabolites for each reaction
+			catalysts: {reaction ID: enzyme IDs with location tag}
+				enzyme catalysts for each reaction with known catalysts, likely
+				a subset of reactions in stoich
 
 		Returns:
 			constraints: valid kinetic constraints for each reaction/enzyme pair
@@ -673,18 +681,21 @@ class Metabolism(object):
 		TODO:
 			use function in reflect script
 			add location tag to saturation
-			check enzyme for reaction
-			lambdafy saturation
 		"""
 
-		def match_reaction(stoich, rxn, mets, direction=None):
-			# type: (Dict[str, Dict[str, int]], str, List[str], Optional[str]) -> Optional[str]
+		def match_reaction(stoich, catalysts, rxn, enz, mets, direction=None):
+			# type: (Dict[str, Dict[str, int]], Dict[str, List[str]], str, str, List[str], Optional[str]) -> Optional[str]
 			"""
 			Args:
 				stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
 					stoichiometry of metabolites for each reaction
+				catalysts: {reaction ID: enzyme IDs with location tag}
+					enzyme catalysts for each reaction with known catalysts,
+					likely a subset of reactions in stoich
 				rxn: reaction ID from kinetics to match to existing reactions
+				enz: enzyme ID with location tag
 				mets: metabolite IDs with no location tag from kinetics
+				direction: reaction directionality, 'forward' or 'reverse' or None
 
 			Returns:
 				rxn: matched reaction ID to reaction in stoich with reverse tag
@@ -711,16 +722,18 @@ class Metabolism(object):
 				for long_rxn, long_mets in stoich.items():
 					if rxn in long_rxn and not long_rxn.endswith(REVERSE_TAG):
 						match = True
+						stripped_enzs = {e[:-3] for e in catalysts.get(long_rxn, [])}
 						stripped_mets = {m[:-3] for m in long_mets}
-						if np.all([class_mets.get(m, m) in stripped_mets for m in mets]):
+						if (np.all([class_mets.get(m, m) in stripped_mets for m in mets])
+								and enz in stripped_enzs):
 							# TODO: check if other reactions match instead of breaking on first
 							rxn = long_rxn
 							break
 				else:
 					if VERBOSE:
 						if match:
-							print('Partial reaction match: {} {} {}'.format(
-								rxn, mets, stripped_mets))
+							print('Partial reaction match: {} {} {} {} {}'.format(
+								rxn, enz, stripped_enzs, mets, stripped_mets))
 						else:
 							print('No reaction match: {}'.format(rxn))
 					return None
@@ -901,8 +914,15 @@ class Metabolism(object):
 			kms = list(constraint['kM'].asNumber(MICROMOLAR_UNITS))
 			kis = list(constraint['kI'].asNumber(MICROMOLAR_UNITS))
 			n_reactants = len(metabolites) - len(kis)
-			matched_rxn = match_reaction(stoich, rxn, metabolites[:n_reactants], direction)
+			matched_rxn = match_reaction(stoich, catalysts, rxn, enzyme,
+				metabolites[:n_reactants], direction)
 			if matched_rxn is None:
+				continue
+
+			# Ensure enzyme catalyzes reaction in model
+			if enzyme not in {e[:-3] for e in catalysts.get(matched_rxn, [])}:
+				if VERBOSE:
+					print('{} does not catalyze {}'.format(enzyme, matched_rxn))
 				continue
 
 			# Extract kcat and saturation parameters
