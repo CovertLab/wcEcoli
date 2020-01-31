@@ -478,26 +478,27 @@ class Metabolism(object):
 			matched_rxn = match_reaction(reactionStoich, rxn, metabolites[:n_reactants], direction)
 			if matched_rxn is None:
 				continue
-			custom = constraint['rateEquationType'] == 'custom'
 
-			kcats = temperature_adjusted_kcat(constraint['kcat'], constraint['Temp'])
-			if len(kcats) > 1:
-				if len(kcats) != len(kms) or len(kms) != len(metabolites):
-					if VERBOSE:
-						print('Could not align kcats and kms: {} {} {} {}'.format(
-							rxn, kcats, kms, metabolites))
-					continue
-
-				saturation = [
-					construct_default_saturation_equation([m], [km], [])
-					for m, km in zip(metabolites, kms)
-				]
-			elif custom:
+			# Extract kcat and saturation parameters
+			if constraint['rateEquationType'] == 'custom':
 				kcats, saturation = extract_custom_constraint(constraint)
 				if kcats is None:
 					continue
 			else:
-				saturation = [construct_default_saturation_equation(metabolites, kms, kis)]
+				kcats = temperature_adjusted_kcat(constraint['kcat'], constraint['Temp'])
+				if len(kcats) > 1:
+					if len(kcats) != len(kms) or len(kms) != len(metabolites):
+						if VERBOSE:
+							print('Could not align kcats and kms: {} {} {} {}'.format(
+								rxn, kcats, kms, metabolites))
+						continue
+
+					saturation = [
+						construct_default_saturation_equation([m], [km], [])
+						for m, km in zip(metabolites, kms)
+					]
+				else:
+					saturation = [construct_default_saturation_equation(metabolites, kms, kis)]
 
 			# Add new kcats and saturation terms for the enzymatic reaction
 			key = (matched_rxn, enzyme)
