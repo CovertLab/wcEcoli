@@ -658,9 +658,16 @@ class Metabolism(object):
 		return supply_scaling
 
 	@staticmethod
-	def _match_reaction(stoich, catalysts, rxn, enz, mets, direction=None):
+	def match_reaction(stoich, catalysts, rxn, enz, mets, direction=None):
 		# type: (Dict[str, Dict[str, int]], Dict[str, List[str]], str, str, List[str], Optional[str]) -> Optional[str]
 		"""
+		Matches a given reaction (rxn) to reactions that exist in stoich given
+		that enz is known to catalyze the reaction and mets are reactants in
+		the reaction.  Can perform a fuzzy reaction match since rxn just needs
+		to be part of the actual reaction name to match specific instances of a
+		reaction (eg. rxn="ALCOHOL-DEHYDROG-GENERIC-RXN" can match
+		"ALCOHOL-DEHYDROG-GENERIC-RXN-ETOH/NAD//ACETALD/NADH/PROTON.30.").
+
 		Args:
 			stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
 				stoichiometry of metabolites for each reaction
@@ -745,7 +752,7 @@ class Metabolism(object):
 		return rxn
 
 	@staticmethod
-	def _temperature_adjusted_kcat(kcat, temp):
+	def temperature_adjusted_kcat(kcat, temp):
 		# type: (units.Unum, float) -> np.ndarray[float]
 		"""
 		Args:
@@ -842,7 +849,7 @@ class Metabolism(object):
 			return None, []
 
 		custom_kcat = 1 / units.s * np.array([constant_values[constant_keys.index(kcat_str)]])
-		kcats = Metabolism._temperature_adjusted_kcat(custom_kcat, temp)
+		kcats = Metabolism.temperature_adjusted_kcat(custom_kcat, temp)
 
 		# Make sure equation can be parsed, otherwise just return kcat
 		if enzyme_str not in variables:
@@ -900,7 +907,7 @@ class Metabolism(object):
 
 		Returns:
 			constraints: valid kinetic constraints for each reaction/enzyme pair
-				{(reaction ID, enzyme): {
+				{(reaction ID, enzyme with location tag): {
 					'kcat': kcat values (List[float]),
 					'saturation': saturation equations (List[str])
 				}}
@@ -918,16 +925,19 @@ class Metabolism(object):
 			kms = list(constraint['kM'].asNumber(MICROMOLAR_UNITS))
 			kis = list(constraint['kI'].asNumber(MICROMOLAR_UNITS))
 			n_reactants = len(metabolites) - len(kis)
-			matched_rxn = Metabolism._match_reaction(stoich, catalysts, rxn, enzyme,
+			matched_rxn = Metabolism.match_reaction(stoich, catalysts, rxn, enzyme,
 				metabolites[:n_reactants], direction)
 			if matched_rxn is None:
 				continue
 
 			# Ensure enzyme catalyzes reaction in model
-			if enzyme not in {e[:-3] for e in catalysts.get(matched_rxn, [])}:
+			enzymes_tag_conversion = {e[:-3]: e for e in catalysts.get(matched_rxn, [])}
+			if enzyme not in enzymes_tag_conversion:
 				if VERBOSE:
 					print('{} does not catalyze {}'.format(enzyme, matched_rxn))
 				continue
+			else:
+				enzyme = enzymes_tag_conversion[enzyme]
 
 			# Update metabolites with a location tag from the reaction
 			# First look in reactants but some products can inhibit
@@ -950,7 +960,7 @@ class Metabolism(object):
 				if kcats is None:
 					continue
 			else:
-				kcats = Metabolism._temperature_adjusted_kcat(constraint['kcat'], constraint['Temp'])
+				kcats = Metabolism.temperature_adjusted_kcat(constraint['kcat'], constraint['Temp'])
 				if len(kcats) > 1:
 					if len(kcats) != len(kms) or len(kms) != len(mets_with_tag):
 						if VERBOSE:
