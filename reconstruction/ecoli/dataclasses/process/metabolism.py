@@ -680,7 +680,6 @@ class Metabolism(object):
 
 		TODO:
 			use function in reflect script
-			add location tag to saturation
 		"""
 
 		def match_reaction(stoich, catalysts, rxn, enz, mets, direction=None):
@@ -803,7 +802,8 @@ class Metabolism(object):
 			if n_params == 0:
 				return '1'
 			if n_params != len(mets):
-				print('Saturation parameter mismatch: {} {} {}'.format(mets, kms, kis))
+				if VERBOSE:
+					print('Saturation parameter mismatch: {} {} {}'.format(mets, kms, kis))
 				return '1'
 
 			terms = []
@@ -925,6 +925,21 @@ class Metabolism(object):
 					print('{} does not catalyze {}'.format(enzyme, matched_rxn))
 				continue
 
+			# Update metabolites with a location tag from the reaction
+			# First look in reactants but some products can inhibit
+			reactant_tags = {k[:-3]: k for k, v in stoich[matched_rxn].items() if v < 0}
+			product_tags = {k[:-3]: k for k, v in stoich[matched_rxn].items() if v > 0}
+			mets_with_tag = [
+				reactant_tags.get(met, product_tags.get(met, None))
+				for met in metabolites
+				if met in reactant_tags or met in product_tags
+			]
+			if len(mets_with_tag) != len(metabolites):
+				# Warn if verbose but no continue since we can still use kcat
+				if VERBOSE:
+					print('Could not match all metabolites: {} {}'.format(
+						metabolites, mets_with_tag))
+
 			# Extract kcat and saturation parameters
 			if constraint['rateEquationType'] == 'custom':
 				kcats, saturation = extract_custom_constraint(constraint)
@@ -933,18 +948,18 @@ class Metabolism(object):
 			else:
 				kcats = temperature_adjusted_kcat(constraint['kcat'], constraint['Temp'])
 				if len(kcats) > 1:
-					if len(kcats) != len(kms) or len(kms) != len(metabolites):
+					if len(kcats) != len(kms) or len(kms) != len(mets_with_tag):
 						if VERBOSE:
 							print('Could not align kcats and kms: {} {} {} {}'.format(
-								rxn, kcats, kms, metabolites))
+								rxn, kcats, kms, mets_with_tag))
 						continue
 
 					saturation = [
 						construct_default_saturation_equation([m], [km], [])
-						for m, km in zip(metabolites, kms)
+						for m, km in zip(mets_with_tag, kms)
 					]
 				else:
-					saturation = [construct_default_saturation_equation(metabolites, kms, kis)]
+					saturation = [construct_default_saturation_equation(mets_with_tag, kms, kis)]
 
 			# Add new kcats and saturation terms for the enzymatic reaction
 			key = (matched_rxn, enzyme)
