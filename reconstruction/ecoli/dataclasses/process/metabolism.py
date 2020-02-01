@@ -658,6 +658,233 @@ class Metabolism(object):
 		return supply_scaling
 
 	@staticmethod
+	def _match_reaction(stoich, catalysts, rxn, enz, mets, direction=None):
+		# type: (Dict[str, Dict[str, int]], Dict[str, List[str]], str, str, List[str], Optional[str]) -> Optional[str]
+		"""
+		Args:
+			stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
+				stoichiometry of metabolites for each reaction
+			catalysts: {reaction ID: enzyme IDs with location tag}
+				enzyme catalysts for each reaction with known catalysts,
+				likely a subset of reactions in stoich
+			rxn: reaction ID from kinetics to match to existing reactions
+			enz: enzyme ID with location tag
+			mets: metabolite IDs with no location tag from kinetics
+			direction: reaction directionality, 'forward' or 'reverse' or None
+
+		Returns:
+			rxn: matched reaction ID to reaction in stoich with reverse tag
+				if in the reverse direction, returns None if no match
+		"""
+
+		# Mapping to handle instances of metabolite classes in kinetics
+		# Keys: specific molecules in kinetics file
+		# Values: class of molecules in reactions file that contain the key
+		class_mets = {
+			'RED-THIOREDOXIN-MONOMER': 'Red-Thioredoxin',
+			'RED-THIOREDOXIN2-MONOMER': 'Red-Thioredoxin',
+			'RED-GLUTAREDOXIN': 'Red-Glutaredoxins',
+			'GRXB-MONOMER': 'Red-Glutaredoxins',
+			'GRXC-MONOMER': 'Red-Glutaredoxins',
+			'OX-FLAVODOXIN1': 'Oxidized-flavodoxins',
+			'OX-FLAVODOXIN2': 'Oxidized-flavodoxins',
+		}
+
+		# Match full reaction name from partial reaction in kinetics. Must
+		# also match metabolites since there can be multiple reaction instances.
+		match = False
+		if rxn not in stoich:
+			for long_rxn, long_mets in stoich.items():
+				if rxn in long_rxn and not long_rxn.endswith(REVERSE_TAG):
+					match = True
+					stripped_enzs = {e[:-3] for e in catalysts.get(long_rxn, [])}
+					stripped_mets = {m[:-3] for m in long_mets}
+					if (np.all([class_mets.get(m, m) in stripped_mets for m in mets])
+							and enz in stripped_enzs):
+						# TODO: check if other reactions match instead of breaking on first
+						rxn = long_rxn
+						break
+			else:
+				if VERBOSE:
+					if match:
+						print('Partial reaction match: {} {} {} {} {}'.format(
+							rxn, enz, stripped_enzs, mets, stripped_mets))
+					else:
+						print('No reaction match: {}'.format(rxn))
+				return None
+
+		# Determine direction of kinetic reaction from annotation or
+		# metabolite stoichiometry.
+		reverse_rxn = REVERSE_REACTION_ID.format(rxn)
+		reverse_rxn_exists = reverse_rxn in stoich
+		if direction:
+			reverse = direction == 'reverse'
+		else:
+			s = {k[:-3]: v for k, v in stoich.get(rxn, {}).items()}
+			direction = np.unique(np.sign([
+				s.get(class_mets.get(m, m), 0) for m in mets]))
+			if len(direction) == 0 and not reverse_rxn_exists:
+				reverse = False
+			elif len(direction) != 1 or direction[0] == 0:
+				if VERBOSE:
+					print('Conflicting directionality: {} {} {}'.format(
+						rxn, mets, direction))
+				return None
+			else:
+				reverse = direction[0] > 0
+
+		# Verify a reverse reaction exists in the model
+		if reverse:
+			if reverse_rxn_exists:
+				rxn = reverse_rxn
+			else:
+				if VERBOSE:
+					print('No reverse reaction: {} {}'.format(rxn, mets))
+				return None
+
+		return rxn
+
+	@staticmethod
+	def _temperature_adjusted_kcat(kcat, temp):
+		# type: (units.Unum, float) -> np.ndarray[float]
+		"""
+		Args:
+			kcat: enzyme turnover number(s) (1 / time)
+			temp: temperature of measurement, defaults to 25 if ''
+
+		Returns:
+			temperature adjusted kcat values, in units of 1/s
+		"""
+
+		if temp == '':
+			temp = 25
+		return 2**((37. - temp) / 10.) * kcat.asNumber(1 / units.s)
+
+	@staticmethod
+	def _construct_default_saturation_equation(mets, kms, kis):
+		# type: (List[str], List[float], List[float]) -> str
+		"""
+		Args:
+			mets: metabolite IDs without location tag for KM and KI
+				parameters ordered to match order of kms then kis
+			kms: KM parameters associated with mets
+			kis: KI parameters associated with mets
+
+		Returns:
+			saturation equation with metabolites to replace delimited
+				by double quote (eg. "metabolite")
+		"""
+
+		# Check input dimensions
+		n_params = len(kms) + len(kis)
+		if n_params == 0:
+			return '1'
+		if n_params != len(mets):
+			if VERBOSE:
+				print('Saturation parameter mismatch: {} {} {}'.format(mets, kms, kis))
+			return '1'
+
+		terms = []
+		# Add KM terms
+		for m, k in zip(mets, kms):
+			terms.append('1+{}/"{}"'.format(k, m))
+		# Add KI terms
+		for m, k in zip(mets[len(kms):], kis):
+			terms.append('1+"{}"/{}'.format(m, k))
+
+		# Enclose groupings if being multiplied together
+		if len(terms) > 1:
+			terms[0] = '(' + terms[0]
+			terms[-1] += ')'
+
+		return '1/({})'.format(')*('.join(terms))
+
+	@staticmethod
+	def _extract_custom_constraint(constraint):
+		# type: (Dict[str, Any]) -> (Optional[np.ndarray[float]], List[str])
+		"""
+		Args:
+			constraint: values defining a kinetic constraint with key:
+				'customRateEquation' (str): mathematical representation of
+					rate, must contain 'kcat*E'
+				'customParameterVariables' (Dict[str, str]): mapping of
+					variable names in the rate equation to metabolite IDs
+					without location tags, must contain key 'E' (enzyme)
+				'customParameterConstants' (List[str]): constant strings
+					in the rate equation that correspond to values, must
+					contain 'kcat'
+				'customParameterConstantValues' (List[float]): values for
+					each of the constant strings
+				'Temp' (float or ''): temperature of measurement
+
+		Returns:
+			kcats: temperature adjusted kcat value, in units of 1/s
+			saturation: saturation equation with metabolites to replace
+				delimited by double quote (eg. "metabolite")
+		"""
+
+		equation = constraint['customRateEquation']
+		variables = constraint['customParameterVariables']
+		constant_keys = constraint['customParameterConstants']
+		constant_values = constraint['customParameterConstantValues']
+		temp = constraint['Temp']
+
+		# Need to have these in the constraint
+		kcat_str = 'kcat'
+		enzyme_str = 'E'
+		capacity_str = '{}*{}'.format(kcat_str, enzyme_str)
+
+		# Make sure kcat exists
+		if kcat_str not in constant_keys:
+			if VERBOSE:
+				print('Missing {} in custom constants: {}'.format(
+					kcat_str, constant_keys))
+			return None, []
+
+		custom_kcat = 1 / units.s * np.array([constant_values[constant_keys.index(kcat_str)]])
+		kcats = Metabolism._temperature_adjusted_kcat(custom_kcat, temp)
+
+		# Make sure equation can be parsed, otherwise just return kcat
+		if enzyme_str not in variables:
+			if VERBOSE:
+				print('Missing enzyme key ({}) in custom variables: {}'.format(
+					enzyme_str, variables))
+			return kcats, []
+		if not capacity_str in equation:
+			if VERBOSE:
+				print('Expected to find {} in custom equation: {}'.format(
+					capacity_str, equation))
+			return kcats, []
+		if len(constant_keys) != len(constant_values):
+			if VERBOSE:
+				print('Mismatch between constants: {} {}'.format(
+					constant_keys, constant_values))
+			return kcats, []
+
+		# Substitute values into custom equations
+		## Remove capacity to get only saturation
+		new_equation = equation.replace(capacity_str, '1')
+
+		## Tokenize equation to terms and symbols
+		parsed_variables = re.findall('\w*', new_equation)[:-1]  # Remove trailing empty match
+		parsed_symbols = re.findall('\W', new_equation)
+		tokenized_equation = np.array(parsed_variables)
+		tokenized_equation[tokenized_equation == ''] = parsed_symbols
+		if ''.join(tokenized_equation) != new_equation:
+			if VERBOSE:
+				print('Error parsing custom equation: {}'.format(equation))
+			return kcats, []
+
+		## Replace terms with known constant values or sim molecule IDs
+		custom_subs = {k: str(v) for k, v in zip(constant_keys, constant_values)}
+		custom_subs.update({k: '"{}"'.format(v) for k, v in variables.items()})
+
+		# Reconstruct saturation equation with replacements
+		saturation = [''.join([custom_subs.get(token, token) for token in tokenized_equation])]
+
+		return kcats, saturation
+
+	@staticmethod
 	def extract_kinetic_constraints(raw_data, stoich, catalysts):
 		# type: (KnowledgeBaseEcoli, Dict[str, Dict[str, int]], Dict[str, List[str]]) -> Dict[Tuple[str], Dict[str, List[Any]]]
 		"""
@@ -682,229 +909,6 @@ class Metabolism(object):
 			use function in reflect script
 		"""
 
-		def match_reaction(stoich, catalysts, rxn, enz, mets, direction=None):
-			# type: (Dict[str, Dict[str, int]], Dict[str, List[str]], str, str, List[str], Optional[str]) -> Optional[str]
-			"""
-			Args:
-				stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
-					stoichiometry of metabolites for each reaction
-				catalysts: {reaction ID: enzyme IDs with location tag}
-					enzyme catalysts for each reaction with known catalysts,
-					likely a subset of reactions in stoich
-				rxn: reaction ID from kinetics to match to existing reactions
-				enz: enzyme ID with location tag
-				mets: metabolite IDs with no location tag from kinetics
-				direction: reaction directionality, 'forward' or 'reverse' or None
-
-			Returns:
-				rxn: matched reaction ID to reaction in stoich with reverse tag
-					if in the reverse direction, returns None if no match
-			"""
-
-			# Mapping to handle instances of metabolite classes in kinetics
-			# Keys: specific molecules in kinetics file
-			# Values: class of molecules in reactions file that contain the key
-			class_mets = {
-				'RED-THIOREDOXIN-MONOMER': 'Red-Thioredoxin',
-				'RED-THIOREDOXIN2-MONOMER': 'Red-Thioredoxin',
-				'RED-GLUTAREDOXIN': 'Red-Glutaredoxins',
-				'GRXB-MONOMER': 'Red-Glutaredoxins',
-				'GRXC-MONOMER': 'Red-Glutaredoxins',
-				'OX-FLAVODOXIN1': 'Oxidized-flavodoxins',
-				'OX-FLAVODOXIN2': 'Oxidized-flavodoxins',
-			}
-
-			# Match full reaction name from partial reaction in kinetics. Must
-			# also match metabolites since there can be multiple reaction instances.
-			match = False
-			if rxn not in stoich:
-				for long_rxn, long_mets in stoich.items():
-					if rxn in long_rxn and not long_rxn.endswith(REVERSE_TAG):
-						match = True
-						stripped_enzs = {e[:-3] for e in catalysts.get(long_rxn, [])}
-						stripped_mets = {m[:-3] for m in long_mets}
-						if (np.all([class_mets.get(m, m) in stripped_mets for m in mets])
-								and enz in stripped_enzs):
-							# TODO: check if other reactions match instead of breaking on first
-							rxn = long_rxn
-							break
-				else:
-					if VERBOSE:
-						if match:
-							print('Partial reaction match: {} {} {} {} {}'.format(
-								rxn, enz, stripped_enzs, mets, stripped_mets))
-						else:
-							print('No reaction match: {}'.format(rxn))
-					return None
-
-			# Determine direction of kinetic reaction from annotation or
-			# metabolite stoichiometry.
-			reverse_rxn = REVERSE_REACTION_ID.format(rxn)
-			reverse_rxn_exists = reverse_rxn in stoich
-			if direction:
-				reverse = direction == 'reverse'
-			else:
-				s = {k[:-3]: v for k, v in stoich.get(rxn, {}).items()}
-				direction = np.unique(np.sign([
-					s.get(class_mets.get(m, m), 0) for m in mets]))
-				if len(direction) == 0 and not reverse_rxn_exists:
-					reverse = False
-				elif len(direction) != 1 or direction[0] == 0:
-					if VERBOSE:
-						print('Conflicting directionality: {} {} {}'.format(
-							rxn, mets, direction))
-					return None
-				else:
-					reverse = direction[0] > 0
-
-			# Verify a reverse reaction exists in the model
-			if reverse:
-				if reverse_rxn_exists:
-					rxn = reverse_rxn
-				else:
-					if VERBOSE:
-						print('No reverse reaction: {} {}'.format(rxn, mets))
-					return None
-
-			return rxn
-
-		def temperature_adjusted_kcat(kcat, temp):
-			# type: (units.Unum, float) -> np.ndarray[float]
-			"""
-			Args:
-				kcat: enzyme turnover number(s) (1 / time)
-				temp: temperature of measurement, defaults to 25 if ''
-
-			Returns:
-				temperature adjusted kcat values, in units of 1/s
-			"""
-
-			if temp == '':
-				temp = 25
-			return 2**((37. - temp) / 10.) * kcat.asNumber(1 / units.s)
-
-		def construct_default_saturation_equation(mets, kms, kis):
-			# type: (List[str], List[float], List[float]) -> str
-			"""
-			Args:
-				mets: metabolite IDs without location tag for KM and KI
-					parameters ordered to match order of kms then kis
-				kms: KM parameters associated with mets
-				kis: KI parameters associated with mets
-
-			Returns:
-				saturation equation with metabolites to replace delimited
-					by double quote (eg. "metabolite")
-			"""
-
-			# Check input dimensions
-			n_params = len(kms) + len(kis)
-			if n_params == 0:
-				return '1'
-			if n_params != len(mets):
-				if VERBOSE:
-					print('Saturation parameter mismatch: {} {} {}'.format(mets, kms, kis))
-				return '1'
-
-			terms = []
-			# Add KM terms
-			for m, k in zip(mets, kms):
-				terms.append('1+{}/"{}"'.format(k, m))
-			# Add KI terms
-			for m, k in zip(mets[len(kms):], kis):
-				terms.append('1+"{}"/{}'.format(m, k))
-
-			# Enclose groupings if being multiplied together
-			if len(terms) > 1:
-				terms[0] = '(' + terms[0]
-				terms[-1] += ')'
-
-			return '1/({})'.format(')*('.join(terms))
-
-		def extract_custom_constraint(constraint):
-			# type: (Dict[str, Any]) -> (Optional[np.ndarray[float]], List[str])
-			"""
-			Args:
-				constraint: values defining a kinetic constraint with key:
-					'customRateEquation' (str): mathematical representation of
-						rate, must contain 'kcat*E'
-					'customParameterVariables' (Dict[str, str]): mapping of
-						variable names in the rate equation to metabolite IDs
-						without location tags, must contain key 'E' (enzyme)
-					'customParameterConstants' (List[str]): constant strings
-						in the rate equation that correspond to values, must
-						contain 'kcat'
-					'customParameterConstantValues' (List[float]): values for
-						each of the constant strings
-					'Temp' (float or ''): temperature of measurement
-
-			Returns:
-				kcats: temperature adjusted kcat value, in units of 1/s
-				saturation: saturation equation with metabolites to replace
-					delimited by double quote (eg. "metabolite")
-			"""
-
-			equation = constraint['customRateEquation']
-			variables = constraint['customParameterVariables']
-			constant_keys = constraint['customParameterConstants']
-			constant_values = constraint['customParameterConstantValues']
-			temp = constraint['Temp']
-
-			# Need to have these in the constraint
-			kcat_str = 'kcat'
-			enzyme_str = 'E'
-			capacity_str = '{}*{}'.format(kcat_str, enzyme_str)
-
-			# Make sure kcat exists
-			if kcat_str not in constant_keys:
-				if VERBOSE:
-					print('Missing {} in custom constants: {}'.format(
-						kcat_str, constant_keys))
-				return None, []
-
-			custom_kcat = 1 / units.s * np.array([constant_values[constant_keys.index(kcat_str)]])
-			kcats = temperature_adjusted_kcat(custom_kcat, temp)
-
-			# Make sure equation can be parsed, otherwise just return kcat
-			if enzyme_str not in variables:
-				if VERBOSE:
-					print('Missing enzyme key ({}) in custom variables: {}'.format(
-						enzyme_str, variables))
-				return kcats, []
-			if not capacity_str in equation:
-				if VERBOSE:
-					print('Expected to find {} in custom equation: {}'.format(
-						capacity_str, equation))
-				return kcats, []
-			if len(constant_keys) != len(constant_values):
-				if VERBOSE:
-					print('Mismatch between constants: {} {}'.format(
-						constant_keys, constant_values))
-				return kcats, []
-
-			# Substitute values into custom equations
-			## Remove capacity to get only saturation
-			new_equation = equation.replace(capacity_str, '1')
-
-			## Tokenize equation to terms and symbols
-			parsed_variables = re.findall('\w*', new_equation)[:-1]  # Remove trailing empty match
-			parsed_symbols = re.findall('\W', new_equation)
-			tokenized_equation = np.array(parsed_variables)
-			tokenized_equation[tokenized_equation == ''] = parsed_symbols
-			if ''.join(tokenized_equation) != new_equation:
-				if VERBOSE:
-					print('Error parsing custom equation: {}'.format(equation))
-				return kcats, []
-
-			## Replace terms with known constant values or sim molecule IDs
-			custom_subs = {k: str(v) for k, v in zip(constant_keys, constant_values)}
-			custom_subs.update({k: '"{}"'.format(v) for k, v in variables.items()})
-
-			# Reconstruct saturation equation with replacements
-			saturation = [''.join([custom_subs.get(token, token) for token in tokenized_equation])]
-
-			return kcats, saturation
-
 		constraints = {}
 		for constraint in raw_data.metabolism_kinetics:
 			rxn = constraint['reactionID']
@@ -914,7 +918,7 @@ class Metabolism(object):
 			kms = list(constraint['kM'].asNumber(MICROMOLAR_UNITS))
 			kis = list(constraint['kI'].asNumber(MICROMOLAR_UNITS))
 			n_reactants = len(metabolites) - len(kis)
-			matched_rxn = match_reaction(stoich, catalysts, rxn, enzyme,
+			matched_rxn = Metabolism._match_reaction(stoich, catalysts, rxn, enzyme,
 				metabolites[:n_reactants], direction)
 			if matched_rxn is None:
 				continue
@@ -942,11 +946,11 @@ class Metabolism(object):
 
 			# Extract kcat and saturation parameters
 			if constraint['rateEquationType'] == 'custom':
-				kcats, saturation = extract_custom_constraint(constraint)
+				kcats, saturation = Metabolism._extract_custom_constraint(constraint)
 				if kcats is None:
 					continue
 			else:
-				kcats = temperature_adjusted_kcat(constraint['kcat'], constraint['Temp'])
+				kcats = Metabolism._temperature_adjusted_kcat(constraint['kcat'], constraint['Temp'])
 				if len(kcats) > 1:
 					if len(kcats) != len(kms) or len(kms) != len(mets_with_tag):
 						if VERBOSE:
@@ -955,11 +959,13 @@ class Metabolism(object):
 						continue
 
 					saturation = [
-						construct_default_saturation_equation([m], [km], [])
+						Metabolism._construct_default_saturation_equation([m], [km], [])
 						for m, km in zip(mets_with_tag, kms)
 					]
 				else:
-					saturation = [construct_default_saturation_equation(mets_with_tag, kms, kis)]
+					saturation = [
+						Metabolism._construct_default_saturation_equation(mets_with_tag, kms, kis)
+					]
 
 			# Add new kcats and saturation terms for the enzymatic reaction
 			key = (matched_rxn, enzyme)
