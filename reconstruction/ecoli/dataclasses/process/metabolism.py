@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 from copy import copy
 import re
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 import numpy as np
 import sympy as sp
@@ -33,7 +33,8 @@ METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
 USE_ALL_CONSTRAINTS = False # False will remove defined constraints from objective
 
 REVERSE_TAG = ' (reverse)'
-REVERSE_REACTION_ID = "{{}}{}".format(REVERSE_TAG)
+REVERSE_REACTION_ID = '{{}}{}'.format(REVERSE_TAG)
+ENZYME_REACTION_ID = '{}__{}'
 
 # threshold (units.mmol / units.L) separates concentrations that are import constrained with
 # max flux = 0 from unconstrained molecules.
@@ -202,8 +203,8 @@ class Metabolism(object):
 			stoich=reactionStoich, catalysts=catalysts)
 
 		# Make modifications from kinetics data
-		# constraints, catalysts = self._replace_enzyme_reactions(constraints, catalysts, reversibleReactions, reactionStoich)
-		# TODO: replace reactions with multiple enzymes
+		constraints, reactionStoich, catalysts, reversibleReactions = self._replace_enzyme_reactions(
+			constraints, reactionStoich, catalysts, reversibleReactions)
 		# TODO: check saturation with concentrations
 		# TODO: lambdify saturation
 
@@ -683,7 +684,7 @@ class Metabolism(object):
 
 				reversibleReactions.append(reactionID)
 				if len(catalystsForThisRxn) > 0:
-					reactionCatalysts[reverseReactionID] = reactionCatalysts[reactionID]
+					reactionCatalysts[reverseReactionID] = list(reactionCatalysts[reactionID])
 
 		return reactionStoich, reversibleReactions, reactionCatalysts
 
@@ -923,7 +924,7 @@ class Metabolism(object):
 
 	@staticmethod
 	def extract_kinetic_constraints(raw_data, sim_data, stoich=None, catalysts=None):
-		# type: (KnowledgeBaseEcoli, SimulationDataEcoli, Optional[Dict[str, Dict[str, int]]], Optional[Dict[str, List[str]]]) -> Dict[Tuple[str], Dict[str, List[Any]]]
+		# type: (KnowledgeBaseEcoli, SimulationDataEcoli, Optional[Dict[str, Dict[str, int]]], Optional[Dict[str, List[str]]]) -> Dict[(str, str), Dict[str, List[Any]]]
 		"""
 		Load and parse kinetic constraint information from raw_data
 
@@ -1027,6 +1028,84 @@ class Metabolism(object):
 			constraints[key] = entries
 
 		return constraints
+
+	@staticmethod
+	def _replace_enzyme_reactions(constraints, stoich, rxn_catalysts, reversible_rxns):
+		# type: (Dict[(str, str), Dict[str, List[Any]]], Dict[str, Dict[str, int]], Dict[str, List[str]], List[str]) -> (Dict[str, Any], Dict[str, Dict[str, int]], Dict[str, List[str]], List[str])
+		"""
+		Modifies reaction IDs in data structures to duplicate reactions with
+		kinetic constraints and multiple enzymes.
+
+		Args:
+			constraints: valid kinetic constraints for each reaction/enzyme pair
+				{(reaction ID, enzyme with location tag): {
+					'kcat': kcat values (List[float]),
+					'saturation': saturation equations (List[str])
+				}}
+			stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
+				stoichiometry of metabolites for each reaction, if None, data
+				is loaded from raw_data and sim_data
+			rxn_catalysts: {reaction ID: enzyme IDs with location tag}
+				enzyme catalysts for each reaction with known catalysts, likely
+				a subset of reactions in stoich, if None, data is loaded from
+				raw_data and sim_data
+			reversible_rxns: reaction IDs for reactions that have a reverse
+				complement, does not have reverse tag
+
+		Returns:
+			new_constraints: valid kinetic constraints for each reaction
+				{reaction ID: {
+					'enzyme': enzyme catalyst (str),
+					'kcat': kcat values (List[float]),
+					'saturation': saturation equations (List[str])
+				}}
+			stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
+				stoichiometry of metabolites for each reaction with updated
+				reactions for enzyme catalyzed kinetic reactions
+			rxn_catalysts: {reaction ID: enzyme IDs with location tag}
+				enzyme catalysts for each reaction with known catalysts, likely
+				a subset of reactions in stoich with updated
+				reactions for enzyme catalyzed kinetic reactions
+			reversible_rxns: reaction IDs for reactions that have a reverse
+				complement with updated reactions for enzyme catalyzed kinetic
+				reactions, does not have reverse tag
+		"""
+
+		new_constraints = {}
+
+		n_catalysts = {rxn: len(catalysts) for rxn, catalysts in rxn_catalysts.items()}
+
+		# Split out reactions that are kinetically constrained and that have
+		# more than one enzyme that catalyzes the reaction
+		for (rxn, enzyme), constraint in constraints.items():
+			if n_catalysts[rxn] > 1:
+				# Create new reaction name with enzyme appended to the end
+				if rxn.endswith(REVERSE_TAG):
+					new_rxn = REVERSE_REACTION_ID.format(ENZYME_REACTION_ID.format(rxn[:-len(REVERSE_TAG)], enzyme[:-3]))
+				else:
+					new_rxn = ENZYME_REACTION_ID.format(rxn, enzyme[:-3])
+
+				# Add the new reaction to appropriate lists and dicts
+				stoich[new_rxn] = copy(stoich[rxn])
+				rxn_catalysts[new_rxn] = [enzyme]
+				if rxn in reversible_rxns:
+					reversible_rxns.append(new_rxn)
+
+				# Remove enzyme from old reaction and remove old reaction if no
+				# more enzyme catalysts
+				rxn_catalysts[rxn].pop(rxn_catalysts[rxn].index(enzyme))
+				if len(rxn_catalysts[rxn]) == 0:
+					stoich.pop(rxn)
+					rxn_catalysts.pop(rxn)
+					if rxn in reversible_rxns:
+						reversible_rxns.pop(reversible_rxns.index(rxn))
+			else:
+				new_rxn = rxn
+
+			new_constraints[new_rxn] = dict(constraints[(rxn, enzyme)], enzyme=enzyme)
+
+		return new_constraints, stoich, rxn_catalysts, reversible_rxns
+
 
 
 # Class used to update metabolite concentrations based on the current nutrient conditions
