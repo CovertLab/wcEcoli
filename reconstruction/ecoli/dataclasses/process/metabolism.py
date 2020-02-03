@@ -11,7 +11,7 @@ TODO:
 @date: Created 03/06/2015
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 from copy import copy
 import re
@@ -194,61 +194,27 @@ class Metabolism(object):
 		Reads in and stores reaction and kinetic constraint information
 		"""
 
-		# Initialize variables to store reaction information
-		reactionStoich = {}			# dict with reactions as keys and dict with reaction stoich as values
-		reversibleReactions = []
-		reactionCatalysts = {}		# dict with reactions as keys and list of catalysts as values
-		catalystsList = []
+		(reactionStoich, reversibleReactions, catalysts
+			) = self.extract_reactions(raw_data, sim_data)
 
-		# Load and parse reaction information from raw_data
-		for reaction in raw_data.reactions:
-			reactionID = reaction["reaction id"]
-			stoich = reaction["stoichiometry"]
-			reversible = reaction["is reversible"]
+		# Load kinetic reaction constraints from raw_data
+		constraints = self.extract_kinetic_constraints(raw_data, sim_data,
+			stoich=reactionStoich, catalysts=catalysts)
 
-			if len(stoich) <= 1:
-				raise Exception("Invalid biochemical reaction: {}, {}".format(reactionID, stoich))
+		# Make modifications from kinetics data
+		# constraints, catalysts = self._replace_enzyme_reactions(constraints, catalysts, reversibleReactions, reactionStoich)
+		# TODO: replace reactions with multiple enzymes
+		# TODO: check saturation with concentrations
+		# TODO: lambdify saturation
 
-			reactionStoich[reactionID] = stoich
 
-			catalystsForThisRxn = []
-			for catalyst in reaction["catalyzed by"]:
-				try:
-					catalystWithLoc = (catalyst + "[" + sim_data.getter.getLocation([catalyst])[0][0] + "]").encode("utf-8")
-					catalystsForThisRxn.append(catalystWithLoc)
-					catalystsList.append(catalystWithLoc)
-				# If we don't have the catalyst in our reconstruction, drop it
-				except KeyError:
-					if VERBOSE:
-						print('Skipping catalyst {} for {} since it is not in the model'
-							.format(catalyst, reactionID))
-
-			if len(catalystsForThisRxn) > 0:
-				reactionCatalysts[reactionID] = catalystsForThisRxn
-
-			# Add the reverse reaction
-			if reversible:
-				reverseReactionID = REVERSE_REACTION_ID.format(reactionID)
-				reactionStoich[reverseReactionID] = {
-					moleculeID:-stoichCoeff
-					for moleculeID, stoichCoeff in reactionStoich[reactionID].viewitems()
-					}
-
-				reversibleReactions.append(reactionID)
-				if len(catalystsForThisRxn) > 0:
-					reactionCatalysts[reverseReactionID] = reactionCatalysts[reactionID]
-
+		# TODO (cleanup): remove start
 		# Initialize variables to store kinetic constraint information
 		constraintDict = {}
 		constraintIdList = []
 		enzymeIdList = []
 		kineticsSubstratesList = []
 		reactionsToConstraintsDict = {}
-
-		constraints = self.extract_kinetic_constraints(raw_data, reactionStoich, reactionCatalysts)
-		# TODO: replace reactions with multiple enzymes
-		# TODO: check saturation with concentrations
-		# TODO: lambdify saturation
 
 		for constraint in raw_data.enzymeKinetics:
 			if constraint["rateEquationType"] == "custom":
@@ -261,7 +227,7 @@ class Metabolism(object):
 			# Get compartment for enzyme
 			enzymeId = (constraint["enzymeIDs"] + "[" + sim_data.getter.getLocation([constraint["enzymeIDs"]])[0][0] + "]").encode("utf-8")
 			constraint["enzymeIDs"] = enzymeId
-			assert enzymeId in reactionCatalysts[constraint["reactionID"]], "%s is not a catalyst for %s according to FBA reconstruction" % (enzymeId, constraint["reactionID"])
+			assert enzymeId in catalysts[constraint["reactionID"]], "%s is not a catalyst for %s according to FBA reconstruction" % (enzymeId, constraint["reactionID"])
 
 			# Get compartments for Concentration Substrates
 			concentrationSubstrates = []
@@ -333,9 +299,9 @@ class Metabolism(object):
 
 		# split out reactions that are kinetically constrained and that have more than one enzyme that catalyzes the reaction
 		for rxn in constrainedReactionList:
-			catalysts = reactionCatalysts[rxn]
-			if len(catalysts) > 1:
-				for catalyst in catalysts:
+			rxn_catalysts = catalysts[rxn]
+			if len(rxn_catalysts) > 1:
+				for catalyst in rxn_catalysts:
 					# create new reaction name with enzyme appended to the end
 					if rxn.endswith(REVERSE_TAG):
 						newReaction = REVERSE_REACTION_ID.format("%s__%s" % (rxn[:-len(REVERSE_TAG)], catalyst[:-3]))
@@ -347,7 +313,7 @@ class Metabolism(object):
 						reversibleReactions.append(newReaction)
 
 					reactionStoich[newReaction] = copy(reactionStoich[rxn])
-					reactionCatalysts[newReaction] = [catalyst]
+					catalysts[newReaction] = [catalyst]
 					for constraint in reactionsToConstraintsDict[rxn]:
 						if constraintDict[constraint]["enzymeIDs"] == catalyst:
 							constraintDict[constraint]["reactionID"] = newReaction
@@ -357,14 +323,16 @@ class Metabolism(object):
 
 				# remove old reaction name
 				reactionStoich.pop(rxn)
-				reactionCatalysts.pop(rxn)
+				catalysts.pop(rxn)
 				reactionsToConstraintsDict.pop(rxn)
 				if rxn in reversibleReactions:
 					reversibleReactions.pop(reversibleReactions.index(rxn))
 
 		constrainedReactionList = sorted(reactionsToConstraintsDict)
-		catalystsList = sorted(set(catalystsList))
-		reactionCatalystsList = sorted(reactionCatalysts)
+		catalystsList = sorted({c for rxn_catalysts in catalysts.values() for c in rxn_catalysts})
+		reactionCatalystsList = sorted(catalysts)
+
+		# TODO (cleanup): remove end
 
 		# Create catalysis matrix (to be used in the simulation)
 		catalysisMatrixI = []
@@ -372,7 +340,7 @@ class Metabolism(object):
 		catalysisMatrixV = []
 
 		for row, reaction in enumerate(reactionCatalystsList):
-			for catalyst in reactionCatalysts[reaction]:
+			for catalyst in catalysts[reaction]:
 				col = catalystsList.index(catalyst)
 				catalysisMatrixI.append(row)
 				catalysisMatrixJ.append(col)
@@ -444,7 +412,7 @@ class Metabolism(object):
 		self.reversibleReactions = reversibleReactions
 
 		# Properties for catalysis matrix (to set hard bounds)
-		self.reactionCatalysts = reactionCatalysts
+		self.reactionCatalysts = catalysts
 		self.catalystsList = catalystsList
 		self.reactionCatalystsList = reactionCatalystsList
 		self.catalysisMatrixI = catalysisMatrixI
@@ -656,6 +624,68 @@ class Metabolism(object):
 		supply_scaling = aa_supply + aa_import + aa_synthesis - aa_export
 
 		return supply_scaling
+
+	@staticmethod
+	def extract_reactions(raw_data, sim_data):
+		# type: (KnowledgeBaseEcoli, SimulationDataEcoli) -> (Dict[str, Dict[str, int]], List[str], Dict[str, List[str]])
+		"""
+		Args:
+			raw_data: knowledge base data
+			sim_data: simulation data
+
+		Returns:
+			reactionStoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
+				stoichiometry of metabolites for each reaction
+			reversibleReactions: reaction IDs for reactions that have a reverse
+				complement, does not have reverse tag
+			reactionCatalysts: {reaction ID: enzyme IDs with location tag}
+				enzyme catalysts for each reaction with known catalysts, likely
+				a subset of reactions in stoich
+		"""
+
+		# Initialize variables to store reaction information
+		reactionStoich = {}
+		reversibleReactions = []
+		reactionCatalysts = {}
+
+		# Load and parse reaction information from raw_data
+		for reaction in raw_data.reactions:
+			reactionID = reaction["reaction id"]
+			stoich = reaction["stoichiometry"]
+			reversible = reaction["is reversible"]
+
+			if len(stoich) <= 1:
+				raise Exception("Invalid biochemical reaction: {}, {}".format(reactionID, stoich))
+
+			reactionStoich[reactionID] = stoich
+
+			catalystsForThisRxn = []
+			for catalyst in reaction["catalyzed by"]:
+				try:
+					catalystWithLoc = (catalyst + "[" + sim_data.getter.getLocation([catalyst])[0][0] + "]").encode("utf-8")
+					catalystsForThisRxn.append(catalystWithLoc)
+				# If we don't have the catalyst in our reconstruction, drop it
+				except KeyError:
+					if VERBOSE:
+						print('Skipping catalyst {} for {} since it is not in the model'
+							.format(catalyst, reactionID))
+
+			if len(catalystsForThisRxn) > 0:
+				reactionCatalysts[reactionID] = catalystsForThisRxn
+
+			# Add the reverse reaction
+			if reversible:
+				reverseReactionID = REVERSE_REACTION_ID.format(reactionID)
+				reactionStoich[reverseReactionID] = {
+					moleculeID:-stoichCoeff
+					for moleculeID, stoichCoeff in reactionStoich[reactionID].viewitems()
+					}
+
+				reversibleReactions.append(reactionID)
+				if len(catalystsForThisRxn) > 0:
+					reactionCatalysts[reverseReactionID] = reactionCatalysts[reactionID]
+
+		return reactionStoich, reversibleReactions, reactionCatalysts
 
 	@staticmethod
 	def match_reaction(stoich, catalysts, rxn, enz, mets, direction=None):
@@ -892,18 +922,21 @@ class Metabolism(object):
 		return kcats, saturation
 
 	@staticmethod
-	def extract_kinetic_constraints(raw_data, stoich, catalysts):
-		# type: (KnowledgeBaseEcoli, Dict[str, Dict[str, int]], Dict[str, List[str]]) -> Dict[Tuple[str], Dict[str, List[Any]]]
+	def extract_kinetic_constraints(raw_data, sim_data, stoich=None, catalysts=None):
+		# type: (KnowledgeBaseEcoli, SimulationDataEcoli, Optional[Dict[str, Dict[str, int]]], Optional[Dict[str, List[str]]]) -> Dict[Tuple[str], Dict[str, List[Any]]]
 		"""
 		Load and parse kinetic constraint information from raw_data
 
 		Args:
 			raw_data: knowledge base data
+			sim_data: simulation data
 			stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
-				stoichiometry of metabolites for each reaction
+				stoichiometry of metabolites for each reaction, if None, data
+				is loaded from raw_data and sim_data
 			catalysts: {reaction ID: enzyme IDs with location tag}
 				enzyme catalysts for each reaction with known catalysts, likely
-				a subset of reactions in stoich
+				a subset of reactions in stoich, if None, data is loaded from
+				raw_data and sim_data
 
 		Returns:
 			constraints: valid kinetic constraints for each reaction/enzyme pair
@@ -915,6 +948,15 @@ class Metabolism(object):
 		TODO:
 			use function in reflect script
 		"""
+
+		# Load data for optional args if needed
+		if stoich is None or catalysts is None:
+			loaded_stoich, _, loaded_catalysts = Metabolism.extract_reactions(raw_data, sim_data)
+
+			if stoich is None:
+				stoich = loaded_stoich
+			if catalysts is None:
+				catalysts = loaded_catalysts
 
 		constraints = {}
 		for constraint in raw_data.metabolism_kinetics:
