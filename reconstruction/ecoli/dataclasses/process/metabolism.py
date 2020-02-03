@@ -205,144 +205,38 @@ class Metabolism(object):
 		# Make modifications from kinetics data
 		constraints, reactionStoich, catalysts, reversibleReactions = self._replace_enzyme_reactions(
 			constraints, reactionStoich, catalysts, reversibleReactions)
+
+		reactions = sorted({k[0] for k in constraints})
+		enzymes = sorted({k[1] for k in constraints})
+		metabolites = sorted({match for c in constraints.values() for s in c['saturation'] for match in re.findall('".+?"', s) if match.strip('"') in self.concDict})
+		print(np.sum([len(c['kcat']) for c in constraints.values()]))
+		print(len(constraints))
+		print(len(reactions))
+		print(len(enzymes))
+		print(len(metabolites))
+
 		# TODO: check saturation with concentrations
 		# TODO: lambdify saturation
 
 
-		# TODO (cleanup): remove start
-		# Initialize variables to store kinetic constraint information
-		constraintDict = {}
+		# Extract data
+		reactions_with_catalyst = sorted(constraints)
+		catalyst_ids = sorted({c for all_cat in catalysts.values() for c in all_cat})
+		# TODO: replace
+		kineticsSubstratesList = []
 		constraintIdList = []
 		enzymeIdList = []
-		kineticsSubstratesList = []
-		reactionsToConstraintsDict = {}
+		constraintDict = {}
 
-		for constraint in raw_data.enzymeKinetics:
-			if constraint["rateEquationType"] == "custom":
-				continue
-
-			constraintId = constraint["reactionID"].encode("utf-8") + "__" + constraint["enzymeIDs"].encode("utf-8") + "__%f" % (constraint["kcat"].asNumber(1 / units.s))
-			assert len(constraint["Concentration Substrates"]) == len(constraint["kM"]) + len(constraint["kI"]), "Concentration Substrates are wrong length"
-			assert constraintId not in constraintIdList, "constraintId already exists"
-
-			# Get compartment for enzyme
-			enzymeId = (constraint["enzymeIDs"] + "[" + sim_data.getter.getLocation([constraint["enzymeIDs"]])[0][0] + "]").encode("utf-8")
-			constraint["enzymeIDs"] = enzymeId
-			assert enzymeId in catalysts[constraint["reactionID"]], "%s is not a catalyst for %s according to FBA reconstruction" % (enzymeId, constraint["reactionID"])
-
-			# Get compartments for Concentration Substrates
-			concentrationSubstrates = []
-			for substrate in constraint["Concentration Substrates"]:
-				# In current implementation, anything with a concentration exists in the cytosol
-				substrateWithCompartment = substrate.encode("utf-8") + "[c]"
-				if substrateWithCompartment not in self.concDict:
-					raise Exception, "Don't have concentration for %s" % substrateWithCompartment
-				concentrationSubstrates.append(substrateWithCompartment)
-				kineticsSubstratesList.append(substrateWithCompartment)
-			constraint["Concentration Substrates"] = concentrationSubstrates
-
-			# Get compartments for substrates
-			substrates = []
-			for substrate in constraint["substrateIDs"]:
-				# In current implementation, anything with a concentration exists in the cytosol
-				substrateFound = False
-				for rxnSubstrate in reactionStoich[constraint["reactionID"]]:
-					if rxnSubstrate.startswith(substrate + "["):
-						substrateFound = True
-						substrates.append(rxnSubstrate.encode("utf-8"))
-				if not substrateFound:
-					raise Exception, "Could not find compartment for substrate %s" % substrate
-			constraint["substrateIDs"] = substrates
-
-			# Adjust kcat for temperature
-			temperature = constraint["Temp"]
-
-			# If temperature not reported, assume 25 C
-			if type(temperature) == str:
-				temperature = 25
-			constraint["kcatAdjusted"] = 2**((37. - temperature) / 10.) * constraint["kcat"]
-
-			# Fix reactionID based on directionality
-			stoichiometry = reactionStoich[constraint["reactionID"]]
-			stoichVals = []
-			for substrate in constraint["substrateIDs"]:
-				stoichVals.append(stoichiometry[substrate])
-			stoichVals = np.array(stoichVals)
-
-			if np.all(stoichVals < 0):
-				forward = True
-			elif np.all(stoichVals > 0):
-				forward = False
-			else:
-				raise Exception, "Have data for some reactants and some products (this is an inconsistency)"
-
-			constraint["reactionID"] = constraint["reactionID"].encode("utf-8")
-			if forward == False:
-				constraint["reactionID"] = REVERSE_REACTION_ID.format(constraint["reactionID"])
-
-			# Get rid of constraints for reverse reactions that the FBA reconstruction says should not exist
-			# (i.e., if the FBA reconstruction says the reaction is irreversible but we have a constraint on
-			#  the reverse reaction, drop the constraint)
-			if constraint["reactionID"] not in reactionStoich:
-				continue
-
-			enzymeIdList.append(enzymeId)
-			constraintIdList.append(constraintId)
-			constraintDict[constraintId] = constraint
-			if constraint["reactionID"] not in reactionsToConstraintsDict:
-				reactionsToConstraintsDict[constraint["reactionID"]] = []
-			reactionsToConstraintsDict[constraint["reactionID"]].append(constraintId)
-
-		constraintIdList = sorted(constraintIdList)
-		constrainedReactionList = sorted(reactionsToConstraintsDict)
-		kineticsSubstratesList = sorted(set(kineticsSubstratesList))
-		enzymeIdList = sorted(set(enzymeIdList))
-
-		# split out reactions that are kinetically constrained and that have more than one enzyme that catalyzes the reaction
-		for rxn in constrainedReactionList:
-			rxn_catalysts = catalysts[rxn]
-			if len(rxn_catalysts) > 1:
-				for catalyst in rxn_catalysts:
-					# create new reaction name with enzyme appended to the end
-					if rxn.endswith(REVERSE_TAG):
-						newReaction = REVERSE_REACTION_ID.format("%s__%s" % (rxn[:-len(REVERSE_TAG)], catalyst[:-3]))
-					else:
-						newReaction = "%s__%s" % (rxn, catalyst[:-3])
-
-					# add the new reaction to appropriate lists and dicts
-					if rxn in reversibleReactions:
-						reversibleReactions.append(newReaction)
-
-					reactionStoich[newReaction] = copy(reactionStoich[rxn])
-					catalysts[newReaction] = [catalyst]
-					for constraint in reactionsToConstraintsDict[rxn]:
-						if constraintDict[constraint]["enzymeIDs"] == catalyst:
-							constraintDict[constraint]["reactionID"] = newReaction
-							if newReaction not in reactionsToConstraintsDict:
-								reactionsToConstraintsDict[newReaction] = []
-							reactionsToConstraintsDict[newReaction].append(constraint)
-
-				# remove old reaction name
-				reactionStoich.pop(rxn)
-				catalysts.pop(rxn)
-				reactionsToConstraintsDict.pop(rxn)
-				if rxn in reversibleReactions:
-					reversibleReactions.pop(reversibleReactions.index(rxn))
-
-		constrainedReactionList = sorted(reactionsToConstraintsDict)
-		catalystsList = sorted({c for rxn_catalysts in catalysts.values() for c in rxn_catalysts})
-		reactionCatalystsList = sorted(catalysts)
-
-		# TODO (cleanup): remove end
 
 		# Create catalysis matrix (to be used in the simulation)
 		catalysisMatrixI = []
 		catalysisMatrixJ = []
 		catalysisMatrixV = []
 
-		for row, reaction in enumerate(reactionCatalystsList):
+		for row, reaction in enumerate(reactions_with_catalyst):
 			for catalyst in catalysts[reaction]:
-				col = catalystsList.index(catalyst)
+				col = catalyst_ids.index(catalyst)
 				catalysisMatrixI.append(row)
 				catalysisMatrixJ.append(col)
 				catalysisMatrixV.append(1)
@@ -350,30 +244,6 @@ class Metabolism(object):
 		catalysisMatrixI = np.array(catalysisMatrixI)
 		catalysisMatrixJ = np.array(catalysisMatrixJ)
 		catalysisMatrixV = np.array(catalysisMatrixV)
-
-#		shape = (catalysisMatrixI.max() + 1, catalysisMatrixJ.max() + 1)
-#		catalysisMatrix = np.zeros(shape, np.float64)
-#		catalysisMatrix[catalysisMatrixI, catalysisMatrixJ] = catalysisMatrixV
-
-		# Create constraint to reaction matrix (to be used in the simulation)
-		constraintToReactionMatrixI = []
-		constraintToReactionMatrixJ = []
-		constraintToReactionMatrixV = []
-
-		for row, reaction in enumerate(constrainedReactionList):
-			for constraintId in reactionsToConstraintsDict[reaction]:
-				col = constraintIdList.index(constraintId)
-				constraintToReactionMatrixI.append(row)
-				constraintToReactionMatrixJ.append(col)
-				constraintToReactionMatrixV.append(1)
-
-		constraintToReactionMatrixI = np.array(constraintToReactionMatrixI)
-		constraintToReactionMatrixJ = np.array(constraintToReactionMatrixJ)
-		constraintToReactionMatrixV = np.array(constraintToReactionMatrixV)
-
-#		shape = (constraintToReactionMatrixI.max() + 1, constraintToReactionMatrixJ.max() + 1)
-#		constraintToReactionMatrix = np.zeros(shape, np.float64)
-#		constraintToReactionMatrix[constraintToReactionMatrixI, constraintToReactionMatrixJ] = constraintToReactionMatrixV
 
 		# Use Sympy to create vector function that returns all kinetic constraints
 		kineticsSubstrates = sp.symbols(["kineticsSubstrates[%d]" % idx for idx in xrange(len(kineticsSubstratesList))])
@@ -413,9 +283,10 @@ class Metabolism(object):
 		self.reversibleReactions = reversibleReactions
 
 		# Properties for catalysis matrix (to set hard bounds)
+		# TODO: rename these elsewhere
 		self.reactionCatalysts = catalysts
-		self.catalystsList = catalystsList
-		self.reactionCatalystsList = reactionCatalystsList
+		self.catalyst_ids = catalyst_ids
+		self.reactions_with_catalyst = reactions_with_catalyst
 		self.catalysisMatrixI = catalysisMatrixI
 		self.catalysisMatrixJ = catalysisMatrixJ
 		self.catalysisMatrixV = catalysisMatrixV
@@ -423,6 +294,7 @@ class Metabolism(object):
 		# Properties for setting flux targets
 		self.constraintIdList = constraintIdList
 		self.constrainedReactionList = constrainedReactionList
+		# TODO: remove these elsewhere
 		self.constraintToReactionMatrixI = constraintToReactionMatrixI
 		self.constraintToReactionMatrixJ = constraintToReactionMatrixJ
 		self.constraintToReactionMatrixV = constraintToReactionMatrixV
