@@ -199,23 +199,14 @@ class Metabolism(object):
 			) = self.extract_reactions(raw_data, sim_data)
 
 		# Load kinetic reaction constraints from raw_data
-		constraints = self.extract_kinetic_constraints(raw_data, sim_data,
+		raw_constraints = self.extract_kinetic_constraints(raw_data, sim_data,
 			stoich=reactionStoich, catalysts=catalysts)
 
 		# Make modifications from kinetics data
 		constraints, reactionStoich, catalysts, reversibleReactions = self._replace_enzyme_reactions(
-			constraints, reactionStoich, catalysts, reversibleReactions)
+			raw_constraints, reactionStoich, catalysts, reversibleReactions)
+		constraints = self._remove_unknown_metabolites(constraints, set(self.concDict))
 
-		reactions = sorted({k[0] for k in constraints})
-		enzymes = sorted({k[1] for k in constraints})
-		metabolites = sorted({match for c in constraints.values() for s in c['saturation'] for match in re.findall('".+?"', s) if match.strip('"') in self.concDict})
-		print(np.sum([len(c['kcat']) for c in constraints.values()]))
-		print(len(constraints))
-		print(len(reactions))
-		print(len(enzymes))
-		print(len(metabolites))
-
-		# TODO: check saturation with concentrations
 		# TODO: lambdify saturation
 
 
@@ -978,6 +969,49 @@ class Metabolism(object):
 
 		return new_constraints, stoich, rxn_catalysts, reversible_rxns
 
+	@staticmethod
+	def _remove_unknown_metabolites(constraints, mets_with_conc):
+		# type: (Dict[str, Any], Set[str]) -> Dict[str, Any]
+		"""
+		Removes saturation terms that have metabolites with unknown
+		concentrations from constraints.
+
+		Args:
+			constraints: valid kinetic constraints for each reaction
+				{reaction ID: {
+					'enzyme': enzyme catalyst (str),
+					'kcat': kcat values (List[float]),
+					'saturation': saturation equations (List[str])
+				}}
+			mets_with_conc: metabolite IDs with location tag for metabolites
+				that have a known concentration in the model
+
+		Returns:
+			constraints: valid kinetic constraints for each reaction
+				{reaction ID: {
+					'enzyme': enzyme catalyst (str),
+					'kcat': kcat values (List[float]),
+					'saturation': saturation equations with metabolites with
+						known concentrations only (List[str])
+				}}
+		"""
+
+		for rxn, constraint in constraints.items():
+			new_saturation = []
+			for saturation in constraint['saturation']:
+				for match in re.findall('".+?"', saturation):
+					if match.strip('"') not in mets_with_conc:
+						if VERBOSE:
+							print('Do not have concentration for {} in {}'.format(
+								match, rxn
+								))
+						break
+				else:
+					new_saturation.append(saturation)
+
+			constraints[rxn]['saturation'] = new_saturation
+
+		return constraints
 
 
 # Class used to update metabolite concentrations based on the current nutrient conditions
