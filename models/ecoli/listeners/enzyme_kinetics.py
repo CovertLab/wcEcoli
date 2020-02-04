@@ -48,13 +48,14 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.metaboliteCountsInit = np.zeros(self.n_metabolites, np.float64)
 		self.metaboliteCountsFinal = np.zeros(self.n_metabolites, np.float64)
 		self.metaboliteConcentrations = np.zeros(self.n_metabolites, np.float64)
-		self.enzymeIDs = self.metabolism.kineticsEnzymesList
-		self.enzymeCountsInit = np.zeros(len(self.metabolism.kineticsEnzymesList), np.float64)
+		self.enzymeIDs = self.metabolism.kinetic_constraint_enzymes
+		self.enzymeCountsInit = np.zeros(len(self.metabolism.kinetic_constraint_enzymes), np.float64)
 		self.countsToMolar = np.zeros(1, np.float64)
 		self.targetFluxes = np.zeros(self.n_all_constrained_reactions, np.float64)
 		self.actualFluxes = np.zeros(self.n_all_constrained_reactions, np.float64)
 
 		# reactionConstraint is only for kinetic constrained reactions, without boundary constrained reactions
+		# TODO: remove this from analysis plots
 		self.reactionConstraint = np.zeros(self.n_constrained_reactions, np.int)
 
 	def update(self):

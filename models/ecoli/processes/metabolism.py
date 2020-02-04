@@ -332,28 +332,26 @@ class Metabolism(wholecell.processes.process.Process):
 		kineticsSubstratesConcentrations = countsToMolar * kineticsSubstratesCountsInit
 
 		## Set target fluxes for reactions based on their most relaxed constraint
-		constraintValues = self.getKineticConstraints(
+		reactionTargets = (units.umol / units.L / units.s) * self.getKineticConstraints(
 			kineticsEnzymesConcentrations.asNumber(units.umol / units.L),
 			kineticsSubstratesConcentrations.asNumber(units.umol / units.L),
 			)
-		# TODO: fix this
-		reactionTargets = (units.umol / units.L / units.s) * np.max(self.constraintToReactionMatrix * constraintValues, axis = 1)
 
 		## Shuffle parameters (only performed in very specific cases)
 		if self.shuffleIdxs is not None:
-			reactionTargets = (units.umol / units.L / units.s) * reactionTargets.asNumber()[self.shuffleIdxs]
-
-		## Record which constraint was used, add constraintToReactionMatrix to ensure the index is one of the constraints if multiplication is 0
-		reactionConstraint = np.argmax(self.constraintToReactionMatrix * constraintValues + self.constraintToReactionMatrix, axis = 1)
+			reactionTargets = (units.umol / units.L / units.s) * reactionTargets.asNumber()[self.shuffleIdxs, :]
 
 		## Calculate reaction flux target for current time step
-		targets = (TIME_UNITS * self.timeStepSec() * reactionTargets).asNumber(CONC_UNITS)[self.active_constraints_mask]
+		targets = (TIME_UNITS * self.timeStepSec() * reactionTargets).asNumber(CONC_UNITS)[self.active_constraints_mask, :]
 
 		# add boundary targets
-		all_targets = np.concatenate((targets, self.boundary.transport_fluxes.values()), axis=0)
+		transport_targets = self.boundary.transport_fluxes.values()
+		lower_targets = np.concatenate((targets[:, 0], transport_targets), axis=0)
+		upper_targets = np.concatenate((targets[:, 1], transport_targets), axis=0)
 
 		## Set kinetic targets only if kinetics is enabled
 		if self.use_kinetics and self.burnInComplete:
+			# TODO: set upper and lower targets
 			self.fba.setKineticTarget(self.all_constrained_reactions, all_targets, raiseForReversible = False)
 
 		# Solve FBA problem and update metabolite counts
@@ -397,7 +395,6 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "countsToMolar", countsToMolar.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "actualFluxes", self.fba.getReactionFluxes(self.all_constrained_reactions) / self.timeStepSec())
 		self.writeToListener("EnzymeKinetics", "targetFluxes", all_targets / self.timeStepSec())
-		self.writeToListener("EnzymeKinetics", "reactionConstraint", reactionConstraint[self.active_constraints_mask])
 
 	# limit amino acid uptake to what is needed to meet concentration objective to prevent use as carbon source
 	def _setExternalMoleculeLevels(self, externalMoleculeLevels, metaboliteConcentrations):
