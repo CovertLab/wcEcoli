@@ -215,7 +215,8 @@ class Metabolism(object):
 			self.kinetic_constraint_substrates, self._kcats, self._saturations,
 			self._enzymes, self.constraint_is_kcat_only
 			) = self._lambdify_constraints(constraints)
-		self._compiledConstraints = None
+		self._compiled_enzymes = None
+		self._compiled_saturation = None
 
 		# Extract data
 		reactions_with_catalyst = sorted(catalysts)
@@ -308,30 +309,42 @@ class Metabolism(object):
 		self.ppgpp_reaction_stoich[rxn_i, rxn_j] = rxn_v
 
 	def getKineticConstraints(self, enzymes, substrates):
+		# type: (np.ndarray[float], np.ndarray[float]) -> np.ndarray[float]
 		'''
 		Allows for dynamic code generation for kinetic constraint calculation
 		for use in Metabolism process. Inputs should be unitless but the order
 		of magnitude should match the kinetics parameters (umol/L/s).
 
 		If trying to pickle sim_data object after function has been called,
-		_compiledConstraints might not be able to be pickled.  See
-		__getstate__(), __setstate__() comments on PR 111 to address.
+		_compiled_enzymes and _compiled_saturation might not be able to be pickled.
+		See __getstate__(), __setstate__() comments on PR 111 to address.
 
 		Returns np.array of floats of the kinetic constraint target for each
 		reaction with kinetic parameters
-		Inputs:
-			enzymes (np.array of floats) - concentrations of enzymes associated
-				with kinetics constraints
-			substrates (np.array of floats) - concentrations of substrates
-				associated with kinetics constraints
+
+		Args:
+			enzymes: concentrations of enzymes associated with kinetic
+				constraints
+			substrates: concentrations of substrates associated with kinetic
+				constraints
+
+		Returns:
+			(n reactions, 2): min, max kinetic constraints for each reaction
+				with kinetic constraints
 		'''
 
-		if self._compiledConstraints is None:
-			self._compiledConstraints = eval('lambda enzymes, kineticsSubstrates: np.array(%s)\n'
-				% self._kineticConstraints, {'np': np}, {}
+		if self._compiled_enzymes is None:
+			self._compiled_enzymes = eval('lambda e: np.array(%s)\n'
+				% self._enzymes, {'np': np}, {}
+				)
+		if self._compiled_saturation is None:
+			self._compiled_saturation = eval('lambda s: np.array([[np.min(v), np.max(v)] for v in %s])\n'
+				% self._saturations, {'np': np}, {}
 				)
 
-		return self._compiledConstraints(enzymes, substrates)
+		capacity = self._compiled_enzymes(enzymes)[:, None] * self._kcats
+		saturation = self._compiled_saturation(substrates)
+		return capacity * saturation
 
 	def exchangeConstraints(self, exchangeIDs, coefficient, targetUnits, currentNutrients, exchange_data, concModificationsBasedOnCondition = None):
 		"""
