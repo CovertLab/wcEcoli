@@ -38,9 +38,8 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.n_all_constrained_reactions = self.n_constrained_reactions + self.n_boundary_constrained_reactions
 		self.n_metabolites = len(self.metabolism.metaboliteNamesFromNutrients)
 
-		self.constraint_is_kcat_only = list(
-			sim_data.process.metabolism.constraint_is_kcat_only[
-			self.metabolism.active_constraints_mask])
+		self.constraint_is_kcat_only = sim_data.process.metabolism.constraint_is_kcat_only[
+			self.metabolism.active_constraints_mask].tolist()
 
 	# Allocate memory
 	# In case things are of unknown size, write them here
