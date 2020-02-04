@@ -19,9 +19,11 @@ from typing import Any, Dict, List, Optional, Set
 
 import numpy as np
 import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr
 
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from wholecell.utils import units
+
 
 PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
 ILE_LEU_CONCENTRATION = 3.03e-4  # M, Bennett et al. 2009
@@ -203,15 +205,19 @@ class Metabolism(object):
 			stoich=reactionStoich, catalysts=catalysts)
 
 		# Make modifications from kinetics data
-		constraints, reactionStoich, catalysts, reversibleReactions = self._replace_enzyme_reactions(
+		(constraints, reactionStoich, catalysts, reversibleReactions
+			) = self._replace_enzyme_reactions(
 			raw_constraints, reactionStoich, catalysts, reversibleReactions)
 		constraints = self._remove_unknown_metabolites(constraints, set(self.concDict))
 
-		# TODO: lambdify saturation
-
+		# Create symbolic kinetic equations
+		(self.kinetic_constraint_reactions, self.kinetic_constraint_enzymes,
+			self.kinetic_constraint_substrates, self._kcats, self._saturations,
+			self._enzymes) = self._lambdify_constraints(constraints)
+		self._compiledConstraints = None
 
 		# Extract data
-		reactions_with_catalyst = sorted(constraints)
+		reactions_with_catalyst = sorted(catalysts)
 		catalyst_ids = sorted({c for all_cat in catalysts.values() for c in all_cat})
 		# TODO: replace
 		kineticsSubstratesList = []
@@ -235,38 +241,6 @@ class Metabolism(object):
 		catalysisMatrixI = np.array(catalysisMatrixI)
 		catalysisMatrixJ = np.array(catalysisMatrixJ)
 		catalysisMatrixV = np.array(catalysisMatrixV)
-
-		# Use Sympy to create vector function that returns all kinetic constraints
-		kineticsSubstrates = sp.symbols(["kineticsSubstrates[%d]" % idx for idx in xrange(len(kineticsSubstratesList))])
-		enzymes = sp.symbols(["enzymes[%d]" % idx for idx in xrange(len(enzymeIdList))])
-		constraints = [sp.symbol.S.Zero] * len(constraintIdList)
-		constraintIsKcatOnly = np.zeros(len(constraintIdList))
-
-		for constraintIdx, constraintId in enumerate(constraintIdList):
-			constraint = constraintDict[constraintId]
-			if constraint["rateEquationType"] == "custom":
-				raise Exception
-
-			enzymeIdx = enzymeIdList.index(constraint["enzymeIDs"])
-			constraints[constraintIdx] = constraint["kcatAdjusted"].asNumber(1 / units.s) * enzymes[enzymeIdx]
-			if len(constraint["kM"]) == 0 and len(constraint["kI"]) == 0:
-				constraintIsKcatOnly[constraintIdx] = 1
-
-			concSubstratePos = 0
-			for kM in constraint["kM"]:
-				kineticsSubstrateIdx = kineticsSubstratesList.index(constraint["Concentration Substrates"][concSubstratePos])
-				S = kineticsSubstrates[kineticsSubstrateIdx]
-				constraints[constraintIdx] *= (S / (S + kM))
-				concSubstratePos += 1
-
-			for kI in constraint["kI"]:
-				kineticsSubstrateIdx = kineticsSubstratesList.index(constraint["Concentration Substrates"][concSubstratePos])
-				I = kineticsSubstrates[kineticsSubstrateIdx]
-				constraints[constraintIdx] *= (kI / (kI + I))
-				concSubstratePos += 1
-
-		self._kineticConstraints = str(constraints)
-		self._compiledConstraints = None
 
 		# Properties for FBA reconstruction
 		self.reactionStoich = reactionStoich
@@ -1012,6 +986,92 @@ class Metabolism(object):
 			constraints[rxn]['saturation'] = new_saturation
 
 		return constraints
+
+	@staticmethod
+	def _lambdify_constraints(constraints):
+		# type: (Dict[str, Any]) -> (List[str], List[str], List[str], np.ndarray[float], str, str)
+		"""
+		Creates str representations of kinetic terms to be used to create
+		kinetic constraints that are returned with getKineticConstraints().
+
+		Args:
+			constraints: valid kinetic constraints for each reaction
+				{reaction ID: {
+					'enzyme': enzyme catalyst (str),
+					'kcat': kcat values (List[float]),
+					'saturation': saturation equations (List[str])
+				}}
+
+		Returns:
+			rxns: sorted reaction IDs for reactions with a kinetic constraint
+			enzymes: sorted enzyme IDs for enzymes that catalyze a kinetic reaction
+			substrates: sorted substrate IDs for substrates that are needed
+				for kinetic saturation terms
+			all_kcats: (n rxns, 2) min and max kcat value for each reaction
+			all_saturations: sympy str representation of a list of saturation
+				terms (eg. '[s[0] / (1 + s[0]), 2 / (2 + s[1])]')
+			all_enzymes: sympy str representation of enzymes for each reaction
+				(eg. '[e[0], e[2], e[1]]')
+
+		TODO (Travis):
+			Use average data for kcat in FBA targets? - need to calculate here
+		"""
+
+		# Ordered lists of constraint related IDs
+		rxns = sorted(constraints)
+		enzymes = sorted({c['enzyme'] for c in constraints.values()})
+		substrates = sorted({
+			match.strip('"')
+			for c in constraints.values()
+			for s in c['saturation']
+			for match in re.findall('".+?"', s)
+		})
+
+		# Mapping to replace molecule IDs with generic list strings
+		enzyme_sub = {e: 'e[{}]'.format(i) for i, e in enumerate(enzymes)}
+		substrate_sub = {'"{}"'.format(s): 's[{}]'.format(i)
+			for i, s in enumerate(substrates)}
+
+		# Mapping to replace generic list strings with sympy variables.
+		# Need separate mapping from above because sympy handles '[]' as indexing
+		# so location tags are not parsed properly.
+		enzyme_symbols = {'e': [sp.symbols('e[{}]'.format(i)) for i in range(len(enzymes))]}
+		substrate_symbols = {'s': [sp.symbols('s[{}]'.format(i)) for i in range(len(substrates))]}
+
+		# Values to return
+		all_kcats = np.zeros((len(rxns), 2))
+		all_saturations = []
+		all_enzymes = []
+
+		# Extract out data from each constraint
+		for i, rxn in enumerate(rxns):
+			kcats = constraints[rxn]['kcat']
+			saturation = constraints[rxn]['saturation']
+			enzyme = constraints[rxn]['enzyme']
+
+			# Parse saturation equations into sympy format
+			# If no saturation data is known, assume open range from 0 to 1
+			saturations = []
+			for sat in saturation:
+				if sat == '1':
+					continue
+
+				for token, replace in substrate_sub.items():
+					sat = sat.replace(token, replace)
+				saturations.append(parse_expr(sat, local_dict=substrate_symbols))
+			if len(saturations) == 0:
+				saturations = [0, 1]
+
+			# Save values for this constraint
+			all_kcats[i, :] = [np.min(kcats), np.max(kcats)]
+			all_saturations.append(saturations)
+			all_enzymes.append(parse_expr(enzyme_sub[enzyme], local_dict=enzyme_symbols))
+
+		# Convert to str to save as class attr to be executed
+		all_saturations = str(all_saturations)
+		all_enzymes = str(all_enzymes)
+
+		return rxns, enzymes, substrates, all_kcats, all_saturations, all_enzymes
 
 
 # Class used to update metabolite concentrations based on the current nutrient conditions
