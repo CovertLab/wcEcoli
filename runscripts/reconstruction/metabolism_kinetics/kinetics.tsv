@@ -380,7 +380,7 @@ Pubmed ID	reactionID	enzymeID	substrateIDs	Temp	rateEquationType	direction	kcat 
 11170439	"LEUCINE--TRNA-LIGASE-RXN"	["LEUS-MONOMER"]	["LEU"]	37	"standard"		[5.2]	[15]	[]	null	null	null	null	null	synthetase	done!		['LEU-tRNAs']				
 11170439	"LEUCINE--TRNA-LIGASE-RXN"	["LEUS-MONOMER"]	["ATP"]	37	"standard"		[5]	[280]	[]	null	null	null	null	null	synthetase	done!		['LEU-tRNAs']				
 11170439	"LEUCINE--TRNA-LIGASE-RXN"	["LEUS-MONOMER"]	["LEU-tRNAs"]	37	"standard"		[5.1]	[2.2]	[]	null	null	null	null	null	synthetase	done!		['LEU-tRNAs']				
-11170473	"RXN0-301"	["SARCOX-MONOMER"]	["N-METHYLTRYPTOPHAN"]		"custom"		[77]	[]	[]	"kcat*E*s1*s2/(kia*kb+ka*s2+kb*s1+s1*s2)"	["kcat","ka","kb","kia","E","s1","s2"]	["kcat","ka","kb","kia"]	[77,370,610,7]	{"E":"SARCOX-MONOMER","S1":"N-METHYLTRYPTOPHAN","S2":"OXYGEN-MOLECULE"}	ecocyc kinetics	done!		['N-METHYLTRYPTOPHAN']				
+11170473	"RXN0-301"	["SARCOX-MONOMER"]	["N-METHYLTRYPTOPHAN"]		"custom"		[77]	[]	[]	"kcat*E*s1*s2/(kia*kb+ka*s2+kb*s1+s1*s2)"	["kcat","ka","kb","kia","E","s1","s2"]	["kcat","ka","kb","kia"]	[77,370,610,7]	{"E":"SARCOX-MONOMER","s1":"N-METHYLTRYPTOPHAN","s2":"OXYGEN-MOLECULE"}	ecocyc kinetics	done!		['N-METHYLTRYPTOPHAN']				
 11237337	"UDPACYLGLCNACDEACETYL-RXN"	["UDPACYLGLCNACDEACETYL-MONOMER"]	["UDP-OHMYR-ACETYLGLUCOSAMINE"]	30	"standard"		[1.5]	[2]	[]	null	null	null	null	null		done!						
 11237876	"RXN0-300"	["CPLX0-235"]	["OH-PYR"]	25	"standard"		[72.5]	[700]	[]	null	null	null	null	null	ecocyc kinetics	done!		['OH-PYR']				
 11237876	"1.1.1.215-RXN"	["CPLX0-235"]	["CPD-377"]	25	"standard"		[40.7]	[1500]	[]	null	null	null	null	null	ecocyc kinetics	done!		['CPD-377']				
@@ -561,7 +561,7 @@ Pubmed ID	reactionID	enzymeID	substrateIDs	Temp	rateEquationType	direction	kcat 
 15004015	"PHENYLALANINE--TRNA-LIGASE-RXN"	["PHES-CPLX"]	["PHE"]		"standard"		[3.52]	[20.2]	[]	null	null	null	null	null		temperature not reported						
 15049687	"METHGLYSYN-RXN"	["METHGLYSYN-CPLX"]	["DIHYDROXY-ACETONE-PHOSPHATE"]	25	"standard"		[220]	[200]	[]	null	null	null	null	null		done!						
 15066435	"DIHYDRODIPICSYN-RXN"	["DIHYDRODIPICSYN-CPLX"]	["PYRUVATE","L-ASPARTATE-SEMIALDEHYDE"]	30	"standard"		[124]	[260,110]	[]	null	null	null	null	null	ecocyc kinetics	done!		['L-ASPARTATE-SEMIALDEHYDE', 'PYRUVATE']				
-15066435	"DIHYDRODIPICSYN-RXN"	["DIHYDRODIPICSYN-CPLX"]	["PYRUVATE", "L-ASPARTATE-SEMIALDEHYDE"]	30	"custom"	"forward"	[124]	[260,110]	[]	"kcat*E*s1*s2/(ka*s2+kb*s1+s1*s2)"	["kcat","ka","kb","E","s1","s2"]	["kcat","ka","kb"]	[124,260,110]	{"E":"DIHYDRODIPICSYN-CPLX","S1":"PYRUVATE","S2":"L-ASPARTATE-SEMIALDEHYDE"}		ping-pong kinetics				Morgan Paull		
+15066435	"DIHYDRODIPICSYN-RXN"	["DIHYDRODIPICSYN-CPLX"]	["PYRUVATE", "L-ASPARTATE-SEMIALDEHYDE"]	30	"custom"	"forward"	[124]	[260,110]	[]	"kcat*E*s1*s2/(ka*s2+kb*s1+s1*s2)"	["kcat","ka","kb","E","s1","s2"]	["kcat","ka","kb"]	[124,260,110]	{"E":"DIHYDRODIPICSYN-CPLX","s1":"PYRUVATE","s2":"L-ASPARTATE-SEMIALDEHYDE"}		ping-pong kinetics				Morgan Paull		
 15069062	"BETA-GLUCURONID-RXN"	["BETA-GLUCURONID-MONOMER"]	["Beta-D-Glucuronides"]		"standard"		[68]	[200]	[]	null	null	null	null	null		should be a complex, temperature not reported						
 15078105	"AMINOCYL-TRNA-HYDROLASE-RXN"	["EG10785-MONOMER"]	["N-Substituted-Aminoacyl-tRNA"]	25	"standard"		[9.3]	[5.5]	[]	null	null	null	null	null		done!						
 15081891	"CARBPSYN-RXN"	["CARBPSYN-CPLX"]	["GLN"]		"standard"		[1.4]	[]	[]	null	null	null	null	null		temperature not reported, some other sub-reactions given						

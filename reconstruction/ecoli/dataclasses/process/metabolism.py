@@ -720,11 +720,25 @@ class Metabolism(object):
 			return kcats, []
 
 		# Substitute values into custom equations
+		## Replace terms with known constant values or sim molecule IDs
+		custom_subs = {k: str(v) for k, v in zip(constant_keys, constant_values)}
+		custom_subs.update({k: '"{}"'.format(v) for k, v in variables.items()})
+
 		## Remove capacity to get only saturation
 		new_equation = equation.replace(capacity_str, '1')
 
 		## Tokenize equation to terms and symbols
 		parsed_variables = re.findall('\w*', new_equation)[:-1]  # Remove trailing empty match
+		# Ensure valid input of known variables or a float term
+		for v in parsed_variables:
+			if not (v == '' or v in custom_subs):
+				try:
+					float(v)
+				except ValueError:
+					if VERBOSE:
+						print('Unknown value encountered in custom equation {}: {}'
+							.format(equation, v))
+					return kcats, []
 		parsed_symbols = re.findall('\W', new_equation)
 		tokenized_equation = np.array(parsed_variables)
 		tokenized_equation[tokenized_equation == ''] = parsed_symbols
@@ -732,10 +746,6 @@ class Metabolism(object):
 			if VERBOSE:
 				print('Error parsing custom equation: {}'.format(equation))
 			return kcats, []
-
-		## Replace terms with known constant values or sim molecule IDs
-		custom_subs = {k: str(v) for k, v in zip(constant_keys, constant_values)}
-		custom_subs.update({k: '"{}"'.format(v) for k, v in variables.items()})
 
 		# Reconstruct saturation equation with replacements
 		saturation = [''.join([custom_subs.get(token, token) for token in tokenized_equation])]
