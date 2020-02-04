@@ -43,7 +43,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 
-		constraintIsKcatOnly = sim_data.process.metabolism.constraintIsKcatOnly
+		constraint_is_kcat_only = sim_data.process.metabolism.constraint_is_kcat_only
 
 		targetFluxList = []
 		actualFluxList = []
@@ -105,8 +105,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		actualAve = allActualAve[:n_kinetic_constrained_reactions]
 
 		# categorize reactions that use constraints with only kcat, Km and kcat, or switch between both types of constraints
-		kcatOnlyReactions = np.all(constraintIsKcatOnly[reactionConstraintList], axis = 0)
-		kmAndKcatReactions = ~np.any(constraintIsKcatOnly[reactionConstraintList], axis = 0)
+		kcatOnlyReactions = np.all(constraint_is_kcat_only[reactionConstraintList], axis = 0)
+		kmAndKcatReactions = ~np.any(constraint_is_kcat_only[reactionConstraintList], axis = 0)
 		mixedReactions = ~(kcatOnlyReactions ^ kmAndKcatReactions)
 
 		# categorize how well the actual flux matches the target flux

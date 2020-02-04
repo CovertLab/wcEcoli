@@ -213,18 +213,13 @@ class Metabolism(object):
 		# Create symbolic kinetic equations
 		(self.kinetic_constraint_reactions, self.kinetic_constraint_enzymes,
 			self.kinetic_constraint_substrates, self._kcats, self._saturations,
-			self._enzymes) = self._lambdify_constraints(constraints)
+			self._enzymes, self.constraint_is_kcat_only
+			) = self._lambdify_constraints(constraints)
 		self._compiledConstraints = None
 
 		# Extract data
 		reactions_with_catalyst = sorted(catalysts)
 		catalyst_ids = sorted({c for all_cat in catalysts.values() for c in all_cat})
-		# TODO: replace
-		kineticsSubstratesList = []
-		constraintIdList = []
-		enzymeIdList = []
-		constraintDict = {}
-
 
 		# Create catalysis matrix (to be used in the simulation)
 		catalysisMatrixI = []
@@ -248,7 +243,6 @@ class Metabolism(object):
 		self.reversibleReactions = reversibleReactions
 
 		# Properties for catalysis matrix (to set hard bounds)
-		# TODO: rename these elsewhere
 		self.reactionCatalysts = catalysts
 		self.catalyst_ids = catalyst_ids
 		self.reactions_with_catalyst = reactions_with_catalyst
@@ -257,17 +251,6 @@ class Metabolism(object):
 		self.catalysisMatrixV = catalysisMatrixV
 
 		# Properties for setting flux targets
-		self.constraintIdList = constraintIdList
-		self.constrainedReactionList = constrainedReactionList
-		# TODO: remove these elsewhere
-		self.constraintToReactionMatrixI = constraintToReactionMatrixI
-		self.constraintToReactionMatrixJ = constraintToReactionMatrixJ
-		self.constraintToReactionMatrixV = constraintToReactionMatrixV
-		self.enzymeIdList = enzymeIdList
-		self.kineticsSubstratesList = kineticsSubstratesList
-		self.constraintDict = constraintDict
-		self.reactionsToConstraintsDict = reactionsToConstraintsDict
-		self.constraintIsKcatOnly = constraintIsKcatOnly
 		self.useAllConstraints = USE_ALL_CONSTRAINTS
 		self.constraintsToDisable = [rxn["disabled reaction"] for rxn in raw_data.disabledKineticReactions]
 
@@ -989,7 +972,7 @@ class Metabolism(object):
 
 	@staticmethod
 	def _lambdify_constraints(constraints):
-		# type: (Dict[str, Any]) -> (List[str], List[str], List[str], np.ndarray[float], str, str)
+		# type: (Dict[str, Any]) -> (List[str], List[str], List[str], np.ndarray[float], str, str, np.ndarray[bool])
 		"""
 		Creates str representations of kinetic terms to be used to create
 		kinetic constraints that are returned with getKineticConstraints().
@@ -1012,6 +995,8 @@ class Metabolism(object):
 				terms (eg. '[s[0] / (1 + s[0]), 2 / (2 + s[1])]')
 			all_enzymes: sympy str representation of enzymes for each reaction
 				(eg. '[e[0], e[2], e[1]]')
+			constraint_is_kcat_only: True if reaction only has kcat values and
+				no saturation terms
 
 		TODO (Travis):
 			Use average data for kcat in FBA targets? - need to calculate here
@@ -1042,6 +1027,7 @@ class Metabolism(object):
 		all_kcats = np.zeros((len(rxns), 2))
 		all_saturations = []
 		all_enzymes = []
+		constraint_is_kcat_only = []
 
 		# Extract out data from each constraint
 		for i, rxn in enumerate(rxns):
@@ -1061,6 +1047,9 @@ class Metabolism(object):
 				saturations.append(parse_expr(sat, local_dict=substrate_symbols))
 			if len(saturations) == 0:
 				saturations = [0, 1]
+				constraint_is_kcat_only.append(True)
+			else:
+				constraint_is_kcat_only.append(False)
 
 			# Save values for this constraint
 			all_kcats[i, :] = [np.min(kcats), np.max(kcats)]
@@ -1070,8 +1059,9 @@ class Metabolism(object):
 		# Convert to str to save as class attr to be executed
 		all_saturations = str(all_saturations)
 		all_enzymes = str(all_enzymes)
+		constraint_is_kcat_only = np.array(constraint_is_kcat_only)
 
-		return rxns, enzymes, substrates, all_kcats, all_saturations, all_enzymes
+		return rxns, enzymes, substrates, all_kcats, all_saturations, all_enzymes, constraint_is_kcat_only
 
 
 # Class used to update metabolite concentrations based on the current nutrient conditions

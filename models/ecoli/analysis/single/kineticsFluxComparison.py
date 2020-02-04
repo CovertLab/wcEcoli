@@ -43,7 +43,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		sim_data = cPickle.load(open(simDataFile))
 
-		constraintIsKcatOnly = sim_data.process.metabolism.constraintIsKcatOnly
+		constraint_is_kcat_only = sim_data.process.metabolism.constraint_is_kcat_only
 
 		mainListener = TableReader(os.path.join(simOutDir, "Main"))
 		initialTime = mainListener.readAttribute("initialTime")
@@ -85,8 +85,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		targetAve = allTargetAve[:n_kinetic_constrained_reactions]
 		actualAve = allActualAve[:n_kinetic_constrained_reactions]
 
-		kcatOnlyReactions = np.all(constraintIsKcatOnly[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
-		kmAndKcatReactions = ~np.any(constraintIsKcatOnly[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
+		kcatOnlyReactions = np.all(constraint_is_kcat_only[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
+		kmAndKcatReactions = ~np.any(constraint_is_kcat_only[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
 		mixedReactions = ~(kcatOnlyReactions ^ kmAndKcatReactions)
 
 		thresholds = [2, 10]

@@ -83,17 +83,17 @@ def save_genes(raw_data, sim_data, output):
 
 	##### Metabolism #####
 	metMonomers = [
-		x for x in sim_data.process.metabolism.catalystsList
+		x for x in sim_data.process.metabolism.catalyst_ids
 		if x not in sim_data.process.complexation.complexNames
 		and x not in sim_data.process.equilibrium.complexNameToRxnIdx
 		]
 	metComplexes = [
-		x for x in sim_data.process.metabolism.catalystsList
+		x for x in sim_data.process.metabolism.catalyst_ids
 		if x in sim_data.process.complexation.complexNames
 		or x in sim_data.process.equilibrium.complexNameToRxnIdx
 		]
 
-	assert len(metMonomers) + len(metComplexes) == len(sim_data.process.metabolism.catalystsList)
+	assert len(metMonomers) + len(metComplexes) == len(sim_data.process.metabolism.catalyst_ids)
 
 	for metComplex in metComplexes:
 		if metComplex in sim_data.process.complexation.complexNames:

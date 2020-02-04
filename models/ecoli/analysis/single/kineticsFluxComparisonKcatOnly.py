@@ -37,8 +37,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		sim_data = cPickle.load(open(simDataFile))
 
-		constraintIsKcatOnly = sim_data.process.metabolism.constraintIsKcatOnly
-		constrainedReactions = np.array(sim_data.process.metabolism.constrainedReactionList)
+		constraint_is_kcat_only = sim_data.process.metabolism.constraint_is_kcat_only
+		constrainedReactions = np.array(sim_data.process.metabolism.kinetic_constraint_reactions)
 
 		# read constraint data
 		enzymeKineticsReader = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
@@ -59,8 +59,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		relError = np.abs((actualFluxes[BURN_IN_STEPS:, :] - targetFluxes[BURN_IN_STEPS:, :]) / (targetFluxes[BURN_IN_STEPS:, :] + 1e-15))
 		aveError = np.mean(relError, axis = 0)
 
-		kcatOnlyReactions = np.all(constraintIsKcatOnly[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
-		kmAndKcatReactions = ~np.any(constraintIsKcatOnly[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
+		kcatOnlyReactions = np.all(constraint_is_kcat_only[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
+		kmAndKcatReactions = ~np.any(constraint_is_kcat_only[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
 		mixedReactions = ~(kcatOnlyReactions ^ kmAndKcatReactions)
 
 		kmAndKcatThresholds = [2, 10]
