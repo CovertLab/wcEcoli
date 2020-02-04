@@ -463,63 +463,66 @@ class Metabolism(object):
 	def extract_reactions(raw_data, sim_data):
 		# type: (KnowledgeBaseEcoli, SimulationDataEcoli) -> (Dict[str, Dict[str, int]], List[str], Dict[str, List[str]])
 		"""
+		Extracts reaction data from raw_data to build metabolism reaction
+		network with stoichiometry, reversibility and enzyme catalysts.
+
 		Args:
 			raw_data: knowledge base data
 			sim_data: simulation data
 
 		Returns:
-			reactionStoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
+			reaction_stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
 				stoichiometry of metabolites for each reaction
-			reversibleReactions: reaction IDs for reactions that have a reverse
+			reversible_reactions: reaction IDs for reactions that have a reverse
 				complement, does not have reverse tag
-			reactionCatalysts: {reaction ID: enzyme IDs with location tag}
+			reaction_catalysts: {reaction ID: enzyme IDs with location tag}
 				enzyme catalysts for each reaction with known catalysts, likely
 				a subset of reactions in stoich
 		"""
 
 		# Initialize variables to store reaction information
-		reactionStoich = {}
-		reversibleReactions = []
-		reactionCatalysts = {}
+		reaction_stoich = {}
+		reversible_reactions = []
+		reaction_catalysts = {}
 
 		# Load and parse reaction information from raw_data
 		for reaction in raw_data.reactions:
-			reactionID = reaction["reaction id"]
+			reaction_id = reaction["reaction id"]
 			stoich = reaction["stoichiometry"]
 			reversible = reaction["is reversible"]
 
 			if len(stoich) <= 1:
-				raise Exception("Invalid biochemical reaction: {}, {}".format(reactionID, stoich))
+				raise Exception("Invalid biochemical reaction: {}, {}".format(reaction_id, stoich))
 
-			reactionStoich[reactionID] = stoich
+			reaction_stoich[reaction_id] = stoich
 
-			catalystsForThisRxn = []
+			catalysts_for_this_rxn = []
 			for catalyst in reaction["catalyzed by"]:
 				try:
-					catalystWithLoc = (catalyst + "[" + sim_data.getter.getLocation([catalyst])[0][0] + "]").encode("utf-8")
-					catalystsForThisRxn.append(catalystWithLoc)
+					catalysts_with_loc = (catalyst + "[" + sim_data.getter.getLocation([catalyst])[0][0] + "]").encode("utf-8")
+					catalysts_for_this_rxn.append(catalysts_with_loc)
 				# If we don't have the catalyst in our reconstruction, drop it
 				except KeyError:
 					if VERBOSE:
 						print('Skipping catalyst {} for {} since it is not in the model'
-							.format(catalyst, reactionID))
+							.format(catalyst, reaction_id))
 
-			if len(catalystsForThisRxn) > 0:
-				reactionCatalysts[reactionID] = catalystsForThisRxn
+			if len(catalysts_for_this_rxn) > 0:
+				reaction_catalysts[reaction_id] = catalysts_for_this_rxn
 
 			# Add the reverse reaction
 			if reversible:
-				reverseReactionID = REVERSE_REACTION_ID.format(reactionID)
-				reactionStoich[reverseReactionID] = {
+				reverse_reaction_id = REVERSE_REACTION_ID.format(reaction_id)
+				reaction_stoich[reverse_reaction_id] = {
 					moleculeID:-stoichCoeff
-					for moleculeID, stoichCoeff in reactionStoich[reactionID].viewitems()
+					for moleculeID, stoichCoeff in reaction_stoich[reaction_id].viewitems()
 					}
 
-				reversibleReactions.append(reactionID)
-				if len(catalystsForThisRxn) > 0:
-					reactionCatalysts[reverseReactionID] = list(reactionCatalysts[reactionID])
+				reversible_reactions.append(reaction_id)
+				if len(catalysts_for_this_rxn) > 0:
+					reaction_catalysts[reverse_reaction_id] = list(reaction_catalysts[reaction_id])
 
-		return reactionStoich, reversibleReactions, reactionCatalysts
+		return reaction_stoich, reversible_reactions, reaction_catalysts
 
 	@staticmethod
 	def match_reaction(stoich, catalysts, rxn, enz, mets, direction=None):
