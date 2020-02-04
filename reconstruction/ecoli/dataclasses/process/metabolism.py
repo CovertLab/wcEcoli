@@ -788,9 +788,6 @@ class Metabolism(object):
 					'kcat': kcat values (List[float]),
 					'saturation': saturation equations (List[str])
 				}}
-
-		TODO:
-			use function in reflect script
 		"""
 
 		# Load data for optional args if needed
