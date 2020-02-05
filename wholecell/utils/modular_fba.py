@@ -726,6 +726,11 @@ class FluxBalanceAnalysis(object):
 				kineticObjEquivalent,
 				1,
 				)
+			self._solver.setFlowMaterialCoeff(
+				self._forcedUnityColName,
+				kineticObjEquivalent,
+				-1,
+				)
 
 			## Create relaxation fluxes to allow deviation from this forced consumption
 			if self._solver.quadratic_objective:
@@ -1342,12 +1347,12 @@ class FluxBalanceAnalysis(object):
 				lower_range_flux = self._geneatedID_low_target_range.format(reactionID)
 				self._solver.setFlowBounds(
 					lower_range_flux,
-					upperBound=(1 - lower / mean),
+					upperBound=np.fmax(0, 1 - lower / mean),
 					)
 				upper_range_flux = self._geneatedID_high_target_range.format(reactionID)
 				self._solver.setFlowBounds(
 					upper_range_flux,
-					upperBound=(upper / mean - 1),
+					upperBound=np.fmax(0, upper / mean - 1),
 					)
 
 			# Record the change

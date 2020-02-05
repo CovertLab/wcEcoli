@@ -396,7 +396,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "metaboliteConcentrations", metaboliteConcentrations.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "countsToMolar", countsToMolar.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "actualFluxes", self.fba.getReactionFluxes(self.all_constrained_reactions) / self.timeStepSec())
-		self.writeToListener("EnzymeKinetics", "targetFluxes", upper_targets / self.timeStepSec())
+		self.writeToListener("EnzymeKinetics", "targetFluxes", mean_targets / self.timeStepSec())
+		# TODO: add lower and upper targets
 
 	# limit amino acid uptake to what is needed to meet concentration objective to prevent use as carbon source
 	def _setExternalMoleculeLevels(self, externalMoleculeLevels, metaboliteConcentrations):
