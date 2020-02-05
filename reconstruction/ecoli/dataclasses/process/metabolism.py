@@ -647,6 +647,9 @@ class Metabolism(object):
 		Returns:
 			saturation equation with metabolites to replace delimited
 				by double quote (eg. "metabolite")
+
+		TODO:
+			exclude metabolites with unknown concentrations to prevent filtering later
 		"""
 
 		# Check input dimensions
