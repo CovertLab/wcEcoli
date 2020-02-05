@@ -346,13 +346,12 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# add boundary targets
 		transport_targets = self.boundary.transport_fluxes.values()
-		# TODO (Travis): use lower targets
-		# lower_targets = np.concatenate((targets[:, 0], transport_targets), axis=0)
+		lower_targets = np.concatenate((targets[:, 0], transport_targets), axis=0)
 		upper_targets = np.concatenate((targets[:, 1], transport_targets), axis=0)
 
 		## Set kinetic targets only if kinetics is enabled
 		if self.use_kinetics and self.burnInComplete:
-			self.fba.setKineticTarget(self.all_constrained_reactions, upper_targets)
+			self.fba.setKineticTarget(self.all_constrained_reactions, lower_targets, upper_targets)
 
 		# Solve FBA problem and update metabolite counts
 		deltaMetabolites = (1 / countsToMolar) * (CONC_UNITS * self.fba.getOutputMoleculeLevelsChange())

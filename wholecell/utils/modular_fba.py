@@ -176,6 +176,9 @@ class FluxBalanceAnalysis(object):
 	_generatedID_reactionFluxEquivalents = "reaction flux equivalent for {} reaction"
 	_generatedID_conversionFlux = "Flux converting {} flux to kinetic objective equivalents"
 
+	## Kinetic or homeostatic
+	_geneatedID_target_equivalent = '{} objective pseudoflux in range'
+
 	# Initialization
 
 	def __init__(self, reactionStoich, externalExchangedMolecules, objective,
@@ -683,13 +686,6 @@ class FluxBalanceAnalysis(object):
 		# This is a minimization objective problem
 		self._solver.maximizeObjective(False)
 
-		# Forced a column to always be one
-		self._solver.setFlowBounds(
-			self._forcedUnityColName,
-			lowerBound=1,
-			upperBound=1,
-			)
-
 		for reactionID, expectedFlux in objective.iteritems():
 			if expectedFlux < 0:
 				raise FBAError("Target flux for reaction {} is negative. Kinetic targets must be positive - set the value for the (reverse) reaction if a negative flux is desired.".format(reactionID))
@@ -721,12 +717,20 @@ class FluxBalanceAnalysis(object):
 				1,
 				)
 
-			# Force consumption of one kinetic objective equivalent
+			# Force consumption of kinetic objective equivalent with target range
+			target_equivalent_flux = self._geneatedID_target_equivalent.format(reactionID)
 			self._solver.setFlowMaterialCoeff(
-				self._forcedUnityColName,
+				target_equivalent_flux,
 				kineticObjEquivalent,
 				-1,
 				)
+			# Set limits to 1, if a target range is set, this will vary from 1
+			self._solver.setFlowBounds(
+				target_equivalent_flux,
+				lowerBound=1,
+				upperBound=1,
+				)
+			self._specialFluxIDsSet.add(target_equivalent_flux)
 
 			## Create relaxation fluxes to allow deviation from this forced consumption
 			if self._solver.quadratic_objective:
@@ -1238,28 +1242,36 @@ class FluxBalanceAnalysis(object):
 			values[idx] = relax / self.kineticObjectiveWeight
 		return values
 
-	def setKineticTarget(self, reactionIDs, reactionTargets):
+	def setKineticTarget(self, reactionIDs, lower_targets, upper_targets):
 		# If a single value is passed in, make a list of length 1 from it
 		if isinstance(reactionIDs, basestring):
 			reactionIDs = [reactionIDs]
-		if not (isinstance(reactionTargets, list) or isinstance(reactionTargets, np.ndarray)):
-			reactionTargets = [reactionTargets]
+		if not (isinstance(lower_targets, list) or isinstance(lower_targets, np.ndarray)):
+			lower_targets = [lower_targets]
+		if not (isinstance(upper_targets, list) or isinstance(upper_targets, np.ndarray)):
+			upper_targets = [upper_targets]
 
-		if len(reactionIDs) != len(reactionTargets):
+		if len(reactionIDs) != len(lower_targets) or len(reactionIDs) != len(upper_targets):
 			raise Exception("There must be equal numbers of reactionIDs and reactionTargets when changing the kinetic target.")
 
-		if (np.array(reactionTargets) < 0).any():
-			raise FBAError("Rate targets cannot be negative. {} were provided with targets of {}".format(np.array(reactionIDs)[np.array(reactionTargets) < 0], np.array(reactionTargets)[np.array(reactionTargets) < 0]))
+		if (np.array(lower_targets) < 0).any():
+			raise FBAError("Rate targets cannot be negative. {} were provided with targets of {}".format(np.array(reactionIDs)[np.array(lower_targets) < 0], np.array(lower_targets)[np.array(lower_targets) < 0]))
+		if (np.array(upper_targets) < 0).any():
+			raise FBAError("Rate targets cannot be negative. {} were provided with targets of {}".format(np.array(reactionIDs)[np.array(upper_targets) < 0], np.array(upper_targets)[np.array(upper_targets) < 0]))
 
 		# Change the objective normalization
-		for reactionID, reactionTarget in izip(reactionIDs,reactionTargets):
+		for reactionID, lower, upper in izip(reactionIDs, lower_targets, upper_targets):
 			if reactionID not in self._kineticTargetFluxes:
 				raise FBAError("Kinetic targets can only be set for reactions initialized to be kinetic targets. {} is not set up for it.".format(reactionID))
 
+			if upper < lower:
+				raise FBAError('Upper targets must be higher than lower targets')
+
 			conversionFlux = self._generatedID_conversionFlux.format(reactionID)
 			reactionFluxEquivalent = self._generatedID_reactionFluxEquivalents.format(reactionID)
-			if reactionTarget == 0:
+			if upper == 0:
 				# can't have coeff = 0, target is disabled so -1 is arbitrary value that won't matter
+				target = 0
 				self._solver.setFlowMaterialCoeff(
 					conversionFlux,
 					reactionFluxEquivalent,
@@ -1267,16 +1279,25 @@ class FluxBalanceAnalysis(object):
 					)
 				self.disableKineticTargets(reactionID)
 			else:
+				target = np.mean([lower, upper])
+				target_equivalent_flux = self._geneatedID_target_equivalent.format(reactionID)
+
 				if self._currentKineticTargets[reactionID] == 0:
 					self.enableKineticTargets(reactionID)
+
 				self._solver.setFlowMaterialCoeff(
 					conversionFlux,
 					reactionFluxEquivalent,
-					-reactionTarget
+					-target
+					)
+				self._solver.setFlowBounds(
+					target_equivalent_flux,
+					lowerBound=lower/target,
+					upperBound=upper/target,
 					)
 
 			# Record the change
-			self._currentKineticTargets[reactionID] = reactionTarget
+			self._currentKineticTargets[reactionID] = target
 
 	def enableKineticTargets(self, reactionIDs=None):
 		# If a single value is passed in, make a list of length 1 from it
