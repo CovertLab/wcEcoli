@@ -4,7 +4,7 @@ Pubmed ID	reactionID	enzymeID	substrateIDs	Temp	rateEquationType	direction	kcat 
 357906	"ADENPRIBOSYLTRAN-RXN"	["ADENPRIBOSYLTRAN-CPLX"]	["ADENINE","PRPP"]	37	"standard"		[9.33]	[20,125]	[]	null	null	null	null	null	ecocyc kinetics	done!		['PRPP']				
 368055	"GLURS-RXN"	["GLURS-MONOMER"]	["GLT-tRNAs","GLT","ATP"]		"standard"		[3.4]	[0.08,100,180]	[]	null	null	null	null	null		temp not reported		['GLT-tRNAs']				
 374409	"CATAL-RXN"	["HYDROPEROXIDI-CPLX"]	["HYDROGEN-PEROXIDE"]	25	"standard"		[16333]	[3900]	[]	null	null	null	null	null		done!		['HYDROGEN-PEROXIDE']				
-374976	"DAPASYN-RXN"	["DAPASYN-CPLX"]	["S-ADENOSYLMETHIONINE","8-AMINO-7-OXONONANOATE"]	37	"standard"		[0.283]	[0.2,1.2]	[]	null	null	null	null	null		there is a major discrepancy between this review and the original work, which shows a kM of 0.2 mM, not uM! 		['8-AMINO-7-OXONONANOATE']				
+374976	"DAPASYN-RXN"	["DAPASYN-CPLX"]	["S-ADENOSYLMETHIONINE","8-AMINO-7-OXONONANOATE"]	37	"standard"		[0.283]	[200,1.2]	[]	null	null	null	null	null		there is a major discrepancy between this review and the original work, which shows a kM of 0.2 mM, not uM! 		['8-AMINO-7-OXONONANOATE']				
 383238	"SUCCINATE-DEHYDROGENASE-UBIQUINONE-RXN"	["CPLX0-8160"]	[]		"standard"		[167]	[]	[]	null	null	null	null	null		not checked						
 764868	"ISOLEUCINE--TRNA-LIGASE-RXN"	["ILES-MONOMER"]	["ILE"]		"standard"		[1.46]	[5.69]	[]	null	null	null	null	null	ecocyc new	done!						
 764868	"ISOLEUCINE--TRNA-LIGASE-RXN"	["ILES-MONOMER"]	["ATP"]		"standard"		[1.37]	[30]	[]	null	null	null	null	null	ecocyc new	done!						
