@@ -1207,6 +1207,7 @@ class FluxBalanceAnalysis(object):
 		return self._solver.getObjectiveValue()
 
 	def getKineticReactionFluxTargets(self, reactionIDs=None):
+		# TODO (Travis): get upper and lower targets as well
 		if reactionIDs is None:
 			reactionIDs = self.getKineticTargetFluxNames()
 		values = np.zeros(len(reactionIDs))
@@ -1238,6 +1239,7 @@ class FluxBalanceAnalysis(object):
 		return sorted(self._oneSidedReactions)
 
 	def getKineticObjectiveValues(self, reactionIDs=None):
+		# TODO: use range objective
 		'''
 		Returns the value of the kinetic objective associated with each reaction that
 		is part of the kinetic objective.  If the reaction is disabled (not part of
