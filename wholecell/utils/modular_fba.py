@@ -206,8 +206,8 @@ class FluxBalanceAnalysis(object):
 			self.kineticObjectiveWeight = objectiveParameters.get("kineticObjectiveWeight", 0)
 		else:
 			self.kineticObjectiveWeight = 0
-		# TODO: make this 0.1 a parameter to be passed in?
-		self.kinetic_objective_weight_in_range = 0.1 * self.kineticObjectiveWeight
+		# TODO: make this 0.01 a parameter to be passed in?
+		self.kinetic_objective_weight_in_range = 0.01 * self.kineticObjectiveWeight
 
 		if self.kineticObjectiveWeight > 1 or self.kineticObjectiveWeight < 0:
 			raise FBAError(
