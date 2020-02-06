@@ -209,7 +209,6 @@ class Metabolism(object):
 		(constraints, reactionStoich, catalysts, reversibleReactions
 			) = self._replace_enzyme_reactions(
 			raw_constraints, reactionStoich, catalysts, reversibleReactions)
-		constraints = self._prune_saturation_terms(constraints, known_metabolites)
 
 		# Create symbolic kinetic equations
 		(self.kinetic_constraint_reactions, self.kinetic_constraint_enzymes,
@@ -218,6 +217,12 @@ class Metabolism(object):
 			) = self._lambdify_constraints(constraints)
 		self._compiled_enzymes = None
 		self._compiled_saturation = None
+
+		# Verify no substrates with unknown concentrations have been added
+		unknown = {m for m in self.kinetic_constraint_substrates if m not in known_metabolites}
+		if unknown:
+			raise ValueError('Unknown concentration for {}. Need to remove kinetics saturation term.'
+				.format(', '.join(unknown)))
 
 		# Extract data
 		reactions_with_catalyst = sorted(catalysts)
@@ -650,9 +655,6 @@ class Metabolism(object):
 		Returns:
 			saturation equation with metabolites to replace delimited
 				by double quote (eg. "metabolite")
-
-		TODO:
-			exclude metabolites with unknown concentrations to prevent filtering later
 		"""
 
 		# Check input dimensions
@@ -670,10 +672,14 @@ class Metabolism(object):
 		for m, k in zip(mets, kms):
 			if m in known_mets:
 				terms.append('1+{}/"{}"'.format(k, m))
+			elif VERBOSE:
+				print('Do not have concentration for {} with KM={}'.format(m, k))
 		# Add KI terms
 		for m, k in zip(mets[len(kms):], kis):
 			if m in known_mets:
 				terms.append('1+"{}"/{}'.format(m, k))
+			elif VERBOSE:
+				print('Do not have concentration for {} with KI={}'.format(m, k))
 
 		# Enclose groupings if being multiplied together
 		if len(terms) > 1:
@@ -685,8 +691,8 @@ class Metabolism(object):
 		return '1/({})'.format(')*('.join(terms))
 
 	@staticmethod
-	def _extract_custom_constraint(constraint, reactant_tags, product_tags):
-		# type: (Dict[str, Any], Dict[str, str], Dict[str, str]) -> (Optional[np.ndarray[float]], List[str])
+	def _extract_custom_constraint(constraint, reactant_tags, product_tags, known_mets):
+		# type: (Dict[str, Any], Dict[str, str], Dict[str, str], Set[str]) -> (Optional[np.ndarray[float]], List[str])
 		"""
 		Args:
 			constraint: values defining a kinetic constraint with key:
@@ -701,10 +707,12 @@ class Metabolism(object):
 				'customParameterConstantValues' (List[float]): values for
 					each of the constant strings
 				'Temp' (float or ''): temperature of measurement
-			reactant_tags: mapping of molecule IDs without a tag to with a tag
-				for all reactants
-			product_tags: mapping of molecule IDs without a tag to with a tag
-				for all products
+			reactant_tags: mapping of molecule IDs without a location tag to
+				molecule IDs with a location tag for all reactants
+			product_tags: mapping of molecule IDs without a location tag to
+				molecule IDs with a location tag for all products
+			known_mets: molecule IDs with a location tag for molecules with
+				known concentrations
 
 		Returns:
 			kcats: temperature adjusted kcat value, in units of 1/s
@@ -762,16 +770,20 @@ class Metabolism(object):
 		}
 
 		# Substitute values into custom equations
-		## Replace terms with known constant values or sim molecule IDs
+		## Replace terms with known constant values or sim molecule IDs with concentrations
 		custom_subs = {k: str(v) for k, v in zip(constant_keys, constant_values)}
-		custom_subs.update({k: '"{}"'.format(v) for k, v in variables_with_tags.items()})
+		custom_subs.update({
+			k: '"{}"'.format(v)
+			for k, v in variables_with_tags.items()
+			if v in known_mets
+		})
 
-		## Remove capacity to get only saturation
+		## Remove capacity to get only saturation term
 		new_equation = equation.replace(capacity_str, '1')
 
 		## Tokenize equation to terms and symbols
 		parsed_variables = re.findall('\w*', new_equation)[:-1]  # Remove trailing empty match
-		# Ensure valid input of known variables or a float term
+		## Ensure valid input of known variables or a float term
 		for v in parsed_variables:
 			if not (v == '' or v in custom_subs):
 				try:
@@ -783,12 +795,17 @@ class Metabolism(object):
 					return kcats, []
 		parsed_symbols = re.findall('\W', new_equation)
 		tokenized_equation = np.array(parsed_variables)
-		tokenized_equation[tokenized_equation == ''] = [symbol_sub.get(s, s) for s in parsed_symbols]
-		# TODO: make this check before sub?
-		# if ''.join(tokenized_equation) != new_equation:
-		# 	if VERBOSE:
-		# 		print('Error parsing custom equation: {}'.format(equation))
-		# 	return kcats, []
+		symbol_idx_mask = tokenized_equation == ''
+
+		## Verify tokenized equation matches original before replacements
+		tokenized_equation[symbol_idx_mask] = parsed_symbols
+		if ''.join(tokenized_equation) != new_equation:
+			if VERBOSE:
+				print('Error parsing custom equation: {}'.format(equation))
+			return kcats, []
+
+		## Perform replacement of symbols
+		tokenized_equation[symbol_idx_mask] = [symbol_sub.get(s, s) for s in parsed_symbols]
 
 		# Reconstruct saturation equation with replacements
 		saturation = [''.join([custom_subs.get(token, token) for token in tokenized_equation])]
@@ -875,7 +892,7 @@ class Metabolism(object):
 			# Extract kcat and saturation parameters
 			if constraint['rateEquationType'] == 'custom':
 				kcats, saturation = Metabolism._extract_custom_constraint(
-					constraint, reactant_tags, product_tags)
+					constraint, reactant_tags, product_tags, known_metabolites)
 				if kcats is None:
 					continue
 			else:
@@ -897,6 +914,8 @@ class Metabolism(object):
 						Metabolism._construct_default_saturation_equation(
 							mets_with_tag, kms, kis, known_metabolites)
 					]
+
+				saturation = [s for s in saturation if s != '1']
 
 			# Add new kcats and saturation terms for the enzymatic reaction
 			key = (matched_rxn, enzyme)
@@ -983,53 +1002,6 @@ class Metabolism(object):
 			new_constraints[new_rxn] = dict(constraints[(rxn, enzyme)], enzyme=enzyme)
 
 		return new_constraints, stoich, rxn_catalysts, reversible_rxns
-
-	@staticmethod
-	def _prune_saturation_terms(constraints, mets_with_conc):
-		# type: (Dict[str, Any], Set[str]) -> Dict[str, Any]
-		"""
-		Removes saturation terms from constraints that have metabolites with
-		unknown concentrations or terms that are only 1.
-
-		Args:
-			constraints: valid kinetic constraints for each reaction
-				{reaction ID: {
-					'enzyme': enzyme catalyst (str),
-					'kcat': kcat values (List[float]),
-					'saturation': saturation equations (List[str])
-				}}
-			mets_with_conc: metabolite IDs with location tag for metabolites
-				that have a known concentration in the model
-
-		Returns:
-			constraints: valid kinetic constraints for each reaction
-				{reaction ID: {
-					'enzyme': enzyme catalyst (str),
-					'kcat': kcat values (List[float]),
-					'saturation': saturation equations with metabolites with
-						known concentrations only (List[str])
-				}}
-		"""
-
-		for rxn, constraint in constraints.items():
-			new_saturation = []
-			for saturation in constraint['saturation']:
-				if saturation == '1':
-					continue
-
-				for match in re.findall('".+?"', saturation):
-					if match.strip('"') not in mets_with_conc:
-						if VERBOSE:
-							print('Do not have concentration for {} in {}'.format(
-								match, rxn
-								))
-						break
-				else:
-					new_saturation.append(saturation)
-
-			constraints[rxn]['saturation'] = new_saturation
-
-		return constraints
 
 	@staticmethod
 	def _lambdify_constraints(constraints):
