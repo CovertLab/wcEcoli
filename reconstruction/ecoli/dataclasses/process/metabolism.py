@@ -685,8 +685,8 @@ class Metabolism(object):
 		return '1/({})'.format(')*('.join(terms))
 
 	@staticmethod
-	def _extract_custom_constraint(constraint):
-		# type: (Dict[str, Any]) -> (Optional[np.ndarray[float]], List[str])
+	def _extract_custom_constraint(constraint, reactant_tags, product_tags):
+		# type: (Dict[str, Any], Dict[str, str], Dict[str, str]) -> (Optional[np.ndarray[float]], List[str])
 		"""
 		Args:
 			constraint: values defining a kinetic constraint with key:
@@ -701,6 +701,10 @@ class Metabolism(object):
 				'customParameterConstantValues' (List[float]): values for
 					each of the constant strings
 				'Temp' (float or ''): temperature of measurement
+			reactant_tags: mapping of molecule IDs without a tag to with a tag
+				for all reactants
+			product_tags: mapping of molecule IDs without a tag to with a tag
+				for all products
 
 		Returns:
 			kcats: temperature adjusted kcat value, in units of 1/s
@@ -718,6 +722,11 @@ class Metabolism(object):
 		kcat_str = 'kcat'
 		enzyme_str = 'E'
 		capacity_str = '{}*{}'.format(kcat_str, enzyme_str)
+
+		# Need to replace these symbols in equations
+		symbol_sub = {
+			'^': '**',
+			}
 
 		# Make sure kcat exists
 		if kcat_str not in constant_keys:
@@ -746,10 +755,16 @@ class Metabolism(object):
 					constant_keys, constant_values))
 			return kcats, []
 
+		variables_with_tags = {
+			k: reactant_tags.get(v, product_tags.get(v, None))
+			for k, v in variables.items()
+			if k != enzyme_str and (v in reactant_tags or v in product_tags)
+		}
+
 		# Substitute values into custom equations
 		## Replace terms with known constant values or sim molecule IDs
 		custom_subs = {k: str(v) for k, v in zip(constant_keys, constant_values)}
-		custom_subs.update({k: '"{}"'.format(v) for k, v in variables.items()})
+		custom_subs.update({k: '"{}"'.format(v) for k, v in variables_with_tags.items()})
 
 		## Remove capacity to get only saturation
 		new_equation = equation.replace(capacity_str, '1')
@@ -768,11 +783,12 @@ class Metabolism(object):
 					return kcats, []
 		parsed_symbols = re.findall('\W', new_equation)
 		tokenized_equation = np.array(parsed_variables)
-		tokenized_equation[tokenized_equation == ''] = parsed_symbols
-		if ''.join(tokenized_equation) != new_equation:
-			if VERBOSE:
-				print('Error parsing custom equation: {}'.format(equation))
-			return kcats, []
+		tokenized_equation[tokenized_equation == ''] = [symbol_sub.get(s, s) for s in parsed_symbols]
+		# TODO: make this check before sub?
+		# if ''.join(tokenized_equation) != new_equation:
+		# 	if VERBOSE:
+		# 		print('Error parsing custom equation: {}'.format(equation))
+		# 	return kcats, []
 
 		# Reconstruct saturation equation with replacements
 		saturation = [''.join([custom_subs.get(token, token) for token in tokenized_equation])]
@@ -858,7 +874,8 @@ class Metabolism(object):
 
 			# Extract kcat and saturation parameters
 			if constraint['rateEquationType'] == 'custom':
-				kcats, saturation = Metabolism._extract_custom_constraint(constraint)
+				kcats, saturation = Metabolism._extract_custom_constraint(
+					constraint, reactant_tags, product_tags)
 				if kcats is None:
 					continue
 			else:
