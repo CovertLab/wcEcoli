@@ -203,7 +203,8 @@ class Metabolism(object):
 		# Load kinetic reaction constraints from raw_data
 		known_metabolites = set(self.concDict)
 		raw_constraints = self.extract_kinetic_constraints(raw_data, sim_data,
-			stoich=reactionStoich, catalysts=catalysts, known_metabolites=known_metabolites)
+			stoich=reactionStoich, catalysts=catalysts,
+			known_metabolites=known_metabolites)
 
 		# Make modifications from kinetics data
 		(constraints, reactionStoich, catalysts, reversibleReactions
@@ -219,14 +220,16 @@ class Metabolism(object):
 		self._compiled_saturation = None
 
 		# Verify no substrates with unknown concentrations have been added
-		unknown = {m for m in self.kinetic_constraint_substrates if m not in known_metabolites}
+		unknown = {m for m in self.kinetic_constraint_substrates
+			if m not in known_metabolites}
 		if unknown:
-			raise ValueError('Unknown concentration for {}. Need to remove kinetics saturation term.'
-				.format(', '.join(unknown)))
+			raise ValueError('Unknown concentration for {}. Need to remove'
+				' kinetics saturation term.'.format(', '.join(unknown)))
 
 		# Extract data
 		reactions_with_catalyst = sorted(catalysts)
-		catalyst_ids = sorted({c for all_cat in catalysts.values() for c in all_cat})
+		catalyst_ids = sorted({c for all_cat in catalysts.values()
+			for c in all_cat})
 
 		# Create catalysis matrix (to be used in the simulation)
 		catalysisMatrixI = []
@@ -259,7 +262,8 @@ class Metabolism(object):
 
 		# Properties for setting flux targets
 		self.useAllConstraints = USE_ALL_CONSTRAINTS
-		self.constraintsToDisable = [rxn["disabled reaction"] for rxn in raw_data.disabledKineticReactions]
+		self.constraintsToDisable = [rxn["disabled reaction"]
+			for rxn in raw_data.disabledKineticReactions]
 
 	def _build_ppgpp_reactions(self, raw_data, sim_data):
 		'''
