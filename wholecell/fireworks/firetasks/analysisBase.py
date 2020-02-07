@@ -17,11 +17,14 @@ import traceback
 
 from fireworks import FiretaskBase
 from PIL import Image
-from typing import List, Optional
+import matplotlib as mpl
+from typing import List
 
 from wholecell.utils import parallelization
+import wholecell.utils.filepath as fp
 
 
+mpl.rc_file(fp.MATPLOTLIBRC_FILE)
 SUB_DIRECTORIES = {'.png': 'low_res_plots'}
 
 
