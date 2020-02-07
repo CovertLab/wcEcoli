@@ -204,16 +204,21 @@ class FluxBalanceAnalysis(object):
 		# Set objective weights
 		if objectiveParameters is not None:
 			self.kineticObjectiveWeight = objectiveParameters.get("kineticObjectiveWeight", 0)
+			self.kinetic_objective_weight_in_range = (
+				objectiveParameters.get('kinetic_objective_weight_in_range', 0)
+				* self.kineticObjectiveWeight
+			)
 		else:
 			self.kineticObjectiveWeight = 0
-		# TODO: make this 0.01 a parameter to be passed in?
-		self.kinetic_objective_weight_in_range = 0.01 * self.kineticObjectiveWeight
+			self.kinetic_objective_weight_in_range = 0
 
 		if self.kineticObjectiveWeight > 1 or self.kineticObjectiveWeight < 0:
 			raise FBAError(
 				"kineticObjectiveWeight must be between 0 and 1 inclusive."
 				+ " It represents the percentage of preference going to kinetics."
 				)
+		if self.kinetic_objective_weight_in_range < 0:
+			raise FBAError("kinetic_objective_weight_in_range must be non-negative.")
 
 		self.homeostaticObjectiveWeight = 1 - self.kineticObjectiveWeight
 

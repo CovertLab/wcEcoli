@@ -145,6 +145,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# Set solver and kinetic objective weight (lambda)
 		solver = sim_data.process.metabolism.solver
 		kinetic_objective_weight = sim_data.process.metabolism.kinetic_objective_weight
+		kinetic_objective_weight_in_range = sim_data.process.metabolism.kinetic_objective_weight_in_range
 
 		# Disable kinetics completely if weight is 0 or specified in file above
 		self.use_kinetics = True
@@ -161,6 +162,7 @@ class Metabolism(wholecell.processes.process.Process):
 			"objectiveType": "homeostatic_kinetics_mixed",
 			"objectiveParameters": {
 					"kineticObjectiveWeight": kinetic_objective_weight,
+					'kinetic_objective_weight_in_range': kinetic_objective_weight_in_range,
 					"reactionRateTargets": {reaction: 1 for reaction in self.all_constrained_reactions},
 					"oneSidedReactionTargets": [],
 					},
