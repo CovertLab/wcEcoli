@@ -89,6 +89,11 @@ TAGS = {
 		"growthLimits.py",  # TODO(jerry): include this?
 		"trna_charging.py",
 		],
+	'KINETICS': [
+		"centralCarbonMetabolismScatter.py",
+		"glucoseAndOxygenExchangeFluxes.py",
+		"kineticsFluxComparison.py",
+		],
 	'METABOLISM': [
 		"aaExchangeFluxes.py",
 		"allReactionFluxes.py",
