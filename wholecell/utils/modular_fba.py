@@ -1244,7 +1244,6 @@ class FluxBalanceAnalysis(object):
 		return sorted(self._oneSidedReactions)
 
 	def getKineticObjectiveValues(self, reactionIDs=None):
-		# TODO: use range objective
 		'''
 		Returns the value of the kinetic objective associated with each reaction that
 		is part of the kinetic objective.  If the reaction is disabled (not part of
@@ -1268,7 +1267,13 @@ class FluxBalanceAnalysis(object):
 		if self._solver.quadratic_objective:
 			unity_ids = np.array([self._generatedID_quadFluxRelax.format(rxn) for rxn in reactionIDs])
 		else:
-			unity_ids = np.hstack([[self._generatedID_amountUnder.format(rxn), self._generatedID_amountOver.format(rxn)] for rxn in reactionIDs])
+			unity_ids = np.hstack([[
+				self._generatedID_amountUnder.format(rxn),
+				self._generatedID_amountOver.format(rxn),
+				self._geneatedID_low_target_range.format(rxn),
+				self._geneatedID_high_target_range.format(rxn),
+				] for rxn in reactionIDs
+			])
 		fluxes = {rxn: flux for rxn, flux in izip(unity_ids, self.getReactionFluxes(unity_ids))}
 
 		for idx, reactionID in enumerate(reactionIDs):
@@ -1281,10 +1286,14 @@ class FluxBalanceAnalysis(object):
 			else:
 				belowUnityID = self._generatedID_amountUnder.format(reactionID)
 				aboveUnityID = self._generatedID_amountOver.format(reactionID)
+				below_in_range_id = self._geneatedID_low_target_range.format(reactionID)
+				above_in_range_id = self._geneatedID_high_target_range.format(reactionID)
 				relaxUp = fluxes[belowUnityID] * self._solver.getFlowObjectiveCoeff(belowUnityID)
 				relaxDown = fluxes[aboveUnityID] * self._solver.getFlowObjectiveCoeff(aboveUnityID)
+				below_in_range = fluxes[below_in_range_id] * self._solver.getFlowObjectiveCoeff(below_in_range_id)
+				above_in_range = fluxes[above_in_range_id] * self._solver.getFlowObjectiveCoeff(above_in_range_id)
 
-				relax = relaxUp + relaxDown
+				relax = relaxUp + relaxDown + below_in_range + above_in_range
 
 				assert relaxUp <= NUMERICAL_ZERO or relaxDown <= NUMERICAL_ZERO
 
