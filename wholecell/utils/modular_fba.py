@@ -1305,7 +1305,10 @@ class FluxBalanceAnalysis(object):
 
 	def setKineticTarget(self, reactionIDs,  mean_targets, lower_targets=None, upper_targets=None):
 		# If a single value is passed in, make a list of length 1 from it
-		def validate_targets(targets, reactionIDs):
+		def validate_targets(targets, reactionIDs, default=None):
+			if targets is None:
+				return default
+
 			if not (isinstance(targets, list) or isinstance(targets, np.ndarray)):
 				targets = [targets]
 
@@ -1323,13 +1326,8 @@ class FluxBalanceAnalysis(object):
 		if isinstance(reactionIDs, basestring):
 			reactionIDs = [reactionIDs]
 		mean_targets = validate_targets(mean_targets, reactionIDs)
-		lower_targets = validate_targets(lower_targets, reactionIDs)
-		upper_targets = validate_targets(upper_targets, reactionIDs)
-
-		if lower_targets is None:
-			lower_targets = mean_targets
-		if upper_targets is None:
-			upper_targets = mean_targets
+		lower_targets = validate_targets(lower_targets, reactionIDs, default=mean_targets)
+		upper_targets = validate_targets(upper_targets, reactionIDs, default=mean_targets)
 
 		# Change the objective normalization
 		for reactionID, mean, lower, upper in izip(reactionIDs, mean_targets, lower_targets, upper_targets):
