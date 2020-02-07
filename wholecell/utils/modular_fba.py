@@ -731,6 +731,8 @@ class FluxBalanceAnalysis(object):
 				kineticObjEquivalent,
 				1,
 				)
+
+			# Force consumption of one kinetic objective equivalent
 			self._solver.setFlowMaterialCoeff(
 				self._forcedUnityColName,
 				kineticObjEquivalent,
