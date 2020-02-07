@@ -238,13 +238,13 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 				if molecule_name == 'active_RNAP':
 					# If molecule is RNA polymerase, save data for future use
 					RNAP_unique_index = molecule_set.attr("unique_index")
-					RNAP_d1_indexes = RNAP_unique_index[d1_bool]
-					RNAP_d2_indexes = RNAP_unique_index[d2_bool]
+					d1_RNAP_unique_indexes = RNAP_unique_index[d1_bool]
+					d2_RNAP_unique_indexes = RNAP_unique_index[d2_bool]
 			else:
 				if molecule_name == 'active_RNAP':
 					# If molecule is RNA polymerase, save data for future use
-					RNAP_d1_indexes = np.array([], dtype=np.int64)
-					RNAP_d2_indexes = np.array([], dtype=np.int64)
+					d1_RNAP_unique_indexes = np.array([], dtype=np.int64)
+					d2_RNAP_unique_indexes = np.array([], dtype=np.int64)
 				continue
 
 		elif division_mode[molecule_name] == 'RNA':
@@ -279,9 +279,9 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 					partial_transcript_indexes]
 
 				partial_d1_indexes = partial_transcript_indexes[
-					np.isin(RNAP_index_partial_transcripts, RNAP_d1_indexes)]
+					np.isin(RNAP_index_partial_transcripts, d1_RNAP_unique_indexes)]
 				partial_d2_indexes = partial_transcript_indexes[
-					np.isin(RNAP_index_partial_transcripts, RNAP_d2_indexes)]
+					np.isin(RNAP_index_partial_transcripts, d2_RNAP_unique_indexes)]
 
 				d1_bool[partial_d1_indexes] = True
 				d2_bool[partial_d2_indexes] = True
@@ -290,11 +290,11 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 				n_d2 = d2_bool.sum()
 
 				# Save data for future use (active ribosome division)
-				RNA_d1_indexes = RNA_unique_index[d1_bool]
-				RNA_d2_indexes = RNA_unique_index[d2_bool]
+				d1_RNA_unique_indexes = RNA_unique_index[d1_bool]
+				d2_RNA_unique_indexes = RNA_unique_index[d2_bool]
 			else:
-				RNA_d1_indexes = np.array([], dtype=np.int64)
-				RNA_d2_indexes = np.array([], dtype=np.int64)
+				d1_RNA_unique_indexes = np.array([], dtype=np.int64)
+				d2_RNA_unique_indexes = np.array([], dtype=np.int64)
 				continue
 
 		elif division_mode[molecule_name] == 'active_ribosome':
@@ -316,9 +316,8 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 
 				# Divide ribosomes based on their mRNA index
 				mRNA_index = molecule_set.attr("mRNA_index")
-
-				d1_bool = np.isin(mRNA_index, RNA_d1_indexes)
-				d2_bool = np.isin(mRNA_index, RNA_d2_indexes)
+				d1_bool = np.isin(mRNA_index, d1_RNA_unique_indexes)
+				d2_bool = np.isin(mRNA_index, d2_RNA_unique_indexes)
 
 				# Binomially divide ribosomes whose bound RNAs could not be
 				# found (ggsun: This happens because mRNA degradation does
@@ -359,12 +358,48 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 				molecule_set.attr(molecule_attribute)[d2_bool]
 			)
 
-		d1_unique_molecules_container.objectsNew(
+		if molecule_name == 'RNA':
+			# Reset the RNAP_index attributes of RNAs with the new unique
+			# indexes given to RNAP molecules
+			d1_RNAP_index_old = d1_divided_attributes_dict['RNAP_index']
+			d2_RNAP_index_old = d2_divided_attributes_dict['RNAP_index']
+
+			d1_RNAP_index_new = remap_unique_indexes(d1_RNAP_index_old,
+				d1_RNAP_unique_indexes, d1_RNAP_unique_indexes_new)
+			d2_RNAP_index_new = remap_unique_indexes(d2_RNAP_index_old,
+				d2_RNAP_unique_indexes, d2_RNAP_unique_indexes_new)
+
+			d1_divided_attributes_dict['RNAP_index'] = d1_RNAP_index_new
+			d2_divided_attributes_dict['RNAP_index'] = d2_RNAP_index_new
+
+		elif molecule_name == 'active_ribosome':
+			# Reset the mRNA_index attributes of ribosomes with the new unique
+			# indexes given to RNA molecules
+			d1_mRNA_index_old = d1_divided_attributes_dict['mRNA_index']
+			d2_mRNA_index_old = d2_divided_attributes_dict['mRNA_index']
+
+			d1_mRNA_index_new = remap_unique_indexes(d1_mRNA_index_old,
+				d1_RNA_unique_indexes, d1_RNA_unique_indexes_new)
+			d2_mRNA_index_new = remap_unique_indexes(d2_mRNA_index_old,
+				d2_RNA_unique_indexes, d2_RNA_unique_indexes_new)
+
+			d1_divided_attributes_dict['mRNA_index'] = d1_mRNA_index_new
+			d2_divided_attributes_dict['mRNA_index'] = d2_mRNA_index_new
+
+		d1_unique_indexes = d1_unique_molecules_container.objectsNew(
 			molecule_name, n_d1,
 			**d1_divided_attributes_dict)
-		d2_unique_molecules_container.objectsNew(
+		d2_unique_indexes = d2_unique_molecules_container.objectsNew(
 			molecule_name, n_d2,
 			**d2_divided_attributes_dict)
+
+		# Remember unique indexes that were returned for certain molecules
+		if molecule_name == 'active_RNAP':
+			d1_RNAP_unique_indexes_new = d1_unique_indexes
+			d2_RNAP_unique_indexes_new = d2_unique_indexes
+		elif molecule_name == 'RNA':
+			d1_RNA_unique_indexes_new = d1_unique_indexes
+			d2_RNA_unique_indexes_new = d2_unique_indexes
 
 	return d1_unique_molecules_container, d2_unique_molecules_container, daughter_elng_rates
 
@@ -420,3 +455,17 @@ def get_descendent_domains(root_domains, domain_index, child_domains, place_hold
 	return np.array(flatten([
 		follow_domain_tree(root_domain, domain_index, child_domains, place_holder)
 		for root_domain in root_domains]))
+
+
+def remap_unique_indexes(indexes, old_unique_indexes, new_unique_indexes):
+	"""
+	Replaces the numbers in the indexes array from the numbers found in the
+	old_unique_indexes array to the numbers in the new_unique_indexes array.
+	If the number is not found in old_unique_indexes, the number is replaced
+	with a -1.
+	"""
+	old_to_new_index = {old: new for old, new
+		in zip(old_unique_indexes, new_unique_indexes)}
+	new_indexes = np.array([old_to_new_index.get(i, -1) for i in indexes])
+
+	return new_indexes
