@@ -11,7 +11,7 @@ module load wcEcoli/sherlock2
 ### Edit this line to make the PR build use a new pyenv.
 ### Revert to `pyenv local wcEcoli2` before merging the PR into master.
 ### -------------------------------------------------------------------
-pyenv local wcEcoli2
+pyenv local wcEcoli-seg  # To test TkAgg being set in matplotlibrc in site-packages/matplotlib/mpl-data/matplotlibrc
 
 make clean
 make compile
