@@ -519,9 +519,10 @@ class ScriptBase(object):
 		message (including the elapsed run time).
 		"""
 
+		exceptions = []
 		range_args = self.extract_range_args(self.parse_args())
 		# TODO (Travis): have option to parallelize when ranges given
-		# TODO (Travis): check or handle error if variant/seed/gen range combo does not exist
+		# TODO (Travis): check if variant/seed/gen range combo does not exist
 		for params in itertools.product(*range_args):
 			# Start with original args for each iteration since update_args
 			# overwrites some args and might handle undefined values differently
@@ -541,7 +542,14 @@ class ScriptBase(object):
 			pp.pprint({'Arguments': vars(args)})
 
 			start_process_sec = time.clock()
-			self.run(args)
+			try:
+				self.run(args)
+			except Exception as e:
+				# Handle exceptions after completion if running multiple params
+				if range_args:
+					exceptions.append((params, e))
+				else:
+					raise
 			end_process_sec = time.clock()
 			elapsed_process = end_process_sec - start_process_sec
 
@@ -553,6 +561,15 @@ class ScriptBase(object):
 				datetime.timedelta(seconds=elapsed_wall),
 				elapsed_process,
 				))
+
+		# Handle any exceptions that occurred
+		if exceptions:
+			for params, e in exceptions:
+				param_str = ', '.join(['{}: {}'.format(RANGE_ARGS[o], p)
+					for o, p in zip(self.range_options, params)])
+				print('Error with param set ({}): "{}"'.format(param_str, e))
+
+			raise RuntimeError('Exception in one or more parameter sets (see above).')
 
 
 class TestScript(ScriptBase):

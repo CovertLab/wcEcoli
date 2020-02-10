@@ -189,7 +189,7 @@ class AnalysisBase(FiretaskBase):
 			print("Completed analysis in {} with an exception in:".format(duration))
 			for file in exceptionFileList:
 				print("\t{}".format(file))
-			raise Exception("Error in analysis")
+			raise RuntimeError("Error in analysis plot(s): {}".format(', '.join(exceptionFileList)))
 		else:
 			print("Completed analysis in {}".format(duration))
 
