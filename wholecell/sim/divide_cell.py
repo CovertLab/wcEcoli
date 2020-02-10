@@ -17,6 +17,10 @@ from wholecell.utils import units
 BINOMIAL_COEFF = 0.5
 
 
+class UniqueMoleculeDivisionError(Exception):
+	pass
+
+
 def zero_elongation_rate():
 	return {
 		"d1_elng_rate_factor": 0.,
@@ -205,6 +209,19 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 	d1_all_domain_indexes = chromosome_division_results['d1_all_domain_indexes']
 	d2_all_domain_indexes = chromosome_division_results['d2_all_domain_indexes']
 
+	# Initialize unique index arrays to None
+	d1_RNAP_unique_indexes = None
+	d2_RNAP_unique_indexes = None
+	d1_RNAP_unique_indexes_new = None
+	d2_RNAP_unique_indexes_new = None
+	d1_RNA_unique_indexes = None
+	d2_RNA_unique_indexes = None
+	d1_RNA_unique_indexes_new = None
+	d2_RNA_unique_indexes_new = None
+
+	# Initialize daughter cell ribosome elongation rates
+	daughter_elng_rates = zero_elongation_rate()
+
 	# Divide molecules with division mode "domain_index"
 	for molecule_name in uniqueMolecules.division_mode['domain_index']:
 		molecule_set = uniqueMolecules.container.objectsInCollection(
@@ -250,6 +267,12 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 		if molecule_name == 'active_RNAP':
 			d1_RNAP_unique_indexes_new = d1_unique_indexes
 			d2_RNAP_unique_indexes_new = d2_unique_indexes
+
+	# Check that RNAPs have been properly divided
+	if any(v is None for v in [d1_RNAP_unique_indexes, d2_RNAP_unique_indexes,
+			d1_RNAP_unique_indexes_new, d2_RNAP_unique_indexes_new]):
+		raise UniqueMoleculeDivisionError(
+			'Active RNAPs must be divided and it new unique indexes be known before dividing RNAs.')
 
 	# Divide molecules with division mode "RNA"
 	for molecule_name in uniqueMolecules.division_mode['RNA']:
@@ -299,12 +322,14 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 			n_d1 = d1_bool.sum()
 			n_d2 = d2_bool.sum()
 
-			# Save data for future use (active ribosome division)
-			d1_RNA_unique_indexes = RNA_unique_index[d1_bool]
-			d2_RNA_unique_indexes = RNA_unique_index[d2_bool]
+			if molecule_name == 'RNA':
+				# Save data for future use (active ribosome division)
+				d1_RNA_unique_indexes = RNA_unique_index[d1_bool]
+				d2_RNA_unique_indexes = RNA_unique_index[d2_bool]
 		else:
-			d1_RNA_unique_indexes = np.array([], dtype=np.int64)
-			d2_RNA_unique_indexes = np.array([], dtype=np.int64)
+			if molecule_name == 'RNA':
+				d1_RNA_unique_indexes = np.array([], dtype=np.int64)
+				d2_RNA_unique_indexes = np.array([], dtype=np.int64)
 			continue
 
 		# Add the divided unique molecules to the daughter cell containers
@@ -335,6 +360,12 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 			d1_RNA_unique_indexes_new = d1_unique_indexes
 			d2_RNA_unique_indexes_new = d2_unique_indexes
 
+	# Check that RNAs have been properly divided
+	if any(v is None for v in [d1_RNA_unique_indexes, d2_RNA_unique_indexes,
+			d1_RNA_unique_indexes_new, d2_RNA_unique_indexes_new]):
+		raise UniqueMoleculeDivisionError(
+			'RNAs must be divided and it new unique indexes be known before dividing active ribosomes.')
+
 	for molecule_name in uniqueMolecules.division_mode['active_ribosome']:
 		molecule_set = uniqueMolecules.container.objectsInCollection(
 			molecule_name)
@@ -343,8 +374,6 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 
 		# Divide ribosomes following the mRNA molecule that each ribosome
 		# is bound to.
-		daughter_elng_rates = zero_elongation_rate()
-
 		if n_molecules > 0:
 			# If growth rate noise is set to True, multiply noise parameter
 			# to translation capacity
@@ -483,8 +512,6 @@ def get_divided_attributes(
 		)
 
 	return d1_divided_attributes_dict, d2_divided_attributes_dict
-
-
 
 
 def remap_unique_indexes(indexes, old_unique_indexes, new_unique_indexes):
