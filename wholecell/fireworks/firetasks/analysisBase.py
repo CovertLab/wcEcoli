@@ -187,8 +187,8 @@ class AnalysisBase(FiretaskBase):
 		duration = time.strftime("%H:%M:%S", time.gmtime(timeTotal))
 		if exceptionFileList:
 			print("Completed analysis in {} with an exception in:".format(duration))
-			for file in exceptionFileList:
-				print("\t{}".format(file))
+			for f in exceptionFileList:
+				print("\t{}".format(f))
 			raise RuntimeError("Error in analysis plot(s): {}".format(', '.join(exceptionFileList)))
 		else:
 			print("Completed analysis in {}".format(duration))
