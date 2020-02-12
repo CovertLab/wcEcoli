@@ -94,11 +94,17 @@ class Metabolism(object):
 
 		for row in raw_data.metaboliteConcentrations:
 			metabolite_id = row['Metabolite']
-			conc = np.mean([
-				row[source].asNumber(METABOLITE_CONCENTRATION_UNITS)
-				for source in concentration_sources
-				if units.hasUnit(row[source])
-				])
+
+			# Only use Lempp if Bennett is not available
+			conc = row[concentration_sources[0]] or row[concentration_sources[1]]
+			conc = conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
+
+			# Use average of both sources - parca does not fit TF probabilities
+			# conc = np.mean([
+			# 	row[source].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			# 	for source in concentration_sources
+			# 	if row[source]
+			# 	])
 
 			if metabolite_id in wildtypeIDtoCompartment:
 				metaboliteIDs.append(
