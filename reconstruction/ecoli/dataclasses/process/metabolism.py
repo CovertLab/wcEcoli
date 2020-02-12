@@ -83,29 +83,34 @@ class Metabolism(object):
 		# compartments according to those given in the biomass objective.  Or,
 		# if there is no compartment, assign it to the cytoplasm.
 
+		concentration_sources = ['Bennett Concentration', 'Lempp Concentration']
 		metaboliteIDs = []
 		metaboliteConcentrations = []
-		metaboliteConcentrationData = dict(
-			(m["Metabolite"], m["Concentration"].asNumber(METABOLITE_CONCENTRATION_UNITS))
-			for m in raw_data.metaboliteConcentrations)
 
 		wildtypeIDtoCompartment = {
 			wildtypeID[:-3] : wildtypeID[-3:]
 			for wildtypeID in wildtypeIDs
 			} # this assumes biomass reaction components only exist in a single compartment
 
-		for metaboliteID, concentration in metaboliteConcentrationData.viewitems():
-			if metaboliteID in wildtypeIDtoCompartment:
+		for row in raw_data.metaboliteConcentrations:
+			metabolite_id = row['Metabolite']
+			conc = np.mean([
+				row[source].asNumber(METABOLITE_CONCENTRATION_UNITS)
+				for source in concentration_sources
+				if units.hasUnit(row[source])
+				])
+
+			if metabolite_id in wildtypeIDtoCompartment:
 				metaboliteIDs.append(
-					metaboliteID + wildtypeIDtoCompartment[metaboliteID]
+					metabolite_id + wildtypeIDtoCompartment[metabolite_id]
 					)
 
 			else:
 				metaboliteIDs.append(
-					metaboliteID + "[c]"
+					metabolite_id + "[c]"
 					)
 
-			metaboliteConcentrations.append(concentration)
+			metaboliteConcentrations.append(conc)
 
 		# ILE/LEU: split reported concentration according to their relative abundances
 		ileRelative = ILE_FRACTION
