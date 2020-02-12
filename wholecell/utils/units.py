@@ -38,6 +38,11 @@ def __truediv__(self, other):
 def __rtruediv__(self, other):
 	return Unum.coerceToUnum(other).__truediv__(self)
 
+# Allow nonzero testing on all Unum objects
+def __nonzero__(self):
+	return True if self._value else False
+Unum.__nonzero__ = __nonzero__
+
 # #244 workaround: Monkey patch Unum if it still has the broken implementation.
 # The test also ensures this only patches it once.
 # For some reason, `is` won't work here.
