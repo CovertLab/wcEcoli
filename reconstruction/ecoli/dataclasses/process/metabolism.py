@@ -84,6 +84,12 @@ class Metabolism(object):
 		# if there is no compartment, assign it to the cytoplasm.
 
 		concentration_sources = ['Bennett Concentration', 'Lempp Concentration']
+		bennett_only = {
+			'ATP',  # TF binding does not solve with average concentration with Lempp
+			}
+		lempp_only = {
+			'GLT',  # Steady state concentration reached with tRNA charging is much lower than Bennett
+			}
 		metaboliteIDs = []
 		metaboliteConcentrations = []
 
@@ -95,9 +101,10 @@ class Metabolism(object):
 		for row in raw_data.metaboliteConcentrations:
 			metabolite_id = row['Metabolite']
 
-			if metabolite_id == 'ATP':
-				# TF binding does not solve with average concentration
-				conc = row[concentration_sources[0]].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			if metabolite_id in bennett_only:
+				conc = row['Bennett Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			elif metabolite_id in lempp_only:
+				conc = row['Lempp Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			else:
 				# Use average of both sources
 				conc = np.mean([
