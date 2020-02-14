@@ -65,7 +65,7 @@ class InternalState(object):
 			view._updateQuery()
 
 
-	def partition(self):
+	def partition(self, processes):
 		pass
 
 
