@@ -13,6 +13,7 @@ from __future__ import absolute_import, division, print_function
 import csv
 import os
 import sys
+import time
 
 from typing import Dict, List
 
@@ -41,11 +42,15 @@ def load_conc(filename):
 		reader = csv.reader(f, delimiter='\t')
 
 		headers = reader.next()
+		while headers[0].startswith('#'):
+			headers = reader.next()
 		label = headers[1]
 
 		for line in reader:
 			mol_id = line[0].strip('# "')
-			conc[mol_id] = line[1]
+			mol_conc = line[1]
+			if mol_conc:
+				conc[mol_id] = mol_conc
 
 	return label, conc
 
@@ -64,9 +69,10 @@ def save_conc(conc):
 
 	with open(OUTPUT_FILE, 'w') as f:
 		writer = csv.writer(f, delimiter='\t', quotechar="'", lineterminator='\n')
+		writer.writerow(['# Created with {} on {}'.format(' '.join(sys.argv), time.ctime())])
 		writer.writerow(headers)
 		for m in sorted(mets):
-			writer.writerow(['"{}"'.format(m)] + [c[1].get(m, '') for c in conc])
+			writer.writerow(['"{}"'.format(m)] + [c[1].get(m, 'NaN') for c in conc])
 
 
 if __name__ == '__main__':

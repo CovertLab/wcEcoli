@@ -107,7 +107,7 @@ class Metabolism(object):
 				conc = row['Lempp Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			else:
 				# Use average of both sources
-				conc = np.mean([
+				conc = np.nanmean([
 					row[source].asNumber(METABOLITE_CONCENTRATION_UNITS)
 					for source in concentration_sources
 					if row[source]
