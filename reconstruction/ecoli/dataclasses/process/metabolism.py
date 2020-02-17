@@ -110,7 +110,6 @@ class Metabolism(object):
 				conc = np.nanmean([
 					row[source].asNumber(METABOLITE_CONCENTRATION_UNITS)
 					for source in concentration_sources
-					if row[source]
 					])
 
 			if metabolite_id in wildtypeIDtoCompartment:
