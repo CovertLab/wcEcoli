@@ -69,7 +69,7 @@ class InternalState(object):
 		pass
 
 
-	def merge(self):
+	def merge(self, processes):
 		pass
 
 

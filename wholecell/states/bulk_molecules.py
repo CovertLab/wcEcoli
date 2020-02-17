@@ -115,7 +115,10 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 			if view._processIndex in process_indexes_set:
 				self._countsRequested[view._containerIndexes, view._processIndex] += view._request()
 
-		if ASSERT_POSITIVE_COUNTS and not (self._countsRequested >= 0).all():
+		# Select columns to partition
+		counts_requested = self._countsRequested[:, process_indexes]
+
+		if ASSERT_POSITIVE_COUNTS and np.any(counts_requested < 0):
 			raise NegativeCountsError(
 				"Negative value(s) in self._countsRequested:\n"
 				+ "\n".join(
@@ -132,15 +135,17 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 		if len(processes) > 1:
 			self._countsAllocatedInitial[:, process_indexes] = calculatePartition(
 				self._processPriorities[process_indexes],
-				self._countsRequested[:, process_indexes],
+				counts_requested,
 				self.container._counts)
 		else:
 			# No need to partition if there is only one process
 			self._countsAllocatedInitial[:, process_indexes[0]] = np.fmin(
-				self._countsRequested[:, process_indexes[0]],
-				self.container._counts)
+				counts_requested.flatten(), self.container._counts)
 
-		if ASSERT_POSITIVE_COUNTS and not (self._countsAllocatedInitial >= 0).all():
+		# Select columns that have been partitioned
+		counts_allocated_initial = self._countsAllocatedInitial[:, process_indexes]
+
+		if ASSERT_POSITIVE_COUNTS and np.any(counts_allocated_initial < 0):
 			raise NegativeCountsError(
 					"Negative value(s) in self._countsAllocatedInitial:\n"
 					+ "\n".join(
@@ -155,9 +160,9 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 
 		# Record unpartitioned counts for later merging
 		self._countsUnallocated = self.container._counts - np.sum(
-			self._countsAllocatedInitial[:, process_indexes], axis = -1)
+			counts_allocated_initial, axis=-1)
 
-		if ASSERT_POSITIVE_COUNTS and not (self._countsUnallocated >= 0).all():
+		if ASSERT_POSITIVE_COUNTS and np.any(self._countsUnallocated < 0):
 			raise NegativeCountsError(
 					"Negative value(s) in self._countsUnallocated:\n"
 					+ "\n".join(
@@ -169,11 +174,19 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 					)
 				)
 
-		self._countsAllocatedFinal[:] = self._countsAllocatedInitial
+		np.copyto(self._countsAllocatedFinal, self._countsAllocatedInitial)
 
 
 	def merge(self, processes):
-		if ASSERT_POSITIVE_COUNTS and not (self._countsAllocatedFinal >= 0).all():
+		# Get list of process indexes to be merged
+		process_indexes = np.array([
+			self._processID_to_index[process.__name__]
+			for process in processes])
+
+		# Select columns to merge
+		counts_allocated_final = self._countsAllocatedFinal[:, process_indexes]
+
+		if ASSERT_POSITIVE_COUNTS and np.any(counts_allocated_final < 0):
 			raise NegativeCountsError(
 					"Negative value(s) in self._countsAllocatedFinal:\n"
 					+ "\n".join(
@@ -186,13 +199,8 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 					)
 				)
 
-		# Get list of process indexes to be merged
-		process_indexes = np.array([
-			self._processID_to_index[process.__name__]
-			for process in processes])
-
 		self.container.countsIs(
-			self._countsUnallocated + self._countsAllocatedFinal[:, process_indexes].sum(axis = -1)
+			self._countsUnallocated + counts_allocated_final.sum(axis=-1)
 			)
 
 		# Add mass differences for each process
@@ -306,7 +314,7 @@ class BulkMoleculesViewBase(wholecell.views.view.View):
 		self._requestedCount[:] = value
 
 	def requestAll(self):
-		self._requestedCount[:] = self._totalCount
+		np.copyto(self._requestedCount, self._totalCount)
 
 
 class BulkMoleculesView(BulkMoleculesViewBase):
