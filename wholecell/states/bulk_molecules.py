@@ -197,8 +197,7 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 
 		# Add mass differences for each process
 		self._process_mass_diffs[process_indexes, :] += np.dot(
-			(self._countsAllocatedFinal[:, process_indexes] -
-			 self._countsAllocatedInitial[:, process_indexes]).T,
+			(self._countsAllocatedFinal - self._countsAllocatedInitial)[:, process_indexes].T,
 			self._moleculeMass)
 
 
