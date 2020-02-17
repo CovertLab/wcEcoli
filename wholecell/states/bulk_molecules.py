@@ -18,7 +18,6 @@ import numpy as np
 import wholecell.states.internal_state
 import wholecell.views.view
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
-
 from wholecell.utils import units
 
 from wholecell.utils.constants import REQUEST_PRIORITY_DEFAULT
@@ -178,6 +177,9 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 
 
 	def merge(self, processes):
+		if len(processes) == 0:
+			return
+
 		# Get list of process indexes to be merged
 		process_indexes = np.array([
 			self._processID_to_index[process.__name__]
@@ -199,14 +201,23 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 					)
 				)
 
-		self.container.countsIs(
-			self._countsUnallocated + counts_allocated_final.sum(axis=-1)
-			)
-
-		# Add mass differences for each process
-		self._process_mass_diffs[process_indexes, :] += np.dot(
-			(self._countsAllocatedFinal - self._countsAllocatedInitial)[:, process_indexes].T,
-			self._moleculeMass)
+		# Merge counts and calculate mass differences for each process
+		if len(processes) > 1:
+			self.container.countsIs(
+				self._countsUnallocated + counts_allocated_final.sum(axis=-1)
+				)
+			self._process_mass_diffs[process_indexes, :] += np.dot(
+				(self._countsAllocatedFinal - self._countsAllocatedInitial)[:, process_indexes].T,
+				self._moleculeMass)
+		else:
+			# Use simpler calculations if there is only one process
+			counts_allocated_final = counts_allocated_final.flatten()
+			self.container.countsIs(
+				self._countsUnallocated + counts_allocated_final
+				)
+			self._process_mass_diffs[process_indexes[0], :] += np.dot(
+				counts_allocated_final - self._countsAllocatedInitial[:, process_indexes[0]],
+				self._moleculeMass)
 
 
 	def calculateMass(self):
