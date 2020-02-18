@@ -89,11 +89,11 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			ax.plot(time / 60., deviation, linewidth=1, label="pool size", color='k')
 
 			# Highlights >15% deviation
-			flag_deviation = abs(deviation[int(deviation.shape[0] * IGNORE_FIRST_PERCENTAGE):].min())
+			flag_deviation = np.abs(deviation[int(deviation.shape[0] * IGNORE_FIRST_PERCENTAGE):]).max()
 			bbox = None
 			if flag_deviation > 0.15:
 				bbox = {'facecolor':'red', 'alpha':0.5, 'pad':1}
-			ax.set_title('{}\n{} mmol/L'.format(poolIds[idx][:-3], -1 * round_to_1(concentrationSetpoints[idx].asNumber(units.mmol / units.L))), fontsize=6, bbox=bbox)
+			ax.set_title('{}\n{:.2g} mmol/L'.format(poolIds[idx][:-3], concentrationSetpoints[idx].asNumber(units.mmol / units.L)), fontsize=6, bbox=bbox)
 
 			# Sets ticks so that they look pretty
 			ax.spines['top'].set_visible(False)
@@ -121,7 +121,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 			ax.set_ylim([ymin, ymax])
 			ax.set_yticks([ymin, ymax])
-			ax.set_yticklabels([str(round_to_1(deviation.min())), str(round_to_1(deviation.max()))])
+			ax.set_yticklabels(['{:.2g}'.format(ymin), '{:.2g}'.format(ymax)])
 
 		# Create legend
 		ax = plt.subplot(rows, cols, n_subplots)
