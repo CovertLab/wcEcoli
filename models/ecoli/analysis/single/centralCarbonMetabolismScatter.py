@@ -53,6 +53,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		dryMassFracAverage = np.mean(dryMass / cellMass)
 
+		#Toya Graph
 		toya_reactions = validation_data.reactionFlux.toya2010fluxes["reactionID"]
 		toya_fluxes = FLUX_UNITS * np.array([(dryMassFracAverage * cellDensity * x).asNumber(FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes["reactionFlux"]])
 		toya_stdev = FLUX_UNITS * np.array([(dryMassFracAverage * cellDensity * x).asNumber(FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes["reactionFluxStdev"]])
@@ -65,9 +66,11 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			fluxTimeCourse = []
 
 			for rxn in reactionIDs:
-				if re.findall(toyaReactionID, rxn):
+				if toyaReactionID in rxn:
+				#if re.findall(toyaReactionID, rxn):
 					reverse = 1
-					if re.findall("(reverse)", rxn):
+					if "(reverse)" in rxn:
+					#if re.findall("(reverse)", rxn):
 						reverse = -1
 
 					if len(fluxTimeCourse):
@@ -89,12 +92,68 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		plt.title("Central Carbon Metabolism Flux, Pearson R = {:.2}".format(correlationCoefficient))
 		plt.errorbar(toyaVsReactionAve[:,1].asNumber(FLUX_UNITS), toyaVsReactionAve[:,0].asNumber(FLUX_UNITS), xerr = toyaVsReactionAve[:,3].asNumber(FLUX_UNITS),
 			yerr = toyaVsReactionAve[:,2].asNumber(FLUX_UNITS), fmt = "o", ecolor = "k")
+		plt.plot(toyaVsReactionAve[:, 1].asNumber(FLUX_UNITS), toyaVsReactionAve[:, 0].asNumber(FLUX_UNITS), "o")
+		for x, y, label in zip(toyaVsReactionAve[:, 1].asNumber(FLUX_UNITS), toyaVsReactionAve[:, 0].asNumber(FLUX_UNITS), toya_order):
+			plt.text(x, y, label)
 		plt.ylabel("Mean WCM Reaction Flux {}".format(FLUX_UNITS.strUnit()))
 		plt.xlabel("Toya 2010 Reaction Flux {}".format(FLUX_UNITS.strUnit()))
 
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		exportFigure(plt, plotOutDir, plotOutFileName + "_toya", metadata)
 		plt.close("all")
 
+		#Long  Graph
+
+		long_reactions = validation_data.reactionFlux.long2019fluxes2010fluxes["reactionID"]
+		long_fluxes = FLUX_UNITS * np.array([(dryMassFracAverage * cellDensity * x).asNumber(FLUX_UNITS) for x in
+											 validation_data.reactionFlux.long2019fluxes["reactionFlux"]])
+		long_range = FLUX_UNITS * np.array([(dryMassFracAverage * cellDensity * x).asNumber(FLUX_UNITS) for x in
+											validation_data.reactionFlux.long2019fluxes["reactionFluxRange"]])
+		long_fluxes_dict = dict(zip(long_reactions, long_fluxes))
+		long_range_dict = dict(zip(long_reactions, long_range))
+
+		longVsReactionAve = []
+		long_order = []
+		for longReactionID, longFlux in long_fluxes_dict.iteritems():
+			fluxTimeCourse = []
+
+			for rxn in reactionIDs:
+				if longReactionID in rxn:
+					# if re.findall(longReactionID, rxn):
+					reverse = 1
+					if "(reverse)" in rxn:
+						# if re.findall("(reverse)", rxn):
+						reverse = -1
+
+					if len(fluxTimeCourse):
+						fluxTimeCourse += reverse * reactionFluxes[:, np.where(reactionIDs == rxn)]
+					else:
+						fluxTimeCourse = reverse * reactionFluxes[:, np.where(reactionIDs == rxn)]
+
+			if len(fluxTimeCourse):
+				fluxAve = np.mean(fluxTimeCourse)
+				fluxRange = np.std(fluxTimeCourse.asNumber(FLUX_UNITS))
+				longVsReactionAve.append((fluxAve.asNumber(FLUX_UNITS), longFlux.asNumber(FLUX_UNITS), fluxRange,
+										  long_range_dict[longReactionID].asNumber(FLUX_UNITS)))
+				long_order.append(longReactionID)
+
+		longVsReactionAve = FLUX_UNITS * np.array(longVsReactionAve)
+		correlationCoefficient = \
+		np.corrcoef(longVsReactionAve[:, 0].asNumber(FLUX_UNITS), longVsReactionAve[:, 1].asNumber(FLUX_UNITS))[0, 1]
+
+		plt.figure()
+
+		plt.title("Central Carbon Metabolism Flux, Pearson R = {:.2}".format(correlationCoefficient))
+		# plt.errorbar(longVsReactionAve[:,1].asNumber(FLUX_UNITS), longVsReactionAve[:,0].asNumber(FLUX_UNITS), xerr = longVsReactionAve[:,3].asNumber(FLUX_UNITS),
+		# yerr = longVsReactionAve[:,2].asNumber(FLUX_UNITS), fmt = "o", ecolor = "k")
+		plt.plot(longVsReactionAve[:, 1].asNumber(FLUX_UNITS), longVsReactionAve[:, 0].asNumber(FLUX_UNITS), "o")
+		for x, y, label in zip(longVsReactionAve[:, 1].asNumber(FLUX_UNITS),
+							   longVsReactionAve[:, 0].asNumber(FLUX_UNITS), long_order):
+			plt.text(x, y, label)
+		plt.ylabel("Mean WCM Reaction Flux {}".format(FLUX_UNITS.strUnit()))
+		plt.xlabel("Long 2019 Reaction Flux {}".format(FLUX_UNITS.strUnit()))
+
+		exportFigure(plt, plotOutDir, plotOutFileName + "_long", metadata)
+		plt.close("all")
 
 if __name__ == "__main__":
 	Plot().cli()

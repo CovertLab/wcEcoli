@@ -197,6 +197,16 @@ class ReactionFlux(object):
 			self.toya2010fluxes[idx]["reactionFlux"] = row["flux"]
 			self.toya2010fluxes[idx]["reactionFluxStdev"] = row["flux standard deviation"]
 
+	def _loadLong2019Fluxes(self, validation_data_raw):
+		# Load Long 2019 Metabolic Engineering central carbon metabolism C13 flux dataset
+		long_dataset = validation_data_raw.long_2019_central_carbon_fluxes
+		self.long2019fluxes = np.zeros(len(long_dataset), dtype=[('reactionID', '|S100'), ('reactionFlux', Unum),
+																 ('reactionFluxRange', Unum)])
+		for idx, row in enumerate(long_dataset):
+			self.long2019fluxes[idx]["reactionID"] = row["reactionID"]
+			self.long2019fluxes[idx]["reactionFlux"] = row["flux"]
+			self.long2019fluxes[idx]["reactionFluxRange"] = row["flux range"]
+
 class EssentialGenes(object):
 	""" EssentialGenes """
 
