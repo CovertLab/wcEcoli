@@ -38,32 +38,39 @@ class Complexation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(Complexation, self).initialize(sim, sim_data)
 
-		self.gillespie_time_step = 0.001 # instead of self._sim.timeStepSec()
+		self.gillespie_time_step = 0.0001 # instead of self._sim.timeStepSec()
+
+		# Build views
+		moleculeNames = sim_data.process.complexation.moleculeNames
+		self.molecules = self.bulkMoleculesView(moleculeNames)
 
 		# Create matrices and vectors that describe reaction stoichiometries 
-		complexation_forward_matrix = sim_data.process.complexation.stoichMatrix().astype(np.int64)
-		complexation_reverse_matrix = -sim_data.process.complexation.stoichMatrix().astype(np.int64)
+		complexation_forward_matrix = -sim_data.process.complexation.stoichMatrix().astype(np.int64)
+		complexation_reverse_matrix = sim_data.process.complexation.stoichMatrix().astype(np.int64)
 		self.stoichMatrix = np.append(complexation_forward_matrix, complexation_reverse_matrix, 1)
 
 		# semi-quantitative rate constants
-		forward_rates = sim_data.process.complexation.rates
-		reverse_rates = np.repeat(10, len(forward_rates))
-		self.rates = np.append(forward_rates, reverse_rates)
+		rates = sim_data.process.complexation.rates
+		forward_rates = np.repeat(100.0, len(rates))
+		reverse_rates = np.repeat(100.0, len(forward_rates))
 		# import ipdb; ipdb.set_trace()
+		self.rates = np.append(forward_rates, reverse_rates)
+
+		complexNames = sim_data.process.complexation.ids_complexes
+		self.mazEF_cplx_idx = complexNames.index('CPLX0-1242[c]')
+		# import ipdb; ipdb.set_trace()
+		self.rates[self.mazEF_cplx_idx + len(forward_rates)] = 100000
+
 
 		# build stochastic system simulation
 		seed = self.randomState.randint(RAND_MAX)
 		self.system = StochasticSystem(self.stoichMatrix.T, self.rates, random_seed=seed)
 
-		# Build views
-		moleculeNames = sim_data.process.complexation.moleculeNames
-		self.molecules = self.bulkMoleculesView(moleculeNames)
-		# import ipdb; ipdb.set_trace()
+
 
 
 	def calculateRequest(self):
 		moleculeCounts = self.molecules.total_counts()
-
 		result = self.system.evolve(self.gillespie_time_step, moleculeCounts)
 		updatedMoleculeCounts = result['outcome']
 
@@ -83,6 +90,7 @@ class Complexation(wholecell.processes.process.Process):
 		# import ipdb; ipdb.set_trace()
 
 		self.molecules.countsIs(updatedMoleculeCounts)
+
 
 		# Write outputs to listeners
 		self.writeToListener("ComplexationListener", "complexationEvents", events)

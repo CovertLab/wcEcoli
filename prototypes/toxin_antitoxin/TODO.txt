@@ -1,38 +1,29 @@
 # TO DO LIST TOXIN ANTITOXIN
 
-# get distribution of gillespie times from sim without decomplexation and use it to set time step 
-
-# how does mRNA get produced when init_prob is 0? - figure out where mRNA count is added
-
-# ?? how to model the impact on translation? Start with simple linear modifier? - ask Eran
-
-# UNITS! michaelis menten constants etc
-# * convert ribosome concentrations back to counts.
-
-# pull mazF km and kcat from a param flat file
-
-# de-complexation 
-# * add reverse reactions to gillespie with low rates
-# ** check if clpAP can act on the complex
+# run a bunch of sims and analyze the toxin level/growth rate 
 
 # active degradation of mazE by ClpAP protease
+# * check if clpAP can act on the complex
 # * check if clpAP is in bulk molecules
 # * add into protein_degradation process
-
-# toxin cleavage of own mRNA
-
-# do perturbations such as "antibiotics" via ribosome inhibition or transcription inhibition
-
-
-
-
+--------------------------------------------------- V1
 # * toxin cleavage of mRNA - implement in existing endoRnase structure?
-
+--------------------------------------------------- V2
 # ALTERNATE TRANSCRIPTIONAL PROGRAM
 # ** model cleavage of 16S rRNA on both 30S and 70S
 # *** add attribute to activeRibosome unique molecule to signify cleavage
 # **** when modified active ribosome decomplexes release modified 16S mRNA (missing 43nt)
 # *** deal with cleaved 43nt bit from mazF cleavage : preserve mass balance
+--------------------------------------------------- V3
+
+# ?? how to model the impact on translation? Start with simple linear modifier? - ask Eran
+
+# UNITS! michaelis menten constants etc
+
+# pull mazF km and kcat from a param flat file
+
+
+# do perturbations such as "antibiotics" via ribosome inhibition or transcription inhibition
 
 
 # * need to implement A and T transcription from an operon
@@ -41,6 +32,15 @@
 # ?? no good measurements of deg rates, could measure it experimentally.
 
 # ------------------------------------------------------------------
+# get distribution of gillespie times from sim without decomplexation and use it to set time step 
+# how does mRNA get produced when init_prob is 0? - figure out where mRNA count is added - not setting the other one after chromosome dupilication
+# * convert ribosome concentrations back to counts.
+# de-complexation 
+# * add reverse reactions to gillespie with low rates
+ 
+
+
+
 # * integrate this math into the whole cell model
 
 # * transcription repression by AT complex

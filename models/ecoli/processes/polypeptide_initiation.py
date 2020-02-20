@@ -44,7 +44,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# TODO(taryn): find actual rate
 		# TODO (taryn): put these constants in flat file
 		self.mazF_km =  1 * 10**(-6) * units.mol / units.L
-		self.mazF_kcat = .1 #/ units.s
+		self.mazF_kcat = .01 #/ units.s
 		self.mazFdimer = self.bulkMoleculeView('CPLX0-1241[c]')
 		self.mazFmonomer = self.bulkMoleculeView('EG11249-MONOMER[c]')
 

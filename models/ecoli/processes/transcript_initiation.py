@@ -181,8 +181,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			rnaIdxs = np.append(np.where(TU_index == self.idx_mazE[0]), np.where(TU_index == self.idx_mazF[0]))
 			if (mazEF + mazE) > 0: # if neither mazEF or mazE is expressed, don't adjust probs
 
-				# fc = 1.0/(min(1,mazEF) * 3.3 + min(1, mazE) * 1.0) #scale by sum of fold change
-				fc = 0 #1.0 / (mazEF * 3.3 +  mazE * 1.0) # scale by sum of fold change
+				fc = 1.0/(min(1,mazEF) * 3.3 + min(1, mazE) * 1.0) #scale by sum of fold change
+				# fc = 0 #1.0 / (mazEF * 3.3 +  mazE * 1.0) # scale by sum of fold change
 				fcs = np.repeat(fc, len(rnaIdxs))
 
 				rnaIdxsBool = np.zeros(len(TU_index), dtype=np.bool)
