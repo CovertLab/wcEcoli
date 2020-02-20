@@ -13,9 +13,9 @@ LOW_RES_DIR = 'low_res_plots'
 SVG_DIR = 'svg_plots'
 HTML_DIR = 'html_plots'
 LOW_RES_DPI = 120
-DEFAULT_IMAGE_TYPE = '.pdf'
 
-def exportFigure(plt, plotOutDir, plotOutFileName, metadata=None, transparent = False):
+def exportFigure(plt, plotOutDir, plotOutFileName, metadata=None, transparent=False,
+        dpi=LOW_RES_DPI, extension=None):
 
 	if metadata is not None and "analysis_type" in metadata:
 		analysis_type = metadata["analysis_type"]
@@ -84,20 +84,23 @@ def exportFigure(plt, plotOutDir, plotOutFileName, metadata=None, transparent = 
 			raise ValueError('Unknown analysis_type {}'.format(analysis_type))
 
 		# Add metadata signature to the bottom of the plot
+		# Don't accidentally trigger $TeX formatting$.
+		metadata_signature = metadata_signature.replace('$', '')
 		plt.figtext(0,0, metadata_signature, size=8)
 
 	# Make folders for holding alternate types of images
 	filepath.makedirs(plotOutDir, LOW_RES_DIR)
 	filepath.makedirs(plotOutDir, SVG_DIR)
 
-	# Save PDF image
-	plt.savefig(os.path.join(plotOutDir, plotOutFileName + DEFAULT_IMAGE_TYPE), transparent = transparent)
-
-	# Save SVG image
-	plt.savefig(os.path.join(plotOutDir, SVG_DIR, plotOutFileName + '.svg'), transparent = transparent)
-
-	# Save PNG image
-	plt.savefig(os.path.join(plotOutDir, LOW_RES_DIR, plotOutFileName + '.png'), dpi=LOW_RES_DPI, transparent = transparent)
+	# Save images
+	if extension:
+		# Only save one type in main analysis directory if extension is given
+		plt.savefig(os.path.join(plotOutDir, plotOutFileName + extension), dpi=dpi, transparent=transparent)
+	else:
+		# Save all image types
+		plt.savefig(os.path.join(plotOutDir, plotOutFileName + '.pdf'), transparent=transparent)
+		plt.savefig(os.path.join(plotOutDir, SVG_DIR, plotOutFileName + '.svg'), transparent=transparent)
+		plt.savefig(os.path.join(plotOutDir, LOW_RES_DIR, plotOutFileName + '.png'), dpi=dpi, transparent=transparent)
 
 def read_bulk_molecule_counts(sim_out_dir, mol_names):
 	'''

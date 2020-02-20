@@ -70,14 +70,11 @@ class CellDivision(wholecell.listeners.listener.Listener):
 			self.d_period_division = True
 
 	def update(self):
-		masses = sum(state.mass() for state in self.internal_states.itervalues())
+		all_submasses = sum(
+			state.mass() for state in self.internal_states.itervalues())
 
-		postEvolveMasses = masses[1, ...]
-
-		self.cellMass = postEvolveMasses.sum() # sum over all dimensions
-		submasses = postEvolveMasses.sum(axis = 0) # sum over the processes
-
-		self.waterMass = submasses[self.waterIndex]
+		self.cellMass = all_submasses.sum()  # sum over all submasses
+		self.waterMass = all_submasses[self.waterIndex]
 		self.dryMass = self.cellMass - self.waterMass
 
 		if not self.setInitial:
@@ -98,7 +95,7 @@ class CellDivision(wholecell.listeners.listener.Listener):
 		if self.d_period_division:
 			# Get all existing full chromosomes
 			full_chromosomes = self.uniqueMoleculeContainer.objectsInCollection(
-				"fullChromosome", access=[Access.EDIT])
+				'full_chromosome', access=[Access.EDIT])
 
 			# If there are two or more full chromosomes,
 			if len(full_chromosomes) >= 2:

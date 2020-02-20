@@ -54,7 +54,6 @@ class RnapData(wholecell.listeners.listener.Listener):
 		self.rnaInitEvent = np.zeros(self.nRnaSpecies, np.int64)
 
 		# Collisions with replisomes
-		self.n_aborted_initiations = 0
 		self.n_total_collisions = 0
 		self.n_headon_collisions = 0
 		self.n_codirectional_collisions = 0
@@ -74,12 +73,12 @@ class RnapData(wholecell.listeners.listener.Listener):
 		self.active_rnap_unique_indexes[:] = np.nan
 
 		active_rnaps = self.uniqueMolecules.container.objectsInCollection(
-			'activeRnaPoly')
+			'active_RNAP')
 
 		# Read coordinates of all active RNAPs
 		if len(active_rnaps) > 0:
 			coordinates, domain_indexes, unique_indexes = active_rnaps.attrs(
-				"coordinates", "domain_index", "_uniqueIndex")
+				"coordinates", "domain_index", "unique_index")
 			self.active_rnap_coordinates[:coordinates.size] = coordinates
 			self.active_rnap_domain_indexes[:domain_indexes.size] = domain_indexes
 			self.active_rnap_unique_indexes[:unique_indexes.size] = unique_indexes
@@ -116,7 +115,6 @@ class RnapData(wholecell.listeners.listener.Listener):
 			didInitialize = self.didInitialize,
 			terminationLoss = self.terminationLoss,
 			rnaInitEvent = self.rnaInitEvent,
-			n_aborted_initiations=self.n_aborted_initiations,
 			n_total_collisions=self.n_total_collisions,
 			n_headon_collisions=self.n_headon_collisions,
 			n_codirectional_collisions=self.n_codirectional_collisions,

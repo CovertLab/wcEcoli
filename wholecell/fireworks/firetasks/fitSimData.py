@@ -6,25 +6,38 @@ import os
 import shutil
 import sys
 
-from fireworks import FireTaskBase, explicit_serialize
+from fireworks import FiretaskBase, explicit_serialize
+
 from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
+from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
+from runscripts.metrics.behavior_metrics.metrics_pickle import (
+	get_metrics_data_dict
+)
 
 
 @explicit_serialize
-class FitSimDataTask(FireTaskBase):
+class FitSimDataTask(FiretaskBase):
 
 	_fw_name = "FitSimDataTask"
 	required_params = [
 		"cached",
 		"debug",
-		"input_data", "output_data", "cpus",
+		"input_data",
+		"output_data",
+		"cpus",
 		"disable_ribosome_capacity_fitting",
 		"disable_rnapoly_capacity_fitting",
-		]
+		"output_metrics_data",
+	]
 	optional_params = [
 		"cached_data",
 		"sim_out_dir",
-		]
+		'variable_elongation_transcription',
+		'variable_elongation_translation',
+	]
+
+	def _get_default(self, key):
+		return self.get(key, DEFAULT_SIMULATION_KWARGS[key])
 
 	def run_task(self, fw_spec):
 		print("{}: Calculating sim_data parameters".format(time.ctime()))
@@ -32,6 +45,9 @@ class FitSimDataTask(FireTaskBase):
 		if self["cached"]:
 			try:
 				shutil.copyfile(self["cached_data"], self["output_data"])
+				with open(self["output_data"], "rb") as f:
+					sim_data = cPickle.load(f)
+				self.save_metrics_data(sim_data)
 				mod_time = time.ctime(os.path.getctime(self["cached_data"]))
 				print("Copied sim data from cache (last modified {})".format(mod_time))
 				return
@@ -46,10 +62,19 @@ class FitSimDataTask(FireTaskBase):
 
 		sim_data = fitSimData_1(
 			raw_data, cpus=cpus, debug=self["debug"],
+			variable_elongation_transcription=self._get_default('variable_elongation_transcription'),
+			variable_elongation_translation=self._get_default('variable_elongation_translation'),
 			disable_ribosome_capacity_fitting=self['disable_ribosome_capacity_fitting'],
 			disable_rnapoly_capacity_fitting=self['disable_rnapoly_capacity_fitting'],
-			)
+		)
 
-		sys.setrecursionlimit(4000) #limit found manually
+		sys.setrecursionlimit(4000)  # limit found manually
 		with open(self["output_data"], "wb") as f:
-			cPickle.dump(sim_data, f, protocol = cPickle.HIGHEST_PROTOCOL)
+			cPickle.dump(sim_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
+		self.save_metrics_data(sim_data)
+
+	def save_metrics_data(self, sim_data):
+		metrics_data = get_metrics_data_dict(sim_data)
+		with open(self["output_metrics_data"], "wb") as f:
+			cPickle.dump(
+				metrics_data, f, protocol=cPickle.HIGHEST_PROTOCOL)

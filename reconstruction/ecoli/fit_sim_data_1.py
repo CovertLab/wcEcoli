@@ -28,7 +28,6 @@ from cvxpy import Variable, Problem, Minimize, norm
 
 # Tweaks
 RNA_POLY_MRNA_DEG_RATE_PER_S = np.log(2) / 30. # half-life of 30 seconds
-FRACTION_INCREASE_RIBOSOMAL_PROTEINS = 0.0  # reduce stochasticity from protein expression
 
 # Adjustments to get protein expression for certain enzymes required for metabolism
 TRANSLATION_EFFICIENCIES_ADJUSTMENTS = {
@@ -95,6 +94,10 @@ def fitSimData_1(
 		debug (bool) - if True, fit only one arbitrarily-chosen transcription
 			factor in order to speed up a debug cycle (should not be used for
 			an actual simulation)
+		variable_elongation_transcription (bool) - enable variable elongation
+			for transcription
+		variable_elongation_translation (bool) - enable variable elongation for
+			translation
 		disable_ribosome_capacity_fitting (bool) - if True, ribosome expression
 			is not fit to protein synthesis demands
 		disable_rnapoly_capacity_fitting (bool) - if True, RNA polymerase
@@ -130,6 +133,10 @@ def fitSimData_1(
 		disable_ribosome_capacity_fitting,
 		disable_rnapoly_capacity_fitting
 		)
+
+	# Set expression based on ppGpp regulation from basal expression
+	sim_data.process.transcription.set_ppgpp_expression(sim_data)
+	# TODO (Travis): use ppGpp expression in condition fitting below
 
 	# Modify other properties
 
@@ -219,6 +226,9 @@ def fitSimData_1(
 		print('Fitting promoter binding')
 	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
 	fitLigandConcentrations(sim_data, cellSpecs)
+
+	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints
+	sim_data.process.transcription.adjust_polymerizing_ppgpp_expression(sim_data)
 
 	for condition_label in sorted(cellSpecs):
 		condition = sim_data.conditions[condition_label]
@@ -901,6 +911,7 @@ def setCPeriod(sim_data):
 	"""
 
 	sim_data.growthRateParameters.c_period = sim_data.process.replication.genome_length * units.nt / sim_data.growthRateParameters.dnaPolymeraseElongationRate / 2
+	sim_data.process.replication._c_period = sim_data.growthRateParameters.c_period.asNumber(units.min)
 
 def rescaleMassForSolubleMetabolites(sim_data, bulkMolCntr, concDict, doubling_time):
 	"""
@@ -1002,79 +1013,57 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 
 	"""
 
-	# Load from KB
+	# Load from sim_data
+	n_avogadro = sim_data.constants.nAvogadro
+	rna_data = sim_data.process.transcription.rnaData
+	get_average_copy_number = sim_data.process.replication.get_average_copy_number
+	rna_mw = rna_data['mw']
+	rna_coord = rna_data['replicationCoordinate']
+
+	## Mask arrays for rRNAs
+	is_rRNA23S = rna_data["isRRna23S"]
+	is_rRNA16S = rna_data["isRRna16S"]
+	is_rRNA5S = rna_data["isRRna5S"]
+	is_tRNA = rna_data["isTRna"]
+	is_mRNA = rna_data["isMRna"]
 
 	## IDs
-	ids_rnas = sim_data.process.transcription.rnaData["id"] # All RNAs
-	ids_rRNA23S = sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna23S"]] # 23S rRNA
-	ids_rRNA16S = sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna16S"]] # 16S rRNA
-	ids_rRNA5S = sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isRRna5S"]] # 5s rRNA
-	ids_mRNA = sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]] # mRNAs
-
-	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time)
-
-	# Mask arrays for rRNAs
-	is_rRNA23S = sim_data.process.transcription.rnaData["isRRna23S"]
-	is_rRNA16S = sim_data.process.transcription.rnaData["isRRna16S"]
-	is_rRNA5S = sim_data.process.transcription.rnaData["isRRna5S"]
+	ids_rnas = rna_data["id"]
+	ids_rRNA23S = ids_rnas[is_rRNA23S]
+	ids_rRNA16S = ids_rnas[is_rRNA16S]
+	ids_rRNA5S = ids_rnas[is_rRNA5S]
+	ids_mRNA = ids_rnas[is_mRNA]
 
 	## Mass fractions
-	totalMass_rRNA23S = avgCellFractionMass["rRna23SMass"] / sim_data.mass.avgCellToInitialCellConvFactor
-	totalMass_rRNA16S = avgCellFractionMass["rRna16SMass"] / sim_data.mass.avgCellToInitialCellConvFactor
-	totalMass_rRNA5S = avgCellFractionMass["rRna5SMass"] / sim_data.mass.avgCellToInitialCellConvFactor
-	totalMass_tRNA = avgCellFractionMass["tRnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
-	totalMass_mRNA = avgCellFractionMass["mRnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	initial_rna_mass = (sim_data.mass.getFractionMass(doubling_time)['rnaMass']
+		/ sim_data.mass.avgCellToInitialCellConvFactor)
+	ppgpp = sim_data.growthRateParameters.getppGppConc(doubling_time)
+	rna_fractions = sim_data.process.transcription.get_rna_fractions(ppgpp)
+	total_mass_rRNA23S = initial_rna_mass * rna_fractions['23S']
+	total_mass_rRNA16S = initial_rna_mass * rna_fractions['16S']
+	total_mass_rRNA5S = initial_rna_mass * rna_fractions['5S']
+	total_mass_tRNA = initial_rna_mass * rna_fractions['trna']
+	total_mass_mRNA = initial_rna_mass * rna_fractions['mrna']
 
 	## Molecular weights
-	# individualMasses_RNA = sim_data.getter.getMass(ids_rnas) / sim_data.constants.nAvogadro
-	individualMasses_rRNA23S = sim_data.getter.getMass(ids_rRNA23S) / sim_data.constants.nAvogadro
-	individualMasses_rRNA16S = sim_data.getter.getMass(ids_rRNA16S) / sim_data.constants.nAvogadro
-	individualMasses_rRNA5S = sim_data.getter.getMass(ids_rRNA5S) / sim_data.constants.nAvogadro
-	individualMasses_tRNA = sim_data.process.transcription.rnaData["mw"][sim_data.process.transcription.rnaData["isTRna"]] / sim_data.constants.nAvogadro
-	individualMasses_mRNA = sim_data.process.transcription.rnaData["mw"][sim_data.process.transcription.rnaData["isMRna"]] / sim_data.constants.nAvogadro
+	individual_masses_rRNA23S = rna_mw[is_rRNA23S] / n_avogadro
+	individual_masses_rRNA16S = rna_mw[is_rRNA16S] / n_avogadro
+	individual_masses_rRNA5S = rna_mw[is_rRNA5S] / n_avogadro
+	individual_masses_tRNA = rna_mw[is_tRNA] / n_avogadro
+	individual_masses_mRNA = rna_mw[is_mRNA] / n_avogadro
 
-	## Molecule expression distributions
-
-	# Get C period and D period lengths. These values are currently
-	# assumed to be constant regardless of growth rate.
-	c_period = sim_data.growthRateParameters.c_period.asNumber(units.min)
-	d_period = sim_data.growthRateParameters.d_period.asNumber(units.min)
-
-	# Get lengths of right and left replichores
-	right_replichore_length = sim_data.process.replication.replichore_lengths[0]
-	left_replichore_length = sim_data.process.replication.replichore_lengths[1]
-
-	# Get doubling time in minutes
+	# Molecule expression distributions
 	tau = doubling_time.asNumber(units.min)
 
-	# Get replication coordinates of rRNA genes
-	coord_rRNA23S = sim_data.process.transcription.rnaData["replicationCoordinate"][is_rRNA23S]
-	coord_rRNA16S = sim_data.process.transcription.rnaData["replicationCoordinate"][is_rRNA16S]
-	coord_rRNA5S = sim_data.process.transcription.rnaData["replicationCoordinate"][is_rRNA5S]
+	## Get replication coordinates of rRNA genes
+	coord_rRNA23S = rna_coord[is_rRNA23S]
+	coord_rRNA16S = rna_coord[is_rRNA16S]
+	coord_rRNA5S = rna_coord[is_rRNA5S]
 
-	def get_average_copy_number(coord):
-		"""
-		Calculates the average copy number of a gene throughout the cell cycle
-		given the location of the gene in coordinates.
-		"""
-		# Calculate the relative position of the gene along the choromosome
-		# from its coordinate
-		if coord > 0:
-			relative_pos = float(coord)/right_replichore_length
-		else:
-			relative_pos = -float(coord)/left_replichore_length
-
-		# Return the predicted average copy number
-		n_avg_copy = 2**(((1 - relative_pos)*c_period + d_period) / tau)
-		return n_avg_copy
-
-	# Get average copy numbers for all rRNA genes
-	n_avg_copy_rRNA23S = np.array([
-		get_average_copy_number(coord) for coord in coord_rRNA23S])
-	n_avg_copy_rRNA16S = np.array([
-		get_average_copy_number(coord) for coord in coord_rRNA16S])
-	n_avg_copy_rRNA5S = np.array([
-		get_average_copy_number(coord) for coord in coord_rRNA5S])
+	## Get average copy numbers for all rRNA genes
+	n_avg_copy_rRNA23S = get_average_copy_number(tau, coord_rRNA23S)
+	n_avg_copy_rRNA16S = get_average_copy_number(tau, coord_rRNA16S)
+	n_avg_copy_rRNA5S = get_average_copy_number(tau, coord_rRNA5S)
 
 	# For rRNAs it is assumed that all operons have the same per-copy
 	# transcription probabilities. Since the positions of the operons and thus
@@ -1088,67 +1077,70 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	trna_distribution = sim_data.mass.getTrnaDistribution(doubling_time)
 	ids_tRNA = trna_distribution['id']
 	distribution_tRNA = normalize(trna_distribution['molar_ratio_to_16SrRNA'])
-	distribution_mRNA = normalize(expression[sim_data.process.transcription.rnaData['isMRna']])
+	distribution_mRNA = normalize(expression[is_mRNA])
 
 	# Construct bulk container
-
-	rnaExpressionContainer = BulkObjectsContainer(ids_rnas, dtype = np.float64)
+	rna_expression_container = BulkObjectsContainer(ids_rnas, dtype=np.float64)
 
 	## Assign rRNA counts based on mass
-
-	totalCount_rRNA23S = totalCountFromMassesAndRatios(
-		totalMass_rRNA23S,
-		individualMasses_rRNA23S,
+	total_count_rRNA23S = totalCountFromMassesAndRatios(
+		total_mass_rRNA23S,
+		individual_masses_rRNA23S,
 		distribution_rRNA23S
 		)
-
-	totalCount_rRNA16S = totalCountFromMassesAndRatios(
-		totalMass_rRNA16S,
-		individualMasses_rRNA16S,
+	total_count_rRNA16S = totalCountFromMassesAndRatios(
+		total_mass_rRNA16S,
+		individual_masses_rRNA16S,
 		distribution_rRNA16S
 		)
-
-	totalCount_rRNA5S = totalCountFromMassesAndRatios(
-		totalMass_rRNA5S,
-		individualMasses_rRNA5S,
+	total_count_rRNA5S = totalCountFromMassesAndRatios(
+		total_mass_rRNA5S,
+		individual_masses_rRNA5S,
 		distribution_rRNA5S
 		)
 
-	totalCount_rRNA_average = sum([totalCount_rRNA23S, totalCount_rRNA16S, totalCount_rRNA5S]) / 3
+	# Mass weighted average rRNA count to set rRNA subunit counts equal to each
+	# other but keep the same expected total rRNA mass
+	mass_weighting_rRNA23S = individual_masses_rRNA23S * distribution_rRNA23S
+	mass_weighting_rRNA16S = individual_masses_rRNA16S * distribution_rRNA16S
+	mass_weighting_rRNA5S = individual_masses_rRNA5S * distribution_rRNA5S
+	total_count_rRNA_average = (
+		units.sum(mass_weighting_rRNA23S * total_count_rRNA23S)
+		+ units.sum(mass_weighting_rRNA16S * total_count_rRNA16S)
+		+ units.sum(mass_weighting_rRNA5S * total_count_rRNA5S)
+		) / (
+		units.sum(mass_weighting_rRNA23S)
+		+ units.sum(mass_weighting_rRNA16S)
+		+ units.sum(mass_weighting_rRNA5S)
+		)
 
-	counts_rRNA23S = totalCount_rRNA_average * distribution_rRNA23S
-	counts_rRNA16S = totalCount_rRNA_average * distribution_rRNA16S
-	counts_rRNA5S = totalCount_rRNA_average * distribution_rRNA5S
+	counts_rRNA23S = total_count_rRNA_average * distribution_rRNA23S
+	counts_rRNA16S = total_count_rRNA_average * distribution_rRNA16S
+	counts_rRNA5S = total_count_rRNA_average * distribution_rRNA5S
 
-	rnaExpressionContainer.countsIs(counts_rRNA23S, ids_rRNA23S)
-	rnaExpressionContainer.countsIs(counts_rRNA16S, ids_rRNA16S)
-	rnaExpressionContainer.countsIs(counts_rRNA5S, ids_rRNA5S)
+	rna_expression_container.countsIs(counts_rRNA23S, ids_rRNA23S)
+	rna_expression_container.countsIs(counts_rRNA16S, ids_rRNA16S)
+	rna_expression_container.countsIs(counts_rRNA5S, ids_rRNA5S)
 
 	## Assign tRNA counts based on mass and relative abundances (see Dong 1996)
-
-	totalCount_tRNA = totalCountFromMassesAndRatios(
-		totalMass_tRNA,
-		individualMasses_tRNA,
+	total_count_tRNA = totalCountFromMassesAndRatios(
+		total_mass_tRNA,
+		individual_masses_tRNA,
 		distribution_tRNA
 		)
-
-	counts_tRNA = totalCount_tRNA * distribution_tRNA
-
-	rnaExpressionContainer.countsIs(counts_tRNA, ids_tRNA)
+	counts_tRNA = total_count_tRNA * distribution_tRNA
+	rna_expression_container.countsIs(counts_tRNA, ids_tRNA)
 
 	## Assign mRNA counts based on mass and relative abundances (microarrays)
-
-	totalCount_mRNA = totalCountFromMassesAndRatios(
-		totalMass_mRNA,
-		individualMasses_mRNA,
+	total_count_mRNA = totalCountFromMassesAndRatios(
+		total_mass_mRNA,
+		individual_masses_mRNA,
 		distribution_mRNA
 		)
+	counts_mRNA = total_count_mRNA * distribution_mRNA
+	rna_expression_container.countsIs(counts_mRNA, ids_mRNA)
 
-	counts_mRNA = totalCount_mRNA * distribution_mRNA
-
-	rnaExpressionContainer.countsIs(counts_mRNA, ids_mRNA)
-
-	expression = normalize(rnaExpressionContainer.counts())
+	expression = normalize(rna_expression_container.counts())
 
 	return expression
 
@@ -1277,11 +1269,6 @@ def setRibosomeCountsConstrainedByPhysiology(
 	(2) Measured rRNA mass fractions
 	(3) Expected ribosomal subunit counts based on RNA expression data
 
-	Requires
-	--------
-	- FRACTION_INCREASE_RIBOSOMAL_PROTEINS (float) - factor to increase number of
-	ribosomes needed (used in computing constraint (1))
-
 	Inputs
 	------
 	bulkContainer (BulkObjectsContainer object) - counts of bulk molecules
@@ -1292,6 +1279,8 @@ def setRibosomeCountsConstrainedByPhysiology(
 	--------
 	- counts of ribosomal protein subunits in bulkContainer
 	"""
+
+	active_fraction = sim_data.growthRateParameters.getFractionActiveRibosome(doubling_time)
 
 	# Get IDs and stoichiometry of ribosome subunits
 	ribosome30SSubunits = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.s30_fullComplex)['subunitIds']
@@ -1321,16 +1310,16 @@ def setRibosomeCountsConstrainedByPhysiology(
 		proteinLengths,
 		elongation_rates,
 		netLossRate_protein,
-		proteinCounts).asNumber(units.aa / units.s)
+		proteinCounts).asNumber(units.aa / units.s) / active_fraction
 
 	# Minimum number of ribosomes needed
 	constraint1_ribosome30SCounts = (
 		nRibosomesNeeded * ribosome30SStoich
-		) * (1 + FRACTION_INCREASE_RIBOSOMAL_PROTEINS)
+		)
 
 	constraint1_ribosome50SCounts = (
 		nRibosomesNeeded * ribosome50SStoich
-		) * (1 + FRACTION_INCREASE_RIBOSOMAL_PROTEINS)
+		)
 
 
 	# -- CONSTRAINT 2: Measured rRNA mass fraction -- #
@@ -1357,7 +1346,6 @@ def setRibosomeCountsConstrainedByPhysiology(
 
 	# -- SET RIBOSOME FUNDAMENTAL SUBUNIT COUNTS TO MAXIMUM CONSTRAINT -- #
 	constraint_names = np.array(["Insufficient to double protein counts", "Too small for mass fraction", "Current level OK"])
-	nRibosomesNeeded = nRibosomesNeeded * (1 + FRACTION_INCREASE_RIBOSOMAL_PROTEINS)
 	rib30lims = np.array([nRibosomesNeeded, massFracPredicted_30SCount, (ribosome30SCounts / ribosome30SStoich).min()])
 	rib50lims = np.array([nRibosomesNeeded, massFracPredicted_50SCount, (ribosome50SCounts / ribosome50SStoich).min()])
 	if VERBOSE > 1:
@@ -2219,24 +2207,9 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		k, kInfo = [], []
 
-		# Get C period and D period lengths. These values are currently
-		# assumed to be constant regardless of growth rate.
-		c_period = sim_data.growthRateParameters.c_period.asNumber(units.min)
-		d_period = sim_data.growthRateParameters.d_period.asNumber(units.min)
-
-		# Get lengths of right and left replichores
-		right_replichore_length = sim_data.process.replication.replichore_lengths[0]
-		left_replichore_length = sim_data.process.replication.replichore_lengths[1]
-
 		for idx, (rnaId, rnaCoordinate) in enumerate(
 				izip(sim_data.process.transcription.rnaData["id"],
 				sim_data.process.transcription.rnaData["replicationCoordinate"])):
-
-			if rnaCoordinate > 0:
-				relative_pos = float(rnaCoordinate)/right_replichore_length
-			else:
-				relative_pos = float(-rnaCoordinate)/left_replichore_length
-
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
 			# Get list of TFs that regulate this RNA
@@ -2264,7 +2237,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 				tau = cellSpecs[condition]["doubling_time"].asNumber(units.min)
 
 				# Calculate average copy number of gene for this condition
-				n_avg_copy = 2**(((1 - relative_pos)*c_period + d_period)/tau)
+				n_avg_copy = sim_data.process.replication.get_average_copy_number(tau, rnaCoordinate)
 
 				# Compute synthesis probability per gene copy
 				prob_per_copy = sim_data.process.transcription.rnaSynthProb[condition][idx] / n_avg_copy
@@ -2708,15 +2681,6 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		ribosome subunits.
 		"""
 
-		# Get C period and D period lengths. These values are currently
-		# assumed to be constant regardless of growth rate.
-		c_period = sim_data.growthRateParameters.c_period.asNumber(units.min)
-		d_period = sim_data.growthRateParameters.d_period.asNumber(units.min)
-
-		# Get lengths of right and left replichores
-		right_replichore_length = sim_data.process.replication.replichore_lengths[0]
-		left_replichore_length = sim_data.process.replication.replichore_lengths[1]
-
 		# Get replication coordinates of each RNA
 		replicationCoordinate = sim_data.process.transcription.rnaData["replicationCoordinate"]
 
@@ -2727,16 +2691,12 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 			# Get coordinate of RNA
 			rnaCoordinate = replicationCoordinate[rna_idx]
-			if rnaCoordinate > 0:
-				relative_pos = float(rnaCoordinate)/right_replichore_length
-			else:
-				relative_pos = float(-rnaCoordinate)/left_replichore_length
 
 			# Get specific doubling time for this condition
 			tau = cellSpecs[condition]["doubling_time"].asNumber(units.min)
 
 			# Calculate average copy number of gene for this condition
-			n_avg_copy = 2 ** (((1 - relative_pos) * c_period + d_period) / tau)
+			n_avg_copy = sim_data.process.replication.get_average_copy_number(tau, rnaCoordinate)
 
 			sim_data.process.transcription.rnaSynthProb[condition][rna_idx] = k_value*n_avg_copy
 

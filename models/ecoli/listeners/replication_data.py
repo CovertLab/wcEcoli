@@ -45,8 +45,8 @@ class ReplicationData(wholecell.listeners.listener.Listener):
 		self.criticalMassPerOriC = 0.
 		self.criticalInitiationMass = 0.
 
-		self.free_DnaA_boxes = 0
 		self.total_DnaA_boxes = 0
+		self.free_DnaA_boxes = 0
 
 
 	def update(self):
@@ -55,18 +55,24 @@ class ReplicationData(wholecell.listeners.listener.Listener):
 		self.fork_unique_index[:] = np.nan
 
 		active_replisomes = self.uniqueMolecules.container.objectsInCollection('active_replisome')
-		oriCs = self.uniqueMolecules.container.objectsInCollection('originOfReplication')
+		oriCs = self.uniqueMolecules.container.objectsInCollection('oriC')
 
 		self.numberOfOric = len(oriCs)
 
 		if len(active_replisomes) > 0:
 			fork_coordinates, fork_domains, fork_unique_index = active_replisomes.attrs(
-				"coordinates", "domain_index", "_uniqueIndex"
+				"coordinates", "domain_index", "unique_index"
 				)
 
 			self.fork_coordinates[:fork_coordinates.size] = fork_coordinates
 			self.fork_domains[:fork_domains.size] = fork_domains
 			self.fork_unique_index[:fork_unique_index.size] = fork_unique_index
+
+		DnaA_boxes = self.uniqueMolecules.container.objectsInCollection('DnaA_box')
+		DnaA_box_bound = DnaA_boxes.attrs('DnaA_bound')
+
+		self.total_DnaA_boxes = len(DnaA_boxes)
+		self.free_DnaA_boxes = np.count_nonzero(np.logical_not(DnaA_box_bound))
 
 
 	def tableCreate(self, tableWriter):

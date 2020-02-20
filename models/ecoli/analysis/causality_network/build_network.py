@@ -159,7 +159,7 @@ class BuildNetwork(object):
 		self.output_dir = output_dir
 		self.check_sanity = check_sanity
 
-		self.names_dict = self.sim_data.fathom.common_names
+		self.common_names = self.sim_data.common_names
 
 		self.node_list = []
 		self.edge_list = []
@@ -288,7 +288,8 @@ class BuildNetwork(object):
 			gene_node = Node()
 
 			# Get name and synonyms for gene
-			gene_name, gene_synonym = self.names_dict.get(gene_id, (gene_id, [gene_id]))
+			gene_name, gene_synonym = self.common_names.genes.get(
+				gene_id, (gene_id, [gene_id]))
 
 			# Get URL for gene
 			gene_url = URL_TEMPLATE.format(gene_id)
@@ -315,7 +316,7 @@ class BuildNetwork(object):
 		list, and edges connected to the transcription nodes to the edge list.
 		"""
 		ntp_ids = self.sim_data.moleculeGroups.ntpIds
-		ppi_id = "PPI[c]"
+		ppi_id = self.sim_data.moleculeIds.ppi
 		rnap_id = self.sim_data.moleculeIds.rnapFull
 
 		# Loop through all genes (in the order listed in transcription)
@@ -331,15 +332,17 @@ class BuildNetwork(object):
 			# Add common name and synonyms
 			# Remove compartment tag
 			rna_id_no_compartment = rna_id[:-3]
-			gene_name, gene_synonyms = self.names_dict.get(gene_id,
-				(gene_id, [gene_id]))
+			gene_name, gene_synonyms = self.common_names.genes.get(
+				gene_id, (gene_id, [gene_id]))
 
 			if is_mrna:
 				rna_name = gene_name + " mRNA"
 				if isinstance(gene_synonyms, list):
 					rna_synonyms = [x + " mRNA" for x in gene_synonyms]
 			else:
-				rna_name, rna_synonyms = self.names_dict.get(rna_id_no_compartment, (rna_id, [rna_id]))
+				rna_name, rna_synonyms = self.common_names.rnas.get(
+					rna_id_no_compartment,
+					(rna_id_no_compartment, [rna_id_no_compartment]))
 
 			attr = {
 				'node_class': 'State',
@@ -408,8 +411,8 @@ class BuildNetwork(object):
 		aa_ids = self.sim_data.moleculeGroups.aaIDs
 		gtp_id = "GTP[c]"
 		gdp_id = "GDP[c]"
-		water_id = "WATER[c]"
-		ppi_id = "PPI[c]"
+		water_id = self.sim_data.moleculeIds.water
+		ppi_id = self.sim_data.moleculeIds.ppi
 
 		ribosome_subunit_ids = [self.sim_data.moleculeIds.s30_fullComplex,
 			self.sim_data.moleculeIds.s50_fullComplex]
@@ -433,10 +436,10 @@ class BuildNetwork(object):
 
 			# Add attributes to the node
 			monomer_id_no_compartment = monomer_id[:-3]
-			monomer_name, monomer_synonyms = self.names_dict.get(monomer_id_no_compartment,
-				(monomer_id, [monomer_id]))
-			gene_name, gene_synonyms = self.names_dict.get(gene_id,
-				(gene_id, [gene_id]))
+			monomer_name, monomer_synonyms = self.common_names.proteins.get(
+				monomer_id_no_compartment, (monomer_id, [monomer_id]))
+			gene_name, gene_synonyms = self.common_names.genes.get(
+				gene_id, (gene_id, [gene_id]))
 
 			attr = {
 				'node_class': 'State',
@@ -557,7 +560,7 @@ class BuildNetwork(object):
 
 			# Add attributes to the node
 			complex_id_no_compartment = complex_id[:-3]
-			complex_name, complex_synonyms = self.names_dict.get(
+			complex_name, complex_synonyms = self.common_names.proteins.get(
 				complex_id_no_compartment, (complex_id, [complex_id]))
 
 			attr = {
@@ -706,7 +709,7 @@ class BuildNetwork(object):
 
 			# Add attributes to the node
 			metabolite_id_no_compartment = metabolite_id[:-3]
-			metabolite_name, metabolite_synonyms = self.names_dict.get(
+			metabolite_name, metabolite_synonyms = self.common_names.metabolites.get(
 				metabolite_id_no_compartment, (metabolite_id, [metabolite_id]))
 
 			attr = {
@@ -766,6 +769,9 @@ class BuildNetwork(object):
 
 			# Loop through each element in column
 			for molecule_index, stoich in enumerate(equilibrium_stoich_matrix_column):
+				if stoich == 0:
+					continue
+
 				molecule_id = equilibrium_molecule_ids[molecule_index]
 
 				# Add Equilibrium edges
@@ -815,6 +821,9 @@ class BuildNetwork(object):
 
 			# Loop through each element in column
 			for molecule_index, stoich in enumerate(tcs_stoich_matrix_column):
+				if stoich == 0:
+					continue
+
 				molecule_id = tcs_molecule_ids[molecule_index]
 
 				if molecule_id not in monomer_ids + NONPROTEIN_MOLECULES_IN_2CS:
@@ -840,7 +849,7 @@ class BuildNetwork(object):
 
 			# Add attributes to the node
 			complex_id_no_compartment = complex_id[:-3]
-			complex_name, complex_synonyms = self.names_dict.get(
+			complex_name, complex_synonyms = self.common_names.proteins.get(
 				complex_id_no_compartment, (complex_id, [complex_id]))
 
 			attr = {
@@ -863,7 +872,7 @@ class BuildNetwork(object):
 
 			# Add attributes to the node
 			metabolite_id_no_compartment = metabolite_id[:-3]
-			metabolite_name, metabolite_synonyms = self.names_dict.get(
+			metabolite_name, metabolite_synonyms = self.common_names.metabolites.get(
 				metabolite_id_no_compartment, (metabolite_id, [metabolite_id]))
 
 			attr = {
