@@ -1651,7 +1651,7 @@ def fitMaintenanceCosts(sim_data, bulkContainer):
 	# accounting could be more accurate or the GAM value used is too low which
 	# would lead to a negative value. Easy fix is setting darkATP = 0 if this
 	# error is raised.
-	if darkATP < 0:
+	if darkATP.asNumber() < 0:
 		raise ValueError('GAM has been adjusted too low. Explicit energy accounting should not exceed GAM.'
 			' Consider setting darkATP to 0 if energy corrections are accurate.')
 
