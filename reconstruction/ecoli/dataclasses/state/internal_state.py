@@ -172,17 +172,7 @@ class InternalState(object):
 		# mRNA, in number of bases from the transcription start site
 		# TODO: This is a bad hack that works because in the parca
 		# I have forced expression to be these subunits only
-<<<<<<< HEAD
-		ribosome30SMass = self.bulkMolecules.bulkData["mass"][
-			self.bulkMolecules.bulkData["id"] == sim_data.moleculeIds.s30_fullComplex]
-		ribosome50SMass = self.bulkMolecules.bulkData["mass"][
-			self.bulkMolecules.bulkData["id"] == sim_data.moleculeIds.s50_fullComplex]
-		ribosomeMass = ribosome30SMass + ribosome50SMass
-		ribosomeAttributes = {
-			"proteinIndex": "i8",
-			"peptideLength": "i8",
-			"cleaved16S" : "?",
-=======
+
 		ribosome_30S_mass = self.bulkMolecules.bulkData['mass'][
 			self.bulkMolecules.bulkData['id'] == sim_data.moleculeIds.s30_fullComplex]
 		ribosome_50S_mass = self.bulkMolecules.bulkData['mass'][
@@ -193,7 +183,6 @@ class InternalState(object):
 			'peptide_length': 'i8',
 			'mRNA_index': 'i8',
 			'pos_on_mRNA': 'i8',
->>>>>>> master
 			}
 		self.uniqueMolecules.addToUniqueState('active_ribosome', ribosome_attributes, ribosome_mass)
 

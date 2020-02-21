@@ -93,7 +93,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		self.ribosome30S.requestAll()
 		self.ribosome50S.requestAll()
-		self.mRnas.requestAll()
+		self.mRNAs.requestAll()
 		self.mazFdimer.requestAll()
 
 
