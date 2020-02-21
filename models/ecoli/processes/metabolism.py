@@ -300,8 +300,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Calculate GTP usage based on how much was needed in polypeptide elongation in previous step and update if necessary
 		newPolypeptideElongationEnergy = countsToMolar * 0
-		if hasattr(self._sim.processes["PolypeptideElongation"], "gtpRequest"):
-			newPolypeptideElongationEnergy = countsToMolar * self._sim.processes["PolypeptideElongation"].gtpRequest
+		if hasattr(self._sim.processes["PolypeptideElongation"], "gtp_to_hydrolyze"):
+			newPolypeptideElongationEnergy = countsToMolar * self._sim.processes["PolypeptideElongation"].gtp_to_hydrolyze
 		poly_diff = np.abs((self.currentPolypeptideElongationEnergy - newPolypeptideElongationEnergy).asNumber()) / (self.currentPolypeptideElongationEnergy.asNumber() + 1e-20)
 		if poly_diff > ADJUSTMENT_RATIO:
 			self.currentPolypeptideElongationEnergy = newPolypeptideElongationEnergy
