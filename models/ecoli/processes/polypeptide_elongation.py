@@ -50,7 +50,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.proteinSequences = translation.translationSequences
 		self.aaWeightsIncorporated = translation.translationMonomerWeights
 		self.endWeight = translation.translationEndWeight
-		self.gtpPerElongation = constants.gtpPerTranslation
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = translation.make_elongation_rates
 
@@ -90,7 +89,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.elongation_model = BaseElongationModel(sim_data, self)
 		self.ppgpp_regulation = sim._ppgpp_regulation
 
-		# Variable for metabolism to read for growth energy requirements
+		# Growth associated maintenance energy requirements for elongations
+		self.gtpPerElongation = constants.gtpPerTranslation
+		## Need to account for ATP hydrolysis for charging that has been
+		## removed from measured GAM (ATP -> AMP is 2 hydrolysis reactions)
+		## if charging reactions are not explicitly modeled
+		if not sim._trna_charging:
+			self.gtpPerElongation += 2
+		## Variable for metabolism to read to consume required energy
 		self.gtp_to_hydrolyze = 0
 
 	def calculateRequest(self):

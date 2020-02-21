@@ -1639,12 +1639,11 @@ def fitMaintenanceCosts(sim_data, bulkContainer):
 		)
 
 	aasUsedOverCellCycle = units.sum(aaMmolPerGDCW)
-	# TODO: handle atp_per_charge in sim with charging option
-	mmol_maintenance_per_gdcw = (atp_per_charge + gtpPerTranslation) * aasUsedOverCellCycle
+	explicit_mmol_maintenance_per_gdcw = (atp_per_charge + gtpPerTranslation) * aasUsedOverCellCycle
 
 	darkATP = ( # This has everything we can't account for
 		sim_data.constants.growthAssociatedMaintenance -
-		mmol_maintenance_per_gdcw
+		explicit_mmol_maintenance_per_gdcw
 		)
 
 	# We do not want to create energy with growth by having a negative darkATP
