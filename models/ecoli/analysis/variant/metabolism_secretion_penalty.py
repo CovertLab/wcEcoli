@@ -31,10 +31,10 @@ def remove_border(ax):
 	ax.set_xticks([])
 	ax.tick_params(axis='y', labelsize=6)
 
-def show_xaxis(ax):
+def show_xaxis(ax, x_vals):
 	ax.spines['bottom'].set_visible(True)
-	ax.set_xticks(range(len(SECRETION_PENALTY)))
-	ax.set_xticklabels(SECRETION_PENALTY, rotation=45, fontsize=6)
+	ax.set_xticks(x_vals)
+	ax.set_xticklabels(np.array(SECRETION_PENALTY)[x_vals], rotation=45, fontsize=6)
 
 def plot_fluxes(gs, col, selected, x_vals, fluxes, labels):
 	for i, idx in enumerate(selected):
@@ -50,7 +50,7 @@ def plot_fluxes(gs, col, selected, x_vals, fluxes, labels):
 		ax.set_title(labels[idx][:30], fontsize=8)
 		ax.set_ylabel('{} Flux\n(mmol/g DCW/hr)'.format(label), fontsize=8)
 		remove_border(ax)
-	show_xaxis(ax)
+	show_xaxis(ax, x_vals)
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -67,8 +67,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		all_doubling_times = np.zeros(n_variants)
 		all_exchange_fluxes = None
 		ex_molecules = []
+		x_vals = []
 
 		for i, variant in enumerate(variants):
+			if variant > len(SECRETION_PENALTY):
+				continue
+			x_vals.append(variant)
+
 			doubling_times = []
 			exchange_fluxes = []
 			for sim_dir in ap.get_cells(variant=[variant]):
@@ -103,14 +108,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Create bar plots
 		plt.figure(figsize=(8.5, 11))
 		gs = gridspec.GridSpec(max(n_fluxes, n_data), 3)
-		x_vals = list(range(n_variants))
 
 		## Doubling time
 		ax = plt.subplot(gs[0, 0])
 		ax.bar(x_vals, all_doubling_times)
 		ax.set_ylabel('Doubling Time\n(min)', fontsize=8)
 		remove_border(ax)
-		show_xaxis(ax)
+		show_xaxis(ax, x_vals)
 
 		## Lowest exchange fluxes
 		col = 1
