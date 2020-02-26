@@ -6,7 +6,7 @@ Modifies:
 	sim_data.process.metabolism.secretion_penalty_coeff
 
 Expected variant indices (dependent on SECRETION_PENALTY):
-	1: control
+	4: control
 	0 (no penalty) - 9 (high penalty)
 """
 
