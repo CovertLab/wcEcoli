@@ -25,6 +25,8 @@ __all__ = [
 VERSION = 3  # should update this any time there is a spec-breaking change
 
 FILE_ATTRIBUTES = "attributes.json"
+VARIABLE_LENGTH_COLUMNS_ATTRIBUTE_NAME = '_variable_length_columns'
+N_ROWS_ATTRIBUTE_NAME = '_n_rows'
 
 # Chunk type and size.
 CHUNK_HEADER = struct.Struct('>4s I')
@@ -121,13 +123,15 @@ class AttributeTypeError(TableWriterError):
 	pass
 
 class VariableEntrySizeError(TableWriterError):
-	"""Error raised on attempt to write an entry that's not the same size as
+	"""
+	An error raised on attempt to write an entry that's not the same size as
 	the previous entries in the same Column.
 	"""
 	pass
 
 class TableExistsError(TableWriterError):
-	"""Error raised on attempt to create a Table in a directory that already
+	"""
+	An error raised on attempt to create a Table in a directory that already
 	has a table (completed or in progress).
 	"""
 	pass
@@ -319,11 +323,28 @@ class TableWriter(object):
 	The terms used in this class are adapted from the analogy of a spreadsheet
 	or table.
 
-	Each append() operation adds a new 'row' to the table containing one
-	'entry' (or table cell) per 'column'.  Each 'column' corresponds to a
-	'field' and holds a fixed array size and data type for all of its entries.
-	append() will convert scalar values and higher dimension arrays to 1D
-	arrays.  The 1D array elements are called 'subcolumns'.
+	For fixed-length columns, each append() operation adds a new 'row' to the
+	table containing one 'entry' (or table cell) per column.  Each 'column'
+	corresponds to a 'field' and holds a fixed array size and data type for all
+	of its entries. append() will convert scalar values and higher dimension
+	arrays to 1D arrays.  The 1D array elements are called 'subcolumns'.
+
+	For variable-length columns, each append() operation will add each value
+	of an input array as a separate 'entry', possibly resulting in multiple
+	'rows' being added to a column per one append() operation. The current
+	value of self._row_index is added as the first subcolumn of each entry to
+	help the TableReader determine the boundaries of input arrays.
+
+	e.g. If inputs to append() are given as np.array([3, 5, 1]), np.array([0]),
+	np.array([8, 2]), ..., for a variable-length column, the resulting column
+	takes the form
+		0	3
+		0	5
+		0	1
+		1	0
+		2	8
+		2	2
+		:   :
 
 	Both simple and structured ndarray dtypes are supported.  Structured arrays
 	are a good way to work around the dimensional limitations.
@@ -347,6 +368,7 @@ class TableWriter(object):
 	def __init__(self, path):
 		self._path = filepath.makedirs(path)
 		self._columns = None
+		self._variable_length_columns = set()
 
 		self._attributes = {}
 		self._attributes_filename = os.path.join(path, FILE_ATTRIBUTES)
@@ -359,6 +381,8 @@ class TableWriter(object):
 		# attribute but writing the attributes file now lets the above check
 		# also prevent competing TableWriters.
 		self.writeAttributes(_version=VERSION)
+
+		self._row_index = None
 
 
 	def append(self, **namesAndValues):
@@ -377,13 +401,15 @@ class TableWriter(object):
 		-----
 		All fields must be provided every time this method is called.
 		"""
-
+		# First call - instantiate all columns and set row index to zero
 		if self._columns is None:
 			self._columns = {
 				name:_Column(os.path.join(self._path, name))
 				for name in namesAndValues.viewkeys()
 				}
+			self._row_index = 0
 
+		# Later calls - check for missing or unrecognized fields
 		else:
 			missingFields = self._columns.viewkeys() - namesAndValues.viewkeys()
 			unrecognizedFields = namesAndValues.viewkeys() - self._columns.viewkeys()
@@ -399,7 +425,21 @@ class TableWriter(object):
 					)
 
 		for name, value in namesAndValues.viewitems():
-			self._columns[name].append(value)
+			if name in self._variable_length_columns:
+				if len(value) == 0:
+					continue
+
+				value = np.array(value)
+
+				# Row indexes are paired to each value for variable length columns
+				for v in value.flatten():
+					self._columns[name].append(
+						np.array([self._row_index, v], dtype=value.dtype))
+			else:
+				self._columns[name].append(value)
+
+		# Increment row index
+		self._row_index += 1
 
 
 	def writeAttributes(self, **namesAndValues):
@@ -452,19 +492,40 @@ class TableWriter(object):
 		filepath.write_json_file(self._attributes_filename, self._attributes, indent=1)
 
 
+	def set_variable_length_columns(self, *column_names):
+		"""
+		Sets the names of columns that should have entries with variable
+		lengths. This must be set before any values are appended to the column.
+		The list of names is also added to the attributes JSON file for the
+		TableReader to reference.
+
+		Args:
+			*column_names (tuple[str]): Names of columns that should have
+			entries with variable lengths.
+		"""
+		for name in column_names:
+			self._variable_length_columns.add(name)
+
+		self.writeAttributes(
+			**{VARIABLE_LENGTH_COLUMNS_ATTRIBUTE_NAME: list(self._variable_length_columns)})
+
+
 	def close(self):
 		"""
-		Close the output files (columns).
+		Close the output files (columns). Also add the total number of rows
+		(timesteps) to the attributes JSON file.
 
 		Notes
 		-----
 		Trying to append after closing will raise an error.
 
 		"""
-
 		if self._columns is not None:
 			for column in self._columns.viewvalues():
 				column.close()
+
+		if N_ROWS_ATTRIBUTE_NAME not in self._attributes.keys():
+			self.writeAttributes(**{N_ROWS_ATTRIBUTE_NAME: self._row_index})
 
 
 	def __del__(self):

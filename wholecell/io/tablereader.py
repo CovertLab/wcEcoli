@@ -105,6 +105,11 @@ class TableReader(object):
 		# List the column file names. Ignore the 'attributes.json' file.
 		self._columnNames = {p for p in os.listdir(path) if '.json' not in p}
 
+		# Get set of columns with variable lengths and the total number of rows
+		self._variable_length_columns = self._attributes.get(
+			tw.VARIABLE_LENGTH_COLUMNS_ATTRIBUTE_NAME, set())
+		self._n_rows = self._attributes.get(tw.N_ROWS_ATTRIBUTE_NAME)
+
 
 	def readAttribute(self, name):
 		"""
@@ -219,7 +224,58 @@ class TableReader(object):
 			row += additional_rows
 
 		result[row : (row + last_num_rows)] = last_entries
+
+		# Expand arrays returned from columns with variable lengths
+		if name in self._variable_length_columns:
+			result = self._restructure_variable_length_columns(result)
+
 		return result
+
+
+	def _restructure_variable_length_columns(self, raw_result):
+		"""
+		Restructure the arrays returned from columns with variable-length
+		entries. The restructured array is a 2D numpy array of size N x M,
+		where N is the total number of rows in the Table and M is the maximum
+		length of an entry across all entries in the column. If the entry at a
+		specific row is shorter than length M, the remaining values are set to
+		be np.nan.
+
+		Args:
+			raw_result (ndarray): an array returned from variable-length
+			columns in its raw form, where the first column contains the row
+			indexes and the second column contains the input values (See
+			TableWriter for details)
+		Returns:
+			ndarray: A restructured 2D array
+		"""
+		# Build dictionary with the rows as keys and the list of indexes in the
+		# original array corresponding to the rows as values.
+		row_to_index_mapping = {}
+		current_row = None
+
+		for i, row in enumerate(raw_result[:, 0]):
+			if row != current_row:
+				row_to_index_mapping[row] = [i]
+				current_row = row
+			else:
+				row_to_index_mapping[row].append(i)
+
+		# Get lengths of data in each row
+		row_lengths = {
+			row: len(indexes) for row, indexes in row_to_index_mapping.items()
+			}
+
+		# Initialize restructured array
+		restructured_result = np.full(
+			(self._n_rows, max(row_lengths.values())), np.nan)
+
+		# Fill in values for each row
+		for row, indexes in row_to_index_mapping.items():
+			restructured_result[row, :row_lengths[row]] = raw_result[
+				np.array(indexes), 1]
+
+		return restructured_result
 
 
 	def readColumn(self, name, indices=None):
@@ -244,6 +300,7 @@ class TableReader(object):
 		'''
 		return self.readColumn2D(name, indices).squeeze()
 
+
 	def readSubcolumn(self, column, subcolumn_name):
 		# type: (str, str, str, str) -> np.ndarray
 		"""Read in a subcolumn from a table by name
@@ -265,7 +322,6 @@ class TableReader(object):
 		subcols = self.readAttribute(subcol_name_map[column])
 		index = subcols.index(subcolumn_name)
 		return self.readColumn2D(column, [index])[:, 0]
-
 
 
 	def allAttributeNames(self):
