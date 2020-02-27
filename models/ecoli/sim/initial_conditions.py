@@ -57,8 +57,8 @@ def calcInitialConditions(sim, sim_data):
 
 	# Adjust small molecule concentrations again after other mass adjustments
 	# for more stable metabolism solution at beginning of sims
-	initializeSmallMolecules(bulkMolCntr, sim_data, media_id, randomState,
-		massCoeff, calculate_cell_mass(sim.internal_states))
+	set_small_molecule_counts(bulkMolCntr, sim_data, media_id, massCoeff,
+		cell_mass=calculate_cell_mass(sim.internal_states))
 
 def initializeBulkMolecules(bulkMolCntr, sim_data, current_media_id, randomState, massCoeff, ppgpp_regulation):
 
@@ -69,7 +69,7 @@ def initializeBulkMolecules(bulkMolCntr, sim_data, current_media_id, randomState
 	initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation)
 
 	# Set other biomass components
-	initializeSmallMolecules(bulkMolCntr, sim_data, current_media_id, randomState, massCoeff)
+	set_small_molecule_counts(bulkMolCntr, sim_data, current_media_id, massCoeff)
 
 	# Form complexes
 	initializeComplexation(bulkMolCntr, sim_data, randomState)
@@ -235,7 +235,7 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 
 # TODO: remove checks for zero concentrations (change to assertion)
 # TODO: move any rescaling logic to KB/fitting
-def initializeSmallMolecules(bulkMolCntr, sim_data, current_media_id, randomState, massCoeff, cell_mass=None):
+def set_small_molecule_counts(bulkMolCntr, sim_data, current_media_id, massCoeff, cell_mass=None):
 	doubling_time = sim_data.conditionToDoublingTime[sim_data.condition]
 
 	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
@@ -252,11 +252,11 @@ def initializeSmallMolecules(bulkMolCntr, sim_data, current_media_id, randomStat
 			+ avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"])
 			/ sim_data.mass.avgCellToInitialCellConvFactor)
 	else:
-		accounted_for_mass = 0 * units.fg
+		small_molecule_mass = 0 * units.fg
 		for mol in concDict:
-			accounted_for_mass += (bulkMolCntr.count(mol)
+			small_molecule_mass += (bulkMolCntr.count(mol)
 				* sim_data.getter.getMass([mol])[0] / sim_data.constants.nAvogadro)
-		other_dry_mass = cell_mass - accounted_for_mass
+		other_dry_mass = cell_mass - small_molecule_mass
 
 	massesToAdd, countsToAdd = masses_and_counts_for_homeostatic_target(
 		other_dry_mass,
