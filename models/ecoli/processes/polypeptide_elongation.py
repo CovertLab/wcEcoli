@@ -276,11 +276,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("RibosomeData", "processElongationRate", self.ribosomeElongationRate / self.timeStepSec())
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
-		# Without an estimate on ribosome counts, require a short timestep until estimates available
-		activeRibosomes = float(self.active_ribosomes.total_counts()[0])
-		if activeRibosomes == 0:
-			return inputTimeStep <= .2
-
 		# Until more padding values are added to the protein sequence matrix, limit the maximum timestep length to 1 second
 		# Since the current upper limit on a.a's elongated by ribosomes during a single timestep is set to 22, timesteps
 		# longer than 1.0s do not lead to errors, but does slow down the ribosome elongation rate of the resulting simulation.

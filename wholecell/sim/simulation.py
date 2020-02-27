@@ -39,7 +39,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	trna_charging = True,
 	ppgpp_regulation = False,
 	timeStepSafetyFraction = 1.3,
-	maxTimeStep = 0.9,#2.0, # TODO: Reset to 2 once we update PopypeptideElongation
+	maxTimeStep = 1.0, #2.0, # TODO: Reset to 2 once we update PopypeptideElongation
 	updateTimeStepFreq = 5,
 	logToShell = True,
 	logToDisk = False,
@@ -84,7 +84,7 @@ class Simulation(lens.actor.inner.Simulation):
 	# Attributes that may be optionally overwritten by a subclass
 	_listenerClasses = ()
 	_hookClasses = ()
-	_timeStepSec = .2
+	_timeStepSec = 1.0
 	_shellColumnHeaders = ("Time (s)",)
 
 	# Constructors
@@ -431,15 +431,16 @@ class Simulation(lens.actor.inner.Simulation):
 
 	def _findTimeStep(self, minTimeStep, maxTimeStep, checkerFunction):
 		N = 10000
+		candidateTimeStep = maxTimeStep
 		for i in xrange(N):
-			candidateTimeStep = minTimeStep + (maxTimeStep - minTimeStep) / 2.
 			if checkerFunction(candidateTimeStep, self._timeStepSafetyFraction):
 				minTimeStep = candidateTimeStep
 				if (maxTimeStep - minTimeStep) / minTimeStep <= 1e-2:
 					break
 			else:
 				maxTimeStep = candidateTimeStep
-		if i == N - 1:
+			candidateTimeStep = minTimeStep + (maxTimeStep - minTimeStep) / 2.
+		else:
 			raise Exception, "Timestep adjustment did not converge, last attempt was %f" % (candidateTimeStep)
 
 		return candidateTimeStep
