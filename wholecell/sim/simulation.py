@@ -25,7 +25,7 @@ from wholecell.utils import filepath
 import wholecell.loggers.shell
 import wholecell.loggers.disk
 
-
+MAX_TIME_STEP = 1.0
 DEFAULT_SIMULATION_KWARGS = dict(
 	timeline = '0 minimal',
 	boundary_reactions = [],
@@ -39,7 +39,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	trna_charging = True,
 	ppgpp_regulation = False,
 	timeStepSafetyFraction = 1.3,
-	maxTimeStep = 1.0, #2.0, # TODO: Reset to 2 once we update PopypeptideElongation
+	maxTimeStep = MAX_TIME_STEP, # TODO: Reset to 2 once we update PopypeptideElongation
 	updateTimeStepFreq = 5,
 	logToShell = True,
 	logToDisk = False,
@@ -84,7 +84,7 @@ class Simulation(lens.actor.inner.Simulation):
 	# Attributes that may be optionally overwritten by a subclass
 	_listenerClasses = ()
 	_hookClasses = ()
-	_timeStepSec = 1.0
+	_timeStepSec = MAX_TIME_STEP
 	_shellColumnHeaders = ("Time (s)",)
 
 	# Constructors
