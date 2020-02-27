@@ -21,7 +21,7 @@ from wholecell.io.tablereader import TableReader, DoesNotExistError
 from wholecell.io.tablewriter import (BLOCK_BYTES_GOAL,
 	TableWriter, MissingFieldError, TableExistsError, UnrecognizedFieldError,
 	VariableEntrySizeError, AttributeAlreadyExistsError, AttributeTypeError,
-	V2_DIR_COLUMNS)
+	V2_DIR_COLUMNS, N_ROWS_ATTRIBUTE_NAME)
 
 
 COLUMNS = 'x y z theta'.split()
@@ -79,7 +79,9 @@ class Test_TableReader_Writer(unittest.TestCase):
 		# --- Read ---
 		reader = TableReader(self.table_path)
 		self.assertEqual([], reader.attributeNames())
-		self.assertEqual({'_version'}, set(reader.allAttributeNames()))
+		self.assertEqual(
+			{'_version', N_ROWS_ATTRIBUTE_NAME},
+			set(reader.allAttributeNames()))
 		self.assertEqual(set(COLUMNS), set(reader.columnNames()))
 
 		with self.assertRaises(DoesNotExistError):
