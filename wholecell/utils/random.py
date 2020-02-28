@@ -113,18 +113,12 @@ def make_elongation_rates(
 	    variable_elongation (bool): whether to add amplified values to the array.
 
 	Returns:
-	    rates (array[int]): new array with base and adjusted rates.
+	    array[int]: new array with lengths to extend for base and adjusted
+			rates multiplied by the time step
 	'''
 
-
 	rates = make_elongation_rates_flat(size, base, amplified, ceiling, variable_elongation)
-
-	if random:
-		rates = np.min([rates, stochasticRound(random, rates * time_step)], axis=0)
-	else:
-		rates = np.rint(rates)
-
-	return np.array(rates, dtype=np.int64)
+	return stochasticRound(random, rates * time_step).astype(np.int64)
 
 def randomlySelectRows(randomState, mat, prob):
 	nRndRows = randomState.stochasticRound(prob * np.shape(mat)[0])
