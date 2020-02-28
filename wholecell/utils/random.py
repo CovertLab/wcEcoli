@@ -117,8 +117,14 @@ def make_elongation_rates(
 			rates multiplied by the time step
 	'''
 
-	rates = make_elongation_rates_flat(size, base, amplified, ceiling, variable_elongation)
-	return stochasticRound(random, rates * time_step).astype(np.int64)
+	lengths = time_step * make_elongation_rates_flat(size, base, amplified, ceiling, variable_elongation)
+
+	if random:
+		lengths = stochasticRound(random, lengths)
+	else:
+		lengths = np.round(lengths)
+
+	return lengths.astype(np.int64)
 
 def randomlySelectRows(randomState, mat, prob):
 	nRndRows = randomState.stochasticRound(prob * np.shape(mat)[0])
