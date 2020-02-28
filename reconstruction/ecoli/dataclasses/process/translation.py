@@ -23,7 +23,7 @@ class Translation(object):
 	def __init__(self, raw_data, sim_data):
 		# Timesteps longer than 1.0s do not lead to errors, but do slow down
 		# the ribosome elongation rate of the resulting simulation.
-		self.max_time_step = min(MAX_TIME_STEP, 1.)
+		self.max_time_step = min(MAX_TIME_STEP, 2.)
 
 		self._buildMonomerData(raw_data, sim_data)
 		self._buildTranslation(raw_data, sim_data)

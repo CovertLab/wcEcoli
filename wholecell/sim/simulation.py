@@ -25,7 +25,7 @@ from wholecell.utils import filepath
 import wholecell.loggers.shell
 import wholecell.loggers.disk
 
-MAX_TIME_STEP = 1.0
+MAX_TIME_STEP = 2.
 DEFAULT_SIMULATION_KWARGS = dict(
 	timeline = '0 minimal',
 	boundary_reactions = [],
