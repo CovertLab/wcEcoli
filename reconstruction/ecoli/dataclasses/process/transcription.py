@@ -22,6 +22,7 @@ from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import make_elongation_rates
 
 
+PROCESS_MAX_TIME_STEP = 2.
 RNA_SEQ_ANALYSIS = "rsem_tpm"
 KCAT_ENDO_RNASE = 0.001
 ESTIMATE_ENDO_RNASES = 5000
@@ -35,7 +36,7 @@ class Transcription(object):
 	"""
 
 	def __init__(self, raw_data, sim_data):
-		self.max_time_step = min(MAX_TIME_STEP, 2.)
+		self.max_time_step = min(MAX_TIME_STEP, PROCESS_MAX_TIME_STEP)
 
 		self._build_ppgpp_regulation(raw_data, sim_data)
 		self._build_rna_data(raw_data, sim_data)

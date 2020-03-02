@@ -16,13 +16,16 @@ from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import stochasticRound
 
 
+PROCESS_MAX_TIME_STEP = 2.
+
+
 class Replication(object):
 	"""
 	SimulationData for the replication process
 	"""
 
 	def __init__(self, raw_data, sim_data):
-		self.max_time_step = min(MAX_TIME_STEP, 2.)
+		self.max_time_step = min(MAX_TIME_STEP, PROCESS_MAX_TIME_STEP)
 
 		self._n_nt_types = len(sim_data.dNtpOrder)
 		self._c_period = sim_data.growthRateParameters.c_period.asNumber(units.min)

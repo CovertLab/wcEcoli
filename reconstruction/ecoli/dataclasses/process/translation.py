@@ -17,11 +17,14 @@ from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import make_elongation_rates
 
 
+PROCESS_MAX_TIME_STEP = 2.
+
+
 class Translation(object):
 	""" Translation """
 
 	def __init__(self, raw_data, sim_data):
-		self.max_time_step = min(MAX_TIME_STEP, 2.)
+		self.max_time_step = min(MAX_TIME_STEP, PROCESS_MAX_TIME_STEP)
 
 		self._buildMonomerData(raw_data, sim_data)
 		self._buildTranslation(raw_data, sim_data)
