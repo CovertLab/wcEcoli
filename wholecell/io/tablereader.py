@@ -59,7 +59,7 @@ class _ColumnHeader(object):
 
 		if self.variable_length:
 			header_struct = chunk.read(tw.VARIABLE_COLUMN_STRUCT.size)
-			(self.compression_type,) = tw.VARIABLE_COLUMN_STRUCT.unpack(header_struct)
+			(self.compression_type, ) = tw.VARIABLE_COLUMN_STRUCT.unpack(header_struct)
 
 		else:
 			header_struct = chunk.read(tw.COLUMN_STRUCT.size)
@@ -144,7 +144,8 @@ class TableReader(object):
 		subcolumns, so the result is a 2-D array row x subcolumn. In the case
 		of fixed-length columns, this method can optionally read just a
 		vertical slice of all those arrays -- the subcolumns at the given
-		`indices`.
+		`indices`. For variable-length columns, np.nan is used as a filler
+		value for the empty entries of each row.
 
 		The current approach collects up the compressed blocks, allocates the
 		result array, then unpacks entries into it, keeping each decompressed
@@ -158,7 +159,8 @@ class TableReader(object):
 		Parameters:
 			name (str): The name of the column.
 			indices (ndarray[int]): The subcolumn indices to select from each
-				entry, or None to read in all data.
+				entry, or None to read in all data. Specifying this argument
+				for variable-length columns will throw an error.
 
 				If provided, this can give a performance boost for columns that
 				are wide and tall.
@@ -200,7 +202,7 @@ class TableReader(object):
 			raise DoesNotExistError("No such column: {}".format(name))
 
 		entry_blocks = []
-		offset_blocks = []
+		row_size_blocks = []
 
 		# Read the header and read, decompress, and unpack all the blocks.
 		with open(os.path.join(self._path, name), 'rb') as dataFile:
@@ -230,41 +232,41 @@ class TableReader(object):
 							len(raw_entry), chunk.getsize()))
 					entry_blocks.append(raw_entry)
 
-				elif chunk.getname() == tw.OFFSET_CHUNK_TYPE:
-					offset = chunk.read()
-					if len(offset) != chunk.getsize():
-						raise EOFError('Offset block cut short {}/{}'.format(
-							len(offset), chunk.getsize()))
-					offset_blocks.append(offset)
+				elif chunk.getname() == tw.ROW_SIZE_CHUNK_TYPE:
+					row_sizes = chunk.read()
+					if len(row_sizes) != chunk.getsize():
+						raise EOFError('Row sizes block cut short {}/{}'.format(
+							len(row_sizes), chunk.getsize()))
+					row_size_blocks.append(row_sizes)
 
 				chunk.close()  # skips to the next chunk
 
-		if variable_length and len(entry_blocks) != len(offset_blocks):
-			raise EOFError('Number of entry blocks ({}) does not match number of offset blocks ({}).'.format(
-				len(entry_blocks), len(offset_blocks)))
+		if variable_length and len(entry_blocks) != len(row_size_blocks):
+			raise EOFError('Number of entry blocks ({}) does not match number of row size blocks ({}).'.format(
+				len(entry_blocks), len(row_size_blocks)))
 
 		raw_entry = None  # release the block ref
 
 		# Variable-length columns
 		if variable_length:
-			# Concatenate offsets array
-			offsets_list = [
-				np.frombuffer(block, tw.OFFSET_CHUNK_DTYPE)
-				for block in offset_blocks]
-			all_offsets = np.concatenate(offsets_list)
+			# Concatenate row sizes array
+			row_sizes_list = [
+				np.frombuffer(block, tw.ROW_SIZE_CHUNK_DTYPE)
+				for block in row_size_blocks]
+			all_row_sizes = np.concatenate(row_sizes_list)
 
 			# Initialize results array to NaNs
-			result = np.full((len(all_offsets), all_offsets.max()), np.nan)
+			result = np.full((len(all_row_sizes), all_row_sizes.max()), np.nan)
 
 			row = 0
-			for raw_entry, offsets in zip(entry_blocks, offsets_list):
+			for raw_entry, row_sizes in zip(entry_blocks, row_sizes_list):
 				entries = decomp(raw_entry)
 				entry_idx = 0
 
-				# Fill each row with length given by offset
-				for offset in offsets:
-					result[row, :offset] = entries[entry_idx : (entry_idx + offset)]
-					entry_idx += offset
+				# Fill each row with the length given by values in row_sizes
+				for row_size in row_sizes:
+					result[row, :row_size] = entries[entry_idx : (entry_idx + row_size)]
+					entry_idx += row_size
 					row += 1
 
 		# Constant-length columns
