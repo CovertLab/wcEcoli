@@ -64,7 +64,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sim_data.moleculeIds.s30_fullComplex,
 			]
 
-
+		all_time_steps = np.zeros(n_variants)
 		all_doubling_times = np.zeros(n_variants)
 		all_execution_times = np.zeros(n_variants)
 		all_rnap_elong_rates = np.zeros(n_variants)
@@ -84,6 +84,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				continue
 			x_vals.append(variant)
 
+			time_steps = []
 			doubling_times = []
 			execution_times = []
 			rnap_elong_rates = []
@@ -133,6 +134,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					active_ribosome_counts + np.min(inactive_ribosome_counts, axis=1))
 
 				# Save cell data for this variant
+				time_steps.append(time_step.mean())
 				doubling_times.append((time[-1] - time[0]) / 60)
 				execution_times.append((clock_time[-1] - clock_time[0]) / 60)
 				rnap_elong_rates.append(rnap_elong_rate.mean())
@@ -147,6 +149,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				mrna_fold_changes.append((mrna_mass[-1] - mrna_mass[0]) / mrna_mass[0])
 
 			# Aggregate all data for this variant
+			all_time_steps[i] = np.mean(time_steps)
 			all_doubling_times[i] = np.mean(doubling_times)
 			all_execution_times[i] = np.mean(execution_times)
 			all_rnap_elong_rates[i] = np.mean(rnap_elong_rates)
@@ -161,21 +164,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_mrna_fold_changes[i] = np.mean(mrna_fold_changes)
 
 		# Create bar plots
-		plt.figure(figsize=(11, 8.5))
-		gs = gridspec.GridSpec(3, 4)
+		plt.figure(figsize=(8.5, 11))
+		gs = gridspec.GridSpec(5, 3)
 
-		plot_bar(gs[0, 0], x_vals, all_doubling_times, 'Doubling Time\n(min)')
-		plot_bar(gs[0, 1], x_vals, all_execution_times, 'Execution Time\n(min)')
-		plot_bar(gs[1, 0], x_vals, all_rnap_elong_rates, 'RNAP elongation rate\n(nt/s)')
-		plot_bar(gs[1, 1], x_vals, all_rnap_fraction_active, 'RNAP fraction active')
-		plot_bar(gs[2, 0], x_vals, all_rib_elong_rates, 'Ribosome elongation rate\n(AA/s)', show_x=True)
-		plot_bar(gs[2, 1], x_vals, all_rib_fraction_active, 'Ribosome fraction active', show_x=True)
-		plot_bar(gs[0, 2], x_vals, all_protein_fold_changes, 'Protein mass\nfold change')
-		plot_bar(gs[1, 2], x_vals, all_dna_fold_changes, 'DNA mass\nfold change')
-		plot_bar(gs[2, 2], x_vals, all_sm_fold_changes, 'Small molecule mass\nfold change', show_x=True)
-		plot_bar(gs[0, 3], x_vals, all_trna_fold_changes, 'tRNA mass\nfold change')
-		plot_bar(gs[1, 3], x_vals, all_rrna_fold_changes, 'rRNA mass\nfold change')
-		plot_bar(gs[2, 3], x_vals, all_mrna_fold_changes, 'mRNA mass\nfold change', show_x=True)
+		plot_bar(gs[0, 0], x_vals, all_time_steps, 'Time Step\n(sec)')
+		plot_bar(gs[0, 1], x_vals, all_doubling_times, 'Doubling Time\n(min)')
+		plot_bar(gs[0, 2], x_vals, all_execution_times, 'Execution Time\n(min)')
+		plot_bar(gs[1, 0], x_vals, all_protein_fold_changes, 'Protein mass\nfold change')
+		plot_bar(gs[1, 1], x_vals, all_dna_fold_changes, 'DNA mass\nfold change')
+		plot_bar(gs[1, 2], x_vals, all_sm_fold_changes, 'Small molecule mass\nfold change')
+		plot_bar(gs[2, 0], x_vals, all_trna_fold_changes, 'tRNA mass\nfold change')
+		plot_bar(gs[2, 1], x_vals, all_rrna_fold_changes, 'rRNA mass\nfold change')
+		plot_bar(gs[2, 2], x_vals, all_mrna_fold_changes, 'mRNA mass\nfold change', show_x=True)
+		plot_bar(gs[3, 0], x_vals, all_rnap_elong_rates, 'RNAP elongation rate\n(nt/s)')
+		plot_bar(gs[3, 1], x_vals, all_rnap_fraction_active, 'RNAP fraction active')
+		plot_bar(gs[4, 0], x_vals, all_rib_elong_rates, 'Ribosome elongation rate\n(AA/s)', show_x=True)
+		plot_bar(gs[4, 1], x_vals, all_rib_fraction_active, 'Ribosome fraction active', show_x=True)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
