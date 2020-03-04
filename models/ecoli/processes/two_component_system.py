@@ -57,10 +57,13 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		# Note: the BDF solver has been empirically tested to be the fastest
 		# solver for this setting among the list of solvers that can be used
 		# by the scipy ODE suite.
+		import time
+		t = time.time()
 		self.molecules_required, self.all_molecule_changes = self.moleculesToNextTimeStep(
 			moleculeCounts, self.cellVolume, self.nAvogadro,
 			self.timeStepSec(), self.randomState, solver="BDF",
 			)
+		print(time.time() - t)
 
 		# Request counts of molecules needed
 		self.molecules.requestIs(self.molecules_required)
