@@ -76,7 +76,6 @@ class Metabolism(wholecell.processes.process.Process):
 		# create boundary object
 		self.boundary = Boundary(
 			sim_data.external_state,
-			metabolism.boundary,
 			self._external_states,
 			self.environmentView
 			)
@@ -363,7 +362,7 @@ class Metabolism(wholecell.processes.process.Process):
 		external_exchange_molecule_ids = self.fba.getExternalMoleculeIDs()
 		self.boundary.updateEnvironment(external_exchange_molecule_ids, delta_nutrients)
 
-		import_exchange, import_constraint = self.boundary.getImportConstraints(exchange_data)
+		import_exchange, import_constraint = self.boundary.get_import_constraints(exchange_data)
 
 		# Write outputs to listeners
 		self.writeToListener("FBAResults", "import_exchange", import_exchange)
@@ -469,7 +468,7 @@ class Boundary(object):
 	This includes handling all references to the media condition and exchange_data
 	'''
 
-	def __init__(self, sim_data_environment, sim_data_boundary, external_state, environmentView):
+	def __init__(self, sim_data_environment, external_state, environmentView):
 		self.environment = external_state['Environment']
 
 		# get maps between environment and exchange molecules
@@ -477,9 +476,8 @@ class Boundary(object):
 		self.exchange_to_env_map = sim_data_environment.exchange_to_env_map
 
 		# get functions
-		self.exchangeDataFromConcentrations = sim_data_boundary.exchangeDataFromConcentrations
-		self.exchangeDataFromMedia = sim_data_boundary.exchangeDataFromMedia
-		self.getImportConstraints = sim_data_boundary.getImportConstraints
+		self.exchange_data_from_concentrations = sim_data_environment.exchange_data_from_concentrations
+		self.get_import_constraints = sim_data_environment.get_import_constraints
 
 		# get variables from environment
 		self.current_timeline = self.environment.current_timeline
@@ -501,7 +499,7 @@ class Boundary(object):
 		self.current_media_id = self.environment.current_media_id
 		current_concentrations = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
 
-		self.exchange_data = self.exchangeDataFromConcentrations(current_concentrations)
+		self.exchange_data = self.exchange_data_from_concentrations(current_concentrations)
 
 		# transport fluxes from the external state
 		self.transport_fluxes = self.environment.transport_fluxes
