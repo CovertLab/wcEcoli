@@ -1220,7 +1220,7 @@ class Boundary(object):
 	def __init__(self, raw_data, sim_data):
 
 		self.import_constraint_threshold = IMPORT_CONSTRAINT_THRESHOLD
-		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
+		self.env_to_exchange_map = sim_data.external_state.env_to_exchange_map
 
 		self.all_external_exchange_molecules = self._getAllExternalExchangeMolecules(raw_data)
 		self.secretion_exchange_molecules = self._getSecretionExchangeMolecules(raw_data)
@@ -1272,7 +1272,7 @@ class Boundary(object):
 					that can be secreted by the cell into the environment
 		'''
 
-		saved_media = sim_data.external_state.environment.saved_media
+		saved_media = sim_data.external_state.saved_media
 
 		externalExchangeMolecules = {}
 		importExchangeMolecules = {}

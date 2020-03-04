@@ -75,7 +75,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# create boundary object
 		self.boundary = Boundary(
-			sim_data.external_state.environment,
+			sim_data.external_state,
 			metabolism.boundary,
 			self._external_states,
 			self.environmentView

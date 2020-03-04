@@ -67,13 +67,13 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 
 		# if current_timeline_id is specified by a variant in sim_data, look it up in saved_timelines.
 		# else, construct the timeline given to initialize
-		if sim_data.external_state.environment.current_timeline_id:
-			self.current_timeline = sim_data.external_state.environment.saved_timelines[
-				sim_data.external_state.environment.current_timeline_id]
+		if sim_data.external_state.current_timeline_id:
+			self.current_timeline = sim_data.external_state.saved_timelines[
+				sim_data.external_state.current_timeline_id]
 		else:
 			self.current_timeline = make_media.make_timeline(timeline)
 
-		self.saved_media = sim_data.external_state.environment.saved_media
+		self.saved_media = sim_data.external_state.saved_media
 		self.current_media_id = self.current_timeline[0][1]
 		current_media = self.saved_media[self.current_media_id]
 		self._times = [t[0] for t in self.current_timeline]
