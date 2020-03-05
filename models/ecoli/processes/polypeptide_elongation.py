@@ -452,8 +452,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# Adjust aa_supply higher if amino acid concentrations are low
 		# Improves stability of charging and mimics amino acid synthesis
 		# inhibition and export
-		# TODO (Travis): environmentView should probably handle this check
-		aa_in_media = self.aa_environment.totalConcentrations() > self.process.import_threshold
+		aa_in_media = self.aa_environment.import_present()
 		# TODO (Travis): add to listener?
 		self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
 

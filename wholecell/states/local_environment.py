@@ -86,6 +86,7 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		self._get_import_constraints = sim_data.external_state.get_import_constraints
 		self._exchange_data_from_concentrations = sim_data.external_state.exchange_data_from_concentrations
 		self.exchange_to_env_map = sim_data.external_state.exchange_to_env_map
+		self.import_constraint_threshold = sim_data.external_state.import_constraint_threshold
 
 	def update(self):
 		'''update self.current_media_id based on self.current_timeline and self.time'''
@@ -181,6 +182,5 @@ class EnvironmentView(object):
 	def totalConcentrations(self):
 		return self._state.container.counts()[self._containerIndexes]
 
-	def countsInc(self, molecule_ids, counts):
-		# TODO: this doesn't actually increase any counts
-		self._state.accumulate_deltas(molecule_ids, counts)
+	def import_present(self):
+		return self.totalConcentrations() > self._state.import_constraint_threshold
