@@ -21,11 +21,10 @@ from scipy.sparse import csr_matrix
 
 import wholecell.processes.process
 from wholecell.utils import units
-
 from wholecell.utils.random import stochasticRound
 from wholecell.utils.constants import REQUEST_PRIORITY_METABOLISM
-
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
+
 
 COUNTS_UNITS = units.mmol
 VOLUME_UNITS = units.L
@@ -35,6 +34,7 @@ CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
 
 USE_KINETICS = True
 KINETICS_BURN_IN_PERIOD = 0
+
 
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
@@ -73,25 +73,21 @@ class Metabolism(wholecell.processes.process.Process):
 		self.ppgpp_id = sim_data.moleculeIds.ppGpp
 		self.getppGppConc = sim_data.growthRateParameters.getppGppConc
 
-		# create boundary object
-		self.boundary = Boundary(
-			sim_data.external_state,
-			self._external_states,
-			self.environmentView
-			)
+		# Use information from the environment
+		environment = self._external_states['Environment']
 
 		# go through all media in the timeline and add to metaboliteNames
 		self.metaboliteNamesFromNutrients = set()
 		if self.include_ppgpp:
 			self.metaboliteNamesFromNutrients.add(self.ppgpp_id)
-		for time, media_id in self.boundary.current_timeline:
+		for time, media_id in environment.current_timeline:
 			self.metaboliteNamesFromNutrients.update(
 				metabolism.concentrationUpdates.concentrationsBasedOnNutrients(media_id)
 				)
 		self.metaboliteNamesFromNutrients = sorted(self.metaboliteNamesFromNutrients)
 
 		concDict = metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
-			self.boundary.current_media_id
+			environment.current_media_id
 			)
 		doubling_time = sim_data.conditionToDoublingTime[sim_data.condition]
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
@@ -106,7 +102,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# Load initial mass
 		energyCostPerWetMass = constants.darkATP * mass.cellDryMassFraction
-		exchange_molecules = list(sorted(self.boundary.exchange_data['externalExchangeMolecules']))
+		exchange_molecules = list(sorted(environment.get_exchange_data()['externalExchangeMolecules']))
 		moleculeMasses = dict(zip(exchange_molecules,
 			sim_data.getter.getMass(exchange_molecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
 
@@ -135,7 +131,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.kinetics_constrained_reactions = list(np.array(kinetic_constraint_reactions)[self.active_constraints_mask])
 
 		# Add kinetic reaction targets from boundary
-		self.boundary_constrained_reactions = self.boundary.transport_fluxes.keys()
+		self.boundary_constrained_reactions = environment.transport_fluxes.keys()
 		self.all_constrained_reactions = self.kinetics_constrained_reactions + self.boundary_constrained_reactions
 
 		self.kinetic_constraint_enzymes = metabolism.kinetic_constraint_enzymes
@@ -236,13 +232,13 @@ class Metabolism(wholecell.processes.process.Process):
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
 
-		# get boundary conditions
-		self.boundary.updateBoundary()
-		current_media_id = self.boundary.current_media_id
-		exchange_data = self.boundary.exchange_data
+		# Get environment updates
+		environment = self._external_states['Environment']
+		current_media_id = environment.current_media_id
+		exchange_data = environment.get_exchange_data()
 
 		# make sure there are no new flux targets from the boundary
-		assert set(self.boundary.transport_fluxes.keys()).issubset(self.all_constrained_reactions)
+		assert set(environment.transport_fluxes.keys()).issubset(self.all_constrained_reactions)
 
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
 		self.concModificationsBasedOnCondition = self.getBiomassAsConcentrations(doubling_time)
@@ -332,7 +328,7 @@ class Metabolism(wholecell.processes.process.Process):
 		targets = (TIME_UNITS * self.timeStepSec() * reactionTargets).asNumber(CONC_UNITS)[self.active_constraints_mask, :]
 
 		# add boundary targets
-		transport_targets = self.boundary.transport_fluxes.values()
+		transport_targets = environment.transport_fluxes.values()
 		lower_targets = np.concatenate((targets[:, 0], transport_targets), axis=0)
 		mean_targets = np.concatenate((targets[:, 1], transport_targets), axis=0)
 		upper_targets = np.concatenate((targets[:, 2], transport_targets), axis=0)
@@ -360,9 +356,9 @@ class Metabolism(wholecell.processes.process.Process):
 		# update environmental nutrient counts
 		delta_nutrients = ((1 / countsToMolar) * exchange_fluxes).asNumber().astype(int)
 		external_exchange_molecule_ids = self.fba.getExternalMoleculeIDs()
-		self.boundary.updateEnvironment(external_exchange_molecule_ids, delta_nutrients)
+		environment.molecule_exchange(external_exchange_molecule_ids, delta_nutrients)
 
-		import_exchange, import_constraint = self.boundary.get_import_constraints(exchange_data)
+		import_exchange, import_constraint = environment.get_import_constraints(exchange_data)
 
 		# Write outputs to listeners
 		self.writeToListener("FBAResults", "import_exchange", import_exchange)
@@ -460,62 +456,3 @@ class Metabolism(wholecell.processes.process.Process):
 				self.aa_targets[aa] = counts
 
 		return {aa: counts * counts_to_molar for aa, counts in self.aa_targets.items()}
-
-
-class Boundary(object):
-	'''
-	Boundary provides an interface between metabolism and the environment.
-	This includes handling all references to the media condition and exchange_data
-	'''
-
-	def __init__(self, sim_data_environment, external_state, environmentView):
-		self.environment = external_state['Environment']
-
-		# get maps between environment and exchange molecules
-		self.env_to_exchange_map = sim_data_environment.env_to_exchange_map
-		self.exchange_to_env_map = sim_data_environment.exchange_to_env_map
-
-		# get functions
-		self.exchange_data_from_concentrations = sim_data_environment.exchange_data_from_concentrations
-		self.get_import_constraints = sim_data_environment.get_import_constraints
-
-		# get variables from environment
-		self.current_timeline = self.environment.current_timeline
-
-		# views on environment
-		self.environment_molecule_ids = self.environment._moleculeIDs
-		self.environment_molecules = environmentView(self.environment_molecule_ids)
-
-		# transport fluxes from the external state
-		self.transport_fluxes = self.environment.transport_fluxes
-
-		self.updateBoundary()
-
-	def updateBoundary(self):
-		'''
-		update all boundary variables for the current environment
-		'''
-
-		self.current_media_id = self.environment.current_media_id
-		current_concentrations = dict(zip(self.environment_molecule_ids, self.environment_molecules.totalConcentrations()))
-
-		self.exchange_data = self.exchange_data_from_concentrations(current_concentrations)
-
-		# transport fluxes from the external state
-		self.transport_fluxes = self.environment.transport_fluxes
-
-	def updateEnvironment(self, external_exchange_molecule_ids, delta_nutrients):
-		'''
-		Convert exchange molecules to environmental molecules using mapping, and passes delta counts to the local environment
-
-		Args:
-			external_exchange_molecule_ids (tuple[str]): a tuple with all the external exchange molecules from FBA
-			delta_nutrients (np.array[int]): an array with the delta counts for all of the exchange molecules.
-				The array length should be the same as external_exchange_molecule_ids.
-
-		Modifies:
-			uses countsInc() to update local_environment's _env_delta_counts
-		'''
-
-		mapped_environment_molecule_ids = [self.exchange_to_env_map[mol_id] for mol_id in external_exchange_molecule_ids]
-		self.environment_molecules.countsInc(mapped_environment_molecule_ids, delta_nutrients)

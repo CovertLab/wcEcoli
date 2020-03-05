@@ -18,7 +18,7 @@ External state that represents environmental molecules and conditions.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
@@ -82,6 +82,11 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		# set the maximum length for a media_id saved to the listener, this is used for padding
 		self._media_id_max_length = 25
 
+		# Setup for exchange to environment
+		self._get_import_constraints = sim_data.external_state.get_import_constraints
+		self._exchange_data_from_concentrations = sim_data.external_state.exchange_data_from_concentrations
+		self.exchange_to_env_map = sim_data.external_state.exchange_to_env_map
+
 	def update(self):
 		'''update self.current_media_id based on self.current_timeline and self.time'''
 
@@ -119,8 +124,30 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		return self._env_delta_counts
 
 	def accumulate_deltas(self, molecule_ids, counts):
+		# TODO: use _env_delta_counts to update?
 		for molecule_id, count in zip(molecule_ids, counts):
 			self._env_delta_counts[molecule_id] += count
+
+	def get_exchange_data(self):
+		current_concentrations = dict(zip(self._moleculeIDs, self.container.counts()))
+		return self._exchange_data_from_concentrations(current_concentrations)
+
+	def get_import_constraints(self, exchange_data):
+		return self._get_import_constraints(exchange_data)
+
+	def molecule_exchange(self, exchange_molecules, counts):
+		'''
+		Convert exchange molecules to environmental molecules using mapping
+		and updates deltas in the environment.
+
+		Args:
+			exchange_molecules (tuple[str]): internal molecule ID that exchanges
+				with the environment
+			counts (np.ndarray[int]): change in counts for all exchange molecules
+		'''
+
+		molecule_ids = [self.exchange_to_env_map[m] for m in exchange_molecules]
+		self.accumulate_deltas(molecule_ids, counts)
 
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)
