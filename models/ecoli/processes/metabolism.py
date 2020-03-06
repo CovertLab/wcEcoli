@@ -121,7 +121,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.getKineticConstraints = metabolism.getKineticConstraints
 
 		# Remove disabled reactions so they don't get included in the FBA problem setup
-		if hasattr(metabolism, "kineticTargetShuffleRxns") and metabolism.kineticTargetShuffleRxns != None:
+		if hasattr(metabolism, "kineticTargetShuffleRxns") and metabolism.kineticTargetShuffleRxns is not None:
 			self.kinetics_constrained_reactions = metabolism.kineticTargetShuffleRxns
 			self.active_constraints_mask = np.ones(len(self.kinetics_constrained_reactions), dtype=bool)
 		else:
@@ -201,11 +201,11 @@ class Metabolism(wholecell.processes.process.Process):
 		self.aa_names_no_location = [x[:-3] for x in sorted(sim_data.amino_acid_1_to_3_ordered.values())]
 
 		self.shuffleIdxs = None
-		if hasattr(metabolism, "kineticTargetShuffleIdxs") and metabolism.kineticTargetShuffleIdxs != None:
+		if hasattr(metabolism, "kineticTargetShuffleIdxs") and metabolism.kineticTargetShuffleIdxs is not None:
 			self.shuffleIdxs = metabolism.kineticTargetShuffleIdxs
 
 		self.shuffleCatalyzedIdxs = None
-		if hasattr(metabolism, "catalystShuffleIdxs") and metabolism.catalystShuffleIdxs != None:
+		if hasattr(metabolism, "catalystShuffleIdxs") and metabolism.catalystShuffleIdxs is not None:
 			self.shuffleCatalyzedIdxs = metabolism.catalystShuffleIdxs
 
 		# Track updated AA concentration targets with tRNA charging
