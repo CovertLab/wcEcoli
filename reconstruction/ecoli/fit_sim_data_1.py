@@ -1241,6 +1241,42 @@ def createBulkContainer(sim_data, expression, doubling_time):
 	"""
 
 	total_count_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time)
+	import ipdb; ipdb.set_trace()
+
+	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time)
+	ids_molecules = sim_data.internal_state.bulkMolecules.bulkData["id"]
+
+	# Construct bulk container
+	bulkContainer = BulkObjectsContainer(ids_molecules, dtype = np.float64)
+
+	# Assign RNA counts based on mass and expression distribution
+	counts_RNA = total_count_RNA * distribution_RNA
+	bulkContainer.countsIs(counts_RNA, ids_rnas)
+
+	# Assign protein counts based on mass and mRNA counts
+	counts_protein = total_count_protein * distribution_protein
+	bulkContainer.countsIs(counts_protein, ids_protein)
+
+	return bulkContainer
+
+def createBulkContainerFitDegRate(sim_data, expression, doubling_time):
+	"""
+	Creates a container that tracks the counts of all bulk molecules. Relies on
+	totalCountIdDistributionRNA and totalCountIdDistributionProtein to set the
+	counts and IDs of all RNAs and proteins.
+
+	Inputs
+	------
+	- expression (array of floats) - relative frequency distribution of RNA expression
+	- doubling_time (float with units of time) - measured doubling time given the condition
+
+	Returns
+	-------
+	- bulkContainer (BulkObjectsContainer object) - a wrapper around a NumPy
+	array that tracks the counts of bulk molecules
+	"""
+
+	total_count_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time)
 
 	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time)
 	ids_molecules = sim_data.internal_state.bulkMolecules.bulkData["id"]

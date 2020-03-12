@@ -38,7 +38,7 @@ class Complexation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(Complexation, self).initialize(sim, sim_data)
 
-		self.gillespie_time_step = 0.0001 # instead of self._sim.timeStepSec()
+		self.gillespie_time_step = 0.001 # instead of self._sim.timeStepSec()
 
 		# Build views
 		moleculeNames = sim_data.process.complexation.moleculeNames
@@ -47,19 +47,19 @@ class Complexation(wholecell.processes.process.Process):
 		# Create matrices and vectors that describe reaction stoichiometries 
 		complexation_forward_matrix = -sim_data.process.complexation.stoichMatrix().astype(np.int64)
 		complexation_reverse_matrix = sim_data.process.complexation.stoichMatrix().astype(np.int64)
-		self.stoichMatrix = np.append(complexation_forward_matrix, complexation_reverse_matrix, 1)
+		self.stoichMatrix = np.append(complexation_reverse_matrix, complexation_forward_matrix, 1)
 
 		# semi-quantitative rate constants
 		rates = sim_data.process.complexation.rates
-		forward_rates = np.repeat(100.0, len(rates))
-		reverse_rates = np.repeat(1000.0, len(forward_rates))
+		forward_rates = np.repeat(10.0, len(rates))
+		reverse_rates = np.repeat(10000.0, len(forward_rates))
 		# import ipdb; ipdb.set_trace()
 		self.rates = np.append(forward_rates, reverse_rates)
 
 		complexNames = sim_data.process.complexation.ids_complexes
 		self.mazEF_cplx_idx = complexNames.index('CPLX0-1242[c]')
 		# import ipdb; ipdb.set_trace()
-		self.rates[self.mazEF_cplx_idx + len(forward_rates)] = 100000
+		# self.rates[self.mazEF_cplx_idx + len(forward_rates)] = 100000
 
 
 		# build stochastic system simulation
