@@ -221,6 +221,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.kineticsSubstrates.requestAll()
 
 	def evolveState(self):
+		time_step = self.timeStepSec() * units.s
 		metaboliteCountsInit = self.metabolites.counts()
 
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
@@ -230,7 +231,7 @@ class Metabolism(wholecell.processes.process.Process):
 		countsToMolar = 1 / (self.nAvogadro * cellVolume)
 
 		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
-		coefficient = dryMass / cellMass * self.cellDensity * (self.timeStepSec() * units.s)
+		coefficient = dryMass / cellMass * self.cellDensity * time_step
 
 		# Get environment updates
 		environment = self._external_states['Environment']
@@ -325,7 +326,8 @@ class Metabolism(wholecell.processes.process.Process):
 			reactionTargets = (units.umol / units.L / units.s) * reactionTargets.asNumber()[self.shuffleIdxs, :]
 
 		## Calculate reaction flux target for current time step
-		targets = (TIME_UNITS * self.timeStepSec() * reactionTargets).asNumber(CONC_UNITS)[self.active_constraints_mask, :]
+		targets = (time_step * reactionTargets).asNumber(CONC_UNITS)[self.active_constraints_mask, :]
+		self.fba.set_scaled_kinetic_objective(self.timeStepSec())
 
 		# add boundary targets
 		transport_targets = environment.transport_fluxes.values()
@@ -361,10 +363,11 @@ class Metabolism(wholecell.processes.process.Process):
 		import_exchange, import_constraint = environment.get_import_constraints(exchange_data)
 
 		# Write outputs to listeners
+		time_step_unitless = time_step.asNumber(TIME_UNITS)
 		self.writeToListener("FBAResults", "import_exchange", import_exchange)
 		self.writeToListener("FBAResults", "import_constraint", import_constraint)
 		self.writeToListener("FBAResults", "deltaMetabolites", metaboliteCountsFinal - metaboliteCountsInit)
-		self.writeToListener("FBAResults", "reactionFluxes", self.fba.getReactionFluxes() / self.timeStepSec())
+		self.writeToListener("FBAResults", "reactionFluxes", self.fba.getReactionFluxes() / time_step_unitless)
 		self.writeToListener("FBAResults", "externalExchangeFluxes", converted_exchange_fluxes)
 		self.writeToListener("FBAResults", "objectiveValue", self.fba.getObjectiveValue())
 		self.writeToListener("FBAResults", "shadowPrices", self.fba.getShadowPrices(self.metaboliteNames))
@@ -378,8 +381,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "enzymeCountsInit", kineticsEnzymesCountsInit)
 		self.writeToListener("EnzymeKinetics", "metaboliteConcentrations", metaboliteConcentrations.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "countsToMolar", countsToMolar.asNumber(CONC_UNITS))
-		self.writeToListener("EnzymeKinetics", "actualFluxes", self.fba.getReactionFluxes(self.all_constrained_reactions) / self.timeStepSec())
-		self.writeToListener("EnzymeKinetics", "targetFluxes", mean_targets / self.timeStepSec())
+		self.writeToListener("EnzymeKinetics", "actualFluxes", self.fba.getReactionFluxes(self.all_constrained_reactions) / time_step_unitless)
+		self.writeToListener("EnzymeKinetics", "targetFluxes", mean_targets / time_step_unitless)
 		# TODO: add lower and upper targets
 
 	# limit amino acid uptake to what is needed to meet concentration objective to prevent use as carbon source
