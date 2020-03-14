@@ -327,7 +327,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		## Calculate reaction flux target for current time step
 		targets = (time_step * reactionTargets).asNumber(CONC_UNITS)[self.active_constraints_mask, :]
-		self.fba.set_scaled_kinetic_objective(self.timeStepSec())
 
 		# add boundary targets
 		transport_targets = environment.transport_fluxes.values()
@@ -337,6 +336,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		## Set kinetic targets only if kinetics is enabled
 		if self.use_kinetics and self.burnInComplete:
+			self.fba.set_scaled_kinetic_objective(self.timeStepSec())
 			self.fba.setKineticTarget(
 				self.all_constrained_reactions, mean_targets,
 				lower_targets=lower_targets, upper_targets=upper_targets)
