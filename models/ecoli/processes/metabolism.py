@@ -269,7 +269,7 @@ class Metabolism(wholecell.processes.process.Process):
 			self.fba.enableKineticTargets()
 
 		#  Find metabolite concentrations from metabolite counts
-		metaboliteConcentrations =  countsToMolar * metaboliteCountsInit[self.internalExchangeIdxs]
+		metaboliteConcentrations = countsToMolar * metaboliteCountsInit[self.internalExchangeIdxs]
 
 		# Make a dictionary of metabolite names to metabolite concentrations
 		self.fba.setInternalMoleculeLevels(metaboliteConcentrations.asNumber(CONC_UNITS))
@@ -278,35 +278,10 @@ class Metabolism(wholecell.processes.process.Process):
 		# TODO -- this can change external AA levels for the fba problem. Problematic for reliable control of environmental response
 		self._setExternalMoleculeLevels(externalMoleculeLevels, metaboliteConcentrations)
 
-		# Maintenance reactions
-		## Calculate new NGAM
-		flux = (self.ngam * coefficient).asNumber(CONC_UNITS)
-		self.fba.setReactionFluxBounds(
-			self.fba._reactionID_NGAM,
-			lowerBounds=flux, upperBounds=flux,
-			)
-
-		## Calculate GTP usage based on how much was needed in polypeptide
-		## elongation in previous step.
-		gtp_to_hydrolyze = self._sim.processes["PolypeptideElongation"].gtp_to_hydrolyze
-		flux = (countsToMolar * gtp_to_hydrolyze).asNumber(CONC_UNITS)
-		self.fba.setReactionFluxBounds(
-			self.fba._reactionID_polypeptideElongationEnergy,
-			lowerBounds=flux, upperBounds=flux,
-			)
-
-		# Constrain reactions based on absence of catalysts
-		## Read counts for catalysts and enzymes (catalysts with kinetics constraints)
-		catalystsCountsInit = self.catalysts.counts()
-
-		## Set hard upper bounds constraints based on enzyme presence (infinite upper bound) or absence (upper bound of zero)
-		catalyzedReactionBounds = np.inf * np.ones(len(self.reactions_with_catalyst))
-		rxnPresence = self.catalysisMatrix.dot(catalystsCountsInit)
-		catalyzedReactionBounds[rxnPresence == 0] = 0
-		if self.shuffleCatalyzedIdxs is not None:
-			catalyzedReactionBounds = catalyzedReactionBounds[self.shuffleCatalyzedIdxs]
-		self.fba.setReactionFluxBounds(self.reactions_with_catalyst,
-			upperBounds=catalyzedReactionBounds, raiseForReversible=False)
+		translation_gtp = self._sim.processes["PolypeptideElongation"].gtp_to_hydrolyze
+		catalyst_counts = self.catalysts.counts()
+		set_reaction_bounds(self.fba, self.ngam, coefficient, countsToMolar, translation_gtp,
+			self.reactions_with_catalyst, catalyst_counts, self.catalysisMatrix)
 
 		# Constrain reactions based on kinetic values
 		kineticsEnzymesCountsInit = self.kineticsEnzymes.counts()
@@ -459,3 +434,51 @@ class Metabolism(wholecell.processes.process.Process):
 				self.aa_targets[aa] = counts
 
 		return {aa: counts * counts_to_molar for aa, counts in self.aa_targets.items()}
+
+def set_reaction_bounds(fba, ngam, coefficient, counts_to_molar, gtp_to_hydrolyze,
+		catalyzed_reactions, catalyst_counts, catalyst_matrix):
+	"""
+	Set reaction bounds for constrained reactions in the FBA object.
+
+	Args:
+		fba (FluxBalanceAnalysis object): fba solver
+		ngam (Unum): non-growth associated maintenance (counts/mass/time units)
+		coefficient (Unum): coefficient to convert from mmol/g DCW/hr to mM basis
+			(mass.time/volume units)
+		counts_to_molar (Unum): conversion from counts to molar (counts/volume units)
+		gtp_to_hydrolyze (float): number of GTP molecules to hydrolyze to
+			account for consumption in translation
+		catalyzed_reactions (List[str]): reaction IDs for reactions that have
+			an enzyme catalyst
+		catalyst_counts (np.ndarray[int]): counts of enzyme catalysts
+		catalyst_matrix (csr_matrix[int]): mapping of enzymes to reactions
+			they catalyze (n reactions, m enzymes)
+	"""
+
+	# Maintenance reactions
+	## Calculate new NGAM
+	flux = (ngam * coefficient).asNumber(CONC_UNITS)
+	fba.setReactionFluxBounds(
+		fba._reactionID_NGAM,
+		lowerBounds=flux, upperBounds=flux,
+		)
+
+	## Calculate GTP usage based on how much was needed in polypeptide
+	## elongation in previous step.
+	flux = (counts_to_molar * gtp_to_hydrolyze).asNumber(CONC_UNITS)
+	fba.setReactionFluxBounds(
+		fba._reactionID_polypeptideElongationEnergy,
+		lowerBounds=flux, upperBounds=flux,
+		)
+
+	# Set hard upper bounds constraints based on enzyme presence
+	# (infinite upper bound) or absence (upper bound of zero)
+	reaction_bounds = np.inf * np.ones(len(catalyzed_reactions))
+	no_rxn_mask = catalyst_matrix.dot(catalyst_counts) == 0
+	reaction_bounds[no_rxn_mask] = 0
+	fba.setReactionFluxBounds(catalyzed_reactions,
+		upperBounds=reaction_bounds, raiseForReversible=False)
+
+	# TODO: remove this variant and other attributes in class
+	# if self.shuffleCatalyzedIdxs is not None:
+	# 	catalyzedReactionBounds = catalyzedReactionBounds[self.shuffleCatalyzedIdxs]
