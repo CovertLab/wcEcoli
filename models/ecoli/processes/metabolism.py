@@ -220,9 +220,13 @@ class Metabolism(wholecell.processes.process.Process):
 		self.kineticsSubstrates.requestAll()
 
 	def evolveState(self):
+		# After completing the burn-in, enable kinetic rates
+		if self.use_kinetics and (not self.burnInComplete) and (self._sim.time() > KINETICS_BURN_IN_PERIOD):
+			self.burnInComplete = True
+			self.fba.enableKineticTargets()
+
 		time_step = self.timeStepSec() * units.s
 		metaboliteCountsInit = self.metabolites.counts()
-
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
 		dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
 
@@ -240,43 +244,19 @@ class Metabolism(wholecell.processes.process.Process):
 		# make sure there are no new flux targets from the boundary
 		assert set(environment.transport_fluxes.keys()).issubset(self.all_constrained_reactions)
 
+		# Determine updates to concentrations depending on the current state
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
-		concModificationsBasedOnCondition = self.getBiomassAsConcentrations(doubling_time)
-
+		conc_updates = self.getBiomassAsConcentrations(doubling_time)
 		if self.use_trna_charging:
-			concModificationsBasedOnCondition.update(self.update_amino_acid_targets(countsToMolar))
+			conc_updates.update(self.update_amino_acid_targets(countsToMolar))
 		if self.include_ppgpp:
-			concModificationsBasedOnCondition[self.ppgpp_id] = self.getppGppConc(doubling_time)
+			conc_updates[self.ppgpp_id] = self.getppGppConc(doubling_time)
 
-		# Set external molecule levels
-		external_exchange_molecule_ids = self.fba.getExternalMoleculeIDs()
-		externalMoleculeLevels, newObjective = self.exchangeConstraints(
-			external_exchange_molecule_ids,
-			coefficient,
-			CONC_UNITS,
-			current_media_id,
-			exchange_data,
-			concModificationsBasedOnCondition,
-			)
-
-		if newObjective != None and newObjective != self.homeostaticObjective:
-			self.fba.update_homeostatic_targets(newObjective)
-			self.homeostaticObjective = newObjective
-
-		# After completing the burn-in, enable kinetic rates
-		if self.use_kinetics and (not self.burnInComplete) and (self._sim.time() > KINETICS_BURN_IN_PERIOD):
-			self.burnInComplete = True
-			self.fba.enableKineticTargets()
-
-		#  Find metabolite concentrations from metabolite counts
-		metaboliteConcentrations = countsToMolar * metaboliteCountsInit[self.internalExchangeIdxs]
-
-		# Make a dictionary of metabolite names to metabolite concentrations
-		self.fba.setInternalMoleculeLevels(metaboliteConcentrations.asNumber(CONC_UNITS))
-
-		# Set external molecule levels
-		# TODO -- this can change external AA levels for the fba problem. Problematic for reliable control of environmental response
-		self._setExternalMoleculeLevels(externalMoleculeLevels, metaboliteConcentrations)
+		# Set molecule availability (internal and external)
+		set_molecule_levels(self.fba, self.exchangeConstraints, coefficient,
+			current_media_id, exchange_data, conc_updates, countsToMolar,
+			metaboliteCountsInit, self.internalExchangeIdxs,
+			self.aa_names_no_location, self.metaboliteNames)
 
 		# Set reaction limits for maintenance and catalysts present
 		translation_gtp = self._sim.processes["PolypeptideElongation"].gtp_to_hydrolyze
@@ -312,7 +292,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		# update environmental nutrient counts
 		delta_nutrients = ((1 / countsToMolar) * exchange_fluxes).asNumber().astype(int)
-		environment.molecule_exchange(external_exchange_molecule_ids, delta_nutrients)
+		environment.molecule_exchange(self.fba.getExternalMoleculeIDs(), delta_nutrients)
 
 		import_exchange, import_constraint = environment.get_import_constraints(exchange_data)
 
@@ -329,35 +309,13 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("FBAResults", "targetConcentrations", [self.homeostaticObjective[mol] for mol in self.fba.getHomeostaticTargetMolecules()])
 		self.writeToListener("FBAResults", "homeostaticObjectiveValues", self.fba.getHomeostaticObjectiveValues())
 		self.writeToListener("FBAResults", "kineticObjectiveValues", self.fba.getKineticObjectiveValues())
-
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsInit", metaboliteCountsInit)
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsFinal", metaboliteCountsFinal)
 		self.writeToListener("EnzymeKinetics", "enzymeCountsInit", kinetic_enzyme_counts)
-		self.writeToListener("EnzymeKinetics", "metaboliteConcentrations", metaboliteConcentrations.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "countsToMolar", countsToMolar.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "actualFluxes", self.fba.getReactionFluxes(self.all_constrained_reactions) / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetFluxes", targets / time_step_unitless)
 		# TODO: add lower and upper targets
-
-	# limit amino acid uptake to what is needed to meet concentration objective to prevent use as carbon source
-	def _setExternalMoleculeLevels(self, externalMoleculeLevels, metaboliteConcentrations):
-		external_exchange_molecule_ids = self.fba.getExternalMoleculeIDs()
-		for aa in self.aa_names_no_location:
-			if aa + "[p]" in external_exchange_molecule_ids:
-				idx = external_exchange_molecule_ids.index(aa + "[p]")
-			elif aa + "[c]" in external_exchange_molecule_ids:
-				idx = external_exchange_molecule_ids.index(aa + "[c]")
-			else:
-				continue
-
-			concDiff = self.homeostaticObjective[aa + "[c]"] - metaboliteConcentrations[self.metaboliteNames.index(aa + "[c]")].asNumber(CONC_UNITS)
-			if concDiff < 0:
-				concDiff = 0
-
-			if externalMoleculeLevels[idx] > concDiff:
-				externalMoleculeLevels[idx] =  concDiff
-
-		self.fba.setExternalMoleculeLevels(externalMoleculeLevels)
 
 	def getBiomassAsConcentrations(self, doubling_time):
 		'''
@@ -414,6 +372,101 @@ class Metabolism(wholecell.processes.process.Process):
 				self.aa_targets[aa] = counts
 
 		return {aa: counts * counts_to_molar for aa, counts in self.aa_targets.items()}
+
+def update_external_molecule_levels(external_exchange_molecule_ids,
+		aa_names_no_location, objective, metabolite_names,
+		metabolite_concentrations, external_molecule_levels):
+	"""
+	Limit amino acid uptake to what is needed to meet concentration objective
+	to prevent use as carbon source.
+
+	Args:
+		external_exchange_molecule_ids (Tuple[str]): IDs of molecules that
+			are exchanged with the environment (with internal location tag)
+		aa_names_no_location (List[str]): IDs of all amino acids without a
+			location tag
+		objective (Dict[str, Unum]): homeostatic objective for internal
+			molecules (molecule ID: concentration in counts/volume units)
+		metabolite_names (List[str]): IDs of all metabolites with a concentration
+			target
+		metabolite_concentrations (Unum[float]): concentration for each molecule
+			in metabolite_names
+		external_molecule_levels (np.ndarray[float]): current limits on external
+			molecule availability
+
+	Returns:
+		external_molecule_levels (np.ndarray[float]): updated limits on external
+			molcule availability
+	"""
+
+	for aa in aa_names_no_location:
+		if aa + "[p]" in external_exchange_molecule_ids:
+			idx = external_exchange_molecule_ids.index(aa + "[p]")
+		elif aa + "[c]" in external_exchange_molecule_ids:
+			idx = external_exchange_molecule_ids.index(aa + "[c]")
+		else:
+			continue
+
+		concDiff = objective[aa + "[c]"] - metabolite_concentrations[metabolite_names.index(aa + "[c]")].asNumber(CONC_UNITS)
+		if concDiff < 0:
+			concDiff = 0
+
+		if external_molecule_levels[idx] > concDiff:
+			external_molecule_levels[idx] =  concDiff
+
+	return external_molecule_levels
+
+def set_molecule_levels(fba, exchange_constraints, coefficient, current_media_id,
+		exchange_data, conc_updates, counts_to_molar, metabolite_counts,
+		exchange_idxs, aa_names_no_location, metabolite_names):
+	"""
+	Set internal and external molecule levels available to the FBA solver.
+
+	Args:
+		fba (FluxBalanceAnalysis): FBA solver
+		exchange_constraints (Callable): get external molecules and objective
+			based on environment and cell state
+		coefficient (Unum): coefficient to convert from mmol/g DCW/hr to mM basis
+			(mass.time/volume units)
+		current_media_id (str): ID of current media
+		exchange_data (Dict[str, Any]): exchange data for the current environment
+		conc_updates (Dict[str, Unum]): updates to concentrations targets for
+			molecules (molecule ID: concentration in counts/volume units)
+		counts_to_molar (Unum): conversion from counts to molar (counts/volume units)
+		metabolite_counts (np.ndarray[int]): counts for each metabolite with a
+			concentration target
+		exchange_idxs (np.ndarray[int]): mapping of fba object metabolites to
+			simulation metabolite counts
+		aa_names_no_location (List[str]): IDs of all amino acids without a
+			location tag
+		metabolite_names (List[str]): IDs of all metabolites with a concentration
+			target
+	"""
+
+	# Update objective from media exchanges
+	# TODO: check if this is all exchange or only import?
+	# - should it be one or the other for places used
+	# - update arg doc string for function above
+	external_exchange_molecule_ids = fba.getExternalMoleculeIDs()
+	external_molecule_levels, objective = exchange_constraints(
+		external_exchange_molecule_ids,
+		coefficient,
+		CONC_UNITS,
+		current_media_id,
+		exchange_data,
+		conc_updates,
+		)
+	fba.update_homeostatic_targets(objective)
+
+	# Internal concentrations
+	metabolite_conc = counts_to_molar * metabolite_counts[exchange_idxs]
+	fba.setInternalMoleculeLevels(metabolite_conc.asNumber(CONC_UNITS))
+
+	# External concentrations
+	external_molecule_levels = update_external_molecule_levels(
+		external_exchange_molecule_ids, aa_names_no_location, objective,
+		metabolite_names, metabolite_conc, external_molecule_levels)
+	fba.setExternalMoleculeLevels(external_molecule_levels)
 
 def set_reaction_bounds(fba, ngam, coefficient, counts_to_molar, gtp_to_hydrolyze,
 		catalyzed_reactions, catalyst_counts, catalyst_matrix):

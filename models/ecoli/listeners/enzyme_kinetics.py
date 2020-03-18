@@ -30,12 +30,11 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		super(EnzymeKinetics, self).initialize(sim, sim_data)
 
 		self.metabolism = sim.processes["Metabolism"]
-		self.metaboliteIDs = sorted(sim_data.process.metabolism.concDict)
-		self.n_constrained_reactions = len(self.metabolism.kinetics_constrained_reactions)
+		n_constrained_reactions = len(self.metabolism.kinetics_constrained_reactions)
 
 		# flux targets from boundary
-		self.n_boundary_constrained_reactions = len(self.metabolism.boundary_constrained_reactions)
-		self.n_all_constrained_reactions = self.n_constrained_reactions + self.n_boundary_constrained_reactions
+		n_boundary_constrained_reactions = len(self.metabolism.boundary_constrained_reactions)
+		self.n_all_constrained_reactions = n_constrained_reactions + n_boundary_constrained_reactions
 		self.n_metabolites = len(self.metabolism.metaboliteNamesFromNutrients)
 
 		self.constraint_is_kcat_only = sim_data.process.metabolism.constraint_is_kcat_only[
@@ -50,7 +49,6 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		super(EnzymeKinetics, self).allocate()
 		self.metaboliteCountsInit = np.zeros(self.n_metabolites, np.float64)
 		self.metaboliteCountsFinal = np.zeros(self.n_metabolites, np.float64)
-		self.metaboliteConcentrations = np.zeros(self.n_metabolites, np.float64)
 		self.enzymeIDs = self.metabolism.kinetic_constraint_enzymes
 		self.enzymeCountsInit = np.zeros(len(self.metabolism.kinetic_constraint_enzymes), np.float64)
 		self.countsToMolar = np.zeros(1, np.float64)
@@ -64,7 +62,6 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		subcolumns = {
 			'metaboliteCountsInit': 'metaboliteNames',
 			'metaboliteCountsFinal': 'metaboliteNames',
-			'metaboliteConcentrations': 'metaboliteNames',
 			'enzymeCountsInit': 'enzymeIDs',
 			'targetFluxes': 'constrainedReactions',
 			'actualFluxes': 'constrainedReactions'}
@@ -85,7 +82,6 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			metaboliteCountsInit = self.metaboliteCountsInit,
 			metaboliteCountsFinal = self.metaboliteCountsFinal,
-			metaboliteConcentrations = self.metaboliteConcentrations,
 			countsToMolar = self.countsToMolar,
 			enzymeCountsInit = self.enzymeCountsInit,
 			targetFluxes = self.targetFluxes,
