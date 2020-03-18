@@ -107,7 +107,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.homeostaticObjective = dict((key, concDict[key].asNumber(CONC_UNITS)) for key in concDict)
 
-
 		# Data structures to compute reaction bounds based on enzyme presence/absence
 		self.catalyst_ids = metabolism.catalyst_ids
 		self.reactions_with_catalyst = metabolism.reactions_with_catalyst
@@ -225,26 +224,34 @@ class Metabolism(wholecell.processes.process.Process):
 			self.burnInComplete = True
 			self.fba.enableKineticTargets()
 
+		# Load current state of the sim
+		## Get internal state variables
 		time_step = self.timeStepSec() * units.s
 		metaboliteCountsInit = self.metabolites.counts()
-		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg)
-		dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
+		catalyst_counts = self.catalysts.counts()
+		kinetic_enzyme_counts = self.kineticsEnzymes.counts()
+		kinetic_substrate_counts = self.kineticsSubstrates.counts()
+		translation_gtp = self._sim.processes["PolypeptideElongation"].gtp_to_hydrolyze
+		cellMass = self.readFromListener("Mass", "cellMass") * units.fg
+		dryMass = self.readFromListener("Mass", "dryMass") * units.fg
 
-		cellVolume = cellMass / self.cellDensity
-		countsToMolar = 1 / (self.nAvogadro * cellVolume)
-
-		# Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
-		coefficient = dryMass / cellMass * self.cellDensity * time_step
-
-		# Get environment updates
+		## Get environment updates
 		environment = self._external_states['Environment']
+		transport_targets = environment.transport_fluxes.values()
 		current_media_id = environment.current_media_id
 		exchange_data = environment.get_exchange_data()
 
-		# make sure there are no new flux targets from the boundary
+		## Calculate state values
+		cellVolume = cellMass / self.cellDensity
+		countsToMolar = 1 / (self.nAvogadro * cellVolume)
+
+		## Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
+		coefficient = dryMass / cellMass * self.cellDensity * time_step
+
+		## Make sure there are no new flux targets from the boundary
 		assert set(environment.transport_fluxes.keys()).issubset(self.all_constrained_reactions)
 
-		# Determine updates to concentrations depending on the current state
+		## Determine updates to concentrations depending on the current state
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
 		conc_updates = self.getBiomassAsConcentrations(doubling_time)
 		if self.use_trna_charging:
@@ -252,22 +259,18 @@ class Metabolism(wholecell.processes.process.Process):
 		if self.include_ppgpp:
 			conc_updates[self.ppgpp_id] = self.getppGppConc(doubling_time)
 
-		# Set molecule availability (internal and external)
+		# Update FBA problem based on current state
+		## Set molecule availability (internal and external)
 		set_molecule_levels(self.fba, self.exchangeConstraints, coefficient,
 			current_media_id, exchange_data, conc_updates, countsToMolar,
 			metaboliteCountsInit, self.internalExchangeIdxs,
 			self.aa_names_no_location, self.metaboliteNames)
 
-		# Set reaction limits for maintenance and catalysts present
-		translation_gtp = self._sim.processes["PolypeptideElongation"].gtp_to_hydrolyze
-		catalyst_counts = self.catalysts.counts()
+		## Set reaction limits for maintenance and catalysts present
 		set_reaction_bounds(self.fba, self.ngam, coefficient, countsToMolar, translation_gtp,
 			self.reactions_with_catalyst, catalyst_counts, self.catalysisMatrix)
 
-		# Constrain reactions based on targets
-		kinetic_enzyme_counts = self.kineticsEnzymes.counts()
-		kinetic_substrate_counts = self.kineticsSubstrates.counts()
-		transport_targets = environment.transport_fluxes.values()
+		## Constrain reactions based on targets
 		if self.use_kinetics and self.burnInComplete:
 			targets = set_reaction_targets(self.fba, kinetic_enzyme_counts,
 				kinetic_substrate_counts, countsToMolar, self.getKineticConstraints,
@@ -276,27 +279,24 @@ class Metabolism(wholecell.processes.process.Process):
 		else:
 			targets = np.zeros(len(self.all_constrained_reactions))
 
-		# Solve FBA problem and update metabolite counts
+		# Solve FBA problem and update states
+		## Internal molecule changes
 		deltaMetabolites = (1 / countsToMolar) * (CONC_UNITS * self.fba.getOutputMoleculeLevelsChange())
-
 		metaboliteCountsFinal = np.zeros_like(metaboliteCountsInit)
 		metaboliteCountsFinal[self.internalExchangeIdxs] = np.fmax(stochasticRound(
 			self.randomState,
 			metaboliteCountsInit[self.internalExchangeIdxs] + deltaMetabolites.asNumber()
 			), 0).astype(np.int64)
-
 		self.metabolites.countsIs(metaboliteCountsFinal)
 
+		## Environmental changes
 		exchange_fluxes = CONC_UNITS * self.fba.getExternalExchangeFluxes()
 		converted_exchange_fluxes = (exchange_fluxes / coefficient).asNumber(units.mmol / units.g / units.h)
-
-		# update environmental nutrient counts
 		delta_nutrients = ((1 / countsToMolar) * exchange_fluxes).asNumber().astype(int)
 		environment.molecule_exchange(self.fba.getExternalMoleculeIDs(), delta_nutrients)
 
-		import_exchange, import_constraint = environment.get_import_constraints(exchange_data)
-
 		# Write outputs to listeners
+		import_exchange, import_constraint = environment.get_import_constraints(exchange_data)
 		time_step_unitless = time_step.asNumber(TIME_UNITS)
 		self.writeToListener("FBAResults", "import_exchange", import_exchange)
 		self.writeToListener("FBAResults", "import_constraint", import_constraint)
