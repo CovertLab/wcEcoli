@@ -278,43 +278,23 @@ class Metabolism(wholecell.processes.process.Process):
 		# TODO -- this can change external AA levels for the fba problem. Problematic for reliable control of environmental response
 		self._setExternalMoleculeLevels(externalMoleculeLevels, metaboliteConcentrations)
 
+		# Set reaction limits for maintenance and catalysts present
 		translation_gtp = self._sim.processes["PolypeptideElongation"].gtp_to_hydrolyze
 		catalyst_counts = self.catalysts.counts()
 		set_reaction_bounds(self.fba, self.ngam, coefficient, countsToMolar, translation_gtp,
 			self.reactions_with_catalyst, catalyst_counts, self.catalysisMatrix)
 
-		# Constrain reactions based on kinetic values
-		kineticsEnzymesCountsInit = self.kineticsEnzymes.counts()
-		kineticsEnzymesConcentrations = countsToMolar * kineticsEnzymesCountsInit
-
-		kineticsSubstratesCountsInit = self.kineticsSubstrates.counts()
-		kineticsSubstratesConcentrations = countsToMolar * kineticsSubstratesCountsInit
-
-		## Set target fluxes for reactions based on their most relaxed constraint
-		reactionTargets = (units.umol / units.L / units.s) * self.getKineticConstraints(
-			kineticsEnzymesConcentrations.asNumber(units.umol / units.L),
-			kineticsSubstratesConcentrations.asNumber(units.umol / units.L),
-			)
-
-		## Shuffle parameters (only performed in very specific cases)
-		if self.shuffleIdxs is not None:
-			reactionTargets = (units.umol / units.L / units.s) * reactionTargets.asNumber()[self.shuffleIdxs, :]
-
-		## Calculate reaction flux target for current time step
-		targets = (time_step * reactionTargets).asNumber(CONC_UNITS)[self.active_constraints_mask, :]
-
-		# add boundary targets
+		# Constrain reactions based on targets
+		kinetic_enzyme_counts = self.kineticsEnzymes.counts()
+		kinetic_substrate_counts = self.kineticsSubstrates.counts()
 		transport_targets = environment.transport_fluxes.values()
-		lower_targets = np.concatenate((targets[:, 0], transport_targets), axis=0)
-		mean_targets = np.concatenate((targets[:, 1], transport_targets), axis=0)
-		upper_targets = np.concatenate((targets[:, 2], transport_targets), axis=0)
-
-		## Set kinetic targets only if kinetics is enabled
 		if self.use_kinetics and self.burnInComplete:
-			self.fba.set_scaled_kinetic_objective(self.timeStepSec())
-			self.fba.setKineticTarget(
-				self.all_constrained_reactions, mean_targets,
-				lower_targets=lower_targets, upper_targets=upper_targets)
+			targets = set_reaction_targets(self.fba, kinetic_enzyme_counts,
+				kinetic_substrate_counts, countsToMolar, self.getKineticConstraints,
+				transport_targets, time_step, self.active_constraints_mask,
+				self.all_constrained_reactions)
+		else:
+			targets = np.zeros(len(self.all_constrained_reactions))
 
 		# Solve FBA problem and update metabolite counts
 		deltaMetabolites = (1 / countsToMolar) * (CONC_UNITS * self.fba.getOutputMoleculeLevelsChange())
@@ -352,11 +332,11 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsInit", metaboliteCountsInit)
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsFinal", metaboliteCountsFinal)
-		self.writeToListener("EnzymeKinetics", "enzymeCountsInit", kineticsEnzymesCountsInit)
+		self.writeToListener("EnzymeKinetics", "enzymeCountsInit", kinetic_enzyme_counts)
 		self.writeToListener("EnzymeKinetics", "metaboliteConcentrations", metaboliteConcentrations.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "countsToMolar", countsToMolar.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "actualFluxes", self.fba.getReactionFluxes(self.all_constrained_reactions) / time_step_unitless)
-		self.writeToListener("EnzymeKinetics", "targetFluxes", mean_targets / time_step_unitless)
+		self.writeToListener("EnzymeKinetics", "targetFluxes", targets / time_step_unitless)
 		# TODO: add lower and upper targets
 
 	# limit amino acid uptake to what is needed to meet concentration objective to prevent use as carbon source
@@ -441,7 +421,7 @@ def set_reaction_bounds(fba, ngam, coefficient, counts_to_molar, gtp_to_hydrolyz
 	Set reaction bounds for constrained reactions in the FBA object.
 
 	Args:
-		fba (FluxBalanceAnalysis object): fba solver
+		fba (FluxBalanceAnalysis): FBA solver
 		ngam (Unum): non-growth associated maintenance (counts/mass/time units)
 		coefficient (Unum): coefficient to convert from mmol/g DCW/hr to mM basis
 			(mass.time/volume units)
@@ -482,3 +462,65 @@ def set_reaction_bounds(fba, ngam, coefficient, counts_to_molar, gtp_to_hydrolyz
 	# TODO: remove this variant and other attributes in class
 	# if self.shuffleCatalyzedIdxs is not None:
 	# 	catalyzedReactionBounds = catalyzedReactionBounds[self.shuffleCatalyzedIdxs]
+
+def set_reaction_targets(fba, kinetic_enzyme_counts, kinetic_substrate_counts,
+		counts_to_molar, get_kinetic_constraints, transport_targets, time_step,
+		active_constraints_mask, constrained_reactions):
+	"""
+	Set reaction targets for constrained reactions in the FBA object.
+
+	Args:
+		fba (FluxBalanceAnalysis): FBA solver
+		kinetic_enzyme_counts (np.ndarray[int]): counts of enzymes used in
+			kinetic constraints
+		kinetic_substrate_counts (np.ndarray[int]): counts of substrates used
+			in kinetic constraints
+		counts_to_molar (Unum): conversion from counts to molar (counts/volume units)
+		get_kinetic_constraints (Callable[np.ndarray[float], np.ndarray[float]]):
+			returns kinetic constraint targets for each reaction
+		transport_targets (List[float]): targets for transport reactions
+		time_step (Unum): current time step (time units)
+		active_constraints_mask (np.ndarray[bool]): mask for all kinetic target
+			reactions (True if active constraint, False if not)
+		constrained_reactions (List[str]): reaction IDs for reactions with
+			a target, includes both kinetics and transport
+
+	Returns:
+		mean_targets (np.ndarray[float]): mean target for each reaction in
+			constrained_reactions
+	"""
+
+	# Unit basis for kinetic constraints
+	# TODO: handle unit conversion in get_kinetic_constraints function?
+	constraint_conc_units = units.umol / units.L
+	constraint_time_units = units.s
+
+	enzyme_conc = counts_to_molar * kinetic_enzyme_counts
+	substrate_conc = counts_to_molar * kinetic_substrate_counts
+
+	## Set target fluxes for reactions based on their most relaxed constraint
+	reaction_targets = (constraint_conc_units / constraint_time_units) * get_kinetic_constraints(
+		enzyme_conc.asNumber(constraint_conc_units),
+		substrate_conc.asNumber(constraint_conc_units),
+		)
+
+	# TODO: remove this variant and other attributes in class
+	# Shuffle parameters (only performed in very specific cases)
+	# if self.shuffleIdxs is not None:
+	# 	reaction_targets = (units.umol / units.L / units.s) * reaction_targets.asNumber()[self.shuffleIdxs, :]
+
+	## Calculate reaction flux target for current time step
+	targets = (time_step * reaction_targets).asNumber(CONC_UNITS)[active_constraints_mask, :]
+
+	# add boundary targets
+	lower_targets = np.concatenate((targets[:, 0], transport_targets), axis=0)
+	mean_targets = np.concatenate((targets[:, 1], transport_targets), axis=0)
+	upper_targets = np.concatenate((targets[:, 2], transport_targets), axis=0)
+
+	## Set kinetic targets only if kinetics is enabled
+	fba.set_scaled_kinetic_objective(time_step.asNumber(constraint_time_units))
+	fba.setKineticTarget(
+		constrained_reactions, mean_targets,
+		lower_targets=lower_targets, upper_targets=upper_targets)
+
+	return mean_targets
