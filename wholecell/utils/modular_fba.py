@@ -1170,7 +1170,7 @@ class FluxBalanceAnalysis(object):
 			if molecule_id not in self._outputMoleculeIDs:
 				raise FBAError(
 					"This function only allows for modification of setpoint values, " +
-					"not adding new ones. %s is an unrecognized molecule" % moleculeID
+					"not adding new ones. %s is an unrecognized molecule" % molecule_id
 					)
 
 			pseudo_flux_id = self._generatedID_moleculesToEquivalents.format(molecule_id)

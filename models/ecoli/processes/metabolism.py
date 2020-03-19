@@ -18,7 +18,9 @@ from __future__ import division
 
 import numpy as np
 from scipy.sparse import csr_matrix
+from typing import List, Tuple
 
+from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.random import stochasticRound
@@ -59,7 +61,6 @@ class Metabolism(wholecell.processes.process.Process):
 		self.model = FluxBalanceAnalysisModel(
 			sim_data,
 			timeline=environment.current_timeline,
-			media=environment.current_media_id,
 			include_ppgpp=self.include_ppgpp,
 			)
 
@@ -93,13 +94,13 @@ class Metabolism(wholecell.processes.process.Process):
 		# Load current state of the sim
 		## Get internal state variables
 		time_step = self.timeStepSec() * units.s
-		metaboliteCountsInit = self.metabolites.counts()
+		metabolite_counts_init = self.metabolites.counts()
 		catalyst_counts = self.catalysts.counts()
 		kinetic_enzyme_counts = self.kineticsEnzymes.counts()
 		kinetic_substrate_counts = self.kineticsSubstrates.counts()
 		translation_gtp = self._sim.processes["PolypeptideElongation"].gtp_to_hydrolyze
-		cellMass = self.readFromListener("Mass", "cellMass") * units.fg
-		dryMass = self.readFromListener("Mass", "dryMass") * units.fg
+		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
+		dry_mass = self.readFromListener("Mass", "dryMass") * units.fg
 
 		## Get environment updates
 		environment = self._external_states['Environment']
@@ -107,49 +108,49 @@ class Metabolism(wholecell.processes.process.Process):
 		exchange_data = environment.get_exchange_data()
 
 		## Calculate state values
-		cellVolume = cellMass / self.cellDensity
-		countsToMolar = 1 / (self.nAvogadro * cellVolume)
+		cellVolume = cell_mass / self.cellDensity
+		counts_to_molar = 1 / (self.nAvogadro * cellVolume)
 
 		## Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
-		coefficient = dryMass / cellMass * self.cellDensity * time_step
+		coefficient = dry_mass / cell_mass * self.cellDensity * time_step
 
 		## Determine updates to concentrations depending on the current state
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
 		conc_updates = self.model.getBiomassAsConcentrations(doubling_time)
 		if self.use_trna_charging:
-			conc_updates.update(self.update_amino_acid_targets(countsToMolar))
+			conc_updates.update(self.update_amino_acid_targets(counts_to_molar))
 		if self.include_ppgpp:
 			conc_updates[self.model.ppgpp_id] = self.model.getppGppConc(doubling_time)
 
 		# Update FBA problem based on current state
 		## Set molecule availability (internal and external)
-		self.model.set_molecule_levels(metaboliteCountsInit, countsToMolar,
+		self.model.set_molecule_levels(metabolite_counts_init, counts_to_molar,
 			coefficient, current_media_id, exchange_data, conc_updates)
 
 		## Set reaction limits for maintenance and catalysts present
-		self.model.set_reaction_bounds(catalyst_counts, countsToMolar,
+		self.model.set_reaction_bounds(catalyst_counts, counts_to_molar,
 			coefficient, translation_gtp)
 
 		## Constrain reactions based on targets
 		targets = self.model.set_reaction_targets(kinetic_enzyme_counts,
-			kinetic_substrate_counts, countsToMolar, time_step)
+			kinetic_substrate_counts, counts_to_molar, time_step)
 
 		# Solve FBA problem and update states
 		fba = self.model.fba
 
 		## Internal molecule changes
-		deltaMetabolites = (1 / countsToMolar) * (CONC_UNITS * fba.getOutputMoleculeLevelsChange())
-		metaboliteCountsFinal = np.zeros_like(metaboliteCountsInit)
-		metaboliteCountsFinal[self.model.internal_exchange_idxs] = np.fmax(stochasticRound(
+		delta_metabolites = (1 / counts_to_molar) * (CONC_UNITS * fba.getOutputMoleculeLevelsChange())
+		metabolite_counts_final = np.zeros_like(metabolite_counts_init)
+		metabolite_counts_final[self.model.internal_exchange_idxs] = np.fmax(stochasticRound(
 			self.randomState,
-			metaboliteCountsInit[self.model.internal_exchange_idxs] + deltaMetabolites.asNumber()
+			metabolite_counts_init[self.model.internal_exchange_idxs] + delta_metabolites.asNumber()
 			), 0).astype(np.int64)
-		self.metabolites.countsIs(metaboliteCountsFinal)
+		self.metabolites.countsIs(metabolite_counts_final)
 
 		## Environmental changes
 		exchange_fluxes = CONC_UNITS * fba.getExternalExchangeFluxes()
 		converted_exchange_fluxes = (exchange_fluxes / coefficient).asNumber(units.mmol / units.g / units.h)
-		delta_nutrients = ((1 / countsToMolar) * exchange_fluxes).asNumber().astype(int)
+		delta_nutrients = ((1 / counts_to_molar) * exchange_fluxes).asNumber().astype(int)
 		environment.molecule_exchange(fba.getExternalMoleculeIDs(), delta_nutrients)
 
 		# Write outputs to listeners
@@ -157,19 +158,19 @@ class Metabolism(wholecell.processes.process.Process):
 		time_step_unitless = time_step.asNumber(TIME_UNITS)
 		self.writeToListener("FBAResults", "import_exchange", import_exchange)
 		self.writeToListener("FBAResults", "import_constraint", import_constraint)
-		self.writeToListener("FBAResults", "deltaMetabolites", metaboliteCountsFinal - metaboliteCountsInit)
+		self.writeToListener("FBAResults", "deltaMetabolites", metabolite_counts_final - metabolite_counts_init)
 		self.writeToListener("FBAResults", "reactionFluxes", fba.getReactionFluxes() / time_step_unitless)
 		self.writeToListener("FBAResults", "externalExchangeFluxes", converted_exchange_fluxes)
 		self.writeToListener("FBAResults", "objectiveValue", fba.getObjectiveValue())
 		self.writeToListener("FBAResults", "shadowPrices", fba.getShadowPrices(self.model.metaboliteNamesFromNutrients))
 		self.writeToListener("FBAResults", "reducedCosts", fba.getReducedCosts(fba.getReactionIDs()))
-		self.writeToListener("FBAResults", "targetConcentrations", [self.model.homeostaticObjective[mol] for mol in fba.getHomeostaticTargetMolecules()])
+		self.writeToListener("FBAResults", "targetConcentrations", [self.model.homeostatic_objective[mol] for mol in fba.getHomeostaticTargetMolecules()])
 		self.writeToListener("FBAResults", "homeostaticObjectiveValues", fba.getHomeostaticObjectiveValues())
 		self.writeToListener("FBAResults", "kineticObjectiveValues", fba.getKineticObjectiveValues())
-		self.writeToListener("EnzymeKinetics", "metaboliteCountsInit", metaboliteCountsInit)
-		self.writeToListener("EnzymeKinetics", "metaboliteCountsFinal", metaboliteCountsFinal)
+		self.writeToListener("EnzymeKinetics", "metaboliteCountsInit", metabolite_counts_init)
+		self.writeToListener("EnzymeKinetics", "metaboliteCountsFinal", metabolite_counts_final)
 		self.writeToListener("EnzymeKinetics", "enzymeCountsInit", kinetic_enzyme_counts)
-		self.writeToListener("EnzymeKinetics", "countsToMolar", countsToMolar.asNumber(CONC_UNITS))
+		self.writeToListener("EnzymeKinetics", "countsToMolar", counts_to_molar.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "actualFluxes", fba.getReactionFluxes(self.model.kinetics_constrained_reactions) / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetFluxes", targets / time_step_unitless)
 		# TODO: add lower and upper targets
@@ -216,7 +217,23 @@ class FluxBalanceAnalysisModel(object):
 	Metabolism model that solves an FBA problem with modular_fba.
 	"""
 
-	def __init__(self, sim_data, timeline, media, include_ppgpp):
+	def __init__(self, sim_data, timeline=None, include_ppgpp=True):
+		# type: (SimulationDataEcoli, List[Tuple[float, str]], bool) -> None
+		"""
+		Args:
+			sim_data: simulation data
+			timeline: timeline for nutrient changes during simulation
+				(time of change, media ID), if None, nutrients for the saved
+				condition are set at time 0 (eg. [(0.0, 'minimal')])
+			include_ppgpp: if True, ppGpp is included as a concentration target
+		"""
+
+		if timeline is None:
+			nutrients = sim_data.conditions[sim_data.condition]['nutrients']
+			timeline = (0., nutrients)
+		else:
+			nutrients = timeline[0][1]
+
 		# Local sim_data references
 		metabolism = sim_data.process.metabolism
 		constants = sim_data.constants
@@ -224,7 +241,7 @@ class FluxBalanceAnalysisModel(object):
 
 		# Load constants
 		self.ngam = constants.nonGrowthAssociatedMaintenance
-		energyCostPerWetMass = constants.darkATP * mass.cellDryMassFraction
+		gam = constants.darkATP * mass.cellDryMassFraction
 
 		self.exchange_constraints = metabolism.exchangeConstraints
 
@@ -248,20 +265,17 @@ class FluxBalanceAnalysisModel(object):
 			exchange_molecules.update(exchanges['externalExchangeMolecules'])
 		self.metaboliteNamesFromNutrients = list(sorted(self.metaboliteNamesFromNutrients))
 		exchange_molecules = list(sorted(exchange_molecules))
-		moleculeMasses = dict(zip(exchange_molecules,
+		molecule_masses = dict(zip(exchange_molecules,
 			sim_data.getter.getMass(exchange_molecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
 
-		concDict = metabolism.concentrationUpdates.concentrationsBasedOnNutrients(media)
+		conc_dict = metabolism.concentrationUpdates.concentrationsBasedOnNutrients(nutrients)
 		doubling_time = sim_data.conditionToDoublingTime[sim_data.condition]
-		concModificationsBasedOnCondition = self.getBiomassAsConcentrations(
-			doubling_time
-			)
-		concDict.update(concModificationsBasedOnCondition)
+		conc_dict.update(self.getBiomassAsConcentrations(doubling_time))
 
 		if include_ppgpp:
-			concDict[self.ppgpp_id] = self.getppGppConc(doubling_time)
+			conc_dict[self.ppgpp_id] = self.getppGppConc(doubling_time)
 
-		self.homeostaticObjective = dict((key, concDict[key].asNumber(CONC_UNITS)) for key in concDict)
+		self.homeostatic_objective = dict((key, conc_dict[key].asNumber(CONC_UNITS)) for key in conc_dict)
 
 		# Data structures to compute reaction bounds based on enzyme presence/absence
 		self.catalyst_ids = metabolism.catalyst_ids
@@ -301,10 +315,10 @@ class FluxBalanceAnalysisModel(object):
 
 		# Set up FBA solver
 		# reactionRateTargets value is just for initialization, it gets reset each timestep during evolveState
-		self.fbaObjectOptions = {
+		fba_options = {
 			"reactionStoich": metabolism.reactionStoich,
 			"externalExchangedMolecules": exchange_molecules,
-			"objective": self.homeostaticObjective,
+			"objective": self.homeostatic_objective,
 			"objectiveType": objective_type,
 			"objectiveParameters": {
 					"kineticObjectiveWeight": kinetic_objective_weight,
@@ -312,13 +326,13 @@ class FluxBalanceAnalysisModel(object):
 					"reactionRateTargets": {reaction: 1 for reaction in self.kinetics_constrained_reactions},
 					"oneSidedReactionTargets": [],
 					},
-			"moleculeMasses": moleculeMasses,
+			"moleculeMasses": molecule_masses,
 			"secretionPenaltyCoeff": metabolism.secretion_penalty_coeff, # The "inconvenient constant"--limit secretion (e.g., of CO2)
 			"solver": solver,
-			"maintenanceCostGAM": energyCostPerWetMass.asNumber(COUNTS_UNITS / MASS_UNITS),
+			"maintenanceCostGAM": gam.asNumber(COUNTS_UNITS / MASS_UNITS),
 			"maintenanceReaction": metabolism.maintenanceReaction,
 		}
-		self.fba = FluxBalanceAnalysis(**self.fbaObjectOptions)
+		self.fba = FluxBalanceAnalysis(**fba_options)
 
 		self.internal_exchange_idxs = np.array([self.metaboliteNamesFromNutrients.index(x) for x in self.fba.getOutputMoleculeIDs()])
 
