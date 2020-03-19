@@ -30,11 +30,7 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		super(EnzymeKinetics, self).initialize(sim, sim_data)
 
 		self.metabolism = sim.processes["Metabolism"]
-		n_constrained_reactions = len(self.metabolism.kinetics_constrained_reactions)
-
-		# flux targets from boundary
-		n_boundary_constrained_reactions = len(self.metabolism.boundary_constrained_reactions)
-		self.n_all_constrained_reactions = n_constrained_reactions + n_boundary_constrained_reactions
+		self.n_constrained_reactions = len(self.metabolism.kinetics_constrained_reactions)
 		self.n_metabolites = len(self.metabolism.metaboliteNamesFromNutrients)
 
 		self.constraint_is_kcat_only = sim_data.process.metabolism.constraint_is_kcat_only[
@@ -52,8 +48,8 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.enzymeIDs = self.metabolism.kinetic_constraint_enzymes
 		self.enzymeCountsInit = np.zeros(len(self.metabolism.kinetic_constraint_enzymes), np.float64)
 		self.countsToMolar = np.zeros(1, np.float64)
-		self.targetFluxes = np.zeros(self.n_all_constrained_reactions, np.float64)
-		self.actualFluxes = np.zeros(self.n_all_constrained_reactions, np.float64)
+		self.targetFluxes = np.zeros(self.n_constrained_reactions, np.float64)
+		self.actualFluxes = np.zeros(self.n_constrained_reactions, np.float64)
 
 	def update(self):
 		pass
@@ -69,9 +65,8 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		tableWriter.writeAttributes(
 			enzymeIDs = self.enzymeIDs,
 			metaboliteNames = self.metabolism.metaboliteNamesFromNutrients,
-			constrainedReactions = self.metabolism.all_constrained_reactions,
+			constrainedReactions = self.metabolism.kinetics_constrained_reactions,
 			kineticsConstrainedReactions = self.metabolism.kinetics_constrained_reactions,
-			boundaryConstrainedReactions = self.metabolism.boundary_constrained_reactions,
 			constraint_is_kcat_only = self.constraint_is_kcat_only,
 			subcolumns = subcolumns)
 
