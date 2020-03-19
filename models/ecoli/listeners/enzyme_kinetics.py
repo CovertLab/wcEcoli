@@ -29,7 +29,7 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 	def initialize(self, sim, sim_data):
 		super(EnzymeKinetics, self).initialize(sim, sim_data)
 
-		self.metabolism = sim.processes["Metabolism"]
+		self.metabolism = sim.processes["Metabolism"].model
 		self.n_constrained_reactions = len(self.metabolism.kinetics_constrained_reactions)
 		self.n_metabolites = len(self.metabolism.metaboliteNamesFromNutrients)
 
