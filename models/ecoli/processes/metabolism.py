@@ -122,14 +122,10 @@ class Metabolism(wholecell.processes.process.Process):
 		self.getKineticConstraints = metabolism.getKineticConstraints
 
 		# Remove disabled reactions so they don't get included in the FBA problem setup
-		if hasattr(metabolism, "kineticTargetShuffleRxns") and metabolism.kineticTargetShuffleRxns is not None:
-			self.kinetics_constrained_reactions = metabolism.kineticTargetShuffleRxns
-			self.active_constraints_mask = np.ones(len(self.kinetics_constrained_reactions), dtype=bool)
-		else:
-			kinetic_constraint_reactions = metabolism.kinetic_constraint_reactions
-			constraintsToDisable = metabolism.constraintsToDisable
-			self.active_constraints_mask = np.array([(rxn not in constraintsToDisable) for rxn in kinetic_constraint_reactions])
-			self.kinetics_constrained_reactions = list(np.array(kinetic_constraint_reactions)[self.active_constraints_mask])
+		kinetic_constraint_reactions = metabolism.kinetic_constraint_reactions
+		constraintsToDisable = metabolism.constraintsToDisable
+		self.active_constraints_mask = np.array([(rxn not in constraintsToDisable) for rxn in kinetic_constraint_reactions])
+		self.kinetics_constrained_reactions = list(np.array(kinetic_constraint_reactions)[self.active_constraints_mask])
 
 		# Add kinetic reaction targets from boundary
 		self.boundary_constrained_reactions = environment.transport_fluxes.keys()
@@ -197,14 +193,6 @@ class Metabolism(wholecell.processes.process.Process):
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_METABOLISM)
 
 		self.aa_names_no_location = [x[:-3] for x in sorted(sim_data.amino_acid_1_to_3_ordered.values())]
-
-		self.shuffleIdxs = None
-		if hasattr(metabolism, "kineticTargetShuffleIdxs") and metabolism.kineticTargetShuffleIdxs is not None:
-			self.shuffleIdxs = metabolism.kineticTargetShuffleIdxs
-
-		self.shuffleCatalyzedIdxs = None
-		if hasattr(metabolism, "catalystShuffleIdxs") and metabolism.catalystShuffleIdxs is not None:
-			self.shuffleCatalyzedIdxs = metabolism.catalystShuffleIdxs
 
 		# Track updated AA concentration targets with tRNA charging
 		self.aa_targets = {}
@@ -512,10 +500,6 @@ def set_reaction_bounds(fba, ngam, coefficient, counts_to_molar, gtp_to_hydrolyz
 	fba.setReactionFluxBounds(catalyzed_reactions,
 		upperBounds=reaction_bounds, raiseForReversible=False)
 
-	# TODO: remove this variant and other attributes in class
-	# if self.shuffleCatalyzedIdxs is not None:
-	# 	catalyzedReactionBounds = catalyzedReactionBounds[self.shuffleCatalyzedIdxs]
-
 def set_reaction_targets(fba, kinetic_enzyme_counts, kinetic_substrate_counts,
 		counts_to_molar, get_kinetic_constraints, transport_targets, time_step,
 		active_constraints_mask, constrained_reactions):
@@ -556,11 +540,6 @@ def set_reaction_targets(fba, kinetic_enzyme_counts, kinetic_substrate_counts,
 		enzyme_conc.asNumber(constraint_conc_units),
 		substrate_conc.asNumber(constraint_conc_units),
 		)
-
-	# TODO: remove this variant and other attributes in class
-	# Shuffle parameters (only performed in very specific cases)
-	# if self.shuffleIdxs is not None:
-	# 	reaction_targets = (units.umol / units.L / units.s) * reaction_targets.asNumber()[self.shuffleIdxs, :]
 
 	## Calculate reaction flux target for current time step
 	targets = (time_step * reaction_targets).asNumber(CONC_UNITS)[active_constraints_mask, :]
