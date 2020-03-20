@@ -230,7 +230,7 @@ class FluxBalanceAnalysisModel(object):
 
 		if timeline is None:
 			nutrients = sim_data.conditions[sim_data.condition]['nutrients']
-			timeline = (0., nutrients)
+			timeline = [(0., nutrients)]
 		else:
 			nutrients = timeline[0][1]
 
