@@ -141,9 +141,9 @@ class Metabolism(wholecell.processes.process.Process):
 		## Internal molecule changes
 		delta_metabolites = (1 / counts_to_molar) * (CONC_UNITS * fba.getOutputMoleculeLevelsChange())
 		metabolite_counts_final = np.zeros_like(metabolite_counts_init)
-		metabolite_counts_final[self.model.internal_exchange_idxs] = np.fmax(stochasticRound(
+		metabolite_counts_final = np.fmax(stochasticRound(
 			self.randomState,
-			metabolite_counts_init[self.model.internal_exchange_idxs] + delta_metabolites.asNumber()
+			metabolite_counts_init + delta_metabolites.asNumber()
 			), 0).astype(np.int64)
 		self.metabolites.countsIs(metabolite_counts_final)
 
@@ -268,14 +268,19 @@ class FluxBalanceAnalysisModel(object):
 		molecule_masses = dict(zip(exchange_molecules,
 			sim_data.getter.getMass(exchange_molecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
 
+		# Setup homeostatic objective concentration targets
+		## Determine concentrations based on starting environment
 		conc_dict = metabolism.concentrationUpdates.concentrationsBasedOnNutrients(nutrients)
 		doubling_time = sim_data.conditionToDoublingTime[sim_data.condition]
 		conc_dict.update(self.getBiomassAsConcentrations(doubling_time))
-
 		if include_ppgpp:
 			conc_dict[self.ppgpp_id] = self.getppGppConc(doubling_time)
-
 		self.homeostatic_objective = dict((key, conc_dict[key].asNumber(CONC_UNITS)) for key in conc_dict)
+
+		## Include all concentrations that will be present in a sim for constant length listeners
+		for met in self.metaboliteNamesFromNutrients:
+			if met not in self.homeostatic_objective:
+				self.homeostatic_objective[met] = 0.
 
 		# Data structures to compute reaction bounds based on enzyme presence/absence
 		self.catalyst_ids = metabolism.catalyst_ids
@@ -333,8 +338,6 @@ class FluxBalanceAnalysisModel(object):
 			"maintenanceReaction": metabolism.maintenanceReaction,
 		}
 		self.fba = FluxBalanceAnalysis(**fba_options)
-
-		self.internal_exchange_idxs = np.array([self.metaboliteNamesFromNutrients.index(x) for x in self.fba.getOutputMoleculeIDs()])
 
 		self.metabolite_names = {met: i for i, met in enumerate(self.fba.getOutputMoleculeIDs())}
 		self.aa_names_no_location = [x[:-3] for x in sorted(sim_data.amino_acid_1_to_3_ordered.values())]
@@ -427,7 +430,7 @@ class FluxBalanceAnalysisModel(object):
 		self.fba.update_homeostatic_targets(objective)
 
 		# Internal concentrations
-		metabolite_conc = counts_to_molar * metabolite_counts[self.internal_exchange_idxs]
+		metabolite_conc = counts_to_molar * metabolite_counts
 		self.fba.setInternalMoleculeLevels(metabolite_conc.asNumber(CONC_UNITS))
 
 		# External concentrations
