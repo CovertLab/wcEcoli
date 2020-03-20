@@ -365,7 +365,8 @@ class FluxBalanceAnalysisModel(object):
 			metabolite_concentrations, external_molecule_levels):
 		"""
 		Limit amino acid uptake to what is needed to meet concentration objective
-		to prevent use as carbon source.
+		to prevent use as carbon source, otherwise could be used as an infinite
+		nutrient source.
 
 		Args:
 			objective (Dict[str, Unum]): homeostatic objective for internal
@@ -378,6 +379,10 @@ class FluxBalanceAnalysisModel(object):
 		Returns:
 			external_molecule_levels (np.ndarray[float]): updated limits on external
 				molcule availability
+
+		TODO:
+			- determine rate of uptake so that some amino acid uptake can
+			be used as a carbon/nitrogen source
 		"""
 
 		external_exchange_molecule_ids = self.fba.getExternalMoleculeIDs()
@@ -416,9 +421,6 @@ class FluxBalanceAnalysisModel(object):
 		"""
 
 		# Update objective from media exchanges
-		# TODO: check if this is all exchange or only import?
-		# - should it be one or the other for places used
-		# - update arg doc string for function above
 		external_molecule_levels, objective = self.exchange_constraints(
 			self.fba.getExternalMoleculeIDs(),
 			coefficient,
