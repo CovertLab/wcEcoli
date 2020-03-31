@@ -25,6 +25,20 @@ from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic
 
 from cvxpy import Variable, Problem, Minimize, norm
 
+# (TEG) 3/13/20 loading validation data object to get proteomics data for degRate calculation
+# need to modify later to only load protein data since we don't really need to load everything
+from validation.ecoli.validation_data_raw import ValidationDataRawEcoli
+from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
+from validation.ecoli.validation_data import Protein
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+# load validation data
+validation_data = ValidationDataRawEcoli()
+raw_data = KnowledgeBaseEcoli()
+proteomics_data = Protein(validation_data, raw_data)
+
 
 # Tweaks
 RNA_POLY_MRNA_DEG_RATE_PER_S = np.log(2) / 30. # half-life of 30 seconds
@@ -54,7 +68,7 @@ PROTEIN_DEG_RATES_ADJUSTMENTS = {
 	}
 
 # Fitting parameters
-FITNESS_THRESHOLD = 1e-9
+FITNESS_THRESHOLD = 1e-9 #1e-9 DEFAULT!!!
 MAX_FITTING_ITERATIONS = 100
 N_SEEDS = 10
 
@@ -298,8 +312,9 @@ def fitSimData_1(
 
 def buildBasalCellSpecifications(
 		sim_data,
-		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False
+		disable_ribosome_capacity_fitting=True,
+		disable_rnapoly_capacity_fitting=True,
+		fit_protein_deg_rates=True
 		):
 	"""
 	Creates cell specifications for the basal condition by fitting expression.
@@ -358,7 +373,8 @@ def buildBasalCellSpecifications(
 		cellSpecs["basal"]["concDict"],
 		cellSpecs["basal"]["doubling_time"],
 		disable_ribosome_capacity_fitting = disable_ribosome_capacity_fitting,
-		disable_rnapoly_capacity_fitting = disable_rnapoly_capacity_fitting
+		disable_rnapoly_capacity_fitting = disable_rnapoly_capacity_fitting,
+		fit_protein_deg_rates=fit_protein_deg_rates
 		)
 
 	# Store calculated values
@@ -597,7 +613,8 @@ def expressionConverge(
 		variable_elongation_transcription=False,
 		variable_elongation_translation=False,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False):
+		disable_rnapoly_capacity_fitting=False,
+		fit_protein_deg_rates=False):
 	"""
 	Iteratively fits synthesis probabilities for RNA. Calculates initial
 	expression based on gene expression data and makes adjustments to match
@@ -647,7 +664,13 @@ def expressionConverge(
 		initialExpression = expression.copy()
 		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
 
-		bulkContainer = createBulkContainer(sim_data, expression, doubling_time)
+		# use alternate bulk container to fit degrates from proteomics data (for basal condition)
+		if fit_protein_deg_rates and iteration == 0:
+			bulkContainer = createBulkContainerFitDegRate(sim_data, expression, doubling_time, sim_data.total_mrna)
+		else:
+			bulkContainer = createBulkContainer(sim_data, expression, doubling_time)
+
+
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
 
 		if not disable_rnapoly_capacity_fitting:
@@ -1142,7 +1165,98 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 
 	expression = normalize(rna_expression_container.counts())
 
+	sim_data.total_mrna = total_count_mRNA
 	return expression
+
+def totalCountIdDistributionProteinCalcDegRate(sim_data, expression, doubling_time, total_mrna):
+	"""
+	Calculates the total counts of proteins from the relative expression of RNA,
+	individual protein mass, and total protein mass. Relies on the math functions
+	netLossRateFromDilutionAndDegradationProtein, proteinDistributionFrommRNA,
+	totalCountFromMassesAndRatios.
+
+	Inputs
+	------
+	- expression (array of floats) - relative frequency distribution of RNA expression
+	- doubling_time (float with units of time) - measured doubling time given the condition
+
+	Returns
+	--------
+	- total_count_protein (float with empty units) - total number of proteins
+	- ids_protein (array of str) - name of each protein with location tag
+	- distribution_protein (array of floats) - distribution for each protein,
+	normalized to 1
+	"""
+
+	ids_protein = sim_data.process.translation.monomerData["id"]
+	ids_protein_list = list(ids_protein)
+	total_mass_protein = sim_data.mass.getFractionMass(doubling_time)["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	individual_masses_protein = sim_data.process.translation.monomerData["mw"] / sim_data.constants.nAvogadro
+	distribution_transcripts_by_protein = normalize(expression[sim_data.relation.rnaIndexToMonomerMapping])
+	translation_efficiencies_by_protein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
+
+	degradationRates = sim_data.process.translation.monomerData["degRate"]
+
+
+	# load in protein counts from proteomics data
+	proteomics_counts = {t[0] : t[1] for t in proteomics_data.wisniewski2014Data if t[1] > 0.0}
+	# proteomics_taniguchi = {t[0] : t[3] for t in proteomics_data.taniguichi2010counts
+
+	prots_with_count_data = list(set(proteomics_counts.keys()) & set(ids_protein))
+
+
+
+	plt.figure()
+
+	c = 0
+	for prot in prots_with_count_data:
+		prot_idx = ids_protein_list.index(prot)
+
+		new_deg_rate = (translation_efficiencies_by_protein[prot_idx] * distribution_transcripts_by_protein[prot_idx] * total_mrna) \
+						/ proteomics_counts[prot]
+		#
+		if prot in sim_data.moleculeGroups.rProteins:
+			print('rProtein: ' + prot)
+			print('new ' + str(new_deg_rate))
+			print('old ' + str(degradationRates[prot_idx]))
+
+
+		# plt.scatter(c, degradationRates[prot_idx].asNumber(), color='r')
+		# plt.scatter(c, new_deg_rate, color='b')
+		plt.scatter(c, degradationRates[prot_idx].asNumber() - new_deg_rate, color='r')
+
+		degradationRates[prot_idx] = new_deg_rate * 1/units.s
+		c += 1
+
+	plt.savefig('old_new_degs')
+	plt.close()
+
+
+
+
+
+	# degradationRates = (translation_efficiencies_by_protein * distribution_transcripts_by_protein)/
+
+	# Find the net protein loss
+	netLossRate_protein = netLossRateFromDilutionAndDegradationProtein(doubling_time, degradationRates)
+
+	# Find the protein distribution
+	distribution_protein = proteinDistributionFrommRNA(
+		distribution_transcripts_by_protein,
+		translation_efficiencies_by_protein,
+		netLossRate_protein
+		)
+
+
+	# Find total protein counts
+	total_count_protein = totalCountFromMassesAndRatios(
+		total_mass_protein,
+		individual_masses_protein,
+		distribution_protein
+		)
+
+
+	return total_count_protein, ids_protein, distribution_protein
 
 def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	"""
@@ -1170,10 +1284,16 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	distribution_transcripts_by_protein = normalize(expression[sim_data.relation.rnaIndexToMonomerMapping])
 	translation_efficiencies_by_protein = normalize(sim_data.process.translation.translationEfficienciesByMonomer)
 
+	# CHANGE to calculate degradation rate based on proteomics data
 	degradationRates = sim_data.process.translation.monomerData["degRate"]
+
+	if sum(np.isnan(degradationRates.asNumber())) > 0:
+		import ipdb; ipdb.set_trace()
 
 	# Find the net protein loss
 	netLossRate_protein = netLossRateFromDilutionAndDegradationProtein(doubling_time, degradationRates)
+
+
 
 	# Find the protein distribution
 	distribution_protein = proteinDistributionFrommRNA(
@@ -1189,7 +1309,9 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 		distribution_protein
 		)
 
+
 	return total_count_protein, ids_protein, distribution_protein
+
 
 def totalCountIdDistributionRNA(sim_data, expression, doubling_time):
 	"""
@@ -1241,7 +1363,6 @@ def createBulkContainer(sim_data, expression, doubling_time):
 	"""
 
 	total_count_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time)
-	import ipdb; ipdb.set_trace()
 
 	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time)
 	ids_molecules = sim_data.internal_state.bulkMolecules.bulkData["id"]
@@ -1259,7 +1380,7 @@ def createBulkContainer(sim_data, expression, doubling_time):
 
 	return bulkContainer
 
-def createBulkContainerFitDegRate(sim_data, expression, doubling_time):
+def createBulkContainerFitDegRate(sim_data, expression, doubling_time, total_mrna):
 	"""
 	Creates a container that tracks the counts of all bulk molecules. Relies on
 	totalCountIdDistributionRNA and totalCountIdDistributionProtein to set the
@@ -1278,7 +1399,7 @@ def createBulkContainerFitDegRate(sim_data, expression, doubling_time):
 
 	total_count_RNA, ids_rnas, distribution_RNA = totalCountIdDistributionRNA(sim_data, expression, doubling_time)
 
-	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time)
+	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProteinCalcDegRate(sim_data, expression, doubling_time, total_mrna)
 	ids_molecules = sim_data.internal_state.bulkMolecules.bulkData["id"]
 
 	# Construct bulk container
@@ -1940,6 +2061,10 @@ def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, net
 	distributionNormed.normalize()
 	distributionNormed.checkNoUnit()
 
+	# import ipdb; ipdb.set_trace()
+	if sum(np.isnan(distributionNormed.asNumber())) > 0:
+		import ipdb; ipdb.set_trace()
+
 	return distributionNormed.asNumber()
 
 def mRNADistributionFromProtein(distribution_protein, translation_efficiencies, netLossRate):
@@ -2067,8 +2192,12 @@ def netLossRateFromDilutionAndDegradationProtein(doublingTime, degradationRates)
 	--------
 	- array of floats with units of 1/time for the total loss rate for each protein
 	"""
+	netLossRate = np.log(2) / doublingTime + degradationRates
 
-	return np.log(2) / doublingTime + degradationRates
+	if sum(np.isnan(netLossRate.asNumber())) > 0:
+		import ipdb; ipdb.set_trace()
+
+	return netLossRate
 
 def netLossRateFromDilutionAndDegradationRNA(doublingTime, totalEndoRnaseCountsCapacity, Km, rnaConc, countsToMolar):
 	"""

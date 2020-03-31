@@ -38,7 +38,7 @@ class Complexation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(Complexation, self).initialize(sim, sim_data)
 
-		self.gillespie_time_step = 0.001 # instead of self._sim.timeStepSec()
+		self.gillespie_time_step = 0.00001 # instead of self._sim.timeStepSec()
 
 		# Build views
 		moleculeNames = sim_data.process.complexation.moleculeNames
