@@ -7,14 +7,16 @@
 set -e
 
 # Files for tar backup
-date_file="tar_dates.txt"
-tar_file="sims.tar"
+label=$(basename $(pwd))
+date_file="${label}_tar_dates.txt"
+tar_file="${label}_sims.tar"
 
 # Ensure date file exists if a new directory
 touch $date_file
 
-# Find all directories in current directory to add to tar archive
-for src_dir in `find * -maxdepth 0 -type d`; do
+# Find all directories in current directory starting with timestamp YYYYMMDD
+# to add to tar archive
+for src_dir in `find * -maxdepth 0 -type d -regextype egrep -regex '^[0-9]{8}.*'`; do
     # Get date string to only save in tar every 11 days (3x per month)
     # (eg 20041 for all dates between 4/11/20 - 4/21/20)
     src_date=${src_dir::8}
@@ -24,6 +26,7 @@ for src_dir in `find * -maxdepth 0 -type d`; do
     # then add the output from all directories matching the current date
     # for cases like optional features that have multiple sims on a date.
     if [ -z "$(grep $date_str $date_file)" ]; then
+        echo "Adding sims from $src_date to $tar_file"
         echo $date_str >> $date_file
         tar rf $tar_file ${src_date}*
     fi

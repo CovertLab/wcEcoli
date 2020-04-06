@@ -21,8 +21,9 @@ mkdir -p $dest_dir
 date_str="$(date +%y%m)$((10#$(date +%d) / 11))"
 
 # Files for tar backup
-date_file="${dest_dir}tar_dates.txt"
-tar_file="${dest_dir}sims.tar"
+label=$(basename $dest_dir)
+date_file="${dest_dir}${label}_tar_dates.txt"
+tar_file="${dest_dir}${label}_sims.tar"
 
 # Ensure date_file exists if a new directory
 touch $date_file
@@ -31,6 +32,7 @@ touch $date_file
 # then add the output from this run to the archive
 cd $src_dir
 if [ -z "$(grep $date_str $date_file)" ]; then
+    echo "Adding sims to $tar_file"
     echo $date_str >> $date_file
     tar rf $tar_file *
 fi
