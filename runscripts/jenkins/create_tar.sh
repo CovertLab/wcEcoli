@@ -16,7 +16,7 @@ touch $date_file
 
 # Find all directories in current directory starting with timestamp YYYYMMDD
 # to add to tar archive
-for src_dir in `find * -maxdepth 0 -type d -regextype egrep -regex '^[0-9]{8}.*'`; do
+for src_dir in `find * -maxdepth 0 -type d -regextype sed -regex '^[0-9]\{8\}.*'`; do
     # Get date string to only save in tar every 11 days (3x per month)
     # (eg 20041 for all dates between 4/11/20 - 4/21/20)
     src_date=${src_dir::8}
