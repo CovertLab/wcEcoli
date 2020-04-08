@@ -16,7 +16,6 @@ TODO:
 from __future__ import division
 
 import numpy as np
-from itertools import izip
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
@@ -34,6 +33,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 	def initialize(self, sim, sim_data):
 		super(TranscriptElongation, self).initialize(sim, sim_data)
+
+		self.max_time_step = sim_data.process.transcription.max_time_step
 
 		# Load parameters
 		self.rnaPolymeraseElongationRateDict = sim_data.process.transcription.rnaPolymeraseElongationRateDict
@@ -175,7 +176,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		assert (np.count_nonzero(RNAP_index_partial_RNAs == -1) == 0)
 
 		# Get mapping indexes between partial RNAs to RNAPs
-		partial_RNA_to_RNAP_mapping, RNAP_to_partial_RNA_mapping = self._get_mapping_arrays(
+		partial_RNA_to_RNAP_mapping, RNAP_to_partial_RNA_mapping = get_mapping_arrays(
 			RNAP_index_partial_RNAs, RNAP_unique_index)
 
 		# Rescale boolean array of directions to an array of 1's and -1's.
@@ -287,21 +288,17 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			(terminal_lengths - length_partial_RNAs)[did_terminate_mask].sum())
 
 
-	def _get_mapping_arrays(self, x, y):
-		"""
-		Returns the array of indexes of each element of array x in array y, and
-		vice versa. Assumes that the elements of x and y are unique, and
-		set(x) == set(y).
-		"""
-		x_argsort = np.argsort(x)
-		y_argsort = np.argsort(y)
+	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
+		return inputTimeStep <= self.max_time_step
 
-		x_to_y = x_argsort[self._argsort_unique(y_argsort)]
-		y_to_x = y_argsort[self._argsort_unique(x_argsort)]
 
-		return x_to_y, y_to_x
-
-	def _argsort_unique(self, idx):
+def get_mapping_arrays(x, y):
+	"""
+	Returns the array of indexes of each element of array x in array y, and
+	vice versa. Assumes that the elements of x and y are unique, and
+	set(x) == set(y).
+	"""
+	def argsort_unique(idx):
 		"""
 		Quicker argsort for arrays that are permutations of np.arange(n).
 		"""
@@ -309,3 +306,11 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		argsort_idx = np.empty(n, dtype=np.int64)
 		argsort_idx[idx] = np.arange(n)
 		return argsort_idx
+
+	x_argsort = np.argsort(x)
+	y_argsort = np.argsort(y)
+
+	x_to_y = x_argsort[argsort_unique(y_argsort)]
+	y_to_x = y_argsort[argsort_unique(x_argsort)]
+
+	return x_to_y, y_to_x

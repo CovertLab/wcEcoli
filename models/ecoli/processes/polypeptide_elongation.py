@@ -41,7 +41,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		constants = sim_data.constants
 		translation = sim_data.process.translation
 		transcription = sim_data.process.transcription
-		metabolism = sim_data.process.metabolism
+
+		self.max_time_step = translation.max_time_step
 
 		# Load parameters
 		self.nAvogadro = constants.nAvogadro
@@ -50,7 +51,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.proteinSequences = translation.translationSequences
 		self.aaWeightsIncorporated = translation.translationMonomerWeights
 		self.endWeight = translation.translationEndWeight
-		self.gtpPerElongation = constants.gtpPerTranslation
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = translation.make_elongation_rates
 
@@ -58,7 +58,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Amino acid supply calculations
 		self.translation_aa_supply = sim_data.translationSupplyRate
-		self.import_threshold = metabolism.boundary.import_constraint_threshold
+		self.import_threshold = sim_data.external_state.import_constraint_threshold
 
 		# Used for figure in publication
 		self.trpAIndex = np.where(proteinIds == "TRYPSYN-APROTEIN[c]")[0][0]
@@ -75,11 +75,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Create views onto all polymerization reaction small molecules
 		self.aas = self.bulkMoleculesView(sim_data.moleculeGroups.aaIDs)
-		self.gtp = self.bulkMoleculeView("GTP[c]")
-
-		# Set for timestep calculation
-		self.gtpUsed = 0
-		self.gtpAvailable = 0
 
 		self.elngRateFactor = 1.
 
@@ -94,6 +89,16 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		else:
 			self.elongation_model = BaseElongationModel(sim_data, self)
 		self.ppgpp_regulation = sim._ppgpp_regulation
+
+		# Growth associated maintenance energy requirements for elongations
+		self.gtpPerElongation = constants.gtpPerTranslation
+		## Need to account for ATP hydrolysis for charging that has been
+		## removed from measured GAM (ATP -> AMP is 2 hydrolysis reactions)
+		## if charging reactions are not explicitly modeled
+		if not sim._trna_charging:
+			self.gtpPerElongation += 2
+		## Variable for metabolism to read to consume required energy
+		self.gtp_to_hydrolyze = 0
 
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
@@ -147,22 +152,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("GrowthLimits", "aaPoolSize", self.aas.total_counts())
 		self.writeToListener("GrowthLimits", "aaRequestSize", aa_counts_for_translation)
 
-		# Request GTP for polymerization based on sequences
-		gtpsHydrolyzed = np.int64(np.ceil(self.gtpPerElongation * aa_counts_for_translation.sum()))
-
-		self.writeToListener("GrowthLimits", "gtpPoolSize", self.gtp.total_counts()[0])
-		self.writeToListener("GrowthLimits", "gtpRequestSize", gtpsHydrolyzed)
-
-		# GTP hydrolysis is carried out in Metabolism process for growth associated maintenance
-		# THis is set here for metabolism to use
-		self.gtpRequest = gtpsHydrolyzed
-
 		# Request full access to active ribosome molecules
 		self.active_ribosomes.request_access(self.EDIT_DELETE_ACCESS)
 
 	def evolveState(self):
+		# Set value to 0 for metabolism in case of early return
+		self.gtp_to_hydrolyze = 0
+
 		# Write allocation data to listener
-		self.writeToListener("GrowthLimits", "gtpAllocated", self.gtp.count())
 		self.writeToListener("GrowthLimits", "aaAllocated", self.aas.counts())
 
 		# Get number of active ribosomes
@@ -258,10 +255,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# TODO: use something other than a class attribute to pass aa diff to metabolism
 		net_charged, self.aa_count_diff = self.elongation_model.evolve(total_aa_counts, aas_used, nElongations, nInitialized)
 
+		# GTP hydrolysis is carried out in Metabolism process for growth
+		# associated maintenance. This is set here for metabolism to use.
+		self.gtp_to_hydrolyze = self.gtpPerElongation * nElongations
+
 		# Write data to listeners
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
 		self.writeToListener("GrowthLimits", "aasUsed", aas_used)
-		self.writeToListener("GrowthLimits", "gtpUsed", self.gtpUsed)
 
 		self.writeToListener("RibosomeData", "aaCountInSequence", aaCountInSequence)
 		self.writeToListener("RibosomeData", "aaCounts", aa_counts_for_translation)
@@ -277,39 +277,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("RibosomeData", "processElongationRate", self.ribosomeElongationRate / self.timeStepSec())
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
-		"""
-		Assumes GTP is the readout for failed translation with respect to the timestep.
-		"""
-
-		# Until more padding values are added to the protein sequence matrix, limit the maximum timestep length to 1 second
-		# Since the current upper limit on a.a's elongated by ribosomes during a single timestep is set to 22, timesteps
-		# longer than 1.0s do not lead to errors, but does slow down the ribosome elongation rate of the resulting simulation.
-		# Must be modified if timesteps longer than 1.0s are desired.
-		if inputTimeStep > 1.0:
-			return False
-
-		activeRibosomes = float(self.active_ribosomes.total_counts()[0])
-		self.gtpAvailable = float(self.gtp.total_counts()[0])
-
-		# Without an estimate on ribosome counts, require a short timestep until estimates available
-		if activeRibosomes == 0:
-			return inputTimeStep <= .2
-
-		dt = inputTimeStep * timeStepSafetyFraction
-		gtpExpectedUsage = activeRibosomes * self.ribosomeElongationRate * self.gtpPerElongation * dt
-
-		return gtpExpectedUsage < self.gtpAvailable
-
-	def wasTimeStepShortEnough(self):
-		"""
-		If translation used more than 90 percent of gtp, timeStep was too short.
-		"""
-
-		# If gtpAvailable is 0 and the timeStep is short, use the gtp produced this timeStep as the estimate
-		if self.gtpAvailable == 0 and self.timeStepSec() <= .2:
-			self.gtpAvailable = self.gtp.total_counts()[0]
-
-		return (self.gtpAvailable * .9) >= self.gtpUsed
+		return inputTimeStep <= self.max_time_step
 
 
 class BaseElongationModel(object):
@@ -432,7 +400,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# Amino acid supply calculations
 		self.aa_supply_scaling = metabolism.aa_supply_scaling
 		self.aa_environment = self.process.environmentView([aa[:-3] for aa in self.aaNames])
-		self.import_threshold = metabolism.boundary.import_constraint_threshold
 
 	def request(self, aasInSequences):
 		# Conversion from counts to molarity
@@ -485,8 +452,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# Adjust aa_supply higher if amino acid concentrations are low
 		# Improves stability of charging and mimics amino acid synthesis
 		# inhibition and export
-		# TODO (Travis): environmentView should probably handle this check
-		aa_in_media = self.aa_environment.totalConcentrations() > self.process.import_threshold
+		aa_in_media = self.aa_environment.import_present()
 		# TODO (Travis): add to listener?
 		self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
 

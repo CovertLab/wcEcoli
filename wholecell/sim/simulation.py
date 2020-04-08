@@ -25,7 +25,7 @@ from wholecell.utils import filepath
 import wholecell.loggers.shell
 import wholecell.loggers.disk
 
-
+MAX_TIME_STEP = 2.
 DEFAULT_SIMULATION_KWARGS = dict(
 	timeline = '0 minimal',
 	boundary_reactions = [],
@@ -39,7 +39,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	trna_charging = True,
 	ppgpp_regulation = False,
 	timeStepSafetyFraction = 1.3,
-	maxTimeStep = 0.9,#2.0, # TODO: Reset to 2 once we update PopypeptideElongation
+	maxTimeStep = MAX_TIME_STEP,
 	updateTimeStepFreq = 5,
 	logToShell = True,
 	logToDisk = False,
@@ -84,7 +84,7 @@ class Simulation(lens.actor.inner.Simulation):
 	# Attributes that may be optionally overwritten by a subclass
 	_listenerClasses = ()
 	_hookClasses = ()
-	_timeStepSec = .2
+	_timeStepSec = MAX_TIME_STEP
 	_shellColumnHeaders = ("Time (s)",)
 
 	# Constructors
@@ -191,7 +191,7 @@ class Simulation(lens.actor.inner.Simulation):
 			hook.postCalcInitialConditions(self)
 
 		# Make permanent reference to evaluation time listener
-		self._evalTime = self.listeners["EvaluationTime"]
+		self._eval_time = self.listeners["EvaluationTime"]
 
 		# Perform initial mass calculations
 		for state in self.internal_states.itervalues():
@@ -230,7 +230,6 @@ class Simulation(lens.actor.inner.Simulation):
 		Run the simulation for the time period specified in `self._lengthSec`
 		and then clean up.
 		"""
-
 		try:
 			self.run_incremental(self._lengthSec + self.initialTime())
 			if not self._raise_on_time_limit:
@@ -304,11 +303,7 @@ class Simulation(lens.actor.inner.Simulation):
 			state.reset_process_mass_diffs()
 
 		# Reset values in evaluationTime listener
-		self._evalTime.updateQueries_times.fill(0)
-		self._evalTime.calculateRequest_times.fill(0)
-		self._evalTime.partition_times.fill(0)
-		self._evalTime.evolveState_times.fill(0)
-		self._evalTime.merge_times.fill(0)
+		self._eval_time.reset_evaluation_times()
 
 	# Calculate temporal evolution
 	def _evolveState(self, processes):
@@ -317,27 +312,27 @@ class Simulation(lens.actor.inner.Simulation):
 		for i, state in enumerate(self.internal_states.itervalues()):
 			t = time.time()
 			state.updateQueries()
-			self._evalTime.updateQueries_times[i] += time.time() - t
+			self._eval_time.update_queries_times[i] += time.time() - t
 
 		# Calculate requests
 		for i, process in enumerate(self.processes.itervalues()):
 			if process.__class__ in processes:
 				t = time.time()
 				process.calculateRequest()
-				self._evalTime.calculateRequest_times[i] += time.time() - t
+				self._eval_time.calculate_request_times[i] += time.time() - t
 
 		# Partition states among processes
 		for i, state in enumerate(self.internal_states.itervalues()):
 			t = time.time()
 			state.partition(processes)
-			self._evalTime.partition_times[i] += time.time() - t
+			self._eval_time.partition_times[i] += time.time() - t
 
 		# Simulate submodels
 		for i, process in enumerate(self.processes.itervalues()):
 			if process.__class__ in processes:
 				t = time.time()
 				process.evolveState()
-				self._evalTime.evolveState_times[i] += time.time() - t
+				self._eval_time.evolve_state_times[i] += time.time() - t
 
 		# Check that timestep length was short enough
 		for process_name, process in self.processes.iteritems():
@@ -348,7 +343,7 @@ class Simulation(lens.actor.inner.Simulation):
 		for i, state in enumerate(self.internal_states.itervalues()):
 			t = time.time()
 			state.merge(processes)
-			self._evalTime.merge_times[i] += time.time() - t
+			self._eval_time.merge_times[i] += time.time() - t
 
 		# update environment state
 		for state in self.external_states.itervalues():
@@ -356,20 +351,28 @@ class Simulation(lens.actor.inner.Simulation):
 
 	def _post_evolve_state(self):
 		# Calculate mass of all molecules after evolution
-		for state in self.internal_states.itervalues():
+		for i, state in enumerate(self.internal_states.itervalues()):
+			t = time.time()
 			state.calculateMass()
+			self._eval_time.calculate_mass_times[i] = time.time() - t
 
 		# Update listeners
-		for listener in self.listeners.itervalues():
+		for i, listener in enumerate(self.listeners.itervalues()):
+			t = time.time()
 			listener.update()
+			self._eval_time.update_times[i] = time.time() - t
 
 		# Run post-evolveState hooks
 		for hook in self.hooks.itervalues():
 			hook.postEvolveState(self)
 
 		# Append loggers
-		for logger in self.loggers.itervalues():
+		for i, logger in enumerate(self.loggers.itervalues()):
+			t = time.time()
 			logger.append(self)
+			# Note: these values are written at the next timestep
+			self._eval_time.append_times[i] = time.time() - t
+
 
 	def _seedFromName(self, name):
 		return np.uint32((self._seed + hash(name)) % np.iinfo(np.uint64).max)
@@ -431,16 +434,18 @@ class Simulation(lens.actor.inner.Simulation):
 
 	def _findTimeStep(self, minTimeStep, maxTimeStep, checkerFunction):
 		N = 10000
+		candidateTimeStep = maxTimeStep
 		for i in xrange(N):
-			candidateTimeStep = minTimeStep + (maxTimeStep - minTimeStep) / 2.
 			if checkerFunction(candidateTimeStep, self._timeStepSafetyFraction):
 				minTimeStep = candidateTimeStep
 				if (maxTimeStep - minTimeStep) / minTimeStep <= 1e-2:
 					break
 			else:
 				maxTimeStep = candidateTimeStep
-		if i == N - 1:
-			raise Exception, "Timestep adjustment did not converge, last attempt was %f" % (candidateTimeStep)
+			candidateTimeStep = minTimeStep + (maxTimeStep - minTimeStep) / 2.
+		else:
+			raise SimulationException("Timestep adjustment did not converge,"
+				" last attempt was %f" % (candidateTimeStep))
 
 		return candidateTimeStep
 

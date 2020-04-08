@@ -377,11 +377,15 @@ class UniqueObjectsContainer(object):
 
 		active_mask = self._find_active_entries(collectionIndex)
 
-		return _UniqueObjectSet(self,
-			self._collections[collectionIndex]["_globalIndex"][active_mask],
-			process_index=process_index,
-			access=access
-			)
+		if np.count_nonzero(active_mask) > 0:
+			return _UniqueObjectSet(self,
+				self._collections[collectionIndex]["_globalIndex"][active_mask],
+				process_index=process_index,
+				access=access
+				)
+		else:
+			return _EmptyUniqueObjectSet(self,
+				collectionName, process_index=process_index, access=access)
 
 
 	def objectsInCollections(self, collectionNames, process_index=None,
@@ -435,6 +439,23 @@ class UniqueObjectsContainer(object):
 		collection names) sorted by name.
 		"""
 		return self._names
+
+
+	def get_attribute_dtypes(self, collection_name):
+		"""
+		Parameters:
+			collection_name (str): The collection name.
+
+		Returns:
+			dict[str, numpy.dtype]: Dictionary of the numpy dtypes of the
+				defined attributes of this collection
+		"""
+		attribute_dtypes = {
+			attr_name: field[0] for attr_name, field
+			in self._collections[self._nameToIndexMapping[collection_name]].dtype.fields.iteritems()
+			}
+
+		return attribute_dtypes
 
 
 	def counts(self, collectionNames=None):
@@ -663,7 +684,6 @@ class UniqueObjectsContainer(object):
 				"One or more object was deleted from the set")
 
 
-
 	def merge(self):
 		"""
 		Loops through the list of all requests and makes the requested changes.
@@ -844,6 +864,11 @@ class _UniqueObjectSet(object):
 		self._process_index = process_index
 		self._access = access
 
+		collection_indexes = self._container._globalReference["_collectionIndex"][self._globalIndexes]
+		self._object_indexes = self._container._globalReference["_objectIndex"][self._globalIndexes]
+		self._unique_collection_indexes, self._inverse_collection_index_array = np.unique(
+			collection_indexes, return_inverse = True)
+
 
 	def __contains__(self, uniqueObject):
 		if not self._container is uniqueObject._container:
@@ -897,41 +922,41 @@ class _UniqueObjectSet(object):
 
 
 	def attr(self, attribute):
-		"""Return the named attribute for all objects in this collection."""
+		"""
+		Return the named attribute for all objects in this collection. An
+		exception is thrown if the object set is empty - if an empty array
+		needs to be returned, the _EmptyUniqueObjectSet subclass should be used
+		instead.
+		"""
 		if self._globalIndexes.size == 0:
 			raise UniqueObjectsContainerException("Object set is empty")
 
 		container = self._container
-		globalReference = container._globalReference
 
-		if (globalReference["_entryState"][self._globalIndexes] == container._entryInactive).any():
+		if (container._globalReference["_entryState"][self._globalIndexes]
+				== container._entryInactive).any():
 			raise UniqueObjectsContainerException("One or more object was deleted from the set")
 
-		# TODO: cache these properties? should be static
-		collectionIndexes = globalReference["_collectionIndex"][self._globalIndexes]
-		objectIndexes = globalReference["_objectIndex"][self._globalIndexes]
+		attribute_dtype = container._collections[
+			self._unique_collection_indexes[0]].dtype[attribute]
 
-		uniqueColIndexes, inverse = np.unique(collectionIndexes, return_inverse = True)
+		values = np.zeros(self._globalIndexes.size, dtype = attribute_dtype)
 
-		attributeDtype = container._collections[uniqueColIndexes[0]].dtype[attribute]
+		for idx, collection_index in enumerate(self._unique_collection_indexes):
+			global_obj_indexes = np.where(
+				self._inverse_collection_index_array == idx)
+			object_indexes_in_collection = self._object_indexes[global_obj_indexes]
 
-		values = np.zeros(
-			self._globalIndexes.size,
-			dtype = attributeDtype
-			)
-
-		for idx, collectionIndex in enumerate(uniqueColIndexes):
-			globalObjIndexes = np.where(inverse == idx)
-			objectIndexesInCollection = objectIndexes[globalObjIndexes]
-
-			values[globalObjIndexes] = container._collections[collectionIndex][attribute][objectIndexesInCollection]
+			values[global_obj_indexes] = container._collections[
+				collection_index][attribute][object_indexes_in_collection]
 
 		return values
 
 
 	def attrs(self, *attributes):
-		"""Return a tuple containing the named attributes for all objects in
-		this sequence.
+		"""
+		Return a tuple containing the named attributes for all objects in this
+		sequence.
 		"""
 		return tuple(
 			self.attr(attribute) for attribute in attributes
@@ -939,44 +964,40 @@ class _UniqueObjectSet(object):
 
 
 	def attrsAsStructArray(self, *attributes):
-		"""Return a structured array containing the named (or all) attributes
-		from all objects in this sequence.
+		"""
+		Return a structured array containing the named (or all) attributes
+		from all objects in this sequence. An exception is thrown if the object
+		set is empty - if an empty structured array needs to be returned, the
+		_EmptyUniqueObjectSet subclass should be used instead.
 		"""
 		if self._globalIndexes.size == 0:
 			raise UniqueObjectsContainerException("Object set is empty")
 
 		container = self._container
-		globalReference = container._globalReference
 
-		if (globalReference["_entryState"][self._globalIndexes] == container._entryInactive).any():
+		if (container._globalReference["_entryState"][self._globalIndexes]
+				== container._entryInactive).any():
 			raise UniqueObjectsContainerException("One or more object was deleted from the set")
 
-		# TODO: cache these properties? should be static
-		collectionIndexes = globalReference["_collectionIndex"][self._globalIndexes]
-		objectIndexes = globalReference["_objectIndex"][self._globalIndexes]
-
-		uniqueColIndexes, inverse = np.unique(collectionIndexes, return_inverse = True)
-
 		if len(attributes) == 0:
-			attributes = container._collections[uniqueColIndexes[0]].dtype.names
+			attributes = container._collections[
+				self._unique_collection_indexes[0]].dtype.names
 
 		attributes = list(attributes)
 
-		attributeDtypes = [
-			(attribute, container._collections[uniqueColIndexes[0]].dtype[attribute])
-			for attribute in attributes
-			]
+		attribute_dtypes = [
+			(attribute, container._collections[self._unique_collection_indexes[0]].dtype[attribute])
+			for attribute in attributes]
 
-		values = np.zeros(
-			self._globalIndexes.size,
-			dtype = attributeDtypes
-			)
+		values = np.zeros(self._globalIndexes.size, dtype = attribute_dtypes)
 
-		for idx, collectionIndex in enumerate(uniqueColIndexes):
-			globalObjIndexes = np.where(inverse == idx)
-			objectIndexesInCollection = objectIndexes[globalObjIndexes]
+		for idx, collection_index in enumerate(self._unique_collection_indexes):
+			global_obj_indexes = np.where(
+				self._inverse_collection_index_array == idx)
+			object_indexes_in_collection = self._object_indexes[global_obj_indexes]
 
-			values[globalObjIndexes] = container._collections[collectionIndex][attributes][objectIndexesInCollection]
+			values[global_obj_indexes] = container._collections[
+				collection_index][attributes][object_indexes_in_collection]
 
 		return values
 
@@ -990,9 +1011,6 @@ class _UniqueObjectSet(object):
 			raise UniqueObjectsPermissionException(
 				"Can't edit attributes of read-only objects."
 			)
-
-		if self._globalIndexes.size == 0:
-			raise UniqueObjectsContainerException("Object set is empty")
 
 		# Submass attributes must be edited through specialized methods.
 		if not self._container.submass_diff_names_set.isdisjoint(attributes.keys()):
@@ -1029,9 +1047,6 @@ class _UniqueObjectSet(object):
 			raise UniqueObjectsPermissionException(
 				"Can't edit attributes of read-only objects."
 				)
-
-		if self._globalIndexes.size == 0:
-			raise UniqueObjectsContainerException("Object set is empty")
 
 		submass_attr_name = "massDiff_" + submass_name
 
@@ -1074,9 +1089,6 @@ class _UniqueObjectSet(object):
 				"Can't edit attributes of read-only objects."
 				)
 
-		if self._globalIndexes.size == 0:
-			raise UniqueObjectsContainerException("Object set is empty")
-
 		added_masses = {}
 		for i, submass_attr_name in enumerate(self._container.submass_diff_names_list):
 			added_masses[submass_attr_name] = delta_mass[:, i]
@@ -1117,3 +1129,41 @@ class _UniqueObjectSet(object):
 			globalIndexes=globalIndexes,
 			process_index=self._process_index,
 			)
+
+
+class _EmptyUniqueObjectSet(_UniqueObjectSet):
+	"""
+	A specialized subclass of _UniqueObjectSet that handles empty sets of
+	unique objects.
+	"""
+	def __init__(self, container, collection_name, process_index=None,
+			access=()):
+		"""
+		Since the data types of all defined attributes must be known, the name
+		of the collection must be given as an argument.
+		"""
+		# globalIndexes is set to an empty array
+		super(_EmptyUniqueObjectSet, self).__init__(
+			container, np.array([]), process_index=process_index, access=access)
+
+		# Get data types of all attributes of the given collection
+		self._attribute_dtypes = self._container.get_attribute_dtypes(collection_name)
+
+
+	def attr(self, attribute):
+		"""
+		Return an empty array of the appropriate data type for the attribute.
+		"""
+		return np.empty(0, self._attribute_dtypes[attribute])
+
+
+	def attrsAsStructArray(self, *attributes):
+		"""
+		Return an empty structured array with the appropriate data types for
+		each attribute.
+		"""
+		attribute_dtypes = [
+			(attribute, self._attribute_dtypes[attribute])
+			for attribute in attributes]
+
+		return np.empty(0, dtype=attribute_dtypes)

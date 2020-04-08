@@ -30,12 +30,12 @@ class FBAResults(wholecell.listeners.listener.Listener):
 	def initialize(self, sim, sim_data):
 		super(FBAResults, self).initialize(sim, sim_data)
 
-		self.metabolism = sim.processes["Metabolism"]
+		self.metabolism = sim.processes["Metabolism"].model
 
 		self.objectiveValue = 0.0
 
 		# exchange with environment
-		self.all_external_exchange_molecules = sim_data.process.metabolism.boundary.all_external_exchange_molecules
+		self.all_external_exchange_molecules = sim_data.external_state.all_external_exchange_molecules
 
 	# Allocate memory
 	def allocate(self):
