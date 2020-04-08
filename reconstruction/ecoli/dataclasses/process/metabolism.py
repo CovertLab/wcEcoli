@@ -6,69 +6,74 @@ TODO:
 - implement L1-norm minimization for AA concentrations
 - find concentration for PI[c]
 - add (d)NTP byproduct concentrations
-- include custom kinetic constraints when reading from raw_data.enzymeKinetics
 
-@author: Nick Ruggero
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 03/06/2015
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 from copy import copy
+import re
+from typing import Any, Dict, List, Optional, Set
 
 import numpy as np
 import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr
 
+from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from wholecell.utils import units
+
 
 PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
 ILE_LEU_CONCENTRATION = 3.03e-4  # M, Bennett et al. 2009
 ILE_FRACTION = 0.360  # the fraction of iso/leucine that is isoleucine; computed from our monomer data
 ECOLI_PH = 7.2
+MICROMOLAR_UNITS = units.umol / units.L
 METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
 
 USE_ALL_CONSTRAINTS = False # False will remove defined constraints from objective
 
-reverseReactionString = "{} (reverse)"
+REVERSE_TAG = ' (reverse)'
+REVERSE_REACTION_ID = '{{}}{}'.format(REVERSE_TAG)
+ENZYME_REACTION_ID = '{}__{}'
 
-# threshold (units.mmol / units.L) separates concentrations that are import constrained with
-# max flux = 0 from unconstrained molecules.
-IMPORT_CONSTRAINT_THRESHOLD =  1e-5
+VERBOSE = False
 
 
 class Metabolism(object):
 	""" Metabolism """
 
 	def __init__(self, raw_data, sim_data):
-		# set solver and kinetic objective weight
-		self.solver = "glpk-linear"
-		if "linear" in self.solver:
-			self.kinetic_objective_weight = sim_data.constants.metabolismKineticObjectiveWeightLinear
-		else:
-			self.kinetic_objective_weight = sim_data.constants.metabolismKineticObjectiveWeightQuadratic
-
-		self.boundary = Boundary(raw_data, sim_data)
-
-		# make a list of transport reactions
-		transport_reactions_raw = raw_data.transport_reactions
-		self.transport_reactions = []
-		for transport_reaction in transport_reactions_raw:
-			reaction_id = transport_reaction.get('reaction id')
-			self.transport_reactions.append(reaction_id)
-
+		self._set_solver_values(sim_data.constants)
 		self._buildBiomass(raw_data, sim_data)
 		self._buildMetabolism(raw_data, sim_data)
+		self._build_ppgpp_reactions(raw_data, sim_data)
+		self._build_transport_reactions(raw_data, sim_data)
+
+	def _set_solver_values(self, constants):
+		"""
+		Sets values to be used in the FBA solver.
+
+		Attributes set:
+			solver (str): solver ID, should match a value in modular_fba.py
+			kinetic_objective_weight (float): weighting for the kinetic objective,
+				1-weighting for the homeostatic objective
+			kinetic_objective_weight_in_range (float): weighting for deviations
+				from the kinetic target within min and max ranges
+			secretion_penalty_coeff (float): penalty on secretion fluxes
+		"""
+
+		self.solver = "glpk-linear"
+		if "linear" in self.solver:
+			self.kinetic_objective_weight = constants.metabolismKineticObjectiveWeightLinear
+		else:
+			self.kinetic_objective_weight = constants.metabolismKineticObjectiveWeightQuadratic
+		self.kinetic_objective_weight_in_range = constants.metabolism_kinetic_objective_weight_in_range
+		self.secretion_penalty_coeff = constants.secretion_penalty_coeff
 
 	def _buildBiomass(self, raw_data, sim_data):
 		wildtypeIDs = set(entry["molecule id"] for entry in raw_data.biomass)
-
-		# Load the biomass function flat file as a dict
-		self.biomassFunction = {entry['molecule id']:entry['coefficient'] for entry in raw_data.biomass}
-
-		self.previousBiomassMeans = {entry['molecule id']:entry['mean flux'] for entry in raw_data.previousBiomassFluxes}
-		self.previousBiomassLog10Means = {entry['molecule id']:entry['mean log10 flux'] for entry in raw_data.previousBiomassFluxes}
-		self.previousBiomassStds = {entry['molecule id']:entry['standard deviation'] for entry in raw_data.previousBiomassFluxes}
 
 		# Create vector of metabolite target concentrations
 
@@ -80,29 +85,46 @@ class Metabolism(object):
 		# compartments according to those given in the biomass objective.  Or,
 		# if there is no compartment, assign it to the cytoplasm.
 
+		concentration_sources = ['Bennett Concentration', 'Lempp Concentration']
+		bennett_only = {
+			'ATP',  # TF binding does not solve with average concentration with Lempp
+			}
+		lempp_only = {
+			'GLT',  # Steady state concentration reached with tRNA charging is much lower than Bennett
+			}
 		metaboliteIDs = []
 		metaboliteConcentrations = []
-		metaboliteConcentrationData = dict(
-			(m["Metabolite"], m["Concentration"].asNumber(METABOLITE_CONCENTRATION_UNITS))
-			for m in raw_data.metaboliteConcentrations)
 
 		wildtypeIDtoCompartment = {
 			wildtypeID[:-3] : wildtypeID[-3:]
 			for wildtypeID in wildtypeIDs
 			} # this assumes biomass reaction components only exist in a single compartment
 
-		for metaboliteID, concentration in metaboliteConcentrationData.viewitems():
-			if metaboliteID in wildtypeIDtoCompartment:
+		for row in raw_data.metaboliteConcentrations:
+			metabolite_id = row['Metabolite']
+
+			if metabolite_id in bennett_only:
+				conc = row['Bennett Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			elif metabolite_id in lempp_only:
+				conc = row['Lempp Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			else:
+				# Use average of both sources
+				conc = np.nanmean([
+					row[source].asNumber(METABOLITE_CONCENTRATION_UNITS)
+					for source in concentration_sources
+					])
+
+			if metabolite_id in wildtypeIDtoCompartment:
 				metaboliteIDs.append(
-					metaboliteID + wildtypeIDtoCompartment[metaboliteID]
+					metabolite_id + wildtypeIDtoCompartment[metabolite_id]
 					)
 
 			else:
 				metaboliteIDs.append(
-					metaboliteID + "[c]"
+					metabolite_id + "[c]"
 					)
 
-			metaboliteConcentrations.append(concentration)
+			metaboliteConcentrations.append(conc)
 
 		# ILE/LEU: split reported concentration according to their relative abundances
 		ileRelative = ILE_FRACTION
@@ -151,11 +173,11 @@ class Metabolism(object):
 		# H: from reported pH
 		hydrogenConcentration = 10**(-ECOLI_PH)
 
-		metaboliteIDs.append("PROTON[c]")
+		metaboliteIDs.append(sim_data.moleculeIds.proton)
 		metaboliteConcentrations.append(hydrogenConcentration)
 
 		# PPI: multiple sources report 0.5 mM
-		metaboliteIDs.append("PPI[c]")
+		metaboliteIDs.append(sim_data.moleculeIds.ppi)
 		metaboliteConcentrations.append(PPI_CONCENTRATION)
 
 		metaboliteIDs.append("PI[c]")
@@ -176,7 +198,7 @@ class Metabolism(object):
 			METABOLITE_CONCENTRATION_UNITS * np.array(metaboliteConcentrations)
 			)),
 			raw_data.equilibriumReactions,
-			self.boundary.exchange_data_dict,
+			sim_data.external_state.exchange_dict,
 		)
 		self.concDict = self.concentrationUpdates.concentrationsBasedOnNutrients("minimal")
 		self.nutrientsToInternalConc = {}
@@ -188,180 +210,48 @@ class Metabolism(object):
 		Reads in and stores reaction and kinetic constraint information
 		"""
 
-		# Initialize variables to store reaction information
-		reactionStoich = {}			# dict with reactions as keys and dict with reaction stoich as values 
-		reversibleReactions = []
-		reactionCatalysts = {}		# dict with reactions as keys and list of catalysts as values
-		catalystsList = []
+		(reactionStoich, reversibleReactions, catalysts
+			) = self.extract_reactions(raw_data, sim_data)
 
-		# Load and parse reaction information from raw_data
-		for reaction in raw_data.reactions:
-			reactionID = reaction["reaction id"]
-			stoich = reaction["stoichiometry"]
-			reversible = reaction["is reversible"]
+		# Load kinetic reaction constraints from raw_data
+		known_metabolites = set(self.concDict)
+		raw_constraints = self.extract_kinetic_constraints(raw_data, sim_data,
+			stoich=reactionStoich, catalysts=catalysts,
+			known_metabolites=known_metabolites)
 
-			if len(stoich) <= 1:
-				raise Exception("Invalid biochemical reaction: {}, {}".format(reactionID, stoich))
+		# Make modifications from kinetics data
+		(constraints, reactionStoich, catalysts, reversibleReactions
+			) = self._replace_enzyme_reactions(
+			raw_constraints, reactionStoich, catalysts, reversibleReactions)
 
-			reactionStoich[reactionID] = stoich
+		# Create symbolic kinetic equations
+		(self.kinetic_constraint_reactions, self.kinetic_constraint_enzymes,
+			self.kinetic_constraint_substrates, self._kcats, self._saturations,
+			self._enzymes, self.constraint_is_kcat_only
+			) = self._lambdify_constraints(constraints)
+		self._compiled_enzymes = None
+		self._compiled_saturation = None
 
-			catalystsForThisRxn = []
-			for catalyst in reaction["catalyzed by"]:
-				try:
-					catalystWithLoc = (catalyst + "[" + sim_data.getter.getLocation([catalyst])[0][0] + "]").encode("utf-8")
-					catalystsForThisRxn.append(catalystWithLoc)
-					catalystsList.append(catalystWithLoc)
-				# If we don't have the catalyst in our reconstruction, drop it
-				except KeyError:
-					pass
+		# Verify no substrates with unknown concentrations have been added
+		unknown = {m for m in self.kinetic_constraint_substrates
+			if m not in known_metabolites}
+		if unknown:
+			raise ValueError('Unknown concentration for {}. Need to remove'
+				' kinetics saturation term.'.format(', '.join(unknown)))
 
-			if len(catalystsForThisRxn) > 0:
-				reactionCatalysts[reactionID] = catalystsForThisRxn
-
-			# Add the reverse reaction
-			if reversible:
-				reverseReactionID = reverseReactionString.format(reactionID)
-				reactionStoich[reverseReactionID] = {
-					moleculeID:-stoichCoeff
-					for moleculeID, stoichCoeff in reactionStoich[reactionID].viewitems()
-					}
-
-				reversibleReactions.append(reactionID)
-				if len(catalystsForThisRxn) > 0:
-					reactionCatalysts[reverseReactionID] = reactionCatalysts[reactionID]
-
-		# Initialize variables to store kinetic constraint information
-		constraintDict = {}
-		constraintIdList = []
-		enzymeIdList = []
-		kineticsSubstratesList = []
-		reactionsToConstraintsDict = {}
-
-		# Load and parse kinetic constraint information from raw_data
-		for constraint in raw_data.enzymeKinetics:
-			if constraint["rateEquationType"] == "custom":
-				continue
-
-			constraintId = constraint["reactionID"].encode("utf-8") + "__" + constraint["enzymeIDs"].encode("utf-8") + "__%f" % (constraint["kcat"].asNumber(1 / units.s))
-			assert len(constraint["Concentration Substrates"]) == len(constraint["kM"]) + len(constraint["kI"]), "Concentration Substrates are wrong length"
-			assert constraintId not in constraintIdList, "constraintId already exists"
-
-			# Get compartment for enzyme
-			enzymeId = (constraint["enzymeIDs"] + "[" + sim_data.getter.getLocation([constraint["enzymeIDs"]])[0][0] + "]").encode("utf-8")
-			constraint["enzymeIDs"] = enzymeId
-			assert enzymeId in reactionCatalysts[constraint["reactionID"]], "%s is not a catalyst for %s according to FBA reconstruction" % (enzymeId, constraint["reactionID"])
-
-			# Get compartments for Concentration Substrates
-			concentrationSubstrates = []
-			for substrate in constraint["Concentration Substrates"]:
-				# In current implementation, anything with a concentration exists in the cytosol
-				substrateWithCompartment = substrate.encode("utf-8") + "[c]"
-				if substrateWithCompartment not in self.concDict:
-					raise Exception, "Don't have concentration for %s" % substrateWithCompartment
-				concentrationSubstrates.append(substrateWithCompartment)
-				kineticsSubstratesList.append(substrateWithCompartment)
-			constraint["Concentration Substrates"] = concentrationSubstrates
-
-			# Get compartments for substrates
-			substrates = []
-			for substrate in constraint["substrateIDs"]:
-				# In current implementation, anything with a concentration exists in the cytosol
-				substrateFound = False
-				for rxnSubstrate in reactionStoich[constraint["reactionID"]]:
-					if rxnSubstrate.startswith(substrate + "["):
-						substrateFound = True
-						substrates.append(rxnSubstrate.encode("utf-8"))
-				if not substrateFound:
-					raise Exception, "Could not find compartment for substrate %s" % substrate
-			constraint["substrateIDs"] = substrates
-
-			# Adjust kcat for temperature
-			temperature = constraint["Temp"]
-
-			# If temperature not reported, assume 25 C
-			if type(temperature) == str:
-				temperature = 25
-			constraint["kcatAdjusted"] = 2**((37. - temperature) / 10.) * constraint["kcat"]
-
-			# Fix reactionID based on directionality
-			stoichiometry = reactionStoich[constraint["reactionID"]]
-			stoichVals = []
-			for substrate in constraint["substrateIDs"]:
-				stoichVals.append(stoichiometry[substrate])
-			stoichVals = np.array(stoichVals)
-
-			if np.all(stoichVals < 0):
-				forward = True
-			elif np.all(stoichVals > 0):
-				forward = False
-			else:
-				raise Exception, "Have data for some reactants and some products (this is an inconsistency)"
-
-			constraint["reactionID"] = constraint["reactionID"].encode("utf-8")
-			if forward == False:
-				constraint["reactionID"] = reverseReactionString.format(constraint["reactionID"])
-
-			# Get rid of constraints for reverse reactions that the FBA reconstruction says should not exist
-			# (i.e., if the FBA reconstruction says the reaction is irreversible but we have a constraint on 
-			#  the reverse reaction, drop the constraint)
-			if constraint["reactionID"] not in reactionStoich:
-				continue
-
-			enzymeIdList.append(enzymeId)
-			constraintIdList.append(constraintId)
-			constraintDict[constraintId] = constraint
-			if constraint["reactionID"] not in reactionsToConstraintsDict:
-				reactionsToConstraintsDict[constraint["reactionID"]] = []
-			reactionsToConstraintsDict[constraint["reactionID"]].append(constraintId)
-
-		constraintIdList = sorted(constraintIdList)
-		constrainedReactionList = sorted(reactionsToConstraintsDict)
-		kineticsSubstratesList = sorted(set(kineticsSubstratesList))
-		enzymeIdList = sorted(set(enzymeIdList))
-
-		# split out reactions that are kinetically constrained and that have more than one enzyme that catalyzes the reaction
-		for rxn in constrainedReactionList:
-			catalysts = reactionCatalysts[rxn]
-			if len(catalysts) > 1:
-				for catalyst in catalysts:
-					# create new reaction name with enzyme appended to the end
-					if rxn.endswith(" (reverse)"):
-						newReaction = reverseReactionString.format("%s__%s" % (rxn[:-10], catalyst[:-3]))
-					else:
-						newReaction = "%s__%s" % (rxn, catalyst[:-3])
-
-					# add the new reaction to appropriate lists and dicts
-					if rxn in reversibleReactions:
-						reversibleReactions.append(newReaction)
-
-					reactionStoich[newReaction] = copy(reactionStoich[rxn])
-					reactionCatalysts[newReaction] = [catalyst]
-					for constraint in reactionsToConstraintsDict[rxn]:
-						if constraintDict[constraint]["enzymeIDs"] == catalyst:
-							constraintDict[constraint]["reactionID"] = newReaction
-							if newReaction not in reactionsToConstraintsDict:
-								reactionsToConstraintsDict[newReaction] = []
-							reactionsToConstraintsDict[newReaction].append(constraint)
-
-				# remove old reaction name
-				reactionStoich.pop(rxn)
-				reactionCatalysts.pop(rxn)
-				reactionsToConstraintsDict.pop(rxn)
-				if rxn in reversibleReactions:
-					reversibleReactions.pop(reversibleReactions.index(rxn))
-
-		constrainedReactionList = sorted(reactionsToConstraintsDict)
-		catalystsList = sorted(set(catalystsList))
-		reactionCatalystsList = sorted(reactionCatalysts)
+		# Extract data
+		reactions_with_catalyst = sorted(catalysts)
+		catalyst_ids = sorted({c for all_cat in catalysts.values()
+			for c in all_cat})
 
 		# Create catalysis matrix (to be used in the simulation)
 		catalysisMatrixI = []
 		catalysisMatrixJ = []
 		catalysisMatrixV = []
 
-		for row, reaction in enumerate(reactionCatalystsList):
-			for catalyst in reactionCatalysts[reaction]:
-				col = catalystsList.index(catalyst)
+		for row, reaction in enumerate(reactions_with_catalyst):
+			for catalyst in catalysts[reaction]:
+				col = catalyst_ids.index(catalyst)
 				catalysisMatrixI.append(row)
 				catalysisMatrixJ.append(col)
 				catalysisMatrixV.append(1)
@@ -370,114 +260,136 @@ class Metabolism(object):
 		catalysisMatrixJ = np.array(catalysisMatrixJ)
 		catalysisMatrixV = np.array(catalysisMatrixV)
 
-#		shape = (catalysisMatrixI.max() + 1, catalysisMatrixJ.max() + 1)
-#		catalysisMatrix = np.zeros(shape, np.float64)
-#		catalysisMatrix[catalysisMatrixI, catalysisMatrixJ] = catalysisMatrixV
-
-		# Create constraint to reaction matrix (to be used in the simulation)
-		constraintToReactionMatrixI = []
-		constraintToReactionMatrixJ = []
-		constraintToReactionMatrixV = []
-
-		for row, reaction in enumerate(constrainedReactionList):
-			for constraintId in reactionsToConstraintsDict[reaction]:
-				col = constraintIdList.index(constraintId)
-				constraintToReactionMatrixI.append(row)
-				constraintToReactionMatrixJ.append(col)
-				constraintToReactionMatrixV.append(1)
-
-		constraintToReactionMatrixI = np.array(constraintToReactionMatrixI)
-		constraintToReactionMatrixJ = np.array(constraintToReactionMatrixJ)
-		constraintToReactionMatrixV = np.array(constraintToReactionMatrixV)
-
-#		shape = (constraintToReactionMatrixI.max() + 1, constraintToReactionMatrixJ.max() + 1)
-#		constraintToReactionMatrix = np.zeros(shape, np.float64)
-#		constraintToReactionMatrix[constraintToReactionMatrixI, constraintToReactionMatrixJ] = constraintToReactionMatrixV
-
-		# Use Sympy to create vector function that returns all kinetic constraints
-		kineticsSubstrates = sp.symbols(["kineticsSubstrates[%d]" % idx for idx in xrange(len(kineticsSubstratesList))])
-		enzymes = sp.symbols(["enzymes[%d]" % idx for idx in xrange(len(enzymeIdList))])
-		constraints = [sp.symbol.S.Zero] * len(constraintIdList)
-		constraintIsKcatOnly = np.zeros(len(constraintIdList))
-
-		for constraintIdx, constraintId in enumerate(constraintIdList):
-			constraint = constraintDict[constraintId]
-			if constraint["rateEquationType"] == "custom":
-				raise Exception
-
-			enzymeIdx = enzymeIdList.index(constraint["enzymeIDs"])
-			constraints[constraintIdx] = constraint["kcatAdjusted"].asNumber(1 / units.s) * enzymes[enzymeIdx]
-			if len(constraint["kM"]) == 0 and len(constraint["kI"]) == 0:
-				constraintIsKcatOnly[constraintIdx] = 1
-
-			concSubstratePos = 0
-			for kM in constraint["kM"]:
-				kineticsSubstrateIdx = kineticsSubstratesList.index(constraint["Concentration Substrates"][concSubstratePos])
-				S = kineticsSubstrates[kineticsSubstrateIdx]
-				constraints[constraintIdx] *= (S / (S + kM))
-				concSubstratePos += 1
-
-			for kI in constraint["kI"]:
-				kineticsSubstrateIdx = kineticsSubstratesList.index(constraint["Concentration Substrates"][concSubstratePos])
-				I = kineticsSubstrates[kineticsSubstrateIdx]
-				constraints[constraintIdx] *= (kI / (kI + I))
-				concSubstratePos += 1
-
-		self._kineticConstraints = str(constraints)
-		self._compiledConstraints = None
-
 		# Properties for FBA reconstruction
 		self.reactionStoich = reactionStoich
 		self.maintenanceReaction = {"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "PI[c]": +1, "PROTON[c]": +1,}
 		self.reversibleReactions = reversibleReactions
 
 		# Properties for catalysis matrix (to set hard bounds)
-		self.reactionCatalysts = reactionCatalysts
-		self.catalystsList = catalystsList
-		self.reactionCatalystsList = reactionCatalystsList
+		self.reactionCatalysts = catalysts
+		self.catalyst_ids = catalyst_ids
+		self.reactions_with_catalyst = reactions_with_catalyst
 		self.catalysisMatrixI = catalysisMatrixI
 		self.catalysisMatrixJ = catalysisMatrixJ
 		self.catalysisMatrixV = catalysisMatrixV
 
 		# Properties for setting flux targets
-		self.constraintIdList = constraintIdList
-		self.constrainedReactionList = constrainedReactionList
-		self.constraintToReactionMatrixI = constraintToReactionMatrixI
-		self.constraintToReactionMatrixJ = constraintToReactionMatrixJ
-		self.constraintToReactionMatrixV = constraintToReactionMatrixV
-		self.enzymeIdList = enzymeIdList
-		self.kineticsSubstratesList = kineticsSubstratesList
-		self.constraintDict = constraintDict
-		self.reactionsToConstraintsDict = reactionsToConstraintsDict
-		self.constraintIsKcatOnly = constraintIsKcatOnly
 		self.useAllConstraints = USE_ALL_CONSTRAINTS
-		self.constraintsToDisable = [rxn["disabled reaction"] for rxn in raw_data.disabledKineticReactions]
+		self.constraintsToDisable = [rxn["disabled reaction"]
+			for rxn in raw_data.disabledKineticReactions]
+
+	def _build_ppgpp_reactions(self, raw_data, sim_data):
+		'''
+		Creates structures for ppGpp reactions for use in polypeptide_elongation.
+
+		Attributes set:
+			ppgpp_synthesis_reaction (str): reaction ID for ppGpp synthesis
+				(catalyzed by RelA and SpoT)
+			ppgpp_degradation_reaction (str): reaction ID for ppGpp degradation
+				(catalyzed by SpoT)
+			ppgpp_reaction_names (list[str]): names of reaction involved in ppGpp
+			ppgpp_reaction_metabolites (list[str]): names of metabolites in
+				ppGpp reactions
+			ppgpp_reaction_stoich (array[int]): 2D array with metabolites on rows
+				and reactions on columns containing the stoichiometric coefficient
+		'''
+
+		self.ppgpp_synthesis_reaction = 'GDPPYPHOSKIN-RXN'
+		self.ppgpp_degradation_reaction = 'PPGPPSYN-RXN'
+
+		self.ppgpp_reaction_names = [
+			self.ppgpp_synthesis_reaction,
+			self.ppgpp_degradation_reaction,
+			]
+
+		self.ppgpp_reaction_metabolites = []
+
+		# Indices (i: metabolite, j: reaction) and values (v: stoichiometry)
+		# for sparse reaction matrix
+		metabolite_indices = {}
+		new_index = 0
+		rxn_i = []
+		rxn_j = []
+		rxn_v = []
+
+		# Record sparse indices in the matrix
+		for j, rxn in enumerate(self.ppgpp_reaction_names):
+			for met, stoich in self.reactionStoich[rxn].items():
+				idx = metabolite_indices.get(met, new_index)
+
+				if idx == new_index:
+					metabolite_indices[met] = new_index
+					self.ppgpp_reaction_metabolites.append(met)
+					new_index += 1
+
+				rxn_i.append(idx)
+				rxn_j.append(j)
+				rxn_v.append(stoich)
+
+		# Assemble matrix based on indices
+		# new_index is number of metabolites, j+1 is number of reactions
+		self.ppgpp_reaction_stoich = np.zeros((new_index, j+1), dtype=np.int32)
+		self.ppgpp_reaction_stoich[rxn_i, rxn_j] = rxn_v
+
+	def _build_transport_reactions(self, raw_data, sim_data):
+		"""
+		Creates list of transport reactions that are included in the
+		reaction network.
+
+		Attributes set:
+			transport_reactions (List[str]): transport reaction IDs in the
+				metabolic network (includes reverse reactions and reactions
+				with kinetic constraints)
+		"""
+
+		rxn_mapping = {}
+		for rxn in self.reactionStoich:
+			basename = rxn.split('__')[0].split(' (reverse)')[0]
+			rxn_mapping[basename] = rxn_mapping.get(basename, []) + [rxn]
+
+		self.transport_reactions = [
+			rxn
+			for row in raw_data.transport_reactions
+			for rxn in rxn_mapping.get(row['reaction id'], [])
+			]
 
 	def getKineticConstraints(self, enzymes, substrates):
+		# type: (np.ndarray[float], np.ndarray[float]) -> np.ndarray[float]
 		'''
 		Allows for dynamic code generation for kinetic constraint calculation
 		for use in Metabolism process. Inputs should be unitless but the order
 		of magnitude should match the kinetics parameters (umol/L/s).
 
 		If trying to pickle sim_data object after function has been called,
-		_compiledConstraints might not be able to be pickled.  See
-		__getstate__(), __setstate__() comments on PR 111 to address.
+		_compiled_enzymes and _compiled_saturation might not be able to be pickled.
+		See __getstate__(), __setstate__() comments on PR 111 to address.
 
 		Returns np.array of floats of the kinetic constraint target for each
 		reaction with kinetic parameters
-		Inputs:
-			enzymes (np.array of floats) - concentrations of enzymes associated
-				with kinetics constraints
-			substrates (np.array of floats) - concentrations of substrates
-				associated with kinetics constraints
+
+		Args:
+			enzymes: concentrations of enzymes associated with kinetic
+				constraints
+			substrates: concentrations of substrates associated with kinetic
+				constraints
+
+		Returns:
+			(n reactions, 3): min, mean and max kinetic constraints for each
+				reaction with kinetic constraints
 		'''
 
-		if self._compiledConstraints is None:
-			self._compiledConstraints = eval('lambda enzymes, kineticsSubstrates: np.array(%s)\n'
-				% self._kineticConstraints, {'np': np}, {}
+		if self._compiled_enzymes is None:
+			self._compiled_enzymes = eval('lambda e: np.array(%s)\n'
+				% self._enzymes, {'np': np}, {}
+				)
+		if self._compiled_saturation is None:
+			self._compiled_saturation = eval('lambda s: np.array([[np.min(v), np.mean(v), np.max(v)] for v in %s])\n'
+				% self._saturations, {'np': np}, {}
 				)
 
-		return self._compiledConstraints(enzymes, substrates)
+		capacity = self._compiled_enzymes(enzymes)[:, None] * self._kcats
+		saturation = self._compiled_saturation(substrates)
+		return capacity * saturation
 
 	def exchangeConstraints(self, exchangeIDs, coefficient, targetUnits, currentNutrients, exchange_data, concModificationsBasedOnCondition = None):
 		"""
@@ -486,12 +398,10 @@ class Metabolism(object):
 		Returns levels for external molecules available to exchange based on the current nutrients
 		"""
 
-		newObjective = None
+		unconstrained_exchange_molecules = exchange_data["importUnconstrainedExchangeMolecules"]
+		constrained_exchange_molecules = exchange_data["importConstrainedExchangeMolecules"]
 
-		self._unconstrainedExchangeMolecules = exchange_data["importUnconstrainedExchangeMolecules"]
-		self._constrainedExchangeMolecules = exchange_data["importConstrainedExchangeMolecules"]
-
-		concDict = self.concentrationUpdates.concentrationsBasedOnNutrients(currentNutrients, self.nutrientsToInternalConc)
+		concDict = self.concentrationUpdates.concentrationsBasedOnNutrients(currentNutrients)
 		if concModificationsBasedOnCondition is not None:
 			concDict.update(concModificationsBasedOnCondition)
 
@@ -501,11 +411,11 @@ class Metabolism(object):
 		externalMoleculeLevels = np.zeros(len(exchangeIDs), np.float64)
 
 		for index, moleculeID in enumerate(exchangeIDs):
-			if moleculeID in self._unconstrainedExchangeMolecules:
+			if moleculeID in unconstrained_exchange_molecules:
 				externalMoleculeLevels[index] = np.inf
-			elif moleculeID in self._constrainedExchangeMolecules.viewkeys():
+			elif moleculeID in constrained_exchange_molecules:
 				externalMoleculeLevels[index] = (
-					self._constrainedExchangeMolecules[moleculeID] * coefficient
+					constrained_exchange_molecules[moleculeID] * coefficient
 					).asNumber(targetUnits)
 			else:
 				externalMoleculeLevels[index] = 0.
@@ -594,13 +504,641 @@ class Metabolism(object):
 
 		return supply_scaling
 
+	@staticmethod
+	def extract_reactions(raw_data, sim_data):
+		# type: (KnowledgeBaseEcoli, SimulationDataEcoli) -> (Dict[str, Dict[str, int]], List[str], Dict[str, List[str]])
+		"""
+		Extracts reaction data from raw_data to build metabolism reaction
+		network with stoichiometry, reversibility and enzyme catalysts.
+
+		Args:
+			raw_data: knowledge base data
+			sim_data: simulation data
+
+		Returns:
+			reaction_stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
+				stoichiometry of metabolites for each reaction
+			reversible_reactions: reaction IDs for reactions that have a reverse
+				complement, does not have reverse tag
+			reaction_catalysts: {reaction ID: enzyme IDs with location tag}
+				enzyme catalysts for each reaction with known catalysts, likely
+				a subset of reactions in stoich
+		"""
+
+		# Initialize variables to store reaction information
+		reaction_stoich = {}
+		reversible_reactions = []
+		reaction_catalysts = {}
+
+		# Load and parse reaction information from raw_data
+		for reaction in raw_data.reactions:
+			reaction_id = reaction["reaction id"]
+			stoich = reaction["stoichiometry"]
+			reversible = reaction["is reversible"]
+
+			if len(stoich) <= 1:
+				raise Exception("Invalid biochemical reaction: {}, {}".format(reaction_id, stoich))
+
+			reaction_stoich[reaction_id] = stoich
+
+			catalysts_for_this_rxn = []
+			for catalyst in reaction["catalyzed by"]:
+				try:
+					catalysts_with_loc = (catalyst + "[" + sim_data.getter.getLocation([catalyst])[0][0] + "]").encode("utf-8")
+					catalysts_for_this_rxn.append(catalysts_with_loc)
+				# If we don't have the catalyst in our reconstruction, drop it
+				except KeyError:
+					if VERBOSE:
+						print('Skipping catalyst {} for {} since it is not in the model'
+							.format(catalyst, reaction_id))
+
+			if len(catalysts_for_this_rxn) > 0:
+				reaction_catalysts[reaction_id] = catalysts_for_this_rxn
+
+			# Add the reverse reaction
+			if reversible:
+				reverse_reaction_id = REVERSE_REACTION_ID.format(reaction_id)
+				reaction_stoich[reverse_reaction_id] = {
+					moleculeID:-stoichCoeff
+					for moleculeID, stoichCoeff in reaction_stoich[reaction_id].viewitems()
+					}
+
+				reversible_reactions.append(reaction_id)
+				if len(catalysts_for_this_rxn) > 0:
+					reaction_catalysts[reverse_reaction_id] = list(reaction_catalysts[reaction_id])
+
+		return reaction_stoich, reversible_reactions, reaction_catalysts
+
+	@staticmethod
+	def match_reaction(stoich, catalysts, rxn, enz, mets, direction=None):
+		# type: (Dict[str, Dict[str, int]], Dict[str, List[str]], str, str, List[str], Optional[str]) -> Optional[str]
+		"""
+		Matches a given reaction (rxn) to reactions that exist in stoich given
+		that enz is known to catalyze the reaction and mets are reactants in
+		the reaction.  Can perform a fuzzy reaction match since rxn just needs
+		to be part of the actual reaction name to match specific instances of a
+		reaction (eg. rxn="ALCOHOL-DEHYDROG-GENERIC-RXN" can match
+		"ALCOHOL-DEHYDROG-GENERIC-RXN-ETOH/NAD//ACETALD/NADH/PROTON.30.").
+
+		Args:
+			stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
+				stoichiometry of metabolites for each reaction
+			catalysts: {reaction ID: enzyme IDs with location tag}
+				enzyme catalysts for each reaction with known catalysts,
+				likely a subset of reactions in stoich
+			rxn: reaction ID from kinetics to match to existing reactions
+			enz: enzyme ID with location tag
+			mets: metabolite IDs with no location tag from kinetics
+			direction: reaction directionality, 'forward' or 'reverse' or None
+
+		Returns:
+			rxn: matched reaction ID to reaction in stoich with reverse tag
+				if in the reverse direction, returns None if no match
+		"""
+
+		# Mapping to handle instances of metabolite classes in kinetics
+		# Keys: specific molecules in kinetics file
+		# Values: class of molecules in reactions file that contain the key
+		class_mets = {
+			'RED-THIOREDOXIN-MONOMER': 'Red-Thioredoxin',
+			'RED-THIOREDOXIN2-MONOMER': 'Red-Thioredoxin',
+			'RED-GLUTAREDOXIN': 'Red-Glutaredoxins',
+			'GRXB-MONOMER': 'Red-Glutaredoxins',
+			'GRXC-MONOMER': 'Red-Glutaredoxins',
+			'OX-FLAVODOXIN1': 'Oxidized-flavodoxins',
+			'OX-FLAVODOXIN2': 'Oxidized-flavodoxins',
+		}
+
+		# Match full reaction name from partial reaction in kinetics. Must
+		# also match metabolites since there can be multiple reaction instances.
+		match = False
+		if rxn not in stoich:
+			for long_rxn, long_mets in stoich.items():
+				if rxn in long_rxn and not long_rxn.endswith(REVERSE_TAG):
+					match = True
+					stripped_enzs = {e[:-3] for e in catalysts.get(long_rxn, [])}
+					stripped_mets = {m[:-3] for m in long_mets}
+					if (np.all([class_mets.get(m, m) in stripped_mets for m in mets])
+							and enz in stripped_enzs):
+						# TODO: check if other reactions match instead of breaking on first
+						rxn = long_rxn
+						break
+			else:
+				if VERBOSE:
+					if match:
+						print('Partial reaction match: {} {} {} {} {}'.format(
+							rxn, enz, stripped_enzs, mets, stripped_mets))
+					else:
+						print('No reaction match: {}'.format(rxn))
+				return None
+
+		# Determine direction of kinetic reaction from annotation or
+		# metabolite stoichiometry.
+		reverse_rxn = REVERSE_REACTION_ID.format(rxn)
+		reverse_rxn_exists = reverse_rxn in stoich
+		if direction:
+			reverse = direction == 'reverse'
+		else:
+			s = {k[:-3]: v for k, v in stoich.get(rxn, {}).items()}
+			direction = np.unique(np.sign([
+				s.get(class_mets.get(m, m), 0) for m in mets]))
+			if len(direction) == 0 and not reverse_rxn_exists:
+				reverse = False
+			elif len(direction) != 1 or direction[0] == 0:
+				if VERBOSE:
+					print('Conflicting directionality: {} {} {}'.format(
+						rxn, mets, direction))
+				return None
+			else:
+				reverse = direction[0] > 0
+
+		# Verify a reverse reaction exists in the model
+		if reverse:
+			if reverse_rxn_exists:
+				rxn = reverse_rxn
+			else:
+				if VERBOSE:
+					print('No reverse reaction: {} {}'.format(rxn, mets))
+				return None
+
+		return rxn
+
+	@staticmethod
+	def temperature_adjusted_kcat(kcat, temp):
+		# type: (units.Unum, float) -> np.ndarray[float]
+		"""
+		Args:
+			kcat: enzyme turnover number(s) (1 / time)
+			temp: temperature of measurement, defaults to 25 if ''
+
+		Returns:
+			temperature adjusted kcat values, in units of 1/s
+		"""
+
+		if temp == '':
+			temp = 25
+		return 2**((37. - temp) / 10.) * kcat.asNumber(1 / units.s)
+
+	@staticmethod
+	def _construct_default_saturation_equation(mets, kms, kis, known_mets):
+		# type: (List[str], List[float], List[float]) -> str
+		"""
+		Args:
+			mets: metabolite IDs with location tag for KM and KI
+				parameters ordered to match order of kms then kis
+			kms: KM parameters associated with mets
+			kis: KI parameters associated with mets
+			known_mets: metabolite IDs with location tag with known
+				concentrations
+
+		Returns:
+			saturation equation with metabolites to replace delimited
+				by double quote (eg. "metabolite")
+		"""
+
+		# Check input dimensions
+		n_params = len(kms) + len(kis)
+		if n_params == 0:
+			return '1'
+		if n_params != len(mets):
+			if VERBOSE:
+				print('Saturation parameter mismatch: {} {} {}'
+					.format(mets, kms, kis))
+			return '1'
+
+		terms = []
+		# Add KM terms
+		for m, k in zip(mets, kms):
+			if m in known_mets:
+				terms.append('1+{}/"{}"'.format(k, m))
+			elif VERBOSE:
+				print('Do not have concentration for {} with KM={}'.format(m, k))
+		# Add KI terms
+		for m, k in zip(mets[len(kms):], kis):
+			if m in known_mets:
+				terms.append('1+"{}"/{}'.format(m, k))
+			elif VERBOSE:
+				print('Do not have concentration for {} with KI={}'.format(m, k))
+
+		# Enclose groupings if being multiplied together
+		if len(terms) > 1:
+			terms[0] = '(' + terms[0]
+			terms[-1] += ')'
+		elif len(terms) == 0:
+			return '1'
+
+		return '1/({})'.format(')*('.join(terms))
+
+	@staticmethod
+	def _extract_custom_constraint(constraint, reactant_tags, product_tags, known_mets):
+		# type: (Dict[str, Any], Dict[str, str], Dict[str, str], Set[str]) -> (Optional[np.ndarray[float]], List[str])
+		"""
+		Args:
+			constraint: values defining a kinetic constraint with key:
+				'customRateEquation' (str): mathematical representation of
+					rate, must contain 'kcat*E'
+				'customParameterVariables' (Dict[str, str]): mapping of
+					variable names in the rate equation to metabolite IDs
+					without location tags, must contain key 'E' (enzyme)
+				'customParameterConstants' (List[str]): constant strings
+					in the rate equation that correspond to values, must
+					contain 'kcat'
+				'customParameterConstantValues' (List[float]): values for
+					each of the constant strings
+				'Temp' (float or ''): temperature of measurement
+			reactant_tags: mapping of molecule IDs without a location tag to
+				molecule IDs with a location tag for all reactants
+			product_tags: mapping of molecule IDs without a location tag to
+				molecule IDs with a location tag for all products
+			known_mets: molecule IDs with a location tag for molecules with
+				known concentrations
+
+		Returns:
+			kcats: temperature adjusted kcat value, in units of 1/s
+			saturation: saturation equation with metabolites to replace
+				delimited by double quote (eg. "metabolite")
+		"""
+
+		equation = constraint['customRateEquation']
+		variables = constraint['customParameterVariables']
+		constant_keys = constraint['customParameterConstants']
+		constant_values = constraint['customParameterConstantValues']
+		temp = constraint['Temp']
+
+		# Need to have these in the constraint
+		kcat_str = 'kcat'
+		enzyme_str = 'E'
+		capacity_str = '{}*{}'.format(kcat_str, enzyme_str)
+
+		# Need to replace these symbols in equations
+		symbol_sub = {
+			'^': '**',
+			}
+
+		# Make sure kcat exists
+		if kcat_str not in constant_keys:
+			if VERBOSE:
+				print('Missing {} in custom constants: {}'.format(
+					kcat_str, constant_keys))
+			return None, []
+
+		custom_kcat = 1 / units.s * np.array([constant_values[constant_keys.index(kcat_str)]])
+		kcats = Metabolism.temperature_adjusted_kcat(custom_kcat, temp)
+
+		# Make sure equation can be parsed, otherwise just return kcat
+		if enzyme_str not in variables:
+			if VERBOSE:
+				print('Missing enzyme key ({}) in custom variables: {}'.format(
+					enzyme_str, variables))
+			return kcats, []
+		if not capacity_str in equation:
+			if VERBOSE:
+				print('Expected to find {} in custom equation: {}'.format(
+					capacity_str, equation))
+			return kcats, []
+		if len(constant_keys) != len(constant_values):
+			if VERBOSE:
+				print('Mismatch between constants: {} {}'.format(
+					constant_keys, constant_values))
+			return kcats, []
+
+		variables_with_tags = {
+			k: reactant_tags.get(v, product_tags.get(v, None))
+			for k, v in variables.items()
+			if k != enzyme_str and (v in reactant_tags or v in product_tags)
+		}
+
+		# Substitute values into custom equations
+		## Replace terms with known constant values or sim molecule IDs with concentrations
+		custom_subs = {k: str(v) for k, v in zip(constant_keys, constant_values)}
+		custom_subs.update({
+			k: '"{}"'.format(v)
+			for k, v in variables_with_tags.items()
+			if v in known_mets
+		})
+
+		## Remove capacity to get only saturation term
+		new_equation = equation.replace(capacity_str, '1')
+
+		## Tokenize equation to terms and symbols
+		parsed_variables = re.findall('\w*', new_equation)[:-1]  # Remove trailing empty match
+		## Ensure valid input of known variables or a float term
+		for v in parsed_variables:
+			if not (v == '' or v in custom_subs):
+				try:
+					float(v)
+				except ValueError:
+					if VERBOSE:
+						print('Unknown value encountered in custom equation {}: {}'
+							.format(equation, v))
+					return kcats, []
+		parsed_symbols = re.findall('\W', new_equation)
+		tokenized_equation = np.array(parsed_variables)
+		symbol_idx_mask = tokenized_equation == ''
+
+		## Verify tokenized equation matches original before replacements
+		tokenized_equation[symbol_idx_mask] = parsed_symbols
+		if ''.join(tokenized_equation) != new_equation:
+			if VERBOSE:
+				print('Error parsing custom equation: {}'.format(equation))
+			return kcats, []
+
+		## Perform replacement of symbols
+		tokenized_equation[symbol_idx_mask] = [symbol_sub.get(s, s) for s in parsed_symbols]
+
+		# Reconstruct saturation equation with replacements
+		saturation = [''.join([custom_subs.get(token, token) for token in tokenized_equation])]
+
+		return kcats, saturation
+
+	@staticmethod
+	def extract_kinetic_constraints(raw_data, sim_data, stoich=None,
+			catalysts=None, known_metabolites=None):
+		# type: (KnowledgeBaseEcoli, SimulationDataEcoli, Optional[Dict[str, Dict[str, int]]], Optional[Dict[str, List[str]]], Optional[Set[str]]) -> Dict[(str, str), Dict[str, List[Any]]]
+		"""
+		Load and parse kinetic constraint information from raw_data
+
+		Args:
+			raw_data: knowledge base data
+			sim_data: simulation data
+			stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
+				stoichiometry of metabolites for each reaction, if None, data
+				is loaded from raw_data and sim_data
+			catalysts: {reaction ID: enzyme IDs with location tag}
+				enzyme catalysts for each reaction with known catalysts, likely
+				a subset of reactions in stoich, if None, data is loaded from
+				raw_data and sim_data
+			known_metabolites: metabolites with known concentrations
+
+		Returns:
+			constraints: valid kinetic constraints for each reaction/enzyme pair
+				{(reaction ID, enzyme with location tag): {
+					'kcat': kcat values (List[float]),
+					'saturation': saturation equations (List[str])
+				}}
+		"""
+
+		# Load data for optional args if needed
+		if stoich is None or catalysts is None:
+			loaded_stoich, _, loaded_catalysts = Metabolism.extract_reactions(raw_data, sim_data)
+
+			if stoich is None:
+				stoich = loaded_stoich
+			if catalysts is None:
+				catalysts = loaded_catalysts
+
+		if known_metabolites is None:
+			known_metabolites = set()
+
+		constraints = {}
+		for constraint in raw_data.metabolism_kinetics:
+			rxn = constraint['reactionID']
+			enzyme = constraint['enzymeID']
+			metabolites = constraint['substrateIDs']
+			direction = constraint['direction']
+			kms = list(constraint['kM'].asNumber(MICROMOLAR_UNITS))
+			kis = list(constraint['kI'].asNumber(MICROMOLAR_UNITS))
+			n_reactants = len(metabolites) - len(kis)
+			matched_rxn = Metabolism.match_reaction(stoich, catalysts, rxn, enzyme,
+				metabolites[:n_reactants], direction)
+			if matched_rxn is None:
+				continue
+
+			# Ensure enzyme catalyzes reaction in model
+			enzymes_tag_conversion = {e[:-3]: e for e in catalysts.get(matched_rxn, [])}
+			if enzyme not in enzymes_tag_conversion:
+				if VERBOSE:
+					print('{} does not catalyze {}'.format(enzyme, matched_rxn))
+				continue
+			else:
+				enzyme = enzymes_tag_conversion[enzyme]
+
+			# Update metabolites with a location tag from the reaction
+			# First look in reactants but some products can inhibit
+			reactant_tags = {k[:-3]: k for k, v in stoich[matched_rxn].items() if v < 0}
+			product_tags = {k[:-3]: k for k, v in stoich[matched_rxn].items() if v > 0}
+			mets_with_tag = [
+				reactant_tags.get(met, product_tags.get(met, None))
+				for met in metabolites
+				if met in reactant_tags or met in product_tags
+			]
+			if len(mets_with_tag) != len(metabolites):
+				# Warn if verbose but no continue since we can still use kcat
+				if VERBOSE:
+					print('Could not match all metabolites: {} {}'.format(
+						metabolites, mets_with_tag))
+
+			# Extract kcat and saturation parameters
+			if constraint['rateEquationType'] == 'custom':
+				kcats, saturation = Metabolism._extract_custom_constraint(
+					constraint, reactant_tags, product_tags, known_metabolites)
+				if kcats is None:
+					continue
+			else:
+				kcats = Metabolism.temperature_adjusted_kcat(constraint['kcat'], constraint['Temp'])
+				if len(kcats) > 1:
+					if len(kcats) != len(kms) or len(kms) != len(mets_with_tag):
+						if VERBOSE:
+							print('Could not align kcats and kms: {} {} {} {}'.format(
+								rxn, kcats, kms, mets_with_tag))
+						continue
+
+					saturation = [
+						Metabolism._construct_default_saturation_equation(
+							[m], [km], [], known_metabolites)
+						for m, km in zip(mets_with_tag, kms)
+					]
+				else:
+					saturation = [
+						Metabolism._construct_default_saturation_equation(
+							mets_with_tag, kms, kis, known_metabolites)
+					]
+
+				saturation = [s for s in saturation if s != '1']
+
+			# Add new kcats and saturation terms for the enzymatic reaction
+			key = (matched_rxn, enzyme)
+			entries = constraints.get(key, {})
+			entries['kcat'] = entries.get('kcat', []) + list(kcats)
+			entries['saturation'] = entries.get('saturation', []) + saturation
+			constraints[key] = entries
+
+		return constraints
+
+	@staticmethod
+	def _replace_enzyme_reactions(constraints, stoich, rxn_catalysts, reversible_rxns):
+		# type: (Dict[(str, str), Dict[str, List[Any]]], Dict[str, Dict[str, int]], Dict[str, List[str]], List[str]) -> (Dict[str, Any], Dict[str, Dict[str, int]], Dict[str, List[str]], List[str])
+		"""
+		Modifies reaction IDs in data structures to duplicate reactions with
+		kinetic constraints and multiple enzymes.
+
+		Args:
+			constraints: valid kinetic constraints for each reaction/enzyme pair
+				{(reaction ID, enzyme with location tag): {
+					'kcat': kcat values (List[float]),
+					'saturation': saturation equations (List[str])
+				}}
+			stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
+				stoichiometry of metabolites for each reaction, if None, data
+				is loaded from raw_data and sim_data
+			rxn_catalysts: {reaction ID: enzyme IDs with location tag}
+				enzyme catalysts for each reaction with known catalysts, likely
+				a subset of reactions in stoich, if None, data is loaded from
+				raw_data and sim_data
+			reversible_rxns: reaction IDs for reactions that have a reverse
+				complement, does not have reverse tag
+
+		Returns:
+			new_constraints: valid kinetic constraints for each reaction
+				{reaction ID: {
+					'enzyme': enzyme catalyst (str),
+					'kcat': kcat values (List[float]),
+					'saturation': saturation equations (List[str])
+				}}
+			stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
+				stoichiometry of metabolites for each reaction with updated
+				reactions for enzyme catalyzed kinetic reactions
+			rxn_catalysts: {reaction ID: enzyme IDs with location tag}
+				enzyme catalysts for each reaction with known catalysts, likely
+				a subset of reactions in stoich with updated
+				reactions for enzyme catalyzed kinetic reactions
+			reversible_rxns: reaction IDs for reactions that have a reverse
+				complement with updated reactions for enzyme catalyzed kinetic
+				reactions, does not have reverse tag
+		"""
+
+		new_constraints = {}
+
+		n_catalysts = {rxn: len(catalysts) for rxn, catalysts in rxn_catalysts.items()}
+
+		# Split out reactions that are kinetically constrained and that have
+		# more than one enzyme that catalyzes the reaction
+		for (rxn, enzyme), constraint in constraints.items():
+			if n_catalysts[rxn] > 1:
+				# Create new reaction name with enzyme appended to the end
+				if rxn.endswith(REVERSE_TAG):
+					new_rxn = REVERSE_REACTION_ID.format(ENZYME_REACTION_ID.format(rxn[:-len(REVERSE_TAG)], enzyme[:-3]))
+				else:
+					new_rxn = ENZYME_REACTION_ID.format(rxn, enzyme[:-3])
+
+				# Add the new reaction to appropriate lists and dicts
+				stoich[new_rxn] = copy(stoich[rxn])
+				rxn_catalysts[new_rxn] = [enzyme]
+				if rxn in reversible_rxns:
+					reversible_rxns.append(new_rxn)
+
+				# Remove enzyme from old reaction and remove old reaction if no
+				# more enzyme catalysts
+				rxn_catalysts[rxn].pop(rxn_catalysts[rxn].index(enzyme))
+				if len(rxn_catalysts[rxn]) == 0:
+					stoich.pop(rxn)
+					rxn_catalysts.pop(rxn)
+					if rxn in reversible_rxns:
+						reversible_rxns.pop(reversible_rxns.index(rxn))
+			else:
+				new_rxn = rxn
+
+			new_constraints[new_rxn] = dict(constraints[(rxn, enzyme)], enzyme=enzyme)
+
+		return new_constraints, stoich, rxn_catalysts, reversible_rxns
+
+	@staticmethod
+	def _lambdify_constraints(constraints):
+		# type: (Dict[str, Any]) -> (List[str], List[str], List[str], np.ndarray[float], str, str, np.ndarray[bool])
+		"""
+		Creates str representations of kinetic terms to be used to create
+		kinetic constraints that are returned with getKineticConstraints().
+
+		Args:
+			constraints: valid kinetic constraints for each reaction
+				{reaction ID: {
+					'enzyme': enzyme catalyst (str),
+					'kcat': kcat values (List[float]),
+					'saturation': saturation equations (List[str])
+				}}
+
+		Returns:
+			rxns: sorted reaction IDs for reactions with a kinetic constraint
+			enzymes: sorted enzyme IDs for enzymes that catalyze a kinetic reaction
+			substrates: sorted substrate IDs for substrates that are needed
+				for kinetic saturation terms
+			all_kcats: (n rxns, 3) min, mean and max kcat value for each reaction
+			all_saturations: sympy str representation of a list of saturation
+				terms (eg. '[s[0] / (1 + s[0]), 2 / (2 + s[1])]')
+			all_enzymes: sympy str representation of enzymes for each reaction
+				(eg. '[e[0], e[2], e[1]]')
+			constraint_is_kcat_only: True if reaction only has kcat values and
+				no saturation terms
+		"""
+
+		# Ordered lists of constraint related IDs
+		rxns = sorted(constraints)
+		enzymes = sorted({c['enzyme'] for c in constraints.values()})
+		substrates = sorted({
+			match.strip('"')
+			for c in constraints.values()
+			for s in c['saturation']
+			for match in re.findall('".+?"', s)
+		})
+
+		# Mapping to replace molecule IDs with generic list strings
+		enzyme_sub = {e: 'e[{}]'.format(i) for i, e in enumerate(enzymes)}
+		substrate_sub = {'"{}"'.format(s): 's[{}]'.format(i)
+			for i, s in enumerate(substrates)}
+
+		# Mapping to replace generic list strings with sympy variables.
+		# Need separate mapping from above because sympy handles '[]' as indexing
+		# so location tags are not parsed properly.
+		enzyme_symbols = {'e': [sp.symbols('e[{}]'.format(i)) for i in range(len(enzymes))]}
+		substrate_symbols = {'s': [sp.symbols('s[{}]'.format(i)) for i in range(len(substrates))]}
+
+		# Values to return
+		all_kcats = np.zeros((len(rxns), 3))
+		all_saturations = []
+		all_enzymes = []
+		constraint_is_kcat_only = []
+
+		# Extract out data from each constraint
+		for i, rxn in enumerate(rxns):
+			kcats = constraints[rxn]['kcat']
+			saturation = constraints[rxn]['saturation']
+			enzyme = constraints[rxn]['enzyme']
+
+			# Parse saturation equations into sympy format
+			# If no saturation data is known, assume open range from 0 to 1
+			saturations = []
+			for sat in saturation:
+				if sat == '1':
+					continue
+
+				for token, replace in substrate_sub.items():
+					sat = sat.replace(token, replace)
+				saturations.append(parse_expr(sat, local_dict=substrate_symbols))
+			if len(saturations) == 0:
+				saturations = [0, 1]
+				constraint_is_kcat_only.append(True)
+			else:
+				constraint_is_kcat_only.append(False)
+
+			# Save values for this constraint
+			all_kcats[i, :] = [np.min(kcats), np.mean(kcats), np.max(kcats)]
+			all_saturations.append(saturations)
+			all_enzymes.append(parse_expr(enzyme_sub[enzyme], local_dict=enzyme_symbols))
+
+		# Convert to str to save as class attr to be executed
+		all_saturations = str(all_saturations)
+		all_enzymes = str(all_enzymes)
+		constraint_is_kcat_only = np.array(constraint_is_kcat_only)
+
+		return rxns, enzymes, substrates, all_kcats, all_saturations, all_enzymes, constraint_is_kcat_only
+
 
 # Class used to update metabolite concentrations based on the current nutrient conditions
 class ConcentrationUpdates(object):
 	def __init__(self, concDict, equilibriumReactions, exchange_data_dict):
 		self.units = units.getUnit(concDict.values()[0])
 		self.defaultConcentrationsDict = dict((key, concDict[key].asNumber(self.units)) for key in concDict)
-		self.exchange_data_dict = exchange_data_dict
+		self.exchange_fluxes = self._exchange_flux_present(exchange_data_dict)
 
 		# factor of internal amino acid increase if amino acids present in nutrients
 		self.moleculeScaleFactors = {
@@ -630,39 +1168,46 @@ class ConcentrationUpdates(object):
 		self.moleculeSetAmounts = self._addMoleculeAmounts(equilibriumReactions, self.defaultConcentrationsDict)
 
 	# return adjustments to concDict based on nutrient conditions
-	def concentrationsBasedOnNutrients(self, media_id = None, nutrientsToInternalConc = None):
+	def concentrationsBasedOnNutrients(self, media_id=None):
 		concentrationsDict = self.defaultConcentrationsDict.copy()
 
 		metaboliteTargetIds = sorted(concentrationsDict.keys())
 		concentrations = self.units * np.array([concentrationsDict[k] for k in metaboliteTargetIds])
-
-		if media_id == None:
-			return dict(zip(metaboliteTargetIds, concentrations))
-
-		nutrientFluxes = {
-			"importConstrainedExchangeMolecules": self.exchange_data_dict["importConstrainedExchangeMolecules"][media_id],
-			"importUnconstrainedExchangeMolecules": self.exchange_data_dict["importUnconstrainedExchangeMolecules"][media_id],
-		}
-
 		concDict = dict(zip(metaboliteTargetIds, concentrations))
 
-		for moleculeName, setAmount in self.moleculeSetAmounts.iteritems():
-			if self._isNutrientExchangePresent(nutrientFluxes, moleculeName) and (moleculeName[:-3] + "[c]" not in self.moleculeScaleFactors or moleculeName == "L-SELENOCYSTEINE[c]"):
-				concDict[moleculeName] = setAmount
-			if moleculeName in self.moleculeScaleFactors and self._isNutrientExchangePresent(nutrientFluxes, moleculeName[:-3] + "[p]"):
-				concDict[moleculeName] = setAmount
+		if media_id is not None:
+			exchanges = self.exchange_fluxes[media_id]
+			for moleculeName, setAmount in self.moleculeSetAmounts.iteritems():
+				if ((moleculeName in exchanges and (moleculeName[:-3] + "[c]" not in self.moleculeScaleFactors or moleculeName == "L-SELENOCYSTEINE[c]"))
+						or (moleculeName in self.moleculeScaleFactors and moleculeName[:-3] + "[p]" in exchanges)):
+					concDict[moleculeName] = setAmount
 
 		return concDict
 
-	def _isNutrientExchangePresent(self, nutrientFluxes, molecule):
-		if molecule in nutrientFluxes["importUnconstrainedExchangeMolecules"]:
-			return True
+	def _exchange_flux_present(self, exchange_data):
+		# type: (Dict[str, Any]) -> Dict[str, Set[str]]
+		"""
+		Caches the presence of exchanges in each media condition based on
+		exchange_data to set concentrations in concentrationsBasedOnNutrients().
 
-		if molecule in nutrientFluxes["importConstrainedExchangeMolecules"]:
-			if nutrientFluxes["importConstrainedExchangeMolecules"][molecule].asNumber() > 0:
-				return True
+		Args:
+			exchange_data: dictionary of exchange data for all media conditions with keys:
+				importUnconstrainedExchangeMolecules (dict[str, set[str]]): for each media ID key,
+					exchange molecules (with location tag) that do not have an upper bound on their flux
+				importConstrainedExchangeMolecules (dict[str, dict[str, float with mol/mass/time units]]):
+					for each media ID key, constrained molecules (with location tag)
+					with upper bound flux constraints
 
-		return False
+		Returns:
+			sets of molecules IDs (with location tags) that can be imported for each
+			media ID
+		"""
+
+		exchange_fluxes = {}
+		for media, env in exchange_data.items():
+			exchange_fluxes[media] = {mol for mol, conc in env.items() if conc > 0}
+
+		return exchange_fluxes
 
 	def _addMoleculeAmounts(self, equilibriumReactions, concDict):
 		moleculeSetAmounts = {}
@@ -679,211 +1224,3 @@ class ConcentrationUpdates(object):
 		for moleculeName, scaleFactor in self.moleculeScaleFactors.iteritems():
 			moleculeSetAmounts[moleculeName] = scaleFactor * concDict[moleculeName] * self.units
 		return moleculeSetAmounts
-
-
-class Boundary(object):
-	'''
-	Boundary provides an interface between metabolism and the environment.
-	This class builds exchange_data_dict, with keys for the five categories
-	of external molecules that set up the FBA problem space (see _getExchangeDataDict for a description).
-	'''
-	def __init__(self, raw_data, sim_data):
-
-		self.import_constraint_threshold = IMPORT_CONSTRAINT_THRESHOLD
-		self.env_to_exchange_map = sim_data.external_state.environment.env_to_exchange_map
-
-		# lists of molecules whose presence modifies glc's upper bound for FBA import constraint, whose default is 20 (mmol/g DCW/hr).
-		# This is implemented to reproduce glc maximum uptake previous instantiated in environment files, but now done explicitly here.
-		self.glc_vmax_conditions = [
-			# if any of these molecules are ABSENT, GLC upper bound is set to 0 (mmol/g DCW/hr)
-			['GLC[p]'],
-			# if any of these molecules are ABSENT, GLC upper bound is set to 100 (mmol/g DCW/hr)
-			['OXYGEN-MOLECULE[p]'],
-			# if any of these molecules are ABSENT, GLC upper bound is set to 10 (mmol/g DCW/hr)
-			['CA+2[p]', 'MG+2[p]', 'PI[p]'],
-			# if any of these molecules are PRESENT, GLC upper bound is set to 10 (mmol/g DCW/hr)
-			['CPD-183[p]', 'INDOLE[p]', 'NITRATE[p]', 'NITRITE[p]', 'CPD-520[p]', 'TUNGSTATE[p]'],
-		]
-
-		self.all_external_exchange_molecules = self._getAllExternalExchangeMolecules(raw_data)
-		self.secretion_exchange_molecules = self._getSecretionExchangeMolecules(raw_data)
-		self.exchange_data_dict = self._getExchangeDataDict(sim_data)
-
-	def _getAllExternalExchangeMolecules(self, raw_data):
-		'''
-		Returns:
-			list[str]: all external exchange molecules
-		'''
-		externalExchangeData = []
-		# initiate all molecules with 0 concentrations
-		for row in raw_data.condition.environment_molecules:
-			externalExchangeData.append(row["molecule id"] + row["exchange molecule location"])
-
-		return externalExchangeData
-
-	def _getSecretionExchangeMolecules(self, raw_data):
-		'''
-		Returns:
-			list[str]: all secretion exchange molecules
-		'''
-		secretionExchangeMolecules = []
-		for secretion in raw_data.secretions:
-			if secretion["lower bound"] and secretion["upper bound"]:
-				# "non-growth associated maintenance", not included in our metabolic model
-				continue
-			else:
-				secretionExchangeMolecules.append(secretion["molecule id"])
-
-		return secretionExchangeMolecules
-
-	def _getExchangeDataDict(self, sim_data):
-		'''
-		Returns:
-			exchange_data_dict (dict): keys are the five exchange_data variables,
-				with their entries as dicts for all saved media conditions.
-
-		exchange_data_dict includes the following fields:
-			- externalExchangeMolecules: All exchange molecules, both import and secretion exchanged molecules.
-			- importExchangeMolecules: molecules that can be imported from the environment into the cell.
-			- importConstrainedExchangeMolecules: exchange molecules that have an upper bound on their flux.
-			- importUnconstrainedExchangeMolecules: exchange molecules that do not have an upper bound on their flux.
-			- secretionExchangeMolecules: molecules that can be secreted by the	cell into the environment.
-		'''
-		saved_media = sim_data.external_state.environment.saved_media
-
-		externalExchangeMolecules = {}
-		importExchangeMolecules = {}
-		importConstrainedExchangeMolecules = {}
-		importUnconstrainedExchangeMolecules = {}
-		secretionExchangeMolecules = self.secretion_exchange_molecules
-
-		for environment_name, molecules in saved_media.iteritems():
-
-			exchange_data = self.exchangeDataFromConcentrations(molecules)
-
-			externalExchangeMolecules[environment_name] = exchange_data['externalExchangeMolecules']
-			importExchangeMolecules[environment_name] = exchange_data['importExchangeMolecules']
-			importConstrainedExchangeMolecules[environment_name] = exchange_data['importConstrainedExchangeMolecules']
-			importUnconstrainedExchangeMolecules[environment_name] = exchange_data['importUnconstrainedExchangeMolecules']
-
-		return {
-			"externalExchangeMolecules": externalExchangeMolecules,
-			"importExchangeMolecules": importExchangeMolecules,
-			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
-			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
-			"secretionExchangeMolecules": secretionExchangeMolecules,
-		}
-
-	def exchangeDataFromConcentrations(self, molecules):
-		'''
-		Update importExchangeMolecules for FBA based on current nutrient concentrations.
-		This provides a simple type of transport to accommodate changing nutrient
-		concentrations in the environment. Transport is modeled as a binary switch:
-		When there is a high concentrations of environment nutrients, transporters
-		are unconstrained and nutrients are transported as needed by metabolism.
-		When concentrations fall below the threshold, that nutrient's transport
-		is constrained to max flux of 0.
-		'''
-
-		externalExchangeMolecules = set()
-		importExchangeMolecules = set()
-		importUnconstrainedExchangeMolecules = []
-		importConstrainedExchangeMolecules = {}
-		secretionExchangeMolecules = self.secretion_exchange_molecules
-
-		#remove molecules with low concentration
-		exchange_molecules = {self.env_to_exchange_map[mol]: conc for mol, conc in molecules.iteritems()}
-		nonzero_molecules = {molecule_id:concentration
-							 for molecule_id, concentration in exchange_molecules.items()
-							 if concentration >= self.import_constraint_threshold}
-
-		for molecule_id, concentration in nonzero_molecules.iteritems():
-
-			# skip if concentration is 0. Do not include these nonexistent molecules in FBA problem definition.
-			if molecule_id != 'GLC[p]' and concentration == 0:
-				continue
-
-			elif concentration < self.import_constraint_threshold:
-				importConstrainedExchangeMolecules[molecule_id] = 0 * (units.mmol / units.g / units.h)
-
-			# The logic below is used to change GLC's upper bound flux based on what nutrients are present in the environment.
-			# The order of this logic is important. First, if GLC is absent from the environment, the upper bound flux is 0.
-			# If molecules in condition[1] (oxygen) are absent, the upper bound flux is 100 to match anaerobic glucose uptake.
-			# If either molecules in condition[2] are absent or condition[3] are present, the upper bound flux is 10.
-			# Finally, if none of these conditions are true, the upper bound is set to the default of 20.
-			elif molecule_id == 'GLC[p]':
-				# if any molecule in glc_vmax_conditions[0] is ABSENT:
-				if not all(molecule in nonzero_molecules for molecule in self.glc_vmax_conditions[0]):
-					importConstrainedExchangeMolecules[molecule_id] = 0 * (units.mmol / units.g / units.h)
-				# if any molecule in glc_vmax_conditions[1] is ABSENT:
-				elif not all(molecule in nonzero_molecules for molecule in self.glc_vmax_conditions[1]):
-					importConstrainedExchangeMolecules[molecule_id] = 100 * (units.mmol / units.g / units.h)
-				# if any molecule in glc_vmax_conditions[2] is ABSENT:
-				elif not all(molecule in nonzero_molecules for molecule in self.glc_vmax_conditions[2]):
-					importConstrainedExchangeMolecules[molecule_id] = 10 * (units.mmol / units.g / units.h)
-				# if any molecule in glc_vmax_conditions[3] is PRESENT:
-				elif any(molecule in nonzero_molecules for molecule in self.glc_vmax_conditions[3]):
-					importConstrainedExchangeMolecules[molecule_id] = 10 * (units.mmol / units.g / units.h)
-				else:
-					importConstrainedExchangeMolecules[molecule_id] = 20 * (units.mmol / units.g / units.h)
-
-			# add to import unconstrained if concentration >= threshold and not GLC
-			else:
-				importUnconstrainedExchangeMolecules.append(molecule_id)
-
-			importExchangeMolecules.add(molecule_id)
-			externalExchangeMolecules.add(molecule_id)
-
-		for molecule_id in secretionExchangeMolecules:
-			externalExchangeMolecules.add(molecule_id)
-
-		return {
-			"externalExchangeMolecules": list(externalExchangeMolecules),
-			"importExchangeMolecules": list(importExchangeMolecules),
-			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
-			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
-			"secretionExchangeMolecules": secretionExchangeMolecules,
-		}
-
-	def exchangeDataFromMedia(self, media_label):
-		'''
-		Returns:
-			dict: exchange_data for a media_label saved in exchange_data_dict.
-		'''
-
-		externalExchangeMolecules = self.exchange_data_dict['externalExchangeMolecules'][media_label]
-		importExchangeMolecules = self.exchange_data_dict['importExchangeMolecules'][media_label]
-		importConstrainedExchangeMolecules = self.exchange_data_dict['importConstrainedExchangeMolecules'][media_label]
-		importUnconstrainedExchangeMolecules = self.exchange_data_dict['importUnconstrainedExchangeMolecules'][media_label]
-		secretionExchangeMolecules = self.exchange_data_dict['secretionExchangeMolecules']
-
-		return {
-			"externalExchangeMolecules": externalExchangeMolecules,
-			"importExchangeMolecules": importExchangeMolecules,
-			"importConstrainedExchangeMolecules": importConstrainedExchangeMolecules,
-			"importUnconstrainedExchangeMolecules": importUnconstrainedExchangeMolecules,
-			"secretionExchangeMolecules": secretionExchangeMolecules,
-		}
-
-	def getImportConstraints(self, exchange_data):
-		'''
-		Returns:
-			import_constraint (list[bool]): the indices of all importConstrainedExchangeMolecules
-				in self.all_external_exchange_molecules are true, the rest as false.
-			import_exchange (list[bool]): the indices of all importExchangeMolecules
-				in self.all_external_exchange_molecules are true, the rest as false.
-		'''
-
-		# molecules from all_external_exchange_molecules set to 'true' if they are current importExchangeMolecules.
-		import_exchange = [
-			molecule_id in exchange_data['importExchangeMolecules']
-			for molecule_id in self.all_external_exchange_molecules
-			]
-
-		# molecules from all_external_exchange_molecules set to 'true' if they are current importConstrainedExchangeMolecules.
-		import_constraint = [
-			molecule_id in exchange_data['importConstrainedExchangeMolecules']
-			for molecule_id in self.all_external_exchange_molecules
-			]
-
-		return import_exchange, import_constraint

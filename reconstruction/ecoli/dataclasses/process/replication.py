@@ -10,11 +10,14 @@ from __future__ import division
 import numpy as np
 import collections
 
+from wholecell.sim.simulation import MAX_TIME_STEP
 from wholecell.utils import units
 from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import stochasticRound
 
-MAX_TIMESTEP_LEN = 2
+
+PROCESS_MAX_TIME_STEP = 2.
+
 
 class Replication(object):
 	"""
@@ -22,7 +25,11 @@ class Replication(object):
 	"""
 
 	def __init__(self, raw_data, sim_data):
+		self.max_time_step = min(MAX_TIME_STEP, PROCESS_MAX_TIME_STEP)
+
 		self._n_nt_types = len(sim_data.dNtpOrder)
+		self._c_period = sim_data.growthRateParameters.c_period.asNumber(units.min)
+		self._d_period = sim_data.growthRateParameters.d_period.asNumber(units.min)
 
 		self._buildSequence(raw_data, sim_data)
 		self._buildGeneData(raw_data, sim_data)
@@ -93,7 +100,7 @@ class Replication(object):
 		# Determine size of the matrix used by polymerize function
 		maxLen = np.int64(
 			self.replichore_lengths.max()
-			+ MAX_TIMESTEP_LEN * sim_data.growthRateParameters.dnaPolymeraseElongationRate.asNumber(units.nt / units.s)
+			+ self.max_time_step * sim_data.growthRateParameters.dnaPolymeraseElongationRate.asNumber(units.nt / units.s)
 		)
 
 		self.replication_sequences = np.empty((4, maxLen), np.int8)
@@ -107,10 +114,13 @@ class Replication(object):
 		# Get polymerized nucleotide weights
 		self.replicationMonomerWeights = (
 			(sim_data.getter.getMass(sim_data.moleculeGroups.dNtpIds)
-			- sim_data.getter.getMass(["PPI[c]"]))
-			/ raw_data.constants['nAvogadro']
+			- sim_data.getter.getMass([sim_data.moleculeIds.ppi]))
+			/ sim_data.constants.nAvogadro
 		)
 
+		# Placeholder value for "child_domains" attribute of domains without
+		# children domains
+		self.no_child_place_holder = -1
 
 	def _buildMotifs(self, raw_data, sim_data):
 		"""
@@ -131,14 +141,12 @@ class Replication(object):
 			self.motif_coordinates[motif["id"]] = self._get_motif_coordinates(
 				motif["length"], motif["sequences"])
 
-
 	def _get_complement_sequence(self, sequenceVector):
 		"""
 		Calculates the vector for a complement sequence of a DNA sequence given
 		in vector form.
 		"""
 		return (self._n_nt_types - 1) - sequenceVector
-
 
 	def _get_motif_coordinates(self, motif_length, motif_sequences):
 		"""
@@ -177,7 +185,6 @@ class Replication(object):
 
 		return motif_coordinates
 
-
 	def _get_relative_coordinates(self, coordinates):
 		"""
 		Converts an array of genomic coordinates into coordinates relative to
@@ -190,6 +197,7 @@ class Replication(object):
 		relative_coordinates[relative_coordinates < 0] += 1
 
 		return relative_coordinates
+
 	def _build_elongation_rates(self, raw_data, sim_data):
 		self.basal_elongation_rate = int(
 			round(sim_data.growthRateParameters.dnaPolymeraseElongationRate.asNumber(
@@ -202,3 +210,30 @@ class Replication(object):
 			dtype=np.int64)
 
 		return rates
+
+	def get_average_copy_number(self, tau, coords):
+		"""
+		Calculates the average copy number of a gene throughout the cell cycle
+		given the location of the gene in coordinates.
+
+		Args:
+			tau (float): expected doubling time in minutes
+			coords (int or ndarray[int]): chromosome coordinates of genes
+
+		Returns:
+			float or ndarray[float] (matches length of coords): average copy
+			number of each gene expected at a doubling time, tau
+		"""
+
+		right_replichore_length = self.replichore_lengths[0]
+		left_replichore_length = self.replichore_lengths[1]
+
+		# Calculate the relative position of the gene along the chromosome
+		# from its coordinate
+		relative_pos = np.array(coords, float)
+		relative_pos[coords > 0] = relative_pos[coords > 0] / right_replichore_length
+		relative_pos[coords < 0] = -relative_pos[coords < 0] / left_replichore_length
+
+		# Return the predicted average copy number
+		n_avg_copy = 2**(((1 - relative_pos) * self._c_period + self._d_period) / tau)
+		return n_avg_copy

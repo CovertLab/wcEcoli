@@ -1,13 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
-import numpy as np
-import numpy.testing as npt
 import os
 import shutil
 import tempfile
+from typing import List, Dict
 import unittest
 
-import nose.plugins.attrib as noseAttrib
+import numpy as np
+import numpy.testing as npt
+
 
 # def noop_decorator(fcn):
 # 	return fcn
@@ -16,7 +17,8 @@ import nose.plugins.attrib as noseAttrib
 # __builtins__.setdefault('profile', noop_decorator)
 
 from wholecell.utils import filepath
-from wholecell.io.tablereader import TableReader, DoesNotExistError
+from wholecell.io.tablereader import (TableReader, DoesNotExistError,
+	VariableLengthColumnError)
 from wholecell.io.tablewriter import (BLOCK_BYTES_GOAL,
 	TableWriter, MissingFieldError, TableExistsError, UnrecognizedFieldError,
 	VariableEntrySizeError, AttributeAlreadyExistsError, AttributeTypeError,
@@ -26,10 +28,17 @@ from wholecell.io.tablewriter import (BLOCK_BYTES_GOAL,
 COLUMNS = 'x y z theta'.split()
 DATA = {key: np.arange(10.0) + ord(key[0]) for key in COLUMNS}
 
+# For subcolumns read test
+TABLE_NAME = "table"
+COLUMN_NAME = "col"
+COLUMN_2_NAME = "col2"
+VARIABLE_LENGTH_COLUMN_NAME = "vcol"
+SUBCOL_NAMES = ["A", "B", "C", "D", "E", "F"]
+SUBCOL_2_NAMES = ["Z", "Y", "X", "W", "V", "U"]
+
 
 # TODO(jerry): Test structured dtypes.
 
-@noseAttrib.attr('smalltest', 'table')
 class Test_TableReader_Writer(unittest.TestCase):
 	def setUp(self):
 		self.test_dir = None
@@ -358,6 +367,76 @@ class Test_TableReader_Writer(unittest.TestCase):
 		npt.assert_array_equal(np.vstack(rows * [ints]), actual_ints)
 		npt.assert_array_equal(np.vstack(rows * [floats]), actual_floats)
 
+	def test_variable_length_columns(self):
+		'''Test variable-length columns.'''
+		self.make_test_dir()
+
+		# --- Write ---
+		writer = TableWriter(self.table_path)
+		writer.set_variable_length_columns(VARIABLE_LENGTH_COLUMN_NAME)
+		writer.append(**{VARIABLE_LENGTH_COLUMN_NAME: np.arange(1, dtype=np.int32)})
+		writer.append(**{VARIABLE_LENGTH_COLUMN_NAME: np.arange(2)})
+		writer.append(**{VARIABLE_LENGTH_COLUMN_NAME: []})
+		writer.close()
+
+		# --- Read ---
+		reader = TableReader(self.table_path)
+		variable_column = reader.readColumn(VARIABLE_LENGTH_COLUMN_NAME)
+
+		npt.assert_array_equal(
+			np.array([[0, np.nan], [0, 1], [np.nan, np.nan]]),
+			variable_column)
+
+		# Subcolumns cannot be accessed for variable-length columns
+		with self.assertRaises(VariableLengthColumnError):
+			reader.readColumn(VARIABLE_LENGTH_COLUMN_NAME, indices=1)
+
+	def test_long_variable_length_columns(self):
+		'''Test long variable-length columns that span multiple blocks.'''
+		self.make_test_dir()
+
+		rows = []
+		row_lengths = []
+		while len(rows) == 0 or np.concatenate(rows).nbytes < 10*BLOCK_BYTES_GOAL:
+			row_length = np.random.randint(5, 100)
+			rows.append(np.arange(row_length))
+			row_lengths.append(row_length)
+
+		# --- Write ---
+		writer = TableWriter(self.table_path)
+		writer.set_variable_length_columns(VARIABLE_LENGTH_COLUMN_NAME)
+		for row in rows:
+			writer.append(**{VARIABLE_LENGTH_COLUMN_NAME: row})
+		writer.close()
+
+		# --- Read ---
+		reader = TableReader(self.table_path)
+		variable_column = reader.readColumn(VARIABLE_LENGTH_COLUMN_NAME)
+
+		actual_column = np.full((len(rows), np.array(row_lengths).max()), np.nan)
+		for i, row in enumerate(rows):
+			actual_column[i, :row_lengths[i]] = row
+
+		npt.assert_array_equal(actual_column, variable_column)
+
+	def test_empty_variable_length_columns(self):
+		'''Test variable-length columns with empty rows.'''
+		self.make_test_dir()
+
+		# --- Write ---
+		writer = TableWriter(self.table_path)
+		writer.set_variable_length_columns(VARIABLE_LENGTH_COLUMN_NAME)
+		for i in range(1000):
+			writer.append(
+				**{VARIABLE_LENGTH_COLUMN_NAME: np.array([])})
+		writer.close()
+
+		# --- Read ---
+		reader = TableReader(self.table_path)
+		variable_column = reader.readColumn(VARIABLE_LENGTH_COLUMN_NAME)
+
+		npt.assert_array_equal(np.zeros((1000, 0)), variable_column)
+
 	def test_path_clash(self):
 		'''Test two TableWriters trying to write to the same directory.'''
 		self.make_test_dir()
@@ -400,3 +479,116 @@ class Test_TableReader_Writer(unittest.TestCase):
 		with self.assertRaises(AttributeTypeError):
 			writer.writeAttributes(fcn=lambda: 1, object=self, alpha='zed')
 		writer.writeAttributes(alpha='ZED')  # not previously written
+
+
+
+
+class TestReadSubcolumn(unittest.TestCase):
+
+	def setUp(self):
+		self.temp_dir = tempfile.mkdtemp()
+		self.tablewriter = TableWriter(
+			os.path.join(self.temp_dir, TABLE_NAME)
+		)
+
+	def tearDown(self):
+		shutil.rmtree(self.temp_dir)
+
+	def test_read_normal_subcolumn(self):
+		vals = np.random.random((5, 6))
+		for val in vals:
+			self.tablewriter.append(**{COLUMN_NAME: val})
+		self._write_subcolumn_metadata({COLUMN_NAME: SUBCOL_NAMES})
+		self.tablewriter.close()
+
+		for i in range(vals.shape[1]):
+			subcol = self._read_subcolumn(
+				self.temp_dir, TABLE_NAME, COLUMN_NAME, SUBCOL_NAMES[i]
+			)
+			np.testing.assert_array_equal(
+				vals[:, i], subcol
+			)
+
+	def test_read_sole_subcolumn(self):
+		vals = np.random.random(5)
+		for val in vals:
+			self.tablewriter.append(**{COLUMN_NAME: val})
+		self._write_subcolumn_metadata({COLUMN_NAME: SUBCOL_NAMES[0:1]})
+		self.tablewriter.close()
+
+		subcol = self._read_subcolumn(
+			self.temp_dir, TABLE_NAME, COLUMN_NAME, SUBCOL_NAMES[0]
+		)
+		np.testing.assert_array_equal(vals, subcol)
+
+	def test_read_sole_row(self):
+		val = np.random.random()
+		self.tablewriter.append(**{COLUMN_NAME: val})
+		self._write_subcolumn_metadata({COLUMN_NAME: SUBCOL_NAMES[0:1]})
+		self.tablewriter.close()
+
+		subcol = self._read_subcolumn(
+			self.temp_dir, TABLE_NAME, COLUMN_NAME, SUBCOL_NAMES[0]
+		)
+		np.testing.assert_array_equal(np.array(val), subcol)
+
+	def test_read_multiple_columns(self):
+		vals = np.random.random((5, 2, 6))
+		for val in vals:
+			self.tablewriter.append(
+				**{COLUMN_NAME: val[0], COLUMN_2_NAME: val[1]}
+			)
+		self._write_subcolumn_metadata(
+			{COLUMN_NAME: SUBCOL_NAMES, COLUMN_2_NAME: SUBCOL_2_NAMES}
+		)
+		self.tablewriter.close()
+
+		for i in range(vals.shape[2]):
+			subcol = self._read_subcolumn(
+				self.temp_dir, TABLE_NAME, COLUMN_NAME, SUBCOL_NAMES[i]
+			)
+			np.testing.assert_array_equal(
+				vals[:, 0, i], subcol
+			)
+			subcol = self._read_subcolumn(
+				self.temp_dir, TABLE_NAME, COLUMN_2_NAME, SUBCOL_2_NAMES[i]
+			)
+			np.testing.assert_array_equal(
+				vals[:, 1, i], subcol
+			)
+
+	def _read_subcolumn(self, sim_out, table, column, subcolumn):
+		reader = TableReader(os.path.join(sim_out, table))
+		return reader.readSubcolumn(column, subcolumn)
+
+	def _write_subcolumn_metadata(self, subcolumns_labels):
+		# type: (Dict[str, List[str]]) -> None
+		"""Record subcolumn metadata in table attributes
+
+		Precondition:
+			self.tablewriter must be ready to write
+		Postcondition:
+			The table will have an attribute `subcolumns` that stores a
+			dictionary mapping from column names to some arbitrary name.
+			For each such arbitrary name, the table will have another
+			attribute of that name which stores the list of the names
+			for the subcolumns of the associated column, in the order in
+			which the subcolumns are indexed.
+		Arguments:
+			subcolumns_labels: A dictionary where for each key-value
+				pair, the key is the name of a column in the table and
+				the value is a list of the labels for each of that
+				column's subcolumns such that the i-th subcolumn is
+				named by the i-th element of the list.
+		"""
+		subcolumns_key = {
+			col_name: str(i) for i, col_name in
+			enumerate(subcolumns_labels.keys())
+		}
+		attributes = {
+			str(i): lst for i, lst in
+			enumerate(subcolumns_labels.values())
+		}
+		attributes["subcolumns"] = subcolumns_key
+		self.tablewriter.writeAttributes(**attributes)
+

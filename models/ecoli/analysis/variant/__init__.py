@@ -9,9 +9,11 @@ ACTIVE = [
 	"growthConditionComparison.py",
 	"massFractionSummary.py",
 	"metabolism_kinetic_objective_weight.py",
+	"metabolism_secretion_penalty.py",
 	"tfFit.py",
 	"tfFitComparison.py",
 	"tfTarget.py",
+	"time_step.py",
 ]
 
 TAGS = {

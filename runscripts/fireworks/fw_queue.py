@@ -54,6 +54,7 @@ Workflow options:
 Simulation parameters:
 	N_GENS (int, "1"): the number of generations to be simulated
 	N_INIT_SIMS (int, "1"): the number of initial simulations
+	SEED (int, "0"): starting seed to run
 	SINGLE_DAUGHTERS (int, "1"): if nonzero, the simulation will generate only
 		one daughter cell for each new generation rather than two, thus avoiding
 		an exponential increase in the number of simulations
@@ -81,6 +82,8 @@ Modeling options:
 	TRNA_CHARGING (int, "1"): if nonzero, tRNA charging reactions are modeled
 		and the ribosome elongation rate is set by the amount of charged tRNA
 		present.  This option will override TRANSLATION_SUPPLY in the simulation.
+	PPGPP_REGULATION (int, "0"): if nonzero, ppGpp concentration is determined
+		with kinetic equations
 
 Additional variables:
 	LAUNCHPAD_FILE (str, "my_launchpad.yaml"): set launchpad config file location
@@ -234,8 +237,10 @@ GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULA
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))
 TRNA_CHARGING = bool(int(get_environment("TRNA_CHARGING", DEFAULT_SIMULATION_KWARGS["trna_charging"])))
+PPGPP_REGULATION = bool(int(get_environment("PPGPP_REGULATION", DEFAULT_SIMULATION_KWARGS["ppgpp_regulation"])))
 RAISE_ON_TIME_LIMIT = bool(int(get_environment("RAISE_ON_TIME_LIMIT", DEFAULT_SIMULATION_KWARGS["raise_on_time_limit"])))
 N_INIT_SIMS = int(get_environment("N_INIT_SIMS", "1"))
+SEED = int(get_environment("SEED", "0"))
 N_GENS = int(get_environment("N_GENS", "1"))
 SINGLE_DAUGHTERS = bool(int(get_environment("SINGLE_DAUGHTERS", "1")))
 LAUNCHPAD_FILE = str(get_environment("LAUNCHPAD_FILE", "my_launchpad.yaml"))
@@ -291,7 +296,7 @@ for i in VARIANTS_TO_RUN:
 	VARIANT_METADATA_DIRECTORY = filepath.makedirs(VARIANT_DIRECTORY, "metadata")
 	VARIANT_COHORT_PLOT_DIRECTORY = filepath.makedirs(VARIANT_DIRECTORY, "plotOut")
 
-	for j in xrange(N_INIT_SIMS):
+	for j in xrange(SEED, SEED + N_INIT_SIMS):
 		SEED_DIRECTORY = filepath.makedirs(VARIANT_DIRECTORY, "%06d" % j)
 		SEED_PLOT_DIRECTORY = filepath.makedirs(SEED_DIRECTORY, "plotOut")
 
@@ -319,6 +324,7 @@ metadata = {
 	"d_period_division": D_PERIOD_DIVISION,
 	"translation_supply": TRANSLATION_SUPPLY,
 	"trna_charging": TRNA_CHARGING,
+	"ppgpp_regulation": PPGPP_REGULATION,
 	}
 
 metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)
@@ -377,6 +383,8 @@ fw_calculate_sim_data = Firework(
 		debug = DEBUG_PARCA,
 		disable_ribosome_capacity_fitting = DISABLE_RIBOSOME_CAPACITY_FITTING,
 		disable_rnapoly_capacity_fitting = DISABLE_RNAPOLY_CAPACITY_FITTING,
+		output_metrics_data = os.path.join(
+			KB_DIRECTORY, constants.SERIALIZED_METRICS_DATA_FILENAME),
 		),
 	name = fw_name,
 	spec = {"_queueadapter": {"job_name": fw_name, "cpus_per_task": cpusForParca}, "_priority":1}
@@ -585,7 +593,7 @@ for i in VARIANTS_TO_RUN:
 
 	fw_this_variant_this_seed_this_analysis = None
 
-	for j in xrange(N_INIT_SIMS):
+	for j in xrange(SEED, SEED + N_INIT_SIMS):
 		log_info("\tQueueing Seed {}".format(j))
 		SEED_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "%06d" % j)
 		SEED_PLOT_DIRECTORY = os.path.join(SEED_DIRECTORY, "plotOut")
@@ -646,6 +654,7 @@ for i in VARIANTS_TO_RUN:
 							d_period_division = D_PERIOD_DIVISION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
+							ppgpp_regulation = PPGPP_REGULATION,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,
@@ -674,6 +683,7 @@ for i in VARIANTS_TO_RUN:
 							d_period_division = D_PERIOD_DIVISION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
+							ppgpp_regulation = PPGPP_REGULATION,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,

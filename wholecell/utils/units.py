@@ -38,6 +38,11 @@ def __truediv__(self, other):
 def __rtruediv__(self, other):
 	return Unum.coerceToUnum(other).__truediv__(self)
 
+# Allow boolean testing on all Unum objects
+def __bool__(self):
+	return bool(self._value)
+Unum.__bool__ = Unum.__nonzero__ = __bool__
+
 # #244 workaround: Monkey patch Unum if it still has the broken implementation.
 # The test also ensures this only patches it once.
 # For some reason, `is` won't work here.
@@ -76,6 +81,36 @@ def dot(a, b, out=None):
 		b = b.asNumber()
 
 	return a_units * b_units * np.dot(a, b, out)
+
+def multiply(a, b):
+	if not isinstance(a, Unum):
+		a_units = 1
+	else:
+		a_units = getUnit(a)
+		a = a.asNumber()
+
+	if not isinstance(b, Unum):
+		b_units = 1
+	else:
+		b_units = getUnit(b)
+		b = b.asNumber()
+
+	return a_units * b_units * np.multiply(a, b)
+
+def divide(a, b):
+	if not isinstance(a, Unum):
+		a_units = 1
+	else:
+		a_units = getUnit(a)
+		a = a.asNumber()
+
+	if not isinstance(b, Unum):
+		b_units = 1
+	else:
+		b_units = getUnit(b)
+		b = b.asNumber()
+
+	return a_units / b_units * np.divide(a, b)
 
 def floor(x):
 	if not hasUnit(x):

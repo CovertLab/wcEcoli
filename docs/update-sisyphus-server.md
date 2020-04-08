@@ -37,7 +37,7 @@ If those settings aren't right, you can go through `gcloud init` again or quickl
 
 * Launch an instance of the server
 
-      runscripts/cloud/launch-sisyphus.sh resizing
+      WORKFLOW=none runscripts/cloud/launch-workers.sh resizing
 
   (We normally launch these servers with a name that starts with "sisyphus-".
   Here we use an unusual name to find it easily in the Google Cloud Console
@@ -53,7 +53,7 @@ start running workflow steps, or delete itself
 
       sudo reboot
 
-  then ssh to it again and stop the service again.
+  then `ssh` to it again and `sudo systemctl stop` the service again.
 
 * If you're resizing the boot disk, verify that it has the new disk size via
 `sudo lsblk` and `df -h .` (This OS should auto-resize the partition table, so
@@ -62,10 +62,11 @@ you don't have to mess with that.)
 * Update the apt packages
 
       sudo apt-get update
-      sudo apt-get upgrade
+      sudo apt-get upgrade  # if "Resource temporarily unavailable", wait and try again
+      sudo apt autoremove
       sudo reboot
 
-  then ssh to it again and stop the service again.
+  then `ssh` to it again and `sudo systemctl stop` the service again.
 
 * Trim the service journal so we don't keep seeing old failures and junk when
 using `sudo journalctl -u sisyphus` or `sudo journalctl -u sisyphus -f` on the
@@ -78,10 +79,11 @@ server to view the service logs
 
       sudo su -l sisyphus
 
-* Clean out all Docker containers and old (or all) docker images
+* Clean out all Docker containers and old (or all) docker images, if any
 
-      docker stop $(docker ps -a -q)
-      docker rm $(docker ps -a -q)
+      docker ps -aq
+      docker stop $(docker ps -aq)
+      docker rm $(docker ps -aq)
 
 * Delete old Docker images [maybe keep the immediately previous `wcm-runtime` image]
 
@@ -112,14 +114,14 @@ server to view the service logs
 
 * Wait for it to be stopped, checking the Compute Engine > VM instances page
 
-* Look in the Compute Engine > Disks page for the last image name in the `sisyphus-v*` series
+* Look in the Compute Engine > Images page for the last disk image name in the `sisyphus-v*` series
 
-* In the GCE Disks page
+* In the Compute Engine > Disks page
   1. click on the Disk named `resizing`
   2. click `CREATE IMAGE`
   3. fill these properties into the form:
 
-         Name: sisyphus-v4             # whatever's the next version number in the series
+         Name: sisyphus-v6             # whatever's the next version number in the series
          Source: Disk
          Source disk: resizing
          Location: Multi-regional      # [change it to Regional???]

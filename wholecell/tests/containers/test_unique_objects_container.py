@@ -16,7 +16,6 @@ import tempfile
 
 import numpy as np
 import numpy.testing as npt
-import nose.plugins.attrib as noseAttrib
 
 from wholecell.containers.unique_objects_container import (
 	UniqueObjectsContainer, UniqueObjectsContainerException,
@@ -45,7 +44,6 @@ TEST_KB = {
 	}
 
 
-@noseAttrib.attr('smalltest', 'uniqueObjects', 'containerObject')
 class Test_UniqueObjectsContainer(unittest.TestCase):
 	def setUp(self):
 		self.container = createContainer()
@@ -240,7 +238,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 
 	def test_unique_index(self):
 		objectSet = self.container.objects()
-		unique_index = objectSet.attr("_uniqueIndex")
+		unique_index = objectSet.attr("unique_index")
 
 		# Check that all unique index values are unique
 		self.assertEqual(len(np.unique(unique_index)), len(unique_index))
@@ -248,7 +246,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 		# Add new objects to container
 		self.container.objectsNew('Chocolate', 10, nuts=True, percent=95.0)
 		objectSet = self.container.objects()
-		unique_index = objectSet.attr("_uniqueIndex")
+		unique_index = objectSet.attr("unique_index")
 
 		# Check that all unique index values are unique
 		self.assertEqual(len(np.unique(unique_index)), len(unique_index))
@@ -484,6 +482,20 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 			20,
 			(~boundToChromosome).sum()
 			)
+
+	def test_empty_object_set(self):
+		empty_container = self.container.emptyLike()
+		molecules = empty_container.objectsInCollection('RNA polymerase')
+
+		boundToChromosome, chromosomeLocation = molecules.attrs(
+			'boundToChromosome', 'chromosomeLocation')
+
+		npt.assert_array_equal(boundToChromosome, np.array([]))
+		npt.assert_array_equal(chromosomeLocation, np.array([]))
+
+		self.assertEqual(boundToChromosome.dtype, np.bool)
+		self.assertEqual(chromosomeLocation.dtype, np.uint32)
+
 
 	def test_read_only(self):
 		molecules = self.container.objectsInCollection(

@@ -24,7 +24,7 @@
 #
 # It will start a shell where you can execute commands:
 #
-#     # nosetests
+#     # pytest
 #
 # If this succeeds you can start running WCM code in the container, e.g.:
 #
@@ -32,6 +32,15 @@
 
 ARG from=wcm-runtime:latest
 FROM ${from}
+
+# Record Docker Image metadata in ENV variables, viewable by `docker inspect`
+# and accessible to programs in the container.
+ARG git_hash=""
+ARG git_branch=""
+ARG timestamp=""
+ENV IMAGE_GIT_HASH="$git_hash" \
+	IMAGE_GIT_BRANCH="$git_branch" \
+	IMAGE_TIMESTAMP="$timestamp"
 
 LABEL application="Whole Cell Model of Escherichia coli" \
     email="allencentercovertlab@gmail.com" \

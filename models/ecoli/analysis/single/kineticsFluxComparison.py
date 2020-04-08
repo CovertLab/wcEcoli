@@ -43,8 +43,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		sim_data = cPickle.load(open(simDataFile))
 
-		constraintIsKcatOnly = sim_data.process.metabolism.constraintIsKcatOnly
-
 		mainListener = TableReader(os.path.join(simOutDir, "Main"))
 		initialTime = mainListener.readAttribute("initialTime")
 		time = mainListener.readColumn("time") - initialTime
@@ -61,11 +59,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		enzymeKineticsReader = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
 		allTargetFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (enzymeKineticsReader.readColumn("targetFluxes").T / coefficient).T
 		allActualFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (enzymeKineticsReader.readColumn("actualFluxes").T / coefficient).T
-		reactionConstraint = enzymeKineticsReader.readColumn("reactionConstraint")
-		constrainedReactions = np.array(enzymeKineticsReader.readAttribute("constrainedReactions"))
 		kineticsConstrainedReactions = np.array(enzymeKineticsReader.readAttribute("kineticsConstrainedReactions"))
-		boundaryConstrainedReactions = np.array(enzymeKineticsReader.readAttribute("boundaryConstrainedReactions"))
-		enzymeKineticsReader.close()
+		constraint_is_kcat_only = np.array(enzymeKineticsReader.readAttribute('constraint_is_kcat_only'))
 
 		allTargetFluxes = allTargetFluxes.asNumber(units.mmol / units.g / units.h)
 		allActualFluxes = allActualFluxes.asNumber(units.mmol / units.g / units.h)
@@ -80,14 +75,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		boundaryActualAve = allActualAve[n_kinetic_constrained_reactions:]
 
 		# kinetic target fluxes
-		targetFluxes = allTargetFluxes[:, :n_kinetic_constrained_reactions]
 		actualFluxes = allActualFluxes[:, :n_kinetic_constrained_reactions]
 		targetAve = allTargetAve[:n_kinetic_constrained_reactions]
 		actualAve = allActualAve[:n_kinetic_constrained_reactions]
 
-		kcatOnlyReactions = np.all(constraintIsKcatOnly[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
-		kmAndKcatReactions = ~np.any(constraintIsKcatOnly[reactionConstraint[BURN_IN_STEPS:,:]], axis = 0)
-		mixedReactions = ~(kcatOnlyReactions ^ kmAndKcatReactions)
+		kcatOnlyReactions = constraint_is_kcat_only
+		kmAndKcatReactions = ~constraint_is_kcat_only
 
 		thresholds = [2, 10]
 		categorization = np.zeros(n_kinetic_constrained_reactions)
@@ -122,12 +115,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		for reaction, target, flux, category in zip(kineticsConstrainedReactions[kcatOnlyReactions], targetAve[kcatOnlyReactions], actualAve[kcatOnlyReactions], categorization[kcatOnlyReactions]):
 			output.writerow([reaction, target, flux, category])
 
-		if np.sum(mixedReactions):
-			output.writerow(["mixed constraints"])
-			for reaction, target, flux, category in zip(kineticsConstrainedReactions[mixedReactions], targetAve[mixedReactions], actualAve[mixedReactions], categorization[mixedReactions]):
-				output.writerow([reaction, target, flux, category])
-
 		csvFile.close()
+
+		# Masks for highlighting and counting certain groups
+		on_target_mask = actualAve == targetAve
+		zero_mask = (actualAve == 0) & ~on_target_mask
+		other_mask = ~on_target_mask & ~zero_mask
 
 		targetAve += 1e-6
 		actualAve += 1e-6
@@ -135,9 +128,19 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		axes_limits = [1e-7, 1e4]
 		plt.figure(figsize = (8, 8))
 		ax = plt.axes()
-		plt.loglog(axes_limits, axes_limits, 'k')
-		plt.loglog(targetAve, actualAve, "ob", markeredgewidth = 0.25, alpha = 0.25)
-		plt.loglog(boundaryTargetAve, boundaryActualAve, "ob", c='r', markeredgewidth=0.25, alpha=0.9, label='boundary fluxes')
+		plt.loglog(axes_limits, axes_limits, 'k--')
+		plt.loglog(targetAve[on_target_mask], actualAve[on_target_mask], 'og',
+			markeredgewidth=0.25, alpha=0.25,
+			label='on target fluxes (n={})'.format(on_target_mask.sum()))
+		plt.loglog(targetAve[zero_mask], actualAve[zero_mask], 'or',
+			markeredgewidth=0.25, alpha=0.25,
+			label='zero fluxes (n={})'.format(zero_mask.sum()))
+		plt.loglog(targetAve[other_mask], actualAve[other_mask], 'ob',
+			markeredgewidth=0.25, alpha=0.25,
+			label='other fluxes (n={})'.format(other_mask.sum()))
+		if len(boundaryTargetAve):
+			plt.loglog(boundaryTargetAve, boundaryActualAve, 'ok',
+				markeredgewidth=0.25, alpha=0.9, label='boundary fluxes')
 		plt.xlabel("Target Flux (mmol/g/hr)")
 		plt.ylabel("Actual Flux (mmol/g/hr)")
 		plt.minorticks_off()

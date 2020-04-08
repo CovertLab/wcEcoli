@@ -10,7 +10,9 @@ from wholecell.states.local_environment import LocalEnvironment
 from models.ecoli.processes.complexation import Complexation
 from models.ecoli.processes.metabolism import Metabolism
 from models.ecoli.processes.rna_degradation import RnaDegradation
+from models.ecoli.processes.cell_division import CellDivision
 from models.ecoli.processes.chromosome_replication import ChromosomeReplication
+from models.ecoli.processes.chromosome_structure import ChromosomeStructure
 from models.ecoli.processes.polypeptide_initiation import PolypeptideInitiation
 from models.ecoli.processes.polypeptide_elongation import PolypeptideElongation
 from models.ecoli.processes.transcript_initiation import TranscriptInitiation
@@ -31,9 +33,9 @@ from models.ecoli.listeners.transcript_elongation_listener import TranscriptElon
 from models.ecoli.listeners.rnap_data import RnapData
 from models.ecoli.listeners.enzyme_kinetics import EnzymeKinetics
 from models.ecoli.listeners.growth_limits import GrowthLimits
-from models.ecoli.listeners.cell_division import CellDivision
 from models.ecoli.listeners.rna_synth_prob import RnaSynthProb
 from models.ecoli.listeners.monomer_counts import MonomerCounts
+from models.ecoli.listeners.mRNA_counts import mRNACounts
 from models.ecoli.listeners.complexation_listener import ComplexationListener
 from models.ecoli.listeners.equilibrium_listener import EquilibriumListener
 
@@ -52,19 +54,29 @@ class EcoliSimulation(Simulation):
 		)
 
 	_processClasses = (
-		Metabolism,
-		RnaDegradation,
-		TranscriptInitiation,
-		TranscriptElongation,
-		PolypeptideInitiation,
-		PolypeptideElongation,
-		ChromosomeReplication,
-		ProteinDegradation,
-		Complexation,
-		Equilibrium,
-		TfBinding,
-		TwoComponentSystem,
-		)
+		(
+			RnaDegradation,
+			TranscriptInitiation,
+			TranscriptElongation,
+			PolypeptideInitiation,
+			PolypeptideElongation,
+			ChromosomeReplication,
+			ProteinDegradation,
+			Complexation,
+			Equilibrium,
+			TfBinding,
+			TwoComponentSystem,
+		),
+		(
+			ChromosomeStructure,
+		),
+		(
+			Metabolism,
+		),
+		(
+			CellDivision,
+		),
+	)
 
 	_listenerClasses = (
 		Mass,
@@ -77,9 +89,9 @@ class EcoliSimulation(Simulation):
 		RnapData,
 		EnzymeKinetics,
 		GrowthLimits,
-		CellDivision,
 		RnaSynthProb,
 		MonomerCounts,
+		mRNACounts,
 		ComplexationListener,
 		EquilibriumListener,
 		)

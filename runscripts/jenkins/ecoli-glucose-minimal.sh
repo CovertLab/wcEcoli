@@ -19,7 +19,14 @@ echo y | lpad reset
 
 PYTHONPATH=$PWD DESC="Daily build." SINGLE_DAUGHTERS=1 N_GENS=25 MASS_DISTRIBUTION=0 COMPRESS_OUTPUT=1 PLOTS=ACTIVE RAISE_ON_TIME_LIMIT=1 python runscripts/fireworks/fw_queue.py
 
-PYTHONPATH=$PWD rlaunch rapidfire --nlaunches 0
+# Commented rapidfire command below produces seg fault after 2 hr and 10 min (see #764)
+# Could replace singleshot loop with rapidfire if fixed
+# Singleshot might seg fault as well for long single tasks over 2 hr and 10 min
+
+# PYTHONPATH=$PWD rlaunch rapidfire --nlaunches 0
+while [ $(lpad get_fws -s READY -d count) -ge 1 ]; do
+  PYTHONPATH=$PWD rlaunch singleshot
+done
 
 N_FAILS=$(lpad get_fws -s FIZZLED -d count)
 
@@ -36,4 +43,4 @@ cp out/2*/kb/simData.cPickle.bz2 /scratch/PI/mcovert/wc_ecoli/cached/
 bunzip2 -f /scratch/PI/mcovert/wc_ecoli/cached/simData.cPickle.bz2
 chmod 444 /scratch/PI/mcovert/wc_ecoli/cached/simData.cPickle
 
-mv out/2* /scratch/PI/mcovert/wc_ecoli/daily_build/
+runscripts/jenkins/save_output.sh out/ /scratch/PI/mcovert/wc_ecoli/daily_build/

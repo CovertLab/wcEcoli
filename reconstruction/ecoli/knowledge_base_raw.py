@@ -24,13 +24,13 @@ LIST_OF_DICT_FILENAMES = (
 	"disabledKineticReactions.tsv",
 	"dryMassComposition.tsv",
 	"endoRnases.tsv",
-	"enzymeKinetics.tsv",
 	"equilibriumReactions.tsv",
 	"foldChanges.tsv",
 	"full_chromosome.tsv",
 	"genes.tsv",
 	"growthRateDependentParameters.tsv",
 	"massAtReplicationInitiation.tsv",
+	"metabolism_kinetics.tsv",
 	"metabolites.tsv",
 	"metaboliteConcentrations.tsv",
 	"modificationReactions.tsv",
@@ -39,7 +39,8 @@ LIST_OF_DICT_FILENAMES = (
 	"modifiedRnas.tsv",
 	"operon_rnas.tsv",
 	"polymerized.tsv",
-	"previousBiomassFluxes.tsv",
+	"ppgpp_fc.tsv",
+	"ppgpp_regulation.tsv",
 	"promoters.tsv",
 	"protein_half_lives.tsv",
 	"proteinComplexes.tsv",
@@ -84,15 +85,12 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("condition", "media", "5X_supplement_EZ.tsv"),
 	os.path.join("common_names", "genes.tsv"),
 	os.path.join("common_names", "metabolites.tsv"),
-	os.path.join("common_names", "mrna.tsv"),
-	os.path.join("common_names", "polypeptides.tsv"),
-	os.path.join("common_names", "protein-complexes.tsv"),
+	os.path.join("common_names", "proteins.tsv"),
 	os.path.join("common_names", "reactions.tsv"),
 	os.path.join("common_names", "rnas.tsv"),
 	)
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = ("parameters.tsv", "mass_parameters.tsv")
-CONSTANTS_FILENAME = "constants.tsv"
 
 class DataStore(object):
 	def __init__(self):
@@ -108,7 +106,6 @@ class KnowledgeBaseEcoli(object):
 
 		for filename in LIST_OF_PARAMETER_FILENAMES:
 			self._load_parameters(os.path.join(FLAT_DIR, filename))
-		self._load_parameters(os.path.join(FLAT_DIR, CONSTANTS_FILENAME))
 
 		self.genome_sequence = self._load_sequence(os.path.join(FLAT_DIR, SEQUENCE_FILE))
 

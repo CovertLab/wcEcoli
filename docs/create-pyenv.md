@@ -50,14 +50,16 @@ This page goes through the Python environment setup steps in more detail and wit
    module load wcEcoli/sherlock2
    ```
 
-2. Optional: Download and install other packages according to their instructions or take a wait-and-see approach with them.
+1. Optional: Download and install other packages according to their instructions or take a wait-and-see approach with them.
 
    * CPLEX from IBM (free for students)
 
 
 ## Install Python
 
-1. **Sherlock only:** The step after this will install a version of Python. Skip that if it's already installed. Before installing a new version of Python on Sherlock, you might need to do these steps:
+### On Sherlock
+
+1. The step after this will install a version of Python. Skip that if it's already installed. Before installing a new version of Python on Sherlock, you might need to do these steps:
 
    ```bash
    module load readline/7.0
@@ -75,12 +77,19 @@ This page goes through the Python environment setup steps in more detail and wit
         WARNING: The Python readline extension was not compiled. Missing the GNU readline lib?
         WARNING: The Python sqlite3 extension was not compiled. Missing the SQLite3 lib?
 
-2. Install the required version of Python via `pyenv`, and _remember to enable it as a shared library_ so Theano can call into it:
+1. Install the required version of Python via `pyenv`, and _remember to enable it as a shared library_ so Theano can call into it:
 
    ```bash
    PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.16
    ```
 
+### On macOS
+
+1. Install Python using `pyenv`:
+
+   ```bash
+   pyenv install 2.7.16 
+   ```
 
 ## Create the "wcEcoli2" python virtual environment
 
@@ -93,13 +102,13 @@ This page goes through the Python environment setup steps in more detail and wit
    pyenv local wcEcoli2
    ```
 
-2. Upgrade this virtual environment's installers.
+1. Upgrade this virtual environment's installers.
 
    ```bash
    pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
    ```
 
-3. Install OpenBLAS 0.3.5 or later.
+1. Install OpenBLAS 0.3.5 or later.
 
    **Background:** Older versions of OpenBLAS have threading bugs that cause unreliable results and computations that might hang. The alternative implementations of BLAS (Basic Linear Algebra Subprograms) -- Apple's "Accelerate" framework and Intel's Math Kernel Library -- also have threading bugs as of December, 2018.
 
@@ -125,8 +134,11 @@ This page goes through the Python environment setup steps in more detail and wit
    **Note:** If you get an `instruction not found` error while installing OpenBLAS, that probably means
    your old assembler is incompatible with the Fortran compiler. Figure out how to update the assembler
    or else install OpenBLAS 0.3.4 and suffer its threading bugs and inconsistent results.
+   
+   **Note:** OpenBLAS 0.3.7 (as installed by brew install openblas) works fine on macOS, but not inside
+   Docker on macOS unless you compile it with option `NO_AVX2=1`.
 
-4. Create `~/.numpy-site.cfg` pointing to _your OpenBLAS installation directory._
+1. Create `~/.numpy-site.cfg` pointing to _your OpenBLAS installation directory._
 
    (If you want, you can download [site.cfg.example](https://github.com/numpy/numpy/blob/master/site.cfg.example) to your local file `~/.numpy-site.cfg` to start from their example configuration choices and documentation.)
 
@@ -139,21 +151,22 @@ This page goes through the Python environment setup steps in more detail and wit
       include_dirs = /usr/local/opt/openblas/include
       ```
 
-5. Install NumPy linked to this OpenBLAS thanks to `~/.numpy-site.cfg`:
+1. Install NumPy linked to this OpenBLAS thanks to `~/.numpy-site.cfg`
+(It won't work to install numpy and scipy at the same time into Python 2.7.):
 
       ```bash
       cd wcEcoli
       pip install numpy==1.14.6 --no-binary numpy --force-reinstall
       ```
 
-6. Install the packages listed in `requirements.txt` (SciPy will also use `~/.numpy-site.cfg`):
+1. Install the packages listed in `requirements.txt` (SciPy will also use `~/.numpy-site.cfg`):
 
    ```bash
    pip install -r requirements.txt --no-binary numpy,scipy
    pyenv rehash
    ```
 
-6. Test the NumPy and SciPy installation
+1. Test the NumPy and SciPy installation
 
       ```bash
       python runscripts/debug/summarize_environment.py
@@ -168,7 +181,12 @@ This page goes through the Python environment setup steps in more detail and wit
           language = c
       ```
 
-8. Test Theano:
+1. (Optional) Add the following line to your bash profile. This has been shown to improve performance significantly on linux machines.
+    ```
+    export OPENBLAS_NUM_THREADS=1
+    ```
+
+1. Test Theano:
 
       ```bash
       python
@@ -184,26 +202,7 @@ This page goes through the Python environment setup steps in more detail and wit
 
    naming the library_dirs that you set above.
 
-9. **General preface that's important to know:** The wcEcoli software expects to run with `wcEcoli/` as both the current working directory and on the `$PYTHONPATH`.
-
-   **Issue [#161](https://github.com/CovertLab/wcEcoli/issues/161):** The matplotlib rendering "backend" might need to be changed from what its installer configures to `agg` (which in fact is what matplotlib will pick at runtime if not configured otherwise).
-
-   The `wcEcoli/` directory contains a `matplotlibrc` file that configures matplotlib's backend to `agg` whenever you run with this working directory.
-
-   However when running under the "Fireworks" workflow manager, Fireworks’ `rlaunch rapidfire` sets the working directory to its `launcher_.../` subdirectory instead, so the backend can fail to load.
-   (`rlaunch singleshot` does not have that problem. Our manual runscripts do not have that problem, either. We're not sure about Fireworks’ `qlaunch`.)
-
-   **Workaround:** After installing or updating `matplotlib`, test if it can import pyplot:
-
-      1. `cd` to a directory that does not have a `matplotlibrc` file, e.g. `wcEcoli/docs/`.
-      1. Run the `pyenv version` shell command to verify that the pyenv `wcEcoli2` is active. (It should be if the current directory is a subdirectory of `wcEcoli/` and if `wcEcoli/` has a `.python-version` file that was set by `pyenv local wcEcoli2`.)
-      1. Start a python shell and type `import matplotlib.pyplot`
-         * If it raised `ImportError: No module named _tkinter` or `RuntimeError: Python is not installed as a framework`, then matplotlib couldn't load its backend.  
-           The workaround is to edit the relevant `site-packages/matplotlib/mpl-data/matplotlibrc` file, probably the one in `$PYENV_ROOT/versions/wcEcoli2/lib/python2.7/`.   
-           Comment out the line `backend : TkAgg` or `backend : macosx`, then retest.
-         * If it didn't raise an error, run `matplotlib.get_backend()` and check that it returns `'agg'` or similar.
-
-10. Compile the project's native code.
+1. Compile the project's native code.
 
    ```bash
    make clean compile
@@ -211,10 +210,10 @@ This page goes through the Python environment setup steps in more detail and wit
 
    (Yes, that prints deprecation warnings.)
 
-11. Run all the unit tests.
+1. Run all the unit tests.
 
    ```bash
-   nosetests
+   pytest
    ```
 
    If the unit tests fail with an error message saying the loader can't load `.../pyenv/versions/.../lib/libpython2.7.a`, that means you didn't successfully `--enable-shared` when installing python. Go back to that step, run `PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 2.7.16 --force`, and repeat all the steps after it.
@@ -230,7 +229,7 @@ This page goes through the Python environment setup steps in more detail and wit
    ln -s $SCRATCH/wcEcoli_out out
    ```
 
-2. Create a symbolic link to a shared sim data cache directory on `$PI_SCRATCH` that should contain a copy of the newest sim data object (it should be updated by the daily build):
+1. Create a symbolic link to a shared sim data cache directory on `$PI_SCRATCH` that should contain a copy of the newest sim data object (it should be updated by the daily build):
 
    ```bash
    ln -s $PI_SCRATCH/wc_ecoli/cached cached
