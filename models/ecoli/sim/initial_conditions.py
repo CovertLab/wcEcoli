@@ -929,9 +929,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	# Add total available template lengths as weights and normalize
 	protein_init_probs = normalize(mRNA_total_length*translationEfficiencies)
-
-
-'''
+	'''
 	# Sample a multinomial distribution of synthesis probabilities to determine what RNA are initialized
 	nNewProteins = randomState.multinomial(ribosomeToActivate, probNormalized)
 
@@ -955,6 +953,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# Create active 70S ribosomes and assign their protein Indices calculated above
 	# Sample a multinomial distribution of synthesis probabilities to determine
 	# which types of mRNAs are initialized
+
 	n_new_proteins = randomState.multinomial(
 		n_ribosomes_to_activate, protein_init_probs)
 
