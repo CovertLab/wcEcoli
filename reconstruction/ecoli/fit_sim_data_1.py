@@ -1173,8 +1173,7 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	#   as an inverse mapping
 	#import pdb; pdb.set_trace()
 	mrna_expression = normalize(expression[sim_data.relation.is_mrna])
-	distribution_transcripts_by_protein = np.matmul(
-		mrna_expression,
+	distribution_transcripts_by_protein = np.matmul(mrna_expression,
 		sim_data.relation.mrna_to_monomer_transform)
 
 	# distribution_transcripts_by_protein = normalize(expression[sim_data.relation.rnaIndexToMonomerMapping])
