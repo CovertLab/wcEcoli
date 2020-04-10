@@ -1121,31 +1121,31 @@ class FluxBalanceAnalysis(object):
 		nReactions = len(reactionIDs)
 		if lowerBounds is None:
 			lowerBounds = [None] * nReactions
+		elif np.any(np.array(lowerBounds) < 0):
+			raise InvalidBoundaryError("Minimum reaction flux must be non-negative")
 		if upperBounds is None:
 			upperBounds = [None] * nReactions
+		elif np.any(np.array(upperBounds) < 0):
+				raise InvalidBoundaryError("Maximum reaction flux must be non-negative")
 
 		if nReactions != len(lowerBounds) or nReactions != len(upperBounds):
 			raise Exception("There must be equal numbers of reactionIDs and bounds to set limits.")
+
+		if raiseForReversible:
+			for reactionID in reactionIDs:
+				reverseReactionID = self._generatedID_reverseReaction.format(reactionID)
+				if reverseReactionID in self._reactionIDsSet:
+					raise FBAError((
+						"Setting the reaction flux is ambiguous since "
+						+ "reaction {} has both a forward [{}] and reverse [{}] "
+						+ "component.  Call this method with argument "
+						+ "raiseForReversible = False if this is intended behavior."
+						).format(reactionID, reactionID, reverseReactionID))
 
 		# Set reaction flux bounds for each reaction
 		for reactionID, lb, ub in zip(reactionIDs, lowerBounds, upperBounds):
 			if reactionID not in self._reactionIDsSet and reactionID not in self._specialFluxIDsSet:
 				raise InvalidBoundaryError("Unable to set reaction flux: reaction '%s' not recognized." % (reactionID,))
-
-			if lb is not None and lb < 0:
-				raise InvalidBoundaryError("Minimum reaction flux must be non-negative")
-			if ub is not None and ub < 0:
-				raise InvalidBoundaryError("Maximum reaction flux must be non-negative")
-
-			reverseReactionID = self._generatedID_reverseReaction.format(reactionID)
-
-			if raiseForReversible and reverseReactionID in self._reactionIDsSet:
-				raise FBAError((
-					"Setting the reaction flux is ambiguous since "
-					+ "reaction {} has both a forward [{}] and reverse [{}] "
-					+ "component.  Call this method with argument "
-					+ "raiseForReversible = False if this is intended behavior."
-					).format(reactionID, reactionID, reverseReactionID))
 
 			self._solver.setFlowBounds(
 				reactionID,
