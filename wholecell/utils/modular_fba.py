@@ -1309,40 +1309,42 @@ class FluxBalanceAnalysis(object):
 
 		# Get all reaction fluxes at once for faster performance
 		if self._solver.quadratic_objective:
-			unity_ids = np.array([self._generatedID_quadFluxRelax + rxn for rxn in reactionIDs])
+			unity_ids = [self._generatedID_quadFluxRelax + rxn for rxn in reactionIDs]
 		else:
-			unity_ids = np.hstack([[
-				self._generatedID_amountUnder + rxn,
-				self._generatedID_amountOver + rxn,
-				self._geneatedID_low_target_range + rxn,
-				self._geneatedID_high_target_range + rxn,
-				] for rxn in reactionIDs
-			])
+			generated_ids = [
+				self._generatedID_amountUnder,
+				self._generatedID_amountOver,
+				self._geneatedID_low_target_range,
+				self._geneatedID_high_target_range,
+				]
+			unity_ids = [i + rxn for rxn in reactionIDs for i in generated_ids]
+
 		fluxes = {rxn: flux for rxn, flux in izip(unity_ids, self.getReactionFluxes(unity_ids))}
 
 		for idx, reactionID in enumerate(reactionIDs):
+			if reactionID not in self._active_kinetic_targets:
+				continue
 			if reactionID not in self._kineticTargetFluxes:
 				raise FBAError("No kinetic target set for reaction {}.".format(reactionID))
 
 			if self._solver.quadratic_objective:
 				quadUnityID = self._generatedID_quadFluxRelax + reactionID
-				relax = fluxes[quadUnityID]**2 * self._solver.getFlowObjectiveCoeff(quadUnityID)
+				relax = fluxes[quadUnityID]**2
 			else:
 				belowUnityID = self._generatedID_amountUnder + reactionID
 				aboveUnityID = self._generatedID_amountOver + reactionID
 				below_in_range_id = self._geneatedID_low_target_range + reactionID
 				above_in_range_id = self._geneatedID_high_target_range + reactionID
-				relaxUp = fluxes[belowUnityID] * self._solver.getFlowObjectiveCoeff(belowUnityID)
-				relaxDown = fluxes[aboveUnityID] * self._solver.getFlowObjectiveCoeff(aboveUnityID)
-				below_in_range = fluxes[below_in_range_id] * self._solver.getFlowObjectiveCoeff(below_in_range_id)
-				above_in_range = fluxes[above_in_range_id] * self._solver.getFlowObjectiveCoeff(above_in_range_id)
+				relaxUp = fluxes[belowUnityID]
+				relaxDown = fluxes[aboveUnityID]
+				below_in_range = fluxes[below_in_range_id]
+				above_in_range = fluxes[above_in_range_id]
 
 				relax = relaxUp + relaxDown + below_in_range + above_in_range
 
 				assert relaxUp <= NUMERICAL_ZERO or relaxDown <= NUMERICAL_ZERO
 
-			# Normalize out the kinetic weight objective
-			values[idx] = relax / (self.kineticObjectiveWeight * self._kinetic_objective_scaling)
+			values[idx] = relax
 		return values
 
 	def setKineticTarget(self, reactionIDs,  mean_targets, lower_targets=None, upper_targets=None):
