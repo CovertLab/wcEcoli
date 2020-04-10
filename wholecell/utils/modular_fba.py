@@ -229,7 +229,7 @@ class FluxBalanceAnalysis(object):
 		self._forceInternalExchange = False
 
 		# Output calculations
-		self._outputMoleculeIDs = []
+		self._outputMoleculeIDs = {}
 		self._outputMoleculeCoeffs = []
 
 		self.reactionStoich = reactionStoich.copy()
@@ -405,13 +405,10 @@ class FluxBalanceAnalysis(object):
 				)
 
 			# Objective molecules are output molecules
-			if moleculeID in self._outputMoleculeIDs:
-				i = self._outputMoleculeIDs.index(moleculeID)
-			else:
-				self._outputMoleculeIDs.append(moleculeID)
+			if moleculeID not in self._outputMoleculeIDs:
+				self._outputMoleculeIDs[moleculeID] = len(self._outputMoleculeIDs)
 				self._outputMoleculeCoeffs.append(dict())
-				i = len(self._outputMoleculeIDs) - 1
-
+			i = self._outputMoleculeIDs[moleculeID]
 			self._outputMoleculeCoeffs[i][pseudoFluxID] = -coeff
 
 
@@ -904,15 +901,10 @@ class FluxBalanceAnalysis(object):
 				internalMoleculeIDs.append(moleculeID)
 				self._specialFluxIDsSet.add(exchangeID)
 
-				# TODO: functionalize
-				try:
-					i = self._outputMoleculeIDs.index(moleculeID)
-
-				except ValueError:
-					self._outputMoleculeIDs.append(moleculeID)
+				if moleculeID not in self._outputMoleculeIDs:
+					self._outputMoleculeIDs[moleculeID] = len(self._outputMoleculeIDs)
 					self._outputMoleculeCoeffs.append(dict())
-					i = len(self._outputMoleculeIDs) - 1
-
+				i = self._outputMoleculeIDs[moleculeID]
 				self._outputMoleculeCoeffs[i][exchangeID] = -1
 
 		self._internalMoleculeIDs = tuple(internalMoleculeIDs)
@@ -1176,7 +1168,7 @@ class FluxBalanceAnalysis(object):
 				-coeff
 				)
 
-			i = self._outputMoleculeIDs.index(molecule_id)
+			i = self._outputMoleculeIDs[molecule_id]
 			self._outputMoleculeCoeffs[i][pseudo_flux_id] = -coeff
 
 	def setMaxMassAccumulated(self, maxAccumulation):
@@ -1188,7 +1180,7 @@ class FluxBalanceAnalysis(object):
 	# Output
 
 	def getOutputMoleculeIDs(self):
-		return tuple(self._outputMoleculeIDs)
+		return tuple(k for k, v in sorted(self._outputMoleculeIDs.items(), key=lambda d: d[1]))
 
 	def getOutputMoleculeLevelsChange(self):
 		change = np.zeros(len(self._outputMoleculeIDs))
