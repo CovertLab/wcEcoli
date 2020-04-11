@@ -401,12 +401,12 @@ class Metabolism(object):
 		unconstrained_exchange_molecules = exchange_data["importUnconstrainedExchangeMolecules"]
 		constrained_exchange_molecules = exchange_data["importConstrainedExchangeMolecules"]
 
-		concDict = self.concentrationUpdates.concentrationsBasedOnNutrients(currentNutrients)
+		newObjective = self.concentrationUpdates.concentrationsBasedOnNutrients(
+			media_id=currentNutrients, conversion_units=targetUnits)
 		if concModificationsBasedOnCondition is not None:
-			concDict.update(concModificationsBasedOnCondition)
-
-		conversion = targetUnits.asUnit(self.concentrationUpdates.units)
-		newObjective = dict((key, (val / conversion).asNumber()) for key, val in concDict.iteritems())
+			conversion = targetUnits.asUnit(self.concentrationUpdates.units)
+			newObjective.update({k: (v / conversion).asNumber()
+				for k, v in concModificationsBasedOnCondition.items()})
 
 		externalMoleculeLevels = np.zeros(len(exchangeIDs), np.float64)
 
@@ -1168,18 +1168,29 @@ class ConcentrationUpdates(object):
 		self.moleculeSetAmounts = self._addMoleculeAmounts(equilibriumReactions, self.defaultConcentrationsDict)
 
 	# return adjustments to concDict based on nutrient conditions
-	def concentrationsBasedOnNutrients(self, media_id=None):
+	def concentrationsBasedOnNutrients(self, media_id=None, conversion_units=None):
+		if conversion_units:
+			conversion = self.units.asNumber(conversion_units)
+		else:
+			conversion = self.units
+
 		concentrationsDict = self.defaultConcentrationsDict.copy()
 
 		metaboliteTargetIds = sorted(concentrationsDict.keys())
-		concentrations = self.units * np.array([concentrationsDict[k] for k in metaboliteTargetIds])
+		concentrations = conversion * np.array([concentrationsDict[k] for k in metaboliteTargetIds])
 		concDict = dict(zip(metaboliteTargetIds, concentrations))
 
 		if media_id is not None:
+			# For faster conversions than .asNumber(conversion_units) for each setAmount
+			if conversion_units:
+				conversion_to_no_units = conversion_units.asUnit(self.units)
+
 			exchanges = self.exchange_fluxes[media_id]
 			for moleculeName, setAmount in self.moleculeSetAmounts.iteritems():
 				if ((moleculeName in exchanges and (moleculeName[:-3] + "[c]" not in self.moleculeScaleFactors or moleculeName == "L-SELENOCYSTEINE[c]"))
 						or (moleculeName in self.moleculeScaleFactors and moleculeName[:-3] + "[p]" in exchanges)):
+					if conversion_units:
+						setAmount = (setAmount / conversion_to_no_units).asNumber()
 					concDict[moleculeName] = setAmount
 
 		return concDict
