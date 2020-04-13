@@ -378,17 +378,18 @@ class Metabolism(object):
 				reaction with kinetic constraints
 		'''
 
-		if self._compiled_enzymes is None:
-			self._compiled_enzymes = eval('lambda e: np.array(%s)\n'
-				% self._enzymes, {'np': np}, {}
-				)
-		if self._compiled_saturation is None:
-			self._compiled_saturation = eval('lambda s: np.array([[np.min(v), np.mean(v), np.max(v)] for v in %s])\n'
-				% self._saturations, {'np': np}, {}
-				)
 
-		capacity = self._compiled_enzymes(enzymes)[:, None] * self._kcats
-		saturation = self._compiled_saturation(substrates)
+		if self._compiled_enzymes is None:
+			self._compiled_enzymes = eval('lambda e: {}'.format(self._enzymes))
+		if self._compiled_saturation is None:
+			self._compiled_saturation = eval('lambda s: {}'.format(self._saturations))
+
+		capacity = np.array(self._compiled_enzymes(enzymes))[:, None] * self._kcats
+		saturation = np.array([
+			[min(v), sum(v) / len(v), max(v)]
+			for v in self._compiled_saturation(substrates)
+			])
+
 		return capacity * saturation
 
 	def exchangeConstraints(self, exchangeIDs, coefficient, targetUnits, currentNutrients, exchange_data, concModificationsBasedOnCondition = None):
