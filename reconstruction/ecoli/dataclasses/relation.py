@@ -135,7 +135,7 @@ class Relation(object):
 		'''
 		tu_fraction_dict = {}
 		for key, value in overlapping_tu_dict.items():
-			tu_fraction_dict.setdefault(key, [])
+			 .setdefault(key, [])
 			count_sum = 0
 			#first calculate the sum counts of the tus that belong to each monomer.
 			for v in value:

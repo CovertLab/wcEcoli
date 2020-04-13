@@ -1173,8 +1173,8 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	#   as an inverse mapping
 	#import pdb; pdb.set_trace()
 	mrna_expression = normalize(expression[sim_data.relation.is_mrna])
-	distribution_transcripts_by_protein = np.matmul(mrna_expression,
-		sim_data.relation.mrna_to_monomer_transform)
+	distribution_transcripts_by_protein = normalize(np.matmul(mrna_expression,
+		sim_data.relation.mrna_to_monomer_transform))
 
 	# distribution_transcripts_by_protein = normalize(expression[sim_data.relation.rnaIndexToMonomerMapping])
 
@@ -1917,6 +1917,7 @@ def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, net
 
 	assert np.allclose(np.sum(distribution_mRNA), 1)
 	assert np.allclose(np.sum(translation_efficiencies), 1)
+	#import pdb; pdb.set_trace()
 	distributionUnnormed = 1 / netLossRate * distribution_mRNA * translation_efficiencies
 	distributionNormed = distributionUnnormed / units.sum(distributionUnnormed)
 	distributionNormed.normalize()
