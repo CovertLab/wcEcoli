@@ -27,7 +27,7 @@ class Relation(object):
 
 		self._buildRnaIndexToMonomerMapping(raw_data, sim_data)
 		self._buildMonomerIndexToRnaMapping(raw_data, sim_data)
-	
+
 	def _buildRnaIndexToMonomerMapping(self, raw_data, sim_data):
 		'''
 		Input:
@@ -135,7 +135,7 @@ class Relation(object):
 		'''
 		tu_fraction_dict = {}
 		for key, value in overlapping_tu_dict.items():
-			 .setdefault(key, [])
+			tu_fraction_dict.setdefault(key, [])
 			count_sum = 0
 			#first calculate the sum counts of the tus that belong to each monomer.
 			for v in value:
@@ -278,6 +278,7 @@ class Relation(object):
 	
 		overlapping_tu_fractions = self.find_overlapping_tu_fractions(
 			overlapping_tu_dict, tu_dict)
+
 		self.monomer_to_mrna_transform, self.mrna_to_monomer_transform = self.create_transformation_matrices(
 			monomer_id_index_dict, mrna_id_index_dict, overlapping_tu_fractions)
 

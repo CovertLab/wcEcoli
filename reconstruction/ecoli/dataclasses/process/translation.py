@@ -40,6 +40,17 @@ class Translation(object):
 
 
 		
+		#create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
+		rna_location = {}
+		for rna in raw_data.operon_rnas:
+			assert len(rna['location']) == 1
+			rnaLocation = rna['location'][0]
+			rna_location[rna['id']] = rnaLocation
+
+		for rna in raw_data.rnas:
+			if rna['id'] not in rna_location.keys():
+				assert len(rna['location']) == 1
+				rna_location[rna['id']] = rna['location'][0]
 
 
 		#add location tag to all rnaids.
@@ -47,24 +58,14 @@ class Translation(object):
 		for protein in raw_data.proteins:
 			rnaId = protein['rnaId']
 			rnaLocation = None
-			for rna in raw_data.operon_rnas:
-				if rna['id'] == rnaId:
-					assert len(rna['location']) == 1
-					rnaLocation = rna['location'][0]
-					break
+
+			if rnaId in rna_location.keys():
+				rnaLocation = rna_location[rnaId]
 
 			rnaIds.append('{}[{}]'.format(
 				rnaId,
 				rnaLocation
 				))
-
-		#create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
-		rna_location = {}
-		rnaLocation = None
-		for rna in raw_data.operon_rnas:
-			assert len(rna['location']) == 1
-			rnaLocation = rna['location'][0]
-			rna_location[rna['id']] = rnaLocation
 
 
 		#add location tag to all rnaIds within rnaSet.
