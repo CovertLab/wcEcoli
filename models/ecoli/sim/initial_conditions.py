@@ -897,6 +897,8 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	length_mRNAs = length_all_RNAs[is_mRNA]
 	unique_index_mRNAs = unique_index_all_RNAs[is_mRNA]
 
+	import pdb; pdb.set_trace()
+
 	# Get conversion matrix between transcription units and mRNA templates
 	# for each monomer
 	# TODO (ggsun): This should be modified when transcription unit structures
