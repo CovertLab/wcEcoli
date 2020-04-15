@@ -2227,7 +2227,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 				sim_data.process.transcription.rnaData["replicationCoordinate"])):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
-			import pdb; pdb.set_trace()
+			#import pdb; pdb.set_trace()
 			# Get list of TFs that regulate this RNA
 			tfs = sim_data.process.transcription_regulation.targetTf.get(rnaIdNoLoc, [])
 			conditions = ["basal"]

@@ -22,7 +22,7 @@ CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
 
 output_tu_counts = os.path.join(FLAT_DIR, "transcription_units.tsv")
-output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix_lac.tsv")
+output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix.tsv")
 
 def parse_tsv(tsv_file):
 	'''
