@@ -24,6 +24,7 @@ LIST_OF_DICT_FILENAMES = (
 	"toya_2010_central_carbon_fluxes.tsv",
 	"dna_footprint_sizes.tsv",
 	"essential_genes.tsv",
+	"long_2019_central_carbon_fluxes.tsv",
 	"geneFunctions.tsv",
 	)
 

@@ -76,6 +76,47 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		return toya_reactions, toya_fluxes, toya_stdevs
 
 	@staticmethod
+	def load_long_data(validation_data_file, sim_data_file, sim_out_dir):
+		# type: (str, str, str) -> Tuple[List[str], Unum, Unum]
+		"""Load fluxome data from 2019 validation data
+
+		Arguments:
+			validationDataFile: Path to cPickle with validation data.
+			sim_data_file: Path to cPickle with simulation data.
+			sim_out_dir: Path to simulation output directory.
+
+		Returns:
+			Tuple of reaction IDs, fluxes, and standard deviations.
+			Fluxes and standard deviations appear in the same order as
+			their associated reactions do in the reaction ID list.
+			Fluxes and standard deviations are numpy arrays with units
+			FLUX_UNITS.
+		"""
+		validation_data = cPickle.load(open(validation_data_file, "rb"))
+		sim_data = cPickle.load(open(sim_data_file, "rb"))
+		cell_density = sim_data.constants.cellDensity
+
+		mass_listener = TableReader(os.path.join(sim_out_dir, "Mass"))
+		cell_masses = mass_listener.readColumn("cellMass") * units.fg
+		dry_masses = mass_listener.readColumn("dryMass") * units.fg
+		mass_listener.close()
+
+		long_reactions = validation_data.reactionFlux.long2019fluxes["reactionID"]
+		long_fluxes = toya.adjust_toya_data(
+			validation_data.reactionFlux.long2019fluxes["reactionFlux"],
+			cell_masses,
+			dry_masses,
+			cell_density,
+		)
+		long_ranges = toya.adjust_toya_data(
+			validation_data.reactionFlux.long2019fluxes["reactionFluxRange"],
+			cell_masses,
+			dry_masses,
+			cell_density,
+		)
+		return long_reactions, long_fluxes, long_ranges
+
+	@staticmethod
 	def load_fba_data(simOutDir):
 		# type: (str) -> Tuple[np.ndarray, Unum]
 		"""Load fluxome balance analysis (FBA) data
@@ -111,6 +152,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			os.mkdir(plotOutDir)
 
 		reaction_ids, reaction_fluxes = Plot.load_fba_data(simOutDir)
+
+		#Toya graph
+
 		toya_reactions, toya_fluxes, toya_stdevs = Plot.load_toya_data(
 			validationDataFile, simDataFile, simOutDir)
 		root_to_id_indices_map = toya.get_root_to_id_indices_map(
@@ -142,12 +186,52 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			yerr=sim_flux_stdevs.asNumber(FLUX_UNITS),
 			fmt="o", ecolor="k"
 		)
+
 		plt.ylabel("Mean WCM Reaction Flux {}".format(FLUX_UNITS.strUnit()))
 		plt.xlabel("Toya 2010 Reaction Flux {}".format(FLUX_UNITS.strUnit()))
 
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		exportFigure(plt, plotOutDir, plotOutFileName + "_toya", metadata)
 		plt.close("all")
 
+		#Long Graph
+
+		long_reactions, long_fluxes, long_ranges = Plot.load_long_data(
+			validationDataFile, simDataFile, simOutDir)
+		root_to_id_indices_map = toya.get_root_to_id_indices_map(
+			reaction_ids)
+		common_ids = toya.get_common_ids_long(
+			long_reactions, root_to_id_indices_map)
+
+		sim_flux_means, sim_flux_ranges = toya.process_simulated_fluxes(
+			common_ids, reaction_ids, reaction_fluxes,
+			root_to_id_indices_map
+		)
+		long_flux_means = toya.process_toya_data(
+			common_ids, long_reactions, long_fluxes)
+		long_flux_ranges = toya.process_toya_data(
+			common_ids, long_reactions, long_ranges)
+
+		correlation_coefficient = np.corrcoef(
+			sim_flux_means.asNumber(FLUX_UNITS),
+			toya_flux_means.asNumber(FLUX_UNITS),
+		)[0, 1]
+		plt.figure()
+
+		plt.title("Central Carbon Metabolism Flux, Pearson R = {:.2}".format(
+			correlation_coefficient))
+		plt.errorbar(
+			long_flux_means.asNumber(FLUX_UNITS),
+			sim_flux_means.asNumber(FLUX_UNITS),
+			xerr=long_flux_ranges.asNumber(FLUX_UNITS),
+			yerr=sim_flux_ranges.asNumber(FLUX_UNITS),
+			fmt="o", ecolor="k"
+		)
+
+		plt.ylabel("Mean WCM Reaction Flux {}".format(FLUX_UNITS.strUnit()))
+		plt.xlabel("Long 2019 Reaction Flux {}".format(FLUX_UNITS.strUnit()))
+
+		exportFigure(plt, plotOutDir, plotOutFileName + "_long", metadata)
+		plt.close("all")
 
 if __name__ == "__main__":
 	Plot().cli()
