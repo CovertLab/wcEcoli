@@ -14,6 +14,7 @@ import numpy as np
 import theano.tensor as T
 import theano
 
+
 class RnaDecay(object):
 	""" RnaDecay """
 
@@ -165,10 +166,17 @@ class RnaDecay(object):
 		N = rnaConc.size
 		km = T.dvector()
 
+		#import pdb; pdb.set_trace()
+		print 'to km'
+
 		# Residuals of non-linear optimization
 		residual = (vMax / km / kDeg) / (1 + (rnaConc / km).sum()) - np.ones(N)
-		residual_aux = (vMax * rnaConc / km) / (1 + (rnaConc / km).sum()) - (kDeg * rnaConc)
 
+		print 'got to residual'
+
+		residual_aux = (vMax * rnaConc / km) / (1 + (rnaConc / km).sum()) - (kDeg * rnaConc)
+		
+		print 'got to residual aux'
 		# Counting negative Km's (first regularization term)
 		regularizationNegativeNumbers = (np.ones(N) - km / np.abs(km)).sum() / N
 
@@ -182,7 +190,7 @@ class RnaDecay(object):
 		# Loss function
 		LossFunction = T.log(T.exp(residual) + T.exp(alpha * regularization)) - T.log(2)
 		LossFunction_aux = T.log(T.exp(residual_aux) + T.exp(alpha * regularization)) - T.log(2)
-
+		print 'got to loss functions'
 		J = theano.gradient.jacobian(LossFunction, km)
 		J_aux = theano.gradient.jacobian(LossFunction_aux, km)
 		Jacob = theano.function([km], J)
@@ -193,6 +201,8 @@ class RnaDecay(object):
 		R = theano.function([km], residual)
 		Lp = theano.function([km], J)
 		Lp_aux = theano.function([km], J_aux)
+		print 'got to lp_aux'
 		R_aux = theano.function([km], residual_aux)
+		print 'got to R_aux'
 
 		return L, Rneg, R, Lp, R_aux, L_aux, Lp_aux, Jacob, Jacob_aux

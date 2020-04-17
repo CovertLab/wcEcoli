@@ -70,7 +70,7 @@ ECOS_0_TOLERANCE = 1e-12  # Tolerance to adjust solver output to 0
 
 BASAL_EXPRESSION_CONDITION = "M9 Glucose minus AAs"
 
-VERBOSE = 1
+VERBOSE = 2
 
 COUNTS_UNITS = units.dmol
 VOLUME_UNITS = units.L
@@ -352,6 +352,8 @@ def buildBasalCellSpecifications(
 		"expression": sim_data.process.transcription.rnaExpression["basal"].copy(),
 		"doubling_time": sim_data.conditionToDoublingTime["basal"],
 		}
+
+	#import pdb; pdb.set_trace()
 
 	# Determine expression and synthesis probabilities
 	expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, _ = expressionConverge(
@@ -1138,10 +1140,21 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 		individual_masses_mRNA,
 		distribution_mRNA
 		)
+	print('total count mRNA' + str(total_count_mRNA))
+	print('Distribution mRNA LacZYA: ' + str(distribution_mRNA[517]))
+	print('Distribution mRNA LacYA: ' + str(distribution_mRNA[518]))
 	counts_mRNA = total_count_mRNA * distribution_mRNA
 	rna_expression_container.countsIs(counts_mRNA, ids_mRNA)
 
+	print('LacZYA counts:' + str(rna_expression_container.counts()[517]))
+	print('LacYA counts:' + str(rna_expression_container.counts()[518]))
+
 	expression = normalize(rna_expression_container.counts())
+	print('LacZYA expression:' + str(expression[517]))
+	print('LacYA expression:' + str(expression[518]))
+
+
+	#import pdb; pdb.set_trace()
 
 	return expression
 
@@ -3228,7 +3241,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		kcatEndo = [0.0001, 0.001, 0.01, 0.1, 1, 10]
 
 	for kcat in kcatEndo:
-
+		
 		if VERBOSE: print('Kcat = %f' % kcat)
 
 		totalEndoRNcap = units.sum(endoRNaseConc * kcat)
@@ -3245,7 +3258,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		sim_data.process.rna_decay.SensitivityAnalysisKcat_ResIni[kcat] = np.sum(np.abs(R_aux(Kmcounts)))
 		sim_data.process.rna_decay.SensitivityAnalysisKcat_ResOpt[kcat] = np.sum(np.abs(R_aux(KmCooperativeModel)))
 
-
+	#import pdb; pdb.set_trace()
 	# Loss function, and derivative
 	LossFunction, Rneg, R, LossFunctionP, R_aux, L_aux, Lp_aux, Jacob, Jacob_aux = sim_data.process.rna_decay.kmLossFunction(
 				totalEndoRnaseCapacity.asNumber(units.mol / units.L / units.s),
@@ -3255,11 +3268,13 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 				alpha
 			)
 
+
 	needToUpdate = False
 	fixturesDir = filepath.makedirs(filepath.ROOT_PATH, "fixtures", "endo_km")
 	km_filepath = os.path.join(fixturesDir, "km.cPickle")
-
+	'''
 	if os.path.exists(km_filepath):
+		print('km filepath exists')
 		with open(km_filepath, "rb") as f:
 			KmcountsCached = cPickle.load(f)
 
@@ -3268,13 +3283,18 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		# R_aux calculates the difference of the degradation rate based on these
 		# Km values and the expected rate so this sum seems like a reliable test of
 		# whether the cache fits current input data.
+		print("about do do a summation")
+		print("R_aux(KmcountsCached")
+		import pdb; pdb.set_trace()
 		if np.sum(np.abs(R_aux(KmcountsCached))) > 1e-15:
 			needToUpdate = True
 	else:
 		needToUpdate = True
-
+	'''
+	needToUpdate = True
 
 	if needToUpdate:
+		print('in need to update section')
 		rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
 		degradationRates = sim_data.process.transcription.rnaData["degRate"]
 		endoRNaseConc = countsToMolar * bulkContainer.counts(sim_data.process.rna_decay.endoRnaseIds)
@@ -3306,7 +3326,6 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 
 		print("Residuals (scaled by Kdeg * RNAcounts) Km initial = %f" % np.sum(np.abs(R_aux(Kmcounts))))
 		print("Residuals (scaled by Kdeg * RNAcounts) optimized = %f" % np.sum(np.abs(R_aux(KmCooperativeModel))))
-
 
 	# Evaluate Jacobian around solutions (Kmcounts and KmCooperativeModel)
 	JacobDiag = np.diag(Jacob(KmCooperativeModel))
