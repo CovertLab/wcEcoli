@@ -3191,7 +3191,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	numerator = (1 / countsToMolar * totalEndoRnaseCapacity).asNumber() * (denominator - (rnaCounts / (1 / countsToMolar * Kmcounts).asNumber()))
 	gDerivative = np.abs(KmQuadratic * (1 - (numerator / denominator)))
 	if VERBOSE: print("Max derivative (counts) = %f" % max(gDerivative))
-
+	import pdb; pdb.set_trace()
 	# Compute derivative g(Km) in concentrations:
 	KmQuadratic = 1 / np.power(Kmcounts, 2)
 	denominator = np.power(np.sum(rnaConc.asNumber() / Kmcounts),2)
