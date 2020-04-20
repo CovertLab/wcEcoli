@@ -1575,6 +1575,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	view_RNA.countsIs(nRnas * expression)
 
 	rnaLossRate = None
+	Km = None
 	if Km is None:
 		rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
 			doubling_time,
@@ -1602,6 +1603,10 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 
 	synthProb = normalize(rnaLossRate.asNumber(1 / units.min))
 
+	print('expression = ' + str(sum(expression)))
+	print('synth = ' + str(sum(synthProb)))
+	print('rnaLossRate [518] = ' + str(rnaLossRate[518]))
+	#import pdb; pdb.set_trace()
 	return expression, synthProb
 
 def fitMaintenanceCosts(sim_data, bulkContainer):
@@ -3191,7 +3196,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	numerator = (1 / countsToMolar * totalEndoRnaseCapacity).asNumber() * (denominator - (rnaCounts / (1 / countsToMolar * Kmcounts).asNumber()))
 	gDerivative = np.abs(KmQuadratic * (1 - (numerator / denominator)))
 	if VERBOSE: print("Max derivative (counts) = %f" % max(gDerivative))
-	import pdb; pdb.set_trace()
+	#import pdb; pdb.set_trace()
 	# Compute derivative g(Km) in concentrations:
 	KmQuadratic = 1 / np.power(Kmcounts, 2)
 	denominator = np.power(np.sum(rnaConc.asNumber() / Kmcounts),2)
