@@ -48,6 +48,8 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 	def _getVar(self, flow):
 		if flow in self._flows:
 			idx = self._flows[flow]
+		elif self._eqConstBuilt:
+			raise Exception('Equality constraints already built. Unable to add new flow: "{}".'.format(flow))
 		else:
 			self._model.variables.add(obj=[0])
 			idx = len(self._flows)

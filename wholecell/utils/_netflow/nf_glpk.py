@@ -247,6 +247,8 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 	def _getVar(self, flow):
 		if flow in self._flows:
 			idx = self._flows[flow]
+		elif self._eqConstBuilt:
+			raise Exception('Equality constraints already built. Unable to add new flow: "{}".'.format(flow))
 		else:
 			self._add_cols(1)
 			idx = len(self._flows)
