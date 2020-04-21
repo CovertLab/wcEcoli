@@ -229,18 +229,15 @@ if VARIANT_LIST_INPUT.endswith(".csv"):
 		csvreader = csv.reader(VARIANT_LIST, delimiter=",")
 		for line in csvreader:
 			VARIANT_LIST.append(line)
-	print("csv not yet supported")
 else:
 	VARIANT_LIST = list(map(int, VARIANT_LIST_INPUT.split(",")))
-	#VARIANT_LIST = list(map(int(VARIANT_LIST_INPUT)))
 
 # This variable gets iterated over in multiple places
 # So be careful if you change it to xrange
 if VARIANT_LIST == '':
 	VARIANTS_TO_RUN = range(FIRST_VARIANT_INDEX, LAST_VARIANT_INDEX + 1)
 else:
-	#VARIANTS_TO_RUN = VARIANT_LIST
-	VARIANTS_TO_RUN = VARIANT_LIST[0:500]
+	VARIANTS_TO_RUN = VARIANT_LIST
 
 ### Set other simulation parameters
 

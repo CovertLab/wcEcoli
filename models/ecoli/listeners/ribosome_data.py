@@ -72,21 +72,25 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			'active_ribosome')
 		is_full_transcript_RNA, unique_index_RNA = RNAs.attrs(
 			'is_full_transcript', 'unique_index')
-		protein_index_ribosomes, mRNA_index_ribosomes = ribosomes.attrs(
-			'protein_index', 'mRNA_index')
+		if len(ribosomes) > 0:
+			protein_index_ribosomes, mRNA_index_ribosomes = ribosomes.attrs(
+				'protein_index', 'mRNA_index')
 
-		# Get mask for ribosomes that are translating proteins on partially
-		# transcribed mRNAs
-		ribosomes_on_nascent_mRNA_mask = np.isin(
-			mRNA_index_ribosomes,
-			unique_index_RNA[np.logical_not(is_full_transcript_RNA)])
+			# Get mask for ribosomes that are translating proteins on partially
+			# transcribed mRNAs
+			ribosomes_on_nascent_mRNA_mask = np.isin(
+				mRNA_index_ribosomes,
+				unique_index_RNA[np.logical_not(is_full_transcript_RNA)])
 
-		# Get counts of ribosomes for each type
-		self.n_ribosomes_per_transcript = np.bincount(
-			protein_index_ribosomes, minlength=self.nMonomers)
-		self.n_ribosomes_on_partial_mRNA_per_transcript = np.bincount(
-			protein_index_ribosomes[ribosomes_on_nascent_mRNA_mask],
-			minlength=self.nMonomers)
+			# Get counts of ribosomes for each type
+			self.n_ribosomes_per_transcript = np.bincount(
+				protein_index_ribosomes, minlength=self.nMonomers)
+			self.n_ribosomes_on_partial_mRNA_per_transcript = np.bincount(
+				protein_index_ribosomes[ribosomes_on_nascent_mRNA_mask],
+				minlength=self.nMonomers)
+		else:
+			self.n_ribosomes_per_transcript = np.zeros(self.nMonomers)
+			self.n_ribosomes_on_partial_mRNA_per_transcript = np.zeros(self.nMonomers)
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
