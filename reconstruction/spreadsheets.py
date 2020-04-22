@@ -49,7 +49,6 @@ class JsonReader(csv.DictReader):
 		for key, raw_value in csv.DictReader.next(self).viewitems():
 			try:
 				value = json.loads(raw_value) if raw_value else ""
-
 			except (ValueError, TypeError) as e:
 				print(raw_value)
 				repr(e)

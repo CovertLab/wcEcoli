@@ -226,7 +226,10 @@ def fitSimData_1(
 
 	if VERBOSE > 0:
 		print('Fitting promoter binding')
-	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
+	#rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
+	#fitLigandConcentrations(sim_data, cellSpecs)
+	sim_data.pPromoterBound = json.load(open('promoter-bound.json'))
+	rVector = np.array(json.load(open('rvector.json')))
 	fitLigandConcentrations(sim_data, cellSpecs)
 
 	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints
@@ -1430,6 +1433,9 @@ def setRNAPCountsConstrainedByPhysiology(
 			sim_data.process.transcription.rnaData["degRate"],
 			bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
 		)
+		#import pdb; pdb.set_trace()
+		#print('deg rate  = ' + str(sum(sim_data.process.transcription.rnaData["degRate"])))
+		print('counts sum = ' + str(sum(bulkContainer.counts(sim_data.process.transcription.rnaData['id']))))
 	else:
 		# Get constants to compute countsToMolar factor
 		cellDensity = sim_data.constants.cellDensity
@@ -1548,6 +1554,28 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	# 	sim_data.process.translation.monomerData["rnaId"][sim_data.relation.monomerIndexToRnaMapping] == sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]]
 	# 	), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests
 
+
+	'''
+	mRnaExpressionView.countsIs(
+		mRnaExpressionFrac * mRNADistributionFromProtein(
+			normalize(counts_protein), translation_efficienciesByProtein, netLossRate_protein
+			)[sim_data.relation.monomerIndexToRnaMapping]
+		)
+
+	expression = rnaExpressionContainer.counts()
+
+	# Set number of RNAs based on expression we just set
+	nRnas = totalCountFromMassesAndRatios(
+		totalMass_RNA,
+		sim_data.process.transcription.rnaData["mw"] / sim_data.constants.nAvogadro,
+		expression
+		)
+
+	view_RNA.countsIs(nRnas * expression)
+	'''
+
+
+
 	mRnaExpressionView = rnaExpressionContainer.countsView(sim_data.process.transcription.rnaData["id"][sim_data.process.transcription.rnaData["isMRna"]])
 	mRnaExpressionFrac = np.sum(mRnaExpressionView.counts())
 
@@ -1573,9 +1601,11 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		expression)
 
 	view_RNA.countsIs(nRnas * expression)
-
+	import pdb; pdb.set_trace()
 	rnaLossRate = None
+	Km = None
 	if Km is None:
+		print('in the part where Km is none')
 		rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
 			doubling_time,
 			sim_data.process.transcription.rnaData["degRate"],
@@ -1591,6 +1621,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		endoRNaseConc = countsToMolar * bulkContainer.counts(sim_data.process.rna_decay.endoRnaseIds)
 		kcatEndoRNase = sim_data.process.rna_decay.kcats
 		totalEndoRnaseCapacity = units.sum(endoRNaseConc * kcatEndoRNase)
+		print('totalEndoRnaseCapacity = ' + str(totalEndoRnaseCapacity))
 
 		rnaLossRate = netLossRateFromDilutionAndDegradationRNA(
 			doubling_time,
@@ -1601,6 +1632,9 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		)
 
 	synthProb = normalize(rnaLossRate.asNumber(1 / units.min))
+	print('expression = ' + str(sum(expression)))
+	print('synth = ' + str(sum(synthProb)))
+	print('rnaLossRate [518] = ' + str(rnaLossRate[518]))
 
 	return expression, synthProb
 
