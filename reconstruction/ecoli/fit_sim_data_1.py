@@ -1174,7 +1174,6 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 
 	# TODO(Ryan): make sure the transpose of the monomerToMrnaTransform matrix works
 	#   as an inverse mapping
-	#import pdb; pdb.set_trace()
 	mrna_expression = normalize(expression[sim_data.relation.is_mrna])
 	distribution_transcripts_by_protein = normalize(np.matmul(mrna_expression,
 		sim_data.relation.mrna_to_monomer_transform))
@@ -1585,9 +1584,12 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		netLossRate_protein)
 
 	# Translate the transcript distribution into the mrna distribution
-	mRnaDistribution = np.matmul(
-		transcriptDistribution,
-		sim_data.relation.monomer_to_mrna_transform)
+	monomer_to_mrna_transform = sim_data.relation.monomer_to_mrna_transform
+	transcriptDistribution_matrix = np.repeat(np.reshape(transcriptDistribution, (-1,1)), monomer_to_mrna_transform.shape[1], axis=1)
+	mRnaDistribution_matrix = np.multiply(transcriptDistribution_matrix, monomer_to_mrna_transform)
+
+	# For polycistronic mrnas, take the max counts calculated from the constituent monomers
+	mRnaDistribution = np.amax(mRnaDistribution_matrix, axis=0)
 
 	mRnaExpressionView.countsIs(
 		mRnaExpressionFrac * mRnaDistribution)
@@ -1951,7 +1953,6 @@ def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, net
 
 	assert np.allclose(np.sum(distribution_mRNA), 1)
 	assert np.allclose(np.sum(translation_efficiencies), 1)
-	#import pdb; pdb.set_trace()
 	distributionUnnormed = 1 / netLossRate * distribution_mRNA * translation_efficiencies
 	distributionNormed = distributionUnnormed / units.sum(distributionUnnormed)
 	distributionNormed.normalize()
@@ -3261,7 +3262,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		kcatEndo = [0.0001, 0.001, 0.01, 0.1, 1, 10]
 
 	for kcat in kcatEndo:
-
+		
 		if VERBOSE: print('Kcat = %f' % kcat)
 
 		totalEndoRNcap = units.sum(endoRNaseConc * kcat)
@@ -3278,7 +3279,6 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		sim_data.process.rna_decay.SensitivityAnalysisKcat_ResIni[kcat] = np.sum(np.abs(R_aux(Kmcounts)))
 		sim_data.process.rna_decay.SensitivityAnalysisKcat_ResOpt[kcat] = np.sum(np.abs(R_aux(KmCooperativeModel)))
 
-
 	# Loss function, and derivative
 	LossFunction, Rneg, R, LossFunctionP, R_aux, L_aux, Lp_aux, Jacob, Jacob_aux = sim_data.process.rna_decay.kmLossFunction(
 				totalEndoRnaseCapacity.asNumber(units.mol / units.L / units.s),
@@ -3288,11 +3288,14 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 				alpha
 			)
 
-	needToUpdate = False
+
 	fixturesDir = filepath.makedirs(filepath.ROOT_PATH, "fixtures", "endo_km")
 	km_filepath = os.path.join(fixturesDir, "km.cPickle")
 
+	# Removing so that kms are calculated each time by default
+	'''
 	if os.path.exists(km_filepath):
+		print('km filepath exists')
 		with open(km_filepath, "rb") as f:
 			KmcountsCached = cPickle.load(f)
 
@@ -3301,11 +3304,15 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		# R_aux calculates the difference of the degradation rate based on these
 		# Km values and the expected rate so this sum seems like a reliable test of
 		# whether the cache fits current input data.
+		print("about do do a summation")
+		print("R_aux(KmcountsCached")
+		import pdb; pdb.set_trace()
 		if np.sum(np.abs(R_aux(KmcountsCached))) > 1e-15:
 			needToUpdate = True
 	else:
 		needToUpdate = True
-
+	'''
+	needToUpdate = True
 
 	if needToUpdate:
 		rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
@@ -3339,7 +3346,6 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 
 		print("Residuals (scaled by Kdeg * RNAcounts) Km initial = %f" % np.sum(np.abs(R_aux(Kmcounts))))
 		print("Residuals (scaled by Kdeg * RNAcounts) optimized = %f" % np.sum(np.abs(R_aux(KmCooperativeModel))))
-
 
 	# Evaluate Jacobian around solutions (Kmcounts and KmCooperativeModel)
 	JacobDiag = np.diag(Jacob(KmCooperativeModel))
