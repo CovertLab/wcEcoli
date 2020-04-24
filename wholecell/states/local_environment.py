@@ -139,6 +139,14 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		constrained = exchange_data['importConstrainedExchangeMolecules']
 		return unconstrained, constrained
 
+	def get_import_molecules(self):
+		exchange = self.get_exchange_data()
+		imports = exchange['importExchangeMolecules']
+		return imports
+
+	def get_import_constraints(self, exchange_data):
+		return self._get_import_constraints(exchange_data)
+
 	def molecule_exchange(self, exchange_molecules, counts):
 		'''
 		Convert exchange molecules to environmental molecules using mapping

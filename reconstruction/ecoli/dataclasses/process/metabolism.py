@@ -504,8 +504,12 @@ class Metabolism(object):
 		Returns levels for external molecules available to exchange based on the current nutrients
 		"""
 
-		newObjective = self.concentration_updates.concentrations_based_on_nutrients(
-			media_id=currentNutrients, conversion_units=targetUnits)
+		unconstrained_exchange_molecules = exchange_data["importUnconstrainedExchangeMolecules"]
+		constrained_exchange_molecules = exchange_data["importConstrainedExchangeMolecules"]
+
+		newObjective = self.concentration_updates.concentrationsBasedOnNutrients(
+			imports=unconstrained_exchange_molecules.union(constrained_exchange_molecules),
+			conversion_units=targetUnits)
 		if concModificationsBasedOnCondition is not None:
 			newObjective.update(concModificationsBasedOnCondition)
 
@@ -557,10 +561,10 @@ class Metabolism(object):
 		conc = self.concentration_updates.concentrations_based_on_nutrients
 
 		aa_conc_basal = np.array([
-			conc('minimal')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			conc(media_id='minimal')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			for aa in aa_ids])
 		aa_conc_aa_media = np.array([
-			conc('minimal_plus_amino_acids')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			conc(media_id='minimal_plus_amino_acids')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			for aa in aa_ids])
 
 		# Lower concentrations might produce strange rates (excess supply or
@@ -1595,11 +1599,15 @@ class ConcentrationUpdates(object):
 		self.molecule_set_amounts = self._add_molecule_amounts(equilibriumReactions, self.default_concentrations_dict)
 
 	# return adjustments to concDict based on nutrient conditions
-	def concentrations_based_on_nutrients(self, media_id=None, conversion_units=None):
+	def concentrations_based_on_nutrients(self, media_id=None, imports=None, conversion_units=None):
+		# type: (Optional[str], Optional[Set[str]], Optional[units.Unum]) -> Dict[str, Any]
 		if conversion_units:
 			conversion = self.units.asNumber(conversion_units)
 		else:
 			conversion = self.units
+
+		if imports is None and media_id is not None:
+			imports = self.exchange_fluxes[media_id]
 
 		concentrationsDict = self.default_concentrations_dict.copy()
 
@@ -1607,7 +1615,7 @@ class ConcentrationUpdates(object):
 		concentrations = conversion * np.array([concentrationsDict[k] for k in metaboliteTargetIds])
 		concDict = dict(zip(metaboliteTargetIds, concentrations))
 
-		if media_id is not None:
+		if imports is not None:
 			# For faster conversions than .asNumber(conversion_units) for each setAmount
 			if conversion_units:
 				conversion_to_no_units = conversion_units.asUnit(self.units)
@@ -1618,11 +1626,9 @@ class ConcentrationUpdates(object):
 					if mol_id in concDict:
 						concDict[mol_id]  *= conc_change
 
-			# Adjust for concentration changes based on presence in media
-			exchanges = self.exchange_fluxes[media_id]
-			for moleculeName, setAmount in six.viewitems(self.molecule_set_amounts):
-				if ((moleculeName in exchanges and (moleculeName[:-3] + "[c]" not in self.molecule_scale_factors or moleculeName == "L-SELENOCYSTEINE[c]"))
-						or (moleculeName in self.molecule_scale_factors and moleculeName[:-3] + "[p]" in exchanges)):
+			for moleculeName, setAmount in self.molecule_set_amounts.items():
+				if ((moleculeName in imports and (moleculeName[:-3] + "[c]" not in self.molecule_scale_factors or moleculeName == "L-SELENOCYSTEINE[c]"))
+						or (moleculeName in self.molecule_scale_factors and moleculeName[:-3] + "[p]" in imports)):
 					if conversion_units:
 						setAmount = (setAmount / conversion_to_no_units).asNumber()
 					concDict[moleculeName] = setAmount

@@ -58,6 +58,7 @@ class Metabolism(wholecell.processes.process.Process):
 		# Create model to use to solve metabolism updates
 		self.model = FluxBalanceAnalysisModel(
 			sim_data,
+			imports=environment.get_import_molecules(),
 			timeline=environment.current_timeline,
 			include_ppgpp=self.include_ppgpp,
 			)
@@ -250,7 +251,7 @@ class FluxBalanceAnalysisModel(object):
 	Metabolism model that solves an FBA problem with modular_fba.
 	"""
 
-	def __init__(self, sim_data, timeline=None, include_ppgpp=True):
+	def __init__(self, sim_data, imports=None, timeline=None, include_ppgpp=True):
 		# type: (SimulationDataEcoli, List[Tuple[float, str]], bool) -> None
 		"""
 		Args:
@@ -266,6 +267,9 @@ class FluxBalanceAnalysisModel(object):
 			timeline = [(0., nutrients)]
 		else:
 			nutrients = timeline[0][1]
+
+		if imports is None:
+			imports = sim_data.external_state.exchange_data_from_media(nutrients)['importExchangeMolecules']
 
 		# Local sim_data references
 		metabolism = sim_data.process.metabolism
@@ -286,8 +290,8 @@ class FluxBalanceAnalysisModel(object):
 		self.getppGppConc = sim_data.growth_rate_parameters.get_ppGpp_conc
 
 		# go through all media in the timeline and add to metaboliteNames
-		metaboliteNamesFromNutrients = set()
-		exchange_molecules = set()
+		metaboliteNamesFromNutrients = set(imports)
+		exchange_molecules = set(imports)
 		if include_ppgpp:
 			metaboliteNamesFromNutrients.add(self.ppgpp_id)
 		for time, media_id in timeline:
@@ -296,14 +300,18 @@ class FluxBalanceAnalysisModel(object):
 				)
 			exchanges = sim_data.external_state.exchange_data_from_media(media_id)
 			exchange_molecules.update(exchanges['externalExchangeMolecules'])
-		self.metaboliteNamesFromNutrients = list(sorted(metaboliteNamesFromNutrients))
+			self.metaboliteNamesFromNutrients.update(
+				metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
+					imports=exchanges['importExchangeMolecules'])
+				)
+		self.metaboliteNamesFromNutrients = list(sorted(self.metaboliteNamesFromNutrients))
 		exchange_molecules = list(sorted(exchange_molecules))
 		molecule_masses = dict(zip(exchange_molecules,
 			sim_data.getter.get_masses(exchange_molecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
 
 		# Setup homeostatic objective concentration targets
 		## Determine concentrations based on starting environment
-		conc_dict = metabolism.concentration_updates.concentrations_based_on_nutrients(nutrients)
+		conc_dict = metabolism.concentrationUpdates.concentrationsBasedOnNutrients(imports=imports)
 		doubling_time = sim_data.condition_to_doubling_time[sim_data.condition]
 		conc_dict.update(self.getBiomassAsConcentrations(doubling_time))
 		if include_ppgpp:
