@@ -1,4 +1,5 @@
 from .all_shuffle_params import all_shuffle_params
+from .aa_uptake import aa_uptake
 from .condition import condition
 from .gene_knockout import gene_knockout
 from .mene_params import mene_params
@@ -19,6 +20,7 @@ from .wildtype import wildtype
 
 nameToFunctionMapping = {
 	"all_shuffle_params": all_shuffle_params,
+	"aa_uptake": aa_uptake,
 	"condition": condition,
 	"gene_knockout": gene_knockout,
 	"mene_params": mene_params,
