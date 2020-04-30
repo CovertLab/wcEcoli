@@ -1,15 +1,14 @@
-from collections import Counter
-import itertools
-import os
-import csv
-import time
-#from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
+from collections import Counter
+import csv
+import itertools
 import numpy as np
+import os
+import time
+
 from functools import partial
 from reconstruction import spreadsheets
-
 
 '''
 Purpose:
@@ -332,11 +331,15 @@ def gather_tu_info(tu_genes_info):
 		tu_info[pc_gene_id]['type'] = find_tu_type(tu_genes_info[pc_gene_id])
 		tu_info[pc_gene_id]['modifiedForms'] = []
 		tu_info[pc_gene_id]['monomerId'] = '_'.join(pc_monomer_id_list)
-		tu_info[pc_gene_id]['comments'] = "Transcription unit created within script, for individual RNA comments look at rnas.tsv for that RNA"
+		tu_info[pc_gene_id]['comments'] = """Transcription unit created within script,
+		"for individual RNA comments look at rnas.tsv for that RNA"""
 		tu_info[pc_gene_id]['mw'] = calculate_rna_biomass(tu_info[pc_gene_id]['seq'])
 		tu_info[pc_gene_id]['location'] = find_tu_location(tu_genes_info[pc_gene_id])
 		tu_info[pc_gene_id]['ntCount'] = count_ntps_rna(tu_info[pc_gene_id]['seq'])
-		tu_info[pc_gene_id]['id'] = pc_gene_id + '_RNA'
+		if not tu_info[pc_gene_id]['type'] == 'mrna':
+			tu_info[pc_gene_id]['id'] = pc_gene_id + '_' + tu_info[pc_gene_id]['type'].upper()
+		else:
+			tu_info[pc_gene_id]['id'] = pc_gene_id + '_RNA'
 		tu_info[pc_gene_id]['geneId'] = pc_gene_id
 		tu_info[pc_gene_id]['monomerSet'] = pc_monomer_id_list
 		tu_info[pc_gene_id]['microarray expression'] = tu_genes_info[pc_gene_id][first_gene]['microarray expression']
@@ -346,6 +349,7 @@ def gather_tu_info(tu_genes_info):
 def find_monomers_to_remove():
 	return set(itertools.chain(*[pc['monomers_to_remove'] 
 		for pc in PC_INFO]))
+
 def update_rna_info(fieldnames):
 	#look for instances where rnas do not have an assigned monomerId
 	#replace with a empty list, else put monomerId(s) into a list.
@@ -356,8 +360,8 @@ def update_rna_info(fieldnames):
 			rna_row['monomerSet'] = [rna_row['monomerId']]
 	# add fieldname for 'monomersets'
 	fieldnames.append('monomerSet')
-
 	return RNA_INFO, fieldnames
+
 def write_output_file(tu_info, fieldnames, monomers_to_remove):
 	'''
 	Write either with dict writer or regular writer. The choice is for
@@ -395,7 +399,6 @@ def write_output_file(tu_info, fieldnames, monomers_to_remove):
 	
 
 def make_collection():
-	#pull in rna_info as a list
 	global PC_INFO, RNA_INFO, GENE_INFO, GENOMIC_SEQUENCE
 	RNA_INFO, fieldnames = parse_tsv(RNA_FILE)
 	PC_INFO, pc_fieldnames = parse_tsv(POLY_CISTRON_FILE)
