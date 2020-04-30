@@ -1603,7 +1603,6 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		expression)
 
 	view_RNA.countsIs(nRnas * expression)
-	import pdb; pdb.set_trace()
 	rnaLossRate = None
 	Km = None
 	if Km is None:
