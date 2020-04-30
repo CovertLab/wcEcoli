@@ -13,12 +13,12 @@ from reconstruction import spreadsheets
 '''
 Purpose:
 This file autogenerates the operon_rnas.tsv file. This file contains the 
-the monocistronic and pcic mRNAs used within the whole cell model. Functionally
+the monocistronic and polycistronic mRNAs used within the whole cell model. Functionally
 replaces rnas.tsv within the model.
 
 How are the flat files used:
 - polycistronic_mrnas_in_the_model:
-	Supplies the pcic mRNAs to add as a list of geneIds, 
+	Supplies the polycistronic mRNAs to add as a list of geneIds, 
 	in the column "transcription_units". For each transcription unit added 
 	we need to specify if the monocistrons in that operon should be removed.
 	This is because often the mono-cistrons in a transcription unit are not 
