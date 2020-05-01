@@ -4,6 +4,7 @@ import itertools
 import numpy as np
 import os
 import time
+import warnings
 
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
@@ -78,6 +79,8 @@ Note:
 	mRNAs.
 - A comment line is added to the top of the file to indicate that it generated
 	from this script, and to record the date it was compiled.
+TODO:
+= Allow for certain RNA type mixing (rRNA, tRNA) - handle this type differently
 '''
 
 DIALECT = "excel-tab"
@@ -133,7 +136,7 @@ def find_tu_type(tu_genes_info):
 	if there is an even number of RNAs."""
 	tu_types = [tu_genes_info[gene]['type'].lower() for gene in tu_genes_info] 
 	if len(set(tu_types)) > 1:
-		print(mismatch_output.format('_'.join(tu_genes_info.keys())))
+		warnings.warn(mismatch_output.format('_'.join(tu_genes_info.keys())))
 	tu_type = max(tu_types, key=Counter(tu_types).get)	
 	return tu_type
 
@@ -150,13 +153,10 @@ def find_tu_location(tu_genes_info):
 	Might have to do additional checks. The naming for this transcription 
 	unit will follow the most prevalant RNA location, or the first RNA in the TU 
 	if there is an even number of RNAs."""
-
 	tu_locations = [tu_genes_info[gene]['location'] for gene in tu_genes_info]
 	loc_elements = [loc[0] for loc in tu_locations]
-
 	if len(set(loc_elements)) > 1:
-		print(mismatch_output.format('_'.join(tu_genes_info.keys())))
-
+		warnings.warn(mismatch_output.format('_'.join(tu_genes_info.keys())))
 	location = [max(loc_elements, key=Counter(loc_elements).get)]
 	return location
 
