@@ -28,15 +28,15 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(PolypeptideInitiation, self).initialize(sim, sim_data)
 
-		import ipdb; ipdb.set_trace()
 
 		# Load parameters
 		# mrnaIds = sim_data.process.translation.monomerData["rnaId"]
 
 		# TODO(Ryan): This will now be in the wrong order (convert to transcript space, 
 		# then convert to monomer order at the end)
-		mrnaIds = sim_data.relation.mrna_data['id']
-		self.mrnaToMonomerTransform = sim_data.relation.mrnaToMonomerTransform
+		# mrnaIds = sim_data.relation.mrna_data['id']
+		self.monomerTomRnaTransform = sim_data.relation.monomer_to_mrna_transform
+		self.mrnaToMonomerTransform = sim_data.relation.mrna_to_monomer_transform
 		self.proteinLengths = sim_data.process.translation.monomerData["length"].asNumber()
 		self.translationEfficiencies = normalize(
 			sim_data.process.translation.translationEfficienciesByMonomer)
@@ -45,8 +45,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = sim_data.process.translation.make_elongation_rates
 
-		# Get indexes from proteins to transcription units
-		self.protein_index_to_TU_index = sim_data.relation.rnaIndexToMonomerMapping
 
 		# Build matrix to convert transcription unit counts to mRNA counts
 		all_TU_ids = sim_data.process.transcription.rnaData['id']
@@ -54,12 +52,42 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.n_TUs = len(all_TU_ids)
 		self.n_mRNAs = len(all_mRNA_ids)
 
+		# remove later!
+		self.all_TU_ids = all_TU_ids
+		self.all_mRNA_ids = all_mRNA_ids
+
+		# Get indexes from proteins to transcription units
+		# self.protein_index_to_TU_index = sim_data.relation.rnaIndexToMonomerMapping_new
+
+		# get TU indexes for each protein
+		TU_id_to_index = {TU_id: i for i, TU_id in enumerate(all_TU_ids)}
+
+		self.protein_index_to_TU_index = {}
+		for i, protein in enumerate(sim_data.process.translation.monomerData):
+			self.protein_index_to_TU_index[i] = []
+			for rna in protein['rnaSet']:
+				self.protein_index_to_TU_index[i].append(TU_id_to_index[rna])
+
+
+		self.TU_id_to_protein_index = {}
+		for i, protein in enumerate(sim_data.process.translation.monomerData):
+			for rna in protein['rnaSet']:
+				self.TU_id_to_protein_index[rna] = i
+
+		self.translationEfficienciesByTU = np.zeros(len(all_TU_ids))
+		self.TU_index_to_protein_index = {}
+		for i, TU in enumerate(all_TU_ids):
+			if TU in self.TU_id_to_protein_index:
+				self.translationEfficienciesByTU[i] = self.translationEfficiencies[self.TU_id_to_protein_index[TU]]
+				self.TU_index_to_protein_index[i] = self.TU_id_to_protein_index[TU]
+
+
 		self.TU_counts_to_mRNA_counts = np.zeros(
 			(self.n_mRNAs, self.n_TUs), dtype=np.float64)
+		# import ipdb; ipdb.set_trace()
+		# for i, mRNA_id in enumerate(all_mRNA_ids):
+		# 	self.TU_counts_to_mRNA_counts[i, TU_id_to_index[mRNA_id]] = 1
 
-		TU_id_to_index = {TU_id: i for i, TU_id in enumerate(all_TU_ids)}
-		for i, mRNA_id in enumerate(all_mRNA_ids):
-			self.TU_counts_to_mRNA_counts[i, TU_id_to_index[mRNA_id]] = 1
 
 		# Determine changes from parameter shuffling variant
 		if (hasattr(sim_data.process.translation, "translationEfficienciesShuffleIdxs")
@@ -76,6 +104,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Create view onto RNAs
 		self.RNAs = self.uniqueMoleculesView('RNA')
+		self.mRnas = self.bulkMoleculesView(all_TU_ids[sim_data.process.transcription.rnaData['isMRna']])
+		# import ipdb; ipdb.set_trace()#TG
 
 	def calculateRequest(self):
 		current_media_id = self._external_states['Environment'].current_media_id
@@ -129,8 +159,23 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		unique_index_active_mRNAs = unique_index_RNAs[can_translate]
 
 		# Get counts of each type of active mRNA
+		# TODO(TEG): do the ribosomes need to know they on a polycistron?
+		# import ipdb; ipdb.set_trace()
 		TU_counts = np.bincount(TU_index_active_mRNAs, minlength=self.n_TUs)
-		mRNA_counts = self.TU_counts_to_mRNA_counts.dot(TU_counts)
+
+		if TU_counts[532] != self.bulkMoleculeView('EG10527_EG10526_EG10524_RNA[c]').count():
+			import ipdb; ipdb.set_trace()
+
+		mRNA_counts = np.zeros(self.n_mRNAs)
+		for i, TU_count in enumerate(TU_counts):
+			if i in self.TU_index_to_protein_index:
+				mRNA_counts[self.TU_index_to_protein_index[i]] += TU_count
+
+
+
+
+
+		# mRNA_counts = self.TU_counts_to_mRNA_counts.dot(TU_counts)
 
 		# Calculate initiation probabilities for ribosomes based on mRNA counts
 		# and associated mRNA translational efficiencies
@@ -188,6 +233,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		nonzeroCount = (n_new_proteins > 0)
 		start_index = 0
 
+
 		for protein_index, counts in zip(
 				np.arange(n_new_proteins.size)[nonzeroCount],
 				n_new_proteins[nonzeroCount]):
@@ -195,8 +241,10 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			protein_indexes[start_index:start_index+counts] = protein_index
 
 			# Get mask for active mRNA molecules that produce this protein
-			mask = (TU_index_active_mRNAs == self.protein_index_to_TU_index[protein_index])
+			# mask = (TU_index_active_mRNAs == self.protein_index_to_TU_index[protein_index])
+			mask = [True if idx in self.protein_index_to_TU_index[protein_index] else False for idx in TU_index_active_mRNAs]
 			n_mRNAs = np.count_nonzero(mask)
+
 
 			# Distribute ribosomes among these mRNAs
 			n_ribosomes_per_RNA = self.randomState.multinomial(
@@ -240,6 +288,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			- expectedTerminationRate: Average number of terminations in one
 			timestep for one protein
 		"""
+		# import ipdb; ipdb.set_trace()#TG
 		allTranslationTimes = 1. / ribosomeElongationRates * proteinLengths
 		allTranslationTimestepCounts = np.ceil(allTranslationTimes / timeStepSec)
 		averageTranslationTimestepCounts = np.dot(allTranslationTimestepCounts, proteinInitProb)
