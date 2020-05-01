@@ -168,12 +168,25 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppg
 		rnaExpression = sim_data.process.transcription.expression_from_ppgpp(ppgpp)
 	else:
 		rnaExpression = sim_data.process.transcription.rnaExpression[sim_data.condition]
+	# TODO (TEG): map translation efficiencies to polycistrons
+	# monomerExpression = normalize(
+	# 	rnaExpression[sim_data.relation.mrna_to_monomer_transform] *
+	# 	sim_data.process.translation.translationEfficienciesByMonomer /
+	# 	(np.log(2) / sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.s) + sim_data.process.translation.monomerData["degRate"].asNumber(1 / units.s))
+	# 	)
+	monomerExpression = np.zeros(len(sim_data.process.translation.monomerData))
+	conditionToDoublingT = np.log(2) / sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.s)
+	translationEfficienciesByMonomer = sim_data.process.translation.translationEfficienciesByMonomer
+	rnaIds = list(sim_data.process.transcription.rnaData['id'])
+	for monomer_idx, monomer in enumerate(sim_data.process.translation.monomerData):
+		exp = 0
+		for rna in monomer['rnaSet']:
+			rna_idx = rnaIds.index(rna)
+			exp += rnaExpression[rna_idx] * translationEfficienciesByMonomer[monomer_idx] / (conditionToDoublingT + monomer['degRate'])
 
-	monomerExpression = normalize(
-		rnaExpression[sim_data.relation.rnaIndexToMonomerMapping] *
-		sim_data.process.translation.translationEfficienciesByMonomer /
-		(np.log(2) / sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.s) + sim_data.process.translation.monomerData["degRate"].asNumber(1 / units.s))
-		)
+		monomerExpression[monomer_idx] = exp
+
+	monomerExpression = normalize(monomerExpression)
 
 	nMonomers = countsFromMassAndExpression(
 		monomerMass.asNumber(units.g),
@@ -909,10 +922,22 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		(len(all_mRNA_ids), len(all_TU_ids)), dtype=np.int64)
 
 	TU_id_to_index = {TU_id: i for i, TU_id in enumerate(all_TU_ids)}
+	monomer_to_mrna_transform = sim_data.relation.monomer_to_mrna_transform
+
 	protein_index_to_TU_index = {}
-	for i, mRNA_id in enumerate(all_mRNA_ids):
-		TU_counts_to_mRNA_counts[i, TU_id_to_index[mRNA_id]] = 1
-		protein_index_to_TU_index[i] = TU_id_to_index[mRNA_id]
+	# for i, mRNA_id in enumerate(all_mRNA_ids):
+	# 	TU_counts_to_mRNA_counts[i, TU_id_to_index[mRNA_id]] = 1
+	# 	protein_index_to_TU_index[i] = TU_id_to_index[mRNA_id]
+	# import ipdb; ipdb.set_trace()
+
+	for i, protein in enumerate(sim_data.process.translation.monomerData):
+		protein_index_to_TU_index[i] = []
+		for rna in protein['rnaSet']:
+			protein_index_to_TU_index[i].append(TU_id_to_index[rna])
+
+
+
+	TU_counts_to_mRNA_counts[:,sim_data.process.transcription.rnaData['isMRna']] = monomer_to_mrna_transform
 
 	# Calculate available template lengths of each mRNA
 	TU_total_length = np.zeros(len(all_TU_ids), dtype=np.int64)
@@ -969,13 +994,13 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 			n_new_proteins[nonzeroCount]):
 		# Set protein index
 		protein_indexes[start_index:start_index+counts] = protein_index
-
+		# import ipdb; ipdb.set_trace()#TG
 		# Distribute ribosomes among mRNAs that produce this protein, weighted
 		# by their lengths
-		mask = (TU_index_mRNAs == protein_index_to_TU_index[protein_index])
+		# mask = (TU_index_mRNAs == protein_index_to_TU_index[protein_index])
+		mask = [True  if idx in protein_index_to_TU_index[protein_index] else False for idx in TU_index_mRNAs]
 		lengths = length_mRNAs[mask]
-		n_ribosomes_per_RNA = randomState.multinomial(
-			counts, normalize(lengths))
+		n_ribosomes_per_RNA = randomState.multinomial(counts, normalize(lengths))
 
 		# Get unique indexes of each mRNA
 		mRNA_indexes[start_index:start_index+counts] = np.repeat(

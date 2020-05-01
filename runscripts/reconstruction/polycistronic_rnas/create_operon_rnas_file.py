@@ -80,7 +80,8 @@ Note:
 - A comment line is added to the top of the file to indicate that it generated
 	from this script, and to record the date it was compiled.
 TODO:
-= Allow for certain RNA type mixing (rRNA, tRNA) - handle this type differently
+- Allow for certain RNA type mixing (rRNA, tRNA) - handle this type differently
+- Allow mass to determine type and location for importing mass fractions in the Parca
 '''
 
 DIALECT = "excel-tab"
