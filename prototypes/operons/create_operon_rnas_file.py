@@ -1,11 +1,12 @@
-from Bio.Seq import Seq
-from Bio.Alphabet import IUPAC
 from collections import Counter
 import csv
 import itertools
 import numpy as np
 import os
 import time
+
+from Bio.Seq import Seq
+from Bio.Alphabet import IUPAC
 
 from functools import partial
 from reconstruction import spreadsheets
@@ -68,11 +69,10 @@ Returns:
 		'monomerSet' = pc_monomer_id_list
 		'microarray expression' = tu_genes_info[pc_gene_id][rna]['microarray expression']
 
-
-
 Note:
 - I have only functionally checked mRNAs; if adding tRNA or rRNA operons please 
-	double check that all naming conventions hold correctly.
+	double check that all naming conventions hold correctly - updates
+	may need to be made throughout the model.
 - Sequence included for polycistronic TUs includes the intergenic regions so will
 	not sum to the length, width and nt counts of the component mono-cistronic
 	mRNAs.
@@ -88,22 +88,20 @@ JsonReader = partial(spreadsheets.JsonReader, dialect = DIALECT)
 JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
 
 # File paths to all necessary flat files.
-PROTOTYPES_DIR = os.path.join('prototypes', 'operons')
+RUNSCRIPTS_DIR = os.path.join('runscripts', 'reconstruction', 'polycistronic_mrnas')
 FLAT_DIR = os.path.join('reconstruction', 'ecoli', 'flat')
 RNA_FILE = os.path.join(FLAT_DIR, "rnas.tsv")
 GENES_FILE = os.path.join(FLAT_DIR, "genes.tsv")
-POLY_CISTRON_FILE = os.path.join(PROTOTYPES_DIR, 'polycistronic_mrnas_in_model.tsv')
-GENOME_SEQUENCE_FILE = os.path.join(FLAT_DIR, 'flattened_sequence.fasta')
+POLY_CISTRON_FILE = os.path.join(FLAT_DIR, 'polycistronic_mrnas_in_model.tsv')
+GENOME_SEQUENCE_FILE = os.path.join(RUNSCRIPTS_DIR, 'flattened_sequence.fasta')
 
 #saving to a new file for now so that all manually input TUs in 
 #operon_rnas.tsv are not overwritten.
-OUTPUT_FILE = os.path.join(FLAT_DIR, "operon_rnas_testing.tsv")
+OUTPUT_FILE = os.path.join(FLAT_DIR, "operon_rnas.tsv")
 
 def parse_tsv(tsv_file):
-	
 #Takes in a tsv file, and creates a list of lists of the rows 
-#contained within the TSV.
-	
+#contained within the TSV.	
 	tsv_list = []
 	with open(tsv_file) as tsvfile:
 		reader = JsonReader(tsvfile)
@@ -113,7 +111,6 @@ def parse_tsv(tsv_file):
 	return tsv_list, fieldnames
 
 def find_tu_type(tu_genes_info):
-
 	'''
 	Purpose:
 	Need to assign an rna type to the pcic RNA (e.g. rRNA,
@@ -152,7 +149,7 @@ def find_tu_location(tu_genes_info):
 	of the TU instead.
 
 	Return: 
-		List containing a unicode str of the location.
+	- List containing a unicode str of the location.
 	'''
 	mismatch_output = """Locations of RNA's in transcription unit {} dont 
 	match, please double check that your transcription unit is correct. 
@@ -170,6 +167,12 @@ def find_tu_location(tu_genes_info):
 	return location
 
 def load_sequence(sequence):
+	'''
+	Input:
+	- Path to genomic sequence fasta file, who is formatted as a single line.
+	Returns:
+	- List containing a string of the genomic sequence.
+	'''
 	with open(sequence, "r") as f:
 		genome_sequence = f.readlines()[1:]
 	return genome_sequence
@@ -188,7 +191,7 @@ def get_tu_sequence(tu_genes_info, first_gene, last_gene):
 	- First and last gene in the transcription unit.
 
 	Return:
-	The rna sequence for the transcription unit.
+	-The rna sequence for the transcription unit.
 	
 	Note:
 	This was developed with only implementing mRNAs for now. If 
@@ -208,15 +211,16 @@ def get_tu_sequence(tu_genes_info, first_gene, last_gene):
 		sequence = Seq(GENOMIC_SEQUENCE[0][last_gene_coordinate:first_gene_coordinate], IUPAC.unambiguous_dna)
 		rna_sequence = str(sequence.reverse_complement().transcribe())
 	else:
-		print("For some reason your gene hasnt been assigned a direction")
-		
+		print("For some reason your gene hasnt been assigned a direction")	
 	return rna_sequence
 
 def calculate_rna_biomass(sequence):
 	'''
 	Purpose: Calculate the RNA biomass of a particular RNA sequence.
-	Input: RNA sequence
-	Return: Mass of the RNA sequence
+	Input: 
+	- RNA sequence as a str.
+	Return: 
+	- Mass of the RNA sequence as a float.
 	'''
 	rna_masses = {
 		"A": 503.15,
@@ -224,39 +228,36 @@ def calculate_rna_biomass(sequence):
 		"G": 519.149,
 		"U": 480.108,
 	}
-
 	ppi_mass = 174.949
-
 	base_order = ['A', 'C', 'G', 'U']
 	ntp_order = {base + 'TP': index for index, base in enumerate(base_order)}
 	counts = {base: (rna_masses[base] - ppi_mass) * sequence.count(base) for base in base_order}
-	
 	return [0.0, 0.0, 0.0, np.sum(counts.values()) + ppi_mass, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 	
 def count_ntps_rna(sequence):
 	'''
-	Input: RNA sequence.
-	Return: Counts of the nucleotidees in the sequence
+	Input: 
+	- RNA sequence.
+	Return: 
+	- Counts of the nucleotidees in the sequence
 	'''
-
 	return [sequence.count('A'), sequence.count('C'),
 			sequence.count('G'), sequence.count('U')]
 
 def gather_tu_genes_info():
 	'''
 	Purpose: Gather data for each rna within each TU.
-
 	Input:
-		- PC_INFO: A list of dictionaries, where each row is a new 
-		polycistronic TU that needs to be added to the model. 
-			- 'transcription_units': list of genes in the TU.
-			- 'monomers_to_remove': list of monocistronic genes from the
-				TU to remove from the model.
+	- PC_INFO: A list of dictionaries, where each row is a new 
+	polycistronic TU that needs to be added to the model. 
+		- 'transcription_units': list of genes in the TU.
+		- 'monomers_to_remove': list of monocistronic genes from the
+			TU to remove from the model.
 	Returns:
-		A nested dictionary of all the TUs to be added to the model 
-		- first level - and information for all the genes within that
-		TU. This data will used in a later function to define 
-		all the features of a specific TU. 
+	-A nested dictionary of all the TUs to be added to the model. 
+	First level - and information for all the genes within that
+	TU. This data will used in a later function to define 
+	all the features of a specific TU. 
 	'''
 	tu_genes_info = {}
 	for pc in PC_INFO:
@@ -283,24 +284,24 @@ def gather_tu_genes_info():
 def gather_tu_info(tu_genes_info):
 	'''
 	Purpose:
-		Need to gather all the info for each TU we need to add it to the 
-		model. Format closely follows rnas.tsv with modifications outlined
-		at the top of this file.
+	Need to gather all the info for each TU we need to add it to the 
+	model. Format closely follows rnas.tsv with modifications outlined
+	at the top of this file.
 	Inputs
-		- PC_INFO: A list of dictionaries, where each row is a new 
-		polycistronic TU that needs to be added to the model. 
-			- 'transcription_units': list of genes in the TU.
-			- 'monomers_to_remove': list of monocistronic genes from the
-				TU to remove from the model.
-		- tu_genes_info:
-			Dictionary created within gather_tu_genes_info, nested dictionary
-			containing info for each gene within each TU.
+	- PC_INFO: A list of dictionaries, where each row is a new 
+	polycistronic TU that needs to be added to the model. 
+		- 'transcription_units': list of genes in the TU.
+		- 'monomers_to_remove': list of monocistronic genes from the
+			TU to remove from the model.
+	- tu_genes_info:
+		Dictionary created within gather_tu_genes_info, nested dictionary
+		containing info for each gene within each TU.
 	Returns:
-		- A nested dictionary. First level keys are the gene ids for 
-		each polycistron being added to the model, nested keys are all the 
-		columns that will be needed within the operon_rnas.tsv file. 
-		For more detail on each key, please see the comment at the top
-		of this file. Naming mimics rnas.tsv.
+	- A nested dictionary. First level keys are the gene ids for 
+	each polycistron being added to the model, nested keys are all the 
+	columns that will be needed within the operon_rnas.tsv file. 
+	For more detail on each key, please see the comment at the top
+	of this file. Naming mimics rnas.tsv.
 	'''
 	tu_info = {}
 	for pc in PC_INFO:
@@ -329,8 +330,7 @@ def gather_tu_info(tu_genes_info):
 		tu_info[pc_gene_id]['type'] = find_tu_type(tu_genes_info[pc_gene_id])
 		tu_info[pc_gene_id]['modifiedForms'] = []
 		tu_info[pc_gene_id]['monomerId'] = '_'.join(pc_monomer_id_list)
-		tu_info[pc_gene_id]['comments'] = """Transcription unit created within script,
-		"for individual RNA comments look at rnas.tsv for that RNA"""
+		tu_info[pc_gene_id]['comments'] = """Transcription unit created within script, for individual RNA comments look at rnas.tsv for that RNA"""
 		tu_info[pc_gene_id]['mw'] = calculate_rna_biomass(tu_info[pc_gene_id]['seq'])
 		tu_info[pc_gene_id]['location'] = find_tu_location(tu_genes_info[pc_gene_id])
 		tu_info[pc_gene_id]['ntCount'] = count_ntps_rna(tu_info[pc_gene_id]['seq'])
@@ -345,13 +345,32 @@ def gather_tu_info(tu_genes_info):
 
 
 def find_monomers_to_remove():
+	'''
+	Purpose: Find all the momnomers that should not be included in
+	the final operon_rnas.tsv file.
+	Input:
+	- Global variable, of the list of user input data on polycistrons
+	to include and monomers to remove.
+	Return:
+	- Set of unique monomers to not include in final tsv.
+	'''
 	return set(itertools.chain(*[pc['monomers_to_remove'] 
 		for pc in PC_INFO]))
 
 def update_rna_info(fieldnames):
-	#look for instances where rnas do not have an assigned monomerId
-	#replace with a empty list, else put monomerId(s) into a list.
-	for rna_row in RNA_INFO:
+	'''
+	Purpose:
+	Add an additional key for each RNA within RNA_INFO specificing the 
+	monomers assigned to that mRNA. 
+	Input:
+	- RNA_INFO
+	Return:
+	- List of Dictionaries for all the RNA_INFO but this time including
+	a key for monomerSet which contains a list of all the monomers assigned
+	to a particular mRNA, list will be empty if there are no monomers to
+	assign to an RNA.
+	'''
+		for rna_row in RNA_INFO:
 		if not rna_row['monomerId']:
 			rna_row['monomerSet'] = []
 		else:
@@ -361,7 +380,10 @@ def update_rna_info(fieldnames):
 	return RNA_INFO, fieldnames
 
 def write_output_file(tu_info, fieldnames, monomers_to_remove):
-
+	'''
+	Construct a tsv file that mimics the structure and formatting
+	of rnas.tsv.
+	'''
 	# Create file with JSONWriter
 	with open(OUTPUT_FILE, "w") as f:
 		# Add comment line with file creation info
@@ -376,9 +398,7 @@ def write_output_file(tu_info, fieldnames, monomers_to_remove):
 				writer.writerow(rna_row)
 		for pc_data in tu_info:
 			writer.writerow(tu_info[pc_data])
-
 	return
-	
 
 def make_collection():
 	global PC_INFO, RNA_INFO, GENE_INFO, GENOMIC_SEQUENCE

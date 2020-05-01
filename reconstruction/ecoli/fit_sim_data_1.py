@@ -226,10 +226,10 @@ def fitSimData_1(
 
 	if VERBOSE > 0:
 		print('Fitting promoter binding')
-	#rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
-	#fitLigandConcentrations(sim_data, cellSpecs)
-	sim_data.pPromoterBound = json.load(open('promoter-bound.json'))
-	rVector = np.array(json.load(open('rvector.json')))
+	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
+	fitLigandConcentrations(sim_data, cellSpecs)
+	#sim_data.pPromoterBound = json.load(open('promoter-bound.json'))
+	#rVector = np.array(json.load(open('rvector.json')))
 	fitLigandConcentrations(sim_data, cellSpecs)
 
 	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints
@@ -1606,7 +1606,6 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	rnaLossRate = None
 	Km = None
 	if Km is None:
-		print('in the part where Km is none')
 		rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
 			doubling_time,
 			sim_data.process.transcription.rnaData["degRate"],
@@ -1622,7 +1621,6 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		endoRNaseConc = countsToMolar * bulkContainer.counts(sim_data.process.rna_decay.endoRnaseIds)
 		kcatEndoRNase = sim_data.process.rna_decay.kcats
 		totalEndoRnaseCapacity = units.sum(endoRNaseConc * kcatEndoRNase)
-		print('totalEndoRnaseCapacity = ' + str(totalEndoRnaseCapacity))
 
 		rnaLossRate = netLossRateFromDilutionAndDegradationRNA(
 			doubling_time,
@@ -1633,10 +1631,6 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		)
 
 	synthProb = normalize(rnaLossRate.asNumber(1 / units.min))
-	print('expression = ' + str(sum(expression)))
-	print('synth = ' + str(sum(synthProb)))
-	print('rnaLossRate [518] = ' + str(rnaLossRate[518]))
-
 	return expression, synthProb
 
 def fitMaintenanceCosts(sim_data, bulkContainer):
