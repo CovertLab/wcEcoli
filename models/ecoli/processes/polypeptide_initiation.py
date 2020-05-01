@@ -27,9 +27,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 	def initialize(self, sim, sim_data):
 		super(PolypeptideInitiation, self).initialize(sim, sim_data)
-
-		import ipdb; ipdb.set_trace()
-
 		# Load parameters
 		# mrnaIds = sim_data.process.translation.monomerData["rnaId"]
 
