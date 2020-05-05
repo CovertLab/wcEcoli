@@ -6,6 +6,10 @@ identification of metabolites controlling gene expression in E. coli. 2019.
 
 Data in lempp2019.tsv was converted to a tsv from the file downloaded from
 https://static-content.springer.com/esm/art%3A10.1038%2Fs41467-019-12474-1/MediaObjects/41467_2019_12474_MOESM4_ESM.xlsx
+
+Data in park2016.tsv was converted to a tsv from supplementary table 5
+(manually removed some columns and rows) in the file downloaded from
+https://static-content.springer.com/esm/art%3A10.1038%2Fnchembio.2077/MediaObjects/41589_2016_BFnchembio2077_MOESM583_ESM.pdf
 """
 
 from __future__ import absolute_import, division, print_function
@@ -19,14 +23,15 @@ from typing import Dict, Iterable
 
 
 FILE_LOCATION = os.path.realpath(os.path.dirname(__file__))
-CONCENTRATIONS_FILE = os.path.join(FILE_LOCATION, 'lempp2019.tsv')
-OUTPUT_FILE = os.path.join(FILE_LOCATION, 'lempp_concentrations.tsv')
+LEMPP_INPUT = os.path.join(FILE_LOCATION, 'lempp2019.tsv')
+PARK_INPUT = os.path.join(FILE_LOCATION, 'park2016.tsv')
+OUTPUT_FILE = os.path.join(FILE_LOCATION, '{}_concentrations.tsv')
 
 
-def metabolite_concentrations():
+def lempp_concentrations():
 	# type: () -> Dict[str, float]
 	"""
-	Load average metabolite concentrations at the first time point.
+	Load Lempp data for average metabolite concentrations at the first time point.
 
 	Returns:
 		met_conc: KEGG molecule ID to concentration (in M)
@@ -34,7 +39,7 @@ def metabolite_concentrations():
 
 	met_conc = {}
 
-	with open(CONCENTRATIONS_FILE) as f:
+	with open(LEMPP_INPUT) as f:
 		reader = csv.reader(f, delimiter='\t')
 
 		start_conc_col = reader.next().index('intracellular concentrations (\xc2\xb5M)')
@@ -55,6 +60,38 @@ def metabolite_concentrations():
 			met_conc[met_id] = conc / 1e6
 
 	return met_conc
+
+def park_concentrations():
+	# type: () -> Dict[str, float]
+	"""
+	Load Park data for reported metabolite concentrations.
+
+	Returns:
+		met_conc: KEGG molecule ID to concentration (in M)
+	"""
+
+	met_conc = {}
+
+	with open(PARK_INPUT) as f:
+		reader = csv.reader(f, delimiter='\t')
+
+		reader.next()  # discard line
+		headers = reader.next()
+		id_col = headers.index('KEGG ID')
+		conc_col = headers.index('E. coli')
+
+		for line in reader:
+			met_id = line[id_col]
+			try:
+				conc = float(line[conc_col])
+			except ValueError as e:
+				# Concentration data does not exist ('-')
+				continue
+
+			met_conc[met_id] = conc
+
+	return met_conc
+
 
 def kegg_to_ecocyc(kegg_ids):
 	# type: (Iterable[str]) -> Dict[str, str]
@@ -84,27 +121,33 @@ def kegg_to_ecocyc(kegg_ids):
 
 	return mapping
 
-def save_concentrations(conc, mapping):
-	# type: (Dict[str, float], Dict[str, str]) -> None
+def save_concentrations(conc, label):
+	# type: (Dict[str, float], str) -> None
 	"""
 	Save EcoCyc ID concentrations to a file.
 
 	Args:
 		conc: ID to concentration (in M)
-		mapping: ID to EcoCyc ID
+		label: column and filename dataset label (author)
 	"""
 
+	mapping = kegg_to_ecocyc(conc.keys())
 	conc = {mapping[m]: c for m, c in conc.items() if m in mapping}
 
-	with open(OUTPUT_FILE, 'w') as f:
+	output = OUTPUT_FILE.format(label.lower())
+	with open(output, 'w') as f:
 		writer = csv.writer(f, delimiter='\t')
-		writer.writerow(['Metabolite', 'Lempp Concentration (units.mol/units.L)'])
+		writer.writerow(['Metabolite', '{} Concentration (units.mol/units.L)'.format(label)])
 
 		for m, c in sorted(conc.items(), key=lambda d: d[0]):
 			writer.writerow([m, '{:.2e}'.format(c).replace('e+0', 'e').replace('e-0', 'e-')])
 
 
 if __name__ == '__main__':
-	concentrations = metabolite_concentrations()
-	kegg_mapping = kegg_to_ecocyc(concentrations.keys())
-	save_concentrations(concentrations, kegg_mapping)
+	# Lempp 2019
+	lempp = lempp_concentrations()
+	save_concentrations(lempp, 'Lempp')
+
+	# Park 2016
+	park = park_concentrations()
+	save_concentrations(park, 'Park')
