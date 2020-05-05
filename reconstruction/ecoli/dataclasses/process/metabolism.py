@@ -102,6 +102,11 @@ class Metabolism(object):
 
 		for row in raw_data.metaboliteConcentrations:
 			metabolite_id = row['Metabolite']
+			if not sim_data.getter.check_valid_molecule(metabolite_id):
+				if VERBOSE:
+					print('Metabolite concentration for unknown molecule: {}'
+						.format(metabolite_id))
+				continue
 
 			if metabolite_id in park_only:
 				conc = row['Park Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
@@ -114,11 +119,14 @@ class Metabolism(object):
 					for source in concentration_sources
 					])
 
+				# Fallback if concentration is only in Bennett dataset
+				if not np.isfinite(conc):
+					conc = row['Bennett Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
+
 			if metabolite_id in wildtypeIDtoCompartment:
 				metaboliteIDs.append(
 					metabolite_id + wildtypeIDtoCompartment[metabolite_id]
 					)
-
 			else:
 				metaboliteIDs.append(
 					metabolite_id + "[c]"
