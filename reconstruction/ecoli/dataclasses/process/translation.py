@@ -228,7 +228,6 @@ class Translation(object):
 
 		self.translationEfficienciesByMonomer = np.array(trEffs)
 		self.translationEfficienciesByMonomer[np.isnan(self.translationEfficienciesByMonomer)] = np.nanmean(self.translationEfficienciesByMonomer)
-		self.geneIdToTrEff = geneIdToTrEff
 
 
 	def _build_elongation_rates(self, raw_data, sim_data):

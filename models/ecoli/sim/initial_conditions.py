@@ -168,12 +168,8 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppg
 		rnaExpression = sim_data.process.transcription.expression_from_ppgpp(ppgpp)
 	else:
 		rnaExpression = sim_data.process.transcription.rnaExpression[sim_data.condition]
-	# TODO (TEG): map translation efficiencies to polycistrons
-	# monomerExpression = normalize(
-	# 	rnaExpression[sim_data.relation.mrna_to_monomer_transform] *
-	# 	sim_data.process.translation.translationEfficienciesByMonomer /
-	# 	(np.log(2) / sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.s) + sim_data.process.translation.monomerData["degRate"].asNumber(1 / units.s))
-	# 	)
+
+	# get monomer expression from TEs and rna expression, include polycistrons
 	monomerExpression = np.zeros(len(sim_data.process.translation.monomerData))
 	conditionToDoublingT = np.log(2) / sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.s)
 	translationEfficienciesByMonomer = sim_data.process.translation.translationEfficienciesByMonomer
