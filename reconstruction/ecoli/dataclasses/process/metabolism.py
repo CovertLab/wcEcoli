@@ -85,12 +85,12 @@ class Metabolism(object):
 		# compartments according to those given in the biomass objective.  Or,
 		# if there is no compartment, assign it to the cytoplasm.
 
-		concentration_sources = ['Bennett Concentration', 'Lempp Concentration']
-		bennett_only = {
+		concentration_sources = ['Park Concentration', 'Lempp Concentration']
+		park_only = {
 			'ATP',  # TF binding does not solve with average concentration with Lempp
 			}
 		lempp_only = {
-			'GLT',  # Steady state concentration reached with tRNA charging is much lower than Bennett
+			'GLT',  # Steady state concentration reached with tRNA charging is much lower than Park
 			}
 		metaboliteIDs = []
 		metaboliteConcentrations = []
@@ -103,8 +103,8 @@ class Metabolism(object):
 		for row in raw_data.metaboliteConcentrations:
 			metabolite_id = row['Metabolite']
 
-			if metabolite_id in bennett_only:
-				conc = row['Bennett Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			if metabolite_id in park_only:
+				conc = row['Park Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			elif metabolite_id in lempp_only:
 				conc = row['Lempp Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			else:
@@ -127,14 +127,14 @@ class Metabolism(object):
 			metaboliteConcentrations.append(conc)
 
 		# ILE/LEU: split reported concentration according to their relative abundances
-		ileRelative = ILE_FRACTION
-		leuRelative = 1 - ileRelative
-
-		metaboliteIDs.append("ILE[c]")
-		metaboliteConcentrations.append(ileRelative * ILE_LEU_CONCENTRATION)
-
-		metaboliteIDs.append("LEU[c]")
-		metaboliteConcentrations.append(leuRelative * ILE_LEU_CONCENTRATION)
+		# ileRelative = ILE_FRACTION
+		# leuRelative = 1 - ileRelative
+		#
+		# metaboliteIDs.append("ILE[c]")
+		# metaboliteConcentrations.append(ileRelative * ILE_LEU_CONCENTRATION)
+		#
+		# metaboliteIDs.append("LEU[c]")
+		# metaboliteConcentrations.append(leuRelative * ILE_LEU_CONCENTRATION)
 
 		# CYS/SEC/GLY: concentration based on other amino acids
 		aaConcentrations = []
