@@ -82,6 +82,8 @@ Note:
 TODO:
 - Allow for certain RNA type mixing (rRNA, tRNA) - handle this type differently
 - Allow mass to determine type and location for importing mass fractions in the Parca
+- Remove km cpickle file when this script is run. The Parca will need to re-run that
+part of the script.
 '''
 
 DIALECT = "excel-tab"
@@ -91,14 +93,15 @@ JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
 # File paths to all necessary flat files.
 #PROTOTYPES_DIR = os.path.join('prototypes', 'operons')
 FLAT_DIR = os.path.join('reconstruction', 'ecoli', 'flat')
-RNA_FILE = os.path.join(FLAT_DIR, "rnas.tsv")
-GENES_FILE = os.path.join(FLAT_DIR, "genes.tsv")
+RNA_FILE = os.path.join(FLAT_DIR, 'rnas.tsv')
+GENES_FILE = os.path.join(FLAT_DIR, 'genes.tsv')
 POLY_CISTRON_FILE = os.path.join(FLAT_DIR, 'polycistronic_mrnas_in_model.tsv')
 GENOME_SEQUENCE_FILE = os.path.join(FLAT_DIR, 'flattened_sequence.fasta')
+km_file = os.path.join('fixtures', 'endo_km', 'km.cPickle')
 
 #saving to a new file for now so that all manually input TUs in 
 #operon_rnas.tsv are not overwritten.
-OUTPUT_FILE = os.path.join(FLAT_DIR, "operon_rnas.tsv")
+OUTPUT_FILE = os.path.join(FLAT_DIR, 'operon_rnas.tsv')
 
 def parse_tsv(tsv_file):
 #Takes in a tsv file, and creates a list of lists of the rows 
@@ -399,7 +402,20 @@ def write_output_file(tu_info, fieldnames, monomers_to_remove):
 				writer.writerow(rna_row)
 		for pc_data in tu_info:
 			writer.writerow(tu_info[pc_data])
+	return
 
+def remove_kms_file():
+	'''
+	Purpose:
+	The parca checks if the km's have already been calculated, if they have then
+	it does not calculate them again and just pulls them from the km.cpickle file.
+	However, if the operon_rnas file gets modified the kms need to be recalculated.
+	This function will remove the .cpickle file and force the parca to re-calculate the
+	Kms, this way we can be sure we are working with a correct dataset.
+	'''
+
+	if os.path.exists(km_file):
+		os.remove(km_file)
 	return
 	
 

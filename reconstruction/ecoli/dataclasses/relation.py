@@ -197,7 +197,6 @@ class Relation(object):
 				if monocistron == tu or monocistron[:-3] + '[None]' == tu:
 					monomer_to_mrna_transform[moncistron_index, tu_index] = 1
 					mrna_to_monomer_transform[tu_index ,moncistron_index] = 1
-
 		# -For monomer_to_mrna_transform, add the fractions of each overlapping 
 		# transcription unit that can be expected to represent each monomer.
 		# -For mrna_to_monomer_transform, using the overlapping tu data, add mapping
@@ -270,7 +269,6 @@ class Relation(object):
 			for index, mrna_id in enumerate(self.mrna['id'])}
 		monomer_id_index_dict = {rnaId: index 
 			for index, rnaId in enumerate(self.monomer['rnaId'])}
-
 		# tu_dict: Contains all the TU's as keys (str), and their counts as values
 		tu_dict = {tu['tu_id']: tu['tu_count'] 
 			for tu in raw_data.transcription_units}

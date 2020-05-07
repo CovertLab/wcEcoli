@@ -22,7 +22,7 @@ CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
 
 output_tu_counts = os.path.join(FLAT_DIR, "transcription_units.tsv")
-output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix_lac.tsv")
+output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix.tsv")
 
 def parse_tsv(tsv_file):
 	'''
@@ -30,10 +30,26 @@ def parse_tsv(tsv_file):
 	contained within the TSV.
 	'''
 	tsv_list = []
-	with open(tsv_file) as tsvfile:
-		reader = JsonReader(tsvfile)
+	with open(tsv_file) as tsvfile, open('newfile.csv', 'w') as newfile:
+		for curline in tsvfile:
+			if not curline.startswith('#'):
+				newfile.write(curline)
+
+			#import pdb; pdb.set_trace()
+			#if curline.startswith('#'):
+				#next()
+			#else:
+				#tsvfile.write(tsvfile)
+		
+	with open('newfile.csv') as newfile:
+		#import pdb; pdb.set_trace()
+		reader = JsonReader(newfile)
 		for row in reader:
 			tsv_list.append(row)
+	if os.path.exists("newfile.csv"):
+		os.remove("newfile.csv")
+	else:
+		print("newfile.csv does not exist")
 	return tsv_list
 
 def map_genes_to_tu(gene, index, reverse_index, gene_to_tu_matrix):
@@ -112,8 +128,8 @@ def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 
 
 def calculate_tu_counts_vector():
-	rna_info = parse_tsv(RNA_FILE)
 	tu_info = parse_tsv(TU_FILE)
+	rna_info = parse_tsv(RNA_FILE)
 	gene_tu_matrix, rnas_gene_order = create_gene_to_tu_matrix(rna_info, tu_info)
 	rna_seq_counts_vector = create_rnaseq_count_vector(rnas_gene_order)
 	tu_counts = create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info)
@@ -131,9 +147,6 @@ def calculate_tu_counts_vector():
 		writer = csv.writer(f, delimiter=' ')
 		for row in gene_tu_matrix:
 			writer.writerow(row)
-
-	#return tu_counts
-
 
 if __name__ == "__main__":
 	calculate_tu_counts_vector()
