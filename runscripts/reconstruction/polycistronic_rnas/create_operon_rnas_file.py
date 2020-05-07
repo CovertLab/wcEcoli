@@ -138,7 +138,7 @@ def find_tu_type(tu_genes_info):
 	Might have to do additional checks. The naming for this transcription 
 	unit will follow the most prevalant RNA type, or the first RNA in the TU 
 	if there is an even number of RNAs."""
-	tu_types = [tu_genes_info[gene]['type'].lower() for gene in tu_genes_info] 
+	tu_types = [tu_genes_info[gene]['type'] for gene in tu_genes_info] 
 	if len(set(tu_types)) > 1:
 		warnings.warn(mismatch_output.format('_'.join(tu_genes_info.keys())))
 	tu_type = max(tu_types, key=Counter(tu_types).get)	
@@ -338,7 +338,7 @@ def gather_tu_info(tu_genes_info):
 		tu_info[pc_gene_id]['mw'] = calculate_rna_biomass(tu_info[pc_gene_id]['seq'])
 		tu_info[pc_gene_id]['location'] = find_tu_location(tu_genes_info[pc_gene_id])
 		tu_info[pc_gene_id]['ntCount'] = count_ntps_rna(tu_info[pc_gene_id]['seq'])
-		if not tu_info[pc_gene_id]['type'] == 'mrna':
+		if not tu_info[pc_gene_id]['type'] == 'mRNA':
 			tu_info[pc_gene_id]['id'] = pc_gene_id + '_' + tu_info[pc_gene_id]['type'].upper()
 		else:
 			tu_info[pc_gene_id]['id'] = pc_gene_id + '_RNA'
