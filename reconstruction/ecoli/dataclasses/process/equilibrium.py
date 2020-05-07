@@ -9,6 +9,7 @@ fluxesAndMoleculesToSS()
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
+import scipy
 import sympy as sp
 
 from wholecell.utils import build_ode
@@ -299,6 +300,80 @@ class Equilibrium(object):
 		self.derivativesSymbolic = dy
 
 	def fluxesAndMoleculesToSS(self, moleculeCounts, cellVolume, nAvogadro):
+		y_init = moleculeCounts / (cellVolume * nAvogadro)
+		y = scipy.integrate.odeint(self.derivatives, y_init, t = [0, 1e10], args = (self.ratesFwd, self.ratesRev), Dfun = self.derivativesJacobian)
+
+		if np.any(y[-1, :] * (cellVolume * nAvogadro) <= -1):
+			raise Exception, "Have negative values -- probably due to numerical instability"
+		if np.linalg.norm(self.derivatives(y[-1, :], 0, self.ratesFwd, self.ratesRev), np.inf) * (cellVolume * nAvogadro) > 1:
+			raise Exception, "Didn't reach steady state"
+		y[y < 0] = 0
+		yMolecules = y * (cellVolume * nAvogadro)
+
+		dYMolecules = yMolecules[-1, :] - yMolecules[0, :]
+
+		rxnFluxes = np.round(np.dot(self.metsToRxnFluxes, dYMolecules))
+		rxnFluxesN = -1. * (rxnFluxes < 0) * rxnFluxes
+		rxnFluxesP =  1. * (rxnFluxes > 0) * rxnFluxes
+		moleculesNeeded = np.dot(self.Rp, rxnFluxesP) + np.dot(self.Pp, rxnFluxesN)
+		return rxnFluxes, moleculesNeeded
+
+	def fluxesAndMoleculesToSSold(self, moleculeCounts, cellVolume, nAvogadro):
+		'''
+		Calculate change in molecule counts and flux through reactions until steady state.
+		'''
+		monomersTotal = moleculeCounts + np.dot(self._stoichMatrixMonomers, -1. * moleculeCounts[self._complexIdxs])
+		countsToMolarLog = -1. * (np.log10(cellVolume) + np.log10(nAvogadro))
+		for x in range(int(monomersTotal.max())):
+			old_counts = np.array(monomersTotal)
+			for colIdx in xrange(self._stoichMatrix.shape[1]):
+				diff = self._solveSS(
+					monomersTotal,
+					self._stoichMatrix[:, colIdx],
+					np.log10(self.ratesRev[colIdx]) - np.log10(self.ratesFwd[colIdx]),
+					countsToMolarLog,
+					self._monomerIdxs[colIdx],
+					self._rxnNonZeroIdxs[colIdx],
+					max_iters=1,
+					)
+				monomersTotal[self._rxnNonZeroIdxs[colIdx]] += diff
+			if np.all(old_counts == monomersTotal):
+				break
+		else:
+			raise RuntimeError('Total number of iterations reached in equilibrium without a solution.')
+
+		dYMolecules = monomersTotal - moleculeCounts
+		rxnFluxes = np.round(np.dot(self.metsToRxnFluxes, dYMolecules))
+		rxnFluxesN = -1. * (rxnFluxes < 0) * rxnFluxes
+		rxnFluxesP =  1. * (rxnFluxes > 0) * rxnFluxes
+		moleculesNeeded = np.dot(self.Rp, rxnFluxesP) + np.dot(self.Pp, rxnFluxesN)
+		return rxnFluxes, moleculesNeeded
+
+	def _solveSS(self, x, S, kd_log, counts_to_molar_log, monomer_idxs, nonzero_idxs, max_iters=None):
+		rxn_flux = 0.
+		if max_iters is None:
+			max_iters = int(np.ceil(np.min(-x[monomer_idxs] / S[monomer_idxs])))
+
+		if max_iters > 0:
+			all_attempts = (
+				np.arange(max_iters + 1).reshape(1, -1)
+				* S[nonzero_idxs].reshape(-1, 1)
+				+ np.ones(max_iters).reshape(1, -1)
+				* x[nonzero_idxs].reshape(-1, 1)
+				)
+			rxn_flux = np.argmin(np.abs(
+				np.sum(
+					-np.ones(max_iters).reshape(1, -1)
+					* S[nonzero_idxs].reshape(-1, 1)
+					* (counts_to_molar_log + np.log10(all_attempts)),
+					axis = 0,
+					)
+				- kd_log
+				))
+
+		return rxn_flux * S[nonzero_idxs]
+
+	def fluxesAndMoleculesToSSbad(self, moleculeCounts, cellVolume, nAvogadro):
 		'''
 		Calculate change in molecule counts and flux through reactions until steady state.
 		'''
@@ -306,7 +381,7 @@ class Equilibrium(object):
 		monomersTotal = moleculeCounts + np.dot(self._stoichMatrixMonomers, -1. * moleculeCounts[self._complexIdxs])
 		countsToMolarLog = -1. * (np.log10(cellVolume) + np.log10(nAvogadro))
 		for colIdx in xrange(self._stoichMatrix.shape[1]):
-			dYMolecules[self._rxnNonZeroIdxs[colIdx]] = (self._solveSS(
+			dYMolecules[self._rxnNonZeroIdxs[colIdx]] = (self._solveSSbad(
 				monomersTotal,
 				self._stoichMatrix[:, colIdx],
 				np.log10(self.ratesRev[colIdx]) - np.log10(self.ratesFwd[colIdx]),
@@ -322,7 +397,7 @@ class Equilibrium(object):
 		return rxnFluxes, moleculesNeeded
 
 
-	def _solveSS(self, x, S, kdLog, countsToMolarLog, monomerIdxs, nonZeroIdxs):
+	def _solveSSbad(self, x, S, kdLog, countsToMolarLog, monomerIdxs, nonZeroIdxs):
 		rxnFlux = 0.
 		maxIters = int(np.ceil(np.min(-x[monomerIdxs] / S[monomerIdxs])))
 
