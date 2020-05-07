@@ -279,19 +279,35 @@ class Equilibrium(object):
 
 			reactantFlux = ratesFwd[colIdx]
 			for negIdx in negIdxs:
-				reactantFlux *= (y[negIdx] ** (-1 * S[negIdx, colIdx]))
+				stoich = -S[negIdx, colIdx]
+				if stoich == 1:
+					reactantFlux *= y[negIdx]
+				else:
+					reactantFlux *= y[negIdx]**stoich
 
 			productFlux = ratesRev[colIdx]
 			for posIdx in posIdxs:
-				productFlux *=  (y[posIdx] ** ( 1 * S[posIdx, colIdx]))
+				stoich = S[posIdx, colIdx]
+				if stoich == 1:
+					productFlux *= y[posIdx]
+				else:
+					productFlux *= y[posIdx]**stoich
 
-			fluxForNegIdxs = (-1. * reactantFlux) + (1. * productFlux)
-			fluxForPosIdxs = ( 1. * reactantFlux) - (1. * productFlux)
+			fluxForNegIdxs = productFlux - reactantFlux
+			fluxForPosIdxs = reactantFlux - productFlux
 
 			for thisIdx in negIdxs:
-				dy[thisIdx] += fluxForNegIdxs
+				stoich = -S[thisIdx, colIdx]
+				if stoich == 1:
+					dy[thisIdx] += fluxForNegIdxs
+				else:
+					dy[thisIdx] += stoich * fluxForNegIdxs
 			for thisIdx in posIdxs:
-				dy[thisIdx] += fluxForPosIdxs
+				stoich = S[thisIdx, colIdx]
+				if stoich == 1:
+					dy[thisIdx] += fluxForPosIdxs
+				else:
+					dy[thisIdx] += stoich * fluxForPosIdxs
 
 		dy = sp.Matrix(dy)
 		J = dy.jacobian(y)
