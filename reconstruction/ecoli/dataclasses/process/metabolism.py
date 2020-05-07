@@ -114,6 +114,7 @@ class Metabolism(object):
 				conc = row['Lempp Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			else:
 				# Use average of both sources
+				# TODO: handle mean of empty slice warning
 				conc = np.nanmean([
 					row[source].asNumber(METABOLITE_CONCENTRATION_UNITS)
 					for source in concentration_sources
