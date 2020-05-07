@@ -135,11 +135,7 @@ class Equilibrium(object):
 
 		# Build matrices
 		self._populateDerivativeAndJacobian()
-		self._complexIdxs = np.where(np.any(self.stoichMatrix() > 0, axis=1))[0]
-		self._monomerIdxs = [np.where(x < 0)[0] for x in self.stoichMatrix().T]
-		self._rxnNonZeroIdxs = [np.where(x != 0)[0] for x in self.stoichMatrix().T]
 		self._stoichMatrix = self.stoichMatrix()
-		self._stoichMatrixMonomers = self.stoichMatrixMonomers()
 
 	def __getstate__(self):
 		"""Return the state to pickle, omitting derived attributes that
@@ -334,96 +330,6 @@ class Equilibrium(object):
 		rxnFluxesP =  1. * (rxnFluxes > 0) * rxnFluxes
 		moleculesNeeded = np.dot(self.Rp, rxnFluxesP) + np.dot(self.Pp, rxnFluxesN)
 		return rxnFluxes, moleculesNeeded
-
-	def fluxesAndMoleculesToSSold(self, moleculeCounts, cellVolume, nAvogadro):
-		'''
-		Calculate change in molecule counts and flux through reactions until steady state.
-		'''
-		monomersTotal = moleculeCounts + np.dot(self._stoichMatrixMonomers, -1. * moleculeCounts[self._complexIdxs])
-		countsToMolarLog = -1. * (np.log10(cellVolume) + np.log10(nAvogadro))
-		for x in range(int(monomersTotal.max())):
-			old_counts = np.array(monomersTotal)
-			for colIdx in xrange(self._stoichMatrix.shape[1]):
-				diff = self._solveSS(
-					monomersTotal,
-					self._stoichMatrix[:, colIdx],
-					np.log10(self.ratesRev[colIdx]) - np.log10(self.ratesFwd[colIdx]),
-					countsToMolarLog,
-					self._monomerIdxs[colIdx],
-					self._rxnNonZeroIdxs[colIdx],
-					max_iters=1,
-					)
-				monomersTotal[self._rxnNonZeroIdxs[colIdx]] += diff
-			if np.all(old_counts == monomersTotal):
-				break
-		else:
-			raise RuntimeError('Total number of iterations reached in equilibrium without a solution.')
-
-		dYMolecules = monomersTotal - moleculeCounts
-		rxnFluxes = np.round(np.dot(self.metsToRxnFluxes, dYMolecules))
-		rxnFluxesN = -1. * (rxnFluxes < 0) * rxnFluxes
-		rxnFluxesP =  1. * (rxnFluxes > 0) * rxnFluxes
-		moleculesNeeded = np.dot(self.Rp, rxnFluxesP) + np.dot(self.Pp, rxnFluxesN)
-		return rxnFluxes, moleculesNeeded
-
-	def _solveSS(self, x, S, kd_log, counts_to_molar_log, monomer_idxs, nonzero_idxs, max_iters=None):
-		rxn_flux = 0.
-		if max_iters is None:
-			max_iters = int(np.ceil(np.min(-x[monomer_idxs] / S[monomer_idxs])))
-
-		if max_iters > 0:
-			all_attempts = (
-				np.arange(max_iters + 1).reshape(1, -1)
-				* S[nonzero_idxs].reshape(-1, 1)
-				+ np.ones(max_iters).reshape(1, -1)
-				* x[nonzero_idxs].reshape(-1, 1)
-				)
-			rxn_flux = np.argmin(np.abs(
-				np.sum(
-					-np.ones(max_iters).reshape(1, -1)
-					* S[nonzero_idxs].reshape(-1, 1)
-					* (counts_to_molar_log + np.log10(all_attempts)),
-					axis = 0,
-					)
-				- kd_log
-				))
-
-		return rxn_flux * S[nonzero_idxs]
-
-	def fluxesAndMoleculesToSSbad(self, moleculeCounts, cellVolume, nAvogadro):
-		'''
-		Calculate change in molecule counts and flux through reactions until steady state.
-		'''
-		dYMolecules = np.zeros_like(moleculeCounts)
-		monomersTotal = moleculeCounts + np.dot(self._stoichMatrixMonomers, -1. * moleculeCounts[self._complexIdxs])
-		countsToMolarLog = -1. * (np.log10(cellVolume) + np.log10(nAvogadro))
-		for colIdx in xrange(self._stoichMatrix.shape[1]):
-			dYMolecules[self._rxnNonZeroIdxs[colIdx]] = (self._solveSSbad(
-				monomersTotal,
-				self._stoichMatrix[:, colIdx],
-				np.log10(self.ratesRev[colIdx]) - np.log10(self.ratesFwd[colIdx]),
-				countsToMolarLog,
-				self._monomerIdxs[colIdx],
-				self._rxnNonZeroIdxs[colIdx],
-				) - moleculeCounts[self._rxnNonZeroIdxs[colIdx]])
-
-		rxnFluxes = np.round(np.dot(self.metsToRxnFluxes, dYMolecules))
-		rxnFluxesN = -1. * (rxnFluxes < 0) * rxnFluxes
-		rxnFluxesP =  1. * (rxnFluxes > 0) * rxnFluxes
-		moleculesNeeded = np.dot(self.Rp, rxnFluxesP) + np.dot(self.Pp, rxnFluxesN)
-		return rxnFluxes, moleculesNeeded
-
-
-	def _solveSSbad(self, x, S, kdLog, countsToMolarLog, monomerIdxs, nonZeroIdxs):
-		rxnFlux = 0.
-		maxIters = int(np.ceil(np.min(-x[monomerIdxs] / S[monomerIdxs])))
-
-		if maxIters > 0:
-			allAttempts = (np.arange(1, maxIters + 1).reshape(1, -1) * S[nonZeroIdxs].reshape(-1, 1) + np.ones(maxIters).reshape(1, -1) * x[nonZeroIdxs].reshape(-1, 1))
-			h = np.argmin(np.abs(np.sum(-1 * np.ones(maxIters).reshape(1, -1) * S[nonZeroIdxs].reshape(-1, 1) * (countsToMolarLog + np.log10(allAttempts)), axis = 0) - kdLog))
-			rxnFlux = (h + 1)
-
-		return x[nonZeroIdxs] + rxnFlux * S[nonZeroIdxs]
 
 	def getMonomers(self, cplxId):
 		'''

@@ -1785,20 +1785,6 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 				cellVolume.asNumber(units.L),
 				sim_data.constants.nAvogadro.asNumber(1 / units.mol),
 				)
-			delta = np.dot(sim_data.process.equilibrium.stoichMatrix().astype(np.int64), rxnFluxes)
-			old, _ = sim_data.process.equilibrium.fluxesAndMoleculesToSSold(
-				equilibriumMoleculesView.counts(),
-				cellVolume.asNumber(units.L),
-				sim_data.constants.nAvogadro.asNumber(1 / units.mol),
-				)
-			delta_old = np.dot(sim_data.process.equilibrium.stoichMatrix().astype(np.int64), old)
-			bad, _ = sim_data.process.equilibrium.fluxesAndMoleculesToSSbad(
-				equilibriumMoleculesView.counts(),
-				cellVolume.asNumber(units.L),
-				sim_data.constants.nAvogadro.asNumber(1 / units.mol),
-				)
-			delta_bad = np.dot(sim_data.process.equilibrium.stoichMatrix().astype(np.int64), bad)
-			import ipdb; ipdb.set_trace()
 			equilibriumMoleculesView.countsInc(
 				np.dot(sim_data.process.equilibrium.stoichMatrix().astype(np.int64), rxnFluxes)
 				)
