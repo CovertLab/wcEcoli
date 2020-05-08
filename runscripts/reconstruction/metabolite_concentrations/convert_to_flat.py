@@ -27,6 +27,13 @@ LEMPP_INPUT = os.path.join(FILE_LOCATION, 'lempp2019.tsv')
 PARK_INPUT = os.path.join(FILE_LOCATION, 'park2016.tsv')
 OUTPUT_FILE = os.path.join(FILE_LOCATION, '{}_concentrations.tsv')
 
+# Correct EcoCyc IDs to match the whole-cell model ID
+ECOCYC_SUBSTITUTIONS = {
+	'D-GLUCOSAMINE-6-P': 'CPD-13469',
+	'D-glucopyranose-6-phosphate': 'GLC-6-P',
+	'Isocitrate': 'THREO-DS-ISO-CITRATE',
+	}
+
 
 def lempp_concentrations():
 	# type: () -> Dict[str, float]
@@ -117,7 +124,7 @@ def kegg_to_ecocyc(kegg_ids):
 		if line[1] == '1':
 			mol_id = line[0].split(id_type)[1]
 			ecocyc_id = line[2]
-			mapping[mol_id] = ecocyc_id
+			mapping[mol_id] = ECOCYC_SUBSTITUIONS.get(ecocyc_id, ecocyc_id)
 
 	return mapping
 

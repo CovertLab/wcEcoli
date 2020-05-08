@@ -1,9 +1,9 @@
-# Created with runscripts/reconstruction/metabolite_concentrations/merge_files.py reconstruction/ecoli/flat/metaboliteConcentrations.tsv runscripts/reconstruction/metabolite_concentrations/park_concentrations.tsv runscripts/reconstruction/metabolite_concentrations/lempp_concentrations.tsv on Tue May  5 13:59:39 2020
+# Created with runscripts/reconstruction/metabolite_concentrations/merge_files.py reconstruction/ecoli/flat/metaboliteConcentrations.tsv runscripts/reconstruction/metabolite_concentrations/park_concentrations.tsv runscripts/reconstruction/metabolite_concentrations/lempp_concentrations.tsv on Fri May  8 13:29:24 2020
 "Metabolite"	"Bennett Concentration (units.mol/units.L)"	"Park Concentration (units.mol/units.L)"	"Lempp Concentration (units.mol/units.L)"
 "2-3-DIHYDROXYBENZOATE"	1.40e-4	1.38e-4	NaN
 "2-KETOGLUTARATE"	4.40e-4	4.43e-4	NaN
 "2-PG"	NaN	9.18e-5	NaN
-"23-DIPHOSPHOGLYCERATE"	NaN	8.29e-5	NaN
+# "23-DIPHOSPHOGLYCERATE"	NaN	8.29e-5	NaN
 "2K-4CH3-PENTANOATE"	NaN	NaN	1.38e-4
 "4-AMINO-BUTYRATE"	NaN	NaN	3.04e-4
 "4-hydroxybenzoate"	5.20e-5	5.22e-5	NaN
@@ -29,16 +29,14 @@
 "CMP"	3.60e-4	3.60e-4	7.88e-4
 "CO-A"	1.40e-3	1.37e-3	1.05e-4
 "CPD-12575"	2.50e-3	2.50e-3	NaN
-"CPD-13469"	1.20e-3	NaN	NaN
+"CPD-13469"	1.20e-3	1.15e-3	NaN
 "CPD-2961"	3.80e-3	3.77e-3	NaN
-"CPD0-2032"	NaN	2.71e-4	NaN
+# "CPD0-2032"	NaN	2.71e-4	NaN
 "CTP"	2.70e-3	2.73e-3	8.62e-4
 "CYTIDINE"	2.60e-6	2.59e-6	1.09e-6
 "CYTOSINE"	1.40e-5	1.41e-5	4.85e-6
 "D-ALA-D-ALA"	NaN	NaN	1.03e-4
-"D-GLUCOSAMINE-6-P"	NaN	1.15e-3	NaN
 "D-SEDOHEPTULOSE-7-P"	NaN	8.82e-4	1.62e-4
-"D-glucopyranose-6-phosphate"	NaN	7.88e-3	NaN
 "DAMP"	8.80e-6	8.84e-6	NaN
 "DATP"	1.60e-5	1.55e-5	NaN
 "DCTP"	3.50e-5	3.45e-5	NaN
@@ -56,7 +54,8 @@
 "FUM"	1.20e-4	2.88e-4	1.50e-3
 "G3P"	1.50e-3	1.54e-3	NaN
 "GDP"	6.80e-4	6.76e-4	1.89e-5
-"GLC-D-LACTONE"	1.00e-3	1.04e-3	NaN
+"GLC-6-P"	NaN	7.88e-3	NaN
+# "GLC-D-LACTONE"	1.00e-3	1.04e-3	NaN
 "GLN"	3.80e-3	3.81e-3	3.81e-3
 "GLT"	9.60e-2	9.60e-2	3.30e-2
 "GLUCONATE"	4.20e-5	4.16e-5	NaN
@@ -77,8 +76,7 @@
 "ILE"	NaN	1.52e-4	NaN
 "IMP"	NaN	2.72e-4	5.04e-5
 "INOSINE"	NaN	NaN	7.00e-7
-"ITP"	NaN	2.05e-4	NaN
-"Isocitrate"	NaN	3.67e-5	NaN
+# "ITP"	NaN	2.05e-4	NaN
 "L-ALPHA-ALANINE"	2.60e-3	2.55e-3	3.96e-4
 "L-ARGININO-SUCCINATE"	NaN	NaN	1.76e-4
 "L-ASPARTATE"	4.20e-3	4.23e-3	2.00e-3
@@ -90,7 +88,7 @@
 "MAL"	1.70e-3	1.68e-3	2.12e-3
 "MALONYL-COA"	3.50e-5	3.54e-5	NaN
 "MET"	1.50e-4	1.45e-4	5.50e-5
-"MYO-INOSITOL"	5.70e-6	5.72e-6	NaN
+# "MYO-INOSITOL"	5.70e-6	5.72e-6	NaN
 "N-ACETYL-D-GLUCOSAMINE-1-P"	8.20e-5	8.19e-5	NaN
 "N-ALPHA-ACETYLORNITHINE"	4.30e-5	4.33e-5	NaN
 "NAD"	2.60e-3	2.55e-3	2.12e-3
@@ -119,6 +117,7 @@
 "SUC-COA"	2.30e-4	2.33e-4	NaN
 "TDP"	3.80e-4	3.78e-4	NaN
 "THR"	1.80e-4	1.26e-3	NaN
+"THREO-DS-ISO-CITRATE"	NaN	3.67e-5	NaN
 "TRP"	1.20e-5	1.21e-5	2.44e-5
 "TTP"	4.60e-3	4.62e-3	NaN
 "TYR"	2.90e-5	2.89e-5	2.16e-4
