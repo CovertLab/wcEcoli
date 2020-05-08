@@ -311,10 +311,19 @@ class Equilibrium(object):
 		self.derivativesJacobianSymbolic = J
 		self.derivativesSymbolic = dy
 
+	def derivatives_flipped(self, t, y):
+		return self.derivatives(y, t, self.ratesFwd, self.ratesRev)
+	def derivatives_jacobian_flipped(self, t, y):
+		return self.derivativesJacobian(y, t, self.ratesFwd, self.ratesRev)
+
 	def fluxesAndMoleculesToSS(self, moleculeCounts, cellVolume, nAvogadro, time_limit=1e20):
 		y_init = moleculeCounts / (cellVolume * nAvogadro)
-		y = scipy.integrate.odeint(self.derivatives, y_init, t=[0, time_limit],
-			args=(self.ratesFwd, self.ratesRev), Dfun=self.derivativesJacobian)
+
+		sol = scipy.integrate.solve_ivp(
+			self.derivatives_flipped, [0, time_limit], y_init,
+			method="LSODA", t_eval=[0, time_limit],
+			jac=self.derivatives_jacobian_flipped)
+		y = sol.y.T
 
 		if np.any(y[-1, :] * (cellVolume * nAvogadro) <= -1):
 			raise Exception, "Have negative values -- probably due to numerical instability"
