@@ -57,10 +57,14 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
         self.TU_id_to_protein_index = {}
 
         for i, protein in enumerate(sim_data.process.translation.monomerData):
-            self.protein_index_to_TU_index[i] = []
+            self.protein_index_to_TU_index[i] = list()
             for rna in protein['rnaSet']:
                 self.protein_index_to_TU_index[i].append(TU_id_to_index[rna])
-                self.TU_id_to_protein_index[rna] = i
+
+                if rna not in self.TU_id_to_protein_index:
+                    self.TU_id_to_protein_index[rna] = list()
+
+                self.TU_id_to_protein_index[rna].append(i)
 
         # create dict mapping TU index to protein index
         self.TU_index_to_protein_index = {}
@@ -68,8 +72,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
             if TU in self.TU_id_to_protein_index:
                 self.TU_index_to_protein_index[i] = self.TU_id_to_protein_index[TU]
 
-        self.TU_counts_to_mRNA_counts = np.zeros(
-            (self.n_mRNAs, self.n_TUs), dtype=np.float64)
 
         # Determine changes from parameter shuffling variant
         if (hasattr(sim_data.process.translation, "translationEfficienciesShuffleIdxs")
@@ -139,7 +141,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
         mRNA_counts = np.zeros(self.n_mRNAs)
         for i, TU_count in enumerate(TU_counts):
             if i in self.TU_index_to_protein_index:
-                mRNA_counts[self.TU_index_to_protein_index[i]] += TU_count
+                for prot_idx in self.TU_index_to_protein_index[i]:
+                    mRNA_counts[prot_idx] += TU_count
 
         # Calculate initiation probabilities for ribosomes based on mRNA counts
         # and associated mRNA translational efficiencies
