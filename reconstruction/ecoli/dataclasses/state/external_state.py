@@ -131,6 +131,7 @@ class ExternalState(object):
 		secretionExchangeMolecules = self.secretion_exchange_molecules
 
 		glc_id = 'GLC[p]'
+		acetate_id = 'ACET[p]'
 		oxygen_id = 'OXYGEN-MOLECULE[p]'
 
 		exchange_molecules = {self.env_to_exchange_map[mol]: conc for mol, conc in molecules.iteritems()}
@@ -150,6 +151,10 @@ class ExternalState(object):
 			else:
 				importConstrainedExchangeMolecules[glc_id] = 100. * (units.mmol / units.g / units.h)
 			importUnconstrainedExchangeMolecules.remove(glc_id)
+
+		if acetate_id in importUnconstrainedExchangeMolecules:
+			importConstrainedExchangeMolecules[acetate_id] = 16. * (units.mmol / units.g / units.h)
+			importUnconstrainedExchangeMolecules.remove(acetate_id)
 
 		externalExchangeMolecules.update(secretionExchangeMolecules)
 
