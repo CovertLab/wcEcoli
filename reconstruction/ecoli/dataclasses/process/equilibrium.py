@@ -138,14 +138,14 @@ class Equilibrium(object):
 
 	def __getstate__(self):
 		"""Return the state to pickle, omitting derived attributes that
-		__setstate__() will recompute, esp. those like the ode_derivatives
+		__setstate__() will recompute, esp. those like the rates for ODEs
 		that don't pickle.
 		"""
 		return data.dissoc_strict(self.__dict__, (
 			'_stoichMatrix',
 			'Rp', 'Pp', 'metsToRxnFluxes',
 			'symbolic_rates', 'symbolic_rates_jacobian',
-			'derivatives', 'derivativesJacobian'))
+			'_rates', '_rates_jacobian'))
 
 	def __setstate__(self, state):
 		"""Restore instance attributes, recomputing some of them."""
@@ -224,8 +224,8 @@ class Equilibrium(object):
 		self._makeMatrices()
 		self._make_rates()
 
-		self.derivatives = build_ode.derivatives_with_rates(self.symbolic_rates)
-		self.derivativesJacobian = build_ode.derivatives_jacobian_with_rates(
+		self._rates = build_ode.rates(self.symbolic_rates)
+		self._rates_jacobian = build_ode.rates_jacobian(
 			self.symbolic_rates_jacobian)
 
 	def _makeMatrices(self):
@@ -297,11 +297,11 @@ class Equilibrium(object):
 		self.symbolic_rates = dy
 		self.symbolic_rates_jacobian = J
 
-	def derivatives_flipped(self, t, y):
-		return self._stoichMatrix.dot(self.derivatives(y, t, self.ratesFwd, self.ratesRev))
+	def derivatives(self, t, y):
+		return self._stoichMatrix.dot(self._rates(t, y, self.ratesFwd, self.ratesRev))
 
-	def derivatives_jacobian_flipped(self, t, y):
-		return self._stoichMatrix.dot(self.derivativesJacobian(y, t, self.ratesFwd, self.ratesRev))
+	def derivatives_jacobian(self, t, y):
+		return self._stoichMatrix.dot(self._rates_jacobian(t, y, self.ratesFwd, self.ratesRev))
 
 	def fluxesAndMoleculesToSS(self, moleculeCounts, cellVolume, nAvogadro, random_state, time_limit=1e20):
 		y_init = moleculeCounts / (cellVolume * nAvogadro)
@@ -309,14 +309,14 @@ class Equilibrium(object):
 		# odeint has issues solving with the long time step
 		# solve_ivp does not support args for solver until later version of scipy
 		sol = integrate.solve_ivp(
-			self.derivatives_flipped, [0, time_limit], y_init,
+			self.derivatives, [0, time_limit], y_init,
 			method="LSODA", t_eval=[0, time_limit],
-			jac=self.derivatives_jacobian_flipped)
+			jac=self.derivatives_jacobian)
 		y = sol.y.T
 
 		if np.any(y[-1, :] * (cellVolume * nAvogadro) <= -1):
 			raise Exception, "Have negative values -- probably due to numerical instability"
-		if np.linalg.norm(self.derivatives(y[-1, :], 0, self.ratesFwd, self.ratesRev), np.inf) * (cellVolume * nAvogadro) > 1:
+		if np.linalg.norm(self.derivatives(0, y[-1, :]), np.inf) * (cellVolume * nAvogadro) > 1:
 			raise Exception, "Didn't reach steady state"
 		y[y < 0] = 0
 		yMolecules = y * (cellVolume * nAvogadro)
