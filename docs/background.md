@@ -1,14 +1,54 @@
 # Background on the Whole Cell Model
 
 
-## Source code locations
+## Important source code and data locations
 
-* The knowledge base input information: `wcEcoli/reconstruction/ecoli/flat`.
-* The code that uses it to calculate parameters: `wcEcoli/reconstruction/ecoli/`.
-* The code that loads it into an object: `knowledge_base_raw.py`.
-* Simulation processes: `wcEcoli/models/ecoli/processes/`.
-* The cell's initial conditions: `wcEcoli/models/ecoli/sim/initial\_conditions.py`.
+### Knowledgebase/parameters
+Files to generate the `sim_data` object that contains all parameters needed to run simulations.
+* `reconstruction/ecoli/...`
+    * `flat/`: raw data files
+    * `dataclasses/`: classes for organizing data related to processes and states
+    * `knowledge_base_raw.py`: script to load raw data
+    * `simulation_data.py`: class of the `sim_data` object
+    * `fit_sim_data_1.py`: script to calculate parameters from raw data to produce the `sim_data` object required for simulations
 
+### Simulation/analysis
+* `models/ecoli/...`
+    * `processes/`: files to simulate physiological processes
+    * `listeners/`: files to record data to disk during simulations
+    * `analysis/`: files to analyze simulation output
+    * `sim/variants/`: files that modify `sim_data` for running experiments on modified parameters
+    * `sim/initial_conditions.py`: initializes cell states before simulation
+    * `sim/simulation.py`: specifies classes that make an _E. coli_ simulation
+
+### Utilities
+General tools that are not _E. coli_ specific.
+* `wholecell/...`
+    * `fireworks/firetasks/`: handles inputs, outputs and options for the execution of tasks in a simulation workflow (eg. calculating parameters, running simulations, performing analysis)
+    * `tests/`: test scripts to ensure proper functionality
+    * `states/`: classes representing cell states used in simulations
+    * `sim/simulation.py`: main simulation file handling states, processes, listeners and updates between them
+
+### Validation
+This data will only be accessed during analysis and not during simulations.
+* `validation/ecoli/...`
+    * `flat/`: raw data files
+    * `validation_data_raw.py`: script to load raw data
+    * `validation_data.py`: script to process and organize raw data
+
+### Cloud
+* `cloud/...`
+    * `docker/`: Dockerfiles for building Docker containers to run simulations
+    * `build*.sh`: scripts to run Docker builds
+
+### Runscripts
+Scripts used as entry points for executing workflows, performing analysis or generating/cleaning data.
+* `runscripts/`:
+    * `reconstruction/`: scripts for processing data sources to `*.tsv` files in `reconstruction/ecoli/flat/`
+    * `jenkins/`: scripts to test codebase through continuous integration (CI)
+    * `manual/`: scripts for running portions of workflows interactively
+    * `cloud/wcm.py`: used to make Docker fireworks workflows to run locally or on Google compute engine
+    * `fireworks/fw_queue.py`: used to make fireworks workflows to run locally or on Sherlock
 
 ## Processes
 
@@ -25,9 +65,37 @@ Each process has three entry points:
 If you want to save new values to analyze after the simulation, you must write it out via a _listener_. Listeners log data during the simulation. To add a listener to the code, add the file to `wcEcoli/models/ecoli/listeners/` and add the listener to `_listenerClasses` in `wcEcoli/models/ecoli/sim/simulation.py`.
 
 
-## States, bulk molecules, and unique molecules
+## States
 
-[TODO] Introduce States, bulk molecules, and unique molecules.
+### Bulk molecules
+
+### Unique molecules
+
+### Environment
+
+
+## Analysis
+
+### Single
+
+### Multigen
+
+### Cohort
+
+### Variant
+
+### Causality network
+
+## Adding to the codebase
+### New raw data
+
+### New process
+
+### New variant
+
+### New listener
+
+### New analysis
 
 
 ## Design factors
