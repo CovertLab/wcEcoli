@@ -9,7 +9,7 @@ fluxesAndMoleculesToSS()
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-import scipy
+from scipy import integrate
 import sympy as sp
 
 from wholecell.utils import build_ode, data, units
@@ -312,13 +312,16 @@ class Equilibrium(object):
 
 	def derivatives_flipped(self, t, y):
 		return self.derivatives(y, t, self.ratesFwd, self.ratesRev)
+
 	def derivatives_jacobian_flipped(self, t, y):
 		return self.derivativesJacobian(y, t, self.ratesFwd, self.ratesRev)
 
 	def fluxesAndMoleculesToSS(self, moleculeCounts, cellVolume, nAvogadro, random_state, time_limit=1e20):
 		y_init = moleculeCounts / (cellVolume * nAvogadro)
 
-		sol = scipy.integrate.solve_ivp(
+		# odeint has issues solving with the long time step
+		# solve_ivp does not support args for solver until later version of scipy
+		sol = integrate.solve_ivp(
 			self.derivatives_flipped, [0, time_limit], y_init,
 			method="LSODA", t_eval=[0, time_limit],
 			jac=self.derivatives_jacobian_flipped)
@@ -333,30 +336,6 @@ class Equilibrium(object):
 
 		dYMolecules = yMolecules[-1, :] - yMolecules[0, :]
 		rxnFluxes = stochasticRound(random_state, np.dot(self.metsToRxnFluxes, dYMolecules))
-		rxnFluxesN = -1. * (rxnFluxes < 0) * rxnFluxes
-		rxnFluxesP =  1. * (rxnFluxes > 0) * rxnFluxes
-		moleculesNeeded = np.dot(self.Rp, rxnFluxesP) + np.dot(self.Pp, rxnFluxesN)
-		return rxnFluxes, moleculesNeeded
-
-
-	def fluxesAndMoleculesToSS_fixed(self, moleculeCounts, cellVolume, nAvogadro, time_limit=1e20):
-		y_init = moleculeCounts / (cellVolume * nAvogadro)
-
-		sol = scipy.integrate.solve_ivp(
-			self.derivatives_flipped, [0, time_limit], y_init,
-			method="LSODA", t_eval=[0, time_limit],
-			jac=self.derivatives_jacobian_flipped)
-		y = sol.y.T
-
-		if np.any(y[-1, :] * (cellVolume * nAvogadro) <= -1):
-			raise Exception, "Have negative values -- probably due to numerical instability"
-		if np.linalg.norm(self.derivatives(y[-1, :], 0, self.ratesFwd, self.ratesRev), np.inf) * (cellVolume * nAvogadro) > 1:
-			raise Exception, "Didn't reach steady state"
-		y[y < 0] = 0
-		yMolecules = y * (cellVolume * nAvogadro)
-
-		dYMolecules = yMolecules[-1, :] - yMolecules[0, :]
-		rxnFluxes = np.round(np.dot(self.metsToRxnFluxes, dYMolecules))
 		rxnFluxesN = -1. * (rxnFluxes < 0) * rxnFluxes
 		rxnFluxesP =  1. * (rxnFluxes > 0) * rxnFluxes
 		moleculesNeeded = np.dot(self.Rp, rxnFluxesP) + np.dot(self.Pp, rxnFluxesN)
