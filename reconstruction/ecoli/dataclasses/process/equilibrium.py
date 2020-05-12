@@ -306,8 +306,7 @@ class Equilibrium(object):
 	def fluxesAndMoleculesToSS(self, moleculeCounts, cellVolume, nAvogadro, random_state, time_limit=1e20):
 		y_init = moleculeCounts / (cellVolume * nAvogadro)
 
-		# odeint has issues solving with the long time step
-		# solve_ivp does not support args for solver until later version of scipy
+		# Note: odeint has issues solving with a long time step so need to use solve_ivp
 		sol = integrate.solve_ivp(
 			self.derivatives, [0, time_limit], y_init,
 			method="LSODA", t_eval=[0, time_limit],
