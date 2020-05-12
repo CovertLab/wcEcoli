@@ -144,7 +144,7 @@ class Equilibrium(object):
 		return data.dissoc_strict(self.__dict__, (
 			'_stoichMatrix',
 			'Rp', 'Pp', 'metsToRxnFluxes',
-			'derivativesSymbolic', 'derivativesJacobianSymbolic',
+			'symbolic_rates', 'symbolic_rates_jacobian',
 			'derivatives', 'derivativesJacobian'))
 
 	def __setstate__(self, state):
@@ -222,11 +222,11 @@ class Equilibrium(object):
 	def _populateDerivativeAndJacobian(self):
 		'''Compile callable functions for computing the derivative and the Jacobian.'''
 		self._makeMatrices()
-		self._makeDerivative()
+		self._make_rates()
 
-		self.derivatives = build_ode.derivatives_with_rates(self.derivativesSymbolic)
+		self.derivatives = build_ode.derivatives_with_rates(self.symbolic_rates)
 		self.derivativesJacobian = build_ode.derivatives_jacobian_with_rates(
-			self.derivativesJacobianSymbolic)
+			self.symbolic_rates_jacobian)
 
 	def _makeMatrices(self):
 		'''
@@ -253,10 +253,10 @@ class Equilibrium(object):
 
 		self.metsToRxnFluxes = metsToRxnFluxes.T
 
-	def _makeDerivative(self):
+	def _make_rates(self):
 		'''
-		Creates symbolic representation of the ordinary differential equations and the Jacobian.
-		Used during simulations.
+		Creates symbolic representation of the rates for ordinary differential
+		equations and the Jacobian. Used during simulations.
 		'''
 		S = self.stoichMatrix()
 
@@ -266,7 +266,8 @@ class Equilibrium(object):
 		y = sp.symbols(yStrings)
 		ratesFwd = sp.symbols(ratesFwdStrings)
 		ratesRev = sp.symbols(ratesRevStrings)
-		dy = [sp.symbol.S.Zero] * S.shape[0]
+
+		rates = []
 
 		for colIdx in xrange(S.shape[1]):
 			negIdxs = np.where(S[:, colIdx] < 0)[0]
@@ -288,33 +289,19 @@ class Equilibrium(object):
 				else:
 					productFlux *= y[posIdx]**stoich
 
-			fluxForNegIdxs = productFlux - reactantFlux
-			fluxForPosIdxs = reactantFlux - productFlux
+			rates.append(reactantFlux - productFlux)
 
-			for thisIdx in negIdxs:
-				stoich = -S[thisIdx, colIdx]
-				if stoich == 1:
-					dy[thisIdx] += fluxForNegIdxs
-				else:
-					dy[thisIdx] += stoich * fluxForNegIdxs
-			for thisIdx in posIdxs:
-				stoich = S[thisIdx, colIdx]
-				if stoich == 1:
-					dy[thisIdx] += fluxForPosIdxs
-				else:
-					dy[thisIdx] += stoich * fluxForPosIdxs
-
-		dy = sp.Matrix(dy)
+		dy = sp.Matrix(rates)
 		J = dy.jacobian(y)
 
-		self.derivativesJacobianSymbolic = J
-		self.derivativesSymbolic = dy
+		self.symbolic_rates = dy
+		self.symbolic_rates_jacobian = J
 
 	def derivatives_flipped(self, t, y):
-		return self.derivatives(y, t, self.ratesFwd, self.ratesRev)
+		return self._stoichMatrix.dot(self.derivatives(y, t, self.ratesFwd, self.ratesRev))
 
 	def derivatives_jacobian_flipped(self, t, y):
-		return self.derivativesJacobian(y, t, self.ratesFwd, self.ratesRev)
+		return self._stoichMatrix.dot(self.derivativesJacobian(y, t, self.ratesFwd, self.ratesRev))
 
 	def fluxesAndMoleculesToSS(self, moleculeCounts, cellVolume, nAvogadro, random_state, time_limit=1e20):
 		y_init = moleculeCounts / (cellVolume * nAvogadro)
