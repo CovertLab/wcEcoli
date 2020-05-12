@@ -1738,7 +1738,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 
 		allMoleculesView.countsIs(0)
 
-		randomState = np.random.RandomState(seed)
+		# randomState = np.random.RandomState(seed)
 
 		# rnaView.countsIs(randomState.multinomial(
 		# 	totalCount_RNA,
@@ -1772,6 +1772,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 
 		# Iterate processes until metabolites converge to a steady-state
 		while np.linalg.norm(metDiffs, np.inf) > 1:
+			random_state = np.random.RandomState(seed)
 			metCounts = conc_metabolites * cellVolume * sim_data.constants.nAvogadro
 			metCounts.normalize()
 			metCounts.checkNoUnit()
@@ -1784,7 +1785,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 				equilibriumMoleculesView.counts(),
 				cellVolume.asNumber(units.L),
 				sim_data.constants.nAvogadro.asNumber(1 / units.mol),
-				randomState,
+				random_state,
 				)
 			equilibriumMoleculesView.countsInc(
 				np.dot(sim_data.process.equilibrium.stoichMatrix().astype(np.int64), rxnFluxes)
