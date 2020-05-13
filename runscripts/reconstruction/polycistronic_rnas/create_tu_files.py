@@ -1,3 +1,4 @@
+import argparse
 from collections import Counter
 import csv
 from functools import partial
@@ -91,14 +92,26 @@ Note:
 - A comment line is added to the top of the file to indicate that it generated
 	from this script, and to record the date it was compiled.
 TODO:
+- UPDATE PROTEINS.TSV
+- Take polycistrons file as an input argument
 - Allow for certain RNA type mixing (rRNA, tRNA) - handle this type differently
 - Allow mass to determine type and location for importing mass fractions in the Parca
-- Remove km cpickle file when this script is run. The Parca will need to re-run that
-part of the script.
 - Right now I am just making the transcription_units file for a single condition. In the 
 future we will want it for all conditions. Will need to take care in the parca that the 
 correct condiditon data is being used.
+- Dont allow for deletion of a gene without incorporation in a TU.
+
+-Import helper functions from another file.
 '''
+def parse_args():
+	'''
+	return error message if argument is not given
+	'''
+	parser = argparse.ArgumentParser()
+	arser = argparse.ArgumentParser()
+	parser.add_argument('filename')
+	args = parser.parse_args()
+	return args.filename
 
 DIALECT = "excel-tab"
 JsonReader = partial(spreadsheets.JsonReader, dialect = DIALECT)
@@ -108,19 +121,31 @@ JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
 FLAT_DIR = os.path.join('reconstruction', 'ecoli', 'flat')
 RNA_FILE = os.path.join(FLAT_DIR, 'rnas.tsv')
 GENES_FILE = os.path.join(FLAT_DIR, 'genes.tsv')
-POLY_CISTRON_FILE = os.path.join(FLAT_DIR, 'polycistronic_mrnas_in_model.tsv')
+#POLY_CISTRON_FILE = os.path.join(FLAT_DIR, 'polycistronic_mrnas_in_model.tsv')
+POLY_CISTRON_FILE = parse_args()
 GENOME_SEQUENCE_FILE = os.path.join(FLAT_DIR, 'flattened_sequence.fasta')
 km_file = os.path.join('fixtures', 'endo_km', 'km.cPickle')
 RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv')
+PROTEIN_FILE = os.path.join(FLAT_DIR, 'proteins.tsv')
 
 # output files
 TU_FILE = os.path.join(FLAT_DIR, 'operon_rnas.tsv')
 output_tu_counts = os.path.join(FLAT_DIR, "transcription_units.tsv")
 output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix.tsv")
+output_proteins = os.path.join(FLAT_DIR, "protiens_1.tsv")
 
 CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
 
+'''
+parser = argparse.ArgumentParser()
+parser.add_argument('filename')
+args = parser.parse_args()
+with open(args.filename) as file:
+	print(file.readline())
+import pdb; pdb.set_trace()
+#with open(args.filename) as file:
+'''
 
 
 def parse_tsv(tsv_file):
@@ -135,14 +160,14 @@ def parse_tsv(tsv_file):
 	return tsv_list, fieldnames
 
 def read_file_skipping_comments(tsvfile, tsv_list, tempfile):
+	num_lines = 0
 	for curline in tsvfile:
 		if not curline.startswith('#'):
 			tempfile.write(curline)
+	tempfile.close() #need to close file for IOS memory reasons.
 	with open('temp.csv') as tempfile:
-		#import pdb; pdb.set_trace()
 		reader = JsonReader(tempfile)
 		fieldnames = reader.fieldnames
-		#import pdb; pdb.set_trace()
 		for row in reader:
 			tsv_list.append(row)
 	if os.path.exists("temp.csv"):
@@ -150,7 +175,6 @@ def read_file_skipping_comments(tsvfile, tsv_list, tempfile):
 	else:
 		print("temp.csv does not exist")
 	return tsv_list, fieldnames
-
 
 def parse_tsv_2(tsv_file):
 	'''
@@ -160,17 +184,14 @@ def parse_tsv_2(tsv_file):
 	tsv_list = []
 	with open(tsv_file, 'r') as tsvfile, open('temp.csv', 'w') as tempfile:
 		# read in first line in tsvfile
-		if tsvfile.readline().startswith('#'):
-			tsv_list, fieldnames = read_file_skipping_comments(tsvfile, tsv_list, tempfile)
-		else:
+		if not tsvfile.readline().startswith('#'):
+			tsv_list=[]
 			reader = JsonReader(tsvfile)
 			fieldnames = reader.fieldnames
 			for row in reader:
 				tsv_list.append(row)
-	#import pdb; pdb.set_trace()
-		
-	
-	
+		else:
+			tsv_list, fieldnames = read_file_skipping_comments(tsvfile, tsv_list, tempfile)
 	return tsv_list, fieldnames
 
 def find_tu_type(tu_genes_info):
@@ -498,9 +519,7 @@ def create_gene_to_tu_matrix(rna_info, tu_info):
 	num_tus = len(tu_info)
 
 	gene_to_tu_matrix = np.zeros((num_rnas, num_tus))
-
 	rnas_gene_order = [row['geneId'] for row in rna_info]
-	#import pdb; pdb.set_trace()
 	reverse_index = {
 		row['geneId']: gene_index 
 		for gene_index, row in enumerate(rna_info)}
@@ -527,11 +546,11 @@ def create_rnaseq_count_vector(rnas_gene_order):
 	Gathers information needed based on the condition the model is 
 	being run in.
 	'''
-	rna_seq_data_all_cond = parse_tsv_2(RNA_SEQ_FILE)
-
+	rna_seq_data_all_cond = parse_tsv(RNA_SEQ_FILE)
+	#import pdb; pdb.set_trace()
 	rna_seq_data_index = {
 		row['Gene']: row[CONDITION] 
-		for row in rna_seq_data_all_cond}
+		for row in rna_seq_data_all_cond[0]}
 
 	rna_seq_counts_vector = [
 		rna_seq_data_index[gene] 
@@ -570,9 +589,8 @@ def make_transcription_units_file():
 		Run all the functions necessary to get the transcription counts vector 
 		output as transcription_units.tsv.
 	'''
-	tu_info = parse_tsv_2(TU_FILE)
-	rna_info = parse_tsv_2(RNA_FILE)
-	gene_tu_matrix, rnas_gene_order = create_gene_to_tu_matrix(rna_info, tu_info)
+	tu_info, fieldnames_rna = parse_tsv_2(TU_FILE)
+	gene_tu_matrix, rnas_gene_order = create_gene_to_tu_matrix(RNA_INFO, tu_info)
 	rna_seq_counts_vector = create_rnaseq_count_vector(rnas_gene_order)
 	tu_counts = create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info)
 	fieldnames = ['tu_id', 'tu_count']
@@ -587,6 +605,42 @@ def make_transcription_units_file():
 		writer = csv.writer(f, delimiter=' ')
 		for row in gene_tu_matrix:
 			writer.writerow(row)
+
+def make_new_proteins_file(output_file):
+	'''
+	TODO:
+	Check if the key monomer set exists.
+	'''
+
+	#import pdb; pdb.set_trace()
+	protein_info, protein_fieldnames = parse_tsv(PROTEIN_FILE)
+	rna_info, rna_fieldnames = parse_tsv_2(TU_FILE)
+
+	#Go through monomerSet line by line. Find the matching monomers within
+	#those lists then find the corresponding monomer in proteins.tsv.
+	#Add the id from operon_rnas to the rnaSet list
+
+	protein_index = {}
+	for protein_row in protein_info:
+		protein_row['rnaSet'] = []
+		protein_index[protein_row['id']] = protein_row
+
+	
+	for rna_row in rna_info:
+		for monomer in rna_row['monomerSet']:
+			protein_row = protein_index[monomer]
+			protein_row['rnaSet'].append(rna_row['id'])	
+
+	
+	#add fieldname for 'monomersets'
+	protein_fieldnames.append('rnaSet')
+
+	with open(output_file, "w") as f:
+		writer = JsonWriter(f, protein_fieldnames)
+		writer.writeheader()
+		for protein_row in protein_info:
+			writer.writerow(protein_row)
+
 
 def remove_kms_file(km_file):
 	'''
@@ -606,3 +660,4 @@ if __name__ == "__main__":
 	make_operon_rnas_file()
 	make_transcription_units_file()
 	remove_kms_file(km_file)
+	make_new_proteins_file(output_proteins)
