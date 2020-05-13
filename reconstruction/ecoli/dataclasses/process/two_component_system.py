@@ -291,9 +291,7 @@ class TwoComponentSystem(object):
 
 		self._rates = build_ode.derivatives(self.symbolic_rates)
 		self._rates_jacobian = build_ode.derivatives_jacobian(self.symbolic_rates_jacobian)
-		self._stoich_matrix = self.stoichMatrix()  # Matrix is small and can be cached
-
-		# TODO(jerry): Also JIT-compile derivatives_flipped() and derivatives_jacobian_flipped()?
+		self._stoich_matrix = self.stoichMatrix()  # Matrix is small and can be cached for derivatives
 
 		# WORKAROUND: Avoid Numba LoweringError JIT-compiling these functions:
 		self.derivatives_parca = build_ode.derivatives(self.derivativesParcaSymbolic, jit=False)
