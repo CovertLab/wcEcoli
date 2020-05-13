@@ -102,6 +102,9 @@ correct condiditon data is being used.
 - Dont allow for deletion of a gene without incorporation in a TU.
 
 -Import helper functions from another file.
+- Fix parse tsv2.
+- Allow protiens.tsv to overwrite itself, check if rnaset column already exists
+- Make parameters consistent across functions.
 '''
 def parse_args():
 	'''
@@ -126,13 +129,13 @@ POLY_CISTRON_FILE = parse_args()
 GENOME_SEQUENCE_FILE = os.path.join(FLAT_DIR, 'flattened_sequence.fasta')
 km_file = os.path.join('fixtures', 'endo_km', 'km.cPickle')
 RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv')
-PROTEIN_FILE = os.path.join(FLAT_DIR, 'proteins.tsv')
+PROTEIN_FILE = os.path.join(FLAT_DIR, 'proteins_old.tsv')
 
 # output files
 TU_FILE = os.path.join(FLAT_DIR, 'operon_rnas.tsv')
 output_tu_counts = os.path.join(FLAT_DIR, "transcription_units.tsv")
 output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix.tsv")
-output_proteins = os.path.join(FLAT_DIR, "protiens_1.tsv")
+output_proteins = os.path.join(FLAT_DIR, "proteins.tsv")
 
 CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
