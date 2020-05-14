@@ -16,7 +16,6 @@ import cPickle
 import re
 import os
 from typing import Tuple
-import numpy as np
 
 from wholecell.fireworks.firetasks import SimulationTask, VariantSimDataTask
 from wholecell.utils import constants, data, scriptBase
@@ -43,23 +42,31 @@ class ppGpp():
 
 		return new_value, diff
 
-	def perturb_sim_data(self, sim_data_file, iteration):
+	def perturb_sim_data(self, sim_data_file, parameter):
 		# with open(sim_data_file) as f:
 		# 	sim_data = cPickle.load(f)
 		sim_data = sim_data_file.copy()
 
-		parameter = self.get_parameter(iteration)
 		sim_data[parameter] = self.update_parameter_value(sim_data, parameter)[0]
 
 		return sim_data
 
-	def update_sim_data(self, sim_data_file, iteration, old_objective, new_objective):
+	def get_parameter_update(self, sim_data_file, parameter, old_objective, new_objective):
 		# with open(sim_data_file) as f:
 		# 	sim_data = cPickle.load(f)
 		sim_data = sim_data_file.copy()
 
-		parameter = self.get_parameter(iteration)
-		sim_data[parameter] -= self.learning_rate * (new_objective - old_objective) / self.update_parameter_value(sim_data, parameter)[1]
+		update = self.learning_rate * (new_objective - old_objective) / self.update_parameter_value(sim_data, parameter)[1]
+
+		return update
+
+	def update_sim_data(self, sim_data_file, updates):
+		# with open(sim_data_file) as f:
+		# 	sim_data = cPickle.load(f)
+		sim_data = sim_data_file.copy()
+
+		for parameter, update in zip(self.parameters, updates):
+			sim_data[parameter] -= update
 
 		return sim_data
 
@@ -70,7 +77,7 @@ class ppGpp():
 		# Load listeners
 		y0 = 1
 		y = 10*sim_data_file['a'] + 5*sim_data_file['a']*sim_data_file['b']
-		objective = np.abs(y - y0)
+		objective = (y - y0)**2
 
 		return objective
 
@@ -162,17 +169,22 @@ class RunSimulation(scriptBase.ScriptBase):
 		fp.write_json_file(metadata_path, metadata)
 
 		method = PARAMETER_METHODS[args.method]()
-		sim_data = {'a': 1, 'b': 1}
-		sim_out_dir = None  # run sim
-		objective = method.get_objective_value(sim_data, sim_out_dir)
+		sim_data = {'a': 1, 'b': 1}  # TODO: handle sim_data file
 		for i in range(args.iterations):
-			perturbed_sim_data = method.perturb_sim_data(sim_data, i)
+			sim_out_dir = None  # TODO: run sim, handle out dirs
+			objective = method.get_objective_value(sim_data, sim_out_dir)
 
-			sim_out_dir = None  # run sim
+			# Check all parameters before updating objective for faster convergence
+			updates = []
+			for parameter in method.parameters:
+				perturbed_sim_data = method.perturb_sim_data(sim_data, parameter)
 
-			new_objective = method.get_objective_value(perturbed_sim_data, sim_out_dir)
-			sim_data = method.update_sim_data(sim_data, i, objective, new_objective)
-			objective = new_objective
+				sim_out_dir = None  # TODO: run sim, handle out dirs
+
+				new_objective = method.get_objective_value(perturbed_sim_data, sim_out_dir)
+				updates.append(method.get_parameter_update(sim_data, parameter, objective, new_objective))
+
+			sim_data = method.update_sim_data(sim_data, updates)
 			print('It {}: {}\n\t{}'.format(i, new_objective, sim_data))
 
 		import ipdb; ipdb.set_trace()
