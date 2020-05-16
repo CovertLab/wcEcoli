@@ -245,13 +245,13 @@ def replace_uncertain_entries(data):
 				std = entry.get('std', 0)
 				new_direction = np.sign(mean)
 				if new_direction * direction < 0:  # both have opposite signs
-					line[2] = '{:.2f}'.format(mean)
+					line[2] = '{:.2f}'.format(np.abs(mean))
 					line[3] = '{:.2f}'.format(std)
 					line[5] = '{:.0f}'.format(new_direction)
 
 			# Write updated lines to file
 			line = [tf, gene, float(line[2]), float(line[3]), float(line[4]),
-				direction, int(line[6]), int(line[7]), float(line[8])]
+				int(line[5]), int(line[6]), int(line[7]), float(line[8])]
 			d = {header: value for header, value in zip(headers, line)}
 			writer.writerow(d)
 
