@@ -5,6 +5,7 @@ Modifies:
 	sim_data.condition
 	sim_data.external_state.current_timeline_id
 
+TODO: update for succinate and create index on load to prevent constant updating
 Expected variant indices (dependent on sorted order of sim_data.conditionActiveTfs):
 	0: acetate
 	1: control

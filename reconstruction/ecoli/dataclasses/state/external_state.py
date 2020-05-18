@@ -130,8 +130,10 @@ class ExternalState(object):
 		importExchangeMolecules = set()
 		secretionExchangeMolecules = self.secretion_exchange_molecules
 
+		# TODO: add molecule group for carbon sources
 		glc_id = 'GLC[p]'
 		acetate_id = 'ACET[p]'
+		succinate_id = 'SUC[p]'
 		oxygen_id = 'OXYGEN-MOLECULE[p]'
 
 		exchange_molecules = {self.env_to_exchange_map[mol]: conc for mol, conc in molecules.iteritems()}
@@ -143,6 +145,7 @@ class ExternalState(object):
 		importExchangeMolecules.update(importUnconstrainedExchangeMolecules)
 		externalExchangeMolecules.update(importUnconstrainedExchangeMolecules)
 
+		# TODO: functionalize limits
 		# Limit glucose uptake if present depending on the presence of oxygen
 		importConstrainedExchangeMolecules = {}
 		if glc_id in importUnconstrainedExchangeMolecules:
@@ -155,6 +158,10 @@ class ExternalState(object):
 		if acetate_id in importUnconstrainedExchangeMolecules:
 			importConstrainedExchangeMolecules[acetate_id] = 16. * (units.mmol / units.g / units.h)
 			importUnconstrainedExchangeMolecules.remove(acetate_id)
+
+		if succinate_id in importUnconstrainedExchangeMolecules:
+			importConstrainedExchangeMolecules[succinate_id] = 16. * (units.mmol / units.g / units.h)
+			importUnconstrainedExchangeMolecules.remove(succinate_id)
 
 		externalExchangeMolecules.update(secretionExchangeMolecules)
 
