@@ -5,13 +5,12 @@ Raw data processed into forms convenient for whole-cell modeling
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
-from __future__ import division
 
-import numpy as np
+from __future__ import division, print_function
+
 import collections
 
-# Raw data class
-from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
+import numpy as np
 
 # Data classes
 from reconstruction.ecoli.dataclasses.getterFunctions import getterFunctions
@@ -25,9 +24,9 @@ from reconstruction.ecoli.dataclasses.process.process import Process
 from reconstruction.ecoli.dataclasses.growthRateDependentParameters import Mass, GrowthRateParameters
 from reconstruction.ecoli.dataclasses.relation import Relation
 
-from wholecell.utils import units
 
 VERBOSE = False
+
 
 class SimulationDataEcoli(object):
 	""" SimulationDataEcoli """
@@ -150,9 +149,9 @@ class SimulationDataEcoli(object):
 			self.tfToFC[tf][target] = FC
 
 		if VERBOSE:
-			print "The following target genes listed in foldChanges.tsv have no corresponding entry in genes.tsv:"
+			print("The following target genes listed in foldChanges.tsv have no corresponding entry in genes.tsv:")
 			for item in notFound:
-				print item
+				print(item)
 
 		self.tfToActiveInactiveConds = {}
 		for row in raw_data.condition.tf_condition:
@@ -165,7 +164,7 @@ class SimulationDataEcoli(object):
 			if tf not in self.tfToActiveInactiveConds:
 				self.tfToActiveInactiveConds[tf] = {}
 			else:
-				print "Warning: overwriting TF fold change conditions for %s" % tf
+				print("Warning: overwriting TF fold change conditions for %s" % tf)
 
 			self.tfToActiveInactiveConds[tf]["active genotype perturbations"] = activeGenotype
 			self.tfToActiveInactiveConds[tf]["active nutrients"] = activeNutrients
