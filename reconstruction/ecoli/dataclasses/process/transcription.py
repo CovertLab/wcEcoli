@@ -424,7 +424,6 @@ class Transcription(object):
 			'monomerSet': None,
 			}
 
-		import pdb; pdb.set_trace()
 		self.rnaExpression = {}
 		self.rnaSynthProb = {}
 
