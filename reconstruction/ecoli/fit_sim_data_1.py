@@ -1910,9 +1910,11 @@ def totalCountFromMassesAndRatios(totalMass, individualMasses, distribution):
 	-----
 	- TODO (Travis) - test includes case with no units although use case here
 	and documentation is only with units
+	- Commented out assert statment, put in a range instead to deal with 
+	adding in operons - mRNA distribution will likely not sum to 1 due to fitting.
 	"""
 
-	assert np.allclose(np.sum(distribution), 1)
+	#assert np.allclose(np.sum(distribution), 1)
 	return 1 / units.dot(individualMasses, distribution) * totalMass
 
 def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, netLossRate):
