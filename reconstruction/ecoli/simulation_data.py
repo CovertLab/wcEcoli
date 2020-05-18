@@ -116,13 +116,8 @@ class SimulationDataEcoli(object):
 
 
 	def _addConditionData(self, raw_data):
-		self.conditionToDoublingTime = dict([(x["condition"].encode("utf-8"), x["doubling time"]) for x in raw_data.condition.condition_defs])
-		self.conditionActiveTfs = dict([(x["condition"].encode("utf-8"), x["active TFs"]) for x in raw_data.condition.condition_defs])
-
 		abbrToActiveId = dict([(x["TF"].encode("utf-8"), x["activeId"].encode("utf-8").split(", ")) for x in raw_data.tfIds if len(x["activeId"]) > 0])
-
 		geneIdToRnaId = dict([(x["id"].encode("utf-8"), x["rnaId"].encode("utf-8")) for x in raw_data.genes])
-
 		abbrToRnaId = dict(
 			[(x["symbol"].encode("utf-8"), x["rnaId"].encode("utf-8")) for x in raw_data.genes] +
 			[(x["name"].encode("utf-8"), geneIdToRnaId[x["geneId"].encode("utf-8")]) for x in raw_data.translationEfficiency if x["geneId"] != "#N/A"]
@@ -177,29 +172,19 @@ class SimulationDataEcoli(object):
 			self.tfToActiveInactiveConds[tf]["inactive genotype perturbations"] = inactiveGenotype
 			self.tfToActiveInactiveConds[tf]["inactive nutrients"] = inactiveNutrients
 
+		# Populate combined conditions data from condition_defs
 		self.conditions = {}
+		self.conditionToDoublingTime = {}
+		self.conditionActiveTfs = {}
 		for row in raw_data.condition.condition_defs:
 			condition = row["condition"].encode("utf-8")
 			self.conditions[condition] = {}
 			self.conditions[condition]["nutrients"] = row["nutrients"].encode("utf-8")
 			self.conditions[condition]["perturbations"] = row["genotype perturbations"]
+			self.conditionToDoublingTime[condition] = row['doubling time']
+			self.conditionActiveTfs[condition] = row['active TFs']
 
-		for tf in sorted(self.tfToActiveInactiveConds):
-			activeCondition = tf + "__active"
-			inactiveCondition = tf + "__inactive"
-
-			if activeCondition in self.conditionActiveTfs:
-				del self.conditionActiveTfs[activeCondition]
-			if inactiveCondition in self.conditionActiveTfs:
-				del self.conditionActiveTfs[inactiveCondition]
-
-			self.conditions[activeCondition] = {}
-			self.conditions[inactiveCondition] = {}
-			self.conditions[activeCondition]["nutrients"] = self.tfToActiveInactiveConds[tf]["active nutrients"]
-			self.conditions[inactiveCondition]["nutrients"] = self.tfToActiveInactiveConds[tf]["inactive nutrients"]
-			self.conditions[activeCondition]["perturbations"] = self.tfToActiveInactiveConds[tf]["active genotype perturbations"]
-			self.conditions[inactiveCondition]["perturbations"] = self.tfToActiveInactiveConds[tf]["inactive genotype perturbations"]
-
+		# Populate nutrientToDoubling for each set of combined conditions
 		self.nutrientToDoublingTime = {}
 		for condition in self.conditionToDoublingTime:
 			if len(self.conditions[condition]["perturbations"]) > 0:
@@ -208,3 +193,14 @@ class SimulationDataEcoli(object):
 			if nutrientLabel in self.nutrientToDoublingTime and self.conditionToDoublingTime[condition] != self.nutrientToDoublingTime[nutrientLabel]:
 				raise Exception, "Multiple doubling times correspond to the same media conditions"
 			self.nutrientToDoublingTime[nutrientLabel] = self.conditionToDoublingTime[condition]
+
+		# Populate conditions and conditionToDboulingTime for active and inactive TF conditions
+		basal_dt = self.conditionToDoublingTime['basal']
+		for tf in sorted(self.tfToActiveInactiveConds):
+			for status in ['active', 'inactive']:
+				condition = '{}__{}'.format(tf, status)
+				nutrients = self.tfToActiveInactiveConds[tf]['{} nutrients'.format(status)]
+				self.conditions[condition] = {}
+				self.conditions[condition]['nutrients'] = nutrients
+				self.conditions[condition]['perturbations'] = self.tfToActiveInactiveConds[tf]['{} genotype perturbations'.format(status)]
+				self.conditionToDoublingTime[condition] = self.nutrientToDoublingTime.get(nutrients, basal_dt)
