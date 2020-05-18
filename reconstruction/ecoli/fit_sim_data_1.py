@@ -3288,7 +3288,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	km_filepath = os.path.join(fixturesDir, "km.cPickle")
 
 	# Removing so that kms are calculated each time by default
-	'''
+
 	if os.path.exists(km_filepath):
 		print('km filepath exists')
 		with open(km_filepath, "rb") as f:
@@ -3301,13 +3301,10 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		# whether the cache fits current input data.
 		print("about do do a summation")
 		print("R_aux(KmcountsCached")
-		import pdb; pdb.set_trace()
 		if np.sum(np.abs(R_aux(KmcountsCached))) > 1e-15:
 			needToUpdate = True
 	else:
 		needToUpdate = True
-	'''
-	needToUpdate = True
 
 	if needToUpdate:
 		rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
