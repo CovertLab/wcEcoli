@@ -159,9 +159,9 @@ class Transcription(object):
 		assert all([len(rna['location']) == 1 for rna in raw_data.operon_rnas])
 
 		# Loads RNA IDs, degradation rates, lengths, and nucleotide compositions
-		rnaIds = ['{}[{}]'.format(rna['id'], rna['location'][0])
+		rnaIds = ['{}[{}]'.format(rna['id'], rna['location'][0]) 
 			for rna in raw_data.operon_rnas]
-		#import ipdb; ipdb.set_trace()
+		max_rnaId_len = max(len(rnaId) for rnaId in rnaIds)
 		rnaDegRates = np.log(2) / np.array([rna['halfLife'] for rna in raw_data.operon_rnas]) # TODO: units
 		rnaLens = np.array([len(rna['seq']) for rna in raw_data.operon_rnas])
 
@@ -211,7 +211,7 @@ class Transcription(object):
 		# Load molecular weights and gene IDs
 		mws = np.array([rna['mw'] for rna in raw_data.operon_rnas]).sum(axis = 1)
 		geneIds = np.array([rna['geneId'] for rna in raw_data.operon_rnas])
-
+		max_geneId_len = max(len(geneId) for geneId in geneIds)
 		# Construct boolean arrays and index arrays for each rRNA type
 		n_rnas = len(rnaIds)
 		is_23S = np.zeros(n_rnas, dtype = np.bool)
@@ -353,7 +353,7 @@ class Transcription(object):
 		rnaData = np.zeros(
 			n_rnas,
 			dtype = [
-				('id', 'a50'),
+				('id', 'a{}'.format(max_rnaId_len)),
 				('degRate', 'f8'),
 				('length', 'i8'),
 				('countsACGU', '4i8'),
@@ -424,6 +424,7 @@ class Transcription(object):
 			'monomerSet': None,
 			}
 
+		import pdb; pdb.set_trace()
 		self.rnaExpression = {}
 		self.rnaSynthProb = {}
 
