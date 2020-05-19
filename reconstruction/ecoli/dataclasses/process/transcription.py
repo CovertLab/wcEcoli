@@ -785,10 +785,14 @@ class Transcription(object):
 		f_ppgpp_aa = self.fraction_rnap_bound_ppgpp(ppgpp_aa)
 		f_ppgpp_basal = self.fraction_rnap_bound_ppgpp(ppgpp_basal)
 
-		rna_idx = {r[:-3]: i for i, r in enumerate(self.rnaData['id'])}
+		# TODO (TEG) actually map a ppGpp adjustment to polycistrons, currently implemented a sketch work around
+		# rna_idx = {r[:-3]: i for i, r in enumerate(self.rnaData['id'])}
 		fcs = np.zeros(len(self.rnaData))
-		for rna, fc in zip(self.ppgpp_regulated_genes, self.ppgpp_fold_changes):
-			fcs[rna_idx[rna]] = fc
+		rna_fc_dict = dict(zip(self.ppgpp_regulated_genes, self.ppgpp_fold_changes))
+		for i, rna in enumerate(self.rnaData['id']):
+			if rna in rna_fc_dict:
+				fcs[i] = rna_fc_dict[rna]
+				
 		exp = self.rnaExpression['basal']
 		self.exp_ppgpp = ((2**fcs * exp * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))
 			/ (1 - 2**fcs * (f_ppgpp_aa - f_ppgpp_basal * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))))
