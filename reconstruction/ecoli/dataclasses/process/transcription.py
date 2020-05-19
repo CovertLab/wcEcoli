@@ -368,7 +368,7 @@ class Transcription(object):
 				('isRProtein', 'bool'),
 				('isRnap',	'bool'),
 				('sequence', 'a{}'.format(maxSequenceLength)),
-				('geneId', 'a50'),
+				('geneId', 'a{}'.format(max_geneId_len)),
 				('KmEndoRNase', 'f8'),
 				('replicationCoordinate', 'int64'),
 				('direction', 'bool'),
