@@ -324,13 +324,14 @@ class Equilibrium(object):
 		dYMolecules = yMolecules[-1, :] - yMolecules[0, :]
 		for i in range(max_iter):
 			rxnFluxes = stochasticRound(random_state, np.dot(self.metsToRxnFluxes, dYMolecules))
-			rxnFluxesN = -1. * (rxnFluxes < 0) * rxnFluxes
-			rxnFluxesP =  1. * (rxnFluxes > 0) * rxnFluxes
-			moleculesNeeded = np.dot(self.Rp, rxnFluxesP) + np.dot(self.Pp, rxnFluxesN)
-			if np.all(moleculeCounts >= moleculesNeeded):
+			if np.all(moleculeCounts + self._stoichMatrix.dot(rxnFluxes) >= 0):
 				break
 		else:
 			raise ValueError('Negative counts in equilibrium steady state.')
+
+		rxnFluxesN = -1. * (rxnFluxes < 0) * rxnFluxes
+		rxnFluxesP =  1. * (rxnFluxes > 0) * rxnFluxes
+		moleculesNeeded = np.dot(self.Rp, rxnFluxesP) + np.dot(self.Pp, rxnFluxesN)
 
 		return rxnFluxes, moleculesNeeded
 
