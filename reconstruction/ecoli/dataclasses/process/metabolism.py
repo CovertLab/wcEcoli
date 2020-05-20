@@ -114,15 +114,16 @@ class Metabolism(object):
 				conc = row['Lempp Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			else:
 				# Use average of both sources
-				# TODO: handle mean of empty slice warning
 				conc = np.nanmean([
 					row[source].asNumber(METABOLITE_CONCENTRATION_UNITS)
 					for source in concentration_sources
 					])
 
-				# Fallback if concentration is only in Bennett dataset
+				# Check that a value was in the datasets being used
 				if not np.isfinite(conc):
-					conc = row['Bennett Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
+					if VERBOSE:
+						print('No concentration in active datasets for {}'.format(metabolite_id))
+					continue
 
 			if metabolite_id in wildtypeIDtoCompartment:
 				metaboliteIDs.append(
