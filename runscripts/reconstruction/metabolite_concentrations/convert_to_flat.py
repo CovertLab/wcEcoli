@@ -22,10 +22,17 @@ import numpy as np
 from typing import Dict, Iterable
 
 
+# Directories
 FILE_LOCATION = os.path.realpath(os.path.dirname(__file__))
-LEMPP_INPUT = os.path.join(FILE_LOCATION, 'lempp2019.tsv')
-PARK_INPUT = os.path.join(FILE_LOCATION, 'park2016.tsv')
-OUTPUT_FILE = os.path.join(FILE_LOCATION, '{}_concentrations.tsv')
+DATA_DIR = os.path.join(FILE_LOCATION, 'data')
+OUT_DIR = os.path.join(FILE_LOCATION, 'out')
+if not os.path.exists(OUT_DIR):
+	os.makedirs(OUT_DIR)
+
+# Files
+LEMPP_INPUT = os.path.join(DATA_DIR, 'lempp2019.tsv')
+PARK_INPUT = os.path.join(DATA_DIR, 'park2016.tsv')
+OUTPUT_FILE = os.path.join(OUT_DIR, '{}_concentrations.tsv')
 
 # Correct EcoCyc IDs to match the whole-cell model ID
 ECOCYC_SUBSTITUTIONS = {
