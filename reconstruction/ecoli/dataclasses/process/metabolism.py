@@ -26,13 +26,11 @@ from wholecell.utils import units
 
 
 PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
-ILE_LEU_CONCENTRATION = 3.03e-4  # M, Bennett et al. 2009
-ILE_FRACTION = 0.360  # the fraction of iso/leucine that is isoleucine; computed from our monomer data
 ECOLI_PH = 7.2
 MICROMOLAR_UNITS = units.umol / units.L
 METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
 
-USE_ALL_CONSTRAINTS = False # False will remove defined constraints from objective
+USE_ALL_CONSTRAINTS = False  # False will remove defined constraints from objective
 
 REVERSE_TAG = ' (reverse)'
 REVERSE_REACTION_ID = '{{}}{}'.format(REVERSE_TAG)
@@ -136,30 +134,13 @@ class Metabolism(object):
 
 			metaboliteConcentrations.append(conc)
 
-		# ILE/LEU: split reported concentration according to their relative abundances
-		# ileRelative = ILE_FRACTION
-		# leuRelative = 1 - ileRelative
-		#
-		# metaboliteIDs.append("ILE[c]")
-		# metaboliteConcentrations.append(ileRelative * ILE_LEU_CONCENTRATION)
-		#
-		# metaboliteIDs.append("LEU[c]")
-		# metaboliteConcentrations.append(leuRelative * ILE_LEU_CONCENTRATION)
-
-		# CYS/SEC/GLY: concentration based on other amino acids
+		# CYS/SEL: concentration based on other amino acids
 		aaConcentrations = []
-
 		for aaIndex, aaID in enumerate(sim_data.amino_acid_1_to_3_ordered.values()):
 			if aaID in metaboliteIDs:
 				metIndex = metaboliteIDs.index(aaID)
 				aaConcentrations.append(metaboliteConcentrations[metIndex])
-
 		aaSmallestConc = min(aaConcentrations)
-
-		metaboliteIDs.append("GLY[c]")
-		metaboliteConcentrations.append(
-			metaboliteConcentrations[metaboliteIDs.index("L-ALPHA-ALANINE[c]")]
-			)
 
 		metaboliteIDs.append("CYS[c]")
 		metaboliteConcentrations.append(aaSmallestConc)
@@ -169,12 +150,10 @@ class Metabolism(object):
 
 		# DGTP: set to smallest of all other DNTP concentrations
 		dntpConcentrations = []
-
 		for dntpIndex, dntpID in enumerate(sim_data.moleculeGroups.dNtpIds):
 			if dntpID in metaboliteIDs:
 				metIndex = metaboliteIDs.index(dntpID)
 				dntpConcentrations.append(metaboliteConcentrations[metIndex])
-
 		dntpSmallestConc = min(dntpConcentrations)
 
 		metaboliteIDs.append("DGTP[c]")
@@ -193,16 +172,16 @@ class Metabolism(object):
 		metaboliteIDs.append("PI[c]")
 		metaboliteConcentrations.append(PPI_CONCENTRATION)
 
-		# Add byproducts with no annotated concentration to force recycling
-		metaboliteIDs.append("UMP[c]")
-		metaboliteConcentrations.append(2.40e-5)
-
 		# include metabolites that are part of biomass
 		for key, value in sim_data.mass.getBiomassAsConcentrations(sim_data.doubling_time).iteritems():
 			metaboliteIDs.append(key)
 			metaboliteConcentrations.append(value.asNumber(METABOLITE_CONCENTRATION_UNITS))
 
 		# save concentrations as class variables
+		unique_ids, counts = np.unique(metaboliteIDs, return_counts=True)
+		if np.any(counts > 1):
+			raise ValueError('Multiple concentrations for metabolite(s): {}'.format(', '.join(unique_ids[counts > 1])))
+
 		self.concentrationUpdates = ConcentrationUpdates(dict(zip(
 			metaboliteIDs,
 			METABOLITE_CONCENTRATION_UNITS * np.array(metaboliteConcentrations)
