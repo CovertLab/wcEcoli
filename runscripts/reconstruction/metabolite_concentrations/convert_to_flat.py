@@ -124,7 +124,7 @@ def kegg_to_ecocyc(kegg_ids):
 		if line[1] == '1':
 			mol_id = line[0].split(id_type)[1]
 			ecocyc_id = line[2]
-			mapping[mol_id] = ECOCYC_SUBSTITUIONS.get(ecocyc_id, ecocyc_id)
+			mapping[mol_id] = ECOCYC_SUBSTITUTIONS.get(ecocyc_id, ecocyc_id)
 
 	return mapping
 
