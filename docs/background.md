@@ -104,6 +104,24 @@ Useful network topologies can be saved in [models/ecoli/analysis/causality_netwo
 
 ## Adding to the codebase
 ### New raw data
+1. Add a raw data file to [reconstruction/ecoli/flat/](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/flat). Data is stored in a `.tsv` file format with special formatting handling to allow units (specified in parantheses in column headers), lists, dictionaries and comments (lines starting with `#`).
+1. Annotate where the data came from in a comment at the top of the file (URL for the data source and/or script used for processing original data - [see example](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/flat/metabolism_kinetics.tsv)). If a script was required, add it to [runscripts/reconstruction](https://github.com/CovertLab/wcEcoli/tree/master/runscripts/reconstruction).
+1. Add the filename to `LIST_OF_DICT_FILENAMES` in [knowledge_base_raw.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/knowledge_base_raw.py). This will cause the data to be loaded into the class when an instance of `KnowledgeBaseEcoli` is created.
+1. Access the data in the appropriate reconstruction class (eg [processes](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/process) or [states](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/state)) by accessing the `raw_data` attribute (eg. `raw_data.new_file` for a file named `new_file.tsv`)
+
+**NOTE:** if there are issues loading the new file, try saving it using `JsonWriter` from [reconstruction/spreadsheets.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/spreadsheets.py) to ensure proper formatting:
+```python
+import csv
+from reconstruction.spreadsheets import JsonWriter
+
+headers = ['a', 'b']
+with open('output.tsv', 'w') as f:
+    writer = JsonWriter(f, headers, dialect=csv.excel_tab)
+    writer.writeheader()
+    writer.writerow({'a': 1, 'b': 2})  # write as many rows of data as needed
+```
+
+### New validation data
 
 ### New process
 
