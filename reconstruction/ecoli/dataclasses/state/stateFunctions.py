@@ -5,7 +5,7 @@ def addToStateCommon(bulkState, ids, masses):
 	newAddition = np.zeros(
 		len(ids),
 		dtype = [
-			("id", "a50"),
+			("id", "a1000"),
 			("mass", "{}f8".format(masses.asNumber().shape[1])), # TODO: Make this better
 			]
 		)
@@ -14,7 +14,10 @@ def addToStateCommon(bulkState, ids, masses):
 
 	newAddition["id"] = ids
 	newAddition["mass"] = masses.asNumber()
-
+	#try:
+		#np.hstack((bulkState.fullArray(), newAddition))
+	#except:
+		#import pdb; pdb.set_trace()
 	return UnitStructArray(np.hstack((bulkState.fullArray(), newAddition)), bulkState.units)
 
 def createIdsInAllCompartments(ids, compartments):

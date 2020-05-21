@@ -1256,7 +1256,7 @@ def createBulkContainer(sim_data, expression, doubling_time):
 
 	total_count_protein, ids_protein, distribution_protein = totalCountIdDistributionProtein(sim_data, expression, doubling_time)
 	ids_molecules = sim_data.internal_state.bulkMolecules.bulkData["id"]
-
+	#import pdb; pdb.set_trace()
 	# Construct bulk container
 	bulkContainer = BulkObjectsContainer(ids_molecules, dtype = np.float64)
 
@@ -1432,9 +1432,6 @@ def setRNAPCountsConstrainedByPhysiology(
 			sim_data.process.transcription.rnaData["degRate"],
 			bulkContainer.counts(sim_data.process.transcription.rnaData['id'])
 		)
-		#import pdb; pdb.set_trace()
-		#print('deg rate  = ' + str(sum(sim_data.process.transcription.rnaData["degRate"])))
-		print('counts sum = ' + str(sum(bulkContainer.counts(sim_data.process.transcription.rnaData['id']))))
 	else:
 		# Get constants to compute countsToMolar factor
 		cellDensity = sim_data.constants.cellDensity

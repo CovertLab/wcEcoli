@@ -105,6 +105,9 @@ correct condiditon data is being used.
 - Fix parse tsv2.
 - Allow protiens.tsv to overwrite itself, check if rnaset column already exists
 - Make parameters consistent across functions.
+- check that directions of genes in a TU match
+-fix furure warning
+
 '''
 def parse_args():
 	'''

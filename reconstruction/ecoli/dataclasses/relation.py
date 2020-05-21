@@ -45,7 +45,6 @@ class Relation(object):
 		rnaData_id_index = {}
 		for idx, row in enumerate(sim_data.process.transcription.rnaData):
 			rnaData_id_index[row['id']] = idx
-
 		self.rnaIndexToMonomerMapping_new = []
 		for protein_row in sim_data.process.translation.monomerData:
 			set_indices = []
