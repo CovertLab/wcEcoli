@@ -130,6 +130,19 @@ with open('output.tsv', 'w') as f:
 ### New listener
 
 ### New analysis
+This outlines how to add a new single analysis plot called `new_analysis.py`.  For other types of analysis, only the directory needs to be changed.  New analysis plots might require additional simulation data to be saved to disk by adding entries to an existing listener or creating a new listener (see 'New listener' section above).
+1. Decide which level of analysis is appropriate (single, multigen, cohort, variant - see 'Analysis' section above for differences between each).
+1. Create a new file by copying  the `template.py` file in the directory for desired analysis type (single, multigen, cohort, variant) in [models/ecoli/analysis/](https://github.com/CovertLab/wcEcoli/tree/master/models/ecoli/analysis).
+    ```
+    cp models/ecoli/analysis/single/template.py models/ecoli/analysis/single/new_analysis.py
+    ```
+1. Add the new plot (`"new_analysis.py"`) to the desired lists in `__init__.py` in the appropriate analysis directory (eg [for single analysis](https://github.com/CovertLab/wcEcoli/blob/master/models/ecoli/analysis/single/__init__.py)).
+    - Always add to `ACTIVE` so that continuous integration tests the new plot
+    - If desired, add to `CORE` to run with default analysis if the new analysis is useful in most simulation circumstances
+    - If desired, add to other lists in `TAGS` to run with groups of plots for more specific analysis (eg. `METABOLISM`, `TRANSCRIPTION`, `TRANSLATION`, etc.) when using the manual scripts with the `-p` flag.  For example, to run all plots in the METABOLISM tag for a sim in out/manual:
+        ```
+        python runscripts/manual/analysisSingle.py out/manual -p METABOLISM
+        ```
 
 
 ## Design factors
