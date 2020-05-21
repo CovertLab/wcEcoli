@@ -1,7 +1,6 @@
 """
 SimulationData mass data
 
-@author: Nick Ruggero
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 03/13/2015
 """
@@ -10,11 +9,14 @@ from __future__ import division
 
 import numpy as np
 from scipy import interpolate
-from wholecell.utils import units
 import unum
 
-DNA_CRITICAL_MASS = {100: 600, 44: 975} # units of fg
-FRACTION_INCREASE_RNAP_PROTEINS = {100: 0, 44: 0.05}
+from wholecell.utils import units
+
+
+NORMAL_CRITICAL_MASS = 975 * units.fg
+SLOW_GROWTH_FACTOR = 1.2  # adjustment for smaller cells
+
 
 class Mass(object):
 	""" Mass """
@@ -107,6 +109,26 @@ class Mass(object):
 		doubling_time = self._clipTau_d(doubling_time)
 		avgCellDryMass = units.fg * float(interpolate.splev(doubling_time.asNumber(units.min), self._dryMassParams))
 		return avgCellDryMass
+
+	def get_dna_critical_mass(self, doubling_time):
+		# type: (units.Unum) -> units.Unum
+		"""
+		Returns the critical mass for replication initiation.  Faster growing
+		cells maintain a consistent initiation mass but slower growing cells
+		are smaller and will never reach this mass so it needs to be adjusted
+		lower for them.
+
+		Args:
+			doubling_time (float with time units): expected doubling time of cell
+
+		Returns:
+			critical_mass (float with mass units): critical mass for DNA
+				replication initiation
+		"""
+
+		mass = self.getAvgCellDryMass(doubling_time) / self.cellDryMassFraction
+		critical_mass = min(mass * SLOW_GROWTH_FACTOR, NORMAL_CRITICAL_MASS)
+		return critical_mass
 
 	# Set mass fractions based on growth rate
 	def getMassFraction(self, doubling_time):
@@ -389,12 +411,6 @@ class GrowthRateParameters(object):
 	def getppGppConc(self, doubling_time):
 		return _useFitParameters(doubling_time, **self.ppGppConcentration) * self._per_dry_mass_to_per_volume
 
-	def getDnaCriticalMass(self, doubling_time):
-		return DNA_CRITICAL_MASS.get(doubling_time.asNumber(units.min), DNA_CRITICAL_MASS[44]) * units.fg
-
-	def getFractionIncreaseRnapProteins(self, doubling_time):
-		return FRACTION_INCREASE_RNAP_PROTEINS.get(doubling_time.asNumber(units.min), FRACTION_INCREASE_RNAP_PROTEINS[44])
-
 def _getFitParameters(list_of_dicts, key):
 	# Load rows of data
 	x = _loadRow('doublingTime', list_of_dicts)
@@ -416,13 +432,13 @@ def _getFitParameters(list_of_dicts, key):
 	y = y[idx_order]
 
 	# Generate fit
-	parameters = interpolate.splrep(x, y)
-	if np.sum(np.absolute(interpolate.splev(x, parameters) - y)) / y.size > 1.:
+	cs = interpolate.CubicSpline(x, y, bc_type='natural')
+	if np.sum(np.absolute(cs(x) - y)) / y.size > 1.:
 		raise Exception("Fitting {} with 3d spline, residuals are huge!".format(key))
 
-	return {'parameters' : parameters, 'x_units' : x_units, 'y_units' : y_units, 'dtype' : y.dtype}
+	return {'function': cs, 'x_units': x_units, 'y_units': y_units, 'dtype': y.dtype}
 
-def _useFitParameters(x_new, parameters, x_units, y_units, dtype):
+def _useFitParameters(x_new, function, x_units, y_units, dtype):
 	# Convert to same unit base
 	if units.hasUnit(x_units):
 		x_new = x_new.asNumber(x_units)
@@ -430,7 +446,7 @@ def _useFitParameters(x_new, parameters, x_units, y_units, dtype):
 		raise Exception("New x value has units but fit does not!")
 
 	# Calculate new interpolated y value
-	y_new = interpolate.splev(x_new, parameters)
+	y_new = function(x_new)
 
 	# If value should be an integer (i.e. an elongation rate)
 	# round to the nearest integer

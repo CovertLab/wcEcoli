@@ -521,9 +521,9 @@ def buildCombinedConditionCellSpecifications(
 
 	Notes
 	-----
-	- TODO - include TFs in the no_oxygen condition
-	- TODO - determine how to handle fold changes if multiple TFs change the
-	same gene (currently, an exception is raised)
+	- TODO - determine how to handle fold changes when multiple TFs change the
+	same gene because multiplying both fold changes together might not be
+	appropriate
 	"""
 
 	fcData = {}
@@ -535,12 +535,9 @@ def buildCombinedConditionCellSpecifications(
 		# Get expression from fold changes for each TF in the given condition
 		conditionValue = sim_data.conditions[conditionKey]
 		for tf in sim_data.conditionActiveTfs[conditionKey]:
-			for gene in sim_data.tfToFC[tf]:
-				if gene in fcData:
-					# fcData[gene] *= sim_data.tfToFC[tf][gene]
-					raise Exception("Check this implementation: multiple genes regulated")
-				else:
-					fcData[gene] = sim_data.tfToFC[tf][gene]
+			for gene, fc in sim_data.tfToFC[tf].items():
+				fcData[gene] = fcData.get(gene, 1) * fc
+
 		expression = expressionFromConditionAndFoldChange(
 			sim_data.process.transcription.rnaData["id"],
 			sim_data.process.transcription.rnaExpression["basal"],
@@ -1396,11 +1393,6 @@ def setRNAPCountsConstrainedByPhysiology(
 	(2) Expected RNAP subunit counts based on (mRNA) distribution recorded in
 		bulkContainer
 
-	Requires
-	--------
-	- the return value from getFractionIncreaseRnapProteins(doubling_time),
-	described in growthRateDependentParameters.py
-
 	Inputs
 	------
 	- bulkContainer (BulkObjectsContainer object) - counts of bulk molecules
@@ -1469,14 +1461,9 @@ def setRNAPCountsConstrainedByPhysiology(
 	nRnapsNeeded = nActiveRnapNeeded / sim_data.growthRateParameters.getFractionActiveRnap(doubling_time)
 
 	# Convert nRnapsNeeded to the number of RNA polymerase subunits required
-	# Note: The return value from getFractionIncreaseRnapProteins() is
-	# determined in growthRateDependentParameters.py
 	rnapIds = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitIds']
 	rnapStoich = sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitStoich']
-
-	minRnapSubunitCounts = (
-		nRnapsNeeded * rnapStoich # Subunit stoichiometry
-		) * (1 + sim_data.growthRateParameters.getFractionIncreaseRnapProteins(doubling_time))
+	minRnapSubunitCounts = nRnapsNeeded * rnapStoich
 
 	# -- CONSTRAINT 2: Expected RNAP subunit counts based on distribution -- #
 	rnapCounts = bulkContainer.counts(rnapIds)
@@ -1488,6 +1475,9 @@ def setRNAPCountsConstrainedByPhysiology(
 		print('rnap limit: {}'.format(constraint_names[np.where(rnapLims.max() == rnapLims)[0]][0]))
 		print('rnap actual count: {}'.format((rnapCounts / rnapStoich).min()))
 		print('rnap counts set to: {}'.format(rnapLims[np.where(rnapLims.max() == rnapLims)[0]][0]))
+
+	if np.any(minRnapSubunitCounts < 0):
+		raise ValueError('RNAP protein counts must be positive.')
 
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
 
@@ -1821,6 +1811,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 
 		# Iterate processes until metabolites converge to a steady-state
 		while np.linalg.norm(metDiffs, np.inf) > 1:
+			random_state = np.random.RandomState(seed)
 			metCounts = conc_metabolites * cellVolume * sim_data.constants.nAvogadro
 			metCounts.normalize()
 			metCounts.checkNoUnit()
@@ -1833,6 +1824,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 				equilibriumMoleculesView.counts(),
 				cellVolume.asNumber(units.L),
 				sim_data.constants.nAvogadro.asNumber(1 / units.mol),
+				random_state,
 				)
 			equilibriumMoleculesView.countsInc(
 				np.dot(sim_data.process.equilibrium.stoichMatrix().astype(np.int64), rxnFluxes)
