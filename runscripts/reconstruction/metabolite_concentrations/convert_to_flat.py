@@ -21,6 +21,8 @@ from __future__ import absolute_import, division, print_function
 
 import csv
 import os
+import sys
+import time
 import urllib
 
 import numpy as np
@@ -38,7 +40,9 @@ if not os.path.exists(OUT_DIR):
 LEMPP_INPUT = os.path.join(DATA_DIR, 'lempp2019.tsv')
 PARK_INPUT = os.path.join(DATA_DIR, 'park2016.tsv')
 KOCHANOWSKI_ABSOLUTE_INPUT = os.path.join(DATA_DIR, 'kochanowski2017absolute.tsv')
-OUTPUT_FILE = os.path.join(OUT_DIR, '{}_concentrations.tsv')
+KOCHANOWSKI_RELATIVE_INPUT = os.path.join(DATA_DIR, 'kochanowski2017relative.tsv')
+ABSOLUTE_OUTPUT_FILE = os.path.join(OUT_DIR, '{}_concentrations.tsv')
+RELATIVE_OUTPUT_FILE = os.path.join(OUT_DIR, 'relative_metabolite_concentrations.tsv')
 
 # Correct EcoCyc IDs to match the whole-cell model ID
 ECOCYC_SUBSTITUTIONS = {
@@ -48,6 +52,10 @@ ECOCYC_SUBSTITUTIONS = {
 	}
 
 # Kochanowski mappings
+## Special media IDs used later (implemented in WCM)
+GLC_MEDIA = 'minimal'
+ACETATE_MEDIA = 'minimal_acetate'
+SUCCINATE_MEDIA = 'minimal_succinate'
 ## Map metabolite column to wcm IDs (not all could be matched)
 KOCHANOWSKI_METABOLITES = {
 	'Glycerol-P': 'GLYCEROL-3P',
@@ -101,18 +109,18 @@ KOCHANOWSKI_METABOLITES = {
 ## Map media headers to wcm IDs (not all are currently valid media)
 KOCHANOWSKI_MEDIA = {
 	' M9 galactose 2g per L': 'minimal_galactose',
-	' M9 acetate 3.6g per L': 'minimal_acetate',
+	' M9 acetate 3.6g per L': ACETATE_MEDIA,
 	' M9 mannose 2g per L': 'minimal_mannose',
 	' M9 pyruvate 5g per L': 'minimal_pyruvate',
 	' M9 lactate 5g per L': 'minimal_lactate',
 	' M9 glycerol 2g per L': 'minimal_glycerol',
 	' M9 sorbitol 2g per L': 'minimal_sorbitol',
 	' M9 fructose 2g per L': 'minimal_fructose',
-	' M9 succinate 2g per L': 'minimal_succinate',
+	' M9 succinate 2g per L': SUCCINATE_MEDIA,
 	' M9 glcNAc 2g per L': 'minimal_glcNAc',
 	' M9 mannitol 2g per L': 'minimal_mannitol',
 	' M9 gluconate 2g per L': 'minimal_gluconate',
-	' M9 glucose 2g per L first experiment': 'minimal',  # methods say 5 g/L
+	' M9 glucose 2g per L first experiment': GLC_MEDIA,  # methods say 5 g/L
 	' M9 G6P 2g per L': 'minimal_g6p',
 	' M9 glucose 2g per L plus CAA 2g per L': 'minimal_plus_cas_amino_acids',
 	# ' M9 glucose 0 mueM Chloramphenicol': '',
@@ -234,7 +242,7 @@ def kochanowski_concentrations():
 	"""
 
 	raw_data, headers = load_kochanowski(KOCHANOWSKI_ABSOLUTE_INPUT)
-	glc_col = np.where(headers == 'minimal')[0][0]
+	glc_col = np.where(headers == GLC_MEDIA)[0][0]
 
 	met_conc = {}
 	for met, conc in raw_data.items():
@@ -285,13 +293,37 @@ def save_concentrations(conc, label):
 		label: column and filename dataset label (author)
 	"""
 
-	output = OUTPUT_FILE.format(label.lower())
+	output = ABSOLUTE_OUTPUT_FILE.format(label.lower())
 	with open(output, 'w') as f:
 		writer = csv.writer(f, delimiter='\t')
 		writer.writerow(['Metabolite', '{} Concentration (units.mol/units.L)'.format(label)])
 
 		for m, c in sorted(conc.items(), key=lambda d: d[0]):
 			writer.writerow([m, '{:.2e}'.format(c).replace('e+0', 'e').replace('e-0', 'e-')])
+
+def save_kochanowski_relative_changes():
+	"""
+	Convert relative Kochanowski concentration data to wcm IDs for all conditions.
+	"""
+
+	met_conc, headers = load_kochanowski(KOCHANOWSKI_RELATIVE_INPUT)
+
+	# Reorder output to put most interesting conditions first
+	first_headers = [GLC_MEDIA, ACETATE_MEDIA, SUCCINATE_MEDIA]
+	reordered_headers = first_headers + [h for h in headers if h not in first_headers]
+	reordered_indexing = np.array([np.where(headers == h)[0][0] for h in reordered_headers])
+
+	with open(RELATIVE_OUTPUT_FILE, 'w') as f:
+		writer = csv.writer(f, delimiter='\t')
+		writer.writerow(['# Created with {} on {}'.format(' '.join(sys.argv), time.ctime())])
+		writer.writerow(['Metabolite'] + reordered_headers)
+
+		for met, changes in sorted(met_conc.items()):
+			data = [
+				change if np.isfinite(change) else 'NaN'
+				for change in changes[reordered_indexing]
+			]
+			writer.writerow([met] + data)
 
 
 if __name__ == '__main__':
@@ -306,3 +338,4 @@ if __name__ == '__main__':
 	# Kochanowski 2017
 	kochanowski = kochanowski_concentrations()
 	save_concentrations(kochanowski, 'Kochanowski')
+	save_kochanowski_relative_changes()
