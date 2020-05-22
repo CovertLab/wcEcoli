@@ -49,6 +49,7 @@ ECOCYC_SUBSTITUTIONS = {
 	'D-GLUCOSAMINE-6-P': 'CPD-13469',
 	'D-glucopyranose-6-phosphate': 'GLC-6-P',
 	'Isocitrate': 'THREO-DS-ISO-CITRATE',
+	'CPD-18719': 'FRUCTOSE-6P',
 	}
 
 # Kochanowski mappings
