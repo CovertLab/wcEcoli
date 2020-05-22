@@ -315,7 +315,7 @@ def save_kochanowski_relative_changes():
 	reordered_indexing = np.array([np.where(headers == h)[0][0] for h in reordered_headers])
 
 	with open(RELATIVE_OUTPUT_FILE, 'w') as f:
-		writer = csv.writer(f, delimiter='\t')
+		writer = csv.writer(f, delimiter='\t', quotechar="'", lineterminator='\n')
 		writer.writerow(['# Created with {} on {}'.format(' '.join(sys.argv), time.ctime())])
 		writer.writerow(['Metabolite'] + reordered_headers)
 
@@ -324,7 +324,7 @@ def save_kochanowski_relative_changes():
 				change if np.isfinite(change) else 'NaN'
 				for change in changes[reordered_indexing]
 			]
-			writer.writerow([met] + data)
+			writer.writerow(['"{}"'.format(met)] + data)
 
 
 if __name__ == '__main__':
