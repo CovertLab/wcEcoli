@@ -83,12 +83,21 @@ class Metabolism(object):
 		# compartments according to those given in the biomass objective.  Or,
 		# if there is no compartment, assign it to the cytoplasm.
 
-		concentration_sources = ['Park Concentration', 'Lempp Concentration']
-		park_only = {
-			'ATP',  # TF binding does not solve with average concentration with Lempp
-			}
-		lempp_only = {
-			'GLT',  # Steady state concentration reached with tRNA charging is much lower than Park
+		concentration_sources = [
+			'Park Concentration',
+			'Lempp Concentration',
+			'Kochanowski Concentration',
+			]
+		excluded = {
+			'Park Concentration': {
+				'GLT',  # Steady state concentration reached with tRNA charging is much lower than Park
+				},
+			'Lempp Concentration': {
+				'ATP',  # TF binding does not solve with average concentration
+				},
+			'Kochanowski Concentration': {
+				'ATP',  # TF binding does not solve with average concentration
+				},
 			}
 		metaboliteIDs = []
 		metaboliteConcentrations = []
@@ -106,22 +115,18 @@ class Metabolism(object):
 						.format(metabolite_id))
 				continue
 
-			if metabolite_id in park_only:
-				conc = row['Park Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
-			elif metabolite_id in lempp_only:
-				conc = row['Lempp Concentration'].asNumber(METABOLITE_CONCENTRATION_UNITS)
-			else:
-				# Use average of both sources
-				conc = np.nanmean([
-					row[source].asNumber(METABOLITE_CONCENTRATION_UNITS)
-					for source in concentration_sources
-					])
+			# Use average of both sources
+			conc = np.nanmean([
+				row[source].asNumber(METABOLITE_CONCENTRATION_UNITS)
+				for source in concentration_sources
+				if metabolite_id not in excluded.get(source, set())
+				])
 
-				# Check that a value was in the datasets being used
-				if not np.isfinite(conc):
-					if VERBOSE:
-						print('No concentration in active datasets for {}'.format(metabolite_id))
-					continue
+			# Check that a value was in the datasets being used
+			if not np.isfinite(conc):
+				if VERBOSE:
+					print('No concentration in active datasets for {}'.format(metabolite_id))
+				continue
 
 			if metabolite_id in wildtypeIDtoCompartment:
 				metaboliteIDs.append(
