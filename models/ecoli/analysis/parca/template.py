@@ -13,12 +13,12 @@ import os
 from matplotlib import pyplot as plt
 import numpy as np
 
-from models.ecoli.analysis import variantAnalysisPlot
+from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import filepath
 
 
-class Plot(variantAnalysisPlot.VariantAnalysisPlot):
+class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		if not os.path.isdir(inputDir):
 			raise Exception('inputDir does not currently exist as a directory')
