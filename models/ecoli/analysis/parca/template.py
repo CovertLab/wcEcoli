@@ -19,15 +19,16 @@ from wholecell.utils import filepath
 
 
 class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
-	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(inputDir):
-			raise Exception('inputDir does not currently exist as a directory')
+	def do_plot(self, input_dir, plot_out_dir, plot_out_filename,
+			sim_data_file, validation_data_file, metadata):
+		if not os.path.isdir(input_dir):
+			raise Exception('input_dir does not currently exist as a directory')
 
-		filepath.makedirs(plotOutDir)
+		filepath.makedirs(plot_out_dir)
 
-		with open(simDataFile, 'rb') as f:
+		with open(sim_data_file, 'rb') as f:
 			sim_data = cPickle.load(f)
-		with open(validationDataFile, 'rb') as f:
+		with open(validation_data_file, 'rb') as f:
 			validation_data = cPickle.load(f)
 
 		plt.figure()
@@ -35,7 +36,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		### Create Plot ###
 
 		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		exportFigure(plt, plot_out_dir, plot_out_filename, metadata)
 		plt.close('all')
 
 
