@@ -15,17 +15,10 @@ import numpy as np
 
 from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
-from wholecell.utils import filepath
 
 
 class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
-	def do_plot(self, input_dir, plot_out_dir, plot_out_filename,
-			sim_data_file, validation_data_file, metadata):
-		if not os.path.isdir(input_dir):
-			raise Exception('input_dir does not currently exist as a directory')
-
-		filepath.makedirs(plot_out_dir)
-
+	def do_plot(self, input_dir, plot_out_dir, plot_out_filename, sim_data_file, validation_data_file, metadata):
 		with open(sim_data_file, 'rb') as f:
 			sim_data = cPickle.load(f)
 		with open(validation_data_file, 'rb') as f:

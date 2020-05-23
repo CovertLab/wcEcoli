@@ -21,11 +21,6 @@ from wholecell.utils import filepath
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception('simOutDir does not currently exist as a directory')
-
-		filepath.makedirs(plotOutDir)
-
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 		with open(validationDataFile, 'rb') as f:
