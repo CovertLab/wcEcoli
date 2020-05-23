@@ -17,7 +17,6 @@ from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
