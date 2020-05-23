@@ -20,12 +20,12 @@ class AnalysisParca(AnalysisBase):
 	def run(self, args):
 		# TODO: where to put output?
 		# Does kb/plotOut make sense? - Is this compatible with cloud runs?
+		input_dir = os.path.join(args.sim_path, ParcaTask.OUTPUT_SUBDIR)
 		output_dir = os.path.join(args.sim_path, constants.KB_PLOT_OUTPUT_DIR)
-		input_sim_data = os.path.join(args.sim_path,
-			ParcaTask.OUTPUT_SUBDIR, constants.SERIALIZED_SIM_DATA_FILENAME)
+		input_sim_data = os.path.join(input_dir, constants.SERIALIZED_SIM_DATA_FILENAME)
 
 		task = AnalysisParcaTask(
-			input_directory=args.sim_path,
+			input_directory=input_dir,
 			input_sim_data=input_sim_data,
 			input_validation_data=args.input_validation_data,
 			output_plots_directory=output_dir,

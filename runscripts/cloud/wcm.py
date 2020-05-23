@@ -155,7 +155,7 @@ class WcmWorkflow(Workflow):
 			parca_plot_dir = self.internal(constants.KB_PLOT_OUTPUT_DIR, '')
 			python_args = data.select_keys(
 				args, scriptBase.ANALYSIS_KEYS,
-				input_directory=self.internal(''),
+				input_directory=kb_dir,
 				input_sim_data=sim_data_file,
 				input_validation_data=validation_data_file,
 				output_plots_directory=parca_plot_dir,

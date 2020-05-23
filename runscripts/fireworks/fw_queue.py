@@ -521,7 +521,7 @@ if RUN_AGGREGATE_ANALYSIS:
 	fw_name = "AnalysisParcaTask"
 	fw_parca_analysis = Firework(
 		AnalysisParcaTask(
-			input_directory = os.path.join(INDIV_OUT_DIRECTORY),
+			input_directory = KB_DIRECTORY,
 			input_sim_data = os.path.join(KB_DIRECTORY, filename_sim_data),
 			input_validation_data = os.path.join(KB_DIRECTORY, filename_validation_data),
 			output_plots_directory = os.path.join(INDIV_OUT_DIRECTORY, constants.KB_PLOT_OUTPUT_DIR),

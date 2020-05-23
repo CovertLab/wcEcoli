@@ -15,10 +15,13 @@ import numpy as np
 
 from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
+from wholecell.utils import constants
 
 
 class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 	def do_plot(self, input_dir, plot_out_dir, plot_out_filename, sim_data_file, validation_data_file, metadata):
+		with open(os.path.join(input_dir, constants.SERIALIZED_RAW_DATA), 'rb') as f:
+			raw_data = cPickle.load(f)
 		with open(sim_data_file, 'rb') as f:
 			sim_data = cPickle.load(f)
 		with open(validation_data_file, 'rb') as f:
