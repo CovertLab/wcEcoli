@@ -152,7 +152,7 @@ class WcmWorkflow(Workflow):
 			outputs=[kb_dir])
 
 		if run_analysis:
-			parca_plot_dir = self.internal(constants.KB_OUTPUT_DIR, '')
+			parca_plot_dir = self.internal(constants.KB_PLOT_OUTPUT_DIR, '')
 			python_args = data.select_keys(
 				args, scriptBase.ANALYSIS_KEYS,
 				input_directory=self.internal(''),

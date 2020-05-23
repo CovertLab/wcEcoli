@@ -524,7 +524,7 @@ if RUN_AGGREGATE_ANALYSIS:
 			input_directory = os.path.join(INDIV_OUT_DIRECTORY),
 			input_sim_data = os.path.join(KB_DIRECTORY, filename_sim_data),
 			input_validation_data = os.path.join(KB_DIRECTORY, filename_validation_data),
-			output_plots_directory = os.path.join(INDIV_OUT_DIRECTORY, constants.KB_OUTPUT_DIR),
+			output_plots_directory = os.path.join(INDIV_OUT_DIRECTORY, constants.KB_PLOT_OUTPUT_DIR),
 			plot = PLOTS,
 			cpus = analysis_cpus,
 			metadata = metadata,

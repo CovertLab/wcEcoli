@@ -18,7 +18,7 @@ SERIALIZED_INHERITED_STATE = "Daughter%d_inherited_state.cPickle"
 
 # Workflow directories
 # TODO: add 'plotOut', 'kb', etc.
-KB_OUTPUT_DIR = 'kb_plot_out'
+KB_PLOT_OUTPUT_DIR = 'kb_plot_out'
 
 JSON_METADATA_FILE = 'metadata.json'
 
