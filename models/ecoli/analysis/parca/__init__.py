@@ -2,6 +2,7 @@
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
 	'metabolite_concentrations.py',
+	'tf_target.py',
 ]
 
 TAGS = {
