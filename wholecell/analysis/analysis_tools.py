@@ -81,7 +81,7 @@ def exportFigure(plt, plotOutDir, plotOutFileName, metadata=None, transparent=Fa
 				])
 
 		elif analysis_type == 'parca':
-			# Format metadata signature for variant figure
+			# Format metadata signature for parca figure
 			metadata_signature = "_".join([
 				str(metadata["time"][:13]),
 				"Githash",

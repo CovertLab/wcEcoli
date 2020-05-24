@@ -10,11 +10,12 @@ from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
 	WheelZoomTool, ResizeTool, UndoTool, RedoTool)
 
+from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
-from models.ecoli.analysis import variantAnalysisPlot
+from wholecell.utils import filepath
 
 
-class Plot(variantAnalysisPlot.VariantAnalysisPlot):
+class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 	def do_plot(self, input_dir, plot_out_dir, plot_out_filename, sim_data_file, validation_data_file, metadata):
 		with open(sim_data_file, 'rb') as f:
 			sim_data = cPickle.load(f)
@@ -82,9 +83,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plot.scatter("x", "y", source = source)
 
-		if not os.path.exists(os.path.join(plot_out_dir, "html_plots")):
-			os.makedirs(os.path.join(plot_out_dir, "html_plots"))
-		bokeh.io.output_file(os.path.join(plot_out_dir, "html_plots", plot_out_filename + "__probBound" + ".html"), title = plot_out_filename, autosave = False)
+		html_dir = filepath.makedirs(plot_out_dir, 'html_plots')
+		html_file = os.path.join(html_dir, plot_out_filename + "__probBound.html")
+		bokeh.io.output_file(html_file, title=plot_out_filename, autosave=False)
 		bokeh.io.save(plot)
 		bokeh.io.curstate().reset()
 
