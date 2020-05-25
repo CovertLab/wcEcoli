@@ -1,0 +1,7 @@
+- move classes to new directory and separate files
+- test with actual sim_out data and objective
+- allow base output dir instead of specific sim dir
+
+considerations:
+- other methods of gradient descent
+- create workflow dependencies to more easily scale
