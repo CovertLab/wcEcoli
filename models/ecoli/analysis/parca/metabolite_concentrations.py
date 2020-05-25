@@ -13,6 +13,7 @@ import os
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 import numpy as np
+from scipy import stats
 
 from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -108,17 +109,19 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 				conc1 = [c for c, idx in zip(concentrations[source1][CONC_KEY], concentrations[source1][INDEX_KEY]) if idx in idx2]
 				conc2 = [c for c, idx in zip(concentrations[source2][CONC_KEY], concentrations[source2][INDEX_KEY]) if idx in idx1]
 				conc_range = [np.min([conc1, conc2]), np.max([conc1, conc2])]
+				r, p = stats.pearsonr(np.log(conc1), np.log(conc2))
 
 				# Plot data
 				plt.subplot(gs[j, i])
 				plt.loglog(conc1, conc2, 'o', alpha=0.5)
 				plt.loglog(conc_range, conc_range, 'k--')
+				plt.title(r'$R^2$={:.2f}, p={:.1g}'.format(r, p), fontsize=8)
 
 				# Only show axis labels on edge
 				if j == n_sources - 1:
-					plt.xlabel(source1 + ' (mM)')
+					plt.xlabel(source1 + '\n(mM)', fontsize=8)
 				if i == 0:
-					plt.ylabel(source2 + ' (mM)')
+					plt.ylabel(source2 + '\n(mM)', fontsize=8)
 
 		## Save figure
 		plt.tight_layout()
