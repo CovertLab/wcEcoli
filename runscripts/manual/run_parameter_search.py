@@ -25,59 +25,16 @@ import wholecell.utils.filepath as fp
 SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)
 
 
-# TODO: make base class to inherit from
-class ppGpp():
-	parameters = ('constants.a', 'constants.b')
+class ParameterSearch(object):
+	parameters = ()
 	learning_rate = 0.001
 	parameter_step = 0.9
 
 	def __init__(self, sim_dir):
+		if len(self.parameters) == 0:
+			raise NotImplementedError('Must define parameters to search in a subclass.')
+
 		self.sim_dir = sim_dir
-
-	def update_parameter_value(self, sim_data, parameter):
-		old_value = self.get_attrs(sim_data, parameter)
-		new_value = old_value * self.parameter_step
-		diff = new_value - old_value
-
-		return new_value, diff
-
-	def perturb_sim_data(self, sim_data_file, parameter):
-		with open(sim_data_file) as f:
-			sim_data = cPickle.load(f)
-
-		self.set_attrs(sim_data, parameter,
-			self.update_parameter_value(sim_data, parameter)[0])
-
-		return sim_data
-
-	def get_parameter_update(self, sim_data_file, parameter, old_objective, new_objective):
-		with open(sim_data_file) as f:
-			sim_data = cPickle.load(f)
-
-		update = self.learning_rate * (new_objective - old_objective) / self.update_parameter_value(sim_data, parameter)[1]
-
-		return update
-
-	def update_sim_data(self, sim_data_file, updates):
-		with open(sim_data_file) as f:
-			sim_data = cPickle.load(f)
-
-		for parameter, update in zip(self.parameters, updates):
-			self.set_attrs(sim_data, parameter,
-				self.get_attrs(sim_data, parameter) - update)
-
-		return sim_data
-
-	def get_objective_value(self, sim_data_file, sim_out_dir):
-		with open(sim_data_file) as f:
-			sim_data = cPickle.load(f)
-
-		# Load listeners
-		y0 = 1
-		y = 10*sim_data.constants.a + 5*sim_data.constants.a*sim_data.constants.b
-		objective = (y - y0)**2
-
-		return objective
 
 	def sim_data_path(self, variant):
 		kb_dir = fp.makedirs(self.sim_dir, '{}_{:06n}'.format(
@@ -104,6 +61,58 @@ class ppGpp():
 		for a in attrs[:-1]:
 			parent = getattr(parent, a)
 		setattr(parent, attrs[-1], value)
+
+	def update_parameter_value(self, sim_data, parameter):
+		old_value = self.get_attrs(sim_data, parameter)
+		new_value = old_value * self.parameter_step
+		diff = new_value - old_value
+
+		return new_value, diff
+
+	def perturb_sim_data(self, sim_data_file, parameter):
+		with open(sim_data_file) as f:
+			sim_data = cPickle.load(f)
+
+		self.set_attrs(sim_data, parameter,
+			self.update_parameter_value(sim_data, parameter)[0])
+
+		return sim_data
+
+	def get_parameter_update(self, sim_data_file, parameter, old_objective, new_objective):
+		with open(sim_data_file) as f:
+			sim_data = cPickle.load(f)
+
+		update = (self.learning_rate * (new_objective - old_objective)
+			/ self.update_parameter_value(sim_data, parameter)[1])
+
+		return update
+
+	def update_sim_data(self, sim_data_file, updates):
+		with open(sim_data_file) as f:
+			sim_data = cPickle.load(f)
+
+		for parameter, update in zip(self.parameters, updates):
+			self.set_attrs(sim_data, parameter,
+				self.get_attrs(sim_data, parameter) - update)
+
+		return sim_data
+
+	def get_objective_value(self, sim_data_file, sim_out_dir):
+		raise NotImplementedError('Need to implement this in a subclass.')
+
+class ppGpp(ParameterSearch):
+	parameters = ('constants.a', 'constants.b')
+
+	def get_objective_value(self, sim_data_file, sim_out_dir):
+		with open(sim_data_file) as f:
+			sim_data = cPickle.load(f)
+
+		# Load listeners
+		y0 = 1
+		y = 10*sim_data.constants.a + 5*sim_data.constants.a*sim_data.constants.b
+		objective = (y - y0)**2
+
+		return objective
 
 
 # TODO: move to another file
