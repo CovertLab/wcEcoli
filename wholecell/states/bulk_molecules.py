@@ -58,7 +58,6 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 			id: idx for idx, id in enumerate(self._processIDs)}
 
 		# Load constants
-		import pdb; pdb.set_trace()
 		self._moleculeIDs = sim_data.internal_state.bulkMolecules.bulkData['id']
 
 		self._moleculeMass = sim_data.internal_state.bulkMolecules.bulkData['mass'].asNumber(units.fg / units.mol) / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
