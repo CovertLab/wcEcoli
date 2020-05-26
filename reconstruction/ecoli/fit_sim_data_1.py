@@ -1851,9 +1851,7 @@ def totalCountFromMassesAndRatios(totalMass, individualMasses, distribution):
 
 	assert np.allclose(np.sum(distribution), 1)
 	counts = 1 / units.dot(individualMasses, distribution) * totalMass
-	if units.hasUnit(counts):
-		counts = units.convertNoUnitToNumber(counts)
-	return counts
+	return units.strip_empty_units(counts)
 
 def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, netLossRate):
 	"""
