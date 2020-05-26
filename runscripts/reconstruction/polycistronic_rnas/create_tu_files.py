@@ -6,6 +6,7 @@ import itertools
 import numpy as np
 import os
 import re
+from scipy.optimize import nnls
 import time
 import warnings
 
@@ -569,7 +570,7 @@ def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 	Purpose:
 		Calculate transcription unit counts. Will functionally replace how rna seq
 		counts were used in the model. If no TUs are added it will exactly match
-		rna-seq counts.
+		rna-seq counts. Using scipy.optimize..nnls solver to give a non-negative least squares fit.
 	Inputs:
 		gene_tu_matrix: Sparse numpy matrix, mapping TU to rna's. 0 = no mapping; 1 = mapping.
 		rna_seq_counts_vector: A vector of RNA seq counts for the condition we are interested in.
@@ -579,7 +580,7 @@ def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 		A list of dictionaries. Each dictionary contains the 'tu_id' and the 'tu_count' for
 		each TU in the model.
 	'''
-	tu_counts_vector = np.linalg.lstsq(gene_tu_matrix, rna_seq_counts_vector)[0]
+	tu_counts_vector = nnls(gene_tu_matrix, rna_seq_counts_vector)[0]
 	tu_gene_order = [row['geneId'] for row in tu_info]
 	tu_genes_counts = []
 
