@@ -259,7 +259,7 @@ def diff_trees(a, b):
 		diff = {}
 		attrs = SPECIAL_OBJECTS[type(a)]
 		for attr in attrs:
-			subdiff = diff_trees(getattr(a, attr), getattr(b, attr, None))
+			subdiff = diff_trees(getattr(a, attr), getattr(b, attr))
 			if subdiff:
 				diff[attr] = subdiff
 		return diff
