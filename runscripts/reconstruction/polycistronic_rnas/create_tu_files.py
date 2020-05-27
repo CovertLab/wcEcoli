@@ -421,7 +421,9 @@ def gather_tu_info(tu_genes_info):
 			first_gene, last_gene)
 		tu_info[pc_gene_id]['type'] = find_tu_type(tu_genes_info[pc_gene_id])
 		tu_info[pc_gene_id]['modifiedForms'] = []
-		tu_info[pc_gene_id]['monomerId'] = '_'.join(pc_monomer_id_list)
+		tu_info[pc_gene_id]['monomerId'] = '{}{}'.format(
+											'_'.join([x.replace('-MONOMER', '') 
+											for x in pc_monomer_id_list]), '-MONOMER')
 		tu_info[pc_gene_id]['comments'] = """Transcription unit created within script, for individual RNA comments look at rnas.tsv for that RNA"""
 		tu_info[pc_gene_id]['mw'] = calculate_rna_biomass(tu_info[pc_gene_id]['seq'])
 		tu_info[pc_gene_id]['location'] = find_tu_location(tu_genes_info[pc_gene_id])
