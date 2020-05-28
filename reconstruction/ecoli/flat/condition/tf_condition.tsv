@@ -1,4 +1,5 @@
-# TODO: add multiple nutrients (eg succinate and fumarate for DcuR and succinate, acetate, anaerobic, etc for Crp)
+# TODO: add multiple nutrients (eg succinate and fumarate for DcuR and succinate, acetate, anaerobic, etc for Crp and CreB)
+# TODO: add CreB 2CS
 "TF"	"active TF"	"active nutrients"	"active genotype perturbations"	"inactive nutrients"	"inactive genotype perturbations"	"TF type"
 "trpR"	"CPLX-125"	"minimal_plus_amino_acids"	{}	"minimal"	{}	"1CS"
 "argR"	"CPLX0-228"	"minimal_plus_amino_acids"	{}	"minimal"	{}	"1CS"
