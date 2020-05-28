@@ -12,6 +12,7 @@ import cPickle
 import os
 import json
 import hashlib
+import zipfile
 
 from models.ecoli.analysis import causalityNetworkAnalysis
 from wholecell.io.tablereader import TableReader
@@ -144,15 +145,21 @@ class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 		nodes = [build_dynamics(node_dict) for node_dict in node_dicts]
 		nodes.append(time_node(columns))
 
-		for node in nodes:
-			dynamics_path = get_safe_name(node.node_id)
-			dynamics = node.dynamics_dict()
-			dynamics_json = json.dumps(dynamics)
+		zip_name = os.path.join(seriesOutDir, 'series.zip')
+		with zipfile.ZipFile(zip_name, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+			for node in nodes:
+				if node.node_id in name_mapping:
+					# TODO(jerry): Skip duplicates. A bug in the "safe name" generation?
+					continue
 
-			with open(os.path.join(seriesOutDir, dynamics_path + '.json'), 'w') as dynamics_file:
-				dynamics_file.write(dynamics_json)
+				dynamics_path = get_safe_name(node.node_id)
+				dynamics = node.dynamics_dict()
+				dynamics_json = json.dumps(
+					dynamics, ensure_ascii=False, separators=(',', ':'))
 
-			name_mapping[node.node_id] = dynamics_mapping(dynamics, dynamics_path)
+				zf.writestr(dynamics_path + '.json', dynamics_json.encode('utf-8'))
+
+				name_mapping[node.node_id] = dynamics_mapping(dynamics, dynamics_path)
 
 		root = os.path.dirname(nodeListFile)
 		with open(os.path.join(root, 'series.json'), 'w') as series_file:

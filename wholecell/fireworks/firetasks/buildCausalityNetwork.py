@@ -19,6 +19,12 @@ from wholecell.utils import data
 class BuildCausalityNetworkTask(FiretaskBase):
 
 	_fw_name = "BuildCausalNetworkTask"
+
+	# TODO(jerry): Detangle output_network_directory to support workflow.py,
+	#  e.g. write edges.json, nodes.json, & series.json into every sim's
+	#  output_dynamics_directory instead of the variant's kb/, or write them in
+	#  a separate task, or write them in VariantSimDataTask. Maybe build
+	#  causality network for only one sim.
 	required_params = [
 		"input_results_directory",
 		"input_sim_data",
