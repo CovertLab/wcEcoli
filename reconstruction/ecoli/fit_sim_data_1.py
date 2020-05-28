@@ -403,6 +403,7 @@ def buildBasalCellSpecifications(
 
 	return cellSpecs
 
+@parallelization.full_traceback
 def buildTfConditionCellSpecifications(
 		sim_data,
 		tf,
@@ -695,6 +696,7 @@ def expressionConverge(
 
 	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict
 
+@parallelization.full_traceback
 def fitCondition(sim_data, spec, condition):
 	"""
 	Takes a given condition and returns the predicted bulk average, bulk deviation,
