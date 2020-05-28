@@ -271,7 +271,7 @@ def fitSimData_1(
 	return sim_data
 
 def apply_updates(func, args, labels, dest, cpus):
-	# type: (Callable[[Any], Dict[Any, Any]], List[Tuple[Any]], List[str], Dict[Any, Any], int) -> None
+	# type: (Callable[..., dict], List[tuple], List[str], dict, int) -> None
 	"""
 	Use multiprocessing (if cpus > 1) to apply args to a function to get
 	dictionary updates for a destination dictionary.

@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import functools
 import multiprocessing as mp
 import os
+import sys
 import traceback
 
 from typing import Any, Callable, Dict, Iterable, List, Optional
@@ -27,7 +28,7 @@ def full_traceback(func):
 		except Exception as e:
 			msg = "{}\n\nOriginal {}".format(e, traceback.format_exc())
 			raise type(e)(msg)
-	return wrapper
+	return wrapper if sys.version_info[0] < 3 else func
 
 def is_macos():
 	# type: () -> bool
