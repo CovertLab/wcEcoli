@@ -68,7 +68,7 @@ TAGS = {
 		"dntpCounts.py",
 		"evaluationTime.py",
 		"external_exchange_fluxes.py",
-		"fluxBounds.py",
+		"flux_bounds.py",
 		"massFractionSummary.py",
 		"mrnaCounts.py",
 		"ntpCounts.py",
