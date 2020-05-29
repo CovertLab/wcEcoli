@@ -8,7 +8,7 @@ SimulationData mass data
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-from scipy import interpolate
+from scipy import interpolate, stats
 import unum
 
 from wholecell.utils import units
@@ -76,9 +76,12 @@ class Mass(object):
 	def _buildSubMasses(self, raw_data, sim_data):
 		self._doubling_time_vector = units.min * np.array([float(x['doublingTime'].asNumber(units.min)) for x in raw_data.dryMassComposition])
 
-		# TODO: Use helper functions written for growthRateDependent parameters to make this better!
-		dryMass = np.array([float(x['averageDryMass'].asNumber(units.fg)) for x in raw_data.dryMassComposition])
-		self._dryMassParams = interpolate.splrep(self._doubling_time_vector.asNumber(units.min)[::-1], dryMass[::-1])
+		dryMass = np.array([
+			float(x['averageDryMass'].asNumber(units.fg))
+			for x in raw_data.dryMassComposition
+			])
+		self._dryMassParams = linear_regression(
+			self._doubling_time_vector.asNumber(units.min), 1. / dryMass)
 
 		self._proteinMassFractionParams = self._getFitParameters(raw_data.dryMassComposition, 'proteinMassFraction')
 		self._rnaMassFractionParams = self._getFitParameters(raw_data.dryMassComposition, 'rnaMassFraction')
@@ -106,9 +109,13 @@ class Mass(object):
 
 	# Set based on growth rate avgCellDryMass
 	def getAvgCellDryMass(self, doubling_time):
-		doubling_time = self._clipTau_d(doubling_time)
-		avgCellDryMass = units.fg * float(interpolate.splev(doubling_time.asNumber(units.min), self._dryMassParams))
-		return avgCellDryMass
+		# TODO: compare to previous results
+		doubling_time = doubling_time.asNumber(units.min)
+		inverse_mass = self._dryMassParams[0] * doubling_time + self._dryMassParams[1]
+		if inverse_mass < 0:
+			raise ValueError('Doubling time ({} min) is too short, could not get mass.'
+				.format(doubling_time))
+		return units.fg / inverse_mass
 
 	def get_dna_critical_mass(self, doubling_time):
 		# type: (units.Unum) -> units.Unum
@@ -476,3 +483,15 @@ def _loadTableIntoObjectGivenDoublingTime(obj, list_of_dicts):
 		fitParameters = _getFitParameters(list_of_dicts, key)
 		attrValue = _useFitParameters(obj._doubling_time, **fitParameters)
 		setattr(obj, key, attrValue)
+
+def linear_regression(x, y, r_tol=0.999, p_tol=1e-2):
+	result = stats.linregress(x, y)
+
+	if result.rvalue < r_tol:
+		raise ValueError('Could not fit linear regression with high enough r'
+			' value: {} < {}'.format(result.rvalue, r_tol))
+	if result.pvalue > p_tol:
+		raise ValueError('Could not fit linear regression with low enough p'
+			' value: {} > {}'.format(result.pvalue, p_tol))
+
+	return result.slope, result.intercept
