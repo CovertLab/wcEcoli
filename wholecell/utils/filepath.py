@@ -12,9 +12,11 @@ import io
 import os
 import sys
 if os.name == 'posix' and sys.version_info[0] < 3:
-	import subprocess32 as subprocess
+	import subprocess32 as subprocess2
+	subprocess = subprocess2
 else:
-	import subprocess
+	import subprocess as subprocess3
+	subprocess = subprocess3
 from typing import Any, AnyStr, Generator, Optional, Sequence, Tuple
 
 import wholecell
@@ -31,7 +33,7 @@ MATPLOTLIBRC_FILE = os.path.join(ROOT_PATH, 'matplotlibrc')
 TIMESTAMP_PATTERN = r'\d{8}\.\d{6}(?:\.\d{6})?'
 
 def makedirs(path, *paths):
-	# type: (str, *str) -> str
+	# type: (str, str) -> str
 	"""Join one or more path components, make that directory path (using the
 	default mode 0o0777), and return the full path.
 

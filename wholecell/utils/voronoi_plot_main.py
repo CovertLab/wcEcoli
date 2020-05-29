@@ -60,6 +60,7 @@ plt.close("all")
 
 """
 from __future__ import absolute_import, division, print_function
+
 import numpy as np
 import math as math
 from scipy.spatial import distance_matrix
@@ -425,7 +426,7 @@ class LineClass(object):
             """
             This function finds the intersection points of a line with an edge.
             """
-            [P1, P2] = edge_canvas
+            # [P1, P2] = edge_canvas
             [[x1, y1],[x2, y2]] = edge_canvas
             # convert to ax + by = c, dx + ey = f
             a = (y2 - y1)

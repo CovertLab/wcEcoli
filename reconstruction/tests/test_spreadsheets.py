@@ -52,4 +52,4 @@ class Test_Spreadsheets(unittest.TestCase):
 		data = byte_stream.getvalue()
 		assert data == (
 			b'"id"\t"ourLocation"\t"comments"\t"ecocycLocations"\n'
-			'["ID"]\t["OURLOCATION"]\t["COMMENTS"]\t["ECOCYCLOCATIONS"]\n')
+			b'["ID"]\t["OURLOCATION"]\t["COMMENTS"]\t["ECOCYCLOCATIONS"]\n')

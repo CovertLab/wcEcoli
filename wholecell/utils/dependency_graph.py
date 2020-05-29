@@ -2,7 +2,13 @@
 
 from __future__ import absolute_import, division, print_function
 
-from typing import List, Dict, Iterable
+from typing import List, Dict, Iterable, Sequence, Text, Union
+
+
+# A type alias for Python 2 str or unicode; Python 3 str (not bytes).
+# After porting to Python 3, we can use plain `str`.
+# Note: Unions don't work with `isinstance()`.
+String = Union[str, Text]
 
 
 class InvalidDependencyGraphError(Exception):
@@ -32,7 +38,7 @@ class DependencyGraph(object):
 		self.dependencies = {}  # type: Dict[str, List[str]]
 
 	def add_nodes(self, nodes):
-		# type: (Iterable[str]) -> None
+		# type: (Iterable[String]) -> None
 		"""Add nodes with no dependencies
 
 		Arguments:
@@ -42,7 +48,7 @@ class DependencyGraph(object):
 			self.dependencies[node] = []
 
 	def add_dep_relation(self, a, b):
-		# type: (str, str) -> None
+		# type: (String, str) -> None
 		"""Add an edge such that a depends on b
 
 		If a or b does not exist yet as a node, it will be created.
@@ -77,7 +83,7 @@ class DependencyGraph(object):
 		return reverse_ordering
 
 	def _topo_sort_dfs(self, node, explored, reverse_ordering):
-		# type: (str, Dict[str, bool], List[str]) -> None
+		# type: (str, Dict[str, int], List[str]) -> None
 		explored[node] = ExplorationStatus.EXPLORING
 		for dependency in self.dependencies[node]:
 			if explored[dependency] == ExplorationStatus.UNEXPLORED:

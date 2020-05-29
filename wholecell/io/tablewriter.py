@@ -618,7 +618,7 @@ class TableWriter(object):
 
 
 	def set_variable_length_columns(self, *column_names):
-		# type: (*str) -> None
+		# type: (str) -> None
 		"""
 		Sets the names of columns that should have entries with variable
 		lengths. This must be set before any values are appended to the column.

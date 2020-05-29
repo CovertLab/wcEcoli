@@ -843,7 +843,7 @@ class Transcription(object):
 		ppgpp = ppgpp.asNumber(PPGPP_CONC_UNITS)
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 
-		growth = max(interpolate.splev(ppgpp, self._ppgpp_growth_parameters), 0)
+		growth = max(interpolate.splev(ppgpp, self._ppgpp_growth_parameters), 0)  # TODO(jerry): Broken? max(Iterable, int) fails the type check.
 		tau = np.log(2) / growth / 60
 		loss = growth + self.rnaData['degRate'].asNumber(1 / units.s)
 

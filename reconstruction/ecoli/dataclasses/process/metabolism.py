@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 from copy import copy
 import re
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 import numpy as np
 import sympy as sp
@@ -711,7 +711,7 @@ class Metabolism(object):
 
 	@staticmethod
 	def _construct_default_saturation_equation(mets, kms, kis, known_mets):
-		# type: (List[str], List[float], List[float], List[str]) -> str
+		# type: (List[str], List[float], List[float], Iterable[str]) -> str
 		"""
 		Args:
 			mets: metabolite IDs with location tag for KM and KI
@@ -918,7 +918,7 @@ class Metabolism(object):
 				catalysts = loaded_catalysts
 
 		if known_metabolites is None:
-			known_metabolites = set()
+			known_metabolites = set()  # type: Set[str]
 
 		constraints = {}
 		for constraint in raw_data.metabolism_kinetics:
