@@ -79,14 +79,17 @@ class BuildCausalityNetwork(AnalysisBase):
 
 		server_script = os.environ.get(CAUSALITY_ENV_VAR, '')
 		if args.show and os.path.exists(server_script):
-			print('Serving causality site. Ctrl+c to exit.')
-			filepath.run_cmdline('python {} {} {}'.format(
-				server_script, network_output_dir, dynamics_output_dir),
-				timeout=None)
+			# See #890 if running command fails due to differences in pyenv
+			# versions - might need to cd to repo and activate pyenv
+			cmd = 'python {} {} {}'.format(
+				server_script, network_output_dir, dynamics_output_dir)
+			print('Serving causality site with command:\n{}\n\nCtrl+c to exit.'
+				.format(cmd))
+			filepath.run_cmdline(cmd, timeout=None)
 		else:
-			print('\nNOTE: Set ${} to your local path to site/server.py in the'
-				' causality repo and use the --show flag to automatically open'
-				' the viewer for this data.\n'.format(CAUSALITY_ENV_VAR))
+			print('\nNOTE: Use the --show flag and have ${} set to your local'
+				' path to site/server.py in the causality repo to automatically'
+				' open the viewer for this data.\n'.format(CAUSALITY_ENV_VAR))
 
 
 if __name__ == '__main__':
