@@ -10,7 +10,10 @@ import os
 
 from runscripts.manual.analysisBase import AnalysisBase
 from wholecell.fireworks.firetasks.buildCausalityNetwork import BuildCausalityNetworkTask
-from wholecell.utils import constants
+from wholecell.utils import constants, filepath
+
+
+CAUSALITY_ENV_VAR = 'CAUSALITY_SERVER'
 
 
 class BuildCausalityNetwork(AnalysisBase):
@@ -32,6 +35,9 @@ class BuildCausalityNetwork(AnalysisBase):
 			help='Check network sanity.')
 		parser.add_argument('-f', '--force', action='store_true',
 			help='Forces a rebuild of the causality network if set.')
+		parser.add_argument('--show', action='store_true',
+			help='If set, attempts to show the causality visualization after'
+			' processing data.')
 		self.define_range_options(parser, 'variant', 'seed', 'generation')
 
 	def update_args(self, args):
@@ -70,6 +76,17 @@ class BuildCausalityNetwork(AnalysisBase):
 			metadata=args.metadata,
 			force_update=args.force)
 		task.run_task({})
+
+		server_script = os.environ.get(CAUSALITY_ENV_VAR, '')
+		if args.show and os.path.exists(server_script):
+			print('Serving causality site. Ctrl+c to exit.')
+			filepath.run_cmdline('python {} {} {}'.format(
+				server_script, network_output_dir, dynamics_output_dir),
+				timeout=None)
+		else:
+			print('\nNOTE: Set ${} to your local path to site/server.py in the'
+				' causality repo and use the --show flag to automatically open'
+				' the viewer for this data.\n'.format(CAUSALITY_ENV_VAR))
 
 
 if __name__ == '__main__':
