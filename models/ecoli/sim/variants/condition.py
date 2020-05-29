@@ -5,18 +5,19 @@ Modifies:
 	sim_data.condition
 	sim_data.external_state.current_timeline_id
 
-TODO: update for succinate and create index on load to prevent constant updating
-Expected variant indices (dependent on sorted order of sim_data.conditionActiveTfs):
-	0: acetate
-	1: control
-	2: anaerobic
-	3: with amino acids
+Expected variant indices (dependent on sim_data.ordered_conditions and should
+be the same order as rows in condition_defs.tsv):
+	0: control
+	1: anaerobic
+	2: with amino acids
+	3: acetate
+	4: succinate
 """
 from __future__ import absolute_import, division, print_function
 
 
 def condition(sim_data, index):
-	condition_labels = sorted(sim_data.conditionActiveTfs)
+	condition_labels = sim_data.ordered_conditions
 	condition_label = condition_labels[index]
 	sim_data.condition = condition_label
 	sim_data.external_state.current_timeline_id = condition_label

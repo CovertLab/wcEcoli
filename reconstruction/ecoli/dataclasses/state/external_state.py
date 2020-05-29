@@ -143,7 +143,7 @@ class ExternalState(object):
 		importExchangeMolecules.update(importUnconstrainedExchangeMolecules)
 		externalExchangeMolecules.update(importUnconstrainedExchangeMolecules)
 
-		# TODO: functionalize limits
+		# TODO: functionalize limits based on concentrations of transporters and environment
 		# Limit carbon uptake if present depending on the presence of oxygen
 		importConstrainedExchangeMolecules = {}
 		for carbon_source_id in self.carbon_sources:

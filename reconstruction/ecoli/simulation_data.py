@@ -166,8 +166,10 @@ class SimulationDataEcoli(object):
 		self.conditions = {}
 		self.conditionToDoublingTime = {}
 		self.conditionActiveTfs = {}
+		self.ordered_conditions = []  # order for variant to run
 		for row in raw_data.condition.condition_defs:
 			condition = row["condition"].encode("utf-8")
+			self.ordered_conditions.append(condition)
 			self.conditions[condition] = {}
 			self.conditions[condition]["nutrients"] = row["nutrients"].encode("utf-8")
 			self.conditions[condition]["perturbations"] = row["genotype perturbations"]
