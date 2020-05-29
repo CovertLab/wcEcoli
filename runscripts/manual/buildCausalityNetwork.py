@@ -87,9 +87,11 @@ class BuildCausalityNetwork(AnalysisBase):
 				.format(cmd))
 			filepath.run_cmdline(cmd, timeout=None)
 		else:
-			print('\nNOTE: Use the --show flag and have ${} set to your local'
-				' path to site/server.py in the causality repo to automatically'
-				' open the viewer for this data.\n'.format(CAUSALITY_ENV_VAR))
+			print('\nNOTE: Use the --show flag and have ${0} set to your local'
+				' path to site/server.py in the causality repo (eg. run'
+				' `export {0}=~/path/to/causality/site/server.py` with your'
+				' path) to automatically open the viewer for this data.\n'
+				.format(CAUSALITY_ENV_VAR))
 
 
 if __name__ == '__main__':
