@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Process
 
@@ -10,7 +8,7 @@ Process submodel base class. Defines interface that processes expose to the simu
 @date: Created 4/2/2013
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import warnings
 

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 EnzymeKinetics
 
@@ -8,7 +6,7 @@ EnzymeKinetics listener. Tracks information about enzyme kinetics.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 

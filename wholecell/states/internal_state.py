@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Internal State
 
@@ -8,7 +6,7 @@ State variable base class. Defines the interface states expose to the simulation
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 

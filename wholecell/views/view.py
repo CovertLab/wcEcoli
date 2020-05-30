@@ -7,7 +7,7 @@ the Process, and returning the updated values to the State for merging. The
 implementation is largely specific to the State.
 '''
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
