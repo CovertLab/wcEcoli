@@ -9,35 +9,26 @@ Plot upper and lower flux targets
 from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
-from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
+from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
-from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
+
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception(
-				'simOutDir "{}" does not currently exist as a directory'.format(simOutDir))
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		mainListener = TableReader(os.path.join(simOutDir, "Main"))
 		initialTime = mainListener.readAttribute("initialTime")
 		time = mainListener.readColumn("time") - initialTime
-		mainListener.close()
 
 		enzymeKineticsReader = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
 		targetFluxesUpper = enzymeKineticsReader.readColumn('targetFluxesUpper')
 		targetFluxesLower = enzymeKineticsReader.readColumn('targetFluxesLower')
 		actualFluxes = enzymeKineticsReader.readColumn('actualFluxes')
-		reactionNames = [x[0:10] for x in enzymeKineticsReader.readAttribute('constrainedReactions')]
+		reactionNames = [x[:18] for x in enzymeKineticsReader.readAttribute('constrainedReactions')]
 
 
 		fig = plt.figure(figsize = (34, 34))
@@ -45,7 +36,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax_full.set_xlabel('Time', fontsize = 48)
 		ax_full.set_ylabel('Flux', fontsize = 48)
 		ax_full.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
-		
+
 		n_fluxes = actualFluxes.shape[1]
 		n_rows = int(np.ceil(np.sqrt(n_fluxes)))
 		n_cols = int(np.ceil(n_fluxes / n_rows))
