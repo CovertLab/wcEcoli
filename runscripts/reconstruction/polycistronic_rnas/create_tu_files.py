@@ -331,7 +331,6 @@ def count_ntps_rna(sequence):
 	Return: 
 	- Counts of the nucleotidees in the sequence
 	'''
-
 	return [sequence.count('A'), sequence.count('C'),
 			sequence.count('G'), sequence.count('U')]
 
@@ -616,12 +615,6 @@ def make_transcription_units_file():
 			writer.writerow(row)
 
 def make_new_proteins_file(output_file):
-	'''
-	TODO:
-	Check if the key monomer set exists.
-	'''
-
-	#import pdb; pdb.set_trace()
 	protein_info, protein_fieldnames = parse_tsv(PROTEIN_FILE)
 	rna_info, rna_fieldnames = parse_tsv_2(TU_FILE)
 
@@ -650,7 +643,6 @@ def make_new_proteins_file(output_file):
 		for protein_row in protein_info:
 			writer.writerow(protein_row)
 
-
 def remove_kms_file(km_file):
 	'''
 	Purpose:
@@ -660,7 +652,6 @@ def remove_kms_file(km_file):
 	This function will remove the .cpickle file and force the parca to re-calculate the
 	Kms, this way we can be sure we are working with a correct dataset.
 	'''
-
 	if os.path.exists(km_file):
 		os.remove(km_file)
 	return
