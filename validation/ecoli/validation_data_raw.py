@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import csv
 from reconstruction.spreadsheets import JsonReader
+import io
 from itertools import ifilter
 
 CSV_DIALECT = csv.excel_tab
@@ -41,7 +42,7 @@ class ValidationDataRawEcoli(object):
 		attrName = file_name.split(os.path.sep)[-1].split(".")[0]
 		setattr(self, attrName, [])
 
-		with open(file_name, 'rU') as csvfile:
+		with io.open(file_name, 'rU', encoding='utf-8') as csvfile:
 			reader = JsonReader(
 				ifilter(lambda x: x.lstrip()[0] != "#", csvfile),
 				# Strip comments

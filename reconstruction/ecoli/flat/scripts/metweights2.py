@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import re
+from typing import Dict
 
 from Bio.Data.IUPACData import atom_weights
 
@@ -24,13 +25,13 @@ OUTPUT_WATER = os.path.join("reconstruction", "ecoli", "flat", "water.tsv")
 
 no_formula = set()
 atoms = set()
-formulas = {}
+formulas = {}  # type: Dict[str, Dict[str, int]]
 
 for line in open(SOURCE):
 	molecule_name, formula_string = line.strip().split(DELIMITER)
 
 	if formula_string:
-		formula = {}
+		formula = {}  # type: Dict[str, int]
 		for atom_name, count_string in re.findall(REGEX, formula_string):
 			atoms.add(atom_name)
 

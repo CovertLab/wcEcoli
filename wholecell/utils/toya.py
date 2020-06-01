@@ -74,12 +74,8 @@ def get_root_to_id_indices_map(sim_reaction_ids):
 
 
 def process_simulated_fluxes(
-	output_ids,  # type: Iterable[str]
-	reaction_ids,  # type: Iterable[str]
-	reaction_fluxes,  # type: Unum
-	root_to_id_indices_map,  # type: Dict[str, List[int]]
-	):
-	# type: (...) -> Tuple[Unum, Unum]
+		output_ids, reaction_ids, reaction_fluxes, root_to_id_indices_map):
+	# type: (Iterable[str], Iterable[str], Unum, Dict[str, List[int]]) -> Tuple[Unum, Unum]
 	"""Compute means and standard deviations of flux from simulation
 
 	For a given output ID from output_ids, all reaction IDs from
@@ -125,12 +121,8 @@ def process_simulated_fluxes(
 	return means, stdevs
 
 
-def process_toya_data(
-	output_ids,  # type: Iterable[str]
-	reaction_ids,  # type: Iterable[str]
-	data,  # type: Unum
-):
-	# type: (...) -> Unum
+def process_toya_data(output_ids, reaction_ids, data):
+	# type: (Iterable[str], Iterable[str], Unum) -> Unum
 	"""Filter toya fluxes or standard deviations by reaction ID
 
 	Arguments:

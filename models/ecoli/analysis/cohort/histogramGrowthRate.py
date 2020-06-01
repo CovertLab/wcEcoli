@@ -23,6 +23,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			if n_cells > max_cells_in_gen:
 				max_cells_in_gen = n_cells
 
+		# noinspection PyTypeChecker
 		fig, axesList = plt.subplots(ap.n_generation,
 			sharex=True, sharey=True, figsize=(6, 3*ap.n_generation))
 

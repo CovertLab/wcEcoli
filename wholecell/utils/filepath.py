@@ -17,7 +17,9 @@ if os.name == 'posix' and sys.version_info[0] < 3:
 else:
 	import subprocess as subprocess3
 	subprocess = subprocess3
-from typing import Any, AnyStr, Generator, Optional, Sequence, Tuple
+from typing import Any, Generator, Optional, Sequence, Text, Tuple, Union
+
+import six
 
 import wholecell
 
@@ -31,6 +33,8 @@ MATPLOTLIBRC_FILE = os.path.join(ROOT_PATH, 'matplotlibrc')
 
 # Regex for current and previous timestamp() formats: 'YYYYMMDD.HHMMSS[.uuuuuu]'.
 TIMESTAMP_PATTERN = r'\d{8}\.\d{6}(?:\.\d{6})?'
+
+String = Union[str, Text]
 
 def makedirs(path, *paths):
 	# type: (str, str) -> str
@@ -135,10 +139,10 @@ def run_cmdline(line, trim=True, timeout=TIMEOUT):
 		return None
 
 def write_file(filename, content):
-	# type: (str, AnyStr) -> None
-	"""Write string `content` as a text file."""
-	with open(filename, "w") as f:
-		f.write(content)
+	# type: (str, String) -> None
+	"""Write text string `content` as a utf-8 text file."""
+	with io.open(filename, 'w', encoding='utf-8') as f:
+		f.write(six.text_type(content))
 
 def write_json_file(filename, obj, indent=4):
 	# type: (str, Any, int) -> None
@@ -146,7 +150,7 @@ def write_json_file(filename, obj, indent=4):
 	# Indentation puts a newline after each ',' so suppress the space there.
 	message = json.dumps(obj, ensure_ascii=False, indent=indent,
 		separators=(',', ': '), sort_keys=True) + '\n'
-	write_file(filename, message.encode('utf-8'))
+	write_file(filename, message)
 
 def read_json_file(filename):
 	# type: (str) -> Any

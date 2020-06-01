@@ -10,6 +10,8 @@ from __future__ import absolute_import, division, print_function
 import os
 import re
 import csv
+from typing import Any, Dict, Iterator
+
 from reconstruction.spreadsheets import JsonReader
 
 TSV_DIALECT = csv.excel_tab
@@ -20,10 +22,10 @@ OUT_FILE = os.path.join("out", "transport_reactions.tsv")
 # make list of transport reactions
 transport_reactions = []
 with open(REACTIONS_FILE, 'rU') as tsvfile:
-	reader = JsonReader(tsvfile, dialect=TSV_DIALECT)
+	reader = JsonReader(tsvfile, dialect=TSV_DIALECT)  # type: Iterator[Dict[str, Any]]
 	for row in reader:
-		reaction_id = row["reaction id"]
-		stoichiometry = row["stoichiometry"]
+		reaction_id = row["reaction id"]  # type: str
+		stoichiometry = row["stoichiometry"]  # type: Dict[str, int]
 
 		# get substrates and products
 		substrates = [mol_id for mol_id, coeff in stoichiometry.iteritems() if coeff < 0]

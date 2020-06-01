@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import scipy.sparse
+from typing import cast
 
 import wholecell.processes.process
 from wholecell.utils import units
@@ -259,9 +260,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.RNAs.moleculesNew(
 			n_RNAPs_to_activate,
 			TU_index=TU_index_partial_RNAs,
-			transcript_length=np.zeros(n_RNAPs_to_activate),
+			transcript_length=np.zeros(cast(int, n_RNAPs_to_activate)),
 			is_mRNA=is_mRNA,
-			is_full_transcript=np.zeros(n_RNAPs_to_activate, dtype=np.bool),
+			is_full_transcript=np.zeros(cast(int, n_RNAPs_to_activate), dtype=np.bool),
 			can_translate=is_mRNA,
 			RNAP_index=RNAP_indexes)
 

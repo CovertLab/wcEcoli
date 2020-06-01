@@ -44,7 +44,7 @@ validation_data = None  # type: Optional[ValidationDataEcoli]
 
 
 def analyze_variant(args):
-	# type: (Tuple[int, int]) -> np.ndarray[np.float]
+	# type: (Tuple[int, int]) -> np.ndarray
 	'''
 	Method to map each variant to for parallel analysis.
 

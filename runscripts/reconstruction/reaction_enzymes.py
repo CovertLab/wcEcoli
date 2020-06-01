@@ -58,7 +58,7 @@ def truncateNameRxnTrans(name):
 
 def addFilteredEntries(rxnNamesEnzymes):
 	# type: (Dict[str, List[str]]) -> None
-	d = {}
+	d = {}  # type: Dict[str, List[str]]
 	def add_enzymes(name):
 		# type: (str) -> None
 		if name is not None:

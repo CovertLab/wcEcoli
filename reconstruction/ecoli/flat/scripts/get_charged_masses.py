@@ -10,6 +10,7 @@ reactions are mass balanced
 from __future__ import absolute_import, division, print_function
 
 import os
+from typing import Any
 
 import numpy as np
 
@@ -25,7 +26,7 @@ output_filename = os.path.join(file_loc, 'charged_data.tsv')
 np.set_printoptions(suppress = True)
 
 # get raw and sim data
-raw_data = KnowledgeBaseEcoli()
+raw_data = KnowledgeBaseEcoli()  # type: Any
 sim_data = SimulationDataEcoli()
 sim_data.initialize(raw_data)
 

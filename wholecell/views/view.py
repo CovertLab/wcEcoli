@@ -12,7 +12,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 class View(object):
-	_stateID = None
+	_stateID = 'View'
 
 	def __init__(self, state, process, query): # weight, priority, coupling id, option to not evaluate the query
 		self._state = state

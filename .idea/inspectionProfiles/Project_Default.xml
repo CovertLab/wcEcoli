@@ -23,6 +23,7 @@
       <option name="ignoredIdentifiers">
         <list>
           <option value="future_builtins.zip" />
+          <option value="reconstruction.ecoli.knowledge_base_raw.KnowledgeBaseEcoli.metabolism_kinetics" />
         </list>
       </option>
     </inspection_tool>

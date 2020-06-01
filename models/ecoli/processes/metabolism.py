@@ -243,7 +243,7 @@ class FluxBalanceAnalysisModel(object):
 
 		self.exchange_constraints = metabolism.exchangeConstraints
 
-		self._biomass_concentrations = {}
+		self._biomass_concentrations = {}  # type: dict
 		self._getBiomassAsConcentrations = mass.getBiomassAsConcentrations
 
 		# Include ppGpp concentration target in objective if not handled kinetically in other processes

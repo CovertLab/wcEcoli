@@ -97,9 +97,8 @@ class Simulation(lens.actor.inner.Simulation):
 		for listenerClass in DEFAULT_LISTENER_CLASSES:
 			if listenerClass in self._listenerClasses:
 				raise SimulationException("The {} listener is included by"
-					+ " default in the Simulation class.".format(
-						listenerClass.name())
-					)
+					" default in the Simulation class.".format(
+					listenerClass.name()))
 
 		# Set instance attributes
 		for attrName, value in DEFAULT_SIMULATION_KWARGS.viewitems():

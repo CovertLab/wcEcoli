@@ -33,7 +33,7 @@ class AnalysisBase(scriptBase.ScriptBase):
 		"""
 		super(AnalysisBase, self).__init__()
 
-		self.plot_name = None
+		self.plot_name = 'AnalysisBase'
 		if analysis_plotter:
 			module = sys.modules[type(analysis_plotter).__module__]
 			self.plot_name = os.path.basename(module.__file__)

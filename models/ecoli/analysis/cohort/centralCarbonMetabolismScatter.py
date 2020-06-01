@@ -100,6 +100,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.ylabel("Mean WCM Reaction Flux [mmol/g/hr]")
 		whitePadSparklineAxis(ax)
 
+		# noinspection PyTypeChecker
 		ax.set_xlim([-20, 30])
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()

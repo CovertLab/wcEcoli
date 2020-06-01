@@ -9,6 +9,7 @@ import csv
 import json
 import re
 import numpy as np
+from typing import Any, Dict
 
 from wholecell.utils import units
 
@@ -49,6 +50,7 @@ class JsonReader(csv.DictReader, object):
 			]
 
 	def next(self):
+		# type: () -> Dict[str, Any]
 		attributeDict = {}
 		for key, raw_value in super(JsonReader, self).next().viewitems():
 			try:

@@ -226,7 +226,9 @@ def fitSimData_1(
 
 	if VERBOSE > 0:
 		print('Fitting promoter binding')
+	# noinspection PyTypeChecker
 	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
+	# noinspection PyTypeChecker
 	fitLigandConcentrations(sim_data, cellSpecs)
 
 	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints

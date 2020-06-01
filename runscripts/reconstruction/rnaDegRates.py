@@ -6,14 +6,15 @@
 
 from __future__ import absolute_import, division, print_function
 
+import csv
 import os
+from typing import Dict, Union
 
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 
-import csv
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 
 CSV_DIALECT = csv.excel_tab
@@ -44,8 +45,10 @@ with open(DEG_RATES, "rU") as csvfile:
 raw_data = KnowledgeBaseEcoli()
 
 modelRates = {}
-paperRates = {}
-for rna in raw_data.rnas:
+paperRates = {}  # type: Dict[str, Union[int, float]]
+
+# noinspection PyUnresolvedReferences
+for rna in raw_data.rnas:  # type: ignore [attr-defined]
 	geneID = rna["geneId"]
 	modelRates[geneID] = 60. / rna["halfLife"]
 	paperRates[geneID] = 0

@@ -13,7 +13,7 @@ import numpy as np
 class InternalState(object):
 	""" Internal State """
 
-	_name = None
+	_name = 'InternalState'
 
 	# Constructor
 	def __init__(self):

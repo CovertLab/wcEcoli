@@ -36,7 +36,7 @@ OUTLIER_REACTIONS = [
 
 
 def analyze_variant(args):
-	# type: (Tuple[int, AnalysisPaths, List[str], np.ndarray[float], List[bool]]) -> tuple
+	# type: (Tuple[int, AnalysisPaths, List[str], np.ndarray, List[bool]]) -> tuple
 	'''
 	Function to analyze the data for each variant in parallel
 
@@ -273,7 +273,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			+ correlation_coefficient
 		)
 
-		tick_labels = [r'$10^{%i}$' % (np.log10(x),) if x != 0 else '0' for x in lambdas]
+		tick_labels = [r'$10^{%i}$' % np.log10(x) if x != 0 else '0' for x in lambdas]
 		lambdas = [np.log10(x) if x != 0 else np.nanmin(np.log10(lambdas[lambdas != 0]))-1 for x in lambdas]
 
 		plt.figure(figsize = (8.5, 22))

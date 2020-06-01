@@ -32,7 +32,9 @@ def decomp(compressed_names, dtype, compressed_counts):
 	container.countsIs(counts_array)
 	return container
 
-decomp.__safe_for_unpickling__ = True
+
+# noinspection PyUnresolvedReferences,PyTypeHints
+decomp.__safe_for_unpickling__ = True  # type: ignore [attr-defined]
 
 
 class BulkObjectsContainer(object):
@@ -101,7 +103,7 @@ class BulkObjectsContainer(object):
 	"""
 
 	def __init__(self, objectNames, dtype = np.int64):
-		# type: (Iterable[str], np.dtype) -> None
+		# type: (Iterable[str], np.typing.DtypeLike) -> None
 		# Copy the object names into a tuple to ensure they are ordered and
 		# immutable
 		self._objectNames = tuple(objectNames)

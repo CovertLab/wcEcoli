@@ -24,7 +24,7 @@ from wholecell.listeners.listener import WriteMethod
 class Process(object):
 	""" Process """
 
-	_name = None
+	_name = 'Process'
 	EDIT_ACCESS = (Access.EDIT, )
 	EDIT_DELETE_ACCESS = (Access.EDIT, Access.DELETE)
 

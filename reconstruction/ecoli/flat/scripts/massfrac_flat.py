@@ -13,7 +13,7 @@ DIALECT = csv.excel_tab
 
 kb = KnowledgeBaseEcoli()
 
-drymass = kb._cellDryMassCompositionData
+drymass = getattr(kb, '_cellDryMassCompositionData')
 
 fraction_names = {
 	"Glycogen":"glycogen",

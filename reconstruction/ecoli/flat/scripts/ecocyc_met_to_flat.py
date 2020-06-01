@@ -4,8 +4,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import re
 
-from itertools import izip
 from collections import defaultdict
+from itertools import izip
+from typing import Any, Dict, List
 
 from reconstruction.spreadsheets import JsonWriter, JsonReader
 
@@ -71,7 +72,7 @@ for line in open(_LPLOG_FILE):
 started_constraints = False
 compound_id = None
 
-reaction_stoich = defaultdict(dict)
+reaction_stoich = defaultdict(dict)  # type: Dict[str, Dict[str, int]]
 
 for line in open(_LP_FILE):
 	if not started_constraints:
@@ -108,7 +109,9 @@ for line in open(_LP_FILE):
 			reaction_dict = reaction_stoich[reaction_id]
 
 			if compound_id in reaction_dict:
-				assert reaction_dict[compound_id] == stoich, "{}[{}]: {} != {}".format(reaction_id, compound_id, reaction_dict[compound_id], stoich)
+				assert reaction_dict[compound_id] == stoich, (
+					"{}[{}]: {} != {}".format(
+						reaction_id, compound_id, reaction_dict[compound_id], stoich))
 
 			else:
 				reaction_dict[compound_id] = stoich
@@ -151,7 +154,7 @@ with open(os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv"), "w")
 
 current_group = None
 
-data = {}
+data = {}  # type: Dict[str, List[Any]]
 
 with open(_FBA_FILE) as fba_file:
 	for line in fba_file:
