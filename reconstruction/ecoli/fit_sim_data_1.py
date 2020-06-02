@@ -12,7 +12,7 @@ from itertools import izip
 import os
 import multiprocessing as mp
 import traceback
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Callable, List
 
 from arrow import StochasticSystem
 from cvxpy import Variable, Problem, Minimize, norm
@@ -305,6 +305,7 @@ def apply_updates(func, args, labels, dest, cpus):
 			if result.successful():
 				dest.update(result.get())
 			else:
+				# noinspection PyBroadException
 				try:
 					result.get()
 				except Exception as e:

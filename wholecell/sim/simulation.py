@@ -13,7 +13,7 @@ import os.path
 import shutil
 import time
 import uuid
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Tuple
 
 import numpy as np
 
@@ -83,7 +83,7 @@ class Simulation(lens.actor.inner.Simulation):
 		)
 
 	# Attributes that may be optionally overwritten by a subclass
-	_listenerClasses = ()  # type: Sequence[Callable]
+	_listenerClasses = ()  # type: Tuple[Callable, ...]
 	_hookClasses = ()  # type: Sequence[Callable]
 	_timeStepSec = MAX_TIME_STEP
 	_shellColumnHeaders = ("Time (s)",)  # type: Sequence[str]

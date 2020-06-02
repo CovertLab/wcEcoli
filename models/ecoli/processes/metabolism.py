@@ -171,8 +171,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "countsToMolar", counts_to_molar.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "actualFluxes", fba.getReactionFluxes(self.model.kinetics_constrained_reactions) / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetFluxes", targets / time_step_unitless)
-                self.writeToListener("EnzymeKinetics", "targetFluxesUpper", upper_targets / time_step_unitless)
-                self.writeToListener("EnzymeKinetics", "targetFluxesLower", lower_targets /time_step_unitless)
+		self.writeToListener("EnzymeKinetics", "targetFluxesUpper", upper_targets / time_step_unitless)
+		self.writeToListener("EnzymeKinetics", "targetFluxesLower", lower_targets /time_step_unitless)
 
 		# TODO: add lower and upper targets
 
