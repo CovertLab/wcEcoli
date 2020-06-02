@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function
 import re
 
 import numpy as np
-from typing import Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 from unum import Unum
 
@@ -116,8 +116,9 @@ def process_simulated_fluxes(
 			else:
 				time_course = reverse * matches
 		if len(time_course):
-			means.append(np.mean(time_course).asNumber(FLUX_UNITS))
-			stdevs.append(np.std(time_course).asNumber(FLUX_UNITS))
+			time_course_ = time_course  # type: Any
+			means.append(np.mean(time_course_).asNumber(FLUX_UNITS))
+			stdevs.append(np.std(time_course_.asNumber(FLUX_UNITS)))
 	means_ = FLUX_UNITS * np.array(means)
 	stdevs_ = FLUX_UNITS * np.array(stdevs)
 	return means_, stdevs_

@@ -8,7 +8,7 @@ from collections import defaultdict
 from itertools import izip
 from typing import Any, Dict, List
 
-from reconstruction.spreadsheets import JsonWriter, JsonReader
+from reconstruction.spreadsheets import JsonWriter, read_tsv
 
 import numpy as np
 
@@ -270,11 +270,12 @@ biomassCoeffs = {
 
 biomassIDs = {mid[:-3] for mid in biomassCoeffs.viewkeys()}
 
-with open(os.path.join("reconstruction", "ecoli", "flat", "metabolites.tsv")) as massFile:
-	for entry in JsonReader(massFile, dialect = "excel-tab"):
-		if entry["id"] in biomassIDs:
-			for c in entry["location"]:
-				masses[entry["id"] + "[{}]".format(c)] = entry["mw7.2"]
+filename = os.path.join("reconstruction", "ecoli", "flat", "metabolites.tsv")
+rows = read_tsv(filename)
+for entry in rows:
+	if entry["id"] in biomassIDs:
+		for c in entry["location"]:
+			masses[entry["id"] + "[{}]".format(c)] = entry["mw7.2"]
 
 for outName, groupName in _MASS_CATEGORIES.viewitems():
 	moleculeIDs = {

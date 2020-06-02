@@ -891,7 +891,7 @@ class VoronoiMaster(object):
             canvas_obj = PolygonClass(custom_shape_vertices)
 
         labels = list(dic.keys())
-        values = [self._find_total(dic)]
+        values = [self._find_total(dic[key]) for key in dic]
         if voronoi_list_old is not None:
             voronoi_old = voronoi_list_old[0]
             voronoi_out, error_0 = self._voronoi_main_function(

@@ -1,13 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import csv
-from reconstruction.spreadsheets import JsonReader, JsonWriter
+from reconstruction.spreadsheets import read_tsv, JsonWriter
 
 
 def load_tsv(file_name):
-	with open(file_name, 'rU') as csvfile:
-		reader = JsonReader(csvfile, dialect = csv.excel_tab)
-		return [row for row in reader]
+	return read_tsv(file_name)
 
 def write_tsv(list_of_dicts, file_name):
 	with open(file_name, "w") as outfile:

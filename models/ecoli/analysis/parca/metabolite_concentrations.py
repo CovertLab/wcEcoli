@@ -9,7 +9,6 @@ from __future__ import absolute_import, division, print_function
 
 import cPickle
 import os
-from typing import Dict
 
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
