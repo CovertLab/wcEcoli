@@ -46,6 +46,8 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.enzymeCountsInit = np.zeros(len(self.metabolism.kinetic_constraint_enzymes), np.float64)
 		self.countsToMolar = np.zeros(1, np.float64)
 		self.targetFluxes = np.zeros(self.n_constrained_reactions, np.float64)
+                self.targetFluxesUpper = np.zeros(self.n_constrained_reactions, np.float64)
+                self.targetFluxesLower = np.zeros(self.n_constrained_reactions, np.float64)
 		self.actualFluxes = np.zeros(self.n_constrained_reactions, np.float64)
 
 	def update(self):
@@ -57,6 +59,8 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 			'metaboliteCountsFinal': 'metaboliteNames',
 			'enzymeCountsInit': 'enzymeIDs',
 			'targetFluxes': 'constrainedReactions',
+                        'targetFluxesUpper': 'constrainedReactions',
+                        'targetFluxesLower': 'constrainedReactions',
 			'actualFluxes': 'constrainedReactions'}
 
 		tableWriter.writeAttributes(
@@ -77,5 +81,7 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 			countsToMolar = self.countsToMolar,
 			enzymeCountsInit = self.enzymeCountsInit,
 			targetFluxes = self.targetFluxes,
+                        targetFluxesUpper = self.targetFluxesUpper,
+                        targetFluxesLower = self.targetFluxesLower,
 			actualFluxes = self.actualFluxes,
 			)

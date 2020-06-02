@@ -2,11 +2,34 @@
 
 from __future__ import absolute_import, division, print_function
 
+import functools
 import multiprocessing as mp
 import os
+import sys
+import traceback
 
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union
 
+
+def full_traceback(func):
+	# type: (Callable) -> Callable
+	"""
+	Decorator to use on a function used for multiprocessing tasks
+	(eg apply_async) in order to capture the full stack trace for any errors
+	that arise during execution.
+
+	NOTE: no longer needed in python3 as the traceback is properly handled
+	"""
+
+	@functools.wraps(func)
+	def wrapper(*args, **kwargs):
+		try:
+			return func(*args, **kwargs)
+		except Exception as e:
+			msg = '{} in wrapped function {}\n\nOriginal {}'.format(
+				type(e).__name__, func.__name__, traceback.format_exc())
+			raise RuntimeError(msg)
+	return wrapper if sys.version_info[0] < 3 else func
 
 def is_macos():
 	# type: () -> bool
