@@ -2,7 +2,7 @@
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-from typing import Iterable
+from typing import Any, cast, Iterable
 import zlib
 
 ZLIB_LEVEL = 7
@@ -33,8 +33,8 @@ def decomp(compressed_names, dtype, compressed_counts):
 	return container
 
 
-# noinspection PyUnresolvedReferences,PyTypeHints
-decomp.__safe_for_unpickling__ = True  # type: ignore [attr-defined]
+# So mypy won't complain that the Callable has no such attribute.
+cast(Any, decomp).__safe_for_unpickling__ = True
 
 
 class BulkObjectsContainer(object):
@@ -103,7 +103,7 @@ class BulkObjectsContainer(object):
 	"""
 
 	def __init__(self, objectNames, dtype = np.int64):
-		# type: (Iterable[str], np.typing.DtypeLike) -> None
+		# type: (Iterable[str], Any) -> None
 		# Copy the object names into a tuple to ensure they are ordered and
 		# immutable
 		self._objectNames = tuple(objectNames)

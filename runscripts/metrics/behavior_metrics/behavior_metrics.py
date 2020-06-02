@@ -10,7 +10,7 @@ import cPickle
 import importlib
 from os import path
 import re
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Text, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Text, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -122,7 +122,7 @@ def find_indices_bulk(to_search, targets):
 
 
 def np_pick(array, pick_spec):
-	# type: (np.ndarray, List[Union[List[int], int]]) -> Any
+	# type: (np.ndarray, Iterable[Union[List[int], int]]) -> Any
 	"""Perform numpy indexing based on a specification
 
 	Arguments:
@@ -133,9 +133,9 @@ def np_pick(array, pick_spec):
 			indices.
 
 	Returns:
-		An array including the specified indices.
+		The given array indexed by the specified indices.
 	"""
-	parsed_spec = []
+	parsed_spec = []  # type: List[Union[Tuple[int, ...], int]]
 	for axis_spec in pick_spec:
 		if isinstance(axis_spec, list):
 			parsed_spec.append(tuple(axis_spec))

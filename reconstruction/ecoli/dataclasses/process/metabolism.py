@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 from copy import copy
 import re
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, cast, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import sympy as sp
@@ -561,8 +561,7 @@ class Metabolism(object):
 		reaction_catalysts = {}
 
 		# Load and parse reaction information from raw_data
-		# noinspection PyUnresolvedReferences
-		for reaction in raw_data.reactions:  # type: ignore [attr-defined]
+		for reaction in cast(Any, raw_data).reactions:
 			reaction_id = reaction["reaction id"]
 			stoich = reaction["stoichiometry"]
 			reversible = reaction["is reversible"]
@@ -921,8 +920,7 @@ class Metabolism(object):
 		known_metabolites_ = set() if known_metabolites is None else known_metabolites
 
 		constraints = {}  # type: Dict[Tuple[str, str], Dict[str, list]]
-		# noinspection PyUnresolvedReferences
-		for constraint in raw_data.metabolism_kinetics:  # type: ignore [attr-defined]
+		for constraint in cast(Any, raw_data).metabolism_kinetics:
 			rxn = constraint['reactionID']
 			enzyme = constraint['enzymeID']
 			metabolites = constraint['substrateIDs']
@@ -1069,7 +1067,7 @@ class Metabolism(object):
 			else:
 				new_rxn = rxn
 
-			new_constraints[new_rxn] = dict(constraints[(rxn, enzyme)], enzyme=enzyme)
+			new_constraints[new_rxn] = dict(iterable=constraints[(rxn, enzyme)], enzyme=enzyme)
 
 		return new_constraints, stoich, rxn_catalysts, reversible_rxns
 

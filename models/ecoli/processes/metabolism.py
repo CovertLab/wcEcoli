@@ -251,17 +251,17 @@ class FluxBalanceAnalysisModel(object):
 		self.getppGppConc = sim_data.growthRateParameters.getppGppConc
 
 		# go through all media in the timeline and add to metaboliteNames
-		self.metaboliteNamesFromNutrients = set()
+		metaboliteNamesFromNutrients = set()
 		exchange_molecules = set()
 		if include_ppgpp:
-			self.metaboliteNamesFromNutrients.add(self.ppgpp_id)
+			metaboliteNamesFromNutrients.add(self.ppgpp_id)
 		for time, media_id in timeline:
-			self.metaboliteNamesFromNutrients.update(
+			metaboliteNamesFromNutrients.update(
 				metabolism.concentrationUpdates.concentrationsBasedOnNutrients(media_id)
 				)
 			exchanges = sim_data.external_state.exchange_data_from_media(media_id)
 			exchange_molecules.update(exchanges['externalExchangeMolecules'])
-		self.metaboliteNamesFromNutrients = list(sorted(self.metaboliteNamesFromNutrients))
+		self.metaboliteNamesFromNutrients = list(sorted(metaboliteNamesFromNutrients))
 		exchange_molecules = list(sorted(exchange_molecules))
 		molecule_masses = dict(zip(exchange_molecules,
 			sim_data.getter.getMass(exchange_molecules).asNumber(MASS_UNITS / COUNTS_UNITS)))

@@ -13,8 +13,7 @@ import os.path
 import shutil
 import time
 import uuid
-import lens
-from lens.actor.emitter import get_emitter
+from typing import Callable, Sequence
 
 import numpy as np
 
@@ -23,6 +22,9 @@ from wholecell.utils import filepath
 
 import wholecell.loggers.shell
 import wholecell.loggers.disk
+
+import lens
+from lens.actor.emitter import get_emitter
 
 MAX_TIME_STEP = 2.
 DEFAULT_SIMULATION_KWARGS = dict(
@@ -81,10 +83,10 @@ class Simulation(lens.actor.inner.Simulation):
 		)
 
 	# Attributes that may be optionally overwritten by a subclass
-	_listenerClasses = ()
-	_hookClasses = ()
+	_listenerClasses = ()  # type: Sequence[Callable]
+	_hookClasses = ()  # type: Sequence[Callable]
 	_timeStepSec = MAX_TIME_STEP
-	_shellColumnHeaders = ("Time (s)",)
+	_shellColumnHeaders = ("Time (s)",)  # type: Sequence[str]
 
 	# Constructors
 	def __init__(self, **kwargs):

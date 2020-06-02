@@ -13,7 +13,7 @@ import re
 
 from matplotlib import pyplot as plt
 import numpy as np
-from typing import List, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
@@ -32,7 +32,7 @@ FRAC_FLUX_OFF_AXIS = 0.05
 
 OUTLIER_REACTIONS = [
 	# Add reaction IDs to exclude from central carbon correlation
-	]
+	]  # type: Sequence
 
 
 def analyze_variant(args):
@@ -65,7 +65,7 @@ def analyze_variant(args):
 	kinetic_objective_values = []
 	actual_flux = []
 	target_flux = []
-	toya_model_fluxes = {}
+	toya_model_fluxes = {}  # type: Dict[str, List[np.ndarray]]
 	for rxn in toya_reactions:
 		toya_model_fluxes[rxn] = []
 
@@ -133,7 +133,7 @@ def analyze_variant(args):
 		reaction_fluxes = (reaction_fluxes / dcw_to_volume).asNumber(DCW_FLUX_UNITS).T
 
 		for toya_reaction_id in toya_reactions:
-			flux_time_course = []
+			flux_time_course = []  # type: List[np.ndarray]
 
 			for rxn in reaction_ids:
 				if re.findall(toya_reaction_id, rxn):
@@ -200,7 +200,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		total_sims = ap.n_seed * ap.n_generation
 
 		if n_variants <= 1:
-			print('This plot only runs for multiple variants'.format(__name__))
+			print('This plot {} only runs for multiple variants'.format(__name__))
 			return
 
 		# Load validation data

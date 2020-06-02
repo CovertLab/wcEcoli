@@ -72,8 +72,8 @@ def load_src(attempt_match):
 			if attempt_match:
 				fcs = np.abs(fcs)  # Bad!! - ignores annotated condition comparison regulation direction
 			tf_data[gene] = {
-				'mean': np.mean(fcs),
-				'std': np.std(fcs, ddof=1),
+				'mean': float(np.mean(fcs)),
+				'std': float(np.std(fcs, ddof=1)),
 				}
 		processed_data[tf] = tf_data
 

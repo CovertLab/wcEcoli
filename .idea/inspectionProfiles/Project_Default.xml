@@ -3,6 +3,7 @@
     <option name="myName" value="Project Default" />
     <inspection_tool class="Annotator" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="CsvValidation" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="PyAttributeOutsideInitInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="PyCompatibilityInspection" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ourVersions">
         <value>
@@ -16,10 +17,32 @@
       </option>
     </inspection_tool>
     <inspection_tool class="PyMethodMayBeStaticInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="PyMissingConstructorInspection" enabled="true" level="WARNING" enabled_by_default="false">
+      <scope name="NOT pyi files" level="WARNING" enabled="true" />
+    </inspection_tool>
     <inspection_tool class="PyPep8Inspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="PyPep8NamingInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="PyProtectedMemberInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="PyRedundantParenthesesInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="PyShadowingBuiltinsInspection" enabled="true" level="WEAK WARNING" enabled_by_default="false">
+      <scope name="NOT pyi files" level="WEAK WARNING" enabled="true" />
+    </inspection_tool>
+    <inspection_tool class="PyShadowingNamesInspection" enabled="true" level="WEAK WARNING" enabled_by_default="false">
+      <scope name="NOT pyi files" level="WEAK WARNING" enabled="true" />
+    </inspection_tool>
     <inspection_tool class="PySingleQuotedDocstringInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
-    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+    <inspection_tool class="PyUnboundLocalVariableInspection" enabled="true" level="WARNING" enabled_by_default="false">
+      <scope name="NOT pyi files" level="WARNING" enabled="true" />
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="INFORMATION" enabled_by_default="true">
+      <scope name="py files" level="WARNING" enabled="true">
+        <option name="ignoredIdentifiers">
+          <list>
+            <option value="future_builtins.zip" />
+            <option value="reconstruction.ecoli.knowledge_base_raw.KnowledgeBaseEcoli.metabolism_kinetics" />
+          </list>
+        </option>
+      </scope>
       <option name="ignoredIdentifiers">
         <list>
           <option value="future_builtins.zip" />
@@ -31,6 +54,9 @@
       <option name="processCode" value="true" />
       <option name="processLiterals" value="true" />
       <option name="processComments" value="true" />
+    </inspection_tool>
+    <inspection_tool class="SyntaxError" enabled="true" level="ERROR" enabled_by_default="false">
+      <scope name="NOT tsv files" level="ERROR" enabled="true" />
     </inspection_tool>
   </profile>
 </component>

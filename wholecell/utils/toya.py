@@ -65,11 +65,13 @@ def get_root_to_id_indices_map(sim_reaction_ids):
 		Map from ID root to a list of the indices in
 		sim_reaction_ids of reactions having that root.
 	"""
-	root_to_id_indices_map = dict()
+	root_to_id_indices_map = dict()  # type: Dict[str, List[int]]
 	matcher = re.compile("^([A-Za-z0-9-/.]+)")
 	for i, rxn_id in enumerate(sim_reaction_ids):
-		root = matcher.match(rxn_id).group(1)
-		root_to_id_indices_map.setdefault(root, []).append(i)
+		match = matcher.match(rxn_id)
+		if match:
+			root = match.group(1)
+			root_to_id_indices_map.setdefault(root, []).append(i)
 	return root_to_id_indices_map
 
 
@@ -101,10 +103,10 @@ def process_simulated_fluxes(
 		lists will have units FLUX_UNITS.
 	"""
 	reaction_ids = np.array(reaction_ids)
-	means = []
-	stdevs = []
+	means = []  # type: List[Unum]
+	stdevs = []  # type: List[Unum]
 	for output_id in output_ids:
-		time_course = []
+		time_course = []  # type: List[Unum]
 		for i_rxn_id in root_to_id_indices_map[output_id]:
 			rxn_id = reaction_ids[i_rxn_id]
 			reverse = -1 if re.findall("(reverse)", rxn_id) else 1
@@ -115,10 +117,10 @@ def process_simulated_fluxes(
 				time_course = reverse * matches
 		if len(time_course):
 			means.append(np.mean(time_course).asNumber(FLUX_UNITS))
-			stdevs.append(np.std(time_course.asNumber(FLUX_UNITS)))
-	means = FLUX_UNITS * np.array(means)
-	stdevs = FLUX_UNITS * np.array(stdevs)
-	return means, stdevs
+			stdevs.append(np.std(time_course).asNumber(FLUX_UNITS))
+	means_ = FLUX_UNITS * np.array(means)
+	stdevs_ = FLUX_UNITS * np.array(stdevs)
+	return means_, stdevs_
 
 
 def process_toya_data(output_ids, reaction_ids, data):
