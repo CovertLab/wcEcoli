@@ -1067,7 +1067,8 @@ class Metabolism(object):
 			else:
 				new_rxn = rxn
 
-			new_constraints[new_rxn] = dict(iterable=constraints[(rxn, enzyme)], enzyme=enzyme)
+			# noinspection PyTypeChecker
+			new_constraints[new_rxn] = dict(constraints[(rxn, enzyme)], enzyme=enzyme)
 
 		return new_constraints, stoich, rxn_catalysts, reversible_rxns
 
