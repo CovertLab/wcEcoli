@@ -8,16 +8,19 @@ set -e
 module load wcEcoli/sherlock2
 
 ### -------------------------------------------------------------------
-### Edit this line to make the PR build use a new pyenv.
-### Revert to `pyenv local wcEcoli2` before merging the PR into master.
+### Edit this line to make the PR build use another pyenv.
+### Revert it `wcEcoli2` before merging the PR into master.
 ### -------------------------------------------------------------------
-pyenv local wcEcoli2
+WCECOLI_PYENV=wcEcoli2
+pyenv local ${WCECOLI_PYENV}
 
 make clean
 make compile
 
 PYTHONPATH=$PWD:$PYTHONPATH pytest --cov=wholecell --cov-report xml \
     --junitxml=unittests.xml
+
+(export PYENV_VERSION="mypy:${WCECOLI_PYENV}"; mypy --py2)
 
 sh runscripts/jenkins/fireworks-config.sh $HOST $NAME $PORT $PASSWORD
 
