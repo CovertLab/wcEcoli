@@ -32,13 +32,10 @@ def read_tsv(filename):
 	# ########################################################################
 	# NOTE: Python 3 csv requires opening the file as text 'r' with the right
 	# character encoding while Python 2 csv requires opening it as bytes 'rb'
-	# then decoding the UTF-8 bytes after csv reads it but before DictReader
-	# or at least before json.loads().
+	# then decoding from UTF-8 after csv reads it but before DictReader or at
+	# least before json.loads().
 	#
-	# Several of the .tsv files are in UTF-8. The rest are the ASCII subset.
-	#
-	# Currently several modules convert fields in JsonReader's outupt using
-	# x.encode("utf-8"). It should be x.decode("utf-8")!
+	# Several of the .tsv files are in UTF-8. The rest are in the ASCII subset.
 	# ########################################################################
 
 	mode = 'rb' if six.PY2 else 'r'
