@@ -26,7 +26,7 @@ fraction_names = {
 
 keys = drymass.dtype.names
 with open(os.path.join(OUTPUT_DIR, "dryMassComposition.tsv"), "w") as outfile:
-	writer = JsonWriter(outfile, keys, dialect = DIALECT)
+	writer = JsonWriter(outfile, keys)
 
 	writer.writeheader()
 
@@ -40,7 +40,7 @@ for kb_name, file_name in fraction_names.viewitems():
 	keys = array.dtype.names
 
 	with open(os.path.join(OUTPUT_DIR, "massFractions", "{}Fractions.tsv".format(file_name)), "w") as outfile:
-		writer = JsonWriter(outfile, keys, dialect = DIALECT)
+		writer = JsonWriter(outfile, keys)
 
 		writer.writeheader()
 

@@ -32,7 +32,7 @@ sim_data.initialize(raw_data)
 
 # determine masses and write to output file
 with open(output_filename, 'w') as out:
-	writer = JsonWriter(out, ["id", "mw7.2", "location"], dialect = "excel-tab")
+	writer = JsonWriter(out, ["id", "mw7.2", "location"])
 
 	trnas = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']]
 	charged = [x['modifiedForms'] for x in raw_data.rnas if x['id']+'[c]' in trnas]

@@ -229,7 +229,7 @@ def replace_uncertain_entries(data):
 	headers = raw_data[0]
 
 	with open(OUTPUT_FILE, 'w') as f:
-		writer = JsonWriter(f, headers, dialect=csv.excel_tab)
+		writer = JsonWriter(f, headers)
 		writer.writeheader()
 
 		# Check each fold change and update if needed

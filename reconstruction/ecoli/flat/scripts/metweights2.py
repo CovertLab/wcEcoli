@@ -61,7 +61,7 @@ for molecule_name, stoich in ADDED_SPECIES.viewitems():
 
 # Write out metabolites
 with open(OUTPUT_METS, "w") as out:
-	writer = JsonWriter(out, ["id", "mw7.2", "location"], dialect = "excel-tab")
+	writer = JsonWriter(out, ["id", "mw7.2", "location"])
 	writer.writeheader()
 	for molecule_name, weight in weights.viewitems():
 		if molecule_name == "WATER":
@@ -75,7 +75,7 @@ with open(OUTPUT_METS, "w") as out:
 
 # Write out water
 with open(OUTPUT_WATER, "w") as out:
-	writer = JsonWriter(out, ["id", "mw7.2", "location"], dialect = "excel-tab")
+	writer = JsonWriter(out, ["id", "mw7.2", "location"])
 	writer.writeheader()
 	for molecule_name, weight in weights.viewitems():
 		if molecule_name != "WATER":

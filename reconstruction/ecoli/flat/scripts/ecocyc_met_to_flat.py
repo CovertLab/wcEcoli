@@ -138,7 +138,6 @@ with open(os.path.join("reconstruction", "ecoli", "flat", "reactions.tsv"), "w")
 	writer = JsonWriter(
 		outfile,
 		["reaction id", "stoichiometry", "is reversible"],
-		dialect = "excel-tab"
 		)
 
 	writer.writeheader()
@@ -231,7 +230,6 @@ with open(os.path.join("reconstruction", "ecoli", "flat", "biomass.tsv"), "w") a
 	writer = JsonWriter(
 		outfile,
 		["group id", "molecule id", "coefficient"],
-		dialect = "excel-tab"
 		)
 
 	writer.writeheader()
@@ -303,7 +301,6 @@ for outName, groupName in _MASS_CATEGORIES.viewitems():
 		writer = JsonWriter(
 			outfile,
 			["metaboliteId", "massFraction"],
-			dialect = "excel-tab"
 			)
 
 		writer.writeheader()
@@ -317,7 +314,6 @@ for section_name in ("nutrients", "secretions"):
 		writer = JsonWriter(
 			outfile,
 			["molecule id", "lower bound", "upper bound"],
-			dialect = "excel-tab"
 			)
 
 		writer.writeheader()
