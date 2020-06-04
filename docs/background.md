@@ -135,7 +135,27 @@ with open('output.tsv', 'w') as f:
 ### New process
 
 ### New variant
+Variants are used to compare changes to `sim_data` that cause different initialization and simulation conditions.  Each variant can be thought of as an experiment with the model and can be used to test a hypothesis, analyze sensitivity, and/or get a better understanding of parameters.  When running simulations, a range of variant indices can be selected with each one performing a different modification to `sim_data`.  The effect of each index will be determined by the function added in the steps below.  Variants are typically paired with one or more variant level analysis scripts in order to make the desired comparisons between changes in `sim_data`.  The following steps outline how to add a new variant called `new_variant.py`.
+1. Create a new variant script in [models/ecoli/sim/variants/](https://github.com/CovertLab/wcEcoli/tree/master/models/ecoli/sim/variants) by copying the `template.py` file to a new filename that describes what your variant does.
+    ```
+    cp models/ecoli/sim/variants/template.py models/ecoli/sim/variants/new_variant.py
+    ```
+1. Update the new file at the points labeled `UPDATE:`.  You will want to update the docstring at the top, rename the function to match the filename, make modifications to `sim_data` based on the `index` argument, and return descriptions based on the changes made for the specific `index`.
+1. Add an import statement and variant mapping (sorted in alphabetical order) to [models/ecoli/sim/variants/\_\_init\_\_.py](https://github.com/CovertLab/wcEcoli/tree/master/models/ecoli/sim/variants/__init__.py):
+    ```
+    from .new_variant import new_variant
 
+    nameToFunctionMapping = {
+        ...
+        'new_variant': new_variant,
+        ...
+    ```
+1. (Optional) Create a variant analysis script (see 'New analysis' section below) to analyze results of the new variant.
+
+To run a manual simulation with the first two indices of the new variant:
+```
+python runscripts/manual/runSim.py --variant new_variant 0 1
+```
 
 ### New listener
 
