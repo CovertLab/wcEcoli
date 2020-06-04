@@ -5,10 +5,9 @@ module load wcEcoli/sherlock2
 WCECOLI_PYENV=wcEcoli2
 pyenv local ${WCECOLI_PYENV}
 
-make clean
-make compile
+make clean compile
 
 PYTHONPATH=$PWD:$PYTHONPATH pytest --cov=wholecell --cov-report xml \
     --junitxml=unittests.xml
 
-(export PYENV_VERSION="mypy:${WCECOLI_PYENV}"; mypy --py2)
+(export PYENV_VERSION="mypy:${WCECOLI_PYENV}"; echo ---Running mypy---; mypy --py2)
