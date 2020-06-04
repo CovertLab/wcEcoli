@@ -113,6 +113,7 @@ Analysis to be performed on `raw_data`, `sim_data` and `validation_data` only.  
 
 ## Adding to the codebase
 ### New raw data
+Raw data should always be annotated with the source and process used to generate it for reproducibility.  The best way is to include it in the file as noted below and described in the PR that incorporates the data into the repo.  Adding several data files and scripts to a runscript directory could also use a README.md if desired to point to sources and describe how to run the scripts/what output to expect.
 1. Add a raw data file to [reconstruction/ecoli/flat/](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/flat). Data is stored in a `.tsv` file format with special formatting handling to allow units (specified in parantheses in column headers), lists, dictionaries and comments (lines starting with `#`).
 1. Annotate where the data came from in a comment at the top of the file (URL for the data source and/or script used for processing original data - [see example](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/flat/metabolism_kinetics.tsv)). If a script was required, add it to [runscripts/reconstruction](https://github.com/CovertLab/wcEcoli/tree/master/runscripts/reconstruction).
 1. Add the filename to `LIST_OF_DICT_FILENAMES` in [knowledge_base_raw.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/knowledge_base_raw.py). This will cause the data to be loaded into the class when an instance of `KnowledgeBaseEcoli` is created.
@@ -134,6 +135,7 @@ with open('output.tsv', 'w') as f:
 ### New process
 
 ### New variant
+
 
 ### New listener
 
