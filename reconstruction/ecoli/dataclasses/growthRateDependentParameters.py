@@ -7,6 +7,8 @@ SimulationData mass data
 
 from __future__ import absolute_import, division, print_function
 
+from typing import Tuple
+
 import numpy as np
 from scipy import interpolate, stats
 import unum
@@ -109,7 +111,17 @@ class Mass(object):
 
 	# Set based on growth rate avgCellDryMass
 	def getAvgCellDryMass(self, doubling_time):
-		# TODO: compare to previous results
+		# type: (units.Unum) -> units.Unum
+		"""
+		Gets the dry mass for an average cell at the given doubling time.
+
+		Args:
+			doubling_time (float, time units): expected doubling time
+
+		Returns:
+			average cell dry mass (float, mass units)
+		"""
+
 		doubling_time = doubling_time.asNumber(units.min)
 		inverse_mass = self._dryMassParams[0] * doubling_time + self._dryMassParams[1]
 		if inverse_mass < 0:
@@ -484,7 +496,23 @@ def _loadTableIntoObjectGivenDoublingTime(obj, list_of_dicts):
 		attrValue = _useFitParameters(obj._doubling_time, **fitParameters)
 		setattr(obj, key, attrValue)
 
-def linear_regression(x, y, r_tol=0.999, p_tol=1e-2):
+def linear_regression(x, y, r_tol=0.999, p_tol=1e-5):
+	# type: (np.ndarray, np.ndarray, float, float) -> Tuple[float, float]
+	"""
+	Perform linear regression on a data set and check that statistics are
+	within expected values to confirm a good linear fit.
+
+	Args:
+		x (float): x values for regression
+		y (float): y values for regression
+		r_tol: lower limit for r statistic
+		p_tol: upper limit for p statistic
+
+	Returns:
+		slope: linear fit slope
+		intercept: linear fit intercept
+	"""
+
 	result = stats.linregress(x, y)
 
 	if result.rvalue < r_tol:
