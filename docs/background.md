@@ -100,7 +100,16 @@ After generating data series, display the data by running the following command 
 python site/server.py ~/wcEcoli/out/manual/kb ~/wcEcoli/out/manual/wildtype_000000/000000/generation_000000/000000/seriesOut
 ```
 
+Alternatively, you can set your environment variable `$CAUSALITY_SERVER` as the path to `site/server.py` in the Causality repo (TIP: add this to your `.bash_profile`) and run the manual runscript with the `--show` flag from this repo to automatically display the data generated and allow for easier selection of specific seeds/generations etc:
+```
+export CAUSALITY_SERVER="~/path/to/causality/site/server.py"
+python runscripts/manual/buildCausalityNetwork.py --show
+```
+
 Useful network topologies can be saved in [models/ecoli/analysis/causality_network/saved_networks](https://github.com/CovertLab/wcEcoli/tree/master/models/ecoli/analysis/causality_network/saved_networks) and loaded through the web interface after running the `python site/server.py ...` command above.
+
+### Parca
+Analysis to be performed on `raw_data`, `sim_data` and `validation_data` only.  This does not require any simulation output and is only run once after the parca has run to visualize raw data and processed data.
 
 ## Adding to the codebase
 ### New raw data
@@ -111,12 +120,11 @@ Useful network topologies can be saved in [models/ecoli/analysis/causality_netwo
 
 **NOTE:** if there are issues loading the new file, try saving it using `JsonWriter` from [reconstruction/spreadsheets.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/spreadsheets.py) to ensure proper formatting:
 ```python
-import csv
 from reconstruction.spreadsheets import JsonWriter
 
 headers = ['a', 'b']
 with open('output.tsv', 'w') as f:
-    writer = JsonWriter(f, headers, dialect=csv.excel_tab)
+    writer = JsonWriter(f, headers)
     writer.writeheader()
     writer.writerow({'a': 1, 'b': 2})  # write as many rows of data as needed
 ```
