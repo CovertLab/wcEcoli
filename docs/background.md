@@ -62,9 +62,6 @@ Each process has three entry points:
 
 ## Listeners
 
-If you want to save new values to analyze after the simulation, you must write it out via a _listener_. Listeners log data during the simulation. To add a listener to the code, add the file to `wcEcoli/models/ecoli/listeners/` and add the listener to `_listenerClasses` in `wcEcoli/models/ecoli/sim/simulation.py`.
-
-
 ## States
 
 ### Bulk molecules
@@ -158,6 +155,26 @@ python runscripts/manual/runSim.py --variant new_variant 0 1
 ```
 
 ### New listener
+
+If you want to save new values to analyze after the simulation, you must write it out via a _listener_. Listeners log data during the simulation and can write attributes or columns. Attributes are values that are static throughout the simulation like IDs and are written once at the beginning of simulations.  Columns are values that are written every time step like number of reactions that occurred.  Listeners contain data that is similar to each other, often from the same process and used in the same analysis plots.  The following steps outline how to add a new listener:
+
+1. Create a new file in [wcEcoli/models/ecoli/listeners/](https://github.com/CovertLab/wcEcoli/tree/master/models/ecoli/listeners), you can use other listeners in the directory as a template.  It should contain a class definition that inherits from `wholecell.listeners.listener.Listener`.
+1. Complete the `initialize()` function.  This should save any values from `sim_data` or processes/states in `sim` that are required like IDs or number of expected attributes.  This function is called after processes have initialized so process attributes that are set during process `initialize()` calls can be accessed here.
+1. Complete the `allocate()` function.  This should initialize values and types for columns.  The initial state of sims along with all listener values is written once before the evolution of a time step so these initial values will be the first entry in a column.
+1. Complete the `tableCreate(self, tableWriter)` function.  This function is called once at the beginning of simulations and should define subcolumns (a dictionary that maps column name keys to values that contain an array with a corresponding ID for each entry in the column), write attributes (including subcolumns, if needed) using `tableWriter.writeAttributes()`, and define any columns that can be of variable length using `tableWriter.set_variable_length_columns()`.
+1. (Optional) Complete the `update()` function.  This function is called a the end of each time step before values are written and should update any class attributes that will be written to file based on the current state.  Often, processes will set values to be written and this function is unnecessary.
+1. Complete the `tableAppend(self, tableWriter)` function.  This function is called at the end of each time step after `update()` has been called and writes values for each column to file using `tableWriter.append()`.
+1. Add the listener to [wcEcoli/models/ecoli/sim/simulation.py]().  You will need to import the class at the top of the file and add the class to the `_listenerClasses` tuple.
+1. Save data during sims by calling `self.writeToListener('NewListener', 'new_column', value)` in a process to write a value to a column.  `value` can be a single value (float, str, etc) or a list/array of fixed length at every time step (unless `tableWriter.set_variable_length_columns()` was used in `tableCreate()` for the given `'new_column'`).
+1. Load data during analysis plots by creating a table reader and reading the desired attribute or column, where `simOutDir` will be passed in to the `do_plot` function:
+    ```
+    from wholecell.io.tablereader import TableReader
+
+    reader = TableReader(os.path.join(simOutDir, 'NewListener'))
+    attribute = reader.readAttribute('new_attribute')
+    column = reader.readColumn('new_column')
+    ```
+
 
 ### New analysis
 This outlines how to add a new single analysis plot called `new_analysis.py`.  For other types of analysis, only the directory needs to be changed.  New analysis plots might require additional simulation data to be saved to disk by adding entries to an existing listener or creating a new listener (see 'New listener' section above).
