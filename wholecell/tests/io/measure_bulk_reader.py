@@ -11,14 +11,14 @@ Usage example:
 @date: Created 9/28/18
 '''
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import os
 import sys
 import time
 
 import numpy as np
+from typing import Callable, List
 
 from wholecell.io.tablereader import TableReader
 
@@ -27,6 +27,7 @@ BLOCK_SIZE = 5000  # roughly number of proteins or RNA
 
 
 def test_method(method, text):
+	# type: (Callable[[], np.ndarray], str) -> np.ndarray
 	'''
 	Tests a method for indexing into data from a reader
 
@@ -36,7 +37,7 @@ def test_method(method, text):
 		text (str): description of method
 	'''
 
-	counts = None
+	counts = np.array([])
 	start = time.time()
 	for i in range(ITERS):
 		counts = method()
@@ -92,6 +93,7 @@ def test_new_block(reader, column, indices):
 		'New method, read subcolumns')
 
 def test_functions(functions, text, reader, column, indices):
+	# type: (List[Callable[[TableReader, str, np.ndarray], np.ndarray]], str, TableReader, str, np.ndarray) -> np.ndarray
 	'''
 	Tests the given readColumn methods for performance and the same output
 

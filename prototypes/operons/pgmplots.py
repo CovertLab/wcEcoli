@@ -26,7 +26,6 @@ plt.legend()
 plt.title('protein')
 
 plt.subplot(212)
-plt.plot(mRNACounts[:,mRNA_names.index('EG12197_RNA[c]')], color='r', label='pgm')
 plt.plot(mRNACounts[:,mRNA_names.index('EG12144_RNA[c]')], color='g', label='seqA')
 plt.plot(mRNACounts[:,mRNA_names.index('EG12197_EG12144_RNA[c]')], color='b', label='pgm_seqA_RNA')
 plt.legend()

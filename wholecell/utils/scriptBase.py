@@ -50,6 +50,7 @@ SIM_KEYS = (
 	'timestep_safety_frac',
 	'timestep_max',
 	'timestep_update_freq',
+	'jit',
 	'mass_distribution',
 	'growth_rate_noise',
 	'd_period_division',
@@ -402,6 +403,9 @@ class ScriptBase(object):
 		add_option('timestep_update_freq', 'updateTimeStepFreq', int,
 			help='frequency at which the time step is updated')
 
+		add_bool_option('jit', 'jit',
+			help='If true, jit compiled functions are used for certain'
+				 ' processes, otherwise only uses lambda functions')
 		add_bool_option('mass_distribution', 'massDistribution',
 			help='If true, a mass coefficient is drawn from a normal distribution'
 				 ' centered on 1; otherwise it is set equal to 1')
@@ -478,7 +482,7 @@ class ScriptBase(object):
 					args.sim_path, args.variant_index)
 
 	def extract_range_args(self, args):
-		# type: (argparse.Namespace) -> List[Iterable[int]]
+		# type: (argparse.Namespace) -> List[List[int]]
 		"""
 		Extracts arguments that have been specified as ranges for other arguments.
 
@@ -566,10 +570,10 @@ class ScriptBase(object):
 
 		# Handle any exceptions that occurred
 		if exceptions:
-			for params, e in exceptions:
+			for params, ex in exceptions:
 				param_str = ', '.join(['{}: {}'.format(RANGE_ARGS[o], p)
 					for o, p in zip(self.range_options, params)])
-				print('Error with param set ({}): "{}"'.format(param_str, e))
+				print('Error with param set ({}): "{}"'.format(param_str, ex))
 
 			raise RuntimeError('Exception in one or more parameter sets (see above).')
 

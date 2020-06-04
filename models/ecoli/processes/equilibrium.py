@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Equilibrium
 
@@ -9,6 +7,8 @@ Equilibrium binding sub-model
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 8/21/2015
 """
+
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
@@ -30,6 +30,9 @@ class Equilibrium(wholecell.processes.process.Process):
 	# Construct object graph
 	def initialize(self, sim, sim_data):
 		super(Equilibrium, self).initialize(sim, sim_data)
+
+		# Simulation options
+		self.jit = sim._jit
 
 		# Get constants
 		self.nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / units.mol)
@@ -55,7 +58,9 @@ class Equilibrium(wholecell.processes.process.Process):
 
 		# Solve ODEs to steady state
 		self.rxnFluxes, self.req = self.fluxesAndMoleculesToSS(
-			moleculeCounts, cellVolume, self.nAvogadro, self.randomState)
+			moleculeCounts, cellVolume, self.nAvogadro, self.randomState,
+			jit=self.jit,
+			)
 
 		# Request counts of molecules needed
 		self.molecules.requestIs(self.req)

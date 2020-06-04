@@ -9,7 +9,6 @@ import unittest
 import mock
 import numpy as np
 
-from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis.single.centralCarbonMetabolismScatter import (
 	FLUX_UNITS)
 from wholecell.utils import units
@@ -98,7 +97,7 @@ class TestParseDataConfig(unittest.TestCase):
 		)
 
 
-class TestUnitParsing:
+class TestUnitParsing(unittest.TestCase):
 
 	def test_single_unit_str(self):
 		parsed = BehaviorMetrics.parse_units_str("L")

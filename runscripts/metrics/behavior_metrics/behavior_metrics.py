@@ -10,7 +10,7 @@ import cPickle
 import importlib
 from os import path
 import re
-from typing import Dict, Any, List, Union, Iterable
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Text, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -22,6 +22,12 @@ from wholecell.utils.dependency_graph import DependencyGraph
 from wholecell.utils.protein_counts import (
 	get_simulated_validation_counts,
 )
+
+
+# A type alias for Python 2 str or unicode; Python 3 str (not bytes).
+# After porting to Python 3, we can use plain `str`.
+# Note: Unions don't work with `isinstance()`.
+String = Union[str, Text]
 
 
 def calc_end_start_ratio(data):
@@ -54,7 +60,7 @@ def calc_active_fraction(active_counts, inactive_counts):
 
 
 def find_limiting_metabolites(counts, names, window):
-	# type: (np.ndarray, Iterable[str], int) -> Iterable[str]
+	# type: (np.ndarray, Sequence[str], int) -> Iterable[str]
 	"""Find all metabolites that are limiting for some period of time.
 
 	A metabolite is considered limiting over a window of time if, within
@@ -72,7 +78,6 @@ def find_limiting_metabolites(counts, names, window):
 		An iterable collection with the unsorted names of all
 		metabolites ever found to be limiting in counts.
 	"""
-	names = np.array(names)
 	limiting = set()
 	diff = np.diff(counts, axis=0)
 	for i in xrange(diff.shape[0] - window):
@@ -117,7 +122,7 @@ def find_indices_bulk(to_search, targets):
 
 
 def np_pick(array, pick_spec):
-	# type: (np.ndarray, List[List[int]]) -> Any
+	# type: (np.ndarray, Iterable[Union[List[int], int]]) -> Any
 	"""Perform numpy indexing based on a specification
 
 	Arguments:
@@ -128,9 +133,9 @@ def np_pick(array, pick_spec):
 			indices.
 
 	Returns:
-		An array including the specified indices.
+		The given array indexed by the specified indices.
 	"""
-	parsed_spec = []
+	parsed_spec = []  # type: List[Union[Tuple[int, ...], int]]
 	for axis_spec in pick_spec:
 		if isinstance(axis_spec, list):
 			parsed_spec.append(tuple(axis_spec))
@@ -215,7 +220,7 @@ class BehaviorMetrics(object):
 		self, metrics_conf_path, sim_out_dir, validation_path=None,
 		metrics_pickle_path=None
 	):
-		# type: (str, str) -> None
+		# type: (str, str, str, str) -> None
 		"""Store provided paths.
 
 		Arguments:
@@ -310,15 +315,15 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def _calculate_operation(op_config, data):
-		# type: (Dict[str, Any], Dict[str, Any]) -> Any
+		# type: (Dict[str, Any], Dict[String, Any]) -> Any
 		op_func = MODE_FUNC_MAP[op_config["function"]]
 		func_args = [
 			BehaviorMetrics._resolve_func_arg(arg, data) for arg in op_config["args"]
 		]
 		return op_func(*func_args)
 
-	def load_data_from_config(self, data_conf_json, pickles={}):
-		# type: (Dict[str, Any]) -> Dict[str, Any]
+	def load_data_from_config(self, data_conf_json, pickles=None):
+		# type: (Dict[String, Any], Optional[dict]) -> Dict[String, Any]
 		"""Load data as specified in a configuration JSON.
 
 		The configuration JSON should be structured as follows:
@@ -398,6 +403,8 @@ class BehaviorMetrics(object):
 			InvalidDependencyGraphError: If the dependency graph created by the
 			operation attributes contains any cycles.
 		"""
+		if pickles is None:
+			pickles = {}
 		loaded_data = {}
 		for source_name, source_config in data_conf_json.items():
 			if "constant" in source_config:
@@ -442,7 +449,7 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def _resolve_dotted_name(obj, name):
-		# type: (object, str) -> Any
+		# type: (object, String) -> Any
 		names = name.split(".")
 		for name_part in names:
 			obj = getattr(obj, name_part)
@@ -462,8 +469,8 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def parse_units(unit_def):
-		# type: (Union[str, Dict[str, Any]]) -> Unum
-		"""Get an Unum object that can stores the specified units
+		# type: (Union[String, Dict[String, Any]]) -> Unum
+		"""Get an Unum object that can store the specified units
 
 		Arguments:
 			unit_def: A definition of a unit, either as a string or as a
@@ -473,13 +480,13 @@ class BehaviorMetrics(object):
 		Returns:
 			An Unum object storing the specified units.
 		"""
-		if isinstance(unit_def, str) or isinstance(unit_def, unicode):
+		if isinstance(unit_def, (str, Text)):
 			return BehaviorMetrics.parse_units_str(unit_def)
 		return BehaviorMetrics.parse_units_dict(unit_def)
 
 	@staticmethod
 	def parse_units_str(unit_str):
-		# type: (str) -> Unum
+		# type: (String) -> Unum
 		"""Get an Unum object from a unit string.
 
 		Arguments:
@@ -508,7 +515,7 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def parse_units_dict(unit_dict):
-		# type: (Dict[str, Any]) -> Unum
+		# type: (Dict[String, Any]) -> Unum
 		"""Get an Unum object from a JSON object.
 
 		Arguments:
@@ -548,12 +555,12 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def _eval_atomic_unit_str(unit_str):
-		# type: (str) -> Unum
+		# type: (String) -> Unum
 		return 1 if unit_str == "1" else getattr(units, unit_str)
 
 	@staticmethod
 	def order_operations(operation_configs):
-		# type: (Dict[str, Dict[str, Any]]) -> List[str]
+		# type: (Dict[String, Dict[String, Any]]) -> Sequence[String]
 		"""Sorts operation configs for evaluation.
 
 		Operations can take the results of other operations as input, so

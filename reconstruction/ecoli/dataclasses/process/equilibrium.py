@@ -44,7 +44,10 @@ class Equilibrium(object):
 		complexationReactionIds = set([x["id"] for x in raw_data.complexationReactions])
 
 		if equilibriumReactionIds.intersection(complexationReactionIds) != set():
-			raise Exception, "The following reaction ids are specified in equilibriumReactions and complexationReactions: %s" % (equilibriumReactionIds.intersection(complexationReactionIds))
+			raise Exception(
+				"The following reaction ids are specified in equilibriumReactions and complexationReactions: %s" % (
+					equilibriumReactionIds.intersection(
+						complexationReactionIds)))
 
 		# Remove complexes that are currently not simulated
 		FORBIDDEN_MOLECULES = {
@@ -247,7 +250,8 @@ class Equilibrium(object):
 			try:
 				firstNonZeroIdx = np.where(np.abs(metsToRxnFluxes[:, colIdx]) > EPS)[0][0]
 			except IndexError:
-				raise Exception, "Column %d of S matrix not linearly independent!" % colIdx
+				raise Exception(
+					"Column %d of S matrix not linearly independent!" % colIdx)
 			metsToRxnFluxes[:firstNonZeroIdx, colIdx] = 0
 			metsToRxnFluxes[(firstNonZeroIdx + 1):, colIdx] = 0
 
@@ -298,24 +302,41 @@ class Equilibrium(object):
 		self.symbolic_rates_jacobian = J
 
 	def derivatives(self, t, y):
-		return self._stoichMatrix.dot(self._rates(t, y, self.ratesFwd, self.ratesRev))
+		return self._stoichMatrix.dot(self._rates[0](t, y, self.ratesFwd, self.ratesRev))
 
 	def derivatives_jacobian(self, t, y):
-		return self._stoichMatrix.dot(self._rates_jacobian(t, y, self.ratesFwd, self.ratesRev))
+		return self._stoichMatrix.dot(self._rates_jacobian[0](t, y, self.ratesFwd, self.ratesRev))
 
-	def fluxesAndMoleculesToSS(self, moleculeCounts, cellVolume, nAvogadro, random_state, time_limit=1e20, max_iter=100):
+	def derivatives_jit(self, t, y):
+		return self._stoichMatrix.dot(self._rates[1](t, y, self.ratesFwd, self.ratesRev))
+
+	def derivatives_jacobian_jit(self, t, y):
+		return self._stoichMatrix.dot(self._rates_jacobian[1](t, y, self.ratesFwd, self.ratesRev))
+
+	def fluxesAndMoleculesToSS(self, moleculeCounts, cellVolume, nAvogadro,
+			random_state, time_limit=1e20, max_iter=100, jit=True):
 		y_init = moleculeCounts / (cellVolume * nAvogadro)
+
+		# In this version of SciPy, solve_ivp does not support args so need to
+		# select the derivatives functions to use. Could be simplified to single
+		# functions that take a jit argument from solve_ivp in the future.
+		if jit:
+			derivatives = self.derivatives_jit
+			derivatives_jacobian = self.derivatives_jacobian_jit
+		else:
+			derivatives = self.derivatives
+			derivatives_jacobian = self.derivatives_jacobian
 
 		# Note: odeint has issues solving with a long time step so need to use solve_ivp
 		sol = integrate.solve_ivp(
-			self.derivatives, [0, time_limit], y_init,
+			derivatives, [0, time_limit], y_init,
 			method="LSODA", t_eval=[0, time_limit],
-			jac=self.derivatives_jacobian)
+			jac=derivatives_jacobian)
 		y = sol.y.T
 
 		if np.any(y[-1, :] * (cellVolume * nAvogadro) <= -1):
 			raise ValueError('Have negative values at equilibrium steady state -- probably due to numerical instability.')
-		if np.linalg.norm(self.derivatives(0, y[-1, :]), np.inf) * (cellVolume * nAvogadro) > 1:
+		if np.linalg.norm(derivatives(0, y[-1, :]), np.inf) * (cellVolume * nAvogadro) > 1:
 			raise RuntimeError('Did not reach steady state for equilibrium.')
 		y[y < 0] = 0
 		yMolecules = y * (cellVolume * nAvogadro)
@@ -347,7 +368,8 @@ class Equilibrium(object):
 	def getMetabolite(self, cplxId):
 		D = self.getMonomers(cplxId)
 		if len(D["subunitIds"]) > 2:
-			raise Exception, "Calling this function only makes sense for reactions with 2 reactants"
+			raise Exception(
+				"Calling this function only makes sense for reactions with 2 reactants")
 		for subunit in D["subunitIds"]:
 			if subunit in self.metaboliteSet:
 				return subunit
@@ -355,7 +377,8 @@ class Equilibrium(object):
 	def getMetaboliteCoeff(self, cplxId):
 		D = self.getMonomers(cplxId)
 		if len(D["subunitIds"]) > 2:
-			raise Exception, "Calling this function only makes sense for reactions with 2 reactants"
+			raise Exception(
+				"Calling this function only makes sense for reactions with 2 reactants")
 		for subunit, stoich in zip(D["subunitIds"], D["subunitStoich"]):
 			if subunit in self.metaboliteSet:
 				return stoich
@@ -363,7 +386,8 @@ class Equilibrium(object):
 	def getUnbound(self, cplxId):
 		D = self.getMonomers(cplxId)
 		if len(D["subunitIds"]) > 2:
-			raise Exception, "Calling this function only makes sense for reactions with 2 reactants"
+			raise Exception(
+				"Calling this function only makes sense for reactions with 2 reactants")
 		for subunit in D["subunitIds"]:
 			if subunit not in self.metaboliteSet:
 				return subunit

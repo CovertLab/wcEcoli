@@ -6,14 +6,10 @@ SimulationData relation functions
 @date: Created 03/10/2015
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-import re
 import numpy as np
 
-# Unit imports
-from wholecell.utils import units
-from wholecell.utils.unit_struct_array import UnitStructArray
 
 class Relation(object):
 	""" Relation """
@@ -305,3 +301,5 @@ class Relation(object):
 
 		self.monomerIndexToRnaMapping = np.array([np.where(x == sim_data.process.translation.monomerData["rnaId"])[0][0] for x in sim_data.process.transcription.rnaData["id"] if len(np.where(x == sim_data.process.translation.monomerData["rnaId"])[0])])
 		'''
+	#def _buildRnaIndexToGeneMapping(self, raw_data, sim_data):
+	#	self.rnaIndexToGeneMapping = np.array([np.where(x + "[c]" == sim_data.process.transcription.rnaData["id"])[0][0] for x in sim_data.process.replication.geneData["rnaId"]])

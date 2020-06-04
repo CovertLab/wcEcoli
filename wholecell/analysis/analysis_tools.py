@@ -2,6 +2,8 @@
 Analysis script toolbox functions
 """
 
+from __future__ import absolute_import, division, print_function
+
 import os
 
 import numpy as np
@@ -74,6 +76,16 @@ def exportFigure(plt, plotOutDir, plotOutFileName, metadata=None, transparent=Fa
 				"variants",
 				str(metadata["total_gens"]),
 				"gens",
+				"Githash",
+				str(metadata["git_hash"])[:10],
+				"Desc",
+				str(metadata["description"])
+				])
+
+		elif analysis_type == 'parca':
+			# Format metadata signature for parca figure
+			metadata_signature = "_".join([
+				str(metadata["time"][:13]),
 				"Githash",
 				str(metadata["git_hash"])[:10],
 				"Desc",

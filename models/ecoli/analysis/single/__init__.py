@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+
 # Active analysis modules to run, in this order.
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
@@ -68,6 +70,7 @@ TAGS = {
 		"dntpCounts.py",
 		"evaluationTime.py",
 		"external_exchange_fluxes.py",
+		"flux_bounds.py",
 		"massFractionSummary.py",
 		"metabolites.py",
 		"mrnaCounts.py",
@@ -104,6 +107,7 @@ TAGS = {
 		"concentrationDeviation.py",
 		"external_exchange_fluxes.py",
 		"fbaOptimizationProblem.py",
+		"fluxBounds.py",
 		"glucoseMassYield.py",
 		"kineticsFluxComparison.py",
 		"kineticsFluxComparisonKcatOnly.py",

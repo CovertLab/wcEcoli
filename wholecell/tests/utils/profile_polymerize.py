@@ -20,6 +20,7 @@ kernprof doesn't support that.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 10/10/2016
 """
+from __future__ import absolute_import, division, print_function
 
 import __builtin__
 import sys
@@ -43,7 +44,7 @@ PAD_VALUE = polymerize.PAD_VALUE
 
 # Wrap with kernprof profiling decorator - will throw an error if we call this
 # script using the vanilla python interpreter.
-if not __builtin__.__dict__.has_key('profile'):
+if 'profile' not in __builtin__.__dict__:
 	raise Exception(
 		'kernprof @profile decorator not available.  This script should be '
 		+ 'invoked via kernprof -lv.  If invoked correctly and this error '
@@ -57,22 +58,26 @@ polymerize.__iter__ = lambda self: iter((self.sequenceElongation, self.monomerUs
 # Wrap methods in line-profiling decorator
 # TODO (John): write an introspection utility to facilitate decoration
 
-polymerize.__init__ = profile(polymerize.__init__)
+# noinspection PyUnresolvedReferences
+def setup_profiler():
+	polymerize.__init__ = profile(polymerize.__init__)
 
-polymerize._setup = profile(polymerize._setup)
-polymerize._sanitize_inputs = profile(polymerize._sanitize_inputs)
-polymerize._gather_input_dimensions = profile(polymerize._gather_input_dimensions)
-polymerize._gather_sequence_data = profile(polymerize._gather_sequence_data)
-polymerize._prepare_running_values = profile(polymerize._prepare_running_values)
-polymerize._prepare_outputs = profile(polymerize._prepare_outputs)
+	polymerize._setup = profile(polymerize._setup)
+	polymerize._sanitize_inputs = profile(polymerize._sanitize_inputs)
+	polymerize._gather_input_dimensions = profile(polymerize._gather_input_dimensions)
+	polymerize._gather_sequence_data = profile(polymerize._gather_sequence_data)
+	polymerize._prepare_running_values = profile(polymerize._prepare_running_values)
+	polymerize._prepare_outputs = profile(polymerize._prepare_outputs)
 
-polymerize._elongate = profile(polymerize._elongate)
-polymerize._elongate_to_limit = profile(polymerize._elongate_to_limit)
-polymerize._finalize_resource_limited_elongations = profile(polymerize._finalize_resource_limited_elongations)
-polymerize._update_elongation_resource_demands = profile(polymerize._update_elongation_resource_demands)
+	polymerize._elongate = profile(polymerize._elongate)
+	polymerize._elongate_to_limit = profile(polymerize._elongate_to_limit)
+	polymerize._finalize_resource_limited_elongations = profile(polymerize._finalize_resource_limited_elongations)
+	polymerize._update_elongation_resource_demands = profile(polymerize._update_elongation_resource_demands)
 
-polymerize._finalize = profile(polymerize._finalize)
-polymerize._clamp_elongation_to_sequence_length = profile(polymerize._clamp_elongation_to_sequence_length)
+	polymerize._finalize = profile(polymerize._finalize)
+	polymerize._clamp_elongation_to_sequence_length = profile(polymerize._clamp_elongation_to_sequence_length)
+
+setup_profiler()
 
 def _setupRealExample():
 	# Test data pulled from an actual sim at an early time point.
@@ -134,10 +139,11 @@ def _simpleProfile():
 	nSequences, length = sequences.shape
 	nMonomers = monomerLimits.size
 	sequenceLengths = (sequences != PAD_VALUE).sum(axis = 1)
+	elongation_rates = []  # TODO: What to use here?
 
 	t = time.time()
 	sequenceElongation, monomerUsages, nReactions = polymerize(
-		sequences, monomerLimits, reactionLimit, randomState)
+		sequences, monomerLimits, reactionLimit, randomState, elongation_rates)
 	evalTime = time.time() - t
 
 	assert (sequenceElongation <= sequenceLengths+1).all()
@@ -145,7 +151,7 @@ def _simpleProfile():
 	assert nReactions <= reactionLimit
 	assert nReactions == monomerUsages.sum()
 
-	print """
+	print("""
 Polymerize function report:
 
 For {} sequences of {} different monomers elongating by at most {}:
@@ -168,7 +174,7 @@ For {} sequences of {} different monomers elongating by at most {}:
 		nReactions/reactionLimit,
 		(sequenceElongation == sequenceLengths).sum()/nSequences,
 		sequenceElongation.sum()/sequenceLengths.sum()
-		)
+		))
 
 
 def _fullProfile():
@@ -180,15 +186,16 @@ def _fullProfile():
 	pr = cProfile.Profile()
 	pr.enable()
 
+	elongation_rates = []  # TODO: What to use here?
 	sequenceElongation, monomerUsages, nReactions = polymerize(
-		sequences, monomerLimits, reactionLimit, randomState)
+		sequences, monomerLimits, reactionLimit, randomState, elongation_rates)
 
 	pr.disable()
 	s = StringIO.StringIO()
 	sortby = 'cumulative'
 	ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
 	ps.print_stats()
-	print s.getvalue()
+	print(s.getvalue())
 
 
 if __name__ == "__main__":

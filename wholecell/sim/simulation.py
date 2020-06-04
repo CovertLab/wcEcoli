@@ -6,16 +6,14 @@ Simulation
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import collections
 import os.path
 import shutil
 import time
 import uuid
-import lens
-from lens.actor.emitter import get_emitter
+from typing import Callable, Sequence, Tuple
 
 import numpy as np
 
@@ -25,6 +23,9 @@ from wholecell.utils import filepath
 import wholecell.loggers.shell
 import wholecell.loggers.disk
 
+import lens
+from lens.actor.emitter import get_emitter
+
 MAX_TIME_STEP = 2.
 DEFAULT_SIMULATION_KWARGS = dict(
 	timeline = '0 minimal',
@@ -32,6 +33,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	seed = 0,
 	lengthSec = 3*60*60, # 3 hours max
 	initialTime = 0.,
+	jit = True,
 	massDistribution = True,
 	dPeriodDivision = False,
 	growthRateNoise = False,
@@ -82,10 +84,10 @@ class Simulation(lens.actor.inner.Simulation):
 		)
 
 	# Attributes that may be optionally overwritten by a subclass
-	_listenerClasses = ()
-	_hookClasses = ()
+	_listenerClasses = ()  # type: Tuple[Callable, ...]
+	_hookClasses = ()  # type: Sequence[Callable]
 	_timeStepSec = MAX_TIME_STEP
-	_shellColumnHeaders = ("Time (s)",)
+	_shellColumnHeaders = ("Time (s)",)  # type: Sequence[str]
 
 	# Constructors
 	def __init__(self, **kwargs):
@@ -98,9 +100,8 @@ class Simulation(lens.actor.inner.Simulation):
 		for listenerClass in DEFAULT_LISTENER_CLASSES:
 			if listenerClass in self._listenerClasses:
 				raise SimulationException("The {} listener is included by"
-					+ " default in the Simulation class.".format(
-						listenerClass.name())
-					)
+					" default in the Simulation class.".format(
+					listenerClass.name()))
 
 		# Set instance attributes
 		for attrName, value in DEFAULT_SIMULATION_KWARGS.viewitems():
@@ -445,7 +446,7 @@ class Simulation(lens.actor.inner.Simulation):
 			candidateTimeStep = minTimeStep + (maxTimeStep - minTimeStep) / 2.
 		else:
 			raise SimulationException("Timestep adjustment did not converge,"
-				" last attempt was %f" % (candidateTimeStep))
+				" last attempt was %f" % (candidateTimeStep,))
 
 		return candidateTimeStep
 

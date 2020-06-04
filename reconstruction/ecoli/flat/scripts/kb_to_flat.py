@@ -1,19 +1,18 @@
+from __future__ import absolute_import, division, print_function
 
 import os
 import re
 import csv
 import sys
 
-import numpy as np
-
-from reconstruction.ecoli.knowledge_base import KnowledgeBaseEcoli
+from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.spreadsheets import JsonWriter
 
 OUTPUT_DIR = sys.argv[1]
 REPORT_FILENAME = os.path.join(OUTPUT_DIR, "generated_file_report.txt")
 DIALECT = csv.excel_tab
 
-kb = KnowledgeBaseEcoli(False)
+kb = KnowledgeBaseEcoli()
 
 report_file = sys.stdout #open(REPORT_FILENAME, "w")
 
@@ -53,7 +52,7 @@ for attr_name in candidates:
 
 		outfile = open(os.path.join(OUTPUT_DIR, attr_name.lstrip("_")) + ".tsv", "w")
 
-		writer = JsonWriter(outfile, fieldnames, dialect = DIALECT)
+		writer = JsonWriter(outfile, fieldnames)
 
 		writer.writeheader()
 

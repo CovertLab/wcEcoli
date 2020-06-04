@@ -10,11 +10,11 @@ metabolite and enzyme concentrations at runtime.
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 2/8/2016
 """
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
 from wholecell.utils import units
-import re
 from Equation import Expression
 
 class enzymeKineticsError(Exception):
@@ -54,7 +54,7 @@ class EnzymeKinetics(object):
 		if not useCustoms:
 			reactionRateInfoNew = {}
 			for constraintID, reactionInfo in self.reactionRateInfo.iteritems():
-				if reactionInfo["customRateEquation"] == None:
+				if reactionInfo["customRateEquation"] is None:
 					reactionRateInfoNew[constraintID] = reactionInfo
 			self.reactionRateInfo = reactionRateInfoNew
 
@@ -122,7 +122,7 @@ class EnzymeKinetics(object):
 						keepReaction = False
 			else:
 				# Reaction type is unknown
-				raise Exception("Reaction type '%s' is unknown. Must be either 'standard' or 'custom'." % (reactionType))
+				raise Exception("Reaction type '%s' is unknown. Must be either 'standard' or 'custom'." % (reactionType,))
 
 			# Keep the reaction only if both substrates and enzymes are known
 			if keepReaction:
@@ -256,7 +256,7 @@ class EnzymeKinetics(object):
 		"""
 		# Check if all needed metabolite and enzyme concentrations are given
 		if not self.inputsChecked:
-			knownConstraints, unusableConstraints, unknownVals = self.checkKnownSubstratesAndEnzymes(metaboliteConcentrationsDict, enzymeConcentrationsDict, removeUnknowns=False)
+			knownConstraints, unusableConstraints, unknownVals = self.checkKnownSubstratesAndEnzymes(metaboliteConcentrationsDict, enzymeConcentrationsDict, enzymeNames={}, removeUnknowns=False)
 			if len(unusableConstraints) > 0:
 				raise Exception("Unable to compute kinetic rate for these reactions: {}\n. Missing values for: {}".format(unusableConstraints.keys(), unknownVals))
 
@@ -284,7 +284,7 @@ class EnzymeKinetics(object):
 		"""
 		# Check if all needed metabolite and enzyme concentrations are given
 		if not self.inputsChecked:
-			knownConstraints, unusableConstraints, unknownVals = self.checkKnownSubstratesAndEnzymes(metaboliteConcentrationsDict, enzymeConcentrationsDict, removeUnknowns=False)
+			knownConstraints, unusableConstraints, unknownVals = self.checkKnownSubstratesAndEnzymes(metaboliteConcentrationsDict, enzymeConcentrationsDict, enzymeNames={}, removeUnknowns=False)
 			if len(unusableConstraints) > 0:
 				raise Exception("Unable to compute kinetic rate for these reactions: {}\n. Missing values for: {}".format(unusableConstraints.keys(), unknownVals))
 

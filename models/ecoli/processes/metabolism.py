@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Metabolism
 
@@ -14,7 +12,7 @@ TODO:
 @date: Created 4/2/2013
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -132,7 +130,7 @@ class Metabolism(wholecell.processes.process.Process):
 			coefficient, translation_gtp)
 
 		## Constrain reactions based on targets
-		targets = self.model.set_reaction_targets(kinetic_enzyme_counts,
+		targets, upper_targets, lower_targets = self.model.set_reaction_targets(kinetic_enzyme_counts,
 			kinetic_substrate_counts, counts_to_molar, time_step)
 
 		# Solve FBA problem and update states
@@ -173,6 +171,9 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "countsToMolar", counts_to_molar.asNumber(CONC_UNITS))
 		self.writeToListener("EnzymeKinetics", "actualFluxes", fba.getReactionFluxes(self.model.kinetics_constrained_reactions) / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetFluxes", targets / time_step_unitless)
+		self.writeToListener("EnzymeKinetics", "targetFluxesUpper", upper_targets / time_step_unitless)
+		self.writeToListener("EnzymeKinetics", "targetFluxesLower", lower_targets /time_step_unitless)
+
 		# TODO: add lower and upper targets
 
 	def update_amino_acid_targets(self, counts_to_molar):
@@ -245,7 +246,7 @@ class FluxBalanceAnalysisModel(object):
 
 		self.exchange_constraints = metabolism.exchangeConstraints
 
-		self._biomass_concentrations = {}
+		self._biomass_concentrations = {}  # type: dict
 		self._getBiomassAsConcentrations = mass.getBiomassAsConcentrations
 
 		# Include ppGpp concentration target in objective if not handled kinetically in other processes
@@ -253,17 +254,17 @@ class FluxBalanceAnalysisModel(object):
 		self.getppGppConc = sim_data.growthRateParameters.getppGppConc
 
 		# go through all media in the timeline and add to metaboliteNames
-		self.metaboliteNamesFromNutrients = set()
+		metaboliteNamesFromNutrients = set()
 		exchange_molecules = set()
 		if include_ppgpp:
-			self.metaboliteNamesFromNutrients.add(self.ppgpp_id)
+			metaboliteNamesFromNutrients.add(self.ppgpp_id)
 		for time, media_id in timeline:
-			self.metaboliteNamesFromNutrients.update(
+			metaboliteNamesFromNutrients.update(
 				metabolism.concentrationUpdates.concentrationsBasedOnNutrients(media_id)
 				)
 			exchanges = sim_data.external_state.exchange_data_from_media(media_id)
 			exchange_molecules.update(exchanges['externalExchangeMolecules'])
-		self.metaboliteNamesFromNutrients = list(sorted(self.metaboliteNamesFromNutrients))
+		self.metaboliteNamesFromNutrients = list(sorted(metaboliteNamesFromNutrients))
 		exchange_molecules = list(sorted(exchange_molecules))
 		molecule_masses = dict(zip(exchange_molecules,
 			sim_data.getter.getMass(exchange_molecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
@@ -525,4 +526,4 @@ class FluxBalanceAnalysisModel(object):
 		else:
 			mean_targets = np.zeros(len(self.kinetics_constrained_reactions))
 
-		return mean_targets
+		return mean_targets, upper_targets, lower_targets
