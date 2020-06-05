@@ -220,7 +220,6 @@ If you want to save new values to analyze after the simulation, you must write i
     column = reader.readColumn('new_column')
     ```
 
-
 ### New analysis
 This outlines how to add a new single analysis plot called `new_analysis.py`.  For other types of analysis, only the directory needs to be changed.  New analysis plots might require additional simulation data to be saved to disk by adding entries to an existing listener or creating a new listener (see 'New listener' section above).
 1. Decide which level of analysis is appropriate (single, multigen, cohort, variant - see 'Analysis' section above for differences between each).
@@ -236,6 +235,7 @@ This outlines how to add a new single analysis plot called `new_analysis.py`.  F
         python runscripts/manual/analysisSingle.py out/manual -p METABOLISM
         ```
 
+### TODO: states - bulk, unique, environment (info about adding or describe how they fit in)
 
 ## Design factors
 
