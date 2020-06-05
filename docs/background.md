@@ -52,14 +52,6 @@ Scripts used as entry points for executing workflows, performing analysis or gen
 
 ## Processes
 
-Each _process_ models one part of the cell’s function, e.g. RNA polymerase elongation. They are modeled separately (modular), run in short time steps, and the results from each time step are integrated between processes before initiating the next time step. Other processes include translation, elongation, transciption, and metabolism.
-
-Each process has three entry points:
-* _initialize_: called only once at the beginning of a simulation. Get needed parameters from the knowledge base, get views of bulk and unique molecules (bulk molecules are “indistinguishable” from each other, e.g. inactive RNAP molecules, unique molecules can be distinguished from each other, e.g. active RNAP molecules are each assigned to a location on the genome), create a view so that you can get counts, change counts, and change properties.
-* _calculateRequest_: called at the beginning of each timestep. Request the resources that you want for that timestep (don’t request all unless you are certain that another process doesn’t need this resource as well, don’t forget about metabolism).
-* _evolveState_: called after resources are allocated at each timestep. Perform the process, update counts, and update masses (mass must be conserved between steps).
-
-
 ## Listeners
 
 ## States
@@ -145,6 +137,57 @@ The process for adding validation data is very similar to that described in `New
 1. Access, process and store the data as an attribute in the appropriate class (or create a new class) in [validation_data.py](https://github.com/CovertLab/wcEcoli/blob/master/validation/ecoli/validatoin_data.py) by accessing the `validation_data_raw` attribute for the file (eg. `validation_data_raw.new_file` for a file named `new_file.tsv`)
 
 ### New process
+Each _process_ models one part of the cell’s function, e.g. RNA polymerase elongation. They are modeled separately (modular), run in short time steps (assumed to be independent over a short time), and the results from each time step are integrated between processes before initiating the next time step.
+
+Each process has three entry points during a simulation:
+* _initialize_: called only once at the beginning of a simulation. Get needed parameters from the knowledge base, get views of bulk and unique molecules (bulk molecules are “indistinguishable” from each other, e.g. inactive RNAP molecules, unique molecules can be distinguished from each other, e.g. active RNAP molecules are each assigned to a location on the genome), create a view so that you can get counts, change counts, and change properties.
+* _calculateRequest_: called at the beginning of each timestep. Request the resources that you want for that timestep (don’t request all unless you are certain that another process doesn’t need this resource as well, don’t forget about metabolism).
+* _evolveState_: called after resources are allocated at each timestep. Perform the process, update counts, and update masses (mass must be conserved between steps).
+
+Adding a process involves adding data to be used by that process in `reconstruction/` as well as code to model the process in `models/`.  The steps to add a new process called `new_process` are outlined below:
+1. Add any required raw data (see 'New raw data' section above)
+1. Create a new file called `new_process.py` in [reconstruction/ecoli/dataclasses/process/](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/process).  This should include a class definition for `NewProcess` that loads data from `raw_data` to store as class attributes in an `__init__(self, raw_data, sim_data)` function.  See other files in the directory for an example.
+1. Import the new reconstruction class and initialize an instance of it in [process.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/dataclasses/process/process.py).  This will make the data in the previous step accessible with `sim_data.process.new_process`.
+    ```
+    from .new_process import NewProcess
+
+            ...
+            self.new_process = NewProcess(raw_data, sim_data)
+            ...
+    ```
+1. Create a new file called `new_process.py` in [models/ecoli/processes/](https://github.com/CovertLab/wcEcoli/tree/master/models/ecoli/processes).  Add a class definition with the following functions as described above:
+    ```
+    class NewProcess(wholecell.processes.process.Process):
+        """ NewProcess """
+
+        _name = "NewProcess"
+
+        def __init__(self):
+            super(NewProcess, self).__init__()
+
+        def initialize(self, sim, sim_data):
+            super(NewProcess, self).initialize(sim, sim_data)
+
+        def calculateRequest(self):
+
+        def evolveState(self):
+    ```
+1. Import the new model class in [simulation.py](https://github.com/CovertLab/wcEcoli/blob/master/models/ecoli/sim/simulation.py) and add the class to one of the tuples in `_processClasses`.  Each tuple within `_processClasses` represents a set of processes that will all run before updating the cell state.  All processes within a tuple are assumed to be independent of each other and will request from the same pool of resources.  The tuples of processes will be exectued in order so a process that requires all other processes to run first, should be in the last tuple.  One time step will be completed once all of the processes in each tuple have been run.  In most cases, a new class will be added to the first tuple.
+    ```
+    from models.ecoli.processes.new_process import NewProcess
+
+    _processClasses = (
+        (
+            ...
+            NewProcess,
+            ...
+        ),
+    )
+    ```
+1. Add a function to [initial_conditions.py](https://github.com/CovertLab/wcEcoli/blob/master/models/ecoli/sim/initial_conditions.py) to approximate the function of the new process at steady state so that the initial cell state is representative of the state expected after the process runs.
+1. (Optional) Add a new listener (see 'Add new listener' section) to save important information about the new process.
+1. (Optional) Add new analysis plots (see 'Add new analysis' section) to show data from the new process.
+1. Add documentation (.tex and .pdf) about the new process in [docs/processes/](https://github.com/CovertLab/wcEcoli/tree/master/docs/processes).
 
 ### New variant
 Variants are used to compare changes to `sim_data` that cause different initialization and simulation conditions.  Each variant can be thought of as an experiment with the model and can be used to test a hypothesis, analyze sensitivity, and/or get a better understanding of parameters.  When running simulations, a range of variant indices can be selected with each one performing a different modification to `sim_data`.  The effect of each index will be determined by the function added in the steps below.  Variants are typically paired with one or more variant level analysis scripts in order to make the desired comparisons between changes in `sim_data`.  The following steps outline how to add a new variant called `new_variant.py`.
