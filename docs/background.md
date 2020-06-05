@@ -114,7 +114,7 @@ Raw data should always be annotated with the source and process used to generate
 1. Add a raw data file to [reconstruction/ecoli/flat/](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/flat). Data is stored in a `.tsv` file format with special formatting handling to allow units (specified in parantheses in column headers), lists, dictionaries and comments (lines starting with `#`).
 1. Annotate where the data came from in a comment at the top of the file (URL for the data source and/or script used for processing original data - [see example](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/flat/metabolism_kinetics.tsv)). If a script was required, add it to [runscripts/reconstruction](https://github.com/CovertLab/wcEcoli/tree/master/runscripts/reconstruction).
 1. Add the filename to `LIST_OF_DICT_FILENAMES` in [knowledge_base_raw.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/knowledge_base_raw.py). This will cause the data to be loaded into the class when an instance of `KnowledgeBaseEcoli` is created.
-1. Access the data in the appropriate reconstruction class (eg [processes](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/process) or [states](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/state)) by accessing the `raw_data` attribute (eg. `raw_data.new_file` for a file named `new_file.tsv`)
+1. Access, process and store the data in the appropriate reconstruction class (eg [processes](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/process) or [states](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/state)) by accessing the `raw_data` attribute for the file (eg. `raw_data.new_file` for a file named `new_file.tsv`)
 
 **NOTE:** if there are issues loading the new file, try saving it using `JsonWriter` from [reconstruction/spreadsheets.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/spreadsheets.py) to ensure proper formatting:
 ```python
@@ -128,6 +128,11 @@ with open('output.tsv', 'w') as f:
 ```
 
 ### New validation data
+The process for adding validation data is very similar to that described in `New raw data` above but an important distinction to make between raw data and validation data is that validation data will not be used to calculate parameters or be used in simulations at all.  Validation data is only used to compare simulation results in analysis plots.  Additional information about file formatting and annotating in `New raw data` should also be considered here.
+1. Add a validation data file to [validation/ecoli/flat/](https://github.com/CovertLab/wcEcoli/tree/master/validation/ecoli/flat).
+1. Annotate where the data came from in a comment at the top of the file (URL for the data source and/or script used for processing original data - [see example](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/flat/metabolism_kinetics.tsv)). If a script was required, add it to [runscripts/reconstruction](https://github.com/CovertLab/wcEcoli/tree/master/runscripts/reconstruction).
+1. Add the filename to `LIST_OF_DICT_FILENAMES` in [validation_data_raw.py](https://github.com/CovertLab/wcEcoli/blob/master/validation/ecoli/validatoin_data_raw.py). This will cause the data to be loaded into the class when an instance of `ValidationDataRawEcoli` is created.
+1. Access, process and store the data as an attribute in the appropriate class (or create a new class) in [validation_data.py](https://github.com/CovertLab/wcEcoli/blob/master/validation/ecoli/validatoin_data.py) by accessing the `validation_data_raw` attribute for the file (eg. `validation_data_raw.new_file` for a file named `new_file.tsv`)
 
 ### New process
 
