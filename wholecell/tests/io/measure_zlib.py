@@ -182,7 +182,7 @@ def measure_block(array):
 		print('zlib {:<3d} {:9d} {:9d} {:8d} {:8.4f} {:6.1f}% {:6.1f}%'.format(*tup))
 
 def measure_tables(basepath, table_columns):
-	for table, columns in table_columns.iterkeys():
+	for table, columns in table_columns:
 		reader = TableReader(os.path.join(basepath, table))
 		for column in columns:
 			array = reader.readColumn2D(column)

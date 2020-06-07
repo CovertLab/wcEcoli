@@ -236,7 +236,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 		float value conversion.
 		'''
 		self.make_test_dir()
-		d0 = {key: 19 for key in DATA.iterkeys()}
+		d0 = {key: 19 for key in DATA}
 		d2 = {key: value.reshape(2, -1) for key, value in DATA.iteritems()}
 		d3 = {key: value[2:] for key, value in DATA.iteritems()}
 

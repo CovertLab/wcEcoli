@@ -60,7 +60,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 		self._submass_diff_names = []
 		self._submass_diff_name_to_index = {}
 
-		for i, submassName in enumerate(sim_data.submassNameToIndex.viewkeys()):
+		for i, submassName in enumerate(sim_data.submassNameToIndex):
 			massDiffPropertyName = "massDiff_" + submassName
 			defaultMassAttributes[massDiffPropertyName] = np.float64
 			self._submass_diff_names.append(massDiffPropertyName)

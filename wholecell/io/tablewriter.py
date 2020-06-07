@@ -561,7 +561,7 @@ class TableWriter(object):
 				name: _VariableLengthColumn(os.path.join(self._path, name))
 				if name in self._variable_length_columns
 				else _FixedLengthColumn(os.path.join(self._path, name))
-				for name in namesAndValues.viewkeys()
+				for name in namesAndValues
 				}
 
 		# Later calls - check for missing or unrecognized fields

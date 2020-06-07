@@ -105,7 +105,7 @@ class Simulation(lens.actor.inner.Simulation):
 
 		# Set instance attributes
 		for attrName, value in DEFAULT_SIMULATION_KWARGS.viewitems():
-			if attrName in kwargs.viewkeys():
+			if attrName in kwargs:
 				value = kwargs[attrName]
 
 			setattr(self, "_" + attrName, value)

@@ -422,7 +422,7 @@ class FluxBalanceAnalysis(object):
 		the standard objective, all molecules must be created/destroyed in
 		prescribed ratios."""
 
-		for moleculeID in objective.viewkeys():
+		for moleculeID in objective:
 			objectiveEquivID = self._generatedID_moleculeEquivalents + moleculeID
 
 			self._solver.setFlowMaterialCoeff(
@@ -468,7 +468,7 @@ class FluxBalanceAnalysis(object):
 			)
 
 		# Create fraction and biomass outputs
-		for moleculeID in objective.viewkeys():
+		for moleculeID in objective:
 			fractionID = self._generatedID_moleculeEquivalents + moleculeID
 
 			# Biomass out
@@ -497,7 +497,7 @@ class FluxBalanceAnalysis(object):
 		# Create fraction differences (leading - other), used in objective and constraints
 		leadingMoleculeToFractionID = self._generatedID_moleculesToEquivalents + leadingMoleculeID
 
-		for moleculeID in objective.viewkeys():
+		for moleculeID in objective:
 			if moleculeID == leadingMoleculeID:
 				continue
 
@@ -532,7 +532,7 @@ class FluxBalanceAnalysis(object):
 
 		# Create biomass differences (fraction - biomass), used in constraints
 
-		for moleculeID in objective.viewkeys():
+		for moleculeID in objective:
 			fractionDifferenceBiomassID = self._generatedID_fractionalDifferenceBiomass + moleculeID
 
 			moleculeToFractionID = self._generatedID_moleculesToEquivalents + moleculeID
