@@ -30,8 +30,10 @@ from __future__ import absolute_import, division, print_function
 
 from collections import defaultdict
 from enum import Enum
+
 import numpy as np
 from scipy.sparse import coo_matrix
+import six
 import swiglpk as glp
 
 from ._base import NetworkFlowProblemBase
@@ -324,7 +326,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		return self._objective[flow]
 
 	def getFlowRates(self, flows):
-		if isinstance(flows, basestring):
+		if isinstance(flows, six.string_types):
 			flows = (flows,)
 
 		self._solve()

@@ -15,6 +15,7 @@ from itertools import izip
 from copy import deepcopy
 
 import numpy as np
+import six
 
 import wholecell.states.internal_state
 import wholecell.views.view
@@ -205,7 +206,7 @@ class UniqueMoleculesView(wholecell.views.view.View):
 		self.cached_attributes = {}
 
 		# self._query must be the name of a unique molecule
-		assert isinstance(self._query, basestring)
+		assert isinstance(self._query, six.string_types)
 
 	def _updateQuery(self):
 		# TODO: generalize this logic (both here and in the state)

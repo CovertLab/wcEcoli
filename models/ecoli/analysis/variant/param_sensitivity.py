@@ -23,6 +23,7 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import numpy as np
 from scipy import special, stats
+from six.moves import reduce
 from typing import List, Optional, Tuple
 
 from models.ecoli.analysis import variantAnalysisPlot
