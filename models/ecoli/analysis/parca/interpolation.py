@@ -8,6 +8,7 @@ import pickle
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 import numpy as np
+from scipy import stats
 
 from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -79,6 +80,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			for dt in sim_data.condition_to_doubling_time.values()
 			])
 		doubling_time_range = np.arange(0.5 * doubling_times.min(), 1.2 * doubling_times.max())
+		mass_range = np.array([mass.getAvgCellDryMass(dt * units.min).asNumber() for dt in doubling_time_range])
 
 		# Create Plot
 		plt.figure(figsize=(20, 20))
@@ -86,7 +88,33 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		cols = 5
 		gs = gridspec.GridSpec(int(np.ceil(n_plots / cols)), cols)
 
-		for i, ((fun, key), data) in enumerate(interpolation_functions.items()):
+		funs = {
+			'none': lambda x: x,
+			'sqrt': lambda x: np.sqrt(x),
+			'exp': lambda x: np.exp(x),
+			'log': lambda x: np.log(x),
+			'log2': lambda x: np.log(x**2),
+			'logsqrt': lambda x: np.log(np.sqrt(x)),
+			'2': lambda x: x**2,
+			'3': lambda x: x**3,
+			'1/sqrt': lambda x: 1/np.sqrt(x),
+			'1/x': lambda x: 1/x,
+			'1/x2': lambda x: 1/x**2,
+			}
+		inverse = {
+			'none': lambda x: x,
+			'sqrt': lambda x: x**2,
+			'exp': lambda x: np.log(x),
+			'log': lambda x: np.exp(x),
+			'log2': lambda x: np.sqrt(np.exp(x)),
+			'logsqrt': lambda x: np.exp(x)**2,
+			'2': lambda x: np.sqrt(x),
+			'3': lambda x: x**(1/3),
+			'1/sqrt': lambda x: (1/x)**2,
+			'1/x': lambda x: 1/x,
+			'1/x2': lambda x: np.sqrt(1/x),
+			}
+		for i, ((fun, key), data) in enumerate(sorted(interpolation_functions.items())):
 			ax = plt.subplot(gs[i // cols, i % cols])
 
 			# Get interpolation values and handle units
@@ -115,7 +143,24 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			# Plot data
 			ax.plot(doubling_time_range, y_interp)
 			if data:
-				ax.plot(data[0], data[1], 'or')
+				transform = funs['none']
+				slope = 1
+				intercept = 0
+				rval = 0
+				print(fun.__name__)
+				x = np.array([mass.getAvgCellDryMass(dt * units.min).asNumber() for dt in data[0]])
+				y = np.array(data[1])
+				for yname, fy in funs.items():
+					result = stats.linregress(data[0], fy(y))
+					if np.abs(result.rvalue) > rval:
+						rval = np.abs(result.rvalue)
+						transform = yname
+						slope = result.slope
+						intercept = result.intercept
+					if np.abs(result.rvalue) > 0.99:
+						print('\t{}: {:.3f} {:.1e}'.format(yname, result.rvalue, result.pvalue))
+				ax.plot(data[0], y, 'or')
+				ax.plot(doubling_time_range, inverse[transform](doubling_time_range * slope + intercept), '--')
 			for dt in doubling_times:
 				ax.axvline(dt, linestyle='--', color='k', linewidth=0.5)
 
