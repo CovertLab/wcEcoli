@@ -21,6 +21,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import units
+from six.moves import range
 
 # Number of proteins sampled for Plot 1
 PROTEIN_SAMPLE_COUNT = 10

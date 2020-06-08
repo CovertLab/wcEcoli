@@ -18,6 +18,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
+from six.moves import range
 
 COLOR_CHOICES = np.array([
 	[0,0,0],

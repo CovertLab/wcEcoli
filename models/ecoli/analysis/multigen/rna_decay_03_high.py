@@ -30,6 +30,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
+from six.moves import range
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
@@ -91,12 +92,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		for dt, rnaDegradedCount, rnaCount in zip(dts, rnaDegradedCounts, rnaCounts):
 			tmpArray = np.nan * np.ones_like(rnaDegradedCount)
-			for colIdx in xrange(tmpArray.shape[1]):
+			for colIdx in range(tmpArray.shape[1]):
 				tmpArray[:, colIdx] = np.convolve(rnaDegradedCount[:, colIdx] / dt, np.ones(N) / N, mode = "same")
 			rnaDegradedCountsAveraged.append(tmpArray[N:-1*N, :])
 
 			tmpArray = np.nan * np.ones_like(rnaCount)
-			for colIdx in xrange(tmpArray.shape[1]):
+			for colIdx in range(tmpArray.shape[1]):
 				tmpArray[:, colIdx] = np.convolve(rnaCount[:, colIdx], np.ones(N) / N, mode = "same")
 			rnaCountsAveraged.append(tmpArray[N:-1*N, :])
 
@@ -105,7 +106,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		plt.figure(figsize = (8.5, 11))
 
-		for subplotIdx in xrange(1, 10):
+		for subplotIdx in range(1, 10):
 
 			plt.subplot(3, 3, subplotIdx)
 

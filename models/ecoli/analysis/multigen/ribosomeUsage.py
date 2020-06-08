@@ -20,6 +20,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
+from six.moves import range
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):

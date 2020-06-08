@@ -22,6 +22,7 @@ from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import parallelization, units
 from wholecell.utils.sparkline import whitePadSparklineAxis
+from six.moves import range
 
 
 MODEL_FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS

@@ -19,6 +19,7 @@ import unum
 
 from wholecell.utils import constants
 import wholecell.utils.unit_struct_array
+from six.moves import range
 
 
 NULP = 0  # float comparison tolerance, in Number of Units in the Last Place
@@ -291,7 +292,7 @@ def diff_trees(a, b):
 			a = list(a) + (len(b) - len(a)) * [Repr('--')]
 
 		diff = []
-		for index in xrange(len(a)):
+		for index in range(len(a)):
 			subdiff = diff_trees(a[index], b[index])
 			if subdiff:
 				diff.append(subdiff)

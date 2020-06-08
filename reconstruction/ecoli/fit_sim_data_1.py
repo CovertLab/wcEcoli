@@ -23,6 +23,7 @@ from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import filepath, parallelization, units
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
+from six.moves import range
 
 
 # Tweaks
@@ -658,7 +659,7 @@ def expressionConverge(
 	if VERBOSE > 0:
 		print("Fitting RNA synthesis probabilities.")
 
-	for iteration in xrange(MAX_FITTING_ITERATIONS):
+	for iteration in range(MAX_FITTING_ITERATIONS):
 		if VERBOSE > 1:
 			print('Iteration: {}'.format(iteration))
 
@@ -1751,7 +1752,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 		print("Bulk distribution seed:")
 
 	# Instantiate cells to find average copy numbers of macromolecules
-	for seed in xrange(N_SEEDS):
+	for seed in range(N_SEEDS):
 		if VERBOSE > 1:
 			print('seed = {}'.format(seed))
 
@@ -2394,7 +2395,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 			nTfs = len(tfsWithData)
 
 			# For all possible combinations of TFs
-			for combinationIdx in xrange(2**nTfs):
+			for combinationIdx in range(2**nTfs):
 				# Add a row for each combination
 				rowName = rnaIdNoLoc + "__%d" % combinationIdx
 				rowNames.append(rowName)
@@ -2731,7 +2732,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 	k, kInfo = build_vector_k(sim_data, cellSpecs)
 
 	# Repeat for a fixed maximum number of iterations
-	for i in xrange(PROMOTER_MAX_ITERATIONS):
+	for i in range(PROMOTER_MAX_ITERATIONS):
 		# Build matrices used in optimizing R
 		G, rowNamesG, colNamesG = build_matrix_G(sim_data, pPromoterBound)
 		Z = build_matrix_Z(sim_data, colNamesG)

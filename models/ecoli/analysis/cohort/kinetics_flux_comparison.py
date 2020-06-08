@@ -23,6 +23,7 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
+from six.moves import range
 
 # ignore data from metabolism burnin period
 BURN_IN_TIME = 1
@@ -139,8 +140,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ylim = ax.get_ylim()
 		ax.set_ylim(ylim[0] - 0.5, ylim[1])
 		ax.set_xlim(xlim[0] - 0.5, xlim[1])
-		ax.set_yticks(range(-6, int(ylim[1]) + 1, 2))
-		ax.set_xticks(range(-6, int(xlim[1]) + 1, 2))
+		ax.set_yticks(list(range(-6, int(ylim[1]) + 1, 2)))
+		ax.set_xticks(list(range(-6, int(xlim[1]) + 1, 2)))
 		ax.legend()
 
 		exportFigure(plt, plotOutDir, plotOutFileName)

@@ -11,6 +11,7 @@ from wholecell.analysis.analysis_tools import exportFigure
 
 from six.moves import cPickle
 from models.ecoli.analysis import multigenAnalysisPlot
+from six.moves import range
 
 CLOSE_TO_DOUBLE = 0.1
 

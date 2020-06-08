@@ -17,6 +17,7 @@ import numpy as np
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
+from six.moves import range
 
 
 # Flags to indicate replisome status

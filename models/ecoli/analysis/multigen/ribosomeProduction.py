@@ -13,6 +13,7 @@ from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.utils import units
 from six.moves import cPickle
 from models.ecoli.analysis import multigenAnalysisPlot
+from six.moves import range
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):

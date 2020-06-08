@@ -20,6 +20,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
+from six.moves import range
 
 N_SEEDS = 32
 
@@ -96,7 +97,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		whitePadSparklineAxis(scatterAxis)
 
 		N, bins, patches = histAxis.hist(hadTranscribedFrequency, bins = N_SEEDS + 1, orientation = 'horizontal')
-		for i in xrange(1, len(patches) - 1):
+		for i in range(1, len(patches) - 1):
 			plt.setp(patches[i], facecolor = "none", edgecolor = "g")
 		plt.setp(patches[0], facecolor = "none", edgecolor = "r")
 		plt.setp(patches[-1], facecolor = "none", edgecolor = "b")

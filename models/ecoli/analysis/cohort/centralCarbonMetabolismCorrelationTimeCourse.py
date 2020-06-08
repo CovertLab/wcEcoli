@@ -20,6 +20,7 @@ from models.ecoli.processes.metabolism import (COUNTS_UNITS, VOLUME_UNITS,
 	TIME_UNITS)
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
+from six.moves import range
 
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 
@@ -38,7 +39,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		seed_color = {}
 		line_instances = {}
-		for seed_num in xrange(ap.n_seed):
+		for seed_num in range(ap.n_seed):
 			# Get all cells in this seed
 			seedDir = ap.get_cells(seed=[seed_num])
 

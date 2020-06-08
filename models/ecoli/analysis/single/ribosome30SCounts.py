@@ -17,6 +17,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import sparklineAxis, setAxisMaxMinY
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
+from six.moves import range
 
 FONT = {
 	'size':	8
@@ -55,7 +56,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		plt.figure(figsize = (8.5, 15))
 		plt.rc('font', **FONT)
 
-		for idx in xrange(len(proteinIds)):
+		for idx in range(len(proteinIds)):
 			rna_axis = plt.subplot(12, 3, idx + 1)
 
 			sparklineAxis(rna_axis, time / 60., rnaCounts[:, idx], 'left', '-', 'b')
@@ -68,7 +69,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			# Component label
 			rna_axis.set_xlabel(proteinIds[idx][:-3])
 
-		for idx in xrange(len(rRnaIds)):
+		for idx in range(len(rRnaIds)):
 			rna_axis = plt.subplot(12, 3, idx + len(proteinIds) + 1)
 
 			sparklineAxis(rna_axis, time / 60., freeRRnaCounts[:, idx], 'left', '-', 'b')
@@ -77,7 +78,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			# Component label
 			rna_axis.set_xlabel(rRnaIds[idx][:-3])
 
-		for idx in xrange(len(complexIds)):
+		for idx in range(len(complexIds)):
 			complex_axis = plt.subplot(12, 3, idx + len(proteinIds) + len(rRnaIds) + 1)
 
 			sparklineAxis(complex_axis, time / 60., complexCounts[:, idx], 'left', '-', 'r')

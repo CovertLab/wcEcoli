@@ -23,6 +23,7 @@ from wholecell.io.tablewriter import (BLOCK_BYTES_GOAL,
 	TableWriter, MissingFieldError, TableExistsError, UnrecognizedFieldError,
 	VariableEntrySizeError, AttributeAlreadyExistsError, AttributeTypeError,
 	V2_DIR_COLUMNS)
+from six.moves import range
 
 
 COLUMNS = 'x y z theta'.split()
@@ -356,7 +357,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 
 		# --- Write ---
 		writer = TableWriter(self.table_path)
-		for _ in xrange(rows):
+		for _ in range(rows):
 			writer.append(**d0)
 		writer.close()
 

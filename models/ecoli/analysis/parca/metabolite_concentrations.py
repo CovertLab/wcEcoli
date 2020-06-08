@@ -18,6 +18,7 @@ from scipy import stats
 from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import constants, units
+from six.moves import range
 
 
 CONC_UNITS = units.mmol / units.L

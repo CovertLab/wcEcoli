@@ -18,6 +18,7 @@ from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
+from six.moves import range
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
@@ -52,7 +53,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		plt.rc('xtick', labelsize=7)
 		plt.rc('ytick', labelsize=5)
 
-		for subplotIdx in xrange(0, n_subplots):
+		for subplotIdx in range(0, n_subplots):
 			ax = plt.subplot(18, 2, 1 + subplotIdx)
 
 			if not subplotIdx % 2:

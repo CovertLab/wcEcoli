@@ -19,6 +19,7 @@ from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
+from six.moves import range
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
@@ -57,7 +58,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Plot time series
 		plt.figure(figsize=(8.5, 11))
 
-		for idx in xrange(21):
+		for idx in range(21):
 			plt.subplot(6, 4, idx + 1)
 			plt.plot(time, aa_conc[:, idx])
 			plt.ylim(0)
@@ -73,7 +74,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		n_row = 6
 		n_col = 4
-		for idx in xrange(len(aa_ids)):
+		for idx in range(len(aa_ids)):
 			ave_conc = aa_conc[:, idx].mean()
 			plt.subplot(n_row, n_col, idx + 1)
 			plt.hist(aa_conc[:, idx])

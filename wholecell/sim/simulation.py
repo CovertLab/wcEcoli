@@ -25,6 +25,7 @@ import wholecell.loggers.disk
 
 import lens
 from lens.actor.emitter import get_emitter
+from six.moves import range
 
 MAX_TIME_STEP = 2.
 DEFAULT_SIMULATION_KWARGS = dict(
@@ -436,7 +437,7 @@ class Simulation(lens.actor.inner.Simulation):
 	def _findTimeStep(self, minTimeStep, maxTimeStep, checkerFunction):
 		N = 10000
 		candidateTimeStep = maxTimeStep
-		for i in xrange(N):
+		for i in range(N):
 			if checkerFunction(candidateTimeStep, self._timeStepSafetyFraction):
 				minTimeStep = candidateTimeStep
 				if (maxTimeStep - minTimeStep) / minTimeStep <= 1e-2:

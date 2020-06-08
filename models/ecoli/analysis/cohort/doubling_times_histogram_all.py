@@ -26,6 +26,7 @@ from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import units
 
 from models.ecoli.analysis import cohortAnalysisPlot
+from six.moves import range
 
 # First generation (counting from zero) from which to gather doubling time
 # values.  If fewer generations were run, this script quits early without
@@ -58,7 +59,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		sim_dirs = analysis_paths.get_cells(
-			generation = range(FIRST_GENERATION, n_gens)
+			generation = list(range(FIRST_GENERATION, n_gens))
 			)
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))

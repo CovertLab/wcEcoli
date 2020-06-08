@@ -20,6 +20,7 @@ from wholecell.utils import units
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import variantAnalysisPlot
+from six.moves import range
 
 THRESHOLD = 0.001 # .1 percent
 TARGET_CONC_SINGLE = 0.10183094010881857 * units.mmol / units.L # found from WT sim; mmol/L
@@ -52,8 +53,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		simOutDir = None
 
-		for variant in xrange(ap.n_variant):
-			for seed in xrange(ap.n_seed):
+		for variant in range(ap.n_variant):
+			for seed in range(ap.n_seed):
 				cells = ap.get_cells(variant = [variant], seed = [seed])
 				timeMeneDepleted = [] # seconds
 				timeEndProdDepleted = [] # seconds
@@ -80,7 +81,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					# Compute time with end products under the target concentration
 					mass = TableReader(os.path.join(simOutDir, "Mass")).readColumn("cellMass") * units.fg
 					volume = mass / cellDensity
-					endProductConcentrations = np.sum([endProductCounts[:, col] / nAvogadro / volume for col in xrange(endProductCounts.shape[1])], axis = 0)
+					endProductConcentrations = np.sum([endProductCounts[:, col] / nAvogadro / volume for col in range(endProductCounts.shape[1])], axis = 0)
 					endProductDepletionIndices = np.where(endProductConcentrations < ((1 - THRESHOLD) * TARGET_CONC))[0]
 					timeEndProdDepleted.append(timeStepSec[endProductDepletionIndices].sum())
 

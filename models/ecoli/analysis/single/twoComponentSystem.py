@@ -18,6 +18,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
+from six.moves import range
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
@@ -63,13 +64,13 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		new_RR = True
 
 
-		for idx in xrange(len(sim_data.moleculeGroups.twoComponentSystems)):
+		for idx in range(len(sim_data.moleculeGroups.twoComponentSystems)):
 			grid_loc = idx + 1 + (cols*(num_subentries + 1))*( idx / cols)
 			current_RR = str(sim_data.moleculeGroups.twoComponentSystems[idx]["molecules"]["RR"])
 			if RR_phosphorylation[current_RR].size == 1:
 				new_RR = True
 
-			for subentryIdx in xrange(len(moleculeTypeOrder)):
+			for subentryIdx in range(len(moleculeTypeOrder)):
 				if new_RR:
 					if moleculeTypeOrder[subentryIdx] == "RR":
 						RR[:] = moleculeCounts[:, (idx * num_subentries) + subentryIdx] / (cellVolume * nAvogadro)

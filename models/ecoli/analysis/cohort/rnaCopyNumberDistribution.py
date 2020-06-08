@@ -21,6 +21,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
+from six.moves import range
 
 # Number of RNAs sampled for Plot 1
 RNA_SAMPLE_COUNT = 10

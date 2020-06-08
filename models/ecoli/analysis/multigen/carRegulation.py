@@ -19,6 +19,7 @@ from wholecell.utils import units
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
+from six.moves import range
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):

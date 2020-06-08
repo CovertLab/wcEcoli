@@ -16,6 +16,7 @@ import numpy as np
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
+from six.moves import range
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):

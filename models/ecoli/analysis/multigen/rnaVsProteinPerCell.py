@@ -20,6 +20,7 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 import matplotlib.lines as mlines
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
+from six.moves import range
 
 complexToMonomer = {
 	"CPLX0-7620[c]": "PD00260[c]", # CPLX0-7620's monomer is EG10359-MONOMER, which is ID'ed as PD00260 (proteins.tsv)
@@ -185,7 +186,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# plot monomers that are not involved in complexes or involved in only 1 complex
 		monomersInvolvedInManyComplexes_index = [ids_translation.index(x) for x in monomersInvolvedInManyComplexes_id]
-		A = [x for x in xrange(len(ids_translation)) if x not in monomersInvolvedInManyComplexes_index]
+		A = [x for x in range(len(ids_translation)) if x not in monomersInvolvedInManyComplexes_index]
 		for i in A:
 			color = colors[mrnaIds.index(rnaIds[i])]
 			ax.loglog(avgRnaCounts_perCell[i], avgProteinCounts_perCell[i], alpha = 0.5, marker = ".", lw = 0., color = color)

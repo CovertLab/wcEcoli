@@ -22,6 +22,7 @@ from wholecell.utils.dependency_graph import DependencyGraph
 from wholecell.utils.protein_counts import (
 	get_simulated_validation_counts,
 )
+from six.moves import range
 
 
 # A type alias for Python 2 str or unicode; Python 3 str (not bytes).
@@ -80,7 +81,7 @@ def find_limiting_metabolites(counts, names, window):
 	"""
 	limiting = set()
 	diff = np.diff(counts, axis=0)
-	for i in xrange(diff.shape[0] - window):
+	for i in range(diff.shape[0] - window):
 		production_in_window = np.any(diff[i:i + window] > 0, axis=0)
 		i_unproduced_metabolites = np.where(
 			production_in_window == False)[0].astype(int)
