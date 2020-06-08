@@ -7,7 +7,7 @@ TODO: functionalize so that values are not both set and returned from some metho
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 from itertools import izip
 import os
 import multiprocessing as mp

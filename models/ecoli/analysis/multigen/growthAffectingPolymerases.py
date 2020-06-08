@@ -11,7 +11,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.utils import units
-import cPickle
+from six.moves import cPickle
 from models.ecoli.analysis import multigenAnalysisPlot
 
 

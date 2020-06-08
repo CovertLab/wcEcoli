@@ -9,7 +9,7 @@ multiple-seed simulations.
 from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
+from six.moves import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt

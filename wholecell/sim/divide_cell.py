@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import os
-import cPickle
+from six.moves import cPickle
 from copy import deepcopy
 
 from wholecell.utils.constants import SERIALIZED_INHERITED_STATE

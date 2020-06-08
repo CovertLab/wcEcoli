@@ -7,7 +7,7 @@ Patterns of co-transcriptional translation in the E. coli WCM
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 import os
 
 from matplotlib import pyplot as plt

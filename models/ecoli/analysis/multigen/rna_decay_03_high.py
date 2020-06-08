@@ -22,7 +22,7 @@ from __future__ import absolute_import, division, print_function
 import os
 
 import numpy as np
-import cPickle
+from six.moves import cPickle
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader

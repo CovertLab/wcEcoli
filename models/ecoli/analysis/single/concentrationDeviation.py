@@ -12,7 +12,7 @@ import os
 from math import log10, floor
 import numpy as np
 from matplotlib import pyplot as plt
-import cPickle
+from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units

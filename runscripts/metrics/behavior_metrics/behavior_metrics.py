@@ -6,7 +6,7 @@
 from __future__ import absolute_import, division, print_function
 
 from collections import namedtuple
-import cPickle
+from six.moves import cPickle
 import importlib
 from os import path
 import re

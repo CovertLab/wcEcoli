@@ -7,7 +7,7 @@ Analyze results from metabolism_kinetic_objective_weight variant
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 import os
 import re
 

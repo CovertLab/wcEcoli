@@ -12,7 +12,7 @@ from __future__ import absolute_import, division, print_function
 
 from future_builtins import zip
 
-import cPickle
+from six.moves import cPickle
 import csv
 from multiprocessing import Pool
 import operator

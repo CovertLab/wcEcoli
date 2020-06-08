@@ -7,7 +7,7 @@ Comparison of average amino acid concentrations to expected concentrations
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 import os
 
 from matplotlib import pyplot as plt
