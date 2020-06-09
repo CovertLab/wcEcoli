@@ -82,7 +82,7 @@ export CAUSALITY_SERVER="~/path/to/causality/site/server.py"
 python runscripts/manual/buildCausalityNetwork.py --show
 ```
 
-Useful network topologies can be saved in [models/ecoli/analysis/causality_network/saved_networks](https://github.com/CovertLab/wcEcoli/tree/master/models/ecoli/analysis/causality_network/saved_networks) and loaded through the web interface after running the `python site/server.py ...` command above.
+Useful network topologies are saved in [models/ecoli/analysis/causality_network/saved_networks](https://github.com/CovertLab/wcEcoli/tree/master/models/ecoli/analysis/causality_network/saved_networks). Saved topologies can be loaded and new topologies can be saved through the web interface after running the `python site/server.py ...` or `python runscripts/manual/buildCausalityNetwork.py --show` commands from above.  If a newly saved topology is useful for the team, check it in with a new commit.
 
 ### Parca
 Analysis to be performed on `raw_data`, `sim_data` and `validation_data` only.  This does not require any simulation output and is only run once after the parca has run to visualize raw data and processed data.
@@ -100,12 +100,12 @@ The sections below provide step by step guides for adding different components t
 
 ### New raw data
 Raw data should always be annotated with the source and process used to generate it for reproducibility.  The best way is to include it in the file as noted below and described in the PR that incorporates the data into the repo.  Adding several data files and scripts to a runscript directory could also use a README.md if desired to point to sources and describe how to run the scripts/what output to expect.
-1. Add a raw data file to [reconstruction/ecoli/flat/](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/flat). Data is stored in a `.tsv` file format with special formatting handling to allow units (specified in parantheses in column headers), lists, dictionaries and comments (lines starting with `#`).
+1. Add a raw data file to [reconstruction/ecoli/flat/](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/flat). Data is stored in a `.tsv` file format with special formatting handling to allow units (specified in parentheses in column headers), lists, dictionaries and comments (lines starting with `#`).
 1. Annotate where the data came from in a comment at the top of the file (URL for the data source and/or script used for processing original data - [see example](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/flat/metabolism_kinetics.tsv)). If a script was required, add it to [runscripts/reconstruction](https://github.com/CovertLab/wcEcoli/tree/master/runscripts/reconstruction).
 1. Add the filename to `LIST_OF_DICT_FILENAMES` in [knowledge_base_raw.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/knowledge_base_raw.py). This will cause the data to be loaded into the class when an instance of `KnowledgeBaseEcoli` is created.
 1. Access, process and store the data in the appropriate reconstruction class (eg [processes](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/process) or [states](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/state)) by accessing the `raw_data` attribute for the file (eg. `raw_data.new_file` for a file named `new_file.tsv`)
 
-**NOTE:** if there are issues loading the new file, try saving it using `JsonWriter` from [reconstruction/spreadsheets.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/spreadsheets.py) to ensure proper formatting:
+**NOTE:** if there are issues loading the new file, try saving it using `JsonWriter` from [reconstruction/spreadsheets.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/spreadsheets.py) to ensure proper formatting that can be read by `JsonReader`:
 ```python
 from reconstruction.spreadsheets import JsonWriter
 
@@ -117,11 +117,11 @@ with open('output.tsv', 'w') as f:
 ```
 
 ### New validation data
-The process for adding validation data is very similar to that described in `New raw data` above but an important distinction to make between raw data and validation data is that validation data will not be used to calculate parameters or be used in simulations at all.  Validation data is only used to compare simulation results in analysis plots.  Additional information about file formatting and annotating in `New raw data` should also be considered here.
+The steps to add validation data are very similar to that described in `New raw data` above but an important distinction to make between raw data and validation data is that validation data will not be used to calculate parameters or be used in simulations at all.  Validation data is only used to compare simulation results in analysis plots.  Additional information about file formatting and annotating in `New raw data` should also be considered here.
 1. Add a validation data file to [validation/ecoli/flat/](https://github.com/CovertLab/wcEcoli/tree/master/validation/ecoli/flat).
 1. Annotate where the data came from in a comment at the top of the file (URL for the data source and/or script used for processing original data - [see example](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/flat/metabolism_kinetics.tsv)). If a script was required, add it to [runscripts/reconstruction](https://github.com/CovertLab/wcEcoli/tree/master/runscripts/reconstruction).
-1. Add the filename to `LIST_OF_DICT_FILENAMES` in [validation_data_raw.py](https://github.com/CovertLab/wcEcoli/blob/master/validation/ecoli/validatoin_data_raw.py). This will cause the data to be loaded into the class when an instance of `ValidationDataRawEcoli` is created.
-1. Access, process and store the data as an attribute in the appropriate class (or create a new class) in [validation_data.py](https://github.com/CovertLab/wcEcoli/blob/master/validation/ecoli/validatoin_data.py) by accessing the `validation_data_raw` attribute for the file (eg. `validation_data_raw.new_file` for a file named `new_file.tsv`)
+1. Add the filename to `LIST_OF_DICT_FILENAMES` in [validation_data_raw.py](https://github.com/CovertLab/wcEcoli/blob/master/validation/ecoli/validation_data_raw.py). This will cause the data to be loaded into the class when an instance of `ValidationDataRawEcoli` is created.
+1. Access, process and store the data as an attribute in the appropriate class (or create a new class) in [validation_data.py](https://github.com/CovertLab/wcEcoli/blob/master/validation/ecoli/validation_data.py) by accessing the `validation_data_raw` attribute for the file (eg. `validation_data_raw.new_file` for a file named `new_file.tsv`)
 
 ### New process
 Each _process_ models one part of the cell’s function, e.g. RNA polymerase elongation. They are modeled separately (modular), run in short time steps (assumed to be independent over a short time), and the results from each time step are integrated between processes before initiating the next time step.
@@ -133,7 +133,7 @@ Each process has three entry points during a simulation:
 
 Adding a process involves adding data to be used by that process in `reconstruction/` as well as code to model the process in `models/`.  The steps to add a new process called `new_process` are outlined below:
 1. Add any required raw data (see 'New raw data' section above)
-1. Create a new file called `new_process.py` in [reconstruction/ecoli/dataclasses/process/](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/process).  This should include a class definition for `NewProcess` that loads data from `raw_data` to store as class attributes in an `__init__(self, raw_data, sim_data)` function.  See other files in the directory for an example.
+1. Create a new file called `new_process.py` in [reconstruction/ecoli/dataclasses/process/](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/process).  This should include a class definition for `NewProcess` that loads data from `raw_data` to store as instance variables in an `__init__(self, raw_data, sim_data)` function.  See other files in the directory for an example.
 1. Import the new reconstruction class and initialize an instance of it in [process.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/dataclasses/process/process.py).  This will make the data in the previous step accessible with `sim_data.process.new_process`.
     ```
     from .new_process import NewProcess
@@ -159,7 +159,7 @@ Adding a process involves adding data to be used by that process in `reconstruct
 
         def evolveState(self):
     ```
-1. Import the new model class in [simulation.py](https://github.com/CovertLab/wcEcoli/blob/master/models/ecoli/sim/simulation.py) and add the class to one of the tuples in `_processClasses`.  Each tuple within `_processClasses` represents a set of processes that will all run before updating the cell state.  All processes within a tuple are assumed to be independent of each other and will request from the same pool of resources.  The tuples of processes will be exectued in order so a process that requires all other processes to run first, should be in the last tuple.  One time step will be completed once all of the processes in each tuple have been run.  In most cases, a new class will be added to the first tuple.
+1. Import the new model class in [simulation.py](https://github.com/CovertLab/wcEcoli/blob/master/models/ecoli/sim/simulation.py) and add the class to one of the tuples in `_processClasses`.  Each tuple within `_processClasses` represents a set of processes that will all run before updating the cell state.  All processes within a tuple are assumed to be independent of each other and will request from the same pool of resources.  The tuples of processes will be executed in order so a process that requires all other processes to run first, should be in the last tuple.  One time step will be completed once all of the processes in each tuple have been run.  In most cases, a new class will be added to the first tuple.
     ```
     from models.ecoli.processes.new_process import NewProcess
 
@@ -201,13 +201,13 @@ python runscripts/manual/runSim.py --variant new_variant 0 1
 
 ### New listener
 
-If you want to save new values to analyze after the simulation, you must write it out via a _listener_. Listeners log data during the simulation and can write attributes or columns. Attributes are values that are static throughout the simulation like IDs and are written once at the beginning of simulations.  Columns are values that are written every time step like number of reactions that occurred.  Listeners contain data that is similar to each other, often from the same process and used in the same analysis plots.  The following steps outline how to add a new listener:
+If you want to save new values to analyze after the simulation, you must write it out via a _listener_. Listeners log data during the simulation and can write attributes or columns. Attributes are values that are static throughout the simulation (eg. IDs) and only written once (usually at the beginning of simulations).  Columns are values that change and are written every time step (eg. number of reactions that occurred).  Listeners are organized to contain data that is similar to other data within the listener, often from the same process and used in the same analysis plots.  The following steps outline how to add a new listener:
 
 1. Create a new file in [wcEcoli/models/ecoli/listeners/](https://github.com/CovertLab/wcEcoli/tree/master/models/ecoli/listeners), you can use other listeners in the directory as a template.  It should contain a class definition that inherits from `wholecell.listeners.listener.Listener`.
 1. Complete the `initialize()` function.  This should save any values from `sim_data` or processes/states in `sim` that are required like IDs or number of expected attributes.  This function is called after processes have initialized so process attributes that are set during process `initialize()` calls can be accessed here.
 1. Complete the `allocate()` function.  This should initialize values and types for columns.  The initial state of sims along with all listener values is written once before the evolution of a time step so these initial values will be the first entry in a column.
 1. Complete the `tableCreate(self, tableWriter)` function.  This function is called once at the beginning of simulations and should define subcolumns (a dictionary that maps column name keys to values that contain an array with a corresponding ID for each entry in the column), write attributes (including subcolumns, if needed) using `tableWriter.writeAttributes()`, and define any columns that can be of variable length using `tableWriter.set_variable_length_columns()`.
-1. (Optional) Complete the `update()` function.  This function is called a the end of each time step before values are written and should update any class attributes that will be written to file based on the current state.  Often, processes will set values to be written and this function is unnecessary.
+1. (Optional) Complete the `update()` function.  This function is called a the end of each time step before values are written and should update any instance variables that will be written to file based on the current state.  Often, processes will set values to be written and this function is unnecessary.
 1. Complete the `tableAppend(self, tableWriter)` function.  This function is called at the end of each time step after `update()` has been called and writes values for each column to file using `tableWriter.append()`.
 1. Add the listener to [wcEcoli/models/ecoli/sim/simulation.py]().  You will need to import the class at the top of the file and add the class to the `_listenerClasses` tuple.
 1. Save data during sims by calling `self.writeToListener('NewListener', 'new_column', value)` in a process to write a value to a column.  `value` can be a single value (float, str, etc) or a list/array of fixed length at every time step (unless `tableWriter.set_variable_length_columns()` was used in `tableCreate()` for the given `'new_column'`).
