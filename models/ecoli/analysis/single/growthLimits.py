@@ -7,16 +7,15 @@ Plots various simulation components that may be limiting growth
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
 
 from matplotlib import pyplot as plt
 import numpy as np
+from six.moves import cPickle, range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
-from six.moves import range
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):

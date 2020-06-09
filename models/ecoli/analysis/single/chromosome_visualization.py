@@ -8,16 +8,15 @@ the chromosome.
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
 import json
 
 import numpy as np
+from six.moves import cPickle, range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
-from six.moves import range
 
 
 # Flags to indicate replisome status

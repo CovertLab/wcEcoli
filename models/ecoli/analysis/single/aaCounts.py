@@ -9,14 +9,13 @@ Plot amino acid counts
 from __future__ import absolute_import, division, print_function
 
 import os
-from six.moves import cPickle
 
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import range
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):

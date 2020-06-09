@@ -7,18 +7,18 @@ Compare metabolite concentrations from different datasets.
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
+from typing import Dict, List
 
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 from scipy import stats
+from six.moves import cPickle, range
 
 from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import constants, units
-from six.moves import range
 
 
 CONC_UNITS = units.mmol / units.L
@@ -34,7 +34,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			sim_data = cPickle.load(f)
 
 		# Extract raw concentrations
-		concentrations = {}
+		concentrations = {}  # type: Dict[str, Dict[str, List]]
 		metabolites = []
 		index = 0
 		for row in raw_data.metaboliteConcentrations:

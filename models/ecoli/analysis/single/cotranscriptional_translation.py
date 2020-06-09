@@ -7,18 +7,17 @@ Patterns of co-transcriptional translation in the E. coli WCM
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
 
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
+from six.moves import cPickle, range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
-from six.moves import range
 
 
 PLOT_TOP_N_GENES = 30

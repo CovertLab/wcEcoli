@@ -9,7 +9,7 @@ from os import listdir
 from os.path import isdir, join
 from re import match, findall
 from itertools import chain
-from typing import cast, Iterable, List, Optional
+from typing import cast, Iterable, List, Optional, Union
 import numpy as np
 
 from wholecell.utils import constants
@@ -127,7 +127,7 @@ class AnalysisPaths(object):
 		self.n_seed = len(set(seeds))
 
 	def get_cells(self, variant = None, seed = None, generation = None):
-		# type: (Optional[Iterable[int]], Optional[Iterable[int]], Optional[Iterable[int]]) -> np.ndarray
+		# type: (Optional[Iterable[Union[int, str]]], Optional[Iterable[int]], Optional[Iterable[int]]) -> np.ndarray
 		"""Returns file paths for all the simulated cells."""
 		# TODO: Rename this to get_cell_paths()?
 		if variant is None:
@@ -148,13 +148,13 @@ class AnalysisPaths(object):
 		return self._path_data['path'][np.logical_and.reduce((variantBool, seedBool, generationBool))]
 
 	def get_variant_kb(self, variant):
-		# type: (int) -> str
+		# type: (Union[int, str]) -> str
 		kb_path = np.unique(self._path_data['variantkb'][np.where(self._path_data["variant"] == variant)])
 		assert kb_path.size == 1
 		return kb_path[0]
 
 	def get_variants(self):
-		# type: () -> List[str]
+		# type: () -> List[Union[int, str]]
 		return sorted(np.unique(self._path_data["variant"]))
 
 	def _get_generations(self, directory):
@@ -178,7 +178,7 @@ class AnalysisPaths(object):
 		return individuals
 
 	def _set_match(self, field, value):
-		# type: (str, Iterable[int]) -> np.ndarray
+		# type: (str, Iterable[Union[int, str]]) -> np.ndarray
 		union = np.zeros(self._path_data[field].size)
 		for x in value:
 			union = cast(np.ndarray, np.logical_or(self._path_data[field] == x, union))

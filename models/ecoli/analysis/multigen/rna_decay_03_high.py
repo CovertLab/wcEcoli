@@ -22,15 +22,14 @@ from __future__ import absolute_import, division, print_function
 import os
 
 import numpy as np
-from six.moves import cPickle
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
-from six.moves import range
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):

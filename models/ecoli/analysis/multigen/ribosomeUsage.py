@@ -9,18 +9,17 @@ Plot usage statistics of ribosomes
 from __future__ import absolute_import, division, print_function
 
 import os
-from six.moves import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
-from six.moves import range
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):

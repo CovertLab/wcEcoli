@@ -2,10 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 
 import os
-from six.moves import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -13,7 +13,6 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import variantAnalysisPlot
-from six.moves import range
 
 FONT_SIZE=9
 

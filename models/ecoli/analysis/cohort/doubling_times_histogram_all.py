@@ -15,10 +15,10 @@ standardize the output across sets of simulations.
 from __future__ import absolute_import, division, print_function
 
 import os
-from six.moves import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -26,7 +26,6 @@ from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import units
 
 from models.ecoli.analysis import cohortAnalysisPlot
-from six.moves import range
 
 # First generation (counting from zero) from which to gather doubling time
 # values.  If fewer generations were run, this script quits early without

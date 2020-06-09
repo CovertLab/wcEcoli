@@ -11,13 +11,12 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle
+from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import sparklineAxis, setAxisMaxMinY
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import range
 
 FONT = {
 	'size':	8

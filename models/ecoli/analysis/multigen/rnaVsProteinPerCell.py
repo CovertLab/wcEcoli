@@ -9,10 +9,10 @@ Plots average RNA counts per cell vs average protein counts per cell.
 from __future__ import absolute_import, division, print_function
 
 import os
-from six.moves import cPickle
 
 import numpy as np
 import matplotlib.pyplot as plt
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -20,7 +20,6 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 import matplotlib.lines as mlines
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
-from six.moves import range
 
 complexToMonomer = {
 	"CPLX0-7620[c]": "PD00260[c]", # CPLX0-7620's monomer is EG10359-MONOMER, which is ID'ed as PD00260 (proteins.tsv)

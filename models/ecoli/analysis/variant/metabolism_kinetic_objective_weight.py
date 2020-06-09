@@ -7,13 +7,13 @@ Analyze results from metabolism_kinetic_objective_weight variant
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
 import re
+from typing import Dict, List, Sequence, Tuple
 
 from matplotlib import pyplot as plt
 import numpy as np
-from typing import Dict, List, Sequence, Tuple
+from six.moves import cPickle, range
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS
@@ -22,7 +22,6 @@ from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import parallelization, units
 from wholecell.utils.sparkline import whitePadSparklineAxis
-from six.moves import range
 
 
 MODEL_FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS

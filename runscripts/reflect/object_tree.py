@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import collections
-from six.moves import cPickle
 import functools
 import numbers
 import os
@@ -13,13 +12,13 @@ from typing import Text
 import Bio.Seq
 import numpy as np
 import scipy.interpolate
+from six.moves import cPickle, range
 import sympy
 from sympy.matrices import dense
 import unum
 
 from wholecell.utils import constants
 import wholecell.utils.unit_struct_array
-from six.moves import range
 
 
 NULP = 0  # float comparison tolerance, in Number of Units in the Last Place

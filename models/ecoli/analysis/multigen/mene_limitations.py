@@ -6,11 +6,11 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from six.moves import cPickle
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -20,7 +20,6 @@ from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from models.ecoli.analysis import multigenAnalysisPlot
-from six.moves import range
 
 FONTSIZE = 6
 LABELSIZE = 6

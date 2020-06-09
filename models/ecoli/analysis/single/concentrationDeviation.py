@@ -12,13 +12,12 @@ import os
 from math import log10, floor
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle
+from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import range
 
 COLOR_CHOICES = np.array([
 	[0,0,0],

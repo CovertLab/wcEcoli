@@ -7,10 +7,10 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from six.moves import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -20,7 +20,6 @@ from models.ecoli.processes.metabolism import (COUNTS_UNITS, VOLUME_UNITS,
 	TIME_UNITS)
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
-from six.moves import range
 
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 

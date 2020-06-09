@@ -4,14 +4,12 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
+from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
-
-from six.moves import cPickle
-from models.ecoli.analysis import multigenAnalysisPlot
-from six.moves import range
 
 CLOSE_TO_DOUBLE = 0.1
 

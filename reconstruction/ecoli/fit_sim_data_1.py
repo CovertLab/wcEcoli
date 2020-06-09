@@ -7,7 +7,6 @@ TODO: functionalize so that values are not both set and returned from some metho
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 from itertools import izip
 import os
 import multiprocessing as mp
@@ -18,12 +17,12 @@ from arrow import StochasticSystem
 from cvxpy import Variable, Problem, Minimize, norm
 import numpy as np
 import scipy.optimize
+from six.moves import cPickle, range
 
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import filepath, parallelization, units
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
-from six.moves import range
 
 
 # Tweaks

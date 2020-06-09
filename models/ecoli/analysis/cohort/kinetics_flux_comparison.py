@@ -8,12 +8,12 @@ Compare fluxes in simulation to target fluxes
 from __future__ import absolute_import, division, print_function
 
 import os
-from six.moves import cPickle
 import csv
 
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -23,7 +23,6 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
-from six.moves import range
 
 # ignore data from metabolism burnin period
 BURN_IN_TIME = 1
