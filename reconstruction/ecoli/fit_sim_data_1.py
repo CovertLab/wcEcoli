@@ -550,13 +550,13 @@ def buildCombinedConditionCellSpecifications(
 	appropriate
 	"""
 
-	fcData = {}
 	for conditionKey in sim_data.conditionActiveTfs:
 		# Skip adjustments if 'basal' condition
 		if conditionKey == "basal":
 			continue
 
 		# Get expression from fold changes for each TF in the given condition
+		fcData = {}
 		conditionValue = sim_data.conditions[conditionKey]
 		for tf in sim_data.conditionActiveTfs[conditionKey]:
 			for gene, fc in sim_data.tfToFC[tf].items():
