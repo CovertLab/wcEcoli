@@ -22,13 +22,13 @@ kernprof doesn't support that.
 """
 from __future__ import absolute_import, division, print_function
 
-from six.moves import builtins
 import sys
 import os
 import time
 import cProfile
 import pstats
-import StringIO
+
+from six.moves import builtins, StringIO
 
 import numpy as np
 
