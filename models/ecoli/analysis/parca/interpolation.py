@@ -149,20 +149,24 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 				rval = 0
 				print(fun.__name__)
 				x = np.array([mass.getAvgCellDryMass(dt * units.min).asNumber() for dt in data[0]])
+				x = np.array(data[0])
 				y = np.array(data[1])
-				for yname, fy in funs.items():
-					result = stats.linregress(data[0], fy(y))
-					if np.abs(result.rvalue) > rval:
-						rval = np.abs(result.rvalue)
-						transform = yname
-						slope = result.slope
-						intercept = result.intercept
-					if np.abs(result.rvalue) > 0.99:
-						print('\t{}: {:.3f} {:.1e}'.format(yname, result.rvalue, result.pvalue))
-				ax.plot(data[0], y, 'or')
-				ax.plot(doubling_time_range, inverse[transform](doubling_time_range * slope + intercept), '--')
-			for dt in doubling_times:
-				ax.axvline(dt, linestyle='--', color='k', linewidth=0.5)
+				for xname, fx in funs.items():
+					for yname, fy in funs.items():
+						result = stats.linregress(fx(x), fy(y))
+						if np.abs(result.rvalue) > rval:
+							rval = np.abs(result.rvalue)
+							xtransform = xname
+							ytransform = yname
+							slope = result.slope
+							intercept = result.intercept
+						if np.abs(result.rvalue) > 0.95:
+							print('\t{} {}: {:.3f} {:.1e}'.format(xname, yname, result.rvalue, result.pvalue))
+				ax.plot(x, y, 'or')
+				print(xtransform, ytransform)
+				ax.plot(doubling_time_range, inverse[ytransform](funs[xtransform](doubling_time_range) * slope + intercept), '--')
+			# for dt in doubling_times:
+			# 	ax.axvline(dt, linestyle='--', color='k', linewidth=1)
 
 			# Formatting
 			ax.spines['top'].set_visible(False)
