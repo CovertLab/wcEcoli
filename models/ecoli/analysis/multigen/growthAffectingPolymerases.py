@@ -286,6 +286,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				y_lim = [processElongationRate[100:].min(), processElongationRate[100:].max()]
 			else:
 				y_lim = get_new_ylim(ax12, processElongationRate[100:].min(), processElongationRate[100:].max())
+			if y_lim[0] == y_lim[1]:
+				y_lim[1] += 1e-10  # avoid matplotlib bottom==top singularity warning
 			ax12.set_ylim(y_lim)
 			ax12.set_ylabel("Process ribosome\nelongation rate\n(aa/s)")
 
