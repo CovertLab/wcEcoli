@@ -105,7 +105,7 @@ class JsonReader(csv.DictReader, object):
 				repr(e)
 				raise Exception("failed to parse json string:{}".format(raw_value))
 
-			match = re.search('(.*?) \((.*?)\)', key)
+			match = re.search(r'(.*?) \((.*?)\)', key)
 			if match:
 				# Entry includes units so need to apply parsed units to values
 				_ = units  # don't warn about `units`; it's imported for eval()
