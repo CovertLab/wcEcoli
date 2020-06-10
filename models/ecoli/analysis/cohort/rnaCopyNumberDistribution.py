@@ -125,7 +125,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# 1-1: Plot histogram of average RNA counts for each generation
 		for gen_idx in range(n_generation):
-			ax = plt.subplot(gs[0, gen_idx])
+			ax = self.subplot(gs[0, gen_idx])
 			mean_counts = rna_counts_mean_over_seed[gen_idx, :]
 			ax.hist(mean_counts, bins=np.logspace(-3, 6, 19))
 			ax.set_title("Generation %d"%(gen_idx,))
@@ -162,7 +162,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# Plot histogram for each generation
 			for gen_idx in range(n_generation):
-				ax = plt.subplot(gs[i + 1, gen_idx])
+				ax = self.subplot(gs[i + 1, gen_idx])
 				seed_counts = all_rna_counts[gen_idx, :, idx_rna_sampled]
 
 				# The weights rescale histogram such that all columns sum to one
@@ -187,7 +187,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# Go back and reset y axis upper limit
 			for gen_idx in range(n_generation):
-				ax = plt.subplot(gs[i + 1, gen_idx])
+				ax = self.subplot(gs[i + 1, gen_idx])
 				ax.set_ylim([0, 1.1*max_bin_prob])
 
 		fig.tight_layout()
