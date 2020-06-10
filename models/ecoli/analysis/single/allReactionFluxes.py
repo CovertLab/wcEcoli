@@ -11,6 +11,7 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 import itertools
+from six.moves import zip
 
 from wholecell.io.tablereader import TableReader
 
@@ -18,7 +19,6 @@ from models.ecoli.processes.metabolism import COUNTS_UNITS, TIME_UNITS, VOLUME_U
 from wholecell.analysis.plotting_tools import COLORS_LARGE
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import zip
 
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 
@@ -43,7 +43,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Build a mapping from reaction to color
 		idToColor = {}
-		for reactionID, color in itertools.izip(reactionIDs, itertools.cycle(COLORS_LARGE)):
+		for reactionID, color in zip(reactionIDs, itertools.cycle(COLORS_LARGE)):
 			idToColor[reactionID] = color
 
 		plt.figure(figsize = (17, 11))

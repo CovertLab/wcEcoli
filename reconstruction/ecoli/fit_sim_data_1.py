@@ -7,7 +7,6 @@ TODO: functionalize so that values are not both set and returned from some metho
 
 from __future__ import absolute_import, division, print_function
 
-from itertools import izip
 import os
 import multiprocessing as mp
 import traceback
@@ -17,14 +16,13 @@ from arrow import StochasticSystem
 from cvxpy import Variable, Problem, Minimize, norm
 import numpy as np
 import scipy.optimize
-from six.moves import cPickle, range
+import six
+from six.moves import cPickle, range, zip
 
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import filepath, parallelization, units
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
-import six
-from six.moves import zip
 
 
 # Tweaks
@@ -2190,7 +2188,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		k, kInfo = [], []
 
 		for idx, (rnaId, rnaCoordinate) in enumerate(
-				izip(sim_data.process.transcription.rnaData["id"],
+				zip(sim_data.process.transcription.rnaData["id"],
 				sim_data.process.transcription.rnaData["replicationCoordinate"])):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
@@ -2484,7 +2482,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		- colNamesH: List of column names of H as strings
 		"""
 
-		rDict = dict([(colName, value) for colName, value in izip(colNames, r)])
+		rDict = dict([(colName, value) for colName, value in zip(colNames, r)])
 
 		pPromoterBoundIdxs = dict([(condition, {}) for condition in pPromoterBound])
 		hI, hJ, hV, rowNames, colNamesH, pInitI, pInitV = [], [], [], [], [], [], []
@@ -2667,7 +2665,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		replicationCoordinate = sim_data.process.transcription.rnaData["replicationCoordinate"]
 
 		# Update sim_data values with fit values
-		for D, k_value in izip(kInfo, k):
+		for D, k_value in zip(kInfo, k):
 			condition = D["condition"]
 			rna_idx = D["idx"]
 

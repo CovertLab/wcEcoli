@@ -6,11 +6,11 @@ TODO: raise/warn if physiological metabolite concentration targets appear to be 
 
 from __future__ import absolute_import, division, print_function
 
-from itertools import izip
 from typing import cast
 
 import numpy as np
 import scipy.sparse
+from six.moves import zip
 
 from wholecell.utils.fitting import normalize, countsFromMassAndExpression, masses_and_counts_for_homeostatic_target
 from wholecell.utils.polymerize import computeMassIncrease
@@ -21,7 +21,6 @@ from wholecell.utils.random import stochasticRound
 from models.ecoli.processes.polypeptide_elongation import SteadyStateElongationModel
 from wholecell.containers.unique_objects_container import Access
 from wholecell.sim.divide_cell import load_inherited_state
-from six.moves import zip
 
 
 RAND_MAX = 2**31
@@ -1177,6 +1176,6 @@ def rescale_initiation_probs(init_probs, TU_index, fixed_synth_probs,
 	RNA A, whose synthesis probability should be fixed to 0.1, each promoter is
 	given an initiation probability of 0.05.
 	"""
-	for rna_idx, synth_prob in izip(fixed_TU_indexes, fixed_synth_probs):
+	for rna_idx, synth_prob in zip(fixed_TU_indexes, fixed_synth_probs):
 		fixed_rna_mask = (TU_index == rna_idx)
 		init_probs[fixed_rna_mask] = synth_prob / fixed_rna_mask.sum()

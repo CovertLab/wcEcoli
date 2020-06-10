@@ -6,15 +6,15 @@
 
 from __future__ import absolute_import, division, print_function
 
-from itertools import izip
+
 from typing import Dict, Type
 import warnings
 
 import numpy as np
 import six
+from six.moves import zip
 
 from wholecell.utils._netflow._base import NetworkFlowProblemBase
-from six.moves import zip
 
 NUMERICAL_ZERO = 1e-20
 
@@ -1049,7 +1049,7 @@ class FluxBalanceAnalysis(object):
 		levels_array = np.empty(len(self._externalMoleculeIDs))
 		levels_array[:] = levels
 
-		for moleculeID, level in izip(self._externalMoleculeIDs, levels_array):
+		for moleculeID, level in zip(self._externalMoleculeIDs, levels_array):
 			flowID = self._generatedID_externalExchange + moleculeID
 
 			if level < 0:
@@ -1077,7 +1077,7 @@ class FluxBalanceAnalysis(object):
 		if (levels_array < 0).any():
 			raise InvalidBoundaryError("Negative molecule levels not allowed")
 
-		for moleculeID, level in izip(self._internalMoleculeIDs, levels_array):
+		for moleculeID, level in zip(self._internalMoleculeIDs, levels_array):
 			flowID = self._generatedID_internalExchange + moleculeID
 
 			if self._forceInternalExchange:
@@ -1317,7 +1317,7 @@ class FluxBalanceAnalysis(object):
 				]
 			unity_ids = [i + rxn for rxn in reactionIDs for i in generated_ids]
 
-		fluxes = {rxn: flux for rxn, flux in izip(unity_ids, self.getReactionFluxes(unity_ids))}
+		fluxes = {rxn: flux for rxn, flux in zip(unity_ids, self.getReactionFluxes(unity_ids))}
 
 		for idx, reactionID in enumerate(reactionIDs):
 			if reactionID not in self._active_kinetic_targets:
@@ -1372,7 +1372,7 @@ class FluxBalanceAnalysis(object):
 		upper_targets = validate_targets(upper_targets, reactionIDs, default=mean_targets)
 
 		# Change the objective normalization
-		for reactionID, mean, lower, upper in izip(reactionIDs, mean_targets, lower_targets, upper_targets):
+		for reactionID, mean, lower, upper in zip(reactionIDs, mean_targets, lower_targets, upper_targets):
 			if reactionID not in self._kineticTargetFluxes:
 				raise FBAError('Kinetic targets can only be set for reactions'
 					' initialized to be kinetic targets. {} is not set up for it.'

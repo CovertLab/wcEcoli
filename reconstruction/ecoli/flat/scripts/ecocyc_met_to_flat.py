@@ -1,17 +1,17 @@
 
 from __future__ import absolute_import, division, print_function
 
+from collections import defaultdict
 import os
 import re
-
-from collections import defaultdict
-from itertools import izip
 from typing import Any, Dict, List
-
-from reconstruction.spreadsheets import JsonWriter, read_tsv
 
 import numpy as np
 import six
+from six.moves import zip
+
+from reconstruction.spreadsheets import JsonWriter, read_tsv
+
 
 _DIR = os.path.join("reconstruction", "ecoli", "flat", "metabolism")
 _FBA_FILE = os.path.join(_DIR, "ecocyc-full-biomass.fba") # biomass stoich, nutrients, secretions
@@ -295,7 +295,7 @@ for outName, groupName in six.viewitems(_MASS_CATEGORIES):
 
 	out = [
 		{"metaboliteId":mid, "massFraction":frac}
-		for mid, frac in izip(moleculeIDs, fractions)
+		for mid, frac in zip(moleculeIDs, fractions)
 		]
 
 	with open(os.path.join("reconstruction", "ecoli", "flat", "massFractions", outName + "Fractions.tsv"), "w") as outfile:

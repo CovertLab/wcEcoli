@@ -11,11 +11,11 @@ creates and manages the structured arrays in memory.
 
 from __future__ import absolute_import, division, print_function
 
-from itertools import izip
 from copy import deepcopy
 
 import numpy as np
 import six
+from six.moves import zip
 
 import wholecell.states.internal_state
 import wholecell.views.view
@@ -77,7 +77,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 
 		molecule_id_to_mass = {}
 		uniqueMoleculeMasses = sim_data.internal_state.uniqueMolecules.uniqueMoleculeMasses
-		for (id_, mass) in izip(
+		for (id_, mass) in zip(
 			uniqueMoleculeMasses["id"], uniqueMoleculeMasses["mass"]
 			):
 			molecule_id_to_mass[id_] = (mass/sim_data.constants.nAvogadro).asNumber(units.fg)
@@ -162,7 +162,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 		"""
 		masses = np.zeros_like(self._masses)
 
-		for moleculeId, moleculeMasses in izip(
+		for moleculeId, moleculeMasses in zip(
 				self._molecule_ids, self._molecule_masses):
 			# Get all molecules of a particular type
 			molecules = self.container.objectsInCollection(moleculeId)

@@ -60,21 +60,20 @@ which assigns that node dynamics from listener output:
 """
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import numpy as np
 import re
 import os
 import json
-from itertools import izip
+
 from typing import Union
+import six
+from six.moves import cPickle, zip
 
 from models.ecoli.analysis.causality_network.network_components import (
 	Node, Edge,
 	NODELIST_FILENAME, EDGELIST_FILENAME,
 	NODE_LIST_HEADER, EDGE_LIST_HEADER,
 	NODELIST_JSON, EDGELIST_JSON)
-import six
-from six.moves import zip
 
 # Suffixes that are added to the node IDs of a particular type of node
 NODE_ID_SUFFIX = {
@@ -323,7 +322,7 @@ class BuildNetwork(object):
 		rnap_id = self.sim_data.moleculeIds.rnapFull
 
 		# Loop through all genes (in the order listed in transcription)
-		for rna_id, gene_id, is_mrna in izip(
+		for rna_id, gene_id, is_mrna in zip(
 				self.sim_data.process.transcription.rnaData["id"],
 				self.sim_data.process.transcription.rnaData["geneId"],
 				self.sim_data.process.transcription.rnaData["isMRna"]):
@@ -423,13 +422,13 @@ class BuildNetwork(object):
 
 		# Construct dictionary to get corrensponding gene IDs from RNA IDs
 		rna_id_to_gene_id = {}
-		for rna_id, gene_id in izip(
+		for rna_id, gene_id in zip(
 				self.sim_data.process.transcription.rnaData["id"],
 				self.sim_data.process.transcription.rnaData["geneId"]):
 			rna_id_to_gene_id[rna_id] = gene_id
 
 		# Loop through all translatable genes
-		for monomer_id, rna_id in izip(
+		for monomer_id, rna_id in zip(
 				self.sim_data.process.translation.monomerData["id"],
 				self.sim_data.process.translation.monomerData["rnaId"]):
 
@@ -546,7 +545,7 @@ class BuildNetwork(object):
 			stoich_coeffs = stoich_vector[molecule_indices]
 
 			# Loop through all proteins participating in the reaction
-			for molecule_index, stoich in izip(molecule_indices, stoich_coeffs):
+			for molecule_index, stoich in zip(molecule_indices, stoich_coeffs):
 				# Add complexation edges
 				# Note: the direction of the edge is determined by the sign of the
 				# stoichiometric coefficient.
@@ -916,7 +915,7 @@ class BuildNetwork(object):
 		# Build dict that maps RNA IDs to gene IDs
 		rna_id_to_gene_id = {}
 
-		for rna_id, gene_id in izip(
+		for rna_id, gene_id in zip(
 				self.sim_data.process.replication.geneData["rnaId"],
 				self.sim_data.process.replication.geneData["name"]):
 			rna_id_to_gene_id[rna_id + "[c]"] = gene_id

@@ -43,9 +43,9 @@ def load_conc(filename):
 	with open(filename) as f:
 		reader = csv.reader(f, delimiter='\t')
 
-		headers = reader.next()
+		headers = next(reader)
 		while headers[0].startswith('#'):
-			headers = reader.next()
+			headers = next(reader)
 		label = headers[1]
 
 		for line in reader:

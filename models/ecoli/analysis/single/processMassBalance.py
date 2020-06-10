@@ -6,18 +6,18 @@
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
-from itertools import izip
+
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
+import six
+from six.moves import cPickle, zip
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
-import six
 
 
 THRESHOLD = 1e-13 # roughly, the mass of an electron
@@ -60,7 +60,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		conversion = 1e15 / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
 		metabolism_mass_imported = np.zeros(delta_metabolites.shape[0])
-		for mol, flux in izip(metabolites, delta_metabolites.T):
+		for mol, flux in zip(metabolites, delta_metabolites.T):
 			mol_mass = sim_data.getter.getMass([mol])[0].asNumber(units.g / units.mol)
 			metabolism_mass_imported += mol_mass * conversion * flux
 

@@ -17,10 +17,11 @@ import numpy as np
 import scipy.sparse
 from typing import cast
 
+from six.moves import zip
+
 import wholecell.processes.process
 from wholecell.utils import units
 
-from itertools import izip
 
 class TranscriptInitiation(wholecell.processes.process.Process):
 	""" TranscriptInitiation """
@@ -343,6 +344,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		promoters for RNA A, whose synthesis probability should be fixed to
 		0.1, each promoter is given an initiation probability of 0.05.
 		"""
-		for idx, synth_prob in izip(fixed_indexes, fixed_synth_probs):
+		for idx, synth_prob in zip(fixed_indexes, fixed_synth_probs):
 			fixed_mask = (TU_index == idx)
 			self.promoter_init_probs[fixed_mask] = synth_prob / fixed_mask.sum()

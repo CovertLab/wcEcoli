@@ -8,13 +8,13 @@ from __future__ import absolute_import, division, print_function
 
 import csv
 import io
-from itertools import ifilterfalse
 import json
 import re
 import numpy as np
 from typing import Any, cast, Dict, Sequence, Text
 
 import six
+from six.moves import filterfalse
 
 from wholecell.utils import units
 
@@ -41,7 +41,7 @@ def read_tsv(filename):
 	mode = 'rb' if six.PY2 else 'r'
 	encoding = None if six.PY2 else 'utf-8'
 	with io.open(filename, mode=mode, encoding=encoding) as fh:
-		reader = JsonReader(ifilterfalse(comment_line, fh), dialect=CSV_DIALECT)
+		reader = JsonReader(filterfalse(comment_line, fh), dialect=CSV_DIALECT)
 		return list(reader)
 
 

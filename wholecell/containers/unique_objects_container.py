@@ -11,7 +11,7 @@ SEE THE decomp2() CAUTION ABOUT PERSISTENT DATA (PICKLE) FORMAT.
 from __future__ import absolute_import, division, print_function
 
 from copy import deepcopy
-from itertools import izip, product
+from itertools import product
 from enum import Enum
 from typing import cast
 
@@ -251,7 +251,7 @@ class UniqueObjectsContainer(object):
 			return False
 		if self.submass_diff_names_list != other.submass_diff_names_list:
 			return False
-		for (selfCollection, otherCollection) in izip(self._collections, other._collections):
+		for (selfCollection, otherCollection) in zip(self._collections, other._collections):
 			if not np.array_equal(selfCollection, otherCollection):
 				return False
 		return True
@@ -408,7 +408,7 @@ class UniqueObjectsContainer(object):
 		return _UniqueObjectSet(self,
 			np.concatenate([
 			self._collections[collectionIndex]["_globalIndex"][result]
-			for collectionIndex, result in izip(collectionIndexes, active_masks)]),
+			for collectionIndex, result in zip(collectionIndexes, active_masks)]),
 			process_index=process_index,
 			access=access
 			)

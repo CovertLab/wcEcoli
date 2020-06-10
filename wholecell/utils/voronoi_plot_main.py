@@ -501,6 +501,7 @@ class RayClass(object):
         self.c_r = (tangent[0]*origin[1] - tangent[1]*origin[0])
         self.main_sites = main_sites
         self.adjunct_site = adjunct_site
+        self.index_ip = -10000
 
     def is_on_ray(self, p):
         """
