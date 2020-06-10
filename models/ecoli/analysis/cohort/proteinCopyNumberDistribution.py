@@ -144,7 +144,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# Plot histogram for each generation
 			for gen_idx in range(n_generation):
-				ax = plt.subplot(gs[i + 1, gen_idx])
+				ax = self.subplot(gs[i + 1, gen_idx])
 				seed_counts = protein_counts[gen_idx, :, idx_sampled_protein]
 
 				# The weights rescale histogram such that all columns sum to one
@@ -169,10 +169,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# Go back and reset y axis upper limit
 			for gen_idx in range(n_generation):
-				# TODO: MatplotlibDeprecationWarning: Adding an axes using the same arguments as a previous axes currently reuses the earlier instance.
-				#  In a future version, a new instance will always be created and returned.  Meanwhile, this warning can be suppressed, and the
-				#  future behavior ensured, by passing a unique label to each axes instance.
-				ax = plt.subplot(gs[i + 1, gen_idx])
+				ax = self.subplot(gs[i + 1, gen_idx])
 				ax.set_ylim([0, 1.1*max_bin_prob])
 
 		fig.tight_layout()
