@@ -65,7 +65,7 @@ class JsonWriter(csv.DictWriter, object):
 	def _dict_to_list(self, rowdict):
 		return super(JsonWriter, self)._dict_to_list({
 			key:json.dumps(array_to_list(value))
-			for key, value in rowdict.viewitems()
+			for key, value in six.viewitems(rowdict)
 			})
 
 
@@ -88,7 +88,7 @@ class JsonReader(csv.DictReader, object):
 	def next(self):
 		# type: () -> Dict[str, Any]
 		attributeDict = {}  # type: Dict[Text, Any]
-		for key_, raw_value_ in super(JsonReader, self).next().viewitems():
+		for key_, raw_value_ in six.viewitems(super(JsonReader, self).next()):
 			# NOTE: Decoding UTF-8 bytes would be safer between DictReader and
 			# its csv.reader as in csv32, but this is much simpler.
 			if six.PY2:

@@ -73,6 +73,7 @@ from models.ecoli.analysis.causality_network.network_components import (
 	NODELIST_FILENAME, EDGELIST_FILENAME,
 	NODE_LIST_HEADER, EDGE_LIST_HEADER,
 	NODELIST_JSON, EDGELIST_JSON)
+import six
 
 # Suffixes that are added to the node IDs of a particular type of node
 NODE_ID_SUFFIX = {
@@ -600,7 +601,7 @@ class BuildNetwork(object):
 		metabolite_ids = []
 
 		# Loop through all reactions
-		for reaction_id, stoich_dict in reaction_stoich.iteritems():
+		for reaction_id, stoich_dict in six.viewitems(reaction_stoich):
 
 			node_type = 'Metabolism'
 

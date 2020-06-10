@@ -12,6 +12,7 @@ import os
 import posixpath
 import re
 import sys
+import six
 if os.name == 'posix' and sys.version_info[0] < 3:
 	import subprocess32 as subprocess2
 	subprocess = subprocess2
@@ -385,10 +386,10 @@ class Workflow(object):
 		"""Build all the FireWorks `Firework` objects for the workflow."""
 		built = OrderedDict()  # type: Dict[str, Firework]
 
-		for task in self._tasks.itervalues():
+		for task in six.viewvalues(self._tasks):
 			self._build_firework(task, built)
 
-		return built.values()
+		return list(built.values())
 
 	def build_workflow(self):
 		# type: () -> FwWorkflow

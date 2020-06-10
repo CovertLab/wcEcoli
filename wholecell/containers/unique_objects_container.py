@@ -17,6 +17,7 @@ from typing import cast
 
 import numpy as np
 import zlib
+import six
 
 # TODO: object transfer between UniqueObjectsContainer instances
 
@@ -107,7 +108,7 @@ def make_dtype_spec(dict_of_dtype_specs):
 	"""
 	return sorted([
 		(attrName, attrType)
-		for attrName, attrType in dict_of_dtype_specs.iteritems()
+		for attrName, attrType in six.viewitems(dict_of_dtype_specs)
 		])
 
 
@@ -181,12 +182,12 @@ class UniqueObjectsContainer(object):
 		# List of requests
 		self._requests = []
 
-		defaultSpecKeys = self._defaultSpecification.viewkeys()
+		defaultSpecKeys = six.viewkeys(self._defaultSpecification)
 
 		# Add the attributes used internally
-		for name, specification in self._specifications.viewitems():
+		for name, specification in six.viewitems(self._specifications):
 			# Make sure there is no overlap in attribute names
-			invalidAttributeNames = (specification.viewkeys() & defaultSpecKeys)
+			invalidAttributeNames = (six.viewkeys(specification) & defaultSpecKeys)
 			if invalidAttributeNames:
 				raise UniqueObjectsContainerException(
 					"Invalid attribute names in specification for {}: {}".format(
@@ -453,7 +454,7 @@ class UniqueObjectsContainer(object):
 		"""
 		attribute_dtypes = {
 			attr_name: field[0] for attr_name, field
-			in self._collections[self._nameToIndexMapping[collection_name]].dtype.fields.iteritems()
+			in self._collections[self._nameToIndexMapping[collection_name]].dtype.fields.items()
 			}
 
 		return attribute_dtypes
@@ -499,8 +500,8 @@ class UniqueObjectsContainer(object):
 		specs, as suitable for constructing a new UniqueObjectsContainer.
 		"""
 		specifications = deepcopy(self._specifications)
-		specs_to_remove = self._defaultSpecification.keys()
-		for moleculeName, moleculeSpecs in specifications.iteritems():
+		specs_to_remove = list(self._defaultSpecification.keys())
+		for moleculeName, moleculeSpecs in six.viewitems(specifications):
 			for spec in specs_to_remove:
 				moleculeSpecs.pop(spec)
 		return specifications
@@ -588,7 +589,7 @@ class UniqueObjectsContainer(object):
 		collection["_entryState"][objectIndexes] = self._entryActive
 		collection["_globalIndex"][objectIndexes] = globalIndexes
 
-		for attrName, attrValue in attributes.viewitems():
+		for attrName, attrValue in six.viewitems(attributes):
 			collection[attrName][objectIndexes] = attrValue
 
 		self._globalReference["_entryState"][globalIndexes] = self._entryActive
@@ -655,7 +656,7 @@ class UniqueObjectsContainer(object):
 			globalObjIndexes = np.where(inverse == idx)
 			objectIndexesInCollection = objectIndexes[globalObjIndexes]
 
-			for attribute, deltas in attributes.viewitems():
+			for attribute, deltas in six.viewitems(attributes):
 				deltas_as_array = np.array(deltas, ndmin=1)
 				values = self._collections[collectionIndex][attribute][
 					objectIndexesInCollection]
@@ -701,7 +702,7 @@ class UniqueObjectsContainer(object):
 			if req["type"] == "edit":
 				self.update_attribute(req["globalIndexes"], req["attributes"], 0)
 				resolver.extend(
-					list(product(req["globalIndexes"], req["attributes"].keys()))
+					list(product(req["globalIndexes"], list(req["attributes"].keys())))
 					)
 
 			# Apply requested submass edits
@@ -794,7 +795,7 @@ class _UniqueObject(object):
 			)
 
 		# Submass attributes must be edited through specialized methods.
-		if not self._container.submass_diff_names_set.isdisjoint(attributes.keys()):
+		if not self._container.submass_diff_names_set.isdisjoint(list(attributes.keys())):
 			raise UniqueObjectsPermissionException(
 				"Can't modify submass differences with attrIs(). Use add_submass_by_name() or add_submass_by_array() instead."
 				)
@@ -804,7 +805,7 @@ class _UniqueObject(object):
 		if entry["_entryState"] == self._container._entryInactive:
 			raise UniqueObjectsContainerException("Attempted to access an inactive object.")
 
-		for attribute, value in attributes.viewitems():
+		for attribute, value in six.viewitems(attributes):
 			if isinstance(entry[attribute], np.ndarray):
 				# Fix for the circumstance that the attribute is an ndarray -
 				# without the [:] assignment, only the first value will be
@@ -1011,7 +1012,7 @@ class _UniqueObjectSet(object):
 			)
 
 		# Submass attributes must be edited through specialized methods.
-		if not self._container.submass_diff_names_set.isdisjoint(attributes.keys()):
+		if not self._container.submass_diff_names_set.isdisjoint(list(attributes.keys())):
 			raise UniqueObjectsPermissionException(
 				"Can't modify submass differences with attrIs(). Use add_submass_by_name() or add_submass_by_array() instead."
 				)

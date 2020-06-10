@@ -23,6 +23,7 @@ from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import filepath, parallelization, units
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
+import six
 
 
 # Tweaks
@@ -119,7 +120,7 @@ def fitSimData_1(
 	# Limit the number of conditions that are being fit so that execution time decreases
 	if debug:
 		print("Warning: Running the Parca in debug mode - not all conditions will be fit")
-		key = sim_data.tfToActiveInactiveConds.keys()[0]
+		key = list(sim_data.tfToActiveInactiveConds.keys())[0]
 		sim_data.tfToActiveInactiveConds = {key: sim_data.tfToActiveInactiveConds[key]}
 
 	# Make adjustments for metabolic enzymes
@@ -196,7 +197,7 @@ def fitSimData_1(
 
 	for condition_label in sorted(cellSpecs):
 		nutrients = sim_data.conditions[condition_label]["nutrients"]
-		if nutrients not in sim_data.translationSupplyRate.keys():
+		if nutrients not in sim_data.translationSupplyRate:
 			sim_data.translationSupplyRate[nutrients] = cellSpecs[condition_label]["translation_aa_supply"]
 
 	if VERBOSE > 0:
@@ -465,7 +466,7 @@ def buildTfConditionCellSpecifications(
 			fcData = sim_data.tfToFC[tf]
 		if choice == "__inactive" and conditionValue != sim_data.conditions["basal"]:
 			fcDataTmp = sim_data.tfToFC[tf].copy()
-			for key, value in fcDataTmp.iteritems():
+			for key, value in six.viewitems(fcDataTmp):
 				fcData[key] = 1. / value
 		expression = expressionFromConditionAndFoldChange(
 			sim_data.process.transcription.rnaData["id"],

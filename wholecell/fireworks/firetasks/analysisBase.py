@@ -89,7 +89,7 @@ class AnalysisBase(FiretaskBase):
 			plot_names = ['CORE']
 		name_dict = OrderedDict()
 		self.expand_plot_names(plot_names, name_dict)
-		return name_dict.keys()
+		return list(name_dict.keys())
 
 	def compile_images(self, file_list, extension='.png'):
 		# type: (List[str], str) -> None

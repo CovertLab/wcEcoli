@@ -31,10 +31,10 @@ class EvaluationTime(wholecell.listeners.listener.Listener):
 		# Clock time
 		self.clock_time = None
 
-		self.state_names = sim.internal_states.keys()
-		self.process_names = sim.processes.keys()
-		self.listener_names = sim.listeners.keys()
-		self.logger_names = sim.loggers.keys()
+		self.state_names = list(sim.internal_states.keys())
+		self.process_names = list(sim.processes.keys())
+		self.listener_names = list(sim.listeners.keys())
+		self.logger_names = list(sim.loggers.keys())
 
 		self.n_states = len(sim.internal_states)
 		self.n_processes = len(sim.processes)

@@ -406,7 +406,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		A = np.zeros((n_coeffs, n_flows))
 		# avoid creating duplicate constraints
 		self._materialIdxLookup = {}
-		for materialIdx, (material, pairs) in enumerate(sorted(self._materialCoeffs.viewitems())):
+		for materialIdx, (material, pairs) in enumerate(sorted(six.viewitems(self._materialCoeffs))):
 			self._materialIdxLookup[material] = materialIdx
 			for pair in pairs:
 				A[materialIdx, pair[1]] = pair[0]

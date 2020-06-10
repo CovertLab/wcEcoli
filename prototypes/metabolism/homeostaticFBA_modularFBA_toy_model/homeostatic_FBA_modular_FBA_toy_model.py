@@ -103,7 +103,7 @@ fba = FluxBalanceAnalysis(
 
 
 # Describe reaction flux constraints
-reactionIDs = reactionStoich.keys()
+reactionIDs = list(reactionStoich.keys())
 nReactions = len(reactionIDs)
 maxReactionFluxes = np.inf * np.ones(nReactions)
 

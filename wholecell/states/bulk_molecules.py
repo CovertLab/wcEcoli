@@ -52,7 +52,7 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 	def initialize(self, sim, sim_data):
 		super(BulkMolecules, self).initialize(sim, sim_data)
 
-		self._processIDs = sim.processes.keys()
+		self._processIDs = list(sim.processes.keys())
 		self._processID_to_index = {
 			id_: idx for idx, id_ in enumerate(self._processIDs)}
 

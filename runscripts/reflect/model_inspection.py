@@ -220,7 +220,7 @@ def save_metabolites(raw_data, sim_data, output):
 		output (str): path to tsv file with list of implemented genes
 	"""
 
-	metabolites = sim_data.process.metabolism.concDict.keys()
+	metabolites = list(sim_data.process.metabolism.concDict.keys())
 	bennett = [m['Metabolite'] for m in raw_data.metaboliteConcentrations
 		if not np.isnan(m['Bennett Concentration'].asNumber())]
 	lempp = [m['Metabolite'] for m in raw_data.metaboliteConcentrations

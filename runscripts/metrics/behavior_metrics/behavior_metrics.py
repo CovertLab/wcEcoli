@@ -580,13 +580,13 @@ class BehaviorMetrics(object):
 			operation attributes contains any cycles.
 		"""
 		graph = DependencyGraph()
-		graph.add_nodes(operation_configs.keys())
+		graph.add_nodes(list(operation_configs.keys()))
 		for op_name, config in operation_configs.items():
 			if "args" in config:
 				args = BehaviorMetrics._flatten(config["args"])
 				deps = [
 					arg for arg in args
-					if arg in operation_configs.keys()
+					if arg in operation_configs
 				]
 				for dep in deps:
 					graph.add_dep_relation(op_name, dep)

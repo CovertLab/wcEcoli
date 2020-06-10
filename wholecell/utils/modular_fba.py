@@ -332,7 +332,7 @@ class FluxBalanceAnalysis(object):
 
 		for reactionID in sorted(reactionStoich):
 			stoichiometry = reactionStoich[reactionID]
-			for moleculeID, stoichCoeff in stoichiometry.viewitems():
+			for moleculeID, stoichCoeff in six.viewitems(stoichiometry):
 				self._solver.setFlowMaterialCoeff(
 					reactionID,
 					moleculeID,
@@ -458,7 +458,7 @@ class FluxBalanceAnalysis(object):
 		if biomassSatisfactionWeight < 0:
 			raise FBAError("flexFBA beta parameter must be nonnegative")
 
-		if any(coeff < 0 for coeff in objective.viewvalues()):
+		if any(coeff < 0 for coeff in six.viewvalues(objective)):
 			warnings.warn("flexFBA is not designed to use negative biomass coefficients")
 
 		# Add biomass to objective
@@ -562,7 +562,7 @@ class FluxBalanceAnalysis(object):
 		to minimize the distance between the current metabolite level and some
 		target level, as defined in the objective."""
 
-		if any(coeff < 0 for coeff in objective.viewvalues()):
+		if any(coeff < 0 for coeff in six.viewvalues(objective)):
 			raise FBAError("Homeostatic FBA is not designed to use negative biomass coefficients")
 
 		self._homeostaticTargetMolecules.update(set(objective.keys()))
@@ -701,7 +701,7 @@ class FluxBalanceAnalysis(object):
 			upperBound = 1,
 			)
 
-		for reactionID, expectedFlux in objective.iteritems():
+		for reactionID, expectedFlux in six.viewitems(objective):
 			if expectedFlux < 0:
 				raise FBAError("Target flux for reaction {} is negative. Kinetic targets must be positive - set the value for the (reverse) reaction if a negative flux is desired.".format(reactionID))
 
@@ -1005,7 +1005,7 @@ class FluxBalanceAnalysis(object):
 			-1
 			)
 
-		for moleculeID, stoichCoeff in maintenanceReaction.viewitems():
+		for moleculeID, stoichCoeff in six.viewitems(maintenanceReaction):
 			self._solver.setFlowMaterialCoeff(
 				self._reactionID_GAM,
 				moleculeID,
@@ -1191,8 +1191,8 @@ class FluxBalanceAnalysis(object):
 		change = np.zeros(len(self._outputMoleculeIDs))
 
 		for i, stoich in enumerate(self._outputMoleculeCoeffs):
-			flowRates = self._solver.getFlowRates(stoich.viewkeys())
-			coeffs = stoich.values()
+			flowRates = self._solver.getFlowRates(six.viewkeys(stoich))
+			coeffs = list(stoich.values())
 			change[i] = np.dot(flowRates, coeffs)
 
 		return -change

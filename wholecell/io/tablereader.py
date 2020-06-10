@@ -359,7 +359,7 @@ class TableReader(object):
 		"""
 		Returns a list of all attribute names including Table metadata.
 		"""
-		return self._attributes.keys()
+		return list(self._attributes.keys())
 
 
 	def attributeNames(self):

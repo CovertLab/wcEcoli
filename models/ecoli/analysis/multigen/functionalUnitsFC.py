@@ -141,7 +141,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		nSubG = len(subgenerational_monomerIds)
 		nSubGMonomers = len(subG_noncomplex_indices)
 		nSubGMonomersInComplexes = nSubG - nSubGMonomers
-		nSubGComplexes = len(complexMinCounts_dict.keys())
+		nSubGComplexes = len(complexMinCounts_dict)
 		nSubGFunctionalUnits = nSubGMonomers + nSubGComplexes
 
 		text = "%s total subgenerational genes" % nSubG

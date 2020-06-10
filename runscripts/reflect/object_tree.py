@@ -19,6 +19,7 @@ import unum
 
 from wholecell.utils import constants
 import wholecell.utils.unit_struct_array
+import six
 
 
 NULP = 0  # float comparison tolerance, in Number of Units in the Last Place
@@ -117,13 +118,13 @@ def object_tree(obj, path='', debug=None):
 		return obj
 	elif isinstance(obj, collections.Mapping):
 		return {key: object_tree(value, "{}['{}']".format(path, key), debug)
-			for (key, value) in obj.iteritems()}
+			for (key, value) in six.viewitems(obj)}
 	elif isinstance(obj, collections.Sequence):
 		return [object_tree(subobj, "{}[{}]".format(path, index), debug) for index, subobj in enumerate(obj)]
 	else:
 		attrs = all_vars(obj)
 		tree = {key: object_tree(value, "{}.{}".format(path, key), debug)
-				for (key, value) in attrs.iteritems()}
+				for (key, value) in six.viewitems(attrs)}
 		tree['!type'] = type(obj)
 
 		return tree

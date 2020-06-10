@@ -17,6 +17,7 @@ from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
+import six
 
 
 THRESHOLD = 1e-13 # roughly, the mass of an electron
@@ -88,7 +89,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		plt.text(THRESHOLD, index[-1], "electron", rotation = "vertical", va = "center", ha = "right")
 
-		for name, mass in REPRESENTATIVE_MASSES.viewitems():
+		for name, mass in six.viewitems(REPRESENTATIVE_MASSES):
 			plt.axvline(mass, color = "k")
 			plt.text(mass, index[-1], name, rotation = "vertical", va = "center", ha = "right")
 
