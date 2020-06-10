@@ -63,8 +63,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 					if rna_data['id'] in sim_data.genetic_perturbations]
 
 			self.genetic_perturbations = {
-				'fixedRnaIdxs': map(lambda pair: pair[0], probability_indexes),
-				'fixedSynthProbs': map(lambda pair: pair[1], probability_indexes)
+				'fixedRnaIdxs': [pair[0] for pair in probability_indexes],
+				'fixedSynthProbs': [pair[1] for pair in probability_indexes]
 				}
 
 		# If initiationShuffleIdxs does not exist, set value to None

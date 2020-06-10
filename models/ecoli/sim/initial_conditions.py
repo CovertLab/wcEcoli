@@ -695,8 +695,8 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 				if rna_data['id'] in sim_data.genetic_perturbations]
 
 		genetic_perturbations = {
-			'fixedRnaIdxs': map(lambda pair: pair[0], probability_indexes),
-			'fixedSynthProbs': map(lambda pair: pair[1], probability_indexes)}
+			'fixedRnaIdxs': [pair[0] for pair in probability_indexes],
+			'fixedSynthProbs': [pair[1] for pair in probability_indexes]}
 
 	# If initiationShuffleIdxs does not exist, set value to None
 	shuffleIdxs = getattr(sim_data.process.transcription, 'initiationShuffleIdxs', None)

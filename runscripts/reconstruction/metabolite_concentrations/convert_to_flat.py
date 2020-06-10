@@ -23,7 +23,7 @@ import csv
 import os
 import sys
 import time
-import urllib
+import six.moves.urllib.request
 
 import numpy as np
 from typing import Any, Dict, Tuple
@@ -191,7 +191,7 @@ def park_concentrations():
 			met_id = line[id_col]
 			try:
 				conc = float(line[conc_col])
-			except ValueError as e:
+			except ValueError as _:
 				# Concentration data does not exist ('-')
 				continue
 
@@ -271,7 +271,7 @@ def kegg_to_ecocyc(data):
 	url = 'https://websvc.biocyc.org/ECOLI/foreignid?ids='
 	ids = ','.join(['{}{}'.format(id_type, i) for i in kegg_ids])
 
-	u = urllib.urlopen(url + ids)
+	u = six.moves.urllib.request.urlopen(url + ids)
 	reader = csv.reader(u, delimiter='\t')
 
 	for line in reader:
