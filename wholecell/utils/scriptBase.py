@@ -24,6 +24,7 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple
 import wholecell.utils.filepath as fp
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from six.moves import range
+import six
 
 
 METADATA_KEYS = (
@@ -135,7 +136,7 @@ def dashize(underscore):
 	return re.sub(r'_+', r'-', underscore)
 
 
-class ScriptBase(object):
+class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 	"""Abstract base class for scripts. This defines a template where
 	`description()` describes the script,
 	`define_parameters()` defines its command line parameters,
@@ -143,7 +144,6 @@ class ScriptBase(object):
 	`run()` does the work,
 	`cli()` is the driving Command-Line Interpreter.
 	"""
-	__metaclass__ = abc.ABCMeta
 
 	# Regex to match a variant directory name. In the resulting match
 	# object, group 1 is the variant_type and group 2 is the variant_index.
