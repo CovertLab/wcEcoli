@@ -25,6 +25,7 @@ import wholecell.utils.filepath as fp
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from six.moves import range
 import six
+from six.moves import zip
 
 
 METADATA_KEYS = (

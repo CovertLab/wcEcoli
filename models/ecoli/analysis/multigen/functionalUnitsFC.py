@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
+from six.moves import zip
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):

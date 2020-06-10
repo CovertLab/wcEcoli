@@ -38,6 +38,7 @@ import swiglpk as glp
 
 from ._base import NetworkFlowProblemBase
 from six.moves import range
+from six.moves import zip
 
 class MessageLevel(Enum):
 	OFF = glp.GLP_MSG_OFF  # no output
@@ -439,7 +440,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		'''
 
 		for material in self._materialCoeffs:
-			coeff, flowIdxs = zip(*self._materialCoeffs[material])
+			coeff, flowIdxs = list(zip(*self._materialCoeffs[material]))
 			self._flow_locations[material] = {idx: i + 1  # +1 for swiglpk indexing
 				for i, idx in enumerate(flowIdxs)}
 			flowIdxs = _toIndexArray(flowIdxs)

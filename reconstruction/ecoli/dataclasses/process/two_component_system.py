@@ -20,7 +20,7 @@ import sympy as sp
 from wholecell.utils import build_ode
 from wholecell.utils import data
 from wholecell.utils import units
-from six.moves import range
+from six.moves import range, zip
 
 
 class TwoComponentSystem(object):

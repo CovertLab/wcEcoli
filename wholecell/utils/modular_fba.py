@@ -14,6 +14,7 @@ import numpy as np
 import six
 
 from wholecell.utils._netflow._base import NetworkFlowProblemBase
+from six.moves import zip
 
 NUMERICAL_ZERO = 1e-20
 

@@ -23,6 +23,7 @@ from typing import List
 from wholecell.utils import data
 from wholecell.utils import parallelization
 import wholecell.utils.filepath as fp
+from six.moves import zip
 
 
 # Used to set the backend to Agg before pyplot imports in other scripts.
@@ -118,7 +119,7 @@ class AnalysisBase(FiretaskBase):
 		images = [Image.open(f) for f in image_files if os.path.exists(f)]
 		if not images:
 			return
-		widths, heights = zip(*(i.size for i in images))
+		widths, heights = list(zip(*(i.size for i in images)))
 
 		# Create and save compiled image
 		compiled_image = Image.new('RGB', (max(widths), sum(heights)), (255, 255, 255))

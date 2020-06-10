@@ -10,7 +10,8 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from wholecell.utils import units
-from six.moves import range
+from six.moves import range, zip
+
 
 class ComplexationError(Exception):
 	pass

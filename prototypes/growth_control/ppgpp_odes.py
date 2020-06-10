@@ -23,7 +23,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from scipy.integrate import odeint
 from scipy.integrate import ode
-from six.moves import range
+from six.moves import range, zip
 
 
 file_location = os.path.dirname(os.path.realpath(__file__))

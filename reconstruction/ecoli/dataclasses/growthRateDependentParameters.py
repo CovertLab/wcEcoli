@@ -16,6 +16,7 @@ import unum
 from wholecell.utils import units
 from six.moves import range
 import six
+from six.moves import zip
 
 
 NORMAL_CRITICAL_MASS = 975 * units.fg

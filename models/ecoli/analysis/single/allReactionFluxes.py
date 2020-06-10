@@ -18,6 +18,7 @@ from models.ecoli.processes.metabolism import COUNTS_UNITS, TIME_UNITS, VOLUME_U
 from wholecell.analysis.plotting_tools import COLORS_LARGE
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
+from six.moves import zip
 
 FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 

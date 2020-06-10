@@ -21,6 +21,7 @@ from wholecell.utils.random import stochasticRound
 from models.ecoli.processes.polypeptide_elongation import SteadyStateElongationModel
 from wholecell.containers.unique_objects_container import Access
 from wholecell.sim.divide_cell import load_inherited_state
+from six.moves import zip
 
 
 RAND_MAX = 2**31

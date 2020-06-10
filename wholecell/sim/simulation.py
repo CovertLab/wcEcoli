@@ -27,6 +27,7 @@ import lens
 from lens.actor.emitter import get_emitter
 from six.moves import range
 import six
+from six.moves import zip
 
 MAX_TIME_STEP = 2.
 DEFAULT_SIMULATION_KWARGS = dict(

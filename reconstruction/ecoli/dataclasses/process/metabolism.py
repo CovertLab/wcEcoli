@@ -25,8 +25,8 @@ from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 # NOTE: Importing SimulationDataEcoli would make a circular reference so use Any.
 #from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.utils import units
-from six.moves import range
 import six
+from six.moves import range, zip
 
 
 PPI_CONCENTRATION = 0.5e-3  # M, multiple sources

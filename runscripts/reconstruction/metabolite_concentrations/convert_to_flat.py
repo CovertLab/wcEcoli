@@ -23,7 +23,7 @@ import csv
 import os
 import sys
 import time
-import six.moves.urllib.request
+from six.moves.urllib import request
 
 import numpy as np
 from typing import Any, Dict, Tuple
@@ -271,7 +271,7 @@ def kegg_to_ecocyc(data):
 	url = 'https://websvc.biocyc.org/ECOLI/foreignid?ids='
 	ids = ','.join(['{}{}'.format(id_type, i) for i in kegg_ids])
 
-	u = six.moves.urllib.request.urlopen(url + ids)
+	u = request.urlopen(url + ids)
 	reader = csv.reader(u, delimiter='\t')
 
 	for line in reader:

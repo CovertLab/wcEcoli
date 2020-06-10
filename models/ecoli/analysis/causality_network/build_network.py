@@ -74,6 +74,7 @@ from models.ecoli.analysis.causality_network.network_components import (
 	NODE_LIST_HEADER, EDGE_LIST_HEADER,
 	NODELIST_JSON, EDGELIST_JSON)
 import six
+from six.moves import zip
 
 # Suffixes that are added to the node IDs of a particular type of node
 NODE_ID_SUFFIX = {

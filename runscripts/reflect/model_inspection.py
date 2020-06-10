@@ -26,6 +26,7 @@ import numpy as np
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
 from wholecell.utils import filepath
+from six.moves import zip
 
 
 FILE_LOCATION = os.path.dirname(os.path.realpath(__file__))

@@ -24,6 +24,7 @@ from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from models.ecoli.analysis import multigenAnalysisPlot
 import six
+from six.moves import zip
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):

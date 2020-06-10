@@ -22,6 +22,7 @@ from wholecell.utils.dependency_graph import DependencyGraph
 from wholecell.utils.protein_counts import (
 	get_simulated_validation_counts,
 )
+from six.moves import zip
 
 
 # A type alias for Python 2 str or unicode; Python 3 str (not bytes).

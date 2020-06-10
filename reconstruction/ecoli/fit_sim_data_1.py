@@ -24,6 +24,7 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import filepath, parallelization, units
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
 import six
+from six.moves import zip
 
 
 # Tweaks
