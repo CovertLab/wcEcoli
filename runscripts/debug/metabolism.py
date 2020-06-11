@@ -35,8 +35,12 @@ class MetabolismDebug(scriptBase.ScriptBase):
 		# self.define_range_options(parser, 'variant', 'seed', 'generation')
 
 		# Debug options
-		parser.add_argument('--validation', type=int, default=0,
+		parser.add_argument('--validation', type=int, default=1,
 			help='Number of time steps to run for validation. If < 0, will run all.')
+		parser.add_argument('-t', '--timestep', type=int, default=0,
+			help='Specify a timestep to run analysis for.  Works with certain options.')
+		parser.add_argument('--produce-met', nargs='*',
+			help='Check which enzymes need to be positive to produce a list of metabolites.')
 
 	def update_args(self, args):
 		super(MetabolismDebug, self).update_args(args)
@@ -115,7 +119,7 @@ class MetabolismDebug(scriptBase.ScriptBase):
 
 		# Set reaction limits for maintenance and catalysts present
 		model.set_reaction_bounds(
-			self.catalyst_counts[timestep], counts_to_molar,
+			self.catalyst_counts[timestep, :], counts_to_molar,
 			coefficient, self.translation_gtp[timestep],
 			)
 
@@ -141,10 +145,44 @@ class MetabolismDebug(scriptBase.ScriptBase):
 				raise ValueError('Objective value does not match for time step {}'.format(timestep))
 		print('All {} timesteps match the results from the whole-cell model.'.format(n_steps))
 
+	def produce_metabolites(self, metabolites, timestep):
+		model = self.new_model()
+		metabolites_indices = {
+			metabolite: idx
+			for idx, metabolite in enumerate(model.fba.getOutputMoleculeIDs())
+			}
+
+		old_catalyst_counts = self.catalyst_counts[timestep, :].copy()
+		for met in metabolites:
+			if met in metabolites_indices:
+				met_idx = metabolites_indices[met]
+			else:
+				print('FBA does not solve for concentration of {}. Skipping.'.format(met))
+				continue
+
+			self.solve_timestep(model, timestep)
+			if model.fba.getOutputMoleculeLevelsChange()[met_idx] > 0:
+				print('Positive flux already exists for {}. Skipping.'.format(met))
+				continue
+
+			print('Checking for production of {}:'.format(met))
+			for i, catalyst in enumerate(self.catalyst_ids):
+				if old_catalyst_counts[i] != 0:
+					continue
+
+				self.catalyst_counts[timestep, i] = 1
+				self.solve_timestep(model, timestep)
+				if model.fba.getOutputMoleculeLevelsChange()[met_idx] > 0:
+					print('\t{} causes positive flux'.format(catalyst))
+
+				self.catalyst_counts[timestep, :] = old_catalyst_counts
+
 	def run(self, args):
 		self.load_data(args.sim_data_file, args.sim_out_dir)
 
 		self.validation(args.validation)
+
+		self.produce_metabolites(args.produce_met, args.timestep)
 
 
 if __name__ == '__main__':
