@@ -906,7 +906,7 @@ class VoronoiMaster(object):
         label_site_list = [[] for _ in dic]  # type: List[Iterable]
 
         for i, value in enumerate(dic.values()):
-            if isinstance(value, float) or isinstance(value, int):
+            if isinstance(value, (float, int)):
                 polygon_value_list[i] = (voronoi_out.polygons[i], values[i])
                 label_site_list[i] = (labels[i], voronoi_out.sites[i])
 

@@ -19,7 +19,7 @@ if os.name == 'posix' and sys.version_info[0] < 3:
 else:
 	import subprocess as subprocess3
 	subprocess = subprocess3
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Text
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set
 
 from borealis import gce
 from borealis.docker_task import DockerTask
@@ -29,6 +29,7 @@ from future.utils import raise_with_traceback
 import ruamel.yaml as yaml
 
 from wholecell.utils import filepath as fp
+from wholecell.utils.py3 import ANY_STRING
 
 
 STDOUT_PATH = '>'    # special path that captures stdout + stderror
@@ -41,8 +42,6 @@ STORAGE_ROOT_ENV_VAR = 'WORKFLOW_STORAGE_ROOT'
 # runscripts/cloud/mongo-ssh.sh
 DEFAULT_LPAD_YAML = 'my_launchpad.yaml'
 DEFAULT_FIREWORKS_DATABASE = 'default_fireworks_database'
-
-ANY_STRING = (bytes, str, Text)
 
 
 def _keyify(paths, fn=lambda path: path):

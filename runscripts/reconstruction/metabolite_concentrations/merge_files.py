@@ -15,13 +15,13 @@ import os
 import sys
 import time
 
-from typing import Dict, List, Text, Tuple, Union
+from typing import Dict, List, Tuple
+
+from wholecell.utils.py3 import String
 
 
 FILE_LOCATION = os.path.realpath(os.path.dirname(__file__))
 OUTPUT_FILE = os.path.join(FILE_LOCATION, 'metabolite_concentrations.tsv')
-
-String = Union[str, Text]
 
 
 def load_conc(filename):

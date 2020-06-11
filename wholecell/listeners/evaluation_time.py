@@ -9,11 +9,11 @@ Large-scale, low-overhead evaluation time tracker for process/state operations.
 
 from __future__ import absolute_import, division, print_function
 
-import time
-
 import numpy as np
 
 import wholecell.listeners.listener
+from wholecell.utils.py3 import monotonic_seconds
+
 
 class EvaluationTime(wholecell.listeners.listener.Listener):
 	""" EvaluationTime """
@@ -112,7 +112,7 @@ class EvaluationTime(wholecell.listeners.listener.Listener):
 
 
 	def update(self):
-		self.clock_time = time.time()
+		self.clock_time = monotonic_seconds()
 
 		self.update_queries_total = self.update_queries_times.sum()
 		self.partition_total = self.partition_times.sum()

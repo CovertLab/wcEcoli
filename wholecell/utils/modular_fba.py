@@ -1351,7 +1351,7 @@ class FluxBalanceAnalysis(object):
 			if targets is None:
 				return default
 
-			if not (isinstance(targets, list) or isinstance(targets, np.ndarray)):
+			if not (isinstance(targets, (list, np.ndarray))):
 				targets = [targets]
 
 			if (np.array(targets) < 0).any():

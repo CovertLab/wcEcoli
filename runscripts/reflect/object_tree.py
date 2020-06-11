@@ -7,19 +7,19 @@ import os
 import re
 import sys
 import types
-from typing import Text
 
 import Bio.Seq
 import numpy as np
 import scipy.interpolate
+import six
 from six.moves import cPickle, range
 import sympy
 from sympy.matrices import dense
 import unum
 
 from wholecell.utils import constants
+from wholecell.utils.py3 import ANY_STRING
 import wholecell.utils.unit_struct_array
-import six
 
 
 NULP = 0  # float comparison tolerance, in Number of Units in the Last Place
@@ -40,7 +40,6 @@ LEAF_TYPES = (
 	wholecell.utils.unit_struct_array.UnitStructArray)
 
 WHITESPACE = re.compile(r'\s+')
-ANY_STRING = (bytes, str, Text)
 
 
 class Repr(object):

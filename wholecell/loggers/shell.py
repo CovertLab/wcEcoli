@@ -13,12 +13,13 @@ Prints a very brief summary of a whole-cell simulation to standard output
 from __future__ import absolute_import, division, print_function
 
 import datetime
-import time
 import sys
 import numpy as np
 
-import wholecell.loggers.logger
 from six.moves import range, zip
+
+import wholecell.loggers.logger
+from wholecell.utils.py3 import monotonic_seconds
 
 
 SPACER = "  "
@@ -41,7 +42,7 @@ class Shell(wholecell.loggers.logger.Logger):
 		self._headerBoundary = None
 
 		self.nLines = -1
-		self.startTime = time.time()
+		self.startTime = monotonic_seconds()
 		self.startSimTime = 0
 
 
@@ -62,7 +63,7 @@ class Shell(wholecell.loggers.logger.Logger):
 
 		# Collect Metadata
 		self.nLines = -1
-		self.startTime = time.time()
+		self.startTime = monotonic_seconds()
 		self.startSimTime = sim.time()
 
 		# Print initial state
@@ -184,7 +185,7 @@ class Shell(wholecell.loggers.logger.Logger):
 
 		simTime = sim.time()
 		simLength = simTime - self.startSimTime
-		runtime = time.time() - self.startTime
+		runtime = monotonic_seconds() - self.startTime
 
 		sys.stdout.write(" - Sim length: {}\n".format(hms(simLength)))
 		sys.stdout.write(" - Sim end time: {}\n".format(hms(simTime)))

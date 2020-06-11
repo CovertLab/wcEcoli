@@ -14,21 +14,13 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Text, Tuple, U
 import numpy as np
 import pandas as pd
 from unum import Unum
-from six.moves import cPickle, range
+from six.moves import cPickle, range, zip
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath, units, toya
 from wholecell.utils.dependency_graph import DependencyGraph
-from wholecell.utils.protein_counts import (
-	get_simulated_validation_counts,
-)
-from six.moves import zip
-
-
-# A type alias for Python 2 str or unicode; Python 3 str (not bytes).
-# After porting to Python 3, we can use plain `str`.
-# Note: Unions don't work with `isinstance()`.
-String = Union[str, Text]
+from wholecell.utils.protein_counts import get_simulated_validation_counts
+from wholecell.utils.py3 import String
 
 
 def calc_end_start_ratio(data):

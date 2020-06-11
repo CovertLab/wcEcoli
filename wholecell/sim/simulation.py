@@ -11,7 +11,6 @@ from __future__ import absolute_import, division, print_function
 import collections
 import os.path
 import shutil
-import time
 import uuid
 from typing import Callable, Sequence, Tuple
 
@@ -19,6 +18,7 @@ import numpy as np
 
 from wholecell.listeners.evaluation_time import EvaluationTime
 from wholecell.utils import filepath
+from wholecell.utils.py3 import monotonic_seconds
 
 import wholecell.loggers.shell
 import wholecell.loggers.disk
@@ -314,29 +314,29 @@ class Simulation(lens.actor.inner.Simulation):
 		# Update queries
 		# TODO: context manager/function calls for this logic?
 		for i, state in enumerate(six.viewvalues(self.internal_states)):
-			t = time.time()
+			t = monotonic_seconds()
 			state.updateQueries()
-			self._eval_time.update_queries_times[i] += time.time() - t
+			self._eval_time.update_queries_times[i] += monotonic_seconds() - t
 
 		# Calculate requests
 		for i, process in enumerate(six.viewvalues(self.processes)):
 			if process.__class__ in processes:
-				t = time.time()
+				t = monotonic_seconds()
 				process.calculateRequest()
-				self._eval_time.calculate_request_times[i] += time.time() - t
+				self._eval_time.calculate_request_times[i] += monotonic_seconds() - t
 
 		# Partition states among processes
 		for i, state in enumerate(six.viewvalues(self.internal_states)):
-			t = time.time()
+			t = monotonic_seconds()
 			state.partition(processes)
-			self._eval_time.partition_times[i] += time.time() - t
+			self._eval_time.partition_times[i] += monotonic_seconds() - t
 
 		# Simulate submodels
 		for i, process in enumerate(six.viewvalues(self.processes)):
 			if process.__class__ in processes:
-				t = time.time()
+				t = monotonic_seconds()
 				process.evolveState()
-				self._eval_time.evolve_state_times[i] += time.time() - t
+				self._eval_time.evolve_state_times[i] += monotonic_seconds() - t
 
 		# Check that timestep length was short enough
 		for process_name, process in six.viewitems(self.processes):
@@ -345,9 +345,9 @@ class Simulation(lens.actor.inner.Simulation):
 
 		# Merge state
 		for i, state in enumerate(six.viewvalues(self.internal_states)):
-			t = time.time()
+			t = monotonic_seconds()
 			state.merge(processes)
-			self._eval_time.merge_times[i] += time.time() - t
+			self._eval_time.merge_times[i] += monotonic_seconds() - t
 
 		# update environment state
 		for state in six.viewvalues(self.external_states):
@@ -356,15 +356,15 @@ class Simulation(lens.actor.inner.Simulation):
 	def _post_evolve_state(self):
 		# Calculate mass of all molecules after evolution
 		for i, state in enumerate(six.viewvalues(self.internal_states)):
-			t = time.time()
+			t = monotonic_seconds()
 			state.calculateMass()
-			self._eval_time.calculate_mass_times[i] = time.time() - t
+			self._eval_time.calculate_mass_times[i] = monotonic_seconds() - t
 
 		# Update listeners
 		for i, listener in enumerate(six.viewvalues(self.listeners)):
-			t = time.time()
+			t = monotonic_seconds()
 			listener.update()
-			self._eval_time.update_times[i] = time.time() - t
+			self._eval_time.update_times[i] = monotonic_seconds() - t
 
 		# Run post-evolveState hooks
 		for hook in six.viewvalues(self.hooks):
@@ -372,10 +372,10 @@ class Simulation(lens.actor.inner.Simulation):
 
 		# Append loggers
 		for i, logger in enumerate(six.viewvalues(self.loggers)):
-			t = time.time()
+			t = monotonic_seconds()
 			logger.append(self)
 			# Note: these values are written at the next timestep
-			self._eval_time.append_times[i] = time.time() - t
+			self._eval_time.append_times[i] = monotonic_seconds() - t
 
 
 	def _seedFromName(self, name):

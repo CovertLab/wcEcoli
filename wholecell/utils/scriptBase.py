@@ -21,11 +21,12 @@ import time
 import traceback
 from typing import Any, Callable, Iterable, List, Optional, Tuple
 
+import six
+from six.moves import range, zip
+
 import wholecell.utils.filepath as fp
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
-from six.moves import range
-import six
-from six.moves import zip
+from wholecell.utils.py3 import monotonic_seconds, process_time_seconds
 
 
 METADATA_KEYS = (
@@ -543,12 +544,11 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 			if location:
 				location = ' at ' + location
 
-			start_wall_sec = time.time()
-			print('{}: {}{}'.format(
-				time.ctime(start_wall_sec), self.description(), location))
+			start_real_sec = monotonic_seconds()
+			print('{}: {}{}'.format(time.ctime(), self.description(), location))
 			pp.pprint({'Arguments': vars(args)})
 
-			start_process_sec = time.clock()
+			start_process_sec = process_time_seconds()
 			try:
 				self.run(args)
 			except Exception as e:
@@ -558,15 +558,13 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 					exceptions.append((params, e))
 				else:
 					raise
-			end_process_sec = time.clock()
-			elapsed_process = end_process_sec - start_process_sec
+			elapsed_process = process_time_seconds() - start_process_sec
 
-			end_wall_sec = time.time()
-			elapsed_wall = end_wall_sec - start_wall_sec
-			print("{}: Elapsed time {:1.2f} sec ({}); {:1.2f} sec in process".format(
-				time.ctime(end_wall_sec),
-				elapsed_wall,
-				datetime.timedelta(seconds=elapsed_wall),
+			elapsed_real_sec = monotonic_seconds() - start_real_sec
+			print("{}: Elapsed time {:1.2f} sec ({}); CPU {:1.2f} sec".format(
+				time.ctime(),
+				elapsed_real_sec,
+				datetime.timedelta(seconds=elapsed_real_sec),
 				elapsed_process,
 				))
 
