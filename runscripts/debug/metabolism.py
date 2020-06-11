@@ -34,6 +34,10 @@ class MetabolismDebug(scriptBase.ScriptBase):
 				 ' a subdirectory name like "000000". Default = 0.')
 		# self.define_range_options(parser, 'variant', 'seed', 'generation')
 
+		# Debug options
+		parser.add_argument('--validation', type=int, default=0,
+			help='Number of time steps to run for validation. If < 0, will run all.')
+
 	def update_args(self, args):
 		super(MetabolismDebug, self).update_args(args)
 
@@ -121,19 +125,26 @@ class MetabolismDebug(scriptBase.ScriptBase):
 			counts_to_molar, self.time_step_sizes[timestep],
 			)
 
-	def validation(self):
+	def validation(self, n_steps):
+		if n_steps == 0:
+			return
+		elif n_steps < 0:
+			n_steps = self.n_time_steps
+		else:
+			n_steps = min(self.n_time_steps, n_steps)
+
 		print('Running validation to check output...')
 		model = self.new_model()
-		for timestep in range(self.n_time_steps):
+		for timestep in range(n_steps):
 			self.solve_timestep(model, timestep)
 			if model.fba.getObjectiveValue() != self.objective[timestep]:
 				raise ValueError('Objective value does not match for time step {}'.format(timestep))
-		print('All {} timesteps match the results from the whole-cell model.'.format(self.n_time_steps))
+		print('All {} timesteps match the results from the whole-cell model.'.format(n_steps))
 
 	def run(self, args):
 		self.load_data(args.sim_data_file, args.sim_out_dir)
 
-		self.validation()
+		self.validation(args.validation)
 
 
 if __name__ == '__main__':
