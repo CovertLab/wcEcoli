@@ -238,7 +238,8 @@ class MetabolismDebug(scriptBase.ScriptBase):
 
 		self.load_data(args.sim_data_file, args.sim_out_dir)
 		self.validation(args.validation)
-		self.produce_metabolites(args.produce_met, args.timestep)
+		if args.produce_met:
+			self.produce_metabolites(args.produce_met, args.timestep)
 
 
 if __name__ == '__main__':
