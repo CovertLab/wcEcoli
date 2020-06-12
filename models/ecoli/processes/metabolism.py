@@ -486,17 +486,17 @@ class FluxBalanceAnalysisModel(object):
 		Set reaction targets for constrained reactions in the FBA object.
 
 		Args:
-			kinetic_enzyme_counts (int): counts of enzymes used in
+			kinetic_enzyme_counts (np.ndarray[int]): counts of enzymes used in
 				kinetic constraints
-			kinetic_substrate_counts (int): counts of substrates used
+			kinetic_substrate_counts (np.ndarray[int]): counts of substrates used
 				in kinetic constraints
-			counts_to_molar: conversion from counts to molar (counts/volume units)
-			time_step: current time step (time units)
+			counts_to_molar: conversion from counts to molar (float with counts/volume units)
+			time_step: current time step (float with time units)
 
 		Returns:
-			mean_targets (float): mean target for each constrained reaction
-			upper_targets (float): upper target limit for each constrained reaction
-			lower_targets (float): lower target limit for each constrained reaction
+			mean_targets (np.ndarray[float]): mean target for each constrained reaction
+			upper_targets (np.ndarray[float]): upper target limit for each constrained reaction
+			lower_targets (np.ndarray[float]): lower target limit for each constrained reaction
 		"""
 
 		if self.use_kinetics:
