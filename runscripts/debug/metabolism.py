@@ -10,7 +10,7 @@ import os
 from typing import List
 
 import numpy as np
-from six.moves import cPickle, range
+from six.moves import cPickle, range, zip
 
 from models.ecoli.processes.metabolism import (CONC_UNITS, CONVERSION_UNITS,
 	FluxBalanceAnalysisModel, GDCW_BASIS)
