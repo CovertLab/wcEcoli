@@ -10,6 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 import itertools
 import re
+from typing import List, Union
 
 import numpy as np
 
@@ -27,14 +28,11 @@ class getterFunctions(object):
 
 	def getMass(self, ids):
 		assert isinstance(ids, (list, np.ndarray))
-		try:
-			masses = [self._all_mass[self._location_tag.sub('', i)] for i in ids]
-		except KeyError:
-			raise Exception("Unrecognized id: {}".format(i))
-
+		masses = [self._all_mass[self._location_tag.sub('', i)] for i in ids]
 		return self._mass_units * np.array(masses)
 
 	def getLocation(self, ids):
+		# type: (Union[List[str], np.ndarray]) -> List[str]
 		assert isinstance(ids, (list, np.ndarray))
 		return [self._locationDict[x] for x in ids]
 
@@ -54,7 +52,7 @@ class getterFunctions(object):
 
 		self._all_mass = all_mass
 		self._mass_units = units.g / units.mol
-		self._location_tag = re.compile('\[[a-z]\]')
+		self._location_tag = re.compile(r'\[[a-z]\]')
 
 	def _buildLocations(self, raw_data):
 		locationDict = {
