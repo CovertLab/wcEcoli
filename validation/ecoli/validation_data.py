@@ -67,7 +67,7 @@ class Protein(object):
 
 		# Build and save a dict from gene ID to monomerId
 		self.geneIdToMonomerId = {
-			x["id"]: x["monomerId"] + "[" + utilFunctions.getLocation([x["monomerId"]])[0][0] + "]"
+			x["id"]: x["monomerId"] + utilFunctions.get_location_tag(x["monomerId"])
 			for x in knowledge_base_raw.genes
 			if x["type"] == "mRNA"}
 

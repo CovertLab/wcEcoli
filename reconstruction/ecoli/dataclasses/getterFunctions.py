@@ -36,6 +36,11 @@ class getterFunctions(object):
 		assert isinstance(ids, (list, np.ndarray))
 		return [self._locationDict[x] for x in ids]
 
+	def get_location_tag(self, id_):
+		# type: (str) -> str
+		"""Look up a location id and return a location suffix tag like '[c]'."""
+		return '[{}]'.format(self._locationDict[id_][0])
+
 	def check_valid_molecule(self, mol_id):
 		return mol_id in self._all_mass and mol_id in self._locationDict
 

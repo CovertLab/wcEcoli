@@ -188,10 +188,10 @@ class Translation(object):
 
 	def _buildTranslationEfficiency(self, raw_data, sim_data):
 		monomerIds = [
-			x["id"] + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]"
+			x["id"] + sim_data.getter.get_location_tag(x["id"])
 			for x in raw_data.proteins]
 		monomerIdToGeneId = {
-			x["id"] + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]": x["geneId"]
+			x["id"] + sim_data.getter.get_location_tag(x["id"]): x["geneId"]
 			for x in raw_data.proteins}
 		geneIdToTrEff = {
 			x["geneId"]: x["translationEfficiency"]
