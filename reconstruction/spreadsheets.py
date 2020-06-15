@@ -146,8 +146,8 @@ class JsonReader(csv.DictReader, object):
 
 			match = re.search(r'(.*?) \((.*?)\)', key)
 			if match:
-				# Entry has units so apply the units to the value and strip it
-				# from the key.
+				# Entry has units so apply the units to the value and strip
+				# them from the key.
 				_ = units  # don't warn about `units`; it's imported for eval()
 				attribute = match.group(1)
 				value_units = eval(match.group(2))
