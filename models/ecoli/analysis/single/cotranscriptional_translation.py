@@ -88,13 +88,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		membrane_protein_y = []
 
 		for coordinates in membrane_protein_coordinates:
-			if coordinates >= 0:
-				theta = np.pi*coordinates/right_replichore_length
-				membrane_protein_x.append(np.sin(theta))
-			else:
-				theta = -np.pi*coordinates/left_replichore_length
-				membrane_protein_x.append(-np.sin(theta))
-
+			theta = np.pi * coordinates/(right_replichore_length if coordinates >= 0 else left_replichore_length)
+			membrane_protein_x.append(np.sin(theta))
 			membrane_protein_y.append(np.cos(theta))
 
 		membrane_protein_x = np.array(membrane_protein_x)
