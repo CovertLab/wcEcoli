@@ -40,23 +40,37 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		growth = sim_data.growthRateParameters
 		mass = sim_data.mass
 
-		# List of functions that perform interpolation from data
+		# Mapping of functions that perform interpolation to raw data
 		interpolation_functions = {
-			growth.getFractionActiveRibosome: get_raw(raw_data.growthRateDependentParameters, 'doublingTime', 'fractionActiveRibosome'),
-			growth.getFractionActiveRnap: get_raw(raw_data.growthRateDependentParameters, 'doublingTime', 'fractionActiveRnap'),
-			growth.getppGppConc: get_raw(raw_data.growthRateDependentParameters, 'doublingTime', 'ppGpp_conc', factor=growth._per_dry_mass_to_per_volume),
-			growth.getRibosomeElongationRate: get_raw(raw_data.growthRateDependentParameters, 'doublingTime', 'ribosomeElongationRate'),
-			growth.getRnapElongationRate: get_raw(raw_data.growthRateDependentParameters, 'doublingTime', 'rnaPolymeraseElongationRate'),
-			mass.get_dna_critical_mass: None,
-			mass.getAvgCellDryMass: get_raw(raw_data.dryMassComposition, 'doublingTime', 'averageDryMass'),
+			(growth.getFractionActiveRibosome, None):
+				get_raw(raw_data.growthRateDependentParameters, 'doublingTime',
+					'fractionActiveRibosome'),
+			(growth.getFractionActiveRnap, None):
+				get_raw(raw_data.growthRateDependentParameters, 'doublingTime',
+					'fractionActiveRnap'),
+			(growth.getppGppConc, None):
+				get_raw(raw_data.growthRateDependentParameters, 'doublingTime',
+					'ppGpp_conc', factor=growth._per_dry_mass_to_per_volume),
+			(growth.getRibosomeElongationRate, None):
+				get_raw(raw_data.growthRateDependentParameters, 'doublingTime',
+					'ribosomeElongationRate'),
+			(growth.getRnapElongationRate, None):
+				get_raw(raw_data.growthRateDependentParameters, 'doublingTime',
+					'rnaPolymeraseElongationRate'),
+			(mass.get_dna_critical_mass, None): None,
+			(mass.getAvgCellDryMass, None):
+				get_raw(raw_data.dryMassComposition, 'doublingTime',
+					'averageDryMass'),
 			}
 
 		# Interpolation functions that return values in a dictionary
-		indexed_functions = {
-			(mass.getMassFraction, fraction): get_raw(raw_data.dryMassComposition, 'doublingTime', '{}MassFraction'.format(fraction))
+		interpolation_functions.update({
+			(mass.getMassFraction, fraction):
+				get_raw(raw_data.dryMassComposition, 'doublingTime',
+					'{}MassFraction'.format(fraction))
 			for fraction in mass.getMassFraction(45*units.min)
-			}
-		indexed_functions.update({
+			})
+		interpolation_functions.update({
 			(mass.getFractionMass, fraction): None
 			for fraction in mass.getFractionMass(45*units.min)
 			})
@@ -73,44 +87,22 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		# Create Plot
 		plt.figure(figsize=(20, 20))
-		n_plots = len(interpolation_functions) + len(indexed_functions)
+		n_plots = len(interpolation_functions)
 		cols = 5
 		gs = gridspec.GridSpec(int(np.ceil(n_plots / cols)), cols)
 
-		## Plot values for each function
-		for i, (fun, data) in enumerate(sorted(interpolation_functions.items())):
+		for i, ((fun, key), data) in enumerate(sorted(interpolation_functions.items())):
 			ax = plt.subplot(gs[i // cols, i % cols])
-
-			# Get interpolation values and handle units
-			y_interp = np.array([fun(dt) for dt in units.min * doubling_time_range])
-			label = fun.__name__
-			if units.hasUnit(y_interp[0]):
-				label += '\n({})'.format(str(units.getUnit(y_interp[0])).strip('1 []'))
-				y_interp = np.array([y.asNumber() for y in y_interp])
-
-			# Plot data
-			ax.plot(doubling_time_range, y_interp)
-			if data:
-				ax.plot(data[0], data[1], 'or')
-			for dt in doubling_times:
-				ax.axvline(dt, linestyle='--', color='k', linewidth=1)
-
-			# Formatting
-			ax.spines['top'].set_visible(False)
-			ax.spines['right'].set_visible(False)
-			ax.set_ylabel(label)
-
-		row = len(interpolation_functions)
-		for (fun, key), data in sorted(indexed_functions.items()):
-			ax = plt.subplot(gs[row // cols, row % cols])
-			row += 1
 
 			# Get interpolation values and handle units
 			values = []
 			unit = None
 			for dt in units.min * doubling_time_range:
 				try:
-					value = fun(dt)[key]
+					value = fun(dt)
+					if key:
+						value = value[key]
+
 					if units.hasUnit(value):
 						unit = str(units.getUnit(value)).strip('1 []')
 						value = value.asNumber()
@@ -118,7 +110,9 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 					value = np.nan
 				values.append(value)
 			y_interp = np.array(values)
-			label = '{}\n{}'.format(fun.__name__, key)
+
+			# Create y labels
+			label = fun.__name__ + ('\n{}'.format(key) if key else '')
 			if unit:
 				label += '\n({})'.format(unit)
 
@@ -133,6 +127,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			ax.spines['top'].set_visible(False)
 			ax.spines['right'].set_visible(False)
 			ax.set_ylabel(label)
+			ax.set_xlim([np.min(doubling_time_range), np.max(doubling_time_range)])
 
 		## Save figure
 		plt.tight_layout()
