@@ -23,8 +23,8 @@ from wholecell.utils.py3 import monotonic_seconds
 import wholecell.loggers.shell
 import wholecell.loggers.disk
 
-import lens
-from lens.actor.emitter import get_emitter
+import vivarium
+from vivarium.core.emitter import get_emitter
 from six.moves import range
 import six
 from six.moves import zip
@@ -75,7 +75,7 @@ DEFAULT_LISTENER_CLASSES = (
 	EvaluationTime,
 	)
 
-class Simulation(lens.actor.inner.Simulation):
+class Simulation(vivarium.actor.inner.Simulation):
 	""" Simulation """
 
 	# Attributes that must be set by a subclass
