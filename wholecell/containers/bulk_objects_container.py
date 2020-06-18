@@ -26,7 +26,7 @@ def decomp(compressed_names, dtype, compressed_counts):
 		dtype (str) array-protocol typestring [dtype.str]
 		compressed_counts (bytes) zlib-compressed bytes of the counts ndarray
 	"""
-	names = zlib.decompress(compressed_names).split('\t')
+	names = zlib.decompress(compressed_names).decode('utf-8').split('\t')
 	counts_array = np.frombuffer(zlib.decompress(compressed_counts), dtype)
 	container = BulkObjectsContainer(names, counts_array.dtype)
 	container.countsIs(counts_array)
@@ -126,7 +126,7 @@ class BulkObjectsContainer(object):
 		Return a callable object and its args.
 		"""
 		compact_names = '\t'.join(self._objectNames)
-		compressed_names = zlib.compress(compact_names, ZLIB_LEVEL)
+		compressed_names = zlib.compress(compact_names.encode('utf-8'), ZLIB_LEVEL)
 		compressed_counts = zlib.compress(self._counts.tobytes(), ZLIB_LEVEL)
 		dtype = self._counts.dtype
 
