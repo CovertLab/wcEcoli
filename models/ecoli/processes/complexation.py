@@ -55,7 +55,7 @@ class Complexation(wholecell.processes.process.Process):
 		moleculeCounts = self.molecules.total_counts()
 
 		result = self.system.evolve(
-            self._sim.timeStepSec(), moleculeCounts, self.rates)
+			self._sim.timeStepSec(), moleculeCounts, self.rates)
 		updatedMoleculeCounts = result['outcome']
 
 		self.molecules.requestIs(np.fmax(moleculeCounts - updatedMoleculeCounts, 0))
@@ -65,7 +65,7 @@ class Complexation(wholecell.processes.process.Process):
 		moleculeCounts = self.molecules.counts()
 
 		result = self.system.evolve(
-            self._sim.timeStepSec(), moleculeCounts, self.rates)
+			self._sim.timeStepSec(), moleculeCounts, self.rates)
 		updatedMoleculeCounts = result['outcome']
 		events = result['occurrences']
 
