@@ -62,6 +62,7 @@ certifi==2018.4.16
 cffi==1.13.2
 chardet==3.0.4
 click==6.7
+cobra==0.18.1
 colorama==0.3.9
 configparser==3.5.0
 confluent-kafka==0.11.5
@@ -72,6 +73,7 @@ cvxpy==1.0.6
 cycler==0.10.0
 Cython==0.29.13
 decorator==4.3.0
+depinfo==1.5.1
 dill==0.2.8.2
 distlib==0.3.0
 docker==4.2.0
@@ -126,6 +128,7 @@ more-itertools==4.2.0
 mpmath==1.0.0
 multiprocess==0.70.6.1
 nbformat==4.4.0
+networkx==2.2
 numba==0.47.0
 numpy==1.14.6
 optlang==1.4.2
@@ -141,6 +144,7 @@ pexpect==4.6.0
 pickleshare==0.7.4
 Pillow==6.1.0
 Pint==0.9
+pipdeptree==1.0.0
 pluggy==0.13.0
 prompt-toolkit==1.0.15
 protobuf==3.11.3
@@ -160,6 +164,7 @@ pytest==4.6.5
 pytest-benchmark==3.2.2
 pytest-cov==2.8.1
 python-dateutil==2.7.3
+python-libsbml-experimental==5.18.1
 pytz==2018.5
 PyYAML==5.1
 requests==2.22.0
