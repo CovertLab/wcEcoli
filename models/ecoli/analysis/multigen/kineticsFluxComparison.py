@@ -8,9 +8,8 @@ Compare fluxes in simulation to target fluxes
 
 from __future__ import absolute_import, division, print_function
 
+import io
 import os
-from six.moves import cPickle
-import csv
 import re
 
 import numpy as np
@@ -19,8 +18,10 @@ import bokeh.io
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
 	WheelZoomTool, ResizeTool, UndoTool, RedoTool)
+from six.moves import cPickle, zip
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from wholecell.io import tsv
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath, units
 from wholecell.utils.sparkline import whitePadSparklineAxis
@@ -29,7 +30,6 @@ from wholecell.analysis.plotting_tools import COLORS_LARGE
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
-from six.moves import zip
 
 BURN_IN_STEPS = 20
 
@@ -115,8 +115,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			rxns.append(rxn[0])
 		# print(siteStr)
 
-		csvFile = open(os.path.join(plotOutDir, plotOutFileName + ".tsv"), "wb")
-		output = csv.writer(csvFile, delimiter = "\t")
+		csvFile = io.open(os.path.join(plotOutDir, plotOutFileName + ".tsv"), "wb")
+		output = tsv.writer(csvFile)
 		output.writerow(["ecocyc link:", siteStr])
 		output.writerow(["", "Target", "Actual", "Category"])
 

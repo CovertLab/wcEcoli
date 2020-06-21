@@ -30,13 +30,13 @@ with open(DATA_FILE, "rU") as csvfile:
 			for reaction in row["EcoCyc ID reaction (metabolite vs. TF)"].split(", "):
 				reactionDict[reaction] = float(row["<Kd> (uM)"]) / 10**6
 
+class quoteDialect(CSV_DIALECT):
+	quotechar = "'"
+	quoting = csv.QUOTE_NONNUMERIC
+
 with open(REACTION_FILE, "rU") as infile:
 	with open(OUTPUT_FILE, "w") as outfile:
 		reader = csv.DictReader(infile, dialect = CSV_DIALECT)
-		quoteDialect = CSV_DIALECT
-		quoteDialect.quotechar = "'"
-		quoteDialect.quoting = csv.QUOTE_NONNUMERIC
-
 		fieldnames = list(reader.fieldnames or [])
 		fieldnames.append("original reverse rate")
 		writer = csv.DictWriter(outfile, fieldnames=fieldnames, dialect=quoteDialect)

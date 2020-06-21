@@ -12,7 +12,7 @@ import io
 import json
 import re
 import numpy as np
-from typing import Any, cast, Dict, Iterator, List, Sequence, Text
+from typing import Any, cast, Dict, Iterator, Sequence, Text
 
 import six
 from six.moves import filterfalse
@@ -77,11 +77,18 @@ def array_to_list(value):
 class JsonWriter(csv.DictWriter, object):
 	# [Python 2 DictWriter is an old-style class so mix in `object` to get a
 	# new-style class that supports `super()`.]
-	# NOTE: JsonWriter doesn't handle units.
 	def __init__(self, *args, **kwargs):
-		"""Defaults dialect=CSV_DIALECT.
+		"""Writer for a .tsv file to be read by JsonReader. This writes a
+		header with quotes and dict rows in TSV format, JSON encoding, and
+		UTF-8 encoding.
+
+		NOTE: The caller needs to remove units from the dict values and add
+		them to the fieldnames. JsonWriter does not handle units.
+
 		The first argument should be a file-like writer open in binary mode in
 		Python 2 but text mode in Python 3.
+
+		By default, dialect=CSV_DIALECT, which is excel-tab.
 		"""
 		kwargs.setdefault('dialect', CSV_DIALECT)
 		super(JsonWriter, self).__init__(
@@ -110,9 +117,14 @@ class JsonWriter(csv.DictWriter, object):
 
 class JsonReader(csv.DictReader, object):
 	def __init__(self, *args, **kwargs):
-		"""Defaults dialect=CSV_DIALECT.
+		"""Reader for a .tsv file that supports units and json-coded values.
+		Units are denoted with a fieldname in the format 'name (units)' e.g.
+		"flux standard deviation (units.mmol / units.g / units.h)".
+
 		The first argument should be a file-like reader open in binary mode in
 		Python 2 but text mode in Python 3.
+
+		By default, dialect=CSV_DIALECT, which is excel-tab.
 		"""
 		kwargs.setdefault('dialect', CSV_DIALECT)
 		super(JsonReader, self).__init__(

@@ -19,14 +19,16 @@ https://www.embopress.org/action/downloadSupplement?doi=10.15252%2Fmsb.20167402&
 
 from __future__ import absolute_import, division, print_function
 
-import csv
+import io
 import os
 import sys
 import time
-from six.moves.urllib import request
+from typing import Any, cast, Dict, IO, Tuple
 
 import numpy as np
-from typing import Any, Dict, Tuple
+from six.moves.urllib import request
+
+from wholecell.io import tsv
 
 
 # Directories
@@ -146,8 +148,8 @@ def lempp_concentrations():
 
 	met_conc = {}
 
-	with open(LEMPP_INPUT) as f:
-		reader = csv.reader(f, delimiter='\t')
+	with io.open(LEMPP_INPUT, 'rb') as f:
+		reader = tsv.reader(f)
 
 		start_conc_col = next(reader).index('intracellular concentrations (\xc2\xb5M)')
 		next(reader)  # discard line
@@ -179,8 +181,8 @@ def park_concentrations():
 
 	met_conc = {}
 
-	with open(PARK_INPUT) as f:
-		reader = csv.reader(f, delimiter='\t')
+	with io.open(PARK_INPUT, 'rb') as f:
+		reader = tsv.reader(f)
 
 		next(reader)  # discard line
 		headers = next(reader)
@@ -213,8 +215,8 @@ def load_kochanowski(filename):
 
 	met_conc = {}
 
-	with open(filename) as f:
-		reader = csv.reader(f, delimiter='\t')
+	with io.open(filename, 'rb') as f:
+		reader = tsv.reader(f)
 
 		next(reader)  # discard line
 		headers = next(reader)[1:]
@@ -271,8 +273,8 @@ def kegg_to_ecocyc(data):
 	url = 'https://websvc.biocyc.org/ECOLI/foreignid?ids='
 	ids = ','.join(['{}{}'.format(id_type, i) for i in kegg_ids])
 
-	u = request.urlopen(url + ids)
-	reader = csv.reader(u, delimiter='\t')
+	u = cast(IO[bytes], request.urlopen(url + ids))  # type "addinfourl"?
+	reader = tsv.reader(u)
 
 	for line in reader:
 		if line[1] == '1':
@@ -295,8 +297,8 @@ def save_concentrations(conc, label):
 	"""
 
 	output = ABSOLUTE_OUTPUT_FILE.format(label.lower())
-	with open(output, 'w') as f:
-		writer = csv.writer(f, delimiter='\t')
+	with io.open(output, 'wb') as f:
+		writer = tsv.writer(f)
 		writer.writerow(['Metabolite', '{} Concentration (units.mol/units.L)'.format(label)])
 
 		for m, c in sorted(conc.items(), key=lambda d: d[0]):
@@ -314,8 +316,8 @@ def save_kochanowski_relative_changes():
 	reordered_headers = first_headers + [h for h in headers if h not in first_headers]
 	reordered_indexing = np.array([np.where(headers == h)[0][0] for h in reordered_headers])
 
-	with open(RELATIVE_OUTPUT_FILE, 'w') as f:
-		writer = csv.writer(f, delimiter='\t', quotechar="'", lineterminator='\n')
+	with io.open(RELATIVE_OUTPUT_FILE, 'wb') as f:
+		writer = tsv.writer(f, quotechar="'", lineterminator='\n')
 		writer.writerow(['# Created with {} on {}'.format(' '.join(sys.argv), time.ctime())])
 		writer.writerow(['Metabolite'] + reordered_headers)
 

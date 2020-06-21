@@ -7,13 +7,17 @@ goes through all reactions in reaction.tsv and compares substrate and product id
 
 from __future__ import absolute_import, division, print_function
 
+import csv
+import io
 import os
 import re
-import csv
 from typing import Dict
 
-from reconstruction.spreadsheets import read_tsv
 import six
+
+from reconstruction.spreadsheets import read_tsv
+from wholecell.io import tsv
+
 
 TSV_DIALECT = csv.excel_tab
 
@@ -55,8 +59,8 @@ transport_reactions = sorted(transport_reactions)
 if os.path.exists(OUT_FILE):
 	os.remove(OUT_FILE)
 
-with open(OUT_FILE, 'a') as tsvfile:
-	writer = csv.writer(tsvfile, quoting=csv.QUOTE_NONNUMERIC, delimiter='\t')
+with io.open(OUT_FILE, 'ab') as tsvfile:
+	writer = tsv.writer(tsvfile, quoting=csv.QUOTE_NONNUMERIC)
 	writer.writerow(["reaction id"])
 	for reaction_id_ in transport_reactions:
 		append_line = [reaction_id_]
