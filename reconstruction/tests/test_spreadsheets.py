@@ -44,20 +44,23 @@ class Test_Spreadsheets(unittest.TestCase):
 
 	def test_json_writer(self):
 		byte_stream = BytesIO()
-		write_stream = byte_stream if six.PY2 else TextIOWrapper(byte_stream)
-		field_names = UNITLESS_FIELD_NAMES  # JsonWriter doesn't support units!
+		write_stream = byte_stream if six.PY2 else TextIOWrapper(
+			byte_stream, line_buffering=True)
+		key2 = u'key \u20ac.'
+		field_names = ['key1', key2, '33.3']
 		writer = JsonWriter(write_stream, field_names)
 		writer.writeheader()
 
-		row = {f: [f.upper()] for f in field_names}
-		row['id'] = 3.14159
-		row['mass'] = 1.23
-		writer.writerow(row)
+		writer.writerow({'key1': 'value1', key2: '', '33.3': 33.4})
+		writer.writerow({'key1': [1.1, '11'], key2: None, '33.3': {u'\u2297!': [33]}})
 
 		data = byte_stream.getvalue()
-		assert data == (
-			b'"id"\t"ourLocation"\t"\xe2\x82\xac:xyz"\t"mass"\n'
-			b'3.14159\t["OURLOCATION"]\t["\xe2\x82\xac:XYZ"]\t1.23\n')
+		lines = data.split(b'\n')
+		assert len(lines) == 4
+		assert lines[0] == b'"key1"\t"key \xE2\x82\xAC."\t"33.3"'
+		assert lines[1] == b'"value1"\t""\t33.4'
+		assert lines[2] == b'[1.1, "11"]\tnull\t{"\xe2\x8a\x97!": [33]}'
+		assert lines[3] == b''
 
 	# TODO(jerry): Test dict and ndarray values.
 	# TODO(jerry): Test tsv_writer() by writing and reading back a file.

@@ -1,7 +1,7 @@
 """
 Subclasses of DictWriter and DictReader that parse plaintext as JSON strings,
-allowing for basic type parsing and fields that are dictionaries or lists, with
-optional units.
+allowing for basic type parsing and fields that are dictionaries or lists. The
+reader also supports units and comment lines.
 """
 
 from __future__ import absolute_import, division, print_function
@@ -77,6 +77,7 @@ def array_to_list(value):
 class JsonWriter(csv.DictWriter, object):
 	# [Python 2 DictWriter is an old-style class so mix in `object` to get a
 	# new-style class that supports `super()`.]
+	# NOTE: JsonWriter doesn't handle units.
 	def __init__(self, *args, **kwargs):
 		"""Defaults dialect=CSV_DIALECT.
 		The first argument should be a file-like writer open in binary mode in
@@ -90,9 +91,9 @@ class JsonWriter(csv.DictWriter, object):
 	def writeheader(self):
 		# Bypass DictWriter's writeheader() and _dict_to_list(). [Consider
 		# reimplementing on csv.writer rather than subclassing DictWriter.]
-		header = [
-			u'"{}"'.format(name).encode('utf-8')
-			for name in self.fieldnames]
+		header = [u'"{}"'.format(name) for name in self.fieldnames]
+		if six.PY2:
+			header = [name.encode('utf-8') for name in header]
 		self.writer.writerow(header)
 
 	def _dict_to_list(self, rowdict):
@@ -126,13 +127,22 @@ class JsonReader(csv.DictReader, object):
 
 	def next(self):
 		# type: () -> Dict[str, Any]
+		if six.PY2:
+			return self._decode_row(super(JsonReader, self).next())
+		return self._decode_row(super(JsonReader, self).__next__())
+
+	__next__ = next
+
+	def _decode_row(self, row_dict):
+		# type: (Dict[str, str]) -> Dict[str, Any]
+		"""Decode a DictReader row."""
 		attributeDict = {}  # type: Dict[Text, Any]
-		for key_, raw_value_ in six.viewitems(super(JsonReader, self).next()):
+		for key_, raw_value_ in six.viewitems(row_dict):
 			# NOTE: Decoding UTF-8 bytes would be safer between DictReader and
 			# its csv.reader as in csv32, but this is much simpler.
 			if six.PY2:
-				key = key_.decode('utf-8')
-				raw_value = (raw_value_ or '').decode('utf-8')
+				key = cast(bytes, key_).decode('utf-8')
+				raw_value = cast(bytes, raw_value_ or '').decode('utf-8')
 			else:
 				key = key_
 				raw_value = raw_value_

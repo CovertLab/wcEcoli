@@ -149,11 +149,11 @@ def lempp_concentrations():
 	with open(LEMPP_INPUT) as f:
 		reader = csv.reader(f, delimiter='\t')
 
-		start_conc_col = reader.next().index('intracellular concentrations (\xc2\xb5M)')
+		start_conc_col = next(reader).index('intracellular concentrations (\xc2\xb5M)')
 		next(reader)  # discard line
-		n_conc = np.sum([t.startswith('t0') for t in reader.next()[start_conc_col:]])
+		n_conc = np.sum([t.startswith('t0') for t in next(reader)[start_conc_col:]])
 		end_conc_col = start_conc_col + n_conc
-		id_col = reader.next().index('KEGG')
+		id_col = next(reader).index('KEGG')
 
 		for line in reader:
 			met_id = line[id_col]
@@ -217,7 +217,7 @@ def load_kochanowski(filename):
 		reader = csv.reader(f, delimiter='\t')
 
 		next(reader)  # discard line
-		headers = reader.next()[1:]
+		headers = next(reader)[1:]
 		valid_conditions = np.array([h in KOCHANOWSKI_MEDIA for h in headers])
 		condition_headers = np.array([KOCHANOWSKI_MEDIA.get(h) for h in headers])[valid_conditions]
 		met_col = 0

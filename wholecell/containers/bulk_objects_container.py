@@ -357,7 +357,7 @@ class BulkObjectsContainer(object):
 		return np.array_equal(self._counts, other._counts)
 
 	def __ne__(self, other):
-		# assertNotEquals() calls `!=`.
+		# Needed for assertNotEqual().
 		return not (self == other)
 
 

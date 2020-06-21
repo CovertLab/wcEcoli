@@ -44,7 +44,8 @@ for row in read_tsv(REACTIONS_FILE):
 		if len(overlap) == 0:
 			# print('sub ' + str(sub))
 			# print('prod ' + str(prod))
-			transport_reactions.append(reaction_id.encode('ascii','ignore'))
+			transport_reactions.append(
+				reaction_id.encode('ascii', 'ignore').decode('ascii'))
 
 # sort reactions to save them in ordered list
 transport_reactions = list(set(transport_reactions))
@@ -57,6 +58,6 @@ if os.path.exists(OUT_FILE):
 with open(OUT_FILE, 'a') as tsvfile:
 	writer = csv.writer(tsvfile, quoting=csv.QUOTE_NONNUMERIC, delimiter='\t')
 	writer.writerow(["reaction id"])
-	for reaction_id in transport_reactions:
-		append_line = [reaction_id]
+	for reaction_id_ in transport_reactions:
+		append_line = [reaction_id_]
 		writer.writerow(append_line)
