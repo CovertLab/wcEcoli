@@ -35,7 +35,7 @@ BURN_IN_STEPS = 20
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		sim_data = cPickle.load(open(simDataFile))
+		sim_data = cPickle.load(open(simDataFile, 'rb'))
 
 		mainListener = TableReader(os.path.join(simOutDir, "Main"))
 		initialTime = mainListener.readAttribute("initialTime")

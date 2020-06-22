@@ -64,7 +64,10 @@ def tsv_writer(filename, fieldnames):
 	with io.open(filename, mode=mode, encoding=encoding, newline=newline) as fh:
 		writer = JsonWriter(fh, fieldnames, dialect=CSV_DIALECT)
 		writer.writeheader()
+
 		yield writer
+
+		fh.flush()
 
 
 def array_to_list(value):

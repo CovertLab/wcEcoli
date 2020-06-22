@@ -51,8 +51,6 @@ wheel
 numpy
 scipy
 
-pygame==2.0.0.dev10
-
 biopython
 bokeh
 borealis-fireworks

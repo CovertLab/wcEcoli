@@ -28,7 +28,7 @@ PLOT_BOKEH = False
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		with open(simDataFile) as f:
+		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 		aa_ids = sim_data.moleculeGroups.aaIDs
 
