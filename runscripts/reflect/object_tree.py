@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import collections
-import cPickle
 import functools
 import numbers
 import os
@@ -12,11 +11,14 @@ import types
 import Bio.Seq
 import numpy as np
 import scipy.interpolate
+import six
+from six.moves import cPickle, range
 import sympy
 from sympy.matrices import dense
 import unum
 
 from wholecell.utils import constants
+from wholecell.utils.py3 import ANY_STRING
 import wholecell.utils.unit_struct_array
 
 
@@ -78,7 +80,7 @@ def is_leaf(value, leaves=LEAF_TYPES):
 	through the object tree.
 	"""
 	if isinstance(value, (collections.Mapping, collections.Sequence)):
-		return isinstance(value, basestring)
+		return isinstance(value, ANY_STRING)
 	return (callable(value)                 # it's callable
 			or isinstance(value, leaves)    # it's an instance of a declared leaf type
 			or not has_python_vars(value))  # an object without Python instance variables
@@ -115,13 +117,13 @@ def object_tree(obj, path='', debug=None):
 		return obj
 	elif isinstance(obj, collections.Mapping):
 		return {key: object_tree(value, "{}['{}']".format(path, key), debug)
-			for (key, value) in obj.iteritems()}
+			for (key, value) in six.viewitems(obj)}
 	elif isinstance(obj, collections.Sequence):
 		return [object_tree(subobj, "{}[{}]".format(path, index), debug) for index, subobj in enumerate(obj)]
 	else:
 		attrs = all_vars(obj)
 		tree = {key: object_tree(value, "{}.{}".format(path, key), debug)
-				for (key, value) in attrs.iteritems()}
+				for (key, value) in six.viewitems(attrs)}
 		tree['!type'] = type(obj)
 
 		return tree
@@ -223,10 +225,17 @@ def size_tree(o, cutoff=0.1):
 	else:
 		return size,
 
+def _are_instances_of(a, b, a_type):
+	"""
+	Return True if `a` and `b` are both instances of the given type (or tuple
+	of types).
+	"""
+	return isinstance(a, a_type) and isinstance(b, a_type)
+
 def diff_trees(a, b):
 	"""
 	Find the differences between two trees or leaf nodes a and b. Return a
-	falsely value if the inputs match OR a truthy value that explains or
+	falsey value if the inputs match OR a truthy value that explains or
 	summarizes their differences, where each point in the tree where the inputs
 	differ will be a tuple (a's value, b's value, optional description).
 
@@ -237,9 +246,16 @@ def diff_trees(a, b):
 	This operation is symmetrical.
 	"""
 
+	# treat str and Python 2 unicode as the same leaf type
+	# ditto for int and Python 2 long
+	if (_are_instances_of(a, b, six.string_types)
+			or _are_instances_of(a, b, six.integer_types)):
+		if a != b:
+			return elide(a), elide(b)
+
 	# if they aren't they same type, they are clearly different. Also this lets us
 	# safely assume throughout the rest of the function that a and b are the same type
-	if type(a) != type(b):
+	elif type(a) != type(b):
 		return elide(a, max_len=400), elide(b, max_len=400)
 
 	# if they are floats, handle various kinds of values
@@ -289,7 +305,7 @@ def diff_trees(a, b):
 			a = list(a) + (len(b) - len(a)) * [Repr('--')]
 
 		diff = []
-		for index in xrange(len(a)):
+		for index in range(len(a)):
 			subdiff = diff_trees(a[index], b[index])
 			if subdiff:
 				diff.append(subdiff)

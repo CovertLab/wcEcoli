@@ -4,12 +4,13 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-import cPickle
+from six.moves import cPickle
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import variantAnalysisPlot
+from six.moves import zip
 
 NUMERICAL_ZERO = 1e-12
 

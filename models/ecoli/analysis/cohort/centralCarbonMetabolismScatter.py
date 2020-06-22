@@ -8,12 +8,12 @@ Central carbon metabolism comparison to Toya et al
 from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
 import re
 
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -23,6 +23,8 @@ from wholecell.analysis.analysis_tools import exportFigure
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from models.ecoli.analysis import cohortAnalysisPlot
+import six
+from six.moves import zip
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -81,7 +83,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					modelFluxes[toyaReaction].append(np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
 
 		toyaVsReactionAve = []
-		for rxn, toyaFlux in toyaFluxesDict.iteritems():
+		for rxn, toyaFlux in six.viewitems(toyaFluxesDict):
 			if rxn in modelFluxes:
 				toyaVsReactionAve.append(
 					(np.mean(modelFluxes[rxn]),
@@ -108,8 +110,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ax.set_xlim([-20, 30])
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
-		ax.set_yticks(range(int(ylim[0]), int(ylim[1]) + 1, 10))
-		ax.set_xticks(range(int(xlim[0]), int(xlim[1]) + 1, 10))
+		ax.set_yticks(list(range(int(ylim[0]), int(ylim[1]) + 1, 10)))
+		ax.set_xticks(list(range(int(xlim[0]), int(xlim[1]) + 1, 10)))
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 

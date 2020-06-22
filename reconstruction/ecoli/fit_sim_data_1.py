@@ -7,8 +7,6 @@ TODO: functionalize so that values are not both set and returned from some metho
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle
-from itertools import izip
 import os
 import multiprocessing as mp
 import traceback
@@ -18,6 +16,8 @@ from arrow import StochasticSystem
 from cvxpy import Variable, Problem, Minimize, norm
 import numpy as np
 import scipy.optimize
+import six
+from six.moves import cPickle, range, zip
 
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
@@ -26,8 +26,6 @@ from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic
 
 
 # Tweaks
-RNA_POLY_MRNA_DEG_RATE_PER_S = np.log(2) / 30. # half-life of 30 seconds
-
 # Adjustments to get protein expression for certain enzymes required for metabolism
 TRANSLATION_EFFICIENCIES_ADJUSTMENTS = {
 	"ADCLY-MONOMER[c]": 5,  # pabC, aminodeoxychorismate lyase
@@ -41,6 +39,7 @@ RNA_EXPRESSION_ADJUSTMENTS = {
 	"EG12298_RNA[c]": 10,  # yibQ, Predicted polysaccharide deacetylase; This RNA is fit for the anaerobic condition viability
 	"EG11672_RNA[c]": 10,  # atoB, acetyl-CoA acetyltransferase; This RNA is fit for the anaerobic condition viability
 	"EG10238_RNA[c]": 10,  # dnaE, DNA polymerase III subunit alpha; This RNA is fit for the sims to produce enough DNAPs for timely replication
+	"EG11673_RNA[c]": 10,  # folB, dihydroneopterin aldolase; needed for growth (METHYLENE-THF) in acetate condition
 	"EG10808_RNA[c]": 2,  # pyrE, orotate phosphoribosyltransferase; Needed for UTP synthesis, transcriptional regulation by UTP is not included in the model
 	}
 RNA_DEG_RATES_ADJUSTMENTS = {
@@ -49,6 +48,7 @@ RNA_DEG_RATES_ADJUSTMENTS = {
 	"EG10710_RNA[c]": 2,  # pheT, phenylalanine synthetase subunit; for tRNA charging in anaerobic condition
 	}
 PROTEIN_DEG_RATES_ADJUSTMENTS = {
+	"ADENYLATECYC-MONOMER[c]": 2. / 600,  # CyaA, adenylate cyclase; convert from 2 min to 10 hr half life to get expression in acetate condition (required for cAMP)
 	"SPOT-MONOMER[c]": 2. / 600,  # SpoT, ppGpp phosphatase; convert from 2 min to 10 hr half life to better match expected protein counts
 	"EG12298-MONOMER[p]": 0.1, # yibQ, Predicted polysaccharide deacetylase; This protein is fit for the anaerobic condition
 	}
@@ -114,11 +114,8 @@ def fitSimData_1(
 	# Limit the number of conditions that are being fit so that execution time decreases
 	if debug:
 		print("Warning: Running the Parca in debug mode - not all conditions will be fit")
-		key = sim_data.tfToActiveInactiveConds.keys()[0]
+		key = list(sim_data.tfToActiveInactiveConds.keys())[0]
 		sim_data.tfToActiveInactiveConds = {key: sim_data.tfToActiveInactiveConds[key]}
-
-	# Increase RNA poly mRNA deg rates
-	setRnaPolymeraseCodingRnaDegradationRates(sim_data)
 
 	# Make adjustments for metabolic enzymes
 	setTranslationEfficiencies(sim_data)
@@ -194,7 +191,7 @@ def fitSimData_1(
 
 	for condition_label in sorted(cellSpecs):
 		nutrients = sim_data.conditions[condition_label]["nutrients"]
-		if nutrients not in sim_data.translationSupplyRate.keys():
+		if nutrients not in sim_data.translationSupplyRate:
 			sim_data.translationSupplyRate[nutrients] = cellSpecs[condition_label]["translation_aa_supply"]
 
 	if VERBOSE > 0:
@@ -466,7 +463,7 @@ def buildTfConditionCellSpecifications(
 			fcData = sim_data.tfToFC[tf]
 		if choice == "__inactive" and conditionValue != sim_data.conditions["basal"]:
 			fcDataTmp = sim_data.tfToFC[tf].copy()
-			for key, value in fcDataTmp.iteritems():
+			for key, value in six.viewitems(fcDataTmp):
 				fcData[key] = 1. / value
 		expression = expressionFromConditionAndFoldChange(
 			sim_data.process.transcription.rnaData["id"],
@@ -551,13 +548,13 @@ def buildCombinedConditionCellSpecifications(
 	appropriate
 	"""
 
-	fcData = {}
 	for conditionKey in sim_data.conditionActiveTfs:
 		# Skip adjustments if 'basal' condition
 		if conditionKey == "basal":
 			continue
 
 		# Get expression from fold changes for each TF in the given condition
+		fcData = {}
 		conditionValue = sim_data.conditions[conditionKey]
 		for tf in sim_data.conditionActiveTfs[conditionKey]:
 			for gene, fc in sim_data.tfToFC[tf].items():
@@ -661,7 +658,7 @@ def expressionConverge(
 	if VERBOSE > 0:
 		print("Fitting RNA synthesis probabilities.")
 
-	for iteration in xrange(MAX_FITTING_ITERATIONS):
+	for iteration in range(MAX_FITTING_ITERATIONS):
 		if VERBOSE > 1:
 			print('Iteration: {}'.format(iteration))
 
@@ -796,41 +793,6 @@ def calculateTranslationSupply(sim_data, doubling_time, bulkContainer, avgCellDr
 	return translation_aa_supply
 
 # Sub-fitting functions
-
-def setRnaPolymeraseCodingRnaDegradationRates(sim_data):
-	"""
-	Increase the degradation rates for the RNA polymerase mRNAs.  This is done to increase the
-	rate of	mRNA synthesis and overall reduce the stochasticity in RNA polymerase subunit
-	expression, which would otherwise constrain transcription.
-
-	Requires
-	--------
-	- RNA_POLY_MRNA_DEG_RATE_PER_S (float) - the new first-order degradation rate,
-	in units of per second
-
-	Modifies
-	--------
-	- Degradation rates of RNA polymerase subunit mRNAs.
-
-	Notes
-	-----
-	- Incorporating transcription unit structure would facilitate co-expression of the subunits
-	but might not address the fundamental stochasticity issue.
-	- MD - The structure of this function deviates from the following functions that set values based on an adjustment
-	maybe think about how adjustments should be incorporated?
-	"""
-
-	rnaPolySubunits = sim_data.process.complexation.getMonomers("APORNAP-CPLX[c]")["subunitIds"] # APORNAP-CPLX[c] is the RNA polymerase complex
-	subunitIndexes = np.array([np.where(sim_data.process.translation.monomerData["id"] == id_)[0].item() for id_ in rnaPolySubunits]) # there has to be a better way...
-
-	# TODO(Mialy): This mapping works currently for rnaPolySubunits, but would not work for anything where its in 
-	# a TU. This would be a potential problem later if the RNA polymerases were put into a TU.
-	mRNA_indexes = sim_data.relation.rnaIndexToMonomerMapping_new[subunitIndexes]
-
-	# Modifies
-
-	for mRNA_index in mRNA_indexes:
-		sim_data.process.transcription.rnaData.struct_array["degRate"][mRNA_index] = RNA_POLY_MRNA_DEG_RATE_PER_S
 
 def setTranslationEfficiencies(sim_data):
 	"""
@@ -1797,7 +1759,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 		print("Bulk distribution seed:")
 
 	# Instantiate cells to find average copy numbers of macromolecules
-	for seed in xrange(N_SEEDS):
+	for seed in range(N_SEEDS):
 		if VERBOSE > 1:
 			print('seed = {}'.format(seed))
 
@@ -1824,8 +1786,9 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 		# Form complexes
 		time_step = 2**31 # don't stop until all complexes are formed.
 		complexation_rates = sim_data.process.complexation.rates
-		system = StochasticSystem(complexationStoichMatrix.T, complexation_rates, random_seed=seed)
-		complexation_result = system.evolve(time_step, complexationMoleculeCounts)
+		system = StochasticSystem(complexationStoichMatrix.T, random_seed=seed)
+		complexation_result = system.evolve(
+			time_step, complexationMoleculeCounts, complexation_rates)
 
 		updatedCompMoleculeCounts = complexation_result['outcome']
 		complexationMoleculesView.countsIs(updatedCompMoleculeCounts)
@@ -2269,7 +2232,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		k, kInfo = [], []
 
 		for idx, (rnaId, rnaCoordinate) in enumerate(
-				izip(sim_data.process.transcription.rnaData["id"],
+				zip(sim_data.process.transcription.rnaData["id"],
 				sim_data.process.transcription.rnaData["replicationCoordinate"])):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
@@ -2447,7 +2410,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 			nTfs = len(tfsWithData)
 
 			# For all possible combinations of TFs
-			for combinationIdx in xrange(2**nTfs):
+			for combinationIdx in range(2**nTfs):
 				# Add a row for each combination
 				rowName = rnaIdNoLoc + "__%d" % combinationIdx
 				rowNames.append(rowName)
@@ -2563,7 +2526,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		- colNamesH: List of column names of H as strings
 		"""
 
-		rDict = dict([(colName, value) for colName, value in izip(colNames, r)])
+		rDict = dict([(colName, value) for colName, value in zip(colNames, r)])
 
 		pPromoterBoundIdxs = dict([(condition, {}) for condition in pPromoterBound])
 		hI, hJ, hV, rowNames, colNamesH, pInitI, pInitV = [], [], [], [], [], [], []
@@ -2746,7 +2709,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		replicationCoordinate = sim_data.process.transcription.rnaData["replicationCoordinate"]
 
 		# Update sim_data values with fit values
-		for D, k_value in izip(kInfo, k):
+		for D, k_value in zip(kInfo, k):
 			condition = D["condition"]
 			rna_idx = D["idx"]
 
@@ -2784,7 +2747,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 	k, kInfo = build_vector_k(sim_data, cellSpecs)
 
 	# Repeat for a fixed maximum number of iterations
-	for i in xrange(PROMOTER_MAX_ITERATIONS):
+	for i in range(PROMOTER_MAX_ITERATIONS):
 		# Build matrices used in optimizing R
 		G, rowNamesG, colNamesG = build_matrix_G(sim_data, pPromoterBound)
 		Z = build_matrix_Z(sim_data, colNamesG)

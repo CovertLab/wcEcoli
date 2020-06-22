@@ -12,7 +12,7 @@ from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
 from bokeh.models import CustomJS
 from bokeh.models.widgets import Button
 
-import cPickle
+from six.moves import cPickle
 import scipy.stats
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
@@ -20,6 +20,7 @@ from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import filepath
+from six.moves import zip
 
 NUMERICAL_ZERO = 1e-12
 

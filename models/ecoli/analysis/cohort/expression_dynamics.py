@@ -1,11 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from itertools import izip
-import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, zip
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -13,6 +12,7 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.rdp import rdp
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
+
 
 GENS = np.arange(3, 9)
 
@@ -207,7 +207,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				(time_minutes.max() - time_minutes.min()) * n_gens
 				)
 
-			for (ax, c, lc, cm, cs) in izip(axes, counts, line_color, count_min, count_scale):
+			for (ax, c, lc, cm, cs) in zip(axes, counts, line_color, count_min, count_scale):
 				rescaled_counts = (c.astype(np.float64) - cm)/cs
 
 				# Roughly rescale the data into the plotted dimensions for
@@ -256,7 +256,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		expRna_axis.set_xticks(time_eachGen / 60.)
 		burstRna_axis.set_xticks(time_eachGen / 60.)
-		xlabel = GENS.tolist()
+		xlabel = GENS.tolist()  # type: list
 		xlabel.append(GENS[-1] + 1)
 		expRna_axis.set_xticklabels(xlabel)
 		burstRna_axis.set_xticklabels(xlabel)

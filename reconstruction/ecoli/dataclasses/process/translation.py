@@ -9,6 +9,7 @@ SimulationData for translation process
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
+import six
 
 from wholecell.sim.simulation import MAX_TIME_STEP
 from wholecell.utils import units
@@ -87,7 +88,7 @@ class Translation(object):
 
 			counts = []
 
-			for aa in sim_data.amino_acid_1_to_3_ordered.viewkeys():
+			for aa in sim_data.amino_acid_1_to_3_ordered:
 				counts.append(
 					sequence.count(aa)
 					)
@@ -194,7 +195,7 @@ class Translation(object):
 		self.translationSequences = np.empty((sequences.shape[0], maxLen), np.int8)
 		self.translationSequences.fill(polymerize.PAD_VALUE)
 
-		aaIDs_singleLetter = sim_data.amino_acid_1_to_3_ordered.keys()
+		aaIDs_singleLetter = six.viewkeys(sim_data.amino_acid_1_to_3_ordered)
 
 		aaMapping = {aa:i for i, aa in enumerate(aaIDs_singleLetter)}
 
@@ -202,7 +203,7 @@ class Translation(object):
 			for j, letter in enumerate(sequence):
 				self.translationSequences[i, j] = aaMapping[letter]
 
-		aaIDs = sim_data.amino_acid_1_to_3_ordered.values()
+		aaIDs = list(sim_data.amino_acid_1_to_3_ordered.values())
 
 		self.translationMonomerWeights = (
 			(
@@ -215,9 +216,16 @@ class Translation(object):
 		self.translationEndWeight = (sim_data.getter.getMass([sim_data.moleculeIds.water]) / sim_data.constants.nAvogadro).asNumber(units.fg)
 
 	def _buildTranslationEfficiency(self, raw_data, sim_data):
-		monomerIds = [x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]" for x in raw_data.proteins]
-		monomerIdToGeneId = dict([(x["id"].encode("utf-8") + "[" + sim_data.getter.getLocation([x["id"]])[0][0] + "]", x["geneId"].encode("utf-8")) for x in raw_data.proteins])
-		geneIdToTrEff = dict([(x["geneId"].encode("utf-8"), x["translationEfficiency"]) for x in raw_data.translationEfficiency if type(x["translationEfficiency"]) == float])
+		monomerIds = [
+			x["id"] + sim_data.getter.get_location_tag(x["id"])
+			for x in raw_data.proteins]
+		monomerIdToGeneId = {
+			x["id"] + sim_data.getter.get_location_tag(x["id"]): x["geneId"]
+			for x in raw_data.proteins}
+		geneIdToTrEff = {
+			x["geneId"]: x["translationEfficiency"]
+			for x in raw_data.translationEfficiency
+			if type(x["translationEfficiency"]) == float}
 		trEffs = []
 		for monomerId in monomerIds:
 			geneId = monomerIdToGeneId[monomerId]

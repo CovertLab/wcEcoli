@@ -25,11 +25,14 @@ from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 # NOTE: Importing SimulationDataEcoli would make a circular reference so use Any.
 #from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.utils import units
+import six
+from six.moves import range, zip
 
 
 PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
 ECOLI_PH = 7.2
-MICROMOLAR_UNITS = units.umol / units.L
+KINETIC_CONSTRAINT_CONC_UNITS = units.umol / units.L
+K_CAT_UNITS = 1 / units.s
 METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
 
 USE_ALL_CONSTRAINTS = False  # False will remove defined constraints from objective
@@ -37,6 +40,14 @@ USE_ALL_CONSTRAINTS = False  # False will remove defined constraints from object
 REVERSE_TAG = ' (reverse)'
 REVERSE_REACTION_ID = '{{}}{}'.format(REVERSE_TAG)
 ENZYME_REACTION_ID = '{}__{}'
+
+# Manually added concentration fold changes expected in media conditions
+# relative to basal. Added in addition to the loaded flat file.
+RELATIVE_CHANGES = {
+	'minimal_minus_oxygen': {
+		'CAMP[c]': 3.7,  # Unden, Duchenne. DOI: 10.1007/BF00415284 (Table 1, 2)
+		},
+	}
 
 VERBOSE = False
 
@@ -181,7 +192,7 @@ class Metabolism(object):
 		metaboliteConcentrations.append(PPI_CONCENTRATION)
 
 		# include metabolites that are part of biomass
-		for key, value in sim_data.mass.getBiomassAsConcentrations(sim_data.doubling_time).iteritems():
+		for key, value in six.viewitems(sim_data.mass.getBiomassAsConcentrations(sim_data.doubling_time)):
 			metaboliteIDs.append(key)
 			metaboliteConcentrations.append(value.asNumber(METABOLITE_CONCENTRATION_UNITS))
 
@@ -205,6 +216,14 @@ class Metabolism(object):
 				if col not in relative_changes:
 					relative_changes[col] = {}
 				relative_changes[col][met_id] = value
+
+		## Add manually curated values for other media
+		for media, data in RELATIVE_CHANGES.items():
+			if media not in relative_changes:
+				relative_changes[media] = {}
+			for met, change in data.items():
+				if met not in relative_changes[media]:
+					relative_changes[media][met] = change
 
 		# save concentrations as class variables
 		unique_ids, counts = np.unique(metaboliteIDs, return_counts=True)
@@ -383,7 +402,7 @@ class Metabolism(object):
 			]
 
 	def getKineticConstraints(self, enzymes, substrates):
-		# type: (np.ndarray, np.ndarray) -> np.ndarray
+		# type: (units.Unum, units.Unum) -> units.Unum
 		'''
 		Allows for dynamic code generation for kinetic constraint calculation
 		for use in Metabolism process. Inputs should be unitless but the order
@@ -398,54 +417,52 @@ class Metabolism(object):
 
 		Args:
 			enzymes: concentrations of enzymes associated with kinetic
-				constraints
+				constraints (mol / volume units)
 			substrates: concentrations of substrates associated with kinetic
-				constraints
+				constraints (mol / volume units)
 
 		Returns:
 			(n reactions, 3): min, mean and max kinetic constraints for each
-				reaction with kinetic constraints
+				reaction with kinetic constraints (mol / volume / time units)
 		'''
-
 
 		if self._compiled_enzymes is None:
 			self._compiled_enzymes = eval('lambda e: {}'.format(self._enzymes))
 		if self._compiled_saturation is None:
 			self._compiled_saturation = eval('lambda s: {}'.format(self._saturations))
 
-		capacity = np.array(self._compiled_enzymes(enzymes))[:, None] * self._kcats
+		# Strip units from args
+		enzs = enzymes.asNumber(KINETIC_CONSTRAINT_CONC_UNITS)
+		subs = substrates.asNumber(KINETIC_CONSTRAINT_CONC_UNITS)
+
+		capacity = np.array(self._compiled_enzymes(enzs))[:, None] * self._kcats
 		saturation = np.array([
 			[min(v), sum(v) / len(v), max(v)]
-			for v in self._compiled_saturation(substrates)
+			for v in self._compiled_saturation(subs)
 			])
 
-		return capacity * saturation
+		return KINETIC_CONSTRAINT_CONC_UNITS * K_CAT_UNITS * capacity * saturation
 
-	def exchangeConstraints(self, exchangeIDs, coefficient, targetUnits, currentNutrients, exchange_data, concModificationsBasedOnCondition = None):
+	def exchangeConstraints(self, exchangeIDs, coefficient, targetUnits, currentNutrients, unconstrained, constrained, concModificationsBasedOnCondition = None):
 		"""
 		Called during Metabolism process
 		Returns the homeostatic objective concentrations based on the current nutrients
 		Returns levels for external molecules available to exchange based on the current nutrients
 		"""
 
-		unconstrained_exchange_molecules = exchange_data["importUnconstrainedExchangeMolecules"]
-		constrained_exchange_molecules = exchange_data["importConstrainedExchangeMolecules"]
-
 		newObjective = self.concentrationUpdates.concentrationsBasedOnNutrients(
 			media_id=currentNutrients, conversion_units=targetUnits)
 		if concModificationsBasedOnCondition is not None:
-			conversion = targetUnits.asUnit(self.concentrationUpdates.units)
-			newObjective.update({k: (v / conversion).asNumber()
-				for k, v in concModificationsBasedOnCondition.items()})
+			newObjective.update(concModificationsBasedOnCondition)
 
 		externalMoleculeLevels = np.zeros(len(exchangeIDs), np.float64)
 
 		for index, moleculeID in enumerate(exchangeIDs):
-			if moleculeID in unconstrained_exchange_molecules:
+			if moleculeID in unconstrained:
 				externalMoleculeLevels[index] = np.inf
-			elif moleculeID in constrained_exchange_molecules:
+			elif moleculeID in constrained:
 				externalMoleculeLevels[index] = (
-					constrained_exchange_molecules[moleculeID] * coefficient
+					constrained[moleculeID] * coefficient
 					).asNumber(targetUnits)
 			else:
 				externalMoleculeLevels[index] = 0.
@@ -574,7 +591,7 @@ class Metabolism(object):
 			catalysts_for_this_rxn = []
 			for catalyst in reaction["catalyzed by"]:
 				try:
-					catalysts_with_loc = (catalyst + "[" + sim_data.getter.getLocation([catalyst])[0][0] + "]").encode("utf-8")
+					catalysts_with_loc = catalyst + sim_data.getter.get_location_tag(catalyst)
 					catalysts_for_this_rxn.append(catalysts_with_loc)
 				# If we don't have the catalyst in our reconstruction, drop it
 				except KeyError:
@@ -590,7 +607,7 @@ class Metabolism(object):
 				reverse_reaction_id = REVERSE_REACTION_ID.format(reaction_id)
 				reaction_stoich[reverse_reaction_id] = {
 					moleculeID:-stoichCoeff
-					for moleculeID, stoichCoeff in reaction_stoich[reaction_id].viewitems()
+					for moleculeID, stoichCoeff in six.viewitems(reaction_stoich[reaction_id])
 					}
 
 				reversible_reactions.append(reaction_id)
@@ -707,7 +724,7 @@ class Metabolism(object):
 
 		if isinstance(temp, str):
 			temp = 25
-		return 2**((37. - temp) / 10.) * kcat.asNumber(1 / units.s)
+		return 2**((37. - temp) / 10.) * kcat.asNumber(K_CAT_UNITS)
 
 	@staticmethod
 	def _construct_default_saturation_equation(mets, kms, kis, known_mets):
@@ -925,8 +942,8 @@ class Metabolism(object):
 			enzyme = constraint['enzymeID']
 			metabolites = constraint['substrateIDs']
 			direction = constraint['direction']
-			kms = list(constraint['kM'].asNumber(MICROMOLAR_UNITS))
-			kis = list(constraint['kI'].asNumber(MICROMOLAR_UNITS))
+			kms = list(constraint['kM'].asNumber(KINETIC_CONSTRAINT_CONC_UNITS))
+			kis = list(constraint['kI'].asNumber(KINETIC_CONSTRAINT_CONC_UNITS))
 			n_reactants = len(metabolites) - len(kis)
 			matched_rxn = Metabolism.match_reaction(stoich, catalysts, rxn, enzyme,
 				metabolites[:n_reactants], direction)
@@ -1166,7 +1183,7 @@ class Metabolism(object):
 # Class used to update metabolite concentrations based on the current nutrient conditions
 class ConcentrationUpdates(object):
 	def __init__(self, concDict, relative_changes, equilibriumReactions, exchange_data_dict):
-		self.units = units.getUnit(concDict.values()[0])
+		self.units = units.getUnit(list(concDict.values())[0])
 		self.defaultConcentrationsDict = dict((key, concDict[key].asNumber(self.units)) for key in concDict)
 		self.exchange_fluxes = self._exchange_flux_present(exchange_data_dict)
 		self.relative_changes = relative_changes
@@ -1224,7 +1241,7 @@ class ConcentrationUpdates(object):
 
 			# Adjust for concentration changes based on presence in media
 			exchanges = self.exchange_fluxes[media_id]
-			for moleculeName, setAmount in self.moleculeSetAmounts.iteritems():
+			for moleculeName, setAmount in six.viewitems(self.moleculeSetAmounts):
 				if ((moleculeName in exchanges and (moleculeName[:-3] + "[c]" not in self.moleculeScaleFactors or moleculeName == "L-SELENOCYSTEINE[c]"))
 						or (moleculeName in self.moleculeScaleFactors and moleculeName[:-3] + "[p]" in exchanges)):
 					if conversion_units:
@@ -1265,11 +1282,11 @@ class ConcentrationUpdates(object):
 			if len(reaction["stoichiometry"]) != 3:
 				continue
 
-			moleculeName = [x["molecule"].encode("utf-8") for x in reaction["stoichiometry"] if x["type"] == "metabolite"][0]
+			moleculeName = [x["molecule"] for x in reaction["stoichiometry"] if x["type"] == "metabolite"][0]
 			amountToSet = 1e-4
 			moleculeSetAmounts[moleculeName + "[p]"] = amountToSet * self.units
 			moleculeSetAmounts[moleculeName + "[c]"] = amountToSet * self.units
 
-		for moleculeName, scaleFactor in self.moleculeScaleFactors.iteritems():
+		for moleculeName, scaleFactor in six.viewitems(self.moleculeScaleFactors):
 			moleculeSetAmounts[moleculeName] = scaleFactor * concDict[moleculeName] * self.units
 		return moleculeSetAmounts

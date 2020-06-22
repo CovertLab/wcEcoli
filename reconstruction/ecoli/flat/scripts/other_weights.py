@@ -13,11 +13,12 @@ import os
 from collections import OrderedDict
 
 import numpy as np
+import six
 
-from reconstruction.spreadsheets import JsonWriter, JsonReader, read_tsv
+from reconstruction.spreadsheets import JsonReader, read_tsv, tsv_writer
 
 def flip_dict(dct):
-	return {value:key for key, value in dct.viewitems()}
+	return {value:key for key, value in six.viewitems(dct)}
 
 KEY = "id"
 
@@ -200,8 +201,8 @@ DISABLED = { # complexes we don't form for modeling reasons
 	}
 
 IGNORED = (
-	SUBUNIT_PROENZYME.viewkeys()
-	| MODIFIED_FORM.viewkeys()
+	six.viewkeys(SUBUNIT_PROENZYME)
+	| six.viewkeys(MODIFIED_FORM)
 	| NONSPECIFIC_METABOLITES
 	| UNIDENTIFIED_GENE
 	| MISC_OR_UNEXPLAINED
@@ -334,13 +335,13 @@ poly.append({
 species_weights = {}
 
 met_index = MW_KEYS.index("metabolite")
-for key, value in met.viewitems():
+for key, value in six.viewitems(met):
 	w = np.zeros(N_MW)
 	w[met_index] = value["mw7.2"]
 	species_weights[key] = np.array(w)
 
 water_index = MW_KEYS.index("water")
-for key, value in water.viewitems():
+for key, value in six.viewitems(water):
 	w = np.zeros(N_MW)
 	w[water_index] = value["mw7.2"]
 	species_weights[key] = np.array(value["mw7.2"])
@@ -351,11 +352,9 @@ del water
 with open(POLY_FILE, "r") as f:
 	reader = JsonReader(f)
 	fieldnames = reader.fieldnames
+	assert fieldnames
 
-with open(POLY_FILE, "w") as f:
-	writer = JsonWriter(f, fieldnames)
-
-	writer.writeheader()
+with tsv_writer(POLY_FILE, fieldnames) as writer:
 	writer.writerows(poly)
 
 del poly
@@ -365,10 +364,11 @@ del poly
 with open(RNA_FILE, "r") as f:
 	reader = JsonReader(f)
 	fieldnames = reader.fieldnames
+	assert fieldnames
 
 	rna_data = lod_to_dod(reader, KEY)
 
-for rna_id, rna_entry in rna_data.viewitems():
+for rna_id, rna_entry in six.viewitems(rna_data):
 	new_weight = ntp_terminal_weight + np.dot(ntp_weights, rna_entry["ntCount"])
 
 	mw = rna_entry["mw"]
@@ -379,10 +379,7 @@ for rna_id, rna_entry in rna_data.viewitems():
 	mw[weight_index] = new_weight
 	species_weights[rna_id] = np.array(mw)
 
-with open(RNA_FILE, "w") as f:
-	writer = JsonWriter(f, fieldnames)
-	writer.writeheader()
-
+with tsv_writer(RNA_FILE, fieldnames) as writer:
 	for key in sorted(rna_data.keys()):
 		writer.writerow(rna_data[key])
 
@@ -393,12 +390,13 @@ del rna_data
 with open(PROT_FILE, "r") as f:
 	reader = JsonReader(f)
 	fieldnames = reader.fieldnames
+	assert fieldnames
 
 	prot_data = lod_to_dod(reader, KEY)
 
 prot_loc = {}
 
-for prot_id, prot_entry in prot_data.viewitems():
+for prot_id, prot_entry in six.viewitems(prot_data):
 	aa_counts = np.zeros(aa_weights.size, np.int64)
 	for c in prot_entry["seq"]:
 		aa_counts[AA_SYM_ORDER[c]] += 1
@@ -416,10 +414,7 @@ for prot_id, prot_entry in prot_data.viewitems():
 
 	prot_loc[prot_id] = prot_entry["location"][0]
 
-with open(PROT_FILE, "w") as f:
-	writer = JsonWriter(f, fieldnames)
-	writer.writeheader()
-
+with tsv_writer(PROT_FILE, fieldnames) as writer:
 	for key in sorted(prot_data.keys()):
 		writer.writerow(prot_data[key])
 
@@ -430,6 +425,7 @@ del prot_data
 with open(COMP_FILE, "r") as f:
 	reader = JsonReader(f)
 	fieldnames = reader.fieldnames
+	assert fieldnames
 
 	comp_data = lod_to_dod(reader, KEY)
 
@@ -441,19 +437,19 @@ bad_rxns = set()
 while comp_rxns:
 	to_remove = set()
 
-	for comp_rxn_id, comp_rxn in comp_rxns.viewitems():
+	for comp_rxn_id, comp_rxn in six.viewitems(comp_rxns):
 		stoich = {s["molecule"]:s["coeff"] for s in comp_rxn["stoichiometry"]}
 
-		subunits = set(mid for mid, c in stoich.viewitems() if c < 0)
+		subunits = set(mid for mid, c in six.viewitems(stoich) if c < 0)
 
-		(comp_id,) = [mid for mid, c in stoich.viewitems() if c > 0]
+		(comp_id,) = [mid for mid, c in six.viewitems(stoich) if c > 0]
 
 		if (subunits & IGNORED) or comp_id in IGNORED:
 			bad_rxns.add(comp_rxn_id)
 			to_remove.add(comp_rxn_id)
 			continue
 
-		if subunits <= set(species_weights.viewkeys()):
+		if subunits <= set(six.viewkeys(species_weights)):
 			weight = np.zeros(N_MW)
 			for subunit in subunits:
 				weight += -stoich[subunit] * species_weights[subunit]
@@ -495,16 +491,13 @@ while comp_rxns:
 	if len(to_remove) == 0:
 		unrecognized_subunits = {
 			s["molecule"]
-			for comp_rxn in comp_rxns.viewvalues()
+			for comp_rxn in six.viewvalues(comp_rxns)
 			for s in comp_rxn["stoichiometry"]
-			} - species_weights.viewkeys() - comp_data.viewkeys()
+			} - six.viewkeys(species_weights) - six.viewkeys(comp_data)
 
 		raise Exception("{} unrecognized subunits: {}".format(len(unrecognized_subunits), "\n".join(unrecognized_subunits)))
 
-with open(COMP_FILE, "w") as f:
-	writer = JsonWriter(f, fieldnames)
-	writer.writeheader()
-
+with tsv_writer(COMP_FILE, fieldnames) as writer:
 	for key in sorted(comp_data.keys()):
 		writer.writerow(comp_data[key])
 
@@ -513,6 +506,7 @@ with open(COMP_FILE, "w") as f:
 with open(COMP_RXN_FILE, "r") as f:
 	reader = JsonReader(f)
 	rxn_fieldnames = reader.fieldnames
+	assert rxn_fieldnames
 
 	comp_rxns = lod_to_dod(reader, KEY)
 
@@ -520,12 +514,10 @@ with open(EQUI_RXNS_FILE, "r") as f:
 	reader = JsonReader(f)
 
 	fn = reader.fieldnames
+	assert fn
 	equi_rxns = lod_to_dod(reader, KEY)
 
-with open(COMP_RXN_OUT, "w") as f:
-	writer = JsonWriter(f, rxn_fieldnames)
-	writer.writeheader()
-
+with tsv_writer(COMP_RXN_OUT, rxn_fieldnames) as writer:
 	for key in sorted(comp_rxns.keys()):
 		if key not in bad_rxns and key not in equi_rxns:
 			for molecule in comp_rxns[key]["stoichiometry"]:
@@ -538,10 +530,7 @@ with open(COMP_RXN_OUT, "w") as f:
 
 			writer.writerow(comp_rxns[key])
 
-with open(EQUI_RXNS_FILE, "w") as f:
-	writer = JsonWriter(f, fn)
-	writer.writeheader()
-
+with tsv_writer(EQUI_RXNS_FILE, fn) as writer:
 	for rxn_id in sorted(equi_rxns.keys()):
 		entry = equi_rxns[rxn_id]
 

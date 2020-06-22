@@ -15,12 +15,14 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import sys
-import time
-
-import numpy as np
 from typing import Callable, List
 
+import numpy as np
+from six.moves import range
+
 from wholecell.io.tablereader import TableReader
+from wholecell.utils.py3 import monotonic_seconds
+
 
 ITERS = 10
 BLOCK_SIZE = 5000  # roughly number of proteins or RNA
@@ -38,10 +40,10 @@ def test_method(method, text):
 	'''
 
 	counts = np.array([])
-	start = time.time()
+	start = monotonic_seconds()
 	for i in range(ITERS):
 		counts = method()
-	end = time.time()
+	end = monotonic_seconds()
 
 	print('\t{}: {:.3f} s'.format(text, end - start))
 
@@ -147,12 +149,12 @@ def test_performance(sim_out_dir):
 		'counts', indices)
 
 	## Large block
-	indices = np.array(range(BLOCK_SIZE))
+	indices = np.array(list(range(BLOCK_SIZE)))
 	test_functions(two_functions, 'Block indices into', bulk_molecules,
 		'counts', indices)
 
 	## 2 Large blocks
-	indices = np.array(range(BLOCK_SIZE) + range(n_mols)[-BLOCK_SIZE:])
+	indices = np.array(list(range(BLOCK_SIZE)) + list(range(n_mols))[-BLOCK_SIZE:])
 	test_functions(two_functions, 'Two blocks of indices into', bulk_molecules,
 		'counts', indices)
 
@@ -162,14 +164,14 @@ def test_performance(sim_out_dir):
 		'counts', indices)
 
 	## Random reads
-	indices = np.array(range(n_mols))
+	indices = np.array(list(range(n_mols)))
 	np.random.shuffle(indices)
 	indices = indices[:BLOCK_SIZE]
 	test_functions(two_functions, 'Random indices into', bulk_molecules,
 		'counts', indices)
 
 	## All indices, same large column as most of these tests
-	indices = np.array(range(n_mols))
+	indices = np.array(list(range(n_mols)))
 	test_functions(three_functions, 'All indices into', bulk_molecules,
 		'counts', indices)
 
@@ -178,7 +180,7 @@ def test_performance(sim_out_dir):
 	# the atpRequested table. Check after timing; beforehand could preload the
 	# disk cache.
 	n_processes = len(bulk_molecules.readAttribute('processNames'))
-	indices = np.array(range(n_processes))
+	indices = np.array(list(range(n_processes)))
 	a = test_functions(three_functions, 'All indices, narrow column', bulk_molecules,
 		'atpRequested', indices)
 	if a.shape[1] != n_processes:

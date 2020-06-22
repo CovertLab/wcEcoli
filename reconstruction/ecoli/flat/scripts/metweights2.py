@@ -5,8 +5,9 @@ import re
 from typing import Dict
 
 from Bio.Data.IUPACData import atom_weights
+import six
 
-from reconstruction.spreadsheets import JsonWriter
+from reconstruction.spreadsheets import tsv_writer
 
 # Constants
 
@@ -48,22 +49,20 @@ for line in open(SOURCE):
 		no_formula.add(molecule_name)
 
 weights = {
-	molecule_name:sum(count * round(atom_weights[atom_name], NDIGITS) for atom_name, count in formula.viewitems())
-	for molecule_name, formula in formulas.viewitems()
+	molecule_name:sum(count * round(atom_weights[atom_name], NDIGITS) for atom_name, count in six.viewitems(formula))
+	for molecule_name, formula in six.viewitems(formulas)
 	}
 
 # Add misc. species
-for molecule_name, stoich in ADDED_SPECIES.viewitems():
+for molecule_name, stoich in six.viewitems(ADDED_SPECIES):
 	assert molecule_name not in weights
 	weights[molecule_name] = sum(
-		coeff * weights[mol] for mol, coeff in stoich.viewitems()
+		coeff * weights[mol] for mol, coeff in six.viewitems(stoich)
 		)
 
 # Write out metabolites
-with open(OUTPUT_METS, "w") as out:
-	writer = JsonWriter(out, ["id", "mw7.2", "location"])
-	writer.writeheader()
-	for molecule_name, weight in weights.viewitems():
+with tsv_writer(OUTPUT_METS, ["id", "mw7.2", "location"]) as writer:
+	for molecule_name, weight in six.viewitems(weights):
 		if molecule_name == "WATER":
 			continue
 
@@ -74,10 +73,8 @@ with open(OUTPUT_METS, "w") as out:
 			})
 
 # Write out water
-with open(OUTPUT_WATER, "w") as out:
-	writer = JsonWriter(out, ["id", "mw7.2", "location"])
-	writer.writeheader()
-	for molecule_name, weight in weights.viewitems():
+with tsv_writer(OUTPUT_WATER, ["id", "mw7.2", "location"]) as writer:
+	for molecule_name, weight in six.viewitems(weights):
 		if molecule_name != "WATER":
 			continue
 

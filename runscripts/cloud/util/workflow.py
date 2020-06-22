@@ -12,6 +12,7 @@ import os
 import posixpath
 import re
 import sys
+import six
 if os.name == 'posix' and sys.version_info[0] < 3:
 	import subprocess32 as subprocess2
 	subprocess = subprocess2
@@ -28,6 +29,7 @@ from future.utils import raise_with_traceback
 import ruamel.yaml as yaml
 
 from wholecell.utils import filepath as fp
+from wholecell.utils.py3 import ANY_STRING
 
 
 STDOUT_PATH = '>'    # special path that captures stdout + stderror
@@ -51,11 +53,12 @@ def _keyify(paths, fn=lambda path: path):
 def _copy_as_list(value):
 	# type: (Iterable[str]) -> List[str]
 	"""Copy an iterable of strings as a list. Fail fast on improper input."""
-	assert isinstance(value, Iterable) and not isinstance(value, basestring), (
-		'Expected a list, not {}'.format(repr(value)))
+
+	assert isinstance(value, Iterable) and not isinstance(value, ANY_STRING), (
+		'Expected a list, not {!r}'.format(value))
 	result = list(value)
 	for s in result:
-		assert isinstance(s, basestring), 'Expected a string, not {}'.format(s)
+		assert isinstance(s, ANY_STRING), 'Expected a string, not {!r}'.format(s)
 	return result
 
 def _copy_path_list(value, internal_prefix, is_output=False):
@@ -383,10 +386,10 @@ class Workflow(object):
 		"""Build all the FireWorks `Firework` objects for the workflow."""
 		built = OrderedDict()  # type: Dict[str, Firework]
 
-		for task in self._tasks.itervalues():
+		for task in six.viewvalues(self._tasks):
 			self._build_firework(task, built)
 
-		return built.values()
+		return list(built.values())
 
 	def build_workflow(self):
 		# type: () -> FwWorkflow
