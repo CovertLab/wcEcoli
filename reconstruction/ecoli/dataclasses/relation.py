@@ -230,9 +230,9 @@ class Relation(object):
 		'''
 		for index, row in enumerate(self.monomer_to_mrna_transform):
 				if sum(row) < 1:
-					print "Row " + str(index) + " is less than 1: " + str(sum(row))
+					print("Row " + str(index) + " is less than 1: " + str(sum(row)))
 				elif sum(row) > 1:
-					print "Row " + str(index) + " is greater than 1: " + str(sum(row))
+					print("Row " + str(index) + " is greater than 1: " + str(sum(row)))
 		return
 
 	def _buildMonomerIndexToRnaMapping(self, raw_data, sim_data):
