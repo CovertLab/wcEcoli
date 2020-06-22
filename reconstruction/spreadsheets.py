@@ -27,9 +27,13 @@ def comment_line(line):
 	# type: (str) -> bool
 	return line.lstrip().startswith('#')
 
-def read_tsv(filename):
-	# type: (str) -> Sequence[Dict[str, Any]]
-	"""Read an entire .tsv file using JsonReader/DictReader."""
+
+@contextmanager
+def tsv_reader(filename):
+	# type: (str) -> Iterator[JsonReader]
+	"""A context manager that opens a TSV JsonReader on the given filename with
+	an input filter to skip comment lines.
+	"""
 	# ########################################################################
 	# NOTE: Python 3 csv requires opening the file as text 'r' with the right
 	# character encoding while Python 2 csv requires opening it as bytes 'rb'
@@ -42,6 +46,13 @@ def read_tsv(filename):
 	newline = None if six.PY2 else ''
 	with io.open(filename, mode=mode, encoding=encoding, newline=newline) as fh:
 		reader = JsonReader(filterfalse(comment_line, fh), dialect=CSV_DIALECT)
+		yield reader
+
+
+def read_tsv(filename):
+	# type: (str) -> Sequence[Dict[str, Any]]
+	"""Read an entire .tsv file using JsonReader and skip comment lines."""
+	with tsv_reader(filename) as reader:
 		return list(reader)
 
 
@@ -150,11 +161,15 @@ class JsonReader(csv.DictReader, object):
 
 	def _decode_row(self, row_dict):
 		# type: (Dict[str, str]) -> Dict[str, Any]
-		"""Decode a DictReader row."""
+		"""Decode a DictReader row.
+
+		NOTE: Each returned row contains unicode/str keys and values, but
+		self.fieldnames contains UTF-8 `bytes` in Python 2.
+		"""
 		attributeDict = {}  # type: Dict[Text, Any]
 		for key_, raw_value_ in six.viewitems(row_dict):
 			# NOTE: Decoding UTF-8 bytes would be safer between DictReader and
-			# its csv.reader as in csv32, but this is much simpler.
+			# its csv.reader as in csv32, but this is simpler.
 			if six.PY2:
 				key = cast(bytes, key_).decode('utf-8')
 				raw_value = cast(bytes, raw_value_ or '').decode('utf-8')

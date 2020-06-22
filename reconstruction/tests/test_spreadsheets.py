@@ -6,9 +6,13 @@ import os
 import six
 import unittest
 
-from reconstruction.spreadsheets import JsonReader, JsonWriter, read_tsv
+from reconstruction.spreadsheets import JsonReader, JsonWriter, read_tsv, tsv_reader
 from wholecell.utils import units
 
+
+JAVIER_TABLE = os.path.join(
+	'validation', 'ecoli', 'flat', 'schmidt2015_javier_table.tsv')
+CHEMOSTAT_20 = b'Chemostat \xc2\xb5=0.20'.decode('utf-8')
 
 FIELD_NAMES = ['id', 'ourLocation', u'\u20ac:xyz', 'mass (units.g)']
 UNITLESS_FIELD_NAMES = FIELD_NAMES[:-1] + ['mass']
@@ -37,10 +41,26 @@ class Test_Spreadsheets(unittest.TestCase):
 			'mass': 12 * units.g}
 		assert set(l[0].keys()) == set(UNITLESS_FIELD_NAMES)
 
+	def test_tsv_reader(self):
+		with tsv_reader(JAVIER_TABLE) as reader:
+			fieldnames = reader.fieldnames
+			assert fieldnames[0] == 'EcoCycID'
+			assert fieldnames[-1] == 'Fructose'
+			row1 = next(reader)
+
+		assert row1['EcoCycID'] == 'EG10001'
+		assert row1[CHEMOSTAT_20] == 9
+		assert CHEMOSTAT_20 in row1
+
+		if six.PY2:
+			# reader.fieldnames contains UTF-8 `bytes`. rows keys are unicode strings.
+			assert CHEMOSTAT_20.encode('utf-8') in fieldnames
+		else:
+			assert CHEMOSTAT_20 in fieldnames
+
 	def test_read_tsv(self):
-		filename = os.path.join('validation', 'ecoli', 'flat', 'schmidt2015_javier_table.tsv')
-		entries = read_tsv(filename)
-		assert b'Chemostat \xc2\xb5=0.20'.decode('utf-8') in entries[0]
+		entries = read_tsv(JAVIER_TABLE)
+		assert CHEMOSTAT_20 in entries[0]
 
 	def test_json_writer(self):
 		byte_stream = BytesIO()

@@ -1,4 +1,4 @@
-.PHONY: compile, clean
+.PHONY: compile, clean, recompile
 
 compile:
 	python setup.py build_ext --inplace
@@ -15,3 +15,9 @@ clean:
 	find . -name "*.so" -exec rm -fr {} \;
 	rm -fr build
 	rm -fr launcher_20* block_20*
+
+# Delete just the *.so libraries then (re)compile them.
+# This is useful when switching to a different Python virtualenv.
+recompile:
+	find . -name "*.so" -delete
+	make compile
