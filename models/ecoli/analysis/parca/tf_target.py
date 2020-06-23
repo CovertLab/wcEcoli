@@ -7,8 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import bokeh.io
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
-	WheelZoomTool, UndoTool, RedoTool)
+from bokeh.models import HoverTool
 
 from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -79,7 +78,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		source = ColumnDataSource(data=dict(x=x, y=y[sortedIdxs], targetId=targetIds, tfId=tfs, condition=conditions))
 		hover = HoverTool(tooltips = [("target", "@targetId"), ("TF", "@tfId"), ("condition", "@condition")])
-		tools = [hover, BoxZoomTool(), LassoSelectTool(), PanTool(), WheelZoomTool(), UndoTool(), RedoTool(), "reset"]
+		tools = [hover, 'box_zoom', 'lasso_select', 'pan', 'wheel_zoom', 'undo', 'redo', 'reset']
 		plot = figure(x_axis_label=xlabel, y_axis_label=ylabel, width=800, height=500, tools=tools)
 
 		plot.scatter("x", "y", source=source)

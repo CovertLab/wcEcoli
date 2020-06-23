@@ -2,7 +2,6 @@
 Compare fluxes in simulation to target fluxes
 
 @date: Created 12/15/16
-@author: Travis Horst
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
@@ -17,8 +16,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import bokeh.io
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
-	WheelZoomTool, UndoTool, RedoTool)
+from bokeh.models import HoverTool
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -161,14 +159,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				("Reaction", "@reactionName"),
 				]
 			)
-		tools = [hover,
-			BoxZoomTool(),
-			LassoSelectTool(),
-			PanTool(),
-			WheelZoomTool(),
-			UndoTool(),
-			RedoTool(),
-			"reset",
+		tools = [
+			hover,
+			'box_zoom',
+			'lasso_select',
+			'pan',
+			'wheel_zoom',
+			'undo',
+			'redo',
+			'reset',
 			]
 		p1 = figure(
 			x_axis_label="Target",
@@ -190,14 +189,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				("Reaction", "@reactionName"),
 				]
 			)
-		tools2 = [hover2,
-			BoxZoomTool(),
-			LassoSelectTool(),
-			PanTool(),
-			WheelZoomTool(),
-			UndoTool(),
-			RedoTool(),
-			"reset",
+		tools2 = [
+			hover2,
+			'box_zoom',
+			'lasso_select',
+			'pan',
+			'wheel_zoom',
+			'undo',
+			'redo',
+			'reset',
 			]
 		p2 = figure(
 			x_axis_label="Time(s)",

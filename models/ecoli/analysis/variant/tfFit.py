@@ -6,8 +6,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import bokeh.io
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
-	WheelZoomTool, UndoTool, RedoTool, Panel, Tabs)
+from bokeh.models import HoverTool, Panel, Tabs
 
 from six.moves import cPickle
 import scipy.stats
@@ -142,7 +141,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			condition=targetCondition,
 			))
 		hover1 = HoverTool(tooltips=[("ID", "@ID"), ("condition", "@condition")])
-		tools1 = [hover1, BoxZoomTool(), LassoSelectTool(), PanTool(), WheelZoomTool(), UndoTool(), RedoTool(), "reset"]
+		tools1 = [hover1, 'box_zoom', 'lasso_select', 'pan', 'wheel_zoom', 'undo', 'redo', 'reset']
 		s1 = figure(
 			x_axis_label="log10(Expected probability bound)",
 			y_axis_label="log10(Simulated probability bound)",
@@ -164,7 +163,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			condition=targetCondition,
 			))
 		hover2 = HoverTool(tooltips=[("ID", "@ID"), ("condition", "@condition")])
-		tools2 = [hover2, BoxZoomTool(), LassoSelectTool(), PanTool(), WheelZoomTool(), UndoTool(), RedoTool(), "reset"]
+		tools2 = [hover2, 'box_zoom', 'lasso_select', 'pan', 'wheel_zoom', 'undo', 'redo', 'reset']
 		s2 = figure(
 			x_axis_label="log10(Expected synthesis probability)",
 			y_axis_label="log10(Simulated synthesis probability)",
@@ -229,7 +228,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			np.log10(expectedSynthProb).max(),
 			np.log10(simulatedSynthProb).max()))
 		hover3 = HoverTool(tooltips=[("ID", "@ID"), ("condition", "@condition")])
-		tools3 = [hover3, BoxZoomTool(), LassoSelectTool(), PanTool(), WheelZoomTool(), UndoTool(), RedoTool(), "reset"]
+		tools3 = [hover3, 'box_zoom', 'lasso_select', 'pan', 'wheel_zoom', 'undo', 'redo', 'reset']
 
 		tabs = []
 		data = [
