@@ -2,11 +2,12 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-import numpy as np
-from matplotlib import pyplot as plt
 import bokeh.io
-from bokeh.plotting import figure, ColumnDataSource
+import bokeh.io.state
 from bokeh.models import HoverTool, Panel, Tabs
+from bokeh.plotting import figure, ColumnDataSource
+from matplotlib import pyplot as plt
+import numpy as np
 
 from six.moves import cPickle
 import scipy.stats

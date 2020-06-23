@@ -3,11 +3,12 @@ from __future__ import absolute_import, division, print_function
 from six.moves import cPickle
 import os
 
-import numpy as np
-from matplotlib import pyplot as plt
 import bokeh.io
-from bokeh.plotting import figure, ColumnDataSource
+import bokeh.io.state
 from bokeh.models import HoverTool
+from bokeh.plotting import figure, ColumnDataSource
+from matplotlib import pyplot as plt
+import numpy as np
 
 from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure

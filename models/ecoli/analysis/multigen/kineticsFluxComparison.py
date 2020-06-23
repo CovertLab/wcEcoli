@@ -12,21 +12,23 @@ from six.moves import cPickle
 import csv
 import re
 
-import numpy as np
-from matplotlib import pyplot as plt
 import bokeh.io
-from bokeh.plotting import figure, ColumnDataSource
+import bokeh.io.state
+import bokeh.layouts
 from bokeh.models import HoverTool
+from bokeh.plotting import figure, ColumnDataSource
+from matplotlib import pyplot as plt
+import numpy as np
 
+from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
+from wholecell.analysis.analysis_tools import exportFigure
+from wholecell.analysis.plotting_tools import COLORS_LARGE
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath, units
 from wholecell.utils.sparkline import whitePadSparklineAxis
-from wholecell.analysis.plotting_tools import COLORS_LARGE
 
-from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
-from wholecell.analysis.analysis_tools import exportFigure
-from models.ecoli.analysis import multigenAnalysisPlot
 from six.moves import zip
 
 

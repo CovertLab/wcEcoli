@@ -10,11 +10,12 @@ from __future__ import absolute_import, division, print_function
 import os
 from six.moves import cPickle
 
-import numpy as np
-import matplotlib.pyplot as plt
-from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import HoverTool
 import bokeh.io
+import bokeh.io.state
+from bokeh.models import HoverTool
+from bokeh.plotting import figure, ColumnDataSource
+import matplotlib.pyplot as plt
+import numpy as np
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.analysis import multigenAnalysisPlot
