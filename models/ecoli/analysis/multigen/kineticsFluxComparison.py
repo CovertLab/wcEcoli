@@ -31,6 +31,7 @@ from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
 from six.moves import zip
 
+
 BURN_IN_STEPS = 20
 
 

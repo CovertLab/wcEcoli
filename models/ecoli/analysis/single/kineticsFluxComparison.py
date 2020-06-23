@@ -18,7 +18,7 @@ from matplotlib import pyplot as plt
 import bokeh.io
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import (HoverTool, BoxZoomTool, LassoSelectTool, PanTool,
-	WheelZoomTool, ResizeTool, UndoTool, RedoTool)
+	WheelZoomTool, UndoTool, RedoTool)
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath, units
@@ -29,6 +29,7 @@ from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_U
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
 from six.moves import zip
+
 
 BURN_IN_STEPS = 20
 
@@ -156,54 +157,33 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				y = actualAve,
 				reactionName = kineticsConstrainedReactions)
 			)
-
 		hover = HoverTool(
 			tooltips = [
 				("Reaction", "@reactionName"),
 				]
 			)
-
-		TOOLS = [hover,
+		tools = [hover,
 			BoxZoomTool(),
 			LassoSelectTool(),
 			PanTool(),
 			WheelZoomTool(),
-			ResizeTool(),
 			UndoTool(),
 			RedoTool(),
 			"reset",
 			]
-
-		p1 = figure(x_axis_label = "Target",
-			x_axis_type = "log",
-			x_range = [min(targetAve[targetAve > 0]), max(targetAve)],
-			y_axis_label = "Actual",
-			y_axis_type = "log",
-			y_range = [min(actualAve[actualAve > 0]), max(actualAve)],
-			width = 800,
-			height = 800,
-			tools = TOOLS,
+		p1 = figure(
+			x_axis_label="Target",
+			x_axis_type="log",
+			x_range=[min(targetAve[targetAve > 0]), max(targetAve)],
+			y_axis_label="Actual",
+			y_axis_type="log",
+			y_range=[min(actualAve[actualAve > 0]), max(actualAve)],
+			width=800,
+			height=800,
+			tools=tools,
 			)
-
-		p1.scatter(targetAve, actualAve, source = source, size = 8)
-		p1.line([1e-15, 10], [1e-15, 10], line_color = "red", line_dash = "dashed")
-
-
-		## bar plot of error
-		# sortedReactions = [constrainedReactions[x] for x in np.argsort(aveError)[::-1]]
-		# aveError[np.log10(aveError) == -np.inf] = 0
-
-		# source = ColumnDataSource(
-		# 	data = dict(
-		# 			x = sorted(relError, reverse = True),
-		# 			reactionName = sortedReactions
-		# 		)
-		# 	)
-
-		# p2 = Bar(data, values = "x")
-
-		# hover2 = p2.select(dict(type=HoverTool))
-		# hover2.tooltips = [("Reaction", "@reactionName")]
+		p1.scatter('x', 'y', source=source, size=8)
+		p1.line([1e-15, 10], [1e-15, 10], line_color="red", line_dash="dashed")
 
 		## flux for each reaction
 		hover2 = HoverTool(
@@ -211,25 +191,23 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				("Reaction", "@reactionName"),
 				]
 			)
-
-		TOOLS2 = [hover2,
+		tools2 = [hover2,
 			BoxZoomTool(),
 			LassoSelectTool(),
 			PanTool(),
 			WheelZoomTool(),
-			ResizeTool(),
 			UndoTool(),
 			RedoTool(),
 			"reset",
 			]
-
-		p2 = figure(x_axis_label = "Time(s)",
-			y_axis_label = "Flux",
-			y_axis_type = "log",
-			y_range = [1e-8, 1],
-			width = 800,
-			height = 800,
-			tools = TOOLS2,
+		p2 = figure(
+			x_axis_label="Time(s)",
+			y_axis_label="Flux",
+			y_axis_type="log",
+			y_range=[1e-8, 1],
+			width=800,
+			height=800,
+			tools=tools2,
 			)
 
 		colors = COLORS_LARGE
@@ -244,8 +222,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				y = y,
 				reactionName = reactionName)
 			)
-
-		p2.line(x, y, line_color = colors[0], source = source)
+		p2.line('x', 'y', line_color=colors[0], source=source)
 
 		# Plot remaining metabolites onto initialized figure
 		for m in np.arange(1, actualFluxes.shape[1]):
@@ -258,15 +235,15 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 					y = y,
 					reactionName = reactionName)
 			)
-
-			p2.line(x, y, line_color = colors[m % len(colors)], source = source)
+			p2.line('x', 'y', line_color=colors[m % len(colors)], source=source)
 
 		filepath.makedirs(plotOutDir, "html_plots")
 
-		p = bokeh.io.vplot(p1, p2)
-		bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + ".html"), title=plotOutFileName, autosave=False)
+		# layout = gridplot()
+		p = bokeh.layouts.gridplot([[p1], [p2]])
+		bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + ".html"), title=plotOutFileName)
 		bokeh.io.save(p)
-		bokeh.io.curstate().reset()
+		bokeh.io.state.curstate().reset()
 
 if __name__ == "__main__":
 	Plot().cli()
