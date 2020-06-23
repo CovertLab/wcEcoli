@@ -94,8 +94,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			))
 		plot.scatter("x", "y", source = source)
 
-		out_dir = filepath.makedirs(plotOutDir, "html_plots")
-		bokeh.io.output_file(os.path.join(out_dir, plotOutFileName + ".html"), title=plotOutFileName)
+		html_dir = filepath.makedirs(plotOutDir, "html_plots")
+		bokeh.io.output_file(os.path.join(html_dir, plotOutFileName + ".html"), title=plotOutFileName)
 		bokeh.io.save(plot)
 		bokeh.io.state.curstate().reset()
 

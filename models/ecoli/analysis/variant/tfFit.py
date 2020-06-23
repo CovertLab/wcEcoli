@@ -151,8 +151,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			)
 		s1.scatter("x", "y", source=source1)
 
-		filepath.makedirs(plotOutDir, "html_plots")
-		bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + "__probBound" + ".html"), title=plotOutFileName)
+		html_dir = filepath.makedirs(plotOutDir, "html_plots")
+		bokeh.io.output_file(os.path.join(html_dir, plotOutFileName + "__probBound" + ".html"), title=plotOutFileName)
 		bokeh.io.save(s1)
 
 		# Synthesis probability - hover for ID
@@ -173,11 +173,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			)
 		s2.scatter("x", "y", source=source2)
 
-		bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + "__synthProb" + ".html"), title=plotOutFileName)
+		bokeh.io.output_file(os.path.join(html_dir, plotOutFileName + "__synthProb" + ".html"), title=plotOutFileName)
 		bokeh.io.save(s2)
 
 		# Synthesis probability - filter targets by TF type
-		bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + "__synthProb__interactive" + ".html"), title=plotOutFileName)
+		bokeh.io.output_file(os.path.join(html_dir, plotOutFileName + "__synthProb__interactive" + ".html"), title=plotOutFileName)
 
 		tfTypes = []
 		for i in targetId:

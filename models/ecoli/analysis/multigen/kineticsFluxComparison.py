@@ -236,11 +236,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			)
 			p2.line('x', 'y', line_color=colors[m % len(colors)], source=source)
 
-		filepath.makedirs(plotOutDir, "html_plots")
-
-		# layout = gridplot()
+		html_dir = filepath.makedirs(plotOutDir, "html_plots")
 		p = bokeh.layouts.gridplot([[p1], [p2]])
-		bokeh.io.output_file(os.path.join(plotOutDir, "html_plots", plotOutFileName + ".html"), title=plotOutFileName)
+		bokeh.io.output_file(os.path.join(html_dir, plotOutFileName + ".html"), title=plotOutFileName)
 		bokeh.io.save(p)
 		bokeh.io.state.curstate().reset()
 
