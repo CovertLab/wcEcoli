@@ -146,7 +146,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			x_axis_label="log10(Expected probability bound)",
 			y_axis_label="log10(Simulated probability bound)",
 			width=800,
-			height=500,
+			height=800,
 			tools=tools1,
 			)
 		s1.scatter("x", "y", source=source1)
@@ -168,7 +168,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			x_axis_label="log10(Expected synthesis probability)",
 			y_axis_label="log10(Simulated synthesis probability)",
 			width=800,
-			height=500,
+			height=800,
 			tools=tools2,
 			)
 		s2.scatter("x", "y", source=source2)
@@ -244,7 +244,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			fig = figure(
 				x_axis_label="log10(Expected synthesis probability)",
 				y_axis_label="log10(Simulated synthesis probability)",
-				plot_width=800, plot_height=500,
+				plot_width=800,
+				plot_height=800,
 				x_range=(axis_min, axis_max),
 				y_range=(axis_min, axis_max),
 				tools=tools3,
