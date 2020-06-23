@@ -16,7 +16,6 @@ import io
 import json
 import os
 import time
-from typing import List
 
 from wholecell.utils.filepath import ROOT_PATH
 from wholecell.io import tsv
@@ -45,7 +44,7 @@ if __name__ == '__main__':
 	with io.open(INPUT_FILE, 'rb') as f:
 		print('Reading from {}'.format(f.name))
 		reader = tsv.reader(f, quotechar="'")
-		header = next(reader)  # type: List[str]
+		header = next(reader)
 
 		n_cols = header.index(LAST_COLUMN) + 1  # number of columns to keep
 		enzyme_col = header.index(ENZYME_COLUMN)
@@ -63,7 +62,7 @@ if __name__ == '__main__':
 		header = [h.replace(k, v) for h in header]
 
 	# Sort by reaction ID
-	sorted_data = sorted(data, key=lambda row: row[header.index(SORT_COLUMN)])
+	sorted_data = sorted(data, key=lambda row_: row_[header.index(SORT_COLUMN)])
 
 	# Save output with first column (literature reference) moved to the last column
 	with io.open(OUTPUT_FILE, 'wb') as f:

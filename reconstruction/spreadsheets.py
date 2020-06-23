@@ -28,6 +28,10 @@ def comment_line(line):
 	return line.lstrip().startswith('#')
 
 
+# TODO(jerry): Rename tsv_reader() et al to tsv_json_reader()?
+# TODO(jerry): Implementing this on wholecell.io.tsv.dict_reader/dict_writer
+#  would simplify it, but not as much after we delete the PY2 code.
+
 @contextmanager
 def tsv_reader(filename):
 	# type: (str) -> Iterator[JsonReader]

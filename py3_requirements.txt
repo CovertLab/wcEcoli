@@ -52,7 +52,7 @@ numpy
 scipy
 
 biopython
-bokeh
+bokeh==1.4.0
 borealis-fireworks
 confluent-kafka
 cvxpy

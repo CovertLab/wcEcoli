@@ -74,7 +74,7 @@ class Test_memory_debug(unittest.TestCase):
 			print("Test_memory_debug dropping refs."
 				  " This should log __del__() on {}.".format(nodes[:3]))
 			uncollectable = str(nodes[3:])  # don't retain the Nodes
-			nodes = []
+			nodes[:] = []
 
 			if PEP442:
 				print("Test_memory_debug GC'ing.")
