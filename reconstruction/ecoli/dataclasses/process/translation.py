@@ -55,7 +55,6 @@ class Translation(object):
 
 		lengths = []
 		aaCounts = []
-		sequences = []
 
 		for protein in raw_data.proteins:
 			sequence = protein['seq']
@@ -69,9 +68,6 @@ class Translation(object):
 
 			lengths.append(len(sequence))
 			aaCounts.append(counts)
-			sequences.append(sequence)
-
-		maxSequenceLength = max(len(seq) for seq in sequences)
 
 		mws = np.array([protein['mw'] for protein in raw_data.proteins]).sum(axis = 1)
 
@@ -121,16 +117,17 @@ class Translation(object):
 			else:
 				degRate[i] = slowRate
 
+		id_length = max(len(id_) for id_ in ids)
+		rna_id_length = max(len(id_) for id_ in rnaIds)
 		monomerData = np.zeros(
 			size,
 			dtype = [
-				('id', 'U50'),
-				('rnaId', 'U50'),
+				('id', 'U{}'.format(id_length)),
+				('rnaId', 'U{}'.format(rna_id_length)),
 				('degRate', 'f8'),
 				('length', 'i8'),
 				('aaCounts', '{}i8'.format(nAAs)),
 				('mw', 'f8'),
-				('sequence', 'U{}'.format(maxSequenceLength)),
 				]
 			)
 
@@ -140,7 +137,6 @@ class Translation(object):
 		monomerData['length'] = lengths
 		monomerData['aaCounts'] = aaCounts
 		monomerData['mw'] = mws
-		monomerData['sequence'] = sequences
 
 		field_units = {
 			'id'		:	None,
@@ -149,14 +145,13 @@ class Translation(object):
 			'length'	:	units.aa,
 			'aaCounts'	:	units.aa,
 			'mw'		:	units.g / units.mol,
-			'sequence'  :   None
 			}
 
 		self.monomerData = UnitStructArray(monomerData, field_units)
 		self.n_monomers = len(self.monomerData)
 
 	def _buildTranslation(self, raw_data, sim_data):
-		sequences = self.monomerData["sequence"] # TODO: consider removing sequences
+		sequences = np.array([protein['seq'] for protein in raw_data.proteins])
 
 		maxLen = np.int64(
 			self.monomerData["length"].asNumber().max()

@@ -234,10 +234,6 @@ class Transcription(object):
 		idx_16S = np.array(idx_16S)
 		idx_5S = np.array(idx_5S)
 
-		# Load sequence data
-		sequences = [rna['seq'] for rna in raw_data.rnas]
-		maxSequenceLength = max(len(sequence) for sequence in sequences)
-
 		# Load IDs of protein monomers
 		monomerIds = [rna['monomerId'] for rna in raw_data.rnas]
 
@@ -296,19 +292,12 @@ class Transcription(object):
 		mws[idx_16S] = mws[idx_16S[0]]
 		mws[idx_5S] = mws[idx_5S[0]]
 
-		for idx in idx_23S[1:]:
-			sequences[idx] = sequences[idx_23S[0]]
-
-		for idx in idx_16S[1:]:
-			sequences[idx] = sequences[idx_16S[0]]
-
-		for idx in idx_5S[1:]:
-			sequences[idx] = sequences[idx_5S[0]]
-
+		id_length = max(len(id_) for id_ in rnaIds)
+		gene_id_length = max(len(id_) for id_ in geneIds)
 		rnaData = np.zeros(
 			n_rnas,
 			dtype = [
-				('id', 'U50'),
+				('id', 'U{}'.format(id_length)),
 				('degRate', 'f8'),
 				('length', 'i8'),
 				('countsACGU', '4i8'),
@@ -322,8 +311,7 @@ class Transcription(object):
 				('isRRna5S', 'bool'),
 				('isRProtein', 'bool'),
 				('isRnap',	'bool'),
-				('sequence', 'U{}'.format(maxSequenceLength)),
-				('geneId', 'U50'),
+				('geneId', 'U{}'.format(gene_id_length)),
 				('KmEndoRNase', 'f8'),
 				('replicationCoordinate', 'int64'),
 				('direction', 'bool'),
@@ -348,7 +336,6 @@ class Transcription(object):
 		rnaData['isRRna23S'] = is_23S
 		rnaData['isRRna16S'] = is_16S
 		rnaData['isRRna5S'] = is_5S
-		rnaData['sequence'] = sequences
 		rnaData['geneId'] = geneIds
 		rnaData['KmEndoRNase'] = Km
 		rnaData['replicationCoordinate'] = replicationCoordinate
@@ -369,7 +356,6 @@ class Transcription(object):
 			'isRRna5S':	None,
 			'isRProtein': None,
 			'isRnap': None,
-			'sequence': None,
 			'geneId': None,
 			'KmEndoRNase': units.mol / units.L,
 			'replicationCoordinate': None,
@@ -391,7 +377,15 @@ class Transcription(object):
 		"""
 		Build transcription-associated simulation data from raw data.
 		"""
-		sequences = self.rnaData["sequence"] # TODO: consider removing sequences
+
+		# Load sequence data
+		sequences = np.array([rna['seq'] for rna in raw_data.rnas])
+
+		rrna_types = ['isRRna23S', 'isRRna23S', 'isRRna23S']
+		for rrna in rrna_types:
+			rrna_idx = np.where(self.rnaData[rrna])[0]
+			for idx in rrna_idx[1:]:
+				sequences[idx] = sequences[rrna_idx[0]]
 
 		# Construct transcription sequence matrix
 		maxLen = np.int64(
