@@ -134,12 +134,14 @@ GENOME_SEQUENCE_FILE = os.path.join(FLAT_DIR, 'flattened_sequence.fasta')
 km_file = os.path.join('fixtures', 'endo_km', 'km.cPickle')
 RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv')
 PROTEIN_FILE = os.path.join(FLAT_DIR, 'proteins_old.tsv')
+TF_COND_FILE = os.path.join(FLAT_DIR, 'condition','tf_condition_old.tsv')
 
 # output files
 TU_FILE = os.path.join(FLAT_DIR, 'operon_rnas.tsv')
 output_tu_counts = os.path.join(FLAT_DIR, "transcription_units.tsv")
 output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix.tsv")
 output_proteins = os.path.join(FLAT_DIR, "proteins.tsv")
+output_tf_conditions = os.path.join(FLAT_DIR, 'condition', 'tf_condition.tsv')
 
 CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
@@ -656,8 +658,33 @@ def remove_kms_file(km_file):
 		os.remove(km_file)
 	return
 
+def make_new_tf_conditions_file(output_file):
+	tf_info, tf_fieldnames = parse_tsv_2(TF_COND_FILE)
+	protein_info, protein_fieldnames = parse_tsv(output_proteins)
+
+	rnaIdToRnaSet = {x["rnaId"]: x["rnaSet"] for x in protein_info}
+	fields_to_modify = ["active genotype perturbations", "inactive genotype perturbations"]
+
+	for row in tf_info:
+		for field in fields_to_modify:
+			if len(row[field]) > 0:
+				genotype = {}
+				for key, val in row[field].items():
+					for new_key in rnaIdToRnaSet[key.strip("[c]")]:
+						genotype[new_key + "[c]"] = val
+				row[field] = genotype
+
+	with open(output_file, "w") as f:
+		writer = JsonWriter(f, tf_fieldnames)
+		writer.writeheader()
+		for tf_row in tf_info:
+			writer.writerow(tf_row)
+
+
 if __name__ == "__main__":
 	make_operon_rnas_file()
 	make_transcription_units_file()
 	remove_kms_file(km_file)
 	make_new_proteins_file(output_proteins)
+	make_new_tf_conditions_file(output_tf_conditions)
+

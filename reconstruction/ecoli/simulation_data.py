@@ -107,12 +107,20 @@ class SimulationDataEcoli(object):
 
 	def _addConditionData(self, raw_data):
 		abbrToActiveId = {x["TF"]: x["activeId"].split(", ") for x in raw_data.tfIds if len(x["activeId"]) > 0}
-		geneIdToRnaId = {x["id"]: x["rnaId"] for x in raw_data.genes}
-		abbrToRnaId = {x["symbol"]: x["rnaId"] for x in raw_data.genes}
+		geneIdToRnaId = {x["geneId"]: x["rnaSet"] for x in raw_data.proteins}
+
+		abbrToRnaId = {}
+		for x in raw_data.genes:
+			if x["id"] in geneIdToRnaId:
+				abbrToRnaId[x["symbol"]] = geneIdToRnaId[x["id"]]
+			else:
+				abbrToRnaId[x["symbol"]] = x["id"]
+
 		abbrToRnaId.update({
 			x["name"]: geneIdToRnaId[x["geneId"]]
 			for x in raw_data.translationEfficiency
 			if x["geneId"] != "#N/A"})
+
 
 		self.tfToFC = {}
 		self.tfToDirection = {}
@@ -134,11 +142,14 @@ class SimulationDataEcoli(object):
 			FC = row["F_avg"]
 			if row["Regulation_direct"] < 0:
 				FC *= -1.
-				self.tfToDirection[tf][target] = -1
+				for t in target:
+					self.tfToDirection[tf][t] = -1
 			else:
-				self.tfToDirection[tf][target] = 1
+				for t in target:
+					self.tfToDirection[tf][t] = 1
 			FC = 2**FC
-			self.tfToFC[tf][target] = FC
+			for t in target:
+				self.tfToFC[tf][t] = FC
 
 		if VERBOSE:
 			print("The following target genes listed in foldChanges.tsv have no corresponding entry in genes.tsv:")
@@ -148,6 +159,7 @@ class SimulationDataEcoli(object):
 		self.tfToActiveInactiveConds = {}
 		for row in raw_data.condition.tf_condition:
 			tf = row["active TF"]
+
 			activeGenotype = row["active genotype perturbations"]
 			activeNutrients = row["active nutrients"]
 			inactiveGenotype = row["inactive genotype perturbations"]
@@ -198,3 +210,6 @@ class SimulationDataEcoli(object):
 				self.conditions[condition]['nutrients'] = nutrients
 				self.conditions[condition]['perturbations'] = self.tfToActiveInactiveConds[tf]['{} genotype perturbations'.format(status)]
 				self.conditionToDoublingTime[condition] = self.nutrientToDoublingTime.get(nutrients, basal_dt)
+
+
+
