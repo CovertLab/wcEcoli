@@ -402,7 +402,7 @@ class Transcription(object):
 		# Load sequence data
 		sequences = np.array([rna['seq'] for rna in raw_data.rnas])
 
-		rrna_types = ['isRRna23S', 'isRRna23S', 'isRRna23S']
+		rrna_types = ['isRRna23S', 'isRRna16S', 'isRRna5S']
 		for rrna in rrna_types:
 			rrna_idx = np.where(self.rnaData[rrna])[0]
 			for idx in rrna_idx[1:]:
