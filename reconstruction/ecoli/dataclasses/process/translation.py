@@ -12,7 +12,7 @@ import numpy as np
 import six
 
 from wholecell.sim.simulation import MAX_TIME_STEP
-from wholecell.utils import units
+from wholecell.utils import data, units
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import make_elongation_rates
@@ -31,6 +31,27 @@ class Translation(object):
 		self._buildTranslation(raw_data, sim_data)
 		self._buildTranslationEfficiency(raw_data, sim_data)
 		self._build_elongation_rates(raw_data, sim_data)
+
+	def __getstate__(self):
+		"""Return the state to pickle with translationSequences removed and
+		only storing data from translationSequences with pad values stripped.
+		"""
+
+		state = data.dissoc_strict(self.__dict__, ('translationSequences',))
+		state['sequences'] = np.array([seq[seq != polymerize.PAD_VALUE] for seq in self.translationSequences])
+		state['sequence_shape'] = self.translationSequences.shape
+		return state
+
+	def __setstate__(self, state):
+		"""Restore translationSequences and remove processed versions of the data."""
+		sequences = state.pop('sequences')
+		sequence_shape = state.pop('sequence_shape')
+		self.__dict__.update(state)
+
+		self.translationSequences = np.empty((sequence_shape), np.int8)
+		self.translationSequences.fill(polymerize.PAD_VALUE)
+		for i, seq in enumerate(sequences):
+			self.translationSequences[i, :len(seq)] = seq
 
 	def _buildMonomerData(self, raw_data, sim_data):
 		assert all([len(protein['location']) == 1 for protein in raw_data.proteins])

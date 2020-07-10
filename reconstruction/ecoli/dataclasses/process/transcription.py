@@ -16,7 +16,7 @@ import sympy as sp
 from typing import cast
 
 from wholecell.sim.simulation import MAX_TIME_STEP
-from wholecell.utils import units
+from wholecell.utils import data, units
 from wholecell.utils.fitting import normalize
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
@@ -45,6 +45,27 @@ class Transcription(object):
 		self._build_transcription(raw_data, sim_data)
 		self._build_charged_trna(raw_data, sim_data)
 		self._build_elongation_rates(raw_data, sim_data)
+
+	def __getstate__(self):
+		"""Return the state to pickle with transcriptionSequences removed and
+		only storing data from transcriptionSequences with pad values stripped.
+		"""
+
+		state = data.dissoc_strict(self.__dict__, ('transcriptionSequences',))
+		state['sequences'] = np.array([seq[seq != polymerize.PAD_VALUE] for seq in self.transcriptionSequences])
+		state['sequence_shape'] = self.transcriptionSequences.shape
+		return state
+
+	def __setstate__(self, state):
+		"""Restore transcriptionSequences and remove processed versions of the data."""
+		sequences = state.pop('sequences')
+		sequence_shape = state.pop('sequence_shape')
+		self.__dict__.update(state)
+
+		self.transcriptionSequences = np.empty((sequence_shape), np.int8)
+		self.transcriptionSequences.fill(polymerize.PAD_VALUE)
+		for i, seq in enumerate(sequences):
+			self.transcriptionSequences[i, :len(seq)] = seq
 
 	def _build_ppgpp_regulation(self, raw_data, sim_data):
 		"""
