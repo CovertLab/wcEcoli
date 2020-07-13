@@ -311,7 +311,6 @@ class Metabolism(object):
 		# Properties for FBA reconstruction
 		self.reactionStoich = reactionStoich
 		self.maintenanceReaction = {"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "PI[c]": +1, "PROTON[c]": +1,}
-		self.reversibleReactions = reversibleReactions
 
 		# Properties for catalysis matrix (to set hard bounds)
 		self.reactionCatalysts = catalysts
