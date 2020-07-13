@@ -38,7 +38,9 @@ class Translation(object):
 		"""
 
 		state = data.dissoc_strict(self.__dict__, ('translationSequences',))
-		state['sequences'] = np.array([seq[seq != polymerize.PAD_VALUE] for seq in self.translationSequences])
+		state['sequences'] = np.array([
+			seq[seq != polymerize.PAD_VALUE]
+			for seq in self.translationSequences], dtype=object)
 		state['sequence_shape'] = self.translationSequences.shape
 		return state
 
@@ -48,8 +50,7 @@ class Translation(object):
 		sequence_shape = state.pop('sequence_shape')
 		self.__dict__.update(state)
 
-		self.translationSequences = np.empty((sequence_shape), np.int8)
-		self.translationSequences.fill(polymerize.PAD_VALUE)
+		self.translationSequences = np.full(sequence_shape, polymerize.PAD_VALUE, dtype=np.int8)
 		for i, seq in enumerate(sequences):
 			self.translationSequences[i, :len(seq)] = seq
 
@@ -179,13 +180,9 @@ class Translation(object):
 			+ self.max_time_step * sim_data.constants.ribosomeElongationRateMax.asNumber(units.aa / units.s)
 			)
 
-		self.translationSequences = np.empty((sequences.shape[0], maxLen), np.int8)
-		self.translationSequences.fill(polymerize.PAD_VALUE)
-
+		self.translationSequences = np.full((sequences.shape[0], maxLen), polymerize.PAD_VALUE, dtype=np.int8)
 		aaIDs_singleLetter = six.viewkeys(sim_data.amino_acid_1_to_3_ordered)
-
 		aaMapping = {aa:i for i, aa in enumerate(aaIDs_singleLetter)}
-
 		for i, sequence in enumerate(sequences):
 			for j, letter in enumerate(sequence):
 				self.translationSequences[i, j] = aaMapping[letter]

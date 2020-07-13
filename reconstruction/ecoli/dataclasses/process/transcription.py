@@ -52,7 +52,9 @@ class Transcription(object):
 		"""
 
 		state = data.dissoc_strict(self.__dict__, ('transcriptionSequences',))
-		state['sequences'] = np.array([seq[seq != polymerize.PAD_VALUE] for seq in self.transcriptionSequences])
+		state['sequences'] = np.array([
+			seq[seq != polymerize.PAD_VALUE]
+			for seq in self.transcriptionSequences], dtype=object)
 		state['sequence_shape'] = self.transcriptionSequences.shape
 		return state
 
@@ -62,8 +64,7 @@ class Transcription(object):
 		sequence_shape = state.pop('sequence_shape')
 		self.__dict__.update(state)
 
-		self.transcriptionSequences = np.empty((sequence_shape), np.int8)
-		self.transcriptionSequences.fill(polymerize.PAD_VALUE)
+		self.transcriptionSequences = np.full(sequence_shape, polymerize.PAD_VALUE, dtype=np.int8)
 		for i, seq in enumerate(sequences):
 			self.transcriptionSequences[i, :len(seq)] = seq
 
@@ -414,11 +415,8 @@ class Transcription(object):
 			+ self.max_time_step * sim_data.growthRateParameters.rnaPolymeraseElongationRate.asNumber(units.nt/units.s)
 			)
 
-		self.transcriptionSequences = np.empty((sequences.shape[0], maxLen), np.int8)
-		self.transcriptionSequences.fill(polymerize.PAD_VALUE)
-
+		self.transcriptionSequences = np.full((sequences.shape[0], maxLen), polymerize.PAD_VALUE, dtype=np.int8)
 		ntMapping = {ntpId: i for i, ntpId in enumerate(["A", "C", "G", "U"])}
-
 		for i, sequence in enumerate(sequences):
 			for j, letter in enumerate(sequence):
 				self.transcriptionSequences[i, j] = ntMapping[letter]

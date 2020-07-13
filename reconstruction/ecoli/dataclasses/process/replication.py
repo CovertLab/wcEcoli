@@ -53,21 +53,20 @@ class Replication(object):
 
 		def extract_data(raw, key):
 			data = [row[key] for row in raw]
-			max_length = max(len(d) for d in data if d is not None)
+			dtype = 'U{}'.format(max(len(d) for d in data if d is not None))
+			return data, dtype
 
-			return data, max_length
-
-		names, name_length = extract_data(raw_data.genes, 'id')
-		symbols, symbol_length = extract_data(raw_data.genes, 'symbol')
-		rna_ids, rna_length = extract_data(raw_data.genes, 'rnaId')
-		monomer_ids, monomer_length = extract_data(raw_data.genes, 'monomerId')
+		names, name_dtype = extract_data(raw_data.genes, 'id')
+		symbols, symbol_dtype = extract_data(raw_data.genes, 'symbol')
+		rna_ids, rna_dtype = extract_data(raw_data.genes, 'rnaId')
+		monomer_ids, monomer_dtype = extract_data(raw_data.genes, 'monomerId')
 
 		self.geneData = np.zeros(
 			len(raw_data.genes),
-			dtype=[('name', 'U{}'.format(name_length)),
-				('symbol', 'U{}'.format(symbol_length)),
-				('rnaId', 'U{}'.format(rna_length)),
-				('monomerId', 'U{}'.format(monomer_length))])
+			dtype=[('name', name_dtype),
+				('symbol', symbol_dtype),
+				('rnaId', rna_dtype),
+				('monomerId', monomer_dtype)])
 
 		self.geneData['name'] = names
 		self.geneData['symbol'] = symbols
