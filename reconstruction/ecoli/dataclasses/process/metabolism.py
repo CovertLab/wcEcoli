@@ -390,7 +390,7 @@ class Metabolism(object):
 		"""
 
 		rxn_mapping = {}
-		for rxn in self.reactionStoich:
+		for rxn in sorted(self.reactionStoich):
 			basename = rxn.split('__')[0].split(' (reverse)')[0]
 			rxn_mapping[basename] = rxn_mapping.get(basename, []) + [rxn]
 
