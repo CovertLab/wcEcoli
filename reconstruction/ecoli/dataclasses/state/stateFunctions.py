@@ -7,7 +7,7 @@ def addToStateCommon(bulkState, ids, masses):
 	newAddition = np.zeros(
 		len(ids),
 		dtype = [
-			("id", "a1000"),
+			("id", "U1000"),
 			("mass", "{}f8".format(masses.asNumber().shape[1])), # TODO: Make this better
 			]
 		)
