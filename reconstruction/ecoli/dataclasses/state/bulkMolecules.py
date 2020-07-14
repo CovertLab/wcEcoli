@@ -22,7 +22,7 @@ class BulkMolecules(object):
 		bulkData = np.zeros(
 			0,
 			dtype = [
-				("id", "a1000"),
+				("id", "U200"),
 				("mass", "{}f8".format(len(sim_data.molecular_weight_order))),
 				]
 			)

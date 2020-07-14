@@ -4,11 +4,12 @@ import numpy as np
 from wholecell.utils.unit_struct_array import UnitStructArray
 
 def addToStateCommon(bulkState, ids, masses):
+	#max_id_len = max(len(id_) for id_ in ids)
 	newAddition = np.zeros(
 		len(ids),
 		dtype = [
-			("id", "a1000"),
-			("mass", "{}f8".format(masses.asNumber().shape[1])), # TODO: Make this better
+			('id', 'U200'),
+			('mass', '{}f8'.format(masses.asNumber().shape[1])), # TODO: Make this better
 			]
 		)
 
@@ -16,10 +17,10 @@ def addToStateCommon(bulkState, ids, masses):
 
 	newAddition["id"] = ids
 	newAddition["mass"] = masses.asNumber()
-	#try:
-		#np.hstack((bulkState.fullArray(), newAddition))
-	#except:
-		#import pdb; pdb.set_trace()
+	try:
+		np.hstack((bulkState.fullArray(), newAddition))
+	except:
+		import pdb; pdb.set_trace()
 	return UnitStructArray(np.hstack((bulkState.fullArray(), newAddition)), bulkState.units)
 
 def createIdsInAllCompartments(ids, compartments):

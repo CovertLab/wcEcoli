@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import multiprocessing as mp
+import sys
 import traceback
 from typing import Callable, List
 
@@ -2758,6 +2759,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		R = Variable(G.shape[1])  # Vector of r's and alpha's
 
 		# Objective: minimize difference between k and G*R
+		# TODO(jerry): Change `G*R` to `G @ R` to fix deprecation warnings,
+		#  after dropping support for Python 2.
 		objective_r = Minimize(
 			norm(G*(PROMOTER_SCALING*R) - PROMOTER_SCALING*k, PROMOTER_NORM_TYPE)
 			)
@@ -2768,6 +2771,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		# value between zero and one.
 		# 2) T*R >= 0 : Values of r for positive regulation should be positive,
 		# and values of r for negative regulation should be negative.
+		# TODO(jerry): Change `Z*R` and `T*R` to `Z @ R` and `T @ R` to fix
+		#  deprecation warnings, after dropping support for Python 2.
 		constraint_r = [
 			0 <= Z*(PROMOTER_SCALING*R), Z*(PROMOTER_SCALING*R) <= PROMOTER_SCALING*1,
 			T*(PROMOTER_SCALING*R) >= 0
@@ -2811,6 +2816,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		# probabilities) and H*P (computed initiation probabilities) while
 		# also minimizing deviation of P from the original value calculated
 		# from mean TF and ligand concentrations
+		# TODO(jerry): Change `H*P` to `H @ P` to fix a deprecation warning,
+		#  after dropping support for Python 2.
 		objective_p = Minimize(
 			norm(H*(PROMOTER_SCALING*P) - PROMOTER_SCALING*k, PROMOTER_NORM_TYPE)
 			+ PROMOTER_REG_COEFF*norm(P - pInit0, PROMOTER_NORM_TYPE)
@@ -2824,6 +2831,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		# 3) pdiff*P >= 0.1 : There must be at least a difference of 0.1
 		# between binding probabilities of a TF in conditions TF__active and
 		# TF__inactive
+		# TODO(jerry): Change `*` to `@` in `np.diag(D) *` and `pdiff @` to fix
+		#  deprecation warnings, after dropping support for Python 2.
 		constraint_p = [
 			0 <= PROMOTER_SCALING*P, PROMOTER_SCALING*P <= PROMOTER_SCALING*1,
 			np.diag(D)*(PROMOTER_SCALING*P) == PROMOTER_SCALING*Drhs,
@@ -3264,7 +3273,11 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 
 	needToUpdate = False
 	fixturesDir = filepath.makedirs(filepath.ROOT_PATH, "fixtures", "endo_km")
-	km_filepath = os.path.join(fixturesDir, "km.cPickle")
+	# Numpy 'U' fields make these files incompatible with older code, so change
+	# the filename. No need to make files compatible between Python 2 & 3l we'd
+	# have to set the same protocol version and set Python 3-only args like
+	# encoding='latin1'.
+	km_filepath = os.path.join(fixturesDir, 'km{}.cPickle'.format(sys.version_info[0]))
 
 	# Removing so that kms are calculated each time by default
 
