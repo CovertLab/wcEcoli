@@ -713,7 +713,7 @@ class Metabolism(object):
 
 			rxn_matches.append(rxn)
 
-		return list(sorted(rxn_matches))
+		return sorted(rxn_matches)
 
 	@staticmethod
 	def temperature_adjusted_kcat(kcat, temp=''):
