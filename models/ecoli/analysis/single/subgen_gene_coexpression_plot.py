@@ -21,8 +21,10 @@ from textwrap import wrap
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
+from wholecell.io import tsv
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.spreadsheets import JsonReader, JsonWriter
+from six.moves import zip
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
     def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -107,6 +109,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                 pdf.savefig()
                 plt.close('all')
 
+        self.write_time_tsv(plotOutDir, mRNA_counts, mRNA_ids, mRNA_protein_dict)
+
     def parse_tsv(self, tsv_file):
         tsv_list = []
         with open(tsv_file) as tsvfile, open('temp.csv', 'w') as tempfile:
@@ -137,13 +141,19 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                     complex_name = complex_row['stoichiometry'][0]['molecule'] + "[" + complex_row['stoichiometry'][0]['location'] + "]"
                     complex_list.append(complex_name)
         return complex_list
-    #
-    # def write_time_tsv(self, mRNA_protein_dict):
-    #     for tu in mRNA_protein_dict.keys():
-    #         for mRNA in mRNA_protein_dict[tu]:
 
-
-
+    def write_time_tsv(self, plotOutDir, mRNA_counts, mRNA_ids, mRNA_protein_dict):
+        tsvFile = io.open(os.path.join(plotOutDir, "mRNA_percent_time_expressed.tsv"), "wb")
+        output = tsv.writer(tsvFile)
+        output.writerow(['tu_id', 'mRNA_id', 'protein_id', 'time_coexp', 'percent_time_coexp'])
+        # convert dict to tuple, easier to write to tsv
+        info_to_write = [(tu, mRNA, protein) for tu in mRNA_protein_dict for mRNA in mRNA_protein_dict[tu] for protein in mRNA_protein_dict[tu][mRNA]]
+        for tu, mRNA, protein in info_to_write:
+            mRNA_count = mRNA_counts[:, mRNA_ids.index(mRNA)] # retrieve array of counts over time (to do: make this less redundant with do_plot function)
+            mRNA_coexp_time = np.count_nonzero(mRNA_count)
+            mRNA_percent_time = (mRNA_coexp_time / len(mRNA_count)) * 100 # get % of time expressed
+            output.writerow([tu, mRNA, protein, mRNA_coexp_time, mRNA_percent_time])
+        return
 
 if __name__ == '__main__':
     Plot().cli()
