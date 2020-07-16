@@ -18,7 +18,9 @@
 #
 # or if you used build.sh or build-wcm.sh to build using Cloud Build:
 #
-#     > docker run --name wholecelltest --user "$(id -u):$(id -g)" -it --rm gcr.io/allen-discovery-center-mcovert/${USER}-wcm-code
+#     > PROJECT="$(gcloud config get-value core/project)"
+#     > TAG="gcr.io/${PROJECT}/${USER}-wcm-code"
+#     > docker run --name wholecelltest --user "$(id -u):$(id -g)" -it --rm "${TAG}"
 #
 # It will start a shell where you can execute commands:
 #

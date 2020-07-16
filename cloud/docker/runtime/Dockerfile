@@ -15,13 +15,12 @@ ARG from=python:3.8.3
 FROM ${from}
 
 # Add option `--build-arg NO_AVX2=1` to make OpenBLAS 0.3.6+ not use the AVX2
-# hardware so the code can pass its build self-test and run properly in Docker
-# Desktop on macOS.
+# hardware so OpenBLAS can pass its build self-test and run properly in macOS
+# Docker.
 #
-# NO_AVX2=1 is a fine workaround BUT it costs 40 minutes when building this
-# Image (between OpenBlas, numpy, and scipy) and (reportedly) 20-30% of BLAS
-# runtime performance. Also it had better be set when building an Image if that
-# Image might ever run on macOS.
+# NO_AVX2=1 is a fine workaround BUT it costs (reportedly) 20-30% of BLAS
+# runtime performance. Also it needs to be set when building an Image that
+# might ever run on macOS.
 #
 # Turn this off once Docker fixes the bug.
 # https://github.com/xianyi/OpenBLAS/issues/2244
@@ -35,16 +34,20 @@ RUN apt-get update \
 RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc \
     && echo "alias ll='ls -l'" >> ~/.bashrc
 
-# Install openblas (0.3.5 is OK; 0.3.3 is not; 0.3.6+ need "NO_AVX2=1"
-# in macOS Docker to produce correct results).
+# Install openblas (at least 0.3.5, and 0.3.6+ need "NO_AVX2=1" for macOS Docker
+# to get correct results) for Theano and maybe numpy/scipy.
 # Someday `apt-get install libopenblas-dev=...` will work.
-RUN if [ $NO_AVX2 != 0 ] ; then (mkdir -p openblas && cd openblas \
+RUN (mkdir -p openblas && cd openblas \
     && curl -SL https://github.com/xianyi/OpenBLAS/archive/v0.3.10.tar.gz | tar -xz \
     && cd OpenBLAS* \
-    && make "NO_AVX2=1" FC=gfortran \
-    && make "NO_AVX2=1" PREFIX=/usr install) \
-    && rm -r openblas \
-    && (echo "[openblas]" \
+    && make "NO_AVX2=${NO_AVX2}" FC=gfortran \
+    && make "NO_AVX2=${NO_AVX2}" PREFIX=/usr install) \
+    && rm -r openblas
+
+# Conditionally build numpy and scipy from source to link them to this OpenBLAS
+# instead of their embedded copies of OpenBLAS. (See `--no-binary`, below.)
+# That can add 50 minutes to the build time!
+RUN if [ $NO_AVX2 != 0 ] ; then (echo "[openblas]" \
     && echo "libraries = openblas" \
     && echo "library_dirs = /usr/lib" \
     && echo "include_dirs = /usr/include") > ~/.numpy-site.cfg ; \
@@ -52,9 +55,11 @@ RUN if [ $NO_AVX2 != 0 ] ; then (mkdir -p openblas && cd openblas \
 
 ENV OPENBLAS_NUM_THREADS=1
 
-# Install all the pips within one Docker layer, don't cache the downloads, link
-# numpy and scipy to the installed OpenBLAS, and enable Theano to write into
-# the data dir it uses when running as a user with no home dir.
+# Install all the pips within one Docker layer, don't cache the downloads, and
+# enable Theano to write into the data dir it gets when running as a user with
+# no home dir. (That happens because DockerTask runs tasks inside the Docker
+# container with the uid:gid of the user outside the container to get
+# read/write/delete access to the tasks's output files.)
 COPY py3_requirements.txt /
 RUN (b1="" \
     && b2="" \
