@@ -24,11 +24,10 @@ from wholecell.io.tablereader import TableReader
 from wholecell.io import tsv
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.spreadsheets import JsonReader, JsonWriter
-from six.moves import zip
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
     def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-        # sim_data = cPickle.load(open(simDataFile, 'rb'))
+        sim_data = cPickle.load(open(simDataFile, "rb"))
 
         # Listeners used
         main_reader = TableReader(os.path.join(simOutDir, 'Main'))
