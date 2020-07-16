@@ -26,7 +26,7 @@ from reconstruction.spreadsheets import JsonReader, JsonWriter
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
     def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-        # sim_data = cPickle.load(open(simDataFile, "rb"))
+        # sim_data = cPickle.load(open(simDataFile, 'rb'))
 
         # Listeners used
         main_reader = TableReader(os.path.join(simOutDir, 'Main'))
@@ -70,13 +70,11 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                     pc_mRNA_ids = [mRNA_with_location if x==rna['id'] else x for x in pc_mRNA_ids] # add mRNA location
                     mRNA_protein_dict[pc_gene_id][mRNA_with_location] = []
                     for protein in PROTEIN_INFO:
-                        if protein['id'] in rna['monomerSet']:
+                        if protein['id'] in rna['monomerSet']: # check if protein is expressed by mRNA
                             protein_with_location = protein['id'] + "[" + protein['location'][0] + "]"
                             mRNA_protein_dict[pc_gene_id][mRNA_with_location].append(protein_with_location) # add protein monomer with location
 
-        # print(mRNA_protein_dict)
-
-        # Make plot, one for each operon
+        # Make multi-page plot, one page per operon
         with PdfPages(os.path.join(plotOutDir, 'mRNA_protein_expression.pdf')) as pdf:
             for plotIndex, tu in enumerate(mRNA_protein_dict.keys()):
                 fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(12, 8))
@@ -84,14 +82,21 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                 plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
 
                 for mRNA in mRNA_protein_dict[tu]:
-                    ax1.plot(mRNA_counts[:, mRNA_ids.index(mRNA)], label='\n'.join(wrap(mRNA, 20)))
+                    mRNA_count = mRNA_counts[:, mRNA_ids.index(mRNA)] # retrieve array of counts over time
+                    mRNA_percent_time = (np.count_nonzero(mRNA_count) / time_total) * 100 # get % of time expressed
+                    ax1.plot(mRNA_count, label='\n'.join(wrap(mRNA + " (" + str(mRNA_percent_time) + "% t_total)", 20))) # wrap text to make legend look nicer
+                    # plotting proteins translated from mRNA
                     for protein in mRNA_protein_dict[tu][mRNA]:
-                        ax2.plot(bulkMolecule_counts[:,bulkMolecule_ids.index(protein)], label='\n'.join(wrap(protein, 20)))
+                        protein_count = bulkMolecule_counts[:,bulkMolecule_ids.index(protein)]
+                        protein_percent_time = (np.count_nonzero(protein_count) / time_total) * 100 # get % of time expressed
+                        ax2.plot(protein_count, label='\n'.join(wrap(protein + " (" + str(protein_percent_time) + "% t_total)", 20)))
                         # now account for complexes
                         complex_list = self.get_protein_complexes(protein[:-3], COMPLEX_INFO) # truncating protein location
                         if complex_list:
                             for cplx in complex_list:
-                                ax2.plot(bulkMolecule_counts[:,bulkMolecule_ids.index(cplx)], label='\n'.join(wrap(cplx, 20)))
+                                cplx_count = bulkMolecule_counts[:,bulkMolecule_ids.index(cplx)]
+                                cplx_percent_time = (np.count_nonzero(cplx_count) / time_total) * 100 # get % of time expressed
+                                ax2.plot(cplx_count, label='\n'.join(wrap(cplx + " (" + str(cplx_percent_time) + "% t_total)", 20)))
                 ax1.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
                 ax2.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
                 ax1.set_title(tu + " mRNAs")
@@ -132,6 +137,11 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                     complex_name = complex_row['stoichiometry'][0]['molecule'] + "[" + complex_row['stoichiometry'][0]['location'] + "]"
                     complex_list.append(complex_name)
         return complex_list
+    #
+    # def write_time_tsv(self, mRNA_protein_dict):
+    #     for tu in mRNA_protein_dict.keys():
+    #         for mRNA in mRNA_protein_dict[tu]:
+
 
 
 
