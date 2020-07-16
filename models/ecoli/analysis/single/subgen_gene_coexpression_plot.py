@@ -12,6 +12,7 @@ import os
 import io
 
 from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
 import pandas as pd
 import itertools
@@ -25,7 +26,7 @@ from reconstruction.spreadsheets import JsonReader, JsonWriter
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
     def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-        sim_data = cPickle.load(open(simDataFile, "rb"))
+        # sim_data = cPickle.load(open(simDataFile, "rb"))
 
         # Listeners used
         main_reader = TableReader(os.path.join(simOutDir, 'Main'))
@@ -76,29 +77,30 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         # print(mRNA_protein_dict)
 
         # Make plot, one for each operon
-        for plotIndex, tu in enumerate(mRNA_protein_dict.keys()):
-            fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(12, 8))
-            fig.add_subplot(111, frameon=False)
-            plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+        with PdfPages(os.path.join(plotOutDir, 'mRNA_protein_expression.pdf')) as pdf:
+            for plotIndex, tu in enumerate(mRNA_protein_dict.keys()):
+                fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(12, 8))
+                fig.add_subplot(111, frameon=False)
+                plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
 
-            for mRNA in mRNA_protein_dict[tu]:
-                ax1.plot(mRNA_counts[:, mRNA_ids.index(mRNA)], label='\n'.join(wrap(mRNA, 20)))
-                for protein in mRNA_protein_dict[tu][mRNA]:
-                    ax2.plot(bulkMolecule_counts[:,bulkMolecule_ids.index(protein)], label='\n'.join(wrap(protein, 20)))
-                    # now account for complexes
-                    complex_list = self.get_protein_complexes(protein[:-3], COMPLEX_INFO) # truncating protein location
-                    if complex_list:
-                        for cplx in complex_list:
-                            ax2.plot(bulkMolecule_counts[:,bulkMolecule_ids.index(cplx)], label='\n'.join(wrap(cplx, 20)))
-            ax1.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
-            ax2.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
-            ax1.set_title(tu + " mRNAs")
-            ax2.set_title(tu + " proteins")
-            plt.xlabel("Time (sec)")
-            plt.ylabel("count")
-            plt.tight_layout()
-            exportFigure(plt, plotOutDir, tu + "_expression", metadata)
-            plt.close('all')
+                for mRNA in mRNA_protein_dict[tu]:
+                    ax1.plot(mRNA_counts[:, mRNA_ids.index(mRNA)], label='\n'.join(wrap(mRNA, 20)))
+                    for protein in mRNA_protein_dict[tu][mRNA]:
+                        ax2.plot(bulkMolecule_counts[:,bulkMolecule_ids.index(protein)], label='\n'.join(wrap(protein, 20)))
+                        # now account for complexes
+                        complex_list = self.get_protein_complexes(protein[:-3], COMPLEX_INFO) # truncating protein location
+                        if complex_list:
+                            for cplx in complex_list:
+                                ax2.plot(bulkMolecule_counts[:,bulkMolecule_ids.index(cplx)], label='\n'.join(wrap(cplx, 20)))
+                ax1.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+                ax2.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+                ax1.set_title(tu + " mRNAs")
+                ax2.set_title(tu + " proteins")
+                plt.xlabel("Time (sec)")
+                plt.ylabel("count")
+                plt.tight_layout()
+                pdf.savefig()
+                plt.close('all')
 
     def parse_tsv(self, tsv_file):
         tsv_list = []
@@ -108,7 +110,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                 tsvfile.seek(tsvfile_start)
                 reader = JsonReader(tsvfile)
                 fieldnames = reader.fieldnames
-                print(fieldnames)
                 for row in reader:
                     tsv_list.append(row)
             else:
