@@ -1,5 +1,5 @@
 """
-Plots mRNA expression with operons integration (improved version)
+Plots mRNA and protein expression with operons integration
 
 @organization: Covert Lab, Department of Bioengineering, Stanford University
 @date: Created 1/7/20
@@ -57,7 +57,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         # Get all mRNAs transcribed from TUs + protein monomers
         mRNA_protein_dict = {}
         mRNA_gene_dict = {}
-        exp_time_df = pd.DataFrame(columns=['tu_unit', 'gene_id', 'time_expressed', 'percent_time_expressed']) # df to store % time expression for each gene
+
+        # df to store % time expression for each gene
+        exp_time_df = pd.DataFrame(columns=['tu_unit', 'gene_id', 'time_expressed', 'percent_time_expressed'])
 
         for pc in PC_INFO:
             pc_gene_id = '_'.join(pc['transcription_units']) # get TU id
@@ -113,18 +115,14 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                 fig.add_subplot(111, frameon=False)
                 plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
 
-                # setting up table
-                proteins_plotted = []
-
+                proteins_plotted = [] # keep track of plotted proteins
                 for mRNA in mRNA_protein_dict[tu]:
-                    mRNA_count = mRNA_counts[:, mRNA_ids.index(mRNA)] # retrieve array of counts over time
-                    mRNA_percent_time = (np.count_nonzero(mRNA_count) / time_total) * 100 # get % of time expressed
                     ax1.plot(mRNA_counts[:, mRNA_ids.index(mRNA)], label='\n'.join(wrap(mRNA, 20)))
 
                     # plotting proteins translated from mRNA
                     for protein in mRNA_protein_dict[tu][mRNA]:
                         if protein not in proteins_plotted:
-                            proteins_plotted.append(protein) # add row to table
+                            proteins_plotted.append(protein)
                             protein_count = bulkMolecule_counts[:,bulkMolecule_ids.index(protein)]
                             protein_percent_time = (np.count_nonzero(protein_count) / time_total) * 100 # get % of time expressed
                             ax2.plot(protein_count, label='\n'.join(wrap(protein + "(% t_total: " + str(protein_percent_time) + "%)", 20)))
@@ -136,15 +134,16 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                                     cplx_percent_time = (np.count_nonzero(cplx_count) / time_total) * 100 # get % of time expressed
                                     ax2.plot(cplx_count, label='\n'.join(wrap(cplx + "(% t_total: " + str(cplx_percent_time) + "%)", 20)))
 
+                # output % time gene expression values on mRNA plot
                 text_y_pos = 0.95
                 for gene in mRNA_gene_dict[tu]:
                     gene_row = exp_time_df[exp_time_df['gene_id'] == gene]
-                    percent_time_exp = '%.3f'%(gene_row['percent_time_expressed'].values[0] * 100)
-                    ax1.text(0.05, text_y_pos, gene + " = " + str(percent_time_exp) + "%", transform=plt.gca().transAxes)
+                    percent_time_exp = '%.3f'%(gene_row['percent_time_expressed'].values[0] * 100) # truncate to 3 decimal points
+                    ax1.text(0.05, text_y_pos, gene + " = " + str(percent_time_exp) + "%", transform=plt.gca().transAxes) # print on plot
                     text_y_pos = text_y_pos - 0.03
 
-                ax1.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left') # mRNA plot
-                ax2.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left') # protein plot
+                ax1.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left') # mRNA plot legend
+                ax2.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left') # protein plot legend
 
                 ax1.set_title(tu + " mRNAs")
                 ax2.set_title(tu + " proteins")
