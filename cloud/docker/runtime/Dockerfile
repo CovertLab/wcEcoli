@@ -14,19 +14,20 @@
 ARG from=python:3.8.3
 FROM ${from}
 
-# Add option `--build-arg NO_AVX2=1` to make OpenBLAS 0.3.6+ not use the AVX2
-# hardware so OpenBLAS can pass its build self-test and run properly in macOS
-# Docker.
+# Add option `--build-arg NO_AVX2=1` to make OpenBLAS 0.3.6+ avoid AVX2
+# instructions so it can pass its build self-test in Docker-for-Mac and
+# produce correct results when run there.
 #
-# NO_AVX2=1 is a fine workaround BUT it costs (reportedly) 20-30% of BLAS
-# runtime performance. Also it needs to be set when building an Image that
-# might ever run on macOS.
+# * NO_AVX2=1 is needed to build or run properly in Docker-for-Mac.
+# * NO_AVX2=0 reportedly runs 20-30% faster BLAS if you're sure it'll only
+#   build and run on Linux, but this only saves ~7% in a cell sim.
 #
-# Turn this off once Docker fixes the bug.
+# Docker-for-Mac bug:
 # https://github.com/xianyi/OpenBLAS/issues/2244
 # https://github.com/docker/for-mac/issues/4576
 # https://github.com/machyve/xhyve/issues/171
-ARG NO_AVX2=0
+ARG NO_AVX2=1
+ENV NO_AVX2="$NO_AVX2"
 
 RUN apt-get update \
     && apt-get install -y swig gfortran llvm cmake nano
@@ -34,20 +35,22 @@ RUN apt-get update \
 RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc \
     && echo "alias ll='ls -l'" >> ~/.bashrc
 
-# Install openblas (at least 0.3.5, and 0.3.6+ need "NO_AVX2=1" for macOS Docker
-# to get correct results) for Theano and maybe numpy/scipy.
+# Install openblas (must be 0.3.5+, and 0.3.6+ need "NO_AVX2=1" for macOS Docker
+# to produce correct results) in Theano and maybe numpy/scipy.
 # Someday `apt-get install libopenblas-dev=...` will work.
+ENV OPENBLAS_LABEL=v0.3.10
 RUN (mkdir -p openblas && cd openblas \
-    && curl -SL https://github.com/xianyi/OpenBLAS/archive/v0.3.10.tar.gz | tar -xz \
+    && curl -SL https://github.com/xianyi/OpenBLAS/archive/${OPENBLAS_LABEL}.tar.gz | tar -xz \
     && cd OpenBLAS* \
+    && echo "Compiling OpenBLAS ${OPENBLAS_LABEL} with NO_AVX2=${NO_AVX2}" \
     && make "NO_AVX2=${NO_AVX2}" FC=gfortran \
     && make "NO_AVX2=${NO_AVX2}" PREFIX=/usr install) \
     && rm -r openblas
 
-# Conditionally build numpy and scipy from source to link them to this OpenBLAS
-# instead of their embedded copies of OpenBLAS. (See `--no-binary`, below.)
-# That can add 50 minutes to the build time!
-RUN if [ $NO_AVX2 != 0 ] ; then (echo "[openblas]" \
+# Conditionally build numpy and scipy from source (`--no-binary`, below) to
+# link them to this OpenBLAS instead of their embedded copies of OpenBLAS.
+# That can add 50 minutes to the build time.
+RUN if [ "$NO_AVX2" != 0 ] ; then (echo "[openblas]" \
     && echo "libraries = openblas" \
     && echo "library_dirs = /usr/lib" \
     && echo "include_dirs = /usr/include") > ~/.numpy-site.cfg ; \
@@ -62,11 +65,11 @@ ENV OPENBLAS_NUM_THREADS=1
 # read/write/delete access to the tasks's output files.)
 COPY py3_requirements.txt /
 RUN (b1="" \
-    && b2="" \
-    && if [ -f ~/.numpy-site.cfg ] ; then b1="--no-binary"; b2="numpy,scipy"; fi \
+    && if [ -f ~/.numpy-site.cfg ] ; then b1="--no-binary=numpy,scipy"; fi \
+    && echo "Installing pips with $b1" \
     && pip install --no-cache-dir --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir numpy==1.19.0 $b1 $b2 \
-    && pip install --no-cache-dir -r py3_requirements.txt $b1 $b2 \
+    && pip install --no-cache-dir numpy==1.19.0 $b1 \
+    && pip install --no-cache-dir -r py3_requirements.txt $b1 \
     && umask 000 && mkdir -p /.theano)
 
 CMD ["/bin/bash"]
