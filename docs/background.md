@@ -108,14 +108,13 @@ Raw data should always be annotated with the source and process used to generate
 1. Add the filename to `LIST_OF_DICT_FILENAMES` in [knowledge_base_raw.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/ecoli/knowledge_base_raw.py). This will cause the data to be loaded into the class when an instance of `KnowledgeBaseEcoli` is created.
 1. Access, process and store the data in the appropriate reconstruction class (eg [processes](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/process) or [states](https://github.com/CovertLab/wcEcoli/tree/master/reconstruction/ecoli/dataclasses/state)) by accessing the `raw_data` attribute for the file (eg. `raw_data.new_file` for a file named `new_file.tsv`)
 
-**NOTE:** if there are issues loading the new file, try saving it using `JsonWriter` from [reconstruction/spreadsheets.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/spreadsheets.py) to ensure proper formatting that can be read by `JsonReader`:
+**NOTE:** if there are issues loading the new file, try saving it using `tsv_writer` from [reconstruction/spreadsheets.py](https://github.com/CovertLab/wcEcoli/blob/master/reconstruction/spreadsheets.py) to ensure proper formatting that can be read by `tsv_reader` or `JsonReader`:
 ```python
-from reconstruction.spreadsheets import JsonWriter
+from reconstruction.spreadsheets import tsv_writer
 
-headers = ['a', 'b']
-with open('output.tsv', 'w') as f:
-    writer = JsonWriter(f, headers)
-    writer.writeheader()
+filename = 'output.tsv'
+fieldnames = ['a', 'b']
+with tsv_writer(filename, fieldnames) as writer:
     writer.writerow({'a': 1, 'b': 2})  # write as many rows of data as needed
 ```
 
