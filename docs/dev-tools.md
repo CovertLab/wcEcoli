@@ -162,7 +162,10 @@ because it assumes imported module names (`Bio`) match their PyPI package names
 list doesn't include `stochastic-arrow`, `biopython`, etc., but we can add them.
 
 **The fix:** Each time you install a PyCharm release, run this shell command
-then restart PyCharm:
+then restart PyCharm:  
+[NOTE: So far, this script only works on macOS and maybe only for PyCharm Pro
+as installed by JetBrains Toolbox. To support other installations, we need to
+enhance the script for where `python.jar` or `python-ce.jar` gets installed.]
 
     runscripts/tools/augment-pycharm-package-list.sh
 
