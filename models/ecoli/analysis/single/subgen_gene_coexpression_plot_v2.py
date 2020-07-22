@@ -22,8 +22,7 @@ from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
 from wholecell.io import tsv
-from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
-from reconstruction.spreadsheets import JsonReader, JsonWriter
+from reconstruction.spreadsheets import JsonReader, tsv_reader
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
     def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -62,13 +61,13 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         exp_time_df = pd.DataFrame(columns=['tu_unit', 'gene_id', 'time_expressed', 'percent_time_expressed'])
 
         for pc in PC_INFO:
-            pc_gene_id = '_'.join(pc['transcription_units']) # get TU id
-            pc_mRNA_ids = [pc_gene_id + "_RNA"] # TU id -> polycistronic mRNA id
+            pc_gene_id = '_'.join(pc['transcription_units'])  # get TU id
+            pc_mRNA_ids = [pc_gene_id + "_RNA"]  # TU id -> polycistronic mRNA id
 
             # not all monomers may be removed. find the ones that are expressed on its own
             non_removed_monomers = list(set(pc['transcription_units']) ^ set(pc['monomers_to_remove']))
             non_removed_mRNA_ids = [x + "_RNA" for x in non_removed_monomers]
-            pc_mRNA_ids.extend(non_removed_mRNA_ids) # names of all transcribed single mRNAs
+            pc_mRNA_ids.extend(non_removed_mRNA_ids)  # names of all transcribed single mRNAs
 
             mRNA_protein_dict[pc_gene_id] = {}
             mRNA_gene_dict[pc_gene_id] = pc['transcription_units']
@@ -79,7 +78,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                 if rna['id'] in pc_mRNA_ids:
                     location = rna['location'][0]
                     mRNA_with_location = rna['id'] + "[" + location + "]"
-                    pc_mRNA_ids = [mRNA_with_location if x==rna['id'] else x for x in pc_mRNA_ids] # add mRNA location
+                    pc_mRNA_ids = [mRNA_with_location if x == rna['id'] else x for x in pc_mRNA_ids]  # add mRNA location
 
                     # add gene expression time to dataframe, to plot later
                     mRNA_exp_count = np.count_nonzero(mRNA_counts[:, mRNA_ids.index(mRNA_with_location)])
@@ -87,21 +86,25 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                     exp_time_df = exp_time_df.append({'tu_unit': pc_gene_id, 'gene_id': rna['id'][:-4], 'time_expressed': mRNA_exp_count, 'percent_time_expressed': mRNA_percent_time}, ignore_index=True)
 
                     # store gene expression time specifically for polycistronic gene
-                    if rna['id'][:-4] == pc_gene_id: # check that current mRNA is not a non-removed monomer
+                    if rna['id'][:-4] == pc_gene_id:  # check that current mRNA is not a non-removed monomer
                         polycistron_exp_count = mRNA_exp_count
                         polycistron_percent_time = mRNA_percent_time
 
                     mRNA_protein_dict[pc_gene_id][mRNA_with_location] = []
                     for protein in PROTEIN_INFO:
-                        if protein['id'] in rna['monomerSet']: # check if protein is expressed by mRNA
+                        if protein['id'] in rna['monomerSet']:  # check if protein is expressed by mRNA
                             protein_with_location = protein['id'] + "[" + protein['location'][0] + "]"
-                            mRNA_protein_dict[pc_gene_id][mRNA_with_location].append(protein_with_location) # add protein monomer with location
+                            mRNA_protein_dict[pc_gene_id][mRNA_with_location].append(protein_with_location)  # add protein monomer with location
 
             # add to dataframe: single genes for monomers that were removed
             for gene in pc['transcription_units']:
-                if gene not in exp_time_df.values: # gene not already in dataframe
-                    exp_time_df = exp_time_df.append({'tu_unit': pc_gene_id, 'gene_id': gene, 'time_expressed': polycistron_exp_count, 'percent_time_expressed': polycistron_percent_time}, ignore_index=True)
-                else: # gene in dataframe (i.e. it was a removed monomer and added earlier, see if expression data should be replaced with higher number)
+                if gene not in exp_time_df.values:  # gene not already in dataframe
+                    exp_time_df = exp_time_df.append({'tu_unit': pc_gene_id,
+                                                      'gene_id': gene,
+                                                      'time_expressed': polycistron_exp_count,
+                                                      'percent_time_expressed': polycistron_percent_time},
+                                                     ignore_index=True)
+                else:  # gene in dataframe (i.e. it was a removed monomer and added earlier, see if expression data should be replaced with higher number)
                     gene_row = exp_time_df.loc[exp_time_df['gene_id'] == gene]
                     if polycistron_percent_time > gene_row['percent_time_expressed'].values[0]:
                         exp_time_df.at[gene_row.index.item(), 'time_expressed'] = polycistron_exp_count
@@ -115,7 +118,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                 fig.add_subplot(111, frameon=False)
                 plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
 
-                proteins_plotted = [] # keep track of plotted proteins
+                proteins_plotted = []  # keep track of plotted proteins
                 for mRNA in mRNA_protein_dict[tu]:
                     ax1.plot(mRNA_counts[:, mRNA_ids.index(mRNA)], label='\n'.join(wrap(mRNA, 20)))
 
@@ -124,26 +127,26 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                         if protein not in proteins_plotted:
                             proteins_plotted.append(protein)
                             protein_count = bulkMolecule_counts[:,bulkMolecule_ids.index(protein)]
-                            protein_percent_time = (np.count_nonzero(protein_count) / time_total) * 100 # get % of time expressed
+                            protein_percent_time = (np.count_nonzero(protein_count) / time_total) * 100  # get % of time expressed
                             ax2.plot(protein_count, label='\n'.join(wrap(protein + "(% t_total: " + str(protein_percent_time) + "%)", 20)))
                             # now account for complexes
-                            complex_list = self.get_protein_complexes(protein[:-3], COMPLEX_INFO) # truncating protein location
+                            complex_list = self.get_protein_complexes(protein[:-3], COMPLEX_INFO)  # truncating protein location
                             if complex_list:
                                 for cplx in complex_list:
                                     cplx_count = bulkMolecule_counts[:,bulkMolecule_ids.index(cplx)]
-                                    cplx_percent_time = (np.count_nonzero(cplx_count) / time_total) * 100 # get % of time expressed
+                                    cplx_percent_time = (np.count_nonzero(cplx_count) / time_total) * 100  # get % of time expressed
                                     ax2.plot(cplx_count, label='\n'.join(wrap(cplx + "(% t_total: " + str(cplx_percent_time) + "%)", 20)))
 
                 # output % time gene expression values on mRNA plot
                 text_y_pos = 0.95
                 for gene in mRNA_gene_dict[tu]:
                     gene_row = exp_time_df[exp_time_df['gene_id'] == gene]
-                    percent_time_exp = '%.3f'%(gene_row['percent_time_expressed'].values[0] * 100) # truncate to 3 decimal points
-                    ax1.text(0.05, text_y_pos, gene + " = " + str(percent_time_exp) + "%", transform=plt.gca().transAxes) # print on plot
+                    percent_time_exp = '%.3f'%(gene_row['percent_time_expressed'].values[0] * 100)  # truncate to 3 decimal points
+                    ax1.text(0.05, text_y_pos, gene + " = " + str(percent_time_exp) + "%", transform=plt.gca().transAxes)  # print on plot
                     text_y_pos = text_y_pos - 0.03
 
-                ax1.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left') # mRNA plot legend
-                ax2.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left') # protein plot legend
+                ax1.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')  # mRNA plot legend
+                ax2.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')  # protein plot legend
 
                 ax1.set_title(tu + " mRNAs")
                 ax2.set_title(tu + " proteins")
@@ -156,26 +159,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         self.write_time_tsv(plotOutDir, mRNA_counts, mRNA_ids, mRNA_protein_dict)
 
     def parse_tsv(self, tsv_file):
-        tsv_list = []
-        with open(tsv_file) as tsvfile, open('temp.csv', 'w') as tempfile:
-            tsvfile_start = tsvfile.tell()
-            if not tsvfile.readline().startswith('#'):
-                tsvfile.seek(tsvfile_start)
-                reader = JsonReader(tsvfile)
-                fieldnames = reader.fieldnames
-                for row in reader:
-                    tsv_list.append(row)
-            else:
-                for this_line in tsvfile:
-                    if not this_line.startswith('#'): tempfile.write(this_line)
-                tempfile.close()
-                with open('temp.csv') as tempfile:
-                    reader = JsonReader(tempfile, dialect="excel-tab")
-                    fieldnames = reader.fieldnames
-                    for row in reader:
-                        tsv_list.append(row)
-                if os.path.exists("temp.csv"): os.remove("temp.csv")
-        return tsv_list, fieldnames
+        with tsv_reader(tsv_file) as reader:
+            fieldnames = reader.fieldnames
+            tsv_list = list(reader)
+            return tsv_list, fieldnames
 
     def get_protein_complexes(self, protein, complex_info):
         complex_list = []
@@ -193,9 +180,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         # convert dict to tuple, easier to write to tsv
         info_to_write = [(tu, mRNA, protein) for tu in mRNA_protein_dict for mRNA in mRNA_protein_dict[tu] for protein in mRNA_protein_dict[tu][mRNA]]
         for tu, mRNA, protein in info_to_write:
-            mRNA_count = mRNA_counts[:, mRNA_ids.index(mRNA)] # retrieve array of counts over time (to do: make this less redundant with do_plot function)
+            mRNA_count = mRNA_counts[:, mRNA_ids.index(mRNA)]  # retrieve array of counts over time (to do: make this less redundant with do_plot function)
             mRNA_coexp_time = np.count_nonzero(mRNA_count)
-            mRNA_percent_time = (mRNA_coexp_time / len(mRNA_count)) * 100 # get % of time expressed
+            mRNA_percent_time = (mRNA_coexp_time / len(mRNA_count)) * 100  # get % of time expressed
             output.writerow([tu, mRNA, protein, mRNA_coexp_time, mRNA_percent_time])
         return
 
