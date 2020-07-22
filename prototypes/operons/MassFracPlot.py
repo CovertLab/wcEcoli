@@ -13,7 +13,7 @@ import argparse
 
 
 
-def MassFracPlot(sim1name, sim1OutDir, sim2name, sim2OutDir, plotOutDir):
+def MassPlots(sim1name, sim1OutDir, sim2name, sim2OutDir, plotOutDir):
 
     simData = {}
     simData[sim1name] = {}
@@ -24,8 +24,8 @@ def MassFracPlot(sim1name, sim1OutDir, sim2name, sim2OutDir, plotOutDir):
     LineColor[sim2name] = 'orange'
 
     LineStyle = {}
-    LineStyle[sim1name] = '-.'
-    LineStyle[sim2name] = '-'
+    LineStyle[sim1name] = '-'
+    LineStyle[sim2name] = '-.'
 
     for k, simdir in zip([sim1name, sim2name], [sim1OutDir, sim2OutDir]):
 
@@ -53,15 +53,11 @@ def MassFracPlot(sim1name, sim1OutDir, sim2name, sim2OutDir, plotOutDir):
         ]).T
         simData[k]['fractions'] = (simData[k]['masses']/ simData[k]['cell'][:, None]).mean(axis=0)
 
-    plt.figure(figsize=(11, 8.5))
-
 
     mass_labels = ["cell", "protein", "rRNA", "tRNA", "mRNA", "DNA", "Small Molecules"]
-    # legend = [
-    #              '{} ({:.3f})'.format(label, fraction)
-    #              for label, fraction in zip(mass_labels, fractions)
-    #          ] + ['Total dry mass']
 
+    # PLOT MASS FRACTIONS
+    plt.figure(figsize=(11, 8.5))
     for p, mass in enumerate(mass_labels):
 
         plt.subplot(2, 4, p+1)
@@ -74,8 +70,29 @@ def MassFracPlot(sim1name, sim1OutDir, sim2name, sim2OutDir, plotOutDir):
         # plt.legend(legend, loc="best")
 
     plt.legend()
-    plt.tight_layout()
+    plt.suptitle("Mass Fractions", fontweight="bold")
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     exportFigure(plt, plotOutDir, sim1name + '_' + sim2name + '_massFrac')
+
+    plt.close("all")
+
+    # PLOT ABSOLUTE MASSES
+    plt.figure(figsize=(11, 8.5))
+    for p, mass in enumerate(mass_labels):
+
+        plt.subplot(2, 4, p+1)
+        for k in simData:
+            plt.plot(simData[k]['t'], simData[k][mass], linewidth=2, color=LineColor[k], linestyle=LineStyle[k], label=k)
+
+        plt.title(mass)
+        plt.xlabel("Time (min)")
+        plt.ylabel("Mass")
+        # plt.legend(legend, loc="best")
+
+    plt.legend()
+    plt.suptitle('Absolute Masses', fontweight="bold")
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    exportFigure(plt, plotOutDir, sim1name + '_' + sim2name + '_masses')
     plt.close("all")
 
 
@@ -86,5 +103,5 @@ if __name__ == "__main__":
     parser.add_argument('sim 2 name', type=str, help='name of second sim')
     parser.add_argument('sim2Dir', type=str, help='directory containing master sim (str)')
     args = vars(parser.parse_args())
-    plotOutDir = args['sim1Dir'].split('simOut')[0] + 'plotOut/'
-    MassFracPlot(args['sim 1 name'], args['sim1Dir'], args['sim 2 name'],  args['sim2Dir'], plotOutDir)
+    OutDir = args['sim1Dir'].split('simOut')[0] + 'plotOut/'
+    MassPlots(args['sim 1 name'], args['sim1Dir'], args['sim 2 name'],  args['sim2Dir'], OutDir)
