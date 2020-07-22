@@ -265,7 +265,7 @@ class Relation(object):
 		monomer_id_index_dict = {rnaId: index 
 			for index, rnaId in enumerate(self.monomer['rnaId'])}
 		# tu_dict: Contains all the TU's as keys (str), and their counts as values
-		tu_dict = {tu['tu_id']: tu['tu_count'] 
+		tu_dict = {tu['tu_id']: tu['tu_count_' + sim_data.basal_expression_condition]
 			for tu in raw_data.transcription_units}
 		overlapping_tu_dict = self.find_overlapping_tus(tu_dict)
 	

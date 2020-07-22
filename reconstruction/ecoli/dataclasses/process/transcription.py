@@ -202,7 +202,7 @@ class Transcription(object):
 		for rna in raw_data.operon_rnas:
 			
 			#taking counts from extrapolated transcription_unit counts.
-			arb_exp = [x['tu_count'] for x in raw_data.transcription_units
+			arb_exp = [x['tu_count_' + sim_data.basal_expression_condition] for x in raw_data.transcription_units
 				if x['tu_id'] == rna['geneId']]
 			
 			#arb_exp = [x[sim_data.basal_expression_condition]
