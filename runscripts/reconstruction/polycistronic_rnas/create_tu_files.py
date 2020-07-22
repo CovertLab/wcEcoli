@@ -143,7 +143,7 @@ output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix.tsv")
 output_proteins = os.path.join(FLAT_DIR, "proteins.tsv")
 output_tf_conditions = os.path.join(FLAT_DIR, 'condition', 'tf_condition.tsv')
 
-CONDITION = 'M9 Glucose minus AAs'
+CONDITIONS = ['M9 Glucose minus AAs', 'N limited Glucose minus AAs', 'M9 Glucose plus AAs', 'M9 Glycerol plus AAs', 'P limited Glucose plus AAs']
 SPLIT_DELIMITER = '_'
 
 '''
@@ -548,7 +548,7 @@ def create_gene_to_tu_matrix(rna_info, tu_info):
 
 	return gene_to_tu_matrix, rnas_gene_order
 
-def create_rnaseq_count_vector(rnas_gene_order):
+def create_rnaseq_count_matrix(rnas_gene_order):
 	'''
 	The counts vector is not in the same order as the Gene_TU_Matrix.
 	Need to reoder and pull out count information. 
@@ -557,18 +557,16 @@ def create_rnaseq_count_vector(rnas_gene_order):
 	being run in.
 	'''
 	rna_seq_data_all_cond = parse_tsv(RNA_SEQ_FILE)
-	#import pdb; pdb.set_trace()
-	rna_seq_data_index = {
-		row['Gene']: row[CONDITION] 
-		for row in rna_seq_data_all_cond[0]}
+	rna_seq_counts_matrix = np.empty(shape=(len(rnas_gene_order), len(CONDITIONS)))
 
-	rna_seq_counts_vector = [
-		rna_seq_data_index[gene] 
-		for gene in rnas_gene_order]
+	for i, condition in enumerate(CONDITIONS):
+		rna_seq_data_index = {row['Gene']: row[condition] for row in rna_seq_data_all_cond[0]}
+		rna_seq_counts_vector = [rna_seq_data_index[gene] for gene in rnas_gene_order]
+		rna_seq_counts_matrix[:,i] = rna_seq_counts_vector
 
-	return rna_seq_counts_vector
+	return rna_seq_counts_matrix
 
-def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
+def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_matrix, tu_info):
 	'''
 	Purpose:
 		Calculate transcription unit counts. Will functionally replace how rna seq
@@ -583,12 +581,21 @@ def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 		A list of dictionaries. Each dictionary contains the 'tu_id' and the 'tu_count' for
 		each TU in the model.
 	'''
-	tu_counts_vector = nnls(gene_tu_matrix, rna_seq_counts_vector)[0]
-	tu_gene_order = [row['geneId'] for row in tu_info]
-	tu_genes_counts = []
+	tu_counts_matrix = np.empty((gene_tu_matrix.shape[1], len(CONDITIONS)))  # num_RNAs by num_conditions
+
+	for i, condition in enumerate(CONDITIONS):
+		tu_counts_vector = nnls(gene_tu_matrix, rna_seq_counts_matrix[:,i])[0]  # nnls solve for each condition
+		tu_counts_matrix[:,i] = tu_counts_vector  # add one-condition vector to all-conditions matrix
+
+	tu_gene_order = [row['geneId'] for row in tu_info]  # to get tu_id
+	tu_genes_counts = []  # later will be written to transcription_units.tsv
 
 	for i in range(0, len(tu_gene_order)):
-		tu_genes_counts.append({'tu_id': tu_gene_order[i], 'tu_count': tu_counts_vector[i]})
+		tu_gene_dict = {}
+		tu_gene_dict['tu_id'] = tu_gene_order[i]
+		for j, condition in enumerate(CONDITIONS):  # one column per condition
+			tu_gene_dict['tu_count_' + condition] = tu_counts_matrix[i,j]
+		tu_genes_counts.append(tu_gene_dict)
 
 	return tu_genes_counts
 
@@ -601,9 +608,11 @@ def make_transcription_units_file():
 	'''
 	tu_info, fieldnames_rna = parse_tsv_2(TU_FILE)
 	gene_tu_matrix, rnas_gene_order = create_gene_to_tu_matrix(RNA_INFO, tu_info)
-	rna_seq_counts_vector = create_rnaseq_count_vector(rnas_gene_order)
-	tu_counts = create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info)
-	fieldnames = ['tu_id', 'tu_count']
+	rna_seq_counts_matrix = create_rnaseq_count_matrix(rnas_gene_order)
+	tu_counts = create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_matrix, tu_info)
+	fieldnames = ['tu_id']
+	for condition in CONDITIONS:  # in output_tu_counts file, want one column per condition
+		fieldnames.append('tu_count_' + condition)
 
 	with open(output_tu_counts, "w") as f:
 		writer = JsonWriter(f, fieldnames)
