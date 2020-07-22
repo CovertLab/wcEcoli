@@ -1,37 +1,68 @@
 # How to run the Whole Cell Model on the Google Cloud Platform
 
+➽ See [Borealis](https://github.com/CovertLab/borealis) for the code and documentation
+on running FireWorks workflows in Google Cloud including **Team Setup** and
+**Developer Setup** steps.
+
+
 ## One time setup
 
-1. [Install and log in to the Google Cloud SDK](https://github.com/CovertLab/sisyphus/blob/master/GCLOUD_SETUP.md).
+1. [Install the Google Cloud SDK and log in](https://github.com/CovertLab/sisyphus/blob/master/GCLOUD_SETUP.md).
    The SDK includes the `gcloud` and `gsutil` command line programs.
-   * Afterwards, it will occasionally prompt to install updates.
-   * You can do it proactively via the command:  
+   `gcloud` commands configure and operate projects, access controls, and servers.
+   `gsutil` commands manipulate Google Cloud Storage (GCS) buckets, transfer files,
+   run rysnc, etc.
+   * `gcloud` will occasionally prompt to install updates.
+   * You can install updates proactively via the command:  
    `gcloud components update`
-2. Create your own Google Cloud Storage bucket.
-   This enables usage tracking, cleanup, and ACLs.
+1. Create your own Google Cloud Storage bucket for output files.
+   Using a bucket per developer enables usage tracking, cleanup, and ACLs.
    1. You can create it via the [Google Cloud Storage — Browser
       webpage](https://console.cloud.google.com/storage/browser) or via the
       `gsutil` command line program.
-   2. Pick a name like "sisyphus-crick".
-      [It has to be globally unique; BEWARE that it\'s publicly visible so don\'t
+   1. Pick a name like "sisyphus-crick".  
+      It has to be globally unique.
+      BEWARE: The name is **publicly visible** so don't
       include login IDs, email addresses, project names, project numbers, or
-      personally identifiable information (PII).]
-   3. Pick the same Region used with Compute Engine (run `gcloud info` for info),
-      Standard storage class, and default access control.
-   4. Store the name in an environment variable in your shell profile and
-      update your current shell, e.g.:  
+      personally identifiable information (PII).
+   1. Pick the same Region used with Compute Engine (run `gcloud info` for info).
+   1. Pick Standard storage class, and default access control.
+   1. Store the name in the environment variable `WORKFLOW_STORAGE_ROOT` in
+      your shell profile and update your current shell, e.g.:  
       `export WORKFLOW_STORAGE_ROOT="sisyphus-crick"`
-   5. If you don't have access to create a storage bucket, ask a gcloud project
-      administrator. As a fallback, you can use a subdirectory of the 'sisyphus'
+   1. If you don't have access permissions to create a storage bucket, ask a gcloud project
+      administrator. As a fallback, you can use a subdirectory of the `sisyphus`
       bucket, e.g. `sisyphus/data/crick`.
 
 
 ## Setup
 
-* The steps below need your current working directory to be your wcEcoli git clone, e.g.:  
+* The "Run it" steps in the next section need your current working directory to
+  be your wcEcoli git clone, e.g.:  
   `cd ~/dev/wcEcoli`
-* The Python steps need the wcEcoli directory on the Python path:  
-  `export PYTHONPATH=$PWD`
+* The Python steps in the next section need the wcEcoli directory on the Python path:  
+  `export PYTHONPATH=$PWD`  
+  A shell alias is useful for this:  
+  `alias ppath='export PYTHONPATH=$PWD'`
+* Build your `${USER}-wcm-runtime` Docker Image:  
+  `cloud/build-runtime.sh`  
+  This builds a Docker Image named (by default) `${USER}-wcm-runtime`.  
+  This step takes about an hour but the work happens in a Google server.  
+  The Image contains the Python executable, binary libraries, Python pip libraries,
+  and compiled Cython code.
+  It does not contain the Python source code in your git working directory.  
+  Repeat this step whenever the Python executable or libraries change (i.e. when
+  you'd update your local pyenv virtualenv) and you want to run it in Google Cloud.
+* Build your `${USER}-wcm-code` Docker Image:  
+  `cloud/build-wcm.sh`  
+  This builds a Docker Image named (by default) `${USER}-wcm-code`.  
+  This step is quick.  
+  This Image starts from `${USER}-wcm-runtime` and adds the Python source code
+  in your git working directory.  
+  Your code does not need to be checked into git, but consider running `pytest`,
+  `runscripts/debug/mypy.sh`, and some manual runscripts first.  
+  Repeat this step whenever `${USER}-wcm-runtime` changes or your Python source
+  code changes that you want to run in Google Cloud.
 
 
 ## Run it
@@ -57,13 +88,13 @@
    analysis) didn't change since you last ran this step.
    * See "Variations" below about multiple `wcm-code` Docker images and new `wcm-runtime` base images.
 
-2. Open an ssh connection and TCP tunnel to the Gaia workflow server in Google Compute Engine:
+1. Open an ssh connection and TCP tunnel to the Gaia workflow server in Google Compute Engine:
 
    ```sh
    runscripts/cloud/ssh-tunnel.sh
    ```
 
-3. Use another terminal tab to build, upload, and start the Whole Cell Model workflow:
+1. Use another terminal tab to build, upload, and start the Whole Cell Model workflow:
 
    ```sh
    python runscripts/cloud/wcm.py
@@ -103,15 +134,15 @@ for quick access.
 work" steps of the simulation and analysis.)
 
   1. Move the "Compute Engine" card to top dead center position.
-  2. In this card's `⋮` menu, click `Add Chart`.
-  3. Title it `Worker load`.
-  4. Add Metric type `instance/cpu/utilization` with
+  1. In this card's `⋮` menu, click `Add Chart`.
+  1. Title it `Worker load`.
+  1. Add Metric type `instance/cpu/utilization` with
   filter `metric.labels.instance_name = starts_with("sisyphus")`.
-  5. Add Metric type `instance/disk/read_bytes_count` with the same filter,
+  1. Add Metric type `instance/disk/read_bytes_count` with the same filter,
   group by `resource.label.project_id`, aggregate `Sum`.
-  5. Add Metric type `instance/disk/write_bytes_count` with the same filter,
+  1. Add Metric type `instance/disk/write_bytes_count` with the same filter,
   group by `resource.label.project_id`, aggregate `Sum`.
-  6. Click `Save`.
+  1. Click `Save`.
 
 
 
@@ -137,14 +168,14 @@ page to view the logs from the project's GCE VM instances.
    * The page has several filtering tools.
      * A good place to start is to set the resource menu to
    `GCE VM Instance` and the log level to `Info`.
-     * Log level `Debug` will show internal workings of the Gaia and Sisyphus servers.
+     * Log level `Debug` will show internal workings of the servers.
      * Log severity `NOTICE` is used to make startup and shutdown events more prominent
    than `INFO`, but Log Viewer shows them with the same icon as `INFO` entries.
    * You can also filter on your workflow name or more simply on your user name.
    * Log entries from the Gaia server have
    logName = `projects/allen-discovery-center-mcovert/logs/gaia-base` and
    resource type `gce_instance` and resource label instance_id = `gaia-base`.
-   * Log entries from Sisyphus servers have logNames like
+   * Log entries from servers have logNames like
    `projects/allen-discovery-center-mcovert/logs/sisyphus-$USER-0.Demo_$USER_20190729.193458.count`
    when running a step (named `count` in this example) of a workflow (named `Demo_$USER_20190729.193458`)
    in this example, or just `projects/allen-discovery-center-mcovert/logs/sisyphus-$USER-0`
@@ -311,16 +342,3 @@ default to `$USER`.
    ```sh
    WF_ID=nightly python runscripts/cloud/wcm.py
    ```
-
-
-### Future
-
-* Document how to set up and update the Gaia, Sisyphus, RabbitMQ, and Kafka
-servers on GCE.
-  * Periodically apply security updates and apt-get upgrades.
-  * See [How to update the Sisyphus server's disk Image](update-sisyphus-server.md).
-  * Sisyphus disk images are in an "image family" so new ones supersede older
-  ones and we can revert back if a new one doesn't work. Do the same with the
-  other server types. 
-* Test other ways to open a secure connection to the Gaia workflow server.
-* Build a web UI for the Gaia workflow server to monitor and modify workflow runs.
