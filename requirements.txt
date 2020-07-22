@@ -26,7 +26,7 @@
 #
 ## Install numpy (if it's the first time) then all the packages listed in this file:
 #   pip install numpy==1.19.0
-#   pip install -r py3_requirements.txt && pyenv rehash
+#   pip install -r requirements.txt && pyenv rehash
 
 # Installers
 pip>=20.1.1
