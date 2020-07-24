@@ -61,7 +61,7 @@ This page goes through the Python environment setup steps in more detail and wit
    module load wcEcoli/python3
    ```
 
-   You'll need these newer git modules since since they use a compatible version of `libressl`:
+   You'll need these newer git modules since they use a compatible version of `libressl`:
 
    ```shell script
    module load git/2.27.0 git-lfs/2.11.0
@@ -145,7 +145,7 @@ virtualenv.
 
 1. Install NumPy.
 
-   (Sometimes you have to install numpy before some `scipy` and
+   (Sometimes you have to install numpy before some packages like `scipy` and
    `stochastic-arrow` to avoid installation errors.)
 
       ```bash
