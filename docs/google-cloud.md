@@ -108,8 +108,9 @@ Also see [Borealis: How to run a workflow](https://github.com/CovertLab/borealis
    Cloud Firetasks that start running after you build this Image will pick it up,
    including Firetasks that were already queued to run. You can update your code
    then use `lpad` commands to restart failed tasks and resume paused tasks.  
-   The full Docker Image path is `gcr.io/allen-discovery-center-mcovert/$USER-wcm-code`,
-   where `$USER` is your local username. You can "pull" and run it locally.
+   The full Docker Image path is `gcr.io/$PROJECT/$USER-wcm-code`, where
+   `$PROJECT` is the Google Cloud project name and `$USER` is your local username.
+   You can "pull" and run it locally.
 
 1. Open an ssh tunnel to the project's MongoDB "LaunchPad" server in Google Compute Engine:
 
@@ -170,7 +171,7 @@ Also see [Borealis: How to run a workflow](https://github.com/CovertLab/borealis
 ### Setup
 
 * In your web browser, bookmark the [Google Cloud Platform
-console](https://console.cloud.google.com/home/dashboard?project=allen-discovery-center-mcovert)
+console](https://console.cloud.google.com/home/dashboard)
 and log in.
 * In the `☰` (hamburger) menu in the top left corner of the Google Cloud Platform console webpage,
 pin "Compute Engine" (GCE), "Logging" (Stackdriver), and "Storage" (GCS) to the top section of this menu
@@ -197,10 +198,10 @@ work" steps of the simulation and analysis.)
 ### Monitor
 
 * Use your web browser bookmark to open the [Google Cloud Platform
-console](https://console.cloud.google.com/home/dashboard?project=allen-discovery-center-mcovert)
+console](https://console.cloud.google.com/home/dashboard)
 home page. Use the `☰` menu to navigate to the other pages.
 
-* Open the [Compute Engine — VM instances](https://console.cloud.google.com/compute/instances?project=allen-discovery-center-mcovert&instancessize=50)
+* Open the [Compute Engine — VM instances](https://console.cloud.google.com/compute/instances)
 page to see the list of running Compute Engine VM instances.
 
    * The `fireworker-$USER-0`, `fireworker-$USER-1`, ... VM instances are the worker
@@ -209,7 +210,7 @@ page to see the list of running Compute Engine VM instances.
    your username.
    * "mongo-prime" is running MongoDB for the FireWorks LaunchPad.
 
-* Open the [Logging — Logs Viewer](https://console.cloud.google.com/logs/viewer?project=allen-discovery-center-mcovert)
+* Open the [Logging — Logs Viewer](https://console.cloud.google.com/logs/viewer)
 page to view the logs from the project's GCE VM instances.
 
    * The ▷ (Run) button at the top starts streaming the logs (akin to `tail -f` following).
@@ -222,7 +223,7 @@ page to view the logs from the project's GCE VM instances.
      * You can filter on your workflow name or more simply on your user name.
    * Each step writes a log file to the `logs/` part of the output directory. See below.
 
-* Open the [Storage — Browser](https://console.cloud.google.com/storage/browser?project=allen-discovery-center-mcovert)
+* Open the [Storage — Browser](https://console.cloud.google.com/storage/browser)
 page to browse the files created by the workflow.
 
    * `wcm.py` directs the workflow's output files to the storage bucket you picked, above,
@@ -236,7 +237,7 @@ page to browse the files created by the workflow.
 Ways to download the outputs from your workflow:
 
 * **Simplest for individual files:** Open the [Google Cloud
-Storage — Browser](https://console.cloud.google.com/storage/browser?project=allen-discovery-center-mcovert),
+Storage — Browser](https://console.cloud.google.com/storage/browser),
 browse into your Google Cloud Storage bucket ("sisyphus-crick" or whatever)
 find your workflow files, and click on individual files to download them.
 * **Most convenient:** Use [gcsfuse](https://github.com/GoogleCloudPlatform/gcsfuse) to mount your

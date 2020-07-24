@@ -34,8 +34,8 @@ This page goes through the Python environment setup steps in more detail and wit
 1. Use your package manager to install the needed packages
 [see the `requirements.txt` file for the latest list].
 
-Theano will use the `openblas` library installed in this step.
-You can optionally install numpy and scipy to also use it.
+   Theano will use the `openblas` library installed in this step.
+   You can optionally install numpy and scipy to also use it.
 
    **On macOS**
 
@@ -59,6 +59,12 @@ You can optionally install numpy and scipy to also use it.
 
    ```bash
    module load wcEcoli/python3
+   ```
+
+   You'll need these newer git modules since since they use a compatible version of `libressl`:
+
+   ```shell script
+   module load git/2.27.0 git-lfs/2.11.0
    ```
 
 1. Optional: Download and install other packages according to their instructions or take a wait-and-see approach with them.
