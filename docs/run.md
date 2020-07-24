@@ -4,14 +4,27 @@ See the top level [README](../README.md) for general instructions and [docs/READ
 and tradeoffs between different ways to run the model.
 
 
-## Google Cloud
+## FireWorks on Google Cloud
 
 See [How to run the Whole Cell Model on the Google Cloud Platform](google-cloud.md)
 for instructions to run a FireWorks workflow of cell simulations and analysis plots in Google Cloud or your local computer.
 
-## Fireworks
+## Fireworks on Sherlock
 
 See [Setting up to run FireWorks](wholecell/fireworks/README.md) for instructions to run a FireWorks workflow of cell simulations and analysis plots on Sherlock or your local computer. Start with `fw_queue.py`.
+
+**NOTE:** If you get this error message connecting to an older MongoDB server
+(such as on `mlab.com`, not the one in Google Cloud) with the pymongo library 3.9.0+
+that wcEcoli uses in Python 3:
+
+> pymongo.errors.OperationFailure: This MongoDB deployment does not support retryable writes. Please add retryWrites=false to your connection string.
+
+the fix is to add these lines to your `my_launchpad.yaml` file:
+
+```
+mongoclient_kwargs:
+  retryWrites: false
+```
 
 ## Using the Manual Runscripts
 
