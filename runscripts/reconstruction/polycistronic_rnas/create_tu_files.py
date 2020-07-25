@@ -177,8 +177,12 @@ def read_file_skipping_comments(tsvfile, tsv_list, tempfile):
 	with open('temp.csv') as tempfile:
 		reader = JsonReader(tempfile)
 		fieldnames = reader.fieldnames
-		for row in reader:
-			tsv_list.append(row)
+		try:
+			for row in reader:
+				tsv_list.append(row)
+				print(row)
+		except:
+			import pdb; pdb.set_trace()
 	if os.path.exists("temp.csv"):
 		os.remove("temp.csv")
 	else:
