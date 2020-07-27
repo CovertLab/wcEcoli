@@ -197,26 +197,23 @@ class Transcription(object):
 		mRNA_ids = set([rna['id'] for rna in raw_data.rnas if rna['type'] == 'mRNA'])
 
 		# Load RNA half lives
-		rna_half_life_index = {}
-		all_reported_half_lives = []
+		rna_id_to_half_life = {}
 		reported_mRNA_half_lives = []
 
-		for i, rna in enumerate(raw_data.rna_half_lives):
-			rna_half_life_index[rna['id']] = i
-			all_reported_half_lives.append(rna['half_life'])
+		for rna in raw_data.rna_half_lives:
+			rna_id_to_half_life[rna['id']] = rna['half_life']
 
 			if rna['id'] in mRNA_ids:
 				reported_mRNA_half_lives.append(rna['half_life'])
 
-		# Append average reported half life of mRNAs to end of list
-		all_reported_half_lives.append(
-			int(np.round(np.array(reported_mRNA_half_lives).mean())))
+		# Calculate average reported half lives of mRNAs
+		average_mRNA_half_lives = np.array(reported_mRNA_half_lives).mean()
 
 		# Get half life of each RNA - if the half life is not given, use the
 		# average reported half life of mRNAs
 		# TODO (ggsun): Handle units correctly
 		half_lives = np.array([
-			all_reported_half_lives[rna_half_life_index.get(rna['id'], -1)]
+			rna_id_to_half_life.get(rna['id'], average_mRNA_half_lives)
 			for rna in raw_data.rnas])
 
 		# Convert to degradation rates
