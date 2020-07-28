@@ -108,6 +108,10 @@ def gather_gene_directions(gene_coordinates):
 	return positive_strand_sorted, negative_strand_sorted
 
 def sort_tu(row, gene_coordinates, mrna_ids):
+	'''
+	Returns:
+	List of genes in sorted order.
+	'''
 	row_dup_removed = list(dict.fromkeys(row[0]))
 	tu_coordinates = []
 	check_1 = 0
@@ -123,9 +127,11 @@ def sort_tu(row, gene_coordinates, mrna_ids):
 	if check_1 > 0 or check_2 > 0:
 		sorted_tu = []
 	elif check_1 == 0 and check_2 == 0:
-		sorted_tu = [x for (y,x) in sorted(zip(np.argsort(tu_coordinates),row_dup_removed), key=lambda pair: pair[0])]
+		sorted_inds, sorted_items = zip(*sorted([(i,e) for i,e in enumerate(tu_coordinates)], key=itemgetter(1)))
+		sorted_tu = row_dup_removed.sort(key=list(sorted_inds)) 
 		if row[1] == '-':
 			sorted_tu.reverse()
+		import pdb; pdb.set_trace()
 	return sorted_tu
 
 def write_output_file(data, header, output_file):
