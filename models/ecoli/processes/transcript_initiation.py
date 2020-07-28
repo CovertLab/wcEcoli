@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 TranscriptInitiation
 
@@ -13,15 +11,17 @@ TODO:
 @date: Created 4/26/14
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import scipy.sparse
+from typing import cast
+
+from six.moves import zip
 
 import wholecell.processes.process
 from wholecell.utils import units
 
-from itertools import izip
 
 class TranscriptInitiation(wholecell.processes.process.Process):
 	""" TranscriptInitiation """
@@ -64,8 +64,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 					if rna_data['id'] in sim_data.genetic_perturbations]
 
 			self.genetic_perturbations = {
-				'fixedRnaIdxs': map(lambda pair: pair[0], probability_indexes),
-				'fixedSynthProbs': map(lambda pair: pair[1], probability_indexes)
+				'fixedRnaIdxs': [pair[0] for pair in probability_indexes],
+				'fixedSynthProbs': [pair[1] for pair in probability_indexes]
 				}
 
 		# If initiationShuffleIdxs does not exist, set value to None
@@ -116,7 +116,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# Read current environment
 		current_media_id = self._external_states['Environment'].current_media_id
 
-		if self.full_chromosomes.total_counts()[0] > 0:
+		if self.full_chromosomes.total_count() > 0:
 			# Get attributes of promoters
 			TU_index, bound_TF = self.promoters.attrs("TU_index", "bound_TF")
 
@@ -124,7 +124,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 				cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
 				cell_volume = cell_mass / self.cell_density
 				counts_to_molar = 1 / (self.n_avogadro * cell_volume)
-				ppgpp_conc = self.ppgpp.total_counts()[0] * counts_to_molar
+				ppgpp_conc = self.ppgpp.total_count() * counts_to_molar
 				basal_prob = self.synth_prob(ppgpp_conc, self.copy_number)
 			else:
 				basal_prob = self.basal_prob
@@ -177,7 +177,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		# If there are no chromosomes in the cell, set all probs to zero
 		else:
-			self.promoter_init_probs = np.zeros(self.promoters.total_counts())
+			self.promoter_init_probs = np.zeros(self.promoters.total_count())
 
 		self.fracActiveRnap = self.fracActiveRnapDict[current_media_id]
 		self.rnaPolymeraseElongationRate = self.rnaPolymeraseElongationRateDict[current_media_id]
@@ -190,7 +190,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 	def evolveState(self):
 		# no synthesis if no chromosome
-		if self.full_chromosomes.total_counts()[0] == 0:
+		if self.full_chromosomes.total_count() == 0:
 			self.writeToListener(
 				"RnaSynthProb", "rnaSynthProb", np.zeros(self.n_TUs))
 			return
@@ -200,7 +200,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			"TU_index", "coordinates", "domain_index", "bound_TF")
 
 		# Construct matrix that maps promoters to transcription units
-		n_promoters = self.promoters.total_counts()
+		n_promoters = self.promoters.total_count()
 		TU_to_promoter = scipy.sparse.csr_matrix(
 			(np.ones(n_promoters), (TU_index, np.arange(n_promoters))),
 			shape = (self.n_TUs, n_promoters))
@@ -261,9 +261,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.RNAs.moleculesNew(
 			n_RNAPs_to_activate,
 			TU_index=TU_index_partial_RNAs,
-			transcript_length=np.zeros(n_RNAPs_to_activate),
+			transcript_length=np.zeros(cast(int, n_RNAPs_to_activate)),
 			is_mRNA=is_mRNA,
-			is_full_transcript=np.zeros(n_RNAPs_to_activate, dtype=np.bool),
+			is_full_transcript=np.zeros(cast(int, n_RNAPs_to_activate), dtype=np.bool),
 			can_translate=is_mRNA,
 			RNAP_index=RNAP_indexes)
 
@@ -344,6 +344,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		promoters for RNA A, whose synthesis probability should be fixed to
 		0.1, each promoter is given an initiation probability of 0.05.
 		"""
-		for idx, synth_prob in izip(fixed_indexes, fixed_synth_probs):
+		for idx, synth_prob in zip(fixed_indexes, fixed_synth_probs):
 			fixed_mask = (TU_index == idx)
 			self.promoter_init_probs[fixed_mask] = synth_prob / fixed_mask.sum()

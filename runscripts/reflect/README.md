@@ -17,8 +17,8 @@ import runscripts.reflect.object_tree as o
 Then, get the object you wish to examine. In our case we are going to take a look at `sim_data`:
 
 ```python
-import cPickle
-sim_data = cPickle.load(open('out/manual/kb/simData.cPickle', "rb"))
+from six.moves import cPickle
+sim_data = cPickle.load(io.open('out/manual/kb/simData.cPickle', "rb"))
 ```
 
 Now that we have our object, we can transform it into a nested dictionary:
@@ -33,7 +33,7 @@ You can pretty-print the result, optionally to an output stream:
 import pprint as pp
 pp.pprint(sim_tree)
 
-with open('user/dump.txt', 'w') as f:
+with io.open('user/dump.txt', 'w') as f:
     pp.pprint(sim_tree, f)
 ```
 

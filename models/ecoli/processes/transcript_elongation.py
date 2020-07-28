@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 TranscriptElongation
 
@@ -13,7 +11,7 @@ TODO:
 @date: Created 4/26/14
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
@@ -78,7 +76,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			self.variable_elongation)
 
 		# If there are no active RNA polymerases, return immediately
-		if self.active_RNAPs.total_counts()[0] == 0:
+		if self.active_RNAPs.total_count() == 0:
 			return
 
 		# Determine total possible sequences of nucleotides that can be
@@ -119,7 +117,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		ntpCounts = self.ntps.counts()
 		self.writeToListener("GrowthLimits", "ntpAllocated", ntpCounts)
 
-		if self.active_RNAPs.total_counts()[0] == 0:
+		if self.active_RNAPs.total_count() == 0:
 			return
 
 		# Get attributes from existing RNAs

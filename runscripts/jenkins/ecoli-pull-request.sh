@@ -5,16 +5,21 @@ PASSWORD=$4
 
 set -e
 
-module load wcEcoli/sherlock2
+module load wcEcoli/python3
 
 ### -------------------------------------------------------------------
-### Edit this line to make the PR build use a new pyenv.
-### Revert to `pyenv local wcEcoli2` before merging the PR into master.
+### Edit this line to make the PR build use another pyenv like wcEcoli3-staging.
+### Revert it to `wcEcoli3` before merging the PR into master.
 ### -------------------------------------------------------------------
-pyenv local wcEcoli2
+pyenv local wcEcoli3
 
-make clean
-make compile
+make clean compile
+
+# Get mypy type checker warnings now but defer failing on its error detections.
+set +e
+runscripts/debug/mypy.sh
+MYPY_FAILED=$?
+set -e
 
 PYTHONPATH=$PWD:$PYTHONPATH pytest --cov=wholecell --cov-report xml \
     --junitxml=unittests.xml
@@ -34,6 +39,6 @@ if [ $N_FAILS -gt 0 ]; then
   mv out/2* /scratch/PI/mcovert/wc_ecoli/failed/
 fi
 
-test $N_FAILS = 0
+test $N_FAILS = 0 -a $MYPY_FAILED = 0
 
 rm -fr out/*

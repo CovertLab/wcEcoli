@@ -9,11 +9,14 @@ Polypeptide initiation sub-model.
 
 from __future__ import absolute_import, division, print_function
 
+from typing import cast
+
 import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize
+from six.moves import zip
 
 
 class PolypeptideInitiation(wholecell.processes.process.Process):
@@ -172,9 +175,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.active_ribosomes.moleculesNew(
 			n_ribosomes_to_activate,
 			protein_index=protein_indexes,
-			peptide_length=np.zeros(n_ribosomes_to_activate, dtype=np.int64),
+			peptide_length=np.zeros(cast(int, n_ribosomes_to_activate), dtype=np.int64),
 			mRNA_index=mRNA_indexes,
-			pos_on_mRNA=np.zeros(n_ribosomes_to_activate, dtype=np.int64)
+			pos_on_mRNA=np.zeros(cast(int, n_ribosomes_to_activate), dtype=np.int64)
 			)
 
 		# Decrement free 30S and 70S ribosomal subunit counts

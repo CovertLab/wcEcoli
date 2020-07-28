@@ -8,7 +8,7 @@ for processes.
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 import os
 
 from matplotlib import pyplot as plt
@@ -50,7 +50,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		variants = ap.get_variants()
 		n_variants = len(variants)
 
-		with open(simDataFile) as f:
+		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 		inactive_rnap_id = [sim_data.moleculeIds.rnapFull]
 		ribosome_subunit_ids = [

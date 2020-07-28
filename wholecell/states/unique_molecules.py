@@ -11,10 +11,11 @@ creates and manages the structured arrays in memory.
 
 from __future__ import absolute_import, division, print_function
 
-from itertools import izip
 from copy import deepcopy
 
 import numpy as np
+import six
+from six.moves import zip
 
 import wholecell.states.internal_state
 import wholecell.views.view
@@ -59,13 +60,13 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 		self._submass_diff_names = []
 		self._submass_diff_name_to_index = {}
 
-		for i, submassName in enumerate(sim_data.submassNameToIndex.viewkeys()):
+		for i, submassName in enumerate(sim_data.submassNameToIndex):
 			massDiffPropertyName = "massDiff_" + submassName
 			defaultMassAttributes[massDiffPropertyName] = np.float64
 			self._submass_diff_names.append(massDiffPropertyName)
 			self._submass_diff_name_to_index[massDiffPropertyName] = i
 
-		for molDef in self.uniqueMoleculeDefinitions.viewvalues():
+		for molDef in six.viewvalues(self.uniqueMoleculeDefinitions):
 			molDef.update(defaultMassAttributes)
 
 		self.container = UniqueObjectsContainer(
@@ -76,7 +77,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 
 		molecule_id_to_mass = {}
 		uniqueMoleculeMasses = sim_data.internal_state.uniqueMolecules.uniqueMoleculeMasses
-		for (id_, mass) in izip(
+		for (id_, mass) in zip(
 			uniqueMoleculeMasses["id"], uniqueMoleculeMasses["mass"]
 			):
 			molecule_id_to_mass[id_] = (mass/sim_data.constants.nAvogadro).asNumber(units.fg)
@@ -96,6 +97,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 		self.division_mode['active_ribosome'] = sim_data.moleculeGroups.unique_molecules_active_ribosome_division
 		self.division_mode['RNA'] = sim_data.moleculeGroups.unique_molecules_RNA_division
 		self.division_mode['domain_index'] = sim_data.moleculeGroups.unique_molecules_domain_index_division
+		self.division_mode['chromosomal_segment'] = sim_data.moleculeGroups.unique_molecules_chromosomal_segment_division
 
 
 	def partition(self, processes):
@@ -121,7 +123,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 			if req["type"] == "submass":
 				process_index = req["process_index"]
 
-				for attribute, values in req["added_masses"].viewitems():
+				for attribute, values in six.viewitems(req["added_masses"]):
 					submass_index = self._submass_diff_name_to_index[attribute]
 					process_mass_diffs[process_index, submass_index] += values.sum()
 
@@ -146,7 +148,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 				process_mass_diffs[process_index, :] += masses_per_molecule * req["nObjects"]
 
 				# Add submass differences that the molecules were initialized with
-				for attribute, values in req["attributes"].viewitems():
+				for attribute, values in six.viewitems(req["attributes"]):
 					if attribute in self._submass_diff_names:
 						submass_index = self._submass_diff_name_to_index[attribute]
 						process_mass_diffs[process_index, submass_index] += values.sum()
@@ -161,7 +163,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 		"""
 		masses = np.zeros_like(self._masses)
 
-		for moleculeId, moleculeMasses in izip(
+		for moleculeId, moleculeMasses in zip(
 				self._molecule_ids, self._molecule_masses):
 			# Get all molecules of a particular type
 			molecules = self.container.objectsInCollection(moleculeId)
@@ -205,7 +207,7 @@ class UniqueMoleculesView(wholecell.views.view.View):
 		self.cached_attributes = {}
 
 		# self._query must be the name of a unique molecule
-		assert isinstance(self._query, basestring)
+		assert isinstance(self._query, six.string_types)
 
 	def _updateQuery(self):
 		# TODO: generalize this logic (both here and in the state)

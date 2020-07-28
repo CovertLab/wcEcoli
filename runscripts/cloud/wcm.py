@@ -10,8 +10,10 @@ import json
 import os
 import posixpath
 import re
+import sys
 from typing import Any, Dict, Iterable, Optional, Type
 
+from borealis.util import gcp
 from fireworks import FiretaskBase
 
 from wholecell.fireworks.firetasks import (
@@ -31,10 +33,11 @@ import wholecell.utils.filepath as fp
 from runscripts.manual.analysisBase import AnalysisBase
 from runscripts.cloud.util.workflow import (DEFAULT_LPAD_YAML,
 	STORAGE_ROOT_ENV_VAR, Task, Workflow)
+from six.moves import range
 
 
 # ':latest' -- "You keep using that word. I do not think it means what you think it means."
-DOCKER_IMAGE = 'gcr.io/allen-discovery-center-mcovert/{}-wcm-code'
+DOCKER_IMAGE = 'gcr.io/{}/{}-wcm-code'
 
 
 class WcmWorkflow(Workflow):
@@ -48,7 +51,7 @@ class WcmWorkflow(Workflow):
 			name, owner_id=owner_id, verbose_logging=verbose_logging)
 
 		self.timestamp = timestamp
-		self.image = DOCKER_IMAGE.format(owner_id)
+		self.image = DOCKER_IMAGE.format(gcp.project(), owner_id)
 
 		subdir = self.timestamp + (
 			'__' + _sanitize_description(description) if description else '')
@@ -131,6 +134,7 @@ class WcmWorkflow(Workflow):
 			description=args['description'] or 'WCM',
 			time=self.timestamp,
 			_time="$IMAGE_TIMESTAMP",
+			python=sys.version.splitlines()[0],
 			variant=variant_type,
 			total_variants=str(variant_count),
 			total_gens=args['generations'])
@@ -196,13 +200,13 @@ class WcmWorkflow(Workflow):
 			variant_analysis_inputs.append(variant_sim_data_dir)
 			arg_seed = args['seed']
 
-			for j in xrange(arg_seed, arg_seed + args['init_sims']):  # init sim seeds
+			for j in range(arg_seed, arg_seed + args['init_sims']):  # init sim seeds
 				seed_dir = self.internal(subdir, '{:06d}'.format(j))
 				md_multigen = dict(md_cohort, seed=j)
 
 				this_variant_this_seed_multigen_analysis_inputs = [kb_dir, variant_sim_data_dir]
 
-				for k in xrange(args['generations']):
+				for k in range(args['generations']):
 					gen_dir = posixpath.join(seed_dir, "generation_{:06d}".format(k))
 					md_single = dict(md_multigen, gen=k)
 

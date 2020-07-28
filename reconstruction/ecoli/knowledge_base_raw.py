@@ -7,21 +7,22 @@ directly from CSV flat files.
 """
 from __future__ import absolute_import, division, print_function
 
+import io
 import os
-import csv
-from reconstruction.spreadsheets import JsonReader
 import json
-from itertools import ifilter
 
+from reconstruction.spreadsheets import read_tsv
+from wholecell.io import tsv
 from wholecell.utils import units  # used by eval()
 
-CSV_DIALECT = csv.excel_tab
+
 FLAT_DIR = os.path.join(os.path.dirname(__file__), "flat")
 LIST_OF_DICT_FILENAMES = (
 	"biomass.tsv",
 	"compartments.tsv",
 	"complexationReactions.tsv",
 	"disabledKineticReactions.tsv",
+	"dna_supercoiling.tsv",
 	"dryMassComposition.tsv",
 	"endoRnases.tsv",
 	"equilibriumReactions.tsv",
@@ -29,34 +30,30 @@ LIST_OF_DICT_FILENAMES = (
 	"full_chromosome.tsv",
 	"genes.tsv",
 	"growthRateDependentParameters.tsv",
-	"massAtReplicationInitiation.tsv",
 	"metabolism_kinetics.tsv",
 	"metabolites.tsv",
 	"metaboliteConcentrations.tsv",
 	"modificationReactions.tsv",
 	"modifiedForms.tsv",
 	"modifiedFormsStoichiometry.tsv",
-	"modifiedRnas.tsv",
 	"polymerized.tsv",
 	"ppgpp_fc.tsv",
 	"ppgpp_regulation.tsv",
-	"promoters.tsv",
 	"protein_half_lives.tsv",
 	"proteinComplexes.tsv",
 	"proteins.tsv",
 	"reactions.tsv",
 	"relative_metabolite_concentrations.tsv",
+	"rna_half_lives.tsv",
 	"rnas.tsv",
 	"secretions.tsv",
 	"sequence_motifs.tsv",
-	"terminators.tsv",
 	"tfIds.tsv",
 	"tfOneComponentBound.tsv",
-	"transcriptionUnits.tsv",
 	"translationEfficiency.tsv",
 	"transport_reactions.tsv",
-	"twoComponentSystemTemplates.tsv",
 	"twoComponentSystems.tsv",
+	"twoComponentSystemTemplates.tsv",
 	"water.tsv",
 	os.path.join("massFractions", "glycogenFractions.tsv"),
 	os.path.join("massFractions", "ionFractions.tsv"),
@@ -117,11 +114,8 @@ class KnowledgeBaseEcoli(object):
 		attrName = file_name.split(os.path.sep)[-1].split(".")[0]
 		setattr(path, attrName, [])
 
-		with open(file_name, 'rU') as csvfile:
-			reader = JsonReader(
-				ifilter(lambda x: x.lstrip()[0] != "#", csvfile), # Strip comments
-				dialect = CSV_DIALECT)
-			setattr(path, attrName, [row for row in reader])
+		rows = read_tsv(file_name)
+		setattr(path, attrName, rows)
 
 	def _load_sequence(self, file_path):
 		from Bio import SeqIO
@@ -134,8 +128,8 @@ class KnowledgeBaseEcoli(object):
 		attrName = file_path.split(os.path.sep)[-1].split(".")[0]
 		paramDict = {}
 
-		with open(file_path, "rU") as csvfile:
-			reader = csv.DictReader(csvfile, dialect = CSV_DIALECT)
+		with io.open(file_path, "rb") as csvfile:
+			reader = tsv.dict_reader(csvfile)
 
 			for row in reader:
 				value = json.loads(row['value'])

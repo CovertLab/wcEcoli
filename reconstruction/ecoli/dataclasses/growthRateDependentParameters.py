@@ -7,11 +7,16 @@ SimulationData mass data
 
 from __future__ import absolute_import, division, print_function
 
+from typing import Tuple
+
 import numpy as np
-from scipy import interpolate
+from scipy import interpolate, stats
 import unum
 
 from wholecell.utils import units
+from six.moves import range
+import six
+from six.moves import zip
 
 
 NORMAL_CRITICAL_MASS = 975 * units.fg
@@ -76,9 +81,12 @@ class Mass(object):
 	def _buildSubMasses(self, raw_data, sim_data):
 		self._doubling_time_vector = units.min * np.array([float(x['doublingTime'].asNumber(units.min)) for x in raw_data.dryMassComposition])
 
-		# TODO: Use helper functions written for growthRateDependent parameters to make this better!
-		dryMass = np.array([float(x['averageDryMass'].asNumber(units.fg)) for x in raw_data.dryMassComposition])
-		self._dryMassParams = interpolate.splrep(self._doubling_time_vector.asNumber(units.min)[::-1], dryMass[::-1])
+		dryMass = np.array([
+			float(x['averageDryMass'].asNumber(units.fg))
+			for x in raw_data.dryMassComposition
+			])
+		self._dryMassParams = linear_regression(
+			self._doubling_time_vector.asNumber(units.min), 1. / dryMass)
 
 		self._proteinMassFractionParams = self._getFitParameters(raw_data.dryMassComposition, 'proteinMassFraction')
 		self._rnaMassFractionParams = self._getFitParameters(raw_data.dryMassComposition, 'rnaMassFraction')
@@ -106,9 +114,23 @@ class Mass(object):
 
 	# Set based on growth rate avgCellDryMass
 	def getAvgCellDryMass(self, doubling_time):
-		doubling_time = self._clipTau_d(doubling_time)
-		avgCellDryMass = units.fg * float(interpolate.splev(doubling_time.asNumber(units.min), self._dryMassParams))
-		return avgCellDryMass
+		# type: (units.Unum) -> units.Unum
+		"""
+		Gets the dry mass for an average cell at the given doubling time.
+
+		Args:
+			doubling_time (float, time units): expected doubling time
+
+		Returns:
+			average cell dry mass (float, mass units)
+		"""
+
+		doubling_time = doubling_time.asNumber(units.min)
+		inverse_mass = self._dryMassParams[0] * doubling_time + self._dryMassParams[1]
+		if inverse_mass < 0:
+			raise ValueError('Doubling time ({} min) is too short, could not get mass.'
+				.format(doubling_time))
+		return units.fg / inverse_mass
 
 	def get_dna_critical_mass(self, doubling_time):
 		# type: (units.Unum) -> units.Unum
@@ -151,18 +173,18 @@ class Mass(object):
 		D["solublePool"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._solublePoolMassFractionParams))
 		D["inorganicIon"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._inorganicIonMassFractionParams))
 
-		total = np.sum([y for x,y in D.iteritems()])
-		for key, value in D.iteritems():
+		total = np.sum([y for y in six.viewvalues(D)])
+		for key, value in six.viewitems(D):
 			if key != 'dna':
 				D[key] = value / total
-		assert np.absolute(np.sum([x for x in D.itervalues()]) - 1.) < 1e-3
+		assert np.absolute(np.sum([x for x in six.viewvalues(D)]) - 1.) < 1e-3
 		return D
 
 
 	def getFractionMass(self, doubling_time):
 		D = {}
 		massFraction = self.getMassFraction(doubling_time)
-		for key, value in massFraction.iteritems():
+		for key, value in six.viewitems(massFraction):
 			D[key + "Mass"] = value * self.getAvgCellDryMass(doubling_time)
 
 		return D
@@ -373,7 +395,13 @@ class Mass(object):
 			interpolate.interp1d(self._trna_growth_rates.asNumber(1/units.h), self._trna_ratio_to_16SrRNA_by_growth_rate[:,i])
 			for i in range(self._trna_ratio_to_16SrRNA_by_growth_rate.shape[1])]
 
-		abundance = np.zeros(len(self._trna_ids), dtype = [('id','a50'),('molar_ratio_to_16SrRNA', np.float64)])
+		id_length = max(len(id_) for id_ in self._trna_ids)
+		abundance = np.zeros(
+			len(self._trna_ids),
+			dtype=[
+				('id','U{}'.format(id_length)),
+				('molar_ratio_to_16SrRNA', np.float64),
+			])
 		abundance['id'] = self._trna_ids
 		abundance['molar_ratio_to_16SrRNA'] = [x(growth_rate) for x in trna_abundance_interpolation_functions]
 		return abundance
@@ -464,7 +492,7 @@ def _loadRow(key, list_of_dicts):
 		return np.array([x[key] for x in list_of_dicts])
 
 def _loadTableIntoObjectGivenDoublingTime(obj, list_of_dicts):
-	table_keys = list_of_dicts[0].keys()
+	table_keys = list(list_of_dicts[0].keys())
 
 	if 'doublingTime' not in table_keys:
 		raise Exception(
@@ -476,3 +504,31 @@ def _loadTableIntoObjectGivenDoublingTime(obj, list_of_dicts):
 		fitParameters = _getFitParameters(list_of_dicts, key)
 		attrValue = _useFitParameters(obj._doubling_time, **fitParameters)
 		setattr(obj, key, attrValue)
+
+def linear_regression(x, y, r_tol=0.999, p_tol=1e-5):
+	# type: (np.ndarray, np.ndarray, float, float) -> Tuple[float, float]
+	"""
+	Perform linear regression on a data set and check that statistics are
+	within expected values to confirm a good linear fit.
+
+	Args:
+		x (float): x values for regression
+		y (float): y values for regression
+		r_tol: lower limit for r statistic
+		p_tol: upper limit for p statistic
+
+	Returns:
+		slope: linear fit slope
+		intercept: linear fit intercept
+	"""
+
+	result = stats.linregress(x, y)
+
+	if result.rvalue < r_tol:
+		raise ValueError('Could not fit linear regression with high enough r'
+			' value: {} < {}'.format(result.rvalue, r_tol))
+	if result.pvalue > p_tol:
+		raise ValueError('Could not fit linear regression with low enough p'
+			' value: {} > {}'.format(result.pvalue, p_tol))
+
+	return result.slope, result.intercept

@@ -9,6 +9,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
+from six.moves import range
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -22,6 +23,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			if n_cells > max_cells_in_gen:
 				max_cells_in_gen = n_cells
 
+		# noinspection PyTypeChecker
 		fig, axesList = plt.subplots(ap.n_generation, sharey = True, sharex = True,
 			subplot_kw={'aspect': 0.4, 'adjustable': 'box'})
 

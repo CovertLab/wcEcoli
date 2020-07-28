@@ -2,10 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 
 import os
-import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -52,7 +52,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			variant = variants[varIdx]
 			all_cells = ap.get_cells(variant=[variant])
 			try:
-				sim_data = cPickle.load(open(ap.get_variant_kb(variant)))
+				sim_data = cPickle.load(open(ap.get_variant_kb(variant), 'rb'))
 			except Exception as e:
 				print("Couldn't load sim_data object. Exiting.", e)
 				return

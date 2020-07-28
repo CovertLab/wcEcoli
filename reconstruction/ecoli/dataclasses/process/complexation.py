@@ -6,10 +6,12 @@ SimulationData for the Complexation process
 @date: Created 01/23/2015
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from wholecell.utils import units
+from six.moves import range, zip
+
 
 class ComplexationError(Exception):
 	pass
@@ -153,7 +155,12 @@ class Complexation(object):
 		coefficient of one.
 		'''
 		info = self._moleculeRecursiveSearch(cplxId, self.stoichMatrix(), self.moleculeNames)
-		return {'subunitIds': np.array(info.keys()), 'subunitStoich': np.array(info.values())}
+		subunits = []
+		subunit_stoich = []
+		for subunit, stoich in sorted(info.items()):
+			subunits.append(subunit)
+			subunit_stoich.append(stoich)
+		return {'subunitIds': np.array(subunits), 'subunitStoich': np.array(subunit_stoich)}
 
 	def _buildStoichMatrixMonomers(self):
 		"""

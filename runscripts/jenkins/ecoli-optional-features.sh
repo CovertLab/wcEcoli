@@ -5,8 +5,8 @@ PASSWORD=$4
 
 set -e
 
-module load wcEcoli/sherlock2
-pyenv local wcEcoli2
+module load wcEcoli/python3
+pyenv local wcEcoli3
 export PYTHONPATH=$PWD
 
 make clean
@@ -21,6 +21,10 @@ DESC="No tRNA Charging" TRNA_CHARGING=0 N_GENS=8 \
   PLOTS=ACTIVE WC_ANALYZE_FAST=1 \
   python runscripts/fireworks/fw_queue.py
 DESC="ppGpp regulation" PPGPP_REGULATION=1 N_GENS=8 \
+  PARALLEL_PARCA=1 SINGLE_DAUGHTERS=1 COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 \
+  PLOTS=ACTIVE WC_ANALYZE_FAST=1 \
+  python runscripts/fireworks/fw_queue.py
+DESC="Superhelical Densities" SUPERHELICAL_DENSITIES=1 N_GENS=8 \
   PARALLEL_PARCA=1 SINGLE_DAUGHTERS=1 COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 \
   PLOTS=ACTIVE WC_ANALYZE_FAST=1 \
   python runscripts/fireworks/fw_queue.py

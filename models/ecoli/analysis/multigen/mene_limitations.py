@@ -6,11 +6,12 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
+from typing import cast
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -204,7 +205,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		axesList = [rnaInitAxis, rnaAxis, monomerAxis, complexAxis, fluxAxis, metAxis]
 		for axis in axesList:
 			axis.tick_params(labelsize = LABELSIZE)
-			for i in xrange(len(patchStart)):
+			for i in range(len(patchStart)):
 				width = time[patchEnd[i]] / 3600. - time[patchStart[i]] / 3600.
 				if width <= 0.1:
 					continue
@@ -253,15 +254,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					simOutDir, (enzymeIds, metaboliteIds[:1], reactantIds))
 
 				fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-				reactionIDs = np.array(fbaResults.readAttribute("reactionIDs")).tolist()
-				reactionIndexes = [reactionIDs.index(x) for x in reactionIds]
+				reactionIDs_ = cast(list, np.array(fbaResults.readAttribute("reactionIDs")).tolist())
+				reactionIndexes = [reactionIDs_.index(x) for x in reactionIds]
 				reactionFluxes = np.array(fbaResults.readColumn("reactionFluxes"))
 				enzymeFluxes = reactionFluxes[:, reactionIndexes]
 				fbaResults.close()
 
 				coefficient = (units.fg * np.array(dryMass)) / (units.fg * np.array(cellMass)) * cellDensity * (units.s * timeStepSec)
 
-				for i, row in enumerate(xrange(0, 2 * len(enzymeIds), 2)):
+				for i, row in enumerate(range(0, 2 * len(enzymeIds), 2)):
 					countAxis = axesList[row]
 					fluxAxis = axesList[row + 1]
 					plotFlux = (((COUNTS_UNITS / VOLUME_UNITS) * enzymeFluxes[:, i]) / coefficient).asNumber(units.mmol / units.g / units.h)
@@ -281,7 +282,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			axesList[-1].set_ylabel(ylabels[-1], rotation = 0)
 
 			for axis in axesList:
-				for i in xrange(len(patchStart)):
+				for i in range(len(patchStart)):
 					width = time[patchEnd[i]] / 3600. - time[patchStart[i]] / 3600.
 					if width <= 0.1:
 						continue

@@ -1,11 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from itertools import izip
-import cPickle
+from typing import cast
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, zip
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -13,6 +13,7 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.rdp import rdp
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
+
 
 GENS = np.arange(3, 9)
 
@@ -50,7 +51,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Pre-allocate variables. Rows = Generations, Cols = Monomers
 		n_monomers = sim_data.process.translation.monomerData['id'].size
-		n_sims = ap.n_generation
 
 		# Load simData from first simulation
 		simOutDir = os.path.join(allDir[0], "simOut")
@@ -59,10 +59,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		transcriptionIdx = np.array([moleculeIds.index(x) for x in ids_transcription])
 
 		ratioFinalToInitialCountMultigen = np.zeros((n_gens, n_monomers), dtype = np.float)
-		initiationEventsPerMonomerMultigen = np.zeros((n_sims, n_monomers), dtype = np.int)
 
 		# protein_index_of_interest_full = np.zeros((n_gens, n_monomers), dtype = np.bool)
 
+		time = np.arange(0)
 		for gen_idx, simDir in enumerate(allDir):
 			simOutDir = os.path.join(simDir, "simOut")
 
@@ -88,6 +88,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print("Error: %s" % exc)
 			return
 
+		# noinspection PyTypeChecker
 		fig, axesList = plt.subplots(ncols = 2, nrows = 2, sharex = True)
 		expProtein_axis = axesList[0,0]
 		expRna_axis = axesList[1,0]
@@ -120,13 +121,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		fig.set_figwidth(fig_width)
 		fig.set_figheight(fig_height)
-		firstLine = True
-		firstLineInit = None
-		firstLineInitRna = None
-		firstLineInit_burst = None
-		firstLineInitRna_burst = None
+		# firstLine = True
+		# firstLineInit = None
+		# firstLineInitRna = None
+		# firstLineInit_burst = None
+		# firstLineInitRna_burst = None
 
 		time_eachGen = []
+		startTime = 0
 		for gen_idx, simDir in enumerate(allDir):
 			simOutDir = os.path.join(simDir, "simOut")
 			time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
@@ -145,12 +147,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			proteinMonomerCounts = monomerCounts.readColumn("monomerCounts")
 			rnaMonomerCounts = bulkCounts[:, transcriptionIdx]
 
-			if firstLine:
-				firstLineInit = float(proteinMonomerCounts[:, protein_idx][0])
-				firstLineInitRna = float(rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx][0])
-				firstLineInit_burst = float(proteinMonomerCounts[:, protein_idx_burst][0])
-				firstLineInitRna_burst = float(rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx_burst][0])
-				firstLine = False
+			# if firstLine:
+			# 	firstLineInit = float(proteinMonomerCounts[:, protein_idx][0])
+			# 	firstLineInitRna = float(rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx][0])
+			# 	firstLineInit_burst = float(proteinMonomerCounts[:, protein_idx_burst][0])
+			# 	firstLineInitRna_burst = float(rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx_burst][0])
+			# 	firstLine = False
 
 			LINEWIDTH = 1
 
@@ -206,7 +208,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				(time_minutes.max() - time_minutes.min()) * n_gens
 				)
 
-			for (ax, c, lc, cm, cs) in izip(axes, counts, line_color, count_min, count_scale):
+			for (ax, c, lc, cm, cs) in zip(axes, counts, line_color, count_min, count_scale):
 				rescaled_counts = (c.astype(np.float64) - cm)/cs
 
 				# Roughly rescale the data into the plotted dimensions for
@@ -255,7 +257,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		expRna_axis.set_xticks(time_eachGen / 60.)
 		burstRna_axis.set_xticks(time_eachGen / 60.)
-		xlabel = GENS.tolist()
+		xlabel = cast('List[int]', GENS.tolist())
 		xlabel.append(GENS[-1] + 1)
 		expRna_axis.set_xticklabels(xlabel)
 		burstRna_axis.set_xticklabels(xlabel)

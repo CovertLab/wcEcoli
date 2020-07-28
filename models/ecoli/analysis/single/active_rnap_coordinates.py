@@ -8,13 +8,13 @@ time.
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle
 import os
 
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib import collections as mc
 import numpy as np
+from six.moves import cPickle, range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -124,11 +124,14 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			"marker": "x", "markersize": 10, "linewidth": 0,
 			"color": "darkblue", "label": "co-directional"}
 
-		# Plot coordinates of collisions between RNAPs and replisomes
-		ax.plot(time_mins, headon_collision_coordinates,
-			**headon_params)
-		ax.plot(time_mins, codirectional_collision_coordinates,
-			**codirectional_params)
+		# Plot coordinates of collisions between RNAPs and replisomes. Skip
+		# if there are no collisions (no replication forks)
+		if headon_collision_coordinates.shape[1] > 0:
+			ax.plot(time_mins, headon_collision_coordinates,
+				**headon_params)
+		if codirectional_collision_coordinates.shape[1] > 0:
+			ax.plot(time_mins, codirectional_collision_coordinates,
+				**codirectional_params)
 
 		ax.set_xticks([0, time_mins.max()])
 		ax.set_yticks([-replichore_lengths[1], 0, replichore_lengths[0]])

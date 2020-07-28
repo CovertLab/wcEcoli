@@ -7,12 +7,13 @@ CellDivision process
 @date: Created 3/6/2020
 """
 
-from __future__ import division, absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils import units
+import six
 
 class CellDivision(wholecell.processes.process.Process):
 	""" CellDivision """
@@ -66,7 +67,7 @@ class CellDivision(wholecell.processes.process.Process):
 		# chromosome if the chromosome has already induced division to avoid
 		# double counting.
 		if self.d_period_division:
-			if self.full_chromosomes.total_counts() >= 2:
+			if self.full_chromosomes.total_count() >= 2:
 				# Extract attributes from existing full chromosomes
 				division_time, has_triggered_division = self.full_chromosomes.attrs(
 					"division_time", "has_triggered_division"
@@ -90,14 +91,14 @@ class CellDivision(wholecell.processes.process.Process):
 		else:
 			# Calculate dry mass before timestep
 			all_submasses_pre_timestep = sum(
-				state.mass() for state in self.internal_states.itervalues())
+				state.mass() for state in six.viewvalues(self.internal_states))
 			dry_mass_pre_timestep = all_submasses_pre_timestep.sum() - all_submasses_pre_timestep[
 				self.water_index]
 
 			# Calculate dry mass added in this timestep
 			all_submass_diffs = sum(
 				state.process_mass_diffs().sum(axis=0)
-				for state in self.internal_states.itervalues())
+				for state in six.viewvalues(self.internal_states))
 			dry_mass_added = all_submass_diffs.sum() - all_submass_diffs[
 				self.water_index]
 

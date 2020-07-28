@@ -5,9 +5,9 @@ Plots rnap capacity
 @date: Created 6/18/2015
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 
 from matplotlib import pyplot as plt
 import numpy as np

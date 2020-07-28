@@ -6,7 +6,8 @@ SimulationData for unique molecules state
 @date: Created 02/19/2015
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
+
 import collections
 
 import numpy as np
@@ -25,7 +26,7 @@ class UniqueMolecules(object):
 
 		uniqueMoleculeMasses = np.zeros(0,
 				dtype = [
-						("id", "a50"),
+						("id", "U50"),
 						("mass", "{}f8".format(len(sim_data.molecular_weight_order))),
 						]
 			)

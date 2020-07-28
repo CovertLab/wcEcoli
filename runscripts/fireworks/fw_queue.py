@@ -67,6 +67,8 @@ Simulation parameters:
 	TIMESTEP_SAFETY_FRAC (float, "1.3"): increases the time step by this factor
 		if conditions are favorable; up the the limit of the max time step
 	TIMESTEP_UPDATE_FREQ (int, "5"): frequency at which the time step is updated
+	JIT (int, "1"): if nonzero, jit compiled functions are used for certain
+		processes, otherwise only uses lambda functions
 
 Modeling options:
 	MASS_DISTRIBUTION (int, "1"): if nonzero, a mass coefficient is drawn from
@@ -84,6 +86,8 @@ Modeling options:
 		present.  This option will override TRANSLATION_SUPPLY in the simulation.
 	PPGPP_REGULATION (int, "0"): if nonzero, ppGpp concentration is determined
 		with kinetic equations
+	SUPERHELICAL_DENSITY (int, "0"): if nonzero, dynamically compute
+		superhelical densities of each DNA fragment
 
 Additional variables:
 	LAUNCHPAD_FILE (str, "my_launchpad.yaml"): set launchpad config file location
@@ -174,6 +178,7 @@ from __future__ import absolute_import, division, print_function
 
 import collections
 import os
+import sys
 
 import yaml
 from fireworks import Firework, LaunchPad, Workflow, ScriptTask
@@ -194,6 +199,7 @@ from wholecell.fireworks.firetasks import BuildCausalityNetworkTask
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants
 from wholecell.utils import filepath
+from six.moves import range
 
 
 def get_environment(variable, default):
@@ -230,7 +236,7 @@ LAST_VARIANT_INDEX = int(get_environment("LAST_VARIANT_INDEX", "0"))
 
 # This variable gets iterated over in multiple places
 # So be careful if you change it to xrange
-VARIANTS_TO_RUN = range(FIRST_VARIANT_INDEX, LAST_VARIANT_INDEX + 1)
+VARIANTS_TO_RUN = list(range(FIRST_VARIANT_INDEX, LAST_VARIANT_INDEX + 1))
 
 ### Set other simulation parameters
 
@@ -239,12 +245,14 @@ WC_LENGTHSEC = int(get_environment("WC_LENGTHSEC", DEFAULT_SIMULATION_KWARGS["le
 TIMESTEP_SAFETY_FRAC = float(get_environment("TIMESTEP_SAFETY_FRAC", DEFAULT_SIMULATION_KWARGS["timeStepSafetyFraction"]))
 TIMESTEP_MAX = float(get_environment("TIMESTEP_MAX", DEFAULT_SIMULATION_KWARGS["maxTimeStep"]))
 TIMESTEP_UPDATE_FREQ = int(get_environment("TIMESTEP_UPDATE_FREQ", DEFAULT_SIMULATION_KWARGS["updateTimeStepFreq"]))
+JIT = bool(int(get_environment("JIT", DEFAULT_SIMULATION_KWARGS["jit"])))
 MASS_DISTRIBUTION = bool(int(get_environment("MASS_DISTRIBUTION", DEFAULT_SIMULATION_KWARGS["massDistribution"])))
 GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULATION_KWARGS["growthRateNoise"])))
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))
 TRNA_CHARGING = bool(int(get_environment("TRNA_CHARGING", DEFAULT_SIMULATION_KWARGS["trna_charging"])))
 PPGPP_REGULATION = bool(int(get_environment("PPGPP_REGULATION", DEFAULT_SIMULATION_KWARGS["ppgpp_regulation"])))
+SUPERHELICAL_DENSITY = bool(int(get_environment("SUPERHELICAL_DENSITY", DEFAULT_SIMULATION_KWARGS["superhelical_density"])))
 RAISE_ON_TIME_LIMIT = bool(int(get_environment("RAISE_ON_TIME_LIMIT", DEFAULT_SIMULATION_KWARGS["raise_on_time_limit"])))
 N_INIT_SIMS = int(get_environment("N_INIT_SIMS", "1"))
 SEED = int(get_environment("SEED", "0"))
@@ -303,14 +311,14 @@ for i in VARIANTS_TO_RUN:
 	VARIANT_METADATA_DIRECTORY = filepath.makedirs(VARIANT_DIRECTORY, "metadata")
 	VARIANT_COHORT_PLOT_DIRECTORY = filepath.makedirs(VARIANT_DIRECTORY, "plotOut")
 
-	for j in xrange(SEED, SEED + N_INIT_SIMS):
+	for j in range(SEED, SEED + N_INIT_SIMS):
 		SEED_DIRECTORY = filepath.makedirs(VARIANT_DIRECTORY, "%06d" % j)
 		SEED_PLOT_DIRECTORY = filepath.makedirs(SEED_DIRECTORY, "plotOut")
 
-		for k in xrange(N_GENS):
+		for k in range(N_GENS):
 			GEN_DIRECTORY = filepath.makedirs(SEED_DIRECTORY, "generation_%06d" % k)
 
-			for l in (xrange(2**k) if not SINGLE_DAUGHTERS else [0]):
+			for l in (range(2**k) if not SINGLE_DAUGHTERS else [0]):
 				CELL_DIRECTORY = filepath.makedirs(GEN_DIRECTORY, "%06d" % l)
 				CELL_SIM_OUT_DIRECTORY = filepath.makedirs(CELL_DIRECTORY, "simOut")
 				CELL_PLOT_OUT_DIRECTORY = filepath.makedirs(CELL_DIRECTORY, "plotOut")
@@ -322,6 +330,7 @@ metadata = {
 	"git_branch": filepath.run_cmdline("git symbolic-ref --short HEAD"),
 	"description": os.environ.get("DESC", ""),
 	"time": SUBMISSION_TIME,
+	"python": sys.version.splitlines()[0],
 	"total_gens": N_GENS,
 	"analysis_type": None,
 	"variant": VARIANT,
@@ -332,13 +341,15 @@ metadata = {
 	"translation_supply": TRANSLATION_SUPPLY,
 	"trna_charging": TRNA_CHARGING,
 	"ppgpp_regulation": PPGPP_REGULATION,
+	"superhelical_density": SUPERHELICAL_DENSITY,
 	}
 
 metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)
 filepath.write_json_file(metadata_path, metadata)
 
 git_diff = filepath.run_cmdline("git diff", trim=False)
-filepath.write_file(os.path.join(METADATA_DIRECTORY, "git_diff"), git_diff)
+if git_diff:
+	filepath.write_file(os.path.join(METADATA_DIRECTORY, "git_diff"), git_diff)
 
 #### Create workflow
 
@@ -622,7 +633,7 @@ for i in VARIANTS_TO_RUN:
 
 	fw_this_variant_this_seed_this_analysis = None
 
-	for j in xrange(SEED, SEED + N_INIT_SIMS):
+	for j in range(SEED, SEED + N_INIT_SIMS):
 		log_info("\tQueueing Seed {}".format(j))
 		SEED_DIRECTORY = os.path.join(VARIANT_DIRECTORY, "%06d" % j)
 		SEED_PLOT_DIRECTORY = os.path.join(SEED_DIRECTORY, "plotOut")
@@ -650,12 +661,12 @@ for i in VARIANTS_TO_RUN:
 
 		sims_this_seed = collections.defaultdict(list)
 
-		for k in xrange(N_GENS):
+		for k in range(N_GENS):
 			log_info("\t\tQueueing Gen %02d." % (k,))
 			GEN_DIRECTORY = os.path.join(SEED_DIRECTORY, "generation_%06d" % k)
 			md_single = dict(md_multigen, gen = k)
 
-			for l in (xrange(2**k) if not SINGLE_DAUGHTERS else [0]):
+			for l in (range(2**k) if not SINGLE_DAUGHTERS else [0]):
 
 				log_info("\t\t\tQueueing Cell {}".format(l))
 				CELL_DIRECTORY = os.path.join(GEN_DIRECTORY, "%06d" % l)
@@ -678,12 +689,14 @@ for i in VARIANTS_TO_RUN:
 							timestep_safety_frac = TIMESTEP_SAFETY_FRAC,
 							timestep_max = TIMESTEP_MAX,
 							timestep_update_freq = TIMESTEP_UPDATE_FREQ,
+							jit=JIT,
 							mass_distribution = MASS_DISTRIBUTION,
 							growth_rate_noise = GROWTH_RATE_NOISE,
 							d_period_division = D_PERIOD_DIVISION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
 							ppgpp_regulation = PPGPP_REGULATION,
+							superhelical_density = SUPERHELICAL_DENSITY,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,
@@ -707,12 +720,14 @@ for i in VARIANTS_TO_RUN:
 							timestep_safety_frac = TIMESTEP_SAFETY_FRAC,
 							timestep_max = TIMESTEP_MAX,
 							timestep_update_freq = TIMESTEP_UPDATE_FREQ,
+							jit=JIT,
 							mass_distribution = MASS_DISTRIBUTION,
 							growth_rate_noise = GROWTH_RATE_NOISE,
 							d_period_division = D_PERIOD_DIVISION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
 							ppgpp_regulation = PPGPP_REGULATION,
+							superhelical_density = SUPERHELICAL_DENSITY,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,

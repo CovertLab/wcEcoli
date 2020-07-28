@@ -5,9 +5,11 @@ import os
 import json
 import numpy as np
 import struct
+from typing import Any, Dict, List, Optional, Set
 import zlib
 
 from wholecell.utils import filepath
+import six
 
 
 __all__ = [
@@ -183,6 +185,7 @@ class _Column(object):
 		TableWriter's internal implementation.
 	"""
 	def __init__(self, path, compression_type=COMPRESSION_TYPE_ZLIB):
+		# type: (str, int) -> None
 		if compression_type not in (COMPRESSION_TYPE_NONE, COMPRESSION_TYPE_ZLIB):
 			raise ValueError('Unknown compression type {}'.format(compression_type))
 
@@ -190,10 +193,11 @@ class _Column(object):
 		self._data = open(path, "wb")
 		self._dtype = None
 		self._compression_type = compression_type
-		self._current_data_block = []
+		self._current_data_block = []  # type: List[bytes]
 
 
 	def append(self, value):
+		# type: (Any) -> None
 		"""
 		Appends an array-like entry to the end of a column, converting the
 		value to a 1-D array. Specific implementation depends on subclasses.
@@ -207,6 +211,7 @@ class _Column(object):
 
 
 	def _write_block(self):
+		# type: () -> None
 		"""
 		Compress and write the current block, if any. Specific implementation
 		depends on subclasses.
@@ -215,18 +220,21 @@ class _Column(object):
 
 
 	def _get_dtype_descr(self):
+		# type: () -> bytes
 		"""
 		Get the description of the column data type in JSON format.
 		"""
+		assert self._dtype
 		descr = self._dtype.descr
 		if len(descr) == 1 and descr[0][0] == "":
 			descr = descr[0][1]
-		descr_json = json.dumps(descr, separators=(',', ':'))
+		descr_json = json.dumps(descr, separators=(',', ':')).encode('utf-8')
 
 		return descr_json
 
 
 	def close(self):
+		# type: () -> None
 		"""
 		Finish writing and close the column's data file. Idempotent.
 
@@ -243,6 +251,7 @@ class _Column(object):
 
 
 	def __del__(self):
+		# type: () -> None
 		"""
 		Explicitly closes the output file once the instance is totally
 		dereferenced.
@@ -267,15 +276,17 @@ class _FixedLengthColumn(_Column):
 	actual rows. The data chunks are optionally compressed.
 	"""
 	def __init__(self, path, compression_type=COMPRESSION_TYPE_ZLIB):
+		# type: (str, int) -> None
 		super(_FixedLengthColumn, self).__init__(
 			path, compression_type=compression_type)
 
-		self._bytes_per_entry = None
-		self._entries_per_block = None
-		self._elements_per_entry = None  # aka subcolumn count
+		self._bytes_per_entry = 0
+		self._entries_per_block = 0
+		self._elements_per_entry = 0  # aka subcolumn count
 
 
 	def append(self, value):
+		# type: (Any) -> None
 		"""
 		Append a row to the fixed-length column.
 
@@ -336,6 +347,7 @@ class _FixedLengthColumn(_Column):
 
 
 	def _write_block(self):
+		# type: () -> None
 		"""
 		Compress and write the current block, if any.
 		"""
@@ -369,13 +381,15 @@ class _VariableLengthColumn(_Column):
 	integer arrays).
 	"""
 	def __init__(self, path, compression_type=COMPRESSION_TYPE_ZLIB):
+		# type: (str, int) -> None
 		super(_VariableLengthColumn, self).__init__(path, compression_type)
 
-		self._current_row_sizes_block = []
+		self._current_row_sizes_block = []  # type: List[int]
 		self._remaining_bytes_in_block = BLOCK_BYTES_GOAL
 
 
 	def append(self, value):
+		# type: (Any) -> None
 		"""
 		Append a row to the variable-length column.
 
@@ -418,6 +432,7 @@ class _VariableLengthColumn(_Column):
 
 
 	def _write_block(self):
+		# type: () -> None
 		"""
 		Compress and write the current block, if any. All block data chunks
 		are preceded by a row size chunk that specifies the number of array
@@ -506,11 +521,12 @@ class TableWriter(object):
 	"""
 
 	def __init__(self, path):
+		# type: (str) -> None
 		self._path = filepath.makedirs(path)
-		self._columns = None
-		self._variable_length_columns = set()
+		self._columns = None  # type: Optional[Dict[str, _Column]]
+		self._variable_length_columns = set()  # type: Set[str]
 
-		self._attributes = {}
+		self._attributes = {}  # type: Dict[str, Any]
 		self._attributes_filename = os.path.join(path, FILE_ATTRIBUTES)
 
 		if (os.path.exists(self._attributes_filename)
@@ -524,6 +540,7 @@ class TableWriter(object):
 
 
 	def append(self, **namesAndValues):
+		# type: (**Any) -> None
 		"""
 		Write a new row of values, writing a 1-D NumPy array to each named
 		column.
@@ -532,8 +549,8 @@ class TableWriter(object):
 		Subsequent calls will validate the names and types for consistency.
 
 		Parameters:
-			**namesAndValues (dict[str, array-like]):  The column names (fields)
-				and associated values to append to the ends of the columns.
+			**namesAndValues: The array-like values to append to the ends
+				of the named columns.
 
 		Notes
 		-----
@@ -545,13 +562,13 @@ class TableWriter(object):
 				name: _VariableLengthColumn(os.path.join(self._path, name))
 				if name in self._variable_length_columns
 				else _FixedLengthColumn(os.path.join(self._path, name))
-				for name in namesAndValues.viewkeys()
+				for name in namesAndValues
 				}
 
 		# Later calls - check for missing or unrecognized fields
 		else:
-			missingFields = self._columns.viewkeys() - namesAndValues.viewkeys()
-			unrecognizedFields = namesAndValues.viewkeys() - self._columns.viewkeys()
+			missingFields = six.viewkeys(self._columns) - six.viewkeys(namesAndValues)
+			unrecognizedFields = six.viewkeys(namesAndValues) - six.viewkeys(self._columns)
 
 			if missingFields:
 				raise MissingFieldError(
@@ -563,11 +580,12 @@ class TableWriter(object):
 					"Unrecognized fields: {}".format(", ".join(unrecognizedFields))
 					)
 
-		for name, value in namesAndValues.viewitems():
+		for name, value in six.viewitems(namesAndValues):
 			self._columns[name].append(value)
 
 
 	def writeAttributes(self, **namesAndValues):
+		# type: (**Any) -> None
 		"""
 		Writes JSON-serializable data.
 
@@ -576,8 +594,7 @@ class TableWriter(object):
 		data (e.g. a list of strings) alongside the column data.
 
 		Parameters:
-			**namesAndValues (dict[str, JSON-serializable]): The named
-				attribute values.
+			**namesAndValues: The named JSON-serializable attribute values.
 
 		NOTE: TableWriter uses attribute names starting with "_" to hold its
 		internal metadata.
@@ -591,9 +608,10 @@ class TableWriter(object):
 		'Main' at the end of each generation.]
 		"""
 
-		sanitized = {}  # check before modifying self._attributes
+		# check before modifying self._attributes
+		sanitized = {}  # type: Dict[str, Any]
 
-		for name, value in namesAndValues.viewitems():
+		for name, value in six.viewitems(namesAndValues):
 			if name in self._attributes:
 				raise AttributeAlreadyExistsError(
 					"An attribute named '{}' already exists.".format(name)
@@ -624,14 +642,17 @@ class TableWriter(object):
 		lengths. This must be set before any values are appended to the column.
 
 		Args:
-			*column_names (tuple[str]): Names of columns that should have
-			entries with variable lengths.
+			*column_names (str): Names of columns that should have entries with
+				variable lengths.
 		"""
+		assert self._columns is None, 'Can set variable-length columns only before appending data rows'
+
 		for name in column_names:
 			self._variable_length_columns.add(name)
 
 
 	def close(self):
+		# type: () -> None
 		"""
 		Close the output files (columns).
 
@@ -641,11 +662,12 @@ class TableWriter(object):
 
 		"""
 		if self._columns is not None:
-			for column in self._columns.viewvalues():
+			for column in six.viewvalues(self._columns):
 				column.close()
 
 
 	def __del__(self):
+		# type: () -> None
 		"""
 		Close the output files once the instance is totally dereferenced.
 		"""

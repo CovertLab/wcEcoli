@@ -1,4 +1,4 @@
-from __future__ import division, absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -9,6 +9,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader, TableReaderError
 from wholecell.utils import units
+from six.moves import range
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -23,6 +24,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			if n_cells > max_cells_in_gen:
 				max_cells_in_gen = n_cells
 
+		# noinspection PyTypeChecker
 		fig, axesList = plt.subplots(ap.n_generation,
 			sharex=True, sharey=True, figsize=(6, 3*ap.n_generation))
 
