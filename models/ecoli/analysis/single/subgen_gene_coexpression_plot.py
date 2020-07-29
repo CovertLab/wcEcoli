@@ -12,6 +12,7 @@ import os
 import io
 
 from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
 import pandas as pd
 import itertools
@@ -20,6 +21,7 @@ from textwrap import wrap
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
+from wholecell.io import tsv
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.spreadsheets import JsonReader, JsonWriter
 
@@ -69,36 +71,44 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                     pc_mRNA_ids = [mRNA_with_location if x==rna['id'] else x for x in pc_mRNA_ids] # add mRNA location
                     mRNA_protein_dict[pc_gene_id][mRNA_with_location] = []
                     for protein in PROTEIN_INFO:
-                        if protein['id'] in rna['monomerSet']:
+                        if protein['id'] in rna['monomerSet']: # check if protein is expressed by mRNA
                             protein_with_location = protein['id'] + "[" + protein['location'][0] + "]"
                             mRNA_protein_dict[pc_gene_id][mRNA_with_location].append(protein_with_location) # add protein monomer with location
 
-        # print(mRNA_protein_dict)
+        # Make multi-page plot, one page per operon
+        with PdfPages(os.path.join(plotOutDir, 'mRNA_protein_expression.pdf')) as pdf:
+            for plotIndex, tu in enumerate(mRNA_protein_dict.keys()):
+                fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(12, 8))
+                fig.add_subplot(111, frameon=False)
+                plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
 
-        # Make plot, one for each operon
-        for plotIndex, tu in enumerate(mRNA_protein_dict.keys()):
-            fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(12, 8))
-            fig.add_subplot(111, frameon=False)
-            plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+                for mRNA in mRNA_protein_dict[tu]:
+                    mRNA_count = mRNA_counts[:, mRNA_ids.index(mRNA)] # retrieve array of counts over time
+                    mRNA_percent_time = (np.count_nonzero(mRNA_count) / time_total) * 100 # get % of time expressed
+                    ax1.plot(mRNA_count, label='\n'.join(wrap(mRNA + " (" + str(mRNA_percent_time) + "% t_total)", 20))) # wrap text to make legend look nicer
+                    # plotting proteins translated from mRNA
+                    for protein in mRNA_protein_dict[tu][mRNA]:
+                        protein_count = bulkMolecule_counts[:,bulkMolecule_ids.index(protein)]
+                        protein_percent_time = (np.count_nonzero(protein_count) / time_total) * 100 # get % of time expressed
+                        ax2.plot(protein_count, label='\n'.join(wrap(protein + " (" + str(protein_percent_time) + "% t_total)", 20)))
+                        # now account for complexes
+                        complex_list = self.get_protein_complexes(protein[:-3], COMPLEX_INFO) # truncating protein location
+                        if complex_list:
+                            for cplx in complex_list:
+                                cplx_count = bulkMolecule_counts[:,bulkMolecule_ids.index(cplx)]
+                                cplx_percent_time = (np.count_nonzero(cplx_count) / time_total) * 100 # get % of time expressed
+                                ax2.plot(cplx_count, label='\n'.join(wrap(cplx + " (" + str(cplx_percent_time) + "% t_total)", 20)))
+                ax1.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+                ax2.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+                ax1.set_title(tu + " mRNAs")
+                ax2.set_title(tu + " proteins")
+                plt.xlabel("Time (sec)")
+                plt.ylabel("count")
+                plt.tight_layout()
+                pdf.savefig()
+                plt.close('all')
 
-            for mRNA in mRNA_protein_dict[tu]:
-                ax1.plot(mRNA_counts[:, mRNA_ids.index(mRNA)], label='\n'.join(wrap(mRNA, 20)))
-                for protein in mRNA_protein_dict[tu][mRNA]:
-                    ax2.plot(bulkMolecule_counts[:,bulkMolecule_ids.index(protein)], label='\n'.join(wrap(protein, 20)))
-                    # now account for complexes
-                    complex_list = self.get_protein_complexes(protein[:-3], COMPLEX_INFO) # truncating protein location
-                    if complex_list:
-                        for cplx in complex_list:
-                            ax2.plot(bulkMolecule_counts[:,bulkMolecule_ids.index(cplx)], label='\n'.join(wrap(cplx, 20)))
-            ax1.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
-            ax2.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
-            ax1.set_title(tu + " mRNAs")
-            ax2.set_title(tu + " proteins")
-            plt.xlabel("Time (sec)")
-            plt.ylabel("count")
-            plt.tight_layout()
-            exportFigure(plt, plotOutDir, tu + "_expression", metadata)
-            plt.close('all')
+        self.write_time_tsv(plotOutDir, mRNA_counts, mRNA_ids, mRNA_protein_dict)
 
     def parse_tsv(self, tsv_file):
         tsv_list = []
@@ -108,7 +118,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                 tsvfile.seek(tsvfile_start)
                 reader = JsonReader(tsvfile)
                 fieldnames = reader.fieldnames
-                print(fieldnames)
                 for row in reader:
                     tsv_list.append(row)
             else:
@@ -132,7 +141,18 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                     complex_list.append(complex_name)
         return complex_list
 
-
+    def write_time_tsv(self, plotOutDir, mRNA_counts, mRNA_ids, mRNA_protein_dict):
+        tsvFile = io.open(os.path.join(plotOutDir, "mRNA_percent_time_expressed.tsv"), "wb")
+        output = tsv.writer(tsvFile)
+        output.writerow(['tu_id', 'mRNA_id', 'protein_id', 'time_coexp', 'percent_time_coexp'])
+        # convert dict to tuple, easier to write to tsv
+        info_to_write = [(tu, mRNA, protein) for tu in mRNA_protein_dict for mRNA in mRNA_protein_dict[tu] for protein in mRNA_protein_dict[tu][mRNA]]
+        for tu, mRNA, protein in info_to_write:
+            mRNA_count = mRNA_counts[:, mRNA_ids.index(mRNA)] # retrieve array of counts over time (to do: make this less redundant with do_plot function)
+            mRNA_coexp_time = np.count_nonzero(mRNA_count)
+            mRNA_percent_time = (mRNA_coexp_time / len(mRNA_count)) * 100 # get % of time expressed
+            output.writerow([tu, mRNA, protein, mRNA_coexp_time, mRNA_percent_time])
+        return
 
 if __name__ == '__main__':
     Plot().cli()
