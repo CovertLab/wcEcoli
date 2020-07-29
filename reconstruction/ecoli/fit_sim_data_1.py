@@ -1122,6 +1122,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	rna_expression_container.countsIs(counts_tRNA, ids_tRNA)
 
 	## Assign mRNA counts based on mass and relative abundances (microarrays)
+
 	total_count_mRNA = totalCountFromMassesAndRatios(
 		total_mass_mRNA,
 		individual_masses_mRNA,
@@ -1570,7 +1571,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	mRnaExpressionView.countsIs(
 		mRnaExpressionFrac * mRnaDistribution)
 
-	expression = rnaExpressionContainer.counts()
+	expression = normalize(rnaExpressionContainer.counts())
 
 	# Set number of RNAs based on expression we just set
 	nRnas = totalCountFromMassesAndRatios(
@@ -1889,11 +1890,9 @@ def totalCountFromMassesAndRatios(totalMass, individualMasses, distribution):
 	-----
 	- TODO (Travis) - test includes case with no units although use case here
 	and documentation is only with units
-	- Commented out assert statment, put in a range instead to deal with 
-	adding in operons - mRNA distribution will likely not sum to 1 due to fitting.
 	"""
 
-	#assert np.allclose(np.sum(distribution), 1)
+	assert np.allclose(np.sum(distribution), 1)
 	counts = 1 / units.dot(individualMasses, distribution) * totalMass
 	return units.strip_empty_units(counts)
 
