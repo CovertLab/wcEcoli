@@ -60,8 +60,6 @@ Returns:
 		monomer to map to a mRNA). 
 
 		-Values are defined as follows:
-		'halfLife' = half life of first gene in TU, taken from rnas.tsv
-		'name' =  string of all names in TU separated by '_'
 		'seq' = sequence of all genes in TU including all intergenic regions
 		'type' = str indiciated the type of RNA
 		'modifiedForms' = list containing modified form each RNA within
@@ -71,11 +69,9 @@ Returns:
 			individual RNA comments look at rnas.tsv for that RNA"
 		'mw' = mw of the TU sequence
 		'location' = location of the first gene in a 
-		'ntCount' = count_ntps_rna(tu_info[pc_gene_id]['seq'])
 		'id' = pc_gene_id + '_RNA'
 		'geneId' = pc_gene_id
 		'monomerSet' = pc_monomer_id_list
-		'microarray expression' = tu_genes_info[pc_gene_id][rna]['microarray expression']
 	gene_to_tu_matrix.tsv
 		- A boolean matrix, rows = genes, cols = tus, which serves as a maping of
 		genes to tus.
@@ -127,6 +123,7 @@ JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
 # File paths to all necessary flat files.
 FLAT_DIR = os.path.join('reconstruction', 'ecoli', 'flat')
 RNA_FILE = os.path.join(FLAT_DIR, 'rnas.tsv')
+RNA_HALF_LIVES_FILE = os.path.join(FLAT_DIR, 'rna_half_lives.tsv')
 GENES_FILE = os.path.join(FLAT_DIR, 'genes.tsv')
 #POLY_CISTRON_FILE = os.path.join(FLAT_DIR, 'polycistronic_mrnas_in_model.tsv')
 POLY_CISTRON_FILE = parse_args()
@@ -138,6 +135,7 @@ TF_COND_FILE = os.path.join(FLAT_DIR, 'condition','tf_condition_old.tsv')
 
 # output files
 TU_FILE = os.path.join(FLAT_DIR, 'operon_rnas.tsv')
+TU_HALF_LIVES_FILE = os.path.join(FLAT_DIR, 'operon_rnas_half_lives.tsv')
 output_tu_counts = os.path.join(FLAT_DIR, "transcription_units.tsv")
 output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix.tsv")
 output_proteins = os.path.join(FLAT_DIR, "proteins.tsv")
@@ -180,7 +178,6 @@ def read_file_skipping_comments(tsvfile, tsv_list, tempfile):
 		try:
 			for row in reader:
 				tsv_list.append(row)
-				print(row)
 		except:
 			import pdb; pdb.set_trace()
 	if os.path.exists("temp.csv"):
@@ -362,15 +359,17 @@ def gather_tu_genes_info():
 		tu_genes_info[pc_gene_id] = {}
 		for rna in pc['transcription_units']:
 			tu_genes_info[pc_gene_id][rna] = {}
+			rnaId = rna + "_RNA" # by default, rnaId is set to geneId_RNA (for half lives file)
 			for rna_row in RNA_INFO:
 				if rna_row['geneId'] == rna:
-					tu_genes_info[pc_gene_id][rna]['halfLife'] = rna_row['halfLife']
-					tu_genes_info[pc_gene_id][rna]['microarray expression'] = rna_row['microarray expression']
-					tu_genes_info[pc_gene_id][rna]['name'] = rna_row['name'][0:-6]
+					rnaId = rna_row['id'] # rnaId updated based on rnas.tsv, if suffix is not _RNA
 					tu_genes_info[pc_gene_id][rna]['type'] = rna_row['type']
 					tu_genes_info[pc_gene_id][rna]['modifiedForms'] = rna_row['modifiedForms']
 					tu_genes_info[pc_gene_id][rna]['monomerId'] = rna_row['monomerId']
 					tu_genes_info[pc_gene_id][rna]['location'] = rna_row['location']
+			for rna_hl_row in RNA_HALF_LIVES_INFO:  # create separate half lives file
+				if rna_hl_row['id'] == rnaId:
+					tu_genes_info[pc_gene_id][rna]['halfLife'] = rna_hl_row['half_life']
 			for gene_row in GENE_INFO:
 				if gene_row['id'] == rna:
 					tu_genes_info[pc_gene_id][rna]['chromosome_coordinate'] = gene_row['coordinate']
@@ -399,8 +398,13 @@ def gather_tu_info(tu_genes_info):
 	columns that will be needed within the operon_rnas.tsv file. 
 	For more detail on each key, please see the comment at the top
 	of this file. Naming mimics rnas.tsv.
+	- A nested dictionary specifically for RNA half lives. First level
+	keys are the gene ids for each polycistron being added to the model,
+	nested keys are RNA ids and half lives. Naming mimics rna_half_lives.tsv.
 	'''
 	tu_info = {}
+	tu_half_life_info = {}
+
 	for pc in PC_INFO:
 		# Get the gene ID of the polycistron
 		pc_gene_id = '_'.join(pc['transcription_units'])
@@ -411,7 +415,7 @@ def gather_tu_info(tu_genes_info):
 		pc_modified_forms_list = []
 		for rna in pc['transcription_units']:
 			pc_monomer_id_list.append(tu_genes_info[pc_gene_id][rna]['monomerId'])
-			pc_name_list.append(tu_genes_info[pc_gene_id][rna]['name'])
+			# pc_name_list.append(tu_genes_info[pc_gene_id][rna]['name'])
 			pc_modified_forms_list.append(tu_genes_info[pc_gene_id][rna]['modifiedForms'])
 		
 		# Find the first and last genes in the TU
@@ -420,9 +424,7 @@ def gather_tu_info(tu_genes_info):
 
 		# Construct dictionary of transcription unit info for each tu.
 		tu_info[pc_gene_id] = {}
-		tu_info[pc_gene_id]['halfLife'] = tu_genes_info[pc_gene_id][first_gene]['halfLife']
-		tu_info[pc_gene_id]['name'] =  ':'.join(pc_name_list)
-		tu_info[pc_gene_id]['seq'] = get_tu_sequence(tu_genes_info[pc_gene_id], 
+		tu_info[pc_gene_id]['seq'] = get_tu_sequence(tu_genes_info[pc_gene_id],
 			first_gene, last_gene)
 		tu_info[pc_gene_id]['type'] = find_tu_type(tu_genes_info[pc_gene_id])
 		tu_info[pc_gene_id]['modifiedForms'] = []
@@ -432,15 +434,17 @@ def gather_tu_info(tu_genes_info):
 		tu_info[pc_gene_id]['comments'] = """Transcription unit created within script, for individual RNA comments look at rnas.tsv for that RNA"""
 		tu_info[pc_gene_id]['mw'] = calculate_rna_biomass(tu_info[pc_gene_id]['seq'])
 		tu_info[pc_gene_id]['location'] = find_tu_location(tu_genes_info[pc_gene_id])
-		tu_info[pc_gene_id]['ntCount'] = count_ntps_rna(tu_info[pc_gene_id]['seq'])
 		if not tu_info[pc_gene_id]['type'] == 'mRNA':
 			tu_info[pc_gene_id]['id'] = pc_gene_id + '_' + tu_info[pc_gene_id]['type'].upper()
 		else:
 			tu_info[pc_gene_id]['id'] = pc_gene_id + '_RNA'
 		tu_info[pc_gene_id]['geneId'] = pc_gene_id
 		tu_info[pc_gene_id]['monomerSet'] = pc_monomer_id_list
-		tu_info[pc_gene_id]['microarray expression'] = tu_genes_info[pc_gene_id][first_gene]['microarray expression']
-	return tu_info
+
+		tu_half_life_info[pc_gene_id] = {}
+		tu_half_life_info[pc_gene_id]['id'] = pc_gene_id + '_RNA'
+		tu_half_life_info[pc_gene_id]['half_life'] = tu_genes_info[pc_gene_id][first_gene]['halfLife']
+	return tu_info, tu_half_life_info
 
 
 def find_monomers_to_remove():
@@ -470,7 +474,7 @@ def update_rna_info(fieldnames):
 	assign to an RNA.
 	'''
 	for rna_row in RNA_INFO:
-		if not rna_row['monomerId']:
+		if not rna_row['monomerId'] or rna_row['monomerId'] == "null":
 			rna_row['monomerSet'] = []
 		else:
 			rna_row['monomerSet'] = [rna_row['monomerId']]
@@ -478,7 +482,7 @@ def update_rna_info(fieldnames):
 	fieldnames.append('monomerSet')
 	return RNA_INFO, fieldnames
 
-def write_output_file(tu_info, fieldnames, monomers_to_remove):
+def write_output_file(tu_info, tu_half_life_info, fieldnames, rna_hl_fieldnames, monomers_to_remove):
 	'''
 	Construct a tsv file that mimics the structure and formatting
 	of rnas.tsv.
@@ -497,22 +501,37 @@ def write_output_file(tu_info, fieldnames, monomers_to_remove):
 				writer.writerow(rna_row)
 		for pc_data in tu_info:
 			writer.writerow(tu_info[pc_data])
+
+	# Write separate operon_rnas_half_lives file
+	with open(TU_HALF_LIVES_FILE, "w") as f:
+		f.write('# Generated by {} on {} \n'.format(__file__, time.ctime()))
+
+		writer = JsonWriter(f, rna_hl_fieldnames)
+		writer.writeheader()
+
+		for rna_hl_row in RNA_HALF_LIVES_INFO:
+			# need to check if monomer id is contained (not ==) in RNA id, since monomer id does not contain '_RNA'
+			if not any(monomer in rna_hl_row['id'] for monomer in monomers_to_remove):
+				writer.writerow(rna_hl_row)
+		for pc_data in tu_info:
+			writer.writerow(tu_half_life_info[pc_data])
 	return
 
 def make_operon_rnas_file():
-	global PC_INFO, RNA_INFO, GENE_INFO, GENOMIC_SEQUENCE
+	global PC_INFO, RNA_INFO, RNA_HALF_LIVES_INFO, GENE_INFO, GENOMIC_SEQUENCE
 	RNA_INFO, fieldnames = parse_tsv(RNA_FILE)
+	RNA_HALF_LIVES_INFO, rna_hl_fieldnames = parse_tsv(RNA_HALF_LIVES_FILE)
 	PC_INFO, pc_fieldnames = parse_tsv(POLY_CISTRON_FILE)
 	GENE_INFO, g_fieldnames = parse_tsv(GENES_FILE)
 	GENOMIC_SEQUENCE = load_sequence(GENOME_SEQUENCE_FILE)
 
 	tu_genes_info = gather_tu_genes_info()
-	tu_info = gather_tu_info(tu_genes_info)
+	tu_info, tu_half_life_info = gather_tu_info(tu_genes_info)
 
 	monomers_to_remove = find_monomers_to_remove()
 	RNA_INFO, fieldnames = update_rna_info(fieldnames)
 
-	write_output_file(tu_info, fieldnames, monomers_to_remove)
+	write_output_file(tu_info, tu_half_life_info, fieldnames, rna_hl_fieldnames, monomers_to_remove)
 
 
 def create_gene_to_tu_matrix(rna_info, tu_info):
@@ -633,7 +652,6 @@ def make_new_proteins_file(output_file):
 		protein_row['rnaSet'] = []
 		protein_index[protein_row['id']] = protein_row
 
-	
 	for rna_row in rna_info:
 		for monomer in rna_row['monomerSet']:
 			protein_row = protein_index[monomer]
