@@ -287,14 +287,14 @@ def get_tu_sequence(tu_genes_info, first_gene, last_gene):
 	incorporating untranslated RNAs (like rRNAs or tRNAs) in the future
 	would have to add a process for RNA processing.
 	'''
-	direction = tu_genes_info[first_gene]['direction'].encode('utf-8')
+	direction = tu_genes_info[first_gene]['direction']
 	rna_sequence = []
-	if direction is '+':
+	if direction == '+':
 		first_gene_coordinate = tu_genes_info[first_gene]['chromosome_coordinate']
 		last_gene_coordinate = tu_genes_info[last_gene]['chromosome_coordinate'] + tu_genes_info[last_gene]['length']
 		sequence = Seq(GENOMIC_SEQUENCE[0][first_gene_coordinate:last_gene_coordinate], IUPAC.unambiguous_dna)
 		rna_sequence = str(sequence.transcribe())
-	elif direction is '-':
+	elif direction == '-':
 		first_gene_coordinate = tu_genes_info[first_gene]['chromosome_coordinate'] +1
 		last_gene_coordinate = tu_genes_info[last_gene]['chromosome_coordinate'] - tu_genes_info[last_gene]['length'] + 1
 		sequence = Seq(GENOMIC_SEQUENCE[0][last_gene_coordinate:first_gene_coordinate], IUPAC.unambiguous_dna)
@@ -325,7 +325,7 @@ def calculate_rna_biomass(sequence):
 	ntp_order = {base + 'TP': index for index, base in enumerate(base_order)}
 	counts = {base: (rna_masses[base] - ppi_mass) * sequence.count(base) for base in base_order}
 	
-	return [0.0, 0.0, 0.0, np.sum(counts.values()) + ppi_mass, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+	return [0.0, 0.0, 0.0, np.sum(list(counts.values())) + ppi_mass, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 	
 def count_ntps_rna(sequence):
 	'''
