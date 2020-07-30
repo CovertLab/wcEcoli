@@ -15,6 +15,7 @@ from Bio.Alphabet import IUPAC
 
 from functools import partial
 from reconstruction import spreadsheets
+from reconstruction.spreadsheets import tsv_reader
 
 '''
 Purpose:
@@ -154,55 +155,13 @@ import pdb; pdb.set_trace()
 #with open(args.filename) as file:
 '''
 
-
 def parse_tsv(tsv_file):
-#Takes in a tsv file, and creates a list of lists of the rows 
-#contained within the TSV.
-	tsv_list = []
-	with open(tsv_file) as tsvfile:
-		reader = JsonReader(tsvfile)
+	# Input: tsv file
+	# Returns: list of lists of the rows contained in the tsv, column names
+	with tsv_reader(tsv_file) as reader:
 		fieldnames = reader.fieldnames
-		for row in reader:
-			tsv_list.append(row)
-	return tsv_list, fieldnames
-
-def read_file_skipping_comments(tsvfile, tsv_list, tempfile):
-	num_lines = 0
-	for curline in tsvfile:
-		if not curline.startswith('#'):
-			tempfile.write(curline)
-	tempfile.close() #need to close file for IOS memory reasons.
-	with open('temp.csv') as tempfile:
-		reader = JsonReader(tempfile)
-		fieldnames = reader.fieldnames
-		try:
-			for row in reader:
-				tsv_list.append(row)
-		except:
-			import pdb; pdb.set_trace()
-	if os.path.exists("temp.csv"):
-		os.remove("temp.csv")
-	else:
-		print("temp.csv does not exist")
-	return tsv_list, fieldnames
-
-def parse_tsv_2(tsv_file):
-	'''
-	Takes in a tsv file, and creates a list of dicts of the rows 
-	contained within the TSV.
-	'''
-	tsv_list = []
-	with open(tsv_file, 'r') as tsvfile, open('temp.csv', 'w') as tempfile:
-		# read in first line in tsvfile
-		if not tsvfile.readline().startswith('#'):
-			tsv_list=[]
-			reader = JsonReader(tsvfile)
-			fieldnames = reader.fieldnames
-			for row in reader:
-				tsv_list.append(row)
-		else:
-			tsv_list, fieldnames = read_file_skipping_comments(tsvfile, tsv_list, tempfile)
-	return tsv_list, fieldnames
+		tsv_list = list(reader)
+		return tsv_list, fieldnames
 
 def find_tu_type(tu_genes_info):
 	'''
@@ -622,7 +581,7 @@ def make_transcription_units_file():
 		Run all the functions necessary to get the transcription counts vector 
 		output as transcription_units.tsv.
 	'''
-	tu_info, fieldnames_rna = parse_tsv_2(TU_FILE)
+	tu_info, fieldnames_rna = parse_tsv(TU_FILE)
 	gene_tu_matrix, rnas_gene_order = create_gene_to_tu_matrix(RNA_INFO, tu_info)
 	rna_seq_counts_vector = create_rnaseq_count_vector(rnas_gene_order)
 	tu_counts = create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info)
@@ -641,7 +600,7 @@ def make_transcription_units_file():
 
 def make_new_proteins_file(output_file):
 	protein_info, protein_fieldnames = parse_tsv(PROTEIN_FILE)
-	rna_info, rna_fieldnames = parse_tsv_2(TU_FILE)
+	rna_info, rna_fieldnames = parse_tsv(TU_FILE)
 
 	#Go through monomerSet line by line. Find the matching monomers within
 	#those lists then find the corresponding monomer in proteins.tsv.
@@ -681,7 +640,7 @@ def remove_kms_file(km_file):
 	return
 
 def make_new_tf_conditions_file(output_file):
-	tf_info, tf_fieldnames = parse_tsv_2(TF_COND_FILE)
+	tf_info, tf_fieldnames = parse_tsv(TF_COND_FILE)
 	protein_info, protein_fieldnames = parse_tsv(output_proteins)
 
 	rnaIdToRnaSet = {x["rnaId"]: x["rnaSet"] for x in protein_info}
