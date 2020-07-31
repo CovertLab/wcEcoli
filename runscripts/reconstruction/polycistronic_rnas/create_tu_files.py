@@ -89,18 +89,12 @@ Note:
 - A comment line is added to the top of the file to indicate that it generated
 	from this script, and to record the date it was compiled.
 TODO:
-- UPDATE PROTEINS.TSV
-- Take polycistrons file as an input argument
 - Allow for certain RNA type mixing (rRNA, tRNA) - handle this type differently
 - Allow mass to determine type and location for importing mass fractions in the Parca
-- Right now I am just making the transcription_units file for a single condition. In the 
-future we will want it for all conditions. Will need to take care in the parca that the 
-correct condiditon data is being used.
 - Dont allow for deletion of a gene without incorporation in a TU.
 
 -Import helper functions from another file.
 - Fix parse tsv2.
-- Allow protiens.tsv to overwrite itself, check if rnaset column already exists
 - Make parameters consistent across functions.
 - check that directions of genes in a TU match
 -fix furure warning

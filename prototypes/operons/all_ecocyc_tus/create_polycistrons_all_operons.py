@@ -1,6 +1,7 @@
 # Import packages
 import itertools
 import os
+from operator import itemgetter
 import csv
 import numpy as np
 
@@ -19,6 +20,8 @@ to condense it down to just what is needed.
 
 When was the ecocyc file pulled?
 - Get new TU's and coordinates file.
+
+- Make sure works with python3
 '''
 
 # --- Functions
@@ -117,18 +120,23 @@ def sort_tu(row, gene_coordinates, mrna_ids):
 	check_1 = 0
 	for gene in row_dup_removed:
 		try:
-			tu_coordinates.append(gene_coordinates[gene])
+			#tu_coordinates.append(gene_coordinates[gene])
+			tu_coordinates.append((gene, gene_coordinates[gene]['coordinate'], gene_coordinates[gene]['direction']))
 		except KeyError:
 			check_1 += 1
 	check_2 = 0
 	for gene in row_dup_removed:
 		if gene not in mrna_ids:
 			check_2 +=1
+	check_3 = 0
+	if len(set([tu[2] for tu in tu_sorted]) > 1:
+		except()
 	if check_1 > 0 or check_2 > 0:
 		sorted_tu = []
 	elif check_1 == 0 and check_2 == 0:
-		sorted_inds, sorted_items = zip(*sorted([(i,e) for i,e in enumerate(tu_coordinates)], key=itemgetter(1)))
-		sorted_tu = row_dup_removed.sort(key=list(sorted_inds)) 
+		import pdb; pdb.set_trace()
+		#sorted_inds, sorted_items = zip(*sorted([(i,e) for i,e in enumerate(tu_coordinates)], key=itemgetter(1)))
+		tu_sorted = sorted(tu_coordinates, key=itemgetter(1), reverse=False)
 		if row[1] == '-':
 			sorted_tu.reverse()
 		import pdb; pdb.set_trace()
