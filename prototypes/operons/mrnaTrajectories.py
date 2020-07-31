@@ -11,12 +11,10 @@ from wholecell.analysis.analysis_tools import exportFigure
 from prototypes.operons.get_operon_rna_list import get_operon_rna_list
 
 
-
-
-
-
 def mrnaTrajectories(sim1Name, sim1Dir, sim2Name, sim2Dir, polycistron_file, plotOutDir):
 
+    # GET CANDIDATE mRNAs
+    # TAKE 25 mRNAs WITH GREATEST EXPRESSION DISPARITY BETWEEN POLY AND MONO CISTRON SIMS
     mRNA_names = {}
     mRNA_counts = {}
     for simName, simDir in zip([sim1Name, sim2Name], [sim1Dir, sim2Dir]):
@@ -26,14 +24,44 @@ def mrnaTrajectories(sim1Name, sim1Dir, sim2Name, sim2Dir, polycistron_file, plo
 
     pc_dict = get_operon_rna_list(polycistron_file)
 
-    num_plots = len(pc_dict.keys())
+    # filter out subgen genes based on sim2 monocistron expression levels
+    gene_list = []
+    expression_disparity = []
+    for polycis in pc_dict:
+        polycis_idx = mRNA_names[sim1Name].index(polycis)
+        if type(polycis_idx) == tuple:
+            import ipdb; ipdb.set_trace()
+        t_expressed = []
+        monocis_expression = np.array([]).reshape(0,mRNA_counts[simName].shape[0])
+
+        for monocis in pc_dict[polycis]:
+            monocis_idx = mRNA_names[sim2Name].index(monocis)
+            if type(monocis_idx) == tuple:
+                import ipdb; ipdb.set_trace()
+            t_expressed.append(sum(mRNA_counts[sim2Name][:, monocis_idx] > 0) / mRNA_counts[sim2Name].shape[0])
+            monocis_expression = np.vstack((monocis_expression, mRNA_counts[sim2Name][:, monocis_idx]))
+
+        try:
+            avg_expression_diff = np.mean(mRNA_counts[sim1Name][:, polycis_idx]) - np.mean(np.mean(monocis_expression, axis=0))
+        except:
+            import ipdb; ipdb.set_trace()
+
+        if np.mean(t_expressed) > 0.3:
+            gene_list.append(polycis)
+            expression_disparity.append(avg_expression_diff)
+
+    sorted_gene_list = [x for _, x in zip(expression_disparity, gene_list)]
+
+    # -------------------------------------------------------------
+    # DO PLOT
+    num_plots = min(25, len(sorted_gene_list))
 
     r = np.ceil(np.sqrt(num_plots))
     c = np.ceil(num_plots/r)
 
 
 
-    sim1_rnas = pc_dict.keys()
+    sim1_rnas = sorted_gene_list
     plt.figure(figsize=(8.5, 11))
     # import ipdb; ipdb.set_trace()
     for p in range(0,num_plots):
@@ -41,11 +69,11 @@ def mrnaTrajectories(sim1Name, sim1Dir, sim2Name, sim2Dir, polycistron_file, plo
         plt.subplot(r,c,p+1)
 
         for rna in pc_dict[sim1_rnas[p]]:
-            rna_idx = mRNA_names[sim2Name].index(rna + '_RNA[c]')
+            rna_idx = mRNA_names[sim2Name].index(rna)
             plt.plot(mRNA_counts[sim2Name][:,rna_idx], color='silver')
 
 
-        plt.plot(mRNA_counts[sim1Name][:, mRNA_names[sim1Name].index(sim1_rnas[p] + '[c]')], color='crimson', linewidth=2)
+        plt.plot(mRNA_counts[sim1Name][:, mRNA_names[sim1Name].index(sim1_rnas[p])], color='crimson', linewidth=2)
         plt.title(sim1_rnas[p], fontsize=3)
 
 
