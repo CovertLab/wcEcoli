@@ -17,14 +17,14 @@ def get_operon_rna_list(pc_rnas_path):
 
     pc_dict = {}
     for row in rna_list:
-        operon_rna = '_'.join(row['transcription_units']) + '_RNA'
-        pc_dict[operon_rna] = row['transcription_units']
+        operon_rna = '_'.join(row['transcription_units']) + '_RNA[c]'
+        pc_dict[operon_rna] = [s + '_RNA[c]' for s in row['transcription_units']]
 
         monomer_rna_included = set(row['transcription_units']) - set(row['monomers_to_remove'])
 
         if len(monomer_rna_included) > 0:
             for mono_rna in monomer_rna_included:
-                pc_dict[mono_rna + '_RNA'] = mono_rna
+                pc_dict[mono_rna + '_RNA[c]'] = mono_rna + '_RNA[c]'
 
     return pc_dict
 
