@@ -41,10 +41,8 @@ def mrnaTrajectories(sim1Name, sim1Dir, sim2Name, sim2Dir, polycistron_file, plo
             t_expressed.append(sum(mRNA_counts[sim2Name][:, monocis_idx] > 0) / mRNA_counts[sim2Name].shape[0])
             monocis_expression = np.vstack((monocis_expression, mRNA_counts[sim2Name][:, monocis_idx]))
 
-        try:
-            avg_expression_diff = np.mean(mRNA_counts[sim1Name][:, polycis_idx]) - np.mean(np.mean(monocis_expression, axis=0))
-        except:
-            import ipdb; ipdb.set_trace()
+        avg_expression_diff = np.mean(mRNA_counts[sim1Name][:, polycis_idx]) - np.mean(np.mean(monocis_expression, axis=0))
+
 
         if np.mean(t_expressed) > 0.3:
             gene_list.append(polycis)
