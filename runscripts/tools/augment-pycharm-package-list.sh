@@ -7,8 +7,10 @@
 # See https://youtrack.jetbrains.com/issue/PY-27985
 #
 # This handles PyCharm Pro (python.jar) and PyCharm CE (python-ce.jar)
-# installed on macOS by JetBrains Toolbox and by snap on Linux.
-# TODO: Support other PyCharm installers and other OSs.
+# installed on macOS by JetBrains Toolbox.
+#
+# TODO: Support other PyCharm installers and other OSs. But this approach doesn't
+# work for PyCharm installed by snap since it's on a read-only filesystem.
 
 set -eu
 
@@ -48,9 +50,3 @@ if [ -d "$MAC_JB_TOOLBOX_PYCHARM" ]; then
   patch_packages PyCharm.app/Contents/plugins/python/lib python.jar
   patch_packages PyCharm.app/Contents/plugins/python/lib python-ce.jar
 fi
-
-LINUX_SNAP_PYCHARM_PRO="/snap/pycharm-professional/current/plugins/python/lib/"
-patch_packages "$LINUX_SNAP_PYCHARM_PRO" python.jar
-
-LINUX_SNAP_PYCHARM="/snap/pycharm/current/plugins/python/lib/"
-patch_packages "$LINUX_SNAP_PYCHARM" python-ce.jar
