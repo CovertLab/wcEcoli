@@ -1,27 +1,13 @@
 # Style Guide
 
-_These guidelines are condensed from the PEP8 and Google style guides here, along with our decisions. -- Jerry_
+_These guidelines are condensed from the PEP8 and Google style guides here, along with our decisions._
 
 * See [PEP8](https://www.python.org/dev/peps/pep-0008/)
 * See [Google's Python style guide](https://google.github.io/styleguide/pyguide.html)
-* See our [March 12, 2018 meeting slides](https://docs.google.com/presentation/d/1pf6GQmMwbUoeASmNk1bmjYZ-PteJ0tSFH0v6P6vd5eE/edit#slide=id.g313d94100c_0_55) with notes on the tradeoffs between alternatives.
 
-## Note: Python 2 and 3 compatibility
-Since Python 2 end-of-life is Jan. 1, 2020, the project is transitioning to Python 3. **Code additions and changes should remain compatible with Python 2 and also be compatible with Python 3 to an increasing degree.**
+_NOTE: This release snapshot was partway through the project's transition to Python 3.
+This code runs in Python 2._
 
-* Until we finish the transition, use syntax and features that are compatible with both Python 2 + 3. We'll use the conversion tools to do the bulk of the conversion work, but do make edits compatible. Easy cases:
-  *  `raise Exception, args` → `raise Exception(args)`
-  *  `except TypeError, ZeroDivisionError:` → `except Exception as variable:`
-  *  `` `i` `` → `repr(i)`
-  *  `a <> b` → `a != b`
-  *  `a_dict.has_key(k)` → `k in a_dict`
-  *  `apply(f, args)` → `f(*args)`
-
-* Put `from __future__ import absolute_import, division, print_function` in each source file after making and testing any needed adaptations.
-* See [Python 2.7 → 3.7 slides](https://docs.google.com/presentation/d/1xwVHjpQsRTGLdaIpPDNjKPQFtp7mBNfn7oTWK4Kct30/edit?usp=sharing) and [TODO] wiki pages.
-
-
-# Style Guides
 
 Style guides make recommendations among programming alternatives like [imports](https://docs.google.com/presentation/d/1pf6GQmMwbUoeASmNk1bmjYZ-PteJ0tSFH0v6P6vd5eE/edit#slide=id.g313d94100c_0_107), [docstrings](https://docs.google.com/presentation/d/1pf6GQmMwbUoeASmNk1bmjYZ-PteJ0tSFH0v6P6vd5eE/edit#slide=id.g313d94100c_0_123), [common patterns](https://docs.google.com/presentation/d/1pf6GQmMwbUoeASmNk1bmjYZ-PteJ0tSFH0v6P6vd5eE/edit#slide=id.g313d94100c_0_117), [names](https://docs.google.com/presentation/d/1pf6GQmMwbUoeASmNk1bmjYZ-PteJ0tSFH0v6P6vd5eE/edit#slide=id.g313d94100c_0_151), and [layout](https://docs.google.com/presentation/d/1pf6GQmMwbUoeASmNk1bmjYZ-PteJ0tSFH0v6P6vd5eE/edit#slide=id.g313d94100c_0_131). The purpose is to reduce the likelihood of some bugs, increase code readability and familiarity, and make it easier for programmers to collaborate and merge code. But don't overdo consistency.
 
@@ -237,7 +223,7 @@ Programming tips:
 
 See https://google.github.io/styleguide/pyguide.html
 
-* Use pylint. [And/or PyCharm inspections.]
+* Use mypy, pylint, and/or PyCharm inspections.
 * Import packages and modules only, not names from modules.
 * Use full pathnames to import a module; no relative imports to help prevent importing a package twice.
 * Avoid global variables.
@@ -271,13 +257,13 @@ See https://google.github.io/styleguide/pyguide.html
 
 [Summarized from sources like [PythonSpeed](https://wiki.python.org/moin/PythonSpeed).]
 
-* Testing membership in a set or a dict is very fast, `O(n)`, unlike a list, tuple, or array.
+* Testing membership in a set or a dict is very fast, `O(1)`, unlike a list, tuple, or array.
 * Sorting a list using a _sort key_ is faster than using a _comparison function._
 * Mapping a function over a list, or using a list comprehension or generator comprehension, should be faster than a `for` loop since it pushes the loop work into compiled C code.
 * Local variables are faster to access than global variables, builtins, and attribute lookups.
 * Iterators are generally more memory-friendly and scalable than list operations, e.g. `xrange()`, `itertools.imap()`, `dict.iteritems` vs. `range()`, `map()`, `dict.items()`.
 * Core building blocks are coded in optimized C, including the builtin datatypes (lists, tuples, sets, and dictionaries) and extension modules like `array`, `itertools`, and `collections.deque`.
 * Builtin functions run faster than hand-built equivalents, e.g. `map(operator.add, v1, v2)` is faster than `map(lambda x, y: x+y, v1, v2)`.
-* For queue applications using `pop(0)` or `insert(0,v)`, `collections.deque()` offers superior `O(1)` performance over a list because it avoids the `O(n)` step of rebuilding a list for each insertion or deletion.
+* For queue applications using `pop(0)` or `insert(0, v)`, `collections.deque()` offers superior `O(1)` performance over a list because it avoids the `O(n)` step of rebuilding a list for each insertion or deletion.
 * Chained comparisons like `x < y < z` are faster and hopefully more readable than `x < y and y < z`.
 * Threading can improve the response time in applications that would otherwise waste time waiting for I/O.
