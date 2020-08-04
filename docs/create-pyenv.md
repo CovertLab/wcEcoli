@@ -139,32 +139,32 @@ This page goes through the Python environment setup steps in more detail and wit
 
 6. Test the NumPy and SciPy installation
 
-      ```bash
-      python runscripts/debug/summarize_environment.py
-      ```
-      It should print entries like this for numpy and scipy, naming the
-      `library_dirs` that you set above:
-      ```
-      lapack_opt_info:
-          libraries = ['openblas', 'openblas']
-          library_dirs = ['/usr/local/opt/openblas/lib']
-          define_macros = [('HAVE_CBLAS', None)]
-          language = c
-      ```
+   ```bash
+   python runscripts/debug/summarize_environment.py
+   ```
+
+   It should print several sections like this for numpy and scipy, naming the
+   `library_dirs` that you set above:
+
+   ```
+   lapack_opt_info:
+       libraries = ['openblas', 'openblas']
+       library_dirs = ['/usr/local/opt/openblas/lib']
+       define_macros = [('HAVE_CBLAS', None)]
+       language = c
+   ```
 
 8. Test Theano:
 
-      ```bash
-      python
-      import theano
-      theano.config.blas.ldflags
-      ```
+   ```bash
+   python -c 'import theano; print theano.config.blas.ldflags'
+   ```
 
-   It should print something like
+   which should print something like:
 
-      ```bash
-      '-L/usr/local/opt/openblas/lib -lopenblas -lopenblas'
-      ```
+   ```
+   -L/usr/local/opt/openblas/lib -lopenblas -lopenblas
+   ```
 
    naming the library_dirs that you set above.
 

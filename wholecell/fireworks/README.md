@@ -33,6 +33,4 @@ server, use a shared server, or instantiate a database on mlab.com.
 
 * Run `python wholecell/fireworks/initialize.py`
 
-* Run `lpad -l my_launchpad.yaml reset` and choose `Y`es if prompted
-
-* Run `lpad -l my_launchpad_2.yaml reset` and again choose `Y`es if prompted
+* Run `lpad -l my_launchpad.yaml reset` and choose `Y`es when prompted

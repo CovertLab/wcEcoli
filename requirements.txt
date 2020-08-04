@@ -23,7 +23,7 @@
 #   pyenv local wcEcoli-paper
 #
 ## Upgrade this virtual environment's installers:
-#   pip install --upgrade pip==20.1.1 setuptools==44.1.1 virtualenv==16.4.1 virtualenv-clone==0.5.1 virtualenvwrapper==4.8.4 wheel==0.34.2
+#   pip install pip==20.1.1 setuptools==44.1.1 virtualenv==16.4.1 virtualenv-clone==0.5.1 virtualenvwrapper==4.8.4 wheel==0.34.2
 #
 ## Install OpenBLAS 0.3.5 or later using your package manager or download and
 ## build it from source. (Earlier releases of OpenBLAS had threading bugs. So

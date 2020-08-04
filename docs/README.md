@@ -6,15 +6,18 @@ These are the docs for a variety of topics on the Whole Cell Model.
 
 There are two alternative ways to set up to run the model:
 
-1. **Docker setup (recommended):** Install the [Docker Desktop software](https://www.docker.com/products/docker-desktop) then launch a Docker Image.
-   Build the Docker Image via the shell commands:
+1. **Docker Container:** Install the
+   [Docker Desktop software](https://www.docker.com/products/docker-desktop),
+   build a Docker Image, then run the Docker Image as a Container.
+
+   Build the wcEcoli Docker Image this way:
 
    ```shell script
-   cd $YOUR_CODE_PROJECTS/wcEcoli  # or wherever you cloned the `wcEcoli` project to
+   cd $YOUR_CODE_PROJECTS_DIR/wcEcoli  # or wherever you cloned the wcEcoli project to
    cloud/build-containers.sh
    ```
 
-   You can then run the model inside the container like this:
+   You can then run the wcEcoli model inside the Container like this:
 
    ```shell script
    docker run --name=wcm -it --rm wcm-code
@@ -26,25 +29,25 @@ There are two alternative ways to set up to run the model:
    Another useful option is `--rm`, which asks Docker to remove the Container on
    exit so you don't have to remember to delete old Containers.
 
-   You can mount your local subdirectory `out/` into the container to keep the
-   program's output files after the container exits:
+   You can mount your local directory `wcEcoli/out/` into the Container to preserve the
+   program's output files when the Container exits:
 
    ```shell script
    docker run --name=wcm -v $PWD/out:/wcEcoli/out -it wcm-code
    ```
 
-   In this case, the output files will be owned by root. You can work around
+   In this case, the output files will be owned by root. You can fix
    that by adding the option `--user "$(id -u):$(id -g)"` to run the process
-   inside the container as your user and group from the host computer so the
-   output files will instead be owned by you, but that adds complications, e.g.
-   the process inside the container won't have a user profile and won't own the
+   inside the Container as your user and group from the host computer so the
+   output files will be owned by you, but that adds complications. E.g.
+   the process inside the Container won't have a user profile and won't own the
    `wcEcoli/` directory.
 
    **NOTE:** If you encounter memory issues while using Docker Desktop (the default allocated memory is 2GB) and the simulation processes get killed midway, click the Docker icon > Preferences > Advanced > adjust memory to 4GB.
 
    **NOTE:** Docker Desktop for Windows is not currently compatible with VirtualBox.  If you use VirtualBox, try installing the legacy [Docker Toolbox](https://github.com/docker/toolbox/releases) instead.  You may also need to adjust the memory allocated to the VirtualBox VM (named 'default') that gets created.  In VirtualBox, select the 'default' VM and under system, change the base memory from 1 GB to 4 GB.
 
-   Inside the container you can then run commands like these:
+   Inside the Container you can then run commands like these:
 
    ```shell script
    python runscripts/manual/runFitter.py
@@ -52,13 +55,19 @@ There are two alternative ways to set up to run the model:
    python runscripts/manual/analysisSingle.py
    ```
 
-2. **pyenv setup:** Follow [Required development tools](dev-tools.md) to install the development tools including pyenv, gcc, make, and git, then follow [Creating the "pyenv" runtime environment](create-pyenv.md) to set up the Python runtime virtual environment for the model including binary libraries and Python packages.
+   **Tip:** Eventually, you'll want to delete the Docker Image. Refer to the
+   commands `docker image prune`, `docker image ls`, and `docker image rm`.
 
-   You can then run the model with this version of Python under `pyenv`.
-   
-   If you have Anaconda installed, you might have to take it off the `$PATH` temporarily to run the Whole Cell Model.
+2. **Python virtual environment:** Follow [Required development tools](dev-tools.md) to install the development tools including pyenv, gcc, make, and git, then follow [Creating the "pyenv" runtime environment](create-pyenv.md) to set up the Python runtime virtual environment for the model including binary libraries and Python packages.
 
-   This approach takes many careful steps that vary depending on your operating system. It will run ≈1 dB faster than inside a container.
+   You can then run wcEcoli in this Python virtualenv.
+
+   This approach takes many careful steps that vary depending on your operating
+   system but it will run noticeably faster than inside a Docker Container.
+   The native libraries and compilers will not be isolated from the rest of your
+   computer but the virtualenv will be isolated from other Python environments.
+   However if you have Anaconda installed, you might have to
+   take it off the `$PATH` temporarily to run Python in this virtualenv.
 
    * [Required development tools](dev-tools.md) -- installation and tips
    * [Creating the "pyenv" runtime environment](create-pyenv.md)
