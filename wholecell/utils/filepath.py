@@ -94,7 +94,7 @@ def run_cmd2(tokens, trim=True, timeout=TIMEOUT, env=None):
 			because the outputs usually end with a newline.
 		timeout: timeout in seconds; None for no timeout.
 		env: optional environment variables for the new process to use instead
-			of inheriting the current process’ environment.
+			of inheriting the current process' environment.
 	Returns:
 		The command's stdout and stderr strings.
 	Raises:
