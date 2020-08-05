@@ -14,6 +14,7 @@ import unittest
 import numpy as np
 
 import wholecell.utils.filepath as fp
+from wholecell.utils import parallelization
 
 
 THIS_DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -34,7 +35,9 @@ class Test_openblas_threads(unittest.TestCase):
 		products = []
 		print(f'{"THREADS":>7} {"DOT PRODUCT":>25} {"DIFF":>25}')
 
-		for num_threads in range(1, 13):
+		for num_threads in range(parallelization.cpus(advice='mac override') + 1):
+			if num_threads == 0:
+				num_threads = ''
 			env = dict(os.environ, OPENBLAS_NUM_THREADS=str(num_threads))
 			command = 'python -m wholecell.tests.utils.test_openblas_threads DOT'.split()
 			dot = float(fp.run_cmd(command, env=env))
