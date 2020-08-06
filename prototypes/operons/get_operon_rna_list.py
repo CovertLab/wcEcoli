@@ -28,6 +28,21 @@ def get_operon_rna_list(pc_rnas_path):
 
     return pc_dict
 
+def pc_mc_conversion_dicts(pc_rnas_path):
+    rna_list, fieldnames = parse_tsv(pc_rnas_path)
+
+    pc_to_mc_dict = {}
+    for row in rna_list:
+        operon_rna = '_'.join(row['transcription_units']) + '_RNA[c]'
+        pc_to_mc_dict[operon_rna] = [s + '_RNA[c]' for s in row['transcription_units']]
+
+    mc_to_pc_dict = defaultdict(list)
+
+    for key, vals in pc_to_mc_dict:
+        for v in vals:
+            mc_to_pc_dict[v].append(key)
+
+    return pc_to_mc_dict, mc_to_pc_dict
 
 
 def parse_tsv(tsv_file):
