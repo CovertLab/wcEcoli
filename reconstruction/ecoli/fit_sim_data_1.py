@@ -41,7 +41,7 @@ RNA_EXPRESSION_ADJUSTMENTS = {
 	"EG11672_RNA[c]": 10,  # atoB, acetyl-CoA acetyltransferase; This RNA is fit for the anaerobic condition viability
 	"EG10238_RNA[c]": 10,  # dnaE, DNA polymerase III subunit alpha; This RNA is fit for the sims to produce enough DNAPs for timely replication
 	"EG11673_RNA[c]": 10,  # folB, dihydroneopterin aldolase; needed for growth (METHYLENE-THF) in acetate condition
-	"EG10808_RNA[c]": 2,  # pyrE, orotate phosphoribosyltransferase; Needed for UTP synthesis, transcriptional regulation by UTP is not included in the model
+	"EG10808_RNA[c]": 4,  # pyrE, orotate phosphoribosyltransferase; Needed for UTP synthesis, transcriptional regulation by UTP is not included in the model
 	}
 RNA_DEG_RATES_ADJUSTMENTS = {
 	"EG11493_RNA[c]": 2,  # pabC, aminodeoxychorismate lyase
@@ -1122,6 +1122,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	rna_expression_container.countsIs(counts_tRNA, ids_tRNA)
 
 	## Assign mRNA counts based on mass and relative abundances (microarrays)
+
 	total_count_mRNA = totalCountFromMassesAndRatios(
 		total_mass_mRNA,
 		individual_masses_mRNA,
@@ -1570,7 +1571,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	mRnaExpressionView.countsIs(
 		mRnaExpressionFrac * mRnaDistribution)
 
-	expression = rnaExpressionContainer.counts()
+	expression = normalize(rnaExpressionContainer.counts())
 
 	# Set number of RNAs based on expression we just set
 	nRnas = totalCountFromMassesAndRatios(
@@ -1889,11 +1890,9 @@ def totalCountFromMassesAndRatios(totalMass, individualMasses, distribution):
 	-----
 	- TODO (Travis) - test includes case with no units although use case here
 	and documentation is only with units
-	- Commented out assert statment, put in a range instead to deal with 
-	adding in operons - mRNA distribution will likely not sum to 1 due to fitting.
 	"""
 
-	#assert np.allclose(np.sum(distribution), 1)
+	assert np.allclose(np.sum(distribution), 1)
 	counts = 1 / units.dot(individualMasses, distribution) * totalMass
 	return units.strip_empty_units(counts)
 
@@ -3274,7 +3273,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	needToUpdate = False
 	fixturesDir = filepath.makedirs(filepath.ROOT_PATH, "fixtures", "endo_km")
 	# Numpy 'U' fields make these files incompatible with older code, so change
-	# the filename. No need to make files compatible between Python 2 & 3l we'd
+	# the filename. No need to make files compatible between Python 2 & 3; we'd
 	# have to set the same protocol version and set Python 3-only args like
 	# encoding='latin1'.
 	km_filepath = os.path.join(fixturesDir, 'km{}.cPickle'.format(sys.version_info[0]))
