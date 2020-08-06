@@ -33,11 +33,10 @@ class Test_openblas_threads(unittest.TestCase):
 	def test_openblas(self):
 		"""Compare a dot product running with various numbers of OpenBLAS threads."""
 		products = []
-		print(f'{"THREADS":>7} {"DOT PRODUCT":>25} {"DIFF":>25}')
+		thread_range = list(range(1, parallelization.cpus(advice='mac override') + 1)) + ['']
+		print(f'{"THREADS":>7} {"DOT PRODUCT":>25} {"DIFF FROM 1 THREAD":>25}')
 
-		for num_threads in range(parallelization.cpus(advice='mac override') + 1):
-			if num_threads == 0:
-				num_threads = ''
+		for num_threads in thread_range:
 			env = dict(os.environ, OPENBLAS_NUM_THREADS=str(num_threads))
 			command = 'python -m wholecell.tests.utils.test_openblas_threads DOT'.split()
 			dot = float(fp.run_cmd(command, env=env))
