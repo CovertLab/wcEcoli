@@ -34,7 +34,7 @@ class Test_openblas_threads(unittest.TestCase):
 		"""Compare a dot product running with various numbers of OpenBLAS threads."""
 		products = []
 		thread_range = list(range(1, parallelization.cpus(advice='mac override') + 1)) + ['']
-		print('{:>7} {:>25} {:>25}'.format('THREADS', 'DOT PRODUCT', 'DIFF FROM 1 THREAD'))
+		print('{:>7} {:>26} {:>26}'.format('THREADS', 'DOT PRODUCT', 'DIFF FROM 1 THREAD'))
 
 		for num_threads in thread_range:
 			env = dict(os.environ, OPENBLAS_NUM_THREADS=str(num_threads))
@@ -43,7 +43,7 @@ class Test_openblas_threads(unittest.TestCase):
 
 			products.append(dot)
 			diff = dot - products[0]
-			print('{:7} {:25.18f} {:25.18f}'.format(num_threads, dot, diff))
+			print('{:7} {:26.17g} {:26.17g}'.format(num_threads, dot, diff))
 
 		assert products[0] == 0.016683805584112754
 
