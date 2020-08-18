@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-import os
-import numpy as np
+
 from reconstruction import spreadsheets
 from functools import partial
 from collections import defaultdict
@@ -38,8 +37,8 @@ def pc_mc_conversion_dicts(pc_rnas_path):
 
     mc_to_pc_dict = defaultdict(list)
 
-    for key, vals in pc_to_mc_dict:
-        for v in vals:
+    for key in pc_to_mc_dict.keys():
+        for v in pc_to_mc_dict[key]:
             mc_to_pc_dict[v].append(key)
 
     return pc_to_mc_dict, mc_to_pc_dict
