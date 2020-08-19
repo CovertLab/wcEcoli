@@ -16,3 +16,7 @@ docker build -f cloud/docker/runtime/Dockerfile -t wcm-runtime \
 # Docker image #2: The Whole Cell Model code on the runtime environment.
 # See this Dockerfile for usage instructions.
 docker build -f cloud/docker/wholecell/Dockerfile -t wcm-code .
+
+# Docker image #3: The Whole Cell Model code with parameters calculated, ready for sims.
+# See this Dockerfile for usage instructions.
+docker build -f cloud/docker/full/Dockerfile -t wcm-full .
