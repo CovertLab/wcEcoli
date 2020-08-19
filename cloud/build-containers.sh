@@ -5,8 +5,13 @@
 
 set -eu
 
+# On macOS, build with `NO_AVX2=1` to avoid the OpenBLAS 0.3.6+ self-test failures
+# and bad results when building and running in Docker Desktop on macOS.
+if [ "$(uname -s)" == Darwin ]; then NO_AVX2=1; else NO_AVX2=0; fi
+
 # Docker image #1: The Python runtime environment.
-docker build -f cloud/docker/runtime/Dockerfile -t wcm-runtime .
+docker build -f cloud/docker/runtime/Dockerfile -t wcm-runtime \
+  --build-arg NO_AVX2=$NO_AVX2 .
 
 # Docker image #2: The Whole Cell Model code on the runtime environment.
 # See this Dockerfile for usage instructions.
