@@ -43,7 +43,7 @@ class getterFunctions(object):
 	def get_location_tag(self, id_):
 		# type: (str) -> str
 		"""Look up a location id and return a location suffix tag like '[c]'."""
-		return '[{}]'.format(self._locationDict[id_][0])
+		return f'[{self._locationDict[id_][0]}]'
 
 	def check_valid_molecule(self, mol_id):
 		return mol_id in self._all_mass and mol_id in self._locationDict
@@ -123,7 +123,7 @@ class getterFunctions(object):
 
 		# Calculate molecular weights
 		metabolite_id_to_mw = {
-			'{}[c]'.format(met['id']): met['mw7.2'] for met in raw_data.metabolites
+			f'{met["id"]}[c]': met['mw7.2'] for met in raw_data.metabolites
 			}
 		ppi_mw = metabolite_id_to_mw[sim_data.moleculeIds.ppi]
 		polymerized_ntp_mws = np.array(

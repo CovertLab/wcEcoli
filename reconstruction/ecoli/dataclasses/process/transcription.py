@@ -185,8 +185,8 @@ class Transcription(object):
 		compartments = sim_data.getter.getLocation(rna_ids)
 
 		rna_ids_with_compartments = [
-			'{}[{}]'.format(rna_id, loc[0])
-			for (rna_id, loc) in zip(rna_ids, compartments)]
+			f'{rna_id}[{loc[0]}]' for (rna_id, loc)
+			in zip(rna_ids, compartments)]
 
 		# Load set of mRNA ids
 		mRNA_ids = set([rna['id'] for rna in raw_data.rnas if rna['type'] == 'mRNA'])
@@ -230,11 +230,11 @@ class Transcription(object):
 			if gene_id in seq_data:
 				expression.append(seq_data[gene_id])
 			elif rna['type'] == 'mRNA' or rna['type'] == 'miscRNA':
-				raise Exception('No RNA-seq data found for {}'.format(rna['id']))
+				raise Exception(f'No RNA-seq data found for {rna["id"]}')
 			elif rna['type'] == 'rRNA' or rna['type'] == 'tRNA':
 				expression.append(0.)
 			else:
-				raise Exception('Unknown RNA {}'.format(rna['id']))
+				raise Exception(f'Unknown RNA {rna["id"]}')
 
 		expression = np.array(expression)
 
@@ -282,18 +282,16 @@ class Transcription(object):
 		monomer_ids = [rna['monomerId'] for rna in raw_data.rnas]
 
 		# Load RNA sequences and molecular weights from getter functions
-		self._rna_raw_seqs = sim_data.getter.get_rna_sequence(
-			[rna['id'] for rna in raw_data.rnas])
-		mws = sim_data.getter.getMass(
-			[rna['id'] for rna in raw_data.rnas]).asNumber(units.g/units.mol)
+		rna_seqs = sim_data.getter.get_rna_sequence(rna_ids)
+		mws = sim_data.getter.getMass(rna_ids).asNumber(units.g/units.mol)
 
 		# Calculate lengths and nt counts from sequence
-		rna_lengths = np.array([len(seq) for seq in self._rna_raw_seqs])
+		rna_lengths = np.array([len(seq) for seq in rna_seqs])
 
 		# Get RNA nucleotide compositions
 		ntp_abbreviations = [ntp_id[0] for ntp_id in sim_data.moleculeGroups.ntpIds]
 		nt_counts = []
-		for seq in self._rna_raw_seqs:
+		for seq in rna_seqs:
 			nt_counts.append(
 				[seq.count(letter) for letter in ntp_abbreviations])
 		nt_counts = np.array(nt_counts)
@@ -439,13 +437,14 @@ class Transcription(object):
 		Build transcription-associated simulation data from raw data.
 		"""
 		# Load sequence data
-		sequences = np.array(self._rna_raw_seqs)
+		rna_seqs = np.array(sim_data.getter.get_rna_sequence(
+			[rna['id'] for rna in raw_data.rnas]))
 
 		rrna_types = ['isRRna23S', 'isRRna16S', 'isRRna5S']
 		for rrna in rrna_types:
 			rrna_idx = np.where(self.rnaData[rrna])[0]
 			for idx in rrna_idx[1:]:
-				sequences[idx] = sequences[rrna_idx[0]]
+				rna_seqs[idx] = rna_seqs[rrna_idx[0]]
 
 		# Construct transcription sequence matrix
 		maxLen = np.int64(
@@ -453,9 +452,9 @@ class Transcription(object):
 			+ self.max_time_step * sim_data.growthRateParameters.rnaPolymeraseElongationRate.asNumber(units.nt/units.s)
 			)
 
-		self.transcriptionSequences = np.full((sequences.shape[0], maxLen), polymerize.PAD_VALUE, dtype=np.int8)
+		self.transcriptionSequences = np.full((rna_seqs.shape[0], maxLen), polymerize.PAD_VALUE, dtype=np.int8)
 		ntMapping = {ntpId: i for i, ntpId in enumerate(["A", "C", "G", "U"])}
-		for i, sequence in enumerate(sequences):
+		for i, sequence in enumerate(rna_seqs):
 			for j, letter in enumerate(sequence):
 				self.transcriptionSequences[i, j] = ntMapping[letter]
 
