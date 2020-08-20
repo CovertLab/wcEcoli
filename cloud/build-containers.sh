@@ -6,7 +6,7 @@
 set -eu
 
 # On macOS, build with `NO_AVX2=1` to avoid the OpenBLAS 0.3.6+ self-test failures
-# and bad results when building and running in Docker Desktop on macOS.
+# and bad results when building with Docker Desktop on macOS.
 if [ "$(uname -s)" == Darwin ]; then NO_AVX2=1; else NO_AVX2=0; fi
 
 # Docker image #1: The Python runtime environment.

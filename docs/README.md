@@ -28,7 +28,8 @@ There are two alternative ways to set up to run the model:
    exit so you don't have to remember to delete old Containers.
 
    You can mount your local directory `wcEcoli/out/` into the Container to preserve the
-   program's output files when the Container exits:
+   program's output files when the Container exits - just be sure to provide a full path
+   to `out/` (eg. `$PWD/out`), not just a relative path from your current directory:
 
    ```shell script
    docker run --name=wcm -v $PWD/out:/wcEcoli/out -it wcm-full

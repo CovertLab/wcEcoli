@@ -57,7 +57,7 @@ These scripts have command line interfaces built on Python's `argparse`, so you 
 **NOTE:** _Use the `-h` or `--help` switch to get complete, up-to-date documentation on the command line options._ Below are just _some_ of the command line options.
 
 
-To run the parameter calculator (ParCa), which is needed to prepare input data for the simulation:
+To run the parameter calculator (ParCa), which is needed to prepare input data for the simulation (this step has already been run when building the wcm-full Docker image and can be skipped if running a container from that image):
 ```bash
 python runscripts/manual/runFitter.py [-h] [--cpus CPUS] [sim_outdir]
 ```
