@@ -12,11 +12,11 @@ See [docs/README.md](docs/README.md) for more info on setting up and running the
 In short, there are two alternative setups to run the model: inside a Docker container vs. in a manually constructed `pyenv` virtual environment.  With Docker, you can start running a simulation with three commands:
 1.  Pull the Docker image:
     ```shell script
-    docker pull docker.pkg.github.com/CovertLab/WholeCellEcoliRelease/wcm-full:latest
+    docker pull docker.pkg.github.com/covertlab/wholecellecolirelease/wcm-full:latest
     ```
 1. Run the Docker container:
     ```shell script
-    docker run --name=wcm -it --rm docker.pkg.github.com/CovertLab/WholeCellEcoliRelease/wcm-full
+    docker run --name=wcm -it --rm docker.pkg.github.com/covertlab/wholecellecolirelease/wcm-full
     ```
 1. Inside the container, run the model:
     ```shell script

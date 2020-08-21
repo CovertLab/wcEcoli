@@ -12,13 +12,13 @@ There are two alternative ways to set up to run the model:
 
    Pull the full docker image from the package registry in this repo:
    ```shell script
-   docker pull docker.pkg.github.com/CovertLab/WholeCellEcoliRelease/wcm-full:latest
+   docker pull docker.pkg.github.com/covertlab/wholecellecolirelease/wcm-full:latest
    ```
 
    You can then run the wcEcoli model inside the Container like this:
 
    ```shell script
-   docker run --name=wcm -it --rm wcm-full
+   docker run --name=wcm -it --rm docker.pkg.github.com/covertlab/wholecellecolirelease/wcm-full
    ```
 
    The `-it` option starts an interactive shell.
@@ -32,7 +32,7 @@ There are two alternative ways to set up to run the model:
    to `out/` (eg. `$PWD/out`), not just a relative path from your current directory:
 
    ```shell script
-   docker run --name=wcm -v $PWD/out:/wcEcoli/out -it wcm-full
+   docker run --name=wcm -v $PWD/out:/wcEcoli/out -it docker.pkg.github.com/covertlab/wholecellecolirelease/wcm-full
    ```
 
    In this case, the output files will be owned by root. You can fix
