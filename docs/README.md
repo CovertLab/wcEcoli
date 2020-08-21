@@ -5,31 +5,71 @@ These are the docs for a variety of topics on the Whole Cell Model.
 ## setup
 
 
-There are two alternative ways to set up to run the model:
+There are two alternative ways to set up to run the model.
+
+Building a Docker Container Image takes one step -- one shell script.
+The Container will be isolated from your computer's operating system, versions of Python, binary libraries, and everything else installed on your development computer.
+
+Building a pyenv virtual environment takes a lot of installation steps that depend
+on what's already installed. The result is isolated from other Python
+virtual environments but the binary libraries might impact the rest of your computer.
+On the other hand, this lets you edit, run, and debug without the complications of
+Docker mechanics.
 
 * **Docker setup**
 
-   Install the [Docker Desktop software](https://www.docker.com/products/docker-desktop) then pull our Docker container image from the Google Cloud Package Registry `gcr.io`, or build it locally using the `cloud/build-containers-locally.sh` or `cloud/build.sh` shell scripts.
+   Install the [Docker Desktop software](https://www.docker.com/products/docker-desktop).
 
-   A Docker container image builds automatically and is isolated from your computer's operating system, versions of Python, binary libraries, and everything else installed on your development computer.
+   **NOTE:** Open Docker's Advanced Preferences and increase the memory allocation to 4GB.
+   (The default allocation is 2GB which would make the model's Python code run out of
+   memory, print "Killed", and stop with exit code 137.)
 
-   You can then run the model inside the Docker container.
-   (PyCharm Pro should support debugging into a Docker container but we haven't tested that.)
+   Build and run the Docker Container Image locally like this:
 
-   You can share a local directory with the code inside the Docker container, either just the model's output directory `/wcEcoli/out` in order to preserve its output files outside the container:
+   ```shell script
+   cloud/cloud/build-containers-locally.sh
+   docker run --name=wcm -it --rm wcm-code
+   ```
 
-   ```docker run --name=wcm -v <LOCAL_WCECOLI>/out:/wcEcoli/out --user "$(id -u):$(id -g)" -it --rm wcm-code```
+   Or build a Container Image using a Google Cloud Build server,
+   pull the Image from the Google Cloud Package Registry `gcr.io`,
+   and run it locally
+   (to do this you'll need to [set up the Google Cloud project](google-cloud.md)):
 
-   (where `<LOCAL_WCECOLI>` denotes the local path to your cloned repo),
-   or share the entire `/wcEcoli` directory to also substitute the model's code inside the container with the code in your local wcEcoli directory.
+   ```shell script
+   cloud/build.sh
+   docker pull gcr.io/${PROJECT}/${USER}-wcm-code
+   docker run --name=wcm -it --rm gcr.io/${PROJECT}/${USER}-wcm-code
+   ```
 
-   ```docker run --name=wcm -v <LOCAL_WCECOLI>:/wcEcoli --user "$(id -u):$(id -g)" -it --rm wcm-code```
+   You can then run the model's Python programs inside the Container.
+   (PyCharm Pro should support debugging into a Docker Container but we haven't tested that.)
 
-   The `--user "$(id -u):$(id -g)"` option runs the model inside the container as your user and group in the host computer so the output files will be owned by you.
+   After changing the model's source code in the `wcEcoli/` directory, building an
+   updated `wcm-code` Container Image via Google Cloud Build takes only a few minutes:
 
-   **NOTE:** If you encounter memory issues while using Docker Desktop (the default allocated memory is 2GB) causing the simulation to get killed midway, click the Docker icon > Preferences > Advanced > adjust memory to 4GB.
+   ```shell script
+   cloud/build-wcm.sh
+   ```
 
    **NOTE:** Docker Desktop for Windows is not currently compatible with VirtualBox.  If you use VirtualBox, try installing the legacy [Docker Toolbox](https://github.com/docker/toolbox/releases) instead.  You may also need to adjust the memory allocated to the VirtualBox VM (named 'default') that gets created.  In VirtualBox, select the 'default' VM and under system, change the base memory from 1 GB to 4 GB. 
+
+   **TIP:** To preserve the model's output files after the Container exits,
+   bind its output directory `/wcEcoli/out` to a local directory by adding
+   the option `-v $PWD/wcEcoli/out:/wcEcoli/out`, where `$PWD/wcEcoli` is the
+   path to your cloned repo in the host computer.
+
+   **NOTE:** `-v` needs absolute paths!
+
+   You can share the entire `/wcEcoli` directory to also substitute the model's code
+   inside the Container with the code in your host wcEcoli directory by changing
+   that option to `-v $PWD/wcEcoli:/wcEcoli`.
+
+   **TIP:** If the Container creates output files with the wrong host user and group
+   ownership, you can change that by adding the `--user "$(id -u):$(id -g)"` option.
+   That runs the process inside the Container as your host computer user and group so
+   the files will be owned by you. However, this adds other complications since it runs
+   inside the Container without ownership of the existing files and directories.
 
 * **pyenv setup**
 
@@ -42,7 +82,7 @@ There are two alternative ways to set up to run the model:
 
    If you have Anaconda installed, you might have to take Anaconda off the `$PATH` temporarily to run the Whole Cell Model.
 
-   This approach takes a bunch of steps that vary depending on your operating system. It will run ≈25% faster than inside a container and works with any Python debugger.
+   This approach takes a bunch of steps that vary depending on your operating system. It will run ≈25% faster than inside a Container and works with any Python debugger.
 
   See:
 

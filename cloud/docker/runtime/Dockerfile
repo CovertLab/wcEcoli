@@ -14,29 +14,29 @@
 ARG from=python:3.8.3
 FROM ${from}
 
-# Add option `--build-arg NO_AVX2=1` to make OpenBLAS 0.3.6+ avoid AVX2
-# instructions so it can pass its build self-test in Docker-for-Mac and
-# produce correct results when run there.
+# Option `--build-arg NO_AVX2=1` controls OpenBLAS' use of AVX2 vector instructions:
 #
-# * NO_AVX2=1 is needed to build or run properly in Docker-for-Mac.
-# * NO_AVX2=0 reportedly runs 20-30% faster BLAS if you're sure it'll only
-#   build and run on Linux, but this only saves ~7% in a cell sim.
+# * NO_AVX2=1 is needed to build properly in Docker-for-Mac due to a Docker bug,
+#   but it computes slightly different results.
+# * NO_AVX2=0 gets more consistent results and reportedly runs 20-30% faster
+#   (although it only saves ~7% in a cell sim). Use this when building in
+#   Docker-for-Linux. The built Images seem to run fine on Mac.
 #
 # Docker-for-Mac bug:
 # https://github.com/xianyi/OpenBLAS/issues/2244
 # https://github.com/docker/for-mac/issues/4576
 # https://github.com/machyve/xhyve/issues/171
-ARG NO_AVX2=1
+ARG NO_AVX2=0
 ENV NO_AVX2="$NO_AVX2"
 
 RUN apt-get update \
     && apt-get install -y swig gfortran llvm cmake nano
 
 RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc \
-    && echo "alias ll='ls -l'" >> ~/.bashrc
+    && echo "alias ll='ls -l'" >> ~/.bashrc \
+    && cp ~/.bashrc /
 
-# Install openblas (must be 0.3.5+, and 0.3.6+ need "NO_AVX2=1" for macOS Docker
-# to produce correct results) in Theano and maybe numpy/scipy.
+# Install openblas (must be 0.3.5+) for numpy, scipy, and Theano.
 # Someday `apt-get install libopenblas-dev=...` will work.
 ENV OPENBLAS_LABEL=v0.3.10
 RUN (mkdir -p openblas && cd openblas \
@@ -47,15 +47,15 @@ RUN (mkdir -p openblas && cd openblas \
     && make "NO_AVX2=${NO_AVX2}" PREFIX=/usr install) \
     && rm -r openblas
 
-# Conditionally build numpy and scipy from source (`--no-binary`, below) to
-# link them to this OpenBLAS instead of their embedded copies of OpenBLAS.
-# That can add 50 minutes to the build time.
-RUN if [ "$NO_AVX2" != 0 ] ; then (echo "[openblas]" \
+# Build numpy and scipy from source (`--no-binary`) to link them to this
+# OpenBLAS. This can add 50 minutes to the build time to get more consistent
+# results and go faster at run time.
+RUN (echo "[openblas]" \
     && echo "libraries = openblas" \
     && echo "library_dirs = /usr/lib" \
-    && echo "include_dirs = /usr/include") > ~/.numpy-site.cfg ; \
-    fi
+    && echo "include_dirs = /usr/include") > ~/.numpy-site.cfg
 
+# This gets more consistent results from openblas.
 ENV OPENBLAS_NUM_THREADS=1
 
 # Install all the pips within one Docker layer, don't cache the downloads, and
@@ -68,7 +68,7 @@ RUN (b1="" \
     && if [ -f ~/.numpy-site.cfg ] ; then b1="--no-binary=numpy,scipy"; fi \
     && echo "Installing pips with $b1" \
     && pip install --no-cache-dir --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir numpy==1.19.0 $b1 \
+    && pip install --no-cache-dir numpy==1.19.1 $b1 \
     && pip install --no-cache-dir -r requirements.txt $b1 \
     && umask 000 && mkdir -p /.theano)
 

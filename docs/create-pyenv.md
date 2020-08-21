@@ -149,13 +149,13 @@ virtualenv.
    `stochastic-arrow` to avoid installation errors.)
 
       ```bash
-      pip install numpy==1.19.0
+      pip install numpy==1.19.1  # see requirements.txt for the right version
       ```
 
 1. Install the packages listed in `requirements.txt`.
 
    ```bash
-   pip install -r py3_requirements.txt && pyenv rehash
+   pip install -r requirements.txt && pyenv rehash
    ```
 
 1. Test the NumPy and SciPy installation.
@@ -172,8 +172,9 @@ virtualenv.
           language = c
       ```
 
-1. (Optional) Add the following line to your bash profile and run it in your current shell.
-This has been shown to improve performance significantly on linux machines.
+1. **(Now required)** Add the following line to your bash profile and run it in your current shell.
+This gets more consistent results from OpenBLAS and it improves performance significantly,
+especially when called from multiple processes.
 
     ```
     export OPENBLAS_NUM_THREADS=1
@@ -197,7 +198,7 @@ This has been shown to improve performance significantly on linux machines.
 
    or
 
-      `'-L/usr/local/opt/openblas/lib -lopenblas -lopenblas'`
+      `-L/usr/local/opt/openblas/lib -lopenblas -lopenblas`
 
 1. Compile the project's native code.
 
