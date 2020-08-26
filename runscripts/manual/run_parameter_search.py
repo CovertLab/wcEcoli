@@ -251,6 +251,43 @@ def run_sim(cli_args, variant):
 			# TODO: currently only supports one sim cycle with out dir
 			return cell_sim_out_directory
 
+def gradient_descent(method, args, n_variants, sim_data_file):
+	sim_out_dir = run_sim(args, n_variants)
+	n_variants += 1
+
+	objective = method.get_objective_value(sim_data_file, sim_out_dir)
+
+	print(f'Initial objective: {objective:.3f}\n')
+
+	# Check all parameters before updating objective for faster convergence
+	updates = []
+	for parameter in method.parameters:
+		# Perturb parameter in sim_data
+		perturbed_sim_data = method.perturb_sim_data(sim_data_file, parameter)
+
+		# Save perturbed sim_data for variant sim
+		perturbed_sim_data_file = method.sim_data_path(n_variants)
+		with open(perturbed_sim_data_file, 'wb') as f:
+			pickle.dump(perturbed_sim_data, f,
+				protocol=pickle.HIGHEST_PROTOCOL)
+
+		# Run sim with perturbed sim_data
+		sim_out_dir = run_sim(args, n_variants)
+		n_variants += 1
+
+		# Calculate objective and resulting parameter update
+		new_objective = method.get_objective_value(perturbed_sim_data_file,
+			sim_out_dir)
+		print(f'Updated {parameter}: objective = {new_objective:.3f}\n')
+		updates.append(
+			method.get_parameter_update(sim_data_file, parameter, objective,
+				new_objective))
+
+	# Apply all updates to sim_data
+	sim_data = method.update_sim_data(sim_data_file, updates)
+
+	return sim_data, n_variants
+
 
 class RunParameterSearch(scriptBase.ScriptBase):
 	"""Drives a simple simulation run."""
@@ -328,34 +365,8 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		with open(sim_data_file, 'wb') as f:
 			pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 		for i in range(args.iterations):
-			sim_out_dir = run_sim(args, n_variants)
-			n_variants += 1
-			objective = method.get_objective_value(sim_data_file, sim_out_dir)
-
-			print(f'** Starting iteration {i}: {objective:.3f} **')
-
-			# Check all parameters before updating objective for faster convergence
-			updates = []
-			for parameter in method.parameters:
-				# Perturb parameter in sim_data
-				perturbed_sim_data = method.perturb_sim_data(sim_data_file, parameter)
-
-				# Save perturbed sim_data for variant sim
-				perturbed_sim_data_file = method.sim_data_path(n_variants)
-				with open(perturbed_sim_data_file, 'wb') as f:
-					pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-				# Run sim with perturbed sim_data
-				sim_out_dir = run_sim(args, n_variants)
-				n_variants += 1
-
-				# Calculate objective and resulting parameter update
-				new_objective = method.get_objective_value(perturbed_sim_data_file, sim_out_dir)
-				print(f'Updated {parameter}: objective = {new_objective:.3f}\n')
-				updates.append(method.get_parameter_update(sim_data_file, parameter, objective, new_objective))
-
-			# Apply all updates to sim_data
-			sim_data = method.update_sim_data(sim_data_file, updates)
+			print(f'** Starting iteration {i} **')
+			gradient_descent(method, args, n_variants, sim_data_file)
 
 			# Save updated sim_data
 			sim_data_file = method.sim_data_path(n_variants)
