@@ -24,6 +24,11 @@ import wholecell.utils.filepath as fp
 
 SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)
 
+# Command line arg defaults for solver options
+DEFAULT_ITERATIONS = 5
+DEFAULT_LEARNING_RATE = 1e-3
+DEFAULT_PARAMETER_STEP = 0.99
+
 
 class ParameterSearch(object):
 	parameters = ()
@@ -242,9 +247,17 @@ class RunParameterSearch(scriptBase.ScriptBase):
 			choices=PARAMETER_METHODS.keys(),
 			help='Method for updating parameters in parameter search.')
 		parser.add_argument('--iterations',
-			default=5,
+			default=DEFAULT_ITERATIONS,
 			type=int,
-			help='Number of iterations to update parameters before stopping.')
+			help=f'Number of iterations to update parameters before stopping (default: {DEFAULT_ITERATIONS}).')
+		parser.add_argument('--learning-rate',
+			default=DEFAULT_LEARNING_RATE,
+			type=float,
+			help=f'Learning rate for updating parameters (default: {DEFAULT_LEARNING_RATE}).')
+		parser.add_argument('--parameter-step',
+			default=DEFAULT_PARAMETER_STEP,
+			type=float,
+			help=f'Fraction to update parameters by to determine the gradient (default: {DEFAULT_PARAMETER_STEP}).')
 
 	def run(self, args):
 		kb_directory = os.path.join(args.sim_path, 'kb')
@@ -274,7 +287,8 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 		fp.write_json_file(metadata_path, metadata)
 
-		method = PARAMETER_METHODS[args.method](args.sim_path)
+		method = PARAMETER_METHODS[args.method](args.sim_path,
+			lr=args.learning_rate, step=args.parameter_step)
 		n_variants = 0
 		sim_data_file = method.sim_data_path(n_variants)
 		with open(sim_data_file, 'wb') as f:
