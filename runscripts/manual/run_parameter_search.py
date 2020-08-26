@@ -10,11 +10,9 @@ Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
 
-from __future__ import absolute_import, division, print_function
-
-import cPickle
-import re
 import os
+import pickle
+import re
 from typing import Tuple
 
 from wholecell.fireworks.firetasks import SimulationTask, SimulationDaughterTask, VariantSimDataTask
@@ -70,8 +68,8 @@ class ParameterSearch(object):
 		return new_value, diff
 
 	def perturb_sim_data(self, sim_data_file, parameter):
-		with open(sim_data_file) as f:
-			sim_data = cPickle.load(f)
+		with open(sim_data_file, 'rb') as f:
+			sim_data = pickle.load(f)
 
 		self.set_attrs(sim_data, parameter,
 			self.update_parameter_value(sim_data, parameter)[0])
@@ -79,8 +77,8 @@ class ParameterSearch(object):
 		return sim_data
 
 	def get_parameter_update(self, sim_data_file, parameter, old_objective, new_objective):
-		with open(sim_data_file) as f:
-			sim_data = cPickle.load(f)
+		with open(sim_data_file, 'rb') as f:
+			sim_data = pickle.load(f)
 
 		update = (self.learning_rate * (new_objective - old_objective)
 			/ self.update_parameter_value(sim_data, parameter)[1])
@@ -88,8 +86,8 @@ class ParameterSearch(object):
 		return update
 
 	def update_sim_data(self, sim_data_file, updates):
-		with open(sim_data_file) as f:
-			sim_data = cPickle.load(f)
+		with open(sim_data_file, 'rb') as f:
+			sim_data = pickle.load(f)
 
 		for parameter, update in zip(self.parameters, updates):
 			self.set_attrs(sim_data, parameter,
@@ -104,8 +102,8 @@ class ppGpp(ParameterSearch):
 	parameters = ('constants.a', 'constants.b')
 
 	def get_objective_value(self, sim_data_file, sim_out_dir):
-		with open(sim_data_file) as f:
-			sim_data = cPickle.load(f)
+		with open(sim_data_file, 'rb') as f:
+			sim_data = pickle.load(f)
 
 		# Load listeners
 		y0 = 1
@@ -152,11 +150,11 @@ def run_sim(cli_args, variant):
 	variant_sim_data_modified_file = os.path.join(
 		variant_sim_data_directory, constants.SERIALIZED_SIM_DATA_MODIFIED)
 
-	for j in xrange(cli_args.seed,
+	for j in range(cli_args.seed,
 			cli_args.seed + cli_args.init_sims):  # init sim seeds
 		seed_directory = fp.makedirs(variant_directory, "%06d" % j)
 
-		for k in xrange(cli_args.generations):  # generation number k
+		for k in range(cli_args.generations):  # generation number k
 			gen_directory = fp.makedirs(seed_directory,
 				"generation_%06d" % k)
 
@@ -231,8 +229,8 @@ class RunParameterSearch(scriptBase.ScriptBase):
 	def run(self, args):
 		kb_directory = os.path.join(args.sim_path, 'kb')
 		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_SIM_DATA_FILENAME)
-		with open(sim_data_file) as f:
-			sim_data = cPickle.load(f)
+		with open(sim_data_file, 'rb') as f:
+			sim_data = pickle.load(f)
 		fp.verify_file_exists(sim_data_file, 'Run runParca?')
 
 		timestamp, description = parse_timestamp_description(args.sim_path)
@@ -263,8 +261,8 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		sim_data.constants.a = 1
 		sim_data.constants.b = 1
 		### End test ###
-		with open(sim_data_file, 'w') as f:
-			cPickle.dump(sim_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
+		with open(sim_data_file, 'wb') as f:
+			pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 		for i in range(args.iterations):
 			sim_out_dir = run_sim(args, n_variants)
 			n_variants += 1
@@ -278,8 +276,8 @@ class RunParameterSearch(scriptBase.ScriptBase):
 
 				# Save perturbed sim_data for variant sim
 				perturbed_sim_data_file = method.sim_data_path(n_variants)
-				with open(perturbed_sim_data_file, 'w') as f:
-					cPickle.dump(perturbed_sim_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
+				with open(perturbed_sim_data_file, 'wb') as f:
+					pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 				# Run sim with perturbed sim_data
 				sim_out_dir = run_sim(args, n_variants)
@@ -294,8 +292,8 @@ class RunParameterSearch(scriptBase.ScriptBase):
 
 			# Save updated sim_data
 			sim_data_file = method.sim_data_path(n_variants)
-			with open(sim_data_file, 'w') as f:
-				cPickle.dump(sim_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
+			with open(sim_data_file, 'wb') as f:
+				pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 			# Print status update
 			print('** Iteration {}: {} **'.format(i, new_objective))
