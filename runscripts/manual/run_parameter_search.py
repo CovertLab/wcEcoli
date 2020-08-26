@@ -289,6 +289,11 @@ def gradient_descent(method, args, n_variants, sim_data_file):
 	return sim_data, n_variants
 
 
+SOLVERS = {
+	'gradient-descent': gradient_descent,
+	}
+
+
 class RunParameterSearch(scriptBase.ScriptBase):
 	"""Drives a simple simulation run."""
 
@@ -313,10 +318,16 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		self.define_sim_options(parser)
 		self.define_elongation_options(parser)
 
+		default_solver = list(SOLVERS.keys())[0]
+
+		parser.add_argument('--solver',
+			default=default_solver,
+			choices=SOLVERS.keys(),
+			help=f'Solver for optimizing parameters (default: {default_solver}).')
 		parser.add_argument('--method',
 			required=True,
 			choices=PARAMETER_METHODS.keys(),
-			help='Method for updating parameters in parameter search.')
+			help='Class defining parameters and an objective for parameter search.')
 		parser.add_argument('--iterations',
 			default=DEFAULT_ITERATIONS,
 			type=int,
@@ -329,6 +340,7 @@ class RunParameterSearch(scriptBase.ScriptBase):
 			default=DEFAULT_PARAMETER_STEP,
 			type=float,
 			help=f'Fraction to update parameters by to determine the gradient (default: {DEFAULT_PARAMETER_STEP}).')
+
 
 	def run(self, args):
 		kb_directory = os.path.join(args.sim_path, 'kb')
@@ -358,6 +370,7 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 		fp.write_json_file(metadata_path, metadata)
 
+		solver = SOLVERS[args.solver]
 		method = PARAMETER_METHODS[args.method](args.sim_path,
 			lr=args.learning_rate, step=args.parameter_step)
 		n_variants = 0
@@ -366,7 +379,8 @@ class RunParameterSearch(scriptBase.ScriptBase):
 			pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 		for i in range(args.iterations):
 			print(f'** Starting iteration {i} **')
-			gradient_descent(method, args, n_variants, sim_data_file)
+
+			sim_data, n_variants = solver(method, args, n_variants, sim_data_file)
 
 			# Save updated sim_data
 			sim_data_file = method.sim_data_path(n_variants)
