@@ -20,7 +20,7 @@ import numpy as np
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.fireworks.firetasks import SimulationTask, SimulationDaughterTask, VariantSimDataTask
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import constants, data, scriptBase, units
+from wholecell.utils import constants, data, parallelization, scriptBase, units
 import wholecell.utils.filepath as fp
 
 
@@ -318,6 +318,23 @@ def gradient_descent(method, args, n_variants, sim_data_file, iteration):
 
 	return sim_data, n_variants
 
+def solve_spsa(method, args, n_variants, sim_data_file, iteration, alpha, gamma, direction):
+	# Perturb parameter in sim_data
+	perturbed_sim_data = method.perturb_sim_data_spsa(sim_data_file, iteration, alpha, gamma, direction)
+
+	# Save perturbed sim_data for variant sim
+	perturbed_sim_data_file = method.sim_data_path(n_variants)
+	with open(perturbed_sim_data_file, 'wb') as f:
+		pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+	# Run sim with perturbed sim_data
+	sim_out_dir = run_sim(args, n_variants)
+
+	# Calculate objective and resulting parameter update
+	objective = method.get_objective_value(perturbed_sim_data_file, sim_out_dir)
+	print(f'Updated parameter direction {direction}: objective = {objective:.3f}\n')
+	return objective
+
 def spsa(method, args, n_variants, sim_data_file, iteration):
 	"""Simultaneous perturbation stochastic approximation"""
 
@@ -325,24 +342,19 @@ def spsa(method, args, n_variants, sim_data_file, iteration):
 	alpha = 0.1
 	gamma = 0.1
 
-	objectives = []
-	for direction in [-1, 1]:
-		# Perturb parameter in sim_data
-		perturbed_sim_data = method.perturb_sim_data_spsa(sim_data_file, iteration, alpha, gamma, direction)
+	directions = [-1, 1]
+	n_args = len(directions)
+	solver_args = [
+		(method, args, variant, sim_data_file, iteration, alpha, gamma, direction)
+		for variant, direction in zip(range(n_variants, n_variants + n_args), directions)
+		]
+	n_variants += n_args
 
-		# Save perturbed sim_data for variant sim
-		perturbed_sim_data_file = method.sim_data_path(n_variants)
-		with open(perturbed_sim_data_file, 'wb') as f:
-			pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-		# Run sim with perturbed sim_data
-		sim_out_dir = run_sim(args, n_variants)
-		n_variants += 1
-
-		# Calculate objective and resulting parameter update
-		new_objective = method.get_objective_value(perturbed_sim_data_file, sim_out_dir)
-		print(f'Updated parameter direction {direction}: objective = {new_objective:.3f}\n')
-		objectives.append(new_objective)
+	pool = parallelization.pool(args.cpus)
+	results = [pool.apply_async(solve_spsa, a) for a in solver_args]
+	pool.close()
+	pool.join()
+	objectives = [result.get() for result in results]
 
 	# Apply all updates to sim_data
 	sim_data = method.update_sim_data_spsa(sim_data_file, objectives, iteration, alpha, gamma)
@@ -402,7 +414,10 @@ class RunParameterSearch(scriptBase.ScriptBase):
 			default=DEFAULT_PARAMETER_STEP,
 			type=float,
 			help=f'Fraction to update parameters by to determine the gradient (default: {DEFAULT_PARAMETER_STEP}).')
-
+		parser.add_argument('--cpus',
+			default=1,
+			type=int,
+			help='Number of CPUs to use for running sims in parallel for a given iteration.')
 
 	def run(self, args):
 		kb_directory = os.path.join(args.sim_path, 'kb')
@@ -437,6 +452,7 @@ class RunParameterSearch(scriptBase.ScriptBase):
 			lr=args.learning_rate, step=args.parameter_step)
 		n_variants = 0
 		sim_data_file = method.sim_data_path(n_variants)
+		n_variants += 1
 		with open(sim_data_file, 'wb') as f:
 			pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 		for i in range(args.iterations):
