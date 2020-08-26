@@ -15,8 +15,10 @@ import pickle
 import re
 from typing import Tuple
 
+from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.fireworks.firetasks import SimulationTask, SimulationDaughterTask, VariantSimDataTask
-from wholecell.utils import constants, data, scriptBase
+from wholecell.io.tablereader import TableReader
+from wholecell.utils import constants, data, scriptBase, units
 import wholecell.utils.filepath as fp
 
 
@@ -25,14 +27,18 @@ SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)
 
 class ParameterSearch(object):
 	parameters = ()
-	learning_rate = 0.001
-	parameter_step = 0.9
 
-	def __init__(self, sim_dir):
+	def __init__(self, sim_dir, lr=1e-3, step=0.99):
 		if len(self.parameters) == 0:
 			raise NotImplementedError('Must define parameters to search in a subclass.')
 
+		self.learning_rate = lr
+		self.parameter_step = step
 		self.sim_dir = sim_dir
+
+	@staticmethod
+	def reader(out_dir, table):
+		return TableReader(os.path.join(out_dir, table))
 
 	def sim_data_path(self, variant):
 		kb_dir = fp.makedirs(self.sim_dir, '{}_{:06n}'.format(
@@ -90,8 +96,15 @@ class ParameterSearch(object):
 			sim_data = pickle.load(f)
 
 		for parameter, update in zip(self.parameters, updates):
-			self.set_attrs(sim_data, parameter,
-				self.get_attrs(sim_data, parameter) - update)
+			old_val = self.get_attrs(sim_data, parameter)
+			if units.hasUnit(old_val):
+				unit = units.getUnit(old_val)
+				old_val = old_val.asNumber(unit)
+				update = update.asNumber(1/unit)
+			else:
+				unit = 1
+			new_val = unit * (old_val - update)
+			self.set_attrs(sim_data, parameter, new_val)
 
 		return sim_data
 
@@ -99,16 +112,23 @@ class ParameterSearch(object):
 		raise NotImplementedError('Need to implement this in a subclass.')
 
 class ppGpp(ParameterSearch):
-	parameters = ('constants.a', 'constants.b')
+	parameters = ('constants.KD_RelA_ribosome', 'constants.k_RelA_ppGpp_synthesis')
 
 	def get_objective_value(self, sim_data_file, sim_out_dir):
 		with open(sim_data_file, 'rb') as f:
 			sim_data = pickle.load(f)
 
-		# Load listeners
-		y0 = 1
-		y = 10*sim_data.constants.a + 5*sim_data.constants.a*sim_data.constants.b
-		objective = (y - y0)**2
+		# Listeners used
+		enzyme_kinetics_reader = self.reader(sim_out_dir, 'EnzymeKinetics')
+
+		# Load data
+		counts_to_molar = enzyme_kinetics_reader.readColumn('countsToMolar')
+		ppgpp_counts, = read_bulk_molecule_counts(sim_out_dir, ([sim_data.moleculeIds.ppGpp],))
+		ppgpp_conc = (counts_to_molar * ppgpp_counts)[1:].mean() * 1000
+
+		# Calculate objective
+		ppgpp_target = 45
+		objective = (ppgpp_conc - ppgpp_target)**2
 
 		return objective
 
@@ -257,10 +277,6 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		method = PARAMETER_METHODS[args.method](args.sim_path)
 		n_variants = 0
 		sim_data_file = method.sim_data_path(n_variants)
-		### Test values ###
-		sim_data.constants.a = 1
-		sim_data.constants.b = 1
-		### End test ###
 		with open(sim_data_file, 'wb') as f:
 			pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 		for i in range(args.iterations):
