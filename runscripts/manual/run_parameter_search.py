@@ -15,6 +15,8 @@ import pickle
 import re
 from typing import Tuple
 
+import numpy as np
+
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.fireworks.firetasks import SimulationTask, SimulationDaughterTask, VariantSimDataTask
 from wholecell.io.tablereader import TableReader
@@ -116,7 +118,7 @@ class ParameterSearch(object):
 	def get_objective_value(self, sim_data_file, sim_out_dir):
 		raise NotImplementedError('Need to implement this in a subclass.')
 
-class ppGpp(ParameterSearch):
+class BasicppGpp(ParameterSearch):
 	parameters = ('constants.KD_RelA_ribosome', 'constants.k_RelA_ppGpp_synthesis')
 
 	def get_objective_value(self, sim_data_file, sim_out_dir):
@@ -137,10 +139,42 @@ class ppGpp(ParameterSearch):
 
 		return objective
 
+class ppGpp(ParameterSearch):
+	parameters = (
+		'constants.synthetase_charging_rate',
+		'constants.Km_synthetase_uncharged_trna',
+		'constants.Km_synthetase_amino_acid',
+		'constants.Kdissociation_charged_trna_ribosome',
+		'constants.Kdissociation_uncharged_trna_ribosome',
+		'constants.KD_RelA_ribosome',
+		'constants.k_RelA_ppGpp_synthesis',
+		'constants.k_SpoT_ppGpp_synthesis',
+		'constants.k_SpoT_ppGpp_degradation',
+		'constants.KI_SpoT_ppGpp_degradation',
+		)
+
+	def get_objective_value(self, sim_data_file, sim_out_dir):
+		with open(sim_data_file, 'rb') as f:
+			sim_data = pickle.load(f)
+
+		# Listeners used
+		enzyme_kinetics_reader = self.reader(sim_out_dir, 'EnzymeKinetics')
+
+		# Load data
+		counts_to_molar = enzyme_kinetics_reader.readColumn('countsToMolar')
+		ppgpp_counts, = read_bulk_molecule_counts(sim_out_dir, ([sim_data.moleculeIds.ppGpp],))
+		ppgpp_conc = (counts_to_molar * ppgpp_counts)[1:] * 1000
+
+		# Calculate objective
+		ppgpp_target = 45
+		objective = np.linalg.norm(ppgpp_conc - ppgpp_target)
+
+		return objective
 
 # TODO: move to another file
 PARAMETER_METHODS = {
 	'ppGpp': ppGpp,
+	'BasicppGpp': BasicppGpp,
 	}
 
 
@@ -326,6 +360,7 @@ class RunParameterSearch(scriptBase.ScriptBase):
 				pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 			# Print status update
+			# TODO: this should not be new_objective since that is just for the last parameter
 			print('** Iteration {}: {} **'.format(i, new_objective))
 			for p, val in sorted(method.parameter_summary(sim_data).items()):
 				print('   {}: {}'.format(p, val))
