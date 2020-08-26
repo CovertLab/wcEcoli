@@ -29,7 +29,7 @@ SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)
 # Command line arg defaults for solver options
 DEFAULT_ITERATIONS = 5
 DEFAULT_LEARNING_RATE = 1e-3
-DEFAULT_PARAMETER_STEP = 0.99
+DEFAULT_PARAMETER_STEP = 1e-2
 
 
 class ParameterSearch(object):
@@ -75,7 +75,7 @@ class ParameterSearch(object):
 
 	def update_parameter_value(self, sim_data, parameter):
 		old_value = self.get_attrs(sim_data, parameter)
-		new_value = old_value * self.parameter_step
+		new_value = old_value * (1 - self.parameter_step)
 		diff = new_value - old_value
 
 		return new_value, diff
@@ -84,8 +84,19 @@ class ParameterSearch(object):
 		with open(sim_data_file, 'rb') as f:
 			sim_data = pickle.load(f)
 
-		self.set_attrs(sim_data, parameter,
-			self.update_parameter_value(sim_data, parameter)[0])
+		value = self.update_parameter_value(sim_data, parameter)[0]
+		self.set_attrs(sim_data, parameter, value)
+
+		return sim_data
+
+	def perturb_sim_data_spsa(self, sim_data_file, iteration, alpha, gamma, direction):
+		with open(sim_data_file, 'rb') as f:
+			sim_data = pickle.load(f)
+
+		_, deltas = self.get_spsa_parameters(iteration, alpha, gamma)
+		for d, parameter in zip(deltas, self.parameters):
+			value = self.get_attrs(sim_data, parameter) * (1 + direction * d)
+			self.set_attrs(sim_data, parameter, value)
 
 		return sim_data
 
@@ -114,6 +125,29 @@ class ParameterSearch(object):
 			self.set_attrs(sim_data, parameter, new_val)
 
 		return sim_data
+
+	def update_sim_data_spsa(self, sim_data_file, objectives, iteration, alpha, gamma):
+		with open(sim_data_file, 'rb') as f:
+			sim_data = pickle.load(f)
+
+		objective_difference = objectives[1] - objectives[0]
+
+		at, deltas = self.get_spsa_parameters(iteration, alpha, gamma)
+		updates = []
+		# TODO: iterate at if different learning rate for each parameter
+		for d, parameter in zip(deltas, self.parameters):
+			updates.append(at * objective_difference / (2 * d * self.get_attrs(sim_data, parameter)))
+
+		return self.update_sim_data(sim_data_file, updates)
+
+	def get_spsa_parameters(self, iteration, alpha, gamma):
+		it = iteration + 1
+		np.random.seed(it)
+		at = self.learning_rate / it**alpha
+		ct = self.parameter_step / it**gamma
+		deltas = ct * (np.random.rand(len(self.parameters)) * 2 - 1)
+
+		return at, deltas
 
 	def get_objective_value(self, sim_data_file, sim_out_dir):
 		raise NotImplementedError('Need to implement this in a subclass.')
@@ -251,7 +285,7 @@ def run_sim(cli_args, variant):
 			# TODO: currently only supports one sim cycle with out dir
 			return cell_sim_out_directory
 
-def gradient_descent(method, args, n_variants, sim_data_file):
+def gradient_descent(method, args, n_variants, sim_data_file, iteration):
 	sim_out_dir = run_sim(args, n_variants)
 	n_variants += 1
 
@@ -284,8 +318,40 @@ def gradient_descent(method, args, n_variants, sim_data_file):
 
 	return sim_data, n_variants
 
+def spsa(method, args, n_variants, sim_data_file, iteration):
+	"""Simultaneous perturbation stochastic approximation"""
+
+	# TODO: pass these in as args and allow adjustment from the command line
+	alpha = 0.1
+	gamma = 0.1
+
+	objectives = []
+	for direction in [-1, 1]:
+		# Perturb parameter in sim_data
+		perturbed_sim_data = method.perturb_sim_data_spsa(sim_data_file, iteration, alpha, gamma, direction)
+
+		# Save perturbed sim_data for variant sim
+		perturbed_sim_data_file = method.sim_data_path(n_variants)
+		with open(perturbed_sim_data_file, 'wb') as f:
+			pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+		# Run sim with perturbed sim_data
+		sim_out_dir = run_sim(args, n_variants)
+		n_variants += 1
+
+		# Calculate objective and resulting parameter update
+		new_objective = method.get_objective_value(perturbed_sim_data_file, sim_out_dir)
+		print(f'Updated parameter direction {direction}: objective = {new_objective:.3f}\n')
+		objectives.append(new_objective)
+
+	# Apply all updates to sim_data
+	sim_data = method.update_sim_data_spsa(sim_data_file, objectives, iteration, alpha, gamma)
+
+	return sim_data, n_variants
+
 
 SOLVERS = {
+	'spsa': spsa,
 	'gradient-descent': gradient_descent,
 	}
 
@@ -376,10 +442,11 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		for i in range(args.iterations):
 			print(f'** Starting iteration {i} **')
 
-			sim_data, n_variants = solver(method, args, n_variants, sim_data_file)
+			sim_data, n_variants = solver(method, args, n_variants, sim_data_file, i)
 
 			# Save updated sim_data
 			sim_data_file = method.sim_data_path(n_variants)
+			n_variants += 1
 			with open(sim_data_file, 'wb') as f:
 				pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
