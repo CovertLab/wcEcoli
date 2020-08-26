@@ -268,20 +268,16 @@ def gradient_descent(method, args, n_variants, sim_data_file):
 		# Save perturbed sim_data for variant sim
 		perturbed_sim_data_file = method.sim_data_path(n_variants)
 		with open(perturbed_sim_data_file, 'wb') as f:
-			pickle.dump(perturbed_sim_data, f,
-				protocol=pickle.HIGHEST_PROTOCOL)
+			pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 		# Run sim with perturbed sim_data
 		sim_out_dir = run_sim(args, n_variants)
 		n_variants += 1
 
 		# Calculate objective and resulting parameter update
-		new_objective = method.get_objective_value(perturbed_sim_data_file,
-			sim_out_dir)
+		new_objective = method.get_objective_value(perturbed_sim_data_file, sim_out_dir)
 		print(f'Updated {parameter}: objective = {new_objective:.3f}\n')
-		updates.append(
-			method.get_parameter_update(sim_data_file, parameter, objective,
-				new_objective))
+		updates.append(method.get_parameter_update(sim_data_file, parameter, objective, new_objective))
 
 	# Apply all updates to sim_data
 	sim_data = method.update_sim_data(sim_data_file, updates)
