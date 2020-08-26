@@ -332,6 +332,8 @@ class RunParameterSearch(scriptBase.ScriptBase):
 			n_variants += 1
 			objective = method.get_objective_value(sim_data_file, sim_out_dir)
 
+			print(f'** Starting iteration {i}: {objective:.3f} **')
+
 			# Check all parameters before updating objective for faster convergence
 			updates = []
 			for parameter in method.parameters:
@@ -349,6 +351,7 @@ class RunParameterSearch(scriptBase.ScriptBase):
 
 				# Calculate objective and resulting parameter update
 				new_objective = method.get_objective_value(perturbed_sim_data_file, sim_out_dir)
+				print(f'Updated {parameter}: objective = {new_objective:.3f}\n')
 				updates.append(method.get_parameter_update(sim_data_file, parameter, objective, new_objective))
 
 			# Apply all updates to sim_data
@@ -360,10 +363,9 @@ class RunParameterSearch(scriptBase.ScriptBase):
 				pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 			# Print status update
-			# TODO: this should not be new_objective since that is just for the last parameter
-			print('** Iteration {}: {} **'.format(i, new_objective))
+			print('New parameter values after this iteration:')
 			for p, val in sorted(method.parameter_summary(sim_data).items()):
-				print('   {}: {}'.format(p, val))
+				print(f'   {p}: {val}')
 			print('')
 
 
