@@ -83,13 +83,6 @@ This page goes through the Python environment setup steps in more detail and wit
    If you need to update binary libraries like libressl, readline, or libffi,
    see their `installation_notes/*.txt` files.
 
-   Some libraries and tools were built by Spack, as a consequence of
-   `spack install python@3.8.3 +shared +optimizations +uuid`.
-   That's easier and more reliable than compiling libraries manually. However
-   the Python it builds doesn't include `pip`, which means pyenv can't create a
-   virtualenv or install packages. Spack can install a limited set of Python
-   packages.
-
    These libraries and tools need "environment modules" to set environment
    variables like `CPPFLAGS`. See for example `$PI_HOME/modules/xz/5.2.5.lua`.
 
@@ -125,38 +118,66 @@ virtualenv.
    pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
    ```
 
-1. ***OPTIONAL:*** Create `~/.numpy-site.cfg` pointing to _your OpenBLAS installation directory._
+1. ***CONDITIONAL:*** Install OpenBLAS and link numpy and scipy to it.
 
-   This step is not usually necessary. If somehow it turns out you need it, then
-   also run `pip install <whatever> --no-binary numpy,scipy` in the steps below.
+   **TODO:** Figure out when to build OpenBLAS from source vs. install it using a
+   package manager vs. let numpy and scipy install their own embedded copies.
+   The goal is primarily to get repeatable cross-platform results, and secondarily
+   simpler installation and faster runtime.
 
-   Brew installs OpenBLAS in `/usr/local/opt/openblas/`.
-   For other package managers, find out where it's installed.
-   If you compiled OpenBLAS from source, use the `make PREFIX=/XYZ install`
-   PREFIX directory (e.g. `/opt/OpenBLAS/`) plus `lib` and `include`.
-   On Sherlock, it's installed in `$PI_HOME/downloads-sherlock2/compiled/openblas/lib`.)
+   Where is OpenBLAS installed?
+   * Brew on macOS installs OpenBLAS in `/usr/local/opt/openblas/`.
+   * For other package managers, find out where they install it.
+   * When compiling OpenBLAS from source, the key steps are
+     `make FC=gfortran && make PREFIX=/XYZ install`. It installs in that `/XYZ`
+     PREFIX directory, which defaults to `/opt/OpenBLAS`.
+   * On Sherlock, it's installed in `$PI_HOME/downloads-sherlock2/compiled/openblas`.
+     (Using an environment module for OpenBLAS only works if it's loaded at runtime.)
+
+   To link numpy and scipy to OpenBLAS, create a `~/.numpy-site.cfg` file pointing to
+   it (and remember to run `pip install <packages> --no-binary numpy,scipy` in the
+   pip-install steps below), e.g.:
 
       ```
       [openblas]
       libraries = openblas
       library_dirs = /usr/local/opt/openblas/lib
       include_dirs = /usr/local/opt/openblas/include
+      runtime_library_dirs = /usr/local/opt/openblas/lib
       ```
 
 1. Install NumPy.
 
-   (Sometimes you have to install numpy before some packages like `scipy` and
-   `stochastic-arrow` to avoid installation errors.)
+   Sometimes you have to install numpy before some packages like `scipy` and
+   `stochastic-arrow` to avoid installation errors.
 
-      ```bash
-      pip install numpy==1.19.1  # see requirements.txt for the right version
-      ```
+   ```shell script
+   pip install numpy==1.19.1  # see requirements.txt for the right version
+   ```
+
+   **NOTE:** If you installed OpenBLAS and created `~/.numpy-site.cfg`, use this command
+   instead so pip will compile numpy from source code using `~/.numpy-site.cfg`:
+
+   ```shell script
+   pip install numpy==1.19.1 --no-binary numpy  # see requirements.txt for the right version
+   ```
 
 1. Install the packages listed in `requirements.txt`.
 
-   ```bash
+   ```shell script
    pip install -r requirements.txt && pyenv rehash
    ```
+
+   **NOTE:** If you installed OpenBLAS and created `~/.numpy-site.cfg`, use this command
+   instead:
+
+   ```shell script
+   LDFLAGS="-shared $LDFLAGS" pip install -r requirements.txt --no-binary numpy,scipy && pyenv rehash
+   ```
+
+   The `LDFLAGS="-shared $LDFLAGS"` part fixes a lot of scipy build errors starting with  
+   `In function _start (.text+0x20): undefined reference to main` and  
+   `undefined reference to PyFloat_FromDouble`.
 
 1. Test the NumPy and SciPy installation.
 

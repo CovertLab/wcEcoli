@@ -50,7 +50,7 @@ class Test_openblas_threads(unittest.TestCase):
 		# Check that multi-threaded results are within some tolerance.
 		np_products = np.array(products)
 		reference = np.full(len(products), products[0])
-		np.testing.assert_allclose(np_products, reference, rtol=1e-14)
+		np.testing.assert_allclose(np_products, reference, rtol=1.5e-14)
 
 
 if __name__ == '__main__':
