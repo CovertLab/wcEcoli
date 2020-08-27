@@ -30,6 +30,8 @@ SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)
 DEFAULT_ITERATIONS = 5
 DEFAULT_LEARNING_RATE = 1e-3
 DEFAULT_PARAMETER_STEP = 1e-2
+DEFAULT_ALPHA = 0.1
+DEFAULT_GAMMA = 0.1
 
 
 class ParameterSearch(object):
@@ -318,9 +320,10 @@ def gradient_descent(method, args, n_variants, sim_data_file, iteration):
 
 	return sim_data, n_variants
 
-def solve_spsa(method, args, n_variants, sim_data_file, iteration, alpha, gamma, direction):
+def solve_spsa(method, args, n_variants, sim_data_file, iteration, direction):
 	# Perturb parameter in sim_data
-	perturbed_sim_data = method.perturb_sim_data_spsa(sim_data_file, iteration, alpha, gamma, direction)
+	perturbed_sim_data = method.perturb_sim_data_spsa(sim_data_file, iteration,
+		args.alpha, args.gamma, direction)
 
 	# Save perturbed sim_data for variant sim
 	perturbed_sim_data_file = method.sim_data_path(n_variants)
@@ -333,19 +336,16 @@ def solve_spsa(method, args, n_variants, sim_data_file, iteration, alpha, gamma,
 	# Calculate objective and resulting parameter update
 	objective = method.get_objective_value(perturbed_sim_data_file, sim_out_dir)
 	print(f'Updated parameter direction {direction}: objective = {objective:.3f}\n')
+
 	return objective
 
 def spsa(method, args, n_variants, sim_data_file, iteration):
 	"""Simultaneous perturbation stochastic approximation"""
 
-	# TODO: pass these in as args and allow adjustment from the command line
-	alpha = 0.1
-	gamma = 0.1
-
 	directions = [-1, 1]
 	n_args = len(directions)
 	solver_args = [
-		(method, args, variant, sim_data_file, iteration, alpha, gamma, direction)
+		(method, args, variant, sim_data_file, iteration, direction)
 		for variant, direction in zip(range(n_variants, n_variants + n_args), directions)
 		]
 	n_variants += n_args
@@ -357,7 +357,7 @@ def spsa(method, args, n_variants, sim_data_file, iteration):
 	objectives = [result.get() for result in results]
 
 	# Apply all updates to sim_data
-	sim_data = method.update_sim_data_spsa(sim_data_file, objectives, iteration, alpha, gamma)
+	sim_data = method.update_sim_data_spsa(sim_data_file, objectives, iteration, args.alpha, args.gamma)
 
 	return sim_data, n_variants
 
@@ -418,6 +418,16 @@ class RunParameterSearch(scriptBase.ScriptBase):
 			default=1,
 			type=int,
 			help='Number of CPUs to use for running sims in parallel for a given iteration.')
+
+		# SPSA options
+		parser.add_argument('--alpha',
+			type=float,
+			default=DEFAULT_ALPHA,
+			help=f'Set alpha parameter for SPSA solver to control learning rate decay (default: {DEFAULT_ALPHA}).')
+		parser.add_argument('--gamma',
+			type=float,
+			default=DEFAULT_GAMMA,
+			help=f'Set gamma parameter for SPSA solver to control parameter update decay (default: {DEFAULT_GAMMA}).')
 
 	def run(self, args):
 		kb_directory = os.path.join(args.sim_path, 'kb')
