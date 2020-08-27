@@ -30,6 +30,7 @@ SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)
 DEFAULT_ITERATIONS = 5
 DEFAULT_LEARNING_RATE = 1e-3
 DEFAULT_PARAMETER_STEP = 1e-2
+DEFAULT_MAX_CHANGE = 0.1
 DEFAULT_ALPHA = 0.1
 DEFAULT_GAMMA = 0.1
 
@@ -37,12 +38,14 @@ DEFAULT_GAMMA = 0.1
 class ParameterSearch(object):
 	parameters = ()
 
-	def __init__(self, sim_dir, lr=1e-3, step=0.99):
+	def __init__(self, sim_dir, lr=DEFAULT_LEARNING_RATE,
+			step=DEFAULT_PARAMETER_STEP, max_change=DEFAULT_MAX_CHANGE):
 		if len(self.parameters) == 0:
 			raise NotImplementedError('Must define parameters to search in a subclass.')
 
 		self.learning_rate = lr
 		self.parameter_step = step
+		self.max_change = max_change
 		self.sim_dir = sim_dir
 
 	@staticmethod
@@ -106,8 +109,8 @@ class ParameterSearch(object):
 		with open(sim_data_file, 'rb') as f:
 			sim_data = pickle.load(f)
 
-		update = (self.learning_rate * (new_objective - old_objective)
-			/ self.update_parameter_value(sim_data, parameter)[1])
+		update = (self.learning_rate * (new_objective - old_objective) / self.parameter_step
+			* self.update_parameter_value(sim_data, parameter)[1])
 
 		return update
 
@@ -120,11 +123,23 @@ class ParameterSearch(object):
 			if units.hasUnit(old_val):
 				unit = units.getUnit(old_val)
 				old_val = old_val.asNumber(unit)
-				update = update.asNumber(1/unit)
 			else:
 				unit = 1
-			new_val = unit * (old_val - update)
-			self.set_attrs(sim_data, parameter, new_val)
+
+			# Assume appropriate scale for the update (adjusting learning rate
+			# could capture any conversion effects if it is in improper untis)
+			if units.hasUnit(update):
+				update = update.asNumber()
+
+			new_val = old_val - update
+
+			# Prevent large updates to parameters to avoid instability and negative values
+			if new_val < (1 - self.max_change) * old_val:
+				new_val = (1 - self.max_change) * old_val
+			elif new_val > (1 + self.max_change) * old_val:
+				new_val = (1 + self.max_change) * old_val
+
+			self.set_attrs(sim_data, parameter, unit * new_val)
 
 		return sim_data
 
@@ -138,7 +153,7 @@ class ParameterSearch(object):
 		updates = []
 		# TODO: iterate at if different learning rate for each parameter
 		for d, parameter in zip(deltas, self.parameters):
-			updates.append(at * objective_difference / (2 * d * self.get_attrs(sim_data, parameter)))
+			updates.append(at * objective_difference / (2 * d) * self.get_attrs(sim_data, parameter))
 
 		return self.update_sim_data(sim_data_file, updates)
 
@@ -427,6 +442,10 @@ class RunParameterSearch(scriptBase.ScriptBase):
 			default=DEFAULT_PARAMETER_STEP,
 			type=float,
 			help=f'Fraction to update parameters by to determine the gradient (default: {DEFAULT_PARAMETER_STEP}).')
+		parser.add_argument('--max-change',
+			default=DEFAULT_MAX_CHANGE,
+			type=float,
+			help=f'Maximum fraction to update a parameter in a given time step (default: {DEFAULT_MAX_CHANGE}).')
 		parser.add_argument('--cpus',
 			default=1,
 			type=int,
@@ -472,7 +491,7 @@ class RunParameterSearch(scriptBase.ScriptBase):
 
 		solver = SOLVERS[args.solver]
 		method = PARAMETER_METHODS[args.method](args.sim_path,
-			lr=args.learning_rate, step=args.parameter_step)
+			lr=args.learning_rate, step=args.parameter_step, max_change=args.max_change)
 		n_variants = 0
 		sim_data_file = method.sim_data_path(n_variants)
 		n_variants += 1
