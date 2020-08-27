@@ -287,33 +287,46 @@ def run_sim(cli_args, variant):
 			# TODO: currently only supports one sim cycle with out dir
 			return cell_sim_out_directory
 
-def gradient_descent(method, args, n_variants, sim_data_file, iteration):
-	sim_out_dir = run_sim(args, n_variants)
-	n_variants += 1
-
-	objective = method.get_objective_value(sim_data_file, sim_out_dir)
-
-	print(f'Initial objective: {objective:.3f}\n')
-
-	# Check all parameters before updating objective for faster convergence
-	updates = []
-	for parameter in method.parameters:
-		# Perturb parameter in sim_data
+def solve_gradient_descent(method, args, n_variants, sim_data_file, parameter):
+	# Perturb parameter in sim_data
+	if parameter:
 		perturbed_sim_data = method.perturb_sim_data(sim_data_file, parameter)
+	else:
+		with open(sim_data_file, 'rb') as f:
+			perturbed_sim_data = pickle.load(f)
 
-		# Save perturbed sim_data for variant sim
-		perturbed_sim_data_file = method.sim_data_path(n_variants)
-		with open(perturbed_sim_data_file, 'wb') as f:
-			pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+	# Save perturbed sim_data for variant sim
+	perturbed_sim_data_file = method.sim_data_path(n_variants)
+	with open(perturbed_sim_data_file, 'wb') as f:
+		pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-		# Run sim with perturbed sim_data
-		sim_out_dir = run_sim(args, n_variants)
-		n_variants += 1
+	# Run sim with perturbed sim_data
+	sim_out_dir = run_sim(args, n_variants)
 
-		# Calculate objective and resulting parameter update
-		new_objective = method.get_objective_value(perturbed_sim_data_file, sim_out_dir)
-		print(f'Updated {parameter}: objective = {new_objective:.3f}\n')
-		updates.append(method.get_parameter_update(sim_data_file, parameter, objective, new_objective))
+	# Calculate objective and resulting parameter update
+	objective = method.get_objective_value(perturbed_sim_data_file, sim_out_dir)
+	print(f'Updated {parameter}: objective = {objective:.3f}\n')
+
+	return objective
+
+def gradient_descent(method, args, n_variants, sim_data_file, iteration):
+	parameters = [None] + list(method.parameters)
+	n_args = len(parameters)
+	solver_args = [
+		(method, args, variant, sim_data_file, parameter)
+		for variant, parameter in zip(range(n_variants, n_variants + n_args), parameters)
+		]
+	n_variants += n_args
+
+	pool = parallelization.pool(args.cpus)
+	results = [pool.apply_async(solve_gradient_descent, a) for a in solver_args]
+	pool.close()
+	pool.join()
+	objectives = [result.get() for result in results]
+
+	updates = []
+	for parameter, objective in zip(method.parameters, objectives[1:]):
+		updates.append(method.get_parameter_update(sim_data_file, parameter, objectives[0], objective))
 
 	# Apply all updates to sim_data
 	sim_data = method.update_sim_data(sim_data_file, updates)
