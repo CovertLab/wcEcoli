@@ -302,7 +302,7 @@ def run_sim(cli_args, variant):
 			# TODO: currently only supports one sim cycle with out dir
 			return cell_sim_out_directory
 
-def solve_gradient_descent(method, args, n_variants, sim_data_file, parameter):
+def solve_gradient_descent(method, args, variant, sim_data_file, parameter):
 	# Perturb parameter in sim_data
 	if parameter:
 		perturbed_sim_data = method.perturb_sim_data(sim_data_file, parameter)
@@ -311,16 +311,16 @@ def solve_gradient_descent(method, args, n_variants, sim_data_file, parameter):
 			perturbed_sim_data = pickle.load(f)
 
 	# Save perturbed sim_data for variant sim
-	perturbed_sim_data_file = method.sim_data_path(n_variants)
+	perturbed_sim_data_file = method.sim_data_path(variant)
 	with open(perturbed_sim_data_file, 'wb') as f:
 		pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 	# Run sim with perturbed sim_data
-	sim_out_dir = run_sim(args, n_variants)
+	sim_out_dir = run_sim(args, variant)
 
 	# Calculate objective and resulting parameter update
 	objective = method.get_objective_value(perturbed_sim_data_file, sim_out_dir)
-	print(f'Updated {parameter}: objective = {objective:.3f}\n')
+	print(f'Variant {variant} updated {parameter}: objective = {objective:.3f}\n')
 
 	return objective
 
@@ -348,22 +348,22 @@ def gradient_descent(method, args, n_variants, sim_data_file, iteration):
 
 	return sim_data, n_variants
 
-def solve_spsa(method, args, n_variants, sim_data_file, iteration, direction):
+def solve_spsa(method, args, variant, sim_data_file, iteration, direction):
 	# Perturb parameter in sim_data
 	perturbed_sim_data = method.perturb_sim_data_spsa(sim_data_file, iteration,
 		args.alpha, args.gamma, direction)
 
 	# Save perturbed sim_data for variant sim
-	perturbed_sim_data_file = method.sim_data_path(n_variants)
+	perturbed_sim_data_file = method.sim_data_path(variant)
 	with open(perturbed_sim_data_file, 'wb') as f:
 		pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 	# Run sim with perturbed sim_data
-	sim_out_dir = run_sim(args, n_variants)
+	sim_out_dir = run_sim(args, variant)
 
 	# Calculate objective and resulting parameter update
 	objective = method.get_objective_value(perturbed_sim_data_file, sim_out_dir)
-	print(f'Updated parameter direction {direction}: objective = {objective:.3f}\n')
+	print(f'Variant {variant} updated parameter direction {direction}: objective = {objective:.3f}\n')
 
 	return objective
 
