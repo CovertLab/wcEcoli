@@ -303,17 +303,15 @@ def run_sim(cli_args, variant):
 			return cell_sim_out_directory
 
 def solve_gradient_descent(method, args, variant, sim_data_file, parameter):
-	# Perturb parameter in sim_data
-	if parameter:
-		perturbed_sim_data = method.perturb_sim_data(sim_data_file, parameter)
-	else:
-		with open(sim_data_file, 'rb') as f:
-			perturbed_sim_data = pickle.load(f)
-
-	# Save perturbed sim_data for variant sim
 	perturbed_sim_data_file = method.sim_data_path(variant)
-	with open(perturbed_sim_data_file, 'wb') as f:
-		pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+	if parameter:
+		# Perturb parameter in sim_data
+		perturbed_sim_data = method.perturb_sim_data(sim_data_file, parameter)
+
+		# Save perturbed sim_data for variant sim
+		with open(perturbed_sim_data_file, 'wb') as f:
+			pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 	# Run sim with perturbed sim_data
 	sim_out_dir = run_sim(args, variant)
@@ -349,14 +347,16 @@ def gradient_descent(method, args, n_variants, sim_data_file, iteration):
 	return sim_data, n_variants
 
 def solve_spsa(method, args, variant, sim_data_file, iteration, direction):
-	# Perturb parameter in sim_data
-	perturbed_sim_data = method.perturb_sim_data_spsa(sim_data_file, iteration,
-		args.alpha, args.gamma, direction)
-
-	# Save perturbed sim_data for variant sim
 	perturbed_sim_data_file = method.sim_data_path(variant)
-	with open(perturbed_sim_data_file, 'wb') as f:
-		pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+	if direction:
+		# Perturb parameters in sim_data
+		perturbed_sim_data = method.perturb_sim_data_spsa(sim_data_file, iteration,
+			args.alpha, args.gamma, direction)
+
+		# Save perturbed sim_data for variant sim
+		with open(perturbed_sim_data_file, 'wb') as f:
+			pickle.dump(perturbed_sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 	# Run sim with perturbed sim_data
 	sim_out_dir = run_sim(args, variant)
@@ -367,10 +367,15 @@ def solve_spsa(method, args, variant, sim_data_file, iteration, direction):
 
 	return objective
 
-def spsa(method, args, n_variants, sim_data_file, iteration):
+def spsa(method, args, n_variants, sim_data_file, iteration, run_baseline=True):
 	"""Simultaneous perturbation stochastic approximation"""
 
 	directions = [-1, 1]
+	if run_baseline:
+		directions = [0] + directions
+	else:
+		n_variants += 1
+
 	n_args = len(directions)
 	solver_args = [
 		(method, args, variant, sim_data_file, iteration, direction)
@@ -382,7 +387,11 @@ def spsa(method, args, n_variants, sim_data_file, iteration):
 	results = [pool.apply_async(solve_spsa, a) for a in solver_args]
 	pool.close()
 	pool.join()
-	objectives = [result.get() for result in results]
+	objectives = [
+		result.get()
+		for result, direction in zip(results, directions)
+		if direction
+		]
 
 	# Apply all updates to sim_data
 	sim_data = method.update_sim_data_spsa(sim_data_file, objectives, iteration, args.alpha, args.gamma)
@@ -494,7 +503,6 @@ class RunParameterSearch(scriptBase.ScriptBase):
 			lr=args.learning_rate, step=args.parameter_step, max_change=args.max_change)
 		n_variants = 0
 		sim_data_file = method.sim_data_path(n_variants)
-		n_variants += 1
 		with open(sim_data_file, 'wb') as f:
 			pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 		for i in range(args.iterations):
@@ -504,7 +512,6 @@ class RunParameterSearch(scriptBase.ScriptBase):
 
 			# Save updated sim_data
 			sim_data_file = method.sim_data_path(n_variants)
-			n_variants += 1
 			with open(sim_data_file, 'wb') as f:
 				pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
