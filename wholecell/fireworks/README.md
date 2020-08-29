@@ -12,7 +12,7 @@ It's useful for running FireWorks in Google Cloud and on our local computers.
 (See [How to run the Whole Cell Model on the Google Cloud
 Platform](../../docs/google-cloud.md) for details.)
 You can access the service securely via an ssh tunnel with your Google login.
-Creating a database there just takes the two steps in the next section.
+Creating a database there just takes the steps in the next section.
 
 That MongoDB service is not accessible to the open Intenet,
 so to run workflows on Sherlock you can create an account and database on
@@ -27,33 +27,45 @@ So use a password vault to generate and save long, random passwords for the
 account and the DB user. As always, don't reuse them anywhere else.
 
 
-## Launchpad config YAML files for Fireworks
+## Config YAML files for Fireworks
 
 Fireworks needs a launchpad config file, `my_launchpad.yaml`.
-When running with a job queue via `qlaunch` (such as with SLURM on Sherlock),
-it also needs a queue-adapter file, `my_qadapter.yaml`. The
-queue-adapter file is not used with worker nodes on Google Compute Engine (GCE).
+When running with a job queue via `qlaunch` (such as with SLURM on Sherlock, not
+with worker nodes on Google Compute Engine),
+it also needs a queue-adapter file, `my_qadapter.yaml`.
 
-1. With an **Atlas** MongoDB cluster, see the
-   [MAT project forum](https://matsci.org/t/heres-how-to-connect-to-atlas-mongodb/4816)
-   on how to use the `lpad init -u` command to create `my_launchpad.yaml`,
-   and write `my_qadapter.yaml` cribbing from the template
-   `wholecell/fireworks/templates/my_qadapter.yaml`.  
-   With a **Google Cloud** MongoDB database, construct `my_launchpad.yaml` like
-   this (`my_qadapter.yaml` is not needed):
+1. Create the `my_launchpad.yaml` file.
 
-       host: localhost
-       port: 27017
-       name: <your-username-or-another-unique-name-for-your-database>
-       username: null
-       password: null
+   * **Atlas MongoDB cluster:** See the
+     [MAT project forum](https://matsci.org/t/heres-how-to-connect-to-atlas-mongodb/4816)
+     on how to use the `lpad init -u` command to create `my_launchpad.yaml`.
 
-   These values ask FireWorks to connect to `localhost:27017`, which the
-   `mongo-ssh.sh` tunnel will forward to port `27017` on the Google Compute
-   Engine MongoDB server. `name` will be your database name. We're not using user
-   authentication on this server since the ssh tunnel already requires Google login.
+   * **Google Cloud MongoDB database:** Run the script
+     `runscripts/cloud/mongo-ssh.sh` to open an ssh tunnel whenever you want to
+     access the server. (You can leave it running in one terminal tab then `^C`
+     it when you're done, or run `runscripts/cloud/mongo-ssh.sh bg` to run it in a
+     background process and kill it when you're done.)
 
-2. Run
+     Construct `my_launchpad.yaml` like this:
+
+     ```
+     host: localhost
+     port: 27017
+     name: <your-username-or-another-unique-name-for-your-database>
+     username: null
+     password: null
+     ```
+
+     These values ask FireWorks to connect to `localhost:27017`, which the
+     `mongo-ssh.sh` tunnel will forward to port `27017` on the Google Compute
+     Engine MongoDB server.
+
+     `name` will be your database name.
+
+     We're not using user
+     authentication on this server since the ssh tunnel already requires Google login.
+
+1. Run
 
    ```
    lpad reset
@@ -68,6 +80,10 @@ queue-adapter file is not used with worker nodes on Google Compute Engine (GCE).
    To use a launchpad config filename besides the default
    `my_launchpad.yaml`, pass it as an option to commands, e.g.
    `lpad -l gce_launchpad.yaml reset`.
+
+1. If you need a queue-adapter to run FireWorks workers on Sherlock, write
+   `my_qadapter.yaml` from the template
+   `wholecell/fireworks/templates/my_qadapter.yaml`.
 
 The launchpad database keeps the status of current and past workflows.
 You can rerun past workflows without re-uploading them, archive or delete
