@@ -75,15 +75,17 @@ it also needs a queue-adapter file, `my_qadapter.yaml`.
    confirm creating and initializing the database. If it fails to connect, check
    that the `mongo-ssh.sh` tunnel is still running.
 
-   If you want additional launchpad databases, just create a launchpad yaml file
+   If you want additional launchpad databases, create a launchpad yaml file
    for each one.
    To use a launchpad config filename besides the default
-   `my_launchpad.yaml`, pass it as an option to commands, e.g.
-   `lpad -l gce_launchpad.yaml reset`.
+   `my_launchpad.yaml`, pass it as a command option like
+   `lpad -l gce_launchpad.yaml webgui -s`.
 
 1. If you need a queue-adapter to run FireWorks workers on Sherlock, write
    `my_qadapter.yaml` from the template
    `wholecell/fireworks/templates/my_qadapter.yaml`.
+   Or you can run the interactive script `python -m wholecell.fireworks.initialize`,
+   but beware that it overwrites `my_launchpad.yaml` and `my_qadapter.yaml`.
 
 The launchpad database keeps the status of current and past workflows.
 You can rerun past workflows without re-uploading them, archive or delete
