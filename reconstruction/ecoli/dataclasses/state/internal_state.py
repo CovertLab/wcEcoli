@@ -31,29 +31,18 @@ class InternalState(object):
 		"""
 		Add data (IDs and mass) for all classes of bulk molecules.
 		"""
-
 		# Set metabolites
-		metaboliteIds = stateFunctions.createIdsWithCompartments(raw_data.metabolites)
-		metaboliteMasses = (units.g/units.mol) * (
-			stateFunctions.createMetaboliteMassesByCompartments(
-				raw_data.metabolites, sim_data.submass_name_to_index['metabolite'],
-				len(sim_data.submass_name_to_index)
-				))
+		metabolite_index = sim_data.submass_name_to_index['metabolite']
+		water_index = sim_data.submass_name_to_index['water']
+		metabolite_ids, metabolite_masses = self._build_bulk_molecule_specs(
+			sim_data, [met['id'] for met in raw_data.metabolites],
+			[metabolite_index if met['id'] != 'WATER' else water_index
+				for met in raw_data.metabolites]
+			)
 
-		self.bulkMolecules.addToBulkState(metaboliteIds, metaboliteMasses)
-		sim_data.moleculeGroups.bulk_molecules_binomial_division.extend(metaboliteIds)
-
-		# Set water
-		waterIds = stateFunctions.createIdsWithCompartments(raw_data.water)
-		waterMasses = (units.g/units.mol) * (
-			stateFunctions.createMetaboliteMassesByCompartments(
-				raw_data.water, sim_data.submass_name_to_index['water'],
-				len(sim_data.submass_name_to_index)
-				))
-
-		self.bulkMolecules.addToBulkState(waterIds, waterMasses)
+		self.bulkMolecules.addToBulkState(metabolite_ids, metabolite_masses)
 		sim_data.moleculeGroups.bulk_molecules_binomial_division.extend(
-			waterIds)
+			metabolite_ids)
 
 		# Set RNAs
 		rna_ids, rna_masses = self._build_bulk_molecule_specs(

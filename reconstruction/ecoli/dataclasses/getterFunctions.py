@@ -107,10 +107,8 @@ class getterFunctions(object):
 
 		self._all_mass.update(
 			{x['id']: np.sum(x['mw']) for x in raw_data.metabolites})
-		self._all_mass.update(
-			{x['id']: np.sum(x['mw']) for x in raw_data.water})
 
-		# These updates can be dependent on the masses built above
+		# These updates can be dependent on metabolite masses
 		self._all_mass.update(self._build_rna_masses(raw_data, sim_data))
 		self._all_mass.update(self._build_protein_masses(raw_data, sim_data))
 		self._all_mass.update({x['id']: np.sum(x['mw']) for x in raw_data.proteinComplexes})
@@ -179,9 +177,7 @@ class getterFunctions(object):
 			item["id"]: list(item["location"])
 			for item in itertools.chain(
 				raw_data.proteinComplexes,
-				raw_data.metabolites,
 				raw_data.polymerized,
-				raw_data.water,
 				raw_data.modifiedForms)}
 
 		# RNAs only localize to the cytosol
@@ -193,6 +189,12 @@ class getterFunctions(object):
 		# each protein
 		locationDict.update({
 			protein['id']: [protein['location']] for protein in raw_data.proteins
+			})
+
+		# Metabolites can localize to all compartments being modeled
+		all_compartments = [comp['abbrev'] for comp in raw_data.compartments]
+		locationDict.update({
+			met['id']: all_compartments for met in raw_data.metabolites
 			})
 
 		self._locationDict = locationDict
