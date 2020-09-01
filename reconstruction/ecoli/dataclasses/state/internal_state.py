@@ -54,6 +54,16 @@ class InternalState(object):
 		sim_data.moleculeGroups.bulk_molecules_binomial_division.extend(
 			rna_ids)
 
+		# Set RNA subunits (used to represent masses of RNA fragments)
+		rna_subunit_ids, rna_subunit_masses = self._build_bulk_molecule_specs(
+			sim_data, [subunit_id[:-3] for subunit_id in sim_data.moleculeGroups.polymerized_ntps],
+			[sim_data.submass_name_to_index['nonspecific_RNA']]*len(sim_data.moleculeGroups.polymerized_ntps)
+			)
+
+		self.bulkMolecules.addToBulkState(rna_subunit_ids, rna_subunit_masses)
+		sim_data.moleculeGroups.bulk_molecules_binomial_division.extend(
+			rna_subunit_ids)
+
 		# Set proteins
 		protein_ids, protein_masses = self._build_bulk_molecule_specs(
 			sim_data, [protein['id'] for protein in raw_data.proteins],
@@ -81,22 +91,6 @@ class InternalState(object):
 		self.bulkMolecules.addToBulkState(modifiedFormIds, modifiedFormMasses)
 		sim_data.moleculeGroups.bulk_molecules_binomial_division.extend(
 			modifiedFormIds)
-
-		# Set fragments
-		fragments = []
-		
-		for x in raw_data.polymerized:
-			if x['is_ntp']:
-				if not x['is_end']:
-					temp = x
-					temp['id'] = x['id'].replace('Polymerized','Fragment')
-					fragments.append(temp)
-					
-		fragmentsIds = stateFunctions.createIdsWithCompartments(fragments)
-		fragmentsMasses = (units.g/units.mol) * (
-			stateFunctions.createMassesByCompartments(fragments))
-
-		self.bulkMolecules.addToBulkState(fragmentsIds, fragmentsMasses)
 
 
 	def _build_bulk_molecule_specs(self, sim_data, molecule_ids, submass_indexes):
@@ -240,15 +234,17 @@ class InternalState(object):
 		# is reset to True when division_time was reached and the cell has
 		# divided. The 'domain_index' keeps track of the index of the oldest
 		# chromosome domain that is part of the full chromosome.
-		fullChromosomeMass = (units.g/units.mol) * (
-			stateFunctions.createMassesByCompartments(raw_data.full_chromosome))
-		fullChromosomeAttributes = {
+		full_chromosome_mass = (units.g/units.mol) * np.zeros_like(RNAP_mass)
+		full_chromosome_mass[0][
+			sim_data.submass_name_to_index['DNA']
+			] = sim_data.getter.getMass([sim_data.moleculeIds.full_chromosome])[0]
+		full_chromosome_attributes = {
 			'division_time': 'f8',
 			'has_triggered_division': '?',
 			'domain_index': 'i4',
 			}
 
-		self.uniqueMolecules.addToUniqueState('full_chromosome', fullChromosomeAttributes, fullChromosomeMass)
+		self.uniqueMolecules.addToUniqueState('full_chromosome', full_chromosome_attributes, full_chromosome_mass)
 
 		# Full chromosomes are divided based on their domain index
 		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(

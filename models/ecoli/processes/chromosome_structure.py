@@ -36,7 +36,7 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		self.protein_sequences = sim_data.process.translation.translationSequences
 		self.n_TUs = len(sim_data.process.transcription.rnaData)
 		self.n_TFs = len(sim_data.process.transcription_regulation.tf_ids)
-		self.n_amino_acids = len(sim_data.moleculeGroups.aaIDs)
+		self.n_amino_acids = len(sim_data.moleculeGroups.amino_acids)
 		self.n_fragment_bases = len(sim_data.moleculeGroups.fragmentNT_IDs)
 		replichore_lengths = sim_data.process.replication.replichore_lengths
 		self.min_coordinates = -replichore_lengths[1]
@@ -59,7 +59,7 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 			[x + "[c]" for x in sim_data.process.transcription_regulation.tf_ids])
 		self.ribosome_30S_subunit = self.bulkMoleculeView(sim_data.moleculeIds.s30_fullComplex)
 		self.ribosome_50S_subunit = self.bulkMoleculeView(sim_data.moleculeIds.s50_fullComplex)
-		self.amino_acids = self.bulkMoleculesView(sim_data.moleculeGroups.aaIDs)
+		self.amino_acids = self.bulkMoleculesView(sim_data.moleculeGroups.amino_acids)
 		self.water = self.bulkMoleculeView(sim_data.moleculeIds.water)
 
 		# Load unique molecule views
