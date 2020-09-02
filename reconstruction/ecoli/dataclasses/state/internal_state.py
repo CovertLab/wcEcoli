@@ -23,7 +23,7 @@ class InternalState(object):
 		self.uniqueMolecules = UniqueMolecules(raw_data, sim_data)
 
 		self._buildBulkMolecules(raw_data, sim_data)
-		self._buildUniqueMolecules(raw_data, sim_data)
+		self._buildUniqueMolecules(sim_data)
 		self._buildCompartments(raw_data, sim_data)
 
 
@@ -128,11 +128,17 @@ class InternalState(object):
 		return molecule_ids_with_compartments, masses
 
 
-	def _buildUniqueMolecules(self, raw_data, sim_data):
+	def _buildUniqueMolecules(self, sim_data):
 		"""
 		Add data (name, mass, and attribute data structure) for all classes of
 		unique molecules.
 		"""
+		# Set up dictionary for quick indexing of bulk molecule masses
+		bulk_molecule_id_to_mass = {
+			molecule_id: mass for (molecule_id, mass)
+			in zip(self.bulkMolecules.bulkData['id'], self.bulkMolecules.bulkData['mass'])
+			}
+
 		# Add active RNA polymerase
 		# The attributes of active RNA polymerases are given as:
 		# - domain_index (32-bit int): Domain index of the chromosome domain
@@ -144,8 +150,7 @@ class InternalState(object):
 		# of the coordinate, False if RNAP is moving in the negative direction.
 		# This is determined by the orientation of the gene that the RNAP is
 		# transcribing.
-		RNAP_mass = self.bulkMolecules.bulkData['mass'][
-			self.bulkMolecules.bulkData['id'] == sim_data.moleculeIds.rnapFull]
+		RNAP_mass = bulk_molecule_id_to_mass[sim_data.moleculeIds.rnapFull]
 		RNAP_attributes = {
 			'domain_index': 'i4',
 			'coordinates': 'i8',
@@ -208,10 +213,8 @@ class InternalState(object):
 		# mRNA, in number of bases from the transcription start site
 		# TODO: This is a bad hack that works because in the parca
 		# I have forced expression to be these subunits only
-		ribosome_30S_mass = self.bulkMolecules.bulkData['mass'][
-			self.bulkMolecules.bulkData['id'] == sim_data.moleculeIds.s30_fullComplex]
-		ribosome_50S_mass = self.bulkMolecules.bulkData['mass'][
-			self.bulkMolecules.bulkData['id'] == sim_data.moleculeIds.s50_fullComplex]
+		ribosome_30S_mass = bulk_molecule_id_to_mass[sim_data.moleculeIds.s30_fullComplex]
+		ribosome_50S_mass = bulk_molecule_id_to_mass[sim_data.moleculeIds.s50_fullComplex]
 		ribosome_mass = ribosome_30S_mass + ribosome_50S_mass
 		ribosome_attributes = {
 			'protein_index': 'i8',
@@ -235,7 +238,7 @@ class InternalState(object):
 		# divided. The 'domain_index' keeps track of the index of the oldest
 		# chromosome domain that is part of the full chromosome.
 		full_chromosome_mass = (units.g/units.mol) * np.zeros_like(RNAP_mass)
-		full_chromosome_mass[0][
+		full_chromosome_mass[
 			sim_data.submass_name_to_index['DNA']
 			] = sim_data.getter.getMass([sim_data.moleculeIds.full_chromosome])[0]
 		full_chromosome_attributes = {
@@ -276,18 +279,15 @@ class InternalState(object):
 		# essential subunits of the replisome complex. The list of essential
 		# subunits and their stoichiometry were taken from Reyes-Lamothe et
 		# al., 2010.
+		replisome_mass = (units.g / units.mol) * np.zeros_like(RNAP_mass)
+
 		trimer_ids = sim_data.moleculeGroups.replisome_trimer_subunits
 		monomer_ids = sim_data.moleculeGroups.replisome_monomer_subunits
 
-		trimer_mass = [self.bulkMolecules.bulkData['mass'][
-			self.bulkMolecules.bulkData['id'] == id_].asNumber(units.g/units.mol)
-			for id_ in trimer_ids]
-		monomer_mass = [self.bulkMolecules.bulkData['mass'][
-			self.bulkMolecules.bulkData['id'] == id_].asNumber(units.g/units.mol)
-			for id_ in monomer_ids]
-
-		replisomeMass = (units.g/units.mol) * (
-				3*np.sum(trimer_mass, axis=0) + np.sum(monomer_mass, axis=0))
+		for trimer_id in trimer_ids:
+			replisome_mass += 3*bulk_molecule_id_to_mass[trimer_id]
+		for monomer_id in monomer_ids:
+			replisome_mass += bulk_molecule_id_to_mass[monomer_id]
 
 		replisomeAttributes = {
 			'domain_index': 'i4',
@@ -295,7 +295,8 @@ class InternalState(object):
 			'coordinates': 'i8',
 			}
 
-		self.uniqueMolecules.addToUniqueState('active_replisome', replisomeAttributes, replisomeMass)
+		self.uniqueMolecules.addToUniqueState(
+			'active_replisome', replisomeAttributes, replisome_mass)
 
 		# Active replisomes are divided based on their domain index
 		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(
