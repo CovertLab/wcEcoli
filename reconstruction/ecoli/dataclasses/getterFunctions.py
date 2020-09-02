@@ -173,6 +173,7 @@ class getterFunctions(object):
 		polymerized_ntp_mws = np.array([
 			self._all_mass[met_id[:-3]] for met_id in sim_data.moleculeGroups.polymerized_ntps
 			])
+
 		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
 
 		return {rna['id']: mw for (rna, mw) in zip(raw_data.rnas, mws)}
@@ -257,6 +258,12 @@ class getterFunctions(object):
 		locationDict.update({
 			subunit_id[:-3]: all_compartments
 			for subunit_id in sim_data.moleculeGroups.polymerized_subunits
+			})
+
+		# Proteins localize to the single compartment specified in raw data for
+		# each protein
+		locationDict.update({
+			protein['id']: [protein['location']] for protein in raw_data.proteins
 			})
 
 		self._locationDict = locationDict
