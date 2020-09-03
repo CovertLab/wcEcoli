@@ -72,7 +72,8 @@ def mrnaTrajectories(sim1Name, sim1Dir, sim2Name, sim2Dir, polycistron_file, plo
 
 
         plt.plot(mRNA_counts[sim1Name][:, mRNA_names[sim1Name].index(sim1_rnas[p])], color='crimson', linewidth=2)
-        plt.title(sim1_rnas[p], fontsize=3)
+        plt.title(sim1_rnas[p], fontsize=5)
+        plt.tick_params(labelbottom=False, bottom=False, labelsize=6)
 
 
     # save plot

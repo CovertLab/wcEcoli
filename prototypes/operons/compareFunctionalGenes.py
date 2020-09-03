@@ -89,7 +89,7 @@ def inspect_functional_genes(sim1Name, sim1Dir, sim2Name, sim2Dir, pc_rnas_path)
                 axs[0, p].scatter(x, y, c='w', edgecolor='k', alpha=.7, s=7)
 
                 if x > 0:
-                    s1_s2_delta = round((y - x)/x,6)
+                    s1_s2_delta = round(y/x,6)
                 else:
                     s1_s2_delta = np.nan
 
@@ -124,7 +124,7 @@ def inspect_functional_genes(sim1Name, sim1Dir, sim2Name, sim2Dir, pc_rnas_path)
             axs[1, p].scatter(np.log10(x+1), np.log10(y+1), c='w', edgecolor='r', alpha=0.7, s=7)
 
             if x > 0:
-                s1_s2_delta = round((y - x) / x, 6)
+                s1_s2_delta = round(y / x, 6)
             else:
                 s1_s2_delta = np.nan
 

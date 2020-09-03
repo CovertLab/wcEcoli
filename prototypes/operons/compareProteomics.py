@@ -24,6 +24,14 @@ from reconstruction import spreadsheets
 
 
 def compareProteomics(sim1Name, sim1Dir, sim2Name, sim2Dir, pc_rnas_path):
+    # function for saving PDF page in later plot
+    def save_page():
+        plt.tight_layout(rect=[0, 0.03, 1, 1])
+        plt.legend(handles=[ob1, ob2], labels=[sim1Name, sim2Name], ncol=2, bbox_to_anchor=(0.5, 0),
+                   bbox_transform=fig.transFigure, loc=8, fontsize=6)
+        pdf.savefig(fig)
+        plt.close()
+
     # make sure output directory for plots exists
     OutDir = sim1Dir.split('simOut')[0] + 'plotOut/'
     if not os.path.isdir(OutDir):
@@ -146,27 +154,35 @@ def compareProteomics(sim1Name, sim1Dir, sim2Name, sim2Dir, pc_rnas_path):
             # import ipdb; ipdb.set_trace()
 
             for p in range(0, 9):
-                ax[p].scatter(pc_xys[sim1Name][pc_list[pcn]][0,:], pc_xys[sim1Name][pc_list[pcn]][1,:],
-                              color='steelblue', edgecolor='k')
-                ax[p].scatter(pc_xys[sim2Name][pc_list[pcn]][0,:], pc_xys[sim2Name][pc_list[pcn]][1,:],
-                              color='palevioletred', edgecolor='k')
+                ob1 = ax[p].scatter(pc_xys[sim1Name][pc_list[pcn]][0,:], pc_xys[sim1Name][pc_list[pcn]][1,:],
+                              color='steelblue', edgecolor='k', alpha=0.7)
+                ob2 = ax[p].scatter(pc_xys[sim2Name][pc_list[pcn]][0,:], pc_xys[sim2Name][pc_list[pcn]][1,:],
+                              color='palevioletred', edgecolor='k', alpha=0.7)
                 ax[p].set_title(pc_list[pcn], fontsize=5)
 
-                ax[p].set_aspect('equal')
+                ax[p].set_xlabel('wisniewsk counts', fontsize=6)
+                ax[p].set_ylabel('sim counts', fontsize=5)
+
+                equalize_axes(ax[p])
 
                 pcn += 1
 
 
                 if pcn >= len(pc_list):
-                    pdf.savefig(fig)
-                    plt.close()
+                    save_page()
                     break
-
-            plt.tight_layout()
-            pdf.savefig(fig)
-            plt.close()
+            save_page()
 
 
+
+def equalize_axes(ax):
+    lims = ax.get_ylim() + ax.get_xlim()
+    max_lim = max(lims)
+    min_lim = min(lims)
+    ax.plot([min_lim, max_lim], [min_lim, max_lim], color='k', linestyle='--')
+    ax.set_ylim((min_lim, max_lim))
+    ax.set_xlim((min_lim, max_lim))
+    ax.tick_params(axis='both', labelsize=5)
 
 
 def build_rna_to_protein_dict():

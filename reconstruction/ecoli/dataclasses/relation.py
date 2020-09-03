@@ -88,7 +88,7 @@ class Relation(object):
 			for monocistron in polycistron[1]:
 				for tu in tu_dict.keys():
 					#Check all the TU's that a monocistron is present in.
-					if monocistron in tu:
+					if monocistron in tu.split('_'):
 						monocistron_loc = monocistron + '_RNA[c]'
 						tu_loc = tu + '_RNA[c]'
 						overlapping_tu_dict.setdefault(monocistron_loc, [])
@@ -186,7 +186,7 @@ class Relation(object):
 	
 		monomer_to_mrna_transform = np.zeros((monomer_count, mrna_tu_count))
 		mrna_to_monomer_transform = np.zeros((mrna_tu_count, monomer_count))
-
+		import ipdb; ipdb.set_trace()
 		for monocistron, moncistron_index in monomer_id_index_dict.items():
 			for tu, tu_index in mrna_id_index_dict.items():
 				if monocistron == tu or monocistron[:-3] + '[None]' == tu:
