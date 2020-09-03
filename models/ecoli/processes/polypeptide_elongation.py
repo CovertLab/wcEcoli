@@ -125,12 +125,28 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.ribosomeElongationRate,
 			self.timeStepSec(),
 			self.variable_elongation)
+		'''
+		if np.any(peptideLengths + self.elongation_rates.max() > self.proteinSequences.shape[1]):
+			problematic_peptides = np.unique([i for i, value in enumerate(peptideLengths) if value >  self.proteinSequences.shape[1]])
+			problematic_peptide_indices = np.unique([proteinIndexes[i] for i in problematic_peptides])
 
+			breakpoint()
+		else:
+			print('not a problem in this round')
+		try:
+			sequences = buildSequences(
+				self.proteinSequences,
+				proteinIndexes,
+				peptideLengths,
+				self.elongation_rates)
+		except:
+			breakpoint()
+		'''
 		sequences = buildSequences(
-			self.proteinSequences,
-			proteinIndexes,
-			peptideLengths,
-			self.elongation_rates)
+				self.proteinSequences,
+				proteinIndexes,
+				peptideLengths,
+				self.elongation_rates)
 
 		sequenceHasAA = (sequences != polymerize.PAD_VALUE)
 		aasInSequences = np.bincount(sequences[sequenceHasAA], minlength=21)

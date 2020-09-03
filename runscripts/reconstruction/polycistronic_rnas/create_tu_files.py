@@ -98,6 +98,7 @@ TODO:
 - Make parameters consistent across functions.
 - check that directions of genes in a TU match
 -fix furure warning
+- Combine with file to make the polycistrons file, add flag so user can stil make their own.
 
 '''
 
@@ -148,7 +149,7 @@ GENES_FILE = os.path.join(FLAT_DIR, 'genes.tsv')
 #POLY_CISTRON_FILE = os.path.join(FLAT_DIR, 'polycistronic_mrnas_in_model.tsv')
 POLY_CISTRON_FILE = parse_args()
 GENOME_SEQUENCE_FILE = os.path.join(FLAT_DIR, 'flattened_sequence.fasta')
-km_file = os.path.join('fixtures', 'endo_km', 'km.cPickle')
+km_file = os.path.join('fixtures', 'endo_km', 'km3.cPickle')
 RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv')
 PROTEIN_FILE = os.path.join(FLAT_DIR, 'proteins_old.tsv')
 TF_COND_FILE = os.path.join(FLAT_DIR, 'condition','tf_condition_old.tsv')
@@ -170,7 +171,7 @@ RNA_HALF_LIVES_INFO, rna_hl_fieldnames = parse_tsv(RNA_HALF_LIVES_FILE)
 PC_INFO, pc_fieldnames = parse_tsv(POLY_CISTRON_FILE)
 GENE_INFO, g_fieldnames = parse_tsv(GENES_FILE)
 PROTEIN_INFO, protein_fieldnames = parse_tsv(PROTEIN_FILE)
-TF_INFO, tf_fieldnames = parse_tsv(TF_COND_FILE)
+TF_INFO, TF_FIELDNAMES = parse_tsv(TF_COND_FILE)
 GENOMIC_SEQUENCE = load_sequence(GENOME_SEQUENCE_FILE)
 rna_seq_data_all_cond = parse_tsv(RNA_SEQ_FILE)
 
@@ -403,7 +404,11 @@ def gather_tu_info(tu_genes_info):
 
 		tu_half_life_info[pc_gene_id] = {}
 		tu_half_life_info[pc_gene_id]['id'] = pc_gene_id + '_RNA'
-		tu_half_life_info[pc_gene_id]['half_life'] = tu_genes_info[pc_gene_id][first_gene]['halfLife']
+		try:
+			tu_half_life_info[pc_gene_id]['half_life'] = tu_genes_info[pc_gene_id][first_gene]['halfLife']
+		except:
+			#for now dont include a half life if the first gene does not have one, and let it be solved for in the parca
+			del tu_half_life_info[pc_gene_id]
 	return tu_info, tu_half_life_info
 
 
@@ -468,7 +473,10 @@ def write_output_file(tu_info, tu_half_life_info, monomers_to_remove):
 			if not any(monomer in rna_hl_row['id'] for monomer in monomers_to_remove):
 				writer.writerow(rna_hl_row)
 		for pc_data in tu_info:
-			writer.writerow(tu_half_life_info[pc_data])
+			try:
+				writer.writerow(tu_half_life_info[pc_data])
+			except:
+				pass
 	return
 
 def make_operon_rnas_file():
@@ -613,7 +621,9 @@ def make_new_proteins_file(output_file):
 		for protein_row in PROTEIN_INFO:
 			writer.writerow(protein_row)
 
-def remove_kms_file():
+	#breakpoint()
+
+def remove_kms_file(km_file):
 	"""
 	Purpose:
 	The parca checks if the km's have already been calculated, if they have then
@@ -640,9 +650,8 @@ def make_new_tf_conditions_file(output_file):
 					for new_key in rnaIdToRnaSet[key.strip("[c]")]:
 						genotype[new_key + "[c]"] = val
 				row[field] = genotype
-
 	with open(output_file, "w") as f:
-		writer = JsonWriter(f, tf_fieldnames)
+		writer = JsonWriter(f, TF_FIELDNAMES)
 		writer.writeheader()
 		for tf_row in TF_INFO:
 			writer.writerow(tf_row)
@@ -651,7 +660,7 @@ def make_new_tf_conditions_file(output_file):
 if __name__ == "__main__":
 	make_operon_rnas_file()
 	make_transcription_units_file()
-	remove_kms_file()
+	remove_kms_file(km_file)
 	make_new_proteins_file(output_proteins)
 	make_new_tf_conditions_file(output_tf_conditions)
 
