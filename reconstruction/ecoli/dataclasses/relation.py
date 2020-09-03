@@ -88,7 +88,7 @@ class Relation(object):
 			for monocistron in polycistron[1]:
 				for tu in tu_dict.keys():
 					#Check all the TU's that a monocistron is present in.
-					if monocistron in tu:
+					if monocistron in tu.split('_'):
 						monocistron_loc = monocistron + '_RNA[c]'
 						tu_loc = tu + '_RNA[c]'
 						overlapping_tu_dict.setdefault(monocistron_loc, [])
