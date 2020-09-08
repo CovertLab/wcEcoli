@@ -55,16 +55,26 @@ This page goes through the Python environment setup steps in more detail and wit
 
    **On Sherlock**
 
-   The needed packages are already installed. Just run this in your bash profile:
-
-   ```bash
-   module load wcEcoli/python3
-   ```
-
-   You'll need these newer git modules since they use a compatible version of `libressl`:
+   The needed packages are already installed. Set up your bash profile to locate the
+   group environment modules, load the git and python modules, and initialize `pyenv`.
+   You'll need these newer git modules since they use a compatible version of `libressl`.
 
    ```shell script
-   module load git/2.27.0 git-lfs/2.11.0
+   ##### Add group-wide path settings #####
+   if [ -f "${PI_HOME}/etc/bash_profile" ]; then
+       . "${PI_HOME}/etc/bash_profile"
+   fi
+
+   module load git/2.27.0 git-lfs/2.11.
+   module load wcEcoli/python3
+
+   export PYENV_ROOT="${PI_HOME}/pyenv"
+
+   if [ -d "${PYENV_ROOT}" ]; then
+       export PATH="${PYENV_ROOT}/bin:${PATH}"
+       eval "$(pyenv init -)"
+       eval "$(pyenv virtualenv-init -)"
+   fi
    ```
 
 1. Optional: Download and install other packages according to their instructions or take a wait-and-see approach with them.
@@ -76,7 +86,7 @@ This page goes through the Python environment setup steps in more detail and wit
 
 ### On Sherlock
 
-1. Install Python 3.
+1. Install Python 3 **in a shared pyenv for the team.**
 
    See `$PI_HOME/installation_notes/python3.txt`.
 
