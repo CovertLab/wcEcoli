@@ -139,7 +139,7 @@ def initialize_trna_charging(sim_data, states, calc_charging):
 	synthetases = bulk_molecules.countsView(transcription.synthetase_names)
 	uncharged_trna = bulk_molecules.countsView(transcription.rnaData['id'][transcription.rnaData['isTRna']])
 	charged_trna = bulk_molecules.countsView(transcription.charged_trna_names)
-	aas = bulk_molecules.countsView(sim_data.moleculeGroups.aaIDs)
+	aas = bulk_molecules.countsView(sim_data.moleculeGroups.amino_acids)
 	ribosome_counts = states['UniqueMolecules'].container.counts(['active_ribosome'])
 
 	synthetase_conc = counts_to_molar * np.dot(aa_from_synthetase, synthetases.counts())
@@ -610,7 +610,7 @@ def initialize_transcription_factors(bulkMolCntr, uniqueMolCntr, sim_data, rando
 			bound_locs[
 				randomState.choice(
 					n_available_promoters,
-					size=np.min((n_to_bind, active_tf_view[tf_id].counts())),
+					size=min(n_to_bind, active_tf_view[tf_id].counts()[0]),
 					replace=False)
 			] = True
 

@@ -282,14 +282,14 @@ class Transcription(object):
 		monomer_ids = [rna['monomerId'] for rna in raw_data.rnas]
 
 		# Load RNA sequences and molecular weights from getter functions
-		rna_seqs = sim_data.getter.get_rna_sequence(rna_ids)
+		rna_seqs = sim_data.getter.get_sequence(rna_ids)
 		mws = sim_data.getter.getMass(rna_ids).asNumber(units.g/units.mol)
 
 		# Calculate lengths and nt counts from sequence
 		rna_lengths = np.array([len(seq) for seq in rna_seqs])
 
 		# Get RNA nucleotide compositions
-		ntp_abbreviations = [ntp_id[0] for ntp_id in sim_data.moleculeGroups.ntpIds]
+		ntp_abbreviations = [ntp_id[0] for ntp_id in sim_data.moleculeGroups.ntps]
 		nt_counts = []
 		for seq in rna_seqs:
 			nt_counts.append(
@@ -437,8 +437,8 @@ class Transcription(object):
 		Build transcription-associated simulation data from raw data.
 		"""
 		# Load sequence data
-		rna_seqs = np.array(sim_data.getter.get_rna_sequence(
-			[rna['id'] for rna in raw_data.rnas]))
+		rna_seqs = sim_data.getter.get_sequence(
+			[rna['id'] for rna in raw_data.rnas])
 
 		rrna_types = ['isRRna23S', 'isRRna16S', 'isRRna5S']
 		for rrna in rrna_types:
@@ -452,7 +452,7 @@ class Transcription(object):
 			+ self.max_time_step * sim_data.growthRateParameters.rnaPolymeraseElongationRate.asNumber(units.nt/units.s)
 			)
 
-		self.transcriptionSequences = np.full((rna_seqs.shape[0], maxLen), polymerize.PAD_VALUE, dtype=np.int8)
+		self.transcriptionSequences = np.full((len(rna_seqs), maxLen), polymerize.PAD_VALUE, dtype=np.int8)
 		ntMapping = {ntpId: i for i, ntpId in enumerate(["A", "C", "G", "U"])}
 		for i, sequence in enumerate(rna_seqs):
 			for j, letter in enumerate(sequence):
@@ -461,7 +461,7 @@ class Transcription(object):
 		# Calculate weights of transcript nucleotide monomers
 		self.transcriptionMonomerWeights = (
 			(
-				sim_data.getter.getMass(sim_data.moleculeGroups.ntpIds)
+				sim_data.getter.getMass(sim_data.moleculeGroups.ntps)
 				- sim_data.getter.getMass([sim_data.moleculeIds.ppi])
 				)
 			/ sim_data.constants.nAvogadro
@@ -505,7 +505,7 @@ class Transcription(object):
 			'RNA0-305[c]': 'ILE',
 			'RNA0-306[c]': 'MET',
 			}
-		aa_names = sim_data.moleculeGroups.aaIDs
+		aa_names = sim_data.moleculeGroups.amino_acids
 		aa_indices = {aa: i for i, aa in enumerate(aa_names)}
 		trna_indices = {trna: i for i, trna in enumerate(trna_names)}
 		self.aa_from_trna = np.zeros((len(aa_names), len(trna_names)))

@@ -23,7 +23,7 @@ class InternalState(object):
 		self.uniqueMolecules = UniqueMolecules(raw_data, sim_data)
 
 		self._buildBulkMolecules(raw_data, sim_data)
-		self._buildUniqueMolecules(raw_data, sim_data)
+		self._buildUniqueMolecules(sim_data)
 		self._buildCompartments(raw_data, sim_data)
 
 
@@ -31,65 +31,48 @@ class InternalState(object):
 		"""
 		Add data (IDs and mass) for all classes of bulk molecules.
 		"""
-
 		# Set metabolites
-		metaboliteIds = stateFunctions.createIdsWithCompartments(raw_data.metabolites)
-		metaboliteMasses = (units.g/units.mol) * (
-			stateFunctions.createMetaboliteMassesByCompartments(
-				raw_data.metabolites, sim_data.submass_name_to_index['metabolite'],
-				len(sim_data.submass_name_to_index)
-				))
+		metabolite_index = sim_data.submass_name_to_index['metabolite']
+		water_index = sim_data.submass_name_to_index['water']
+		metabolite_ids, metabolite_masses = self._build_bulk_molecule_specs(
+			sim_data, [met['id'] for met in raw_data.metabolites],
+			[metabolite_index if met['id'] != 'WATER' else water_index
+				for met in raw_data.metabolites]
+			)
 
-		self.bulkMolecules.addToBulkState(metaboliteIds, metaboliteMasses)
-		sim_data.moleculeGroups.bulk_molecules_binomial_division.extend(metaboliteIds)
-
-		# Set water
-		waterIds = stateFunctions.createIdsWithCompartments(raw_data.water)
-		waterMasses = (units.g/units.mol) * (
-			stateFunctions.createMetaboliteMassesByCompartments(
-				raw_data.water, sim_data.submass_name_to_index['water'],
-				len(sim_data.submass_name_to_index)
-				))
-
-		self.bulkMolecules.addToBulkState(waterIds, waterMasses)
+		self.bulkMolecules.addToBulkState(metabolite_ids, metabolite_masses)
 		sim_data.moleculeGroups.bulk_molecules_binomial_division.extend(
-			waterIds)
+			metabolite_ids)
 
-		# Set RNA
-		# Initialize lists of RNA ids and masses
-		rna_ids = []
-		rna_masses = []
-
-		# Loop through each RNA species and associated compartments
-		for rna in raw_data.rnas:
-			mw = sim_data.getter.getMass([rna['id']]).asNumber(units.g/units.mol)[0]
-
-			for loc in sim_data.getter.getLocation([rna['id']])[0]:
-				rna_ids.append('{}[{}]'.format(rna['id'], loc))
-
-				# Get submass index based on RNA type
-				submass_index = sim_data.submass_name_to_index[rna['type']]
-
-				# Build mass array
-				rna_mass = [0.]*len(sim_data.submass_name_to_index)
-				rna_mass[submass_index] = mw
-
-				rna_masses.append(rna_mass)
-
-		rna_masses = (units.g/units.mol) * np.array(rna_masses)
+		# Set RNAs
+		rna_ids, rna_masses = self._build_bulk_molecule_specs(
+			sim_data, [rna['id'] for rna in raw_data.rnas],
+			[sim_data.submass_name_to_index[rna['type']] for rna in raw_data.rnas]
+			)
 
 		self.bulkMolecules.addToBulkState(rna_ids, rna_masses)
 		sim_data.moleculeGroups.bulk_molecules_binomial_division.extend(
 			rna_ids)
 
-		# Set proteins
-		proteinIds = stateFunctions.createIdsWithCompartments(raw_data.proteins)
-		proteinMasses = (units.g/units.mol) * (
-			stateFunctions.createMassesByCompartments(raw_data.proteins))
+		# Set RNA subunits (used to represent masses of RNA fragments)
+		rna_subunit_ids, rna_subunit_masses = self._build_bulk_molecule_specs(
+			sim_data, [subunit_id[:-3] for subunit_id in sim_data.moleculeGroups.polymerized_ntps],
+			[sim_data.submass_name_to_index['nonspecific_RNA']]*len(sim_data.moleculeGroups.polymerized_ntps)
+			)
 
-		self.bulkMolecules.addToBulkState(proteinIds, proteinMasses)
+		self.bulkMolecules.addToBulkState(rna_subunit_ids, rna_subunit_masses)
 		sim_data.moleculeGroups.bulk_molecules_binomial_division.extend(
-			proteinIds)
+			rna_subunit_ids)
+
+		# Set proteins
+		protein_ids, protein_masses = self._build_bulk_molecule_specs(
+			sim_data, [protein['id'] for protein in raw_data.proteins],
+			[sim_data.submass_name_to_index['protein']]*len(raw_data.proteins)
+			)
+
+		self.bulkMolecules.addToBulkState(protein_ids, protein_masses)
+		sim_data.moleculeGroups.bulk_molecules_binomial_division.extend(
+			protein_ids)
 
 		# Set complexes
 		complexIds = stateFunctions.createIdsWithCompartments(raw_data.proteinComplexes)
@@ -109,28 +92,53 @@ class InternalState(object):
 		sim_data.moleculeGroups.bulk_molecules_binomial_division.extend(
 			modifiedFormIds)
 
-		# Set fragments
-		fragments = []
-		
-		for x in raw_data.polymerized:
-			if x['is_ntp']:
-				if not x['is_end']:
-					temp = x
-					temp['id'] = x['id'].replace('Polymerized','Fragment')
-					fragments.append(temp)
-					
-		fragmentsIds = stateFunctions.createIdsWithCompartments(fragments)
-		fragmentsMasses = (units.g/units.mol) * (
-			stateFunctions.createMassesByCompartments(fragments))
 
-		self.bulkMolecules.addToBulkState(fragmentsIds, fragmentsMasses)
+	def _build_bulk_molecule_specs(self, sim_data, molecule_ids, submass_indexes):
+		"""
+		Builds a list of molecule IDs with compartment tags and a corresponding
+		array of molecular masses to add to the bulk state. Can only be used
+		for molecules whose entire mass falls into a single submass type.
+		Args:
+			molecule_ids (List[str]): List of molecule IDs w/o compartment tags
+			submass_indexes (List[int]): List of submass indexes
+		Returns:
+			molecule_ids_with_compartments (List[str]): List of molecule IDs
+				with compartment tags
+			masses (np.ndarray): Array of molecular masses divided into
+				submasses
+		"""
+		molecule_ids_with_compartments = []
+		masses = []
+
+		# Loop through each molecule species and associated compartments
+		for molecule_id, submass_index in zip(molecule_ids, submass_indexes):
+			mw = sim_data.getter.getMass([molecule_id]).asNumber(units.g / units.mol)[0]
+
+			for loc in sim_data.getter.getLocation([molecule_id])[0]:
+				molecule_ids_with_compartments.append('{}[{}]'.format(molecule_id, loc))
+
+				# Build mass array
+				mass = [0.] * len(sim_data.submass_name_to_index)
+				mass[submass_index] = mw
+
+				masses.append(mass)
+
+		masses = (units.g/units.mol) * np.array(masses)
+
+		return molecule_ids_with_compartments, masses
 
 
-	def _buildUniqueMolecules(self, raw_data, sim_data):
+	def _buildUniqueMolecules(self, sim_data):
 		"""
 		Add data (name, mass, and attribute data structure) for all classes of
 		unique molecules.
 		"""
+		# Set up dictionary for quick indexing of bulk molecule masses
+		bulk_molecule_id_to_mass = {
+			molecule_id: mass for (molecule_id, mass)
+			in zip(self.bulkMolecules.bulkData['id'], self.bulkMolecules.bulkData['mass'])
+			}
+
 		# Add active RNA polymerase
 		# The attributes of active RNA polymerases are given as:
 		# - domain_index (32-bit int): Domain index of the chromosome domain
@@ -142,8 +150,7 @@ class InternalState(object):
 		# of the coordinate, False if RNAP is moving in the negative direction.
 		# This is determined by the orientation of the gene that the RNAP is
 		# transcribing.
-		RNAP_mass = self.bulkMolecules.bulkData['mass'][
-			self.bulkMolecules.bulkData['id'] == sim_data.moleculeIds.rnapFull]
+		RNAP_mass = bulk_molecule_id_to_mass[sim_data.moleculeIds.rnapFull]
 		RNAP_attributes = {
 			'domain_index': 'i4',
 			'coordinates': 'i8',
@@ -206,10 +213,8 @@ class InternalState(object):
 		# mRNA, in number of bases from the transcription start site
 		# TODO: This is a bad hack that works because in the parca
 		# I have forced expression to be these subunits only
-		ribosome_30S_mass = self.bulkMolecules.bulkData['mass'][
-			self.bulkMolecules.bulkData['id'] == sim_data.moleculeIds.s30_fullComplex]
-		ribosome_50S_mass = self.bulkMolecules.bulkData['mass'][
-			self.bulkMolecules.bulkData['id'] == sim_data.moleculeIds.s50_fullComplex]
+		ribosome_30S_mass = bulk_molecule_id_to_mass[sim_data.moleculeIds.s30_fullComplex]
+		ribosome_50S_mass = bulk_molecule_id_to_mass[sim_data.moleculeIds.s50_fullComplex]
 		ribosome_mass = ribosome_30S_mass + ribosome_50S_mass
 		ribosome_attributes = {
 			'protein_index': 'i8',
@@ -232,15 +237,17 @@ class InternalState(object):
 		# is reset to True when division_time was reached and the cell has
 		# divided. The 'domain_index' keeps track of the index of the oldest
 		# chromosome domain that is part of the full chromosome.
-		fullChromosomeMass = (units.g/units.mol) * (
-			stateFunctions.createMassesByCompartments(raw_data.full_chromosome))
-		fullChromosomeAttributes = {
+		full_chromosome_mass = (units.g/units.mol) * np.zeros_like(RNAP_mass)
+		full_chromosome_mass[
+			sim_data.submass_name_to_index['DNA']
+			] = sim_data.getter.getMass([sim_data.moleculeIds.full_chromosome])[0]
+		full_chromosome_attributes = {
 			'division_time': 'f8',
 			'has_triggered_division': '?',
 			'domain_index': 'i4',
 			}
 
-		self.uniqueMolecules.addToUniqueState('full_chromosome', fullChromosomeAttributes, fullChromosomeMass)
+		self.uniqueMolecules.addToUniqueState('full_chromosome', full_chromosome_attributes, full_chromosome_mass)
 
 		# Full chromosomes are divided based on their domain index
 		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(
@@ -272,18 +279,15 @@ class InternalState(object):
 		# essential subunits of the replisome complex. The list of essential
 		# subunits and their stoichiometry were taken from Reyes-Lamothe et
 		# al., 2010.
+		replisome_mass = (units.g / units.mol) * np.zeros_like(RNAP_mass)
+
 		trimer_ids = sim_data.moleculeGroups.replisome_trimer_subunits
 		monomer_ids = sim_data.moleculeGroups.replisome_monomer_subunits
 
-		trimer_mass = [self.bulkMolecules.bulkData['mass'][
-			self.bulkMolecules.bulkData['id'] == id_].asNumber(units.g/units.mol)
-			for id_ in trimer_ids]
-		monomer_mass = [self.bulkMolecules.bulkData['mass'][
-			self.bulkMolecules.bulkData['id'] == id_].asNumber(units.g/units.mol)
-			for id_ in monomer_ids]
-
-		replisomeMass = (units.g/units.mol) * (
-				3*np.sum(trimer_mass, axis=0) + np.sum(monomer_mass, axis=0))
+		for trimer_id in trimer_ids:
+			replisome_mass += 3*bulk_molecule_id_to_mass[trimer_id]
+		for monomer_id in monomer_ids:
+			replisome_mass += bulk_molecule_id_to_mass[monomer_id]
 
 		replisomeAttributes = {
 			'domain_index': 'i4',
@@ -291,7 +295,8 @@ class InternalState(object):
 			'coordinates': 'i8',
 			}
 
-		self.uniqueMolecules.addToUniqueState('active_replisome', replisomeAttributes, replisomeMass)
+		self.uniqueMolecules.addToUniqueState(
+			'active_replisome', replisomeAttributes, replisome_mass)
 
 		# Active replisomes are divided based on their domain index
 		sim_data.moleculeGroups.unique_molecules_domain_index_division.append(
