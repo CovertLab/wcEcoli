@@ -3,15 +3,17 @@
 # image and store it in the Google Container Registry.
 #
 # COMMAND LINE ARGUMENTS:
-#   ARG1: Docker tag for the wcm-runtime image in GCR to build; defaults to
-#     "${USER}-wcm-runtime".
+#   ARG1: Distinguishing ID prefix for the "${ID}-wcm-runtime" tag for the
+#     Docker Image to build in GCR; defaults to "${USER}". Must be in lower case.
 #
 # ASSUMES: The current working dir is the wcEcoli/ project root.
 
 set -eu
 
+ID="${1:-$USER}"
+
 PROJECT="$(gcloud config get-value core/project)"
-WCM_RUNTIME="${1:-${USER}-wcm-runtime}"
+WCM_RUNTIME="${ID}-wcm-runtime"
 TAG="gcr.io/${PROJECT}/${WCM_RUNTIME}"
 
 echo "=== Cloud-building WCM runtime Docker Image: ${TAG} ==="
@@ -20,4 +22,4 @@ echo "=== Cloud-building WCM runtime Docker Image: ${TAG} ==="
 # the project root which would upload the entire project.
 cp requirements.txt cloud/docker/runtime/
 gcloud builds submit --timeout=2h --tag "${TAG}" cloud/docker/runtime/
-rm cloud/docker/runtime/*requirements.txt
+rm cloud/docker/runtime/requirements.txt
