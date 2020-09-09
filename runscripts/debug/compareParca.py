@@ -8,10 +8,9 @@ Usage (SIMDIR is a path to simulation output containing a kb/ directory):
 
 from __future__ import absolute_import, division, print_function
 
-from pprint import pprint
 import sys
 
-from runscripts.reflect.object_tree import diff_trees, load_fit_tree
+from runscripts.reflect.object_tree import diff_trees, load_fit_tree, pprint_diffs
 
 
 if __name__ == '__main__':
@@ -28,6 +27,6 @@ the differences.'''.format(sys.argv[0]))
 	twice = load_fit_tree(dir2)
 
 	diffs = diff_trees(once, twice)
-	pprint(diffs, width=160)
+	pprint_diffs(diffs)
 
 	exit(3 if diffs else 0)

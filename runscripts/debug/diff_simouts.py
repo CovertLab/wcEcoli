@@ -19,10 +19,10 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import os
 import os.path as op
-from pprint import pprint
 import re
 import sys
 
+from runscripts.reflect.object_tree import pprint_diffs
 from wholecell.io.tablereader import TableReader, VersionError
 
 
@@ -128,6 +128,8 @@ def diff_subdirs(subdir, simout_dir1, simout_dir2):
 	attribute_names2 = set(table2.attributeNames())
 
 	for key in attribute_names1 | attribute_names2:
+		if subdir == 'Main' and key in ('startTime', 'endTime'):
+			continue  # the timestamps differ as a matter of course
 		v1 = table1.readAttribute(key) if key in attribute_names1 else Repr('<absent value>')
 		v2 = table2.readAttribute(key) if key in attribute_names2 else Repr('<absent value>')
 		if v1 != v2:
@@ -171,6 +173,8 @@ def cmd_diff_simout(simout_dir1, simout_dir2):
 	messages and returning an exit status code.
 	'''
 	if simout_dir1 == simout_dir2:
+		# Since this doesn't compare abspaths you can work around it for testing
+		# with alternate path strings to the same directory.
 		return "diff_simouts: Don't diff a simOut directory against itself"
 
 	print('Comparing: {}\n'.format((simout_dir1, simout_dir2)))
@@ -181,13 +185,9 @@ def cmd_diff_simout(simout_dir1, simout_dir2):
 		return 'diff_simouts: No simOut directory 2: {}'.format(simout_dir2)
 
 	diffs = diff_simout(simout_dir1, simout_dir2)
+	pprint_diffs(diffs)
 
-	if diffs:
-		pprint(diffs)
-		return 1
-	else:
-		print('The simOut dirs match')
-		return 0
+	return 1 if diffs else 0
 
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@ import collections
 import functools
 import numbers
 import os
+from pprint import pformat
 import re
 import sys
 import types
@@ -391,3 +392,17 @@ def load_fit_tree(out_subdir):
 		sim_data = cPickle.load(f, **kwargs)
 
 	return object_tree(sim_data)
+
+def pprint_diffs(diffs, width=160):
+	'''Pretty-print the diffs, print the number of lines of diffs as a single
+	figure of merit, and return the number of lines of diffs.
+	'''
+	if diffs:
+		output = pformat(diffs, width=width)
+		print(output)
+		line_count = len(output.strip().splitlines())
+	else:
+		line_count = 0
+
+	print('\nlines of differences: {}'.format(line_count))
+	return line_count
