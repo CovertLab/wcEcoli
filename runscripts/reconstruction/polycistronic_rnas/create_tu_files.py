@@ -73,6 +73,8 @@ Returns:
 		'id' = pc_gene_id + '_RNA'
 		'geneId' = pc_gene_id
 		'monomerSet' = pc_monomer_id_list
+		'gene_starts_stops' = list of lists recording the start and stop position of each gene in the TU, 
+			to be used later within initial_conditions
 	gene_to_tu_matrix.tsv
 		- A boolean matrix, rows = genes, cols = tus, which serves as a maping of
 		genes to tus.
@@ -343,6 +345,24 @@ def gather_tu_genes_info():
 					tu_genes_info[pc_gene_id][rna]['length'] = gene_row['length']
 	return tu_genes_info
 
+def find_gene_starts_stops(pc_gene_id, pc_gene_info):
+	# getting the genes in the PC this way to preserve the proper order
+	genes_in_pc = pc_gene_id.split('_')
+	gene_starts_stops = []
+	for idx, gene in enumerate(genes_in_pc):
+		if idx == 0:
+			start = 0
+			stop = pc_gene_info[gene]['length'] - 1
+			gene_starts_stops.append([start, stop])
+		else:
+			if pc_gene_info[gene]['direction'] == '+':
+				start = pc_gene_info[gene]['chromosome_coordinate'] - pc_gene_info[genes_in_pc[idx-1]]['chromosome_coordinate'] - 1
+			elif pc_gene_info[gene]['direction'] == '-':
+				start = pc_gene_info[genes_in_pc[idx-1]]['chromosome_coordinate'] - pc_gene_info[gene]['chromosome_coordinate'] - 1
+			stop = start + pc_gene_info[gene]['length']
+			gene_starts_stops.append([start, stop])
+	return gene_starts_stops
+
 def gather_tu_info(tu_genes_info):
 	"""
 	Purpose:
@@ -401,6 +421,7 @@ def gather_tu_info(tu_genes_info):
 			tu_info[pc_gene_id]['id'] = pc_gene_id + '_RNA'
 		tu_info[pc_gene_id]['geneId'] = pc_gene_id
 		tu_info[pc_gene_id]['monomerSet'] = pc_monomer_id_list
+		tu_info[pc_gene_id]['gene_starts_stops'] = find_gene_starts_stops(pc_gene_id, tu_genes_info[pc_gene_id])
 
 		tu_half_life_info[pc_gene_id] = {}
 		tu_half_life_info[pc_gene_id]['id'] = pc_gene_id + '_RNA'
@@ -438,8 +459,12 @@ def update_rna_info():
 			rna_row['monomerSet'] = []
 		else:
 			rna_row['monomerSet'] = [rna_row['monomerId']]
+		for gene in GENE_INFO:
+			if rna_row['id'] == gene['rnaId']:
+				rna_row['gene_starts_stops'] = [[0, gene['length']-1]]
 	# add fieldname for 'monomersets'
 	fieldnames.append('monomerSet')
+	fieldnames.append('gene_starts_stops')
 
 def write_output_file(tu_info, tu_half_life_info, monomers_to_remove):
 	"""
