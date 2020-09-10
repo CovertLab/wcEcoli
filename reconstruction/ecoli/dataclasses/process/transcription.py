@@ -207,6 +207,12 @@ class Transcription(object):
 			if rna['id'] in mRNA_ids:
 				reported_mRNA_half_lives.append(rna['half_life'])
 
+		# Load rna start and stop position (values are relative to the RNA, not the chromosome)
+		
+		gene_starts_stops = [rna['gene_starts_stops'] for rna in raw_data.operon_rnas]
+		breakpoint()
+
+
 		# Calculate average reported half lives of mRNAs
 		average_mRNA_half_lives = np.array(reported_mRNA_half_lives).mean()
 
@@ -415,6 +421,7 @@ class Transcription(object):
 				('replicationCoordinate', 'int64'),
 				('direction', 'bool'),
 				('monomerSet', 'object')
+				('gene_starts_stops', 'object')
 				]
 			)
 
@@ -441,6 +448,7 @@ class Transcription(object):
 		rnaData['replicationCoordinate'] = replicationCoordinate
 		rnaData['direction'] = direction
 		rnaData['monomerSet'] = monomerSets
+		rnaData['gene_starts_stops'] = gene_starts_stops
 
 		field_units = {
 			'id': None,
@@ -462,6 +470,7 @@ class Transcription(object):
 			'replicationCoordinate': None,
 			'direction': None,
 			'monomerSet': None,
+			'gene_starts_stops': None,
 			}
 
 		self.rnaExpression = {}
