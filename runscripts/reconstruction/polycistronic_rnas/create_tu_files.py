@@ -356,9 +356,9 @@ def find_gene_starts_stops(pc_gene_id, pc_gene_info):
 			gene_starts_stops.append([start, stop])
 		else:
 			if pc_gene_info[gene]['direction'] == '+':
-				start = pc_gene_info[gene]['chromosome_coordinate'] - pc_gene_info[genes_in_pc[idx-1]]['chromosome_coordinate'] - 1
+				start = pc_gene_info[gene]['chromosome_coordinate'] - pc_gene_info[genes_in_pc[0]]['chromosome_coordinate'] - 1
 			elif pc_gene_info[gene]['direction'] == '-':
-				start = pc_gene_info[genes_in_pc[idx-1]]['chromosome_coordinate'] - pc_gene_info[gene]['chromosome_coordinate'] - 1
+				start = pc_gene_info[genes_in_pc[0]]['chromosome_coordinate'] - pc_gene_info[gene]['chromosome_coordinate'] - 1
 			stop = start + pc_gene_info[gene]['length']
 			gene_starts_stops.append([start, stop])
 	return gene_starts_stops

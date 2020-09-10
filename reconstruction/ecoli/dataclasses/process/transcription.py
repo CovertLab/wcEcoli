@@ -210,8 +210,6 @@ class Transcription(object):
 		# Load rna start and stop position (values are relative to the RNA, not the chromosome)
 		
 		gene_starts_stops = [rna['gene_starts_stops'] for rna in raw_data.operon_rnas]
-		breakpoint()
-
 
 		# Calculate average reported half lives of mRNAs
 		average_mRNA_half_lives = np.array(reported_mRNA_half_lives).mean()
@@ -420,8 +418,8 @@ class Transcription(object):
 				('KmEndoRNase', 'f8'),
 				('replicationCoordinate', 'int64'),
 				('direction', 'bool'),
-				('monomerSet', 'object')
-				('gene_starts_stops', 'object')
+				('monomerSet', 'object'),
+				('gene_starts_stops', 'object'),
 				]
 			)
 
