@@ -127,6 +127,9 @@ class Relation(object):
 			ID with a TU ID. This is bc each monomer is still attached
 			to a single rna_id (even if its never actually transcribed as a mono-
 			cistronic unit). This makes it easier to set up this relationship.
+
+			Assumption: if the total counts to a TU are zero, 
+			just assign an equal fraction for any overlapping TU's
 		'''
 		tu_fraction_dict = {}
 		for key, value in overlapping_tu_dict.items():
@@ -137,7 +140,11 @@ class Relation(object):
 				#Need to remove the location tag from v in order to find it in the tu_dict.
 				count_sum += tu_dict[v[:-7]]
 			for v in value:
-				tu_fraction_dict[key].append(tu_dict[v[:-7]] / count_sum)
+				#if the total counts to a TU are zero, just assign an equal fraction for any overlapping TU's
+				if count_sum == 0:
+					tu_fraction_dict[key].append(1/len(value))
+				else:
+					tu_fraction_dict[key].append(tu_dict[v[:-7]] / count_sum)
 
 		overlapping_tu_fractions = {}
 		for monomer_monocistron, overlapping_tus in overlapping_tu_dict.items():

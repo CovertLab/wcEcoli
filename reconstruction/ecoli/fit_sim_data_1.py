@@ -2156,8 +2156,9 @@ def expressionFromConditionAndFoldChange(rnaIds, basalExpression, condPerturbati
 		rnaIdxs.append(np.where(rnaIds == key)[0][0])
 		fcs.append(value)
 	for key in sorted(tfFCs):
-		rnaIdxs.append(np.where(rnaIds == key + "[c]")[0][0])
-		fcs.append(tfFCs[key])
+		if key + '[c]' not in condPerturbations:
+			rnaIdxs.append(np.where(rnaIds == key + "[c]")[0][0])
+			fcs.append(tfFCs[key])
 
 	# Sort fold changes and indices for the bool array indexing to work properly
 	fcs = [fc for (rnaIdx, fc) in sorted(zip(rnaIdxs, fcs), key = lambda pair: pair[0])]
@@ -2168,6 +2169,7 @@ def expressionFromConditionAndFoldChange(rnaIds, basalExpression, condPerturbati
 	rnaIdxsBool[rnaIdxs] = 1
 	fcs = np.array(fcs)
 	scaleTheRestBy = (1. - (expression[rnaIdxs] * fcs).sum()) / (1. - (expression[rnaIdxs]).sum())
+
 	expression[rnaIdxsBool] *= fcs
 	expression[~rnaIdxsBool] *= scaleTheRestBy
 

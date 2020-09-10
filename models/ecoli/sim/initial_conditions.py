@@ -1112,6 +1112,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	# Add total available template lengths as weights and normalize
 	protein_init_probs = normalize(mRNA_total_length*translationEfficiencies)
+
 	'''
 	# Sample a multinomial distribution of synthesis probabilities to determine what RNA are initialized
 	nNewProteins = randomState.multinomial(ribosomeToActivate, probNormalized)
@@ -1173,6 +1174,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# Calculate the lengths of the partial polypeptide, and rescale position on
 	# mRNA to be a multiple of three using this peptide length
 	peptide_lengths = np.floor_divide(positions_on_mRNA, 3)
+	breakpoint()
 	positions_on_mRNA = 3*peptide_lengths
 
 	# Update masses of partially translated proteins
