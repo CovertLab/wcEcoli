@@ -1062,11 +1062,12 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	# Get attributes of RNAs
 	all_RNAs = uniqueMolCntr.objectsInCollection('RNA')
-	TU_index_all_RNAs, length_all_RNAs, is_mRNA, unique_index_all_RNAs = all_RNAs.attrs(
-		'TU_index', 'transcript_length', 'is_mRNA', 'unique_index')
+	TU_index_all_RNAs, length_all_RNAs, is_mRNA, unique_index_all_RNAs, RNAP_index_all_RNAs = all_RNAs.attrs(
+		'TU_index', 'transcript_length', 'is_mRNA', 'unique_index', 'RNAP_index')
 	TU_index_mRNAs = TU_index_all_RNAs[is_mRNA]
 	length_mRNAs = length_all_RNAs[is_mRNA]
 	unique_index_mRNAs = unique_index_all_RNAs[is_mRNA]
+	RNAP_index = RNAP_index_all_RNAs[is_mRNA]
 
 	# Get conversion matrix between transcription units and mRNA templates
 	# for each monomer
@@ -1076,33 +1077,63 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# 	transcript.
 	all_TU_ids = sim_data.process.transcription.rnaData['id']
 	all_mRNA_ids = sim_data.process.translation.monomerData['rnaId']
-	TU_counts_to_mRNA_counts = np.zeros(
-		(len(all_mRNA_ids), len(all_TU_ids)), dtype=np.int64)
+	# TU_counts_to_mRNA_counts = np.zeros(
+	# 	(len(all_mRNA_ids), len(all_TU_ids)), dtype=np.int64)
+
+	start_codon_positions = sim_data.process.transcription.rnaData['gene_starts_stops']
+	monomer_sets = sim_data.process.transcription.rnaData['monomerSet']
 
 	TU_id_to_index = {TU_id: i for i, TU_id in enumerate(all_TU_ids)}
 	monomer_to_mrna_transform = sim_data.relation.monomer_to_mrna_transform
 
+
+	# map proteins to TU indexes, gene coordinates, and available mRNA template length
 	protein_index_to_TU_index = {}
-	# for i, mRNA_id in enumerate(all_mRNA_ids):
-	# 	TU_counts_to_mRNA_counts[i, TU_id_to_index[mRNA_id]] = 1
-	# 	protein_index_to_TU_index[i] = TU_id_to_index[mRNA_id]
-	# import ipdb; ipdb.set_trace()
+	protein_index_to_gene_coord = {}
+	available_template = np.zeros(len(all_mRNA_ids), dtype=np.int64)
 
 	for i, protein in enumerate(sim_data.process.translation.monomerData):
 		protein_index_to_TU_index[i] = []
+		protein_index_to_gene_coord[i] = []
+
 		for rna in protein['rnaSet']:
-			protein_index_to_TU_index[i].append(TU_id_to_index[rna])
+			rna_index = TU_id_to_index[rna]
+			prot_index = monomer_sets[rna_index].index(protein['id'])
+			gene_coords = start_codon_positions[rna_index][prot_index]
 
+			protein_index_to_TU_index[i].append(rna_index)
+			protein_index_to_gene_coord[i].append(gene_coords)
 
+			# identify all existing mRNAs with this TU id and
+			# add up length the sequence of the TU that corresponds to this protein
+			mask = TU_index_mRNAs == rna_index
+			lengths = length_mRNAs[mask]
+			RNAP_positions = RNAP_index[mask]
+			# RNAPs on fully transcribed RNAs are assinged -1
+			# repalce this value with length of mRNA for calculating template length
+			RNAP_positions[RNAP_positions == -1] = lengths[RNAP_positions == -1]
 
-	TU_counts_to_mRNA_counts[:,sim_data.process.transcription.rnaData['isMRna']] = monomer_to_mrna_transform
+			# only keep rnas containing gene start codon
+			rnas_containing_gene = RNAP_positions > gene_coords[0]
 
-	# Calculate available template lengths of each mRNA
-	TU_total_length = np.zeros(len(all_TU_ids), dtype=np.int64)
-	for index, length in zip(TU_index_mRNAs, length_mRNAs):
-		TU_total_length[index] += length
+			# find length of gene that has been transcribed
+			# if RNAP is past end of gene, truncate available template to gene length
+			transcription_end = RNAP_positions[rnas_containing_gene]
+			transcription_end[transcription_end > gene_coords[1]] = gene_coords[1]
 
-	mRNA_total_length = TU_counts_to_mRNA_counts.dot(TU_total_length)
+			rna_lengths = transcription_end - np.repeat(gene_coords[0], len(transcription_end))
+
+			available_template[i] += sum(rna_lengths)
+
+	# TU_counts_to_mRNA_counts[:,sim_data.process.transcription.rnaData['isMRna']] = monomer_to_mrna_transform
+
+	# # Calculate available template lengths of each mRNA
+	# TU_total_length = np.zeros(len(all_TU_ids), dtype=np.int64)
+	# for index, length in zip(TU_index_mRNAs, length_mRNAs):
+	# 	TU_total_length[index] += length
+	#
+	# mRNA_total_length = TU_counts_to_mRNA_counts.dot(TU_total_length)
+
 
 	# Find number of ribosomes to activate
 	ribosome30S = bulkMolCntr.countsView([sim_data.moleculeIds.s30_fullComplex]).counts()[0]
@@ -1111,7 +1142,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	n_ribosomes_to_activate = np.int64(fracActiveRibosome * inactiveRibosomeCount)
 
 	# Add total available template lengths as weights and normalize
-	protein_init_probs = normalize(mRNA_total_length*translationEfficiencies)
+	protein_init_probs = normalize(available_template * translationEfficiencies)
 
 	'''
 	# Sample a multinomial distribution of synthesis probabilities to determine what RNA are initialized
@@ -1157,6 +1188,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		# Distribute ribosomes among mRNAs that produce this protein, weighted
 		# by their lengths
 		# mask = (TU_index_mRNAs == protein_index_to_TU_index[protein_index])
+
 		mask = [True  if idx in protein_index_to_TU_index[protein_index] else False for idx in TU_index_mRNAs]
 		lengths = length_mRNAs[mask]
 		n_ribosomes_per_RNA = randomState.multinomial(counts, normalize(lengths))
