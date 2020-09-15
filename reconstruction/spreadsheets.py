@@ -172,6 +172,10 @@ class JsonReader(csv.DictReader, object):
 		"""
 		attributeDict = {}  # type: Dict[Text, Any]
 		for key_, raw_value_ in six.viewitems(row_dict):
+			# Skip private keys whose name starts with an underscore
+			if key_.startswith('_'):
+				continue
+
 			# NOTE: Decoding UTF-8 bytes would be safer between DictReader and
 			# its csv.reader as in csv32, but this is simpler.
 			if six.PY2:
