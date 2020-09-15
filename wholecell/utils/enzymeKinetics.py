@@ -5,10 +5,6 @@ EnzymeKinetics
 
 Takes in enzyme kinetics data on initialization, and returns dicts of rate estimates when passed
 metabolite and enzyme concentrations at runtime.
-
-@author: Morgan Paull
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 2/8/2016
 """
 from __future__ import absolute_import, division, print_function
 

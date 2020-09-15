@@ -11,7 +11,7 @@ from reconstruction.spreadsheets import tsv_writer
 
 # Constants
 
-SOURCE = os.path.join("reconstruction", "ecoli", "flat", "metabolism", "ecocyc-compound-formulas.dat")
+SOURCE = os.path.join("reconstruction", "ecoli", "flat", "metabolism", "ecocyc_compound_formulas.dat")
 DELIMITER = "$"
 REGEX = "([A-Z][a-z]?)([0-9]*)"
 NDIGITS = 3 # number of decimals in atomic weights
@@ -61,25 +61,25 @@ for molecule_name, stoich in six.viewitems(ADDED_SPECIES):
 		)
 
 # Write out metabolites
-with tsv_writer(OUTPUT_METS, ["id", "mw7.2", "location"]) as writer:
+with tsv_writer(OUTPUT_METS, ["id", "mw", "location"]) as writer:
 	for molecule_name, weight in six.viewitems(weights):
 		if molecule_name == "WATER":
 			continue
 
 		writer.writerow({
 			"id":molecule_name,
-			"mw7.2":weight,
+			"mw":weight,
 			"location":COMPARTMENTS
 			})
 
 # Write out water
-with tsv_writer(OUTPUT_WATER, ["id", "mw7.2", "location"]) as writer:
+with tsv_writer(OUTPUT_WATER, ["id", "mw", "location"]) as writer:
 	for molecule_name, weight in six.viewitems(weights):
 		if molecule_name != "WATER":
 			continue
 
 		writer.writerow({
 			"id":molecule_name,
-			"mw7.2":weight,
+			"mw":weight,
 			"location":COMPARTMENTS
 			})

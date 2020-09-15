@@ -1,9 +1,6 @@
 """
 Analysis for time_step variant to show impact of a maximum time step limit
 for processes.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 3/2/20
 """
 
 from __future__ import absolute_import, division, print_function
@@ -52,10 +49,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
-		inactive_rnap_id = [sim_data.moleculeIds.rnapFull]
+		inactive_rnap_id = [sim_data.molecule_ids.full_RNAP]
 		ribosome_subunit_ids = [
-			sim_data.moleculeIds.s50_fullComplex,
-			sim_data.moleculeIds.s30_fullComplex,
+			sim_data.molecule_ids.s50_full_complex,
+			sim_data.molecule_ids.s30_full_complex,
 			]
 
 		all_time_steps = np.zeros(n_variants)

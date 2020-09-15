@@ -6,10 +6,6 @@ Macromolecular complexation sub-model. Encodes molecular simulation of macromole
 TODO:
 - allow for shuffling when appropriate (maybe in another process)
 - handle protein complex dissociation
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/4/2013
 """
 
 from __future__ import absolute_import, division, print_function
@@ -37,7 +33,7 @@ class Complexation(wholecell.processes.process.Process):
 		super(Complexation, self).initialize(sim, sim_data)
 
 		# Create matrices and vectors that describe reaction stoichiometries
-		self.stoichMatrix = sim_data.process.complexation.stoichMatrix().astype(np.int64)
+		self.stoichMatrix = sim_data.process.complexation.stoich_matrix().astype(np.int64)
 
 		# semi-quantitative rate constants
 		self.rates = sim_data.process.complexation.rates
@@ -47,7 +43,7 @@ class Complexation(wholecell.processes.process.Process):
 		self.system = StochasticSystem(self.stoichMatrix.T, random_seed=seed)
 
 		# Build views
-		moleculeNames = sim_data.process.complexation.moleculeNames
+		moleculeNames = sim_data.process.complexation.molecule_names
 		self.molecules = self.bulkMoleculesView(moleculeNames)
 
 

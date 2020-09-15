@@ -1,8 +1,5 @@
 """
 Plots various effects that may be limiting growth
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/18/2015
 """
 
 from __future__ import absolute_import, division, print_function
@@ -42,9 +39,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		nAvogadro = sim_data.constants.nAvogadro
-		cellDensity = sim_data.constants.cellDensity
-		homeostaticRangeObjFractionHigher = sim_data.constants.metabolismHomeostaticRangeObjFractionHigher
+		nAvogadro = sim_data.constants.n_avogadro
+		cellDensity = sim_data.constants.cell_density
+		homeostaticRangeObjFractionHigher = sim_data.constants.metabolism_homeostatic_range_obj_fraction_higher
 
 		# Load time
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))
@@ -55,8 +52,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		mass = TableReader(os.path.join(simOutDir, "Mass"))
 		cellMass = units.fg * mass.readColumn("cellMass")
 
-		concIds = sorted(sim_data.process.metabolism.concDict)
-		concPools = units.mol / units.L * np.array([sim_data.process.metabolism.concDict[key].asNumber(units.mol / units.L) for key in concIds])
+		concIds = sorted(sim_data.process.metabolism.conc_dict)
+		concPools = units.mol / units.L * np.array([sim_data.process.metabolism.conc_dict[key].asNumber(units.mol / units.L) for key in concIds])
 		concentrationSetpoints = concPools
 		sortedConcentrationIndex = concentrationSetpoints.asNumber().argsort()[::-1]
 		concentrationSetpoints = concentrationSetpoints[sortedConcentrationIndex]

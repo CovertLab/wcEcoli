@@ -11,10 +11,6 @@ EG10873_RNA[c]	44.7	rplL	50S Ribosomal subunit protein L7/L12 dimer
 EG12179_RNA[c]	46.2	cspE	Transcription antiterminator and regulator of RNA stability
 EG10321_RNA[c]	53.2	fliC	Flagellin
 EG10544_RNA[c]	97.5	lpp		Murein lipoprotein
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 10/29/2015
 """
 
 from __future__ import absolute_import, division, print_function

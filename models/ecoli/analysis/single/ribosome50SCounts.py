@@ -1,8 +1,5 @@
 """
 Plots counts of 50S rRNA, associated proteins, and complexes
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 9/8/2014
 """
 
 from __future__ import absolute_import, division, print_function
@@ -27,12 +24,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		proteinIds = sim_data.moleculeGroups.s50_proteins
-		rnaIds = [sim_data.process.translation.monomerData['rnaId'][np.where(sim_data.process.translation.monomerData['id'] == pid)[0][0]] for pid in proteinIds]
-		rRnaIds = sim_data.moleculeGroups.s50_23sRRNA
-		rRnaIds.extend(sim_data.moleculeGroups.s50_5sRRNA)
-		complexIds = sim_data.moleculeGroups.s50_proteinComplexes
-		complexIds.append(sim_data.moleculeIds.s50_fullComplex)
+		proteinIds = sim_data.molecule_groups.s50_proteins
+		rnaIds = [sim_data.process.translation.monomer_data['rna_id'][np.where(sim_data.process.translation.monomer_data['id'] == pid)[0][0]] for pid in proteinIds]
+		rRnaIds = sim_data.molecule_groups.s50_23s_rRNA
+		rRnaIds.extend(sim_data.molecule_groups.s50_5s_rRNA)
+		complexIds = sim_data.molecule_groups.s50_protein_complexes
+		complexIds.append(sim_data.molecule_ids.s50_full_complex)
 
 		# Load count data for mRNAs
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))

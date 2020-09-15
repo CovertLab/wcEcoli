@@ -1,9 +1,5 @@
 """
 Plot to assess sensitivity of menE behavior to model parameters.
-
-@author: Heejo Choi
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 12/1/17
 """
 
 from __future__ import absolute_import, division, print_function
@@ -39,8 +35,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Get constants from wildtype variant
 		sim_data = cPickle.load(open(ap.get_variant_kb(4), "rb")) # 4 is the wildtype variant
-		cellDensity = sim_data.constants.cellDensity
-		nAvogadro = sim_data.constants.nAvogadro
+		cellDensity = sim_data.constants.cell_density
+		nAvogadro = sim_data.constants.n_avogadro
 
 		# Initialize variables
 		enzymeId = "MENE-CPLX[c]"

@@ -1,9 +1,3 @@
-"""
-@author: Morgan Paull
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 12/17/2015
-"""
-
 from __future__ import absolute_import, division, print_function
 
 import os

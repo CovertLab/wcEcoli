@@ -12,7 +12,6 @@ Initializes the environment using conditions and time series from raw_data.
 	- saved_media: a dictionary of all media, each entry
 		itself a dictionary molecules (keys) and their concentrations (values).
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
 from __future__ import absolute_import, division, print_function
@@ -38,7 +37,7 @@ class ExternalState(object):
 		# make media object
 		self.make_media = Media(raw_data)
 
-		self.carbon_sources = sim_data.moleculeGroups.carbon_sources
+		self.carbon_sources = sim_data.molecule_groups.carbon_sources
 		self._initialize_environment(raw_data)
 		self.all_external_exchange_molecules = self._get_all_external_exchange_molecules(raw_data)
 		self.secretion_exchange_molecules = self._get_secretion_exchange_molecules(raw_data)

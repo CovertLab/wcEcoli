@@ -1,9 +1,5 @@
 """
 Plot trp regulation
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/17/2016
 """
 
 from __future__ import absolute_import, division, print_function
@@ -30,8 +26,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Load data from KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		nAvogadro = sim_data.constants.nAvogadro
-		cellDensity = sim_data.constants.cellDensity
+		nAvogadro = sim_data.constants.n_avogadro
+		cellDensity = sim_data.constants.cell_density
 
 		# Get list of TF and transcription unit IDs from first simOut directory
 		simOutDir = os.path.join(allDirs[0], "simOut")
@@ -40,7 +36,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		rna_ids = rna_synth_prob_reader.readAttribute("rnaIds")
 
 		trpRIndex = tf_ids.index("CPLX-125")
-		target_ids = six.viewkeys(sim_data.tfToFC["CPLX-125"])
+		target_ids = six.viewkeys(sim_data.tf_to_fold_change["CPLX-125"])
 		target_idx = np.array([rna_ids.index(target_id + "[c]") for target_id in target_ids])
 
 		plt.figure(figsize = (10, 15))
@@ -132,7 +128,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			trpARnaConcentration = trpARnaMols * 1. / volume
 
 			# Compute the trpA mass in the cell
-			trpAMw = sim_data.getter.getMass(trpAProteinId)
+			trpAMw = sim_data.getter.get_mass(trpAProteinId)
 			trpAMass = 1. / nAvogadro * trpAProteinTotalCounts * trpAMw
 
 			# Compute the proteome mass fraction

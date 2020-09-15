@@ -1,9 +1,5 @@
 """
 Plot tyr regulation
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/17/2016
 """
 
 from __future__ import absolute_import, division, print_function
@@ -29,8 +25,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Load data from KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		nAvogadro = sim_data.constants.nAvogadro
-		cellDensity = sim_data.constants.cellDensity
+		nAvogadro = sim_data.constants.n_avogadro
+		cellDensity = sim_data.constants.cell_density
 
 		# Get list of TF and transcription unit IDs from first simOut directory
 		simOutDir = os.path.join(allDirs[0], "simOut")
@@ -102,7 +98,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			tyrAProteinTotalCounts = tyrAProteinCounts + 2 * tyrAComplexCounts
 
 			# Compute the tyrA mass in the cell
-			tyrAMw = sim_data.getter.getMass(tyrAProteinId)
+			tyrAMw = sim_data.getter.get_mass(tyrAProteinId)
 			tyrAMass = 1. / nAvogadro * tyrAProteinTotalCounts * tyrAMw
 
 			# Compute the proteome mass fraction

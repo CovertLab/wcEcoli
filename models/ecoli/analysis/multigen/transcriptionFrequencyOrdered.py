@@ -1,8 +1,5 @@
 """
 Plots frequency of observing at least 1 transcript during a cell's life.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 1/31/2017
 """
 
 from __future__ import absolute_import, division, print_function
@@ -33,8 +30,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Get mRNA data
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		rnaIds = sim_data.process.transcription.rnaData["id"]
-		isMRna = sim_data.process.transcription.rnaData["isMRna"]
+		rnaIds = sim_data.process.transcription.rna_data["id"]
+		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
 		mRnaIndexes = np.where(isMRna)[0]
 		mRnaIds = np.array([rnaIds[x] for x in mRnaIndexes])
 

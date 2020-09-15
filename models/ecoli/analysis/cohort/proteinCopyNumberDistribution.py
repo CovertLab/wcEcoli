@@ -1,9 +1,6 @@
 """
 Plots the histograms of the copy number of each protein at each generation for
 multiple-seed simulations.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/20/2018
 """
 
 from __future__ import absolute_import, division, print_function
@@ -45,8 +42,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Load simDataFile and get constants
 		sim_data = cPickle.load(open(simDataFile, 'rb'))
-		cell_density = sim_data.constants.cellDensity
-		ids_translation = sim_data.process.translation.monomerData["id"]
+		cell_density = sim_data.constants.cell_density
+		ids_translation = sim_data.process.translation.monomer_data["id"]
 		n_proteins = len(ids_translation)
 
 		# Load simData from first simulation

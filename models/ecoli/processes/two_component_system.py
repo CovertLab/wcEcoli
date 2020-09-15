@@ -3,9 +3,6 @@ Two component system
 
 Two component system sub-model
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/3/2016
-
 """
 from __future__ import absolute_import, division, print_function
 
@@ -33,14 +30,14 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		self.jit = sim._jit
 
 		# Get constants
-		self.nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / units.mmol)
-		self.cellDensity = sim_data.constants.cellDensity.asNumber(units.g / units.L)
+		self.nAvogadro = sim_data.constants.n_avogadro.asNumber(1 / units.mmol)
+		self.cellDensity = sim_data.constants.cell_density.asNumber(units.g / units.L)
 
 		# Create method
-		self.moleculesToNextTimeStep = sim_data.process.two_component_system.moleculesToNextTimeStep
+		self.moleculesToNextTimeStep = sim_data.process.two_component_system.molecules_to_next_time_step
 
 		# Build views
-		self.moleculeNames = sim_data.process.two_component_system.moleculeNames
+		self.moleculeNames = sim_data.process.two_component_system.molecule_names
 		self.molecules = self.bulkMoleculesView(self.moleculeNames)
 
 		# Set priority to a lower value (but greater priority than metabolism)

@@ -1,8 +1,3 @@
-"""
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/29/2016
-"""
-
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -52,7 +47,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		"""
 		validation_data = cPickle.load(open(validation_data_file, "rb"))
 		sim_data = cPickle.load(open(sim_data_file, "rb"))
-		cell_density = sim_data.constants.cellDensity
+		cell_density = sim_data.constants.cell_density
 
 		mass_listener = TableReader(os.path.join(sim_out_dir, "Mass"))
 		cell_masses = mass_listener.readColumn("cellMass") * units.fg

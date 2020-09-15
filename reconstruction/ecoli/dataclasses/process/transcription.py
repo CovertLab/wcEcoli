@@ -1,9 +1,6 @@
 """
 SimulationData for transcription process
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 03/06/2015
-
 TODO: add mapping of tRNA to charged tRNA if allowing more than one modified form of tRNA and separate mappings for tRNA and charged tRNA to AA
 TODO: handle ppGpp and DksA-ppGpp regulation separately
 """
@@ -52,11 +49,11 @@ class Transcription(object):
 		only storing data from transcriptionSequences with pad values stripped.
 		"""
 
-		state = data.dissoc_strict(self.__dict__, ('transcriptionSequences',))
+		state = data.dissoc_strict(self.__dict__, ('transcription_sequences',))
 		state['sequences'] = np.array([
 			seq[seq != polymerize.PAD_VALUE]
-			for seq in self.transcriptionSequences], dtype=object)
-		state['sequence_shape'] = self.transcriptionSequences.shape
+			for seq in self.transcription_sequences], dtype=object)
+		state['sequence_shape'] = self.transcription_sequences.shape
 		return state
 
 	def __setstate__(self, state):
@@ -65,9 +62,9 @@ class Transcription(object):
 		sequence_shape = state.pop('sequence_shape')
 		self.__dict__.update(state)
 
-		self.transcriptionSequences = np.full(sequence_shape, polymerize.PAD_VALUE, dtype=np.int8)
+		self.transcription_sequences = np.full(sequence_shape, polymerize.PAD_VALUE, dtype=np.int8)
 		for i, seq in enumerate(sequences):
-			self.transcriptionSequences[i, :len(seq)] = seq
+			self.transcription_sequences[i, :len(seq)] = seq
 
 	def _build_ppgpp_regulation(self, raw_data, sim_data):
 		"""
@@ -97,7 +94,7 @@ class Transcription(object):
 
 		# Read regulation data from raw_data
 		# Treats ppGpp and DksA-ppGpp regulation the same
-		gene_to_rna = {g['symbol']: g['rnaId'] for g in raw_data.genes}
+		gene_to_rna = {g['symbol']: g['rna_id'] for g in raw_data.genes}
 		regulation = {}
 		for reg in raw_data.ppgpp_regulation:
 			# Convert to regulated RNA
@@ -160,11 +157,11 @@ class Transcription(object):
 		self.ppgpp_fold_changes = fold_changes
 
 		# Predict growth rate from ppGpp level
-		per_dry_mass_to_per_volume = sim_data.constants.cellDensity * sim_data.mass.cellDryMassFraction
+		per_dry_mass_to_per_volume = sim_data.constants.cell_density * sim_data.mass.cell_dry_mass_fraction
 		ppgpp = np.array([(d['ppGpp_conc'] * per_dry_mass_to_per_volume).asNumber(PPGPP_CONC_UNITS)
-			for d in raw_data.growthRateDependentParameters])
+			for d in raw_data.growth_rate_dependent_parameters])
 		growth_rates = np.log(2) / np.array([d['doublingTime'].asNumber(units.s)
-			for d in raw_data.growthRateDependentParameters])
+			for d in raw_data.growth_rate_dependent_parameters])
 		self._ppgpp_growth_parameters = interpolate.splrep(ppgpp[::-1], growth_rates[::-1], k=1)
 
 		if PRINT_VALUES:
@@ -181,18 +178,13 @@ class Transcription(object):
 		"""
 		self._basal_rna_fractions = sim_data.mass.get_basal_rna_fractions()
 
-		assert all([len(rna['location']) == 1 for rna in raw_data.operon_rnas])
+		# Load RNA IDs with compartment tags
+		rna_ids = [rna['id'] for rna in raw_data.operon_rnas]
+		compartments = sim_data.getter.get_location(rna_ids)
 
-		# Loads RNA IDs, lengths, and nucleotide compositions
-		rnaIds = ['{}[{}]'.format(rna['id'], rna['location'][0])
-            for rna in raw_data.operon_rnas]
-		rnaLens = np.array([len(rna['seq']) for rna in raw_data.operon_rnas])
-
-		ntCounts = np.array([
-			(rna['seq'].count('A'), rna['seq'].count('C'),
-			rna['seq'].count('G'), rna['seq'].count('U'))
-			for rna in raw_data.operon_rnas
-			])
+		rna_ids_with_compartments = [
+			f'{rna_id}[{loc[0]}]' for (rna_id, loc)
+			in zip(rna_ids, compartments)]
 
 		# Load set of mRNA ids
 		mRNA_ids = set([rna['id'] for rna in raw_data.operon_rnas if rna['type'] == 'mRNA'])
@@ -207,8 +199,7 @@ class Transcription(object):
 			if rna['id'] in mRNA_ids:
 				reported_mRNA_half_lives.append(rna['half_life'])
 
-		# Load rna start and stop position (values are relative to the RNA, not the chromosome)
-		
+		# Load rna start and stop position (values are relative to the RNA, not the chromosome)	
 		gene_starts_stops = [rna['gene_starts_stops'] for rna in raw_data.operon_rnas]
 
 		# Calculate average reported half lives of mRNAs
@@ -216,57 +207,54 @@ class Transcription(object):
 
 		# Get half life of each RNA - if the half life is not given, use the
 		# average reported half life of mRNAs
-		# TODO (ggsun): Handle units correctly
 		half_lives = np.array([
-			rna_id_to_half_life.get(rna['id'], average_mRNA_half_lives)
+			rna_id_to_half_life.get(rna['id'], average_mRNA_half_lives).asNumber(units.s)
 			for rna in raw_data.operon_rnas])
 
 		# Convert to degradation rates
 		rna_deg_rates = np.log(2) / half_lives
 
-		# Load RNA expression from RNA-seq data
+		# Load RNA expression from transcription unit count data
 		expression = []
-		
-		for rna in raw_data.operon_rnas:
-			
-			#taking counts from extrapolated transcription_unit counts.
-			arb_exp = [x['tu_count'] for x in raw_data.transcription_units
-				if x['tu_id'] == rna['geneId']]
-			
-			#arb_exp = [x[sim_data.basal_expression_condition]
-				#for x in eval("raw_data.rna_seq_data.rnaseq_{}_mean".format(RNA_SEQ_ANALYSIS))
-				#if x['Gene'] == rna['geneId']]
-			
 
-			# If sequencing data is not found for rRNA or tRNA, initialize
-			# expression to zero. For other RNA types, raise exception.
-			if len(arb_exp) > 0:
-				expression.append(arb_exp[0])
+		# Taking counts from extrapolated transcription_unit counts instead of the seq data.
+		# tu_counts is essentially equivilant to seq_data.
+		# TODO (Mialy): change rna['geneId'] to rna['tu_id']
+
+		tu_counts = {
+			x['tu_id']: x['tu_count'] for x in raw_data.transcription_units}
+
+		for rna in raw_data.operon_rnas:		
+            # If sequencing data is not found for rRNA or tRNA, initialize
+            # expression to zero. For other RNA types, raise exception.
+			if rna['geneId'] in tu_counts:
+				expression.append(tu_counts[rna['geneId']])
 			elif rna['type'] == 'mRNA' or rna['type'] == 'miscRNA':
-				raise Exception('No RNA-seq data found for {}'.format(rna['id']))
+				raise Exception(f'No RNA-seq data found for {rna["id"]}')
 			elif rna['type'] == 'rRNA' or rna['type'] == 'tRNA':
 				expression.append(0.)
 			else:
-				raise Exception('Unknown RNA {}'.format(rna['id']))
+				raise Exception(f'Unknown RNA {rna["id"]}')
 
 		expression = np.array(expression)
 		
 		# Calculate synthesis probabilities from expression and normalize
-		synthProb = expression*(
+		synth_prob = expression*(
 			np.log(2) / sim_data.doubling_time.asNumber(units.s)
 			+ rna_deg_rates
 			)
-		synthProb /= synthProb.sum()
+		synth_prob /= synth_prob.sum()
 
 		# Calculate EndoRNase Km values
 		Km = (KCAT_ENDO_RNASE*ESTIMATE_ENDO_RNASES/rna_deg_rates) - expression
 
-		# Load molecular weights and gene IDs
-		mws = np.array([rna['mw'] for rna in raw_data.operon_rnas]).sum(axis = 1)
-		geneIds = np.array([rna['geneId'] for rna in raw_data.operon_rnas])
-		max_geneId_len = max(len(geneId) for geneId in geneIds)
+		# Load gene IDs
+		# TODO(mialy): Should these be named 'tu_ids' instead?
+		gene_ids = np.array(
+			[gene_ids for rna in raw_data.operon_rnas])
+
 		# Construct boolean arrays and index arrays for each rRNA type
-		n_rnas = len(rnaIds)
+		n_rnas = len(rna_ids_with_compartments)
 		is_23S = np.zeros(n_rnas, dtype = np.bool)
 		is_16S = np.zeros(n_rnas, dtype = np.bool)
 		is_5S = np.zeros(n_rnas, dtype = np.bool)
@@ -293,7 +281,7 @@ class Transcription(object):
 		idx_5S = np.array(idx_5S)
 
 		# Load IDs of protein monomers
-		monomerIds = [rna['monomerId'] for rna in raw_data.operon_rnas]
+		monomer_ids = [rna['monomerId'] for rna in raw_data.operon_rnas]
 
 		# Load lists of all monomers that can be transcribed by the operon.
 		# Create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
@@ -316,16 +304,33 @@ class Transcription(object):
 				monomer_id_set.append('{}[{}]'.format(monomer_id, monomer_loc))
 			monomerSets.append(monomer_id_set)
 
+		# Load RNA sequences and molecular weights from getter functions
+		# TODO (Mialy): make sure the getter functions work for multi-gene TUS
+		rna_seqs = sim_data.getter.get_sequence(rna_ids)
+		mws = sim_data.getter.get_mass(rna_ids).asNumber(units.g / units.mol)
+
+		# Calculate lengths and nt counts from sequence
+		rna_lengths = np.array([len(seq) for seq in rna_seqs])
+
+		# Get RNA nucleotide compositions
+		ntp_abbreviations = [ntp_id[0] for ntp_id in sim_data.molecule_groups.ntps]
+		nt_counts = []
+		for seq in rna_seqs:
+			nt_counts.append(
+				[seq.count(letter) for letter in ntp_abbreviations])
+		nt_counts = np.array(nt_counts)
+
 		# Get index of gene corresponding to each RNA
-		gene_index = {gene["rnaId"]: i
+		rna_id_to_gene_index = {gene['rna_id']: i
 			for i, gene in enumerate(raw_data.genes)}
 
 		# Get list of coordinates and directions for each gene
 		coordinate_list = [gene["coordinate"] for gene in raw_data.genes]
 		direction_list = [gene["direction"] for gene in raw_data.genes]
 
-		oric_coordinate = raw_data.parameters['oriCCenter'].asNumber()
-		terc_coordinate = raw_data.parameters['terCCenter'].asNumber()
+		# Get coordinates of oriC and terC
+		oric_coordinate = sim_data.constants.oriC_center.asNumber()
+		terc_coordinate = sim_data.constants.terC_center.asNumber()
 		genome_length = len(raw_data.genome_sequence)
 
 		def get_relative_coordinates(coordinates):
@@ -343,38 +348,29 @@ class Transcription(object):
 			return relative_coordinates
 
 		# Location of transcription initiation relative to origin
-		'''
-		replicationCoordinate = [
-			get_relative_coordinates(coordinate_list[gene_index[rna["id"]]])
-			for rna in raw_data.rnas]
-			'''
-		# Direction of transcription
-		'''
-		direction = [
-			(direction_list[gene_index[rna["id"]]] == "+")
-			for rna in raw_data.operon_rnas]
-		'''
-		def get_first_rna_id(rna_id):
-			#move this to the top if we keep it
-			SPLIT_DELIMITER = '_'
-			#This solution will work for now, but will need to look for type and add the appropriate suffix
-			#There has to be an easier way, maybe store the first gene in the operon_rnas file.
-			rna_id = re.split(SPLIT_DELIMITER, rna_id)[0] + '_RNA'
-			return rna_id
 
-		replicationCoordinate = []
+		replication_coordinate = []
 		direction = []
 		for rna in raw_data.operon_rnas:
-			#only perform function on multi-gene tus.
 			if len(rna['monomerSet']) > 1:
-				rna_id = get_first_rna_id(rna['id'])
+				rna_id = re.split('_', rna['id'])[0] + '_RNA'
 			else:
 				rna_id = rna['id']
 			# Location of transcription initiation relative to origin
-			replicationCoordinate.append(get_relative_coordinates(coordinate_list[gene_index[rna_id]]))
+			replication_coordinate.append(get_relative_coordinates(coordinate_list[rna_id_to_gene_index[rna_id]]))
 			# Direction of transcription
-			direction.append((direction_list[gene_index[rna_id]] == "+"))
+			direction.append((direction_list[rna_id_to_gene_index[rna_id]] == "+"))
 		
+		# Get location of transcription initiation relative to origin
+		replication_coordinate = [
+			get_relative_coordinates(coordinate_list[rna_id_to_gene_index[rna["id"]]])
+			for rna in raw_data.rnas]
+
+		# Get direction of transcription
+		direction = [
+			(direction_list[rna_id_to_gene_index[rna["id"]]] == "+")
+			for rna in raw_data.rnas]
+
 		# Set the lengths, nucleotide counts, molecular weights, and sequences
 		# of each type of rRNAs to be identical to those of the first rRNA
 		# operon. Later in the sim, transcription of all rRNA genes are set to
@@ -382,143 +378,142 @@ class Transcription(object):
 		# complexation reactions that form ribosomes. In reality, all of these
 		# genes produce rRNA molecules with slightly different sequences and
 		# molecular weights.
-		rnaLens[idx_23S] = rnaLens[idx_23S[0]]
-		rnaLens[idx_16S] = rnaLens[idx_16S[0]]
-		rnaLens[idx_5S] = rnaLens[idx_5S[0]]
+		rna_lengths[idx_23S] = rna_lengths[idx_23S[0]]
+		rna_lengths[idx_16S] = rna_lengths[idx_16S[0]]
+		rna_lengths[idx_5S] = rna_lengths[idx_5S[0]]
 
-		ntCounts[idx_23S, :] = ntCounts[idx_23S[0], :]
-		ntCounts[idx_16S, :] = ntCounts[idx_16S[0], :]
-		ntCounts[idx_5S, :] = ntCounts[idx_5S[0], :]
+		nt_counts[idx_23S, :] = nt_counts[idx_23S[0], :]
+		nt_counts[idx_16S, :] = nt_counts[idx_16S[0], :]
+		nt_counts[idx_5S, :] = nt_counts[idx_5S[0], :]
 
 		mws[idx_23S] = mws[idx_23S[0]]
 		mws[idx_16S] = mws[idx_16S[0]]
 		mws[idx_5S] = mws[idx_5S[0]]
 
-		id_length = max(len(id_) for id_ in rnaIds)
-		gene_id_length = max(len(id_) for id_ in geneIds)
-		rnaData = np.zeros(
+		id_length = max(len(id_) for id_ in rna_ids_with_compartments)
+		gene_id_length = max(len(id_) for id_ in gene_ids)
+		rna_data = np.zeros(
 			n_rnas,
 			dtype = [
 
 				('id', 'U{}'.format(id_length)),
-				('degRate', 'f8'),
+				('deg_rate', 'f8'),
 				('length', 'i8'),
-				('countsACGU', '4i8'),
+				('counts_ACGU', '4i8'),
 				('mw', 'f8'),
-				('isMRna', 'bool'),
-				('isMiscRna', 'bool'),
-				('isRRna', 'bool'),
-				('isTRna', 'bool'),
-				('isRRna23S', 'bool'),
-				('isRRna16S', 'bool'),
-				('isRRna5S', 'bool'),
-				('isRProtein', 'bool'),
-				('isRnap',	'bool'),
-				('geneId', 'U{}'.format(gene_id_length)),
-				('KmEndoRNase', 'f8'),
-				('replicationCoordinate', 'int64'),
+				('is_mRNA', 'bool'),
+				('is_miscRNA', 'bool'),
+				('is_rRNA', 'bool'),
+				('is_tRNA', 'bool'),
+				('is_23S_rRNA', 'bool'),
+				('is_16S_rRNA', 'bool'),
+				('is_5S_rRNA', 'bool'),
+				('is_ribosomal_protein', 'bool'),
+				('is_RNAP',	'bool'),
+				('gene_id', 'U{}'.format(gene_id_length)),
+				('Km_endoRNase', 'f8'),
+				('replication_coordinate', 'int64'),
 				('direction', 'bool'),
 				('monomerSet', 'object'),
 				('gene_starts_stops', 'object'),
 				]
 			)
 
-		rnaData['id'] = rnaIds
-		rnaData['degRate'] = rna_deg_rates
-		rnaData['length'] = rnaLens
-		rnaData['countsACGU'] = ntCounts
-		rnaData['mw'] = mws
-		rnaData['isMRna'] = [rna["type"] == "mRNA" for rna in raw_data.operon_rnas]
-		rnaData['isMiscRna'] = [rna["type"] == "miscRNA" for rna in raw_data.operon_rnas]
-		rnaData['isRRna'] = [rna["type"] == "rRNA" for rna in raw_data.operon_rnas]
-		rnaData['isTRna'] = [rna["type"] == "tRNA" for rna in raw_data.operon_rnas]
-		rnaData['isRProtein'] = [
-			"{}[c]".format(x) in sim_data.moleculeGroups.rProteins
-			for x in monomerIds]
-		rnaData['isRnap'] = [
-			"{}[c]".format(x) in sim_data.moleculeGroups.rnapIds
-			for x in monomerIds]
-		rnaData['isRRna23S'] = is_23S
-		rnaData['isRRna16S'] = is_16S
-		rnaData['isRRna5S'] = is_5S
-		rnaData['geneId'] = geneIds
-		rnaData['KmEndoRNase'] = Km
-		rnaData['replicationCoordinate'] = replicationCoordinate
-		rnaData['direction'] = direction
+		rna_data['id'] = rna_ids_with_compartments
+		rna_data['deg_rate'] = rna_deg_rates
+		rna_data['length'] = rna_lengths
+		rna_data['counts_ACGU'] = nt_counts
+		rna_data['mw'] = mws
+		rna_data['is_mRNA'] = [rna["type"] == "mRNA" for rna in raw_data.operon_rnas]
+		rna_data['is_miscRNA'] = [rna["type"] == "miscRNA" for rna in raw_data.operon_rnas]
+		rna_data['is_rRNA'] = [rna["type"] == "rRNA" for rna in raw_data.operon_rnas]
+		rna_data['is_tRNA'] = [rna["type"] == "tRNA" for rna in raw_data.operon_rnas]
+		rna_data['is_ribosomal_protein'] = [
+            "{}[c]".format(x) in sim_data.molecule_groups.ribosomal_proteins
+            for x in monomer_ids]
+		rna_data['is_RNAP'] = [
+            "{}[c]".format(x) in sim_data.molecule_groups.RNAP_subunits
+            for x in monomer_ids]
+		rna_data['is_23S_rRNA'] = is_23S
+		rna_data['is_16S_rRNA'] = is_16S
+		rna_data['is_5S_rRNA'] = is_5S
+		rna_data['gene_id'] = gene_ids
+		rna_data['Km_endoRNase'] = Km
+		rna_data['replication_coordinate'] = replication_coordinate
+		rna_data['direction'] = direction
 		rnaData['monomerSet'] = monomerSets
 		rnaData['gene_starts_stops'] = gene_starts_stops
 
 		field_units = {
 			'id': None,
-			'degRate': 1 / units.s,
+			'deg_rate': 1 / units.s,
 			'length': units.nt,
-			'countsACGU': units.nt,
+			'counts_ACGU': units.nt,
 			'mw': units.g / units.mol,
-			'isMRna': None,
-			'isMiscRna': None,
-			'isRRna': None,
-			'isTRna': None,
-			'isRRna23S': None,
-			'isRRna16S': None,
-			'isRRna5S':	None,
-			'isRProtein': None,
-			'isRnap': None,
-			'geneId': None,
-			'KmEndoRNase': units.mol / units.L,
-			'replicationCoordinate': None,
+			'is_mRNA': None,
+			'is_miscRNA': None,
+			'is_rRNA': None,
+			'is_tRNA': None,
+			'is_23S_rRNA': None,
+			'is_16S_rRNA': None,
+			'is_5S_rRNA': None,
+			'is_ribosomal_protein': None,
+			'is_RNAP': None,
+			'gene_id': None,
+			'Km_endoRNase': units.mol / units.L,
+			'replication_coordinate': None,
 			'direction': None,
 			'monomerSet': None,
 			'gene_starts_stops': None,
 			}
 
-		self.rnaExpression = {}
-		self.rnaSynthProb = {}
+		self.rna_expression = {}
+		self.rna_synth_prob = {}
 
 		# Set basal expression and synthesis probabilities - conditional values
-		# are set in the parca.
-		self.rnaExpression["basal"] = expression / expression.sum()
-		self.rnaSynthProb["basal"] = synthProb / synthProb.sum()
+        # are set in the parca.
+		self.rna_expression["basal"] = expression / expression.sum()
+		self.rna_synth_prob["basal"] = synth_prob / synth_prob.sum()
 
-		self.rnaData = UnitStructArray(rnaData, field_units)
-
+		self.rna_data = UnitStructArray(rna_data, field_units)
 
 	def _build_transcription(self, raw_data, sim_data):
 		"""
 		Build transcription-associated simulation data from raw data.
 		"""
-
 		# Load sequence data
-		sequences = np.array([rna['seq'] for rna in raw_data.operon_rnas])
+		rna_seqs = sim_data.getter.get_sequence(
+			[rna['id'] for rna in raw_data.opeorn_rnas])
 
-		rrna_types = ['isRRna23S', 'isRRna16S', 'isRRna5S']
+		rrna_types = ['is_23S_rRNA', 'is_16S_rRNA', 'is_5S_rRNA']
 		for rrna in rrna_types:
-			rrna_idx = np.where(self.rnaData[rrna])[0]
+			rrna_idx = np.where(self.rna_data[rrna])[0]
 			for idx in rrna_idx[1:]:
-				sequences[idx] = sequences[rrna_idx[0]]
+				rna_seqs[idx] = rna_seqs[rrna_idx[0]]
 
 		# Construct transcription sequence matrix
 		maxLen = np.int64(
-			self.rnaData["length"].asNumber().max()
-			+ self.max_time_step * sim_data.growthRateParameters.rnaPolymeraseElongationRate.asNumber(units.nt/units.s)
+			self.rna_data["length"].asNumber().max()
+			+ self.max_time_step * sim_data.growth_rate_parameters.rnaPolymeraseElongationRate.asNumber(units.nt / units.s)
 			)
 
-		self.transcriptionSequences = np.full((sequences.shape[0], maxLen), polymerize.PAD_VALUE, dtype=np.int8)
+		self.transcription_sequences = np.full((len(rna_seqs), maxLen), polymerize.PAD_VALUE, dtype=np.int8)
 		ntMapping = {ntpId: i for i, ntpId in enumerate(["A", "C", "G", "U"])}
-		for i, sequence in enumerate(sequences):
+		for i, sequence in enumerate(rna_seqs):
 			for j, letter in enumerate(sequence):
-				self.transcriptionSequences[i, j] = ntMapping[letter]
+				self.transcription_sequences[i, j] = ntMapping[letter]
 
 		# Calculate weights of transcript nucleotide monomers
-		self.transcriptionMonomerWeights = (
+		self.transcription_monomer_weights = (
 			(
-				sim_data.getter.getMass(sim_data.moleculeGroups.ntpIds)
-				- sim_data.getter.getMass([sim_data.moleculeIds.ppi])
+				sim_data.getter.get_mass(sim_data.molecule_groups.ntps)
+				- sim_data.getter.get_mass([sim_data.molecule_ids.ppi])
 				)
-			/ sim_data.constants.nAvogadro
+			/ sim_data.constants.n_avogadro
 			).asNumber(units.fg)
 
-		self.transcriptionEndWeight = ((sim_data.getter.getMass([sim_data.moleculeIds.ppi])
-            / sim_data.constants.nAvogadro).asNumber(units.fg))
+		self.transcription_end_weight = ((sim_data.getter.get_mass([sim_data.molecule_ids.ppi])
+			/ sim_data.constants.n_avogadro).asNumber(units.fg))
 
 	def _build_charged_trna(self, raw_data, sim_data):
 		'''
@@ -530,9 +525,8 @@ class Transcription(object):
 		'''
 
 		# Create list of charged tRNAs
-		trna_names = self.rnaData['id'][self.rnaData['isTRna']]
-		charged_trnas = [x['modifiedForms'] for x in raw_data.operon_rnas if x['id'] + '[c]' in trna_names]
-
+		trna_names = self.rna_data['id'][self.rna_data['is_tRNA']]
+		charged_trnas = [x['modified_forms'] for x in raw_data.operon_rnas if x['id'] + '[c]' in trna_names]
 		filtered_charged_trna = []
 		for charged_list in charged_trnas:
 			for trna in charged_list:
@@ -540,7 +534,7 @@ class Transcription(object):
 				if 'FMET' in trna or 'modified' in trna:
 					continue
 
-				assert('c' in sim_data.getter.getLocation([trna])[0])
+				assert('c' in sim_data.getter.get_location([trna])[0])
 				filtered_charged_trna += [trna + '[c]']
 
 		self.charged_trna_names = filtered_charged_trna
@@ -556,7 +550,7 @@ class Transcription(object):
 			'RNA0-305[c]': 'ILE',
 			'RNA0-306[c]': 'MET',
 			}
-		aa_names = sim_data.moleculeGroups.aaIDs
+		aa_names = sim_data.molecule_groups.amino_acids
 		aa_indices = {aa: i for i, aa in enumerate(aa_names)}
 		trna_indices = {trna: i for i, trna in enumerate(trna_names)}
 		self.aa_from_trna = np.zeros((len(aa_names), len(trna_names)))
@@ -571,7 +565,7 @@ class Transcription(object):
 			elif aa == 'RNA':
 				aa = trna_dict[trna]
 
-			assert('c' in sim_data.getter.getLocation([aa])[0])
+			assert('c' in sim_data.getter.get_location([aa])[0])
 			aa += '[c]'
 			if aa in aa_names:
 				aa_idx = aa_indices[aa]
@@ -591,7 +585,7 @@ class Transcription(object):
 		synthetase_mapping_syn = []
 
 		# Create stoichiometry matrix for charging reactions
-		for reaction in raw_data.modificationReactions:
+		for reaction in raw_data.modification_reactions:
 			# Skip reactions from modificationReactions that don't have both an uncharged and charged tRNA
 			no_charged_trna_in_reaction = True
 			no_trna_in_reaction = True
@@ -685,15 +679,15 @@ class Transcription(object):
 		return out
 
 	def _build_elongation_rates(self, raw_data, sim_data):
-		self.max_elongation_rate = sim_data.constants.dnaPolymeraseElongationRateMax
-		self.RRNA_indexes = np.where(self.rnaData['isRRna'])[0]
+		self.max_elongation_rate = sim_data.constants.RNAP_elongation_rate_max
+		self.rRNA_indexes = np.where(self.rna_data['is_rRNA'])[0]
 
 	def make_elongation_rates(self, random, base, time_step, variable_elongation=False):
 		return make_elongation_rates(
 			random,
-			self.transcriptionSequences.shape[0],
+			self.transcription_sequences.shape[0],
 			base,
-			self.RRNA_indexes,
+			self.rRNA_indexes,
 			self.max_elongation_rate,
 			time_step,
 			variable_elongation)
@@ -718,16 +712,16 @@ class Transcription(object):
 		"""
 
 		# Data for different doubling times (100, 60, 40, 30, 24 min)
-		per_dry_mass_to_per_volume = sim_data.constants.cellDensity * sim_data.mass.cellDryMassFraction
+		per_dry_mass_to_per_volume = sim_data.constants.cell_density * sim_data.mass.cell_dry_mass_fraction
 		ppgpp = np.array(
 			[(d['ppGpp_conc'] * per_dry_mass_to_per_volume).asNumber(PPGPP_CONC_UNITS)
-			for d in raw_data.growthRateDependentParameters])**2
+			for d in raw_data.growth_rate_dependent_parameters])**2
 		rna = np.array([d['rnaMassFraction']
-			for d in raw_data.dryMassComposition])
+			for d in raw_data.dry_mass_composition])
 		mass_per_cell = np.array([d['averageDryMass'].asNumber(units.fg)
-			for d in raw_data.dryMassComposition])
+			for d in raw_data.dry_mass_composition])
 		rnap_per_cell = np.array([d['RNAP_per_cell']
-			for d in raw_data.growthRateDependentParameters])
+			for d in raw_data.growth_rate_dependent_parameters])
 
 		# Variables for the objective
 		## a1: rate of RNA production from free RNAP
@@ -801,14 +795,14 @@ class Transcription(object):
 
 		if self._ppgpp_expression_set:
 			exp = self.expression_from_ppgpp(ppgpp)
-			mass = self.rnaData['mw'] * exp
+			mass = self.rna_data['mw'] * exp
 			mass = (mass / units.sum(mass)).asNumber()
 			fractions =  {
-				'23S': mass[self.rnaData['isRRna23S']].sum(),
-				'16S': mass[self.rnaData['isRRna16S']].sum(),
-				'5S': mass[self.rnaData['isRRna5S']].sum(),
-				'trna': mass[self.rnaData['isTRna']].sum(),
-				'mrna': mass[self.rnaData['isMRna']].sum(),
+				'23S': mass[self.rna_data['is_23S_rRNA']].sum(),
+				'16S': mass[self.rna_data['is_16S_rRNA']].sum(),
+				'5S': mass[self.rna_data['is_5S_rRNA']].sum(),
+				'trna': mass[self.rna_data['is_tRNA']].sum(),
+				'mrna': mass[self.rna_data['is_mRNA']].sum(),
 				}
 		else:
 			fractions = self._basal_rna_fractions
@@ -830,22 +824,22 @@ class Transcription(object):
 				faster computation in other functions
 		"""
 
-		ppgpp_aa = sim_data.growthRateParameters.getppGppConc(
-			sim_data.conditionToDoublingTime['with_aa'])
-		ppgpp_basal = sim_data.growthRateParameters.getppGppConc(
-			sim_data.conditionToDoublingTime['basal'])
+		ppgpp_aa = sim_data.growth_rate_parameters.get_ppGpp_conc(
+			sim_data.condition_to_doubling_time['with_aa'])
+		ppgpp_basal = sim_data.growth_rate_parameters.get_ppGpp_conc(
+			sim_data.condition_to_doubling_time['basal'])
 		f_ppgpp_aa = self.fraction_rnap_bound_ppgpp(ppgpp_aa)
 		f_ppgpp_basal = self.fraction_rnap_bound_ppgpp(ppgpp_basal)
 
 		# TODO (TEG) actually map a ppGpp adjustment to polycistrons, currently implemented a sketch work around
 		# rna_idx = {r[:-3]: i for i, r in enumerate(self.rnaData['id'])}
-		fcs = np.zeros(len(self.rnaData))
+		fcs = np.zeros(len(self.rna_data))
 		rna_fc_dict = dict(zip(self.ppgpp_regulated_genes, self.ppgpp_fold_changes))
 		for i, rna in enumerate(self.rnaData['id']):
 			if rna in rna_fc_dict:
 				fcs[i] = rna_fc_dict[rna]
-				
-		exp = self.rnaExpression['basal']
+		exp = self.rna_expression['basal']
+
 		self.exp_ppgpp = ((2**fcs * exp * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))
 			/ (1 - 2**fcs * (f_ppgpp_aa - f_ppgpp_basal * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))))
 		self.exp_free = (exp - self.exp_ppgpp*f_ppgpp_basal) / (1 - f_ppgpp_basal)
@@ -868,30 +862,30 @@ class Transcription(object):
 		"""
 
 		# Fraction RNAP bound to ppGpp in different conditions
-		ppgpp_aa = sim_data.growthRateParameters.getppGppConc(
-			sim_data.conditionToDoublingTime['with_aa'])
-		ppgpp_basal = sim_data.growthRateParameters.getppGppConc(
-			sim_data.conditionToDoublingTime['basal'])
-		ppgpp_anaerobic = sim_data.growthRateParameters.getppGppConc(
-			sim_data.conditionToDoublingTime['basal'])
+		ppgpp_aa = sim_data.growth_rate_parameters.get_ppGpp_conc(
+			sim_data.condition_to_doubling_time['with_aa'])
+		ppgpp_basal = sim_data.growth_rate_parameters.get_ppGpp_conc(
+			sim_data.condition_to_doubling_time['basal'])
+		ppgpp_anaerobic = sim_data.growth_rate_parameters.get_ppGpp_conc(
+			sim_data.condition_to_doubling_time['basal'])
 		f_ppgpp_aa = self.fraction_rnap_bound_ppgpp(ppgpp_aa)
 		f_ppgpp_basal = self.fraction_rnap_bound_ppgpp(ppgpp_basal)
 		f_ppgpp_anaerobic = self.fraction_rnap_bound_ppgpp(ppgpp_anaerobic)
 
 		# Solve least squares fit for expression of each component of RNAP and ribosomes
-		adjusted_mask = self.rnaData['isRnap'] | self.rnaData['isRProtein'] | self.rnaData['isRRna']
+		adjusted_mask = self.rna_data['is_RNAP'] | self.rna_data['is_ribosomal_protein'] | self.rna_data['is_rRNA']
 		F = np.array([[1- f_ppgpp_aa, f_ppgpp_aa], [1 - f_ppgpp_basal, f_ppgpp_basal], [1 - f_ppgpp_anaerobic, f_ppgpp_anaerobic]])
 		Flst = np.linalg.inv(F.T.dot(F)).dot(F.T)
 		expression = np.array([
-			self.rnaExpression['with_aa'],
-			self.rnaExpression['basal'],
-			self.rnaExpression['no_oxygen']])
+			self.rna_expression['with_aa'],
+			self.rna_expression['basal'],
+			self.rna_expression['no_oxygen']])
 		adjusted_free, adjusted_ppgpp = Flst.dot(expression)
 		self.exp_free[adjusted_mask] = adjusted_free[adjusted_mask]
 		self.exp_ppgpp[adjusted_mask] = adjusted_ppgpp[adjusted_mask]
 
 		# Rescale expression of genes that are not regulated so expression sums to 1
-		ppgpp_regulated = np.array([g[:-3] in self.ppgpp_regulated_genes for g in self.rnaData['id']])
+		ppgpp_regulated = np.array([g[:-3] in self.ppgpp_regulated_genes for g in self.rna_data['id']])
 		scale_free_by = (1 - self.exp_free[ppgpp_regulated].sum()) / self.exp_free[~ppgpp_regulated].sum()
 		self.exp_free[~ppgpp_regulated] *= scale_free_by
 		assert(scale_free_by > 0)
@@ -957,8 +951,8 @@ class Transcription(object):
 		y = interpolate.splev(ppgpp, self._ppgpp_growth_parameters)
 		growth = max(cast(float, y), 0.0)
 		tau = np.log(2) / growth / 60
-		loss = growth + self.rnaData['degRate'].asNumber(1 / units.s)
+		loss = growth + self.rna_data['deg_rate'].asNumber(1 / units.s)
 
-		n_avg_copy = copy_number(tau, self.rnaData['replicationCoordinate'])
+		n_avg_copy = copy_number(tau, self.rna_data['replication_coordinate'])
 
 		return normalize((self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp) * loss / n_avg_copy)

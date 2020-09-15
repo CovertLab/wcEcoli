@@ -5,7 +5,6 @@ EquilibriumListener
 
 Records dynamics of equilibrium output.
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
 from __future__ import absolute_import, division, print_function
@@ -29,7 +28,7 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 		super(EquilibriumListener, self).initialize(sim, sim_data)
 
 		self.complexIDs = sim_data.process.equilibrium.ids_complexes
-		self.reactionIDs = sim_data.process.equilibrium.rxnIds
+		self.reactionIDs = sim_data.process.equilibrium.rxn_ids
 
 
 	# Allocate memory
