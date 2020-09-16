@@ -138,6 +138,22 @@ def load_sequence(sequence):
 		genome_sequence = f.readlines()[1:]
 	return genome_sequence
 
+def strip_units(parsed_file_output):
+	# hack for stripping units off any field that contains units.
+	# hacky way to look for units too
+	parsed_tsv, parsed_fieldnames = parsed_file_output
+	fields_to_strip_units = [idx
+		for idx, field in enumerate(parsed_fieldnames)
+			if '(' in field
+		]
+	for field_idx in fields_to_strip_units:
+		unitless_fieldname = parsed_fieldnames[field_idx].split(' ')[0]
+		for row in parsed_tsv:
+			row[unitless_fieldname] = int(re.sub("[^0-9]", "", str(row[unitless_fieldname])))
+			row[parsed_fieldnames[field_idx]] = row.pop(unitless_fieldname)
+		#unit_keys = parsed_fieldnames[field_idx].split(' ')[0]
+	return parsed_tsv, parsed_fieldnames
+
 
 DIALECT = "excel-tab"
 JsonReader = partial(spreadsheets.JsonReader, dialect = DIALECT)
@@ -169,13 +185,15 @@ SPLIT_DELIMITER = '_'
 
 # Read flat file data
 RNA_INFO, fieldnames = parse_tsv(RNA_FILE)
-RNA_HALF_LIVES_INFO, rna_hl_fieldnames = parse_tsv(RNA_HALF_LIVES_FILE)
+RNA_HALF_LIVES_INFO, rna_hl_fieldnames = strip_units(parse_tsv(RNA_HALF_LIVES_FILE))
 PC_INFO, pc_fieldnames = parse_tsv(POLY_CISTRON_FILE)
 GENE_INFO, g_fieldnames = parse_tsv(GENES_FILE)
 PROTEIN_INFO, protein_fieldnames = parse_tsv(PROTEIN_FILE)
 TF_INFO, TF_FIELDNAMES = parse_tsv(TF_COND_FILE)
 GENOMIC_SEQUENCE = load_sequence(GENOME_SEQUENCE_FILE)
 rna_seq_data_all_cond = parse_tsv(RNA_SEQ_FILE)
+
+
 
 def find_tu_type(tu_genes_info):
 	"""
@@ -337,7 +355,7 @@ def gather_tu_genes_info():
 					tu_genes_info[pc_gene_id][rna]['monomer_id'] = rna_row['monomer_id']
 			for rna_hl_row in RNA_HALF_LIVES_INFO:  # create separate half lives file
 				if rna_hl_row['id'] == rnaId:
-					tu_genes_info[pc_gene_id][rna]['halfLife'] = rna_hl_row['half_life']
+					tu_genes_info[pc_gene_id][rna]['halfLife'] = rna_hl_row['half_life (units.s)']
 			'''
 			for gene_row in GENE_INFO:
 				if gene_row['id'] == rna:
@@ -505,9 +523,9 @@ def write_output_file(tu_info, tu_half_life_info, monomers_to_remove):
 		writer.writeheader()
 
 		for rna_hl_row in RNA_HALF_LIVES_INFO:
+			#breakpoint()
 			# need to check if monomer id is contained (not ==) in RNA id, since monomer id does not end with '_RNA'
 			if not any(monomer + '_RNA' == rna_hl_row['id'] for monomer in monomers_to_remove):
-				breakpoint()
 				writer.writerow(rna_hl_row)
 		for pc_data in tu_info:
 			try:
