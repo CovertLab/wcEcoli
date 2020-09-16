@@ -199,7 +199,7 @@ class Transcription(object):
 			if rna['id'] in mRNA_ids:
 				reported_mRNA_half_lives.append(rna['half_life'])
 
-		# Load rna start and stop position (values are relative to the RNA, not the chromosome)	
+		# Load rna start and stop position (values are relative to the RNA, not the chromosome)
 		gene_starts_stops = [rna['gene_starts_stops'] for rna in raw_data.operon_rnas]
 
 		# Calculate average reported half lives of mRNAs
@@ -370,6 +370,34 @@ class Transcription(object):
 		direction = [
 			(direction_list[rna_id_to_gene_index[rna["id"]]] == "+")
 			for rna in raw_data.rnas]
+
+
+		# find start and stop location for each gene in polycistron
+		# coordinates are relative to start of RNA
+
+		# get length, direction, and coordinate of of each gene
+		gene_lengths = {gene['id']: gene['length'] for gene in raw_data.genes}
+		direction_dict = {gene['id']:gene['direction'] for gene in raw_data.genes}
+		coordinate_dict = {gene['id']: gene['coordinate'] for gene in raw_data.genes}
+		gene_starts_stops = []
+		for rna in raw_data.operon_rnas:
+			direction = direction_dict[rna['gene_id'][0]]
+			start_stop = []
+			for idx, gene in enumerate(rna['gene_id']):
+
+				if idx == 0:
+					start = 0
+				elif direction == '+':
+					start = coordinate_dict[gene] - coordinate_dict[rna['gene_id'][0]] - 1
+				elif direction == '-':
+					start = coordinate_dict[rna['gene_id'][0]] - coordinate_dict[gene] - 1
+
+				stop = start + gene_lengths[gene]
+
+				start_stop.append([start, stop])
+
+			gene_starts_stops.append(start_stop)
+
 
 		# Set the lengths, nucleotide counts, molecular weights, and sequences
 		# of each type of rRNAs to be identical to those of the first rRNA
