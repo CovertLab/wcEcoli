@@ -68,7 +68,7 @@ RUN (b1="" \
     && if [ -f ~/.numpy-site.cfg ] ; then b1="--no-binary=numpy,scipy"; fi \
     && echo "Installing pips with $b1" \
     && pip install --no-cache-dir --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir numpy==1.19.1 $b1 \
+    && pip install --no-cache-dir numpy==1.19.2 $b1 \
     && pip install --no-cache-dir -r requirements.txt $b1 \
     && umask 000 && mkdir -p /.theano)
 

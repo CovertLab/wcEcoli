@@ -55,15 +55,15 @@ Docker mechanics.
    **NOTE:** Docker Desktop for Windows is not currently compatible with VirtualBox.  If you use VirtualBox, try installing the legacy [Docker Toolbox](https://github.com/docker/toolbox/releases) instead.  You may also need to adjust the memory allocated to the VirtualBox VM (named 'default') that gets created.  In VirtualBox, select the 'default' VM and under system, change the base memory from 1 GB to 4 GB. 
 
    **TIP:** To preserve the model's output files after the Container exits,
-   bind its output directory `/wcEcoli/out` to a local directory by adding
-   the option `-v $PWD/wcEcoli/out:/wcEcoli/out`, where `$PWD/wcEcoli` is the
+   bind its output directory `/wcEcoli/out` to a local directory like `out/` by adding
+   the option `-v $PWD/out:/wcEcoli/out`, where `$PWD` is the
    path to your cloned repo in the host computer.
 
    **NOTE:** `-v` needs absolute paths!
 
    You can share the entire `/wcEcoli` directory to also substitute the model's code
    inside the Container with the code in your host wcEcoli directory by changing
-   that option to `-v $PWD/wcEcoli:/wcEcoli`.
+   that option to `-v $PWD:/wcEcoli`.
 
    **TIP:** If the Container creates output files with the wrong host user and group
    ownership, you can change that by adding the `--user "$(id -u):$(id -g)"` option.
