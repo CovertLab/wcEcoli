@@ -5,9 +5,11 @@ delimiters.
 
 from __future__ import absolute_import, division, print_function
 
+from collections import OrderedDict
 import csv
+
 from io import TextIOWrapper
-from typing import Any, cast, IO, Iterable, List, Optional, Sequence, Text, Type, Union
+from typing import Any, cast, Dict, IO, Iterable, List, Optional, Sequence, Text, Type, Union
 
 import six
 
@@ -97,20 +99,67 @@ class writer(object):
 		return self.writer.dialect
 
 
-def dict_reader(f, fieldnames=None, **kwargs):
-	# type: (IO[bytes], Optional[List[str]], **Any) -> csv.DictReader
-	"""Open a csv DictReader(), handling Python 2/3 Unicode I/O compatibility (by
-	replacing its csv reader with a tsv.reader) and defaulting to TAB delimiters.
+class dict_reader(object):
+	def __init__(self, f, fieldnames=None, **kwargs):
+		# type: (IO[bytes], Optional[List[str]], **Any) -> None
+		"""
+		Open a csv DictReader(), handling Python 2/3 Unicode I/O compatibility
+		(by replacing its csv reader with a tsv.reader) and defaulting to TAB
+		delimiters. Fields whose name starts with an underscore are removed
+		from self.fieldnames, and discarded from each row during iteration.
 
-	REQUIRES: `csvfile` must be a buffered byte reader, e.g. from
-	io.open(filename, 'rb') or io.BytesIO(buffer).
-	"""
-	tsv_reader = reader(f, **kwargs)
-	tsv_dict_reader = csv.DictReader(
-		tsv_reader.input_file, fieldnames=fieldnames, **kwargs)
-	tsv_dict_reader.reader = cast(Any, tsv_reader)
+		REQUIRES: `csvfile` must be a buffered byte reader, e.g. from
+		io.open(filename, 'rb') or io.BytesIO(buffer).
+		"""
+		tsv_reader = reader(f, **kwargs)
+		self.tsv_dict_reader = csv.DictReader(
+			tsv_reader.input_file, fieldnames=fieldnames, **kwargs)
+		self.tsv_dict_reader.reader = cast(Any, tsv_reader)
 
-	return tsv_dict_reader
+		# Discard private field names that begin with underscore
+		if self.tsv_dict_reader.fieldnames is not None:
+			self._fieldnames = [
+				fieldname for fieldname in self.tsv_dict_reader.fieldnames
+				if not fieldname.startswith('_')]
+		else:
+			self._fieldnames = []
+
+	def __iter__(self):
+		return self
+
+	def __next__(self):
+		# type: () -> Union[Dict[str, str], OrderedDict[str, str]]
+		row = self.tsv_dict_reader.__next__()
+
+		# Discard entries with private field names
+		new_row = {k: row[k] for k in self._fieldnames}
+
+		return new_row
+
+	@property
+	def fieldnames(self):
+		# type: () -> List[str]
+		return self._fieldnames
+
+	@fieldnames.setter
+	def fieldnames(self, values):
+		# type: (List[str]) -> None
+		self.tsv_dict_reader.fieldnames = values
+
+		self._fieldnames = [
+			fieldname for fieldname in self.tsv_dict_reader.fieldnames
+			if not fieldname.startswith('_')]
+
+	@property
+	def dialect(self):
+		# type: () -> DIALECT
+		return self.tsv_dict_reader.dialect
+
+	@property
+	def line_num(self):
+		# type: () -> int
+		return self.tsv_dict_reader.line_num
+
 
 def dict_writer(f, fieldnames, dialect='excel', **kwargs):
 	# type: (IO[bytes], Iterable[str], DIALECT, **Any) -> csv.DictWriter

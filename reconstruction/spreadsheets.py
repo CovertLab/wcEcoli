@@ -133,7 +133,7 @@ class JsonWriter(csv.DictWriter, object):
 		return super(JsonWriter, self)._dict_to_list(rowdict_)
 
 
-class JsonReader(csv.DictReader, object):
+class JsonReader(object):
 	def __init__(self, *args, **kwargs):
 		"""Reader for a .tsv file that supports units and json-coded values.
 		Units are denoted with a fieldname in the format 'name (units)' e.g.
@@ -145,21 +145,29 @@ class JsonReader(csv.DictReader, object):
 		By default, dialect=CSV_DIALECT, which is excel-tab.
 		"""
 		kwargs.setdefault('dialect', CSV_DIALECT)
-		super(JsonReader, self).__init__(
+		self.tsv_dict_reader = csv.DictReader(
 			quotechar = "'", quoting = csv.QUOTE_MINIMAL, *args, **kwargs
 			)
 
-		# This is a hack to strip extra quotes from the field names
-		# Not proud of it, but it works.
-		_ = self.fieldnames # called for side effect
-		self._fieldnames = [
-			fieldname.strip('"') for fieldname in self._fieldnames]
+		fieldnames = self.tsv_dict_reader.fieldnames
+
+		# Strip extra quotes from the field names
+		fieldnames = [fieldname.strip('"') for fieldname in fieldnames]
+		self.tsv_dict_reader.fieldnames = fieldnames
+
+		# Discard private field names that begin with underscore
+		self.fieldnames = [
+			fieldname for fieldname in fieldnames
+			if not fieldname.startswith('_')]
+
+	def __iter__(self):
+		return self
 
 	def next(self):
 		# type: () -> Dict[str, Any]
 		if six.PY2:
-			return self._decode_row(super(JsonReader, self).next())
-		return self._decode_row(super(JsonReader, self).__next__())
+			return self._decode_row(self.tsv_dict_reader.next())
+		return self._decode_row(self.tsv_dict_reader.__next__())
 
 	__next__ = next
 
@@ -171,18 +179,17 @@ class JsonReader(csv.DictReader, object):
 		self.fieldnames contains UTF-8 `bytes` in Python 2.
 		"""
 		attributeDict = {}  # type: Dict[Text, Any]
-		for key_, raw_value_ in six.viewitems(row_dict):
-			# Skip private keys whose name starts with an underscore
-			if key_.startswith('_'):
-				continue
+
+		for fieldname in self.fieldnames:
+			raw_value_ = row_dict[fieldname]
 
 			# NOTE: Decoding UTF-8 bytes would be safer between DictReader and
 			# its csv.reader as in csv32, but this is simpler.
 			if six.PY2:
-				key = cast(bytes, key_).decode('utf-8')
+				key = cast(bytes, fieldname).decode('utf-8')
 				raw_value = cast(bytes, raw_value_ or '').decode('utf-8')
 			else:
-				key = key_
+				key = fieldname
 				raw_value = raw_value_
 
 			try:
@@ -220,3 +227,13 @@ class JsonReader(csv.DictReader, object):
 		# subclass it. Until we move to PY3 or change the base class, the type
 		# checker won't know this method returns a Dict[unicode, Any].
 		return cast('Dict[str, Any]', attributeDict)
+
+	@property
+	def dialect(self):
+		# type: () -> CSV_DIALECT
+		return self.tsv_dict_reader.dialect
+
+	@property
+	def line_num(self):
+		# type: () -> int
+		return self.tsv_dict_reader.line_num
