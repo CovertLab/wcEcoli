@@ -229,6 +229,22 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 			self._moleculeMass
 			).sum(axis=0)
 
+		# import ipdb; ipdb.set_trace()
+		# Calculates masses for each compartment
+		# TODO: Change this to get abbrevs from compartments.tsv
+		compartment_abbrevs = ["[n]","[j]","[w]","[c]","[e]","[m]","[o]","[p]","[l]","[i]"]
+		for abbrev in compartment_abbrevs:
+			compartmentIndex = np.core.defchararray.chararray.endswith(self._moleculeIDs, abbrev)
+			compartmentMoleculeMass = np.zeros(self._moleculeMass.shape)
+			compartmentMoleculeMass[compartmentIndex,:] = self._moleculeMass[compartmentIndex,:]
+			self._compartment_masses.update(
+				{abbrev : np.dot(
+				np.hstack([self._countsAllocatedFinal, self._countsUnallocated[:, np.newaxis]]).T,
+				compartmentMoleculeMass
+			).sum(axis=0)})
+
+
+
 
 	def loadSnapshot(self, container):
 		"""Load data from a snapshot `container`."""

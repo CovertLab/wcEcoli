@@ -54,6 +54,17 @@ class Mass(wholecell.listeners.listener.Listener):
 		self.proteinIndex = sim_data.submass_name_to_index["protein"]
 		self.waterIndex = sim_data.submass_name_to_index["water"]
 
+		self.nucleoidIndex = "[n]"
+		self.projectionIndex = "[j]"
+		self.cellWallIndex = "[w]"
+		self.cytosolIndex = "[c]"
+		self.extracellularIndex = "[e]"
+		self.membraneIndex = "[m]"
+		self.outerMembraneIndex = "[o]"
+		self.periplasmIndex = "[p]"
+		self.pilusIndex = "[l]"
+		self.innerMembraneIndex = "[i]"
+
 		self.cellDensity = sim_data.constants.cell_density.asNumber(units.g / units.L)
 
 		# Set initial values
@@ -131,6 +142,9 @@ class Mass(wholecell.listeners.listener.Listener):
 		all_submasses = sum(
 			state.mass() for state in six.viewvalues(self.internal_states))
 
+		bulk_submasses = self.internal_states.get('BulkMolecules').compartment_mass()
+		unique_submasses = self.internal_states.get('UniqueMolecules').mass()
+
 		self.cellMass = all_submasses.sum()  # sum over all submasses
 
 		self.waterMass = all_submasses[self.waterIndex]
@@ -142,6 +156,17 @@ class Mass(wholecell.listeners.listener.Listener):
 		self.dnaMass = all_submasses[self.dnaIndex]
 		self.proteinMass = all_submasses[self.proteinIndex]
 		self.smallMoleculeMass = all_submasses[self.smallMoleculeIndex]
+		# import ipdb; ipdb.set_trace()
+		self.nucleoidMass = sum(bulk_submasses.get(self.nucleoidIndex))
+		self.projectionMass = sum(bulk_submasses.get(self.projectionIndex))
+		self.cellWallMass = sum(bulk_submasses.get(self.cellWallIndex))
+		self.cytosolMass = sum(bulk_submasses.get(self.cytosolIndex)) + sum(unique_submasses)
+		self.extracellularMass = sum(bulk_submasses.get(self.extracellularIndex))
+		self.membraneMass = sum(bulk_submasses.get(self.membraneIndex))
+		self.outerMembraneMass = sum(bulk_submasses.get(self.outerMembraneIndex))
+		self.periplasmMass = sum(bulk_submasses.get(self.periplasmIndex))
+		self.pilusMass = sum(bulk_submasses.get(self.pilusIndex))
+		self.innerMembraneMass = sum(bulk_submasses.get(self.innerMembraneIndex))
 
 		# TODO (Eran) use this volume everywhere in the codebase that is currently calculating volume
 		self.volume = self.cellMass / self.cellDensity
@@ -210,6 +235,16 @@ class Mass(wholecell.listeners.listener.Listener):
 			dnaMass = self.dnaMass,
 			proteinMass = self.proteinMass,
 			waterMass = self.waterMass,
+			nucleoidMass = self.nucleoidMass,
+			projectionMass = self.projectionMass,
+			cellWallMass = self.cellWallMass,
+			cytosolMass = self.cytosolMass,
+			extracellularMass = self.extracellularMass,
+			membraneMass = self.membraneMass,
+			outerMembraneMass = self.outerMembraneMass,
+			periplasmMass = self.periplasmMass,
+			pilusMass = self.pilusMass,
+			innerMembraneMass = self.innerMembraneMass,
 			processMassDifferences = self.processMassDifferences.astype(np.float64),
 			smallMoleculeMass = self.smallMoleculeMass,
 			instantaniousGrowthRate = self.instantaniousGrowthRate,
