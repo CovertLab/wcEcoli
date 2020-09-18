@@ -16,13 +16,13 @@ from vivarium.core.composition import (
 	agent_environment_experiment,
 	simulate_experiment,
 )
-from vivarium.compartments.lattice import Lattice
+from cell.composites.lattice import Lattice
 from vivarium.core.emitter import (
 	get_atlas_database_emitter_config,
 	emit_environment_config,
 	SECRETS_PATH,
 )
-from vivarium.processes.diffusion_field import make_gradient
+from cell.processes.diffusion_field import make_gradient
 
 from wholecell.io import tsv
 from colony.processes.wcecoli import WcEcoli

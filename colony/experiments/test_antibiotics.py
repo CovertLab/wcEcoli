@@ -4,7 +4,6 @@
 from __future__ import absolute_import, division, print_function
 
 import argparse
-import io
 import os
 
 from vivarium.core.composition import (
@@ -15,7 +14,6 @@ from vivarium.library.timeseries import (
 	process_path_timeseries_for_csv,
 	save_flat_timeseries,
 )
-from wholecell.io import tsv
 
 from colony.experiments.antibiotics import simulate
 from colony.constants import REFERENCE_DATA_PATH

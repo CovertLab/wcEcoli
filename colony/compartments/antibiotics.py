@@ -2,14 +2,14 @@ from __future__ import absolute_import, division, print_function
 
 from vivarium.core.process import Generator
 from vivarium.library.units import units
-from vivarium.processes.death import DeathFreezeState
-from vivarium.processes.antibiotic_transport import AntibioticTransport
-from vivarium.processes.diffusion_cell_environment_ficks import (
+from cell.processes.death import DeathFreezeState
+from cell.processes.antibiotic_transport import AntibioticTransport
+from cell.processes.diffusion_cell_environment_ficks import (
 	CellEnvironmentDiffusionFicks,
 )
 from vivarium.processes.derive_concentrations import (
 	DeriveConcentrations)
-from vivarium.processes.derive_globals import DeriveGlobals
+from cell.processes.derive_globals import DeriveGlobals
 from vivarium.processes.timeline import TimelineProcess
 
 from colony.processes.antibiotic_hydrolysis import AntibioticHydrolysis

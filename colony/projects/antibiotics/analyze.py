@@ -5,11 +5,10 @@ For usage information, execute:
 	python analysis.py -h
 '''
 
-from vivarium.analysis.analyze import Analyzer
+from cell.analysis.analyze import Analyzer
 
 
 TIMESERIES_CONFIG = {
-	'remove_zeros': True,
 	'skip_paths': [
 		('boundary', 'wcecoli_fields_null'),
 	],

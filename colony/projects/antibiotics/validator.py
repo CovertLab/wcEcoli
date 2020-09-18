@@ -9,9 +9,9 @@ import argparse
 
 import numpy as np
 
-from vivarium.analysis.analyze import Analyzer
+from cell.analysis.analyze import Analyzer
+from cell.library.lattice_utils import get_bin_volume
 from vivarium.core.experiment import get_in
-from vivarium.library.lattice_utils import get_bin_volume
 from vivarium.library.units import units
 
 
