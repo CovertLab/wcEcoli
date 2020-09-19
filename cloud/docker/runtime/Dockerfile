@@ -14,6 +14,14 @@
 ARG from=python:3.8.5
 FROM ${from}
 
+RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc \
+    && echo "alias ll='ls -l'" >> ~/.bashrc \
+    && cp ~/.bashrc /
+
+# Update and install in the same layer so it won't install from old updates.
+RUN apt-get update \
+    && apt-get install -y swig gfortran llvm cmake nano
+
 # Option `--build-arg NO_AVX2=1` controls OpenBLAS' use of AVX2 vector instructions:
 #
 # * NO_AVX2=1 is needed to build properly in Docker-for-Mac due to a Docker bug,
@@ -29,15 +37,7 @@ FROM ${from}
 ARG NO_AVX2=0
 ENV NO_AVX2="$NO_AVX2"
 
-RUN apt-get update \
-    && apt-get install -y swig gfortran llvm cmake nano
-
-RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc \
-    && echo "alias ll='ls -l'" >> ~/.bashrc \
-    && cp ~/.bashrc /
-
 # Install openblas (must be 0.3.5+) for numpy, scipy, and Theano.
-# Someday `apt-get install libopenblas-dev=...` will work.
 ENV OPENBLAS_LABEL=v0.3.10
 RUN (mkdir -p openblas && cd openblas \
     && curl -SL https://github.com/xianyi/OpenBLAS/archive/${OPENBLAS_LABEL}.tar.gz | tar -xz \
