@@ -22,14 +22,19 @@ class GetterFunctions(object):
 		self._build_all_masses(raw_data, sim_data)
 		self._build_locations(raw_data, sim_data)
 
-	def get_sequence(self, ids):
+	def get_sequences(self, ids):
 		# type: (Union[List[str], np.ndarray]) -> List[str]
 		assert isinstance(ids, (list, np.ndarray))
 		return [self._sequences[mol_id] for mol_id in ids]
 
-	def get_mass(self, ids):
-		assert isinstance(ids, (list, np.ndarray))
-		masses = [self._all_mass[self._location_tag.sub('', i)] for i in ids]
+	def get_mass(self, mol_id):
+		# type: (str) -> units
+		assert isinstance(mol_id, str)
+		return self._mass_units * self._all_mass[self._location_tag.sub('', mol_id)]
+
+	def get_masses(self, mol_ids):
+		assert isinstance(mol_ids, (list, np.ndarray))
+		masses = [self._all_mass[self._location_tag.sub('', i)] for i in mol_ids]
 		return self._mass_units * np.array(masses)
 
 	def get_location(self, ids):
@@ -102,7 +107,7 @@ class GetterFunctions(object):
 		self._all_mass = {}
 
 		self._all_mass.update(
-			{x['id']: np.sum(x['mw']) for x in raw_data.metabolites})
+			{x['id']: x['mw'] for x in raw_data.metabolites})
 
 		# These updates can be dependent on metabolite masses
 		self._all_mass.update(self._build_polymerized_subunit_masses(sim_data))
@@ -158,7 +163,7 @@ class GetterFunctions(object):
 		of polymerized NTPs.
 		"""
 		# Get RNA nucleotide compositions
-		rna_seqs = self.get_sequence([rna['id'] for rna in raw_data.rnas])
+		rna_seqs = self.get_sequences([rna['id'] for rna in raw_data.rnas])
 		nt_counts = []
 		for seq in rna_seqs:
 			nt_counts.append(
@@ -182,7 +187,7 @@ class GetterFunctions(object):
 		sequence and the weights of polymerized amino acids.
 		"""
 		# Get protein amino acid compositions
-		protein_seqs = self.get_sequence(
+		protein_seqs = self.get_sequences(
 			[protein['id'] for protein in raw_data.proteins])
 		aa_counts = []
 		for seq in protein_seqs:

@@ -111,7 +111,7 @@ class InternalState(object):
 
 		# Loop through each molecule species and associated compartments
 		for molecule_id, submass_index in zip(molecule_ids, submass_indexes):
-			mw = sim_data.getter.get_mass([molecule_id]).asNumber(units.g / units.mol)[0]
+			mw = sim_data.getter.get_mass(molecule_id).asNumber(units.g / units.mol)
 
 			for loc in sim_data.getter.get_location([molecule_id])[0]:
 				molecule_ids_with_compartments.append('{}[{}]'.format(molecule_id, loc))
@@ -239,7 +239,7 @@ class InternalState(object):
 		full_chromosome_mass = (units.g/units.mol) * np.zeros_like(RNAP_mass)
 		full_chromosome_mass[
 			sim_data.submass_name_to_index['DNA']
-			] = sim_data.getter.get_mass([sim_data.molecule_ids.full_chromosome])[0]
+			] = sim_data.getter.get_mass(sim_data.molecule_ids.full_chromosome)
 		full_chromosome_attributes = {
 			'division_time': 'f8',
 			'has_triggered_division': '?',
