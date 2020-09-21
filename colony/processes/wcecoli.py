@@ -260,8 +260,8 @@ class WcEcoli(Process):
 		self.ecoli_simulation = initialize_ecoli(self.ecoli_config)
 		self.sim_data = self.ecoli_simulation.get_sim_data()
 
-		self.parameters['density'] = (
-			self.sim_data.constants.cellDensity.asNumber()
+		parameters['density'] = (
+			self.sim_data.constants.cell_density.asNumber()
 		) * self.density_units
 
 		environment = self.ecoli_simulation.external_states['Environment']
