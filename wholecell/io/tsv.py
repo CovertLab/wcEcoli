@@ -1,6 +1,5 @@
 """
-CSV reader and writer that handle Python 2/3 compatibility and default to TAB
-delimiters.
+CSV reader and writer that default to TAB delimiters.
 """
 
 from __future__ import absolute_import, division, print_function
@@ -11,8 +10,6 @@ import csv
 from io import TextIOWrapper
 from typing import Any, cast, Dict, IO, Iterable, List, Optional, Sequence, Text, Type, Union
 
-import six
-
 
 DIALECT = Union[str, csv.Dialect, Type[csv.Dialect]]
 
@@ -20,19 +17,14 @@ DIALECT = Union[str, csv.Dialect, Type[csv.Dialect]]
 class reader(object):
 	def __init__(self, csvfile, dialect='excel', delimiter='\t', **fmtparams):
 		# type: (IO[bytes], DIALECT, str, **Any) -> None
-		"""Open a csv reader(), handling Python 2/3 Unicode I/O compatibility,
-		and defaulting to TAB delimiters.
+		"""Open a csv reader() defaulting to TAB delimiters.
 
 		REQUIRES: `csvfile` must be a buffered byte reader, e.g. from
 		io.open(filename, 'rb') or io.BytesIO(buffer).
 
-		This does Unicode in Python 2 by decoding the values read by csv.reader,
-		and in Python 3 by constructing the csv.reader with a TextIO.
+		This does Unicode by constructing the csv.reader with a TextIO.
 		"""
-		if six.PY2:
-			self.input_file = csvfile
-		else:
-			self.input_file = TextIOWrapper(csvfile, encoding='utf-8', newline='')
+		self.input_file = TextIOWrapper(csvfile, encoding='utf-8', newline='')
 		self.reader = csv.reader(
 			self.input_file, dialect=dialect, delimiter=delimiter, **fmtparams)
 
@@ -42,9 +34,6 @@ class reader(object):
 	def __next__(self):
 		# type: () -> List[Text]
 		row = next(self.reader)
-		if six.PY2:
-			row_ = [value.decode('utf-8') for value in row]
-			return row_
 		return row
 
 	next = __next__
@@ -63,30 +52,21 @@ class reader(object):
 class writer(object):
 	def __init__(self, csvfile, dialect='excel', delimiter='\t', **fmtparams):
 		# type: (IO[bytes], DIALECT, str, **Any) -> None
-		"""Open a csv writer(), handling Python 2/3 Unicode I/O compatibility,
-		and defaulting to TAB delimiters.
+		"""Open a csv writer() defaulting to TAB delimiters.
 
 		REQUIRES: `csvfile` must be a buffered byte writer, e.g. from
 		io.open(filename, 'wb') or io.BytesIO(buffer).
 
-		This does Unicode in Python 2 by encoding the values passed to csv.writer,
-		and in Python 3 by constructing the csv.writer with a TextIO.
+		This does Unicode by constructing the csv.writer with a TextIO.
 		"""
-		if six.PY2:
-			self.output_file = csvfile
-		else:
-			self.output_file = TextIOWrapper(
-				csvfile, encoding='utf-8', newline='', line_buffering=True)
+		self.output_file = TextIOWrapper(
+			csvfile, encoding='utf-8', newline='', line_buffering=True)
 		self.writer = csv.writer(
 			self.output_file, dialect=dialect, delimiter=delimiter, **fmtparams)
 
 	def writerow(self, row):
 		# type: (Sequence[Any]) -> None
-		def stringify(s):
-			return s if isinstance(s, six.string_types) else Text(s)
-
-		row_ = [stringify(value).encode('utf-8') for value in row] if six.PY2 else row
-		self.writer.writerow(row_)
+		self.writer.writerow(row)
 
 	def writerows(self, rows):
 		# type: (Iterable[Sequence[Any]]) -> None
@@ -103,10 +83,9 @@ class dict_reader(object):
 	def __init__(self, f, fieldnames=None, **kwargs):
 		# type: (IO[bytes], Optional[List[str]], **Any) -> None
 		"""
-		Open a csv DictReader(), handling Python 2/3 Unicode I/O compatibility
-		(by replacing its csv reader with a tsv.reader) and defaulting to TAB
-		delimiters. Fields whose names start with an underscore are removed
-		from self._fieldnames, and discarded from each row during iteration.
+		Open a csv DictReader() defaulting to TAB delimiters. Fields whose
+		names start with an underscore are removed from self._fieldnames, and
+		discarded from each row during iteration.
 
 		REQUIRES: `f` must be a buffered byte reader, e.g. from
 		io.open(filename, 'rb') or io.BytesIO(buffer).
@@ -160,8 +139,7 @@ class dict_reader(object):
 
 def dict_writer(f, fieldnames, dialect='excel', **kwargs):
 	# type: (IO[bytes], Iterable[str], DIALECT, **Any) -> csv.DictWriter
-	"""Open a csv DictWriter(), handling Python 2/3 Unicode I/O compatibility (by
-	replacing its csv writer with a tsv.writer) and defaulting to TAB delimiters.
+	"""Open a csv DictWriter() defaulting to TAB delimiters.
 
 	REQUIRES: `csvfile` must be a buffered byte writer, e.g. from
 	io.open(filename, 'wb') or io.BytesIO(buffer).

@@ -9,13 +9,11 @@ from __future__ import absolute_import, division, print_function
 from contextlib import contextmanager
 import csv
 import io
+from itertools import filterfalse
 import json
 import re
 import numpy as np
-from typing import Any, cast, Dict, Iterator, List, Sequence, Text
-
-import six
-from six.moves import filterfalse
+from typing import Any, Dict, Iterator, List, Sequence, Text
 
 from wholecell.utils import units
 
@@ -45,10 +43,7 @@ def tsv_reader(filename):
 	# least before json.loads(). The file can be in UTF-8 or its ASCII subset.
 	# ########################################################################
 
-	mode = 'rb' if six.PY2 else 'r'
-	encoding = None if six.PY2 else 'utf-8'
-	newline = None if six.PY2 else ''
-	with io.open(filename, mode=mode, encoding=encoding, newline=newline) as fh:
+	with io.open(filename, mode='r', encoding='utf-8', newline='') as fh:
 		reader = JsonReader(filterfalse(comment_line, fh), dialect=CSV_DIALECT)
 		yield reader
 
@@ -73,10 +68,7 @@ def tsv_writer(filename, fieldnames):
 	# ########################################################################
 
 	fieldnames = list(fieldnames)
-	mode = 'wb' if six.PY2 else 'w'
-	encoding = None if six.PY2 else 'utf-8'
-	newline = None if six.PY2 else ''
-	with io.open(filename, mode=mode, encoding=encoding, newline=newline) as fh:
+	with io.open(filename, mode='w', encoding='utf-8', newline='') as fh:
 		writer = JsonWriter(fh, fieldnames, dialect=CSV_DIALECT)
 		writer.writeheader()
 
@@ -92,9 +84,7 @@ def array_to_list(value):
 	return value
 
 
-class JsonWriter(csv.DictWriter, object):
-	# [Python 2 DictWriter is an old-style class so mix in `object` to get a
-	# new-style class that supports `super()`.]
+class JsonWriter(csv.DictWriter):
 	def __init__(self, *args, **kwargs):
 		"""Writer for a .tsv file to be read by JsonReader. This writes a
 		header with quotes and dict rows in TSV format, JSON encoding, and
@@ -103,8 +93,7 @@ class JsonWriter(csv.DictWriter, object):
 		NOTE: The caller needs to remove units from the dict values and add
 		them to the fieldnames. JsonWriter does not handle units.
 
-		The first argument should be a file-like writer open in binary mode in
-		Python 2 but text mode in Python 3.
+		The first argument should be a file-like writer open in text mode.
 
 		By default, dialect=CSV_DIALECT, which is excel-tab.
 		"""
@@ -117,18 +106,12 @@ class JsonWriter(csv.DictWriter, object):
 		# Bypass DictWriter's writeheader() and _dict_to_list(). [Consider
 		# reimplementing on csv.writer rather than subclassing DictWriter.]
 		header = [u'"{}"'.format(name) for name in self.fieldnames]
-		if six.PY2:
-			header = [name.encode('utf-8') for name in header]
 		self.writer.writerow(header)
 
 	def _dict_to_list(self, rowdict):
 		rowdict_ = {
 			key: json.dumps(array_to_list(value), ensure_ascii=False)
-			for key, value in six.viewitems(rowdict)}
-		if six.PY2:
-			rowdict_ = {
-				key: value.encode('utf-8')
-				for key, value in six.viewitems(rowdict_)}
+			for key, value in rowdict.items()}
 		# noinspection PyUnresolvedReferences
 		return super(JsonWriter, self)._dict_to_list(rowdict_)
 
@@ -142,8 +125,7 @@ class JsonReader(object):
 		whose names start with an underscore are removed from self._fieldnames,
 		and discarded from each row during iteration.
 
-		The first argument should be a file-like reader open in binary mode in
-		Python 2 but text mode in Python 3.
+		The first argument should be a file-like reader open in text mode.
 
 		By default, dialect=CSV_DIALECT, which is excel-tab.
 		"""
@@ -168,8 +150,6 @@ class JsonReader(object):
 
 	def next(self):
 		# type: () -> Dict[str, Any]
-		if six.PY2:
-			return self._decode_row(self.tsv_dict_reader.next())
 		return self._decode_row(self.tsv_dict_reader.__next__())
 
 	__next__ = next
@@ -177,31 +157,19 @@ class JsonReader(object):
 	@property
 	def fieldnames(self):
 		# type: () -> List[str]
-		if six.PY2:
-			return [cast(bytes, name).decode('utf-8') for name in self._fieldnames]
-		else:
-			return self._fieldnames
+		return self._fieldnames
 
 	def _decode_row(self, row_dict):
 		# type: (Dict[str, str]) -> Dict[str, Any]
 		"""Decode a DictReader row.
 
-		NOTE: Each returned row contains unicode/str keys and values, but
-		self.fieldnames contains UTF-8 `bytes` in Python 2.
+		NOTE: Each returned row contains unicode/str keys and values.
 		"""
 		attributeDict = {}  # type: Dict[Text, Any]
 
 		for fieldname in self._fieldnames:
-			raw_value_ = row_dict[fieldname]
-
-			# NOTE: Decoding UTF-8 bytes would be safer between DictReader and
-			# its csv.reader as in csv32, but this is simpler.
-			if six.PY2:
-				key = cast(bytes, fieldname).decode('utf-8')
-				raw_value = cast(bytes, raw_value_ or '').decode('utf-8')
-			else:
-				key = fieldname
-				raw_value = raw_value_
+			raw_value = row_dict[fieldname]
+			key = fieldname
 
 			try:
 				value = json.loads(raw_value) if raw_value else ""
@@ -232,12 +200,7 @@ class JsonReader(object):
 			else:
 				attributeDict[key] = value
 
-		# TODO(jerry): The return type differs from the base class in PY2!
-		# Either suppress that mypy warning with `cast()` while we're still on
-		# PY2, or go ahead and make JsonReader proxy csv.DictReader rather than
-		# subclass it. Until we move to PY3 or change the base class, the type
-		# checker won't know this method returns a Dict[unicode, Any].
-		return cast('Dict[str, Any]', attributeDict)
+		return attributeDict
 
 	@property
 	def dialect(self):
