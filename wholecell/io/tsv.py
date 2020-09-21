@@ -105,10 +105,10 @@ class dict_reader(object):
 		"""
 		Open a csv DictReader(), handling Python 2/3 Unicode I/O compatibility
 		(by replacing its csv reader with a tsv.reader) and defaulting to TAB
-		delimiters. Fields whose name starts with an underscore are removed
-		from self.fieldnames, and discarded from each row during iteration.
+		delimiters. Fields whose names start with an underscore are removed
+		from self._fieldnames, and discarded from each row during iteration.
 
-		REQUIRES: `csvfile` must be a buffered byte reader, e.g. from
+		REQUIRES: `f` must be a buffered byte reader, e.g. from
 		io.open(filename, 'rb') or io.BytesIO(buffer).
 		"""
 		tsv_reader = reader(f, **kwargs)
@@ -117,12 +117,9 @@ class dict_reader(object):
 		self.tsv_dict_reader.reader = cast(Any, tsv_reader)
 
 		# Discard private field names that begin with underscore
-		if self.tsv_dict_reader.fieldnames is not None:
-			self._fieldnames = [
-				fieldname for fieldname in self.tsv_dict_reader.fieldnames
-				if not fieldname.startswith('_')]
-		else:
-			self._fieldnames = []
+		self._fieldnames = [
+			fieldname for fieldname in (self.tsv_dict_reader.fieldnames or [])
+			if not fieldname.startswith('_')]
 
 	def __iter__(self):
 		return self

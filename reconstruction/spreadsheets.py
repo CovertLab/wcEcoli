@@ -12,7 +12,7 @@ import io
 import json
 import re
 import numpy as np
-from typing import Any, cast, Dict, Iterator, Sequence, Text
+from typing import Any, cast, Dict, Iterator, List, Sequence, Text
 
 import six
 from six.moves import filterfalse
@@ -135,9 +135,12 @@ class JsonWriter(csv.DictWriter, object):
 
 class JsonReader(object):
 	def __init__(self, *args, **kwargs):
-		"""Reader for a .tsv file that supports units and json-coded values.
+		"""
+		Reader for a .tsv file that supports units and json-coded values.
 		Units are denoted with a fieldname in the format 'name (units)' e.g.
-		"flux standard deviation (units.mmol / units.g / units.h)".
+		"flux standard deviation (units.mmol / units.g / units.h)". Fields
+		whose names start with an underscore are removed from self._fieldnames,
+		and discarded from each row during iteration.
 
 		The first argument should be a file-like reader open in binary mode in
 		Python 2 but text mode in Python 3.
@@ -156,7 +159,7 @@ class JsonReader(object):
 		self.tsv_dict_reader.fieldnames = fieldnames
 
 		# Discard private field names that begin with underscore
-		self.fieldnames = [
+		self._fieldnames = [
 			fieldname for fieldname in fieldnames
 			if not fieldname.startswith('_')]
 
@@ -171,6 +174,14 @@ class JsonReader(object):
 
 	__next__ = next
 
+	@property
+	def fieldnames(self):
+		# type: () -> List[str]
+		if six.PY2:
+			return [cast(bytes, name).decode('utf-8') for name in self._fieldnames]
+		else:
+			return self._fieldnames
+
 	def _decode_row(self, row_dict):
 		# type: (Dict[str, str]) -> Dict[str, Any]
 		"""Decode a DictReader row.
@@ -180,7 +191,7 @@ class JsonReader(object):
 		"""
 		attributeDict = {}  # type: Dict[Text, Any]
 
-		for fieldname in self.fieldnames:
+		for fieldname in self._fieldnames:
 			raw_value_ = row_dict[fieldname]
 
 			# NOTE: Decoding UTF-8 bytes would be safer between DictReader and
