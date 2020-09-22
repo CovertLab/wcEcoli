@@ -379,6 +379,7 @@ class Transcription(object):
 		gene_lengths = {gene['id']: gene['length'] for gene in raw_data.genes}
 		direction_dict = {gene['id']:gene['direction'] for gene in raw_data.genes}
 		coordinate_dict = {gene['id']: gene['coordinate'] for gene in raw_data.genes}
+		
 		gene_starts_stops = []
 		for rna in raw_data.operon_rnas:
 			direction = direction_dict[rna['gene_id'][0]]

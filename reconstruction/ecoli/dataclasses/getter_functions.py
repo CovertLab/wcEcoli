@@ -58,31 +58,28 @@ class GetterFunctions(object):
 		Builds nucleotide sequences of each RNA using the genome sequence and
 		the transcription start sites and lengths of the corresponding gene.
 		"""
-		# gene id to gene index
-		gene_id_to_index = {gene['id']: i
-			for i, gene in enumerate(raw_data.genes)}
 
 		# Get RNA lengths from gene data
-		gene_lengths = [gene['length'] for gene in raw_data.genes]
+		gene_lengths = {gene["id"]: ['length'] for gene in raw_data.genes}
 
-		# Get list of coordinates and directions for each gene
-		coordinate_list = [gene["coordinate"] for gene in raw_data.genes]
-		direction_list = [gene["direction"] for gene in raw_data.genes]
+		# Get dict of coordinates and directions for each gene
+		coordinate_dict = {gene["id"]: gene["coordinate"] for gene in raw_data.genes}
+		direction_dict = {gene["id"]: gene["direction"] for gene in raw_data.genes}
 
 		# Get RNA sequence from genome sequence
 		genome_sequence = raw_data.genome_sequence
 
 		# get sequence for entire polycistron
 		for rna in raw_data.operon_rnas:
-			first_gene = gene_id_to_index[['gene_set'][0]]
-			last_gene = gene_id_to_index[['gene_set'][-1]]
-			direction = direction_list[first_gene]
+			first_gene = rna['gene_set'][0]
+			last_gene = rna['gene_set'][-1]
+			direction = direction_dict[first_gene]
 
 			# Parse genome sequence to get RNA sequence
 			if direction == '+':
-				seq = genome_sequence[coordinate_list[first_gene]:coordinate_list[last_gene] + gene_lengths[last_gene]].transcribe()
+				seq = genome_sequence[coordinate_dict[first_gene]:coordinate_dict[last_gene] + gene_lengths[last_gene]].transcribe()
 			else:
-				seq = genome_sequence[coordinate_list[last_gene] - gene_lengths[last_gene] + 1:coordinate_list[first_gene] + 1].reverse_complement().transcribe()
+				seq = genome_sequence[coordinate_dict[last_gene] - gene_lengths[last_gene] + 1:coordinate_dict[first_gene] + 1].reverse_complement().transcribe()
 
 			self._sequences[rna['id']] = seq
 
