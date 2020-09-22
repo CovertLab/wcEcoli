@@ -169,7 +169,7 @@ POLY_CISTRON_FILE = parse_args()
 GENOME_SEQUENCE_FILE = os.path.join(FLAT_DIR, 'flattened_sequence.fasta')
 km_file = os.path.join('fixtures', 'endo_km', 'km3.cPickle')
 RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv')
-PROTEIN_FILE = os.path.join(FLAT_DIR, 'proteins_old.tsv')
+PROTEIN_FILE = os.path.join(FLAT_DIR, 'proteins_new_condensed.tsv')
 TF_COND_FILE = os.path.join(FLAT_DIR, 'condition','tf_condition_old.tsv')
 
 # output files
@@ -523,7 +523,6 @@ def write_output_file(tu_info, tu_half_life_info, monomers_to_remove):
 		writer.writeheader()
 
 		for rna_hl_row in RNA_HALF_LIVES_INFO:
-			#breakpoint()
 			# need to check if monomer id is contained (not ==) in RNA id, since monomer id does not end with '_RNA'
 			if not any(monomer + '_RNA' == rna_hl_row['id'] for monomer in monomers_to_remove):
 				writer.writerow(rna_hl_row)
@@ -562,23 +561,17 @@ def create_gene_to_tu_matrix(rna_info, tu_info):
 	num_rnas = len(rna_info)
 	num_tus = len(tu_info)
 
-	breakpoint()
-
 	gene_to_tu_matrix = np.zeros((num_rnas, num_tus))
-	rnas_gene_order = [row['geneId'] for row in rna_info]
+	rnas_gene_order = ['_'.join(row['gene_set']) for row in rna_info]
 	reverse_index = {
-		row['geneId']: gene_index
+		'_'.join(row['gene_set']): gene_index
 		for gene_index, row in enumerate(rna_info)}
 
-
 	for index, tu in enumerate(tu_info):
-		if not SPLIT_DELIMITER in tu['geneId']:
-			gene = tu['geneId']
-			gene_index = reverse_index[gene]
-			gene_to_tu_matrix[gene_index, index] = 1
+		if len(tu['gene_set']) == 1:
+			gene = tu['gene_set'][0]
 		else:
-			genes_in_tu = re.split(SPLIT_DELIMITER, tu['geneId'])
-			for gene in genes_in_tu:
+			for gene in tu['gene_set']:
 				gene_index = reverse_index[gene]
 				gene_to_tu_matrix[gene_index, index] = 1
 
@@ -592,7 +585,6 @@ def create_rnaseq_count_vector(rnas_gene_order):
 	Gathers information needed based on the condition the model is
 	being run in.
 	"""
-	#import pdb; pdb.set_trace()
 	rna_seq_data_index = {
 		row['Gene']: row[CONDITION]
 		for row in rna_seq_data_all_cond[0]}
@@ -621,7 +613,7 @@ def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 		each TU in the model.
 	"""
 	tu_counts_vector = nnls(gene_tu_matrix, rna_seq_counts_vector)[0]
-	tu_gene_order = [row['geneId'] for row in tu_info]
+	tu_gene_order = [row['id'].replace('_RNA','') for row in tu_info]
 	tu_genes_counts = []
 
 	for i in range(0, len(tu_gene_order)):
@@ -695,15 +687,37 @@ def remove_kms_file(km_file):
 
 def make_new_tf_conditions_file(output_file):
 	protein_info, _ = parse_tsv(output_proteins)
+	tu_info, _ = parse_tsv(TU_FILE)
+	rna_id_to_rna_set = {}
+	for monocistronic_rna in RNA_INFO:
+		rna_id = monocistronic_rna['id']
+		for protein_row in protein_info:
+			for rna_in_set in protein_row['rna_set']:
+				mono_in_poly = rna_in_set.replace('_RNA', '').replace('-tRNA','').replace('-RNA','').split('_')
+				monocis_rnaid = monocistronic_rna['id'].replace('_RNA', '').replace('-tRNA','').replace('-RNA','')
+				if len(mono_in_poly) > 1:
+					for cistron in mono_in_poly:
+						if monocis_rnaid == cistron:
+							if rna_id in rna_id_to_rna_set and rna_in_set not in rna_id_to_rna_set[rna_id]:
+								rna_id_to_rna_set[rna_id].append(rna_in_set)
+							elif rna_id not in rna_id_to_rna_set:
+								rna_id_to_rna_set[rna_id] = [rna_in_set]
+				elif len(mono_in_poly) == 1:
+					if monocis_rnaid == mono_in_poly[0]:
+						if rna_id in rna_id_to_rna_set and rna_in_set not in rna_id_to_rna_set[rna_id]:
+							rna_id_to_rna_set[rna_id].append(rna_in_set)
+						elif rna_id not in rna_id_to_rna_set:
+							rna_id_to_rna_set[rna_id] = [rna_in_set]
 
-	rna_id_to_rna_set = {x["rna_id"]: x["rna_set"] for x in protein_info}
 	fields_to_modify = ["active genotype perturbations", "inactive genotype perturbations"]
-
+	
 	for row in TF_INFO:
 		for field in fields_to_modify:
 			if len(row[field]) > 0:
 				genotype = {}
 				for key, val in row[field].items():
+					#if key == 'EG10440_RNA[c]':
+						#breakpoint()
 					for new_key in rna_id_to_rna_set[key.strip("[c]")]:
 						genotype[new_key + "[c]"] = val
 				row[field] = genotype
@@ -712,7 +726,6 @@ def make_new_tf_conditions_file(output_file):
 		writer.writeheader()
 		for tf_row in TF_INFO:
 			writer.writerow(tf_row)
-
 
 if __name__ == "__main__":
 	make_operon_rnas_file()
