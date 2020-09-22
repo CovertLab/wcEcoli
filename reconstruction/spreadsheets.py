@@ -13,7 +13,7 @@ from itertools import filterfalse
 import json
 import re
 import numpy as np
-from typing import Any, Dict, Iterator, List, Sequence, Text
+from typing import Any, Dict, Iterator, List, Sequence
 
 from wholecell.utils import units
 
@@ -148,11 +148,9 @@ class JsonReader(object):
 	def __iter__(self):
 		return self
 
-	def next(self):
+	def __next__(self):
 		# type: () -> Dict[str, Any]
 		return self._decode_row(self.tsv_dict_reader.__next__())
-
-	__next__ = next
 
 	@property
 	def fieldnames(self):
@@ -165,7 +163,7 @@ class JsonReader(object):
 
 		NOTE: Each returned row contains unicode/str keys and values.
 		"""
-		attributeDict = {}  # type: Dict[Text, Any]
+		attributeDict = {}  # type: Dict[str, Any]
 
 		for fieldname in self._fieldnames:
 			raw_value = row_dict[fieldname]
