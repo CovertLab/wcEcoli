@@ -96,7 +96,7 @@ class InternalState(object):
 		for molecule_id in molecule_ids:
 			mw = sim_data.getter.get_submass_array(molecule_id).asNumber(units.g/units.mol)
 
-			for loc in sim_data.getter.get_location([molecule_id])[0]:
+			for loc in sim_data.getter.get_location(molecule_id):
 				molecule_ids_with_compartments.append('{}[{}]'.format(molecule_id, loc))
 				masses.append(mw)
 

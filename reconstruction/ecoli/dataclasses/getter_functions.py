@@ -60,7 +60,16 @@ class GetterFunctions(object):
 		assert isinstance(mol_id, str)
 		return self._mass_units * self._all_mass[self._location_tag.sub('', mol_id)]
 
-	def get_location(self, ids):
+	def get_location(self, mol_id):
+		# type: (str) -> List[List[str]]
+		"""
+		Returns the list of one-letter codes for the locations that the
+		molecule with the given ID can exist in.
+		"""
+		assert isinstance(mol_id, str)
+		return self._locationDict[mol_id]
+
+	def get_locations(self, ids):
 		# type: (Union[List[str], np.ndarray]) -> List[List[str]]
 		"""
 		Returns a list of the list of one-letter codes for the locations that
