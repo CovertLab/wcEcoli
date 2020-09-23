@@ -1,9 +1,5 @@
 """
 Plot NTP counts
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/8/2014
 """
 
 from __future__ import absolute_import, division, print_function
@@ -22,7 +18,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		sim_data = cPickle.load(open(simDataFile, 'rb'))
 
-		dntpIDs = sim_data.moleculeGroups.dntps
+		dntpIDs = sim_data.molecule_groups.dntps
 		(dntpCounts,) = read_bulk_molecule_counts(simOutDir, (dntpIDs,))
 
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))

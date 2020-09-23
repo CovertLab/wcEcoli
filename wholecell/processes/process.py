@@ -2,10 +2,6 @@
 Process
 
 Process submodel base class. Defines interface that processes expose to the simulation and to the states.
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/2/2013
 """
 
 from __future__ import absolute_import, division, print_function

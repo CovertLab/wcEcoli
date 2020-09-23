@@ -1,9 +1,5 @@
 """
 SimulationData for bulk molecules state
-
-@author: Nick Ruggero
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 02/13/2015
 """
 
 from __future__ import absolute_import, division, print_function
@@ -33,7 +29,7 @@ class BulkMolecules(object):
 			"mass"				:	units.g / units.mol,
 			}
 
-		self.bulkData = UnitStructArray(bulkData, field_units)
+		self.bulk_data = UnitStructArray(bulkData, field_units)
 
-	def addToBulkState(self, ids, masses):
-		self.bulkData = addToStateCommon(self.bulkData, ids, masses)
+	def add_to_bulk_state(self, ids, masses):
+		self.bulk_data = addToStateCommon(self.bulk_data, ids, masses)

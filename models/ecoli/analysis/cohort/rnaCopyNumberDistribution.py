@@ -1,9 +1,6 @@
 """
 Plots the histograms of the copy number of each RNA at each generation for
 multiple-seed simulations.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/21/2018
 """
 
 from __future__ import absolute_import, division, print_function
@@ -47,12 +44,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		simData = cPickle.load(open(simDataFile, 'rb'))
 
 		# Get IDs for RNA from simData
-		ids_rna = simData.process.transcription.rnaData["id"]
-		mRNA_indexes = np.where(simData.process.transcription.rnaData["isMRna"])[0]
+		ids_rna = simData.process.transcription.rna_data["id"]
+		mRNA_indexes = np.where(simData.process.transcription.rna_data['is_mRNA'])[0]
 		n_rnas = len(ids_rna)
 
 		# Get cell density constant
-		cell_density = simData.constants.cellDensity
+		cell_density = simData.constants.cell_density
 
 		# Load simData from first simulation to extract indices
 		simOutDir = os.path.join(sim_dirs_grouped_by_gen[0][0], "simOut")

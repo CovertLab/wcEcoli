@@ -1,9 +1,5 @@
 """
 Plots counts of rna degraded and the resulting free NMPs
-
-@author: Javier Carrera
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 1/15/2015 - Updated 8/10/2015
 """
 
 from __future__ import absolute_import, division, print_function
@@ -29,8 +25,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 
 		ntp_ids = ['ATP[c]', 'CTP[c]', 'GTP[c]', 'UTP[c]']
-		endoRnaseIds = sim_data.process.rna_decay.endoRnaseIds
-		exoRnaseIds = sim_data.moleculeGroups.exoRnaseIds
+		endoRnaseIds = sim_data.process.rna_decay.endoRNase_ids
+		exoRnaseIds = sim_data.molecule_groups.exoRNases
 		RnaseIds = np.concatenate((endoRnaseIds, exoRnaseIds))
 
 		(RnaseCounts, exoRnaseCounts, endoRnaseCounts, ntpCounts) = read_bulk_molecule_counts(
@@ -128,7 +124,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
 		# compute active ExoRNase capacity (%)
-		ActiveExoRNcapacity = fragmentBasesDigested.astype(float) / (totalexoRnaseCounts * sim_data.constants.KcatExoRNase.asNumber()) * 100
+		ActiveExoRNcapacity = fragmentBasesDigested.astype(float) / (totalexoRnaseCounts * sim_data.constants.kcat_exoRNase.asNumber()) * 100
 
 		ax = plt.subplot(n_rows, n_cols, 11)
 		plt.plot(time / 60., ActiveExoRNcapacity)

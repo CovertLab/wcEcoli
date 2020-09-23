@@ -1,9 +1,5 @@
 """
 Central carbon metabolism comparison to Toya et al for figure 3c
-
-@author: Travis Horst
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 2/13/17
 """
 
 from __future__ import absolute_import, division, print_function
@@ -35,7 +31,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# allDir = ap.get_cells(generation = [0, 1, 2])
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		metaboliteNames = np.array(sorted(sim_data.process.metabolism.concDict.keys()))
+		metaboliteNames = np.array(sorted(sim_data.process.metabolism.conc_dict.keys()))
 		nMetabolites = len(metaboliteNames)
 
 		validation_data = cPickle.load(open(validationDataFile, "rb"))
@@ -46,7 +42,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		toyaStdevDict = dict(zip(toyaReactions, toyaStdev))
 
 		sim_data = cPickle.load(open(simDataFile, 'rb'))
-		cellDensity = sim_data.constants.cellDensity
+		cellDensity = sim_data.constants.cell_density
 
 		modelFluxes = {}
 		toyaOrder = []
@@ -65,7 +61,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			dryMass = massListener.readColumn("dryMass")
 			massListener.close()
 
-			coefficient = dryMass / cellMass * sim_data.constants.cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
+			coefficient = dryMass / cellMass * sim_data.constants.cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
 
 			fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
 			reactionIDs = np.array(fbaResults.readAttribute("reactionIDs"))

@@ -1,8 +1,5 @@
 """
 Plot fluxes for metabolic map figure during a shift
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 2/13/17
 """
 
 from __future__ import absolute_import, division, print_function
@@ -37,7 +34,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = ap.get_cells()
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		rxnStoich = sim_data.process.metabolism.reactionStoich
+		rxnStoich = sim_data.process.metabolism.reaction_stoich
 
 		reactants = [
 			"GLC[p]",
@@ -261,7 +258,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			dryMass = massListener.readColumn("dryMass")
 			massListener.close()
 
-			coefficient = dryMass / cellMass * sim_data.constants.cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS) # units - g/L
+			coefficient = dryMass / cellMass * sim_data.constants.cell_density.asNumber(MASS_UNITS / VOLUME_UNITS) # units - g/L
 
 			fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
 			reactionIDs = fbaResults.readAttribute("reactionIDs")

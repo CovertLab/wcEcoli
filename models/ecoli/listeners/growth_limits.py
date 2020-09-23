@@ -1,9 +1,5 @@
 """
 GrowthLimits
-
-@author: Nick Ruggero
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/25/15
 """
 
 from __future__ import absolute_import, division, print_function
@@ -31,9 +27,9 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		super(GrowthLimits, self).initialize(sim, sim_data)
 
 		# Computed, saved attributes
-		self.aaIds = sim_data.moleculeGroups.amino_acids
-		self.ntpIds = sim_data.moleculeGroups.ntps
-		self.uncharged_trna_ids = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']].tolist()
+		self.aaIds = sim_data.molecule_groups.amino_acids
+		self.ntpIds = sim_data.molecule_groups.ntps
+		self.uncharged_trna_ids = sim_data.process.transcription.rna_data['id'][sim_data.process.transcription.rna_data['is_tRNA']].tolist()
 		self.charged_trna_ids = sim_data.process.transcription.charged_trna_names
 		self.n_aas = len(self.aaIds)
 

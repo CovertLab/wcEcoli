@@ -1,8 +1,5 @@
 """
 RnapData
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/18/15
 """
 
 from __future__ import absolute_import, division, print_function
@@ -29,7 +26,7 @@ class RnapData(wholecell.listeners.listener.Listener):
 	def initialize(self, sim, sim_data):
 		super(RnapData, self).initialize(sim, sim_data)
 
-		self.rnaIds = sim_data.process.transcription.rnaData['id']
+		self.rnaIds = sim_data.process.transcription.rna_data['id']
 		self.nRnaSpecies = self.rnaIds.size
 		self.uniqueMolecules = sim.internal_states['UniqueMolecules']
 

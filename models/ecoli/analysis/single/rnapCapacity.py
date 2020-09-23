@@ -1,8 +1,5 @@
 """
 Plots rnap capacity
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/18/2015
 """
 
 from __future__ import absolute_import, division, print_function
@@ -35,7 +32,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		rnap_reader = TableReader(os.path.join(simOutDir, "RnapData"))
 
 		# Get ID and mass of inactive (bulk) RNAP
-		inactive_rnap_id = sim_data.moleculeIds.rnapFull
+		inactive_rnap_id = sim_data.molecule_ids.full_RNAP
 
 		# Read time data
 		initial_time = main_reader.readAttribute("initialTime")
