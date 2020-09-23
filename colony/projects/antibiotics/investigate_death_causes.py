@@ -113,3 +113,7 @@ def main():
 		survive_data, multigen_settings, OUT_DIR, 'survive')
 	plot_agents_multigen(
 		die_data, multigen_settings, OUT_DIR, 'die')
+
+
+if __name__ == '__main__':
+	main()
