@@ -90,7 +90,7 @@ def main():
 	)
 	fig_pump.savefig(os.path.join(out_dir, 'pump'))
 	fig_beta_lactamase = plot_expression_survival(
-		data, PUMP_PATH,
+		data, BETA_LACTAMASE_PATH,
 		'Average Beta-Lactamase Concentration (mmol/L) over Cell Lifetime',
 		ANTIBIOTIC_TIME_RANGE,
 	)
