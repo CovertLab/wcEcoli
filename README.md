@@ -263,8 +263,3 @@ custom workflow software.
 Allen Discovery Center project on Google Cloud Platform.
 
 See [How to run the Whole Cell Model on the Google Cloud Platform](docs/google-cloud.md).
-
-
-## Multi-scale agent framework
-
-See [How to run multi-scale agents](environment/README.md).
