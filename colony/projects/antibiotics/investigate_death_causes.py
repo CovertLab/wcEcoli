@@ -67,9 +67,6 @@ def split_raw_data_by_survival(raw_data):
 
 
 def main():
-	if not os.path.exists(OUT_DIR):
-		os.makedirs(OUT_DIR)
-
 	parser = argparse.ArgumentParser()
 	Analyzer.add_connection_args(parser)
 	parser.add_argument(
@@ -79,6 +76,10 @@ def main():
 	)
 	args = parser.parse_args()
 
+	out_dir = os.path.join(OUT_DIR, args.experiment_id)
+	if not os.path.exists(out_dir):
+		os.makedirs(out_dir)
+
 	data, _ = Analyzer.get_data(
 		args, args.experiment_id)
 
@@ -87,13 +88,13 @@ def main():
 		'Average AcrAB-TolC Concentration (mmol/L) over Cell Lifetime',
 		ANTIBIOTIC_TIME_RANGE,
 	)
-	fig_pump.savefig(os.path.join(OUT_DIR, 'pump'))
+	fig_pump.savefig(os.path.join(out_dir, 'pump'))
 	fig_beta_lactamase = plot_expression_survival(
 		data, PUMP_PATH,
 		'Average Beta-Lactamase Concentration (mmol/L) over Cell Lifetime',
 		ANTIBIOTIC_TIME_RANGE,
 	)
-	fig_beta_lactamase.savefig(os.path.join(OUT_DIR, 'beta_lactamase'))
+	fig_beta_lactamase.savefig(os.path.join(out_dir, 'beta_lactamase'))
 
 	multigen_settings = {
 		'include_paths': [
@@ -110,9 +111,9 @@ def main():
 	filtered = filter_raw_data_by_time(data, ANTIBIOTIC_TIME_RANGE)
 	survive_data, die_data = split_raw_data_by_survival(filtered)
 	plot_agents_multigen(
-		survive_data, multigen_settings, OUT_DIR, 'survive')
+		survive_data, multigen_settings, out_dir, 'survive')
 	plot_agents_multigen(
-		die_data, multigen_settings, OUT_DIR, 'die')
+		die_data, multigen_settings, out_dir, 'die')
 
 
 if __name__ == '__main__':
