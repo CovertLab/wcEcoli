@@ -20,6 +20,11 @@ Docker mechanics.
 
    Install the [Docker Desktop software](https://www.docker.com/products/docker-desktop).
 
+   **On Windows:** To use Docker on Windows, do it within
+   [Windows Subsystem for Linux 2 (WSL2)](https://docs.microsoft.com/en-us/windows/wsl/about)
+   which is a real Linux kernel that behaves the same as other Linux environments.
+   Don't try to use VirtualBox.
+
    **NOTE:** Open Docker's Advanced Preferences and increase the memory allocation to 4GB.
    (The default allocation is 2GB which would make the model's Python code run out of
    memory, print "Killed", and stop with exit code 137.)
@@ -27,12 +32,12 @@ Docker mechanics.
    Build and run the Docker Container Image locally like this:
 
    ```shell script
-   cloud/cloud/build-containers-locally.sh
+   cloud/build-containers-locally.sh
    docker run --name=wcm -it --rm wcm-code
    ```
 
-   Or build a Container Image using a Google Cloud Build server,
-   pull the Image from the Google Cloud Package Registry `gcr.io`,
+   Or build a Docker Image using a Google Cloud Build server,
+   pull the Image from the Google Cloud Package Registry,
    and run it locally
    (to do this you'll need to [set up the Google Cloud project](google-cloud.md)):
 
@@ -42,7 +47,14 @@ Docker mechanics.
    docker run --name=wcm -it --rm gcr.io/${PROJECT}/${USER}-wcm-code
    ```
 
-   You can then run the model's Python programs inside the Container.
+   **NOTE:** It's better to build the Docker Image on Linux (e.g. in Google Cloud
+   Build or WSL2) than on macOS where `build-containers-locally.sh` has to work around
+   a Docker bug by disabling AVX2 instructions in OpenBLAS. That change somehow
+   makes the computation produce different results and run a little slower.
+   An Image built on Linux won't have the AVX2 workaround and yet it runs fine on macOS.
+   See [xianyi/OpenBLAS#2244](https://github.com/xianyi/OpenBLAS/issues/2244#issuecomment-696510557).
+
+   Once you have a Docker Image, you can run the model's Python programs inside the Container.
    (PyCharm Pro should support debugging into a Docker Container but we haven't tested that.)
 
    After changing the model's source code in the `wcEcoli/` directory, building an
@@ -52,10 +64,8 @@ Docker mechanics.
    cloud/build-wcm.sh
    ```
 
-   **NOTE:** Docker Desktop for Windows is not currently compatible with VirtualBox.  If you use VirtualBox, try installing the legacy [Docker Toolbox](https://github.com/docker/toolbox/releases) instead.  You may also need to adjust the memory allocated to the VirtualBox VM (named 'default') that gets created.  In VirtualBox, select the 'default' VM and under system, change the base memory from 1 GB to 4 GB. 
-
    **TIP:** To preserve the model's output files after the Container exits,
-   bind its output directory `/wcEcoli/out` to a local directory like `out/` by adding
+   bind its output directory `/wcEcoli/out` to a host directory like `out/` by adding
    the option `-v $PWD/out:/wcEcoli/out`, where `$PWD` is the
    path to your cloned repo in the host computer.
 
@@ -65,10 +75,11 @@ Docker mechanics.
    inside the Container with the code in your host wcEcoli directory by changing
    that option to `-v $PWD:/wcEcoli`.
 
-   **TIP:** If the Container creates output files with the wrong host user and group
-   ownership, you can change that by adding the `--user "$(id -u):$(id -g)"` option.
+   **TIP:** When running in Docker on Linux or WSL2, the Container's output files
+   will have the wrong host user and group ownership. You can change that by
+   adding the `--user "$(id -u):$(id -g)"` option to the `docker run` command.
    That runs the process inside the Container as your host computer user and group so
-   the files will be owned by you. However, this adds other complications since it runs
+   the files will be owned by you, but it adds other complications since it runs
    inside the Container without ownership of the existing files and directories.
 
 * **pyenv setup**

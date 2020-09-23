@@ -197,9 +197,10 @@ source code, and many other features for working with Python code.
   * `Cmd-[` and `Cmd-]`: Navigate Back and Forward, like in a web browser.
   * `F2`: Next Bookmark, `Shift-F2`: Previous Bookmark, `Cmd-F2`: Toggle Bookmarks.
 
-[TODO] Tips on setting up and using the debugger...
+See [this PyCharm debugger tutorial video](https://youtu.be/QJtWxm12Eo0) or
+[this PyCharm debugger tutorial webpage](https://www.jetbrains.com/help/pycharm/debugging-your-first-python-application.html).
 
-#### Special package names
+#### Mismatched package names
 
 PyCharm's inspector gives false-positive error messages like:
 
@@ -212,8 +213,9 @@ list doesn't include `stochastic-arrow`, `biopython`, etc., but we can add them.
 **The fix:** Each time you install a PyCharm release, run the following shell command,
 then restart PyCharm:  
 
-> [NOTE: So far, this script only works on macOS and maybe only for PyCharm Pro
-installed by JetBrains Toolbox. To support other installations, we need to
+> \[NOTE: So far, this script only works on macOS and maybe only for PyCharm Pro
+installed by JetBrains Toolbox. It won't work with snap-installed PyCharm since
+snap installs on a readonly file system. To support other installations,
 enhance the script for where `python.jar` or `python-ce.jar` gets installed.]
 
     runscripts/tools/augment-pycharm-package-list.sh
