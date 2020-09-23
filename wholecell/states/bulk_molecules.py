@@ -9,6 +9,7 @@ State which represents for a class of molecules the bulk copy numbers.
 
 from __future__ import absolute_import, division, print_function
 
+import os
 import numpy as np
 from six.moves import zip
 
@@ -229,10 +230,10 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 			self._moleculeMass
 			).sum(axis=0)
 
-		# import ipdb; ipdb.set_trace()
-		# Calculates masses for each compartment
-		# TODO: Change this to get abbrevs from compartments.tsv
-		compartment_abbrevs = ["[n]","[j]","[w]","[c]","[e]","[m]","[o]","[p]","[l]","[i]"]
+		# Compute summed masses for each compartment
+		compartment_file = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))) +
+										   '/reconstruction/ecoli/flat/compartments.tsv')
+		compartment_abbrevs = ['[' + line.rstrip()[1] + ']' for line in open(compartment_file)][1:]
 		for abbrev in compartment_abbrevs:
 			compartmentIndex = np.core.defchararray.chararray.endswith(self._moleculeIDs, abbrev)
 			compartmentMoleculeMass = np.zeros(self._moleculeMass.shape)

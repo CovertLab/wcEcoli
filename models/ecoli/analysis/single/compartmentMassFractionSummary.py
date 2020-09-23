@@ -67,10 +67,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		mass_labels = ["Nucleoid", "Projection", "Cell Wall", "Cytosol", "Extracellular", "Membrane",
 					   "Outer Membrane", "Periplasm", "Pilus", "Inner Membrane"]
 		legend = [
-			'{} ({:e})'.format(label, fraction)
+			'{} ({:.3e})'.format(label, fraction)
 			for label, fraction in zip(mass_labels, fractions)
 			] + ['Total cell mass']
-		# import ipdb; ipdb.set_trace()
+
 		plt.figure(figsize = (8.5, 11))
 		plt.gca().set_prop_cycle('color', COLORS)
 

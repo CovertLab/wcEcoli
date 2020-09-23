@@ -54,16 +54,16 @@ class Mass(wholecell.listeners.listener.Listener):
 		self.proteinIndex = sim_data.submass_name_to_index["protein"]
 		self.waterIndex = sim_data.submass_name_to_index["water"]
 
-		self.nucleoidIndex = "[n]"
-		self.projectionIndex = "[j]"
-		self.cellWallIndex = "[w]"
-		self.cytosolIndex = "[c]"
-		self.extracellularIndex = "[e]"
-		self.membraneIndex = "[m]"
-		self.outerMembraneIndex = "[o]"
-		self.periplasmIndex = "[p]"
-		self.pilusIndex = "[l]"
-		self.innerMembraneIndex = "[i]"
+		self.nucleoidKey = "[n]"
+		self.projectionKey = "[j]"
+		self.cellWallKey = "[w]"
+		self.cytosolKey = "[c]"
+		self.extracellularKey = "[e]"
+		self.membraneKey = "[m]"
+		self.outerMembraneKey = "[o]"
+		self.periplasmKey = "[p]"
+		self.pilusKey = "[l]"
+		self.innerMembraneKey = "[i]"
 
 		self.cellDensity = sim_data.constants.cell_density.asNumber(units.g / units.L)
 
@@ -156,17 +156,17 @@ class Mass(wholecell.listeners.listener.Listener):
 		self.dnaMass = all_submasses[self.dnaIndex]
 		self.proteinMass = all_submasses[self.proteinIndex]
 		self.smallMoleculeMass = all_submasses[self.smallMoleculeIndex]
-		# import ipdb; ipdb.set_trace()
-		self.nucleoidMass = sum(bulk_submasses.get(self.nucleoidIndex))
-		self.projectionMass = sum(bulk_submasses.get(self.projectionIndex))
-		self.cellWallMass = sum(bulk_submasses.get(self.cellWallIndex))
-		self.cytosolMass = sum(bulk_submasses.get(self.cytosolIndex)) + sum(unique_submasses)
-		self.extracellularMass = sum(bulk_submasses.get(self.extracellularIndex))
-		self.membraneMass = sum(bulk_submasses.get(self.membraneIndex))
-		self.outerMembraneMass = sum(bulk_submasses.get(self.outerMembraneIndex))
-		self.periplasmMass = sum(bulk_submasses.get(self.periplasmIndex))
-		self.pilusMass = sum(bulk_submasses.get(self.pilusIndex))
-		self.innerMembraneMass = sum(bulk_submasses.get(self.innerMembraneIndex))
+
+		self.nucleoidMass = sum(bulk_submasses.get(self.nucleoidKey))
+		self.projectionMass = sum(bulk_submasses.get(self.projectionKey))
+		self.cellWallMass = sum(bulk_submasses.get(self.cellWallKey))
+		self.cytosolMass = sum(bulk_submasses.get(self.cytosolKey)) + sum(unique_submasses)
+		self.extracellularMass = sum(bulk_submasses.get(self.extracellularKey))
+		self.membraneMass = sum(bulk_submasses.get(self.membraneKey))
+		self.outerMembraneMass = sum(bulk_submasses.get(self.outerMembraneKey))
+		self.periplasmMass = sum(bulk_submasses.get(self.periplasmKey))
+		self.pilusMass = sum(bulk_submasses.get(self.pilusKey))
+		self.innerMembraneMass = sum(bulk_submasses.get(self.innerMembraneKey))
 
 		# TODO (Eran) use this volume everywhere in the codebase that is currently calculating volume
 		self.volume = self.cellMass / self.cellDensity
