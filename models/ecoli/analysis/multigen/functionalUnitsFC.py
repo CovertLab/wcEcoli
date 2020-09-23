@@ -1,9 +1,3 @@
-"""
-@author: Heejo Choi
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 11/13/2017
-"""
-
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -57,11 +51,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Load sim data
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		rnaIds = sim_data.process.transcription.rnaData["id"][sim_data.relation.rnaIndexToMonomerMapping] # orders rna IDs to match monomer IDs
+		rnaIds = sim_data.process.transcription.rna_data["id"][sim_data.relation.rna_index_to_monomer_mapping] # orders rna IDs to match monomer IDs
 		rnaIds = rnaIds.tolist()
-		ids_complexation = sim_data.process.complexation.moleculeNames # Complexe of proteins, and protein monomers
+		ids_complexation = sim_data.process.complexation.molecule_names # Complexe of proteins, and protein monomers
 		ids_complexation_complexes = sim_data.process.complexation.ids_complexes # Only complexes
-		ids_translation = sim_data.process.translation.monomerData["id"].tolist() # Only protein monomers
+		ids_translation = sim_data.process.translation.monomer_data["id"].tolist() # Only protein monomers
 
 		# ID subgenerational rnas
 		subgenerational_indices = np.where(colors == "b")[0]
@@ -86,7 +80,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Check whether all subunits of subgenerational complexes are subgenerational monomers
 		nComplexesWNonSubGSubunits = 0
 		for i in complexMinCounts_dict.keys():
-			subunitIds = sim_data.process.complexation.getMonomers(i)["subunitIds"]
+			subunitIds = sim_data.process.complexation.get_monomers(i)["subunitIds"]
 			if not np.all([x in subgenerational_monomerIds for x in subunitIds]):
 				nComplexesWNonSubGSubunits += 1
 

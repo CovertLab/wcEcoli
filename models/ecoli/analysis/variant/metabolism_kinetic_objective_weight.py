@@ -1,8 +1,5 @@
 '''
 Analyze results from metabolism_kinetic_objective_weight variant
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/7/18'
 '''
 
 from __future__ import absolute_import, division, print_function
@@ -54,8 +51,8 @@ def analyze_variant(args):
 
 	# Load sim_data attributes for the given variant
 	sim_data = cPickle.load(open(ap.get_variant_kb(variant), 'rb'))
-	cell_density = sim_data.constants.cellDensity
-	n_avogadro = sim_data.constants.nAvogadro
+	cell_density = sim_data.constants.cell_density
+	n_avogadro = sim_data.constants.n_avogadro
 	lambdas = sim_data.process.metabolism.kinetic_objective_weight
 
 	# Lists for each cell in current variant

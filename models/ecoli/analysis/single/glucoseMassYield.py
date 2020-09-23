@@ -1,9 +1,3 @@
-"""
-@author: Nick Ruggero
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 8/8/2014
-"""
-
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -52,7 +46,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		growth = GROWTH_UNITS * mass.readColumn("growth") / timeStepSec
 		mass.close()
 
-		glucoseMW = sim_data.getter.getMass([GLUCOSE_ID])[0]
+		glucoseMW = sim_data.getter.get_mass([GLUCOSE_ID])[0]
 
 		glucoseMassFlux = glucoseFlux * glucoseMW * cellDryMass
 

@@ -14,9 +14,9 @@ from reconstruction.spreadsheets import read_tsv, tsv_writer
 
 
 _DIR = os.path.join("reconstruction", "ecoli", "flat", "metabolism")
-_FBA_FILE = os.path.join(_DIR, "ecocyc-full-biomass.fba") # biomass stoich, nutrients, secretions
-_LP_FILE = os.path.join(_DIR, "ecocyc-full-biomass.lp") # reaction stoich, constraints, objective
-_LPLOG_FILE = os.path.join(_DIR, "ecocyc-full-biomass.lplog") # rxn/compound mapping
+_FBA_FILE = os.path.join(_DIR, "ecocyc_full_biomass.fba") # biomass stoich, nutrients, secretions
+_LP_FILE = os.path.join(_DIR, "ecocyc_full_biomass.lp") # reaction stoich, constraints, objective
+_LPLOG_FILE = os.path.join(_DIR, "ecocyc_full_biomass.lplog") # rxn/compound mapping
 
 _COMPARTMENT_CHAR = {
 	"CCO-CYTOSOL":"c",
@@ -263,7 +263,7 @@ rows = read_tsv(filename)
 for entry in rows:
 	if entry["id"] in biomassIDs:
 		for c in entry["location"]:
-			masses[entry["id"] + "[{}]".format(c)] = entry["mw7.2"]
+			masses[entry["id"] + "[{}]".format(c)] = entry["mw"]
 
 for outName, groupName in six.viewitems(_MASS_CATEGORIES):
 	moleculeIDs = {
@@ -288,7 +288,7 @@ for outName, groupName in six.viewitems(_MASS_CATEGORIES):
 		]
 
 	filename = os.path.join(
-		"reconstruction", "ecoli", "flat", "massFractions", outName + "Fractions.tsv")
+		"reconstruction", "ecoli", "flat", "mass_fractions", outName + "Fractions.tsv")
 	with tsv_writer(filename, ["metaboliteId", "massFraction"]) as writer:
 		writer.writerows(out)
 

@@ -1,7 +1,6 @@
 """
 Simulation
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
 from __future__ import absolute_import, division, print_function
@@ -94,7 +93,6 @@ class Simulation():
 	# Attributes that may be optionally overwritten by a subclass
 	_listenerClasses = ()  # type: Tuple[Callable, ...]
 	_hookClasses = ()  # type: Sequence[Callable]
-	_timeStepSec = MAX_TIME_STEP
 	_shellColumnHeaders = ("Time (s)",)  # type: Sequence[str]
 
 	# Constructors
@@ -124,6 +122,7 @@ class Simulation():
 			print("Unknown keyword arguments: {}".format(unknownKeywords))
 
 		# Set time variables
+		self._timeStepSec = min(MAX_TIME_STEP, self._maxTimeStep)
 		self._simulationStep = 0
 		self.daughter_paths = []
 

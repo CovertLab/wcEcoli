@@ -2,9 +2,6 @@
 TfBinding
 
 Bind transcription factors to DNA
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/14/16
 """
 
 from __future__ import absolute_import, division, print_function
@@ -47,12 +44,12 @@ class TfBinding(wholecell.processes.process.Process):
 		self.n_TU = delta_prob['shape'][0]
 
 		# Get constants
-		self.nAvogadro = sim_data.constants.nAvogadro
-		self.cellDensity = sim_data.constants.cellDensity
+		self.nAvogadro = sim_data.constants.n_avogadro
+		self.cellDensity = sim_data.constants.cell_density
 
 		# Create dictionaries and method
-		self.pPromoterBoundTF = sim_data.process.transcription_regulation.pPromoterBoundTF
-		self.tfToTfType = sim_data.process.transcription_regulation.tfToTfType
+		self.pPromoterBoundTF = sim_data.process.transcription_regulation.p_promoter_bound_tf
+		self.tfToTfType = sim_data.process.transcription_regulation.tf_to_tf_type
 
 		# Build views with low request priority to requestAll
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_TF_BINDING)
@@ -64,21 +61,21 @@ class TfBinding(wholecell.processes.process.Process):
 			self.active_tf_view[tf] = self.bulkMoleculeView(tf + "[c]")
 
 			if self.tfToTfType[tf] == "1CS":
-				if tf == sim_data.process.transcription_regulation.activeToBound[tf]:
+				if tf == sim_data.process.transcription_regulation.active_to_bound[tf]:
 					self.inactive_tf_view[tf] = self.bulkMoleculeView(
-						sim_data.process.equilibrium.getUnbound(tf + "[c]"))
+						sim_data.process.equilibrium.get_unbound(tf + "[c]"))
 				else:
 					self.inactive_tf_view[tf] = self.bulkMoleculeView(
-						sim_data.process.transcription_regulation.activeToBound[tf] + "[c]")
+						sim_data.process.transcription_regulation.active_to_bound[tf] + "[c]")
 			elif self.tfToTfType[tf] == "2CS":
 				self.inactive_tf_view[tf] = self.bulkMoleculeView(
-					sim_data.process.two_component_system.activeToInactiveTF[tf + "[c]"])
+					sim_data.process.two_component_system.active_to_inactive_tf[tf + "[c]"])
 
 		# Build array of active TF masses
-		bulk_molecule_ids = sim_data.internal_state.bulkMolecules.bulkData["id"]
+		bulk_molecule_ids = sim_data.internal_state.bulk_molecules.bulk_data["id"]
 		tf_indexes = [np.where(bulk_molecule_ids == tf_id + "[c]")[0][0]
 			for tf_id in self.tf_ids]
-		self.active_tf_masses = (sim_data.internal_state.bulkMolecules.bulkData[
+		self.active_tf_masses = (sim_data.internal_state.bulk_molecules.bulk_data[
 			"mass"][tf_indexes]/self.nAvogadro).asNumber(units.fg)
 
 

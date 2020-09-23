@@ -1,8 +1,5 @@
 """
 Plots the counts of active replisomes and their subunits over time.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 7/30/2018
 """
 
 from __future__ import absolute_import, division, print_function
@@ -49,13 +46,13 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Load IDs of direct replisome subunits
 		replisome_subunit_ids = []
 		replisome_subunit_ids.extend(
-			sim_data.moleculeGroups.replisome_trimer_subunits)
+			sim_data.molecule_groups.replisome_trimer_subunits)
 		replisome_subunit_ids.extend(
-			sim_data.moleculeGroups.replisome_monomer_subunits)
+			sim_data.molecule_groups.replisome_monomer_subunits)
 
 		# Load IDs of DNA polymerase III core enzyme subunits
 		replisome_subunit_ids.extend(
-			sim_data.process.complexation.getMonomers(
+			sim_data.process.complexation.get_monomers(
 				'CPLX0-2361[c]')['subunitIds']
 			)
 

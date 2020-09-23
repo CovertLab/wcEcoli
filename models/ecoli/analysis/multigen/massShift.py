@@ -1,9 +1,3 @@
-"""
-@author: Heejo Choi
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 1/19/2017
-"""
-
 from __future__ import absolute_import, division, print_function
 
 import os

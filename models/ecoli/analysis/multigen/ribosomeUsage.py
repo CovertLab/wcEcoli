@@ -1,9 +1,5 @@
 """
 Plot usage statistics of ribosomes
-
-@author: Gwanggyu Sun
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 10/18/2017
 """
 
 from __future__ import absolute_import, division, print_function
@@ -73,13 +69,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			## Ribosome counts and statistics ##
 
 			# Get ids for 30S and 50S subunits
-			complexIds30S = [sim_data.moleculeIds.s30_fullComplex]
-			complexIds50S = [sim_data.moleculeIds.s50_fullComplex]
+			complexIds30S = [sim_data.molecule_ids.s30_full_complex]
+			complexIds50S = [sim_data.molecule_ids.s50_full_complex]
 
 			# Get molecular weights for 30S and 50S subunits, and add these two for 70S
-			nAvogadro = sim_data.constants.nAvogadro
-			mw30S = sim_data.getter.getMass(complexIds30S)
-			mw50S = sim_data.getter.getMass(complexIds50S)
+			nAvogadro = sim_data.constants.n_avogadro
+			mw30S = sim_data.getter.get_mass(complexIds30S)
+			mw50S = sim_data.getter.get_mass(complexIds50S)
 			mw70S = mw30S + mw50S
 
 			# Get indexes for 30S and 50S subunits based on ids
@@ -122,7 +118,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			massDataFile.close()
 
 			# Calculate cell volume
-			cellVolume = (1.0 / sim_data.constants.cellDensity) * (units.fg * cellMass)
+			cellVolume = (1.0 / sim_data.constants.cell_density) * (units.fg * cellMass)
 
 			# Calculate molecule counts and molar fraction of active ribosomes
 			counts30S = complexCounts30S

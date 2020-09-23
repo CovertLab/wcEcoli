@@ -2,10 +2,6 @@
 Equilibrium
 
 Equilibrium binding sub-model
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 8/21/2015
 """
 
 from __future__ import absolute_import, division, print_function
@@ -36,16 +32,16 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.jit = sim._jit
 
 		# Get constants
-		self.nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / units.mol)
-		self.cellDensity = sim_data.constants.cellDensity.asNumber(units.g / units.L)
+		self.nAvogadro = sim_data.constants.n_avogadro.asNumber(1 / units.mol)
+		self.cellDensity = sim_data.constants.cell_density.asNumber(units.g / units.L)
 
 		# Create matrix and method
-		self.stoichMatrix = sim_data.process.equilibrium.stoichMatrix().astype(np.int64)
-		self.fluxesAndMoleculesToSS = sim_data.process.equilibrium.fluxesAndMoleculesToSS
+		self.stoichMatrix = sim_data.process.equilibrium.stoich_matrix().astype(np.int64)
+		self.fluxesAndMoleculesToSS = sim_data.process.equilibrium.fluxes_and_molecules_to_SS
 		self.product_indices = [idx for idx in np.where(np.any(self.stoichMatrix > 0, axis=1))[0]]
 
 		# Build views
-		moleculeNames = sim_data.process.equilibrium.moleculeNames
+		moleculeNames = sim_data.process.equilibrium.molecule_names
 		self.molecules = self.bulkMoleculesView(moleculeNames)
 
 

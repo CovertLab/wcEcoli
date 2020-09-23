@@ -11,10 +11,6 @@ EG10873_RNA[c]	44.7	rplL	50S Ribosomal subunit protein L7/L12 dimer
 EG12179_RNA[c]	46.2	cspE	Transcription antiterminator and regulator of RNA stability
 EG10321_RNA[c]	53.2	fliC	Flagellin
 EG10544_RNA[c]	97.5	lpp		Murein lipoprotein
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 10/29/2015
 """
 
 from __future__ import absolute_import, division, print_function
@@ -36,7 +32,7 @@ from six.moves import zip
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		allRnaIds = sim_data.process.transcription.rnaData["id"].tolist()
+		allRnaIds = sim_data.process.transcription.rna_data["id"].tolist()
 
 		rnaIds = [
 			"EG10367_RNA[c]", "EG11036_RNA[c]", "EG50002_RNA[c]", "EG10671_RNA[c]", "EG50003_RNA[c]",
@@ -56,7 +52,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		]
 
 		rnaIdxs = [allRnaIds.index(x) for x in rnaIds]
-		degRates = sim_data.process.transcription.rnaData["degRate"][rnaIdxs]
+		degRates = sim_data.process.transcription.rna_data['deg_rate'][rnaIdxs]
 
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 

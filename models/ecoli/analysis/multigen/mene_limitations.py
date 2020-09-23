@@ -1,8 +1,3 @@
-"""
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 2/12/2017
-"""
-
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -55,9 +50,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = ap.get_cells(seed = [0])
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		cellDensity = sim_data.constants.cellDensity
+		cellDensity = sim_data.constants.cell_density
 
-		rnaIds = sim_data.process.transcription.rnaData["id"]
+		rnaIds = sim_data.process.transcription.rna_data["id"]
 
 		simOutDir = os.path.join(allDir[0], "simOut")
 		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))

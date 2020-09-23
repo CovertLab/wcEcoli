@@ -1,9 +1,5 @@
 """
 Plot mRNA counts
-
-@author: John Mason
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/27/2014
 """
 
 from __future__ import absolute_import, division, print_function
@@ -25,8 +21,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			sim_data = cPickle.load(f)
 
 		# Get the names of RNAs from the KB
-		is_mRNA = sim_data.process.transcription.rnaData['isMRna']
-		mRNA_ids = sim_data.process.transcription.rnaData['id'][is_mRNA]
+		is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']
+		mRNA_ids = sim_data.process.transcription.rna_data['id'][is_mRNA]
 
 		# Get reader for mRNA counts
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
@@ -39,7 +35,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		plt.figure(figsize = (8.5, 11))
 
-		expectedCountsArbitrary = sim_data.process.transcription.rnaExpression[
+		expectedCountsArbitrary = sim_data.process.transcription.rna_expression[
 			sim_data.condition][is_mRNA]
 		expectedCounts = expectedCountsArbitrary/expectedCountsArbitrary.sum() * counts.sum()
 

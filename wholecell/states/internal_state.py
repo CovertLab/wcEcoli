@@ -3,7 +3,6 @@ Internal State
 
 State variable base class. Defines the interface states expose to the simulation and processes.
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
 from __future__ import absolute_import, division, print_function
@@ -42,9 +41,9 @@ class InternalState(object):
 		self._nProcesses = len(sim.processes)
 
 		# TODO: include compartment
-		self._masses = np.zeros(len(sim_data.submassNameToIndex), np.float64)
+		self._masses = np.zeros(len(sim_data.submass_name_to_index), np.float64)
 		self._process_mass_diffs = np.zeros(
-			(self._nProcesses, len(sim_data.submassNameToIndex)), np.float64)
+			(self._nProcesses, len(sim_data.submass_name_to_index)), np.float64)
 
 
 	# Allocate memory

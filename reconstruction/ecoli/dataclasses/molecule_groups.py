@@ -1,13 +1,10 @@
 """
 SimulationData moleculeGroups
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 02/13/2015
 """
 
 from __future__ import absolute_import, division, print_function
 
-from reconstruction.ecoli.dataclasses.state.stateFunctions import createIdsWithCompartments
+POLYMERIZED_FRAGMENT_PREFIX = 'polymerized_'
 
 
 class MoleculeGroups(object):
@@ -17,20 +14,28 @@ class MoleculeGroups(object):
 	"""
 
 	def __init__(self, raw_data, sim_data):
-		self._buildMoleculeGroups(raw_data, sim_data)
+		self._build_molecule_groups(sim_data)
 
-	def _buildMoleculeGroups(self, raw_data, sim_data):
-		moleculeGroups = {
-			'ntpIds': ["ATP[c]","CTP[c]","GTP[c]","UTP[c]"],
-			'dNtpIds': ["DATP[c]", "DCTP[c]", "DGTP[c]", "TTP[c]"],
-			'rnapIds': ['RPOB-MONOMER[c]', 'RPOC-MONOMER[c]', 'EG10893-MONOMER[c]'],
+	def _build_molecule_groups(self, sim_data):
+		aa_ids = list(sim_data.amino_acid_code_to_id_ordered.values())
+		ntp_ids = list(sim_data.ntp_code_to_id_ordered.values())
+		dntp_ids = list(sim_data.dntp_code_to_id_ordered.values())
+		polymerized_aa_ids = [
+			POLYMERIZED_FRAGMENT_PREFIX + aa_id for aa_id in aa_ids]
+		polymerized_ntp_ids = [
+			POLYMERIZED_FRAGMENT_PREFIX + ntp_id for ntp_id in ntp_ids]
+		polymerized_dntp_ids = [
+			POLYMERIZED_FRAGMENT_PREFIX + dntp_id for dntp_id in dntp_ids]
 
-			'polymerizedAA_IDs': [x['id'] for x in raw_data.polymerized
-				if x['is_aa'] and not x['is_end']], # TODO: end weight
-			'polymerizedNT_IDs': [x['id'] for x in raw_data.polymerized
-				if x['is_ntp'] and not x['is_end']], # TODO: end weight
-			'polymerizedDNT_IDs': [x['id'] for x in raw_data.polymerized
-				if x['is_dntp'] and not x['is_end']], # TODO: end weight
+		molecule_groups = {
+			'amino_acids': aa_ids,
+			'ntps': ntp_ids,
+			'dntps': dntp_ids,
+
+			'polymerized_amino_acids': polymerized_aa_ids,
+			'polymerized_ntps': polymerized_ntp_ids,
+			'polymerized_dntps': polymerized_dntp_ids,
+			'polymerized_subunits': polymerized_aa_ids + polymerized_ntp_ids + polymerized_dntp_ids,
 
 			's30_proteins':	['EG10912-MONOMER[c]', 'EG10916-MONOMER[c]',
 				'EG10906-MONOMER[c]', 'EG10914-MONOMER[c]', 'EG10909-MONOMER[c]',
@@ -40,10 +45,10 @@ class MoleculeGroups(object):
 				'EG10907-MONOMER[c]', 'EG11508-MONOMER[c]', 'EG10908-MONOMER[c]',
 				'EG10920-MONOMER[c]', 'EG10910-MONOMER[c]', 'EG10902-MONOMER[c]',
 				'EG10917-MONOMER[c]', 'EG10913-MONOMER[c]'],
-			's30_16sRRNA': ['RRSA-RRNA[c]', 'RRSB-RRNA[c]', 'RRSC-RRNA[c]',
+			's30_16s_rRNA': ['RRSA-RRNA[c]', 'RRSB-RRNA[c]', 'RRSC-RRNA[c]',
 				'RRSD-RRNA[c]', 'RRSE-RRNA[c]', 'RRSG-RRNA[c]', 'RRSH-RRNA[c]'],
 
-			's50_proteinComplexes': ['CPLX0-3956[c]'],
+			's50_protein_complexes': ['CPLX0-3956[c]'],
 			's50_proteins':	['EG10872-MONOMER[c]', 'EG10879-MONOMER[c]',
 				'EG11232-MONOMER[c]', 'EG10877-MONOMER[c]', 'EG10876-MONOMER[c]',
 				'EG10892-MONOMER[c]', 'EG10874-MONOMER[c]', 'EG50001-MONOMER[c]',
@@ -55,48 +60,40 @@ class MoleculeGroups(object):
 				'EG10890-MONOMER[c]', 'EG10864-MONOMER[c]', 'EG10881-MONOMER[c]',
 				'EG10865-MONOMER[c]', 'EG10868-MONOMER[c]', 'EG10880-MONOMER[c]',
 				'EG10867-MONOMER[c]', 'EG10866-MONOMER[c]'],
-			's50_23sRRNA': ['RRLA-RRNA[c]', 'RRLB-RRNA[c]', 'RRLC-RRNA[c]',
+			's50_23s_rRNA': ['RRLA-RRNA[c]', 'RRLB-RRNA[c]', 'RRLC-RRNA[c]',
 				'RRLD-RRNA[c]', 'RRLE-RRNA[c]', 'RRLG-RRNA[c]', 'RRLH-RRNA[c]'],
-			's50_5sRRNA': ['RRFA-RRNA[c]', 'RRFB-RRNA[c]', 'RRFC-RRNA[c]',
+			's50_5s_rRNA': ['RRFA-RRNA[c]', 'RRFB-RRNA[c]', 'RRFC-RRNA[c]',
 				'RRFD-RRNA[c]', 'RRFE-RRNA[c]', 'RRFG-RRNA[c]', 'RRFH-RRNA[c]'],
 
 			'lipids': ['CPD-8260[c]', 'CPD-12819[c]', 'CPD-12824[c]'],
 			'polyamines': ['GAMMA-GLUTAMYL-PUTRESCINE[c]', 'PUTRESCINE[c]',
 				'GLUTATHIONYLSPERMIDINE[c]', 'SPERMIDINE[c]',
 				'N1-ACETYLSPERMINE[c]', 'SPERMINE[c]'],
-			'dna_structural_proteins': ['PD00347[c]', 'PD00348[c]', 'PC00027[c]',
-										'PD00196[c]', 'CPLX0-7705[c]',
-										'EG10466-MONOMER[c]', 'EG10467-MONOMER[c]', 'CPLX0-2021[c]',
-										'PD00288[c]',
-										'EG10618-MONOMER[c]', 'EG11252-MONOMER[c]', 'EG12165-MONOMER[c]',
-										'CPLX0-7696[c]', 'CPLX0-7698[c]', 'CPLX0-7697[c]', 'CPLX0-2561[c]',
-										'EG11191-MONOMER[c]', 'CPLX0-7922[c]',
-										'EG12855-MONOMER[c]', 'CPLX0-7789[c]',],
+
 			# TODO: 'EG10245-MONOMER[c]' (DNAP III subunit tau) should be added
-			# to the list of trimer subunits once frame-shifting proteins are
-			# produced.
+			# 	to the list of trimer subunits once frame-shifting proteins are
+			# 	produced.
 			'replisome_trimer_subunits': ['CPLX0-2361[c]', 'CPLX0-3761[c]'],
 			'replisome_monomer_subunits': ['CPLX0-3621[c]', 'EG10239-MONOMER[c]',
 				'EG11500-MONOMER[c]', 'EG11412-MONOMER[c]'],
 
-			'aaIDs': list(sim_data.amino_acid_1_to_3_ordered.values()),
-			'fragmentNT_IDs': [x['id'].replace('Polymerized','Fragment')
-				for x in raw_data.polymerized if x['is_ntp'] and not x['is_end']],
-
-			'exoRnaseIds': ['EG11620-MONOMER[c]', 'G7175-MONOMER[c]',
+			'exoRNases': ['EG11620-MONOMER[c]', 'G7175-MONOMER[c]',
 				'EG10858-MONOMER[c]', 'EG10863-MONOMER[c]', 'EG11259-MONOMER[c]',
 				'EG11547-MONOMER[c]', 'EG10746-MONOMER[c]', 'G7842-MONOMER[c]',
 				'EG10743-MONOMER[c]'],
-			'endoRnase_RnaIDs':	['EG10856_RNA[c]', 'EG10857_RNA[c]',
+			'endoRNase_rnas': ['EG10856_RNA[c]', 'EG10857_RNA[c]',
 				'EG10859_RNA[c]', 'EG10860_RNA[c]', 'EG10861_RNA[c]',
 				'EG10862_RNA[c]', 'EG11299_RNA[c]', 'G7175_RNA[c]',
 				'G7365_RNA[c]'],
-			'exoRnase_RnaIDs': ['EG11620_RNA[c]', 'G7175_RNA[c]',
+			'exoRNase_rnas': ['EG11620_RNA[c]', 'G7175_RNA[c]',
 				'EG10858_RNA[c]', 'EG10863_RNA[c]', 'EG11259_RNA[c]',
 				'EG11547_RNA[c]', 'EG10746_RNA[c]', 'G7842_RNA[c]',
 				'EG10743_RNA[c]'],
 
-			'rProteins': ['EG10872-MONOMER[c]', 'EG10879-MONOMER[c]',
+			'RNAP_subunits': ['RPOB-MONOMER[c]', 'RPOC-MONOMER[c]',
+				'EG10893-MONOMER[c]'],
+
+			'ribosomal_proteins': ['EG10872-MONOMER[c]', 'EG10879-MONOMER[c]',
 				'EG11232-MONOMER[c]', 'EG10877-MONOMER[c]', 'EG10876-MONOMER[c]',
 				'EG10892-MONOMER[c]', 'EG10874-MONOMER[c]',	'EG50001-MONOMER[c]',
 				'EG10875-MONOMER[c]', 'EG10884-MONOMER[c]', 'EG11231-MONOMER[c]',
@@ -119,20 +116,14 @@ class MoleculeGroups(object):
 			'carbon_sources': ['GLC[p]', 'ACET[p]', 'SUC[p]'],
 		}
 
-		bulkMoleculesBinomialDivision = createIdsWithCompartments(raw_data.metabolites)
+		# Initialize molecule groups for how molecules are split between two
+		# daughter cells at cell division (populated later by InternalState)
+		molecule_groups['bulk_molecules_binomial_division'] = []
+		molecule_groups['bulk_molecules_equal_division'] = []
 
-		bulkMoleculesBinomialDivision.extend(createIdsWithCompartments(raw_data.rnas))
-		bulkMoleculesBinomialDivision.extend(createIdsWithCompartments(raw_data.proteins))
-		bulkMoleculesBinomialDivision.extend(createIdsWithCompartments(raw_data.proteinComplexes))
-		bulkMoleculesBinomialDivision.extend(createIdsWithCompartments(raw_data.modifiedForms))
-		bulkMoleculesBinomialDivision.extend(createIdsWithCompartments(raw_data.water))
+		molecule_groups['unique_molecules_active_ribosome_division'] = []
+		molecule_groups['unique_molecules_RNA_division'] = []
+		molecule_groups['unique_molecules_domain_index_division'] = []
+		molecule_groups['unique_molecules_chromosomal_segment_division'] = []
 
-		moleculeGroups['bulkMoleculesBinomialDivision'] = bulkMoleculesBinomialDivision
-		moleculeGroups['bulkMoleculesEqualDivision'] = []
-
-		moleculeGroups['unique_molecules_active_ribosome_division'] = []
-		moleculeGroups['unique_molecules_RNA_division'] = []
-		moleculeGroups['unique_molecules_domain_index_division'] = []
-		moleculeGroups['unique_molecules_chromosomal_segment_division'] = []
-
-		self.__dict__.update(moleculeGroups)
+		self.__dict__.update(molecule_groups)

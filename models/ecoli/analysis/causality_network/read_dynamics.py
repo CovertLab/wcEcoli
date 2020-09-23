@@ -2,9 +2,6 @@
 """
 Reads dynamics data for each of the nodes of a causality network from a single
 simulation.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/26/2018
 """
 from __future__ import absolute_import, division, print_function
 
@@ -62,7 +59,7 @@ class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 		# Convert units of metabolic fluxes in listener to mmol/gCDW/h
 		conversion_coeffs = (
 			columns[("Mass", "dryMass")] / columns[("Mass", "cellMass")]
-			* sim_data.constants.cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
+			* sim_data.constants.cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
 			)
 
 		columns[("FBAResults", "reactionFluxesConverted")] = (
@@ -71,7 +68,7 @@ class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 			).asNumber(units.mmol/units.g/units.h)
 
 		# Reshape array for number of bound transcription factors
-		n_TU = len(sim_data.process.transcription.rnaData["id"])
+		n_TU = len(sim_data.process.transcription.rna_data["id"])
 		n_TF = len(sim_data.process.transcription_regulation.tf_ids)
 
 		columns[("RnaSynthProb", "n_bound_TF_per_TU")] = (
@@ -88,15 +85,15 @@ class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 			os.path.join(simOutDir, "BulkMolecules")).readAttribute("objectNames")
 		indexes["BulkMolecules"] = build_index_dict(molecule_ids)
 
-		gene_ids = sim_data.process.transcription.rnaData["geneId"]
+		gene_ids = sim_data.process.transcription.rna_data['gene_id']
 		indexes["Genes"] = build_index_dict(gene_ids)
 
-		mRNA_ids = sim_data.process.transcription.rnaData["id"][
-			sim_data.process.transcription.rnaData["isMRna"]
+		mRNA_ids = sim_data.process.transcription.rna_data["id"][
+			sim_data.process.transcription.rna_data['is_mRNA']
 		]
 		indexes["mRNAs"] = build_index_dict(mRNA_ids)
 
-		translated_rna_ids = sim_data.process.translation.monomerData["rnaId"]
+		translated_rna_ids = sim_data.process.translation.monomer_data['rna_id']
 		indexes["TranslatedRnas"] = build_index_dict(translated_rna_ids)
 
 		metabolism_rxn_ids = TableReader(
@@ -106,18 +103,18 @@ class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 		complexation_rxn_ids = sim_data.process.complexation.ids_reactions
 		indexes["ComplexationReactions"] = build_index_dict(complexation_rxn_ids)
 
-		equilibrium_rxn_ids = sim_data.process.equilibrium.rxnIds
+		equilibrium_rxn_ids = sim_data.process.equilibrium.rxn_ids
 		indexes["EquilibriumReactions"] = build_index_dict(equilibrium_rxn_ids)
 
 		tf_ids = sim_data.process.transcription_regulation.tf_ids
 		indexes["TranscriptionFactors"] = build_index_dict(tf_ids)
 
-		rna_ids = sim_data.process.transcription.rnaData["id"]
-		trna_ids = rna_ids[sim_data.process.transcription.rnaData["isTRna"]]
+		rna_ids = sim_data.process.transcription.rna_data["id"]
+		trna_ids = rna_ids[sim_data.process.transcription.rna_data['is_tRNA']]
 		indexes["Charging"] = build_index_dict(trna_ids)
 
 		# Cache cell volume array (used for calculating concentrations)
-		volume = ((1.0 / sim_data.constants.cellDensity) * (
+		volume = ((1.0 / sim_data.constants.cell_density) * (
 			units.fg * columns[("Mass", "cellMass")])).asNumber(units.L)
 
 		with open(nodeListFile, 'r') as node_file:
@@ -203,7 +200,7 @@ def read_global_dynamics(sim_data, node, node_id, columns, indexes, volume):
 			}
 
 	elif node_id == "cell_volume":
-		cell_volume = ((1.0 / sim_data.constants.cellDensity) * (
+		cell_volume = ((1.0 / sim_data.constants.cell_density) * (
 					units.fg * cell_mass)).asNumber(units.L)
 		dynamics = {
 			'volume': cell_volume,
@@ -264,7 +261,7 @@ def read_protein_dynamics(sim_data, node, node_id, columns, indexes, volume):
 	"""
 	count_index = indexes["BulkMolecules"][node_id]
 	counts = columns[("BulkMolecules", "counts")][:, count_index]
-	concentration = (((1 / sim_data.constants.nAvogadro) * counts)/(units.L * volume)).asNumber(units.mmol/units.L)
+	concentration = (((1 / sim_data.constants.n_avogadro) * counts) / (units.L * volume)).asNumber(units.mmol / units.L)
 
 	dynamics = {
 		'counts': counts,
@@ -287,7 +284,7 @@ def read_metabolite_dynamics(sim_data, node, node_id, columns, indexes, volume):
 	except (KeyError, IndexError):
 		return  # Metabolite not being modeled
 	counts = columns[("BulkMolecules", "counts")][:, count_index]
-	concentration = (((1 / sim_data.constants.nAvogadro) * counts)/(units.L * volume)).asNumber(units.mmol/units.L)
+	concentration = (((1 / sim_data.constants.n_avogadro) * counts) / (units.L * volume)).asNumber(units.mmol / units.L)
 
 	dynamics = {
 		'counts': counts,
