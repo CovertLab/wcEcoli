@@ -66,7 +66,7 @@ class BuildCausalityNetworkTask(FiretaskBase):
 		self["check_sanity"] = self.get("check_sanity", False)
 
 		if self.get("force_update", False) or not os.path.isfile(self['node_list_file']):
-			print("{}: Building causality network".format(time.ctime()))
+			print("{}: Building the Causality network".format(time.ctime()))
 
 			fp.makedirs(self["output_network_directory"])
 			causality_network = BuildNetwork(
@@ -79,13 +79,12 @@ class BuildCausalityNetworkTask(FiretaskBase):
 		mod = importlib.import_module(self.READER_FILE_PATH)
 		args = self.plotter_args()
 
-		print("{}: Reading simulation results for causality network"
+		print("{}: Reading simulation results for the Causality network"
 			.format(time.ctime()))
 		mod.Plot.main(*args)
 
 		elapsed_real_sec = monotonic_seconds() - start_real_sec
 
 		duration = datetime.timedelta(seconds=elapsed_real_sec)
-		print("{}: Completed building causality network in {}".format(
-			time.ctime(), duration)
-			)
+		print("{}: Completed building the Causality network in {}".format(
+			time.ctime(), duration))

@@ -77,6 +77,7 @@ class BuildCausalityNetwork(AnalysisBase):
 			force_update=args.force)
 		task.run_task({})
 
+		# Optionally show the causality visualization.
 		server_script = os.environ.get(CAUSALITY_ENV_VAR, '')
 		if args.show and os.path.exists(server_script):
 			# See #890 if running command fails due to differences in pyenv

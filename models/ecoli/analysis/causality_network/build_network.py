@@ -56,6 +56,7 @@ which assigns that node dynamics from listener output:
 """
 from __future__ import absolute_import, division, print_function
 
+from collections import Counter
 import numpy as np
 import re
 import os
@@ -953,18 +954,12 @@ class BuildNetwork(object):
 		"""
 		Identify nodes that have duplicate IDs.
 		"""
-		node_ids = []
-
-		# Loop through all nodes in the node_list
-		for node in self.node_list:
-			# Get ID of the node
-			node_ids.append(node.get_node_id())
-
-		duplicate_ids = set([x for x in node_ids if node_ids.count(x) > 1])
+		counters = Counter([node.get_node_id() for node in self.node_list])
+		duplicate_ids = {node_id for node_id in counters if counters[node_id] > 1}
 
 		# Print duplicate node IDs that were found
 		if len(duplicate_ids) > 0:
-			raise Exception("%d node IDs were found to be duplicate: %s"
+			raise ValueError("%d node IDs have duplicates: %s"
 				% (len(duplicate_ids), duplicate_ids))
 
 
