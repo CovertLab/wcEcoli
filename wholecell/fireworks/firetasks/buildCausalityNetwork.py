@@ -5,13 +5,14 @@ tool.
 from __future__ import absolute_import, division, print_function
 
 import datetime
-import importlib
 import os
 import time
 
 from fireworks import FiretaskBase, explicit_serialize
+
+from models.ecoli.analysis.causality_network import read_dynamics
 from models.ecoli.analysis.causality_network.build_network import BuildNetwork
-from models.ecoli.analysis.causality_network.network_components import NODELIST_JSON, DYNAMICS_FILENAME
+from models.ecoli.analysis.causality_network.network_components import NODELIST_JSON
 from wholecell.utils import filepath as fp
 from wholecell.utils import data
 from wholecell.utils.py3 import monotonic_seconds
@@ -36,27 +37,13 @@ class BuildCausalityNetworkTask(FiretaskBase):
 		"force_update",
 		]
 
-	READER_FILE_PATH = 'models.ecoli.analysis.causality_network.read_dynamics'
-
-	def plotter_args(self):
-		self["metadata"] = dict(self["metadata"], analysis_type="causality_network")
-
-		return (
-			self["input_results_directory"],
-			self["output_dynamics_directory"],
-			DYNAMICS_FILENAME,
-			self["input_sim_data"],
-			self["node_list_file"],
-			self["metadata"],
-			)
-
 	def run_task(self, fw_spec):
 		start_real_sec = monotonic_seconds()
 		print("\n{}: --- Starting {} ---".format(
 			time.ctime(), type(self).__name__))
 
 		self['metadata'] = data.expand_keyed_env_vars(self['metadata'])
-		self['node_list_file'] = os.path.join(
+		node_list_file = os.path.join(
 			self["output_network_directory"], NODELIST_JSON)
 			# self["output_network_directory"], NODELIST_FILENAME)
 
@@ -71,12 +58,13 @@ class BuildCausalityNetworkTask(FiretaskBase):
 
 		fp.makedirs(self["output_dynamics_directory"])
 
-		mod = importlib.import_module(self.READER_FILE_PATH)
-		args = self.plotter_args()
-
 		print("{}: Reading simulation results for the Causality network"
 			.format(time.ctime()))
-		mod.Plot.main(*args)
+		read_dynamics.convert_dynamics(
+			self["input_results_directory"],
+			self["output_dynamics_directory"],
+			self["input_sim_data"],
+			node_list_file)
 
 		elapsed_real_sec = monotonic_seconds() - start_real_sec
 

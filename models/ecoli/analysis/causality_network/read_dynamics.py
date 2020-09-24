@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Reads dynamics data for each of the nodes of a causality network from a single
 simulation.
@@ -12,7 +11,6 @@ import hashlib
 from typing import Any, Tuple
 import zipfile
 
-from models.ecoli.analysis import causalityNetworkAnalysis
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
@@ -51,8 +49,7 @@ def compact_json(obj, ensure_ascii=False, separators=(',', ':'), **kwargs):
 	"""Convert obj into compact JSON form."""
 	return json.dumps(obj, ensure_ascii=ensure_ascii, separators=separators, **kwargs)
 
-class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
-	def do_plot(self, simOutDir, seriesOutDir, dynamicsFileName, simDataFile, nodeListFile, metadata):
+def convert_dynamics(simOutDir, seriesOutDir, simDataFile, nodeListFile):
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
@@ -443,7 +440,3 @@ TYPE_TO_READER_FUNCTION = {
 	"Regulation": read_regulation_dynamics,
 	"Charging": read_charging_dynamics,
 	}
-
-
-if __name__ == '__main__':
-	Plot().cli()
