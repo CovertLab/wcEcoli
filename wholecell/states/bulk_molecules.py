@@ -62,6 +62,8 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 
 		self._submass_name_to_index = sim_data.submass_name_to_index
 
+		self._compartment_abbrev_to_index = sim_data.compartment_abbrev_to_index
+
 		# Create the container for molecule counts
 		self.container = BulkObjectsContainer(self._moleculeIDs)
 
@@ -73,6 +75,12 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 		self.division_mode = {}
 		self.division_mode['binomial'] = sim_data.molecule_groups.bulk_molecules_binomial_division
 		self.division_mode['equally'] = sim_data.molecule_groups.bulk_molecules_equal_division
+
+		# Set up matrix for compartment mass calculation
+		self._molecule_by_compartment = np.stack(
+			[np.core.defchararray.chararray.endswith(self._moleculeIDs, abbrev + ']'
+			) for abbrev in self._compartment_abbrev_to_index])
+
 
 	def processRequestPriorityIs(self, processIndex, priorityLevel):
 		self._processPriorities[processIndex] = priorityLevel
@@ -231,20 +239,9 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 			).sum(axis=0)
 
 		# Compute summed masses for each compartment
-		compartment_file = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))) +
-										   '/reconstruction/ecoli/flat/compartments.tsv')
-		compartment_abbrevs = ['[' + line.rstrip()[1] + ']' for line in open(compartment_file)][1:]
-		for abbrev in compartment_abbrevs:
-			compartmentIndex = np.core.defchararray.chararray.endswith(self._moleculeIDs, abbrev)
-			compartmentMoleculeMass = np.zeros(self._moleculeMass.shape)
-			compartmentMoleculeMass[compartmentIndex,:] = self._moleculeMass[compartmentIndex,:]
-			self._compartment_masses.update(
-				{abbrev : np.dot(
-				np.hstack([self._countsAllocatedFinal, self._countsUnallocated[:, np.newaxis]]).T,
-				compartmentMoleculeMass
-			).sum(axis=0)})
-
-
+		self._compartment_masses = np.dot(
+			np.hstack([self._countsAllocatedFinal, self._countsUnallocated[:, np.newaxis]]
+			).sum(axis=1)*self._molecule_by_compartment, self._moleculeMass)
 
 
 	def loadSnapshot(self, container):

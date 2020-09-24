@@ -4,7 +4,6 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import zip
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -14,14 +13,14 @@ COLORS_256 = [ # From colorbrewer2.org, qualitative 8-class set 1
 	[166,206,227],
 	[31,120,180],
 	[178,223,138],
-	[51,160,44],
+	[255,222,0],
 	[251,154,153],
 	[227,26,28],
 	[253,191,111],
 	[255,127,0],
 	[202,178,214],
 	[106,61,154],
-	[255,255,153]
+	[51,160,44]
 	]
 
 COLORS = [
@@ -46,6 +45,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		periplasm = mass.readColumn("periplasmMass")
 		pilus = mass.readColumn("pilusMass")
 		innerMembrane = mass.readColumn("innerMembraneMass")
+		flagellum = mass.readColumn("flagellum")
 
 		initialTime = main_reader.readAttribute("initialTime")
 		t = (main_reader.readColumn("time") - initialTime) / 60.
@@ -61,11 +61,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			periplasm,
 			pilus,
 			innerMembrane,
+			flagellum,
 			]).T
 		fractions = (masses / cell[:, None]).mean(axis=0)
 
 		mass_labels = ["Nucleoid", "Projection", "Cell Wall", "Cytosol", "Extracellular", "Membrane",
-					   "Outer Membrane", "Periplasm", "Pilus", "Inner Membrane"]
+					   "Outer Membrane", "Periplasm", "Pilus", "Inner Membrane","Flagellum"]
 		legend = [
 			'{} ({:.3e})'.format(label, fraction)
 			for label, fraction in zip(mass_labels, fractions)

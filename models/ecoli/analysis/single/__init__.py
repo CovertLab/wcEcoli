@@ -14,6 +14,7 @@ ACTIVE = [
 	"centralCarbonMetabolismScatter.py",
 	"chromosome_visualization.py",
 	"concentrationDeviation.py",
+	"compartmentMassFractionSummary.py",
 	"cotranscriptional_translation.py",
 	"dnaA_box_dynamics.py",
 	"dntpCounts.py",
