@@ -5,7 +5,8 @@ For usage information, execute:
 	python analysis.py -h
 '''
 
-from cell.analysis.analyze import Analyzer
+
+from vivarium_cell.analysis.analyze import Analyzer
 
 
 TIMESERIES_CONFIG = {
