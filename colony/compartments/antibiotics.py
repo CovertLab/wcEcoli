@@ -80,7 +80,7 @@ class AntibioticsCell(Generator):
 			},
 			'targets': [
 				'wcecoli', 'meta_division', 'death',
-				'antibiotic_transport'
+				'antibiotic_transport', 'hydrolysis',
 			],
 		},
 		'derive_shape': {},
