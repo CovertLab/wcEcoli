@@ -9,6 +9,7 @@ from six.moves import cPickle
 import os
 import json
 import hashlib
+from typing import Any, Tuple
 import zipfile
 
 from models.ecoli.analysis import causalityNetworkAnalysis
@@ -44,6 +45,11 @@ REQUIRED_COLUMNS = [
 def get_safe_name(s):
 	fname = str(int(hashlib.sha256(s.encode('utf-8')).hexdigest(), 16) % 10 **16)
 	return fname
+
+def compact_json(obj, ensure_ascii=False, separators=(',', ':'), **kwargs):
+	# type: (Any, bool, Tuple, **Any) -> str
+	"""Convert obj into compact JSON form."""
+	return json.dumps(obj, ensure_ascii=ensure_ascii, separators=separators, **kwargs)
 
 class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 	def do_plot(self, simOutDir, seriesOutDir, dynamicsFileName, simDataFile, nodeListFile, metadata):
@@ -142,25 +148,25 @@ class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 		nodes = [build_dynamics(node_dict) for node_dict in node_dicts]
 		nodes.append(time_node(columns))
 
-		zip_name = os.path.join(seriesOutDir, 'series.zip')
-		with zipfile.ZipFile(zip_name, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+		# ZIP_BZIP2 saves 14% bytes vs. ZIP_DEFLATED but takes  +70 secs.
+		# ZIP_LZMA  saves 19% bytes vs. ZIP_DEFLATED but takes +260 sec.
+		# compresslevel=9 saves very little space.
+		zip_name = os.path.join(seriesOutDir, 'seriesOut.zip')
+		with zipfile.ZipFile(zip_name, 'w', compression=zipfile.ZIP_DEFLATED, allowZip64=False) as zf:
 			for node in nodes:
 				if node.node_id in name_mapping:
-					# TODO(jerry): Skip duplicates. A bug in the "safe name" generation?
+					# Skip duplicates. Why are there duplicates? --check_sanity finds them.
 					continue
 
 				dynamics_path = get_safe_name(node.node_id)
 				dynamics = node.dynamics_dict()
-				dynamics_json = json.dumps(
-					dynamics, ensure_ascii=False, separators=(',', ':'))
+				dynamics_json = compact_json(dynamics)
 
-				zf.writestr(dynamics_path + '.json', dynamics_json.encode('utf-8'))
+				zf.writestr(os.path.join('series', dynamics_path + '.json'), dynamics_json)
 
 				name_mapping[node.node_id] = dynamics_mapping(dynamics, dynamics_path)
 
-		root = os.path.dirname(nodeListFile)
-		with open(os.path.join(root, 'series.json'), 'w') as series_file:
-			series_file.write(json.dumps(name_mapping))
+			zf.writestr('series.json', compact_json(name_mapping))
 
 
 def time_node(columns):

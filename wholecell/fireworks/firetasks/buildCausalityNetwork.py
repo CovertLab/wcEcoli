@@ -22,11 +22,8 @@ class BuildCausalityNetworkTask(FiretaskBase):
 
 	_fw_name = "BuildCausalNetworkTask"
 
-	# TODO(jerry): Detangle output_network_directory to support workflow.py,
-	#  e.g. write edges.json, nodes.json, & series.json into every sim's
-	#  output_dynamics_directory instead of the variant's kb/, or write them in
-	#  a separate task, or write them in VariantSimDataTask. Maybe build
-	#  causality network for only one sim.
+	# TODO(jerry): Write edges.json & nodes.json into every sim's
+	#  output_dynamics_directory instead of the variant's kb/.
 	required_params = [
 		"input_results_directory",
 		"input_sim_data",
@@ -65,14 +62,12 @@ class BuildCausalityNetworkTask(FiretaskBase):
 
 		self["check_sanity"] = self.get("check_sanity", False)
 
-		if self.get("force_update", False) or not os.path.isfile(self['node_list_file']):
-			print("{}: Building the Causality network".format(time.ctime()))
-
-			fp.makedirs(self["output_network_directory"])
-			causality_network = BuildNetwork(
-				self["input_sim_data"], self["output_network_directory"],
-				self["check_sanity"])
-			causality_network.run()
+		print("{}: Building the Causality network".format(time.ctime()))
+		fp.makedirs(self["output_network_directory"])
+		causality_network = BuildNetwork(
+			self["input_sim_data"], self["output_network_directory"],
+			self["check_sanity"])
+		causality_network.run()
 
 		fp.makedirs(self["output_dynamics_directory"])
 
