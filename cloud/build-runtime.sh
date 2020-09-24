@@ -1,6 +1,6 @@
 #!/bin/sh
-# Use Google Cloud Build servers to build a personalized wcm-runtime Docker
-# image and store it in the Google Container Registry.
+# Use Google Cloud Build servers to build a personalized "${ID}-wcm-runtime"
+# Docker Image and store it in the Google Container Registry.
 #
 # COMMAND LINE ARGUMENTS:
 #   ARG1: Distinguishing ID prefix for the "${ID}-wcm-runtime" tag for the

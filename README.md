@@ -23,7 +23,7 @@ When running this code, prepare with these steps (the wcm-code Docker container 
 2. Set the `$PYTHONPATH`:
 
    ```bash
-   export PYTHONPATH="$PYTHONPATH"
+   export PYTHONPATH="$PWD"
    ```
 
 3. In the `wcEcoli` directory, compile the Cython code:
