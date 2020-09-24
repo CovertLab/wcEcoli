@@ -1,4 +1,4 @@
-from colony.projects.antibiotics.investigate_death_causes import (
+from colony.projects.antibiotics.investigate_utils import (
 	filter_raw_data_by_time,
 	split_raw_data_by_survival,
 )
