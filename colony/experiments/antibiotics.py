@@ -40,7 +40,7 @@ ANAEROBIC_MEDIA_ID = 'minimal_minus_oxygen'
 CONDITION_VARIANTS = [
 	'basal', 'no_oxygen', 'with_aa', 'acetate', 'succinate']
 BOUNDS = (50, 50)
-N_BINS = (20, 20)
+N_BINS = (10, 10)
 TAGGED_MOLECULES_PATH = os.path.join(
 	os.path.dirname(__file__), 'antibiotics_tagged_molecules.csv')
 NUM_EMISSIONS = 100
