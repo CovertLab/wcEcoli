@@ -5,16 +5,12 @@ tool.
 from __future__ import absolute_import, division, print_function
 
 import datetime
-import os
 import time
 
 from fireworks import FiretaskBase, explicit_serialize
-
 from models.ecoli.analysis.causality_network import read_dynamics
 from models.ecoli.analysis.causality_network.build_network import BuildNetwork
-from models.ecoli.analysis.causality_network.network_components import NODELIST_JSON
 from wholecell.utils import filepath as fp
-from wholecell.utils import data
 from wholecell.utils.py3 import monotonic_seconds
 
 
@@ -23,18 +19,15 @@ class BuildCausalityNetworkTask(FiretaskBase):
 
 	_fw_name = "BuildCausalNetworkTask"
 
-	# TODO(jerry): Write edges.json & nodes.json into every sim's
-	#  output_dynamics_directory instead of the variant's kb/.
 	required_params = [
 		"input_results_directory",
 		"input_sim_data",
-		"output_network_directory",  # an output once per variant, else an input!
 		"output_dynamics_directory",
-		"metadata",
 		]
 	optional_params = [
 		"check_sanity",
-		"force_update",
+		"output_network_directory",  # no longer used
+		"metadata",  # no longer used
 		]
 
 	def run_task(self, fw_spec):
@@ -42,29 +35,23 @@ class BuildCausalityNetworkTask(FiretaskBase):
 		print("\n{}: --- Starting {} ---".format(
 			time.ctime(), type(self).__name__))
 
-		self['metadata'] = data.expand_keyed_env_vars(self['metadata'])
-		node_list_file = os.path.join(
-			self["output_network_directory"], NODELIST_JSON)
-			# self["output_network_directory"], NODELIST_FILENAME)
-
-		self["check_sanity"] = self.get("check_sanity", False)
-
 		print("{}: Building the Causality network".format(time.ctime()))
-		fp.makedirs(self["output_network_directory"])
 		causality_network = BuildNetwork(
-			self["input_sim_data"], self["output_network_directory"],
-			self["check_sanity"])
-		causality_network.run()
+			self["input_sim_data"],
+			self["output_dynamics_directory"],
+			self.get("check_sanity", False))
+		node_list, edge_list = causality_network.build_nodes_and_edges()
 
 		fp.makedirs(self["output_dynamics_directory"])
 
-		print("{}: Reading simulation results for the Causality network"
+		print("{}: Converting simulation results to the Causality series"
 			.format(time.ctime()))
 		read_dynamics.convert_dynamics(
 			self["input_results_directory"],
 			self["output_dynamics_directory"],
 			self["input_sim_data"],
-			node_list_file)
+			node_list,
+			edge_list)
 
 		elapsed_real_sec = monotonic_seconds() - start_real_sec
 

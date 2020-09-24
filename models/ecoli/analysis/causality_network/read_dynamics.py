@@ -15,12 +15,10 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 from models.ecoli.analysis.causality_network.network_components import (
-	Node, COUNT_UNITS, PROB_UNITS
-	)
+	EDGELIST_JSON, Node, NODELIST_JSON, COUNT_UNITS, PROB_UNITS)
 from models.ecoli.analysis.causality_network.build_network import NODE_ID_SUFFIX
 from models.ecoli.processes.metabolism import (
-	COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
-	)
+	COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS)
 
 REQUIRED_COLUMNS = [
 	("BulkMolecules", "counts"),
@@ -49,7 +47,8 @@ def compact_json(obj, ensure_ascii=False, separators=(',', ':'), **kwargs):
 	"""Convert obj into compact JSON form."""
 	return json.dumps(obj, ensure_ascii=ensure_ascii, separators=separators, **kwargs)
 
-def convert_dynamics(simOutDir, seriesOutDir, simDataFile, nodeListFile):
+def convert_dynamics(simOutDir, seriesOutDir, simDataFile, node_list, edge_list):
+		"""Convert the sim's dynamics data to a Causality seriesOut.zip file."""
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
@@ -120,9 +119,6 @@ def convert_dynamics(simOutDir, seriesOutDir, simDataFile, nodeListFile):
 		volume = ((1.0 / sim_data.constants.cell_density) * (
 			units.fg * columns[("Mass", "cellMass")])).asNumber(units.L)
 
-		with open(nodeListFile, 'r') as node_file:
-			node_dicts = json.load(node_file)
-
 		def dynamics_mapping(dynamics, safe):
 			return [{
 				'index': index,
@@ -142,7 +138,7 @@ def convert_dynamics(simOutDir, seriesOutDir, simDataFile, nodeListFile):
 				reader(sim_data, node, node.node_id, columns, indexes, volume)
 			return node
 
-		nodes = [build_dynamics(node_dict) for node_dict in node_dicts]
+		nodes = [build_dynamics(node_dict) for node_dict in node_list]
 		nodes.append(time_node(columns))
 
 		# ZIP_BZIP2 saves 14% bytes vs. ZIP_DEFLATED but takes  +70 secs.
@@ -164,6 +160,8 @@ def convert_dynamics(simOutDir, seriesOutDir, simDataFile, nodeListFile):
 				name_mapping[node.node_id] = dynamics_mapping(dynamics, dynamics_path)
 
 			zf.writestr('series.json', compact_json(name_mapping))
+			zf.writestr(NODELIST_JSON, compact_json(node_list))
+			zf.writestr(EDGELIST_JSON, compact_json(edge_list))
 
 
 def time_node(columns):

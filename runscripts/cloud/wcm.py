@@ -268,7 +268,6 @@ class WcmWorkflow(Workflow):
 							python_args = dict(
 								input_results_directory=cell_sim_out_dir,
 								input_sim_data=variant_sim_data_modified_file,
-								output_network_directory=cell_series_out_dir,
 								output_dynamics_directory=cell_series_out_dir,
 								metadata=md_single)
 							causality_task = self.add_python_task(BuildCausalityNetworkTask,

@@ -173,6 +173,12 @@ class BuildNetwork(object):
 		# self._write_files()
 
 
+	def build_nodes_and_edges(self):
+		"""Build the network and return the node and edge lists."""
+		self._build_network()
+		return self._node_list(), self._edge_list()
+
+
 	def _build_network(self):
 		"""
 		Add nodes and edges to the node/edge lists, and check for network
@@ -193,6 +199,21 @@ class BuildNetwork(object):
 		# Check for network sanity (optional)
 		if self.check_sanity:
 			self._find_duplicate_nodes()
+
+
+	def _node_list(self):
+		return [node.to_dict() for node in self.node_list]
+
+
+	def _edge_list(self):
+		def edge_dict(edge):
+			return {
+				'src_node_id': edge.src_id,
+				'dst_node_id': edge.dst_id,
+				'stoichiometry': edge.stoichiometry,
+				'process': edge.process}
+
+		return [edge_dict(edge) for edge in self.edge_list]
 
 
 	def _write_files(self):
@@ -223,31 +244,20 @@ class BuildNetwork(object):
 
 
 	def _write_json(self):
-		"""
-		Write node and edge lists as json files.
-		"""
-
-		nodes = [node.to_dict() for node in self.node_list]
+		"""Write node and edge lists as json files."""
+		nodes = self._node_list()
 		node_json = json.dumps(nodes)
 		node_path = os.path.join(self.output_dir, NODELIST_JSON)
 		print('writing {} nodes to node file {}'.format(len(nodes), node_path))
 		with open(node_path, 'w') as node_file:
 			node_file.write(node_json)
 
-		def edge_dict(edge):
-			return {
-				'src_node_id': edge.src_id,
-				'dst_node_id': edge.dst_id,
-				'stoichiometry': edge.stoichiometry,
-				'process': edge.process}
-
-		edges = [edge_dict(edge) for edge in self.edge_list]
+		edges = self._edge_list()
 		edge_json = json.dumps(edges)
 		edge_path = os.path.join(self.output_dir, EDGELIST_JSON)
 		print('writing {} edges to edge file {}'.format(len(edges), edge_path))
 		with open(edge_path, 'w') as edge_file:
 			edge_file.write(edge_json)
-
 
 	def _add_global_nodes(self):
 		"""
@@ -282,7 +292,7 @@ class BuildNetwork(object):
 		"""
 		# Loop through all genes (in the order listed in transcription)
 		for gene_id in self.sim_data.process.transcription.rna_data['gene_id']:
-			
+
 			# Initialize a single gene node
 			gene_node = Node()
 
