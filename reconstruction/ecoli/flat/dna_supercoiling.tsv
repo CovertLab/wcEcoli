@@ -1,2 +1,5 @@
 "name"	"value"	"units"	"_source"
 "relaxed_DNA_base_pairs_per_turn"	10.5		"Rhodes and Klug, 1980"
+"steady_state_superhelical_density"	-0.06		"Zechiedrich et al., 2000"
+"mean_gyrase_dwell_time"	2	"units.s"	"Stracy et al., 2018"
+"fraction_bound_gyrase"	0.5		"Stracy et al., 2018"
