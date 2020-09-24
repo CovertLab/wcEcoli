@@ -44,7 +44,7 @@ class BuildCausalityNetworkTask(FiretaskBase):
 
 		fp.makedirs(self["output_dynamics_directory"])
 
-		print("{}: Converting simulation results to the Causality series"
+		print("{}: Converting simulation results to a Causality series"
 			.format(time.ctime()))
 		read_dynamics.convert_dynamics(
 			self["input_results_directory"],

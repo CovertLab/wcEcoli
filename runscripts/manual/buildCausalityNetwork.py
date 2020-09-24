@@ -7,10 +7,11 @@ Run with '-h' for command line help.
 from __future__ import absolute_import, division, print_function
 
 import os
+import subprocess
 
 from runscripts.manual.analysisBase import AnalysisBase
 from wholecell.fireworks.firetasks.buildCausalityNetwork import BuildCausalityNetworkTask
-from wholecell.utils import constants, filepath
+from wholecell.utils import constants
 
 
 CAUSALITY_ENV_VAR = 'CAUSALITY_SERVER'
@@ -73,16 +74,16 @@ class BuildCausalityNetwork(AnalysisBase):
 		task.run_task({})
 
 		# Optionally show the causality visualization.
-		server_dir = os.environ.get(CAUSALITY_ENV_VAR, '../causality')
-		server_app = 'site/server.py'
+		server_dir = os.environ.get(CAUSALITY_ENV_VAR, os.path.join('..', 'causality'))
+		server_app = os.path.join('site', 'server.py')
 		server_path = os.path.join(server_dir, server_app)
-		if args.show and os.path.exists(server_dir):
+		if args.show and os.path.isfile(server_path):
 			# See #890 if running command fails due to differences in pyenv
 			# versions - might need to cd to repo and activate pyenv
-			cmd = 'python {} {}'.format(server_path, dynamics_output_dir)
-			print('\nServing the Causality site with command:\n{}\n\nCtrl+C to exit.'
-				.format(cmd))
-			filepath.run_cmdline(cmd, timeout=None)
+			cmd = ['python', server_path, dynamics_output_dir]
+			print(f'\nServing the Causality site via the command:\n  {cmd}\n'
+				  f'Ctrl+C to exit.\n')
+			subprocess.run(cmd)
 		else:
 			print('\nNOTE: Use the --show flag to automatically open the'
 				' Casuality viewer on this data. You\'ll first need to'
