@@ -284,11 +284,21 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 						dtype=np.int32)))
 				all_new_linking_numbers = np.concatenate((
 					all_new_linking_numbers, new_segment_attrs["linking_numbers"]))
-	
+
+			# Assume negative supercoils are instantly removed by topoisomerases
+			segment_lengths = all_new_boundary_coordinates[:, 1] - all_new_boundary_coordinates[:, 0]
+			relaxed_linking_numbers = segment_lengths / self.relaxed_DNA_base_pairs_per_turn
+			negatively_supercoiled_segments = (
+				relaxed_linking_numbers > all_new_linking_numbers
+			)
+			all_new_linking_numbers[
+				negatively_supercoiled_segments
+				] = relaxed_linking_numbers[negatively_supercoiled_segments]
+
 			# Delete all existing chromosomal segments
 			self.chromosomal_segments.delByIndexes(
 				np.arange(self.chromosomal_segments.total_count()))
-	
+
 			# Add new chromosomal segments
 			n_segments = len(all_new_linking_numbers)
 			self.chromosomal_segments.moleculesNew(
