@@ -18,6 +18,7 @@ from colony.projects.antibiotics.investigate_utils import (
 
 TIME_RANGE = (0.51, 1)
 FIELDS = ['nitrocefin']
+N_SNAPSHOTS = 50
 
 
 def main():
@@ -43,6 +44,7 @@ def main():
 		'out_dir': out_dir,
 		'filename': 'snapshots_during_pulse',
 		'include_fields': FIELDS,
+		'n_snapshots': N_SNAPSHOTS,
 	}
 	plot_snapshots(snapshots_data, plot_config)
 
