@@ -87,6 +87,10 @@ class SimulationDataEcoli(object):
 			compartment["abbrev"]:i
 			for i, compartment in enumerate(raw_data.compartments)
 		}
+		self.compartment_id_to_index = {
+			compartment["id"]:i
+			for i,compartment in enumerate(raw_data.compartments)
+		}
 
 
 	def _add_hard_coded_attributes(self):

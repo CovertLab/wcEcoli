@@ -54,17 +54,17 @@ class Mass(wholecell.listeners.listener.Listener):
 		self.proteinIndex = sim_data.submass_name_to_index["protein"]
 		self.waterIndex = sim_data.submass_name_to_index["water"]
 
-		self.nucleoid_index = sim_data.compartment_abbrev_to_index["n"]
-		self.projection_index = sim_data.compartment_abbrev_to_index["j"]
-		self.cell_wall_index = sim_data.compartment_abbrev_to_index["w"]
-		self.cytosol_index = sim_data.compartment_abbrev_to_index["c"]
-		self.extracellular_index = sim_data.compartment_abbrev_to_index["e"]
-		self.membrane_index = sim_data.compartment_abbrev_to_index["m"]
-		self.outer_membrane_index = sim_data.compartment_abbrev_to_index["o"]
-		self.periplasm_index = sim_data.compartment_abbrev_to_index["p"]
-		self.pilus_index = sim_data.compartment_abbrev_to_index["l"]
-		self.inner_membrane_index = sim_data.compartment_abbrev_to_index["i"]
-		self.flagellum_index = sim_data.compartment_abbrev_to_index["s"]
+		self.nucleoid_index = sim_data.compartment_id_to_index["CCO-BAC-NUCLEOID"]
+		self.projection_index = sim_data.compartment_id_to_index["CCO-CELL-PROJECTION"]
+		self.cell_wall_index = sim_data.compartment_id_to_index["CCO-CW-BAC-NEG"]
+		self.cytosol_index = sim_data.compartment_id_to_index["CCO-CYTOSOL"]
+		self.extracellular_index = sim_data.compartment_id_to_index["CCO-EXTRACELLULAR"]
+		self.membrane_index = sim_data.compartment_id_to_index["CCO-MEMBRANE"]
+		self.outer_membrane_index = sim_data.compartment_id_to_index["CCO-OUTER-MEM"]
+		self.periplasm_index = sim_data.compartment_id_to_index["CCO-PERI-BAC"]
+		self.pilus_index = sim_data.compartment_id_to_index["CCO-PILUS"]
+		self.inner_membrane_index = sim_data.compartment_id_to_index["CCO-PM-BAC-NEG"]
+		self.flagellum_index = sim_data.compartment_id_to_index["CCO-FLAGELLUM"]
 
 		self.cellDensity = sim_data.constants.cell_density.asNumber(units.g / units.L)
 
