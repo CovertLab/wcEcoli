@@ -84,11 +84,11 @@ class SimulationDataEcoli(object):
 
 	def _add_compartment_keys(self, raw_data):
 		self.compartment_abbrev_to_index = {
-			compartment["abbrev"]:i
+			compartment["abbrev"]: i
 			for i, compartment in enumerate(raw_data.compartments)
 		}
 		self.compartment_id_to_index = {
-			compartment["id"]:i
+			compartment["id"]: i
 			for i,compartment in enumerate(raw_data.compartments)
 		}
 

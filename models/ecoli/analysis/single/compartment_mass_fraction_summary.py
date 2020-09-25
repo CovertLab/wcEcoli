@@ -37,16 +37,17 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))
 
 		cell = mass.readColumn("cellMass")
-		nucleoid = mass.readColumn("nucleoidMass")
-		projection = mass.readColumn("projectionMass")
-		cellWall = mass.readColumn("cellWallMass")
-		cytosol = mass.readColumn("cytosolMass")
-		extracellular = mass.readColumn("extracellularMass")
-		membrane = mass.readColumn("membraneMass")
-		outerMembrane = mass.readColumn("outerMembraneMass")
-		periplasm = mass.readColumn("periplasmMass")
-		pilus = mass.readColumn("pilusMass")
-		innerMembrane = mass.readColumn("innerMembraneMass")
+
+		nucleoid = mass.readColumn("nucleoid_mass")
+		projection = mass.readColumn("projection_mass")
+		cell_wall = mass.readColumn("cell_wall_mass")
+		cytosol = mass.readColumn("cytosol_mass")
+		extracellular = mass.readColumn("extracellular_mass")
+		membrane = mass.readColumn("membrane_mass")
+		outer_membrane = mass.readColumn("outer_membrane_mass")
+		periplasm = mass.readColumn("periplasm_mass")
+		pilus = mass.readColumn("pilus_mass")
+		inner_membrane = mass.readColumn("inner_membrane_mass")
 		flagellum = mass.readColumn("flagellum")
 
 		initialTime = main_reader.readAttribute("initialTime")
@@ -55,14 +56,14 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		masses = np.vstack([
 			nucleoid,
 			projection,
-			cellWall,
+			cell_wall,
 			cytosol,
 			extracellular,
 			membrane,
-			outerMembrane,
+			outer_membrane,
 			periplasm,
 			pilus,
-			innerMembrane,
+			inner_membrane,
 			flagellum,
 			]).T
 		fractions = (masses / cell[:, None]).mean(axis=0)
