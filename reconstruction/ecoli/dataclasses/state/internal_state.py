@@ -337,6 +337,35 @@ class InternalState(object):
 		sim_data.molecule_groups.unique_molecules_chromosomal_segment_division.append(
 			'chromosomal_segment')
 
+		# Add active gyrases
+		# Active gyrases are DNA gyrase enzymes that are bound to DNA and
+		# actively performing rounds of catalysis that removes positive
+		# supercoils from the bound DNA segment.
+		# - coordinates (64-bit int): Location of the gyrase on the chromosome,
+		# in base pairs from the origin.
+		# - domain_index (32-bit int): Domain index of the chromosome domain
+		# that the gyrase is bound to.
+		# - original_dwell_time (64-bit float): Total dwell time of the bound
+		# gyrase. This value is taken from an exponential distribution when
+		# an active gyrase molecule is initialized.
+		# - remaining_dwell_time (64-bit float): Remaining dwell time of the
+		# bound gyrase. Active gyrases are removed when this value goes to zero
+		# or when it collides with an active RNA polymerase.
+		active_gyrase_mass = bulk_molecule_id_to_mass[sim_data.molecule_ids.gyrase]
+		active_gyrase_attributes = {
+			'coordinates': 'i8',
+			'domain_index': 'i4',
+			'original_dwell_time': 'f8',
+			'remaining_dwell_time': 'f8',
+			}
+
+		self.unique_molecule.add_to_unique_state('active_gyrase',
+			active_gyrase_attributes, active_gyrase_mass)
+
+		# Gyrases are divided based on their domain index
+		sim_data.molecule_groups.unique_molecules_domain_index_division.append(
+			'active_gyrase')
+
 		# Add DnaA boxes
 		# DnaA boxes are 9-base sequence motifs on the DNA that bind to the
 		# protein DnaA. Except for DnaA boxes close to the origin, these boxes

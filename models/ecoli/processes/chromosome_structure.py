@@ -38,8 +38,6 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		replichore_lengths = sim_data.process.replication.replichore_lengths
 		self.min_coordinates = -replichore_lengths[1]
 		self.max_coordinates = replichore_lengths[0]
-		self.relaxed_DNA_base_pairs_per_turn = sim_data.process.chromosome_structure.relaxed_DNA_base_pairs_per_turn
-		self.terC_index = sim_data.process.chromosome_structure.terC_dummy_molecule_index
 		
 		# Load sim options
 		self.calculate_superhelical_densities = sim._superhelical_density
@@ -68,10 +66,21 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		self.full_chromosomes = self.uniqueMoleculesView('full_chromosome')
 		self.promoters = self.uniqueMoleculesView('promoter')
 		self.DnaA_boxes = self.uniqueMoleculesView('DnaA_box')
-		
+
 		if self.calculate_superhelical_densities:
+			# Load parameters
+			self.relaxed_DNA_base_pairs_per_turn = sim_data.process.chromosome_structure.relaxed_DNA_base_pairs_per_turn
+			self.steady_state_superhelical_density = sim_data.process.chromosome_structure.steady_state_superhelical_density
+			self.mean_gyrase_dwell_time = sim_data.process.chromosome_structure.mean_gyrase_dwell_time
+			self.terC_index = sim_data.process.chromosome_structure.terC_dummy_molecule_index
+
+			# Load molecule views
+			self.inactive_gyrases = self.bulkMoleculeView(
+				sim_data.molecule_ids.gyrase)
 			self.chromosomal_segments = self.uniqueMoleculesView(
 				'chromosomal_segment')
+			self.active_gyrases = self.uniqueMoleculesView(
+				'active_gyrase')
 
 
 	def calculateRequest(self):
@@ -154,6 +163,7 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 
 			return mask
 
+		# TODO: remove active gyrases that collide with replisomes
 
 		# Build mask for molecules that should be removed
 		removed_RNAPs_mask = get_removed_molecules_mask(
@@ -285,15 +295,38 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 				all_new_linking_numbers = np.concatenate((
 					all_new_linking_numbers, new_segment_attrs["linking_numbers"]))
 
-			# Assume negative supercoils are instantly removed by topoisomerases
+			# Assume negative supercoils below the steady state threshold are
+			# instantly removed by topoisomerases
 			segment_lengths = all_new_boundary_coordinates[:, 1] - all_new_boundary_coordinates[:, 0]
 			relaxed_linking_numbers = segment_lengths / self.relaxed_DNA_base_pairs_per_turn
+			steady_state_linking_numbers = relaxed_linking_numbers * (
+				1 + self.steady_state_superhelical_density)
 			negatively_supercoiled_segments = (
-				relaxed_linking_numbers > all_new_linking_numbers
+				steady_state_linking_numbers > all_new_linking_numbers
 			)
 			all_new_linking_numbers[
 				negatively_supercoiled_segments
-				] = relaxed_linking_numbers[negatively_supercoiled_segments]
+				] = steady_state_linking_numbers[negatively_supercoiled_segments]
+
+			# Assume half of available gyrases are bound randomly to positively
+			# supercoiled segments, with the probability of each gyrase binding
+			# proportional to the length of the segment
+			n_bound_gyrases = self.inactive_gyrases.total_count()/2
+			positively_supercoiled_segments = (
+				steady_state_linking_numbers < all_new_linking_numbers
+			)
+			binding_probs = segment_lengths[positively_supercoiled_segments]/segment_lengths[positively_supercoiled_segments].sum()
+			gyrases_per_segment = self.randomState.multinomial(n_bound_gyrases, binding_probs)
+
+			all_new_linking_numbers[positively_supercoiled_segments] -= 40 * gyrases_per_segment
+
+			# Remove overshoots
+			negatively_supercoiled_segments = (
+					steady_state_linking_numbers > all_new_linking_numbers
+			)
+			all_new_linking_numbers[
+				negatively_supercoiled_segments
+			] = steady_state_linking_numbers[negatively_supercoiled_segments]
 
 			# Delete all existing chromosomal segments
 			self.chromosomal_segments.delByIndexes(

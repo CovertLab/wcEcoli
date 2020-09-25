@@ -881,11 +881,12 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 def initialize_chromosomal_segments(uniqueMolCntr, sim_data):
 	"""
 	Initialize unique molecule representations of chromosomal segments. All
-	chromosomal segments are assumed to be at their relaxed states upon
-	initialization.
+	chromosomal segments are assumed to have the steady state superhelical
+	density upon initialization.
 	"""
 	# Load parameters
 	relaxed_DNA_base_pairs_per_turn = sim_data.process.chromosome_structure.relaxed_DNA_base_pairs_per_turn
+	steady_state_superhelical_density = sim_data.process.chromosome_structure.steady_state_superhelical_density
 	terC_index = sim_data.process.chromosome_structure.terC_dummy_molecule_index
 	replichore_lengths = sim_data.process.replication.replichore_lengths
 	min_coordinates = -replichore_lengths[1]
@@ -961,12 +962,14 @@ def initialize_chromosomal_segments(uniqueMolCntr, sim_data):
 			boundary_coordinates = np.delete(boundary_coordinates,
 				oriC_segment_index, 0)
 
-		# Assumes all segments are at their relaxed state at initialization
-		linking_numbers = (
+		# Assumes all segments have the steady state superhelical density
+		relaxed_DNA_linking_numbers = (
 			boundary_coordinates[:, 1] - boundary_coordinates[:, 0]
 			) / relaxed_DNA_base_pairs_per_turn
+		steady_state_linking_numbers = relaxed_DNA_linking_numbers * (
+			1 + steady_state_superhelical_density)
 
-		return boundary_molecule_indexes, boundary_coordinates, linking_numbers
+		return boundary_molecule_indexes, boundary_coordinates, steady_state_linking_numbers
 
 
 	# Loop through each domain index

@@ -8,6 +8,7 @@ from six.moves import cPickle
 import os
 
 from matplotlib import pyplot as plt
+import matplotlib.colors as colors
 import matplotlib.gridspec as gridspec
 import numpy as np
 
@@ -21,12 +22,13 @@ from wholecell.io.tablereader import TableReader
 DOWNSAMPLING_RATIO = 100
 
 # Range of relative coordinates for cropped heatmap
-CROP_LOWER_BOUND = 240500
-CROP_UPPER_BOUND = 246000
+CROP_LOWER_BOUND = 200000
+CROP_UPPER_BOUND = 210000
 
 # Upper and lower bounds for heatmap (values outside this range are clipped)
-HEATMAP_UPPER_BOUND = 0.01
-HEATMAP_LOWER_BOUND = -0.01
+HEATMAP_UPPER_BOUND = 0.5
+HEATMAP_CENTER = -0.06
+HEATMAP_LOWER_BOUND = -0.1
 
 # Global parameters for all subplots
 TICK_ATTRS = {'labelsize': 30, 'length': 10}
@@ -42,10 +44,10 @@ def format_heatmap_subplot(ax, time):
 
 def add_colorbar_subplot(ax, fig, heatmap):
 	colorbar = fig.colorbar(heatmap, cax=ax, orientation='horizontal')
-	colorbar.set_ticks([HEATMAP_LOWER_BOUND, 0, HEATMAP_UPPER_BOUND])
+	colorbar.set_ticks([HEATMAP_LOWER_BOUND, HEATMAP_CENTER, HEATMAP_UPPER_BOUND])
 	colorbar.set_label('Superhelical Density $(L - L_0)/L_0$', size=LABEL_SIZE)
 	ax.set_xticklabels(
-		['<%g' % (HEATMAP_LOWER_BOUND,), 0, '>%g' % (HEATMAP_UPPER_BOUND,)])
+		['<%g' % (HEATMAP_LOWER_BOUND,), '%g' % (HEATMAP_CENTER,), '>%g' % (HEATMAP_UPPER_BOUND,)])
 	ax.tick_params(**TICK_ATTRS)
 
 
@@ -105,7 +107,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			rb_this_timestep = rb_this_timestep[
 				np.logical_not(np.isnan(rb_this_timestep))].astype(np.int64)
 			sd_this_timestep = sd_this_timestep[
-				np.logical_not(np.isnan(sd_this_timestep))].astype(np.int64)
+				np.logical_not(np.isnan(sd_this_timestep))].astype(np.float64)
 
 			# Loop through each segment
 			for lb, rb, sd in zip(lb_this_timestep, rb_this_timestep, sd_this_timestep):
@@ -157,10 +159,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Plot main heatmap
 		ax_main = fig.add_subplot(gs[1, 1])
+		norm = colors.TwoSlopeNorm(vmin=HEATMAP_LOWER_BOUND,
+			vcenter=HEATMAP_CENTER, vmax=HEATMAP_UPPER_BOUND)
 		heatmap = ax_main.imshow(
 			downsampled_density_array,
 			clim=(HEATMAP_LOWER_BOUND, HEATMAP_UPPER_BOUND),
-			cmap='coolwarm', aspect='auto')
+			cmap='coolwarm', aspect='auto', norm=norm)
 		ax_main.tick_params(top=True, labeltop=True, right=True, labelright=True)
 		ax_main.yaxis.set_label_position('right')
 		ax_main.set_yticks(

@@ -29,7 +29,8 @@ class MoleculeIds(object):
 			'water': 'WATER[c]',
 			'proton': 'PROTON[c]',
 			'ppi': 'PPI[c]',
-			'full_chromosome': 'CHROM_FULL[c]'
+			'full_chromosome': 'CHROM_FULL[c]',
+			'gyrase': 'CPLX0-2425[c]',
 		}
 
 		self.__dict__.update(molecule_ids)
