@@ -12,6 +12,7 @@ import json
 import os
 
 import numpy as np
+from typing import List, Tuple
 from vivarium.core.composition import (
 	agent_environment_experiment,
 	simulate_experiment,
