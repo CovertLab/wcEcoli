@@ -43,7 +43,7 @@ def get_safe_name(s):
 	return fname
 
 def compact_json(obj, ensure_ascii=False, separators=(',', ':'), **kwargs):
-	# type: (Any, bool, Tuple, **Any) -> str
+	# type: (Any, bool, Tuple[str, str], **Any) -> str
 	"""Convert obj into compact JSON form."""
 	return json.dumps(obj, ensure_ascii=ensure_ascii, separators=separators, **kwargs)
 
