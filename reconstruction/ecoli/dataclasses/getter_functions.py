@@ -39,7 +39,7 @@ class GetterFunctions(object):
 		Return the total mass of the molecule with a given ID.
 		"""
 		assert isinstance(mol_id, str)
-		return self._mass_units * self._all_mass[self._location_tag.sub('', mol_id)].sum()
+		return self._mass_units * self._all_total_masses[self._location_tag.sub('', mol_id)]
 
 	def get_masses(self, mol_ids):
 		# type: (Union[List, np.ndarray]) -> Any
@@ -48,7 +48,7 @@ class GetterFunctions(object):
 		"""
 		assert isinstance(mol_ids, (list, np.ndarray))
 		masses = [
-			self._all_mass[self._location_tag.sub('', mol_id)].sum()
+			self._all_total_masses[self._location_tag.sub('', mol_id)]
 			for mol_id in mol_ids]
 		return self._mass_units * np.array(masses)
 
@@ -58,7 +58,7 @@ class GetterFunctions(object):
 		Return the submass array of the molecule with a given ID.
 		"""
 		assert isinstance(mol_id, str)
-		return self._mass_units * self._all_mass[self._location_tag.sub('', mol_id)]
+		return self._mass_units * self._all_submass_arrays[self._location_tag.sub('', mol_id)]
 
 	def get_location(self, mol_id):
 		# type: (str) -> List[List[str]]
@@ -86,7 +86,7 @@ class GetterFunctions(object):
 		return f'[{self._locationDict[id_][0]}]'
 
 	def check_valid_molecule(self, mol_id):
-		return mol_id in self._all_mass and mol_id in self._locationDict
+		return mol_id in self._all_submass_arrays and mol_id in self._locationDict
 
 	def _build_sequences(self, raw_data):
 		"""
@@ -152,9 +152,9 @@ class GetterFunctions(object):
 		directly from raw data, or dynamically calculated from the existing
 		data.
 		"""
-		self._all_mass = {}
+		self._all_submass_arrays = {}
 
-		self._all_mass.update({
+		self._all_submass_arrays.update({
 			met['id']: (self._build_submass_array(met['mw'], 'metabolite')
 			if met['id'] != sim_data.molecule_ids.water[:-3]
 			else self._build_submass_array(met['mw'], 'water'))
@@ -162,17 +162,23 @@ class GetterFunctions(object):
 			})
 
 		# These updates can be dependent on metabolite masses
-		self._all_mass.update(self._build_polymerized_subunit_masses(sim_data))
-		self._all_mass.update(self._build_rna_masses(raw_data, sim_data))
-		self._all_mass.update(self._build_protein_masses(raw_data, sim_data))
-		self._all_mass.update(self._build_full_chromosome_mass(raw_data, sim_data))
-		self._all_mass.update(
+		self._all_submass_arrays.update(self._build_polymerized_subunit_masses(sim_data))
+		self._all_submass_arrays.update(self._build_rna_masses(raw_data, sim_data))
+		self._all_submass_arrays.update(self._build_protein_masses(raw_data, sim_data))
+		self._all_submass_arrays.update(self._build_full_chromosome_mass(raw_data, sim_data))
+		self._all_submass_arrays.update(
 			{x['id']: np.array(x['mw'])
 				for x in itertools.chain(raw_data.protein_complexes, raw_data.modified_forms)}
 			)
 
 		self._mass_units = units.g / units.mol
 		self._location_tag = re.compile(r'\[[a-z]\]')
+
+		# Build dictionary of total masses of each molecule
+		self._all_total_masses = {
+			mol_id: mass_array.sum()
+			for (mol_id, mass_array) in self._all_submass_arrays.items()
+			}
 
 	def _build_polymerized_subunit_masses(self, sim_data):
 		"""
@@ -188,9 +194,9 @@ class GetterFunctions(object):
 			subunits and the end group.
 			"""
 			# Subtract mw of end group from each polymer subunit
-			end_group_mw = self._all_mass[end_group_id[:-3]].sum()
+			end_group_mw = self._all_submass_arrays[end_group_id[:-3]].sum()
 			polymerized_subunit_mws = [
-				self._all_mass[met_id[:-3]].sum() - end_group_mw
+				self._all_submass_arrays[met_id[:-3]].sum() - end_group_mw
 				for met_id in subunit_ids]
 
 			# Add to dictionary with prefixed ID
@@ -223,9 +229,9 @@ class GetterFunctions(object):
 		nt_counts = np.array(nt_counts)
 
 		# Calculate molecular weights
-		ppi_mw = self._all_mass[sim_data.molecule_ids.ppi[:-3]].sum()
+		ppi_mw = self._all_submass_arrays[sim_data.molecule_ids.ppi[:-3]].sum()
 		polymerized_ntp_mws = np.array([
-			self._all_mass[met_id[:-3]].sum() for met_id in sim_data.molecule_groups.polymerized_ntps
+			self._all_submass_arrays[met_id[:-3]].sum() for met_id in sim_data.molecule_groups.polymerized_ntps
 			])
 
 		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
@@ -248,9 +254,9 @@ class GetterFunctions(object):
 		aa_counts = np.array(aa_counts)
 
 		# Calculate molecular weights
-		water_mw = self._all_mass[sim_data.molecule_ids.water[:-3]].sum()
+		water_mw = self._all_submass_arrays[sim_data.molecule_ids.water[:-3]].sum()
 		polymerized_aa_mws = np.array(
-			[self._all_mass[met_id[:-3]].sum() for met_id in sim_data.molecule_groups.polymerized_amino_acids]
+			[self._all_submass_arrays[met_id[:-3]].sum() for met_id in sim_data.molecule_groups.polymerized_amino_acids]
 			)
 		mws = aa_counts.dot(polymerized_aa_mws) + water_mw  # Add end weight
 
@@ -274,7 +280,7 @@ class GetterFunctions(object):
 
 		# Calculate molecular weight
 		polymerized_dntp_mws = np.array([
-			self._all_mass[met_id[:-3]].sum() for met_id in sim_data.molecule_groups.polymerized_dntps
+			self._all_submass_arrays[met_id[:-3]].sum() for met_id in sim_data.molecule_groups.polymerized_dntps
 			])
 		mw = float(np.dot(
 			forward_strand_nt_counts + reverse_strand_nt_counts,
