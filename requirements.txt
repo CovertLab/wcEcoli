@@ -77,7 +77,7 @@ swiglpk==4.65.1
 sympy==1.6.1
 Theano==1.0.5
 Unum==4.1.4
-vivarium-core==0.0.20
+vivarium-core==0.0.23
 vivarium-cell==0.0.21
 
 ## The following requirements were added by pip freeze:
