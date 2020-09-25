@@ -143,8 +143,9 @@ class Mass(wholecell.listeners.listener.Listener):
 		all_submasses = sum(
 			state.mass() for state in six.viewvalues(self.internal_states))
 
-		bulk_submasses = self.internal_states.get('BulkMolecules').compartment_mass()
-		unique_submasses = self.internal_states.get('UniqueMolecules').mass()
+		compartment_submasses = sum(
+			state.compartment_mass() for state in six.viewvalues(
+			self.internal_states))
 
 		self.cellMass = all_submasses.sum()  # sum over all submasses
 
@@ -158,17 +159,17 @@ class Mass(wholecell.listeners.listener.Listener):
 		self.proteinMass = all_submasses[self.proteinIndex]
 		self.smallMoleculeMass = all_submasses[self.smallMoleculeIndex]
 
-		self.nucleoid_mass = bulk_submasses[self.nucleoid_index,:].sum()
-		self.projection_mass = bulk_submasses[self.projection_index,:].sum()
-		self.cell_wall_mass = bulk_submasses[self.cell_wall_index,:].sum()
-		self.cytosol_mass = bulk_submasses[self.cytosol_index,:].sum() + unique_submasses.sum()
-		self.extracellular_mass = bulk_submasses[self.extracellular_index,:].sum()
-		self.membrane_mass = bulk_submasses[self.membrane_index,:].sum()
-		self.outer_membrane_mass = bulk_submasses[self.outer_membrane_index,:].sum()
-		self.periplasm_mass = bulk_submasses[self.periplasm_index,:].sum()
-		self.pilus_mass = bulk_submasses[self.pilus_index,:].sum()
-		self.inner_membrane_mass = bulk_submasses[self.inner_membrane_index,:].sum()
-		self.flagellum_mass = bulk_submasses[self.flagellum_index,:].sum()
+		self.nucleoid_mass = compartment_submasses[self.nucleoid_index,:].sum()
+		self.projection_mass = compartment_submasses[self.projection_index,:].sum()
+		self.cell_wall_mass = compartment_submasses[self.cell_wall_index,:].sum()
+		self.cytosol_mass = compartment_submasses[self.cytosol_index,:].sum()
+		self.extracellular_mass = compartment_submasses[self.extracellular_index,:].sum()
+		self.membrane_mass = compartment_submasses[self.membrane_index,:].sum()
+		self.outer_membrane_mass = compartment_submasses[self.outer_membrane_index,:].sum()
+		self.periplasm_mass = compartment_submasses[self.periplasm_index,:].sum()
+		self.pilus_mass = compartment_submasses[self.pilus_index,:].sum()
+		self.inner_membrane_mass = compartment_submasses[self.inner_membrane_index,:].sum()
+		self.flagellum_mass = compartment_submasses[self.flagellum_index,:].sum()
 
 		# TODO (Eran) use this volume everywhere in the codebase that is currently calculating volume
 		self.volume = self.cellMass / self.cellDensity

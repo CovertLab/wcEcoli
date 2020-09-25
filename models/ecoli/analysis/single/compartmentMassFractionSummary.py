@@ -30,7 +30,9 @@ COLORS = [
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
-	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+	def do_plot(
+			self, simOutDir, plotOutDir, plotOutFileName,
+			simDataFile, validationDataFile, metadata):
 		mass = TableReader(os.path.join(simOutDir, "Mass"))
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))
 
@@ -65,8 +67,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			]).T
 		fractions = (masses / cell[:, None]).mean(axis=0)
 
-		mass_labels = ["Nucleoid", "Projection", "Cell Wall", "Cytosol", "Extracellular", "Membrane",
-					   "Outer Membrane", "Periplasm", "Pilus", "Inner Membrane","Flagellum"]
+		mass_labels = ["Nucleoid", "Projection", "Cell Wall", "Cytosol",
+					   "Extracellular", "Membrane", "Outer Membrane",
+					   "Periplasm", "Pilus", "Inner Membrane","Flagellum"]
 		legend = [
 			'{} ({:.3e})'.format(label, fraction)
 			for label, fraction in zip(mass_labels, fractions)

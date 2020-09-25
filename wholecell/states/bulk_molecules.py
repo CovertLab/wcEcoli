@@ -241,7 +241,7 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 		# Compute summed masses for each compartment
 		self._compartment_masses = np.dot(
 			np.hstack([self._countsAllocatedFinal, self._countsUnallocated[:, np.newaxis]]
-			).sum(axis=1)*self._molecule_by_compartment, self._moleculeMass)
+			).sum(axis=1) * self._molecule_by_compartment, self._moleculeMass)
 
 
 	def loadSnapshot(self, container):
