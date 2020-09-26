@@ -13,7 +13,7 @@ from six.moves import zip
 
 
 def subplot(gs, x, y, title, labels, sort=False):
-	assert y.ndim == 2, f'{y.ndim=}, {title=}, {labels=}'
+	assert y.ndim == 2, 'y.ndim={}, title={}, labels={}'.format(y.ndim, title, labels)
 	ax = plt.subplot(gs)
 	if sort:
 		idx = np.argsort(y[-1, :])[::-1]
