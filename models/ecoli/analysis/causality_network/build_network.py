@@ -118,14 +118,16 @@ NONPROTEIN_MOLECULES_IN_2CS = ["ATP[c]", "ADP[c]", "WATER[c]", "PI[c]",
 COMPARTMENTS = {
 	"n": "nucleoid",
 	"j": "projection",
-	"w": "negative",
+	"w": "cell wall",
 	"c": "cytoplasm",
 	"e": "extracellular",
 	"m": "membrane",
 	"o": "outer membrane",
 	"p": "periplasm",
 	"l": "pilus",
-	"i": "inner membrane"}
+	"i": "inner membrane",
+	"s": "flagellum",
+	}
 
 def molecule_compartment(molecule):
 	match = re.match(r'.+\[(.)\]$', molecule)
@@ -674,6 +676,7 @@ class BuildNetwork(object):
 		charging_molecules = np.array(transcription.charging_molecules)
 		synthetases = np.array(transcription.synthetase_names)
 		trna_to_synthetase = transcription.aa_from_trna.T.dot(transcription.aa_from_synthetase)
+
 		for stoich, trna, synth_idx in zip(charging_stoich, uncharged_trnas, trna_to_synthetase):
 			rxn = '{} net charging'.format(trna[:-3])
 
@@ -697,7 +700,7 @@ class BuildNetwork(object):
 			mol_idx = np.where(stoich != 0)[0]
 			for mol, direction in zip(charging_molecules[mol_idx], stoich[mol_idx]):
 				# Add metabolites that were not encountered
-				if mol not in metabolite_ids:
+				if mol != trna and mol not in metabolite_ids:
 					metabolite_ids.append(mol)
 
 				# Add Charging edges
