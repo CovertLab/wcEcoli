@@ -50,7 +50,8 @@ class Translation(object):
 		for i, seq in enumerate(sequences):
 			self.translation_sequences[i, :len(seq)] = seq
 
-	def _buildMonomerData(self, raw_data, sim_data):
+	def _build_monomer_data(self, raw_data, sim_data):
+
 		# Get protein IDs with compartments
 		protein_ids = [protein['id'] for protein in raw_data.proteins]
 		protein_compartments = sim_data.getter.get_location(protein_ids)
@@ -62,33 +63,37 @@ class Translation(object):
 		n_proteins = len(protein_ids)
 		
 		#create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
-		rna_location = {}
-		for rna in raw_data.operon_rnas:
-			assert len(rna['location']) == 1
-			rnaLocation = rna['location'][0]
-			rna_location[rna['id']] = rnaLocation
+		rna_ids = [rna['id'] for rna in raw_data.operon_rnas]
+		compartments = sim_data.getter.get_location(rna_ids)
+		assert all([len(loc) == 1 for loc in compartments])
 
-		for rna in raw_data.rnas:
-			if rna['id'] not in rna_location.keys():
-				assert len(rna['location']) == 1
-				rna_location[rna['id']] = rna['location'][0]
+		'''
+		rna_ids_with_compartments = [
+			f'{rna_id}[{loc[0]}]' for (rna_id, loc)
+			in zip(rna_ids, compartments)]
+		'''
+		rna_ids_with_compartments_lookups = {
+			rna: "{}[{}]".format(rna, compartments[ind][0])
+			for ind, rna in enumerate(rna_ids)
+			}
+		
+		rna_sets = [
+			[rna_ids_with_compartments_lookups[rna_id]
+			for rna_id in protein['rna_set']]
+			for protein in raw_data.proteins
+			]
 
-		#add location tag to all rnaids.
-		rna_ids_with_compartments = []
-		for protein in raw_data.proteins:
-			rnaId = protein['rnaId']
-			rnaLocation = None
-
-			if rnaId in rna_location.keys():
-				rnaLocation = rna_location[rnaId]
-
-			rna_ids_with_compartments.append('{}[{}]'.format(
-				rnaId,
-				rnaLocation
-				))
-
+		
+		individual_rna_ids = [rna['id'] for rna in raw_data.rnas]
+		individual_rna_compartments = sim_data.getter.get_location(individual_rna_ids)
+		monomer_to_direct_rnaid = {
+			rna['monomer_id']: "{}[{}]".format(rna['id'], individual_rna_compartments[idx][0]) 
+			for idx, rna in enumerate(raw_data.rnas)
+			}
+		direct_rna_ids = [monomer_to_direct_rnaid[protein['id']] for protein in raw_data.proteins]
 		#add location tag to all rnaIds within rnaSet.
 		#remember to export rna_set_ids as rnaSet
+		'''
 		rnaSets = []
 		for protein in raw_data.proteins:
 			rna_id_set = []
@@ -97,7 +102,7 @@ class Translation(object):
 				rna_loc = rna_location[rna_id]
 				rna_id_set.append('{}[{}]'.format(rna_id, rna_loc))
 			rnaSets.append(rna_id_set)
-
+		'''
 		'''
 		# TODO:New form that this takes using get_locations that I should mimic in the future
 
@@ -158,7 +163,7 @@ class Translation(object):
 		max_protein_id_length = max(
 			len(protein_id) for protein_id in protein_ids_with_compartments)
 		max_rna_id_length = max(
-			len(rna_id) for rna_id in rna_ids_with_compartments)
+			len(rna_id) for rna_id in direct_rna_ids)
 		monomer_data = np.zeros(
 			n_proteins,
 			dtype = [
@@ -168,17 +173,17 @@ class Translation(object):
 				('length', 'i8'),
 				('aa_counts', '{}i8'.format(n_amino_acids)),
 				('mw', 'f8'),
-				('rnaSet', 'object')
+				('rna_set', 'object')
 				]
 			)
 
 		monomer_data['id'] = protein_ids_with_compartments
-		monomer_data['rna_id'] = rna_ids_with_compartments
+		monomer_data['rna_id'] = direct_rna_ids
 		monomer_data['deg_rate'] = deg_rate
 		monomer_data['length'] = lengths
 		monomer_data['aa_counts'] = aa_counts
 		monomer_data['mw'] = mws
-		monomerData['rnaSet'] = rnaSets
+		monomer_data['rna_set'] = rna_sets
 
 		field_units = {
 			'id'		:	None,
@@ -187,7 +192,7 @@ class Translation(object):
 			'length'	:	units.aa,
 			'aa_counts'	:	units.aa,
 			'mw'		:	units.g / units.mol,
-			'rnaSet'	: 	None
+			'rna_set'	: 	None
 			}
 
 		self.monomer_data = UnitStructArray(monomer_data, field_units)

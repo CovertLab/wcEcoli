@@ -102,17 +102,16 @@ class SimulationDataEcoli(object):
 
 	def _add_condition_data(self, raw_data):
 		abbrToActiveId = {x["TF"]: x["activeId"].split(", ") for x in raw_data.transcription_factors if len(x["activeId"]) > 0}
-		geneIdToRnaId = {x["geneId"]: x["rnaSet"] for x in raw_data.proteins}
+		geneIdToRnaId = {x["gene_id"]: x["rna_set"] for x in raw_data.proteins}
 
 		abbrToRnaId = {}
 		for x in raw_data.genes:
 			if x["id"] in geneIdToRnaId:
-				abbrToRnaId[x["symbol"]] = geneIdToRnaId[x["id"]]
+				abbrToRnaId[x["symbol"]] = geneIdToRnaId[x["id"]][0]
 			else:
 				abbrToRnaId[x["symbol"]] = x["id"]
-
 		abbrToRnaId.update({
-			x["name"]: geneIdToRnaId[x["geneId"]]
+			x["name"]: geneIdToRnaId[x["geneId"]][0]
 			for x in raw_data.translation_efficiency
 			if x["geneId"] != "#N/A"})
 

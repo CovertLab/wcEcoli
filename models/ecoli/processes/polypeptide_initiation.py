@@ -54,7 +54,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		for i, protein in enumerate(sim_data.process.translation.monomer_data):
 			self.protein_index_to_TU_index[i] = list()
-			for rna in protein['rnaSet']:
+			for rna in protein['rna_set']:
 				self.protein_index_to_TU_index[i].append(TU_id_to_index[rna])
 
 				if rna not in self.TU_id_to_protein_index:
@@ -84,7 +84,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Create view onto RNAs
 		self.RNAs = self.uniqueMoleculesView('RNA')
-		self.mRnas = self.bulkMoleculesView(all_TU_ids[sim_data.process.transcription.rna_data['isMRna']])
+		self.mRnas = self.bulkMoleculesView(all_TU_ids[sim_data.process.transcription.rna_data['is_mRNA']])
 
 
 	def calculateRequest(self):

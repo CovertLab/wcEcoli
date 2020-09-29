@@ -182,6 +182,7 @@ class Transcription(object):
 		rna_ids = [rna['id'] for rna in raw_data.operon_rnas]
 		compartments = sim_data.getter.get_location(rna_ids)
 
+
 		rna_ids_with_compartments = [
 			f'{rna_id}[{loc[0]}]' for (rna_id, loc)
 			in zip(rna_ids, compartments)]
@@ -195,12 +196,8 @@ class Transcription(object):
 
 		for rna in raw_data.rna_half_lives:
 			rna_id_to_half_life[rna['id']] = rna['half_life']
-
 			if rna['id'] in mRNA_ids:
 				reported_mRNA_half_lives.append(rna['half_life'])
-
-		# Load rna start and stop position (values are relative to the RNA, not the chromosome)
-		gene_starts_stops = [rna['gene_starts_stops'] for rna in raw_data.operon_rnas]
 
 		# Calculate average reported half lives of mRNAs
 		average_mRNA_half_lives = np.array(reported_mRNA_half_lives).mean()
@@ -219,18 +216,19 @@ class Transcription(object):
 
 		# Taking counts from extrapolated transcription_unit counts instead of the seq data.
 		# tu_counts is essentially equivilant to seq_data.
-		# TODO (Mialy): change rna['geneId'] to rna['tu_id']
 
 		tu_counts = {
 			x['tu_id']: x['tu_count'] for x in raw_data.transcription_units}
 
 		for rna in raw_data.operon_rnas:		
-            # If sequencing data is not found for rRNA or tRNA, initialize
-            # expression to zero. For other RNA types, raise exception.
-			if rna['geneId'] in tu_counts:
-				expression.append(tu_counts[rna['geneId']])
+			# If sequencing data is not found for rRNA or tRNA, initialize
+			# expression to zero. For other RNA types, raise exception.
+			#rna_id = rna['id'].replace('_RNA', '').replace('-tRNA','').replace('-RNA','')
+			tu_id = '_'.join(rna['gene_set'])
+			if tu_id in tu_counts:
+				expression.append(tu_counts[tu_id])
 			elif rna['type'] == 'mRNA' or rna['type'] == 'miscRNA':
-				raise Exception(f'No RNA-seq data found for {rna["id"]}')
+				raise Exception(f'No transcription unit count data found for {tu_id}')
 			elif rna['type'] == 'rRNA' or rna['type'] == 'tRNA':
 				expression.append(0.)
 			else:
@@ -251,7 +249,7 @@ class Transcription(object):
 		# Load gene IDs
 		# TODO(mialy): Should these be named 'tu_ids' instead?
 		gene_ids = np.array(
-			[gene_ids for rna in raw_data.operon_rnas])
+			['_'.join(rna['gene_set']) for rna in raw_data.operon_rnas])
 
 		# Construct boolean arrays and index arrays for each rRNA type
 		n_rnas = len(rna_ids_with_compartments)
@@ -281,28 +279,26 @@ class Transcription(object):
 		idx_5S = np.array(idx_5S)
 
 		# Load IDs of protein monomers
-		monomer_ids = [rna['monomerId'] for rna in raw_data.operon_rnas]
+		# TODO (mialy): Better way to do this for its downstream use? Right now just replicating what
+		# was done before columns were deleted.
+		monomer_ids = ['_'.join([monomer.replace('-MONOMER', '') for monomer in rna['monomer_set']]) + '-MONOMER' for rna in raw_data.operon_rnas]
 
 		# Load lists of all monomers that can be transcribed by the operon.
 		# Create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
-		monomer_location = {}
-		monomerLocation = None
-		for monomer in raw_data.proteins:
-			assert len(monomer['location']) == 1
-			monomerLocation = monomer['location'][0]
-			monomer_location[monomer['id']] = monomerLocation
 
-
-		#add location tag to all rnaIds within rnaSet.
-		#remember to export rna_set_ids as rnaSet
-		monomerSets = []
-		for rna in raw_data.operon_rnas:
-			monomer_id_set = []
-			monomer_loc = None
-			for monomer_id in rna['monomerSet']:
-				monomer_loc = monomer_location[monomer_id]
-				monomer_id_set.append('{}[{}]'.format(monomer_id, monomer_loc))
-			monomerSets.append(monomer_id_set)
+		single_monomer_ids = [monomer['id'] for monomer in raw_data.proteins]
+		protein_compartments = sim_data.getter.get_location(single_monomer_ids)
+		
+		protein_ids_with_compartments = {
+			monomer:  "{}[{}]".format(monomer, protein_compartments[ind][0])
+			for ind, monomer in enumerate(single_monomer_ids)
+			}
+		
+		monomer_sets = [
+			[protein_ids_with_compartments[monomer_id] 
+			for monomer_id in rna['monomer_set']] 
+			for rna in raw_data.operon_rnas
+			]
 
 		# Load RNA sequences and molecular weights from getter functions
 		# TODO (Mialy): make sure the getter functions work for multi-gene TUS
@@ -352,7 +348,7 @@ class Transcription(object):
 		replication_coordinate = []
 		direction = []
 		for rna in raw_data.operon_rnas:
-			if len(rna['monomerSet']) > 1:
+			if len(rna['monomer_set']) > 1:
 				rna_id = re.split('_', rna['id'])[0] + '_RNA'
 			else:
 				rna_id = rna['id']
@@ -361,6 +357,7 @@ class Transcription(object):
 			# Direction of transcription
 			direction.append((direction_list[rna_id_to_gene_index[rna_id]] == "+"))
 		
+		'''
 		# Get location of transcription initiation relative to origin
 		replication_coordinate = [
 			get_relative_coordinates(coordinate_list[rna_id_to_gene_index[rna["id"]]])
@@ -369,8 +366,8 @@ class Transcription(object):
 		# Get direction of transcription
 		direction = [
 			(direction_list[rna_id_to_gene_index[rna["id"]]] == "+")
-			for rna in raw_data.rnas]
-
+			for rna in raw_data.operon_rnas]
+		'''
 
 		# find start and stop location for each gene in polycistron
 		# coordinates are relative to start of RNA
@@ -382,21 +379,19 @@ class Transcription(object):
 		
 		gene_starts_stops = []
 		for rna in raw_data.operon_rnas:
-			direction = direction_dict[rna['gene_id'][0]]
+			direction_ss = direction_dict[rna['gene_set'][0]]
 			start_stop = []
-			for idx, gene in enumerate(rna['gene_id']):
+			for idx, gene in enumerate(rna['gene_set']):
 
 				if idx == 0:
 					start = 0
-				elif direction == '+':
-					start = coordinate_dict[gene] - coordinate_dict[rna['gene_id'][0]] - 1
-				elif direction == '-':
-					start = coordinate_dict[rna['gene_id'][0]] - coordinate_dict[gene] - 1
+				elif direction_ss == '+':
+					start = coordinate_dict[gene] - coordinate_dict[rna['gene_set'][0]] - 1
+				elif direction_ss == '-':
+					start = coordinate_dict[rna['gene_set'][0]] - coordinate_dict[gene] - 1
 
 				stop = start + gene_lengths[gene]
-
 				start_stop.append([start, stop])
-
 			gene_starts_stops.append(start_stop)
 
 
@@ -443,7 +438,7 @@ class Transcription(object):
 				('Km_endoRNase', 'f8'),
 				('replication_coordinate', 'int64'),
 				('direction', 'bool'),
-				('monomerSet', 'object'),
+				('monomer_set', 'object'),
 				('gene_starts_stops', 'object'),
 				]
 			)
@@ -458,11 +453,11 @@ class Transcription(object):
 		rna_data['is_rRNA'] = [rna["type"] == "rRNA" for rna in raw_data.operon_rnas]
 		rna_data['is_tRNA'] = [rna["type"] == "tRNA" for rna in raw_data.operon_rnas]
 		rna_data['is_ribosomal_protein'] = [
-            "{}[c]".format(x) in sim_data.molecule_groups.ribosomal_proteins
-            for x in monomer_ids]
+			"{}[c]".format(x) in sim_data.molecule_groups.ribosomal_proteins
+			for x in monomer_ids]
 		rna_data['is_RNAP'] = [
-            "{}[c]".format(x) in sim_data.molecule_groups.RNAP_subunits
-            for x in monomer_ids]
+			"{}[c]".format(x) in sim_data.molecule_groups.RNAP_subunits
+			for x in monomer_ids]
 		rna_data['is_23S_rRNA'] = is_23S
 		rna_data['is_16S_rRNA'] = is_16S
 		rna_data['is_5S_rRNA'] = is_5S
@@ -470,8 +465,8 @@ class Transcription(object):
 		rna_data['Km_endoRNase'] = Km
 		rna_data['replication_coordinate'] = replication_coordinate
 		rna_data['direction'] = direction
-		rnaData['monomerSet'] = monomerSets
-		rnaData['gene_starts_stops'] = gene_starts_stops
+		rna_data['monomer_set'] = monomer_sets
+		rna_data['gene_starts_stops'] = gene_starts_stops
 
 		field_units = {
 			'id': None,
@@ -492,7 +487,7 @@ class Transcription(object):
 			'Km_endoRNase': units.mol / units.L,
 			'replication_coordinate': None,
 			'direction': None,
-			'monomerSet': None,
+			'monomer_set': None,
 			'gene_starts_stops': None,
 			}
 
@@ -500,7 +495,7 @@ class Transcription(object):
 		self.rna_synth_prob = {}
 
 		# Set basal expression and synthesis probabilities - conditional values
-        # are set in the parca.
+		# are set in the parca.
 		self.rna_expression["basal"] = expression / expression.sum()
 		self.rna_synth_prob["basal"] = synth_prob / synth_prob.sum()
 
@@ -512,7 +507,7 @@ class Transcription(object):
 		"""
 		# Load sequence data
 		rna_seqs = sim_data.getter.get_sequence(
-			[rna['id'] for rna in raw_data.opeorn_rnas])
+			[rna['id'] for rna in raw_data.operon_rnas])
 
 		rrna_types = ['is_23S_rRNA', 'is_16S_rRNA', 'is_5S_rRNA']
 		for rrna in rrna_types:
@@ -864,7 +859,7 @@ class Transcription(object):
 		# rna_idx = {r[:-3]: i for i, r in enumerate(self.rnaData['id'])}
 		fcs = np.zeros(len(self.rna_data))
 		rna_fc_dict = dict(zip(self.ppgpp_regulated_genes, self.ppgpp_fold_changes))
-		for i, rna in enumerate(self.rnaData['id']):
+		for i, rna in enumerate(self.rna_data['id']):
 			if rna in rna_fc_dict:
 				fcs[i] = rna_fc_dict[rna]
 		exp = self.rna_expression['basal']

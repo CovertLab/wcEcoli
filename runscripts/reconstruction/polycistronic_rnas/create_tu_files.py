@@ -102,6 +102,12 @@ TODO:
 -fix furure warning
 - Combine with file to make the polycistrons file, add flag so user can stil make their own.
 
+- is rnas_genes_order used?
+- update all documentation for changes that needed to happen due to changes in the flat file
+
+
+-IMPORTANT:
+SOMETHING CONFUSING IS HAPPENING WITH THE COUNTS FOR SOME NONCODING RNAS
 '''
 
 
@@ -170,6 +176,7 @@ GENOME_SEQUENCE_FILE = os.path.join(FLAT_DIR, 'flattened_sequence.fasta')
 km_file = os.path.join('fixtures', 'endo_km', 'km3.cPickle')
 RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv')
 PROTEIN_FILE = os.path.join(FLAT_DIR, 'proteins_new_condensed.tsv')
+PROTEIN_OLD_FILE = os.path.join(FLAT_DIR, 'proteins_old.tsv')
 TF_COND_FILE = os.path.join(FLAT_DIR, 'condition','tf_condition_old.tsv')
 
 # output files
@@ -189,6 +196,7 @@ RNA_HALF_LIVES_INFO, rna_hl_fieldnames = strip_units(parse_tsv(RNA_HALF_LIVES_FI
 PC_INFO, pc_fieldnames = parse_tsv(POLY_CISTRON_FILE)
 GENE_INFO, g_fieldnames = parse_tsv(GENES_FILE)
 PROTEIN_INFO, protein_fieldnames = parse_tsv(PROTEIN_FILE)
+PROTEIN_OLD_INFO, protein_old_fieldnames = parse_tsv(PROTEIN_OLD_FILE)
 TF_INFO, TF_FIELDNAMES = parse_tsv(TF_COND_FILE)
 GENOMIC_SEQUENCE = load_sequence(GENOME_SEQUENCE_FILE)
 rna_seq_data_all_cond = parse_tsv(RNA_SEQ_FILE)
@@ -562,14 +570,18 @@ def create_gene_to_tu_matrix(rna_info, tu_info):
 	num_tus = len(tu_info)
 
 	gene_to_tu_matrix = np.zeros((num_rnas, num_tus))
-	rnas_gene_order = ['_'.join(row['gene_set']) for row in rna_info]
+	rnas_gene_order = [row['gene_set'][0] for row in rna_info]
 	reverse_index = {
-		'_'.join(row['gene_set']): gene_index
+		row['gene_set'][0]: gene_index
 		for gene_index, row in enumerate(rna_info)}
 
 	for index, tu in enumerate(tu_info):
 		if len(tu['gene_set']) == 1:
+			#if tu['gene_set'][0] == "G0-8903":
+				#breakpoint()
 			gene = tu['gene_set'][0]
+			gene_index = reverse_index[gene]
+			gene_to_tu_matrix[gene_index, index] = 1
 		else:
 			for gene in tu['gene_set']:
 				gene_index = reverse_index[gene]
@@ -592,7 +604,6 @@ def create_rnaseq_count_vector(rnas_gene_order):
 	rna_seq_counts_vector = [
 		rna_seq_data_index[gene]
 		for gene in rnas_gene_order]
-
 	return rna_seq_counts_vector
 
 def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
@@ -611,12 +622,14 @@ def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 	Returns:
 		A list of dictionaries. Each dictionary contains the 'tu_id' and the 'tu_count' for
 		each TU in the model.
+
+	TODO: enumerate for the i in range stuff below
 	"""
 	tu_counts_vector = nnls(gene_tu_matrix, rna_seq_counts_vector)[0]
-	tu_gene_order = [row['id'].replace('_RNA','') for row in tu_info]
+	tu_gene_order = [('_').join(row['gene_set']) for row in tu_info]
 	tu_genes_counts = []
 
-	for i in range(0, len(tu_gene_order)):
+	for i, val in enumerate(tu_gene_order):
 		tu_genes_counts.append({'tu_id': tu_gene_order[i], 'tu_count': tu_counts_vector[i]})
 
 	return tu_genes_counts
@@ -654,15 +667,30 @@ def make_new_proteins_file(output_file):
 	protein_index = {}
 	for protein_row in PROTEIN_INFO:
 		protein_row['rna_set'] = []
+		#protein_row['gene_id'] = []
 		protein_index[protein_row['id']] = protein_row
+		for old_protein in PROTEIN_OLD_INFO:
+			if old_protein['id'] == protein_row['id']:
+				protein_row['gene_id'] = old_protein['geneId']
 
 	for rna_row in rna_info:
 		for monomer in rna_row['monomer_set']:
 			protein_row = protein_index[monomer]
 			protein_row['rna_set'].append(rna_row['id'])
-
+	'''
+	for rna_row in rna_info:
+		for monomer in rna_row['monomer_set']:
+			protein_row = protein_index[monomer]
+			#list_of_rnas_in_set = rna_row['id'].split('_')[0:-1]
+			protein_row['rna_set'] = [rna + '_RNA' for rna in rna_row['id'].split('_')[0:-1]]
+			#protein_row['rna_set'].append(rna_row['id'].split('_')[0:-1])
+	for protein in PROTEIN_INFO:
+		if type(protein['rna_set'][0]) == list:
+			protein['rna_set'] = protein['rna_set'][0]
+	'''
 	#add fieldname for 'rna_set'
 	protein_fieldnames.append('rna_set')
+	protein_fieldnames.append('gene_id')
 
 	with open(output_file, "w") as f:
 		writer = JsonWriter(f, protein_fieldnames)

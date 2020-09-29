@@ -45,8 +45,8 @@ class InternalState(object):
 
 		# Set RNAs
 		rna_ids, rna_masses = self._build_bulk_molecule_specs(
-			sim_data, [rna['id'] for rna in raw_data.rnas],
-			[sim_data.submass_name_to_index[rna['type']] for rna in raw_data.rnas]
+			sim_data, [rna['id'] for rna in raw_data.operon_rnas],
+			[sim_data.submass_name_to_index[rna['type']] for rna in raw_data.operon_rnas]
 			)
 
 		self.bulk_molecules.add_to_bulk_state(rna_ids, rna_masses)

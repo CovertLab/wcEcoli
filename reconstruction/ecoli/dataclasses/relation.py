@@ -12,7 +12,7 @@ class Relation(object):
 
 	def __init__(self, raw_data, sim_data):
 		# pull mrna and monomer data
-		self.is_mrna = np.where(sim_data.process.transcription.rna_data['isMRna'])[0]
+		self.is_mrna = np.where(sim_data.process.transcription.rna_data['is_mRNA'])[0]
 		self.mrna = sim_data.process.transcription.rna_data[self.is_mrna]
 		self.monomer = sim_data.process.translation.monomer_data
 
@@ -39,7 +39,7 @@ class Relation(object):
 		self.rnaIndexToMonomerMapping_new = []
 		for protein_row in sim_data.process.translation.monomer_data:
 			set_indices = []
-			for rna_id in protein_row['rnaSet']:
+			for rna_id in protein_row['rna_set']:
 				set_indices.append(rna_data_id_index[rna_id])
 			self.rnaIndexToMonomerMapping_new.append(set_indices)
 		self.rnaIndexToMonomerMapping_new = np.array(self.rnaIndexToMonomerMapping_new)
@@ -264,8 +264,8 @@ class Relation(object):
 		# unit and monomer space.
 		mrna_id_index_dict = {mrna_id: index 
 			for index, mrna_id in enumerate(self.mrna['id'])}
-		monomer_id_index_dict = {rnaId: index 
-			for index, rnaId in enumerate(self.monomer['rnaId'])}
+		monomer_id_index_dict = {rna_id: index 
+			for index, rna_id in enumerate(self.monomer['rna_id'])}
 		# tu_dict: Contains all the TU's as keys (str), and their counts as values
 		tu_dict = {tu['tu_id']: tu['tu_count'] 
 			for tu in raw_data.transcription_units}

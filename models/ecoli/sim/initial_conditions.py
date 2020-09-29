@@ -179,12 +179,12 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppg
 	monomerExpression = np.zeros(len(sim_data.process.translation.monomer_data))
 	condition_to_doubling_time = np.log(2) / sim_data.condition_to_doubling_time[sim_data.condition].asNumber(units.s)
 	translation_efficiencies_by_monomer = sim_data.process.translation.translation_efficiencies_by_monomer
-	rna_ids = list(sim_data.process.transcription.rnaData['id'])
+	rna_ids = list(sim_data.process.transcription.rna_data['id'])
 	for monomer_idx, monomer in enumerate(sim_data.process.translation.monomer_data):
 		exp = 0
-		for rna in monomer['rnaSet']:
+		for rna in monomer['rna_set']:
 			rna_idx = rna_ids.index(rna)
-			exp += rnaExpression[rna_idx] * translation_efficiencies_by_monomer[monomer_idx] / (condition_to_doubling_time + monomer['degRate'])
+			exp += rnaExpression[rna_idx] * translation_efficiencies_by_monomer[monomer_idx] / (condition_to_doubling_time + monomer['deg_rate'])
 
 		monomerExpression[monomer_idx] = exp
 
@@ -1076,12 +1076,12 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# 	of each transcript will affect the availabilities of mRNAs on that
 	# 	transcript.
 	all_TU_ids = sim_data.process.transcription.rna_data['id']
-	all_mRNA_ids = sim_data.process.translation.monomer_data['rnaId']
+	all_mRNA_ids = sim_data.process.translation.monomer_data['rna_id']
 	# TU_counts_to_mRNA_counts = np.zeros(
 	# 	(len(all_mRNA_ids), len(all_TU_ids)), dtype=np.int64)
 
-	start_codon_positions = sim_data.process.transcription.rnaData['gene_starts_stops']
-	monomer_sets = sim_data.process.transcription.rnaData['monomerSet']
+	start_codon_positions = sim_data.process.transcription.rna_data['gene_starts_stops']
+	monomer_sets = sim_data.process.transcription.rna_data['monomer_set']
 
 
 	TU_id_to_index = {TU_id: i for i, TU_id in enumerate(all_TU_ids)}
@@ -1093,11 +1093,11 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	protein_index_to_gene_coord = {}
 	available_template = np.zeros(len(all_mRNA_ids), dtype=np.int64)
 
-	for i, protein in enumerate(sim_data.process.translation.monomerData):
+	for i, protein in enumerate(sim_data.process.translation.monomer_data):
 		protein_index_to_TU_index[i] = []
 		protein_index_to_gene_coord[i] = []
 
-		for rna in protein['rnaSet']:
+		for rna in protein['rna_set']:
 			rna_index = TU_id_to_index[rna]
 			prot_index = monomer_sets[rna_index].index(protein['id'])
 			gene_coords = start_codon_positions[rna_index][prot_index]

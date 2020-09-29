@@ -77,8 +77,8 @@ class TranscriptionRegulation(object):
 		"""
 		geneIdToRnaId = {}
 		for rna in raw_data.operon_rnas:
-			geneId = rna["geneId"]
-			for gene in geneId.split("_"):
+			#geneId = rna["geneId"]
+			for gene in rna['gene_set']:
 				geneIdToRnaId[gene] = rna["id"]
 
 		self.abbr_to_rna_id = {}

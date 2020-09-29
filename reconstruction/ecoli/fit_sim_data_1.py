@@ -1519,9 +1519,9 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		)
 
 	# Update mRNA expression to reflect monomer counts
-	assert np.all(
-		sim_data.process.translation.monomer_data['rna_id'][sim_data.relation.monomer_index_to_rna_mapping] == sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']]
-		), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests
+	#assert np.all(
+	#	sim_data.process.translation.monomer_data['rna_id'][sim_data.relation.monomer_index_to_rna_mapping] == sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']]
+	#	), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests
 
 	mRnaExpressionView = rnaExpressionContainer.countsView(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']])
 	mRnaExpressionFrac = np.sum(mRnaExpressionView.counts())
@@ -1547,7 +1547,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	# Set number of RNAs based on expression we just set
 	nRnas = totalCountFromMassesAndRatios(
 		totalMass_RNA,
-		sim_data.process.transcription.rnaData["mw"] / sim_data.constants.nAvogadro,
+		sim_data.process.transcription.rna_data["mw"] / sim_data.constants.n_avogadro,
 		expression)
 
 	view_RNA.countsIs(nRnas * expression)

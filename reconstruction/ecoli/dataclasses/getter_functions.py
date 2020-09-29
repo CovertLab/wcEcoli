@@ -60,7 +60,7 @@ class GetterFunctions(object):
 		"""
 
 		# Get RNA lengths from gene data
-		gene_lengths = {gene["id"]: ['length'] for gene in raw_data.genes}
+		gene_lengths = {gene["id"]: gene['length'] for gene in raw_data.genes}
 
 		# Get dict of coordinates and directions for each gene
 		coordinate_dict = {gene["id"]: gene["coordinate"] for gene in raw_data.genes}
@@ -157,7 +157,7 @@ class GetterFunctions(object):
 		of polymerized NTPs.
 		"""
 		# Get RNA nucleotide compositions
-		rna_seqs = self.get_sequence([rna['id'] for rna in raw_data.rnas])
+		rna_seqs = self.get_sequence([rna['id'] for rna in raw_data.operon_rnas])
 		nt_counts = []
 		for seq in rna_seqs:
 			nt_counts.append(
@@ -172,7 +172,7 @@ class GetterFunctions(object):
 
 		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
 
-		return {rna['id']: mw for (rna, mw) in zip(raw_data.rnas, mws)}
+		return {rna['id']: mw for (rna, mw) in zip(raw_data.operon_rnas, mws)}
 
 	def _build_protein_masses(self, raw_data, sim_data):
 		"""
