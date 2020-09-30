@@ -8,6 +8,7 @@ import os
 from cell.analysis.analyze import Analyzer
 from cell.plots.expression_survival_dotplot import (
 	plot_expression_survival)
+from cell.plots.multibody_physics import plot_tags
 from vivarium.core.composition import plot_agents_multigen
 
 from colony.constants import OUT_DIR
@@ -16,8 +17,8 @@ from colony.compartments.antibiotics import (
 	PUMP_KEY,
 )
 from colony.projects.antibiotics.investigate_utils import (
-    filter_raw_data_by_time,
-    split_raw_data_by_survival,
+	filter_raw_data_by_time,
+	split_raw_data_by_survival,
 )
 
 
@@ -42,7 +43,7 @@ def main():
 	if not os.path.exists(out_dir):
 		os.makedirs(out_dir)
 
-	data, _ = Analyzer.get_data(
+	data, environment_config = Analyzer.get_data(
 		args, args.experiment_id)
 
 	fig_pump = plot_expression_survival(
@@ -76,6 +77,19 @@ def main():
 		survive_data, multigen_settings, out_dir, 'survive')
 	plot_agents_multigen(
 		die_data, multigen_settings, out_dir, 'die')
+
+	tag_path_name_map = {
+		PUMP_PATH: 'AcrAB-TOlC',
+		BETA_LACTAMASE_PATH: 'Beta-Lactamase',
+	}
+	tags_config = {
+		'out_dir': out_dir,
+		'tagged_molecules': tag_path_name_map.keys(),
+		'filename': 'expression',
+		'tag_path_name_map': tag_path_name_map,
+	}
+	tags_data = Analyzer.format_data_for_tags(data, environment_config)
+	plot_tags(tags_data, tags_config)
 
 
 if __name__ == '__main__':
