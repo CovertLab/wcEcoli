@@ -91,7 +91,7 @@ def main():
 				'agents,wcecoli_0,boundary,bulk_molecules_report,BCCP-MONOMER[c]':
 					900,
 				'agents,wcecoli_0,boundary,bulk_molecules_report,G7602-MONOMER[c]':
-					9,
+					99,
 				'agents,wcecoli_0,boundary,bulk_molecules_report,G7763-MONOMER[c]':
 					9,
 				'agents,wcecoli_0,boundary,bulk_molecules_report,EG11162-MONOMER[c]':
@@ -100,8 +100,6 @@ def main():
 					500,
 				'agents,wcecoli_0,boundary,dry_mass': 9,
 				'agents,wcecoli_0,boundary,mass': 9,
-				'agents,wcecoli_0,boundary,bulk_molecules_report,G7602-MONOMER[c]':
-					99,
 				'agents,wcecoli_0,boundary,bulk_molecules_report,PD03585[c]':
 					9,
 			},
