@@ -27,7 +27,7 @@ REFERENCE_DATA_FILE = os.path.join(
 OUTPUT_DATA_PATH = os.path.join(
 	OUT_DIR, 'antibiotics_test_output.csv')
 #: Length of simulation to run for both generation and checking
-DURATION = 1300
+DURATION = 100
 #: Number of cells with which to initialize simulation
 NUM_CELLS = 1
 PULSE_CONCENTRATION = 0
@@ -70,7 +70,7 @@ def main():
 		action='store_true',
 		default=False,
 		help='Check that model behavior matches {}.'.format(
-            REFERENCE_DATA_FILE),
+			REFERENCE_DATA_FILE),
 	)
 	args = parser.parse_args()
 	assert args.check != args.generate
@@ -94,21 +94,31 @@ def main():
 					99,
 				'agents,wcecoli_0,boundary,bulk_molecules_report,G7763-MONOMER[c]':
 					9,
+				'agents,wcecoli_0,boundary,bulk_molecules_report,EG10229-MONOMER[c]':
+					9,
 				'agents,wcecoli_0,boundary,bulk_molecules_report,EG11162-MONOMER[c]':
 					50,
 				'agents,wcecoli_0,boundary,bulk_molecules_report,EG11256-MONOMER[c]':
 					500,
+				'agents,wcecoli_0,boundary,bulk_molecules_report,EG11729-MONOMER[p]':
+					9,
+				'agents,wcecoli_0,boundary,bulk_molecules_report,EG12859-MONOMER[p]':
+					99,
+				'agents,wcecoli_0,boundary,bulk_molecules_report,TRANS-CPLX-201[s]':
+					9,
 				'agents,wcecoli_0,boundary,dry_mass': 9,
 				'agents,wcecoli_0,boundary,mass': 9,
 				'agents,wcecoli_0,boundary,bulk_molecules_report,PD03585[c]':
 					9,
+				# We don't expect angles to match
+				'agents,wcecoli_0,boundary,angle': 3,
 			},
 		)
 	if args.generate:
 		save_flat_timeseries(
 			processed_ts,
-			os.path.dirname(OUTPUT_DATA_PATH),
-			os.path.basename(OUTPUT_DATA_PATH),
+			os.path.dirname(REFERENCE_DATA_FILE),
+			os.path.basename(REFERENCE_DATA_FILE),
 		)
 
 
