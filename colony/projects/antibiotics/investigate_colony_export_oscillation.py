@@ -7,8 +7,8 @@ this investigation will also reveal.
 import argparse
 import os
 
-from cell.analysis.analyze import Analyzer
-from cell.plots.multibody_physics import plot_snapshots
+from vivarium_cell.analysis.analyze import Analyzer
+from vivarium_cell.plots.multibody_physics import plot_snapshots
 
 from colony.constants import OUT_DIR
 from colony.projects.antibiotics.investigate_utils import (

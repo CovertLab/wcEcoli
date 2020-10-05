@@ -5,11 +5,11 @@
 import argparse
 import os
 
-from cell.analysis.analyze import Analyzer
-from cell.plots.expression_survival_dotplot import (
+from vivarium_cell.analysis.analyze import Analyzer
+from vivarium_cell.plots.expression_survival_dotplot import (
 	plot_expression_survival)
-from cell.plots.multibody_physics import plot_tags
-from vivarium.core.composition import plot_agents_multigen
+from vivarium_cell.plots.multibody_physics import plot_tags
+from vivarium.plots.agents_multigen import plot_agents_multigen
 
 from colony.constants import OUT_DIR
 from colony.compartments.antibiotics import (
