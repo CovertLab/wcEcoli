@@ -1,4 +1,4 @@
-"reaction id"	"stoichiometry"	"is reversible"	"catalyzed by"
+"id"	"stoichiometry"	"is_reversible"	"catalyzed_by"
 "1.1.1.127-RXN"	{"NADH[c]": 1, "PROTON[c]": 1, "2-DEHYDRO-3-DEOXY-D-GLUCONATE[c]": -1, "CPD-343[c]": 1, "NAD[c]": -1}	true	["KDUD-MONOMER"]
 "1.1.1.215-RXN"	{"NADPH[c]": -1, "GLUCONATE[c]": 1, "CPD-377[c]": -1, "PROTON[c]": -1, "NADP[c]": 1}	false	["CPLX0-235"]
 "1.1.1.262-RXN"	{"NADH[c]": 1, "PROTON[c]": 1, "2-AMINO-3-OXO-4-PHOSPHONOOXYBUTYRATE[c]": 1, "NAD[c]": -1, "4-PHOSPHONOOXY-THREONINE[c]": -1}	false	["CPLX0-7847"]

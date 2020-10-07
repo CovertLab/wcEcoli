@@ -43,8 +43,6 @@ class Complexation(object):
 
 		# Build stoichiometric matrix from given complexation reactions
 		for reactionIndex, reaction in enumerate(raw_data.complexation_reactions):
-			assert reaction["process"] == "complexation"
-			assert reaction["dir"] == 1
 
 			for molecule in reaction["stoichiometry"]:
 				if molecule["type"] == "metabolite":

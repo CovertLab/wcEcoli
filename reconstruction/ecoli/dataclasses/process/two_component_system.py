@@ -73,8 +73,8 @@ class TwoComponentSystem(object):
 
 				if reactionName not in rxnIds:
 					rxnIds.append(reactionName)
-					ratesFwd.append(reactionTemplate[reaction]["forward rate"])
-					ratesRev.append(reactionTemplate[reaction]["reverse rate"])
+					ratesFwd.append(reactionTemplate[reaction]["forward_rate"])
+					ratesRev.append(reactionTemplate[reaction]["reverse_rate"])
 					reactionIndex = len(rxnIds) - 1
 
 				else:

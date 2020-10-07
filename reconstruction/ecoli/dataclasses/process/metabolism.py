@@ -394,7 +394,7 @@ class Metabolism(object):
 		self.transport_reactions = [
 			rxn
 			for row in raw_data.transport_reactions
-			for rxn in rxn_mapping.get(row['reaction id'], [])
+			for rxn in rxn_mapping.get(row['id'], [])
 			]
 
 	def get_kinetic_constraints(self, enzymes, substrates):
@@ -575,9 +575,9 @@ class Metabolism(object):
 
 		# Load and parse reaction information from raw_data
 		for reaction in cast(Any, raw_data).reactions:
-			reaction_id = reaction["reaction id"]
+			reaction_id = reaction["id"]
 			stoich = reaction["stoichiometry"]
-			reversible = reaction["is reversible"]
+			reversible = reaction["is_reversible"]
 
 			if len(stoich) <= 1:
 				raise Exception("Invalid biochemical reaction: {}, {}".format(reaction_id, stoich))
@@ -585,7 +585,7 @@ class Metabolism(object):
 			reaction_stoich[reaction_id] = stoich
 
 			catalysts_for_this_rxn = []
-			for catalyst in reaction["catalyzed by"]:
+			for catalyst in reaction["catalyzed_by"]:
 				try:
 					catalysts_with_loc = catalyst + sim_data.getter.get_location_tag(catalyst)
 					catalysts_for_this_rxn.append(catalysts_with_loc)

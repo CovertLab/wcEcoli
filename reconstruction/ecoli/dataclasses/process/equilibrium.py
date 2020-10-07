@@ -70,11 +70,8 @@ class Equilibrium(object):
 
 		# Build stoichiometry matrix
 		for reactionIndex, reaction in enumerate(raw_data.equilibrium_reactions):
-			assert reaction["process"] == "equilibrium"
-			assert reaction["dir"] == 1
-
-			ratesFwd.append(reaction["forward rate"])
-			ratesRev.append(reaction["reverse rate"])
+			ratesFwd.append(reaction["forward_rate"])
+			ratesRev.append(reaction["reverse_rate"])
 			rxnIds.append(reaction["id"])
 
 			for molecule in reaction["stoichiometry"]:

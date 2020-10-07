@@ -550,9 +550,6 @@ class Transcription(object):
 			if no_charged_trna_in_reaction or no_trna_in_reaction:
 				continue
 
-			assert reaction['process'] == 'rna'
-			assert reaction['dir'] == 1
-
 			# Get uncharged tRNA name for the given reaction
 			trna = None
 			for mol in [molecule['molecule'] + '[' + molecule['location'] + ']' for molecule in reaction['stoichiometry']]:
@@ -595,7 +592,7 @@ class Transcription(object):
 			assert aa_idx is not None
 
 			# Create mapping for synthetases catalyzing charging
-			for synthetase in reaction['catBy']:
+			for synthetase in reaction['catalyzed_by']:
 				synthetase = '{}[{}]'.format(synthetase, molecule['location'])
 
 				if synthetase not in synthetase_names:
