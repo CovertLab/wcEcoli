@@ -172,7 +172,7 @@ def simulate(
 			},
 		},
 	}
-	agent_ids = ['wcecoli_{}'.format(i) for i in range(num_cells)]
+	agent_ids = ['{}_wcecoli'.format(i) for i in range(num_cells)]
 
 	initial_state = {}
 	settings = {

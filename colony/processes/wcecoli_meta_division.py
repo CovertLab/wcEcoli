@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
-import uuid
 
 from vivarium.core.process import Deriver
 from vivarium.library.dict_utils import deep_merge
+from vivarium.processes.meta_division import daughter_phylogeny_id
 
 
 def divide_empty_list(state):
@@ -17,21 +17,21 @@ class WcEcoliMetaDivision(Deriver):
 
 	defaults = {
 		'daughter_path': tuple(),
-		'id_function': lambda: str(uuid.uuid1()),
+		'daughter_ids_function': daughter_phylogeny_id,
 	}
 	name = 'wcEcoliMetaDivision'
 
 	def __init__(self, initial_parameters):
 		'''Implement division for wcEcoli simulations
 
-        When wcEcoli triggers division internally, it passes through its
-        update a list of 2 paths to states for the daughter cells. The
-        :py:class:`colony.processes.wcecoli.WcEcoli` process stores this
-        in the ``division`` variable of the ``global`` port, which is
-        associated with the same store as the ``global`` port for this
-        process. When this deriver runs then, it uses these paths to
-        instantiate new WcEcoli processes and uses the ``_divide``
-        operation to trigger the division in the hierarchy.
+		When wcEcoli triggers division internally, it passes through its
+		update a list of 2 paths to states for the daughter cells. The
+		:py:class:`colony.processes.wcecoli.WcEcoli` process stores this
+		in the ``division`` variable of the ``global`` port, which is
+		associated with the same store as the ``global`` port for this
+		process. When this deriver runs then, it uses these paths to
+		instantiate new WcEcoli processes and uses the ``_divide``
+		operation to trigger the division in the hierarchy.
 
 		Ports:
 
@@ -44,9 +44,9 @@ class WcEcoliMetaDivision(Deriver):
 			initial_parameters(dict): Accepts the following
 				configuration keys:
 
-				* **id_function**: Function that generates a unique
-				  identifier for the agents generated upon
-				  division.
+				* **daughter_ids_function**: Function that generates a
+				  unique identifier for each of the agents generated
+				  upon division.
 				* **compartment**
 				  (:py:class:`vivarium.core.experiment.Compartment`):
 				  The compartment object that will generate the agents.
@@ -67,7 +67,7 @@ class WcEcoliMetaDivision(Deriver):
 		parameters = copy.deepcopy(self.defaults)
 		deep_merge(parameters, initial_parameters)
 
-		self.id_function = parameters['id_function']
+		self.daughter_ids_function = parameters['daughter_ids_function']
 		self.compartment = parameters['compartment']
 		self.daughter_path = parameters['daughter_path']
 		self.agent_id = parameters['agent_id']
@@ -94,9 +94,14 @@ class WcEcoliMetaDivision(Deriver):
 			return {}
 
 		daughter_updates = []
+		assert len(daughter_configs) == 2
+		daughter_ids = self.daughter_ids_function(self.agent_id)
 
-		for daughter_config in daughter_configs:
-			daughter_id = daughter_config['id']
+		# WcEcoli gives us a daughter ID under the 'id' key in the
+		# configuration, but we ignore it. We generate our own IDs so
+		# that we can use them to track phylogeny.
+		for daughter_config, daughter_id in zip(
+				daughter_configs, daughter_ids):
 			assert daughter_id != self.agent_id
 			compartment = self.compartment.generate({
 				'agent_id': daughter_id,
