@@ -573,9 +573,18 @@ class Metabolism(object):
 		reversible_reactions = []
 		reaction_catalysts = {}
 
+		# Get IDs of reactions that should be removed
+		removed_reaction_ids = {
+			rxn['id'] for rxn in cast(Any, raw_data).metabolic_reactions_removed}
+
 		# Load and parse reaction information from raw_data
-		for reaction in cast(Any, raw_data).reactions:
+		for reaction in cast(Any, raw_data).metabolic_reactions:
 			reaction_id = reaction["id"]
+
+			# Skip removed reactions
+			if reaction_id in removed_reaction_ids:
+				continue
+
 			stoich = reaction["stoichiometry"]
 			reversible = reaction["is_reversible"]
 
