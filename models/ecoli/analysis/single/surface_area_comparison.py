@@ -37,6 +37,9 @@ Bacterial Cell, Chapter 1
 - average e. coli time point 44% of the way through cell cycle: Neidhart et al., 
 Physiology of the Bacterial Cell, Chapter 1
 
+Note:
+- cell volume: this value from the model is derived from the density parameter
+	- strain: ML308
 '''
 
 width = [0.5, 0.73]		# in um
