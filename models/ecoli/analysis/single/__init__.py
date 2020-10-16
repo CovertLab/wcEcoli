@@ -72,7 +72,6 @@ TAGS = {
 	'ACTIVE': ACTIVE,   # all active analyses in this category
 	'CORE': [           # the default list to run in development
 		"aaCounts.py",
-		"cell_wall_expression.py",
 		"compartment_mass_fraction_summary.py",
 		"dntpCounts.py",
 		"evaluationTime.py",
