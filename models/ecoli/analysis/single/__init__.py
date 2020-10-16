@@ -9,7 +9,6 @@ ACTIVE = [
 	"aaExchangeFluxes.py",
 	"active_rnap_coordinates.py",
 	"allReactionFluxes.py",
-	"cell_wall_expression.py",
 	"centralCarbonMetabolism.py",
 	"centralCarbonMetabolismCorrelationTimeCourse.py",
 	"centralCarbonMetabolismScatter.py",
@@ -72,7 +71,6 @@ TAGS = {
 	'ACTIVE': ACTIVE,   # all active analyses in this category
 	'CORE': [           # the default list to run in development
 		"aaCounts.py",
-		"cell_wall_expression.py",
 		"compartment_mass_fraction_summary.py",
 		"dntpCounts.py",
 		"evaluationTime.py",
