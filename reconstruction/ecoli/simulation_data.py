@@ -123,7 +123,7 @@ class SimulationDataEcoli(object):
 
 		self.tf_to_fold_change = {}
 		self.tf_to_direction = {}
-		notFound = []
+		not_found = set()
 		for row in raw_data.fold_changes:
 			# Skip fold changes that do not agree with curation
 			if np.abs(row['Regulation_direct']) > 2:
@@ -133,7 +133,7 @@ class SimulationDataEcoli(object):
 			try:
 				target = abbrToRnaId[row["Target"]]
 			except KeyError:
-				notFound.append(row["Target"])
+				not_found.add(row["Target"])
 				continue
 			if tf not in self.tf_to_fold_change:
 				self.tf_to_fold_change[tf] = {}
@@ -148,9 +148,43 @@ class SimulationDataEcoli(object):
 			self.tf_to_fold_change[tf][target] = FC
 
 		if VERBOSE:
-			print("The following target genes listed in fold_changes.tsv have no corresponding entry in genes.tsv:")
-			for item in notFound:
+			print("The following target genes listed in fold_changes.tsv have"
+				" no corresponding entry in genes.tsv:")
+			for item in not_found:
 				print(item)
+
+		not_found = set()
+		tf_not_found = set()
+		for row in raw_data.fold_changes_nca:
+			try:
+				tf = abbrToActiveId[row["TF"]][0]
+			except:
+				tf_not_found.add(row['TF'])
+				continue
+			try:
+				target = abbrToRnaId[row["Target"]]
+			except KeyError:
+				not_found.add(row["Target"])
+				continue
+			if row['TF'] == row['Target']:
+				continue
+			FC = row["F_avg"]
+			if tf not in self.tf_to_fold_change:
+				self.tf_to_fold_change[tf] = {}
+				self.tf_to_direction[tf] = {}
+			self.tf_to_direction[tf][target] = np.sign(FC)
+			self.tf_to_fold_change[tf][target] = 2**FC
+
+		if VERBOSE:
+			print("The following target genes listed in fold_changes_nca.tsv"
+				" have no corresponding entry in genes.tsv:")
+			for item in not_found:
+				print(item)
+			print('The following transcription factors listed in'
+				' fold_changes_nca.tsv have no corresponding active entry in'
+				' transcription_factors.tsv:')
+			for tf in tf_not_found:
+				print(tf)
 
 		self.tf_to_active_inactive_conditions = {}
 		for row in raw_data.condition.tf_condition:
