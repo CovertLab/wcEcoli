@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function
 from typing import cast
 
 import numpy as np
+import re
 import scipy.sparse
 from six.moves import zip
 
@@ -1098,6 +1099,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		protein_index_to_gene_coord[i] = []
 
 		for rna in protein['rna_set']:
+			#TODO(mialy): doublecheck
 			rna_index = TU_id_to_index[rna]
 			prot_index = monomer_sets[rna_index].index(protein['id'])
 			gene_coords = start_codon_positions[rna_index][prot_index]
@@ -1108,34 +1110,20 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 			# identify all existing mRNAs with this TU id and
 			# add up length the sequence of the TU that corresponds to this protein
 			mask = TU_index_mRNAs == rna_index
+
+			#length_mRNAs is the current transcript length
 			lengths = length_mRNAs[mask]
-			RNAP_positions = RNAP_index[mask]
-			# RNAPs on fully transcribed RNAs are assinged -1
-			# repalce this value with length of mRNA for calculating template length
-			RNAP_positions[RNAP_positions == -1] = lengths[RNAP_positions == -1]
 
 			# only keep rnas containing gene start codon
-			rnas_containing_gene = RNAP_positions > gene_coords[0]
+			rnas_containing_gene = lengths > gene_coords[0]
 
-			# find length of gene that has been transcribed
-			# if RNAP is past end of gene, truncate available template to gene length
-			transcription_end = RNAP_positions[rnas_containing_gene]
+			transcription_end = lengths[rnas_containing_gene]
 			transcription_end[transcription_end > gene_coords[1]] = gene_coords[1]
 
 			rna_lengths = transcription_end - np.repeat(gene_coords[0], len(transcription_end))
 
 			available_template[i] += sum(rna_lengths)
-
-	# TU_counts_to_mRNA_counts[:,sim_data.process.transcription.rnaData['isMRna']] = monomer_to_mrna_transform
-
-	# # Calculate available template lengths of each mRNA
-	# TU_total_length = np.zeros(len(all_TU_ids), dtype=np.int64)
-	# for index, length in zip(TU_index_mRNAs, length_mRNAs):
-	# 	TU_total_length[index] += length
-	#
-	# mRNA_total_length = TU_counts_to_mRNA_counts.dot(TU_total_length)
-
-
+			
 	# Find number of ribosomes to activate
 	ribosome30S = bulkMolCntr.countsView([sim_data.molecule_ids.s30_full_complex]).counts()[0]
 	ribosome50S = bulkMolCntr.countsView([sim_data.molecule_ids.s50_full_complex]).counts()[0]
@@ -1145,27 +1133,6 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# Add total available template lengths as weights and normalize
 	protein_init_probs = normalize(available_template * translationEfficiencies)
 
-	'''
-	# Sample a multinomial distribution of synthesis probabilities to determine what RNA are initialized
-	nNewProteins = randomState.multinomial(ribosomeToActivate, probNormalized)
-
-	# protein Indices
-	# TODO(Ryan): replace these protein indexes with transcript indexes
-	proteinIndices = np.empty(ribosomeToActivate, np.int64)
-	startIndex = 0
-	nonzeroCount = (nNewProteins > 0)
-	for proteinIndex, counts in izip(np.arange(nNewProteins.size)[nonzeroCount], nNewProteins[nonzeroCount]):
-		proteinIndices[startIndex:startIndex+counts] = proteinIndex
-		startIndex += counts
-
-	# TODO (Eran) -- make sure there aren't any peptides at same location on same rna
-	updatedLengths = np.array(randomState.rand(ribosomeToActivate) * proteinLengths[proteinIndices], dtype=np.int)
-
-	# update mass
-	sequences = proteinSequences[proteinIndices]
-	massIncreaseProtein = computeMassIncrease(sequences, updatedLengths, aaWeightsIncorporated)
-	massIncreaseProtein[updatedLengths != 0] += endWeight  # add endWeight to all new Rna
-	'''
 	# Create active 70S ribosomes and assign their protein Indices calculated above
 	# Sample a multinomial distribution of synthesis probabilities to determine
 	# which types of mRNAs are initialized
@@ -1174,40 +1141,86 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		n_ribosomes_to_activate, protein_init_probs)
 
 	# Build attributes for active ribosomes
+
 	protein_indexes = np.empty(n_ribosomes_to_activate, np.int64)
 	positions_on_mRNA = np.empty(n_ribosomes_to_activate, np.int64)
+	positions_gene_start = np.empty(n_ribosomes_to_activate, np.int64)
 	mRNA_indexes = np.empty(n_ribosomes_to_activate, np.int64)
+	index_of_zero_counts = np.zeros(n_ribosomes_to_activate, np.int64)
 	start_index = 0
 	nonzeroCount = (n_new_proteins > 0)
+
+	## For each protein find the transcription units that are able to encode it.
+	## Needs for the entire transcript to be transcribed before assigning ribosomes to the transcript.
 
 	for protein_index, counts in zip(
 			np.arange(n_new_proteins.size)[nonzeroCount],
 			n_new_proteins[nonzeroCount]):
 		# Set protein index
 		protein_indexes[start_index:start_index+counts] = protein_index
-		# import ipdb; ipdb.set_trace()#TG
-		# Distribute ribosomes among mRNAs that produce this protein, weighted
-		# by their lengths
-		# mask = (TU_index_mRNAs == protein_index_to_TU_index[protein_index])
+		protein = sim_data.process.translation.monomer_data[int(protein_index)]
 
-		mask = [True  if idx in protein_index_to_TU_index[protein_index] else False for idx in TU_index_mRNAs]
-		lengths = length_mRNAs[mask]
-		n_ribosomes_per_RNA = randomState.multinomial(counts, normalize(lengths))
+		# all the indices of RNAs that encode this protein
+		rna_indices = [TU_id_to_index[rna] for rna in protein['rna_set']]
 
-		# Get unique indexes of each mRNA
-		mRNA_indexes[start_index:start_index+counts] = np.repeat(
-			unique_index_mRNAs[mask], n_ribosomes_per_RNA)
+		# which of these RNAs are actually available this timestep?
+		indices_transcribed = [ind for ind, index in enumerate(rna_indices) if index in TU_index_all_RNAs]
+		
+		# in these RNAs, what is the index of the protein of interst?
+		protein_index_in_transcripts = [
+			idx 
+			for ind in indices_transcribed 
+			for idx,value in enumerate(re.split('-RNA|_RNA', protein['rna_set'][ind])[0].split('_'))
+			if value in re.split('-RNA|_RNA', protein['rna_id'])[0]
+			]
+		
+		# get info for transcribed mRNAs
 
-		# Randomly place ribosomes along the length of each mRNA
-		positions_on_mRNA[start_index:start_index+counts] = np.floor(
-			randomState.rand(counts)*np.repeat(lengths, n_ribosomes_per_RNA))
+		# Gene coordinates
+		all_gene_coords = [start_codon_positions[rna_indices[ind]] for ind in indices_transcribed]
+		# what are the gene coordinates for the protein of interest for each transcript?
+		protein_gene_coords = [coords[protein_index_in_transcripts[ind]] for ind, coords in enumerate(all_gene_coords)]
+		
+		# masks for the TU_indices
+		masks = [TU_index_mRNAs == rna_indices[ind] for ind in indices_transcribed]
+		#lengths of the mRNAs
+		lengths = [length_mRNAs[mask] for mask in masks]
 
-		start_index += counts
+		# Lengths describes the current transcript length.
+		# Gene coords describes, how long the gene should be.
+		transcript_lengths = []
+		for ind, length in enumerate(lengths):
+			transcript_lengths.append([])
+			for endpoint in length:
+				if endpoint > protein_gene_coords[ind][0] and endpoint > protein_gene_coords[ind][1]:
+					transcript_lengths[ind].append(protein_gene_coords[ind][1] - protein_gene_coords[ind][0])
+				elif endpoint > protein_gene_coords[ind][0] and endpoint <= protein_gene_coords[ind][1]:
+					transcript_lengths[ind].append(endpoint - protein_gene_coords[ind][0])
+
+		n_transcripts = [len(leng) for leng in transcript_lengths]
+
+		condensed_transcript_lengths = [item for sublist in transcript_lengths for item in sublist]
+
+		# Matching the master branch the n_ribosomes_per_RNA is the same no matter the RNA length.
+		# Counts is the number of ribosomes we need initialized overall
+		n_ribosomes_per_RNA = randomState.multinomial(counts, normalize(condensed_transcript_lengths))
+
+		count = 0
+		for idx, transcript_len in enumerate(transcript_lengths):
+			for i, transcript in enumerate(transcript_len):
+				n_ribosomes = n_ribosomes_per_RNA[count]
+				mRNA_indexes[start_index:start_index+n_ribosomes] = np.repeat(
+					unique_index_mRNAs[masks[idx]][i], n_ribosomes)
+				positions_on_mRNA[start_index:start_index+n_ribosomes] = np.floor(
+					randomState.rand(n_ribosomes)*np.repeat(transcript, n_ribosomes)) + all_gene_coords[idx][protein_index_in_transcripts[0]][0]
+				positions_gene_start[start_index:start_index+n_ribosomes] = all_gene_coords[idx][protein_index_in_transcripts[0]][0]
+				count = count + 1
+				start_index += n_ribosomes
 
 	# Calculate the lengths of the partial polypeptide, and rescale position on
 	# mRNA to be a multiple of three using this peptide length
-	peptide_lengths = np.floor_divide(positions_on_mRNA, 3)
-	positions_on_mRNA = 3*peptide_lengths
+	peptide_lengths = np.floor_divide(positions_on_mRNA-positions_gene_start, 3)
+	positions_on_mRNA = 3*peptide_lengths + positions_gene_start
 
 	# Update masses of partially translated proteins
 	sequences = proteinSequences[protein_indexes]
