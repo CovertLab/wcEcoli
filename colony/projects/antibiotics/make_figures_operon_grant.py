@@ -63,6 +63,7 @@ def main():
 		'tag_path_name_map': TAG_PATH_NAME_MAP,
 		'tag_label_size': 48,
 		'default_font_size': 48,
+        'n_snapshots': 5,
 	}
 	plot_tags(tags_data, plot_config)
 
