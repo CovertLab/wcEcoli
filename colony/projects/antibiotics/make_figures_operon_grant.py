@@ -64,6 +64,7 @@ def main():
 		'tag_label_size': 48,
 		'default_font_size': 48,
         'n_snapshots': 5,
+        'background_color': 'gray',
 	}
 	plot_tags(tags_data, plot_config)
 
