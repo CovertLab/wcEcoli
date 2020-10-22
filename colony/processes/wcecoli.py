@@ -396,16 +396,19 @@ class WcEcoli(Process):
 				'_default': 0.0 * self.mass_units,
 				'_emit': True,
 				'_updater': 'set',
+				'_divider': 'split',
 			},
 			'mass': {
 				'_default': 0.0 * self.mass_units,
 				'_emit': True,
 				'_updater': 'set',
+				'_divider': 'split',
 			},
 			'volume': {
 				'_default': 0.0 * self.volume_units,
 				'_emit': True,
 				'_updater': 'set',
+				'_divider': 'split',
 			},
 			'density': {
 				'_default': parameters['density'],
