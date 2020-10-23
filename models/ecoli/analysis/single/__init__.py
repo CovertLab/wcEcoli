@@ -88,7 +88,6 @@ TAGS = {
 		"rnapCapacity.py",
 		"rnapCounts.py",
 		"rnaseCounts.py",
-		"surface_area_comparison.py"
 		],
 	'PARCA': [
 		"KmOptimization.py",
