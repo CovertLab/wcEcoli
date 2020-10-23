@@ -1,9 +1,12 @@
 """
-Comparison of surface area calculations
+Comparison of model-derived surface area calculations and molecule
+count-derived surface area calculations of the inner and outer leaflets
+of the outer membrane.
 """
 
 from __future__ import absolute_import, division, print_function
 
+from six.moves import cPickle
 import os
 
 from matplotlib import pyplot as plt
@@ -42,33 +45,17 @@ Note:
 	- strain: ML308
 '''
 
-width = [0.5, 0.73]		# in um
-surface_area_per_molecule = {
+WIDTH = [0.5, 0.73]		# in um
+AVERAGE_SURFACE_AREA = 6	# in um^2
+
+SURFACE_AREA_PER_MOLECULE = {		# in um^2 / molecule
 	'LPS': 1.42E-6,
 	'porins_and_ompA': 9E-6,
 	'phospholipids': 4.71E-07,
 	'lipoprotein': 7.14E-07,
 }
 
-ordered_outer_mem_protein_ids = [
-	# phospholipids
-	'CPD-12819[c]',
-    'CPD-12824[c]',
-    'CPD-8260[c]',
-
-	# LPS
-    'CPD0-939[c]',
-
-	# porins and ompA
-    'EG10669-MONOMER[i]',
-	'CPLX0-7533[e]',
-	'CPLX0-7534[e]',
-
-	# lipoprotein
-	'EG10544-MONOMER[o]',
-]
-
-outer_mem_proteins = {
+OUTER_MEM_PROTEIN = {
 	# phospholipids
 	'CPD-12819[c]': 'phosphatidylethanolamine',
     'CPD-12824[c]' : 'cardiolipin',
@@ -90,6 +77,12 @@ outer_mem_proteins = {
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
+		with open(simDataFile, 'rb') as f:
+			sim_data = cPickle.load(f)
+		average_timepoint = np.log(
+			sim_data.mass.avg_cell_to_initial_cell_conversion_factor) / np.log(2)
+		outer_mem_protein_ids = list(OUTER_MEM_PROTEIN.keys())
+
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
 		mass = TableReader(os.path.join(simOutDir, "Mass"))
@@ -98,38 +91,34 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		volume = mass.readColumn("cellVolume")
 		initial_time = main_reader.readAttribute('initialTime')
 		time = (main_reader.readColumn('time') - initial_time) / 60
-		(counts,) = read_bulk_molecule_counts(simOutDir, (ordered_outer_mem_protein_ids,))
+		(counts,) = read_bulk_molecule_counts(simOutDir, (outer_mem_protein_ids,))
 		counts = counts.astype(float).T
 
 
 		# Calculate surface area based off of model volume
-		radii = np.divide(width, 2)
+		radii = np.divide(WIDTH, 2)
 		surface_area_model = np.zeros((np.shape(radii)[0], np.shape(volume)[0]))
 		for i, radius in enumerate(radii):
 			surface_area_sphere = 4 * np.pi * radius**2
-			length = [(vol - ((4 / 3) * np.pi * radius**3))/(np.pi * radius**2)
-					  + 2 * radius for vol in volume]
-			surface_area_cylinder = [2 * np.pi * radius * l for l in length]
-			surface_area_model[i] = [val + surface_area_sphere
-									 for val in surface_area_cylinder]
+			length = (volume - ((4 / 3) * np.pi * radius**3))/(np.pi * radius**2) + 2*radius
+			surface_area_cylinder = 2 * np.pi * radius * (length - 2*radius)
+			surface_area_model[i, :] = surface_area_cylinder + surface_area_sphere
 
 		# calculate SA based off of molecule counts
-		surface_area_LPS = surface_area_per_molecule['LPS'] * \
-			counts[ordered_outer_mem_protein_ids.index(
+		surface_area_LPS = SURFACE_AREA_PER_MOLECULE['LPS'] * counts[outer_mem_protein_ids.index(
 			'CPD0-939[c]')]
-		surface_area_porins_and_ompA = \
-			surface_area_per_molecule['porins_and_ompA'] * (np.add(np.add(
-			counts[ordered_outer_mem_protein_ids.index('CPLX0-7533[e]')],
-			counts[ordered_outer_mem_protein_ids.index('CPLX0-7534[e]')]),
-			counts[ordered_outer_mem_protein_ids.index('EG10669-MONOMER[i]')]))
-		surface_area_phospholipids = \
-			surface_area_per_molecule['phospholipids'] * 0.5 * (np.add(np.add(
-			counts[ordered_outer_mem_protein_ids.index('CPD-12819[c]')],
-			counts[ordered_outer_mem_protein_ids.index('CPD-12824[c]')]),
-			counts[ordered_outer_mem_protein_ids.index('CPD-8260[c]')]))
-		surface_area_lipoprotein = \
-			surface_area_per_molecule['lipoprotein'] * counts[
-			ordered_outer_mem_protein_ids.index('EG10544-MONOMER[o]')]
+		# import ipdb; ipdb.set_trace()
+		surface_area_porins_and_ompA = SURFACE_AREA_PER_MOLECULE['porins_and_ompA'] * np.sum(
+			counts[[outer_mem_protein_ids.index('CPLX0-7533[e]'),
+					outer_mem_protein_ids.index('CPLX0-7534[e]'),
+					outer_mem_protein_ids.index('CPLX0-7534[e]'),
+					outer_mem_protein_ids.index('EG10669-MONOMER[i]')], :], axis = 0)
+		surface_area_phospholipids = SURFACE_AREA_PER_MOLECULE['phospholipids'] * 0.5 * np.sum(
+			counts[[outer_mem_protein_ids.index('CPD-12819[c]'),
+					outer_mem_protein_ids.index('CPD-12824[c]'),
+					outer_mem_protein_ids.index('CPD-8260[c]')], :], axis = 0)
+		surface_area_lipoprotein = SURFACE_AREA_PER_MOLECULE['lipoprotein'] * counts[
+			outer_mem_protein_ids.index('EG10544-MONOMER[o]')]
 
 		surface_area_outer_leaflet = np.add(surface_area_LPS,
 			surface_area_porins_and_ompA)
@@ -141,15 +130,17 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		plt.plot(time, surface_area_model[1], 'r--')
 		plt.plot(time, surface_area_outer_leaflet, 'b-')
 		plt.plot(time, surface_area_inner_leaflet, 'b--')
-		plt.scatter(0.44*time[-1], 6)
+		plt.scatter(average_timepoint * time[-1], AVERAGE_SURFACE_AREA)
 
 		plt.xlabel('time (min)')
-		plt.ylabel('surface area (um ^2)')
+		plt.ylabel(r'surface area ($\mu m ^2$)')
 		plt.title('Comparison of surface area calculations')
-		plt.legend(['Model derived SA: width = 0.5', 'Model derived SA: width = 0.73',
-					'Molecule count derived SA of outer leaflet',
-					'Molecule count derived SA of inner leaflet',
-					'Average E. coli SA'])
+		model_derived_legend = ['Model derived SA: width = ' + str(width)
+								for width in WIDTH]
+		plt.legend(model_derived_legend + [
+			'Molecule count derived SA of outer leaflet',
+			'Molecule count derived SA of inner leaflet',
+			'Average E. coli SA'])
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
