@@ -10,7 +10,7 @@
 "dnaA"	"MONOMER0-160"	"minimal"	{}	"minimal"	{"EG10235_EG10242_EG10828_RNA[c]": 0}	"1CS"
 "fis"	"CPLX0-7705"	"minimal"	{}	"minimal"	{"EG11311_EG10317_RNA[c]": 0}	"0CS"
 "hns"	"PD00288"	"minimal"	{}	"minimal"	{"EG10457_RNA[c]": 0}	"0CS"
-"ihfA"	"PC00027"	"minimal"	{}	"minimal"	{"EG10440_RNA[c]": 0, "EG11001_EG10506_EG11231_EG10881_EG11272_EG10709_EG10710_EG10440_RNA[c]": 0, "EG11272_EG10709_EG10710_EG10440_RNA[c]": 0}	"0CS"
+"ihfA"	"PC00027"	"minimal"	{}	"minimal"	{"EG11001_EG10506_EG11231_EG10881_EG11272_EG10709_EG10710_EG10440_RNA[c]": 0, "EG11272_EG10709_EG10710_EG10440_RNA[c]": 0, "EG10440_RNA[c]": 0}	"0CS"
 "leuO"	"PD00519"	"minimal"	{}	"minimal"	{"EG10531_RNA[c]": 0}	"0CS"
 "lexA"	"PC00010"	"minimal"	{}	"minimal"	{"EG10533_EG11491_RNA[c]": 0}	"0CS"
 "metJ"	"CPLX0-7796"	"minimal_plus_sam"	{}	"minimal"	{}	"1CS"
