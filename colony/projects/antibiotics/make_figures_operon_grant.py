@@ -17,9 +17,9 @@ import wholecell.utils.filepath as fp
 
 PROTEIN_KEYS_MAP = {
     'EG11250-MONOMER[c]': 'chpS',
-    'EG11222­MONOMER[c]': 'alkA',
-    'G6504­MONOMER[o]': 'gfcE',
-    'G7263­MONOMER[c]': 'murQ',
+    'EG11222-MONOMER[c]': 'alkA',
+    'G6504-MONOMER[o]': 'gfcE',
+    'G7263-MONOMER[c]': 'murQ',
 }
 TAG_PATH_NAME_MAP = {
 	('boundary', 'bulk_molecules_report', key): name
@@ -65,6 +65,11 @@ def main():
 		'default_font_size': 48,
         'n_snapshots': 5,
         'background_color': 'gray',
+        'membrane_width': 0,
+        'tag_colors': {
+            tag_id: [120/360, 1, 1]
+            for tag_id in TAG_PATH_NAME_MAP
+        }
 	}
 	plot_tags(tags_data, plot_config)
 
