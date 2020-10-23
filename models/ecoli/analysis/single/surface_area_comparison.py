@@ -111,7 +111,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		surface_area_porins_and_ompA = SURFACE_AREA_PER_MOLECULE['porins_and_ompA'] * np.sum(
 			counts[[outer_mem_protein_ids.index('CPLX0-7533[e]'),
 					outer_mem_protein_ids.index('CPLX0-7534[e]'),
-					outer_mem_protein_ids.index('CPLX0-7534[e]'),
 					outer_mem_protein_ids.index('EG10669-MONOMER[i]')], :], axis = 0)
 		surface_area_phospholipids = SURFACE_AREA_PER_MOLECULE['phospholipids'] * 0.5 * np.sum(
 			counts[[outer_mem_protein_ids.index('CPD-12819[c]'),
