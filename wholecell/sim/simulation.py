@@ -11,6 +11,7 @@ import os.path
 import shutil
 import uuid
 from typing import Callable, Sequence, Tuple
+import json
 
 import numpy as np
 
@@ -272,6 +273,36 @@ class Simulation():
 			for processes in self._processClasses:
 				self._evolveState(processes)
 			self._post_evolve_state()
+
+			time = self.time()
+			if time >= 100:
+
+				# internal states to json
+				internal_states = {state: value for state, value in six.iteritems(self.internal_states)}
+				bulk_molecules = internal_states['BulkMolecules']
+				unique_molecules = internal_states['UniqueMolecules']
+
+				# bulk
+				bulk_ids = bulk_molecules._moleculeIDs
+				bulk_counts = bulk_molecules_countsAllocatedFinal.sum(axis=1)
+				bulk_state = dict(zip(bulk_ids, bulk_counts.tolist()))
+
+				# unique
+				unique_ids = unique_molecules._molecule_ids
+				unique_counts = unique_molecules.container.counts()
+				unique_state = dict(zip(unique_ids, unique_counts.tolist()))
+				# TODO -- get masses
+
+				state_output = {}
+				state_output['bulk'] = bulk_state
+				state_output['unique'] = unique_state
+
+				with open(f'out/wcecoli_t{time}.json', 'w') as outfile:
+					json.dump(state_output, outfile)
+
+				import ipdb;
+				ipdb.set_trace()
+
 
 	def run_for(self, run_for):
 		self.run_incremental(self.time() + run_for)
