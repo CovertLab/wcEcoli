@@ -274,8 +274,8 @@ class Simulation():
 				self._evolveState(processes)
 			self._post_evolve_state()
 
-			time = self.time()
-			if time >= 10:
+			if self.time() >= 1000:
+				time = int(self.time())
 				self.write_states(f'out/wcecoli_t{time}.json')
 				import ipdb; ipdb.set_trace()
 
