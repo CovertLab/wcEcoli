@@ -275,34 +275,66 @@ class Simulation():
 			self._post_evolve_state()
 
 			time = self.time()
-			if time >= 100:
+			if time >= 10:
+				self.write_states(f'out/wcecoli_t{time}.json')
+				import ipdb; ipdb.set_trace()
 
-				# internal states to json
-				internal_states = {state: value for state, value in six.iteritems(self.internal_states)}
-				bulk_molecules = internal_states['BulkMolecules']
-				unique_molecules = internal_states['UniqueMolecules']
+	def get_states(self):
+		bulk = self.internal_states['BulkMolecules'].container
+		bulk_names = bulk.objectNames()
+		bulk_counts = bulk.counts()
+		bulk_molecules = {
+			bulk_names[index]: bulk_counts[index]
+			for index in np.arange(len(bulk_names))}
 
-				# bulk
-				bulk_ids = bulk_molecules._moleculeIDs
-				bulk_counts = bulk_molecules_countsAllocatedFinal.sum(axis=1)
-				bulk_state = dict(zip(bulk_ids, bulk_counts.tolist()))
+		unique = self.internal_states['UniqueMolecules'].container
+		unique_molecules = {}
+		unique_names = unique.objectNames()
+		for name in unique_names:
+			types = unique.get_attribute_dtypes(name)
+			attrs = unique.objectsInCollection(name).attrsAsStructArray()
+			records = {}
+			for struct in attrs:
+				record = {}
+				for index, attr in enumerate(types.keys()):
+					record[attr] = struct[index]
+				records[int(record['unique_index'])] = record
+			unique_molecules[name] = records
 
-				# unique
-				unique_ids = unique_molecules._molecule_ids
-				unique_counts = unique_molecules.container.counts()
-				unique_state = dict(zip(unique_ids, unique_counts.tolist()))
-				# TODO -- get masses
+		environment = self.external_states['Environment'].container
+		environment_names = environment.objectNames()
+		environment_counts = environment.counts()
+		environment_concentrations = {
+			environment_names[index]: environment_counts[index]
+			for index in np.arange(len(environment_names))}
 
-				state_output = {}
-				state_output['bulk'] = bulk_state
-				state_output['unique'] = unique_state
+		return {
+			'bulk': bulk_molecules,
+			'unique': unique_molecules,
+			'environment': environment_concentrations}
 
-				with open(f'out/wcecoli_t{time}.json', 'w') as outfile:
-					json.dump(state_output, outfile)
+	def write_states(self, path):
+		import json
+		INFINITY = float('inf')
 
-				import ipdb;
-				ipdb.set_trace()
+		class NpEncoder(json.JSONEncoder):
+			def default(self, obj):
+				if isinstance(obj, np.integer):
+					return int(obj)
+				elif isinstance(obj, np.ndarray):
+					return obj.tolist()
+				elif obj == INFINITY:
+					return '__INFINITY__'
+				elif isinstance(obj, np.floating):
+					return float(obj)
+				elif isinstance(obj, np.bool_):
+					return bool(obj)
+				else:
+					return super(NpEncoder, self).default(obj)
 
+		states = self.get_states()
+		with open(path, 'w') as outfile:
+			json.dump(states, outfile, cls=NpEncoder)
 
 	def run_for(self, run_for):
 		self.run_incremental(self.time() + run_for)
