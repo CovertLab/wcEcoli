@@ -274,7 +274,7 @@ class Simulation():
 				self._evolveState(processes)
 			self._post_evolve_state()
 
-			if self.time() >= 1000:
+			if self.time() >= 10:
 				time = int(self.time())
 				self.write_states(f'out/wcecoli_t{time}.json')
 				import ipdb; ipdb.set_trace()
@@ -308,10 +308,17 @@ class Simulation():
 			environment_names[index]: environment_counts[index]
 			for index in np.arange(len(environment_names))}
 
+		mass_listener = self.listeners['Mass']
+		listeners = {
+			'mass': {
+				'cell_mass': mass_listener.cellMass,
+				'dry_mass': mass_listener.dryMass}}
+
 		return {
 			'bulk': bulk_molecules,
 			'unique': unique_molecules,
-			'environment': environment_concentrations}
+			'environment': environment_concentrations,
+			'listeners': listeners}
 
 	def write_states(self, path):
 		import json
