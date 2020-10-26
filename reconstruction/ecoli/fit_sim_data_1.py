@@ -2251,8 +2251,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		Returns
 		--------
 		- G: Matrix of values in pPromoterBound, rearranged based on each RNA
-		- rowNames: List of row names of G as strings
-		- colNames: List of column names of G as strings
+		- rowNames: Dict[str, int] of column names of G to column index
+		- colNames: Dict[str, int] of column names of G to column index
 		"""
 
 		gI, gJ, gV, rowNames, colNames = [], [], [], {}, {}
@@ -2324,7 +2324,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		Inputs
 		------
-		- colNames: List of column names from matrix G.
+		- colNames: Dict[str, int] of column names of G to column index
 
 		Returns
 		--------
@@ -2388,7 +2388,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		Inputs
 		------
-		- colNames: List of column names from matrix G.
+		- colNames: Dict[str, int] of column names of G to column index
 
 		Returns
 		--------
@@ -2455,7 +2455,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		Inputs
 		------
-		- colNames: List of column names from matrix G.
+		- colNames: Dict[str, int] of column names of G to column index
 		- pPromoterBound: Probabilities that a given TF is bound to its
 		promoter in a given condition, calculated from bulk average
 		concentrations of the TF and its associated ligands.
@@ -2474,7 +2474,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		- pNotAlphaIdxs: Indexes of columns that correspond to r's in H and pInit
 		- fixedTFIdxs: Indexes of columns that correspond to fixed TFs in H and pInit
 		- pPromoterBoundIdxs: Dictionary of indexes to pInit.
-		- colNamesH: List of column names of H as strings
+		- colNamesH: Dict[str, int] of column names of H to column index
 		"""
 
 		rDict = dict([(colName, value) for colName, value in zip(colNames, r)])
@@ -2578,7 +2578,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		Inputs
 		------
-		- colNamesH: List of column names from matrix H.
+		- colNamesH: Dict[str, int] of column names of H to column index
 
 		Returns
 		--------
