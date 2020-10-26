@@ -2480,7 +2480,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		rDict = dict([(colName, value) for colName, value in zip(colNames, r)])
 
 		pPromoterBoundIdxs = dict([(condition, {}) for condition in pPromoterBound])
-		hI, hJ, hV, rowNames, colNamesH, pInitI, pInitV = [], [], [], [], [], [], []
+		hI, hJ, hV, pInitI, pInitV = [], [], [], [], []
+		rowNames, colNamesH = {}, {}
 
 		for idx, rnaId in enumerate(sim_data.process.transcription.rna_data["id"]):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
@@ -2506,17 +2507,17 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 				# Add row for each condition specific to each RNA
 				rowName = rnaIdNoLoc + "__" + condition
-				rowNames.append(rowName)
+				rowNames[rowName] = len(rowNames)
 
 				for tf in tfsWithData:
 					# Add column for each TF and condition
 					colName = tf + "__" + condition
 
 					if colName not in colNamesH:
-						colNamesH.append(colName)
+						colNamesH[colName] = len(colNamesH)
 
-					hI.append(rowNames.index(rowName))
-					hJ.append(colNamesH.index(colName))
+					hI.append(rowNames[rowName])
+					hJ.append(colNamesH[colName])
 
 					# Handle the case of the TF being knocked out (admittedly not the cleanest solution)
 					if cellSpecs[condition]["bulkAverageContainer"].count(tf + "[c]") == 0:
@@ -2526,23 +2527,23 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 					# Rearrange values in pPromoterBound in the same order
 					# given by the columns of H
-					pInitI.append(colNamesH.index(colName))
+					pInitI.append(colNamesH[colName])
 					pInitV.append(pPromoterBound[condition][tf])
-					pPromoterBoundIdxs[condition][tf] = colNamesH.index(colName)
+					pPromoterBoundIdxs[condition][tf] = colNamesH[colName]
 
 				# Add alpha column for each RNA
 				colName = rnaIdNoLoc + "__alpha"
 
 				if colName not in colNamesH:
-					colNamesH.append(colName)
+					colNamesH[colName] = len(colNamesH)
 
 				# Add optimized value of alpha in r to H
-				hI.append(rowNames.index(rowName))
-				hJ.append(colNamesH.index(colName))
+				hI.append(rowNames[rowName])
+				hJ.append(colNamesH[colName])
 				hV.append(rDict[colName])
 
 				# Set corresponding value in pInit to one
-				pInitI.append(colNamesH.index(colName))
+				pInitI.append(colNamesH[colName])
 				pInitV.append(1.)
 
 		# Build vector pInit and matrix H
@@ -2555,12 +2556,12 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		H[hI, hJ] = hV
 
 		# Get indexes of alpha and non-alpha columns in pInit and H
-		pAlphaIdxs = np.array([colNamesH.index(colName) for colName in colNamesH if colName.endswith("__alpha")])
-		pNotAlphaIdxs = np.array([colNamesH.index(colName) for colName in colNamesH if not colName.endswith("__alpha")])
+		pAlphaIdxs = np.array([idx for colName, idx in colNamesH.items() if colName.endswith("__alpha")])
+		pNotAlphaIdxs = np.array([idx for colName, idx in colNamesH.items() if not colName.endswith("__alpha")])
 
 		# Get indexes of columns that correspond to fixed TFs
 		fixedTFIdxs = []
-		for idx, colName in enumerate(colNamesH):
+		for colName, idx in colNamesH.items():
 			secondElem = colName.split("__")[1]
 
 			if secondElem in fixedTFs:
@@ -2595,14 +2596,14 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 			condition = tf + "__active"
 			colName = tf + "__" + condition
 			PdiffI.append(rowIdx)
-			PdiffJ.append(colNamesH.index(colName))
+			PdiffJ.append(colNamesH[colName])
 			PdiffV.append(1)
 
 			# Find condition [TF]__[TF]__inactive and set element to -1
 			condition = tf + "__inactive"
 			colName = tf + "__" + condition
 			PdiffI.append(rowIdx)
-			PdiffJ.append(colNamesH.index(colName))
+			PdiffJ.append(colNamesH[colName])
 			PdiffV.append(-1)
 
 		# Build matrix Pdiff
