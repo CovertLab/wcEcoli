@@ -2255,7 +2255,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		- colNames: List of column names of G as strings
 		"""
 
-		gI, gJ, gV, rowNames, colNames = [], [], [], [], []
+		gI, gJ, gV, rowNames, colNames = [], [], [], {}, {}
 
 		for idx, rnaId in enumerate(sim_data.process.transcription.rna_data["id"]):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
@@ -2282,7 +2282,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 				# Add row for each condition specific to each RNA
 				rowName = rnaIdNoLoc + "__" + condition
-				rowNames.append(rowName)
+				rowNames[rowName] = len(rowNames)
 
 				for tf in tfsWithData:
 					# Add column for each TF that regulates each RNA
@@ -2290,20 +2290,20 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 					# TODO (Gwanggyu): Are these checks necessary?
 					if colName not in colNames:
-						colNames.append(colName)
+						colNames[colName] = len(colNames)
 
-					gI.append(rowNames.index(rowName))
-					gJ.append(colNames.index(colName))
+					gI.append(rowNames[rowName])
+					gJ.append(colNames[colName])
 					gV.append(pPromoterBound[condition][tf])  # Probability that TF is bound in given condition
 
 				# Add alpha column for each RNA
 				colName = rnaIdNoLoc + "__alpha"
 
 				if colName not in colNames:
-					colNames.append(colName)
+					colNames[colName] = len(colNames)
 
-				gI.append(rowNames.index(rowName))
-				gJ.append(colNames.index(colName))
+				gI.append(rowNames[rowName])
+				gJ.append(colNames[colName])
 				gV.append(1.)
 
 		gI, gJ, gV = np.array(gI), np.array(gJ), np.array(gV)
@@ -2343,7 +2343,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 			tfs_with_data = []
 
 			# Get column index of the RNA's alpha column
-			col_idxs = [colNames.index(rna_id_no_loc + "__alpha")]
+			col_idxs = [colNames[rna_id_no_loc + "__alpha"]]
 
 			# Take only those TFs with active/inactive conditions data
 			for tf in tfs:
@@ -2353,7 +2353,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 				tfs_with_data.append(tf)
 
 				# Get column index of the RNA-TF pair
-				col_idxs.append(colNames.index(rna_id_no_loc + "__" + tf))
+				col_idxs.append(colNames[rna_id_no_loc + "__" + tf])
 
 			n_tfs = len(tfs_with_data)
 
@@ -2397,7 +2397,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		this is negative, and 0 if the row is an RNA_alpha row.
 		"""
 
-		tI, tJ, tV, rowNamesT = [], [], [], []
+		tI, tJ, tV = [], [], []
+		row_idx = 0
 
 		for rnaId in sim_data.process.transcription.rna_data["id"]:
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
@@ -2415,23 +2416,21 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 			for tf in tfsWithData:
 				# Add row for TF and find column for TF in colNames
-				rowName = rnaIdNoLoc + "__" + tf
-				rowNamesT.append(rowName)
 				colName = rnaIdNoLoc + "__" + tf
 
 				# Set matrix value to regulation direction (+1 or -1)
-				tI.append(rowNamesT.index(rowName))
-				tJ.append(colNames.index(colName))
+				tI.append(row_idx)
+				tJ.append(colNames[colName])
 				tV.append(sim_data.tf_to_direction[tf][rnaIdNoLoc])
+				row_idx += 1
 
 			# Add RNA_alpha rows and columns, and set matrix value to zero
-			rowName = rnaIdNoLoc + "__alpha"
-			rowNamesT.append(rowName)
 			colName = rnaIdNoLoc + "__alpha"
 
-			tI.append(rowNamesT.index(rowName))
-			tJ.append(colNames.index(colName))
+			tI.append(row_idx)
+			tJ.append(colNames[colName])
 			tV.append(0)
+			row_idx += 1
 
 		tI, tJ, tV = np.array(tI), np.array(tJ), np.array(tV)
 		T = np.zeros((tI.max() + 1, tJ.max() + 1), np.float64)
