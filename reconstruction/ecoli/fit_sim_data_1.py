@@ -2332,7 +2332,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		correspond to combinations in the rows.
 		"""
 
-		zI, zJ, zV, row_names = [], [], [], []
+		zI, zJ, zV = [], [], []
+		row_idx = 0
 
 		for rna_id in sim_data.process.transcription.rna_data["id"]:
 			rna_id_no_loc = rna_id[:-3]  # Remove compartment ID from RNA ID
@@ -2357,14 +2358,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 			n_tfs = len(tfs_with_data)
 
 			# For all possible combinations of TFs
-			combination_idx = 0
 			for n_combinations in range(n_tfs + 1):
 				for combination in itertools.combinations(range(1, n_tfs + 1), n_combinations):
-					# Add a row for each combination
-					row_name = f'{rna_id_no_loc}__{combination_idx}'
-					row_idx = len(row_names)
-					row_names.append(row_name)
-
 					# Always include alpha column
 					zI.append(row_idx)
 					zJ.append(col_idxs[0])
@@ -2376,6 +2371,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 						zI.append(row_idx)
 						zJ.append(col_idxs[col_idx])
 						zV.append(1)
+
+					row_idx += 1
 
 		# Build matrix Z
 		zI, zJ, zV = np.array(zI), np.array(zJ), np.array(zV)
