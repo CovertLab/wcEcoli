@@ -107,7 +107,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# calculate SA based off of molecule counts
 		surface_area_LPS = SURFACE_AREA_PER_MOLECULE['LPS'] * counts[outer_mem_protein_ids.index(
 			'CPD0-939[c]')]
-		# import ipdb; ipdb.set_trace()
 		surface_area_porins_and_ompA = SURFACE_AREA_PER_MOLECULE['porins_and_ompA'] * np.sum(
 			counts[[outer_mem_protein_ids.index('CPLX0-7533[e]'),
 					outer_mem_protein_ids.index('CPLX0-7534[e]'),
