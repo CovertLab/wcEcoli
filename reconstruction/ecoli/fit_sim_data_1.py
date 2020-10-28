@@ -2251,11 +2251,12 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		Returns
 		--------
 		- G: Matrix of values in pPromoterBound, rearranged based on each RNA
-		- rowNames: Dict[str, int] of column names of G to column index
-		- colNames: Dict[str, int] of column names of G to column index
+		- row_name_to_index: Dict[str, int] of row names of G to row index
+		- col_name_to_index: Dict[str, int] of column names of G to column index
 		"""
 
-		gI, gJ, gV, rowNames, colNames = [], [], [], {}, {}
+		gI, gJ, gV = [], [], []
+		row_name_to_index, col_name_to_index = {}, {}
 
 		for idx, rnaId in enumerate(sim_data.process.transcription.rna_data["id"]):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
@@ -2281,38 +2282,38 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 					continue
 
 				# Add row for each condition specific to each RNA
-				rowName = rnaIdNoLoc + "__" + condition
-				rowNames[rowName] = len(rowNames)
+				row_name = rnaIdNoLoc + "__" + condition
+				row_name_to_index[row_name] = len(row_name_to_index)
 
 				for tf in tfsWithData:
 					# Add column for each TF that regulates each RNA
-					colName = rnaIdNoLoc + "__" + tf
+					col_name = rnaIdNoLoc + "__" + tf
 
 					# TODO (Gwanggyu): Are these checks necessary?
-					if colName not in colNames:
-						colNames[colName] = len(colNames)
+					if col_name not in col_name_to_index:
+						col_name_to_index[col_name] = len(col_name_to_index)
 
-					gI.append(rowNames[rowName])
-					gJ.append(colNames[colName])
+					gI.append(row_name_to_index[row_name])
+					gJ.append(col_name_to_index[col_name])
 					gV.append(pPromoterBound[condition][tf])  # Probability that TF is bound in given condition
 
 				# Add alpha column for each RNA
-				colName = rnaIdNoLoc + "__alpha"
+				col_name = rnaIdNoLoc + "__alpha"
 
-				if colName not in colNames:
-					colNames[colName] = len(colNames)
+				if col_name not in col_name_to_index:
+					col_name_to_index[col_name] = len(col_name_to_index)
 
-				gI.append(rowNames[rowName])
-				gJ.append(colNames[colName])
+				gI.append(row_name_to_index[row_name])
+				gJ.append(col_name_to_index[col_name])
 				gV.append(1.)
 
 		gI, gJ, gV = np.array(gI), np.array(gJ), np.array(gV)
-		G = np.zeros((len(rowNames), len(colNames)), np.float64)
+		G = np.zeros((len(row_name_to_index), len(col_name_to_index)), np.float64)
 		G[gI, gJ] = gV
 
-		return G, rowNames, colNames
+		return G, row_name_to_index, col_name_to_index
 
-	def build_matrix_Z(sim_data, colNames):
+	def build_matrix_Z(sim_data, col_name_to_index):
 		"""
 		Construct matrix Z that connects all possible TF combinations with
 		each TF. Each row of the matrix corresponds to an RNA-(TF combination)
@@ -2324,7 +2325,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		Inputs
 		------
-		- colNames: Dict[str, int] of column names of G to column index
+		- col_name_to_index: Dict[str, int] of column names of G to column index
 
 		Returns
 		--------
@@ -2343,7 +2344,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 			tfs_with_data = []
 
 			# Get column index of the RNA's alpha column
-			col_idxs = [colNames[rna_id_no_loc + "__alpha"]]
+			col_idxs = [col_name_to_index[rna_id_no_loc + "__alpha"]]
 
 			# Take only those TFs with active/inactive conditions data
 			for tf in tfs:
@@ -2353,7 +2354,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 				tfs_with_data.append(tf)
 
 				# Get column index of the RNA-TF pair
-				col_idxs.append(colNames[rna_id_no_loc + "__" + tf])
+				col_idxs.append(col_name_to_index[rna_id_no_loc + "__" + tf])
 
 			n_tfs = len(tfs_with_data)
 
@@ -2381,14 +2382,14 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		return Z
 
-	def build_matrix_T(sim_data, colNames):
+	def build_matrix_T(sim_data, col_name_to_index):
 		"""
 		Construct matrix T that specifies the direction of regulation for each
 		RNA-TF pair.
 
 		Inputs
 		------
-		- colNames: Dict[str, int] of column names of G to column index
+		- col_name_to_index: Dict[str, int] of column names of G to column index
 
 		Returns
 		--------
@@ -2415,20 +2416,20 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 				tfsWithData.append(tf)
 
 			for tf in tfsWithData:
-				# Add row for TF and find column for TF in colNames
-				colName = rnaIdNoLoc + "__" + tf
+				# Add row for TF and find column for TF in col_name_to_index
+				col_name = rnaIdNoLoc + "__" + tf
 
 				# Set matrix value to regulation direction (+1 or -1)
 				tI.append(row_idx)
-				tJ.append(colNames[colName])
+				tJ.append(col_name_to_index[col_name])
 				tV.append(sim_data.tf_to_direction[tf][rnaIdNoLoc])
 				row_idx += 1
 
 			# Add RNA_alpha rows and columns, and set matrix value to zero
-			colName = rnaIdNoLoc + "__alpha"
+			col_name = rnaIdNoLoc + "__alpha"
 
 			tI.append(row_idx)
-			tJ.append(colNames[colName])
+			tJ.append(col_name_to_index[col_name])
 			tV.append(0)
 			row_idx += 1
 
@@ -2438,7 +2439,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		return T
 
-	def build_matrix_H(sim_data, colNames, pPromoterBound, r, fixedTFs, cellSpecs):
+	def build_matrix_H(sim_data, col_name_to_index, pPromoterBound, r, fixedTFs, cellSpecs):
 		r"""
 		Construct matrix H that contains values of vector r as elements.
 		Each row of the matrix is named "[RNA]__[condition]", where
@@ -2455,7 +2456,7 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		Inputs
 		------
-		- colNames: Dict[str, int] of column names of G to column index
+		- col_name_to_index: Dict[str, int] of column names of G to column index
 		- pPromoterBound: Probabilities that a given TF is bound to its
 		promoter in a given condition, calculated from bulk average
 		concentrations of the TF and its associated ligands.
@@ -2474,14 +2475,14 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		- pNotAlphaIdxs: Indexes of columns that correspond to r's in H and pInit
 		- fixedTFIdxs: Indexes of columns that correspond to fixed TFs in H and pInit
 		- pPromoterBoundIdxs: Dictionary of indexes to pInit.
-		- colNamesH: Dict[str, int] of column names of H to column index
+		- H_col_name_to_index: Dict[str, int] of column names of H to column index
 		"""
 
-		rDict = dict([(colName, value) for colName, value in zip(colNames, r)])
+		rDict = dict([(col_name, value) for col_name, value in zip(col_name_to_index, r)])
 
 		pPromoterBoundIdxs = dict([(condition, {}) for condition in pPromoterBound])
 		hI, hJ, hV, pInitI, pInitV = [], [], [], [], []
-		rowNames, colNamesH = {}, {}
+		H_row_name_to_index, H_col_name_to_index = {}, {}
 
 		for idx, rnaId in enumerate(sim_data.process.transcription.rna_data["id"]):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
@@ -2506,18 +2507,18 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 					continue
 
 				# Add row for each condition specific to each RNA
-				rowName = rnaIdNoLoc + "__" + condition
-				rowNames[rowName] = len(rowNames)
+				row_name = rnaIdNoLoc + "__" + condition
+				H_row_name_to_index[row_name] = len(H_row_name_to_index)
 
 				for tf in tfsWithData:
 					# Add column for each TF and condition
-					colName = tf + "__" + condition
+					col_name = tf + "__" + condition
 
-					if colName not in colNamesH:
-						colNamesH[colName] = len(colNamesH)
+					if col_name not in H_col_name_to_index:
+						H_col_name_to_index[col_name] = len(H_col_name_to_index)
 
-					hI.append(rowNames[rowName])
-					hJ.append(colNamesH[colName])
+					hI.append(H_row_name_to_index[row_name])
+					hJ.append(H_col_name_to_index[col_name])
 
 					# Handle the case of the TF being knocked out (admittedly not the cleanest solution)
 					if cellSpecs[condition]["bulkAverageContainer"].count(tf + "[c]") == 0:
@@ -2527,23 +2528,23 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 					# Rearrange values in pPromoterBound in the same order
 					# given by the columns of H
-					pInitI.append(colNamesH[colName])
+					pInitI.append(H_col_name_to_index[col_name])
 					pInitV.append(pPromoterBound[condition][tf])
-					pPromoterBoundIdxs[condition][tf] = colNamesH[colName]
+					pPromoterBoundIdxs[condition][tf] = H_col_name_to_index[col_name]
 
 				# Add alpha column for each RNA
-				colName = rnaIdNoLoc + "__alpha"
+				col_name = rnaIdNoLoc + "__alpha"
 
-				if colName not in colNamesH:
-					colNamesH[colName] = len(colNamesH)
+				if col_name not in H_col_name_to_index:
+					H_col_name_to_index[col_name] = len(H_col_name_to_index)
 
 				# Add optimized value of alpha in r to H
-				hI.append(rowNames[rowName])
-				hJ.append(colNamesH[colName])
-				hV.append(rDict[colName])
+				hI.append(H_row_name_to_index[row_name])
+				hJ.append(H_col_name_to_index[col_name])
+				hV.append(rDict[col_name])
 
 				# Set corresponding value in pInit to one
-				pInitI.append(colNamesH[colName])
+				pInitI.append(H_col_name_to_index[col_name])
 				pInitV.append(1.)
 
 		# Build vector pInit and matrix H
@@ -2556,29 +2557,29 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		H[hI, hJ] = hV
 
 		# Get indexes of alpha and non-alpha columns in pInit and H
-		pAlphaIdxs = np.array([idx for colName, idx in colNamesH.items() if colName.endswith("__alpha")])
-		pNotAlphaIdxs = np.array([idx for colName, idx in colNamesH.items() if not colName.endswith("__alpha")])
+		pAlphaIdxs = np.array([idx for col_name, idx in H_col_name_to_index.items() if col_name.endswith("__alpha")])
+		pNotAlphaIdxs = np.array([idx for col_name, idx in H_col_name_to_index.items() if not col_name.endswith("__alpha")])
 
 		# Get indexes of columns that correspond to fixed TFs
 		fixedTFIdxs = []
-		for colName, idx in colNamesH.items():
-			secondElem = colName.split("__")[1]
+		for col_name, idx in H_col_name_to_index.items():
+			secondElem = col_name.split("__")[1]
 
 			if secondElem in fixedTFs:
 				fixedTFIdxs.append(idx)
 
 		fixedTFIdxs = np.array(fixedTFIdxs, dtype=np.int)
 
-		return H, pInit, pAlphaIdxs, pNotAlphaIdxs, fixedTFIdxs, pPromoterBoundIdxs, colNamesH
+		return H, pInit, pAlphaIdxs, pNotAlphaIdxs, fixedTFIdxs, pPromoterBoundIdxs, H_col_name_to_index
 
-	def build_matrix_pdiff(sim_data, colNamesH):
+	def build_matrix_pdiff(sim_data, H_col_name_to_index):
 		"""
 		Construct matrix Pdiff that specifies the indexes of corresponding
 		TFs and conditions.
 
 		Inputs
 		------
-		- colNamesH: Dict[str, int] of column names of H to column index
+		- H_col_name_to_index: Dict[str, int] of column names of H to column index
 
 		Returns
 		--------
@@ -2594,21 +2595,21 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		for rowIdx, tf in enumerate(sorted(sim_data.tf_to_active_inactive_conditions)):
 			# For each TF, find condition [TF]__[TF]__active and set element to 1
 			condition = tf + "__active"
-			colName = tf + "__" + condition
+			col_name = tf + "__" + condition
 			PdiffI.append(rowIdx)
-			PdiffJ.append(colNamesH[colName])
+			PdiffJ.append(H_col_name_to_index[col_name])
 			PdiffV.append(1)
 
 			# Find condition [TF]__[TF]__inactive and set element to -1
 			condition = tf + "__inactive"
-			colName = tf + "__" + condition
+			col_name = tf + "__" + condition
 			PdiffI.append(rowIdx)
-			PdiffJ.append(colNamesH[colName])
+			PdiffJ.append(H_col_name_to_index[col_name])
 			PdiffV.append(-1)
 
 		# Build matrix Pdiff
 		PdiffI, PdiffJ, PdiffV = np.array(PdiffI), np.array(PdiffJ), np.array(PdiffV)
-		Pdiffshape = (PdiffI.max() + 1, len(colNamesH))
+		Pdiffshape = (PdiffI.max() + 1, len(H_col_name_to_index))
 		Pdiff = np.zeros(Pdiffshape, np.float64)
 		Pdiff[PdiffI, PdiffJ] = PdiffV
 
@@ -2701,9 +2702,9 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 	# Repeat for a fixed maximum number of iterations
 	for i in range(PROMOTER_MAX_ITERATIONS):
 		# Build matrices used in optimizing R
-		G, rowNamesG, colNamesG = build_matrix_G(sim_data, pPromoterBound)
-		Z = build_matrix_Z(sim_data, colNamesG)
-		T = build_matrix_T(sim_data, colNamesG)
+		G, G_row_name_to_index, G_col_name_to_index = build_matrix_G(sim_data, pPromoterBound)
+		Z = build_matrix_Z(sim_data, G_col_name_to_index)
+		T = build_matrix_T(sim_data, G_col_name_to_index)
 
 		# Optimize R such that transcription initiation probabilities computed
 		# from existing values of P in matrix G are close to fit values.
@@ -2735,9 +2736,9 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		r[np.abs(r) < ECOS_0_TOLERANCE] = 0  # Adjust to 0 for small values from solver tolerance
 
 		# Use optimal value of R to construct matrix H and vector Pdiff
-		H, pInit, pAlphaIdxs, pNotAlphaIdxs, fixedTFIdxs, pPromoterBoundIdxs, colNamesH = build_matrix_H(
-			sim_data, colNamesG, pPromoterBound, r, fixedTFs, cellSpecs)
-		pdiff = build_matrix_pdiff(sim_data, colNamesH)
+		H, pInit, pAlphaIdxs, pNotAlphaIdxs, fixedTFIdxs, pPromoterBoundIdxs, H_col_name_to_index = build_matrix_H(
+			sim_data, G_col_name_to_index, pPromoterBound, r, fixedTFs, cellSpecs)
+		pdiff = build_matrix_pdiff(sim_data, H_col_name_to_index)
 
 		# On first iteration, save the value of the initial p
 		if i == 0:
