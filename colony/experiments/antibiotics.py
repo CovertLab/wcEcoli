@@ -7,6 +7,7 @@ environment using Vivarium.
 from __future__ import absolute_import, division, print_function
 
 import argparse
+import datetime
 import io
 import json
 import os
@@ -22,6 +23,7 @@ from vivarium.core.emitter import (
 	emit_environment_config,
 	SECRETS_PATH,
 )
+from vivarium.core.experiment import timestamp
 from vivarium_cell.composites.lattice import Lattice
 from vivarium_cell.processes.diffusion_field import make_gradient
 
@@ -178,6 +180,7 @@ def simulate(
 		'emitter': emitter_config,
 		'emit_step': max(simulation_time // NUM_EMISSIONS, 1),
 		'timeline': timeline_config,
+		'experiment_id': timestamp(datetime.datetime.utcnow()),
 	}
 	agents_config = {
 		'type': AntibioticsCell,
