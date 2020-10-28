@@ -345,6 +345,7 @@ class WcEcoli(Process):
 					'_default': 0.0,
 					'_emit': True,
 					'_updater': 'set',
+					'_divider': 'split',
 				}
 				for mol
 				in parameters['agent_config']['to_report']['bulk_molecules']
@@ -365,6 +366,7 @@ class WcEcoli(Process):
 					'_default': 0.0,
 					'_emit': True,
 					'_updater': 'set',
+					'_divider': 'split',
 				}
 				for mol
 				in parameters['agent_config']['to_report']['unique_molecules']
@@ -385,6 +387,7 @@ class WcEcoli(Process):
 					'_default': 0.0,
 					'_emit': True,
 					'_updater': 'set',
+					'_divider': 'split',
 				}
 				for listener, attr
 				in parameters['agent_config']['to_report']['listeners']
