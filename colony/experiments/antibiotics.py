@@ -163,7 +163,6 @@ def simulate(
 		},
 		'_parallel': True,
 		'update_fields': update_fields,
-		'timeline': timeline_config,
 		'death': {
 			'detectors': {
 				'antibiotic': {
@@ -177,7 +176,8 @@ def simulate(
 	initial_state = {}
 	settings = {
 		'emitter': emitter_config,
-		'emit_step': max(simulation_time // NUM_EMISSIONS, 1)
+		'emit_step': max(simulation_time // NUM_EMISSIONS, 1),
+		'timeline': timeline_config,
 	}
 	agents_config = {
 		'type': AntibioticsCell,
