@@ -382,7 +382,7 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 					 ' metadata.json file. Default = the value of --generations.')
 		parser.add_argument('-s', '--seed', type=int, default=0,
 			help="Simulation seed for the first generation of the first cell"
-				 " lineage of every variant. The lineages (--init_sims) get"
+				 " lineage of every variant. The lineages (--init-sims) get"
 				 " sequentially increasing seed numbers. The generations"
 				 " (--generations) get seeds computed from the lineage seed and"
 				 " the generation number. Default = 0")
