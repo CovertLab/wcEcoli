@@ -4,6 +4,7 @@ import os
 from operator import itemgetter
 import csv
 import numpy as np
+import warnings
 
 from functools import partial
 from reconstruction import spreadsheets
@@ -16,12 +17,16 @@ This is only extracting polycistrons that form mRNAs.
 TODO: right now im extracting waaaayyy more information than is needed. Will need
 to condense it down to just what is needed.
 
+Use tsvreader instead of json reader.
+
 - output a readme file with relevant information : what genes are not encoded...etc
+- write output with misordered genes
+- Hand edit operons
 
 When was the ecocyc file pulled?
 - Get new TU's and coordinates file.
 
-- Make sure works with python3
+
 '''
 
 # --- Functions
@@ -33,13 +38,6 @@ def parseStringList(string):
 		newStrArray.append(st.strip())
 	return newStrArray
 
-def get_ids(genes, synonyms_data):
-	object_ids = []
-	for gene in genes:
-		for row in synonyms_data:
-			if gene in row[1] or gene in row[2]:
-				object_ids.append(row[0])
-	return object_ids
 def gather_tu_information(tu_data, synonyms_data):
 	'''
 	Assemble data - record the object, for each gene and the operon direction.
@@ -49,9 +47,9 @@ def gather_tu_information(tu_data, synonyms_data):
 	'''
 	tu_information = []
 	for row in tu_data:
-		object_ids = get_ids(parseStringList(row[0]), synonyms_data)
+		object_ids = parseStringList(row[1])
 		if object_ids != []:
-			tu_information.append([object_ids, row[1]])
+			tu_information.append([object_ids, row[4]])
 	return tu_information
 
 def find_rna_ids(file_path):
@@ -72,23 +70,6 @@ def find_rna_ids(file_path):
 def returnNotMatches(a, b):
     return [[x for x in a if x not in b], [x for x in b if x not in a]]
 
-
-DIALECT = "excel-tab"
-JsonReader = partial(spreadsheets.JsonReader, dialect = DIALECT)
-JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
-
-
-# --- Base file path to data in prototypes folder
-data_loc = os.path.join(os.getcwd(), 'prototypes', 'operons', 'all_ecocyc_tus')
-
-# --- Upload TU structure data
-tu_path = os.path.join(data_loc, 'tus_coordinates_directions.txt')
-tu_data = list(csv.reader(open(tu_path, 'r'), delimiter='\t'))[1:]
-
-# --- Upload gene data
-
-gene_data_path = os.path.join('reconstruction', 'ecoli', 'flat', 'genes.tsv')
-
 def gather_gene_coordinates(gene_data_path):
 	gene_coordinates = {}
 	with open(gene_data_path) as tsvfile:
@@ -100,23 +81,82 @@ def gather_gene_coordinates(gene_data_path):
 			gene_coordinates[row['id']]['direction'] = row['direction']
 	return gene_coordinates
 
-def gather_gene_directions(gene_coordinates):
-	postive_strand_gene_dict = {key:value['coordinate'] for key, value in gene_coordinates.items() if value['direction'] == '+'}
-	negative_strand_gene_dict = {key:value['coordinate'] for key, value in gene_coordinates.items() if value['direction'] == '-'}
+def sort_strands(gene_coordinates):
+	directions = ('+', '-')
+	sorted_dictionary = {}
+	sorted_strands = [[], []]
+	reverse_bool = False
+	for idx, direct in enumerate(directions):
+		if direct == '-':
+			reverse_bool = True
+		#{key:value['coordinate'] for key, value in gene_coordinates.items() if value['direction'] == '+'}
+		sorted_dictionary[direct] = {}
+		sorted_dictionary[direct] = {key:value['coordinate'] for key, value in gene_coordinates.items() if value['direction'] == direct}
+		sorted_strands[idx] = sorted(sorted_dictionary[direct], key=sorted_dictionary[direct].__getitem__, reverse=reverse_bool)
+	return sorted_strands
 
-	positive_strand_sorted = sorted(postive_strand_gene_dict, key=postive_strand_gene_dict.__getitem__)
-	negative_strand_sorted = sorted(negative_strand_gene_dict, key=negative_strand_gene_dict.__getitem__, reverse=True)
+def create_neighbor_dictionary(gene_coordinates):
+	sorted_strands = sort_strands(gene_coordinates)
+	neighbor_dictionary = {}
+	for strand in sorted_strands:
+		for idx, gene in enumerate(strand):
+			previous_index = idx
+			next_index = idx
+			if next_index == len(strand)-1:
+				next_index = -1
+			neighbor_dictionary[gene] = {}
+			neighbor_dictionary[gene]['previous_gene'] = strand[previous_index-1]
+			neighbor_dictionary[gene]['next_gene'] = strand[next_index+1]
+	return neighbor_dictionary
 
-	import pdb; pdb.set_trace
-	return positive_strand_sorted, negative_strand_sorted
+def check_gene_order(sorted_tu, neighbor_dictionary):
+	'''
+	The purpose of this function is to check that the nighboring genes to the target one match.
+	'''
+	tu_len = len(sorted_tu)
+	mismatch_check = []
+
+	def make_dict(tu_name, gene, direction, neighbor, ecocyc_tu_neighbor):
+		check_dict = {}
+		check_dict['Transcription Unit'] = tu_name
+		check_dict['Current Gene'] = gene
+		check_dict['Direction'] = direction
+		check_dict['Real Neighbor'] = neighbor
+		check_dict['Ecocyc TU Neighbor'] = ecocyc_tu_neighbor
+		return check_dict
+
+	def check_neighbor(idx, gene, sorted_tu, direction):
+		if direction == 'previous_gene':
+			dir_index = idx-1
+		else:
+			dir_index = idx+1
+		check = []
+		if sorted_tu[dir_index] != neighbor_dictionary[gene][direction]:
+			check.append(make_dict('_'.join(sorted_tu), gene, direction, neighbor_dictionary[gene][direction], sorted_tu[dir_index]))
+		return check
+
+	directions = ['next_gene', 'previous_gene']
+	for idx, gene in enumerate(sorted_tu):
+		if idx == 0:
+			mismatch_check.append(check_neighbor(idx, gene, sorted_tu, directions[0]))
+		elif idx == tu_len - 1:
+			mismatch_check.append(check_neighbor(idx, gene, sorted_tu, directions[1]))
+		else:
+			for direct in directions:
+				mismatch_check.append(check_neighbor(idx,gene, sorted_tu, direct))
+	mismatch_check = [x for x in mismatch_check if x]
+	return mismatch_check
 
 def sort_tu(row, gene_coordinates, mrna_ids):
 	'''
 	Returns:
 	List of genes in sorted order.
 	'''
-	row_dup_removed = list(dict.fromkeys(row[0]))
+	mismatch_warning_message = "For this operon ({}), the directions do not match"
+
+	row_dup_removed = set(row[0])
 	tu_coordinates = []
+	misordered_operon = []
 	check_1 = 0
 	for gene in row_dup_removed:
 		try:
@@ -128,19 +168,19 @@ def sort_tu(row, gene_coordinates, mrna_ids):
 	for gene in row_dup_removed:
 		if gene not in mrna_ids:
 			check_2 +=1
-	check_3 = 0
-	if len(set([tu[2] for tu in tu_sorted]) > 1:
-		except()
+	if len(set([tu[2] for tu in tu_coordinates])) > 1:
+		warnings.warn(mismatch_warning_message.format("insert tu here"))
 	if check_1 > 0 or check_2 > 0:
 		sorted_tu = []
 	elif check_1 == 0 and check_2 == 0:
-		import pdb; pdb.set_trace()
 		#sorted_inds, sorted_items = zip(*sorted([(i,e) for i,e in enumerate(tu_coordinates)], key=itemgetter(1)))
-		tu_sorted = sorted(tu_coordinates, key=itemgetter(1), reverse=False)
+		sorted_tu = [gene[0] for gene in sorted(tu_coordinates, key=itemgetter(1), reverse=False)]
 		if row[1] == '-':
 			sorted_tu.reverse()
-		import pdb; pdb.set_trace()
-	return sorted_tu
+		mismatch_check = check_gene_order(sorted_tu, neighbor_dictionary)
+		if mismatch_check:
+			misordered_operon.append(mismatch_check)
+	return sorted_tu, misordered_operon
 
 def write_output_file(data, header, output_file):
 	with open(output_file, "w") as f:
@@ -150,6 +190,21 @@ def write_output_file(data, header, output_file):
 			writer.writerow(row)
 	return
 
+DIALECT = "excel-tab"
+JsonReader = partial(spreadsheets.JsonReader, dialect = DIALECT)
+JsonWriter = partial(spreadsheets.JsonWriter, dialect = DIALECT)
+
+
+# --- Base file path to data in prototypes folder
+data_loc = os.path.join(os.getcwd(), 'prototypes', 'operons', 'all_ecocyc_tus')
+
+# --- Upload TU structure data
+tu_path = os.path.join(data_loc, 'new_frameID_tus_coordinates_directions.txt')
+tu_data = list(csv.reader(open(tu_path, 'r'), delimiter='\t'))[1:]
+
+# --- Upload gene data
+
+gene_data_path = os.path.join('reconstruction', 'ecoli', 'flat', 'genes.tsv')
 
 # --- Upload synonyms data
 synonyms_path = os.path.join(data_loc, '070320_gene_ids_syns.txt')
@@ -159,7 +214,8 @@ synonyms_data = list(csv.reader(open(synonyms_path, 'r'), delimiter = '\t'))
 rna_file_path = os.path.join('reconstruction', 'ecoli', 'flat', 'rnas.tsv')
 
 # --- Specify output path
-output_file = os.path.join(data_loc, 'all_polycistrons.tsv')
+polycistrons_output_file = os.path.join(data_loc, 'all_polycistrons.tsv')
+monocistrons_output_file = os.path.join(data_loc, 'monocistrons_to_keep.tsv')
 
 # --- Get rid of duplicate rows in tu_data
 tu_data.sort()
@@ -178,6 +234,63 @@ rna_ids, mrna_ids = find_rna_ids(rna_file_path)
 
 # Create polycistrons file, for each operon greater than one gene, delete all monomers.
 polycistrons = [[row[0], row[1]] for row in tu_information if len(row[0]) > 1]
+monocistrons = [row[0] for row in tu_information if len(row[0]) == 1]
+
+gene_coordinates = gather_gene_coordinates(gene_data_path)
+neighbor_dictionary = create_neighbor_dictionary(gene_coordinates)
+
+'''
+polycistrons_file = []
+monocistrons_file = []
+polycistrons_header = ['polycistrons']
+monocistrons_header = ['monocistrons']
+
+polycistrons_dict_list = []
+monocistrons_to_remove_list = []
+misordered_operons = []
+
+for row in polycistrons:
+	polydict = {}
+	monodict = []
+	sorted_tu, misordered_operon = sort_tu(row, gene_coordinates, mrna_ids)
+	if sorted_tu != []:
+		polydict['polycistrons'] = sorted_tu
+		monodict['monocistrons_to_remove'] = [gene for gene in sorted_tu if gene not in monocistrons]
+		monodict['monocistrons_to_keep']
+		#make sure not to repeat rows
+		if rowdict not in poly_dict_list:
+			poly_dict_list.append(polydict)
+			monocistrons_to_remove_list.append(monodict)
+	if misordered_operon:
+		misordered_operons.append(misordered_operon)
+'''
+
+
+
+polycistrons_file = []
+header = ['transcription_units', 'monomers_to_remove']
+poly_dict_list = []
+misordered_operons = []
+for row in polycistrons:
+	rowdict = {}
+	sorted_tu, misordered_operon = sort_tu(row, gene_coordinates, mrna_ids)
+	if sorted_tu != []:
+		rowdict['transcription_units'] = sorted_tu
+		rowdict['monomers_to_remove'] = [gene for gene in sorted_tu if [gene] not in monocistrons]
+		#make sure not to repeat rows
+		if rowdict not in poly_dict_list:
+			poly_dict_list.append(rowdict)
+	if misordered_operon:
+		misordered_operons.append(misordered_operon)
+
+write_output_file(poly_dict_list, header, polycistrons_output_file)
+#write_output_files(monocistrons_to_keep, monocistrons_header, monocistrons_output)
+
+breakpoint()
+
+
+
+
 
 
 # TODO: Remove repeat genes in operon.
@@ -197,32 +310,7 @@ for row in polycistrons:
 		if row[0] != check_row[0] and set(row[0]).difference(set(check_row[0])) == set([]) and set(check_row[0]).difference(set(row[0])) == set([]):
 			polycistrons.remove(row[0])
 '''
-monomers_to_include = [row[0] for row in polycistrons if len(row[0]) == 1 and row[0] not in non_mrnas]
-gene_coordinates = gather_gene_coordinates(gene_data_path)
-
-
-polycistrons_file = []
-header = ['transcription_units', 'monomers_to_remove']
-poly_dict_list = []
-for row in polycistrons:
-	rowdict = {}
-	sorted_tu = sort_tu(row, gene_coordinates, mrna_ids)
-	if sorted_tu != []:
-		rowdict['transcription_units'] = sorted_tu
-		rowdict['monomers_to_remove'] = [gene for gene in sorted_tu if gene not in monomers_to_include]
-		if rowdict not in poly_dict_list:
-			poly_dict_list.append(rowdict)
-# remove repeat rows in list.
-
-# check for bi-directional operon genes
-
-genes_ordered_pos, genes_ordered_neg = gather_gene_directions(gene_coordinates)
-
-test_operon = genes_ordered_pos[0:4]
-
-import pdb; pdb.set_trace()
-
-write_output_file(poly_dict_list, header, output_file)
+#monomers_to_include = [row[0] for row in polycistrons if len(row[0]) == 1 and row[0] not in non_mrnas]
 
 
 # - Collect some extra stats so we know more about the genes being included

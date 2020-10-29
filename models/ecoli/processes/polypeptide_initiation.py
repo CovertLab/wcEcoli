@@ -2,9 +2,6 @@
 PolypeptideInitiation
 
 Polypeptide initiation sub-model.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/30/14
 """
 
 from __future__ import absolute_import, division, print_function
@@ -32,19 +29,17 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Load parameters
 		# mrnaIds = sim_data.process.translation.monomerData["rnaId"]
-
-
-		self.proteinLengths = sim_data.process.translation.monomerData["length"].asNumber()
+		self.proteinLengths = sim_data.process.translation.monomer_data["length"].asNumber()
 		self.translationEfficiencies = normalize(
-			sim_data.process.translation.translationEfficienciesByMonomer)
+			sim_data.process.translation.translation_efficiencies_by_monomer)
 		self.fracActiveRibosomeDict = sim_data.process.translation.ribosomeFractionActiveDict
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = sim_data.process.translation.make_elongation_rates
 
 		# Build matrix to convert transcription unit counts to mRNA counts
-		all_TU_ids = sim_data.process.transcription.rnaData['id']
-		all_mRNA_ids = sim_data.process.translation.monomerData['rnaId']
+		all_TU_ids = sim_data.process.transcription.rna_data['id']
+		all_mRNA_ids = sim_data.process.translation.monomer_data['rna_id']
 		self.n_TUs = len(all_TU_ids)
 		self.n_mRNAs = len(all_mRNA_ids)
 
@@ -57,9 +52,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# create dict mapping TU name to protein index
 		self.TU_id_to_protein_index = {}
 
-		for i, protein in enumerate(sim_data.process.translation.monomerData):
+		for i, protein in enumerate(sim_data.process.translation.monomer_data):
 			self.protein_index_to_TU_index[i] = list()
-			for rna in protein['rnaSet']:
+			for rna in protein['rna_set']:
 				self.protein_index_to_TU_index[i].append(TU_id_to_index[rna])
 
 				if rna not in self.TU_id_to_protein_index:
@@ -84,12 +79,12 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
 
 		# Create views onto bulk 30S and 50S ribosomal subunits
-		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeIds.s30_fullComplex)
-		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeIds.s50_fullComplex)
+		self.ribosome30S = self.bulkMoleculeView(sim_data.molecule_ids.s30_full_complex)
+		self.ribosome50S = self.bulkMoleculeView(sim_data.molecule_ids.s50_full_complex)
 
 		# Create view onto RNAs
 		self.RNAs = self.uniqueMoleculesView('RNA')
-		self.mRnas = self.bulkMoleculesView(all_TU_ids[sim_data.process.transcription.rnaData['isMRna']])
+		self.mRnas = self.bulkMoleculesView(all_TU_ids[sim_data.process.transcription.rna_data['is_mRNA']])
 
 
 	def calculateRequest(self):

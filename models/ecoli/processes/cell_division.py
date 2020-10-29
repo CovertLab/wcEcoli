@@ -2,9 +2,6 @@
 CellDivision process
 
 - Flags the cell for division when a preset division criterion has been met
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 3/6/2020
 """
 
 from __future__ import absolute_import, division, print_function
@@ -41,7 +38,7 @@ class CellDivision(wholecell.processes.process.Process):
 			# an approximation for length)
 			self.expectedDryMassIncreaseDict = sim_data.expectedDryMassIncreaseDict
 			self.internal_states = sim.internal_states
-			self.water_index = sim_data.submassNameToIndex["water"]
+			self.water_index = sim_data.submass_name_to_index["water"]
 
 			if sim._massDistribution:
 				self.division_mass_multiplier = sim.randomState.normal(loc=1.0, scale=0.1)

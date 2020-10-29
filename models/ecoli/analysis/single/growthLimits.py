@@ -1,8 +1,5 @@
 """
 Plots various simulation components that may be limiting growth
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/18/2015
 """
 
 from __future__ import absolute_import, division, print_function
@@ -23,8 +20,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
-		moleculeIds = sim_data.moleculeGroups.aaIDs
-		moleculeIds.extend(sim_data.moleculeGroups.ntpIds)
+		moleculeIds = sim_data.molecule_groups.amino_acids
+		moleculeIds.extend(sim_data.molecule_groups.ntps)
 
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))

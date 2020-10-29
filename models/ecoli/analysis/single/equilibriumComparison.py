@@ -1,9 +1,5 @@
 """
 Plot empirical Kd's (from the simulation) and their expected value (from the sim_data)
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 8/24/15
 """
 
 from __future__ import absolute_import, division, print_function
@@ -27,14 +23,14 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Load data from KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 
-		stoichMatrix = sim_data.process.equilibrium.stoichMatrix().astype(np.int64)
-		ratesFwd = sim_data.process.equilibrium.ratesFwd
-		ratesRev = sim_data.process.equilibrium.ratesRev
+		stoichMatrix = sim_data.process.equilibrium.stoich_matrix().astype(np.int64)
+		ratesFwd = sim_data.process.equilibrium.rates_fwd
+		ratesRev = sim_data.process.equilibrium.rates_rev
 
-		nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / units.mol)
-		cellDensity = sim_data.constants.cellDensity.asNumber(units.g / units.L)
+		nAvogadro = sim_data.constants.n_avogadro.asNumber(1 / units.mol)
+		cellDensity = sim_data.constants.cell_density.asNumber(units.g / units.L)
 
-		moleculeNames = sim_data.process.equilibrium.moleculeNames
+		moleculeNames = sim_data.process.equilibrium.molecule_names
 
 		# Load time
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))

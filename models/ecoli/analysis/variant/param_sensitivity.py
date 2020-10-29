@@ -3,9 +3,6 @@ Analyzes parameters sensitivity from running variant param_sensitivity.
 Outputs two plots showing sorted z score for each parameter's effect
 on each output measure and individual parameter values for the most
 significant parameters for each output difference measure.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/17/19
 """
 
 from __future__ import absolute_import, division, print_function
@@ -84,7 +81,7 @@ def analyze_variant(args):
 	increase_params_flux_correlation = np.zeros(total_params)
 	decrease_params_flux_correlation = np.zeros(total_params)
 
-	cell_density = sim_data.constants.cellDensity
+	cell_density = sim_data.constants.cell_density
 	flux_units = units.mmol / units.g / units.h
 
 	# Validation data
@@ -190,10 +187,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# sim_data information
 		total_params = sum(number_params(sim_data))
-		rna_to_gene = {gene['rnaId']: gene['symbol'] for gene in sim_data.process.replication.geneData}
-		monomer_to_gene = {gene['monomerId']: gene['symbol'] for gene in sim_data.process.replication.geneData}
-		rna_ids = sim_data.process.transcription.rnaData['id']
-		monomer_ids = sim_data.process.translation.monomerData['id']
+		rna_to_gene = {gene['rna_id']: gene['symbol'] for gene in sim_data.process.replication.gene_data}
+		monomer_to_gene = {gene['monomer_id']: gene['symbol'] for gene in sim_data.process.replication.gene_data}
+		rna_ids = sim_data.process.transcription.rna_data['id']
+		monomer_ids = sim_data.process.translation.monomer_data['id']
 
 		# IDs must match order from param_indices() from param_sensitivity.py variant
 		param_ids = np.array(

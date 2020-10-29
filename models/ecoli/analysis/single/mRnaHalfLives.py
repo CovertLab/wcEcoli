@@ -1,8 +1,5 @@
 """
 Plot first-order rate constants of mRNAs, observed vs expected.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 1/30/2015
 """
 
 from __future__ import absolute_import, division, print_function
@@ -26,10 +23,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Get the expected degradation rates from KB
 		sim_data = cPickle.load(open(simDataFile, 'rb'))
-		mRNA_ids = sim_data.process.transcription.rnaData['id']
-		isMRna = sim_data.process.transcription.rnaData["isMRna"]
+		mRNA_ids = sim_data.process.transcription.rna_data['id']
+		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
 		expected_degradation_rate_constants = np.array(
-			sim_data.process.transcription.rnaData['degRate'][isMRna].asNumber()
+			sim_data.process.transcription.rna_data['deg_rate'][isMRna].asNumber()
 			)
 
 		# Get length of simulation

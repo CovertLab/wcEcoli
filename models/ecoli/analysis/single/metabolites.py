@@ -1,8 +1,5 @@
 """
 Shows fold change of metabolites over the course of the simulation
-
-@date: Created 8/25/2016
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
 from __future__ import absolute_import, division, print_function
@@ -23,7 +20,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
-		aa_ids = sim_data.moleculeGroups.aaIDs
+		aa_ids = sim_data.molecule_groups.amino_acids
 
 		# Listeners used
 		enzymeKineticsdata = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))

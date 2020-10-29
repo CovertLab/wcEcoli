@@ -1,9 +1,5 @@
 """
 UniqueMoleculeCounts
-
-@author: John Mason
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/10/2014
 """
 
 # TODO: move to the wholecell package & write interface such that it will

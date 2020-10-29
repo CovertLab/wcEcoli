@@ -4,10 +4,6 @@
 _fastsums.pyx
 
 Fast group sums to speed up polymerize.
-
-@author: Jerry Morrison
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 10/12/2016
 """
 
 from __future__ import absolute_import, division, print_function

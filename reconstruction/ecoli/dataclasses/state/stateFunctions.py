@@ -4,12 +4,19 @@ import numpy as np
 from wholecell.utils.unit_struct_array import UnitStructArray
 
 def addToStateCommon(bulkState, ids, masses):
-	#max_id_len = max(len(id_) for id_ in ids)
+	masses_unitless = masses.asNumber()
+
+	if masses_unitless.ndim == 1:
+		assert len(ids) == 1
+		mass_size = len(masses_unitless)
+	else:
+		mass_size = masses_unitless.shape[1]
+
 	newAddition = np.zeros(
 		len(ids),
 		dtype = [
-			('id', 'U200'),
-			('mass', '{}f8'.format(masses.asNumber().shape[1])), # TODO: Make this better
+			("id", "U200"),
+			("mass", "{}f8".format(mass_size)),
 			]
 		)
 
@@ -44,7 +51,7 @@ def createMassesByCompartments(dictList):
 			], dtype = np.float64)
 
 def createModifiedFormMassesByCompartments(dictList):
-	return np.array([x['mw7.2']
+	return np.array([x['mw']
 			for x in dictList
 			for c in x['location']
 			], dtype = np.float64)
@@ -53,7 +60,7 @@ def createMetaboliteMassesByCompartments(dictList, metAt, total):
 	leading = metAt
 	trailing = total - metAt - 1
 
-	return np.array([[0.0]*leading + [x['mw7.2']] + [0.0]*trailing
+	return np.array([[0.0]*leading + [x['mw']] + [0.0]*trailing
 			for x in dictList
 			for c in x['location']
 			], dtype = np.float64)

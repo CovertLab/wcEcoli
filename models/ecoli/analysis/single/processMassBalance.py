@@ -1,9 +1,3 @@
-"""
-@author: John Mason
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/27/2014
-"""
-
 from __future__ import absolute_import, division, print_function
 
 
@@ -58,10 +52,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		metabolites = fba_results.readAttribute('outputMoleculeIDs')
 		delta_metabolites = fba_results.readColumn('deltaMetabolites')
 
-		conversion = 1e15 / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		conversion = 1e15 / sim_data.constants.n_avogadro.asNumber(1 / units.mol)
 		metabolism_mass_imported = np.zeros(delta_metabolites.shape[0])
 		for mol, flux in zip(metabolites, delta_metabolites.T):
-			mol_mass = sim_data.getter.getMass([mol])[0].asNumber(units.g / units.mol)
+			mol_mass = sim_data.getter.get_mass([mol])[0].asNumber(units.g / units.mol)
 			metabolism_mass_imported += mol_mass * conversion * flux
 
 		metabolism_mass_difference = processMassDifferences[:, processNames.index('Metabolism')]

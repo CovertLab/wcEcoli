@@ -1,9 +1,5 @@
 """
 Plot RNA polymerase counts and counts of mRNA precursors
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/8/2014
 """
 
 from __future__ import absolute_import, division, print_function

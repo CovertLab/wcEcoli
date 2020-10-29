@@ -1,9 +1,5 @@
 """
 Compare protein counts to Schmidt 2015 data set
-
-@author: Javier	Carrera
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 12/4/2017
 """
 
 from __future__ import absolute_import, division, print_function
@@ -26,7 +22,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 		validation_data = cPickle.load(open(validationDataFile, "rb"))
 
-		ids_translation = sim_data.process.translation.monomerData["id"].tolist()
+		ids_translation = sim_data.process.translation.monomer_data["id"].tolist()
 		schmidt_idx = [ids_translation.index(x) for x in validation_data.protein.schmidt2015Data["monomerId"].tolist()]
 
 		schmidt_counts = validation_data.protein.schmidt2015Data["glucoseCounts"]

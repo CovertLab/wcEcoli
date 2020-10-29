@@ -1,9 +1,3 @@
-"""
-@author: Morgan Paull
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/29/2016
-"""
-
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -34,7 +28,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		validation_data = cPickle.load(open(validationDataFile, "rb"))
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 
-		cellDensity = sim_data.constants.cellDensity
+		cellDensity = sim_data.constants.cell_density
 
 		seed_color = {}
 		line_instances = {}

@@ -7,9 +7,6 @@ are possible causes for changes to the ribosomal elongation rate if the rate is
 specified by tRNA charging in the simulation. tRNA and synthetases are shown
 on a per amino acid basis with a sum from all relevant species.
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 9/20/18
-
 TODO: add amino acids and other metabolites involved in charging reactions
 '''
 
@@ -94,15 +91,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		transcription = sim_data.process.transcription
 		synthetase_names = transcription.synthetase_names
-		uncharged_trna_names = transcription.rnaData['id'][transcription.rnaData['isTRna']]
+		uncharged_trna_names = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
 		charged_trna_names = transcription.charged_trna_names
 		aa_from_synthetase = transcription.aa_from_synthetase.T
 		aa_from_trna = transcription.aa_from_trna.T
 
-		aa_ids = sim_data.moleculeGroups.aaIDs
+		aa_ids = sim_data.molecule_groups.amino_acids
 		n_aas = len(aa_ids)
 
-		mol_ids = sim_data.moleculeIds
+		mol_ids = sim_data.molecule_ids
 		ppgpp_molecules = [mol_ids.RelA, mol_ids.SpoT, mol_ids.ppGpp]
 
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot=True)

@@ -5,9 +5,6 @@ Translation elongation sub-model.
 
 TODO:
 - see the initiation process for more TODOs
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/30/14
 """
 
 from __future__ import absolute_import, division, print_function
@@ -43,19 +40,19 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.max_time_step = translation.max_time_step
 
 		# Load parameters
-		self.nAvogadro = constants.nAvogadro
-		proteinIds = translation.monomerData['id']
-		self.proteinLengths = translation.monomerData["length"].asNumber()
-		self.proteinSequences = translation.translationSequences
-		self.aaWeightsIncorporated = translation.translationMonomerWeights
-		self.endWeight = translation.translationEndWeight
+		self.n_avogadro = constants.n_avogadro
+		proteinIds = translation.monomer_data['id']
+		self.proteinLengths = translation.monomer_data["length"].asNumber()
+		self.proteinSequences = translation.translation_sequences
+		self.aaWeightsIncorporated = translation.translation_monomer_weights
+		self.endWeight = translation.translation_end_weight
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = translation.make_elongation_rates
 
-		self.ribosomeElongationRate = float(sim_data.growthRateParameters.ribosomeElongationRate.asNumber(units.aa / units.s))
+		self.ribosomeElongationRate = float(sim_data.growth_rate_parameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 
 		# Amino acid supply calculations
-		self.translation_aa_supply = sim_data.translationSupplyRate
+		self.translation_aa_supply = sim_data.translation_supply_rate
 		self.import_threshold = sim_data.external_state.import_constraint_threshold
 
 		# Used for figure in publication
@@ -65,14 +62,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
 
 		# Create views onto 30S and 50S ribosomal subunits for termination
-		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeIds.s30_fullComplex)
-		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeIds.s50_fullComplex)
+		self.ribosome30S = self.bulkMoleculeView(sim_data.molecule_ids.s30_full_complex)
+		self.ribosome50S = self.bulkMoleculeView(sim_data.molecule_ids.s50_full_complex)
 
 		# Create view onto all proteins
 		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
 
 		# Create views onto all polymerization reaction small molecules
-		self.aas = self.bulkMoleculesView(sim_data.moleculeGroups.aaIDs)
+		self.aas = self.bulkMoleculesView(sim_data.molecule_groups.amino_acids)
 
 		self.elngRateFactor = 1.
 
@@ -89,7 +86,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ppgpp_regulation = sim._ppgpp_regulation
 
 		# Growth associated maintenance energy requirements for elongations
-		self.gtpPerElongation = constants.gtpPerTranslation
+		self.gtpPerElongation = constants.gtp_per_translation
 		## Need to account for ATP hydrolysis for charging that has been
 		## removed from measured GAM (ATP -> AMP is 2 hydrolysis reactions)
 		## if charging reactions are not explicitly modeled
@@ -125,12 +122,28 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.ribosomeElongationRate,
 			self.timeStepSec(),
 			self.variable_elongation)
+		'''
+		if np.any(peptideLengths + self.elongation_rates.max() > self.proteinSequences.shape[1]):
+			problematic_peptides = np.unique([i for i, value in enumerate(peptideLengths) if value >  self.proteinSequences.shape[1]])
+			problematic_peptide_indices = np.unique([proteinIndexes[i] for i in problematic_peptides])
 
+			breakpoint()
+		else:
+			print('not a problem in this round')
+		try:
+			sequences = buildSequences(
+				self.proteinSequences,
+				proteinIndexes,
+				peptideLengths,
+				self.elongation_rates)
+		except:
+			breakpoint()
+		'''
 		sequences = buildSequences(
-			self.proteinSequences,
-			proteinIndexes,
-			peptideLengths,
-			self.elongation_rates)
+				self.proteinSequences,
+				proteinIndexes,
+				peptideLengths,
+				self.elongation_rates)
 
 		sequenceHasAA = (sequences != polymerize.PAD_VALUE)
 		aasInSequences = np.bincount(sequences[sequenceHasAA], minlength=21)
@@ -139,7 +152,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
 		translation_supply_rate = self.translation_aa_supply[current_media_id] * self.elngRateFactor
 		mol_aas_supplied = translation_supply_rate * dryMass * self.timeStepSec() * units.s
-		self.aa_supply = units.strip_empty_units(mol_aas_supplied * self.nAvogadro)
+		self.aa_supply = units.strip_empty_units(mol_aas_supplied * self.n_avogadro)
 		self.writeToListener("RibosomeData", "translationSupply", translation_supply_rate.asNumber())
 
 		# MODEL SPECIFIC: Calculate AA request
@@ -285,12 +298,12 @@ class BaseElongationModel(object):
 	"""
 	def __init__(self, sim_data, process):
 		self.process = process
-		self.basal_elongation_rate = sim_data.constants.ribosomeElongationRateBasal.asNumber(units.aa / units.s)
+		self.basal_elongation_rate = sim_data.constants.ribosome_elongation_rate_basal.asNumber(units.aa / units.s)
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
-		self.uncharged_trna_names = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']]
-		self.aaNames = sim_data.moleculeGroups.aaIDs
-		self.proton = self.process.bulkMoleculeView(sim_data.moleculeIds.proton)
-		self.water = self.process.bulkMoleculeView(sim_data.moleculeIds.water)
+		self.uncharged_trna_names = sim_data.process.transcription.rna_data['id'][sim_data.process.transcription.rna_data['is_tRNA']]
+		self.aaNames = sim_data.molecule_groups.amino_acids
+		self.proton = self.process.bulkMoleculeView(sim_data.molecule_ids.proton)
+		self.water = self.process.bulkMoleculeView(sim_data.molecule_ids.water)
 
 	def elongation_rate(self, current_media_id):
 		rate = self.process.elngRateFactor * self.ribosomeElongationRateDict[
@@ -347,11 +360,11 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		constants = sim_data.constants
 		transcription = sim_data.process.transcription
 		metabolism = sim_data.process.metabolism
-		molecule_ids = sim_data.moleculeIds
+		molecule_ids = sim_data.molecule_ids
 
 		# Cell parameters
-		self.cellDensity = constants.cellDensity
-		elongation_max = constants.ribosomeElongationRateMax if self.process.variable_elongation else constants.ribosomeElongationRateBasal
+		self.cellDensity = constants.cell_density
+		elongation_max = constants.ribosome_elongation_rate_max if self.process.variable_elongation else constants.ribosome_elongation_rate_basal
 		self.maxRibosomeElongationRate = float(elongation_max.asNumber(units.aa / units.s))
 
 		# Data structures for charging
@@ -403,7 +416,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# Conversion from counts to molarity
 		cell_mass = self.process.readFromListener("Mass", "cellMass") * units.fg
 		cell_volume = cell_mass / self.cellDensity
-		self.counts_to_molar = 1 / (self.process.nAvogadro * cell_volume)
+		self.counts_to_molar = 1 / (self.process.n_avogadro * cell_volume)
 
 		# Get counts and convert synthetase and tRNA to a per AA basis
 		synthetase_counts = np.dot(self.aa_from_synthetase, self.synthetases.total_counts())

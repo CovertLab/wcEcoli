@@ -1,9 +1,5 @@
 """
 SimulationData relation functions
-
-@author: Nick Ruggero
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 03/10/2015
 """
 
 from __future__ import absolute_import, division, print_function
@@ -15,11 +11,10 @@ class Relation(object):
 	""" Relation """
 
 	def __init__(self, raw_data, sim_data):
-
 		# pull mrna and monomer data
-		self.is_mrna = np.where(sim_data.process.transcription.rnaData['isMRna'])[0]
-		self.mrna = sim_data.process.transcription.rnaData[self.is_mrna]
-		self.monomer = sim_data.process.translation.monomerData
+		self.is_mrna = np.where(sim_data.process.transcription.rna_data['is_mRNA'])[0]
+		self.mrna = sim_data.process.transcription.rna_data[self.is_mrna]
+		self.monomer = sim_data.process.translation.monomer_data
 
 		self._buildRnaIndexToMonomerMapping(raw_data, sim_data)
 		self._buildMonomerIndexToRnaMapping(raw_data, sim_data)
@@ -38,14 +33,14 @@ class Relation(object):
 		The RNA's are: "EG12197_RNA" and "EG12197_EG12144_RNA"
 		'''
 
-		rnaData_id_index = {}
-		for idx, row in enumerate(sim_data.process.transcription.rnaData):
-			rnaData_id_index[row['id']] = idx
+		rna_data_id_index = {}
+		for idx, row in enumerate(sim_data.process.transcription.rna_data):
+			rna_data_id_index[row['id']] = idx
 		self.rnaIndexToMonomerMapping_new = []
-		for protein_row in sim_data.process.translation.monomerData:
+		for protein_row in sim_data.process.translation.monomer_data:
 			set_indices = []
-			for rna_id in protein_row['rnaSet']:
-				set_indices.append(rnaData_id_index[rna_id])
+			for rna_id in protein_row['rna_set']:
+				set_indices.append(rna_data_id_index[rna_id])
 			self.rnaIndexToMonomerMapping_new.append(set_indices)
 		self.rnaIndexToMonomerMapping_new = np.array(self.rnaIndexToMonomerMapping_new)
 		'''
@@ -127,6 +122,9 @@ class Relation(object):
 			ID with a TU ID. This is bc each monomer is still attached
 			to a single rna_id (even if its never actually transcribed as a mono-
 			cistronic unit). This makes it easier to set up this relationship.
+
+			Assumption: if the total counts to a TU are zero, 
+			just assign an equal fraction for any overlapping TU's
 		'''
 		tu_fraction_dict = {}
 		for key, value in overlapping_tu_dict.items():
@@ -137,7 +135,11 @@ class Relation(object):
 				#Need to remove the location tag from v in order to find it in the tu_dict.
 				count_sum += tu_dict[v[:-7]]
 			for v in value:
-				tu_fraction_dict[key].append(tu_dict[v[:-7]] / count_sum)
+				#if the total counts to a TU are zero, just assign an equal fraction for any overlapping TU's
+				if count_sum == 0:
+					tu_fraction_dict[key].append(1/len(value))
+				else:
+					tu_fraction_dict[key].append(tu_dict[v[:-7]] / count_sum)
 
 		overlapping_tu_fractions = {}
 		for monomer_monocistron, overlapping_tus in overlapping_tu_dict.items():
@@ -262,8 +264,8 @@ class Relation(object):
 		# unit and monomer space.
 		mrna_id_index_dict = {mrna_id: index 
 			for index, mrna_id in enumerate(self.mrna['id'])}
-		monomer_id_index_dict = {rnaId: index 
-			for index, rnaId in enumerate(self.monomer['rnaId'])}
+		monomer_id_index_dict = {rna_id: index 
+			for index, rna_id in enumerate(self.monomer['rna_id'])}
 		# tu_dict: Contains all the TU's as keys (str), and their counts as values
 		tu_dict = {tu['tu_id']: tu['tu_count'] 
 			for tu in raw_data.transcription_units}
@@ -278,28 +280,3 @@ class Relation(object):
 		if check_matrix:
 			self.check_monomer_to_mrna_transformation_matrix(
 				self.monomer_to_mrna_transform)
-
-		'''
-		# ---------------------
-		# This part is not used right now, mapping that Mialy added.
-		# this mapping is a vector like the old one
-		self.monomerIndexToRnaMapping_all = []
-		for rna_row in sim_data.process.transcription.rnaData:
-			set_indices = []
-			for monomer_id in rna_row['monomerSet']:
-				set_indices.append(monomer_id_indexes[monomer_id])
-			self.monomerIndexToRnaMapping_all.append(set_indices)
-
-		#remove all empty lists.
-		self.monomerIndexToRnaMapping_new = [x for x in self.monomerIndexToRnaMapping_all if x != []]
-		self.monomerIndexToRnaMapping_new = np.array(self.monomerIndexToRnaMapping_new)
-		
-		#new and old mapping does not match here!
-		#new mapping maps directly from rnas to proteins. mimics the functioning of _buildRnaIndexToMonomerMapping
-		#old mapping takes out all non-monomers from the indexing, so the indexing does not directly match 
-		#the rnas and proteins indexing.
-
-		self.monomerIndexToRnaMapping = np.array([np.where(x == sim_data.process.translation.monomerData["rnaId"])[0][0] for x in sim_data.process.transcription.rnaData["id"] if len(np.where(x == sim_data.process.translation.monomerData["rnaId"])[0])])
-		'''
-	#def _buildRnaIndexToGeneMapping(self, raw_data, sim_data):
-	#	self.rnaIndexToGeneMapping = np.array([np.where(x + "[c]" == sim_data.process.transcription.rnaData["id"])[0][0] for x in sim_data.process.replication.geneData["rnaId"]])

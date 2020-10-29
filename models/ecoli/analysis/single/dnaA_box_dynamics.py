@@ -1,8 +1,5 @@
 """
 Plot for dynamics of DnaA proteins binding to DnaA boxes across the chromosome
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/18/19
 """
 
 from __future__ import absolute_import, division, print_function
@@ -37,8 +34,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		criticalMassPerOriC = replication_data_reader.readColumn(
 			"criticalMassPerOriC")
 
-		names = [sim_data.moleculeIds.DnaA,
-			sim_data.moleculeIds.DnaA_ATP_complex]
+		names = [sim_data.molecule_ids.DnaA,
+			sim_data.molecule_ids.DnaA_ATP_complex]
 		(counts,) = read_bulk_molecule_counts(simOutDir, (names,))
 
 		fig = plt.figure()
