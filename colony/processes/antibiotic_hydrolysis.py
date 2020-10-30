@@ -18,6 +18,7 @@ class AntibioticHydrolysis(ConvenienceKinetics):
 		'initial_hydrolyzed_internal': 0,
 		'catalyst': 'catalyst',
 		'initial_catalyst': 1,
+		'global_deriver_key': 'global_deriver',
 	}
 
 	def __init__(self, initial_parameters=None):
@@ -69,6 +70,7 @@ class AntibioticHydrolysis(ConvenienceKinetics):
 				},
 			},
 			'port_ids': ['internal', 'catalyst_port'],
+			'global_deriver_key': parameters['global_deriver_key'],
 		}
 
 		super(AntibioticHydrolysis, self).__init__(kinetics_parameters)
