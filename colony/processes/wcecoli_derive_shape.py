@@ -13,7 +13,7 @@ from vivarium_cell.processes.derive_globals import (
 )
 
 
-AVOGADRO = constants.N_A * 1 / units.mmol
+AVOGADRO = constants.N_A * 1 / units.mol
 
 
 class WcEcoliDeriveShape(Deriver):
