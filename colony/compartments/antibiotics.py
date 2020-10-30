@@ -51,6 +51,7 @@ class AntibioticsCell(Generator):
 			'pump_km': 4.95e-3,  # Units: mM
 			'pump_key': PUMP_KEY,
 			'antibiotic_key': ANTIBIOTIC_KEY,
+			'global_deriver_key': 'derive_shape',
 		},
 		'hydrolysis': {
 			'initial_catalyst': 0.0,
@@ -61,6 +62,7 @@ class AntibioticsCell(Generator):
 			'kcat': 490 / units.sec,
 			# Reported in (Galleni et al., 1988)
 			'Km': 500 * units.micromolar,
+			'global_deriver_key': 'derive_shape',
 		},
 		'death': {
 			'detectors': {
@@ -83,7 +85,7 @@ class AntibioticsCell(Generator):
 		},
 		'derive_shape': {
 			'periplasm_volume_fraction': PERIPLASM_FRACTION,
-        },
+		},
 		'cell_environment_diffusion': {
 			'default_state': {
 				'external': {
