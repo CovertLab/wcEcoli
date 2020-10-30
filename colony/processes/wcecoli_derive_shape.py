@@ -53,12 +53,12 @@ class WcEcoliDeriveShape(Deriver):
 	def ports_schema(self):
 		default_state = {
 			'global': {
-				'volume': 0 * units.fL,
+				'volume': 1 * units.fL,
 				'width': self.parameters['width'],
-				'length': 0,
-				'surface_area': 0,
-				'mmol_to_counts': 0,
-				'periplasm_volume': 0,
+				'length': 1,
+				'surface_area': 1,
+				'mmol_to_counts': 1,
+				'periplasm_volume': 1,
 			}
 		}
 
