@@ -25,18 +25,19 @@ class WorkflowCLI(scriptBase.ScriptBase):
 	def __init__(self):
 		super(WorkflowCLI, self).__init__()
 		self.storage_prefix = ''
+		self.internal_prefix = '/tmp'
 		self.wf = None  # type: Optional[Workflow]
 
 	def add_task(self, name='', inputs=(), outputs=(), command=(), timeout=0):
 		# type: (str, Iterable[str], Iterable[str], Iterable[str], int) -> Task
-		assert self.wf, 'Need to construct the Workflow first.'
+		assert self.wf, 'Need to construct the Workflow object first.'
 		task = Task(
 			name=name,
 			image=self.DOCKER_IMAGE,
 			inputs=inputs,
 			outputs=outputs,
 			storage_prefix=self.storage_prefix,
-			internal_prefix='/tmp',
+			internal_prefix=self.internal_prefix,
 			command=command,
 			timeout=timeout if timeout > 0 else self.DEFAULT_TIMEOUT)
 		return self.wf.add_task(task)
@@ -60,7 +61,8 @@ class WorkflowCLI(scriptBase.ScriptBase):
 
 	def build(self, args):
 		# type: (argparse.Namespace) -> None
-		"""Build the workflow."""
+		"""Build the workflow's Firetasks and call add_task() to add each one to
+		the workflow."""
 		raise NotImplementedError("WorkflowCLI subclass must implement build()")
 
 	def dumpOrRun(self, args):
@@ -75,12 +77,18 @@ class WorkflowCLI(scriptBase.ScriptBase):
 
 	def run(self, args):
 		# type: (argparse.Namespace) -> None
-		basename = type(self).__name__
-		owner_id = os.environ['USER']
-		timestamp = fp.timestamp()
+		"""ScriptBase: Run the CLI. Construct the Workflow object, build its
+		tasks, then upload & run it or dump it to a yaml file."""
+		# The basename affects the workflow name and its storage prefix.
+		owner_id = getattr(args, 'owner_id', os.environ['USER'])
+		basename = getattr(args, 'basename', type(self).__name__)
+		timestamp = getattr(args, 'timestamp', fp.timestamp())
+		description = getattr(args, 'description', '')
+
 		name = '{}_{}_{}'.format(owner_id, basename, timestamp)
+		subdir = Workflow.make_description(timestamp, description)
 		self.storage_prefix = posixpath.join(
-			Workflow.storage_root(args.storage_root), basename, timestamp, '')
+			Workflow.storage_root(args.storage_root), basename, subdir, '')
 		self.wf = Workflow(name, owner_id=owner_id)
 
 		self.wf.log_info('\nStorage prefix: {}'.format(self.storage_prefix))

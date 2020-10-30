@@ -236,6 +236,26 @@ class Workflow(object):
 		self._input_to_tasknames = defaultdict(set)  # type: Dict[str, Set[str]]
 
 	@classmethod
+	def sanitize_description(cls, description):
+		# type (str) -> str
+		"""Sanitize the description and check that it's legal in a file path."""
+		description = description.replace(' ', '_')
+
+		pattern = r'[-.\w]*$'
+		assert re.match(pattern, description), (
+			"description {!r} doesn't match the regex pattern {!r} for a file path."
+				.format(description, pattern))
+
+		return description
+
+	@classmethod
+	def make_description(cls, timestamp, description=''):
+		# type (str, str) -> str
+		"""Construct a timestamped workflow description string."""
+		return timestamp + (
+			'__' + cls.sanitize_description(description) if description else '')
+
+	@classmethod
 	def storage_root(cls, cli_arg=None):
 		# type: (Optional[str]) -> str
 		"""Validate the workflow cloud storage root from the given CLI argument
@@ -284,9 +304,8 @@ class Workflow(object):
 
 	def add_task(self, task):
 		# type: (Task) -> Task
-		"""Add a Task object. It will create a workflow step, aka a FireWorks
-		"firework".
-		Return it for chaining.
+		"""Add a Task object. It will create a FireWorks "Firework" that runs a
+		single "Firetask". Return it for chaining.
 		Raise ValueError if there's a conflicting task name or output path.
 		"""
 		task_name = task.name

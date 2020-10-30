@@ -9,7 +9,6 @@ from __future__ import absolute_import, division, print_function
 import json
 import os
 import posixpath
-import re
 import sys
 from typing import Any, Dict, Iterable, Optional, Type
 
@@ -53,8 +52,7 @@ class WcmWorkflow(Workflow):
 		self.timestamp = timestamp
 		self.image = DOCKER_IMAGE.format(gcp.project(), owner_id)
 
-		subdir = self.timestamp + (
-			'__' + _sanitize_description(description) if description else '')
+		subdir = Workflow.make_description(timestamp, description)
 		self.storage_prefix = posixpath.join(
 			self.storage_root(cli_storage_root), 'WCM', subdir, '')
 		self.internal_prefix = posixpath.join(posixpath.sep, 'wcEcoli', 'out', 'wf')
@@ -66,7 +64,7 @@ class WcmWorkflow(Workflow):
 
 	def internal(self, *path_elements):
 		# type: (*str) -> str
-		"""Construct a file path that's internal to the task's container."""
+		"""Construct a docker container internal file path."""
 		return posixpath.join(self.internal_prefix, *path_elements)
 
 	def remote(self, *path_elements):
@@ -320,18 +318,6 @@ class WcmWorkflow(Workflow):
 				name='analysis_variant',
 				inputs=variant_analysis_inputs,
 				outputs=[variant_plot_dir])
-
-def _sanitize_description(description):
-	# type (str) -> str
-	"""Sanitize the description and check that it's legal in a file path."""
-	description = description.replace(' ', '_')
-
-	pattern = r'[-.\w]*$'
-	assert re.match(pattern, description), (
-		"description {!r} doesn't match the regex pattern {!r} for a file path."
-			.format(description, pattern))
-
-	return description
 
 
 def wc_ecoli_workflow(args):
