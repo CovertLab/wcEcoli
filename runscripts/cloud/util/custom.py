@@ -31,11 +31,6 @@ class CustomWorkflow(WorkflowCLI):
 		self.internal_prefix = pp.join(pp.sep, 'wcEcoli', 'out')
 		self.DOCKER_IMAGE = ''
 
-	def internal(self, *path_elements):
-		# type: (*str) -> str
-		"""Construct a docker container internal file path."""
-		return pp.join(self.internal_prefix, *path_elements)
-
 	def add_analysis_task(self, seed, num_gens):
 		# type: (int, int) -> Task
 		"""Add an analysis task to the workflow."""
@@ -90,9 +85,8 @@ class CustomWorkflow(WorkflowCLI):
 				 ' to upload new steps for an existing workflow. Default ='
 				 ' the current local date-time.')
 		self.define_parameter_bool(parser, 'verbose', True,
-			help='Verbose workflow builder logging')
+			help='Verbose workflow builder logging.')
 
-		# TODO(jerry): Default the number of workers to the number of seeds?
 		super().define_parameters(parser)
 
 	def run(self, args):

@@ -28,6 +28,11 @@ class WorkflowCLI(scriptBase.ScriptBase):
 		self.internal_prefix = '/tmp'
 		self.wf = None  # type: Optional[Workflow]
 
+	def internal(self, *path_elements):
+		# type: (*str) -> str
+		"""Construct a docker container internal file path."""
+		return posixpath.join(self.internal_prefix, *path_elements)
+
 	def add_task(self, name='', inputs=(), outputs=(), command=(), timeout=0):
 		# type: (str, Iterable[str], Iterable[str], Iterable[str], int) -> Task
 		assert self.wf, 'Need to construct the Workflow object first.'
@@ -48,15 +53,15 @@ class WorkflowCLI(scriptBase.ScriptBase):
 			help='The cloud storage root for the output files, usually a GCS'
 				 ' bucket name like "sisyphus-crick". Default = ${}'
 				 ' environment variable.'.format(STORAGE_ROOT_ENV_VAR))
-		parser.add_argument('-l', dest='launchpad_filename',
+		self.define_option(parser, 'launchpad_filename', str, flag='l',
 			default=DEFAULT_LPAD_YAML,
-			help='Launchpad config YAML filename (default="{}").'.format(
-				DEFAULT_LPAD_YAML))
-		parser.add_argument('-w', '--workers', type=int, default=1,
-			help='number of worker nodes to launch; default = 1')
+			help='Launchpad config YAML filename for sending the workflow to a'
+				 ' launchpad DB server.')
+		self.define_option(parser, 'workers', int, default=1, flag='w',
+			help='The number of worker nodes to launch.')
 		parser.add_argument('--dump', action='store_true',
 			help='Dump the built workflow to a YAML file for review *instead*'
-				 ' of sending it to the launchpad DB server. This is useful'
+				 ' of sending it to a launchpad DB server. This is useful'
 				 ' for testing and debugging.')
 
 	def build(self, args):
