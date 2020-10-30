@@ -396,19 +396,19 @@ class WcEcoli(Process):
 		# global
 		schema['global'] = {
 			'dry_mass': {
-				'_default': 0.0 * self.mass_units,
+				'_default': 1 * self.mass_units,
 				'_emit': True,
 				'_updater': 'set',
 				'_divider': 'split',
 			},
 			'mass': {
-				'_default': 0.0 * self.mass_units,
+				'_default': 1 * self.mass_units,
 				'_emit': True,
 				'_updater': 'set',
 				'_divider': 'split',
 			},
 			'volume': {
-				'_default': 0.0 * self.volume_units,
+				'_default': 1 * self.volume_units,
 				'_emit': True,
 				'_updater': 'set',
 				'_divider': 'split',
