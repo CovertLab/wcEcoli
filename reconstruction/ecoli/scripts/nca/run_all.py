@@ -16,9 +16,12 @@ from typing import List
 
 
 FILE_LOCATION = os.path.dirname(os.path.realpath(__file__))
+OUTPUT_DIR = os.path.join(FILE_LOCATION, 'out')
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 LOG_DIR = os.path.join(FILE_LOCATION, 'log')
 os.makedirs(LOG_DIR, exist_ok=True)
-SUMMARY_FILE = os.path.join(LOG_DIR, 'summary.tsv')
+FOLD_CHANGE_SCRIPT = os.path.join(FILE_LOCATION, 'fold_changes.py')
+SUMMARY_FILE = os.path.join(OUTPUT_DIR, 'summary.tsv')
 
 OPTIONS = [
 	'average-seq',
@@ -36,7 +39,7 @@ MODELS = [
 def solve_nca(model: str, options: List[str]):
 	label = '-'.join([model] + [option.split('-')[0] for option in options])
 	flags = ' '.join([f'--{option}' for option in options])
-	cmd = f'./fold_changes.py -f -l {label} -m {model} {flags}'
+	cmd = f'{FOLD_CHANGE_SCRIPT} -f -l {label} -m {model} {flags}'
 
 	print(f'Running: {cmd}')
 	with open(os.path.join(LOG_DIR, f'{label}.log'), 'w') as f:

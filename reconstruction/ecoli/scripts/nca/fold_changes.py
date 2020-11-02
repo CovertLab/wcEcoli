@@ -26,8 +26,7 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 
 # Output related
 OUTPUT_DIR = os.path.join(BASE_DIR, 'out')
-if not os.path.exists(OUTPUT_DIR):
-    os.mkdir(OUTPUT_DIR)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 REGULATION_FILE = 'regulation.tsv'
 ACTIVITY_FILE = 'activity.tsv'
 HISTOGRAM_FILE = 'histogram.png'
