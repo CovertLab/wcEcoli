@@ -86,6 +86,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.RNAs = self.uniqueMoleculesView('RNA')
 		self.mRnas = self.bulkMoleculesView(all_TU_ids[sim_data.process.transcription.rna_data['is_mRNA']])
 
+		# Create view onto thiamine pyrophosphate
+		self.TPP = self.bulkMoleculeView('THIAMINE-PYROPHOSPHATE[c]')
 
 	def calculateRequest(self):
 		current_media_id = self._external_states['Environment'].current_media_id
@@ -139,6 +141,40 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			if i in self.TU_index_to_protein_index:
 				for prot_idx in self.TU_index_to_protein_index[i]:
 					mRNA_counts[prot_idx] += TU_count
+
+		# Calculate fraction of thiCEFSGH and thiMD operon TUs bound by thiamine pyrophosphate (TPP), which
+		# negatively regulates translation
+
+		# Identify thiCEFSGH and thiMD operon transcripts in mRNA_counts
+		# dict returns list of protein indices for all proteins encoded by operon transcript
+		TU_thiCEFSGH_prot_idx = self.TU_id_to_protein_index['EG11585_EG11586_EG11587_G1_EG11589_EG11590_RNA[c]']
+		TU_thiMD_prot_idx = self.TU_id_to_protein_index['M007_G7135_RNA[c]']
+
+		# Calculate fraction of mRNA that are bound, and apply to each mRNA in operon unit
+		# Access thiamine concentration
+		TPP_count = self.TPP.count()
+		# Calculate fraction of mRNA bound by TPP based on dissociation constant of TPP binding to mRNA
+		Kd_TPP_thiCEFSGH = 0.93 * 6.022e23 * 1.1e-15 # [molecules/cell]
+		Kd_TPP_thiMD = 0.45 * 6.022e23 * 1.1e-15 # [molecules/cell]
+		frac_thiCEFSGH_bound = TPP_count / (TPP_count + Kd_TPP_thiCEFSGH)
+		frac_thiMD_bound = TPP_count / (TPP_count + Kd_TPP_thiMD)
+
+		# print(f'TPP_count = {TPP_count}')
+		# print(f'frac_thiCEFSGH_bound = {frac_thiCEFSGH_bound}')
+		# print(f'frac_thiMD_bound = {frac_thiMD_bound}')
+		# print(f'thiCEFSGH count initial = {[mRNA_counts[prot_idx] for prot_idx in TU_thiCEFSGH_prot_idx]}')
+		# print(f'thiMD count initial = {[mRNA_counts[prot_idx] for prot_idx in TU_thiMD_prot_idx]}')
+		# breakpoint()
+
+		# Decrease mRNA_count based on fraction bound
+		for prot_idx in TU_thiCEFSGH_prot_idx:
+			mRNA_counts[prot_idx] = round(mRNA_counts[prot_idx] * (1-frac_thiCEFSGH_bound))
+		for prot_idx in TU_thiMD_prot_idx:
+			mRNA_counts[prot_idx] = round(mRNA_counts[prot_idx] * (1-frac_thiMD_bound))
+
+		# print(f'thiCEFSGH count final = {[mRNA_counts[prot_idx] for prot_idx in TU_thiCEFSGH_prot_idx]}')
+		# print(f'thiMD count final = {[mRNA_counts[prot_idx] for prot_idx in TU_thiMD_prot_idx]}')
+		# breakpoint()
 
 		# Calculate initiation probabilities for ribosomes based on mRNA counts
 		# and associated mRNA translational efficiencies
