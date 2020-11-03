@@ -197,7 +197,7 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 	def define_parameters(self, parser):
 		# type: (argparse.ArgumentParser) -> None
 		"""Define command line parameters. This base method defines a --verbose
-		flag. Overrides should call super.
+		flag if it isn't already defined. Overrides should call super.
 
 		Examples include positional arguments
 			`parser.add_argument('variant', nargs='?',

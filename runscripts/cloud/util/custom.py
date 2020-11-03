@@ -5,14 +5,18 @@ the GCS files from a WCM workflow run.
 
 Prerequisite: Run `cloud/build-wcm.sh` to build a Docker Image containing the
 command line code to invoke in the workers. The code doesn't have to be checked
-in to git, just in the directory that build-wcm.sh bundles up."""
+in to git, just in the directory that build-wcm.sh bundles up.
+
+The owner_id, timestamp arg, and description arg must match those of a previous
+WCM workflow so this can fetch input files from that workflow and store output
+files to the same directory.
+"""
 
 import os
 import posixpath as pp
 
 from borealis.util import gcp
 
-import wholecell.utils.filepath as fp
 from runscripts.cloud.util.workflow import Task
 from runscripts.cloud.util.workflow_cli import WorkflowCLI
 
@@ -23,13 +27,12 @@ from runscripts.cloud.util.workflow_cli import WorkflowCLI
 class CustomWorkflow(WorkflowCLI):
 	"""A workflow to run a custom command line in Google Cloud."""
 
+	WORKFLOW_BASENAME = 'ComplexCounts'
 	DEFAULT_TIMEOUT = 60 * 60  # add_task() default timeout, in seconds
-	DOCKER_IMAGE_TEMPLATE = 'gcr.io/{}/{}-wcm-code'
 
 	def __init__(self):
-		super().__init__()
-		self.internal_prefix = pp.join(pp.sep, 'wcEcoli', 'out')
-		self.DOCKER_IMAGE = ''
+		super().__init__(internal_prefix=pp.join(pp.sep, 'wcEcoli', 'out', 'wf'))
+		self.DOCKER_IMAGE = ''  # set it after parsing CLI parameters
 
 	def add_analysis_task(self, seed, num_gens):
 		# type: (int, int) -> Task
@@ -59,7 +62,7 @@ class CustomWorkflow(WorkflowCLI):
 							 'pull_complex_counts_cloud.py'),
 					 pp.join(base, seed_key)],
 			inputs=inputs,
-			outputs=[pp.join(base, 'count_out', seed_key, 'complex')])
+			outputs=[pp.join(base, 'count_out', seed_key, 'complex', '')])
 
 	def build(self, args):
 		"""Build the workflow."""
@@ -72,29 +75,19 @@ class CustomWorkflow(WorkflowCLI):
 		self.define_option(parser, 'seeds', int, 1, flag='s',
 			help='The number of seeds to analyze.')  # TODO(jerry): Take a seed list?
 
-		self.define_option(parser, 'description', str, '',
-			help='A simulation description; part of the storage folder name.')
-		self.define_option(parser, 'id', str, default=None,
-			help='Workflow ID or owner ID such as a user name or a CI build'
-				 ' name to combine with the timestamp to form the unique'
-				 ' workflow name. Default = $WF_ID environment variable or'
-				 ' else the $USER environment variable.')
-		self.define_option(parser, 'timestamp', str, fp.timestamp(),
-			help='Timestamp for this workflow. It gets combined with the'
-				 ' Workflow ID to form the workflow name. Set this if you want'
-				 ' to upload new steps for an existing workflow. Default ='
-				 ' the current local date-time.')
-		self.define_parameter_bool(parser, 'verbose', True,
-			help='Verbose workflow builder logging.')
+		self.define_wf_name_parameters(parser)
 
 		super().define_parameters(parser)
 
 	def run(self, args):
 		owner_id = args.id or os.environ.get('WF_ID', os.environ['USER'])
-		setattr(args, 'basename', 'WCM')
 		setattr(args, 'owner_id', owner_id)
-		self.DOCKER_IMAGE = self.DOCKER_IMAGE_TEMPLATE.format(
-			gcp.project(), owner_id)
+
+		# Fetch from and store to a WCM workflow's storage directory, assuming
+		# the owner_id, timestamp arg, and description arg match.
+		setattr(args, 'storage_basename', 'WCM')
+
+		self.DOCKER_IMAGE = f'gcr.io/{gcp.project()}/{owner_id}-wcm-code'
 		super().run(args)
 
 
