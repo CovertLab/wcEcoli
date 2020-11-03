@@ -184,6 +184,7 @@ class WcmWorkflow(Workflow):
 				variant_sim_data_dir, constants.SERIALIZED_SIM_DATA_MODIFIED)
 			md_cohort = dict(metadata, variant_function=variant_type,
 				variant_index=i)
+			variant_analysis_inputs.append(variant_metadata_dir)
 
 			python_args = dict(
 				variant_function=variant_type,
