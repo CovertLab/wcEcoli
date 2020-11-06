@@ -42,7 +42,7 @@ TEST_TOPOLOGY = np.array([
     ])
 
 
-def test_nca(method: str) -> None:
+def chang_nca(method: str) -> None:
     """
     Plots TFAs to match results from Chang et al. Bioinformatics. 2008. Fig 5.
 
@@ -145,9 +145,7 @@ if __name__ == '__main__':
         print(f'P =\n{Pe}')
         print(f'error: {np.linalg.norm(2**TEST_EXPRESSION - 2**(Ae.dot(Pe))):.3f}')
 
-
-
     # Test all methods on example data from Chang to compare output plots to paper
     print('\nTesting all methods on Chang data')
     for method in nca.METHODS:
-        test_nca(method)
+        chang_nca(method)
