@@ -5,7 +5,7 @@ NCA methods to use to solve E = AP given E and specified network connections in 
 """
 
 import multiprocessing
-from typing import Any, Callable, List, Set, Tuple
+from typing import Any, Callable, List, Optional, Set, Tuple, cast
 
 import numpy as np
 import scipy.linalg
@@ -34,7 +34,7 @@ def nonnegative_least_squares(A: np.ndarray, B: np.ndarray) -> np.ndarray:
 
     return X
 
-def nca_criteria_check(A: np.ndarray, tfs: np.ndarray, verbose: bool = True) -> (np.ndarray, np.ndarray):
+def nca_criteria_check(A: np.ndarray, tfs: np.ndarray, verbose: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     """
     Check criteria for the A matrix of NCA (E = AP).
     - full column rank in A
@@ -162,7 +162,7 @@ def nca_criteria_check(A: np.ndarray, tfs: np.ndarray, verbose: bool = True) -> 
 
     return A, tfs
 
-def random_nca(E: np.ndarray, A: np.ndarray, verbose: bool = True, **options) -> (np.ndarray, np.ndarray):
+def random_nca(E: np.ndarray, A: np.ndarray, verbose: bool = True, **options) -> Tuple[np.ndarray, np.ndarray]:
     """
     Randomly assign values to A and solve for P with least squares to
     determine performance of randomly assigned A.
@@ -182,7 +182,7 @@ def random_nca(E: np.ndarray, A: np.ndarray, verbose: bool = True, **options) ->
         print('Solving with random A values...')
 
     # Set entries between -1.1 and -0.9 or 0.9 and 1.1 depending on sign of A
-    A_est = np.sign(A)
+    A_est = cast(np.ndarray, np.sign(A))
     nonzero_mask = A_est != 0
     n_nonzero = np.sum(nonzero_mask)
     A_est[nonzero_mask] += 0.1 * (np.random.rand(n_nonzero) - 0.5)
@@ -202,7 +202,7 @@ def fast_nca(E: np.ndarray,
         A: np.ndarray,
         verbose: bool = True,
         status_step: float = 0.1,
-        **options) -> (np.ndarray, np.ndarray):
+        **options) -> Tuple[np.ndarray, np.ndarray]:
     """
     Perform FastNCA on dataset E with network connectivity specified by A for the
     problem: E = AP. Based on matlab implementation from Chang et al. 2008.
@@ -255,7 +255,7 @@ def robust_nca(
         status_step: float = 0.1,
         n_iters: int = 5,
         error_tolerance = 1e-3,
-        **options) -> (np.ndarray, np.ndarray):
+        **options) -> Tuple[np.ndarray, np.ndarray]:
     """
     Perform ROBNCA on dataset E with network connectivity specified by A for the
     problem: E = AP. Based on method in Noor et al. Bioinformatics. 2013.
@@ -325,7 +325,7 @@ def robust_nca(
     P_est = S
     return A_est, P_est
 
-def constrained_nca(E: np.ndarray, A: np.ndarray, verbose: bool = True, **options) -> (np.ndarray, np.ndarray):
+def constrained_nca(E: np.ndarray, A: np.ndarray, verbose: bool = True, **options) -> Tuple[np.ndarray, np.ndarray]:
     """
     Perform constrained NCA on dataset E with network connectivity specified by
     A for the problem: E = AP. Based on method in Chang et al. ICA. 2009.
@@ -462,7 +462,7 @@ def iterative_sub_nca(
         robust_iters: int = 1,
         status_step: float = 0.1,
         verbose: bool = False,
-        ) -> (np.ndarray, np.ndarray):
+        ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
     """
     Iterative sub-network component analysis method applied to any NCA method
     above. Based on method in Jayavelu et al. BMC Bioinformatics. 2015.
@@ -495,7 +495,7 @@ def iterative_sub_nca(
             tfs: np.ndarray,
             verbose: bool,
             max_divisions: int,
-            ) -> (List[np.ndarray], List[np.ndarray], List[np.ndarray], List[Set[int]], List[Set[int]]):
+            ) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], List[Set[int]], List[Set[int]]]:
         """
         Divide the network into subnetworks with unique and common TFs (eq. 3 and 4).
 
@@ -519,7 +519,7 @@ def iterative_sub_nca(
                 unique to each subnetwork and not shared with any others
         """
 
-        E_divided = []
+        E_divided = []  # type: List[np.ndarray]
         A_divided = []
         tfs_divided = []
         divided_genes = []
@@ -552,11 +552,11 @@ def iterative_sub_nca(
         return E_divided, A_divided, tfs_divided, common_genes, unique_genes
 
     def solve_networks(
-            method: Callable[[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]],
+            method: Callable,
             E_divided: List[np.ndarray],
             A_divided: List[np.ndarray],
             cpus: int,
-            **kwargs) -> (List[np.ndarray], List[np.ndarray]):
+            **kwargs) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """Solve the divided networks with the given method."""
 
         A_hat = []
@@ -591,7 +591,7 @@ def iterative_sub_nca(
             P_hat: List[np.ndarray],
             common_genes: List[Set[int]],
             unique_genes: List[Set[int]],
-            ) -> (np.ndarray, np.ndarray):
+            ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Assemble subnetwork solutions into combined A and P solutions (eq. 8).
 
