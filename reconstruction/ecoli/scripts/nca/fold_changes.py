@@ -11,7 +11,7 @@ import os
 import re
 import sys
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, cast
 
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
@@ -111,7 +111,7 @@ def load_regulon_db_file(filename: str) -> List[List[str]]:
 
     return data
 
-def load_gene_names() -> (np.ndarray, np.ndarray, Dict[str, str]):
+def load_gene_names() -> Tuple[np.ndarray, np.ndarray, Dict[str, str]]:
     """
     Loads genes names associated with sequencing data rows.
 
@@ -141,17 +141,19 @@ def load_gene_names() -> (np.ndarray, np.ndarray, Dict[str, str]):
 
     return np.array(b_numbers), np.array(symbols), synonyms
 
-def load_seq_data(linearize: bool, average: bool) -> np.ndarray:
+def load_seq_data(linearize: bool, average: bool) -> Tuple[np.ndarray, Dict[int, int]]:
     """
     Load sequencing data from the compendium.
 
     Args:
         linearize: if set, counts will be transformed from log2 space to linear space
+        average: if True, average sequencing in replicate samples
 
     Returns:
         data: matrix of normalized sequencing data representing counts (n genes, m samples)
             linear if linearize, log2 otherwise
-        average: if True, average sequencing in replicate samples
+        idx_mapping: mapping of loaded sample column index to new sample column index
+            which will be a 1:1 mapping if average is False
 
     TODO:
     - normalize data to include other files instead of just EcoMAC in SEQ_FILES
@@ -218,7 +220,7 @@ def load_sigma_gene_interactions() -> Dict[str, Dict[str, int]]:
 
     data = load_regulon_db_file('sigma_genes.tsv')
 
-    sigma_genes = {}
+    sigma_genes = {}  # type: Dict[str, Dict[str, int]]
     sigma_idx = 0
     gene_idx = 1
     dir_idx = 2
@@ -314,7 +316,7 @@ def load_ecocyc_tf_gene_interactions(
             regulatory direction is 0 for unknown or conflicting regulation
     """
 
-    tf_genes = {}
+    tf_genes = {}  # type: Dict[str, Dict[str, int]]
 
     with open(ECOCYC_REGULATION_FILE) as f:
         reader = csv.reader(f, delimiter='\t')
@@ -356,7 +358,7 @@ def load_regulondb_tf_gene_interactions(
 
     data = load_regulon_db_file(TF_GENE_FILE)
 
-    tf_genes = {}
+    tf_genes = {}  # type: Dict[str, Dict[str, int]]
     tf_idx = 0
     gene_idx = 1
     dir_idx = 2
@@ -421,7 +423,7 @@ def load_wcm_fold_changes() -> Dict[str, Dict[str, Tuple[float, int]]]:
             {tf: {gene: (log2 FC, direction)}}
     """
 
-    fold_changes = {}
+    fold_changes = {}  # type: Dict[str, Dict[str, Tuple[float, int]]]
 
     with open(WCM_FILE) as f:
         reader = csv.reader(f, delimiter='\t')
@@ -453,7 +455,7 @@ def create_tf_map(
         synonyms: Dict[str, str],
         tf_genes: Dict[str, Dict[str, int]],
         verbose: bool = True,
-        ) -> (np.ndarray, np.ndarray):
+        ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Create an initial map reflecting the known regulatory network topology between
     transcription factors and genes. Also includes a column of ones for constitutive
@@ -528,11 +530,11 @@ def save_regulation(
     # Activity data (TF in each condition)
     with open(os.path.join(output_dir, ACTIVITY_FILE), 'w') as f:
         writer = csv.writer(f, delimiter='\t')
-        writer.writerow(['Condition:'] + list(range(P.shape[1])))
+        writer.writerow(['Condition:'] + list(range(P.shape[1])))  # type: ignore
         for tf, activity in zip(tfs, P):
             writer.writerow([tf] + list(activity))
 
-def load_regulation(directory: str, genes: np.ndarray, tfs: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
+def load_regulation(directory: str, genes: np.ndarray, tfs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Load the results of a previous NCA run saved to file with save_regulation.
     Return values should match the arguments passed to save_regulation.
@@ -574,7 +576,7 @@ def load_regulation(directory: str, genes: np.ndarray, tfs: np.ndarray) -> (np.n
 def add_global_expression(
         tfs: np.ndarray,
         mapping: Optional[np.ndarray] = None,
-        ) -> (np.ndarray, np.ndarray):
+        ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Expand out TFs to include global expression (consituitive and regulated).
     This will capture genes not captured by TFs.
@@ -594,7 +596,9 @@ def add_global_expression(
 
     tfs = np.hstack((np.array(['constituitive', 'regulated']), tfs))
 
-    if mapping is not None:
+    if mapping is None:
+        mapping = np.array([])
+    else:
         n_genes = mapping.shape[0]
         no_regulation = np.sum(mapping, axis=1) == 0
 
@@ -608,7 +612,7 @@ def add_global_expression(
 
         mapping = np.hstack((constituitive, regulated, mapping))
 
-    return tfs, mapping
+    return tfs, cast(np.ndarray, mapping)
 
 def add_sigma_factors(
         tfs: np.ndarray,
@@ -616,7 +620,7 @@ def add_sigma_factors(
         synonyms: Dict[str, str],
         mapping: Optional[np.ndarray] = None,
         verbose: bool = False,
-        ) -> (np.ndarray, np.ndarray):
+        ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Expand out TFs to include sigma factors. This will capture some genes not
     regulated by TFs.
@@ -638,7 +642,9 @@ def add_sigma_factors(
     sigma_factors = list(sigma_genes.keys())
     tfs = np.hstack((np.array(sigma_factors), tfs))
 
-    if mapping is not None:
+    if mapping is None:
+        mapping = np.array([])
+    else:
         n_genes = mapping.shape[0]
         sigma_regulation = np.zeros((n_genes, len(sigma_factors)))
         gene_idx = {gene: idx for idx, gene in enumerate(genes)}
@@ -652,7 +658,7 @@ def add_sigma_factors(
                     print(f'Unknown sigma factor gene: {gene}')
         mapping = np.hstack((sigma_regulation, mapping))
 
-    return tfs, mapping
+    return tfs, cast(np.ndarray, mapping)
 
 def add_noisy_expression(
         tfs: np.ndarray,
@@ -660,7 +666,7 @@ def add_noisy_expression(
         repeats: int,
         seed: int,
         mapping: Optional[np.ndarray] = None,
-        ) -> (np.ndarray, np.ndarray):
+        ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Expand out TFs to include random expression but assigning genes to multiple
     "transcription factors".
@@ -681,19 +687,22 @@ def add_noisy_expression(
         - verify this leads to reasonable results and doesn't cause issues
     """
 
-    np.random.seed(seed)
-    n_genes = mapping.shape[0]
-    n_noisy = noise * repeats
-    tfs = np.hstack(([f'noise-{i}' for i in range(n_noisy)], tfs))
-    for repeat in range(repeats):
-        idx = np.arange(n_genes)
-        np.random.shuffle(idx)
-        for n in range(noise):
-            new = np.zeros((n_genes, 1))
-            new[idx[n_genes * n // noise:n_genes * (n + 1) // noise]] = 1
-            mapping = np.hstack((new, mapping))
+    if mapping is None:
+        mapping = np.array([])
+    else:
+        np.random.seed(seed)
+        n_genes = mapping.shape[0]
+        n_noisy = noise * repeats
+        tfs = np.hstack(([f'noise-{i}' for i in range(n_noisy)], tfs))
+        for repeat in range(repeats):
+            idx = np.arange(n_genes)
+            np.random.shuffle(idx)
+            for n in range(noise):
+                new = np.zeros((n_genes, 1))
+                new[idx[n_genes * n // noise:n_genes * (n + 1) // noise]] = 1
+                mapping = np.hstack((new, mapping))
 
-    return tfs, mapping
+    return tfs, cast(np.ndarray, mapping)
 
 def calculate_fold_changes(
         A: np.ndarray,
@@ -702,7 +711,7 @@ def calculate_fold_changes(
         tfs: np.ndarray,
         n_std: float = 1.,
         min_conditions: int = 10,
-        ) -> (np.ndarray, Dict[str, Dict[str, float]]):
+        ) -> Tuple[np.ndarray, Dict[str, Dict[str, float]]]:
     """
     Calculate expected expression fold changes from NCA solutions.
 
@@ -733,7 +742,7 @@ def calculate_fold_changes(
     # Determine fold change as TF effect on gene multiplied by the difference
     # in activity between average high and low conditions
     fcs = A * (high_P.sum(0) / np.sum(high_P != 0, 0) - low_P.sum(0) / np.sum(low_P != 0, 0))
-    regulatory_pairs = {}
+    regulatory_pairs = {}  # type: Dict[str, Dict[str, float]]
     for i, gene in enumerate(genes):
         for j, tf in enumerate(tfs):
             processed_tf = tf.split(':')[0].lower()
@@ -745,7 +754,7 @@ def calculate_fold_changes(
 
     return fcs, regulatory_pairs
 
-def compare_wcm_nca(nca_pairs: Dict[str, Dict[str, float]]) -> (np.ndarray, np.ndarray, np.ndarray):
+def compare_wcm_nca(nca_pairs: Dict[str, Dict[str, float]]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Get matching arrays of fold changes from the whole-cell model and NCA results
     for comparison and plotting.
@@ -1073,12 +1082,12 @@ def save_fold_changes(
         writer.writerow(header)
 
         # Write row for each regulatory interaction
-        for tf, genes in sorted(nca_pairs.items()):
+        for tf, nca_genes in sorted(nca_pairs.items()):
             if tf not in lowercase_mapping:
                 print(f'Warning: did not find a match for {tf}')
             tf = lowercase_mapping.get(tf, tf)
 
-            for gene, fc in sorted(genes.items()):
+            for gene, fc in sorted(nca_genes.items()):
                 curated_dir = curated_data.get(tf, {}).get(gene, 0)
 
                 # Skip fold changes that do not agree with curated directions
@@ -1233,7 +1242,7 @@ if __name__ == '__main__':
         if args.sigma_factors:
             tfs, initial_tf_map = add_sigma_factors(tfs, b_numbers, synonyms, mapping=initial_tf_map, verbose=args.verbose)
         if args.noise:
-            tfs, initial_tf_map = add_noisy_expression(tfs, *args.noise, mapping=initial_tf_map)
+            tfs, initial_tf_map = add_noisy_expression(tfs, *args.noise, mapping=initial_tf_map)  # type: ignore
 
         # Solve NCA problem
         nca_method = getattr(nca, args.method)
