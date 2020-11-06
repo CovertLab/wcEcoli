@@ -5,7 +5,7 @@ NCA methods to use to solve E = AP given E and specified network connections in 
 """
 
 import multiprocessing
-from typing import Any, Callable, List, Optional, Set, Tuple, cast
+from typing import Callable, Dict, List, Optional, Set, Tuple, cast
 
 import numpy as np
 import scipy.linalg
@@ -454,7 +454,7 @@ def iterative_sub_nca(
         E: np.ndarray,
         A: np.ndarray,
         tfs: np.ndarray,
-        statistics: Callable[[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any], None] = None,
+        statistics: Callable[[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Dict[str, Dict[str, int]], np.ndarray], None] = None,
         statistics_args: Tuple = (),
         n_iters: int = 100,
         splits: int = 2,
@@ -462,7 +462,7 @@ def iterative_sub_nca(
         robust_iters: int = 1,
         status_step: float = 0.1,
         verbose: bool = False,
-        ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+        ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Iterative sub-network component analysis method applied to any NCA method
     above. Based on method in Jayavelu et al. BMC Bioinformatics. 2015.
@@ -687,8 +687,8 @@ def iterative_sub_nca(
     error_threshold = 1e-5
     old_error = np.inf
     best_error = np.inf
-    best_A = None
-    best_P = None
+    best_A = np.array([])
+    best_P = np.array([])
 
     E_divided, A_divided, tfs_divided, common_genes, unique_genes = divide_network(E, A, tfs, verbose, splits)
     new_tfs = np.array([tf for tfs in tfs_divided for tf in tfs])
