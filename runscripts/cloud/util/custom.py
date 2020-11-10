@@ -40,7 +40,7 @@ class CustomWorkflow(WorkflowCLI):
 		def in_sim_dir(*path_elements):
 			return pp.join(sim_dir, *path_elements)
 
-		base = self.internal('wildtype_000000')  # 'counts/wildtype_000000'???
+		base = self.internal('wildtype_000000')
 		seed_key = format(seed, '06')  # in 6-digit format
 		inputs = []
 
@@ -57,9 +57,8 @@ class CustomWorkflow(WorkflowCLI):
 			name='pull_complex_counts_cloud{}'.format(seed),  # unique task name
 			command=['python',
 					 '-u',
-					 pp.join('prototypes',
-							 'subgenerational_analysis',
-							 'pull_complex_counts_cloud.py'),
+					 # 'prototypes/subgenerational_analysis/pull_complex_counts_cloud.py',
+					 'runscripts/cloud/util/multigen_analysis_example.py',
 					 pp.join(base, seed_key)],
 			inputs=inputs,
 			outputs=[pp.join(base, 'count_out', seed_key, 'complex', '')])
