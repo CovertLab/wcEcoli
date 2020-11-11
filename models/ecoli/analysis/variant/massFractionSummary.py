@@ -47,9 +47,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		currentMaxTime = 0
 		for cellIdx, simDir in enumerate(all_cells):
-			# TODO(jerry): simDir[:-32] is a fragile way to drop subdirs like
-			# '/000000/generation_000000/000000' from the path!
-			with open(os.path.join(simDir[:-32],'metadata','short_name')) as f:
+			variant_dir = os.path.join(simDir, '..', '..', '..')
+			with open(os.path.join(variant_dir, 'metadata', 'short_name')) as f:
 				variant_name = list(f)[0]
 
 			simOutDir = os.path.join(simDir, "simOut")
