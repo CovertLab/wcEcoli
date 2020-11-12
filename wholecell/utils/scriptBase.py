@@ -32,6 +32,8 @@ from wholecell.utils.py3 import monotonic_seconds, process_time_seconds
 METADATA_KEYS = (
 	'timeline',
 	'generations',
+	'seed',
+	'init_sims',
 	'mass_distribution',
 	'growth_rate_noise',
 	'd_period_division',

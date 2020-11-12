@@ -344,7 +344,7 @@ class Workflow(object):
 				unfulfilled.add(input_path)
 
 		if unfulfilled:
-			print(f'WARNING: Task {task.name} has inputs unfulfilled by the'
+			print(f'\nWARNING: Task {task.name} has inputs unfulfilled by the'
 				  f' Tasks in this workflow:')
 			for input_path in sorted(unfulfilled):
 				print(f'    {input_path}')

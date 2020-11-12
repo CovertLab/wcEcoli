@@ -5,11 +5,11 @@ the GCS files from a WCM workflow run.
 
 Prerequisite: Run `cloud/build-wcm.sh` to build a Docker Image containing the
 command line code to invoke in the workers. The code doesn't have to be checked
-in to git, just in the directory that build-wcm.sh bundles up.
+in to git, just in the directories that build-wcm.sh bundles up.
 
-The owner_id, timestamp arg, and description arg must match those of a previous
-WCM workflow so this can fetch input files from that workflow and store output
-files to the same directory.
+The owner_id, timestamp arg, and description CLI args must match those of a
+previous WCM workflow run so this can fetch input files from that workflow's
+outputs and store output files to the same directory.
 """
 
 import os
@@ -28,7 +28,7 @@ class CustomWorkflow(WorkflowCLI):
 	"""A workflow to run a custom command line in Google Cloud."""
 
 	WORKFLOW_BASENAME = 'ComplexCounts'
-	DEFAULT_TIMEOUT = 60 * 60  # add_task() default timeout, in seconds
+	DEFAULT_TIMEOUT = 10 * 60  # add_task() default timeout, in seconds
 
 	def __init__(self):
 		super().__init__(internal_prefix=pp.join(pp.sep, 'wcEcoli', 'out', 'wf'))
@@ -65,14 +65,15 @@ class CustomWorkflow(WorkflowCLI):
 
 	def build(self, args):
 		"""Build the workflow."""
-		for seed in range(args.seeds):
+		seeds = [int(seed) for seed in args.seed_list.split()]
+		for seed in seeds:
 			self.add_analysis_task(seed, args.generations)
 
 	def define_parameters(self, parser):
 		self.define_option(parser, 'generations', int, 1, flag='g',
 			help='The number of generations to analyze.')
-		self.define_option(parser, 'seeds', int, 1, flag='s',
-			help='The number of seeds to analyze.')  # TODO(jerry): Take a seed list?
+		self.define_option(parser, 'seed_list', str, '0', flag='s',
+			help='The list of cell sim seed numbers to analyze, e.g. "0 1 2".')
 
 		self.define_wf_name_parameters(parser)
 
