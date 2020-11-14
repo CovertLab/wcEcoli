@@ -147,14 +147,17 @@ class WcmWorkflow(Workflow):
 			outputs=[metadata_file],
 			timeout=90)
 
-		python_args = data.select_keys(
-			args,
-			scriptBase.PARCA_KEYS,
-			debug=args['debug_parca'],
-			output_directory=kb_dir)
-		parca_task = self.add_python_task(ParcaTask, python_args,
-			name='parca',
-			outputs=[kb_dir])
+		if args['run_parca']:
+			python_args = data.select_keys(
+				args,
+				scriptBase.PARCA_KEYS,
+				debug=args['debug_parca'],
+				output_directory=kb_dir)
+			parca_task = self.add_python_task(ParcaTask, python_args,
+				name='parca',
+				outputs=[kb_dir])
+		else:
+			print('    (Skipping the Parca step per the --no-run-parca option.)')
 
 		if run_analysis:
 			parca_plot_dir = self.internal(constants.KB_PLOT_OUTPUT_DIR, '')
@@ -386,7 +389,7 @@ class RunWcm(scriptBase.ScriptBase):
 			help='The number of worker nodes to launch, with a smart default.')
 
 		# Parca
-		self.define_parca_options(parser)
+		self.define_parca_options(parser, run_parca_option=True)
 
 		# Simulation
 		self.define_sim_loop_options(parser)
