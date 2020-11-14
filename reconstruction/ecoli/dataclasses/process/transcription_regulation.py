@@ -17,11 +17,6 @@ class TranscriptionRegulation(object):
 		# Store list of transcription factor IDs
 		self.tf_ids = list(sorted(sim_data.tf_to_active_inactive_conditions.keys()))
 
-		mRNASet = {
-			x["id"]
-			for x in raw_data.rnas
-			if x["type"] not in ("rRNA", "tRNA")}
-
 		# Build dictionary mapping RNA targets to its regulators
 		self.target_tf = {}
 
