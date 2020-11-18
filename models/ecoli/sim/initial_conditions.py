@@ -1056,6 +1056,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	currentNutrients = sim_data.conditions[sim_data.condition]['nutrients']
 	fracActiveRibosome = sim_data.process.translation.ribosomeFractionActiveDict[currentNutrients]
 	proteinSequences = sim_data.process.translation.translation_sequences
+	protein_lengths = sim_data.process.translation.monomer_data['length'].asNumber()
 	translationEfficiencies = normalize(
 		sim_data.process.translation.translation_efficiencies_by_monomer)
 	aaWeightsIncorporated = sim_data.process.translation.translation_monomer_weights
@@ -1159,6 +1160,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		# Set protein index
 		protein_indexes[start_index:start_index+counts] = protein_index
 		protein = sim_data.process.translation.monomer_data[int(protein_index)]
+		peptide_full_length = protein_lengths[protein_index]
 
 		# all the indices of RNAs that encode this protein
 		rna_indices = [TU_id_to_index[rna] for rna in protein['rna_set']]
@@ -1212,7 +1214,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 				mRNA_indexes[start_index:start_index+n_ribosomes] = np.repeat(
 					unique_index_mRNAs[masks[idx]][i], n_ribosomes)
 				positions_on_mRNA[start_index:start_index+n_ribosomes] = np.floor(
-					randomState.rand(n_ribosomes)*np.repeat(transcript, n_ribosomes)) + all_gene_coords[idx][protein_index_in_transcripts[0]][0]
+					randomState.rand(n_ribosomes)*np.repeat(np.minimum(transcript, peptide_full_length*3), n_ribosomes)) + all_gene_coords[idx][protein_index_in_transcripts[0]][0]
 				positions_gene_start[start_index:start_index+n_ribosomes] = all_gene_coords[idx][protein_index_in_transcripts[0]][0]
 				count = count + 1
 				start_index += n_ribosomes
