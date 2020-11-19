@@ -192,6 +192,7 @@ def simulate(
 		'config': {
 			'multibody': {
 				'bounds': BOUNDS,
+				'jitter_force': 1e-6,
 			},
 			'diffusion': {
 				'bounds': BOUNDS,
