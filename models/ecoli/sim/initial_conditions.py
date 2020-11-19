@@ -1213,9 +1213,14 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 				n_ribosomes = n_ribosomes_per_RNA[count]
 				mRNA_indexes[start_index:start_index+n_ribosomes] = np.repeat(
 					unique_index_mRNAs[masks[idx]][i], n_ribosomes)
+				try:
+					#all_gene_coords[idx][protein_index_in_transcripts[0]][0]
+					all_gene_coords[idx][protein_index_in_transcripts[idx]][0]
+				except:
+					breakpoint()
 				positions_on_mRNA[start_index:start_index+n_ribosomes] = np.floor(
-					randomState.rand(n_ribosomes)*np.repeat(np.minimum(transcript, peptide_full_length*3), n_ribosomes)) + all_gene_coords[idx][protein_index_in_transcripts[0]][0]
-				positions_gene_start[start_index:start_index+n_ribosomes] = all_gene_coords[idx][protein_index_in_transcripts[0]][0]
+					randomState.rand(n_ribosomes)*np.repeat(np.minimum(transcript, peptide_full_length*3), n_ribosomes)) + all_gene_coords[idx][protein_index_in_transcripts[idx]][0]
+				positions_gene_start[start_index:start_index+n_ribosomes] = all_gene_coords[idx][protein_index_in_transcripts[idx]][0]
 				count = count + 1
 				start_index += n_ribosomes
 
