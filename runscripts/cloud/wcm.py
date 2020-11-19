@@ -140,7 +140,7 @@ class WcmWorkflow(Workflow):
 			total_variants=str(variant_count),
 			total_gens=args['generations'])
 
-		python_args = dict(output_file=metadata_file, data=metadata)
+		python_args = dict(output_file=metadata_file, data=metadata)  # type: Dict[str, Any]
 		metadata_task = self.add_python_task(WriteJsonTask, python_args,
 			name='write_metadata',
 			inputs=[],
