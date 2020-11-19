@@ -42,7 +42,7 @@ def makedirs(path, *paths):
 	"""Join one or more path components, make that directory path (using the
 	default mode 0o0777), and return the full path.
 
-	Raises FileExistsError if there's a f file (not a directory) with that path.
+	Raise FileExistsError if there's a file (not a directory) with that path.
 	No exception if the directory already exists.
 	"""
 	full_path = os.path.join(path, *paths)
