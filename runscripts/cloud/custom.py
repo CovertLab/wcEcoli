@@ -1,15 +1,23 @@
 #!/usr/bin/env python
 
-"""Run a custom command line in Google Cloud using Fireworks, with access to
-the GCS files from a WCM workflow run.
+"""Run a custom analysis command line in a new Fireworks workflow on Google
+Compute Engine (GCE), with access to the Google Cloud Storage (GCS) files from a
+WCM workflow run.
+
+Use this as as starting point for experimental analyses and other custom code.
 
 Prerequisite: Run `cloud/build-wcm.sh` to build a Docker Image containing the
-command line code to invoke in the workers. The code doesn't have to be checked
-in to git, just in the directories that build-wcm.sh bundles up.
+custom code you want the GCE workers to run. The code needn't be checked in to
+git. It just needs to be in the wcEcoli/ directory (and not listed in
+`.gcloudignore` or `.dockerignore`).
 
-The owner_id, timestamp arg, and description CLI args must match those of a
-previous WCM workflow run so this can fetch input files from that workflow's
-outputs and store output files to the same directory.
+For the custom code to read input files from a WCM workflow run, the owner_id,
+timestamp arg, and description CLI args must match those of the previous run,
+and `add_analysis_task()` must list the needed input directories and files.
+
+You can iterate on the code by rebuilding the Image then re-running this
+workflow builder script, or (if the same Firetask definition is fine), just use
+`lpad rerun_fws -i <N>` to rerun the Firetask.
 """
 
 import os
@@ -25,7 +33,7 @@ from runscripts.cloud.util.workflow_cli import WorkflowCLI
 
 
 class CustomWorkflow(WorkflowCLI):
-	"""A workflow to run a custom command line in Google Cloud."""
+	"""Build a workflow that runs a custom command line in Google Cloud."""
 
 	WORKFLOW_BASENAME = 'ComplexCounts'
 	DEFAULT_TIMEOUT = 10 * 60  # add_task() default timeout, in seconds
@@ -36,7 +44,7 @@ class CustomWorkflow(WorkflowCLI):
 
 	def add_analysis_task(self, seed, num_gens):
 		# type: (int, int) -> Task
-		"""Add an analysis task to the workflow."""
+		"""Add a workflow task that analyzes some of the WCM output data."""
 		def in_sim_dir(*path_elements):
 			return pp.join(sim_dir, *path_elements)
 
