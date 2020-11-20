@@ -53,14 +53,16 @@ cell_wall_proteins = {
 }
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
-	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+	def do_plot(self, simOutDir, plotOutDir, plotOutFileName,
+				simDataFile, validationDataFile, metadata):
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
 
 		# Load data
 		initial_time = main_reader.readAttribute('initialTime')
 		time = main_reader.readColumn('time') - initial_time
-		(counts,) = read_bulk_molecule_counts(simOutDir, (cell_wall_proteins.keys(),))
+		(counts,) = read_bulk_molecule_counts(simOutDir,
+											  (cell_wall_proteins.keys(),))
 		counts = counts.astype(float).T
 
 		row_max = counts.max(axis=1)
@@ -73,7 +75,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			aspect='auto',
 			extent=[time[0],time[-1],len(cell_wall_proteins)-0.5,-0.5])
 		ax.set_yticks(np.arange(0, len(cell_wall_proteins), 1))
-		ax.set_yticklabels([cell_wall_proteins[mol_id] for mol_id in cell_wall_proteins.keys()], fontsize=8)
+		ax.set_yticklabels([cell_wall_proteins[mol_id] for
+							mol_id in cell_wall_proteins.keys()], fontsize=8)
 		plt.xlabel('time (s)')
 		plt.title('Cell wall major components expression')
 
@@ -91,7 +94,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax2.get_xaxis().set_visible(False)
 		ax2.set_ylabel('final counts')
 
-		ax3 = fig.add_axes([0.93, 0.12, 0.02, 0.3])
+		ax3 = fig.add_axes([0.93, 0.12, 0.02, 0.28])
 		plt.colorbar(image, cax=ax3)
 
 		plt.tight_layout()
