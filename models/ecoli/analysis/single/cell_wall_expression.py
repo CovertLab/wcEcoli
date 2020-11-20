@@ -91,6 +91,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax2.get_xaxis().set_visible(False)
 		ax2.set_ylabel('final counts')
 
+		ax3 = fig.add_axes([0.93, 0.12, 0.02, 0.3])
+		plt.colorbar(image, cax=ax3)
+
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
