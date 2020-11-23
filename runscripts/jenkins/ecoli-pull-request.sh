@@ -15,15 +15,6 @@ pyenv local wcEcoli3
 
 make clean compile
 
-# Get mypy type checker warnings now but defer failing on its error detections.
-set +e
-runscripts/debug/mypy.sh
-MYPY_FAILED=$?
-set -e
-
-PYTHONPATH=$PWD:$PYTHONPATH pytest --cov=wholecell --cov-report xml \
-    --junitxml=unittests.xml
-
 sh runscripts/jenkins/fireworks-config.sh $HOST $NAME $PORT $PASSWORD
 
 echo y | lpad reset
@@ -36,11 +27,12 @@ PYTHONPATH=$PWD rlaunch rapidfire --nlaunches 0
 N_FAILS=$(lpad get_fws -s FIZZLED -d count)
 
 if [ $N_FAILS -gt 0 ]; then
+  lpad get_fws -s FIZZLED
   mv out/2* /scratch/PI/mcovert/wc_ecoli/failed/
 fi
 
 git status | head -1
 
-test $N_FAILS = 0 -a $MYPY_FAILED = 0
+test $N_FAILS = 0
 
 rm -fr out/*
