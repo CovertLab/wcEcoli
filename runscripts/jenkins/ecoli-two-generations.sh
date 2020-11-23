@@ -5,12 +5,7 @@ PASSWORD=$4
 
 set -e
 
-module load wcEcoli/python3
-pyenv local wcEcoli3
-
-make clean
-make compile
-
+sh runscripts/jenkins/setup-environment.sh
 sh runscripts/jenkins/fireworks-config.sh $HOST $NAME $PORT $PASSWORD
 
 echo y | lpad reset
