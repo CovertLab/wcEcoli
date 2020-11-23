@@ -1,5 +1,6 @@
 set -e
 
+export PYTHONPATH=$PWD
 module load wcEcoli/python3
 
 ### -------------------------------------------------------------------

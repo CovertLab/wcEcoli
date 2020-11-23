@@ -1,4 +1,4 @@
-sh runscripts/jenkins/setup-environment.sh
+source runscripts/jenkins/setup-environment.sh
 
 set -e
 

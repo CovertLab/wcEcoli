@@ -1,8 +1,6 @@
 set -e
 
-sh runscripts/jenkins/setup-environment.sh
+source runscripts/jenkins/setup-environment.sh
 
-PYTHONPATH=$PWD:$PYTHONPATH pytest --cov=wholecell --cov-report xml \
-    --junitxml=unittests.xml
-
+pytest --cov=wholecell --cov-report xml --junitxml=unittests.xml
 runscripts/debug/mypy.sh
