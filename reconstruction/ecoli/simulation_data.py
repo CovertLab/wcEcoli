@@ -126,7 +126,7 @@ class SimulationDataEcoli(object):
 		not_found = set()
 		for row in raw_data.fold_changes:
 			# Skip fold changes that do not agree with curation
-			if np.abs(row['Regulation_direct']) > 2:
+			if row['Regulation_direct'] > 2:
 				continue
 
 			tf = abbrToActiveId[row["TF"]][0]
@@ -135,17 +135,15 @@ class SimulationDataEcoli(object):
 			except KeyError:
 				not_found.add(row["Target"])
 				continue
+
+			if row['TF'] == row['Target']:
+				continue
 			if tf not in self.tf_to_fold_change:
 				self.tf_to_fold_change[tf] = {}
 				self.tf_to_direction[tf] = {}
 			FC = row["F_avg"]
-			if row["Regulation_direct"] < 0:
-				FC *= -1.
-				self.tf_to_direction[tf][target] = -1
-			else:
-				self.tf_to_direction[tf][target] = 1
-			FC = 2**FC
-			self.tf_to_fold_change[tf][target] = FC
+			self.tf_to_direction[tf][target] = np.sign(FC)
+			self.tf_to_fold_change[tf][target] = 2**FC
 
 		if VERBOSE:
 			print("The following target genes listed in fold_changes.tsv have"
