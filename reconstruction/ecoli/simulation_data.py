@@ -152,7 +152,7 @@ class SimulationDataEcoli(object):
 					self.tf_to_fold_change[tf] = {}
 					self.tf_to_direction[tf] = {}
 
-				FC = row['F_avg']
+				FC = row['log2 FC mean']
 				self.tf_to_direction[tf][target] = np.sign(FC)
 				self.tf_to_fold_change[tf][target] = 2**FC
 

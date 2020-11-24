@@ -1,4 +1,4 @@
-"TF"	"Target"	"F_avg"	"F_sd"	"Regulation_direct"
+"TF"	"Target"	"log2 FC mean"	"log2 FC std"	"Regulation_direct"
 "araC"	"araD"	-0.35	0	2
 "araC"	"araA"	-0.7	0.04	2
 "araC"	"araB"	-0.64	0.1	2
