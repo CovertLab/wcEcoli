@@ -124,6 +124,43 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			self.ribosome50S.count().sum(),
 		])
 
+		# From older version:
+
+		# Calculate actual number of ribosomes that should be activated based on probabilities
+		# Get attributes of active (translatable) mRNAs
+		TU_index_RNAs, can_translate, unique_index_RNAs = self.RNAs.attrs(
+			'TU_index', 'can_translate', 'unique_index')
+		TU_index_active_mRNAs = TU_index_RNAs[can_translate]
+		unique_index_active_mRNAs = unique_index_RNAs[can_translate]
+
+		# Get counts of each type of active mRNA
+		# TODO(TEG): do the ribosomes need to know they on a polycistron?
+
+		TU_counts = np.bincount(TU_index_active_mRNAs, minlength=self.n_TUs)
+
+		mRNA_counts = np.zeros(self.n_mRNAs)
+		for i, TU_count in enumerate(TU_counts):
+			if i in self.TU_index_to_protein_index:
+				for prot_idx in self.TU_index_to_protein_index[i]:
+					mRNA_counts[prot_idx] += TU_count
+
+		# Calculate initiation probabilities for ribosomes based on mRNA counts
+		# and associated mRNA translational efficiencies
+		proteinInitProb = normalize(
+			mRNA_counts * self.translationEfficiencies
+		)
+
+		# Calculate actual number of ribosomes that should be activated based
+		# on probabilities
+		self.activationProb = self._calculateActivationProb(
+			self.fracActiveRibosome,
+			self.proteinLengths,
+			self.elongation_rates,
+			proteinInitProb,
+			self.timeStepSec())
+
+
+		'''
 		# Calculate actual number of ribosomes that should be activated based on probabilities
 		# Get attributes of active (translatable) mRNAs
 		TU_index_RNAs, can_translate, unique_index_RNAs, length_all_RNAs = self.RNAs.attrs(
@@ -145,6 +182,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		protein_index_to_gene_coord = {}
 		available_template = np.zeros(len(self.all_mRNA_ids), dtype=np.int64)
 
+		
 		for i, protein in enumerate(self.monomer_data):
 			protein_index_to_TU_index[i] = []
 			protein_index_to_gene_coord[i] = []
@@ -197,7 +235,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			self.elongation_rates,
 			proteinInitProb,
 			self.timeStepSec())
-
+		'''
 		n_ribosomes_to_activate = np.int64(self.activationProb * inactiveRibosomeCount)
 
 		if n_ribosomes_to_activate == 0:
@@ -301,7 +339,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		allTranslationTimestepCounts = np.ceil(allTranslationTimes / timeStepSec)
 		averageTranslationTimestepCounts = np.dot(allTranslationTimestepCounts, proteinInitProb)
 		expectedTerminationRate = 1.0 / averageTranslationTimestepCounts
-
+		
 		# Modify given fraction of active ribosomes to take into account early
 		# terminations in between timesteps
 		# allFractionTimeInactive: Vector of probabilities an "active" ribosome
@@ -324,6 +362,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# The upper bound for the activation probability is temporarily set to
 		# 1.0 to prevent negative molecule counts. This will lower the fraction
 		# of active ribosomes for timesteps longer than roughly 1.8s.
+
 		if activationProb >= 1.0:
 			activationProb = 1
 
