@@ -36,18 +36,16 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = sim_data.process.translation.make_elongation_rates
-		self.monomer_data = sim_data.process.translation.monomer_data
-		self.start_codon_positions = sim_data.process.transcription.rna_data['gene_starts_stops']
-		self.monomer_sets = sim_data.process.transcription.rna_data['monomer_set']
+
 		# Build matrix to convert transcription unit counts to mRNA counts
-		self.all_TU_ids = sim_data.process.transcription.rna_data['id']
-		self.all_mRNA_ids = sim_data.process.translation.monomer_data['rna_id']
-		self.n_TUs = len(self.all_TU_ids)
-		self.n_mRNAs = len(self.all_mRNA_ids)
+		all_TU_ids = sim_data.process.transcription.rna_data['id']
+		all_mRNA_ids = sim_data.process.translation.monomer_data['rna_id']
+		self.n_TUs = len(all_TU_ids)
+		self.n_mRNAs = len(all_mRNA_ids)
 
 
 		# Get indexes from proteins to transcription units
-		TU_id_to_index = {TU_id: i for i, TU_id in enumerate(self.all_TU_ids)}
+		TU_id_to_index = {TU_id: i for i, TU_id in enumerate(all_TU_ids)}
 
 		# create dict mapping protein index to TU index
 		self.protein_index_to_TU_index = {}
@@ -66,7 +64,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# create dict mapping TU index to protein index
 		self.TU_index_to_protein_index = {}
-		for i, TU in enumerate(self.all_TU_ids):
+		for i, TU in enumerate(all_TU_ids):
 			if TU in self.TU_id_to_protein_index:
 				self.TU_index_to_protein_index[i] = self.TU_id_to_protein_index[TU]
 
@@ -86,7 +84,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Create view onto RNAs
 		self.RNAs = self.uniqueMoleculesView('RNA')
-		self.mRnas = self.bulkMoleculesView(self.all_TU_ids[sim_data.process.transcription.rna_data['is_mRNA']])
+		self.mRnas = self.bulkMoleculesView(all_TU_ids[sim_data.process.transcription.rna_data['is_mRNA']])
 
 
 	def calculateRequest(self):
@@ -126,67 +124,26 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Calculate actual number of ribosomes that should be activated based on probabilities
 		# Get attributes of active (translatable) mRNAs
-		TU_index_RNAs, can_translate, unique_index_RNAs, length_all_RNAs = self.RNAs.attrs(
-			'TU_index', 'can_translate', 'unique_index', 'transcript_length')
-		length_mRNAs = length_all_RNAs[can_translate]
+		TU_index_RNAs, can_translate, unique_index_RNAs = self.RNAs.attrs(
+			'TU_index', 'can_translate', 'unique_index')
 		TU_index_active_mRNAs = TU_index_RNAs[can_translate]
 		unique_index_active_mRNAs = unique_index_RNAs[can_translate]
 
 		# Get counts of each type of active mRNA
 		# TODO(TEG): do the ribosomes need to know they on a polycistron?
-		# TU_counts_to_mRNA_counts = np.zeros(
-		# 	(len(all_mRNA_ids), len(all_TU_ids)), dtype=np.int64)
 
+		TU_counts = np.bincount(TU_index_active_mRNAs, minlength=self.n_TUs)
 
-		TU_id_to_index = {TU_id: i for i, TU_id in enumerate(self.all_TU_ids)}
-
-		# map proteins to TU indexes, gene coordinates, and available mRNA template length
-		protein_index_to_TU_index = {}
-		protein_index_to_gene_coord = {}
-		available_template = np.zeros(len(self.all_mRNA_ids), dtype=np.int64)
-
-		for i, protein in enumerate(self.monomer_data):
-			protein_index_to_TU_index[i] = []
-			protein_index_to_gene_coord[i] = []
-
-			for rna in protein['rna_set']:
-				# TODO(mialy): doublecheck
-				rna_index = TU_id_to_index[rna]
-				prot_index = self.monomer_sets[rna_index].index(protein['id'])
-				gene_coords = self.start_codon_positions[rna_index][prot_index]
-
-				protein_index_to_TU_index[i].append(rna_index)
-				protein_index_to_gene_coord[i].append(gene_coords)
-
-				# identify all existing mRNAs with this TU id and
-				# add up length the sequence of the TU that corresponds to this protein
-				mask = TU_index_active_mRNAs == rna_index
-
-				# length_mRNAs is the current transcript length
-				lengths = length_mRNAs[mask]
-
-				# only keep rnas containing gene start codon
-				rnas_containing_gene = lengths > gene_coords[0]
-
-				transcription_end = lengths[rnas_containing_gene]
-				transcription_end[transcription_end > gene_coords[1]] = gene_coords[1]
-
-				rna_lengths = transcription_end - np.repeat(gene_coords[0], len(transcription_end))
-
-				available_template[i] += sum(rna_lengths)
-
-		# TU_counts = np.bincount(TU_index_active_mRNAs, minlength=self.n_TUs)
-		#
-		# mRNA_counts = np.zeros(self.n_mRNAs)
-		# for i, TU_count in enumerate(TU_counts):
-		# 	if i in self.TU_index_to_protein_index:
-		# 		for prot_idx in self.TU_index_to_protein_index[i]:
-		# 			mRNA_counts[prot_idx] += TU_count
+		mRNA_counts = np.zeros(self.n_mRNAs)
+		for i, TU_count in enumerate(TU_counts):
+			if i in self.TU_index_to_protein_index:
+				for prot_idx in self.TU_index_to_protein_index[i]:
+					mRNA_counts[prot_idx] += TU_count
 
 		# Calculate initiation probabilities for ribosomes based on mRNA counts
 		# and associated mRNA translational efficiencies
 		proteinInitProb = normalize(
-			available_template * self.translationEfficiencies
+			mRNA_counts * self.translationEfficiencies
 		)
 
 		# Calculate actual number of ribosomes that should be activated based
