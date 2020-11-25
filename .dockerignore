@@ -39,6 +39,7 @@ nosetests.*.xml
 # Output files #
 ################
 /out
+reconstruction/ecoli/scripts/nca/out/
 
 # Cached sim data #
 ###################
