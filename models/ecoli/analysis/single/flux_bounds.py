@@ -17,6 +17,7 @@ from six.moves import range
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		raise  # TEMP: test out error aggregation
 		mainListener = TableReader(os.path.join(simOutDir, "Main"))
 		initialTime = mainListener.readAttribute("initialTime")
 		time = mainListener.readColumn("time") - initialTime
