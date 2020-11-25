@@ -175,7 +175,7 @@ POLY_CISTRON_FILE = parse_args()
 GENOME_SEQUENCE_FILE = os.path.join(FLAT_DIR, 'flattened_sequence.fasta')
 km_file = os.path.join('fixtures', 'endo_km', 'km3.cPickle')
 RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv')
-PROTEIN_FILE = os.path.join(FLAT_DIR, 'proteins_new_condensed.tsv')
+PROTEIN_FILE = os.path.join(FLAT_DIR, 'proteins.tsv')
 PROTEIN_OLD_FILE = os.path.join(FLAT_DIR, 'proteins_old.tsv')
 TF_COND_FILE = os.path.join(FLAT_DIR, 'condition','tf_condition_old.tsv')
 
