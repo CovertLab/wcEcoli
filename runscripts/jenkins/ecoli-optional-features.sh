@@ -27,6 +27,6 @@ DESC="Causality Network" BUILD_CAUSALITY_NETWORK=1 N_GENS=2 SEED=$RANDOM \
   WC_ANALYZE_FAST=1 \
   python runscripts/fireworks/fw_queue.py
 
-bash run-fireworks.sh
+bash runscripts/jenkins/run-fireworks.sh
 
 runscripts/jenkins/save_output.sh out/ /scratch/PI/mcovert/wc_ecoli/optional_features/
