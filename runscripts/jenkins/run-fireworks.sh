@@ -12,7 +12,7 @@ done
 N_FAILS=$(lpad get_fws -s FIZZLED -d count)
 
 if [ $N_FAILS -gt 0 ]; then
-  echo -e "\nFailed sims on $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD):"
+  echo -e "\nSims failed. $(git status | head -1) $(git rev-parse --short HEAD):"
   lpad get_fws -s FIZZLED
   cat stderr.log
   mv out/2* /scratch/PI/mcovert/wc_ecoli/failed/
