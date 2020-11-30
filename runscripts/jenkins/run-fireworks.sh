@@ -1,3 +1,5 @@
+#! /usr/bin/env bash
+
 set -e
 
 # Commented rapidfire command below produces seg fault after 2 hr and 10 min (see #764)
