@@ -11,16 +11,13 @@ set -e
 ### merging the PR into master to prevent changing it for other Jenkins builds.
 ### ---------------------------------------------------------------------------
 source runscripts/jenkins/setup-environment.sh
-#sh runscripts/jenkins/fireworks-config.sh $HOST $NAME $PORT $PASSWORD
-#
-#echo y | lpad reset
-#
-#DESC="2 generations completion test." WC_ANALYZE_FAST=1 SINGLE_DAUGHTERS=1 N_GENS=2 MASS_DISTRIBUTION=0 \
-#	PARALLEL_PARCA=1 COMPRESS_OUTPUT=0 PLOTS=ACTIVE BUILD_CAUSALITY_NETWORK=1 RAISE_ON_TIME_LIMIT=1 python runscripts/fireworks/fw_queue.py
-#
-#bash runscripts/jenkins/run-fireworks.sh
-git status | head -1
-git rev-parse --abbrev-ref HEAD
-git rev-parse --short HEAD
+sh runscripts/jenkins/fireworks-config.sh $HOST $NAME $PORT $PASSWORD
 
-#rm -fr out/*
+echo y | lpad reset
+
+DESC="2 generations completion test." WC_ANALYZE_FAST=1 SINGLE_DAUGHTERS=1 N_GENS=2 MASS_DISTRIBUTION=0 \
+	PARALLEL_PARCA=1 COMPRESS_OUTPUT=0 PLOTS=ACTIVE BUILD_CAUSALITY_NETWORK=1 RAISE_ON_TIME_LIMIT=1 python runscripts/fireworks/fw_queue.py
+
+bash runscripts/jenkins/run-fireworks.sh
+
+rm -fr out/*
