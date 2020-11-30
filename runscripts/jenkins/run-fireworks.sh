@@ -15,7 +15,7 @@ done
 N_FAILS=$(lpad get_fws -s FIZZLED -d count)
 
 if [ $N_FAILS -gt 0 ]; then
-  echo -e "\nSims failed. $(rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD):"
+  echo -e "\nSims failed on $(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short HEAD):"
   lpad get_fws -s FIZZLED
   echo
   sed '/^$/N;/^\n$/D' stderr.log  # Print errors but filter out multiple blank lines in a row
