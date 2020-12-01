@@ -10,22 +10,25 @@
 set -eu
 
 WC_MONGO_DB=$1
+LOG_DIR="/scratch/PI/mcovert/jenkins/fireworks/logs/launchpad"
 
-mkdir -p /scratch/PI/mcovert/jenkins/fireworks/logs/launchpad
-echo "authsource: admin" > my_launchpad.yaml
-echo "host: mongodb+srv://${WC_MONGO_USER}:${WC_MONGO_PW}@${WC_MONGO_CLUSTER}/${WC_MONGO_DB}?retryWrites=true&w=majority" >> my_launchpad.yaml
-echo "logdir: /scratch/PI/mcovert/jenkins/fireworks/logs/launchpad" >> my_launchpad.yaml
-echo "mongoclient_kwargs: {}" >> my_launchpad.yaml
-echo "name: null" >> my_launchpad.yaml
-echo "password: null" >> my_launchpad.yaml
-echo "port: null" >> my_launchpad.yaml
-echo "ssl: false" >> my_launchpad.yaml
-echo "ssl_ca_certs: null" >> my_launchpad.yaml
-echo "ssl_certfile: null" >> my_launchpad.yaml
-echo "ssl_keyfile: null" >> my_launchpad.yaml
-echo "ssl_pem_passphrase: null" >> my_launchpad.yaml
-echo "strm_lvl: INFO" >> my_launchpad.yaml
-echo "uri_mode: true" >> my_launchpad.yaml
-echo "user_indices: []" >> my_launchpad.yaml
-echo "username: null" >> my_launchpad.yaml
-echo "wf_user_indices: []" >> my_launchpad.yaml
+mkdir -p $LOG_DIR
+{
+  echo "authsource: admin"
+  echo "host: mongodb+srv://${WC_MONGO_USER}:${WC_MONGO_PW}@${WC_MONGO_CLUSTER}/${WC_MONGO_DB}?retryWrites=true&w=majority"
+  echo "logdir: $LOG_DIR"
+  echo "mongoclient_kwargs: {}"
+  echo "name: null"
+  echo "password: null"
+  echo "port: null"
+  echo "ssl: false"
+  echo "ssl_ca_certs: null"
+  echo "ssl_certfile: null"
+  echo "ssl_keyfile: null"
+  echo "ssl_pem_passphrase: null"
+  echo "strm_lvl: INFO"
+  echo "uri_mode: true"
+  echo "user_indices: []"
+  echo "username: null"
+  echo "wf_user_indices: []"
+} > my_launchpad.yaml
