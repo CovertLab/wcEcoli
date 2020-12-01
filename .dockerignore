@@ -112,6 +112,8 @@ reconstruction/ecoli/dataclasses/process/two_component_system_odes_fitter.py
 *.hdf
 *.tar.gz
 /build/
+/.mypy_cache/
+secrets.*
 reconstruction/ecoli/scripts/nca/data/regulon-db/*.tsv
 
 # LaTeX compilation files #
