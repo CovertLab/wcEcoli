@@ -115,7 +115,7 @@ reconstruction/ecoli/dataclasses/process/two_component_system_odes_fitter.py
 /.pytype/
 /.mypy_cache/
 secrets.*
-reconstruction/ecoli/scripts/nca/data/regulon-db/
+reconstruction/ecoli/scripts/nca/data/regulon-db/*.tsv
 
 # PyCharm files #
 #################
