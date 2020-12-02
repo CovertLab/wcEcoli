@@ -243,10 +243,13 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Sample multinomial distribution to determine which mRNAs have full
 		# 70S ribosomes initialized on them
-		n_new_proteins = self.randomState.multinomial(
-			n_ribosomes_to_activate,
-			proteinInitProb
-		)
+		try:
+			n_new_proteins = self.randomState.multinomial(
+				n_ribosomes_to_activate,
+				proteinInitProb
+			)
+		except:
+			breakpoint()
 
 		# Each ribosome is assigned a protein index for the protein that corresponds to the
 		# polypeptide it will polymerize. This is done in blocks of protein ids for efficiency.
