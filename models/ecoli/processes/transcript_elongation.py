@@ -34,6 +34,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		# Load parameters
 		self.rnaPolymeraseElongationRateDict = sim_data.process.transcription.rnaPolymeraseElongationRateDict
 		self.rnaIds = sim_data.process.transcription.rna_data['id']
+		# add to rnaIds the cleaved operons at the end
 		self.rnaLengths = sim_data.process.transcription.rna_data["length"].asNumber()
 		self.rnaSequences = sim_data.process.transcription.transcription_sequences
 		self.ntWeights = sim_data.process.transcription.transcription_monomer_weights
@@ -49,6 +50,11 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		# Mask for mRNAs
 		self.is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']
 
+		# Mask for operon rRNAs ------------- do we need this still?
+		self.is_rRNA = sim_data.process.transcription.rna_data['is_rRNA']
+		self.is_operon = [rna[0].count('_') > 1 for rna in sim_data.process.transcription.rna_data] # check if name has multiple (if count of underscore is > 1)
+		# from operon find type of each ---------- TO DO
+
 		# Views
 		self.active_RNAPs = self.uniqueMoleculesView('active_RNAP')
 		self.RNAs = self.uniqueMoleculesView('RNA')
@@ -58,6 +64,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.inactive_RNAPs = self.bulkMoleculeView("APORNAP-CPLX[c]")
 		self.variable_elongation = sim._variable_elongation_transcription
 		self.make_elongation_rates = sim_data.process.transcription.make_elongation_rates
+
+		breakpoint()
 
 
 	def calculateRequest(self):
@@ -218,10 +226,19 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			TU_index_partial_RNAs[did_terminate_mask],
 			minlength = self.rnaSequences.shape[0])
 
+		# check if rRNA operon
+		# for __ in terminated_RNAs
+		# self.is_rRNA and self.is_operon
+		# for rRNA or tRNA in operon_rnas
+		# terminated_RNAs[cleaved r/tRNAs] = terminated_RNAs[operon r/tRNAs]*num
+		# add to n_total below
+
+		breakpoint()
+
 		# Assume transcription from all rRNA genes produce rRNAs from the first
 		# operon. This is done to simplify the complexation reactions that
 		# produce ribosomal subunits.
-		n_total_16Srrna = terminated_RNAs[self.idx_16S_rRNA].sum()
+		n_total_16Srrna = terminated_RNAs[self.idx_16S_rRNA].sum() # add count from cleaved operon
 		n_total_23Srrna = terminated_RNAs[self.idx_23S_rRNA].sum()
 		n_total_5Srrna = terminated_RNAs[self.idx_5S_rRNA].sum()
 
@@ -256,6 +273,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		# Get counts of new bulk RNAs
 		n_new_bulk_RNAs = terminated_RNAs.copy()
 		n_new_bulk_RNAs[self.is_mRNA] = 0
+		# edit new_bulk_RNAs
 
 		# Update bulk molecule counts
 		self.ntps.countsDec(ntps_used)

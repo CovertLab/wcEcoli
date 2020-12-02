@@ -51,6 +51,7 @@ class GetterFunctions(object):
 		"""
 		self._sequences = {}
 		self._build_rna_sequences(raw_data)
+		self._build_cleaved_rrna_trna_sequences(raw_data) # Added to calculate masses of cleaved rRNAs and tRNAS
 		self._build_protein_sequences(raw_data)
 
 	def _build_rna_sequences(self, raw_data):
@@ -83,6 +84,38 @@ class GetterFunctions(object):
 
 			self._sequences[rna['id']] = seq
 
+	def _build_cleaved_rrna_trna_sequences(self, raw_data):
+		"""
+		Builds nucleotide sequences of each cleaved rRNA and tRNA using the genome sequence and
+		the transcription start sites and lengths of the corresponding gene.
+		"""
+
+		# Get RNA lengths from gene data
+		gene_lengths = {gene["id"]: gene['length'] for gene in raw_data.genes}
+
+		# Get dict of coordinates and directions for each gene
+		coordinate_dict = {gene["id"]: gene["coordinate"] for gene in raw_data.genes}
+		direction_dict = {gene["id"]: gene["direction"] for gene in raw_data.genes}
+
+		# Get RNA sequence from genome sequence
+		genome_sequence = raw_data.genome_sequence
+
+		# get sequence for entire polycistron
+		for rna in raw_data.rRNA_tRNA_cleaved:
+			first_gene = rna['gene_set'][0]
+			last_gene = rna['gene_set'][-1]
+			direction = direction_dict[first_gene]
+
+			# Parse genome sequence to get RNA sequence
+			if direction == '+':
+				seq = genome_sequence[
+					  coordinate_dict[first_gene]:coordinate_dict[last_gene] + gene_lengths[last_gene]].transcribe()
+			else:
+				seq = genome_sequence[coordinate_dict[last_gene] - gene_lengths[last_gene] + 1:coordinate_dict[
+																								   first_gene] + 1].reverse_complement().transcribe()
+
+			self._sequences[rna['id']] = seq
+
 	def _build_protein_sequences(self, raw_data):
 		"""
 		Builds the amino acid sequences of each protein monomer using sequences
@@ -106,6 +139,7 @@ class GetterFunctions(object):
 		# These updates can be dependent on metabolite masses
 		self._all_mass.update(self._build_polymerized_subunit_masses(sim_data))
 		self._all_mass.update(self._build_rna_masses(raw_data, sim_data))
+		self._all_mass.update(self._build_cleaved_rrna_trna_masses(raw_data, sim_data)) # Added to calculate masses of cleaved rRNAs and tRNAS
 		self._all_mass.update(self._build_protein_masses(raw_data, sim_data))
 		self._all_mass.update(self._build_full_chromosome_mass(raw_data, sim_data))
 		self._all_mass.update(
@@ -173,6 +207,30 @@ class GetterFunctions(object):
 		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
 
 		return {rna['id']: mw for (rna, mw) in zip(raw_data.operon_rnas, mws)}
+
+	def _build_cleaved_rrna_trna_masses(self, raw_data, sim_data):
+		"""
+		Builds dictionary of molecular weights of cleaved rRNAs and tRNAs keyed with the RNA IDs.
+		Molecular weights are calculated from the RNA sequence and the weights
+		of polymerized NTPs.
+		"""
+		# Get RNA nucleotide compositions
+		rna_seqs = self.get_sequence([rna['id'] for rna in raw_data.rRNA_tRNA_cleaved])
+		nt_counts = []
+		for seq in rna_seqs:
+			nt_counts.append(
+				[seq.count(letter) for letter in sim_data.ntp_code_to_id_ordered.keys()])
+		nt_counts = np.array(nt_counts)
+
+		# Calculate molecular weights
+		ppi_mw = self._all_mass[sim_data.molecule_ids.ppi[:-3]]
+		polymerized_ntp_mws = np.array([
+			self._all_mass[met_id[:-3]] for met_id in sim_data.molecule_groups.polymerized_ntps
+		])
+
+		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
+
+		return {rna['id']: mw for (rna, mw) in zip(raw_data.rRNA_tRNA_cleaved, mws)}
 
 	def _build_protein_masses(self, raw_data, sim_data):
 		"""

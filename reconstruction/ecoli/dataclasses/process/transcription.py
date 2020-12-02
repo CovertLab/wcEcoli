@@ -293,12 +293,9 @@ class Transcription(object):
 			monomer:  "{}[{}]".format(monomer, protein_compartments[ind][0])
 			for ind, monomer in enumerate(single_monomer_ids)
 			}
-		
-		monomer_sets = [
-			[protein_ids_with_compartments[monomer_id] 
-			for monomer_id in rna['monomer_set']] 
-			for rna in raw_data.operon_rnas
-			]
+
+		# TODO: delete "null" monomer id when creating operon_rnas.tsv in create_tu_files.py
+		monomer_sets = [[protein_ids_with_compartments[monomer_id] for monomer_id in rna['monomer_set']] for rna in raw_data.operon_rnas]
 
 		# Load RNA sequences and molecular weights from getter functions
 		# TODO (Mialy): make sure the getter functions work for multi-gene TUS
@@ -319,6 +316,9 @@ class Transcription(object):
 		# Get index of gene corresponding to each RNA
 		rna_id_to_gene_index = {gene['rna_id']: i
 			for i, gene in enumerate(raw_data.genes)}
+
+		# Get RNA ID from gene ID
+		gene_id_to_rrna_trna_id = {gene['gene_set'][0]: gene['id'] for gene in raw_data.rRNA_tRNA_cleaved}
 
 		# Get list of coordinates and directions for each gene
 		coordinate_list = [gene["coordinate"] for gene in raw_data.genes]
@@ -348,8 +348,11 @@ class Transcription(object):
 		replication_coordinate = []
 		direction = []
 		for rna in raw_data.operon_rnas:
-			if len(rna['monomer_set']) > 1:
-				rna_id = re.split('_', rna['id'])[0] + '_RNA'
+			if len(rna['gene_set']) > 1: # changed from monomer_set to catch rRNA and tRNA operons without monomers
+				if rna['type'] == 'tRNA' or rna['type'] == 'rRNA': # naming convention for rRNA and tRNA cannot be converted from gene ID used for operons
+					rna_id = gene_id_to_rrna_trna_id[re.split('_', rna['id'])[0]] # convert first RNA in operon from gene ID to RNA ID
+				else:
+					rna_id = re.split('_', rna['id'])[0] + '_RNA'
 			else:
 				rna_id = rna['id']
 			# Location of transcription initiation relative to origin

@@ -53,6 +53,16 @@ class InternalState(object):
 		sim_data.molecule_groups.bulk_molecules_binomial_division.extend(
 			rna_ids)
 
+		# Set cleaved rRNAs and tRNAs
+		rrna_trna_ids, rrna_trna_masses = self._build_bulk_molecule_specs(
+			sim_data, [rna['id'] for rna in raw_data.rRNA_tRNA_cleaved],
+			[sim_data.submass_name_to_index[rna['type']] for rna in raw_data.rRNA_tRNA_cleaved]
+		)
+
+		self.bulk_molecules.add_to_bulk_state(rrna_trna_ids, rrna_trna_masses)
+		sim_data.molecule_groups.bulk_molecules_binomial_division.extend(
+			rrna_trna_ids)
+
 		# Set RNA subunits (used to represent masses of RNA fragments)
 		rna_subunit_ids, rna_subunit_masses = self._build_bulk_molecule_specs(
 			sim_data, [subunit_id[:-3] for subunit_id in sim_data.molecule_groups.polymerized_ntps],

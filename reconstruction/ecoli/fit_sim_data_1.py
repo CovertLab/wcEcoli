@@ -118,6 +118,17 @@ def fitSimData_1(
 		key = list(sim_data.tf_to_active_inactive_conditions.keys())[0]
 		sim_data.tf_to_active_inactive_conditions = {key: sim_data.tf_to_active_inactive_conditions[key]}
 
+	# Get RNA ID from gene ID
+	gene_id_to_rrna_trna_id = {gene['gene_set'][0]: gene['id'] for gene in raw_data.rRNA_tRNA_cleaved}
+
+	# Create dictionary of rRNA and tRNA operon id to RNA ids
+	rrna_trna_operon_id_to_rna_id = {}
+	for rna in raw_data.operon_rnas:
+		if rna['id'].count('_') > 1 and rna['type'] == 'rRNA':
+			rrna_trna_operon_id_to_rna_id[rna['id'] + '[c]'] = [gene_id_to_rrna_trna_id[rna_id] + '[c]' for rna_id in rna['id'].split('_')[:-1]]
+
+	sim_data.rrna_trna_dict = rrna_trna_operon_id_to_rna_id
+
 	# Make adjustments for metabolic enzymes
 	setTranslationEfficiencies(sim_data)
 	setRNAExpression(sim_data)
@@ -669,6 +680,9 @@ def expressionConverge(
 		bulkContainer = createBulkContainer(sim_data, expression, doubling_time)
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
 
+		# Convert operon rRNAs and tRNAs to cleaved RNAs in bulkContainer
+
+
 		if not disable_rnapoly_capacity_fitting:
 			setRNAPCountsConstrainedByPhysiology(
 				sim_data,
@@ -1011,7 +1025,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	rna_coord = rna_data['replication_coordinate']
 
 	## Mask arrays for rRNAs
-	is_rRNA23S = rna_data['is_23S_rRNA']
+	is_rRNA23S = rna_data['is_23S_rRNA'] # TODO replace with list of names
 	is_rRNA16S = rna_data['is_16S_rRNA']
 	is_rRNA5S = rna_data['is_5S_rRNA']
 	is_tRNA = rna_data['is_tRNA']
@@ -1242,7 +1256,21 @@ def createBulkContainer(sim_data, expression, doubling_time):
 
 	# Assign RNA counts based on mass and expression distribution
 	counts_RNA = total_count_RNA * distribution_RNA
+
 	bulkContainer.countsIs(counts_RNA, ids_rnas)
+
+	# Decrement operon rRNA counts and increment cleaved rRNAs counts
+	# for rna in ids_rnas:
+	print(f"operon before: {bulkContainer.count('EG30070_EG30077_EG30084_EG30071_RRNA[c]')}")
+
+	for key in sim_data.rrna_trna_dict.keys():
+		rrna_operon_count = bulkContainer.count(key)
+		value = sim_data.rrna_trna_dict[key]
+		bulkContainer.countsInc([rrna_operon_count]*len(value), value)
+		bulkContainer.countDec(rrna_operon_count, key)
+
+	print(f"operon after: {bulkContainer.count('EG30070_EG30077_EG30084_EG30071_RRNA[c]')}")
+	print(bulkContainer.count('RRSA-RRNA[c]'))
 
 	# Assign protein counts based on mass and mRNA counts
 	counts_protein = total_count_protein * distribution_protein
@@ -1313,7 +1341,6 @@ def setRibosomeCountsConstrainedByPhysiology(
 		nRibosomesNeeded * ribosome50SStoich
 		)
 
-
 	# -- CONSTRAINT 2: Measured rRNA mass fraction -- #
 	## Calculate exact number of 30S and 50S subunits based on measured mass fractions of
 	## 16S, 23S, and 5S rRNA.
@@ -1359,6 +1386,7 @@ def setRibosomeCountsConstrainedByPhysiology(
 		)
 
 	# Return rRNA counts to value in sim_data
+	# TODO change rRNA indexes
 	bulkContainer.countsIs(rRna23SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_23S_rRNA']])
 	bulkContainer.countsIs(rRna16SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_16S_rRNA']])
 	bulkContainer.countsIs(rRna5SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_5S_rRNA']])

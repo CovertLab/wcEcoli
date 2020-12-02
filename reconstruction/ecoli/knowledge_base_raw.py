@@ -55,6 +55,7 @@ LIST_OF_DICT_FILENAMES = (
 	"transport_reactions.tsv",
 	"two_component_systems.tsv",
 	"two_component_system_templates.tsv",
+	"rRNA_tRNA_cleaved.tsv", # added to generate sequences for cleaved rRNAs and tRNAs
 	os.path.join("mass_fractions", "glycogen_fractions.tsv"),
 	os.path.join("mass_fractions", "ion_fractions.tsv"),
 	os.path.join("mass_fractions", "LPS_fractions.tsv"),

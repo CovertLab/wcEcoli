@@ -663,7 +663,6 @@ def make_new_proteins_file(output_file):
 	#Go through monomer_set line by line. Find the matching monomers within
 	#those lists then find the corresponding monomer in proteins.tsv.
 	#Add the id from operon_rnas to the rna_set list
-
 	protein_index = {}
 	for protein_row in PROTEIN_INFO:
 		protein_row['rna_set'] = []
@@ -675,6 +674,8 @@ def make_new_proteins_file(output_file):
 
 	for rna_row in rna_info:
 		for monomer in rna_row['monomer_set']:
+			if monomer == 'null': # in the case of rRNAs and tRNAs
+				continue
 			protein_row = protein_index[monomer]
 			protein_row['rna_set'].append(rna_row['id'])
 	'''
