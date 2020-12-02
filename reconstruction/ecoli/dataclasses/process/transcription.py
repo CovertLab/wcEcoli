@@ -278,11 +278,6 @@ class Transcription(object):
 		idx_16S = np.array(idx_16S)
 		idx_5S = np.array(idx_5S)
 
-		# Load IDs of protein monomers
-		# TODO (mialy): Better way to do this for its downstream use? Right now just replicating what
-		# was done before columns were deleted.
-		monomer_ids = ['_'.join([monomer.replace('-MONOMER', '') for monomer in rna['monomer_set']]) + '-MONOMER' for rna in raw_data.operon_rnas]
-
 		# Load lists of all monomers that can be transcribed by the operon.
 		# Create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
 
@@ -416,6 +411,7 @@ class Transcription(object):
 
 		id_length = max(len(id_) for id_ in rna_ids_with_compartments)
 		gene_id_length = max(len(id_) for id_ in gene_ids)
+
 		rna_data = np.zeros(
 			n_rnas,
 			dtype = [
@@ -452,12 +448,21 @@ class Transcription(object):
 		rna_data['is_miscRNA'] = [rna["type"] == "miscRNA" for rna in raw_data.operon_rnas]
 		rna_data['is_rRNA'] = [rna["type"] == "rRNA" for rna in raw_data.operon_rnas]
 		rna_data['is_tRNA'] = [rna["type"] == "tRNA" for rna in raw_data.operon_rnas]
+	
+		# mark an entire operon as true if it contains a ribosomal protein
 		rna_data['is_ribosomal_protein'] = [
-			"{}[c]".format(x) in sim_data.molecule_groups.ribosomal_proteins
-			for x in monomer_ids]
+			any("{}[c]".format(item) in sim_data.molecule_groups.ribosomal_proteins 
+				for item in operon_rna['monomer_set'])
+			for operon_rna in raw_data.operon_rnas
+			]
+		# mark an entire operon as true if it contains a rna polymerase protein
+		# operons will be double marked as ribosomal and polymerase. this might have to be
+		# updated later
 		rna_data['is_RNAP'] = [
-			"{}[c]".format(x) in sim_data.molecule_groups.RNAP_subunits
-			for x in monomer_ids]
+			any("{}[c]".format(item) in sim_data.molecule_groups.RNAP_subunits 
+				for item in operon_rna['monomer_set'])
+			for operon_rna in raw_data.operon_rnas
+			]
 		rna_data['is_23S_rRNA'] = is_23S
 		rna_data['is_16S_rRNA'] = is_16S
 		rna_data['is_5S_rRNA'] = is_5S
