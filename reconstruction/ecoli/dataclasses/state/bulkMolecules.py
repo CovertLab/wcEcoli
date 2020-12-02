@@ -18,7 +18,7 @@ class BulkMolecules(object):
 		bulkData = np.zeros(
 			0,
 			dtype = [
-				("id", "U200"),
+				("id", "U300"),
 				("mass", "{}f8".format(len(sim_data.submass_name_to_index))),
 				]
 			)
