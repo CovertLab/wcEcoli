@@ -52,7 +52,7 @@ def plot_operon_master(operon_data, master_data):
                  'spot_syn',
                  'fraction_trna_charged']
 
-    with PdfPages('out/operon_vs_master_growth_limits_multigen.pdf') as pdf:
+    with PdfPages('out/rend_seq_ribosome_only/operon_vs_master_growth_limits_multigen.pdf') as pdf:
         for p in plot_list:
             op_t = 0
             m_t = 0
@@ -89,6 +89,6 @@ def plot_operon_master(operon_data, master_data):
 
 
 
-operon_gen_data = cat_gen_data('/Users/taryn/GoogleDrive/code/wcEcoli/out/clean_1124_allTU/wildtype_000000/000000')
-master_gen_data = cat_gen_data('/Users/taryn/GoogleDrive/code/wcEcoli_master/wcEcoli/out/master1019/wildtype_000000/000000')
+operon_gen_data = cat_gen_data('/Users/mialydefelice/Documents/code_repositories/wcEcoli_2/wcEcoli/out/rend_seq_ribosome_only/wildtype_000000/000000')
+master_gen_data = cat_gen_data('/Users/mialydefelice/Documents/code_repositories/wcEcoli_2/wcEcoli/out/master_troubleshooting/wildtype_000000/000000')
 plot_operon_master(operon_gen_data, master_gen_data)
