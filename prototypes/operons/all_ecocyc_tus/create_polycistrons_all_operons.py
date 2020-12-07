@@ -8,6 +8,7 @@ import warnings
 
 from functools import partial
 from reconstruction import spreadsheets
+from reconstruction.spreadsheets import tsv_reader
 
 '''
 NOTE:
@@ -25,6 +26,8 @@ Use tsvreader instead of json reader.
 
 When was the ecocyc file pulled?
 - Get new TU's and coordinates file.
+
+- Can we use a different synonyms file? Do we need the synonyms file?
 
 
 '''
@@ -52,7 +55,19 @@ def gather_tu_information(tu_data, synonyms_data):
 			tu_information.append([object_ids, row[4]])
 	return tu_information
 
-def find_rna_ids(file_path):
+def rna_id_to_gene_id(gene_data_path):
+	'''
+	Returns a dictionary linking geneIds to RNA ids
+	'''
+	rna_to_gene_id_dict = {}
+	with open(gene_data_path) as tsvfile:
+		reader = JsonReader(tsvfile)
+		fieldnames = reader.fieldnames
+		for row in reader:
+			rna_to_gene_id_dict[row['rna_id']] = row['id']
+	return rna_to_gene_id_dict
+
+def find_rna_ids(file_path, rna_to_gene_id_dict):
 	mrnas_list = []
 	all_rnas = []
 	with open(file_path) as tsvfile:
@@ -60,11 +75,12 @@ def find_rna_ids(file_path):
 		fieldnames = reader.fieldnames
 		for row in reader:
 			try:
-				all_rnas.append(row['geneId'])
+				#all_rnas.append(row['id']['geneId'])
+				all_rnas.append(rna_to_gene_id_dict[row['id']])
 			except:
 				pass 
 			if row['type'] == 'mRNA':
-				mrnas_list.append(row['geneId'])
+				mrnas_list.append(rna_to_gene_id_dict[row['id']])
 	return all_rnas, mrnas_list
 
 def returnNotMatches(a, b):
@@ -147,33 +163,46 @@ def check_gene_order(sorted_tu, neighbor_dictionary):
 	mismatch_check = [x for x in mismatch_check if x]
 	return mismatch_check
 
-def sort_tu(row, gene_coordinates, mrna_ids):
+def sort_tu(row, gene_coordinates, mrna_ids, neighbor_dictionary):
 	'''
 	Returns:
 	List of genes in sorted order.
+
+	Sorts genes using a series of 'checks'
 	'''
+	# Prespecify a warning message:
 	mismatch_warning_message = "For this operon ({}), the directions do not match"
 
+	# initialize variables:
 	row_dup_removed = set(row[0])
 	tu_coordinates = []
 	misordered_operon = []
+
+	# Check 1:
+	# Look to see if the gene has coordinates within our version of the genome. If not flag it.
 	check_1 = 0
 	for gene in row_dup_removed:
 		try:
-			#tu_coordinates.append(gene_coordinates[gene])
 			tu_coordinates.append((gene, gene_coordinates[gene]['coordinate'], gene_coordinates[gene]['direction']))
 		except KeyError:
 			check_1 += 1
+
+	# Check 2:
+	# Check if the genes in the TU are mRNAs
 	check_2 = 0
 	for gene in row_dup_removed:
 		if gene not in mrna_ids:
 			check_2 +=1
+
+	# Detect if the directions of the genes in the opeorn match
 	if len(set([tu[2] for tu in tu_coordinates])) > 1:
-		warnings.warn(mismatch_warning_message.format("insert tu here"))
+		warnings.warn(mismatch_warning_message.format(tu[0]))
+
+	# If any of the checks fail, then dont recored that TU
 	if check_1 > 0 or check_2 > 0:
 		sorted_tu = []
+	# If the checks pass then sort the TU and record, reverse order if gene is on - strand
 	elif check_1 == 0 and check_2 == 0:
-		#sorted_inds, sorted_items = zip(*sorted([(i,e) for i,e in enumerate(tu_coordinates)], key=itemgetter(1)))
 		sorted_tu = [gene[0] for gene in sorted(tu_coordinates, key=itemgetter(1), reverse=False)]
 		if row[1] == '-':
 			sorted_tu.reverse()
@@ -182,12 +211,28 @@ def sort_tu(row, gene_coordinates, mrna_ids):
 			misordered_operon.append(mismatch_check)
 	return sorted_tu, misordered_operon
 
+def find_polycistrons():
+	return
+
 def write_output_file(data, header, output_file):
 	with open(output_file, "w") as f:
 		writer = JsonWriter(f, header)
 		writer.writeheader()
 		for row in data:
 			writer.writerow(row)
+	return
+
+def write_ouput_file_omit_genes(data, header, omission_list, output_file):
+	with open(output_file, "w") as f:
+		writer = JsonWriter(f, header)
+		writer.writeheader()
+		for row in data:
+			count = 0
+			for gene in row['transcription_units']:
+				if gene in omission_list:
+					count+=1
+			if count == 0:
+				writer.writerow(row)
 	return
 
 DIALECT = "excel-tab"
@@ -203,7 +248,6 @@ tu_path = os.path.join(data_loc, 'new_frameID_tus_coordinates_directions.txt')
 tu_data = list(csv.reader(open(tu_path, 'r'), delimiter='\t'))[1:]
 
 # --- Upload gene data
-
 gene_data_path = os.path.join('reconstruction', 'ecoli', 'flat', 'genes.tsv')
 
 # --- Upload synonyms data
@@ -226,8 +270,9 @@ tu_information = gather_tu_information(tu_data, synonyms_data)
 # how many unique genes are coded into operons
 genes_in_operons = set([j for i in tu_information for j in i[0]])
 
+rna_to_gene_id_dict = rna_id_to_gene_id(gene_data_path)
 # find ids of all mRNAs
-rna_ids, mrna_ids = find_rna_ids(rna_file_path)
+rna_ids, mrna_ids = find_rna_ids(rna_file_path, rna_to_gene_id_dict)
 
 # find the genes that are not mrnas (doing the negative to save space)
 #non_mrnas = [gene for gene in genes_in_operons if gene not in mrna_ids]
@@ -239,32 +284,7 @@ monocistrons = [row[0] for row in tu_information if len(row[0]) == 1]
 gene_coordinates = gather_gene_coordinates(gene_data_path)
 neighbor_dictionary = create_neighbor_dictionary(gene_coordinates)
 
-'''
-polycistrons_file = []
-monocistrons_file = []
-polycistrons_header = ['polycistrons']
-monocistrons_header = ['monocistrons']
-
-polycistrons_dict_list = []
-monocistrons_to_remove_list = []
-misordered_operons = []
-
-for row in polycistrons:
-	polydict = {}
-	monodict = []
-	sorted_tu, misordered_operon = sort_tu(row, gene_coordinates, mrna_ids)
-	if sorted_tu != []:
-		polydict['polycistrons'] = sorted_tu
-		monodict['monocistrons_to_remove'] = [gene for gene in sorted_tu if gene not in monocistrons]
-		monodict['monocistrons_to_keep']
-		#make sure not to repeat rows
-		if rowdict not in poly_dict_list:
-			poly_dict_list.append(polydict)
-			monocistrons_to_remove_list.append(monodict)
-	if misordered_operon:
-		misordered_operons.append(misordered_operon)
-'''
-
+polycistron_dictionary = find_polycistrons()
 
 
 polycistrons_file = []
@@ -273,7 +293,7 @@ poly_dict_list = []
 misordered_operons = []
 for row in polycistrons:
 	rowdict = {}
-	sorted_tu, misordered_operon = sort_tu(row, gene_coordinates, mrna_ids)
+	sorted_tu, misordered_operon = sort_tu(row, gene_coordinates, mrna_ids, neighbor_dictionary)
 	if sorted_tu != []:
 		rowdict['transcription_units'] = sorted_tu
 		rowdict['monomers_to_remove'] = [gene for gene in sorted_tu if [gene] not in monocistrons]
@@ -283,61 +303,42 @@ for row in polycistrons:
 	if misordered_operon:
 		misordered_operons.append(misordered_operon)
 
-write_output_file(poly_dict_list, header, polycistrons_output_file)
-#write_output_files(monocistrons_to_keep, monocistrons_header, monocistrons_output)
+#write_output_file(poly_dict_list, header, polycistrons_output_file)
 
-breakpoint()
+functional_genes_file_path = os.path.join('prototypes/troubleshooting_mass_loss', 'functional_genes.tsv')
+type_to_exclued = 'Metabolism'
+def create_exclusion_file(functional_genes_file_path, type_to_exclued):
+	'''
+	with open(functional_genes_file_path, 'r') as j:
+		file_reader = csv.reader(j, delimiter='\t')
+		next(file_reader) # skip header
+		next(file_reader)
+		data = []
+		for row in file_reader:
+			data.append(row)
+		breakpoint()
+	'''
+	exclusion_reader = csv.reader(open(functional_genes_file_path, 'r'), delimiter='\t')
+	exclusion_list = list(exclusion_reader)[2:]
+	exclusion_rnas = [row[1] for row in exclusion_list if row[3] == 'Transcription' or row[3] == 'RNA Decay']
+	#exclusion_reader.close()
+	return exclusion_rnas
 
+exclusion_list = create_exclusion_file(functional_genes_file_path, type_to_exclued)
+excluded = [rna[:-4] for rna in exclusion_list]
 
+omission_output_file_path = os.path.join(data_loc, 'all_polycistrons_except_transcription_rna_decay_fg.tsv')
+write_ouput_file_omit_genes(poly_dict_list, header, excluded, omission_output_file_path)
 
-
-
-
-# TODO: Remove repeat genes in operon.
-
-# Reorder polycistrons:
+# use this portion in the case that you want to exclude certain RNAs from being in operons at all
 '''
-for pc in polycistrons:
-	pc_coordinate = []
-	for gene in pc[0]:
-		pc_coordinate.append(gene_coordinates[gene])
-	sorted_index = np.argsort(pc_coordinate)
+high_expressors_file_path = os.path.join('out', 'master_troubleshooting', 'top_expressers_master_rna_data.tsv')
+high_expressers_list = list(csv.reader(open(high_expressors_file_path, 'r'), delimiter = '\t'))[0]
+high_expressers = [rna[:-4] for rna in high_expressers_list]
 
-# Some operons repeat but just in a different order. Keep only one order version.
-
-for row in polycistrons:
-	for check_row in polycistrons:
-		if row[0] != check_row[0] and set(row[0]).difference(set(check_row[0])) == set([]) and set(check_row[0]).difference(set(row[0])) == set([]):
-			polycistrons.remove(row[0])
-'''
-#monomers_to_include = [row[0] for row in polycistrons if len(row[0]) == 1 and row[0] not in non_mrnas]
-
-
-# - Collect some extra stats so we know more about the genes being included
-# - Or excluded from the model.
-
-pc_genes_excluded = set(list(itertools.chain.from_iterable(all_polycistrons_with_misc_mrnas)))
-pc_genes_included = set(list(itertools.chain.from_iterable(find_all_polycistrons)))
-
-def gather_tu_stats():
-	return
-
-# are any ids not present in our lists?
-what_gene_is_this = [gene for gene in genes_in_operons if gene not in all_rnas]
-# which mrnas are not not in a TU?
-mRNAs_not_in_ecocyc_data = returnNotMatches(mrnas_list, genes_in_operons)
-
-'''
-find_all_polycistrons = []
-all_polycistrons_with_misc_mrnas = []
-all_genes_in_misc_operons = []
-all_monomers_that_are_staying = []
-for row in polycistrons:
-
-		all_monomers_that_are_staying.append([gene for gene in row if gene in monomers_to_include])
-		rowdict['monomers_to_remove'] = monomers_to_remove
-		polycistrons_file.append(rowdict)
+omission_output_file_path = os.path.join(data_loc, 'polycistrons_no_master_rna_high_expressers.tsv')
+write_ouput_file_omit_genes(poly_dict_list, header, high_expressers, omission_output_file_path)
 '''
 
-# if __name__ == "__main__":
+
 
