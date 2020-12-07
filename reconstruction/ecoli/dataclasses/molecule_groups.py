@@ -73,6 +73,7 @@ class MoleculeGroups(object):
 			# TODO: 'EG10245-MONOMER[c]' (DNAP III subunit tau) should be added
 			# 	to the list of trimer subunits once frame-shifting proteins are
 			# 	produced.
+			#'replisome_trimer_subunits': ['CPLX0-2361[c]'],
 			'replisome_trimer_subunits': ['CPLX0-2361[c]', 'CPLX0-3761[c]'],
 			'replisome_monomer_subunits': ['CPLX0-3621[c]', 'EG10239-MONOMER[c]',
 				'EG11500-MONOMER[c]', 'EG11412-MONOMER[c]'],
