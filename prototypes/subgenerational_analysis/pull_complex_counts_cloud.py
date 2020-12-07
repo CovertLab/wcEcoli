@@ -76,7 +76,7 @@ def import_proteins_rnas_tsv():
 	need to structure outputs at np.ndarray
 	'''
 	FLAT_DIR = os.path.join('reconstruction', 'ecoli', 'flat')
-	COMPLEX_FILE = os.path.join(FLAT_DIR, 'complexationReactions.tsv')
+	COMPLEX_FILE = os.path.join(FLAT_DIR, 'complexation_reactions.tsv')
 	complex_info, fieldnames = parse_tsv(COMPLEX_FILE)
 
 	return complex_info
@@ -162,7 +162,7 @@ for i, sim_dir in enumerate(all_dir):
 TO DO:rewrite subsampling to move it into the main function!
 This was originally written to take in the full concatenated data set. Now need to break it up per gen.
 '''
-'''
+
 if subsample:
 	rna_counts = rna_counts[0::subsample_degree].copy()
 	protein_counts = protein_counts[0::subsample_degree].copy()
@@ -171,7 +171,7 @@ if subsample:
 	save_file_name = seed_name + '_multi_gen_rna_protein_counts_ids_subsampled.tsv'
 else:
 	save_file_name = seed_name + '_multi_gen_rna_protein_counts_ids.tsv'
-'''	
+
 
 
 #save the remainder of collected information:
