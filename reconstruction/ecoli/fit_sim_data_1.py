@@ -3030,8 +3030,31 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 	pPromoterBound = {}  # Initialize return value
 	cellDensity = sim_data.constants.cell_density
 
+	# Matrix to determine number of promoters each TF can bind to in a given condition
+	rna_data = sim_data.process.transcription.rna_data
+	tf_idx = {tf: i for i, tf in enumerate(sim_data.tf_to_active_inactive_conditions)}
+	rna_idx = {rna[:-3]: i for i, rna in enumerate(rna_data['id'])}
+	regulation_i = []
+	regulation_j = []
+	regulation_v = []
+	for tf, rnas in sim_data.tf_to_fold_change.items():
+		if tf not in tf_idx:
+			continue
+
+		for rna in rnas:
+			regulation_i.append(tf_idx[tf])
+			regulation_j.append(rna_idx[rna])
+			regulation_v.append(1)
+	regulation = scipy.sparse.csr_matrix(
+		(regulation_v, (regulation_i, regulation_j)),
+		shape=(len(tf_idx), len(rna_idx)))
+	rna_coords = rna_data['replication_coordinate']
+
 	for conditionKey in sorted(cell_specs):
 		pPromoterBound[conditionKey] = {}
+		tau = sim_data.condition_to_doubling_time[conditionKey].asNumber(units.min)
+		n_avg_copy = sim_data.process.replication.get_average_copy_number(tau, rna_coords)
+		n_promoter_targets = regulation.dot(n_avg_copy)
 
 		cellVolume = cell_specs[conditionKey]["avgCellDryMassInit"]/cellDensity/sim_data.mass.cell_dry_mass_fraction
 		countsToMolar = 1/(sim_data.constants.n_avogadro * cellVolume)
@@ -3039,7 +3062,7 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 		for tf in sorted(sim_data.tf_to_active_inactive_conditions):
 			tfType = sim_data.process.transcription_regulation.tf_to_tf_type[tf]
 			tf_counts = cell_specs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")
-			tf_targets = len(sim_data.tf_to_fold_change[tf])
+			tf_targets = n_promoter_targets[tf_idx[tf]]
 			limited_tf_counts = min(1, tf_counts / tf_targets)
 			if tfType == "0CS":
 				pPromoterBound[conditionKey][tf] = limited_tf_counts  # If TF exists, the promoter is always bound to the TF
