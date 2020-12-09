@@ -3038,14 +3038,11 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 
 		for tf in sorted(sim_data.tf_to_active_inactive_conditions):
 			tfType = sim_data.process.transcription_regulation.tf_to_tf_type[tf]
-
+			tf_counts = cell_specs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")
+			tf_targets = len(sim_data.tf_to_fold_change[tf])
+			limited_tf_counts = min(1, tf_counts / tf_targets)
 			if tfType == "0CS":
-				tfCount = cell_specs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")
-
-				if tfCount > 0:
-					pPromoterBound[conditionKey][tf] = 1.  # If TF exists, the promoter is always bound to the TF
-				else:
-					pPromoterBound[conditionKey][tf] = 0.
+				pPromoterBound[conditionKey][tf] = limited_tf_counts  # If TF exists, the promoter is always bound to the TF
 
 			elif tfType == "1CS":
 				boundId = sim_data.process.transcription_regulation.active_to_bound[tf]  # ID of TF bound to ligand
@@ -3056,32 +3053,32 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 
 				# Get bulk average concentrations of ligand and TF
 				signalConc = (countsToMolar*cell_specs[conditionKey]["bulkAverageContainer"].count(signal)).asNumber(units.mol/units.L)
-				tfConc = (countsToMolar*cell_specs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")).asNumber(units.mol/units.L)
+				tfConc = (countsToMolar*tf_counts).asNumber(units.mol/units.L)
 
 				# If TF is active in its bound state
 				if tf == boundId:
 					if tfConc > 0:
-						pPromoterBound[conditionKey][tf] = sim_data.process.transcription_regulation.p_promoter_bound_SKd(signalConc, kd, signalCoeff)
+						pPromoterBound[conditionKey][tf] = limited_tf_counts * sim_data.process.transcription_regulation.p_promoter_bound_SKd(signalConc, kd, signalCoeff)
 					else:
 						pPromoterBound[conditionKey][tf] = 0.
 
 				# If TF is active in its unbound state
 				else:
 					if tfConc > 0:
-						pPromoterBound[conditionKey][tf] = 1. - sim_data.process.transcription_regulation.p_promoter_bound_SKd(signalConc, kd, signalCoeff)
+						pPromoterBound[conditionKey][tf] = 1. - limited_tf_counts * sim_data.process.transcription_regulation.p_promoter_bound_SKd(signalConc, kd, signalCoeff)
 					else:
 						pPromoterBound[conditionKey][tf] = 0.
 
 			elif tfType == "2CS":
 				# Get bulk average concentrations of active and inactive TF
-				activeTfConc = (countsToMolar*cell_specs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")).asNumber(units.mol/units.L)
+				activeTfConc = (countsToMolar*tf_counts).asNumber(units.mol/units.L)
 				inactiveTf = sim_data.process.two_component_system.active_to_inactive_tf[tf + "[c]"]
 				inactiveTfConc = (countsToMolar*cell_specs[conditionKey]["bulkAverageContainer"].count(inactiveTf)).asNumber(units.mol/units.L)
 
 				if activeTfConc == 0 and inactiveTfConc == 0:
 					pPromoterBound[conditionKey][tf] = 0.
 				else:
-					pPromoterBound[conditionKey][tf] = activeTfConc/(activeTfConc + inactiveTfConc)
+					pPromoterBound[conditionKey][tf] = limited_tf_counts * activeTfConc/(activeTfConc + inactiveTfConc)
 
 	return pPromoterBound
 
