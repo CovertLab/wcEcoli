@@ -194,7 +194,7 @@ class Transcription(object):
 		rna_id_to_half_life = {}
 		reported_mRNA_half_lives = []
 
-		for rna in raw_data.rna_half_lives:
+		for rna in raw_data.operon_rnas_half_lives:
 			rna_id_to_half_life[rna['id']] = rna['half_life']
 			if rna['id'] in mRNA_ids:
 				reported_mRNA_half_lives.append(rna['half_life'])
@@ -448,13 +448,23 @@ class Transcription(object):
 		rna_data['is_miscRNA'] = [rna["type"] == "miscRNA" for rna in raw_data.operon_rnas]
 		rna_data['is_rRNA'] = [rna["type"] == "rRNA" for rna in raw_data.operon_rnas]
 		rna_data['is_tRNA'] = [rna["type"] == "tRNA" for rna in raw_data.operon_rnas]
-	
+		
+		# operon_integration modification
+		# Only mark is_ribosomal_protein as true if it does not include a RNA Polymerase protein.
+		for idx, operon_rna in enumerate(raw_data.operon_rnas):
+			if any("{}[c]".format(monomer) in sim_data.molecule_groups.RNAP_subunits for monomer in operon_rna['monomer_set']):
+				rna_data['is_ribosomal_protein'][idx] = False
+			elif any("{}[c]".format(monomer) in sim_data.molecule_groups.ribosomal_proteins for monomer in operon_rna['monomer_set']):
+				rna_data['is_ribosomal_protein'][idx] = True
+		'''
 		# mark an entire operon as true if it contains a ribosomal protein
 		rna_data['is_ribosomal_protein'] = [
 			any("{}[c]".format(item) in sim_data.molecule_groups.ribosomal_proteins 
 				for item in operon_rna['monomer_set'])
 			for operon_rna in raw_data.operon_rnas
 			]
+		'''
+		# operon_integration modification
 		# mark an entire operon as true if it contains a rna polymerase protein
 		# operons will be double marked as ribosomal and polymerase. this might have to be
 		# updated later
@@ -472,7 +482,6 @@ class Transcription(object):
 		rna_data['direction'] = direction
 		rna_data['monomer_set'] = monomer_sets
 		rna_data['gene_starts_stops'] = gene_starts_stops
-
 		field_units = {
 			'id': None,
 			'deg_rate': 1 / units.s,
