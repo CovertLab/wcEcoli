@@ -82,6 +82,7 @@ Returns:
 		- Counts of each transcription unit included in the model. Functionally replaces
 		rna seq counts in the model, at least for the basal case. See todos for future
 		upgrades to this file
+	operon_half_.tsv
 Note:
 - I have only functionally checked mRNAs; if adding tRNA or rRNA operons please 
 	double check that all naming conventions hold correctly - updates
@@ -350,6 +351,7 @@ def gather_tu_genes_info():
 	rna_to_gene_map = {gene['rna_id']: gene['id'] for gene in GENE_INFO}
 	for pc in PC_INFO:
 		pc_gene_id = '_'.join(pc['transcription_units'])
+		first_gene = pc['transcription_units'][0] + '_RNA'
 		tu_genes_info[pc_gene_id] = {}
 		for rna in pc['transcription_units']:
 			tu_genes_info[pc_gene_id][rna] = {}
@@ -362,7 +364,8 @@ def gather_tu_genes_info():
 					tu_genes_info[pc_gene_id][rna]['modified_forms'] = rna_row['modified_forms']
 					tu_genes_info[pc_gene_id][rna]['monomer_id'] = rna_row['monomer_id']
 			for rna_hl_row in RNA_HALF_LIVES_INFO:  # create separate half lives file
-				if rna_hl_row['id'] == rnaId:
+				# if rna_hl_row['id'] == rnaId:
+				if rna_hl_row['id'] == rna_id:
 					tu_genes_info[pc_gene_id][rna]['halfLife'] = rna_hl_row['half_life (units.s)']
 			'''
 			for gene_row in GENE_INFO:
@@ -452,10 +455,11 @@ def gather_tu_info(tu_genes_info):
 		#tu_info[pc_gene_id]['gene_starts_stops'] = find_gene_starts_stops(pc_gene_id, tu_genes_info[pc_gene_id])
 
 		# Half-Life Info
+		# Note: Will assign average half life if first gene does not have an associated half life.
 		tu_half_life_info[pc_gene_id] = {}
 		tu_half_life_info[pc_gene_id]['id'] = pc_gene_id + '_RNA'
 		try:
-			tu_half_life_info[pc_gene_id]['half_life'] = tu_genes_info[pc_gene_id][first_gene]['halfLife']
+			tu_half_life_info[pc_gene_id]['half_life (units.s)'] = tu_genes_info[pc_gene_id][first_gene]['halfLife']
 		except:
 			#for now dont include a half life if the first gene does not have one, and let it be solved for in the parca
 			del tu_half_life_info[pc_gene_id]
@@ -535,9 +539,13 @@ def write_output_file(tu_info, tu_half_life_info, monomers_to_remove):
 			if not any(monomer + '_RNA' == rna_hl_row['id'] for monomer in monomers_to_remove):
 				writer.writerow(rna_hl_row)
 		for pc_data in tu_info:
+			#breakpoint()
 			try:
 				writer.writerow(tu_half_life_info[pc_data])
 			except:
+				# Note: Need to do this try:except since sometimes the operon is not given a half life if the first gene 
+				# is not originally assigned a half life.
+				#breakpoint()
 				pass
 	return
 
