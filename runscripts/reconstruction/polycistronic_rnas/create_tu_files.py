@@ -202,6 +202,16 @@ TF_INFO, TF_FIELDNAMES = parse_tsv(TF_COND_FILE)
 GENOMIC_SEQUENCE = load_sequence(GENOME_SEQUENCE_FILE)
 rna_seq_data_all_cond = parse_tsv(RNA_SEQ_FILE)
 
+'''
+How to calculate Half-Life of a polycistronic mRNA:
+1. For a multi-gene operon, take the value of the first gene. If the first gene does not 
+have an experimentally determined half-life, let the average be used.
+2. For a multi-gene operon, take the value of the first gene. If the first gene does not 
+have an experimentally determined half-life, take the value of the second gene, and so on.
+If no genes have half life, allow to use the average.
+3. Take the average of all available half-lives.
+'''
+HALF_LIFE_CALC = 2
 
 
 def find_tu_type(tu_genes_info):
@@ -394,6 +404,48 @@ def find_gene_starts_stops(pc_gene_id, pc_gene_info):
 			gene_starts_stops.append([start, stop])
 	return gene_starts_stops
 '''
+
+def calculate_half_life(tu_genes_info, pc_gene_id, pc):
+	'''
+	How to calculate Half-Life of a polycistronic mRNA:
+	1. For a multi-gene operon, take the value of the first gene. If the first gene does not 
+	have an experimentally determined half-life, let the average be used.
+	2. For a multi-gene operon, take the value of the first gene. If the first gene does not 
+	have an experimentally determined half-life, take the value of the second gene, and so on.
+	If no genes have half life, allow to use the average.
+	3. Take the average of all available half-lives.
+	'''
+	if HALF_LIFE_CALC == 1:
+		first_gene = pc['transcription_units'][0]
+		try:
+			half_life = tu_genes_info[pc_gene_id][first_gene]['halfLife']
+		except:
+			#for now dont include a half life if the first gene does not have one, and let it be solved for in the parca
+			half_life = False
+	if HALF_LIFE_CALC == 2:
+		half_lives = []
+		for gene in pc['transcription_units']:
+			try:
+				half_lives.append(tu_genes_info[pc_gene_id][gene]['halfLife'])
+			except:
+				pass
+		if half_lives:
+			half_life = half_lives[0]
+		else: 
+			half_life = False
+	if HALF_LIFE_CALC == 3:
+		half_lives = []
+		for gene in pc['transcription_units']:
+			try:
+				half_lives.append(tu_genes_info[pc_gene_id][gene]['halfLife'])
+			except:
+				pass
+		if half_lives:
+			half_life = np.mean(half_lives)
+		else: 
+			half_life = False
+	return half_life
+	
 def gather_tu_info(tu_genes_info):
 	"""
 	Purpose:
@@ -458,11 +510,21 @@ def gather_tu_info(tu_genes_info):
 		# Note: Will assign average half life if first gene does not have an associated half life.
 		tu_half_life_info[pc_gene_id] = {}
 		tu_half_life_info[pc_gene_id]['id'] = pc_gene_id + '_RNA'
+		half_life = calculate_half_life(tu_genes_info, pc_gene_id, pc)
+		if half_life:
+			tu_half_life_info[pc_gene_id]['half_life (units.s)'] = half_life
+		else:
+			del tu_half_life_info[pc_gene_id]
+
+		#for now dont include a half life if the first gene does not have one, and let it be solved for in the parca
+			
+		'''
 		try:
 			tu_half_life_info[pc_gene_id]['half_life (units.s)'] = tu_genes_info[pc_gene_id][first_gene]['halfLife']
 		except:
 			#for now dont include a half life if the first gene does not have one, and let it be solved for in the parca
 			del tu_half_life_info[pc_gene_id]
+		'''
 	return tu_info, tu_half_life_info
 
 
