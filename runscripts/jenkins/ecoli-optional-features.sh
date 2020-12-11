@@ -1,12 +1,7 @@
-HOST=$1
-NAME=$2
-PORT=$3
-PASSWORD=$4
-
 set -e
 
 source runscripts/jenkins/setup-environment.sh
-sh runscripts/jenkins/fireworks-config.sh $HOST $NAME $PORT $PASSWORD
+sh runscripts/jenkins/fireworks-config.sh optional
 
 echo y | lpad reset
 
@@ -14,7 +9,7 @@ DESC="No tRNA Charging" TRNA_CHARGING=0 N_GENS=8 \
   PARALLEL_PARCA=1 SINGLE_DAUGHTERS=1 COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 \
   PLOTS=ACTIVE WC_ANALYZE_FAST=1 \
   python runscripts/fireworks/fw_queue.py
-DESC="ppGpp regulation" PPGPP_REGULATION=1 N_GENS=8 \
+DESC="ppGpp regulation" PPGPP_REGULATION=1 N_GENS=4 \
   PARALLEL_PARCA=1 SINGLE_DAUGHTERS=1 COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 \
   PLOTS=ACTIVE WC_ANALYZE_FAST=1 \
   python runscripts/fireworks/fw_queue.py

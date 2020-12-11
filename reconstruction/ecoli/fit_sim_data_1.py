@@ -2099,10 +2099,10 @@ def expressionFromConditionAndFoldChange(rnaIds, basalExpression, condPerturbati
 		rnaIdxs.append(np.where(rnaIds == key)[0][0])
 		fcs.append(value)
 	for key in sorted(tfFCs):
-		# TODO (ggsun): remove these earlier?
-		if key + "[c]" not in rna_id_set:
+		compartment_key = key + "[c]"
+		if compartment_key in condPerturbations:
 			continue
-		rnaIdxs.append(np.where(rnaIds == key + "[c]")[0][0])
+		rnaIdxs.append(np.where(rnaIds == compartment_key)[0][0])
 		fcs.append(tfFCs[key])
 
 	# Sort fold changes and indices for the bool array indexing to work properly
@@ -2720,10 +2720,13 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 
 		# Solve optimization problem
 		prob_r = Problem(objective_r, constraint_r)
-		prob_r.solve(solver='ECOS')
+		prob_r.solve(solver='ECOS', max_iters=1000)
 
-		if prob_r.status != "optimal":
-			raise Exception("Solver could not find optimal value")
+		if prob_r.status == 'optimal_inaccurate':
+			raise RuntimeError('Solver found an optimum that is inaccurate.'
+				' Try increasing max_iters or adjusting tolerances.')
+		elif prob_r.status != 'optimal':
+			raise RuntimeError('Solver could not find optimal value')
 
 		# Get optimal value of R
 		r = np.array(R.value).reshape(-1)
@@ -2777,8 +2780,11 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		prob_p = Problem(objective_p, constraint_p)
 		prob_p.solve(solver='ECOS')
 
-		if prob_p.status != "optimal":
-			raise Exception("Solver could not find optimal value")
+		if prob_p.status == 'optimal_inaccurate':
+			raise RuntimeError('Solver found an optimum that is inaccurate.'
+				' Try increasing max_iters or adjusting tolerances.')
+		elif prob_p.status != 'optimal':
+			raise RuntimeError('Solver could not find optimal value')
 
 		# Get optimal value of P
 		p = np.array(P.value).reshape(-1)
