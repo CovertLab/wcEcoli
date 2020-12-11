@@ -1517,7 +1517,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	# Update mRNA expression to reflect monomer counts
 	assert np.all(
 		sim_data.process.translation.monomer_data['rna_id'][sim_data.relation.monomer_index_to_rna_mapping] == sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']]
-		), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests
+		), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests (only need to do once?)
 
 	mRnaExpressionView = rnaExpressionContainer.countsView(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']])
 	mRnaExpressionFrac = np.sum(mRnaExpressionView.counts())
@@ -1726,18 +1726,6 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 
 		allMoleculesView.countsIs(0)
 
-		# randomState = np.random.RandomState(seed)
-
-		# rnaView.countsIs(randomState.multinomial(
-		# 	totalCount_RNA,
-		# 	distribution_RNA
-		# 	))
-
-		# proteinView.countsIs(randomState.multinomial(
-		# 	totalCount_protein,
-		# 	distribution_protein
-		# 	))
-
 		rnaView.countsIs(totalCount_RNA * distribution_RNA)
 
 		proteinView.countsIs(totalCount_protein * distribution_protein)
@@ -1787,7 +1775,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 				twoComponentSystemMoleculesView.counts(),
 				cellVolume.asNumber(units.L),
 				sim_data.constants.n_avogadro.asNumber(1 / units.mmol),
-				1e6,
+				1e8,
 				)
 			twoComponentSystemMoleculesView.countsInc(moleculeCountChanges)
 
@@ -2101,6 +2089,7 @@ def expressionFromConditionAndFoldChange(rnaIds, basalExpression, condPerturbati
 	"""
 
 	expression = basalExpression.copy()
+	rna_id_set = set(rnaIds)
 
 	# Gather RNA indices and fold changes for each RNA that will be adjusted
 	rnaIdxs = []
@@ -2110,6 +2099,9 @@ def expressionFromConditionAndFoldChange(rnaIds, basalExpression, condPerturbati
 		rnaIdxs.append(np.where(rnaIds == key)[0][0])
 		fcs.append(value)
 	for key in sorted(tfFCs):
+		# TODO (ggsun): remove these earlier?
+		if key + "[c]" not in rna_id_set:
+			continue
 		rnaIdxs.append(np.where(rnaIds == key + "[c]")[0][0])
 		fcs.append(tfFCs[key])
 
@@ -2286,6 +2278,8 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 				row_name_to_index[row_name] = len(row_name_to_index)
 
 				for tf in tfsWithData:
+					if tf not in pPromoterBound[condition]:
+						continue
 					# Add column for each TF that regulates each RNA
 					col_name = rnaIdNoLoc + "__" + tf
 
@@ -2945,6 +2939,9 @@ def calculatePromoterBoundProbability(sim_data, cellSpecs):
 
 			elif tfType == "1CS":
 				boundId = sim_data.process.transcription_regulation.active_to_bound[tf]  # ID of TF bound to ligand
+				if boundId + "[c]" not in sim_data.process.equilibrium.complex_name_to_rxn_idx:
+					continue
+
 				kd = sim_data.process.equilibrium.get_rev_rate(boundId + "[c]") / sim_data.process.equilibrium.get_fwd_rate(boundId + "[c]")
 
 				signal = sim_data.process.equilibrium.get_metabolite(boundId + "[c]")  # ID of ligand that binds to TF
@@ -2969,6 +2966,8 @@ def calculatePromoterBoundProbability(sim_data, cellSpecs):
 						pPromoterBound[conditionKey][tf] = 0.
 
 			elif tfType == "2CS":
+				if boundId + "[c]" not in sim_data.process.two_component_system.active_to_inactive_tf:
+					continue
 				# Get bulk average concentrations of active and inactive TF
 				activeTfConc = (countsToMolar*cellSpecs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")).asNumber(units.mol/units.L)
 				inactiveTf = sim_data.process.two_component_system.active_to_inactive_tf[tf + "[c]"]

@@ -79,7 +79,7 @@ class TranscriptionRegulation(object):
 
 		self.abbr_to_rna_id = {}
 		for lookupInfo in raw_data.transcription_factors:
-			if len(lookupInfo["geneId"]) == 0:
+			if len(lookupInfo["geneId"]) == 0 or lookupInfo["geneId"] not in geneIdToRnaId:
 				continue
 			self.abbr_to_rna_id[lookupInfo["TF"]] = geneIdToRnaId[lookupInfo["geneId"]]
 

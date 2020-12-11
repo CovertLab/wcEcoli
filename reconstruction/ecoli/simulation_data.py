@@ -114,10 +114,12 @@ class SimulationDataEcoli(object):
 
 	def _add_condition_data(self, raw_data):
 		abbrToActiveId = {x["TF"]: x["activeId"].split(", ") for x in raw_data.transcription_factors if len(x["activeId"]) > 0}
-		geneIdToRnaId = {x["id"]: x['rna_id'] for x in raw_data.genes}
-		abbrToRnaId = {x["symbol"]: x['rna_id'] for x in raw_data.genes}
-		abbrToRnaId.update({
-			x["name"]: geneIdToRnaId[x["geneId"]]
+		gene_id_to_rna_id = {
+			gene['id']: gene['rna_id'] for gene in raw_data.genes}
+		gene_symbol_to_rna_id = {
+			gene['symbol']: gene['rna_id'] for gene in raw_data.genes}
+		gene_symbol_to_rna_id.update({
+			x["name"]: gene_id_to_rna_id[x["geneId"]]
 			for x in raw_data.translation_efficiency
 			if x["geneId"] != "#N/A"})
 
@@ -131,7 +133,7 @@ class SimulationDataEcoli(object):
 
 			tf = abbrToActiveId[row["TF"]][0]
 			try:
-				target = abbrToRnaId[row["Target"]]
+				target = gene_symbol_to_rna_id[row["Target"]]
 			except KeyError:
 				notFound.append(row["Target"])
 				continue

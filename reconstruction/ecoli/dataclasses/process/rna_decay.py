@@ -16,6 +16,7 @@ class RnaDecay(object):
 		self._buildRnaDecayData(raw_data, sim_data)
 
 	def _buildRnaDecayData(self, raw_data, sim_data):
+		# TODO (ggsun): Make raw_data.endoRNases independent to compartment info
 		self.endoRNase_ids = [x["endoRnase"] for x in raw_data.endoRNases]
 		self.kcats = (1 / units.s) * np.array([x["kcat"].asNumber(1 / units.s) for x in raw_data.endoRNases])
 		self.stats_fit = {

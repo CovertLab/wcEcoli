@@ -24,6 +24,7 @@ LIST_OF_DICT_FILENAMES = (
 	"disabled_kinetic_reactions.tsv",
 	"dry_mass_composition.tsv",
 	"endoRNases.tsv",
+	"equilibrium_reaction_rates.tsv",
 	"equilibrium_reactions.tsv",
 	"equilibrium_reactions_removed.tsv",
 	"fold_changes.tsv",

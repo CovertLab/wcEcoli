@@ -30,6 +30,9 @@ class Complexation(object):
 		removed_reaction_ids = {
 			rxn['id'] for rxn in raw_data.complexation_reactions_removed}
 
+		# Get IDs of all metabolites
+		metabolite_ids = {met['id'] for met in raw_data.metabolites}
+
 		self.ids_reactions = []
 		reaction_index = 0
 
@@ -41,42 +44,41 @@ class Complexation(object):
 
 			self.ids_reactions.append(reaction['id'])
 
-			for molecule in reaction["stoichiometry"]:
-				if molecule["type"] == "metabolite":
-					moleculeName = "{}[{}]".format(
-						molecule["molecule"].upper(),
-						molecule["location"]
+			for mol_id, coeff in reaction["stoichiometry"].items():
+				if mol_id in metabolite_ids:
+					molecule_name = "{}[{}]".format(
+						mol_id, 'c'  # Assume all metabolites are in cytosol
 						)
 				else:
-					moleculeName = "{}[{}]".format(
-						molecule["molecule"],
-						sim_data.getter.get_compartment(molecule["molecule"])[0]
+					molecule_name = "{}[{}]".format(
+						mol_id,
+						sim_data.getter.get_compartment(mol_id)[0]
 						)
 
-				if moleculeName not in molecules:
-					molecules.append(moleculeName)
+				if molecule_name not in molecules:
+					molecules.append(molecule_name)
 					molecule_index = len(molecules) - 1
 				else:
-					molecule_index = molecules.index(moleculeName)
+					molecule_index = molecules.index(molecule_name)
 
-				coefficient = molecule["coeff"]
-				assert (coefficient % 1) == 0
+				if coeff is None:
+					coeff = -1
+				assert (coeff % 1) == 0
 
 				stoichMatrixI.append(molecule_index)
 				stoichMatrixJ.append(reaction_index)
-				stoichMatrixV.append(coefficient)
+				stoichMatrixV.append(coeff)
 
 				# Classify molecule into subunit or complex depending on sign
 				# of the stoichiometric coefficient - Note that a molecule can
 				# be both a subunit and a complex
-				if coefficient < 0:
-					subunits.append(moleculeName)
+				if coeff < 0:
+					subunits.append(molecule_name)
 				else:
-					assert molecule["type"] == "proteincomplex"
-					complexes.append(moleculeName)
+					complexes.append(molecule_name)
 
 				# Find molecular mass of the molecule and add to mass matrix
-				molecularMass = sim_data.getter.get_mass(moleculeName).asNumber(units.g / units.mol)
+				molecularMass = sim_data.getter.get_mass(molecule_name).asNumber(units.g / units.mol)
 				stoichMatrixMass.append(molecularMass)
 
 			reaction_index += 1

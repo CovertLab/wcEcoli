@@ -55,6 +55,9 @@ class Equilibrium(object):
 		removed_reaction_ids = {
 			rxn['id'] for rxn in raw_data.equilibrium_reactions_removed}
 
+		# Get IDs of all metabolites
+		metabolite_ids = {met['id'] for met in raw_data.metabolites}
+
 		# Remove complexes that are currently not simulated
 		FORBIDDEN_MOLECULES = {
 			"modified-charged-selC-tRNA", # molecule does not exist
@@ -69,10 +72,20 @@ class Equilibrium(object):
 			l["molecules"]["LIGAND"] for l in raw_data.two_component_systems]
 
 		for reaction in raw_data.equilibrium_reactions:
-			for molecule in reaction["stoichiometry"]:
-				if molecule["molecule"] in FORBIDDEN_MOLECULES or (molecule["type"] == "metabolite" and molecule["molecule"] not in MOLECULES_THAT_WILL_EXIST_IN_SIMULATION):
+			for mol_id in reaction["stoichiometry"].keys():
+				if mol_id in FORBIDDEN_MOLECULES or (mol_id in metabolite_ids and mol_id not in MOLECULES_THAT_WILL_EXIST_IN_SIMULATION):
 					removed_reaction_ids.add(reaction['id'])
 					break
+
+		# Get forward and reverse rates of each reaction
+		forward_rates = {
+			rxn['id']: rxn['forward_rate'] for rxn in raw_data.equilibrium_reaction_rates
+			}
+		reverse_rates = {
+			rxn['id']: rxn['reverse_rate'] for rxn in raw_data.equilibrium_reaction_rates
+			}
+		median_forward_rate = np.median(np.array(list(forward_rates.values())))
+		median_reverse_rate = np.median(np.array(list(reverse_rates.values())))
 
 		reaction_index = 0
 
@@ -81,22 +94,21 @@ class Equilibrium(object):
 			if reaction['id'] in removed_reaction_ids:
 				continue
 
-			ratesFwd.append(reaction["forward_rate"])
-			ratesRev.append(reaction["reverse_rate"])
+			ratesFwd.append(forward_rates.get(reaction['id'], median_forward_rate))
+			ratesRev.append(reverse_rates.get(reaction['id'], median_reverse_rate))
 			rxnIds.append(reaction["id"])
 
-			for molecule in reaction["stoichiometry"]:
-				if molecule["type"] == "metabolite":
+			for mol_id, coeff in reaction["stoichiometry"].items():
+				if mol_id in metabolite_ids:
 					moleculeName = "{}[{}]".format(
-						molecule["molecule"].upper(),
-						molecule["location"]
+						mol_id, 'c'  # Assume all metabolites are in cytosol
 						)
 					self.metabolite_set.add(moleculeName)
 
 				else:
 					moleculeName = "{}[{}]".format(
-						molecule["molecule"],
-						sim_data.getter.get_compartment(molecule["molecule"])[0]
+						mol_id,
+						sim_data.getter.get_compartment(mol_id)[0]
 						)
 
 				if moleculeName not in molecules:
@@ -106,17 +118,16 @@ class Equilibrium(object):
 				else:
 					molecule_index = molecules.index(moleculeName)
 
-				coefficient = molecule["coeff"]
-
-				assert coefficient % 1 == 0
+				if coeff is None:
+					coeff = -1
+				assert coeff % 1 == 0
 
 				# Store indices for the row and column, and molecule coefficient for building the stoichiometry matrix
 				stoichMatrixI.append(molecule_index)
 				stoichMatrixJ.append(reaction_index)
-				stoichMatrixV.append(coefficient)
+				stoichMatrixV.append(coeff)
 
-				if coefficient > 0:
-					assert molecule["type"] == "proteincomplex"
+				if coeff > 0:
 					self.complex_name_to_rxn_idx[moleculeName] = reaction_index
 
 				# Find molecular mass

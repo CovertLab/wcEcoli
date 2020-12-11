@@ -999,7 +999,7 @@
 "Antigen-Ley"	"a Lewis y epitope"	["a histo-blood group Le<sup>y</sup> antigen", "AH6 antigen"]	null	null	
 "ANTIMONITE"	"antimonite"	[]	"O3Sb"	169.758	
 "Apiogalacturonans"	"an apiogalacturonan"	[]	null	null	
-"Apo-Base-off-His-on-Enzymes"	""	[]	null	null
+"Apo-Base-off-His-on-Enzymes"	"an <i>apo</i>-[\"base-off/His-on\" B12-enzyme]"	[]	null	null
 "Apo-GcvH"	"Apo-GcvH"	[]	null	null	
 "Apocarotenoids"	"an apocarotenoid"	[]	null	null	
 "APS"	"adenosine 5'-phosphosulfate"	["adenylyl-sulfate", "adenosine phosphosulfate", "adenosine 5'-sulphatophosphate"]	"C10H12N5O10PS"	425.266	
@@ -6002,7 +6002,7 @@
 "Phosphatidylglycerols-34-3"	"phosphatidylglycerol-34:3"	["PG-34:3", "PG34:3"]	null	null	
 "Phosphatidylglycerols-34-4"	"phosphatidylglycerol-34:4"	["PG-34:4", "PG34:4"]	null	null	
 "PHOSPHATIDYLINOSITOL-345-TRIPHOSPHATE"	"1-phosphatidyl-1D-myo-inositol 3,4,5-trisphosphate"	["1-phosphatidyl-1D-myo-inositol 3,4,5-triphosphate", "phosphatidyl inositol-3,4,5-trisphosphate", "phosphatidylinositol-3,4,5-triphosphate", "PtdIns(3,4,5)P<sub>3</sub>"]	null	null	
-"Phosphatidylinositols"	"a phosphatidylinositol"	["PI"]	null	null	
+"Phosphatidylinositols"	"a phosphatidylinositol"	["Pi"]	null	null
 "Phosphatidylinositols-34-1"	"phosphatidylinositol-34:1"	["PI-34:1", "PI34:1"]	null	null	
 "Phosphatidylinositols-34-2"	"phosphatidylinositol-34:2"	["PI-34:2", "PI34:2"]	null	null	
 "Phosphatidylinositols-34-3"	"phosphatidylinositol-34:3"	["PI-34:3", "PI34:3"]	null	null	
@@ -7175,4 +7175,5 @@
 "yW-86"	"7-[(3S)-3-amino-3-carboxypropyl]-4-demethylwyosine<sup>37</sup> in tRNA<sup>Phe</sup>"	["yW86 in tRNA<sup>Phe</sup>", "4-demethyl-7-(3-amino-3-carboxypropyl)wyosine<sup>37</sup> in tRNA<sup>Phe</sup>"]	null	null	
 "Zealexins"	"a zealexin"	[]	null	null	
 "ZN+2"	"Zn<SUP>2+</SUP>"	["zinc(II)", "Zn(II) (incorrect)", "Zn<sup>II</sup>"]	"Zn"	65.38	
-"Zymosan"	"zymosan"	[]	null	null	
+"Zymosan"	"zymosan"	[]	null	null
+"glycogen-monomer"				163.149

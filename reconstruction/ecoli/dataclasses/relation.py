@@ -16,7 +16,22 @@ class Relation(object):
 		#self._buildRnaIndexToGeneMapping(raw_data, sim_data)
 
 	def _build_rna_index_to_monomer_mapping(self, raw_data, sim_data):
-		self.rna_index_to_monomer_mapping = np.array([np.where(x == sim_data.process.transcription.rna_data["id"])[0][0] for x in sim_data.process.translation.monomer_data['rna_id']])
+		rna_id_to_index = {
+			rna_id: i for i, rna_id
+			in enumerate(sim_data.process.transcription.rna_data['id'])
+			}
+		self.rna_index_to_monomer_mapping = np.array([
+			rna_id_to_index[rna_id] for rna_id
+			in sim_data.process.translation.monomer_data['rna_id']
+			])
 
 	def _build_monomer_index_to_rna_mapping(self, raw_data, sim_data):
-		self.monomer_index_to_rna_mapping = np.array([np.where(x == sim_data.process.translation.monomer_data['rna_id'])[0][0] for x in sim_data.process.transcription.rna_data["id"] if len(np.where(x == sim_data.process.translation.monomer_data['rna_id'])[0])])
+		rna_id_to_index = {
+			rna_id: i for i, rna_id
+			in enumerate(sim_data.process.translation.monomer_data['rna_id'])
+			}
+		self.monomer_index_to_rna_mapping = np.array([
+			rna_id_to_index[rna_id] for rna_id
+			in sim_data.process.transcription.rna_data['id']
+			if rna_id in rna_id_to_index
+			])

@@ -175,4 +175,12 @@
 "MONOMER0-46_RXN"	{"MONOMER0-46":1,"PD00474":null,"NA+":null}	"NhaR-Na<SUP>+</SUP> DNA-binding transcriptional activator"	
 "MONOMER0-49_RXN"	{"MONOMER0-49":1,"PD00251":null,"CHOLINE":null}	"BetI-choline"	
 "MONOMER0-562_RXN"	{"MONOMER0-562":1,"G7546-MONOMER":null,"GLYCOLLATE":null}	"GlcC-Glycolate DNA-binding transcriptional dual regulator"	
-"MONOMER0-941_RXN"	{"MONOMER0-941":1,"EG11149-MONOMER":null,"GLY":null}	"GcvR-gly"	
+"MONOMER0-941_RXN"	{"MONOMER0-941":1,"EG11149-MONOMER":null,"GLY":null}	"GcvR-gly"
+# Reactions below were added to save two-component systems
+# "ARCB-OXYGEN_RXN"	{"ARCB-OXYGEN-CPLX": 1.0, "ARCB-CPLX": -1.0, "OXYGEN-MOLECULE": -1.0}
+"BAES-INDOLE_RXN"	{"BAES-INDOLE-CPLX": 1.0, "BAES-MONOMER": -1.0, "INDOLE": -1.0}
+"BASS-FE+3_RXN"	{"BASS-FE+3-CPLX": 1.0, "BASS-MONOMER": -1.0, "FE+3": -1.0}
+"DCUS-SUC_RXN"	{"DCUS-SUC-CPLX": 1.0, "DCUS-MONOMER": -1.0, "SUC": -1.0}
+"NARX-NITRATE_RXN"	{"NARX-NITRATE-CPLX": 1.0, "NARX-CPLX": -1.0, "NITRATE": -1.0}
+"PHOQ-CA+2_RXN"	{"PHOQ-CA+2-CPLX": 1.0, "CPLX0-8168": -1.0, "CA+2": -1.0}
+"PHOR-Pi-CPLX_RXN"	{"PHOR-Pi-CPLX": 1.0, "PHOR-CPLX": -1.0, "Pi": -1.0}
