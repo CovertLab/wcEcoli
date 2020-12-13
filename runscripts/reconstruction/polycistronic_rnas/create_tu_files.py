@@ -105,10 +105,7 @@ TODO:
 
 - is rnas_genes_order used?
 - update all documentation for changes that needed to happen due to changes in the flat file
-
-
--IMPORTANT:
-SOMETHING CONFUSING IS HAPPENING WITH THE COUNTS FOR SOME NONCODING RNAS
+- Delete functions that are no longer necessary.
 '''
 
 
@@ -210,8 +207,10 @@ have an experimentally determined half-life, let the average be used.
 have an experimentally determined half-life, take the value of the second gene, and so on.
 If no genes have half life, allow to use the average.
 3. Take the average of all available half-lives.
+
+TODO: Add half life calc value as an argument
 '''
-HALF_LIFE_CALC = 2
+HALF_LIFE_CALC = 3
 
 
 def find_tu_type(tu_genes_info):
@@ -445,7 +444,7 @@ def calculate_half_life(tu_genes_info, pc_gene_id, pc):
 		else: 
 			half_life = False
 	return half_life
-	
+
 def gather_tu_info(tu_genes_info):
 	"""
 	Purpose:
