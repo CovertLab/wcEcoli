@@ -243,103 +243,7 @@ def find_tu_type(tu_genes_info):
 		warnings.warn(mismatch_output.format('_'.join(tu_genes_info.keys())))
 	tu_type = max(tu_types, key=Counter(tu_types).get)
 	return tu_type
-'''
-def find_tu_location(tu_genes_info):
-	"""
-	Mimics structure and output of find_tu_type but comparing locations
-	of the TU instead.
-	Args:
-		tu_genes_info: Dictionary of transcription unit info for target transcription unit.
 
-	Returns:
-		List containing a unicode str of the location.
-	"""
-	mismatch_output = """Locations of RNA's in transcription unit {} dont 
-	match, please double check that your transcription unit is correct. 
-	Might have to do additional checks. The naming for this transcription 
-	unit will follow the most prevalant RNA location, or the first RNA in the TU 
-	if there is an even number of RNAs."""
-	tu_locations = [tu_genes_info[gene]['location'] for gene in tu_genes_info]
-	loc_elements = [loc[0] for loc in tu_locations]
-	if len(set(loc_elements)) > 1:
-		warnings.warn(mismatch_output.format('_'.join(tu_genes_info.keys())))
-	location = [max(loc_elements, key=Counter(loc_elements).get)]
-	return location
-
-def get_tu_sequence(tu_genes_info, first_gene, last_gene):
-	"""
-	Purpose:
-	Obtain the RNA sequence for the entire transcription unit.
-	Cannot simply concatenate component individual RNA sequences since
-	they would not include intergenic regions.
-
-	Args:
-		tu_genes_info: Dictionary containing information for a transcription unit (Dict
-		contains direction and coordinate info).
-		first_gene: First gene in the transcription unit
-		last_gene: Last gene in the transcription unit
-
-	Returns:
-		The rna sequence for the transcription unit.
-
-	Note:
-	This was developed with only implementing mRNAs for now. If
-	incorporating untranslated RNAs (like rRNAs or tRNAs) in the future
-	would have to add a process for RNA processing.
-	"""
-	direction = tu_genes_info[first_gene]['direction']
-	rna_sequence = []
-	if direction == '+':
-		first_gene_coordinate = tu_genes_info[first_gene]['chromosome_coordinate']
-		last_gene_coordinate = tu_genes_info[last_gene]['chromosome_coordinate'] + tu_genes_info[last_gene]['length']
-		sequence = Seq(GENOMIC_SEQUENCE[0][first_gene_coordinate:last_gene_coordinate], IUPAC.unambiguous_dna)
-		rna_sequence = str(sequence.transcribe())
-	elif direction == '-':
-		first_gene_coordinate = tu_genes_info[first_gene]['chromosome_coordinate'] +1
-		last_gene_coordinate = tu_genes_info[last_gene]['chromosome_coordinate'] - tu_genes_info[last_gene]['length'] + 1
-		sequence = Seq(GENOMIC_SEQUENCE[0][last_gene_coordinate:first_gene_coordinate], IUPAC.unambiguous_dna)
-		rna_sequence = str(sequence.reverse_complement().transcribe())
-	else:
-		print("For some reason your gene hasnt been assigned a direction")
-
-	return rna_sequence
-
-def calculate_rna_biomass(sequence):
-	"""
-	Purpose: Calculate the RNA biomass of a particular RNA sequence.
-
-	Args:
-		sequence: RNA sequence as a str.
-
-	Returns:
-		Mass of the RNA sequence as a float.
-	"""
-	rna_masses = {
-		"A": 503.15,
-		"C": 479.124,
-		"G": 519.149,
-		"U": 480.108,
-	}
-
-	ppi_mass = 174.949
-
-	base_order = ['A', 'C', 'G', 'U']
-	ntp_order = {base + 'TP': index for index, base in enumerate(base_order)}
-	counts = {base: (rna_masses[base] - ppi_mass) * sequence.count(base) for base in base_order}
-
-	return [0.0, 0.0, 0.0, np.sum(list(counts.values())) + ppi_mass, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-
-def count_ntps_rna(sequence):
-	"""
-	Args:
-		sequence: RNA sequence.
-
-	Returns:
-		Counts of the nucleotidees in the sequence
-	"""
-	return [sequence.count('A'), sequence.count('C'),
-			sequence.count('G'), sequence.count('U')]
-'''
 def gather_tu_genes_info():
 	"""
 	Purpose: Gather data for each rna within each TU.
@@ -384,25 +288,6 @@ def gather_tu_genes_info():
 					tu_genes_info[pc_gene_id][rna]['length'] = gene_row['length']
 			'''
 	return tu_genes_info
-'''
-def find_gene_starts_stops(pc_gene_id, pc_gene_info):
-	# getting the genes in the PC this way to preserve the proper order
-	genes_in_pc = pc_gene_id.split('_')
-	gene_starts_stops = []
-	for idx, gene in enumerate(genes_in_pc):
-		if idx == 0:
-			start = 0
-			stop = pc_gene_info[gene]['length'] - 1
-			gene_starts_stops.append([start, stop])
-		else:
-			if pc_gene_info[gene]['direction'] == '+':
-				start = pc_gene_info[gene]['chromosome_coordinate'] - pc_gene_info[genes_in_pc[0]]['chromosome_coordinate'] - 1
-			elif pc_gene_info[gene]['direction'] == '-':
-				start = pc_gene_info[genes_in_pc[0]]['chromosome_coordinate'] - pc_gene_info[gene]['chromosome_coordinate'] - 1
-			stop = start + pc_gene_info[gene]['length']
-			gene_starts_stops.append([start, stop])
-	return gene_starts_stops
-'''
 
 def calculate_half_life(tu_genes_info, pc_gene_id, pc):
 	'''
