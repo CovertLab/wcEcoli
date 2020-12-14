@@ -109,11 +109,8 @@ class MoleculeGroups(object):
 			# 	to the list of trimer subunits once frame-shifting proteins are
 			# 	produced.
 			'replisome_trimer_subunits': ['CPLX0-2361[c]'],
-<<<<<<< HEAD
 			#'replisome_trimer_subunits': ['CPLX0-2361[c]', 'CPLX0-3761[c]'],
-=======
-			# 'replisome_trimer_subunits': ['CPLX0-2361[c]', 'CPLX0-3761[c]'],
->>>>>>> 4692f834835273bf60fd936adb3c39dfe3fa915c
+
 			'replisome_monomer_subunits': ['CPLX0-3621[c]', 'EG10239-MONOMER[c]',
 				'EG11500-MONOMER[c]', 'EG11412-MONOMER[c]'],
 
