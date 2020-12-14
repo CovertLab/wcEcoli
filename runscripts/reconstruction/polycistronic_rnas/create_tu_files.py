@@ -191,6 +191,9 @@ SPLIT_DELIMITER = '_'
 # Read flat file data
 RNA_INFO, fieldnames = parse_tsv(RNA_FILE)
 RNA_HALF_LIVES_INFO, rna_hl_fieldnames = strip_units(parse_tsv(RNA_HALF_LIVES_FILE))
+RNA_HALF_LIVES_DICTIONARY = {
+	rna['id'].replace('_RNA', '').replace('-tRNA','').replace('-RNA',''): rna['half_life (units.s)'] 
+	for rna in RNA_HALF_LIVES_INFO}
 PC_INFO, pc_fieldnames = parse_tsv(POLY_CISTRON_FILE)
 GENE_INFO, g_fieldnames = parse_tsv(GENES_FILE)
 PROTEIN_INFO, protein_fieldnames = parse_tsv(PROTEIN_FILE)
@@ -210,7 +213,7 @@ If no genes have half life, allow to use the average.
 
 TODO: Add half life calc value as an argument
 '''
-HALF_LIFE_CALC = 3
+HALF_LIFE_CALC = 1
 
 
 def find_tu_type(tu_genes_info):
@@ -276,20 +279,14 @@ def gather_tu_genes_info():
 					tu_genes_info[pc_gene_id][rna]['type'] = rna_row['type']
 					tu_genes_info[pc_gene_id][rna]['modified_forms'] = rna_row['modified_forms']
 					tu_genes_info[pc_gene_id][rna]['monomer_id'] = rna_row['monomer_id']
-			for rna_hl_row in RNA_HALF_LIVES_INFO:  # create separate half lives file
-				# if rna_hl_row['id'] == rnaId:
-				if rna_hl_row['id'] == rna_id:
-					tu_genes_info[pc_gene_id][rna]['halfLife'] = rna_hl_row['half_life (units.s)']
+			# Remove this region?
 			'''
-			for gene_row in GENE_INFO:
-				if gene_row['id'] == rna:
-					tu_genes_info[pc_gene_id][rna]['chromosome_coordinate'] = gene_row['coordinate']
-					tu_genes_info[pc_gene_id][rna]['direction'] = gene_row['direction']
-					tu_genes_info[pc_gene_id][rna]['length'] = gene_row['length']
+			if rna_id in RNA_HALF_LIVES_DICTIONARY:
+				tu_genes_info[pc_gene_id][rna]['halfLife'] = RNA_HALF_LIVES_DICTIONARY[rna_id]
 			'''
 	return tu_genes_info
 
-def calculate_half_life(tu_genes_info, pc_gene_id, pc):
+def calculate_half_life(pc_gene_id, pc):
 	'''
 	How to calculate Half-Life of a polycistronic mRNA:
 	1. For a multi-gene operon, take the value of the first gene. If the first gene does not 
@@ -302,7 +299,9 @@ def calculate_half_life(tu_genes_info, pc_gene_id, pc):
 	if HALF_LIFE_CALC == 1:
 		first_gene = pc['transcription_units'][0]
 		try:
-			half_life = tu_genes_info[pc_gene_id][first_gene]['halfLife']
+			half_life = RNA_HALF_LIVES_DICTIONARY[first_gene]
+			# Update Dictionary to have new half life info
+			RNA_HALF_LIVES_DICTIONARY[pc_gene_id] = half_life
 		except:
 			#for now dont include a half life if the first gene does not have one, and let it be solved for in the parca
 			half_life = False
@@ -310,22 +309,24 @@ def calculate_half_life(tu_genes_info, pc_gene_id, pc):
 		half_lives = []
 		for gene in pc['transcription_units']:
 			try:
-				half_lives.append(tu_genes_info[pc_gene_id][gene]['halfLife'])
+				half_lives.append(RNA_HALF_LIVES_DICTIONARY[gene])
 			except:
 				pass
 		if half_lives:
 			half_life = half_lives[0]
+			RNA_HALF_LIVES_DICTIONARY[pc_gene_id] = half_life
 		else: 
 			half_life = False
 	if HALF_LIFE_CALC == 3:
 		half_lives = []
 		for gene in pc['transcription_units']:
 			try:
-				half_lives.append(tu_genes_info[pc_gene_id][gene]['halfLife'])
+				half_lives.append(RNA_HALF_LIVES_DICTIONARY[gene])
 			except:
 				pass
 		if half_lives:
 			half_life = np.mean(half_lives)
+			RNA_HALF_LIVES_DICTIONARY[pc_gene_id] = half_life
 		else: 
 			half_life = False
 	return half_life
@@ -394,7 +395,8 @@ def gather_tu_info(tu_genes_info):
 		# Note: Will assign average half life if first gene does not have an associated half life.
 		tu_half_life_info[pc_gene_id] = {}
 		tu_half_life_info[pc_gene_id]['id'] = pc_gene_id + '_RNA'
-		half_life = calculate_half_life(tu_genes_info, pc_gene_id, pc)
+		half_life = calculate_half_life(pc_gene_id, pc)
+		# might not need this part, just save the new dictionary thats being created.
 		if half_life:
 			tu_half_life_info[pc_gene_id]['half_life (units.s)'] = half_life
 		else:
@@ -411,10 +413,9 @@ def gather_tu_info(tu_genes_info):
 		'''
 	return tu_info, tu_half_life_info
 
-
 def find_monomers_to_remove():
 	"""
-	Purpose: Find all the momnomers that should not be included in
+	Purpose: Find all the monoomers that should not be included in
 	the final operon_rnas.tsv file.
 	Returns: Set of unique monomers to not include in final tsv.
 	"""
