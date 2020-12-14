@@ -47,7 +47,8 @@ class MoleculeGroups(object):
 
 		endoRNase_rna_ids = []
 		for gene in endoRNase_genes:
-			endoRNase_rna_ids = endoRNase_genes + self.gene_id_to_rnas[gene]
+			rnaids = [i + '[c]' for i in self.gene_id_to_rnas[gene]]
+			endoRNase_rna_ids = endoRNase_rna_ids + rnaids
 
 
 		exoRNase_genes= ['EG11620', 'G7175',
@@ -57,10 +58,10 @@ class MoleculeGroups(object):
 
 		exoRNase_rna_ids = []
 		for gene in exoRNase_genes:
-			exoRNase_rna_ids = exoRNase_genes + self.gene_id_to_rnas[gene]
+			rnaids = [i + '[c]' for i in self.gene_id_to_rnas[gene]]
+			exoRNase_rna_ids = exoRNase_rna_ids + rnaids
 
-		print(endoRNase_rna_ids)
-		print(exoRNase_rna_ids)
+		import ipdb; ipdb.set_trace()
 
 		molecule_groups = {
 			'amino_acids': aa_ids,
