@@ -61,7 +61,6 @@ class MoleculeGroups(object):
 			rnaids = [i + '[c]' for i in self.gene_id_to_rnas[gene]]
 			exoRNase_rna_ids = exoRNase_rna_ids + rnaids
 
-		import ipdb; ipdb.set_trace()
 
 		molecule_groups = {
 			'amino_acids': aa_ids,
