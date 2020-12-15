@@ -38,16 +38,13 @@ PLOT_OPTIONS = {
 # Object IDs
 GRAPH_ID = 'test-plot'
 PLOT_SELECTION = 'plot'
-X_DATA_SELECTION_ID = 'x-data'
-Y_DATA_SELECTION_ID = 'y-data'
+X_DATA_SELECTION_ID = 'x data:'
+Y_DATA_SELECTION_ID = 'y data:'
 SEPARATOR = '<>'
 VALUE_JOIN = f'{{}}{SEPARATOR}{{}}'
 
 
 def get_vals(d, k):
-	if k is None:
-		return d
-
 	if type(k) == str:
 		k = k.split(SEPARATOR)
 
@@ -137,7 +134,7 @@ def create_app(data_structure):
 	x_div, x_input = data_selection(app, data_structure, X_DATA_SELECTION_ID)
 	y_div, y_input = data_selection(app, data_structure, Y_DATA_SELECTION_ID, multi=False)  # TODO: get multi selection working
 	app.layout = html.Div(children=[
-		html.H1('Interactive test'),
+		html.H1('Whole-cell simulation explorer'),
 		html.Div(children=[
 			html.H2('Plot selection:'),
 			dcc.Dropdown(
@@ -175,7 +172,6 @@ def create_app(data_structure):
 		return {
 			'data': traces,
 			'layout': go.Layout(
-				title=plot_id,
 				xaxis_title=x_input.split(SEPARATOR)[-1],
 				yaxis_title=y_input.split(SEPARATOR)[-1],
 				**layout_options),
