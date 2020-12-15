@@ -35,6 +35,8 @@ GRAPH_ID = 'test-plot'
 PLOT_SELECTION = 'plot'
 X_DATA_SELECTION_ID = 'x-data'
 Y_DATA_SELECTION_ID = 'y-data'
+SEPARATOR = '<>'
+VALUE_JOIN = f'{{}}{SEPARATOR}{{}}'
 
 
 def get_vals(d, k):
@@ -42,7 +44,7 @@ def get_vals(d, k):
 		return d
 
 	if type(k) == str:
-		k = [k]
+		k = k.split(SEPARATOR)
 
 	if len(k) > 1:
 		return get_vals(d[k[0]], k[1:])
@@ -65,30 +67,20 @@ def create_app(data_structure):
 						dash.dependencies.Output(sub_id, 'options'),
 						dash.dependencies.Output(sub_id, 'value'),
 						],
-					[dash.dependencies.Input(parent_id, 'value'), dash.dependencies.Input(parent_id, 'id')]
+					[dash.dependencies.Input(parent_id, 'value')]
 					)
-				def update(path, parent_id):
-					print(parent_id, path)
-					data = get_vals(data_structure, path)
-					print([k for k in data])
-					if type(path) == str:
-						path = [path]
+				def update(path):
+					vals = sorted(get_vals(data_structure, path))
 
 					options = [{
-						'label': d,
-						'value': path + [d] if d else path,
-						} for d in data]
-					value = path + list(data)[:1]
-					print('test')
-					print(list(data)[:1])
-					print(value)
-					print([path + [d] if d else path for d in data])
-					print('end')
+						'label': v,
+						'value': VALUE_JOIN.format(path, v),
+						} for v in vals]
+					value = VALUE_JOIN.format(path, vals[0])
 
 					return options, value
 
-				default.append(next(iter(vals)))
-				print(default)
+				default = VALUE_JOIN.format(default, next(iter(vals)))
 				return add_children(children, base_id, sub_id, default, data_structure, count=count+1)
 			else:
 				return children
@@ -107,32 +99,7 @@ def create_app(data_structure):
 				)
 			]
 
-		children.append(
-			dcc.Dropdown(
-				id='sub',
-				multi=multi,
-				)
-			)
-
-		@app.callback(
-			[
-				dash.dependencies.Output('sub', 'options'),
-				dash.dependencies.Output('sub', 'value'),
-				],
-			[dash.dependencies.Input(id_, 'value')]
-			)
-		def update(dataset):
-			data = data_structure[dataset]
-			options = [{
-				'label': d,
-				'value': d,
-				} for d in data]
-			value = next(iter(data))
-
-			return options, value
-
-
-		# children = add_children(children, id_, id_, [default_top_level], data_structure)
+		children = add_children(children, id_, id_, default_top_level, data_structure)
 
 		div = html.Div(children=children)
 
