@@ -213,7 +213,7 @@ If no genes have half life, allow to use the average.
 
 TODO: Add half life calc value as an argument
 '''
-HALF_LIFE_CALC = 1
+HALF_LIFE_CALC = 4
 
 
 def find_tu_type(tu_genes_info):
@@ -324,6 +324,30 @@ def calculate_half_life(pc_gene_id, pc):
 				half_lives.append(RNA_HALF_LIVES_DICTIONARY[gene])
 			except:
 				pass
+		if half_lives:
+			half_life = np.mean(half_lives)
+			RNA_HALF_LIVES_DICTIONARY[pc_gene_id] = half_life
+		else: 
+			half_life = False
+	if HALF_LIFE_CALC == 4:
+		half_lives = []
+		for gene in pc['transcription_units']:
+			try:
+				half_lives.append(RNA_HALF_LIVES_DICTIONARY[gene])
+			except:
+				pass
+		if half_lives:
+			half_life = np.max(half_lives)
+			RNA_HALF_LIVES_DICTIONARY[pc_gene_id] = half_life
+		else: 
+			half_life = False
+	if HALF_LIFE_CALC == 5:
+		half_lives = []
+		for gene in pc['transcription_units']:
+			try:
+				half_lives.append(RNA_HALF_LIVES_DICTIONARY[gene])
+			except:
+				half_lives.append(344.50836653386455)
 		if half_lives:
 			half_life = np.mean(half_lives)
 			RNA_HALF_LIVES_DICTIONARY[pc_gene_id] = half_life
