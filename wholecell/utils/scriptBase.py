@@ -268,7 +268,7 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 			)
 
 	def define_parameter_sim_dir(self, parser, default=None):
-		# type: (argparse.ArgumentParser, Optional) -> None
+		# type: (argparse.ArgumentParser, Optional[Any]) -> None
 		"""Add a `sim_dir` parameter to the command line parser. parse_args()
 		will then use `args.sim_dir` to add `args.sim_path`.
 
