@@ -3,6 +3,12 @@
 """
 Explore simulation data in an interactive manner with the ability to select
 datasets and graph types.
+
+TODO:
+	- update names displayed on page
+	- default column option? - start with time as x
+	- add plotting options - log scale
+	- add reducing options - mean across samples
 """
 
 import argparse
@@ -15,8 +21,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
 
-from wholecell.io.tablereader import TableReader
-from wholecell.utils import constants, data, scriptBase
+from wholecell.io.tablereader import DoesNotExistError, TableReader
+from wholecell.utils import scriptBase
 import wholecell.utils.filepath as fp
 
 
@@ -57,9 +63,19 @@ def load_listener(input):
 	column = split[-1]
 
 	reader = TableReader(os.path.join(path, listener))
-	data = reader.readColumn(column)
+	data = reader.readColumn2D(column)
 
-	return data
+	# Read subcolumn attributes
+	try:
+		subcolumns = reader.readAttribute('subcolumns')
+	except DoesNotExistError:
+		subcolumns = []
+	if column in subcolumns:
+		labels = reader.readAttribute(subcolumns[column])
+	else:
+		labels = list(range(data.shape[1]))
+
+	return data, labels
 
 def create_app(data_structure):
 	def data_selection(app, data_structure, id_, multi=False):
@@ -144,15 +160,15 @@ def create_app(data_structure):
 		dash.dependencies.Output(GRAPH_ID, 'figure'),
 		[dash.dependencies.Input(PLOT_SELECTION, 'value'), x_input, y_input])
 	def update_graph(plot_id, x_input, y_input):
-		x_data = load_listener(x_input)
-		y_data = load_listener(y_input)
+		x_data, x_labels = load_listener(x_input)
+		y_data, y_labels = load_listener(y_input)
 
 		plot = PLOT_OPTIONS[plot_id]
 		plot_options = plot.get('plot_options', {})
 		layout_options = plot.get('layout_options', {})
 		traces = [
-			plot['function'](x=x_data, y=y_data[:, col], name=col, **plot_options)
-			for col in range(y_data.shape[1])
+			plot['function'](x=x_data[:, 0], y=y_data[:, idx], name=col, **plot_options)
+			for idx, col in enumerate(y_labels)
 			]
 
 		# Dict used to update 'figure' for dcc.Graph object GRAPH_ID
@@ -160,8 +176,8 @@ def create_app(data_structure):
 			'data': traces,
 			'layout': go.Layout(
 				title=plot_id,
-				xaxis_title=x_input[-1],
-				yaxis_title=y_input[-1],
+				xaxis_title=x_input.split(SEPARATOR)[-1],
+				yaxis_title=y_input.split(SEPARATOR)[-1],
 				**layout_options),
 			}
 
