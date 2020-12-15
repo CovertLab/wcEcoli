@@ -107,7 +107,32 @@ def create_app(data_structure):
 				)
 			]
 
-		children = add_children(children, id_, id_, [default_top_level], data_structure)
+		children.append(
+			dcc.Dropdown(
+				id='sub',
+				multi=multi,
+				)
+			)
+
+		@app.callback(
+			[
+				dash.dependencies.Output('sub', 'options'),
+				dash.dependencies.Output('sub', 'value'),
+				],
+			[dash.dependencies.Input(id_, 'value')]
+			)
+		def update(dataset):
+			data = data_structure[dataset]
+			options = [{
+				'label': d,
+				'value': d,
+				} for d in data]
+			value = next(iter(data))
+
+			return options, value
+
+
+		# children = add_children(children, id_, id_, [default_top_level], data_structure)
 
 		div = html.Div(children=children)
 
