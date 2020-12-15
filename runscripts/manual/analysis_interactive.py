@@ -13,10 +13,9 @@ import webbrowser
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-import numpy as np
 import plotly.graph_objs as go
-import seaborn as sns
 
+from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
 
@@ -51,6 +50,17 @@ def get_vals(d, k):
 	else:
 		return d.get(k[0])
 
+def load_listener(input):
+	split = input.split(SEPARATOR)
+	path = os.path.join(*split[:-2], 'simOut')
+	listener = split[-2]
+	column = split[-1]
+
+	reader = TableReader(os.path.join(path, listener))
+	data = reader.readColumn(column)
+
+	return data
+
 def create_app(data_structure):
 	def data_selection(app, data_structure, id_, multi=False):
 		def add_children(children, base_id, parent_id, default, data_structure, count=0):
@@ -83,7 +93,7 @@ def create_app(data_structure):
 				default = VALUE_JOIN.format(default, next(iter(vals)))
 				return add_children(children, base_id, sub_id, default, data_structure, count=count+1)
 			else:
-				return children
+				return children, count
 
 		default_top_level = next(iter(data_structure))
 
@@ -99,14 +109,17 @@ def create_app(data_structure):
 				)
 			]
 
-		children = add_children(children, id_, id_, default_top_level, data_structure)
+		children, n_added = add_children(children, id_, id_, default_top_level, data_structure)
+		input = dash.dependencies.Input(f'{id_}{n_added-1}', 'value')
 
 		div = html.Div(children=children)
 
-		return div
+		return div, input
 
 	# Create webpage layout
 	app = dash.Dash()
+	x_div, x_input = data_selection(app, data_structure, X_DATA_SELECTION_ID)
+	y_div, y_input = data_selection(app, data_structure, Y_DATA_SELECTION_ID, multi=False)  # TODO: get multi selection working
 	app.layout = html.Div(children=[
 		html.H1('Interactive test'),
 		html.Div(children=[
@@ -115,12 +128,12 @@ def create_app(data_structure):
 				id=PLOT_SELECTION,
 				options=[{
 					'label': o,  # display name
-					'value': o,  # value passed through callback
+					'value': o,  # value passed through callback, must be str
 					} for o in PLOT_OPTIONS],
-				value=next(iter(PLOT_OPTIONS.keys())),
+				value=next(iter(PLOT_OPTIONS)),
 				),
-			data_selection(app, data_structure, X_DATA_SELECTION_ID),
-			# data_selection(app, data_structure, Y_DATA_SELECTION_ID, multi=True),
+			x_div,
+			y_div,
 			]),
 		dcc.Graph(id=GRAPH_ID),
 		])
@@ -129,36 +142,28 @@ def create_app(data_structure):
 	# Second arg for Output/Input sets or gets a kwarg from the dcc function
 	@app.callback(
 		dash.dependencies.Output(GRAPH_ID, 'figure'),
-		[
-			dash.dependencies.Input(X_DATA_SELECTION_ID, 'value'),
-			dash.dependencies.Input(Y_DATA_SELECTION_ID, 'value'),
-			dash.dependencies.Input(PLOT_SELECTION, 'value'),
-			])
-	def update_graph(x_dataset, y_dataset, plot_id):
+		[dash.dependencies.Input(PLOT_SELECTION, 'value'), x_input, y_input])
+	def update_graph(plot_id, x_input, y_input):
+		x_data = load_listener(x_input)
+		y_data = load_listener(y_input)
 
-		return {}
+		plot = PLOT_OPTIONS[plot_id]
+		plot_options = plot.get('plot_options', {})
+		layout_options = plot.get('layout_options', {})
+		traces = [
+			plot['function'](x=x_data, y=y_data[:, col], name=col, **plot_options)
+			for col in range(y_data.shape[1])
+			]
 
-		# # Create datasets based on selection
-		# if isinstance(y_col, str):
-		# 	y_col = [y_col]
-		#
-		# plot = PLOT_OPTIONS[plot_id]
-		# plot_options = plot.get('plot_options', {})
-		# layout_options = plot.get('layout_options', {})
-		# traces = [
-		# 	plot['function'](x=x_data[x_col], y=y_data[col], name=col, **plot_options)
-		# 	for col in y_col
-		# 	]
-		#
-		# # Dict used to update 'figure' for dcc.Graph object GRAPH_ID
-		# return {
-		# 	'data': traces,
-		# 	'layout': go.Layout(
-		# 		title=plot_id,
-		# 		xaxis_title=x_col,
-		# 		yaxis_title=y_col[0] if len(y_col) == 1 else '',
-		# 		**layout_options),
-		# 	}
+		# Dict used to update 'figure' for dcc.Graph object GRAPH_ID
+		return {
+			'data': traces,
+			'layout': go.Layout(
+				title=plot_id,
+				xaxis_title=x_input[-1],
+				yaxis_title=y_input[-1],
+				**layout_options),
+			}
 
 	return app
 
