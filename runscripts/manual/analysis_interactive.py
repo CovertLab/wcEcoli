@@ -12,6 +12,8 @@ TODO:
 	- select multiple y datasets
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import re
@@ -58,13 +60,13 @@ def get_vals(d: Dict, k: Union[str, List[str]]):
 	else:
 		return d.get(k[0])
 
-def load_listener(input: str) -> Tuple[np.ndarray, List[str]]:
+def load_listener(selection: str) -> Tuple[np.ndarray, List[str]]:
 	"""
 	Load data from a listener specified by the drop down selection directory
 	string.
 
 	Args:
-		input: directory path to simOut with listener and column as last two
+		selection: directory path to simOut with listener and column as last two
 			values (all separated by SEPARATOR)
 
 	Returns:
@@ -72,7 +74,7 @@ def load_listener(input: str) -> Tuple[np.ndarray, List[str]]:
 		labels: labels corresponding to each m data series
 	"""
 
-	split = input.split(SEPARATOR)
+	split = selection.split(SEPARATOR)
 	path = os.path.join(*split[:-2], 'simOut')
 	listener = split[-2]
 	column = split[-1]
@@ -123,7 +125,7 @@ def create_app(data_structure: Dict) -> dash.Dash:
 
 		Returns:
 			div: div containing all drop down menus
-			input: value for the bottom drop down menu for the path to data
+			value: value for the bottom drop down menu for the path to data
 				selected
 		"""
 
@@ -177,13 +179,19 @@ def create_app(data_structure: Dict) -> dash.Dash:
 					[dash.dependencies.Input(parent_id, 'value')])
 				def update(path: str) -> Tuple[List[Dict[str, str]], str]:
 					"""Update valid selection based on the parent value"""
-					vals = sorted(get_vals(data_structure, path))
 
-					options = [{
-						'label': v,
-						'value': VALUE_JOIN.format(path, v),
-						} for v in vals]
-					value = VALUE_JOIN.format(path, vals[0])
+					# Default return values in case path or vals are not specified
+					options = []
+					value = None
+
+					if path is not None:
+						vals = sorted(get_vals(data_structure, path))
+						if vals:
+							options = [{
+								'label': v,
+								'value': VALUE_JOIN.format(path, v),
+								} for v in vals]
+							value = VALUE_JOIN.format(path, vals[0])
 
 					return options, value
 
@@ -207,9 +215,9 @@ def create_app(data_structure: Dict) -> dash.Dash:
 		children, n_added = add_children(children, id_, id_, default_top_level, data_structure)
 
 		div = html.Div(children=children)
-		input = dash.dependencies.Input(f'{id_}{n_added}', 'value')
+		value = dash.dependencies.Input(f'{id_}{n_added}', 'value')
 
-		return div, input
+		return div, value
 
 	# Create webpage layout
 	app = dash.Dash()
@@ -253,6 +261,9 @@ def create_app(data_structure: Dict) -> dash.Dash:
 		Returns:
 			plotly figure dict
 		"""
+
+		if x_input is None or y_input is None:
+			return {}
 
 		x_data, x_labels = load_listener(x_input)
 		y_data, y_labels = load_listener(y_input)
@@ -303,8 +314,8 @@ class AnalysisInteractive(scriptBase.ScriptBase):
 		if len(variant_dirs):
 			experiments[path] = {d: {} for d in variant_dirs}
 		else:
-			for dir in os.listdir(path):
-				sim_path = os.path.join(path, dir)
+			for directory in os.listdir(path):
+				sim_path = os.path.join(path, directory)
 				if not os.path.isdir(sim_path):
 					continue
 
@@ -315,6 +326,7 @@ class AnalysisInteractive(scriptBase.ScriptBase):
 		# Find all possible simulations to select
 		# TODO: more efficient or cleaner way of doing this
 		# TODO: only find matches when selected on the page instead of prior
+		found_listeners = False
 		seed_regex = re.compile('[0-9]{6}')
 		generation_regex = re.compile('generation_[0-9]{6}')
 		daughter_regex = re.compile('[0-9]{6}')
@@ -340,10 +352,17 @@ class AnalysisInteractive(scriptBase.ScriptBase):
 												for column in os.listdir(listener_dir):
 													if '.' not in column:  # TODO: handle .cPickle columns
 														column_dict[column] = None
+														found_listeners = True
 												listener_dict[listener] = column_dict
 										daughter_dict[daughter] = listener_dict
 								gen_dict[gen] = daughter_dict
 						seed_dict[seed] = gen_dict
+
+		if len(experiments) == 0 or not found_listeners:
+			raise ValueError(f'Could not find valid simulations in "{path}"'
+				' or its immediate subdirectories. Make sure the provided path'
+				' is to a top level simulation output directory or directory'
+				' containing one or more simulation output directories.')
 
 		return experiments
 
