@@ -1775,7 +1775,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 				twoComponentSystemMoleculesView.counts(),
 				cellVolume.asNumber(units.L),
 				sim_data.constants.n_avogadro.asNumber(1 / units.mmol),
-				1e8,
+				1e6,
 				)
 			twoComponentSystemMoleculesView.countsInc(moleculeCountChanges)
 
@@ -2089,7 +2089,6 @@ def expressionFromConditionAndFoldChange(rnaIds, basalExpression, condPerturbati
 	"""
 
 	expression = basalExpression.copy()
-	rna_id_set = set(rnaIds)
 
 	# Gather RNA indices and fold changes for each RNA that will be adjusted
 	rnaIdxs = []
@@ -2102,6 +2101,7 @@ def expressionFromConditionAndFoldChange(rnaIds, basalExpression, condPerturbati
 		compartment_key = key + "[c]"
 		if compartment_key in condPerturbations:
 			continue
+
 		rnaIdxs.append(np.where(rnaIds == compartment_key)[0][0])
 		fcs.append(tfFCs[key])
 
@@ -2278,8 +2278,6 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 				row_name_to_index[row_name] = len(row_name_to_index)
 
 				for tf in tfsWithData:
-					if tf not in pPromoterBound[condition]:
-						continue
 					# Add column for each TF that regulates each RNA
 					col_name = rnaIdNoLoc + "__" + tf
 
@@ -2773,12 +2771,14 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		# TF__inactive
 		constraint_p = [
 			0 <= PROMOTER_SCALING * P, PROMOTER_SCALING * P <= PROMOTER_SCALING,
-			np.diag(D) @ (PROMOTER_SCALING * P) == PROMOTER_SCALING * Drhs,
-			pdiff @ (PROMOTER_SCALING * P) >= PROMOTER_SCALING * PROMOTER_PDIFF_THRESHOLD]
+			np.diag(D) @ (PROMOTER_SCALING * P) == PROMOTER_SCALING * Drhs]
+			# pdiff @ (PROMOTER_SCALING * P) >= PROMOTER_SCALING * PROMOTER_PDIFF_THRESHOLD]
 
 		# Solve optimization problem
 		prob_p = Problem(objective_p, constraint_p)
-		prob_p.solve(solver='ECOS')
+		prob_p.solve(solver='ECOS', max_iters=1000)
+
+		print(prob_p.status)
 
 		if prob_p.status == 'optimal_inaccurate':
 			raise RuntimeError('Solver found an optimum that is inaccurate.'
@@ -2945,9 +2945,6 @@ def calculatePromoterBoundProbability(sim_data, cellSpecs):
 
 			elif tfType == "1CS":
 				boundId = sim_data.process.transcription_regulation.active_to_bound[tf]  # ID of TF bound to ligand
-				if boundId + "[c]" not in sim_data.process.equilibrium.complex_name_to_rxn_idx:
-					continue
-
 				kd = sim_data.process.equilibrium.get_rev_rate(boundId + "[c]") / sim_data.process.equilibrium.get_fwd_rate(boundId + "[c]")
 
 				signal = sim_data.process.equilibrium.get_metabolite(boundId + "[c]")  # ID of ligand that binds to TF
@@ -2972,8 +2969,6 @@ def calculatePromoterBoundProbability(sim_data, cellSpecs):
 						pPromoterBound[conditionKey][tf] = 0.
 
 			elif tfType == "2CS":
-				if boundId + "[c]" not in sim_data.process.two_component_system.active_to_inactive_tf:
-					continue
 				# Get bulk average concentrations of active and inactive TF
 				activeTfConc = (countsToMolar*cellSpecs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")).asNumber(units.mol/units.L)
 				inactiveTf = sim_data.process.two_component_system.active_to_inactive_tf[tf + "[c]"]

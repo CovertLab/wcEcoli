@@ -176,7 +176,10 @@
 "MONOMER0-49_RXN"	{"MONOMER0-49":1,"PD00251":null,"CHOLINE":null}	"BetI-choline"	
 "MONOMER0-562_RXN"	{"MONOMER0-562":1,"G7546-MONOMER":null,"GLYCOLLATE":null}	"GlcC-Glycolate DNA-binding transcriptional dual regulator"	
 "MONOMER0-941_RXN"	{"MONOMER0-941":1,"EG11149-MONOMER":null,"GLY":null}	"GcvR-gly"
-# Reactions below were added to save two-component systems
+# Reactions below were added to save some 1CS reactions
+"PUTA-CPLXBND_RXN"	{"PUTA-CPLXBND": 1.0, "PUTA-CPLX": -1.0, "PRO": -2.0}
+"FNR-4FE-4S_RXN"	{"FNR-4FE-4S-CPLX": 1.0, "CPLX0-7797": -1.0, "4FE-4S": -1.0}
+# Reactions below were added to save some 2CS reactions
 # "ARCB-OXYGEN_RXN"	{"ARCB-OXYGEN-CPLX": 1.0, "ARCB-CPLX": -1.0, "OXYGEN-MOLECULE": -1.0}
 "BAES-INDOLE_RXN"	{"BAES-INDOLE-CPLX": 1.0, "BAES-MONOMER": -1.0, "INDOLE": -1.0}
 "BASS-FE+3_RXN"	{"BASS-FE+3-CPLX": 1.0, "BASS-MONOMER": -1.0, "FE+3": -1.0}

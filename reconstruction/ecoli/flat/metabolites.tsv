@@ -7176,4 +7176,6 @@
 "Zealexins"	"a zealexin"	[]	null	null	
 "ZN+2"	"Zn<SUP>2+</SUP>"	["zinc(II)", "Zn(II) (incorrect)", "Zn<sup>II</sup>"]	"Zn"	65.38	
 "Zymosan"	"zymosan"	[]	null	null
+# Metabolites below were added to save other processes
 "glycogen-monomer"				163.149
+"4FE-4S"				351.642
