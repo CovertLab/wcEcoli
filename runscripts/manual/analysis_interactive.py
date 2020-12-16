@@ -10,6 +10,8 @@ TODO:
 	- add reducing options - mean across samples, downsampling
 	- access sim_data/validation_data arrays
 	- select multiple y datasets
+	- add multigen/cohort/variant selection options
+	- add '*' selection option (select all) when multiple directories are found
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union
 import webbrowser
 
 import dash
@@ -110,6 +112,7 @@ def create_app(data_structure: Dict) -> dash.Dash:
 			app: dash.Dash,
 			data_structure: Dict,
 			id_: str,
+			defaults: Optional[Set[str]] = None,
 			multi: bool = False,
 			) -> Tuple[html.Div, dash.dependencies.Input]:
 		"""
@@ -120,6 +123,8 @@ def create_app(data_structure: Dict) -> dash.Dash:
 			data_structure: nested directory structure of possible simulations
 				(see parse_data_structure())
 			id_: ID for the drop down object on the webpage
+			defaults: default values to start with in a drop down if any
+				selection options match a value in this set
 			multi: if True, creates drop down menus with the option of making
 				multiple selections
 
@@ -129,12 +134,54 @@ def create_app(data_structure: Dict) -> dash.Dash:
 				selected
 		"""
 
+		def get_selection_options(
+				data_structure: Dict,
+				parent_value: str,
+				defaults: Set[str],
+				) -> Tuple[List[Dict[str, str]], str]:
+			"""
+			Get the selection options for drop down menus based on the parent
+			drop down value indexed into the data structure.
+
+			Args:
+				data_structure: nested directory structure of possible
+					simulations (see parse_data_structure())
+				parent_value: value of the parent drop down menu
+				defaults: default values to start with in a drop down if any
+					selection options match a value in this set
+
+			Returns:
+				options: drop down menu options with a display label and
+					correponding value
+				value: the default value to select for the drop down menu
+			"""
+
+			# Empty return values in case path or vals are not specified
+			options = []
+			value = None
+
+			if parent_value is not None:
+				vals = get_vals(data_structure, parent_value)
+				if vals is not None:
+					for val in sorted(vals):
+						joined = VALUE_JOIN.format(parent_value, val)
+						options.append({
+							'label': val,
+							'value': joined,
+							})
+						if val in defaults or value is None:
+							value = joined
+
+			return options, value
+
+
 		def add_children(
 				children: List,
 				base_id: str,
 				parent_id: str,
-				default: str,
+				parent_value: str,
 				data_structure: Dict,
+				defaults: Set[str],
 				count: int = 0
 				) -> Tuple[List, int]:
 			"""
@@ -146,9 +193,11 @@ def create_app(data_structure: Dict) -> dash.Dash:
 				children: children for the HTML div (header and drop down menus)
 				base_id: ID for the top level drop down object on the webpage
 				parent_id: ID for the parent drop down object on the webpage
-				default: default value for the parent drop down
+				parent_value: value for the parent drop down
 				data_structure: nested directory structure of possible simulations
 					(see parse_data_structure())
+				defaults: default values to start with in a drop down if any
+					selection options match a value in this set
 				count: number of children drop down menus added
 
 			Returns:
@@ -157,8 +206,9 @@ def create_app(data_structure: Dict) -> dash.Dash:
 				count: number of new drop downs added
 			"""
 
-			vals = get_vals(data_structure, default)
-			if vals is None:
+			options, value = get_selection_options(data_structure, parent_value, defaults)
+
+			if value is None:
 				# Bottom of the data structure - no more selection is needed
 				return children, count
 			else:
@@ -168,6 +218,8 @@ def create_app(data_structure: Dict) -> dash.Dash:
 				children.append(dcc.Dropdown(
 					id=sub_id,
 					multi=multi,
+					options=options,
+					value=value,
 					))
 
 				# Register callback to update list options when parent changes
@@ -177,28 +229,16 @@ def create_app(data_structure: Dict) -> dash.Dash:
 						dash.dependencies.Output(sub_id, 'value'),
 					],
 					[dash.dependencies.Input(parent_id, 'value')])
-				def update(path: str) -> Tuple[List[Dict[str, str]], str]:
+				def update(parent_value: str) -> Tuple[List[Dict[str, str]], str]:
 					"""Update valid selection based on the parent value"""
+					return get_selection_options(data_structure, parent_value, defaults)
 
-					# Default return values in case path or vals are not specified
-					options = []
-					value = None
+				return add_children(children, base_id, sub_id, value, data_structure, defaults, count=count)
 
-					if path is not None:
-						vals = sorted(get_vals(data_structure, path))
-						if vals:
-							options = [{
-								'label': v,
-								'value': VALUE_JOIN.format(path, v),
-								} for v in vals]
-							value = VALUE_JOIN.format(path, vals[0])
+		if defaults is None:
+			defaults = set()
 
-					return options, value
-
-				default = VALUE_JOIN.format(default, next(iter(vals)))
-				return add_children(children, base_id, sub_id, default, data_structure, count=count)
-
-		default_top_level = next(iter(data_structure))
+		value = next(iter(data_structure))
 
 		# Create children for the drop down div
 		children = [
@@ -209,19 +249,19 @@ def create_app(data_structure: Dict) -> dash.Dash:
 					'label': os.path.basename(d),
 					'value': d,
 					} for d in data_structure],
-				value=default_top_level,
+				value=value,
 				)
 			]
-		children, n_added = add_children(children, id_, id_, default_top_level, data_structure)
+		children, n_added = add_children(children, id_, id_, value, data_structure, defaults)
 
 		div = html.Div(children=children)
-		value = dash.dependencies.Input(f'{id_}{n_added}', 'value')
+		input_value = dash.dependencies.Input(f'{id_}{n_added}', 'value')
 
-		return div, value
+		return div, input_value
 
 	# Create webpage layout
 	app = dash.Dash()
-	x_div, x_input = data_selection(app, data_structure, X_DATA_SELECTION_ID)
+	x_div, x_input = data_selection(app, data_structure, X_DATA_SELECTION_ID, defaults={'Main', 'time'})
 	y_div, y_input = data_selection(app, data_structure, Y_DATA_SELECTION_ID, multi=False)  # TODO: get multi selection working
 	app.layout = html.Div(children=[
 		html.H1('Whole-cell simulation explorer'),
