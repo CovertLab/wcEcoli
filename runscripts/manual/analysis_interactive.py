@@ -139,7 +139,7 @@ def create_app(data_structure: Dict) -> dash.Dash:
 				parent_value: str,
 				defaults: Set[str],
 				current: Optional[str] = None,
-				) -> Tuple[List[Dict[str, str]], str]:
+				) -> Tuple[List[Dict[str, str]], Optional[str]]:
 			"""
 			Get the selection options for drop down menus based on the parent
 			drop down value indexed into the data structure.
@@ -239,7 +239,7 @@ def create_app(data_structure: Dict) -> dash.Dash:
 					[dash.dependencies.Input(parent_id, 'value')],
 					[dash.dependencies.State(sub_id, 'value')],
 					prevent_initial_call=True)
-				def update(parent_value: str, current: str) -> Tuple[List[Dict[str, str]], str]:
+				def update(parent_value: str, current: str) -> Tuple[List[Dict[str, str]], Optional[str]]:
 					"""Update valid selection based on the parent value"""
 					return get_selection_options(data_structure, parent_value, defaults, current=current)
 
