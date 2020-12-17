@@ -138,6 +138,7 @@ def create_app(data_structure: Dict) -> dash.Dash:
 				data_structure: Dict,
 				parent_value: str,
 				defaults: Set[str],
+				current: Optional[str] = None,
 				) -> Tuple[List[Dict[str, str]], str]:
 			"""
 			Get the selection options for drop down menus based on the parent
@@ -149,6 +150,8 @@ def create_app(data_structure: Dict) -> dash.Dash:
 				parent_value: value of the parent drop down menu
 				defaults: default values to start with in a drop down if any
 					selection options match a value in this set
+				current: current value of the drop down, if set, keeps this
+					value if it is still a valid selection option
 
 			Returns:
 				options: drop down menu options with a display label and
@@ -171,6 +174,11 @@ def create_app(data_structure: Dict) -> dash.Dash:
 							})
 						if val in defaults or value is None:
 							value = joined
+
+					if current is not None:
+						current = current.split(SEPARATOR)[-1]
+						if current in vals:
+							value = VALUE_JOIN.format(parent_value, current)
 
 			return options, value
 
@@ -228,10 +236,12 @@ def create_app(data_structure: Dict) -> dash.Dash:
 						dash.dependencies.Output(sub_id, 'options'),
 						dash.dependencies.Output(sub_id, 'value'),
 					],
-					[dash.dependencies.Input(parent_id, 'value')])
-				def update(parent_value: str) -> Tuple[List[Dict[str, str]], str]:
+					[dash.dependencies.Input(parent_id, 'value')],
+					[dash.dependencies.State(sub_id, 'value')],
+					prevent_initial_call=True)
+				def update(parent_value: str, current: str) -> Tuple[List[Dict[str, str]], str]:
 					"""Update valid selection based on the parent value"""
-					return get_selection_options(data_structure, parent_value, defaults)
+					return get_selection_options(data_structure, parent_value, defaults, current=current)
 
 				return add_children(children, base_id, sub_id, value, data_structure, defaults, count=count)
 
