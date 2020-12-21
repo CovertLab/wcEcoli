@@ -2980,6 +2980,18 @@ def calculatePromoterBoundProbability(sim_data, cellSpecs):
 				else:
 					pPromoterBound[conditionKey][tf] = activeTfConc/(activeTfConc + inactiveTfConc)
 
+	# Check for any inconsistencies that could lead to feasbility issues when fitting
+	for condition in pPromoterBound:
+		if 'inactive' in condition:
+			tf = condition.split('__')[0]
+			active_p = pPromoterBound[f'{tf}__active'][tf]
+			inactive_p = pPromoterBound[f'{tf}__inactive'][tf]
+
+			if inactive_p >= active_p:
+				print('Warning: active condition does not have higher binding'
+					f' probability than inactive condition for {tf}'
+					f' ({active_p:.3f} vs {inactive_p:.3f}).')
+
 	return pPromoterBound
 
 
