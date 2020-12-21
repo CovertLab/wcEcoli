@@ -299,21 +299,34 @@ class Equilibrium(object):
 			negIdxs = np.where(S[:, colIdx] < 0)[0]
 			posIdxs = np.where(S[:, colIdx] > 0)[0]
 
+			fwd_stoich = 1.
 			reactantFlux = ratesFwd[colIdx]
 			for negIdx in negIdxs:
 				stoich = -S[negIdx, colIdx]
 				if stoich == 1:
 					reactantFlux *= y[negIdx]
 				else:
+					if stoich > fwd_stoich:
+						fwd_stoich = stoich
 					reactantFlux *= y[negIdx]**stoich
 
-			productFlux = ratesRev[colIdx]
+			# Need to scale the rate by the number of dissociation reactions
+			# which is the highest stoichiometry in the forward direction
+			if fwd_stoich > 1:
+				productFlux = ratesRev[colIdx]**fwd_stoich
+			else:
+				productFlux = ratesRev[colIdx]
 			for posIdx in posIdxs:
 				stoich = S[posIdx, colIdx]
 				if stoich == 1:
 					productFlux *= y[posIdx]
 				else:
-					productFlux *= y[posIdx]**stoich
+					# If this needs to be included, it may affect the rate
+					# calculation with multiple products so double check before
+					# implementing.  For now, the assumption is that there will
+					# only be one product and this verifies that assumption.
+					raise ValueError('Expected a single product (stoichiometry'
+						f' of 1) for equilibrium reaction {self.rxn_ids[colIdx]}')
 
 			rates.append(reactantFlux - productFlux)
 
