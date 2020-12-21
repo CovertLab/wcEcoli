@@ -2771,8 +2771,9 @@ def fitPromoterBoundProbability(sim_data, cellSpecs):
 		# TF__inactive
 		constraint_p = [
 			0 <= PROMOTER_SCALING * P, PROMOTER_SCALING * P <= PROMOTER_SCALING,
-			np.diag(D) @ (PROMOTER_SCALING * P) == PROMOTER_SCALING * Drhs]
-			# pdiff @ (PROMOTER_SCALING * P) >= PROMOTER_SCALING * PROMOTER_PDIFF_THRESHOLD]
+			np.diag(D) @ (PROMOTER_SCALING * P) == PROMOTER_SCALING * Drhs,
+			pdiff @ (PROMOTER_SCALING * P) >= PROMOTER_SCALING * PROMOTER_PDIFF_THRESHOLD,
+			]
 
 		# Solve optimization problem
 		prob_p = Problem(objective_p, constraint_p)
