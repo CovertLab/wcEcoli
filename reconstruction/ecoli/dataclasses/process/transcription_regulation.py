@@ -53,7 +53,7 @@ class TranscriptionRegulation(object):
 		Computes probability of a one-component transcription factor binding
 		promoter.
 		"""
-		return float(signal)**power / (float(signal)**power + float(Kd))
+		return float(signal)**power / (float(signal)**power + float(Kd)**power)
 
 	def _build_lookups(self, raw_data):
 		"""
