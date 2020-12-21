@@ -288,7 +288,9 @@ class Transcription(object):
 			monomer:  "{}[{}]".format(monomer, protein_compartments[ind][0])
 			for ind, monomer in enumerate(single_monomer_ids)
 			}
-		
+
+		# TODO (ggsun): Probably can be simplified by using new versions of
+		# 	get_location methods
 		monomer_sets = [
 			[protein_ids_with_compartments[monomer_id] 
 			for monomer_id in rna['monomer_set']] 
@@ -344,7 +346,7 @@ class Transcription(object):
 		direction = []
 		for rna in raw_data.operon_rnas:
 			if len(rna['monomer_set']) > 1:
-				rna_id = re.split('_', rna['id'])[0] + '_RNA'
+				rna_id = re.split('_', rna['id'])[0] + '_RNA'  # TODO (ggsun): probably better to use entries in column 'gene_set'
 			else:
 				rna_id = rna['id']
 			# Location of transcription initiation relative to origin
@@ -381,7 +383,7 @@ class Transcription(object):
 				if idx == 0:
 					start = 0
 				elif direction_ss == '+':
-					start = coordinate_dict[gene] - coordinate_dict[rna['gene_set'][0]] - 1
+					start = coordinate_dict[gene] - coordinate_dict[rna['gene_set'][0]] - 1  # TODO (ggsun): Is the minus one correct?
 				elif direction_ss == '-':
 					start = coordinate_dict[rna['gene_set'][0]] - coordinate_dict[gene] - 1
 
@@ -451,6 +453,7 @@ class Transcription(object):
 		
 		# operon_integration modification
 		# Only mark is_ribosomal_protein as true if it does not include a RNA Polymerase protein.
+		# TODO (ggsun): this could be a single if statement since the array is initialized to False
 		for idx, operon_rna in enumerate(raw_data.operon_rnas):
 			if any("{}[c]".format(monomer) in sim_data.molecule_groups.RNAP_subunits for monomer in operon_rna['monomer_set']):
 				rna_data['is_ribosomal_protein'][idx] = False
