@@ -182,7 +182,6 @@ class Transcription(object):
 		rna_ids = [rna['id'] for rna in raw_data.operon_rnas]
 		compartments = sim_data.getter.get_location(rna_ids)
 
-
 		rna_ids_with_compartments = [
 			f'{rna_id}[{loc[0]}]' for (rna_id, loc)
 			in zip(rna_ids, compartments)]
@@ -194,6 +193,7 @@ class Transcription(object):
 		rna_id_to_half_life = {}
 		reported_mRNA_half_lives = []
 
+		# TODO (ggsun): Internalize the calculation of half lives
 		for rna in raw_data.operon_rnas_half_lives:
 			rna_id_to_half_life[rna['id']] = rna['half_life']
 			if rna['id'] in mRNA_ids:
@@ -446,6 +446,10 @@ class Transcription(object):
 		rna_data['length'] = rna_lengths
 		rna_data['counts_ACGU'] = nt_counts
 		rna_data['mw'] = mws
+		# TODO (ggsun): we would eventually want to get rid of these
+		# 	classifications for operon RNAs, and only maintain them for
+		# 	individual genes. Might complicate how we distribute transcription
+		# 	probabilities.
 		rna_data['is_mRNA'] = [rna["type"] == "mRNA" for rna in raw_data.operon_rnas]
 		rna_data['is_miscRNA'] = [rna["type"] == "miscRNA" for rna in raw_data.operon_rnas]
 		rna_data['is_rRNA'] = [rna["type"] == "rRNA" for rna in raw_data.operon_rnas]
@@ -453,7 +457,11 @@ class Transcription(object):
 		
 		# operon_integration modification
 		# Only mark is_ribosomal_protein as true if it does not include a RNA Polymerase protein.
-		# TODO (ggsun): this could be a single if statement since the array is initialized to False
+		# TODO (ggsun): instead of a boolean array, we might need to actually
+		# 	count the number of ribosomal proteins each operon contains
+		# 	depending on how this array gets used
+		# TODO (ggsun): this could be a single if statement since the array is
+		# 	initialized to False
 		for idx, operon_rna in enumerate(raw_data.operon_rnas):
 			if any("{}[c]".format(monomer) in sim_data.molecule_groups.RNAP_subunits for monomer in operon_rna['monomer_set']):
 				rna_data['is_ribosomal_protein'][idx] = False
@@ -471,6 +479,8 @@ class Transcription(object):
 		# mark an entire operon as true if it contains a rna polymerase protein
 		# operons will be double marked as ribosomal and polymerase. this might have to be
 		# updated later
+		# TODO (ggsun): Again, consider counting the number of RNAP proteins of
+		# 	each type
 		rna_data['is_RNAP'] = [
 			any("{}[c]".format(item) in sim_data.molecule_groups.RNAP_subunits 
 				for item in operon_rna['monomer_set'])

@@ -76,6 +76,7 @@ class TranscriptionRegulation(object):
 		their RNA IDs, and to their active form.
 		"""
 		geneIdToRnaId = {}
+		# TODO (ggsun): This would only map genes to a single TU
 		for rna in raw_data.operon_rnas:
 			#geneId = rna["geneId"]
 			for gene in rna['gene_set']:

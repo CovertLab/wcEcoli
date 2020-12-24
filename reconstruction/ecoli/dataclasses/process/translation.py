@@ -62,7 +62,7 @@ class Translation(object):
 			]
 		n_proteins = len(protein_ids)
 		
-		#create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
+		# Create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
 		rna_ids = [rna['id'] for rna in raw_data.operon_rnas]
 		compartments = sim_data.getter.get_location(rna_ids)
 		assert all([len(loc) == 1 for loc in compartments])
@@ -76,13 +76,13 @@ class Translation(object):
 			rna: "{}[{}]".format(rna, compartments[ind][0])
 			for ind, rna in enumerate(rna_ids)
 			}
-		
+
+		# TODO (ggsun): RNA sets could be determined from existing tables in raw_data.
 		rna_sets = [
 			[rna_ids_with_compartments_lookups[rna_id]
 			for rna_id in protein['rna_set']]
 			for protein in raw_data.proteins
 			]
-
 		
 		individual_rna_ids = [rna['id'] for rna in raw_data.rnas]
 		individual_rna_compartments = sim_data.getter.get_location(individual_rna_ids)

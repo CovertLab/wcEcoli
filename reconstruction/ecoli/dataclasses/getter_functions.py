@@ -233,6 +233,7 @@ class GetterFunctions(object):
 
 		# RNAs and full chromosomes only localize to the cytosol
 		# TODO (MIALY): Dont record overlapping rna_ids from rnas and operon_rnas
+		# TODO (ggsun): Check if original RNA IDs are needed
 		locationDict.update({
 			rna['id']: ['c'] for rna in raw_data.rnas
 			})

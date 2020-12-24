@@ -36,31 +36,22 @@ class MoleculeGroups(object):
 		polymerized_dntp_ids = [
 			POLYMERIZED_FRAGMENT_PREFIX + dntp_id for dntp_id in dntp_ids]
 
-
-
-
 		# find endoRNAse RNA names in case of operons
-		endoRNase_genes = ['EG10856', 'EG10857',
-			'EG10859', 'EG10860', 'EG10861',
-			'EG10862', 'EG11299', 'G7175',
-			'G7365']
+		endoRNase_genes = ['EG10856', 'EG10857', 'EG10859', 'EG10860',
+			'EG10861', 'EG10862', 'EG11299', 'G7175', 'G7365']
 
 		endoRNase_rna_ids = []
 		for gene in endoRNase_genes:
 			rnaids = [i + '[c]' for i in self.gene_id_to_rnas[gene]]
 			endoRNase_rna_ids = endoRNase_rna_ids + rnaids
 
-
-		exoRNase_genes= ['EG11620', 'G7175',
-			'EG10858', 'EG10863', 'EG11259',
-			'EG11547', 'EG10746', 'G7842',
-			'EG10743']
+		exoRNase_genes = ['EG11620', 'G7175', 'EG10858', 'EG10863', 'EG11259',
+			'EG11547', 'EG10746', 'G7842', 'EG10743']
 
 		exoRNase_rna_ids = []
 		for gene in exoRNase_genes:
 			rnaids = [i + '[c]' for i in self.gene_id_to_rnas[gene]]
 			exoRNase_rna_ids = exoRNase_rna_ids + rnaids
-
 
 		molecule_groups = {
 			'amino_acids': aa_ids,
@@ -109,7 +100,9 @@ class MoleculeGroups(object):
 			# 	to the list of trimer subunits once frame-shifting proteins are
 			# 	produced.
 			'replisome_trimer_subunits': ['CPLX0-2361[c]'],
-			#'replisome_trimer_subunits': ['CPLX0-2361[c]', 'CPLX0-3761[c]'],
+			# TODO (ggsun): Determine if removal of CPLX0-3761[c] is necessary
+			# 	before merge
+			# 'replisome_trimer_subunits': ['CPLX0-2361[c]', 'CPLX0-3761[c]'],
 			'replisome_monomer_subunits': ['CPLX0-3621[c]', 'EG10239-MONOMER[c]',
 				'EG11500-MONOMER[c]', 'EG11412-MONOMER[c]'],
 

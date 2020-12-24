@@ -204,6 +204,7 @@ def fitSimData_1(
 	# noinspection PyTypeChecker
 	rVector = fitPromoterBoundProbability(sim_data, cellSpecs)
 	# noinspection PyTypeChecker
+	# TODO (ggsun): Why is this called twice?
 	fitLigandConcentrations(sim_data, cellSpecs)
 	#sim_data.pPromoterBound = json.load(open('promoter-bound.json'))
 	#rVector = np.array(json.load(open('rvector.json')))
