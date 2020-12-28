@@ -81,12 +81,7 @@ TIME_UNITS = units.s
 
 def fitSimData_1(
 		raw_data,
-		cpus=1,
-		debug=False,
-		variable_elongation_transcription=False,
-		variable_elongation_translation=False,
-		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False):
+		**kwargs):
 	"""
 	Fits parameters necessary for the simulation based on the knowledge base
 
@@ -108,11 +103,28 @@ def fitSimData_1(
 	"""
 
 	sim_data = SimulationDataEcoli()
+	cell_specs = {}
+
+	sim_data, cell_specs = initialize(sim_data, cell_specs, raw_data=raw_data, **kwargs)
+	sim_data, cell_specs = input_adjustments(sim_data, cell_specs, **kwargs)
+	sim_data, cell_specs = basal_specs(sim_data, cell_specs, **kwargs)
+	sim_data, cell_specs = tf_condition_specs(sim_data, cell_specs, **kwargs)
+	sim_data, cell_specs = fit_condition(sim_data, cell_specs, **kwargs)
+	sim_data, cell_specs = promoter_binding(sim_data, cell_specs, **kwargs)
+	sim_data, cell_specs = set_conditions(sim_data, cell_specs, **kwargs)
+	sim_data, cell_specs = final_adjustments(sim_data, cell_specs, **kwargs)
+
+	return sim_data
+
+def initialize(sim_data, cell_specs, raw_data=None, **kwargs):
 	sim_data.initialize(
 		raw_data = raw_data,
 		basal_expression_condition = BASAL_EXPRESSION_CONDITION,
 		)
 
+	return sim_data, cell_specs
+
+def input_adjustments(sim_data, cell_specs, debug=False, **kwargs):
 	# Limit the number of conditions that are being fit so that execution time decreases
 	if debug:
 		print("Warning: Running the Parca in debug mode - not all conditions will be fit")
@@ -128,6 +140,11 @@ def fitSimData_1(
 	# Set C-period
 	setCPeriod(sim_data)
 
+	return sim_data, cell_specs
+
+def basal_specs(sim_data, cell_specs,
+		disable_ribosome_capacity_fitting=False, disable_rnapoly_capacity_fitting=False,
+		**kwargs):
 	cell_specs = buildBasalCellSpecifications(
 		sim_data,
 		disable_ribosome_capacity_fitting,
@@ -136,7 +153,7 @@ def fitSimData_1(
 
 	# Set expression based on ppGpp regulation from basal expression
 	sim_data.process.transcription.set_ppgpp_expression(sim_data)
-	# TODO (Travis): use ppGpp expression in condition fitting below
+	# TODO (Travis): use ppGpp expression in condition fitting
 
 	# Modify other properties
 
@@ -149,6 +166,12 @@ def fitSimData_1(
 	# ----- Growth associated maintenance -----
 	fitMaintenanceCosts(sim_data, cell_specs["basal"]["bulkContainer"])
 
+	return sim_data, cell_specs
+
+def tf_condition_specs(sim_data, cell_specs, cpus=1,
+		disable_ribosome_capacity_fitting=False, disable_rnapoly_capacity_fitting=False,
+		variable_elongation_transcription=False, variable_elongation_translation=False,
+		**kwargs):
 	# NOTE: multiprocessing `fork` seems to work here even on macOS, so override the
 	# cpus() safety check for now. Be careful calling native libraries that
 	# use threads and other resources which don't play well with `fork`.
@@ -176,15 +199,9 @@ def fitSimData_1(
 		disable_ribosome_capacity_fitting,
 		disable_rnapoly_capacity_fitting)
 
-	sim_data.process.transcription.rnaSynthProbFraction = {}
-	sim_data.process.transcription.rnapFractionActiveDict = {}
-	sim_data.process.transcription.rnaSynthProbRProtein = {}
-	sim_data.process.transcription.rnaSynthProbRnaPolymerase = {}
-	sim_data.process.transcription.rnaPolymeraseElongationRateDict = {}
-	sim_data.expectedDryMassIncreaseDict = {}
-	sim_data.process.translation.ribosomeElongationRateDict = {}
-	sim_data.process.translation.ribosomeFractionActiveDict = {}
+	return sim_data, cell_specs
 
+def fit_condition(sim_data, cell_specs, cpus=1, **kwargs):
 	# Apply updates from fitCondition to cell_specs for each fit condition
 	conditions = list(sorted(cell_specs))
 	args = [(sim_data, cell_specs[condition], condition)
@@ -196,6 +213,9 @@ def fitSimData_1(
 		if nutrients not in sim_data.translation_supply_rate:
 			sim_data.translation_supply_rate[nutrients] = cell_specs[condition_label]["translation_aa_supply"]
 
+	return sim_data, cell_specs
+
+def promoter_binding(sim_data, cell_specs, **kwargs):
 	if VERBOSE > 0:
 		print('Fitting promoter binding')
 	# noinspection PyTypeChecker
@@ -203,8 +223,19 @@ def fitSimData_1(
 	# noinspection PyTypeChecker
 	fitLigandConcentrations(sim_data, cell_specs)
 
-	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints
-	sim_data.process.transcription.adjust_polymerizing_ppgpp_expression(sim_data)
+	calculateRnapRecruitment(sim_data, rVector)
+
+	return sim_data, cell_specs
+
+def set_conditions(sim_data, cell_specs, **kwargs):
+	sim_data.process.transcription.rnaSynthProbFraction = {}
+	sim_data.process.transcription.rnapFractionActiveDict = {}
+	sim_data.process.transcription.rnaSynthProbRProtein = {}
+	sim_data.process.transcription.rnaSynthProbRnaPolymerase = {}
+	sim_data.process.transcription.rnaPolymeraseElongationRateDict = {}
+	sim_data.expectedDryMassIncreaseDict = {}
+	sim_data.process.translation.ribosomeElongationRateDict = {}
+	sim_data.process.translation.ribosomeFractionActiveDict = {}
 
 	for condition_label in sorted(cell_specs):
 		condition = sim_data.conditions[condition_label]
@@ -266,10 +297,16 @@ def fitSimData_1(
 				frac = sim_data.growth_rate_parameters.get_fraction_active_ribosome(spec["doubling_time"])
 				sim_data.process.translation.ribosomeFractionActiveDict[nutrients] = frac
 
-	calculateRnapRecruitment(sim_data, rVector)
+	return sim_data, cell_specs
+
+def final_adjustments(sim_data, cell_specs, **kwargs):
+	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints
+	sim_data.process.transcription.adjust_polymerizing_ppgpp_expression(sim_data)
+
+	# Set supply constants for amino acids based on condition supply requirements
 	sim_data.process.metabolism.set_supply_constants(sim_data)
 
-	return sim_data
+	return sim_data, cell_specs
 
 def apply_updates(func, args, labels, dest, cpus):
 	# type: (Callable[..., dict], List[tuple], List[str], dict, int) -> None
