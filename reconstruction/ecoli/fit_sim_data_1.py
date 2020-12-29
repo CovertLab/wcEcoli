@@ -108,8 +108,10 @@ def fitSimData_1(raw_data, **kwargs):
 	cell_specs = {}
 
 	# Functions to modify sim_data and/or cell_specs
-	# Functions defined below should be wrapped by @save_state to allow saving and loading
-	# sim_data and cell_specs to skip certain functions while doing development
+	# Functions defined below should be wrapped by @save_state to allow saving
+	# and loading sim_data and cell_specs to skip certain functions while doing
+	# development for faster testing and iteration of later functions that
+	# might not need earlier functions to be rerun each time.
 	sim_data, cell_specs = initialize(sim_data, cell_specs, raw_data=raw_data, **kwargs)
 	sim_data, cell_specs = input_adjustments(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = basal_specs(sim_data, cell_specs, **kwargs)
@@ -118,6 +120,11 @@ def fitSimData_1(raw_data, **kwargs):
 	sim_data, cell_specs = promoter_binding(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = set_conditions(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = final_adjustments(sim_data, cell_specs, **kwargs)
+
+	if sim_data is None:
+		raise ValueError('sim_data is not specified.  Check that the'
+			f' load_intermediate function ({kwargs.get("load_intermediate")})'
+			' is correct and matches a function to be run.')
 
 	return sim_data
 
@@ -149,12 +156,13 @@ def save_state(func):
 		sim_data_file = os.path.join(intermediates_dir, f'sim_data_{func_name}.cPickle')
 		cell_specs_file = os.path.join(intermediates_dir, f'cell_specs_{func_name}.cPickle')
 
-		# Run, load or skip the wrapped function
+		# Run the wrapped function if the function to load is not specified or was already loaded
 		if load_intermediate is None or load_intermediate in functions_run:
 			start = time.time()
 			sim_data, cell_specs = func(*args, **kwargs)
 			end = time.time()
 			print(f'Ran {func_name} in {end - start:.0f} s')
+		# Load the saved results from the wrapped function if it is set to be loaded
 		elif load_intermediate == func_name:
 			if not os.path.exists(sim_data_file) or not os.path.exists(cell_specs_file):
 				raise IOError(f'Could not find intermediate files ({sim_data_file}'
@@ -165,6 +173,7 @@ def save_state(func):
 			with open(cell_specs_file, 'rb') as f:
 				cell_specs = cPickle.load(f)
 			print(f'Loaded sim_data and cell_specs for {func_name}')
+		# Skip running or loading if a later function will be loaded
 		else:
 			print(f'Skipped {func_name}')
 			sim_data = None
