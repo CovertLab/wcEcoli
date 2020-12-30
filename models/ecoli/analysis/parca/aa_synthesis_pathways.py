@@ -49,20 +49,31 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		# Plot data
 		plt.figure(figsize=(5, 10))
-		gs = gridspec.GridSpec(2, 1)
+		gs = gridspec.GridSpec(3, 1)
 
-		## kcat comparison
+		## kcat scatter comparison
 		plt.subplot(gs[0, 0])
 		plt.loglog(kcat_data, kcat_calc, 'o')
 		plt.loglog(kcat_range, kcat_range, 'k--')
+		plt.xlabel('kcat, from data')
+		plt.ylabel('kcat, calculated')
+
+		## kcat bar comparison
+		plt.subplot(gs[1, 0])
+		plt.bar(x_amino_acids, np.log2(kcat_calc / kcat_data))
+		plt.axhline(0, linestyle='--', color='k')
+		plt.xticks(x_amino_acids, amino_acids, rotation=45, fontsize=6)
+		plt.ylabel('log2(kcat, calculated / kcat, from data)')
 
 		## Inhibition comparison
-		plt.subplot(gs[1, 0])
-		plt.bar(x_amino_acids, aa_inhibition[:, 1], label='upper limit')
-		plt.bar(x_amino_acids, aa_inhibition[:, 0], label='lower limit')
+		plt.subplot(gs[2, 0])
+		plt.bar(x_amino_acids, aa_inhibition[:, 1], label='upper limit KI')
+		plt.bar(x_amino_acids, aa_inhibition[:, 0], label='lower limit KI')
 		plt.xticks(x_amino_acids, amino_acids, rotation=45, fontsize=6)
+		plt.ylabel('Inhibited fraction')
 		plt.legend()
 
+		## Save plot
 		plt.tight_layout()
 		exportFigure(plt, plot_out_dir, plot_out_filename, metadata)
 		plt.close('all')
