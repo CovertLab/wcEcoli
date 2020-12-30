@@ -51,6 +51,7 @@ class Metabolism(object):
 		self._build_metabolism(raw_data, sim_data)
 		self._build_ppgpp_reactions(raw_data, sim_data)
 		self._build_transport_reactions(raw_data, sim_data)
+		self._build_amino_acid_pathways(raw_data, sim_data)
 
 	def _set_solver_values(self, constants):
 		"""
@@ -404,6 +405,33 @@ class Metabolism(object):
 			if self._is_transport_rxn(stoich)]
 
 		self.transport_reactions = transport_reactions
+
+	def _build_amino_acid_pathways(self, raw_data, sim_data):
+		"""
+		Creates mapping between enzymes and amino acid pathways with
+		allosteric inhibition feedback from the amino acid.
+
+		Attributes set:
+			aa_synthesis_pathways (Dict[str, Dict]): data for allosteric
+				inhibition of amino acid pathways indexed by amino acid ID with
+				location tag and nested dictionary with the following keys:
+					'enzyme' (str): limiting/regulated enzyme ID in synthesis
+						pathway with location tag
+					'kcat_data' (units.Unum): kcat associated with enzyme
+						reaction with units of 1/time
+					'ki' (Tuple[units.Unum, units.Unum]]): lower and upper
+						limits of KI associated with enzyme reaction with units
+						of mol/volume
+		"""
+
+		self.aa_synthesis_pathways = {}
+
+		for row in raw_data.amino_acid_pathways:
+			data = {}
+			data['enzyme'] = row['Enzyme']
+			data['kcat_data'] = row['kcat'] if row['kcat'] else 0 / units.s
+			data['ki'] = (row['KI, lower bound'], row['KI, upper bound'])
+			self.aa_synthesis_pathways[row['Amino acid']] = data
 
 	def get_kinetic_constraints(self, enzymes, substrates):
 		# type: (units.Unum, units.Unum) -> units.Unum
