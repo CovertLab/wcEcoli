@@ -501,7 +501,7 @@ class Metabolism(object):
 
 		return externalMoleculeLevels, newObjective
 
-	def set_supply_constants(self, sim_data):
+	def set_supply_constants(self, sim_data, cell_specs):
 		"""
 		Sets constants to determine amino acid supply during translation.
 
@@ -555,6 +555,21 @@ class Metabolism(object):
 		self.KM_aa_export = (1 / f_exported - 1) * aa_conc_aa_media
 		self.fraction_supply_rate = 1 - f_inhibited + aa_conc_basal / (self.KM_aa_export + aa_conc_basal)
 		self.fraction_import_rate = 1 - (self.fraction_supply_rate + 1 / (1 + aa_conc_aa_media / self.KI_aa_synthesis) - f_exported)
+
+		# Allosteric inhibition constants to match required supply rate
+		rates = (
+			sim_data.translation_supply_rate['minimal']
+			* sim_data.mass.avg_cell_dry_mass * sim_data.constants.n_avogadro
+			)
+		supply = {
+			aa: rate
+			for aa, rate in zip(sim_data.molecule_groups.amino_acids, rates)
+			}
+		for aa, data in sorted(self.aa_synthesis_pathways.items(), key=lambda d: d[0]):
+			enzyme = cell_specs['basal']['bulkAverageContainer'].count(data['enzyme'])
+			aa_conc = conc('minimal')[aa]
+			ki = np.mean(data['ki'])
+			data['kcat'] = supply[aa] / enzyme * (1 + aa_conc / ki)
 
 	def aa_supply_scaling(self, aa_conc, aa_present):
 		"""
