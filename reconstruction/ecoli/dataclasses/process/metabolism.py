@@ -565,11 +565,31 @@ class Metabolism(object):
 			aa: rate
 			for aa, rate in zip(sim_data.molecule_groups.amino_acids, rates)
 			}
+		enzymes = []
+		kcats = []
+		kis = []
+		aa_ids = []
 		for aa, data in sorted(self.aa_synthesis_pathways.items(), key=lambda d: d[0]):
-			enzyme = cell_specs['basal']['bulkAverageContainer'].count(data['enzyme'])
+			enzyme = data['enzyme']
+			enzyme_counts = cell_specs['basal']['bulkAverageContainer'].count(enzyme)
 			aa_conc = conc('minimal')[aa]
 			ki = np.mean(data['ki'])
-			data['kcat'] = supply[aa] / enzyme * (1 + aa_conc / ki)
+			if aa == 'PRO[c]':  # TODO: include this in data file?
+				ki = 0.15 * units.mmol/units.L
+				data['ki'] = (0.02 * units.mmol/units.L, 0.15 * units.mmol/units.L)
+			kcat = supply[aa] / enzyme_counts * (1 + aa_conc / ki)
+			data['kcat'] = kcat
+
+			enzymes.append(enzyme)
+			kcats.append(kcat)
+			kis.append(ki)
+			aa_ids.append(aa)
+
+		# TODO: clean this up
+		self.aa_enzymes = enzymes
+		self.aa_kcats = kcats
+		self.aa_kis = kis
+		self.aa_aas = aa_ids
 
 	def aa_supply_scaling(self, aa_conc, aa_present):
 		"""
