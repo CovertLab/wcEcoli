@@ -559,7 +559,7 @@ class Metabolism(object):
 		# Allosteric inhibition constants to match required supply rate
 		rates = (
 			sim_data.translation_supply_rate['minimal']
-			* sim_data.mass.avg_cell_dry_mass * sim_data.constants.n_avogadro
+			* sim_data.mass.avg_cell_dry_mass_init * sim_data.constants.n_avogadro
 			)
 		supply = {
 			aa: rate
