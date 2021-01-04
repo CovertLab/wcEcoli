@@ -221,7 +221,8 @@ class Simulation():
 
 		if self._logToShell:
 			self.loggers["Shell"] = wholecell.loggers.shell.Shell(
-				self._shellColumnHeaders
+				self._shellColumnHeaders,
+				self._outputDir if self._logToDisk else None,
 				)
 
 		if self._logToDisk:
