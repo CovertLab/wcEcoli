@@ -430,7 +430,10 @@ class Metabolism(object):
 			data = {}
 			data['enzyme'] = row['Enzyme']
 			data['kcat_data'] = row['kcat'] if row['kcat'] else 0 / units.s
-			data['ki'] = (row['KI, lower bound'], row['KI, upper bound'])
+			if row['KI, lower bound'] and row['KI, lower bound']:
+				data['ki'] = (row['KI, lower bound'], row['KI, upper bound'])
+			else:
+				data['ki'] = None
 			self.aa_synthesis_pathways[row['Amino acid']] = data
 
 	def get_kinetic_constraints(self, enzymes, substrates):
@@ -573,7 +576,10 @@ class Metabolism(object):
 			enzyme = data['enzyme']
 			enzyme_counts = cell_specs['basal']['bulkAverageContainer'].count(enzyme)
 			aa_conc = conc('minimal')[aa]
-			ki = np.mean(data['ki'])
+			if data['ki'] is None:
+				ki = np.inf * units.mol / units.L
+			else:
+				ki = np.mean(data['ki'])
 			if aa == 'PRO[c]':  # TODO: include this in data file?
 				ki = 0.15 * units.mmol/units.L
 				data['ki'] = (0.02 * units.mmol/units.L, 0.15 * units.mmol/units.L)
