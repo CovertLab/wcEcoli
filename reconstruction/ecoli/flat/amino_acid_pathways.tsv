@@ -1,4 +1,5 @@
 # Data from Sander et al. Allosteric feedback inhibition enables robust amino acid biosynthesis in E. coli by enforcing enzyme overabundance. Cell. 2019.
+# No annotated regulation for L-ALPHA-ALANINE[c], L-ASPARTATE[c], GLT[c], GLN[c], GLY[c]
 "Amino acid"	"Enzyme"	"kcat (1/units.s)"	"KI, lower bound (units.mmol/units.L)"	"KI, upper bound (units.mmol/units.L)"	"_notes"
 "ARG[c]"	"N-ACETYLTRANSFER-CPLX[c]"	654	0.15	0.15	"ArgA"
 "ASN[c]"	"ASNSYNA-CPLX[c]"		0.12	0.12	"AsnA"
