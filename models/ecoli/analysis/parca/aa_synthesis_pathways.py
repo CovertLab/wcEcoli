@@ -70,7 +70,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		plt.bar(x_amino_acids, aa_inhibition[:, 1], label='upper limit KI')
 		plt.bar(x_amino_acids, aa_inhibition[:, 0], label='lower limit KI')
 		plt.xticks(x_amino_acids, amino_acids, rotation=45, fontsize=6)
-		plt.ylabel('Inhibited fraction')
+		plt.ylabel('Fraction of max flux at AA conc')
 		plt.legend()
 
 		## Save plot
