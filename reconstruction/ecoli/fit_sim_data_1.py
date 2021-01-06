@@ -1536,7 +1536,8 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		netLossRate_protein)
 
 	# Translate the transcript distribution into the mrna distribution
-	monomer_to_mrna_transform = sim_data.relation.monomer_to_mrna_transform
+	# monomer_to_mrna_transform = sim_data.relation.monomer_to_mrna_transform
+	monomer_to_mrna_transform = sim_data.relation.buildMonomerIndexToRnaMapping(sim_data, view_RNA.counts())
 	transcriptDistribution_matrix = np.repeat(np.reshape(transcriptDistribution, (-1,1)), monomer_to_mrna_transform.shape[1], axis=1)
 	mRnaDistribution_matrix = np.multiply(transcriptDistribution_matrix, monomer_to_mrna_transform)
 
@@ -1553,7 +1554,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		totalMass_RNA,
 		sim_data.process.transcription.rna_data["mw"] / sim_data.constants.n_avogadro,
 		expression)
-
+	print(nRnas)
 	view_RNA.countsIs(nRnas * expression)
 	rnaLossRate = None
 
