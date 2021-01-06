@@ -488,8 +488,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		aa_ids_all = self.process.aas._state._moleculeIDs[self.process.aas._containerIndexes]
 		aa_ids = self.aa_aas._state._moleculeIDs[self.aa_aas._containerIndexes]
 		for aa, new in zip(aa_ids, supply):
-			print(aa, new, self.process.aa_supply[aa_ids_all == aa])
-			print(new / self.process.aa_supply[aa_ids_all == aa])
+			# print(aa, new, self.process.aa_supply[aa_ids_all == aa])
+			# print(new / self.process.aa_supply[aa_ids_all == aa])
 			self.process.aa_supply[aa_ids_all == aa] = new
 
 		self.process.writeToListener('GrowthLimits', 'aa_supply', supply)
