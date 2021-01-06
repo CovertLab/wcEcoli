@@ -579,10 +579,14 @@ class Metabolism(object):
 			if data['ki'] is None:
 				ki = np.inf * units.mol / units.L
 			else:
-				ki = np.mean(data['ki'])
-			if aa == 'PRO[c]':  # TODO: include this in data file?
-				ki = 0.15 * units.mmol/units.L
-				data['ki'] = (0.02 * units.mmol/units.L, 0.15 * units.mmol/units.L)
+				# Get largest dynamic range possible given the range of measured KIs
+				lower_limit, upper_limit = data['ki']
+				if aa_conc < lower_limit:
+					ki = lower_limit
+				elif aa_conc > upper_limit:
+					ki = upper_limit
+				else:
+					ki = aa_conc
 			kcat = supply[aa] / enzyme_counts * (1 + aa_conc / ki)
 			data['kcat'] = kcat
 
