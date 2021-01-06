@@ -213,7 +213,7 @@ If no genes have half life, allow to use the average.
 
 TODO: Add half life calc value as an argument
 '''
-HALF_LIFE_CALC = 4
+HALF_LIFE_CALC = 3
 
 
 def find_tu_type(tu_genes_info):
