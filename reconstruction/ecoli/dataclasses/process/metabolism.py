@@ -599,14 +599,27 @@ class Metabolism(object):
 				km_conc = conc('minimal')['GLT[c]']
 				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
 			elif aa == 'GLN[c]':
+				km = 3.3 * units.mmol/units.L  # from metabolism_kinetics, GLUTAMINESYN-OLIGOMER
+				km_conc = conc('minimal')['GLT[c]']
+				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
+			elif aa == 'PRO[c]':
+				km = 24.9 * units.mmol/units.L
+				km_conc = conc('minimal')['GLT[c]']
+				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
+			elif aa == 'L-ASPARTATE[c]':
 				km = 24.9 * units.mmol/units.L
 				km_conc = conc('minimal')['GLT[c]']
 				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
 			elif aa == 'SER[c]':
 				kcat = (supply[aa] + supply['GLY[c]']) / enzyme_counts * (1 + aa_conc / ki)
 			elif aa == 'GLT[c]':
-				adjustment = 1.05  # TODO: remove, needed to help keep Ala and Gln from very low conc
-				kcat = adjustment * (supply[aa] + supply['L-ALPHA-ALANINE[c]'] + supply['GLN[c]']) / enzyme_counts * (1 + aa_conc / ki)
+				adjustment = 1.25  # TODO: remove, needed to help keep Ala and Gln from very low conc
+				kcat = adjustment * (
+						supply[aa]
+						+ supply['L-ALPHA-ALANINE[c]']
+						+ supply['GLN[c]']
+						+ supply['PRO[c]']
+						+ supply['L-ASPARTATE[c]']) / enzyme_counts * (1 + aa_conc / ki)
 			else:
 				kcat = supply[aa] / enzyme_counts * (1 + aa_conc / ki)
 			data['kcat'] = kcat
