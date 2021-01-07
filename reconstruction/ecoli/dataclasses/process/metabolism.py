@@ -590,10 +590,13 @@ class Metabolism(object):
 
 			# Handling of upstream amino acids
 			# TODO: generalize to all pathways
+			# TODO: handle different kcats for reverse
 			if aa == 'GLY[c]':
 				km = 0.3 * units.mmol/units.L
+				km_reverse = 1 * units.mmol/units.L  # TODO: find this
 				km_conc = conc('minimal')['SER[c]']
-				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
+				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
+				# TODO: check if kcat is negative
 			elif aa == 'L-ALPHA-ALANINE[c]':
 				km = 24.9 * units.mmol/units.L
 				km_conc = conc('minimal')['GLT[c]']

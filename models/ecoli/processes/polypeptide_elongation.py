@@ -504,6 +504,10 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		fraction[pro_idx] *= pro_fraction
 		fraction[asp_idx] *= asp_fraction
 
+		# TODO: generalize to all reversible pathways
+		gly_reverse = 1 / (1 + 1 * units.mmol/units.L / aa_conc[gly_idx])
+		fraction[gly_idx] -= gly_reverse
+
 		supply = units.strip_empty_units(self.aa_kcats * enzyme_counts * fraction * self.process.timeStepSec() * units.s)
 		supply[ser_idx] -= supply[gly_idx]
 		supply[glt_idx] -= supply[ala_idx] + supply[gln_idx] + supply[pro_idx] + supply[asp_idx]
