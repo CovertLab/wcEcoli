@@ -228,8 +228,7 @@ class Simulation():
 		if self._logToDisk:
 			self.loggers["Disk"] = wholecell.loggers.disk.Disk(
 				self._outputDir,
-				self._overwriteExistingFiles,
-				self._logToDiskEvery
+				logEvery=self._logToDiskEvery,
 				)
 
 	# Run simulation

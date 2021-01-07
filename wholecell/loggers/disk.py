@@ -4,7 +4,7 @@ Disk
 Logs whole-cell simulations and metadata to disk.
 """
 
-from __future__ import absolute_import, division, print_function
+from __future__ import annotations
 
 import os
 import time
@@ -19,13 +19,21 @@ import six
 DEFAULT_LOG_FREQUENCY = 1
 
 class Disk(wholecell.loggers.logger.Logger):
-	""" Disk """
+	"""
+	Writes state and listener data to disk.  Responsible for creating and
+	appending to data tables as well as writing attributes.
+	"""
 
-	def __init__(self, outDir = None, allowOverwrite = False, logEvery = None):
+	def __init__(self, outDir: str, logEvery: int = DEFAULT_LOG_FREQUENCY):
+		"""
+		Args:
+			outDir: directory path to save data to
+			logEvery: how frequently (# of timesteps) data is saved to disk
+				(ie 2 will write data for every other time step)
+		"""
+
 		self.outDir = outDir
-
-		self.allowOverwrite = allowOverwrite
-		self.logEvery = logEvery if logEvery is not None else DEFAULT_LOG_FREQUENCY
+		self.logEvery = logEvery
 
 		self.saveFiles = {}
 		self.mainFile = None
