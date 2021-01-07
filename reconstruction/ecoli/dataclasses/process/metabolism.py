@@ -620,13 +620,13 @@ class Metabolism(object):
 			elif aa == 'SER[c]':
 				kcat = (supply[aa] + supply['GLY[c]']) / enzyme_counts * (1 + aa_conc / ki)
 			elif aa == 'GLT[c]':
-				adjustment = 1.  # TODO: remove, needed to help keep Ala and Gln from very low conc
-				kcat = adjustment * (
+				km_reverse = 24.9 * units.mmol/units.L
+				kcat = (
 						supply[aa]
 						+ supply['L-ALPHA-ALANINE[c]']
 						+ supply['GLN[c]']
 						+ supply['PRO[c]']
-						+ supply['L-ASPARTATE[c]']) / enzyme_counts * (1 + aa_conc / ki)
+						+ supply['L-ASPARTATE[c]']) / (enzyme_counts * (1 / (1 + aa_conc / ki) - 1 / (1 + km_reverse / aa_conc)))
 			else:
 				kcat = supply[aa] / enzyme_counts * (1 + aa_conc / ki)
 			data['kcat'] = kcat
