@@ -6,9 +6,10 @@ Logs whole-cell simulations and metadata to disk.
 
 from __future__ import annotations
 
+import itertools
 import os
 import time
-import itertools
+from typing import Any, Dict
 
 import wholecell.loggers.logger
 from wholecell.io.tablewriter import TableWriter
@@ -35,7 +36,7 @@ class Disk(wholecell.loggers.logger.Logger):
 		self.outDir = outDir
 		self.logEvery = logEvery
 
-		self.saveFiles = {}
+		self.saveFiles = {}  # type: Dict[Any, TableWriter]
 		self.mainFile = None
 		self.logStep = 0
 
