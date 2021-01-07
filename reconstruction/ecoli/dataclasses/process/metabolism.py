@@ -599,8 +599,9 @@ class Metabolism(object):
 				# TODO: check if kcat is negative
 			elif aa == 'L-ALPHA-ALANINE[c]':
 				km = 24.9 * units.mmol/units.L
+				km_reverse = 5 * units.mmol/units.L
 				km_conc = conc('minimal')['GLT[c]']
-				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
+				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
 			elif aa == 'GLN[c]':
 				km = 3.3 * units.mmol/units.L  # from metabolism_kinetics, GLUTAMINESYN-OLIGOMER
 				km_conc = conc('minimal')['GLT[c]']
