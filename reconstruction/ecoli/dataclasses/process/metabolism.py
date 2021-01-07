@@ -591,6 +591,7 @@ class Metabolism(object):
 			# Handling of upstream amino acids
 			# TODO: generalize to all pathways
 			# TODO: handle different kcats for reverse
+			# TODO: find KM values - reverse fraction should be lower than forward fraction
 			if aa == 'GLY[c]':
 				km = 0.3 * units.mmol/units.L
 				km_reverse = 1 * units.mmol/units.L  # TODO: find this
@@ -604,16 +605,19 @@ class Metabolism(object):
 				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
 			elif aa == 'GLN[c]':
 				km = 3.3 * units.mmol/units.L  # from metabolism_kinetics, GLUTAMINESYN-OLIGOMER
+				km_reverse = 5 * units.mmol/units.L
 				km_conc = conc('minimal')['GLT[c]']
-				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
+				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
 			elif aa == 'PRO[c]':
 				km = 24.9 * units.mmol/units.L
+				km_reverse = 1 * units.mmol/units.L
 				km_conc = conc('minimal')['GLT[c]']
-				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
+				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
 			elif aa == 'L-ASPARTATE[c]':
 				km = 24.9 * units.mmol/units.L
+				km_reverse = 5 * units.mmol/units.L
 				km_conc = conc('minimal')['GLT[c]']
-				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
+				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
 			elif aa == 'SER[c]':
 				kcat = (supply[aa] + supply['GLY[c]']) / enzyme_counts * (1 + aa_conc / ki)
 			elif aa == 'GLT[c]':
