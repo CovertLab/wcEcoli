@@ -45,7 +45,6 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	logToShell = True,
 	logToDisk = False,
 	outputDir = None,
-	overwriteExistingFiles = False,
 	logToDiskEvery = 1,
 	simData = None,
 	inheritedStatePath = None,
