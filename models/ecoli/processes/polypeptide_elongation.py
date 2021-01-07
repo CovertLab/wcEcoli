@@ -479,23 +479,31 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
 
 		# TODO: encapsulate this in the class as a function for enzyme counts and AA conc
+		aa_ids = self.aa_aas._state._moleculeIDs[self.aa_aas._containerIndexes].tolist()
 		enzyme_counts = self.aa_enzymes.total_counts()
 		aa_conc = self.counts_to_molar * self.aa_aas.total_counts()
 		fraction = units.strip_empty_units(1 / (1 + aa_conc / self.aa_kis))
 
 		# Temporary check for upstream control Ser -> Gly
 		# TODO: generalize to all pathways
-		ser_idx = 15
-		gly_idx = 5
-		ser_fraction = 1 / (1 + 0.3 * units.mmol/units.L / aa_conc[ser_idx])
-		fraction[gly_idx] *= ser_fraction
+		ser_idx = aa_ids.index('SER[c]')
+		gly_idx = aa_ids.index('GLY[c]')
+		glt_idx = aa_ids.index('GLT[c]')
+		gln_idx = aa_ids.index('GLN[c]')
+		ala_idx = aa_ids.index('L-ALPHA-ALANINE[c]')
+		gly_fraction = 1 / (1 + 0.3 * units.mmol/units.L / aa_conc[ser_idx])
+		ala_fraction = 1 / (1 + 24.9 * units.mmol/units.L / aa_conc[glt_idx])
+		gln_fraction = 1 / (1 + 24.9 * units.mmol/units.L / aa_conc[glt_idx])
+		fraction[gly_idx] *= gly_fraction
+		fraction[ala_idx] *= ala_fraction
+		fraction[gln_idx] *= gln_fraction
 
 		supply = units.strip_empty_units(self.aa_kcats * enzyme_counts * fraction * self.process.timeStepSec() * units.s)
 		supply[ser_idx] -= supply[gly_idx]
+		supply[glt_idx] -= supply[ala_idx] + supply[gln_idx]
 
 		# TODO: Clean this up
 		aa_ids_all = self.process.aas._state._moleculeIDs[self.process.aas._containerIndexes]
-		aa_ids = self.aa_aas._state._moleculeIDs[self.aa_aas._containerIndexes]
 		for aa, new in zip(aa_ids, supply):
 			# print(aa, new, self.process.aa_supply[aa_ids_all == aa])
 			# print(new / self.process.aa_supply[aa_ids_all == aa])

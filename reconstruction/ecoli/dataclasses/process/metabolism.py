@@ -592,10 +592,21 @@ class Metabolism(object):
 			# TODO: generalize to all pathways
 			if aa == 'GLY[c]':
 				km = 0.3 * units.mmol/units.L
-				ser_conc = conc('minimal')['SER[c]']
-				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / ser_conc))
+				km_conc = conc('minimal')['SER[c]']
+				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
+			elif aa == 'L-ALPHA-ALANINE[c]':
+				km = 24.9 * units.mmol/units.L
+				km_conc = conc('minimal')['GLT[c]']
+				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
+			elif aa == 'GLN[c]':
+				km = 24.9 * units.mmol/units.L
+				km_conc = conc('minimal')['GLT[c]']
+				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
 			elif aa == 'SER[c]':
 				kcat = (supply[aa] + supply['GLY[c]']) / enzyme_counts * (1 + aa_conc / ki)
+			elif aa == 'GLT[c]':
+				adjustment = 1.05  # TODO: remove, needed to help keep Ala and Gln from very low conc
+				kcat = adjustment * (supply[aa] + supply['L-ALPHA-ALANINE[c]'] + supply['GLN[c]']) / enzyme_counts * (1 + aa_conc / ki)
 			else:
 				kcat = supply[aa] / enzyme_counts * (1 + aa_conc / ki)
 			data['kcat'] = kcat
