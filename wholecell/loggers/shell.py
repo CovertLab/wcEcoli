@@ -6,10 +6,13 @@ Shell
 Prints a very brief summary of a whole-cell simulation to standard output
 """
 
+from __future__ import annotations
+
 import datetime
 import numpy as np
 import os
 import sys
+from typing import Iterable, Optional
 
 from six.moves import range, zip
 
@@ -20,12 +23,29 @@ from wholecell.utils.py3 import monotonic_seconds
 SPACER = "  "
 
 class Shell(wholecell.loggers.logger.Logger):
-	""" Shell """
+	"""
+	Displays a simple summary of the simulation state to the shell as the
+	simulation progresses.  Optionally saves the output in a log file.
+	Logged values are added to columnSpecs by calling registerLoggedQuantity()
+	in a Listener class.
+	"""
 
-	def __init__(self, columnHeaders, output_dir=None):
+	def __init__(self,
+			columnHeaders: Iterable[str],
+			output_dir: Optional[str] = None,
+			):
+		"""
+		Args:
+			columnHeaders: header IDs for values added to columnSpecs to
+				display at each time step
+			output_dir: if not None, will also save the output to a log file
+				in this directory in addition to logging to the shell
+		"""
+
 		self.iterFreq = 1
 		self.headerFreq = 50
 
+		# Can also be populated by Listener classes calling registerLoggedQuantity()
 		self.columnSpecs = [
 			{"header": "Time (s)", "target": "Simulation", "property": "time", "length": 8, "format": ".2f", "sum": False},
 			]
