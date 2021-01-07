@@ -587,7 +587,17 @@ class Metabolism(object):
 					ki = upper_limit
 				else:
 					ki = aa_conc
-			kcat = supply[aa] / enzyme_counts * (1 + aa_conc / ki)
+
+			# Handling of upstream amino acids
+			# TODO: generalize to all pathways
+			if aa == 'GLY[c]':
+				km = 0.3 * units.mmol/units.L
+				ser_conc = conc('minimal')['SER[c]']
+				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / ser_conc))
+			elif aa == 'SER[c]':
+				kcat = (supply[aa] + supply['GLY[c]']) / enzyme_counts * (1 + aa_conc / ki)
+			else:
+				kcat = supply[aa] / enzyme_counts * (1 + aa_conc / ki)
 			data['kcat'] = kcat
 
 			enzymes.append(enzyme)

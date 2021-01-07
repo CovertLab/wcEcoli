@@ -482,7 +482,16 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		enzyme_counts = self.aa_enzymes.total_counts()
 		aa_conc = self.counts_to_molar * self.aa_aas.total_counts()
 		fraction = units.strip_empty_units(1 / (1 + aa_conc / self.aa_kis))
+
+		# Temporary check for upstream control Ser -> Gly
+		# TODO: generalize to all pathways
+		ser_idx = 15
+		gly_idx = 5
+		ser_fraction = 1 / (1 + 0.3 * units.mmol/units.L / aa_conc[ser_idx])
+		fraction[gly_idx] *= ser_fraction
+
 		supply = units.strip_empty_units(self.aa_kcats * enzyme_counts * fraction * self.process.timeStepSec() * units.s)
+		supply[ser_idx] -= supply[gly_idx]
 
 		# TODO: Clean this up
 		aa_ids_all = self.process.aas._state._moleculeIDs[self.process.aas._containerIndexes]
