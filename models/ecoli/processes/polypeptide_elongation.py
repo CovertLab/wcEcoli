@@ -508,12 +508,10 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		gly_reverse = 1 / (1 + 1 * units.mmol/units.L / aa_conc[gly_idx])
 		ala_reverse = 1 / (1 + 5 * units.mmol/units.L / aa_conc[ala_idx])
 		gln_reverse = 1 / (1 + 5 * units.mmol/units.L / aa_conc[gln_idx])
-		pro_reverse = 1 / (1 + 1 * units.mmol/units.L / aa_conc[pro_idx])
 		asp_reverse = 1 / (1 + 5 * units.mmol/units.L / aa_conc[asp_idx])
 		fraction[gly_idx] -= gly_reverse
 		fraction[ala_idx] -= ala_reverse
 		fraction[gln_idx] -= gln_reverse
-		fraction[pro_idx] -= pro_reverse
 		fraction[asp_idx] -= asp_reverse
 
 		supply = units.strip_empty_units(self.aa_kcats * enzyme_counts * fraction * self.process.timeStepSec() * units.s)

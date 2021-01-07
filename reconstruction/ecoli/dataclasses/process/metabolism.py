@@ -610,9 +610,8 @@ class Metabolism(object):
 				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
 			elif aa == 'PRO[c]':
 				km = 24.9 * units.mmol/units.L
-				km_reverse = 1 * units.mmol/units.L
 				km_conc = conc('minimal')['GLT[c]']
-				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
+				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
 			elif aa == 'L-ASPARTATE[c]':
 				km = 24.9 * units.mmol/units.L
 				km_reverse = 5 * units.mmol/units.L
