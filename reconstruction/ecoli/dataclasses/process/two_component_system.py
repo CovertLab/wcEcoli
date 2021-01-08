@@ -167,7 +167,7 @@ class TwoComponentSystem(object):
 		self.independent_molecules_atp_index = np.where(self.independent_molecules == "ATP[c]")[0][0]
 
 		self.complex_to_monomer = self._buildComplexToMonomer(raw_data.modified_proteins, self.molecule_names)
-		import ipdb; ipdb.set_trace()
+
 
 		# Mass balance matrix
 		self._stoich_matrix_mass = np.array(stoichMatrixMass)
