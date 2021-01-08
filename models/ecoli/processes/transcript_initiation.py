@@ -100,6 +100,10 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.copy_number = sim_data.process.replication.get_average_copy_number
 		self.ppgpp_regulation = sim._ppgpp_regulation
 
+		self.basal_prob[1030] *= 100
+		self.delta_prob_matrix[1030, :] *= 100
+		self.basal_prob[1031] *= 100
+		self.delta_prob_matrix[1031, :] *= 100
 
 	def calculateRequest(self):
 		# Get all inactive RNA polymerases

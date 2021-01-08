@@ -13,8 +13,10 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 import wholecell.processes.process
+from wholecell.utils.random import stochasticRound
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
 from wholecell.utils import units
+
 
 class TranscriptElongation(wholecell.processes.process.Process):
 	""" TranscriptElongation """
@@ -29,25 +31,29 @@ class TranscriptElongation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(TranscriptElongation, self).initialize(sim, sim_data)
 
-		self.max_time_step = sim_data.process.transcription.max_time_step
+		transcription = sim_data.process.transcription
+		constants = sim_data.constants
+		rna_data = transcription.rna_data
+
+		self.max_time_step = transcription.max_time_step
 
 		# Load parameters
-		self.rnaPolymeraseElongationRateDict = sim_data.process.transcription.rnaPolymeraseElongationRateDict
-		self.rnaIds = sim_data.process.transcription.rna_data['id']
-		self.rnaLengths = sim_data.process.transcription.rna_data["length"].asNumber()
-		self.rnaSequences = sim_data.process.transcription.transcription_sequences
-		self.ntWeights = sim_data.process.transcription.transcription_monomer_weights
-		self.endWeight = sim_data.process.transcription.transcription_end_weight
+		self.rnaPolymeraseElongationRateDict = transcription.rnaPolymeraseElongationRateDict
+		self.rnaIds = rna_data['id']
+		self.rnaLengths = rna_data["length"].asNumber()
+		self.rnaSequences = transcription.transcription_sequences
+		self.ntWeights = transcription.transcription_monomer_weights
+		self.endWeight = transcription.transcription_end_weight
 		self.replichore_lengths = sim_data.process.replication.replichore_lengths
 		self.chromosome_length = self.replichore_lengths.sum()
 
 		# ID Groups of rRNAs
-		self.idx_16S_rRNA = np.where(sim_data.process.transcription.rna_data['is_16S_rRNA'])[0]
-		self.idx_23S_rRNA = np.where(sim_data.process.transcription.rna_data['is_23S_rRNA'])[0]
-		self.idx_5S_rRNA = np.where(sim_data.process.transcription.rna_data['is_5S_rRNA'])[0]
+		self.idx_16S_rRNA = np.where(rna_data['is_16S_rRNA'])[0]
+		self.idx_23S_rRNA = np.where(rna_data['is_23S_rRNA'])[0]
+		self.idx_5S_rRNA = np.where(rna_data['is_5S_rRNA'])[0]
 
 		# Mask for mRNAs
-		self.is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']
+		self.is_mRNA = rna_data['is_mRNA']
 
 		# Views
 		self.active_RNAPs = self.uniqueMoleculesView('active_RNAP')
@@ -57,7 +63,20 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.ppi = self.bulkMoleculeView(sim_data.molecule_ids.ppi)
 		self.inactive_RNAPs = self.bulkMoleculeView("APORNAP-CPLX[c]")
 		self.variable_elongation = sim._variable_elongation_transcription
-		self.make_elongation_rates = sim_data.process.transcription.make_elongation_rates
+		self.make_elongation_rates = transcription.make_elongation_rates
+
+		# Attenuation
+		# TODO: generalize for all (in parca)
+		trp_trna_idx = np.where(transcription.aa_from_trna[sim_data.molecule_groups.amino_acids.index('TRP[c]'), :])[0]
+		trp_trna_ids = np.array(transcription.charged_trna_names)[trp_trna_idx]
+		trp_rna = ['EG11027_RNA[c]', 'EG11028_RNA[c]']
+		self.attenuation_rna_idx = np.where([r in trp_rna for r in rna_data['id']])[0]
+
+		# TODO: move to separate process
+		self.cell_density = constants.cell_density
+		self.n_avogadro = constants.n_avogadro
+		self.charged_trna = self.bulkMoleculesView(trp_trna_ids)
+		self.K = 1 * units.umol/units.L  # TODO: load from sim_data
 
 
 	def calculateRequest(self):
@@ -129,6 +148,17 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		length_partial_RNAs = length_all_RNAs[is_partial_transcript]
 		is_mRNA_partial_RNAs = is_mRNA_all_RNAs[is_partial_transcript]
 		RNAP_index_partial_RNAs = RNAP_index_all_RNAs[is_partial_transcript]
+
+		# Attenuation
+		# TODO: move to separate process
+		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
+		cellVolume = cell_mass / self.cell_density
+		counts_to_molar = 1 / (self.n_avogadro * cellVolume)
+		trna_conc = counts_to_molar * self.charged_trna.total_counts()
+		prob_attenuation = 1 - np.exp(-units.strip_empty_units(trna_conc / self.K))
+		attenuation_mask = (np.isin(TU_index_all_RNAs, self.attenuation_rna_idx) & (length_all_RNAs < 10))[is_partial_transcript]
+		rna_to_attenuate = stochasticRound(self.randomState, attenuation_mask * prob_attenuation[0]).astype(bool)
+		print(prob_attenuation, rna_to_attenuate.sum(), attenuation_mask.sum())
 
 		sequences = buildSequences(
 			self.rnaSequences,
@@ -213,7 +243,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		# Determine if transcript has reached the end of the sequence
 		terminal_lengths = self.rnaLengths[TU_index_partial_RNAs]
-		did_terminate_mask = (updated_transcript_lengths == terminal_lengths)
+		did_terminate_mask = (updated_transcript_lengths == terminal_lengths) | rna_to_attenuate
 		terminated_RNAs = np.bincount(
 			TU_index_partial_RNAs[did_terminate_mask],
 			minlength = self.rnaSequences.shape[0])
