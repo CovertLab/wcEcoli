@@ -76,7 +76,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.cell_density = constants.cell_density
 		self.n_avogadro = constants.n_avogadro
 		self.charged_trna = self.bulkMoleculesView(trp_trna_ids)
-		self.K = 1 * units.umol/units.L  # TODO: load from sim_data
+		self.K = 0.5 * units.umol/units.L  # TODO: load from sim_data
 
 
 	def calculateRequest(self):
@@ -158,7 +158,6 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		prob_attenuation = 1 - np.exp(-units.strip_empty_units(trna_conc / self.K))
 		attenuation_mask = (np.isin(TU_index_all_RNAs, self.attenuation_rna_idx) & (length_all_RNAs < 10))[is_partial_transcript]
 		rna_to_attenuate = stochasticRound(self.randomState, attenuation_mask * prob_attenuation[0]).astype(bool)
-		print(prob_attenuation, rna_to_attenuate.sum(), attenuation_mask.sum())
 
 		sequences = buildSequences(
 			self.rnaSequences,
