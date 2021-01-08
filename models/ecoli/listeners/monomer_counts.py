@@ -21,6 +21,8 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 	def initialize(self, sim, sim_data):
 		super(MonomerCounts, self).initialize(sim, sim_data)
 
+
+
 		# Get IDs of all bulk molecules
 		self.bulkMolecules = sim.internal_states["BulkMolecules"]
 		bulk_molecule_ids = self.bulkMolecules.container.objectNames()
@@ -31,6 +33,11 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		equilibrium_molecule_ids = sim_data.process.equilibrium.molecule_names
 		equilibrium_complex_ids = sim_data.process.equilibrium.ids_complexes
 		self.monomer_ids = sim_data.process.translation.monomer_data["id"].tolist()
+
+		# Get IDs of complexed molecules monomers involved in two component system
+		two_component_system_molecule_ids = list(sim_data.process.two_component_system.molecule_names)
+		two_component_system_complex_ids = list(sim_data.process.two_component_system.complex_to_monomer.keys())
+		import ipdb; ipdb.set_trace()
 
 		# Get IDs of ribosome subunits
 		ribosome_50s_subunits = sim_data.process.complexation.get_monomers(
@@ -50,10 +57,11 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		replisome_monomer_subunits = sim_data.molecule_groups.replisome_monomer_subunits
 		replisome_subunit_ids = replisome_trimer_subunits + replisome_monomer_subunits
 
-		# Get stoichiometric matrices for complexation, equilibrium, and the
+		# Get stoichiometric matrices for complexation, equilibrium, two component system and the
 		# assembly of unique molecules
 		self.complexation_stoich = sim_data.process.complexation.stoich_matrix_monomers()
 		self.equilibrium_stoich = sim_data.process.equilibrium.stoich_matrix_monomers()
+		self.two_component_system_stoich = sim_data.process.two_component_system.stoich_matrix_monomers()
 		self.ribosome_stoich = np.hstack(
 			(ribosome_50s_subunits["subunitStoich"],
 			ribosome_30s_subunits["subunitStoich"]))
@@ -61,7 +69,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.replisome_stoich = np.hstack(
 			(3*np.ones(len(replisome_trimer_subunits)),
 			np.ones(len(replisome_monomer_subunits))))
-
+		ipdb.set_trace()
 		# Construct dictionary to quickly find bulk molecule indexes from IDs
 		molecule_dict = {mol: i for i, mol in enumerate(bulk_molecule_ids)}
 
@@ -74,9 +82,12 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.complexation_complex_idx = get_molecule_indexes(complexation_complex_ids)
 		self.equilibrium_molecule_idx = get_molecule_indexes(equilibrium_molecule_ids)
 		self.equilibrium_complex_idx = get_molecule_indexes(equilibrium_complex_ids)
+		self.two_component_system_molecule_idx = get_molecule_indexes(two_component_system_molecule_ids)
+		self.two_component_system_complex_idx = get_molecule_indexes(two_component_system_complex_ids)
 		self.ribosome_subunit_idx = get_molecule_indexes(ribosome_subunit_ids)
 		self.rnap_subunit_idx = get_molecule_indexes(rnap_subunit_ids)
 		self.replisome_subunit_idx = get_molecule_indexes(replisome_subunit_ids)
+		ipdb.set_trace()
 
 		# Get indexes of all unique molecules that need to be accounted for
 		self.uniqueMolecules = sim.internal_states["UniqueMolecules"]
@@ -106,9 +117,16 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			np.negative(bulkMoleculeCounts[self.complexation_complex_idx]))
 		equilibrium_monomer_counts = np.dot(self.equilibrium_stoich,
 			np.negative(bulkMoleculeCounts[self.equilibrium_complex_idx]))
+		two_component_monomer_counts = np.dot(self.two_component_system_stoich,
+			np.negative(bulkMoleculeCounts[self.two_component_system_complex_idx]))
+
+		import ipdb; ipdb.set_trace()
 
 		bulkMoleculeCounts[self.complexation_molecule_idx] += complex_monomer_counts.astype(np.int)
 		bulkMoleculeCounts[self.equilibrium_molecule_idx] += equilibrium_monomer_counts.astype(np.int)
+		bulkMoleculeCounts[self.two_component_system_molecule_idx] += two_component_monomer_counts.astype(np.int)
+		import ipdb;
+		ipdb.set_trace()
 
 		# Account for monomers in unique molecule complexes
 		n_ribosome_subunit = n_active_ribosome * self.ribosome_stoich
