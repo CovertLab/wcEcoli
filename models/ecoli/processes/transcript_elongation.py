@@ -243,7 +243,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		# Determine if transcript has reached the end of the sequence
 		terminal_lengths = self.rnaLengths[TU_index_partial_RNAs]
-		did_terminate_mask = (updated_transcript_lengths == terminal_lengths) | rna_to_attenuate
+		did_terminate_mask = (updated_transcript_lengths == terminal_lengths)
 		terminated_RNAs = np.bincount(
 			TU_index_partial_RNAs[did_terminate_mask],
 			minlength = self.rnaSequences.shape[0])
@@ -278,6 +278,12 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		# Remove RNAPs that have finished transcription
 		self.active_RNAPs.delByIndexes(
 			np.where(did_terminate_mask[partial_RNA_to_RNAP_mapping]))
+
+		# Attenuation removes RNAs and RNAPs
+		if np.any(rna_to_attenuate):
+			self.RNAs.delByIndexes(partial_transcript_indexes[rna_to_attenuate])
+			self.active_RNAPs.delByIndexes(np.where(rna_to_attenuate[partial_RNA_to_RNAP_mapping]))
+			# TODO: account for lost mass from early termination
 
 		n_terminated = did_terminate_mask.sum()
 		n_initialized = did_initialize.sum()
