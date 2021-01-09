@@ -434,6 +434,10 @@ class Metabolism(object):
 				data['ki'] = (row['KI, lower bound'], row['KI, upper bound'])
 			else:
 				data['ki'] = None
+			data['upstream'] = row['Upstream amino acid']
+			data['km, upstream'] = row['KM, upstream']
+			data['km, reverse'] = row['KM, reverse']
+			data['downstream'] = row['Downstream amino acids']
 			self.aa_synthesis_pathways[row['Amino acid']] = data
 
 	def get_kinetic_constraints(self, enzymes, substrates):
@@ -573,10 +577,11 @@ class Metabolism(object):
 		kis = []
 		aa_ids = []
 		enzyme_to_aa = []
+		minimal_conc = conc('minimal')
 		for aa, data in sorted(self.aa_synthesis_pathways.items(), key=lambda d: d[0]):
 			enzymes = data['enzymes']
 			enzyme_counts = cell_specs['basal']['bulkAverageContainer'].counts(enzymes).sum()
-			aa_conc = conc('minimal')[aa]
+			aa_conc = minimal_conc[aa]
 			if data['ki'] is None:
 				ki = np.inf * units.mol / units.L
 			else:
@@ -588,48 +593,18 @@ class Metabolism(object):
 					ki = upper_limit
 				else:
 					ki = aa_conc
+			upstream_aa = data['upstream']
+			km_conc = minimal_conc.get(upstream_aa, np.inf * units.mol/units.L)
+			km = data['km, upstream'] if data['km, upstream'] else 0. * units.mol/units.L
+			km_reverse = data['km, reverse'] if data['km, reverse'] else np.inf * units.mol/units.L
+			total_supply = supply[aa]
+			for downstream in data['downstream']:
+				total_supply += supply[downstream]
 
-			# Handling of upstream amino acids
-			# TODO: generalize to all pathways
+			# Calculate kcat value to ensure sufficient supply to double
 			# TODO: handle different kcats for reverse
 			# TODO: find KM values - reverse fraction should be lower than forward fraction
-			if aa == 'GLY[c]':
-				km = 0.3 * units.mmol/units.L
-				km_reverse = 1 * units.mmol/units.L  # TODO: find this
-				km_conc = conc('minimal')['SER[c]']
-				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
-				# TODO: check if kcat is negative
-			elif aa == 'L-ALPHA-ALANINE[c]':
-				km = 24.9 * units.mmol/units.L
-				km_reverse = 5 * units.mmol/units.L
-				km_conc = conc('minimal')['GLT[c]']
-				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
-			elif aa == 'GLN[c]':
-				km = 3.3 * units.mmol/units.L  # from metabolism_kinetics, GLUTAMINESYN-OLIGOMER
-				km_reverse = 5 * units.mmol/units.L
-				km_conc = conc('minimal')['GLT[c]']
-				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
-			elif aa == 'PRO[c]':
-				km = 24.9 * units.mmol/units.L
-				km_conc = conc('minimal')['GLT[c]']
-				kcat = supply[aa] / (enzyme_counts / (1 + aa_conc / ki) / (1 + km / km_conc))
-			elif aa == 'L-ASPARTATE[c]':
-				km = 24.9 * units.mmol/units.L
-				km_reverse = 5 * units.mmol/units.L
-				km_conc = conc('minimal')['GLT[c]']
-				kcat = supply[aa] / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
-			elif aa == 'SER[c]':
-				kcat = (supply[aa] + supply['GLY[c]']) / enzyme_counts * (1 + aa_conc / ki)
-			elif aa == 'GLT[c]':
-				km_reverse = 24.9 * units.mmol/units.L
-				kcat = (
-						supply[aa]
-						+ supply['L-ALPHA-ALANINE[c]']
-						+ supply['GLN[c]']
-						+ supply['PRO[c]']
-						+ supply['L-ASPARTATE[c]']) / (enzyme_counts * (1 / (1 + aa_conc / ki) - 1 / (1 + km_reverse / aa_conc)))
-			else:
-				kcat = supply[aa] / enzyme_counts * (1 + aa_conc / ki)
+			kcat = total_supply / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
 			data['kcat'] = kcat
 
 			all_enzymes += enzymes
