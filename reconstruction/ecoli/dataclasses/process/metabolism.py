@@ -415,7 +415,7 @@ class Metabolism(object):
 			aa_synthesis_pathways (Dict[str, Dict]): data for allosteric
 				inhibition of amino acid pathways indexed by amino acid ID with
 				location tag and nested dictionary with the following keys:
-					'enzyme' (str): limiting/regulated enzyme ID in synthesis
+					'enzymes' (str): limiting/regulated enzyme ID in synthesis
 						pathway with location tag
 					'kcat_data' (units.Unum): kcat associated with enzyme
 						reaction with units of 1/time
@@ -428,7 +428,7 @@ class Metabolism(object):
 
 		for row in raw_data.amino_acid_pathways:
 			data = {}
-			data['enzyme'] = row['Enzyme']
+			data['enzymes'] = row['Enzymes']
 			data['kcat_data'] = row['kcat'] if row['kcat'] else 0 / units.s
 			if row['KI, lower bound'] and row['KI, lower bound']:
 				data['ki'] = (row['KI, lower bound'], row['KI, upper bound'])
@@ -568,13 +568,14 @@ class Metabolism(object):
 			aa: rate
 			for aa, rate in zip(sim_data.molecule_groups.amino_acids, rates)
 			}
-		enzymes = []
+		all_enzymes = []
 		kcats = []
 		kis = []
 		aa_ids = []
+		enzyme_to_aa = []
 		for aa, data in sorted(self.aa_synthesis_pathways.items(), key=lambda d: d[0]):
-			enzyme = data['enzyme']
-			enzyme_counts = cell_specs['basal']['bulkAverageContainer'].count(enzyme)
+			enzymes = data['enzymes']
+			enzyme_counts = cell_specs['basal']['bulkAverageContainer'].counts(enzymes).sum()
 			aa_conc = conc('minimal')[aa]
 			if data['ki'] is None:
 				ki = np.inf * units.mol / units.L
@@ -631,16 +632,23 @@ class Metabolism(object):
 				kcat = supply[aa] / enzyme_counts * (1 + aa_conc / ki)
 			data['kcat'] = kcat
 
-			enzymes.append(enzyme)
+			all_enzymes += enzymes
 			kcats.append(kcat)
 			kis.append(ki)
 			aa_ids.append(aa)
+			enzyme_to_aa += [aa] * len(enzymes)
 
 		# TODO: clean this up
-		self.aa_enzymes = enzymes
+		self.aa_enzymes = all_enzymes
 		self.aa_kcats = kcats
 		self.aa_kis = kis
-		self.aa_aas = aa_ids
+		self.aa_aas = aa_ids  # TODO: just use molecule_groups.amino_acids (need to add selenocys)
+
+		self.enzyme_to_amino_acid = np.zeros((len(self.aa_enzymes), len(self.aa_aas)))
+		enzyme_mapping = {e: i for i, e in enumerate(self.aa_enzymes)}
+		aa_mapping = {a: i for i, a in enumerate(self.aa_aas)}
+		for enzyme, aa in zip(self.aa_enzymes, enzyme_to_aa):
+			self.enzyme_to_amino_acid[enzyme_mapping[enzyme], aa_mapping[aa]] = 1
 
 	def aa_supply_scaling(self, aa_conc, aa_present):
 		"""

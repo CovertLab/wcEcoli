@@ -420,6 +420,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.aa_aas = self.process.bulkMoleculesView(metabolism.aa_aas)
 		self.aa_kcats = 1 / units.min * np.array([k.asNumber(1/units.min) for k in metabolism.aa_kcats])
 		self.aa_kis = units.mmol / units.L * np.array([k.asNumber(units.mmol / units.L) for k in metabolism.aa_kis])
+		self.enzyme_to_amino_acid = metabolism.enzyme_to_amino_acid
 
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)
@@ -480,7 +481,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		# TODO: encapsulate this in the class as a function for enzyme counts and AA conc
 		aa_ids = self.aa_aas._state._moleculeIDs[self.aa_aas._containerIndexes].tolist()
-		enzyme_counts = self.aa_enzymes.total_counts()
+		enzyme_counts = self.aa_enzymes.total_counts() @ self.enzyme_to_amino_acid
 		aa_conc = self.counts_to_molar * self.aa_aas.total_counts()
 		fraction = units.strip_empty_units(1 / (1 + aa_conc / self.aa_kis))
 
