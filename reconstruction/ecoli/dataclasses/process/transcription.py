@@ -44,6 +44,11 @@ class Transcription(object):
 		self._build_charged_trna(raw_data, sim_data)
 		self._build_elongation_rates(raw_data, sim_data)
 
+		# this number is subtracted from the mRNA frac calculated during the ppGpp fitting
+		# in master the mRNA frac is around 0.04, so this should be about half
+		# the rest of the fracts are bumped by mRNA_frac_adjust/4 (there are 4 other fracs, so I just distrubute it equally)
+		self.mRNA_frac_adjust = 0.02
+
 	def __getstate__(self):
 		"""Return the state to pickle with transcriptionSequences removed and
 		only storing data from transcriptionSequences with pad values stripped.
@@ -836,15 +841,15 @@ class Transcription(object):
 			mass = self.rna_data['mw'] * exp
 			mass = (mass / units.sum(mass)).asNumber()
 			fractions =  {
-				'23S': mass[self.rna_data['is_23S_rRNA']].sum(),
-				'16S': mass[self.rna_data['is_16S_rRNA']].sum(),
-				'5S': mass[self.rna_data['is_5S_rRNA']].sum(),
-				'trna': mass[self.rna_data['is_tRNA']].sum(),
-				'mrna': mass[self.rna_data['is_mRNA']].sum(),
+				'23S': mass[self.rna_data['is_23S_rRNA']].sum()+self.mRNA_frac_adjust/4,
+				'16S': mass[self.rna_data['is_16S_rRNA']].sum()+self.mRNA_frac_adjust/4,
+				'5S': mass[self.rna_data['is_5S_rRNA']].sum()+self.mRNA_frac_adjust/4,
+				'trna': mass[self.rna_data['is_tRNA']].sum()+self.mRNA_frac_adjust/4,
+				'mrna': mass[self.rna_data['is_mRNA']].sum()-self.mRNA_frac_adjust,
 				}
 		else:
 			fractions = self._basal_rna_fractions
-
+		print(fractions)
 		return fractions
 
 	def set_ppgpp_expression(self, sim_data):
