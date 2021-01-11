@@ -418,9 +418,13 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		self.aa_enzymes = self.process.bulkMoleculesView(metabolism.aa_enzymes)
 		self.aa_aas = self.process.bulkMoleculesView(metabolism.aa_aas)
-		self.aa_kcats = 1 / units.min * np.array([k.asNumber(1/units.min) for k in metabolism.aa_kcats])
-		self.aa_kis = units.mmol / units.L * np.array([k.asNumber(units.mmol / units.L) for k in metabolism.aa_kis])
+		self.aa_kcats = 1 / units.min * np.array([k.asNumber(1/units.min) for k in metabolism.aa_kcats])  # TODO: handle this converse in parca
+		self.aa_kis = units.mmol / units.L * np.array([k.asNumber(units.mmol / units.L) for k in metabolism.aa_kis])  # TODO: handle this converse in parca
+		self.aa_upstream_kms = units.mmol / units.L * np.array([k.asNumber(units.mmol / units.L) for k in metabolism.aa_upstream_kms])  # TODO: handle this converse in parca
+		self.aa_reverse_kms = units.mmol / units.L * np.array([k.asNumber(units.mmol / units.L) for k in metabolism.aa_reverse_kms])  # TODO: handle this converse in parca
 		self.enzyme_to_amino_acid = metabolism.enzyme_to_amino_acid
+		self.upstream_mapping = metabolism.aa_upstream_mapping
+		self.supply_balance = metabolism.aa_supply_balance
 
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)
@@ -483,43 +487,14 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		aa_ids = self.aa_aas._state._moleculeIDs[self.aa_aas._containerIndexes].tolist()
 		enzyme_counts = self.aa_enzymes.total_counts() @ self.enzyme_to_amino_acid
 		aa_conc = self.counts_to_molar * self.aa_aas.total_counts()
-		fraction = units.strip_empty_units(1 / (1 + aa_conc / self.aa_kis))
-
-		# Temporary check for upstream control Ser -> Gly and Glt to Ala, Gln, Pro
-		# TODO: generalize to all pathways
-		ser_idx = aa_ids.index('SER[c]')
-		gly_idx = aa_ids.index('GLY[c]')
-		glt_idx = aa_ids.index('GLT[c]')
-		ala_idx = aa_ids.index('L-ALPHA-ALANINE[c]')
-		gln_idx = aa_ids.index('GLN[c]')
-		pro_idx = aa_ids.index('PRO[c]')
-		asp_idx = aa_ids.index('L-ASPARTATE[c]')
-		gly_fraction = 1 / (1 + 0.3 * units.mmol/units.L / aa_conc[ser_idx])
-		ala_fraction = 1 / (1 + 24.9 * units.mmol/units.L / aa_conc[glt_idx])
-		gln_fraction = 1 / (1 + 3.3 * units.mmol/units.L / aa_conc[glt_idx])
-		pro_fraction = 1 / (1 + 24.9 * units.mmol/units.L / aa_conc[glt_idx])
-		asp_fraction = 1 / (1 + 24.9 * units.mmol/units.L / aa_conc[glt_idx])
-		fraction[gly_idx] *= gly_fraction
-		fraction[ala_idx] *= ala_fraction
-		fraction[gln_idx] *= gln_fraction
-		fraction[pro_idx] *= pro_fraction
-		fraction[asp_idx] *= asp_fraction
-
-		# TODO: generalize to all reversible pathways
-		gly_reverse = 1 / (1 + 1 * units.mmol/units.L / aa_conc[gly_idx])
-		ala_reverse = 1 / (1 + 5 * units.mmol/units.L / aa_conc[ala_idx])
-		gln_reverse = 1 / (1 + 5 * units.mmol/units.L / aa_conc[gln_idx])
-		asp_reverse = 1 / (1 + 5 * units.mmol/units.L / aa_conc[asp_idx])
-		glt_reverse = 1 / (1 + 24.9 * units.mmol/units.L / aa_conc[glt_idx])
-		fraction[gly_idx] -= gly_reverse
-		fraction[ala_idx] -= ala_reverse
-		fraction[gln_idx] -= gln_reverse
-		fraction[asp_idx] -= asp_reverse
-		fraction[glt_idx] -= glt_reverse
+		upstream_conc = aa_conc[self.upstream_mapping]
+		fraction = units.strip_empty_units(
+			1 / (1 + aa_conc / self.aa_kis) / (1 + self.aa_upstream_kms / upstream_conc)
+			- 1 / (1 + self.aa_reverse_kms / aa_conc)
+			)
 
 		supply = units.strip_empty_units(self.aa_kcats * enzyme_counts * fraction * self.process.timeStepSec() * units.s)
-		supply[ser_idx] -= supply[gly_idx]
-		supply[glt_idx] -= supply[ala_idx] + supply[gln_idx] + supply[pro_idx] + supply[asp_idx]
+		supply = self.supply_balance @ supply
 
 		# TODO: Clean this up
 		aa_ids_all = self.process.aas._state._moleculeIDs[self.process.aas._containerIndexes]
