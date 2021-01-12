@@ -537,6 +537,8 @@ class Metabolism(object):
 			Better handling of concentration assumption
 		"""
 
+		### TODO: remove - old code ###
+
 		aa_ids = sim_data.molecule_groups.amino_acids
 		conc = self.concentration_updates.concentrations_based_on_nutrients
 
@@ -563,6 +565,9 @@ class Metabolism(object):
 		self.fraction_supply_rate = 1 - f_inhibited + aa_conc_basal / (self.KM_aa_export + aa_conc_basal)
 		self.fraction_import_rate = 1 - (self.fraction_supply_rate + 1 / (1 + aa_conc_aa_media / self.KI_aa_synthesis) - f_exported)
 
+		### Old code ###
+
+
 		# Allosteric inhibition constants to match required supply rate
 		rates = (
 			sim_data.translation_supply_rate['minimal']
@@ -573,13 +578,13 @@ class Metabolism(object):
 			for aa, rate in zip(sim_data.molecule_groups.amino_acids, rates)
 			}
 		self.aa_enzymes = []
-		self.aa_kcats = []
-		self.aa_kis = []
+		aa_kcats = []
+		aa_kis = []
 		self.aa_aas = []  # TODO: just use molecule_groups.amino_acids (need to add selenocys)
 		upstream_aas = []
 		downstream_aas = []
-		self.aa_upstream_kms = []
-		self.aa_reverse_kms = []
+		aa_upstream_kms = []
+		aa_reverse_kms = []
 		enzyme_to_aa = []
 		minimal_conc = conc('minimal')
 		for aa, data in sorted(self.aa_synthesis_pathways.items(), key=lambda d: d[0]):
@@ -612,14 +617,19 @@ class Metabolism(object):
 			data['kcat'] = kcat
 
 			self.aa_enzymes += enzymes
-			self.aa_kcats.append(kcat)
-			self.aa_kis.append(ki)
+			aa_kcats.append(kcat.asNumber(K_CAT_UNITS))
+			aa_kis.append(ki.asNumber(METABOLITE_CONCENTRATION_UNITS))
 			self.aa_aas.append(aa)
 			upstream_aas.append(upstream_aa)
 			downstream_aas.append(data['downstream'])
-			self.aa_upstream_kms.append(km)
-			self.aa_reverse_kms.append(km_reverse)
+			aa_upstream_kms.append(km.asNumber(METABOLITE_CONCENTRATION_UNITS))
+			aa_reverse_kms.append(km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS))
 			enzyme_to_aa += [aa] * len(enzymes)
+
+		self.aa_kcats = np.array(aa_kcats)
+		self.aa_kis = np.array(aa_kis)
+		self.aa_upstream_kms = np.array(aa_upstream_kms)
+		self.aa_reverse_kms = np.array(aa_reverse_kms)
 
 		# Convert aa_conc to array with upstream aa_conc via indexing (aa_conc[self.aa_upstream_mapping])
 		aa_to_index = {aa: i for i, aa in enumerate(self.aa_aas)}
@@ -639,6 +649,17 @@ class Metabolism(object):
 		for i, downstream in enumerate(downstream_aas):
 			for aa in downstream:
 				self.aa_supply_balance[i, aa_to_index[aa]] = -1
+
+	def amino_acid_synthesis(self, enzyme_counts, aa_conc):
+		aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
+		counts_per_aa = enzyme_counts @ self.enzyme_to_amino_acid
+		upstream_conc = aa_conc[self.aa_upstream_mapping]
+
+		forward_fraction = 1 / (1 + aa_conc / self.aa_kis) / (1 + self.aa_upstream_kms / upstream_conc)
+		reverse_fraction = 1 / (1 + self.aa_reverse_kms / aa_conc)
+		fraction = forward_fraction - reverse_fraction
+		supply = self.aa_supply_balance @ (self.aa_kcats * counts_per_aa * fraction)
+		return supply
 
 	def aa_supply_scaling(self, aa_conc, aa_present):
 		"""

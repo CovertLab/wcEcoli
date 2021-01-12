@@ -418,13 +418,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		self.aa_enzymes = self.process.bulkMoleculesView(metabolism.aa_enzymes)
 		self.aa_aas = self.process.bulkMoleculesView(metabolism.aa_aas)
-		self.aa_kcats = 1 / units.min * np.array([k.asNumber(1/units.min) for k in metabolism.aa_kcats])  # TODO: handle this converse in parca
-		self.aa_kis = units.mmol / units.L * np.array([k.asNumber(units.mmol / units.L) for k in metabolism.aa_kis])  # TODO: handle this converse in parca
-		self.aa_upstream_kms = units.mmol / units.L * np.array([k.asNumber(units.mmol / units.L) for k in metabolism.aa_upstream_kms])  # TODO: handle this converse in parca
-		self.aa_reverse_kms = units.mmol / units.L * np.array([k.asNumber(units.mmol / units.L) for k in metabolism.aa_reverse_kms])  # TODO: handle this converse in parca
-		self.enzyme_to_amino_acid = metabolism.enzyme_to_amino_acid
-		self.upstream_mapping = metabolism.aa_upstream_mapping
-		self.supply_balance = metabolism.aa_supply_balance
+		self.amino_acid_synthesis = metabolism.amino_acid_synthesis
 
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)
@@ -485,16 +479,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		# TODO: encapsulate this in the class as a function for enzyme counts and AA conc
 		aa_ids = self.aa_aas._state._moleculeIDs[self.aa_aas._containerIndexes].tolist()
-		enzyme_counts = self.aa_enzymes.total_counts() @ self.enzyme_to_amino_acid
-		aa_conc = self.counts_to_molar * self.aa_aas.total_counts()
-		upstream_conc = aa_conc[self.upstream_mapping]
-		fraction = units.strip_empty_units(
-			1 / (1 + aa_conc / self.aa_kis) / (1 + self.aa_upstream_kms / upstream_conc)
-			- 1 / (1 + self.aa_reverse_kms / aa_conc)
-			)
-
-		supply = units.strip_empty_units(self.aa_kcats * enzyme_counts * fraction * self.process.timeStepSec() * units.s)
-		supply = self.supply_balance @ supply
+		supply = self.amino_acid_synthesis(self.aa_enzymes.total_counts(), self.counts_to_molar * self.aa_aas.total_counts()) * self.process.timeStepSec()
 
 		# TODO: Clean this up
 		aa_ids_all = self.process.aas._state._moleculeIDs[self.process.aas._containerIndexes]
@@ -504,9 +489,9 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.process.aa_supply[aa_ids_all == aa] = new
 
 		self.process.writeToListener('GrowthLimits', 'aa_supply', supply)
-		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts)
-		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
-		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', fraction)
+		# self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts)
+		# self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
+		# self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', fraction)
 
 		# Only request molecules that will be consumed in the charging reactions
 		requested_molecules = -np.dot(self.charging_stoich_matrix, total_charging_reactions)
