@@ -31,6 +31,7 @@ ECOLI_PH = 7.2
 KINETIC_CONSTRAINT_CONC_UNITS = units.umol / units.L
 K_CAT_UNITS = 1 / units.s
 METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
+DRY_MASS_UNITS = units.fg
 
 USE_ALL_CONSTRAINTS = False  # False will remove defined constraints from objective
 
@@ -650,6 +651,25 @@ class Metabolism(object):
 			for aa in downstream:
 				self.aa_supply_balance[i, aa_to_index[aa]] = -1
 
+		# Calculate import rates to match supply in amino acid conditions
+		# TODO: base on external concentration and counts of transporters
+		with_aa_rates = (
+			sim_data.translation_supply_rate['minimal_plus_amino_acids']
+			* cell_specs['with_aa']['avgCellDryMassInit'] * sim_data.constants.n_avogadro
+			).asNumber(K_CAT_UNITS)
+		with_aa_supply = {
+			aa: rate
+			for aa, rate in zip(sim_data.molecule_groups.amino_acids, with_aa_rates)
+			}
+		enzyme_counts = cell_specs['with_aa']['bulkAverageContainer'].counts(self.aa_enzymes)
+		aa_conc = units.mol / units.L * np.array([
+			conc('minimal_plus_amino_acids')[aa].asNumber(units.mol/units.L)
+			for aa in self.aa_aas
+			])
+		supply = np.array([with_aa_supply[aa] for aa in self.aa_aas])
+		synthesis = self.amino_acid_synthesis(enzyme_counts, aa_conc)
+		self.specific_import_rates = (supply - synthesis) / cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS)
+
 	def amino_acid_synthesis(self, enzyme_counts: np.ndarray, aa_conc: units.Unum):
 		"""
 		Calculate the net rate of synthesis for amino acid pathways (can be
@@ -677,6 +697,27 @@ class Metabolism(object):
 		# Calculate synthesis rate
 		synthesis = self.aa_supply_balance @ (self.aa_kcats * counts_per_aa * fraction)
 		return synthesis
+
+	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum):
+		"""
+		Calculate the rate of amino acid uptake.
+
+		Args:
+			aa_in_media: bool for each amino acid being present in current media
+			dry_mass: current dry mass of the cell, with mass units
+
+		Returns:
+			uptake: rate of uptake for each amino acid. array is unitless but
+				represents counts of amino acid per second
+		"""
+
+		uptake = self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
+
+		# TODO: fix this when handling all amino acids (don't have the option for single amino acid presence so ok to test like this)
+		if not np.all(aa_in_media):
+			uptake *= 0
+
+		return uptake
 
 	def aa_supply_scaling(self, aa_conc, aa_present):
 		"""

@@ -419,12 +419,14 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.aa_enzymes = self.process.bulkMoleculesView(metabolism.aa_enzymes)
 		self.aa_aas = self.process.bulkMoleculesView(metabolism.aa_aas)
 		self.amino_acid_synthesis = metabolism.amino_acid_synthesis
+		self.amino_acid_import = metabolism.amino_acid_import
 
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)
 
 		# Conversion from counts to molarity
 		cell_mass = self.process.readFromListener("Mass", "cellMass") * units.fg
+		dry_mass = self.process.readFromListener("Mass", "dryMass") * units.fg
 		cell_volume = cell_mass / self.cellDensity
 		self.counts_to_molar = 1 / (self.process.n_avogadro * cell_volume)
 
@@ -479,7 +481,10 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		# TODO: encapsulate this in the class as a function for enzyme counts and AA conc
 		aa_ids = self.aa_aas._state._moleculeIDs[self.aa_aas._containerIndexes].tolist()
-		supply = self.amino_acid_synthesis(self.aa_enzymes.total_counts(), self.counts_to_molar * self.aa_aas.total_counts()) * self.process.timeStepSec()
+		supply = self.process.timeStepSec() * (
+			self.amino_acid_synthesis(self.aa_enzymes.total_counts(), self.counts_to_molar * self.aa_aas.total_counts())
+			+ self.amino_acid_import(aa_in_media, dry_mass)
+		)
 
 		# TODO: Clean this up
 		aa_ids_all = self.process.aas._state._moleculeIDs[self.process.aas._containerIndexes]
