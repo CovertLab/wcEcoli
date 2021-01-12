@@ -11,9 +11,9 @@ import datetime
 import io
 import json
 import os
+from typing import List, Tuple
 
 import numpy as np
-from typing import List, Tuple
 from vivarium.core.composition import (
 	agent_environment_experiment,
 	simulate_experiment,
@@ -95,7 +95,7 @@ def get_antibiotics_timeline(
 
 def simulate(
 	emitter_config, simulation_time, num_cells, pulse_concentration,
-	add_aa, anaerobic, antibiotic_threshold, update_fields,
+	add_aa, anaerobic, antibiotic_threshold, update_fields, seed,
 ):
 	'''Run the simulation
 
@@ -115,6 +115,7 @@ def simulate(
 		update_fields: Whether to let wcEcoli update environmental
 			fields. This often needs to be set to False to avoid
 			breaking FBA.
+		seed: Seed for whole cell model random number generators.
 
 	Returns:
 		vivarium.core.emitter.Emitter: An emitter from which the
@@ -162,6 +163,7 @@ def simulate(
 			'media_id': media_id,
 			'variant_type': 'condition',
 			'variant_index': variant_index,
+			'seed': seed,
 		},
 		'_parallel': True,
 		'update_fields': update_fields,
@@ -308,6 +310,12 @@ def main():
 		action='store_true',
 		help='Let wcEcoli update the environment fields.',
 	)
+	parser.add_argument(
+		'--seed',
+		type=int,
+		default=0,
+		help='Let wcEcoli update the environment fields.',
+	)
 	args = parser.parse_args()
 	if args.atlas:
 		with open(SECRETS_PATH, 'r') as f:
@@ -329,6 +337,7 @@ def main():
 		args.anaerobic,
 		args.antibiotic_threshold,
 		args.update_fields,
+		args.seed,
 	)
 
 

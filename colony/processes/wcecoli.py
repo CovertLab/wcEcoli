@@ -187,6 +187,7 @@ class WcEcoli(Process):
 			'media_id': 'minimal',
 			'variant_type': 'condition',
 			'variant_index': 0,
+			'seed': 0,
 		},
 		'update_fields': True,
 	}

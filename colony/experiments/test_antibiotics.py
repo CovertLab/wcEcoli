@@ -50,7 +50,7 @@ def run_simulation():
 	}
 	emitter = simulate(
 		emitter_config, DURATION, NUM_CELLS, PULSE_CONCENTRATION,
-		ADD_AA, ANAEROBIC, ANTIBIOTIC_THRESHOLD, UPDATE_FIELDS,
+		ADD_AA, ANAEROBIC, ANTIBIOTIC_THRESHOLD, UPDATE_FIELDS, 0,
 	)
 	path_ts = emitter.get_path_timeseries()
 	processed_ts = process_path_timeseries_for_csv(path_ts)
