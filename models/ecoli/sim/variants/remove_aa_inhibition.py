@@ -11,30 +11,31 @@ Modifies:
 
 Expected variant indices (dependent on sorted order of sim_data.conditionActiveTfs):
 	0: wildtype
-	1-7: enzyme mutants that show no feedback control
-		Arg (argA)
-		His (hisG)
-		Ile (ilvA)
-		Leu (leuA)
-		Pro (proB)
-		Thr (thrA)
-		Trp (trpE)
+	1-7: enzyme mutants that show no feedback control (determined by order of AA_TO_ENZYME
 """
 
 import numpy as np
 
 
-AA_TO_ADJUST = ['ARG[c]', 'HIS[c]', 'ILE[c]', 'LEU[c]', 'PRO[c]', 'THR[c]', 'TRP[c]']
+AA_TO_ENZYME = {
+	'ARG[c]': 'argA',
+	'TRP[c]': 'trpE',
+	'HIS[c]': 'hisG',
+	'LEU[c]': 'leuA',
+	'THR[c]': 'thrA',
+	'ILE[c]': 'ilvA',
+	'PRO[c]': 'proB',
+	}
 
 
 def remove_aa_inhibition(sim_data, index):
 	if index > 0:
 		metabolism = sim_data.process.metabolism
-		aa = AA_TO_ADJUST[index-1]
+		aa = list(AA_TO_ENZYME.keys())[index-1]
 		aa_index = metabolism.aa_aas.index(aa)
 		metabolism.aa_kis[aa_index] *= np.inf
 		short = aa
-		desc = f'remove {aa} inhibition'
+		desc = f'remove {aa} inhibition on {AA_TO_ENZYME[aa]} activity'
 	else:
 		short = 'wt'
 		desc = 'wildtype with no enzyme adjustment'
