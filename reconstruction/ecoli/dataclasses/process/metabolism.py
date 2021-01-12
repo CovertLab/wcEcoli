@@ -650,16 +650,33 @@ class Metabolism(object):
 			for aa in downstream:
 				self.aa_supply_balance[i, aa_to_index[aa]] = -1
 
-	def amino_acid_synthesis(self, enzyme_counts, aa_conc):
+	def amino_acid_synthesis(self, enzyme_counts: np.ndarray, aa_conc: units.Unum):
+		"""
+		Calculate the net rate of synthesis for amino acid pathways (can be
+		negative with reverse reactions).
+
+		Args:
+			enzyme_counts: counts for each enzyme accounted for in pathways
+			aa_conc: concentrations of each amino acid with mol/volume units
+
+		Returns:
+			synthesis: net rate of synthesis for each amino acid pathway.
+				array is unitless but represents counts of amino acid per second
+		"""
+
+		# Convert to appropraite arrays
 		aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
 		counts_per_aa = enzyme_counts @ self.enzyme_to_amino_acid
 		upstream_conc = aa_conc[self.aa_upstream_mapping]
 
+		# Determine saturation fraction for reactions
 		forward_fraction = 1 / (1 + aa_conc / self.aa_kis) / (1 + self.aa_upstream_kms / upstream_conc)
 		reverse_fraction = 1 / (1 + self.aa_reverse_kms / aa_conc)
 		fraction = forward_fraction - reverse_fraction
-		supply = self.aa_supply_balance @ (self.aa_kcats * counts_per_aa * fraction)
-		return supply
+
+		# Calculate synthesis rate
+		synthesis = self.aa_supply_balance @ (self.aa_kcats * counts_per_aa * fraction)
+		return synthesis
 
 	def aa_supply_scaling(self, aa_conc, aa_present):
 		"""
