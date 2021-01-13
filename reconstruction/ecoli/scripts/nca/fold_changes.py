@@ -359,9 +359,13 @@ def load_ecocyc_tf_gene_interactions(
             effect = line[dir_idx]
 
             # Handle special case for Leu-Lrp vs just Lrp regulation
-            if tf == 'lrp' and gene in leu_lrp_regulation:
-                tf = 'leu-lrp'
-                effect = leu_lrp_regulation[gene]
+            if tf == 'lrp':
+                if gene in leu_lrp_regulation:
+                    effect = leu_lrp_regulation[gene]
+                elif effect == positive:
+                    effect = negative
+                elif effect == negative:
+                    effect = positive
 
             add_tf_gene_data(tf_genes, tf, gene, effect, positive, negative, unknown, split, verbose)
 
