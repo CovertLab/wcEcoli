@@ -295,7 +295,7 @@ class Relation(object):
 		overlapping_tu_dict = self.find_overlapping_tus(tu_dict)
 		overlapping_tu_fractions = self.find_overlapping_tu_fractions(
 			overlapping_tu_dict, tu_dict)
-		import ipdb; ipdb.set_trace()
+		#import ipdb; ipdb.set_trace()
 		monomer_to_mrna_transform, mrna_to_monomer_transform = self.create_transformation_matrices(
 			monomer_id_index_dict, mrna_id_index_dict, overlapping_tu_fractions)
 		print("Building in the Parca")
