@@ -1,5 +1,5 @@
-"# curated from https://ecocyc.org/gene?orgid=ECOLI&id=PD00353#tab=REGULON on 1/13/21 to show differences between Leu-lrp and Lrp or Leu -| Lrp regulatcapture"		
-"# regulation shown here will only be for the Leu-Lrp complex, not Lrp by itself"		
+# curated from https://ecocyc.org/gene?orgid=ECOLI&id=PD00353#tab=REGULON on 1/13/21 to show differences between Leu-lrp and Lrp or Leu -| Lrp regulation
+# regulation shown here will only be for the Leu-Lrp complex, not Lrp by itself
 "gene"	"Leu-lrp positive"	"Leu-lrp negative"
 "rrsH"		"x"
 "ilvA"		"x"
