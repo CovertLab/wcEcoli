@@ -578,17 +578,17 @@ class Metabolism(object):
 			aa: rate
 			for aa, rate in zip(sim_data.molecule_groups.amino_acids, rates)
 			}
-		self.aa_enzymes = []
+		aa_enzymes = []
 		aa_kcats = []
 		aa_kis = []
-		self.aa_aas = []  # TODO: just use molecule_groups.amino_acids (need to add selenocys)
 		upstream_aas = []
 		downstream_aas = []
 		aa_upstream_kms = []
 		aa_reverse_kms = []
 		enzyme_to_aa = []
 		minimal_conc = conc('minimal')
-		for aa, data in sorted(self.aa_synthesis_pathways.items(), key=lambda d: d[0]):
+		for aa in aa_ids:
+			data = self.aa_synthesis_pathways[aa]
 			enzymes = data['enzymes']
 			enzyme_counts = cell_specs['basal']['bulkAverageContainer'].counts(enzymes).sum()
 			aa_conc = minimal_conc[aa]
@@ -617,36 +617,36 @@ class Metabolism(object):
 			kcat = total_supply / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
 			data['kcat'] = kcat
 
-			self.aa_enzymes += enzymes
+			aa_enzymes += enzymes
 			aa_kcats.append(kcat.asNumber(K_CAT_UNITS))
 			aa_kis.append(ki.asNumber(METABOLITE_CONCENTRATION_UNITS))
-			self.aa_aas.append(aa)
 			upstream_aas.append(upstream_aa)
 			downstream_aas.append(data['downstream'])
 			aa_upstream_kms.append(km.asNumber(METABOLITE_CONCENTRATION_UNITS))
 			aa_reverse_kms.append(km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS))
 			enzyme_to_aa += [aa] * len(enzymes)
 
+		self.aa_enzymes = np.unique(aa_enzymes)
 		self.aa_kcats = np.array(aa_kcats)
 		self.aa_kis = np.array(aa_kis)
 		self.aa_upstream_kms = np.array(aa_upstream_kms)
 		self.aa_reverse_kms = np.array(aa_reverse_kms)
 
 		# Convert aa_conc to array with upstream aa_conc via indexing (aa_conc[self.aa_upstream_mapping])
-		aa_to_index = {aa: i for i, aa in enumerate(self.aa_aas)}
+		aa_to_index = {aa: i for i, aa in enumerate(aa_ids)}
 		self.aa_upstream_mapping = np.array([aa_to_index[aa] for aa in upstream_aas])
 
 		# Convert enzyme counts to an amino acid basis via dot product (counts @ self.enzyme_to_amino_acid)
-		self.enzyme_to_amino_acid = np.zeros((len(self.aa_enzymes), len(self.aa_aas)))
+		self.enzyme_to_amino_acid = np.zeros((len(self.aa_enzymes), len(aa_ids)))
 		enzyme_mapping = {e: i for i, e in enumerate(self.aa_enzymes)}
-		aa_mapping = {a: i for i, a in enumerate(self.aa_aas)}
-		for enzyme, aa in zip(self.aa_enzymes, enzyme_to_aa):
+		aa_mapping = {a: i for i, a in enumerate(aa_ids)}
+		for enzyme, aa in zip(aa_enzymes, enzyme_to_aa):
 			self.enzyme_to_amino_acid[enzyme_mapping[enzyme], aa_mapping[aa]] = 1
 
 		# Convert individual supply calculations to overall supply based on dependencies
 		# via dot product (self.aa_supply_balance @ supply)
 		# TODO: check for loops (eg ser dependent on glt, glt dependent on ser)
-		self.aa_supply_balance = np.eye(len(self.aa_aas))
+		self.aa_supply_balance = np.eye(len(aa_ids))
 		for i, downstream in enumerate(downstream_aas):
 			for aa in downstream:
 				self.aa_supply_balance[i, aa_to_index[aa]] = -1
@@ -664,9 +664,9 @@ class Metabolism(object):
 		enzyme_counts = cell_specs['with_aa']['bulkAverageContainer'].counts(self.aa_enzymes)
 		aa_conc = units.mol / units.L * np.array([
 			conc('minimal_plus_amino_acids')[aa].asNumber(units.mol/units.L)
-			for aa in self.aa_aas
+			for aa in aa_ids
 			])
-		supply = np.array([with_aa_supply[aa] for aa in self.aa_aas])
+		supply = np.array([with_aa_supply[aa] for aa in aa_ids])
 		synthesis = self.amino_acid_synthesis(enzyme_counts, aa_conc)
 		self.specific_import_rates = (supply - synthesis) / cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS)
 

@@ -23,3 +23,4 @@ Amino acid	Enzymes	kcat (1/units.s)	KI, lower bound (units.mmol/units.L)	KI, upp
 "GLT[c]"	["GLUTAMATESYN-CPLX[c]", "GLUTAMATESYN-DIMER[c]"]	0					24.9	["L-ALPHA-ALANINE[c]", "L-ASPARTATE[c]", "GLN[c]", "PRO[c]"]	"GltBD"
 "GLN[c]"	["GLUTAMINESYN-OLIGOMER[c]"]	36			"GLT[c]"	3.3	5	[]	"GlnA, KM, upstream from metabolism_kinetics (GLUTAMINESYN-RXN)"
 "GLY[c]"	["GLYOHMETRANS-CPLX[c]"]	11			"SER[c]"	0.3	1	[]	"GlyA, KM, upstream from metabolism_kinetics (GLYOHMETRANS-RXN-SER/THF//GLY/METHYLENE-THF/WATER.33.)"
+"L-SELENOCYSTEINE[c]"	["CPLX0-246[c]"]	0						[]	"SufS, mainly just a placeholder for Selenocysteine because the model does not explicitly produce it"

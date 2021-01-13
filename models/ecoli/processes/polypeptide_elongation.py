@@ -356,6 +356,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		transcription = sim_data.process.transcription
 		metabolism = sim_data.process.metabolism
 		molecule_ids = sim_data.molecule_ids
+		molecule_groups = sim_data.molecule_groups
 
 		# Cell parameters
 		self.cellDensity = constants.cell_density
@@ -417,7 +418,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.max_amino_acid_adjustment = 0.05
 
 		self.aa_enzymes = self.process.bulkMoleculesView(metabolism.aa_enzymes)
-		self.aa_aas = self.process.bulkMoleculesView(metabolism.aa_aas)
+		self.aa_aas = self.process.bulkMoleculesView(molecule_groups.amino_acids)
 		self.amino_acid_synthesis = metabolism.amino_acid_synthesis
 		self.amino_acid_import = metabolism.amino_acid_import
 

@@ -32,7 +32,6 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		self.uncharged_trna_ids = sim_data.process.transcription.rna_data['id'][sim_data.process.transcription.rna_data['is_tRNA']].tolist()
 		self.charged_trna_ids = sim_data.process.transcription.charged_trna_names
 		self.n_aas = len(self.aaIds)
-		self.aa_supply_ids = sim_data.process.metabolism.aa_aas
 
 	# Allocate memory
 	def allocate(self):
@@ -62,7 +61,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		self.spot_syn = 0.
 		self.spot_deg = 0.
 
-		n_aa_supplied = len(self.aa_supply_ids)
+		n_aa_supplied = len(self.aaIds)
 		self.aa_supply = np.zeros(n_aa_supplied, np.float64)
 		self.aa_supply_enzymes = np.zeros(n_aa_supplied, np.int)
 		self.aa_supply_aa_conc = np.zeros(n_aa_supplied, np.float64)
@@ -83,15 +82,14 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			'ntpRequestSize': 'ntpIds',
 			'ntpAllocated': 'ntpIds',
 			'ntpUsed': 'ntpIds',
-			'aa_supply': 'aa_supply_ids',
-			'aa_supply_enzymes': 'aa_supply_ids',
-			'aa_supply_aa_conc': 'aa_supply_ids',
-			'aa_supply_fraction': 'aa_supply_ids',
+			'aa_supply': 'aaIds',
+			'aa_supply_enzymes': 'aaIds',
+			'aa_supply_aa_conc': 'aaIds',
+			'aa_supply_fraction': 'aaIds',
 			}
 
 		tableWriter.writeAttributes(
 			aaIds = self.aaIds,
-			aa_supply_ids = self.aa_supply_ids,  # subset of aaIds
 			uncharged_trna_ids = self.uncharged_trna_ids,
 			ntpIds = self.ntpIds,
 			subcolumns = subcolumns)
