@@ -29,25 +29,24 @@ class TwoComponentSystem(object):
 		sim_data.molecule_groups.twoComponentSystems = raw_data.two_component_systems
 
 		# Build the abstractions needed for two component systems
-		molecules = [] # list of all molecules involved in two component system
-		moleculeTypes = [] # the type of each molecule (metabolite, protein monomer, protein complex, etc.)
+		molecules = []  # list of all molecules involved in two component system
+		moleculeTypes = []  # the type of each molecule (metabolite, protein monomer, protein complex, etc.)
 
-		ratesFwd = [] # rate of reaction fwd
-		ratesRev = [] # rate of reaction reverse (all 0, reverse reactions are
-		rxnIds = [] # ID tied to each rxn equation
+		ratesFwd = []  # rate of reaction fwd
+		ratesRev = []  # rate of reaction reverse (most/all are 0 in flat file)
+		rxnIds = []  # ID tied to each rxn equation
 
-		stoichMatrixI = [] # Molecule indices
-		stoichMatrixJ = [] # Reaction indices
-		stoichMatrixV = [] # Stoichometric coefficients
+		stoichMatrixI = []  # Molecule indices
+		stoichMatrixJ = []  # Reaction indices
+		stoichMatrixV = []  # Stoichometric coefficients
 
-		stoichMatrixMass = [] # molecular mass of molecules in stoichMatrixI
+		stoichMatrixMass = []  # molecular mass of molecules in stoichMatrixI
 
+		independentMolecules = []  # list of all specific independent molecule names
+		independent_molecule_indexes = []  # index of each of the independent molecules
+		independentToDependentMolecules = {}  # holds the phosphorylated version of the independent molecules
 
-		independentMolecules = [] # list of all specific independent molecule names
-		independent_molecule_indexes = [] # index of each of the independent molecules
-		independentToDependentMolecules = {} # holds the phosphorylated version of the independent molecules
-
-		activeToInactiveTF = {} #convention: active TF is the DNA-binding form (active form is phosphorylated version of RR)
+		activeToInactiveTF = {}  # convention: active TF is the DNA-binding form (active form is phosphorylated version of RR)
 
 		# Build template reactions
 		signalingTemplate = {
@@ -150,9 +149,9 @@ class TwoComponentSystem(object):
 					stoichMatrixMass.append(molecularMass)
 
 		# TODO(jerry): Move most of the rest to a subroutine for __init__ and __setstate__?
-		self._stoichMatrixI = np.array(stoichMatrixI) # array of molecule indices
-		self._stoichMatrixJ = np.array(stoichMatrixJ) # array of reaction indices
-		self._stoichMatrixV = np.array(stoichMatrixV) # arrary of stoichometric coefficients
+		self._stoichMatrixI = np.array(stoichMatrixI)  # array of molecule indices
+		self._stoichMatrixJ = np.array(stoichMatrixJ)  # array of reaction indices
+		self._stoichMatrixV = np.array(stoichMatrixV)  # arrary of stoichometric coefficients
 
 		self.molecule_names = np.array(molecules, dtype='U')
 		self.molecule_types = np.array(moleculeTypes, dtype='U')
