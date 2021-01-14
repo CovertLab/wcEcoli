@@ -218,6 +218,11 @@ class TwoComponentSystem(object):
 			if molecule_and_location in tcsMolecules:
 				D[molecule_and_location] = {}
 				for subunit in row["subunits"]:
+					# We only care about mapping to protein monomers for now
+					# and PI[c] stoichiometry is off for some complexes so we
+					# can skip it for now (see #975)
+					if subunit['monomer'] == 'PI[c]':
+						continue
 					D[molecule_and_location][str(subunit["monomer"])] = float(subunit["stoichiometry"])
 
 		return D
