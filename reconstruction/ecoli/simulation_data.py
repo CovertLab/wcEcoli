@@ -45,7 +45,8 @@ class SimulationDataEcoli(object):
 
 		self._add_molecular_weight_keys(raw_data)
 		self._add_compartment_keys(raw_data)
-		self._add_hard_coded_attributes()
+		self._add_base_codes(raw_data)
+		self._add_adjustments(raw_data)
 
 		# General helper functions (have no dependencies)
 		self.common_names = CommonNames(raw_data)
@@ -93,24 +94,37 @@ class SimulationDataEcoli(object):
 		}
 
 
-	def _add_hard_coded_attributes(self):
-		self.amino_acid_code_to_id_ordered = collections.OrderedDict((
-			("A", "L-ALPHA-ALANINE[c]"), ("R", "ARG[c]"), ("N", "ASN[c]"), ("D", "L-ASPARTATE[c]"),
-			("C", "CYS[c]"), ("E", "GLT[c]"), ("Q", "GLN[c]"), ("G", "GLY[c]"),
-			("H", "HIS[c]"), ("I", "ILE[c]"), ("L", "LEU[c]"), ("K", "LYS[c]"),
-			("M", "MET[c]"), ("F", "PHE[c]"), ("P", "PRO[c]"), ("S", "SER[c]"),
-			("T", "THR[c]"), ("W", "TRP[c]"), ("Y", "TYR[c]"), ("U", "L-SELENOCYSTEINE[c]"),
-			("V", "VAL[c]")
-			))
+	def _add_base_codes(self, raw_data):
+		self.amino_acid_code_to_id_ordered = collections.OrderedDict(
+			tuple((row["code"], row["id"])
+				  for row in raw_data.base_codes.amino_acids))
 
-		self.ntp_code_to_id_ordered = collections.OrderedDict((
-			("A", "ATP[c]"), ("C", "CTP[c]"), ("G", "GTP[c]"), ("U", "UTP[c]")
-			))
+		self.ntp_code_to_id_ordered = collections.OrderedDict(
+			tuple((row["code"], row["id"])
+				  for row in raw_data.base_codes.ntp))
 
-		self.dntp_code_to_id_ordered = collections.OrderedDict((
-			("A", "DATP[c]"), ("C", "DCTP[c]"), ("G", "DGTP[c]"), ("T", "TTP[c]")
-			))
+		self.dntp_code_to_id_ordered = collections.OrderedDict(
+			tuple((row["code"], row["id"])
+				  for row in raw_data.base_codes.dntp))
 
+
+	def _add_adjustments(self, raw_data):
+		self.translation_efficiencies_adjustments = {
+			adj["name"]: adj["value"]
+			for adj in raw_data.adjustments.translation_efficiencies_adjustments
+		}
+		self.rna_expression_adjustments = {
+			adj["name"]: adj["value"]
+			for adj in raw_data.adjustments.rna_expression_adjustments
+		}
+		self.rna_deg_rates_adjustments = {
+			adj["name"]: adj["value"]
+			for adj in raw_data.adjustments.rna_deg_rates_adjustments
+		}
+		self.protein_deg_rates_adjustments = {
+			adj["name"]: (adj["value"] if not isinstance(adj["value"], str) else eval(adj["value"])) # eval fractions
+			for adj in raw_data.adjustments.protein_deg_rates_adjustments
+		}
 
 	def _add_condition_data(self, raw_data):
 		abbrToActiveId = {x["TF"]: x["activeId"].split(", ") for x in raw_data.transcription_factors if len(x["activeId"]) > 0}
