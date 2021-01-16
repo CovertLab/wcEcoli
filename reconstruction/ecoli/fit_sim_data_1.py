@@ -29,34 +29,6 @@ from wholecell.utils import filepath, parallelization, units
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
 
 
-# Tweaks
-# Adjustments to get protein expression for certain enzymes required for metabolism
-# TRANSLATION_EFFICIENCIES_ADJUSTMENTS = {
-# 	"ADCLY-MONOMER[c]": 5,  # pabC, aminodeoxychorismate lyase
-# 	"EG12438-MONOMER[c]": 5,  # menH, 2-succinyl-6-hydroxy-2,4-cyclohexadiene-1-carboxylate synthetase
-# 	"EG12298-MONOMER[p]": 5,  # yibQ, Predicted polysaccharide deacetylase; This RNA is fit for the anaerobic condition viability
-# 	"ACETYL-COA-ACETYLTRANSFER-MONOMER[c]": 5,  # atoB; This RNA is fit for the anaerobic condition viability
-# 	}
-# RNA_EXPRESSION_ADJUSTMENTS = {
-# 	"EG11493_RNA[c]": 10,  # pabC, aminodeoxychorismate lyase
-# 	"EG12438_RNA[c]": 10,  # menH, 2-succinyl-6-hydroxy-2,4-cyclohexadiene-1-carboxylate synthetase
-# 	"EG12298_RNA[c]": 10,  # yibQ, Predicted polysaccharide deacetylase; This RNA is fit for the anaerobic condition viability
-# 	"EG11672_RNA[c]": 10,  # atoB, acetyl-CoA acetyltransferase; This RNA is fit for the anaerobic condition viability
-# 	"EG10238_RNA[c]": 10,  # dnaE, DNA polymerase III subunit alpha; This RNA is fit for the sims to produce enough DNAPs for timely replication
-# 	"EG11673_RNA[c]": 10,  # folB, dihydroneopterin aldolase; needed for growth (METHYLENE-THF) in acetate condition
-# 	"EG10808_RNA[c]": 4,  # pyrE, orotate phosphoribosyltransferase; Needed for UTP synthesis, transcriptional regulation by UTP is not included in the model
-# 	}
-# RNA_DEG_RATES_ADJUSTMENTS = {
-# 	"EG11493_RNA[c]": 2,  # pabC, aminodeoxychorismate lyase
-# 	"EG10709_RNA[c]": 2,  # pheS, phenylalanine synthetase subunit; for tRNA charging in anaerobic condition
-# 	"EG10710_RNA[c]": 2,  # pheT, phenylalanine synthetase subunit; for tRNA charging in anaerobic condition
-# 	}
-# PROTEIN_DEG_RATES_ADJUSTMENTS = {
-# 	"ADENYLATECYC-MONOMER[c]": 2. / 600,  # CyaA, adenylate cyclase; convert from 2 min to 10 hr half life to get expression in acetate condition (required for cAMP)
-# 	"SPOT-MONOMER[c]": 2. / 600,  # SpoT, ppGpp phosphatase; convert from 2 min to 10 hr half life to better match expected protein counts
-# 	"EG12298-MONOMER[p]": 0.1, # yibQ, Predicted polysaccharide deacetylase; This protein is fit for the anaerobic condition
-# 	}
-
 # Fitting parameters
 FITNESS_THRESHOLD = 1e-9
 MAX_FITTING_ITERATIONS = 100

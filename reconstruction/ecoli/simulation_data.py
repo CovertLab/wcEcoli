@@ -125,6 +125,10 @@ class SimulationDataEcoli(object):
 			adj["name"]: (adj["value"] if not isinstance(adj["value"], str) else eval(adj["value"])) # eval fractions
 			for adj in raw_data.adjustments.protein_deg_rates_adjustments
 		}
+		self.relative_metabolite_concentrations_changes = {
+			adj["media"]: {adj["metabolite"] : adj["fold_change"]}
+			for adj in raw_data.adjustments.relative_metabolite_concentrations_changes
+		}
 
 	def _add_condition_data(self, raw_data):
 		abbrToActiveId = {x["TF"]: x["activeId"].split(", ") for x in raw_data.transcription_factors if len(x["activeId"]) > 0}
