@@ -154,10 +154,10 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
 		cellVolume = cell_mass / self.cell_density
 		counts_to_molar = 1 / (self.n_avogadro * cellVolume)
-		trna_conc = counts_to_molar * self.charged_trna.total_counts()
+		trna_conc = counts_to_molar * self.charged_trna.total_counts().sum()  # TODO: sum across each set of AA tRNA
 		prob_attenuation = 1 - np.exp(-units.strip_empty_units(trna_conc / self.K))
 		attenuation_mask = (np.isin(TU_index_all_RNAs, self.attenuation_rna_idx) & (length_all_RNAs < 10))[is_partial_transcript]
-		rna_to_attenuate = stochasticRound(self.randomState, attenuation_mask * prob_attenuation[0]).astype(bool)
+		rna_to_attenuate = stochasticRound(self.randomState, attenuation_mask * prob_attenuation).astype(bool)
 
 		sequences = buildSequences(
 			self.rnaSequences,
