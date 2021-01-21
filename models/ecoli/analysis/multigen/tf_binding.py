@@ -1,7 +1,8 @@
 """
 Show dynamics of active and inactive transcription factors along with binding
 to promoters over time.  Also shows the fractions of active and bound
-transcription factors.
+transcription factors.  Useful for troubleshooting TF dynamics and regulatory
+control of transcription in cases where certain proteins might not be produced.
 """
 
 import pickle

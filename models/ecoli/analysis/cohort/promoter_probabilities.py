@@ -1,5 +1,7 @@
 """
 Compare expected promoter binding probabilities with observed probabilities.
+Useful for checking if actual promoter binding differs from the expected and
+if this is due to limitations from the counts of active TFs available to bind.
 """
 
 import os
