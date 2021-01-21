@@ -37,8 +37,7 @@ PORT = 8050
 # Options from drop down menu
 PLOT_OPTIONS = {
 	'line': {'function': go.Scatter},
-	'scatter': {'function': go.Scatter, 'plot_options': {'mode': 'markers'}},
-	'bar': {'function': go.Bar, 'layout_options': {'barmode': 'stack'}},
+	'bar': {'function': go.Bar, 'layout_options': {'barmode': 'stack'}},  # this could use more testing
 	}
 
 # Object IDs
