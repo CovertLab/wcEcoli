@@ -106,8 +106,6 @@ class TfBinding(wholecell.processes.process.Process):
 		pPromotersBound = np.zeros(self.n_TF, dtype=np.float64)
 		nPromotersBound = np.zeros(self.n_TF, dtype=np.float64)
 		nActualBound = np.zeros(self.n_TF, dtype=np.float64)
-		n_active_tfs = np.zeros(self.n_TF, dtype=np.float64)
-		total_tf_counts = np.zeros(self.n_TF, dtype=np.float64)
 		n_promoters = np.zeros(self.n_TF, dtype=np.float64)
 		n_bound_TF_per_TU = np.zeros((self.n_TU, self.n_TF), dtype=np.int16)
 
@@ -124,18 +122,23 @@ class TfBinding(wholecell.processes.process.Process):
 			active_tf_counts = active_tf_view.total_counts() + bound_tf_counts
 			n_available_active_tfs = active_tf_view.count()
 
+			# Determine the number of available promoter sites
+			available_promoters = np.isin(TU_index, self.TF_to_TU_idx[tf_id])
+			n_available_promoters = np.count_nonzero(available_promoters)
+			n_promoters[tf_idx] = n_available_promoters
+
+			# If there are no active transcription factors to work with,
+			# continue to the next transcription factor
+			if n_available_active_tfs == 0:
+				continue
+
 			# Compute probability of binding the promoter
 			if self.tfToTfType[tf_id] == "0CS":
 				pPromoterBound = 1.
-				inactive_tf_counts = 0
 			else:
 				inactive_tf_counts = self.inactive_tf_view[tf_id].total_counts()
 				pPromoterBound = self.pPromoterBoundTF(
 					active_tf_counts, inactive_tf_counts)
-
-			# Determine the number of available promoter sites
-			available_promoters = np.isin(TU_index, self.TF_to_TU_idx[tf_id])
-			n_available_promoters = np.count_nonzero(available_promoters)
 
 			# Calculate the number of promoters that should be bound
 			n_to_bind = int(min(stochasticRound(
@@ -169,9 +172,6 @@ class TfBinding(wholecell.processes.process.Process):
 			pPromotersBound[tf_idx] = pPromoterBound
 			nPromotersBound[tf_idx] = n_to_bind
 			nActualBound[tf_idx] = bound_locs.sum()
-			n_active_tfs[tf_idx] = active_tf_counts
-			total_tf_counts[tf_idx] = inactive_tf_counts + active_tf_counts
-			n_promoters[tf_idx] = n_available_promoters
 
 		delta_TF = bound_TF_new.astype(np.int8) - bound_TF.astype(np.int8)
 		mass_diffs = delta_TF.dot(self.active_tf_masses)
@@ -186,8 +186,6 @@ class TfBinding(wholecell.processes.process.Process):
 		self.writeToListener("RnaSynthProb", "pPromoterBound", pPromotersBound)
 		self.writeToListener("RnaSynthProb", "nPromoterBound", nPromotersBound)
 		self.writeToListener("RnaSynthProb", "nActualBound", nActualBound)
-		self.writeToListener("RnaSynthProb", "n_active_tfs", n_active_tfs)
-		self.writeToListener("RnaSynthProb", "total_tf_counts", total_tf_counts)
 		self.writeToListener("RnaSynthProb", "n_available_promoters", n_promoters)
 		self.writeToListener(
 			"RnaSynthProb", "n_bound_TF_per_TU", n_bound_TF_per_TU)

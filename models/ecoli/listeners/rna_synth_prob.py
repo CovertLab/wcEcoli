@@ -45,8 +45,6 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		self.pPromoterBound = np.zeros(self.n_TF, np.float64)
 		self.nPromoterBound = np.zeros(self.n_TF, np.float64)
 		self.nActualBound = np.zeros(self.n_TF, np.float64)
-		self.n_active_tfs = np.zeros(self.n_TF, np.float64)
-		self.total_tf_counts = np.zeros(self.n_TF, np.float64)
 		self.n_available_promoters = np.zeros(self.n_TF, np.float64)
 
 		# This array gets flattened at tableAppend(). Resulting array should
@@ -81,8 +79,6 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			'pPromoterBound': 'tf_ids',
 			'nPromoterBound': 'tf_ids',
 			'nActualBound': 'tf_ids',
-			'n_active_tfs': 'tf_ids',
-			'total_tf_counts': 'tf_ids',
 			'n_available_promoters': 'tf_ids',
 			'n_bound_TF_per_TU': 'rnaIds'}
 
@@ -107,8 +103,6 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			pPromoterBound = self.pPromoterBound,
 			nPromoterBound = self.nPromoterBound,
 			nActualBound = self.nActualBound,
-			n_active_tfs = self.n_active_tfs,
-			total_tf_counts = self.total_tf_counts,
 			n_available_promoters = self.n_available_promoters,
 			n_bound_TF_per_TU = self.n_bound_TF_per_TU,
 			bound_TF_indexes = self.bound_TF_indexes,
