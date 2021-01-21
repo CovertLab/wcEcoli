@@ -363,6 +363,10 @@ def create_app(data_structure: Dict) -> dash.Dash:
 				two values (all separated by SEPARATOR) for x data
 			y_input: directory path to simOut with listener and column as last
 				two values (all separated by SEPARATOR) for y data
+			x_options: options from check boxes to apply transformations to the
+				x data
+			y_options: options from check boxes to apply transformations to the
+				y data
 
 		Returns:
 			plotly figure dict
