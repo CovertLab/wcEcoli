@@ -48,6 +48,7 @@ PLOT_SELECTION = 'plot-selector'
 DATA_SELECTION_ID = 'Data selection:'
 ADD_X_ID = 'Update x'
 ADD_Y_ID = 'Update y'
+BUTTON_VALUE_TEMPLATE = '{} value'
 SEPARATOR = '<>'
 VALUE_JOIN = f'{{}}{SEPARATOR}{{}}'
 
@@ -293,6 +294,10 @@ def create_app(data_structure: Dict) -> dash.Dash:
 				html.Button(ADD_X_ID, id=ADD_X_ID),
 				html.Button(ADD_Y_ID, id=ADD_Y_ID),
 				]),
+			html.Div(children=[
+				html.Plaintext('x: ', id=BUTTON_VALUE_TEMPLATE.format(ADD_X_ID)),
+				html.Plaintext('y: ', id=BUTTON_VALUE_TEMPLATE.format(ADD_Y_ID)),
+				]),
 			]),
 		dcc.Graph(id=GRAPH_ID),
 		])
@@ -300,11 +305,18 @@ def create_app(data_structure: Dict) -> dash.Dash:
 	# Only update axis values on button click
 	for button in [ADD_X_ID, ADD_Y_ID]:
 		@app.callback(
-			dash.dependencies.Output(button, 'value'),
+			[
+				dash.dependencies.Output(button, 'value'),
+				dash.dependencies.Output(BUTTON_VALUE_TEMPLATE.format(button), 'children'),
+			],
 			dash.dependencies.Input(button, 'n_clicks'),  # needed for callback trigger
-			input_value)
-		def update_axis(n_clicks, val):
-			return val
+			[
+				input_value,
+				dash.dependencies.State(BUTTON_VALUE_TEMPLATE.format(button), 'children'),
+			])
+		def update_axis(n_clicks, val, previous):
+			new_text = ' '.join(previous.split(' ')[:1] + val.split(SEPARATOR))
+			return val, new_text
 
 	# Register callback to update plot when selections change
 	# First arg for Output/Input selects the page object
