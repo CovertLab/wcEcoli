@@ -6,8 +6,7 @@ datasets and graph types.
 
 TODO:
 	- default column option? - start with time as x (select from command line)
-	- add plotting options - log scale
-	- add reducing options - mean across samples, downsampling
+	- add reducing options - downsampling
 	- access sim_data/validation_data arrays
 	- select multiple y datasets
 	- add multigen/cohort/variant selection options
@@ -53,7 +52,7 @@ ADD_Y_ID = 'Update y'
 BUTTON_VALUE_TEMPLATE = '{} value'
 SEPARATOR = '<>'
 VALUE_JOIN = f'{{}}{SEPARATOR}{{}}'
-DATA_OPTIONS = ['mean', 'normalized']
+DATA_OPTIONS = ['mean', 'normalized', 'log']
 
 
 def get_vals(d: Dict, k: Union[str, List[str]]):
@@ -376,6 +375,8 @@ def create_app(data_structure: Dict) -> dash.Dash:
 					data /= data[1, :]  # use 1 as first index since a lot of listeners start at 0 for first entry
 				if 'mean' in options:
 					data = data.mean(0).reshape(1, -1)  # need to keep as 2D array
+				if 'log' in options:
+					data = np.log10(data)
 			return data
 
 		if x_input is None or y_input is None:
