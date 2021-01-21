@@ -18,8 +18,7 @@ from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_c
 from wholecell.io.tablereader import TableReader
 
 
-def subplot(gs, tf_id, gene_id, t, active, bound, inactive, promoters):
-
+def subplot(gs, legend, title, tf_id, gene_id, t, active, bound, inactive, promoters):
 	subplots = gs.subgridspec(nrows=1, ncols=2)
 
 	# Derive values to plot
@@ -55,7 +54,14 @@ def subplot(gs, tf_id, gene_id, t, active, bound, inactive, promoters):
 	ax.spines['top'].set_visible(False)
 	handles2, labels2 = ax.get_legend_handles_labels()
 
-	return [handles1, handles2], [labels1, labels2]
+	# Handle legends for each column
+	legend_gs = legend.subgridspec(nrows=1, ncols=2)
+	handles = [handles1, handles2]
+	labels = [labels1, labels2]
+	for col, (handle, label) in enumerate(zip(handles, labels)):
+		ax = plt.subplot(legend_gs[0, col])
+		ax.axis('off')
+		ax.legend(handle, label, loc='lower center', frameon=False, title=title, title_fontsize=12)
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
@@ -68,6 +74,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		tf_type = t_reg.tf_to_tf_type
 		active_to_bound = t_reg.active_to_bound
 		tf_to_gene_id = t_reg.tf_to_gene_id
+		max_type_counts = np.unique(list(tf_type.values()), return_counts=True)[1].max()
 
 		active_ids = []
 		inactive_ids = []
@@ -123,24 +130,30 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		bound_counts = np.vstack(all_bound_counts).T
 		promoter_counts = np.vstack(all_promoter_counts).T
 
-		plt.figure(figsize=(10, 50))
+		plt.figure(figsize=(20, 30))
 
-		# TODO: column headers for counts and fractions
-		# TODO: handle 0, 1, 2CS separately
 		legend_row = 1
-		gs = gridspec.GridSpec(nrows=n_tfs+legend_row, ncols=1)
+		gs = gridspec.GridSpec(nrows=max_type_counts+legend_row, ncols=3)
+		n_0cs = 0
+		n_1cs = 0
+		n_2cs = 0
 		for i, (tf_id, active, bound, inactive, promoters) in enumerate(zip(tf_ids, active_counts, bound_counts, inactive_counts, promoter_counts)):
 			if tf_type[tf_id] == '0CS':
-				inactive = None
-			handles, labels = subplot(gs[legend_row+i, :], tf_id,
-				tf_to_gene_id[tf_id], times, active, bound, inactive, promoters)
+				inactive = None  # Used dummy counts in arrays above because no inactive form
+				n_0cs += 1
+				grid = gs[n_0cs, 0]
+				legend = gs[0, 0]
+			elif tf_type[tf_id] == '1CS':
+				n_1cs += 1
+				grid = gs[n_1cs, 1]
+				legend = gs[0, 1]
+			else:
+				n_2cs += 1
+				grid = gs[n_2cs, 2]
+				legend = gs[0, 2]
 
-		# Create legend
-		legend_gs = gs[0, :].subgridspec(nrows=1, ncols=len(handles))
-		for col, (handle, label) in enumerate(zip(handles, labels)):
-			ax = plt.subplot(legend_gs[0, col])
-			ax.axis('off')
-			ax.legend(handle, label, loc='center', frameon=False)
+			subplot(grid, legend, tf_type[tf_id], tf_id, tf_to_gene_id[tf_id],
+				times, active, bound, inactive, promoters)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
