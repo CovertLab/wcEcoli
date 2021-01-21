@@ -45,8 +45,9 @@ PLOT_OPTIONS = {
 # Object IDs
 GRAPH_ID = 'graph'
 PLOT_SELECTION = 'plot-selector'
-X_DATA_SELECTION_ID = 'x data:'
-Y_DATA_SELECTION_ID = 'y data:'
+DATA_SELECTION_ID = 'Data selection:'
+ADD_X_ID = 'Update x'
+ADD_Y_ID = 'Update y'
 SEPARATOR = '<>'
 VALUE_JOIN = f'{{}}{SEPARATOR}{{}}'
 
@@ -114,7 +115,7 @@ def create_app(data_structure: Dict) -> dash.Dash:
 			id_: str,
 			defaults: Optional[Set[str]] = None,
 			multi: bool = False,
-			) -> Tuple[html.Div, dash.dependencies.Input]:
+			) -> Tuple[html.Div, dash.dependencies.State]:
 		"""
 		Create div to hold drop down menus for data selection.
 
@@ -132,6 +133,10 @@ def create_app(data_structure: Dict) -> dash.Dash:
 			div: div containing all drop down menus
 			value: value for the bottom drop down menu for the path to data
 				selected
+
+		TODO:
+			- get multi selection working
+			- handle initialization for x and y separately
 		"""
 
 		def get_selection_options(
@@ -181,7 +186,6 @@ def create_app(data_structure: Dict) -> dash.Dash:
 							value = VALUE_JOIN.format(parent_value, current)
 
 			return options, value
-
 
 		def add_children(
 				children: List,
@@ -265,14 +269,13 @@ def create_app(data_structure: Dict) -> dash.Dash:
 		children, n_added = add_children(children, id_, id_, value, data_structure, defaults)
 
 		div = html.Div(children=children)
-		input_value = dash.dependencies.Input(f'{id_}{n_added}', 'value')
+		input_value = dash.dependencies.State(f'{id_}{n_added}', 'value')
 
 		return div, input_value
 
 	# Create webpage layout
 	app = dash.Dash()
-	x_div, x_input = data_selection(app, data_structure, X_DATA_SELECTION_ID, defaults={'Main', 'time'})
-	y_div, y_input = data_selection(app, data_structure, Y_DATA_SELECTION_ID, multi=False)  # TODO: get multi selection working
+	input_div, input_value = data_selection(app, data_structure, DATA_SELECTION_ID, defaults={'Main', 'time'})
 	app.layout = html.Div(children=[
 		html.H1('Whole-cell simulation explorer'),
 		html.Div(children=[
@@ -285,18 +288,34 @@ def create_app(data_structure: Dict) -> dash.Dash:
 					} for o in PLOT_OPTIONS],
 				value=next(iter(PLOT_OPTIONS)),
 				),
-			x_div,
-			y_div,
+			input_div,
+			html.Div(children=[
+				html.Button(ADD_X_ID, id=ADD_X_ID),
+				html.Button(ADD_Y_ID, id=ADD_Y_ID),
+				]),
 			]),
 		dcc.Graph(id=GRAPH_ID),
 		])
+
+	# Only update axis values on button click
+	for button in [ADD_X_ID, ADD_Y_ID]:
+		@app.callback(
+			dash.dependencies.Output(button, 'value'),
+			dash.dependencies.Input(button, 'n_clicks'),  # needed for callback trigger
+			input_value)
+		def update_axis(n_clicks, val):
+			return val
 
 	# Register callback to update plot when selections change
 	# First arg for Output/Input selects the page object
 	# Second arg for Output/Input sets or gets a kwarg from the dcc function
 	@app.callback(
 		dash.dependencies.Output(GRAPH_ID, 'figure'),
-		[dash.dependencies.Input(PLOT_SELECTION, 'value'), x_input, y_input])
+		[
+			dash.dependencies.Input(PLOT_SELECTION, 'value'),
+			dash.dependencies.Input(ADD_X_ID, 'value'),
+			dash.dependencies.Input(ADD_Y_ID, 'value'),
+		])
 	def update_graph(plot_id: str, x_input: str, y_input: str) -> Dict:
 		"""
 		Update the plot based on selection changes.
