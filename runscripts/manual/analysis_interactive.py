@@ -46,11 +46,14 @@ PLOT_OPTIONS = {
 GRAPH_ID = 'graph'
 PLOT_SELECTION = 'plot-selector'
 DATA_SELECTION_ID = 'Data selection:'
+X_DATA_OPTIONS_ID = 'x-data-options'
+Y_DATA_OPTIONS_ID = 'y-data-options'
 ADD_X_ID = 'Update x'
 ADD_Y_ID = 'Update y'
 BUTTON_VALUE_TEMPLATE = '{} value'
 SEPARATOR = '<>'
 VALUE_JOIN = f'{{}}{SEPARATOR}{{}}'
+DATA_OPTIONS = ['mean', 'normalized']
 
 
 def get_vals(d: Dict, k: Union[str, List[str]]):
@@ -291,6 +294,28 @@ def create_app(data_structure: Dict) -> dash.Dash:
 				),
 			input_div,
 			html.Div(children=[
+				html.Plaintext('x data options: '),
+				dcc.Checklist(
+					id=X_DATA_OPTIONS_ID,
+					options=[{
+						'label': o,  # display name
+						'value': o,  # value passed through callback, must be str
+						} for o in DATA_OPTIONS],
+					value=[],
+					),
+				]),
+			html.Div(children=[
+				html.Plaintext('y data options: '),
+				dcc.Checklist(
+					id=Y_DATA_OPTIONS_ID,
+					options=[{
+						'label': o,  # display name
+						'value': o,  # value passed through callback, must be str
+						} for o in DATA_OPTIONS],
+					value=[],
+					),
+				]),
+			html.Div(children=[
 				html.Button(ADD_X_ID, id=ADD_X_ID),
 				html.Button(ADD_Y_ID, id=ADD_Y_ID),
 				]),
@@ -327,8 +352,10 @@ def create_app(data_structure: Dict) -> dash.Dash:
 			dash.dependencies.Input(PLOT_SELECTION, 'value'),
 			dash.dependencies.Input(ADD_X_ID, 'value'),
 			dash.dependencies.Input(ADD_Y_ID, 'value'),
+			dash.dependencies.Input(X_DATA_OPTIONS_ID, 'value'),
+			dash.dependencies.Input(Y_DATA_OPTIONS_ID, 'value'),
 		])
-	def update_graph(plot_id: str, x_input: str, y_input: str) -> Dict:
+	def update_graph(plot_id: str, x_input: str, y_input: str, x_options: List[str], y_options: List[str]) -> Dict:
 		"""
 		Update the plot based on selection changes.
 
@@ -343,11 +370,22 @@ def create_app(data_structure: Dict) -> dash.Dash:
 			plotly figure dict
 		"""
 
+		def adjust_data(data, options):
+			if data.shape[1] > 1:
+				if 'normalized' in options:
+					data /= data[1, :]  # use 1 as first index since a lot of listeners start at 0 for first entry
+				if 'mean' in options:
+					data = data.mean(1).reshape(-1, 1)  # need to keep as 2D array
+			return data
+
 		if x_input is None or y_input is None:
 			return {}
 
 		x_data, x_labels = load_listener(x_input)
 		y_data, y_labels = load_listener(y_input)
+
+		x_data = adjust_data(x_data, x_options)
+		y_data = adjust_data(y_data, y_options)
 
 		plot = PLOT_OPTIONS[plot_id]
 		plot_options = plot.get('plot_options', {})
