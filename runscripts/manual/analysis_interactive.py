@@ -375,7 +375,7 @@ def create_app(data_structure: Dict) -> dash.Dash:
 				if 'normalized' in options:
 					data /= data[1, :]  # use 1 as first index since a lot of listeners start at 0 for first entry
 				if 'mean' in options:
-					data = data.mean(1).reshape(-1, 1)  # need to keep as 2D array
+					data = data.mean(0).reshape(1, -1)  # need to keep as 2D array
 			return data
 
 		if x_input is None or y_input is None:
@@ -390,10 +390,16 @@ def create_app(data_structure: Dict) -> dash.Dash:
 		plot = PLOT_OPTIONS[plot_id]
 		plot_options = plot.get('plot_options', {})
 		layout_options = plot.get('layout_options', {})
-		traces = [
-			plot['function'](x=x_data[:, 0], y=y_data[:, idx], name=col, **plot_options)
-			for idx, col in enumerate(y_labels)
-			]
+		if x_data.shape == y_data.shape:
+			traces = [
+				plot['function'](x=x_data[:, idx], y=y_data[:, idx], name=col, **plot_options)
+				for idx, col in enumerate(y_labels)
+				]
+		else:
+			traces = [
+				plot['function'](x=x_data[:, 0], y=y_data[:, idx], name=col, **plot_options)
+				for idx, col in enumerate(y_labels)
+				]
 
 		# Dict used to update 'figure' for dcc.Graph object GRAPH_ID
 		return {
