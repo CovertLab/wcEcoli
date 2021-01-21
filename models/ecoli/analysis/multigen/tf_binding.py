@@ -17,7 +17,8 @@ from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_c
 from wholecell.io.tablereader import TableReader
 
 
-def subplot(gs, tf_id, t, active, bound, inactive, promoters):
+def subplot(gs, tf_id, gene_id, t, active, bound, inactive, promoters):
+
 	subplots = gs.subgridspec(nrows=1, ncols=2)
 
 	# Derive values to plot
@@ -34,7 +35,9 @@ def subplot(gs, tf_id, t, active, bound, inactive, promoters):
 	ax.plot(t, bound, alpha=0.5, label='Bound TF Counts')
 	if inactive is not None:
 		ax.plot(t, inactive, alpha=0.5, label='Inactive TF Counts')
-	ax.set_ylabel(tf_id)
+	ax.set_xlabel('Time (min)', fontsize=10)
+	ax.set_ylabel(f'{tf_id} ({gene_id})\nCounts', fontsize=10)
+	ax.tick_params(axis='both', labelsize=8)
 	ax.spines['right'].set_visible(False)
 	ax.spines['top'].set_visible(False)
 	handles1, labels1 = ax.get_legend_handles_labels()
@@ -44,6 +47,9 @@ def subplot(gs, tf_id, t, active, bound, inactive, promoters):
 	ax.plot(t, frac_promoters_occupied, alpha=0.5, label='Fraction promoters bound')
 	ax.plot(t, frac_active, alpha=0.5, label='Fraction TFs active')
 	ax.plot(t, frac_tf_bound, alpha=0.5, label='Fraction active TFs bound')
+	ax.set_xlabel('Time (min)', fontsize=10)
+	ax.set_ylabel('Fraction', fontsize=10)
+	ax.tick_params(axis='both', labelsize=8)
 	ax.spines['right'].set_visible(False)
 	ax.spines['top'].set_visible(False)
 	handles2, labels2 = ax.get_legend_handles_labels()
@@ -60,6 +66,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		tf_ids = t_reg.tf_ids
 		tf_type = t_reg.tf_to_tf_type
 		active_to_bound = t_reg.active_to_bound
+		tf_to_gene_id = t_reg.tf_to_gene_id
 
 		active_ids = []
 		inactive_ids = []
@@ -109,7 +116,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_promoter_counts.append(promoter_counts)
 
 		n_tfs = len(tf_ids)
-		times = np.hstack(times)
+		times = np.hstack(times) / 60
 		active_counts = np.vstack(all_active_counts).T
 		inactive_counts = np.vstack(all_inactive_counts).T
 		bound_counts = np.vstack(all_bound_counts).T
@@ -124,7 +131,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		for i, (tf_id, active, bound, inactive, promoters) in enumerate(zip(tf_ids, active_counts, bound_counts, inactive_counts, promoter_counts)):
 			if tf_type[tf_id] == '0CS':
 				inactive = None
-			handles, labels = subplot(gs[legend_row+i, :], tf_id, times, active, bound, inactive, promoters)
+			handles, labels = subplot(gs[legend_row+i, :], tf_id,
+				tf_to_gene_id[tf_id], times, active, bound, inactive, promoters)
 
 		# Create legend
 		legend_gs = gs[0, :].subgridspec(nrows=1, ncols=len(handles))
