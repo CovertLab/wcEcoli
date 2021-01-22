@@ -3005,11 +3005,11 @@ def fitLigandConcentrations(sim_data, cell_specs):
 			if 1 - p_active < 1e-9:
 				kdNew = kd  # Concentration of metabolite-bound TF is negligible
 			else:
-				kdNew = (activeSignalConc**metaboliteCoeff) * p_active/(1 - p_active)
+				kdNew = ((activeSignalConc**metaboliteCoeff) * p_active/(1 - p_active))**(1/metaboliteCoeff)
 
 			# Reset metabolite concentration with fitted P and kd
 			sim_data.process.metabolism.concentration_updates.molecule_set_amounts[metabolite] = (
-				(kdNew*(1 - p_inactive)/p_inactive)**(1./metaboliteCoeff)*(units.mol/units.L))
+				(kdNew**metaboliteCoeff*(1 - p_inactive)/p_inactive)**(1./metaboliteCoeff)*(units.mol/units.L))
 
 		else:
 			if p_active == 1:
@@ -3018,11 +3018,11 @@ def fitLigandConcentrations(sim_data, cell_specs):
 			if p_inactive < 1e-9:
 				kdNew = kd  # Concentration of metabolite-bound TF is negligible
 			else:
-				kdNew = (inactiveSignalConc**metaboliteCoeff) * (1 - p_inactive)/p_inactive
+				kdNew = ((inactiveSignalConc**metaboliteCoeff) * (1 - p_inactive)/p_inactive)**(1/metaboliteCoeff)
 
 			# Reset metabolite concentration with fitted P and kd
 			sim_data.process.metabolism.concentration_updates.molecule_set_amounts[metabolite] = (
-				(kdNew*p_active/(1 - p_active))**(1./metaboliteCoeff)*(units.mol/units.L))
+				(kdNew**metaboliteCoeff*p_active/(1 - p_active))**(1./metaboliteCoeff)*(units.mol/units.L))
 
 		# Fit reverse rate in line with fitted kd
 		sim_data.process.equilibrium.set_rev_rate(boundId + "[c]", kdNew * fwdRate)
