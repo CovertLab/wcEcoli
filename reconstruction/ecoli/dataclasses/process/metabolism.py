@@ -207,7 +207,7 @@ class Metabolism(object):
 				relative_changes[col][met_id] = value
 
 		## Add manually curated values for other media
-		for media, data in sim_data.relative_metabolite_concentrations_changes.items():
+		for media, data in sim_data.adjustments.relative_metabolite_concentrations_changes.items():
 			if media not in relative_changes:
 				relative_changes[media] = {}
 			for met, change in data.items():

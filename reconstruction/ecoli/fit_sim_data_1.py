@@ -905,9 +905,9 @@ def setTranslationEfficiencies(sim_data):
 	It takes their current efficiency and multiplies them by the factor specified in adjustments.
 	"""
 
-	for protein in sim_data.translation_efficiencies_adjustments:
+	for protein in sim_data.adjustments.translation_efficiencies_adjustments:
 		idx = np.where(sim_data.process.translation.monomer_data["id"] == protein)[0]
-		sim_data.process.translation.translation_efficiencies_by_monomer[idx] *= sim_data.translation_efficiencies_adjustments[protein]
+		sim_data.process.translation.translation_efficiencies_by_monomer[idx] *= sim_data.adjustments.translation_efficiencies_adjustments[protein]
 
 def setRNAExpression(sim_data):
 	"""
@@ -931,9 +931,9 @@ def setRNAExpression(sim_data):
 	function normalizes all the basal expression levels.
 	"""
 
-	for rna in sim_data.rna_expression_adjustments:
+	for rna in sim_data.adjustments.rna_expression_adjustments:
 		idx = np.where(sim_data.process.transcription.rna_data["id"] == rna)[0]
-		sim_data.process.transcription.rna_expression["basal"][idx] *= sim_data.rna_expression_adjustments[rna]
+		sim_data.process.transcription.rna_expression["basal"][idx] *= sim_data.adjustments.rna_expression_adjustments[rna]
 
 	sim_data.process.transcription.rna_expression["basal"] /= sim_data.process.transcription.rna_expression["basal"].sum()
 
@@ -953,9 +953,9 @@ def setRNADegRates(sim_data):
 	It takes their current degradation rate and multiplies them by the factor specified in adjustments.
 	"""
 
-	for rna in sim_data.rna_deg_rates_adjustments:
+	for rna in sim_data.adjustments.rna_deg_rates_adjustments:
 		idx = np.where(sim_data.process.transcription.rna_data["id"] == rna)[0]
-		sim_data.process.transcription.rna_data.struct_array['deg_rate'][idx] *= sim_data.rna_deg_rates_adjustments[rna]
+		sim_data.process.transcription.rna_data.struct_array['deg_rate'][idx] *= sim_data.adjustments.rna_deg_rates_adjustments[rna]
 
 def setProteinDegRates(sim_data):
 	"""
@@ -973,9 +973,9 @@ def setProteinDegRates(sim_data):
 	It takes their current degradation rate and multiplies them by the factor specified in adjustments.
 	"""
 
-	for protein in sim_data.protein_deg_rates_adjustments:
+	for protein in sim_data.adjustments.protein_deg_rates_adjustments:
 		idx = np.where(sim_data.process.translation.monomer_data["id"] == protein)[0]
-		sim_data.process.translation.monomer_data.struct_array['deg_rate'][idx] *= sim_data.protein_deg_rates_adjustments[protein]
+		sim_data.process.translation.monomer_data.struct_array['deg_rate'][idx] *= sim_data.adjustments.protein_deg_rates_adjustments[protein]
 
 def setCPeriod(sim_data):
 	"""

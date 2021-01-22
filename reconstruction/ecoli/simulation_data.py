@@ -22,6 +22,7 @@ from reconstruction.ecoli.dataclasses.state.external_state import ExternalState
 from reconstruction.ecoli.dataclasses.process.process import Process
 from reconstruction.ecoli.dataclasses.growth_rate_dependent_parameters import Mass, GrowthRateParameters
 from reconstruction.ecoli.dataclasses.relation import Relation
+from reconstruction.ecoli.dataclasses.adjustments import Adjustments
 
 
 VERBOSE = False
@@ -46,11 +47,11 @@ class SimulationDataEcoli(object):
 		self._add_molecular_weight_keys(raw_data)
 		self._add_compartment_keys(raw_data)
 		self._add_base_codes(raw_data)
-		self._add_adjustments(raw_data)
 
 		# General helper functions (have no dependencies)
 		self.common_names = CommonNames(raw_data)
 		self.constants = Constants(raw_data)
+		self.adjustments = Adjustments(raw_data)
 
 		# Reference helper functions (can depend on hard-coded attributes)
 		self.molecule_groups = MoleculeGroups(raw_data, self)
@@ -107,28 +108,6 @@ class SimulationDataEcoli(object):
 			tuple((row["code"], row["id"])
 				  for row in raw_data.base_codes.dntp))
 
-
-	def _add_adjustments(self, raw_data):
-		self.translation_efficiencies_adjustments = {
-			adj["name"]: adj["value"]
-			for adj in raw_data.adjustments.translation_efficiencies_adjustments
-		}
-		self.rna_expression_adjustments = {
-			adj["name"]: adj["value"]
-			for adj in raw_data.adjustments.rna_expression_adjustments
-		}
-		self.rna_deg_rates_adjustments = {
-			adj["name"]: adj["value"]
-			for adj in raw_data.adjustments.rna_deg_rates_adjustments
-		}
-		self.protein_deg_rates_adjustments = {
-			adj["name"]: (adj["value"] if not isinstance(adj["value"], str) else eval(adj["value"])) # eval fractions
-			for adj in raw_data.adjustments.protein_deg_rates_adjustments
-		}
-		self.relative_metabolite_concentrations_changes = {
-			adj["media"]: {adj["metabolite"] : adj["fold_change"]}
-			for adj in raw_data.adjustments.relative_metabolite_concentrations_changes
-		}
 
 	def _add_condition_data(self, raw_data):
 		abbrToActiveId = {x["TF"]: x["activeId"].split(", ") for x in raw_data.transcription_factors if len(x["activeId"]) > 0}
