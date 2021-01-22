@@ -322,7 +322,6 @@ class Equilibrium(object):
 
 		dy = sp.Matrix(rates)
 		J = dy.jacobian(y)
-		import ipdb; ipdb.set_trace()
 
 		self.symbolic_rates = dy
 		self.symbolic_rates_jacobian = J
