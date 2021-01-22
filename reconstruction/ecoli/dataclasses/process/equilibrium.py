@@ -100,38 +100,41 @@ class Equilibrium(object):
 
 			for mol_id, coeff in reaction["stoichiometry"].items():
 				if mol_id in metabolite_ids:
-					moleculeName = "{}[{}]".format(
+					mol_id_with_compartment = "{}[{}]".format(
 						mol_id, 'c'  # Assume all metabolites are in cytosol
 						)
-					self.metabolite_set.add(moleculeName)
-
+					self.metabolite_set.add(mol_id_with_compartment)
 				else:
-					moleculeName = "{}[{}]".format(
+					mol_id_with_compartment = "{}[{}]".format(
 						mol_id,
 						sim_data.getter.get_compartment(mol_id)[0]
 						)
 
-				if moleculeName not in molecules:
-					molecules.append(moleculeName)
+				if mol_id_with_compartment not in molecules:
+					molecules.append(mol_id_with_compartment)
 					molecule_index = len(molecules) - 1
-
 				else:
-					molecule_index = molecules.index(moleculeName)
+					molecule_index = molecules.index(mol_id_with_compartment)
 
+				# Any unknown stoichiometries will default to -1
 				if coeff is None:
 					coeff = -1
+
+				# All stoichiometric coefficients must be integers
 				assert coeff % 1 == 0
 
-				# Store indices for the row and column, and molecule coefficient for building the stoichiometry matrix
+				# Store indices for the row and column, and molecule
+				# coefficient for building the stoichiometry matrix
 				stoichMatrixI.append(molecule_index)
 				stoichMatrixJ.append(reaction_index)
 				stoichMatrixV.append(coeff)
 
+				# If coefficient is positive, the molecule is the complex
 				if coeff > 0:
-					self.complex_name_to_rxn_idx[moleculeName] = reaction_index
+					self.complex_name_to_rxn_idx[mol_id_with_compartment] = reaction_index
 
 				# Find molecular mass
-				molecularMass = sim_data.getter.get_mass(moleculeName).asNumber(units.g / units.mol)
+				molecularMass = sim_data.getter.get_mass(mol_id_with_compartment).asNumber(units.g / units.mol)
 				stoichMatrixMass.append(molecularMass)
 
 			reaction_index += 1
@@ -319,6 +322,7 @@ class Equilibrium(object):
 
 		dy = sp.Matrix(rates)
 		J = dy.jacobian(y)
+		import ipdb; ipdb.set_trace()
 
 		self.symbolic_rates = dy
 		self.symbolic_rates_jacobian = J
