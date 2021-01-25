@@ -3,9 +3,12 @@ Plot to visualize basal probabilities and TF bound delta probabilities for
 gene expression.  Useful to see which genes are highly expressed and which
 ones have low expression or regulation.  Note that some genes will have 0 basal
 probability and some TF-gene pairs will have 0 delta probability, which might
-be unexpected.
+be unexpected.  Also saves tsv files to check which genes and TF-gene pairs
+are at 0.
 """
 
+import csv
+import os
 import pickle
 
 from matplotlib import gridspec
@@ -22,14 +25,21 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			sim_data = pickle.load(f)
 
 		t_reg = sim_data.process.transcription_regulation
+		transcription = sim_data.process.transcription
+		replication = sim_data.process.replication
 		tf_to_gene_id = t_reg.tf_to_gene_id
 		tf_ids = [tf_to_gene_id[tf] for tf in t_reg.tf_ids]
 		basal_prob = t_reg.basal_prob
+		reg_i = t_reg.delta_prob['deltaI']
 		reg_j = t_reg.delta_prob['deltaJ']
 		reg_v = t_reg.delta_prob['deltaV']
+		rna_ids = transcription.rna_data['id']
+		gene_ids = transcription.rna_data['gene_id']
+		gene_to_symbol = {d['name']: d['symbol'] for d in replication.gene_data}
 
 		# Sort regulation by TF
 		tf_sort = np.argsort(reg_j)
+		tf_sorted_i = reg_i[tf_sort]
 		tf_sorted_j = reg_j[tf_sort]
 		tf_sorted_v = reg_v[tf_sort]
 
@@ -78,6 +88,19 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		exportFigure(plt, plot_out_dir, plot_out_filename, metadata)
 		plt.close('all')
 
+		# Save data to tsv files for easy lookup
+		with open(os.path.join(plot_out_dir, f'{plot_out_filename}_basal.tsv'), 'w') as f:
+			writer = csv.writer(f, delimiter='\t')
+			writer.writerow(['RNA', 'Gene symbol', 'Basal prob'])
+			for idx in np.argsort(basal_prob):
+				writer.writerow([rna_ids[idx], gene_to_symbol[gene_ids[idx]], basal_prob[idx]])
+
+		with open(os.path.join(plot_out_dir, f'{plot_out_filename}_delta.tsv'), 'w') as f:
+			writer = csv.writer(f, delimiter='\t')
+			writer.writerow(['TF', 'RNA', 'Gene symbol', 'Delta prob'])
+			for begin, end in zip(ticks[:-1], ticks[1:]):
+				for idx in np.argsort(tf_sorted_v[begin:end]) + begin:
+					writer.writerow([tf_ids[tf_sorted_j[idx]], rna_ids[tf_sorted_i[idx]], gene_to_symbol[gene_ids[tf_sorted_i[idx]]], tf_sorted_v[idx]])
 
 if __name__ == "__main__":
 	Plot().cli()
