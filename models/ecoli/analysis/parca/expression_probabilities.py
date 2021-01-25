@@ -36,6 +36,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		rna_ids = transcription.rna_data['id']
 		gene_ids = transcription.rna_data['gene_id']
 		gene_to_symbol = {d['name']: d['symbol'] for d in replication.gene_data}
+		rna_expression = transcription.rna_expression['basal']
 
 		# Calculate statistics
 		n_basal = len(basal_prob)
@@ -101,16 +102,26 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		# Save data to tsv files for easy lookup
 		with open(os.path.join(plot_out_dir, f'{plot_out_filename}_basal.tsv'), 'w') as f:
 			writer = csv.writer(f, delimiter='\t')
-			writer.writerow(['RNA', 'Gene symbol', 'Basal prob'])
+			writer.writerow(['RNA', 'Gene symbol', 'Basal prob', 'Expression'])
 			for idx in np.argsort(basal_prob):
-				writer.writerow([rna_ids[idx], gene_to_symbol[gene_ids[idx]], basal_prob[idx]])
+				writer.writerow([
+					rna_ids[idx],
+					gene_to_symbol[gene_ids[idx]],
+					basal_prob[idx],
+					rna_expression[idx],
+					])
 
 		with open(os.path.join(plot_out_dir, f'{plot_out_filename}_delta.tsv'), 'w') as f:
 			writer = csv.writer(f, delimiter='\t')
 			writer.writerow(['TF', 'RNA', 'Gene symbol', 'Delta prob'])
 			for begin, end in zip(ticks[:-1], ticks[1:]):
 				for idx in np.argsort(tf_sorted_v[begin:end]) + begin:
-					writer.writerow([tf_ids[tf_sorted_j[idx]], rna_ids[tf_sorted_i[idx]], gene_to_symbol[gene_ids[tf_sorted_i[idx]]], tf_sorted_v[idx]])
+					writer.writerow([
+						tf_ids[tf_sorted_j[idx]],
+						rna_ids[tf_sorted_i[idx]],
+						gene_to_symbol[gene_ids[tf_sorted_i[idx]]],
+						tf_sorted_v[idx],
+						])
 
 if __name__ == "__main__":
 	Plot().cli()
