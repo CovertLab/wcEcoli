@@ -37,6 +37,14 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		gene_ids = transcription.rna_data['gene_id']
 		gene_to_symbol = {d['name']: d['symbol'] for d in replication.gene_data}
 
+		# Calculate statistics
+		n_basal = len(basal_prob)
+		n_0_basal = np.sum(basal_prob == 0)
+		frac_0_basal = n_0_basal / n_basal
+		n_delta = len(reg_v)
+		n_0_delta = np.sum(reg_v == 0)
+		frac_0_delta = n_0_delta / n_delta
+
 		# Sort regulation by TF
 		tf_sort = np.argsort(reg_j)
 		tf_sorted_i = reg_i[tf_sort]
@@ -55,6 +63,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		ax.tick_params(labelsize=6, bottom=False, labelbottom=False)
 		ax.set_xlabel('Sorted genes')
 		ax.set_ylabel('Basal prob')
+		ax.set_title(f'{n_0_basal}/{n_basal} ({100*frac_0_basal:.1f}%) at 0', fontsize=10)
 
 		# Plot delta probabilities grouped by genes
 		ax = plt.subplot(gs[1, :])
@@ -65,6 +74,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		ax.tick_params(labelsize=6, bottom=False, labelbottom=False)
 		ax.set_xlabel('Sorted genes')
 		ax.set_ylabel('Delta prob')
+		ax.set_title(f'{n_0_delta}/{n_delta} ({100*frac_0_delta:.1f}%) at 0', fontsize=10)
 
 		# Plot delta probabilities grouped by transcription factors
 		ax = plt.subplot(gs[2, :])
