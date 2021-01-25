@@ -22,6 +22,8 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			sim_data = pickle.load(f)
 
 		t_reg = sim_data.process.transcription_regulation
+		tf_to_gene_id = t_reg.tf_to_gene_id
+		tf_ids = [tf_to_gene_id[tf] for tf in t_reg.tf_ids]
 		basal_prob = t_reg.basal_prob
 		reg_i = t_reg.delta_prob['deltaI']
 		reg_j = t_reg.delta_prob['deltaJ']
@@ -33,6 +35,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		# Sort regulation by TF
 		tf_sort = np.argsort(reg_j)
+		tf_sorted_j = reg_j[tf_sort]
 		tf_sorted_v = reg_v[tf_sort]
 
 		plt.figure(figsize=(6, 12))
@@ -54,16 +57,25 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		ax.set_yscale('symlog', linthreshy=np.min(np.abs(reg_v[np.abs(reg_v) > 0])))
 		ax.spines['top'].set_visible(False)
 		ax.spines['right'].set_visible(False)
-		ax.tick_params(labelsize=6)
+		ax.tick_params(labelsize=6, bottom=False, labelbottom=False)
+		ax.set_xlabel('Sorted genes')
 		ax.set_ylabel('Delta prob')
 
 		# Plot delta probabilities grouped by transcription factors
 		ax = plt.subplot(gs[2, :])
+		ticks = np.array([0] + list(np.where(tf_sorted_j[:-1] != tf_sorted_j[1:])[0] + 1) + [len(tf_sorted_j) - 1])
+		tf_x = (ticks[1:] + ticks[:-1]) / 2
 		ax.bar(range(len(gene_sorted_v)), tf_sorted_v)
 		ax.set_yscale('symlog', linthreshy=np.min(np.abs(reg_v[np.abs(reg_v) > 0])))
 		ax.spines['top'].set_visible(False)
 		ax.spines['right'].set_visible(False)
-		ax.tick_params(labelsize=6)
+		ax.set_xticks(ticks)
+		ax.set_xticks(tf_x, minor=True)
+		labels = ax.set_xticklabels(tf_ids, minor=True, fontsize=4)
+		for i, label in enumerate(labels):
+			label.set_y(label.get_position()[1] - (i % 4) * 0.015)
+		ax.tick_params(labelsize=6, labelbottom=False)
+		ax.tick_params(axis='x', which='minor', bottom=False)
 		ax.set_ylabel('Delta prob')
 
 		plt.tight_layout()
