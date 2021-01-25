@@ -25,13 +25,8 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		tf_to_gene_id = t_reg.tf_to_gene_id
 		tf_ids = [tf_to_gene_id[tf] for tf in t_reg.tf_ids]
 		basal_prob = t_reg.basal_prob
-		reg_i = t_reg.delta_prob['deltaI']
 		reg_j = t_reg.delta_prob['deltaJ']
 		reg_v = t_reg.delta_prob['deltaV']
-
-		# Sort regulation by gene
-		gene_sort = np.argsort(reg_i)
-		gene_sorted_v = reg_v[gene_sort]
 
 		# Sort regulation by TF
 		tf_sort = np.argsort(reg_j)
@@ -43,7 +38,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		# Plot sorted basal probabilities
 		ax = plt.subplot(gs[0, :])
-		ax.bar(range(len(basal_prob)), np.sort(basal_prob))
+		ax.bar(range(len(basal_prob)), sorted(basal_prob))
 		ax.set_yscale('symlog', linthreshy=np.min(basal_prob[basal_prob > 0]))
 		ax.spines['top'].set_visible(False)
 		ax.spines['right'].set_visible(False)
@@ -53,7 +48,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		# Plot delta probabilities grouped by genes
 		ax = plt.subplot(gs[1, :])
-		ax.bar(range(len(gene_sorted_v)), gene_sorted_v)
+		ax.bar(range(len(reg_v)), sorted(reg_v))
 		ax.set_yscale('symlog', linthreshy=np.min(np.abs(reg_v[np.abs(reg_v) > 0])))
 		ax.spines['top'].set_visible(False)
 		ax.spines['right'].set_visible(False)
@@ -63,9 +58,10 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		# Plot delta probabilities grouped by transcription factors
 		ax = plt.subplot(gs[2, :])
-		ticks = np.array([0] + list(np.where(tf_sorted_j[:-1] != tf_sorted_j[1:])[0] + 1) + [len(tf_sorted_j) - 1])
+		ticks = np.array([0] + list(np.where(tf_sorted_j[:-1] != tf_sorted_j[1:])[0] + 1) + [len(tf_sorted_j)])
 		tf_x = (ticks[1:] + ticks[:-1]) / 2
-		ax.bar(range(len(gene_sorted_v)), tf_sorted_v)
+		for begin, end in zip(ticks[:-1], ticks[1:]):
+			ax.bar(range(begin, end), sorted(tf_sorted_v[begin:end]))
 		ax.set_yscale('symlog', linthreshy=np.min(np.abs(reg_v[np.abs(reg_v) > 0])))
 		ax.spines['top'].set_visible(False)
 		ax.spines['right'].set_visible(False)
