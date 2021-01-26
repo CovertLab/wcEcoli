@@ -112,7 +112,7 @@ EQUILIBRIUM_COMPLEXES_IN_COMPLEXATION = ["CPLX0-7620[c]", "CPLX0-7701[c]",
 METABOLITES_ONLY_IN_EQUILIBRIUM = ["4FE-4S[c]", "NITRATE[p]"]
 
 # Molecules in 2CS (two component system) reactions that are not proteins
-NONPROTEIN_MOLECULES_IN_2CS = ["ATP[c]", "ADP[c]", "WATER[c]", "PI[c]",
+NONPROTEIN_MOLECULES_IN_2CS = ["ATP[c]", "ADP[c]", "WATER[c]", "Pi[c]",
 	"PROTON[c]", "PHOSPHO-PHOB[c]"]
 
 COMPARTMENTS = {

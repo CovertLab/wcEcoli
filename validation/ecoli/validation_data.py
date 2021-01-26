@@ -58,11 +58,34 @@ class Protein(object):
 	""" Protein """
 
 	def __init__(self, validation_data_raw, knowledge_base_raw):
+		compartment_ids_to_abbreviations = {
+			comp['id']: comp['abbrev'] for comp in knowledge_base_raw.compartments
+			}
+		# Compartments that don't exist in compartments.tsv
+		# TODO (ggsun): Add some of these to list of compartments?
+		compartment_ids_to_abbreviations.update({
+			'CCO-CW-BAC-NEG': 'o',
+			'CCO-CE-BAC': 'm',
+			'CCO-BAC-NUCLEOID': 'c',
+			'CCO-RIBOSOME': 'c',
+			})
+
+		protein_to_compartment_tag = {}
+
+		for protein in knowledge_base_raw.proteins:
+			compartments = protein['exp_location'] + protein['comp_location']
+			if len(compartments) == 0:
+				compartments = ['CCO-CYTOSOL']
+
+			protein_to_compartment_tag.update({
+				protein['id']: compartment_ids_to_abbreviations[compartments[0]]
+				})
+
 		# Build and save a dict from gene ID to monomerId
 		rna_id_to_gene_id = {
 			gene['rna_id']: gene['id'] for gene in knowledge_base_raw.genes}
 		protein_id_to_location = {
-			protein['id']: protein['compartment'][0] for protein in knowledge_base_raw.proteins}
+			protein['id']: protein_to_compartment_tag[protein['id']] for protein in knowledge_base_raw.proteins}
 
 		self.geneIdToMonomerId = {
 			rna_id_to_gene_id[rna['id']]: '{}[{}]'.format(rna['monomer_id'], protein_id_to_location[rna['monomer_id']])
