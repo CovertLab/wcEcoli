@@ -82,11 +82,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 			ax1.set_title(title)
 			ax1.set_xlim([time[0], time[-1]])
-
-			if synth_prob.max() > 0:
-				ax1.set_ylim([0, synth_prob.max()*1.2])
-			else:
-				ax1.set_ylim([-0.01, 0.01])
+			self.set_ylim(ax1, 0, synth_prob.max()*1.2)
 
 			ax1.set_xlabel("Time [s]")
 			ax1.set_ylabel("Transcription probability")
