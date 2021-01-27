@@ -90,7 +90,7 @@ class Protein(object):
 		self.geneIdToMonomerId = {
 			rna_id_to_gene_id[rna['id']]: '{}[{}]'.format(rna['monomer_id'], protein_id_to_location[rna['monomer_id']])
 			for rna in knowledge_base_raw.rnas
-			if rna["type"] == "mRNA"}
+			if rna["type"] == "mRNA" or rna["type"] == "pseudo"}
 
 		# Build and save a dict from gene symbol to corresponding monomerId
 		self.geneSymbolToMonomerId = {}
