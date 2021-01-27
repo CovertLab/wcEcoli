@@ -197,11 +197,14 @@ class GetterFunctions(object):
 		"""
 		self._all_submass_arrays = {}
 
+		metabolites_with_masses = [
+			met for met in raw_data.metabolites if met['mw'] is not None]
+
 		self._all_submass_arrays.update({
 			met['id']: (self._build_submass_array(met['mw'], 'metabolite')
 			if met['id'] != sim_data.molecule_ids.water[:-3]
 			else self._build_submass_array(met['mw'], 'water'))
-			for met in raw_data.metabolites
+			for met in metabolites_with_masses
 			})
 
 		# These updates can be dependent on metabolite masses
