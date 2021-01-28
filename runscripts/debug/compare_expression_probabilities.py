@@ -33,6 +33,8 @@ def load_sim_data(paths):
 def plot_comparison(sim_data1, sim_data2):
 	t_reg1 = sim_data1.process.transcription_regulation
 	t_reg2 = sim_data2.process.transcription_regulation
+	tf_to_gene_id = t_reg1.tf_to_gene_id
+	rna_to_gene_id = {d['rna_id'] + '[c]': d['symbol'] for d in sim_data1.process.replication.gene_data}
 
 	# RNA and TF ids
 	rnas1 = sim_data1.process.transcription.rna_data['id']
@@ -55,6 +57,7 @@ def plot_comparison(sim_data1, sim_data2):
 	min_basal = min(x_basal[x_basal > 0].min(), y_basal[y_basal > 0].min())
 	x_basal_log = np.log10(x_basal + min_basal / 10)
 	y_basal_log = np.log10(y_basal + min_basal / 10)
+	basal_text = [f'{rna_to_gene_id[rna]} ({rna})' for rna in basal_ids]
 
 	# Delta probabilities
 	delta1 = {
@@ -74,14 +77,15 @@ def plot_comparison(sim_data1, sim_data2):
 	min_delta_neg = -max(x_delta[x_delta < 0].max(), y_delta[y_delta < 0].max())
 	x_delta_log_neg = np.log10(-x_delta + min_delta_neg / 10)
 	y_delta_log_neg = np.log10(-y_delta + min_delta_neg / 10)
+	delta_text = [f'{tf_to_gene_id[tf]} -> {rna_to_gene_id[rna]}' for rna, tf in delta_ids]
 
 	# Plot probabilities
 	fig = make_subplots(rows=3, cols=1, subplot_titles=['Basal', 'Positive Delta', 'Negative Delta'])
 
 	fig.add_traces([
-		go.Scatter(x=x_basal_log, y=y_basal_log, mode='markers', text=basal_ids),
-		go.Scatter(x=x_delta_log_pos, y=y_delta_log_pos, mode='markers', text=delta_ids),
-		go.Scatter(x=x_delta_log_neg, y=y_delta_log_neg, mode='markers', text=delta_ids)],
+		go.Scatter(x=x_basal_log, y=y_basal_log, mode='markers', text=basal_text),
+		go.Scatter(x=x_delta_log_pos, y=y_delta_log_pos, mode='markers', text=delta_text),
+		go.Scatter(x=x_delta_log_neg, y=y_delta_log_neg, mode='markers', text=delta_text)],
 		rows=[1, 2, 3], cols=[1, 1, 1],
 		)
 	fig.update_xaxes(row=1, col=1, title='basal prob 1 (log scale + offset for 0s)')
