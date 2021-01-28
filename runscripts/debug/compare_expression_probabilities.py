@@ -13,6 +13,7 @@ import numpy as np
 from plotly.subplots import make_subplots
 import plotly.graph_objs as go
 
+import wholecell.utils.constants as constants
 from wholecell.utils.filepath import DEBUG_OUT_DIR
 
 
@@ -26,7 +27,7 @@ def parse_args():
 def load_sim_data(paths):
 	sim_data = []
 	for path in paths:
-		with open(path, 'rb') as f:
+		with open(os.path.join(path, constants.KB_DIR, constants.SERIALIZED_SIM_DATA_FILENAME), 'rb') as f:
 			sim_data.append(pickle.load(f))
 	return sim_data
 
