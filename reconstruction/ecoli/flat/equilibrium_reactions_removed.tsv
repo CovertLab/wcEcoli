@@ -54,5 +54,7 @@
 "MONOMER-51_STEAROYL-COA_RXN"
 "MONOMER-51_TETRADECANOYL-COA_RXN"
 "MONOMER-51_PROPIONYL-COA_RXN"
+"CPLX0-8076_RXN"	"ArgR-Arg complex. Not included in EcoCyc. Prevents formation of 6ArgR-Arg complex which is a TF"
+"MONOMER-51-PROPIONYL-COA_RXN"
 "MONOMER0-163_RXN"
 "CPLX0-8083_RXN"	"Molecular weight of CPD-6 unknown"

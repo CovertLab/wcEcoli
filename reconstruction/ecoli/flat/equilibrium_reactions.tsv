@@ -1,3 +1,4 @@
+# Note: Reactions listed in equilibrium_reactions_removed.tsv are removed from simulation data.
 "id"	"stoichiometry"	"common_name"	
 "CPLX-123_RXN"	{"CPLX-123":1,"PC00033":null,"HYPOXANTHINE":null}	"PurR-Hypoxanthine DNA-binding transcriptional repressor"	
 "CPLX-124_CPD0-1112_RXN"	{"CPLX-124":1,"CPD0-1112":null,"PC00086":null}	"RhaS-L-rhamnose DNA-binding transcriptional activator"	

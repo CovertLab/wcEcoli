@@ -22,6 +22,7 @@ from reconstruction.ecoli.dataclasses.state.external_state import ExternalState
 from reconstruction.ecoli.dataclasses.process.process import Process
 from reconstruction.ecoli.dataclasses.growth_rate_dependent_parameters import Mass, GrowthRateParameters
 from reconstruction.ecoli.dataclasses.relation import Relation
+from reconstruction.ecoli.dataclasses.adjustments import Adjustments
 
 
 VERBOSE = False
@@ -45,11 +46,12 @@ class SimulationDataEcoli(object):
 
 		self._add_molecular_weight_keys(raw_data)
 		self._add_compartment_keys(raw_data)
-		self._add_hard_coded_attributes()
+		self._add_base_codes(raw_data)
 
 		# General helper functions (have no dependencies)
 		self.common_names = CommonNames(raw_data)
 		self.constants = Constants(raw_data)
+		self.adjustments = Adjustments(raw_data)
 
 		# Reference helper functions (can depend on hard-coded attributes)
 		self.molecule_groups = MoleculeGroups(raw_data, self)
@@ -93,23 +95,18 @@ class SimulationDataEcoli(object):
 		}
 
 
-	def _add_hard_coded_attributes(self):
-		self.amino_acid_code_to_id_ordered = collections.OrderedDict((
-			("A", "L-ALPHA-ALANINE[c]"), ("R", "ARG[c]"), ("N", "ASN[c]"), ("D", "L-ASPARTATE[c]"),
-			("C", "CYS[c]"), ("E", "GLT[c]"), ("Q", "GLN[c]"), ("G", "GLY[c]"),
-			("H", "HIS[c]"), ("I", "ILE[c]"), ("L", "LEU[c]"), ("K", "LYS[c]"),
-			("M", "MET[c]"), ("F", "PHE[c]"), ("P", "PRO[c]"), ("S", "SER[c]"),
-			("T", "THR[c]"), ("W", "TRP[c]"), ("Y", "TYR[c]"), ("U", "L-SELENOCYSTEINE[c]"),
-			("V", "VAL[c]")
-			))
+	def _add_base_codes(self, raw_data):
+		self.amino_acid_code_to_id_ordered = collections.OrderedDict(
+			tuple((row["code"], row["id"])
+				  for row in raw_data.base_codes.amino_acids))
 
-		self.ntp_code_to_id_ordered = collections.OrderedDict((
-			("A", "ATP[c]"), ("C", "CTP[c]"), ("G", "GTP[c]"), ("U", "UTP[c]")
-			))
+		self.ntp_code_to_id_ordered = collections.OrderedDict(
+			tuple((row["code"], row["id"])
+				  for row in raw_data.base_codes.ntp))
 
-		self.dntp_code_to_id_ordered = collections.OrderedDict((
-			("A", "DATP[c]"), ("C", "DCTP[c]"), ("G", "DGTP[c]"), ("T", "TTP[c]")
-			))
+		self.dntp_code_to_id_ordered = collections.OrderedDict(
+			tuple((row["code"], row["id"])
+				  for row in raw_data.base_codes.dntp))
 
 
 	def _add_condition_data(self, raw_data):
@@ -138,6 +135,8 @@ class SimulationDataEcoli(object):
 			gene_location_not_specified = set()
 
 			for row in getattr(raw_data, fc_file):
+				FC = row['log2 FC mean']
+
 				# Skip fold changes that have been removed
 				if (row['TF'], row['Target']) in removed_fcs:
 					continue
@@ -146,8 +145,8 @@ class SimulationDataEcoli(object):
 				if row['Regulation_direct'] != '' and row['Regulation_direct'] > 2:
 					continue
 
-				# Skip autoregulation
-				if row['TF'] == row['Target']:
+				# Skip positive autoregulation
+				if row['TF'] == row['Target'] and FC > 0:
 					continue
 
 				try:
@@ -170,7 +169,6 @@ class SimulationDataEcoli(object):
 					self.tf_to_fold_change[tf] = {}
 					self.tf_to_direction[tf] = {}
 
-				FC = row['log2 FC mean']
 				self.tf_to_direction[tf][target] = np.sign(FC)
 				self.tf_to_fold_change[tf][target] = 2**FC
 
