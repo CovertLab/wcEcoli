@@ -1535,8 +1535,19 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		translation_efficienciesByProtein,
 		netLossRate_protein)
 
+
+	# ---- Testing Area for potential least squares 
+
+	#monomer_to_mrna_ls_transform = sim_data.relation.build_monomer_to_RNA_ls_transform(sim_data, counts_protein)
+
+	#Calculate take transcriptDistribution and transform using least squares into the TU shape.
+	mRnaDistribution = sim_data.relation.build_monomer_to_RNA_ls_transform(sim_data, transcriptDistribution)
+
+	# ---- End
+
 	# Translate the transcript distribution into the mrna distribution
 	# monomer_to_mrna_transform = sim_data.relation.monomer_to_mrna_transform
+	'''
 	monomer_to_mrna_transform = sim_data.relation.buildMonomerIndexToRnaMapping(sim_data, view_RNA.counts())
 	transcriptDistribution_matrix = np.repeat(np.reshape(transcriptDistribution, (-1,1)), monomer_to_mrna_transform.shape[1], axis=1)
 	mRnaDistribution_matrix = np.multiply(transcriptDistribution_matrix, monomer_to_mrna_transform)
@@ -1544,11 +1555,12 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	# For polycistronic mrnas, take the max counts calculated from the constituent monomers
 	mRnaDistribution = np.amax(mRnaDistribution_matrix, axis=0)
 
+	'''
+
 	mRnaExpressionView.countsIs(
 		mRnaExpressionFrac * mRnaDistribution)
 
 	expression = normalize(rnaExpressionContainer.counts())
-
 	# Set number of RNAs based on expression we just set
 	nRnas = totalCountFromMassesAndRatios(
 		totalMass_RNA,
