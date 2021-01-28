@@ -76,7 +76,7 @@ def plot_comparison(sim_data1, sim_data2):
 	y_delta_log_neg = np.log10(-y_delta + min_delta_neg / 10)
 
 	# Plot probabilities
-	fig = make_subplots(rows=3, cols=1)
+	fig = make_subplots(rows=3, cols=1, subplot_titles=['Basal', 'Positive Delta', 'Negative Delta'])
 
 	fig.add_traces([
 		go.Scatter(x=x_basal_log, y=y_basal_log, mode='markers', text=basal_ids),
@@ -84,9 +84,16 @@ def plot_comparison(sim_data1, sim_data2):
 		go.Scatter(x=x_delta_log_neg, y=y_delta_log_neg, mode='markers', text=delta_ids)],
 		rows=[1, 2, 3], cols=[1, 1, 1],
 		)
+	fig.update_xaxes(row=1, col=1, title='basal prob 1 (log scale + offset for 0s)')
+	fig.update_yaxes(row=1, col=1, title='basal prob 2 (log scale + offset for 0s)')
+	fig.update_xaxes(row=2, col=1, title='delta prob positive 1 (log scale + offset for 0s)')
+	fig.update_yaxes(row=2, col=1, title='delta prob positive 2 (log scale + offset for 0s)')
+	fig.update_xaxes(row=3, col=1, title='delta prob negative 1 (log scale + offset for 0s)')
+	fig.update_yaxes(row=3, col=1, title='delta prob negative 2 (log scale + offset for 0s)')
 
 	os.makedirs(DEBUG_OUT_DIR, exist_ok=True)
 	out = os.path.join(DEBUG_OUT_DIR, 'expression_probabilities.html')
+	print(f'Saved output to {out}')
 	fig.write_html(out)
 
 if __name__ == '__main__':
