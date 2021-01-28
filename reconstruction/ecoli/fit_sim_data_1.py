@@ -3029,6 +3029,7 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 
 	pPromoterBound = {}  # Initialize return value
 	cellDensity = sim_data.constants.cell_density
+	init_to_average = sim_data.mass.avg_cell_to_initial_cell_conversion_factor
 
 	# Matrix to determine number of promoters each TF can bind to in a given condition
 	rna_data = sim_data.process.transcription.rna_data
@@ -3063,7 +3064,7 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 			tfType = sim_data.process.transcription_regulation.tf_to_tf_type[tf]
 			tf_counts = cell_specs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")
 			tf_targets = n_promoter_targets[tf_idx[tf]]
-			limited_tf_counts = min(1, tf_counts / tf_targets)
+			limited_tf_counts = min(1, tf_counts * init_to_average / tf_targets)
 			if tfType == "0CS":
 				pPromoterBound[conditionKey][tf] = limited_tf_counts  # If TF exists, the promoter is always bound to the TF
 
