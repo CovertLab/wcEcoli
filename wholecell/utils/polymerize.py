@@ -172,6 +172,8 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		self.sequenceElongation = np.zeros(self._nSequences, np.int64)
 		self.monomerUsages = np.zeros(self._nMonomers, np.int64)
 		self.nReactions = 0
+		self.sequencesStalled = np.full(self._nSequences, False)
+		self.sequenceLengths = self._sequenceLengths
 
 	# Iteration subroutines
 
@@ -189,7 +191,7 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 			# Quit if finished or out of resources
 			if fully_elongated or monomer_limited or reaction_limited:
-				break
+				break #TODO-Betty
 
 			# Perform nontrivial (resource-limited) elongations, and cull
 			# sequences that can no longer be elongated
@@ -361,6 +363,7 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		'''
 
 		self._clamp_elongation_to_sequence_length()
+		self.sequencesStalled = (self.sequenceElongation != self._sequenceLengths)
 
 	def _clamp_elongation_to_sequence_length(self):
 		'''

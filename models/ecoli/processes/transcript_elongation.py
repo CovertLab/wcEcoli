@@ -58,6 +58,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.inactive_RNAPs = self.bulkMoleculeView("APORNAP-CPLX[c]")
 		self.variable_elongation = sim._variable_elongation_transcription
 		self.make_elongation_rates = sim_data.process.transcription.make_elongation_rates
+		self.fragmentBases = self.bulkMoleculesView(sim_data.molecule_groups.polymerized_ntps)
 
 
 	def calculateRequest(self):
@@ -147,6 +148,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		sequence_elongations = result.sequenceElongation
 		ntps_used = result.monomerUsages
+		did_stall_mask = result.sequencesStalled
 
 		# Calculate changes in mass associated with polymerization
 		added_mass = computeMassIncrease(sequences, sequence_elongations,
@@ -263,6 +265,30 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.inactive_RNAPs.countInc(n_terminated)
 		self.ppi.countInc(n_elongations - n_initialized)
 
+		# Remove RNAPs that were bound to stalled elongation transcripts
+		# and increment counts of inactive RNAPs
+		self.active_RNAPs.delByIndexes(
+			np.where(did_stall_mask[partial_RNA_to_RNAP_mapping]))
+		self.inactive_RNAPs.countInc(did_stall_mask.sum())
+
+		# Remove partial transcripts from stalled elongation
+		# and get their sequences
+		self.RNAs.delByIndexes(
+			partial_transcript_indexes[did_stall_mask])
+		stalled_sequence_lengths = result.sequenceLengths[did_stall_mask]
+		n_stalled_sequences = np.count_nonzero(stalled_sequence_lengths)
+
+		# Release the ntps from stalled transcripts
+		if n_stalled_sequences > 0:
+			stalled_sequences = sequences[did_stall_mask]
+
+			base_counts = np.bincount(
+				stalled_sequences[stalled_sequences != polymerize.PAD_VALUE], minlength=4)
+
+			# Increment counts of fragment NTPs and phosphates
+			self.fragmentBases.countsInc(base_counts)
+			self.ppi.countInc(n_stalled_sequences)
+
 		# Write outputs to listeners
 		self.writeToListener(
 			"TranscriptElongationListener", "countRnaSynthesized",
@@ -278,6 +304,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.writeToListener(
 			"RnapData", "terminationLoss",
 			(terminal_lengths - length_partial_RNAs)[did_terminate_mask].sum())
+		self.writeToListener("RnapData", "didStall", did_stall_mask.sum()) # add a new analysis script using this
 
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
