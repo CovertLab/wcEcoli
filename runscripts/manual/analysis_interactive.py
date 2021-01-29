@@ -444,7 +444,7 @@ class AnalysisInteractive(scriptBase.ScriptBase):
 		if len(variant_dirs):
 			experiments[path] = {d: {} for d in variant_dirs}
 		else:
-			for directory in os.listdir(path):
+			for directory in sorted(os.listdir(path)):
 				sim_path = os.path.join(path, directory)
 				if not os.path.isdir(sim_path):
 					continue
