@@ -2,7 +2,7 @@
 
 """
 Compare basal and delta probabilities of expression from two different sim_data
-objects. Requires the path to
+objects. Requires the path to the simulation directory for two sims as args.
 """
 
 import argparse
