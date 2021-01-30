@@ -696,7 +696,7 @@ class Metabolism(object):
 
 		# Calculate synthesis rate
 		synthesis = self.aa_supply_balance @ (self.aa_kcats * counts_per_aa * fraction)
-		return synthesis
+		return synthesis, counts_per_aa, fraction
 
 	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum):
 		"""
@@ -707,17 +707,11 @@ class Metabolism(object):
 			dry_mass: current dry mass of the cell, with mass units
 
 		Returns:
-			uptake: rate of uptake for each amino acid. array is unitless but
+			rate of uptake for each amino acid. array is unitless but
 				represents counts of amino acid per second
 		"""
 
-		uptake = self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
-
-		# TODO: fix this when handling all amino acids (don't have the option for single amino acid presence so ok to test like this)
-		if not np.all(aa_in_media):
-			uptake *= 0
-
-		return uptake
+		return aa_in_media * self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
 
 	def aa_supply_scaling(self, aa_conc, aa_present):
 		"""

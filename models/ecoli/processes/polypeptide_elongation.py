@@ -474,30 +474,21 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 				* fraction_trna_per_aa + uncharged_trna_request)
 
 		# Adjust aa_supply higher if amino acid concentrations are low
-		# Improves stability of charging and mimics amino acid synthesis
-		# inhibition and export
 		aa_in_media = self.aa_environment.import_present()
-		# TODO (Travis): add to listener?
+		### TODO: remove - left in here for now for comparison purposes ###
 		self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
+		old_supply = self.process.aa_supply.copy()
+		### END: remove ###
+		synthesis, enzyme_counts, saturation = self.amino_acid_synthesis(
+			self.aa_enzymes.total_counts(), aa_conc)
+		self.process.aa_supply = self.process.timeStepSec() * (
+			synthesis + self.amino_acid_import(aa_in_media, dry_mass))
 
-		# TODO: encapsulate this in the class as a function for enzyme counts and AA conc
-		aa_ids = self.aa_aas._state._moleculeIDs[self.aa_aas._containerIndexes].tolist()
-		supply = self.process.timeStepSec() * (
-			self.amino_acid_synthesis(self.aa_enzymes.total_counts(), self.counts_to_molar * self.aa_aas.total_counts())
-			+ self.amino_acid_import(aa_in_media, dry_mass)
-		)
-
-		# TODO: Clean this up
-		aa_ids_all = self.process.aas._state._moleculeIDs[self.process.aas._containerIndexes]
-		for aa, new in zip(aa_ids, supply):
-			# print(aa, new, self.process.aa_supply[aa_ids_all == aa])
-			# print(new / self.process.aa_supply[aa_ids_all == aa])
-			self.process.aa_supply[aa_ids_all == aa] = new
-
-		self.process.writeToListener('GrowthLimits', 'aa_supply', supply)
-		# self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts)
-		# self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
-		# self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', fraction)
+		# TODO: add synthesis and import?
+		self.process.writeToListener('GrowthLimits', 'aa_supply', self.process.aa_supply)
+		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts)
+		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
+		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', saturation)
 
 		# Only request molecules that will be consumed in the charging reactions
 		requested_molecules = -np.dot(self.charging_stoich_matrix, total_charging_reactions)
