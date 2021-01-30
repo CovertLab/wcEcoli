@@ -1,1 +1,0 @@
-Transcription Units to Add	Keep Monomers?"['EG10527', 'EG10526', 'EG10524']"	"[False, False, False]""['EG10526', 'EG10524']"	"[False, False]""['EG12197', 'EG12144']"	"[True, True]"

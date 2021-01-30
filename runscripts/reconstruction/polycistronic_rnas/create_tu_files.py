@@ -213,7 +213,7 @@ If no genes have half life, allow to use the average.
 
 TODO: Add half life calc value as an argument
 '''
-HALF_LIFE_CALC = 4
+HALF_LIFE_CALC = 3
 
 
 def find_tu_type(tu_genes_info):
@@ -590,7 +590,7 @@ def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 	Purpose:
 		Calculate transcription unit counts. Will functionally replace how rna seq
 		counts were used in the model. If no TUs are added it will exactly match
-		rna-seq counts. Using scipy.optimize..nnls solver to give a non-negative least squares fit.
+		rna-seq counts. Using scipy.optimize.nnls solver to give a non-negative least squares fit.
 
 	Args:
 		gene_tu_matrix: Sparse numpy matrix, mapping TU to rna's. 0 = no mapping; 1 = mapping.
@@ -630,12 +630,12 @@ def make_transcription_units_file():
 		writer.writeheader()
 		for tu_count in tu_counts:
 			writer.writerow(tu_count)
-
+	'''
 	with open(output_gene_tu_matrix, "w") as f:
 		writer = csv.writer(f, delimiter=' ')
 		for row in gene_tu_matrix:
 			writer.writerow(row)
-
+	'''
 def make_new_proteins_file(output_file):
 	rna_info, rna_fieldnames = parse_tsv(TU_FILE)
 
@@ -667,9 +667,10 @@ def make_new_proteins_file(output_file):
 		if type(protein['rna_set'][0]) == list:
 			protein['rna_set'] = protein['rna_set'][0]
 	'''
-	#add fieldname for 'rna_set'
-	protein_fieldnames.append('rna_set')
-	protein_fieldnames.append('gene_id')
+	#add fieldname for 'rna_set' if it doesnt already exist.
+	if 'rna_set' and 'gene_id' not in protein_fieldnames:
+		protein_fieldnames.append('rna_set')
+		protein_fieldnames.append('gene_id')
 
 	with open(output_file, "w") as f:
 		writer = JsonWriter(f, protein_fieldnames)

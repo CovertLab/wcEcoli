@@ -41,10 +41,10 @@ RNA_EXPRESSION_ADJUSTMENTS = {
 	"EG12298_RNA[c]": 10,  # yibQ, Predicted polysaccharide deacetylase; This RNA is fit for the anaerobic condition viability
 	"EG11672_RNA[c]": 10,  # atoB, acetyl-CoA acetyltransferase; This RNA is fit for the anaerobic condition viability
 	"EG10238_RNA[c]": 10,  # dnaE, DNA polymerase III subunit alpha; This RNA is fit for the sims to produce enough DNAPs for timely replication
-	"G6093_EG10455_EG10316_EG11284_EG10545_EG10546_EG10861_EG10238": 10,
+	"G6093_EG10455_EG10316_EG11284_EG10545_EG10546_EG10861_EG10238_RNA[c]": 10,
 	"EG11673_RNA[c]": 10,  # folB, dihydroneopterin aldolase; needed for growth (METHYLENE-THF) in acetate condition
 	"EG10808_RNA[c]": 4,  # pyrE, orotate phosphoribosyltransferase; Needed for UTP synthesis, transcriptional regulation by UTP is not included in the model
-	"EG10863_EG10808": 4,
+	"EG10863_EG10808_RNA[c]": 4,
 	}
 RNA_DEG_RATES_ADJUSTMENTS = {
 	"EG11493_RNA[c]": 2,  # pabC, aminodeoxychorismate lyase
@@ -1536,25 +1536,38 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		translation_efficienciesByProtein,
 		netLossRate_protein)
 
+
+	# ---- Testing Area for potential least squares 
+
+	#monomer_to_mrna_ls_transform = sim_data.relation.build_monomer_to_RNA_ls_transform(sim_data, counts_protein)
+
+	#Calculate take transcriptDistribution and transform using least squares into the TU shape.
+	mRnaDistribution = sim_data.relation.build_monomer_to_RNA_ls_transform(sim_data, transcriptDistribution)
+
+	# ---- End
+
 	# Translate the transcript distribution into the mrna distribution
-	monomer_to_mrna_transform = sim_data.relation.monomer_to_mrna_transform
+	# monomer_to_mrna_transform = sim_data.relation.monomer_to_mrna_transform
+	'''
+	monomer_to_mrna_transform = sim_data.relation.buildMonomerIndexToRnaMapping(sim_data, view_RNA.counts())
 	transcriptDistribution_matrix = np.repeat(np.reshape(transcriptDistribution, (-1,1)), monomer_to_mrna_transform.shape[1], axis=1)
 	mRnaDistribution_matrix = np.multiply(transcriptDistribution_matrix, monomer_to_mrna_transform)
 
 	# For polycistronic mrnas, take the max counts calculated from the constituent monomers
 	mRnaDistribution = np.amax(mRnaDistribution_matrix, axis=0)
 
+	'''
+
 	mRnaExpressionView.countsIs(
 		mRnaExpressionFrac * mRnaDistribution)
 
 	expression = normalize(rnaExpressionContainer.counts())
-
 	# Set number of RNAs based on expression we just set
 	nRnas = totalCountFromMassesAndRatios(
 		totalMass_RNA,
 		sim_data.process.transcription.rna_data["mw"] / sim_data.constants.n_avogadro,
 		expression)
-
+	print(nRnas)
 	view_RNA.countsIs(nRnas * expression)
 	rnaLossRate = None
 

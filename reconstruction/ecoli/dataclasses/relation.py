@@ -5,6 +5,7 @@ SimulationData relation functions
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
+from scipy.optimize import nnls
 
 
 class Relation(object):
@@ -18,6 +19,7 @@ class Relation(object):
 
 		self._buildRnaIndexToMonomerMapping(raw_data, sim_data)
 		self._buildMonomerIndexToRnaMapping(raw_data, sim_data)
+		#self._build_mrna_to_monomer_matrix(raw_data, sim_data)
 
 	def _buildRnaIndexToMonomerMapping(self, raw_data, sim_data):
 		'''
@@ -280,3 +282,56 @@ class Relation(object):
 		if check_matrix:
 			self.check_monomer_to_mrna_transformation_matrix(
 				self.monomer_to_mrna_transform)
+
+	# MIALY 1/4/21 dynamic calculation of fractions for parca
+	def buildMonomerIndexToRnaMapping(self, sim_data, mRnaExpressionView):
+		mrna_id_index_dict = {mrna_id: index
+							  for index, mrna_id in enumerate(self.mrna['id'])}
+		monomer_id_index_dict = {rna_id: index
+								 for index, rna_id in enumerate(self.monomer['rna_id'])}
+		# tu_dict: Contains all the TU's as keys (str), and their counts as values
+		tu_dict = {rna['id'][:-7]: mRnaExpressionView[idx]
+				   for idx, rna in enumerate(sim_data.process.transcription.rna_data)
+				   if rna['is_mRNA']}
+		# breakpoint()
+		overlapping_tu_dict = self.find_overlapping_tus(tu_dict)
+		overlapping_tu_fractions = self.find_overlapping_tu_fractions(
+			overlapping_tu_dict, tu_dict)
+		#import ipdb; ipdb.set_trace()
+		monomer_to_mrna_transform, mrna_to_monomer_transform = self.create_transformation_matrices(
+			monomer_id_index_dict, mrna_id_index_dict, overlapping_tu_fractions)
+		print("Building in the Parca")
+		# breakpoint()
+		return monomer_to_mrna_transform
+
+	#def _build_mrna_to_monomer_matrix(self, raw_data, sim_data):
+	def build_monomer_to_RNA_ls_transform(self, sim_data, transcriptDistribution):
+		'''
+		Want to build a transformation matrix between proteins and mRNAs.
+		when looking at mrnaIndexToMonomerMapping, they are arranged by monomer index
+		with the value given at each position referring to the mrna index.
+
+		'''
+		# self.mrnaIndexToMonomerMapping
+
+
+		rna_data_id_index = {}
+		for idx, row in enumerate(self.mrna):
+			rna_data_id_index[row['id']] = idx
+		mrnaIndexToMonomerMapping = []
+		for protein_row in self.monomer:
+			set_indices = []
+			for rna_id in protein_row['rna_set']:
+				set_indices.append(rna_data_id_index[rna_id])
+			mrnaIndexToMonomerMapping.append(set_indices)
+		#mrnaIndexToMonomerMapping = np.array(mrnaIndexToMonomerMapping)
+
+		self.mrna_to_monomer_matrix = np.zeros((len(self.monomer), len(self.mrna)))
+
+		for idx, rna_idx in enumerate(mrnaIndexToMonomerMapping):
+			for r_i in rna_idx:
+				self.mrna_to_monomer_matrix[idx,r_i] = 1
+
+		tu_shaped_protein_counts_vector = nnls(self.mrna_to_monomer_matrix, transcriptDistribution)[0]
+
+		return tu_shaped_protein_counts_vector
