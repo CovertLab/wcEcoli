@@ -191,7 +191,7 @@ def read_stacked_bulk_molecules(cell_paths: np.ndarray, mol_names) -> List[np.nd
 		stacked data (n time points, m subcolumns) for each group in mol_names
 	"""
 
-	data = [list() for i in range(len(mol_names))]
+	data = [list() for i in range(len(mol_names))]  # type: List
 	for sim_dir in cell_paths:
 		sim_out_dir = os.path.join(sim_dir, 'simOut')
 		for i, counts in enumerate(read_bulk_molecule_counts(sim_out_dir, mol_names)):
