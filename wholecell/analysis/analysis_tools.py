@@ -173,3 +173,33 @@ def read_bulk_molecule_counts(sim_out_dir, mol_names):
 		counts = bulk_counts[:, start_slice:start_slice + length].squeeze()
 		start_slice += length
 		yield counts
+
+def read_stacked_columns(cells: np.ndarray, table: str, column: str) -> np.ndarray:
+	"""
+	Reads column data from multiple cells and assumbles into a single array.
+
+	Args:
+		cells: paths to all cells to read data from (directories should
+			contain a simOut/ subdirectory), typically the return from
+			AnalysisPaths.get_cells()
+		table: name of the table to read data from
+		column: name of the column to read data from
+
+	Returns:
+		stacked data (n time points, m subcolumns)
+
+	TODO:
+		add common processing options:
+		- mean per cell cycle
+		- remove first time point
+		- normalize to a time point
+		integrate with read_bulk_molecule_counts
+	"""
+
+	data = []
+	for sim_dir in cells:
+		sim_out_dir = os.path.join(sim_dir, 'simOut')
+		reader = TableReader(os.path.join(sim_out_dir, table))
+		data.append(reader.readColumn2D(column))
+
+	return np.vstack(data)
