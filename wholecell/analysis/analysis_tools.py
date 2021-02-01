@@ -2,10 +2,10 @@
 Analysis script toolbox functions
 """
 
-from __future__ import absolute_import, division, print_function
+from __future__ import annotations
 
 import os
-from typing import Iterator, Sequence, Tuple, Union
+from typing import Iterator, List, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -174,12 +174,37 @@ def read_bulk_molecule_counts(sim_out_dir, mol_names):
 		start_slice += length
 		yield counts
 
-def read_stacked_columns(cells: np.ndarray, table: str, column: str) -> np.ndarray:
+def read_stacked_bulk_molecules(cell_paths: np.ndarray, mol_names) -> List[np.ndarray]:
+	"""
+	Reads bulk molecule counts from multiple cells and assumbles each group
+	into a single array.
+
+	Args:
+		cell_paths: paths to all cells to read data from (directories should
+			contain a simOut/ subdirectory), typically the return from
+			AnalysisPaths.get_cells()
+		mol_names: tuple of list-likes of strings or a list-like of strings
+			that name molecules to read the counts for. A single array will be
+			converted to a tuple for processing.
+
+	Returns:
+		stacked data (n time points, m subcolumns) for each group in mol_names
+	"""
+
+	data = [list() for i in range(len(mol_names))]
+	for sim_dir in cell_paths:
+		sim_out_dir = os.path.join(sim_dir, 'simOut')
+		for i, counts in enumerate(read_bulk_molecule_counts(sim_out_dir, mol_names)):
+			data[i].append(counts)
+
+	return [np.vstack(d) for d in data]
+
+def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str) -> np.ndarray:
 	"""
 	Reads column data from multiple cells and assumbles into a single array.
 
 	Args:
-		cells: paths to all cells to read data from (directories should
+		cell_paths: paths to all cells to read data from (directories should
 			contain a simOut/ subdirectory), typically the return from
 			AnalysisPaths.get_cells()
 		table: name of the table to read data from
@@ -193,11 +218,10 @@ def read_stacked_columns(cells: np.ndarray, table: str, column: str) -> np.ndarr
 		- mean per cell cycle
 		- remove first time point
 		- normalize to a time point
-		integrate with read_bulk_molecule_counts
 	"""
 
 	data = []
-	for sim_dir in cells:
+	for sim_dir in cell_paths:
 		sim_out_dir = os.path.join(sim_dir, 'simOut')
 		reader = TableReader(os.path.join(sim_out_dir, table))
 		data.append(reader.readColumn2D(column))
