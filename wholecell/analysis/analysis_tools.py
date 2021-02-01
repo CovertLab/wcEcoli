@@ -197,7 +197,7 @@ def read_stacked_bulk_molecules(cell_paths: np.ndarray, mol_names) -> List[np.nd
 		for i, counts in enumerate(read_bulk_molecule_counts(sim_out_dir, mol_names)):
 			data[i].append(counts)
 
-	return [np.vstack(d) for d in data]
+	return [np.vstack(d) if len(d[0].shape) > 1 else np.hstack(d) for d in data]
 
 def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str) -> np.ndarray:
 	"""
