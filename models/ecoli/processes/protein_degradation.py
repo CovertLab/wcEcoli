@@ -71,6 +71,9 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
+		self.first_request_saved = False
+		self.first_evolve_saved = False
+
 	def calculateRequest(self):
 
 		# Determine how many proteins to degrade based on the degradation rates and counts of each protein
@@ -87,16 +90,30 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
 		self.proteins.requestIs(nProteinsToDegrade)
 
+		if not self.first_request_saved:
+			from wholecell.utils.migration.write_json import write_json
+
+			write_json(f'out/migration/prot_update_t{int(self._sim.time())}.json', {"proteins_to_degrade": nProteinsToDegrade})
+
+		self.first_request_saved = True
 
 	def evolveState(self):
 
 		# Degrade selected proteins, release amino acids from those proteins back into the cell, 
 		# and consume H_2O that is required for the degradation process
-		self.metabolites.countsInc(np.dot(
+		metabolite_update = np.dot(
 			self.proteinDegSMatrix,
 			self.proteins.counts()
-			))
+		)
+		self.metabolites.countsInc(metabolite_update)
 		self.proteins.countsIs(0)
+
+		'''
+		if not self.first_evolve_saved:
+			with open("out/migration/protein_degradation/evolve.pkl", "wb") as output:
+				pickle.dump(metabolite_update, output, pickle.HIGHEST_PROTOCOL)
+		self.first_evolve_saved = True
+		'''
 
 	def _proteinDegRates(self):
 		return self.rawDegRate * self.timeStepSec()
