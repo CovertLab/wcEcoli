@@ -670,6 +670,18 @@ class Metabolism(object):
 		synthesis, _, _ = self.amino_acid_synthesis(enzyme_counts, aa_conc)
 		self.specific_import_rates = (supply - synthesis) / cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS)
 
+		# Check calculations that could end up negative
+		neg_idx = np.where(self.aa_kcats < 0)[0]
+		if len(neg_idx):
+			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
+			raise ValueError(f'kcat value was determined to be negative for {aas}.'
+				' Check input parameters like KM and KI or the concentration.')
+		neg_idx = np.where(self.specific_import_rates < 0)[0]
+		if len(neg_idx):
+			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
+			raise ValueError(f'Import rate was determined to be negative for {aas}.'
+				' Check input parameters like supply and synthesis or enzyme expression.')
+
 	def amino_acid_synthesis(self, enzyme_counts: np.ndarray, aa_conc: units.Unum):
 		"""
 		Calculate the net rate of synthesis for amino acid pathways (can be
