@@ -174,9 +174,12 @@ def read_bulk_molecule_counts(sim_out_dir, mol_names):
 		start_slice += length
 		yield counts
 
-def read_stacked_bulk_molecules(cell_paths: np.ndarray, mol_names) -> List[np.ndarray]:
+def read_stacked_bulk_molecules(
+		cell_paths: np.ndarray,
+		mol_names: Union[Tuple[Sequence[str], ...], Sequence[str]],
+		) -> List[np.ndarray]:
 	"""
-	Reads bulk molecule counts from multiple cells and assumbles each group
+	Reads bulk molecule counts from multiple cells and assembles each group
 	into a single array.
 
 	Args:
@@ -188,20 +191,24 @@ def read_stacked_bulk_molecules(cell_paths: np.ndarray, mol_names) -> List[np.nd
 			converted to a tuple for processing.
 
 	Returns:
-		stacked data (n time points, m subcolumns) for each group in mol_names
+		stacked data (n time points) if single molecule or
+			(n time points, m molecules) if multiple molecules for each group
+			in mol_names
 	"""
 
-	data = [list() for i in range(len(mol_names))]  # type: List
+	# Needs to be list() not [] to get unique references for each position
+	data: List[List[np.ndarray]] = [list() for _ in mol_names]
 	for sim_dir in cell_paths:
 		sim_out_dir = os.path.join(sim_dir, 'simOut')
 		for i, counts in enumerate(read_bulk_molecule_counts(sim_out_dir, mol_names)):
 			data[i].append(counts)
 
+	# Use vstack for 2D or hstack for 1D to get proper dimension alignments
 	return [np.vstack(d) if len(d[0].shape) > 1 else np.hstack(d) for d in data]
 
 def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str) -> np.ndarray:
 	"""
-	Reads column data from multiple cells and assumbles into a single array.
+	Reads column data from multiple cells and assembles into a single array.
 
 	Args:
 		cell_paths: paths to all cells to read data from (directories should
