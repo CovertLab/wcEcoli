@@ -667,7 +667,7 @@ class Metabolism(object):
 			for aa in aa_ids
 			])
 		supply = np.array([with_aa_supply[aa] for aa in aa_ids])
-		synthesis = self.amino_acid_synthesis(enzyme_counts, aa_conc)
+		synthesis, _, _ = self.amino_acid_synthesis(enzyme_counts, aa_conc)
 		self.specific_import_rates = (supply - synthesis) / cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS)
 
 	def amino_acid_synthesis(self, enzyme_counts: np.ndarray, aa_conc: units.Unum):
