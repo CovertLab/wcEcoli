@@ -15,6 +15,7 @@ import numpy as np
 import wholecell.processes.process
 from wholecell.utils.constants import REQUEST_PRIORITY_DEGRADATION
 from wholecell.utils import units
+from wholecell.utils.migration.write_json import write_json
 
 class ProteinDegradation(wholecell.processes.process.Process):
 	""" ProteinDegradation """
@@ -71,8 +72,9 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
-		self.first_request_saved = False
-		self.first_evolve_saved = False
+		# saving updates
+		self.update_to_save = {}
+		self.saved = False
 
 	def calculateRequest(self):
 
@@ -90,12 +92,13 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
 		self.proteins.requestIs(nProteinsToDegrade)
 
-		if not self.first_request_saved:
-			from wholecell.utils.migration.write_json import write_json
 
-			write_json(f'out/migration/prot_update_t{int(self._sim.time())}.json', {"proteins_to_degrade": nProteinsToDegrade})
+		if "proteins_to_degrade" not in self.update_to_save.keys():
+			self.update_to_save["proteins_to_degrade"] = nProteinsToDegrade
 
-		self.first_request_saved = True
+		if not self.saved and "metabolite_update" in self.update_to_save.keys():
+			write_json(f'out/migration/prot_deg_update_t{int(self._sim.time())}.json', self.update_to_save)
+			self.saved = True
 
 	def evolveState(self):
 
@@ -108,12 +111,12 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.metabolites.countsInc(metabolite_update)
 		self.proteins.countsIs(0)
 
-		'''
-		if not self.first_evolve_saved:
-			with open("out/migration/protein_degradation/evolve.pkl", "wb") as output:
-				pickle.dump(metabolite_update, output, pickle.HIGHEST_PROTOCOL)
-		self.first_evolve_saved = True
-		'''
+		if "metabolite_update" not in self.update_to_save:
+			self.update_to_save["metabolite_update"] = metabolite_update
+
+		if not self.saved and "proteins_to_degrade" in self.update_to_save.keys():
+			write_json(f'out/migration/prot_deg_update_t{int(self._sim.time())}.json', self.update_to_save)
+			self.saved = True
 
 	def _proteinDegRates(self):
 		return self.rawDegRate * self.timeStepSec()
