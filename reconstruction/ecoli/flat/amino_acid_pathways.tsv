@@ -7,7 +7,7 @@ Amino acid	Enzymes	kcat (1/units.s)	KI, lower bound (units.mmol/units.L)	KI, upp
 "CYS[c]"	["CYSSYNMULTI-CPLX[c]", "CPLX0-237[c]"]	772	0.001	0.001				[]	"CysE"
 "HIS[c]"	["CPLX0-7614[c]"]		0.012	0.1				[]	"HisG"
 "ILE[c]"	["THREDEHYDSYN-CPLX[c]"]		0.06	0.06	"GLT[c]"	24.9	1.5	[]	"IlvA"
-"LEU[c]"	["2-ISOPROPYLMALATESYN-MONOMER[c]"]		0.28	0.28	"GLT[c]"	24.9	1.5	[]	"LeuA"
+"LEU[c]"	["2-ISOPROPYLMALATESYN-MONOMER[c]"]		0.28	0.28	"GLT[c]"	24.9	0.8	[]	"LeuA"
 "LYS[c]"	["DIHYDRODIPICSYN-CPLX[c]"]	104	0.21	3.9	"GLT[c]"	24.9	5	[]	"DapA"
 "MET[c]"	["HOMSUCTRAN-CPLX[c]"]	22	0.1	4				[]	"MetA"
 "PHE[c]"	["CHORISMUTPREPHENDEHYDRAT-CPLX[c]"]	32	0.1	0.6	"GLT[c]"	24.9	0.5	[]	"PheA"
