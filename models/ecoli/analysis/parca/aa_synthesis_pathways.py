@@ -40,6 +40,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		# Calculate expected inhibition in minimal media condition
 		aa_inhibition = np.array([
+			[0, 0] if aa_synthesis_pathways[aa]['ki'] is None else
 			[1 / (1 + conc('minimal')[aa] / ki).asNumber() for ki in aa_synthesis_pathways[aa]['ki']]
 			for aa in amino_acids
 			])
@@ -62,14 +63,14 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		plt.subplot(gs[1, 0])
 		plt.bar(x_amino_acids, np.log2(kcat_calc / kcat_data))
 		plt.axhline(0, linestyle='--', color='k')
-		plt.xticks(x_amino_acids, amino_acids, rotation=45, fontsize=6)
+		plt.xticks(x_amino_acids, amino_acids, rotation=45, fontsize=6, ha='right')
 		plt.ylabel('log2(kcat, calculated / kcat, from data)')
 
 		## Inhibition comparison
 		plt.subplot(gs[2, 0])
 		plt.bar(x_amino_acids, aa_inhibition[:, 1], label='upper limit KI')
 		plt.bar(x_amino_acids, aa_inhibition[:, 0], label='lower limit KI')
-		plt.xticks(x_amino_acids, amino_acids, rotation=45, fontsize=6)
+		plt.xticks(x_amino_acids, amino_acids, rotation=45, fontsize=6, ha='right')
 		plt.ylabel('Fraction of max flux at AA conc')
 		plt.legend()
 
