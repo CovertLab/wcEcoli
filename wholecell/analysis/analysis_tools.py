@@ -117,6 +117,23 @@ def exportFigure(plt, plotOutDir, plotOutFileName, metadata=None, transparent=Fa
 		plt.savefig(os.path.join(plotOutDir, SVG_DIR, plotOutFileName + '.svg'), transparent=transparent)
 		plt.savefig(os.path.join(plotOutDir, LOW_RES_DIR, plotOutFileName + '.png'), dpi=dpi, transparent=transparent)
 
+def _check_bulk_inputs(mol_names: Union[Tuple[Sequence[str], ...], Sequence[str]]) -> Tuple[Sequence[str], ...]:
+	"""
+	Use to check and adjust mol_names inputs for functions that read bulk
+	molecules to get consistent argument handling in both functions.
+	"""
+
+	# Wrap an array in a tuple to ensure correct dimensions
+	if not isinstance(mol_names, tuple):
+		mol_names = (mol_names,)
+
+	# Check for string instead of array since it will cause mol_indices lookup to fail
+	for names in mol_names:
+		if isinstance(names, ANY_STRING):
+			raise Exception('mol_names tuple must contain arrays not strings like {!r}'.format(names))
+
+	return mol_names
+
 def read_bulk_molecule_counts(sim_out_dir, mol_names):
 	# type: (str, Union[Tuple[Sequence[str], ...], Sequence[str]]) -> Iterator[np.ndarray]
 	'''
@@ -150,14 +167,7 @@ def read_bulk_molecule_counts(sim_out_dir, mol_names):
 	is used for those tables.
 	'''
 
-	# Wrap an array in a tuple to ensure correct dimensions
-	if not isinstance(mol_names, tuple):
-		mol_names = (mol_names,)
-
-	# Check for string instead of array since it will cause mol_indices lookup to fail
-	for names in mol_names:
-		if isinstance(names, ANY_STRING):
-			raise Exception('mol_names tuple must contain arrays not strings like {!r}'.format(names))
+	mol_names = _check_bulk_inputs(mol_names)
 
 	bulk_reader = TableReader(os.path.join(sim_out_dir, 'BulkMolecules'))
 
@@ -195,6 +205,8 @@ def read_stacked_bulk_molecules(
 			(n time points, m molecules) if multiple molecules for each group
 			in mol_names
 	"""
+
+	mol_names = _check_bulk_inputs(mol_names)
 
 	# Needs to be list() not [] to get unique references for each position
 	data: List[List[np.ndarray]] = [list() for _ in mol_names]
