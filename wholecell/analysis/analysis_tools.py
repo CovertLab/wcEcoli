@@ -208,8 +208,7 @@ def read_stacked_bulk_molecules(
 
 	mol_names = _check_bulk_inputs(mol_names)
 
-	# Needs to be list() not [] to get unique references for each position
-	data: List[List[np.ndarray]] = [list() for _ in mol_names]
+	data = [[] for _ in mol_names]  # type: List[List[np.ndarray]]
 	for sim_dir in cell_paths:
 		sim_out_dir = os.path.join(sim_dir, 'simOut')
 		for i, counts in enumerate(read_bulk_molecule_counts(sim_out_dir, mol_names)):
