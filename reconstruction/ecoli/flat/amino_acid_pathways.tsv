@@ -16,7 +16,7 @@ Amino acid	Enzymes	kcat (1/units.s)	KI, lower bound (units.mmol/units.L)	KI, upp
 "THR[c]"	["ASPKINIHOMOSERDEHYDROGI-CPLX[c]"]		0.097	0.167				[]	"ThrA"
 "TRP[c]"	["ANTHRANSYN-CPLX[c]"]		0.17	0.17				[]	"TrpDE"
 "TYR[c]"	["CHORISMUTPREPHENDEHYDROG-CPLX[c]"]	71	0.1	0.1	"GLT[c]"	24.9	1	[]	"TyrA"
-"VAL[c]"	["ACETOLACTSYNI-CPLX[c]"]	38.5	0.078	0.1	"GLT[c]"	24.9	20	[]	"IlvB"
+"VAL[c]"	["ACETOLACTSYNI-CPLX[c]"]	38.5	0.078	0.1	"GLT[c]"	24.9	200	[]	"IlvB"
 # Added from other sources
 "L-ALPHA-ALANINE[c]"	["CPLX0-7887[c]", "CPLX0-7888[c]", "VALINE-PYRUVATE-AMINOTRANSFER-MONOMER[c]", "CPLX0-246[c]", "CPLX0-248[c]"]	0			"GLT[c]"	24.9	5	[]	"AlaC, AlaA, AvtA, SufS, IscS"
 "L-ASPARTATE[c]"	["ASPAMINOTRANS-DIMER[c]"]	670			"GLT[c]"	24.9	5	[]	"AspC"
