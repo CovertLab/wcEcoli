@@ -304,7 +304,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.writeToListener(
 			"RnapData", "terminationLoss",
 			(terminal_lengths - length_partial_RNAs)[did_terminate_mask].sum())
-		self.writeToListener("RnapData", "didStall", did_stall_mask.sum()) # add a new analysis script using this
+		self.writeToListener("RnapData", "didStall", did_stall_mask.sum())
 
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
