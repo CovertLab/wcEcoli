@@ -55,26 +55,30 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		h2oIdx = metaboliteIds.index(sim_data.molecule_ids.water)
 
 		# Build protein IDs for S matrix
-		proteinIds = sim_data.process.translation.monomer_data['id']
+		self.proteinIds = sim_data.process.translation.monomer_data['id']
 
 		# Load protein length
 		self.proteinLengths = sim_data.process.translation.monomer_data['length']
 
 		# Build S matrix
-		self.proteinDegSMatrix = np.zeros((len(metaboliteIds), len(proteinIds)), np.int64)
+		self.proteinDegSMatrix = np.zeros((len(metaboliteIds), len(self.proteinIds)), np.int64)
 		self.proteinDegSMatrix[aaIdxs, :] = np.transpose(sim_data.process.translation.monomer_data['aa_counts'].asNumber())
 		self.proteinDegSMatrix[h2oIdx, :]  = -(np.sum(self.proteinDegSMatrix[aaIdxs, :], axis = 0) - 1)
 
 		# Build Views
 		self.metabolites = self.bulkMoleculesView(metaboliteIds)
 		self.h2o = self.bulkMoleculeView(sim_data.molecule_ids.water)
-		self.proteins = self.bulkMoleculesView(proteinIds)
+		self.proteins = self.bulkMoleculesView(self.proteinIds)
 
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
 		# saving updates
 		self.update_to_save = {}
 		self.saved = False
+
+		self.update_to_save["protein_ids"] = self.proteinIds
+		self.update_to_save["metabolite_ids"] = metaboliteIds
+
 
 	def calculateRequest(self):
 
