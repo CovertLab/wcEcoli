@@ -43,6 +43,7 @@ METADATA_KEYS = (
 	'trna_charging',
 	'ppgpp_regulation',
 	'superhelical_density',
+	'mechanistic_replisome',
 	)
 
 PARCA_KEYS = (
