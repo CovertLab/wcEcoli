@@ -345,6 +345,7 @@ metadata = {
 	"trna_charging": TRNA_CHARGING,
 	"ppgpp_regulation": PPGPP_REGULATION,
 	"superhelical_density": SUPERHELICAL_DENSITY,
+	"mechanistic_replisome": MECHANISTIC_REPLISOME,
 	}
 
 metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)
@@ -700,6 +701,7 @@ for i in VARIANTS_TO_RUN:
 							trna_charging = TRNA_CHARGING,
 							ppgpp_regulation = PPGPP_REGULATION,
 							superhelical_density = SUPERHELICAL_DENSITY,
+							mechanistic_replisome = MECHANISTIC_REPLISOME,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,
@@ -731,6 +733,7 @@ for i in VARIANTS_TO_RUN:
 							trna_charging = TRNA_CHARGING,
 							ppgpp_regulation = PPGPP_REGULATION,
 							superhelical_density = SUPERHELICAL_DENSITY,
+							mechanistic_replisome = MECHANISTIC_REPLISOME,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,
