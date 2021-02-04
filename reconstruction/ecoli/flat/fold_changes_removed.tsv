@@ -3,7 +3,7 @@
 "bglJ"	"leuO"	"Remove feedback loop between bglJ <-> leuO"
 "leuO"	"bglJ"	"Remove feedback loop between bglJ <-> leuO"
 "fnr"	"arcA"	"Remove to get expression of arcA"
-"fis"	"gltX"	"Remove for more stable growth"
+"fis"	"gltX"	"Remove for more stable growth with ppGpp"
 "arcA"	"rpsC"	"Remove r-Proteins for more stable growth"
 "arcA"	"rpsJ"	"Remove r-Proteins for more stable growth"
 "arcA"	"rpsQ"	"Remove r-Proteins for more stable growth"
