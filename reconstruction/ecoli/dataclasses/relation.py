@@ -5,7 +5,7 @@ SimulationData relation functions
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-from scipy.optimize import nnls
+from wholecell.utils.fast_nonnegative_least_squares import fast_nnls
 
 
 class Relation(object):
@@ -332,6 +332,6 @@ class Relation(object):
 			for r_i in rna_idx:
 				self.mrna_to_monomer_matrix[idx,r_i] = 1
 
-		tu_shaped_protein_counts_vector = nnls(self.mrna_to_monomer_matrix, transcriptDistribution)[0]
+		tu_shaped_protein_counts_vector, _ = fast_nnls(self.mrna_to_monomer_matrix, transcriptDistribution)
 
 		return tu_shaped_protein_counts_vector

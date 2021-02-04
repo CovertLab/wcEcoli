@@ -16,6 +16,7 @@ from Bio.Alphabet import IUPAC
 from functools import partial
 from reconstruction import spreadsheets
 from reconstruction.spreadsheets import tsv_reader
+from wholecell.utils.fast_nonnegative_least_squares import fast_nnls
 
 '''
 Purpose:
@@ -75,9 +76,6 @@ Returns:
 		'monomer_set' = pc_monomer_id_list
 		'gene_starts_stops' = list of lists recording the start and stop position of each gene in the TU, 
 			to be used later within initial_conditions
-	gene_to_tu_matrix.tsv
-		- A boolean matrix, rows = genes, cols = tus, which serves as a maping of
-		genes to tus.
 	transcription_units.tsv
 		- Counts of each transcription unit included in the model. Functionally replaces
 		rna seq counts in the model, at least for the basal case. See todos for future
@@ -181,10 +179,8 @@ TF_COND_FILE = os.path.join(FLAT_DIR, 'condition','tf_condition_old.tsv')
 TU_FILE = os.path.join(FLAT_DIR, 'operon_rnas.tsv')
 TU_HALF_LIVES_FILE = os.path.join(FLAT_DIR, 'operon_rnas_half_lives.tsv')
 output_tu_counts = os.path.join(FLAT_DIR, "transcription_units.tsv")
-output_gene_tu_matrix = os.path.join(FLAT_DIR, "gene_to_tu_matrix.tsv")
 output_proteins = os.path.join(FLAT_DIR, "proteins.tsv")
 output_tf_conditions = os.path.join(FLAT_DIR, 'condition', 'tf_condition.tsv')
-
 CONDITION = 'M9 Glucose minus AAs'
 SPLIT_DELIMITER = '_'
 
@@ -583,7 +579,7 @@ def create_rnaseq_count_vector(rnas_gene_order):
 	rna_seq_counts_vector = [
 		rna_seq_data_index[gene]
 		for gene in rnas_gene_order]
-	return rna_seq_counts_vector
+	return np.array(rna_seq_counts_vector)
 
 def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 	"""
@@ -604,7 +600,8 @@ def create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info):
 
 	TODO: enumerate for the i in range stuff below
 	"""
-	tu_counts_vector = nnls(gene_tu_matrix, rna_seq_counts_vector)[0]
+	tu_counts_vector, rnorm = fast_nnls(gene_tu_matrix, rna_seq_counts_vector)
+
 	tu_gene_order = [('_').join(row['gene_set']) for row in tu_info]
 	tu_genes_counts = []
 
@@ -623,6 +620,32 @@ def make_transcription_units_file():
 	gene_tu_matrix, rnas_gene_order = create_gene_to_tu_matrix(RNA_INFO, tu_info)
 	rna_seq_counts_vector = create_rnaseq_count_vector(rnas_gene_order)
 	tu_counts = create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info)
+	tu_counts_vector = np.array([x['tu_count'] for x in tu_counts])
+
+	def get_monocistronic_gene_indexes(gene_tu_matrix):
+		indexes = []
+
+		for i in np.where(gene_tu_matrix.sum(axis=1) == 1)[0]:
+			TU_index = np.where(gene_tu_matrix[i, :] == 1)[0]
+			if gene_tu_matrix[:, TU_index].sum() == 1:
+				indexes.append(i)
+
+		return np.array(indexes)
+
+	import matplotlib.pyplot as plt
+	mc_gene_indexes = get_monocistronic_gene_indexes(gene_tu_matrix)
+	rna_counts_new = gene_tu_matrix.dot(tu_counts_vector)
+	rna_counts_old = rna_seq_counts_vector
+
+	plt.figure(figsize=(12, 12))
+	plt.scatter(rna_counts_old[~mc_gene_indexes], rna_counts_new[~mc_gene_indexes], s=3, c='b', label='poly')
+	plt.scatter(rna_counts_old[mc_gene_indexes], rna_counts_new[mc_gene_indexes], s=3, c='r', label='mono')
+	plt.legend()
+	plt.xlabel('Original counts')
+	plt.ylabel('Counts calculated through NNLS')
+	plt.savefig('nnlq_rna_counts.pdf')
+
+
 	tu_fieldnames = ['tu_id', 'tu_count']
 
 	with open(output_tu_counts, "w") as f:
@@ -630,12 +653,7 @@ def make_transcription_units_file():
 		writer.writeheader()
 		for tu_count in tu_counts:
 			writer.writerow(tu_count)
-	'''
-	with open(output_gene_tu_matrix, "w") as f:
-		writer = csv.writer(f, delimiter=' ')
-		for row in gene_tu_matrix:
-			writer.writerow(row)
-	'''
+
 def make_new_proteins_file(output_file):
 	rna_info, rna_fieldnames = parse_tsv(TU_FILE)
 
@@ -678,7 +696,6 @@ def make_new_proteins_file(output_file):
 		for protein_row in PROTEIN_INFO:
 			writer.writerow(protein_row)
 
-	#breakpoint()
 
 def remove_kms_file(km_file):
 	"""
