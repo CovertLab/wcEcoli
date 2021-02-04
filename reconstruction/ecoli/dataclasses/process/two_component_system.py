@@ -23,30 +23,34 @@ from wholecell.utils import units
 from six.moves import range, zip
 
 
+# Alternative methods to try (in order of priority) when solving ODEs to the next time step
+IVP_METHODS = ['LSODA', 'BDF']
+
+
 class TwoComponentSystem(object):
 	def __init__(self, raw_data, sim_data):
 		# Store two component system raw data for use in analysis
 		sim_data.molecule_groups.twoComponentSystems = raw_data.two_component_systems
 
 		# Build the abstractions needed for two component systems
-		molecules = []
-		moleculeTypes = []
+		molecules = []  # list of all molecules involved in two component system
+		moleculeTypes = []  # the type of each molecule (metabolite, protein monomer, protein complex, etc.)
 
-		ratesFwd = []
-		ratesRev = []
-		rxnIds = []
+		ratesFwd = []  # rate of reaction fwd
+		ratesRev = []  # rate of reaction reverse (most/all are 0 in flat file)
+		rxnIds = []  # ID tied to each rxn equation
 
-		stoichMatrixI = []
-		stoichMatrixJ = []
-		stoichMatrixV = []
+		stoichMatrixI = []  # Molecule indices
+		stoichMatrixJ = []  # Reaction indices
+		stoichMatrixV = []  # Stoichometric coefficients
 
-		stoichMatrixMass = []
+		stoichMatrixMass = []  # molecular mass of molecules in stoichMatrixI
 
-		independentMolecules = []
-		independent_molecule_indexes = []
-		independentToDependentMolecules = {}
+		independentMolecules = []  # list of all specific independent molecule names
+		independent_molecule_indexes = []  # index of each of the independent molecules
+		independentToDependentMolecules = {}  # holds the phosphorylated version of the independent molecules
 
-		activeToInactiveTF = {} #convention: active TF is the DNA-binding form
+		activeToInactiveTF = {}  # convention: active TF is the DNA-binding form (active form is phosphorylated version of RR)
 
 		# Build template reactions
 		signalingTemplate = {
@@ -66,6 +70,7 @@ class TwoComponentSystem(object):
 		for reactionIndex, reaction in enumerate(raw_data.two_component_system_templates):
 			reactionTemplate[str(reaction["id"])] = reaction
 
+
 		# Build stoichiometry matrix
 		for systemIndex, system in enumerate(raw_data.two_component_systems):
 			for reaction in signalingTemplate[system["orientation"]]:
@@ -73,8 +78,8 @@ class TwoComponentSystem(object):
 
 				if reactionName not in rxnIds:
 					rxnIds.append(reactionName)
-					ratesFwd.append(reactionTemplate[reaction]["forward rate"])
-					ratesRev.append(reactionTemplate[reaction]["reverse rate"])
+					ratesFwd.append(reactionTemplate[reaction]["forward_rate"])
+					ratesRev.append(reactionTemplate[reaction]["reverse_rate"])
 					reactionIndex = len(rxnIds) - 1
 
 				else:
@@ -86,7 +91,7 @@ class TwoComponentSystem(object):
 					if molecule["molecule"] in system["molecules"]:
 						moleculeName = "{}[{}]".format(
 							system["molecules"][molecule["molecule"]],
-							molecule["location"]
+							sim_data.getter.get_compartment(system["molecules"][molecule["molecule"]])[0]
 							)
 
 					# Build name for common molecules (ATP, ADP, PI, WATER, PROTON)
@@ -144,13 +149,13 @@ class TwoComponentSystem(object):
 								)
 
 					# Find molecular mass
-					molecularMass = sim_data.getter.get_mass([moleculeName]).asNumber(units.g / units.mol)[0]
+					molecularMass = sim_data.getter.get_mass(moleculeName).asNumber(units.g / units.mol)
 					stoichMatrixMass.append(molecularMass)
 
 		# TODO(jerry): Move most of the rest to a subroutine for __init__ and __setstate__?
-		self._stoichMatrixI = np.array(stoichMatrixI)
-		self._stoichMatrixJ = np.array(stoichMatrixJ)
-		self._stoichMatrixV = np.array(stoichMatrixV)
+		self._stoichMatrixI = np.array(stoichMatrixI)  # array of molecule indices
+		self._stoichMatrixJ = np.array(stoichMatrixJ)  # array of reaction indices
+		self._stoichMatrixV = np.array(stoichMatrixV)  # arrary of stoichometric coefficients
 
 		self.molecule_names = np.array(molecules, dtype='U')
 		self.molecule_types = np.array(moleculeTypes, dtype='U')
@@ -164,7 +169,8 @@ class TwoComponentSystem(object):
 
 		self.independent_molecules_atp_index = np.where(self.independent_molecules == "ATP[c]")[0][0]
 
-		self.complex_to_monomer = self._buildComplexToMonomer(raw_data.modified_forms_stoichiometry, self.molecule_names)
+		self.complex_to_monomer = self._buildComplexToMonomer(raw_data.modified_proteins, self.molecule_names)
+
 
 		# Mass balance matrix
 		self._stoich_matrix_mass = np.array(stoichMatrixMass)
@@ -210,10 +216,17 @@ class TwoComponentSystem(object):
 		'''
 		D = {}
 		for row in modifiedFormsMonomers:
-			if str(row["complexID"]) in tcsMolecules:
-				D[str(row["complexID"])] = {}
+			# tags on the molecule compartment found in tcsMolecules
+			molecule_and_location = f"{row['id']}[{row['compartment']}]"
+			if molecule_and_location in tcsMolecules:
+				D[molecule_and_location] = {}
 				for subunit in row["subunits"]:
-					D[str(row["complexID"])][str(subunit["monomer"])] = float(subunit["stoichiometry"])
+					# We only care about mapping to protein monomers for now
+					# and PI[c] stoichiometry is off for some complexes so we
+					# can skip it for now (see #975)
+					if subunit['monomer'] == 'PI[c]':
+						continue
+					D[molecule_and_location][str(subunit["monomer"])] = float(subunit["stoichiometry"])
 
 		return D
 
@@ -371,7 +384,7 @@ class TwoComponentSystem(object):
 
 	def molecules_to_next_time_step(self, moleculeCounts, cellVolume,
 			nAvogadro, timeStepSec, random_state, method="LSODA",
-			min_time_step=None, jit=True):
+			min_time_step=None, jit=True, methods_tried=None):
 		"""
 		Calculates the changes in the counts of molecules in the next timestep
 		by solving an initial value ODE problem.
@@ -388,6 +401,8 @@ class TwoComponentSystem(object):
 				it is below min_time_step if negative counts are encountered
 			jit (bool): if True, use the jit compiled version of derivatives
 				functions
+			methods_tried (Optional[Set[str]]): methods for the solver that have
+				already been tried
 
 		Returns:
 			moleculesNeeded (1d ndarray, ints): counts of molecules that need
@@ -421,12 +436,21 @@ class TwoComponentSystem(object):
 				return self.molecules_to_next_time_step(
 					moleculeCounts, cellVolume, nAvogadro, timeStepSec/2, random_state,
 					method=method, min_time_step=min_time_step, jit=jit)
-			elif method != 'LSODA':
-				# Try with different method for better stability
-				print('Warning: switching to LSODA method in TCS')
+
+			# Try with different method for better stability
+			if methods_tried is None:
+				methods_tried = set()
+			methods_tried.add(method)
+			for new_method in IVP_METHODS:
+				# Skip methods that have already been tried
+				if new_method in methods_tried:
+					continue
+
+				print(f'Warning: switching to {new_method} method in TCS')
 				return self.molecules_to_next_time_step(
 					moleculeCounts, cellVolume, nAvogadro, timeStepSec, random_state,
-					method='LSODA', min_time_step=min_time_step, jit=jit)
+					method=new_method, min_time_step=min_time_step, jit=jit,
+					methods_tried=methods_tried)
 			else:
 				raise Exception(
 					"Solution to ODE for two-component systems has negative values."
@@ -661,3 +685,5 @@ class TwoComponentSystem(object):
 		with argument order for solve_ivp.
 		"""
 		return self._stoich_matrix.dot(self._rates_jacobian[1](y, t))
+
+

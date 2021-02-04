@@ -45,7 +45,6 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	logToShell = True,
 	logToDisk = False,
 	outputDir = None,
-	overwriteExistingFiles = False,
 	logToDiskEvery = 1,
 	simData = None,
 	inheritedStatePath = None,
@@ -93,7 +92,6 @@ class Simulation():
 	# Attributes that may be optionally overwritten by a subclass
 	_listenerClasses = ()  # type: Tuple[Callable, ...]
 	_hookClasses = ()  # type: Sequence[Callable]
-	_timeStepSec = MAX_TIME_STEP
 	_shellColumnHeaders = ("Time (s)",)  # type: Sequence[str]
 
 	# Constructors
@@ -123,6 +121,7 @@ class Simulation():
 			print("Unknown keyword arguments: {}".format(unknownKeywords))
 
 		# Set time variables
+		self._timeStepSec = min(MAX_TIME_STEP, self._maxTimeStep)
 		self._simulationStep = 0
 		self.daughter_paths = []
 
@@ -221,14 +220,14 @@ class Simulation():
 
 		if self._logToShell:
 			self.loggers["Shell"] = wholecell.loggers.shell.Shell(
-				self._shellColumnHeaders
+				self._shellColumnHeaders,
+				self._outputDir if self._logToDisk else None,
 				)
 
 		if self._logToDisk:
 			self.loggers["Disk"] = wholecell.loggers.disk.Disk(
 				self._outputDir,
-				self._overwriteExistingFiles,
-				self._logToDiskEvery
+				logEvery=self._logToDiskEvery,
 				)
 
 	# Run simulation

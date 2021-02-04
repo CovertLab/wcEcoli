@@ -7,11 +7,13 @@ on running FireWorks workflows in Google Cloud including **Team Setup** and
 
 ## One time setup
 
-1. [Install the Google Cloud SDK and log in](https://github.com/CovertLab/sisyphus/blob/master/GCLOUD_SETUP.md).
+1. [Install the Google Cloud SDK and log in](https://github.com/CovertLab/borealis/blob/master/docs/install-tools.md).
    The SDK includes the `gcloud` and `gsutil` command line programs.
    `gcloud` commands configure and operate projects, access controls, and servers.
    `gsutil` commands manipulate Google Cloud Storage (GCS) buckets, transfer files,
    run rysnc, etc.
+   * See the note in that webpage about working around a compatibility bug by
+     configuring `CLOUDSDK_PYTHON` to Python 3.7.
    * `gcloud` will occasionally prompt to install updates.
      You can install updates proactively via:  
      `gcloud components update`
@@ -41,10 +43,10 @@ on running FireWorks workflows in Google Cloud including **Team Setup** and
 
 ## Setup
 
-* The "Run it" steps in the next section need your current working directory to
-  be your wcEcoli git clone, e.g.:  
+* Before doing the **Run it** steps in the next section, set your current working directory to
+  your wcEcoli git clone, e.g.:  
   `cd ~/dev/wcEcoli`
-* The Python steps in the next section need the wcEcoli directory on the Python path:  
+* Running Python in the next section needs the wcEcoli directory on the Python path:  
   `export PYTHONPATH=$PWD`  
   A shell alias is useful for this:  
   `alias ppath='export PYTHONPATH=$PWD'`
@@ -84,7 +86,7 @@ Also see [Borealis: How to run a workflow](https://github.com/CovertLab/borealis
    build the equivalent of
    [Creating the "pyenv" runtime environment](create-pyenv.md) for worker nodes.  
    It does not contain your Python source code in the project.  
-   This step takes about an hour but the work happens in a Google server.  
+   This step takes about an hour but the heavy lifting happens in a Google server.  
    Repeat this step whenever the Python executable or libraries change (i.e. when
    you'd update your local pyenv virtualenv) and you want to run it in Google Cloud. If
    the result is the same, the Docker cache might save some time and the Cloud Registry
@@ -138,8 +140,8 @@ Also see [Borealis: How to run a workflow](https://github.com/CovertLab/borealis
    e.g. you can let workflows accumulate in the database, rerun them later, or
    delete or archive specific workflows.
 
-   **Tip:** If you `reset` often enough to want to breeze past its confirmation
-   step, this works:
+   **Tip:** If you `reset` often enough, you might like this technique to breeze
+   past its confirmation step:
 
    ```shell script
    echo y | lpad reset
@@ -180,7 +182,7 @@ for quick access.
 
 **Optional:** Set up a chart to display worker node CPU utilization.
 (_"Worker nodes"_ are the Compute Engine virtual machines that run the "real
-work" steps of the simulation and analysis.)
+work" firetasks of the simulation and analysis.)
 
   1. Move the "Compute Engine" card to top dead center position.
   1. In this card's `⋮` menu, click `Add Chart`.
@@ -204,10 +206,11 @@ home page. Use the `☰` menu to navigate to the other pages.
 * Open the [Compute Engine — VM instances](https://console.cloud.google.com/compute/instances)
 page to see the list of running Compute Engine VM instances.
 
-   * The `fireworker-$USER-0`, `fireworker-$USER-1`, ... VM instances are the worker
-   nodes that run the workflow steps, launched by `wcm.py` or `gce.py`, where `$USER`
+   * The `fireworker-USER-0`, `fireworker-USER-1`, ... VM instances are the worker
+   nodes to run the workflow firetasks, where `USER`
    will be the `name:` value in your `my_launchpad.yaml` file, typically set to
-   your username.
+   your shell `$USER` username.
+   Use `wcm.py` or `gce.py` to launch worker nodes.
    * "mongo-prime" is running MongoDB for the FireWorks LaunchPad.
 
 * Open the [Logging — Logs Viewer](https://console.cloud.google.com/logs/viewer)
@@ -217,11 +220,12 @@ page to view the logs from the project's GCE VM instances.
    * The page has several filtering tools.
      * A good place to start is to set the resource menu to
    `GCE VM Instance` and the log level to `Info`.
-     * Log level `Debug` will show internal workings of the servers.
-     * Log severity `NOTICE` is used to make startup and shutdown events more prominent
-   than `INFO`, but Log Viewer shows them with the same icon as `INFO` entries.
-     * You can filter on your workflow name or more simply on your user name.
-   * Each step writes a log file to the `logs/` part of the output directory. See below.
+     * Log level `Debug` will include the detail workings of the workers
+     and their Firetask console output lines.
+     * You can filter the log to your worker nodes via an advanced filter like
+     `resource.labels.instance_id:"fireworker-USER-"` or to a single node like
+     `resource.labels.instance_id="fireworker-USER-2"`, inserting your `$USER` name.
+   * Each firetask writes a log file to the `logs/` part of the output directory. See below.
 
 * Open the [Storage — Browser](https://console.cloud.google.com/storage/browser)
 page to browse the files created by the workflow.
@@ -234,7 +238,7 @@ page to browse the files created by the workflow.
 
 ## Download the outputs
 
-Ways to download the outputs from your workflow:
+### Ways to download the workflow outputs
 
 * **Simplest for individual files:** Open the [Google Cloud
 Storage — Browser](https://console.cloud.google.com/storage/browser),
@@ -246,20 +250,22 @@ to mount just a subdirectory of it) and access
 the files like local files.
   * Example:  
     `cd ~/dev/gcs/ && mkdir sisyphus-crick && gcsfuse sisyphus-crick sisyphus-crick`
-  * Google Cloud Storage (GCS) is not a regular file system and gcsfuse can't completely hide
-  that when mounting it on your local file system.
+  * Note the **gcsfuse setup** instructions below.
+  * gcsfuse can't completely hide the fact that Google Cloud Storage (GCS) is not a
+  regular file system.
   E.g. GCS doesn't have directories, just file paths that may contain slashes and may end with
   a slash, so it cannot atomically rename a "directory".
   GCS reads and writes whole files.
   See the notes in
   [semantics.md](https://github.com/GoogleCloudPlatform/gcsfuse/blob/master/docs/semantics.md)
   for details.
-* **Fastest download:** Use the
-[gsutil command line tool](https://cloud.google.com/storage/docs/gsutil) (it's part of the
-Cloud SDK tools you installed along with `gcloud`).
-  * With the `-m` option, it'll transfer lots of files in parallel.
+* **Fastest bulk transfers:** Use the
+[gsutil command line tool](https://cloud.google.com/storage/docs/gsutil). (It's part of the
+Cloud SDK tools you installed along with `gcloud`.)
+  * Use `gsutil -m` to transfer multiple files in parallel.
+    Example: `gsutil -m cp gs://my-bucket/my-subdir download_dir`
   * It can also do [gsutil -m rsync](https://cloud.google.com/storage/docs/gsutil/commands/rsync).
-* We might write a visual browser for pictures in our Cloud Storage bucket.
+* We could write a visual browser for images in our Cloud Storage bucket.
 * If you have lots of microscopy images, try running [ffmpeg](https://ffmpeg.org/) to
 compress them as as video using a lossless or "visually lossless" codec such as
 [LosslessH.264](https://trac.ffmpeg.org/wiki/Encode/H.264#LosslessH.264),
@@ -268,13 +274,49 @@ compress them as as video using a lossless or "visually lossless" codec such as
 to save on storage and transfer anywhere.
 
 
+### gcsfuse setup
+
+See their [docs to install it](https://github.com/GoogleCloudPlatform/gcsfuse/blob/master/docs/installing.md).
+
+Authenticating with **gcsfuse** requires a credentials key file for a Google Cloud
+_service account._ We use the `fireworker` service account since it can not only access
+Google Cloud Storage, it has the Logs permissions needed to run a fireworker, in case
+you want to do that locally.
+
+Run these shell commands to get a credentials key file `fireworker.json`:
+
+```shell script
+export GOOGLE_APPLICATION_CREDENTIALS=$HOME/bin/fireworker.json
+gcloud iam service-accounts keys create $GOOGLE_APPLICATION_CREDENTIALS --iam-account=fireworker@allen-discovery-center-mcovert.iam.gserviceaccount.com
+chmod 400 $GOOGLE_APPLICATION_CREDENTIALS  # owner-only since it contains a private key
+# Now add that "export" line to your shell .profile or .bash_profile file.
+```
+
+(_Alternatively_ you can get the credentials key file from the Google Cloud Console's
+IAM-Service Accounts section: Click on the "fireworker" service account,
+click `ADD KEY` > `Create new key` > `JSON` > `CREATE`, and put the downloaded file at
+`$HOME/bin/fireworker.json`. As above: `chmod` it, export/set
+`$GOOGLE_APPLICATION_CREDENTIALS`, and add that "export" line to your shell profile.)
+
+
 ## Debugging
 
 Use the [Logs Viewer](https://console.cloud.google.com/logs/query) to watch workflows
 run with error messages and other information from the servers involved.
 The Logs Viewer supports filtering and searching.
 
-See the [outputs](#Download-the-outputs) for the `logs/` files from the steps of the workflow.
+See the [outputs](#Download-the-outputs) for the `logs/` files from the workflow firetasks.
+To help with debugging, each firetask logs its task specification, console output, and
+details on how it ended, e.g. by timeout. If you rerun firetasks (e.g.
+`lpad rerun_fws -i 10,12`), each run will write a separate log file.
+
+After mounting the GCS storage bucket via **gcsfuse** or downloading its `logs/` files,
+you can quickly check on completed firetask runs:
+
+```shell script
+grep TASK: logs/*   # see which ones were SUCCESSFUL and which ones FAILED
+grep FAILED logs/*  # see which ones FAILED
+```
 
 Use FireWorks `lpad` commands to view the state of your Firetasks. See
 [Borealis: How to run a workflow](https://github.com/CovertLab/borealis#how-to-run-a-workflow).
@@ -307,9 +349,6 @@ tag "`:latest`".
 It's just a default tag name. Pulling with the default tag or with `:latest` (same
 thing) will pull the latest image that has the tag `:latest`, as with any tag.
 It won't pull any image that has a different tag.
-
-**Optimization:** The `fireworker` Compute Engine disk image has a copy of a `wcm-runtime` Docker
-image to save tens of seconds in startup time. It's useful to update this now and then.
 
 
 ### Multiple `wcm-code` Docker images

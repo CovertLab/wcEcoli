@@ -28,6 +28,7 @@ class TranscriptionRegulation(object):
 		for D in raw_data.fold_changes:
 			self.tf_Kd[self.abbr_to_active_id[D["TF"]][0]] = D["kd"]
 
+
 		# Build dictionary mapping RNA targets to its regulators
 		self.target_tf = {}
 
@@ -36,10 +37,6 @@ class TranscriptionRegulation(object):
 			targetsToRemove = []
 
 			for target in targets:
-				if target not in mRNASet:
-					targetsToRemove.append(target)
-					continue
-
 				if target not in self.target_tf:
 					self.target_tf[target] = []
 
@@ -55,6 +52,9 @@ class TranscriptionRegulation(object):
 			for x in raw_data.tf_one_component_bound}
 		self.tf_to_tf_type = {
 			x["active TF"]: x["TF type"]
+			for x in raw_data.condition.tf_condition}
+		self.tf_to_gene_id = {
+			x["active TF"]: x["TF"]
 			for x in raw_data.condition.tf_condition}
 
 	def p_promoter_bound_tf(self, tfActive, tfInactive):

@@ -32,6 +32,8 @@ from wholecell.utils.py3 import monotonic_seconds, process_time_seconds
 METADATA_KEYS = (
 	'timeline',
 	'generations',
+	'seed',
+	'init_sims',
 	'mass_distribution',
 	'growth_rate_noise',
 	'd_period_division',
@@ -197,7 +199,7 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 	def define_parameters(self, parser):
 		# type: (argparse.ArgumentParser) -> None
 		"""Define command line parameters. This base method defines a --verbose
-		flag. Overrides should call super.
+		flag if it isn't already defined. Overrides should call super.
 
 		Examples include positional arguments
 			`parser.add_argument('variant', nargs='?',
@@ -262,11 +264,11 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 		parser.add_argument(*names,
 			type=datatype,
 			default=default,
-			help='({}; {!r}) {}'.format(datatype.__name__, default, help)
+			help='({}; default {!r}) {}'.format(datatype.__name__, default, help)
 			)
 
-	def define_parameter_sim_dir(self, parser):
-		# type: (argparse.ArgumentParser) -> None
+	def define_parameter_sim_dir(self, parser, default=None):
+		# type: (argparse.ArgumentParser, Optional[Any]) -> None
 		"""Add a `sim_dir` parameter to the command line parser. parse_args()
 		will then use `args.sim_dir` to add `args.sim_path`.
 
@@ -277,6 +279,7 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 		Call this in overridden define_parameters() methods as needed.
 		"""
 		parser.add_argument('sim_dir', nargs='?',
+			default=default,
 			help='''The simulation "out/" subdirectory to read from (optionally
 				starting with "out/"), or an absolute directory name, or
 				default to the "out/" subdirectory name that starts with
@@ -335,9 +338,20 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 				 ' (currently increases rates for ribosomal proteins).'
 				 ' Usually set this consistently between runParca and runSim.')
 
-	def define_parca_options(self, parser):
-		# type: (argparse.ArgumentParser) -> None
+	def define_parca_options(self, parser, run_parca_option=False):
+		# type: (argparse.ArgumentParser, bool) -> None
 		"""Define Parca task options EXCEPT the elongation options."""
+
+		if run_parca_option:
+			self.define_parameter_bool(parser, 'run_parca', True,
+				help='Run the Parca. The alternative, --no-run-parca, is useful'
+					 ' to run more cell sims without rerunning the Parca.'
+					 ' For that to work, the CLI args must specify the'
+					 ' --timestamp and the same --description, --id, and'
+					 ' --storage-root as a previous workflow that ran the Parca'
+					 ' in order to locate its storage path. --no-run-parca makes'
+					 ' other Parca CLI options irrelevant (the options below,'
+					 ' through --no-debug-parca).')
 
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
 			help="Fit ribosome expression to protein synthesis demands.")
@@ -362,6 +376,9 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 				type choices and their supported index ranges, e.g.: wildtype,
 				condition, meneParams, metabolism_kinetic_objective_weight,
 				nutrientTimeSeries, and param_sensitivity.
+				The meaning of the index values depends on the variant type. With
+				wildtype, every index does the same thing, so it's a way to test
+				that the simulation is repeatable.
 				Default = ''' + ' '.join(DEFAULT_VARIANT))
 		if manual_script:
 			self.define_parameter_bool(parser, 'require_variants', False,
@@ -371,17 +388,22 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 
 		# Simulation
 		parser.add_argument('-g', '--generations', type=int, default=1,
-			help='Number of cell sim generations to run. (Single daughters only.)'
-				 ' Default = 1')
+			help='Number of cell sim generations to run per variant. (Single'
+				 ' daughters only.) Default = 1')
 		if manual_script:
 			parser.add_argument(dashize('--total_gens'), type=int,
 				help='(int) Total number of generations to write into the'
 					 ' metadata.json file. Default = the value of --generations.')
 		parser.add_argument('-s', '--seed', type=int, default=0,
-			help="First cell lineage's simulation seed. Default = 0")
+			help="Simulation seed for the first generation of the first cell"
+				 " lineage of every variant. The lineages (--init-sims) get"
+				 " sequentially increasing seed numbers. The generations"
+				 " (--generations) get seeds computed from the lineage seed and"
+				 " the generation number. Default = 0")
 
 		self.define_option(parser, 'init_sims', int, 1, flag='i',
-			help='Number of initial sims (lineage seeds) per variant.')
+			help='Number of initial sims (cell lineages) per variant. The'
+				 ' lineages get sequential seeds starting with the --seed value.')
 
 	def define_sim_options(self, parser):
 		# type: (argparse.ArgumentParser) -> None

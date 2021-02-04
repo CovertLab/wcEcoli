@@ -8,24 +8,29 @@
 #   brew install glpk openssl readline swig suite-sparse xz
 #
 ## Whole Cell Model requires OpenBLAS 0.3.7+ or equivalent. Installing numpy and
-## scipy binary wheels now provides a suitable OpenBLAS by default.
-## (OpenBLAS before 0.3.7 had threading bugs. So does Apple's "Accelerate"
-## framework. We haven't tested recent releases of Intel Math Kernel Library.)
+## scipy binary wheels now embed a recent enough OpenBLAS release by default.
+##
+## If OpenBLAS uses multiple threads, it will produce slightly different results
+## and usually runs significantly slower, esp. when called from multiple
+## processes. See wholecell/tests/utils/test_openblas_threads.py .
+## To fix that, set the environment variable:
+#   export OPENBLAS_NUM_THREADS=1
 #
 ## Install the required version of Python via pyenv, and remember to enable it as
 ## a shared library:
-#   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.3
+#   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.5
 #
 ## Create the "wcEcoli3" python virtual environment based on that Python version,
 ## and select it for your project directory:
 #   cd ~/dev/wcEcoli
-#   pyenv virtualenv 3.8.3 wcEcoli3 && pyenv local wcEcoli3
+#   pyenv virtualenv 3.8.5 wcEcoli3 && pyenv local wcEcoli3
 #
 ## Upgrade this virtual environment's installers:
 #   pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
 #
-## Install numpy (if it's the first time) then all the packages listed in this file:
-#   pip install numpy==1.19.0
+## Install numpy (if it's the first time) then all the packages listed in this file (see
+## docs/create-pyenv.md about whether to add `--no-binary numpy,scipy` to these steps):
+#   pip install numpy==1.19.2
 #   pip install -r requirements.txt && pyenv rehash
 
 # Installers
@@ -39,13 +44,13 @@ wheel>=0.34.2
 # Direct dependendencies, frozen at the latest version 2020-07-08, except bokeh is
 # frozen at the latest version that's compatible with Python 2.
 #
-# confluent-kafka is for wholecell-vivarium.
+# confluent-kafka is for vivarium-core.
 # dnspython is for pymongo to access server clusters.
 # pytest-cov is for `pytest --cov`.
 #
 # TODO: Periodically unfreeze, update, test, and refreeze.
-numpy==1.19.0
-scipy==1.5.1
+numpy==1.19.2
+scipy==1.5.2
 
 biopython==1.77
 bokeh==1.4.0
@@ -53,6 +58,7 @@ borealis-fireworks==0.6.6
 confluent-kafka==1.4.2
 cvxpy==1.1.3
 Cython==0.29.21
+dash==1.18.1
 dnspython==2.0.0
 Equation==1.2.1
 FireWorks==1.9.6
@@ -66,6 +72,7 @@ mock==4.0.2
 numba==0.50.1
 pandas==1.0.5
 Pillow==7.2.0
+plotly==4.14.1
 pymongo==3.10.1
 pytest==5.4.3
 pytest-cov==2.10.0
@@ -77,7 +84,8 @@ swiglpk==4.65.1
 sympy==1.6.1
 Theano==1.0.5
 Unum==4.1.4
-wholecell-vivarium==0.0.54
+vivarium-core==0.0.23
+vivarium-cell==0.0.22
 
 ## The following requirements were added by pip freeze:
 alphashape==1.1.0
@@ -86,6 +94,7 @@ appnope==0.1.0
 Arpeggio==1.9.2
 attrs==19.3.0
 backcall==0.2.0
+Brotli==1.0.9
 cachetools==4.1.1
 certifi==2020.6.20
 cffi==1.14.0
@@ -95,6 +104,10 @@ click-log==0.3.2
 cobra==0.18.1
 coverage==5.2
 cycler==0.10.0
+dash-core-components==1.14.1
+dash-html-components==1.1.1
+dash-renderer==1.8.3
+dash-table==4.11.1
 decorator==4.4.2
 depinfo==1.5.3
 distlib==0.3.1
@@ -102,6 +115,7 @@ docker==4.2.2
 ecos==2.0.7.post1
 filelock==3.0.12
 Flask==1.1.2
+Flask-Compress==1.8.0
 flask-paginate==0.7.0
 google-api-core==1.21.0
 google-auth==1.18.0
@@ -150,6 +164,7 @@ python-dateutil==2.8.1
 python-libsbml-experimental==5.18.1
 pytz==2020.1
 requests==2.24.0
+retrying==1.3.3
 rsa==4.6
 ruamel.yaml.clib==0.2.0
 scs==2.1.2

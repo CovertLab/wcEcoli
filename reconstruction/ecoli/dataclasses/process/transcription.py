@@ -298,7 +298,6 @@ class Transcription(object):
 			]
 
 		# Load RNA sequences and molecular weights from getter functions
-		# TODO (Mialy): make sure the getter functions work for multi-gene TUS
 		rna_seqs = sim_data.getter.get_sequence(rna_ids)
 		mws = sim_data.getter.get_mass(rna_ids).asNumber(units.g / units.mol)
 
@@ -557,13 +556,13 @@ class Transcription(object):
 		# Calculate weights of transcript nucleotide monomers
 		self.transcription_monomer_weights = (
 			(
-				sim_data.getter.get_mass(sim_data.molecule_groups.ntps)
-				- sim_data.getter.get_mass([sim_data.molecule_ids.ppi])
+				sim_data.getter.get_masses(sim_data.molecule_groups.ntps)
+				- sim_data.getter.get_masses([sim_data.molecule_ids.ppi])
 				)
 			/ sim_data.constants.n_avogadro
 			).asNumber(units.fg)
 
-		self.transcription_end_weight = ((sim_data.getter.get_mass([sim_data.molecule_ids.ppi])
+		self.transcription_end_weight = ((sim_data.getter.get_masses([sim_data.molecule_ids.ppi])
 			/ sim_data.constants.n_avogadro).asNumber(units.fg))
 
 	def _build_charged_trna(self, raw_data, sim_data):
@@ -585,7 +584,7 @@ class Transcription(object):
 				if 'FMET' in trna or 'modified' in trna:
 					continue
 
-				assert('c' in sim_data.getter.get_location([trna])[0])
+				assert('c' in sim_data.getter.get_compartment(trna))
 				filtered_charged_trna += [trna + '[c]']
 
 		self.charged_trna_names = filtered_charged_trna
@@ -616,7 +615,7 @@ class Transcription(object):
 			elif aa == 'RNA':
 				aa = trna_dict[trna]
 
-			assert('c' in sim_data.getter.get_location([aa])[0])
+			assert('c' in sim_data.getter.get_compartment(aa))
 			aa += '[c]'
 			if aa in aa_names:
 				aa_idx = aa_indices[aa]
@@ -635,23 +634,14 @@ class Transcription(object):
 		synthetase_mapping_aa = []
 		synthetase_mapping_syn = []
 
+		# Get IDs of charging reactions that should be removed
+		removed_reaction_ids = {
+			rxn['id'] for rxn in raw_data.rna_modification_reactions_removed}
+
 		# Create stoichiometry matrix for charging reactions
-		for reaction in raw_data.modification_reactions:
-			# Skip reactions from modificationReactions that don't have both an uncharged and charged tRNA
-			no_charged_trna_in_reaction = True
-			no_trna_in_reaction = True
-			for mol in [molecule['molecule'] + '[' + molecule['location'] + ']' for molecule in reaction['stoichiometry']]:
-				if mol in self.charged_trna_names:
-					no_charged_trna_in_reaction = False
-
-				if mol in trna_names:
-					no_trna_in_reaction = False
-
-			if no_charged_trna_in_reaction or no_trna_in_reaction:
+		for reaction in raw_data.rna_modification_reactions:
+			if reaction['id'] in removed_reaction_ids:
 				continue
-
-			assert reaction['process'] == 'rna'
-			assert reaction['dir'] == 1
 
 			# Get uncharged tRNA name for the given reaction
 			trna = None
@@ -695,7 +685,7 @@ class Transcription(object):
 			assert aa_idx is not None
 
 			# Create mapping for synthetases catalyzing charging
-			for synthetase in reaction['catBy']:
+			for synthetase in reaction['catalyzed_by']:
 				synthetase = '{}[{}]'.format(synthetase, molecule['location'])
 
 				if synthetase not in synthetase_names:
