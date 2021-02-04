@@ -620,32 +620,6 @@ def make_transcription_units_file():
 	gene_tu_matrix, rnas_gene_order = create_gene_to_tu_matrix(RNA_INFO, tu_info)
 	rna_seq_counts_vector = create_rnaseq_count_vector(rnas_gene_order)
 	tu_counts = create_tu_counts_vector(gene_tu_matrix, rna_seq_counts_vector, tu_info)
-	tu_counts_vector = np.array([x['tu_count'] for x in tu_counts])
-
-	def get_monocistronic_gene_indexes(gene_tu_matrix):
-		indexes = []
-
-		for i in np.where(gene_tu_matrix.sum(axis=1) == 1)[0]:
-			TU_index = np.where(gene_tu_matrix[i, :] == 1)[0]
-			if gene_tu_matrix[:, TU_index].sum() == 1:
-				indexes.append(i)
-
-		return np.array(indexes)
-
-	import matplotlib.pyplot as plt
-	mc_gene_indexes = get_monocistronic_gene_indexes(gene_tu_matrix)
-	rna_counts_new = gene_tu_matrix.dot(tu_counts_vector)
-	rna_counts_old = rna_seq_counts_vector
-
-	plt.figure(figsize=(12, 12))
-	plt.scatter(rna_counts_old[~mc_gene_indexes], rna_counts_new[~mc_gene_indexes], s=3, c='b', label='poly')
-	plt.scatter(rna_counts_old[mc_gene_indexes], rna_counts_new[mc_gene_indexes], s=3, c='r', label='mono')
-	plt.legend()
-	plt.xlabel('Original counts')
-	plt.ylabel('Counts calculated through NNLS')
-	plt.savefig('nnlq_rna_counts.pdf')
-
-
 	tu_fieldnames = ['tu_id', 'tu_count']
 
 	with open(output_tu_counts, "w") as f:

@@ -24,7 +24,7 @@ from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import filepath, parallelization, units
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
-
+ITER = 0
 
 # Tweaks
 # Adjustments to get protein expression for certain enzymes required for metabolism
@@ -691,7 +691,7 @@ def expressionConverge(
 				variable_elongation_translation)
 
 		# Normalize expression and write out changes
-		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
+		expression, synthProb = fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, iteration, Km)
 
 		degreeOfFit = np.sqrt(np.mean(np.square(initialExpression - expression)))
 		if VERBOSE > 1:
@@ -1469,7 +1469,7 @@ def setRNAPCountsConstrainedByPhysiology(
 
 	bulkContainer.countsIs(minRnapSubunitCounts, rnapIds)
 
-def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km=None):
+def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, i, Km=None):
 	"""
 	Determines expression and synthesis probabilities for RNA molecules to fit
 	protein levels and RNA degradation rates. Assumes a steady state analysis
