@@ -33,8 +33,8 @@
         </option>
       </scope>
     </inspection_tool>
-    <inspection_tool class="PyShadowingNamesInspection" enabled="true" level="WEAK WARNING" enabled_by_default="false">
-      <scope name="NOT pyi files" level="WEAK WARNING" enabled="true" />
+    <inspection_tool class="PyShadowingNamesInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false">
+      <scope name="NOT pyi files" level="WEAK WARNING" enabled="false" />
     </inspection_tool>
     <inspection_tool class="PySingleQuotedDocstringInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="PyUnboundLocalVariableInspection" enabled="true" level="WARNING" enabled_by_default="false">
