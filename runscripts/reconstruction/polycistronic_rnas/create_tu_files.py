@@ -1,17 +1,11 @@
 import argparse
 from collections import Counter
-import csv
-from functools import partial
 import itertools
 import numpy as np
 import os
 import re
-from scipy.optimize import nnls
 import time
 import warnings
-
-from Bio.Seq import Seq
-from Bio.Alphabet import IUPAC
 
 from functools import partial
 from reconstruction import spreadsheets
@@ -730,6 +724,6 @@ if __name__ == "__main__":
 	make_operon_rnas_file()
 	make_transcription_units_file()
 	remove_kms_file(km_file)
-	make_new_proteins_file(output_proteins)
+	# make_new_proteins_file(output_proteins)
 	make_new_tf_conditions_file(output_tf_conditions)
 

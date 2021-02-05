@@ -44,7 +44,6 @@ class Relation(object):
 			for rna_id in protein_row['rna_set']:
 				set_indices.append(rna_data_id_index[rna_id])
 			self.rnaIndexToMonomerMapping_new.append(set_indices)
-		self.rnaIndexToMonomerMapping_new = np.array(self.rnaIndexToMonomerMapping_new)
 		'''
 		self.rnaIndexToMonomerMapping = np.array(
 			[np.where(x == sim_data.process.transcription.rnaData["id"])[0][0] 
@@ -260,7 +259,7 @@ class Relation(object):
 			rounding 'error'. Do not know yet if this will negatively impact anything.
 		'''
 		# Read above for description of this boolean.
-		check_matrix = True
+		check_matrix = False
 
 		# Create dictionaries of mRNA IDs attached to their indexes from both the transcription 
 		# unit and monomer space.

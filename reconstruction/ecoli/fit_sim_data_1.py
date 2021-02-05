@@ -27,7 +27,6 @@ from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import filepath, parallelization, units
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
-ITER = 0
 
 # Fitting parameters
 FITNESS_THRESHOLD = 1e-9
@@ -1654,8 +1653,8 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, i,
 		totalMass_RNA,
 		sim_data.process.transcription.rna_data["mw"] / sim_data.constants.n_avogadro,
 		expression)
-	print(nRnas)
 	view_RNA.countsIs(nRnas * expression)
+
 	rnaLossRate = None
 
 	if Km is None:

@@ -247,7 +247,7 @@ class GetterFunctions(object):
 		of polymerized NTPs.
 		"""
 		# Get RNA nucleotide compositions
-		rna_seqs = self.get_sequence([rna['id'] for rna in raw_data.operon_rnas])
+		rna_seqs = self.get_sequences([rna['id'] for rna in raw_data.operon_rnas])
 		nt_counts = []
 		for seq in rna_seqs:
 			nt_counts.append(
@@ -259,10 +259,9 @@ class GetterFunctions(object):
 		polymerized_ntp_mws = np.array([
 			self._all_submass_arrays[met_id[:-3]].sum() for met_id in sim_data.molecule_groups.polymerized_ntps
 			])
-
 		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
 
-		return {rna['id']: mw for (rna, mw) in zip(raw_data.operon_rnas, mws)}
+		return {rna['id']: self._build_submass_array(mw, rna['type']) for (rna, mw) in zip(raw_data.operon_rnas, mws)}
 
 
 	def _build_protein_masses(self, raw_data, sim_data):
@@ -436,7 +435,7 @@ class GetterFunctions(object):
 				# stoichiometry
 				if mol_id not in complex_id_to_stoich:
 					raise InvalidProteinComplexError(
-						'Complex %s is not being produced by any copmlexation or equilibrium reaction.'
+						'Complex %s is not being produced by any complexation or equilibrium reaction.'
 						% (mol_id, )
 						)
 				mw_sum = np.zeros(self._n_submass_indexes)

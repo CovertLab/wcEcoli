@@ -180,7 +180,7 @@ class Transcription(object):
 
 		# Load RNA IDs with compartment tags
 		rna_ids = [rna['id'] for rna in raw_data.operon_rnas]
-		compartments = sim_data.getter.get_location(rna_ids)
+		compartments = sim_data.getter.get_compartments(rna_ids)
 
 		rna_ids_with_compartments = [
 			f'{rna_id}[{loc[0]}]' for (rna_id, loc)
@@ -282,7 +282,7 @@ class Transcription(object):
 		# Create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
 
 		single_monomer_ids = [monomer['id'] for monomer in raw_data.proteins]
-		protein_compartments = sim_data.getter.get_location(single_monomer_ids)
+		protein_compartments = sim_data.getter.get_compartments(single_monomer_ids)
 		
 		protein_ids_with_compartments = {
 			monomer:  "{}[{}]".format(monomer, protein_compartments[ind][0])
@@ -298,8 +298,8 @@ class Transcription(object):
 			]
 
 		# Load RNA sequences and molecular weights from getter functions
-		rna_seqs = sim_data.getter.get_sequence(rna_ids)
-		mws = sim_data.getter.get_mass(rna_ids).asNumber(units.g / units.mol)
+		rna_seqs = sim_data.getter.get_sequences(rna_ids)
+		mws = sim_data.getter.get_masses(rna_ids).asNumber(units.g / units.mol)
 
 		# Calculate lengths and nt counts from sequence
 		rna_lengths = np.array([len(seq) for seq in rna_seqs])
@@ -532,7 +532,7 @@ class Transcription(object):
 		Build transcription-associated simulation data from raw data.
 		"""
 		# Load sequence data
-		rna_seqs = sim_data.getter.get_sequence(
+		rna_seqs = sim_data.getter.get_sequences(
 			[rna['id'] for rna in raw_data.operon_rnas])
 
 		rrna_types = ['is_23S_rRNA', 'is_16S_rRNA', 'is_5S_rRNA']

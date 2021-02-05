@@ -111,16 +111,24 @@ class SimulationDataEcoli(object):
 
 	def _add_condition_data(self, raw_data):
 		abbrToActiveId = {x["TF"]: x["activeId"].split(", ") for x in raw_data.transcription_factors if len(x["activeId"]) > 0}
-		geneIdToRnaId = {x["gene_id"]: x["rna_set"] for x in raw_data.proteins}
 
+		gene_id_to_rna_set = {}
+		for rna in raw_data.operon_rnas:
+			for gene in rna['gene_set']:
+				if gene in gene_id_to_rna_set:
+					gene_id_to_rna_set[gene].append(rna['id'])
+				else:
+					gene_id_to_rna_set[gene] = [rna['id']]
+
+		# TODO (ggsun): Choice of first RNA is arbitrary?
 		abbrToRnaId = {}
 		for x in raw_data.genes:
-			if x["id"] in geneIdToRnaId:
-				abbrToRnaId[x["symbol"]] = geneIdToRnaId[x["id"]][0]
+			if x["id"] in gene_id_to_rna_set:
+				abbrToRnaId[x["symbol"]] = gene_id_to_rna_set[x["id"]][0]
 			else:
 				abbrToRnaId[x["symbol"]] = x["id"]
 		abbrToRnaId.update({
-			x["name"]: geneIdToRnaId[x["geneId"]][0]
+			x["name"]: gene_id_to_rna_set[x["geneId"]][0]
 			for x in raw_data.translation_efficiency
 			if x["geneId"] != "#N/A"})
 
