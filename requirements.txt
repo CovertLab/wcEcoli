@@ -50,7 +50,7 @@ wheel>=0.34.2
 #
 # TODO: Periodically unfreeze, update, test, and refreeze.
 numpy==1.19.5
-scipy==1.5.2
+scipy==1.5.4
 
 biopython==1.77
 bokeh==1.4.0
