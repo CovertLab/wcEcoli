@@ -120,6 +120,11 @@ class SimulationDataEcoli(object):
 				else:
 					gene_id_to_rna_set[gene] = [rna['id']]
 
+		rna_id_to_rna_set = {
+			gene['rna_id']: gene_id_to_rna_set.get(gene['id'], [])
+			for gene in raw_data.genes
+			}
+
 		# TODO (ggsun): Choice of first RNA is arbitrary?
 		abbrToRnaId = {}
 		for x in raw_data.genes:
@@ -191,20 +196,30 @@ class SimulationDataEcoli(object):
 		for row in raw_data.condition.tf_condition:
 			tf = row["active TF"]
 
-			activeGenotype = row["active genotype perturbations"]
-			activeNutrients = row["active nutrients"]
-			inactiveGenotype = row["inactive genotype perturbations"]
-			inactiveNutrients = row["inactive nutrients"]
+			active_genotype = row["active genotype perturbations"]
+			active_nutrients = row["active nutrients"]
+			inactive_genotype = row["inactive genotype perturbations"]
+			inactive_nutrients = row["inactive nutrients"]
 
 			if tf not in self.tf_to_active_inactive_conditions:
 				self.tf_to_active_inactive_conditions[tf] = {}
 			else:
 				print("Warning: overwriting TF fold change conditions for %s" % tf)
 
-			self.tf_to_active_inactive_conditions[tf]["active genotype perturbations"] = activeGenotype
-			self.tf_to_active_inactive_conditions[tf]["active nutrients"] = activeNutrients
-			self.tf_to_active_inactive_conditions[tf]["inactive genotype perturbations"] = inactiveGenotype
-			self.tf_to_active_inactive_conditions[tf]["inactive nutrients"] = inactiveNutrients
+			active_genotype_polycistronic = {}
+			for rna_id, value in active_genotype.items():
+				for polycis_rna_id in rna_id_to_rna_set[rna_id[:-3]]:
+					active_genotype_polycistronic[polycis_rna_id + "[c]"] = value
+
+			inactive_genotype_polycistronic = {}
+			for rna_id, value in inactive_genotype.items():
+				for polycis_rna_id in rna_id_to_rna_set[rna_id[:-3]]:
+					inactive_genotype_polycistronic[polycis_rna_id + "[c]"] = value
+
+			self.tf_to_active_inactive_conditions[tf]["active genotype perturbations"] = active_genotype_polycistronic
+			self.tf_to_active_inactive_conditions[tf]["active nutrients"] = active_nutrients
+			self.tf_to_active_inactive_conditions[tf]["inactive genotype perturbations"] = inactive_genotype_polycistronic
+			self.tf_to_active_inactive_conditions[tf]["inactive nutrients"] = inactive_nutrients
 
 		# Populate combined conditions data from condition_defs
 		self.conditions = {}

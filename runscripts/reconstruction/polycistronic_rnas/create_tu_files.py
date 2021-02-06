@@ -38,10 +38,6 @@ Inputs:
 	the direction and coordinate of the genes in the pcic TUs for the
 	purpose of finding the sequence of the pcic TUs including the 
 	intergenic regions.
-- flattened_sequence.fasta:
-	A single line version of the sequence.fasta file so that its easier to 
-	search and only has to be generated once outside the model instead of 
-	within. 
 Assumptions:
 1. The half-life matches the first gene in the TU.
 2. The location matches the first gene in the TU or the most prevalent one.
@@ -104,7 +100,6 @@ TODO:
 def parse_args():
 	"""Return error message if argument is not given"""
 	parser = argparse.ArgumentParser()
-	arser = argparse.ArgumentParser()
 	parser.add_argument('filename')
 	args = parser.parse_args()
 	return args.filename
@@ -122,17 +117,6 @@ def parse_tsv(tsv_file):
 		tsv_list = list(reader)
 		return tsv_list, tsv_fieldnames
 
-def load_sequence(sequence):
-	"""
-	Args:
-		sequence: Path to genomic sequence fasta file, who is formatted as a single line.
-
-	Returns:
-		List containing a string of the genomic sequence.
-	"""
-	with open(sequence, "r") as f:
-		genome_sequence = f.readlines()[1:]
-	return genome_sequence
 
 def strip_units(parsed_file_output):
 	# hack for stripping units off any field that contains units.
@@ -160,14 +144,10 @@ FLAT_DIR = os.path.join('reconstruction', 'ecoli', 'flat')
 RNA_FILE = os.path.join(FLAT_DIR, 'rnas.tsv')
 RNA_HALF_LIVES_FILE = os.path.join(FLAT_DIR, 'rna_half_lives.tsv')
 GENES_FILE = os.path.join(FLAT_DIR, 'genes.tsv')
-#POLY_CISTRON_FILE = os.path.join(FLAT_DIR, 'polycistronic_mrnas_in_model.tsv')
 POLY_CISTRON_FILE = parse_args()
-GENOME_SEQUENCE_FILE = os.path.join(FLAT_DIR, 'flattened_sequence.fasta')
 km_file = os.path.join('fixtures', 'endo_km', 'km3.cPickle')
 RNA_SEQ_FILE = os.path.join(FLAT_DIR, 'rna_seq_data', 'rnaseq_rsem_tpm_mean.tsv')
 PROTEIN_FILE = os.path.join(FLAT_DIR, 'proteins.tsv')
-PROTEIN_OLD_FILE = os.path.join(FLAT_DIR, 'proteins_old.tsv')
-TF_COND_FILE = os.path.join(FLAT_DIR, 'condition','tf_condition_old.tsv')
 
 # output files
 TU_FILE = os.path.join(FLAT_DIR, 'operon_rnas.tsv')
@@ -187,9 +167,6 @@ RNA_HALF_LIVES_DICTIONARY = {
 PC_INFO, pc_fieldnames = parse_tsv(POLY_CISTRON_FILE)
 GENE_INFO, g_fieldnames = parse_tsv(GENES_FILE)
 PROTEIN_INFO, protein_fieldnames = parse_tsv(PROTEIN_FILE)
-PROTEIN_OLD_INFO, protein_old_fieldnames = parse_tsv(PROTEIN_OLD_FILE)
-TF_INFO, TF_FIELDNAMES = parse_tsv(TF_COND_FILE)
-GENOMIC_SEQUENCE = load_sequence(GENOME_SEQUENCE_FILE)
 rna_seq_data_all_cond = parse_tsv(RNA_SEQ_FILE)
 
 '''
@@ -622,48 +599,6 @@ def make_transcription_units_file():
 		for tu_count in tu_counts:
 			writer.writerow(tu_count)
 
-def make_new_proteins_file(output_file):
-	rna_info, rna_fieldnames = parse_tsv(TU_FILE)
-
-	#Go through monomer_set line by line. Find the matching monomers within
-	#those lists then find the corresponding monomer in proteins.tsv.
-	#Add the id from operon_rnas to the rna_set list
-
-	protein_index = {}
-	for protein_row in PROTEIN_INFO:
-		protein_row['rna_set'] = []
-		#protein_row['gene_id'] = []
-		protein_index[protein_row['id']] = protein_row
-		for old_protein in PROTEIN_OLD_INFO:
-			if old_protein['id'] == protein_row['id']:
-				protein_row['gene_id'] = old_protein['geneId']
-
-	for rna_row in rna_info:
-		for monomer in rna_row['monomer_set']:
-			protein_row = protein_index[monomer]
-			protein_row['rna_set'].append(rna_row['id'])
-	'''
-	for rna_row in rna_info:
-		for monomer in rna_row['monomer_set']:
-			protein_row = protein_index[monomer]
-			#list_of_rnas_in_set = rna_row['id'].split('_')[0:-1]
-			protein_row['rna_set'] = [rna + '_RNA' for rna in rna_row['id'].split('_')[0:-1]]
-			#protein_row['rna_set'].append(rna_row['id'].split('_')[0:-1])
-	for protein in PROTEIN_INFO:
-		if type(protein['rna_set'][0]) == list:
-			protein['rna_set'] = protein['rna_set'][0]
-	'''
-	#add fieldname for 'rna_set' if it doesnt already exist.
-	if 'rna_set' and 'gene_id' not in protein_fieldnames:
-		protein_fieldnames.append('rna_set')
-		protein_fieldnames.append('gene_id')
-
-	with open(output_file, "w") as f:
-		writer = JsonWriter(f, protein_fieldnames)
-		writer.writeheader()
-		for protein_row in PROTEIN_INFO:
-			writer.writerow(protein_row)
-
 
 def remove_kms_file(km_file):
 	"""
@@ -703,6 +638,8 @@ def make_new_tf_conditions_file(output_file):
 							rna_id_to_rna_set[rna_id] = [rna_in_set]
 
 	fields_to_modify = ["active genotype perturbations", "inactive genotype perturbations"]
+
+	import ipdb; ipdb.set_trace()
 	
 	for row in TF_INFO:
 		for field in fields_to_modify:
@@ -724,6 +661,4 @@ if __name__ == "__main__":
 	make_operon_rnas_file()
 	make_transcription_units_file()
 	remove_kms_file(km_file)
-	# make_new_proteins_file(output_proteins)
-	make_new_tf_conditions_file(output_tf_conditions)
 

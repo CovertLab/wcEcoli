@@ -36,10 +36,7 @@ How are the flat files used:
 	the direction and coordinate of the genes in the pcic TUs for the
 	purpose of finding the sequence of the pcic TUs including the 
 	intergenic regions.
-- flattened_sequence.fasta:
-	A single line version of the sequence.fasta file so that its easier to 
-	search and only has to be generated once outside the model instead of 
-	within. 
+	
 Assumptions:
 1. The half-life matches the first gene in the TU.
 2. The location matches the first gene in the TU.
