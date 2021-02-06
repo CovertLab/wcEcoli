@@ -3128,8 +3128,13 @@ def calculateRnapRecruitment(sim_data, r):
 	colNames = []
 
 	# Get list of transcription units and TF IDs
-	all_TUs = sim_data.process.transcription.rna_data["id"]
-	all_tfs = sim_data.process.transcription_regulation.tf_ids
+	transcription = sim_data.process.transcription
+	transcription_regulation = sim_data.process.transcription_regulation
+	all_TUs = transcription.rna_data["id"]
+	all_tfs = transcription_regulation.tf_ids
+	exp_free = transcription.exp_free
+	exp_ppgpp = transcription.exp_ppgpp
+	old_prob = transcription.rna_synth_prob['basal']
 
 	# Initialize basal_prob vector and delta_prob sparse matrix
 	basal_prob = np.zeros(len(all_TUs))
@@ -3138,7 +3143,7 @@ def calculateRnapRecruitment(sim_data, r):
 	for rna_idx, rnaId in enumerate(all_TUs):
 		rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
-		tfs = sim_data.process.transcription_regulation.target_tf.get(rnaIdNoLoc, [])
+		tfs = transcription_regulation.target_tf.get(rnaIdNoLoc, [])
 		tfsWithData = []
 
 		# Take only those TFs with active/inactive conditions data
@@ -3168,7 +3173,12 @@ def calculateRnapRecruitment(sim_data, r):
 			colNames.append(colName)
 
 		# Set element in basal_prob to the transcription unit's value for alpha
-		basal_prob[rna_idx] = r[colNames.index(colName)]
+		new_prob = r[colNames.index(colName)]
+		factor = new_prob / old_prob[rna_idx]
+		if np.isfinite(factor):
+			exp_free[rna_idx] *= factor
+			exp_ppgpp[rna_idx] *= factor
+		basal_prob[rna_idx] = new_prob
 
 	# Convert to arrays
 	deltaI, deltaJ, deltaV = np.array(deltaI), np.array(deltaJ), np.array(deltaV)
@@ -3178,8 +3188,8 @@ def calculateRnapRecruitment(sim_data, r):
 	basal_prob[basal_prob < 0] = 0
 
 	# Add basal_prob vector and delta_prob matrix to sim_data
-	sim_data.process.transcription_regulation.basal_prob = basal_prob
-	sim_data.process.transcription_regulation.delta_prob = {
+	transcription_regulation.basal_prob = basal_prob
+	transcription_regulation.delta_prob = {
 		"deltaI": deltaI,
 		"deltaJ": deltaJ,
 		"deltaV": deltaV,
