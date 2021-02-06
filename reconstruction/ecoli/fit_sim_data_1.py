@@ -93,6 +93,11 @@ def fitSimData_1(raw_data, **kwargs):
 	sim_data, cell_specs = set_conditions(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = final_adjustments(sim_data, cell_specs, **kwargs)
 
+	sim_data.process.transcription.exp_free[sim_data.process.transcription.exp_free < 0] = 0
+	sim_data.process.transcription.exp_free /= sim_data.process.transcription.exp_free.sum()
+	sim_data.process.transcription.exp_ppgpp[sim_data.process.transcription.exp_ppgpp < 0] = 0
+	sim_data.process.transcription.exp_ppgpp /= sim_data.process.transcription.exp_ppgpp.sum()
+
 	if sim_data is None:
 		raise ValueError('sim_data is not specified.  Check that the'
 			f' load_intermediate function ({kwargs.get("load_intermediate")})'
