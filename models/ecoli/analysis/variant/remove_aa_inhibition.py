@@ -23,7 +23,7 @@ from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_c
 from wholecell.io.tablereader import TableReader
 
 
-def subplot(gs, data, xlabels, title, amino_acids):
+def subplot(gs, data, variance, xlabels, title, amino_acids):
 	ax = plt.subplot(gs)
 	n_variants = data.shape[0]
 	x = list(range(n_variants))
@@ -31,7 +31,7 @@ def subplot(gs, data, xlabels, title, amino_acids):
 
 	# Plot an amino acid concentration (or sum of multiple amino acids)
 	# for each mutant (variant)
-	ax.bar(x, data[:, idx].sum(axis=1))
+	ax.bar(x, data[:, idx].sum(axis=1), yerr=np.sqrt(variance[:, idx].sum(axis=1)))
 
 	# Format subplot
 	if len(xlabels) == n_variants:
@@ -50,6 +50,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		aa_ids = list(AA_TO_ENZYME.keys())
 
 		aa_conc = np.zeros((len(variants), len(aa_ids)))
+		aa_var = np.zeros((len(variants), len(aa_ids)))
 		for i, variant in enumerate(variants):
 			variant_conc = []
 			for sim_dir in ap.get_cells(variant=[variant]):
@@ -66,7 +67,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				variant_conc.append(aa_counts[1:, :]*counts_to_molar[1:])
 
 			# Average concentration over all time steps
-			aa_conc[i, :] = np.vstack(variant_conc).mean(axis=0)
+			conc = np.vstack(variant_conc)
+			aa_conc[i, :] = conc.mean(axis=0)
+			aa_var[i, :] = conc.std(axis=0)**2
 
 		# xtick labels
 		labels = ['wt'] + list(AA_TO_ENZYME.values())
@@ -76,14 +79,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		gs = gridspec.GridSpec(nrows=3, ncols=3)
 
 		## Plot subplots for each amino acid
-		subplot(gs[0, 0], aa_conc, labels, 'Arginine', ['ARG[c]'])
-		subplot(gs[0, 1], aa_conc, labels, 'Tryptophan', ['TRP[c]'])
-		subplot(gs[0, 2], aa_conc, labels, 'Histidine', ['HIS[c]'])
-		subplot(gs[1, 0], aa_conc, labels, '(Iso-)leucine', ['ILE[c]', 'LEU[c]'])  # group isoforms like paper
-		subplot(gs[1, 1], aa_conc, labels, 'Threonine', ['THR[c]'])
-		subplot(gs[1, 2], aa_conc, labels, 'Proline', ['PRO[c]'])
-		subplot(gs[2, 0], aa_conc, labels, 'Isoleucine', ['ILE[c]'])  # also plot single isoforms since model allows granularity
-		subplot(gs[2, 1], aa_conc, labels, 'Leucine', ['LEU[c]'])  # also plot single isoforms since model allows granularity
+		subplot(gs[0, 0], aa_conc, aa_var, labels, 'Arginine', ['ARG[c]'])
+		subplot(gs[0, 1], aa_conc, aa_var, labels, 'Tryptophan', ['TRP[c]'])
+		subplot(gs[0, 2], aa_conc, aa_var, labels, 'Histidine', ['HIS[c]'])
+		subplot(gs[1, 0], aa_conc, aa_var, labels, '(Iso-)leucine', ['ILE[c]', 'LEU[c]'])  # group isoforms like paper
+		subplot(gs[1, 1], aa_conc, aa_var, labels, 'Threonine', ['THR[c]'])
+		subplot(gs[1, 2], aa_conc, aa_var, labels, 'Proline', ['PRO[c]'])
+		subplot(gs[2, 0], aa_conc, aa_var, labels, 'Isoleucine', ['ILE[c]'])  # also plot single isoforms since model allows granularity
+		subplot(gs[2, 1], aa_conc, aa_var, labels, 'Leucine', ['LEU[c]'])  # also plot single isoforms since model allows granularity
 
 		## Format and save figure
 		plt.tight_layout()
