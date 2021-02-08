@@ -875,7 +875,8 @@ class Transcription(object):
 				number given a doubling time and gene replication coordinate
 
 		Returns
-			ndarray[float]: normalized synthesis probability for each gene
+			prob (ndarray[float]): normalized synthesis probability for each gene
+			factor (ndarray[float]): factor to adjust expression to probability for each gene
 
 		Note:
 			copy_number should be sim_data.process.replication.get_average_copy_number
@@ -890,7 +891,10 @@ class Transcription(object):
 		growth = max(cast(float, y), 0.0)
 		tau = np.log(2) / growth / 60
 		loss = growth + self.rna_data['deg_rate'].asNumber(1 / units.s)
-
 		n_avg_copy = copy_number(tau, self.rna_data['replication_coordinate'])
 
-		return normalize((self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp) * loss / n_avg_copy)
+		# Return values
+		factor = loss / n_avg_copy
+		prob = normalize((self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp) * factor)
+
+		return prob, factor
