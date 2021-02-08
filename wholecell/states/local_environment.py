@@ -140,8 +140,8 @@ class LocalEnvironment(wholecell.states.external_state.ExternalState):
 		return unconstrained, constrained
 
 	def get_import_molecules(self):
-		exchange = self.get_exchange_data()
-		imports = exchange['importExchangeMolecules']
+		unconstrained, constrained = self.get_exchange_data()
+		imports = set(unconstrained) | set(constrained)
 		return imports
 
 	def get_import_constraints(self, exchange_data):

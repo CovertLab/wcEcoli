@@ -5,9 +5,7 @@ Compare cell cycle times across variants.
 @date: Created 4/26/20
 """
 
-from __future__ import absolute_import, division, print_function
-
-import cPickle
+import pickle
 import os
 
 from matplotlib import pyplot as plt
@@ -17,7 +15,6 @@ from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
 
 
 def remove_border(ax, bottom=False):
@@ -28,18 +25,14 @@ def remove_border(ax, bottom=False):
 		ax.set_xticks([])
 	ax.tick_params(axis='y', labelsize=6)
 
+
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(inputDir):
-			raise Exception('inputDir does not currently exist as a directory')
-
-		filepath.makedirs(plotOutDir)
-
 		ap = AnalysisPaths(inputDir, variant_plot=True)
 		variants = ap.get_variants()
 
-		with open(simDataFile) as f:
-			sim_data = cPickle.load(f)
+		with open(simDataFile, 'rb') as f:
+			sim_data = pickle.load(f)
 
 		variant_lengths = []
 		variant_counts = []
@@ -66,7 +59,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			variant_lengths.append(np.mean(lengths))
 			variant_counts.append(count)
-			labels.append(sim_data.moleculeGroups.aaIDs[variant])
+			labels.append(sim_data.molecule_groups.amino_acids[variant])
 
 		plt.figure()
 

@@ -300,18 +300,18 @@ class FluxBalanceAnalysisModel(object):
 				)
 			exchanges = sim_data.external_state.exchange_data_from_media(media_id)
 			exchange_molecules.update(exchanges['externalExchangeMolecules'])
-			self.metaboliteNamesFromNutrients.update(
-				metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
+			metaboliteNamesFromNutrients.update(
+				metabolism.concentration_updates.concentrations_based_on_nutrients(
 					imports=exchanges['importExchangeMolecules'])
 				)
-		self.metaboliteNamesFromNutrients = list(sorted(self.metaboliteNamesFromNutrients))
+		self.metaboliteNamesFromNutrients = list(sorted(metaboliteNamesFromNutrients))
 		exchange_molecules = list(sorted(exchange_molecules))
 		molecule_masses = dict(zip(exchange_molecules,
 			sim_data.getter.get_masses(exchange_molecules).asNumber(MASS_UNITS / COUNTS_UNITS)))
 
 		# Setup homeostatic objective concentration targets
 		## Determine concentrations based on starting environment
-		conc_dict = metabolism.concentrationUpdates.concentrationsBasedOnNutrients(imports=imports)
+		conc_dict = metabolism.concentration_updates.concentrations_based_on_nutrients(imports=imports)
 		doubling_time = sim_data.condition_to_doubling_time[sim_data.condition]
 		conc_dict.update(self.getBiomassAsConcentrations(doubling_time))
 		if include_ppgpp:
@@ -467,7 +467,7 @@ class FluxBalanceAnalysisModel(object):
 		# Update objective from media exchanges
 		external_molecule_levels, objective = self.exchange_constraints(
 			self.fba.getExternalMoleculeIDs(), coefficient, CONC_UNITS,
-			current_media_id, unconstrained, constrained, conc_updates,
+			unconstrained, constrained, conc_updates,
 			)
 		self.fba.update_homeostatic_targets(objective)
 

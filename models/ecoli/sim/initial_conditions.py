@@ -243,7 +243,7 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 def set_small_molecule_counts(bulkMolCntr, sim_data, import_molecules, massCoeff, cell_mass=None):
 	doubling_time = sim_data.condition_to_doubling_time[sim_data.condition]
 
-	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
+	concDict = sim_data.process.metabolism.concentration_updates.concentrations_based_on_nutrients(
 		imports=import_molecules
 		)
 	concDict.update(sim_data.mass.getBiomassAsConcentrations(doubling_time))

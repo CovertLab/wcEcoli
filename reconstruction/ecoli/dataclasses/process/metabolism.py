@@ -497,18 +497,15 @@ class Metabolism(object):
 
 		return KINETIC_CONSTRAINT_CONC_UNITS * K_CAT_UNITS * capacity * saturation
 
-	def exchange_constraints(self, exchangeIDs, coefficient, targetUnits, currentNutrients, unconstrained, constrained, concModificationsBasedOnCondition = None):
+	def exchange_constraints(self, exchangeIDs, coefficient, targetUnits, unconstrained, constrained, concModificationsBasedOnCondition = None):
 		"""
 		Called during Metabolism process
 		Returns the homeostatic objective concentrations based on the current nutrients
 		Returns levels for external molecules available to exchange based on the current nutrients
 		"""
 
-		unconstrained_exchange_molecules = exchange_data["importUnconstrainedExchangeMolecules"]
-		constrained_exchange_molecules = exchange_data["importConstrainedExchangeMolecules"]
-
-		newObjective = self.concentration_updates.concentrationsBasedOnNutrients(
-			imports=unconstrained_exchange_molecules.union(constrained_exchange_molecules),
+		newObjective = self.concentration_updates.concentrations_based_on_nutrients(
+			imports=unconstrained.union(constrained),
 			conversion_units=targetUnits)
 		if concModificationsBasedOnCondition is not None:
 			newObjective.update(concModificationsBasedOnCondition)
@@ -1639,7 +1636,7 @@ class ConcentrationUpdates(object):
 		# type: (Dict[str, Any]) -> Dict[str, Set[str]]
 		"""
 		Caches the presence of exchanges in each media condition based on
-		exchange_data to set concentrations in concentrationsBasedOnNutrients().
+		exchange_data to set concentrations in concentrations_based_on_nutrients().
 
 		Args:
 			exchange_data: dictionary of exchange data for all media conditions with keys:

@@ -13,7 +13,7 @@ import numpy as np
 
 
 def aa_uptake(sim_data, index):
-	aa = sim_data.moleculeGroups.aaIDs[index][:-3]
+	aa = sim_data.molecule_groups.amino_acids[index][:-3]
 	sim_data.external_state.saved_media['minimal'][aa] = np.inf
 
 	return dict(
