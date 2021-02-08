@@ -493,11 +493,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
 		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', saturation)
 
-		# TODO: this is a hack to test environment, need to fix if useful
-		rich_rate = (self.process.translation_aa_supply['minimal_plus_amino_acids']
-			/ self.process.translation_aa_supply['minimal']).asNumber()
-		self.process.aa_supply[aa_in_media] *= rich_rate[aa_in_media]
-
 		# Only request molecules that will be consumed in the charging reactions
 		requested_molecules = -np.dot(self.charging_stoich_matrix, total_charging_reactions)
 		requested_molecules[requested_molecules < 0] = 0
