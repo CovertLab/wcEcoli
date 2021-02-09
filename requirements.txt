@@ -30,6 +30,7 @@
 #
 ## Install numpy (if it's the first time) then all the packages listed in this file (see
 ## docs/create-pyenv.md about whether to add `--no-binary numpy,scipy` to these steps):
+## [When updating numpy here also update it below, in Dockerfile, and in docs/*.]
 #   pip install numpy==1.19.5
 #   pip install -r requirements.txt && pyenv rehash
 
