@@ -28,6 +28,8 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import filepath, parallelization, units
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
 
+import matplotlib.pyplot as plt
+
 # Fitting parameters
 FITNESS_THRESHOLD = 1e-9
 MAX_FITTING_ITERATIONS = 100
@@ -50,6 +52,8 @@ COUNTS_UNITS = units.dmol
 VOLUME_UNITS = units.L
 MASS_UNITS = units.g
 TIME_UNITS = units.s
+
+RES_PLOT_DIR_NAME = 'ls_residual_plots'
 
 functions_run = []
 
@@ -1630,6 +1634,10 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, i,
 	#Calculate take transcriptDistribution and transform using least squares into the TU shape.
 	mRnaDistribution = sim_data.relation.build_monomer_to_RNA_ls_transform(sim_data, transcriptDistribution)
 
+	# TODO (ggsun): Remove this after troubleshooting is complete
+	plot_ls_residuals_for_growth_genes(
+		sim_data, mRnaDistribution, transcriptDistribution, i)
+
 	# ---- End
 
 	# Translate the transcript distribution into the mrna distribution
@@ -1684,6 +1692,61 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, i,
 
 	synthProb = normalize(rnaLossRate.asNumber(1 / units.min))
 	return expression, synthProb
+
+def plot_ls_residuals_for_growth_genes(sim_data, mRnaDistribution,
+		transcriptDistribution, iteration):
+	"""
+	Plots the residuals of the least squares solution for genes that encode
+	for RNAP and ribosomal subunits.
+	"""
+	transcript_distribution_from_mrna_distribution = sim_data.relation.mrna_to_monomer_matrix.dot(
+		mRnaDistribution)
+
+	monomer_id_to_index = {
+		mon['id']: i for i, mon in enumerate(sim_data.relation.monomer)
+		}
+	RNAP_subunits = sim_data.process.complexation.get_monomers(
+		sim_data.molecule_ids.full_RNAP)['subunitIds']
+	ribosome30SSubunits = [
+		x for x in
+		sim_data.process.complexation.get_monomers(
+			sim_data.molecule_ids.s30_full_complex)['subunitIds']
+		if x in monomer_id_to_index]
+	ribosome50SSubunits = [
+		x for x in
+		sim_data.process.complexation.get_monomers(
+			sim_data.molecule_ids.s50_full_complex)['subunitIds']
+		if x in monomer_id_to_index]
+
+	RNAP_subunit_indexes = np.array(
+		[monomer_id_to_index[mon_id] for mon_id in RNAP_subunits]
+		)
+	ribosomal_subunit_indexes = np.array(
+		[monomer_id_to_index[mon_id] for mon_id in
+			ribosome30SSubunits + ribosome50SSubunits]
+		)
+
+	if not os.path.isdir(RES_PLOT_DIR_NAME):
+		os.mkdir(RES_PLOT_DIR_NAME)
+
+	plt.figure(figsize=(10, 10))
+	plt.plot([0, 0.015], [0, 0.015], ls='--')
+	plt.scatter(
+		transcriptDistribution[RNAP_subunit_indexes],
+		transcript_distribution_from_mrna_distribution[RNAP_subunit_indexes],
+		s=5, c='b', label='RNAP')
+	plt.scatter(
+		transcriptDistribution[ribosomal_subunit_indexes],
+		transcript_distribution_from_mrna_distribution[ribosomal_subunit_indexes],
+		s=5, c='r', label='ribosome')
+	plt.xlim([0, 0.015])
+	plt.ylim([0, 0.015])
+	plt.xlabel('b')
+	plt.ylabel('Ax')
+	plt.legend()
+	plt.savefig(os.path.join(RES_PLOT_DIR_NAME, 'LS_residuals_iteration_%d.pdf' % (iteration, )))
+	plt.close()
+
 
 def fitMaintenanceCosts(sim_data, bulkContainer):
 	"""
