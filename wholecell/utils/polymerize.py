@@ -190,7 +190,7 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 			# Quit if finished or out of resources
 			if fully_elongated or monomer_limited or reaction_limited:
-				break #TODO-Betty
+				break
 
 			# Perform nontrivial (resource-limited) elongations, and cull
 			# sequences that can no longer be elongated

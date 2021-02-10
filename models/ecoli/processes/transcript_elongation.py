@@ -296,7 +296,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 				# Increment counts of fragment NTPs and phosphates
 				self.fragmentBases.countsInc(base_counts)
-				self.ppi.countInc(n_total_stalled)
+				self.ppi.countInc(n_initiated_sequences)
 
 		# Write outputs to listeners
 		self.writeToListener(
