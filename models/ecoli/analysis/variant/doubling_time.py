@@ -52,19 +52,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					cycle_length = time[-1] - time[0]
 
 				except:
-					continue
+					cycle_length = 0
 
-				lengths.append(cycle_length / 60)
-				count += 1
+				# TODO: better way to test for failure
+				# TODO: also check for long cells that are going to fail
+				if cycle_length / 60 < 35:
+					lengths.append(np.inf)
+				else:
+					lengths.append(cycle_length / 60)
+					count += 1
 
-			variant_lengths.append(np.mean(lengths))
+			variant_lengths.append(lengths)
 			variant_counts.append(count)
 			labels.append(sim_data.molecule_groups.amino_acids[variant])
+
+		all_lengths = np.vstack(variant_lengths)
+		mean_lengths = np.array([np.mean(row[np.isfinite(row) & (row > 0)]) for row in all_lengths])
+
+		# Could normalize by control condition if the index is known
+		# normalized = all_lengths[-2, :] / all_lengths
+		# mean_normalized = np.array([np.mean(row[np.isfinite(row) & (row > 0)]) for row in normalized])
 
 		plt.figure()
 
 		plt.subplot(2, 1, 1)
-		plt.bar(variants, variant_lengths)
+		plt.bar(variants, mean_lengths)
 		plt.ylabel('Average cell cycle length (min)', fontsize=8)
 		remove_border(plt.gca(), bottom=True)
 
