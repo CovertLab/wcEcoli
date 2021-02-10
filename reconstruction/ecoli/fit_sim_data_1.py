@@ -936,9 +936,10 @@ def setRNAExpression(sim_data):
 	function normalizes all the basal expression levels.
 	"""
 
-	for rna in sim_data.adjustments.rna_expression_adjustments:
-		idx = np.where(sim_data.process.transcription.rna_data["id"] == rna)[0]
-		sim_data.process.transcription.rna_expression["basal"][idx] *= sim_data.adjustments.rna_expression_adjustments[rna]
+	for gene in sim_data.adjustments.rna_expression_adjustments:
+		for i, tu in enumerate(sim_data.process.transcription.rna_data):
+			if gene in tu['gene_set']:
+				sim_data.process.transcription.rna_expression["basal"][i] *= sim_data.adjustments.rna_expression_adjustments[gene]
 
 	sim_data.process.transcription.rna_expression["basal"] /= sim_data.process.transcription.rna_expression["basal"].sum()
 
@@ -957,10 +958,10 @@ def setRNADegRates(sim_data):
 	- This function modifies the RNA degradation rates for the chosen RNAs in sim_data.
 	It takes their current degradation rate and multiplies them by the factor specified in adjustments.
 	"""
-
-	for rna in sim_data.adjustments.rna_deg_rates_adjustments:
-		idx = np.where(sim_data.process.transcription.rna_data["id"] == rna)[0]
-		sim_data.process.transcription.rna_data.struct_array['deg_rate'][idx] *= sim_data.adjustments.rna_deg_rates_adjustments[rna]
+	for gene in sim_data.adjustments.rna_deg_rates_adjustments:
+		for i, tu in enumerate(sim_data.process.transcription.rna_data):
+			if gene in tu['gene_set']:
+				sim_data.process.transcription.rna_data.struct_array['deg_rate'][i] *= sim_data.adjustments.rna_deg_rates_adjustments[gene]
 
 def setProteinDegRates(sim_data):
 	"""
@@ -1638,8 +1639,8 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, i,
 	mRnaDistribution = sim_data.relation.build_monomer_to_RNA_ls_transform(sim_data, transcriptDistribution)
 
 	# TODO (ggsun): Remove this after troubleshooting is complete
-	plot_ls_residuals_for_growth_genes(
-		sim_data, mRnaDistribution, transcriptDistribution, i)
+	#plot_ls_residuals_for_growth_genes(
+	# 	sim_data, mRnaDistribution, transcriptDistribution, i)
 
 	# ---- End
 

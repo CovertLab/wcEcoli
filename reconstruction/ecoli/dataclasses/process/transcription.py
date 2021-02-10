@@ -416,7 +416,6 @@ class Transcription(object):
 		rna_data = np.zeros(
 			n_rnas,
 			dtype = [
-
 				('id', 'U{}'.format(id_length)),
 				('deg_rate', 'f8'),
 				('length', 'i8'),
@@ -435,6 +434,8 @@ class Transcription(object):
 				('Km_endoRNase', 'f8'),
 				('replication_coordinate', 'int64'),
 				('direction', 'bool'),
+				# TODO (ggsun): check effects of adding generic objects as dtypes
+				('gene_set', 'object'),
 				('monomer_set', 'object'),
 				('gene_starts_stops', 'object'),
 				]
@@ -492,6 +493,7 @@ class Transcription(object):
 		rna_data['Km_endoRNase'] = Km
 		rna_data['replication_coordinate'] = replication_coordinate
 		rna_data['direction'] = direction
+		rna_data['gene_set'] = [rna['gene_set'] for rna in raw_data.operon_rnas]
 		rna_data['monomer_set'] = monomer_sets
 		rna_data['gene_starts_stops'] = gene_starts_stops
 		field_units = {
@@ -513,6 +515,7 @@ class Transcription(object):
 			'Km_endoRNase': units.mol / units.L,
 			'replication_coordinate': None,
 			'direction': None,
+			'gene_set': None,
 			'monomer_set': None,
 			'gene_starts_stops': None,
 			}
