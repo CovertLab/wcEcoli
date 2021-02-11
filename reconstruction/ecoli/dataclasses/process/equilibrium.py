@@ -346,8 +346,8 @@ class Equilibrium(object):
 					method=method, t_eval=[0, time_limit],
 					jac=derivatives_jacobian)
 				break
-			except ValueError:
-				print('Warning: switching solver method in equilibrium')
+			except ValueError as e:
+				print(f'Warning: switching solver method in equilibrium, {e!r}')
 		else:
 			raise RuntimeError('Could not solve ODEs in equilibrium to SS.'
 				' Try adjusting time step or changing methods.')
