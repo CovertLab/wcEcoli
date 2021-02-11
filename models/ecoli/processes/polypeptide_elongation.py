@@ -272,7 +272,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("RibosomeData", "processElongationRate", self.ribosomeElongationRate / self.timeStepSec())
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
-		return inputTimeStep <= self.max_time_step
+		model_specific = self.elongation_model.isTimeStepShortEnough(inputTimeStep, timeStepSafetyFraction)
+		max_time_step = inputTimeStep <= self.max_time_step
+		return model_specific and max_time_step
 
 
 class BaseElongationModel(object):
@@ -317,6 +319,9 @@ class BaseElongationModel(object):
 		net_charged = np.zeros(len(self.uncharged_trna_names))
 
 		return net_charged, {}
+
+	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
+		return True
 
 class TranslationSupplyElongationModel(BaseElongationModel):
 	"""
@@ -395,6 +400,9 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# Amino acid supply calculations
 		self.aa_supply_scaling = metabolism.aa_supply_scaling
 		self.aa_environment = self.process.environmentView([aa[:-3] for aa in self.aaNames])
+
+		# Manage unstable charging with too long time step by setting this to True
+		self.time_step_short_enough = True
 
 	def request(self, aasInSequences):
 		# Conversion from counts to molarity
@@ -822,3 +830,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			raise ValueError('Failed to meet molecule limits with ppGpp reactions.')
 
 		return delta_metabolites, n_syn_reactions, n_deg_reactions, v_rela_syn, v_spot_syn, v_deg
+
+	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
+		time_step_short_enough = self.time_step_short_enough
+		self.time_step_short_enough = True
+		return time_step_short_enough
