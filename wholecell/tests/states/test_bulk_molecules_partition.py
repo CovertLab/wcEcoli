@@ -51,8 +51,8 @@ class Test_BulkMolecules_partition(unittest.TestCase):
 
 		countsBulkPartitioned_test = np.zeros((7, 3), dtype = float)
 		countsBulkPartitioned_test[...,0] = np.array([1., 0., 0., 0., 0., 0., 0.]).T
-		countsBulkPartitioned_test[...,1] = np.array([2., 2., 2., 2., 0., 0., 0.]).T
-		countsBulkPartitioned_test[...,2] = np.array([7., 0., 3., 1., 2., 0., 2.]).T
+		countsBulkPartitioned_test[...,1] = np.array([2., 1., 2., 2., 0., 0., 0.]).T
+		countsBulkPartitioned_test[...,2] = np.array([7., 1., 3., 1., 2., 0., 2.]).T
 
 		self.assertEqual(countsBulkPartitioned.tolist(), countsBulkPartitioned_test.tolist())
 
@@ -89,8 +89,8 @@ class Test_BulkMolecules_partition(unittest.TestCase):
 
 		countsBulkPartitioned_test = np.zeros((7, 3), dtype = float)
 		countsBulkPartitioned_test[...,0] = np.array([0., 0., 0., 0., 0., 0., 0.]).T
-		countsBulkPartitioned_test[...,1] = np.array([2., 2., 2., 2., 0., 0., 0.]).T
-		countsBulkPartitioned_test[...,2] = np.array([8., 0., 3., 1., 2., 0., 2.]).T
+		countsBulkPartitioned_test[...,1] = np.array([2., 1., 2., 2., 0., 0., 0.]).T
+		countsBulkPartitioned_test[...,2] = np.array([8., 1., 3., 1., 2., 0., 2.]).T
 
 		self.assertEqual(countsBulkPartitioned.tolist(), countsBulkPartitioned_test.tolist())
 
