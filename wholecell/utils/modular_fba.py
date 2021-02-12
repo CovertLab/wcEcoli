@@ -1154,6 +1154,9 @@ class FluxBalanceAnalysis(object):
 		'''
 
 		for molecule_id, coeff in objective.items():
+			if coeff < 0:
+				raise ValueError('Homeostatic target must be non-negative.')
+
 			if molecule_id not in self._outputMoleculeIDs:
 				raise FBAError(
 					"This function only allows for modification of setpoint values, " +
