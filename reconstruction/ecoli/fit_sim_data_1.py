@@ -1639,8 +1639,8 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, i,
 	mRnaDistribution = sim_data.relation.build_monomer_to_RNA_ls_transform(sim_data, transcriptDistribution)
 
 	# TODO (ggsun): Remove this after troubleshooting is complete
-	#plot_ls_residuals_for_growth_genes(
-	# 	sim_data, mRnaDistribution, transcriptDistribution, i)
+	# plot_ls_residuals_for_growth_genes(
+	#   	sim_data, mRnaDistribution, transcriptDistribution, i)
 
 	# ---- End
 
@@ -3076,7 +3076,7 @@ def fitLigandConcentrations(sim_data, cell_specs):
 			if p_inactive == 0:
 				raise ValueError('Inf ligand concentration from p_inactive = 0.'
 					' Check results from fitPromoterBoundProbability and Kd values.')
-			if 1 - p_active < 1e-9:
+			if 1 - p_active < 1e-8:
 				kdNew = kd  # Concentration of metabolite-bound TF is negligible
 			else:
 				kdNew = (activeSignalConc**metaboliteCoeff) * p_active/(1 - p_active)
@@ -3089,7 +3089,7 @@ def fitLigandConcentrations(sim_data, cell_specs):
 			if p_active == 1:
 				raise ValueError('Inf ligand concentration from p_active = 1.'
 					' Check results from fitPromoterBoundProbability and Kd values.')
-			if p_inactive < 1e-9:
+			if p_inactive < 1e-8:
 				kdNew = kd  # Concentration of metabolite-bound TF is negligible
 			else:
 				kdNew = (inactiveSignalConc**metaboliteCoeff) * (1 - p_inactive)/p_inactive
