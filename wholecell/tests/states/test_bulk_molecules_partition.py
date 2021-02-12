@@ -93,3 +93,27 @@ class Test_BulkMolecules_partition(unittest.TestCase):
 		countsBulkPartitioned_test[...,2] = np.array([8., 0., 3., 1., 2., 0., 2.]).T
 
 		self.assertEqual(countsBulkPartitioned.tolist(), countsBulkPartitioned_test.tolist())
+
+	def test_high_counts(self):
+		"""
+		Tests specific counts case where rounding caused a ValueError in previous versions.
+		"""
+		random_state = np.random.RandomState(0)
+		processPriorities = np.array([0, 0, 0, 0, 0, 0, 0])
+		countsBulkRequested = np.array([[0, 14768, 0, 609520, 0, 0, 0]])
+		countsBulk = np.array([604314])
+
+		wcBulkMolecules.calculatePartition(
+			processPriorities, countsBulkRequested, countsBulk, random_state)
+
+	def test_excess_remainder(self):
+		"""
+		Tests that a remainder greater than 1 will be handled without an error.
+		"""
+		random_state = np.random.RandomState(0)
+		processPriorities = np.array([0, 0, 0])
+		countsBulkRequested = np.array([[7, 2, 1]])
+		countsBulk = np.array([4])
+
+		wcBulkMolecules.calculatePartition(
+			processPriorities, countsBulkRequested, countsBulk, random_state)
