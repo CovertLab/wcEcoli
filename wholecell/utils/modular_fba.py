@@ -1473,6 +1473,7 @@ class FluxBalanceAnalysis(object):
 		else:
 			try:
 				self._solver._solve()
+				return
 			except Exception as inst:
 				print("Warning: {} error while solving FBA - repeating FBA solve".format(inst))
-				self.solve(iterations - 1)
+			self.solve(iterations - 1)
