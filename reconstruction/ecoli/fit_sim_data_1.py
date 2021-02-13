@@ -90,6 +90,7 @@ def fitSimData_1(raw_data, **kwargs):
 	sim_data, cell_specs = tf_condition_specs(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = fit_condition(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = promoter_binding(sim_data, cell_specs, **kwargs)
+	sim_data, cell_specs = adjust_promoters(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = set_conditions(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = final_adjustments(sim_data, cell_specs, **kwargs)
 
@@ -277,11 +278,16 @@ def promoter_binding(sim_data, cell_specs, **kwargs):
 	if VERBOSE > 0:
 		print('Fitting promoter binding')
 	# noinspection PyTypeChecker
-	rVector = fitPromoterBoundProbability(sim_data, cell_specs)
+	cell_specs['basal']['r_vector'] = fitPromoterBoundProbability(sim_data, cell_specs)
+
+	return sim_data, cell_specs
+
+@save_state
+def adjust_promoters(sim_data, cell_specs, **kwargs):
 	# noinspection PyTypeChecker
 	fitLigandConcentrations(sim_data, cell_specs)
 
-	calculateRnapRecruitment(sim_data, rVector)
+	calculateRnapRecruitment(sim_data, cell_specs['basal']['r_vector'])
 
 	return sim_data, cell_specs
 
