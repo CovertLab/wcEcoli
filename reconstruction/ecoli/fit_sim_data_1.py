@@ -3143,9 +3143,6 @@ def calculateRnapRecruitment(sim_data, r):
 	transcription_regulation = sim_data.process.transcription_regulation
 	all_TUs = transcription.rna_data["id"]
 	all_tfs = transcription_regulation.tf_ids
-	exp_free = transcription.exp_free
-	exp_ppgpp = transcription.exp_ppgpp
-	old_prob = transcription.rna_synth_prob['basal']
 
 	# Initialize basal_prob vector and delta_prob sparse matrix
 	basal_prob = np.zeros(len(all_TUs))
@@ -3184,12 +3181,7 @@ def calculateRnapRecruitment(sim_data, r):
 			colNames.append(colName)
 
 		# Set element in basal_prob to the transcription unit's value for alpha
-		new_prob = r[colNames.index(colName)]
-		factor = new_prob / old_prob[rna_idx]
-		if np.isfinite(factor):
-			exp_free[rna_idx] *= factor
-			exp_ppgpp[rna_idx] *= factor
-		basal_prob[rna_idx] = new_prob
+		basal_prob[rna_idx] = r[colNames.index(colName)]
 
 	# Convert to arrays
 	deltaI, deltaJ, deltaV = np.array(deltaI), np.array(deltaJ), np.array(deltaV)
