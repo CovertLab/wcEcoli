@@ -48,6 +48,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.endWeight = translation.translation_end_weight
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = translation.make_elongation_rates
+		self.next_aa_pad = translation.next_aa_pad
 
 		self.ribosomeElongationRate = float(sim_data.growth_rate_parameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 
@@ -169,13 +170,12 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			'protein_index', 'peptide_length', 'pos_on_mRNA'
 			)
 
-		next_aa_pad = 1  # Need an extra amino acid to find out the next one if fully elongated
 		all_sequences = buildSequences(
 			self.proteinSequences,
 			protein_indexes,
 			peptide_lengths,
-			self.elongation_rates + next_aa_pad)
-		sequences = all_sequences[:, :-next_aa_pad].copy()
+			self.elongation_rates + self.next_aa_pad)
+		sequences = all_sequences[:, :-self.next_aa_pad].copy()
 
 		if sequences.size == 0:
 			return
