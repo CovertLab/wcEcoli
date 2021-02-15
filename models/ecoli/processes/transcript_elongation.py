@@ -267,7 +267,10 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.ppi.countInc(n_elongations - n_initialized)
 
 		# Handle stalled elongation
-		n_total_stalled = did_stall_mask.sum()
+		recyc = True
+		if self._external_states['Environment'].time()==2:
+			print(f"Recycling of RNAP and RNA in stalled elongation? -> {recyc}")
+		n_total_stalled = did_stall_mask.sum() if recyc else 0
 		if n_total_stalled > 0:
 			# Remove RNAPs that were bound to stalled elongation transcripts
 			# and increment counts of inactive RNAPs
