@@ -274,8 +274,13 @@ class TableReader(object):
 				for block in row_size_blocks]  # type: List[Iterable[int]]
 			all_row_sizes = np.concatenate(row_sizes_list)
 
-			# Initialize results array to NaNs
-			result = np.full((len(all_row_sizes), all_row_sizes.max()), np.nan)
+			# Initialize results array to NaNs (Number of columns is set to be
+			# 2 if the maximum row size is 1 to ensure the array is not
+			# flattened to a 1D array by readColumn())
+			if all_row_sizes.max() == 1:
+				result = np.full((len(all_row_sizes), 2), np.nan)
+			else:
+				result = np.full((len(all_row_sizes), all_row_sizes.max()), np.nan)
 
 			row = 0
 			for raw_entry, row_sizes_ in zip(entry_blocks, row_sizes_list):
