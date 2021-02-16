@@ -1630,6 +1630,10 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, i,
 		translation_efficienciesByProtein,
 		netLossRate_protein)
 
+	#f = open('operon_0212.tsv', 'w')
+	#for (monomer_id, exp) in zip(sim_data.process.translation.monomer_data['id'], transcriptDistribution):
+	#	f.write('%s\t%g\n' % (monomer_id, exp))
+
 
 	# ---- Testing Area for potential least squares 
 
