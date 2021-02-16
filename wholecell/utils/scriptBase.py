@@ -7,8 +7,6 @@ Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import abc
 import argparse
 import datetime
@@ -20,9 +18,6 @@ import pprint as pp
 import time
 import traceback
 from typing import Any, Callable, Iterable, List, Optional, Tuple
-
-import six
-from six.moves import range, zip
 
 import wholecell.utils.filepath as fp
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
@@ -43,6 +38,7 @@ METADATA_KEYS = (
 	'trna_charging',
 	'ppgpp_regulation',
 	'superhelical_density',
+	'mechanistic_replisome',
 	)
 
 PARCA_KEYS = (
@@ -68,6 +64,7 @@ SIM_KEYS = (
 	'trna_charging',
 	'ppgpp_regulation',
 	'superhelical_density',
+	'mechanistic_replisome',
 	'raise_on_time_limit',
 	'log_to_shell',
 	)
@@ -145,7 +142,7 @@ def dashize(underscore):
 	return re.sub(r'_+', r'-', underscore)
 
 
-class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
+class ScriptBase(metaclass=abc.ABCMeta):
 	"""Abstract base class for scripts. This defines a template where
 	`description()` describes the script,
 	`define_parameters()` defines its command line parameters,
@@ -458,6 +455,9 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 			help='if true, ppGpp concentration is determined with kinetic equations.')
 		add_bool_option('superhelical_density', 'superhelical_density',
 			help='if true, dynamically calculate superhelical densities of each DNA segment')
+		add_bool_option('mechanistic_replisome', 'mechanistic_replisome',
+			help='if true, replisome initiation is mechanistic (requires'
+				 ' appropriate number of subunits to initiate)')
 		add_bool_option('raise_on_time_limit', 'raise_on_time_limit',
 			help='if true, the simulation raises an error if the time limit'
 				 ' (--length-sec) is reached before division.')

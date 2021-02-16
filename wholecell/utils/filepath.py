@@ -31,6 +31,8 @@ TIMEOUT = 60  # seconds
 
 # The wcEcoli/ project root path which contains wholecell/.
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(wholecell.__file__)))
+OUT_DIR = os.path.join(ROOT_PATH, 'out')
+DEBUG_OUT_DIR = os.path.join(OUT_DIR, 'debug')
 
 MATPLOTLIBRC_FILE = os.path.join(ROOT_PATH, 'matplotlibrc')
 
@@ -102,7 +104,7 @@ def run_cmd2(tokens, trim=True, timeout=TIMEOUT, env=None):
 		stderr=subprocess.PIPE,
 		check=True,
 		env=env,
-		universal_newlines=True,
+		encoding='utf-8',
 		timeout=timeout)
 	if trim:
 		return out.stdout.rstrip(), out.stderr.rstrip()

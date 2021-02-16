@@ -10,7 +10,6 @@ from __future__ import absolute_import, division, print_function
 import functools
 import itertools
 import os
-import multiprocessing as mp
 import sys
 import time
 import traceback
@@ -27,6 +26,7 @@ from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import filepath, parallelization, units
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
+from wholecell.utils import parallelization
 
 
 # Fitting parameters
@@ -62,7 +62,7 @@ def fitSimData_1(raw_data, **kwargs):
 	Inputs:
 		raw_data (KnowledgeBaseEcoli) - knowledge base consisting of the
 			necessary raw data
-		cpus (int) - number of processes to use (if >1 uses multiprocessing)
+		cpus (int) - number of processes to use (if > 1, use multiprocessing)
 		debug (bool) - if True, fit only one arbitrarily-chosen transcription
 			factor in order to speed up a debug cycle (should not be used for
 			an actual simulation)
@@ -152,7 +152,7 @@ def save_state(func):
 			cell_specs = {}
 
 		# Save the current state of the parameter calculator after the function to disk
-		if kwargs.get('save_intermediates', False) and intermediates_dir != '':
+		if kwargs.get('save_intermediates', False) and intermediates_dir != '' and sim_data is not None:
 			os.makedirs(intermediates_dir, exist_ok=True)
 			with open(sim_data_file, 'wb') as f:
 				cPickle.dump(sim_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
@@ -226,11 +226,8 @@ def tf_condition_specs(sim_data, cell_specs, cpus=1,
 		disable_ribosome_capacity_fitting=False, disable_rnapoly_capacity_fitting=False,
 		variable_elongation_transcription=False, variable_elongation_translation=False,
 		**kwargs):
-	# NOTE: multiprocessing `fork` seems to work here even on macOS, so override the
-	# cpus() safety check for now. Be careful calling native libraries that
-	# use threads and other resources which don't play well with `fork`.
-	# See Issue #392.
-	cpus = parallelization.cpus(cpus, advice='mac override')
+	# Limit the number of CPUs before printing it to stdout.
+	cpus = parallelization.cpus(cpus)
 
 	# Apply updates to cell_specs from buildTfConditionCellSpecifications for each TF condition
 	conditions = list(sorted(sim_data.tf_to_active_inactive_conditions))
@@ -385,7 +382,7 @@ def apply_updates(func, args, labels, dest, cpus):
 		print("Starting {} Parca processes".format(cpus))
 
 		# Apply args to func
-		pool = mp.Pool(processes=cpus)
+		pool = parallelization.pool(cpus)
 		results = {
 			label: pool.apply_async(func, a)
 			for label, a in zip(labels, args)
@@ -500,7 +497,6 @@ def buildBasalCellSpecifications(
 
 	return cell_specs
 
-@parallelization.full_traceback
 def buildTfConditionCellSpecifications(
 		sim_data,
 		tf,
@@ -653,6 +649,9 @@ def buildCombinedConditionCellSpecifications(
 		for tf in sim_data.condition_active_tfs[conditionKey]:
 			for gene, fc in sim_data.tf_to_fold_change[tf].items():
 				fcData[gene] = fcData.get(gene, 1) * fc
+		for tf in sim_data.condition_inactive_tfs[conditionKey]:
+			for gene, fc in sim_data.tf_to_fold_change[tf].items():
+				fcData[gene] = fcData.get(gene, 1) / fc
 
 		expression = expressionFromConditionAndFoldChange(
 			sim_data.process.transcription.rna_data["id"],
@@ -793,7 +792,6 @@ def expressionConverge(
 
 	return expression, synthProb, avgCellDryMassInit, fitAvgSolubleTargetMolMass, bulkContainer, concDict
 
-@parallelization.full_traceback
 def fitCondition(sim_data, spec, condition):
 	"""
 	Takes a given condition and returns the predicted bulk average, bulk deviation,
@@ -3019,23 +3017,44 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 
 	pPromoterBound = {}  # Initialize return value
 	cellDensity = sim_data.constants.cell_density
+	init_to_average = sim_data.mass.avg_cell_to_initial_cell_conversion_factor
+
+	# Matrix to determine number of promoters each TF can bind to in a given condition
+	rna_data = sim_data.process.transcription.rna_data
+	tf_idx = {tf: i for i, tf in enumerate(sim_data.tf_to_active_inactive_conditions)}
+	rna_idx = {rna[:-3]: i for i, rna in enumerate(rna_data['id'])}
+	regulation_i = []
+	regulation_j = []
+	regulation_v = []
+	for tf, rnas in sim_data.tf_to_fold_change.items():
+		if tf not in tf_idx:
+			continue
+
+		for rna in rnas:
+			regulation_i.append(tf_idx[tf])
+			regulation_j.append(rna_idx[rna])
+			regulation_v.append(1)
+	regulation = scipy.sparse.csr_matrix(
+		(regulation_v, (regulation_i, regulation_j)),
+		shape=(len(tf_idx), len(rna_idx)))
+	rna_coords = rna_data['replication_coordinate']
 
 	for conditionKey in sorted(cell_specs):
 		pPromoterBound[conditionKey] = {}
+		tau = sim_data.condition_to_doubling_time[conditionKey].asNumber(units.min)
+		n_avg_copy = sim_data.process.replication.get_average_copy_number(tau, rna_coords)
+		n_promoter_targets = regulation.dot(n_avg_copy)
 
 		cellVolume = cell_specs[conditionKey]["avgCellDryMassInit"]/cellDensity/sim_data.mass.cell_dry_mass_fraction
 		countsToMolar = 1/(sim_data.constants.n_avogadro * cellVolume)
 
 		for tf in sorted(sim_data.tf_to_active_inactive_conditions):
 			tfType = sim_data.process.transcription_regulation.tf_to_tf_type[tf]
-
+			tf_counts = cell_specs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")
+			tf_targets = n_promoter_targets[tf_idx[tf]]
+			limited_tf_counts = min(1, tf_counts * init_to_average / tf_targets)
 			if tfType == "0CS":
-				tfCount = cell_specs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")
-
-				if tfCount > 0:
-					pPromoterBound[conditionKey][tf] = 1.  # If TF exists, the promoter is always bound to the TF
-				else:
-					pPromoterBound[conditionKey][tf] = 0.
+				pPromoterBound[conditionKey][tf] = limited_tf_counts  # If TF exists, the promoter is always bound to the TF
 
 			elif tfType == "1CS":
 				boundId = sim_data.process.transcription_regulation.active_to_bound[tf]  # ID of TF bound to ligand
@@ -3046,32 +3065,32 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 
 				# Get bulk average concentrations of ligand and TF
 				signalConc = (countsToMolar*cell_specs[conditionKey]["bulkAverageContainer"].count(signal)).asNumber(units.mol/units.L)
-				tfConc = (countsToMolar*cell_specs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")).asNumber(units.mol/units.L)
+				tfConc = (countsToMolar*tf_counts).asNumber(units.mol/units.L)
 
 				# If TF is active in its bound state
 				if tf == boundId:
 					if tfConc > 0:
-						pPromoterBound[conditionKey][tf] = sim_data.process.transcription_regulation.p_promoter_bound_SKd(signalConc, kd, signalCoeff)
+						pPromoterBound[conditionKey][tf] = limited_tf_counts * sim_data.process.transcription_regulation.p_promoter_bound_SKd(signalConc, kd, signalCoeff)
 					else:
 						pPromoterBound[conditionKey][tf] = 0.
 
 				# If TF is active in its unbound state
 				else:
 					if tfConc > 0:
-						pPromoterBound[conditionKey][tf] = 1. - sim_data.process.transcription_regulation.p_promoter_bound_SKd(signalConc, kd, signalCoeff)
+						pPromoterBound[conditionKey][tf] = 1. - limited_tf_counts * sim_data.process.transcription_regulation.p_promoter_bound_SKd(signalConc, kd, signalCoeff)
 					else:
 						pPromoterBound[conditionKey][tf] = 0.
 
 			elif tfType == "2CS":
 				# Get bulk average concentrations of active and inactive TF
-				activeTfConc = (countsToMolar*cell_specs[conditionKey]["bulkAverageContainer"].count(tf + "[c]")).asNumber(units.mol/units.L)
+				activeTfConc = (countsToMolar*tf_counts).asNumber(units.mol/units.L)
 				inactiveTf = sim_data.process.two_component_system.active_to_inactive_tf[tf + "[c]"]
 				inactiveTfConc = (countsToMolar*cell_specs[conditionKey]["bulkAverageContainer"].count(inactiveTf)).asNumber(units.mol/units.L)
 
 				if activeTfConc == 0 and inactiveTfConc == 0:
 					pPromoterBound[conditionKey][tf] = 0.
 				else:
-					pPromoterBound[conditionKey][tf] = activeTfConc/(activeTfConc + inactiveTfConc)
+					pPromoterBound[conditionKey][tf] = limited_tf_counts * activeTfConc/(activeTfConc + inactiveTfConc)
 
 	# Check for any inconsistencies that could lead to feasbility issues when fitting
 	for condition in pPromoterBound:
