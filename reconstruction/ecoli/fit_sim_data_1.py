@@ -95,9 +95,7 @@ def fitSimData_1(raw_data, **kwargs):
 	sim_data, cell_specs = final_adjustments(sim_data, cell_specs, **kwargs)
 
 	sim_data.process.transcription.exp_free[sim_data.process.transcription.exp_free < 0] = 0
-	sim_data.process.transcription.exp_free /= sim_data.process.transcription.exp_free.sum()
 	sim_data.process.transcription.exp_ppgpp[sim_data.process.transcription.exp_ppgpp < 0] = 0
-	sim_data.process.transcription.exp_ppgpp /= sim_data.process.transcription.exp_ppgpp.sum()
 
 	if sim_data is None:
 		raise ValueError('sim_data is not specified.  Check that the'
@@ -370,6 +368,7 @@ def final_adjustments(sim_data, cell_specs, **kwargs):
 	sim_data.process.transcription.adjust_polymerizing_ppgpp_expression(sim_data)
 
 	# Adjust ppGpp expression for TF binding
+	t_reg = sim_data.process.transcription_regulation
 	r = cell_specs['basal']['r_vector']
 	col_names_to_index = cell_specs['basal']['r_columns']
 	transcription = sim_data.process.transcription
@@ -377,15 +376,30 @@ def final_adjustments(sim_data, cell_specs, **kwargs):
 	exp_free = transcription.exp_free
 	exp_ppgpp = transcription.exp_ppgpp
 	ppgpp_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(sim_data.doubling_time)
-	ppgpp_prob, _ = transcription.synth_prob_from_ppgpp(ppgpp_conc, sim_data.process.replication.get_average_copy_number)
-	for rna_idx, rna_id in enumerate(all_tus):
-		rna_id_no_loc = rna_id[:-3]
-		col_name = rna_id_no_loc + "__alpha"
-		new_prob = r[col_names_to_index[col_name]]
-		factor = new_prob / ppgpp_prob[rna_idx]
-		if np.isfinite(factor):
-			exp_free[rna_idx] *= factor
-			exp_ppgpp[rna_idx] *= factor
+	old_prob, factor = transcription.synth_prob_from_ppgpp(ppgpp_conc, sim_data.process.replication.get_average_copy_number)
+	old_exp = sim_data.process.transcription.rna_expression['basal']
+
+	delta_prob = scipy.sparse.csr_matrix(
+		(t_reg.delta_prob['deltaV'],
+		(t_reg.delta_prob['deltaI'], t_reg.delta_prob['deltaJ'])),
+		shape=t_reg.delta_prob['shape']
+		).toarray()
+	p_promoter_bound = np.array([sim_data.pPromoterBound[sim_data.condition][tf] for tf in t_reg.tf_ids])
+	delta = delta_prob @ p_promoter_bound
+
+	new_prob = normalize(sim_data.process.transcription.rna_expression['basal'] * factor) - delta
+	new_prob[new_prob < 0] = 0
+	new_prob = normalize(new_prob)
+	new_exp = (old_prob + delta) / factor
+	new_exp[new_exp < 0] = 0
+	new_exp = normalize(new_exp)
+
+	adjustment = new_prob / old_prob
+	adjustment[~np.isfinite(adjustment)] = (old_exp / new_exp)[~np.isfinite(adjustment)]
+	adjustment[~np.isfinite(adjustment)] = 1
+
+	exp_free *= adjustment
+	exp_ppgpp *= adjustment
 
 	# Set supply constants for amino acids based on condition supply requirements
 	sim_data.process.metabolism.set_supply_constants(sim_data)
