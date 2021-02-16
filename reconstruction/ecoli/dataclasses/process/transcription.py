@@ -8,6 +8,7 @@ TODO: handle ppGpp and DksA-ppGpp regulation separately
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
+import scipy
 from scipy import interpolate
 import sympy as sp
 from typing import cast
@@ -822,6 +823,42 @@ class Transcription(object):
 		self.exp_free[adjusted_mask] = adjusted_free[adjusted_mask]
 		self.exp_ppgpp[adjusted_mask] = adjusted_ppgpp[adjusted_mask]
 
+		self.normalize_ppgpp_expression()
+
+	def adjust_ppgpp_expression_for_tfs(self, sim_data):
+		# Adjust ppGpp expression for TF binding
+		t_reg = sim_data.process.transcription_regulation
+		exp_free = self.exp_free
+		exp_ppgpp = self.exp_ppgpp
+		ppgpp_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(
+			sim_data.doubling_time)
+		old_prob, factor = self.synth_prob_from_ppgpp(ppgpp_conc,
+			sim_data.process.replication.get_average_copy_number)
+
+		delta_prob = scipy.sparse.csr_matrix(
+			(t_reg.delta_prob['deltaV'],
+			(t_reg.delta_prob['deltaI'], t_reg.delta_prob['deltaJ'])),
+			shape=t_reg.delta_prob['shape']
+			).toarray()
+		p_promoter_bound = np.array(
+			[sim_data.pPromoterBound[sim_data.condition][tf] for tf in
+				t_reg.tf_ids])
+		delta = delta_prob @ p_promoter_bound
+
+		new_prob = normalize(sim_data.process.transcription.rna_expression[
+								 'basal'] * factor) - delta
+		new_prob[new_prob < 0] = 0
+		new_prob = normalize(new_prob)
+
+		adjustment = new_prob / old_prob
+		adjustment[~np.isfinite(adjustment)] = 1
+
+		exp_free *= adjustment
+		exp_ppgpp *= adjustment
+
+		self.normalize_ppgpp_expression()
+
+	def normalize_ppgpp_expression(self):
 		# Rescale expression of genes that are not regulated so expression sums to 1
 		ppgpp_regulated = np.array([g[:-3] in self.ppgpp_regulated_genes for g in self.rna_data['id']])
 		scale_free_by = (1 - self.exp_free[ppgpp_regulated].sum()) / self.exp_free[~ppgpp_regulated].sum()

@@ -94,9 +94,6 @@ def fitSimData_1(raw_data, **kwargs):
 	sim_data, cell_specs = set_conditions(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = final_adjustments(sim_data, cell_specs, **kwargs)
 
-	sim_data.process.transcription.exp_free[sim_data.process.transcription.exp_free < 0] = 0
-	sim_data.process.transcription.exp_ppgpp[sim_data.process.transcription.exp_ppgpp < 0] = 0
-
 	if sim_data is None:
 		raise ValueError('sim_data is not specified.  Check that the'
 			f' load_intermediate function ({kwargs.get("load_intermediate")})'
@@ -366,40 +363,7 @@ def set_conditions(sim_data, cell_specs, **kwargs):
 def final_adjustments(sim_data, cell_specs, **kwargs):
 	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints
 	sim_data.process.transcription.adjust_polymerizing_ppgpp_expression(sim_data)
-
-	# Adjust ppGpp expression for TF binding
-	t_reg = sim_data.process.transcription_regulation
-	r = cell_specs['basal']['r_vector']
-	col_names_to_index = cell_specs['basal']['r_columns']
-	transcription = sim_data.process.transcription
-	all_tus = transcription.rna_data["id"]
-	exp_free = transcription.exp_free
-	exp_ppgpp = transcription.exp_ppgpp
-	ppgpp_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(sim_data.doubling_time)
-	old_prob, factor = transcription.synth_prob_from_ppgpp(ppgpp_conc, sim_data.process.replication.get_average_copy_number)
-	old_exp = sim_data.process.transcription.rna_expression['basal']
-
-	delta_prob = scipy.sparse.csr_matrix(
-		(t_reg.delta_prob['deltaV'],
-		(t_reg.delta_prob['deltaI'], t_reg.delta_prob['deltaJ'])),
-		shape=t_reg.delta_prob['shape']
-		).toarray()
-	p_promoter_bound = np.array([sim_data.pPromoterBound[sim_data.condition][tf] for tf in t_reg.tf_ids])
-	delta = delta_prob @ p_promoter_bound
-
-	new_prob = normalize(sim_data.process.transcription.rna_expression['basal'] * factor) - delta
-	new_prob[new_prob < 0] = 0
-	new_prob = normalize(new_prob)
-	new_exp = (old_prob + delta) / factor
-	new_exp[new_exp < 0] = 0
-	new_exp = normalize(new_exp)
-
-	adjustment = new_prob / old_prob
-	adjustment[~np.isfinite(adjustment)] = (old_exp / new_exp)[~np.isfinite(adjustment)]
-	adjustment[~np.isfinite(adjustment)] = 1
-
-	exp_free *= adjustment
-	exp_ppgpp *= adjustment
+	sim_data.process.transcription.adjust_ppgpp_expression_for_tfs(sim_data)
 
 	# Set supply constants for amino acids based on condition supply requirements
 	sim_data.process.metabolism.set_supply_constants(sim_data)
