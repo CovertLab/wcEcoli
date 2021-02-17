@@ -767,6 +767,9 @@ class Transcription(object):
 				faster computation in other functions
 		"""
 
+		self.ppgpp_factor = 1.
+		self.free_factor = 1.
+
 		ppgpp_aa = sim_data.growth_rate_parameters.get_ppGpp_conc(
 			sim_data.condition_to_doubling_time['with_aa'])
 		ppgpp_basal = sim_data.growth_rate_parameters.get_ppGpp_conc(
@@ -859,14 +862,13 @@ class Transcription(object):
 		self.normalize_ppgpp_expression()
 
 	def normalize_ppgpp_expression(self):
-		# Rescale expression of genes that are not regulated so expression sums to 1
-		ppgpp_regulated = np.array([g[:-3] in self.ppgpp_regulated_genes for g in self.rna_data['id']])
-		scale_free_by = (1 - self.exp_free[ppgpp_regulated].sum()) / self.exp_free[~ppgpp_regulated].sum()
-		self.exp_free[~ppgpp_regulated] *= scale_free_by
-		assert(scale_free_by > 0)
-		scale_ppgpp_by = (1 - self.exp_ppgpp[ppgpp_regulated].sum()) / self.exp_ppgpp[~ppgpp_regulated].sum()
-		self.exp_ppgpp[~ppgpp_regulated] *= scale_ppgpp_by
-		assert(scale_ppgpp_by > 0)
+		total = self.exp_free.sum()
+		self.exp_free /= total
+		# self.free_factor *= total
+
+		total = self.exp_ppgpp.sum()
+		self.exp_ppgpp /= total
+		# self.ppgpp_factor *= total
 
 	def fraction_rnap_bound_ppgpp(self, ppgpp):
 		"""
@@ -899,7 +901,7 @@ class Transcription(object):
 		"""
 
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
-		return normalize(self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp)
+		return normalize(self.exp_free * (1 - f_ppgpp) * self.free_factor + self.exp_ppgpp * f_ppgpp * self.ppgpp_factor)
 
 	def synth_prob_from_ppgpp(self, ppgpp, copy_number):
 		"""
@@ -922,7 +924,6 @@ class Transcription(object):
 		"""
 
 		ppgpp = ppgpp.asNumber(PPGPP_CONC_UNITS)
-		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 
 		y = interpolate.splev(ppgpp, self._ppgpp_growth_parameters)
 		growth = max(cast(float, y), 0.0)
@@ -932,6 +933,6 @@ class Transcription(object):
 
 		# Return values
 		factor = loss / n_avg_copy
-		prob = normalize((self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp) * factor)
+		prob = normalize(self.expression_from_ppgpp(ppgpp) * factor)
 
 		return prob, factor
