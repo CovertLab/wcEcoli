@@ -1,13 +1,10 @@
 """
 Analysis of ppGpp control and synthesis/degradation.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 11/18/19
 """
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 import itertools
 import os
 
@@ -19,7 +16,6 @@ from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
 
 
 RELA_RNA = 'EG10835_RNA[c]'
@@ -27,13 +23,14 @@ SPOT_RNA = 'EG10966_RNA[c]'
 
 
 def read_data(cell_paths, table, column):
-	def data_generator(cell_paths, table, column):
-		for sim_dir in cell_paths:
-			sim_out_dir = os.path.join(sim_dir, 'simOut')
-			reader = TableReader(os.path.join(sim_out_dir, table))
-			yield reader.readColumn2D(column)
+	sim_columns = []
 
-	return np.vstack(data_generator(cell_paths, table, column))
+	for sim_dir in cell_paths:
+		sim_out_dir = os.path.join(sim_dir, 'simOut')
+		reader = TableReader(os.path.join(sim_out_dir, table))
+		sim_columns.append(reader.readColumn2D(column))
+
+	return np.vstack(sim_columns)
 
 def remove_axes(ax, show_xaxis=False):
 	ax.spines['right'].set_visible(False)
@@ -45,28 +42,23 @@ def remove_axes(ax, show_xaxis=False):
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(seedOutDir):
-			raise Exception('seedOutDir does not currently exist as a directory')
-
-		filepath.makedirs(plotOutDir)
-
 		# sim_data values
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
-		rna_data = sim_data.process.transcription.rnaData
+		rna_data = sim_data.process.transcription.rna_data
 		fractions = [
-			'isRRna',
-			'isTRna',
-			'isMRna',
-			'isRProtein',
-			'isRnap',
+			'is_rRNA',
+			'is_tRNA',
+			'is_mRNA',
+			'is_ribosomal_protein',
+			'is_RNAP',
 			]
 		n_fractions = len(fractions)
 		synthase_rna_idx_all_rnas = np.array([
 			np.where(rna_data['id'] == RELA_RNA)[0][0],
 			np.where(rna_data['id'] == SPOT_RNA)[0][0],
 			])
-		mrna_ids = rna_data['id'][rna_data['isMRna']]
+		mrna_ids = rna_data['id'][rna_data['is_mRNA']]
 		synthase_rna_idx_mrnas = np.array([
 			np.where(mrna_ids == RELA_RNA)[0][0],
 			np.where(mrna_ids == SPOT_RNA)[0][0],
@@ -84,10 +76,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			read_data(cell_paths, 'GrowthLimits', 'spot_syn'),
 			read_data(cell_paths, 'GrowthLimits', 'spot_deg'),
 			))
-		ppgpp_count = np.hstack(itertools.chain.from_iterable([
-			read_bulk_molecule_counts(os.path.join(p, 'simOut'), [sim_data.moleculeIds.ppGpp])
-			for p in cell_paths
-			]))
+		cell_count_iters = [
+			read_bulk_molecule_counts(
+				os.path.join(p, 'simOut'), [sim_data.molecule_ids.ppGpp])
+			for p in cell_paths]
+		ppgpp_count = np.hstack(list(itertools.chain.from_iterable(cell_count_iters)))
+		del cell_count_iters
 		ppgpp_conc = ppgpp_count * counts_to_molar * 1000  # uM
 		mrna_count = read_data(cell_paths, 'mRNACounts', 'mRNA_counts')
 		synthase_counts = mrna_count[:, synthase_rna_idx_mrnas]

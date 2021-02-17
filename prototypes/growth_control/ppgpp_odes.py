@@ -11,18 +11,21 @@ similar results to their paper figure although not explicitly shown in their
 mathematica file.
 '''
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import argparse
-import csv
-import multiprocessing as mp
+import io
 import os
-import time
 
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy.integrate import odeint
 from scipy.integrate import ode
+from six.moves import range, zip
+
+from wholecell.io import tsv
+from wholecell.utils.py3 import monotonic_seconds
+from wholecell.utils import parallelization
 
 
 file_location = os.path.dirname(os.path.realpath(__file__))
@@ -33,8 +36,8 @@ nAvogadro = 6e23
 proteinContent = 15e8
 
 # indices for concentrations
-aa_indices = range(nAA)
-ta_indices = range(nAA, 2 * nAA)
+aa_indices = list(range(nAA))
+ta_indices = list(range(nAA, 2 * nAA))
 ppgpp_index = ta_indices[-1] + 1
 r_index = ppgpp_index + 1
 
@@ -320,7 +323,7 @@ def parse():
 
 
 if __name__ == '__main__':
-	start = time.time()
+	start = monotonic_seconds()
 
 	args = parse()
 
@@ -338,8 +341,8 @@ if __name__ == '__main__':
 		baseline = simulate(args, params, os.path.join(output_dir, args.output))
 
 		# Perform sensitivity for each parameter in params
-		with open(os.path.join(output_dir, '{}.tsv'.format(args.output)), 'w') as f:
-			writer = csv.writer(f, delimiter='\t')
+		with io.open(os.path.join(output_dir, '{}.tsv'.format(args.output)), 'wb') as f:
+			writer = tsv.writer(f)
 			writer.writerow(['Parameter', 'Factor', 'ppGpp', 'Ribosomes', 'Elongation Rate',
 				'Average AA', 'Average tRNA'] + ['AA_{}'.format(i) for i in range(nAA)]
 				+ ['tRNA_{}'.format(i) for i in range(nAA)])
@@ -353,7 +356,7 @@ if __name__ == '__main__':
 					for factor in variations]
 
 				if args.parallel:
-					pool = mp.Pool(processes=mp.cpu_count())
+					pool = parallelization.pool()
 					results = [pool.apply_async(simulate, sa) for sa in sim_args]
 					pool.close()
 					pool.join()
@@ -374,4 +377,4 @@ if __name__ == '__main__':
 		output_file = os.path.join(file_location, 'output', args.output)
 		simulate(args, params, output_file)
 
-	print('Completed in {:.1f} min'.format((time.time() - start) / 60))
+	print('Completed in {:.1f} min'.format((monotonic_seconds() - start) / 60))

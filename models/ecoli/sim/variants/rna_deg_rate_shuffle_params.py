@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+
 import numpy as np
 
 CONTROL_OUTPUT = dict(
@@ -11,7 +13,7 @@ def rna_deg_rate_shuffle_params(sim_data, index):
 		return CONTROL_OUTPUT, sim_data
 
 	np.random.seed(index)
-	idxs = np.arange(len(sim_data.process.transcription.rnaData["degRate"]))
+	idxs = np.arange(len(sim_data.process.transcription.rna_data['deg_rate']))
 	np.random.shuffle(idxs)
 	sim_data.process.transcription.rnaDegRateShuffleIdxs = idxs
 

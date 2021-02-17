@@ -8,19 +8,28 @@ from __future__ import absolute_import, division, print_function
 
 import abc
 from collections import OrderedDict
+import datetime
 import importlib
-import multiprocessing as mp
 import os
 import sys
 import time
 import traceback
+from typing import List
 
 from fireworks import FiretaskBase
+import matplotlib as mpl
 from PIL import Image
-from typing import List, Optional
+from six.moves import zip
 
+from wholecell.utils import data
 from wholecell.utils import parallelization
+import wholecell.utils.filepath as fp
+from wholecell.utils.py3 import monotonic_seconds
 
+
+# Used to set the backend to Agg before pyplot imports in other scripts.
+# Other configuration settings can be added to the file as well.
+mpl.rc_file(fp.MATPLOTLIBRC_FILE)
 
 SUB_DIRECTORIES = {'.png': 'low_res_plots'}
 
@@ -82,7 +91,7 @@ class AnalysisBase(FiretaskBase):
 			plot_names = ['CORE']
 		name_dict = OrderedDict()
 		self.expand_plot_names(plot_names, name_dict)
-		return name_dict.keys()
+		return list(name_dict.keys())
 
 	def compile_images(self, file_list, extension='.png'):
 		# type: (List[str], str) -> None
@@ -111,7 +120,7 @@ class AnalysisBase(FiretaskBase):
 		images = [Image.open(f) for f in image_files if os.path.exists(f)]
 		if not images:
 			return
-		widths, heights = zip(*(i.size for i in images))
+		widths, heights = list(zip(*(i.size for i in images)))
 
 		# Create and save compiled image
 		compiled_image = Image.new('RGB', (max(widths), sum(heights)), (255, 255, 255))
@@ -121,28 +130,27 @@ class AnalysisBase(FiretaskBase):
 			pos += image.size[1]
 		compiled_image.save(os.path.join(output_dir, 'compiled' + extension))
 
+		for image in images:
+			image.close()
+		compiled_image.close()
+
 	def run_task(self, fw_spec):
-		startTime = time.time()
+		start_real_sec = monotonic_seconds()
 		print("\n{}: --- Starting {} ---".format(
-			time.ctime(startTime), type(self).__name__))
+			time.ctime(), type(self).__name__))
 
 		plot_names = self.get("plot", [])
 		fileList = self.list_plot_files(plot_names)
 
 		self['output_filename_prefix'] = self.get('output_filename_prefix', '')
+		self['metadata'] = data.expand_keyed_env_vars(self['metadata'])
 
-		# TODO(jerry): Restructure the code to `exec` the analyses using their
-		# command line interpreters rather than `fork` them via mp.Pool(), to
-		# work around Issue #392 with `fork`. For this to call the command line
-		# code, it should not run analyses via this firetask.
-		# Meanwhile, parallelization.cpus() returns 1 on macOS unless the
-		# caller overrides that safety check.
 		cpus = parallelization.cpus(self.get("cpus", 1))
 		pool = None
 		results = {}
 
 		if cpus > 1:
-			pool = mp.Pool(processes=cpus)
+			pool = parallelization.pool(cpus)
 
 		exceptionFileList = []
 		for f in fileList:
@@ -159,6 +167,7 @@ class AnalysisBase(FiretaskBase):
 				results[f] = pool.apply_async(run_plot, args=(mod.Plot, args, f))
 			else:
 				print("{}: Running {}".format(time.ctime(), f))
+				# noinspection PyBroadException
 				try:
 					mod.Plot.main(*args)
 				except Exception:
@@ -173,19 +182,19 @@ class AnalysisBase(FiretaskBase):
 					exceptionFileList.append(f)
 
 		if self.get('compile', False):
-			print("{}: Compiling images".format(time.ctime()))
+			print('{}: Compiling images'.format(time.ctime()))
 			self.compile_images(fileList)
 
-		timeTotal = time.time() - startTime
+		elapsed_real_sec = monotonic_seconds() - start_real_sec
 
-		duration = time.strftime("%H:%M:%S", time.gmtime(timeTotal))
+		duration = datetime.timedelta(seconds=elapsed_real_sec)
 		if exceptionFileList:
-			print("Completed analysis in {} with an exception in:".format(duration))
-			for file in exceptionFileList:
-				print("\t{}".format(file))
-			raise Exception("Error in analysis")
+			print('Completed analysis in {} with an exception in:'.format(duration))
+			for f in exceptionFileList:
+				print('\t{}'.format(f))
+			raise RuntimeError('Error in analysis plot(s): {}'.format(', '.join(exceptionFileList)))
 		else:
-			print("Completed analysis in {}".format(duration))
+			print('Completed analysis in {}'.format(duration))
 
 
 def run_plot(plot_class, args, name):

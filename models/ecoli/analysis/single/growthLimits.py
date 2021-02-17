@@ -1,38 +1,27 @@
 """
 Plots various simulation components that may be limiting growth
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/18/2015
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-import cPickle
 import os
 
 from matplotlib import pyplot as plt
 import numpy as np
+from six.moves import cPickle, range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, 'simOutDir does not currently exist as a directory'
-
-		filepath.makedirs(plotOutDir)
-
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
-		moleculeIds = sim_data.moleculeGroups.aaIDs
-		moleculeIds.append('GTP[c] (translation)')
-		moleculeIds.extend(sim_data.moleculeGroups.ntpIds)
+		moleculeIds = sim_data.molecule_groups.amino_acids
+		moleculeIds.extend(sim_data.molecule_groups.ntps)
 
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
@@ -43,11 +32,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		time = main_reader.readColumn("time") - initialTime
 
 		# Translation
-		gtpPoolSize = growth_limits_reader.readColumn("gtpPoolSize")
-		gtpRequestSize = growth_limits_reader.readColumn("gtpRequestSize")
-		gtpAllocated = growth_limits_reader.readColumn("gtpAllocated")
-		gtpUsed = growth_limits_reader.readColumn("gtpUsed")
-
 		aaPoolSize = growth_limits_reader.readColumn("aaPoolSize")
 		aaRequestSize = growth_limits_reader.readColumn("aaRequestSize")
 		aaAllocated = growth_limits_reader.readColumn("aaAllocated")
@@ -62,22 +46,18 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Create aggregate
 		poolSize = np.hstack((
 			aaPoolSize,
-			gtpPoolSize.reshape(gtpPoolSize.size, 1),
 			ntpPoolSize,
 			))
 		requestSize = np.hstack((
 			aaRequestSize,
-			gtpRequestSize.reshape(gtpPoolSize.size, 1),
 			ntpRequestSize,
 			)).astype(np.int64)
 		allocated = np.hstack((
 			aaAllocated,
-			gtpAllocated.reshape(gtpPoolSize.size, 1),
 			ntpAllocated,
 			))
 		used =  np.hstack((
 			aasUsed,
-			gtpUsed.reshape(gtpPoolSize.size, 1),
 			ntpUsed,
 			))
 

@@ -5,20 +5,16 @@ BulkMolecules.py
 
 State which represents for a class of molecules the bulk copy numbers.
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import absolute_import
-from __future__ import division
-
-from itertools import izip
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
+from six.moves import zip
 
 import wholecell.states.internal_state
 import wholecell.views.view
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
-
 from wholecell.utils import units
 
 from wholecell.utils.constants import REQUEST_PRIORITY_DEFAULT
@@ -45,7 +41,8 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 		self._countsUnallocated = None
 
 		self._processIDs = None
-		self._submassNameToIndex = None
+		self._processID_to_index = {}
+		self._submass_name_to_index = None
 		self._processPriorities = None
 		self.division_mode = {}
 
@@ -53,14 +50,18 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 	def initialize(self, sim, sim_data):
 		super(BulkMolecules, self).initialize(sim, sim_data)
 
-		self._processIDs = sim.processes.keys()
+		self._processIDs = list(sim.processes.keys())
+		self._processID_to_index = {
+			id_: idx for idx, id_ in enumerate(self._processIDs)}
 
 		# Load constants
-		self._moleculeIDs = sim_data.internal_state.bulkMolecules.bulkData['id']
+		self._moleculeIDs = sim_data.internal_state.bulk_molecules.bulk_data['id']
 
-		self._moleculeMass = sim_data.internal_state.bulkMolecules.bulkData['mass'].asNumber(units.fg / units.mol) / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		self._moleculeMass = sim_data.internal_state.bulk_molecules.bulk_data['mass'].asNumber(units.fg / units.mol) / sim_data.constants.n_avogadro.asNumber(1 / units.mol)
 
-		self._submassNameToIndex = sim_data.submassNameToIndex
+		self._submass_name_to_index = sim_data.submass_name_to_index
+
+		self._compartment_abbrev_to_index = sim_data.compartment_abbrev_to_index
 
 		# Create the container for molecule counts
 		self.container = BulkObjectsContainer(self._moleculeIDs)
@@ -71,8 +72,14 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 
 		# Set up ids for division into daughter cells
 		self.division_mode = {}
-		self.division_mode['binomial'] = sim_data.moleculeGroups.bulkMoleculesBinomialDivision
-		self.division_mode['equally'] = sim_data.moleculeGroups.bulkMoleculesEqualDivision
+		self.division_mode['binomial'] = sim_data.molecule_groups.bulk_molecules_binomial_division
+		self.division_mode['equally'] = sim_data.molecule_groups.bulk_molecules_equal_division
+
+		# Set up matrix for compartment mass calculation
+		self._molecule_by_compartment = np.stack(
+			[np.core.defchararray.chararray.endswith(self._moleculeIDs, abbrev + ']'
+			) for abbrev in self._compartment_abbrev_to_index])
+
 
 	def processRequestPriorityIs(self, processIndex, priorityLevel):
 		self._processPriorities[processIndex] = priorityLevel
@@ -91,18 +98,31 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 		self._countsUnallocated = np.zeros(nMolecules, dtype)
 
 
-	def partition(self):
-		if self._nProcesses == 0:
+	def partition(self, processes):
+		# Reset allocated counts
+		self._countsAllocatedInitial.fill(0)
+
+		if len(processes) == 0:
 			self._countsUnallocated = self.container._counts
 			return
 
+		# Get list of process indexes to be partitioned
+		process_indexes = np.array([
+			self._processID_to_index[process.__name__]
+		    for process in processes])
+
 		# Calculate and store requests
-		self._countsRequested[:] = 0
+		self._countsRequested.fill(0)
 
+		process_indexes_set = set(process_indexes)
 		for view in self._views:
-			self._countsRequested[view._containerIndexes, view._processIndex] += view._request()
+			if view._processIndex in process_indexes_set:
+				self._countsRequested[view._containerIndexes, view._processIndex] += view._request()
 
-		if ASSERT_POSITIVE_COUNTS and not (self._countsRequested >= 0).all():
+		# Select columns to partition
+		counts_requested = self._countsRequested[:, process_indexes]
+
+		if ASSERT_POSITIVE_COUNTS and np.any(counts_requested < 0):
 			raise NegativeCountsError(
 				"Negative value(s) in self._countsRequested:\n"
 				+ "\n".join(
@@ -111,15 +131,27 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 						self._processIDs[processIndex],
 						self._countsRequested[molIndex, processIndex]
 						)
-					for molIndex, processIndex in izip(*np.where(self._countsRequested < 0))
+					for molIndex, processIndex in zip(*np.where(self._countsRequested < 0))
 					)
 				)
 
 		# Calculate partition
+		if len(processes) > 1:
+			self._countsAllocatedInitial[:, process_indexes] = calculatePartition(
+				self._processPriorities[process_indexes],
+				counts_requested,
+				self.container._counts,
+				self.randomState,
+				)
+		else:
+			# No need to partition if there is only one process
+			self._countsAllocatedInitial[:, process_indexes[0]] = np.fmin(
+				counts_requested.flatten(), self.container._counts)
 
-		calculatePartition(self._processPriorities, self._countsRequested, self.container._counts, self._countsAllocatedInitial)
+		# Select columns that have been partitioned
+		counts_allocated_initial = self._countsAllocatedInitial[:, process_indexes]
 
-		if ASSERT_POSITIVE_COUNTS and not (self._countsAllocatedInitial >= 0).all():
+		if ASSERT_POSITIVE_COUNTS and np.any(counts_allocated_initial < 0):
 			raise NegativeCountsError(
 					"Negative value(s) in self._countsAllocatedInitial:\n"
 					+ "\n".join(
@@ -128,14 +160,15 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 						self._processIDs[processIndex],
 						self._countsAllocatedInitial[molIndex, processIndex]
 						)
-					for molIndex, processIndex in izip(*np.where(self._countsAllocatedInitial < 0))
+					for molIndex, processIndex in zip(*np.where(self._countsAllocatedInitial < 0))
 					)
 				)
 
 		# Record unpartitioned counts for later merging
-		self._countsUnallocated = self.container._counts - np.sum(self._countsAllocatedInitial, axis = -1)
+		self._countsUnallocated = self.container._counts - np.sum(
+			counts_allocated_initial, axis=-1)
 
-		if ASSERT_POSITIVE_COUNTS and not (self._countsUnallocated >= 0).all():
+		if ASSERT_POSITIVE_COUNTS and np.any(self._countsUnallocated < 0):
 			raise NegativeCountsError(
 					"Negative value(s) in self._countsUnallocated:\n"
 					+ "\n".join(
@@ -147,22 +180,22 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 					)
 				)
 
-		self._countsAllocatedFinal[:] = self._countsAllocatedInitial
-
-	def calculatePreEvolveStateMass(self):
-		# Compute masses of partitioned molecules
-
-		if self.simulationStep() == 0:
-			self._countsUnallocated = self.container._counts
-
-		self._masses[self._preEvolveStateMassIndex, ...] = np.dot(
-			np.hstack([self._countsAllocatedInitial, self._countsUnallocated[:, np.newaxis]]).T,
-			self._moleculeMass
-			)
+		np.copyto(self._countsAllocatedFinal, self._countsAllocatedInitial)
 
 
-	def merge(self):
-		if ASSERT_POSITIVE_COUNTS and not (self._countsAllocatedFinal >= 0).all():
+	def merge(self, processes):
+		if len(processes) == 0:
+			return
+
+		# Get list of process indexes to be merged
+		process_indexes = np.array([
+			self._processID_to_index[process.__name__]
+			for process in processes])
+
+		# Select columns to merge
+		counts_allocated_final = self._countsAllocatedFinal[:, process_indexes]
+
+		if ASSERT_POSITIVE_COUNTS and np.any(counts_allocated_final < 0):
 			raise NegativeCountsError(
 					"Negative value(s) in self._countsAllocatedFinal:\n"
 					+ "\n".join(
@@ -171,25 +204,43 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 						self._processIDs[processIndex],
 						self._countsAllocatedFinal[molIndex, processIndex]
 						)
-					for molIndex, processIndex in izip(*np.where(self._countsAllocatedFinal < 0))
+					for molIndex, processIndex in zip(*np.where(self._countsAllocatedFinal < 0))
 					)
 				)
 
-		self.container.countsIs(
-			self._countsUnallocated + self._countsAllocatedFinal.sum(axis = -1)
-			)
+		# Merge counts and calculate mass differences for each process
+		if len(processes) > 1:
+			self.container.countsIs(
+				self._countsUnallocated + counts_allocated_final.sum(axis=-1)
+				)
+			self._process_mass_diffs[process_indexes, :] += np.dot(
+				(self._countsAllocatedFinal - self._countsAllocatedInitial)[:, process_indexes].T,
+				self._moleculeMass)
+		else:
+			# Use simpler calculations if there is only one process
+			counts_allocated_final = counts_allocated_final.flatten()
+			self.container.countsIs(
+				self._countsUnallocated + counts_allocated_final
+				)
+			self._process_mass_diffs[process_indexes[0], :] += np.dot(
+				counts_allocated_final - self._countsAllocatedInitial[:, process_indexes[0]],
+				self._moleculeMass)
 
 
-	def calculatePostEvolveStateMass(self):
-		# Compute masses of partitioned molecules
-
+	def calculateMass(self):
+		# Compute summed masses of all molecules
 		if self.simulationStep() == 0:
 			self._countsUnallocated = self.container._counts
 
-		self._masses[self._postEvolveStateMassIndex, ...] = np.dot(
+		self._masses = np.dot(
 			np.hstack([self._countsAllocatedFinal, self._countsUnallocated[:, np.newaxis]]).T,
 			self._moleculeMass
-			)
+			).sum(axis=0)
+
+		# Compute summed masses for each compartment
+		self._compartment_masses = np.dot(
+			np.hstack([self._countsAllocatedFinal, self._countsUnallocated[:, np.newaxis]]
+			).sum(axis=1) * self._molecule_by_compartment, self._moleculeMass)
 
 
 	def loadSnapshot(self, container):
@@ -198,7 +249,6 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 
 	def tableCreate(self, tableWriter):
 		self.container.tableCreate(tableWriter)
-		objectNames = self.container.objectNames()
 		subcolumns = {
 			'counts': 'objectNames'}
 
@@ -207,7 +257,6 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 			subcolumns = subcolumns)
 
 	def tableAppend(self, tableWriter):
-		# self.container.tableAppend(tableWriter)
 		tableWriter.append(
 			counts = self.container._counts,
 			atpAllocatedInitial = self._countsAllocatedInitial[self.container._objectNames.index("ATP[c]"), :],
@@ -216,9 +265,8 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 			)
 
 
-def calculatePartition(processPriorities, countsRequested, counts, countsPartitioned):
-	# TODO: reduce the arrays to elements where counts != 0
-
+def calculatePartition(processPriorities, countsRequested, counts, random_state):
+	partitioned_counts = np.zeros_like(countsRequested)
 	counts = counts.copy()
 
 	priorityLevels = np.sort(np.unique(processPriorities))[::-1]
@@ -226,25 +274,31 @@ def calculatePartition(processPriorities, countsRequested, counts, countsPartiti
 	for priorityLevel in priorityLevels:
 		processHasPriority = (priorityLevel == processPriorities)
 
-		requests = countsRequested[:, processHasPriority]
+		requests = countsRequested[:, processHasPriority].copy()
 
-		totalRequests = requests.sum(axis = 1)
-		totalRequestIsNonzero = (totalRequests > 0)
+		totalRequests = requests.sum(axis=1)
+		excess_request_mask = (totalRequests > counts)
 
-		fractionalRequests = np.zeros(requests.shape, np.float64)
-		fractionalRequests[totalRequestIsNonzero, :] = (
-			requests[totalRequestIsNonzero, :]
-			/ totalRequests[totalRequestIsNonzero, np.newaxis]
+		# Get fractional request for molecules that have excess request
+		# compared to available counts
+		fractional_requests = (
+			requests[excess_request_mask, :] * counts[excess_request_mask, np.newaxis]
+			/ totalRequests[excess_request_mask, np.newaxis]
 			)
 
-		allocations = np.fmin(
-			requests,
-			counts[:, np.newaxis] * fractionalRequests
-			).astype(np.int64)
+		# Distribute fractional counts to ensure full allocation of excess
+		# request molecules
+		remainders = fractional_requests % 1
+		for idx, remainder in enumerate(remainders):
+			count = int(np.round(remainder.sum()))
+			fractional_requests[idx, :] += random_state.multinomial(count, remainder)
+		requests[excess_request_mask, :] = fractional_requests
 
-		countsPartitioned[:, processHasPriority] = allocations
+		allocations = requests.astype(np.int64)
+		partitioned_counts[:, processHasPriority] = allocations
+		counts -= allocations.sum(axis=1)
 
-		counts -= allocations.sum(axis = 1)
+	return partitioned_counts
 
 
 class BulkMoleculesViewBase(wholecell.views.view.View):
@@ -286,7 +340,7 @@ class BulkMoleculesViewBase(wholecell.views.view.View):
 		self._requestedCount[:] = value
 
 	def requestAll(self):
-		self._requestedCount[:] = self._totalCount
+		np.copyto(self._requestedCount, self._totalCount)
 
 
 class BulkMoleculesView(BulkMoleculesViewBase):

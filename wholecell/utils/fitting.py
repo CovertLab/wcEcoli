@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+
 import numpy as np
 import unum # Imported here to be used in getCountsFromMassAndExpression assertions
 from wholecell.utils import units
@@ -112,6 +114,10 @@ def masses_and_counts_for_homeostatic_target(
 
 	cell_volume = dry_mass_of_non_small_molecules / (cell_density - total_small_mol_mass_conc)
 
+	if cell_volume.asNumber() < 0:
+		raise ValueError('Could not achieve concentration targets with the expected dry mass.'
+			' Check for any unusually high concentrations.')
+
 	# Calculate and return the counts of molecules and their associated masses
 
 	mols = cell_volume * concentrations
@@ -132,15 +138,15 @@ def calcProteinCounts(sim_data, monomerMass):
 def calcProteinTotalCounts(sim_data, monomerMass, monomerExpression):
 	return countsFromMassAndExpression(
 		monomerMass.asNumber(units.g),
-		sim_data.process.translation.monomerData["mw"].asNumber(units.g / units.mol),
+		sim_data.process.translation.monomer_data["mw"].asNumber(units.g / units.mol),
 		monomerExpression,
-		sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		sim_data.constants.n_avogadro.asNumber(1 / units.mol)
 		)
 
 def calcProteinDistribution(sim_data):
 	return normalize(
-		sim_data.process.transcription.rnaData["expression"][sim_data.relation.rnaIndexToMonomerMapping] /
-		(np.log(2) / sim_data.doubling_time.asNumber(units.s) + sim_data.process.translation.monomerData["degRate"].asNumber(1 / units.s))
+		sim_data.process.transcription.rna_data["expression"][sim_data.relation.rna_index_to_monomer_mapping] /
+		(np.log(2) / sim_data.doubling_time.asNumber(units.s) + sim_data.process.translation.monomer_data['deg_rate'].asNumber(1 / units.s))
 		)
 
 def cosine_similarity(samples):

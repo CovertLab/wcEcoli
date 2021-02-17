@@ -53,19 +53,18 @@ node list is read, nodes of the new type will be passed into the new function,
 which assigns that node dynamics from listener output:
 
 	node.read_dynamics(dynamics, dynamics_units)
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/26/2018
-
 """
 from __future__ import absolute_import, division, print_function
 
-import cPickle
+from collections import Counter
 import numpy as np
 import re
 import os
 import json
-from itertools import izip
+
+from typing import Union
+import six
+from six.moves import cPickle, zip
 
 from models.ecoli.analysis.causality_network.network_components import (
 	Node, Edge,
@@ -119,17 +118,19 @@ NONPROTEIN_MOLECULES_IN_2CS = ["ATP[c]", "ADP[c]", "WATER[c]", "PI[c]",
 COMPARTMENTS = {
 	"n": "nucleoid",
 	"j": "projection",
-	"w": "negative",
+	"w": "cell wall",
 	"c": "cytoplasm",
 	"e": "extracellular",
 	"m": "membrane",
 	"o": "outer membrane",
 	"p": "periplasm",
 	"l": "pilus",
-	"i": "inner membrane"}
+	"i": "inner membrane",
+	"s": "flagellum",
+	}
 
 def molecule_compartment(molecule):
-	match = re.match(r'.+\[(.)\]$', molecule)
+	match = re.match(r'.+\[(.)]$', molecule)
 	if match:
 		return COMPARTMENTS.get(match.groups()[0])
 
@@ -174,6 +175,12 @@ class BuildNetwork(object):
 		# self._write_files()
 
 
+	def build_nodes_and_edges(self):
+		"""Build the network and return the node and edge lists."""
+		self._build_network()
+		return self._node_list(), self._edge_list()
+
+
 	def _build_network(self):
 		"""
 		Add nodes and edges to the node/edge lists, and check for network
@@ -194,6 +201,21 @@ class BuildNetwork(object):
 		# Check for network sanity (optional)
 		if self.check_sanity:
 			self._find_duplicate_nodes()
+
+
+	def _node_list(self):
+		return [node.to_dict() for node in self.node_list]
+
+
+	def _edge_list(self):
+		def edge_dict(edge):
+			return {
+				'src_node_id': edge.src_id,
+				'dst_node_id': edge.dst_id,
+				'stoichiometry': edge.stoichiometry,
+				'process': edge.process}
+
+		return [edge_dict(edge) for edge in self.edge_list]
 
 
 	def _write_files(self):
@@ -224,31 +246,20 @@ class BuildNetwork(object):
 
 
 	def _write_json(self):
-		"""
-		Write node and edge lists as json files.
-		"""
-
-		nodes = [node.to_dict() for node in self.node_list]
+		"""Write node and edge lists as json files."""
+		nodes = self._node_list()
 		node_json = json.dumps(nodes)
 		node_path = os.path.join(self.output_dir, NODELIST_JSON)
 		print('writing {} nodes to node file {}'.format(len(nodes), node_path))
 		with open(node_path, 'w') as node_file:
 			node_file.write(node_json)
 
-		def edge_dict(edge):
-			return {
-				'src_node_id': edge.src_id,
-				'dst_node_id': edge.dst_id,
-				'stoichiometry': edge.stoichiometry,
-				'process': edge.process}
-
-		edges = [edge_dict(edge) for edge in self.edge_list]
+		edges = self._edge_list()
 		edge_json = json.dumps(edges)
 		edge_path = os.path.join(self.output_dir, EDGELIST_JSON)
 		print('writing {} edges to edge file {}'.format(len(edges), edge_path))
 		with open(edge_path, 'w') as edge_file:
 			edge_file.write(edge_json)
-
 
 	def _add_global_nodes(self):
 		"""
@@ -282,8 +293,8 @@ class BuildNetwork(object):
 		Add gene state nodes to the node list.
 		"""
 		# Loop through all genes (in the order listed in transcription)
-		for gene_id in self.sim_data.process.transcription.rnaData["geneId"]:
-			
+		for gene_id in self.sim_data.process.transcription.rna_data['gene_id']:
+
 			# Initialize a single gene node
 			gene_node = Node()
 
@@ -315,15 +326,15 @@ class BuildNetwork(object):
 		Add transcription process nodes and transcript state nodes to the node
 		list, and edges connected to the transcription nodes to the edge list.
 		"""
-		ntp_ids = self.sim_data.moleculeGroups.ntpIds
-		ppi_id = "PPI[c]"
-		rnap_id = self.sim_data.moleculeIds.rnapFull
+		ntp_ids = self.sim_data.molecule_groups.ntps
+		ppi_id = self.sim_data.molecule_ids.ppi
+		rnap_id = self.sim_data.molecule_ids.full_RNAP
 
 		# Loop through all genes (in the order listed in transcription)
-		for rna_id, gene_id, is_mrna in izip(
-				self.sim_data.process.transcription.rnaData["id"],
-				self.sim_data.process.transcription.rnaData["geneId"],
-				self.sim_data.process.transcription.rnaData["isMRna"]):
+		for rna_id, gene_id, is_mrna in zip(
+				self.sim_data.process.transcription.rna_data["id"],
+				self.sim_data.process.transcription.rna_data['gene_id'],
+				self.sim_data.process.transcription.rna_data['is_mRNA']):
 
 			# Initialize a single transcript node
 			rna_node = Node()
@@ -335,6 +346,7 @@ class BuildNetwork(object):
 			gene_name, gene_synonyms = self.common_names.genes.get(
 				gene_id, (gene_id, [gene_id]))
 
+			rna_synonyms = []  # TODO(jerry): what default value to use?
 			if is_mrna:
 				rna_name = gene_name + " mRNA"
 				if isinstance(gene_synonyms, list):
@@ -408,26 +420,26 @@ class BuildNetwork(object):
 		list.
 		"""
 		# Create nodes for amino acids
-		aa_ids = self.sim_data.moleculeGroups.aaIDs
+		aa_ids = self.sim_data.molecule_groups.amino_acids
 		gtp_id = "GTP[c]"
 		gdp_id = "GDP[c]"
-		water_id = "WATER[c]"
-		ppi_id = "PPI[c]"
+		water_id = self.sim_data.molecule_ids.water
+		ppi_id = self.sim_data.molecule_ids.ppi
 
-		ribosome_subunit_ids = [self.sim_data.moleculeIds.s30_fullComplex,
-			self.sim_data.moleculeIds.s50_fullComplex]
+		ribosome_subunit_ids = [self.sim_data.molecule_ids.s30_full_complex,
+			self.sim_data.molecule_ids.s50_full_complex]
 
 		# Construct dictionary to get corrensponding gene IDs from RNA IDs
 		rna_id_to_gene_id = {}
-		for rna_id, gene_id in izip(
-				self.sim_data.process.transcription.rnaData["id"],
-				self.sim_data.process.transcription.rnaData["geneId"]):
+		for rna_id, gene_id in zip(
+				self.sim_data.process.transcription.rna_data["id"],
+				self.sim_data.process.transcription.rna_data['gene_id']):
 			rna_id_to_gene_id[rna_id] = gene_id
 
 		# Loop through all translatable genes
-		for monomer_id, rna_id in izip(
-				self.sim_data.process.translation.monomerData["id"],
-				self.sim_data.process.translation.monomerData["rnaId"]):
+		for monomer_id, rna_id in zip(
+				self.sim_data.process.translation.monomer_data["id"],
+				self.sim_data.process.translation.monomer_data['rna_id']):
 
 			gene_id = rna_id_to_gene_id[rna_id]
 
@@ -514,8 +526,8 @@ class BuildNetwork(object):
 		complex_ids = self.sim_data.process.complexation.ids_complexes + EQUILIBRIUM_COMPLEXES_IN_COMPLEXATION
 		reaction_ids = self.sim_data.process.complexation.ids_reactions
 
-		molecule_ids = self.sim_data.process.complexation.moleculeNames
-		stoich_matrix = self.sim_data.process.complexation.stoichMatrix()
+		molecule_ids = self.sim_data.process.complexation.molecule_names
+		stoich_matrix = self.sim_data.process.complexation.stoich_matrix()
 
 		# Loop through all complexation reactions
 		for reaction_index, reaction_id in enumerate(reaction_ids):
@@ -542,7 +554,7 @@ class BuildNetwork(object):
 			stoich_coeffs = stoich_vector[molecule_indices]
 
 			# Loop through all proteins participating in the reaction
-			for molecule_index, stoich in izip(molecule_indices, stoich_coeffs):
+			for molecule_index, stoich in zip(molecule_indices, stoich_coeffs):
 				# Add complexation edges
 				# Note: the direction of the edge is determined by the sign of the
 				# stoichiometric coefficient.
@@ -586,10 +598,10 @@ class BuildNetwork(object):
 		Note: forward and reverse reactions are represented as separate nodes.
 		"""
 		# Get all reaction stoichiometry from sim_data
-		reaction_stoich = self.sim_data.process.metabolism.reactionStoich
+		reaction_stoich = self.sim_data.process.metabolism.reaction_stoich
 
 		# Get reaction to catalyst dict from sim_data
-		reaction_catalysts = self.sim_data.process.metabolism.reactionCatalysts
+		reaction_catalysts = self.sim_data.process.metabolism.reaction_catalysts
 
 		# get transport reactions and remove from metabolism
 		transport_reactions = set(self.sim_data.process.metabolism.transport_reactions)
@@ -598,7 +610,7 @@ class BuildNetwork(object):
 		metabolite_ids = []
 
 		# Loop through all reactions
-		for reaction_id, stoich_dict in reaction_stoich.iteritems():
+		for reaction_id, stoich_dict in six.viewitems(reaction_stoich):
 
 			node_type = 'Metabolism'
 
@@ -659,11 +671,12 @@ class BuildNetwork(object):
 		# Add specific charging reactions
 		# TODO (Travis): add charged/uncharged tRNA as RNA not metabolites?
 		transcription = self.sim_data.process.transcription
-		uncharged_trnas = transcription.rnaData['id'][transcription.rnaData['isTRna']]
+		uncharged_trnas = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
 		charging_stoich = transcription.charging_stoich_matrix().T
 		charging_molecules = np.array(transcription.charging_molecules)
 		synthetases = np.array(transcription.synthetase_names)
 		trna_to_synthetase = transcription.aa_from_trna.T.dot(transcription.aa_from_synthetase)
+
 		for stoich, trna, synth_idx in zip(charging_stoich, uncharged_trnas, trna_to_synthetase):
 			rxn = '{} net charging'.format(trna[:-3])
 
@@ -687,7 +700,7 @@ class BuildNetwork(object):
 			mol_idx = np.where(stoich != 0)[0]
 			for mol, direction in zip(charging_molecules[mol_idx], stoich[mol_idx]):
 				# Add metabolites that were not encountered
-				if mol not in metabolite_ids:
+				if mol != trna and mol not in metabolite_ids:
 					metabolite_ids.append(mol)
 
 				# Add Charging edges
@@ -734,9 +747,9 @@ class BuildNetwork(object):
 		equilibrium nodes to the edge list.
 		"""
 		# Get equilibrium-specific data from sim_data
-		equilibrium_molecule_ids = self.sim_data.process.equilibrium.moleculeNames
-		equilibrium_reaction_ids = self.sim_data.process.equilibrium.rxnIds
-		equilibrium_stoich_matrix = self.sim_data.process.equilibrium.stoichMatrix()
+		equilibrium_molecule_ids = self.sim_data.process.equilibrium.molecule_names
+		equilibrium_reaction_ids = self.sim_data.process.equilibrium.rxn_ids
+		equilibrium_stoich_matrix = self.sim_data.process.equilibrium.stoich_matrix()
 
 		# Get IDs of complexes that were already added
 		complexation_complex_ids = self.sim_data.process.complexation.ids_complexes
@@ -769,6 +782,9 @@ class BuildNetwork(object):
 
 			# Loop through each element in column
 			for molecule_index, stoich in enumerate(equilibrium_stoich_matrix_column):
+				if stoich == 0:
+					continue
+
 				molecule_id = equilibrium_molecule_ids[molecule_index]
 
 				# Add Equilibrium edges
@@ -782,16 +798,16 @@ class BuildNetwork(object):
 						stoich)
 
 		# Get 2CS-specific data from sim_data
-		tcs_molecule_ids = self.sim_data.process.two_component_system.moleculeNames
-		tcs_reaction_ids = self.sim_data.process.two_component_system.rxnIds
-		tcs_stoich_matrix = self.sim_data.process.two_component_system.stoichMatrix()
+		tcs_molecule_ids = self.sim_data.process.two_component_system.molecule_names
+		tcs_reaction_ids = self.sim_data.process.two_component_system.rxn_ids
+		tcs_stoich_matrix = self.sim_data.process.two_component_system.stoich_matrix()
 
 		# Initialize list of complex IDs in 2CS
 		# TODO (ggsun): add this to sim_data
 		tcs_complex_ids = []
 
 		# Get lists of monomers that were already added
-		monomer_ids = list(self.sim_data.process.translation.monomerData["id"])
+		monomer_ids = list(self.sim_data.process.translation.monomer_data["id"])
 
 		# Loop through each 2CS reaction
 		for reaction_index, reaction_id in enumerate(tcs_reaction_ids):
@@ -818,6 +834,9 @@ class BuildNetwork(object):
 
 			# Loop through each element in column
 			for molecule_index, stoich in enumerate(tcs_stoich_matrix_column):
+				if stoich == 0:
+					continue
+
 				molecule_id = tcs_molecule_ids[molecule_index]
 
 				if molecule_id not in monomer_ids + NONPROTEIN_MOLECULES_IN_2CS:
@@ -890,7 +909,7 @@ class BuildNetwork(object):
 		"""
 		# Get list of transcription factor IDs and transcription unit IDs
 		tf_ids = self.sim_data.process.transcription_regulation.tf_ids
-		rna_ids = self.sim_data.process.transcription.rnaData["id"]
+		rna_ids = self.sim_data.process.transcription.rna_data["id"]
 
 		# Get delta_prob matrix from sim_data
 		delta_prob = self.sim_data.process.transcription_regulation.delta_prob
@@ -906,13 +925,27 @@ class BuildNetwork(object):
 		# Build dict that maps RNA IDs to gene IDs
 		rna_id_to_gene_id = {}
 
-		for rna_id, gene_id in izip(
-				self.sim_data.process.replication.geneData["rnaId"],
-				self.sim_data.process.replication.geneData["name"]):
+		for rna_id, gene_id in zip(
+				self.sim_data.process.replication.gene_data['rna_id'],
+				self.sim_data.process.replication.gene_data["name"]):
 			rna_id_to_gene_id[rna_id + "[c]"] = gene_id
 
 		# Loop through all TFs
 		for tf_id in tf_ids:
+			# Add TF bound to DNA
+			bound_tf_id = f'{tf_id}-bound'
+			tf_node = Node()
+			attr = {
+				'node_class': 'Process',
+				'node_type': 'TF Binding',
+				'node_id': bound_tf_id,
+				'name': bound_tf_id,
+				'location': 'c',
+				}
+			tf_node.read_attributes(**attr)
+			self.node_list.append(tf_node)
+			self._append_edge("Regulation", tf_id + "[c]", bound_tf_id)
+
 			# Get IDs of RNAs that are regulated by the TF
 			regulated_rna_ids = rna_ids[TF_to_TU_idx[tf_id]]
 
@@ -938,7 +971,7 @@ class BuildNetwork(object):
 				self.node_list.append(regulation_node)
 
 				# Add edge from TF to this regulation node
-				self._append_edge("Regulation", tf_id + "[c]", reg_id)
+				self._append_edge("Regulation", bound_tf_id, reg_id)
 
 				# Add edge from this regulation node to the gene
 				self._append_edge("Regulation", reg_id, gene_id)
@@ -948,30 +981,20 @@ class BuildNetwork(object):
 		"""
 		Identify nodes that have duplicate IDs.
 		"""
-		node_ids = []
-
-		# Loop through all nodes in the node_list
-		for node in self.node_list:
-			# Get ID of the node
-			node_ids.append(node.get_node_id())
-
-		duplicate_ids = set([x for x in node_ids if node_ids.count(x) > 1])
+		counters = Counter([node.get_node_id() for node in self.node_list])
+		duplicate_ids = {node_id for node_id in counters if counters[node_id] > 1}
 
 		# Print duplicate node IDs that were found
 		if len(duplicate_ids) > 0:
-			raise Exception("%d node IDs were found to be duplicate: %s"
+			raise ValueError("%d node IDs have duplicates: %s"
 				% (len(duplicate_ids), duplicate_ids))
 
 
 	def _append_edge(self, type_, src, dst, stoichiometry=""):
+		# type: (str, str, str, Union[None, str, int]) -> None
 		"""
 		Helper function for appending new nodes to the network.
 		"""
 		edge = Edge(type_)
-		attr = {
-			'src_id': src,
-			'dst_id': dst,
-			'stoichiometry': stoichiometry,
-			}
-		edge.read_attributes(**attr)
+		edge.read_attributes(src_id=src, dst_id=dst, stoichiometry=stoichiometry)
 		self.edge_list.append(edge)

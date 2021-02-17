@@ -12,6 +12,8 @@ Expected variant indices (dependent on FACTORS):
 	0 (low expression) - 8 (high expression)
 """
 
+from __future__ import absolute_import, division, print_function
+
 import numpy as np
 
 FACTORS = [0.1, 0.125, 0.25, 0.5, 1, 2., 4., 8., 10.]
@@ -27,7 +29,7 @@ def mene_params(sim_data, index):
 		return CONTROL_OUTPUT, sim_data
 
 	adjustFactor = FACTORS[index]
-	mene_rna_index = np.where(sim_data.process.transcription.rnaData["id"] == "EG12437_RNA[c]")[0]
+	mene_rna_index = np.where(sim_data.process.transcription.rna_data["id"] == "EG12437_RNA[c]")[0]
 	mene_delta_prob_indices = np.where(sim_data.process.transcription_regulation.delta_prob["deltaI"] == mene_rna_index)[0]
 
 	# Adjust transcript synthesis probability in basal_prob and delta_prob
@@ -35,7 +37,7 @@ def mene_params(sim_data, index):
 	sim_data.process.transcription_regulation.delta_prob["deltaV"][mene_delta_prob_indices] *= adjustFactor
 
 	# Adjust rna expression data in order to impact initial condition
-	sim_data.process.transcription.rnaExpression[sim_data.condition][mene_rna_index] *= adjustFactor
+	sim_data.process.transcription.rna_expression[sim_data.condition][mene_rna_index] *= adjustFactor
 
 	return dict(
 		shortName = "{}_meneParams".format(index),

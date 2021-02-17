@@ -8,6 +8,9 @@ Expected variant indices:
 	0: control
 	1: reverse orientation of all rRNA genes
 """
+
+from __future__ import absolute_import, division, print_function
+
 import numpy as np
 from wholecell.utils import units
 
@@ -19,11 +22,11 @@ CONTROL_OUTPUT = dict(
 
 def rrna_orientation(sim_data, index):
 	if index == 1:
-		is_rrna = sim_data.process.transcription.rnaData["isRRna"]
-		direction = sim_data.process.transcription.rnaData["direction"]
-		coordinate = sim_data.process.transcription.rnaData[
-			"replicationCoordinate"]
-		length = sim_data.process.transcription.rnaData["length"].asNumber(units.nt)
+		is_rrna = sim_data.process.transcription.rna_data['is_rRNA']
+		direction = sim_data.process.transcription.rna_data["direction"]
+		coordinate = sim_data.process.transcription.rna_data[
+			"replication_coordinate"]
+		length = sim_data.process.transcription.rna_data["length"].asNumber(units.nt)
 
 		# Reverse orientations of all rRNA genes
 		coordinate[is_rrna] = coordinate[is_rrna] + np.multiply(

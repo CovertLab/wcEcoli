@@ -13,15 +13,20 @@ Outputs:
 		kinetic_constraints.tsv: metabolic reaction kinetic constraints
 """
 
+from __future__ import absolute_import, division, print_function
+
 import argparse
-import cPickle
-import csv
+import io
 import os
 import time
 
+import numpy as np
+from six.moves import cPickle, zip
+
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
-from wholecell.utils import filepath, units
+from wholecell.io import tsv
+from wholecell.utils import filepath
 
 
 FILE_LOCATION = os.path.dirname(os.path.realpath(__file__))
@@ -77,31 +82,31 @@ def save_genes(raw_data, sim_data, output):
 		output (str): path to tsv file with list of implemented genes
 	"""
 
-	validMonomers = sim_data.process.translation.monomerData['id']
+	validMonomers = sim_data.process.translation.monomer_data['id']
 
 	monomers = []
 
 	##### Metabolism #####
 	metMonomers = [
-		x for x in sim_data.process.metabolism.catalystsList
-		if x not in sim_data.process.complexation.complexNames
-		and x not in sim_data.process.equilibrium.complexNameToRxnIdx
+		x for x in sim_data.process.metabolism.catalyst_ids
+		if x not in sim_data.process.complexation.complex_names
+		and x not in sim_data.process.equilibrium.complex_name_to_rxn_idx
 		]
 	metComplexes = [
-		x for x in sim_data.process.metabolism.catalystsList
-		if x in sim_data.process.complexation.complexNames
-		or x in sim_data.process.equilibrium.complexNameToRxnIdx
+		x for x in sim_data.process.metabolism.catalyst_ids
+		if x in sim_data.process.complexation.complex_names
+		or x in sim_data.process.equilibrium.complex_name_to_rxn_idx
 		]
 
-	assert len(metMonomers) + len(metComplexes) == len(sim_data.process.metabolism.catalystsList)
+	assert len(metMonomers) + len(metComplexes) == len(sim_data.process.metabolism.catalyst_ids)
 
 	for metComplex in metComplexes:
-		if metComplex in sim_data.process.complexation.complexNames:
-			metMonomers += sim_data.process.complexation.getMonomers(metComplex)['subunitIds'].tolist()
-		elif metComplex in sim_data.process.equilibrium.complexNameToRxnIdx:
-			for subunit in sim_data.process.equilibrium.getMonomers(metComplex)['subunitIds'].tolist():
-				if subunit in sim_data.process.complexation.complexNames:
-					metMonomers += sim_data.process.complexation.getMonomers(subunit)['subunitIds'].tolist()
+		if metComplex in sim_data.process.complexation.complex_names:
+			metMonomers += sim_data.process.complexation.get_monomers(metComplex)['subunitIds'].tolist()
+		elif metComplex in sim_data.process.equilibrium.complex_name_to_rxn_idx:
+			for subunit in sim_data.process.equilibrium.get_monomers(metComplex)['subunitIds'].tolist():
+				if subunit in sim_data.process.complexation.complex_names:
+					metMonomers += sim_data.process.complexation.get_monomers(subunit)['subunitIds'].tolist()
 				elif subunit in validMonomers:
 					metMonomers += [subunit]
 		else:
@@ -111,55 +116,55 @@ def save_genes(raw_data, sim_data, output):
 
 	##### Translation #####
 	translationMonomers = []
-	translationMonomers += sim_data.process.complexation.getMonomers(sim_data.moleculeIds.s30_fullComplex)['subunitIds'].tolist()
-	translationMonomers += sim_data.process.complexation.getMonomers(sim_data.moleculeIds.s50_fullComplex)['subunitIds'].tolist()
+	translationMonomers += sim_data.process.complexation.get_monomers(sim_data.molecule_ids.s30_full_complex)['subunitIds'].tolist()
+	translationMonomers += sim_data.process.complexation.get_monomers(sim_data.molecule_ids.s50_full_complex)['subunitIds'].tolist()
 
 	monomers += translationMonomers
 
 	##### Transcription #####
 	transcriptionMonomers = []
-	transcriptionMonomers += sim_data.process.complexation.getMonomers(sim_data.moleculeIds.rnapFull)['subunitIds'].tolist()
+	transcriptionMonomers += sim_data.process.complexation.get_monomers(sim_data.molecule_ids.full_RNAP)['subunitIds'].tolist()
 
 	monomers += transcriptionMonomers
 
 	##### RNA Decay #####
 	rnaDecayMonomers = []
-	rnaDecayMonomers += sim_data.process.rna_decay.endoRnaseIds
-	rnaDecayMonomers += sim_data.moleculeGroups.exoRnaseIds
+	rnaDecayMonomers += sim_data.process.rna_decay.endoRNase_ids
+	rnaDecayMonomers += sim_data.molecule_groups.exoRNases
 
 	monomers += rnaDecayMonomers
 
 	##### Transcriptional Regulation #####
 	tfMonomers = []
-	tfIds = [x + '[c]' for x in sim_data.process.transcription_regulation.tfToTfType]
+	tfIds = [x + '[c]' for x in sim_data.process.transcription_regulation.tf_to_tf_type]
 	tfComplexes = [
 		x for x in tfIds
-		if x in sim_data.process.complexation.complexNames
-		or x in sim_data.process.equilibrium.complexNameToRxnIdx
-		or x in sim_data.process.two_component_system.complexToMonomer
+		if x in sim_data.process.complexation.complex_names
+		or x in sim_data.process.equilibrium.complex_name_to_rxn_idx
+		or x in sim_data.process.two_component_system.complex_to_monomer
 		]
 	tfMonomers += [
 		x for x in tfIds
-		if x not in sim_data.process.complexation.complexNames
-		and x not in sim_data.process.equilibrium.complexNameToRxnIdx
-		and x not in sim_data.process.two_component_system.complexToMonomer
+		if x not in sim_data.process.complexation.complex_names
+		and x not in sim_data.process.equilibrium.complex_name_to_rxn_idx
+		and x not in sim_data.process.two_component_system.complex_to_monomer
 		]
 
 	assert len(tfMonomers) + len(tfComplexes) == len(tfIds)
 
 	for tfComplex in tfComplexes:
-		if tfComplex in sim_data.process.complexation.complexNames:
-			tfMonomers += sim_data.process.complexation.getMonomers(tfComplex)['subunitIds'].tolist()
-		elif tfComplex in sim_data.process.equilibrium.complexNameToRxnIdx:
-			for subunit in sim_data.process.equilibrium.getMonomers(tfComplex)['subunitIds'].tolist():
-				if subunit in sim_data.process.complexation.complexNames:
-					tfMonomers += sim_data.process.complexation.getMonomers(subunit)['subunitIds'].tolist()
+		if tfComplex in sim_data.process.complexation.complex_names:
+			tfMonomers += sim_data.process.complexation.get_monomers(tfComplex)['subunitIds'].tolist()
+		elif tfComplex in sim_data.process.equilibrium.complex_name_to_rxn_idx:
+			for subunit in sim_data.process.equilibrium.get_monomers(tfComplex)['subunitIds'].tolist():
+				if subunit in sim_data.process.complexation.complex_names:
+					tfMonomers += sim_data.process.complexation.get_monomers(subunit)['subunitIds'].tolist()
 				elif subunit in validMonomers:
 					tfMonomers += [subunit]
-		elif tfComplex in sim_data.process.two_component_system.complexToMonomer:
-			for subunit in sim_data.process.two_component_system.complexToMonomer[tfComplex]:
-				if subunit in sim_data.process.complexation.complexNames:
-					tfMonomers += sim_data.process.complexation.getMonomers(subunit)['subunitIds'].tolist()
+		elif tfComplex in sim_data.process.two_component_system.complex_to_monomer:
+			for subunit in sim_data.process.two_component_system.complex_to_monomer[tfComplex]:
+				if subunit in sim_data.process.complexation.complex_names:
+					tfMonomers += sim_data.process.complexation.get_monomers(subunit)['subunitIds'].tolist()
 				elif subunit in validMonomers:
 					tfMonomers += [subunit]
 		else:
@@ -170,8 +175,8 @@ def save_genes(raw_data, sim_data, output):
 	monomers = set([x for x in monomers if x in validMonomers])
 
 	# Get gene names for each monomer implemented
-	rnaIdToSymbol = {x['rnaId']: x['symbol'] for x in raw_data.genes}
-	monomerToRna = {x['id'][:-3]: x['rnaId'][:-3] for x in sim_data.process.translation.monomerData}
+	rnaIdToSymbol = {x['rna_id']: x['symbol'] for x in raw_data.genes}
+	monomerToRna = {x['id'][:-3]: x['rna_id'][:-3] for x in sim_data.process.translation.monomer_data}
 	geneNames = [rnaIdToSymbol[monomerToRna[monomer[:-3]]] for monomer in monomers]
 
 	# Save data to output tsv file
@@ -184,9 +189,9 @@ def save_genes(raw_data, sim_data, output):
 		'Transcription Regulation': tfMonomers,
 		}
 
-	with open(output, 'w') as f:
+	with io.open(output, 'wb') as f:
 		print('\nWriting gene info to {}'.format(output))
-		writer = csv.writer(f, delimiter='\t')
+		writer = tsv.writer(f)
 		writer.writerow(['Generated by {} on {}'.format(__file__, time.ctime())])
 		writer.writerow(['Gene', 'RNA ID', 'Monomer ID', 'Process'])
 
@@ -203,7 +208,7 @@ def save_genes(raw_data, sim_data, output):
 				writer.writerow([gene, monomerToRna[monomer], monomer, ', '.join(processes)])
 				monomers_added.add(monomer)
 
-	print 'Number of genes: {}'.format(len(monomers_added))
+	print('Number of genes: {}'.format(len(monomers_added)))
 
 def save_metabolites(raw_data, sim_data, output):
 	"""
@@ -216,53 +221,58 @@ def save_metabolites(raw_data, sim_data, output):
 		output (str): path to tsv file with list of implemented genes
 	"""
 
-	metabolites = sim_data.process.metabolism.concDict.keys()
-	bennett = [m['Metabolite'] for m in raw_data.metaboliteConcentrations]
+	metabolites = list(sim_data.process.metabolism.conc_dict.keys())
+	bennett = [m['Metabolite'] for m in raw_data.metabolite_concentrations
+		if not np.isnan(m['Bennett Concentration'].asNumber())]
+	lempp = [m['Metabolite'] for m in raw_data.metabolite_concentrations
+		if not np.isnan(m['Lempp Concentration'].asNumber())]
 
-	with open(output, 'w') as f:
+	with io.open(output, 'wb') as f:
 		print('\nWriting metabolite info to {}'.format(output))
-		writer = csv.writer(f, delimiter='\t')
+		writer = tsv.writer(f)
 		writer.writerow(['Generated by {} on {}'.format(__file__, time.ctime())])
 		writer.writerow(['Metabolite', 'Source'])
 
 		for m in sorted(metabolites):
+			sources = []
 			if m[:-3] in bennett:
-				source = 'Bennett et al. 2009'
+				sources.append('Bennett et al. 2009')
+			if m[:-3] in lempp:
+				sources.append('Lempp et al. 2019')
+
+			if sources:
+				source = ', '.join(sources)
 			else:
 				source = 'Biomass (EcoCyc GEM, Bremer and Dennis. 1996., and Neidhardt. 2006.)'
 			writer.writerow([m, source])
 
-	print 'Number of metabolites: {}'.format(len(metabolites))
+	print('Number of metabolites: {}'.format(len(metabolites)))
 
-def save_kinetics(sim_data, output):
+def save_kinetics(raw_data, sim_data, output):
 	"""
 	Gets kinetic constraints that are used in the model and saves the list to
 	a tsv file.
 
 	Args:
+		raw_data (KnowledgeBaseEcoli object): raw data
 		sim_data (SimulationDataEcoli object): simulation data
 		output (str): path to tsv file with list of implemented genes
 	"""
 
-	kinetic_constraints = sim_data.process.metabolism.constraintDict
+	kinetic_constraints = sim_data.process.metabolism.extract_kinetic_constraints(
+		raw_data, sim_data)
 
-	with open(output, 'w') as f:
+	with io.open(output, 'wb') as f:
 		print('\nWriting kinetics info to {}'.format(output))
-		writer = csv.writer(f, delimiter='\t')
+		writer = tsv.writer(f)
 		writer.writerow(['Generated by {} on {}'.format(__file__, time.ctime())])
-		writer.writerow(['Pubmed ID', 'Reaction ID', 'kcat (1/s)',
-			'KM (uM)', 'Adjusted kcat (1/s)', 'Enzyme',
-			'Substrates', 'Substrates for KM', 'Temperature (C)'])
+		writer.writerow(['Reaction ID', 'Enzyme', 'Adjusted kcat (1/s)', 'Saturation'])
 
-		for rxn in sorted(kinetic_constraints):
-			c = kinetic_constraints[rxn]
-			writer.writerow([c['Pubmed ID'], c['reactionID'],
-				c['kcat'].asNumber(1 / units.s),
-				c['kM'], c['kcatAdjusted'].asNumber(1 / units.s),
-				c['enzymeIDs'],
-				c['substrateIDs'], c['Concentration Substrates'], c['Temp']])
+		# TODO: include info like pubmed ID, substrates, KM, KI, temp
+		for (rxn, enz), c in sorted(kinetic_constraints.items(), key=lambda d: d[0][0]):
+			writer.writerow([rxn, enz, c['kcat'], c['saturation']])
 
-	print 'Number of kinetic constraints: {}'.format(len(kinetic_constraints))
+	print('Number of kinetic constraints: {}'.format(len(kinetic_constraints)))
 
 def parse_args():
 	"""
@@ -299,4 +309,4 @@ if __name__ == '__main__':
 	filepath.makedirs(args.output)
 	save_genes(raw_data, sim_data, os.path.join(args.output, GENES_FILE))
 	save_metabolites(raw_data, sim_data, os.path.join(args.output, METABOLITES_FILE))
-	save_kinetics(sim_data, os.path.join(args.output, KINETICS_FILE))
+	save_kinetics(raw_data, sim_data, os.path.join(args.output, KINETICS_FILE))

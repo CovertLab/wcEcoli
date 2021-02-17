@@ -1,18 +1,14 @@
 """
 Plots average RNA counts per cell vs average protein counts per cell.
-
-@author: Heejo Choi
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 11/1/2017
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
 
 import numpy as np
 import matplotlib.pyplot as plt
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -43,19 +39,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		HIGHLIGHT_GENES = False
 
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Check if cache from figure5B_E_F_G.py exist
 		if os.path.exists(os.path.join(plotOutDir, "figure5B.pickle")):
 			figure5B_data = cPickle.load(open(os.path.join(plotOutDir, "figure5B.pickle"), "rb"))
 			colors = figure5B_data["colors"]
 			mrnaIds = figure5B_data["id"].tolist()
 		else:
-			print "Requires figure5B.pickle from figure5B_E_F_G.py"
+			print("Requires figure5B.pickle from figure5B_E_F_G.py")
 			return
 
 		# Get all cells
@@ -64,14 +54,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Load sim data
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		rnaIds = sim_data.process.transcription.rnaData["id"][sim_data.relation.rnaIndexToMonomerMapping] # orders rna IDs to match monomer IDs
+		rnaIds = sim_data.process.transcription.rna_data["id"][sim_data.relation.rna_index_to_monomer_mapping] # orders rna IDs to match monomer IDs
 
 		# Make views for monomers
-		ids_complexation = sim_data.process.complexation.moleculeNames
+		ids_complexation = sim_data.process.complexation.molecule_names
 		ids_complexation_complexes = sim_data.process.complexation.ids_complexes
-		ids_equilibrium = sim_data.process.equilibrium.moleculeNames
+		ids_equilibrium = sim_data.process.equilibrium.molecule_names
 		ids_equilibrium_complexes = sim_data.process.equilibrium.ids_complexes
-		ids_translation = sim_data.process.translation.monomerData["id"].tolist()
+		ids_translation = sim_data.process.translation.monomer_data["id"].tolist()
 		ids_protein = sorted(set(ids_complexation + ids_equilibrium + ids_translation))
 		bulkContainer = BulkObjectsContainer(ids_protein, dtype = np.float64)
 		view_complexation = bulkContainer.countsView(ids_complexation)
@@ -84,7 +74,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		monomersInvolvedInManyComplexes = []
 		monomersInvolvedInComplexes = []
 		for complexId in ids_complexation_complexes:
-			subunitIds = sim_data.process.complexation.getMonomers(complexId)["subunitIds"]
+			subunitIds = sim_data.process.complexation.get_monomers(complexId)["subunitIds"]
 			for subunitId in subunitIds:
 				if subunitId in monomersInvolvedInComplexes:
 					monomersInvolvedInManyComplexes.append(subunitId)
@@ -124,11 +114,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			uniqueMoleculeCounts.close()
 
 			# Account for unique molecules
-			bulkContainer.countsInc(nActiveRibosome.mean(), [sim_data.moleculeIds.s30_fullComplex, sim_data.moleculeIds.s50_fullComplex])
-			bulkContainer.countsInc(nActiveRnaPoly.mean(), [sim_data.moleculeIds.rnapFull])
+			bulkContainer.countsInc(nActiveRibosome.mean(), [sim_data.molecule_ids.s30_full_complex, sim_data.molecule_ids.s50_full_complex])
+			bulkContainer.countsInc(nActiveRnaPoly.mean(), [sim_data.molecule_ids.full_RNAP])
 
 			# Account for small-molecule bound complexes
-			view_equilibrium.countsInc(np.dot(sim_data.process.equilibrium.stoichMatrixMonomers(), view_equilibrium_complexes.counts() * -1))
+			view_equilibrium.countsInc(np.dot(sim_data.process.equilibrium.stoich_matrix_monomers(), view_equilibrium_complexes.counts() * -1))
 
 			# Average counts of monomers
 			avgMonomerCounts = view_translation.counts()
@@ -140,7 +130,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			for j, complexId in enumerate(ids_complexation_complexes):
 				# Map all subsunits to the average counts of the complex (ignores counts of monomers)
 				# Some subunits are involved in multiple complexes - these cases are kept track
-				subunitIds = sim_data.process.complexation.getMonomers(complexId)["subunitIds"]
+				subunitIds = sim_data.process.complexation.get_monomers(complexId)["subunitIds"]
 
 				for subunitId in subunitIds:
 					if subunitId not in ids_translation:
@@ -191,7 +181,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# plot monomers that are not involved in complexes or involved in only 1 complex
 		monomersInvolvedInManyComplexes_index = [ids_translation.index(x) for x in monomersInvolvedInManyComplexes_id]
-		A = [x for x in xrange(len(ids_translation)) if x not in monomersInvolvedInManyComplexes_index]
+		A = [x for x in range(len(ids_translation)) if x not in monomersInvolvedInManyComplexes_index]
 		for i in A:
 			color = colors[mrnaIds.index(rnaIds[i])]
 			ax.loglog(avgRnaCounts_perCell[i], avgProteinCounts_perCell[i], alpha = 0.5, marker = ".", lw = 0., color = color)

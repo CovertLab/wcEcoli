@@ -1,15 +1,13 @@
 """
 SimulationData for the Complexation process
-
-@author: John Mason
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 01/23/2015
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from wholecell.utils import units
+from six.moves import range, zip
+
 
 class ComplexationError(Exception):
 	pass
@@ -28,25 +26,20 @@ class Complexation(object):
 		stoichMatrixV = []  # Stoichiometric coefficients
 		stoichMatrixMass = []  # Molecular masses of molecules in stoichMatrixI
 
-		# Remove complexes containing molecules that are currently not simulated
-		FORBIDDEN_MOLECULES = {
-			"modified-charged-selC-tRNA",  # molecule does not exist
-			}
+		# Get IDs of reactions that should be removed
+		removed_reaction_ids = {
+			rxn['id'] for rxn in raw_data.complexation_reactions_removed}
 
-		deleteReactions = []
-		for reactionIndex, reaction in enumerate(raw_data.complexationReactions):
-			for molecule in reaction["stoichiometry"]:
-				if molecule["molecule"] in FORBIDDEN_MOLECULES:
-					deleteReactions.append(reactionIndex)
-					break
-
-		for reactionIndex in deleteReactions[::-1]:
-			del raw_data.complexationReactions[reactionIndex]
+		self.ids_reactions = []
+		reaction_index = 0
 
 		# Build stoichiometric matrix from given complexation reactions
-		for reactionIndex, reaction in enumerate(raw_data.complexationReactions):
-			assert reaction["process"] == "complexation"
-			assert reaction["dir"] == 1
+		for reaction in raw_data.complexation_reactions:
+			# Skip removed reactions
+			if reaction['id'] in removed_reaction_ids:
+				continue
+
+			self.ids_reactions.append(reaction['id'])
 
 			for molecule in reaction["stoichiometry"]:
 				if molecule["type"] == "metabolite":
@@ -57,20 +50,20 @@ class Complexation(object):
 				else:
 					moleculeName = "{}[{}]".format(
 						molecule["molecule"],
-						molecule["location"]
+						sim_data.getter.get_compartment(molecule["molecule"])[0]
 						)
 
 				if moleculeName not in molecules:
 					molecules.append(moleculeName)
-					moleculeIndex = len(molecules) - 1
+					molecule_index = len(molecules) - 1
 				else:
-					moleculeIndex = molecules.index(moleculeName)
+					molecule_index = molecules.index(moleculeName)
 
 				coefficient = molecule["coeff"]
 				assert (coefficient % 1) == 0
 
-				stoichMatrixI.append(moleculeIndex)
-				stoichMatrixJ.append(reactionIndex)
+				stoichMatrixI.append(molecule_index)
+				stoichMatrixJ.append(reaction_index)
 				stoichMatrixV.append(coefficient)
 
 				# Classify molecule into subunit or complex depending on sign
@@ -83,25 +76,25 @@ class Complexation(object):
 					complexes.append(moleculeName)
 
 				# Find molecular mass of the molecule and add to mass matrix
-				molecularMass = sim_data.getter.getMass([moleculeName]).asNumber(units.g / units.mol)[0]
+				molecularMass = sim_data.getter.get_mass(moleculeName).asNumber(units.g / units.mol)
 				stoichMatrixMass.append(molecularMass)
 
-		self.rates = np.full(
-			(len(raw_data.complexationReactions),),
-			raw_data.parameters['complexation_rate'].asNumber())
+			reaction_index += 1
 
-		self._stoichMatrixI = np.array(stoichMatrixI)
-		self._stoichMatrixJ = np.array(stoichMatrixJ)
-		self._stoichMatrixV = np.array(stoichMatrixV)
-		self._stoichMatrixMass = np.array(stoichMatrixMass)
+		self.rates = np.full((reaction_index, ),
+			sim_data.constants.complexation_rate.asNumber(1/units.s))
 
-		self.moleculeNames = molecules
-		self.ids_complexes = [self.moleculeNames[i] for i in np.where(np.any(self.stoichMatrix() > 0, axis=1))[0]]
-		self.ids_reactions = [stoich_dict['id'] for stoich_dict in raw_data.complexationReactions]
+		self._stoich_matrix_I = np.array(stoichMatrixI)
+		self._stoich_matrix_J = np.array(stoichMatrixJ)
+		self._stoich_matrix_V = np.array(stoichMatrixV)
+		self._stoich_matrix_mass = np.array(stoichMatrixMass)
+
+		self.molecule_names = molecules
+		self.ids_complexes = [self.molecule_names[i] for i in np.where(np.any(self.stoich_matrix() > 0, axis=1))[0]]
 
 		# Remove duplicate names in subunits and complexes
-		self.subunitNames = set(subunits)
-		self.complexNames = set(complexes)
+		self.subunit_names = set(subunits)
+		self.complex_names = set(complexes)
 
 		# Create sparse matrix for monomer to complex stoichiometry
 		i, j, v, shape = self._buildStoichMatrixMonomers()
@@ -112,32 +105,32 @@ class Complexation(object):
 
 		# Mass balance matrix
 		# All reaction mass balances should balance out to numerical zero
-		balanceMatrix = self.stoichMatrix()*self.massMatrix()
+		balanceMatrix = self.stoich_matrix() * self.mass_matrix()
 		massBalanceArray = np.sum(balanceMatrix, axis=0)
 		assert np.max(np.absolute(massBalanceArray)) < 1e-8  # had to bump this up to 1e-8 because of flagella supercomplex
 
-	def stoichMatrix(self):
+	def stoich_matrix(self):
 		"""
 		Builds a stoichiometric matrix based on each given complexation
 		reaction. One reaction corresponds to one column in the stoichiometric
 		matrix.
 		"""
-		shape = (self._stoichMatrixI.max() + 1, self._stoichMatrixJ.max() + 1)
+		shape = (self._stoich_matrix_I.max() + 1, self._stoich_matrix_J.max() + 1)
 		out = np.zeros(shape, np.float64)
-		out[self._stoichMatrixI, self._stoichMatrixJ] = self._stoichMatrixV
+		out[self._stoich_matrix_I, self._stoich_matrix_J] = self._stoich_matrix_V
 		return out
 
-	def massMatrix(self):
+	def mass_matrix(self):
 		"""
 		Builds a matrix with the same shape as the stoichiometric matrix, but
 		with molecular masses as elements instead of stoichiometric constants
 		"""
-		shape = (self._stoichMatrixI.max() + 1, self._stoichMatrixJ.max() + 1)
+		shape = (self._stoich_matrix_I.max() + 1, self._stoich_matrix_J.max() + 1)
 		out = np.zeros(shape, np.float64)
-		out[self._stoichMatrixI, self._stoichMatrixJ] = self._stoichMatrixMass
+		out[self._stoich_matrix_I, self._stoich_matrix_J] = self._stoich_matrix_mass
 		return out
 
-	def stoichMatrixMonomers(self):
+	def stoich_matrix_monomers(self):
 		"""
 		Returns the dense stoichiometric matrix for monomers from each complex
 		"""
@@ -146,14 +139,19 @@ class Complexation(object):
 		return out
 
 	# TODO: redesign this so it doesn't need to create a stoich matrix
-	def getMonomers(self, cplxId):
+	def get_monomers(self, cplxId):
 		'''
 		Returns subunits for a complex (or any ID passed). If the ID passed is
 		already a monomer returns the monomer ID again with a stoichiometric
 		coefficient of one.
 		'''
-		info = self._moleculeRecursiveSearch(cplxId, self.stoichMatrix(), self.moleculeNames)
-		return {'subunitIds': np.array(info.keys()), 'subunitStoich': np.array(info.values())}
+		info = self._moleculeRecursiveSearch(cplxId, self.stoich_matrix(), self.molecule_names)
+		subunits = []
+		subunit_stoich = []
+		for subunit, stoich in sorted(info.items()):
+			subunits.append(subunit)
+			subunit_stoich.append(stoich)
+		return {'subunitIds': np.array(subunits), 'subunitStoich': np.array(subunit_stoich)}
 
 	def _buildStoichMatrixMonomers(self):
 		"""
@@ -168,15 +166,15 @@ class Complexation(object):
 		stoichMatrixMonomersV = []
 
 		for colIdx, id_complex in enumerate(self.ids_complexes):
-			D = self.getMonomers(id_complex)
+			D = self.get_monomers(id_complex)
 
-			rowIdx = self.moleculeNames.index(id_complex)
+			rowIdx = self.molecule_names.index(id_complex)
 			stoichMatrixMonomersI.append(rowIdx)
 			stoichMatrixMonomersJ.append(colIdx)
 			stoichMatrixMonomersV.append(1.)
 
 			for subunitId, subunitStoich in zip(D["subunitIds"], D["subunitStoich"]):
-				rowIdx = self.moleculeNames.index(subunitId)
+				rowIdx = self.molecule_names.index(subunitId)
 				stoichMatrixMonomersI.append(rowIdx)
 				stoichMatrixMonomersJ.append(colIdx)
 				stoichMatrixMonomersV.append(-1. * subunitStoich)

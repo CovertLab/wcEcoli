@@ -1,14 +1,10 @@
 """
 Submodel for chromosome replication
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/12/2014
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
-from itertools import izip
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import (buildSequences, polymerize,
@@ -32,57 +28,52 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(ChromosomeReplication, self).initialize(sim, sim_data)
 
+		self.max_time_step = sim_data.process.replication.max_time_step
+
 		# Load parameters
-		self.criticalInitiationMass = sim_data.growthRateParameters.getDnaCriticalMass(
-			sim_data.conditionToDoublingTime[sim_data.condition])
-		self.getDnaCriticalMass = sim_data.growthRateParameters.getDnaCriticalMass
-		self.nutrientToDoublingTime = sim_data.nutrientToDoublingTime
+		self.get_dna_critical_mass = sim_data.mass.get_dna_critical_mass
+		self.criticalInitiationMass = self.get_dna_critical_mass(
+			sim_data.condition_to_doubling_time[sim_data.condition])
+		self.nutrientToDoublingTime = sim_data.nutrient_to_doubling_time
 		self.replichore_lengths = sim_data.process.replication.replichore_lengths
 		self.sequences = sim_data.process.replication.replication_sequences
-		self.polymerized_dntp_weights = sim_data.process.replication.replicationMonomerWeights
-		self.replication_coordinate = sim_data.process.transcription.rnaData[
-			"replicationCoordinate"]
-		self.D_period = sim_data.growthRateParameters.d_period.asNumber(
+		self.polymerized_dntp_weights = sim_data.process.replication.replication_monomer_weights
+		self.replication_coordinate = sim_data.process.transcription.rna_data[
+			"replication_coordinate"]
+		self.D_period = sim_data.growth_rate_parameters.d_period.asNumber(
 			units.s)
 
 		# Create molecule views for replisome subunits, active replisomes,
 		# origins of replication, chromosome domains, and free active TFs
 		self.replisome_trimers = self.bulkMoleculesView(
-			sim_data.moleculeGroups.replisome_trimer_subunits)
+			sim_data.molecule_groups.replisome_trimer_subunits)
 		self.replisome_monomers = self.bulkMoleculesView(
-			sim_data.moleculeGroups.replisome_monomer_subunits)
+			sim_data.molecule_groups.replisome_monomer_subunits)
 		self.active_replisomes = self.uniqueMoleculesView('active_replisome')
 		self.oriCs = self.uniqueMoleculesView('oriC')
 		self.chromosome_domains = self.uniqueMoleculesView('chromosome_domain')
-		self.active_tfs = self.bulkMoleculesView(
-			[x + "[c]" for x in sim_data.process.transcription_regulation.tf_ids])
 
 		# Create bulk molecule views for polymerization reaction
-		self.dntps = self.bulkMoleculesView(sim_data.moleculeGroups.dNtpIds)
-		self.ppi = self.bulkMoleculeView('PPI[c]')
+		self.dntps = self.bulkMoleculesView(sim_data.molecule_groups.dntps)
+		self.ppi = self.bulkMoleculeView(sim_data.molecule_ids.ppi)
 
 		# Create molecules views for full chromosomes
 		self.full_chromosomes = self.uniqueMoleculesView('full_chromosome')
-
-		# Create view for promoters and get total number of TF types
-		self.promoters = self.uniqueMoleculesView("promoter")
-		self.n_tf = len(sim_data.process.transcription_regulation.tf_ids)
-
-		# Create view for DnaA boxes
-		self.DnaA_boxes = self.uniqueMoleculesView("DnaA_box")
 
 		# Get placeholder value for domains without children
 		self.no_child_place_holder = sim_data.process.replication.no_child_place_holder
 
 		self.basal_elongation_rate = int(
-			round(sim_data.growthRateParameters.dnaPolymeraseElongationRate.asNumber(
+			round(sim_data.growth_rate_parameters.replisome_elongation_rate.asNumber(
 			units.nt / units.s)))
 		self.make_elongation_rates = sim_data.process.replication.make_elongation_rates
 
+		# Sim options
+		self.mechanistic_replisome = sim._mechanistic_replisome
 
 	def calculateRequest(self):
 		# Get total count of existing oriC's
-		n_oric = self.oriCs.total_counts()[0]
+		n_oric = self.oriCs.total_count()
 
 		# If there are no origins, return immediately
 		if n_oric == 0:
@@ -93,7 +84,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 		# Get critical initiation mass for current simulation environment
 		current_media_id = self._external_states['Environment'].current_media_id
-		self.criticalInitiationMass = self.getDnaCriticalMass(
+		self.criticalInitiationMass = self.get_dna_critical_mass(
 			self.nutrientToDoublingTime[current_media_id])
 
 		# Calculate mass per origin of replication, and compare to critical
@@ -110,10 +101,10 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			self.replisome_trimers.requestIs(6*n_oric)
 			self.replisome_monomers.requestIs(2*n_oric)
 			self.oriCs.request_access(self.EDIT_ACCESS)
-			self.chromosome_domains.request_access(self.EDIT_DELETE_ACCESS)
+			self.chromosome_domains.request_access(self.EDIT_ACCESS)
 
 		# If there are no active forks return
-		n_active_replisomes = self.active_replisomes.total_counts()[0]
+		n_active_replisomes = self.active_replisomes.total_count()
 		if n_active_replisomes == 0:
 			return
 
@@ -149,15 +140,12 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Request access to relevant unique molecules
 		self.full_chromosomes.request_access(self.EDIT_ACCESS)
 		self.active_replisomes.request_access(self.EDIT_DELETE_ACCESS)
-		self.chromosome_domains.request_access(self.EDIT_DELETE_ACCESS)
-		self.promoters.request_access(self.EDIT_DELETE_ACCESS)
-		self.DnaA_boxes.request_access(self.EDIT_DELETE_ACCESS)
 
 	def evolveState(self):
 		## Module 1: Replication initiation
 		# Get number of existing replisomes and oriCs
-		n_active_replisomes = self.active_replisomes.total_counts()[0]
-		n_oriC = self.oriCs.total_counts()[0]
+		n_active_replisomes = self.active_replisomes.total_count()
+		n_oriC = self.oriCs.total_count()
 
 		# If there are no origins, return immediately
 		if n_oriC == 0:
@@ -173,12 +161,12 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 		# Initiate replication only when
 		# 1) The cell has reached the critical mass per oriC
-		# 2) There are enough replisome subunits to assemble two replisomes per
-		# existing OriC.
+		# 2) If mechanistic replisome option is on, there are enough replisome
+		# subunits to assemble two replisomes per existing OriC.
 		# Note that we assume asynchronous initiation does not happen.
-		initiate_replication = (self.criticalMassPerOriC >= 1.0 and
-			np.all(n_replisome_trimers == 6*n_oriC) and
-			np.all(n_replisome_monomers == 2*n_oriC))
+		initiate_replication = self.criticalMassPerOriC >= 1.0 and (
+			not self.mechanistic_replisome or (np.all(n_replisome_trimers == 6*n_oriC) and
+			np.all(n_replisome_monomers == 2*n_oriC)))
 
 		# If all conditions are met, initiate a round of replication on every
 		# origin of replication
@@ -237,8 +225,9 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			self.chromosome_domains.attrIs(child_domains=child_domains)
 
 			# Decrement counts of replisome subunits
-			self.replisome_trimers.countsDec(6*n_oriC)
-			self.replisome_monomers.countsDec(2*n_oriC)
+			if self.mechanistic_replisome:
+				self.replisome_trimers.countsDec(6*n_oriC)
+				self.replisome_monomers.countsDec(2*n_oriC)
 
 		# Write data from this module to a listener
 		self.writeToListener("ReplicationData", "criticalMassPerOriC",
@@ -247,25 +236,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			self.criticalInitiationMass.asNumber(units.fg))
 
 		## Module 2: replication elongation
-		# Get attributes of promoters
-		TU_index, coordinates_promoters, domain_index_promoters, bound_TF = self.promoters.attrs(
-			"TU_index", "coordinates", "domain_index", "bound_TF")
-
-		# Write gene copy numbers to listener
-		self.writeToListener(
-			"RnaSynthProb", "gene_copy_number",
-			np.bincount(TU_index, minlength=len(self.replication_coordinate)))
-
-		# Get attributes of DnaA boxes
-		coordinates_DnaA_boxes, domain_index_DnaA_boxes, DnaA_bound = self.DnaA_boxes.attrs(
-			"coordinates", "domain_index", "DnaA_bound")
-
-		# Write DnaA_box copy numbers to listener
-		self.writeToListener(
-			"ReplicationData", "total_DnaA_boxes", self.DnaA_boxes.total_counts()[0])
-		self.writeToListener(
-			"ReplicationData", "free_DnaA_boxes", np.logical_not(DnaA_bound).sum())
-
 		# If no active replisomes are present, return immediately
 		# Note: the new replication forks added in the previous module are not
 		# elongated until the next timestep.
@@ -330,114 +300,11 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.ppi.countInc(dNtpsUsed.sum())
 
 
-		# Define function that identifies replicated DNA motifs
-		def get_replicated_motif_mask(motif_coordinates, motif_domain_indexes):
-			"""
-			Computes a mask array for DNA motifs that should be replicated in
-			this timestep, based on the old and new positions of replisomes.
-
-			Args:
-				motif_coordinates (ndarray): Replication coordinates of all
-				existing motifs
-				motif_domain_indexes (ndarray): Domain indexes of chromosome
-				domains that each motif belongs to
-
-			Returns: Mask array of motifs that should be replicated in this
-			timestep
-			"""
-			# Initialize mask array
-			replicated_motifs = np.zeros_like(motif_coordinates, dtype=np.bool)
-
-			# Loop through all replisomes
-			for (domain_index, rr, old_coord, new_coord) in izip(
-					domain_index_replisome, right_replichore,
-					coordinates_replisome, updated_coordinates):
-				# Fork on right replichore
-				if rr:
-					coordinates_mask = np.logical_and(
-						motif_coordinates >= old_coord,
-						motif_coordinates < new_coord)
-
-				# Fork on left replichore
-				else:
-					coordinates_mask = np.logical_and(
-						motif_coordinates <= old_coord,
-						motif_coordinates > new_coord)
-
-				mask = np.logical_and(
-					motif_domain_indexes == domain_index,
-					coordinates_mask)
-
-				replicated_motifs[mask] = True
-
-			return replicated_motifs
-
-
-		replicated_promoters = get_replicated_motif_mask(
-			coordinates_promoters, domain_index_promoters)
-		replicated_DnaA_boxes = get_replicated_motif_mask(
-			coordinates_DnaA_boxes, domain_index_DnaA_boxes)
-
-		# Get counts of replicated promoters and DnaA boxes
-		n_new_promoters = 2*replicated_promoters.sum()
-		n_new_DnaA_boxes = 2*replicated_DnaA_boxes.sum()
-
-		# Handle replicated promoters
-		if n_new_promoters > 0:
-			# Delete original promoters
-			self.promoters.delByIndexes(np.where(replicated_promoters)[0])
-
-			# Add freed active tfs
-			self.active_tfs.countsInc(
-				bound_TF[replicated_promoters, :].sum(axis=0))
-
-			# Set up attributes for the replicated promoters
-			TU_index_new = np.repeat(TU_index[replicated_promoters], 2)
-			coordinates_promoters_new = np.repeat(
-				coordinates_promoters[replicated_promoters], 2)
-			parent_domain_index_promoters = domain_index_promoters[replicated_promoters]
-
-			domain_index_promoters_new = child_domains[
-				np.array([np.where(domain_index_existing_domain == idx)[0][0]
-					for idx in parent_domain_index_promoters]),
-				:].flatten()
-
-			# Add new promoters with new domain indexes
-			self.promoters.moleculesNew(
-				n_new_promoters,
-				TU_index=TU_index_new,
-				coordinates=coordinates_promoters_new,
-				domain_index=domain_index_promoters_new,
-				bound_TF=np.zeros((n_new_promoters, self.n_tf), dtype=np.bool))
-
-		# Handle replicated DnaA boxes
-		if n_new_DnaA_boxes > 0:
-			# Delete original DnaA boxes
-			self.DnaA_boxes.delByIndexes(np.where(replicated_DnaA_boxes)[0])
-
-			# Set up attributes for the replicated DnaA boxes
-			coordinates_DnaA_boxes_new = np.repeat(
-				coordinates_DnaA_boxes[replicated_DnaA_boxes], 2)
-			parent_domain_index_DnaA_boxes = domain_index_DnaA_boxes[
-				replicated_DnaA_boxes]
-
-			domain_index_DnaA_boxes_new = child_domains[
-				np.array([np.where(domain_index_existing_domain == idx)[0][0]
-					for idx in parent_domain_index_DnaA_boxes]),
-				:].flatten()
-
-			# Add new DnaA boxes with new domain indexes
-			self.DnaA_boxes.moleculesNew(
-				n_new_DnaA_boxes,
-				coordinates=coordinates_DnaA_boxes_new,
-				domain_index=domain_index_DnaA_boxes_new,
-				DnaA_bound=np.zeros(n_new_DnaA_boxes, dtype=np.bool))
-
 		## Module 3: replication termination
 		# Determine if any forks have reached the end of their sequences. If
 		# so, delete the replisomes and domains that were terminated.
 		terminal_lengths = self.replichore_lengths[
-			np.tile(np.arange(2), n_active_replisomes // 2)]
+			np.logical_not(right_replichore).astype(np.int64)]
 		terminated_replisomes = (np.abs(updated_coordinates) == terminal_lengths)
 
 		# If any forks were terminated,
@@ -450,9 +317,8 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 				"domain_index", "child_domains")
 			domain_index_full_chroms = self.full_chromosomes.attr("domain_index")
 
-			# Initialize array of replisomes and domains that should be deleted
+			# Initialize array of replisomes that should be deleted
 			replisomes_to_delete = np.zeros_like(domain_index_replisome, dtype=np.bool)
-			domains_to_delete = np.zeros_like(domain_index_domains, dtype=np.bool)
 
 			# Count number of new full chromosomes that should be created
 			n_new_chromosomes = 0
@@ -475,15 +341,12 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 						replisomes_to_delete,
 						terminated_domain_matching_replisomes)
 
-					domain_matching_domains = (
+					domain_mask = (
 						domain_index_domains == terminated_domain_index)
-					domains_to_delete = np.logical_or(
-						domains_to_delete,
-						domain_matching_domains)
 
 					# Get child domains of deleted domain
 					child_domains_this_domain = child_domains[
-						np.where(domain_matching_domains)[0][0], :]
+						np.where(domain_mask)[0][0], :]
 
 					# Modify domain index of one existing full chromosome to
 					# index of first child domain
@@ -497,16 +360,15 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 					# Append chromosome index of new full chromosome
 					domain_index_new_full_chroms.append(child_domains_this_domain[1])
 
-			# Delete terminated replisomes and domains
+			# Delete terminated replisomes
 			self.active_replisomes.delByIndexes(np.where(replisomes_to_delete)[0])
-			self.chromosome_domains.delByIndexes(np.where(domains_to_delete)[0])
 
 			# Generate new full chromosome molecules
 			if n_new_chromosomes > 0:
 				self.full_chromosomes.moleculesNew(
 					n_new_chromosomes,
 					division_time=[self.time() + self.D_period]*n_new_chromosomes,
-					has_induced_division=[False] * n_new_chromosomes,
+					has_triggered_division=[False] * n_new_chromosomes,
 					domain_index=domain_index_new_full_chroms)
 
 				# Reset domain index of existing chromosomes that have finished
@@ -515,6 +377,9 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 					domain_index = domain_index_full_chroms)
 
 			# Increment counts of replisome subunits
-			self.replisome_trimers.countsInc(3*replisomes_to_delete.sum())
-			self.replisome_monomers.countsInc(replisomes_to_delete.sum())
+			if self.mechanistic_replisome:
+				self.replisome_trimers.countsInc(3*replisomes_to_delete.sum())
+				self.replisome_monomers.countsInc(replisomes_to_delete.sum())
 
+	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
+		return inputTimeStep <= self.max_time_step

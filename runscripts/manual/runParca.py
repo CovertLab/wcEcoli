@@ -11,9 +11,10 @@ Set PYTHONPATH when running this.
 from __future__ import absolute_import, division, print_function
 
 import os
+import sys
 
 from wholecell.fireworks.firetasks import ParcaTask
-from wholecell.utils import data, parallelization, scriptBase
+from wholecell.utils import constants, data, parallelization, scriptBase
 from wholecell.utils import filepath as fp
 
 
@@ -35,6 +36,17 @@ class RunParca(scriptBase.ScriptBase):
 		parser.add_argument('-c', '--cpus', type=int, default=1,
 			help='The number of CPU processes to use. Default = 1.')
 
+		parser.add_argument('--load-intermediate',
+			help='The function in the parca to load (skips functions that would'
+				 ' have run before the function). Must run with --save-intermediates first.')
+		parser.add_argument('--save-intermediates', action='store_true',
+			help='If set, saves sim_data and cell_specs at intermediate'
+			     ' function calls in the parca.')
+		parser.add_argument('--intermediates-directory',
+			help='Directory to save or load intermediate sim_data and cell_specs'
+			     ' results from if --load-intermediate or --save-intermediates'
+			     ' are set.')
+
 		self.define_parca_options(parser)
 		self.define_elongation_options(parser)
 
@@ -42,14 +54,29 @@ class RunParca(scriptBase.ScriptBase):
 		args = super(RunParca, self).parse_args()
 		args.cpus = parallelization.cpus(args.cpus)
 
+		args.time = fp.timestamp()
+		args.description = args.sim_outdir.replace(' ', '_')
+
 		if args.timestamp:
-			args.sim_outdir = fp.timestamp() + '__' + args.sim_outdir.replace(' ', '_')
+			args.sim_outdir = args.time + '__' + args.description
 
 		args.sim_path = fp.makedirs(fp.ROOT_PATH, "out", args.sim_outdir)
 		return args
 
 	def run(self, args):
 		kb_directory = os.path.join(args.sim_path, ParcaTask.OUTPUT_SUBDIR)
+
+		# Write the metadata file.
+		metadata = {
+			'git_hash': fp.run_cmdline("git rev-parse HEAD") or '--',
+			'git_branch': fp.run_cmdline("git symbolic-ref --short HEAD") or '--',
+			'description': args.description,
+			'time': args.time,
+			'python': sys.version.splitlines()[0],
+		}
+		metadata_dir = fp.makedirs(args.sim_path, 'metadata')
+		metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
+		fp.write_json_file(metadata_path, metadata)
 
 		if args.debug_parca:
 			print('DEBUG Parca')
@@ -58,6 +85,9 @@ class RunParca(scriptBase.ScriptBase):
 			vars(args),
 			scriptBase.PARCA_KEYS,
 			debug=args.debug_parca,
+			load_intermediate=args.load_intermediate,
+			save_intermediates=args.save_intermediates,
+			intermediates_directory=args.intermediates_directory,
 			output_directory=kb_directory)
 
 		task = ParcaTask(**python_args)

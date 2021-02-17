@@ -2,10 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 
 import os
-import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -19,12 +19,6 @@ FONT_SIZE=9
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(inputDir):
-			raise Exception, "variantDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		ap = AnalysisPaths(inputDir, variant_plot = True)
 
 		fig = plt.figure()
@@ -58,7 +52,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			variant = variants[varIdx]
 			all_cells = ap.get_cells(variant=[variant])
 			try:
-				sim_data = cPickle.load(open(ap.get_variant_kb(variant)))
+				sim_data = cPickle.load(open(ap.get_variant_kb(variant), 'rb'))
 			except Exception as e:
 				print("Couldn't load sim_data object. Exiting.", e)
 				return
@@ -98,7 +92,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				transcriptDataFile = TableReader(os.path.join(simOutDir, "TranscriptElongationListener"))
 				rnaSynth = transcriptDataFile.readColumn("countRnaSynthesized")
-				isRRna = sim_data.process.transcription.rnaData["isRRna"]
+				isRRna = sim_data.process.transcription.rna_data['is_rRNA']
 				meanRrnInitRate[idx] = (rnaSynth[:, isRRna].sum(axis=1) / timeStepSec).mean() * 60. / 3
 
 			sim_rna_mass_per_cell[varIdx] = meanRnaMass.mean()

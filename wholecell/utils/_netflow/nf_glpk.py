@@ -18,24 +18,23 @@ CAUTION: GLPK will exit the process on error, so do pre-checks. It's
 possible to set its error_hook -- if SWIG can pass in a native function
 pointer and use setjmp/longjmp, and the hook has to reallocate the GLPK
 environment, losing state info.
-
-@author: Jerry Morrison
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 3/26/2018
 """
 
 # TODO(Jerry): Check that integer arguments are in range so GLPK won't exit?
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 from collections import defaultdict
 from enum import Enum
+
 import numpy as np
 from scipy.sparse import coo_matrix
+import six
 import swiglpk as glp
 
 from ._base import NetworkFlowProblemBase
+from six.moves import range
+from six.moves import zip
 
 class MessageLevel(Enum):
 	OFF = glp.GLP_MSG_OFF  # no output
@@ -102,7 +101,7 @@ def _toDoubleArray(array):
 class NetworkFlowGLPK(NetworkFlowProblemBase):
 	def __init__(self, quadratic_objective=False):
 		if quadratic_objective:
-			raise Exception('Quadratic objective not supported for GLPK')
+			raise ValueError('Quadratic objective not supported for GLPK')
 
 		self._lp = glp.glp_create_prob()
 		self._smcp = glp.glp_smcp()  # simplex solver control parameters
@@ -120,6 +119,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		self._materialIdxLookup = {}
 		self._flow_index_arrays = {}
 		self._coeff_arrays = {}
+		self._flow_locations = {}
 
 		self._eqConstBuilt = False
 		self._solved = False
@@ -246,6 +246,8 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 	def _getVar(self, flow):
 		if flow in self._flows:
 			idx = self._flows[flow]
+		elif self._eqConstBuilt:
+			raise ValueError('Equality constraints already built. Unable to add new flow: "{}".'.format(flow))
 		else:
 			self._add_cols(1)
 			idx = len(self._flows)
@@ -264,25 +266,16 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 	def setFlowMaterialCoeff(self, flow, material, coefficient):
 		if self._eqConstBuilt:
 			if material not in self._materialIdxLookup:
-				raise Exception("Invalid material")
+				raise ValueError("Invalid material: {}".format(material))
 			if flow not in self._flows:
-				raise Exception("Invalid flow")
-			materialIdx = self._materialIdxLookup[material]
-			flowIdx = self._flows[flow]
-			coeffs, flowIdxs = zip(*self._materialCoeffs[material])
-			coeffs = list(coeffs)
-			flowLoc = flowIdxs.index(flowIdx)
-			coeffs[flowLoc] = coefficient
-			self._materialCoeffs[material] = zip(coeffs, flowIdxs)
+				raise ValueError("Invalid flow: {}".format(flow))
 
-			rowIdx = int(materialIdx + 1)
-			length = len(flowIdxs)
-			if length != len(coeffs):
-				raise ValueError("Array sizes must match")
-
+			length = len(self._flow_locations[material])
+			flow_loc = self._flow_locations[material][self._flows[flow]]
+			rowIdx = int(self._materialIdxLookup[material] + 1)
 			colIdxs = self._flow_index_arrays[material]
 			data = self._coeff_arrays[material]
-			data[flowLoc + 1] = float(coefficient)  # swiglpk offsets index by 1
+			data[flow_loc] = float(coefficient)  # swiglpk offsets index by 1
 			glp.glp_set_mat_row(self._lp, rowIdx, length, colIdxs, data)
 		else:
 			idx = self._getVar(flow)
@@ -299,26 +292,29 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 			upperBound (float) - upper bound for flow (None if unchanged)
 		"""
 
+		reset_bounds = False
 		idx = self._getVar(flow)
-		if lowerBound is not None:
+		if lowerBound is not None and self._lb[flow] != lowerBound:
 			self._lb[flow] = lowerBound
-		if upperBound is not None:
+			reset_bounds = True
+		if upperBound is not None and self._ub[flow] != upperBound:
 			self._ub[flow] = upperBound
+			reset_bounds = True
 
-		self._set_col_bounds(
-			1 + idx,				# GLPK does 1 indexing
-			self._lb[flow],
-			self._ub[flow],
-			)
-
-		self._solved = False
+		if reset_bounds:
+			self._set_col_bounds(
+				1 + idx,  # GLPK does 1 indexing
+				self._lb[flow],
+				self._ub[flow],
+				)
+			self._solved = False
 
 	def setFlowObjectiveCoeff(self, flow, coefficient):
 		idx = self._getVar(flow)
 		self._objective[flow] = coefficient
 		glp.glp_set_obj_coef(
 			self._lp,
-			1 + idx,				# GLPK does 1 indexing
+			1 + idx,  # GLPK does 1 indexing
 			coefficient
 			)
 
@@ -328,7 +324,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		return self._objective[flow]
 
 	def getFlowRates(self, flows):
-		if isinstance(flows, basestring):
+		if isinstance(flows, six.string_types):
 			flows = (flows,)
 
 		self._solve()
@@ -341,7 +337,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 
 	def getShadowPrices(self, materials):
 		if not self._eqConstBuilt:
-			raise Exception("Equality constraints not yet built. Finish construction of the problem before accessing dual values.")
+			raise RuntimeError("Equality constraints not yet built. Finish construction of the problem before accessing dual values.")
 
 		self._solve()
 
@@ -353,7 +349,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 
 	def getReducedCosts(self, fluxNames):
 		if not self._eqConstBuilt:
-			raise Exception("Equality constraints not yet built. Finish construction of the problem before accessing dual values.")
+			raise RuntimeError("Equality constraints not yet built. Finish construction of the problem before accessing dual values.")
 
 		self._solve()
 
@@ -365,27 +361,27 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 
 	def getObjectiveValue(self):
 		"""The current value of the objective function."""
+		self._solve()
 		return glp.glp_get_obj_val(self._lp)
 
 	def getSMatrix(self):
 		if not self._eqConstBuilt:
-			raise Exception("Equality constraints not yet built. Finish construction of the problem before accessing S matrix.")
+			raise RuntimeError("Equality constraints not yet built. Finish construction of the problem before accessing S matrix.")
 		A = np.zeros((len(self._materialCoeffs), len(self._flows)))
-		self._materialIdxLookup = {}
-		for materialIdx, (material, pairs) in enumerate(sorted(self._materialCoeffs.viewitems())):
-			self._materialIdxLookup[material] = materialIdx
-			for pair in pairs:
-				A[materialIdx, pair[1]] = pair[0]
+		for materialIdx, material in enumerate(sorted(self._materialCoeffs)):
+			coeffs = self._coeff_arrays[material]
+			for flow_idx, coeff_idx in self._flow_locations[material].items():
+				A[materialIdx, flow_idx] = coeffs[coeff_idx]
 		return A
 
 	def getFlowNames(self):
 		if not self._eqConstBuilt:
-			raise Exception("Equality constraints not yet built. Finish construction of the problem before accessing flow names.")
+			raise RuntimeError("Equality constraints not yet built. Finish construction of the problem before accessing flow names.")
 		return sorted(self._flows, key=self._flows.__getitem__)
 
 	def getMaterialNames(self):
 		if not self._eqConstBuilt:
-			raise Exception("Equality constraints not yet built. Finish construction of the problem before accessing material names.")
+			raise RuntimeError("Equality constraints not yet built. Finish construction of the problem before accessing material names.")
 		return sorted(self._materialIdxLookup, key=self._materialIdxLookup.__getitem__)
 
 	def getUpperBounds(self):
@@ -399,7 +395,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 
 	def buildEqConst(self):
 		if self._eqConstBuilt:
-			raise Exception("Equality constraints already built.")
+			raise RuntimeError("Equality constraints already built.")
 		n_coeffs = len(self._materialCoeffs)
 		n_flows = len(self._flows)
 
@@ -407,7 +403,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		A = np.zeros((n_coeffs, n_flows))
 		# avoid creating duplicate constraints
 		self._materialIdxLookup = {}
-		for materialIdx, (material, pairs) in enumerate(sorted(self._materialCoeffs.viewitems())):
+		for materialIdx, (material, pairs) in enumerate(sorted(six.viewitems(self._materialCoeffs))):
 			self._materialIdxLookup[material] = materialIdx
 			for pair in pairs:
 				A[materialIdx, pair[1]] = pair[0]
@@ -418,7 +414,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		data = _toDoubleArray(A_coo.data)
 		n_elems = len(A_coo.row)
 
-		for row in xrange(1, self._n_eq_constraints + 1):
+		for row in range(1, self._n_eq_constraints + 1):
 			glp.glp_set_row_bnds(self._lp, row, glp.GLP_FX, 0.0, 0.0)
 		glp.glp_load_matrix(self._lp, n_elems, rowIdxs, colIdxs, data)
 
@@ -440,7 +436,9 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		'''
 
 		for material in self._materialCoeffs:
-			coeff, flowIdxs = zip(*self._materialCoeffs[material])
+			coeff, flowIdxs = list(zip(*self._materialCoeffs[material]))
+			self._flow_locations[material] = {idx: i + 1  # +1 for swiglpk indexing
+				for i, idx in enumerate(flowIdxs)}
 			flowIdxs = _toIndexArray(flowIdxs)
 			coeff = _toDoubleArray(coeff)
 			self._flow_index_arrays[material] = flowIdxs

@@ -3,73 +3,71 @@ KnowledgeBase for Ecoli
 Whole-cell knowledge base for Ecoli. Contains all raw, un-fit data processed
 directly from CSV flat files.
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 from __future__ import absolute_import, division, print_function
 
+import io
 import os
-import csv
-from reconstruction.spreadsheets import JsonReader
 import json
-from itertools import ifilter
 
+from reconstruction.spreadsheets import read_tsv
+from wholecell.io import tsv
 from wholecell.utils import units  # used by eval()
 
-CSV_DIALECT = csv.excel_tab
+
 FLAT_DIR = os.path.join(os.path.dirname(__file__), "flat")
 LIST_OF_DICT_FILENAMES = (
 	"biomass.tsv",
 	"compartments.tsv",
-	"complexationReactions.tsv",
-	"disabledKineticReactions.tsv",
-	"dryMassComposition.tsv",
-	"endoRnases.tsv",
-	"enzymeKinetics.tsv",
-	"equilibriumReactions.tsv",
-	"foldChanges.tsv",
-	"full_chromosome.tsv",
+	"complexation_reactions.tsv",
+	"complexation_reactions_removed.tsv",
+	"disabled_kinetic_reactions.tsv",
+	"dry_mass_composition.tsv",
+	"endoRNases.tsv",
+	"equilibrium_reactions.tsv",
+	"equilibrium_reactions_removed.tsv",
+	"fold_changes.tsv",
+	"fold_changes_nca.tsv",
+	"fold_changes_removed.tsv",
 	"genes.tsv",
-	"growthRateDependentParameters.tsv",
-	"massAtReplicationInitiation.tsv",
+	"growth_rate_dependent_parameters.tsv",
+	"linked_metabolites.tsv",
+	"metabolic_reactions.tsv",
+	"metabolic_reactions_removed.tsv",
+	"metabolism_kinetics.tsv",
+	"metabolite_concentrations.tsv",
 	"metabolites.tsv",
-	"metaboliteConcentrations.tsv",
-	"modificationReactions.tsv",
-	"modifiedForms.tsv",
-	"modifiedFormsStoichiometry.tsv",
-	"modifiedRnas.tsv",
-	"polymerized.tsv",
+	"modified_proteins.tsv",
+	"molecular_weight_keys.tsv",
 	"ppgpp_fc.tsv",
 	"ppgpp_regulation.tsv",
-	"previousBiomassFluxes.tsv",
-	"promoters.tsv",
-	"protein_half_lives.tsv",
-	"proteinComplexes.tsv",
+	"protein_half_lives_measured.tsv",
+	"protein_half_lives_n_end_rule.tsv",
 	"proteins.tsv",
-	"reactions.tsv",
+	"relative_metabolite_concentrations.tsv",
+	"rna_half_lives.tsv",
+	"rna_modification_reactions.tsv",
+	"rna_modification_reactions_removed.tsv",
 	"rnas.tsv",
 	"secretions.tsv",
 	"sequence_motifs.tsv",
-	"terminators.tsv",
-	"tfIds.tsv",
-	"tfOneComponentBound.tsv",
-	"transcriptionUnits.tsv",
-	"translationEfficiency.tsv",
-	"transport_reactions.tsv",
-	"twoComponentSystemTemplates.tsv",
-	"twoComponentSystems.tsv",
-	"water.tsv",
-	os.path.join("massFractions", "glycogenFractions.tsv"),
-	os.path.join("massFractions", "ionFractions.tsv"),
-	os.path.join("massFractions", "LPSFractions.tsv"),
-	os.path.join("massFractions", "lipidFractions.tsv"),
-	os.path.join("massFractions", "mureinFractions.tsv"),
-	os.path.join("massFractions", "solubleFractions.tsv"),
-	os.path.join("trnaData","trna_ratio_to_16SrRNA_0p4.tsv"),
-	os.path.join("trnaData","trna_ratio_to_16SrRNA_0p7.tsv"),
-	os.path.join("trnaData","trna_ratio_to_16SrRNA_1p6.tsv"),
-	os.path.join("trnaData","trna_ratio_to_16SrRNA_1p07.tsv"),
-	os.path.join("trnaData","trna_ratio_to_16SrRNA_2p5.tsv"),
-	os.path.join("trnaData","trna_growth_rates.tsv"),
+	"transcription_factors.tsv",
+	"tf_one_component_bound.tsv",
+	"translation_efficiency.tsv",
+	"two_component_systems.tsv",
+	"two_component_system_templates.tsv",
+	os.path.join("mass_fractions", "glycogen_fractions.tsv"),
+	os.path.join("mass_fractions", "ion_fractions.tsv"),
+	os.path.join("mass_fractions", "LPS_fractions.tsv"),
+	os.path.join("mass_fractions", "lipid_fractions.tsv"),
+	os.path.join("mass_fractions", "murein_fractions.tsv"),
+	os.path.join("mass_fractions", "soluble_fractions.tsv"),
+	os.path.join("trna_data","trna_ratio_to_16SrRNA_0p4.tsv"),
+	os.path.join("trna_data","trna_ratio_to_16SrRNA_0p7.tsv"),
+	os.path.join("trna_data","trna_ratio_to_16SrRNA_1p6.tsv"),
+	os.path.join("trna_data","trna_ratio_to_16SrRNA_1p07.tsv"),
+	os.path.join("trna_data","trna_ratio_to_16SrRNA_2p5.tsv"),
+	os.path.join("trna_data","trna_growth_rates.tsv"),
 	os.path.join("rna_seq_data","rnaseq_rsem_tpm_mean.tsv"),
 	os.path.join("rna_seq_data","rnaseq_rsem_tpm_std.tsv"),
 	os.path.join("rna_seq_data","rnaseq_seal_rpkm_mean.tsv"),
@@ -87,9 +85,21 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("common_names", "proteins.tsv"),
 	os.path.join("common_names", "reactions.tsv"),
 	os.path.join("common_names", "rnas.tsv"),
+	os.path.join("base_codes", "amino_acids.tsv"),
+	os.path.join("base_codes", "ntp.tsv"),
+	os.path.join("base_codes", "dntp.tsv"),
+	os.path.join("adjustments", "translation_efficiencies_adjustments.tsv"),
+	os.path.join("adjustments", "rna_expression_adjustments.tsv"),
+	os.path.join("adjustments", "rna_deg_rates_adjustments.tsv"),
+	os.path.join("adjustments", "protein_deg_rates_adjustments.tsv"),
+	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv"),
 	)
 SEQUENCE_FILE = 'sequence.fasta'
-LIST_OF_PARAMETER_FILENAMES = ("parameters.tsv", "mass_parameters.tsv")
+LIST_OF_PARAMETER_FILENAMES = (
+	"parameters.tsv",
+	"mass_parameters.tsv",
+	"dna_supercoiling.tsv"
+	)
 
 class DataStore(object):
 	def __init__(self):
@@ -110,18 +120,15 @@ class KnowledgeBaseEcoli(object):
 
 	def _load_tsv(self, dir_name, file_name):
 		path = self
-		for subPath in file_name[len(dir_name) + 1 : ].split(os.path.sep)[:-1]:
-			if not hasattr(path, subPath):
-				setattr(path, subPath, DataStore())
-			path = getattr(path, subPath)
-		attrName = file_name.split(os.path.sep)[-1].split(".")[0]
-		setattr(path, attrName, [])
+		for sub_path in file_name[len(dir_name) + 1 : ].split(os.path.sep)[:-1]:
+			if not hasattr(path, sub_path):
+				setattr(path, sub_path, DataStore())
+			path = getattr(path, sub_path)
+		attr_name = file_name.split(os.path.sep)[-1].split(".")[0]
+		setattr(path, attr_name, [])
 
-		with open(file_name, 'rU') as csvfile:
-			reader = JsonReader(
-				ifilter(lambda x: x.lstrip()[0] != "#", csvfile), # Strip comments
-				dialect = CSV_DIALECT)
-			setattr(path, attrName, [row for row in reader])
+		rows = read_tsv(file_name)
+		setattr(path, attr_name, rows)
 
 	def _load_sequence(self, file_path):
 		from Bio import SeqIO
@@ -131,11 +138,11 @@ class KnowledgeBaseEcoli(object):
 				return record.seq
 
 	def _load_parameters(self, file_path):
-		attrName = file_path.split(os.path.sep)[-1].split(".")[0]
-		paramDict = {}
+		attr_name = file_path.split(os.path.sep)[-1].split(".")[0]
+		param_dict = {}
 
-		with open(file_path, "rU") as csvfile:
-			reader = csv.DictReader(csvfile, dialect = CSV_DIALECT)
+		with io.open(file_path, "rb") as csvfile:
+			reader = tsv.dict_reader(csvfile)
 
 			for row in reader:
 				value = json.loads(row['value'])
@@ -146,6 +153,6 @@ class KnowledgeBaseEcoli(object):
 					unit = eval(row['units'])   # risky!
 					unit = units.getUnit(unit)  # strip
 					value = value * unit
-				paramDict[row['name']] = value
+				param_dict[row['name']] = value
 
-		setattr(self, attrName, paramDict)
+		setattr(self, attr_name, param_dict)

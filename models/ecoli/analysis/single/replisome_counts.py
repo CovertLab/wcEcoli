@@ -1,15 +1,11 @@
 """
 Plots the counts of active replisomes and their subunits over time.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 7/30/2018
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
+from six.moves import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -22,12 +18,6 @@ from models.ecoli.analysis import singleAnalysisPlot
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
@@ -56,13 +46,13 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Load IDs of direct replisome subunits
 		replisome_subunit_ids = []
 		replisome_subunit_ids.extend(
-			sim_data.moleculeGroups.replisome_trimer_subunits)
+			sim_data.molecule_groups.replisome_trimer_subunits)
 		replisome_subunit_ids.extend(
-			sim_data.moleculeGroups.replisome_monomer_subunits)
+			sim_data.molecule_groups.replisome_monomer_subunits)
 
 		# Load IDs of DNA polymerase III core enzyme subunits
 		replisome_subunit_ids.extend(
-			sim_data.process.complexation.getMonomers(
+			sim_data.process.complexation.get_monomers(
 				'CPLX0-2361[c]')['subunitIds']
 			)
 

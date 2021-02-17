@@ -1,13 +1,8 @@
 """
 Template for variant analysis plots
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 8/2/18
 """
 
-from __future__ import absolute_import, division, print_function
-
-import cPickle
+import pickle
 import os
 
 from matplotlib import pyplot as plt
@@ -15,22 +10,17 @@ import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
+from wholecell.analysis.analysis_tools import (exportFigure,
+	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(inputDir):
-			raise Exception('inputDir does not currently exist as a directory')
-
-		filepath.makedirs(plotOutDir)
-
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 		with open(validationDataFile, 'rb') as f:
-			validation_data = cPickle.load(f)
+			validation_data = pickle.load(f)
 
 		ap = AnalysisPaths(inputDir, variant_plot=True)
 		variants = ap.get_variants()
@@ -40,10 +30,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			## Consider calculating variant difference and only loading
 			## sim_data once above for better performance.
 			with open(ap.get_variant_kb(variant), 'rb') as f:
-				variant_sim_data = cPickle.load(f)
+				variant_sim_data = pickle.load(f)
 
-			for sim_dir in ap.get_cells(variant=[variant]):
-				simOutDir = os.path.join(sim_dir, "simOut")
+			cell_paths = ap.get_cells(variant=[variant])
+
+			# Load data
+			## Simple stacking functions for data from all cells
+			names = ['ATP[c]']  # Replace with desired list of names
+			time = read_stacked_columns(cell_paths, 'Main', 'time')
+			(counts,) = read_stacked_bulk_molecules(cell_paths, (names,))
+
+			## Or iterate on each cell if additional processing is needed
+			for sim_dir in cell_paths:
+				simOutDir = os.path.join(sim_dir, 'simOut')
 
 				# Listeners used
 				main_reader = TableReader(os.path.join(simOutDir, 'Main'))
@@ -51,7 +50,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				# Load data
 				time = main_reader.readColumn('time')
 
-				names = ['ATP[c]']  # Replace with desired list of names
 				(counts,) = read_bulk_molecule_counts(simOutDir, (names,))
 
 		plt.figure()

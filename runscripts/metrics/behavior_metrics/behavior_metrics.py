@@ -6,22 +6,21 @@
 from __future__ import absolute_import, division, print_function
 
 from collections import namedtuple
-import cPickle
 import importlib
 from os import path
 import re
-from typing import Dict, Any, List, Union, Iterable
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Text, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from unum import Unum
+from six.moves import cPickle, range, zip
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath, units, toya
 from wholecell.utils.dependency_graph import DependencyGraph
-from wholecell.utils.protein_counts import (
-	get_simulated_validation_counts,
-)
+from wholecell.utils.protein_counts import get_simulated_validation_counts
+from wholecell.utils.py3 import String
 
 
 def calc_end_start_ratio(data):
@@ -54,7 +53,7 @@ def calc_active_fraction(active_counts, inactive_counts):
 
 
 def find_limiting_metabolites(counts, names, window):
-	# type: (np.ndarray, Iterable[str], int) -> Iterable[str]
+	# type: (np.ndarray, Sequence[str], int) -> Iterable[str]
 	"""Find all metabolites that are limiting for some period of time.
 
 	A metabolite is considered limiting over a window of time if, within
@@ -72,15 +71,15 @@ def find_limiting_metabolites(counts, names, window):
 		An iterable collection with the unsorted names of all
 		metabolites ever found to be limiting in counts.
 	"""
-	names = np.array(names)
 	limiting = set()
 	diff = np.diff(counts, axis=0)
-	for i in xrange(diff.shape[0] - window):
+	for i in range(diff.shape[0] - window):
 		production_in_window = np.any(diff[i:i + window] > 0, axis=0)
 		i_unproduced_metabolites = np.where(
 			production_in_window == False)[0].astype(int)
 		if len(i_unproduced_metabolites):
-			curr_limiting = names[i_unproduced_metabolites]
+			curr_limiting = [
+				names[i] for i in i_unproduced_metabolites]
 			limiting.update(curr_limiting)
 	return limiting
 
@@ -117,7 +116,7 @@ def find_indices_bulk(to_search, targets):
 
 
 def np_pick(array, pick_spec):
-	# type: (np.ndarray, List[List[int]]) -> Any
+	# type: (np.ndarray, Iterable[Union[List[int], int]]) -> Any
 	"""Perform numpy indexing based on a specification
 
 	Arguments:
@@ -128,9 +127,9 @@ def np_pick(array, pick_spec):
 			indices.
 
 	Returns:
-		An array including the specified indices.
+		The given array indexed by the specified indices.
 	"""
-	parsed_spec = []
+	parsed_spec = []  # type: List[Union[Tuple[int, ...], int]]
 	for axis_spec in pick_spec:
 		if isinstance(axis_spec, list):
 			parsed_spec.append(tuple(axis_spec))
@@ -140,18 +139,22 @@ def np_pick(array, pick_spec):
 
 
 #: Path from repository root to metrics configuration JSON file
-METRICS_CONF_PATH = "runscripts/metrics/behavior_metrics/metrics.json"
+METRICS_CONF_PATH = path.join(
+	"runscripts", "metrics", "behavior_metrics", "metrics.json")
+
+#: Path to the output directory
+OUTPUT_PATH = path.join("out", "manual")
 
 #: Path to the simulation output directory from repository root
-SIM_OUT_DIR = (
-	"out/manual/wildtype_000000/000000/generation_000000/000000/simOut"
-)
+SIM_OUT_DIR = path.join(
+	OUTPUT_PATH, "wildtype_000000", "000000", "generation_000000", "000000",
+	"simOut")
 
 #: Path to pickle that stores validation data for correlation checks
-VALIDATION_PICKLE_PATH = "out/manual/kb/validationData.cPickle"
+VALIDATION_PICKLE_PATH = path.join(OUTPUT_PATH, "kb", "validationData.cPickle")
 
 #: Path to pickle that stores pickle of data for metrics computation
-METRICS_PICKLE_PATH = "out/manual/kb/metricsData.cPickle"
+METRICS_PICKLE_PATH = path.join(OUTPUT_PATH, "kb", "metricsData.cPickle")
 
 #: Map from mode names to the functions that handle the mode
 MODE_FUNC_MAP = {
@@ -215,7 +218,7 @@ class BehaviorMetrics(object):
 		self, metrics_conf_path, sim_out_dir, validation_path=None,
 		metrics_pickle_path=None
 	):
-		# type: (str, str) -> None
+		# type: (str, str, str, str) -> None
 		"""Store provided paths.
 
 		Arguments:
@@ -298,6 +301,7 @@ class BehaviorMetrics(object):
 					)
 					results.append(result)
 
+		results = sorted(results)
 		results_df = pd.DataFrame(results)
 		return results_df
 
@@ -310,15 +314,15 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def _calculate_operation(op_config, data):
-		# type: (Dict[str, Any], Dict[str, Any]) -> Any
+		# type: (Dict[str, Any], Dict[String, Any]) -> Any
 		op_func = MODE_FUNC_MAP[op_config["function"]]
 		func_args = [
 			BehaviorMetrics._resolve_func_arg(arg, data) for arg in op_config["args"]
 		]
 		return op_func(*func_args)
 
-	def load_data_from_config(self, data_conf_json, pickles={}):
-		# type: (Dict[str, Any]) -> Dict[str, Any]
+	def load_data_from_config(self, data_conf_json, pickles=None):
+		# type: (Dict[String, Any], Optional[dict]) -> Dict[String, Any]
 		"""Load data as specified in a configuration JSON.
 
 		The configuration JSON should be structured as follows:
@@ -398,6 +402,8 @@ class BehaviorMetrics(object):
 			InvalidDependencyGraphError: If the dependency graph created by the
 			operation attributes contains any cycles.
 		"""
+		if pickles is None:
+			pickles = {}
 		loaded_data = {}
 		for source_name, source_config in data_conf_json.items():
 			if "constant" in source_config:
@@ -442,7 +448,7 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def _resolve_dotted_name(obj, name):
-		# type: (object, str) -> Any
+		# type: (object, String) -> Any
 		names = name.split(".")
 		for name_part in names:
 			obj = getattr(obj, name_part)
@@ -462,8 +468,8 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def parse_units(unit_def):
-		# type: (Union[str, Dict[str, Any]]) -> Unum
-		"""Get an Unum object that can stores the specified units
+		# type: (Union[String, Dict[String, Any]]) -> Unum
+		"""Get an Unum object that can store the specified units
 
 		Arguments:
 			unit_def: A definition of a unit, either as a string or as a
@@ -473,13 +479,13 @@ class BehaviorMetrics(object):
 		Returns:
 			An Unum object storing the specified units.
 		"""
-		if isinstance(unit_def, str) or isinstance(unit_def, unicode):
+		if isinstance(unit_def, (str, Text)):
 			return BehaviorMetrics.parse_units_str(unit_def)
 		return BehaviorMetrics.parse_units_dict(unit_def)
 
 	@staticmethod
 	def parse_units_str(unit_str):
-		# type: (str) -> Unum
+		# type: (String) -> Unum
 		"""Get an Unum object from a unit string.
 
 		Arguments:
@@ -508,7 +514,7 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def parse_units_dict(unit_dict):
-		# type: (Dict[str, Any]) -> Unum
+		# type: (Dict[String, Any]) -> Unum
 		"""Get an Unum object from a JSON object.
 
 		Arguments:
@@ -548,12 +554,12 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def _eval_atomic_unit_str(unit_str):
-		# type: (str) -> Unum
+		# type: (String) -> Unum
 		return 1 if unit_str == "1" else getattr(units, unit_str)
 
 	@staticmethod
 	def order_operations(operation_configs):
-		# type: (Dict[str, Dict[str, Any]]) -> List[str]
+		# type: (Dict[String, Dict[String, Any]]) -> Sequence[String]
 		"""Sorts operation configs for evaluation.
 
 		Operations can take the results of other operations as input, so
@@ -573,13 +579,13 @@ class BehaviorMetrics(object):
 			operation attributes contains any cycles.
 		"""
 		graph = DependencyGraph()
-		graph.add_nodes(operation_configs.keys())
+		graph.add_nodes(list(operation_configs.keys()))
 		for op_name, config in operation_configs.items():
 			if "args" in config:
 				args = BehaviorMetrics._flatten(config["args"])
 				deps = [
 					arg for arg in args
-					if arg in operation_configs.keys()
+					if arg in operation_configs
 				]
 				for dep in deps:
 					graph.add_dep_relation(op_name, dep)

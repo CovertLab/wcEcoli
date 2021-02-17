@@ -3,12 +3,8 @@ Two component system
 
 Two component system sub-model
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/3/2016
-
 """
 from __future__ import absolute_import, division, print_function
-import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils import units
@@ -30,15 +26,18 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(TwoComponentSystem, self).initialize(sim, sim_data)
 
+		# Simulation options
+		self.jit = sim._jit
+
 		# Get constants
-		self.nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / units.mmol)
-		self.cellDensity = sim_data.constants.cellDensity.asNumber(units.g / units.L)
+		self.nAvogadro = sim_data.constants.n_avogadro.asNumber(1 / units.mmol)
+		self.cellDensity = sim_data.constants.cell_density.asNumber(units.g / units.L)
 
 		# Create method
-		self.moleculesToNextTimeStep = sim_data.process.two_component_system.moleculesToNextTimeStep
+		self.moleculesToNextTimeStep = sim_data.process.two_component_system.molecules_to_next_time_step
 
 		# Build views
-		self.moleculeNames = sim_data.process.two_component_system.moleculeNames
+		self.moleculeNames = sim_data.process.two_component_system.molecule_names
 		self.molecules = self.bulkMoleculesView(self.moleculeNames)
 
 		# Set priority to a lower value (but greater priority than metabolism)
@@ -59,7 +58,7 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		# by the scipy ODE suite.
 		self.molecules_required, self.all_molecule_changes = self.moleculesToNextTimeStep(
 			moleculeCounts, self.cellVolume, self.nAvogadro,
-			self.timeStepSec(), self.randomState, solver="BDF",
+			self.timeStepSec(), self.randomState, method="LSODA", jit=self.jit,
 			)
 
 		# Request counts of molecules needed
@@ -80,7 +79,8 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 
 			_, self.all_molecule_changes = self.moleculesToNextTimeStep(
 				moleculeCounts, self.cellVolume, self.nAvogadro,
-				10000, self.randomState, solver="BDF", min_time_step=self.timeStepSec(),
+				10000, self.randomState, method="BDF", min_time_step=self.timeStepSec(),
+				jit=self.jit,
 				)
 
 		# Increment changes in molecule counts

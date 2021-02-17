@@ -2,7 +2,10 @@
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
+from typing import Any, cast, Iterable
 import zlib
+
+from wholecell.utils.py3 import String
 
 ZLIB_LEVEL = 7
 
@@ -25,13 +28,15 @@ def decomp(compressed_names, dtype, compressed_counts):
 		dtype (str) array-protocol typestring [dtype.str]
 		compressed_counts (bytes) zlib-compressed bytes of the counts ndarray
 	"""
-	names = zlib.decompress(compressed_names).split('\t')
+	names = zlib.decompress(compressed_names).decode('utf-8').split('\t')
 	counts_array = np.frombuffer(zlib.decompress(compressed_counts), dtype)
 	container = BulkObjectsContainer(names, counts_array.dtype)
 	container.countsIs(counts_array)
 	return container
 
-decomp.__safe_for_unpickling__ = True
+
+# So mypy won't complain that the Callable has no such attribute.
+cast(Any, decomp).__safe_for_unpickling__ = True
 
 
 class BulkObjectsContainer(object):
@@ -92,7 +97,7 @@ class BulkObjectsContainer(object):
 	TODO (John): Give methods more standard names (e.g. set, get, add).
 	TODO (John): Move methods and attributes from mixedCase to under_scores.
 	TODO (John): Get rid of single/group distinction in methods/views, and
-		instead check input types against basestring to decide what sort of
+		instead check input types against str to decide what sort of
 		output to return.
 	TODO (John): Use something more generic than 'counts' to reflect the fact
 		that non-integer data types are permissible.
@@ -100,6 +105,7 @@ class BulkObjectsContainer(object):
 	"""
 
 	def __init__(self, objectNames, dtype = np.int64):
+		# type: (Iterable[String], Any) -> None
 		# Copy the object names into a tuple to ensure they are ordered and
 		# immutable
 		self._objectNames = tuple(objectNames)
@@ -122,7 +128,7 @@ class BulkObjectsContainer(object):
 		Return a callable object and its args.
 		"""
 		compact_names = '\t'.join(self._objectNames)
-		compressed_names = zlib.compress(compact_names, ZLIB_LEVEL)
+		compressed_names = zlib.compress(compact_names.encode('utf-8'), ZLIB_LEVEL)
 		compressed_counts = zlib.compress(self._counts.tobytes(), ZLIB_LEVEL)
 		dtype = self._counts.dtype
 
@@ -351,7 +357,7 @@ class BulkObjectsContainer(object):
 		return np.array_equal(self._counts, other._counts)
 
 	def __ne__(self, other):
-		# assertNotEquals() calls `!=`.
+		# Needed for assertNotEqual().
 		return not (self == other)
 
 

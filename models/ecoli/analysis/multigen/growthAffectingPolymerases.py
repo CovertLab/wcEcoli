@@ -1,29 +1,22 @@
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.utils import units
-import cPickle
 from models.ecoli.analysis import multigenAnalysisPlot
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 
 		# Get first cell from each generation
@@ -76,14 +69,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			doublingTime = 1 / growthRate * np.log(2)
 
 			# Get ids for 30S and 50S subunits
-			proteinIds30S = sim_data.moleculeGroups.s30_proteins
-			rRnaIds30S = sim_data.moleculeGroups.s30_16sRRNA
-			complexIds30S = [sim_data.moleculeIds.s30_fullComplex]
+			proteinIds30S = sim_data.molecule_groups.s30_proteins
+			rRnaIds30S = sim_data.molecule_groups.s30_16s_rRNA
+			complexIds30S = [sim_data.molecule_ids.s30_full_complex]
 
-			proteinIds50S = sim_data.moleculeGroups.s50_proteins
-			rRnaIds50S = sim_data.moleculeGroups.s50_23sRRNA
-			rRnaIds50S.extend(sim_data.moleculeGroups.s50_5sRRNA)
-			complexIds50S = [sim_data.moleculeIds.s50_fullComplex]
+			proteinIds50S = sim_data.molecule_groups.s50_proteins
+			rRnaIds50S = sim_data.molecule_groups.s50_23s_rRNA
+			rRnaIds50S.extend(sim_data.molecule_groups.s50_5s_rRNA)
+			complexIds50S = [sim_data.molecule_ids.s50_full_complex]
 
 			rnapId = ["APORNAP-CPLX[c]"]
 
@@ -153,7 +146,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			## Calculate statistics involving ribosomes and RNAP ##
 			ratioRNAPtoRibosome = totalRnap.astype(np.float) / ribosomeCounts.astype(np.float)
-			ribosomeConcentration = ((1 / sim_data.constants.nAvogadro) * ribosomeCounts) / ((1.0 / sim_data.constants.cellDensity) * (units.fg * cellMass))
+			ribosomeConcentration = ((1 / sim_data.constants.n_avogadro) * ribosomeCounts) / ((1.0 / sim_data.constants.cell_density) * (units.fg * cellMass))
 
 			averageRibosomeElongationRate = ribosomeDataFile.readColumn("effectiveElongationRate")
 			processElongationRate = ribosomeDataFile.readColumn("processElongationRate")
@@ -197,7 +190,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			# Plot RNAP active fraction
 			ax2.plot(time.asNumber(units.min), fractionRnapActive)
-			ax2.plot(time.asNumber(units.min), sim_data.growthRateParameters.fractionActiveRnap * np.ones(time.asNumber().size), linestyle='--')
+			ax2.plot(time.asNumber(units.min), sim_data.growth_rate_parameters.fractionActiveRnap * np.ones(time.asNumber().size), linestyle='--')
 			ax2.axvline(x = time.asNumber(units.min).max(), linewidth=2, color='k', linestyle='--')
 			ax2.set_ylabel("Fraction active\nRNAP")
 
@@ -293,6 +286,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				y_lim = [processElongationRate[100:].min(), processElongationRate[100:].max()]
 			else:
 				y_lim = get_new_ylim(ax12, processElongationRate[100:].min(), processElongationRate[100:].max())
+			if y_lim[0] == y_lim[1]:
+				y_lim[0] -= .011  # avoid matplotlib bottom==top singularity warning
+				y_lim[1] += .011
 			ax12.set_ylim(y_lim)
 			ax12.set_ylabel("Process ribosome\nelongation rate\n(aa/s)")
 

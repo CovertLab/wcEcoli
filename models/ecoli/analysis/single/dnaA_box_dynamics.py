@@ -1,14 +1,10 @@
 """
 Plot for dynamics of DnaA proteins binding to DnaA boxes across the chromosome
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/18/19
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 import os
 
 from matplotlib import pyplot as plt
@@ -19,16 +15,10 @@ from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, 'simOutDir does not currently exist as a directory'
-
-		filepath.makedirs(plotOutDir)
-
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
@@ -44,8 +34,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		criticalMassPerOriC = replication_data_reader.readColumn(
 			"criticalMassPerOriC")
 
-		names = [sim_data.moleculeIds.DnaA,
-			sim_data.moleculeIds.DnaA_ATP_complex]
+		names = [sim_data.molecule_ids.DnaA,
+			sim_data.molecule_ids.DnaA_ATP_complex]
 		(counts,) = read_bulk_molecule_counts(simOutDir, (names,))
 
 		fig = plt.figure()

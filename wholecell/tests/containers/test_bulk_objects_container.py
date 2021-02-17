@@ -1,17 +1,16 @@
 '''
 test_bulk_objects_container.py
 
-@author: John Mason
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 @data: Created 2/27/2014
 '''
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 import os
 import shutil
 import tempfile
+from typing import Iterable
 import unittest
 
 import numpy as np
@@ -267,7 +266,7 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 		npt.assert_equal(self.container.counts(), newContainer.counts())
 
 		container2 = BulkObjectsContainer(tuple('abcdefghijklmnopqrstuvwxyz'))
-		self.assertNotEquals(self.container, container2)  # different names and shape
+		assert self.container != container2  # different names and shape
 
 		# __eq__() tests the counts. The dtypes may differ.
 		newContainer.countsIs(7 + 9876 * np.arange(len(OBJECT_NAMES)))
@@ -316,7 +315,7 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 
 	def test_cannot_pickle(self):
 		"""Try to pickle a container whose dtype has fields or a subarray."""
-		container = BulkObjectsContainer(ELEMENTS, dtype=[('a', 'f4'), ('b', 'i4')])
+		container = BulkObjectsContainer(ELEMENTS, dtype=[('U', 'f4'), ('b', 'i4')])
 		with self.assertRaises(ValueError):
 			cPickle.dumps(container)
 
@@ -324,8 +323,13 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			cPickle.dumps(container)
 
-		container = BulkObjectsContainer([OBJECT_NAMES, OBJECT_NAMES], dtype='f8')
 		with self.assertRaises(TypeError):
+			# Suppress PyCharm's type check then test that the bad arg type
+			# gets caught at run time -- currently by BOC's dumps() method.
+			# Why doesn't mypy catch this bad type?
+			# noinspection PyTypeChecker
+			bad_names = [OBJECT_NAMES, OBJECT_NAMES]  # type: Iterable[str]
+			container = BulkObjectsContainer(bad_names, dtype='f8')
 			cPickle.dumps(container)
 
 	def test_write_table(self):

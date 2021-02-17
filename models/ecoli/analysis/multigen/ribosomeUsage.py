@@ -1,19 +1,15 @@
 """
 Plot usage statistics of ribosomes
-
-@author: Gwanggyu Sun
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 10/18/2017
 """
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -24,12 +20,6 @@ from models.ecoli.analysis import multigenAnalysisPlot
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 
 		# Get first cell from each generation
@@ -79,13 +69,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			## Ribosome counts and statistics ##
 
 			# Get ids for 30S and 50S subunits
-			complexIds30S = [sim_data.moleculeIds.s30_fullComplex]
-			complexIds50S = [sim_data.moleculeIds.s50_fullComplex]
+			complexIds30S = [sim_data.molecule_ids.s30_full_complex]
+			complexIds50S = [sim_data.molecule_ids.s50_full_complex]
 
 			# Get molecular weights for 30S and 50S subunits, and add these two for 70S
-			nAvogadro = sim_data.constants.nAvogadro
-			mw30S = sim_data.getter.getMass(complexIds30S)
-			mw50S = sim_data.getter.getMass(complexIds50S)
+			nAvogadro = sim_data.constants.n_avogadro
+			mw30S = sim_data.getter.get_masses(complexIds30S)
+			mw50S = sim_data.getter.get_masses(complexIds50S)
 			mw70S = mw30S + mw50S
 
 			# Get indexes for 30S and 50S subunits based on ids
@@ -128,7 +118,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			massDataFile.close()
 
 			# Calculate cell volume
-			cellVolume = (1.0 / sim_data.constants.cellDensity) * (units.fg * cellMass)
+			cellVolume = (1.0 / sim_data.constants.cell_density) * (units.fg * cellMass)
 
 			# Calculate molecule counts and molar fraction of active ribosomes
 			counts30S = complexCounts30S

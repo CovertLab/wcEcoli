@@ -7,8 +7,6 @@ Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import abc
 import argparse
 import datetime
@@ -18,15 +16,19 @@ import re
 import os
 import pprint as pp
 import time
-from typing import Any, Callable, List, Optional, Tuple
+import traceback
+from typing import Any, Callable, Iterable, List, Optional, Tuple
 
 import wholecell.utils.filepath as fp
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
+from wholecell.utils.py3 import monotonic_seconds, process_time_seconds
 
 
 METADATA_KEYS = (
 	'timeline',
 	'generations',
+	'seed',
+	'init_sims',
 	'mass_distribution',
 	'growth_rate_noise',
 	'd_period_division',
@@ -34,7 +36,10 @@ METADATA_KEYS = (
 	'variable_elongation_translation',
 	'translation_supply',
 	'trna_charging',
-	'ppgpp_regulation')
+	'ppgpp_regulation',
+	'superhelical_density',
+	'mechanistic_replisome',
+	)
 
 PARCA_KEYS = (
 	'ribosome_fitting',
@@ -49,6 +54,7 @@ SIM_KEYS = (
 	'timestep_safety_frac',
 	'timestep_max',
 	'timestep_update_freq',
+	'jit',
 	'mass_distribution',
 	'growth_rate_noise',
 	'd_period_division',
@@ -57,7 +63,11 @@ SIM_KEYS = (
 	'translation_supply',
 	'trna_charging',
 	'ppgpp_regulation',
-	'raise_on_time_limit')
+	'superhelical_density',
+	'mechanistic_replisome',
+	'raise_on_time_limit',
+	'log_to_shell',
+	)
 
 ANALYSIS_KEYS = (
 	'plot',
@@ -132,7 +142,7 @@ def dashize(underscore):
 	return re.sub(r'_+', r'-', underscore)
 
 
-class ScriptBase(object):
+class ScriptBase(metaclass=abc.ABCMeta):
 	"""Abstract base class for scripts. This defines a template where
 	`description()` describes the script,
 	`define_parameters()` defines its command line parameters,
@@ -140,7 +150,6 @@ class ScriptBase(object):
 	`run()` does the work,
 	`cli()` is the driving Command-Line Interpreter.
 	"""
-	__metaclass__ = abc.ABCMeta
 
 	# Regex to match a variant directory name. In the resulting match
 	# object, group 1 is the variant_type and group 2 is the variant_index.
@@ -187,7 +196,7 @@ class ScriptBase(object):
 	def define_parameters(self, parser):
 		# type: (argparse.ArgumentParser) -> None
 		"""Define command line parameters. This base method defines a --verbose
-		flag. Overrides should call super.
+		flag if it isn't already defined. Overrides should call super.
 
 		Examples include positional arguments
 			`parser.add_argument('variant', nargs='?',
@@ -252,11 +261,11 @@ class ScriptBase(object):
 		parser.add_argument(*names,
 			type=datatype,
 			default=default,
-			help='({}; {!r}) {}'.format(datatype.__name__, default, help)
+			help='({}; default {!r}) {}'.format(datatype.__name__, default, help)
 			)
 
-	def define_parameter_sim_dir(self, parser):
-		# type: (argparse.ArgumentParser) -> None
+	def define_parameter_sim_dir(self, parser, default=None):
+		# type: (argparse.ArgumentParser, Optional[Any]) -> None
 		"""Add a `sim_dir` parameter to the command line parser. parse_args()
 		will then use `args.sim_dir` to add `args.sim_path`.
 
@@ -267,6 +276,7 @@ class ScriptBase(object):
 		Call this in overridden define_parameters() methods as needed.
 		"""
 		parser.add_argument('sim_dir', nargs='?',
+			default=default,
 			help='''The simulation "out/" subdirectory to read from (optionally
 				starting with "out/"), or an absolute directory name, or
 				default to the "out/" subdirectory name that starts with
@@ -325,9 +335,20 @@ class ScriptBase(object):
 				 ' (currently increases rates for ribosomal proteins).'
 				 ' Usually set this consistently between runParca and runSim.')
 
-	def define_parca_options(self, parser):
-		# type: (argparse.ArgumentParser) -> None
+	def define_parca_options(self, parser, run_parca_option=False):
+		# type: (argparse.ArgumentParser, bool) -> None
 		"""Define Parca task options EXCEPT the elongation options."""
+
+		if run_parca_option:
+			self.define_parameter_bool(parser, 'run_parca', True,
+				help='Run the Parca. The alternative, --no-run-parca, is useful'
+					 ' to run more cell sims without rerunning the Parca.'
+					 ' For that to work, the CLI args must specify the'
+					 ' --timestamp and the same --description, --id, and'
+					 ' --storage-root as a previous workflow that ran the Parca'
+					 ' in order to locate its storage path. --no-run-parca makes'
+					 ' other Parca CLI options irrelevant (the options below,'
+					 ' through --no-debug-parca).')
 
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
 			help="Fit ribosome expression to protein synthesis demands.")
@@ -352,6 +373,9 @@ class ScriptBase(object):
 				type choices and their supported index ranges, e.g.: wildtype,
 				condition, meneParams, metabolism_kinetic_objective_weight,
 				nutrientTimeSeries, and param_sensitivity.
+				The meaning of the index values depends on the variant type. With
+				wildtype, every index does the same thing, so it's a way to test
+				that the simulation is repeatable.
 				Default = ''' + ' '.join(DEFAULT_VARIANT))
 		if manual_script:
 			self.define_parameter_bool(parser, 'require_variants', False,
@@ -361,17 +385,22 @@ class ScriptBase(object):
 
 		# Simulation
 		parser.add_argument('-g', '--generations', type=int, default=1,
-			help='Number of cell sim generations to run. (Single daughters only.)'
-				 ' Default = 1')
+			help='Number of cell sim generations to run per variant. (Single'
+				 ' daughters only.) Default = 1')
 		if manual_script:
 			parser.add_argument(dashize('--total_gens'), type=int,
 				help='(int) Total number of generations to write into the'
 					 ' metadata.json file. Default = the value of --generations.')
 		parser.add_argument('-s', '--seed', type=int, default=0,
-			help="First cell lineage's simulation seed. Default = 0")
+			help="Simulation seed for the first generation of the first cell"
+				 " lineage of every variant. The lineages (--init-sims) get"
+				 " sequentially increasing seed numbers. The generations"
+				 " (--generations) get seeds computed from the lineage seed and"
+				 " the generation number. Default = 0")
 
 		self.define_option(parser, 'init_sims', int, 1, flag='i',
-			help='Number of initial sims (lineage seeds) per variant.')
+			help='Number of initial sims (cell lineages) per variant. The'
+				 ' lineages get sequential seeds starting with the --seed value.')
 
 	def define_sim_options(self, parser):
 		# type: (argparse.ArgumentParser) -> None
@@ -401,6 +430,9 @@ class ScriptBase(object):
 		add_option('timestep_update_freq', 'updateTimeStepFreq', int,
 			help='frequency at which the time step is updated')
 
+		add_bool_option('jit', 'jit',
+			help='If true, jit compiled functions are used for certain'
+				 ' processes, otherwise only uses lambda functions')
 		add_bool_option('mass_distribution', 'massDistribution',
 			help='If true, a mass coefficient is drawn from a normal distribution'
 				 ' centered on 1; otherwise it is set equal to 1')
@@ -421,9 +453,16 @@ class ScriptBase(object):
 				 ' This option will override TRANSLATION_SUPPLY in the simulation.')
 		add_bool_option('ppgpp_regulation', 'ppgpp_regulation',
 			help='if true, ppGpp concentration is determined with kinetic equations.')
+		add_bool_option('superhelical_density', 'superhelical_density',
+			help='if true, dynamically calculate superhelical densities of each DNA segment')
+		add_bool_option('mechanistic_replisome', 'mechanistic_replisome',
+			help='if true, replisome initiation is mechanistic (requires'
+				 ' appropriate number of subunits to initiate)')
 		add_bool_option('raise_on_time_limit', 'raise_on_time_limit',
 			help='if true, the simulation raises an error if the time limit'
 				 ' (--length-sec) is reached before division.')
+		add_bool_option('log_to_shell', 'logToShell',
+			help='if true, logs output to the shell')
 
 	def define_range_options(self, parser, *range_keys):
 		# type: (argparse.ArgumentParser, *str) -> None
@@ -490,7 +529,7 @@ class ScriptBase(object):
 		for range_option in self.range_options:
 			if getattr(args, range_option):
 				start, end = getattr(args, range_option)
-				values = range(start, end+1)
+				values = list(range(start, end+1))
 			else:
 				values = [getattr(args, RANGE_ARGS[range_option])]
 
@@ -499,7 +538,7 @@ class ScriptBase(object):
 		return range_args
 
 	def set_range_args(self, args, params):
-		# type: (argparse.Namespace, List[int]) -> None
+		# type: (argparse.Namespace, Iterable[int]) -> None
 		"""Sets arguments from a combination of values from ranges."""
 
 		for range_id, param in zip(self.range_options, params):
@@ -519,9 +558,10 @@ class ScriptBase(object):
 		message (including the elapsed run time).
 		"""
 
+		exceptions = []
 		range_args = self.extract_range_args(self.parse_args())
 		# TODO (Travis): have option to parallelize when ranges given
-		# TODO (Travis): check or handle error if variant/seed/gen range combo does not exist
+		# TODO (Travis): check if variant/seed/gen range combo does not exist
 		for params in itertools.product(*range_args):
 			# Start with original args for each iteration since update_args
 			# overwrites some args and might handle undefined values differently
@@ -535,24 +575,38 @@ class ScriptBase(object):
 			if location:
 				location = ' at ' + location
 
-			start_wall_sec = time.time()
-			print('{}: {}{}'.format(
-				time.ctime(start_wall_sec), self.description(), location))
+			start_real_sec = monotonic_seconds()
+			print('{}: {}{}'.format(time.ctime(), self.description(), location))
 			pp.pprint({'Arguments': vars(args)})
 
-			start_process_sec = time.clock()
-			self.run(args)
-			end_process_sec = time.clock()
-			elapsed_process = end_process_sec - start_process_sec
+			start_process_sec = process_time_seconds()
+			try:
+				self.run(args)
+			except Exception as e:
+				# Handle exceptions after completion if running multiple params
+				if range_args and max([len(a) for a in range_args]) > 1:
+					traceback.print_exc()
+					exceptions.append((params, e))
+				else:
+					raise
+			elapsed_process = process_time_seconds() - start_process_sec
 
-			end_wall_sec = time.time()
-			elapsed_wall = end_wall_sec - start_wall_sec
-			print("{}: Elapsed time {:1.2f} sec ({}); {:1.2f} sec in process".format(
-				time.ctime(end_wall_sec),
-				elapsed_wall,
-				datetime.timedelta(seconds=elapsed_wall),
+			elapsed_real_sec = monotonic_seconds() - start_real_sec
+			print("{}: Elapsed time {:1.2f} sec ({}); CPU {:1.2f} sec".format(
+				time.ctime(),
+				elapsed_real_sec,
+				datetime.timedelta(seconds=elapsed_real_sec),
 				elapsed_process,
 				))
+
+		# Handle any exceptions that occurred
+		if exceptions:
+			for params, ex in exceptions:
+				param_str = ', '.join(['{}: {}'.format(RANGE_ARGS[o], p)
+					for o, p in zip(self.range_options, params)])
+				print('Error with param set ({}): "{}"'.format(param_str, ex))
+
+			raise RuntimeError('Exception in one or more parameter sets (see above).')
 
 
 class TestScript(ScriptBase):

@@ -1,13 +1,8 @@
 """
 Template for single analysis plots
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 8/2/18
 """
 
-from __future__ import absolute_import, division, print_function
-
-import cPickle
+import pickle
 import os
 
 from matplotlib import pyplot as plt
@@ -16,20 +11,14 @@ import numpy as np
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception('simOutDir does not currently exist as a directory')
-
-		filepath.makedirs(plotOutDir)
-
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 		with open(validationDataFile, 'rb') as f:
-			validation_data = cPickle.load(f)
+			validation_data = pickle.load(f)
 
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))

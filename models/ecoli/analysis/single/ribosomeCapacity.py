@@ -1,13 +1,10 @@
 """
 Plots ribosome capacity
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 11/20/2014
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -17,7 +14,6 @@ from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
 from wholecell.utils import units
 
 FONT = {
@@ -27,16 +23,11 @@ FONT = {
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
-
-		filepath.makedirs(plotOutDir)
-
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
 		# Load data from KB
-		nAvogadro = sim_data.constants.nAvogadro
+		nAvogadro = sim_data.constants.n_avogadro
 
 		# Listeners used
 		unique_molecules_reader = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
@@ -45,12 +36,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Get IDs of ribosome subunits
 		ribosome_subunit_ids = [
-			sim_data.moleculeIds.s50_fullComplex,
-			sim_data.moleculeIds.s30_fullComplex,
+			sim_data.molecule_ids.s50_full_complex,
+			sim_data.molecule_ids.s30_full_complex,
 			]
 
 		# Get masses of full ribosomes and subunits
-		ribosome_subunit_masses = sim_data.getter.getMass(ribosome_subunit_ids)
+		ribosome_subunit_masses = sim_data.getter.get_masses(ribosome_subunit_ids)
 		full_ribosome_mass = units.sum(ribosome_subunit_masses)
 
 		# Read time data
@@ -60,10 +51,11 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Calculate the elongation rate for the given condition
 		nutrients = sim_data.conditions[sim_data.condition]["nutrients"]
-		elongation_rate = sim_data.process.translation.ribosomeElongationRateDict[nutrients].asNumber(units.aa/units.s) * timeStep
+		elongation_rate = sim_data.process.translation.ribosomeElongationRateDict[nutrients].asNumber(units.aa/units.s)
 
 		# Load ribosome data
 		actual_elongations = ribosome_reader.readColumn("actualElongations")
+		actual_elongation_rate = actual_elongations / timeStep
 
 		# Load counts of subunits and active ribosomes
 		(ribosome_subunit_counts, ) = read_bulk_molecule_counts(
@@ -88,41 +80,41 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ribosomeCapacity_axis = plt.subplot(6,1,1)
 		ribosomeCapacity_axis.plot(
 			time / 60., total_ribosome_capacity,
-			label="Theoretical total ribosome capacity", linewidth=2, color='b')
+			label="Theoretical total ribosome rate", linewidth=2, color='b')
 		ribosomeCapacity_axis.plot(
-			time / 60., actual_elongations,
-			label="Actual elongations", linewidth=2, color='r')
-		ribosomeCapacity_axis.set_ylabel("Amino acids polymerized")
+			time / 60., actual_elongation_rate,
+			label="Actual elongation rate", linewidth=2, color='r')
+		ribosomeCapacity_axis.set_ylabel("Total amino acid\npolymerization rate\n(AA/s)")
 		ribosomeCapacity_axis.legend(ncol=2)
 
 		activeRibosomeCapacity_axis = plt.subplot(6,1,2)
 		activeRibosomeCapacity_axis.plot(
 			time / 60., active_ribosome_counts * elongation_rate,
-			label="Theoretical active ribosome capacity", linewidth=2, color='b')
+			label="Theoretical active ribosome rate", linewidth=2, color='b')
 		activeRibosomeCapacity_axis.plot(
-			time / 60., actual_elongations,
-			label="Actual elongations", linewidth=2, color='r')
-		activeRibosomeCapacity_axis.set_ylabel("Amino acids polymerized")
+			time / 60., actual_elongation_rate,
+			label="Actual elongation rate", linewidth=2, color='r')
+		activeRibosomeCapacity_axis.set_ylabel("Total amino acid\npolymerization rate\n(AA/s)")
 		activeRibosomeCapacity_axis.legend(ncol=2)
 
 		inactiveRibosomeCapacity_axis = plt.subplot(6,1,3)
 		inactiveRibosomeCapacity_axis.plot(
 			time / 60., ribosome_subunit_counts.min(axis=1) * elongation_rate,
-			label="Theoretical inactive ribosome capacity", linewidth=2, color='b')
-		inactiveRibosomeCapacity_axis.set_ylabel("Amino acids polymerized")
+			label="Theoretical inactive ribosome rate", linewidth=2, color='b')
+		inactiveRibosomeCapacity_axis.set_ylabel("Total amino acid\npolymerization rate\n(AA/s)")
 		inactiveRibosomeCapacity_axis.legend(ncol=2)
 
 		fractionalCapacity_axis = plt.subplot(6,1,4)
 		fractionalCapacity_axis.plot(
-			time / 60., actual_elongations / total_ribosome_capacity,
+			time / 60., actual_elongation_rate / total_ribosome_capacity,
 			linewidth=2, color='k')
 		fractionalCapacity_axis.set_ylabel("Fraction of total ribosome capacity used")
 
 		effectiveElongationRate_axis = plt.subplot(6,1,5)
 		effectiveElongationRate_axis.plot(
-			time / 60., actual_elongations / active_ribosome_counts,
+			time / 60., actual_elongation_rate / active_ribosome_counts,
 			linewidth=2, color='k')
-		effectiveElongationRate_axis.set_ylabel("Effective elongation rate (aa/s/ribosome)")
+		effectiveElongationRate_axis.set_ylabel("Relative elongation rate (aa/s/ribosome)")
 
 		fractionActive_axis = plt.subplot(6,1,6)
 		fractionActive_axis.plot(

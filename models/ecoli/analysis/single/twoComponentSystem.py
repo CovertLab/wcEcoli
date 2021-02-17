@@ -1,40 +1,31 @@
 """
 Plot two component system counts
-
-@author: Heejo Choi
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/20/2016
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
+from six.moves import zip
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 		TCS_IDS = []
 		moleculeTypeOrder = ["HK", "PHOSPHO-HK", "LIGAND", "HK-LIGAND", "PHOSPHO-HK-LIGAND", "RR", "PHOSPHO-RR"]
 		moleculeTypeLocation = ["[i]", "[i]", "[p]", "[i]", "[i]", "[c]", "[c]"]
 		moleculeTypeColor = ["b", "b", "orange", "g", "g", "r", "r"]
-		for system in sim_data.moleculeGroups.twoComponentSystems:
+		for system in sim_data.molecule_groups.twoComponentSystems:
 			for idx, moleculeType in enumerate(moleculeTypeOrder):
 				TCS_IDS.append(str(system["molecules"][moleculeType]) + moleculeTypeLocation[idx])
 
@@ -45,8 +36,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		time = main_reader.readColumn("time") - initialTime
 
 		# Convert molecule counts to concentrations
-		nAvogadro = sim_data.constants.nAvogadro.asNumber(1 / units.mol)
-		cellDensity = sim_data.constants.cellDensity.asNumber(units.g / units.L)
+		nAvogadro = sim_data.constants.n_avogadro.asNumber(1 / units.mol)
+		cellDensity = sim_data.constants.cell_density.asNumber(units.g / units.L)
 		mass = TableReader(os.path.join(simOutDir, "Mass"))
 		cellMass = (units.fg * mass.readColumn("cellMass")).asNumber(units.g)
 		cellVolume = cellMass / cellDensity
@@ -57,7 +48,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		plt.figure(figsize = (8.5, 11))
 
-		RRs = [str(x["molecules"]["RR"]) for x in sim_data.moleculeGroups.twoComponentSystems]
+		RRs = [str(x["molecules"]["RR"]) for x in sim_data.molecule_groups.twoComponentSystems]
 		RRs_unique = []
 		for x in RRs:
 			if x not in RRs_unique:
@@ -69,13 +60,13 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		new_RR = True
 
 
-		for idx in xrange(len(sim_data.moleculeGroups.twoComponentSystems)):
+		for idx in range(len(sim_data.molecule_groups.twoComponentSystems)):
 			grid_loc = idx + 1 + (cols*(num_subentries + 1))*( idx / cols)
-			current_RR = str(sim_data.moleculeGroups.twoComponentSystems[idx]["molecules"]["RR"])
+			current_RR = str(sim_data.molecule_groups.twoComponentSystems[idx]["molecules"]["RR"])
 			if RR_phosphorylation[current_RR].size == 1:
 				new_RR = True
 
-			for subentryIdx in xrange(len(moleculeTypeOrder)):
+			for subentryIdx in range(len(moleculeTypeOrder)):
 				if new_RR:
 					if moleculeTypeOrder[subentryIdx] == "RR":
 						RR[:] = moleculeCounts[:, (idx * num_subentries) + subentryIdx] / (cellVolume * nAvogadro)

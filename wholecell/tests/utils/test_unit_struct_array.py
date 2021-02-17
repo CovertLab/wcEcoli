@@ -1,9 +1,5 @@
 """
 Test unit_struct_array.py
-
-@author: Nick Ruggero
-@organization: Covert Lab, Department of Chemical Engineering, Stanford University
-@date: Created 8/14/2014
 """
 
 from __future__ import absolute_import, division, print_function
@@ -11,6 +7,7 @@ from __future__ import absolute_import, division, print_function
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.units import g, mol
 import numpy as np
+import six
 
 import unittest
 
@@ -18,25 +15,27 @@ import unittest
 class Test_unit_struct_array(unittest.TestCase):
 
 	def setUp(self):
-		self.struct_array = np.zeros(3, dtype = [('id','a10'),('mass',np.float64)])
+		self.struct_array = np.zeros(3, dtype = [('id','U10'),('mass',np.float64)])
 		self.units = {'id' : None, 'mass' : g}
 		self.us_array = UnitStructArray(self.struct_array, self.units)
 
 	def test_init(self):
-		with self.assertRaisesRegexp(
+		with six.assertRaisesRegex(self,
 			Exception,
 			'^UnitStructArray must be initialized with a numpy array!\n$',
 		):
+			# noinspection PyTypeChecker
 			UnitStructArray(1., {'hello': 'goodbye'})
 
-		with self.assertRaisesRegexp(
+		with six.assertRaisesRegex(self,
 			Exception,
 			'^UnitStructArray must be initialized with a dict storing '
 			'units!\n$',
 		):
+			# noinspection PyTypeChecker
 			UnitStructArray(self.struct_array, 'foo')
 
-		with self.assertRaisesRegexp(
+		with six.assertRaisesRegex(self,
 			Exception,
 			'Struct array fields do not match unit fields!\n',
 		):
@@ -98,7 +97,7 @@ class Test_unit_struct_array(unittest.TestCase):
 			(self.us_array['mass'] == g * np.array([1., 2., 3.])).all()
 		)
 
-		with self.assertRaisesRegexp(
+		with six.assertRaisesRegex(self,
 			Exception,
 			'Units do not match!\n',
 		):
@@ -106,13 +105,14 @@ class Test_unit_struct_array(unittest.TestCase):
 
 
 	def test_setItem_quantity_no_units(self):
-		self.us_array['id'] = ['nick', 'derek', 'john']
+		names = ['mo', 'jo', 'risin']
+		self.us_array['id'] = names
 
-		self.assertTrue(
-			(self.us_array['id'] == np.array(['nick', 'derek', 'john'])).all()
-		)
+		assert (self.us_array['id'] == np.array(names, dtype='U10')).all()
 
-		with self.assertRaisesRegexp(
+		assert (self.us_array['id'] == np.array(names)).all()
+
+		with six.assertRaisesRegex(self,
 			Exception,
 			'Units do not match! Quantity has units your input does not!\n',
 		):

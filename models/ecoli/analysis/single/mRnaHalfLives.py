@@ -1,18 +1,14 @@
 """
 Plot first-order rate constants of mRNAs, observed vs expected.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 1/30/2015
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-import cPickle
+from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
@@ -25,23 +21,17 @@ MEAN_RNA_COUNT_THRESHOLD = 3
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Get the expected degradation rates from KB
-		sim_data = cPickle.load(open(simDataFile))
-		mRNA_ids = sim_data.process.transcription.rnaData['id']
-		isMRna = sim_data.process.transcription.rnaData["isMRna"]
+		sim_data = cPickle.load(open(simDataFile, 'rb'))
+		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
 		expected_degradation_rate_constants = np.array(
-			sim_data.process.transcription.rnaData['degRate'][isMRna].asNumber()
+			sim_data.process.transcription.rna_data['deg_rate'][isMRna].asNumber()
 			)
 
 		# Get length of simulation
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
-		sim_length = main_reader.readColumn('time')[-1]
+		sim_time = main_reader.readColumn('time')
+		sim_length = sim_time[-1] - sim_time[0]
 
 		# Read counts of mRNAs
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))

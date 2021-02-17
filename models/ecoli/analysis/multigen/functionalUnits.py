@@ -1,15 +1,11 @@
-"""
-@author: Heejo Choi
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 11/8/2017
-"""
-
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
+
 import numpy as np
 import matplotlib.pyplot as plt
+from six.moves import cPickle, range
+
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
@@ -36,12 +32,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		return
 
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Check if cache from rnaVsProteinPerCell.py exists
 		if os.path.exists(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle")):
 			rnaVsProteinPerCell = cPickle.load(open(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle"), "rb"))
@@ -55,7 +45,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			for key in monomersInManyComplexes_dict.keys():
 				monomersInManyComplexes_dict[key] = {}
 		else:
-			print "Requires rnaVsProteinPerCell.cPickle from rnaVsProteinPerCell.py"
+			print("Requires rnaVsProteinPerCell.cPickle from rnaVsProteinPerCell.py")
 			return
 
 		# Check if cache from figure5B_E_F_G.py exist
@@ -64,7 +54,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			colors = figure5B_data["colors"]
 			mrnaIds = figure5B_data["id"].tolist()
 		else:
-			print "Requires figure5B.pickle from figure5B_E_F_G.py"
+			print("Requires figure5B.pickle from figure5B_E_F_G.py")
 			return
 
 		# Get all cells
@@ -73,14 +63,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Load sim data
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		rnaIds = sim_data.process.transcription.rnaData["id"][sim_data.relation.rnaIndexToMonomerMapping] # orders rna IDs to match monomer IDs
+		rnaIds = sim_data.process.transcription.rna_data["id"][sim_data.relation.rna_index_to_monomer_mapping] # orders rna IDs to match monomer IDs
 
 		# Make views for monomers
-		ids_complexation = sim_data.process.complexation.moleculeNames
+		ids_complexation = sim_data.process.complexation.molecule_names
 		ids_complexation_complexes = sim_data.process.complexation.ids_complexes
-		ids_equilibrium = sim_data.process.equilibrium.moleculeNames
+		ids_equilibrium = sim_data.process.equilibrium.molecule_names
 		ids_equilibrium_complexes = sim_data.process.equilibrium.ids_complexes
-		ids_translation = sim_data.process.translation.monomerData["id"].tolist()
+		ids_translation = sim_data.process.translation.monomer_data["id"].tolist()
 		ids_protein = sorted(set(ids_complexation + ids_equilibrium + ids_translation))
 		bulkContainer = BulkObjectsContainer(ids_protein, dtype = np.float64)
 		view_complexation = bulkContainer.countsView(ids_complexation)
@@ -93,7 +83,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		monomersInManyComplexes = []
 		monomersInComplexes = []
 		for complexId in ids_complexation_complexes:
-			subunitIds = sim_data.process.complexation.getMonomers(complexId)["subunitIds"]
+			subunitIds = sim_data.process.complexation.get_monomers(complexId)["subunitIds"]
 			for subunitId in subunitIds:
 				if subunitId in monomersInComplexes:
 					monomersInManyComplexes.append(subunitId)
@@ -104,7 +94,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		minProteinCounts = np.ones(rnaIds.shape[0], np.float64) * np.inf
 
 		for i, simDir in enumerate(allDir):
-			print i
+			print(i)
 			simOutDir = os.path.join(simDir, "simOut")
 
 			# Account for bulk molecules
@@ -128,10 +118,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			nActiveRnaPoly = uniqueMoleculeCounts.readColumn("uniqueMoleculeCounts")[:, rnaPolyIndex]
 			uniqueMoleculeCounts.close()
 			# Account for unique molecules
-			bulkContainer.countsInc(nActiveRibosome.mean(), [sim_data.moleculeIds.s30_fullComplex, sim_data.moleculeIds.s50_fullComplex])
-			bulkContainer.countsInc(nActiveRnaPoly.mean(), [sim_data.moleculeIds.rnapFull])
+			bulkContainer.countsInc(nActiveRibosome.mean(), [sim_data.molecule_ids.s30_full_complex, sim_data.molecule_ids.s50_full_complex])
+			bulkContainer.countsInc(nActiveRnaPoly.mean(), [sim_data.molecule_ids.full_RNAP])
 			# Account for small-molecule bound complexes
-			view_equilibrium.countsInc(np.dot(sim_data.process.equilibrium.stoichMatrixMonomers(), view_equilibrium_complexes.counts() * -1))
+			view_equilibrium.countsInc(np.dot(sim_data.process.equilibrium.stoich_matrix_monomers(), view_equilibrium_complexes.counts() * -1))
 
 			# Minimum monomer counts
 			minMonomerCounts = view_translation.counts()
@@ -144,7 +134,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				# Map all subsunits to the minimum counts of the complex (ignores counts of monomers)
 				# Some subunits are involved in multiple complexes - these cases are kept track separately
 				# by monomersInManyComplexes_dict
-				subunitIds = sim_data.process.complexation.getMonomers(complexId)["subunitIds"]
+				subunitIds = sim_data.process.complexation.get_monomers(complexId)["subunitIds"]
 
 				for subunitId in subunitIds:
 					if subunitId not in ids_translation:
@@ -208,7 +198,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# plot monomers that are not involved in complexes or involved in only 1 complex
 		monomersInManyComplexes_index = [ids_translation.index(x) for x in monomersInManyComplexes_id]
-		A = [x for x in xrange(len(ids_translation)) if x not in monomersInManyComplexes_index]
+		A = [x for x in range(len(ids_translation)) if x not in monomersInManyComplexes_index]
 		for i in A:
 			color = colors[mrnaIds.index(rnaIds[i])]
 			ax0.loglog(avgProteinCounts_perCell[i], minProteinCounts[i], alpha = 0.5, color = color,lw = 0., marker = ".")

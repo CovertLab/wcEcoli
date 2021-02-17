@@ -2,17 +2,22 @@
 Analysis script toolbox functions
 """
 
+from __future__ import annotations
+
 import os
+from typing import Iterator, List, Sequence, Tuple, Union
 
 import numpy as np
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath
+from wholecell.utils.py3 import ANY_STRING
 
 LOW_RES_DIR = 'low_res_plots'
 SVG_DIR = 'svg_plots'
 HTML_DIR = 'html_plots'
 LOW_RES_DPI = 120
+
 
 def exportFigure(plt, plotOutDir, plotOutFileName, metadata=None, transparent=False,
         dpi=LOW_RES_DPI, extension=None):
@@ -80,10 +85,22 @@ def exportFigure(plt, plotOutDir, plotOutFileName, metadata=None, transparent=Fa
 				str(metadata["description"])
 				])
 
+		elif analysis_type == 'parca':
+			# Format metadata signature for parca figure
+			metadata_signature = "_".join([
+				str(metadata["time"][:13]),
+				"Githash",
+				str(metadata["git_hash"])[:10],
+				"Desc",
+				str(metadata["description"])
+				])
+
 		else:
 			raise ValueError('Unknown analysis_type {}'.format(analysis_type))
 
 		# Add metadata signature to the bottom of the plot
+		# Don't accidentally trigger $TeX formatting$.
+		metadata_signature = metadata_signature.replace('$', '')
 		plt.figtext(0,0, metadata_signature, size=8)
 
 	# Make folders for holding alternate types of images
@@ -100,16 +117,34 @@ def exportFigure(plt, plotOutDir, plotOutFileName, metadata=None, transparent=Fa
 		plt.savefig(os.path.join(plotOutDir, SVG_DIR, plotOutFileName + '.svg'), transparent=transparent)
 		plt.savefig(os.path.join(plotOutDir, LOW_RES_DIR, plotOutFileName + '.png'), dpi=dpi, transparent=transparent)
 
+def _check_bulk_inputs(mol_names: Union[Tuple[Sequence[str], ...], Sequence[str]]) -> Tuple[Sequence[str], ...]:
+	"""
+	Use to check and adjust mol_names inputs for functions that read bulk
+	molecules to get consistent argument handling in both functions.
+	"""
+
+	# Wrap an array in a tuple to ensure correct dimensions
+	if not isinstance(mol_names, tuple):
+		mol_names = (mol_names,)
+
+	# Check for string instead of array since it will cause mol_indices lookup to fail
+	for names in mol_names:
+		if isinstance(names, ANY_STRING):
+			raise Exception('mol_names tuple must contain arrays not strings like {!r}'.format(names))
+
+	return mol_names
+
 def read_bulk_molecule_counts(sim_out_dir, mol_names):
+	# type: (str, Union[Tuple[Sequence[str], ...], Sequence[str]]) -> Iterator[np.ndarray]
 	'''
 	Reads a subset of molecule counts from BulkMolecules using the indexing method
 	of readColumn. Should only be called once per simulation being analyzed with
 	all molecules of interest.
 
 	Args:
-		sim_out_dir (str): path to the directory with simulation output data
-		mol_names (list-like or tuple of list-like): lists of strings containing
-			names of molecules to read the counts for. A single array will be
+		sim_out_dir: path to the directory with simulation output data
+		mol_names: tuple of list-likes of strings or a list-like of strings
+			that name molecules to read the counts for. A single array will be
 			converted to a tuple for processing.
 
 	Returns:
@@ -132,14 +167,7 @@ def read_bulk_molecule_counts(sim_out_dir, mol_names):
 	is used for those tables.
 	'''
 
-	# Convert an array to tuple to ensure correct dimensions
-	if not isinstance(mol_names, tuple):
-		mol_names = (mol_names,)
-
-	# Check for string instead of array since it will cause mol_indices lookup to fail
-	for names in mol_names:
-		if isinstance(names, basestring):
-			raise Exception('mol_names must be a tuple of arrays not strings like {}'.format(names))
+	mol_names = _check_bulk_inputs(mol_names)
 
 	bulk_reader = TableReader(os.path.join(sim_out_dir, 'BulkMolecules'))
 
@@ -155,3 +183,65 @@ def read_bulk_molecule_counts(sim_out_dir, mol_names):
 		counts = bulk_counts[:, start_slice:start_slice + length].squeeze()
 		start_slice += length
 		yield counts
+
+def read_stacked_bulk_molecules(
+		cell_paths: np.ndarray,
+		mol_names: Union[Tuple[Sequence[str], ...], Sequence[str]],
+		) -> List[np.ndarray]:
+	"""
+	Reads bulk molecule counts from multiple cells and assembles each group
+	into a single array.
+
+	Args:
+		cell_paths: paths to all cells to read data from (directories should
+			contain a simOut/ subdirectory), typically the return from
+			AnalysisPaths.get_cells()
+		mol_names: tuple of list-likes of strings or a list-like of strings
+			that name molecules to read the counts for. A single array will be
+			converted to a tuple for processing.
+
+	Returns:
+		stacked data (n time points) if single molecule or
+			(n time points, m molecules) if multiple molecules for each group
+			in mol_names
+	"""
+
+	mol_names = _check_bulk_inputs(mol_names)
+
+	data = [[] for _ in mol_names]  # type: List[List[np.ndarray]]
+	for sim_dir in cell_paths:
+		sim_out_dir = os.path.join(sim_dir, 'simOut')
+		for i, counts in enumerate(read_bulk_molecule_counts(sim_out_dir, mol_names)):
+			data[i].append(counts)
+
+	# Use vstack for 2D or hstack for 1D to get proper dimension alignments
+	return [np.vstack(d) if len(d[0].shape) > 1 else np.hstack(d) for d in data]
+
+def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str) -> np.ndarray:
+	"""
+	Reads column data from multiple cells and assembles into a single array.
+
+	Args:
+		cell_paths: paths to all cells to read data from (directories should
+			contain a simOut/ subdirectory), typically the return from
+			AnalysisPaths.get_cells()
+		table: name of the table to read data from
+		column: name of the column to read data from
+
+	Returns:
+		stacked data (n time points, m subcolumns)
+
+	TODO:
+		add common processing options:
+		- mean per cell cycle
+		- remove first time point
+		- normalize to a time point
+	"""
+
+	data = []
+	for sim_dir in cell_paths:
+		sim_out_dir = os.path.join(sim_dir, 'simOut')
+		reader = TableReader(os.path.join(sim_out_dir, table))
+		data.append(reader.readColumn2D(column))
+
+	return np.vstack(data)

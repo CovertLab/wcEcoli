@@ -2,35 +2,25 @@
 Common code for analysis plots. The abstract base class AnalysisPlot defines a
 plot() method for scripts to call.
 
-TODO: See Issue #161 Matplotlib backend enforcement. If updating to matplotlib
-2.2.2 doesn't fix it, this class can implement a workaround but must do so
-before any code imports pyplot, which means every subclass must import this
-file before importing pyplot.
-
-TODO: Reliably load the wcEcoli/matplotlibrc file even if the working directory
-is wrong (see Issue #132). Setting the working directory could work if done
-before matplotlib loads it, and that should also fix the backend (#161),
-otherwise loading matplotlibrc here just ensures loading of other resources.
-
 TODO: Enable future warnings, esp. for matplotlib.
 
 TODO: Move the run_plot() args to instance variables?
 
-TODO: Other shared code to simplify the subclasses, e.g. make plotOutDir,
-check that `os.path.isdir(simOutDir)`, instantiate an AnalysisPaths (except for
-SingleAnalysisPlot subclasses), etc.
+TODO: Other shared code to simplify the subclasses, e.g. instantiate an
+AnalysisPaths (except for SingleAnalysisPlot subclasses), etc.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import abc
+import os
+
 import matplotlib as mp
+
 from matplotlib import pyplot as plt
 from wholecell.utils import memory_debug, parallelization
 from wholecell.utils import filepath as fp
 
 
-class AnalysisPlot(object):
+class AnalysisPlot(metaclass=abc.ABCMeta):
 	"""Abstract Base Class for analysis plots.
 
 	Each analysis class must override do_plot().
@@ -42,10 +32,8 @@ class AnalysisPlot(object):
 	Inputs:
 		cpus: allotted number of CPU cores; default (0) => all available cores
 	"""
-	__metaclass__ = abc.ABCMeta
 
 	def __init__(self, cpus=0):
-		mp.rc_file(fp.MATPLOTLIBRC_FILE)
 		self.cpus = parallelization.cpus(cpus)
 		self._axeses = {}
 
@@ -110,7 +98,10 @@ class AnalysisPlot(object):
 	def plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata):
 		"""Public method to set up, make a plot, and cleanup."""
-		fp.makedirs(plotOutDir)  # TODO(jerry): don't repeat this in 132 do_plot() methods
+		if not os.path.isdir(inputDir):
+			raise RuntimeError('Input directory ({}) does not currently exist.'
+				.format(inputDir))
+		fp.makedirs(plotOutDir)
 
 		with memory_debug.detect_leaks(), mp.rc_context():
 			self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,

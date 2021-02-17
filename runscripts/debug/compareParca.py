@@ -1,47 +1,35 @@
+#! /usr/bin/env python
+"""
+Compare the output of two parca runs and show any differences.
+
+Usage (SIMDIR is a path to simulation output containing a kb/ directory):
+	runscripts/debug/compareParca.py SIMDIR1 SIMDIR2
+"""
+
 from __future__ import absolute_import, division, print_function
 
-import os
-import cPickle
-from pprint import pprint
+import argparse
 import sys
 
-from wholecell.utils import constants
-from runscripts.reflect.object_tree import object_tree, diff_trees
+from runscripts.reflect.object_tree import diff_trees, load_fit_tree, pprint_diffs
 
-
-def load_fit_tree(out_subdir):
-	'''Load the parameter calculator's (Parca's) output as an object_tree.'''
-	# For convenience, optionally add the prefix 'out/'.
-	if not os.path.isabs(out_subdir) and not os.path.isdir(out_subdir):
-		out_subdir = os.path.join('out', out_subdir)
-
-	path = os.path.join(
-		out_subdir,
-		'kb',
-		constants.SERIALIZED_SIM_DATA_FILENAME)
-
-	with open(path, "rb") as f:
-		sim_data = cPickle.load(f)
-
-	return object_tree(sim_data)
-
-
-# Compare the output of two parca runs, optionally running the parca first.
 
 if __name__ == '__main__':
-	if len(sys.argv) < 3:
-		print('''Usage: {} SIMDIR1 SIMDIR2
-Compare the Parca output between the two out/ sim-dirs and print a summary of
-the differences.'''.format(sys.argv[0]))
-		exit(2)
+	parser = argparse.ArgumentParser(
+		description="Compare the Parca output between the two out/ sim-dirs and"
+					" print a summary and count of the differences.")
+	parser.add_argument('-c', '--count', action='store_true',
+		help="Print just the diff line count, skipping the detailed diff lines.")
+	parser.add_argument('sim_dir', nargs=2,
+		help="The two out/ sim-dirs to compare.")
 
-	dir1 = sys.argv[1]
-	dir2 = sys.argv[2]
+	args = parser.parse_args()
+	dir1, dir2 = args.sim_dir
 
-	once = load_fit_tree(dir1)
-	twice = load_fit_tree(dir2)
+	tree1 = load_fit_tree(dir1)
+	tree2 = load_fit_tree(dir2)
 
-	diffs = diff_trees(once, twice)
-	pprint(diffs, width=160)
+	diffs = diff_trees(tree1, tree2)
+	pprint_diffs(diffs, print_diff_lines=not args.count)
 
-	exit(3 if diffs else 0)
+	sys.exit(3 if diffs else 0)

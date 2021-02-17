@@ -2,14 +2,9 @@
 Shows shadow prices and reduced costs for the FBA objective
 Plots all reduced cost and shadow prices on separate subplots
 Identifies outliers for each and plots those on separate subplots
-
-@date: Created 2/6/2018
-@author: Travis Horst
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 '''
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import os
 
@@ -27,12 +22,6 @@ from models.ecoli.analysis import singleAnalysisPlot
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, 'simOutDir does not currently exist as a directory'
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Read optimization problem results
 		fbaResults = TableReader(os.path.join(simOutDir, 'FBAResults'))
 		metaboliteNames = np.array(fbaResults.readAttribute('metaboliteNames'))

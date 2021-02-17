@@ -2,15 +2,11 @@
 Computes the average distance between transcribing RNA polymerases for each
 gene (transcription unit), and compares the distance to the known size of the
 molecular footprint of RNAP.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/25/19
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 import os
 
 from matplotlib import pyplot as plt
@@ -19,7 +15,7 @@ import numpy as np
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath, units
+from wholecell.utils import units
 
 
 SAMPLE_SIZE = 75  # Number of genes to plot
@@ -27,11 +23,6 @@ SAMPLE_SIZE = 75  # Number of genes to plot
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, 'simOutDir does not currently exist as a directory'
-
-		filepath.makedirs(plotOutDir)
-
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 		with open(validationDataFile, 'rb') as f:
@@ -74,7 +65,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Get RNAP footprint size from validation data
 		RNAP_footprint_size = validation_data.dna_footprint_sizes[
-			sim_data.moleculeIds.rnapFull].asNumber(units.nt)
+			sim_data.molecule_ids.full_RNAP].asNumber(units.nt)
 
 		# Mark genes with RNAPs that are too close to each other
 		n_too_close = (avg_inter_rnap_distance[:SAMPLE_SIZE] < RNAP_footprint_size).sum()
@@ -90,8 +81,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Add values to each bar
 		for i, v in enumerate(avg_inter_rnap_distance[:SAMPLE_SIZE]):
-			plt.text(v - 1, i, "{0:.1f}".format(v), color='white', fontsize=5,
-				horizontalalignment='right', verticalalignment='center')
+			if np.isfinite(v):
+				plt.text(v - 1, i, "{0:.1f}".format(v), color='white', fontsize=5,
+					horizontalalignment='right', verticalalignment='center')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

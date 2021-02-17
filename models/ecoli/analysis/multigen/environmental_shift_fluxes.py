@@ -1,17 +1,14 @@
 """
 Plot fluxes for metabolic map figure during a shift
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 2/13/17
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -21,6 +18,7 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
+from six.moves import zip
 
 START = 8300
 SHIFT = 11000
@@ -31,18 +29,12 @@ MA_WIDTH = 15
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Get all cells
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 		allDir = ap.get_cells()
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		rxnStoich = sim_data.process.metabolism.reactionStoich
+		rxnStoich = sim_data.process.metabolism.reaction_stoich
 
 		reactants = [
 			"GLC[p]",
@@ -266,7 +258,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			dryMass = massListener.readColumn("dryMass")
 			massListener.close()
 
-			coefficient = dryMass / cellMass * sim_data.constants.cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS) # units - g/L
+			coefficient = dryMass / cellMass * sim_data.constants.cell_density.asNumber(MASS_UNITS / VOLUME_UNITS) # units - g/L
 
 			fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
 			reactionIDs = fbaResults.readAttribute("reactionIDs")
@@ -297,9 +289,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 				for rxn in rxnStoich:
 					if reactant in rxnStoich[rxn] and product in rxnStoich[rxn]:
-						if rxnStoich[rxn][reactant] < 0 and rxnStoich[rxn][product] > 0:
+						if rxnStoich[rxn][reactant] < 0 < rxnStoich[rxn][product]:
 							direction = 1
-						elif rxnStoich[rxn][reactant] > 0 and rxnStoich[rxn][product] < 0:
+						elif rxnStoich[rxn][reactant] > 0 > rxnStoich[rxn][product]:
 							direction = -1
 						else:
 							continue
@@ -322,9 +314,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 				for rxn in rxnStoich:
 					if reactant in rxnStoich[rxn] and product in rxnStoich[rxn]:
-						if rxnStoich[rxn][reactant] < 0 and rxnStoich[rxn][product] > 0:
+						if rxnStoich[rxn][reactant] < 0 < rxnStoich[rxn][product]:
 							direction = 1
-						elif rxnStoich[rxn][reactant] > 0 and rxnStoich[rxn][product] < 0:
+						elif rxnStoich[rxn][reactant] > 0 > rxnStoich[rxn][product]:
 							direction = -1
 						else:
 							continue

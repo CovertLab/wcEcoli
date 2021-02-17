@@ -1,29 +1,27 @@
 """
 Compare fluxes in simulation to target fluxes
-
-@date: Created 4/3/17
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
+import io
 import os
-import cPickle
-import csv
 
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
+from wholecell.io import tsv
 from wholecell.utils import units
 from wholecell.utils.sparkline import whitePadSparklineAxis
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
+from six.moves import zip
 
 # ignore data from metabolism burnin period
 BURN_IN_TIME = 1
@@ -31,23 +29,14 @@ BURN_IN_TIME = 1
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(variantDir):
-			raise Exception, "variantDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Get all cells
 		ap = AnalysisPaths(variantDir, cohort_plot = True)
 		allDir = ap.get_cells()
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 
-		constraintIsKcatOnly = sim_data.process.metabolism.constraintIsKcatOnly
-
 		targetFluxList = []
 		actualFluxList = []
-		reactionConstraintlist = []
 
 		for simDir in allDir:
 			simOutDir = os.path.join(simDir, "simOut")
@@ -63,17 +52,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			dryMass = massListener.readColumn("dryMass")
 			massListener.close()
 
-			coefficient = dryMass / cellMass * sim_data.constants.cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
+			coefficient = dryMass / cellMass * sim_data.constants.cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
 
 			# read constraint data
 			enzymeKineticsReader = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
 			allTargetFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (enzymeKineticsReader.readColumn("targetFluxes").T / coefficient).T
 			allActualFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (enzymeKineticsReader.readColumn("actualFluxes").T / coefficient).T
-			reactionConstraint = enzymeKineticsReader.readColumn("reactionConstraint")
-			constrainedReactions = np.array(enzymeKineticsReader.readAttribute("constrainedReactions"))
 			kineticsConstrainedReactions = np.array(enzymeKineticsReader.readAttribute("kineticsConstrainedReactions"))
-			boundaryConstrainedReactions = np.array(enzymeKineticsReader.readAttribute("boundaryConstrainedReactions"))
-			enzymeKineticsReader.close()
+			constraint_is_kcat_only = np.array(enzymeKineticsReader.readAttribute('constraint_is_kcat_only'))
 
 			allTargetFluxes = allTargetFluxes.asNumber(units.mmol / units.g / units.h)
 			allActualFluxes = allActualFluxes.asNumber(units.mmol / units.g / units.h)
@@ -84,11 +70,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			if len(targetFluxList) == 0:
 				targetFluxList = np.array([allTargetAve])
 				actualFluxList = np.array([allActualAve])
-				reactionConstraintList = np.array(reactionConstraint[burnIn, :])
 			else:
 				targetFluxList = np.concatenate((targetFluxList, np.array([allTargetAve])), axis = 0)
 				actualFluxList = np.concatenate((actualFluxList, np.array([allActualAve])), axis = 0)
-				reactionConstraintList = np.concatenate((reactionConstraintList, np.array(reactionConstraint[burnIn, :])), axis = 0)
 
 		n_kinetic_constrained_reactions = len(kineticsConstrainedReactions)
 
@@ -105,13 +89,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		actualAve = allActualAve[:n_kinetic_constrained_reactions]
 
 		# categorize reactions that use constraints with only kcat, Km and kcat, or switch between both types of constraints
-		kcatOnlyReactions = np.all(constraintIsKcatOnly[reactionConstraintList], axis = 0)
-		kmAndKcatReactions = ~np.any(constraintIsKcatOnly[reactionConstraintList], axis = 0)
-		mixedReactions = ~(kcatOnlyReactions ^ kmAndKcatReactions)
+		kcatOnlyReactions = constraint_is_kcat_only
+		kmAndKcatReactions = ~constraint_is_kcat_only
 
 		# categorize how well the actual flux matches the target flux
 		thresholds = [2, 10]
-		categorization = np.zeros(reactionConstraint.shape[1])
+		categorization = np.zeros(n_kinetic_constrained_reactions)
 		for i, threshold in enumerate(thresholds):
 			categorization[actualAve / targetAve < 1. / threshold] = i + 1
 			categorization[actualAve / targetAve > threshold] = i + 1
@@ -119,8 +102,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		categorization[actualAve == targetAve] = -1
 
 		# write data for each reaction to a file
-		csvFile = open(os.path.join(plotOutDir, plotOutFileName + ".tsv"), "wb")
-		output = csv.writer(csvFile, delimiter = "\t")
+		csvFile = io.open(os.path.join(plotOutDir, plotOutFileName + ".tsv"), "wb")
+		output = tsv.writer(csvFile)
 		output.writerow(["Km and kcat", "Target", "Actual", "Category"])
 		for reaction, target, flux, category in zip(kineticsConstrainedReactions[kmAndKcatReactions], targetAve[kmAndKcatReactions], actualAve[kmAndKcatReactions], categorization[kmAndKcatReactions]):
 			output.writerow([reaction, target, flux, category])
@@ -128,11 +111,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		output.writerow(["kcat only"])
 		for reaction, target, flux, category in zip(kineticsConstrainedReactions[kcatOnlyReactions], targetAve[kcatOnlyReactions], actualAve[kcatOnlyReactions], categorization[kcatOnlyReactions]):
 			output.writerow([reaction, target, flux, category])
-
-		if np.sum(mixedReactions):
-			output.writerow(["mixed constraints"])
-			for reaction, target, flux, category in zip(kineticsConstrainedReactions[mixedReactions], targetAve[mixedReactions], actualAve[mixedReactions], categorization[mixedReactions]):
-				output.writerow([reaction, target, flux, category])
 
 		csvFile.close()
 
@@ -160,8 +138,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ylim = ax.get_ylim()
 		ax.set_ylim(ylim[0] - 0.5, ylim[1])
 		ax.set_xlim(xlim[0] - 0.5, xlim[1])
-		ax.set_yticks(range(-6, int(ylim[1]) + 1, 2))
-		ax.set_xticks(range(-6, int(xlim[1]) + 1, 2))
+		ax.set_yticks(list(range(-6, int(ylim[1]) + 1, 2)))
+		ax.set_xticks(list(range(-6, int(xlim[1]) + 1, 2)))
 		ax.legend()
 
 		exportFigure(plt, plotOutDir, plotOutFileName)

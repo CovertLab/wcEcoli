@@ -1,30 +1,24 @@
-#!/usr/bin/env python
 """
 Reads dynamics data for each of the nodes of a causality network from a single
 simulation.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/26/2018
 """
 from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 import os
 import json
 import hashlib
+from typing import Any, Tuple
+import zipfile
 
-from models.ecoli.analysis import causalityNetworkAnalysis
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
 from wholecell.utils import units
 
 from models.ecoli.analysis.causality_network.network_components import (
-	Node, COUNT_UNITS, PROB_UNITS
-	)
+	EDGELIST_JSON, Node, NODELIST_JSON, COUNT_UNITS, PROB_UNITS)
 from models.ecoli.analysis.causality_network.build_network import NODE_ID_SUFFIX
 from models.ecoli.processes.metabolism import (
-	COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
-	)
+	COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS)
 
 REQUIRED_COLUMNS = [
 	("BulkMolecules", "counts"),
@@ -48,13 +42,13 @@ def get_safe_name(s):
 	fname = str(int(hashlib.sha256(s.encode('utf-8')).hexdigest(), 16) % 10 **16)
 	return fname
 
-class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
-	def do_plot(self, simOutDir, seriesOutDir, dynamicsFileName, simDataFile, nodeListFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
+def compact_json(obj, ensure_ascii=False, separators=(',', ':'), **kwargs):
+	# type: (Any, bool, Tuple[str, str], **Any) -> str
+	"""Convert obj into compact JSON form."""
+	return json.dumps(obj, ensure_ascii=ensure_ascii, separators=separators, **kwargs)
 
-		filepath.makedirs(seriesOutDir)
-
+def convert_dynamics(simOutDir, seriesOutDir, simDataFile, node_list, edge_list):
+		"""Convert the sim's dynamics data to a Causality seriesOut.zip file."""
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
@@ -67,7 +61,7 @@ class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 		# Convert units of metabolic fluxes in listener to mmol/gCDW/h
 		conversion_coeffs = (
 			columns[("Mass", "dryMass")] / columns[("Mass", "cellMass")]
-			* sim_data.constants.cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
+			* sim_data.constants.cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
 			)
 
 		columns[("FBAResults", "reactionFluxesConverted")] = (
@@ -76,7 +70,7 @@ class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 			).asNumber(units.mmol/units.g/units.h)
 
 		# Reshape array for number of bound transcription factors
-		n_TU = len(sim_data.process.transcription.rnaData["id"])
+		n_TU = len(sim_data.process.transcription.rna_data["id"])
 		n_TF = len(sim_data.process.transcription_regulation.tf_ids)
 
 		columns[("RnaSynthProb", "n_bound_TF_per_TU")] = (
@@ -93,15 +87,15 @@ class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 			os.path.join(simOutDir, "BulkMolecules")).readAttribute("objectNames")
 		indexes["BulkMolecules"] = build_index_dict(molecule_ids)
 
-		gene_ids = sim_data.process.transcription.rnaData["geneId"]
+		gene_ids = sim_data.process.transcription.rna_data['gene_id']
 		indexes["Genes"] = build_index_dict(gene_ids)
 
-		mRNA_ids = sim_data.process.transcription.rnaData["id"][
-			sim_data.process.transcription.rnaData["isMRna"]
+		mRNA_ids = sim_data.process.transcription.rna_data["id"][
+			sim_data.process.transcription.rna_data['is_mRNA']
 		]
 		indexes["mRNAs"] = build_index_dict(mRNA_ids)
 
-		translated_rna_ids = sim_data.process.translation.monomerData["rnaId"]
+		translated_rna_ids = sim_data.process.translation.monomer_data['rna_id']
 		indexes["TranslatedRnas"] = build_index_dict(translated_rna_ids)
 
 		metabolism_rxn_ids = TableReader(
@@ -111,22 +105,19 @@ class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 		complexation_rxn_ids = sim_data.process.complexation.ids_reactions
 		indexes["ComplexationReactions"] = build_index_dict(complexation_rxn_ids)
 
-		equilibrium_rxn_ids = sim_data.process.equilibrium.rxnIds
+		equilibrium_rxn_ids = sim_data.process.equilibrium.rxn_ids
 		indexes["EquilibriumReactions"] = build_index_dict(equilibrium_rxn_ids)
 
 		tf_ids = sim_data.process.transcription_regulation.tf_ids
 		indexes["TranscriptionFactors"] = build_index_dict(tf_ids)
 
-		rna_ids = sim_data.process.transcription.rnaData["id"]
-		trna_ids = rna_ids[sim_data.process.transcription.rnaData["isTRna"]]
+		rna_ids = sim_data.process.transcription.rna_data["id"]
+		trna_ids = rna_ids[sim_data.process.transcription.rna_data['is_tRNA']]
 		indexes["Charging"] = build_index_dict(trna_ids)
 
 		# Cache cell volume array (used for calculating concentrations)
-		volume = ((1.0 / sim_data.constants.cellDensity) * (
+		volume = ((1.0 / sim_data.constants.cell_density) * (
 			units.fg * columns[("Mass", "cellMass")])).asNumber(units.L)
-
-		with open(nodeListFile, 'r') as node_file:
-			node_dicts = json.load(node_file)
 
 		def dynamics_mapping(dynamics, safe):
 			return [{
@@ -147,22 +138,30 @@ class Plot(causalityNetworkAnalysis.CausalityNetworkAnalysis):
 				reader(sim_data, node, node.node_id, columns, indexes, volume)
 			return node
 
-		nodes = [build_dynamics(node_dict) for node_dict in node_dicts]
+		nodes = [build_dynamics(node_dict) for node_dict in node_list]
 		nodes.append(time_node(columns))
 
-		for node in nodes:
-			dynamics_path = get_safe_name(node.node_id)
-			dynamics = node.dynamics_dict()
-			dynamics_json = json.dumps(dynamics)
+		# ZIP_BZIP2 saves 14% bytes vs. ZIP_DEFLATED but takes  +70 secs.
+		# ZIP_LZMA  saves 19% bytes vs. ZIP_DEFLATED but takes +260 sec.
+		# compresslevel=9 saves very little space.
+		zip_name = os.path.join(seriesOutDir, 'seriesOut.zip')
+		with zipfile.ZipFile(zip_name, 'w', compression=zipfile.ZIP_DEFLATED, allowZip64=False) as zf:
+			for node in nodes:
+				if node.node_id in name_mapping:
+					# Skip duplicates. Why are there duplicates? --check_sanity finds them.
+					continue
 
-			with open(os.path.join(seriesOutDir, dynamics_path + '.json'), 'w') as dynamics_file:
-				dynamics_file.write(dynamics_json)
+				dynamics_path = get_safe_name(node.node_id)
+				dynamics = node.dynamics_dict()
+				dynamics_json = compact_json(dynamics)
 
-			name_mapping[node.node_id] = dynamics_mapping(dynamics, dynamics_path)
+				zf.writestr(os.path.join('series', dynamics_path + '.json'), dynamics_json)
 
-		root = os.path.dirname(nodeListFile)
-		with open(os.path.join(root, 'series.json'), 'w') as series_file:
-			series_file.write(json.dumps(name_mapping))
+				name_mapping[node.node_id] = dynamics_mapping(dynamics, dynamics_path)
+
+			zf.writestr('series.json', compact_json(name_mapping))
+			zf.writestr(NODELIST_JSON, compact_json(node_list))
+			zf.writestr(EDGELIST_JSON, compact_json(edge_list))
 
 
 def time_node(columns):
@@ -202,7 +201,7 @@ def read_global_dynamics(sim_data, node, node_id, columns, indexes, volume):
 			}
 
 	elif node_id == "cell_volume":
-		cell_volume = ((1.0 / sim_data.constants.cellDensity) * (
+		cell_volume = ((1.0 / sim_data.constants.cell_density) * (
 					units.fg * cell_mass)).asNumber(units.L)
 		dynamics = {
 			'volume': cell_volume,
@@ -263,7 +262,7 @@ def read_protein_dynamics(sim_data, node, node_id, columns, indexes, volume):
 	"""
 	count_index = indexes["BulkMolecules"][node_id]
 	counts = columns[("BulkMolecules", "counts")][:, count_index]
-	concentration = (((1 / sim_data.constants.nAvogadro) * counts)/(units.L * volume)).asNumber(units.mmol/units.L)
+	concentration = (((1 / sim_data.constants.n_avogadro) * counts) / (units.L * volume)).asNumber(units.mmol / units.L)
 
 	dynamics = {
 		'counts': counts,
@@ -283,10 +282,10 @@ def read_metabolite_dynamics(sim_data, node, node_id, columns, indexes, volume):
 	"""
 	try:
 		count_index = indexes["BulkMolecules"][node_id]
-	except Exception:
+	except (KeyError, IndexError):
 		return  # Metabolite not being modeled
 	counts = columns[("BulkMolecules", "counts")][:, count_index]
-	concentration = (((1 / sim_data.constants.nAvogadro) * counts)/(units.L * volume)).asNumber(units.mmol/units.L)
+	concentration = (((1 / sim_data.constants.n_avogadro) * counts) / (units.L * volume)).asNumber(units.mmol / units.L)
 
 	dynamics = {
 		'counts': counts,
@@ -373,7 +372,7 @@ def read_equilibrium_dynamics(sim_data, node, node_id, columns, indexes, volume)
 	# TODO (ggsun): Fluxes for 2CS reactions are not being listened to.
 	try:
 		reaction_idx = indexes["EquilibriumReactions"][node_id]
-	except Exception:
+	except (KeyError, IndexError):
 		return  # 2CS reaction
 
 	dynamics = {
@@ -397,6 +396,25 @@ def read_regulation_dynamics(sim_data, node, node_id, columns, indexes, volume):
 	dynamics = {
 		'bound TFs': columns[("RnaSynthProb", "n_bound_TF_per_TU")][
 			:, gene_idx, tf_idx],
+		}
+	dynamics_units = {
+		'bound TFs': COUNT_UNITS,
+		}
+
+	node.read_dynamics(dynamics, dynamics_units)
+
+
+def read_tf_binding_dynamics(sim_data, node, node_id, columns, indexes, volume):
+	"""
+	Reads dynamics data for TF binding nodes from a simulation output.
+	"""
+
+	tf_id, _ = node_id.split("-bound")
+	tf_idx = indexes["TranscriptionFactors"][tf_id]
+
+	dynamics = {
+		'bound TFs': columns[("RnaSynthProb", "n_bound_TF_per_TU")][
+			:, :, tf_idx].sum(axis=1),
 		}
 	dynamics_units = {
 		'bound TFs': COUNT_UNITS,
@@ -437,9 +455,6 @@ TYPE_TO_READER_FUNCTION = {
 	"Metabolism": read_metabolism_dynamics,
 	"Transport": read_metabolism_dynamics,
 	"Regulation": read_regulation_dynamics,
+	"TF Binding": read_tf_binding_dynamics,
 	"Charging": read_charging_dynamics,
 	}
-
-
-if __name__ == '__main__':
-	Plot().cli()

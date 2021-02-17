@@ -1,14 +1,8 @@
-#!/usr/bin/env python
-
 """
 GrowthLimits
-
-@author: Nick Ruggero
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/25/15
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
@@ -33,9 +27,9 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		super(GrowthLimits, self).initialize(sim, sim_data)
 
 		# Computed, saved attributes
-		self.aaIds = sim_data.moleculeGroups.aaIDs
-		self.ntpIds = sim_data.moleculeGroups.ntpIds
-		self.uncharged_trna_ids = sim_data.process.transcription.rnaData['id'][sim_data.process.transcription.rnaData['isTRna']].tolist()
+		self.aaIds = sim_data.molecule_groups.amino_acids
+		self.ntpIds = sim_data.molecule_groups.ntps
+		self.uncharged_trna_ids = sim_data.process.transcription.rna_data['id'][sim_data.process.transcription.rna_data['is_tRNA']].tolist()
 		self.charged_trna_ids = sim_data.process.transcription.charged_trna_names
 		self.n_aas = len(self.aaIds)
 
@@ -44,11 +38,6 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		super(GrowthLimits, self).allocate()
 
 		# For translation
-		self.gtpPoolSize = 0
-		self.gtpRequestSize = 0
-		self.gtpAllocated = 0
-		self.gtpUsed = 0
-
 		self.activeRibosomeAllocated = 0
 
 		n_aa = len(self.aaIds)
@@ -100,10 +89,6 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		tableWriter.append(
 			time = self.time(),
 			simulationStep = self.simulationStep(),
-			gtpPoolSize = self.gtpPoolSize,
-			gtpRequestSize = self.gtpRequestSize,
-			gtpAllocated = self.gtpAllocated,
-			gtpUsed = self.gtpUsed,
 			activeRibosomeAllocated = self.activeRibosomeAllocated,
 			aaPoolSize = self.aaPoolSize,
 			aaRequestSize = self.aaRequestSize,

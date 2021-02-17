@@ -1,21 +1,18 @@
 """
 Plots transcription events across multiple generations
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 2/7/2017
 """
 
 from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
+from six.moves import cPickle
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
-from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
+from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
 
 N_GENES_TO_PLOT = -1
@@ -23,20 +20,14 @@ N_GENES_TO_PLOT = -1
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Get all cells
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 		allDir = ap.get_cells()
 
 		# Get mRNA data
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		rnaIds = sim_data.process.transcription.rnaData["id"]
-		isMRna = sim_data.process.transcription.rnaData["isMRna"]
+		rnaIds = sim_data.process.transcription.rna_data["id"]
+		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
 		mRnaIndexes = np.where(isMRna)[0]
 		mRnaIds = np.array([rnaIds[x] for x in mRnaIndexes])
 
@@ -46,7 +37,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		simulatedSynthProbs = []
 		transcriptionEvents = []
 		for gen, simDir in enumerate(allDir):
-			# print gen
+			# print(gen)
 			simOutDir = os.path.join(simDir, "simOut")
 
 			time += TableReader(os.path.join(simOutDir, "Main")).readColumn("time").tolist()

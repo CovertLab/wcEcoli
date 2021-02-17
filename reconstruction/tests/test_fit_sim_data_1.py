@@ -1,9 +1,5 @@
 """
 Test fitkb1.py
-
-@author: Nick Ruggero
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 9/23/2014
 """
 
 from __future__ import absolute_import, division, print_function
@@ -34,7 +30,7 @@ class Test_fitkb1(unittest.TestCase):
 		individualMasses = units.fg * np.array([0.1, 0.2, 0.1])
 		distribution = np.array([0.5, 0.25, 0.25])
 		count = totalCountFromMassesAndRatios(totalMass, individualMasses, distribution)
-		count.checkNoUnit()
+		self.assertFalse(units.hasUnit(count))
 		self.assertEqual(count, 80.)
 
 		# Test assertion in function

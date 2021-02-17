@@ -1,19 +1,16 @@
 """
 Central carbon metabolism comparison to Toya et al
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/3/17
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
 import re
 
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -23,16 +20,12 @@ from wholecell.analysis.analysis_tools import exportFigure
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from models.ecoli.analysis import cohortAnalysisPlot
+import six
+from six.moves import zip
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(variantDir):
-			raise Exception, "variantDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Get all cells
 		ap = AnalysisPaths(variantDir, cohort_plot = True)
 		allDir = ap.get_cells()
@@ -44,8 +37,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		toyaFluxesDict = dict(zip(toyaReactions, toyaFluxes))
 		toyaStdevDict = dict(zip(toyaReactions, toyaStdev))
 
-		sim_data = cPickle.load(open(simDataFile))
-		cellDensity = sim_data.constants.cellDensity
+		sim_data = cPickle.load(open(simDataFile, 'rb'))
+		cellDensity = sim_data.constants.cell_density
 
 		modelFluxes = {}
 		toyaOrder = []
@@ -53,6 +46,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			modelFluxes[rxn] = []
 			toyaOrder.append(rxn)
 
+		mmol_per_g_per_h = units.mmol / units.g / units.h
 		for simDir in allDir:
 			simOutDir = os.path.join(simDir, "simOut")
 
@@ -83,12 +77,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 							fluxTimeCourse = reverse * reactionFluxes[:, np.where(reactionIDs == rxn)]
 
 				if len(fluxTimeCourse):
-					modelFluxes[toyaReaction].append(np.mean(fluxTimeCourse).asNumber(units.mmol / units.g / units.h))
+					modelFluxes[toyaReaction].append(np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
 
 		toyaVsReactionAve = []
-		for rxn, toyaFlux in toyaFluxesDict.iteritems():
+		for rxn, toyaFlux in six.viewitems(toyaFluxesDict):
 			if rxn in modelFluxes:
-				toyaVsReactionAve.append((np.mean(modelFluxes[rxn]), toyaFlux.asNumber(units.mmol / units.g / units.h), np.std(modelFluxes[rxn]), toyaStdevDict[rxn].asNumber(units.mmol / units.g / units.h)))
+				toyaVsReactionAve.append(
+					(np.mean(modelFluxes[rxn]),
+					toyaFlux.asNumber(mmol_per_g_per_h),
+					np.std(modelFluxes[rxn]), toyaStdevDict[rxn].asNumber(mmol_per_g_per_h)))
 
 		toyaVsReactionAve = np.array(toyaVsReactionAve)
 		idx = np.abs(toyaVsReactionAve[:,0]) < 5 * np.abs(toyaVsReactionAve[:,1])
@@ -106,11 +103,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.ylabel("Mean WCM Reaction Flux [mmol/g/hr]")
 		whitePadSparklineAxis(ax)
 
+		# noinspection PyTypeChecker
 		ax.set_xlim([-20, 30])
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
-		ax.set_yticks(range(int(ylim[0]), int(ylim[1]) + 1, 10))
-		ax.set_xticks(range(int(xlim[0]), int(xlim[1]) + 1, 10))
+		ax.set_yticks(list(range(int(ylim[0]), int(ylim[1]) + 1, 10)))
+		ax.set_xticks(list(range(int(xlim[0]), int(xlim[1]) + 1, 10)))
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 

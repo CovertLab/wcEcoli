@@ -1,30 +1,23 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
+from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
-
-import cPickle
-from models.ecoli.analysis import multigenAnalysisPlot
 
 CLOSE_TO_DOUBLE = 0.1
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		print "DISABLED"
+		print("DISABLED")
 		return
-
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
 
 		# Get all ids reqiured
 		sim_data = cPickle.load(open(simDataFile, "rb"))
@@ -34,7 +27,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = ap.get_cells()
 
 		# Pre-allocate variables. Rows = Generations, Cols = Monomers
-		n_monomers = sim_data.process.translation.monomerData['id'].size
+		n_monomers = sim_data.process.translation.monomer_data['id'].size
 		n_sims = ap.n_generation
 
 		monomerExistMultigen = np.zeros((n_sims, n_monomers), dtype = np.bool)
@@ -61,7 +54,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			initiationEventsPerRna = rnapData.readColumn("rnaInitEvent").sum(axis = 0)
 
 			# Map transcription initiation events to monomers
-			initiationEventsPerMonomer = initiationEventsPerRna[sim_data.relation.rnaIndexToMonomerMapping]
+			initiationEventsPerMonomer = initiationEventsPerRna[sim_data.relation.rna_index_to_monomer_mapping]
 
 			# Log data
 			monomerExistMultigen[gen_idx,:] = monomerExist

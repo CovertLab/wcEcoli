@@ -2,29 +2,31 @@
 ValidationData for Ecoli
 
 Raw data processed into forms convienent for validation and analysis
-
-@author: Morgan Paull
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 11/30/2015
 """
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
-import collections
 from unum import Unum
 
 # Raw data class
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 
 # Data classes
-from reconstruction.ecoli.dataclasses.getterFunctions import getterFunctions
-from reconstruction.ecoli.dataclasses.moleculeGroups import MoleculeGroups
-from reconstruction.ecoli.dataclasses.moleculeIds import MoleculeIds
+from reconstruction.ecoli.dataclasses.getter_functions import GetterFunctions
+from reconstruction.ecoli.dataclasses.molecule_groups import MoleculeGroups
+from reconstruction.ecoli.dataclasses.molecule_ids import MoleculeIds
 from reconstruction.ecoli.dataclasses.constants import Constants
 from reconstruction.ecoli.dataclasses.state.internal_state import InternalState
 from reconstruction.ecoli.dataclasses.process.process import Process
-from reconstruction.ecoli.dataclasses.growthRateDependentParameters import Mass, GrowthRateParameters
+from reconstruction.ecoli.dataclasses.growth_rate_dependent_parameters import Mass, GrowthRateParameters
 from reconstruction.ecoli.dataclasses.relation import Relation
+
+__all__ = [
+	'KnowledgeBaseEcoli', 'GetterFunctions', 'MoleculeGroups', 'MoleculeIds',
+	'Constants', 'InternalState', 'Process', 'Mass', 'GrowthRateParameters',
+	'Relation', 'ValidationDataEcoli', 'Protein', 'ReactionFlux',
+	'EssentialGenes', 'GeneFunctions']
+
 
 class ValidationDataEcoli(object):
 	""" ValidationDataEcoli """
@@ -56,18 +58,24 @@ class Protein(object):
 	""" Protein """
 
 	def __init__(self, validation_data_raw, knowledge_base_raw):
-
-		utilFunctions = getterFunctions(knowledge_base_raw, None)
-
 		# Build and save a dict from gene ID to monomerId
-		self.geneIdToMonomerId = dict([(x["id"].encode("utf-8"), x["monomerId"].encode("utf-8") + "[" + utilFunctions.getLocation([x["monomerId"].encode("utf-8")])[0][0] + "]") for x in knowledge_base_raw.genes if x["type"] == "mRNA"])
+		rna_id_to_gene_id = {
+			gene['rna_id']: gene['id'] for gene in knowledge_base_raw.genes}
+		protein_id_to_location = {
+			protein['id']: protein['compartment'][0] for protein in knowledge_base_raw.proteins}
+
+		self.geneIdToMonomerId = {
+			rna_id_to_gene_id[rna['id']]: '{}[{}]'.format(rna['monomer_id'], protein_id_to_location[rna['monomer_id']])
+			for rna in knowledge_base_raw.rnas
+			if rna["type"] == "mRNA"}
 
 		# Build and save a dict from gene symbol to corresponding monomerId
 		self.geneSymbolToMonomerId = {}
-		for entry in knowledge_base_raw.genes:
-			symbol = entry["symbol"]
-			monomerId = entry["monomerId"]
-			self.geneSymbolToMonomerId[symbol] = monomerId
+		gene_id_to_symbol = {
+			gene["id"]: gene["symbol"] for gene in knowledge_base_raw.genes}
+
+		for gene_id, monomer_id in self.geneIdToMonomerId.items():
+			self.geneSymbolToMonomerId[gene_id_to_symbol[gene_id]] = monomer_id
 
 		self._loadTaniguchi2010Counts(validation_data_raw)
 		self._loadHouser2015Counts(validation_data_raw)
@@ -77,7 +85,7 @@ class Protein(object):
 	def _loadTaniguchi2010Counts(self, validation_data_raw):
 		# Load taniguichi Xie Science 2010 dataset
 		taniguichi_dataset = validation_data_raw.taniguichi2010_table_6
-		self.taniguichi2010counts = np.zeros(len(taniguichi_dataset), dtype=[('monomerId', '|S100'), ('gene_symbol', '|S10'), ('b_number', '|S10'), ('counts_ave', np.float32), ('gamma_shape_parameter', np.float32), ('gamma_scale_parameter', np.float32)])
+		self.taniguichi2010counts = np.zeros(len(taniguichi_dataset), dtype=[('monomerId', 'U100'), ('gene_symbol', 'U10'), ('b_number', 'U10'), ('counts_ave', np.float32), ('gamma_shape_parameter', np.float32), ('gamma_scale_parameter', np.float32)])
 		for idx, row in enumerate(taniguichi_dataset):
 			self.taniguichi2010counts[idx]["gene_symbol"] = row["Gene_Name"]
 			self.taniguichi2010counts[idx]["b_number"] = row["B_Number"]
@@ -92,8 +100,8 @@ class Protein(object):
 		# Load Houser Wilke PLoSCB 2015 dataset
 		houser_dataset = validation_data_raw.houser2015_javier_table
 		self.houser2015counts = np.zeros(len(houser_dataset), dtype=[
-			('monomerId', '|S100'),
-			('gene_symbol', '|S10'),
+			('monomerId', 'U100'),
+			('gene_symbol', 'U10'),
 			('counts_ave_exponential', np.float32),
 			('sample16_t3', np.float32),
 			('sample17_t4', np.float32),
@@ -125,7 +133,6 @@ class Protein(object):
 			])
 
 		for idx, row in enumerate(houser_dataset):
-			
 			if row["gene_symbol"] in self.geneSymbolToMonomerId:
 				self.houser2015counts[idx]["monomerId"] = self.geneSymbolToMonomerId[row["gene_symbol"]]
 			self.houser2015counts[idx]["gene_symbol"] = row["gene_symbol"]
@@ -151,7 +158,7 @@ class Protein(object):
 		rep2 = np.array([x["rep2"] for x in dataset])
 		rep3 = np.array([x["rep3"] for x in dataset])
 		avg = np.mean((rep1, rep2, rep3), axis = 0)
-		geneIds = [x["EcoCycID"].encode("utf-8") for x in dataset]
+		geneIds = [x["EcoCycID"] for x in dataset]
 
 		monomerIds = [self.geneIdToMonomerId[x] for x in geneIds]
 		nEntries = len(geneIds)
@@ -159,7 +166,7 @@ class Protein(object):
 		wisniewski2014Data = np.zeros(
 			nEntries,
 			dtype = [
-				('monomerId', 'a50'),
+				('monomerId', 'U50'),
 				('avgCounts', 'f8'),
 				]
 			)
@@ -172,17 +179,17 @@ class Protein(object):
 	def _loadSchmidt2015Counts(self, validation_data_raw):
 		dataset = validation_data_raw.schmidt2015_javier_table
 
-		geneIds = [x["EcoCycID"].encode("utf-8") for x in dataset]
+		geneIds = [x["EcoCycID"] for x in dataset]
 		monomerIds = [self.geneIdToMonomerId[x] for x in geneIds]
 
 		glucoseCounts = [x["Glucose"] for x in dataset]
-		
+
 		nEntries = len(geneIds)
 
 		schmidt2015Data = np.zeros(
 			nEntries,
 			dtype = [
-				('monomerId', 'a50'),
+				('monomerId', 'U50'),
 				('glucoseCounts', 'f8')
 			])
 
@@ -196,15 +203,12 @@ class ReactionFlux(object):
 	""" ReactionFlux """
 
 	def __init__(self, validation_data_raw, knowledge_base_raw):
-
-		utilFunctions = getterFunctions(knowledge_base_raw, None)
-
 		self._loadToya2010Fluxes(validation_data_raw)
 
 	def _loadToya2010Fluxes(self, validation_data_raw):
 		# Load Toya 2010 Biotech Prog central carbon metabolism C13 flux dataset
 		toya_dataset = validation_data_raw.toya_2010_central_carbon_fluxes
-		self.toya2010fluxes = np.zeros(len(toya_dataset), dtype=[('reactionID', '|S100'), ('reactionFlux', Unum), ('reactionFluxStdev', Unum)])
+		self.toya2010fluxes = np.zeros(len(toya_dataset), dtype=[('reactionID', 'U100'), ('reactionFlux', Unum), ('reactionFluxStdev', Unum)])
 		for idx, row in enumerate(toya_dataset):
 			self.toya2010fluxes[idx]["reactionID"] = row["reactionID"]
 			self.toya2010fluxes[idx]["reactionFlux"] = row["flux"]

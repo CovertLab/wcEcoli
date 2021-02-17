@@ -1,17 +1,13 @@
 """
 RibosomeData
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/21/14
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
 import wholecell.listeners.listener
 
-# from numpy.lib.recfunctions import merge_arrays
 
 VERBOSE = False
 
@@ -31,7 +27,7 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 
 		self.uniqueMolecules = sim.internal_states['UniqueMolecules']
 
-		self.monomerIds = sim_data.process.translation.monomerData['id'].tolist()
+		self.monomerIds = sim_data.process.translation.monomer_data['id'].tolist()
 		self.nMonomers = len(self.monomerIds)
 
 

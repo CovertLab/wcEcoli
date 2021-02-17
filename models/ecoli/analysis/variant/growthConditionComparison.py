@@ -1,20 +1,16 @@
 """
 Plot to compare cell properties across different growth conditions similar to Dennis and Bremer. 1996. Fig 2
 Multiple generations of the same variant will be plotted together
-
-@author: Travis Horst
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/7/16
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-import cPickle
+from six.moves import cPickle
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -27,14 +23,8 @@ PROTEIN_MW = 110.0
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(inputDir):
-			raise Exception, "inputDir does not currently exist as a directory"
-
 		ap = AnalysisPaths(inputDir, variant_plot = True)
 		all_cells = ap.get_cells()
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
 
 		rnaToProteinDict = {}
 		dnaToProteinDict = {}
@@ -44,8 +34,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		variantSimDataFile = ap.get_variant_kb(ap.get_variants()[0])
 		sim_data = cPickle.load(open(variantSimDataFile, "rb"))
-		nAvogadro = sim_data.constants.nAvogadro.asNumber()
-		chromMass = (sim_data.getter.getMass(['CHROM_FULL[c]'])[0] / sim_data.constants.nAvogadro).asNumber()
+		nAvogadro = sim_data.constants.n_avogadro.asNumber()
+		chromMass = (sim_data.getter.get_mass(sim_data.molecule_ids.full_chromosome) / sim_data.constants.n_avogadro).asNumber()
 
 		for simDir in all_cells:
 			simOutDir = os.path.join(simDir, "simOut")
@@ -73,8 +63,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			transcriptDataFile = TableReader(os.path.join(simOutDir, "TranscriptElongationListener"))
 			rnaSynth = transcriptDataFile.readColumn("countRnaSynthesized")
-			isTRna = sim_data.process.transcription.rnaData["isTRna"]
-			isRRna = sim_data.process.transcription.rnaData["isRRna"]
+			isTRna = sim_data.process.transcription.rna_data['is_tRNA']
+			isRRna = sim_data.process.transcription.rna_data['is_rRNA']
 			stableRnaSynth = np.sum(rnaSynth[:,isTRna], axis=1) + np.sum(rnaSynth[:,isRRna], axis=1)
 			totalRnaSynth = np.sum(rnaSynth, axis=1).astype(float)
 			rnaFraction = stableRnaSynth / totalRnaSynth
@@ -88,7 +78,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			timeStepSec = TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")
 
-			if variant in rnaToProteinDict.keys():
+			if variant in rnaToProteinDict:
 				rnaToProteinDict[variant] = np.append(rnaToProteinDict[variant], rnaNT / (proteinAA / 100))
 				dnaToProteinDict[variant] = np.append(dnaToProteinDict[variant], chromEquivalents / (proteinAA / 10**9))
 				elngRateDict[variant] = np.append(elngRateDict[variant], (actualElongations / activeRibosome / timeStepSec)[3:])
@@ -107,7 +97,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		stableRnaFraction = []
 		doublingPerHour = []
 
-		for key in rnaToProteinDict.keys():
+		for key in rnaToProteinDict:
 			rnaToProtein += [rnaToProteinDict[key]]
 			dnaToProtein += [dnaToProteinDict[key]]
 			elngRate += [elngRateDict[key]]

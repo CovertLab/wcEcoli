@@ -1,8 +1,5 @@
 """
 Plots counts of 50S rRNA, associated proteins, and complexes
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 9/8/2014
 """
 
 from __future__ import absolute_import, division, print_function
@@ -11,7 +8,7 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-import cPickle
+from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import sparklineAxis, setAxisMaxMinY
@@ -25,20 +22,14 @@ FONT = {
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Load data from KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		proteinIds = sim_data.moleculeGroups.s50_proteins
-		rnaIds = [sim_data.process.translation.monomerData['rnaId'][np.where(sim_data.process.translation.monomerData['id'] == pid)[0][0]] for pid in proteinIds]
-		rRnaIds = sim_data.moleculeGroups.s50_23sRRNA
-		rRnaIds.extend(sim_data.moleculeGroups.s50_5sRRNA)
-		complexIds = sim_data.moleculeGroups.s50_proteinComplexes
-		complexIds.append(sim_data.moleculeIds.s50_fullComplex)
+		proteinIds = sim_data.molecule_groups.s50_proteins
+		rnaIds = [sim_data.process.translation.monomer_data['rna_id'][np.where(sim_data.process.translation.monomer_data['id'] == pid)[0][0]] for pid in proteinIds]
+		rRnaIds = sim_data.molecule_groups.s50_23s_rRNA
+		rRnaIds.extend(sim_data.molecule_groups.s50_5s_rRNA)
+		complexIds = sim_data.molecule_groups.s50_protein_complexes
+		complexIds.append(sim_data.molecule_ids.s50_full_complex)
 
 		# Load count data for mRNAs
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
@@ -62,7 +53,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		plt.figure(figsize = (8.5, 22))
 		plt.rc('font', **FONT)
 
-		for idx in xrange(len(proteinIds)):
+		for idx in range(len(proteinIds)):
 			rna_axis = plt.subplot(17, 3, idx + 1)
 
 			sparklineAxis(rna_axis, time / 60., rnaCounts[:, idx], 'left', '-', 'b')
@@ -75,7 +66,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			# Component label
 			rna_axis.set_xlabel(proteinIds[idx][:-3])
 
-		for idx in xrange(len(rRnaIds)):
+		for idx in range(len(rRnaIds)):
 			rna_axis = plt.subplot(17, 3, idx + len(proteinIds) + 1)
 
 			sparklineAxis(rna_axis, time / 60., freeRRnaCounts[:, idx], 'left', '-', 'b')
@@ -85,7 +76,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			# Component label
 			rna_axis.set_xlabel(rRnaIds[idx][:-3])
 
-		for idx in xrange(len(complexIds)):
+		for idx in range(len(complexIds)):
 			complex_axis = plt.subplot(17, 3, idx + len(proteinIds) + len(rRnaIds) + 1)
 
 			sparklineAxis(complex_axis, time / 60., complexCounts[:, idx], 'left', '-', 'r')

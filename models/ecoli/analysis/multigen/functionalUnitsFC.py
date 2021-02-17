@@ -1,13 +1,7 @@
-"""
-@author: Heejo Choi
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 11/13/2017
-"""
-
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
+from six.moves import cPickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,23 +9,18 @@ import matplotlib.pyplot as plt
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
+from six.moves import zip
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Check if cache from rnaVsProteinPerCell.py exists
 		if os.path.exists(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle")):
 			rnaVsProteinPerCell = cPickle.load(open(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle"), "rb"))
 			avgProteinCounts_forAllCells = rnaVsProteinPerCell["protein"]
 			avgProteinCounts_perCell = avgProteinCounts_forAllCells / float(32)
 		else:
-			print "Requires rnaVsProteinPerCell.cPickle from rnaVsProteinPerCell.py"
+			print("Requires rnaVsProteinPerCell.cPickle from rnaVsProteinPerCell.py")
 			return
 
 		# Check if cache from figure5B_E_F_G.py exist
@@ -40,7 +29,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			colors = figure5B_data["colors"]
 			mrnaIds = figure5B_data["id"].tolist()
 		else:
-			print "Requires figure5B.pickle from figure5B_E_F_G.py"
+			print("Requires figure5B.pickle from figure5B_E_F_G.py")
 			return
 
 		# Check if cache functionalUnits.py exist
@@ -49,7 +38,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			minProteinCounts = functionalUnits_data["minProteinCounts"]
 			monomersInManyComplexes_dict = functionalUnits_data["monomersInvolvedInManyComplexes_dict"]
 		else:
-			print "Requires functionalUnits.cPickle from functionalUnits.py"
+			print("Requires functionalUnits.cPickle from functionalUnits.py")
 			return
 
 		# Check if cache ratioFinalToInitialCountMultigen.pickle from figure5_c.py (cohort analysis) exists
@@ -57,16 +46,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		if os.path.exists(os.path.join(cohortPlotOutDir, "ratioFinalToInitialCountMultigen.pickle")):
 			ratioFinalToInitialCountMultigen = cPickle.load(open(os.path.join(plotOutDir,"ratioFinalToInitialCountMultigen.pickle"), "rb"))
 		else:
-			print "Requires ratioFinalToInitialCountMultigen.pickle from figure5_c.py"
+			print("Requires ratioFinalToInitialCountMultigen.pickle from figure5_c.py")
 			return
 
 		# Load sim data
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		rnaIds = sim_data.process.transcription.rnaData["id"][sim_data.relation.rnaIndexToMonomerMapping] # orders rna IDs to match monomer IDs
+		rnaIds = sim_data.process.transcription.rna_data["id"][sim_data.relation.rna_index_to_monomer_mapping] # orders rna IDs to match monomer IDs
 		rnaIds = rnaIds.tolist()
-		ids_complexation = sim_data.process.complexation.moleculeNames # Complexe of proteins, and protein monomers
+		ids_complexation = sim_data.process.complexation.molecule_names # Complexe of proteins, and protein monomers
 		ids_complexation_complexes = sim_data.process.complexation.ids_complexes # Only complexes
-		ids_translation = sim_data.process.translation.monomerData["id"].tolist() # Only protein monomers
+		ids_translation = sim_data.process.translation.monomer_data["id"].tolist() # Only protein monomers
 
 		# ID subgenerational rnas
 		subgenerational_indices = np.where(colors == "b")[0]
@@ -91,7 +80,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Check whether all subunits of subgenerational complexes are subgenerational monomers
 		nComplexesWNonSubGSubunits = 0
 		for i in complexMinCounts_dict.keys():
-			subunitIds = sim_data.process.complexation.getMonomers(i)["subunitIds"]
+			subunitIds = sim_data.process.complexation.get_monomers(i)["subunitIds"]
 			if not np.all([x in subgenerational_monomerIds for x in subunitIds]):
 				nComplexesWNonSubGSubunits += 1
 
@@ -147,7 +136,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		nSubG = len(subgenerational_monomerIds)
 		nSubGMonomers = len(subG_noncomplex_indices)
 		nSubGMonomersInComplexes = nSubG - nSubGMonomers
-		nSubGComplexes = len(complexMinCounts_dict.keys())
+		nSubGComplexes = len(complexMinCounts_dict)
 		nSubGFunctionalUnits = nSubGMonomers + nSubGComplexes
 
 		text = "%s total subgenerational genes" % nSubG

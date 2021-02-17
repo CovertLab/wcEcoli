@@ -1,8 +1,4 @@
-module load wcEcoli/sherlock2
-pyenv local wcEcoli2
-
-make clean
-make compile
+source runscripts/jenkins/setup-environment.sh
 
 set -e
 

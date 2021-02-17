@@ -1,13 +1,10 @@
 """
 Plots rnap capacity
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/18/2015
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -17,7 +14,6 @@ from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
 from wholecell.utils import units
 
 FONT = {
@@ -27,16 +23,8 @@ FONT = {
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
-
-		filepath.makedirs(plotOutDir)
-
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
-
-		# Load data from KB
-		nAvogadro = sim_data.constants.nAvogadro
 
 		# Listeners used
 		unique_molecules_reader = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
@@ -44,8 +32,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		rnap_reader = TableReader(os.path.join(simOutDir, "RnapData"))
 
 		# Get ID and mass of inactive (bulk) RNAP
-		inactive_rnap_id = sim_data.moleculeIds.rnapFull
-		rnap_mass = sim_data.getter.getMass([inactive_rnap_id])[0]
+		inactive_rnap_id = sim_data.molecule_ids.full_RNAP
 
 		# Read time data
 		initial_time = main_reader.readAttribute("initialTime")
@@ -54,12 +41,13 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Calculate the elongation rate for the given condition
 		nutrients = sim_data.conditions[sim_data.condition]["nutrients"]
-		elongation_rate = sim_data.process.transcription.rnaPolymeraseElongationRateDict[nutrients].asNumber(units.aa/units.s) * timeStep
+		elongation_rate = sim_data.process.transcription.rnaPolymeraseElongationRateDict[nutrients].asNumber(units.nt/units.s)
 
 		# Load rnap data
 		actual_elongations = rnap_reader.readColumn("actualElongations")
+		actual_elongation_rate = actual_elongations / timeStep
 
-		# Load counts of subunits and active ribosomes
+		# Load counts of subunits and active RNAPs
 		(inactive_rnap_counts, ) = read_bulk_molecule_counts(
 			simOutDir, ([inactive_rnap_id], ))
 		active_rnap_index = unique_molecules_reader.readAttribute("uniqueMoleculeIds").index('active_RNAP')
@@ -77,41 +65,41 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		total_rnap_capacity_axis = plt.subplot(6,1,1)
 		total_rnap_capacity_axis.plot(
 			time / 60., total_rnap_capacity,
-			label="Theoretical total RNAP capacity", linewidth=2, color='b')
+			label="Theoretical total RNAP rate", linewidth=2, color='b')
 		total_rnap_capacity_axis.plot(
-			time / 60., actual_elongations,
-			label="Actual elongations", linewidth=2, color='r')
+			time / 60., actual_elongation_rate,
+			label="Actual elongation rate", linewidth=2, color='r')
 		total_rnap_capacity_axis.set_ylabel("Nucleotides polymerized")
 		total_rnap_capacity_axis.legend(ncol=2)
 
 		active_rnap_capacity_axis = plt.subplot(6,1,2)
 		active_rnap_capacity_axis.plot(
 			time / 60., active_rnap_counts * elongation_rate,
-			label="Theoretical active RNAP capacity", linewidth=2, color='b')
+			label="Theoretical active RNAP rate", linewidth=2, color='b')
 		active_rnap_capacity_axis.plot(
-			time / 60., actual_elongations,
-			label="Actual elongations", linewidth=2, color='r')
+			time / 60., actual_elongation_rate,
+			label="Actual elongation rate", linewidth=2, color='r')
 		active_rnap_capacity_axis.set_ylabel("Nucleotides polymerized")
 		active_rnap_capacity_axis.legend(ncol=2)
 
 		inactive_rnap_capacity_axis = plt.subplot(6,1,3)
 		inactive_rnap_capacity_axis.plot(
 			time / 60., inactive_rnap_counts * elongation_rate,
-			label="Theoretical inactive ribosome capacity", linewidth=2, color='b')
+			label="Theoretical inactive RNAP rate", linewidth=2, color='b')
 		inactive_rnap_capacity_axis.set_ylabel("Nucleotides polymerized")
 		inactive_rnap_capacity_axis.legend(ncol=2)
 
 		fractionalCapacity_axis = plt.subplot(6,1,4)
 		fractionalCapacity_axis.plot(
-			time / 60., actual_elongations / total_rnap_capacity,
+			time / 60., actual_elongation_rate / total_rnap_capacity,
 			linewidth=2, color='k')
 		fractionalCapacity_axis.set_ylabel("Fraction of total RNAP capacity used")
 
 		effectiveElongationRate_axis = plt.subplot(6,1,5)
 		effectiveElongationRate_axis.plot(
-			time / 60., actual_elongations / active_rnap_counts,
+			time / 60., actual_elongation_rate / active_rnap_counts,
 			linewidth=2, color='k')
-		effectiveElongationRate_axis.set_ylabel("Effective elongation rate (aa/s/rnap)")
+		effectiveElongationRate_axis.set_ylabel("Relative elongation rate (nt/s/rnap)")
 
 		fractionActive_axis = plt.subplot(6,1,6)
 		fractionActive_axis.plot(

@@ -1,13 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 import time
 
-from fireworks import FireTaskBase, explicit_serialize
+from fireworks import FiretaskBase, explicit_serialize
 from validation.ecoli.validation_data_raw import ValidationDataRawEcoli
 
+
 @explicit_serialize
-class InitRawValidationDataTask(FireTaskBase):
+class InitRawValidationDataTask(FiretaskBase):
 
 	_fw_name = "InitRawValidationDataTask"
 	required_params = ["output"]
@@ -19,8 +20,5 @@ class InitRawValidationDataTask(FireTaskBase):
 
 		print("%s: Saving validation_data_raw" % (time.ctime()))
 
-		cPickle.dump(
-			validation_data_raw,
-			open(self["output"], "wb"),
-			protocol = cPickle.HIGHEST_PROTOCOL
-			)
+		with open(self["output"], "wb") as fh:
+			cPickle.dump(validation_data_raw, fh, protocol=cPickle.HIGHEST_PROTOCOL)

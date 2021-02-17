@@ -1,29 +1,22 @@
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
+from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.utils import units
-import cPickle
 from models.ecoli.analysis import multigenAnalysisPlot
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 
 		# Get first cell from each generation
@@ -74,16 +67,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			rrn5S_produced = ribosomeData.readColumn("rrn5S_produced")
 
 			ids_16s = []
-			ids_16s.extend(sim_data.moleculeGroups.s30_16sRRNA)
-			ids_16s.append(sim_data.moleculeIds.s30_fullComplex)
+			ids_16s.extend(sim_data.molecule_groups.s30_16s_rRNA)
+			ids_16s.append(sim_data.molecule_ids.s30_full_complex)
 
 			ids_23s = []
-			ids_23s.extend(sim_data.moleculeGroups.s50_23sRRNA)
-			ids_23s.append(sim_data.moleculeIds.s50_fullComplex)
+			ids_23s.extend(sim_data.molecule_groups.s50_23s_rRNA)
+			ids_23s.append(sim_data.molecule_ids.s50_full_complex)
 
 			ids_5s = []
-			ids_5s.extend(sim_data.moleculeGroups.s50_5sRRNA)
-			ids_5s.append(sim_data.moleculeIds.s50_fullComplex)
+			ids_5s.extend(sim_data.molecule_groups.s50_5s_rRNA)
+			ids_5s.append(sim_data.molecule_ids.s50_full_complex)
 
 			(rrn16s_count_bulk, rrn23s_count_bulk, rrn5s_count_bulk
 				) = read_bulk_molecule_counts(simOutDir,
@@ -116,22 +109,22 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			rrn23S_init_prob = ribosomeData.readColumn("rrn23S_init_prob")
 			rrn5S_init_prob = ribosomeData.readColumn("rrn5S_init_prob")
 
-			idx_16s = np.zeros(len(sim_data.moleculeGroups.s30_16sRRNA), dtype=np.int)
-			for idx, id16s in enumerate(sim_data.moleculeGroups.s30_16sRRNA):
-				idx_16s[idx] = np.where(sim_data.process.transcription.rnaData['id'] == id16s)[0][0]
+			idx_16s = np.zeros(len(sim_data.molecule_groups.s30_16s_rRNA), dtype=np.int)
+			for idx, id16s in enumerate(sim_data.molecule_groups.s30_16s_rRNA):
+				idx_16s[idx] = np.where(sim_data.process.transcription.rna_data['id'] == id16s)[0][0]
 
-			idx_23s = np.zeros(len(sim_data.moleculeGroups.s50_23sRRNA), dtype=np.int)
-			for idx, id23s in enumerate(sim_data.moleculeGroups.s50_23sRRNA):
-				idx_23s[idx] = np.where(sim_data.process.transcription.rnaData['id'] == id23s)[0][0]
+			idx_23s = np.zeros(len(sim_data.molecule_groups.s50_23s_rRNA), dtype=np.int)
+			for idx, id23s in enumerate(sim_data.molecule_groups.s50_23s_rRNA):
+				idx_23s[idx] = np.where(sim_data.process.transcription.rna_data['id'] == id23s)[0][0]
 
-			idx_5s = np.zeros(len(sim_data.moleculeGroups.s50_5sRRNA), dtype=np.int)
-			for idx, id5s in enumerate(sim_data.moleculeGroups.s50_5sRRNA):
-				idx_5s[idx] = np.where(sim_data.process.transcription.rnaData['id'] == id5s)[0][0]
+			idx_5s = np.zeros(len(sim_data.molecule_groups.s50_5s_rRNA), dtype=np.int)
+			for idx, id5s in enumerate(sim_data.molecule_groups.s50_5s_rRNA):
+				idx_5s[idx] = np.where(sim_data.process.transcription.rna_data['id'] == id5s)[0][0]
 
 			condition = sim_data.condition
-			rrn16s_fit_init_prob = sim_data.process.transcription.rnaSynthProb[condition][idx_16s].sum()
-			rrn23s_fit_init_prob = sim_data.process.transcription.rnaSynthProb[condition][idx_23s].sum()
-			rrn5s_fit_init_prob = sim_data.process.transcription.rnaSynthProb[condition][idx_5s].sum()
+			rrn16s_fit_init_prob = sim_data.process.transcription.rna_synth_prob[condition][idx_16s].sum()
+			rrn23s_fit_init_prob = sim_data.process.transcription.rna_synth_prob[condition][idx_23s].sum()
+			rrn5s_fit_init_prob = sim_data.process.transcription.rna_synth_prob[condition][idx_5s].sum()
 
 			## Calculated expected multinomial variance ##
 			total_rna_init = ribosomeData.readColumn("total_rna_init")

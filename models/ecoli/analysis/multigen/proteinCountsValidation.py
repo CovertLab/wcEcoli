@@ -1,19 +1,14 @@
 """
 Compare protein counts to Schmidt 2015 data set
-
-@author: Javier	Carrera
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 12/4/2017
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-import cPickle
+from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 
@@ -24,16 +19,10 @@ from models.ecoli.analysis import multigenAnalysisPlot
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 		validation_data = cPickle.load(open(validationDataFile, "rb"))
 
-		ids_translation = sim_data.process.translation.monomerData["id"].tolist()
+		ids_translation = sim_data.process.translation.monomer_data["id"].tolist()
 		schmidt_idx = [ids_translation.index(x) for x in validation_data.protein.schmidt2015Data["monomerId"].tolist()]
 
 		schmidt_counts = validation_data.protein.schmidt2015Data["glucoseCounts"]
@@ -48,7 +37,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		fig = plt.figure(figsize = (4, 4))
 
 		for simDir in allDir:
-			# print simDir
+			# print(simDir)
 
 			simOutDir = os.path.join(simDir, "simOut")
 
@@ -63,7 +52,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		axis = plt.subplot(1,1,1)
 
 		axis.plot(np.log10(schmidt_counts + 1), np.log10(sim_schmidt_counts_multigen + 1), 'o', color = "black", markersize = 6, alpha = 0.1, zorder = 1, markeredgewidth = 0.0)
-		# print pearsonr( np.log10(sim_schmidt_counts_mulitgen + 1), np.log10(schmidtCounts + 1) )[0]
+		# print(pearsonr( np.log10(sim_schmidt_counts_mulitgen + 1), np.log10(schmidtCounts + 1) )[0])
 
 		maxLine = np.ceil(
 						max((np.log10(schmidt_counts + 1)).max(),

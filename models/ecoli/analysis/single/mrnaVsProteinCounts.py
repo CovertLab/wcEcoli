@@ -1,19 +1,14 @@
 """
 Plot mRNA counts
-
-@author: John Mason
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/27/2014
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-import cPickle
+from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
@@ -25,19 +20,13 @@ from models.ecoli.analysis import singleAnalysisPlot
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Get the names of rnas from the KB
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 
 
-		proteinIds = sim_data.process.translation.monomerData["id"]
-		rnaIds = sim_data.process.translation.monomerData["rnaId"]
+		proteinIds = sim_data.process.translation.monomer_data["id"]
+		rnaIds = sim_data.process.translation.monomer_data['rna_id']
 
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
 		mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')

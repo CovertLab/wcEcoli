@@ -1,19 +1,11 @@
 #!/usr/bin/env python
 
-"""
-@author: John Mason
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 7/19/2013
-"""
-
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import unittest
-import warnings
 
-import numpy as np
-import numpy.testing as npt
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
+from six.moves import zip
 
 
 # TODO: test all solvers

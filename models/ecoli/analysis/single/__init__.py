@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+
 # Active analysis modules to run, in this order.
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
@@ -7,11 +9,13 @@ ACTIVE = [
 	"aaExchangeFluxes.py",
 	"active_rnap_coordinates.py",
 	"allReactionFluxes.py",
+	"cell_wall_expression.py",
 	"centralCarbonMetabolism.py",
 	"centralCarbonMetabolismCorrelationTimeCourse.py",
 	"centralCarbonMetabolismScatter.py",
 	"chromosome_visualization.py",
 	"concentrationDeviation.py",
+	"compartment_mass_fraction_summary.py",
 	"cotranscriptional_translation.py",
 	"dnaA_box_dynamics.py",
 	"dntpCounts.py",
@@ -20,9 +24,10 @@ ACTIVE = [
 	"expression_rna_01_low.py",
 	"expression_rna_02_med.py",
 	"expression_rna_03_high.py",
+	"external_exchange_fluxes.py",
 	"fbaOptimizationProblem.py",
 	"flagella_expression.py",
-	"glucoseAndOxygenExchangeFluxes.py",
+	"flux_bounds.py",
 	"glucoseMassYield.py",
 	"growthLimits.py",
 	"inter_rnap_distance.py",
@@ -30,13 +35,14 @@ ACTIVE = [
 	"kineticsFluxComparisonKcatOnly.py",
 	"mRnaHalfLives.py",
 	"massFractionSummary.py",
-	"massFractions.py",
+	"mass_fractions.py",
 	"mass_fractions_voronoi.py",
 	"metaboliteComparison.py",
 	"metabolites.py",
 	"mrnaCounts.py",
 	"mrnaVsProteinCounts.py",
 	"ntpCounts.py",
+	"outer_membrane_expression.py",
 	"processMassBalance.py",
 	"processMassBalanceDynamics.py",
 	"proteinCounts.py",
@@ -54,6 +60,8 @@ ACTIVE = [
 	"rnapCapacity.py",
 	"rnapCounts.py",
 	"rnaseCounts.py",
+	"superhelical_density.py",
+	"surface_area_comparison.py",
 	"transient_gene_dosage.py",
 	"trna_charging.py",
 	"tRnaCounts.py",
@@ -65,10 +73,12 @@ TAGS = {
 	'ACTIVE': ACTIVE,   # all active analyses in this category
 	'CORE': [           # the default list to run in development
 		"aaCounts.py",
+		"compartment_mass_fraction_summary.py",
 		"dntpCounts.py",
 		"evaluationTime.py",
-		"glucoseAndOxygenExchangeFluxes.py",
+		"external_exchange_fluxes.py",
 		"massFractionSummary.py",
+		"metabolites.py",
 		"mrnaCounts.py",
 		"ntpCounts.py",
 		"processMassBalance.py",
@@ -89,6 +99,11 @@ TAGS = {
 		"growthLimits.py",  # TODO(jerry): include this?
 		"trna_charging.py",
 		],
+	'KINETICS': [
+		"centralCarbonMetabolismScatter.py",
+		"external_exchange_fluxes.py",
+		"kineticsFluxComparison.py",
+		],
 	'METABOLISM': [
 		"aaExchangeFluxes.py",
 		"allReactionFluxes.py",
@@ -96,8 +111,9 @@ TAGS = {
 		"centralCarbonMetabolismCorrelationTimeCourse.py",
 		"centralCarbonMetabolismScatter.py",
 		"concentrationDeviation.py",
+		"external_exchange_fluxes.py",
 		"fbaOptimizationProblem.py",
-		"glucoseAndOxygenExchangeFluxes.py",
+		"flux_bounds.py",
 		"glucoseMassYield.py",
 		"kineticsFluxComparison.py",
 		"kineticsFluxComparisonKcatOnly.py",
@@ -138,6 +154,7 @@ TAGS = {
 		"rnaSynthesisProbabilities.py",
 		"rnapCapacity.py",
 		"rnapCounts.py",
+		"superhelical_density.py",
 		"tRnaCounts.py",
 		],
 	'TRANSLATION': [

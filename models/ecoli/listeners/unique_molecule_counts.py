@@ -1,17 +1,11 @@
-#!/usr/bin/env python
-
 """
 UniqueMoleculeCounts
-
-@author: John Mason
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/10/2014
 """
 
 # TODO: move to the wholecell package & write interface such that it will
 # function without requiring the state (will save an empty file)
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 

@@ -7,12 +7,15 @@ the Process, and returning the updated values to the State for merging. The
 implementation is largely specific to the State.
 '''
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
+class TotalCountError(Exception):
+	pass
+
 class View(object):
-	_stateID = None
+	_stateID = 'View'
 
 	def __init__(self, state, process, query): # weight, priority, coupling id, option to not evaluate the query
 		self._state = state
@@ -52,6 +55,12 @@ class View(object):
 
 	def total_counts(self):
 		return self._totalCount.copy()
+
+	def total_count(self):
+		if self._totalCount.size != 1:
+			raise TotalCountError('total_count() can only be used for views that cover a single molecule type.')
+
+		return self._totalCount[0]
 
 	# TODO (ggsun): deprecated alias, should be deleted
 	total = total_counts

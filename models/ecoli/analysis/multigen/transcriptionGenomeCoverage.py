@@ -1,15 +1,11 @@
 """
 Plots fraction of mRNAs transcribed (out of all genes to be transcribed) for all generations.
-
-@author: Heejo Choi
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/24/2016
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
+from six.moves import cPickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,23 +21,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		return
 
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Get all cells
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 		allDir = ap.get_cells()
 
 		# Get IDs of mRNAs
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		rnaIds = sim_data.process.transcription.rnaData["id"]
-		isMRna = sim_data.process.transcription.rnaData["isMRna"]
-		degRate = sim_data.process.transcription.rnaData["degRate"]
-		basalExpression = sim_data.process.transcription.rnaExpression["basal"]
-		synthProb = sim_data.process.transcription.rnaSynthProb["basal"]
+		rnaIds = sim_data.process.transcription.rna_data["id"]
+		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
+		degRate = sim_data.process.transcription.rna_data['deg_rate']
+		basalExpression = sim_data.process.transcription.rna_expression["basal"]
+		synthProb = sim_data.process.transcription.rna_synth_prob["basal"]
 		mRnaIds = np.where(isMRna)[0]
 
 		mRnaBasalExpression = np.array([basalExpression[x] for x in mRnaIds])

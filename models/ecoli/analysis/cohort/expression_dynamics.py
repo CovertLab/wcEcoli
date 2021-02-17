@@ -1,11 +1,11 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
-from itertools import izip
-import cPickle
+from typing import cast
 
 import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, zip
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -13,6 +13,7 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.rdp import rdp
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
+
 
 GENS = np.arange(3, 9)
 
@@ -31,16 +32,10 @@ def align_yaxis(ax1, v1, ax2, v2):
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Check if basal sim
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 		if sim_data.condition != "basal":
-			print "Skipping - plot only runs for basal sim."
+			print("Skipping - plot only runs for basal sim.")
 			return
 
 		# Get all cells
@@ -48,15 +43,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		allDir = ap.get_cells(seed=[0], generation = GENS)
 		n_gens = GENS.size
 		if len(allDir) < n_gens:
-			print "Skipping - particular seed and/or gens were not simulated."
+			print("Skipping - particular seed and/or gens were not simulated.")
 			return
 
 		# Get all ids reqiured
-		ids_transcription = sim_data.process.transcription.rnaData["id"].tolist()
+		ids_transcription = sim_data.process.transcription.rna_data["id"].tolist()
 
 		# Pre-allocate variables. Rows = Generations, Cols = Monomers
-		n_monomers = sim_data.process.translation.monomerData['id'].size
-		n_sims = ap.n_generation
+		n_monomers = sim_data.process.translation.monomer_data['id'].size
 
 		# Load simData from first simulation
 		simOutDir = os.path.join(allDir[0], "simOut")
@@ -65,10 +59,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		transcriptionIdx = np.array([moleculeIds.index(x) for x in ids_transcription])
 
 		ratioFinalToInitialCountMultigen = np.zeros((n_gens, n_monomers), dtype = np.float)
-		initiationEventsPerMonomerMultigen = np.zeros((n_sims, n_monomers), dtype = np.int)
 
 		# protein_index_of_interest_full = np.zeros((n_gens, n_monomers), dtype = np.bool)
 
+		time = np.arange(0)
 		for gen_idx, simDir in enumerate(allDir):
 			simOutDir = os.path.join(simDir, "simOut")
 
@@ -91,9 +85,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			protein_idx = protein_index_of_interest[4]
 			protein_idx_burst = protein_index_of_interest_burst[2]
 		except Exception as exc:
-			print "Error: %s" % exc
+			print("Error: %s" % exc)
 			return
 
+		# noinspection PyTypeChecker
 		fig, axesList = plt.subplots(ncols = 2, nrows = 2, sharex = True)
 		expProtein_axis = axesList[0,0]
 		expRna_axis = axesList[1,0]
@@ -126,13 +121,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		fig.set_figwidth(fig_width)
 		fig.set_figheight(fig_height)
-		firstLine = True
-		firstLineInit = None
-		firstLineInitRna = None
-		firstLineInit_burst = None
-		firstLineInitRna_burst = None
+		# firstLine = True
+		# firstLineInit = None
+		# firstLineInitRna = None
+		# firstLineInit_burst = None
+		# firstLineInitRna_burst = None
 
 		time_eachGen = []
+		startTime = 0
 		for gen_idx, simDir in enumerate(allDir):
 			simOutDir = os.path.join(simDir, "simOut")
 			time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
@@ -151,12 +147,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			proteinMonomerCounts = monomerCounts.readColumn("monomerCounts")
 			rnaMonomerCounts = bulkCounts[:, transcriptionIdx]
 
-			if firstLine:
-				firstLineInit = float(proteinMonomerCounts[:, protein_idx][0])
-				firstLineInitRna = float(rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx][0])
-				firstLineInit_burst = float(proteinMonomerCounts[:, protein_idx_burst][0])
-				firstLineInitRna_burst = float(rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx_burst][0])
-				firstLine = False
+			# if firstLine:
+			# 	firstLineInit = float(proteinMonomerCounts[:, protein_idx][0])
+			# 	firstLineInitRna = float(rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx][0])
+			# 	firstLineInit_burst = float(proteinMonomerCounts[:, protein_idx_burst][0])
+			# 	firstLineInitRna_burst = float(rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx_burst][0])
+			# 	firstLine = False
 
 			LINEWIDTH = 1
 
@@ -174,8 +170,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			counts = (
 				proteinMonomerCounts[:, protein_idx],
 				proteinMonomerCounts[:, protein_idx_burst],
-				rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx],
-				rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx_burst]
+				rnaMonomerCounts[:, sim_data.relation.rna_index_to_monomer_mapping][:, protein_idx],
+				rnaMonomerCounts[:, sim_data.relation.rna_index_to_monomer_mapping][:, protein_idx_burst]
 				)
 			line_color = (
 				EXP_COLOR,
@@ -212,7 +208,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				(time_minutes.max() - time_minutes.min()) * n_gens
 				)
 
-			for (ax, c, lc, cm, cs) in izip(axes, counts, line_color, count_min, count_scale):
+			for (ax, c, lc, cm, cs) in zip(axes, counts, line_color, count_min, count_scale):
 				rescaled_counts = (c.astype(np.float64) - cm)/cs
 
 				# Roughly rescale the data into the plotted dimensions for
@@ -234,8 +230,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# expProteinFold_axis.plot(time_minutes, proteinMonomerCounts[:, protein_idx] / firstLineInit, alpha = 0.,color = "red")
 			# burstProteinFold_axis.plot(time_minutes, proteinMonomerCounts[:, protein_idx_burst] / firstLineInit_burst, alpha = 0., color="red")
 
-		expProtein_axis.set_title("Exponential dynamics: {}".format(sim_data.process.translation.monomerData['id'][protein_idx][:-3]), fontsize=9)
-		burstProtein_axis.set_title("Sub-generational dynamics: {}".format(sim_data.process.translation.monomerData['id'][protein_idx_burst][:-3]), fontsize=9)
+		expProtein_axis.set_title("Exponential dynamics: {}".format(sim_data.process.translation.monomer_data['id'][protein_idx][:-3]), fontsize=9)
+		burstProtein_axis.set_title("Sub-generational dynamics: {}".format(sim_data.process.translation.monomer_data['id'][protein_idx_burst][:-3]), fontsize=9)
 		expProtein_axis.set_ylabel("Protein\ncount", rotation=0, fontsize=9)
 		expRna_axis.set_ylabel("mRNA\ncount", rotation=0, fontsize=9)
 
@@ -261,7 +257,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		expRna_axis.set_xticks(time_eachGen / 60.)
 		burstRna_axis.set_xticks(time_eachGen / 60.)
-		xlabel = GENS.tolist()
+		xlabel = cast('List[int]', GENS.tolist())
 		xlabel.append(GENS[-1] + 1)
 		expRna_axis.set_xticklabels(xlabel)
 		burstRna_axis.set_xticklabels(xlabel)

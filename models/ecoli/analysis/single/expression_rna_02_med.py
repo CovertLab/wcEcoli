@@ -13,13 +13,9 @@ EG10104_RNA[c]	5.2	atpG	ATP synthase F1 complex - gamma subunit
 EG10539_RNA[c]	5.3	livJ	Branched chain amino acid ABC transporter - periplasmic binding protein
 
 (sorted from sim_data.transcription.process.rnaData, mrna only, elements in range -125:-115)
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 10/29/2015
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
 
@@ -29,16 +25,11 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
+from six.moves import range
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
 		mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')
 		all_mRNA_idx = {rna: i for i, rna in enumerate(mRNA_counts_reader.readAttribute('mRNA_ids'))}
@@ -69,7 +60,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		plt.figure(figsize = (8.5, 11))
 
-		for subplotIdx in xrange(1, 10):
+		for subplotIdx in range(1, 10):
 
 			plt.subplot(3, 3, subplotIdx)
 

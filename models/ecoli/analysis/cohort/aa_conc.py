@@ -1,40 +1,30 @@
 """
 Comparison of average amino acid concentrations to expected concentrations
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/26/19
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-import cPickle
 import os
 
 from matplotlib import pyplot as plt
 import numpy as np
+from six.moves import cPickle, range
 
 from models.ecoli.analysis import cohortAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import filepath
 from wholecell.utils import units
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(variantDir):
-			raise Exception, 'variantDir does not currently exist as a directory'
-
-		filepath.makedirs(plotOutDir)
-
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
-		aa_ids = sim_data.moleculeGroups.aaIDs
-		targets = np.array([sim_data.process.metabolism.concDict[key].asNumber(units.mmol / units.L) for key in aa_ids])
+		aa_ids = sim_data.molecule_groups.amino_acids
+		targets = np.array([sim_data.process.metabolism.conc_dict[key].asNumber(units.mmol / units.L) for key in aa_ids])
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
 
@@ -76,7 +66,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		n_row = 6
 		n_col = 4
-		for idx in xrange(len(aa_ids)):
+		for idx in range(len(aa_ids)):
 			ave_conc = aa_conc[:, idx].mean()
 			plt.subplot(n_row, n_col, idx + 1)
 			plt.hist(aa_conc[:, idx])

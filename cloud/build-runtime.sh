@@ -1,24 +1,25 @@
 #!/bin/sh
-# Use Google Cloud Build servers to build a personalized wcm-runtime Docker
-# image and store it in the Google Container Registry.
+# Use Google Cloud Build servers to build a personalized "${ID}-wcm-runtime"
+# Docker Image and store it in the Google Container Registry.
 #
-# INPUTS:
-#   ARG1: Docker tag for the wcm-runtime image in GCR to build; defaults to
-#     "wcm-runtime". This lets you build a test runtime that has new packages
-#     without breaking anyone else.
+# COMMAND LINE ARGUMENTS:
+#   ARG1: Distinguishing ID prefix for the "${ID}-wcm-runtime" tag for the
+#     Docker Image to build in GCR; defaults to "${USER}". Must be in lower case.
 #
 # ASSUMES: The current working dir is the wcEcoli/ project root.
 
 set -eu
 
-WCM_RUNTIME="${1:-wcm-runtime}"
+ID="${1:-$USER}"
 
-echo "=== Cloud-building WCM runtime: ${WCM_RUNTIME} ==="
+PROJECT="$(gcloud config get-value core/project)"
+WCM_RUNTIME="${ID}-wcm-runtime"
+TAG="gcr.io/${PROJECT}/${WCM_RUNTIME}"
 
-# This needs one payload file so copy it in rather than using a config at the
-# project root which would upload the entire project.
+echo "=== Cloud-building WCM runtime Docker Image: ${TAG} ==="
+
+# This needs only one payload file so copy it in rather than using a config at
+# the project root which would upload the entire project.
 cp requirements.txt cloud/docker/runtime/
-gcloud builds submit --timeout=2h \
-    --tag "gcr.io/allen-discovery-center-mcovert/${WCM_RUNTIME}" \
-    cloud/docker/runtime/
-rm -f cloud/docker/runtime/requirements.txt
+gcloud builds submit --timeout=3h --tag "${TAG}" cloud/docker/runtime/
+rm cloud/docker/runtime/requirements.txt

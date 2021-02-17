@@ -1,20 +1,19 @@
-#!/usr/bin/env python
 """
 PolypeptideInitiation
 
 Polypeptide initiation sub-model.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/30/14
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
+
+from typing import cast
 
 import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize
+from six.moves import zip
 
 
 class PolypeptideInitiation(wholecell.processes.process.Process):
@@ -29,20 +28,20 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		super(PolypeptideInitiation, self).initialize(sim, sim_data)
 
 		# Load parameters
-		self.proteinLengths = sim_data.process.translation.monomerData["length"].asNumber()
+		self.proteinLengths = sim_data.process.translation.monomer_data["length"].asNumber()
 		self.translationEfficiencies = normalize(
-			sim_data.process.translation.translationEfficienciesByMonomer)
+			sim_data.process.translation.translation_efficiencies_by_monomer)
 		self.fracActiveRibosomeDict = sim_data.process.translation.ribosomeFractionActiveDict
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = sim_data.process.translation.make_elongation_rates
 
 		# Get indexes from proteins to transcription units
-		self.protein_index_to_TU_index = sim_data.relation.rnaIndexToMonomerMapping
+		self.protein_index_to_TU_index = sim_data.relation.rna_index_to_monomer_mapping
 
 		# Build matrix to convert transcription unit counts to mRNA counts
-		all_TU_ids = sim_data.process.transcription.rnaData['id']
-		all_mRNA_ids = sim_data.process.translation.monomerData['rnaId']
+		all_TU_ids = sim_data.process.transcription.rna_data['id']
+		all_mRNA_ids = sim_data.process.translation.monomer_data['rna_id']
 		self.n_TUs = len(all_TU_ids)
 		self.n_mRNAs = len(all_mRNA_ids)
 
@@ -63,8 +62,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
 
 		# Create views onto bulk 30S and 50S ribosomal subunits
-		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeIds.s30_fullComplex)
-		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeIds.s50_fullComplex)
+		self.ribosome30S = self.bulkMoleculeView(sim_data.molecule_ids.s30_full_complex)
+		self.ribosome50S = self.bulkMoleculeView(sim_data.molecule_ids.s50_full_complex)
 
 		# Create view onto RNAs
 		self.RNAs = self.uniqueMoleculesView('RNA')
@@ -173,9 +172,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.active_ribosomes.moleculesNew(
 			n_ribosomes_to_activate,
 			protein_index=protein_indexes,
-			peptide_length=np.zeros(n_ribosomes_to_activate, dtype=np.int64),
+			peptide_length=np.zeros(cast(int, n_ribosomes_to_activate), dtype=np.int64),
 			mRNA_index=mRNA_indexes,
-			pos_on_mRNA=np.zeros(n_ribosomes_to_activate, dtype=np.int64)
+			pos_on_mRNA=np.zeros(cast(int, n_ribosomes_to_activate), dtype=np.int64)
 			)
 
 		# Decrement free 30S and 70S ribosomal subunit counts
@@ -232,11 +231,3 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			activationProb = 1
 
 		return activationProb
-
-	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
-		# Return false if timestep is longer than 1.7s. Timesteps longer than
-		# 1.8s will lower the fraction of activated ribosomes.
-		if inputTimeStep > 1.7:
-			return False
-		else:
-			return True

@@ -9,12 +9,13 @@ The UniqueMolecules State instantiates a UniqueObjectsContainer object, which
 creates and manages the structured arrays in memory.
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
-from itertools import izip
 from copy import deepcopy
 
 import numpy as np
+import six
+from six.moves import zip
 
 import wholecell.states.internal_state
 import wholecell.views.view
@@ -43,7 +44,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 		self._pre_evolve_state_mass_index = None
 		self._requests = []
 
-		self.uniqueMoleculeDefinitions = None
+		self.unique_molecule_definitions = None
 		self.division_mode = {}
 
 
@@ -51,35 +52,35 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 		super(UniqueMolecules, self).initialize(sim, sim_data)
 
 		# Used to store information for cell division
-		self.uniqueMoleculeDefinitions = deepcopy(
-			sim_data.internal_state.uniqueMolecules.uniqueMoleculeDefinitions)
+		self.unique_molecule_definitions = deepcopy(
+			sim_data.internal_state.unique_molecule.unique_molecule_definitions)
 
 		# Add the submass difference attributes for processes to operate
 		defaultMassAttributes = {}
 		self._submass_diff_names = []
 		self._submass_diff_name_to_index = {}
 
-		for i, submassName in enumerate(sim_data.submassNameToIndex.viewkeys()):
-			massDiffPropertyName = "massDiff_" + submassName
+		for submass_name, index in sim_data.submass_name_to_index.items():
+			massDiffPropertyName = "massDiff_" + submass_name
 			defaultMassAttributes[massDiffPropertyName] = np.float64
 			self._submass_diff_names.append(massDiffPropertyName)
-			self._submass_diff_name_to_index[massDiffPropertyName] = i
+			self._submass_diff_name_to_index[massDiffPropertyName] = index
 
-		for molDef in self.uniqueMoleculeDefinitions.viewvalues():
+		for molDef in six.viewvalues(self.unique_molecule_definitions):
 			molDef.update(defaultMassAttributes)
 
 		self.container = UniqueObjectsContainer(
-			self.uniqueMoleculeDefinitions, submass_diff_names=self._submass_diff_names)
+			self.unique_molecule_definitions, submass_diff_names=self._submass_diff_names)
 
 		# Get ordered list of molecule ids and masses
-		self._molecule_ids = tuple(sorted(self.uniqueMoleculeDefinitions.keys()))
+		self._molecule_ids = tuple(sorted(self.unique_molecule_definitions.keys()))
 
 		molecule_id_to_mass = {}
-		uniqueMoleculeMasses = sim_data.internal_state.uniqueMolecules.uniqueMoleculeMasses
-		for (id, mass) in izip(
+		uniqueMoleculeMasses = sim_data.internal_state.unique_molecule.unique_molecule_masses
+		for (id_, mass) in zip(
 			uniqueMoleculeMasses["id"], uniqueMoleculeMasses["mass"]
 			):
-			molecule_id_to_mass[id] = (mass/sim_data.constants.nAvogadro).asNumber(units.fg)
+			molecule_id_to_mass[id_] = (mass/sim_data.constants.n_avogadro).asNumber(units.fg)
 
 		self._molecule_masses = np.array(
 			[molecule_id_to_mass[x] for x in self._molecule_ids]
@@ -89,72 +90,35 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 			x: self._molecule_ids.index(x) for x in self._molecule_ids
 			}
 
+		# Load compartments information for mass calculation
+		self._compartment_abbrev_to_index = sim_data.compartment_abbrev_to_index
+
 		# Total mass of molecules before evolveState goes into the last row
 		# of the masses array
 		self._pre_evolve_state_mass_index = self._nProcesses
 
-		self.division_mode['active_ribosome'] = sim_data.moleculeGroups.unique_molecules_active_ribosome_division
-		self.division_mode['RNA'] = sim_data.moleculeGroups.unique_molecules_RNA_division
-		self.division_mode['domain_index'] = sim_data.moleculeGroups.unique_molecules_domain_index_division
+		self.division_mode['active_ribosome'] = sim_data.molecule_groups.unique_molecules_active_ribosome_division
+		self.division_mode['RNA'] = sim_data.molecule_groups.unique_molecules_RNA_division
+		self.division_mode['domain_index'] = sim_data.molecule_groups.unique_molecules_domain_index_division
+		self.division_mode['chromosomal_segment'] = sim_data.molecule_groups.unique_molecules_chromosomal_segment_division
 
 
-	def partition(self):
+	def partition(self, processes):
 		"""
 		Unique molecules are not partitioned.
 		"""
 		pass
 
 
-	def calculatePreEvolveStateMass(self):
-		"""
-		Computes the summed masses of all unique molecules, prior to
-		evolveState(). Since no unique molecules are partitioned to specific
-		processes, all masses are marked as "no_process_assigned".
-		"""
-		masses = np.zeros(self._masses.shape[1:], np.float64)
-
-		for moleculeId, moleculeMasses in izip(
-				self._molecule_ids, self._molecule_masses):
-			# Get all molecules of a particular type
-			molecules = self.container.objectsInCollection(moleculeId)
-			n_molecules = len(molecules)
-
-			if n_molecules == 0:
-				continue
-
-			# Add basal masses of the molecule to last row
-			masses[self._pre_evolve_state_mass_index, :] += moleculeMasses * n_molecules
-
-			# Add additional submasses of the molecule to last row
-			massDiffs = molecules.attrsAsStructArray(*self._submass_diff_names).view(
-				(np.float64, len(self._submass_diff_names))
-				)
-			masses[self._pre_evolve_state_mass_index, :] += massDiffs.sum(axis=0)
-
-		self._masses[self._preEvolveStateMassIndex, ...] = masses
-
-
-	def merge(self):
+	def merge(self, processes):
 		"""
 		Apply all requested changes to the container. The returned list of
-		requests is used in calculatePostEvolveStateMass() to compute mass
-		differences.
+		requests is used to compute mass differences for each process.
 		"""
 		self._requests = self.container.merge()
 
-
-	def calculatePostEvolveStateMass(self):
-		"""
-		Computes the summed masses of all unique molecules, after
-		evolveState(). If certain process added or deleted molecules, or
-		changed the massdiff attributes of molecules, the corresponding change
-		of mass is recorded in the self._masses array, with the rows
-		corresponding to each process and columns corresponding to each
-		type of submass. This is done to check if each process conserves mass
-		at each timestep.
-		"""
-		# Get mass calculated before evolveState()
-		masses = self._masses[self._preEvolveStateMassIndex, ...].copy()
+		# Initialize mass differences array
+		process_mass_diffs = np.zeros_like(self._process_mass_diffs)
 
 		# Loop through all requests
 		for req in self._requests:
@@ -162,9 +126,9 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 			if req["type"] == "submass":
 				process_index = req["process_index"]
 
-				for attribute, values in req["added_masses"].viewitems():
+				for attribute, values in six.viewitems(req["added_masses"]):
 					submass_index = self._submass_diff_name_to_index[attribute]
-					masses[process_index, submass_index] += values.sum()
+					process_mass_diffs[process_index, submass_index] += values.sum()
 
 			# Delete mass of removed objects
 			if req["type"] == "delete":
@@ -172,10 +136,10 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 
 				# Subtract masses of the deleted molecules themselves
 				deleted_masses = self._molecule_masses[req["collection_indexes"], :].sum(axis=0)
-				masses[process_index, :] -= deleted_masses
+				process_mass_diffs[process_index, :] -= deleted_masses
 
 				# Subtract submasses of the deleted molecules
-				masses[process_index, :] -= req["deleted_submasses"]
+				process_mass_diffs[process_index, :] -= req["deleted_submasses"]
 
 			# Add mass from new objects
 			if req["type"] == "new_molecule":
@@ -184,15 +148,51 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 				# Add masses of the added molecules themselves
 				collection_index = self._molecule_id_to_index[req["collectionName"]]
 				masses_per_molecule = self._molecule_masses[collection_index, :]
-				masses[process_index, :] += masses_per_molecule * req["nObjects"]
+				process_mass_diffs[process_index, :] += masses_per_molecule * req["nObjects"]
 
 				# Add submass differences that the molecules were initialized with
-				for attribute, values in req["attributes"].viewitems():
+				for attribute, values in six.viewitems(req["attributes"]):
 					if attribute in self._submass_diff_names:
 						submass_index = self._submass_diff_name_to_index[attribute]
-						masses[process_index, submass_index] += values.sum()
+						process_mass_diffs[process_index, submass_index] += values.sum()
 
-		self._masses[self._postEvolveStateMassIndex, ...] = masses
+		self._process_mass_diffs += process_mass_diffs
+
+
+	def calculateMass(self):
+		"""
+		Computes the summed masses of all unique molecules, including both the
+		basal mass and the added submasses of each molecule.
+		"""
+		masses = np.zeros_like(self._masses)
+		compartment_masses = np.zeros_like(self._compartment_masses)
+
+		for moleculeId, moleculeMasses in zip(
+				self._molecule_ids, self._molecule_masses):
+			# Get all molecules of a particular type
+			molecules = self.container.objectsInCollection(moleculeId)
+			n_molecules = len(molecules)
+
+			if n_molecules == 0:
+				continue
+
+			# Add basal masses of the molecule
+			masses += moleculeMasses * n_molecules
+
+			# TODO: include other compartments for unique molecules
+			compartment_masses[self._compartment_abbrev_to_index['c'],
+				:] += moleculeMasses * n_molecules
+
+			# Add additional submasses of the molecule
+			massDiffs = molecules.attrsAsStructArray(*self._submass_diff_names).view(
+				(np.float64, len(self._submass_diff_names))
+				)
+			masses += massDiffs.sum(axis=0)
+			compartment_masses[self._compartment_abbrev_to_index['c'],
+				:] += massDiffs.sum(axis=0)
+
+		self._masses = masses
+		self._compartment_masses = compartment_masses
 
 
 	def loadSnapshot(self, container):
@@ -215,10 +215,10 @@ class UniqueMoleculesView(wholecell.views.view.View):
 		super(UniqueMoleculesView, self).__init__(*args, **kwargs)
 
 		self._queryResult = None # TODO: store query results with the state
+		self.cached_attributes = {}
 
 		# self._query must be the name of a unique molecule
-		assert isinstance(self._query, basestring)
-
+		assert isinstance(self._query, six.string_types)
 
 	def _updateQuery(self):
 		# TODO: generalize this logic (both here and in the state)
@@ -228,9 +228,15 @@ class UniqueMoleculesView(wholecell.views.view.View):
 			process_index=self._processIndex,
 			access=()
 			)
+		self._flush_cached_attributes()
 
 		self._totalIs(len(self._queryResult))
 
+	def _flush_cached_attributes(self):
+		"""
+		Removes all of the cached attribute arrays.
+		"""
+		self.cached_attributes = {}
 
 	def request_access(self, access):
 		"""
@@ -240,15 +246,25 @@ class UniqueMoleculesView(wholecell.views.view.View):
 		"""
 		self._queryResult.set_access_level(access=access)
 
-
 	# Wrappers for reading or manipulating queried molecules
 	def attr(self, attribute):
-		return self._queryResult.attr(attribute)
+		if attribute not in self.cached_attributes:
+			self.cached_attributes[attribute] = self._queryResult.attr(
+				attribute)
+		return self.cached_attributes[attribute]
 
 	def attrs(self, *attributes):
-		return self._queryResult.attrs(*attributes)
+		all_attrs = []
+		for attribute in attributes:
+			if attribute not in self.cached_attributes:
+				self.cached_attributes[attribute] = self._queryResult.attr(
+					attribute)
+			all_attrs.append(self.cached_attributes[attribute])
+
+		return tuple(all_attrs)
 
 	def attrIs(self, **attributes):
+		self._flush_cached_attributes()
 		self._queryResult.attrIs(**attributes)
 
 	def add_submass_by_name(self, submass_name, delta_mass):
@@ -258,27 +274,16 @@ class UniqueMoleculesView(wholecell.views.view.View):
 		self._queryResult.add_submass_by_array(delta_mass)
 
 	def delByIndexes(self, indexes):
+		self._flush_cached_attributes()
 		self._queryResult.delByIndexes(indexes)
-
-
-	def moleculeNew(self, **attributes):
-		"""
-		Adds a single object of the same type as the queried molecule to the
-		container with the given attributes.
-		"""
-		self._state.container.add_new_molecule_request(
-			self._query,
-			1,
-			process_index=self._processIndex,
-			**attributes
-			)
-
 
 	def moleculesNew(self, nMolecules, **attributes):
 		"""
 		Adds nMolecules objects of the same type as the queried molecule to the
 		container with the given attributes.
 		"""
+		self._flush_cached_attributes()
+
 		unique_indexes = self._state.container.add_request(
 			type="new_molecule",
 			collectionName=self._query,

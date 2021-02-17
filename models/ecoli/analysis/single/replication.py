@@ -1,8 +1,5 @@
 """
 Plots simulation outputs relevant to DNA replication
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/17/2015
 """
 
 from __future__ import absolute_import, division, print_function
@@ -11,7 +8,7 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-import cPickle
+from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -20,12 +17,6 @@ from models.ecoli.analysis import singleAnalysisPlot
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Load KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 
@@ -52,7 +43,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		pairsOfForks = np.logical_not(np.isnan(fork_coordinates)).sum(axis = 1)/2
 
 		# Count chromosome equivalents
-		chromMass = (sim_data.getter.getMass(['CHROM_FULL[c]'])[0] / sim_data.constants.nAvogadro).asNumber(units.fg)
+		chromMass = (sim_data.getter.get_mass(sim_data.molecule_ids.full_chromosome) / sim_data.constants.n_avogadro).asNumber(units.fg)
 		chromEquivalents = dnaMass / chromMass
 
 		# Count full chromosomes
@@ -73,7 +64,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		plt.figure(figsize = (8.5, 11))
 
 		ax = plt.subplot(7,1,1)
-		ax.plot(time / 60., fork_coordinates, marker='.', markersize=1, linewidth=0)
+		# Skip if there are no replication forks
+		if fork_coordinates.shape[1] > 0:
+			ax.plot(time / 60., fork_coordinates, marker='.', markersize=1, linewidth=0)
 		ax.set_xticks([0, time.max() / 60])
 		ax.set_yticks([-1 * genomeLength / 2, 0, genomeLength / 2])
 		ax.set_yticklabels(['-terC', 'oriC', '+terC'])

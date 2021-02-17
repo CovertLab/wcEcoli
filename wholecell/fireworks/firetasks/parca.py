@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-from fireworks import FireTaskBase, explicit_serialize
+from fireworks import FiretaskBase, explicit_serialize
 
 from . import InitRawDataTask
 from . import InitRawValidationDataTask
@@ -11,13 +11,13 @@ from . import FitSimDataTask
 
 from wholecell.utils import constants
 from wholecell.utils import filepath as fp
-
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 
+
 @explicit_serialize
-class ParcaTask(FireTaskBase):
+class ParcaTask(FiretaskBase):
 	"""A complete Parameter Calculator Firetask. It makes its output directory
-	and writes everything into it, to fit into a Gaia/Sisyphus workflow.
+	and writes everything into it, to fit into a cloud workflow.
 	"""
 
 	_fw_name = 'ParcaTask'
@@ -26,12 +26,18 @@ class ParcaTask(FireTaskBase):
 		'ribosome_fitting',
 		'rnapoly_fitting']
 	optional_params = [
+		'load_intermediate',
+		'save_intermediates',
+		'intermediates_directory',
 		'cpus',
 		'debug',
 		'variable_elongation_transcription',
 		'variable_elongation_translation']
 
 	OUTPUT_SUBDIR = 'kb'  # the task's recommended output directory
+
+	def _get_default(self, key):
+		return self.get(key, DEFAULT_SIMULATION_KWARGS[key])
 
 	def run_task(self, fw_spec):
 		kb_directory = fp.makedirs(self['output_directory'])
@@ -44,6 +50,7 @@ class ParcaTask(FireTaskBase):
 			kb_directory, constants.SERIALIZED_RAW_VALIDATION_DATA)
 		validation_data_file = os.path.join(
 			kb_directory, constants.SERIALIZED_VALIDATION_DATA)
+		intermediates_dir = self.get('intermediates_directory') if self.get('intermediates_directory') else kb_directory
 
 		tasks = [
 			InitRawDataTask(
@@ -54,10 +61,13 @@ class ParcaTask(FireTaskBase):
 				output_data=sim_data_file,
 				output_metrics_data=metrics_data_file,
 				cached=False,
+				load_intermediate=self.get('load_intermediate', None),
+				save_intermediates=self.get('save_intermediates', False),
+				intermediates_directory=intermediates_dir,
 				cpus=self.get('cpus', 1),
 				debug=self.get('debug', False),
-				variable_elongation_transcription=self.get('variable_elongation_transcription', DEFAULT_SIMULATION_KWARGS['variable_elongation_transcription']),
-				variable_elongation_translation=self.get('variable_elongation_translation', DEFAULT_SIMULATION_KWARGS['variable_elongation_translation']),
+				variable_elongation_transcription=self._get_default('variable_elongation_transcription'),
+				variable_elongation_translation=self._get_default('variable_elongation_translation'),
 				disable_ribosome_capacity_fitting=not self['ribosome_fitting'],
 				disable_rnapoly_capacity_fitting=not self['rnapoly_fitting']),
 
@@ -72,5 +82,5 @@ class ParcaTask(FireTaskBase):
 		for task in tasks:
 			task.run_task(fw_spec)
 
-		print('\n\t'.join(['Wrote', raw_data_file, sim_data_file,
-			raw_validation_data_file, validation_data_file]))
+		print('Wrote: {}'.format([metrics_data_file, raw_data_file,
+			sim_data_file, raw_validation_data_file, validation_data_file]))

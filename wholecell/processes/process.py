@@ -1,16 +1,10 @@
-#!/usr/bin/env python
-
 """
 Process
 
 Process submodel base class. Defines interface that processes expose to the simulation and to the states.
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/2/2013
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import warnings
 
@@ -26,7 +20,7 @@ from wholecell.listeners.listener import WriteMethod
 class Process(object):
 	""" Process """
 
-	_name = None
+	_name = 'Process'
 	EDIT_ACCESS = (Access.EDIT, )
 	EDIT_DELETE_ACCESS = (Access.EDIT, Access.DELETE)
 
@@ -51,7 +45,7 @@ class Process(object):
 	def initialize(self, sim, sim_data):
 		self._sim = sim
 
-		self._processIndex = sim.processes.keys().index(self._name)
+		self._processIndex = list(sim.processes.keys()).index(self._name)
 
 		self._internal_states = sim.internal_states
 		self._external_states = sim.external_states
@@ -98,7 +92,7 @@ class Process(object):
 	# TODO: consider an object-oriented interface to reading/writing to listeners
 	# that way, processes would use object handles instead of strings
 	def writeToListener(self, listenerName, attributeName, value, writeMethod = WriteMethod.update):
-		if listenerName not in self._sim.listeners.viewkeys():
+		if listenerName not in self._sim.listeners:
 			warnings.warn("The {} process attempted to write {} to the {} listener, but there is no listener with that name.".format(
 				self._name,
 				attributeName,
@@ -148,7 +142,7 @@ class Process(object):
 
 
 	def readFromListener(self, listenerName, attributeName):
-		if listenerName not in self._sim.listeners.viewkeys():
+		if listenerName not in self._sim.listeners:
 			raise Exception("The {} process attempted to read {} from the {} listener, but there is no listener with that name.".format(
 				self._name,
 				attributeName,

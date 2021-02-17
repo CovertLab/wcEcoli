@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 TranscriptElongation
 
@@ -8,20 +6,15 @@ Transcription elongation sub-model.
 TODO:
 - use transcription units instead of single genes
 - account for energy
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/26/14
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
-from itertools import izip
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
 from wholecell.utils import units
-from wholecell.listeners.listener import WriteMethod
 
 class TranscriptElongation(wholecell.processes.process.Process):
 	""" TranscriptElongation """
@@ -36,41 +29,33 @@ class TranscriptElongation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(TranscriptElongation, self).initialize(sim, sim_data)
 
+		self.max_time_step = sim_data.process.transcription.max_time_step
+
 		# Load parameters
 		self.rnaPolymeraseElongationRateDict = sim_data.process.transcription.rnaPolymeraseElongationRateDict
-		self.rnaIds = sim_data.process.transcription.rnaData['id']
-		self.rnaLengths = sim_data.process.transcription.rnaData["length"].asNumber()
-		self.rnaSequences = sim_data.process.transcription.transcriptionSequences
-		self.ntWeights = sim_data.process.transcription.transcriptionMonomerWeights
-		self.endWeight = sim_data.process.transcription.transcriptionEndWeight
+		self.rnaIds = sim_data.process.transcription.rna_data['id']
+		self.rnaLengths = sim_data.process.transcription.rna_data["length"].asNumber()
+		self.rnaSequences = sim_data.process.transcription.transcription_sequences
+		self.ntWeights = sim_data.process.transcription.transcription_monomer_weights
+		self.endWeight = sim_data.process.transcription.transcription_end_weight
 		self.replichore_lengths = sim_data.process.replication.replichore_lengths
 		self.chromosome_length = self.replichore_lengths.sum()
 
-		# Get DNA polymerase elongation rate (used to determine mask for RNAPs
-		# that are expected to collide with the replisome in the current
-		# timestep)
-		self.dnaPolyElngRate = int(
-			round(sim_data.growthRateParameters.dnaPolymeraseElongationRate.asNumber(
-			units.nt / units.s)))
-
 		# ID Groups of rRNAs
-		self.idx_16S_rRNA = np.where(sim_data.process.transcription.rnaData['isRRna16S'])[0]
-		self.idx_23S_rRNA = np.where(sim_data.process.transcription.rnaData['isRRna23S'])[0]
-		self.idx_5S_rRNA = np.where(sim_data.process.transcription.rnaData['isRRna5S'])[0]
+		self.idx_16S_rRNA = np.where(sim_data.process.transcription.rna_data['is_16S_rRNA'])[0]
+		self.idx_23S_rRNA = np.where(sim_data.process.transcription.rna_data['is_23S_rRNA'])[0]
+		self.idx_5S_rRNA = np.where(sim_data.process.transcription.rna_data['is_5S_rRNA'])[0]
 
 		# Mask for mRNAs
-		self.is_mRNA = sim_data.process.transcription.rnaData['isMRna']
+		self.is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']
 
 		# Views
 		self.active_RNAPs = self.uniqueMoleculesView('active_RNAP')
 		self.RNAs = self.uniqueMoleculesView('RNA')
 		self.bulk_RNAs = self.bulkMoleculesView(self.rnaIds)
 		self.ntps = self.bulkMoleculesView(["ATP[c]", "CTP[c]", "GTP[c]", "UTP[c]"])
-		self.ppi = self.bulkMoleculeView('PPI[c]')
+		self.ppi = self.bulkMoleculeView(sim_data.molecule_ids.ppi)
 		self.inactive_RNAPs = self.bulkMoleculeView("APORNAP-CPLX[c]")
-		self.active_replisomes = self.uniqueMoleculesView("active_replisome")
-		self.fragmentBases = self.bulkMoleculesView(
-			[id_ + "[c]" for id_ in sim_data.moleculeGroups.fragmentNT_IDs])
 		self.variable_elongation = sim._variable_elongation_transcription
 		self.make_elongation_rates = sim_data.process.transcription.make_elongation_rates
 
@@ -88,7 +73,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			self.variable_elongation)
 
 		# If there are no active RNA polymerases, return immediately
-		if self.active_RNAPs.total_counts()[0] == 0:
+		if self.active_RNAPs.total_count() == 0:
 			return
 
 		# Determine total possible sequences of nucleotides that can be
@@ -129,7 +114,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		ntpCounts = self.ntps.counts()
 		self.writeToListener("GrowthLimits", "ntpAllocated", ntpCounts)
 
-		if self.active_RNAPs.total_counts()[0] == 0:
+		if self.active_RNAPs.total_count() == 0:
 			return
 
 		# Get attributes from existing RNAs
@@ -179,8 +164,11 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		# Active RNAP count should equal partial transcript count
 		assert len(RNAP_unique_index) == len(RNAP_index_partial_RNAs)
 
+		# All partial RNAs must be linked to an RNAP
+		assert (np.count_nonzero(RNAP_index_partial_RNAs == -1) == 0)
+
 		# Get mapping indexes between partial RNAs to RNAPs
-		partial_RNA_to_RNAP_mapping, RNAP_to_partial_RNA_mapping = self._get_mapping_arrays(
+		partial_RNA_to_RNAP_mapping, RNAP_to_partial_RNA_mapping = get_mapping_arrays(
 			RNAP_index_partial_RNAs, RNAP_unique_index)
 
 		# Rescale boolean array of directions to an array of 1's and -1's.
@@ -193,60 +181,6 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		updated_coordinates = coordinates + np.multiply(
 			direction_rescaled, sequence_elongations[partial_RNA_to_RNAP_mapping])
 
-		# If there are active replisomes, construct mask for RNAPs that are
-		# expected to collide with replisomes in the current timestep. If the
-		# sign of the differences between the updated coordinates of replisomes
-		# and RNAPs are opposite to the sign of the differences between the
-		# original coordinates, a collision occurs and the RNAP is knocked off
-		# the chromosome.
-		# TODO (ggsun): This assumes that replisomes always elongate at
-		# 	maximum rates without dNTP limitations. Ideally this information
-		# 	should be obtained from the chromosome_replication process.
-		RNAP_collisions_mask = np.zeros_like(coordinates, dtype=np.bool)
-		RNAP_headon_collisions_mask = np.zeros_like(coordinates, dtype=np.bool)
-
-		if self.active_replisomes.total_counts()[0] > 0:
-			domain_index_replisome, right_replichore, coordinates_replisome = self.active_replisomes.attrs(
-				"domain_index", "right_replichore", "coordinates")
-
-			elongation_length = np.ceil(
-				self.dnaPolyElngRate * self.timeStepSec())
-
-			for rr, coord_rep, dmn_idx in izip(right_replichore,
-					coordinates_replisome, domain_index_replisome):
-				if rr:
-					coordinates_mask = (
-						np.multiply(coordinates - coord_rep,
-							coordinates - (coord_rep + elongation_length)) < 0)
-				else:
-					coordinates_mask = (
-						np.multiply(coordinates - coord_rep,
-							coordinates - (coord_rep - elongation_length)) < 0)
-
-				all_collisions_mask = np.logical_and(
-					domain_index == dmn_idx, coordinates_mask)
-				RNAP_collisions_mask[all_collisions_mask] = True
-
-				# Collisions are head-on if replisomes and RNAPs are going in
-				# opposite directions, hence the exclusive OR
-				headon_collisions_mask = np.logical_and(
-					all_collisions_mask, np.logical_xor(direction, rr))
-				RNAP_headon_collisions_mask[headon_collisions_mask] = True
-
-		# Remaining collisions are codirectional
-		RNAP_codirectional_collisions_mask = np.logical_and(
-			RNAP_collisions_mask, ~RNAP_headon_collisions_mask)
-
-		# Get counts of collisions
-		n_total_collisions = RNAP_collisions_mask.sum()
-		n_headon_collisions = RNAP_headon_collisions_mask.sum()
-		n_codirectional_collisions = RNAP_codirectional_collisions_mask.sum()
-
-		# Get coordinates for where the collisions occur
-		headon_collision_coordinates = coordinates[RNAP_headon_collisions_mask]
-		codirectional_collision_coordinates = coordinates[
-			RNAP_codirectional_collisions_mask]
-
 		# Reset coordinates of RNAPs that cross the boundaries between right
 		# and left replichores
 		updated_coordinates[
@@ -256,15 +190,6 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			updated_coordinates < -self.replichore_lengths[1]
 			] += self.chromosome_length
 
-		# Get mask of partial transcripts whose RNAPs are expected to collide
-		partial_RNAs_collisions_mask = RNAP_collisions_mask[
-			RNAP_to_partial_RNA_mapping]
-		all_RNAs_collisions_mask = np.zeros_like(TU_index_all_RNAs,
-			dtype=np.bool)
-		all_RNAs_collisions_mask[
-			partial_transcript_indexes[partial_RNAs_collisions_mask]
-			] = True
-
 		# Update transcript lengths of RNAs and coordinates of RNAPs
 		length_all_RNAs[is_partial_transcript] = updated_transcript_lengths
 		self.RNAs.attrIs(transcript_length=length_all_RNAs)
@@ -272,56 +197,23 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		# Update added submasses of RNAs. Masses of partial mRNAs are counted
 		# as mRNA mass as they are already functional, but the masses of other
-		# types of partial RNAs are counted as generic RNA mass.
-		added_RNA_mass_all_RNAs = np.zeros_like(
+		# types of partial RNAs are counted as nonspecific RNA mass.
+		added_nsRNA_mass_all_RNAs = np.zeros_like(
 			TU_index_all_RNAs, dtype=np.float64)
 		added_mRNA_mass_all_RNAs = np.zeros_like(
 			TU_index_all_RNAs, dtype=np.float64)
 
-		added_RNA_mass_all_RNAs[is_partial_transcript] = np.multiply(
+		added_nsRNA_mass_all_RNAs[is_partial_transcript] = np.multiply(
 			added_mass, np.logical_not(is_mRNA_partial_RNAs))
 		added_mRNA_mass_all_RNAs[is_partial_transcript] = np.multiply(
 			added_mass, is_mRNA_partial_RNAs)
 
-		self.RNAs.add_submass_by_name("RNA", added_RNA_mass_all_RNAs)
+		self.RNAs.add_submass_by_name("nonspecific_RNA", added_nsRNA_mass_all_RNAs)
 		self.RNAs.add_submass_by_name("mRNA", added_mRNA_mass_all_RNAs)
-
-		# If there are collisions with replisomes, remove RNAPs and RNAs
-		if n_total_collisions > 0:
-			# Remove polymerases and their partial transcripts that are
-			# projected to collide with replisomes
-			self.active_RNAPs.delByIndexes(np.where(RNAP_collisions_mask)[0])
-			self.RNAs.delByIndexes(np.where(all_RNAs_collisions_mask)[0])
-
-			# Increment counts of inactive RNA polymerases
-			self.inactive_RNAPs.countInc(n_total_collisions)
-
-			# Get lengths of transcripts that were terminated prematurely as a
-			# result of the collision
-			incomplete_sequence_lengths = updated_transcript_lengths[
-				partial_RNAs_collisions_mask]
-
-			# Calculate counts of each base in incomplete transcripts
-			incomplete_sequences = buildSequences(
-				self.rnaSequences,
-				TU_index_partial_RNAs[partial_RNAs_collisions_mask],
-				np.zeros(n_total_collisions, dtype=np.int64),
-				np.full(n_total_collisions, incomplete_sequence_lengths.max()))
-
-			base_counts = np.zeros(4, dtype=np.int64)
-
-			for sl, seq in izip(incomplete_sequence_lengths, incomplete_sequences):
-				base_counts += np.bincount(seq[:sl], minlength = 4)
-
-			# Add fragment bases and PPi
-			self.fragmentBases.countsInc(base_counts)
-			self.ppi.countInc(n_total_collisions)
 
 		# Determine if transcript has reached the end of the sequence
 		terminal_lengths = self.rnaLengths[TU_index_partial_RNAs]
-		did_terminate_mask = np.logical_and(
-			updated_transcript_lengths == terminal_lengths,
-			np.logical_not(partial_RNAs_collisions_mask))
+		did_terminate_mask = (updated_transcript_lengths == terminal_lengths)
 		terminated_RNAs = np.bincount(
 			TU_index_partial_RNAs[did_terminate_mask],
 			minlength = self.rnaSequences.shape[0])
@@ -387,35 +279,18 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			"RnapData", "terminationLoss",
 			(terminal_lengths - length_partial_RNAs)[did_terminate_mask].sum())
 
-		self.writeToListener(
-			"RnapData", "n_total_collisions", n_total_collisions)
-		self.writeToListener(
-			"RnapData", "n_headon_collisions", n_headon_collisions)
-		self.writeToListener(
-			"RnapData", "n_codirectional_collisions",
-			n_codirectional_collisions)
-		self.writeToListener(
-			"RnapData", "headon_collision_coordinates",
-			headon_collision_coordinates, writeMethod=WriteMethod.fill)
-		self.writeToListener(
-			"RnapData", "codirectional_collision_coordinates",
-			codirectional_collision_coordinates, writeMethod=WriteMethod.fill)
 
-	def _get_mapping_arrays(self, x, y):
-		"""
-		Returns the array of indexes of each element of array x in array y, and
-		vice versa. Assumes that the elements of x and y are unique, and
-		set(x) == set(y).
-		"""
-		x_argsort = np.argsort(x)
-		y_argsort = np.argsort(y)
+	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
+		return inputTimeStep <= self.max_time_step
 
-		x_to_y = x_argsort[self._argsort_unique(y_argsort)]
-		y_to_x = y_argsort[self._argsort_unique(x_argsort)]
 
-		return x_to_y, y_to_x
-
-	def _argsort_unique(self, idx):
+def get_mapping_arrays(x, y):
+	"""
+	Returns the array of indexes of each element of array x in array y, and
+	vice versa. Assumes that the elements of x and y are unique, and
+	set(x) == set(y).
+	"""
+	def argsort_unique(idx):
 		"""
 		Quicker argsort for arrays that are permutations of np.arange(n).
 		"""
@@ -423,3 +298,11 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		argsort_idx = np.empty(n, dtype=np.int64)
 		argsort_idx[idx] = np.arange(n)
 		return argsort_idx
+
+	x_argsort = np.argsort(x)
+	y_argsort = np.argsort(y)
+
+	x_to_y = x_argsort[argsort_unique(y_argsort)]
+	y_to_x = y_argsort[argsort_unique(x_argsort)]
+
+	return x_to_y, y_to_x

@@ -1,14 +1,12 @@
 '''
 test_unique_objects_container.py
 
-@author: John Mason
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 @data: Created 2/27/2014
 '''
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle
+from six.moves import cPickle
 import unittest
 import os
 import shutil
@@ -482,6 +480,20 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 			20,
 			(~boundToChromosome).sum()
 			)
+
+	def test_empty_object_set(self):
+		empty_container = self.container.emptyLike()
+		molecules = empty_container.objectsInCollection('RNA polymerase')
+
+		boundToChromosome, chromosomeLocation = molecules.attrs(
+			'boundToChromosome', 'chromosomeLocation')
+
+		npt.assert_array_equal(boundToChromosome, np.array([]))
+		npt.assert_array_equal(chromosomeLocation, np.array([]))
+
+		self.assertEqual(boundToChromosome.dtype, np.bool)
+		self.assertEqual(chromosomeLocation.dtype, np.uint32)
+
 
 	def test_read_only(self):
 		molecules = self.container.objectsInCollection(

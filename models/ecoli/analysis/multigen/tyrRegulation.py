@@ -1,19 +1,14 @@
 """
 Plot tyr regulation
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/17/2016
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-import cPickle
+from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -24,20 +19,14 @@ from models.ecoli.analysis import multigenAnalysisPlot
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(seedOutDir):
-			raise Exception, "seedOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 
 		allDirs = ap.get_cells()
 
 		# Load data from KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
-		nAvogadro = sim_data.constants.nAvogadro
-		cellDensity = sim_data.constants.cellDensity
+		nAvogadro = sim_data.constants.n_avogadro
+		cellDensity = sim_data.constants.cell_density
 
 		# Get list of TF and transcription unit IDs from first simOut directory
 		simOutDir = os.path.join(allDirs[0], "simOut")
@@ -109,7 +98,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			tyrAProteinTotalCounts = tyrAProteinCounts + 2 * tyrAComplexCounts
 
 			# Compute the tyrA mass in the cell
-			tyrAMw = sim_data.getter.getMass(tyrAProteinId)
+			tyrAMw = sim_data.getter.get_masses(tyrAProteinId)
 			tyrAMass = 1. / nAvogadro * tyrAProteinTotalCounts * tyrAMw
 
 			# Compute the proteome mass fraction

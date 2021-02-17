@@ -6,18 +6,22 @@ TODO: raise/warn if physiological metabolite concentration targets appear to be 
 
 from __future__ import absolute_import, division, print_function
 
-from itertools import izip
-import scipy.sparse
+from typing import cast
 
 import numpy as np
+import scipy.sparse
+from six.moves import zip
 
 from wholecell.utils.fitting import normalize, countsFromMassAndExpression, masses_and_counts_for_homeostatic_target
 from wholecell.utils.polymerize import computeMassIncrease
 from wholecell.utils import units
 from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWithPrebuiltMatrices
+from wholecell.utils.random import stochasticRound
 
-from wholecell.sim.divide_cell import load_inherited_state
 from models.ecoli.processes.polypeptide_elongation import SteadyStateElongationModel
+from wholecell.containers.unique_objects_container import Access
+from wholecell.sim.divide_cell import load_inherited_state
+
 
 RAND_MAX = 2**31
 
@@ -39,17 +43,24 @@ def calcInitialConditions(sim, sim_data):
 
 	bulkMolCntr = sim.internal_states['BulkMolecules'].container
 	uniqueMolCntr = sim.internal_states["UniqueMolecules"].container
+	media_id = sim.external_states['Environment'].current_media_id
 
 	# Set up states
-	initializeBulkMolecules(bulkMolCntr, sim_data, sim.external_states['Environment'].current_media_id,
+	initializeBulkMolecules(bulkMolCntr, sim_data, media_id,
 		randomState, massCoeff, sim._ppgpp_regulation)
-	initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
+	initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data,
+		randomState, sim._superhelical_density)
 
 	# Must be called after unique and bulk molecules are initialized to get
 	# concentrations for ribosomes, tRNA, synthetases etc from cell volume
 	if sim._trna_charging:
 		elongation_model = SteadyStateElongationModel(sim_data, sim.processes['PolypeptideElongation'])
 		initialize_trna_charging(sim_data, sim.internal_states, elongation_model.calculate_trna_charging)
+
+	# Adjust small molecule concentrations again after other mass adjustments
+	# for more stable metabolism solution at beginning of sims
+	set_small_molecule_counts(bulkMolCntr, sim_data, media_id, massCoeff,
+		cell_mass=calculate_cell_mass(sim.internal_states))
 
 def initializeBulkMolecules(bulkMolCntr, sim_data, current_media_id, randomState, massCoeff, ppgpp_regulation):
 
@@ -60,25 +71,48 @@ def initializeBulkMolecules(bulkMolCntr, sim_data, current_media_id, randomState
 	initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation)
 
 	# Set other biomass components
-	initializeSmallMolecules(bulkMolCntr, sim_data, current_media_id, randomState, massCoeff)
+	set_small_molecule_counts(bulkMolCntr, sim_data, current_media_id, massCoeff)
 
 	# Form complexes
 	initializeComplexation(bulkMolCntr, sim_data, randomState)
 
-def initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
+def initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, randomState, superhelical_density):
 	# Initialize counts of full chromosomes
 	initializeFullChromosome(bulkMolCntr, uniqueMolCntr, sim_data)
 
 	# Initialize unique molecules relevant to replication
 	initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data)
 
-	# TODO (ggsun): initialize binding of transcription factors
+	# Initialize bound transcription factors
+	initialize_transcription_factors(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
 
 	# Initialize active RNAPs and unique molecule representations of RNAs
 	initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
 
+	# Initialize linking numbers of chromosomal segments
+	if superhelical_density:
+		initialize_chromosomal_segments(uniqueMolCntr, sim_data)
+
 	# Initialize activate ribosomes
 	initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
+
+def calculate_cell_mass(states):
+	"""
+	Determines the total cell mass from the currently initialized states.
+
+	Args:
+		states (dict with internal_state objects as values): internal states of sim
+
+	Returns:
+		float with mass units: total mass of the current cell state
+	"""
+
+	mass = 0
+	for state in states.values():
+		state.calculateMass()
+		mass += np.sum(state.mass())
+
+	return units.fg * mass
 
 def initialize_trna_charging(sim_data, states, calc_charging):
 	'''
@@ -94,12 +128,8 @@ def initialize_trna_charging(sim_data, states, calc_charging):
 	'''
 
 	# Calculate cell volume for concentrations
-	mass = 0
-	for state in states.values():
-		state.calculatePreEvolveStateMass()
-		mass += np.sum(state._masses)
-	cell_volume = units.fg * mass / sim_data.constants.cellDensity
-	counts_to_molar = 1 / (sim_data.constants.nAvogadro * cell_volume)
+	cell_volume = calculate_cell_mass(states) / sim_data.constants.cell_density
+	counts_to_molar = 1 / (sim_data.constants.n_avogadro * cell_volume)
 
 	# Get molecule views and concentrations
 	transcription = sim_data.process.transcription
@@ -107,9 +137,9 @@ def initialize_trna_charging(sim_data, states, calc_charging):
 	aa_from_trna = transcription.aa_from_trna
 	bulk_molecules = states['BulkMolecules'].container
 	synthetases = bulk_molecules.countsView(transcription.synthetase_names)
-	uncharged_trna = bulk_molecules.countsView(transcription.rnaData['id'][transcription.rnaData['isTRna']])
+	uncharged_trna = bulk_molecules.countsView(transcription.rna_data['id'][transcription.rna_data['is_tRNA']])
 	charged_trna = bulk_molecules.countsView(transcription.charged_trna_names)
-	aas = bulk_molecules.countsView(sim_data.moleculeGroups.aaIDs)
+	aas = bulk_molecules.countsView(sim_data.molecule_groups.amino_acids)
 	ribosome_counts = states['UniqueMolecules'].container.counts(['active_ribosome'])
 
 	synthetase_conc = counts_to_molar * np.dot(aa_from_synthetase, synthetases.counts())
@@ -119,7 +149,7 @@ def initialize_trna_charging(sim_data, states, calc_charging):
 	ribosome_conc = counts_to_molar * ribosome_counts
 
 	# Estimate fraction of amino acids from sequences, excluding first index for padding of -1
-	_, aas_in_sequences = np.unique(sim_data.process.translation.translationSequences, return_counts=True)
+	_, aas_in_sequences = np.unique(sim_data.process.translation.translation_sequences, return_counts=True)
 	f = aas_in_sequences[1:] / np.sum(aas_in_sequences[1:])
 
 	# Estimate initial charging state
@@ -134,28 +164,28 @@ def initialize_trna_charging(sim_data, states, calc_charging):
 
 def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation):
 
-	monomersView = bulkMolCntr.countsView(sim_data.process.translation.monomerData["id"])
-	monomerMass = massCoeff * sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])["proteinMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	monomersView = bulkMolCntr.countsView(sim_data.process.translation.monomer_data["id"])
+	monomerMass = massCoeff * sim_data.mass.get_component_masses(sim_data.condition_to_doubling_time[sim_data.condition])["proteinMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
 	# TODO: unify this logic with the parca so it doesn't fall out of step
 	# again (look at the calcProteinCounts function)
 
 	if ppgpp_regulation:
-		ppgpp = sim_data.growthRateParameters.getppGppConc(sim_data.conditionToDoublingTime[sim_data.condition])
+		ppgpp = sim_data.growth_rate_parameters.get_ppGpp_conc(sim_data.condition_to_doubling_time[sim_data.condition])
 		rnaExpression = sim_data.process.transcription.expression_from_ppgpp(ppgpp)
 	else:
-		rnaExpression = sim_data.process.transcription.rnaExpression[sim_data.condition]
+		rnaExpression = sim_data.process.transcription.rna_expression[sim_data.condition]
 
 	monomerExpression = normalize(
-		rnaExpression[sim_data.relation.rnaIndexToMonomerMapping] *
-		sim_data.process.translation.translationEfficienciesByMonomer /
-		(np.log(2) / sim_data.conditionToDoublingTime[sim_data.condition].asNumber(units.s) + sim_data.process.translation.monomerData["degRate"].asNumber(1 / units.s))
+		rnaExpression[sim_data.relation.rna_index_to_monomer_mapping] *
+		sim_data.process.translation.translation_efficiencies_by_monomer /
+		(np.log(2) / sim_data.condition_to_doubling_time[sim_data.condition].asNumber(units.s) + sim_data.process.translation.monomer_data['deg_rate'].asNumber(1 / units.s))
 		)
 
 	nMonomers = countsFromMassAndExpression(
 		monomerMass.asNumber(units.g),
-		sim_data.process.translation.monomerData["mw"].asNumber(units.g/units.mol),
+		sim_data.process.translation.monomer_data["mw"].asNumber(units.g / units.mol),
 		monomerExpression,
-		sim_data.constants.nAvogadro.asNumber(1/units.mol)
+		sim_data.constants.n_avogadro.asNumber(1 / units.mol)
 		)
 
 	monomersView.countsIs(
@@ -170,26 +200,26 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 	to zero when the representations for mRNAs are moved to the unique molecule
 	container.
 	"""
-	rnaView = bulkMolCntr.countsView(sim_data.process.transcription.rnaData["id"])
-	rnaMass = massCoeff * sim_data.mass.getFractionMass(sim_data.conditionToDoublingTime[sim_data.condition])["rnaMass"] / sim_data.mass.avgCellToInitialCellConvFactor
+	rnaView = bulkMolCntr.countsView(sim_data.process.transcription.rna_data["id"])
+	rnaMass = massCoeff * sim_data.mass.get_component_masses(sim_data.condition_to_doubling_time[sim_data.condition])["rnaMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
 
 	if ppgpp_regulation:
-		ppgpp = sim_data.growthRateParameters.getppGppConc(sim_data.conditionToDoublingTime[sim_data.condition])
+		ppgpp = sim_data.growth_rate_parameters.get_ppGpp_conc(sim_data.condition_to_doubling_time[sim_data.condition])
 		rnaExpression = sim_data.process.transcription.expression_from_ppgpp(ppgpp)
 	else:
-		rnaExpression = normalize(sim_data.process.transcription.rnaExpression[sim_data.condition])
+		rnaExpression = normalize(sim_data.process.transcription.rna_expression[sim_data.condition])
 
 	nRnas = countsFromMassAndExpression(
 		rnaMass.asNumber(units.g),
-		sim_data.process.transcription.rnaData["mw"].asNumber(units.g/units.mol),
+		sim_data.process.transcription.rna_data["mw"].asNumber(units.g / units.mol),
 		rnaExpression,
-		sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		sim_data.constants.n_avogadro.asNumber(1 / units.mol)
 		)
 
 	# ID Groups of rRNAs
-	idx_16Srrna = np.where(sim_data.process.transcription.rnaData['isRRna16S'])[0]
-	idx_23Srrna = np.where(sim_data.process.transcription.rnaData['isRRna23S'])[0]
-	idx_5Srrna = np.where(sim_data.process.transcription.rnaData['isRRna5S'])[0]
+	idx_16Srrna = np.where(sim_data.process.transcription.rna_data['is_16S_rRNA'])[0]
+	idx_23Srrna = np.where(sim_data.process.transcription.rna_data['is_23S_rRNA'])[0]
+	idx_5Srrna = np.where(sim_data.process.transcription.rna_data['is_5S_rRNA'])[0]
 
 	# Assume expression from all rRNA genes produce rRNAs from the first operon
 	total_16Srrna_expression = rnaExpression[idx_16Srrna].sum()
@@ -211,26 +241,35 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 
 # TODO: remove checks for zero concentrations (change to assertion)
 # TODO: move any rescaling logic to KB/fitting
-def initializeSmallMolecules(bulkMolCntr, sim_data, current_media_id, randomState, massCoeff):
-	doubling_time = sim_data.conditionToDoublingTime[sim_data.condition]
-	avgCellFractionMass = sim_data.mass.getFractionMass(doubling_time)
+def set_small_molecule_counts(bulkMolCntr, sim_data, current_media_id, massCoeff, cell_mass=None):
+	doubling_time = sim_data.condition_to_doubling_time[sim_data.condition]
 
-	mass = massCoeff * (avgCellFractionMass["proteinMass"] + avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"]) / sim_data.mass.avgCellToInitialCellConvFactor
-
-	concDict = sim_data.process.metabolism.concentrationUpdates.concentrationsBasedOnNutrients(
+	concDict = sim_data.process.metabolism.concentration_updates.concentrations_based_on_nutrients(
 		current_media_id
 		)
 	concDict.update(sim_data.mass.getBiomassAsConcentrations(doubling_time))
-	concDict[sim_data.moleculeIds.ppGpp] = sim_data.growthRateParameters.getppGppConc(doubling_time)
+	concDict[sim_data.molecule_ids.ppGpp] = sim_data.growth_rate_parameters.get_ppGpp_conc(doubling_time)
 	moleculeIds = sorted(concDict)
 	moleculeConcentrations = (units.mol / units.L) * np.array([concDict[key].asNumber(units.mol / units.L) for key in moleculeIds])
 
+	if cell_mass is None:
+		avgCellFractionMass = sim_data.mass.get_component_masses(doubling_time)
+		other_dry_mass = (massCoeff * (avgCellFractionMass["proteinMass"]
+			+ avgCellFractionMass["rnaMass"] + avgCellFractionMass["dnaMass"])
+			/ sim_data.mass.avg_cell_to_initial_cell_conversion_factor)
+	else:
+		small_molecule_mass = 0 * units.fg
+		for mol in concDict:
+			small_molecule_mass += (bulkMolCntr.count(mol)
+									* sim_data.getter.get_mass(mol) / sim_data.constants.n_avogadro)
+		other_dry_mass = cell_mass - small_molecule_mass
+
 	massesToAdd, countsToAdd = masses_and_counts_for_homeostatic_target(
-		mass,
+		other_dry_mass,
 		moleculeConcentrations,
-		sim_data.getter.getMass(moleculeIds),
-		sim_data.constants.cellDensity,
-		sim_data.constants.nAvogadro
+		sim_data.getter.get_masses(moleculeIds),
+		sim_data.constants.cell_density,
+		sim_data.constants.n_avogadro
 		)
 
 	bulkMolCntr.countsIs(
@@ -239,15 +278,15 @@ def initializeSmallMolecules(bulkMolCntr, sim_data, current_media_id, randomStat
 		)
 
 def initializeComplexation(bulkMolCntr, sim_data, randomState):
-	moleculeNames = sim_data.process.complexation.moleculeNames
+	moleculeNames = sim_data.process.complexation.molecule_names
 	moleculeView = bulkMolCntr.countsView(moleculeNames)
 
 	# save rnase counts for after complexation, need to be monomers
-	rnases = sim_data.process.rna_decay.endoRnaseIds
+	rnases = sim_data.process.rna_decay.endoRNase_ids
 	rnaseCounts = bulkMolCntr.countsView(rnases).counts()
 	bulkMolCntr.countsIs(0, rnases)
 
-	stoichMatrix = sim_data.process.complexation.stoichMatrix().astype(np.int64, order='F')
+	stoichMatrix = sim_data.process.complexation.stoich_matrix().astype(np.int64, order='F')
 	prebuiltMatrices = mccBuildMatrices(stoichMatrix)
 
 	# form complexes until no new complexes form (some complexes are complexes of complexes)
@@ -280,7 +319,7 @@ def initializeFullChromosome(bulkMolCntr, uniqueMolCntr, sim_data):
 	uniqueMolCntr.objectsNew(
 		'full_chromosome', 1,
 		division_time=0.0,
-		has_induced_division=True,
+		has_triggered_division=True,
 		domain_index=0,
 		)
 
@@ -294,9 +333,9 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 	# Determine the number and location of replication forks at the start of
 	# the cell cycle
 	# Get growth rate constants
-	C = sim_data.growthRateParameters.c_period.asUnit(units.min)
-	D = sim_data.growthRateParameters.d_period.asUnit(units.min)
-	tau = sim_data.conditionToDoublingTime[sim_data.condition].asUnit(units.min)
+	C = sim_data.growth_rate_parameters.c_period.asUnit(units.min)
+	D = sim_data.growth_rate_parameters.d_period.asUnit(units.min)
+	tau = sim_data.condition_to_doubling_time[sim_data.condition].asUnit(units.min)
 
 	# Calculate length of replichore
 	genome_length = sim_data.process.replication.genome_length
@@ -305,8 +344,8 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 	# Calculate the maximum number of replisomes that could be formed with
 	# the existing counts of replisome subunits
 	n_max_replisomes = np.min(np.concatenate(
-		(bulkMolCntr.counts(sim_data.moleculeGroups.replisome_trimer_subunits)//3,
-		bulkMolCntr.counts(sim_data.moleculeGroups.replisome_monomer_subunits))))
+		(bulkMolCntr.counts(sim_data.molecule_groups.replisome_trimer_subunits) // 3,
+		bulkMolCntr.counts(sim_data.molecule_groups.replisome_monomer_subunits))))
 
 	# Generate arrays specifying appropriate initial replication conditions
 	oric_state, replisome_state, domain_state = determine_chromosome_state(
@@ -338,7 +377,7 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 		mass_increase_dna = computeMassIncrease(
 			np.tile(sequences, (n_replisome//2, 1)),
 			sequence_elongations,
-			sim_data.process.replication.replicationMonomerWeights.asNumber(units.fg))
+			sim_data.process.replication.replication_monomer_weights.asNumber(units.fg))
 
 		# Add active replisomes as unique molecules and set attributes
 		uniqueMolCntr.objectsNew(
@@ -349,12 +388,12 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 			massDiff_DNA=mass_increase_dna[0::2] + mass_increase_dna[1::2])
 
 		# Remove replisome subunits from bulk molecules
-		bulkMolCntr.countsDec(3*n_replisome, sim_data.moleculeGroups.replisome_trimer_subunits)
-		bulkMolCntr.countsDec(n_replisome, sim_data.moleculeGroups.replisome_monomer_subunits)
+		bulkMolCntr.countsDec(3*n_replisome, sim_data.molecule_groups.replisome_trimer_subunits)
+		bulkMolCntr.countsDec(n_replisome, sim_data.molecule_groups.replisome_monomer_subunits)
 
 	# Get coordinates of all promoters and DnaA boxes
-	all_promoter_coordinates = sim_data.process.transcription.rnaData[
-		"replicationCoordinate"]
+	all_promoter_coordinates = sim_data.process.transcription.rna_data[
+		"replication_coordinate"]
 	all_DnaA_box_coordinates = sim_data.process.replication.motif_coordinates[
 		"DnaA_box"]
 
@@ -456,6 +495,8 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 		all_DnaA_box_coordinates)
 
 	# Add promoters as unique molecules and set attributes
+	# Note: the bound_TF attribute is properly initialized in the function
+	# initialize_transcription_factors
 	n_promoter = len(TU_index)
 	n_tf = len(sim_data.process.transcription_regulation.tf_ids)
 
@@ -477,6 +518,118 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 		)
 
 
+def initialize_transcription_factors(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
+	"""
+	Initialize transcription factors that are bound to the chromosome. For each
+	type of transcription factor, this function calculates the total number of
+	transcription factors that should be bound to the chromosome using the
+	binding probabilities of each transcription factor and the number of
+	available promoter sites. The calculated number of transcription factors
+	are then distributed randomly to promoters, whose bound_TF attributes and
+	submasses are updated correspondingly.
+	"""
+	# Get transcription factor properties from sim_data
+	tf_ids = sim_data.process.transcription_regulation.tf_ids
+	tfToTfType = sim_data.process.transcription_regulation.tf_to_tf_type
+	pPromoterBoundTF = sim_data.process.transcription_regulation.p_promoter_bound_tf
+
+	# Build dict that maps TFs to transcription units they regulate
+	delta_prob = sim_data.process.transcription_regulation.delta_prob
+	TF_to_TU_idx = {}
+
+	for i, tf in enumerate(tf_ids):
+		TF_to_TU_idx[tf] = delta_prob['deltaI'][delta_prob['deltaJ'] == i]
+
+	# Get views into bulk molecule representations of transcription factors
+	active_tf_view = {}
+	inactive_tf_view = {}
+
+	for tf in tf_ids:
+		active_tf_view[tf] = bulkMolCntr.countsView([tf + "[c]"])
+
+		if tfToTfType[tf] == "1CS":
+			if tf == sim_data.process.transcription_regulation.active_to_bound[tf]:
+				inactive_tf_view[tf] = bulkMolCntr.countsView([
+					sim_data.process.equilibrium.get_unbound(tf + "[c]")
+					])
+			else:
+				inactive_tf_view[tf] = bulkMolCntr.countsView([
+					sim_data.process.transcription_regulation.active_to_bound[tf] + "[c]"
+					])
+		elif tfToTfType[tf] == "2CS":
+			inactive_tf_view[tf] = bulkMolCntr.countsView([
+				sim_data.process.two_component_system.active_to_inactive_tf[tf + "[c]"]
+				])
+
+	# Get masses of active transcription factors
+	bulk_molecule_ids = sim_data.internal_state.bulk_molecules.bulk_data["id"]
+	tf_indexes = [np.where(bulk_molecule_ids == tf_id + "[c]")[0][0]
+		for tf_id in tf_ids]
+	active_tf_masses = (sim_data.internal_state.bulk_molecules.bulk_data["mass"][
+		tf_indexes] / sim_data.constants.n_avogadro).asNumber(units.fg)
+
+	# Get attributes of promoters
+	promoters = uniqueMolCntr.objectsInCollection(
+		'promoter', access=[Access.EDIT])
+	TU_index = promoters.attr("TU_index")
+
+	# Initialize bound_TF array
+	bound_TF = np.zeros((len(promoters), len(tf_ids)), dtype=np.bool)
+
+	for tf_idx, tf_id in enumerate(tf_ids):
+		# Get counts of transcription factors
+		active_tf_counts = active_tf_view[tf_id].counts()
+
+		# If there are no active transcription factors at initialization,
+		# continue to the next transcription factor
+		if active_tf_counts == 0:
+			continue
+
+		# Compute probability of binding the promoter
+		if tfToTfType[tf_id] == "0CS":
+			pPromoterBound = 1.
+		else:
+			inactive_tf_counts = inactive_tf_view[tf_id].counts()
+			pPromoterBound = pPromoterBoundTF(
+				active_tf_counts, inactive_tf_counts)
+
+		# Determine the number of available promoter sites
+		available_promoters = np.isin(TU_index, TF_to_TU_idx[tf_id])
+		n_available_promoters = available_promoters.sum()
+
+		# Calculate the number of promoters that should be bound
+		n_to_bind = int(stochasticRound(
+			randomState, np.full(n_available_promoters, pPromoterBound)).sum())
+
+		bound_locs = np.zeros(n_available_promoters, dtype=np.bool)
+		if n_to_bind > 0:
+			# Determine randomly which DNA targets to bind based on which of
+			# the following is more limiting:
+			# number of promoter sites to bind, or number of active
+			# transcription factors
+			bound_locs[
+				randomState.choice(
+					n_available_promoters,
+					size=min(n_to_bind, active_tf_view[tf_id].counts()[0]),
+					replace=False)
+			] = True
+
+			# Update count of free transcription factors
+			active_tf_view[tf_id].countsDec(bound_locs.sum())
+
+			# Update bound_TF array
+			bound_TF[available_promoters, tf_idx] = bound_locs
+
+	# Calculate masses of bound TFs
+	mass_diffs = bound_TF.dot(active_tf_masses)
+
+	# Reset bound_TF attribute of promoters
+	promoters.attrIs(bound_TF=bound_TF)
+
+	# Add mass_diffs array to promoter submass
+	promoters.add_submass_by_array(mass_diffs)
+
+
 def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	"""
 	Activate RNA polymerases as unique molecules, and distribute them along
@@ -492,14 +645,14 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	polymerases placed at each gene.
 	"""
 	# Load parameters
-	rnaLengths = sim_data.process.transcription.rnaData['length'].asNumber()
-	rna_masses = (sim_data.process.transcription.rnaData['mw']/sim_data.constants.nAvogadro).asNumber(units.fg)
+	rnaLengths = sim_data.process.transcription.rna_data['length'].asNumber()
+	rna_masses = (sim_data.process.transcription.rna_data['mw'] / sim_data.constants.n_avogadro).asNumber(units.fg)
 	current_media_id = sim_data.conditions[sim_data.condition]['nutrients']
 	fracActiveRnap = sim_data.process.transcription.rnapFractionActiveDict[current_media_id]
-	inactive_RNAP_counts = bulkMolCntr.countsView(['APORNAP-CPLX[c]']).counts()[0]
-	rnaSequences = sim_data.process.transcription.transcriptionSequences
-	ntWeights = sim_data.process.transcription.transcriptionMonomerWeights
-	endWeight = sim_data.process.transcription.transcriptionEndWeight
+	inactive_RNAP_counts = bulkMolCntr.countsView([sim_data.molecule_ids.full_RNAP]).counts()[0]
+	rnaSequences = sim_data.process.transcription.transcription_sequences
+	ntWeights = sim_data.process.transcription.transcription_monomer_weights
+	endWeight = sim_data.process.transcription.transcription_end_weight
 	replichore_lengths = sim_data.process.replication.replichore_lengths
 	chromosome_length = replichore_lengths.sum()
 
@@ -531,9 +684,9 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	rnaSynthProbRnaPolymerase = sim_data.process.transcription.rnaSynthProbRnaPolymerase
 
 	# Get coordinates and transcription directions of transcription units
-	replication_coordinate = sim_data.process.transcription.rnaData[
-		"replicationCoordinate"]
-	transcription_direction = sim_data.process.transcription.rnaData[
+	replication_coordinate = sim_data.process.transcription.rna_data[
+		"replication_coordinate"]
+	transcription_direction = sim_data.process.transcription.rna_data[
 		"direction"]
 
 	# Determine changes from genetic perturbations
@@ -543,22 +696,22 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	if len(perturbations) > 0:
 		probability_indexes = [
 			(index, sim_data.genetic_perturbations[rna_data['id']])
-				for index, rna_data in enumerate(sim_data.process.transcription.rnaData)
+				for index, rna_data in enumerate(sim_data.process.transcription.rna_data)
 				if rna_data['id'] in sim_data.genetic_perturbations]
 
 		genetic_perturbations = {
-			'fixedRnaIdxs': map(lambda pair: pair[0], probability_indexes),
-			'fixedSynthProbs': map(lambda pair: pair[1], probability_indexes)}
+			'fixedRnaIdxs': [pair[0] for pair in probability_indexes],
+			'fixedSynthProbs': [pair[1] for pair in probability_indexes]}
 
 	# If initiationShuffleIdxs does not exist, set value to None
 	shuffleIdxs = getattr(sim_data.process.transcription, 'initiationShuffleIdxs', None)
 
 	# ID Groups
-	idx_rRNA = np.where(sim_data.process.transcription.rnaData['isRRna'])[0]
-	idx_mRNA = np.where(sim_data.process.transcription.rnaData["isMRna"])[0]
-	idx_tRNA = np.where(sim_data.process.transcription.rnaData["isTRna"])[0]
-	idx_rprotein = np.where(sim_data.process.transcription.rnaData['isRProtein'])[0]
-	idx_rnap = np.where(sim_data.process.transcription.rnaData['isRnap'])[0]
+	idx_rRNA = np.where(sim_data.process.transcription.rna_data['is_rRNA'])[0]
+	idx_mRNA = np.where(sim_data.process.transcription.rna_data['is_mRNA'])[0]
+	idx_tRNA = np.where(sim_data.process.transcription.rna_data['is_tRNA'])[0]
+	idx_rprotein = np.where(sim_data.process.transcription.rna_data['is_ribosomal_protein'])[0]
+	idx_rnap = np.where(sim_data.process.transcription.rna_data['is_RNAP'])[0]
 
 	# Calculate probabilities of the RNAP binding to the promoters
 	promoter_init_probs = (basal_prob[TU_index] +
@@ -677,7 +830,8 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		direction=direction)
 
 	# Decrement counts of bulk inactive RNAPs
-	bulkMolCntr.countsIs(inactive_RNAP_counts - n_RNAPs_to_activate, ['APORNAP-CPLX[c]'])
+	bulkMolCntr.countsIs(inactive_RNAP_counts - n_RNAPs_to_activate,
+		[sim_data.molecule_ids.full_RNAP])
 
 	# Add partially transcribed RNAs
 	uniqueMolCntr.objectsNew(
@@ -685,15 +839,15 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		TU_index=TU_index_partial_RNAs,
 		transcript_length=updated_lengths,
 		is_mRNA=is_mRNA_partial_RNAs,
-		is_full_transcript=np.zeros(n_RNAPs_to_activate, dtype=np.bool),
+		is_full_transcript=np.zeros(cast(int, n_RNAPs_to_activate), dtype=np.bool),
 		can_translate=is_mRNA_partial_RNAs,
 		RNAP_index=RNAP_indexes,
-		massDiff_RNA=added_RNA_mass,
+		massDiff_nonspecific_RNA=added_RNA_mass,
 		massDiff_mRNA=added_mRNA_mass)
 
 	# Get counts of mRNAs initialized as bulk molecules
-	mRNA_ids = sim_data.process.transcription.rnaData["id"][
-		sim_data.process.transcription.rnaData["isMRna"]]
+	mRNA_ids = sim_data.process.transcription.rna_data["id"][
+		sim_data.process.transcription.rna_data['is_mRNA']]
 	mRNA_view = bulkMolCntr.countsView(mRNA_ids)
 	mRNA_counts = mRNA_view.counts()
 
@@ -724,6 +878,162 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	mRNA_view.countsIs(0)
 
 
+def initialize_chromosomal_segments(uniqueMolCntr, sim_data):
+	"""
+	Initialize unique molecule representations of chromosomal segments. All
+	chromosomal segments are assumed to be at their relaxed states upon
+	initialization.
+	"""
+	# Load parameters
+	relaxed_DNA_base_pairs_per_turn = sim_data.process.chromosome_structure.relaxed_DNA_base_pairs_per_turn
+	terC_index = sim_data.process.chromosome_structure.terC_dummy_molecule_index
+	replichore_lengths = sim_data.process.replication.replichore_lengths
+	min_coordinates = -replichore_lengths[1]
+	max_coordinates = replichore_lengths[0]
+
+	# Get attributes of replisomes, active RNAPs, chromosome domains, full
+	# chromosomes, and oriCs
+	replisomes = uniqueMolCntr.objectsInCollection('active_replisome')
+	if len(replisomes) > 0:
+		replisome_coordinates, replisome_domain_indexes, replisome_unique_indexes = replisomes.attrs(
+			'coordinates', 'domain_index', 'unique_index')
+	else:
+		replisome_coordinates = np.array([])
+		replisome_domain_indexes = np.array([])
+		replisome_unique_indexes = np.array([])
+
+	active_RNAPs = uniqueMolCntr.objectsInCollection('active_RNAP')
+	active_RNAP_coordinates, active_RNAP_domain_indexes, active_RNAP_unique_indexes = active_RNAPs.attrs(
+		'coordinates', 'domain_index', 'unique_index')
+
+	chromosome_domains = uniqueMolCntr.objectsInCollection('chromosome_domain')
+	chromosome_domain_domain_indexes, child_domains = chromosome_domains.attrs(
+		'domain_index', 'child_domains')
+
+	full_chromosomes = uniqueMolCntr.objectsInCollection('full_chromosome')
+	full_chromosome_domain_indexes = full_chromosomes.attr('domain_index')
+
+	oriCs = uniqueMolCntr.objectsInCollection('oriC')
+	origin_domain_indexes = oriCs.attr('domain_index')
+
+	# Initialize chromosomal segment attributes
+	all_boundary_molecule_indexes = np.empty((0, 2), dtype=np.int64)
+	all_boundary_coordinates = np.empty((0, 2), dtype=np.int64)
+	all_segment_domain_indexes = np.array([], dtype=np.int32)
+	all_linking_numbers = np.array([], dtype=np.float64)
+
+
+	def get_chromosomal_segment_attributes(coordinates, unique_indexes,
+			spans_oriC, spans_terC):
+		"""
+		Returns the attributes of all chromosomal segments from a continuous
+		stretch of DNA, given the coordinates and unique indexes of all
+		boundary molecules.
+		"""
+		coordinates_argsort = np.argsort(coordinates)
+		coordinates_sorted = coordinates[coordinates_argsort]
+		unique_indexes_sorted = unique_indexes[coordinates_argsort]
+
+		# Add dummy molecule at terC if domain spans terC
+		if spans_terC:
+			coordinates_sorted = np.insert(
+				coordinates_sorted, [0, len(coordinates_sorted)],
+				[min_coordinates, max_coordinates])
+			unique_indexes_sorted = np.insert(
+				unique_indexes_sorted, [0, len(unique_indexes_sorted)],
+				terC_index)
+
+		boundary_molecule_indexes = np.hstack((
+			unique_indexes_sorted[:-1][:, np.newaxis],
+			unique_indexes_sorted[1:][:, np.newaxis]))
+		boundary_coordinates = np.hstack((
+			coordinates_sorted[:-1][:, np.newaxis],
+			coordinates_sorted[1:][:, np.newaxis]))
+
+		# Remove segment that spans oriC if the domain does not span oriC
+		if not spans_oriC:
+			oriC_segment_index = np.where(
+				np.sign(boundary_coordinates).sum(axis=1) == 0)[0]
+			assert len(oriC_segment_index) == 1
+
+			boundary_molecule_indexes = np.delete(boundary_molecule_indexes,
+				oriC_segment_index, 0)
+			boundary_coordinates = np.delete(boundary_coordinates,
+				oriC_segment_index, 0)
+
+		# Assumes all segments are at their relaxed state at initialization
+		linking_numbers = (
+			boundary_coordinates[:, 1] - boundary_coordinates[:, 0]
+			) / relaxed_DNA_base_pairs_per_turn
+
+		return boundary_molecule_indexes, boundary_coordinates, linking_numbers
+
+
+	# Loop through each domain index
+	for domain_index in chromosome_domain_domain_indexes:
+		domain_spans_oriC = (domain_index in origin_domain_indexes)
+		domain_spans_terC = (domain_index in full_chromosome_domain_indexes)
+
+		# Get coordinates and indexes of all RNAPs on this domain
+		RNAP_domain_mask = (active_RNAP_domain_indexes == domain_index)
+		molecule_coordinates_this_domain = active_RNAP_coordinates[RNAP_domain_mask]
+		molecule_indexes_this_domain = active_RNAP_unique_indexes[RNAP_domain_mask]
+
+		# Append coordinates and indexes of replisomes on this domain, if any
+		if not domain_spans_oriC:
+			replisome_domain_mask = (replisome_domain_indexes == domain_index)
+			molecule_coordinates_this_domain = np.concatenate((
+				molecule_coordinates_this_domain,
+				replisome_coordinates[replisome_domain_mask]))
+			molecule_indexes_this_domain = np.concatenate((
+				molecule_indexes_this_domain,
+				replisome_unique_indexes[replisome_domain_mask]
+				))
+
+		# Append coordinates and indexes of parent domain replisomes, if any
+		if not domain_spans_terC:
+			parent_domain_index = chromosome_domain_domain_indexes[
+				np.where(child_domains == domain_index)[0][0]]
+			replisome_parent_domain_mask = (replisome_domain_indexes == parent_domain_index)
+			molecule_coordinates_this_domain = np.concatenate((
+				molecule_coordinates_this_domain,
+				replisome_coordinates[replisome_parent_domain_mask]))
+			molecule_indexes_this_domain = np.concatenate((
+				molecule_indexes_this_domain,
+				replisome_unique_indexes[replisome_parent_domain_mask]
+				))
+
+		# Get attributes of chromosomal segments on this domain
+		boundary_molecule_indexes_this_domain, boundary_coordinates_this_domain, linking_numbers_this_domain = get_chromosomal_segment_attributes(
+			molecule_coordinates_this_domain, molecule_indexes_this_domain,
+			domain_spans_oriC, domain_spans_terC)
+
+		# Append to existing array of attributes
+		all_boundary_molecule_indexes = np.vstack([
+			all_boundary_molecule_indexes, boundary_molecule_indexes_this_domain])
+		all_boundary_coordinates = np.vstack((
+			all_boundary_coordinates, boundary_coordinates_this_domain))
+		all_segment_domain_indexes = np.concatenate((
+			all_segment_domain_indexes,
+			np.full(len(linking_numbers_this_domain), domain_index,
+				dtype=np.int32)))
+		all_linking_numbers = np.concatenate((
+			all_linking_numbers, linking_numbers_this_domain))
+
+	# Confirm total counts of all segments
+	n_segments = len(all_linking_numbers)
+	assert n_segments == len(active_RNAPs) + 1.5*len(replisomes) + 1
+
+	# Add chromosomal segments
+	uniqueMolCntr.objectsNew(
+		'chromosomal_segment', n_segments,
+		boundary_molecule_indexes=all_boundary_molecule_indexes,
+		boundary_coordinates=all_boundary_coordinates,
+		domain_index=all_segment_domain_indexes,
+		linking_number=all_linking_numbers,
+		)
+
+
 def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	"""
 	Activate ribosomes as unique molecules, and distribute them along lengths
@@ -735,11 +1045,12 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# Load translation parameters
 	currentNutrients = sim_data.conditions[sim_data.condition]['nutrients']
 	fracActiveRibosome = sim_data.process.translation.ribosomeFractionActiveDict[currentNutrients]
-	proteinSequences = sim_data.process.translation.translationSequences
+	proteinSequences = sim_data.process.translation.translation_sequences
+	protein_lengths = sim_data.process.translation.monomer_data['length'].asNumber()
 	translationEfficiencies = normalize(
-		sim_data.process.translation.translationEfficienciesByMonomer)
-	aaWeightsIncorporated = sim_data.process.translation.translationMonomerWeights
-	endWeight = sim_data.process.translation.translationEndWeight
+		sim_data.process.translation.translation_efficiencies_by_monomer)
+	aaWeightsIncorporated = sim_data.process.translation.translation_monomer_weights
+	endWeight = sim_data.process.translation.translation_end_weight
 
 	# Get attributes of RNAs
 	all_RNAs = uniqueMolCntr.objectsInCollection('RNA')
@@ -755,8 +1066,8 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# 	are incorporated - the matrix would not be one-on-one, and the lengths
 	# 	of each transcript will affect the availabilities of mRNAs on that
 	# 	transcript.
-	all_TU_ids = sim_data.process.transcription.rnaData['id']
-	all_mRNA_ids = sim_data.process.translation.monomerData['rnaId']
+	all_TU_ids = sim_data.process.transcription.rna_data['id']
+	all_mRNA_ids = sim_data.process.translation.monomer_data['rna_id']
 	TU_counts_to_mRNA_counts = np.zeros(
 		(len(all_mRNA_ids), len(all_TU_ids)), dtype=np.int64)
 
@@ -774,8 +1085,8 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	mRNA_total_length = TU_counts_to_mRNA_counts.dot(TU_total_length)
 
 	# Find number of ribosomes to activate
-	ribosome30S = bulkMolCntr.countsView([sim_data.moleculeIds.s30_fullComplex]).counts()[0]
-	ribosome50S = bulkMolCntr.countsView([sim_data.moleculeIds.s50_fullComplex]).counts()[0]
+	ribosome30S = bulkMolCntr.countsView([sim_data.molecule_ids.s30_full_complex]).counts()[0]
+	ribosome50S = bulkMolCntr.countsView([sim_data.molecule_ids.s50_full_complex]).counts()[0]
 	inactiveRibosomeCount = np.minimum(ribosome30S, ribosome50S)
 	n_ribosomes_to_activate = np.int64(fracActiveRibosome * inactiveRibosomeCount)
 
@@ -811,9 +1122,16 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		mRNA_indexes[start_index:start_index+counts] = np.repeat(
 			unique_index_mRNAs[mask], n_ribosomes_per_RNA)
 
-		# Randomly place ribosomes along the length of each mRNA
+		# Get full length of this polypeptide
+		peptide_full_length = protein_lengths[protein_index]
+
+		# Randomly place ribosomes along the length of each mRNA, capped by the
+		# mRNA length expected from the full polypeptide length to prevent
+		# ribosomes from overshooting full peptide lengths
 		positions_on_mRNA[start_index:start_index+counts] = np.floor(
-			randomState.rand(counts)*np.repeat(lengths, n_ribosomes_per_RNA))
+			randomState.rand(counts)
+			* np.repeat(np.minimum(lengths, peptide_full_length*3), n_ribosomes_per_RNA)
+			)
 
 		start_index += counts
 
@@ -842,9 +1160,9 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	# Decrease counts of free 30S and 50S ribosomal subunits
 	bulkMolCntr.countsIs(ribosome30S - n_ribosomes_to_activate,
-		[sim_data.moleculeIds.s30_fullComplex])
+		[sim_data.molecule_ids.s30_full_complex])
 	bulkMolCntr.countsIs(ribosome50S - n_ribosomes_to_activate,
-		[sim_data.moleculeIds.s50_fullComplex])
+		[sim_data.molecule_ids.s50_full_complex])
 
 
 def setDaughterInitialConditions(sim, sim_data):
@@ -968,7 +1286,7 @@ def determine_chromosome_state(C, D, tau, replichore_length, n_max_replisomes,
 		# Determine at which location (base) of the chromosome the replication
 		# forks should be initialized to
 		rel_location = 1.0 - (((round_idx + 1.0)*tau - D)/C)
-		rel_location = units.convertNoUnitToNumber(rel_location)
+		rel_location = units.strip_empty_units(rel_location)
 		fork_location = np.floor(rel_location*(
 			replichore_length.asNumber(units.nt)))
 
@@ -1027,6 +1345,6 @@ def rescale_initiation_probs(init_probs, TU_index, fixed_synth_probs,
 	RNA A, whose synthesis probability should be fixed to 0.1, each promoter is
 	given an initiation probability of 0.05.
 	"""
-	for rna_idx, synth_prob in izip(fixed_TU_indexes, fixed_synth_probs):
+	for rna_idx, synth_prob in zip(fixed_TU_indexes, fixed_synth_probs):
 		fixed_rna_mask = (TU_index == rna_idx)
 		init_probs[fixed_rna_mask] = synth_prob / fixed_rna_mask.sum()

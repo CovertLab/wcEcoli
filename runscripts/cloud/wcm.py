@@ -1,26 +1,39 @@
 #!/usr/bin/env python
 
 """
-Build a workflow for the Whole Cell Model then send it to the Gaia server in
-Google Cloud.
+Build a workflow for the Whole Cell Model then send it to the workflow server.
 """
-
-from __future__ import absolute_import, division, print_function
 
 import json
 import os
-import posixpath
-import re
-from typing import Any, Dict, Iterable, Optional
+import posixpath as pp
+import sys
+from typing import Any, Dict, Iterable, Optional, Type
 
-from wholecell.fireworks.firetasks import ParcaTask, VariantSimDataTask
+from borealis.util import gcp
+from fireworks import FiretaskBase
+
+from wholecell.fireworks.firetasks import (
+	ParcaTask,
+	VariantSimDataTask,
+	SimulationTask,
+	SimulationDaughterTask,
+	AnalysisParcaTask,
+	AnalysisVariantTask,
+	AnalysisCohortTask,
+	AnalysisSingleTask,
+	AnalysisMultiGenTask,
+	BuildCausalityNetworkTask,
+	WriteJsonTask)
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
 from runscripts.manual.analysisBase import AnalysisBase
-from runscripts.cloud.util.workflow import STORAGE_ROOT_ENV_VAR, Task, Workflow
+from runscripts.cloud.util.workflow import (DEFAULT_LPAD_YAML,
+	STORAGE_ROOT_ENV_VAR, Task, Workflow)
 
 
-DOCKER_IMAGE = 'gcr.io/allen-discovery-center-mcovert/{}-wcm-code:latest'
+# ':latest' -- "You keep using that word. I do not think it means what you think it means."
+DOCKER_IMAGE = 'gcr.io/{}/{}-wcm-code'
 
 
 class WcmWorkflow(Workflow):
@@ -30,58 +43,68 @@ class WcmWorkflow(Workflow):
 			description='', cli_storage_root=None):
 		# type: (str, str, bool, str, Optional[str]) -> None
 		name = '{}_WCM_{}'.format(owner_id, timestamp)
-		super(WcmWorkflow, self).__init__(
-			name, owner_id=owner_id, verbose_logging=verbose_logging)
+
+		super().__init__(
+			name,
+			owner_id=owner_id,
+			verbose_logging=verbose_logging,
+			description=description)
 
 		self.timestamp = timestamp
-		self.image = DOCKER_IMAGE.format(owner_id)
+		self.image = DOCKER_IMAGE.format(gcp.project(), owner_id)
 
-		subdir = self.timestamp + (
-			'__' + _sanitize_description(description) if description else '')
-		self.storage_prefix = posixpath.join(
+		subdir = Workflow.timestamped_description(timestamp, description)
+		self.storage_prefix = pp.join(
 			self.storage_root(cli_storage_root), 'WCM', subdir, '')
-		self.internal_prefix = posixpath.join(posixpath.sep, 'wcEcoli', 'out', 'wf')
+		self.internal_prefix = pp.join(pp.sep, 'wcEcoli', 'out', 'wf', '')
 
-		self.log_info('\nStorage prefix: {}'.format(self.storage_prefix))
-
-		if description:
-			self.add_properties(description=description)
+		self.log_info(
+			f'\nWorkflow: {name}\n'
+			f'Storage prefix: {self.storage_prefix}\n'
+			f'Docker internal path prefix: {self.internal_prefix}\n')
 
 	def internal(self, *path_elements):
 		# type: (*str) -> str
-		"""Construct a file path that's internal to the task's container."""
-		return posixpath.join(self.internal_prefix, *path_elements)
+		"""Construct a docker container internal file path."""
+		return pp.join(self.internal_prefix, *path_elements)
 
 	def remote(self, *path_elements):
 		# type: (*str) -> str
 		"""Construct a remote GCS storage path within the bucket."""
-		return posixpath.join(self.storage_prefix, *path_elements)
+		return pp.join(self.storage_prefix, *path_elements)
 
 	def add_python_task(self, firetask, python_args, name='', inputs=(),
 			outputs=(), timeout=0):
-		# type: (str, Dict[str, Any], str, Iterable[str], Iterable[str], int) -> Task
+		# type: (Type[FiretaskBase], Dict[str, Any], str, Iterable[str], Iterable[str], int) -> Task
 		"""Add a Python task to the workflow and return it. Store its
-		stdout + stderr as storage_prefix/logs/name.log
+		stdout + stderr as storage_prefix/logs/name.log .
+		Turn on Python '-u' so it doesn't buffer output for long time.
 		"""
+		# TODO(jerry): An option to emit a task that runs `firetask` directly
+		#  rather than via a command line in a Docker image. That requires
+		#  running the firetask with access to the wcEcoli code and the file
+		#  system. You wouldn't do that on GCE unless there's an NFS mount for
+		#  the wcEcoli code and data.
 		return self.add_task(Task(
 			name=name,
 			image=self.image,
 			command=['python', '-u', '-m', 'wholecell.fireworks.runTask',
-					firetask, json.dumps(python_args)],
+					firetask.__name__, json.dumps(python_args)],
 			inputs=inputs,
 			outputs=outputs,
 			storage_prefix=self.storage_prefix,
 			internal_prefix=self.internal_prefix,
 			timeout=timeout))
 
+	# noinspection PyUnusedLocal
 	def build(self, args):
 		# type: (Dict[str, Any]) -> None
 
 		# Joining with '' gets a path that ends with the path separator, which
-		# tells Sisyphus to pull or push an entire directory tree.
+		# tells DockerTask to fetch or store an entire directory tree.
 		kb_dir = self.internal(ParcaTask.OUTPUT_SUBDIR, '')
-		sim_data_file = posixpath.join(kb_dir, constants.SERIALIZED_SIM_DATA_FILENAME)
-		validation_data_file = posixpath.join(kb_dir, constants.SERIALIZED_VALIDATION_DATA)
+		sim_data_file = pp.join(kb_dir, constants.SERIALIZED_SIM_DATA_FILENAME)
+		validation_data_file = pp.join(kb_dir, constants.SERIALIZED_VALIDATION_DATA)
 
 		variant_arg = args['variant']
 		variant_spec = (variant_arg[0], int(variant_arg[1]), int(variant_arg[2]))
@@ -89,38 +112,67 @@ class WcmWorkflow(Workflow):
 		variant_count = variant_spec[2] + 1 - variant_spec[1]
 
 		run_analysis = args['run_analysis'] and args['generations'] > 0
+		cell_series_out_dir = ''
 
 		if args['workers'] is None:
 			args['workers'] = variant_count * args['init_sims']
 
+		# Collect metadata. Analysis Firetasks will expand the _keyed $VARs
+		# from (Docker Image) environment variables to update the regular dict
+		# entries. Outside the Docker Image, the initial dict entries are good.
 		metadata_file = self.internal('metadata', constants.JSON_METADATA_FILE)
+		git_hash = fp.run_cmdline("git rev-parse HEAD")
+		git_branch = fp.run_cmdline("git symbolic-ref --short HEAD")
 		metadata = data.select_keys(
 			args,
 			scriptBase.METADATA_KEYS,
-			git_hash=fp.run_cmdline("git rev-parse HEAD"),
-			git_branch=fp.run_cmdline("git symbolic-ref --short HEAD"),
+			git_hash=git_hash,
+			_git_hash="$IMAGE_GIT_HASH",
+			workflow_git_hash=git_hash,
+			git_branch=git_branch,
+			_git_branch="$IMAGE_GIT_BRANCH",
+			workflow_git_branch=git_branch,
 			description=args['description'] or 'WCM',
 			time=self.timestamp,
+			_time="$IMAGE_TIMESTAMP",
+			python=sys.version.splitlines()[0],
 			variant=variant_type,
 			total_variants=str(variant_count),
 			total_gens=args['generations'])
 
-		python_args = dict(output_file=metadata_file, data=metadata)
-		metadata_task = self.add_python_task('write_json', python_args,
+		python_args = dict(output_file=metadata_file, data=metadata)  # type: Dict[str, Any]
+		metadata_task = self.add_python_task(WriteJsonTask, python_args,
 			name='write_metadata',
-			inputs=[kb_dir],  # TODO(jerry): TEMPORARY workaround to delay this
-				# task so its worker doesn't exit while the Parca runs.
+			inputs=[],
 			outputs=[metadata_file],
 			timeout=90)
 
-		python_args = data.select_keys(
-			args,
-			scriptBase.PARCA_KEYS,
-			debug=args['debug_parca'],
-			output_directory=kb_dir)
-		parca_task = self.add_python_task('parca', python_args,
-			name='parca',
-			outputs=[kb_dir])
+		if args['run_parca']:
+			python_args = data.select_keys(
+				args,
+				scriptBase.PARCA_KEYS,
+				debug=args['debug_parca'],
+				output_directory=kb_dir)
+			parca_task = self.add_python_task(ParcaTask, python_args,
+				name='parca',
+				outputs=[kb_dir])
+		else:
+			print('    (Skipping the Parca step per the --no-run-parca option.)')
+
+		if run_analysis:
+			parca_plot_dir = self.internal(constants.KB_PLOT_OUTPUT_DIR, '')
+			python_args = data.select_keys(
+				args, scriptBase.ANALYSIS_KEYS,
+				input_directory=kb_dir,
+				input_sim_data=sim_data_file,
+				input_validation_data=validation_data_file,
+				output_plots_directory=parca_plot_dir,
+				metadata=metadata)
+			analysis_parca_task = self.add_python_task(AnalysisParcaTask,
+				python_args,
+				name='analysis_parca',
+				inputs=[kb_dir],
+				outputs=[parca_plot_dir])
 
 		variant_analysis_inputs = [kb_dir]
 
@@ -131,10 +183,11 @@ class WcmWorkflow(Workflow):
 				VariantSimDataTask.OUTPUT_SUBDIR_KB, '')
 			variant_metadata_dir = self.internal(subdir,
 				VariantSimDataTask.OUTPUT_SUBDIR_METADATA, '')
-			variant_sim_data_modified_file = posixpath.join(
+			variant_sim_data_modified_file = pp.join(
 				variant_sim_data_dir, constants.SERIALIZED_SIM_DATA_MODIFIED)
 			md_cohort = dict(metadata, variant_function=variant_type,
 				variant_index=i)
+			variant_analysis_inputs.append(variant_metadata_dir)
 
 			python_args = dict(
 				variant_function=variant_type,
@@ -142,7 +195,7 @@ class WcmWorkflow(Workflow):
 				input_sim_data=sim_data_file,
 				output_sim_data=variant_sim_data_modified_file,
 				variant_metadata_directory=variant_metadata_dir)
-			variant_task = self.add_python_task('variant_sim_data', python_args,
+			variant_task = self.add_python_task(VariantSimDataTask, python_args,
 				name='variant_{}_{}'.format(variant_type, i),
 				inputs=[kb_dir],
 				outputs=[variant_sim_data_dir, variant_metadata_dir],
@@ -152,21 +205,21 @@ class WcmWorkflow(Workflow):
 			variant_analysis_inputs.append(variant_sim_data_dir)
 			arg_seed = args['seed']
 
-			for j in xrange(arg_seed, arg_seed + args['init_sims']):  # init sim seeds
+			for j in range(arg_seed, arg_seed + args['init_sims']):  # init sim seeds
 				seed_dir = self.internal(subdir, '{:06d}'.format(j))
 				md_multigen = dict(md_cohort, seed=j)
 
 				this_variant_this_seed_multigen_analysis_inputs = [kb_dir, variant_sim_data_dir]
 
-				for k in xrange(args['generations']):
-					gen_dir = posixpath.join(seed_dir, "generation_{:06d}".format(k))
+				for k in range(args['generations']):
+					gen_dir = pp.join(seed_dir, "generation_{:06d}".format(k))
 					md_single = dict(md_multigen, gen=k)
 
 					# l is the daughter number among all of this generation's cells.
 					# l in [0] for single daughters; l in range(2**k) for dual daughters.
 					for l in [0]:
-						cell_dir = posixpath.join(gen_dir, '{:06d}'.format(l))
-						cell_sim_out_dir = posixpath.join(cell_dir, 'simOut', '')
+						cell_dir = pp.join(gen_dir, '{:06d}'.format(l))
+						cell_sim_out_dir = pp.join(cell_dir, 'simOut', '')
 
 						python_args = dict(sim_args,
 							input_sim_data=variant_sim_data_modified_file,
@@ -175,14 +228,14 @@ class WcmWorkflow(Workflow):
 
 						if k == 0:
 							python_args['seed'] = j
-							firetask = 'simulation'
+							firetask = SimulationTask
 						else:
-							firetask = 'simulation_daughter'
-							parent_gen_dir = posixpath.join(
+							firetask = SimulationDaughterTask
+							parent_gen_dir = pp.join(
 								seed_dir, 'generation_{:06d}'.format(k - 1))
-							parent_cell_dir = posixpath.join(parent_gen_dir, '{:06d}'.format(l // 2))
-							parent_cell_sim_out_dir = posixpath.join(parent_cell_dir, 'simOut', '')
-							daughter_state_path = posixpath.join(
+							parent_cell_dir = pp.join(parent_gen_dir, '{:06d}'.format(l // 2))
+							parent_cell_sim_out_dir = pp.join(parent_cell_dir, 'simOut', '')
+							daughter_state_path = pp.join(
 								parent_cell_sim_out_dir,
 								constants.SERIALIZED_INHERITED_STATE % (l % 2 + 1))
 							python_args['inherited_state_path'] = daughter_state_path
@@ -200,7 +253,7 @@ class WcmWorkflow(Workflow):
 						this_variant_this_seed_multigen_analysis_inputs.append(cell_sim_out_dir)
 
 						if run_analysis:
-							plot_dir = posixpath.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
+							plot_dir = pp.join(cell_dir, AnalysisBase.OUTPUT_SUBDIR, '')
 							python_args = data.select_keys(
 								args, scriptBase.ANALYSIS_KEYS,
 								input_results_directory=cell_sim_out_dir,
@@ -208,31 +261,27 @@ class WcmWorkflow(Workflow):
 								input_validation_data=validation_data_file,
 								output_plots_directory=plot_dir,
 								metadata=md_single)
-							analysis_single_task = self.add_python_task('analysis_single',
+							analysis_single_task = self.add_python_task(AnalysisSingleTask,
 								python_args,
 								name='analysis_' + cell_id,
 								inputs=[kb_dir, variant_sim_data_dir, cell_sim_out_dir],
 								outputs=[plot_dir])
 
-						if args['build_causality_network']:
-							cell_series_out_dir = posixpath.join(cell_dir, 'seriesOut', '')
-							# NOTE: This could reuse the Causality network over the variant. For
-							# Sisyphus it'd take moving that work from BuildCausalityNetworkTask
-							# to VariantSimDataTask, but it wouldn't save much space and time.
+						if args['build_causality_network'] and not cell_series_out_dir:
+							cell_series_out_dir = pp.join(cell_dir, 'seriesOut', '')
 							python_args = dict(
 								input_results_directory=cell_sim_out_dir,
 								input_sim_data=variant_sim_data_modified_file,
-								output_network_directory=cell_series_out_dir,
 								output_dynamics_directory=cell_series_out_dir,
 								metadata=md_single)
-							causality_task = self.add_python_task('build_causality_network',
+							causality_task = self.add_python_task(BuildCausalityNetworkTask,
 								python_args,
 								name='causality_' + cell_id,
 								inputs=[cell_sim_out_dir, variant_sim_data_dir],
 								outputs=[cell_series_out_dir])
 
 				if run_analysis:
-					multigen_plot_dir = posixpath.join(seed_dir, AnalysisBase.OUTPUT_SUBDIR, '')
+					multigen_plot_dir = pp.join(seed_dir, AnalysisBase.OUTPUT_SUBDIR, '')
 					python_args = data.select_keys(
 						args, scriptBase.ANALYSIS_KEYS,
 						input_seed_directory=seed_dir,
@@ -240,7 +289,7 @@ class WcmWorkflow(Workflow):
 						input_validation_data=validation_data_file,
 						output_plots_directory=multigen_plot_dir,
 						metadata=md_multigen)
-					analysis_multigen_task = self.add_python_task('analysis_multigen',
+					analysis_multigen_task = self.add_python_task(AnalysisMultiGenTask,
 						python_args,
 						name='analysis_multigen_Var{}_Seed{}'.format(i, j),
 						inputs=this_variant_this_seed_multigen_analysis_inputs,
@@ -255,7 +304,7 @@ class WcmWorkflow(Workflow):
 					input_validation_data=validation_data_file,
 					output_plots_directory=cohort_plot_dir,
 					metadata=md_cohort)
-				analysis_cohort_task = self.add_python_task('analysis_cohort',
+				analysis_cohort_task = self.add_python_task(AnalysisCohortTask,
 					python_args,
 					name='analysis_cohort_Var{}'.format(i),
 					inputs=this_variant_cohort_analysis_inputs,
@@ -270,23 +319,11 @@ class WcmWorkflow(Workflow):
 				input_validation_data=validation_data_file,
 				output_plots_directory=variant_plot_dir,
 				metadata=metadata)
-			analysis_variant_task = self.add_python_task('analysis_variant',
+			analysis_variant_task = self.add_python_task(AnalysisVariantTask,
 				python_args,
 				name='analysis_variant',
 				inputs=variant_analysis_inputs,
 				outputs=[variant_plot_dir])
-
-def _sanitize_description(description):
-	# type (str) -> str
-	"""Sanitize the description and check that it's legal in a file path."""
-	description = description.replace(' ', '_')
-
-	pattern = r'[-.\w]*$'
-	assert re.match(pattern, description), (
-		"description {!r} doesn't match the regex pattern {!r} for a file path."
-			.format(description, pattern))
-
-	return description
 
 
 def wc_ecoli_workflow(args):
@@ -309,14 +346,14 @@ class RunWcm(scriptBase.ScriptBase):
 		return 'E. coli Whole Cell Model workflow'
 
 	def epilog(self):
-		return '''Set the environment variable $WF_ID if you want to select the
-			Docker container image named "$WF_ID-wcm-code" for the workers.
-			$WF_ID defaults to $USER. This also determines the output storage
-			path prefix. Run `cloud/build-wcm.sh $WF_ID` to build the WCM
-			container image with that name.
+		return '''The command line option names are long but you can use any
+			unambiguous prefix.
 
-			(The command line option names are long but you can use any
-			unambiguous prefix.)'''
+			Set the environment variable WF_ID if you want to select the
+			Docker Container Image named "${WF_ID}-wcm-code" for the workers.
+			$WF_ID defaults to $USER. It also determines the output storage
+			path prefix. Run `cloud/build-wcm.sh $WF_ID` to build the WCM
+			Container Image with that name.'''
 
 	def define_parameters(self, parser):
 		self.define_option(parser, 'description', str, '',
@@ -341,15 +378,18 @@ class RunWcm(scriptBase.ScriptBase):
 			help='The number of CPU processes to use in the Parca and analysis'
 				 ' steps. Default = 1.')
 		self.define_parameter_bool(parser, 'dump', False,
-			help='Dump the built workflow to JSON files for'
-				 ' review *instead* of sending them to the Gaia workflow'
-				 ' server. This is useful for testing and debugging. You can'
-				 ' upload them manually or re-run this program without `--dump`.')
+			help='Dump the built workflow to a YAML file for review *instead*'
+				 ' of sending it to the launchpad DB server. This is useful'
+				 ' for testing and debugging.')
+		parser.add_argument('-l', dest='launchpad_filename',
+			default=DEFAULT_LPAD_YAML,
+			help='Launchpad config YAML filename (default="{}").'.format(
+				DEFAULT_LPAD_YAML))
 		parser.add_argument('-w', '--workers', type=int,
 			help='The number of worker nodes to launch, with a smart default.')
 
 		# Parca
-		self.define_parca_options(parser)
+		self.define_parca_options(parser, run_parca_option=True)
 
 		# Simulation
 		self.define_sim_loop_options(parser)
@@ -374,12 +414,12 @@ class RunWcm(scriptBase.ScriptBase):
 		self.define_parameter_bool(parser, 'compile', False,
 			'Compiles output images into one file (only for .png).')
 		self.define_parameter_bool(parser, 'build_causality_network', False,
-			help="Build the Causality network files for each sim generation.")
+			help="Build the Causality network files for one sim generation.")
 
-		super(RunWcm, self).define_parameters(parser)
+		super().define_parameters(parser)
 
 	def parse_args(self):
-		args = super(RunWcm, self).parse_args()
+		args = super().parse_args()
 		args.cpus = max(args.cpus, 1)
 
 		assert args.generations >= 0
@@ -390,10 +430,12 @@ class RunWcm(scriptBase.ScriptBase):
 
 	def run(self, args):
 		wf = wc_ecoli_workflow(vars(args))
+
 		if args.dump:
 			wf.write()
 		else:
-			wf.send(args.workers)
+			wf.send_to_lpad(
+				worker_count=args.workers, lpad_filename=args.launchpad_filename)
 
 
 if __name__ == '__main__':

@@ -1,9 +1,6 @@
 """
 Submodel for RNA degradation.
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 1/26/2015 - Updated 22/3/2017
-
 Mathematical formulation:
 
 dr/dt = Kb - Kd * r
@@ -43,13 +40,14 @@ that can be digested
 digestion
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils.constants import REQUEST_PRIORITY_DEGRADATION
 from wholecell.utils import units
+from six.moves import range, zip
 
 class RnaDegradation(wholecell.processes.process.Process):
 	""" RnaDegradation """
@@ -64,17 +62,17 @@ class RnaDegradation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(RnaDegradation, self).initialize(sim, sim_data)
 
-		rnaIds = sim_data.process.transcription.rnaData['id']
+		rnaIds = sim_data.process.transcription.rna_data['id']
 		self.n_total_RNAs = len(rnaIds)
 
 		# Load constants
-		self.nAvogadro = sim_data.constants.nAvogadro
-		self.cellDensity = sim_data.constants.cellDensity
+		self.nAvogadro = sim_data.constants.n_avogadro
+		self.cellDensity = sim_data.constants.cell_density
 
 		# Load RNase kinetic data
-		endoRnaseIds = sim_data.process.rna_decay.endoRnaseIds
-		exoRnaseIds = sim_data.moleculeGroups.exoRnaseIds
-		self.KcatExoRNase = sim_data.constants.KcatExoRNase
+		endoRnaseIds = sim_data.process.rna_decay.endoRNase_ids
+		exoRnaseIds = sim_data.molecule_groups.exoRNases
+		self.KcatExoRNase = sim_data.constants.kcat_exoRNase
 		self.KcatEndoRNases = sim_data.process.rna_decay.kcats
 
 		# Load information about charged tRNA
@@ -82,28 +80,30 @@ class RnaDegradation(wholecell.processes.process.Process):
 		self.charged_trna = self.bulkMoleculesView(self.charged_trna_names)
 
 		# Load first-order RNA degradation rates (estimated by mRNA half-life data)
-		self.rnaDegRates = sim_data.process.transcription.rnaData['degRate']
+		self.rnaDegRates = sim_data.process.transcription.rna_data['deg_rate']
 
 		shuffleIdxs = None
-		if hasattr(sim_data.process.transcription, "rnaDegRateShuffleIdxs") and sim_data.process.transcription.rnaDegRateShuffleIdxs != None:
+		if hasattr(sim_data.process.transcription, "rnaDegRateShuffleIdxs") and sim_data.process.transcription.rnaDegRateShuffleIdxs is not None:
 			shuffleIdxs = sim_data.process.transcription.rnaDegRateShuffleIdxs
 			self.rnaDegRates = self.rnaDegRates[shuffleIdxs]
 
-		self.is_mRNA = sim_data.process.transcription.rnaData["isMRna"].astype(np.int64)
-		self.is_rRNA = sim_data.process.transcription.rnaData["isRRna"].astype(np.int64)
-		self.is_tRNA = sim_data.process.transcription.rnaData["isTRna"].astype(np.int64)
+		self.is_mRNA = sim_data.process.transcription.rna_data['is_mRNA'].astype(np.int64)
+		self.is_rRNA = sim_data.process.transcription.rna_data['is_rRNA'].astype(np.int64)
+		self.is_tRNA = sim_data.process.transcription.rna_data['is_tRNA'].astype(np.int64)
 
-		self.rna_lengths = sim_data.process.transcription.rnaData['length'].asNumber()
+		self.rna_lengths = sim_data.process.transcription.rna_data['length'].asNumber()
 
 		# Build stoichiometric matrix
-		endCleavageMetaboliteIds = [id_ + "[c]" for id_ in sim_data.moleculeGroups.fragmentNT_IDs]
-		endCleavageMetaboliteIds.extend(["WATER[c]", "PPI[c]", "PROTON[c]"])
-		nmpIdxs = range(4)
-		h2oIdx = endCleavageMetaboliteIds.index("WATER[c]")
-		ppiIdx = endCleavageMetaboliteIds.index("PPI[c]")
-		hIdx = endCleavageMetaboliteIds.index("PROTON[c]")
+		polymerized_ntp_ids = sim_data.molecule_groups.polymerized_ntps
+		endCleavageMetaboliteIds = polymerized_ntp_ids + [
+			sim_data.molecule_ids.water, sim_data.molecule_ids.ppi,
+			sim_data.molecule_ids.proton]
+		nmpIdxs = list(range(4))
+		h2oIdx = endCleavageMetaboliteIds.index(sim_data.molecule_ids.water)
+		ppiIdx = endCleavageMetaboliteIds.index(sim_data.molecule_ids.ppi)
+		hIdx = endCleavageMetaboliteIds.index(sim_data.molecule_ids.proton)
 		self.endoDegradationSMatrix = np.zeros((len(endCleavageMetaboliteIds), self.n_total_RNAs), np.int64)
-		self.endoDegradationSMatrix[nmpIdxs, :] = units.transpose(sim_data.process.transcription.rnaData['countsACGU']).asNumber()
+		self.endoDegradationSMatrix[nmpIdxs, :] = units.transpose(sim_data.process.transcription.rna_data['counts_ACGU']).asNumber()
 		self.endoDegradationSMatrix[h2oIdx, :] = 0
 		self.endoDegradationSMatrix[ppiIdx, :] = 1
 		self.endoDegradationSMatrix[hIdx, :] = 0
@@ -111,32 +111,32 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# Build Views
 		self.bulk_RNAs = self.bulkMoleculesView(rnaIds)
 		self.unique_RNAs = self.uniqueMoleculesView('RNA')
-		self.h2o = self.bulkMoleculesView(["WATER[c]"])
+		self.h2o = self.bulkMoleculeView(sim_data.molecule_ids.water)
 		self.nmps = self.bulkMoleculesView(["AMP[c]", "CMP[c]", "GMP[c]", "UMP[c]"])
-		self.proton = self.bulkMoleculesView(["PROTON[c]"])
+		self.proton = self.bulkMoleculeView(sim_data.molecule_ids.proton)
 
 		self.fragmentMetabolites = self.bulkMoleculesView(endCleavageMetaboliteIds)
-		self.fragmentBases = self.bulkMoleculesView([id_ + "[c]" for id_ in sim_data.moleculeGroups.fragmentNT_IDs])
+		self.fragmentBases = self.bulkMoleculesView(polymerized_ntp_ids)
 
-		self.ribosome30S = self.bulkMoleculeView(sim_data.moleculeIds.s30_fullComplex)
-		self.ribosome50S = self.bulkMoleculeView(sim_data.moleculeIds.s50_fullComplex)
+		self.ribosome30S = self.bulkMoleculeView(sim_data.molecule_ids.s30_full_complex)
+		self.ribosome50S = self.bulkMoleculeView(sim_data.molecule_ids.s50_full_complex)
 		self.activeRibosomes = self.uniqueMoleculesView('active_ribosome')
-		self.rrfaIdx = sim_data.process.transcription.rnaData["id"].tolist().index("RRFA-RRNA[c]")
-		self.rrlaIdx = sim_data.process.transcription.rnaData["id"].tolist().index("RRLA-RRNA[c]")
-		self.rrsaIdx = sim_data.process.transcription.rnaData["id"].tolist().index("RRSA-RRNA[c]")
+		self.rrfaIdx = sim_data.process.transcription.rna_data["id"].tolist().index("RRFA-RRNA[c]")
+		self.rrlaIdx = sim_data.process.transcription.rna_data["id"].tolist().index("RRLA-RRNA[c]")
+		self.rrsaIdx = sim_data.process.transcription.rna_data["id"].tolist().index("RRSA-RRNA[c]")
 
 		self.endoRnases = self.bulkMoleculesView(endoRnaseIds)
 		self.exoRnases = self.bulkMoleculesView(exoRnaseIds)
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
 		# Load Michaelis-Menten constants fitted to recapitulate first-order RNA decay model
-		self.Km = sim_data.process.transcription.rnaData["KmEndoRNase"]
+		self.Km = sim_data.process.transcription.rna_data['Km_endoRNase']
 
 		# If set to True, assume cooperation in endoRNase activity
-		self.EndoRNaseCoop = sim_data.constants.EndoRNaseCooperation
+		self.EndoRNaseCoop = sim_data.constants.endoRNase_cooperation
 
 		# If set to False, assume RNAs degrade simply by first-order kinetics
-		self.EndoRNaseFunc = sim_data.constants.EndoRNaseFunction
+		self.EndoRNaseFunc = sim_data.constants.endoRNase_function
 
 
 	def calculateRequest(self):
@@ -148,9 +148,9 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# Get total counts of RNAs including rRNAs, charged tRNAs, and active
 		# (translatable) unique mRNAs
 		bulk_RNA_counts = self.bulk_RNAs.total_counts().copy()
-		bulk_RNA_counts[self.rrsaIdx] += self.ribosome30S.total_counts()
-		bulk_RNA_counts[[self.rrlaIdx, self.rrfaIdx]] += self.ribosome50S.total_counts()
-		bulk_RNA_counts[[self.rrlaIdx, self.rrfaIdx, self.rrsaIdx]] += self.activeRibosomes.total_counts()
+		bulk_RNA_counts[self.rrsaIdx] += self.ribosome30S.total_count()
+		bulk_RNA_counts[[self.rrlaIdx, self.rrfaIdx]] += self.ribosome50S.total_count()
+		bulk_RNA_counts[[self.rrlaIdx, self.rrfaIdx, self.rrsaIdx]] += self.activeRibosomes.total_count()
 		bulk_RNA_counts[self.is_tRNA.astype(np.bool)] += self.charged_trna.total_counts()
 
 		TU_index, can_translate, is_full_transcript = self.unique_RNAs.attrs(
@@ -380,8 +380,8 @@ class RnaDegradation(wholecell.processes.process.Process):
 
 		if exornase_capacity >= n_fragment_bases_sum:
 			self.nmps.countsInc(n_fragment_bases)
-			self.h2o.countsDec(n_fragment_bases_sum)
-			self.proton.countsInc(n_fragment_bases_sum)
+			self.h2o.countDec(n_fragment_bases_sum)
+			self.proton.countInc(n_fragment_bases_sum)
 			self.fragmentBases.countsIs(0)
 
 			total_fragment_bases_digested = n_fragment_bases_sum
@@ -396,8 +396,8 @@ class RnaDegradation(wholecell.processes.process.Process):
 			total_fragment_bases_digested = n_fragment_bases_digested.sum()
 
 			self.nmps.countsInc(n_fragment_bases_digested)
-			self.h2o.countsDec(total_fragment_bases_digested)
-			self.proton.countsInc(total_fragment_bases_digested)
+			self.h2o.countDec(total_fragment_bases_digested)
+			self.proton.countInc(total_fragment_bases_digested)
 			self.fragmentBases.countsDec(n_fragment_bases_digested)
 
 		self.writeToListener("RnaDegradationListener",

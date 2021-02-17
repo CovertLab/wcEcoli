@@ -1,18 +1,12 @@
-"""
-@author: John Mason
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 6/27/2014
-"""
+from __future__ import absolute_import, division, print_function
 
-from __future__ import absolute_import
-from __future__ import division
 
-import cPickle
-from itertools import izip
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
+import six
+from six.moves import cPickle, zip
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -36,12 +30,6 @@ REPRESENTATIVE_MASSES = {
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
@@ -64,10 +52,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		metabolites = fba_results.readAttribute('outputMoleculeIDs')
 		delta_metabolites = fba_results.readColumn('deltaMetabolites')
 
-		conversion = 1e15 / sim_data.constants.nAvogadro.asNumber(1 / units.mol)
+		conversion = 1e15 / sim_data.constants.n_avogadro.asNumber(1 / units.mol)
 		metabolism_mass_imported = np.zeros(delta_metabolites.shape[0])
-		for mol, flux in izip(metabolites, delta_metabolites.T):
-			mol_mass = sim_data.getter.getMass([mol])[0].asNumber(units.g / units.mol)
+		for mol, flux in zip(metabolites, delta_metabolites.T):
+			mol_mass = sim_data.getter.get_mass(mol).asNumber(units.g / units.mol)
 			metabolism_mass_imported += mol_mass * conversion * flux
 
 		metabolism_mass_difference = processMassDifferences[:, processNames.index('Metabolism')]
@@ -95,7 +83,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		plt.text(THRESHOLD, index[-1], "electron", rotation = "vertical", va = "center", ha = "right")
 
-		for name, mass in REPRESENTATIVE_MASSES.viewitems():
+		for name, mass in six.viewitems(REPRESENTATIVE_MASSES):
 			plt.axvline(mass, color = "k")
 			plt.text(mass, index[-1], name, rotation = "vertical", va = "center", ha = "right")
 

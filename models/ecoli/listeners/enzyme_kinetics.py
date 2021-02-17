@@ -1,20 +1,16 @@
-#!/usr/bin/env python
-
 """
 EnzymeKinetics
 
 EnzymeKinetics listener. Tracks information about enzyme kinetics.
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
 import wholecell.listeners.listener
-from wholecell.utils.fitting import normalize
-from wholecell.utils import units
+
 
 class EnzymeKinetics(wholecell.listeners.listener.Listener):
 	""" EnzymeKinetics """
@@ -29,14 +25,12 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 	def initialize(self, sim, sim_data):
 		super(EnzymeKinetics, self).initialize(sim, sim_data)
 
-		self.metabolism = sim.processes["Metabolism"]
-		self.metaboliteIDs = sorted(sim_data.process.metabolism.concDict)
+		self.metabolism = sim.processes["Metabolism"].model
 		self.n_constrained_reactions = len(self.metabolism.kinetics_constrained_reactions)
-
-		# flux targets from boundary
-		self.n_boundary_constrained_reactions = len(self.metabolism.boundary_constrained_reactions)
-		self.n_all_constrained_reactions = self.n_constrained_reactions + self.n_boundary_constrained_reactions
 		self.n_metabolites = len(self.metabolism.metaboliteNamesFromNutrients)
+
+		self.constraint_is_kcat_only = sim_data.process.metabolism.constraint_is_kcat_only[
+			self.metabolism.active_constraints_mask].tolist()
 
 	# Allocate memory
 	# In case things are of unknown size, write them here
@@ -47,15 +41,13 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		super(EnzymeKinetics, self).allocate()
 		self.metaboliteCountsInit = np.zeros(self.n_metabolites, np.float64)
 		self.metaboliteCountsFinal = np.zeros(self.n_metabolites, np.float64)
-		self.metaboliteConcentrations = np.zeros(self.n_metabolites, np.float64)
-		self.enzymeIDs = self.metabolism.kineticsEnzymesList
-		self.enzymeCountsInit = np.zeros(len(self.metabolism.kineticsEnzymesList), np.float64)
+		self.enzymeIDs = self.metabolism.kinetic_constraint_enzymes
+		self.enzymeCountsInit = np.zeros(len(self.metabolism.kinetic_constraint_enzymes), np.float64)
 		self.countsToMolar = np.zeros(1, np.float64)
-		self.targetFluxes = np.zeros(self.n_all_constrained_reactions, np.float64)
-		self.actualFluxes = np.zeros(self.n_all_constrained_reactions, np.float64)
-
-		# reactionConstraint is only for kinetic constrained reactions, without boundary constrained reactions
-		self.reactionConstraint = np.zeros(self.n_constrained_reactions, np.int)
+		self.targetFluxes = np.zeros(self.n_constrained_reactions, np.float64)
+		self.targetFluxesUpper = np.zeros(self.n_constrained_reactions, np.float64)
+		self.targetFluxesLower = np.zeros(self.n_constrained_reactions, np.float64)
+		self.actualFluxes = np.zeros(self.n_constrained_reactions, np.float64)
 
 	def update(self):
 		pass
@@ -64,17 +56,18 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		subcolumns = {
 			'metaboliteCountsInit': 'metaboliteNames',
 			'metaboliteCountsFinal': 'metaboliteNames',
-			'metaboliteConcentrations': 'metaboliteNames',
 			'enzymeCountsInit': 'enzymeIDs',
 			'targetFluxes': 'constrainedReactions',
+                        'targetFluxesUpper': 'constrainedReactions',
+                        'targetFluxesLower': 'constrainedReactions',
 			'actualFluxes': 'constrainedReactions'}
 
 		tableWriter.writeAttributes(
 			enzymeIDs = self.enzymeIDs,
 			metaboliteNames = self.metabolism.metaboliteNamesFromNutrients,
-			constrainedReactions = self.metabolism.all_constrained_reactions,
+			constrainedReactions = self.metabolism.kinetics_constrained_reactions,
 			kineticsConstrainedReactions = self.metabolism.kinetics_constrained_reactions,
-			boundaryConstrainedReactions = self.metabolism.boundary_constrained_reactions,
+			constraint_is_kcat_only = self.constraint_is_kcat_only,
 			subcolumns = subcolumns)
 
 
@@ -84,10 +77,10 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			metaboliteCountsInit = self.metaboliteCountsInit,
 			metaboliteCountsFinal = self.metaboliteCountsFinal,
-			metaboliteConcentrations = self.metaboliteConcentrations,
 			countsToMolar = self.countsToMolar,
 			enzymeCountsInit = self.enzymeCountsInit,
 			targetFluxes = self.targetFluxes,
+                        targetFluxesUpper = self.targetFluxesUpper,
+                        targetFluxesLower = self.targetFluxesLower,
 			actualFluxes = self.actualFluxes,
-			reactionConstraint = self.reactionConstraint,
 			)

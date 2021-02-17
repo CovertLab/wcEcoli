@@ -1,10 +1,6 @@
 set -e
 
-module load wcEcoli/sherlock2
-pyenv local wcEcoli2
+source runscripts/jenkins/setup-environment.sh
 
-make clean
-make compile
-
-PYTHONPATH=$PWD:$PYTHONPATH pytest --cov=wholecell --cov-report xml \
-    --junitxml=unittests.xml
+pytest --cov=wholecell --cov-report xml --junitxml=unittests.xml
+runscripts/debug/mypy.sh

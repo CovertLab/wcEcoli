@@ -3,13 +3,12 @@ UnitStructArray
 
 Wraps Numpy struct arrays using Pint units. Will assure that correct units are
 being used while loading constants.
-
-@author: Nick Ruggero
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/31/2014
 """
 
+from __future__ import absolute_import, division, print_function
+
 import numpy as np
+from typing import Dict, Optional
 import unum
 
 from wholecell.utils import units as units_pkg
@@ -20,6 +19,7 @@ class UnitStructArray(object):
 	"""
 
 	def __init__(self, struct_array, units):
+		# type: (np.ndarray, Dict[str, Optional[str]]) -> None
 		self._validate(struct_array, units)
 
 		self.struct_array = struct_array

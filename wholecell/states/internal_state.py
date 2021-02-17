@@ -1,21 +1,18 @@
-#!/usr/bin/env python
-
 """
 Internal State
 
 State variable base class. Defines the interface states expose to the simulation and processes.
 
-@organization: Covert Lab, Department of Bioengineering, Stanford University
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
 class InternalState(object):
 	""" Internal State """
 
-	_name = None
+	_name = 'InternalState'
 
 	# Constructor
 	def __init__(self):
@@ -30,13 +27,11 @@ class InternalState(object):
 
 		# Random number stream
 		self.randomState = None  # Set at the first time step by Simulation._evolveState()
-
 		self.seed = None
 
+		# Mass arrays
 		self._masses = None
-		self._unallocatedMassIndex = 0
-		self._preEvolveStateMassIndex = 0
-		self._postEvolveStateMassIndex = 0
+		self._process_mass_diffs = None
 
 
 	# Construct state-process graph, calculate constants
@@ -45,16 +40,13 @@ class InternalState(object):
 
 		self._nProcesses = len(sim.processes)
 
-		# TODO: include compartment
-		self._masses = np.zeros((
-			2,
-			self._nProcesses + 1,
-			len(sim_data.submassNameToIndex),
-			), np.float64)
-
-		self._unallocatedMassIndex = self._nProcesses + 1
-		self._preEvolveStateMassIndex = 0
-		self._postEvolveStateMassIndex = 1
+		self._masses = np.zeros(len(sim_data.submass_name_to_index), np.float64)
+		self._compartment_masses = np.zeros(
+			(len(sim_data.compartment_abbrev_to_index),
+			 len(sim_data.submass_name_to_index)
+			 ), np.float64)
+		self._process_mass_diffs = np.zeros(
+			(self._nProcesses, len(sim_data.submass_name_to_index)), np.float64)
 
 
 	# Allocate memory
@@ -73,25 +65,31 @@ class InternalState(object):
 			view._updateQuery()
 
 
-	def partition(self):
+	def partition(self, processes):
 		pass
 
 
-	def merge(self):
+	def merge(self, processes):
 		pass
 
 
-	def calculatePreEvolveStateMass(self):
-		raise NotImplementedError("Subclass must implement")
-
-
-	def calculatePostEvolveStateMass(self):
+	def calculateMass(self):
 		raise NotImplementedError("Subclass must implement")
 
 
 	# Mass calculations
 	def mass(self):
 		return self._masses
+
+	# Mass calculations by compartment
+	def compartment_mass(self):
+		return self._compartment_masses
+
+	def process_mass_diffs(self):
+		return self._process_mass_diffs
+
+	def reset_process_mass_diffs(self):
+		self._process_mass_diffs.fill(0)
 
 
 	# Saving

@@ -1,18 +1,13 @@
 """
 Plot NTP counts
-
-@author: Derek Macklin
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/8/2014
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
-import cPickle
 
-import numpy as np
 from matplotlib import pyplot as plt
+from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
@@ -21,15 +16,9 @@ from models.ecoli.analysis import singleAnalysisPlot
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
+		sim_data = cPickle.load(open(simDataFile, 'rb'))
 
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
-		sim_data = cPickle.load(open(simDataFile))
-
-		dntpIDs = sim_data.moleculeGroups.dNtpIds
+		dntpIDs = sim_data.molecule_groups.dntps
 		(dntpCounts,) = read_bulk_molecule_counts(simOutDir, (dntpIDs,))
 
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))
@@ -38,7 +27,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		plt.figure(figsize = (8.5, 8.5))
 
-		for idx in xrange(4):
+		for idx in range(4):
 
 			plt.subplot(2, 2, idx + 1)
 

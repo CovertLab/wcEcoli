@@ -1,19 +1,15 @@
 """
 Plot protein monomer counts
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 5/27/2014
 """
 
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import os
 
 import numpy as np
 from scipy.stats import pearsonr
 from matplotlib import pyplot as plt
-import cPickle
+from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.fitting import normalize
@@ -24,12 +20,6 @@ from models.ecoli.analysis import singleAnalysisPlot
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		if not os.path.isdir(simOutDir):
-			raise Exception, "simOutDir does not currently exist as a directory"
-
-		if not os.path.exists(plotOutDir):
-			os.mkdir(plotOutDir)
-
 		# Get the names of proteins from the KB
 
 		sim_data = cPickle.load(open(simDataFile, "rb"))
@@ -40,9 +30,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		relativeCounts = avgCounts / avgCounts.sum()
 
 		expectedCountsArbitrary = normalize(
-			sim_data.process.transcription.rnaExpression[sim_data.condition][sim_data.relation.rnaIndexToMonomerMapping] *
-			sim_data.process.translation.translationEfficienciesByMonomer /
-			(np.log(2) / sim_data.doubling_time.asNumber(units.s) + sim_data.process.translation.monomerData["degRate"].asNumber(1 / units.s))
+			sim_data.process.transcription.rna_expression[sim_data.condition][sim_data.relation.rna_index_to_monomer_mapping] *
+			sim_data.process.translation.translation_efficiencies_by_monomer /
+			(np.log(2) / sim_data.doubling_time.asNumber(units.s) + sim_data.process.translation.monomer_data['deg_rate'].asNumber(1 / units.s))
 			)
 
 		expectedCountsRelative = expectedCountsArbitrary / expectedCountsArbitrary.sum()

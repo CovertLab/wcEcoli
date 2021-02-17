@@ -21,11 +21,13 @@ from __future__ import absolute_import, division, print_function
 
 import re
 import os
+import sys
 from typing import Tuple
 
 from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
+from six.moves import range
 
 
 SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)
@@ -46,7 +48,7 @@ def parse_timestamp_description(sim_path):
 		description = match.group(2).replace('_', ' ')
 	else:
 		timestamp = fp.timestamp()
-		description = 'a manual run'
+		description = sim_dir
 
 	return timestamp, description
 
@@ -95,6 +97,7 @@ class RunSimulation(scriptBase.ScriptBase):
 			git_branch=fp.run_cmdline("git symbolic-ref --short HEAD") or '--',
 			description=description,
 			time=timestamp,
+			python=sys.version.splitlines()[0],
 			analysis_type=None,
 			variant=variant_type,
 			total_variants=str(variant_spec[2] + 1 - variant_spec[1]),
@@ -128,10 +131,10 @@ class RunSimulation(scriptBase.ScriptBase):
 					)
 				task.run_task({})
 
-			for j in xrange(args.seed, args.seed + args.init_sims):  # init sim seeds
+			for j in range(args.seed, args.seed + args.init_sims):  # init sim seeds
 				seed_directory = fp.makedirs(variant_directory, "%06d" % j)
 
-				for k in xrange(args.generations):  # generation number k
+				for k in range(args.generations):  # generation number k
 					gen_directory = fp.makedirs(seed_directory, "generation_%06d" % k)
 
 					# l is the daughter number among all of this generation's cells,
