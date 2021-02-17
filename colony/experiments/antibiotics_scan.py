@@ -8,9 +8,7 @@ import argparse
 import datetime
 import json
 import sys
-from typing import List, Tuple
 
-from matplotlib import pyplot as plt
 import numpy as np
 from vivarium.core.composition import (
 	agent_environment_experiment,
@@ -26,62 +24,21 @@ from colony.compartments.antibiotics_simple import (
 	INITIAL_EXTERNAL_ANTIBIOTIC,
 	SimpleAntibioticsCell,
 )
+from colony.experiments.antibiotics import (
+	get_antibiotics_timeline,
+	BOUNDS,
+	N_BINS,
+	NUM_EMISSIONS,
+)
 from wholecell.utils import filepath as fp
 
 
-BOUNDS = (50, 50)
-N_BINS = (10, 10)
-NUM_EMISSIONS = 100
 AGENT_NAME = 'simple_antibiotic_cell'
 PUMP_CONCENTRATIONS = np.linspace(0, 0.000175, 10)
 BETA_LACTAMASE_CONCENTRATIONS = np.linspace(0, 0.0003, 10)
 ANTIBIOTIC_THRESHOLD = 0.02
 SIMULATION_TIME = 48 * 60
 PULSE_CONCENTRATION = 0.1239
-
-
-def get_antibiotics_timeline(
-	n_bins,  # type: Tuple[int, int]
-	size,  # type: Tuple[int, int]
-	pulses,  # type: List[Tuple[int, int, float]]
-	end_time,  # type: int
-):
-	'''Get a timeline for antibiotic pulses.
-
-	Arguments:
-		n_bins: Number of bins in x and y directions.
-		size: Size of environment in x and y directions.
-		pulses: List of tuples, each of which describes a pulse.
-			Each tuple has the form (start_time, duration,
-			concentration).
-		end_time: The length of the experiment
-	Returns:
-		list: A timeline that implements the described pulses.
-	'''
-	timeline = []
-	get_empty_field = lambda: make_gradient(
-		{
-			'type': 'uniform',
-			'molecules': {
-				ANTIBIOTIC_KEY: '0',
-			},
-		},
-		n_bins,
-		size,
-	)[ANTIBIOTIC_KEY]
-	for start_time, duration, concentration in pulses:
-		start_field = np.full_like(get_empty_field(), concentration)
-		timeline.append((
-			start_time,
-			{('fields', ANTIBIOTIC_KEY): start_field},
-		))
-		end_field = get_empty_field()
-		timeline.append((
-			start_time + duration,
-			{('fields', ANTIBIOTIC_KEY): end_field},
-		))
-	timeline.append((end_time, {}))
-	return timeline
 
 
 def simulate_one(
@@ -215,15 +172,15 @@ def main():
 			'git_hash': fp.run_cmdline('git rev-parse HEAD'),
 			'git_branch': fp.run_cmdline('git symbolic-ref --short HEAD'),
 			'git_status': fp.run_cmdline(
-                'git status --porcelain').split('\n'),
-            'time': datetime.datetime.utcnow().isoformat() + '+00:00',
+				'git status --porcelain').split('\n'),
+			'time': datetime.datetime.utcnow().isoformat() + '+00:00',
 		},
 		'data': results,
 		'parameters': {
 			'pump_concentrations': PUMP_CONCENTRATIONS.tolist(),
 			'beta_lactamase_concentrations': (
 				BETA_LACTAMASE_CONCENTRATIONS.tolist()),
-            'agent_name': AGENT_NAME,
+			'agent_name': AGENT_NAME,
 		},
 	}
 	with open(args.out, 'w') as f:
