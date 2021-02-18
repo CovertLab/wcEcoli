@@ -814,8 +814,9 @@ class Transcription(object):
 		f_ppgpp_basal = self.fraction_rnap_bound_ppgpp(ppgpp_basal)
 		f_ppgpp_anaerobic = self.fraction_rnap_bound_ppgpp(ppgpp_anaerobic)
 
-		# Solve least squares fit for expression of each component of RNAP and ribosomes
-		adjusted_mask = self.rna_data['is_RNAP'] | self.rna_data['is_ribosomal_protein'] | self.rna_data['is_rRNA']
+		# Solve least squares fit for expression of each component of RNAP and ribosomes that is not ppGpp regulated
+		is_ppgpp_regulated = np.array([g[:-3] in self.ppgpp_regulated_genes for g in self.rna_data['id']])
+		adjusted_mask = (self.rna_data['is_RNAP'] | self.rna_data['is_ribosomal_protein'] | self.rna_data['is_rRNA']) & ~is_ppgpp_regulated
 		F = np.array([[1- f_ppgpp_aa, f_ppgpp_aa], [1 - f_ppgpp_basal, f_ppgpp_basal], [1 - f_ppgpp_anaerobic, f_ppgpp_anaerobic]])
 		Flst = np.linalg.inv(F.T.dot(F)).dot(F.T)
 		expression = np.array([
