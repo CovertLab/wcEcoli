@@ -1635,7 +1635,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, i,
 	#monomer_to_mrna_ls_transform = sim_data.relation.build_monomer_to_RNA_ls_transform(sim_data, counts_protein)
 
 	#Calculate take transcriptDistribution and transform using least squares into the TU shape.
-	mRnaDistribution = sim_data.relation.build_monomer_to_RNA_ls_transform(sim_data, transcriptDistribution)
+	mRnaDistribution = normalize(sim_data.relation.build_monomer_to_RNA_ls_transform(sim_data, transcriptDistribution))
 
 	# TODO (ggsun): Remove this after troubleshooting is complete
 	# plot_ls_residuals_for_growth_genes(
