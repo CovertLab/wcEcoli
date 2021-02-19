@@ -19,7 +19,7 @@ import wholecell.utils.filepath as fp
 LOGREG_BOUNDARY_M = -0.1824149289775941
 LOGREG_BOUNDARY_B = 0.1343552138570287e-3  # mM
 LOGREG_Y_ERROR = 0.05e-3  # mM
-X_LOCATIONS = np.linspace(0.06e-3, 0.18e-3, 10)  # mM
+X_LOCATIONS = np.linspace(0, 0.18e-3, 10)  # mM
 DESIRED_PRECISION = 1e-6  # mM
 DEATH_PATH = ('agents', AGENT_NAME, 'boundary', 'dead')
 
@@ -45,8 +45,8 @@ def get_metadata():
 def evaluate_point(x, y):
 	data = simulate_one(
 		SIMULATION_TIME, PULSE_CONCENTRATION,
-		ANTIBIOTIC_THRESHOLD, y, middle)
-	dead = get_in(data, DEATH_PATH)
+		ANTIBIOTIC_THRESHOLD, x, y)
+	dead = get_in(data[max(data.keys())], DEATH_PATH)
 	return dead
 
 
@@ -60,18 +60,18 @@ def search(estimate_func, x_values, precision):
 			raise ValueError(
 				f'Incorrectly assuming cell lives at ({x}, {upper}) mM')
 		lower = y_estimate - y_error
-		if not evaluate_point(x, upper):
+		if not evaluate_point(x, lower):
 			raise ValueError(
 				f'Incorrectly assuming cell dies at ({x}, {lower}) mM')
 		while upper - lower > precision:
 			middle = (upper + lower) / 2
 			dead = evaluate_point(x, middle)
-			points.append(x, middle, dead)
+			points.append((x, middle, dead))
 			if dead:
 				lower = middle
 			else:
 				upper = middle
-		y_values.append(upper + lower / 2)
+		y_values.append((upper + lower) / 2)
 	return y_values, points
 
 
