@@ -23,7 +23,7 @@ import os.path as op
 import re
 import sys
 
-from typing import Any, cast
+from typing import Any, cast, Set
 
 from runscripts.reflect.object_tree import pprint_diffs
 from wholecell.io.tablereader import TableReader, VersionError
@@ -117,8 +117,8 @@ def diff_subdirs(subdir, simout_dir1, simout_dir2):
 
 	# Diff the Table Columns.
 	for key in column_names1 | column_names2:
-		column1 = table1.readColumn2D(key) if key in column_names1 else Repr('<absent column>')
-		column2 = table2.readColumn2D(key) if key in column_names2 else Repr('<absent column>')
+		column1 = table1.readColumn(key, squeeze=False) if key in column_names1 else Repr('<absent column>')
+		column2 = table2.readColumn(key, squeeze=False) if key in column_names2 else Repr('<absent column>')
 		if is_repr(column1) or is_repr(column2):
 			description = (column1, column2)
 		else:
@@ -142,31 +142,30 @@ def diff_subdirs(subdir, simout_dir1, simout_dir2):
 	return diffs
 
 def diff_simout(simout_dir1, simout_dir2):
-	'''Diff two simOut dirs. Return a dict describing the differences.
+	'''Diff two simOut dirs by diffing their tables. Each table is in a subdir.
+	Ignore files like 'shell.log' and 'Daughter1_inherited_state.cPickle'.
+	Return a dict describing the differences.
 
 	TODO(jerry): One could call this function in a Python shell and explore the
 	values, but to do that it should return all the original values and make
 	the caller elide them before printing.
 	'''
+	def subdirs(d: str) -> Set[str]:
+		"""Return a directory's subdirs."""
+		return {entry.name for entry in os.scandir(d) if entry.is_dir()}
+
 	diffs = {}
 
-	subdirs1 = set(os.listdir(simout_dir1))
-	subdirs2 = set(os.listdir(simout_dir2))
+	subdirs1 = subdirs(simout_dir1)
+	subdirs2 = subdirs(simout_dir2)
 
 	# ------------------------------------------------------------------------
 	# Ignore the EvaluationTime table since CPU timing measurements will always
 	# vary. It isn't really simulation output.
-	#
-	# Ignore the Daughter* cell inherited state pickle files. They don't
-	# contain Tables and they only depend on wholecell/sim/divide_cell.py, not
-	# the actual simulation.
 	# ------------------------------------------------------------------------
 	subdirs = (subdirs1 | subdirs2) - {'EvaluationTime'}
 
 	for subdir in subdirs:
-		if subdir.endswith('.cPickle'):
-			continue
-
 		diffs.update(diff_subdirs(subdir, simout_dir1, simout_dir2))
 
 	return diffs
