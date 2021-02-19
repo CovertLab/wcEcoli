@@ -146,7 +146,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		## Set reaction limits for maintenance and catalysts present
 		self.model.set_reaction_bounds(catalyst_counts, counts_to_molar,
-			coefficient, translation_gtp)
+			coefficient, translation_gtp, currTime=environment.time()) # BL: added time for testing recycling
 
 		## Constrain reactions based on targets
 		targets, upper_targets, lower_targets = self.model.set_reaction_targets(kinetic_enzyme_counts,
@@ -473,7 +473,7 @@ class FluxBalanceAnalysisModel(object):
 		self.fba.setExternalMoleculeLevels(external_molecule_levels)
 
 	def set_reaction_bounds(self, catalyst_counts, counts_to_molar, coefficient,
-			gtp_to_hydrolyze):
+			gtp_to_hydrolyze, currTime):
 		"""
 		Set reaction bounds for constrained reactions in the FBA object.
 
@@ -484,6 +484,8 @@ class FluxBalanceAnalysisModel(object):
 				(mass.time/volume units)
 			gtp_to_hydrolyze (float): number of GTP molecules to hydrolyze to
 				account for consumption in translation
+			currTime (int): current simulation time in seconds, used to define periods of
+				zero flux bound
 		"""
 
 		# Maintenance reactions
@@ -506,6 +508,16 @@ class FluxBalanceAnalysisModel(object):
 		# (infinite upper bound) or absence (upper bound of zero)
 		reaction_bounds = np.inf * np.ones(len(self.reactions_with_catalyst))
 		no_rxn_mask = self.catalysis_matrix.dot(catalyst_counts) == 0
+		####---------Test recycling process robustness--------------
+		# via enforcing the reaction flux bounds to be zero for two UTP
+		# synthesis reactions 'UDPKIN-RXN' and 'NUCLEOSIDE-DIP-KIN-RXN-UDP/ATP//UTP/ADP.17.'
+		loc = np.where(('UDPKIN-RXN' == np.array(self.reactions_with_catalyst)) |
+					   ('NUCLEOSIDE-DIP-KIN-RXN-UDP/ATP//UTP/ADP.17.' == np.array(self.reactions_with_catalyst)))[0]
+		if currTime <= 600: # set bound to zero for a fixed period of time at beginning
+			no_rxn_mask[loc] = True
+		else:
+			no_rxn_mask[loc] = False
+		#----------end test--------------
 		reaction_bounds[no_rxn_mask] = 0
 		self.fba.setReactionFluxBounds(self.reactions_with_catalyst,
 			upperBounds=reaction_bounds, raiseForReversible=False)
