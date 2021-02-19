@@ -121,8 +121,8 @@ class WcmWorkflow(Workflow):
 		# from (Docker Image) environment variables to update the regular dict
 		# entries. Outside the Docker Image, the initial dict entries are good.
 		metadata_file = self.internal('metadata', constants.JSON_METADATA_FILE)
-		git_hash = fp.run_cmdline("git rev-parse HEAD")
-		git_branch = fp.run_cmdline("git symbolic-ref --short HEAD")
+		git_hash = fp.git_hash()
+		git_branch = fp.git_branch()
 		metadata = data.select_keys(
 			args,
 			scriptBase.METADATA_KEYS,

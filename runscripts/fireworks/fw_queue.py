@@ -329,8 +329,8 @@ for i in VARIANTS_TO_RUN:
 
 ### Write metadata
 metadata = {
-	"git_hash": filepath.run_cmdline("git rev-parse HEAD"),
-	"git_branch": filepath.run_cmdline("git symbolic-ref --short HEAD"),
+	"git_hash": filepath.git_hash(),
+	"git_branch": filepath.git_branch(),
 	"description": os.environ.get("DESC", ""),
 	"time": SUBMISSION_TIME,
 	"python": sys.version.splitlines()[0],
