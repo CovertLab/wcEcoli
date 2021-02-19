@@ -432,6 +432,7 @@ class Workflow(object):
 		prefix = 'fireworker-{}'.format(db_name)
 		options = {
 			'image-family': 'fireworker',
+			'machine-type': 'custom-1-5120',  # N1 VMs with 1 CPU, 5 GB for WCM
 			'description': 'FireWorks worker VM for user/ID {}'.format(self.name)}
 
 		metadata = {'db': db_name}
