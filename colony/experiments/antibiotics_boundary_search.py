@@ -32,7 +32,7 @@ def _logreg_estimate(x):
 def get_metadata():
 	metadata = {
 		'git_hash': fp.run_cmdline('git rev-parse HEAD'),
-		'git_branch': fm.run_cmdline(
+		'git_branch': fp.run_cmdline(
 			'git symbolic-ref --short HEAD'),
 		'git_status': fp.run_cmdline(
 			'git status --porcelain').split('\n'),
@@ -42,24 +42,37 @@ def get_metadata():
 	return metadata
 
 
+def evaluate_point(x, y):
+	data = simulate_one(
+		SIMULATION_TIME, PULSE_CONCENTRATION,
+		ANTIBIOTIC_THRESHOLD, y, middle)
+	dead = get_in(data, DEATH_PATH)
+	return dead
+
+
 def search(estimate_func, x_values, precision):
 	y_values = []
+	points = []
 	for x in x_values:
 		y_estimate, y_error = estimate_func(x)
 		upper = y_estimate + y_error
+		if evaluate_point(x, upper):
+			raise ValueError(
+				f'Incorrectly assuming cell lives at ({x}, {upper}) mM')
 		lower = y_estimate - y_error
+		if not evaluate_point(x, upper):
+			raise ValueError(
+				f'Incorrectly assuming cell dies at ({x}, {lower}) mM')
 		while upper - lower > precision:
 			middle = (upper + lower) / 2
-			data = simulate_one(
-				SIMULATION_TIME, PULSE_CONCENTRATION,
-				ANTIBIOTIC_THRESHOLD, x, middle)
-			dead = get_in(data, DEATH_PATH)
+			dead = evaluate_point(x, middle)
+			points.append(x, middle, dead)
 			if dead:
 				lower = middle
 			else:
 				upper = middle
 		y_values.append(upper + lower / 2)
-	return y_values
+	return y_values, points
 
 
 def main(tokens=None):
@@ -67,10 +80,11 @@ def main(tokens=None):
 	parser.add_argument(
 		'out_path', type=str, help='Path to output JSON file')
 	args = parser.parse_args(tokens)
-	y_values = search(_logreg_estimate, X_LOCATIONS, DESIRED_PRECISION)
+	y_values, points = search(_logreg_estimate, X_LOCATIONS, DESIRED_PRECISION)
 	output = {
-		'x_values': X_LOCATIONS,
+		'x_values': X_LOCATIONS.tolist(),
 		'y_values': y_values,
+		'points': points,
 		'estimate_m': LOGREG_BOUNDARY_M,
 		'estimate_b': LOGREG_BOUNDARY_B,
 		'estiamte_error': LOGREG_Y_ERROR,
