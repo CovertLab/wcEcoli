@@ -809,7 +809,7 @@ class Transcription(object):
 		ppgpp_basal = sim_data.growth_rate_parameters.get_ppGpp_conc(
 			sim_data.condition_to_doubling_time['basal'])
 		ppgpp_anaerobic = sim_data.growth_rate_parameters.get_ppGpp_conc(
-			sim_data.condition_to_doubling_time['basal'])
+			sim_data.condition_to_doubling_time['no_oxygen'])
 		f_ppgpp_aa = self.fraction_rnap_bound_ppgpp(ppgpp_aa)
 		f_ppgpp_basal = self.fraction_rnap_bound_ppgpp(ppgpp_basal)
 		f_ppgpp_anaerobic = self.fraction_rnap_bound_ppgpp(ppgpp_anaerobic)
