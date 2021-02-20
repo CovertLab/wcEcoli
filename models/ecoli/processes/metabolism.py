@@ -146,7 +146,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		## Set reaction limits for maintenance and catalysts present
 		self.model.set_reaction_bounds(catalyst_counts, counts_to_molar,
-			coefficient, translation_gtp, currTime=environment.time()) # BL: added time for testing recycling
+			coefficient, translation_gtp, currTime=environment.time(),
+									   random=self.randomState) # BL: added params for testing recycling
 
 		## Constrain reactions based on targets
 		targets, upper_targets, lower_targets = self.model.set_reaction_targets(kinetic_enzyme_counts,
@@ -318,6 +319,7 @@ class FluxBalanceAnalysisModel(object):
 		# Data structures to compute reaction bounds based on enzyme presence/absence
 		self.catalyst_ids = metabolism.catalyst_ids
 		self.reactions_with_catalyst = metabolism.reactions_with_catalyst
+		self.rxn_mask_loc_state = np.array([False, False]) # BL: test recycling
 
 		i = metabolism.catalysis_matrix_I
 		j = metabolism.catalysis_matrix_J
@@ -473,7 +475,7 @@ class FluxBalanceAnalysisModel(object):
 		self.fba.setExternalMoleculeLevels(external_molecule_levels)
 
 	def set_reaction_bounds(self, catalyst_counts, counts_to_molar, coefficient,
-			gtp_to_hydrolyze, currTime):
+			gtp_to_hydrolyze, currTime, random):
 		"""
 		Set reaction bounds for constrained reactions in the FBA object.
 
@@ -486,6 +488,7 @@ class FluxBalanceAnalysisModel(object):
 				account for consumption in translation
 			currTime (int): current simulation time in seconds, used to define periods of
 				zero flux bound
+			random (int): numpy random state object
 		"""
 
 		# Maintenance reactions
@@ -513,10 +516,11 @@ class FluxBalanceAnalysisModel(object):
 		# synthesis reactions 'UDPKIN-RXN' and 'NUCLEOSIDE-DIP-KIN-RXN-UDP/ATP//UTP/ADP.17.'
 		loc = np.where(('UDPKIN-RXN' == np.array(self.reactions_with_catalyst)) |
 					   ('NUCLEOSIDE-DIP-KIN-RXN-UDP/ATP//UTP/ADP.17.' == np.array(self.reactions_with_catalyst)))[0]
-		if currTime <= 600: # set bound to zero for a fixed period of time at beginning
-			no_rxn_mask[loc] = True
-		else:
-			no_rxn_mask[loc] = False
+		prob = random.rand()
+		# switch bound state with a probability
+		if prob < 0.1:
+			no_rxn_mask[loc] = ~self.rxn_mask_loc_state
+			self.rxn_mask_loc_state = no_rxn_mask[loc]
 		#----------end test--------------
 		reaction_bounds[no_rxn_mask] = 0
 		self.fba.setReactionFluxBounds(self.reactions_with_catalyst,
