@@ -22,7 +22,7 @@ class TranscriptionRegulation(object):
 
 		# RNA IDs for stable RNA should be removed for now until better amino
 		# acid regulation in incorporated or else growth can be unstable
-		stable_rna = {x['id'] for x in raw_data.rnas if x['type'] in {'rRNA', 'tRNA'}}
+		stable_rna = {x['id'] for x in raw_data.rnas if x['type'] in {}}
 
 		for tf in sorted(sim_data.tf_to_fold_change):
 			targets = sim_data.tf_to_fold_change[tf]
