@@ -119,9 +119,13 @@ class WcmWorkflow(Workflow):
 		if args['workers'] is None:
 			args['workers'] = variant_count * args['init_sims']
 
-		# Collect metadata. Analysis Firetasks will expand the _keyed $VARs
-		# from (Docker Image) environment variables to update the regular dict
-		# entries. Outside the Docker Image, the initial dict entries are good.
+		# Collect metadata for the workflow to record in metadata.json.
+		# The git info of the running sim code might differ from the current git
+		# info of this workflow builder. Since the Docker Image doesn't include
+		# the git repo, the Image builder records git info into $IMAGE_... env
+		# variables. Analysis Firetasks will call data.expand_keyed_env_vars()
+		# to expand those _keyed $VARs and update the un-_keyed dict entries.
+		# When run outside a Docker Image, the initial dict values are good.
 		metadata_file = self.internal('metadata', constants.JSON_METADATA_FILE)
 		git_hash = fp.git_hash()
 		git_branch = fp.git_branch()
