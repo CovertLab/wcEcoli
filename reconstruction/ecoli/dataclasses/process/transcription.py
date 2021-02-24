@@ -916,11 +916,11 @@ class Transcription(object):
 	def normalize_ppgpp_expression(self):
 		total = self.exp_free.sum()
 		self.exp_free /= total
-		self.free_factor *= total
+		# self.free_factor *= total
 
 		total = self.exp_ppgpp.sum()
 		self.exp_ppgpp /= total
-		self.ppgpp_factor *= total
+		# self.ppgpp_factor *= total
 
 	def fraction_rnap_bound_ppgpp(self, ppgpp):
 		"""
