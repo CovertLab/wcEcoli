@@ -767,9 +767,6 @@ class Transcription(object):
 				faster computation in other functions
 		"""
 
-		self.ppgpp_factor = 1.
-		self.free_factor = 1.
-
 		ppgpp_aa = sim_data.growth_rate_parameters.get_ppGpp_conc(
 			sim_data.condition_to_doubling_time['with_aa'])
 		ppgpp_basal = sim_data.growth_rate_parameters.get_ppGpp_conc(
@@ -841,6 +838,15 @@ class Transcription(object):
 		adjusted_free, adjusted_ppgpp = Flst.dot(expression)
 		self.exp_free[adjusted_mask] = adjusted_free[adjusted_mask]
 		self.exp_ppgpp[adjusted_mask] = adjusted_ppgpp[adjusted_mask]
+
+		# Rescale expression of genes that are not regulated so expression sums to 1
+		ppgpp_regulated = np.array([g[:-3] in self.ppgpp_regulated_genes for g in self.rna_data['id']])
+		scale_free_by = (1 - self.exp_free[ppgpp_regulated].sum()) / self.exp_free[~ppgpp_regulated].sum()
+		self.exp_free[~ppgpp_regulated] *= scale_free_by
+		assert(scale_free_by > 0)
+		scale_ppgpp_by = (1 - self.exp_ppgpp[ppgpp_regulated].sum()) / self.exp_ppgpp[~ppgpp_regulated].sum()
+		self.exp_ppgpp[~ppgpp_regulated] *= scale_ppgpp_by
+		assert(scale_ppgpp_by > 0)
 
 
 		# TODO: clean this up to not repeat things from above and remove function below
@@ -947,7 +953,7 @@ class Transcription(object):
 		"""
 
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
-		return normalize(self.exp_free * (1 - f_ppgpp) * self.free_factor + self.exp_ppgpp * f_ppgpp * self.ppgpp_factor)
+		return normalize(self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp)
 
 	def synth_prob_from_ppgpp(self, ppgpp, copy_number):
 		"""
@@ -970,6 +976,7 @@ class Transcription(object):
 		"""
 
 		ppgpp = ppgpp.asNumber(PPGPP_CONC_UNITS)
+		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 
 		y = interpolate.splev(ppgpp, self._ppgpp_growth_parameters)
 		growth = max(cast(float, y), 0.0)
@@ -979,6 +986,6 @@ class Transcription(object):
 
 		# Return values
 		factor = loss / n_avg_copy
-		prob = normalize(self.expression_from_ppgpp(ppgpp) * factor)
+		prob = normalize((self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp) * factor)
 
 		return prob, factor
