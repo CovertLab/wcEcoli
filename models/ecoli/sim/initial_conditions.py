@@ -170,7 +170,7 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppg
 	# again (look at the calcProteinCounts function)
 
 	if ppgpp_regulation:
-		rnaExpression = _get_ppgpp_expression(sim_data)
+		rnaExpression = sim_data.calculate_ppgpp_expression(sim_data.condition)
 	else:
 		rnaExpression = sim_data.process.transcription.rna_expression[sim_data.condition]
 
@@ -203,7 +203,7 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 	rnaMass = massCoeff * sim_data.mass.get_component_masses(sim_data.condition_to_doubling_time[sim_data.condition])["rnaMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
 
 	if ppgpp_regulation:
-		rnaExpression = _get_ppgpp_expression(sim_data)
+		rnaExpression = sim_data.calculate_ppgpp_expression(sim_data.condition)
 	else:
 		rnaExpression = normalize(sim_data.process.transcription.rna_expression[sim_data.condition])
 
@@ -1346,18 +1346,3 @@ def rescale_initiation_probs(init_probs, TU_index, fixed_synth_probs,
 	for rna_idx, synth_prob in zip(fixed_TU_indexes, fixed_synth_probs):
 		fixed_rna_mask = (TU_index == rna_idx)
 		init_probs[fixed_rna_mask] = synth_prob / fixed_rna_mask.sum()
-
-def _get_ppgpp_expression(sim_data):
-	t_reg = sim_data.process.transcription_regulation
-	ppgpp = sim_data.growth_rate_parameters.get_ppGpp_conc(sim_data.condition_to_doubling_time[sim_data.condition])
-	delta_prob = scipy.sparse.csr_matrix(
-		(t_reg.delta_prob['deltaV'],
-		(t_reg.delta_prob['deltaI'], t_reg.delta_prob['deltaJ'])),
-		shape=t_reg.delta_prob['shape']
-		).toarray()
-	p_promoter_bound = np.array([sim_data.pPromoterBound[sim_data.condition][tf] for tf in t_reg.tf_ids])
-	delta = delta_prob @ p_promoter_bound
-	prob, factor = sim_data.process.transcription.synth_prob_from_ppgpp(ppgpp, sim_data.process.replication.get_average_copy_number)
-	rna_expression = (prob + delta) / factor
-	rna_expression[rna_expression < 0] = 0
-	return normalize(rna_expression)

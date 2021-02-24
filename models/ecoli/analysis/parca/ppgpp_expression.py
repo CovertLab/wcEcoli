@@ -12,27 +12,8 @@ import pickle
 import numpy as np
 from plotly.subplots import make_subplots
 import plotly.graph_objs as go
-import scipy
 
 from models.ecoli.analysis import parcaAnalysisPlot
-from wholecell.utils.fitting import normalize
-
-
-# TODO: this is same an initial conditions - move somewhere common
-def get_ppgpp_expression(sim_data, condition):
-	t_reg = sim_data.process.transcription_regulation
-	ppgpp = sim_data.growth_rate_parameters.get_ppGpp_conc(sim_data.condition_to_doubling_time[condition])
-	delta_prob = scipy.sparse.csr_matrix(
-		(t_reg.delta_prob['deltaV'],
-		(t_reg.delta_prob['deltaI'], t_reg.delta_prob['deltaJ'])),
-		shape=t_reg.delta_prob['shape']
-		).toarray()
-	p_promoter_bound = np.array([sim_data.pPromoterBound[condition][tf] for tf in t_reg.tf_ids])
-	delta = delta_prob @ p_promoter_bound
-	prob, factor = sim_data.process.transcription.synth_prob_from_ppgpp(ppgpp, sim_data.process.replication.get_average_copy_number)
-	rna_expression = (prob + delta) / factor
-	rna_expression[rna_expression < 0] = 0
-	return normalize(rna_expression)
 
 
 class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
@@ -58,7 +39,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		conditions = list(sim_data.condition_active_tfs.keys())
 		n_conditions = len(conditions)
 		expression = [
-			(sim_data.process.transcription.rna_expression[condition], get_ppgpp_expression(sim_data, condition))
+			(sim_data.process.transcription.rna_expression[condition], sim_data.calculate_ppgpp_expression(condition))
 			for condition in conditions
 			]
 
