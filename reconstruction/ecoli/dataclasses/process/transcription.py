@@ -828,6 +828,8 @@ class Transcription(object):
 			tf_adjustments[condition] = delta / sim_data.process.transcription.rna_synth_prob[condition]
 
 		# Solve least squares fit for expression of each component of RNAP and ribosomes
+		free_scale = self.exp_free.sum()
+		ppgpp_scale = self.exp_ppgpp.sum()
 		adjusted_mask = self.rna_data['is_RNAP'] | self.rna_data['is_ribosomal_protein'] | self.rna_data['is_rRNA']
 		F = np.array([[1- f_ppgpp_aa, f_ppgpp_aa], [1 - f_ppgpp_basal, f_ppgpp_basal], [1 - f_ppgpp_anaerobic, f_ppgpp_anaerobic]])
 		Flst = np.linalg.inv(F.T.dot(F)).dot(F.T)
@@ -836,17 +838,9 @@ class Transcription(object):
 			self.rna_expression['basal'] * (1 - tf_adjustments['basal']),
 			self.rna_expression['no_oxygen'] * (1 - tf_adjustments['no_oxygen'])])
 		adjusted_free, adjusted_ppgpp = Flst.dot(expression)
-		self.exp_free[adjusted_mask] = adjusted_free[adjusted_mask]
-		self.exp_ppgpp[adjusted_mask] = adjusted_ppgpp[adjusted_mask]
-
-		# Rescale expression of genes that are not regulated so expression sums to 1
-		ppgpp_regulated = np.array([g[:-3] in self.ppgpp_regulated_genes for g in self.rna_data['id']])
-		scale_free_by = (1 - self.exp_free[ppgpp_regulated].sum()) / self.exp_free[~ppgpp_regulated].sum()
-		self.exp_free[~ppgpp_regulated] *= scale_free_by
-		assert(scale_free_by > 0)
-		scale_ppgpp_by = (1 - self.exp_ppgpp[ppgpp_regulated].sum()) / self.exp_ppgpp[~ppgpp_regulated].sum()
-		self.exp_ppgpp[~ppgpp_regulated] *= scale_ppgpp_by
-		assert(scale_ppgpp_by > 0)
+		self.exp_free[adjusted_mask] = adjusted_free[adjusted_mask] * free_scale
+		self.exp_ppgpp[adjusted_mask] = adjusted_ppgpp[adjusted_mask] * ppgpp_scale
+		self.normalize_ppgpp_expression()
 
 
 		# TODO: clean this up to not repeat things from above and remove function below
