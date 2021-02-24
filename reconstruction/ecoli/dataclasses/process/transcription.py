@@ -828,8 +828,7 @@ class Transcription(object):
 			tf_adjustments[condition] = delta / sim_data.process.transcription.rna_synth_prob[condition]
 
 		# Solve least squares fit for expression of each component of RNAP and ribosomes
-		free_scale = self.exp_free.sum()
-		ppgpp_scale = self.exp_ppgpp.sum()
+		self.normalize_ppgpp_expression()  # Need to normalize first to get correct scale
 		adjusted_mask = self.rna_data['is_RNAP'] | self.rna_data['is_ribosomal_protein'] | self.rna_data['is_rRNA']
 		F = np.array([[1- f_ppgpp_aa, f_ppgpp_aa], [1 - f_ppgpp_basal, f_ppgpp_basal], [1 - f_ppgpp_anaerobic, f_ppgpp_anaerobic]])
 		Flst = np.linalg.inv(F.T.dot(F)).dot(F.T)
@@ -838,8 +837,8 @@ class Transcription(object):
 			self.rna_expression['basal'] * (1 - tf_adjustments['basal']),
 			self.rna_expression['no_oxygen'] * (1 - tf_adjustments['no_oxygen'])])
 		adjusted_free, adjusted_ppgpp = Flst.dot(expression)
-		self.exp_free[adjusted_mask] = adjusted_free[adjusted_mask] * free_scale
-		self.exp_ppgpp[adjusted_mask] = adjusted_ppgpp[adjusted_mask] * ppgpp_scale
+		self.exp_free[adjusted_mask] = adjusted_free[adjusted_mask]
+		self.exp_ppgpp[adjusted_mask] = adjusted_ppgpp[adjusted_mask]
 		self.normalize_ppgpp_expression()
 
 
