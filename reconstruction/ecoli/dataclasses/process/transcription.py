@@ -798,6 +798,13 @@ class Transcription(object):
 			exp_free (ndarray[float]): expression for each gene when RNAP
 				is not bound to ppGpp, adjusted for necessary RNAP and ribosome
 				expression, normalized to 1
+
+		Note:
+			See docs/processes/transcription_regulation.pdf for a description
+			of the math used in this section.
+
+		TODO:
+			fit for all conditions and not just those specified below?
 		"""
 
 		# Fraction RNAP bound to ppGpp in different conditions
