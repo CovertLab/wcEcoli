@@ -245,15 +245,13 @@ class SimulationDataEcoli(object):
 				expression for (eg. 'basal', 'with_aa', etc)
 		"""
 
-		t_reg = self.process.transcription_regulation
 		ppgpp = self.growth_rate_parameters.get_ppGpp_conc(
 			self.condition_to_doubling_time[condition])
-		delta_prob = scipy.sparse.csr_matrix(
-			(t_reg.delta_prob['deltaV'],
-			(t_reg.delta_prob['deltaI'], t_reg.delta_prob['deltaJ'])),
-			shape=t_reg.delta_prob['shape']
-			).toarray()
-		p_promoter_bound = np.array([self.pPromoterBound[condition][tf] for tf in t_reg.tf_ids])
+		delta_prob = self.process.transcription_regulation.get_delta_prob_matrix()
+		p_promoter_bound = np.array([
+			self.pPromoterBound[condition][tf]
+			for tf in self.process.transcription_regulation.tf_ids
+			])
 		delta = delta_prob @ p_promoter_bound
 		prob, factor = self.process.transcription.synth_prob_from_ppgpp(
 			ppgpp, self.process.replication.get_average_copy_number)

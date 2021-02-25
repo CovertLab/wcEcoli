@@ -800,8 +800,6 @@ class Transcription(object):
 				expression, normalized to 1
 		"""
 
-		t_reg = sim_data.process.transcription_regulation
-
 		# Fraction RNAP bound to ppGpp in different conditions
 		ppgpp_aa = sim_data.growth_rate_parameters.get_ppGpp_conc(
 			sim_data.condition_to_doubling_time['with_aa'])
@@ -815,16 +813,13 @@ class Transcription(object):
 
 		# Adjustments for TFs
 		tf_adjustments = {}
-		delta_prob = scipy.sparse.csr_matrix(
-			(t_reg.delta_prob['deltaV'],
-			(t_reg.delta_prob['deltaI'], t_reg.delta_prob['deltaJ'])),
-			shape=t_reg.delta_prob['shape']
-			).toarray()
-		p_promoter_bound = {
-			condition: np.array([tfs[tf] for tf in t_reg.tf_ids])
-			for condition, tfs in sim_data.pPromoterBound.items()}
+		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix()
 		for condition in ['with_aa', 'basal', 'no_oxygen']:
-			delta = delta_prob @ p_promoter_bound[condition]
+			p_promoter_bound = np.array([
+				sim_data.pPromoterBound[condition][tf]
+				for tf in sim_data.process.transcription_regulation.tf_ids
+				])
+			delta = delta_prob @ p_promoter_bound
 			tf_adjustments[condition] = delta / sim_data.process.transcription.rna_synth_prob[condition]
 
 		# Solve least squares fit for expression of each component of RNAP and ribosomes
@@ -853,7 +848,6 @@ class Transcription(object):
 				been adjusted for transcription factor effects?
 		"""
 
-		t_reg = sim_data.process.transcription_regulation
 		condition = 'basal'
 
 		# Current (unnormalized) probabilities from ppGpp regulation
@@ -863,13 +857,11 @@ class Transcription(object):
 			sim_data.process.replication.get_average_copy_number)
 
 		# Calculate the average expected effect of TFs in basal condition
-		delta_prob = scipy.sparse.csr_matrix(
-			(t_reg.delta_prob['deltaV'],
-			(t_reg.delta_prob['deltaI'], t_reg.delta_prob['deltaJ'])),
-			shape=t_reg.delta_prob['shape']
-			).toarray()
-		p_promoter_bound = np.array(
-			[sim_data.pPromoterBound[condition][tf] for tf in t_reg.tf_ids])
+		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix()
+		p_promoter_bound = np.array([
+			sim_data.pPromoterBound[condition][tf]
+			for tf in sim_data.process.transcription_regulation.tf_ids
+			])
 		delta = delta_prob @ p_promoter_bound
 
 		# Calculate the required probability to match expression without ppGpp

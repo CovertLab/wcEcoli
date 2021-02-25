@@ -660,10 +660,7 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# Parameters for rnaSynthProb
 	basal_prob = sim_data.process.transcription_regulation.basal_prob
 	n_TUs = len(basal_prob)
-	delta_prob = sim_data.process.transcription_regulation.delta_prob
-	delta_prob_matrix = scipy.sparse.csr_matrix(
-		(delta_prob['deltaV'], (delta_prob['deltaI'], delta_prob['deltaJ'])),
-		shape=delta_prob['shape']).toarray()
+	delta_prob_matrix = sim_data.process.transcription_regulation.get_delta_prob_matrix(dense=True)
 
 	# Get attributes of promoters
 	promoters = uniqueMolCntr.objectsInCollection("promoter")
