@@ -828,7 +828,7 @@ class Transcription(object):
 			tf_adjustments[condition] = delta / sim_data.process.transcription.rna_synth_prob[condition]
 
 		# Solve least squares fit for expression of each component of RNAP and ribosomes
-		self.normalize_ppgpp_expression()  # Need to normalize first to get correct scale
+		self._normalize_ppgpp_expression()  # Need to normalize first to get correct scale
 		adjusted_mask = self.rna_data['is_RNAP'] | self.rna_data['is_ribosomal_protein'] | self.rna_data['is_rRNA']
 		F = np.array([[1- f_ppgpp_aa, f_ppgpp_aa], [1 - f_ppgpp_basal, f_ppgpp_basal], [1 - f_ppgpp_anaerobic, f_ppgpp_anaerobic]])
 		Flst = np.linalg.inv(F.T.dot(F)).dot(F.T)
@@ -839,81 +839,61 @@ class Transcription(object):
 		adjusted_free, adjusted_ppgpp = Flst.dot(expression)
 		self.exp_free[adjusted_mask] = adjusted_free[adjusted_mask]
 		self.exp_ppgpp[adjusted_mask] = adjusted_ppgpp[adjusted_mask]
-		self.normalize_ppgpp_expression()
-
-
-		# TODO: clean this up to not repeat things from above and remove function below
-		# Adjust ppGpp expression for TF binding
-		t_reg = sim_data.process.transcription_regulation
-		exp_free = self.exp_free
-		exp_ppgpp = self.exp_ppgpp
-		ppgpp_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(
-			sim_data.doubling_time)
-		old_prob, factor = self.synth_prob_from_ppgpp(ppgpp_conc,
-			sim_data.process.replication.get_average_copy_number)
-
-		delta_prob = scipy.sparse.csr_matrix(
-			(t_reg.delta_prob['deltaV'],
-			(t_reg.delta_prob['deltaI'], t_reg.delta_prob['deltaJ'])),
-			shape=t_reg.delta_prob['shape']
-			).toarray()
-		p_promoter_bound = np.array(
-			[sim_data.pPromoterBound[sim_data.condition][tf] for tf in t_reg.tf_ids])
-		delta = delta_prob @ p_promoter_bound
-
-		new_prob = normalize(sim_data.process.transcription.rna_expression['basal'] * factor) - delta
-		new_prob[new_prob < 0] = 0
-		new_prob = normalize(new_prob)
-
-		adjustment = new_prob / old_prob
-		adjustment[~np.isfinite(adjustment)] = 1
-
-		exp_free[~adjusted_mask] *= adjustment[~adjusted_mask]
-		exp_ppgpp[~adjusted_mask] *= adjustment[~adjusted_mask]
-
-		self.normalize_ppgpp_expression()
+		self._normalize_ppgpp_expression()
 
 	def adjust_ppgpp_expression_for_tfs(self, sim_data):
-		# Adjust ppGpp expression for TF binding
+		"""
+		Adjusts ppGpp regulated expression to get expression with and without
+		ppGpp regulation to match in basal condition and taking into account
+		the effect transcription factors will have.
+
+		TODO:
+			Should this not adjust polymerizing genes (adjusted_mask in
+				adjust_polymerizing_ppgpp_expression) since they have already
+				been adjusted for transcription factor effects?
+		"""
+
 		t_reg = sim_data.process.transcription_regulation
-		exp_free = self.exp_free
-		exp_ppgpp = self.exp_ppgpp
+		condition = 'basal'
+
+		# Current (unnormalized) probabilities from ppGpp regulation
 		ppgpp_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(
-			sim_data.doubling_time)
+			sim_data.condition_to_doubling_time[condition])
 		old_prob, factor = self.synth_prob_from_ppgpp(ppgpp_conc,
 			sim_data.process.replication.get_average_copy_number)
 
+		# Calculate the average expected effect of TFs in basal condition
 		delta_prob = scipy.sparse.csr_matrix(
 			(t_reg.delta_prob['deltaV'],
 			(t_reg.delta_prob['deltaI'], t_reg.delta_prob['deltaJ'])),
 			shape=t_reg.delta_prob['shape']
 			).toarray()
 		p_promoter_bound = np.array(
-			[sim_data.pPromoterBound[sim_data.condition][tf] for tf in
-				t_reg.tf_ids])
+			[sim_data.pPromoterBound[condition][tf] for tf in t_reg.tf_ids])
 		delta = delta_prob @ p_promoter_bound
 
-		new_prob = normalize(sim_data.process.transcription.rna_expression[
-								 'basal'] * factor) - delta
+		# Calculate the required probability to match expression without ppGpp
+		new_prob = normalize(self.rna_expression[condition] * factor) - delta
 		new_prob[new_prob < 0] = 0
 		new_prob = normalize(new_prob)
 
+		# Determine adjustments to the current ppGpp expression to scale
+		# to the expected expression
 		adjustment = new_prob / old_prob
 		adjustment[~np.isfinite(adjustment)] = 1
 
-		exp_free *= adjustment
-		exp_ppgpp *= adjustment
+		# Scale free and bound expression and renormalize ppGpp regulated expression
+		self.exp_free *= adjustment
+		self.exp_ppgpp *= adjustment
+		self._normalize_ppgpp_expression()
 
-		self.normalize_ppgpp_expression()
+	def _normalize_ppgpp_expression(self):
+		"""
+		Normalize both free and ppGpp bound expression values to 1.
+		"""
 
-	def normalize_ppgpp_expression(self):
-		total = self.exp_free.sum()
-		self.exp_free /= total
-		# self.free_factor *= total
-
-		total = self.exp_ppgpp.sum()
-		self.exp_ppgpp /= total
-		# self.ppgpp_factor *= total
+		self.exp_free /= self.exp_free.sum()
+		self.exp_ppgpp /= self.exp_ppgpp.sum()
 
 	def fraction_rnap_bound_ppgpp(self, ppgpp):
 		"""
