@@ -523,7 +523,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		## Reactions that are charged and elongated in same time step
 		total_uncharging_reactions = self.distribution_from_aa(aas_used, total_trna)
-		charged_and_elongated = total_uncharging_reactions - charged_trna
+		trna_to_uncharge = np.fmin(charged_trna, total_uncharging_reactions)
+		charged_and_elongated = total_uncharging_reactions - trna_to_uncharge
 		total_charging_reactions = charged_and_elongated + n_trna_charged
 		net_charged = total_charging_reactions - total_uncharging_reactions
 		self.charging_molecules.countsInc(np.dot(self.charging_stoich_matrix, total_charging_reactions))
