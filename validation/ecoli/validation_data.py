@@ -87,10 +87,12 @@ class Protein(object):
 		protein_id_to_location = {
 			protein['id']: protein_to_compartment_tag[protein['id']] for protein in knowledge_base_raw.proteins}
 
-		self.geneIdToMonomerId = {
-			rna_id_to_gene_id[rna['id']]: '{}[{}]'.format(rna['monomer_id'], protein_id_to_location[rna['monomer_id']])
-			for rna in knowledge_base_raw.rnas
-			if rna["type"] == "mRNA" or rna["type"] == "pseudo"}
+		self.geneIdToMonomerId = {}
+
+		for rna in knowledge_base_raw.rnas:
+			if rna['monomer_id'] is not None:
+				self.geneIdToMonomerId[rna_id_to_gene_id[rna['id']]] = '{}[{}]'.format(
+					rna['monomer_id'], protein_id_to_location[rna['monomer_id']])
 
 		# Build and save a dict from gene symbol to corresponding monomerId
 		self.geneSymbolToMonomerId = {}
@@ -183,8 +185,15 @@ class Protein(object):
 		avg = np.mean((rep1, rep2, rep3), axis = 0)
 		geneIds = [x["EcoCycID"] for x in dataset]
 
-		monomerIds = [self.geneIdToMonomerId[x] for x in geneIds]
-		nEntries = len(geneIds)
+		monomer_ids = []
+		avg_counts_filtered = []
+
+		for i, (gene_id, avg_count) in enumerate(zip(geneIds, avg)):
+			if gene_id in self.geneIdToMonomerId:
+				monomer_ids.append(self.geneIdToMonomerId[gene_id])
+				avg_counts_filtered.append(avg_count)
+
+		nEntries = len(monomer_ids)
 
 		wisniewski2014Data = np.zeros(
 			nEntries,
@@ -194,8 +203,8 @@ class Protein(object):
 				]
 			)
 
-		wisniewski2014Data["monomerId"] = monomerIds
-		wisniewski2014Data["avgCounts"] = avg
+		wisniewski2014Data["monomerId"] = monomer_ids
+		wisniewski2014Data["avgCounts"] = avg_counts_filtered
 
 		self.wisniewski2014Data = wisniewski2014Data
 
