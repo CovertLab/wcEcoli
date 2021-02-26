@@ -85,6 +85,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		else:
 			self.elongation_model = BaseElongationModel(sim_data, self)
 		self.ppgpp_regulation = sim._ppgpp_regulation
+		self.mechanistic_supply = False  # TODO: accept as sim arg
 
 		# Growth associated maintenance energy requirements for elongations
 		self.gtpPerElongation = constants.gtp_per_translation
@@ -473,16 +474,18 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 				np.dot(aa_counts_for_translation, self.process.aa_from_trna)
 				* fraction_trna_per_aa + uncharged_trna_request)
 
-		# Adjust aa_supply higher if amino acid concentrations are low
 		aa_in_media = self.aa_environment.import_present()
-		### TODO: remove - left in here for now for comparison purposes ###
-		self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
-		old_supply = self.process.aa_supply.copy()
-		### END: remove ###
 		synthesis, enzyme_counts, saturation = self.amino_acid_synthesis(
 			self.aa_enzymes.total_counts(), aa_conc)
-		self.process.aa_supply = self.process.timeStepSec() * (
-			synthesis + self.amino_acid_import(aa_in_media, dry_mass))
+		if self.process.mechanistic_supply:
+			# Set supply based on mechanistic synthesis and supply
+			self.process.aa_supply = self.process.timeStepSec() * (
+					synthesis + self.amino_acid_import(aa_in_media, dry_mass))
+		else:
+			# Adjust aa_supply higher if amino acid concentrations are low
+			# Improves stability of charging and mimics amino acid synthesis
+			# inhibition and export
+			self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
 
 		# TODO: add synthesis and import?
 		self.process.writeToListener('GrowthLimits', 'aa_supply', self.process.aa_supply)
