@@ -3123,7 +3123,7 @@ def calculateRnapRecruitment(sim_data, cell_specs):
 		- ['r_vector']: Fit parameters on how the recruitment of a TF affects the expression
 		of a gene. High (positive) values of r indicate that the TF binding
 		increases the probability that the gene is expressed.
-		- ['col_names_to_index']: mapping of column name to index in r
+		- ['r_columns']: mapping of column name to index in r
 
 	Modifies
 	--------
