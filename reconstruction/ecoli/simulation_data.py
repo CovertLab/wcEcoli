@@ -77,6 +77,7 @@ class SimulationDataEcoli(object):
 		self.relation = Relation(raw_data, self)
 
 		self.translation_supply_rate = {}
+		self.pPromoterBound = {}
 
 
 	def _add_molecular_weight_keys(self, raw_data):
