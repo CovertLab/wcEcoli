@@ -509,9 +509,14 @@ class Metabolism(object):
 
 		return externalMoleculeLevels, newObjective
 
-	def set_supply_constants(self, sim_data, cell_specs):
+	def set_phenomological_supply_constants(self, sim_data):
 		"""
-		Sets constants to determine amino acid supply during translation.
+		Sets constants to determine amino acid supply during translation.  Used
+		with aa_supply_scaling() during simulations but supply can
+		alternatively be determined mechanistically.  This approach may require
+		manually adjusting constants (fraction_supply_inhibited and
+		fraction_supply_exported) but has less variability related to gene
+		expression and regulation.
 
 		Args:
 			sim_data (SimulationData object)
@@ -525,20 +530,14 @@ class Metabolism(object):
 				a base synthesis rate
 			fraction_import_rate (ndarray[float]): fraction of AA supply that
 				comes from AA import if nutrients are present
-			base_aa_conc (ndarray[float]): expected AA conc in basal condition
-				(in units of METABOLITE_CONCENTRATION_UNITS)
 
 		Assumptions:
 			- Each internal amino acid concentration in 'minimal_plus_amino_acids'
 			media is not lower than in 'minimal' media
 
 		TODO (Travis):
-			Base on measured KI and KM values.
-			Add impact from synthesis enzymes and transporters.
 			Better handling of concentration assumption
 		"""
-
-		### TODO: remove - old code ###
 
 		aa_ids = sim_data.molecule_groups.amino_acids
 		conc = self.concentration_updates.concentrations_based_on_nutrients
@@ -566,8 +565,97 @@ class Metabolism(object):
 		self.fraction_supply_rate = 1 - f_inhibited + aa_conc_basal / (self.KM_aa_export + aa_conc_basal)
 		self.fraction_import_rate = 1 - (self.fraction_supply_rate + 1 / (1 + aa_conc_aa_media / self.KI_aa_synthesis) - f_exported)
 
-		### Old code ###
+	def aa_supply_scaling(self, aa_conc, aa_present):
+		"""
+		Called during polypeptide_elongation process
+		Determine amino acid supply rate scaling based on current amino acid
+		concentrations.
 
+		Args:
+			aa_conc (ndarray[float] with mol / volume units): internal
+				concentration for each amino acid
+			aa_present (ndarray[bool]): whether each amino acid is in the
+				external environment or not
+
+		Returns:
+			ndarray[float]: scaling for the supply of each amino acid with
+				higher supply rate if >1, lower supply rate if <1
+		"""
+
+		aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
+
+		aa_supply = self.fraction_supply_rate
+		aa_import = aa_present * self.fraction_import_rate
+		aa_synthesis = 1 / (1 + aa_conc / self.KI_aa_synthesis)
+		aa_export = aa_conc / (self.KM_aa_export + aa_conc)
+		supply_scaling = aa_supply + aa_import + aa_synthesis - aa_export
+
+		return supply_scaling
+
+	def set_mechanistic_supply_constants(self, sim_data, cell_specs):
+		"""
+		Sets constants to determine amino acid supply during translation.  Used
+		with amino_acid_synthesis() and amino_acid_import() during simulations
+		but supply can alternatively be determined phenomologically.  This
+		approach is more detailed and should better respond to environmental
+		changes and perturbations but has more variability related to gene
+		expression and regulation.
+
+		Args:
+			sim_data (SimulationData object)
+			cell_specs (Dict[str, Dict])
+
+		Sets class attributes:
+			aa_enzymes (np.ndarray[str]): enzyme ID with location tag for each
+				enzyme that can catalyze an amino acid pathway with
+				self.enzyme_to_amino_acid mapping these to each amino acid
+			aa_kcats (np.ndarray[float]): kcat value for each synthesis pathway
+				in units of K_CAT_UNITS, ordered by amino acid molecule group
+			aa_kis (np.ndarray[float]): KI value for each synthesis pathway
+				in units of METABOLITE_CONCENTRATION_UNITS, ordered by amino
+				acid molecule group. Will be inf if there is no inhibitory
+				control.
+			aa_upstream_kms (np.ndarray[float]): KM value associated with the
+				amino acid that feeds into each synthesis pathway in units of
+				METABOLITE_CONCENTRATION_UNITS, ordered by amino acid molecule
+				group. Will be 0 if there is no upstream amino acid considered.
+			aa_reverse_kms (np.ndarray[float]): KM value associated with the
+				amino acid in each synthesis pathway in units of
+				METABOLITE_CONCENTRATION_UNITS, ordered by amino acid molecule
+				group. Will be inf if the synthesis pathway is not reversible.
+			aa_upstream_mapping (np.ndarray[int]): index of the upstream amino
+				acid that feeds into each synthesis pathway, ordered by amino
+				acid molecule group
+			enzyme_to_amino_acid (np.ndarray[float]): relationship mapping from
+				aa_enzymes to amino acids (n enzymes, m amino acids).  Will
+				contain a 1 if the enzyme associated with the row can catalyze
+				the pathway for the amino acid associated with the column
+			aa_supply_balance (np.ndarray[float]): relationship mapping from
+				upstream amino acids to downstream amino acids (n upstream,
+				m downstream).  Will contain a -1 if the amino acid associated
+				with the row is required for synthesis of the amino acid
+				associated with the column
+			specific_import_rates (np.ndarray[float]): import rates expected
+				in rich media conditions for each amino acid normalized by dry
+				cell mass in units of (1 / (K_CAT_UNITS * DRY_MASS_UNITS),
+				ordered by amino acid molecule group
+
+		Assumptions:
+			- Only one reaction is limiting in an amino acid pathway (typically
+			the first and one with KI)
+			- kcat applies to forward and reverse reaction and multiple enzymes
+			catalyzing the same pathway will have the same kcat and saturation
+			terms
+
+		TODO:
+			Tie import rates to transporter expression and external concentrations
+			Handle different kcats (or enzymes) for reverse reactions
+			Search for new kcat/KM values in literature or use metabolism_kinetics.tsv
+			Consider multiple reaction steps
+		"""
+
+		aa_ids = sim_data.molecule_groups.amino_acids
+		conc = self.concentration_updates.concentrations_based_on_nutrients
 
 		# Allosteric inhibition constants to match required supply rate
 		rates = (
@@ -612,8 +700,6 @@ class Metabolism(object):
 				total_supply += supply[downstream]
 
 			# Calculate kcat value to ensure sufficient supply to double
-			# TODO: handle different kcats for reverse
-			# TODO: find KM values - reverse fraction should be lower than forward fraction
 			kcat = total_supply / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
 			data['kcat'] = kcat
 
@@ -652,7 +738,6 @@ class Metabolism(object):
 				self.aa_supply_balance[i, aa_to_index[aa]] = -1
 
 		# Calculate import rates to match supply in amino acid conditions
-		# TODO: base on external concentration and counts of transporters
 		with_aa_rates = (
 			sim_data.translation_supply_rate['minimal_plus_amino_acids']
 			* cell_specs['with_aa']['avgCellDryMassInit'] * sim_data.constants.n_avogadro
@@ -724,33 +809,6 @@ class Metabolism(object):
 		"""
 
 		return aa_in_media * self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
-
-	def aa_supply_scaling(self, aa_conc, aa_present):
-		"""
-		Called during polypeptide_elongation process
-		Determine amino acid supply rate scaling based on current amino acid
-		concentrations.
-
-		Args:
-			aa_conc (ndarray[float] with mol / volume units): internal
-				concentration for each amino acid
-			aa_present (ndarray[bool]): whether each amino acid is in the
-				external environment or not
-
-		Returns:
-			ndarray[float]: scaling for the supply of each amino acid with
-				higher supply rate if >1, lower supply rate if <1
-		"""
-
-		aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
-
-		aa_supply = self.fraction_supply_rate
-		aa_import = aa_present * self.fraction_import_rate
-		aa_synthesis = 1 / (1 + aa_conc / self.KI_aa_synthesis)
-		aa_export = aa_conc / (self.KM_aa_export + aa_conc)
-		supply_scaling = aa_supply + aa_import + aa_synthesis - aa_export
-
-		return supply_scaling
 
 	@staticmethod
 	def extract_reactions(raw_data, sim_data):
