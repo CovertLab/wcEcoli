@@ -1,5 +1,8 @@
 """
-Template for parca analysis plots
+Shows a comparison of kcat and KI values associated with amino acid synthesis
+pathways.  Useful as validation for the kcat data and identifying any issues
+with KI values that might not be inconsistent with expected amino acid
+concentrations.
 """
 
 import pickle
