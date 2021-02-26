@@ -85,7 +85,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		else:
 			self.elongation_model = BaseElongationModel(sim_data, self)
 		self.ppgpp_regulation = sim._ppgpp_regulation
-		self.mechanistic_supply = False  # TODO: accept as sim arg
+		self.mechanistic_supply = sim._mechanistic_aa_supply
 
 		# Growth associated maintenance energy requirements for elongations
 		self.gtpPerElongation = constants.gtp_per_translation
