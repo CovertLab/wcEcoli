@@ -351,9 +351,9 @@ metadata = {
 metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)
 filepath.write_json_file(metadata_path, metadata)
 
-git_diff = filepath.run_cmdline("git diff", trim=False)
+git_diff = filepath.run_cmdline("git diff HEAD", trim=False)
 if git_diff:
-	filepath.write_file(os.path.join(METADATA_DIRECTORY, "git_diff"), git_diff)
+	filepath.write_file(os.path.join(METADATA_DIRECTORY, "git_diff.txt"), git_diff)
 
 #### Create workflow
 
