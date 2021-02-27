@@ -85,3 +85,5 @@
 "VALINE--TRNA-LIGASE-RXN_valW-tRNA"	{"VAL":-1,"ATP":-1,"valW-tRNA":-1,"PPI":1,"AMP":1,"charged-valW-tRNA":1}	["VALS-MONOMER"]	"VALYL-TRNA SYNTHETASE"	
 "VALINE--TRNA-LIGASE-RXN_valX-tRNA"	{"VAL":-1,"ATP":-1,"valX-tRNA":-1,"PPI":1,"AMP":1,"charged-valX-tRNA":1}	["VALS-MONOMER"]	"VALYL-TRNA SYNTHETASE"	
 "VALINE--TRNA-LIGASE-RXN_valY-tRNA"	{"VAL":-1,"ATP":-1,"valY-tRNA":-1,"PPI":1,"AMP":1,"charged-valY-tRNA":1}	["VALS-MONOMER"]	"VALYL-TRNA SYNTHETASE"	
+# Selenocysteine reaction added
+"2.9.1.1-RXN-SERINE--TRNA-LIGASE-RXN"	{"selC-tRNA":-1, "L-SELENOCYSTEINE": -1, "ATP": -1, "charged-selC-tRNA":1, "PPI": 1, "AMP": 1}	["CPLX0-1141"]	""
