@@ -1,0 +1,11 @@
+Data handling:
+- convert regevents to tRNA -> gene regulation
+- determine expected fold change from attenuation
+
+Parca changes:
+- calculate K from expression change and tRNA concentrations in minimal/rich media
+- update basal expression/probs for attenuation effect
+
+Sim changes:
+- load data structures from sim_data
+- check mass balance and handle properly
