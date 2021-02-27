@@ -66,14 +66,15 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		trp_trna_idx = np.where(sim_data.process.transcription.aa_from_trna[sim_data.molecule_groups.amino_acids.index('TRP[c]'), :])[0]
 		trp_trna_ids = np.array(sim_data.process.transcription.charged_trna_names)[trp_trna_idx]
 		trp_rna = ['EG11027_RNA[c]', 'EG11028_RNA[c]']
-		self.attenuation_rna_idx = np.where([r in trp_rna for r in sim_data.process.transcription.rna_data['id']])[0]
 
 		# TODO: move to separate process
 		self.cell_density = sim_data.constants.cell_density
 		self.n_avogadro = sim_data.constants.n_avogadro
-		self.charged_trna = self.bulkMoleculesView(trp_trna_ids)
-		self.K = 0.5 * units.umol/units.L  # TODO: load from sim_data
-
+		self.charged_trna = self.bulkMoleculesView(trp_trna_ids)  # TODO: use all tRNA
+		self.trna_to_tu_mapping = np.array([[1, 1]])  # TODO: load from sim_data, (tRNA single, attenuated genes), handle multiple tRNA types for each gene (eg Leu and Val for ilvB) with different K?
+		self.K = units.umol/units.L * np.array([0.5, 0.4])  # TODO: load from sim_data (attenuated genes)
+		self.attenuation_rna_idx = np.where([r in trp_rna for r in sim_data.process.transcription.rna_data['id']])[0]  # TODO: load from sim_data (attenuated genes)
+		self.length_lookup = {idx: 10 for idx in self.attenuation_rna_idx}
 
 	def calculateRequest(self):
 		# Calculate elongation rate based on the current media
@@ -150,10 +151,15 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
 		cellVolume = cell_mass / self.cell_density
 		counts_to_molar = 1 / (self.n_avogadro * cellVolume)
-		trna_conc = counts_to_molar * self.charged_trna.total_counts().sum()  # TODO: sum across each set of AA tRNA
-		prob_attenuation = 1 - np.exp(-units.strip_empty_units(trna_conc / self.K))
-		attenuation_mask = (np.isin(TU_index_all_RNAs, self.attenuation_rna_idx) & (length_all_RNAs < 10))[is_partial_transcript]
-		rna_to_attenuate = stochasticRound(self.randomState, attenuation_mask * prob_attenuation).astype(bool)
+		trna_counts = self.charged_trna.total_counts() @ self.trna_to_tu_mapping
+		trna_conc = counts_to_molar * trna_counts
+		probs = 1 - np.exp(-units.strip_empty_units(trna_conc / self.K))
+		prob_lookup = {tu: prob for tu, prob in zip(self.attenuation_rna_idx, probs)}
+		prob_attenuation = np.array([
+			prob_lookup.get(idx, 0) * (length < self.length_lookup.get(idx, 0))
+			for idx, length in zip(TU_index_partial_RNAs, length_partial_RNAs)
+			])
+		rna_to_attenuate = stochasticRound(self.randomState, prob_attenuation).astype(bool)
 
 		sequences = buildSequences(
 			self.rnaSequences,
