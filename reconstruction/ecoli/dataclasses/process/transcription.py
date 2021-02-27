@@ -42,6 +42,7 @@ class Transcription(object):
 		self._build_rna_data(raw_data, sim_data)
 		self._build_transcription(raw_data, sim_data)
 		self._build_charged_trna(raw_data, sim_data)
+		self._build_attenuation(raw_data, sim_data)
 		self._build_elongation_rates(raw_data, sim_data)
 
 	def __getstate__(self):
@@ -620,6 +621,22 @@ class Transcription(object):
 		out[self._stoich_matrix_i, self._stoich_matrix_j] = self._stoich_matrix_v
 
 		return out
+
+	def _build_attenuation(self, raw_data, sim_data):
+		"""
+		Load fold changes related to transcriptional attenuation.
+		"""
+
+		trna = []
+		genes = []
+		fold_changes = []
+		for row in raw_data.transcriptional_attenuation:
+			trna.append(row['tRNA'])
+			genes.append(row['Target'])
+			fold_changes.append(float(row['log2 FC mean'])**2)
+
+		# TODO: map tRNA to charged names
+		# TODO: map genes to rna index
 
 	def _build_elongation_rates(self, raw_data, sim_data):
 		self.max_elongation_rate = sim_data.constants.RNAP_elongation_rate_max

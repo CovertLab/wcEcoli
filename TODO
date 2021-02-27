@@ -1,7 +1,7 @@
 Data handling:
 -x- convert regevents to tRNA -> gene regulation
 -x- determine expected fold change from attenuation
-- - touch up nca for new changes (allow option for tRNA, uncomment broken code and handle, use tRNA not TF in fold_change output)
+- - touch up nca for new changes (allow option for tRNA, uncomment broken code and handle, use tRNA not TF in fold_change output and remove unused columns)
 
 Parca changes:
 - - calculate K from expression change and tRNA concentrations in minimal/rich media
@@ -10,3 +10,7 @@ Parca changes:
 Sim changes:
 - - load data structures from sim_data
 - - check mass balance and handle properly
+- - listener for number of aborted transcripts
+
+Analysis:
+- - plot showing aborted transcripts vs AA and tRNA conc
