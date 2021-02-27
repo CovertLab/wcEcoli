@@ -31,29 +31,25 @@ class TranscriptElongation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(TranscriptElongation, self).initialize(sim, sim_data)
 
-		transcription = sim_data.process.transcription
-		constants = sim_data.constants
-		rna_data = transcription.rna_data
-
-		self.max_time_step = transcription.max_time_step
+		self.max_time_step = sim_data.process.transcription.max_time_step
 
 		# Load parameters
-		self.rnaPolymeraseElongationRateDict = transcription.rnaPolymeraseElongationRateDict
-		self.rnaIds = rna_data['id']
-		self.rnaLengths = rna_data["length"].asNumber()
-		self.rnaSequences = transcription.transcription_sequences
-		self.ntWeights = transcription.transcription_monomer_weights
-		self.endWeight = transcription.transcription_end_weight
+		self.rnaPolymeraseElongationRateDict = sim_data.process.transcription.rnaPolymeraseElongationRateDict
+		self.rnaIds = sim_data.process.transcription.rna_data['id']
+		self.rnaLengths = sim_data.process.transcription.rna_data["length"].asNumber()
+		self.rnaSequences = sim_data.process.transcription.transcription_sequences
+		self.ntWeights = sim_data.process.transcription.transcription_monomer_weights
+		self.endWeight = sim_data.process.transcription.transcription_end_weight
 		self.replichore_lengths = sim_data.process.replication.replichore_lengths
 		self.chromosome_length = self.replichore_lengths.sum()
 
 		# ID Groups of rRNAs
-		self.idx_16S_rRNA = np.where(rna_data['is_16S_rRNA'])[0]
-		self.idx_23S_rRNA = np.where(rna_data['is_23S_rRNA'])[0]
-		self.idx_5S_rRNA = np.where(rna_data['is_5S_rRNA'])[0]
+		self.idx_16S_rRNA = np.where(sim_data.process.transcription.rna_data['is_16S_rRNA'])[0]
+		self.idx_23S_rRNA = np.where(sim_data.process.transcription.rna_data['is_23S_rRNA'])[0]
+		self.idx_5S_rRNA = np.where(sim_data.process.transcription.rna_data['is_5S_rRNA'])[0]
 
 		# Mask for mRNAs
-		self.is_mRNA = rna_data['is_mRNA']
+		self.is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']
 
 		# Views
 		self.active_RNAPs = self.uniqueMoleculesView('active_RNAP')
@@ -63,18 +59,18 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.ppi = self.bulkMoleculeView(sim_data.molecule_ids.ppi)
 		self.inactive_RNAPs = self.bulkMoleculeView("APORNAP-CPLX[c]")
 		self.variable_elongation = sim._variable_elongation_transcription
-		self.make_elongation_rates = transcription.make_elongation_rates
+		self.make_elongation_rates = sim_data.process.transcription.make_elongation_rates
 
 		# Attenuation
 		# TODO: generalize for all (in parca)
-		trp_trna_idx = np.where(transcription.aa_from_trna[sim_data.molecule_groups.amino_acids.index('TRP[c]'), :])[0]
-		trp_trna_ids = np.array(transcription.charged_trna_names)[trp_trna_idx]
+		trp_trna_idx = np.where(sim_data.process.transcription.aa_from_trna[sim_data.molecule_groups.amino_acids.index('TRP[c]'), :])[0]
+		trp_trna_ids = np.array(sim_data.process.transcription.charged_trna_names)[trp_trna_idx]
 		trp_rna = ['EG11027_RNA[c]', 'EG11028_RNA[c]']
-		self.attenuation_rna_idx = np.where([r in trp_rna for r in rna_data['id']])[0]
+		self.attenuation_rna_idx = np.where([r in trp_rna for r in sim_data.process.transcription.rna_data['id']])[0]
 
 		# TODO: move to separate process
-		self.cell_density = constants.cell_density
-		self.n_avogadro = constants.n_avogadro
+		self.cell_density = sim_data.constants.cell_density
+		self.n_avogadro = sim_data.constants.n_avogadro
 		self.charged_trna = self.bulkMoleculesView(trp_trna_ids)
 		self.K = 0.5 * units.umol/units.L  # TODO: load from sim_data
 
