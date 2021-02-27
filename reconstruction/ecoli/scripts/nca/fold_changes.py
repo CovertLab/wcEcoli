@@ -87,6 +87,16 @@ WCM_MAPPING = {
     'rcdA': 'ybjK',
     }
 
+TRNA_MAPPING = {
+    'an l-histidyl-[trnahis]': 'tRNA-His',
+    'an l-isoleucyl-[trnaile]': 'tRNA-Ile',
+    'an l-leucyl-[trnaleu]': 'tRNA-Leu',
+    'an l-phenylalanyl-[trnaphe]': 'tRNA-Phe',
+    'an l-threonyl-[trnathr]': 'tRNA-Thr',
+    'an l-tryptophanyl-[trnatrp]': 'tRNA-Trp',
+    'an l-valyl-[trnaval]': 'tRNA-Val',
+    }
+
 
 def load_regulon_db_file(filename: str) -> List[List[str]]:
     """
@@ -321,6 +331,12 @@ def load_ecocyc_tf_gene_interactions(
     positive = '+'
     negative = '-'
     unknown = 'NIL'
+    valid_types = {
+        # 'Transcription-Factor-Binding',
+        'Ribosome-Mediated-Attenuation',
+        # 'Transcriptional-Attenuation',
+        # 'Small-Molecule-Mediated-Attenuation',
+        }
 
     # Load Leu-Lrp regulation to differentiate from just Lrp regulation.
     # Leu-Lrp will have roughly the opposite effect of Lrp but they are not
@@ -351,7 +367,7 @@ def load_ecocyc_tf_gene_interactions(
             # Skip lines that are not needed
             if line[0].startswith('#'):
                 continue
-            if line[type_idx] != 'Transcription-Factor-Binding':
+            if line[type_idx] not in valid_types:
                 continue
 
             # Extract data from the line
@@ -1127,6 +1143,7 @@ def save_fold_changes(
                 if curated_dir * fc < 0:
                     continue
 
+                tf = TRNA_MAPPING.get(tf, tf)
                 writer.writerow([tf, gene, round(fc, 2)])
 
 def parse_args() -> argparse.Namespace:
@@ -1308,8 +1325,8 @@ if __name__ == '__main__':
 
         A, P = load_regulation(args.analysis, gene_symbols, tfs)
 
-    match_statistics(seq_data, A, P, tfs, tf_genes, gene_symbols)
-    plot_results(tf_genes, A, P, gene_symbols, tfs, output_dir)
+    # match_statistics(seq_data, A, P, tfs, tf_genes, gene_symbols)
+    # plot_results(tf_genes, A, P, gene_symbols, tfs, output_dir)
     save_fold_changes(args.ecocyc, args.regulondb, A, P, gene_symbols, tfs, output_dir)
 
     print(f'Completed in {(time.time() - start) / 60:.1f} min')

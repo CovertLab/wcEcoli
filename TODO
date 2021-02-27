@@ -1,11 +1,12 @@
 Data handling:
-- convert regevents to tRNA -> gene regulation
-- determine expected fold change from attenuation
+-x- convert regevents to tRNA -> gene regulation
+-x- determine expected fold change from attenuation
+- - touch up nca for new changes (allow option for tRNA, uncomment broken code and handle, use tRNA not TF in fold_change output)
 
 Parca changes:
-- calculate K from expression change and tRNA concentrations in minimal/rich media
-- update basal expression/probs for attenuation effect
+- - calculate K from expression change and tRNA concentrations in minimal/rich media
+- - update basal expression/probs for attenuation effect
 
 Sim changes:
-- load data structures from sim_data
-- check mass balance and handle properly
+- - load data structures from sim_data
+- - check mass balance and handle properly
