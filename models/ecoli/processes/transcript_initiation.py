@@ -100,17 +100,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.copy_number = sim_data.process.replication.get_average_copy_number
 		self.ppgpp_regulation = sim._ppgpp_regulation
 
-		rna_ids = sim_data.process.transcription.rna_data['id']
-		factor = 5
-		rnas = {
-			'EG11027_RNA[c]': factor,
-			'EG11028_RNA[c]': factor,
-			# 'EG11226_RNA[c]': factor,  # for Leu
-			}
-		for rna, factor in rnas.items():
-			idx = np.where(rna_ids == rna)[0][0]
-			self.basal_prob[idx] *= factor
-			self.delta_prob_matrix[idx, :] *= factor
 
 	def calculateRequest(self):
 		# Get all inactive RNA polymerases
