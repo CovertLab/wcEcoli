@@ -4,12 +4,12 @@ Data handling:
 - - touch up nca for new changes (allow option for tRNA, uncomment broken code and handle, use tRNA not TF in fold_change output and remove unused columns)
 
 Parca changes:
-- - calculate K from fold change and tRNA concentrations in minimal/rich media
-- - update basal probs (adjusted for TFs?) for attenuation effect
+-x- calculate K from fold change and tRNA concentrations in rich media
+-x- update basal probs (adjusted for TFs?) for attenuation effect
 - - update ppGpp expression vectors (or synth prob calculation?) for attenuation effect
 
 Sim changes:
-- - load data structures from sim_data
+-x- load data structures from sim_data
 - - check mass balance and handle properly
 - - listener for number of aborted transcripts
 - - option to run with attenuation or not (also parca option?)

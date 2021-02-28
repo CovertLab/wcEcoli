@@ -683,13 +683,33 @@ class Transcription(object):
 			return conc
 
 		k_units = units.umol / units.L
-		trna_conc = get_trna_conc('with_aa').asNumber(k_units) @ self.aa_from_trna.T
+		trna_conc = self.aa_from_trna @ get_trna_conc('with_aa').asNumber(k_units)
 
+		# Calculate constant for stop probability
 		self.attenuation_k = np.zeros_like(self._attenuation_fold_changes)
 		for i, j in zip(*np.where(self._attenuation_fold_changes != 1)):
 			k = trna_conc[i] / np.log(self._attenuation_fold_changes[i, j])
 			self.attenuation_k[i, j] = 1/k
 		self.attenuation_k = 1 / k_units * self.attenuation_k
+
+		# Adjust basal synthesis probabilities to account for less synthesis
+		# due to attenuation
+		condition = 'basal'
+		basal_prob = sim_data.process.transcription_regulation.basal_prob
+		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix()
+		p_promoter_bound = np.array([
+			sim_data.pPromoterBound[condition][tf]
+			for tf in sim_data.process.transcription_regulation.tf_ids
+			])
+		delta = delta_prob @ p_promoter_bound
+		basal_stop_prob = self.get_attenuation_stop_probabilities(get_trna_conc(condition))
+		basal_synth_prob = (basal_prob + delta)[self.attenuated_rna_indices]
+		basal_prob[self.attenuated_rna_indices] += basal_synth_prob * (1 / (1 - basal_stop_prob) - 1)
+
+	def get_attenuation_stop_probabilities(self, trna_conc):
+		trna_by_aa = units.matmul(self.aa_from_trna, trna_conc)
+		stop_prob = 1 - np.exp(units.strip_empty_units(trna_by_aa @ self.attenuation_k))
+		return stop_prob
 
 	def _build_elongation_rates(self, raw_data, sim_data):
 		self.max_elongation_rate = sim_data.constants.RNAP_elongation_rate_max
