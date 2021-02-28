@@ -674,24 +674,21 @@ class Transcription(object):
 
 		def get_trna_conc(condition):
 			spec = cell_specs[condition]
-			estimated_charged_fraction = 0.95
 			uncharged_trna_ids = self.rna_data['id'][self.rna_data['is_tRNA']]
 			counts = spec['bulkAverageContainer'].counts(uncharged_trna_ids)
 			volume = (spec['avgCellDryMassInit'] / sim_data.constants.cell_density
 				/ sim_data.mass.cell_dry_mass_fraction)
 			# Order of operations for conc (counts last) is to get units to work well
-			conc = (estimated_charged_fraction / sim_data.constants.n_avogadro / volume * counts)
+			conc = (1 / sim_data.constants.n_avogadro / volume * counts)
 			return conc
 
 		k_units = units.umol / units.L
-		trna_low = get_trna_conc('no_oxygen')
-		trna_high = get_trna_conc('with_aa')
-		trna_diff = (trna_low - trna_high).asNumber(k_units) @ self.aa_from_trna.T
+		trna_conc = get_trna_conc('with_aa').asNumber(k_units) @ self.aa_from_trna.T
 
 		self.attenuation_k = np.zeros_like(self._attenuation_fold_changes)
 		for i, j in zip(*np.where(self._attenuation_fold_changes != 1)):
-			k = trna_diff[i] / np.log(self._attenuation_fold_changes[i, j])
-			self.attenuation_k[i, j] = -1/k
+			k = trna_conc[i] / np.log(self._attenuation_fold_changes[i, j])
+			self.attenuation_k[i, j] = 1/k
 		self.attenuation_k = 1 / k_units * self.attenuation_k
 
 	def _build_elongation_rates(self, raw_data, sim_data):
