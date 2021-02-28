@@ -16,3 +16,7 @@ Sim changes:
 
 Analysis:
 - - plot showing aborted transcripts vs AA and tRNA conc
+
+Checks:
+- - check all negative fold changes
+- - check why some tRNA are higher in anaerobic than with_aa in parca

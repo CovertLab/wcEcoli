@@ -66,8 +66,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.cell_density = sim_data.constants.cell_density
 		self.n_avogadro = sim_data.constants.n_avogadro
 		self.charged_trna = self.bulkMoleculesView(sim_data.process.transcription.charged_trna_names)
-		self.trna_to_tu_mapping = np.array([[1, 1]])  # TODO: load from sim_data, (tRNA single, attenuated genes), handle multiple tRNA types for each gene (eg Leu and Val for ilvB) with different K?
-		self.K = units.umol/units.L * np.array([0.5, 0.4])  # TODO: load from sim_data (attenuated genes)
+		self.trna_to_aa = sim_data.process.transcription.aa_from_trna.T
+		self.k = sim_data.process.transcription.attenuation_k
 		self.attenuated_rna_indices = sim_data.process.transcription.attenuated_rna_indices
 		self.location_lookup = sim_data.process.transcription.attenuation_location
 
@@ -146,9 +146,9 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
 		cellVolume = cell_mass / self.cell_density
 		counts_to_molar = 1 / (self.n_avogadro * cellVolume)
-		trna_counts = self.charged_trna.total_counts() @ self.trna_to_tu_mapping
+		trna_counts = self.charged_trna.total_counts() @ self.trna_to_aa
 		trna_conc = counts_to_molar * trna_counts
-		probs = 1 - np.exp(-units.strip_empty_units(trna_conc / self.K))
+		probs = 1 - np.exp(units.strip_empty_units(trna_conc @ self.k))
 		prob_lookup = {tu: prob for tu, prob in zip(self.attenuated_rna_indices, probs)}
 		prob_attenuation = np.array([
 			prob_lookup.get(idx, 0) * (length < self.location_lookup.get(idx, 0))
