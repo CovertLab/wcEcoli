@@ -6,6 +6,8 @@ Transcription elongation sub-model.
 TODO:
 - use transcription units instead of single genes
 - account for energy
+- move attenuation to its own process (would need to be between initiation and
+elongation or allow for exclusive unique molecule requests)
 """
 
 from __future__ import absolute_import, division, print_function
@@ -62,12 +64,12 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.make_elongation_rates = sim_data.process.transcription.make_elongation_rates
 
 		# Attenuation
-		# TODO: move to separate process
 		self.cell_density = sim_data.constants.cell_density
 		self.n_avogadro = sim_data.constants.n_avogadro
 		self.charged_trna = self.bulkMoleculesView(sim_data.process.transcription.charged_trna_names)
 		self.stop_probabilities = sim_data.process.transcription.get_attenuation_stop_probabilities
 		self.attenuated_rna_indices = sim_data.process.transcription.attenuated_rna_indices
+		self.attenuated_rna_indices_lookup = {idx: i for i, idx in enumerate(self.attenuated_rna_indices)}
 		self.location_lookup = sim_data.process.transcription.attenuation_location
 
 	def calculateRequest(self):
@@ -141,17 +143,16 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		RNAP_index_partial_RNAs = RNAP_index_all_RNAs[is_partial_transcript]
 
 		# Attenuation
-		# TODO: move to separate process
-		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
+		cell_mass = self.readFromListener('Mass', 'cellMass') * units.fg
 		cellVolume = cell_mass / self.cell_density
 		counts_to_molar = 1 / (self.n_avogadro * cellVolume)
-		probs = self.stop_probabilities(counts_to_molar * self.charged_trna.total_counts())
-		prob_lookup = {tu: prob for tu, prob in zip(self.attenuated_rna_indices, probs)}
-		prob_attenuation = np.array([
+		attenuation_probability = self.stop_probabilities(counts_to_molar * self.charged_trna.total_counts())
+		prob_lookup = {tu: prob for tu, prob in zip(self.attenuated_rna_indices, attenuation_probability)}
+		tu_stop_probability = np.array([
 			prob_lookup.get(idx, 0) * (length < self.location_lookup.get(idx, 0))
 			for idx, length in zip(TU_index_partial_RNAs, length_partial_RNAs)
 			])
-		rna_to_attenuate = stochasticRound(self.randomState, prob_attenuation).astype(bool)
+		rna_to_attenuate = stochasticRound(self.randomState, tu_stop_probability).astype(bool)
 
 		sequences = buildSequences(
 			self.rnaSequences,
@@ -273,7 +274,10 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			np.where(did_terminate_mask[partial_RNA_to_RNAP_mapping]))
 
 		# Attenuation removes RNAs and RNAPs
+		counts_attenuated = np.zeros(len(self.attenuated_rna_indices))
 		if np.any(rna_to_attenuate):
+			for idx in TU_index_partial_RNAs[rna_to_attenuate]:
+				counts_attenuated[self.attenuated_rna_indices_lookup[idx]] += 1
 			self.RNAs.delByIndexes(partial_transcript_indexes[rna_to_attenuate])
 			self.active_RNAPs.delByIndexes(np.where(rna_to_attenuate[partial_RNA_to_RNAP_mapping]))
 			# TODO: account for lost mass from early termination
@@ -298,6 +302,10 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			terminated_RNAs)
 		self.writeToListener(
 			"TranscriptElongationListener", "countNTPsUSed", n_elongations)
+		self.writeToListener('TranscriptElongationListener',
+			'attenuation_probability', attenuation_probability)
+		self.writeToListener('TranscriptElongationListener',
+			'counts_attenuated', counts_attenuated)
 
 		self.writeToListener("GrowthLimits", "ntpUsed", ntps_used)
 

@@ -11,11 +11,12 @@ Parca changes:
 Sim changes:
 -x- load data structures from sim_data
 - - check mass balance and handle properly
-- - listener for number of aborted transcripts
+-x- listener for number of aborted transcripts
 - - option to run with attenuation or not (also parca option?)
 
 Analysis:
 - - plot showing aborted transcripts vs AA and tRNA conc
+- - plot showing cumulative counts attenuated, cumulative counts finished and fraction of initial that are attenuated
 
 Checks:
 - - check all negative fold changes
