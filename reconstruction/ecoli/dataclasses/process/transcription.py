@@ -627,16 +627,42 @@ class Transcription(object):
 		Load fold changes related to transcriptional attenuation.
 		"""
 
-		trna = []
-		genes = []
+		# Load data from file
+		aa_trnas = []
+		attenuated_rnas = []
 		fold_changes = []
+		gene_to_rna = {g['symbol']: g['rna_id'] for g in raw_data.genes}
 		for row in raw_data.transcriptional_attenuation:
-			trna.append(row['tRNA'])
-			genes.append(row['Target'])
-			fold_changes.append(float(row['log2 FC mean'])**2)
+			trna_aa = row['tRNA'].split('-')[1].upper() + '[c]'
+			gene = row['Target']
+			rna = gene_to_rna[gene] + '[c]'
 
-		# TODO: map tRNA to charged names
-		# TODO: map genes to rna index
+			aa_trnas.append(trna_aa)
+			attenuated_rnas.append(rna)
+			fold_changes.append(2**row['log2 FC mean'])
+
+		self.attenuated_rna_ids = np.unique(attenuated_rnas)
+
+		# Convert data to matrix mapping tRNA to genes with a fold change
+		trna_to_row = {t: i for i, t in enumerate(sim_data.molecule_groups.amino_acids)}
+		rna_to_col = {r: i for i, r in enumerate(self.attenuated_rna_ids)}
+		n_aas = len(sim_data.molecule_groups.amino_acids)
+		n_rnas = len(self.attenuated_rna_ids)
+		self._attenuation_fold_changes = np.ones((n_aas, n_rnas))
+		for trna, rna, fc in zip(aa_trnas, attenuated_rnas, fold_changes):
+			i = trna_to_row[trna]
+			j = rna_to_col[rna]
+			self._attenuation_fold_changes[i, j] = fc
+
+		# Attenuated RNA index mapping
+		rna_to_index = {r: i for i, r in enumerate(self.rna_data['id'])}
+		self.attenuated_rna_indices = np.array([rna_to_index[r] for r in self.attenuated_rna_ids])
+
+		# Specify location in gene where attenuation will occur
+		# Currently just assumes before a transcript begins elongation (position < 1)
+		# TODO: base this on specific locations for each gene
+		locations = np.ones(len(self.attenuated_rna_indices))
+		self.attenuation_location = {idx: loc for idx, loc in zip(self.attenuated_rna_indices, locations)}
 
 	def _build_elongation_rates(self, raw_data, sim_data):
 		self.max_elongation_rate = sim_data.constants.RNAP_elongation_rate_max
