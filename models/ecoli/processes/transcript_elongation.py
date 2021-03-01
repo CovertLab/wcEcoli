@@ -153,52 +153,49 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			for idx, length in zip(TU_index_partial_RNAs, length_partial_RNAs)
 			])
 		rna_to_attenuate = stochasticRound(self.randomState, tu_stop_probability).astype(bool)
-
-		TU_to_elongate = TU_index_partial_RNAs[~rna_to_attenuate]
-		length_to_elongate = length_partial_RNAs[~rna_to_attenuate]
-		is_mRNA_to_elongate = is_mRNA_partial_RNAs[~rna_to_attenuate]
-		RNAP_index_to_elongate = RNAP_index_partial_RNAs[~rna_to_attenuate]
+		rna_to_elongate = ~rna_to_attenuate
 
 		sequences = buildSequences(
 			self.rnaSequences,
-			TU_to_elongate,
-			length_to_elongate,
+			TU_index_partial_RNAs,
+			length_partial_RNAs,
 			self.elongation_rates)
 
 		# Polymerize transcripts based on sequences and available nucleotides
 		reactionLimit = ntpCounts.sum()
 		result = polymerize(
-			sequences,
+			sequences[rna_to_elongate],
 			ntpCounts,
 			reactionLimit,
 			self.randomState,
-			self.elongation_rates[TU_to_elongate])
+			self.elongation_rates[TU_index_partial_RNAs][rna_to_elongate])
 
-		sequence_elongations = result.sequenceElongation
+		sequence_elongations = np.zeros_like(length_partial_RNAs)
+		sequence_elongations[rna_to_elongate] = result.sequenceElongation
 		ntps_used = result.monomerUsages
 
 		# Calculate changes in mass associated with polymerization
 		added_mass = computeMassIncrease(sequences, sequence_elongations,
 			self.ntWeights)
-		did_initialize = (length_to_elongate == 0) & (sequence_elongations > 0)
+		did_initialize = (length_partial_RNAs == 0) & (sequence_elongations > 0)
 		added_mass[did_initialize] += self.endWeight
 
 		# Calculate updated transcript lengths
-		updated_transcript_lengths = length_to_elongate + sequence_elongations
+		updated_transcript_lengths = length_partial_RNAs + sequence_elongations
 
 		# Get attributes of active RNAPs
 		coordinates, domain_index, direction, RNAP_unique_index = self.active_RNAPs.attrs(
 			'coordinates', 'domain_index', 'direction', 'unique_index')
 
 		# Active RNAP count should equal partial transcript count
-		assert len(RNAP_unique_index) == len(RNAP_index_to_elongate) + rna_to_attenuate.sum()
+		assert len(RNAP_unique_index) == len(RNAP_index_partial_RNAs)
 
 		# All partial RNAs must be linked to an RNAP
-		assert (np.count_nonzero(RNAP_index_to_elongate == -1) == 0)
+		assert (np.count_nonzero(RNAP_index_partial_RNAs == -1) == 0)
 
 		# Get mapping indexes between partial RNAs to RNAPs
 		partial_RNA_to_RNAP_mapping, RNAP_to_partial_RNA_mapping = get_mapping_arrays(
-			RNAP_index_to_elongate, RNAP_unique_index)
+			RNAP_index_partial_RNAs, RNAP_unique_index)
 
 		# Rescale boolean array of directions to an array of 1's and -1's.
 		# True is converted to 1, False is converted to -1.
@@ -233,18 +230,18 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			TU_index_all_RNAs, dtype=np.float64)
 
 		added_nsRNA_mass_all_RNAs[is_partial_transcript] = np.multiply(
-			added_mass, np.logical_not(is_mRNA_to_elongate))
+			added_mass, np.logical_not(is_mRNA_partial_RNAs))
 		added_mRNA_mass_all_RNAs[is_partial_transcript] = np.multiply(
-			added_mass, is_mRNA_to_elongate)
+			added_mass, is_mRNA_partial_RNAs)
 
 		self.RNAs.add_submass_by_name("nonspecific_RNA", added_nsRNA_mass_all_RNAs)
 		self.RNAs.add_submass_by_name("mRNA", added_mRNA_mass_all_RNAs)
 
 		# Determine if transcript has reached the end of the sequence
-		terminal_lengths = self.rnaLengths[TU_to_elongate]
+		terminal_lengths = self.rnaLengths[TU_index_partial_RNAs]
 		did_terminate_mask = (updated_transcript_lengths == terminal_lengths)
 		terminated_RNAs = np.bincount(
-			TU_to_elongate[did_terminate_mask],
+			TU_index_partial_RNAs[did_terminate_mask],
 			minlength = self.rnaSequences.shape[0])
 
 		# Assume transcription from all rRNA genes produce rRNAs from the first
@@ -272,7 +269,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		# not mRNAs from unique molecules (these are moved to bulk molecules)
 		self.RNAs.delByIndexes(
 			partial_transcript_indexes[np.logical_and(
-				did_terminate_mask, np.logical_not(is_mRNA_to_elongate))])
+				did_terminate_mask, np.logical_not(is_mRNA_partial_RNAs))])
 
 		# Remove RNAPs that have finished transcription
 		self.active_RNAPs.delByIndexes(
@@ -287,6 +284,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			self.active_RNAPs.delByIndexes(np.where(rna_to_attenuate[partial_RNA_to_RNAP_mapping]))
 			# TODO: account for lost mass from early termination
 
+		n_attenuated = rna_to_attenuate.sum()
 		n_terminated = did_terminate_mask.sum()
 		n_initialized = did_initialize.sum()
 		n_elongations = ntps_used.sum()
@@ -298,7 +296,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		# Update bulk molecule counts
 		self.ntps.countsDec(ntps_used)
 		self.bulk_RNAs.countsInc(n_new_bulk_RNAs)
-		self.inactive_RNAPs.countInc(n_terminated)
+		self.inactive_RNAPs.countInc(n_terminated + n_attenuated)
 		self.ppi.countInc(n_elongations - n_initialized)
 
 		# Write outputs to listeners
@@ -319,7 +317,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.writeToListener("RnapData", "didTerminate", did_terminate_mask.sum())
 		self.writeToListener(
 			"RnapData", "terminationLoss",
-			(terminal_lengths - length_to_elongate)[did_terminate_mask].sum())
+			(terminal_lengths - length_partial_RNAs)[did_terminate_mask].sum())
 
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):

@@ -11,7 +11,7 @@ Parca changes:
 
 Sim changes:
 -x- load data structures from sim_data
-- - check mass balance and handle properly
+-x- check mass balance and handle properly
 -x- listener for number of aborted transcripts
 - - option to run with attenuation or not (also parca option?)
 - - update basal probs if option set
@@ -25,4 +25,4 @@ Checks:
 - - check why some tRNA are higher in anaerobic than with_aa in parca
 
 Troubleshooting:
-- - slower growth rate (likely less RNA being produced - need to adjust init rate for attenuation or loss of mass balance)
+-x- slower growth rate (likely less RNA being produced - need to adjust init rate for attenuation or loss of mass balance) - due to losing RNAP counts
