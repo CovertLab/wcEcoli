@@ -11,7 +11,7 @@ import os
 import re
 import sys
 import time
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Dict, List, Optional, Set, Tuple, cast
 
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
@@ -310,6 +310,7 @@ def add_tf_gene_data(
         tf_genes[tf] = genes
 
 def load_ecocyc_tf_gene_interactions(
+        valid_types: Set[str],
         split: bool = False,
         verbose: bool = True,
         ) -> Dict[str, Dict[str, int]]:
@@ -317,6 +318,7 @@ def load_ecocyc_tf_gene_interactions(
     Load EcoCyc TF-gene interactions.
 
     Args:
+        valid_types: types of regulation that should be included in the NCA problem
         split: if True, splits TFs into activator and repressor forms
         verbose: if True, prints warnings about loaded data
 
@@ -331,12 +333,6 @@ def load_ecocyc_tf_gene_interactions(
     positive = '+'
     negative = '-'
     unknown = 'NIL'
-    valid_types = {
-        # 'Transcription-Factor-Binding',
-        'Ribosome-Mediated-Attenuation',
-        # 'Transcriptional-Attenuation',
-        # 'Small-Molecule-Mediated-Attenuation',
-        }
 
     # Load Leu-Lrp regulation to differentiate from just Lrp regulation.
     # Leu-Lrp will have roughly the opposite effect of Lrp but they are not
@@ -422,6 +418,7 @@ def load_regulondb_tf_gene_interactions(
     return tf_genes
 
 def load_tf_gene_interactions(
+        valid_types: Set[str],
         ecocyc: bool = True,
         regulondb: bool = False,
         split: bool = False,
@@ -431,6 +428,8 @@ def load_tf_gene_interactions(
     Load TF-gene interactions.
 
     Args:
+        valid_types: types of regulation that should be included in the NCA problem
+            (only used for EcoCyc)
         ecocyc: if True, uses regulation interactions from EcoCyc
         regulondb: if True, uses regulation interactions from RegulonDB
         split: if True, splits TFs into activator and repressor forms
@@ -452,12 +451,12 @@ def load_tf_gene_interactions(
 
     tf_genes = {}
     if ecocyc:
-        tf_genes.update(load_ecocyc_tf_gene_interactions(split, verbose))
+        tf_genes.update(load_ecocyc_tf_gene_interactions(valid_types, split=split, verbose=verbose))
         if verbose:
             print('Loaded EcoCyc gene regulation')
 
     if regulondb:
-        tf_genes.update(load_regulondb_tf_gene_interactions(split, verbose))
+        tf_genes.update(load_regulondb_tf_gene_interactions(split=split, verbose=verbose))
         if verbose:
             print('Loaded RegulonDB gene regulation')
 
@@ -928,7 +927,10 @@ def match_statistics(
     nonzero = nca_fcs != 0
     pearson_all = stats.pearsonr(wcm_fcs, nca_fcs)
     pearson_consistent = stats.pearsonr(wcm_fcs[wcm_consistent], nca_fcs[wcm_consistent])
-    pearson_no_zeros = stats.pearsonr(wcm_fcs[nonzero], nca_fcs[nonzero])
+    if np.any(nonzero):
+        pearson_no_zeros = stats.pearsonr(wcm_fcs[nonzero], nca_fcs[nonzero])
+    else:
+        pearson_no_zeros = [np.nan, np.nan]
     print('\nFold change correlation with WCM:')
     print(f'All: r={pearson_all[0]:.3f} (p={pearson_all[1]:.0e}, n={len(wcm_fcs)})')
     print(f'Only if WCM consistent: r={pearson_consistent[0]:.3f} (p={pearson_consistent[1]:.0e}, n={np.sum(wcm_consistent)})')
@@ -1030,7 +1032,10 @@ def plot_results(
     nonzero = nca_fcs != 0
     pearson_all = stats.pearsonr(wcm_fcs, nca_fcs)
     pearson_consistent = stats.pearsonr(wcm_fcs[wcm_consistent], nca_fcs[wcm_consistent])
-    pearson_no_zeros = stats.pearsonr(wcm_fcs[nonzero], nca_fcs[nonzero])
+    if np.any(nonzero):
+        pearson_no_zeros = stats.pearsonr(wcm_fcs[nonzero], nca_fcs[nonzero])
+    else:
+        pearson_no_zeros = [np.nan, np.nan]
     ax_wcm.plot(wcm_fcs[wcm_consistent], nca_fcs[wcm_consistent], 'x', label='WCM consistent')
     ax_wcm.plot(wcm_fcs[~wcm_consistent], nca_fcs[~wcm_consistent], 'x', label='WCM inconsistent')
     xlim = ax_wcm.get_xlim()
@@ -1086,6 +1091,7 @@ def plot_results(
     plt.close('all')
 
 def save_fold_changes(
+        valid_types: Set[str],
         ecocyc: bool,
         regulondb: bool,
         A: np.ndarray,
@@ -1098,6 +1104,7 @@ def save_fold_changes(
     Save fold changes to a file to use in the whole-cell model.
 
     Args:
+        valid_types: types of regulation that should be included in the NCA problem
         ecocyc: if True, uses regulation interactions from EcoCyc
         regulondb: if True, uses regulation interactions from RegulonDB
         A: NCA solution for TF/gene matrix relationship (n genes, m TFs)
@@ -1111,7 +1118,7 @@ def save_fold_changes(
     """
 
     curated_data = load_tf_gene_interactions(
-        ecocyc=ecocyc, regulondb=regulondb, split=False, verbose=False)
+        valid_types, ecocyc=ecocyc, regulondb=regulondb, split=False, verbose=False)
     output_file = os.path.join(output_dir, FOLD_CHANGE_FILE)
     _, nca_pairs = calculate_fold_changes(A, P, genes, tfs)
     lowercase_mapping = {k.lower(): k for k in load_gene_names()[2]}
@@ -1184,6 +1191,9 @@ def parse_args() -> argparse.Namespace:
         help='If set, uses RegulonDB regulation data.')
 
     # Data options
+    parser.add_argument('--attenuation-only',
+        action='store_true',
+        help='If set, only looks at tRNA attenuation fold changes.')
     parser.add_argument('--average-seq',
         action='store_true',
         help='If set, averages sequencing data for replicate samples and reduces the number of samples.')
@@ -1244,6 +1254,13 @@ if __name__ == '__main__':
     start = time.time()
     args = parse_args()
 
+    # TODO: allow combinations of valid regulation types
+    # TODO: add other types of interest ('Transcription-Attenuation', 'Small-Molecule-Mediated-Attenuation')
+    if args.attenuation_only:
+        valid_types = {'Ribosome-Mediated-Attenuation'}
+    else:
+        valid_types = {'Transcription-Factor-Binding'}
+
     # TODO: normalize seq data or only use EcoMAC data for now
     # TODO: handle options better when loading analysis or cache
     #   - seq_data can be different with args.linear
@@ -1253,7 +1270,7 @@ if __name__ == '__main__':
     seq_data, idx_mapping = load_seq_data(args.linear, args.average_seq)
     b_numbers, gene_symbols, synonyms = load_gene_names()
     tf_genes = load_tf_gene_interactions(
-        ecocyc=args.ecocyc, regulondb=args.regulondb,
+        valid_types, ecocyc=args.ecocyc, regulondb=args.regulondb,
         split=args.split, verbose=args.verbose,
         )
 
@@ -1325,8 +1342,8 @@ if __name__ == '__main__':
 
         A, P = load_regulation(args.analysis, gene_symbols, tfs)
 
-    # match_statistics(seq_data, A, P, tfs, tf_genes, gene_symbols)
-    # plot_results(tf_genes, A, P, gene_symbols, tfs, output_dir)
-    save_fold_changes(args.ecocyc, args.regulondb, A, P, gene_symbols, tfs, output_dir)
+    match_statistics(seq_data, A, P, tfs, tf_genes, gene_symbols)
+    plot_results(tf_genes, A, P, gene_symbols, tfs, output_dir)
+    save_fold_changes(valid_types, args.ecocyc, args.regulondb, A, P, gene_symbols, tfs, output_dir)
 
     print(f'Completed in {(time.time() - start) / 60:.1f} min')

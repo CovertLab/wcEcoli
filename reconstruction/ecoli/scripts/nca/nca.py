@@ -719,8 +719,8 @@ def iterative_sub_nca(
         print(f'Iteration {it} error: {error:.3f}')
 
         # Print statistics for this iteration
-        # if verbose and statistics:
-            # statistics(E, A_est, P_est, new_tfs, *statistics_args)
+        if verbose and statistics:
+            statistics(E, A_est, P_est, new_tfs, *statistics_args)
 
         # Check if this is the best solution so far and store results
         if error < best_error:
