@@ -3,6 +3,10 @@
 """
 Use Network Component Analysis (NCA) to determine TF regulatory impacts on
 each gene based on expression in all conditions.
+
+Note: many variables are named assuming a transcrition factor (TF) is the
+regulator but with new features and additional regulation added, this is now
+not always the case and could be refactored for clarity.
 """
 
 import argparse
@@ -1099,6 +1103,7 @@ def save_fold_changes(
         genes: np.ndarray,
         tfs: np.ndarray,
         output_dir: str,
+        attenuation: bool = False,
         ) -> None:
     """
     Save fold changes to a file to use in the whole-cell model.
@@ -1112,6 +1117,7 @@ def save_fold_changes(
         genes: IDs for each gene corresponding to rows in A (n genes)
         tfs: names of each TF corresponding to columns in A (m TFs)
         output_dir: path to directory to save the data
+        attenuation: if True, sets different headers for output file
 
     TODO:
         - strip columns that are not needed after updating WCM load
@@ -1134,7 +1140,10 @@ def save_fold_changes(
         writer = csv.writer(f, delimiter='\t', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
 
         # Write header
-        header = ['TF', 'Target', 'log2 FC mean', 'log2 FC std', 'Regulation_direct']
+        if attenuation:
+            header = ['tRNA', 'Target', 'log2 FC']
+        else:
+            header = ['TF', 'Target', 'log2 FC mean', 'log2 FC std', 'Regulation_direct']
         writer.writerow(header)
 
         # Write row for each regulatory interaction
@@ -1344,6 +1353,7 @@ if __name__ == '__main__':
 
     match_statistics(seq_data, A, P, tfs, tf_genes, gene_symbols)
     plot_results(tf_genes, A, P, gene_symbols, tfs, output_dir)
-    save_fold_changes(valid_types, args.ecocyc, args.regulondb, A, P, gene_symbols, tfs, output_dir)
+    save_fold_changes(valid_types, args.ecocyc, args.regulondb, A, P,
+        gene_symbols, tfs, output_dir, args.attenuation_only)
 
     print(f'Completed in {(time.time() - start) / 60:.1f} min')

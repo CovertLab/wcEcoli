@@ -1,7 +1,7 @@
 Data handling:
 -x- convert regevents to tRNA -> gene regulation
 -x- determine expected fold change from attenuation
-- - touch up nca for new changes (allow option for tRNA, uncomment broken code and handle, use tRNA not TF in fold_change output and remove unused columns)
+-x- touch up nca for new changes (allow option for tRNA, uncomment broken code and handle, use tRNA not TF in fold_change output and remove unused columns)
 
 Parca changes:
 -x- calculate K from fold change and tRNA concentrations in rich media
