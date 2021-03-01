@@ -639,7 +639,7 @@ class Transcription(object):
 
 			aa_trnas.append(trna_aa)
 			attenuated_rnas.append(rna)
-			fold_changes.append(2**row['log2 FC mean'])
+			fold_changes.append(2**row['log2 FC'])
 
 		self.attenuated_rna_ids = np.unique(attenuated_rnas)
 
