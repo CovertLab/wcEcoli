@@ -6,6 +6,7 @@ Data handling:
 Parca changes:
 -x- calculate K from fold change and tRNA concentrations in rich media
 -x- update basal probs (adjusted for TFs?) for attenuation effect
+- - save basal prob adjustments and include in sim if option set
 - - update ppGpp expression vectors (or synth prob calculation?) for attenuation effect
 
 Sim changes:
@@ -13,11 +14,15 @@ Sim changes:
 - - check mass balance and handle properly
 -x- listener for number of aborted transcripts
 - - option to run with attenuation or not (also parca option?)
+- - update basal probs if option set
 
 Analysis:
 - - plot showing aborted transcripts vs AA and tRNA conc
-- - plot showing cumulative counts attenuated, cumulative counts finished and fraction of initial that are attenuated
+-x- plot showing cumulative counts attenuated, cumulative counts finished and fraction of initial that are attenuated
 
 Checks:
 - - check all negative fold changes
 - - check why some tRNA are higher in anaerobic than with_aa in parca
+
+Troubleshooting:
+- - slower growth rate (likely less RNA being produced - need to adjust init rate for attenuation or loss of mass balance)
