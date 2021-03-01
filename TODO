@@ -6,15 +6,15 @@ Data handling:
 Parca changes:
 -x- calculate K from fold change and tRNA concentrations in rich media
 -x- update basal probs (adjusted for TFs?) for attenuation effect
-- - save basal prob adjustments and include in sim if option set
+-x- save basal prob adjustments and include in sim if option set
 - - update ppGpp expression vectors (or synth prob calculation?) for attenuation effect
 
 Sim changes:
 -x- load data structures from sim_data
 -x- check mass balance and handle properly
 -x- listener for number of aborted transcripts
-- - option to run with attenuation or not (also parca option?)
-- - update basal probs if option set
+-x- option to run with attenuation or not (also parca option?)
+-x- update basal probs if option set
 
 Analysis:
 - - plot showing aborted transcripts vs AA and tRNA conc

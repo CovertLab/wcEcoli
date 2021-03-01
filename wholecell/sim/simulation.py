@@ -41,6 +41,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	superhelical_density = False,
 	mechanistic_replisome = True,
 	mechanistic_aa_supply = False,
+	trna_attenuation = False,
 	timeStepSafetyFraction = 1.3,
 	maxTimeStep = MAX_TIME_STEP,
 	updateTimeStepFreq = 5,

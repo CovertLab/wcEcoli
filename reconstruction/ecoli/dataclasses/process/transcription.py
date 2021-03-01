@@ -704,7 +704,7 @@ class Transcription(object):
 		delta = delta_prob @ p_promoter_bound
 		basal_stop_prob = self.get_attenuation_stop_probabilities(get_trna_conc(condition))
 		basal_synth_prob = (basal_prob + delta)[self.attenuated_rna_indices]
-		basal_prob[self.attenuated_rna_indices] += basal_synth_prob * (1 / (1 - basal_stop_prob) - 1)
+		self.attenuation_basal_prob_adjustments = basal_synth_prob * (1 / (1 - basal_stop_prob) - 1)
 
 	def get_attenuation_stop_probabilities(self, trna_conc):
 		trna_by_aa = units.matmul(self.aa_from_trna, trna_conc)

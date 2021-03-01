@@ -64,6 +64,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.make_elongation_rates = sim_data.process.transcription.make_elongation_rates
 
 		# Attenuation
+		self.trna_attenuation = sim._trna_attenuation
 		self.cell_density = sim_data.constants.cell_density
 		self.n_avogadro = sim_data.constants.n_avogadro
 		self.charged_trna = self.bulkMoleculesView(sim_data.process.transcription.charged_trna_names)
@@ -143,16 +144,20 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		RNAP_index_partial_RNAs = RNAP_index_all_RNAs[is_partial_transcript]
 
 		# Attenuation
-		cell_mass = self.readFromListener('Mass', 'cellMass') * units.fg
-		cellVolume = cell_mass / self.cell_density
-		counts_to_molar = 1 / (self.n_avogadro * cellVolume)
-		attenuation_probability = self.stop_probabilities(counts_to_molar * self.charged_trna.total_counts())
-		prob_lookup = {tu: prob for tu, prob in zip(self.attenuated_rna_indices, attenuation_probability)}
-		tu_stop_probability = np.array([
-			prob_lookup.get(idx, 0) * (length < self.location_lookup.get(idx, 0))
-			for idx, length in zip(TU_index_partial_RNAs, length_partial_RNAs)
-			])
-		rna_to_attenuate = stochasticRound(self.randomState, tu_stop_probability).astype(bool)
+		if self.trna_attenuation:
+			cell_mass = self.readFromListener('Mass', 'cellMass') * units.fg
+			cellVolume = cell_mass / self.cell_density
+			counts_to_molar = 1 / (self.n_avogadro * cellVolume)
+			attenuation_probability = self.stop_probabilities(counts_to_molar * self.charged_trna.total_counts())
+			prob_lookup = {tu: prob for tu, prob in zip(self.attenuated_rna_indices, attenuation_probability)}
+			tu_stop_probability = np.array([
+				prob_lookup.get(idx, 0) * (length < self.location_lookup.get(idx, 0))
+				for idx, length in zip(TU_index_partial_RNAs, length_partial_RNAs)
+				])
+			rna_to_attenuate = stochasticRound(self.randomState, tu_stop_probability).astype(bool)
+		else:
+			attenuation_probability = np.zeros(len(self.attenuated_rna_indices))
+			rna_to_attenuate = np.zeros(len(TU_index_partial_RNAs), bool)
 		rna_to_elongate = ~rna_to_attenuate
 
 		sequences = buildSequences(
