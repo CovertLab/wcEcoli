@@ -3,7 +3,7 @@ SimulationData for transcription regulation
 
 """
 
-from __future__ import absolute_import, division, print_function
+import scipy
 
 
 class TranscriptionRegulation(object):
@@ -41,6 +41,9 @@ class TranscriptionRegulation(object):
 		self.tf_to_tf_type = {
 			x["active TF"]: x["TF type"]
 			for x in raw_data.condition.tf_condition}
+		self.tf_to_gene_id = {
+			x["active TF"]: x["TF"]
+			for x in raw_data.condition.tf_condition}
 
 	def p_promoter_bound_tf(self, tfActive, tfInactive):
 		"""
@@ -54,6 +57,17 @@ class TranscriptionRegulation(object):
 		promoter.
 		"""
 		return float(signal)**power / (float(signal)**power + float(Kd))
+
+	def get_delta_prob_matrix(self, dense=False):
+		delta_prob = scipy.sparse.csr_matrix(
+			(self.delta_prob['deltaV'],
+			(self.delta_prob['deltaI'], self.delta_prob['deltaJ'])),
+			shape=self.delta_prob['shape'])
+
+		if dense:
+			delta_prob = delta_prob.toarray()
+
+		return delta_prob
 
 	def _build_lookups(self, raw_data):
 		"""

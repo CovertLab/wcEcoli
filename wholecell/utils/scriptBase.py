@@ -7,8 +7,6 @@ Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import abc
 import argparse
 import datetime
@@ -20,9 +18,6 @@ import pprint as pp
 import time
 import traceback
 from typing import Any, Callable, Iterable, List, Optional, Tuple
-
-import six
-from six.moves import range, zip
 
 import wholecell.utils.filepath as fp
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
@@ -44,6 +39,7 @@ METADATA_KEYS = (
 	'ppgpp_regulation',
 	'superhelical_density',
 	'recycle_stalled_elongation',
+	'mechanistic_replisome',
 	)
 
 PARCA_KEYS = (
@@ -70,6 +66,7 @@ SIM_KEYS = (
 	'ppgpp_regulation',
 	'superhelical_density',
 	'recycle_stalled_elongation',
+	'mechanistic_replisome',
 	'raise_on_time_limit',
 	'log_to_shell',
 	)
@@ -147,7 +144,7 @@ def dashize(underscore):
 	return re.sub(r'_+', r'-', underscore)
 
 
-class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
+class ScriptBase(metaclass=abc.ABCMeta):
 	"""Abstract base class for scripts. This defines a template where
 	`description()` describes the script,
 	`define_parameters()` defines its command line parameters,
@@ -463,6 +460,9 @@ class ScriptBase(six.with_metaclass(abc.ABCMeta, object)):
 		add_bool_option('recycle_stalled_elongation', 'recycle_stalled_elongation',
 						help='if true, recycle RNAP and fragment bases when transcription'
 							 'elongation is stalled in ntp-limiting conditions')
+		add_bool_option('mechanistic_replisome', 'mechanistic_replisome',
+			help='if true, replisome initiation is mechanistic (requires'
+				 ' appropriate number of subunits to initiate)')
 		add_bool_option('raise_on_time_limit', 'raise_on_time_limit',
 			help='if true, the simulation raises an error if the time limit'
 				 ' (--length-sec) is reached before division.')

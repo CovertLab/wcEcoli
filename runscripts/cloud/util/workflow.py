@@ -13,6 +13,7 @@ import subprocess
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set
 
 from borealis import gce
+from borealis.util import gcp
 from borealis.docker_task import DockerTask
 from fireworks import FiretaskBase, Firework, LaunchPad
 from fireworks import Workflow as FwWorkflow
@@ -80,21 +81,23 @@ def _copy_path_list(value, internal_prefix, is_output=False):
 
 def _to_create_bucket(prefix):
 	# type: (str) -> str
-	return ('{0}'
-			' Create your own Google Cloud Storage bucket if needed. This aids'
-			' usage tracking, cleanup, and ACLs.'
-			' Pick a name like "sisyphus-{2}", the same Region used with'
-			' Compute Engine (run `gcloud info` for info), Standard storage'
-			' class, and default access control. The name has to be globally'
-			' unique across EVERY GCS PROJECT IN THE WORLD so we\'re using'
-			' "sisyphus-" as a distinguishing prefix.'
-			' BEWARE that the name is publicly visible so don\'t include login'
-			' IDs, email addresses, project names, project numbers, or'
-			' personally identifiable information (PII).'
-			' Then store the bucket name in an environment variable in your'
-			' shell profile and update your current shell, e.g.'
-			' `export {1}="sisyphus-{2}"`.'
-				.format(prefix, STORAGE_ROOT_ENV_VAR, os.environ['USER']))
+	bucket_name = 'sisyphus-' + os.environ['USER']
+	region = gcp.gcloud_get_config('compute/region')
+	return (f'{prefix}'
+			f' Create your own Google Cloud Storage bucket to aid usage'
+			f' tracking, cleanup, and ACLs.'
+			f' Pick a name like "{bucket_name}", THE SAME REGION ({region})'
+			f' used with Compute Engine (run `gcloud info` for more info),'
+			f' Standard storage'
+			f' class, and default access control. The name has to be globally'
+			f' unique across EVERY GCS PROJECT IN THE WORLD so we\'re using'
+			f' "sisyphus-" as a distinguishing prefix.'
+			f' BEWARE that the name is publicly visible so don\'t include login'
+			f' IDs, email addresses, project names, project numbers, or'
+			f' personally identifiable information (PII).'
+			f' Then store the bucket name in an environment variable in your'
+			f' shell profile and update your current shell, e.g.'
+			f' `export {STORAGE_ROOT_ENV_VAR}="{bucket_name}"`.')
 
 def bucket_from_path(storage_path):
 	# type: (str) -> str
@@ -118,7 +121,7 @@ def validate_gcs_bucket(bucket_name):
 		["gsutil", "ls", "-b", "gs://" + bucket_name],  # bucket list!
 		stdout=subprocess.PIPE,
 		stderr=subprocess.PIPE,
-		universal_newlines=True,
+		encoding='utf-8',
 		timeout=60)
 	if completion.returncode:
 		message = _to_create_bucket(
@@ -137,24 +140,50 @@ class Task(object):
 			inputs=(), outputs=(), storage_prefix='', internal_prefix='',
 			timeout=0, store_log=True):
 		# type: (str, str, Iterable[str], Iterable[str], Iterable[str], str, str, int, bool) -> None
-		"""Construct a Workflow Task.
+		"""Construct a "DockerTask" Workflow Firetask.
 
-		The inputs and outputs are absolute paths internal to the worker's
-		Docker container. The corresponding storage paths will get constructed
-		by rebasing each path from internal_prefix to storage_prefix.
+		Fireworks can run other Firetasks but DockerTask is especially handy for
+		Google Cloud workflows since it pulls a Docker Image containing the
+		payload code, copies input and output files from/to Google Cloud Storage
+		(GCS), implements timeouts, and sends console output to cloud logs.
 
-		Each path indicates a directory tree of files to fetch or store (rather
-		than a single file) iff it ends with '/'.
+		The Workflow builder uses `inputs` and `outputs` to derive Task-to-Task
+		dependencies.
 
-		Outputs will get written to GCS if the task completes normally. An
-		output path that starts with '>' will capture stdout + stderr (if the
-		task completes normally), while the rest of the path gets rebased to
-		provide the storage path.
+		Args:
+			name: The task name. It must be unique within the workflow.
+			image: The Docker Image name to load as a Container.
+			command: The shell command to run in the Container.
+			inputs: The absolute pathnames (internal to the Docker Container)
+				for the input files and directories to fetch from GCS.
 
-		An output path that starts with '>>' will capture a log of stdout +
-		stderr + other log messages like elapsed time and task exit code, even
-		if the task fails. This is useful for debugging. Just set
-		store_log=True (the default) to save this log.
+				Their corresponding GCS storage paths will get constructed by
+				rebasing each path from internal_prefix to storage_prefix.
+
+				Each path indicates a directory tree of files (rather than a
+				single file) iff it ends with '/'.
+			outputs: The absolute pathnames (internal to the Docker Container)
+				for the output files and directories to store to GCS.
+
+				Output pathnames get rebased and treated as directories like
+				input pathnames.
+
+				Outputs will get written to GCS if the task completes normally.
+
+				'>': An output path that starts with '>' will capture stdout +
+				stderr (if the task completes normally). The rest of the path
+				gets rebased to provide the storage pathname.
+
+				'>>': An output path that starts with '>>' will capture a log of
+				stdout + stderr + other log messages like elapsed time and the
+				task exit code, and it gets written to GCS even if the task
+				fails. This is useful for debugging. See `store_log`.
+			storage_prefix: The GCS path prefix for the inputs and outputs.
+			internal_prefix: The path prefix within the container that
+				corresponds to storage_prefix.
+			timeout: How many seconds to let the Docker task run.
+				0 => DEFAULT_TIMEOUT.
+			store_log: If True, save a '>>' log file to the logs/ dir.
 		"""
 		assert name, 'Every task needs a name'
 		assert image, 'Every task needs a Docker image name'
@@ -416,9 +445,12 @@ class Workflow(object):
 		wf = FwWorkflow(fireworks, name=self.name, metadata=self.properties)
 		return wf
 
-	def launch_fireworkers(self, count, config):
-		# type: (int, dict) -> None
-		"""Launch the requested number of fireworker nodes (GCE VMs)."""
+	def launch_fireworkers(self, count, config, gce_options=None):
+		# type: (int, Dict[str, Any], Optional[Dict[str, Any]]) -> None
+		"""Launch the requested number of fireworker nodes (GCE VMs) with
+		(db, username, password) metadata from config and GCE VM options from
+		gce_options.
+		"""
 		def copy_key(src, key, dest):
 			# type: (dict, str, dict) -> None
 			"""Copy a keyed value from src to dest dicts unless the value is
@@ -433,6 +465,7 @@ class Workflow(object):
 		options = {
 			'image-family': 'fireworker',
 			'description': 'FireWorks worker VM for user/ID {}'.format(self.name)}
+		options.update(gce_options or {})
 
 		metadata = {'db': db_name}
 		copy_key(config, 'username', metadata)
@@ -441,10 +474,12 @@ class Workflow(object):
 		engine = gce.ComputeEngine(prefix)
 		engine.create(count=count, command_options=options, **metadata)
 
-	def send_to_lpad(self, worker_count=4, lpad_filename=DEFAULT_LPAD_YAML):
-		# type: (int, str) -> FwWorkflow
+	def send_to_lpad(self, worker_count=4, lpad_filename=DEFAULT_LPAD_YAML,
+					 gce_options=None):
+		# type: (int, str, Optional[Dict[str, Any]]) -> FwWorkflow
 		"""Build this workflow for FireWorks, upload it to the given or
-		default LaunchPad, launch workers, and return the built workflow.
+		default LaunchPad, launch workers with the given GCE VM options, and
+		return the built workflow.
 		"""
 		# TODO(jerry): Add an option to pass in the LaunchPad config as a dict.
 		with open(lpad_filename) as f:
@@ -473,7 +508,7 @@ class Workflow(object):
 				'Caused by: ' + str(e)))
 
 		# Launch the workers after the successful upload.
-		self.launch_fireworkers(worker_count, config)
+		self.launch_fireworkers(worker_count, config, gce_options=gce_options)
 
 		return wf
 

@@ -40,6 +40,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	ppgpp_regulation = False,
 	superhelical_density = False,
 	recycle_stalled_elongation = False,
+	mechanistic_replisome = True,
 	timeStepSafetyFraction = 1.3,
 	maxTimeStep = MAX_TIME_STEP,
 	updateTimeStepFreq = 5,
@@ -449,6 +450,9 @@ class Simulation():
 				if (maxTimeStep - minTimeStep) / minTimeStep <= 1e-2:
 					break
 			else:
+				if minTimeStep > 0 and (maxTimeStep - minTimeStep) / minTimeStep <= 1e-2:
+					candidateTimeStep = minTimeStep
+					break
 				maxTimeStep = candidateTimeStep
 			candidateTimeStep = minTimeStep + (maxTimeStep - minTimeStep) / 2.
 		else:

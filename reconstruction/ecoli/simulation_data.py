@@ -5,11 +5,12 @@ Raw data processed into forms convenient for whole-cell modeling
 
 """
 
-from __future__ import absolute_import, division, print_function
+from __future__ import annotations
 
 import collections
 
 import numpy as np
+import scipy
 
 # Data classes
 from reconstruction.ecoli.dataclasses.getter_functions import GetterFunctions
@@ -23,6 +24,7 @@ from reconstruction.ecoli.dataclasses.process.process import Process
 from reconstruction.ecoli.dataclasses.growth_rate_dependent_parameters import Mass, GrowthRateParameters
 from reconstruction.ecoli.dataclasses.relation import Relation
 from reconstruction.ecoli.dataclasses.adjustments import Adjustments
+from wholecell.utils.fitting import normalize
 
 
 VERBOSE = False
@@ -75,6 +77,7 @@ class SimulationDataEcoli(object):
 		self.relation = Relation(raw_data, self)
 
 		self.translation_supply_rate = {}
+		self.pPromoterBound = {}
 
 
 	def _add_molecular_weight_keys(self, raw_data):
@@ -126,6 +129,8 @@ class SimulationDataEcoli(object):
 			gene_not_found = set()
 			tf_not_found = set()
 			for row in getattr(raw_data, fc_file):
+				FC = row['log2 FC mean']
+
 				# Skip fold changes that have been removed
 				if (row['TF'], row['Target']) in removed_fcs:
 					continue
@@ -134,8 +139,8 @@ class SimulationDataEcoli(object):
 				if row['Regulation_direct'] != '' and row['Regulation_direct'] > 2:
 					continue
 
-				# Skip autoregulation
-				if row['TF'] == row['Target']:
+				# Skip positive autoregulation
+				if row['TF'] == row['Target'] and FC > 0:
 					continue
 
 				try:
@@ -154,7 +159,6 @@ class SimulationDataEcoli(object):
 					self.tf_to_fold_change[tf] = {}
 					self.tf_to_direction[tf] = {}
 
-				FC = row['log2 FC mean']
 				self.tf_to_direction[tf][target] = np.sign(FC)
 				self.tf_to_fold_change[tf][target] = 2**FC
 
@@ -194,6 +198,7 @@ class SimulationDataEcoli(object):
 		self.conditions = {}
 		self.condition_to_doubling_time = {}
 		self.condition_active_tfs = {}
+		self.condition_inactive_tfs = {}
 		self.ordered_conditions = []  # order for variant to run
 		for row in raw_data.condition.condition_defs:
 			condition = row["condition"]
@@ -203,6 +208,7 @@ class SimulationDataEcoli(object):
 			self.conditions[condition]["perturbations"] = row["genotype perturbations"]
 			self.condition_to_doubling_time[condition] = row['doubling time']
 			self.condition_active_tfs[condition] = row['active TFs']
+			self.condition_inactive_tfs[condition] = row['inactive TFs']
 
 		# Populate nutrientToDoubling for each set of combined conditions
 		self.nutrient_to_doubling_time = {}
@@ -225,3 +231,31 @@ class SimulationDataEcoli(object):
 				self.conditions[condition]['nutrients'] = nutrients
 				self.conditions[condition]['perturbations'] = self.tf_to_active_inactive_conditions[tf]['{} genotype perturbations'.format(status)]
 				self.condition_to_doubling_time[condition] = self.nutrient_to_doubling_time.get(nutrients, basal_dt)
+
+	def calculate_ppgpp_expression(self, condition: str):
+		"""
+		Calculates the expected expression of RNA based on ppGpp regulation
+		in a given condition and the expected transcription factor effects in
+		that condition.
+
+		Relies on other values that are calculated in the fitting process so
+		should only be called after the parca has been run.
+
+		Args:
+			condition: label for the desired condition to calculate the average
+				expression for (eg. 'basal', 'with_aa', etc)
+		"""
+
+		ppgpp = self.growth_rate_parameters.get_ppGpp_conc(
+			self.condition_to_doubling_time[condition])
+		delta_prob = self.process.transcription_regulation.get_delta_prob_matrix()
+		p_promoter_bound = np.array([
+			self.pPromoterBound[condition][tf]
+			for tf in self.process.transcription_regulation.tf_ids
+			])
+		delta = delta_prob @ p_promoter_bound
+		prob, factor = self.process.transcription.synth_prob_from_ppgpp(
+			ppgpp, self.process.replication.get_average_copy_number)
+		rna_expression = (prob + delta) / factor
+		rna_expression[rna_expression < 0] = 0
+		return normalize(rna_expression)
