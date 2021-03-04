@@ -150,7 +150,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		sequence_elongations = result.sequenceElongation
 		ntps_used = result.monomerUsages
-		did_stall_mask = result.sequencesStalled
+		did_stall_mask = result.sequences_limited_elongation
 
 		# Calculate changes in mass associated with polymerization
 		added_mass = computeMassIncrease(sequences, sequence_elongations,
@@ -251,7 +251,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 
 		# Remove RNAPs that have finished transcription
 		self.active_RNAPs.delByIndexes(
-			np.where(did_terminate_mask[partial_RNA_to_RNAP_mapping]))
+			np.where(did_terminate_mask[partial_RNA_to_RNAP_mapping])[0])
 
 		n_terminated = did_terminate_mask.sum()
 		n_initialized = did_initialize.sum()
@@ -268,12 +268,12 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.ppi.countInc(n_elongations - n_initialized)
 
 		# Handle stalled elongation
-		n_total_stalled = did_stall_mask.sum() if self.recycle_stalled_elongation else 0
-		if n_total_stalled > 0:
+		n_total_stalled = did_stall_mask.sum()
+		if self.recycle_stalled_elongation and (n_total_stalled > 0):
 			# Remove RNAPs that were bound to stalled elongation transcripts
 			# and increment counts of inactive RNAPs
 			self.active_RNAPs.delByIndexes(
-				np.where(did_stall_mask[partial_RNA_to_RNAP_mapping]))
+				np.where(did_stall_mask[partial_RNA_to_RNAP_mapping])[0])
 			self.inactive_RNAPs.countInc(n_total_stalled)
 
 			# Remove partial transcripts from stalled elongation
