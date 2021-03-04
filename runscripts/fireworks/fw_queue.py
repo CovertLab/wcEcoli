@@ -90,6 +90,8 @@ Modeling options:
 		superhelical densities of each DNA fragment
 	MECHANISTIC_REPLISOME (int, "1"): if nonzero, replisome initiation is
 		mechanistic (requires appropriate number of subunits to initiate)
+	MECHANISTIC_AA_SUPPLY (int, "0"): if nonzero, amino acid supply is
+		mechanistic (depends on concentrations of enzymes and amino acids)
 
 Additional variables:
 	LAUNCHPAD_FILE (str, "my_launchpad.yaml"): set launchpad config file location
@@ -256,6 +258,7 @@ TRNA_CHARGING = bool(int(get_environment("TRNA_CHARGING", DEFAULT_SIMULATION_KWA
 PPGPP_REGULATION = bool(int(get_environment("PPGPP_REGULATION", DEFAULT_SIMULATION_KWARGS["ppgpp_regulation"])))
 SUPERHELICAL_DENSITY = bool(int(get_environment("SUPERHELICAL_DENSITY", DEFAULT_SIMULATION_KWARGS["superhelical_density"])))
 MECHANISTIC_REPLISOME = bool(int(get_environment("MECHANISTIC_REPLISOME", DEFAULT_SIMULATION_KWARGS["mechanistic_replisome"])))
+MECHANISTIC_AA_SUPPLY = bool(int(get_environment("MECHANISTIC_AA_SUPPLY", DEFAULT_SIMULATION_KWARGS["mechanistic_aa_supply"])))
 RAISE_ON_TIME_LIMIT = bool(int(get_environment("RAISE_ON_TIME_LIMIT", DEFAULT_SIMULATION_KWARGS["raise_on_time_limit"])))
 N_INIT_SIMS = int(get_environment("N_INIT_SIMS", "1"))
 SEED = int(get_environment("SEED", "0"))
@@ -329,8 +332,8 @@ for i in VARIANTS_TO_RUN:
 
 ### Write metadata
 metadata = {
-	"git_hash": filepath.run_cmdline("git rev-parse HEAD"),
-	"git_branch": filepath.run_cmdline("git symbolic-ref --short HEAD"),
+	"git_hash": filepath.git_hash(),
+	"git_branch": filepath.git_branch(),
 	"description": os.environ.get("DESC", ""),
 	"time": SUBMISSION_TIME,
 	"python": sys.version.splitlines()[0],
@@ -346,14 +349,15 @@ metadata = {
 	"ppgpp_regulation": PPGPP_REGULATION,
 	"superhelical_density": SUPERHELICAL_DENSITY,
 	"mechanistic_replisome": MECHANISTIC_REPLISOME,
+	"mechanistic_aa_supply": MECHANISTIC_AA_SUPPLY,
 	}
 
 metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)
 filepath.write_json_file(metadata_path, metadata)
 
-git_diff = filepath.run_cmdline("git diff", trim=False)
+git_diff = filepath.run_cmdline("git diff HEAD", trim=False)
 if git_diff:
-	filepath.write_file(os.path.join(METADATA_DIRECTORY, "git_diff"), git_diff)
+	filepath.write_file(os.path.join(METADATA_DIRECTORY, "git_diff.txt"), git_diff)
 
 #### Create workflow
 
@@ -702,6 +706,7 @@ for i in VARIANTS_TO_RUN:
 							ppgpp_regulation = PPGPP_REGULATION,
 							superhelical_density = SUPERHELICAL_DENSITY,
 							mechanistic_replisome = MECHANISTIC_REPLISOME,
+							mechanistic_aa_supply = MECHANISTIC_AA_SUPPLY,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,
@@ -734,6 +739,7 @@ for i in VARIANTS_TO_RUN:
 							ppgpp_regulation = PPGPP_REGULATION,
 							superhelical_density = SUPERHELICAL_DENSITY,
 							mechanistic_replisome = MECHANISTIC_REPLISOME,
+							mechanistic_aa_supply = MECHANISTIC_AA_SUPPLY,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,

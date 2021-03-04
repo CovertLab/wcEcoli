@@ -85,6 +85,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		else:
 			self.elongation_model = BaseElongationModel(sim_data, self)
 		self.ppgpp_regulation = sim._ppgpp_regulation
+		self.mechanistic_supply = sim._mechanistic_aa_supply
 
 		# Growth associated maintenance energy requirements for elongations
 		self.gtpPerElongation = constants.gtp_per_translation
@@ -372,6 +373,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		transcription = sim_data.process.transcription
 		metabolism = sim_data.process.metabolism
 		molecule_ids = sim_data.molecule_ids
+		molecule_groups = sim_data.molecule_groups
 
 		# Cell parameters
 		self.cellDensity = constants.cell_density
@@ -432,11 +434,17 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.time_step_increase = 1.01
 		self.max_amino_acid_adjustment = 0.05
 
+		self.aa_enzymes = self.process.bulkMoleculesView(metabolism.aa_enzymes)
+		self.aa_aas = self.process.bulkMoleculesView(molecule_groups.amino_acids)
+		self.amino_acid_synthesis = metabolism.amino_acid_synthesis
+		self.amino_acid_import = metabolism.amino_acid_import
+
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)
 
 		# Conversion from counts to molarity
 		cell_mass = self.process.readFromListener("Mass", "cellMass") * units.fg
+		dry_mass = self.process.readFromListener("Mass", "dryMass") * units.fg
 		cell_volume = cell_mass / self.cellDensity
 		self.counts_to_molar = 1 / (self.process.n_avogadro * cell_volume)
 
@@ -482,12 +490,24 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 				np.dot(aa_counts_for_translation, self.process.aa_from_trna)
 				* fraction_trna_per_aa + uncharged_trna_request)
 
-		# Adjust aa_supply higher if amino acid concentrations are low
-		# Improves stability of charging and mimics amino acid synthesis
-		# inhibition and export
 		aa_in_media = self.aa_environment.import_present()
-		# TODO (Travis): add to listener?
-		self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
+		synthesis, enzyme_counts, saturation = self.amino_acid_synthesis(
+			self.aa_enzymes.total_counts(), aa_conc)
+		if self.process.mechanistic_supply:
+			# Set supply based on mechanistic synthesis and supply
+			self.process.aa_supply = self.process.timeStepSec() * (
+					synthesis + self.amino_acid_import(aa_in_media, dry_mass))
+		else:
+			# Adjust aa_supply higher if amino acid concentrations are low
+			# Improves stability of charging and mimics amino acid synthesis
+			# inhibition and export
+			self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
+
+		# TODO: add synthesis and import?
+		self.process.writeToListener('GrowthLimits', 'aa_supply', self.process.aa_supply)
+		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts)
+		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
+		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', saturation)
 
 		# Only request molecules that will be consumed in the charging reactions
 		requested_molecules = -np.dot(self.charging_stoich_matrix, total_charging_reactions)
@@ -536,16 +556,18 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		aa_for_charging = total_aa_counts - aas_used
 		n_aa_charged = np.fmin(aa_for_charging, np.dot(self.process.aa_from_trna, uncharged_trna))
 		n_trna_charged = self.distribution_from_aa(n_aa_charged, uncharged_trna, True)
-		net_charged = n_trna_charged - charged_trna
 
 		## Reactions that are charged and elongated in same time step
-		charged_and_elongated = self.distribution_from_aa(aas_used, total_trna)
-		total_charging_reactions = charged_and_elongated + net_charged
+		total_uncharging_reactions = self.distribution_from_aa(aas_used, total_trna)
+		trna_to_uncharge = np.fmin(charged_trna, total_uncharging_reactions)
+		charged_and_elongated = total_uncharging_reactions - trna_to_uncharge
+		total_charging_reactions = charged_and_elongated + n_trna_charged
+		net_charged = total_charging_reactions - total_uncharging_reactions
 		self.charging_molecules.countsInc(np.dot(self.charging_stoich_matrix, total_charging_reactions))
 
 		## Account for uncharging of tRNA during elongation
-		self.charged_trna.countsDec(charged_and_elongated)
-		self.uncharged_trna.countsInc(charged_and_elongated)
+		self.charged_trna.countsDec(total_uncharging_reactions)
+		self.uncharged_trna.countsInc(total_uncharging_reactions)
 
 		# Create ppGpp
 		## Concentrations of interest

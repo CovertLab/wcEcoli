@@ -93,6 +93,7 @@ def fitSimData_1(raw_data, **kwargs):
 	sim_data, cell_specs = tf_condition_specs(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = fit_condition(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = promoter_binding(sim_data, cell_specs, **kwargs)
+	sim_data, cell_specs = adjust_promoters(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = set_conditions(sim_data, cell_specs, **kwargs)
 	sim_data, cell_specs = final_adjustments(sim_data, cell_specs, **kwargs)
 
@@ -275,10 +276,15 @@ def promoter_binding(sim_data, cell_specs, **kwargs):
 	if VERBOSE > 0:
 		print('Fitting promoter binding')
 	# noinspection PyTypeChecker
-	rVector = fitPromoterBoundProbability(sim_data, cell_specs)
+	fitPromoterBoundProbability(sim_data, cell_specs)
+
+	return sim_data, cell_specs
+
+@save_state
+def adjust_promoters(sim_data, cell_specs, **kwargs):
 	# noinspection PyTypeChecker
 	fitLigandConcentrations(sim_data, cell_specs)
-	calculateRnapRecruitment(sim_data, rVector)
+	calculateRnapRecruitment(sim_data, cell_specs)
 
 	return sim_data, cell_specs
 
@@ -359,9 +365,11 @@ def set_conditions(sim_data, cell_specs, **kwargs):
 def final_adjustments(sim_data, cell_specs, **kwargs):
 	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints
 	sim_data.process.transcription.adjust_polymerizing_ppgpp_expression(sim_data)
+	sim_data.process.transcription.adjust_ppgpp_expression_for_tfs(sim_data)
 
 	# Set supply constants for amino acids based on condition supply requirements
-	sim_data.process.metabolism.set_supply_constants(sim_data)
+	sim_data.process.metabolism.set_phenomological_supply_constants(sim_data)
+	sim_data.process.metabolism.set_mechanistic_supply_constants(sim_data, cell_specs)
 
 	return sim_data, cell_specs
 
@@ -2345,12 +2353,10 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 	--------
 	- Probabilities of TFs binding to their promoters
 	- RNA synthesis probabilities
-
-	Returns
-	--------
-	- r: Fit parameters on how the recruitment of a TF affects the expression
-	of a gene. High (positive) values of r indicate that the TF binding
-	increases the probability that the gene is expressed.
+	- cell_specs['basal']['r_vector']: Fit parameters on how the recruitment of
+	a TF affects the expression of a gene. High (positive) values of r indicate
+	that the TF binding increases the probability that the gene is expressed.
+	- cell_specs['basal']['r_columns']: mapping of column name to index in r
 
 	Notes
 	--------
@@ -3003,8 +3009,8 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 	sim_data.pPromoterBound = pPromoterBound
 	updateSynthProb(sim_data, cell_specs, kInfo, np.dot(H, p))
 
-	return r
-
+	cell_specs['basal']['r_vector'] = r
+	cell_specs['basal']['r_columns'] = G_col_name_to_index
 
 def fitLigandConcentrations(sim_data, cell_specs):
 	"""
@@ -3200,7 +3206,7 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 	return pPromoterBound
 
 
-def calculateRnapRecruitment(sim_data, r):
+def calculateRnapRecruitment(sim_data, cell_specs):
 	"""
 	Constructs the basal_prob vector and delta_prob matrix from values of r.
 	The basal_prob vector holds the basal transcription probabilities of each
@@ -3210,9 +3216,11 @@ def calculateRnapRecruitment(sim_data, r):
 
 	Requires
 	--------
-	- r: Fit parameters on how the recruitment of a TF affects the expression
-	of a gene. High (positive) values of r indicate that the TF binding
-	increases the probability that the gene is expressed.
+	- cell_specs['basal']:
+		- ['r_vector']: Fit parameters on how the recruitment of a TF affects the expression
+		of a gene. High (positive) values of r indicate that the TF binding
+		increases the probability that the gene is expressed.
+		- ['r_columns']: mapping of column name to index in r
 
 	Modifies
 	--------
@@ -3220,11 +3228,14 @@ def calculateRnapRecruitment(sim_data, r):
 	- Adds basal_prob and delta_prob arrays to sim_data
 	"""
 
-	colNames = []
+	r = cell_specs['basal']['r_vector']
+	col_names_to_index = cell_specs['basal']['r_columns']
 
 	# Get list of transcription units and TF IDs
-	all_TUs = sim_data.process.transcription.rna_data["id"]
-	all_tfs = sim_data.process.transcription_regulation.tf_ids
+	transcription = sim_data.process.transcription
+	transcription_regulation = sim_data.process.transcription_regulation
+	all_TUs = transcription.rna_data["id"]
+	all_tfs = transcription_regulation.tf_ids
 
 	# Initialize basal_prob vector and delta_prob sparse matrix
 	basal_prob = np.zeros(len(all_TUs))
@@ -3233,37 +3244,24 @@ def calculateRnapRecruitment(sim_data, r):
 	for rna_idx, rnaId in enumerate(all_TUs):
 		rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
-		tfs = sim_data.process.transcription_regulation.target_tf.get(rnaIdNoLoc, [])
-		tfsWithData = []
-
 		# Take only those TFs with active/inactive conditions data
-		for tf in tfs:
+		for tf in transcription_regulation.target_tf.get(rnaIdNoLoc, []):
 			if tf not in sorted(sim_data.tf_to_active_inactive_conditions):
 				continue
 
-			tfsWithData.append(
-				{"id": tf, "mass_g/mol": sim_data.getter.get_masses([tf]).asNumber(units.g / units.mol)}
-				)
-
-		# Add one column for each TF that regulates the RNA
-		for tf in tfsWithData:
-			colName = rnaIdNoLoc + "__" + tf["id"]
-			if colName not in colNames:
-				colNames.append(colName)
+			colName = rnaIdNoLoc + "__" + tf
 
 			# Set element in delta to value in r that corresponds to the
 			# transcription unit of the row, and the TF of the column
 			deltaI.append(rna_idx)
-			deltaJ.append(all_tfs.index(tf["id"]))
-			deltaV.append(r[colNames.index(colName)])
+			deltaJ.append(all_tfs.index(tf))
+			deltaV.append(r[col_names_to_index[colName]])
 
 		# Add alpha column for each RNA
 		colName = rnaIdNoLoc + "__alpha"
-		if colName not in colNames:
-			colNames.append(colName)
 
 		# Set element in basal_prob to the transcription unit's value for alpha
-		basal_prob[rna_idx] = r[colNames.index(colName)]
+		basal_prob[rna_idx] = r[col_names_to_index[colName]]
 
 	# Convert to arrays
 	deltaI, deltaJ, deltaV = np.array(deltaI), np.array(deltaJ), np.array(deltaV)
@@ -3273,8 +3271,8 @@ def calculateRnapRecruitment(sim_data, r):
 	basal_prob[basal_prob < 0] = 0
 
 	# Add basal_prob vector and delta_prob matrix to sim_data
-	sim_data.process.transcription_regulation.basal_prob = basal_prob
-	sim_data.process.transcription_regulation.delta_prob = {
+	transcription_regulation.basal_prob = basal_prob
+	transcription_regulation.delta_prob = {
 		"deltaI": deltaI,
 		"deltaJ": deltaJ,
 		"deltaV": deltaV,
