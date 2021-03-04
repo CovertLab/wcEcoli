@@ -500,6 +500,8 @@ class Workflow(object):
 
 		wf = self.build_workflow()
 		try:
+			self.log_info(
+				f'\nSending the workflow to Launchpad DB: {config["name"]}')
 			lpad.add_wf(wf)
 		except ValueError as e:
 			raise_with_traceback(RuntimeError(
@@ -508,7 +510,18 @@ class Workflow(object):
 				'Caused by: ' + str(e)))
 
 		# Launch the workers after the successful upload.
-		self.launch_fireworkers(worker_count, config, gce_options=gce_options)
+		self.log_info(f'\nCreating {worker_count} Fireworker '
+					  f'{"VM" if worker_count == 1 else "VMs"}.')
+		try:
+			self.launch_fireworkers(worker_count, config, gce_options=gce_options)
+		except Exception:
+			print('\nNOTE: The workflow was uploaded to the Launchpad DB but'
+				  ' creating Fireworker VMs raised an exception. You could use'
+				  ' the `gce` command to create Fireworkers, or maybe run'
+				  ' `lpad reset` to erase the workflow and start over.\n'
+				  '    |\n'
+				  '    V')
+			raise
 
 		return wf
 
