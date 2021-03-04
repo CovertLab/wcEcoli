@@ -3,16 +3,10 @@ Cohort analysis identifying seeds and generations in which
 stalled transcript elongation occurred
 """
 
-import pickle
 import os
-
-from matplotlib import pyplot as plt
 import numpy as np
-
 from models.ecoli.analysis import cohortAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from wholecell.analysis.analysis_tools import (exportFigure,
-	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
 
@@ -27,21 +21,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# Listeners used
 			main_reader = TableReader(os.path.join(simOutDir, 'Main'))
-			stallRNAP_counts_reader = TableReader(os.path.join(simOutDir, 'RnapData'))
+			rnap_data_reader = TableReader(os.path.join(simOutDir, 'RnapData'))
 
 			# Load data
 			time = main_reader.readColumn('time')
-			stallRNAP_counts = stallRNAP_counts_reader.readColumn('didStall')
+			stalled_rnap_counts = rnap_data_reader.readColumn('didStall')
 
 			# add to result if stalled elongation occurred
-			if np.sum(stallRNAP_counts) > 0:
+			if np.sum(stalled_rnap_counts) > 0:
 				paths = os.path.normpath(simOutDir).split(os.sep)
 				seed = paths[-4]
 				gen = paths[-3].split('_')[1]
 				seed_gen_stalled.append([seed, gen, simOutDir])
 
 		seed_gen_stalled.sort()
-		np.savetxt(fname=f"{plotOutDir}/rnapStalledSims.tsv",
+		np.savetxt(fname=f"{plotOutDir}/rnap_stalled_sims.tsv",
 				   X=seed_gen_stalled, delimiter='\t', fmt='%s',
 				   comments='', header='seed\tgeneration\tsimOutDir')
 
