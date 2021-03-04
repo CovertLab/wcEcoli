@@ -12,7 +12,7 @@ from wholecell.utils import scriptBase
 from runscripts.cloud.util.workflow import (DEFAULT_LPAD_YAML,
 	STORAGE_ROOT_ENV_VAR, Task, Workflow)
 
-GCE_VM_MACHINE_TYPE = 'custom-1-5120'  # N1 VM with 1 CPU and 5 GB RAM
+GCE_VM_MACHINE_TYPE = 'custom-1-6656'  # N1 VM, 1 CPU, 6.5 GB RAM (N1's max per CPU)
 
 
 class WorkflowCLI(scriptBase.ScriptBase):
