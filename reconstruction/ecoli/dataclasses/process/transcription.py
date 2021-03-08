@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import scipy
+import re
 from scipy import interpolate
 import sympy as sp
 from typing import cast
