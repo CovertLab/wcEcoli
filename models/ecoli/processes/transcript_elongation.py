@@ -146,7 +146,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			ntpCounts,
 			reactionLimit,
 			self.randomState,
-			self.elongation_rates[TU_index_partial_RNAs])
+			self.elongation_rates[TU_index_partial_RNAs],
+			self.variable_elongation)
 
 		sequence_elongations = result.sequenceElongation
 		ntps_used = result.monomerUsages
