@@ -19,7 +19,7 @@ import wholecell.utils.filepath as fp
 LOGREG_BOUNDARY_M = -0.1824149289775941
 LOGREG_BOUNDARY_B = 0.1343552138570287e-3  # mM
 LOGREG_Y_ERROR = 0.05e-3  # mM
-X_LOCATIONS = np.linspace(0, 0.18e-3, 10)  # mM
+X_LOCATIONS = np.linspace(0, 0.3e-3, 100)  # mM
 DESIRED_PRECISION = 1e-6  # mM
 DEATH_PATH = ('agents', AGENT_NAME, 'boundary', 'dead')
 
