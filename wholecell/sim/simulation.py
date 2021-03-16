@@ -265,6 +265,12 @@ class Simulation():
 				self.finalize()
 				break
 
+			save_time = 0
+			if self.time() >= save_time:
+				time = int(self.time())
+				self.write_states(f'out/wcecoli_t{time}.json')
+				import ipdb; ipdb.set_trace()
+
 			self._simulationStep += 1
 
 			self._timeTotal += self._timeStepSec
@@ -274,10 +280,6 @@ class Simulation():
 				self._evolveState(processes)
 			self._post_evolve_state()
 
-			if self.time() >= 10:
-				time = int(self.time())
-				self.write_states(f'out/wcecoli_t{time}.json')
-				import ipdb; ipdb.set_trace()
 
 	def get_states(self):
 		bulk = self.internal_states['BulkMolecules'].container
