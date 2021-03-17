@@ -56,7 +56,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	simData = None,
 	inheritedStatePath = None,
 	variable_elongation_translation = False,
-	variable_elongation_transcription = True,
+	variable_elongation_transcription = False,
 	raise_on_time_limit = False,
 	to_report = {
 		# Iterable of molecule names
