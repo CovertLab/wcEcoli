@@ -287,7 +287,6 @@ class TranscriptElongation(wholecell.processes.process.Process):
 				counts_attenuated[self.attenuated_rna_indices_lookup[idx]] += 1
 			self.RNAs.delByIndexes(partial_transcript_indexes[rna_to_attenuate])
 			self.active_RNAPs.delByIndexes(np.where(rna_to_attenuate[partial_RNA_to_RNAP_mapping]))
-			# TODO: account for lost mass from early termination
 
 		n_attenuated = rna_to_attenuate.sum()
 		n_terminated = did_terminate_mask.sum()
