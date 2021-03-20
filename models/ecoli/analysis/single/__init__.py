@@ -59,9 +59,11 @@ ACTIVE = [
 	"rnaSynthesisProbabilities.py",
 	"rnapCapacity.py",
 	"rnapCounts.py",
+	"rnap_stalled.py",
 	"rnaseCounts.py",
 	"superhelical_density.py",
 	"surface_area_comparison.py",
+	"transcriptional_attenuation.py",
 	"transient_gene_dosage.py",
 	"trna_charging.py",
 	"tRnaCounts.py",
@@ -131,6 +133,7 @@ TAGS = {
 		],
 	'REGULATION': [
 		"equilibriumComparison.py",
+		"transcriptional_attenuation.py",
 		"transient_gene_dosage.py",
 		"trpRegulation.py",
 		"twoComponentSystem.py",
@@ -166,6 +169,7 @@ TAGS = {
 		"ribosome50SCounts.py",
 		"ribosomeCapacity.py",
 		"ribosomeCounts.py",
+		"transcriptional_attenuation.py",
 		"trna_charging.py",
 		],
 	'TWO_COMPONENT_SYSTEM': [
