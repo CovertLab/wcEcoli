@@ -361,12 +361,16 @@ def set_conditions(sim_data, cell_specs, **kwargs):
 
 @save_state
 def final_adjustments(sim_data, cell_specs, **kwargs):
+	# Adjust expression for RNA attenuation
+	sim_data.process.transcription.calculate_attenuation(sim_data, cell_specs)
+
 	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints
 	sim_data.process.transcription.adjust_polymerizing_ppgpp_expression(sim_data)
 	sim_data.process.transcription.adjust_ppgpp_expression_for_tfs(sim_data)
 
 	# Set supply constants for amino acids based on condition supply requirements
-	sim_data.process.metabolism.set_supply_constants(sim_data)
+	sim_data.process.metabolism.set_phenomological_supply_constants(sim_data)
+	sim_data.process.metabolism.set_mechanistic_supply_constants(sim_data, cell_specs)
 
 	return sim_data, cell_specs
 
