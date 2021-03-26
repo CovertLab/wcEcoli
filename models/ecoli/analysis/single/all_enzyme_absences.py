@@ -42,6 +42,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax.set_xlabel('Time (min)')
 		ax.set_yticks(np.arange(len(enzyme_ids)))
 		ax.set_yticklabels(enzyme_ids)
+		ax.set_title(
+			'Times when each enzyme is completely absent from the simulation'
+			)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
