@@ -46,7 +46,6 @@ BOUNDS = (50, 50)
 N_BINS = (10, 10)
 TAGGED_MOLECULES_PATH = os.path.join(
 	os.path.dirname(__file__), 'antibiotics_tagged_molecules.csv')
-NUM_EMISSIONS = 100
 
 
 def get_antibiotics_timeline(
@@ -96,6 +95,7 @@ def get_antibiotics_timeline(
 def simulate(
 	emitter_config, simulation_time, num_cells, pulse_concentration,
 	add_aa, anaerobic, antibiotic_threshold, update_fields, seed,
+	num_emissions=100
 ):
 	'''Run the simulation
 
@@ -116,6 +116,7 @@ def simulate(
 			fields. This often needs to be set to False to avoid
 			breaking FBA.
 		seed: Seed for whole cell model random number generators.
+		num_emissions: Number of times to emit data.
 
 	Returns:
 		vivarium.core.emitter.Emitter: An emitter from which the
@@ -180,7 +181,7 @@ def simulate(
 	initial_state = {}
 	settings = {
 		'emitter': emitter_config,
-		'emit_step': max(simulation_time // NUM_EMISSIONS, 1),
+		'emit_step': max(simulation_time // num_emissions, 1),
 		'timeline': timeline_config,
 		'experiment_id': timestamp(datetime.datetime.utcnow()),
 	}
@@ -316,6 +317,11 @@ def main():
 		default=0,
 		help='Let wcEcoli update the environment fields.',
 	)
+	parser.add_argument(
+		'--emissions',
+		type=int,
+		default=100,
+		help='Number of times to emit data over simulation.')
 	args = parser.parse_args()
 	if args.atlas:
 		with open(SECRETS_PATH, 'r') as f:
@@ -338,6 +344,7 @@ def main():
 		args.antibiotic_threshold,
 		args.update_fields,
 		args.seed,
+		args.emissions,
 	)
 
 
