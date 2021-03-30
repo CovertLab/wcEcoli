@@ -8,6 +8,7 @@ ACTIVE = [
 	"aaCounts.py",
 	"aaExchangeFluxes.py",
 	"active_rnap_coordinates.py",
+	"all_enzyme_absences.py",
 	"allReactionFluxes.py",
 	"cell_wall_expression.py",
 	"centralCarbonMetabolism.py",
@@ -63,6 +64,7 @@ ACTIVE = [
 	"rnaseCounts.py",
 	"superhelical_density.py",
 	"surface_area_comparison.py",
+	"transcriptional_attenuation.py",
 	"transient_gene_dosage.py",
 	"trna_charging.py",
 	"tRnaCounts.py",
@@ -107,6 +109,7 @@ TAGS = {
 		],
 	'METABOLISM': [
 		"aaExchangeFluxes.py",
+		"all_enzyme_absences.py",
 		"allReactionFluxes.py",
 		"centralCarbonMetabolism.py",
 		"centralCarbonMetabolismCorrelationTimeCourse.py",
@@ -132,6 +135,7 @@ TAGS = {
 		],
 	'REGULATION': [
 		"equilibriumComparison.py",
+		"transcriptional_attenuation.py",
 		"transient_gene_dosage.py",
 		"trpRegulation.py",
 		"twoComponentSystem.py",
@@ -167,6 +171,7 @@ TAGS = {
 		"ribosome50SCounts.py",
 		"ribosomeCapacity.py",
 		"ribosomeCounts.py",
+		"transcriptional_attenuation.py",
 		"trna_charging.py",
 		],
 	'TWO_COMPONENT_SYSTEM': [
