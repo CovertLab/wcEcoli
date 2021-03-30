@@ -369,9 +369,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		# sequences_limited_elongation: ndarray of bool, shape (num_sequences,),
 		#	mask indicating whether the sequences were actually elongated to the
 		#	max lengths expected from the current step
-		self.sequences_limited_elongation = (np.min([self._raw_elongation_rates,
-													 self._sequenceLengths], axis=0)\
-											!= self.sequenceElongation)
+		self.sequences_limited_elongation = (
+			np.minimum(self._raw_elongation_rates, self._sequenceLength)
+			!= self.sequenceElongation
+			)
 
 	def _clamp_elongation_to_sequence_length(self):
 		'''
