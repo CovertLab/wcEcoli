@@ -104,8 +104,8 @@ PROTEINS_IN_METABOLISM = ["EG50003-MONOMER[c]", "PHOB-MONOMER[c]",
 
 # Equilibrium complexes that are formed from deactivated equilibrium reactions,
 # but are reactants in a complexation reaction
-EQUILIBRIUM_COMPLEXES_IN_COMPLEXATION = ["CPLX0-7620[c]", "CPLX0-7701[c]",
-	"CPLX0-7677[c]", "MONOMER0-1781[c]", "CPLX0-7702[c]"]
+EQUILIBRIUM_COMPLEXES_IN_COMPLEXATION = ["CPLX0-7701[c]", "CPLX0-7677[c]",
+	"MONOMER0-1781[c]", "CPLX0-7702[c]"]
 
 # Metabolites that are used as ligands in equilibrium, but do not participate
 # in any metabolic reactions
