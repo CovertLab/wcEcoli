@@ -483,7 +483,8 @@ class Workflow(object):
 		"""
 		# TODO(jerry): Add an option to pass in the LaunchPad config as a dict.
 		with open(lpad_filename) as f:
-			config = yaml.safe_load(f)
+			yml = yaml.YAML(typ='safe')
+			config = yml.load(f)
 			lpad = LaunchPad(**config)
 
 		if lpad.uri_mode:
@@ -535,4 +536,5 @@ class Workflow(object):
 		fw_wf = self.build_workflow()
 
 		with open(filename, 'w') as f:
-			yaml.safe_dump(fw_wf.to_dict(), f)
+			yml = yaml.YAML(typ='safe')
+			yml.dump(fw_wf.to_dict(), f)
