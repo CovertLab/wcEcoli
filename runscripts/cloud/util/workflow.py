@@ -464,7 +464,8 @@ class Workflow(object):
 		prefix = 'fireworker-{}'.format(db_name)
 		options = {
 			'image-family': 'fireworker',
-			'description': 'FireWorks worker VM for user/ID {}'.format(self.name)}
+			'network-interface': 'no-address',  # no External IP
+			'description': f'FireWorks worker VM for user/ID {self.name}'}
 		options.update(gce_options or {})
 
 		metadata = {'db': db_name}
