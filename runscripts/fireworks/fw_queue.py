@@ -63,7 +63,7 @@ Simulation parameters:
 		formatting details.
 	WC_LENGTHSEC (int, "10800"): sets the maximum simulation time in seconds, useful
 		for short simulations (default is 3 hr)
-	TIMESTEP_MAX (float, "0.9"): sets the maximum time step
+	TIMESTEP_MAX (float, "2"): sets the maximum time step
 	TIMESTEP_SAFETY_FRAC (float, "1.3"): increases the time step by this factor
 		if conditions are favorable; up the the limit of the max time step
 	TIMESTEP_UPDATE_FREQ (int, "5"): frequency at which the time step is updated
