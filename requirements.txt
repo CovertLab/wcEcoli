@@ -62,7 +62,7 @@ Cython==0.29.21
 dash==1.18.1
 dnspython==2.0.0
 Equation==1.2.1
-FireWorks==1.9.6
+FireWorks==1.9.7
 future==0.18.2
 ipdb==0.13.3
 ipython==7.16.1

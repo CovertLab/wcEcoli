@@ -9,7 +9,7 @@
 
 set -eu
 
-HOST=mongo-prime
+HOST=mongo2
 ZONE=us-west1-b
 PORT=27017
 TUNNEL=127.0.0.1:$PORT:localhost:$PORT
