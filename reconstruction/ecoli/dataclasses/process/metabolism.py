@@ -12,6 +12,7 @@ TODO:
 from __future__ import absolute_import, division, print_function
 
 from copy import copy
+import itertools
 import re
 from typing import Any, cast, Dict, Iterable, List, Optional, Set, Tuple, Union
 
@@ -854,7 +855,7 @@ class Metabolism(object):
 			rxn['id'] for rxn in cast(Any, raw_data).metabolic_reactions_removed}
 
 		# Load and parse reaction information from raw_data
-		for reaction in cast(Any, raw_data).metabolic_reactions:
+		for reaction in itertools.chain(cast(Any, raw_data).metabolic_reactions, cast(Any, raw_data).protein_modification_reactions):
 			reaction_id = reaction["id"]
 
 			# Skip removed reactions
