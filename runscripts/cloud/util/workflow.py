@@ -492,7 +492,7 @@ class Workflow(object):
 				metadata['host'], uri_mode=metadata.get('uri_mode'))
 			info = f' to connect to MongoDB at {db_host}'
 		self.log_info(f'\nCreating {count} GCE Fireworker '
-					  f'{"VM" if count == 1 else "VMs"}{info}\n')
+					  f'{"VM" if count == 1 else "VMs"}{info}')
 
 		engine = gce.ComputeEngine(prefix)
 		engine.create(count=count, command_options=options, **metadata)
