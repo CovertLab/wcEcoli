@@ -18,13 +18,13 @@ TUNNEL=127.0.0.1:$PORT:localhost:$PORT
 
 if [ "${1-}" == bg ]
 then
-    gcloud compute ssh $HOST --zone=$ZONE -- \
+    gcloud compute ssh "$HOST" --zone="$ZONE" -- \
         -o ExitOnForwardFailure=yes -L $TUNNEL -nNT &
     ssh_pid="$!"
 
     echo "ssh port forwarding to $HOST in the background process: pid ${ssh_pid}"
     echo "Do 'kill ${ssh_pid}' to stop it."
 else
-    gcloud compute ssh $HOST --zone=$ZONE -- \
+    gcloud compute ssh "$HOST" --zone="$ZONE" -- \
         -o ExitOnForwardFailure=yes -L $TUNNEL
 fi
