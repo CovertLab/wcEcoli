@@ -34,10 +34,10 @@ cell_wall_proteins = {
     'EG10344-MONOMER[i]': 'essential cell division protein (FtsW)',
 
     # catalyzes lipid II formation
-    'NACGLCTRANS-MONOMER[c]': 'MurG',
+    # 'NACGLCTRANS-MONOMER[c]': 'MurG',
 
     # catalyzes lipid I formation
-    'PHOSNACMURPENTATRANS-MONOMER[i]': 'MraY',
+    # 'PHOSNACMURPENTATRANS-MONOMER[i]': 'MraY',
 
     # PBP
     'CPLX0-7717[i]': 'PBP1A', # transglycosylase-transpeptidase ~100

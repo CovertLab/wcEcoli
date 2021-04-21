@@ -73,7 +73,8 @@ class Equilibrium(object):
 
 		for reaction in raw_data.equilibrium_reactions:
 			for mol_id in reaction["stoichiometry"].keys():
-				if mol_id in FORBIDDEN_MOLECULES or (mol_id in metabolite_ids and mol_id not in MOLECULES_THAT_WILL_EXIST_IN_SIMULATION):
+				if mol_id in FORBIDDEN_MOLECULES or (
+						mol_id in metabolite_ids and mol_id not in MOLECULES_THAT_WILL_EXIST_IN_SIMULATION):
 					removed_reaction_ids.add(reaction['id'])
 					break
 
@@ -116,7 +117,7 @@ class Equilibrium(object):
 				else:
 					molecule_index = molecules.index(mol_id_with_compartment)
 
-				# Any unknown stoichiometries will default to -1
+				# Assume coefficients given as null are -1
 				if coeff is None:
 					coeff = -1
 

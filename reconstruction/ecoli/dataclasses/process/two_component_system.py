@@ -177,8 +177,7 @@ class TwoComponentSystem(object):
 		massBalanceArray = self.mass_balance()
 
 		# The stoichometric matrix should balance out to numerical zero.
-		# TODO (ggsun): fix this
-		# assert np.max([abs(x) for x in massBalanceArray]) < 1e-9
+		assert np.max(np.absolute(massBalanceArray)) < 1e-9
 
 		# Map active TF to inactive TF
 		self.active_to_inactive_tf = activeToInactiveTF

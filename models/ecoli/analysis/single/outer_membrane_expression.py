@@ -28,7 +28,7 @@ outer_mem_proteins = {
     'CPD0-939[c]': 'LPS',
 
 	# outer membrane proteins
-    'EG10669-MONOMER[i]': 'ompA',
+    # 'EG10669-MONOMER[i]': 'ompA',
     # 'EG10671-MONOMER[e]': 'ompF',
     # 'EG10670-MONOMER[e]': 'ompC',
     # 'G6657-MONOMER[o]': 'ompG',

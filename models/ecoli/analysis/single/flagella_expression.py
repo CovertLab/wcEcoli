@@ -56,7 +56,7 @@ ordered_flagella_protein_ids = [
 
 flagella_proteins = {
 	'G7028-MONOMER[i]': 'FlhB',
-	'G378-MONOMER[s]': 'FliJ',
+	# 'G378-MONOMER[s]': 'FliJ',
 	'G377-MONOMER[i]': 'FliI',
 	'G370-MONOMER[i]': 'FlhA',
 	'EG11977-MONOMER[s]': 'FliR',

@@ -30,9 +30,6 @@ class Complexation(object):
 		removed_reaction_ids = {
 			rxn['id'] for rxn in raw_data.complexation_reactions_removed}
 
-		# Get IDs of all metabolites
-		metabolite_ids = {met['id'] for met in raw_data.metabolites}
-
 		self.ids_reactions = []
 		reaction_index = 0
 
@@ -45,24 +42,21 @@ class Complexation(object):
 			self.ids_reactions.append(reaction['id'])
 
 			for mol_id, coeff in reaction["stoichiometry"].items():
-				if mol_id in metabolite_ids:
-					molecule_name = "{}[{}]".format(
-						mol_id, 'c'  # Assume all metabolites are in cytosol
-						)
-				else:
-					molecule_name = "{}[{}]".format(
-						mol_id,
-						sim_data.getter.get_compartment(mol_id)[0]
-						)
+				mol_id_with_compartment = "{}[{}]".format(
+					mol_id,
+					sim_data.getter.get_compartment(mol_id)[0]
+					)
 
-				if molecule_name not in molecules:
-					molecules.append(molecule_name)
+				if mol_id_with_compartment not in molecules:
+					molecules.append(mol_id_with_compartment)
 					molecule_index = len(molecules) - 1
 				else:
-					molecule_index = molecules.index(molecule_name)
+					molecule_index = molecules.index(mol_id_with_compartment)
 
+				# Assume coefficents given as null are -1
 				if coeff is None:
 					coeff = -1
+
 				assert (coeff % 1) == 0
 
 				stoichMatrixI.append(molecule_index)
@@ -73,12 +67,12 @@ class Complexation(object):
 				# of the stoichiometric coefficient - Note that a molecule can
 				# be both a subunit and a complex
 				if coeff < 0:
-					subunits.append(molecule_name)
+					subunits.append(mol_id_with_compartment)
 				else:
-					complexes.append(molecule_name)
+					complexes.append(mol_id_with_compartment)
 
 				# Find molecular mass of the molecule and add to mass matrix
-				molecularMass = sim_data.getter.get_mass(molecule_name).asNumber(units.g / units.mol)
+				molecularMass = sim_data.getter.get_mass(mol_id_with_compartment).asNumber(units.g / units.mol)
 				stoichMatrixMass.append(molecularMass)
 
 			reaction_index += 1
