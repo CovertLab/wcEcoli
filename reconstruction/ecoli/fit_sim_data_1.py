@@ -1259,7 +1259,7 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	ids_protein = sim_data.process.translation.monomer_data["id"]
 	total_mass_protein = sim_data.mass.get_component_masses(doubling_time)["proteinMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
 	individual_masses_protein = sim_data.process.translation.monomer_data["mw"] / sim_data.constants.n_avogadro
-	distribution_transcripts_by_protein = normalize(expression[sim_data.relation.rna_index_to_monomer_mapping])
+	distribution_transcripts_by_protein = normalize(expression[sim_data.relation.RNA_to_monomer_mapping])
 	translation_efficiencies_by_protein = normalize(sim_data.process.translation.translation_efficiencies_by_monomer)
 
 	degradationRates = sim_data.process.translation.monomer_data['deg_rate']
@@ -1618,18 +1618,13 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		normalize(view_RNA.counts())
 		)
 
-	# Update mRNA expression to reflect monomer counts
-	assert np.all(
-		sim_data.process.translation.monomer_data['rna_id'][sim_data.relation.monomer_index_to_rna_mapping] == sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']]
-		), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests (only need to do once?)
-
 	mRnaExpressionView = rnaExpressionContainer.countsView(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']])
 	mRnaExpressionFrac = np.sum(mRnaExpressionView.counts())
 
 	mRnaExpressionView.countsIs(
 		mRnaExpressionFrac * mRNADistributionFromProtein(
 			normalize(counts_protein), translation_efficienciesByProtein, netLossRate_protein
-			)[sim_data.relation.monomer_index_to_rna_mapping]
+			).dot(sim_data.relation.monomer_to_mRNA_mapping())
 		)
 
 	expression = rnaExpressionContainer.counts()
@@ -2820,7 +2815,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 
 		# Solve optimization problem
 		prob_r = Problem(objective_r, constraint_r)
-		prob_r.solve(solver='ECOS', max_iters=1000)
+		prob_r.solve(solver='ECOS', max_iter=1000)
 
 		if prob_r.status == 'optimal_inaccurate':
 			raise RuntimeError('Solver found an optimum that is inaccurate.'

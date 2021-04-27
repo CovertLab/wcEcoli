@@ -12,7 +12,7 @@ from unum import Unum
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 
 # Data classes
-from reconstruction.ecoli.dataclasses.getter_functions import GetterFunctions
+from reconstruction.ecoli.dataclasses.getter_functions import GetterFunctions, UNDEFINED_COMPARTMENT_IDS_TO_ABBREVS
 from reconstruction.ecoli.dataclasses.molecule_groups import MoleculeGroups
 from reconstruction.ecoli.dataclasses.molecule_ids import MoleculeIds
 from reconstruction.ecoli.dataclasses.constants import Constants
@@ -61,38 +61,38 @@ class Protein(object):
 		compartment_ids_to_abbreviations = {
 			comp['id']: comp['abbrev'] for comp in knowledge_base_raw.compartments
 			}
-		# Compartments that don't exist in compartments.tsv
-		# TODO (ggsun): Add some of these to list of compartments?
-		compartment_ids_to_abbreviations.update({
-			'CCO-CW-BAC-NEG': 'o',
-			'CCO-CE-BAC': 'm',
-			'CCO-BAC-NUCLEOID': 'c',
-			'CCO-RIBOSOME': 'c',
-			})
 
-		protein_to_compartment_tag = {}
+		# Compartments that don't exist in compartments.tsv
+		compartment_ids_to_abbreviations.update(
+			UNDEFINED_COMPARTMENT_IDS_TO_ABBREVS)
+
+		protein_id_to_compartment_tag = {}
 
 		for protein in knowledge_base_raw.proteins:
-			compartments = protein['exp_location'] + protein['comp_location']
-			if len(compartments) == 0:
-				compartments = ['CCO-CYTOSOL']
+			exp_location = protein['exp_location']
+			comp_location = protein['comp_location']
 
-			protein_to_compartment_tag.update({
-				protein['id']: compartment_ids_to_abbreviations[compartments[0]]
+			if len(exp_location) + len(comp_location) == 0:
+				compartment = 'CCO-CYTOSOL'
+			elif len(exp_location) > 0:
+				compartment = exp_location[0]
+			else:
+				compartment = comp_location[0]
+
+			protein_id_to_compartment_tag.update({
+				protein['id']: [compartment_ids_to_abbreviations[compartment]]
 				})
 
 		# Build and save a dict from gene ID to monomerId
 		rna_id_to_gene_id = {
 			gene['rna_id']: gene['id'] for gene in knowledge_base_raw.genes}
-		protein_id_to_location = {
-			protein['id']: protein_to_compartment_tag[protein['id']] for protein in knowledge_base_raw.proteins}
 
 		self.geneIdToMonomerId = {}
 
 		for rna in knowledge_base_raw.rnas:
-			if rna['monomer_id'] is not None:
+			if len(rna['monomer_ids']) > 0:
 				self.geneIdToMonomerId[rna_id_to_gene_id[rna['id']]] = '{}[{}]'.format(
-					rna['monomer_id'], protein_id_to_location[rna['monomer_id']])
+					rna['monomer_ids'][0], protein_id_to_compartment_tag[rna['monomer_ids'][0]])
 
 		# Build and save a dict from gene symbol to corresponding monomerId
 		self.geneSymbolToMonomerId = {}

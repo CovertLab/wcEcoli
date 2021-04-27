@@ -125,8 +125,7 @@ class SimulationDataEcoli(object):
 
 		rna_ids_with_coordinates = {
 			gene['rna_id'] for gene in raw_data.genes
-			if gene['left_end_pos'] is not None and gene[
-				'right_end_pos'] is not None}
+			if gene['left_end_pos'] is not None and gene['right_end_pos'] is not None}
 
 		self.tf_to_fold_change = {}
 		self.tf_to_direction = {}
