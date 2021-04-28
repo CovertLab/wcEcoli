@@ -59,9 +59,9 @@ class Translation(object):
 
 		# Get mappings from monomer IDs to RNA IDs
 		monomer_id_to_rna_id = {
-			monomer_id: rna['id']
+			rna['monomer_ids'][0]: rna['id']
 			for rna in raw_data.rnas
-			for monomer_id in rna['monomer_ids']}
+			if len(rna['monomer_ids']) > 0}
 
 		# Select proteins with valid sequences and mappings to valid mRNAs
 		all_proteins = []
@@ -201,9 +201,9 @@ class Translation(object):
 
 		# Get mappings from monomer IDs to gene IDs
 		monomer_id_to_rna_id = {
-			monomer_id: rna['id']
+			rna['monomer_ids'][0]: rna['id']
 			for rna in raw_data.rnas
-			for monomer_id in rna['monomer_ids']}
+			if len(rna['monomer_ids']) > 0}
 		rna_id_to_gene_id = {
 			gene['rna_id']: gene['id'] for gene in raw_data.genes}
 		monomer_id_to_gene_id = {
