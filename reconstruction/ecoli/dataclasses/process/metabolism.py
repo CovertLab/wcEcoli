@@ -894,11 +894,11 @@ class Metabolism(object):
 			# TODO (ggsun): Add complexes formed by complexing given enzymes
 			catalysts_for_this_rxn = []
 			for catalyst in reaction["catalyzed_by"]:
-				try:
+				if sim_data.getter.is_valid_molecule(catalyst):
 					catalysts_with_loc = catalyst + sim_data.getter.get_compartment_tag(catalyst)
 					catalysts_for_this_rxn.append(catalysts_with_loc)
 				# If we don't have the catalyst in our reconstruction, drop it
-				except KeyError:
+				else:
 					if VERBOSE:
 						print(
 							'Skipping catalyst {} for {} since it is not in the model'
