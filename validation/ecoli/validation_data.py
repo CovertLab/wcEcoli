@@ -90,7 +90,7 @@ class Protein(object):
 		self.geneIdToMonomerId = {}
 
 		for rna in knowledge_base_raw.rnas:
-			if len(rna['monomer_ids']) > 0:
+			if len(rna['monomer_ids']) > 0 and rna['monomer_ids'][0] in protein_id_to_compartment_tag:
 				self.geneIdToMonomerId[rna_id_to_gene_id[rna['id']]] = '{}[{}]'.format(
 					rna['monomer_ids'][0], protein_id_to_compartment_tag[rna['monomer_ids'][0]])
 
