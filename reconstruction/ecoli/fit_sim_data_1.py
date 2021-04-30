@@ -2815,7 +2815,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 
 		# Solve optimization problem
 		prob_r = Problem(objective_r, constraint_r)
-		prob_r.solve(solver='ECOS')
+		prob_r.solve(solver='ECOS', max_iters=1000)
 
 		if prob_r.status == 'optimal_inaccurate':
 			raise RuntimeError('Solver found an optimum that is inaccurate.'
@@ -2874,7 +2874,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 
 		# Solve optimization problem
 		prob_p = Problem(objective_p, constraint_p)
-		prob_p.solve(solver='ECOS', max_iters=1000)
+		prob_p.solve(solver='ECOS')
 
 		if prob_p.status == 'optimal_inaccurate':
 			raise RuntimeError('Solver found an optimum that is inaccurate.'
