@@ -42,18 +42,25 @@ class Equilibrium(object):
 
 		# Make sure reactions are not duplicated in complexationReactions and
 		# equilibriumReactions
-		equilibriumReactionIds = set([x["id"] for x in raw_data.equilibrium_reactions])
-		complexationReactionIds = set([x["id"] for x in raw_data.complexation_reactions])
+		removed_equilibrium_reaction_ids = {
+			rxn['id'] for rxn in raw_data.equilibrium_reactions_removed}
+		removed_complexation_reaction_ids = {
+			rxn['id'] for rxn in raw_data.complexation_reactions_removed}
 
-		if equilibriumReactionIds.intersection(complexationReactionIds) != set():
+		equilibrium_reaction_ids = set(
+			[x["id"] for x in raw_data.equilibrium_reactions
+			 if x['id'] not in removed_equilibrium_reaction_ids]
+		)
+		complexation_reaction_ids = set(
+			[x["id"] for x in raw_data.complexation_reactions
+			 if x['id'] not in removed_complexation_reaction_ids]
+		)
+
+		if equilibrium_reaction_ids.intersection(complexation_reaction_ids) != set():
 			raise Exception(
 				"The following reaction ids are specified in equilibriumReactions and complexationReactions: %s" % (
-					equilibriumReactionIds.intersection(
-						complexationReactionIds)))
-
-		# Initialize IDs of reactions that should be removed
-		removed_reaction_ids = {
-			rxn['id'] for rxn in raw_data.equilibrium_reactions_removed}
+					equilibrium_reaction_ids.intersection(
+						complexation_reaction_ids)))
 
 		# Get IDs of all metabolites
 		metabolite_ids = {met['id'] for met in raw_data.metabolites}
@@ -75,7 +82,7 @@ class Equilibrium(object):
 			for mol_id in reaction["stoichiometry"].keys():
 				if mol_id in FORBIDDEN_MOLECULES or (
 						mol_id in metabolite_ids and mol_id not in MOLECULES_THAT_WILL_EXIST_IN_SIMULATION):
-					removed_reaction_ids.add(reaction['id'])
+					removed_equilibrium_reaction_ids.add(reaction['id'])
 					break
 
 		# Get forward and reverse rates of each reaction
@@ -92,7 +99,7 @@ class Equilibrium(object):
 
 		# Build stoichiometry matrix
 		for reaction in raw_data.equilibrium_reactions:
-			if reaction['id'] in removed_reaction_ids:
+			if reaction['id'] in removed_equilibrium_reaction_ids:
 				continue
 
 			ratesFwd.append(forward_rates.get(reaction['id'], median_forward_rate))

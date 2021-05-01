@@ -1,4 +1,5 @@
 "id"	"subunits"	"mw"	"compartment"
+"PHOSPHO-ARCA"	[{"monomer": "ARCA-MONOMER[c]", "stoichiometry": 1}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 27281.891, 77.964, 0.0, 0.0]	"c"
 "PHOSPHO-BAER"	[{"monomer": "BAER-MONOMER[c]", "stoichiometry": 1}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 27650.854, 77.964, 0.0, 0.0]	"c"
 "PHOSPHO-BAES"	[{"monomer": "BAES-MONOMER[i]", "stoichiometry": 1}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 51991.262, 77.964, 0.0, 0.0]	"i"
 "PHOSPHO-BASR"	[{"monomer": "BASR-MONOMER[c]", "stoichiometry": 1}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 25024.723, 77.964, 0.0, 0.0]	"c"
@@ -11,6 +12,7 @@
 "PHOSPHO-PHOQ"	[{"monomer": "PHOQ-MONOMER[i]", "stoichiometry": 2}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 110576.89, 77.964, 0.0, 0.0]	"i"
 "PHOSPHO-PHOB"	[{"monomer": "PHOB-MONOMER[c]", "stoichiometry": 1}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 26425.252, 77.964, 0.0, 0.0]	"c"
 "PHOSPHO-PHOR"	[{"monomer": "PHOR-MONOMER[i]", "stoichiometry": 2}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 99280.802, 77.964, 0.0, 0.0]	"i"
+"PHOSPHO-ARCB-CPLX"	[{"monomer": "ARCB-MONOMER[i]", "stoichiometry": 2}, {"monomer": "PI[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 175899.018, 77.964, 0.0, 0.0]	"i"
 "PHOSPHO-BAES-INDOLE-CPLX"	[{"monomer": "BAES-MONOMER[i]", "stoichiometry": 1}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 51991.262, 195.114, 0.0, 0.0]	"i"
 "PHOSPHO-BASS-FE+3-CPLX"	[{"monomer": "BASS-MONOMER[i]", "stoichiometry": 1}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 41022.114, 133.811, 0.0, 0.0]	"i"
 "PHOSPHO-DCUS-SUC-CPLX"	[{"monomer": "DCUS-MONOMER[i]", "stoichiometry": 1}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 60545.55, 194.037, 0.0, 0.0]	"i"

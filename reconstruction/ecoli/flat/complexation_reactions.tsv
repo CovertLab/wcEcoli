@@ -1098,3 +1098,7 @@
 "CPLX0-8053_RXN"	{"CPLX0-8053":1,"EG10942-MONOMER":null}	"SelB-L-selenocysteinyl-tRNA<sup>sec</sup>"	
 "CPLX0-8253_RXN"	{"CPLX0-8253":1,"CSRC-RNA":-1,"EG11447-MONOMER":-9}	"CsrA complex with CsrC RNA"	
 "SRP-CPLX_RXN"	{"SRP-CPLX":1,"EG10300-MONOMER":null,"FFS-RNA":null}	"Signal Recognition Particle"	
+# Reactions below were added to save some 1CS reactions
+"CPLX0-7796APO_RXN"	{"CPLX0-7796APO": 1, "PD04032": -2}	null
+# Reactions below were added to save some 2CS reactions
+"ARCB-CPLX_RXN"	{"ARCB-CPLX": 1, "ARCB-MONOMER": -2}	null

@@ -516,8 +516,7 @@ class TwoComponentSystem(object):
 		return moleculesNeeded, allMoleculesChanges
 
 
-	def molecules_to_ss(self, moleculeCounts, cellVolume, nAvogadro, timeStepSec,
-			method="LSODA", jit=True):
+	def molecules_to_ss(self, moleculeCounts, cellVolume, nAvogadro, timeStepSec=1e20):
 		"""
 		Calculates the changes in the counts of molecules as the system
 		reaches steady state
@@ -537,22 +536,10 @@ class TwoComponentSystem(object):
 		# 	function above.
 		y_init = moleculeCounts / (cellVolume * nAvogadro)
 
-		# In this version of SciPy, solve_ivp does not support args so need to
-		# select the derivatives functions to use. Could be simplified to single
-		# functions that take a jit argument from solve_ivp in the future.
-		if jit:
-			derivatives = self.derivatives_jit
-			derivatives_jacobian = self.derivatives_jacobian_jit
-		else:
-			derivatives = self.derivatives
-			derivatives_jacobian = self.derivatives_jacobian
-
-		sol = scipy.integrate.solve_ivp(
-			derivatives, [0, timeStepSec], y_init,
-			method=method, t_eval=[0, timeStepSec], atol=1e-8,
-			jac=derivatives_jacobian
-			)
-		y = sol.y.T
+		y = scipy.integrate.odeint(
+			self.derivatives_parca, y_init,
+			t=[0, timeStepSec], Dfun=self.derivatives_parca_jacobian
+		)
 
 		if np.any(y[-1, :] * (cellVolume * nAvogadro) <= -1):
 			raise Exception(

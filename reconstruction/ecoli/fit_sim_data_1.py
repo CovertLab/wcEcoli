@@ -1858,12 +1858,16 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 			# Do not use jit to avoid compiling time (especially when running
 			# in parallel since sim_data needs to be pickled and reconstructed
 			# each time)
-			rxnFluxes, _ = sim_data.process.equilibrium.fluxes_and_molecules_to_SS(
-				equilibriumMoleculesView.counts(),
-				cellVolume.asNumber(units.L),
-				sim_data.constants.n_avogadro.asNumber(1 / units.mol),
-				random_state, jit=False,
-				)
+			try:
+				rxnFluxes, _ = sim_data.process.equilibrium.fluxes_and_molecules_to_SS(
+					equilibriumMoleculesView.counts(),
+					cellVolume.asNumber(units.L),
+					sim_data.constants.n_avogadro.asNumber(1 / units.mol),
+					random_state, jit=False,
+					)
+			except:
+				negative_counts = [ids_equilibrium[x] for x in np.where(equilibriumMoleculesView.counts() < 0)[0]]
+				import ipdb; ipdb.set_trace()
 			equilibriumMoleculesView.countsInc(
 				np.dot(sim_data.process.equilibrium.stoich_matrix().astype(np.int64), rxnFluxes)
 				)
@@ -1873,9 +1877,12 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 			_, moleculeCountChanges = sim_data.process.two_component_system.molecules_to_ss(
 				twoComponentSystemMoleculesView.counts(),
 				cellVolume.asNumber(units.L),
-				sim_data.constants.n_avogadro.asNumber(1 / units.mmol),
-				1e6,
+				sim_data.constants.n_avogadro.asNumber(1 / units.mmol)
 				)
+
+			if np.any(twoComponentSystemMoleculesView.counts() < 0):
+				import ipdb; ipdb.set_trace()
+
 			twoComponentSystemMoleculesView.countsInc(moleculeCountChanges)
 
 			metDiffs = metabolitesView.counts() - metCounts.asNumber().round()
