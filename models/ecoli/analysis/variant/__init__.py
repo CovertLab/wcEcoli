@@ -12,7 +12,7 @@ ACTIVE = [
 	"massFractionSummary.py",
 	"metabolism_kinetic_objective_weight.py",
 	"metabolism_secretion_penalty.py",
-	"remove_aa_inhibition.py"
+	"remove_aa_inhibition.py",
 	"tfFit.py",
 	"tfFitComparison.py",
 	"time_step.py",
