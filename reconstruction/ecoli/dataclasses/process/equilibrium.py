@@ -65,6 +65,10 @@ class Equilibrium(object):
 		# Get IDs of all metabolites
 		metabolite_ids = {met['id'] for met in raw_data.metabolites}
 
+		# IDs of 2CS ligands that should be tagged to the periplasm
+		two_component_system_ligands = [
+			l["molecules"]["LIGAND"] for l in raw_data.two_component_systems]
+
 		# Remove complexes that are currently not simulated
 		FORBIDDEN_MOLECULES = {
 			"modified-charged-selC-tRNA", # molecule does not exist
@@ -75,8 +79,7 @@ class Equilibrium(object):
 		# TODO (ggsun): check if this list is accurate
 		MOLECULES_THAT_WILL_EXIST_IN_SIMULATION = [
 			m["Metabolite"] for m in raw_data.metabolite_concentrations] + [
-			"LEU", "S-ADENOSYLMETHIONINE", "ARABINOSE", "4FE-4S"] + [
-			l["molecules"]["LIGAND"] for l in raw_data.two_component_systems]
+			"LEU", "S-ADENOSYLMETHIONINE", "ARABINOSE", "4FE-4S"] + two_component_system_ligands
 
 		for reaction in raw_data.equilibrium_reactions:
 			for mol_id in reaction["stoichiometry"].keys():
@@ -108,9 +111,14 @@ class Equilibrium(object):
 
 			for mol_id, coeff in reaction["stoichiometry"].items():
 				if mol_id in metabolite_ids:
-					mol_id_with_compartment = "{}[{}]".format(
-						mol_id, 'c'  # Assume all metabolites are in cytosol
-						)
+					if mol_id in two_component_system_ligands:
+						mol_id_with_compartment = "{}[{}]".format(
+							mol_id, 'p'  # Assume 2CS ligands are in periplasm
+							)
+					else:
+						mol_id_with_compartment = "{}[{}]".format(
+							mol_id, 'c'  # Assume all other metabolites are in cytosol
+							)
 					self.metabolite_set.add(mol_id_with_compartment)
 				else:
 					mol_id_with_compartment = "{}[{}]".format(

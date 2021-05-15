@@ -190,6 +190,7 @@ def input_adjustments(sim_data, cell_specs, debug=False, **kwargs):
 	setRNADegRates(sim_data)
 	setProteinDegRates(sim_data)
 
+	# TODO (ggsun): Make this part of dataclasses/process/replication.py?
 	# Set C-period
 	setCPeriod(sim_data)
 
@@ -1858,16 +1859,12 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 			# Do not use jit to avoid compiling time (especially when running
 			# in parallel since sim_data needs to be pickled and reconstructed
 			# each time)
-			try:
-				rxnFluxes, _ = sim_data.process.equilibrium.fluxes_and_molecules_to_SS(
-					equilibriumMoleculesView.counts(),
-					cellVolume.asNumber(units.L),
-					sim_data.constants.n_avogadro.asNumber(1 / units.mol),
-					random_state, jit=False,
-					)
-			except:
-				negative_counts = [ids_equilibrium[x] for x in np.where(equilibriumMoleculesView.counts() < 0)[0]]
-				import ipdb; ipdb.set_trace()
+			rxnFluxes, _ = sim_data.process.equilibrium.fluxes_and_molecules_to_SS(
+				equilibriumMoleculesView.counts(),
+				cellVolume.asNumber(units.L),
+				sim_data.constants.n_avogadro.asNumber(1 / units.mol),
+				random_state, jit=False,
+				)
 			equilibriumMoleculesView.countsInc(
 				np.dot(sim_data.process.equilibrium.stoich_matrix().astype(np.int64), rxnFluxes)
 				)
@@ -1879,9 +1876,6 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 				cellVolume.asNumber(units.L),
 				sim_data.constants.n_avogadro.asNumber(1 / units.mmol)
 				)
-
-			if np.any(twoComponentSystemMoleculesView.counts() < 0):
-				import ipdb; ipdb.set_trace()
 
 			twoComponentSystemMoleculesView.countsInc(moleculeCountChanges)
 
