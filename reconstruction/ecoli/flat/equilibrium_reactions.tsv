@@ -181,7 +181,7 @@
 "PUTA-CPLXBND_RXN"	{"PUTA-CPLXBND": 1, "PUTA-CPLX": -1, "PRO": -2}
 "FNR-4FE-4S_RXN"	{"FNR-4FE-4S-CPLX": 1, "CPLX0-7797": -1, "4FE-4S": -1}
 "CPLX0-7796_EQUILIBRIUM_RXN"	{"CPLX0-7796": 1, "CPLX0-7796APO": -1, "S-ADENOSYLMETHIONINE": -2}
-# Reactions below were added to save some 2CS reactions
+# Reactions below were added to save some 2CS reactions (TODO: have 2CS add these reactions)
 "ARCB-OXYGEN_RXN"	{"ARCB-OXYGEN-CPLX": 1, "ARCB-CPLX": -1, "OXYGEN-MOLECULE": -1}
 "BAES-INDOLE_RXN"	{"BAES-INDOLE-CPLX": 1, "BAES-MONOMER": -1, "INDOLE": -1}
 "BASS-FE+3_RXN"	{"BASS-FE+3-CPLX": 1, "BASS-MONOMER": -1, "FE+3": -1}

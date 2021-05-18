@@ -30,3 +30,5 @@
 "TRG-CPLX_RXN"	"Subunit CHEA-CPLX missing from model"
 "TSR-CPLX_RXN"	"Subunit CHEA-CPLX missing from model"
 "CPLX0-7796_RXN"	"Manual fix for 1CS TF CPLX0-7796"
+"CPLX0-8304_RXN"	"Removed to prevent the consumption of DCUS-MONOMER, a histidine kinase of a 2CS"
+"CPLX0-8306_RXN"	"Removed to prevent the consumption of DCUS-MONOMER, a histidine kinase of a 2CS"
