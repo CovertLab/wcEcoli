@@ -17,3 +17,7 @@
 "PHOSPHO-BASS-FE+3-CPLX"	[{"monomer": "BASS-MONOMER[i]", "stoichiometry": 1}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 41022.114, 133.811, 0.0, 0.0]	"i"
 "PHOSPHO-DCUS-SUC-CPLX"	[{"monomer": "DCUS-MONOMER[i]", "stoichiometry": 1}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 60545.55, 194.037, 0.0, 0.0]	"i"
 "PHOSPHO-NARX-NITRATE-CPLX"	[{"monomer": "NARX-MONOMER[i]", "stoichiometry": 2}, {"monomer": "Pi[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 134155.558, 139.969, 0.0, 0.0]	"i"
+# Proteins below are not used by the simulation and are added just as placeholders
+"PHOSPHO-ARCB-OXYGEN-CPLX"	[{"monomer": "ARCB-MONOMER[i]", "stoichiometry": 2}, {"monomer": "PI[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 175899.976, 109.961, 0.0, 0.0]	"i"
+"PHOSPHO-PHOQ-CA+2-CPLX"	[{"monomer": "PHOQ-MONOMER[i]", "stoichiometry": 2}, {"monomer": "PI[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 110577.528, 118.041, 0.0, 0.0]	"i"
+"PHOSPHO-PHOR-Pi-CPLX"	[{"monomer": "PHOR-MONOMER[i]", "stoichiometry": 2}, {"monomer": "PI[c]", "stoichiometry": 1}]	[0.0, 0.0, 0.0, 0.0, 0.0, 99217.306, 173.941, 0.0, 0.0]	"i"
