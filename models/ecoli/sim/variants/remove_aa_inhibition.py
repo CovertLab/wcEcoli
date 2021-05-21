@@ -30,10 +30,9 @@ AA_TO_ENZYME = {
 
 def remove_aa_inhibition(sim_data, index):
 	if index > 0:
-		metabolism = sim_data.process.metabolism
 		aa = list(AA_TO_ENZYME.keys())[index-1]
 		aa_index = sim_data.molecule_groups.amino_acids.index(aa)
-		metabolism.aa_kis[aa_index] *= np.inf
+		sim_data.process.metabolism.aa_kis[aa_index] *= np.inf
 		short = aa
 		desc = f'remove {aa} inhibition on {AA_TO_ENZYME[aa]} activity'
 	else:
