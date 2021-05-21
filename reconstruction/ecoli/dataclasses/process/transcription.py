@@ -687,8 +687,8 @@ class Transcription(object):
 
 		def get_trna_conc(condition):
 			spec = cell_specs[condition]
-			uncharged_trna_ids = self.rna_data['id'][self.rna_data['is_tRNA']]
-			counts = spec['bulkAverageContainer'].counts(uncharged_trna_ids)
+			# uncharged_trna_ids = self.rna_data['id'][self.rna_data['is_tRNA']]
+			counts = spec['bulkAverageContainer'].counts(sim_data.molecule_groups.amino_acids)
 			volume = (spec['avgCellDryMassInit'] / sim_data.constants.cell_density
 				/ sim_data.mass.cell_dry_mass_fraction)
 			# Order of operations for conc (counts last) is to get units to work well
@@ -696,7 +696,7 @@ class Transcription(object):
 			return conc
 
 		k_units = units.umol / units.L
-		trna_conc = self.aa_from_trna @ get_trna_conc('with_aa').asNumber(k_units)
+		trna_conc = get_trna_conc('with_aa').asNumber(k_units)
 
 		# Calculate constant for stop probability
 		self.attenuation_k = np.zeros_like(self._attenuation_fold_changes)
@@ -720,8 +720,8 @@ class Transcription(object):
 		self.attenuation_basal_prob_adjustments = basal_synth_prob * (1 / (1 - basal_stop_prob) - 1)
 
 	def get_attenuation_stop_probabilities(self, trna_conc):
-		trna_by_aa = units.matmul(self.aa_from_trna, trna_conc)
-		stop_prob = 1 - np.exp(units.strip_empty_units(trna_by_aa @ self.attenuation_k))
+		# trna_by_aa = units.matmul(self.aa_from_trna, trna_conc)
+		stop_prob = 1 - np.exp(units.strip_empty_units(trna_conc @ self.attenuation_k))
 		return stop_prob
 
 	def _build_elongation_rates(self, raw_data, sim_data):
