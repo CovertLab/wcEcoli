@@ -721,7 +721,7 @@ class Transcription(object):
 
 	def get_attenuation_stop_probabilities(self, trna_conc):
 		# trna_by_aa = units.matmul(self.aa_from_trna, trna_conc)
-		a = 0.85
+		a = 0.95
 		stop_prob = a * (1 - np.exp(units.strip_empty_units(trna_conc @ self.attenuation_k)))
 		return stop_prob
 
