@@ -18,6 +18,7 @@ from six.moves import zip
 
 import wholecell.processes.process
 from wholecell.utils import units
+from wholecell.utils.migration.write_json import write_json
 
 
 class TranscriptInitiation(wholecell.processes.process.Process):
@@ -104,6 +105,10 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.synth_prob = sim_data.process.transcription.synth_prob_from_ppgpp
 		self.copy_number = sim_data.process.replication.get_average_copy_number
 		self.ppgpp_regulation = sim._ppgpp_regulation
+
+		# saving updates
+		self.update_to_save = {}
+		self.saved = False
 
 
 	def calculateRequest(self):
@@ -208,6 +213,11 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		TU_synth_probs = TU_to_promoter.dot(self.promoter_init_probs)
 		self.writeToListener("RnaSynthProb", "rnaSynthProb", TU_synth_probs)
 
+		self.update_to_save = {
+			'listeners': {
+				'rna_synth_prob': {
+					'rna_synth_prob': TU_synth_probs}}}
+
 		# Shuffle synthesis probabilities if we're running the variant that
 		# calls this (In general, this should lead to a cell which does not
 		# grow and divide)
@@ -252,8 +262,20 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			coordinates = coordinates,
 			direction = direction)
 
+		self.update_to_save['active_RNAPs'] = {
+			'_add' : [{'key' : RNAP_indexes[i],
+					   'state' : {'unique_index' : RNAP_indexes[i],
+								  'domain_index' : domain_index_rnap[i],
+								  'coordinates' : coordinates[i],
+								  'direction' : direction[i]}}
+					  for i in range(len(RNAP_indexes))]
+		}
+
 		# Decrement counts of inactive RNAPs
 		self.inactive_RNAPs.countDec(n_initiations.sum())
+
+		self.update_to_save['molecules'] = {
+			'APORNAP-CPLX[c]': -n_initiations.sum()}
 
 		# Add partially transcribed RNAs
 		is_mRNA = np.isin(TU_index_partial_RNAs, self.idx_mRNA)
@@ -266,10 +288,35 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			can_translate=is_mRNA,
 			RNAP_index=RNAP_indexes)
 
+		self.update_to_save['RNAs'] = {'_add':
+										   [{'key': i,
+											 'state': {'unique_index': i,
+													   'TU_index': TU_index_partial_RNAs[i],
+													   'transcript_length': 0,
+													   'is_mRNA': is_mRNA[i],
+													   'is_full_transcript': False,
+													   'can_translate': is_mRNA[i],
+													   'RNAP_index': RNAP_indexes[i]}}
+											for i in range(n_RNAPs_to_activate)]}
+
 		# Create masks for ribosomal RNAs
 		is_5Srrna = np.isin(TU_index, self.idx_5SrRNA)
 		is_16Srrna = np.isin(TU_index, self.idx_16SrRNA)
 		is_23Srrna = np.isin(TU_index, self.idx_23SrRNA)
+
+		self.update_to_save['listeners']['ribosome_data'] = {
+			'rrn16S_produced': n_initiations[is_16Srrna].sum(),
+			'rrn23S_produced': n_initiations[is_23Srrna].sum(),
+			'rrn5S_produced': n_initiations[is_5Srrna].sum(),
+
+			'rrn16S_init_prob': n_initiations[is_16Srrna].sum() / float(n_RNAPs_to_activate),
+			'rrn23S_init_prob': n_initiations[is_23Srrna].sum() / float(n_RNAPs_to_activate),
+			'rrn5S_init_prob': n_initiations[is_5Srrna].sum() / float(n_RNAPs_to_activate),
+			'total_rna_init': n_RNAPs_to_activate}
+
+		self.update_to_save['listeners']['rnap_data'] = {
+			'didInitialize': n_RNAPs_to_activate,
+			'rnaInitEvent': TU_to_promoter.dot(n_initiations)}
 
 		# Write outputs to listeners
 		self.writeToListener(
@@ -291,6 +338,11 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.writeToListener("RnapData", "didInitialize", n_RNAPs_to_activate)
 		self.writeToListener("RnapData", "rnaInitEvent", TU_to_promoter.dot(n_initiations))
+
+		if not self.saved:
+			write_json(f'out/migration/transcript_initiation_update_t{int(self._sim.time())}.json',
+					   self.update_to_save)
+			self.saved = True
 
 
 	def _calculateActivationProb(self, fracActiveRnap, rnaLengths, rnaPolymeraseElongationRates, synthProb):

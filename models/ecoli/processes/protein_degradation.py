@@ -15,6 +15,7 @@ import numpy as np
 import wholecell.processes.process
 from wholecell.utils.constants import REQUEST_PRIORITY_DEGRADATION
 from wholecell.utils import units
+from wholecell.utils.migration.write_json import write_json
 
 class ProteinDegradation(wholecell.processes.process.Process):
 	""" ProteinDegradation """
@@ -54,22 +55,30 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		h2oIdx = metaboliteIds.index(sim_data.molecule_ids.water)
 
 		# Build protein IDs for S matrix
-		proteinIds = sim_data.process.translation.monomer_data['id']
+		self.proteinIds = sim_data.process.translation.monomer_data['id']
 
 		# Load protein length
 		self.proteinLengths = sim_data.process.translation.monomer_data['length']
 
 		# Build S matrix
-		self.proteinDegSMatrix = np.zeros((len(metaboliteIds), len(proteinIds)), np.int64)
+		self.proteinDegSMatrix = np.zeros((len(metaboliteIds), len(self.proteinIds)), np.int64)
 		self.proteinDegSMatrix[aaIdxs, :] = np.transpose(sim_data.process.translation.monomer_data['aa_counts'].asNumber())
 		self.proteinDegSMatrix[h2oIdx, :]  = -(np.sum(self.proteinDegSMatrix[aaIdxs, :], axis = 0) - 1)
 
 		# Build Views
 		self.metabolites = self.bulkMoleculesView(metaboliteIds)
 		self.h2o = self.bulkMoleculeView(sim_data.molecule_ids.water)
-		self.proteins = self.bulkMoleculesView(proteinIds)
+		self.proteins = self.bulkMoleculesView(self.proteinIds)
 
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
+
+		# saving updates
+		self.update_to_save = {}
+		self.saved = False
+
+		self.update_to_save["protein_ids"] = self.proteinIds
+		self.update_to_save["metabolite_ids"] = metaboliteIds
+
 
 	def calculateRequest(self):
 
@@ -88,15 +97,30 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.proteins.requestIs(nProteinsToDegrade)
 
 
+		if "proteins_to_degrade" not in self.update_to_save.keys():
+			self.update_to_save["proteins_to_degrade"] = nProteinsToDegrade
+
+		if not self.saved and "metabolite_update" in self.update_to_save.keys():
+			write_json(f'out/migration/prot_deg_update_t{int(self._sim.time())}.json', self.update_to_save)
+			self.saved = True
+
 	def evolveState(self):
 
 		# Degrade selected proteins, release amino acids from those proteins back into the cell, 
 		# and consume H_2O that is required for the degradation process
-		self.metabolites.countsInc(np.dot(
+		metabolite_update = np.dot(
 			self.proteinDegSMatrix,
 			self.proteins.counts()
-			))
+		)
+		self.metabolites.countsInc(metabolite_update)
 		self.proteins.countsIs(0)
+
+		if "metabolite_update" not in self.update_to_save:
+			self.update_to_save["metabolite_update"] = metabolite_update
+
+		if not self.saved and "proteins_to_degrade" in self.update_to_save.keys():
+			write_json(f'out/migration/prot_deg_update_t{int(self._sim.time())}.json', self.update_to_save)
+			self.saved = True
 
 	def _proteinDegRates(self):
 		return self.rawDegRate * self.timeStepSec()

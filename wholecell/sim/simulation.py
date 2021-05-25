@@ -11,6 +11,7 @@ import os.path
 import shutil
 import uuid
 from typing import Callable, Sequence, Tuple
+import json
 
 import numpy as np
 
@@ -267,6 +268,12 @@ class Simulation():
 				self.finalize()
 				break
 
+			save_time = 0
+			if self.time() >= save_time:
+				time = int(self.time())
+				self.write_states(f'out/wcecoli_t{time}.json')
+				import ipdb; ipdb.set_trace()
+
 			self._simulationStep += 1
 
 			self._timeTotal += self._timeStepSec
@@ -275,6 +282,71 @@ class Simulation():
 			for processes in self._processClasses:
 				self._evolveState(processes)
 			self._post_evolve_state()
+
+
+	def get_states(self):
+		bulk = self.internal_states['BulkMolecules'].container
+		bulk_names = bulk.objectNames()
+		bulk_counts = bulk.counts()
+		bulk_molecules = {
+			bulk_names[index]: bulk_counts[index]
+			for index in np.arange(len(bulk_names))}
+
+		unique = self.internal_states['UniqueMolecules'].container
+		unique_molecules = {}
+		unique_names = unique.objectNames()
+		for name in unique_names:
+			types = unique.get_attribute_dtypes(name)
+			attrs = unique.objectsInCollection(name).attrsAsStructArray()
+			records = {}
+			for struct in attrs:
+				record = {}
+				for index, attr in enumerate(types.keys()):
+					record[attr] = struct[index]
+				records[int(record['unique_index'])] = record
+			unique_molecules[name] = records
+
+		environment = self.external_states['Environment'].container
+		environment_names = environment.objectNames()
+		environment_counts = environment.counts()
+		environment_concentrations = {
+			environment_names[index]: environment_counts[index]
+			for index in np.arange(len(environment_names))}
+
+		mass_listener = self.listeners['Mass']
+		listeners = {
+			'mass': {
+				'cell_mass': mass_listener.cellMass,
+				'dry_mass': mass_listener.dryMass}}
+
+		return {
+			'bulk': bulk_molecules,
+			'unique': unique_molecules,
+			'environment': environment_concentrations,
+			'listeners': listeners}
+
+	def write_states(self, path):
+		import json
+		INFINITY = float('inf')
+
+		class NpEncoder(json.JSONEncoder):
+			def default(self, obj):
+				if isinstance(obj, np.integer):
+					return int(obj)
+				elif isinstance(obj, np.ndarray):
+					return obj.tolist()
+				elif obj == INFINITY:
+					return '__INFINITY__'
+				elif isinstance(obj, np.floating):
+					return float(obj)
+				elif isinstance(obj, np.bool_):
+					return bool(obj)
+				else:
+					return super(NpEncoder, self).default(obj)
+
+		states = self.get_states()
+		with open(path, 'w') as outfile:
+			json.dump(states, outfile, cls=NpEncoder)
 
 	def run_for(self, run_for):
 		self.run_incremental(self.time() + run_for)
