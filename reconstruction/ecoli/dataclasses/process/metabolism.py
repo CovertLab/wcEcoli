@@ -701,28 +701,15 @@ class Metabolism(object):
 				else:
 					ki = aa_conc
 			upstream_aa = data['upstream'] if data['upstream'] else aa
-			# if aa == 'THR[c]':
-			# 	upstream_aa = 'L-ASPARTATE[c]'
 			km_conc = minimal_conc[upstream_aa]
 			km = data['km, upstream'] if data['km, upstream'] else 0. * units.mol/units.L
-			# if aa == 'ILE[c]':
-			# 	km = 24.9 * units.mol/units.L
-			# if aa == 'THR[c]':
-			# 	km = km_conc
 			km_reverse = data['km, reverse'] if data['km, reverse'] else np.inf * units.mol/units.L
-			if aa == 'THR[c]':
-				km_reverse = km_conc * 5
 			total_supply = supply[aa]
 			for downstream in data['downstream']:
-				if aa == 'THR[c]':
-					continue
 				total_supply += supply[downstream]
 
 			# Calculate kcat value to ensure sufficient supply to double
 			kcat = total_supply / (enzyme_counts * (1 / (1 + aa_conc / ki) / (1 + km / km_conc) - 1 / (1 + km_reverse / aa_conc)))
-			if aa == 'THR[c]':
-				kcat *= 0.01
-				print(kcat)
 			data['kcat'] = kcat
 
 			aa_enzymes += enzymes
@@ -757,8 +744,6 @@ class Metabolism(object):
 		self.aa_supply_balance = np.eye(len(aa_ids))
 		for i, downstream in enumerate(downstream_aas):
 			for aa in downstream:
-				if aa == 'ILE[c]':
-					continue
 				self.aa_supply_balance[i, aa_to_index[aa]] = -1
 
 		# Calculate import rates to match supply in amino acid conditions
