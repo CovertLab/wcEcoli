@@ -36,9 +36,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		variant_lengths = []
 		variant_counts = []
+		variant_rates = []
 		labels = []
 		for variant in variants:
 			lengths = []
+			rates = []
 			count = 0
 			for sim_dir in ap.get_cells(variant=[variant]):
 				try:
@@ -46,41 +48,51 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 					# Listeners used
 					main_reader = TableReader(os.path.join(sim_out_dir, 'Main'))
+					mass_reader = TableReader(os.path.join(sim_out_dir, 'Mass'))
 
 					# Load data
 					time = main_reader.readColumn('time')
 					cycle_length = time[-1] - time[0]
-
+					growth_rate = mass_reader.readColumn('instantaneous_growth_rate')[1:].mean()
 				except:
 					cycle_length = 0
+					growth_rate = 0
 
 				# TODO: better way to test for failure
 				# TODO: also check for long cells that are going to fail
-				if cycle_length / 60 < 35:
+				if cycle_length / 60 < 30:
 					lengths.append(np.inf)
 				else:
 					lengths.append(cycle_length / 60)
 					count += 1
+				rates.append(growth_rate)
 
 			variant_lengths.append(lengths)
 			variant_counts.append(count)
+			variant_rates.append(rates)
 			labels.append(sim_data.molecule_groups.amino_acids[variant])
 
 		all_lengths = np.vstack(variant_lengths)
 		mean_lengths = np.array([np.mean(row[np.isfinite(row) & (row > 0)]) for row in all_lengths])
+		mean_rates = np.vstack(variant_rates).mean(axis=1) * 3600
 
 		# Could normalize by control condition if the index is known
 		# normalized = all_lengths[-2, :] / all_lengths
 		# mean_normalized = np.array([np.mean(row[np.isfinite(row) & (row > 0)]) for row in normalized])
 
-		plt.figure()
+		plt.figure(figsize=(8, 10))
 
-		plt.subplot(2, 1, 1)
+		plt.subplot(3, 1, 1)
 		plt.bar(variants, mean_lengths)
 		plt.ylabel('Average cell cycle length (min)', fontsize=8)
 		remove_border(plt.gca(), bottom=True)
 
-		plt.subplot(2, 1, 2)
+		plt.subplot(3, 1, 2)
+		plt.bar(variants, mean_rates)
+		plt.ylabel('Average growth rate (1/hr)', fontsize=8)
+		remove_border(plt.gca(), bottom=True)
+
+		plt.subplot(3, 1, 3)
 		plt.bar(variants, variant_counts)
 		plt.ylabel('Number of variants', fontsize=8)
 		plt.xticks(variants, labels, rotation=45, fontsize=6, ha='right')
