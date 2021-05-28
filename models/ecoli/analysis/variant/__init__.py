@@ -4,14 +4,15 @@ from __future__ import absolute_import, division, print_function
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
 	"adder_sizer.py",
+	"doubling_time.py",
 	"doubling_time_histogram.py",
-	"param_sensitivity.py",
-	"meneSensitivity.py",
-	"growth_condition_comparison_validation.py",
 	"growthConditionComparison.py",
+	"growth_condition_comparison_validation.py",
 	"massFractionSummary.py",
+	"meneSensitivity.py",
 	"metabolism_kinetic_objective_weight.py",
 	"metabolism_secretion_penalty.py",
+	"param_sensitivity.py",
 	"remove_aa_inhibition.py",
 	"tfFit.py",
 	"tfFitComparison.py",
@@ -31,7 +32,10 @@ TAGS = {
 		"growth_condition_comparison_validation.py",
 		],
 	# Variant analyses to run with a specific simulation variant (key)
+	'aa_uptake': [
+		'doubling_time.py',
+		],
 	'remove_aa_inhibition': [
 		'remove_aa_inhibition.py',
-		]
+		],
 	}
