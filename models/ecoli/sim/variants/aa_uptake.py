@@ -7,6 +7,9 @@ Modifies:
 Expected variant indices (dependent on order of sim_data.moleculeGroups.aaIDs):
 	0-20: adding one amino acid to media
 	19: control (adding L-selenocysteine which is already required in media)
+
+TODO:
+	Create new media ID for new mixtures?
 """
 
 import numpy as np

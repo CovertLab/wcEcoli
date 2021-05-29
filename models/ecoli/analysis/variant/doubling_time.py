@@ -60,6 +60,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					cycle_length = 0
 					growth_rate = 0
 
+				# Filter out cell cycle lengths that are too short (likely failed)
 				# TODO: better way to test for failure
 				# TODO: also check for long cells that are going to fail
 				if cycle_length / 60 < 30:
