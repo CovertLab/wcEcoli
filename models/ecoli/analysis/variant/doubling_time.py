@@ -1,20 +1,20 @@
 """
-Compare cell cycle times across variants.
-
-@organization: Covert Lab, Department of Bioengineering, Stanford University
-@date: Created 4/26/20
+Compare cell cycle times and growth rates across variants.  Useful as validation
+with the aa_uptake variant.
 """
 
 import pickle
 import os
 
 from matplotlib import pyplot as plt
+from matplotlib import gridspec
 import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
+from wholecell.utils import units
 
 
 def remove_border(ax, bottom=False):
@@ -33,6 +33,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
+		with open(validationDataFile, 'rb') as f:
+			validation_data = pickle.load(f)
 
 		variant_lengths = []
 		variant_counts = []
@@ -70,33 +72,81 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			variant_lengths.append(lengths)
 			variant_counts.append(count)
 			variant_rates.append(rates)
-			labels.append(sim_data.molecule_groups.amino_acids[variant])
+			labels.append(sim_data.molecule_groups.amino_acids[variant][:-3])
 
 		all_lengths = np.vstack(variant_lengths)
 		mean_lengths = np.array([np.mean(row[np.isfinite(row) & (row > 0)]) for row in all_lengths])
-		mean_rates = np.vstack(variant_rates).mean(axis=1) * 3600
+		all_rates = np.vstack(variant_rates) * 3600
+		mean_rates = all_rates.mean(axis=1)
+		std_rates = all_rates.std(axis=1)
 
-		# Could normalize by control condition if the index is known
-		# normalized = all_lengths[-2, :] / all_lengths
-		# mean_normalized = np.array([np.mean(row[np.isfinite(row) & (row > 0)]) for row in normalized])
+		# Load validation growth rates
+		all_aa_ids = {aa[:-3] for aa in sim_data.molecule_groups.amino_acids}
+		val_control = validation_data.amino_acid_growth_rates['minimal']['mean']
+		val_aa_ids = []
+		val_normalized_growth_rates = []
+		val_normalized_std = []
+		for media, rates in validation_data.amino_acid_growth_rates.items():
+			aa_id = media.split('_')[-1]
+			if aa_id in all_aa_ids:
+				val_aa_ids.append(aa_id)
+				val_normalized_growth_rates.append(units.strip_empty_units(rates['mean'] / val_control))
+				val_normalized_std.append(units.strip_empty_units(rates['std'] / val_control))
+		val_normalized_growth_rates = np.array(val_normalized_growth_rates)
+		val_normalized_std = np.array(val_normalized_std)
 
-		plt.figure(figsize=(8, 10))
+		# Normalize simulation rates by the control condition
+		rate_mapping = {label: rate for label, rate in zip(labels, mean_rates)}
+		std_mapping = {label: std for label, std in zip(labels, std_rates)}
+		control_label = 'L-SELENOCYSTEINE'  # control because SEL is already included for uptake in minimal media
+		wcm_control = rate_mapping.get(control_label, 1)
+		wcm_normalized_growth_rates = np.array([
+			rate_mapping[aa] / wcm_control
+			for aa in val_aa_ids
+			])
+		wcm_normalized_std = np.array([
+			std_mapping[aa] / wcm_control
+			for aa in val_aa_ids
+			])
 
-		plt.subplot(3, 1, 1)
+		# Create plots
+		plt.figure(figsize=(16, 8))
+		gs = gridspec.GridSpec(3, 2)
+
+		## Bar plot of cell cycle lengths
+		ax = plt.subplot(gs[0, 0])
 		plt.bar(variants, mean_lengths)
 		plt.ylabel('Average cell cycle length (min)', fontsize=8)
-		remove_border(plt.gca(), bottom=True)
+		remove_border(ax, bottom=True)
 
-		plt.subplot(3, 1, 2)
-		plt.bar(variants, mean_rates)
+		## Bar plot of growth rates
+		ax = plt.subplot(gs[1, 0])
+		plt.bar(variants, mean_rates, yerr=std_rates)
 		plt.ylabel('Average growth rate (1/hr)', fontsize=8)
-		remove_border(plt.gca(), bottom=True)
+		remove_border(ax, bottom=True)
 
-		plt.subplot(3, 1, 3)
+		## Bar plot of valid simulations
+		ax = plt.subplot(gs[2, 0])
 		plt.bar(variants, variant_counts)
 		plt.ylabel('Number of variants', fontsize=8)
 		plt.xticks(variants, labels, rotation=45, fontsize=6, ha='right')
-		remove_border(plt.gca())
+		remove_border(ax)
+
+		## Validation comparison for each amino acid addition
+		ax = plt.subplot(gs[:, 1])
+		min_rate = min(val_normalized_growth_rates.min(), wcm_normalized_growth_rates.min())
+		max_rate = max(val_normalized_growth_rates.max(), wcm_normalized_growth_rates.max())
+
+		plt.errorbar(val_normalized_growth_rates, wcm_normalized_growth_rates,
+			xerr=val_normalized_std, yerr=wcm_normalized_std, fmt='o')
+		plt.plot([min_rate, max_rate], [min_rate, max_rate], '--k')
+		for aa, x, y in zip(val_aa_ids, val_normalized_growth_rates, wcm_normalized_growth_rates):
+			plt.text(x, 0.01 + y, aa, ha='center', fontsize=6)
+
+		remove_border(ax)
+		ax.tick_params(axis='x', labelsize=6)
+		plt.xlabel('Validation growth rate\n(Normalized to minimal media)')
+		plt.ylabel('Simulation growth rate\n(Normalized to minimal media)')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

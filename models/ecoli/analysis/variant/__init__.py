@@ -31,6 +31,9 @@ TAGS = {
 		"param_sensitivity.py",
 		"growth_condition_comparison_validation.py",
 		],
+	'VALIDATION': [
+		'doubling_time.py',
+		],
 	# Variant analyses to run with a specific simulation variant (key)
 	'aa_uptake': [
 		'doubling_time.py',
