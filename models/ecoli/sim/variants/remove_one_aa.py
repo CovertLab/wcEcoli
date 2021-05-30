@@ -13,8 +13,15 @@ TODO:
 """
 
 def remove_one_aa(sim_data, index):
+	condition_label = sim_data.ordered_conditions[2]
+	sim_data.condition = condition_label
+	sim_data.external_state.current_timeline_id = condition_label
+	sim_data.external_state.saved_timelines[condition_label] = [
+		(0, sim_data.conditions[condition_label]["nutrients"])
+	]
 	aa = sim_data.molecule_groups.amino_acids[index][:-3]
-	sim_data.external_state.saved_media['minimal_plus_amino_acids'][aa] = 0
+	if index != 19:
+		sim_data.external_state.saved_media['minimal_plus_amino_acids'][aa] = 0
 
 	return dict(
 		shortName = "{}_removed".format(aa),
