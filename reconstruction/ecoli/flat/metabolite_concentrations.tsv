@@ -56,7 +56,7 @@
 "G3P"	1.50e-3	1.54e-3	NaN	NaN	NaN
 "GDP"	6.80e-4	6.76e-4	1.89e-5	5.55e-4	NaN
 "GLC-6-P"	NaN	7.88e-3	NaN	9.87e-4	NaN
-"GLC-D-LACTONE"	NaN	1.04e-3	NaN	NaN	NaN
+"GLC-D-LACTONE"	1.00e-3	1.04e-3	NaN	NaN	NaN
 "GLN"	3.80e-3	3.81e-3	3.81e-3	1.85e-3	6.61e-3
 "GLT"	9.60e-2	9.60e-2	3.30e-2	1.68e-2	6.57e-2
 "GLUCONATE"	4.20e-5	4.16e-5	NaN	NaN	NaN
@@ -89,7 +89,7 @@
 "MAL"	1.70e-3	1.68e-3	2.12e-3	2.15e-3	NaN
 "MALONYL-COA"	3.50e-5	3.54e-5	NaN	NaN	NaN
 "MET"	1.50e-4	1.45e-4	5.50e-5	NaN	4.35e-5
-"MYO-INOSITOL"	NaN	5.72e-6	NaN	NaN	NaN
+"MYO-INOSITOL"	5.70e-6	5.72e-6	NaN	NaN	NaN
 "N-ACETYL-D-GLUCOSAMINE-1-P"	8.20e-5	8.19e-5	NaN	NaN	NaN
 "N-ALPHA-ACETYLORNITHINE"	4.30e-5	4.33e-5	NaN	NaN	NaN
 "NAD"	2.60e-3	2.55e-3	2.12e-3	NaN	NaN
@@ -131,9 +131,3 @@
 "UTP"	8.30e-3	8.29e-3	1.14e-3	NaN	NaN
 "VAL"	4.00e-3	4.02e-3	5.66e-4	NaN	3.05e-4
 "XYLULOSE-5-PHOSPHATE"	NaN	1.81e-4	NaN	1.58e-4	NaN
-# unable to produce in metabolism "23-DIPHOSPHOGLYCERATE"	NaN	8.29-5	NaN	NaN	NaN
-# unable to produce in metabolism "CPD0-2032"	NaN	2.71e-4	NaN	NaN	NaN
-# unable to produce in metabolism "GLC-D-LACTONE"	1.00e-3	1.04e-3	NaN	NaN	NaN
-# unable to produce in metabolism "IDP"	NaN	2.38e-5	NaN	NaN	NaN
-# unable to produce in metabolism "ITP"	NaN	2.05e-4	NaN	NaN	NaN
-# unable to produce in metabolism "MYO-INOSITOL"	5.70e-6	5.72e-6	NaN	NaN	NaN
