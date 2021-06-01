@@ -103,11 +103,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		control_label = 'L-SELENOCYSTEINE'  # control because SEL is already included for uptake in minimal media
 		wcm_control = rate_mapping.get(control_label, 1)
 		wcm_normalized_growth_rates = np.array([
-			rate_mapping[aa] / wcm_control
+			rate_mapping.get(aa, 0) / wcm_control
 			for aa in val_aa_ids
 			])
 		wcm_normalized_std = np.array([
-			std_mapping[aa] / wcm_control
+			std_mapping.get(aa, 0) / wcm_control
 			for aa in val_aa_ids
 			])
 
