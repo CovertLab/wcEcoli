@@ -18,11 +18,10 @@ TODO:
 def remove_one_aa(sim_data, index):
 	# Set condition to be minimal with amino acids
 	condition_label = 'with_aa'
+	media_label = 'minimal_plus_amino_acids'
 	sim_data.condition = condition_label
 	sim_data.external_state.current_timeline_id = condition_label
-	sim_data.external_state.saved_timelines[condition_label] = [
-		(0, sim_data.conditions[condition_label]["nutrients"])
-	]
+	sim_data.external_state.saved_timelines[condition_label] = [(0, media_label)]
 
 	aa = sim_data.molecule_groups.amino_acids[index][:-3]
 	# Use index as a control because Sel needs to be in the media
@@ -31,7 +30,7 @@ def remove_one_aa(sim_data, index):
 		desc = 'Minimal media with amino acids control'
 	# Remove one amino acid from the media
 	else:
-		sim_data.external_state.saved_media['minimal_plus_amino_acids'][aa] = 0
+		sim_data.external_state.saved_media[media_label][aa] = 0
 		name = '{}_removed'.format(aa)
 		desc = 'Remove {} from rich media.'.format(aa)
 
