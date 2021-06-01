@@ -103,6 +103,10 @@ class AnalysisPlot(metaclass=abc.ABCMeta):
 	def plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata):
 		"""Public method to set up, make a plot, and cleanup."""
+		def do_plot():
+			self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
+						 validationDataFile, metadata)
+
 		if not os.path.isdir(inputDir):
 			raise RuntimeError('Input directory ({}) does not currently exist.'
 				.format(inputDir))
@@ -111,11 +115,9 @@ class AnalysisPlot(metaclass=abc.ABCMeta):
 		with memory_debug.detect_leaks(), mp.rc_context():
 			if self._suppress_numpy_warnings:
 				with np.errstate(divide='ignore'), np.errstate(invalid='ignore'):
-					self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
-								 validationDataFile, metadata)
+					do_plot()
 			else:
-				self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
-					validationDataFile, metadata)
+				do_plot()
 
 		self._axeses = {}
 
