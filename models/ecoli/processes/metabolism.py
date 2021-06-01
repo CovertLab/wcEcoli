@@ -49,11 +49,13 @@ class Metabolism(wholecell.processes.process.Process):
 		super(Metabolism, self).initialize(sim, sim_data)
 
 		# Use information from the environment and sim
+		metabolism = sim_data.process.metabolism
 		self.get_import_constraints = sim_data.external_state.get_import_constraints
 		self.nutrientToDoublingTime = sim_data.nutrient_to_doubling_time
 		environment = self._external_states['Environment']
 		self.use_trna_charging = sim._trna_charging
 		self.include_ppgpp = not sim._ppgpp_regulation or not self.use_trna_charging
+		self.mechanistic_aa_supply = sim._mechanistic_aa_supply
 
 		# Create model to use to solve metabolism updates
 		self.model = FluxBalanceAnalysisModel(
@@ -84,7 +86,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_METABOLISM)
 
 		# Molecules with concentration updates for listener
-		self.linked_metabolites = sim_data.process.metabolism.linked_metabolites
+		self.linked_metabolites = metabolism.linked_metabolites
 		doubling_time = self.nutrientToDoublingTime.get(
 			environment.current_media_id,
 			self.nutrientToDoublingTime["minimal"])
@@ -95,6 +97,18 @@ class Metabolism(wholecell.processes.process.Process):
 		if self.include_ppgpp:
 			update_molecules += [self.model.ppgpp_id]
 		self.conc_update_molecules = sorted(update_molecules)
+
+		# Amino acids in media for import rates
+		self.aa_exchange_names = np.array([
+			sim_data.external_state.env_to_exchange_map[aa[:-3]]
+			for aa in self.aa_names
+			])
+		self.aa_environment = self.environmentView([aa[:-3] for aa in self.aa_exchange_names])
+		self.removed_aa_uptake = np.array([
+			aa in self.aa_targets_not_updated
+			for aa in self.aa_exchange_names
+			])
+		self.amino_acid_import = metabolism.amino_acid_import
 
 	def calculateRequest(self):
 		self.metabolites.requestAll()
@@ -140,6 +154,7 @@ class Metabolism(wholecell.processes.process.Process):
 			for met, conc in conc_updates.items()
 			}
 
+
 		# Update FBA problem based on current state
 		## Set molecule availability (internal and external)
 		self.model.set_molecule_levels(metabolite_counts_init, counts_to_molar,
@@ -152,6 +167,15 @@ class Metabolism(wholecell.processes.process.Process):
 		## Constrain reactions based on targets
 		targets, upper_targets, lower_targets = self.model.set_reaction_targets(kinetic_enzyme_counts,
 			kinetic_substrate_counts, counts_to_molar, time_step)
+
+		if self.mechanistic_aa_supply:
+			# TODO: move updates into a function and update the debugger script/saved values
+			# TODO: remove aas in media from other function updates so setExternalMoleculeLevels only needs to be called once
+			aa_in_media = self.aa_environment.import_present()
+			aa_in_media[self.removed_aa_uptake] = False
+			# Set supply based on mechanistic synthesis and supply
+			import_rates = (counts_to_molar * self.timeStepSec() * self.amino_acid_import(aa_in_media, dry_mass)).asNumber(CONC_UNITS)
+			self.model.fba.setExternalMoleculeLevels(import_rates[aa_in_media], molecules=self.aa_exchange_names[aa_in_media], force=True)
 
 		# Solve FBA problem and update states
 		n_retries = 3

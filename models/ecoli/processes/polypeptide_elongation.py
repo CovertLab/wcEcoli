@@ -54,7 +54,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Amino acid supply calculations
 		self.translation_aa_supply = sim_data.translation_supply_rate
-		self.import_threshold = sim_data.external_state.import_constraint_threshold
 
 		# Used for figure in publication
 		self.trpAIndex = np.where(proteinIds == "TRYPSYN-APROTEIN[c]")[0][0]
