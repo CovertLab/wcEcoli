@@ -12,7 +12,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from scipy.sparse import csr_matrix
-from typing import List, Tuple
+from typing import List, Optional, Set, Tuple
 
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 import wholecell.processes.process
@@ -252,10 +252,12 @@ class FluxBalanceAnalysisModel(object):
 	"""
 
 	def __init__(self, sim_data, imports=None, timeline=None, include_ppgpp=True):
-		# type: (SimulationDataEcoli, List[Tuple[float, str]], bool) -> None
+		# type: (SimulationDataEcoli, Optional[Set[str]], Optional[List[Tuple[float, str]]], bool) -> None
 		"""
 		Args:
 			sim_data: simulation data
+			imports: molecule IDs with compartment tag of molecules that can be
+				imported into the cell
 			timeline: timeline for nutrient changes during simulation
 				(time of change, media ID), if None, nutrients for the saved
 				condition are set at time 0 (eg. [(0.0, 'minimal')])
