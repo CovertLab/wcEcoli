@@ -15,11 +15,16 @@ TODO:
 import numpy as np
 
 
-def aa_uptake(sim_data, index):
+def add_one_aa(sim_data, index):
 	aa = sim_data.molecule_groups.amino_acids[index][:-3]
 	sim_data.external_state.saved_media['minimal'][aa] = np.inf
 
-	return dict(
-		shortName = "{}_added".format(aa),
-		desc = "Add {} to minimal media.".format(aa)
-		), sim_data
+	name = '{}_added'.format(aa)
+	desc = 'Add {} to minimal media.'.format(aa)
+
+	# Use index as a control because Sel needs to be in the media
+	if aa == 'L-SELENOCYSTEINE':
+		name = 'control'
+		desc = 'Minimal media control'
+
+	return dict(shortName=name, desc=desc), sim_data

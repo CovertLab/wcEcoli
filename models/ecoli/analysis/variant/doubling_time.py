@@ -1,6 +1,7 @@
 """
 Compare cell cycle times and growth rates across variants.  Useful as validation
-with the aa_uptake variant.
+with the add_one_aa variant and can also be used to compare variants in
+remove_one_aa variant.
 """
 
 import pickle
@@ -63,7 +64,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				# Filter out cell cycle lengths that are too short (likely failed)
 				# TODO: better way to test for failure
 				# TODO: also check for long cells that are going to fail
-				if cycle_length / 60 < 30:
+				if cycle_length / 60 < 15:
 					lengths.append(np.inf)
 				else:
 					lengths.append(cycle_length / 60)
@@ -134,20 +135,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		remove_border(ax)
 
 		## Validation comparison for each amino acid addition
-		ax = plt.subplot(gs[:, 1])
-		min_rate = min(val_normalized_growth_rates.min(), wcm_normalized_growth_rates.min())
-		max_rate = max(val_normalized_growth_rates.max(), wcm_normalized_growth_rates.max())
+		if metadata.get('variant', '') == 'add_one_aa':
+			ax = plt.subplot(gs[:, 1])
+			min_rate = min(val_normalized_growth_rates.min(), wcm_normalized_growth_rates.min())
+			max_rate = max(val_normalized_growth_rates.max(), wcm_normalized_growth_rates.max())
 
-		plt.errorbar(val_normalized_growth_rates, wcm_normalized_growth_rates,
-			xerr=val_normalized_std, yerr=wcm_normalized_std, fmt='o')
-		plt.plot([min_rate, max_rate], [min_rate, max_rate], '--k')
-		for aa, x, y in zip(val_aa_ids, val_normalized_growth_rates, wcm_normalized_growth_rates):
-			plt.text(x, 0.01 + y, aa, ha='center', fontsize=6)
+			plt.errorbar(val_normalized_growth_rates, wcm_normalized_growth_rates,
+				xerr=val_normalized_std, yerr=wcm_normalized_std, fmt='o')
+			plt.plot([min_rate, max_rate], [min_rate, max_rate], '--k')
+			for aa, x, y in zip(val_aa_ids, val_normalized_growth_rates, wcm_normalized_growth_rates):
+				plt.text(x, 0.01 + y, aa, ha='center', fontsize=6)
 
-		remove_border(ax)
-		ax.tick_params(axis='x', labelsize=6)
-		plt.xlabel('Validation growth rate\n(Normalized to minimal media)')
-		plt.ylabel('Simulation growth rate\n(Normalized to minimal media)')
+			remove_border(ax)
+			ax.tick_params(axis='x', labelsize=6)
+			plt.xlabel('Validation growth rate\n(Normalized to minimal media)')
+			plt.ylabel('Simulation growth rate\n(Normalized to minimal media)')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

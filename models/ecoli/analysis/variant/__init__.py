@@ -35,10 +35,13 @@ TAGS = {
 		'doubling_time.py',
 		],
 	# Variant analyses to run with a specific simulation variant (key)
-	'aa_uptake': [
+	'add_one_aa': [
 		'doubling_time.py',
 		],
 	'remove_aa_inhibition': [
 		'remove_aa_inhibition.py',
+		],
+	'remove_one_aa': [
+		'doubling_time.py',
 		],
 	}
