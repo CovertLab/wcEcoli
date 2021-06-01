@@ -108,6 +108,7 @@ class AnalysisPlot(metaclass=abc.ABCMeta):
 				.format(inputDir))
 		fp.makedirs(plotOutDir)
 
+		with memory_debug.detect_leaks(), mp.rc_context():
 			if self._suppress_numpy_warnings:
 				with np.errstate(divide='ignore'), np.errstate(invalid='ignore'):
 					self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
