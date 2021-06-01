@@ -14,8 +14,9 @@ import abc
 import os
 
 import matplotlib as mp
-
 from matplotlib import pyplot as plt
+import numpy as np
+
 from wholecell.utils import memory_debug, parallelization
 from wholecell.utils import filepath as fp
 
@@ -103,7 +104,8 @@ class AnalysisPlot(metaclass=abc.ABCMeta):
 				.format(inputDir))
 		fp.makedirs(plotOutDir)
 
-		with memory_debug.detect_leaks(), mp.rc_context():
+		with memory_debug.detect_leaks(), mp.rc_context(), np.errstate(
+				divide='ignore'), np.errstate(invalid='ignore'):
 			self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata)
 
