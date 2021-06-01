@@ -34,6 +34,10 @@ class AnalysisPlot(metaclass=abc.ABCMeta):
 		cpus: allotted number of CPU cores; default (0) => all available cores
 	"""
 
+	#: Whether to suppress NumPy "divide" and "invalid" warnings like Theano
+	#: used to do. Override this in subclasses as needed.
+	_suppress_numpy_warnings = False
+
 	def __init__(self, cpus=0):
 		self.cpus = parallelization.cpus(cpus)
 		self._axeses = {}
@@ -104,10 +108,13 @@ class AnalysisPlot(metaclass=abc.ABCMeta):
 				.format(inputDir))
 		fp.makedirs(plotOutDir)
 
-		with memory_debug.detect_leaks(), mp.rc_context(), np.errstate(
-				divide='ignore'), np.errstate(invalid='ignore'):
-			self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
-				validationDataFile, metadata)
+			if self._suppress_numpy_warnings:
+				with np.errstate(divide='ignore'), np.errstate(invalid='ignore'):
+					self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
+								 validationDataFile, metadata)
+			else:
+				self.do_plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
+					validationDataFile, metadata)
 
 		self._axeses = {}
 
