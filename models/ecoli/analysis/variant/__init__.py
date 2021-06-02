@@ -12,7 +12,7 @@ ACTIVE = [
 	"massFractionSummary.py",
 	"metabolism_kinetic_objective_weight.py",
 	"metabolism_secretion_penalty.py",
-	# "remove_aa_inhibition.py",  # IndexError: index 3 is out of bounds for axis 0 with size 1, line 79, in heatmap
+	"remove_aa_inhibition.py",
 	"tfFit.py",
 	"tfFitComparison.py",
 	"time_step.py",
