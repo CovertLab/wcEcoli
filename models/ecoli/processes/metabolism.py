@@ -292,20 +292,17 @@ class FluxBalanceAnalysisModel(object):
 		self.getppGppConc = sim_data.growth_rate_parameters.get_ppGpp_conc
 
 		# go through all media in the timeline and add to metaboliteNames
-		metaboliteNamesFromNutrients = set(imports)
+		metaboliteNamesFromNutrients = set()
 		exchange_molecules = set(imports)
 		if include_ppgpp:
 			metaboliteNamesFromNutrients.add(self.ppgpp_id)
 		for time, media_id in timeline:
-			metaboliteNamesFromNutrients.update(
-				metabolism.concentration_updates.concentrations_based_on_nutrients(media_id)
-				)
 			exchanges = sim_data.external_state.exchange_data_from_media(media_id)
-			exchange_molecules.update(exchanges['externalExchangeMolecules'])
 			metaboliteNamesFromNutrients.update(
 				metabolism.concentration_updates.concentrations_based_on_nutrients(
 					imports=exchanges['importExchangeMolecules'])
 				)
+			exchange_molecules.update(exchanges['externalExchangeMolecules'])
 		self.metaboliteNamesFromNutrients = list(sorted(metaboliteNamesFromNutrients))
 		exchange_molecules = list(sorted(exchange_molecules))
 		molecule_masses = dict(zip(exchange_molecules,
@@ -469,7 +466,7 @@ class FluxBalanceAnalysisModel(object):
 		# Update objective from media exchanges
 		external_molecule_levels, objective = self.exchange_constraints(
 			self.fba.getExternalMoleculeIDs(), coefficient, CONC_UNITS,
-			unconstrained, constrained, conc_updates,
+			current_media_id, unconstrained, constrained, conc_updates,
 			)
 		self.fba.update_homeostatic_targets(objective)
 

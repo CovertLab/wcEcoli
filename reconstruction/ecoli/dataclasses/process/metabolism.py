@@ -497,7 +497,8 @@ class Metabolism(object):
 
 		return KINETIC_CONSTRAINT_CONC_UNITS * K_CAT_UNITS * capacity * saturation
 
-	def exchange_constraints(self, exchangeIDs, coefficient, targetUnits, unconstrained, constrained, concModificationsBasedOnCondition = None):
+	def exchange_constraints(self, exchangeIDs, coefficient, targetUnits, media_id,
+			unconstrained, constrained, concModificationsBasedOnCondition = None):
 		"""
 		Called during Metabolism process
 		Returns the homeostatic objective concentrations based on the current nutrients
@@ -505,7 +506,7 @@ class Metabolism(object):
 		"""
 
 		newObjective = self.concentration_updates.concentrations_based_on_nutrients(
-			imports=unconstrained.union(constrained),
+			imports=unconstrained.union(constrained), media_id=media_id,
 			conversion_units=targetUnits)
 		if concModificationsBasedOnCondition is not None:
 			newObjective.update(concModificationsBasedOnCondition)
