@@ -10,6 +10,7 @@ import os
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 import numpy as np
+from scipy.stats import pearsonr
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
@@ -136,6 +137,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		## Validation comparison for each amino acid addition
 		if metadata.get('variant', '') == 'add_one_aa':
+			# Statistics
+			r, p = pearsonr(val_normalized_growth_rates, wcm_normalized_growth_rates)
+			n = len(val_normalized_growth_rates)
+
 			ax = plt.subplot(gs[:, 1])
 			min_rate = min(val_normalized_growth_rates.min(), wcm_normalized_growth_rates.min())
 			max_rate = max(val_normalized_growth_rates.max(), wcm_normalized_growth_rates.max())
@@ -150,6 +155,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.tick_params(axis='x', labelsize=6)
 			plt.xlabel('Validation growth rate\n(Normalized to minimal media)')
 			plt.ylabel('Simulation growth rate\n(Normalized to minimal media)')
+			plt.title(f'Growth comparison to validation data\nr={r:.2f} (p={p:.2g}, n={n})', fontsize=8)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
