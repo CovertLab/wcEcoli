@@ -112,6 +112,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 
 	def calculateRequest(self):
+		# Migration: save factors influencing promoter initiation probabilities
+		self.probability_factors = {}
+
 		# Get all inactive RNA polymerases
 		self.inactive_RNAPs.requestAll()
 
@@ -121,6 +124,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		if self.full_chromosomes.total_count() > 0:
 			# Get attributes of promoters
 			TU_index, bound_TF = self.promoters.attrs("TU_index", "bound_TF")
+
+			self.probability_factors['bound_TF'] = bound_TF
 
 			if self.ppgpp_regulation:
 				cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
@@ -132,6 +137,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 					basal_prob[self.attenuated_rna_indices] += self.attenuation_adjustments
 			else:
 				basal_prob = self.basal_prob
+
+			self.probability_factors["basal_prob"] = basal_prob
 
 			# Calculate probabilities of the RNAP binding to each promoter
 			self.promoter_init_probs = (basal_prob[TU_index] +
@@ -150,6 +157,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			if not self.ppgpp_regulation:
 				# Adjust synthesis probabilities depending on environment
 				synthProbFractions = self.rnaSynthProbFractions[current_media_id]
+				
+				self.probability_factors["synthProbFractions"] = synthProbFractions
 
 				# Create masks for different types of RNAs
 				is_mrna = np.isin(TU_index, self.idx_mRNA)
@@ -172,6 +181,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 						self.rnaSynthProbRnaPolymerase[current_media_id]
 						)),
 					TU_index)
+				
+				self.probability_factors["rnaSynthProbRProtein"] = self.rnaSynthProbRProtein[current_media_id]
+				self.probability_factors["rnaSynthProbRnaPolymerase"] = self.rnaSynthProbRnaPolymerase[current_media_id]
 
 				assert self.promoter_init_probs[is_fixed].sum() < 1.0
 
@@ -342,6 +354,10 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		if not self.saved:
 			write_json(f'out/migration/transcript_initiation_update_t{int(self._sim.time())}.json',
 					   self.update_to_save)
+			
+			write_json(f'out/migration/transcript_initiation_probability_factors_t{int(self._sim.time())}.json',
+					   self.probability_factors)
+			
 			self.saved = True
 
 
