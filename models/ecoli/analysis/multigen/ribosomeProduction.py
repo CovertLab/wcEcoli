@@ -16,6 +16,8 @@ from models.ecoli.analysis import multigenAnalysisPlot
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
+	_suppress_numpy_warnings = True
+
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot = True)
 
@@ -54,7 +56,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			simOutDir = os.path.join(simDir, "simOut")
 
 			## Mass growth rate ##
-			time, growthRate = getMassData(simDir, ["instantaniousGrowthRate"])
+			time, growthRate = getMassData(simDir, ["instantaneous_growth_rate"])
 			timeStep = units.s * TableReader(os.path.join(simOutDir, "Main")).readColumn("timeStepSec")
 			time = units.s * time
 			growthRate = (1 / units.s) * growthRate

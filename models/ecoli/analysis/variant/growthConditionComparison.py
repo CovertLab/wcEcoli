@@ -22,6 +22,8 @@ PROTEIN_MW = 110.0
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
+	_suppress_numpy_warnings = True
+
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		ap = AnalysisPaths(inputDir, variant_plot = True)
 		all_cells = ap.get_cells()
@@ -47,7 +49,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			rna = mass.readColumn("rnaMass") * 10**-15
 			dna = mass.readColumn("dnaMass") * 10**-15
 
-			growthRate = mass.readColumn("instantaniousGrowthRate")
+			growthRate = mass.readColumn("instantaneous_growth_rate")
 			doublingTime = np.nanmean(np.log(2) / growthRate / 60)
 
 			rnaNT = rna / NT_MW * nAvogadro

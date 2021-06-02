@@ -98,16 +98,21 @@ class Metabolism(object):
 			'Park Concentration',
 			'Lempp Concentration',
 			'Kochanowski Concentration',
+			'Sander Concentration',
 			]
 		excluded = {
 			'Park Concentration': {
 				'GLT',  # Steady state concentration reached with tRNA charging is much lower than Park
+				'THR',  # Attenuation needs concentration to be lower to match validation data
 				},
 			'Lempp Concentration': {
 				'ATP',  # TF binding does not solve with average concentration
 				},
 			'Kochanowski Concentration': {
 				'ATP',  # TF binding does not solve with average concentration
+				},
+			'Sander Concentration': {
+				'GLT',  # Steady state concentration reached with tRNA charging is much lower than Sander
 				},
 			}
 		metaboliteIDs = []
@@ -646,7 +651,7 @@ class Metabolism(object):
 				associated with the column
 			specific_import_rates (np.ndarray[float]): import rates expected
 				in rich media conditions for each amino acid normalized by dry
-				cell mass in units of (1 / (K_CAT_UNITS * DRY_MASS_UNITS),
+				cell mass in units of K_CAT_UNITS / DRY_MASS_UNITS,
 				ordered by amino acid molecule group
 
 		Assumptions:
