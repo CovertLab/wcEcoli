@@ -58,7 +58,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					time = main_reader.readColumn('time')
 					cycle_length = time[-1] - time[0]
 					growth_rate = mass_reader.readColumn('instantaneous_growth_rate')[1:].mean()
-				except:
+				except Exception:
 					cycle_length = 0
 					growth_rate = 0
 
