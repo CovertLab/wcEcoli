@@ -58,7 +58,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					time = main_reader.readColumn('time')
 					cycle_length = time[-1] - time[0]
 					growth_rate = mass_reader.readColumn('instantaneous_growth_rate')[1:].mean()
-				except Exception:
+				except Exception as e:
+					print(f'Exception reading Main/time or Mass/instantaneous_growth_rate: {e!r}')
 					cycle_length = 0
 					growth_rate = 0
 
