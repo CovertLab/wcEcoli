@@ -58,6 +58,7 @@ LIST_OF_DICT_FILENAMES = (
 	"tf_one_component_bound.tsv",
 	"translation_efficiency.tsv",
 	"trna_charging_reactions.tsv",
+	"trna_charging_reactions_added.tsv",
 	"trna_charging_reactions_removed.tsv",
 	"two_component_systems.tsv",
 	"two_component_system_templates.tsv",
@@ -108,6 +109,11 @@ LIST_OF_PARAMETER_FILENAMES = (
 # TODO: add other removed files here and not handle removing in scripts
 REMOVED_DATA = {
 	'metabolite_concentrations': 'metabolite_concentrations_removed',
+	'trna_charging_reactions': 'trna_charging_reactions_removed',
+	}
+# TODO: move added rows from some flat files to new files and add here
+ADDED_DATA = {
+	'trna_charging_reactions': 'trna_charging_reactions_added',
 	}
 
 class DataStore(object):
@@ -128,6 +134,7 @@ class KnowledgeBaseEcoli(object):
 			self._load_parameters(os.path.join(FLAT_DIR, filename))
 
 		self._prune_data()
+		self._join_data()
 
 		self.genome_sequence = self._load_sequence(os.path.join(FLAT_DIR, SEQUENCE_FILE))
 
@@ -193,3 +200,17 @@ class KnowledgeBaseEcoli(object):
 				checked_id = tuple([row[col] for col in removed_cols])
 				if checked_id in removed_ids:
 					attr_data.pop(n_entries - i - 1)
+
+	def _join_data(self):
+		"""
+		Add rows that are specified in additional files.
+
+		TODO: add check that columns match up
+		"""
+
+		# Join data for each file with data to be added
+		for data_attr, attr_to_add in ADDED_DATA.items():
+			data = getattr(self, data_attr)
+			added_data = getattr(self, attr_to_add)
+			for row in added_data:
+				data.append(row)
