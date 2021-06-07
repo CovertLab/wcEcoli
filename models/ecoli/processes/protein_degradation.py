@@ -99,8 +99,8 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 		# update for migration
 		self.update_to_save["proteins_to_degrade"] = nProteinsToDegrade
-		if self._sim.time() > self.save_time:
-			# import ipdb; ipdb.set_trace()
+		# if self._sim.time() > self.save_time:
+		# 	import ipdb; ipdb.set_trace()
 
 	def evolveState(self):
 
