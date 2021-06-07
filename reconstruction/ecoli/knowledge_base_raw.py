@@ -185,21 +185,21 @@ class KnowledgeBaseEcoli(object):
 		"""
 
 		# Check each pair of files to be removed
-		for data, to_remove in REMOVED_DATA.items():
+		for data_attr, attr_to_remove in REMOVED_DATA.items():
 			# Build the set of data to identify rows to be removed
-			attr_removed = getattr(self, to_remove)
-			removed_cols = list(attr_removed[0].keys())
+			data_to_remove = getattr(self, attr_to_remove)
+			removed_cols = list(data_to_remove[0].keys())
 			removed_ids = set()
-			for row in attr_removed:
+			for row in data_to_remove:
 				removed_ids.add(tuple([row[col] for col in removed_cols]))
 
 			# Remove any matching rows
-			attr_data = getattr(self, data)
-			n_entries = len(attr_data)
-			for i, row in enumerate(attr_data[::-1]):
+			data = getattr(self, data_attr)
+			n_entries = len(data)
+			for i, row in enumerate(data[::-1]):
 				checked_id = tuple([row[col] for col in removed_cols])
 				if checked_id in removed_ids:
-					attr_data.pop(n_entries - i - 1)
+					data.pop(n_entries - i - 1)
 
 	def _join_data(self):
 		"""
