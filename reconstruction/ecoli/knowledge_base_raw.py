@@ -203,14 +203,22 @@ class KnowledgeBaseEcoli(object):
 
 	def _join_data(self):
 		"""
-		Add rows that are specified in additional files.
-
-		TODO: add check that columns match up
+		Add rows that are specified in additional files. Data will only be added
+		if all the loaded columns from both datasets match.
 		"""
 
 		# Join data for each file with data to be added
 		for data_attr, attr_to_add in ADDED_DATA.items():
+			# Get datasets to join
 			data = getattr(self, data_attr)
 			added_data = getattr(self, attr_to_add)
+
+			# Check columns are the same for each dataset
+			col_diff = set(data[0].keys()).symmetric_difference(added_data[0].keys())
+			if col_diff:
+				raise ValueError(f'Could not join datasets {data_attr} and {attr_to_add} '
+					f'because columns do not match (different columns: {col_diff}).')
+
+			# Join datasets
 			for row in added_data:
 				data.append(row)
