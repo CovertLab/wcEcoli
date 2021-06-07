@@ -73,6 +73,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
 		# saving updates
+		self.save_time = 10
 		self.update_to_save = {}
 		self.saved = False
 
@@ -96,13 +97,8 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
 		self.proteins.requestIs(nProteinsToDegrade)
 
-
-		if "proteins_to_degrade" not in self.update_to_save.keys():
-			self.update_to_save["proteins_to_degrade"] = nProteinsToDegrade
-
-		if not self.saved and "metabolite_update" in self.update_to_save.keys():
-			write_json(f'out/migration/prot_deg_update_t{int(self._sim.time())}.json', self.update_to_save)
-			self.saved = True
+		# update for migration
+		self.update_to_save["proteins_to_degrade"] = nProteinsToDegrade
 
 	def evolveState(self):
 
@@ -115,10 +111,11 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.metabolites.countsInc(metabolite_update)
 		self.proteins.countsIs(0)
 
-		if "metabolite_update" not in self.update_to_save:
-			self.update_to_save["metabolite_update"] = metabolite_update
+		# update for migration
+		self.update_to_save["metabolite_update"] = metabolite_update
 
-		if not self.saved and "proteins_to_degrade" in self.update_to_save.keys():
+		# save the update
+		if not self.saved and "proteins_to_degrade" in self.update_to_save.keys() and int(self._sim.time()) > self.save_time:
 			write_json(f'out/migration/prot_deg_update_t{int(self._sim.time())}.json', self.update_to_save)
 			self.saved = True
 

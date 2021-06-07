@@ -272,7 +272,7 @@ class Simulation():
 			if self.time() >= save_time:
 				time = int(self.time())
 				self.write_states(f'out/wcecoli_t{time}.json')
-				import ipdb; ipdb.set_trace()
+				# import ipdb; ipdb.set_trace()
 
 			self._simulationStep += 1
 
