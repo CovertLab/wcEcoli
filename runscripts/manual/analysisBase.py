@@ -58,7 +58,8 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 					like "aaCounts.py" or "aaCounts" and tags like "METABOLISM"
 					as defined in this category's __init__.py file. If omitted,
 					the default is "CORE", which names the plots recommended
-					for everyday development. Use "ACTIVE" to run all active
+					for everyday development, and the variant tag for any
+					variant specific plots. Use "ACTIVE" to run all active
 					plots in this category.''')
 
 		parser.add_argument('-o', scriptBase.dashize('--output_prefix'),

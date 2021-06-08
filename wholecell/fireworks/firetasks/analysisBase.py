@@ -82,13 +82,17 @@ class AnalysisBase(FiretaskBase):
 		'''List the plot module files (within self.MODULE_PATH) named by the
 		given list of plot names, doing these transformations:
 
-			* Default to the 'CORE' tag if plot_names is empty.
+			* Default to the 'CORE' tag and any variant specific plots if
+			plot_names is empty.
 			* Expand all TAGS as defined by self.TAGS.
 			* Append '.py' to filenames as needed.
 			* Deduplicate entries but preserve the order.
 		'''
 		if not plot_names:
 			plot_names = ['CORE']
+			variant = self['metadata'].get('variant', '').upper()
+			if variant in self.TAGS:
+				plot_names.append(variant)
 		name_dict = OrderedDict()
 		self.expand_plot_names(plot_names, name_dict)
 		return list(name_dict.keys())
