@@ -140,7 +140,7 @@ class JsonReader(object):
 		fieldnames = [fieldname.strip('"') for fieldname in fieldnames]
 		self.tsv_dict_reader.fieldnames = fieldnames
 
-		# Discard private field names that begin with underscore and empty filed names
+		# Discard private field names that begin with underscore and empty field names
 		self._fieldnames = [
 			fieldname for fieldname in fieldnames
 			if not fieldname.startswith('_') and fieldname != '']
