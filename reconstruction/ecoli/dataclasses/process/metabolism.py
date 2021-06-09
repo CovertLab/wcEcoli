@@ -687,6 +687,7 @@ class Metabolism(object):
 		aa_enzymes = []
 		aa_kcats = []
 		aa_kis = []
+		upstream_aas_for_km = []
 		upstream_aas = []
 		downstream_aas = []
 		aa_upstream_kms = []
@@ -729,7 +730,8 @@ class Metabolism(object):
 			aa_enzymes += enzymes
 			aa_kcats.append(kcat.asNumber(K_CAT_UNITS))
 			aa_kis.append(ki.asNumber(METABOLITE_CONCENTRATION_UNITS))
-			upstream_aas.append(upstream_aa)
+			upstream_aas_for_km.append(upstream_aa)
+			upstream_aas.append(data['upstream'])
 			downstream_aas.append(data['downstream'])
 			aa_upstream_kms.append(kms.asNumber(METABOLITE_CONCENTRATION_UNITS))
 			aa_reverse_kms.append(km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS))
@@ -746,8 +748,8 @@ class Metabolism(object):
 
 		# TODO: better way of handling this that is efficient computationally
 		self.aa_to_index = aa_to_index
-		self.aa_upstream_aas = upstream_aas
-		# self.aa_upstream_mapping = np.array([aa_to_index[aa] for aa in upstream_aas])
+		self.aa_upstream_aas = upstream_aas_for_km
+		# self.aa_upstream_mapping = np.array([aa_to_index[aa] for aa in upstream_aas_for_km])
 
 		# Convert enzyme counts to an amino acid basis via dot product (counts @ self.enzyme_to_amino_acid)
 		self.enzyme_to_amino_acid = np.zeros((len(self.aa_enzymes), len(aa_ids)))
@@ -761,9 +763,9 @@ class Metabolism(object):
 		# TODO: check for loops (eg ser dependent on glt, glt dependent on ser)
 		# TODO: check this makes sense with new format
 		self.aa_supply_balance = np.eye(len(aa_ids))
-		for i, downstream in enumerate(downstream_aas):
-			for aa, stoich in downstream.items():
-				self.aa_supply_balance[i, aa_to_index[aa]] = -stoich
+		for i, upstream in enumerate(upstream_aas):
+			for aa, stoich in upstream.items():
+				self.aa_supply_balance[aa_to_index[aa], i] = -stoich
 
 		# Calculate import rates to match supply in amino acid conditions
 		with_aa_rates = (
