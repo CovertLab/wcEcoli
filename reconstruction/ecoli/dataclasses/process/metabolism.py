@@ -441,7 +441,7 @@ class Metabolism(object):
 		self.aa_synthesis_pathways = {}
 		cytoplasm_tag = '[c]'
 
-		for row in raw_data.new_pathways:
+		for row in raw_data.amino_acid_pathways:
 			data = {}
 			data['enzymes'] = [e + cytoplasm_tag for e in row['Enzymes']]
 			data['kcat_data'] = 0 / units.s if units.isnan(row['kcat']) else row['kcat']
