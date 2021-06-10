@@ -37,8 +37,9 @@ Workflow options:
 		true). This should name one or more tags. For more than one tag,
 		separate them with whitespace and remember shell quoting. ACTIVE
 		includes all active plots. CORE includes just the plots recommended for
-		everyday development and is selected along with the variant tag by
-		default. You can also name specific analysis files but any analysis
+		everyday development. VARIANT runs analysis specific to the specified
+		variant. DEFAULT runs both CORE and VARIANT and is selected by default.
+		You can also name specific analysis files but any analysis
 		categories that don't have such a filename will print error messages.
 	DISABLE_RIBOSOME_CAPACITY_FITTING (int, "0"): if nonzero, ribosome
 		expression is not fit to protein synthesis demands
