@@ -781,6 +781,29 @@ class Metabolism(object):
 			conc('minimal_plus_amino_acids')[aa].asNumber(units.mol/units.L)
 			for aa in aa_ids
 			])
+		basal_conc = units.mol / units.L * np.array([
+			conc('minimal')[aa].asNumber(units.mol/units.L)
+			for aa in aa_ids
+			])
+
+		# Use approximate adjustment for attenuation of enzymes
+		aa_attenuation = sim_data.process.transcription.get_attenuation_stop_probabilities(aa_conc)
+		basal_attenuation = sim_data.process.transcription.get_attenuation_stop_probabilities(basal_conc)
+		attenuation_expression_adjustment = (1 - aa_attenuation) / (1 - basal_attenuation)
+		attenuated_idx = {rna: i for i, rna in enumerate(sim_data.process.transcription.attenuated_rna_ids)}
+		monomer_to_rna = {d['id']: d['rna_id'] for d in sim_data.process.translation.monomer_data}
+		for i, enzyme in enumerate(self.aa_enzymes):
+			rna_ids = [
+				monomer_to_rna[monomer]
+				for monomer in sim_data.process.complexation.get_monomers(enzyme)['subunitIds']
+				]
+			attenuation = np.array([
+				attenuation_expression_adjustment[attenuated_idx[rna]]
+				if rna in attenuated_idx else 1
+				for rna in rna_ids
+				])
+			enzyme_counts[i] *= min(attenuation)
+
 		supply = np.array([with_aa_supply[aa] for aa in aa_ids])  # TODO: check that this is ok and do not need other adjustments for downstream
 		synthesis, _, _ = self.amino_acid_synthesis(enzyme_counts, aa_conc)
 		self.specific_import_rates = (supply - synthesis) / cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS)
