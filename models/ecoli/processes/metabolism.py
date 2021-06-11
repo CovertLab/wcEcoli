@@ -113,6 +113,9 @@ class Metabolism(wholecell.processes.process.Process):
 		self.aa_transporters_names = sim_data.process.metabolism.aa_transporters_names
 		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
 
+		self.update_diff = {}
+		self.updates = {}
+
 	def calculateRequest(self):
 		self.metabolites.requestAll()
 		self.catalysts.requestAll()
@@ -147,6 +150,11 @@ class Metabolism(wholecell.processes.process.Process):
 		## Determine updates to concentrations depending on the current state
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
 		conc_updates = self.model.getBiomassAsConcentrations(doubling_time)
+		for m, diff in self.update_diff.items():
+			# if m in conc_updates and m != 'S-ADENOSYLMETHIONINE[c]':
+			# 	conc_updates[m] += diff
+			# else:
+				conc_updates[m] = self.updates[m]
 		if self.use_trna_charging:
 			conc_updates.update(self.update_amino_acid_targets(counts_to_molar))
 		if self.include_ppgpp:
@@ -192,6 +200,10 @@ class Metabolism(wholecell.processes.process.Process):
 			metabolite_counts_init + delta_metabolites.asNumber()
 			), 0).astype(np.int64)
 		self.metabolites.countsIs(metabolite_counts_final)
+
+		for count, m in zip(metabolite_counts_final, self.model.metaboliteNamesFromNutrients):
+			self.update_diff[m] = counts_to_molar * count - CONC_UNITS * self.model.homeostatic_objective[m]
+			self.updates[m] = counts_to_molar * count
 
 		## Environmental changes
 		exchange_fluxes = CONC_UNITS * fba.getExternalExchangeFluxes()
