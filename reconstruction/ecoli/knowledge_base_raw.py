@@ -105,8 +105,13 @@ LIST_OF_PARAMETER_FILENAMES = (
 	"mass_parameters.tsv",
 	"dna_supercoiling.tsv"
 	)
-# TODO: add other removed files here and not handle removing in scripts
+
 REMOVED_DATA = {
+	'complexation_reactions': 'complexation_reactions_removed',
+	'equilibrium_reactions': 'equilibrium_reactions_removed',
+	'fold_changes': 'fold_changes_removed',
+	'fold_changes_nca': 'fold_changes_removed',
+	'metabolic_reactions': 'metabolic_reactions_removed',
 	'metabolite_concentrations': 'metabolite_concentrations_removed',
 	'trna_charging_reactions': 'trna_charging_reactions_removed',
 	}
