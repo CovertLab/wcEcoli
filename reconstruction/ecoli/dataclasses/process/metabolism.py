@@ -861,7 +861,6 @@ class Metabolism(object):
 		reaction_catalysts = {}
 
 		# Load and parse reaction information from raw_data
-		# TODO (ggsun): Two files will later be merged
 		for reaction in cast(Any, raw_data).metabolic_reactions:
 			reaction_id = reaction["id"]
 			stoich = reaction["stoichiometry"]
