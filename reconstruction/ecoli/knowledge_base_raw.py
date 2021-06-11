@@ -46,7 +46,6 @@ LIST_OF_DICT_FILENAMES = (
 	"ppgpp_regulation.tsv",
 	"protein_half_lives_measured.tsv",
 	"protein_half_lives_n_end_rule.tsv",
-	"protein_modification_reactions.tsv",
 	"proteins.tsv",
 	"relative_metabolite_concentrations.tsv",
 	"rna_half_lives.tsv",
