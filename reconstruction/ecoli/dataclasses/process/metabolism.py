@@ -855,6 +855,52 @@ class Metabolism(object):
 		forward_directions = {'L2R', 'BOTH'}
 		reverse_directions = {'R2L', 'BOTH'}
 
+		# Build mapping from each complexation subunit to all downstream
+		# complexes containing the subunit, including itself
+		# Start by building mappings from subunits to complexes that are
+		# directly formed from the subunit through a single reaction
+		subunit_id_to_parent_complexes = {}
+
+		for comp_reaction in raw_data.complexation_reactions:
+			complex_id = None
+
+			# Find ID of complex
+			for mol_id, coeff in comp_reaction['stoichiometry'].items():
+				if coeff > 0:
+					complex_id = mol_id
+					break
+
+			assert complex_id is not None
+
+			# Map each subunit to found complex
+			for mol_id, coeff in comp_reaction['stoichiometry'].items():
+				if mol_id == complex_id:
+					continue
+				elif mol_id in subunit_id_to_parent_complexes:
+					subunit_id_to_parent_complexes[mol_id].append(complex_id)
+				else:
+					subunit_id_to_parent_complexes[mol_id] = [complex_id]
+
+		# Recursive function that returns a list of all downstream complexes
+		# containing the given subunit, including itself
+		def get_all_complexes(subunit_id):
+			all_downstream_complex_ids = [subunit_id]
+
+			if subunit_id not in subunit_id_to_parent_complexes:
+				return all_downstream_complex_ids
+
+			# Get downstream complexes of all parent complexes
+			for parent_complex_id in subunit_id_to_parent_complexes[subunit_id]:
+				all_downstream_complex_ids.extend(get_all_complexes(parent_complex_id))
+
+			# Remove duplicates
+			return list(set(all_downstream_complex_ids))
+
+		subunit_id_to_all_downstream_complexes = {
+			subunit_id: get_all_complexes(subunit_id)
+			for subunit_id in subunit_id_to_parent_complexes.keys()
+			}
+
 		# Initialize variables to store reaction information
 		reaction_stoich = {}
 		reversible_reactions = []
@@ -885,9 +931,15 @@ class Metabolism(object):
 
 				return new_met_id
 
-			# TODO (ggsun): Add complexes formed by complexing given enzymes
+			# All protein complexes that contain an enzyme subunit are assumed
+			# to retain the enzyme's catalytic activity
 			catalysts_for_this_rxn = []
+			all_potential_catalysts = []
 			for catalyst in reaction["catalyzed_by"]:
+				all_potential_catalysts.extend(
+					subunit_id_to_all_downstream_complexes.get(catalyst, [catalyst]))
+
+			for catalyst in list(set(all_potential_catalysts)):
 				if sim_data.getter.is_valid_molecule(catalyst):
 					catalysts_with_loc = catalyst + sim_data.getter.get_compartment_tag(catalyst)
 					catalysts_for_this_rxn.append(catalysts_with_loc)
