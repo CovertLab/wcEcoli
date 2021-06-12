@@ -26,9 +26,6 @@ from wholecell.utils import units
 import six
 from six.moves import range, zip
 
-# TODO (ggsun): Add these values as raw data files
-PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
-ECOLI_PH = 7.2
 KINETIC_CONSTRAINT_CONC_UNITS = units.umol / units.L
 K_CAT_UNITS = 1 / units.s
 METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
@@ -181,17 +178,19 @@ class Metabolism(object):
 		metaboliteConcentrations.append(dntpSmallestConc)
 
 		# H: from reported pH
-		hydrogenConcentration = 10**(-ECOLI_PH)
+		hydrogenConcentration = 10**(-raw_data.metabolism_parameters['pH'])
 
 		metaboliteIDs.append(sim_data.molecule_ids.proton)
 		metaboliteConcentrations.append(hydrogenConcentration)
 
-		# PPI: multiple sources report 0.5 mM
+		# PPI
+		ppi_conc = raw_data.metabolism_parameters['ppi_concentration'].asNumber(
+			METABOLITE_CONCENTRATION_UNITS)
 		metaboliteIDs.append(sim_data.molecule_ids.ppi)
-		metaboliteConcentrations.append(PPI_CONCENTRATION)
+		metaboliteConcentrations.append(ppi_conc)
 
 		metaboliteIDs.append("Pi[c]")
-		metaboliteConcentrations.append(PPI_CONCENTRATION)
+		metaboliteConcentrations.append(ppi_conc)
 
 		# include metabolites that are part of biomass
 		for key, value in six.viewitems(sim_data.mass.getBiomassAsConcentrations(sim_data.doubling_time)):
