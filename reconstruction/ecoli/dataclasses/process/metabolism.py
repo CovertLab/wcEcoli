@@ -858,9 +858,9 @@ class Metabolism(object):
 		# complexes containing the subunit, including itself
 		# Start by building mappings from subunits to complexes that are
 		# directly formed from the subunit through a single reaction
-		subunit_id_to_parent_complexes = {}
+		subunit_id_to_parent_complexes = {} # type: Dict[str, List[str]]
 
-		for comp_reaction in raw_data.complexation_reactions:
+		for comp_reaction in cast(Any, raw_data).complexation_reactions:
 			complex_id = None
 
 			# Find ID of complex
