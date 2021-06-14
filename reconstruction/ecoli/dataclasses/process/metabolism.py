@@ -178,13 +178,13 @@ class Metabolism(object):
 		metaboliteConcentrations.append(dntpSmallestConc)
 
 		# H: from reported pH
-		hydrogenConcentration = 10**(-raw_data.metabolism_parameters['pH'])
+		hydrogenConcentration = 10**(-sim_data.constants.pH)
 
 		metaboliteIDs.append(sim_data.molecule_ids.proton)
 		metaboliteConcentrations.append(hydrogenConcentration)
 
 		# PPI
-		ppi_conc = raw_data.metabolism_parameters['ppi_concentration'].asNumber(
+		ppi_conc = sim_data.constants.ppi_concentration.asNumber(
 			METABOLITE_CONCENTRATION_UNITS)
 		metaboliteIDs.append(sim_data.molecule_ids.ppi)
 		metaboliteConcentrations.append(ppi_conc)

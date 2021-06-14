@@ -104,7 +104,6 @@ LIST_OF_PARAMETER_FILENAMES = (
 	"dna_supercoiling.tsv",
 	"parameters.tsv",
 	"mass_parameters.tsv",
-	"metabolism_parameters.tsv",
 	)
 
 REMOVED_DATA = {
