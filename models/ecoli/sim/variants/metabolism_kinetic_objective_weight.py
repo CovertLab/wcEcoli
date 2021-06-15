@@ -12,7 +12,7 @@ Expected variant indices (dependent on KINETIC_OBJECTIVE_WEIGHT):
 
 from __future__ import absolute_import, division, print_function
 
-KINETIC_OBJECTIVE_WEIGHT = [0, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 0.01, 0.1, 1]
+KINETIC_OBJECTIVE_WEIGHT = [0, 1e-12, 1e-11, 5e-11, 1e-10, 5e-10, 1e-9, 5e-9, 1e-8, 1e-7]
 
 
 def metabolism_kinetic_objective_weight(sim_data, index):
