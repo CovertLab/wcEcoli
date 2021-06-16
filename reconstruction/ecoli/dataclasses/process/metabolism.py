@@ -72,7 +72,7 @@ class Metabolism(object):
 			secretion_penalty_coeff (float): penalty on secretion fluxes
 		"""
 
-		self.solver = "cplex-quad"
+		self.solver = "glpk-linear"
 		if "linear" in self.solver:
 			self.kinetic_objective_weight = constants.metabolism_kinetic_objective_weight_linear
 		else:
