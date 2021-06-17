@@ -177,6 +177,11 @@ class Metabolism(wholecell.processes.process.Process):
 			import_rates = (counts_to_molar * self.timeStepSec() * self.amino_acid_import(aa_in_media, dry_mass)).asNumber(CONC_UNITS)
 			self.model.fba.setExternalMoleculeLevels(import_rates[aa_in_media], molecules=self.aa_exchange_names[aa_in_media], force=True)
 
+		# Glc hard bound
+		flux_bound = 10 * units.mmol / units.g / units.h
+		unitless_bound = (flux_bound * coefficient).asNumber(CONC_UNITS)
+		self.model.fba.setExternalMoleculeLevels(unitless_bound, molecules='GLC[p]', force=True)
+
 		# Solve FBA problem and update states
 		n_retries = 3
 		fba = self.model.fba
