@@ -113,8 +113,9 @@ class Metabolism(wholecell.processes.process.Process):
 		self.aa_transporters_names = sim_data.process.metabolism.aa_transporters_names
 		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
 
+		# TODO: is diff needed?
 		self.update_diff = {}
-		self.updates = {}
+		self.updates = None
 
 	def calculateRequest(self):
 		self.metabolites.requestAll()
@@ -150,11 +151,22 @@ class Metabolism(wholecell.processes.process.Process):
 		## Determine updates to concentrations depending on the current state
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
 		conc_updates = self.model.getBiomassAsConcentrations(doubling_time)
-		for m, diff in self.update_diff.items():
+
+		if self.updates is None:
+			# Handle new targets after cell division
+			self.updates = {
+				m: counts_to_molar * counts
+				for m, counts in zip(self.model.metaboliteNamesFromNutrients, self.metabolites.total_counts())}
+		for m, update in self.updates.items():
+			conc_updates[m] = update
+
+		# TODO: remove this or use the diffs
+		# for m, diff in self.update_diff.items():
 			# if m in conc_updates and m != 'S-ADENOSYLMETHIONINE[c]':
 			# 	conc_updates[m] += diff
 			# else:
-				conc_updates[m] = self.updates[m]
+			# 	conc_updates[m] = self.updates[m]
+
 		if self.use_trna_charging:
 			conc_updates.update(self.update_amino_acid_targets(counts_to_molar))
 		if self.include_ppgpp:
