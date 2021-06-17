@@ -657,25 +657,6 @@ class FluxBalanceAnalysis(object):
 					self.homeostaticObjectiveWeight * range_weight,
 					)
 
-				# Allow consumption of kinetic objective equivalent at lower objective
-				# weight within target range (below average)
-				lower_range_flux = self._generatedID_low_target_range + moleculeID
-				self._solver.setFlowMaterialCoeff(
-					lower_range_flux,
-					objectiveEquivID,
-					1,
-					)
-				# Set limits to 0, if a target range is set, the upper bound will vary from 0
-				self._solver.setFlowBounds(
-					lower_range_flux,
-					lowerBound=0,
-					upperBound=lower_range,
-					)
-				self._solver.setFlowObjectiveCoeff(
-					lower_range_flux,
-					self.homeostaticObjectiveWeight * range_weight,
-					)
-
 	def _initObjectiveRangeHomeostatic(self, objective, objectiveParameters):
 		""" Homeostatic FBA with a range of acceptable values. The objective is
 		to minimize the distance between the current metabolite level and a range
