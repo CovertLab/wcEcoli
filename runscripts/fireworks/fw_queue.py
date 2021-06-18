@@ -33,13 +33,14 @@ Workflow options:
 	COMPRESS_OUTPUT (int, "0"): if nonzero, outputs will be compressed (.bz2)
 	RUN_AGGREGATE_ANALYSIS (int, "1"): if nonzero, all analyses are run on
 		simulation output
-	PLOTS (str, "CORE"): Which analyses to run (if RUN_AGGREGATE_ANALYSIS is
+	PLOTS (str, ""): Which analyses to run (if RUN_AGGREGATE_ANALYSIS is
 		true). This should name one or more tags. For more than one tag,
 		separate them with whitespace and remember shell quoting. ACTIVE
 		includes all active plots. CORE includes just the plots recommended for
-		everyday development. You can also name specific analysis files but any
-		analysis categories that don't have such a filename will print error
-		messages.
+		everyday development. VARIANT runs analysis specific to the specified
+		variant. DEFAULT runs both CORE and VARIANT and is selected by default.
+		You can also name specific analysis files but any analysis
+		categories that don't have such a filename will print error messages.
 	DISABLE_RIBOSOME_CAPACITY_FITTING (int, "0"): if nonzero, ribosome
 		expression is not fit to protein synthesis demands
 	DISABLE_RNAPOLY_CAPACITY_FITTING (int, "0"): if nonzero, RNA polymerase
@@ -63,10 +64,12 @@ Simulation parameters:
 		formatting details.
 	WC_LENGTHSEC (int, "10800"): sets the maximum simulation time in seconds, useful
 		for short simulations (default is 3 hr)
-	TIMESTEP_MAX (float, "0.9"): sets the maximum time step
+	TIMESTEP_MAX (float, "2"): sets the maximum time step
 	TIMESTEP_SAFETY_FRAC (float, "1.3"): increases the time step by this factor
 		if conditions are favorable; up the the limit of the max time step
 	TIMESTEP_UPDATE_FREQ (int, "5"): frequency at which the time step is updated
+	LOG_TO_DISK_EVERY (int, "1"): frequency at which simulation outputs are
+		logged to disk
 	JIT (int, "1"): if nonzero, jit compiled functions are used for certain
 		processes, otherwise only uses lambda functions
 
@@ -88,10 +91,14 @@ Modeling options:
 		with kinetic equations
 	SUPERHELICAL_DENSITY (int, "0"): if nonzero, dynamically compute
 		superhelical densities of each DNA fragment
+	RECYCLE_STALLED_ELONGATION (int "0"): if nonzero, recycle RNAP and fragment
+		bases when transcription elongation is stalled in ntp-limiting conditions
 	MECHANISTIC_REPLISOME (int, "1"): if nonzero, replisome initiation is
 		mechanistic (requires appropriate number of subunits to initiate)
 	MECHANISTIC_AA_SUPPLY (int, "0"): if nonzero, amino acid supply is
 		mechanistic (depends on concentrations of enzymes and amino acids)
+	TRNA_ATTENUATION (int, "0"): if nonzero, transcriptional attenuation by
+		charged tRNA is enabled
 
 Additional variables:
 	LAUNCHPAD_FILE (str, "my_launchpad.yaml"): set launchpad config file location
@@ -249,6 +256,7 @@ WC_LENGTHSEC = int(get_environment("WC_LENGTHSEC", DEFAULT_SIMULATION_KWARGS["le
 TIMESTEP_SAFETY_FRAC = float(get_environment("TIMESTEP_SAFETY_FRAC", DEFAULT_SIMULATION_KWARGS["timeStepSafetyFraction"]))
 TIMESTEP_MAX = float(get_environment("TIMESTEP_MAX", DEFAULT_SIMULATION_KWARGS["maxTimeStep"]))
 TIMESTEP_UPDATE_FREQ = int(get_environment("TIMESTEP_UPDATE_FREQ", DEFAULT_SIMULATION_KWARGS["updateTimeStepFreq"]))
+LOG_TO_DISK_EVERY = int(get_environment("LOG_TO_DISK_EVERY", DEFAULT_SIMULATION_KWARGS["logToDiskEvery"]))
 JIT = bool(int(get_environment("JIT", DEFAULT_SIMULATION_KWARGS["jit"])))
 MASS_DISTRIBUTION = bool(int(get_environment("MASS_DISTRIBUTION", DEFAULT_SIMULATION_KWARGS["massDistribution"])))
 GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULATION_KWARGS["growthRateNoise"])))
@@ -257,8 +265,10 @@ TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMU
 TRNA_CHARGING = bool(int(get_environment("TRNA_CHARGING", DEFAULT_SIMULATION_KWARGS["trna_charging"])))
 PPGPP_REGULATION = bool(int(get_environment("PPGPP_REGULATION", DEFAULT_SIMULATION_KWARGS["ppgpp_regulation"])))
 SUPERHELICAL_DENSITY = bool(int(get_environment("SUPERHELICAL_DENSITY", DEFAULT_SIMULATION_KWARGS["superhelical_density"])))
+RECYCLE_STALLED_ELONGATION = bool(int(get_environment("RECYCLE_STALLED_ELONGATION", DEFAULT_SIMULATION_KWARGS["recycle_stalled_elongation"])))
 MECHANISTIC_REPLISOME = bool(int(get_environment("MECHANISTIC_REPLISOME", DEFAULT_SIMULATION_KWARGS["mechanistic_replisome"])))
 MECHANISTIC_AA_SUPPLY = bool(int(get_environment("MECHANISTIC_AA_SUPPLY", DEFAULT_SIMULATION_KWARGS["mechanistic_aa_supply"])))
+TRNA_ATTENUATION = bool(int(get_environment("TRNA_ATTENUATION", DEFAULT_SIMULATION_KWARGS["trna_attenuation"])))
 RAISE_ON_TIME_LIMIT = bool(int(get_environment("RAISE_ON_TIME_LIMIT", DEFAULT_SIMULATION_KWARGS["raise_on_time_limit"])))
 N_INIT_SIMS = int(get_environment("N_INIT_SIMS", "1"))
 SEED = int(get_environment("SEED", "0"))
@@ -269,7 +279,7 @@ COMPRESS_OUTPUT = bool(int(get_environment("COMPRESS_OUTPUT", "0")))
 SIM_DESCRIPTION = get_environment("DESC", "").replace(" ", "_")
 VERBOSE_QUEUE = bool(int(get_environment("VERBOSE_QUEUE", "1")))
 RUN_AGGREGATE_ANALYSIS = bool(int(get_environment("RUN_AGGREGATE_ANALYSIS", "1")))
-PLOTS = get_environment("PLOTS", "CORE").split()
+PLOTS = get_environment("PLOTS", "").split()
 CACHED_SIM_DATA = bool(int(get_environment("CACHED_SIM_DATA", "0")))
 PARALLEL_PARCA = bool(int(get_environment("PARALLEL_PARCA", "0")))
 DEBUG_PARCA = bool(int(get_environment("DEBUG_PARCA", "0")))
@@ -348,8 +358,10 @@ metadata = {
 	"trna_charging": TRNA_CHARGING,
 	"ppgpp_regulation": PPGPP_REGULATION,
 	"superhelical_density": SUPERHELICAL_DENSITY,
+	"recycle_stalled_elongation": RECYCLE_STALLED_ELONGATION,
 	"mechanistic_replisome": MECHANISTIC_REPLISOME,
 	"mechanistic_aa_supply": MECHANISTIC_AA_SUPPLY,
+	"trna_attenuation": TRNA_ATTENUATION,
 	}
 
 metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)
@@ -697,6 +709,7 @@ for i in VARIANTS_TO_RUN:
 							timestep_safety_frac = TIMESTEP_SAFETY_FRAC,
 							timestep_max = TIMESTEP_MAX,
 							timestep_update_freq = TIMESTEP_UPDATE_FREQ,
+							log_to_disk_every = LOG_TO_DISK_EVERY,
 							jit=JIT,
 							mass_distribution = MASS_DISTRIBUTION,
 							growth_rate_noise = GROWTH_RATE_NOISE,
@@ -705,8 +718,10 @@ for i in VARIANTS_TO_RUN:
 							trna_charging = TRNA_CHARGING,
 							ppgpp_regulation = PPGPP_REGULATION,
 							superhelical_density = SUPERHELICAL_DENSITY,
+							recycle_stalled_elongation = RECYCLE_STALLED_ELONGATION,
 							mechanistic_replisome = MECHANISTIC_REPLISOME,
 							mechanistic_aa_supply = MECHANISTIC_AA_SUPPLY,
+							trna_attenuation = TRNA_ATTENUATION,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,
@@ -730,6 +745,7 @@ for i in VARIANTS_TO_RUN:
 							timestep_safety_frac = TIMESTEP_SAFETY_FRAC,
 							timestep_max = TIMESTEP_MAX,
 							timestep_update_freq = TIMESTEP_UPDATE_FREQ,
+							log_to_disk_every = LOG_TO_DISK_EVERY,
 							jit=JIT,
 							mass_distribution = MASS_DISTRIBUTION,
 							growth_rate_noise = GROWTH_RATE_NOISE,
@@ -738,8 +754,10 @@ for i in VARIANTS_TO_RUN:
 							trna_charging = TRNA_CHARGING,
 							ppgpp_regulation = PPGPP_REGULATION,
 							superhelical_density = SUPERHELICAL_DENSITY,
+							recycle_stalled_elongation = RECYCLE_STALLED_ELONGATION,
 							mechanistic_replisome = MECHANISTIC_REPLISOME,
 							mechanistic_aa_supply = MECHANISTIC_AA_SUPPLY,
+							trna_attenuation = TRNA_ATTENUATION,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
 						name = fw_name,

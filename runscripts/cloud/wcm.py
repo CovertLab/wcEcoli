@@ -28,6 +28,7 @@ from wholecell.fireworks.firetasks import (
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
 from runscripts.manual.analysisBase import AnalysisBase
+from runscripts.cloud.util import workflow_cli
 from runscripts.cloud.util.workflow import (DEFAULT_LPAD_YAML,
 	STORAGE_ROOT_ENV_VAR, Task, Workflow)
 
@@ -35,7 +36,7 @@ from runscripts.cloud.util.workflow import (DEFAULT_LPAD_YAML,
 # ':latest' -- "You keep using that word. I do not think it means what you think it means."
 DOCKER_IMAGE = 'gcr.io/{}/{}-wcm-code'
 
-GCE_VM_MACHINE_TYPE = 'custom-1-5120'  # N1 VM with 1 CPU and 5 GB RAM
+GCE_VM_MACHINE_TYPE = workflow_cli.GCE_VM_MACHINE_TYPE
 
 
 class WcmWorkflow(Workflow):
@@ -438,8 +439,9 @@ class RunWcm(scriptBase.ScriptBase):
 			help='''Names the analysis plots to run, e.g. plot filenames
 				like "aaCounts.py" or "aaCounts" and tags like "METABOLISM"
 				as defined in the __init__.py files. If omitted, the default is
-				"CORE", which names the plots recommended for everyday
-				development. Use "ACTIVE" to run all active plots in this
+				"DEFAULT", which will run the "CORE" tag with plots recommended
+				for everyday development and the "VARIANT" tag for any variant
+				specific plots. Use "ACTIVE" to run all active plots in this
 				category. You can name specific analysis files but any
 				analysis categories that don't have those files will print
 				error messages.''')

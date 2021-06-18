@@ -19,6 +19,8 @@ IGNORE_FIRST_PERCENTAGE = 0.1
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
+	_suppress_numpy_warnings = True
+
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
@@ -48,8 +50,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		cellVolume = cellMass / cellDensity
 
 		fig = plt.figure(figsize = (20, 20))
-		rows = 6
-		cols = 6
+		rows = 8
+		cols = 8
 		num_subentries = 3
 
 		for idx in range(stoichMatrix.shape[1]):

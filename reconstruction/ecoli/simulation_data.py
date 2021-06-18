@@ -114,7 +114,6 @@ class SimulationDataEcoli(object):
 
 	def _add_condition_data(self, raw_data):
 		abbrToActiveId = {x["TF"]: x["activeId"].split(", ") for x in raw_data.transcription_factors if len(x["activeId"]) > 0}
-
 		gene_id_to_rna_set = {}
 		for rna in raw_data.operon_rnas:
 			for gene in rna['gene_set']:
@@ -137,22 +136,31 @@ class SimulationDataEcoli(object):
 				abbrToRnaId[x["symbol"]] = x["id"]
 		abbrToRnaId.update({
 			x["name"]: gene_id_to_rna_set[x["geneId"]][0]
+			})
+
+		gene_id_to_rna_id = {
+			gene['id']: gene['rna_id'] for gene in raw_data.genes}
+		gene_symbol_to_rna_id = {
+			gene['symbol']: gene['rna_id'] for gene in raw_data.genes}
+		gene_symbol_to_rna_id.update({
+			x["name"]: gene_id_to_rna_id[x["geneId"]]
 			for x in raw_data.translation_efficiency
 			if x["geneId"] != "#N/A"})
+
+		rna_ids_with_coordinates = {
+			gene['rna_id'] for gene in raw_data.genes
+			if gene['left_end_pos'] is not None and gene['right_end_pos'] is not None}
 
 		self.tf_to_fold_change = {}
 		self.tf_to_direction = {}
 
-		removed_fcs = {(row['TF'], row['Target']) for row in raw_data.fold_changes_removed}
 		for fc_file in ['fold_changes', 'fold_changes_nca']:
 			gene_not_found = set()
 			tf_not_found = set()
+			gene_location_not_specified = set()
+
 			for row in getattr(raw_data, fc_file):
 				FC = row['log2 FC mean']
-
-				# Skip fold changes that have been removed
-				if (row['TF'], row['Target']) in removed_fcs:
-					continue
 
 				# Skip fold changes that do not agree with curation
 				if row['Regulation_direct'] != '' and row['Regulation_direct'] > 2:
@@ -169,9 +177,13 @@ class SimulationDataEcoli(object):
 					continue
 
 				try:
-					target = abbrToRnaId[row['Target']]
+					target = gene_symbol_to_rna_id[row['Target']]
 				except KeyError:
 					gene_not_found.add(row['Target'])
+					continue
+
+				if target not in rna_ids_with_coordinates:
+					gene_location_not_specified.add(row['Target'])
 					continue
 
 				if tf not in self.tf_to_fold_change:
@@ -195,14 +207,24 @@ class SimulationDataEcoli(object):
 					for tf in tf_not_found:
 						print(tf)
 
+				if gene_location_not_specified:
+					print(f'The following target genes listed in {fc_file}.tsv'
+						  ' have no chromosomal location specified in'
+						  ' genes.tsv:')
+					for item in gene_location_not_specified:
+						print(item)
+
 		self.tf_to_active_inactive_conditions = {}
 		for row in raw_data.condition.tf_condition:
 			tf = row["active TF"]
 
-			active_genotype = row["active genotype perturbations"]
-			active_nutrients = row["active nutrients"]
-			inactive_genotype = row["inactive genotype perturbations"]
-			inactive_nutrients = row["inactive nutrients"]
+			if tf not in self.tf_to_fold_change:
+				continue
+
+			activeGenotype = row["active genotype perturbations"]
+			activeNutrients = row["active nutrients"]
+			inactiveGenotype = row["inactive genotype perturbations"]
+			inactiveNutrients = row["inactive nutrients"]
 
 			if tf not in self.tf_to_active_inactive_conditions:
 				self.tf_to_active_inactive_conditions[tf] = {}

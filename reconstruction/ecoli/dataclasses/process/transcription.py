@@ -43,6 +43,7 @@ class Transcription(object):
 		self._build_rna_data(raw_data, sim_data)
 		self._build_transcription(raw_data, sim_data)
 		self._build_charged_trna(raw_data, sim_data)
+		self._build_attenuation(raw_data, sim_data)
 		self._build_elongation_rates(raw_data, sim_data)
 
 	def __getstate__(self):
@@ -179,8 +180,13 @@ class Transcription(object):
 		"""
 		self._basal_rna_fractions = sim_data.mass.get_basal_rna_fractions()
 
+		# Filter out RNAs without sequences
+		all_rnas = [
+			rna for rna in raw_data.rnas
+			if sim_data.getter.is_valid_molecule(rna['id'])]
+
 		# Load RNA IDs with compartment tags
-		rna_ids = [rna['id'] for rna in raw_data.operon_rnas]
+		rna_ids = [rna['id'] for rna in all_rnas]
 		compartments = sim_data.getter.get_compartments(rna_ids)
 
 		rna_ids_with_compartments = [
@@ -188,7 +194,7 @@ class Transcription(object):
 			in zip(rna_ids, compartments)]
 
 		# Load set of mRNA ids
-		mRNA_ids = set([rna['id'] for rna in raw_data.operon_rnas if rna['type'] == 'mRNA'])
+		mRNA_ids = set([rna['id'] for rna in all_rnas if rna['type'] == 'mRNA'])
 
 		# Load RNA half lives
 		rna_id_to_half_life = {}
@@ -207,7 +213,7 @@ class Transcription(object):
 		# average reported half life of mRNAs
 		half_lives = np.array([
 			rna_id_to_half_life.get(rna['id'], average_mRNA_half_lives).asNumber(units.s)
-			for rna in raw_data.operon_rnas])
+			for rna in all_rnas])
 
 		# Convert to degradation rates
 		rna_deg_rates = np.log(2) / half_lives
@@ -221,19 +227,10 @@ class Transcription(object):
 		tu_counts = {
 			x['tu_id']: x['tu_count'] for x in raw_data.transcription_units}
 
-		for rna in raw_data.operon_rnas:		
-			# If sequencing data is not found for rRNA or tRNA, initialize
-			# expression to zero. For other RNA types, raise exception.
-			#rna_id = rna['id'].replace('_RNA', '').replace('-tRNA','').replace('-RNA','')
-			tu_id = '_'.join(rna['gene_set'])
-			if tu_id in tu_counts:
-				expression.append(tu_counts[tu_id])
-			elif rna['type'] == 'mRNA' or rna['type'] == 'miscRNA':
-				raise Exception(f'No transcription unit count data found for {tu_id}')
-			elif rna['type'] == 'rRNA' or rna['type'] == 'tRNA':
-				expression.append(0.)
-			else:
-				raise Exception(f'Unknown RNA {rna["id"]}')
+		for rna in all_rnas:
+			gene_id = rna_id_to_gene_id[rna['id']]
+			# If sequencing data is not found, initialize expression to zero.
+			expression.append(seq_data.get(gene_id, 0.))
 
 		expression = np.array(expression)
 		
@@ -250,10 +247,21 @@ class Transcription(object):
 		# Load gene IDs
 		# TODO(mialy): Should these be named 'tu_ids' instead?
 		gene_ids = np.array(
-			['_'.join(rna['gene_set']) for rna in raw_data.operon_rnas])
+			[rna_id_to_gene_id[rna['id']] for rna in all_rnas])
+		
+		# Construct boolean arrays for ribosomal protein and RNAP genes
+		n_rnas = len(rna_ids_with_compartments)
+		is_ribosomal_protein = np.zeros(n_rnas, dtype=np.bool)
+		is_RNAP	= np.zeros(n_rnas, dtype=np.bool)
+
+		for i, rna in enumerate(all_rnas):
+			for monomer_id in rna['monomer_ids']:
+				if monomer_id + '[c]' in sim_data.molecule_groups.ribosomal_proteins:
+					is_ribosomal_protein[i] = True
+				if monomer_id + '[c]' in sim_data.molecule_groups.RNAP_subunits:
+					is_RNAP[i] = True
 
 		# Construct boolean arrays and index arrays for each rRNA type
-		n_rnas = len(rna_ids_with_compartments)
 		is_23S = np.zeros(n_rnas, dtype = np.bool)
 		is_16S = np.zeros(n_rnas, dtype = np.bool)
 		is_5S = np.zeros(n_rnas, dtype = np.bool)
@@ -261,7 +269,7 @@ class Transcription(object):
 		idx_16S = []
 		idx_5S = []
 
-		for rnaIndex, rna in enumerate(raw_data.operon_rnas):
+		for rnaIndex, rna in enumerate(all_rnas):
 			if rna["type"] == "rRNA" and rna["id"].startswith("RRL"):
 				is_23S[rnaIndex] = True
 				idx_23S.append(rnaIndex)
@@ -318,7 +326,10 @@ class Transcription(object):
 			for i, gene in enumerate(raw_data.genes)}
 
 		# Get list of coordinates and directions for each gene
-		coordinate_list = [gene["coordinate"] for gene in raw_data.genes]
+		coordinate_list = [
+			gene["left_end_pos"] if gene["direction"] == '+'
+			else gene["right_end_pos"]
+			for gene in raw_data.genes]
 		direction_list = [gene["direction"] for gene in raw_data.genes]
 
 		# Get coordinates of oriC and terC
@@ -358,7 +369,7 @@ class Transcription(object):
 		# Get location of transcription initiation relative to origin
 		replication_coordinate = [
 			get_relative_coordinates(coordinate_list[rna_id_to_gene_index[rna["id"]]])
-			for rna in raw_data.rnas]
+			for rna in all_rnas]
 
 		# Get direction of transcription
 		direction = [
@@ -390,7 +401,6 @@ class Transcription(object):
 				stop = start + gene_lengths[gene]
 				start_stop.append([start, stop])
 			gene_starts_stops.append(start_stop)
-
 
 		# Set the lengths, nucleotide counts, molecular weights, and sequences
 		# of each type of rRNAs to be identical to those of the first rRNA
@@ -451,10 +461,10 @@ class Transcription(object):
 		# 	classifications for operon RNAs, and only maintain them for
 		# 	individual genes. Might complicate how we distribute transcription
 		# 	probabilities.
-		rna_data['is_mRNA'] = [rna["type"] == "mRNA" for rna in raw_data.operon_rnas]
-		rna_data['is_miscRNA'] = [rna["type"] == "miscRNA" for rna in raw_data.operon_rnas]
-		rna_data['is_rRNA'] = [rna["type"] == "rRNA" for rna in raw_data.operon_rnas]
-		rna_data['is_tRNA'] = [rna["type"] == "tRNA" for rna in raw_data.operon_rnas]
+		rna_data['is_mRNA'] = [rna["type"] == "mRNA" for rna in all_rnas]
+		rna_data['is_miscRNA'] = [rna["type"] == "miscRNA" for rna in all_rnas]
+		rna_data['is_rRNA'] = [rna["type"] == "rRNA" for rna in all_rnas]
+		rna_data['is_tRNA'] = [rna["type"] == "tRNA" for rna in all_rnas]
 		
 		# operon_integration modification
 		# Only mark is_ribosomal_protein as true if it does not include a RNA Polymerase protein.
@@ -537,7 +547,7 @@ class Transcription(object):
 		"""
 		# Load sequence data
 		rna_seqs = sim_data.getter.get_sequences(
-			[rna['id'] for rna in raw_data.operon_rnas])
+			[rna_id[:-3] for rna_id in self.rna_data['id']])
 
 		rrna_types = ['is_23S_rRNA', 'is_16S_rRNA', 'is_5S_rRNA']
 		for rrna in rrna_types:
@@ -637,38 +647,37 @@ class Transcription(object):
 		synthetase_names = []
 		synthetase_mapping_aa = []
 		synthetase_mapping_syn = []
-
-		# Get IDs of charging reactions that should be removed
-		removed_reaction_ids = {
-			rxn['id'] for rxn in raw_data.rna_modification_reactions_removed}
+		# Get IDs of all metabolites
+		metabolite_ids = {met['id'] for met in raw_data.metabolites}
 
 		# Create stoichiometry matrix for charging reactions
-		for reaction in raw_data.rna_modification_reactions:
-			if reaction['id'] in removed_reaction_ids:
-				continue
-
+		for reaction in raw_data.trna_charging_reactions:
 			# Get uncharged tRNA name for the given reaction
 			trna = None
-			for mol in [molecule['molecule'] + '[' + molecule['location'] + ']' for molecule in reaction['stoichiometry']]:
-				if mol in trna_names:
-					trna = mol
+			for mol_id in reaction['stoichiometry'].keys():
+				if f'{mol_id}[c]' in trna_names:
+					trna = f'{mol_id}[c]'
 					break
 
 			if trna is None:
 				continue
+
 			trna_index = trna_indices[trna]
 
 			# Get molecule information
 			aa_idx = None
-			for molecule in reaction['stoichiometry']:
-				molecule_prefix = molecule['molecule']
-				if molecule['type'] == 'metabolite':
-					molecule_prefix = molecule_prefix.upper()
+			for mol_id, coeff in reaction['stoichiometry'].items():
 
-				molecule_name = '{}[{}]'.format(
-					molecule_prefix,
-					molecule['location']
-					)
+				if mol_id in metabolite_ids:
+					molecule_name = "{}[{}]".format(
+						mol_id, 'c'
+						# Assume all metabolites are in cytosol
+						)
+				else:
+					molecule_name = "{}[{}]".format(
+						mol_id,
+						sim_data.getter.get_compartment(mol_id)[0]
+						)
 
 				if molecule_name not in molecules:
 					molecules.append(molecule_name)
@@ -678,19 +687,21 @@ class Transcription(object):
 
 				aa_idx = aa_indices.get(molecule_name, aa_idx)
 
-				coefficient = molecule['coeff']
-
-				assert coefficient % 1 == 0
+				# Assume coefficents given as null are -1
+				if coeff is None:
+					coeff = -1
+				assert coeff % 1 == 0
 
 				stoich_matrix_i.append(molecule_index)
 				stoich_matrix_j.append(trna_index)
-				stoich_matrix_v.append(coefficient)
+				stoich_matrix_v.append(coeff)
 
 			assert aa_idx is not None
 
 			# Create mapping for synthetases catalyzing charging
 			for synthetase in reaction['catalyzed_by']:
-				synthetase = '{}[{}]'.format(synthetase, molecule['location'])
+				synthetase = '{}[{}]'.format(
+					synthetase, sim_data.getter.get_compartment(synthetase)[0])
 
 				if synthetase not in synthetase_names:
 					synthetase_names.append(synthetase)
@@ -723,8 +734,101 @@ class Transcription(object):
 
 		return out
 
+	def _build_attenuation(self, raw_data, sim_data):
+		"""
+		Load fold changes related to transcriptional attenuation.
+		"""
+
+		# Load data from file
+		aa_trnas = []
+		attenuated_rnas = []
+		fold_changes = []
+		gene_to_rna = {g['symbol']: g['rna_id'] for g in raw_data.genes}
+		for row in raw_data.transcriptional_attenuation:
+			trna_aa = row['tRNA'].split('-')[1].upper() + '[c]'
+			gene = row['Target']
+			rna = gene_to_rna[gene] + '[c]'
+
+			aa_trnas.append(trna_aa)
+			attenuated_rnas.append(rna)
+			fold_changes.append(2**row['log2 FC'])
+
+		self.attenuated_rna_ids = np.unique(attenuated_rnas)
+
+		# Convert data to matrix mapping tRNA to genes with a fold change
+		trna_to_row = {t: i for i, t in enumerate(sim_data.molecule_groups.amino_acids)}
+		rna_to_col = {r: i for i, r in enumerate(self.attenuated_rna_ids)}
+		n_aas = len(sim_data.molecule_groups.amino_acids)
+		n_rnas = len(self.attenuated_rna_ids)
+		self._attenuation_fold_changes = np.ones((n_aas, n_rnas))
+		for trna, rna, fc in zip(aa_trnas, attenuated_rnas, fold_changes):
+			i = trna_to_row[trna]
+			j = rna_to_col[rna]
+			self._attenuation_fold_changes[i, j] = fc
+
+		# Attenuated RNA index mapping
+		rna_to_index = {r: i for i, r in enumerate(self.rna_data['id'])}
+		self.attenuated_rna_indices = np.array([rna_to_index[r] for r in self.attenuated_rna_ids])
+
+		# Specify location in gene where attenuation will occur
+		# Currently just assumes before a transcript begins elongation (position < 1)
+		# TODO: base this on specific locations for each gene
+		locations = np.ones(len(self.attenuated_rna_indices))
+		self.attenuation_location = {idx: loc for idx, loc in zip(self.attenuated_rna_indices, locations)}
+
+	def calculate_attenuation(self, sim_data, cell_specs):
+		"""
+		Calculate constants for each attenuated gene.
+
+		TODO:
+			Use charged tRNA conc instead of AA conc for attenuation
+		"""
+
+		def get_aa_conc(condition):
+			spec = cell_specs[condition]
+			counts = spec['bulkAverageContainer'].counts(sim_data.molecule_groups.amino_acids)
+			volume = (spec['avgCellDryMassInit'] / sim_data.constants.cell_density
+				/ sim_data.mass.cell_dry_mass_fraction)
+			# Order of operations for conc (counts last) is to get units to work well
+			conc = 1 / sim_data.constants.n_avogadro / volume * counts
+			return conc
+
+		k_units = units.umol / units.L
+		aa_conc = get_aa_conc('with_aa').asNumber(k_units)
+
+		# Calculate constant for stop probability
+		self.attenuation_k = np.zeros_like(self._attenuation_fold_changes)
+		for i, j in zip(*np.where(self._attenuation_fold_changes != 1)):
+			k = aa_conc[i] / np.log(self._attenuation_fold_changes[i, j])
+			self.attenuation_k[i, j] = 1/k
+		self.attenuation_k = 1 / k_units * self.attenuation_k
+
+		# Adjust basal synthesis probabilities to account for less synthesis
+		# due to attenuation
+		condition = 'basal'
+		basal_prob = sim_data.process.transcription_regulation.basal_prob
+		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix()
+		p_promoter_bound = np.array([
+			sim_data.pPromoterBound[condition][tf]
+			for tf in sim_data.process.transcription_regulation.tf_ids
+			])
+		delta = delta_prob @ p_promoter_bound
+		basal_stop_prob = self.get_attenuation_stop_probabilities(get_aa_conc(condition))
+		basal_synth_prob = (basal_prob + delta)[self.attenuated_rna_indices]
+		self.attenuation_basal_prob_adjustments = basal_synth_prob * (1 / (1 - basal_stop_prob) - 1)
+
+	def get_attenuation_stop_probabilities(self, aa_conc):
+		"""
+		Calculate the probability of a transcript stopping early due to attenuation.
+
+		TODO:
+			Use charged tRNA conc instead of AA conc for attenuation
+			Consider a maximum stop probability factor (eg can only attenuate up to 90% of RNAs)
+		"""
+		return 1 - np.exp(units.strip_empty_units(aa_conc @ self.attenuation_k))
+
 	def _build_elongation_rates(self, raw_data, sim_data):
-		self.max_elongation_rate = sim_data.constants.RNAP_elongation_rate_max
+		self.max_elongation_rate = sim_data.constants.RNAP_elongation_rate_max.asNumber(units.nt / units.s)
 		self.rRNA_indexes = np.where(self.rna_data['is_rRNA'])[0]
 
 	def make_elongation_rates(self, random, base, time_step, variable_elongation=False):
@@ -933,6 +1037,8 @@ class Transcription(object):
 				for tf in sim_data.process.transcription_regulation.tf_ids
 				])
 			delta = delta_prob @ p_promoter_bound
+			# TODO(jerry): Handle the NaN or Infinity values from this line then
+			#  use `with np.errstate(invalid='ignore'):` to suppress its warnings.
 			tf_adjustments[condition] = delta / sim_data.process.transcription.rna_synth_prob[condition]
 
 		# Solve least squares fit for expression of each component of RNAP and ribosomes
@@ -984,7 +1090,8 @@ class Transcription(object):
 
 		# Determine adjustments to the current ppGpp expression to scale
 		# to the expected expression
-		adjustment = new_prob / old_prob
+		with np.errstate(invalid='ignore'):
+			adjustment = new_prob / old_prob
 		adjustment[~np.isfinite(adjustment)] = 1
 
 		# Scale free and bound expression and renormalize ppGpp regulated expression

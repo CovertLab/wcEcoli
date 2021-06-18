@@ -38,8 +38,10 @@ METADATA_KEYS = (
 	'trna_charging',
 	'ppgpp_regulation',
 	'superhelical_density',
+	'recycle_stalled_elongation',
 	'mechanistic_replisome',
 	'mechanistic_aa_supply',
+	'trna_attenuation',
 	)
 
 PARCA_KEYS = (
@@ -55,6 +57,7 @@ SIM_KEYS = (
 	'timestep_safety_frac',
 	'timestep_max',
 	'timestep_update_freq',
+	'log_to_disk_every',
 	'jit',
 	'mass_distribution',
 	'growth_rate_noise',
@@ -65,8 +68,10 @@ SIM_KEYS = (
 	'trna_charging',
 	'ppgpp_regulation',
 	'superhelical_density',
+	'recycle_stalled_elongation',
 	'mechanistic_replisome',
 	'mechanistic_aa_supply',
+	'trna_attenuation',
 	'raise_on_time_limit',
 	'log_to_shell',
 	)
@@ -431,6 +436,8 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			help='the maximum time step, in seconds')
 		add_option('timestep_update_freq', 'updateTimeStepFreq', int,
 			help='frequency at which the time step is updated')
+		add_option('log_to_disk_every', 'logToDiskEvery', int,
+			help='frequency at which sim outputs are written to disk')
 
 		add_bool_option('jit', 'jit',
 			help='If true, jit compiled functions are used for certain'
@@ -457,12 +464,17 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			help='if true, ppGpp concentration is determined with kinetic equations.')
 		add_bool_option('superhelical_density', 'superhelical_density',
 			help='if true, dynamically calculate superhelical densities of each DNA segment')
+		add_bool_option('recycle_stalled_elongation', 'recycle_stalled_elongation',
+						help='if true, recycle RNAP and fragment bases when transcription'
+							 'elongation is stalled in ntp-limiting conditions')
 		add_bool_option('mechanistic_replisome', 'mechanistic_replisome',
 			help='if true, replisome initiation is mechanistic (requires'
 				 ' appropriate number of subunits to initiate)')
 		add_bool_option('mechanistic_aa_supply', 'mechanistic_aa_supply',
 			help='if true, amino acid supply is mechanistic (depends on'
 				 ' concentrations of enzymes and amino acids)')
+		add_bool_option('trna_attenuation', 'trna_attenuation',
+			help='if true, transcriptional attenuation by charged tRNA is enabled')
 		add_bool_option('raise_on_time_limit', 'raise_on_time_limit',
 			help='if true, the simulation raises an error if the time limit'
 				 ' (--length-sec) is reached before division.')

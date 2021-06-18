@@ -37,6 +37,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = sim_data.process.translation.make_elongation_rates
 
+		# Get indexes from proteins to transcription units
+		self.protein_index_to_TU_index = sim_data.relation.RNA_to_monomer_mapping
+
 		# Build matrix to convert transcription unit counts to mRNA counts
 		all_TU_ids = sim_data.process.transcription.rna_data['id']
 		all_mRNA_ids = sim_data.process.translation.monomer_data['rna_id']

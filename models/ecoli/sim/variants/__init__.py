@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
+from .add_one_aa import add_one_aa
 from .all_shuffle_params import all_shuffle_params
 from .condition import condition
 from .gene_knockout import gene_knockout
@@ -8,6 +7,8 @@ from .metabolism_kinetic_objective_weight import metabolism_kinetic_objective_we
 from .metabolism_secretion_penalty import metabolism_secretion_penalty
 from .monomer_deg_rate_shuffle_params import monomer_deg_rate_shuffle_params
 from .param_sensitivity import param_sensitivity
+from .remove_aa_inhibition import remove_aa_inhibition
+from .remove_one_aa import remove_one_aa
 from .rna_deg_rate_shuffle_params import rna_deg_rate_shuffle_params
 from .rrna_orientation import rrna_orientation
 from .tf_activity import tf_activity
@@ -19,6 +20,7 @@ from .wildtype import wildtype
 
 
 nameToFunctionMapping = {
+	"add_one_aa": add_one_aa,
 	"all_shuffle_params": all_shuffle_params,
 	"condition": condition,
 	"gene_knockout": gene_knockout,
@@ -27,6 +29,8 @@ nameToFunctionMapping = {
 	"metabolism_secretion_penalty": metabolism_secretion_penalty,
 	"monomer_deg_rate_shuffle_params": monomer_deg_rate_shuffle_params,
 	"param_sensitivity": param_sensitivity,
+	"remove_aa_inhibition": remove_aa_inhibition,
+	"remove_one_aa": remove_one_aa,
 	"rna_deg_rate_shuffle_params": rna_deg_rate_shuffle_params,
 	"rrna_orientation": rrna_orientation,
 	"tf_activity": tf_activity,

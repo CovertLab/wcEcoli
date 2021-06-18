@@ -1,7 +1,7 @@
 "name"	"value"	"units"	"_source"	"_comments"
 "gtp_per_translation"	4.2			
-"oriC_center"	3923882	"units.nt"	"Ecocyc"
-"terC_center"	1607192	"units.nt"	"Ecocyc"	
+"oriC_center"	3925860	"units.nt"	"EcoCyc, rounded average of two oriC boundaries"
+"terC_center"	1605046	"units.nt"	"EcoCyc, (oriC_center) - (genome_size/2)"
 "cell_density"	1100	"units.g/units.L"	"Baldwin et al."	"from Baldwin WW, Myer R, Powell N, Anderson E, Koch AL. Buoyant density of Escherichia coli is determined solely by the osmolarity of the culture medium. Arch Microbiol. 1995 Aug164(2):155-7 p.156 fig.3 & fig.2 (retrieved from Bionumbers)"
 "growth_associated_maintenance"	59.81	"units.mmol / units.g"	"Feist"	
 "non_growth_associated_maintenance"	8.39	"units.mmol / units.g / units.h"	"Feist"	
@@ -13,7 +13,7 @@
 "RNAP_elongation_rate_max"	85	"units.nt/units.s"		
 "metabolism_homeostatic_range_obj_fraction_higher"	0			
 "metabolism_kinetic_objective_weight_linear"	1E-07			
-"metabolism_kinetic_objective_weight_quadratic"	1E-09			
+"metabolism_kinetic_objective_weight_quadratic"	1E-11			
 "metabolism_kinetic_objective_weight_in_range"	0.01			
 "secretion_penalty_coeff"	0.001		"Use variant metabolism_secretion_penalty to optimize"	
 "sensitivity_analysis_alpha"	0			
@@ -31,3 +31,5 @@
 "complexation_rate"	1000	"1/units.s"	"Placeholder (estimated from Neidhardt)."	
 "fraction_supply_inhibited"	0.01		"Fraction of AA supply that will be inhibited at target conc. Determined empirically to support stable growth with tRNA charging. Can change with more detailed model or be fit to data."	
 "fraction_supply_exported"	0.1		"Fraction of AA supply that will be exported at target conc. Determined empirically to support stable growth with tRNA charging. Can change with more detailed model or be fit to data."	
+"ppi_concentration"	5E-4	"units.mol/units.L"	"multiple sources"	
+"pH"	7.2			

@@ -43,7 +43,7 @@ Image.
 1. Use your package manager to install the needed libraries
 \[see the `requirements.txt` file for the latest list] or compile them from source.
 
-   Theano will use the `openblas` library installed in this step.
+   Aesara will use the `openblas` library installed in this step.
    You can optionally install numpy and scipy to also use it.
 
    **On macOS**
@@ -118,7 +118,7 @@ pyenv lets you install and switch between multiple Python releases and multiple
 "virtual environments", each with its own pip packages.
 
    ```bash
-   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.5
+   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.7
    ```
 
 
@@ -133,7 +133,7 @@ virtualenv.
 
    ```bash
    cd ~/dev/wcEcoli  # or wherever you cloned the `wcEcoli` project to
-   pyenv virtualenv 3.8.5 wcEcoli3 && pyenv local wcEcoli3
+   pyenv virtualenv 3.8.7 wcEcoli3 && pyenv local wcEcoli3
    ```
 
 1. Upgrade this virtual environment's installers.
@@ -240,10 +240,10 @@ especially when called from multiple processes.
     runscripts/debug/time_libraries.sh
     ```
 
-1. Test Theano:
+1. Test Aesara:
 
       ```bash
-      python -c 'import theano; print(theano.config.blas.ldflags)'
+      python -c 'import aesara; print([aesara.config.blas.ldflags, aesara.config.device, aesara.config.floatX])'
       ```
 
    It should print something like
@@ -274,7 +274,7 @@ especially when called from multiple processes.
    Go back to that step, run
 
    ```bash
-   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.5 --force
+   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.7 --force
    ```
 
    then delete and recreate the virtualenv `wcEcoli3`.

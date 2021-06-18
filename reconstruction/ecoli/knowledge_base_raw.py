@@ -25,6 +25,7 @@ LIST_OF_DICT_FILENAMES = (
 	"disabled_kinetic_reactions.tsv",
 	"dry_mass_composition.tsv",
 	"endoRNases.tsv",
+	"equilibrium_reaction_rates.tsv",
 	"equilibrium_reactions.tsv",
 	"equilibrium_reactions_removed.tsv",
 	"fold_changes.tsv",
@@ -38,6 +39,7 @@ LIST_OF_DICT_FILENAMES = (
 	"metabolism_kinetics.tsv",
 	"metabolites.tsv",
 	"metabolite_concentrations.tsv",
+	"metabolite_concentrations_removed.tsv",
 	"metabolites.tsv",
 	"modified_proteins.tsv",
 	"molecular_weight_keys.tsv",
@@ -50,15 +52,17 @@ LIST_OF_DICT_FILENAMES = (
 	"proteins.tsv",
 	"relative_metabolite_concentrations.tsv",
 	"rna_half_lives.tsv",
-	"rna_modification_reactions.tsv",
-	"rna_modification_reactions_removed.tsv",
 	"rnas.tsv",
 	"secretions.tsv",
 	"sequence_motifs.tsv",
 	"transcription_factors.tsv",
 	"transcription_units.tsv",
+	"transcriptional_attenuation.tsv",
 	"tf_one_component_bound.tsv",
 	"translation_efficiency.tsv",
+	"trna_charging_reactions.tsv",
+	"trna_charging_reactions_added.tsv",
+	"trna_charging_reactions_removed.tsv",
 	"two_component_systems.tsv",
 	"two_component_system_templates.tsv",
 	os.path.join("mass_fractions", "glycogen_fractions.tsv"),
@@ -101,10 +105,24 @@ LIST_OF_DICT_FILENAMES = (
 	)
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = (
+	"dna_supercoiling.tsv",
 	"parameters.tsv",
 	"mass_parameters.tsv",
-	"dna_supercoiling.tsv"
 	)
+
+REMOVED_DATA = {
+	'complexation_reactions': 'complexation_reactions_removed',
+	'equilibrium_reactions': 'equilibrium_reactions_removed',
+	'fold_changes': 'fold_changes_removed',
+	'fold_changes_nca': 'fold_changes_removed',
+	'metabolic_reactions': 'metabolic_reactions_removed',
+	'metabolite_concentrations': 'metabolite_concentrations_removed',
+	'trna_charging_reactions': 'trna_charging_reactions_removed',
+	}
+# TODO: move added rows from some flat files to new files and add here
+ADDED_DATA = {
+	'trna_charging_reactions': 'trna_charging_reactions_added',
+	}
 
 class DataStore(object):
 	def __init__(self):
@@ -114,12 +132,17 @@ class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
 	def __init__(self):
+		self.compartments = []  # mypy can't track setattr(self, attr_name, rows)
+
 		# Load raw data from TSV files
 		for filename in LIST_OF_DICT_FILENAMES:
 			self._load_tsv(FLAT_DIR, os.path.join(FLAT_DIR, filename))
 
 		for filename in LIST_OF_PARAMETER_FILENAMES:
 			self._load_parameters(os.path.join(FLAT_DIR, filename))
+
+		self._prune_data()
+		self._join_data()
 
 		self.genome_sequence = self._load_sequence(os.path.join(FLAT_DIR, SEQUENCE_FILE))
 
@@ -161,3 +184,49 @@ class KnowledgeBaseEcoli(object):
 				param_dict[row['name']] = value
 
 		setattr(self, attr_name, param_dict)
+
+	def _prune_data(self):
+		"""
+		Remove rows that are specified to be removed. Data will only be removed
+		if all data in a row in the file specifying rows to be removed matches
+		the same columns in the raw data file.
+		"""
+
+		# Check each pair of files to be removed
+		for data_attr, attr_to_remove in REMOVED_DATA.items():
+			# Build the set of data to identify rows to be removed
+			data_to_remove = getattr(self, attr_to_remove)
+			removed_cols = list(data_to_remove[0].keys())
+			removed_ids = set()
+			for row in data_to_remove:
+				removed_ids.add(tuple([row[col] for col in removed_cols]))
+
+			# Remove any matching rows
+			data = getattr(self, data_attr)
+			n_entries = len(data)
+			for i, row in enumerate(data[::-1]):
+				checked_id = tuple([row[col] for col in removed_cols])
+				if checked_id in removed_ids:
+					data.pop(n_entries - i - 1)
+
+	def _join_data(self):
+		"""
+		Add rows that are specified in additional files. Data will only be added
+		if all the loaded columns from both datasets match.
+		"""
+
+		# Join data for each file with data to be added
+		for data_attr, attr_to_add in ADDED_DATA.items():
+			# Get datasets to join
+			data = getattr(self, data_attr)
+			added_data = getattr(self, attr_to_add)
+
+			# Check columns are the same for each dataset
+			col_diff = set(data[0].keys()).symmetric_difference(added_data[0].keys())
+			if col_diff:
+				raise ValueError(f'Could not join datasets {data_attr} and {attr_to_add} '
+					f'because columns do not match (different columns: {col_diff}).')
+
+			# Join datasets
+			for row in added_data:
+				data.append(row)

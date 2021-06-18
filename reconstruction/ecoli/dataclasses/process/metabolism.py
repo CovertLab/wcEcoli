@@ -18,6 +18,7 @@ import numpy as np
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
+from reconstruction.ecoli.dataclasses.getter_functions import UNDEFINED_COMPARTMENT_IDS_TO_ABBREVS
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 # NOTE: Importing SimulationDataEcoli would make a circular reference so use Any.
 #from reconstruction.ecoli.simulation_data import SimulationDataEcoli
@@ -25,9 +26,6 @@ from wholecell.utils import units
 import six
 from six.moves import range, zip
 
-
-PPI_CONCENTRATION = 0.5e-3  # M, multiple sources
-ECOLI_PH = 7.2
 KINETIC_CONSTRAINT_CONC_UNITS = units.umol / units.L
 K_CAT_UNITS = 1 / units.s
 METABOLITE_CONCENTRATION_UNITS = units.mol / units.L
@@ -40,6 +38,10 @@ REVERSE_REACTION_ID = '{{}}{}'.format(REVERSE_TAG)
 ENZYME_REACTION_ID = '{}__{}'
 
 VERBOSE = False
+
+
+class InvalidReactionDirectionError(Exception):
+	pass
 
 
 class Metabolism(object):
@@ -92,16 +94,21 @@ class Metabolism(object):
 			'Park Concentration',
 			'Lempp Concentration',
 			'Kochanowski Concentration',
+			'Sander Concentration',
 			]
 		excluded = {
 			'Park Concentration': {
 				'GLT',  # Steady state concentration reached with tRNA charging is much lower than Park
+				'THR',  # Attenuation needs concentration to be lower to match validation data
 				},
 			'Lempp Concentration': {
 				'ATP',  # TF binding does not solve with average concentration
 				},
 			'Kochanowski Concentration': {
 				'ATP',  # TF binding does not solve with average concentration
+				},
+			'Sander Concentration': {
+				'GLT',  # Steady state concentration reached with tRNA charging is much lower than Sander
 				},
 			}
 		metaboliteIDs = []
@@ -114,7 +121,7 @@ class Metabolism(object):
 
 		for row in raw_data.metabolite_concentrations:
 			metabolite_id = row['Metabolite']
-			if not sim_data.getter.check_valid_molecule(metabolite_id):
+			if not sim_data.getter.is_valid_molecule(metabolite_id):
 				if VERBOSE:
 					print('Metabolite concentration for unknown molecule: {}'
 						.format(metabolite_id))
@@ -171,17 +178,19 @@ class Metabolism(object):
 		metaboliteConcentrations.append(dntpSmallestConc)
 
 		# H: from reported pH
-		hydrogenConcentration = 10**(-ECOLI_PH)
+		hydrogenConcentration = 10**(-sim_data.constants.pH)
 
 		metaboliteIDs.append(sim_data.molecule_ids.proton)
 		metaboliteConcentrations.append(hydrogenConcentration)
 
-		# PPI: multiple sources report 0.5 mM
+		# PPI
+		ppi_conc = sim_data.constants.ppi_concentration.asNumber(
+			METABOLITE_CONCENTRATION_UNITS)
 		metaboliteIDs.append(sim_data.molecule_ids.ppi)
-		metaboliteConcentrations.append(PPI_CONCENTRATION)
+		metaboliteConcentrations.append(ppi_conc)
 
-		metaboliteIDs.append("PI[c]")
-		metaboliteConcentrations.append(PPI_CONCENTRATION)
+		metaboliteIDs.append("Pi[c]")
+		metaboliteConcentrations.append(ppi_conc)
 
 		# include metabolites that are part of biomass
 		for key, value in six.viewitems(sim_data.mass.getBiomassAsConcentrations(sim_data.doubling_time)):
@@ -223,6 +232,7 @@ class Metabolism(object):
 			raise ValueError('Multiple concentrations for metabolite(s): {}'.format(', '.join(unique_ids[counts > 1])))
 
 		# TODO (Travis): only pass raw_data and sim_data and create functions to load absolute and relative concentrations
+		all_metabolite_ids = {met['id'] for met in raw_data.metabolites}
 		self.concentration_updates = ConcentrationUpdates(dict(zip(
 			metaboliteIDs,
 			METABOLITE_CONCENTRATION_UNITS * np.array(metaboliteConcentrations)
@@ -230,6 +240,7 @@ class Metabolism(object):
 			relative_changes,
 			raw_data.equilibrium_reactions,
 			sim_data.external_state.exchange_dict,
+			all_metabolite_ids
 		)
 		self.conc_dict = self.concentration_updates.concentrations_based_on_nutrients("minimal")
 		self.nutrients_to_internal_conc = {}
@@ -323,7 +334,8 @@ class Metabolism(object):
 
 		# Properties for FBA reconstruction
 		self.reaction_stoich = reaction_stoich
-		self.maintenance_reaction = {"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "PI[c]": +1, "PROTON[c]": +1, }
+		# TODO (ggsun): add this as a raw .tsv file
+		self.maintenance_reaction = {"ATP[c]": -1, "WATER[c]": -1, "ADP[c]": +1, "Pi[c]": +1, "PROTON[c]": +1, }
 
 		# Properties for catalysis matrix (to set hard bounds)
 		self.reaction_catalysts = catalysts
@@ -483,7 +495,8 @@ class Metabolism(object):
 
 		return KINETIC_CONSTRAINT_CONC_UNITS * K_CAT_UNITS * capacity * saturation
 
-	def exchange_constraints(self, exchangeIDs, coefficient, targetUnits, currentNutrients, unconstrained, constrained, concModificationsBasedOnCondition = None):
+	def exchange_constraints(self, exchangeIDs, coefficient, targetUnits, media_id,
+			unconstrained, constrained, concModificationsBasedOnCondition = None):
 		"""
 		Called during Metabolism process
 		Returns the homeostatic objective concentrations based on the current nutrients
@@ -491,7 +504,8 @@ class Metabolism(object):
 		"""
 
 		newObjective = self.concentration_updates.concentrations_based_on_nutrients(
-			media_id=currentNutrients, conversion_units=targetUnits)
+			imports=unconstrained.union(constrained), media_id=media_id,
+			conversion_units=targetUnits)
 		if concModificationsBasedOnCondition is not None:
 			newObjective.update(concModificationsBasedOnCondition)
 
@@ -543,10 +557,10 @@ class Metabolism(object):
 		conc = self.concentration_updates.concentrations_based_on_nutrients
 
 		aa_conc_basal = np.array([
-			conc('minimal')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			conc(media_id='minimal')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			for aa in aa_ids])
 		aa_conc_aa_media = np.array([
-			conc('minimal_plus_amino_acids')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			conc(media_id='minimal_plus_amino_acids')[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
 			for aa in aa_ids])
 
 		# Lower concentrations might produce strange rates (excess supply or
@@ -637,7 +651,7 @@ class Metabolism(object):
 				associated with the column
 			specific_import_rates (np.ndarray[float]): import rates expected
 				in rich media conditions for each amino acid normalized by dry
-				cell mass in units of (1 / (K_CAT_UNITS * DRY_MASS_UNITS),
+				cell mass in units of K_CAT_UNITS / DRY_MASS_UNITS,
 				ordered by amino acid molecule group
 
 		Assumptions:
@@ -830,57 +844,131 @@ class Metabolism(object):
 				enzyme catalysts for each reaction with known catalysts, likely
 				a subset of reactions in stoich
 		"""
+		compartment_ids_to_abbreviations = {
+			comp['id']: comp['abbrev'] for comp in raw_data.compartments
+			}
+		compartment_ids_to_abbreviations.update(
+			UNDEFINED_COMPARTMENT_IDS_TO_ABBREVS)
+
+		valid_directions = {'L2R', 'R2L', 'BOTH'}
+		forward_directions = {'L2R', 'BOTH'}
+		reverse_directions = {'R2L', 'BOTH'}
+
+		# Build mapping from each complexation subunit to all downstream
+		# complexes containing the subunit, including itself
+		# Start by building mappings from subunits to complexes that are
+		# directly formed from the subunit through a single reaction
+		subunit_id_to_parent_complexes = {} # type: Dict[str, List[str]]
+
+		for comp_reaction in cast(Any, raw_data).complexation_reactions:
+			complex_id = None
+
+			# Find ID of complex
+			for mol_id, coeff in comp_reaction['stoichiometry'].items():
+				if coeff > 0:
+					complex_id = mol_id
+					break
+
+			assert complex_id is not None
+
+			# Map each subunit to found complex
+			for mol_id, coeff in comp_reaction['stoichiometry'].items():
+				if mol_id == complex_id:
+					continue
+				elif mol_id in subunit_id_to_parent_complexes:
+					subunit_id_to_parent_complexes[mol_id].append(complex_id)
+				else:
+					subunit_id_to_parent_complexes[mol_id] = [complex_id]
+
+		# Recursive function that returns a list of all downstream complexes
+		# containing the given subunit, including itself
+		def get_all_complexes(subunit_id):
+			all_downstream_complex_ids = [subunit_id]
+
+			if subunit_id not in subunit_id_to_parent_complexes:
+				return all_downstream_complex_ids
+
+			# Get downstream complexes of all parent complexes
+			for parent_complex_id in subunit_id_to_parent_complexes[subunit_id]:
+				all_downstream_complex_ids.extend(get_all_complexes(parent_complex_id))
+
+			# Remove duplicates
+			return list(set(all_downstream_complex_ids))
+
+		subunit_id_to_all_downstream_complexes = {
+			subunit_id: get_all_complexes(subunit_id)
+			for subunit_id in subunit_id_to_parent_complexes.keys()
+			}
 
 		# Initialize variables to store reaction information
 		reaction_stoich = {}
 		reversible_reactions = []
 		reaction_catalysts = {}
 
-		# Get IDs of reactions that should be removed
-		removed_reaction_ids = {
-			rxn['id'] for rxn in cast(Any, raw_data).metabolic_reactions_removed}
-
 		# Load and parse reaction information from raw_data
 		for reaction in cast(Any, raw_data).metabolic_reactions:
 			reaction_id = reaction["id"]
-
-			# Skip removed reactions
-			if reaction_id in removed_reaction_ids:
-				continue
-
 			stoich = reaction["stoichiometry"]
-			reversible = reaction["is_reversible"]
+			direction = reaction["direction"]
 
 			if len(stoich) <= 1:
 				raise Exception("Invalid biochemical reaction: {}, {}".format(reaction_id, stoich))
 
-			reaction_stoich[reaction_id] = stoich
+			if direction not in valid_directions:
+				raise InvalidReactionDirectionError(
+					f'The direction {direction} given for reaction {reaction_id} is invalid.')
 
+			forward = direction in forward_directions
+			reverse = direction in reverse_directions
+
+			def convert_compartment_tags(met_id):
+				new_met_id = met_id
+
+				for comp_id, comp_abbrev in compartment_ids_to_abbreviations.items():
+					new_met_id = new_met_id.replace(
+						f'[{comp_id}]', f'[{comp_abbrev}]')
+
+				return new_met_id
+
+			# All protein complexes that contain an enzyme subunit are assumed
+			# to retain the enzyme's catalytic activity
 			catalysts_for_this_rxn = []
+			all_potential_catalysts = []
 			for catalyst in reaction["catalyzed_by"]:
-				try:
+				all_potential_catalysts.extend(
+					subunit_id_to_all_downstream_complexes.get(catalyst, [catalyst]))
+
+			for catalyst in list(set(all_potential_catalysts)):
+				if sim_data.getter.is_valid_molecule(catalyst):
 					catalysts_with_loc = catalyst + sim_data.getter.get_compartment_tag(catalyst)
 					catalysts_for_this_rxn.append(catalysts_with_loc)
 				# If we don't have the catalyst in our reconstruction, drop it
-				except KeyError:
+				else:
 					if VERBOSE:
-						print('Skipping catalyst {} for {} since it is not in the model'
-							.format(catalyst, reaction_id))
+						print(
+							'Skipping catalyst {} for {} since it is not in the model'
+							.format(catalyst, reaction_id)
+							)
 
-			if len(catalysts_for_this_rxn) > 0:
-				reaction_catalysts[reaction_id] = catalysts_for_this_rxn
+			if forward:
+				reaction_stoich[reaction_id] = {
+					convert_compartment_tags(moleculeID): stoichCoeff
+					for moleculeID, stoichCoeff in stoich.items()
+					}
+				if len(catalysts_for_this_rxn) > 0:
+					reaction_catalysts[reaction_id] = catalysts_for_this_rxn
 
-			# Add the reverse reaction
-			if reversible:
+			if reverse:
 				reverse_reaction_id = REVERSE_REACTION_ID.format(reaction_id)
 				reaction_stoich[reverse_reaction_id] = {
-					moleculeID: -stoichCoeff
-					for moleculeID, stoichCoeff in six.viewitems(reaction_stoich[reaction_id])
+					convert_compartment_tags(moleculeID): -stoichCoeff
+					for moleculeID, stoichCoeff in stoich.items()
 					}
-
-				reversible_reactions.append(reaction_id)
 				if len(catalysts_for_this_rxn) > 0:
-					reaction_catalysts[reverse_reaction_id] = list(reaction_catalysts[reaction_id])
+					reaction_catalysts[reverse_reaction_id] = list(catalysts_for_this_rxn)
+
+			if forward and reverse:
+				reversible_reactions.append(reaction_id)
 
 		return reaction_stoich, reversible_reactions, reaction_catalysts
 
@@ -1331,6 +1419,7 @@ class Metabolism(object):
 		# Split out reactions that are kinetically constrained and that have
 		# more than one enzyme that catalyzes the reaction
 		for (rxn, enzyme), constraint in constraints.items():
+
 			if n_catalysts[rxn] > 1:
 				# Create new reaction name with enzyme appended to the end
 				if rxn.endswith(REVERSE_TAG):
@@ -1347,6 +1436,7 @@ class Metabolism(object):
 				# Remove enzyme from old reaction and remove old reaction if no
 				# more enzyme catalysts
 				rxn_catalysts[rxn].pop(rxn_catalysts[rxn].index(enzyme))
+
 				if len(rxn_catalysts[rxn]) == 0:
 					stoich.pop(rxn)
 					rxn_catalysts.pop(rxn)
@@ -1510,11 +1600,12 @@ class Metabolism(object):
 
 # Class used to update metabolite concentrations based on the current nutrient conditions
 class ConcentrationUpdates(object):
-	def __init__(self, concDict, relative_changes, equilibriumReactions, exchange_data_dict):
+	def __init__(self, concDict, relative_changes, equilibriumReactions, exchange_data_dict, all_metabolite_ids):
 		self.units = units.getUnit(list(concDict.values())[0])
 		self.default_concentrations_dict = dict((key, concDict[key].asNumber(self.units)) for key in concDict)
 		self.exchange_fluxes = self._exchange_flux_present(exchange_data_dict)
 		self.relative_changes = relative_changes
+		self._all_metabolite_ids = all_metabolite_ids
 
 		# factor of internal amino acid increase if amino acids present in nutrients
 		self.molecule_scale_factors = {
@@ -1544,11 +1635,15 @@ class ConcentrationUpdates(object):
 		self.molecule_set_amounts = self._add_molecule_amounts(equilibriumReactions, self.default_concentrations_dict)
 
 	# return adjustments to concDict based on nutrient conditions
-	def concentrations_based_on_nutrients(self, media_id=None, conversion_units=None):
+	def concentrations_based_on_nutrients(self, media_id=None, imports=None, conversion_units=None):
+		# type: (Optional[str], Optional[Set[str]], Optional[units.Unum]) -> Dict[str, Any]
 		if conversion_units:
 			conversion = self.units.asNumber(conversion_units)
 		else:
 			conversion = self.units
+
+		if imports is None and media_id is not None:
+			imports = self.exchange_fluxes[media_id]
 
 		concentrationsDict = self.default_concentrations_dict.copy()
 
@@ -1556,7 +1651,7 @@ class ConcentrationUpdates(object):
 		concentrations = conversion * np.array([concentrationsDict[k] for k in metaboliteTargetIds])
 		concDict = dict(zip(metaboliteTargetIds, concentrations))
 
-		if media_id is not None:
+		if imports is not None:
 			# For faster conversions than .asNumber(conversion_units) for each setAmount
 			if conversion_units:
 				conversion_to_no_units = conversion_units.asUnit(self.units)
@@ -1567,11 +1662,9 @@ class ConcentrationUpdates(object):
 					if mol_id in concDict:
 						concDict[mol_id]  *= conc_change
 
-			# Adjust for concentration changes based on presence in media
-			exchanges = self.exchange_fluxes[media_id]
-			for moleculeName, setAmount in six.viewitems(self.molecule_set_amounts):
-				if ((moleculeName in exchanges and (moleculeName[:-3] + "[c]" not in self.molecule_scale_factors or moleculeName == "L-SELENOCYSTEINE[c]"))
-						or (moleculeName in self.molecule_scale_factors and moleculeName[:-3] + "[p]" in exchanges)):
+			for moleculeName, setAmount in self.molecule_set_amounts.items():
+				if ((moleculeName in imports and (moleculeName[:-3] + "[c]" not in self.molecule_scale_factors or moleculeName == "L-SELENOCYSTEINE[c]"))
+						or (moleculeName in self.molecule_scale_factors and moleculeName[:-3] + "[p]" in imports)):
 					if conversion_units:
 						setAmount = (setAmount / conversion_to_no_units).asNumber()
 					concDict[moleculeName] = setAmount
@@ -1582,7 +1675,7 @@ class ConcentrationUpdates(object):
 		# type: (Dict[str, Any]) -> Dict[str, Set[str]]
 		"""
 		Caches the presence of exchanges in each media condition based on
-		exchange_data to set concentrations in concentrationsBasedOnNutrients().
+		exchange_data to set concentrations in concentrations_based_on_nutrients().
 
 		Args:
 			exchange_data: dictionary of exchange data for all media conditions with keys:
@@ -1610,7 +1703,9 @@ class ConcentrationUpdates(object):
 			if len(reaction["stoichiometry"]) != 3:
 				continue
 
-			moleculeName = [x["molecule"] for x in reaction["stoichiometry"] if x["type"] == "metabolite"][0]
+			moleculeName = [
+				mol_id for mol_id in reaction["stoichiometry"].keys()
+				if mol_id in self._all_metabolite_ids][0]
 			amountToSet = 1e-4
 			moleculeSetAmounts[moleculeName + "[p]"] = amountToSet * self.units
 			moleculeSetAmounts[moleculeName + "[c]"] = amountToSet * self.units

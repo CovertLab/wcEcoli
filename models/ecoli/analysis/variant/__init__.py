@@ -4,14 +4,16 @@ from __future__ import absolute_import, division, print_function
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
 	"adder_sizer.py",
+	"cell_growth.py",
 	"doubling_time_histogram.py",
-	"param_sensitivity.py",
-	"meneSensitivity.py",
-	"growth_condition_comparison_validation.py",
 	"growthConditionComparison.py",
+	"growth_condition_comparison_validation.py",
 	"massFractionSummary.py",
+	"meneSensitivity.py",
 	"metabolism_kinetic_objective_weight.py",
 	"metabolism_secretion_penalty.py",
+	"param_sensitivity.py",
+	"remove_aa_inhibition.py",
 	"tfFit.py",
 	"tfFitComparison.py",
 	"time_step.py",
@@ -28,5 +30,34 @@ TAGS = {
 		"meneSensitivity.py",
 		"param_sensitivity.py",
 		"growth_condition_comparison_validation.py",
+		],
+	'VALIDATION': [
+		'cell_growth.py',
+		],
+	# Variant analyses to run with a specific simulation variant (key)
+	'ADD_ONE_AA': [
+		'cell_growth.py',
+		],
+	'METABOLISM_KINETIC_OBJECTIVE_WEIGHT': [
+		'metabolism_kinetic_objective_weight.py',
+		],
+	'METABOLISM_SECRETION_PENALTY': [
+		'metabolism_secretion_penalty.py',
+		],
+	'PARAM_SENSITIVITY': [
+		'param_sensitivity.py',
+		],
+	'REMOVE_AA_INHIBITION': [
+		'remove_aa_inhibition.py',
+		],
+	'REMOVE_ONE_AA': [
+		'cell_growth.py',
+		],
+	'TF_ACTIVITY': [
+		'tfFit.py',
+		'tfFitComparison.py',
+		],
+	'TIME_STEP': [
+		'time_step.py',
 		],
 	}
