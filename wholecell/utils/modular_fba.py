@@ -243,6 +243,7 @@ class FluxBalanceAnalysis(object):
 
 		# Keep track of homeostatic targets, empty if not used
 		self._homeostaticTargetMolecules = set()
+		self._homeostatic_range_molecules = set()
 
 		# Call indivdual initialization methods
 		self._initReactionNetwork(self.reactionStoich)
@@ -634,28 +635,43 @@ class FluxBalanceAnalysis(object):
 					)
 
 				# TODO: add these as parameters for the FBA initialization
-				upper_range = 0.05  # fraction of target allowed higher
-				lower_range = 0.05  # fraction of taret allowed lower
-				range_weight = 0.01  # fraction of weight for inside range vs out
+				# TODO: adjust upper range at each time step to limit to max growth rate
+				upper_range = 0.001  # fraction of target allowed higher
+				lower_range = 0.001  # fraction of taret allowed lower
+				range_weight = 0.00001  # fraction of weight for inside range vs out
 
-				# Allow consumption of kinetic objective equivalent at lower objective
-				# weight within target range (above average)
+				# # TODO: have these passed in or consider allowing all metabolites to vary
+				# if moleculeID in ['L-ALPHA-ALANINE[c]', 'ARG[c]', 'ASN[c]', 'L-ASPARTATE[c]', 'CYS[c]', 'GLT[c]', 'GLN[c]', 'GLY[c]', 'HIS[c]', 'ILE[c]', 'LEU[c]', 'LYS[c]', 'MET[c]', 'PHE[c]', 'PRO[c]', 'SER[c]', 'THR[c]', 'TRP[c]', 'TYR[c]', 'L-SELENOCYSTEINE[c]', 'VAL[c]']:
+				self._homeostatic_range_molecules.add(moleculeID)
 				upper_range_flux = self._generatedID_high_target_range + moleculeID
 				self._solver.setFlowMaterialCoeff(
 					upper_range_flux,
 					objectiveEquivID,
 					-1,
 					)
-				# Set limits to 0, if a target range is set, the upper bound will vary from 0
-				self._solver.setFlowBounds(
-					upper_range_flux,
-					lowerBound=0,
-					upperBound=upper_range,
-					)
-				self._solver.setFlowObjectiveCoeff(
-					upper_range_flux,
-					self.homeostaticObjectiveWeight * range_weight,
-					)
+				self.set_range_homeostatic(moleculeID, upper_range, range_weight)
+
+	# TODO: move this elsewhere
+	# TODO: document
+	# TODO: change default values
+	# TODO: add option for vectorization
+	def set_range_homeostatic(self, molecule, upper_range, weight):
+		# Allow consumption of kinetic objective equivalent at lower objective
+		# weight within target range (above average)
+		upper_range_flux = self._generatedID_high_target_range + molecule
+		# Set limits to 0, if a target range is set, the upper bound will vary from 0
+		self._solver.setFlowBounds(
+			upper_range_flux,
+			lowerBound=0,
+			upperBound=upper_range,
+			)
+		self._solver.setFlowObjectiveCoeff(
+			upper_range_flux,
+			self.homeostaticObjectiveWeight * weight,
+			)
+
+	def get_homeostatic_range_molecules(self):
+		return tuple(self._homeostatic_range_molecules)
 
 	def _initObjectiveRangeHomeostatic(self, objective, objectiveParameters):
 		""" Homeostatic FBA with a range of acceptable values. The objective is

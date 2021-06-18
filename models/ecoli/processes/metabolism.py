@@ -180,6 +180,11 @@ class Metabolism(wholecell.processes.process.Process):
 		targets, upper_targets, lower_targets = self.model.set_reaction_targets(kinetic_enzyme_counts,
 			kinetic_substrate_counts, counts_to_molar, time_step)
 
+		upper_range = np.log(2) / 20 / 60 * self.timeStepSec()
+		for m in self.model.fba.get_homeostatic_range_molecules():
+			weight = max(0, (conc_updates.get(m, 0) - self.model.homeostatic_objective[m]) / self.model.homeostatic_objective[m])
+			self.model.fba.set_range_homeostatic(m, upper_range, weight)
+
 		# Solve FBA problem and update states
 		n_retries = 3
 		fba = self.model.fba
