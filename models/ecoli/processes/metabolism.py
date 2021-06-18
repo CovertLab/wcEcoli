@@ -152,6 +152,7 @@ class Metabolism(wholecell.processes.process.Process):
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
 		conc_updates = self.model.getBiomassAsConcentrations(doubling_time)
 
+		# TODO: unify self.updates and self.aa_targets
 		if self.updates is None:
 			# Handle new targets after cell division
 			self.updates = {
@@ -159,13 +160,8 @@ class Metabolism(wholecell.processes.process.Process):
 				for m, counts in zip(self.model.metaboliteNamesFromNutrients, self.metabolites.total_counts())}
 		for m, update in self.updates.items():
 			conc_updates[m] = update
-
-		# TODO: remove this or use the diffs
-		# for m, diff in self.update_diff.items():
-			# if m in conc_updates and m != 'S-ADENOSYLMETHIONINE[c]':
-			# 	conc_updates[m] += diff
-			# else:
-			# 	conc_updates[m] = self.updates[m]
+			if m in self.aa_targets:
+				self.aa_targets[m] = (update / counts_to_molar).asNumber()
 
 		if self.use_trna_charging:
 			conc_updates.update(self.update_amino_acid_targets(counts_to_molar))
@@ -214,7 +210,6 @@ class Metabolism(wholecell.processes.process.Process):
 		self.metabolites.countsIs(metabolite_counts_final)
 
 		for count, m in zip(metabolite_counts_final, self.model.metaboliteNamesFromNutrients):
-			self.update_diff[m] = counts_to_molar * count - CONC_UNITS * self.model.homeostatic_objective[m]
 			self.updates[m] = counts_to_molar * count
 
 		## Environmental changes
