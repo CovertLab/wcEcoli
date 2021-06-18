@@ -140,7 +140,7 @@ class GetterFunctions(object):
 		return sorted(self._all_submass_arrays.keys() & self._all_compartments.keys())
 
 	def get_genomic_coordinates(self, site_id):
-		# type: (str) -> Tuple[int]
+		# type: (str) -> Tuple[int, int]
 		"""
 		Returns the genomic coordinates of the left and right ends of a DNA site
 		given the ID of the site.
