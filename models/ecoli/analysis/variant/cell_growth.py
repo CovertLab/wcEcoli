@@ -19,6 +19,33 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 
+def plot_validation(mean, std, labels, val_rates, val_std, val_aa_ids, label, text):
+	# Normalize simulation data by the control condition
+	rate_mapping = {label: rate for label, rate in zip(labels, mean)}
+	std_mapping = {label: std for label, std in zip(labels, std)}
+	control_label = 'L-SELENOCYSTEINE'  # control because SEL is already included for uptake in minimal media
+	wcm_control = rate_mapping.get(control_label, 1)
+	wcm_normalized_growth_rates = np.array([
+		rate_mapping.get(aa, 0) / wcm_control
+		for aa in val_aa_ids
+		])
+	wcm_normalized_std = np.array([
+		std_mapping.get(aa, 0) / wcm_control
+		for aa in val_aa_ids
+		])
+
+	# Statistics
+	r, p = pearsonr(val_rates, wcm_normalized_growth_rates)
+	n = len(val_rates)
+
+	plt.errorbar(val_rates, wcm_normalized_growth_rates,
+		xerr=val_std, yerr=wcm_normalized_std, fmt='o', alpha=0.5,
+		label=f'{label} r={r:.2f} (p={p:.2g}, n={n})')
+
+	if text:
+		for aa, x, y in zip(val_aa_ids, val_rates, wcm_normalized_growth_rates):
+			plt.text(x, 0.01 + y, aa, ha='center', fontsize=6)
+
 def remove_border(ax, bottom=False):
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
@@ -108,20 +135,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		val_normalized_growth_rates = np.array(val_normalized_growth_rates)
 		val_normalized_std = np.array(val_normalized_std)
 
-		# Normalize simulation rates by the control condition
-		rate_mapping = {label: rate for label, rate in zip(labels, mean_growth_rates)}
-		std_mapping = {label: std for label, std in zip(labels, std_growth_rates)}
-		control_label = 'L-SELENOCYSTEINE'  # control because SEL is already included for uptake in minimal media
-		wcm_control = rate_mapping.get(control_label, 1)
-		wcm_normalized_growth_rates = np.array([
-			rate_mapping.get(aa, 0) / wcm_control
-			for aa in val_aa_ids
-			])
-		wcm_normalized_std = np.array([
-			std_mapping.get(aa, 0) / wcm_control
-			for aa in val_aa_ids
-			])
-
 		# Create plots
 		plt.figure(figsize=(16, 8))
 		gs = gridspec.GridSpec(4, 2)
@@ -154,25 +167,29 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		## Validation comparison for each amino acid addition
 		## TODO: overlay with elongation rate
 		if metadata.get('variant', '') == 'add_one_aa':
-			# Statistics
-			r, p = pearsonr(val_normalized_growth_rates, wcm_normalized_growth_rates)
-			n = len(val_normalized_growth_rates)
-
 			ax = plt.subplot(gs[:, 1])
-			min_rate = min(val_normalized_growth_rates.min(), wcm_normalized_growth_rates.min())
-			max_rate = max(val_normalized_growth_rates.max(), wcm_normalized_growth_rates.max())
 
-			plt.errorbar(val_normalized_growth_rates, wcm_normalized_growth_rates,
-				xerr=val_normalized_std, yerr=wcm_normalized_std, fmt='o')
-			plt.plot([min_rate, max_rate], [min_rate, max_rate], '--k')
-			for aa, x, y in zip(val_aa_ids, val_normalized_growth_rates, wcm_normalized_growth_rates):
-				plt.text(x, 0.01 + y, aa, ha='center', fontsize=6)
+			# Plot datasets to compare against validation
+			plot_validation(mean_growth_rates, std_growth_rates, labels,
+				val_normalized_growth_rates, val_normalized_std, val_aa_ids,
+				'Growth rate', text=True)
+			plot_validation(mean_elong_rates, std_elong_rates, labels,
+				val_normalized_growth_rates, val_normalized_std, val_aa_ids,
+				'Elong rate', text=False)
 
+			# Plot formatting
+			plt.legend(fontsize=8)
 			remove_border(ax)
 			ax.tick_params(axis='x', labelsize=6)
 			plt.xlabel('Validation growth rate\n(Normalized to minimal media)')
-			plt.ylabel('Simulation growth rate\n(Normalized to minimal media)')
-			plt.title(f'Growth comparison to validation data\nr={r:.2f} (p={p:.2g}, n={n})', fontsize=8)
+			plt.ylabel('Simulation data\n(Normalized to minimal media)')
+
+			# Plot y=x diagonal
+			x_min, x_max = plt.xlim()
+			y_min, y_max = plt.ylim()
+			min_rate = min(x_min, y_min)
+			max_rate = max(x_max, y_max)
+			plt.plot([min_rate, max_rate], [min_rate, max_rate], '--k')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
