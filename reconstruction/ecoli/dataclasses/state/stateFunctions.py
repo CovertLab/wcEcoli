@@ -15,7 +15,7 @@ def addToStateCommon(bulkState, ids, masses):
 	newAddition = np.zeros(
 		len(ids),
 		dtype = [
-			("id", "U300"),
+			("id", "U50"),
 			("mass", "{}f8".format(mass_size)),
 			]
 		)
@@ -24,8 +24,5 @@ def addToStateCommon(bulkState, ids, masses):
 
 	newAddition["id"] = ids
 	newAddition["mass"] = masses.asNumber()
-	try:
-		np.hstack((bulkState.fullArray(), newAddition))
-	except:
-		import pdb; pdb.set_trace()
+
 	return UnitStructArray(np.hstack((bulkState.fullArray(), newAddition)), bulkState.units)

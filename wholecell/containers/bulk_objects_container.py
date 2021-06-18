@@ -169,6 +169,7 @@ class BulkObjectsContainer(object):
 
 		if names is None:
 			self._counts[:] = values
+
 		else:
 			self._counts[self._namesToIndexes(names)] = values
 

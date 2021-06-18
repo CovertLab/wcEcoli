@@ -45,8 +45,9 @@ with io.open(DEG_RATES, "rb") as csvfile:
 raw_data = KnowledgeBaseEcoli()  # type: Any
 
 modelRates = {}
-paperRates = {}# type: Dict[str, Union[int, float]]
-for rna in raw_data.operon_rnas:
+paperRates = {}  # type: Dict[str, Union[int, float]]
+
+for rna in raw_data.rnas:
 	geneID = rna["geneId"]
 	modelRates[geneID] = 60. / rna["halfLife"]
 	paperRates[geneID] = 0

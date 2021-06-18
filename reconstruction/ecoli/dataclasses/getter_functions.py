@@ -296,9 +296,7 @@ class GetterFunctions(object):
 			rna['id'] for rna in raw_data.rnas if rna['id'] in self._sequences]
 
 		# Get RNA nucleotide compositions
-
 		rna_seqs = self.get_sequences(rnas_with_seqs)
-
 		nt_counts = []
 		for seq in rna_seqs:
 			nt_counts.append([
@@ -312,6 +310,7 @@ class GetterFunctions(object):
 			self._all_submass_arrays[met_id[:-3]].sum()
 			for met_id in sim_data.molecule_groups.polymerized_ntps
 			])
+
 		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
 
 		rna_id_to_type = {

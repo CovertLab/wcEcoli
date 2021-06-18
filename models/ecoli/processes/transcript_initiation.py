@@ -91,7 +91,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.rnaSynthProbRProtein = sim_data.process.transcription.rnaSynthProbRProtein
 		self.rnaSynthProbRnaPolymerase = sim_data.process.transcription.rnaSynthProbRnaPolymerase
 
-
 		# Coordinates and transcription directions of transcription units
 		self.replication_coordinate = sim_data.process.transcription.rna_data[
 			"replication_coordinate"]
@@ -105,6 +104,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.synth_prob = sim_data.process.transcription.synth_prob_from_ppgpp
 		self.copy_number = sim_data.process.replication.get_average_copy_number
 		self.ppgpp_regulation = sim._ppgpp_regulation
+
 
 	def calculateRequest(self):
 		# Get all inactive RNA polymerases

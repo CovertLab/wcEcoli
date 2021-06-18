@@ -171,6 +171,7 @@ class JsonReader(object):
 
 			try:
 				value = json.loads(raw_value) if raw_value else ""
+
 			except (ValueError, TypeError) as e:
 				repr(e)  # TODO(jerry): Why call repr() and discard the result?
 				raise ValueError("failed to parse json string:{}".format(raw_value))

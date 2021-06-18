@@ -29,7 +29,6 @@ STDOUT_PATH = '>'    # special path that captures stdout + stderror
 LOG_OUT_PATH = '>>'  # special path for a fuller log; written even on task failure
 
 STORAGE_ROOT_ENV_VAR = 'WORKFLOW_STORAGE_ROOT'
-#STORAGE_ROOT_ENV_VAR = 'sisyphus-mialydefelice'
 
 # The MongoDB service must be reachable at the host:port named in the LaunchPad
 # file, either directly or via an ssh port forwarding tunnel like

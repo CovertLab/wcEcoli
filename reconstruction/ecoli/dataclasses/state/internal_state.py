@@ -31,11 +31,11 @@ class InternalState(object):
 		Add data (IDs and mass) for all classes of bulk molecules.
 		"""
 		all_bulk_molecule_ids = sim_data.getter.get_all_valid_molecules()
+
 		all_bulk_molecule_ids_with_compartments, all_bulk_molecule_masses = self._build_bulk_molecule_specs(
 			sim_data, all_bulk_molecule_ids)
 		self.bulk_molecules.add_to_bulk_state(
 			all_bulk_molecule_ids_with_compartments, all_bulk_molecule_masses)
-
 		sim_data.molecule_groups.bulk_molecules_binomial_division.extend(
 			all_bulk_molecule_ids_with_compartments)
 
@@ -153,7 +153,6 @@ class InternalState(object):
 		# mRNA, in number of bases from the transcription start site
 		# TODO: This is a bad hack that works because in the parca
 		# I have forced expression to be these subunits only
-
 		ribosome_30S_mass = bulk_molecule_id_to_mass[sim_data.molecule_ids.s30_full_complex]
 		ribosome_50S_mass = bulk_molecule_id_to_mass[sim_data.molecule_ids.s50_full_complex]
 		ribosome_mass = ribosome_30S_mass + ribosome_50S_mass

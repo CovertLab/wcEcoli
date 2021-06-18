@@ -1,9 +1,0 @@
-logdir: null
-host: localhost
-name: mialy
-username: null
-password: null
-port: 27017
-strm_lvl: INFO
-user_indices: []
-wf_user_indices: []
