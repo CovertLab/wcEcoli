@@ -40,11 +40,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		variant_lengths = []
 		variant_counts = []
-		variant_rates = []
+		variant_growth_rates = []
+		variant_elong_rates = []
 		labels = []
 		for variant in variants:
 			lengths = []
-			rates = []
+			growth_rates = []
+			elong_rates = []
 			count = 0
 			for sim_dir in ap.get_cells(variant=[variant]):
 				try:
@@ -53,14 +55,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					# Listeners used
 					main_reader = TableReader(os.path.join(sim_out_dir, 'Main'))
 					mass_reader = TableReader(os.path.join(sim_out_dir, 'Mass'))
+					ribosome_reader = TableReader(os.path.join(sim_out_dir, 'RibosomeData'))
 
 					# Load data
 					time = main_reader.readColumn('time')
 					cycle_length = time[-1] - time[0]
 					growth_rate = mass_reader.readColumn('instantaneous_growth_rate')[1:].mean()
+					elong_rate = ribosome_reader.readColumn('effectiveElongationRate')[1:].mean()
 				except Exception:
 					cycle_length = 0
 					growth_rate = 0
+					elong_rate = 0
 
 				# Filter out cell cycle lengths that are too short (likely failed)
 				# TODO: better way to test for failure
@@ -70,18 +75,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				else:
 					lengths.append(cycle_length / 60)
 					count += 1
-				rates.append(growth_rate)
+				growth_rates.append(growth_rate)
+				elong_rates.append(elong_rate)
 
 			variant_lengths.append(lengths)
 			variant_counts.append(count)
-			variant_rates.append(rates)
+			variant_growth_rates.append(growth_rates)
+			variant_elong_rates.append(elong_rates)
 			labels.append(sim_data.molecule_groups.amino_acids[variant][:-3])
 
 		all_lengths = np.vstack(variant_lengths)
 		mean_lengths = np.array([np.mean(row[np.isfinite(row) & (row > 0)]) for row in all_lengths])
-		all_rates = np.vstack(variant_rates) * 3600
-		mean_rates = all_rates.mean(axis=1)
-		std_rates = all_rates.std(axis=1)
+		all_growth_rates = np.vstack(variant_growth_rates) * 3600
+		mean_growth_rates = all_growth_rates.mean(axis=1)
+		std_growth_rates = all_growth_rates.std(axis=1)
+		all_elong_rates = np.vstack(variant_elong_rates)
+		mean_elong_rates = all_elong_rates.mean(axis=1)
+		std_elong_rates = all_elong_rates.std(axis=1)
 
 		# Load validation growth rates
 		all_aa_ids = {aa[:-3] for aa in sim_data.molecule_groups.amino_acids}
@@ -99,8 +109,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		val_normalized_std = np.array(val_normalized_std)
 
 		# Normalize simulation rates by the control condition
-		rate_mapping = {label: rate for label, rate in zip(labels, mean_rates)}
-		std_mapping = {label: std for label, std in zip(labels, std_rates)}
+		rate_mapping = {label: rate for label, rate in zip(labels, mean_growth_rates)}
+		std_mapping = {label: std for label, std in zip(labels, std_growth_rates)}
 		control_label = 'L-SELENOCYSTEINE'  # control because SEL is already included for uptake in minimal media
 		wcm_control = rate_mapping.get(control_label, 1)
 		wcm_normalized_growth_rates = np.array([
@@ -114,7 +124,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Create plots
 		plt.figure(figsize=(16, 8))
-		gs = gridspec.GridSpec(3, 2)
+		gs = gridspec.GridSpec(4, 2)
 
 		## Bar plot of cell cycle lengths
 		ax = plt.subplot(gs[0, 0])
@@ -124,18 +134,25 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		## Bar plot of growth rates
 		ax = plt.subplot(gs[1, 0])
-		plt.bar(variants, mean_rates, yerr=std_rates)
+		plt.bar(variants, mean_growth_rates, yerr=std_growth_rates)
 		plt.ylabel('Average growth rate (1/hr)', fontsize=8)
 		remove_border(ax, bottom=True)
 
-		## Bar plot of valid simulations
+		## Bar plot of elongation rates
 		ax = plt.subplot(gs[2, 0])
+		plt.bar(variants, mean_elong_rates, yerr=std_elong_rates)
+		plt.ylabel('Average elongation rate (AA/s)', fontsize=8)
+		remove_border(ax, bottom=True)
+
+		## Bar plot of valid simulations
+		ax = plt.subplot(gs[3, 0])
 		plt.bar(variants, variant_counts)
 		plt.ylabel('Number of variants', fontsize=8)
 		plt.xticks(variants, labels, rotation=45, fontsize=6, ha='right')
 		remove_border(ax)
 
 		## Validation comparison for each amino acid addition
+		## TODO: overlay with elongation rate
 		if metadata.get('variant', '') == 'add_one_aa':
 			# Statistics
 			r, p = pearsonr(val_normalized_growth_rates, wcm_normalized_growth_rates)
