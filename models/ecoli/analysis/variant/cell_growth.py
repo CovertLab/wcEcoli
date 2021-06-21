@@ -104,11 +104,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					elong_rate = ribosome_reader.readColumn('effectiveElongationRate')[1:].mean()
 					ex_molecules = fba_results.readAttribute('externalMoleculeIDs')
 					if 'GLC[p]' in ex_molecules:
-						growth = GROWTH_UNITS * mass_reader.readColumn('growth') / main_reader.readColumn('timeStepSec')
-						dry_mass = MASS_UNITS * mass_reader.readColumn('dryMass')
 						glc_idx = ex_molecules.index(GLC_ID)
 						glc_flux = FLUX_UNITS * -fba_results.readColumn('externalExchangeFluxes')[:, glc_idx]
-						yields = units.strip_empty_units(growth / (glc_flux * glc_mw * dry_mass))
+						yields = 1 / glc_flux.asNumber()
+
+						# The above is not a true yield but useful for comparison until uptake problems are fixed
+						# The commented code below will be a better yield measure (g cell / g glc) in the future
+						# growth = GROWTH_UNITS * mass_reader.readColumn('growth') / main_reader.readColumn('timeStepSec')
+						# dry_mass = MASS_UNITS * mass_reader.readColumn('dryMass')
+						# yields = units.strip_empty_units(growth / (glc_flux * glc_mw * dry_mass))
+
 						glc_yield = yields[np.isfinite(yields)].mean()
 				except Exception:
 					cycle_length = 0
@@ -186,7 +191,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		## Bar plot of glucose yield
 		ax = plt.subplot(gs[3, 0])
 		plt.bar(variants, mean_glc_yields, yerr=std_glc_yields)
-		plt.ylabel('Glc yield (g cell / g glc)', fontsize=8)
+		plt.ylabel('Glc yield (1 / uptake)', fontsize=8)
 		remove_border(ax, bottom=True)
 
 		## Bar plot of valid simulations
@@ -197,7 +202,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		remove_border(ax)
 
 		## Validation comparison for each amino acid addition
-		## TODO: overlay with elongation rate
 		if metadata.get('variant', '') == 'add_one_aa':
 			ax = plt.subplot(gs[:, 1:])
 
