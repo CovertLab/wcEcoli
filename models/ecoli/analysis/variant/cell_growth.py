@@ -19,6 +19,12 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 
+GLC_ID = 'GLC[p]'
+FLUX_UNITS = units.mmol / units.g / units.h
+MASS_UNITS = units.fg
+GROWTH_UNITS = MASS_UNITS / units.s
+
+
 def plot_validation(mean, std, labels, val_rates, val_std, val_aa_ids, label, text):
 	# Normalize simulation data by the control condition
 	rate_mapping = {label: rate for label, rate in zip(labels, mean)}
@@ -65,6 +71,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		with open(validationDataFile, 'rb') as f:
 			validation_data = pickle.load(f)
 
+		aa_ids = sim_data.molecule_groups.amino_acids
+		glc_mw = sim_data.getter.get_mass(GLC_ID)
+
 		variant_lengths = []
 		variant_counts = []
 		variant_growth_rates = []
@@ -95,10 +104,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					elong_rate = ribosome_reader.readColumn('effectiveElongationRate')[1:].mean()
 					ex_molecules = fba_results.readAttribute('externalMoleculeIDs')
 					if 'GLC[p]' in ex_molecules:
-						growth = mass_reader.readColumn("growth") / main_reader.readColumn('timeStepSec')
-						glc_idx = ex_molecules.index('GLC[p]')
-						glc_flux = -fba_results.readColumn('externalExchangeFluxes')[:, glc_idx]
-						glc_yield = (growth / glc_flux)[1:].mean()
+						growth = GROWTH_UNITS * mass_reader.readColumn('growth') / main_reader.readColumn('timeStepSec')
+						dry_mass = MASS_UNITS * mass_reader.readColumn('dryMass')
+						glc_idx = ex_molecules.index(GLC_ID)
+						glc_flux = FLUX_UNITS * -fba_results.readColumn('externalExchangeFluxes')[:, glc_idx]
+						yields = units.strip_empty_units(growth / (glc_flux * glc_mw * dry_mass))
+						glc_yield = yields[np.isfinite(yields)].mean()
 				except Exception:
 					cycle_length = 0
 					growth_rate = 0
@@ -121,7 +132,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			variant_growth_rates.append(growth_rates)
 			variant_elong_rates.append(elong_rates)
 			variant_glc_yields.append(glc_yields)
-			labels.append(sim_data.molecule_groups.amino_acids[variant][:-3])
+			labels.append(aa_ids[variant][:-3])
 
 		all_lengths = np.vstack(variant_lengths)
 		mean_lengths = np.array([np.mean(row[np.isfinite(row) & (row > 0)]) for row in all_lengths])
@@ -136,7 +147,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		std_glc_yields = all_glc_yields.std(axis=1)
 
 		# Load validation growth rates
-		all_aa_ids = {aa[:-3] for aa in sim_data.molecule_groups.amino_acids}
+		all_aa_ids = {aa[:-3] for aa in aa_ids}
 		val_control = validation_data.amino_acid_growth_rates['minimal']['mean']
 		val_aa_ids = []
 		val_normalized_growth_rates = []
@@ -175,7 +186,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		## Bar plot of glucose yield
 		ax = plt.subplot(gs[3, 0])
 		plt.bar(variants, mean_glc_yields, yerr=std_glc_yields)
-		plt.ylabel('Average elongation rate (AA/s)', fontsize=8)
+		plt.ylabel('Glc yield (g cell / g glc)', fontsize=8)
 		remove_border(ax, bottom=True)
 
 		## Bar plot of valid simulations
@@ -199,7 +210,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'Elong rate', text=False)
 			plot_validation(mean_glc_yields, std_glc_yields, labels,
 				val_normalized_growth_rates, val_normalized_std, val_aa_ids,
-				'Elong rate', text=False)
+				'Glc yield', text=False)
 
 			# Plot formatting
 			plt.legend(fontsize=8)
