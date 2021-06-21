@@ -311,8 +311,12 @@ class Transcription(object):
 		direction_list = [gene["direction"] for gene in raw_data.genes]
 
 		# Get coordinates of oriC and terC
-		oric_coordinate = sim_data.constants.oriC_center.asNumber()
-		terc_coordinate = sim_data.constants.terC_center.asNumber()
+		oric_left, oric_right = sim_data.getter.get_genomic_coordinates(
+			sim_data.molecule_ids.oriC_site)
+		terc_left, terc_right = sim_data.getter.get_genomic_coordinates(
+			sim_data.molecule_ids.terC_site)
+		oric_coordinate = round((oric_left + oric_right)/2)
+		terc_coordinate = round((terc_left + terc_right)/2)
 		genome_length = len(raw_data.genome_sequence)
 
 		def get_relative_coordinates(coordinates):
@@ -540,19 +544,11 @@ class Transcription(object):
 		synthetase_names = []
 		synthetase_mapping_aa = []
 		synthetase_mapping_syn = []
-
-		# Get IDs of charging reactions that should be removed
-		removed_reaction_ids = {
-			rxn['id'] for rxn in raw_data.trna_charging_reactions_removed}
-
 		# Get IDs of all metabolites
 		metabolite_ids = {met['id'] for met in raw_data.metabolites}
 
 		# Create stoichiometry matrix for charging reactions
 		for reaction in raw_data.trna_charging_reactions:
-			if reaction['id'] in removed_reaction_ids:
-				continue
-
 			# Get uncharged tRNA name for the given reaction
 			trna = None
 			for mol_id in reaction['stoichiometry'].keys():

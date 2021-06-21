@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import itertools
 import re
-from typing import Any, List, Union
+from typing import Any, List, Union, Tuple
 
 from Bio.Seq import Seq
 import numpy as np
@@ -32,6 +32,12 @@ UNDEFINED_COMPARTMENT_IDS_TO_ABBREVS = {
 	'CCO-RIBOSOME': 'c',
 }
 
+IGNORED_DNA_SITE_TYPES = {
+	'dna-binding-site',
+	'phage-attachment-site',
+	'rep-element',
+	}
+
 class GeneDirectionError(Exception):
 	pass
 
@@ -55,6 +61,7 @@ class GetterFunctions(object):
 		self._build_sequences(raw_data)
 		self._build_all_masses(raw_data, sim_data)
 		self._build_compartments(raw_data, sim_data)
+		self._build_genomic_coordinates(raw_data)
 
 	def get_sequences(self, ids):
 		# type: (Union[List[str], np.ndarray]) -> List[str]
@@ -131,6 +138,15 @@ class GetterFunctions(object):
 		compartments.
 		"""
 		return sorted(self._all_submass_arrays.keys() & self._all_compartments.keys())
+
+	def get_genomic_coordinates(self, site_id):
+		# type: (str) -> Tuple[int, int]
+		"""
+		Returns the genomic coordinates of the left and right ends of a DNA site
+		given the ID of the site.
+		"""
+		assert isinstance(site_id, str)
+		return self._all_genomic_coordinates[site_id]
 
 	def _build_sequences(self, raw_data):
 		"""
@@ -397,17 +413,8 @@ class GetterFunctions(object):
 			modified_rna_id for rna in raw_data.rnas
 			for modified_rna_id in rna['modified_forms']}
 
-		# Get IDs of charging reactions that should be removed
-		removed_charging_reaction_ids = {
-			rxn['id'] for rxn in raw_data.trna_charging_reactions_removed
-			}
-
 		# Loop through each charging reaction
 		for rxn in raw_data.trna_charging_reactions:
-			# Skip removed reactions
-			if rxn['id'] in removed_charging_reaction_ids:
-				continue
-
 			# Find molecule IDs whose masses are still unknown
 			unknown_mol_ids = [
 				mol_id for mol_id in rxn['stoichiometry'].keys()
@@ -446,21 +453,11 @@ class GetterFunctions(object):
 		"""
 		protein_complex_masses = {}
 
-		# Get IDs of complexation/equilibrium reactions that should be removed
-		removed_reaction_ids = {
-			rxn['id'] for rxn in itertools.chain(
-				raw_data.complexation_reactions_removed,
-				raw_data.equilibrium_reactions_removed)
-			}
-
 		# Build mapping from complex ID to its subunit stoichiometry
 		complex_id_to_stoich = {}
 
 		for rxn in itertools.chain(
 				raw_data.complexation_reactions, raw_data.equilibrium_reactions):
-			# Skip removed reactions
-			if rxn['id'] in removed_reaction_ids:
-				continue
 
 			# Get the ID of the complex and the stoichiometry of subunits
 			complex_ids = []
@@ -621,23 +618,12 @@ class GetterFunctions(object):
 		protein_complex_compartments = {}
 		metabolite_ids = {met['id'] for met in raw_data.metabolites}
 
-		# Get IDs of complexation/equilibrium reactions that should be removed
-		removed_reaction_ids = {
-			rxn['id'] for rxn in itertools.chain(
-				raw_data.complexation_reactions_removed,
-				raw_data.equilibrium_reactions_removed)
-			}
-
 		# Build mapping from complex ID to its subunit IDs
 		complex_id_to_subunit_ids = {}
 
 		for rxn in itertools.chain(
 				raw_data.complexation_reactions,
 				raw_data.equilibrium_reactions):
-			# Skip removed reactions
-			if rxn['id'] in removed_reaction_ids:
-				continue
-
 			# Get the ID of the complex and the stoichiometry of subunits
 			complex_id = None
 			subunit_ids = []
@@ -692,3 +678,16 @@ class GetterFunctions(object):
 				{complex_id: get_compartment(complex_id)})
 
 		return protein_complex_compartments
+
+	def _build_genomic_coordinates(self, raw_data):
+		"""
+		Builds a dictionary of genomic coordinates of DNA sites. Keys are the
+		IDs of the sites, and the values are tuples of the left-end coordinate
+		and the right-end coordinate of the site. Sites whose types are included
+		in IGNORED_DNA_SITE_TYPES are ignored.
+		"""
+		self._all_genomic_coordinates = {
+			site['id']: (site['left_end_pos'], site['right_end_pos'])
+			for site in raw_data.dna_sites
+			if site['type'] not in IGNORED_DNA_SITE_TYPES
+			}
