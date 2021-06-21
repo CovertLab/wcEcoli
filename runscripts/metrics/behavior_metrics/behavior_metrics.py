@@ -112,7 +112,7 @@ def find_indices_bulk(to_search, targets):
 	Returns:
 		The indices.
 	"""
-	return np.array([to_search.index(elem) for elem in targets], np.int)
+	return np.array([to_search.index(elem) for elem in targets], int)
 
 
 def np_pick(array, pick_spec):
