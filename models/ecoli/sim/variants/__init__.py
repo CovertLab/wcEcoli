@@ -1,4 +1,5 @@
 from .add_one_aa import add_one_aa
+from .add_one_aa_shift import add_one_aa_shift
 from .all_shuffle_params import all_shuffle_params
 from .condition import condition
 from .gene_knockout import gene_knockout
@@ -21,6 +22,7 @@ from .wildtype import wildtype
 
 nameToFunctionMapping = {
 	"add_one_aa": add_one_aa,
+	"add_one_aa_shift": add_one_aa_shift,
 	"all_shuffle_params": all_shuffle_params,
 	"condition": condition,
 	"gene_knockout": gene_knockout,

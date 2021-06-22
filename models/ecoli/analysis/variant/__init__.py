@@ -38,6 +38,9 @@ TAGS = {
 	'ADD_ONE_AA': [
 		'cell_growth.py',
 		],
+	'ADD_ONE_AA_SHIFT': [
+		'cell_growth.py',
+		],
 	'METABOLISM_KINETIC_OBJECTIVE_WEIGHT': [
 		'metabolism_kinetic_objective_weight.py',
 		],
