@@ -56,6 +56,9 @@ TAGS = {
 	'REMOVE_ONE_AA': [
 		'cell_growth.py',
 		],
+	'REMOVE_ONE_AA_SHIFT': [
+		'cell_growth.py',
+		],
 	'TF_ACTIVITY': [
 		'tfFit.py',
 		'tfFitComparison.py',
