@@ -21,14 +21,12 @@ Expected variant indices (dependent on order of sim_data.moleculeGroups.aaIDs):
 	19: control (adding L-selenocysteine which is already required in media)
 """
 
-import numpy as np
-
 
 SHIFT_TIME = 600  # 10 minutes
 
 
 def remove_one_aa_shift(sim_data, index):
-	# Remove one amino acid to the media
+	# Remove one amino acid from the media
 	condition_label = 'with_aa'
 	sim_data.condition = condition_label
 	base_media_id = 'minimal_plus_amino_acids'
@@ -48,7 +46,7 @@ def remove_one_aa_shift(sim_data, index):
 		new_media[aa] = 0
 		sim_data.external_state.saved_media[new_media_id] = new_media
 
-		# Create timeline to shift media at 20 minutes
+		# Create timeline to shift media at 10 minutes
 		sim_data.external_state.current_timeline_id = new_media_id
 		sim_data.external_state.saved_timelines[new_media_id] = [
 			(0, base_media_id), (SHIFT_TIME, new_media_id)

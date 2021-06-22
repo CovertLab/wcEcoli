@@ -35,7 +35,7 @@ def add_one_aa_shift(sim_data, index):
 	new_media[aa] = np.inf
 	sim_data.external_state.saved_media[new_media_id] = new_media
 
-	# Create timeline to shift media at 20 minutes
+	# Create timeline to shift media at 10 minutes
 	sim_data.external_state.current_timeline_id = new_media_id
 	sim_data.external_state.saved_timelines[new_media_id] = [
 		(0, base_media_id), (SHIFT_TIME, new_media_id)
