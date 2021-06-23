@@ -651,11 +651,16 @@ class Metabolism(object):
 				aa_enzymes to amino acids (n enzymes, m amino acids).  Will
 				contain a 1 if the enzyme associated with the row can catalyze
 				the pathway for the amino acid associated with the column
-			aa_supply_balance (np.ndarray[float]): relationship mapping from
+			aa_forward_stoich (np.ndarray[float]): relationship mapping from
 				upstream amino acids to downstream amino acids (n upstream,
 				m downstream).  Will contain a -1 if the amino acid associated
 				with the row is required for synthesis of the amino acid
 				associated with the column
+			aa_reverse_stoich (np.ndarray[float]): relationship mapping from
+				upstream amino acids to downstream amino acids (n downstream,
+				m upstream).  Will contain a -1 if the amino acid associated
+				with the row is produced through a reverse reaction from
+				the amino acid associated with the column
 			specific_import_rates (np.ndarray[float]): import rates expected
 				in rich media conditions for each amino acid normalized by dry
 				cell mass in units of K_CAT_UNITS / DRY_MASS_UNITS,
@@ -693,6 +698,7 @@ class Metabolism(object):
 		upstream_aas_for_km = []
 		upstream_aas = []
 		downstream_aas = []
+		reverse_aas = []
 		aa_upstream_kms = []
 		aa_reverse_kms = []
 		aa_degradation_kms = []
@@ -765,6 +771,7 @@ class Metabolism(object):
 			upstream_aas_for_km.append(upstream_aa)
 			upstream_aas.append(data['upstream'])
 			downstream_aas.append(data['downstream'])
+			reverse_aas.append(data['reverse'])
 			aa_upstream_kms.append(kms.asNumber(METABOLITE_CONCENTRATION_UNITS))
 			aa_reverse_kms.append(km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS))
 			aa_degradation_kms.append(km_degradation.asNumber(METABOLITE_CONCENTRATION_UNITS))
@@ -793,13 +800,17 @@ class Metabolism(object):
 			self.enzyme_to_amino_acid[enzyme_mapping[enzyme], aa_mapping[aa]] = 1
 
 		# Convert individual supply calculations to overall supply based on dependencies
-		# via dot product (self.aa_supply_balance @ supply)
+		# via dot product (self.aa_forward_stoich @ supply)
 		# TODO: check for loops (eg ser dependent on glt, glt dependent on ser)
 		# TODO: check this makes sense with new format
-		self.aa_supply_balance = np.eye(len(aa_ids))
+		self.aa_forward_stoich = np.eye(len(aa_ids))
 		for i, upstream in enumerate(upstream_aas):
 			for aa, stoich in upstream.items():
-				self.aa_supply_balance[aa_to_index[aa], i] = -stoich
+				self.aa_forward_stoich[aa_to_index[aa], i] = -stoich
+		self.aa_reverse_stoich = np.eye(len(aa_ids))
+		for i, reverse in enumerate(upstream_aas):
+			for aa, stoich in reverse.items():
+				self.aa_reverse_stoich[aa_to_index[aa], i] = -stoich
 
 		# Calculate import rates to match supply in amino acid conditions
 		with_aa_rates = (
@@ -889,7 +900,11 @@ class Metabolism(object):
 
 		# Calculate synthesis rate
 		print(self.aa_kcats * counts_per_aa * fraction)
-		synthesis = self.aa_supply_balance @ (self.aa_kcats * counts_per_aa * fraction)
+		synthesis = (
+			self.aa_forward_stoich @ (self.aa_kcats * counts_per_aa * forward_fraction)
+			- self.aa_reverse_stoich @ (self.aa_kcats * counts_per_aa * reverse_fraction)
+			- self.aa_kcats * counts_per_aa * loss_fraction
+		)
 		return synthesis, counts_per_aa, fraction
 
 	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum):
