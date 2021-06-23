@@ -380,8 +380,8 @@ def load_tree(path):
 	with open(path, "rb") as f:
 		# Extra kwargs only in PY3+ for compatibility with PY2 pickle files.
 		kwargs = {} if six.PY2 else dict(fix_imports=True, encoding='latin1')
-		sim_data = cPickle.load(f, **kwargs)
-	return object_tree(sim_data)
+		data = cPickle.load(f, **kwargs)
+	return object_tree(data)
 
 
 def load_fit_tree(out_subdir):
@@ -456,5 +456,6 @@ def diff_dirs(dir1: str, dir2: str, print_diff_lines: bool = True) -> int:
 			  f'{sorted(only_in_dir2)}')
 		count += len(only_in_dir2)
 
-	print('\n====> Total differences: {}'.format(count))
+	print(f'\n====> Total differences: {count} lines for {len(pickles1)} pickle'
+		  f' files in {dir1} against {len(pickles2)} pickle files in {dir2}.')
 	return count
