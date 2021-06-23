@@ -865,6 +865,7 @@ class Metabolism(object):
 		fraction = forward_fraction - reverse_fraction - loss_fraction
 
 		# Calculate synthesis rate
+		print(self.aa_kcats * counts_per_aa * fraction)
 		synthesis = self.aa_supply_balance @ (self.aa_kcats * counts_per_aa * fraction)
 		return synthesis, counts_per_aa, fraction
 
