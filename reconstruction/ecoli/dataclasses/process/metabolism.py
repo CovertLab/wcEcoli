@@ -694,6 +694,7 @@ class Metabolism(object):
 		downstream_aas = []
 		aa_upstream_kms = []
 		aa_reverse_kms = []
+		aa_degradation_kms = []
 		enzyme_to_aa = []
 		minimal_conc = conc('minimal')
 		for amino_acid in aa_ids:
@@ -718,6 +719,7 @@ class Metabolism(object):
 			kms_upstream = data['km, upstream']
 			kms = METABOLITE_CONCENTRATION_UNITS * np.array([kms_upstream.get(aa, minimal_conc[aa]).asNumber(METABOLITE_CONCENTRATION_UNITS) for aa in upstream_aa])
 			km_reverse = data['km, reverse']
+			km_degradation = data['km, degradation']
 
 			total_supply = supply[amino_acid]
 			for aa, stoich in data['downstream'].items():
@@ -729,7 +731,7 @@ class Metabolism(object):
 				km_reverse *= 3
 
 			# Calculate kcat value to ensure sufficient supply to double
-			kcat = total_supply / (enzyme_counts * (1 / (1 + aa_conc / ki) * np.prod(1 / (1 + kms / km_conc)) - 1 / (1 + km_reverse / aa_conc)))
+			kcat = total_supply / (enzyme_counts * (1 / (1 + aa_conc / ki) * np.prod(1 / (1 + kms / km_conc)) - 1 / (1 + km_reverse / aa_conc) - 1 / (1 + km_degradation / aa_conc)))
 			data['kcat'] = kcat
 
 			aa_enzymes += enzymes
@@ -740,6 +742,7 @@ class Metabolism(object):
 			downstream_aas.append(data['downstream'])
 			aa_upstream_kms.append(kms.asNumber(METABOLITE_CONCENTRATION_UNITS))
 			aa_reverse_kms.append(km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS))
+			aa_degradation_kms.append(km_degradation.asNumber(METABOLITE_CONCENTRATION_UNITS))
 			enzyme_to_aa += [amino_acid] * len(enzymes)
 
 		self.aa_enzymes = np.unique(aa_enzymes)
@@ -747,6 +750,7 @@ class Metabolism(object):
 		self.aa_kis = np.array(aa_kis)
 		self.aa_upstream_kms = np.array(aa_upstream_kms)
 		self.aa_reverse_kms = np.array(aa_reverse_kms)
+		self.aa_degradation_kms = np.array(aa_degradation_kms)
 
 		# Convert aa_conc to array with upstream aa_conc via indexing (aa_conc[self.aa_upstream_mapping])
 		aa_to_index = {aa: i for i, aa in enumerate(aa_ids)}
@@ -855,7 +859,8 @@ class Metabolism(object):
 		# Determine saturation fraction for reactions
 		forward_fraction = 1 / (1 + aa_conc / self.aa_kis) * km_saturation
 		reverse_fraction = 1 / (1 + self.aa_reverse_kms / aa_conc)
-		fraction = forward_fraction - reverse_fraction
+		loss_fraction = 1 / (1 + self.aa_degradation_kms / aa_conc)
+		fraction = forward_fraction - reverse_fraction - loss_fraction
 
 		# Calculate synthesis rate
 		synthesis = self.aa_supply_balance @ (self.aa_kcats * counts_per_aa * fraction)
