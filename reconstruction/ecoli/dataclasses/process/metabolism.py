@@ -451,7 +451,7 @@ class Metabolism(object):
 				data['ki'] = (row['KI, lower bound'], row['KI, upper bound'])
 			data['upstream'] = {k + cytoplasm_tag: v for k, v in row['Upstream amino acids'].items()}
 			data['km, upstream'] = {k + cytoplasm_tag: v for k, v in row['KM, upstream'].items()}
-			data['km, reverse'] = {}  #np.inf * units.mol/units.L if units.isnan(row['KM, reverse']) else row['KM, reverse']
+			data['km, reverse'] = np.inf * units.mol/units.L if units.isnan(row['KM, reverse']) else row['KM, reverse']
 			data['km, degradation'] = np.inf * units.mol/units.L if units.isnan(row['KM, degradation']) else row['KM, degradation']
 			data['downstream'] = {k + cytoplasm_tag: v for k, v in row['Downstream amino acids'].items()}
 			self.aa_synthesis_pathways[row['Amino acid'] + cytoplasm_tag] = data
@@ -715,7 +715,7 @@ class Metabolism(object):
 			km_conc = METABOLITE_CONCENTRATION_UNITS * np.array([minimal_conc[aa].asNumber(METABOLITE_CONCENTRATION_UNITS) for aa in upstream_aa])
 			kms_upstream = data['km, upstream']
 			kms = METABOLITE_CONCENTRATION_UNITS * np.array([kms_upstream.get(aa, minimal_conc[aa]).asNumber(METABOLITE_CONCENTRATION_UNITS) for aa in upstream_aa])
-			km_reverse = data['km, reverse'] if data['km, reverse'] else np.inf * units.mol/units.L
+			km_reverse = data['km, reverse']
 
 			total_supply = supply[amino_acid]
 			for aa, stoich in data['downstream'].items():
