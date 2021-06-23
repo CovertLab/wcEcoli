@@ -728,8 +728,16 @@ class Metabolism(object):
 			# TODO: add loss to supply
 
 			if amino_acid == 'GLN[c]':
-				km_reverse *= 3
+				km_reverse *= 5
 			if amino_acid == 'ASN[c]':
+				km_reverse *= 5
+			if amino_acid == 'PRO[c]':
+				km_reverse *= 5
+			if amino_acid == 'LEU[c]':
+				km_reverse *= 5
+			if amino_acid == 'TYR[c]':
+				km_reverse *= 5
+			if amino_acid == 'VAL[c]':
 				km_reverse *= 5
 
 			# Calculate kcat value to ensure sufficient supply to double
