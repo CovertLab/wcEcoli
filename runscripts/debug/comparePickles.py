@@ -3,7 +3,7 @@
 Compare all the .cPickle files in a pair of directories. Show any differences.
 
 Usage (DIR is a path like 'out/manual/intermediates'):
-	runscripts/debug/compareParca.py DIR1 DIR2
+	runscripts/debug/comparePickles.py DIR1 DIR2
 """
 
 import argparse
