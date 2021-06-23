@@ -16,7 +16,8 @@ from runscripts.reflect.object_tree import diff_dirs, diff_files
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(
 		description="Compare two .cPickle files"
-					" or all the .cPickle files in two directories."
+					" or all the .cPickle files in two directories (in"
+					" modification-time order)."
 					" Print a count and optionally a summary of the differences.")
 	parser.add_argument('-c', '--count', action='store_true',
 		help="Print just the diff line count for each file, skipping the"
