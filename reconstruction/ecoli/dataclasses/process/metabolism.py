@@ -101,9 +101,11 @@ class Metabolism(object):
 			'Park Concentration': {
 				'GLT',  # Steady state concentration reached with tRNA charging is much lower than Park
 				'THR',  # Attenuation needs concentration to be lower to match validation data
+				'VAL',  # Synthesis pathway kcat needs concentration to be lower and closer to KI
 				},
 			'Lempp Concentration': {
 				'ATP',  # TF binding does not solve with average concentration
+				'VAL',  # Synthesis pathway kcat needs concentration to be lower and closer to KI
 				},
 			'Kochanowski Concentration': {
 				'ATP',  # TF binding does not solve with average concentration
