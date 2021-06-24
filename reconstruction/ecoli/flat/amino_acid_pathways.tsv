@@ -6,16 +6,16 @@
 "ARG"	["N-ACETYLTRANSFER-CPLX"]	654	0.15	0.15	{"GLT": 2}	NaN	NaN	{"GLT": 2}	{"GLT": 2.65}	{}	ArgA, upstream KM: Takahara 2007
 "ASN"	["ASNSYNA-CPLX"]	NaN	0.12	0.12	{"L-ASPARTATE": 1}	4	NaN	{"L-ASPARTATE": 1}	{}	{}	AsnA, reverse KM: Hejazi 2002
 "CYS"	["CYSSYNMULTI-CPLX", "CPLX0-237"]	772	0.001	0.001	{}	NaN	NaN	{"SER": 1}	{"SER": 1.17}	{"MET": 1}	CysE, upstream KM: Hindson 2003
-"HIS"	["CPLX0-7614"]	NaN	0.012	0.1	{}	NaN	NaN	{"GLN": 1}	{"GLN": 0.24}	{}	HisG, upstream KM: Klem 1993 (for HisHF reaction step)
+"HIS"	["CPLX0-7614"]	NaN	0.012	0.1	{}	NaN	2.57	{"GLN": 1}	{"GLN": 0.24}	{}	HisG, upstream KM: Klem 1993 (for HisHF reaction step), degradation KM: Dolzan 2004 https://doi.org/10.1016/j.febslet.2004.06.075
 "ILE"	["THREDEHYDSYN-CPLX"]	NaN	0.06	0.06	{"GLT": 1}	0.52	NaN	{"GLT": 1}	{}	{}	IlvA, reverse KM: LeePeng 1979 (for IlvE), upstream KM: Eisenstein 1991
 "LEU"	["2-ISOPROPYLMALATESYN-MONOMER"]	NaN	0.28	0.28	{"GLT": 1}	0.58	NaN	{"GLT": 1}	{}	{}	LeuA, reverse KM: LeePeng 1979 (for IlvE)
 "LYS"	["DIHYDRODIPICSYN-CPLX"]	104	0.21	3.9	{"GLT": 1}	NaN	NaN	{"GLT": 1}	{"GLT": 1.21}	{}	DapA, ASP upstream KM: Keng 1996 (for LysC), GLT upstream KM: Cox 1996 (for ArgD)
-"MET"	["HOMSUCTRAN-CPLX"]	22	0.1	4	{}	NaN	NaN	{"L-ASPARTATE": 1, "CYS": 1}	{"L-ASPARTATE": 0.97, "CYS": 0.05}	{}	MetA, ASP upstream KM: Chassagnole 2001 (for ThrA), CYS upstream KM: Holbrook 1990 (for MetB)
+"MET"	["HOMSUCTRAN-CPLX"]	22	0.1	4	{}	NaN	0.11	{"L-ASPARTATE": 1, "CYS": 1}	{"L-ASPARTATE": 0.97, "CYS": 0.05}	{}	MetA, ASP upstream KM: Chassagnole 2001 (for ThrA), CYS upstream KM: Holbrook 1990 (for MetB), degradation KM: Taylor 2003 (for MetK)
 "PHE"	["CHORISMUTPREPHENDEHYDRAT-CPLX"]	32	0.1	0.6	{"GLT": 1}	0.333	NaN	{"GLT": 1}	{}	{}	PheA, reverse KM: Mavrides 1975 (for TyrB)
 "PRO"	["GLUTKIN-CPLX"]	53	0.02	0.15	{"GLT": 1}	2.7	NaN	{"GLT": 1}	{}	{}	ProB, upper limit from Perez-Arellano. 2010. https://doi.org/10.1016/j.jmb.2010.10.019, reverse KM: Abrahamson 1983 (for PutA)
 "SER"	["PGLYCDEHYDROG-CPLX"]	29	0.005	0.37	{}	NaN	NaN	{"GLT": 1}	{}	{"CYS": 1, "GLY": 1, "MET": 1, "TRP": 1}	SerA
-"THR"	["ASPKINIHOMOSERDEHYDROGI-CPLX"]	NaN	0.097	0.167	{}	NaN	NaN	{"L-ASPARTATE": 1}	{"L-ASPARTATE": 0.97}	{}	ThrA, upstream KM: Chassagnole 2001
-"TRP"	["ANTHRANSYN-CPLX"]	NaN	0.17	0.17	{}	NaN	NaN	{"GLN": 1, "SER": 1}	{}	{}	TrpDE
+"THR"	["ASPKINIHOMOSERDEHYDROGI-CPLX"]	NaN	0.097	0.167	{}	NaN	6.5	{"L-ASPARTATE": 1}	{"L-ASPARTATE": 0.97}	{}	ThrA, upstream KM: Chassagnole 2001, degradation KM: Anjem 2012 (for Tdh)
+"TRP"	["ANTHRANSYN-CPLX"]	NaN	0.17	0.17	{}	NaN	0.12	{"GLN": 1, "SER": 1}	{}	{}	TrpDE, degradation KM: Kawata 1990 (for TnaA)
 "TYR"	["CHORISMUTPREPHENDEHYDROG-CPLX"]	71	0.1	0.1	{"GLT": 1}	0.625	NaN	{"GLT": 1}	{}	{}	TyrA, reverse KM: Mavrides 1975 (for TyrB)
 "VAL"	["ACETOLACTSYNI-CPLX"]	38.5	0.078	0.1	{"GLT": 1}	3.13	NaN	{"GLT": 1}	{}	{}	IlvB, reverse KM: LeePeng 1979 (for IlvE)
 # Added from other sources
