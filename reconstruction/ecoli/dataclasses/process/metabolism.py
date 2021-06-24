@@ -742,6 +742,8 @@ class Metabolism(object):
 
 			if amino_acid == 'GLN[c]':
 				km_reverse *= 5
+			if amino_acid == 'PHE[c]':
+				km_reverse *= 5
 			if amino_acid == 'ASN[c]':
 				km_reverse *= 5
 			if amino_acid == 'PRO[c]':
