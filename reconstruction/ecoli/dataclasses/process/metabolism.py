@@ -1718,7 +1718,7 @@ class ConcentrationUpdates(object):
 			"ASN[c]": 2.,
 			"L-ASPARTATE[c]": 2.,
 			"CYS[c]": 2.,
-			"GLT[c]": 1.1,
+			"GLT[c]": 2.,
 			"GLN[c]": 2.,
 			"GLY[c]": 2.,
 			"HIS[c]": 2.,
