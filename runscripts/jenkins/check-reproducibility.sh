@@ -13,6 +13,8 @@ dir1="check-reproducibility-1"
 dir2="check-reproducibility-2"
 sim_out_dir="wildtype_000000/000000/generation_000001/000000/simOut"
 
+source $script_dir/jenkins/setup-environment.sh
+
 # Run parca twice and check that output is consistent from run to run
 python $script_dir/manual/runParca.py -c4 $dir1 --save-intermediates
 python $script_dir/manual/runParca.py -c4 $dir2 --save-intermediates
