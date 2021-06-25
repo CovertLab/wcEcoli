@@ -693,16 +693,15 @@ class Metabolism(object):
 			for aa, rate in zip(sim_data.molecule_groups.amino_acids, rates)
 			}
 		aa_enzymes = []
-		aa_kcats = []
-		aa_kis = []
-		upstream_aas_for_km = []
-		upstream_aas = []
-		downstream_aas = []
-		reverse_aas = []
-		aa_upstream_kms = []
-		aa_reverse_kms = []
-		aa_degradation_kms = []
 		enzyme_to_aa = []
+		aa_kcats = {}
+		aa_kis = {}
+		upstream_aas_for_km = {}
+		upstream_aas = {}
+		reverse_aas = {}
+		aa_upstream_kms = {}
+		aa_reverse_kms = {}
+		aa_degradation_kms = {}
 		minimal_conc = conc('minimal')
 		for amino_acid in aa_ids:
 			data = self.aa_synthesis_pathways[amino_acid]
@@ -770,30 +769,29 @@ class Metabolism(object):
 			data['kcat'] = kcat
 
 			aa_enzymes += enzymes
-			aa_kcats.append(kcat.asNumber(K_CAT_UNITS))
-			aa_kis.append(ki.asNumber(METABOLITE_CONCENTRATION_UNITS))
-			upstream_aas_for_km.append(upstream_aa)
-			upstream_aas.append(data['upstream'])
-			downstream_aas.append(data['downstream'])
-			reverse_aas.append(data['reverse'])
-			aa_upstream_kms.append(kms.asNumber(METABOLITE_CONCENTRATION_UNITS))
-			aa_reverse_kms.append(km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS))
-			aa_degradation_kms.append(km_degradation.asNumber(METABOLITE_CONCENTRATION_UNITS))
 			enzyme_to_aa += [amino_acid] * len(enzymes)
+			aa_kcats[amino_acid] = kcat.asNumber(K_CAT_UNITS)
+			aa_kis[amino_acid] = ki.asNumber(METABOLITE_CONCENTRATION_UNITS)
+			upstream_aas_for_km[amino_acid] = upstream_aa
+			upstream_aas[amino_acid] = data['upstream']
+			reverse_aas[amino_acid] = data['reverse']
+			aa_upstream_kms[amino_acid] = kms.asNumber(METABOLITE_CONCENTRATION_UNITS)
+			aa_reverse_kms[amino_acid] = km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS)
+			aa_degradation_kms[amino_acid] = km_degradation.asNumber(METABOLITE_CONCENTRATION_UNITS)
 
 		self.aa_enzymes = np.unique(aa_enzymes)
-		self.aa_kcats = np.array(aa_kcats)
-		self.aa_kis = np.array(aa_kis)
-		self.aa_upstream_kms = np.array(aa_upstream_kms)
-		self.aa_reverse_kms = np.array(aa_reverse_kms)
-		self.aa_degradation_kms = np.array(aa_degradation_kms)
+		self.aa_kcats = np.array([aa_kcats[aa] for aa in aa_ids])
+		self.aa_kis = np.array([aa_kis[aa] for aa in aa_ids])
+		self.aa_upstream_kms = np.array([aa_upstream_kms[aa] for aa in aa_ids])
+		self.aa_reverse_kms = np.array([aa_reverse_kms[aa] for aa in aa_ids])
+		self.aa_degradation_kms = np.array([aa_degradation_kms[aa] for aa in aa_ids])
 
 		# Convert aa_conc to array with upstream aa_conc via indexing (aa_conc[self.aa_upstream_mapping])
 		aa_to_index = {aa: i for i, aa in enumerate(aa_ids)}
 
 		# TODO: better way of handling this that is efficient computationally
 		self.aa_to_index = aa_to_index
-		self.aa_upstream_aas = upstream_aas_for_km
+		self.aa_upstream_aas = [upstream_aas_for_km[aa] for aa in aa_ids]
 		# self.aa_upstream_mapping = np.array([aa_to_index[aa] for aa in upstream_aas_for_km])
 
 		# Convert enzyme counts to an amino acid basis via dot product (counts @ self.enzyme_to_amino_acid)
@@ -808,13 +806,13 @@ class Metabolism(object):
 		# TODO: check for loops (eg ser dependent on glt, glt dependent on ser)
 		# TODO: check this makes sense with new format
 		self.aa_forward_stoich = np.eye(len(aa_ids))
-		for i, upstream in enumerate(upstream_aas):
-			for aa, stoich in upstream.items():
-				self.aa_forward_stoich[aa_to_index[aa], i] = -stoich
+		for aa, upstream in upstream_aas.items():
+			for upstream_aa, stoich in upstream.items():
+				self.aa_forward_stoich[aa_to_index[upstream_aa], aa_to_index[aa]] = -stoich
 		self.aa_reverse_stoich = np.eye(len(aa_ids))
-		for i, reverse in enumerate(reverse_aas):
-			for aa, stoich in reverse.items():
-				self.aa_reverse_stoich[aa_to_index[aa], i] = -stoich
+		for aa, reverse in reverse_aas.items():
+			for reverse_aa, stoich in reverse.items():
+				self.aa_reverse_stoich[aa_to_index[reverse_aa], aa_to_index[aa]] = -stoich
 
 		# Calculate import rates to match supply in amino acid conditions
 		with_aa_rates = (
