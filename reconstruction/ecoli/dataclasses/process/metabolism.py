@@ -702,8 +702,30 @@ class Metabolism(object):
 		aa_upstream_kms = {}
 		aa_reverse_kms = {}
 		aa_degradation_kms = {}
+		degradation_rates = {}
 		minimal_conc = conc('minimal')
-		for amino_acid in aa_ids:
+
+		# Get order of amino acids to calculate parameters for to ensure that
+		# parameters that are dependent on other amino acids are run after
+		# those calculations have completed
+		dependencies = {}
+		for aa in aa_ids:
+			for downstream_aa in self.aa_synthesis_pathways[aa]['downstream']:
+				if np.isfinite(self.aa_synthesis_pathways[downstream_aa]['km, degradation'].asNumber()):
+					dependencies[aa] = dependencies.get(aa, []) + [downstream_aa]
+		ordered_aa_ids = []
+		for _ in aa_ids:  # limit number of iterations number of amino acids in case there are cyclic links
+			for aa in sorted(set(aa_ids) - set(ordered_aa_ids)):
+				for downstream_aa in dependencies.get(aa, []):
+					if downstream_aa not in ordered_aa_ids:
+						break
+				else:
+					ordered_aa_ids.append(aa)
+		if len(ordered_aa_ids) != len(aa_ids):
+			raise RuntimeError('Could not determine amino acid order to calculate dependencies first.'
+				' Make sure there are no cyclical pathways for amino acids that can degrade.')
+
+		for amino_acid in ordered_aa_ids:
 			data = self.aa_synthesis_pathways[amino_acid]
 			enzymes = data['enzymes']
 			enzyme_counts = cell_specs['basal']['bulkAverageContainer'].counts(enzymes).sum()
@@ -736,8 +758,7 @@ class Metabolism(object):
 			total_supply = supply[amino_acid]
 			for aa, stoich in data['downstream'].items():
 				total_supply += stoich * supply[aa]
-
-			# TODO: add loss to supply
+				total_supply += stoich * degradation_rates.get(aa, 0 / units.min)
 
 			if amino_acid == 'GLN[c]':
 				km_reverse *= 5
@@ -778,6 +799,7 @@ class Metabolism(object):
 			aa_upstream_kms[amino_acid] = kms.asNumber(METABOLITE_CONCENTRATION_UNITS)
 			aa_reverse_kms[amino_acid] = km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS)
 			aa_degradation_kms[amino_acid] = km_degradation.asNumber(METABOLITE_CONCENTRATION_UNITS)
+			degradation_rates[amino_acid] = kcat * enzyme_counts / (1 + km_degradation / aa_conc)
 
 		self.aa_enzymes = np.unique(aa_enzymes)
 		self.aa_kcats = np.array([aa_kcats[aa] for aa in aa_ids])
