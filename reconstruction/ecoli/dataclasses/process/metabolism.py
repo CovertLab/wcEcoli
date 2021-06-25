@@ -812,7 +812,7 @@ class Metabolism(object):
 			for aa, stoich in upstream.items():
 				self.aa_forward_stoich[aa_to_index[aa], i] = -stoich
 		self.aa_reverse_stoich = np.eye(len(aa_ids))
-		for i, reverse in enumerate(upstream_aas):
+		for i, reverse in enumerate(reverse_aas):
 			for aa, stoich in reverse.items():
 				self.aa_reverse_stoich[aa_to_index[aa], i] = -stoich
 
