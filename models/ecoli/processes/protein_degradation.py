@@ -120,7 +120,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		if not self.saved and "proteins_to_degrade" in self.update_to_save.keys() and self._sim.time() > self.save_time:
 			write_json(f'out/migration/prot_deg_update_t{int(self._sim.time())}.json', self.update_to_save)
 			self.saved = True
-			import ipdb; ipdb.set_trace()
+			#import ipdb; ipdb.set_trace()
 
 	def _proteinDegRates(self):
 		return self.rawDegRate * self.timeStepSec()

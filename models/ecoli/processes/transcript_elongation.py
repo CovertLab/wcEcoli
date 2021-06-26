@@ -19,6 +19,12 @@ from wholecell.utils.random import stochasticRound
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
 from wholecell.utils import units
 
+from wholecell.utils.migration.write_json import write_json
+
+def array_to(keys, array):
+    return {
+        key: array[index]
+        for index, key in enumerate(keys)}
 
 class TranscriptElongation(wholecell.processes.process.Process):
 	""" TranscriptElongation """
@@ -76,6 +82,10 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.attenuated_rna_indices_lookup = {idx: i for i, idx in enumerate(self.attenuated_rna_indices)}
 		self.location_lookup = sim_data.process.transcription.attenuation_location
 
+		# saving updates
+		self.update_to_save = {}
+		self.saved = False
+
 	def calculateRequest(self):
 		# Calculate elongation rate based on the current media
 		current_media_id = self._external_states['Environment'].current_media_id
@@ -125,10 +135,17 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.active_RNAPs.request_access(self.EDIT_DELETE_ACCESS)
 		self.RNAs.request_access(self.EDIT_DELETE_ACCESS)
 
+		self.update_to_save = {'listeners': {'growth_limits': {}}}
+		self.update_to_save['listeners']['growth_limits']['ntp_pool_size'] = self.ntps.total_counts()
+		self.update_to_save['listeners']['growth_limits'][
+			'ntp_request_size'] = maxFractionalReactionLimit * sequenceComposition
+
 
 	def evolveState(self):
 		ntpCounts = self.ntps.counts()
 		self.writeToListener("GrowthLimits", "ntpAllocated", ntpCounts)
+
+		self.update_to_save['listeners']['growth_limits']['ntp_allocated'] = ntpCounts
 
 		if self.active_RNAPs.total_count() == 0:
 			return
@@ -308,6 +325,12 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.inactive_RNAPs.countInc(n_terminated + n_attenuated)
 		self.ppi.countInc(n_elongations - n_initialized)
 
+		self.update_to_save['ntps'] = array_to(["ATP[c]", "CTP[c]", "GTP[c]", "UTP[c]"], -ntps_used)
+		self.update_to_save['bulk_RNAs'] = array_to(self.rnaIds, n_new_bulk_RNAs)
+		self.update_to_save['molecules'] = array_to(['PPI[c]', 'APORNAP-CPLX[c]'], [
+			n_elongations - n_initialized,  # ppi
+			n_terminated])  # inactve RNAPs
+
 		# Handle stalled elongation
 		n_total_stalled = did_stall_mask.sum()
 		if self.recycle_stalled_elongation and (n_total_stalled > 0):
@@ -360,6 +383,22 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			"RnapData", "terminationLoss",
 			(terminal_lengths - length_partial_RNAs)[did_terminate_mask].sum())
 		self.writeToListener("RnapData", "didStall", n_total_stalled)
+
+		self.update_to_save['listeners']['transcript_elongation_listener'] = {
+			"countRnaSynthesized": terminated_RNAs,
+			"countNTPsUsed": n_elongations}
+		self.update_to_save['listeners']['growth_limits'] = {
+			"ntpUsed": ntps_used}
+		self.update_to_save['listeners']['rnap_data'] = {
+			"actualElongations": sequence_elongations.sum(),
+			"didTerminate": did_terminate_mask.sum(),
+			"terminationLoss": (terminal_lengths - length_partial_RNAs)[did_terminate_mask].sum()}
+
+		if not self.saved:
+			write_json(f'out/migration/transcript_elongation_update_t{int(self._sim.time())}.json',
+					   self.update_to_save)
+
+			self.saved = True
 
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
