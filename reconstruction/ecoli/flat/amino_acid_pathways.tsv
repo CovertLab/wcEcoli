@@ -21,7 +21,7 @@
 # Added from other sources
 "L-ALPHA-ALANINE"	["CPLX0-7887", "CPLX0-7888", "VALINE-PYRUVATE-AMINOTRANSFER-MONOMER", "CPLX0-246", "CPLX0-248"]	NaN	NaN	NaN	{"GLT": 1}	4.9	NaN	{"GLT": 1}	{}	{}	AlaC, AlaA, AvtA, SufS, IscS, reverse KM: Kim 2010 (for AlaA)
 "L-ASPARTATE"	["ASPAMINOTRANS-DIMER"]	670	NaN	NaN	{"GLT": 1}	NaN	NaN	{"GLT": 1}	{}	{"ASN": 1, "MET": 1, "THR": 1}	AspC
-"GLT"	["GLUTAMATESYN-CPLX", "GDHA-CPLX"]	NaN	NaN	NaN	{}	NaN	2.3	{}	{}	{"L-ALPHA-ALANINE": 1, "ARG": 2, "ASN": 1, "L-ASPARTATE": 1, "CYS": 1, "GLN": 1, "GLY": 1, "HIS": 1, "ILE": 1, "LEU": 1, "LYS": 1, "MET": 2, "PHE": 1, "PRO": 1, "SER": 1, "THR": 1, "TRP": 1, "TYR": 1, "VAL": 1}	GltBD, GdhA, degradation KM: Sharkey 2008
+"GLT"	["GLUTAMATESYN-CPLX", "GDHA-CPLX"]	NaN	NaN	NaN	{}	NaN	2.3	{}	{}	{"L-ALPHA-ALANINE": 1, "ARG": 2, "ASN": 1, "L-ASPARTATE": 1, "CYS": 1, "GLN": 1, "GLY": 1, "HIS": 1, "ILE": 1, "LEU": 1, "LYS": 1, "MET": 2, "PHE": 1, "PRO": 1, "SER": 1, "THR": 1, "TRP": 2, "TYR": 1, "VAL": 1}	GltBD, GdhA, degradation KM: Sharkey 2008
 "GLN"	["GLUTAMINESYN-OLIGOMER"]	36	NaN	NaN	{"GLT": 1}	0.25	NaN	{"GLT": 1}	{"GLT": 3.3}	{"HIS": 1, "TRP": 1}	GlnA, reverse KM: Miller 1972 (for GltBD), upstream KM: Pearson 2005
 "GLY"	["GLYOHMETRANS-CPLX"]	11	NaN	NaN	{"SER": 1}	0.25	NaN	{"SER": 1}	{"SER": 0.14}	{}	GlyA, reverse KM: Hopkins 1986, upstream KM: Florio 2009
 "L-SELENOCYSTEINE"	["CPLX0-246"]	NaN	NaN	NaN	{}	NaN	NaN	{}	{}	{}	SufS, mainly just a placeholder for Selenocysteine because the model does not explicitly produce it
