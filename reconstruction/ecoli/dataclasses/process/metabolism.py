@@ -888,11 +888,13 @@ class Metabolism(object):
 		neg_idx = np.where(self.aa_kcats < 0)[0]
 		if len(neg_idx):
 			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
+			print(f'{self.aa_kcats = }')
 			raise ValueError(f'kcat value was determined to be negative for {aas}.'
 				' Check input parameters like KM and KI or the concentration.')
 		neg_idx = np.where(self.specific_import_rates < 0)[0]
 		if len(neg_idx):
 			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
+			print(f'{self.specific_import_rates = }')
 			raise ValueError(f'Import rate was determined to be negative for {aas}.'
 				' Check input parameters like supply and synthesis or enzyme expression.')
 
