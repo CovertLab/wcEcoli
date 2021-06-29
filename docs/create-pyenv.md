@@ -32,7 +32,7 @@ This page goes through the Python environment setup steps in more detail and wit
 OpenBLAS, numpy, and scipy which change the computed results. We do not know
 how to set up environments to get consistent results across platforms.
 The simplest and fastest setup is to install numpy and scipy from binary "wheels"
-with their embedded copies of OpenBLAS -- recommended. 
+with their embedded copies of OpenBLAS -- **recommended**. 
 
 Still, there's a case for compiling OpenBLAS from source code and linking numpy and scipy to it, as
 `cloud/docker/runtime/Dockerfile` does for building the wcm-runtime Docker Image.
@@ -155,7 +155,7 @@ virtualenv.
    how to set up environments to get consistent results across platforms.
    The simplest and fastest setup is to install numpy and scipy from binary _wheels_
    with their embedded copies of OpenBLAS using `pip install` **without** the
-   `--no-binary numpy,scipy` option -- recommended. 
+   `--no-binary numpy,scipy` option -- **recommended**. 
 
    Still, there's a case for compiling OpenBLAS from source code and linking numpy and scipy to it, as
    `cloud/docker/runtime/Dockerfile` does for building the wcm-runtime Docker
@@ -304,9 +304,9 @@ especially when called from multiple processes.
 
 1. Remember to copy the git hooks from the repo (see [git hooks](../runscripts/git_hooks/README.md)) to your `.git` directory to maintain an up to date environment while doing development:
 
-  ```
-  cp runscripts/git_hooks/*[^.md] .git/hooks/
-  ```
+   ```
+   cp runscripts/git_hooks/*[^.md] .git/hooks/
+   ```
 
 1. If you're using PyCharm, be sure to select the project's Python interpreter so PyCharm understands the version
 of Python and its installed libraries. This enables code completion, usage documentation
