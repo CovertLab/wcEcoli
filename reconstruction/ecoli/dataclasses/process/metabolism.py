@@ -849,8 +849,8 @@ class Metabolism(object):
 			for aa, rate in zip(sim_data.molecule_groups.amino_acids, with_aa_rates)
 			}
 		enzyme_counts = cell_specs['with_aa']['bulkAverageContainer'].counts(self.aa_enzymes)
-		aa_conc = units.mol / units.L * np.array([
-			conc('minimal_plus_amino_acids')[aa].asNumber(units.mol/units.L)
+		aa_conc = units.mol / units.L * 2 * np.array([
+			conc('minimal')[aa].asNumber(units.mol/units.L)
 			for aa in aa_ids
 			])
 		basal_conc = units.mol / units.L * np.array([
