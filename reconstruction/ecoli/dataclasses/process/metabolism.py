@@ -862,12 +862,6 @@ class Metabolism(object):
 		attenuation_expression_adjustment = (1 - aa_attenuation) / (1 - basal_attenuation)
 		attenuated_idx = {rna: i for i, rna in enumerate(sim_data.process.transcription.attenuated_rna_ids)}
 		monomer_to_rna = {d['id']: d['rna_id'] for d in sim_data.process.translation.monomer_data}
-
-		basal_exp = sim_data.process.transcription.rna_expression['with_aa']
-		ppgpp_exp = sim_data.calculate_ppgpp_expression('with_aa')
-		ppgpp_adjustments = ppgpp_exp / basal_exp
-		rna_idx = {rna: i for i, rna in enumerate(sim_data.process.transcription.rna_data['id'])}
-
 		for i, enzyme in enumerate(self.aa_enzymes):
 			rna_ids = [
 				monomer_to_rna[monomer]
@@ -878,11 +872,7 @@ class Metabolism(object):
 				if rna in attenuated_idx else 1
 				for rna in rna_ids
 				])
-			ppgpp_adjustment = np.array([
-				ppgpp_adjustments[rna_idx[rna]]
-				for rna in rna_ids
-				])
-			enzyme_counts[i] *= min(attenuation*ppgpp_adjustment)
+			enzyme_counts[i] *= min(attenuation)
 
 		supply = np.array([with_aa_supply[aa] for aa in aa_ids])  # TODO: check that this is ok and do not need other adjustments for downstream
 		synthesis, _, _ = self.amino_acid_synthesis(enzyme_counts, aa_conc)
