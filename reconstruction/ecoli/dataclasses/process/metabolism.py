@@ -785,8 +785,6 @@ class Metabolism(object):
 			if amino_acid == 'MET[c]':
 				km_degradation *= 10
 				ki *= 5
-			if amino_acid == 'GLT[c]':
-				km_degradation *= 0.1
 
 			# Calculate kcat value to ensure sufficient supply to double
 			kcat = total_supply / (enzyme_counts * (1 / (1 + aa_conc / ki) * np.prod(1 / (1 + kms / km_conc)) - 1 / (1 + km_reverse / aa_conc) - 1 / (1 + km_degradation / aa_conc)))
