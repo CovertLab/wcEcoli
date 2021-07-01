@@ -16,26 +16,37 @@ See [docs/README](README.md).
 
 ## Background
 
-The [requirements.txt](https://github.com/CovertLab/wcEcoli/blob/master/requirements.txt) file contains the needed package list for the Python runtime environment and terse setup instructions.
+The [requirements.txt](https://github.com/CovertLab/wcEcoli/blob/master/requirements.txt) file lists the Python packages needed for the Python runtime environment, with terse setup instructions.
 
-This page goes through the Python environment setup steps in more detail and with more options.
+This page goes through the Python environment setup steps in more detail and with more options, but `requirements.txt` gets updated more frequently since that file specifies the current package versions.
 
-**Prerequisites:** Install the software tools as described in [dev-tools](dev-tools.md). That page covers installing pyenv and pyenv-virtualenv, initializing them in your shell profile, installing a C compiler, and more.
-
-**NOTE**: While it is possible to create a virtual environment with
+**NOTE**: While you can create virtual environments using
 `virtualenv` or `venv` in place of `pyenv`, be sure to put the environment
 *outside* the `wcEcoli/` directory. Otherwise `make clean` will break it!
 
 **Sherlock:** Sherlock is the Stanford scientific computing cluster. Outside the Covert lab, just skip our Sherlock notes. Inside the lab, look in `$PI_HOME/downloads/` and `$PI_HOME/installation_notes/` for downloaded software packages and notes on recompiling them as needed to install new packages, new libraries, and new Python releases for the team.
 
 **See Issue #931.** There are several degrees of freedom for installing
-OpenBLAS, numpy, and scipy which change the computed results. We do not know
+OpenBLAS, NumPy, and SciPy which change the computed results. We do not know
 how to set up environments to get consistent results across platforms.
-The simplest and fastest setup is to install numpy and scipy from binary "wheels"
+It's possible that a newer version of OpenBLAS (such as v0.3.15) fixes those problems.
+The simplest and fastest setup is to install NumPy and SciPy from binary "wheels"
 with their embedded copies of OpenBLAS. Still, there's a case for compiling
 OpenBLAS from source code and linking numpy and scipy to it, as
-`cloud/docker/runtime/Dockerfile` does for building the wcm-runtime Docker
+`cloud/docker/runtime/Dockerfile` can do for building the wcm-runtime Docker
 Image.
+
+
+## Prerequisites
+
+* **Install** the software tools as described in [dev-tools](dev-tools.md), including
+  * pyenv and pyenv-virtualenv
+  * initializing pyenv in your shell profile
+  * gcc or llvm
+  * git
+  * a programming editor such as PyCharm, Sublime Text, or Visual Studio Code
+* **[Set up Git and GitHub](https://docs.github.com/en/get-started/quickstart/set-up-git)** including [Connecting to GitHub with SSH](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
+* **Clone the repo** [wcEcoli git](https://github.com/CovertLab/wcEcoli) to a local directory like `~/dev/wcEcoli/`. See [About remote repositories](https://docs.github.com/en/get-started/getting-started-with-git/about-remote-repositories). It's probably better to use the SSH URL `git@github.com:CovertLab/wcEcoli.git` but it's also possible to use an HTTPS URL.
 
 
 ## Install native libraries
@@ -43,13 +54,21 @@ Image.
 1. Use your package manager to install the needed libraries
 \[see the `requirements.txt` file for the latest list] or compile them from source.
 
-   Aesara will use the `openblas` library installed in this step.
-   You can optionally install numpy and scipy to also use it.
+   Most of this list comes from pyenv's requirements to install Python releases,
+   so check [the pyenv wiki](https://github.com/pyenv/pyenv/wiki) for the latest
+   list of libraries.
+
+   We no longer recommend installing `openblas` library using a package manager or
+   by compiling from source. Instead we let NumPy and SciPy install their
+   own copy and let Aesara find NumPy's copy.
+
+   You can optionally install `openblas` via package manager or source code,
+   but be sure to get at least release v0.3.9.
 
    **On macOS**
 
    ```bash
-   brew install glpk openssl readline swig suite-sparse xz openblas
+   brew install glpk openssl readline swig suite-sparse xz
    ```
 
    **On Ubuntu**
@@ -57,14 +76,10 @@ Image.
    ```bash
    sudo apt install -y glpk-utils libglpk-dev glpk-doc libssl-dev libreadline-dev \
      libncurses5-dev libncursesw5-dev libffi-dev zlib1g-dev libbz2-dev xz-utils \
-     libsqlite3-dev tk-dev openblas
+     libsqlite3-dev tk-dev
    ```
 
    For Ubuntu, you might also need to find and install the proprietary package `python-glpk`.
-
-   Don't use apt-get to install `libopenblas-dev` until that package repository
-   updates to a recent release like v0.3.9 (the version that's embedded in numpy
-   and scipy).
 
    **On Sherlock**
 
@@ -118,7 +133,7 @@ pyenv lets you install and switch between multiple Python releases and multiple
 "virtual environments", each with its own pip packages.
 
    ```bash
-   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.7
+   pyenv install 3.8.7
    ```
 
 
@@ -209,9 +224,17 @@ virtualenv.
    `In function _start (.text+0x20): undefined reference to main` and  
    `undefined reference to PyFloat_FromDouble`.
 
+1. **Prerequisite for the following Python steps:** Set the `PYTHONPATH` environment variable, e.g.
+
+   ```shell script
+   export PYTHONPATH=$PWD
+   ```
+
+   or run the `ppath` alias recommended in [dev-tools.md](dev-tools.md).
+
 1. Test the NumPy and SciPy installation.
 
-      ```bash
+      ```shell script
       python runscripts/debug/summarize_environment.py
       ```
 
@@ -226,37 +249,33 @@ virtualenv.
           language = c
       ```
 
-1. **(Now required)** Add the following line to your bash profile and run it in your current shell.
+1. **Required:** Add the following line to your shell profile and run it in your current shell.
 This gets more consistent results from OpenBLAS and it improves performance significantly,
 especially when called from multiple processes.
 
-    ```
+    ```shell script
     export OPENBLAS_NUM_THREADS=1
     ```
 
 1. Time the NumPy and SciPy libraries
 
-    ```bash
+    ```shell script
     runscripts/debug/time_libraries.sh
     ```
 
 1. Test Aesara:
 
-      ```bash
-      python -c 'import aesara; print([aesara.config.blas.ldflags, aesara.config.device, aesara.config.floatX])'
-      ```
+    ```shell script
+    python -c 'import aesara; print([aesara.config.blas.ldflags, aesara.config.device, aesara.config.floatX])'
+    ```
 
-   It should print something like
+   It should print something like this (with variations if you compiled OpenBLAS from source):
 
-      `-lblas`
-
-   or
-
-      `-L/usr/local/opt/openblas/lib -lopenblas -lopenblas`
+    `['-lblas', 'cpu', 'float64']`
 
 1. Compile the project's native code.
 
-   ```bash
+   ```shell script
    make clean compile
    ```
 
@@ -264,8 +283,7 @@ especially when called from multiple processes.
 
 1. Run the unit tests.
 
-   ```bash
-   export PYTHONPATH=$PWD
+   ```shell script
    pytest
    ```
 
@@ -273,11 +291,12 @@ especially when called from multiple processes.
    ...libpython..., that means you need to `--enable-shared` when installing python.
    Go back to that step, run
 
-   ```bash
+   ```shell script
    PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.7 --force
    ```
 
    then delete and recreate the virtualenv `wcEcoli3`.
+   Delete it via the command `pyenv virtualenv-delete wcEcoli3` or `pyenv uninstall wcEcoli3`.
 
 1. If you're using PyCharm, be sure to select the project's Python interpreter so PyCharm understands the version
 of Python and its installed libraries. This enables code completion, usage documentation
@@ -301,7 +320,7 @@ source code, etc.
 
 1. Make sure the model's output goes to the `$SCRATCH` filesystem (which is larger) rather than SHERLOCK HOME.
 
-   ```bash
+   ```shell script
    mkdir $SCRATCH/wcEcoli_out
    cd wcEcoli
    ln -s $SCRATCH/wcEcoli_out out
@@ -309,6 +328,6 @@ source code, etc.
 
 1. Create a symbolic link to a shared sim data cache directory on `$PI_SCRATCH` that should contain a copy of the newest sim data object (it should be updated by the daily build):
 
-   ```bash
+   ```shell script
    ln -s $PI_SCRATCH/wc_ecoli/cached cached
    ```
