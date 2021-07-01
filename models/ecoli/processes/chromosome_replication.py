@@ -13,6 +13,10 @@ from wholecell.utils.polymerize import (buildSequences, polymerize,
 from wholecell.utils import units
 from wholecell.utils.migration.write_json import write_json
 
+def array_to(keys, array):
+    return {
+        key: array[index]
+        for index, key in enumerate(keys)}
 
 class ChromosomeReplication(wholecell.processes.process.Process):
 	"""
@@ -212,7 +216,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 					'key': str(uuid.uuid1()),
 					'state': {'domain_index': domain_index_new[index]}}
 					for index in range(n_oriC)],
-				'_delete': [(key,) for key in self.oriCs.]} # Something weird here
+				'_delete': [(str(key + 1),) for key in range(n_oriC)]} # If fail, relook here.
 				# '_delete': [(key,) for key in states['oriCs'].keys()]}
 
 			self.oriCs.attrIs(domain_index=domain_index_new[:n_oriC])
@@ -271,7 +275,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.writeToListener("ReplicationData", "criticalMassPerOriC",
 			self.criticalMassPerOriC)
 		self.update_to_save['listeners']['replication_data']['criticalMassPerOriC'] = \
-			criticalMassPerOriC
+			self.criticalMassPerOriC
 		self.writeToListener("ReplicationData", "criticalInitiationMass",
 			self.criticalInitiationMass.asNumber(units.fg))
 		self.update_to_save['listeners']['replication_data']['criticalInitiationMass'] = \
@@ -410,7 +414,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			# Delete terminated replisomes
 			self.active_replisomes.delByIndexes(np.where(replisomes_to_delete)[0])
 			if self.active_replisomes:
-				self.update_to_save['active_replisomes']['_delete'] = replisome_delete_update
+				self.update_to_save['active_replisomes']['_delete'] = self.active_replisomes
 
 
 			# Generate new full chromosome molecules
