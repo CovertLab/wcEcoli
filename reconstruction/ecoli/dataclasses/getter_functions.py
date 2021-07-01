@@ -38,7 +38,7 @@ IGNORED_DNA_SITE_TYPES = {
 	'rep-element',
 	}
 
-class GeneDirectionError(Exception):
+class TranscriptionDirectionError(Exception):
 	pass
 
 class UnknownMolecularWeightError(Exception):
@@ -158,14 +158,47 @@ class GetterFunctions(object):
 
 	def _build_rna_sequences(self, raw_data):
 		"""
-		Builds nucleotide sequences of each RNA using the genome sequence and
-		the transcription start sites and lengths of the corresponding gene.
+		Builds nucleotide sequences of each transcription unit using the genome
+		sequence and the left and right end positions.
 		"""
-		# Get mapping from rna_id to gene_id
+		genome_sequence = raw_data.genome_sequence
+
+		def parse_sequence(left_end_pos, right_end_pos, direction):
+			"""
+			Parses genome sequence to get transcription unit sequence, given
+			left and right end positions and transcription direction (Note:
+			the left and right end positions in the raw data files are given as
+			1-indexed coordinates)
+			"""
+			if direction == '+':
+				return genome_sequence[left_end_pos - 1 : right_end_pos].transcribe()
+			elif direction == '-':
+				return genome_sequence[left_end_pos - 1 : right_end_pos].reverse_complement().transcribe()
+			else:
+				raise TranscriptionDirectionError(
+					f"Unidentified transcription direction given for {tu['id']}")
+
+		# Set of gene IDs that are covered by listed transcription units
+		covered_gene_ids = set()
+
+		# Add sequences from transcription_units file
+		for tu in raw_data.transcription_units:
+			left_end_pos = tu['left_end_pos']
+			right_end_pos = tu['right_end_pos']
+			assert left_end_pos is not None and right_end_pos is not None
+
+			# Keep track of genes that are covered
+			for gene in tu['genes']:
+				covered_gene_ids.add(gene)
+
+			self._sequences[tu['id']] = parse_sequence(
+				left_end_pos, right_end_pos, tu['direction'])
+
+		# Add sequences of individual RNAs that are not part of any
+		# transcription unit (these genes are assumed to be transcribed as
+		# monocistronic transcription units)
 		rna_id_to_gene_id = {
 			gene['rna_id']: gene['id'] for gene in raw_data.genes}
-
-		# Get coordinates and directions of each gene
 		gene_id_to_left_end_pos = {
 			gene['id']: gene['left_end_pos'] for gene in raw_data.genes
 			}
@@ -176,35 +209,28 @@ class GetterFunctions(object):
 			gene['id']: gene['direction'] for gene in raw_data.genes
 			}
 
-		# Get RNA sequences from genome sequence
-		genome_sequence = raw_data.genome_sequence
-		all_rna_ids = list(set([rna['id'] for rna in raw_data.rnas]))
+		all_rna_ids = sorted(set([rna['id'] for rna in raw_data.rnas]))
 
 		for rna_id in all_rna_ids:
 			# Skip RNAs without associated genes
 			if rna_id not in rna_id_to_gene_id:
 				continue
-			else:
-				gene_id = rna_id_to_gene_id[rna_id]
-				left_end_pos = gene_id_to_left_end_pos[gene_id]
-				right_end_pos = gene_id_to_right_end_pos[gene_id]
 
-				# Skip RNAs without gene end positions
-				if left_end_pos is None or right_end_pos is None:
-					continue
-				else:
-					# Parse genome sequence to get RNA sequence (Note:
-					# positions in genes.tsv are given as 1-indexed
-					# coordinates)
-					if gene_id_to_direction[gene_id] == '+':
-						seq = genome_sequence[left_end_pos - 1 : right_end_pos].transcribe()
-					elif gene_id_to_direction[gene_id] == '-':
-						seq = genome_sequence[left_end_pos - 1 : right_end_pos].reverse_complement().transcribe()
-					else:
-						raise GeneDirectionError(
-							f'Unidentified gene direction given for {gene_id}')
+			gene_id = rna_id_to_gene_id[rna_id]
 
-			self._sequences[rna_id] = seq
+			# Skip RNAs that are already covered by transcription units
+			if gene_id in covered_gene_ids:
+				continue
+
+			left_end_pos = gene_id_to_left_end_pos[gene_id]
+			right_end_pos = gene_id_to_right_end_pos[gene_id]
+
+			# Skip RNAs without gene end positions
+			if left_end_pos is None or right_end_pos is None:
+				continue
+
+			self._sequences[rna_id] = parse_sequence(
+				left_end_pos, right_end_pos, gene_id_to_direction[gene_id])
 
 	def _build_protein_sequences(self, raw_data):
 		"""
@@ -309,7 +335,8 @@ class GetterFunctions(object):
 		of polymerized NTPs.
 		"""
 		rnas_with_seqs = [
-			rna['id'] for rna in raw_data.rnas if rna['id'] in self._sequences]
+			rna['id'] for rna in itertools.chain(raw_data.rnas, raw_data.transcription_units)
+			if rna['id'] in self._sequences]
 
 		# Get RNA nucleotide compositions
 		rna_seqs = self.get_sequences(rnas_with_seqs)
@@ -328,10 +355,22 @@ class GetterFunctions(object):
 			])
 
 		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
-
-		rna_id_to_type = {
-			rna['id']: rna['type'] for rna in raw_data.rnas
+		
+		gene_id_to_rna_id = {
+			gene['id']: gene['rna_id'] for gene in raw_data.genes
 			}
+		rna_id_to_type = {rna['id']: rna['type'] for rna in raw_data.rnas}
+		for tu in raw_data.transcription_units:
+			tu_rna_types = [
+				rna_id_to_type[gene_id_to_rna_id[gene]] for gene in tu['genes']]
+			
+			if len(set(tu_rna_types)) > 1:
+				raise ValueError(f'Transcription unit f{tu["id"]} includes '
+					f'genes that encode for two or more different types of '
+					f'RNAs, which is not supported by this version of the '
+					f'model and thus should be removed.')
+			
+			rna_id_to_type[tu['id']] = tu_rna_types[0]
 
 		return {
 			rna_id: self._build_submass_array(

@@ -56,7 +56,9 @@ LIST_OF_DICT_FILENAMES = (
 	"secretions.tsv",
 	"sequence_motifs.tsv",
 	"transcription_factors.tsv",
+	"transcription_units.tsv",
 	"transcription_unit_counts.tsv",
+	"transcription_units_removed.tsv",
 	"transcriptional_attenuation.tsv",
 	"tf_one_component_bound.tsv",
 	"translation_efficiency.tsv",
@@ -117,6 +119,7 @@ REMOVED_DATA = {
 	'fold_changes_nca': 'fold_changes_removed',
 	'metabolic_reactions': 'metabolic_reactions_removed',
 	'metabolite_concentrations': 'metabolite_concentrations_removed',
+	'transcription_units': 'transcription_units_removed',
 	'trna_charging_reactions': 'trna_charging_reactions_removed',
 	}
 # TODO: move added rows from some flat files to new files and add here
