@@ -4,12 +4,14 @@ Submodel for chromosome replication
 
 from __future__ import absolute_import, division, print_function
 
+import uuid
 import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import (buildSequences, polymerize,
 	computeMassIncrease)
 from wholecell.utils import units
+from wholecell.utils.migration.write_json import write_json
 
 
 class ChromosomeReplication(wholecell.processes.process.Process):
@@ -27,6 +29,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 	# Construct object graph
 	def initialize(self, sim, sim_data):
 		super(ChromosomeReplication, self).initialize(sim, sim_data)
+
 
 		self.max_time_step = sim_data.process.replication.max_time_step
 
@@ -70,6 +73,10 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 		# Sim options
 		self.mechanistic_replisome = sim._mechanistic_replisome
+
+		# Saving updates
+		self.update_to_save = {}
+		self.saved = False
 
 	def calculateRequest(self):
 		# Get total count of existing oriC's
@@ -141,6 +148,14 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.full_chromosomes.request_access(self.EDIT_ACCESS)
 		self.active_replisomes.request_access(self.EDIT_DELETE_ACCESS)
 
+		self.update_to_save['replisome_trimers'] = {
+                    mol: 0
+                    for mol in self.parameters['replisome_trimers_subunits']}
+		self.update_to_save['replisome_monomers'] = {mol: 0
+                    for mol in self.parameters['replisome_monomers_subunits']}
+		self.update_to_save['active_replisomes'] = {}
+		self.update_to_save['listeners'] = {'replicatoin_data' : {}}
+
 	def evolveState(self):
 		## Module 1: Replication initiation
 		# Get number of existing replisomes and oriCs
@@ -191,6 +206,15 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 			# Add new oriC's, and reset attributes of existing oriC's
 			# All oriC's must be assigned new domain indexes
+
+			self.update_to_save['oriCs'] = {
+				'_add': [{
+					'key': str(uuid.uuid1()),
+					'state': {'domain_index': domain_index_new[index]}}
+					for index in range(n_oriC)],
+				'_delete': [(key,) for key in self.oriCs.]} # Something weird here
+				# '_delete': [(key,) for key in states['oriCs'].keys()]}
+
 			self.oriCs.attrIs(domain_index=domain_index_new[:n_oriC])
 			self.oriCs.moleculesNew(
 				n_oriC, domain_index=domain_index_new[n_oriC:])
@@ -204,6 +228,15 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 				np.array([True, False], dtype=np.bool), n_oriC)
 			domain_index_new_replisome = np.repeat(
 				domain_index_existing_oric, 2)
+
+			self.update_to_save['active_replisomes']['_add'] = [{
+				'key': str(uuid.uuid1()),
+				'state': {
+					'coordinates': coordinates_replisome[index],
+					'right_replichore': right_replichore[index],
+					'domain_index': domain_index_new_replisome[index],
+				}}
+				for index in range(n_new_replisome)]
 
 			self.active_replisomes.moleculesNew(
 				n_new_replisome,
@@ -223,9 +256,14 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			# Add new domains as children of existing domains
 			child_domains[new_parent_domains] = domain_index_new.reshape(-1, 2)
 			self.chromosome_domains.attrIs(child_domains=child_domains)
+			self.update_to_save['chromosome_domains'] = {**new_domains_update, **existing_domains_update}
 
 			# Decrement counts of replisome subunits
 			if self.mechanistic_replisome:
+				for mol in self.parameters['replisome_trimers_subunits']:
+					self.update_to_save['replisome_trimers'][mol] -= 6 * n_oriC
+				for mol in self.parameters['replisome_monomers_subunits']:
+					self.update_to_save['replisome_monomers'][mol] -= 2 * n_oriC
 				self.replisome_trimers.countsDec(6*n_oriC)
 				self.replisome_monomers.countsDec(2*n_oriC)
 
