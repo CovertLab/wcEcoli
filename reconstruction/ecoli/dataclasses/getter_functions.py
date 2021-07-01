@@ -579,14 +579,12 @@ class GetterFunctions(object):
 		self._all_compartments.update({
 			rna['id']: ['c'] for rna
 			in itertools.chain(raw_data.rnas, raw_data.transcription_units)
+			if rna['id'] in self._sequences
 			})
 		self._all_compartments.update({
 			modified_rna_id: ['c'] for rna in raw_data.rnas
 			for modified_rna_id in rna['modified_forms']
 			if modified_rna_id in self._all_submass_arrays
-			})
-		self._all_compartments.update({
-			rna['id']: ['c'] for rna in raw_data.operon_rnas
 			})
 		self._all_compartments.update({
 			sim_data.molecule_ids.full_chromosome[:-3]: ['c']
