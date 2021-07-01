@@ -9,7 +9,17 @@ from __future__ import absolute_import, division, print_function
 import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.constants import REQUEST_PRIORITY_TWO_COMPONENT_SYSTEM
+from wholecell.utils.migration.write_json import write_json
 
+"""
+from ecoli.library.schema import (
+    array_from, array_to, arrays_from,
+    arrays_to, listener_schema, bulk_schema)
+"""
+def array_to(keys, array):
+    return {
+        key: array[index]
+        for index, key in enumerate(keys)}
 
 class TwoComponentSystem(wholecell.processes.process.Process):
 	""" Two component system """
@@ -25,6 +35,10 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 	# Construct object graph
 	def initialize(self, sim, sim_data):
 		super(TwoComponentSystem, self).initialize(sim, sim_data)
+
+		# Saving updates
+		self.update_to_save = {}
+		self.saved = False
 
 		# Simulation options
 		self.jit = sim._jit
@@ -83,5 +97,12 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 				jit=self.jit,
 				)
 
-		# Increment changes in molecule counts
+		# Increment changes in molecule counts and add to update
 		self.molecules.countsInc(self.all_molecule_changes)
+		self.update_to_save['molecules'] = array_to(self.moleculeNames, self.all_molecule_changes.astype(int))
+
+		# Save to .json file
+		if not self.saved:
+			write_json(f'out/migration/transcript_elongation_update_t{int(self._sim.time())}.json',
+					   self.update_to_save)
+			self.saved = True
