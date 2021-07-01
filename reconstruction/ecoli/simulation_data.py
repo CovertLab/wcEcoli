@@ -114,32 +114,6 @@ class SimulationDataEcoli(object):
 
 	def _add_condition_data(self, raw_data):
 		abbrToActiveId = {x["TF"]: x["activeId"].split(", ") for x in raw_data.transcription_factors if len(x["activeId"]) > 0}
-		"""
-		gene_id_to_rna_set = {}
-		for rna in raw_data.operon_rnas:
-			for gene in rna['gene_set']:
-				if gene in gene_id_to_rna_set:
-					gene_id_to_rna_set[gene].append(rna['id'])
-				else:
-					gene_id_to_rna_set[gene] = [rna['id']]
-
-		rna_id_to_rna_set = {
-			gene['rna_id']: gene_id_to_rna_set.get(gene['id'], [])
-			for gene in raw_data.genes
-			}
-
-		# TODO (ggsun): Choice of first RNA is arbitrary?
-		abbrToRnaId = {}
-		for x in raw_data.genes:
-			if x["id"] in gene_id_to_rna_set:
-				abbrToRnaId[x["symbol"]] = gene_id_to_rna_set[x["id"]][0]
-			else:
-				abbrToRnaId[x["symbol"]] = x["id"]
-		abbrToRnaId.update({
-			x["name"]: gene_id_to_rna_set[x["geneId"]][0]
-			})
-		"""
-
 		gene_id_to_rna_id = {
 			gene['id']: gene['rna_id'] for gene in raw_data.genes}
 		gene_symbol_to_rna_id = {
@@ -223,34 +197,21 @@ class SimulationDataEcoli(object):
 			if tf not in self.tf_to_fold_change:
 				continue
 
-			active_genotype = row["active genotype perturbations"]
-			active_nutrients = row["active nutrients"]
-			inactive_genotype = row["inactive genotype perturbations"]
-			inactive_nutrients = row["inactive nutrients"]
-			
+			activeGenotype = row["active genotype perturbations"]
+			activeNutrients = row["active nutrients"]
+			inactiveGenotype = row["inactive genotype perturbations"]
+			inactiveNutrients = row["inactive nutrients"]
+
 			if tf not in self.tf_to_active_inactive_conditions:
 				self.tf_to_active_inactive_conditions[tf] = {}
 			else:
 				print("Warning: overwriting TF fold change conditions for %s" % tf)
 
-			self.tf_to_active_inactive_conditions[tf]["active genotype perturbations"] = active_genotype
-			self.tf_to_active_inactive_conditions[tf]["active nutrients"] = active_nutrients
-			self.tf_to_active_inactive_conditions[tf]["inactive genotype perturbations"] = inactive_genotype
-			self.tf_to_active_inactive_conditions[tf]["inactive nutrients"] = inactive_nutrients			
-			"""
-			active_genotype_polycistronic = {}
-			for rna_id, value in active_genotype.items():
-				for polycis_rna_id in rna_id_to_rna_set[rna_id[:-3]]:
-					active_genotype_polycistronic[polycis_rna_id + "[c]"] = value
+			self.tf_to_active_inactive_conditions[tf]["active genotype perturbations"] = activeGenotype
+			self.tf_to_active_inactive_conditions[tf]["active nutrients"] = activeNutrients
+			self.tf_to_active_inactive_conditions[tf]["inactive genotype perturbations"] = inactiveGenotype
+			self.tf_to_active_inactive_conditions[tf]["inactive nutrients"] = inactiveNutrients
 
-			inactive_genotype_polycistronic = {}
-			for rna_id, value in inactive_genotype.items():
-				for polycis_rna_id in rna_id_to_rna_set[rna_id[:-3]]:
-					inactive_genotype_polycistronic[polycis_rna_id + "[c]"] = value
-
-			self.tf_to_active_inactive_conditions[tf]["active genotype perturbations"] = active_genotype_polycistronic
-			self.tf_to_active_inactive_conditions[tf]["inactive genotype perturbations"] = inactive_genotype_polycistronic
-			"""
 		# Populate combined conditions data from condition_defs
 		self.conditions = {}
 		self.condition_to_doubling_time = {}
