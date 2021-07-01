@@ -426,10 +426,17 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 				self.full_chromosomes.attrIs(
 					domain_index = domain_index_full_chroms)
 
+				self.update_to_save['full_chromosomes'] = {**chromosome_add_update, **chromosome_existing_update}
+
 			# Increment counts of replisome subunits
 			if self.mechanistic_replisome:
 				self.replisome_trimers.countsInc(3*replisomes_to_delete.sum())
 				self.replisome_monomers.countsInc(replisomes_to_delete.sum())
+
+				for mol in self.parameters['replisome_trimers_subunits']:
+					self.update_to_save['replisome_trimers'][mol] += 3 * replisomes_to_delete.sum()
+				for mol in self.parameters['replisome_monomers_subunits']:
+					self.update_to_save['replisome_monomers'][mol] += replisomes_to_delete.sum()
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		return inputTimeStep <= self.max_time_step
