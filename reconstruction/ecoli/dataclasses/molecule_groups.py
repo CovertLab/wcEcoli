@@ -14,15 +14,6 @@ class MoleculeGroups(object):
 	"""
 
 	def __init__(self, raw_data, sim_data):
-		gene_id_to_rnas = {}
-		for rna in raw_data.operon_rnas:
-			for gene in rna['gene_set']:
-				if gene not in gene_id_to_rnas:
-					gene_id_to_rnas[gene] = [rna['id']]
-				else:
-					gene_id_to_rnas[gene].append(rna['id'])
-
-		self.gene_id_to_rnas = gene_id_to_rnas
 		self._build_molecule_groups(sim_data)
 
 	def _build_molecule_groups(self, sim_data):
@@ -35,23 +26,6 @@ class MoleculeGroups(object):
 			POLYMERIZED_FRAGMENT_PREFIX + ntp_id for ntp_id in ntp_ids]
 		polymerized_dntp_ids = [
 			POLYMERIZED_FRAGMENT_PREFIX + dntp_id for dntp_id in dntp_ids]
-
-		# find endoRNAse RNA names in case of operons
-		endoRNase_genes = ['EG10856', 'EG10857', 'EG10859', 'EG10860',
-			'EG10861', 'EG10862', 'EG11299', 'G7175', 'G7365']
-
-		endoRNase_rna_ids = []
-		for gene in endoRNase_genes:
-			rnaids = [i + '[c]' for i in self.gene_id_to_rnas[gene]]
-			endoRNase_rna_ids = endoRNase_rna_ids + rnaids
-
-		exoRNase_genes = ['EG11620', 'G7175', 'EG10858', 'EG10863', 'EG11259',
-			'EG11547', 'EG10746', 'G7842', 'EG10743']
-
-		exoRNase_rna_ids = []
-		for gene in exoRNase_genes:
-			rnaids = [i + '[c]' for i in self.gene_id_to_rnas[gene]]
-			exoRNase_rna_ids = exoRNase_rna_ids + rnaids
 
 		molecule_groups = {
 			'amino_acids': aa_ids,
@@ -99,10 +73,7 @@ class MoleculeGroups(object):
 			# TODO: 'EG10245-MONOMER[c]' (DNAP III subunit tau) should be added
 			# 	to the list of trimer subunits once frame-shifting proteins are
 			# 	produced.
-			'replisome_trimer_subunits': ['CPLX0-2361[c]'],
-			# TODO (ggsun): Determine if removal of CPLX0-3761[c] is necessary
-			# 	before merge
-			# 'replisome_trimer_subunits': ['CPLX0-2361[c]', 'CPLX0-3761[c]'],
+			'replisome_trimer_subunits': ['CPLX0-2361[c]', 'CPLX0-3761[c]'],
 			'replisome_monomer_subunits': ['CPLX0-3621[c]', 'EG10239-MONOMER[c]',
 				'EG11500-MONOMER[c]', 'EG11412-MONOMER[c]'],
 
@@ -110,9 +81,14 @@ class MoleculeGroups(object):
 				'EG10858-MONOMER[c]', 'EG10863-MONOMER[c]', 'EG11259-MONOMER[c]',
 				'EG11547-MONOMER[c]', 'EG10746-MONOMER[c]', 'G7842-MONOMER[c]',
 				'EG10743-MONOMER[c]'],
-			'endoRNase_rnas': endoRNase_rna_ids,
-			'exoRNase_rnas': exoRNase_rna_ids,
-
+			'endoRNase_rnas': ['EG10856_RNA', 'EG10857_RNA',
+				'EG10859_RNA', 'EG10860_RNA', 'EG10861_RNA',
+				'EG10862_RNA', 'EG11299_RNA', 'G7175_RNA',
+				'G7365_RNA'],
+			'exoRNase_rnas': ['EG11620_RNA', 'G7175_RNA',
+				'EG10858_RNA', 'EG10863_RNA', 'EG11259_RNA',
+				'EG11547_RNA', 'EG10746_RNA', 'G7842_RNA',
+				'EG10743_RNA'],
 			'RNAP_subunits': ['RPOB-MONOMER[c]', 'RPOC-MONOMER[c]',
 				'EG10893-MONOMER[c]'],
 
