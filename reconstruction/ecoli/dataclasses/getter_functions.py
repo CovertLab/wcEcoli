@@ -576,10 +576,9 @@ class GetterFunctions(object):
 
 		# RNAs, modified RNAs, and full chromosomes only localize to the
 		# cytosol
-		# TODO (MIALY): Dont record overlapping rna_ids from rnas and operon_rnas
-		# TODO (ggsun): Check if original RNA IDs are needed
 		self._all_compartments.update({
-			rna['id']: ['c'] for rna in raw_data.rnas
+			rna['id']: ['c'] for rna
+			in itertools.chain(raw_data.rnas, raw_data.transcription_units)
 			})
 		self._all_compartments.update({
 			modified_rna_id: ['c'] for rna in raw_data.rnas
