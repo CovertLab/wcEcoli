@@ -270,8 +270,12 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Write data from this module to a listener
 		self.writeToListener("ReplicationData", "criticalMassPerOriC",
 			self.criticalMassPerOriC)
+		self.update_to_save['listeners']['replication_data']['criticalMassPerOriC'] = \
+			criticalMassPerOriC
 		self.writeToListener("ReplicationData", "criticalInitiationMass",
 			self.criticalInitiationMass.asNumber(units.fg))
+		self.update_to_save['listeners']['replication_data']['criticalInitiationMass'] = \
+			self.criticalInitiationMass.asNumber(units.fg)
 
 		## Module 2: replication elongation
 		# If no active replisomes are present, return immediately
@@ -332,10 +336,15 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Update attributes and submasses of replisomes
 		self.active_replisomes.attrIs(coordinates = updated_coordinates)
 		self.active_replisomes.add_submass_by_name("DNA", added_dna_mass)
+		self.update_to_save['active_replisomes'] = {
+			active_replisomes_indexes[index]: active_replisomes
+			for index, active_replisomes in enumerate(active_replisomes_update)}
 
 		# Update counts of polymerized metabolites
 		self.dntps.countsDec(dNtpsUsed)
 		self.ppi.countInc(dNtpsUsed.sum())
+		self.update_to_save['dntps'] = array_to(self.parameters['dntps'], -dNtpsUsed)
+		self.update_to_save['ppi'] = array_to(self.parameters['ppi'], [dNtpsUsed.sum()])
 
 
 		## Module 3: replication termination
@@ -400,6 +409,9 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 			# Delete terminated replisomes
 			self.active_replisomes.delByIndexes(np.where(replisomes_to_delete)[0])
+			if self.active_replisomes:
+				self.update_to_save['active_replisomes']['_delete'] = replisome_delete_update
+
 
 			# Generate new full chromosome molecules
 			if n_new_chromosomes > 0:
