@@ -160,3 +160,11 @@ reconstruction/ecoli/scripts/nca/data/regulon-db/*.tsv
 *.fls
 *.synctex.gz
 
+# Pipenv files #
+################
+Pipfile
+Pipfile.lock
+
+# VS Code Files #
+#################
+.env
