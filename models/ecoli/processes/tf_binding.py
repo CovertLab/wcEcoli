@@ -81,6 +81,7 @@ class TfBinding(wholecell.processes.process.Process):
 			"mass"][tf_indexes]/self.nAvogadro).asNumber(units.fg)
 
 		# saving updates
+		self.save_time = 102
 		self.update_to_save = {}
 		self.saved = False
 
@@ -125,13 +126,19 @@ class TfBinding(wholecell.processes.process.Process):
 			bound_tf_counts = n_bound_TF[tf_idx]
 			active_tf_view.countInc(bound_tf_counts)
 
-			self.update_to_save['active_tfs'][active_tf_view._query] = bound_tf_counts
+			self.update_to_save['active_tfs'][active_tf_view._query] = active_tf_view.count()
 
 			# Get counts of transcription factors
 			# countInc() above increases count() but not total_counts() value
 			# so need to add freed TFs to the total active
 			active_tf_counts = active_tf_view.total_counts() + bound_tf_counts
 			n_available_active_tfs = active_tf_view.count()
+   
+			# Print out differences between .total_counts() and .count() for affected TFs
+			""" if not (active_tf_counts[0] == n_available_active_tfs):
+				print(f"{active_tf_view._query}: ({active_tf_view.total_counts()[0]} + "
+          			f"{bound_tf_counts} = {active_tf_counts[0]} \033[94m != \033[0m "
+             		f"{n_available_active_tfs})") """
 
 			# Determine the number of available promoter sites
 			available_promoters = np.isin(TU_index, self.TF_to_TU_idx[tf_id])
@@ -199,7 +206,7 @@ class TfBinding(wholecell.processes.process.Process):
 			int(key): {
 				'bound_TF': bound_TF_new[index],
 				'submass': mass_diffs[index]}
-			for index, key in enumerate(self.promoters._queryResult._globalIndexes)}
+			for index, key in enumerate(self.promoters.attr('unique_index'))}
 
 		self.update_to_save['listeners'] = {
 			'rna_synth_prob': {
@@ -217,7 +224,7 @@ class TfBinding(wholecell.processes.process.Process):
 		self.writeToListener(
 			"RnaSynthProb", "n_bound_TF_per_TU", n_bound_TF_per_TU)
 
-		if not self.saved:
+		if not self.saved and self._sim.time() >= self.save_time:
 			write_json(f'out/migration/tf_binding_update_t{int(self._sim.time())}.json',
 					   self.update_to_save)
 			self.saved = True
