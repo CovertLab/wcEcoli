@@ -14,6 +14,8 @@ from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 import six
 
+from wholecell.utils.migration.write_json import write_json
+
 
 class TfBinding(wholecell.processes.process.Process):
 	""" TfBinding """
@@ -78,6 +80,11 @@ class TfBinding(wholecell.processes.process.Process):
 		self.active_tf_masses = (sim_data.internal_state.bulk_molecules.bulk_data[
 			"mass"][tf_indexes]/self.nAvogadro).asNumber(units.fg)
 
+		# saving updates
+		self.save_time = 102
+		self.update_to_save = {}
+		self.saved = False
+
 
 	def calculateRequest(self):
 		# Request all counts of active transcription factors
@@ -109,6 +116,9 @@ class TfBinding(wholecell.processes.process.Process):
 		n_promoters = np.zeros(self.n_TF, dtype=np.float64)
 		n_bound_TF_per_TU = np.zeros((self.n_TU, self.n_TF), dtype=np.int16)
 
+		self.update_to_save = {
+			'active_tfs': {}}
+
 		for tf_idx, tf_id in enumerate(self.tf_ids):
 			# Free all DNA-bound transcription factors into free active
 			# transcription factors
@@ -116,11 +126,19 @@ class TfBinding(wholecell.processes.process.Process):
 			bound_tf_counts = n_bound_TF[tf_idx]
 			active_tf_view.countInc(bound_tf_counts)
 
+			self.update_to_save['active_tfs'][active_tf_view._query] = active_tf_view.count()
+
 			# Get counts of transcription factors
 			# countInc() above increases count() but not total_counts() value
 			# so need to add freed TFs to the total active
 			active_tf_counts = active_tf_view.total_counts() + bound_tf_counts
 			n_available_active_tfs = active_tf_view.count()
+   
+			# Print out differences between .total_counts() and .count() for affected TFs
+			""" if not (active_tf_counts[0] == n_available_active_tfs):
+				print(f"{active_tf_view._query}: ({active_tf_view.total_counts()[0]} + "
+          			f"{bound_tf_counts} = {active_tf_counts[0]} \033[94m != \033[0m "
+             		f"{n_available_active_tfs})") """
 
 			# Determine the number of available promoter sites
 			available_promoters = np.isin(TU_index, self.TF_to_TU_idx[tf_id])
@@ -161,6 +179,8 @@ class TfBinding(wholecell.processes.process.Process):
 				# Update count of free transcription factors
 				active_tf_view.countDec(bound_locs.sum())
 
+				self.update_to_save['active_tfs'][active_tf_view._query] -= bound_locs.sum()
+
 				# Update bound_TF array
 				bound_TF_new[available_promoters, tf_idx] = bound_locs
 
@@ -182,6 +202,20 @@ class TfBinding(wholecell.processes.process.Process):
 		# Add mass_diffs array to promoter submass
 		self.promoters.add_submass_by_array(mass_diffs)
 
+		self.update_to_save['promoters'] = {
+			int(key): {
+				'bound_TF': bound_TF_new[index],
+				'submass': mass_diffs[index]}
+			for index, key in enumerate(self.promoters.attr('unique_index'))}
+
+		self.update_to_save['listeners'] = {
+			'rna_synth_prob': {
+				'pPromoterBound': pPromotersBound,
+				'nPromoterBound': nPromotersBound,
+				'nActualBound': nActualBound,
+				'n_available_promoters': n_promoters,
+				'n_bound_TF_per_TU': n_bound_TF_per_TU}}
+
 		# Write values to listeners
 		self.writeToListener("RnaSynthProb", "pPromoterBound", pPromotersBound)
 		self.writeToListener("RnaSynthProb", "nPromoterBound", nPromotersBound)
@@ -189,3 +223,8 @@ class TfBinding(wholecell.processes.process.Process):
 		self.writeToListener("RnaSynthProb", "n_available_promoters", n_promoters)
 		self.writeToListener(
 			"RnaSynthProb", "n_bound_TF_per_TU", n_bound_TF_per_TU)
+
+		if not self.saved and self._sim.time() >= self.save_time:
+			write_json(f'out/migration/tf_binding_update_t{int(self._sim.time())}.json',
+					   self.update_to_save)
+			self.saved = True

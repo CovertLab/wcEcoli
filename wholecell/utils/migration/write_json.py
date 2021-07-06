@@ -1,4 +1,5 @@
 import json
+import unum
 import os
 import numpy as np
 
@@ -14,6 +15,8 @@ def write_json(path, numpy_dict):
             elif obj == INFINITY:
                 return '__INFINITY__'
             elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, unum.Unum):
                 return float(obj)
             elif isinstance(obj, np.bool_):
                 return bool(obj)
