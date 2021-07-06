@@ -1,4 +1,3 @@
-- move classes to new directory and separate files
 - document functions
 - sim error handling
 - resume from a given iteration
@@ -6,9 +5,7 @@
   - option to do so
   - return objective
   - track objective over iterations
-- use iteration as topline folder (need to keep variants with different sim_data)
-  - change top level sims nested under one name
-  - run multiple seeds/gens/variants within each parameter change (maybe also nested?)
+- apply variants before sim_data changes
 
 considerations:
 - create workflow dependencies to more easily scale

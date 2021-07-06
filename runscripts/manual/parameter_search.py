@@ -168,10 +168,10 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		n_variants = 0  # TODO: start with a different variant/iteration step
 		sim_data_file = None  # TODO: start with path or init
 		objective = 0  # TODO: start with objective?
-		for i in range(args.iterations):
-			print(f'** Starting iteration {i} **')
-			n_variants, objective = solver.run(n_variants)
-			solver.print_update()
+		for it in range(args.iterations):
+			print(f'** Starting iteration {it} **')
+			n_variants, objective = solver.run(it, n_variants)
+			solver.print_update(objective)
 
 
 if __name__ == '__main__':

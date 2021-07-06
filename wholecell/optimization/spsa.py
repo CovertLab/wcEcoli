@@ -14,8 +14,10 @@ class SPSA(BaseSolver):
 
         return objective_diff / parameter_diff * original_val
 
-    def get_parameter_perturbations(self):
-        return [{}]*2, [{}]*2
+    def get_parameter_perturbations(self, iteration, index):
+        raw_data_perturbations = self._method.initial_raw_data(iteration, index)
+        sim_data_perturbations = self._method.initial_sim_data(iteration, index)
+        return raw_data_perturbations, sim_data_perturbations
 
     def n_variants_per_iteration(self):
         return 2
