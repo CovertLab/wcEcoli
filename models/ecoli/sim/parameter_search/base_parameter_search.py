@@ -33,5 +33,5 @@ class BaseParameterSearch():
 
         return all_params
 
-    def get_objective(self, sim_data_file, sim_out_dirs):
+    def get_objective(self, sim_out_dirs):
         raise NotImplementedError('Need to implement in a subclass.')

@@ -90,7 +90,7 @@ class BaseSolver():
         self._method = method
         self._sim_dir = sim_dir
 
-    def parameter_update(self):
+    def parameter_update(self, param, objectives, paths, reference_path):
         raise NotImplementedError('Need to implement in a subclass.')
 
     def get_parameter_perturbations(self):
@@ -99,9 +99,9 @@ class BaseSolver():
     def n_variants_per_iteration(self):
         raise NotImplementedError('Need to implement in a subclass.')
 
-    def perturb_parameters(self, variants, raw_data_file, sim_data_file, metrics_file):
+    def perturb_parameters(self, variants, raw_data_file, sim_data_file):
         for variant, raw_updates, sim_updates in zip(variants, *self.get_parameter_perturbations()):
-            new_raw_data_file, new_sim_data_file, _ = self.data_paths(variant)
+            new_raw_data_file, new_sim_data_file, metrics_file = self.data_paths(variant)
             if raw_updates:
                 self.apply_updates(raw_data_file, raw_updates, new_raw_data_file)
 
@@ -113,21 +113,12 @@ class BaseSolver():
     def update_raw_data(self):
         raise NotImplementedError('Need to expand functionality.')
 
-    def update_parameters(self, variant, objective, paths, previous_raw_data, previous_sim_data):
-        for updates in self.get_sim_data_updates():
-            self.apply_updates(previous_sim_data, updates, new_path)
-
-    def get_reference_parameters(self, variant):
-        if variant == 0:
-            raw_data_file, sim_data_file, metrics_file = self.data_paths()
-            if not os.path.exists(raw_data_file):
-                InitRawDataTask(output=raw_data_file).run_task({})
-            if not os.path.exists(sim_data_file):
-                run_parca(self._method.parca_args, raw_data_file, sim_data_file, metrics_file)
-        else:
-            raw_data_file, sim_data_file, metrics_file = self.data_paths(variant-1)
-
-        return raw_data_file, sim_data_file, metrics_file
+    def update_parameters(self, variant, objectives, paths, previous_raw_data, previous_sim_data):
+        raw_data, sim_data, _ = self.data_paths(variant)
+        for updates in self.get_raw_data_updates(objectives, paths, previous_raw_data):
+            self.apply_updates(previous_raw_data, updates, raw_data)
+        for updates in self.get_sim_data_updates(objectives, paths, previous_sim_data):
+            self.apply_updates(previous_sim_data, updates, sim_data)
 
     def run_sims(self, sim_params):
         # TODO: run sims in parallel
@@ -136,8 +127,8 @@ class BaseSolver():
 
     def run(self, variant):
         variants = list(range(variant, variant+self.n_variants_per_iteration()))
-        raw_data_file, sim_data_file, metrics_file = self.get_reference_parameters(variant)
-        sim_out_dirs = self.perturb_parameters(variants, raw_data_file, sim_data_file, metrics_file)
+        raw_data_file, sim_data_file = self.get_reference_parameters(variant)
+        sim_out_dirs = self.perturb_parameters(variants, raw_data_file, sim_data_file)
         sim_params = self._method.get_sim_params(self._sim_dir, variants)
         self.run_sims(sim_params)
         objectives = self._method.get_objective(sim_out_dirs)
@@ -149,17 +140,39 @@ class BaseSolver():
     def print_update(self):
         pass
 
-    def get_sim_data_updates(self):
+    def get_raw_data_updates(self, objectives, paths, reference_path):
         """
-        TODO: add objective value and previous param values
+        TODO: add previous param values
         TODO: generalize to sim or raw
         """
         updates = {}
 
-        for param in self._method.sim_params():
-            updates[param] = self.parameter_update()
+        for param in self._method.raw_params:
+            updates[param] = self.parameter_update(param, objectives, paths, reference_path)
 
         return updates
+
+    def get_sim_data_updates(self, objectives, paths, reference_path):
+        """
+        TODO: add previous param values
+        TODO: generalize to sim or raw
+        """
+        updates = {}
+
+        for param in self._method.sim_params:
+            updates[param] = self.parameter_update(param, objectives, paths, reference_path)
+
+        return updates
+
+    def get_param(self, param, path):
+        with open(path, 'rb') as f:
+            attr = pickle.load(f)
+
+        attrs = param.split('.')
+        for a in attrs:
+            attr = getattr(attr, a)
+
+        return attr
 
     def apply_updates(self, old_path: str, updates: Dict[str, Any], new_path: str):
         """
@@ -182,9 +195,31 @@ class BaseSolver():
                 parent = getattr(parent, a)
             setattr(parent, attrs[-1], val)
 
-        import ipdb; ipdb.set_trace()
         with open(new_path, 'wb') as f:
-            pickle.dump(obj, f)
+            pickle.dump(obj, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def get_reference_parameters(self, variant: int) -> (str, str):
+        """
+        Get paths to raw_data and sim_data files for the reference variant.
+
+        Args:
+            variant: current variant number
+
+        Returns:
+            raw_data: path to the reference raw_data pickle object for this variant
+            sim_data: path to the reference sim_data pickle object for this variant
+        """
+
+        if variant == 0:
+            raw_data, sim_data, metrics = self.data_paths()
+            if not os.path.exists(raw_data):
+                InitRawDataTask(output=raw_data).run_task({})
+            if not os.path.exists(sim_data):
+                run_parca(self._method.parca_args, raw_data, sim_data, metrics)
+        else:
+            raw_data, sim_data, _ = self.data_paths(variant - 1)
+
+        return raw_data, sim_data
 
     def data_paths(self, variant: Optional[int] = None) -> (str, str, str):
         """

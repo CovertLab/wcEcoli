@@ -11,5 +11,5 @@ class Example(BaseParameterSearch):
         },
     )
 
-    def get_objective(self, sim_data_file, sim_out_dirs):
+    def get_objective(self, sim_out_dirs):
         return 0

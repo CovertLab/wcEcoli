@@ -170,7 +170,7 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		objective = 0  # TODO: start with objective?
 		for i in range(args.iterations):
 			print(f'** Starting iteration {i} **')
-			sim_data_file, objective = solver.run(objective)
+			n_variants, objective = solver.run(n_variants)
 			solver.print_update()
 
 

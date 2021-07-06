@@ -7,8 +7,12 @@ class SPSA(BaseSolver):
 
         # TODO: handle solver specific options
 
-    def parameter_update(self):
-        raise NotImplementedError('Need to implement in a subclass.')
+    def parameter_update(self, param, objectives, paths, reference_path):
+        objective_diff = objectives[1] - objectives[0]
+        parameter_diff = self.get_param(param, paths[1]) - self.get_param(param, paths[0])
+        original_val = self.get_param(param, reference_path)
+
+        return objective_diff / parameter_diff * original_val
 
     def get_parameter_perturbations(self):
         return [{}]*2, [{}]*2
