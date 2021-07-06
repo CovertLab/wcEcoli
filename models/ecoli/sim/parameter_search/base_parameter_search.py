@@ -8,80 +8,80 @@ from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 
 
 DEFAULT_CLI_KWARGS = {
-    'init_sims': 1,
-    'generations': 1,
-    }
+	'init_sims': 1,
+	'generations': 1,
+	}
 
 class BaseParameterSearch():
-    parca_args = {'cpus': 8}
-    _raw_params = ()
-    _sim_params = ()
-    sims_to_run = ()
-    _init_raw_params = {}
-    _init_sim_params = {}
+	parca_args = {'cpus': 8}
+	_raw_params = ()
+	_sim_params = ()
+	sims_to_run = ()
+	_init_raw_params = {}
+	_init_sim_params = {}
 
-    def __init__(self):
-        self.variant_name = self.__class__.__name__
-        self.raw_params = {p: None for p in self._raw_params}
-        self.sim_params = {p: None for p in self._sim_params}
-        self.initialized = False
+	def __init__(self):
+		self.variant_name = self.__class__.__name__
+		self.raw_params = {p: None for p in self._raw_params}
+		self.sim_params = {p: None for p in self._sim_params}
+		self.initialized = False
 
-    def update_raw_data(self, objectives, paths):
-        raise NotImplementedError('Need to implement in a subclass.')
+	def update_raw_data(self, objectives, paths):
+		raise NotImplementedError('Need to implement in a subclass.')
 
-    def update_sim_data(self, objectives, paths):
-        raise NotImplementedError('Need to implement in a subclass.')
+	def update_sim_data(self, objectives, paths):
+		raise NotImplementedError('Need to implement in a subclass.')
 
-    def get_objective(self, sim_out_dirs, sim_data_files):
-        raise NotImplementedError('Need to implement in a subclass.')
+	def get_objective(self, sim_out_dirs, sim_data_files):
+		raise NotImplementedError('Need to implement in a subclass.')
 
-    def initialize(self, raw_data_file, sim_data_file):
-        with open(raw_data_file, 'rb') as f:
-            raw_data = pickle.load(f)
-        for param in self.raw_params:
-            self.raw_params[param] = self._init_raw_params.get(param, self.get_attr(raw_data, param))
+	def initialize(self, raw_data_file, sim_data_file):
+		with open(raw_data_file, 'rb') as f:
+			raw_data = pickle.load(f)
+		for param in self.raw_params:
+			self.raw_params[param] = self._init_raw_params.get(param, self.get_attr(raw_data, param))
 
-        with open(sim_data_file, 'rb') as f:
-            sim_data = pickle.load(f)
-        for param in self.sim_params:
-            self.sim_params[param] = self._init_sim_params.get(param, self.get_attr(sim_data, param))
+		with open(sim_data_file, 'rb') as f:
+			sim_data = pickle.load(f)
+		for param in self.sim_params:
+			self.sim_params[param] = self._init_sim_params.get(param, self.get_attr(sim_data, param))
 
-        self.initialized = True
+		self.initialized = True
 
-    def get_sim_params(self, sim_dir, variants):
-        all_params = []
-        for variant in variants:
-            for index, sim_params in enumerate(self.sims_to_run):
-                params = DEFAULT_SIMULATION_KWARGS.copy()
-                params.update(DEFAULT_CLI_KWARGS)
-                params.update(sim_params)
+	def get_sim_params(self, sim_dir, variants):
+		all_params = []
+		for variant in variants:
+			for index, sim_params in enumerate(self.sims_to_run):
+				params = DEFAULT_SIMULATION_KWARGS.copy()
+				params.update(DEFAULT_CLI_KWARGS)
+				params.update(sim_params)
 
-                params['variant type'] = self.variant_name
-                params['variant'] = variant
-                params['sim dir'] = sim_dir
-                params['index'] = index
+				params['variant type'] = self.variant_name
+				params['variant'] = variant
+				params['sim dir'] = sim_dir
+				params['index'] = index
 
-                all_params.append(params)
+				all_params.append(params)
 
-        return all_params
+		return all_params
 
-    def get_attr(self, obj, attr, default=None):
-        attrs = attr.split('.')
-        for a in attrs:
-            if hasattr(obj, a):
-                obj = getattr(obj, a)
-            else:
-                return default
+	def get_attr(self, obj, attr, default=None):
+		attrs = attr.split('.')
+		for a in attrs:
+			if hasattr(obj, a):
+				obj = getattr(obj, a)
+			else:
+				return default
 
-        return obj
+		return obj
 
-    def set_attr(self, obj, attr, val):
-        attrs = attr.split('.')
-        for a in attrs[:-1]:
-            obj = getattr(obj, a)
-        setattr(obj, attrs[-1], val)
+	def set_attr(self, obj, attr, val):
+		attrs = attr.split('.')
+		for a in attrs[:-1]:
+			obj = getattr(obj, a)
+		setattr(obj, attrs[-1], val)
 
-    def print_update(self):
-        # TODO: pretty print
-        print(self.raw_params)
-        print(self.sim_params)
+	def print_update(self):
+		# TODO: pretty print
+		print(self.raw_params)
+		print(self.sim_params)
