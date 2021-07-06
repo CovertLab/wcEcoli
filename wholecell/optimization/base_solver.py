@@ -91,8 +91,9 @@ class BaseSolver():
     def __init__(self, method, sim_dir, **options):
         self._method = method
         self._sim_dir = sim_dir
+        self.perturbations = {}
 
-    def parameter_update(self, param, objectives, paths, reference_path):
+    def parameter_updates(self, original_values, objectives, paths):
         raise NotImplementedError('Need to implement in a subclass.')
 
     def get_parameter_perturbations(self, iteration, index):
@@ -106,6 +107,7 @@ class BaseSolver():
         for variant in variants:
             index = variant - variants[0]
             raw_updates, sim_updates = self.get_parameter_perturbations(iteration, index)
+            self.perturbations[(iteration, index)] = (raw_updates, sim_updates)
             new_raw_data_file, new_sim_data_file, metrics_file = self.data_paths(variant)
             if raw_updates:
                 self.apply_updates(raw_data_file, raw_updates, new_raw_data_file)
@@ -127,8 +129,8 @@ class BaseSolver():
             raw_data_paths.append(raw_data)
             sim_data_paths.append(sim_data)
 
-        self._method.update_raw_data(objectives, raw_data_paths)
-        self._method.update_sim_data(objectives, sim_data_paths)
+        self.parameter_updates(self._method.raw_params, objectives, raw_data_paths)
+        self.parameter_updates(self._method.sim_params, objectives, sim_data_paths)
 
     def run_sims(self, sim_params):
         # TODO: run sims in parallel
@@ -161,7 +163,7 @@ class BaseSolver():
         with open(path, 'rb') as f:
             obj = pickle.load(f)
 
-        return self._method.get_attrs(obj, param)
+        return self._method.get_attr(obj, param)
 
     def apply_updates(self, old_path: str, updates: Dict[str, Any], new_path: str):
         """

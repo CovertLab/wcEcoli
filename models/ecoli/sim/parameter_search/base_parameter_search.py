@@ -17,6 +17,8 @@ class BaseParameterSearch():
     _raw_params = ()
     _sim_params = ()
     sims_to_run = ()
+    _init_raw_params = {}
+    _init_sim_params = {}
 
     def __init__(self):
         self.variant_name = self.__class__.__name__
@@ -37,20 +39,14 @@ class BaseParameterSearch():
         with open(raw_data_file, 'rb') as f:
             raw_data = pickle.load(f)
         for param in self.raw_params:
-            self.raw_params = self.get_attrs(raw_data, param)
+            self.raw_params[param] = self._init_raw_params.get(param, self.get_attr(raw_data, param))
 
         with open(sim_data_file, 'rb') as f:
             sim_data = pickle.load(f)
         for param in self.sim_params:
-            self.sim_params = self.get_attrs(sim_data, param)
+            self.sim_params[param] = self._init_sim_params.get(param, self.get_attr(sim_data, param))
 
         self.initialized = True
-
-    def initial_raw_data(self, iteration, index):
-        return {}
-
-    def initial_sim_data(self, iteration, index):
-        return {}
 
     def get_sim_params(self, sim_dir, variants):
         all_params = []
@@ -69,11 +65,21 @@ class BaseParameterSearch():
 
         return all_params
 
-    def get_attrs(self, obj, attr):
+    def get_attr(self, obj, attr, default=None):
         attrs = attr.split('.')
         for a in attrs:
-            obj = getattr(obj, a)
+            if hasattr(obj, a):
+                obj = getattr(obj, a)
+            else:
+                return default
+
         return obj
+
+    def set_attr(self, obj, attr, val):
+        attrs = attr.split('.')
+        for a in attrs[:-1]:
+            obj = getattr(obj, a)
+        setattr(obj, attrs[-1], val)
 
     def print_update(self):
         # TODO: pretty print

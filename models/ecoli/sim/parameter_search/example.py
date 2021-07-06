@@ -4,14 +4,14 @@ from models.ecoli.sim.parameter_search.base_parameter_search import BaseParamete
 
 
 class Example(BaseParameterSearch):
-    raw_params = ()
-    sim_params = ()
+    _sim_params = ('constants.a',)
     sims_to_run = (
         {
             'jit': False,
             'length_sec': 2,
         },
     )
+    _init_sim_params = {'constants.a': 1}
 
     def update_raw_data(self, objectives, paths):
         print(self.raw_params)
@@ -24,9 +24,6 @@ class Example(BaseParameterSearch):
         for sim_data_file in sim_data_files:
             with open(sim_data_file, 'rb') as f:
                 sim_data = pickle.load(f)
-            objectives.append(self.get_attrs(sim_data, 'constants.a'))
+            objectives.append(self.get_attr(sim_data, 'constants.a')**2)
 
         return objectives
-
-    def initial_sim_data(self, iteration, index):
-        return {'constants.a': 1}
