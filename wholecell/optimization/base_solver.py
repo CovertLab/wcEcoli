@@ -184,11 +184,7 @@ class BaseSolver():
 			obj = pickle.load(f)
 
 		for param, val in updates.items():
-			parent = obj
-			attrs = param.split('.')
-			for a in attrs[:-1]:
-				parent = getattr(parent, a)
-			setattr(parent, attrs[-1], val)
+			self._method.set_attr(obj, param, val)
 
 		with open(new_path, 'wb') as f:
 			pickle.dump(obj, f, protocol=pickle.HIGHEST_PROTOCOL)

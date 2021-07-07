@@ -3,6 +3,9 @@
 """
 
 import pickle
+from typing import Any, Dict, Iterable
+
+import numpy as np
 
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 
@@ -12,8 +15,56 @@ DEFAULT_CLI_KWARGS = {
 	'generations': 1,
 	}
 
+
+class RawParameter():
+	def __init__(self, attr: str, id_columns: Dict[str, Any], columns: Iterable[str], name: str):
+		self._attr = attr
+		self._id = id_columns
+		self._columns = columns
+		self._name = name
+		self._cached_index = None
+
+	def get_row(self, raw_data):
+		def find_row(attr):
+			for i, row in enumerate(attr):
+				for col, val in self._id.items():
+					if row[col] != val:
+						break
+				else:
+					self._cached_index = i
+					return row
+
+			raise RuntimeError('Could not find a row matching the given ID columns.')
+
+		attr = getattr(raw_data, self._attr)
+
+		if self._cached_index is not None:
+			row = attr[self._cached_index]
+			for col, val in self._id.items():
+				if row[col] != val:
+					row = find_row(attr)
+					break
+		else:
+			row = find_row(attr)
+
+		return row
+
+	def get_param(self, raw_data):
+		row = self.get_row(raw_data)
+		return np.mean([row[col] for col in self._columns])
+
+	def set_param(self, raw_data, value):
+		row = self.get_row(raw_data)
+		for col in self._columns:
+			row[col] = value
+
+	def __str__(self):
+		return self._name
+
+
 class BaseParameterSearch():
 	parca_args = {'cpus': 8}
+	# TODO: handle raw and sim params the same - create a class for SimParameter and combine attributes below
 	_raw_params = ()
 	_sim_params = ()
 	sims_to_run = ()
@@ -39,7 +90,7 @@ class BaseParameterSearch():
 			for param in self.raw_params:
 				value = self.get_attr(raw_data, param)
 				if iteration == 0:
-					self.raw_params[param] = self._init_raw_params.get(param, value)
+					self.raw_params[param] = self._init_raw_params.get(str(param), value)
 				else:
 					self.raw_params[param] = value
 
@@ -72,20 +123,26 @@ class BaseParameterSearch():
 		return all_params
 
 	def get_attr(self, obj, attr, default=None):
-		attrs = attr.split('.')
-		for a in attrs:
-			if hasattr(obj, a):
-				obj = getattr(obj, a)
-			else:
-				return default
+		if isinstance(attr, RawParameter):
+			return attr.get_param(obj)
+		else:
+			attrs = attr.split('.')
+			for a in attrs:
+				if hasattr(obj, a):
+					obj = getattr(obj, a)
+				else:
+					return default
 
-		return obj
+			return obj
 
 	def set_attr(self, obj, attr, val):
-		attrs = attr.split('.')
-		for a in attrs[:-1]:
-			obj = getattr(obj, a)
-		setattr(obj, attrs[-1], val)
+		if isinstance(attr, RawParameter):
+			attr.set_param(obj, val)
+		else:
+			attrs = attr.split('.')
+			for a in attrs[:-1]:
+				obj = getattr(obj, a)
+			setattr(obj, attrs[-1], val)
 
 	def print_update(self):
 		def print_params(params, label):
