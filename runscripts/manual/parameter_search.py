@@ -1,15 +1,14 @@
 #! /usr/bin/env python
 """
-Run a parameter search using simulation output.
+Run a parameter search using parca and simulation output.
 
-TODO: Share more code with fw_queue.py.
+TODO: Share more code with fw_queue.py and other runscripts.
 
 Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
 
 import os
-import pickle
 import re
 from typing import Tuple
 
@@ -52,11 +51,11 @@ def parse_timestamp_description(sim_path):
 
 
 class RunParameterSearch(scriptBase.ScriptBase):
-	"""Drives a simple simulation run."""
+	"""Runs various parameter search algorithms to optimize desired objectives."""
 
 	def description(self):
 		"""Describe the command line program."""
-		return 'Whole Cell E. coli simulation'
+		return 'Whole Cell E. coli parameter search'
 
 	def help(self):
 		"""Return help text for the Command Line Interface."""
@@ -147,32 +146,10 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		fp.makedirs(args.sim_path, constants.KB_DIR)
 		fp.makedirs(args.sim_path, 'metadata')  # TODO: write metadata?
 
-		# timestamp, description = parse_timestamp_description(args.sim_path)
-		#
-		# variant_type = args.variant[0]
-		# variant_spec = (variant_type, int(args.variant[1]), int(args.variant[2]))
-		#
-		# # Write the metadata file.
-		# metadata = data.select_keys(
-		# 	vars(args),
-		# 	scriptBase.METADATA_KEYS,
-		# 	git_hash=fp.run_cmdline("git rev-parse HEAD") or '--',
-		# 	git_branch=fp.run_cmdline("git symbolic-ref --short HEAD") or '--',
-		# 	description=description,
-		# 	time=timestamp,
-		# 	analysis_type=None,
-		# 	variant=variant_type,
-		# 	total_variants=str(variant_spec[2] + 1 - variant_spec[1]),  # TODO: arg for total iters
-		# 	total_gens=args.total_gens or args.generations)
-		# metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
-		# fp.write_json_file(metadata_path, metadata)
-
 		method = PARAMETER_METHODS[args.method]()
 		solver = SOLVERS[args.solver](method, args)
-		sim_data_file = None  # TODO: start with path or init
-		objective = 0  # TODO: start with objective?
 
-		# TODO: address this issue
+		# TODO: address this issue by saving raw/sim data directly or saving the updates to apply
 		if args.starting_iteration != 0:
 			print('Warning: starting at a new iteration is not guaranteed to give identical results.'
 				' The updated parameters should be saved after each iteration to restart at the same'
