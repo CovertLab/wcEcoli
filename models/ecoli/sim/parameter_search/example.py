@@ -17,7 +17,7 @@ class Example(BaseParameterSearch):
 		print(self.raw_params)
 
 	def update_sim_data(self, objectives, paths):
-		print(self.raw_params)
+		print(self.sim_params)
 
 	def get_objective(self, sim_out_dirs, sim_data_files):
 		objectives = []

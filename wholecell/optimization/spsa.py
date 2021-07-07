@@ -1,31 +1,62 @@
+"""
+
+"""
+
+import numpy as np
+
 from wholecell.optimization.base_solver import BaseSolver
 
 
 class SPSA(BaseSolver):
-	def __init__(self, method, sim_dir, **options):
-		super().__init__(method, sim_dir, **options)
+	def __init__(self, method, args):
+		super().__init__(method, args)
 
-		self.lr = 0.1
-		# TODO: handle solver specific options
+		self.alpha = args.alpha
+		self.gamma = args.gamma
+
+	### Inherited method implementations ###
 
 	def parameter_updates(self, original_values, objectives, paths):
-		# TODO: use actual SPSA update algorithm
+		at, _ = self.get_spsa_params()
+
 		for param, original_value in original_values.items():
 			objective_diff = objectives[1] - objectives[0]
 			parameter_diff = self.get_param(param, paths[1]) - self.get_param(param, paths[0])
-			original_values[param] -= self.lr * objective_diff / parameter_diff * original_value
+			original_values[param] -= at * objective_diff / parameter_diff  # TODO: pass this back instead of updating directly
 
-	def get_parameter_perturbations(self, iteration, index):
+	def get_parameter_perturbations(self, index):
 		raw_data_perturbations = {}
 		sim_data_perturbations = {}
 
-		# TODO: generalize
 		if index == 0:
-			sim_data_perturbations['constants.a'] = self._method.sim_params['constants.a'] * 1.1
+			direction = 1
+		elif index == 1:
+			direction = -1
 		else:
-			sim_data_perturbations['constants.a'] = self._method.sim_params['constants.a'] * 0.9
+			raise ValueError('Unexpected index for SPSA.')
+
+		_, deltas = self.get_spsa_params()
+		counter = 0
+		for param, value in self._method.raw_params.items():
+			raw_data_perturbations[param] = value * (1 + direction * deltas[counter])
+			counter += 1
+		for param, value in self._method.sim_params.items():
+			sim_data_perturbations[param] = value * (1 + direction * deltas[counter])
+			counter += 1
 
 		return raw_data_perturbations, sim_data_perturbations
 
 	def n_variants_per_iteration(self):
-		return 2
+		return 2  # high and low change
+
+	### Class specific functions ###
+
+	def get_spsa_params(self):
+		it = self.iteration + 1  # prevent 0 for first iteration
+		np.random.seed(it)
+		at = self.learning_rate / it**self.alpha
+		ct = self.parameter_step / it**self.gamma
+		deltas = ct * (np.random.rand(self._method.n_parameters) * 2 - 1)
+
+		return at, deltas
+

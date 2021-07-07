@@ -23,7 +23,8 @@ SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)
 
 # Command line arg defaults for solver options
 DEFAULT_ITERATIONS = 5
-DEFAULT_LEARNING_RATE = 1e-3
+DEFAULT_STARTING_ITERATION = 0
+DEFAULT_LEARNING_RATE = 0.1
 DEFAULT_PARAMETER_STEP = 1e-2
 DEFAULT_MAX_CHANGE = 0.1
 DEFAULT_ALPHA = 0.1
@@ -99,6 +100,10 @@ class RunParameterSearch(scriptBase.ScriptBase):
 			default=DEFAULT_ITERATIONS,
 			type=int,
 			help=f'Number of iterations to update parameters before stopping (default: {DEFAULT_ITERATIONS}).')
+		parser.add_argument('--starting-iteration',
+			default=DEFAULT_STARTING_ITERATION,
+			type=int,
+			help=f'Number of iterations to update parameters before stopping (default: {DEFAULT_STARTING_ITERATION}).')
 		parser.add_argument('--learning-rate',
 			default=DEFAULT_LEARNING_RATE,
 			type=float,
@@ -163,14 +168,12 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		# fp.write_json_file(metadata_path, metadata)
 
 		method = PARAMETER_METHODS[args.method]()
-		solver = SOLVERS[args.solver](method, args.sim_path)
-		# lr=args.learning_rate, step=args.parameter_step, max_change=args.max_change)
-		n_variants = 0  # TODO: start with a different variant/iteration step
+		solver = SOLVERS[args.solver](method, args)
 		sim_data_file = None  # TODO: start with path or init
 		objective = 0  # TODO: start with objective?
 		for it in range(args.iterations):
 			print(f'** Starting iteration {it} **')
-			n_variants, objective = solver.run(it, n_variants)
+			objective = solver.run_iteration()
 			solver.print_update(objective)
 
 

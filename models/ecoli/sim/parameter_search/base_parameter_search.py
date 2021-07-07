@@ -22,6 +22,7 @@ class BaseParameterSearch():
 
 	def __init__(self):
 		self.variant_name = self.__class__.__name__
+		self.n_parameters = len(self._raw_params) + len(self._sim_params)
 		self.raw_params = {p: None for p in self._raw_params}
 		self.sim_params = {p: None for p in self._sim_params}
 		self.initialized = False
