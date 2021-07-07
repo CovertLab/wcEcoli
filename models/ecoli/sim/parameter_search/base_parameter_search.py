@@ -88,6 +88,11 @@ class BaseParameterSearch():
 		setattr(obj, attrs[-1], val)
 
 	def print_update(self):
-		# TODO: pretty print
-		print(self.raw_params)
-		print(self.sim_params)
+		def print_params(params, label):
+			if params:
+				print(f'{label} parameters:')
+				for p, val in params.items():
+					print(f'\t{p}: {val}')
+
+		print_params(self.raw_params, 'Raw data')
+		print_params(self.sim_params, 'Sim data')

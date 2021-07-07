@@ -156,8 +156,8 @@ class BaseSolver():
 
 		return objectives
 
-	def print_update(self, objective):
-		print(objective)
+	def print_update(self, objectives):
+		print(f'Objectives: {objectives}')
 		self._method.print_update()
 
 	def get_param(self, param, path):
