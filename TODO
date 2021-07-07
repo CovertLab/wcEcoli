@@ -1,6 +1,8 @@
 - document functions
 - sim error handling
-- resume from a given iteration
+- update raw_data parameters
+- generic functions like norm
+- load data from sims
 - run baseline sim without parameter changes for each iteration
   - option to do so
   - return objective
