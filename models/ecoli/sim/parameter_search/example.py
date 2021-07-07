@@ -13,12 +13,6 @@ class Example(BaseParameterSearch):
 		)
 	_init_sim_params = {'constants.a': 1}
 
-	def update_raw_data(self, objectives, paths):
-		print(self.raw_params)
-
-	def update_sim_data(self, objectives, paths):
-		print(self.sim_params)
-
 	def get_objective(self, sim_out_dirs, sim_data_files):
 		objectives = []
 		for sim_data_file in sim_data_files:

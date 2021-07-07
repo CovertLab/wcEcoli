@@ -27,12 +27,6 @@ class BaseParameterSearch():
 		self.sim_params = {p: None for p in self._sim_params}
 		self.initialized = False
 
-	def update_raw_data(self, objectives, paths):
-		raise NotImplementedError('Need to implement in a subclass.')
-
-	def update_sim_data(self, objectives, paths):
-		raise NotImplementedError('Need to implement in a subclass.')
-
 	def get_objective(self, sim_out_dirs, sim_data_files):
 		raise NotImplementedError('Need to implement in a subclass.')
 

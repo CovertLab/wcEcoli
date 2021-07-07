@@ -20,20 +20,15 @@ def run_sim(args):
 	sim_args = data.select_keys(args, scriptBase.SIM_KEYS)
 
 	variant_type = args['variant type']
-	variant_directory = os.path.join(args['sim dir'], '{}_{:06n}'
-	                                 .format(variant_type, args['variant']))
-	variant_sim_data_directory = os.path.join(variant_directory,
-	                                          VariantSimDataTask.OUTPUT_SUBDIR_KB)
-
-	variant_sim_data_modified_file = os.path.join(
-		variant_sim_data_directory, constants.SERIALIZED_SIM_DATA_MODIFIED)
+	variant_directory = os.path.join(args['sim dir'], '{}_{:06n}'.format(variant_type, args['variant']))
+	variant_sim_data_directory = os.path.join(variant_directory, VariantSimDataTask.OUTPUT_SUBDIR_KB)
+	variant_sim_data_modified_file = os.path.join(variant_sim_data_directory, constants.SERIALIZED_SIM_DATA_MODIFIED)
 
 	for j in range(args['seed'], args['seed'] + args['init_sims']):  # init sim seeds, TODO: allow for multiple seeds with index
 		seed_directory = fp.makedirs(variant_directory, "%06d" % args['index'])
 
 		for k in range(args['generations']):  # generation number k
-			gen_directory = fp.makedirs(seed_directory,
-			                            "generation_%06d" % k)
+			gen_directory = fp.makedirs(seed_directory, "generation_%06d" % k)
 
 			# l is the daughter number among all of this generation's cells,
 			# which is 0 for single-daughters but would span range(2**k) if
@@ -43,19 +38,16 @@ def run_sim(args):
 			cell_sim_out_directory = fp.makedirs(cell_directory, "simOut")
 
 			options = dict(sim_args,
-			               input_sim_data=variant_sim_data_modified_file,
-			               output_directory=cell_sim_out_directory,
-			               )
+				input_sim_data=variant_sim_data_modified_file,
+				output_directory=cell_sim_out_directory,
+				)
 
 			if k == 0:
 				task = SimulationTask(seed=j, **options)
 			else:
-				parent_gen_directory = os.path.join(seed_directory,
-				                                    "generation_%06d" % (k - 1))
-				parent_cell_directory = os.path.join(parent_gen_directory,
-				                                     "%06d" % (l // 2))
-				parent_cell_sim_out_directory = os.path.join(
-					parent_cell_directory, "simOut")
+				parent_gen_directory = os.path.join(seed_directory, "generation_%06d" % (k - 1))
+				parent_cell_directory = os.path.join(parent_gen_directory, "%06d" % (l // 2))
+				parent_cell_sim_out_directory = os.path.join(parent_cell_directory, "simOut")
 				daughter_state_path = os.path.join(
 					parent_cell_sim_out_directory,
 					constants.SERIALIZED_INHERITED_STATE % (l % 2 + 1))
