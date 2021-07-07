@@ -144,7 +144,7 @@ class BaseSolver():
 		variants = list(range(self.variant, self.variant+self.n_variants_per_iteration()))
 		raw_data_file, sim_data_file = self.get_reference_parameters()
 		if not self._method.initialized:
-			self._method.initialize(raw_data_file, sim_data_file)
+			self._method.initialize(raw_data_file, sim_data_file, self.iteration)
 		sim_data_files = self.perturb_parameters(variants, raw_data_file, sim_data_file)
 		sim_params = self._method.get_sim_params(self._sim_dir, variants)
 		sim_out_dirs = self.run_sims(sim_params)

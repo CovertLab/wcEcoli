@@ -171,7 +171,14 @@ class RunParameterSearch(scriptBase.ScriptBase):
 		solver = SOLVERS[args.solver](method, args)
 		sim_data_file = None  # TODO: start with path or init
 		objective = 0  # TODO: start with objective?
-		for it in range(args.iterations):
+
+		# TODO: address this issue
+		if args.starting_iteration != 0:
+			print('Warning: starting at a new iteration is not guaranteed to give identical results.'
+				' The updated parameters should be saved after each iteration to restart at the same'
+				' place in the algorithm.')
+
+		for it in range(args.starting_iteration, args.starting_iteration + args.iterations):
 			print(f'** Starting iteration {it} **')
 			objective = solver.run_iteration()
 			solver.print_update(objective)

@@ -30,16 +30,27 @@ class BaseParameterSearch():
 	def get_objective(self, sim_out_dirs, sim_data_files):
 		raise NotImplementedError('Need to implement in a subclass.')
 
-	def initialize(self, raw_data_file, sim_data_file):
-		with open(raw_data_file, 'rb') as f:
-			raw_data = pickle.load(f)
-		for param in self.raw_params:
-			self.raw_params[param] = self._init_raw_params.get(param, self.get_attr(raw_data, param))
+	def initialize(self, raw_data_file, sim_data_file, iteration):
+		# If no raw params, raw_data will not be saved with each iteration so
+		# this would cause issues loading from a specific iteration
+		if self.raw_params:
+			with open(raw_data_file, 'rb') as f:
+				raw_data = pickle.load(f)
+			for param in self.raw_params:
+				value = self.get_attr(raw_data, param)
+				if iteration == 0:
+					self.raw_params[param] = self._init_raw_params.get(param, value)
+				else:
+					self.raw_params[param] = value
 
 		with open(sim_data_file, 'rb') as f:
 			sim_data = pickle.load(f)
 		for param in self.sim_params:
-			self.sim_params[param] = self._init_sim_params.get(param, self.get_attr(sim_data, param))
+			value = self.get_attr(sim_data, param)
+			if iteration == 0:
+				self.sim_params[param] = self._init_sim_params.get(param, value)
+			else:
+				self.sim_params[param] = value
 
 		self.initialized = True
 
