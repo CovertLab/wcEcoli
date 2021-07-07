@@ -5,12 +5,6 @@ from models.ecoli.sim.parameter_search.base_parameter_search import BaseParamete
 
 class Example(BaseParameterSearch):
 	_sim_params = ('constants.a',)
-	sims_to_run = (
-		{
-			'jit': False,
-			'length_sec': 2,
-			},
-		)
 	_init_sim_params = {'constants.a': 1}
 
 	def get_objective(self, sim_out_dirs, sim_data_files):
