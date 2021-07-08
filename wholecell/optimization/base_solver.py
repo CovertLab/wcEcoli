@@ -103,6 +103,7 @@ class BaseSolver():
 
 	def perturb_parameters(self, variants, raw_data_file, sim_data_file):
 		sim_data_files = []
+		# TODO: run updates in parallel
 		for variant in variants:
 			index = variant - variants[0]
 			raw_updates, sim_updates = self.get_parameter_perturbations(index)

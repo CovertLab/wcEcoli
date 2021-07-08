@@ -2,11 +2,13 @@
 
 """
 
+import os
 import pickle
 from typing import Any, Dict, Iterable
 
 import numpy as np
 
+from wholecell.io.tablereader import TableReader
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 
 
@@ -153,3 +155,9 @@ class BaseParameterSearch():
 
 		print_params(self.raw_params, 'Raw data')
 		print_params(self.sim_params, 'Sim data')
+
+	def read_column(self, out_dir, table, column):
+		return TableReader(os.path.join(out_dir, table)).readColumn(column)
+
+	def read_attribute(self, out_dir, table, attr):
+		return TableReader(os.path.join(out_dir, table)).readAttribute(attr)
