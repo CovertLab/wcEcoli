@@ -13,6 +13,7 @@ class Example(BaseParameterSearch):
 		{
 			'jit': False,
 			'length_sec': 2,
+			'variant': ('condition', 0),
 		},
 	)
 

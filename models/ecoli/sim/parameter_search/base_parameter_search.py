@@ -115,9 +115,7 @@ class BaseParameterSearch():
 				params.update(DEFAULT_CLI_KWARGS)
 				params.update(sim_params)
 
-				params['variant type'] = self.variant_name
-				params['variant'] = variant
-				params['sim dir'] = sim_dir
+				params['variant directory'] = os.path.join(sim_dir, f'{self.variant_name}_{variant:06n}')
 				params['index'] = index
 
 				all_params.append(params)

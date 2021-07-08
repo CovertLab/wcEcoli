@@ -6,6 +6,7 @@ import os
 import pickle
 from typing import Any, Dict, Optional
 
+from models.ecoli.sim.variants.apply_variant import apply_variant
 from wholecell.fireworks.firetasks import FitSimDataTask, InitRawDataTask, SimulationTask, SimulationDaughterTask, VariantSimDataTask
 from wholecell.sim.simulation import ALTERNATE_KWARG_NAMES
 from wholecell.utils import constants, data, scriptBase
@@ -19,10 +20,23 @@ def run_sim(args):
 
 	sim_args = data.select_keys(args, scriptBase.SIM_KEYS)
 
-	variant_type = args['variant type']
-	variant_directory = os.path.join(args['sim dir'], '{}_{:06n}'.format(variant_type, args['variant']))
+	variant_directory = args['variant directory']
 	variant_sim_data_directory = os.path.join(variant_directory, VariantSimDataTask.OUTPUT_SUBDIR_KB)
 	variant_sim_data_modified_file = os.path.join(variant_sim_data_directory, constants.SERIALIZED_SIM_DATA_MODIFIED)
+
+	# TODO: should this be applied before sim_data parameters are updated?
+	if 'variant' in args:
+		variant, index = args['variant']
+		_, sim_data = apply_variant(variant_sim_data_modified_file, variant, index)
+		updated_sim_data_file = os.path.join(
+			os.path.dirname(variant_sim_data_modified_file),
+			f'{args["index"]}-{os.path.basename(variant_sim_data_modified_file)}',
+			)
+
+		with open(updated_sim_data_file, 'wb') as f:
+			pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+		variant_sim_data_modified_file = updated_sim_data_file
 
 	for j in range(args['seed'], args['seed'] + args['init_sims']):  # init sim seeds, TODO: allow for multiple seeds with index
 		seed_directory = fp.makedirs(variant_directory, "%06d" % args['index'])
@@ -114,7 +128,7 @@ class BaseSolver():
 				run_parca(self._method.parca_args, new_raw_data_file, new_sim_data_file, metrics_file)
 				sim_data_file = new_sim_data_file  # Applying updates below should now be on the newly created file
 
-			# TODO: apply variant modifications before updating sim_data
+			# TODO: apply variant modifications here before updating sim_data?
 			self.apply_updates(sim_data_file, sim_updates, new_sim_data_file)
 			sim_data_files.append(new_sim_data_file)
 
