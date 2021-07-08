@@ -25,7 +25,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Load data from KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 		proteinIds = sim_data.molecule_groups.s30_proteins
-		rnaIds = [sim_data.process.translation.monomer_data['rna_id'][np.where(sim_data.process.translation.monomer_data['id'] == pid)[0][0]] for pid in proteinIds]
+		rnaIds = [sim_data.process.translation.monomer_data['cistron_id'][np.where(sim_data.process.translation.monomer_data['id'] == pid)[0][0]] for pid in proteinIds]
 		rRnaIds = sim_data.molecule_groups.s30_16s_rRNA
 		complexIds = [sim_data.molecule_ids.s30_full_complex]
 

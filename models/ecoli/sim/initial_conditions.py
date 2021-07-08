@@ -1078,7 +1078,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# 	of each transcript will affect the availabilities of mRNAs on that
 	# 	transcript.
 	all_TU_ids = sim_data.process.transcription.rna_data['id']
-	all_mRNA_ids = sim_data.process.translation.monomer_data['rna_id']
+	all_mRNA_ids = sim_data.process.translation.monomer_data['cistron_id']
 	# TU_counts_to_mRNA_counts = np.zeros(
 	# 	(len(all_mRNA_ids), len(all_TU_ids)), dtype=np.int64)
 

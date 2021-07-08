@@ -440,7 +440,7 @@ class BuildNetwork(object):
 		# Loop through all translatable genes
 		for monomer_id, rna_id in zip(
 				self.sim_data.process.translation.monomer_data["id"],
-				self.sim_data.process.translation.monomer_data['rna_id']):
+				self.sim_data.process.translation.monomer_data['cistron_id']):
 
 			gene_id = rna_id_to_gene_id[rna_id]
 

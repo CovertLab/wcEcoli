@@ -1627,7 +1627,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, i,
 
 	# Update mRNA expression to reflect monomer counts
 	#assert np.all(
-	#	sim_data.process.translation.monomer_data['rna_id'][sim_data.relation.monomer_index_to_rna_mapping] == sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']]
+	#	sim_data.process.translation.monomer_data['cistron_id'][sim_data.relation.monomer_index_to_rna_mapping] == sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']]
 	#	), "Cannot properly map monomer ids to RNA ids" # TODO: move to KB tests
 
 	mRnaExpressionView = rnaExpressionContainer.countsView(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']])

@@ -26,7 +26,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 
 		proteinIds = sim_data.process.translation.monomer_data["id"]
-		rnaIds = sim_data.process.translation.monomer_data['rna_id']
+		rnaIds = sim_data.process.translation.monomer_data['cistron_id']
 
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
 		mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')

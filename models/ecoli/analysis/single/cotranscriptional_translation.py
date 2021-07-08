@@ -55,7 +55,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		protein_id_to_mRNA_id = {
 			protein_id: mRNA_id for (protein_id, mRNA_id)
 			in zip(sim_data.process.translation.monomer_data['id'],
-				sim_data.process.translation.monomer_data['rna_id'])
+				sim_data.process.translation.monomer_data['cistron_id'])
 			}
 		protein_id_to_gene_id = {
 			protein_id: mRNA_id_to_gene_id[mRNA_id] for (protein_id, mRNA_id)

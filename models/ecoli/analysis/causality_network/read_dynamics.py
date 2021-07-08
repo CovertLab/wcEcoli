@@ -95,7 +95,7 @@ def convert_dynamics(simOutDir, seriesOutDir, simDataFile, node_list, edge_list)
 		]
 		indexes["mRNAs"] = build_index_dict(mRNA_ids)
 
-		translated_rna_ids = sim_data.process.translation.monomer_data['rna_id']
+		translated_rna_ids = sim_data.process.translation.monomer_data['cistron_id']
 		indexes["TranslatedRnas"] = build_index_dict(translated_rna_ids)
 
 		metabolism_rxn_ids = TableReader(
