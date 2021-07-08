@@ -11,11 +11,6 @@ from wholecell.utils import units
 from wholecell.utils.constants import REQUEST_PRIORITY_TWO_COMPONENT_SYSTEM
 from wholecell.utils.migration.write_json import write_json
 
-"""
-from ecoli.library.schema import (
-    array_from, array_to, arrays_from,
-    arrays_to, listener_schema, bulk_schema)
-"""
 def array_to(keys, array):
     return {
         key: array[index]
@@ -98,11 +93,11 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 				)
 
 		# Increment changes in molecule counts and add to update
-		self.molecules.countsInc(self.all_molecule_changes)
+		# self.molecules.countsInc(self.all_molecule_changes)
 		self.update_to_save['molecules'] = array_to(self.moleculeNames, self.all_molecule_changes.astype(int))
 
 		# Save to .json file
 		if not self.saved:
-			write_json(f'out/migration/transcript_elongation_update_t{int(self._sim.time())}.json',
+			write_json(f'out/migration/two_component_system_update_t{int(self._sim.time())}.json',
 					   self.update_to_save)
 			self.saved = True
