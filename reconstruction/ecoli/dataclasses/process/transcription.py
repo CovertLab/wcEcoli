@@ -8,14 +8,14 @@ TODO: handle ppGpp and DksA-ppGpp regulation separately
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-import scipy
-import re
 from scipy import interpolate
 import sympy as sp
 from typing import cast
 
+from reconstruction.ecoli.dataclasses.getter_functions import RNA_TYPE_TO_SUBMASS
 from wholecell.sim.simulation import MAX_TIME_STEP
 from wholecell.utils import data, units
+from wholecell.utils.fast_nonnegative_least_squares import fast_nnls
 from wholecell.utils.fitting import normalize
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
@@ -40,6 +40,7 @@ class Transcription(object):
 		self.max_time_step = min(MAX_TIME_STEP, PROCESS_MAX_TIME_STEP)
 
 		self._build_ppgpp_regulation(raw_data, sim_data)
+		self._build_cistron_data(raw_data, sim_data)
 		self._build_rna_data(raw_data, sim_data)
 		self._build_transcription(raw_data, sim_data)
 		self._build_charged_trna(raw_data, sim_data)
@@ -174,66 +175,236 @@ class Transcription(object):
 			print('Supplement value (FC-): {:.2f}'.format(self._fit_ppgpp_fc))
 			print('Supplement value (FC+): {:.2f}'.format(average_positive_fc))
 
+	def _build_cistron_data(self, raw_data, sim_data):
+		"""
+		Build cistron-associated simulation data from raw data. Cistrons are
+		sections of RNAs that encode for a specific polypeptide. A single RNA
+		molecule may contain one or more cistrons.
+		"""
+		# Get list of all cistrons with an associated gene and right and left
+		# end positions
+		rna_id_to_gene_id = {
+			gene['rna_id']: gene['id'] for gene in raw_data.genes}
+		gene_id_to_left_end_pos = {
+			gene['id']: gene['left_end_pos'] for gene in raw_data.genes
+			}
+		gene_id_to_right_end_pos = {
+			gene['id']: gene['right_end_pos'] for gene in raw_data.genes
+			}
+
+		all_cistrons = [
+			rna for rna in raw_data.rnas
+			if rna['id'] in rna_id_to_gene_id
+			   and gene_id_to_left_end_pos[rna_id_to_gene_id[rna['id']]] is not None
+			   and gene_id_to_right_end_pos[rna_id_to_gene_id[rna['id']]] is not None
+			]
+
+		# Load gene IDs associated with each cistron
+		gene_id = np.array(
+			[rna_id_to_gene_id[rna['id']] for rna in all_cistrons])
+
+		# Construct boolean arrays for ribosomal protein and RNAP-encoding
+		# cistrons
+		n_cistrons = len(all_cistrons)
+
+		is_ribosomal_protein = np.zeros(n_cistrons, dtype=np.bool)
+		is_RNAP = np.zeros(n_cistrons, dtype=np.bool)
+		for i, rna in enumerate(all_cistrons):
+			for monomer_id in rna['monomer_ids']:
+				if monomer_id + '[c]' in sim_data.molecule_groups.ribosomal_proteins:
+					is_ribosomal_protein[i] = True
+				if monomer_id + '[c]' in sim_data.molecule_groups.RNAP_subunits:
+					is_RNAP[i] = True
+
+		# Construct boolean arrays and index arrays for each rRNA type
+		is_23S = np.zeros(n_cistrons, dtype=np.bool)
+		is_16S = np.zeros(n_cistrons, dtype=np.bool)
+		is_5S = np.zeros(n_cistrons, dtype=np.bool)
+		idx_23S = []
+		idx_16S = []
+		idx_5S = []
+
+		for rnaIndex, rna in enumerate(all_cistrons):
+			if rna["type"] == "rRNA" and rna["id"].startswith("RRL"):
+				is_23S[rnaIndex] = True
+				idx_23S.append(rnaIndex)
+			if rna["type"] == "rRNA" and rna["id"].startswith("RRS"):
+				is_16S[rnaIndex] = True
+				idx_16S.append(rnaIndex)
+			if rna["type"] == "rRNA" and rna["id"].startswith("RRF"):
+				is_5S[rnaIndex] = True
+				idx_5S.append(rnaIndex)
+
+		max_cistron_id_length = max(len(rna['id']) for rna in all_cistrons)
+		max_gene_id_length = max(len(id_) for id_ in gene_id)
+
+		cistron_data = np.zeros(
+			n_cistrons,
+			dtype=[
+				('id', 'U{}'.format(max_cistron_id_length)),
+				('gene_id', 'U{}'.format(max_gene_id_length)),
+				('is_mRNA', 'bool'),
+				('is_miscRNA', 'bool'),
+				('is_rRNA', 'bool'),
+				('is_tRNA', 'bool'),
+				('is_23S_rRNA', 'bool'),
+				('is_16S_rRNA', 'bool'),
+				('is_5S_rRNA', 'bool'),
+				('is_ribosomal_protein', 'bool'),
+				('is_RNAP', 'bool'),
+				]
+			)
+
+		cistron_data['id'] = [rna['id'] for rna in all_cistrons]
+		cistron_data['gene_id'] = gene_id
+		cistron_data['is_mRNA'] = [
+			RNA_TYPE_TO_SUBMASS[rna["type"]] == "mRNA" for rna in all_cistrons]
+		cistron_data['is_miscRNA'] = [
+			RNA_TYPE_TO_SUBMASS[rna["type"]] == "miscRNA" for rna in all_cistrons]
+		cistron_data['is_rRNA'] = [
+			RNA_TYPE_TO_SUBMASS[rna["type"]] == "rRNA" for rna in all_cistrons]
+		cistron_data['is_tRNA'] = [
+			RNA_TYPE_TO_SUBMASS[rna["type"]] == "tRNA" for rna in all_cistrons]
+		cistron_data['is_23S_rRNA'] = is_23S
+		cistron_data['is_16S_rRNA'] = is_16S
+		cistron_data['is_5S_rRNA'] = is_5S
+		cistron_data['is_ribosomal_protein'] = is_ribosomal_protein
+		cistron_data['is_RNAP'] = is_RNAP
+
+		cistron_field_units = {
+			'id': None,
+			'is_mRNA': None,
+			'is_miscRNA': None,
+			'is_rRNA': None,
+			'is_tRNA': None,
+			'is_23S_rRNA': None,
+			'is_16S_rRNA': None,
+			'is_5S_rRNA': None,
+			'is_ribosomal_protein': None,
+			'is_RNAP': None,
+			'gene_id': None,
+			}
+
+		self.cistron_data = UnitStructArray(cistron_data, cistron_field_units)
+
+		# Load expression levels of individual cistrons from sequencing data
+		cistron_expression = []
+		rna_id_to_gene_id = {
+			gene['rna_id']: gene['id'] for gene in raw_data.genes}
+		seq_data = {
+			x['Gene']: x[sim_data.basal_expression_condition]
+			for x in getattr(raw_data.rna_seq_data, f'rnaseq_{RNA_SEQ_ANALYSIS}_mean')}
+
+		for cistron_id in self.cistron_data['id']:
+			gene_id = rna_id_to_gene_id[cistron_id]
+			# If sequencing data is not found, initialize expression to zero.
+			cistron_expression.append(seq_data.get(gene_id, 0.))
+
+		cistron_expression = np.array(cistron_expression)
+
+		self.basal_cistron_expression = cistron_expression / cistron_expression.sum()
+
+
 	def _build_rna_data(self, raw_data, sim_data):
 		"""
 		Build RNA-associated simulation data from raw data.
 		"""
 		self._basal_rna_fractions = sim_data.mass.get_basal_rna_fractions()
 
-		# Filter out RNAs without sequences
-		all_rnas = [
-			rna for rna in raw_data.rnas
-			if sim_data.getter.is_valid_molecule(rna['id'])]
+		# Get list of transcription units used by the model
+		all_valid_tus = [
+			tu for tu in raw_data.transcription_units
+			if sim_data.getter.is_valid_molecule(tu['id'])
+			]
 
-		# Load RNA IDs with compartment tags
-		rna_ids = [rna['id'] for rna in all_rnas]
+		# Compile IDs of all RNAs used by the model, including monocistronic
+		# transcription units represented with cistron IDs
+		rna_ids = [
+			cistron_id for cistron_id in self.cistron_data['id']
+			if sim_data.getter.is_valid_molecule(cistron_id)]
+		rna_ids.extend([tu['id'] for tu in all_valid_tus])
+		n_rnas = len(rna_ids)
+
+		# Get mapping from transcription unit IDs to list of constituent
+		# cistrons
+		gene_id_to_rna_id = {
+			gene['id']: gene['rna_id'] for gene in raw_data.genes
+			}
+		tu_id_to_cistron_ids = {
+			tu['id']: [gene_id_to_rna_id[gene] for gene in tu['genes']]
+			for tu in all_valid_tus
+			}
+
+		# Build mapping matrix between transcription units and constituent
+		# cistrons
+		# Sparse matrix representation for mapping matrix
+		mapping_matrix_i = []
+		mapping_matrix_j = []
+		mapping_matrix_v = []
+
+		# Mapping from monocistronic RNA ID to index
+		cistron_id_to_index = {
+			rna_id: i for (i, rna_id) in enumerate(self.cistron_data['id'])
+			}
+
+		for j, rna_id in enumerate(rna_ids):
+			if rna_id in tu_id_to_cistron_ids:
+				for mc_rna_id in tu_id_to_cistron_ids[rna_id]:
+					mapping_matrix_i.append(cistron_id_to_index[mc_rna_id])
+					mapping_matrix_j.append(j)
+					mapping_matrix_v.append(1)
+			else:
+				mapping_matrix_i.append(cistron_id_to_index[rna_id])
+				mapping_matrix_j.append(j)
+				mapping_matrix_v.append(1)
+
+		self._mapping_matrix_i = np.array(mapping_matrix_i)
+		self._mapping_matrix_j = np.array(mapping_matrix_j)
+		self._mapping_matrix_v = np.array(mapping_matrix_v)
+
+		# Build full mapping matrix
+		rna_tu_mapping_matrix = self.rna_tu_mapping_matrix()
+
+		# Build list of all RNA IDs with compartment tags
 		compartments = sim_data.getter.get_compartments(rna_ids)
-
 		rna_ids_with_compartments = [
 			f'{rna_id}[{loc[0]}]' for (rna_id, loc)
 			in zip(rna_ids, compartments)]
 
-		# Load set of mRNA ids
-		mRNA_ids = set([rna['id'] for rna in all_rnas if rna['type'] == 'mRNA'])
+		# Load set of mRNA cistron ids
+		mRNA_ids = set(self.cistron_data['id'][self.cistron_data['is_mRNA']])
 
 		# Load RNA half lives
 		rna_id_to_half_life = {}
 		reported_mRNA_half_lives = []
 
-		# TODO (ggsun): Internalize the calculation of half lives
-		for rna in raw_data.operon_rnas_half_lives:
+		for rna in raw_data.rna_half_lives:
 			rna_id_to_half_life[rna['id']] = rna['half_life']
 			if rna['id'] in mRNA_ids:
 				reported_mRNA_half_lives.append(rna['half_life'])
 
-		# Calculate average reported half lives of mRNAs
-		average_mRNA_half_lives = np.array(reported_mRNA_half_lives).mean()
+		# Calculate averaged reported half life of mRNAs
+		average_mRNA_half_life = np.array(reported_mRNA_half_lives).mean()
 
-		# Get half life of each RNA - if the half life is not given, use the
-		# average reported half life of mRNAs
-		half_lives = np.array([
-			rna_id_to_half_life.get(rna['id'], average_mRNA_half_lives).asNumber(units.s)
-			for rna in all_rnas])
+		# Get half life of each RNA cistron - if the half life is not given, use
+		# the averaged reported half life of mRNAs
+		cistron_half_lives = np.array([
+			rna_id_to_half_life.get(cistron_id, average_mRNA_half_life).asNumber(units.s)
+			for cistron_id in self.cistron_data['id']])
+
+		# Calculate the half life of each transcription unit. For polycistronic
+		# transcription units, take the average of all constituent cistrons.
+		rna_half_lives = np.divide(
+			rna_tu_mapping_matrix.T.dot(cistron_half_lives),
+			rna_tu_mapping_matrix.sum(axis=0))
 
 		# Convert to degradation rates
-		rna_deg_rates = np.log(2) / half_lives
+		rna_deg_rates = np.log(2) / rna_half_lives
 
-		# Load RNA expression from transcription unit count data
-		expression = []
+		# Convert expression levels of cistrons to expression levels of
+		# transcription units using nonnegative least-squares
+		expression, _ = fast_nnls(rna_tu_mapping_matrix, self.basal_cistron_expression)
 
-		# Taking counts from extrapolated transcription_unit counts instead of the seq data.
-		# tu_counts is essentially equivilant to seq_data.
-
-		tu_counts = {
-			x['tu_id']: x['tu_count'] for x in raw_data.transcription_units}
-
-		for rna in all_rnas:
-			gene_id = rna_id_to_gene_id[rna['id']]
-			# If sequencing data is not found, initialize expression to zero.
-			expression.append(seq_data.get(gene_id, 0.))
-
-		expression = np.array(expression)
-		
 		# Calculate synthesis probabilities from expression and normalize
 		synth_prob = expression*(
 			np.log(2) / sim_data.doubling_time.asNumber(units.s)
@@ -243,68 +414,6 @@ class Transcription(object):
 
 		# Calculate EndoRNase Km values
 		Km = (KCAT_ENDO_RNASE*ESTIMATE_ENDO_RNASES/rna_deg_rates) - expression
-
-		# Load gene IDs
-		# TODO(mialy): Should these be named 'tu_ids' instead?
-		gene_ids = np.array(
-			[rna_id_to_gene_id[rna['id']] for rna in all_rnas])
-		
-		# Construct boolean arrays for ribosomal protein and RNAP genes
-		n_rnas = len(rna_ids_with_compartments)
-		is_ribosomal_protein = np.zeros(n_rnas, dtype=np.bool)
-		is_RNAP	= np.zeros(n_rnas, dtype=np.bool)
-
-		for i, rna in enumerate(all_rnas):
-			for monomer_id in rna['monomer_ids']:
-				if monomer_id + '[c]' in sim_data.molecule_groups.ribosomal_proteins:
-					is_ribosomal_protein[i] = True
-				if monomer_id + '[c]' in sim_data.molecule_groups.RNAP_subunits:
-					is_RNAP[i] = True
-
-		# Construct boolean arrays and index arrays for each rRNA type
-		is_23S = np.zeros(n_rnas, dtype = np.bool)
-		is_16S = np.zeros(n_rnas, dtype = np.bool)
-		is_5S = np.zeros(n_rnas, dtype = np.bool)
-		idx_23S = []
-		idx_16S = []
-		idx_5S = []
-
-		for rnaIndex, rna in enumerate(all_rnas):
-			if rna["type"] == "rRNA" and rna["id"].startswith("RRL"):
-				is_23S[rnaIndex] = True
-				idx_23S.append(rnaIndex)
-
-			if rna["type"] == "rRNA" and rna["id"].startswith("RRS"):
-				is_16S[rnaIndex] = True
-				idx_16S.append(rnaIndex)
-
-			if rna["type"] == "rRNA" and rna["id"].startswith("RRF"):
-				is_5S[rnaIndex] = True
-				idx_5S.append(rnaIndex)
-
-
-		idx_23S = np.array(idx_23S)
-		idx_16S = np.array(idx_16S)
-		idx_5S = np.array(idx_5S)
-
-		# Load lists of all monomers that can be transcribed by the operon.
-		# Create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
-
-		single_monomer_ids = [monomer['id'] for monomer in raw_data.proteins]
-		protein_compartments = sim_data.getter.get_compartments(single_monomer_ids)
-		
-		protein_ids_with_compartments = {
-			monomer:  "{}[{}]".format(monomer, protein_compartments[ind][0])
-			for ind, monomer in enumerate(single_monomer_ids)
-			}
-
-		# TODO (ggsun): Probably can be simplified by using new versions of
-		# 	get_location methods
-		monomer_sets = [
-			[protein_ids_with_compartments[monomer_id] 
-			for monomer_id in rna['monomer_set']] 
-			for rna in raw_data.operon_rnas
-			]
 
 		# Load RNA sequences and molecular weights from getter functions
 		rna_seqs = sim_data.getter.get_sequences(rna_ids)
@@ -320,17 +429,6 @@ class Transcription(object):
 			nt_counts.append(
 				[seq.count(letter) for letter in ntp_abbreviations])
 		nt_counts = np.array(nt_counts)
-
-		# Get index of gene corresponding to each RNA
-		rna_id_to_gene_index = {gene['rna_id']: i
-			for i, gene in enumerate(raw_data.genes)}
-
-		# Get list of coordinates and directions for each gene
-		coordinate_list = [
-			gene["left_end_pos"] if gene["direction"] == '+'
-			else gene["right_end_pos"]
-			for gene in raw_data.genes]
-		direction_list = [gene["direction"] for gene in raw_data.genes]
 
 		# Get coordinates of oriC and terC
 		oric_left, oric_right = sim_data.getter.get_genomic_coordinates(
@@ -355,56 +453,96 @@ class Transcription(object):
 
 			return relative_coordinates
 
-		# Location of transcription initiation relative to origin
-
-		replication_coordinate = []
-		direction = []
-		for rna in raw_data.operon_rnas:
-			if len(rna['monomer_set']) > 1:
-				rna_id = re.split('_', rna['id'])[0] + '_RNA'  # TODO (ggsun): probably better to use entries in column 'gene_set'
+		# Get mapping from cistron IDs to coordinate and direction
+		rna_id_to_coordinate = {}
+		rna_id_to_direction = {}
+		for gene in raw_data.genes:
+			rna_id_to_direction[gene['rna_id']] = gene['direction']
+			if gene['direction'] == '+':
+				rna_id_to_coordinate[gene['rna_id']] = gene['left_end_pos']
 			else:
-				rna_id = rna['id']
-			# Location of transcription initiation relative to origin
-			replication_coordinate.append(get_relative_coordinates(coordinate_list[rna_id_to_gene_index[rna_id]]))
-			# Direction of transcription
-			direction.append((direction_list[rna_id_to_gene_index[rna_id]] == "+"))
+				rna_id_to_coordinate[gene['rna_id']] = gene['right_end_pos']
+
+		# Further extend the dictionaries to include mappings from transcription
+		# unit IDs to coordinate and direction
+		for tu in all_valid_tus:
+			rna_id_to_direction[tu['id']] = tu['direction']
+			if tu['direction'] == '+':
+				rna_id_to_coordinate[tu['id']] = tu['left_end_pos']
+			else:
+				rna_id_to_coordinate[tu['id']] = tu['right_end_pos']
 		
-		'''
-		# Get location of transcription initiation relative to origin
+		# Get mapping from cistron IDs to lengths
+		cistron_id_to_length = {}
+		for gene in raw_data.genes:
+			try:
+				cistron_id_to_length[gene['rna_id']] = np.abs(
+					gene['left_end_pos'] - gene['right_end_pos'])
+			except TypeError:
+				continue
+
+		# Get location of transcription initiation relative to origin and the
+		# transcription direction for each transcription unit
 		replication_coordinate = [
-			get_relative_coordinates(coordinate_list[rna_id_to_gene_index[rna["id"]]])
-			for rna in all_rnas]
+			get_relative_coordinates(rna_id_to_coordinate[rna_id])
+			for rna_id in rna_ids]
+		direction = [rna_id_to_direction[rna_id] for rna_id in rna_ids]
 
-		# Get direction of transcription
-		direction = [
-			(direction_list[rna_id_to_gene_index[rna["id"]]] == "+")
-			for rna in raw_data.operon_rnas]
-		'''
+		# Calculate relative start and end positions of each cistron within each
+		# transcription unit
+		all_cistron_ids = self.cistron_data['id']
+		self.cistron_start_end_pos_in_tu = {}
 
-		# find start and stop location for each gene in polycistron
-		# coordinates are relative to start of RNA
+		for (rna_idx, rna_id) in enumerate(rna_ids):
+			rna_coordinate = rna_id_to_coordinate[rna_id]
+			constituent_cistron_indexes = np.where(
+				rna_tu_mapping_matrix[:, rna_idx])[0]
 
-		# get length, direction, and coordinate of of each gene
-		gene_lengths = {gene['id']: gene['length'] for gene in raw_data.genes}
-		direction_dict = {gene['id']:gene['direction'] for gene in raw_data.genes}
-		coordinate_dict = {gene['id']: gene['coordinate'] for gene in raw_data.genes}
+			for cistron_idx in constituent_cistron_indexes:
+				cistron_id = all_cistron_ids[cistron_idx]
+				cistron_coordinate = rna_id_to_coordinate[cistron_id]
+
+				start_pos = np.abs(cistron_coordinate - rna_coordinate)
+				end_pos = start_pos + cistron_id_to_length[cistron_id]
+
+				# End position should stay within length of entire RNA
+				assert end_pos < rna_lengths[rna_idx]
+
+				# Key: (index of cistron, index of RNA)
+				# Value: (start position, end position)
+				self.cistron_start_end_pos_in_tu[(cistron_idx, rna_idx)] = (start_pos, end_pos)
+
+		# Determine type of each RNA
+		# TODO (ggsun): we would eventually want to get rid of these
+		# 	classifications for full RNAs, and only maintain them for individual
+		# 	cistrons to accomodate more transcription units. Currently no
+		# 	"hybrid" transcription units containing two or distinct types of
+		# 	cistrons are included in the model so this approach works.
+		is_mRNA = rna_tu_mapping_matrix.T.dot(
+			self.cistron_data['is_mRNA']).astype(np.bool)
+		is_miscRNA = rna_tu_mapping_matrix.T.dot(
+			self.cistron_data['is_miscRNA']).astype(np.bool)
+		is_rRNA = rna_tu_mapping_matrix.T.dot(
+			self.cistron_data['is_rRNA']).astype(np.bool)
+		is_tRNA = rna_tu_mapping_matrix.T.dot(
+			self.cistron_data['is_tRNA']).astype(np.bool)
 		
-		gene_starts_stops = []
-		for rna in raw_data.operon_rnas:
-			direction_ss = direction_dict[rna['gene_set'][0]]
-			start_stop = []
-			for idx, gene in enumerate(rna['gene_set']):
+		# Confirm there are no hybrid or unclassified RNAs
+		assert np.all(is_mRNA | is_miscRNA | is_rRNA | is_tRNA)
+		assert is_mRNA.sum() + is_miscRNA.sum() + is_rRNA.sum() + is_tRNA.sum() == n_rnas
 
-				if idx == 0:
-					start = 0
-				elif direction_ss == '+':
-					start = coordinate_dict[gene] - coordinate_dict[rna['gene_set'][0]] - 1  # TODO (ggsun): Is the minus one correct?
-				elif direction_ss == '-':
-					start = coordinate_dict[rna['gene_set'][0]] - coordinate_dict[gene] - 1
-
-				stop = start + gene_lengths[gene]
-				start_stop.append([start, stop])
-			gene_starts_stops.append(start_stop)
+		# Determine if each RNA contains cistrons that encode for special
+		# components
+		includes_23S_rRNA = rna_tu_mapping_matrix.T.dot(
+			self.cistron_data['is_23S_rRNA']).astype(np.bool)
+		includes_16S_rRNA = rna_tu_mapping_matrix.T.dot(
+			self.cistron_data['is_16S_rRNA']).astype(np.bool)
+		includes_5S_rRNA = rna_tu_mapping_matrix.T.dot(
+			self.cistron_data['is_5S_rRNA']).astype(np.bool)
+		includes_ribosomal_protein = rna_tu_mapping_matrix.T.dot(
+			self.cistron_data['is_ribosomal_protein']).astype(np.bool)
+		includes_RNAP = rna_tu_mapping_matrix.T.dot(
+			self.cistron_data['is_RNAP']).astype(np.bool)
 
 		# Set the lengths, nucleotide counts, molecular weights, and sequences
 		# of each type of rRNAs to be identical to those of the first rRNA
@@ -413,6 +551,10 @@ class Transcription(object):
 		# complexation reactions that form ribosomes. In reality, all of these
 		# genes produce rRNA molecules with slightly different sequences and
 		# molecular weights.
+		idx_23S = np.where(includes_23S_rRNA)[0]
+		idx_16S = np.where(includes_16S_rRNA)[0]
+		idx_5S = np.where(includes_5S_rRNA)[0]
+
 		rna_lengths[idx_23S] = rna_lengths[idx_23S[0]]
 		rna_lengths[idx_16S] = rna_lengths[idx_16S[0]]
 		rna_lengths[idx_5S] = rna_lengths[idx_5S[0]]
@@ -425,34 +567,28 @@ class Transcription(object):
 		mws[idx_16S] = mws[idx_16S[0]]
 		mws[idx_5S] = mws[idx_5S[0]]
 
-		id_length = max(len(id_) for id_ in rna_ids_with_compartments)
-		gene_id_length = max(len(id_) for id_ in gene_ids)
+		max_rna_id_length = max(len(id_) for id_ in rna_ids_with_compartments)
 
 		rna_data = np.zeros(
 			n_rnas,
 			dtype = [
-				('id', 'U{}'.format(id_length)),
+				('id', 'U{}'.format(max_rna_id_length)),
 				('deg_rate', 'f8'),
 				('length', 'i8'),
 				('counts_ACGU', '4i8'),
 				('mw', 'f8'),
+				('Km_endoRNase', 'f8'),
+				('replication_coordinate', 'int64'),
+				('direction', 'bool'),
 				('is_mRNA', 'bool'),
 				('is_miscRNA', 'bool'),
 				('is_rRNA', 'bool'),
 				('is_tRNA', 'bool'),
-				('is_23S_rRNA', 'bool'),
-				('is_16S_rRNA', 'bool'),
-				('is_5S_rRNA', 'bool'),
-				('is_ribosomal_protein', 'bool'),
-				('is_RNAP',	'bool'),
-				('gene_id', 'U{}'.format(gene_id_length)),
-				('Km_endoRNase', 'f8'),
-				('replication_coordinate', 'int64'),
-				('direction', 'bool'),
-				# TODO (ggsun): check effects of adding generic objects as dtypes
-				('gene_set', 'object'),
-				('monomer_set', 'object'),
-				('gene_starts_stops', 'object'),
+				('includes_23S_rRNA', 'bool'),
+				('includes_16S_rRNA', 'bool'),
+				('includes_5S_rRNA', 'bool'),
+				('includes_ribosomal_protein', 'bool'),
+				('includes_RNAP', 'bool'),
 				]
 			)
 
@@ -461,89 +597,59 @@ class Transcription(object):
 		rna_data['length'] = rna_lengths
 		rna_data['counts_ACGU'] = nt_counts
 		rna_data['mw'] = mws
-		# TODO (ggsun): we would eventually want to get rid of these
-		# 	classifications for operon RNAs, and only maintain them for
-		# 	individual genes. Might complicate how we distribute transcription
-		# 	probabilities.
-		rna_data['is_mRNA'] = [rna["type"] == "mRNA" for rna in all_rnas]
-		rna_data['is_miscRNA'] = [rna["type"] == "miscRNA" for rna in all_rnas]
-		rna_data['is_rRNA'] = [rna["type"] == "rRNA" for rna in all_rnas]
-		rna_data['is_tRNA'] = [rna["type"] == "tRNA" for rna in all_rnas]
-		
-		# operon_integration modification
-		# Only mark is_ribosomal_protein as true if it does not include a RNA Polymerase protein.
-		# TODO (ggsun): instead of a boolean array, we might need to actually
-		# 	count the number of ribosomal proteins each operon contains
-		# 	depending on how this array gets used
-		# TODO (ggsun): this could be a single if statement since the array is
-		# 	initialized to False
-		for idx, operon_rna in enumerate(raw_data.operon_rnas):
-			if any("{}[c]".format(monomer) in sim_data.molecule_groups.RNAP_subunits for monomer in operon_rna['monomer_set']):
-				rna_data['is_ribosomal_protein'][idx] = False
-			elif any("{}[c]".format(monomer) in sim_data.molecule_groups.ribosomal_proteins for monomer in operon_rna['monomer_set']):
-				rna_data['is_ribosomal_protein'][idx] = True
-		'''
-		# mark an entire operon as true if it contains a ribosomal protein
-		rna_data['is_ribosomal_protein'] = [
-			any("{}[c]".format(item) in sim_data.molecule_groups.ribosomal_proteins 
-				for item in operon_rna['monomer_set'])
-			for operon_rna in raw_data.operon_rnas
-			]
-		'''
-		# operon_integration modification
-		# mark an entire operon as true if it contains a rna polymerase protein
-		# operons will be double marked as ribosomal and polymerase. this might have to be
-		# updated later
-		# TODO (ggsun): Again, consider counting the number of RNAP proteins of
-		# 	each type
-		rna_data['is_RNAP'] = [
-			any("{}[c]".format(item) in sim_data.molecule_groups.RNAP_subunits 
-				for item in operon_rna['monomer_set'])
-			for operon_rna in raw_data.operon_rnas
-			]
-		rna_data['is_23S_rRNA'] = is_23S
-		rna_data['is_16S_rRNA'] = is_16S
-		rna_data['is_5S_rRNA'] = is_5S
-		rna_data['gene_id'] = gene_ids
 		rna_data['Km_endoRNase'] = Km
 		rna_data['replication_coordinate'] = replication_coordinate
 		rna_data['direction'] = direction
-		rna_data['gene_set'] = [rna['gene_set'] for rna in raw_data.operon_rnas]
-		rna_data['monomer_set'] = monomer_sets
-		rna_data['gene_starts_stops'] = gene_starts_stops
+		rna_data['is_mRNA'] = is_mRNA
+		rna_data['is_miscRNA'] = is_miscRNA
+		rna_data['is_rRNA'] = is_rRNA
+		rna_data['is_tRNA'] = is_tRNA
+		rna_data['includes_23S_rRNA'] = includes_23S_rRNA
+		rna_data['includes_16S_rRNA'] = includes_16S_rRNA
+		rna_data['includes_5S_rRNA'] = includes_5S_rRNA
+		rna_data['includes_ribosomal_protein'] = includes_ribosomal_protein
+		rna_data['includes_RNAP'] = includes_RNAP
+
 		field_units = {
 			'id': None,
 			'deg_rate': 1 / units.s,
 			'length': units.nt,
 			'counts_ACGU': units.nt,
 			'mw': units.g / units.mol,
+			'Km_endoRNase': units.mol / units.L,
+			'replication_coordinate': None,
+			'direction': None,
 			'is_mRNA': None,
 			'is_miscRNA': None,
 			'is_rRNA': None,
 			'is_tRNA': None,
-			'is_23S_rRNA': None,
-			'is_16S_rRNA': None,
-			'is_5S_rRNA': None,
-			'is_ribosomal_protein': None,
-			'is_RNAP': None,
-			'gene_id': None,
-			'Km_endoRNase': units.mol / units.L,
-			'replication_coordinate': None,
-			'direction': None,
-			'gene_set': None,
-			'monomer_set': None,
-			'gene_starts_stops': None,
+			'includes_23S_rRNA': None,
+			'includes_16S_rRNA': None,
+			'includes_5S_rRNA': None,
+			'includes_ribosomal_protein': None,
+			'includes_RNAP': None,
 			}
 
-		self.rna_expression = {}
-		self.rna_synth_prob = {}
+		self.rna_data = UnitStructArray(rna_data, field_units)
 
 		# Set basal expression and synthesis probabilities - conditional values
 		# are set in the parca.
+		self.rna_expression = {}
+		self.rna_synth_prob = {}
 		self.rna_expression["basal"] = expression / expression.sum()
 		self.rna_synth_prob["basal"] = synth_prob / synth_prob.sum()
 
-		self.rna_data = UnitStructArray(rna_data, field_units)
+
+	def rna_tu_mapping_matrix(self):
+		'''
+		Creates stoich matrix from i, j, v arrays
+		Returns 2D array with rows of metabolites for each tRNA charging reaction on the column
+		'''
+		shape = (self._mapping_matrix_i.max() + 1, self._mapping_matrix_j.max() + 1)
+		out = np.zeros(shape, np.float64)
+		out[self._mapping_matrix_i, self._mapping_matrix_j] = self._mapping_matrix_v
+
+		return out
 
 	def _build_transcription(self, raw_data, sim_data):
 		"""
