@@ -146,6 +146,10 @@ class Simulation():
 		# Initialize simulation from fit KB
 		self._initialize(sim_data)
 
+		# vivarium-ecoli save boolean
+		self.save_status = False
+		self.save_time = 0
+
 
 	# Link states and processes
 	def _initialize(self, sim_data):
@@ -268,10 +272,12 @@ class Simulation():
 				self.finalize()
 				break
 
-			save_time = 0
-			if self.time() >= save_time:
-				time = int(self.time())
+			# save_time = 0 --> make into a list of times??
+			# added save_status boolean
+			if self.time() >= self.save_time and not self.save_status:
+				time = int(self.time()) # rounding!
 				self.write_states(f'out/wcecoli_t{time}.json')
+				self.save_status = True
 				# import ipdb; ipdb.set_trace()
 
 			self._simulationStep += 1
@@ -506,14 +512,15 @@ class Simulation():
 
 	def _adjustTimeStep(self):
 		# Adjust timestep if needed or at a frequency of updateTimeStepFreq regardless
-		validTimeSteps = self._maxTimeStep * np.ones(len(self.processes))
-		resetTimeStep = False
-		for i, process in enumerate(six.viewvalues(self.processes)):
-			if not process.isTimeStepShortEnough(self._timeStepSec, self._timeStepSafetyFraction) or self.simulationStep() % self._updateTimeStepFreq == 0:
-				validTimeSteps[i] = self._findTimeStep(0., self._maxTimeStep, process.isTimeStepShortEnough)
-				resetTimeStep = True
-		if resetTimeStep:
-			self._timeStepSec = validTimeSteps.min()
+		# validTimeSteps = self._maxTimeStep * np.ones(len(self.processes))
+		# resetTimeStep = False
+		# for i, process in enumerate(six.viewvalues(self.processes)):
+		# 	if not process.isTimeStepShortEnough(self._timeStepSec, self._timeStepSafetyFraction) or self.simulationStep() % self._updateTimeStepFreq == 0:
+		# 		validTimeSteps[i] = self._findTimeStep(0., self._maxTimeStep, process.isTimeStepShortEnough)
+		# 		resetTimeStep = True
+		# if resetTimeStep:
+		# 	self._timeStepSec = validTimeSteps.min()
+		pass
 
 	def _findTimeStep(self, minTimeStep, maxTimeStep, checkerFunction):
 		N = 10000
