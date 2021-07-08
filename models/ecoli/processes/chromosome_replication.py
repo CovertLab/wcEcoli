@@ -83,8 +83,12 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.mechanistic_replisome = sim._mechanistic_replisome
 
 		# Saving updates
-		self.update_to_save = {}
-		self.saved = False
+		self.update_to_save = {
+			'replisome_trimers': {name: 0 for name in self.replisome_trimers._query},
+			'replisome_monomers': {name: 0 for name in self.replisome_monomers._query}}
+		self.zero_save = False
+		self.one_save = False
+		self.two_save = False
 
 	def calculateRequest(self):
 		# Get total count of existing oriC's
@@ -277,15 +281,15 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			# ipdb.set_trace() DONE
 			if self.mechanistic_replisome:
 				for mol in self.replisome_trimers._query:
-					if mol not in self.update_to_save['replisome_trimers']:
-						self.update_to_save['replisome_trimers'][mol] = 0
 					self.update_to_save['replisome_trimers'][mol] -= 6 * n_oriC
 				for mol in self.replisome_monomers._query:
-					if mol not in self.update_to_save['replisome_monomers']:
-						self.update_to_save['replisome_monomers'][mol] = 0
 					self.update_to_save['replisome_monomers'][mol] -= 2 * n_oriC
-				self.replisome_trimers.countsDec(6*n_oriC)
-				self.replisome_monomers.countsDec(2*n_oriC)
+				self.replisome_trimers.countsDec(6 * n_oriC)
+				self.replisome_monomers.countsDec(2 * n_oriC)
+			if not self.two_save:
+				write_json(f'out/migration/chromosome_replication_update_t{int(self._sim.time())}.json',
+						   self.update_to_save)
+				self.zero_save = True
 
 		# Write data from this module to a listener
 		self.writeToListener("ReplicationData", "criticalMassPerOriC",
@@ -470,23 +474,23 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			# Increment counts of replisome subunits
 			if self.mechanistic_replisome:
 
-				# ipdb.set_trace() DONE
 				for mol in self.replisome_trimers._query:
-					if mol not in self.update_to_save['replisome_trimers']:
-						self.update_to_save['replisome_trimers'][mol] = 0
 					self.update_to_save['replisome_trimers'][mol] += 3 * replisomes_to_delete.sum()
 				for mol in self.replisome_monomers._query:
-					if mol not in self.update_to_save['replisome_monomers']:
-						self.update_to_save['replisome_monomers'][mol] = 0
 					self.update_to_save['replisome_monomers'][mol] += replisomes_to_delete.sum()
 
 				self.replisome_trimers.countsInc(3*replisomes_to_delete.sum())
 				self.replisome_monomers.countsInc(replisomes_to_delete.sum())
-		ipdb.set_trace()
-		if not self.saved:
+
+			if not self.one_save:
+				write_json(f'out/migration/chromosome_replication_update_t{int(self._sim.time())}.json',
+						   self.update_to_save)
+				self.one_save = True
+
+		if not self.zero_save:
 			write_json(f'out/migration/chromosome_replication_update_t{int(self._sim.time())}.json',
 					   self.update_to_save)
-			self.saved = True
+			self.zero_save = True
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		return inputTimeStep <= self.max_time_step
