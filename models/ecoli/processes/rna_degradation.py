@@ -46,6 +46,7 @@ import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils.constants import REQUEST_PRIORITY_DEGRADATION
+from wholecell.utils.migration.write_json import write_json # YJK - why is this greyed out?
 from wholecell.utils import units
 from six.moves import range, zip
 
@@ -138,6 +139,11 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# If set to False, assume RNAs degrade simply by first-order kinetics
 		self.EndoRNaseFunc = sim_data.constants.endoRNase_function
 
+		# YJK
+		# Saving updates
+		self.update_to_save = {}
+		self.saved = False
+
 
 	def calculateRequest(self):
 		# Compute factor that convert counts into concentration, and vice versa
@@ -178,6 +184,9 @@ class RnaDegradation(wholecell.processes.process.Process):
 				rna_conc_molar / (self.Km + rna_conc_molar)
 			).asNumber()
 
+		#YJK - update frac_endornase_saturated to self
+		self.frac_endornase_saturated = frac_endornase_saturated
+
 		# Calculate difference in degradation rates from first-order decay
 		# and the number of EndoRNases per one molecule of RNA
 		total_endornase_counts = np.sum(endornase_counts)
@@ -185,7 +194,11 @@ class RnaDegradation(wholecell.processes.process.Process):
 			units.abs(self.rnaDegRates * total_RNA_counts -
 				total_kcat_endornase * frac_endornase_saturated)
 			)
+
+		self.diff_relative_first_order_decay = diff_relative_first_order_decay # YJK - porting diff_relative_etc. to self
+
 		endornase_per_rna = total_endornase_counts / np.sum(total_RNA_counts)
+		self.endornase_per_rna = endornase_per_rna # YJK - porting endornase_per_rna to self
 
 		self.writeToListener("RnaDegradationListener",
 			"FractionActiveEndoRNases",
@@ -332,9 +345,25 @@ class RnaDegradation(wholecell.processes.process.Process):
 
 		self.unique_RNAs.attrIs(can_translate=can_translate)
 
+		#YJK - added update_to_save
+		#YJK - added if statement to update
+		self.update_to_save['listeners'] = {'rna_degradation_listener': {
+                    'fraction_active_endo_rnases': np.sum(self.frac_endornase_saturated),
+                    'diff_relative_first_order_decay': self.diff_relative_first_order_decay.asNumber(),
+                    'fract_endo_rrna_counts': self.endornase_per_rna,
+                    'count_rna_degraded': n_degraded_RNA,
+                    'nucleotides_from_degradation': np.dot(n_degraded_RNA, self.rna_lengths)}}
+
 		# Degrade full mRNAs that are inactive
 		self.unique_RNAs.delByIndexes(
 			np.where(self.unique_mRNAs_to_degrade)[0])
+
+		#YJK - update
+		self.update_to_save['RNAs']['_delete'] = [
+            (rnas_indexes[delete_index],)
+            for delete_index in np.where(self.unique_mRNAs_to_degrade)[0]]
+
+
 
 		# Modeling assumption: Once a RNA is cleaved by an endonuclease its
 		# resulting nucleotides are lumped together as "polymerized fragments".

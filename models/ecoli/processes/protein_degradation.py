@@ -73,12 +73,14 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
 		# saving updates
-		self.save_time = 1
-		self.update_to_save = {}
-		self.saved = False
+		# YJK - added if statement for performance issues
+		if not self.saved:
+			self.save_time = 1
+			self.update_to_save = {}
+			self.saved = False
 
-		self.update_to_save["protein_ids"] = self.proteinIds
-		self.update_to_save["metabolite_ids"] = metaboliteIds
+			self.update_to_save["protein_ids"] = self.proteinIds
+			self.update_to_save["metabolite_ids"] = metaboliteIds
 
 
 	def calculateRequest(self):
@@ -98,9 +100,10 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.proteins.requestIs(nProteinsToDegrade)
 
 		# update for migration
-		self.update_to_save["proteins_to_degrade"] = nProteinsToDegrade
-		# if self._sim.time() > self.save_time:
-		# 	import ipdb; ipdb.set_trace()
+		if not self.saved:
+			self.update_to_save["proteins_to_degrade"] = nProteinsToDegrade
+			# if self._sim.time() > self.save_time:
+			# 	import ipdb; ipdb.set_trace()
 
 	def evolveState(self):
 
@@ -114,7 +117,8 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.proteins.countsIs(0)
 
 		# update for migration
-		self.update_to_save["metabolite_update"] = metabolite_update
+		if not self.saved:
+			self.update_to_save["metabolite_update"] = metabolite_update
 
 		# save the update
 		if not self.saved and "proteins_to_degrade" in self.update_to_save.keys() and self._sim.time() > self.save_time:
