@@ -109,13 +109,12 @@ class BaseSolver():
 			self.perturbations[(self.iteration, index)] = (raw_updates, sim_updates)
 			new_raw_data_file, new_sim_data_file, metrics_file = self.data_paths(variant)
 			if raw_updates:
+				sim_data_file = new_sim_data_file
 				self.apply_updates(raw_data_file, raw_updates, new_raw_data_file)
 				run_parca(self._method.parca_args, raw_data_file, sim_data_file, metrics_file)
-				sim_data_file = new_sim_data_file
 
 			# TODO: apply variant modifications before updating sim_data
 			self.apply_updates(sim_data_file, sim_updates, new_sim_data_file)
-
 			sim_data_files.append(new_sim_data_file)
 
 		return sim_data_files
