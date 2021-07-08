@@ -52,13 +52,14 @@ class Translation(object):
 			self.translation_sequences[i, :len(seq)] = seq
 
 	def _build_monomer_data(self, raw_data, sim_data):
-		valid_mRNA_ids = {
+		valid_mRNA_cistron_ids = {
 			rna['id'] for rna in raw_data.rnas
 			if rna['type'] == 'mRNA' and sim_data.getter.is_valid_molecule(rna['id'])
 			}
 
-		# Get mappings from monomer IDs to RNA IDs
-		monomer_id_to_rna_id = {
+		# Get mappings from monomer IDs to cistron IDs
+		# TODO (ggsun): Handle cistrons with two or more associated proteins
+		monomer_id_to_cistron_id = {
 			rna['monomer_ids'][0]: rna['id']
 			for rna in raw_data.rnas
 			if len(rna['monomer_ids']) > 0}
@@ -68,10 +69,10 @@ class Translation(object):
 		for protein in raw_data.proteins:
 			if sim_data.getter.is_valid_molecule(protein['id']):
 				try:
-					rna_id = monomer_id_to_rna_id[protein['id']]
+					rna_id = monomer_id_to_cistron_id[protein['id']]
 				except KeyError:
 					continue
-				if rna_id in valid_mRNA_ids:
+				if rna_id in valid_mRNA_cistron_ids:
 					all_proteins.append(protein)
 
 		# Get protein IDs with compartments
@@ -84,67 +85,9 @@ class Translation(object):
 			]
 		n_proteins = len(protein_ids)
 		
-		# Create a dictionary for the RNA location for each RNA (use this to add location tag to all rnas)
-		rna_ids = [rna['id'] for rna in raw_data.operon_rnas]
-		compartments = sim_data.getter.get_compartments(rna_ids)
-		assert all([len(loc) == 1 for loc in compartments])
-
-		'''
-		rna_ids_with_compartments = [
-			f'{rna_id}[{loc[0]}]' for (rna_id, loc)
-			in zip(rna_ids, compartments)]
-		'''
-		rna_ids_with_compartments_lookups = {
-			rna: "{}[{}]".format(rna, compartments[ind][0])
-			for ind, rna in enumerate(rna_ids)
-			}
-
-		monomer_id_to_rna_sets = {}
-		for rna in raw_data.operon_rnas:
-			for monomer in rna['monomer_set']:
-				if monomer in monomer_id_to_rna_sets:
-					monomer_id_to_rna_sets[monomer].append(rna['id'])
-				else:
-					monomer_id_to_rna_sets[monomer] = [rna['id']]
-
-		rna_sets = [
-			[rna_ids_with_compartments_lookups[rna_id]
-			for rna_id in monomer_id_to_rna_sets[protein['id']]]
-			for protein in raw_data.proteins
-			]
-		
-		individual_rna_ids = [rna['id'] for rna in raw_data.rnas]
-		individual_rna_compartments = sim_data.getter.get_compartments(individual_rna_ids)
-		monomer_to_direct_rnaid = {
-			rna['monomer_id']: "{}[{}]".format(rna['id'], individual_rna_compartments[idx][0]) 
-			for idx, rna in enumerate(raw_data.rnas)
-			}
-		direct_rna_ids = [monomer_to_direct_rnaid[protein['id']] for protein in raw_data.proteins]
-		#add location tag to all rnaIds within rnaSet.
-		#remember to export rna_set_ids as rnaSet
-		'''
-		rnaSets = []
-		for protein in raw_data.proteins:
-			rna_id_set = []
-			rna_loc = None
-			for rna_id in protein['rnaSet']:
-				rna_loc = rna_location[rna_id]
-				rna_id_set.append('{}[{}]'.format(rna_id, rna_loc))
-			rnaSets.append(rna_id_set)
-		'''
-		'''
-		# TODO:New form that this takes using get_locations that I should mimic in the future
-
-		# Get RNA IDs with compartments
-		rna_ids = [
-			monomer_id_to_rna_id[protein['id']]
-			for protein in all_proteins]
-		rna_compartments = sim_data.getter.get_compartments(rna_ids)
-		assert all([len(loc) == 1 for loc in rna_compartments])
-		rna_ids_with_compartments = [
-			f'{rna_id}[{loc[0]}]'
-			for (rna_id, loc) in zip(rna_ids, rna_compartments)]
-		'''
+		# Get cistron IDs associated to each monomer
+		cistron_ids = [
+			monomer_id_to_cistron_id[protein['id']] for protein in all_proteins]
 
 		# Get lengths and amino acids counts of each protein
 		protein_seqs = sim_data.getter.get_sequences(protein_ids)
@@ -187,37 +130,34 @@ class Translation(object):
 
 		max_protein_id_length = max(
 			len(protein_id) for protein_id in protein_ids_with_compartments)
-		max_rna_id_length = max(
-			len(rna_id) for rna_id in direct_rna_ids)
+		max_cistron_id_length = max(
+			len(cistron_id) for cistron_id in cistron_ids)
 		monomer_data = np.zeros(
 			n_proteins,
 			dtype = [
 				('id', 'U{}'.format(max_protein_id_length)),
-				('rna_id', 'U{}'.format(max_rna_id_length)),
+				('cistron_id', 'U{}'.format(max_cistron_id_length)),
 				('deg_rate', 'f8'),
 				('length', 'i8'),
 				('aa_counts', '{}i8'.format(n_amino_acids)),
 				('mw', 'f8'),
-				('rna_set', 'object')
 				]
 			)
 
 		monomer_data['id'] = protein_ids_with_compartments
-		monomer_data['rna_id'] = direct_rna_ids
+		monomer_data['cistron_id'] = cistron_ids
 		monomer_data['deg_rate'] = deg_rate
 		monomer_data['length'] = lengths
 		monomer_data['aa_counts'] = aa_counts
 		monomer_data['mw'] = mws
-		monomer_data['rna_set'] = rna_sets
 
 		field_units = {
-			'id'		:	None,
-			'rna_id'		:	None,
-			'deg_rate'	:	deg_rate_units,
-			'length'	:	units.aa,
-			'aa_counts'	:	units.aa,
-			'mw'		:	units.g / units.mol,
-			'rna_set'	: 	None
+			'id': None,
+			'cistron_id': None,
+			'deg_rate': deg_rate_units,
+			'length': units.aa,
+			'aa_counts': units.aa,
+			'mw': units.g / units.mol,
 			}
 
 		self.monomer_data = UnitStructArray(monomer_data, field_units)
