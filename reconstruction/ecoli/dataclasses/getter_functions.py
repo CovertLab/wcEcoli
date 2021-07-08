@@ -365,8 +365,8 @@ class GetterFunctions(object):
 				rna_id_to_type[gene_id_to_rna_id[gene]] for gene in tu['genes']]
 			
 			if len(set(tu_rna_types)) > 1:
-				raise ValueError(f'Transcription unit f{tu["id"]} includes '
-					f'genes that encode for two or more different types of '
+				raise ValueError(f'Transcription unit {tu["id"]} includes '
+					f'cistrons that encode for two or more different types of '
 					f'RNAs, which is not supported by this version of the '
 					f'model and thus should be removed.')
 			
