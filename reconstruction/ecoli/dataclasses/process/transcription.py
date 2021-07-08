@@ -273,6 +273,7 @@ class Transcription(object):
 
 		cistron_field_units = {
 			'id': None,
+			'gene_id': None,
 			'is_mRNA': None,
 			'is_miscRNA': None,
 			'is_rRNA': None,
@@ -282,7 +283,6 @@ class Transcription(object):
 			'is_5S_rRNA': None,
 			'is_ribosomal_protein': None,
 			'is_RNAP': None,
-			'gene_id': None,
 			}
 
 		self.cistron_data = UnitStructArray(cistron_data, cistron_field_units)
@@ -471,7 +471,7 @@ class Transcription(object):
 				rna_id_to_coordinate[tu['id']] = tu['left_end_pos']
 			else:
 				rna_id_to_coordinate[tu['id']] = tu['right_end_pos']
-		
+
 		# Get mapping from cistron IDs to lengths
 		cistron_id_to_length = {}
 		for gene in raw_data.genes:
@@ -526,7 +526,7 @@ class Transcription(object):
 			self.cistron_data['is_rRNA']).astype(np.bool)
 		is_tRNA = rna_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_tRNA']).astype(np.bool)
-		
+
 		# Confirm there are no hybrid or unclassified RNAs
 		assert np.all(is_mRNA | is_miscRNA | is_rRNA | is_tRNA)
 		assert is_mRNA.sum() + is_miscRNA.sum() + is_rRNA.sum() + is_tRNA.sum() == n_rnas
@@ -659,7 +659,9 @@ class Transcription(object):
 		rna_seqs = sim_data.getter.get_sequences(
 			[rna_id[:-3] for rna_id in self.rna_data['id']])
 
-		rrna_types = ['is_23S_rRNA', 'is_16S_rRNA', 'is_5S_rRNA']
+		# Set the sequences of each type of rRNAs to be identical to those of
+		# the first rRNA operon.
+		rrna_types = ['includes_23S_rRNA', 'includes_16S_rRNA', 'includes_5S_rRNA']
 		for rrna in rrna_types:
 			rrna_idx = np.where(self.rna_data[rrna])[0]
 			for idx in rrna_idx[1:]:
@@ -694,13 +696,15 @@ class Transcription(object):
 		Loads information and creates data structures necessary for charging of tRNA
 
 		Note:
-			Requires self.rnaData so can't be built in translation even if some
+			Requires self.rna_data so can't be built in translation even if some
 			data structures would be more appropriate there.
 		'''
-
 		# Create list of charged tRNAs
-		trna_names = self.rna_data['id'][self.rna_data['is_tRNA']]
-		charged_trnas = [x['modified_forms'] for x in raw_data.operon_rnas if x['id'] + '[c]' in trna_names]
+		# TODO (ggsun): This assumes all tRNAs are monocistronic.
+		trna_names = self.cistron_data['id'][self.cistron_data['is_tRNA']]
+		charged_trnas = [
+			x['modified_forms'] for x in raw_data.rnas if x['id'] in trna_names]
+
 		filtered_charged_trna = []
 		for charged_list in charged_trnas:
 			for trna in charged_list:
@@ -716,13 +720,13 @@ class Transcription(object):
 
 		# Create mapping of each tRNA/charged tRNA to associated AA
 		trna_dict = {
-			'RNA0-300[c]': 'VAL',
-			'RNA0-301[c]': 'LYS',
-			'RNA0-302[c]': 'LYS',
-			'RNA0-303[c]': 'LYS',
-			'RNA0-304[c]': 'ASN',
-			'RNA0-305[c]': 'ILE',
-			'RNA0-306[c]': 'MET',
+			'RNA0-300': 'VAL',
+			'RNA0-301': 'LYS',
+			'RNA0-302': 'LYS',
+			'RNA0-303': 'LYS',
+			'RNA0-304': 'ASN',
+			'RNA0-305': 'ILE',
+			'RNA0-306': 'MET',
 			}
 		aa_names = sim_data.molecule_groups.amino_acids
 		aa_indices = {aa: i for i, aa in enumerate(aa_names)}
@@ -848,7 +852,6 @@ class Transcription(object):
 		"""
 		Load fold changes related to transcriptional attenuation.
 		"""
-
 		# Load data from file
 		aa_trnas = []
 		attenuated_rnas = []
@@ -1090,7 +1093,8 @@ class Transcription(object):
 		f_ppgpp_aa = self.fraction_rnap_bound_ppgpp(ppgpp_aa)
 		f_ppgpp_basal = self.fraction_rnap_bound_ppgpp(ppgpp_basal)
 
-		# TODO (TEG) actually map a ppGpp adjustment to polycistrons, currently implemented a sketch work around
+		# TODO (ggsun) actually map a ppGpp adjustment to polycistrons,
+		#  currently implemented a sketch work around
 		# rna_idx = {r[:-3]: i for i, r in enumerate(self.rnaData['id'])}
 		fcs = np.zeros(len(self.rna_data))
 		rna_fc_dict = dict(zip(self.ppgpp_regulated_genes, self.ppgpp_fold_changes))
