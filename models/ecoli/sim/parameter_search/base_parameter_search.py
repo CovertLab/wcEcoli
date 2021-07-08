@@ -65,13 +65,13 @@ class RawParameter():
 
 
 class BaseParameterSearch():
-	parca_args = {'cpus': 8}
+	parca_args = {}
 	# TODO: handle raw and sim params the same - create a class for SimParameter and combine attributes below
 	_raw_params = ()
 	_sim_params = ()
-	sims_to_run = ()
 	_init_raw_params = {}
 	_init_sim_params = {}
+	sims_to_run = ()
 
 	def __init__(self):
 		self.variant_name = self.__class__.__name__
