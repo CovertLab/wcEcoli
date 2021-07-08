@@ -22,7 +22,12 @@ class SPSA(BaseSolver):
 		for param, original_value in original_values.items():
 			objective_diff = objectives[1] - objectives[0]
 			parameter_diff = self.get_param(param, paths[1]) - self.get_param(param, paths[0])
-			original_values[param] -= at * objective_diff / parameter_diff  # TODO: pass this back instead of updating directly
+
+			# Get similar scaling for each parameter even if they span a wide range of magnitudes
+			# and gets the update in the correct units if the parameter has units
+			parameter_scaling = original_value**2
+
+			original_values[param] -= at * objective_diff / parameter_diff * parameter_scaling  # TODO: pass this back instead of updating directly
 
 	def get_parameter_perturbations(self, index):
 		raw_data_perturbations = {}
