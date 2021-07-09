@@ -78,8 +78,8 @@ def cpus(requested_num_processes=None):
 	return available
 
 
-def pool(num_processes=None):
-	# type: (Optional[int]) -> Union[mp.pool.Pool, InlinePool]
+def pool(num_processes=None, nestable=False):
+	# type: (Optional[int], Optional[bool]) -> Union[mp.pool.Pool, InlinePool]
 	"""Return an `InlinePool` if `cpus(num_processes) == 1`, else a
 	multiprocessing `Pool(cpus(num_processes))`, as suitable for the current
 	runtime environment.
@@ -88,12 +88,20 @@ def pool(num_processes=None):
 	interpreter process, avoiding threading problems and cross-platform
 	inconsistencies.
 
+	nestable can create a pool that is not a daemon process so that you can nest
+	multiple pool calls.
+
 	See `cpus()` on figuring the number of usable processes.
 	See `InlinePool` about why running in-process is important.
 	"""
 	usable = cpus(num_processes)
 
-	return mp.get_context('spawn').Pool(processes=usable) if usable > 1 else InlinePool()
+	if usable == 1:
+		return InlinePool()
+	elif nestable:
+		return NoDaemonPool()
+	else:
+		return mp.get_context('spawn').Pool(processes=usable)
 
 
 class InlinePool(object):
@@ -152,3 +160,26 @@ class ApplyResult(object):
 
 	def get(self, timeout=None):
 		return self._result
+
+class NoDaemonProcess(mp.Process):
+	@property
+	def daemon(self):
+		return False
+
+	@daemon.setter
+	def daemon(self, value):
+		pass
+
+class NoDaemonContext(type(mp.get_context())):
+	Process = NoDaemonProcess
+
+class NoDaemonPool(mp.pool.Pool):
+	"""
+	A substitute for multiprocessing.Pool() that creates a pool that is not a
+	daemonic process. This allows for nesting pool calls that would otherwise
+	be prevented with an assertion error (AssertionError: daemonic processes
+	are not allowed to have children).
+	"""
+	def __init__(self, *args, **kwargs):
+		kwargs['context'] = NoDaemonContext()
+		super().__init__(*args, **kwargs)
