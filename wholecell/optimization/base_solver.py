@@ -203,16 +203,16 @@ class BaseSolver():
 			updates: updates to apply to attributes in the old pickle object,
 				nested attributes should be separated by '.'
 			new_path: path to the new pickle object to store the modifications
-
-		TODO:
-			way to index into raw_data
 		"""
 
 		with open(old_path, 'rb') as f:
 			obj = pickle.load(f)
 
-		for param, val in updates.items():
-			self._method.set_attr(obj, param, val)
+		if updates:
+			print('Updating values:')
+			for param, val in updates.items():
+				print(f'\t{param}: {val}')
+				self._method.set_attr(obj, param, val)
 
 		with open(new_path, 'wb') as f:
 			pickle.dump(obj, f, protocol=pickle.HIGHEST_PROTOCOL)
