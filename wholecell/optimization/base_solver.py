@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 from models.ecoli.sim.variants.apply_variant import apply_variant
 from wholecell.fireworks.firetasks import FitSimDataTask, InitRawDataTask, SimulationTask, SimulationDaughterTask, VariantSimDataTask
 from wholecell.sim.simulation import ALTERNATE_KWARG_NAMES
-from wholecell.utils import constants, data, scriptBase
+from wholecell.utils import constants, data, parallelization, scriptBase
 import wholecell.utils.filepath as fp
 
 
@@ -97,6 +97,7 @@ class BaseSolver():
 	def __init__(self, method, args):
 		self._method = method
 		self._sim_dir = args.sim_path
+		self._cpus = args.cpus
 		self.perturbations = {}
 
 		self.learning_rate = args.learning_rate
@@ -146,11 +147,12 @@ class BaseSolver():
 		self.parameter_updates(self._method.sim_params, objectives, sim_data_paths)
 
 	def run_sims(self, sim_params):
-		# TODO: run sims in parallel
-		sim_dirs = []
-		for params in sim_params:
-			sim_dir = run_sim(params)
-			sim_dirs.append(sim_dir)
+		pool = parallelization.pool(self._cpus)
+		results = [pool.apply_async(run_sim, (p,)) for p in sim_params]
+		pool.close()
+		pool.join()
+
+		sim_dirs = [result.get() for result in results]
 
 		return sim_dirs
 
