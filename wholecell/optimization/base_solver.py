@@ -118,9 +118,11 @@ class BaseSolver():
 
 	def perturb_parameters(self, variants, raw_data_file, sim_data_file):
 		sim_data_files = []
+		sim_data_updates = []
+		results = []
+
 		pool = parallelization.pool(num_processes=self._cpus, nestable=True)
 		cpus_per_parca = max(1, int(self._cpus / len(variants)))
-		results = []
 		for variant in variants:
 			index = variant - variants[0]
 			raw_updates, sim_updates = self.get_parameter_perturbations(index)
@@ -130,19 +132,18 @@ class BaseSolver():
 				self.apply_updates(raw_data_file, raw_updates, new_raw_data_file)
 				results.append(pool.apply_async(run_parca, (self._method.parca_args,
 					new_raw_data_file, new_sim_data_file, metrics_file, cpus_per_parca)))
-				sim_data_file = new_sim_data_file  # Applying updates below should now be on the newly created file
-
-			# TODO: apply variant modifications here before updating sim_data?
-			self.apply_updates(sim_data_file, sim_updates, new_sim_data_file)
+				sim_data_updates.append(sim_updates)
+			else:
+				self.apply_updates(sim_data_file, sim_updates, new_sim_data_file)
 			sim_data_files.append(new_sim_data_file)
 
 		pool.close()
 		pool.join()
 		pool = None
 
-		# Get results in case an error was raised
-		for result in results:
-			result.get()
+		for result, filename, updates in zip(results, sim_data_files, sim_data_updates):
+			result.get()  # Get results in case an error was raised
+			self.apply_updates(filename, updates, filename)
 
 		return sim_data_files
 
