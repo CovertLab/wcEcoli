@@ -639,10 +639,9 @@ class Transcription(object):
 		self.rna_expression["basal"] = expression / expression.sum()
 		self.rna_synth_prob["basal"] = synth_prob / synth_prob.sum()
 
-
 	def cistron_tu_mapping_matrix(self):
 		'''
-		Creates stoich matrix from i, j, v arrays
+		Creates mapping matrix from i, j, v arrays
 		Returns 2D array with rows for cistrons, columns for transcription
 		units, and entries for a transcription unit containing a cistron.
 		'''
@@ -651,6 +650,14 @@ class Transcription(object):
 		out[self._mapping_matrix_i, self._mapping_matrix_j] = self._mapping_matrix_v
 
 		return out
+
+	def cistron_id_to_tu_indexes(self, cistron_id):
+		"""
+		Returns the indexes of transcription units containing the given RNA
+		cistron given the ID of the cistron.
+		"""
+		cistron_index = np.where(self.cistron_data['id'] == cistron_id)[0]
+		return np.where(self.cistron_tu_mapping_matrix()[cistron_index, :])[0]
 
 	def _build_transcription(self, raw_data, sim_data):
 		"""

@@ -926,35 +926,50 @@ def setRNAExpression(sim_data):
 	This function's goal is to set expression levels for a subset of RNAs.
 	It first gathers the index of the RNA's it wants to modify, then changes
 	the expression levels of those RNAs, within sim_data, based on the
-	specified adjustment factor.
-	These adjustments were made so that the simulation could run.
+	specified adjustment factor. If the specified ID is an RNA cistron, the
+	expression levels of all RNA molecules containing the cistron are adjusted.
 
 	Requires
 	--------
-	- For each RNA that needs to be modified, it takes in an
-	adjustment factor.
+	- For each RNA that needs to be modified, it takes in an adjustment factor.
 
 	Modifies
 	--------
 	- This function modifies the basal RNA expression levels set in sim_data,
 	for the chosen RNAs. It takes their current basal expression and multiplies
 	them by the factor specified in adjustments.
-	- After updating the basal expression levels for the given genes, the
+	- After updating the basal expression levels for the given RNAs, the
 	function normalizes all the basal expression levels.
 	"""
+	cistron_ids = set(sim_data.process.transcription.cistron_data['id'])
+	rna_id_to_index = {
+		rna_id[:-3]: i for (i, rna_id)
+		in enumerate(sim_data.process.transcription.rna_data['id'])}
 
-	for gene in sim_data.adjustments.rna_expression_adjustments:
-		for i, tu in enumerate(sim_data.process.transcription.rna_data):
-			if gene in tu['gene_set']:
-				sim_data.process.transcription.rna_expression["basal"][i] *= sim_data.adjustments.rna_expression_adjustments[gene]
+	for mol_id in sim_data.adjustments.rna_expression_adjustments:
+		if mol_id in cistron_ids:
+			# Find indexes of all RNAs containing the cistron
+			rna_indexes = sim_data.process.transcription.cistron_id_to_tu_indexes(mol_id)
+		elif mol_id in rna_id_to_index:
+			rna_indexes = rna_id_to_index[mol_id]
+		else:
+			raise ValueError(
+				f'Molecule ID {mol_id} not found in list of cistrons or transcription units.')
+
+		# Multiply all expression levels with the specified adjustment factor
+		sim_data.process.transcription.rna_expression["basal"][rna_indexes] *= sim_data.adjustments.rna_expression_adjustments[mol_id]
 
 	sim_data.process.transcription.rna_expression["basal"] /= sim_data.process.transcription.rna_expression["basal"].sum()
 
 def setRNADegRates(sim_data):
 	"""
-	This function's goal is to set the degradation rates for a subset of metabolic RNA's.
-	It first gathers the index of the RNA's it wants to modify, then changes the degradation
-	rates of those RNAs. These adjustments were made so that the simulation could run.
+	This function's goal is to adjust the degradation rates for a subset of
+	metabolic RNA's. It first gathers the index of the RNA's it wants to modify,
+	then changes the degradation rates of those RNAs. If the specified ID is
+	that of an RNA cistron, the degradation rates of all RNA molecules
+	containing the cistron are adjusted. (Note: since RNA concentrations are
+	assumed to be in equilibrium, increasing the degradation rate increases the
+	synthesis rates of these RNAs)
 
 	Requires
 	--------
@@ -962,13 +977,27 @@ def setRNADegRates(sim_data):
 
 	Modifies
 	--------
-	- This function modifies the RNA degradation rates for the chosen RNAs in sim_data.
-	It takes their current degradation rate and multiplies them by the factor specified in adjustments.
+	- This function modifies the RNA degradation rates for the chosen RNAs in
+	sim_data. It takes their current degradation rate and multiplies them by the
+	factor specified in adjustments.
 	"""
-	for gene in sim_data.adjustments.rna_deg_rates_adjustments:
-		for i, tu in enumerate(sim_data.process.transcription.rna_data):
-			if gene in tu['gene_set']:
-				sim_data.process.transcription.rna_data.struct_array['deg_rate'][i] *= sim_data.adjustments.rna_deg_rates_adjustments[gene]
+	cistron_ids = set(sim_data.process.transcription.cistron_data['id'])
+	rna_id_to_index = {
+		rna_id[:-3]: i for (i, rna_id)
+		in enumerate(sim_data.process.transcription.rna_data['id'])}
+
+	for mol_id in sim_data.adjustments.rna_deg_rates_adjustments:
+		if mol_id in cistron_ids:
+			# Find indexes of all RNAs containing the cistron
+			rna_indexes = sim_data.process.transcription.cistron_id_to_tu_indexes(mol_id)
+		elif mol_id in rna_id_to_index:
+			rna_indexes = rna_id_to_index[mol_id]
+		else:
+			raise ValueError(
+				f'Molecule ID {mol_id} not found in list of cistrons or transcription units.')
+
+		# Multiply all degradation rates with the specified adjustment factor
+		sim_data.process.transcription.rna_data.struct_array["deg_rate"][rna_indexes] *= sim_data.adjustments.rna_deg_rates_adjustments[mol_id]
 
 def setProteinDegRates(sim_data):
 	"""
