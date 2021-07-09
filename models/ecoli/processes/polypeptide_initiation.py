@@ -15,6 +15,7 @@ from wholecell.utils import units
 from wholecell.utils.fitting import normalize
 from six.moves import zip
 
+from wholecell.utils.migration.write_json import write_json
 
 class PolypeptideInitiation(wholecell.processes.process.Process):
 	""" PolypeptideInitiation """
@@ -67,6 +68,11 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Create view onto RNAs
 		self.RNAs = self.uniqueMoleculesView('RNA')
+        
+        # Save updates
+		self.save_time = 2
+		self.update_to_save = {}
+		self.saved = False
 
 	def calculateRequest(self):
 		current_media_id = self._external_states['Environment'].current_media_id
@@ -184,6 +190,13 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# Write number of initialized ribosomes to listener
 		self.writeToListener("RibosomeData", "didInitialize", n_new_proteins.sum())
 		self.writeToListener("RibosomeData", "probTranslationPerTranscript", proteinInitProb)
+
+		if not self.saved and self._sim.time() >= self.save_time:
+			write_json(f'out/migration/polypeptide_initiation_update_t{int(self._sim.time())}.json',
+					   self.update_to_save)
+			self.saved = True
+	
+  
 
 	def _calculateActivationProb(self, fracActiveRibosome, proteinLengths, ribosomeElongationRates, proteinInitProb, timeStepSec):
 		"""

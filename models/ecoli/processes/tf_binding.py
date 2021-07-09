@@ -125,8 +125,9 @@ class TfBinding(wholecell.processes.process.Process):
 			active_tf_view = self.active_tf_view[tf_id]
 			bound_tf_counts = n_bound_TF[tf_idx]
 			active_tf_view.countInc(bound_tf_counts)
-
-			self.update_to_save['active_tfs'][active_tf_view._query] = active_tf_view.count()
+   
+			# Use base of 0 to match vivarium default accumulative update scheme
+			self.update_to_save['active_tfs'][active_tf_view._query] = 0
 
 			# Get counts of transcription factors
 			# countInc() above increases count() but not total_counts() value
