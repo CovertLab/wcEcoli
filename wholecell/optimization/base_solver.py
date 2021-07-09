@@ -74,7 +74,7 @@ def run_sim(args):
 
 	return variant_directory
 
-def run_parca(args, raw_data_file, sim_data_file, metrics_data_file):
+def run_parca(args, raw_data_file, sim_data_file, metrics_data_file, cpus):
 	task = FitSimDataTask(
 		input_data=raw_data_file,
 		output_data=sim_data_file,
@@ -83,7 +83,7 @@ def run_parca(args, raw_data_file, sim_data_file, metrics_data_file):
 		load_intermediate=None,
 		save_intermediates=False,
 		intermediates_directory=os.path.dirname(sim_data_file),
-		cpus=args.get('cpus', 1),
+		cpus=cpus,
 		debug=False,
 		variable_elongation_transcription=args.get('variable_elongation_transcription', False),
 		variable_elongation_translation=args.get('variable_elongation_translation', False),
@@ -118,7 +118,9 @@ class BaseSolver():
 
 	def perturb_parameters(self, variants, raw_data_file, sim_data_file):
 		sim_data_files = []
-		# TODO: run updates in parallel
+		pool = parallelization.pool(num_processes=self._cpus, nestable=True)
+		cpus_per_parca = max(1, int(self._cpus / len(variants)))
+		results = []
 		for variant in variants:
 			index = variant - variants[0]
 			raw_updates, sim_updates = self.get_parameter_perturbations(index)
@@ -126,12 +128,21 @@ class BaseSolver():
 			new_raw_data_file, new_sim_data_file, metrics_file = self.data_paths(variant)
 			if raw_updates:
 				self.apply_updates(raw_data_file, raw_updates, new_raw_data_file)
-				run_parca(self._method.parca_args, new_raw_data_file, new_sim_data_file, metrics_file)
+				results.append(pool.apply_async(run_parca, (self._method.parca_args,
+					new_raw_data_file, new_sim_data_file, metrics_file, cpus_per_parca)))
 				sim_data_file = new_sim_data_file  # Applying updates below should now be on the newly created file
 
 			# TODO: apply variant modifications here before updating sim_data?
 			self.apply_updates(sim_data_file, sim_updates, new_sim_data_file)
 			sim_data_files.append(new_sim_data_file)
+
+		pool.close()
+		pool.join()
+		pool = None
+
+		# Get results in case an error was raised
+		for result in results:
+			result.get()
 
 		return sim_data_files
 
@@ -219,7 +230,7 @@ class BaseSolver():
 			if not os.path.exists(raw_data):
 				InitRawDataTask(output=raw_data).run_task({})
 			if not os.path.exists(sim_data):
-				run_parca(self._method.parca_args, raw_data, sim_data, metrics)
+				run_parca(self._method.parca_args, raw_data, sim_data, metrics, self._cpus)
 		else:
 			raw_data, sim_data, _ = self.data_paths(self.variant - 1)
 
