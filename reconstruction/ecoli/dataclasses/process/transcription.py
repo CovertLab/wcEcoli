@@ -342,7 +342,7 @@ class Transcription(object):
 		mapping_matrix_j = []
 		mapping_matrix_v = []
 
-		# Mapping from monocistronic RNA ID to index
+		# Mapping from cistron ID to index
 		cistron_id_to_index = {
 			rna_id: i for (i, rna_id) in enumerate(self.cistron_data['id'])
 			}
@@ -363,7 +363,7 @@ class Transcription(object):
 		self._mapping_matrix_v = np.array(mapping_matrix_v)
 
 		# Build full mapping matrix
-		rna_tu_mapping_matrix = self.rna_tu_mapping_matrix()
+		cistron_tu_mapping_matrix = self.cistron_tu_mapping_matrix()
 
 		# Build list of all RNA IDs with compartment tags
 		compartments = sim_data.getter.get_compartments(rna_ids)
@@ -395,15 +395,15 @@ class Transcription(object):
 		# Calculate the half life of each transcription unit. For polycistronic
 		# transcription units, take the average of all constituent cistrons.
 		rna_half_lives = np.divide(
-			rna_tu_mapping_matrix.T.dot(cistron_half_lives),
-			rna_tu_mapping_matrix.sum(axis=0))
+			cistron_tu_mapping_matrix.T.dot(cistron_half_lives),
+			cistron_tu_mapping_matrix.sum(axis=0))
 
 		# Convert to degradation rates
 		rna_deg_rates = np.log(2) / rna_half_lives
 
 		# Convert expression levels of cistrons to expression levels of
 		# transcription units using nonnegative least-squares
-		expression, _ = fast_nnls(rna_tu_mapping_matrix, self.basal_cistron_expression)
+		expression, _ = fast_nnls(cistron_tu_mapping_matrix, self.basal_cistron_expression)
 
 		# Calculate synthesis probabilities from expression and normalize
 		synth_prob = expression*(
@@ -496,7 +496,7 @@ class Transcription(object):
 		for (rna_idx, rna_id) in enumerate(rna_ids):
 			rna_coordinate = rna_id_to_coordinate[rna_id]
 			constituent_cistron_indexes = np.where(
-				rna_tu_mapping_matrix[:, rna_idx])[0]
+				cistron_tu_mapping_matrix[:, rna_idx])[0]
 
 			for cistron_idx in constituent_cistron_indexes:
 				cistron_id = all_cistron_ids[cistron_idx]
@@ -518,13 +518,13 @@ class Transcription(object):
 		# 	cistrons to accomodate more transcription units. Currently no
 		# 	"hybrid" transcription units containing two or distinct types of
 		# 	cistrons are included in the model so this approach works.
-		is_mRNA = rna_tu_mapping_matrix.T.dot(
+		is_mRNA = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_mRNA']).astype(np.bool)
-		is_miscRNA = rna_tu_mapping_matrix.T.dot(
+		is_miscRNA = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_miscRNA']).astype(np.bool)
-		is_rRNA = rna_tu_mapping_matrix.T.dot(
+		is_rRNA = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_rRNA']).astype(np.bool)
-		is_tRNA = rna_tu_mapping_matrix.T.dot(
+		is_tRNA = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_tRNA']).astype(np.bool)
 
 		# Confirm there are no hybrid or unclassified RNAs
@@ -533,15 +533,15 @@ class Transcription(object):
 
 		# Determine if each RNA contains cistrons that encode for special
 		# components
-		includes_23S_rRNA = rna_tu_mapping_matrix.T.dot(
+		includes_23S_rRNA = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_23S_rRNA']).astype(np.bool)
-		includes_16S_rRNA = rna_tu_mapping_matrix.T.dot(
+		includes_16S_rRNA = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_16S_rRNA']).astype(np.bool)
-		includes_5S_rRNA = rna_tu_mapping_matrix.T.dot(
+		includes_5S_rRNA = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_5S_rRNA']).astype(np.bool)
-		includes_ribosomal_protein = rna_tu_mapping_matrix.T.dot(
+		includes_ribosomal_protein = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_ribosomal_protein']).astype(np.bool)
-		includes_RNAP = rna_tu_mapping_matrix.T.dot(
+		includes_RNAP = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_RNAP']).astype(np.bool)
 
 		# Set the lengths, nucleotide counts, molecular weights, and sequences
@@ -640,10 +640,11 @@ class Transcription(object):
 		self.rna_synth_prob["basal"] = synth_prob / synth_prob.sum()
 
 
-	def rna_tu_mapping_matrix(self):
+	def cistron_tu_mapping_matrix(self):
 		'''
 		Creates stoich matrix from i, j, v arrays
-		Returns 2D array with rows of metabolites for each tRNA charging reaction on the column
+		Returns 2D array with rows for cistrons, columns for transcription
+		units, and entries for a transcription unit containing a cistron.
 		'''
 		shape = (self._mapping_matrix_i.max() + 1, self._mapping_matrix_j.max() + 1)
 		out = np.zeros(shape, np.float64)
