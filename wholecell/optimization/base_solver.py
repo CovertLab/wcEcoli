@@ -87,8 +87,8 @@ def run_parca(args, raw_data_file, sim_data_file, metrics_data_file):
 		debug=False,
 		variable_elongation_transcription=args.get('variable_elongation_transcription', False),
 		variable_elongation_translation=args.get('variable_elongation_translation', False),
-		disable_ribosome_capacity_fitting=not args.get('ribosome_fitting', False),
-		disable_rnapoly_capacity_fitting=not args.get('rnapoly_fitting', False))
+		disable_ribosome_capacity_fitting=not args.get('ribosome_fitting', True),
+		disable_rnapoly_capacity_fitting=not args.get('rnapoly_fitting', True))
 
 	task.run_task({})
 
