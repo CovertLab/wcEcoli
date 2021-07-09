@@ -19,7 +19,25 @@ DEFAULT_CLI_KWARGS = {
 
 
 class RawParameter():
-	def __init__(self, attr: str, id_columns: Dict[str, Any], columns: Iterable[str], name: str):
+	def __init__(self, attr: str, id_columns: Dict[str, Any], columns: Any, name: str):
+		"""
+		Create an object that can access and modify a desired property in raw_data.
+
+		Args:
+			attr: attribute of raw_data containing parameter to modify
+			id_columns: column names (key) and values (value) to identify the row to modify
+				eg. {'Gene': 'TrpR'} will modify the first row that has TrpR listed in column Gene
+			columns: columns within the row to get or modify with several options for indexing
+				str: will get/modify the value of the column directly
+				List[str]: will get the average of the columns specified and set the same updated
+					value for each one
+				List[List[Any]]: will continue indexing into the column with each value in the inner
+					list and get the average of the columns specified and set the same updated value
+					for each one if multiple inner lists are provided (eg. [['KM', 0]] will change
+					the first element in a list of KM values under column KM)
+			name: the text identifier of this parameter to display for updates
+		"""
+
 		self._attr = attr
 		self._id = id_columns
 		self._columns = columns
@@ -51,14 +69,40 @@ class RawParameter():
 
 		return row
 
-	def get_param(self, raw_data):
+	def get_param(self, raw_data, default=None):
 		row = self.get_row(raw_data)
-		return np.mean([row[col] for col in self._columns])
+		try:
+			if isinstance(self._columns, list):
+				values = []
+				for column in self._columns:
+					if isinstance(column, list):
+						obj = row
+						for subcolumn in column:
+							obj = obj[subcolumn]
+						values.append(obj)
+					else:
+						values.append(row[column])
+				value = np.mean(values)
+			else:
+				value = row[self._columns]
+		except (KeyError, IndexError):
+			return default
+
+		return value
 
 	def set_param(self, raw_data, value):
 		row = self.get_row(raw_data)
-		for col in self._columns:
-			row[col] = value
+		if isinstance(self._columns, list):
+			for column in self._columns:
+				if isinstance(column, list):
+					obj = row
+					for subcolumn in column[:-1]:
+						obj = obj[subcolumn]
+					obj[column[-1]] = value
+				else:
+					row[column] = value
+		else:
+			row[self._columns] = value
 
 	def __str__(self):
 		return self._name
@@ -124,7 +168,7 @@ class BaseParameterSearch():
 
 	def get_attr(self, obj, attr, default=None):
 		if isinstance(attr, RawParameter):
-			return attr.get_param(obj)
+			return attr.get_param(obj, default=default)
 		else:
 			attrs = attr.split('.')
 			for a in attrs:
