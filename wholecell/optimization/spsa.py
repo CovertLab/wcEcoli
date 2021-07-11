@@ -5,6 +5,7 @@
 import numpy as np
 
 from wholecell.optimization.base_solver import BaseSolver
+from wholecell.utils import units
 
 
 class SPSA(BaseSolver):
@@ -27,7 +28,11 @@ class SPSA(BaseSolver):
 			# and gets the update in the correct units if the parameter has units
 			parameter_scaling = original_value**2
 
-			original_values[param] -= at * objective_diff / parameter_diff * parameter_scaling  # TODO: pass this back instead of updating directly
+			update = at * objective_diff / parameter_diff * parameter_scaling
+			if np.abs(units.strip_empty_units(update / original_value)) > self.max_change:
+				update = np.sign(units.strip_empty_units(update / original_value)) * self.max_change * original_value
+
+			original_values[param] -= update  # TODO: pass this back instead of updating directly
 
 	def get_parameter_perturbations(self, index):
 		raw_data_perturbations = {}
