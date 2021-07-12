@@ -148,7 +148,7 @@ class Simulation():
 
 		# vivarium-ecoli save boolean
 		self.save_status = False
-		self.save_time = 0
+		self.save_time = 12
 
 
 	# Link states and processes

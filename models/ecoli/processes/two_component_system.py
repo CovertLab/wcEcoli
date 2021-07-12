@@ -98,6 +98,7 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 
 		# Save to .json file
 		if not self.saved:
-			write_json(f'out/migration/two_component_system_update_t{int(self._sim.time())}.json',
+			if self._sim.time() >= 12:
+				write_json(f'out/migration/two_component_system_update_t{int(self._sim.time())}.json',
 					   self.update_to_save)
-			self.saved = True
+				self.saved = True
