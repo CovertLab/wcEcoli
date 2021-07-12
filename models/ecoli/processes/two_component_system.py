@@ -52,6 +52,10 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		# Set priority to a lower value (but greater priority than metabolism)
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_TWO_COMPONENT_SYSTEM)
 
+		self.stoichI = sim_data.process.two_component_system._stoichMatrixI
+		self.stoichJ = sim_data.process.two_component_system._stoichMatrixJ
+		self.stoichV = sim_data.process.two_component_system._stoichMatrixV
+
 
 	def calculateRequest(self):
 		# Get molecule counts
@@ -93,12 +97,13 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 				)
 
 		# Increment changes in molecule counts and add to update
-		# self.molecules.countsInc(self.all_molecule_changes)
+		self.molecules.countsInc(self.all_molecule_changes)
 		self.update_to_save['molecules'] = array_to(self.moleculeNames, self.all_molecule_changes.astype(int))
 
 		# Save to .json file
 		if not self.saved:
 			if self._sim.time() >= 12:
+				import ipdb; ipdb.set_trace()
 				write_json(f'out/migration/two_component_system_update_t{int(self._sim.time())}.json',
-					   self.update_to_save)
+					self.update_to_save)
 				self.saved = True
