@@ -81,7 +81,7 @@ class TfBinding(wholecell.processes.process.Process):
 			"mass"][tf_indexes]/self.nAvogadro).asNumber(units.fg)
 
 		# saving updates
-		self.save_time = 102
+		self.save_time = 2
 		self.update_to_save = {}
 		self.saved = False
 
@@ -126,8 +126,7 @@ class TfBinding(wholecell.processes.process.Process):
 			bound_tf_counts = n_bound_TF[tf_idx]
 			active_tf_view.countInc(bound_tf_counts)
    
-			# Use base of 0 to match vivarium default accumulative update scheme
-			self.update_to_save['active_tfs'][active_tf_view._query] = 0
+			self.update_to_save['active_tfs'][tf_id + "[c]"] = bound_tf_counts
 
 			# Get counts of transcription factors
 			# countInc() above increases count() but not total_counts() value
@@ -180,7 +179,7 @@ class TfBinding(wholecell.processes.process.Process):
 				# Update count of free transcription factors
 				active_tf_view.countDec(bound_locs.sum())
 
-				self.update_to_save['active_tfs'][active_tf_view._query] -= bound_locs.sum()
+				self.update_to_save['active_tfs'][tf_id + "[c]"] -= bound_locs.sum()
 
 				# Update bound_TF array
 				bound_TF_new[available_promoters, tf_idx] = bound_locs
