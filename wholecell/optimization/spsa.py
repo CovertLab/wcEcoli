@@ -5,6 +5,8 @@ Randomly perturbs all parameters up or down to calculate a gradient from two
 simulations.
 """
 
+from typing import Dict, List, Tuple
+
 import numpy as np
 
 from wholecell.optimization.base_solver import BaseSolver
@@ -19,7 +21,23 @@ class SPSA(BaseSolver):
 
 	### Inherited method implementations ###
 
-	def get_parameter_updates(self, original_values, objectives, paths):
+	def get_parameter_updates(self, original_values: Dict, objectives: List[float], paths: List[str]) -> Dict:
+		"""
+		Get the new parameter values based on the results of the current
+		iteration.
+
+		Args:
+			original_values: the original values of parameters at the start of
+				the iteration
+			objectives: objective values for each variant run in this iteration
+			paths: paths to the data objects (raw_data or sim_data) for each
+				variant in this iteration
+
+		Returns:
+			mapping of each parameter to be modified to its update (the amount
+			to change the parameter by)
+		"""
+
 		updates = {}
 		at, _ = self.get_spsa_params()
 
@@ -34,7 +52,20 @@ class SPSA(BaseSolver):
 
 		return updates
 
-	def get_parameter_perturbations(self, index):
+	def get_parameter_perturbations(self, index: int) -> Tuple[Dict, Dict]:
+		"""
+		New parameter values for the given parameter set index within this
+		iteration.
+
+		Args:
+			index: relative variant within the current iteration (0 is the first
+				paramter set, 1 is the second and so on) so that parameters can
+				be modified in different ways for each parameter set
+
+		Returns:
+			mapping of each parameter to be modified to its new value
+		"""
+
 		raw_data_perturbations = {}
 		sim_data_perturbations = {}
 
@@ -56,7 +87,8 @@ class SPSA(BaseSolver):
 
 		return raw_data_perturbations, sim_data_perturbations
 
-	def n_variants_per_iteration(self):
+	def n_variants_per_iteration(self) -> int:
+		"""Number of variants (modified parameter sets) for each iteration"""
 		return 2  # high and low change
 
 	### Class specific functions ###

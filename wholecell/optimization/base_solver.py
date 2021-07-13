@@ -7,7 +7,7 @@ subclass from BaseSolver and implement the required functions.
 
 import os
 import pickle
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -113,16 +113,63 @@ class BaseSolver():
 		self.iteration = args.starting_iteration
 		self.variant = self.iteration * self.n_variants_per_iteration()
 
-	def get_parameter_updates(self, original_values, objectives, paths):
+	def get_parameter_updates(self, original_values: Dict, objectives: List[float], paths: List[str]) -> Dict:
+		"""
+		Get the new parameter values based on the results of the current
+		iteration.
+
+		Args:
+			original_values: the original values of parameters at the start of
+				the iteration
+			objectives: objective values for each variant run in this iteration
+			paths: paths to the data objects (raw_data or sim_data) for each
+				variant in this iteration
+
+		Returns:
+			mapping of each parameter to be modified to its update (the amount
+			to change the parameter by)
+		"""
 		raise NotImplementedError('Need to implement in a subclass.')
 
-	def get_parameter_perturbations(self, index):
+	def get_parameter_perturbations(self, index: int) -> Tuple[Dict, Dict]:
+		"""
+		New parameter values for the given parameter set index within this
+		iteration.
+
+		Args:
+			index: relative variant within the current iteration (0 is the first
+				paramter set, 1 is the second and so on) so that parameters can
+				be modified in different ways for each parameter set
+
+		Returns:
+			mapping of each parameter to be modified to its new value
+		"""
 		raise NotImplementedError('Need to implement in a subclass.')
 
-	def n_variants_per_iteration(self):
+	def n_variants_per_iteration(self) -> int:
+		"""Number of variants (modified parameter sets) for each iteration"""
 		raise NotImplementedError('Need to implement in a subclass.')
 
-	def perturb_parameters(self, variants, raw_data_file, sim_data_file):
+	def perturb_parameters(self, variants: List[int], raw_data_file: str, sim_data_file: str) -> List[str]:
+		"""
+		Perturb parameters for the upcoming iteration and run the parca
+		if necessary (raw_data is modified).  Can run the parca in parallel
+		for different sets of parameters.
+
+		Args:
+			variants: variant numbers for the current iteration to get the
+				associated data files
+			raw_data_file: path to the previous raw_data_file that can be used
+				as a basis for updating to the new parameters
+			sim_data_file: path to the previous sim_data_file that can be used
+				as a basis for updating to the new parameters, not used
+				if the parca needs to be rerun
+
+		Returns:
+			sim_data_files: paths to the newly created sim_data files for each
+				variant
+		"""
+
 		sim_data_files = []
 		sim_data_updates = []
 		results = []
@@ -153,7 +200,17 @@ class BaseSolver():
 
 		return sim_data_files
 
-	def update_parameters(self, variants, objectives):
+	def update_parameters(self, variants: List[int], objectives: List[float]):
+		"""
+		Update parameters for the next iteration based on the objective results
+		from the current iteration.
+
+		Args:
+			variants: variant numbers for the current iteration to get the
+				associated data files
+			objectives: objective values corresponding to each variant
+		"""
+
 		def update(data, objectives, paths):
 			for param, update in self.get_parameter_updates(data, objectives, paths).items():
 				original_value = data[param]
@@ -171,7 +228,19 @@ class BaseSolver():
 		update(self._method.raw_params, objectives, raw_data_paths)
 		update(self._method.sim_params, objectives, sim_data_paths)
 
-	def run_sims(self, sim_params):
+	def run_sims(self, sim_params: List[Dict]) -> List[str]:
+		"""
+		Run the set of simulations for a given iteration with the options
+		specified in sim_params.  Will run a simulation for each entry in
+		sim_params
+
+		Args:
+			sim_params: args for running a simulation
+
+		Returns:
+			sim_dirs: paths to the simulation directories that were run
+		"""
+
 		pool = parallelization.pool(self._cpus)
 		results = [pool.apply_async(run_sim, (p,)) for p in sim_params]
 		pool.close()
@@ -182,6 +251,12 @@ class BaseSolver():
 		return sim_dirs
 
 	def run_iteration(self):
+		"""
+		Run one iteration of the algorithm.  Perturb parameters, run parca,
+		run sims, get objectives and update to new parameters for the next
+		iteration.
+		"""
+
 		variants = list(range(self.variant, self.variant+self.n_variants_per_iteration()))
 		raw_data_file, sim_data_file = self.get_reference_parameters()
 		if not self._method.initialized:
@@ -201,7 +276,19 @@ class BaseSolver():
 		print(f'Objectives: {objectives}')
 		self._method.print_update()
 
-	def get_param(self, param, path):
+	def get_param(self, param: Parameter, path: str) -> Any:
+		"""
+		Get the parameter value from a specified data (raw_data or sim_data)
+		file.
+
+		Args:
+			param: the param object that specifies how to access the desired data
+			path: path to the data pickle to load
+
+		Returns:
+			parameter value stored in the data object
+		"""
+
 		with open(path, 'rb') as f:
 			obj = pickle.load(f)
 
