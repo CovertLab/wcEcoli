@@ -108,7 +108,7 @@ class Mass(object):
 		return massParams
 
 	def _build_CD_periods(self, raw_data, sim_data):
-		self._c_period = len(raw_data.genome_sequence) * units.nt / sim_data.constants.replisome_elongation_rate / 2
+		self._c_period = sim_data.constants.c_period
 		self._d_period = sim_data.constants.d_period
 
 	# Set based on growth rate avgCellDryMass

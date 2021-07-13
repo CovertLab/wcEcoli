@@ -37,8 +37,10 @@ class Replication(object):
 		self._build_motifs(raw_data, sim_data)
 		self._build_elongation_rates(raw_data, sim_data)
 
-		self.c_period = self.genome_length * units.nt / sim_data.constants.replisome_elongation_rate / 2
+		self.c_period = sim_data.constants.c_period
 		self.d_period = sim_data.constants.d_period
+		self.c_period_in_mins = self.c_period.asNumber(units.min)
+		self.d_period_in_mins = self.d_period.asNumber(units.min)
 
 	def _build_sequence(self, raw_data, sim_data):
 		self.genome_sequence = raw_data.genome_sequence
@@ -263,5 +265,5 @@ class Replication(object):
 		relative_pos[coords < 0] = -relative_pos[coords < 0] / left_replichore_length
 
 		# Return the predicted average copy number
-		n_avg_copy = 2**(((1 - relative_pos) * self.c_period.asNumber(units.min) + self.d_period.asNumber(units.min)) / tau)
+		n_avg_copy = 2**(((1 - relative_pos) * self.c_period_in_mins + self.d_period_in_mins) / tau)
 		return n_avg_copy
