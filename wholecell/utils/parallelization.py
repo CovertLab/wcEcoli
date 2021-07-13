@@ -1,6 +1,7 @@
 '''Parallelization utilities.'''
 
 import multiprocessing as mp
+import multiprocessing.pool
 import os
 
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union
