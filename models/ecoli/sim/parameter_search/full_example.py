@@ -4,7 +4,7 @@ import pickle
 from models.ecoli.sim.parameter_search.base_parameter_search import BaseParameterSearch, RawParameter, SimParameter
 
 
-class Example(BaseParameterSearch):
+class FullExample(BaseParameterSearch):
 	_raw_params = (RawParameter('metabolite_concentrations', {'Metabolite': 'TRP'}, ['Park Concentration', 'Lempp Concentration'], 'trp conc'),)
 	_sim_params = (SimParameter('constants.test'),)
 	_init_sim_params = {'constants.test': 1}

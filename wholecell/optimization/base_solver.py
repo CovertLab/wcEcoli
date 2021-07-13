@@ -85,7 +85,7 @@ def run_parca(args, raw_data_file, sim_data_file, metrics_data_file, cpus):
 		save_intermediates=False,
 		intermediates_directory=os.path.dirname(sim_data_file),
 		cpus=cpus,
-		debug=False,
+		debug=args.get('debug', False),
 		variable_elongation_transcription=args.get('variable_elongation_transcription', False),
 		variable_elongation_translation=args.get('variable_elongation_translation', False),
 		disable_ribosome_capacity_fitting=not args.get('ribosome_fitting', True),

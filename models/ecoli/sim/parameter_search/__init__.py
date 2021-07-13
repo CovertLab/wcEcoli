@@ -1,6 +1,8 @@
-from .example import Example
+from .full_example import FullExample
+from .quick_example import QuickExample
 
 
 PARAMETER_METHODS = {
-    'example': Example,
+    'full_example': FullExample,
+    'quick_example': QuickExample,
     }
