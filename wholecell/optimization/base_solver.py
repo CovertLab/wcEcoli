@@ -317,7 +317,7 @@ class BaseSolver():
 		with open(new_path, 'wb') as f:
 			pickle.dump(obj, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-	def get_reference_parameters(self) -> (str, str):
+	def get_reference_parameters(self) -> Tuple[str, str]:
 		"""
 		Get paths to raw_data and sim_data files for the reference variant.
 
@@ -337,7 +337,7 @@ class BaseSolver():
 
 		return raw_data, sim_data
 
-	def data_paths(self, variant: Optional[int] = None) -> (str, str, str):
+	def data_paths(self, variant: Optional[int] = None) -> Tuple[str, str, str]:
 		"""
 		Get paths to raw_data and sim_data files for a given variant.
 

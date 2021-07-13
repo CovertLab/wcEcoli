@@ -162,7 +162,7 @@ class ApplyResult(object):
 		return self._result
 
 class NoDaemonProcess(mp.Process):
-	@property
+	@property  # type: ignore[override]
 	def daemon(self):
 		return False
 
@@ -170,7 +170,7 @@ class NoDaemonProcess(mp.Process):
 	def daemon(self, value):
 		pass
 
-class NoDaemonContext(type(mp.get_context())):
+class NoDaemonContext(type(mp.get_context())):  # type: ignore
 	Process = NoDaemonProcess
 
 class NoDaemonPool(mp.pool.Pool):

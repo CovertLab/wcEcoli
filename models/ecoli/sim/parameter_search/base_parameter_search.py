@@ -7,7 +7,7 @@ required functions.
 
 import os
 import pickle
-from typing import Any, Dict
+from typing import Any, Dict, Tuple, Union
 
 import numpy as np
 
@@ -147,13 +147,13 @@ class SimParameter(Parameter):
 
 
 class BaseParameterSearch():
-	parca_args = {}
+	parca_args = {}  # type: Dict
 	# TODO: handle raw and sim params the same - create a class for SimParameter and combine attributes below
-	_raw_params = ()
-	_sim_params = ()
-	_init_raw_params = {}
-	_init_sim_params = {}
-	sims_to_run = ()
+	_raw_params = ()  # type: Union[Tuple, Tuple[RawParameter]]
+	_sim_params = ()  # type: Union[Tuple, Tuple[SimParameter]]
+	_init_raw_params = {}  # type: Dict
+	_init_sim_params = {}  # type: Dict
+	sims_to_run = ()  # type: Union[Tuple, Tuple[Dict]]
 
 	def __init__(self):
 		self.variant_name = self.__class__.__name__
