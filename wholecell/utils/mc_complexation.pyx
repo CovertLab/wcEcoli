@@ -1,5 +1,5 @@
 # cython: language_level=3str
-# distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
+## [Enable this in Cython 3]  distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
 
 """
 _complexation.pyx
