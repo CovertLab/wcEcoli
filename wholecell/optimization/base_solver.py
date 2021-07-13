@@ -1,16 +1,21 @@
 """
-
+Base implementation of any solver to be used with the parameter_search.py
+runscript.  Will update parameters (raw or sim data), run the parca and run
+sims to get an objective to optimize for.  Specific implementations should
+subclass from BaseSolver and implement the required functions.
 """
 
 import os
 import pickle
 from typing import Any, Dict, Optional
 
+import numpy as np
+
 from models.ecoli.sim.variants.apply_variant import apply_variant
 from models.ecoli.sim.parameter_search.base_parameter_search import Parameter
 from wholecell.fireworks.firetasks import FitSimDataTask, InitRawDataTask, SimulationTask, SimulationDaughterTask, VariantSimDataTask
 from wholecell.sim.simulation import ALTERNATE_KWARG_NAMES
-from wholecell.utils import constants, data, parallelization, scriptBase
+from wholecell.utils import constants, data, parallelization, scriptBase, units
 import wholecell.utils.filepath as fp
 
 
@@ -108,7 +113,7 @@ class BaseSolver():
 		self.iteration = args.starting_iteration
 		self.variant = self.iteration * self.n_variants_per_iteration()
 
-	def parameter_updates(self, original_values, objectives, paths):
+	def get_parameter_updates(self, original_values, objectives, paths):
 		raise NotImplementedError('Need to implement in a subclass.')
 
 	def get_parameter_perturbations(self, index):
@@ -149,6 +154,13 @@ class BaseSolver():
 		return sim_data_files
 
 	def update_parameters(self, variants, objectives):
+		def update(data, objectives, paths):
+			for param, update in self.get_parameter_updates(data, objectives, paths).items():
+				original_value = data[param]
+				if np.abs(units.strip_empty_units(update / original_value)) > self.max_change:
+					update = np.sign(units.strip_empty_units(update / original_value)) * self.max_change * original_value
+				data[param] += update
+
 		raw_data_paths = []
 		sim_data_paths = []
 		for variant in variants:
@@ -156,8 +168,8 @@ class BaseSolver():
 			raw_data_paths.append(raw_data)
 			sim_data_paths.append(sim_data)
 
-		self.parameter_updates(self._method.raw_params, objectives, raw_data_paths)
-		self.parameter_updates(self._method.sim_params, objectives, sim_data_paths)
+		update(self._method.raw_params, objectives, raw_data_paths)
+		update(self._method.sim_params, objectives, sim_data_paths)
 
 	def run_sims(self, sim_params):
 		pool = parallelization.pool(self._cpus)

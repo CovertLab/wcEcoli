@@ -1,3 +1,10 @@
+"""
+An example of using the parameter search framework to optimize over one
+parameter that is modified after running the parca.  The parca will not need
+to be run with each iteration and no sims are specified to run so evaulations
+can occur more quickly to test algorithms.
+"""
+
 import pickle
 
 from models.ecoli.sim.parameter_search.base_parameter_search import BaseParameterSearch, SimParameter

@@ -1,10 +1,13 @@
 """
-
+Base implementation for parameter search methods.  These methods should define
+the parameters to search over and the objective to evaluate progress.  Specific
+implementations should subclass from BaseParameterSearch and implement the
+required functions.
 """
 
 import os
 import pickle
-from typing import Any, Dict, Iterable
+from typing import Any, Dict
 
 import numpy as np
 

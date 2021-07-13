@@ -1,11 +1,13 @@
 """
+Simultaneous Perturbation Stochastic Approximation (SPSA) algorithm.
 
+Randomly perturbs all parameters up or down to calculate a gradient from two
+simulations.
 """
 
 import numpy as np
 
 from wholecell.optimization.base_solver import BaseSolver
-from wholecell.utils import units
 
 
 class SPSA(BaseSolver):
@@ -17,7 +19,8 @@ class SPSA(BaseSolver):
 
 	### Inherited method implementations ###
 
-	def parameter_updates(self, original_values, objectives, paths):
+	def get_parameter_updates(self, original_values, objectives, paths):
+		updates = {}
 		at, _ = self.get_spsa_params()
 
 		for param, original_value in original_values.items():
@@ -27,12 +30,9 @@ class SPSA(BaseSolver):
 			# Get similar scaling for each parameter even if they span a wide range of magnitudes
 			# and gets the update in the correct units if the parameter has units
 			parameter_scaling = original_value**2
+			updates[param] = -at * objective_diff / parameter_diff * parameter_scaling
 
-			update = at * objective_diff / parameter_diff * parameter_scaling
-			if np.abs(units.strip_empty_units(update / original_value)) > self.max_change:
-				update = np.sign(units.strip_empty_units(update / original_value)) * self.max_change * original_value
-
-			original_values[param] -= update  # TODO: pass this back instead of updating directly
+		return updates
 
 	def get_parameter_perturbations(self, index):
 		raw_data_perturbations = {}

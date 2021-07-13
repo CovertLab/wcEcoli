@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 """
-Run a parameter search using parca and simulation output.
+Run a parameter search using parca and simulation output.  See methods and
+solvers in models/ecoli/sim/parameter_search and wholecell/optimization,
+respectively.
 
 TODO: Share more code with fw_queue.py and other runscripts.
 
@@ -14,7 +16,7 @@ from typing import Tuple
 
 from models.ecoli.sim.parameter_search import PARAMETER_METHODS
 from wholecell.optimization import SOLVERS
-from wholecell.utils import constants, data, scriptBase
+from wholecell.utils import constants, scriptBase
 import wholecell.utils.filepath as fp
 
 

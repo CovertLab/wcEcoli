@@ -1,3 +1,9 @@
+"""
+An example of using the parameter search framework to optimize over two
+parameters, one modified before the parca and one modified after.  Each
+iteration will need to run the parca because _raw_params are specified.
+"""
+
 import os
 import pickle
 
