@@ -18,7 +18,18 @@ DEFAULT_CLI_KWARGS = {
 	}
 
 
-class RawParameter():
+class Parameter():
+	def get_param(self, data, default=None):
+		raise NotImplementedError('Need to implement in a subclass.')
+
+	def set_param(self, data, value):
+		raise NotImplementedError('Need to implement in a subclass.')
+
+	def __str__(self):
+		return self._name
+
+
+class RawParameter(Parameter):
 	def __init__(self, attr: str, id_columns: Dict[str, Any], columns: Any, name: str):
 		"""
 		Create an object that can access and modify a desired property in raw_data.
@@ -104,8 +115,32 @@ class RawParameter():
 		else:
 			row[self._columns] = value
 
-	def __str__(self):
-		return self._name
+
+class SimParameter(Parameter):
+	def __init__(self, attr: str):
+		"""
+		Create an object that can access and modify a desired property in sim_data.
+
+		Args:
+			attr: attribute of sim_data to modify, dot separated for nested attributes
+		"""
+
+		self.attrs = attr.split('.')
+		self._name = attr
+
+	def get_param(self, obj, default=None):
+		for a in self.attrs:
+			if hasattr(obj, a):
+				obj = getattr(obj, a)
+			else:
+				return default
+
+		return obj
+
+	def set_param(self, obj, value):
+		for a in self.attrs[:-1]:
+			obj = getattr(obj, a)
+		setattr(obj, self.attrs[-1], value)
 
 
 class BaseParameterSearch():
@@ -134,7 +169,7 @@ class BaseParameterSearch():
 			with open(raw_data_file, 'rb') as f:
 				raw_data = pickle.load(f)
 			for param in self.raw_params:
-				value = self.get_attr(raw_data, param)
+				value = param.get_param(raw_data)
 				if iteration == 0:
 					self.raw_params[param] = self._init_raw_params.get(str(param), value)
 				else:
@@ -143,9 +178,9 @@ class BaseParameterSearch():
 		with open(sim_data_file, 'rb') as f:
 			sim_data = pickle.load(f)
 		for param in self.sim_params:
-			value = self.get_attr(sim_data, param)
+			value = param.get_param(sim_data)
 			if iteration == 0:
-				self.sim_params[param] = self._init_sim_params.get(param, value)
+				self.sim_params[param] = self._init_sim_params.get(str(param), value)
 			else:
 				self.sim_params[param] = value
 
@@ -165,28 +200,6 @@ class BaseParameterSearch():
 				all_params.append(params)
 
 		return all_params
-
-	def get_attr(self, obj, attr, default=None):
-		if isinstance(attr, RawParameter):
-			return attr.get_param(obj, default=default)
-		else:
-			attrs = attr.split('.')
-			for a in attrs:
-				if hasattr(obj, a):
-					obj = getattr(obj, a)
-				else:
-					return default
-
-			return obj
-
-	def set_attr(self, obj, attr, val):
-		if isinstance(attr, RawParameter):
-			attr.set_param(obj, val)
-		else:
-			attrs = attr.split('.')
-			for a in attrs[:-1]:
-				obj = getattr(obj, a)
-			setattr(obj, attrs[-1], val)
 
 	def print_update(self):
 		def print_params(params, label):

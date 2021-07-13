@@ -1,13 +1,12 @@
 import os
 import pickle
 
-from models.ecoli.sim.parameter_search.base_parameter_search import BaseParameterSearch, RawParameter
+from models.ecoli.sim.parameter_search.base_parameter_search import BaseParameterSearch, RawParameter, SimParameter
 
 
 class Example(BaseParameterSearch):
-	parca_args = {'cpus': 8}
 	_raw_params = (RawParameter('metabolite_concentrations', {'Metabolite': 'TRP'}, ['Park Concentration', 'Lempp Concentration'], 'trp conc'),)
-	_sim_params = ('constants.test',)
+	_sim_params = (SimParameter('constants.test'),)
 	_init_sim_params = {'constants.test': 1}
 	sims_to_run = (
 		{
@@ -28,7 +27,7 @@ class Example(BaseParameterSearch):
 			trp_idx = aa_ids.index('TRP[c]')
 			trp_conc = self.read_column(out_dir, 'GrowthLimits', 'aa_supply_aa_conc')[1:, trp_idx].mean()
 
-			objective = self.get_attr(sim_data, 'constants.test')**2 + (trp_conc - 0.05)**2
+			objective = sim_data.constants.test**2 + (trp_conc - 0.05)**2
 			objectives.append(objective)
 
 		return objectives

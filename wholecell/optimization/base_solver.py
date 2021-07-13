@@ -7,6 +7,7 @@ import pickle
 from typing import Any, Dict, Optional
 
 from models.ecoli.sim.variants.apply_variant import apply_variant
+from models.ecoli.sim.parameter_search.base_parameter_search import Parameter
 from wholecell.fireworks.firetasks import FitSimDataTask, InitRawDataTask, SimulationTask, SimulationDaughterTask, VariantSimDataTask
 from wholecell.sim.simulation import ALTERNATE_KWARG_NAMES
 from wholecell.utils import constants, data, parallelization, scriptBase
@@ -102,7 +103,7 @@ class BaseSolver():
 
 		self.learning_rate = args.learning_rate
 		self.parameter_step = args.parameter_step
-		self.max_change = args.max_change  # TODO: implement
+		self.max_change = args.max_change  # TODO: implement generally
 
 		self.iteration = args.starting_iteration
 		self.variant = self.iteration * self.n_variants_per_iteration()
@@ -192,9 +193,9 @@ class BaseSolver():
 		with open(path, 'rb') as f:
 			obj = pickle.load(f)
 
-		return self._method.get_attr(obj, param)
+		return param.get_param(obj)
 
-	def apply_updates(self, old_path: str, updates: Dict[str, Any], new_path: str):
+	def apply_updates(self, old_path: str, updates: Dict[Parameter, Any], new_path: str):
 		"""
 		Apply parameter updates to attributes in a pickle object and save the new object.
 
@@ -212,7 +213,7 @@ class BaseSolver():
 			print('Updating values:')
 			for param, val in updates.items():
 				print(f'\t{param}: {val}')
-				self._method.set_attr(obj, param, val)
+				param.set_param(obj, val)
 
 		with open(new_path, 'wb') as f:
 			pickle.dump(obj, f, protocol=pickle.HIGHEST_PROTOCOL)
