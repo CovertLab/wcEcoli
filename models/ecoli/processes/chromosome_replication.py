@@ -83,12 +83,10 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.mechanistic_replisome = sim._mechanistic_replisome
 
 		# Saving updates
-		self.update_to_save = {
-			'replisome_trimers': {name: 0 for name in self.replisome_trimers._query},
-			'replisome_monomers': {name: 0 for name in self.replisome_monomers._query}}
+		self.update_to_save = {}
+		self.unique_indexes = []
 		self.zero_save = False
 		self.one_save = False
-		self.two_save = False
 
 	def calculateRequest(self):
 		# Get total count of existing oriC's
@@ -161,9 +159,20 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.active_replisomes.request_access(self.EDIT_DELETE_ACCESS)
 
 	def evolveState(self):
+
+		self.update_to_save = {
+			'replisome_trimers': {name: 0 for name in self.replisome_trimers._query},
+			'replisome_monomers': {name: 0 for name in self.replisome_monomers._query},
+			'active_replisomes' : {},
+			'listeners': {
+				'replication_data': {},
+			}}
+
 		## Module 1: Replication initiation
 		# Get number of existing replisomes and oriCs
 		n_active_replisomes = self.active_replisomes.total_count()
+		# if self.time() == 1444:
+		#	ipdb.set_trace()
 		n_oriC = self.oriCs.total_count()
 
 		# If there are no origins, return immediately
@@ -242,7 +251,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 				}}
 				for index in range(n_new_replisome)]
 
-			self.active_replisomes.moleculesNew(
+			self.unique_indexes = self.active_replisomes.moleculesNew(
 				n_new_replisome,
 				coordinates=coordinates_replisome,
 				right_replichore=right_replichore,
@@ -273,7 +282,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			self.chromosome_domains.attrIs(child_domains=child_domains)
 			# ipdb.set_trace() DONE
 			existing_domains_update = {
-				domain: {'child_domains': child_domains[index].tolist()}
+				int(domain): {'child_domains': child_domains[index].tolist()}
 				for index, domain in enumerate(self.chromosome_domains._queryResult._globalIndexes)}
 			self.update_to_save['chromosome_domains'] = {**new_domains_update, **existing_domains_update}
 
@@ -286,10 +295,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 					self.update_to_save['replisome_monomers'][mol] -= 2 * n_oriC
 				self.replisome_trimers.countsDec(6 * n_oriC)
 				self.replisome_monomers.countsDec(2 * n_oriC)
-			if not self.two_save:
-				write_json(f'out/migration/chromosome_replication_update_t{int(self._sim.time())}.json',
-						   self.update_to_save)
-				self.zero_save = True
 
 		# Write data from this module to a listener
 		self.writeToListener("ReplicationData", "criticalMassPerOriC",
@@ -305,6 +310,9 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Note: the new replication forks added in the previous module are not
 		# elongated until the next timestep.
 		if n_active_replisomes == 0:
+			if self.time() == 1444 or self.time() == 1446 or self.time() == 1442:
+				write_json(f'out/migration/chromosome_replication_update_t{int(self._sim.time())}.json',
+						   self.update_to_save)
 			return
 
 		# Get allocated counts of dNTPs
@@ -341,6 +349,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		dNtpsUsed = result.monomerUsages
 
 		# Compute mass increase for each elongated sequence
+		# ipdb.set_trace()
 		mass_increase_dna = computeMassIncrease(
 			sequences,
 			sequenceElongations,
@@ -359,10 +368,15 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Update attributes and submasses of replisomes
 		self.active_replisomes.attrIs(coordinates = updated_coordinates)
 		self.active_replisomes.add_submass_by_name("DNA", added_dna_mass)
+		if len(self.unique_indexes) > 0:
+			unique_indexes = self.unique_indexes
+		else:
+			unique_indexes = self.active_replisomes._queryResult._globalIndexes
 		self.update_to_save['active_replisomes'] = \
-			{str(self.active_replisomes._queryResult._globalIndexes[i]) :
+			{str(unique_indexes[i]) :
 				 {'coordinates' : self.active_replisomes.attr('coordinates')[i],
-				  'dna_mass' : self.active_replisomes.attr('massDiff_DNA')[i]}
+				  # 'dna_mass' : self.active_replisomes.attr('massDiff_DNA')[i]}
+				  'dna_mass': added_dna_mass[i]}
 			 for i in range(len(self.active_replisomes._queryResult._globalIndexes))}
 
 		# Update counts of polymerized metabolites
@@ -437,7 +451,8 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			if self.active_replisomes:
 				# perhaps replisomes to delete?
 				# ipdb.set_trace() DONE
-				self.update_to_save['active_replisomes']['_delete'] = [(index,) for index in
+				if len(self.active_replisomes._queryResult._globalIndexes[np.where(replisomes_to_delete)[0]]) > 0:
+					self.update_to_save['active_replisomes']['_delete'] = [(index,) for index in
 								self.active_replisomes._queryResult._globalIndexes[np.where(replisomes_to_delete)[0]]]
 
 
@@ -463,7 +478,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 				# Reset domain index of existing chromosomes that have finished
 				# replication
 				chromosome_existing_update = {
-					key: {'domain_index': domain_index_full_chroms[index]}
+					int(key): {'domain_index': domain_index_full_chroms[index]}
 					for index, key in enumerate(self.full_chromosomes._queryResult._globalIndexes)}
 				self.full_chromosomes.attrIs(
 					domain_index = domain_index_full_chroms)
@@ -491,6 +506,12 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			write_json(f'out/migration/chromosome_replication_update_t{int(self._sim.time())}.json',
 					   self.update_to_save)
 			self.zero_save = True
+
+		if self.time() == 1442:
+			write_json(f'out/migration/chromosome_replication_update_t{int(self._sim.time())}.json',
+					   self.update_to_save)
+
+
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		return inputTimeStep <= self.max_time_step
