@@ -141,6 +141,13 @@ class InlinePool(object):
 	def join(self):
 		pass
 
+	def __enter__(self):
+		return self
+
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		pass
+
+
 class ApplyResult(object):
 	"""
 	A substitute for multiprocessing.ApplyResult() to return with apply_async.
@@ -162,6 +169,7 @@ class ApplyResult(object):
 	def get(self, timeout=None):
 		return self._result
 
+
 class NoDaemonProcess(mp.Process):
 	@property  # type: ignore[override]
 	def daemon(self):
@@ -171,8 +179,10 @@ class NoDaemonProcess(mp.Process):
 	def daemon(self, value):
 		pass
 
+
 class NoDaemonContext(type(mp.get_context())):  # type: ignore
 	Process = NoDaemonProcess
+
 
 class NoDaemonPool(mp.pool.Pool):
 	"""
