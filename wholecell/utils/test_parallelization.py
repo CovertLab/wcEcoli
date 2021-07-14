@@ -14,7 +14,7 @@ from wholecell.utils import parallelization
 
 def _square(i):  # Runs in inner_pool
     square = i ** 2
-    time.sleep(i / 10)
+    time.sleep(i / 100)
     return square
 
 
@@ -23,7 +23,7 @@ def _sum_squares(i, j):  # Runs in outer_pool
         squares = inner_pool.map(_square, (i, j))
 
     sum_squares = sum(squares)
-    time.sleep(0.1)
+    time.sleep(0.01)
     return sum_squares
 
 
