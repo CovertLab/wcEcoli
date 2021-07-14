@@ -5,6 +5,7 @@ sims to get an objective to optimize for.  Specific implementations should
 subclass from BaseSolver and implement the required functions.
 """
 
+import abc
 import os
 import pickle
 from typing import Any, Dict, List, Optional, Tuple
@@ -99,7 +100,7 @@ def run_parca(args, raw_data_file, sim_data_file, metrics_data_file, cpus):
 	task.run_task({})
 
 
-class BaseSolver():
+class BaseSolver(abc.ABC):
 	def __init__(self, method, args):
 		self._method = method
 		self._sim_dir = args.sim_path
@@ -113,6 +114,7 @@ class BaseSolver():
 		self.iteration = args.starting_iteration
 		self.variant = self.iteration * self.n_variants_per_iteration()
 
+	@abc.abstractmethod
 	def get_parameter_updates(self, original_values: Dict, objectives: List[float], paths: List[str]) -> Dict:
 		"""
 		Get the new parameter values based on the results of the current
@@ -129,8 +131,9 @@ class BaseSolver():
 			mapping of each parameter to be modified to its update (the amount
 			to change the parameter by)
 		"""
-		raise NotImplementedError('Need to implement in a subclass.')
+		pass
 
+	@abc.abstractmethod
 	def get_parameter_perturbations(self, index: int) -> Tuple[Dict, Dict]:
 		"""
 		New parameter values for the given parameter set index within this
@@ -144,11 +147,12 @@ class BaseSolver():
 		Returns:
 			mapping of each parameter to be modified to its new value
 		"""
-		raise NotImplementedError('Need to implement in a subclass.')
+		pass
 
+	@abc.abstractmethod
 	def n_variants_per_iteration(self) -> int:
 		"""Number of variants (modified parameter sets) for each iteration"""
-		raise NotImplementedError('Need to implement in a subclass.')
+		pass
 
 	def perturb_parameters(self, variants: List[int], raw_data_file: str, sim_data_file: str) -> List[str]:
 		"""

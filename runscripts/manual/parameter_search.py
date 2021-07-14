@@ -97,40 +97,24 @@ class RunParameterSearch(scriptBase.ScriptBase):
 			required=True,
 			choices=PARAMETER_METHODS.keys(),
 			help='Class defining parameters and an objective for parameter search.')
-		parser.add_argument('--iterations',
-			default=DEFAULT_ITERATIONS,
-			type=int,
-			help=f'Number of iterations to update parameters before stopping (default: {DEFAULT_ITERATIONS}).')
-		parser.add_argument('--starting-iteration',
-			default=DEFAULT_STARTING_ITERATION,
-			type=int,
-			help=f'Number of iterations to update parameters before stopping (default: {DEFAULT_STARTING_ITERATION}).')
-		parser.add_argument('--learning-rate',
-			default=DEFAULT_LEARNING_RATE,
-			type=float,
-			help=f'Learning rate for updating parameters (default: {DEFAULT_LEARNING_RATE}).')
-		parser.add_argument('--parameter-step',
-			default=DEFAULT_PARAMETER_STEP,
-			type=float,
-			help=f'Fraction to update parameters by to determine the gradient (default: {DEFAULT_PARAMETER_STEP}).')
-		parser.add_argument('--max-change',
-			default=DEFAULT_MAX_CHANGE,
-			type=float,
-			help=f'Maximum fraction to update a parameter in a given time step (default: {DEFAULT_MAX_CHANGE}).')
-		parser.add_argument('--cpus',
-			default=1,
-			type=int,
-			help='Number of CPUs to use for running sims in parallel for a given iteration.')
+		self.define_option(parser, 'iterations', int, default=DEFAULT_ITERATIONS,
+			help=f'Number of iterations to update parameters before stopping.')
+		self.define_option(parser, 'starting_iteration', int, default=DEFAULT_STARTING_ITERATION,
+			help=f'Iteration number to begin with (not guaranteed to reproduce results exactly).')
+		self.define_option(parser, 'learning_rate', float, default=DEFAULT_LEARNING_RATE,
+			help=f'Learning rate for updating parameters.')
+		self.define_option(parser, 'parameter_step', float, default=DEFAULT_PARAMETER_STEP,
+			help=f'Fraction to update parameters by to determine the gradient.')
+		self.define_option(parser, 'max_change', float, default=DEFAULT_MAX_CHANGE,
+			help=f'Maximum fraction to update a parameter in a given time step.')
+		self.define_option(parser, 'cpus', int, default=1, flag='c',
+			help=f'Number of CPUs to use for running parca/sims in parallel for a given iteration.')
 
 		# SPSA options
-		parser.add_argument('--alpha',
-			type=float,
-			default=DEFAULT_ALPHA,
-			help=f'Set alpha parameter for SPSA solver to control learning rate decay (default: {DEFAULT_ALPHA}).')
-		parser.add_argument('--gamma',
-			type=float,
-			default=DEFAULT_GAMMA,
-			help=f'Set gamma parameter for SPSA solver to control parameter update decay (default: {DEFAULT_GAMMA}).')
+		self.define_option(parser, 'alpha', float, default=DEFAULT_ALPHA,
+			help=f'Set alpha parameter for SPSA solver to control learning rate decay.')
+		self.define_option(parser, 'gamma', float, default=DEFAULT_GAMMA,
+			help=f'Set gamma parameter for SPSA solver to control parameter update decay.')
 
 	def parse_args(self):
 		args = super().parse_args()

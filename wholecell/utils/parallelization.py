@@ -80,7 +80,7 @@ def cpus(requested_num_processes=None):
 
 
 def pool(num_processes=None, nestable=False):
-	# type: (Optional[int], Optional[bool]) -> Union[mp.pool.Pool, InlinePool]
+	# type: (Optional[int], bool) -> Union[mp.pool.Pool, InlinePool]
 	"""Return an `InlinePool` if `cpus(num_processes) == 1`, else a
 	multiprocessing `Pool(cpus(num_processes))`, as suitable for the current
 	runtime environment.

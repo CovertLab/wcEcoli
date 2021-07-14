@@ -5,6 +5,7 @@ implementations should subclass from BaseParameterSearch and implement the
 required functions.
 """
 
+import abc
 import os
 import pickle
 from typing import Any, Dict, Tuple, Union
@@ -21,12 +22,14 @@ DEFAULT_CLI_KWARGS = {
 	}
 
 
-class Parameter():
+class Parameter(abc.ABC):
+	@abc.abstractmethod
 	def get_param(self, data, default=None):
-		raise NotImplementedError('Need to implement in a subclass.')
+		pass
 
+	@abc.abstractmethod
 	def set_param(self, data, value):
-		raise NotImplementedError('Need to implement in a subclass.')
+		pass
 
 	def __str__(self):
 		return self._name
@@ -146,7 +149,7 @@ class SimParameter(Parameter):
 		setattr(obj, self.attrs[-1], value)
 
 
-class BaseParameterSearch():
+class BaseParameterSearch(abc.ABC):
 	parca_args = {}  # type: Dict
 	# TODO: handle raw and sim params the same - create a class for SimParameter and combine attributes below
 	_raw_params = ()  # type: Union[Tuple, Tuple[RawParameter]]
@@ -162,8 +165,9 @@ class BaseParameterSearch():
 		self.sim_params = {p: None for p in self._sim_params}
 		self.initialized = False
 
+	@abc.abstractmethod
 	def get_objective(self, sim_out_dirs, sim_data_files):
-		raise NotImplementedError('Need to implement in a subclass.')
+		pass
 
 	def initialize(self, raw_data_file, sim_data_file, iteration):
 		# If no raw params, raw_data will not be saved with each iteration so
