@@ -10,17 +10,11 @@ Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
 
-import os
-import re
-from typing import Tuple
-
 from models.ecoli.sim.parameter_search import PARAMETER_METHODS
 from wholecell.optimization import SOLVERS
 from wholecell.utils import constants, scriptBase
 import wholecell.utils.filepath as fp
 
-
-SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)
 
 # Command line arg defaults for solver options
 DEFAULT_ITERATIONS = 5
@@ -30,26 +24,6 @@ DEFAULT_PARAMETER_STEP = 0.1
 DEFAULT_MAX_CHANGE = 0.1
 DEFAULT_ALPHA = 0.1
 DEFAULT_GAMMA = 0.1
-
-
-def parse_timestamp_description(sim_path):
-	# type: (str) -> Tuple[str, str]
-	"""Parse `timestamp, description` from a sim_path that ends with a dir like
-	'20190704.101500__Latest_sim_run' or failing that, return defaults.
-	"""
-	sim_dir = os.path.basename(sim_path)
-	if not sim_dir:  # sim_path is empty or ends with '/'
-		sim_dir = os.path.basename(os.path.dirname(sim_path))
-
-	match = re.match(SIM_DIR_PATTERN, sim_dir)
-	if match:
-		timestamp = match.group(1)
-		description = match.group(2).replace('_', ' ')
-	else:
-		timestamp = fp.timestamp()
-		description = 'a manual run'
-
-	return timestamp, description
 
 
 class RunParameterSearch(scriptBase.ScriptBase):
@@ -80,13 +54,9 @@ class RunParameterSearch(scriptBase.ScriptBase):
 
 		default_solver = list(SOLVERS.keys())[0]
 
-		# NOTE: Don't name this arg sim_dir since that makes parse_args() look
-		# for an existing sim_dir directory while here we aim to create one.
-		parser.add_argument('sim_outdir', nargs='?', default='manual',
-			help='The simulation "out/" subdirectory to write to.'
-				 ' Default = "manual".')
+		self.define_parameter_sim_dir(parser)
 		parser.add_argument('--timestamp', action='store_true',
-			help='Timestamp the given `sim_outdir`, transforming e.g.'
+			help='Timestamp the given `sim_dir`, transforming e.g.'
 				 ' "Fast run" to "20190514.135600__Fast_run".')
 
 		parser.add_argument('--solver',
@@ -119,13 +89,11 @@ class RunParameterSearch(scriptBase.ScriptBase):
 	def parse_args(self):
 		args = super().parse_args()
 
-		args.time = fp.timestamp()
-		args.description = args.sim_outdir.replace(' ', '_')
-
 		if args.timestamp:
-			args.sim_outdir = args.time + '__' + args.description
+			args.sim_dir = fp.timestamp() + '__' + args.sim_dir.replace(' ', '_')
 
-		args.sim_path = fp.makedirs(fp.ROOT_PATH, "out", args.sim_outdir)
+		args.sim_path = scriptBase.find_sim_path(directory=args.sim_dir, makedirs=True)
+
 		return args
 
 	def run(self, args):
