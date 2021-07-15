@@ -34,7 +34,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(ChromosomeReplication, self).initialize(sim, sim_data)
 
-
 		self.max_time_step = sim_data.process.replication.max_time_step
 
 		# Load parameters
@@ -61,7 +60,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.chromosome_domains = self.uniqueMoleculesView('chromosome_domain')
 
 		# Create bulk molecule views for polymerization reaction
-
 		self.dntps_names = sim_data.molecule_groups.dntps
 		self.ppi_names = [sim_data.molecule_ids.ppi]
 		self.dntps = self.bulkMoleculesView(sim_data.molecule_groups.dntps)
@@ -168,7 +166,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		## Module 1: Replication initiation
 		# Get number of existing replisomes and oriCs
 		n_active_replisomes = self.active_replisomes.total_count()
-		# if self.time() == 1444:
 		n_oriC = self.oriCs.total_count()
 
 		# If there are no origins, return immediately
@@ -220,8 +217,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 					'key': str(uuid.uuid1()),
 					'state': {'domain_index': domain_index_new[index]}}
 					for index in range(n_oriC)],
-				'_delete': [(index,) for index in self.oriCs._queryResult._globalIndexes]} # If fail, relook here. Keys?
-				# '_delete': [(key,) for key in states['oriCs'].keys()]}
+				'_delete': [(index,) for index in self.oriCs._queryResult._globalIndexes]}
 
 			self.oriCs.attrIs(domain_index=domain_index_new[:n_oriC])
 			self.oriCs.moleculesNew(
@@ -357,14 +353,9 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Update attributes and submasses of replisomes
 		self.active_replisomes.attrIs(coordinates = updated_coordinates)
 		self.active_replisomes.add_submass_by_name("DNA", added_dna_mass)
-		if len(self.unique_indexes) > 0:
-			unique_indexes = self.unique_indexes
-		else:
-			unique_indexes = self.active_replisomes._queryResult._globalIndexes
 		self.update_to_save['active_replisomes'] = \
-			{str(unique_indexes[i]) :
+			{str(self.unique_indexes[i]) :
 				 {'coordinates' : self.active_replisomes.attr('coordinates')[i],
-				  # 'dna_mass' : self.active_replisomes.attr('massDiff_DNA')[i]}
 				  'dna_mass': added_dna_mass[i]}
 			 for i in range(len(self.active_replisomes._queryResult._globalIndexes))}
 
@@ -446,7 +437,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 			# Generate new full chromosome molecules
 			if n_new_chromosomes > 0:
-
 				chromosome_add_update = {
 					'_add': [{
 						'key': str(uuid.uuid1()),
@@ -475,7 +465,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 			# Increment counts of replisome subunits
 			if self.mechanistic_replisome:
-
 				for mol in self.replisome_trimers._query:
 					self.update_to_save['replisome_trimers'][mol] += 3 * replisomes_to_delete.sum()
 				for mol in self.replisome_monomers._query:

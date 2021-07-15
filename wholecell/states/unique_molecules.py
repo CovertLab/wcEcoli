@@ -246,7 +246,7 @@ class UniqueMoleculesView(wholecell.views.view.View):
 		"""
 		self._queryResult.set_access_level(access=access)
 
-	# Wrappers for readinsg or manipulating queried molecules
+	# Wrappers for reading or manipulating queried molecules
 	def attr(self, attribute):
 		if attribute not in self.cached_attributes:
 			self.cached_attributes[attribute] = self._queryResult.attr(

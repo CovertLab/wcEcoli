@@ -148,7 +148,7 @@ class Simulation():
 
 		# vivarium-ecoli save boolean
 		self.save_status = False
-		self.save_times = [2250]
+		self.save_times = [0]
 
 
 	# Link states and processes
@@ -278,14 +278,6 @@ class Simulation():
 			time = int(self.time())
 			if time in self.save_times:
 				self.write_states(f'out/wcecoli_t{time}.json')
-
-			"""
-			if self.time() >= self.save_time and not self.save_status:
-				time = int(self.time()) # rounding!
-				self.write_states(f'out/wcecoli_t{time}.json')
-				self.save_status = True
-				# import ipdb; ipdb.set_trace()
-			"""
 
 			self._simulationStep += 1
 
