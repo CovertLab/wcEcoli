@@ -80,6 +80,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax.plot(times, synthesis, label='Synthesis vs expected', alpha=0.5)
 			ax.plot(times, imported, label='Imported vs expected', alpha=0.5)
 			ax.plot(times, use, label='Translation use vs expected', alpha=0.5)
+			ax.axhline(0, linestyle='--', linewidth=0.5, color='k', alpha=0.3)
+			ax.axhline(1, linestyle='--', linewidth=0.5, color='k', alpha=0.3)
 
 			ax.spines['right'].set_visible(False)
 			ax.spines['top'].set_visible(False)
