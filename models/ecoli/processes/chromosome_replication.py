@@ -6,7 +6,6 @@ from __future__ import absolute_import, division, print_function
 
 import uuid
 import numpy as np
-import ipdb
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import (buildSequences, polymerize,
@@ -85,8 +84,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Saving updates
 		self.update_to_save = {}
 		self.unique_indexes = []
-		self.zero_save = False
-		self.one_save = False
 
 	def calculateRequest(self):
 		# Get total count of existing oriC's
@@ -172,7 +169,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Get number of existing replisomes and oriCs
 		n_active_replisomes = self.active_replisomes.total_count()
 		# if self.time() == 1444:
-		#	ipdb.set_trace()
 		n_oriC = self.oriCs.total_count()
 
 		# If there are no origins, return immediately
@@ -219,7 +215,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 			# Add new oriC's, and reset attributes of existing oriC's
 			# All oriC's must be assigned new domain indexes
-			# ipdb.set_trace() DONE
 			self.update_to_save['oriCs'] = {
 				'_add': [{
 					'key': str(uuid.uuid1()),
@@ -280,14 +275,12 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			# Add new domains as children of existing domains
 			child_domains[new_parent_domains] = domain_index_new.reshape(-1, 2)
 			self.chromosome_domains.attrIs(child_domains=child_domains)
-			# ipdb.set_trace() DONE
 			existing_domains_update = {
 				int(domain): {'child_domains': child_domains[index].tolist()}
 				for index, domain in enumerate(self.chromosome_domains._queryResult._globalIndexes)}
 			self.update_to_save['chromosome_domains'] = {**new_domains_update, **existing_domains_update}
 
 			# Decrement counts of replisome subunits
-			# ipdb.set_trace() DONE
 			if self.mechanistic_replisome:
 				for mol in self.replisome_trimers._query:
 					self.update_to_save['replisome_trimers'][mol] -= 6 * n_oriC
@@ -310,9 +303,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Note: the new replication forks added in the previous module are not
 		# elongated until the next timestep.
 		if n_active_replisomes == 0:
-			if self.time() == 1444 or self.time() == 1446 or self.time() == 1442:
-				write_json(f'out/migration/chromosome_replication_update_t{int(self._sim.time())}.json',
-						   self.update_to_save)
 			return
 
 		# Get allocated counts of dNTPs
@@ -349,7 +339,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		dNtpsUsed = result.monomerUsages
 
 		# Compute mass increase for each elongated sequence
-		# ipdb.set_trace()
 		mass_increase_dna = computeMassIncrease(
 			sequences,
 			sequenceElongations,
@@ -450,7 +439,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			self.active_replisomes.delByIndexes(np.where(replisomes_to_delete)[0])
 			if self.active_replisomes:
 				# perhaps replisomes to delete?
-				# ipdb.set_trace() DONE
 				if len(self.active_replisomes._queryResult._globalIndexes[np.where(replisomes_to_delete)[0]]) > 0:
 					self.update_to_save['active_replisomes']['_delete'] = [(index,) for index in
 								self.active_replisomes._queryResult._globalIndexes[np.where(replisomes_to_delete)[0]]]
@@ -483,7 +471,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 				self.full_chromosomes.attrIs(
 					domain_index = domain_index_full_chroms)
 
-				#ipdb.set_trace() DONE
 				self.update_to_save['full_chromosomes'] = {**chromosome_add_update, **chromosome_existing_update}
 
 			# Increment counts of replisome subunits
@@ -496,21 +483,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 				self.replisome_trimers.countsInc(3*replisomes_to_delete.sum())
 				self.replisome_monomers.countsInc(replisomes_to_delete.sum())
-
-			if not self.one_save:
-				write_json(f'out/migration/chromosome_replication_update_t{int(self._sim.time())}.json',
-						   self.update_to_save)
-				self.one_save = True
-
-		if not self.zero_save:
-			write_json(f'out/migration/chromosome_replication_update_t{int(self._sim.time())}.json',
-					   self.update_to_save)
-			self.zero_save = True
-
-		if self.time() == 1442:
-			write_json(f'out/migration/chromosome_replication_update_t{int(self._sim.time())}.json',
-					   self.update_to_save)
-
 
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
