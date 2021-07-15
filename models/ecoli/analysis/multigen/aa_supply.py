@@ -37,20 +37,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		cell_paths = ap.get_cells()
 
 		# Load data
-		times = read_stacked_columns(cell_paths, 'Main', 'time') / 60
-		time_step = read_stacked_columns(cell_paths, 'Main', 'timeStepSec')
-		dry_mass = read_stacked_columns(cell_paths, 'Mass', 'dryMass')
-		counts_to_mol = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar')
-		supply = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply')
-		enzyme_counts = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_enzymes')
-		aa_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_aa_conc').T
-		supply_fraction = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_fraction').T
+		times = read_stacked_columns(cell_paths, 'Main', 'time', remove_first=True) / 60
+		time_step = read_stacked_columns(cell_paths, 'Main', 'timeStepSec', remove_first=True)
+		dry_mass = read_stacked_columns(cell_paths, 'Mass', 'dryMass', remove_first=True)
+		counts_to_mol = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar', remove_first=True)
+		supply = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply', remove_first=True)
+		enzyme_counts = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_enzymes', remove_first=True)
+		aa_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_aa_conc', remove_first=True).T
+		supply_fraction = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_fraction', remove_first=True).T
 
 		# Calculate derived quantities
 		normalized_supply = (supply / time_step / dry_mass / expected_supply).T
 		enzyme_conc = (enzyme_counts * counts_to_mol).T
-		enzyme_conc /= enzyme_conc[:, 1:2]
-		aa_conc /= aa_conc[:, 1:2]
+		enzyme_conc /= enzyme_conc[:, 0:1]
+		aa_conc /= aa_conc[:, 0:1]
 
 		# Plot data
 		plt.figure(figsize=(16, 12))
