@@ -42,6 +42,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		dry_mass = read_stacked_columns(cell_paths, 'Mass', 'dryMass', remove_first=True)
 		counts_to_mol = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar', remove_first=True)
 		supply = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply', remove_first=True)
+		synthesis = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_synthesis', remove_first=True)
+		imported = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_import', remove_first=True)
 		aas_used = read_stacked_columns(cell_paths, 'GrowthLimits', 'aasUsed', remove_first=True)
 		enzyme_counts = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_enzymes', remove_first=True)
 		aa_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_aa_conc', remove_first=True).T
@@ -49,6 +51,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Calculate derived quantities
 		normalized_supply = (supply / time_step / dry_mass / expected_supply).T
+		normalized_synthesis = (synthesis / time_step / dry_mass / expected_supply).T
+		normalized_imported = (imported / time_step / dry_mass / expected_supply).T
 		normalized_use = (aas_used / time_step / dry_mass / expected_supply).T
 		enzyme_conc = (enzyme_counts * counts_to_mol).T
 		enzyme_conc /= enzyme_conc[:, 0:1]
@@ -62,8 +66,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		gs = gridspec.GridSpec(nrows=rows, ncols=cols)
 
 		## Plot data for each amino acid
-		for i, (supply, enzymes, aa_conc, fraction, use) in enumerate(zip(
-				normalized_supply, enzyme_conc, aa_conc, supply_fraction, normalized_use)):
+		for i, (supply, enzymes, aa_conc, fraction, synthesis, imported, use) in enumerate(zip(
+				normalized_supply, enzyme_conc, aa_conc, supply_fraction,
+				normalized_synthesis, normalized_imported, normalized_use)):
 			row = i // cols
 			col = i % cols
 			ax = plt.subplot(gs[row, col])
@@ -72,7 +77,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax.plot(times, enzymes, label='Normalized enzyme conc', alpha=0.5)
 			ax.plot(times, aa_conc, label='Normalized AA conc', alpha=0.5)
 			ax.plot(times, fraction, label='Fraction max supply', alpha=0.5)
-			ax.plot(times, use, label='Use vs expected', alpha=0.5)
+			ax.plot(times, synthesis, label='Synthesis vs expected', alpha=0.5)
+			ax.plot(times, imported, label='Imported vs expected', alpha=0.5)
+			ax.plot(times, use, label='Translation use vs expected', alpha=0.5)
 
 			ax.spines['right'].set_visible(False)
 			ax.spines['top'].set_visible(False)
