@@ -606,6 +606,78 @@ class Metabolism(object):
 
 		return supply_scaling
 
+	def set_aa_to_transporters_data(self):
+		#Aminoacids to their transporters mapping
+
+		aa_to_transporters={
+			"L-ALPHA-ALANINE[c]":["CYCA-MONOMER[i]","EG12713-MONOMER[i]","G7399-MONOMER[i]"],
+			"ARG[c]":["YGGA-MONOMER[i]","EG12713-MONOMER[i]","ABC-4-CPLX[i]","CPLX0-7535[i]"],
+			"ASN[c]":["ANSP-MONOMER[i]","EG12713-MONOMER[i]"],
+			"L-ASPARTATE[c]":["DCUA-MONOMER[i]","EG12713-MONOMER[i]","ABC-13-CPLX[i]","GLTP-MONOMER[i]","YCHM-MONOMER[i]","DCTA-MONOMER[i]"],
+			"CYS[c]":["EG11902-MONOMER[m]", "EG12713-MONOMER[i]", "G6934-MONOMER[i]", "EG12445-MONOMER[i]", "CPLX0-8152[i]", "ABC-6-CPLX[i]", "EG11639-MONOMER[i]"],
+			"GLT[c]":["XASA-MONOMER[i]","EG12713-MONOMER[i]","ABC-13-CPLX[i]","GLTS-MONOMER[i]", "GLTP-MONOMER[i]"],
+			"GLN[c]":["ABC-12-CPLX[i]", "EG12713-MONOMER[i]"], 
+			"GLY[c]":["CYCA-MONOMER[i]","EG12713-MONOMER[i]","CPLX0-7654[i]"], 
+			"HIS[c]":["ABC-14-CPLX[i]","EG12713-MONOMER[i]"], 
+			"ILE[c]":["BRNQ-MONOMER[i]","EG12713-MONOMER[i]","B4141-MONOMER[i]","ABC-15-CPLX[i]"], 
+			"LEU[c]":["BRNQ-MONOMER[i]","EG12713-MONOMER[i]","ABC-15-CPLX[i]","ABC-304-CPLX[i]", "B4141-MONOMER[i]","G6984-MONOMER[i]"], 
+			"LYS[c]":["LYSP-MONOMER[i]","EG12713-MONOMER[i]","CADB-MONOMER[i]","G6458-MONOMER[i]","ABC-3-CPLX[i]"], 
+			"MET[c]":["METNIQ-METHIONINE-ABC-CPLX[o]","EG12713-MONOMER[i]", "B4141-MONOMER[i]","G6984-MONOMER[i]"], 
+			"PHE[c]":["EG12713-MONOMER[i]", "PHEP-MONOMER[i]","AROP-MONOMER[i]", "ABC-15-CPLX[i]","ABC-304-CPLX[i]"], 
+			"PRO[c]":["ABC-26-CPLX[i]","PUTP-MONOMER[i]","CPLX0-7642[m]","EG12713-MONOMER[i]"], 
+			"SER[c]":["YGJU-MONOMER[m]","EG12713-MONOMER[i]", "SDAC-MONOMER[i]","TDCC-MONOMER[i]"], 
+			"THR[c]":["TDCC-MONOMER[i]","EG12713-MONOMER[i]", "RHTB-MONOMER[i]","RHTC-MONOMER[m]","EG12134-MONOMER[i]"], 
+			"TRP[c]":["EG12713-MONOMER[i]", "TNAB-MONOMER[i]","AROP-MONOMER[i]","MTR-MONOMER[i]"], 
+			"TYR[c]":["EG12713-MONOMER[i]", "TYRP-MONOMER[i]","AROP-MONOMER[i]"], 
+			"L-SELENOCYSTEINE[c]":["EG12713-MONOMER[i]"], 
+			"VAL[c]":["BRNQ-MONOMER[i]","EG12713-MONOMER[i]","B4141-MONOMER[i]","CPLX0-7684[i]","ABC-15-CPLX[i]"]
+		}
+
+		c=0
+		transporters_to_idx = {}
+		for aa, transporters in aa_to_transporters.items():
+			for transporter in transporters:
+				if transporter not in transporters_to_idx:
+					transporters_to_idx[transporter]=c
+					c+=1
+
+		aa_to_transporters_matrix = [0]*len(aa_to_transporters)
+
+		for i, trnspts in enumerate(aa_to_transporters.values()):
+			temp = [0] * len(transporters_to_idx)
+			for tr in trnspts:
+				temp[transporters_to_idx[tr]]=1
+			aa_to_transporters_matrix[i]=temp
+
+		aa_transporters_names = list(transporters_to_idx.keys())
+
+		self.aa_to_transporters_matrix = np.array(aa_to_transporters_matrix)
+		self.aa_transporters_names = np.array(aa_transporters_names)
+
+	def set_mechanistic_supply_parameters(self, sim_data, cell_specs):
+		
+		self.set_aa_to_transporters_data()
+		aa_ids = sim_data.molecule_groups.amino_acids
+		
+		#calculate kcats based on self.specific_import_rates, dry mass and transporters counts
+		import_rates = sim_data.process.metabolism.specific_import_rates*cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
+		bulk_container = cell_specs['with_aa']['bulkAverageContainer'].counts(self.aa_transporters_names)
+		counts = self.aa_to_transporters_matrix.dot(bulk_container)
+
+		self.uptake_kcats_per_aa = import_rates / counts;
+
+					# import_rates = sim_data.process.metabolism.specific_import_rates*cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
+					# bulk_container = cell_specs['with_aa']['bulkAverageContainer']
+
+					# self.uptake_kcats_per_aa = {}
+					# for rate, aa in zip(import_rates, aa_ids):
+					# 	transporters = self.aa_to_transporters[aa]
+					# 	self.uptake_kcats_per_aa[aa] = rate / bulk_container.counts(transporters).sum()
+
+					# import ipdb; ipdb.set_trace(context=10)
+					# print(kcats)
+					# print(self.uptake_kcats_per_aa)
+			
 	def set_mechanistic_supply_constants(self, sim_data, cell_specs):
 		"""
 		Sets constants to determine amino acid supply during translation.  Used
@@ -809,7 +881,7 @@ class Metabolism(object):
 		synthesis = self.aa_supply_balance @ (self.aa_kcats * counts_per_aa * fraction)
 		return synthesis, counts_per_aa, fraction
 
-	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum):
+	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum, aa_transporters_counts):
 		"""
 		Calculate the rate of amino acid uptake.
 
@@ -822,7 +894,20 @@ class Metabolism(object):
 				represents counts of amino acid per second
 		"""
 
-		return aa_in_media * self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
+		# Supply based on mechanistic synthesis and supply
+		counts_per_aa = self.aa_to_transporters_matrix.dot(aa_transporters_counts)
+		import_rates = self.uptake_kcats_per_aa * counts_per_aa
+
+					# import_rates={}
+					# for aa, enzymes in self.aa_to_transporters.items(): 
+					# 	aa_periplasm = aa[:-3]+'[p]'
+					# 	import_rates[aa_periplasm] = self.uptake_kcats_per_aa[aa] * sum([enzymes_counts[e] for e in enzymes])
+
+					
+					# import_rates = np.fromiter(import_rates.values(), dtype=float)
+					# # return aa_in_media * self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
+
+		return import_rates*aa_in_media
 
 	@staticmethod
 	def extract_reactions(raw_data, sim_data):

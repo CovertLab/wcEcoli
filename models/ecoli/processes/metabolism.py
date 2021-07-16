@@ -54,6 +54,7 @@ class Metabolism(wholecell.processes.process.Process):
 		environment = self._external_states['Environment']
 		self.use_trna_charging = sim._trna_charging
 		self.include_ppgpp = not sim._ppgpp_regulation or not self.use_trna_charging
+		self.mechanistic_aa_supply = sim._mechanistic_aa_supply
 
 		# Create model to use to solve metabolism updates
 		self.model = FluxBalanceAnalysisModel(
@@ -96,9 +97,26 @@ class Metabolism(wholecell.processes.process.Process):
 			update_molecules += [self.model.ppgpp_id]
 		self.conc_update_molecules = sorted(update_molecules)
 
+		# Amino acids in media for import rates
+		self.aa_exchange_names = np.array([
+			sim_data.external_state.env_to_exchange_map[aa[:-3]]
+			for aa in self.aa_names
+			])
+		self.aa_environment = self.environmentView([aa[:-3] for aa in self.aa_exchange_names])
+
+		self.removed_aa_uptake = np.array([
+			aa in self.aa_targets_not_updated
+			for aa in self.aa_exchange_names
+			])
+		
+		self.amino_acid_import = sim_data.process.metabolism.amino_acid_import
+		self.aa_transporters_names = sim_data.process.metabolism.aa_transporters_names
+		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
+
 	def calculateRequest(self):
 		self.metabolites.requestAll()
 		self.catalysts.requestAll()
+		self.aa_transporters_container.requestAll()
 		self.kineticsEnzymes.requestAll()
 		self.kineticsSubstrates.requestAll()
 
@@ -152,6 +170,32 @@ class Metabolism(wholecell.processes.process.Process):
 		## Constrain reactions based on targets
 		targets, upper_targets, lower_targets = self.model.set_reaction_targets(kinetic_enzyme_counts,
 			kinetic_substrate_counts, counts_to_molar, time_step)
+
+		if self.mechanistic_aa_supply:
+			aa_in_media = self.aa_environment.import_present()
+			aa_in_media[self.removed_aa_uptake] = False
+
+			# Supply based on mechanistic synthesis and supply		
+			import_rates = (counts_to_molar * self.timeStepSec() 
+								* self.amino_acid_import(aa_in_media, dry_mass, self.aa_transporters_container.counts())).asNumber(CONC_UNITS)
+			
+			aa_in_media[4]=False
+			aa_in_media[9]=False
+			aa_in_media[10]=False
+
+			self.model.fba.setExternalMoleculeLevels(import_rates[aa_in_media], molecules=self.aa_exchange_names[aa_in_media], force=True)
+
+			# aa_in_media ^= True
+			# aa_in_media[19] = False
+
+			# import_rates[aa_in_media]=-1e-15
+
+			# self.model.fba.setExternalMoleculeLevels(import_rates[aa_in_media], molecules=self.aa_exchange_names[aa_in_media], force=False)
+
+		# Glc hard bound
+		flux_bound = 10 * units.mmol / units.g / units.h
+		unitless_bound = (flux_bound * coefficient).asNumber(CONC_UNITS)
+		self.model.fba.setExternalMoleculeLevels(unitless_bound, molecules='GLC[p]', force=True)
 
 		# Solve FBA problem and update states
 		n_retries = 3

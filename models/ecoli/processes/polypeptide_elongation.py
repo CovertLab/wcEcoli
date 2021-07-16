@@ -422,6 +422,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.aa_aas = self.process.bulkMoleculesView(molecule_groups.amino_acids)
 		self.amino_acid_synthesis = metabolism.amino_acid_synthesis
 		self.amino_acid_import = metabolism.amino_acid_import
+		
+		self.aa_transporters_container = self.process.bulkMoleculesView(metabolism.aa_transporters_names)
 
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)
@@ -480,7 +482,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		if self.process.mechanistic_supply:
 			# Set supply based on mechanistic synthesis and supply
 			self.process.aa_supply = self.process.timeStepSec() * (
-					synthesis + self.amino_acid_import(aa_in_media, dry_mass))
+					synthesis + self.amino_acid_import(aa_in_media, dry_mass, self.aa_transporters_container.total_counts()))
 		else:
 			# Adjust aa_supply higher if amino acid concentrations are low
 			# Improves stability of charging and mimics amino acid synthesis
