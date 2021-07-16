@@ -1086,41 +1086,49 @@ class Transcription(object):
 
 	def set_ppgpp_expression(self, sim_data):
 		"""
-		Called during the parca to determine expression of each gene for ppGpp
-		bound and free RNAP.
+		Called during the parca to determine expression of each transcription
+		unit for ppGpp bound and free RNAP.
 
 		Attributes set:
-			exp_ppgpp (ndarray[float]): expression for each gene when RNAP
-				is bound to ppGpp
-			exp_free (ndarray[float]): expression for each gene when RNAP
-				is not bound to ppGpp
+			exp_ppgpp (ndarray[float]): expression for each TU when RNAP is
+				bound to ppGpp
+			exp_free (ndarray[float]): expression for each TU when RNAP is not
+				bound to ppGpp
 			ppgpp_km (float with units of mol / vol): KM for ppGpp binding to RNAP
 			ppgpp_km_squared (float): squared and unitless version of KM for
 				faster computation in other functions
 		"""
-
 		ppgpp_aa = sim_data.growth_rate_parameters.get_ppGpp_conc(
 			sim_data.condition_to_doubling_time['with_aa'])
 		ppgpp_basal = sim_data.growth_rate_parameters.get_ppGpp_conc(
 			sim_data.condition_to_doubling_time['basal'])
 		f_ppgpp_aa = self.fraction_rnap_bound_ppgpp(ppgpp_aa)
 		f_ppgpp_basal = self.fraction_rnap_bound_ppgpp(ppgpp_basal)
+		cistron_id_to_idx = {
+			cistron: i for i, cistron in enumerate(self.cistron_data['id'])}
+		cistron_tu_mapping_matrix = self.cistron_tu_mapping_matrix()
 
-		# TODO (ggsun) actually map a ppGpp adjustment to polycistrons,
-		#  currently implemented a sketch work around
-		# rna_idx = {r[:-3]: i for i, r in enumerate(self.rnaData['id'])}
-		fcs = np.zeros(len(self.rna_data))
-		rna_fc_dict = dict(zip(self.ppgpp_regulated_genes, self.ppgpp_fold_changes))
-		for i, rna in enumerate(self.rna_data['id']):
-			if rna in rna_fc_dict:
-				fcs[i] = rna_fc_dict[rna]
-		exp = self.rna_expression['basal']
+		# Since fold changes are reported for each cistron (gene), these are
+		# applied first to the expression levels of individual cistrons which
+		# are converted back to TU expression levels through NNLS
+		rna_exp = self.rna_expression['basal']
+		cistron_exp = normalize(cistron_tu_mapping_matrix.dot(rna_exp))
 
-		self.exp_ppgpp = ((2**fcs * exp * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))
+		fcs = np.zeros(len(self.cistron_data))
+		for cistron_id, fc in zip(self.ppgpp_regulated_genes, self.ppgpp_fold_changes):
+			fcs[cistron_id_to_idx[cistron_id]] = fc
+
+		# Apply fold changes to expression levels of cistrons
+		cistron_exp_ppgpp = ((2**fcs * cistron_exp * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))
 			/ (1 - 2**fcs * (f_ppgpp_aa - f_ppgpp_basal * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))))
-		self.exp_free = (exp - self.exp_ppgpp*f_ppgpp_basal) / (1 - f_ppgpp_basal)
-		self.exp_free[self.exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes
+		cistron_exp_free = (cistron_exp - cistron_exp_ppgpp * f_ppgpp_basal) / (1 - f_ppgpp_basal)
+		cistron_exp_free[cistron_exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes
 
+		# Map expression levels of cistrons to those of TUs through NNLS
+		self.exp_ppgpp, _ = fast_nnls(cistron_tu_mapping_matrix, cistron_exp_ppgpp)
+		self.exp_free, _ = fast_nnls(cistron_tu_mapping_matrix, cistron_exp_free)
+
+		# TODO (ggsun): Should these be normalized here?
 		self._ppgpp_expression_set = True
 
 	def adjust_polymerizing_ppgpp_expression(self, sim_data):
