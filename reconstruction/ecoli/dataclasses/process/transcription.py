@@ -533,11 +533,11 @@ class Transcription(object):
 
 		# Determine if each RNA contains cistrons that encode for special
 		# components
-		includes_23S_rRNA = cistron_tu_mapping_matrix.T.dot(
+		is_23S_rRNA = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_23S_rRNA']).astype(np.bool)
-		includes_16S_rRNA = cistron_tu_mapping_matrix.T.dot(
+		is_16S_rRNA = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_16S_rRNA']).astype(np.bool)
-		includes_5S_rRNA = cistron_tu_mapping_matrix.T.dot(
+		is_5S_rRNA = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_5S_rRNA']).astype(np.bool)
 		includes_ribosomal_protein = cistron_tu_mapping_matrix.T.dot(
 			self.cistron_data['is_ribosomal_protein']).astype(np.bool)
@@ -551,9 +551,9 @@ class Transcription(object):
 		# complexation reactions that form ribosomes. In reality, all of these
 		# genes produce rRNA molecules with slightly different sequences and
 		# molecular weights.
-		idx_23S = np.where(includes_23S_rRNA)[0]
-		idx_16S = np.where(includes_16S_rRNA)[0]
-		idx_5S = np.where(includes_5S_rRNA)[0]
+		idx_23S = np.where(is_23S_rRNA)[0]
+		idx_16S = np.where(is_16S_rRNA)[0]
+		idx_5S = np.where(is_5S_rRNA)[0]
 
 		rna_lengths[idx_23S] = rna_lengths[idx_23S[0]]
 		rna_lengths[idx_16S] = rna_lengths[idx_16S[0]]
@@ -584,9 +584,9 @@ class Transcription(object):
 				('is_miscRNA', 'bool'),
 				('is_rRNA', 'bool'),
 				('is_tRNA', 'bool'),
-				('includes_23S_rRNA', 'bool'),
-				('includes_16S_rRNA', 'bool'),
-				('includes_5S_rRNA', 'bool'),
+				('is_23S_rRNA', 'bool'),
+				('is_16S_rRNA', 'bool'),
+				('is_5S_rRNA', 'bool'),
 				('includes_ribosomal_protein', 'bool'),
 				('includes_RNAP', 'bool'),
 				]
@@ -604,9 +604,9 @@ class Transcription(object):
 		rna_data['is_miscRNA'] = is_miscRNA
 		rna_data['is_rRNA'] = is_rRNA
 		rna_data['is_tRNA'] = is_tRNA
-		rna_data['includes_23S_rRNA'] = includes_23S_rRNA
-		rna_data['includes_16S_rRNA'] = includes_16S_rRNA
-		rna_data['includes_5S_rRNA'] = includes_5S_rRNA
+		rna_data['is_23S_rRNA'] = is_23S_rRNA
+		rna_data['is_16S_rRNA'] = is_16S_rRNA
+		rna_data['is_5S_rRNA'] = is_5S_rRNA
 		rna_data['includes_ribosomal_protein'] = includes_ribosomal_protein
 		rna_data['includes_RNAP'] = includes_RNAP
 
@@ -623,9 +623,9 @@ class Transcription(object):
 			'is_miscRNA': None,
 			'is_rRNA': None,
 			'is_tRNA': None,
-			'includes_23S_rRNA': None,
-			'includes_16S_rRNA': None,
-			'includes_5S_rRNA': None,
+			'is_23S_rRNA': None,
+			'is_16S_rRNA': None,
+			'is_5S_rRNA': None,
 			'includes_ribosomal_protein': None,
 			'includes_RNAP': None,
 			}
@@ -669,7 +669,7 @@ class Transcription(object):
 
 		# Set the sequences of each type of rRNAs to be identical to those of
 		# the first rRNA operon.
-		rrna_types = ['includes_23S_rRNA', 'includes_16S_rRNA', 'includes_5S_rRNA']
+		rrna_types = ['is_23S_rRNA', 'is_16S_rRNA', 'is_5S_rRNA']
 		for rrna in rrna_types:
 			rrna_idx = np.where(self.rna_data[rrna])[0]
 			for idx in rrna_idx[1:]:
