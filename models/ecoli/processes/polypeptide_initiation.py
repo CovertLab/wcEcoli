@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 from typing import cast
 
+import ipdb
 import numpy as np
 
 import wholecell.processes.process
@@ -16,23 +17,7 @@ from wholecell.utils.fitting import normalize
 from six.moves import zip
 
 from wholecell.utils.migration.write_json import write_json
-
-def arrays_to(n, attrs):
-    ds = []
-    for index in np.arange(n):
-        d = {}
-        for attr in attrs.keys():
-            d[attr] = attrs[attr][index]
-        ds.append(d)
-
-    return ds
-
-def add_elements(elements, id):
-    return {
-        '_add': [{
-            'key': element[id],
-            'state': element}
-            for element in elements]}
+from wholecell.utils.migration_utils import arrays_to, add_elements
 
 class PolypeptideInitiation(wholecell.processes.process.Process):
 	""" PolypeptideInitiation """
@@ -88,7 +73,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Create view onto RNAs
 		self.RNAs = self.uniqueMoleculesView('RNA')
-		self.ribosome_index = 30000
+		self.ribosome_index = 0
         
         # Save updates
 		self.save_time = 2
@@ -230,11 +215,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
             'subunits': {
                 self.ribosome30S_name: -n_new_proteins.sum(),
                 self.ribosome50S_name: -n_new_proteins.sum()},
-            'active_ribosome': add_elements(new_ribosomes, 'unique_index'), # {
-                # '_add': [{
-                #     'path': (ribosome['unique_index'],),
-                #     'state': ribosome}
-                #     for ribosome in new_ribosomes]},
+            'active_ribosome': add_elements(new_ribosomes, 'unique_index'),
             'listeners': {
                 'ribosome_data': {
                     'ribosomes_initialized': n_new_proteins.sum(),
