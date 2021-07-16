@@ -179,18 +179,10 @@ class Metabolism(wholecell.processes.process.Process):
 			import_rates = (counts_to_molar * self.timeStepSec() 
 								* self.amino_acid_import(aa_in_media, dry_mass, self.aa_transporters_container.counts())).asNumber(CONC_UNITS)
 			
-			aa_in_media[4]=False
-			aa_in_media[9]=False
-			aa_in_media[10]=False
-
+			import_rates[9] /= 2 #ILE
+			import_rates[10] /= 2 #LEU
+			
 			self.model.fba.setExternalMoleculeLevels(import_rates[aa_in_media], molecules=self.aa_exchange_names[aa_in_media], force=True)
-
-			# aa_in_media ^= True
-			# aa_in_media[19] = False
-
-			# import_rates[aa_in_media]=-1e-15
-
-			# self.model.fba.setExternalMoleculeLevels(import_rates[aa_in_media], molecules=self.aa_exchange_names[aa_in_media], force=False)
 
 		# Glc hard bound
 		flux_bound = 10 * units.mmol / units.g / units.h

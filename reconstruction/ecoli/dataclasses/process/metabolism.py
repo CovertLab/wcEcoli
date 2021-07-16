@@ -614,7 +614,7 @@ class Metabolism(object):
 			"ARG[c]":["YGGA-MONOMER[i]","EG12713-MONOMER[i]","ABC-4-CPLX[i]","CPLX0-7535[i]"],
 			"ASN[c]":["ANSP-MONOMER[i]","EG12713-MONOMER[i]"],
 			"L-ASPARTATE[c]":["DCUA-MONOMER[i]","EG12713-MONOMER[i]","ABC-13-CPLX[i]","GLTP-MONOMER[i]","YCHM-MONOMER[i]","DCTA-MONOMER[i]"],
-			"CYS[c]":["EG11902-MONOMER[m]", "EG12713-MONOMER[i]", "G6934-MONOMER[i]", "EG12445-MONOMER[i]", "CPLX0-8152[i]", "ABC-6-CPLX[i]", "EG11639-MONOMER[i]"],
+			"CYS[c]":[],#"CYS[c]":["EG11902-MONOMER[m]", "EG12713-MONOMER[i]", "G6934-MONOMER[i]", "EG12445-MONOMER[i]", "CPLX0-8152[i]", "ABC-6-CPLX[i]", "EG11639-MONOMER[i]"],
 			"GLT[c]":["XASA-MONOMER[i]","EG12713-MONOMER[i]","ABC-13-CPLX[i]","GLTS-MONOMER[i]", "GLTP-MONOMER[i]"],
 			"GLN[c]":["ABC-12-CPLX[i]", "EG12713-MONOMER[i]"], 
 			"GLY[c]":["CYCA-MONOMER[i]","EG12713-MONOMER[i]","CPLX0-7654[i]"], 
@@ -658,12 +658,14 @@ class Metabolism(object):
 		
 		self.set_aa_to_transporters_data()
 		aa_ids = sim_data.molecule_groups.amino_acids
-		
+		import ipdb; ipdb.set_trace(context=10)
 		#calculate kcats based on self.specific_import_rates, dry mass and transporters counts
 		import_rates = sim_data.process.metabolism.specific_import_rates*cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
 		bulk_container = cell_specs['with_aa']['bulkAverageContainer'].counts(self.aa_transporters_names)
 		counts = self.aa_to_transporters_matrix.dot(bulk_container)
 
+		counts[counts == 0] = 1.
+		import_rates[counts == 1] = 0.
 		self.uptake_kcats_per_aa = import_rates / counts;
 
 					# import_rates = sim_data.process.metabolism.specific_import_rates*cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
