@@ -6,7 +6,6 @@ Two component system sub-model
 """
 from __future__ import absolute_import, division, print_function
 
-import ipdb
 import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.constants import REQUEST_PRIORITY_TWO_COMPONENT_SYSTEM
@@ -26,7 +25,6 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 	def __init__(self):
 
 		super(TwoComponentSystem, self).__init__()
-
 
 	# Construct object graph
 	def initialize(self, sim, sim_data):
@@ -56,6 +54,7 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 	def calculateRequest(self):
 		# Get molecule counts
 		moleculeCounts = self.molecules.total_counts()
+
 		# Get cell mass and volume
 		cellMass = (self.readFromListener("Mass", "cellMass") * units.fg).asNumber(units.g)
 		self.cellVolume = cellMass / self.cellDensity
@@ -70,14 +69,12 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 			)
 
 		# Request counts of molecules needed
-		ipdb.set_trace()
 		self.molecules.requestIs(self.molecules_required)
-		ipdb.set_trace()
 
 	def evolveState(self):
 		# Get counts of molecules allocated to this process
 		moleculeCounts = self.molecules.counts()
-		import ipdb; ipdb.set_trace()
+
 		# Check if any molecules were allocated fewer counts than requested
 		if (self.molecules_required > moleculeCounts).any():
 			# Solve ODEs to a large time step using the the counts of molecules
@@ -96,10 +93,9 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		self.molecules.countsInc(self.all_molecule_changes)
 		self.update_to_save['molecules'] = array_to(self.moleculeNames, self.all_molecule_changes.astype(int))
 
-		# Save to .json file
+		# Save to .json file at time=12
 		if not self.saved:
-			#if self._sim.time() > 1000:
-				#import ipdb; ipdb.set_trace()
-			write_json(f'out/migration/two_component_system_update_t{int(self._sim.time())}.json',
-				self.update_to_save)
-			self.saved = True
+			if self._sim.time() > 10:
+				write_json(f'out/migration/two_component_system_update_t{int(self._sim.time())}.json',
+					self.update_to_save)
+				self.saved = True
