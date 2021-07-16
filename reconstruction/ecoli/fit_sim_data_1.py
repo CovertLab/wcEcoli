@@ -1628,12 +1628,14 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 
 	mRNA_tu_expression_view = rna_expression_container.countsView(
 		sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']])
-	mRNA_expression_frac = np.sum(mRNA_tu_expression_view.counts())
+	mRNA_tu_expression_frac = np.sum(mRNA_tu_expression_view.counts())
 
 	# Calculate current expression levels of each cistron given the RNA
 	# expression levels
-	cistron_expression = cistron_tu_mapping_matrix.dot(
-		normalize(view_RNA.counts()))
+	cistron_expression = normalize(
+		cistron_tu_mapping_matrix.dot(view_RNA.counts()))
+	mRNA_cistron_expression_frac = cistron_expression[
+		sim_data.process.transcription.cistron_data['is_mRNA']].sum()
 
 	# Calculate required mRNA expression from monomer counts
 	counts_protein = bulkContainer.counts(
@@ -1651,7 +1653,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	# Replace mRNA cistron expression with values calculated from monomer counts
 	cistron_expression[
 		sim_data.process.transcription.cistron_data['is_mRNA']
-		] = mRNA_cistron_distribution
+		] = mRNA_cistron_expression_frac * mRNA_cistron_distribution
 
 	# Use least squares to calculate expression of transcription units required
 	# to generate the given cistron expression levels
@@ -1660,7 +1662,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		sim_data.process.transcription.rna_data['is_mRNA']]
 
 	mRNA_tu_expression_view.countsIs(
-		mRNA_expression_frac * normalize(fit_mRNA_tu_expression))
+		mRNA_tu_expression_frac * normalize(fit_mRNA_tu_expression))
 	expression = normalize(rna_expression_container.counts())
 
 	# Set number of RNAs based on expression we just set
