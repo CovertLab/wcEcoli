@@ -5,18 +5,15 @@ Submodel for chromosome replication
 from __future__ import absolute_import, division, print_function
 
 import uuid
+
+import ipdb
 import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import (buildSequences, polymerize,
 	computeMassIncrease)
 from wholecell.utils import units
-from wholecell.utils.migration.write_json import write_json
-
-def array_to(keys, array):
-    return {
-        key: array[index]
-        for index, key in enumerate(keys)}
+from wholecell.utils.array_to import array_to
 
 class ChromosomeReplication(wholecell.processes.process.Process):
 	"""
@@ -353,6 +350,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Update attributes and submasses of replisomes
 		self.active_replisomes.attrIs(coordinates = updated_coordinates)
 		self.active_replisomes.add_submass_by_name("DNA", added_dna_mass)
+		ipdb.set_trace()
 		self.update_to_save['active_replisomes'] = \
 			{str(self.unique_indexes[i]) :
 				 {'coordinates' : self.active_replisomes.attr('coordinates')[i],
