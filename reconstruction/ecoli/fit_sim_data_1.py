@@ -1701,7 +1701,6 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 
 	return expression, synthProb
 
-
 def fitMaintenanceCosts(sim_data, bulkContainer):
 	"""
 	Fits the growth-associated maintenance (GAM) cost associated with metabolism.
@@ -1965,11 +1964,6 @@ def totalCountFromMassesAndRatios(totalMass, individualMasses, distribution):
 	Returns
 	--------
 	- counts (float): total counts (does not need to be a whole number)
-
-	Notes
-	-----
-	- TODO (Travis) - test includes case with no units although use case here
-	and documentation is only with units
 	"""
 
 	assert np.allclose(np.sum(distribution), 1)
@@ -2252,7 +2246,6 @@ def expressionFromConditionAndFoldChange(rnaIds, basalExpression, condPerturbati
 	rnaIdxsBool[rnaIdxs] = 1
 	fcs = np.array(fcs)
 	scaleTheRestBy = (1. - (expression[rnaIdxs] * fcs).sum()) / (1. - (expression[rnaIdxs]).sum())
-
 	expression[rnaIdxsBool] *= fcs
 	expression[~rnaIdxsBool] *= scaleTheRestBy
 
@@ -3014,7 +3007,7 @@ def fitLigandConcentrations(sim_data, cell_specs):
 			if p_inactive == 0:
 				raise ValueError('Inf ligand concentration from p_inactive = 0.'
 					' Check results from fitPromoterBoundProbability and Kd values.')
-			if 1 - p_active < 1e-8:
+			if 1 - p_active < 1e-9:
 				kdNew = kd  # Concentration of metabolite-bound TF is negligible
 			else:
 				kdNew = ((activeSignalConc**metaboliteCoeff) * p_active/(1 - p_active))**(1/metaboliteCoeff)
@@ -3027,7 +3020,7 @@ def fitLigandConcentrations(sim_data, cell_specs):
 			if p_active == 1:
 				raise ValueError('Inf ligand concentration from p_active = 1.'
 					' Check results from fitPromoterBoundProbability and Kd values.')
-			if p_inactive < 1e-8:
+			if p_inactive < 1e-9:
 				kdNew = kd  # Concentration of metabolite-bound TF is negligible
 			else:
 				kdNew = ((inactiveSignalConc**metaboliteCoeff) * (1 - p_inactive)/p_inactive)**(1/metaboliteCoeff)
@@ -3346,7 +3339,6 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		kcatEndo = [0.0001, 0.001, 0.01, 0.1, 1, 10]
 
 	for kcat in kcatEndo:
-		
 		if VERBOSE: print('Kcat = %f' % kcat)
 
 		totalEndoRNcap = units.sum(endoRNaseConc * kcat)
@@ -3380,10 +3372,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	# encoding='latin1'.
 	km_filepath = os.path.join(fixturesDir, 'km{}.cPickle'.format(sys.version_info[0]))
 
-	# Removing so that kms are calculated each time by default
-
 	if os.path.exists(km_filepath):
-		print('km filepath exists')
 		with open(km_filepath, "rb") as f:
 			KmcountsCached = cPickle.load(f)
 
@@ -3392,7 +3381,6 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		# R_aux calculates the difference of the degradation rate based on these
 		# Km values and the expected rate so this sum seems like a reliable test of
 		# whether the cache fits current input data.
-
 		if Kmcounts.shape != KmcountsCached.shape or np.sum(np.abs(R_aux(KmcountsCached))) > 1e-15:
 			needToUpdate = True
 	else:
