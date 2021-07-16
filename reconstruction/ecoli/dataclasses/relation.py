@@ -80,8 +80,8 @@ class Relation(object):
 		_build_monomer_to_mRNA_cistron_mapping().
 
 		e.g.
-		mRNA_property = monomer_property.dot(
-			sim_data.relation.monomer_to_mRNA_cistron_mapping())
+		mRNA_property = sim_data.relation.monomer_to_mRNA_cistron_mapping().T.dot(
+			monomer_property)
 		"""
 		out = np.zeros(self._monomer_to_mRNA_cistron_mapping_shape, dtype=np.float64)
 		out[self._monomer_to_mRNA_cistron_mapping_i, self._monomer_to_mRNA_cistron_mapping_j] = self._monomer_to_mRNA_cistron_mapping_v
