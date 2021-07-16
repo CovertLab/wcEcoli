@@ -52,9 +52,23 @@ class Translation(object):
 			self.translation_sequences[i, :len(seq)] = seq
 
 	def _build_monomer_data(self, raw_data, sim_data):
-		valid_mRNA_cistron_ids = {
+		# Get set of all cistrons IDs with an associated gene and right and left
+		# end positions
+		rna_id_to_gene_id = {
+			gene['rna_id']: gene['id'] for gene in raw_data.genes}
+		gene_id_to_left_end_pos = {
+			gene['id']: gene['left_end_pos'] for gene in raw_data.genes
+			}
+		gene_id_to_right_end_pos = {
+			gene['id']: gene['right_end_pos'] for gene in raw_data.genes
+			}
+
+		all_mRNA_cistrons = {
 			rna['id'] for rna in raw_data.rnas
-			if rna['type'] == 'mRNA' and sim_data.getter.is_valid_molecule(rna['id'])
+			if rna['id'] in rna_id_to_gene_id
+			    and gene_id_to_left_end_pos[rna_id_to_gene_id[rna['id']]] is not None
+			    and gene_id_to_right_end_pos[rna_id_to_gene_id[rna['id']]] is not None
+				and rna['type'] == 'mRNA'
 			}
 
 		# Get mappings from monomer IDs to cistron IDs
@@ -72,7 +86,7 @@ class Translation(object):
 					rna_id = monomer_id_to_cistron_id[protein['id']]
 				except KeyError:
 					continue
-				if rna_id in valid_mRNA_cistron_ids:
+				if rna_id in all_mRNA_cistrons:
 					all_proteins.append(protein)
 
 		# Get protein IDs with compartments
