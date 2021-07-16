@@ -86,6 +86,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.elongation_model = BaseElongationModel(sim_data, self)
 		self.ppgpp_regulation = sim._ppgpp_regulation
 		self.mechanistic_supply = sim._mechanistic_aa_supply
+		self.mechanistic_uptake = sim._mechanistic_aa_uptake
 
 		# Growth associated maintenance energy requirements for elongations
 		self.gtpPerElongation = constants.gtp_per_translation
@@ -481,8 +482,12 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.aa_enzymes.total_counts(), aa_conc)
 		if self.process.mechanistic_supply:
 			# Set supply based on mechanistic synthesis and supply
-			self.process.aa_supply = self.process.timeStepSec() * (
-					synthesis + self.amino_acid_import(aa_in_media, dry_mass, self.aa_transporters_container.total_counts()))
+			self.process.aa_supply = self.process.timeStepSec() * ( synthesis + 
+					self.amino_acid_import(
+						aa_in_media, dry_mass, 
+						self.aa_transporters_container.total_counts(), 
+						self.process.mechanistic_uptake)
+					)
 		else:
 			# Adjust aa_supply higher if amino acid concentrations are low
 			# Improves stability of charging and mimics amino acid synthesis

@@ -42,6 +42,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	recycle_stalled_elongation = False,
 	mechanistic_replisome = True,
 	mechanistic_aa_supply = False,
+	mechanistic_aa_uptake = False,
 	trna_attenuation = False,
 	timeStepSafetyFraction = 1.3,
 	maxTimeStep = MAX_TIME_STEP,

@@ -37,6 +37,7 @@ class SimulationTask(FiretaskBase):
 		"recycle_stalled_elongation",
 		"mechanistic_replisome",
 		"mechanistic_aa_supply",
+		"mechanistic_aa_uptake",
 		"trna_attenuation",
 		"raise_on_time_limit"]
 
@@ -78,6 +79,7 @@ class SimulationTask(FiretaskBase):
 		options["recycle_stalled_elongation"] = self._get_default("recycle_stalled_elongation")
 		options["mechanistic_replisome"] = self._get_default("mechanistic_replisome")
 		options["mechanistic_aa_supply"] = self._get_default("mechanistic_aa_supply")
+		options["mechanistic_aa_uptake"] = self._get_default("mechanistic_aa_uptake")
 		options["trna_attenuation"] = self._get_default("trna_attenuation")
 		options["raise_on_time_limit"] = self._get_default("raise_on_time_limit")
 

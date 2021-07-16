@@ -883,7 +883,7 @@ class Metabolism(object):
 		synthesis = self.aa_supply_balance @ (self.aa_kcats * counts_per_aa * fraction)
 		return synthesis, counts_per_aa, fraction
 
-	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum, aa_transporters_counts):
+	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum, aa_transporters_counts: np.array, mechanisitc_uptake: bool):
 		"""
 		Calculate the rate of amino acid uptake.
 
@@ -895,20 +895,13 @@ class Metabolism(object):
 			rate of uptake for each amino acid. array is unitless but
 				represents counts of amino acid per second
 		"""
+	
+		if not mechanisitc_uptake:
+			return aa_in_media * self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
 
 		# Supply based on mechanistic synthesis and supply
 		counts_per_aa = self.aa_to_transporters_matrix.dot(aa_transporters_counts)
 		import_rates = self.uptake_kcats_per_aa * counts_per_aa
-
-					# import_rates={}
-					# for aa, enzymes in self.aa_to_transporters.items(): 
-					# 	aa_periplasm = aa[:-3]+'[p]'
-					# 	import_rates[aa_periplasm] = self.uptake_kcats_per_aa[aa] * sum([enzymes_counts[e] for e in enzymes])
-
-					
-					# import_rates = np.fromiter(import_rates.values(), dtype=float)
-					# # return aa_in_media * self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
-
 		return import_rates*aa_in_media
 
 	@staticmethod
