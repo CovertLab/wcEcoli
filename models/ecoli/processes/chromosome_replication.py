@@ -6,7 +6,6 @@ from __future__ import absolute_import, division, print_function
 
 import uuid
 
-import ipdb
 import numpy as np
 
 import wholecell.processes.process
@@ -78,7 +77,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 		# Saving updates
 		self.update_to_save = {}
-		self.unique_indexes = []
 
 	def calculateRequest(self):
 		# Get total count of existing oriC's
@@ -239,7 +237,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 				}}
 				for index in range(n_new_replisome)]
 
-			self.unique_indexes = self.active_replisomes.moleculesNew(
+			self.active_replisomes.moleculesNew(
 				n_new_replisome,
 				coordinates=coordinates_replisome,
 				right_replichore=right_replichore,
@@ -350,9 +348,8 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Update attributes and submasses of replisomes
 		self.active_replisomes.attrIs(coordinates = updated_coordinates)
 		self.active_replisomes.add_submass_by_name("DNA", added_dna_mass)
-		ipdb.set_trace()
 		self.update_to_save['active_replisomes'] = \
-			{str(self.unique_indexes[i]) :
+			{str(self.active_replisomes._queryResult._globalIndexes[i]) :
 				 {'coordinates' : self.active_replisomes.attr('coordinates')[i],
 				  'dna_mass': added_dna_mass[i]}
 			 for i in range(len(self.active_replisomes._queryResult._globalIndexes))}
