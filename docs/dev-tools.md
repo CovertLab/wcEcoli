@@ -62,19 +62,21 @@ required libraries and library versions.
 
 1. Install `pyenv`, `pyenv-virtualenv`, `pyenv-virtualenvwrapper` using your local
    package manager, e.g. [homebrew](https://brew.sh/) on macOS.
-   **\[On Sherlock, pyenv is already installed. Skip to the next step.]** E.g.
+   **\[On Sherlock, pyenv is already installed. Skip to the next step.]** 
+
+   See [pyenv Installation](https://github.com/pyenv/pyenv#installation) for _up-to-date and detailed_ ways to install pyenv on various operating systems. **Recommended**
+
+   For example, you may run this command on MacOS:
 
    ```shell script
    brew install pyenv pyenv-virtualenv pyenv-virtualenvwrapper
    ```
 
-   See [pyenv Installation](https://github.com/pyenv/pyenv#installation) for various ways to install pyenv on various operating systems.
-
    Or try these commands on Ubuntu:
 
    ```shell script
    git clone https://github.com/pyenv/pyenv.git ~/.pyenv
-   echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile               #In some cases you might have .bashrc instead of .bash_profile. 
+   echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile       #In some cases you might have .bashrc instead of .bash_profile. 
    echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
    echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile 
    #If you get a Warning when running pyenv, replace (pyenv init -) to (pyenv init --path)
@@ -87,7 +89,7 @@ required libraries and library versions.
    source ~/.bash_profile
    ```
 
-1. Configure your shell's environment (`~/.profile` or `~/.bash_profile` on macOS with bash or Ubuntu, or `~/.zshrc` for zsh, etc.) to initialize `pyenv` and optionally `pyenv-virtualenv` for each shell. To do this, follow the steps below or the more detailed and up-to-date instructions under **Configure your shell's environment for Pyenv** in [pyenv Installation](https://github.com/pyenv/pyenv#basic-github-checkout).
+1. Configure your shell's environment (`~/.profile` or `~/.bash_profile` on macOS with bash or Ubuntu, or `~/.zshrc` for zsh, etc.) to initialize `pyenv` and optionally `pyenv-virtualenv` for each shell. To do this, follow the steps below or refer to the more detailed and up-to-date instructions under **Configure your shell's environment for Pyenv** in [pyenv Installation](https://github.com/pyenv/pyenv#basic-github-checkout)(**Recommended**).
 
    - Example `~/.zshrc` lines for macOS:
 

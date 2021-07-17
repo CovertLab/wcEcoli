@@ -32,8 +32,6 @@ how to set up environments to get consistent results across platforms.
 It's possible that a newer version of OpenBLAS (such as v0.3.15) fixes those problems.
 The simplest and fastest setup is to install numpy and scipy from binary "wheels"
 with their embedded copies of OpenBLAS -- **recommended**. 
-Still, there's a case for compiling OpenBLAS from source code and linking numpy and scipy to it, as
-`cloud/docker/runtime/Dockerfile` does for building the wcm-runtime Docker Image.
 
 
 ## Prerequisites
@@ -83,7 +81,9 @@ Still, there's a case for compiling OpenBLAS from source code and linking numpy 
 
    Don't use apt-get to install `libopenblas-dev` until that package repository
    updates to a recent release like v0.3.9 (the version that's embedded in numpy
-   and scipy). It is also recommended to install OpenBLAS along with numpy (see below).
+   and scipy). For Ubuntu, use ```bashapt-cache policy libopenblas-dev``` to check 
+   the candidate version for OpenBLAS. It is **recommended** to install OpenBLAS along with 
+   numpy (see below).
 
 
    **On Sherlock**
@@ -138,13 +138,13 @@ pyenv lets you install and switch between multiple Python releases and multiple
 "virtual environments", each with its own pip packages.
 
    ```bash
-   pyenv install 3.8.7 #v3.8.9 also works
+   pyenv install 3.8.7 #v3.8.9 might also works but still under tests. 
    ```
 
    For Linux/Ubuntu:
 
    ```bash
-   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.7 #v3.8.9 also works
+   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.7 #v3.8.9 might also works but still under tests.
    ```
 
 
@@ -159,7 +159,7 @@ virtualenv.
 
    ```bash
    cd ~/dev/wcEcoli  # or wherever you cloned the `wcEcoli` project to
-   pyenv virtualenv 3.8.7 wcEcoli3 && pyenv local wcEcoli3 #if you use python 3.8.9, replace 3.8.7 for 3.8.9
+   pyenv virtualenv 3.8.7 wcEcoli3 && pyenv local wcEcoli3 #if you use python 3.8.9, replace 3.8.7 for 3.8.9. 
    ```
 
 1. Upgrade this virtual environment's installers.
@@ -178,8 +178,7 @@ virtualenv.
    `--no-binary numpy,scipy` option -- **recommended**. 
 
    Still, there's a case for compiling OpenBLAS from source code and linking numpy and scipy to it, as
-   `cloud/docker/runtime/Dockerfile` does for building the wcm-runtime Docker
-   Image.
+   `cloud/docker/runtime/Dockerfile` can _optionally_ do for building the wcm-runtime Docker Image.
 
    Where is OpenBLAS installed?
    * Brew on macOS installs OpenBLAS in `/usr/local/opt/openblas/`.
@@ -252,8 +251,10 @@ virtualenv.
       python runscripts/debug/summarize_environment.py
       ```
 
-      It should print entries like this for numpy and scipy showing which
-      OpenBLAS they're linked to:
+      It should print entries like the ones below for numpy and scipy showing which
+      OpenBLAS they're linked to. ```library_dirs = ['/usr/local/opt/openblas/lib']```
+      reveals the path to source openblas while ```library_dirs = ['/usr/local/lib']```
+      is shown for numpy's embedded openblas.
 
       ```
       lapack_opt_info:
