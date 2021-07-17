@@ -42,8 +42,8 @@ with their embedded copies of OpenBLAS -- **recommended**.
   * gcc or llvm
   * git
   * a programming editor such as PyCharm, Sublime Text, or Visual Studio Code
-  * **[Set up Git and GitHub](https://docs.github.com/en/get-started/quickstart/set-up-git)** including [Connecting to GitHub with SSH](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
-  * **Clone the repo** [wcEcoli git](https://github.com/CovertLab/wcEcoli) to a local directory like `~/dev/wcEcoli/`. See [About remote repositories](https://docs.github.com/en/get-started/getting-started-with-git/about-remote-repositories). It's probably better to use the SSH URL `git@github.com:CovertLab/wcEcoli.git` but it's also possible to use an HTTPS URL.
+* **[Set up Git and GitHub](https://docs.github.com/en/get-started/quickstart/set-up-git)** including [Connecting to GitHub with SSH](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
+* **Clone the repo** [wcEcoli git](https://github.com/CovertLab/wcEcoli) to a local directory like `~/dev/wcEcoli/`. See [About remote repositories](https://docs.github.com/en/get-started/getting-started-with-git/about-remote-repositories). It's probably better to use the SSH URL `git@github.com:CovertLab/wcEcoli.git` but it's also possible to use an HTTPS URL.
 
 
 ## Install native libraries
@@ -328,7 +328,7 @@ especially when called from multiple processes.
    ```shell script
    PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.7 --force
    ```
-   
+
    then delete and recreate the virtualenv `wcEcoli3`.
    Delete it via the command `pyenv virtualenv-delete wcEcoli3` or `pyenv uninstall wcEcoli3`.
 
