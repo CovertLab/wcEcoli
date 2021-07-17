@@ -11,6 +11,7 @@ TODO:
 from __future__ import absolute_import, division, print_function
 
 from copy import copy
+import itertools
 import re
 from typing import Any, cast, Dict, Iterable, List, Optional, Set, Tuple, Union
 
@@ -843,6 +844,12 @@ class Metabolism(object):
 		synthesis, _, _ = self.amino_acid_synthesis(enzyme_counts, aa_conc)
 		self.specific_import_rates = (supply - synthesis) / cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS)
 
+		# Concentrations for reference in analysis plot
+		conversion = sim_data.constants.cell_density / sim_data.constants.n_avogadro * sim_data.mass.cell_dry_mass_fraction
+		basal_counts = cell_specs['basal']['bulkAverageContainer'].counts(self.aa_enzymes)
+		self.aa_supply_enzyme_conc_with_aa = conversion * enzyme_counts / cell_specs['with_aa']['avgCellDryMassInit']
+		self.aa_supply_enzyme_conc_basal = conversion * basal_counts / cell_specs['basal']['avgCellDryMassInit']
+
 		# Check calculations that could end up negative
 		neg_idx = np.where(self.aa_kcats < 0)[0]
 		if len(neg_idx):
@@ -934,13 +941,17 @@ class Metabolism(object):
 		forward_directions = {'L2R', 'BOTH'}
 		reverse_directions = {'R2L', 'BOTH'}
 
+		metabolite_ids = {met['id'] for met in cast(Any, raw_data).metabolites}
+
 		# Build mapping from each complexation subunit to all downstream
 		# complexes containing the subunit, including itself
 		# Start by building mappings from subunits to complexes that are
 		# directly formed from the subunit through a single reaction
 		subunit_id_to_parent_complexes = {} # type: Dict[str, List[str]]
 
-		for comp_reaction in cast(Any, raw_data).complexation_reactions:
+		for comp_reaction in itertools.chain(
+				cast(Any, raw_data).complexation_reactions,
+				cast(Any, raw_data).equilibrium_reactions):
 			complex_id = None
 
 			# Find ID of complex
@@ -953,7 +964,7 @@ class Metabolism(object):
 
 			# Map each subunit to found complex
 			for mol_id, coeff in comp_reaction['stoichiometry'].items():
-				if mol_id == complex_id:
+				if mol_id == complex_id or mol_id in metabolite_ids:
 					continue
 				elif mol_id in subunit_id_to_parent_complexes:
 					subunit_id_to_parent_complexes[mol_id].append(complex_id)
@@ -973,7 +984,7 @@ class Metabolism(object):
 				all_downstream_complex_ids.extend(get_all_complexes(parent_complex_id))
 
 			# Remove duplicates
-			return list(set(all_downstream_complex_ids))
+			return sorted(set(all_downstream_complex_ids))
 
 		subunit_id_to_all_downstream_complexes = {
 			subunit_id: get_all_complexes(subunit_id)
@@ -1018,7 +1029,7 @@ class Metabolism(object):
 				all_potential_catalysts.extend(
 					subunit_id_to_all_downstream_complexes.get(catalyst, [catalyst]))
 
-			for catalyst in list(set(all_potential_catalysts)):
+			for catalyst in sorted(set(all_potential_catalysts)):
 				if sim_data.getter.is_valid_molecule(catalyst):
 					catalysts_with_loc = catalyst + sim_data.getter.get_compartment_tag(catalyst)
 					catalysts_for_this_rxn.append(catalysts_with_loc)
