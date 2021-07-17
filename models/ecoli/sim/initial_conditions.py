@@ -48,7 +48,7 @@ def calcInitialConditions(sim, sim_data):
 
 	# Set up states
 	initializeBulkMolecules(bulkMolCntr, sim_data, media_id, import_molecules,
-		randomState, massCoeff, sim._ppgpp_regulation)
+		randomState, massCoeff, sim._ppgpp_regulation, sim._trna_attenuation)
 	initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data,
 		randomState, sim._superhelical_density, sim._trna_attenuation)
 
@@ -63,13 +63,14 @@ def calcInitialConditions(sim, sim_data):
 	set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
 		massCoeff, cell_mass=calculate_cell_mass(sim.internal_states))
 
-def initializeBulkMolecules(bulkMolCntr, sim_data, media_id, import_molecules, randomState, massCoeff, ppgpp_regulation):
+def initializeBulkMolecules(bulkMolCntr, sim_data, media_id, import_molecules, randomState, massCoeff,
+		ppgpp_regulation, trna_attenuation):
 
 	# Set protein counts from expression
-	initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation)
+	initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation, trna_attenuation)
 
 	# Set RNA counts from expression
-	initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation)
+	initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation, trna_attenuation)
 
 	# Set other biomass components
 	set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules, massCoeff)
@@ -164,17 +165,21 @@ def initialize_trna_charging(sim_data, states, calc_charging):
 	charged_trna.countsIs(charged_trna_counts)
 	uncharged_trna.countsIs(uncharged_trna_counts)
 
-def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation):
+def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation, trna_attenuation):
 
 	monomersView = bulkMolCntr.countsView(sim_data.process.translation.monomer_data["id"])
 	monomerMass = massCoeff * sim_data.mass.get_component_masses(sim_data.condition_to_doubling_time[sim_data.condition])["proteinMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
 	# TODO: unify this logic with the parca so it doesn't fall out of step
 	# again (look at the calcProteinCounts function)
 
+	transcription = sim_data.process.transcription
 	if ppgpp_regulation:
 		rnaExpression = sim_data.calculate_ppgpp_expression(sim_data.condition)
 	else:
-		rnaExpression = sim_data.process.transcription.rna_expression[sim_data.condition]
+		rnaExpression = transcription.rna_expression[sim_data.condition]
+
+	if trna_attenuation:
+		rnaExpression[transcription.attenuated_rna_indices] *= transcription.attenuation_readthrough[sim_data.condition]
 
 	monomerExpression = normalize(
 		rnaExpression[sim_data.relation.RNA_to_monomer_mapping] *
@@ -194,32 +199,39 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppg
 		)
 
 
-def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation):
+def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation, trna_attenuation):
 	"""
 	Initializes counts of RNAs in the bulk molecule container using RNA
 	expression data. mRNA counts are also initialized here, but is later reset
 	to zero when the representations for mRNAs are moved to the unique molecule
 	container.
 	"""
-	rnaView = bulkMolCntr.countsView(sim_data.process.transcription.rna_data["id"])
+
+	transcription = sim_data.process.transcription
+
+	rnaView = bulkMolCntr.countsView(transcription.rna_data["id"])
 	rnaMass = massCoeff * sim_data.mass.get_component_masses(sim_data.condition_to_doubling_time[sim_data.condition])["rnaMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
 
 	if ppgpp_regulation:
 		rnaExpression = sim_data.calculate_ppgpp_expression(sim_data.condition)
 	else:
-		rnaExpression = normalize(sim_data.process.transcription.rna_expression[sim_data.condition])
+		rnaExpression = normalize(transcription.rna_expression[sim_data.condition])
+
+	if trna_attenuation:
+		rnaExpression[transcription.attenuated_rna_indices] *= transcription.attenuation_readthrough[sim_data.condition]
+		rnaExpression /= rnaExpression.sum()
 
 	nRnas = countsFromMassAndExpression(
 		rnaMass.asNumber(units.g),
-		sim_data.process.transcription.rna_data["mw"].asNumber(units.g / units.mol),
+		transcription.rna_data["mw"].asNumber(units.g / units.mol),
 		rnaExpression,
 		sim_data.constants.n_avogadro.asNumber(1 / units.mol)
 		)
 
 	# ID Groups of rRNAs
-	idx_16Srrna = np.where(sim_data.process.transcription.rna_data['is_16S_rRNA'])[0]
-	idx_23Srrna = np.where(sim_data.process.transcription.rna_data['is_23S_rRNA'])[0]
-	idx_5Srrna = np.where(sim_data.process.transcription.rna_data['is_5S_rRNA'])[0]
+	idx_16Srrna = np.where(transcription.rna_data['is_16S_rRNA'])[0]
+	idx_23Srrna = np.where(transcription.rna_data['is_23S_rRNA'])[0]
+	idx_5Srrna = np.where(transcription.rna_data['is_5S_rRNA'])[0]
 
 	# Assume expression from all rRNA genes produce rRNAs from the first operon
 	total_16Srrna_expression = rnaExpression[idx_16Srrna].sum()
@@ -333,8 +345,8 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 	# Determine the number and location of replication forks at the start of
 	# the cell cycle
 	# Get growth rate constants
-	C = sim_data.growth_rate_parameters.c_period.asUnit(units.min)
-	D = sim_data.growth_rate_parameters.d_period.asUnit(units.min)
+	C = sim_data.process.replication.c_period
+	D = sim_data.process.replication.d_period
 	tau = sim_data.condition_to_doubling_time[sim_data.condition].asUnit(units.min)
 
 	# Calculate length of replichore
@@ -429,7 +441,7 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 			if domain_idx == 0:
 				if n_replisome == 0:
 					# No replisomes - all motifs should fall in this domain
-					motif_mask = np.ones_like(all_motif_coordinates, dtype=np.bool)
+					motif_mask = np.ones_like(all_motif_coordinates, dtype=bool)
 
 				else:
 					# Get domain boundaries
@@ -505,7 +517,7 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 		TU_index=np.array(TU_index),
 		coordinates=np.array(promoter_coordinates),
 		domain_index=np.array(promoter_domain_index),
-		bound_TF=np.zeros((n_promoter, n_tf), dtype=np.bool))
+		bound_TF=np.zeros((n_promoter, n_tf), dtype=bool))
 
 	# Add DnaA boxes as unique molecules and set attributes
 	n_DnaA_box = len(DnaA_box_coordinates)
@@ -514,7 +526,7 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 		'DnaA_box', n_DnaA_box,
 		coordinates=np.array(DnaA_box_coordinates),
 		domain_index=np.array(DnaA_box_domain_index),
-		DnaA_bound=np.zeros(n_DnaA_box, dtype=np.bool)
+		DnaA_bound=np.zeros(n_DnaA_box, dtype=bool)
 		)
 
 
@@ -574,7 +586,7 @@ def initialize_transcription_factors(bulkMolCntr, uniqueMolCntr, sim_data, rando
 	TU_index = promoters.attr("TU_index")
 
 	# Initialize bound_TF array
-	bound_TF = np.zeros((len(promoters), len(tf_ids)), dtype=np.bool)
+	bound_TF = np.zeros((len(promoters), len(tf_ids)), dtype=bool)
 
 	for tf_idx, tf_id in enumerate(tf_ids):
 		# Get counts of transcription factors
@@ -601,7 +613,7 @@ def initialize_transcription_factors(bulkMolCntr, uniqueMolCntr, sim_data, rando
 		n_to_bind = int(stochasticRound(
 			randomState, np.full(n_available_promoters, pPromoterBound)).sum())
 
-		bound_locs = np.zeros(n_available_promoters, dtype=np.bool)
+		bound_locs = np.zeros(n_available_promoters, dtype=bool)
 		if n_to_bind > 0:
 			# Determine randomly which DNA targets to bind based on which of
 			# the following is more limiting:
@@ -755,6 +767,15 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 
 	assert promoter_init_probs[is_fixed].sum() < 1.0
 
+	# Adjust for attenuation that will stop transcription after initiation
+	if trna_attenuation:
+		attenuation_readthrough = {
+			idx: prob for idx, prob in
+			zip(sim_data.process.transcription.attenuated_rna_indices, sim_data.process.transcription.attenuation_readthrough[sim_data.condition])
+			}
+		readthrough_adjustment = np.array([attenuation_readthrough.get(idx, 1) for idx in TU_index])
+		promoter_init_probs *= readthrough_adjustment
+
 	scaleTheRestBy = (1. - promoter_init_probs[is_fixed].sum()) / promoter_init_probs[~is_fixed].sum()
 	promoter_init_probs[~is_fixed] *= scaleTheRestBy
 
@@ -789,7 +810,7 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 	# TODO (Eran): make sure there aren't any RNAPs at same location on same gene
 	updated_lengths = np.array(
 		randomState.rand(n_RNAPs_to_activate) * rnaLengths[TU_index_partial_RNAs],
-		dtype=np.int)
+		dtype=int)
 
 	# Rescale boolean array of directions to an array of 1's and -1's.
 	direction_rescaled = (2 * (direction - 0.5)).astype(np.int64)
@@ -839,7 +860,7 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 		TU_index=TU_index_partial_RNAs,
 		transcript_length=updated_lengths,
 		is_mRNA=is_mRNA_partial_RNAs,
-		is_full_transcript=np.zeros(cast(int, n_RNAPs_to_activate), dtype=np.bool),
+		is_full_transcript=np.zeros(cast(int, n_RNAPs_to_activate), dtype=bool),
 		can_translate=is_mRNA_partial_RNAs,
 		RNAP_index=RNAP_indexes,
 		massDiff_nonspecific_RNA=added_RNA_mass,
@@ -868,9 +889,9 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 		'RNA', len(TU_index_full_mRNAs),
 		TU_index=TU_index_full_mRNAs,
 		transcript_length=rnaLengths[TU_index_full_mRNAs],
-		is_mRNA=np.ones_like(TU_index_full_mRNAs, dtype=np.bool),
-		is_full_transcript=np.ones_like(TU_index_full_mRNAs, dtype=np.bool),
-		can_translate=np.ones_like(TU_index_full_mRNAs, dtype=np.bool),
+		is_mRNA=np.ones_like(TU_index_full_mRNAs, dtype=bool),
+		is_full_transcript=np.ones_like(TU_index_full_mRNAs, dtype=bool),
+		can_translate=np.ones_like(TU_index_full_mRNAs, dtype=bool),
 		RNAP_index=np.full(TU_index_full_mRNAs.shape, -1, dtype=np.int64),
 		massDiff_mRNA=rna_masses[TU_index_full_mRNAs])
 
@@ -1260,7 +1281,7 @@ def determine_chromosome_state(C, D, tau, replichore_length, n_max_replisomes,
 	# Initialize arrays for replisomes
 	n_replisomes = 2*(2**n_rounds - 1)
 	coordinates = np.zeros(n_replisomes, dtype=np.int64)
-	right_replichore_replisome = np.zeros(n_replisomes, dtype=np.bool)
+	right_replichore_replisome = np.zeros(n_replisomes, dtype=bool)
 	domain_index_replisome = np.zeros(n_replisomes, dtype=np.int32)
 
 	# Initialize child domain array for chromosome domains
