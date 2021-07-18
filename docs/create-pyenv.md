@@ -85,6 +85,7 @@ with their embedded copies of OpenBLAS -- **recommended**.
    the candidate version for OpenBLAS. It is **recommended** to install OpenBLAS along with 
    numpy (see below).
 
+
    **On Sherlock**
 
    The needed packages are already installed. Set up your bash profile to locate the
@@ -158,7 +159,7 @@ virtualenv.
 
    ```bash
    cd ~/dev/wcEcoli  # or wherever you cloned the `wcEcoli` project to
-   pyenv virtualenv 3.8.7 wcEcoli3 && pyenv local wcEcoli3 #if you use python 3.8.9, replace 3.8.7 for 3.8.9
+   pyenv virtualenv 3.8.7 wcEcoli3 && pyenv local wcEcoli3 #if you use python 3.8.9, replace 3.8.7 for 3.8.9.
    ```
 
 1. Upgrade this virtual environment's installers.
@@ -287,12 +288,6 @@ especially when called from multiple processes.
     ```
 
     (It might fail some tests with AssertionError: 0.xxxxx not less than or equal to 0.4.)
-
-1. Test Aesara:
-
-      ```bash
-      python -c 'import aesara; print([aesara.config.blas.ldflags, aesara.config.device, aesara.config.floatX])'
-      ```
 
 1. Test Aesara:
 

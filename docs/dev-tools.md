@@ -76,11 +76,7 @@ required libraries and library versions.
 
    ```shell script
    git clone https://github.com/pyenv/pyenv.git ~/.pyenv
-<<<<<<< HEAD
-   echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile               #In some cases you might have .bashrc instead of .bash_profile. 
-=======
    echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile       #In some cases you might have .bashrc instead of .bash_profile. 
->>>>>>> f9a377c72586adda2683bc2986fe0a7edc1e8ea4
    echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
    echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile 
    #If you get a Warning when running pyenv, replace (pyenv init -) to (pyenv init --path)
@@ -92,10 +88,6 @@ required libraries and library versions.
    git clone https://github.com/pyenv/pyenv-virtualenvwrapper.git $(pyenv root)/plugins/pyenv-virtualenvwrapper
    source ~/.bash_profile
    ```
-
-<<<<<<< HEAD
-1. Set your shell login script (`~/.profile` or `~/.bash_profile` on macOS and Linux) to initialize `pyenv` and optionally `pyenv-virtualenv` for each shell. To do this, follow the steps below or the more intricate instructions under "Add pyenv init to your shell" in [pyenv Installation](https://github.com/pyenv/pyenv#installation).
-=======
 1. Configure your shell's environment (`~/.profile` or `~/.bash_profile` on macOS with bash or Ubuntu, or `~/.zshrc` for zsh, etc.) to initialize `pyenv` and optionally `pyenv-virtualenv` for each shell. To do this, follow the steps below or refer to the more detailed and up-to-date instructions under **Configure your shell's environment for Pyenv** in [pyenv Installation](https://github.com/pyenv/pyenv#basic-github-checkout)(**Recommended**).
 
    - Example `~/.zshrc` lines for macOS:
@@ -103,7 +95,6 @@ required libraries and library versions.
      ```shell script
      eval "$(pyenv init --path)"
      ```
->>>>>>> f9a377c72586adda2683bc2986fe0a7edc1e8ea4
 
    - Example `~/.profile` or `~/.bash_profile` lines for macOS:
 
