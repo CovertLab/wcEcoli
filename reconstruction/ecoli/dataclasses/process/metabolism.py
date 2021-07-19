@@ -459,6 +459,18 @@ class Metabolism(object):
 			data['downstream'] = {k + cytoplasm_tag: v for k, v in row['Downstream amino acids'].items()}
 			self.aa_synthesis_pathways[row['Amino acid'] + cytoplasm_tag] = data
 
+		self.aa_synthesis_pathway_adjustments = {}
+		for row in raw_data.adjustments.amino_acid_pathways:
+			# Read data from row
+			aa = row['Amino acid'] + cytoplasm_tag
+			parameter = row['Parameter']
+			factor = row['Factor']
+
+			# Store adjustments to be used later
+			adjustments = self.aa_synthesis_pathway_adjustments.get(aa, {})
+			adjustments[parameter] = factor
+			self.aa_synthesis_pathway_adjustments[aa] = adjustments
+
 
 	def get_kinetic_constraints(self, enzymes, substrates):
 		# type: (units.Unum, units.Unum) -> units.Unum
@@ -766,33 +778,18 @@ class Metabolism(object):
 				total_supply += stoich * supply[aa]
 				total_supply += stoich * degradation_rates.get(aa, 0 / units.min)
 
-			if amino_acid == 'GLN[c]':
-				km_reverse *= 5
-			if amino_acid == 'PHE[c]':
-				km_reverse *= 5
-			if amino_acid == 'ASN[c]':
-				km_reverse *= 5
-			if amino_acid == 'PRO[c]':
-				km_reverse *= 5
-			if amino_acid == 'ILE[c]':
-				km_reverse *= 5
-			if amino_acid == 'LEU[c]':
-				km_reverse *= 5
-			if amino_acid == 'TYR[c]':
-				km_reverse *= 5
-			if amino_acid == 'VAL[c]':
-				km_reverse *= 5
-			if amino_acid == 'CYS[c]':
-				kms /= 10
-			if amino_acid == 'ARG[c]':
-				km_reverse *= 10
-				kms /= 10
-			if amino_acid == 'LYS[c]':
-				km_reverse *= 10
-				kms /= 10
-			if amino_acid == 'MET[c]':
-				km_degradation *= 10
-				ki *= 5
+			# Make required adjustments in order to get positive kcats and import rates
+			for parameter, factor in self.aa_synthesis_pathway_adjustments.get(amino_acid, {}).items():
+				if parameter == 'ki':
+					ki *= factor
+				elif parameter == 'km_degradation':
+					km_degradation *= factor
+				elif parameter == 'km_reverse':
+					km_reverse *= factor
+				elif parameter == 'kms':
+					kms *= factor
+				else:
+					raise ValueError(f'Unexpected parameter adjustment ({parameter}) for {amino_acid}.')
 
 			# Calculate kcat value to ensure sufficient supply to double
 			kcat = total_supply / (enzyme_counts * (1 / (1 + aa_conc / ki) * np.prod(1 / (1 + kms / km_conc)) - 1 / (1 + km_reverse / aa_conc) - 1 / (1 + km_degradation / aa_conc)))

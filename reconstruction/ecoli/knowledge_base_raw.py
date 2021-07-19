@@ -97,6 +97,7 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("base_codes", "amino_acids.tsv"),
 	os.path.join("base_codes", "ntp.tsv"),
 	os.path.join("base_codes", "dntp.tsv"),
+	os.path.join("adjustments", "amino_acid_pathways.tsv"),
 	os.path.join("adjustments", "translation_efficiencies_adjustments.tsv"),
 	os.path.join("adjustments", "rna_expression_adjustments.tsv"),
 	os.path.join("adjustments", "rna_deg_rates_adjustments.tsv"),
