@@ -110,9 +110,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 					# Load data
 					time = main_reader.readColumn('time')
+					time_step = main_reader.readColumn('timeStepSec')[1:]
 					cycle_length = time[-1] - time[0]
-					growth_rate = mass_reader.readColumn('instantaneous_growth_rate')[1:].mean()
-					elong_rate = ribosome_reader.readColumn('effectiveElongationRate')[1:].mean()
+					growth_rate = mass_reader.readColumn('instantaneous_growth_rate')[1:]
+					weighted_growth = growth_rate @ time_step / (time[-1] - time[1])
+					elong_rate = ribosome_reader.readColumn('effectiveElongationRate')[1:]
+					weighted_elong = elong_rate @ time_step / (time[-1] - time[1])
 					ex_molecules = fba_results.readAttribute('externalMoleculeIDs')
 					if 'GLC[p]' in ex_molecules:
 						glc_idx = ex_molecules.index(GLC_ID)
@@ -125,14 +128,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						# dry_mass = MASS_UNITS * mass_reader.readColumn('dryMass')
 						# yields = units.strip_empty_units(growth / (glc_flux * glc_mw * dry_mass))
 
+						# TODO: weight this by time step like rates above while accounting for removed indices?
 						glc_yield = yields[np.isfinite(yields)].mean()
 				except Exception as e:
 					print(f'Exception reading Main/time, Mass/instantaneous_growth_rate,'
 						  f' RibosomeData/effectiveElongationRate, FBAResults/externalMoleculeIDs,'
 						  f' or FBAResults/externalExchangeFluxes: {e!r}')
 					cycle_length = 0
-					growth_rate = 0
-					elong_rate = 0
+					weighted_growth = 0
+					weighted_elong = 0
 
 				# Filter out cell cycle lengths that are too short (likely failed)
 				# TODO: better way to test for failure
@@ -142,8 +146,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				else:
 					lengths.append(cycle_length / 60)
 					count += 1
-				growth_rates.append(growth_rate)
-				elong_rates.append(elong_rate)
+				growth_rates.append(weighted_growth)
+				elong_rates.append(weighted_elong)
 				glc_yields.append(glc_yield)
 
 			variant_lengths.append(lengths)
