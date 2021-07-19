@@ -24,6 +24,7 @@ GLC_ID = 'GLC[p]'
 FLUX_UNITS = units.mmol / units.g / units.h
 MASS_UNITS = units.fg
 GROWTH_UNITS = MASS_UNITS / units.s
+AXIS_LIMITS = [0.5, 1.5]
 
 
 def plot_bar(gs, x, y, ylabel, reference, bottom=True, yerr=None):
@@ -231,6 +232,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			min_rate = min(x_min, y_min)
 			max_rate = max(x_max, y_max)
 			plt.plot([min_rate, max_rate], [min_rate, max_rate], '--k')
+
+			# Limit axes to reasonable range
+			plt.xlim(AXIS_LIMITS)
+			plt.ylim(AXIS_LIMITS)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
