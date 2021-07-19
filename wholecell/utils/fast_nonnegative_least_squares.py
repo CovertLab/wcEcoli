@@ -19,7 +19,8 @@ def fast_nnls(A, b):
 		b: numpy.ndarray of size (N, )
 	Returns:
 		x: numpy.ndarray of size (M, ), the solution to the NNLS problem.
-		rnorm: float, the residual (||Ax - b||_2) of the NNLS problem.
+		r: numpy.ndarray of size (N, ), the residual vector (||Ax - b||_2) of
+			the NNLS problem.
 	"""
 	# Check matrix dimensions
 	if A.ndim != 2 or b.ndim != 1:
@@ -82,6 +83,6 @@ def fast_nnls(A, b):
 			x[column_indexes] = x_subproblem
 
 	assert np.all(x >= 0)
-	rnorm = np.linalg.norm(A.dot(x) - b)
+	r = A.dot(x) - b
 
-	return x, rnorm
+	return x, r
