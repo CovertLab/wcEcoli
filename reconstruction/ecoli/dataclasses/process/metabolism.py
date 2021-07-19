@@ -743,12 +743,18 @@ class Metabolism(object):
 				else:
 					ki = aa_conc
 			upstream_aa = [aa for aa in data['upstream']]
-			km_conc = METABOLITE_CONCENTRATION_UNITS * np.array([minimal_conc[aa].asNumber(METABOLITE_CONCENTRATION_UNITS) for aa in upstream_aa])
+			km_conc = METABOLITE_CONCENTRATION_UNITS * np.array([
+				minimal_conc[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+				for aa in upstream_aa
+				])
 			kms_upstream = data['km, upstream']
-			kms = METABOLITE_CONCENTRATION_UNITS * np.array([kms_upstream.get(aa, minimal_conc[aa]).asNumber(METABOLITE_CONCENTRATION_UNITS) for aa in upstream_aa])
+			kms = METABOLITE_CONCENTRATION_UNITS * np.array([
+				kms_upstream.get(aa, minimal_conc[aa]).asNumber(METABOLITE_CONCENTRATION_UNITS)
+				for aa in upstream_aa
+				])  # TODO: better way to fill in this missing data
 			if data['reverse']:
 				if np.isnan(data['km, reverse'].asNumber()):
-					km_reverse = minimal_conc[amino_acid] * 10
+					km_reverse = minimal_conc[amino_acid] * 10  # TODO: better way to fill in this missing data
 				else:
 					km_reverse = data['km, reverse']
 			else:
@@ -807,7 +813,7 @@ class Metabolism(object):
 		self.aa_enzymes = np.unique(aa_enzymes)
 		self.aa_kcats = np.array([aa_kcats[aa] for aa in aa_ids])
 		self.aa_kis = np.array([aa_kis[aa] for aa in aa_ids])
-		self.aa_upstream_kms = np.array([aa_upstream_kms[aa] for aa in aa_ids])
+		self.aa_upstream_kms = np.array([aa_upstream_kms[aa] for aa in aa_ids])  # TODO: fix ragged warning
 		self.aa_reverse_kms = np.array([aa_reverse_kms[aa] for aa in aa_ids])
 		self.aa_degradation_kms = np.array([aa_degradation_kms[aa] for aa in aa_ids])
 
