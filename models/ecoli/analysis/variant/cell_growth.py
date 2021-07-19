@@ -60,6 +60,10 @@ def plot_validation(mean, std, labels, val_rates, val_std, val_aa_ids, label, te
 	if text_highlight:
 		for aa, x, y in zip(val_aa_ids, val_rates, wcm_normalized_growth_rates):
 			color = 'r' if text_highlight.get(aa, False) else 'k'
+			if y < AXIS_LIMITS[0]:
+				y = AXIS_LIMITS[0]
+			elif y > AXIS_LIMITS[1]:
+				y = AXIS_LIMITS[1]
 			plt.text(x, 0.01 + y, aa, ha='center', fontsize=6, color=color)
 
 def remove_border(ax, bottom=False):
