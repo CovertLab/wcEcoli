@@ -56,9 +56,9 @@ def plot_validation(mean, std, labels, val_rates, val_std, val_aa_ids, label, te
 		xerr=val_std, yerr=wcm_normalized_std, fmt='o', alpha=0.5,
 		label=f'{label} r={r:.2f} (p={p:.2g}, n={n})')
 
-	if text_highlight is not None:
-		for aa, x, y, highlight in zip(val_aa_ids, val_rates, wcm_normalized_growth_rates, text_highlight):
-			color = 'r' if highlight else 'k'
+	if text_highlight:
+		for aa, x, y in zip(val_aa_ids, val_rates, wcm_normalized_growth_rates):
+			color = 'r' if text_highlight.get(aa, False) else 'k'
 			plt.text(x, 0.01 + y, aa, ha='center', fontsize=6, color=color)
 
 def remove_border(ax, bottom=False):
@@ -200,7 +200,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		## Validation comparison for each amino acid addition
 		if metadata.get('variant', '') == 'add_one_aa':
 			ax = plt.subplot(gs[:, 1:])
-			highlight = np.array(variant_counts) != max(variant_counts)  # Highlight failed variants
+			highlight = {
+				label: count != max(variant_counts)
+				for label, count in zip(labels, variant_counts)
+				}  # Highlight failed variants
 
 			# Plot datasets to compare against validation
 			plot_validation(mean_growth_rates, std_growth_rates, labels,
