@@ -302,7 +302,10 @@ class Transcription(object):
 
 		cistron_expression = np.array(cistron_expression)
 
-		self.basal_cistron_expression = cistron_expression / cistron_expression.sum()
+		# Set basal expression levels of each cistron - conditional values are
+		# set in the parca.
+		self.cistron_expression = {}
+		self.cistron_expression['basal'] = cistron_expression / cistron_expression.sum()
 
 
 	def _build_rna_data(self, raw_data, sim_data):
@@ -403,7 +406,7 @@ class Transcription(object):
 
 		# Convert expression levels of cistrons to expression levels of
 		# transcription units using nonnegative least-squares
-		expression, _ = fast_nnls(cistron_tu_mapping_matrix, self.basal_cistron_expression)
+		expression, _ = fast_nnls(cistron_tu_mapping_matrix, self.cistron_expression['basal'])
 
 		# Calculate synthesis probabilities from expression and normalize
 		synth_prob = expression*(
@@ -1108,11 +1111,10 @@ class Transcription(object):
 			cistron: i for i, cistron in enumerate(self.cistron_data['id'])}
 		cistron_tu_mapping_matrix = self.cistron_tu_mapping_matrix()
 
-		# Since fold changes are reported for each cistron (gene), these are
+		# Since fold changes are reported for each cistron (gene), the FCs are
 		# applied first to the expression levels of individual cistrons which
 		# are converted back to TU expression levels through NNLS
-		rna_exp = self.rna_expression['basal']
-		cistron_exp = normalize(cistron_tu_mapping_matrix.dot(rna_exp))
+		cistron_exp = self.cistron_expression['basal']
 
 		fcs = np.zeros(len(self.cistron_data))
 		for cistron_id, fc in zip(self.ppgpp_regulated_genes, self.ppgpp_fold_changes):
@@ -1125,10 +1127,10 @@ class Transcription(object):
 		cistron_exp_free[cistron_exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes
 
 		# Map expression levels of cistrons to those of TUs through NNLS
+		# TODO (ggsun): Should these be normalized here?
 		self.exp_ppgpp, _ = fast_nnls(cistron_tu_mapping_matrix, cistron_exp_ppgpp)
 		self.exp_free, _ = fast_nnls(cistron_tu_mapping_matrix, cistron_exp_free)
 
-		# TODO (ggsun): Should these be normalized here?
 		self._ppgpp_expression_set = True
 
 	def adjust_polymerizing_ppgpp_expression(self, sim_data):
