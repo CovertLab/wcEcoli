@@ -648,7 +648,7 @@ class Metabolism(object):
 				in units of METABOLITE_CONCENTRATION_UNITS, ordered by amino
 				acid molecule group. Will be inf if there is no inhibitory
 				control.
-			aa_upstream_kms (np.ndarray[float]): KM value associated with the
+			aa_upstream_kms (List[List[float]]): KM value associated with the
 				amino acid that feeds into each synthesis pathway in units of
 				METABOLITE_CONCENTRATION_UNITS, ordered by amino acid molecule
 				group. Will be 0 if there is no upstream amino acid considered.
@@ -810,7 +810,7 @@ class Metabolism(object):
 		self.aa_enzymes = np.unique(aa_enzymes)
 		self.aa_kcats = np.array([aa_kcats[aa] for aa in aa_ids])
 		self.aa_kis = np.array([aa_kis[aa] for aa in aa_ids])
-		self.aa_upstream_kms = np.array([aa_upstream_kms[aa] for aa in aa_ids])  # TODO: fix ragged warning
+		self.aa_upstream_kms = [aa_upstream_kms[aa] for aa in aa_ids]
 		self.aa_reverse_kms = np.array([aa_reverse_kms[aa] for aa in aa_ids])
 		self.aa_degradation_kms = np.array([aa_degradation_kms[aa] for aa in aa_ids])
 
