@@ -88,6 +88,7 @@ required libraries and library versions.
    git clone https://github.com/pyenv/pyenv-virtualenvwrapper.git $(pyenv root)/plugins/pyenv-virtualenvwrapper
    source ~/.bash_profile
    ```
+
 1. Configure your shell's environment (`~/.profile` or `~/.bash_profile` on macOS with bash or Ubuntu, or `~/.zshrc` for zsh, etc.) to initialize `pyenv` and optionally `pyenv-virtualenv` for each shell. To do this, follow the steps below or refer to the more detailed and up-to-date instructions under **Configure your shell's environment for Pyenv** in [pyenv Installation](https://github.com/pyenv/pyenv#basic-github-checkout)(**Recommended**).
 
    - Example `~/.zshrc` lines for macOS:

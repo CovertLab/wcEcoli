@@ -480,7 +480,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		aa_in_media = self.aa_environment.import_present()
 		synthesis, enzyme_counts, saturation = self.amino_acid_synthesis(
 			self.aa_enzymes.total_counts(), aa_conc)
-		imported = self.amino_acid_import(aa_in_media, dry_mass)
+		imported = self.amino_acid_import(aa_in_media, dry_mass, self.aa_transporters_container.total_counts(), self.process.mechanistic_uptake)
 		if self.process.mechanistic_translation_supply:
 			# Set supply based on mechanistic synthesis and supply
 			self.process.aa_supply = self.process.timeStepSec() * ( synthesis + 

@@ -159,7 +159,7 @@ virtualenv.
 
    ```bash
    cd ~/dev/wcEcoli  # or wherever you cloned the `wcEcoli` project to
-   pyenv virtualenv 3.8.7 wcEcoli3 && pyenv local wcEcoli3 #if you use python 3.8.9, replace 3.8.7 for 3.8.9.
+   pyenv virtualenv 3.8.7 wcEcoli3 && pyenv local wcEcoli3 #if you use python 3.8.9, replace 3.8.7 for 3.8.9. 
    ```
 
 1. Upgrade this virtual environment's installers.

@@ -659,7 +659,7 @@ class Metabolism(object):
 		
 		self.set_aa_to_transporters_data()
 		aa_ids = sim_data.molecule_groups.amino_acids
-		import ipdb; ipdb.set_trace(context=10)
+
 		#calculate kcats based on self.specific_import_rates, dry mass and transporters counts
 		import_rates = sim_data.process.metabolism.specific_import_rates*cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
 		bulk_container = cell_specs['with_aa']['bulkAverageContainer'].counts(self.aa_transporters_names)
