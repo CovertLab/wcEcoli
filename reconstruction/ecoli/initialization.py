@@ -19,25 +19,30 @@ from wholecell.utils.random import stochasticRound
 RAND_MAX = 2**31
 
 
-def create_bulk_container(sim_data, condition=None, seed=0, ppgpp_regulation=True, trna_attenuation=True, mass_coeff=1):
+def create_bulk_container(sim_data, n_seeds=1, condition=None, seed=0, ppgpp_regulation=True, trna_attenuation=True, mass_coeff=1):
 	try:
-		media_id = sim_data.conditions[condition]['nutrients']
-		cnt = BulkObjectsContainer(sim_data.internal_state.bulk_molecules.bulk_data['id'])
-		exchange_data = sim_data.external_state.exchange_data_from_media(media_id)
-		import_molecules = (set(exchange_data['importUnconstrainedExchangeMolecules'])
-			| set(exchange_data['importConstrainedExchangeMolecules']))
-		random_state = np.random.RandomState(seed=seed)
-
 		old_condition = sim_data.condition
 		if condition is not None:
 			sim_data.condition = condition
-		initializeBulkMolecules(cnt, sim_data, media_id, import_molecules, random_state,
-			mass_coeff, ppgpp_regulation, trna_attenuation)
-		sim_data.condition = old_condition
+		average_container = BulkObjectsContainer(sim_data.internal_state.bulk_molecules.bulk_data['id'])
+
+		media_id = sim_data.conditions[sim_data.condition]['nutrients']
+		exchange_data = sim_data.external_state.exchange_data_from_media(media_id)
+		import_molecules = (set(exchange_data['importUnconstrainedExchangeMolecules'])
+			| set(exchange_data['importConstrainedExchangeMolecules']))
+
+		for n in range(n_seeds):
+			cnt = BulkObjectsContainer(sim_data.internal_state.bulk_molecules.bulk_data['id'])
+			random_state = np.random.RandomState(seed=seed+n)
+			initializeBulkMolecules(cnt, sim_data, media_id, import_molecules, random_state,
+				mass_coeff, ppgpp_regulation, trna_attenuation)
+			average_container.countsIs(average_container.counts() + cnt.counts())
 	except Exception:
 		raise RuntimeError('sim_data might not be fully initialized.  Make sure all attributes have been set before using this function.')
 
-	return cnt
+	sim_data.condition = old_condition
+	average_container.countsIs(average_container.counts() / n_seeds)
+	return average_container
 
 def initializeBulkMolecules(bulkMolCntr, sim_data, media_id, import_molecules, randomState, massCoeff,
 		ppgpp_regulation, trna_attenuation):
