@@ -1011,6 +1011,15 @@ class Transcription(object):
 		free_adjustment = np.array(free_adjustment)
 		ppgpp_adjustment = np.array(ppgpp_adjustment)
 
+		# Match low basal prob when using ppGpp regulation unless the gene is regulated by ppGpp
+		ppgpp_regulated = np.array([
+			rna[:-3] in set(self.ppgpp_regulated_genes)
+			for rna in self.rna_data['id']
+			])
+		basal_0 = sim_data.process.transcription_regulation.basal_prob == 0
+		free_adjustment[basal_0 & ~ppgpp_regulated] = 0
+		ppgpp_adjustment[basal_0 & ~ppgpp_regulated] = 0
+
 		# Scale free and bound expression and renormalize ppGpp regulated expression
 		self.exp_free *= free_adjustment
 		self.exp_ppgpp *= ppgpp_adjustment
