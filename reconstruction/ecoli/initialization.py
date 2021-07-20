@@ -12,7 +12,7 @@ from wholecell.containers.unique_objects_container import Access
 from wholecell.utils.fitting import normalize, countsFromMassAndExpression, masses_and_counts_for_homeostatic_target
 from wholecell.utils.polymerize import computeMassIncrease
 from wholecell.utils import units
-from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWithPrebuiltMatrices
+from wholecell.utils.mc_complexation import mccFormComplexesWithPrebuiltMatrices
 from wholecell.utils.random import stochasticRound
 
 
@@ -232,26 +232,20 @@ def initializeComplexation(bulkMolCntr, sim_data, randomState):
 	bulkMolCntr.countsIs(0, rnases)
 
 	stoichMatrix = sim_data.process.complexation.stoich_matrix().astype(np.int64, order='F')
-	prebuiltMatrices = mccBuildMatrices(stoichMatrix)
 
-	# form complexes until no new complexes form (some complexes are complexes of complexes)
-	while True:
-		moleculeCounts = moleculeView.counts()
-		updatedMoleculeCounts, complexationEvents = mccFormComplexesWithPrebuiltMatrices(
-			moleculeCounts,
-			randomState.randint(1000),
-			stoichMatrix,
-			*prebuiltMatrices)
+	moleculeCounts = moleculeView.counts()
+	updatedMoleculeCounts, complexationEvents = mccFormComplexesWithPrebuiltMatrices(
+		moleculeCounts,
+		randomState.randint(1000),
+		stoichMatrix,
+		*sim_data.process.complexation.prebuilt_matrices)
 
-		bulkMolCntr.countsIs(
-			updatedMoleculeCounts,
-			moleculeNames)
+	bulkMolCntr.countsIs(
+		updatedMoleculeCounts,
+		moleculeNames)
 
-		if np.any(updatedMoleculeCounts < 0):
-			raise ValueError('Negative counts after complexation')
-
-		if not np.any(moleculeCounts - updatedMoleculeCounts):
-			break
+	if np.any(updatedMoleculeCounts < 0):
+		raise ValueError('Negative counts after complexation')
 
 	bulkMolCntr.countsIs(rnaseCounts, rnases)
 
