@@ -659,7 +659,7 @@ class Transcription(object):
 		Returns the indexes of transcription units containing the given RNA
 		cistron given the ID of the cistron.
 		"""
-		cistron_index = np.where(self.cistron_data['id'] == cistron_id)[0]
+		cistron_index = np.where(self.cistron_data['id'] == cistron_id)[0][0]
 		return np.where(self.cistron_tu_mapping_matrix()[cistron_index, :])[0]
 
 	def _build_transcription(self, raw_data, sim_data):
