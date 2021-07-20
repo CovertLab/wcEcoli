@@ -185,6 +185,7 @@ class Metabolism(wholecell.processes.process.Process):
 			
 			import_rates[9] /= 2 #ILE
 			import_rates[10] /= 2 #LEU
+			import_rates[13] /= 2 #PHE
 			
 			self.model.fba.setExternalMoleculeLevels(import_rates[aa_in_media], molecules=self.aa_exchange_names[aa_in_media], force=True)
 
