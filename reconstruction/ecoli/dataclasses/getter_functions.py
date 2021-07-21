@@ -181,8 +181,19 @@ class GetterFunctions(object):
 		# Set of gene IDs that are covered by listed transcription units
 		covered_gene_ids = set()
 
+		# Keep track of common names to remove duplicate TUs that cover the same
+		# set of genes but have different left & right end coordinates. The
+		# first TU that covers the given set of genes will always be selected.
+		# TODO (ggsun): consider picking longest?
+		all_tu_common_names = set()
+
 		# Add sequences from transcription_units file
 		for tu in raw_data.transcription_units:
+			if tu['common_name'] in all_tu_common_names:
+				continue
+			else:
+				all_tu_common_names.add(tu['common_name'])
+
 			left_end_pos = tu['left_end_pos']
 			right_end_pos = tu['right_end_pos']
 			assert left_end_pos is not None and right_end_pos is not None
@@ -355,7 +366,7 @@ class GetterFunctions(object):
 			])
 
 		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
-		
+
 		gene_id_to_rna_id = {
 			gene['id']: gene['rna_id'] for gene in raw_data.genes
 			}
@@ -363,7 +374,7 @@ class GetterFunctions(object):
 		for tu in raw_data.transcription_units:
 			tu_rna_types = [
 				rna_id_to_type[gene_id_to_rna_id[gene]] for gene in tu['genes']]
-			
+
 			if len(set(tu_rna_types)) > 1:
 				raise ValueError(f'Transcription unit {tu["id"]} includes '
 					f'cistrons that encode for two or more different types of '
