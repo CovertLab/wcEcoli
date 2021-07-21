@@ -4,13 +4,15 @@ Submodel for chromosome replication
 
 from __future__ import absolute_import, division, print_function
 
+import uuid
+
 import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import (buildSequences, polymerize,
 	computeMassIncrease)
 from wholecell.utils import units
-
+from wholecell.utils.array_to import array_to
 
 class ChromosomeReplication(wholecell.processes.process.Process):
 	"""
@@ -54,6 +56,8 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.chromosome_domains = self.uniqueMoleculesView('chromosome_domain')
 
 		# Create bulk molecule views for polymerization reaction
+		self.dntps_names = sim_data.molecule_groups.dntps
+		self.ppi_names = [sim_data.molecule_ids.ppi]
 		self.dntps = self.bulkMoleculesView(sim_data.molecule_groups.dntps)
 		self.ppi = self.bulkMoleculeView(sim_data.molecule_ids.ppi)
 
@@ -70,6 +74,9 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 		# Sim options
 		self.mechanistic_replisome = sim._mechanistic_replisome
+
+		# Saving updates
+		self.update_to_save = {}
 
 	def calculateRequest(self):
 		# Get total count of existing oriC's
@@ -142,6 +149,15 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.active_replisomes.request_access(self.EDIT_DELETE_ACCESS)
 
 	def evolveState(self):
+
+		self.update_to_save = {
+			'replisome_trimers': {name: 0 for name in self.replisome_trimers._query},
+			'replisome_monomers': {name: 0 for name in self.replisome_monomers._query},
+			'active_replisomes' : {},
+			'listeners': {
+				'replication_data': {},
+			}}
+
 		## Module 1: Replication initiation
 		# Get number of existing replisomes and oriCs
 		n_active_replisomes = self.active_replisomes.total_count()
@@ -191,6 +207,13 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 			# Add new oriC's, and reset attributes of existing oriC's
 			# All oriC's must be assigned new domain indexes
+			self.update_to_save['oriCs'] = {
+				'_add': [{
+					'key': str(uuid.uuid1()),
+					'state': {'domain_index': domain_index_new[index]}}
+					for index in range(n_oriC)],
+				'_delete': [(index,) for index in self.oriCs._queryResult._globalIndexes]}
+
 			self.oriCs.attrIs(domain_index=domain_index_new[:n_oriC])
 			self.oriCs.moleculesNew(
 				n_oriC, domain_index=domain_index_new[n_oriC:])
@@ -204,6 +227,15 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 				np.array([True, False], dtype=np.bool), n_oriC)
 			domain_index_new_replisome = np.repeat(
 				domain_index_existing_oric, 2)
+
+			self.update_to_save['active_replisomes']['_add'] = [{
+				'key': str(uuid.uuid1()),
+				'state': {
+					'coordinates': coordinates_replisome[index],
+					'right_replichore': right_replichore[index],
+					'domain_index': domain_index_new_replisome[index],
+				}}
+				for index in range(n_new_replisome)]
 
 			self.active_replisomes.moleculesNew(
 				n_new_replisome,
@@ -220,20 +252,42 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 					(n_new_domain, 2), self.no_child_place_holder,
 					dtype=np.int32))
 
+			new_child_domains = np.full(
+				(n_new_domain, 2), self.no_child_place_holder, dtype=np.int32)
+			new_domains_update = {
+				'_add': [{
+					'key': str(uuid.uuid1()),
+					'state': {
+						'domain_index': domain_index_new[index].tolist(),
+						'child_domains': new_child_domains[index].tolist(),
+					}}
+					for index in range(n_new_domain)]}
+
 			# Add new domains as children of existing domains
 			child_domains[new_parent_domains] = domain_index_new.reshape(-1, 2)
 			self.chromosome_domains.attrIs(child_domains=child_domains)
+			existing_domains_update = {
+				int(domain): {'child_domains': child_domains[index].tolist()}
+				for index, domain in enumerate(self.chromosome_domains._queryResult._globalIndexes)}
+			self.update_to_save['chromosome_domains'] = {**new_domains_update, **existing_domains_update}
 
 			# Decrement counts of replisome subunits
 			if self.mechanistic_replisome:
-				self.replisome_trimers.countsDec(6*n_oriC)
-				self.replisome_monomers.countsDec(2*n_oriC)
+				for mol in self.replisome_trimers._query:
+					self.update_to_save['replisome_trimers'][mol] -= 6 * n_oriC
+				for mol in self.replisome_monomers._query:
+					self.update_to_save['replisome_monomers'][mol] -= 2 * n_oriC
+				self.replisome_trimers.countsDec(6 * n_oriC)
+				self.replisome_monomers.countsDec(2 * n_oriC)
 
 		# Write data from this module to a listener
 		self.writeToListener("ReplicationData", "criticalMassPerOriC",
 			self.criticalMassPerOriC)
+		self.update_to_save['listeners'] = {'replication_data' : {'criticalMassPerOriC' : self.criticalMassPerOriC}}
 		self.writeToListener("ReplicationData", "criticalInitiationMass",
 			self.criticalInitiationMass.asNumber(units.fg))
+		self.update_to_save['listeners']['replication_data']['criticalInitiationMass'] = \
+			self.criticalInitiationMass.asNumber(units.fg)
 
 		## Module 2: replication elongation
 		# If no active replisomes are present, return immediately
@@ -294,10 +348,17 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Update attributes and submasses of replisomes
 		self.active_replisomes.attrIs(coordinates = updated_coordinates)
 		self.active_replisomes.add_submass_by_name("DNA", added_dna_mass)
+		self.update_to_save['active_replisomes'] = \
+			{str(self.active_replisomes._queryResult._globalIndexes[i]) :
+				 {'coordinates' : self.active_replisomes.attr('coordinates')[i],
+				  'dna_mass': added_dna_mass[i]}
+			 for i in range(len(self.active_replisomes._queryResult._globalIndexes))}
 
 		# Update counts of polymerized metabolites
 		self.dntps.countsDec(dNtpsUsed)
 		self.ppi.countInc(dNtpsUsed.sum())
+		self.update_to_save['dntps'] = array_to(self.dntps_names, -dNtpsUsed)
+		self.update_to_save['ppi'] = array_to(self.ppi_names, [dNtpsUsed.sum()])
 
 
 		## Module 3: replication termination
@@ -362,9 +423,25 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 			# Delete terminated replisomes
 			self.active_replisomes.delByIndexes(np.where(replisomes_to_delete)[0])
+			if self.active_replisomes:
+				# perhaps replisomes to delete?
+				if len(self.active_replisomes._queryResult._globalIndexes[np.where(replisomes_to_delete)[0]]) > 0:
+					self.update_to_save['active_replisomes']['_delete'] = [(index,) for index in
+								self.active_replisomes._queryResult._globalIndexes[np.where(replisomes_to_delete)[0]]]
+
 
 			# Generate new full chromosome molecules
 			if n_new_chromosomes > 0:
+				chromosome_add_update = {
+					'_add': [{
+						'key': str(uuid.uuid1()),
+						'state': {
+							'domain_index': domain_index_new_full_chroms[index],
+							'division_time': self.D_period,
+							# self.time() + self.D_period, TODO -- how is division_time used?
+							'has_triggered_division': False}}
+						for index in range(n_new_chromosomes)]}
+
 				self.full_chromosomes.moleculesNew(
 					n_new_chromosomes,
 					division_time=[self.time() + self.D_period]*n_new_chromosomes,
@@ -373,13 +450,24 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 				# Reset domain index of existing chromosomes that have finished
 				# replication
+				chromosome_existing_update = {
+					int(key): {'domain_index': domain_index_full_chroms[index]}
+					for index, key in enumerate(self.full_chromosomes._queryResult._globalIndexes)}
 				self.full_chromosomes.attrIs(
 					domain_index = domain_index_full_chroms)
 
+				self.update_to_save['full_chromosomes'] = {**chromosome_add_update, **chromosome_existing_update}
+
 			# Increment counts of replisome subunits
 			if self.mechanistic_replisome:
+				for mol in self.replisome_trimers._query:
+					self.update_to_save['replisome_trimers'][mol] += 3 * replisomes_to_delete.sum()
+				for mol in self.replisome_monomers._query:
+					self.update_to_save['replisome_monomers'][mol] += replisomes_to_delete.sum()
+
 				self.replisome_trimers.countsInc(3*replisomes_to_delete.sum())
 				self.replisome_monomers.countsInc(replisomes_to_delete.sum())
+
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		return inputTimeStep <= self.max_time_step

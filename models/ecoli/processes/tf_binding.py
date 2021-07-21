@@ -81,7 +81,7 @@ class TfBinding(wholecell.processes.process.Process):
 			"mass"][tf_indexes]/self.nAvogadro).asNumber(units.fg)
 
 		# saving updates
-		self.save_time = 102
+		self.save_time = 2
 		self.update_to_save = {}
 		self.saved = False
 
@@ -125,8 +125,8 @@ class TfBinding(wholecell.processes.process.Process):
 			active_tf_view = self.active_tf_view[tf_id]
 			bound_tf_counts = n_bound_TF[tf_idx]
 			active_tf_view.countInc(bound_tf_counts)
-
-			self.update_to_save['active_tfs'][active_tf_view._query] = active_tf_view.count()
+   
+			self.update_to_save['active_tfs'][tf_id + "[c]"] = bound_tf_counts
 
 			# Get counts of transcription factors
 			# countInc() above increases count() but not total_counts() value
@@ -179,7 +179,7 @@ class TfBinding(wholecell.processes.process.Process):
 				# Update count of free transcription factors
 				active_tf_view.countDec(bound_locs.sum())
 
-				self.update_to_save['active_tfs'][active_tf_view._query] -= bound_locs.sum()
+				self.update_to_save['active_tfs'][tf_id + "[c]"] -= bound_locs.sum()
 
 				# Update bound_TF array
 				bound_TF_new[available_promoters, tf_idx] = bound_locs

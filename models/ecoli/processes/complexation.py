@@ -18,54 +18,78 @@ import wholecell.processes.process
 # Maximum unsigned int value + 1 for randint() to seed srand from C stdlib
 RAND_MAX = 2**31
 
+from wholecell.utils.migration.write_json import write_json
+
 class Complexation(wholecell.processes.process.Process):
-	""" Complexation """
+    """ Complexation """
 
-	_name = "Complexation"
+    _name = "Complexation"
 
-	# Constructor
-	def __init__(self):
+    # Constructor
+    def __init__(self):
 
-		super(Complexation, self).__init__()
+        super(Complexation, self).__init__()
 
-	# Construct object graph
-	def initialize(self, sim, sim_data):
-		super(Complexation, self).initialize(sim, sim_data)
+    # Construct object graph
+    def initialize(self, sim, sim_data):
+        super(Complexation, self).initialize(sim, sim_data)
 
-		# Create matrices and vectors that describe reaction stoichiometries
-		self.stoichMatrix = sim_data.process.complexation.stoich_matrix().astype(np.int64)
+        # Create matrices and vectors that describe reaction stoichiometries
+        self.stoichMatrix = sim_data.process.complexation.stoich_matrix().astype(np.int64)
 
-		# semi-quantitative rate constants
-		self.rates = sim_data.process.complexation.rates
+        # semi-quantitative rate constants
+        self.rates = sim_data.process.complexation.rates
 
-		# build stochastic system simulation
-		seed = self.randomState.randint(RAND_MAX)
-		self.system = StochasticSystem(self.stoichMatrix.T, random_seed=seed)
+        # build stochastic system simulation
+        seed = self.randomState.randint(RAND_MAX)
+        self.system = StochasticSystem(self.stoichMatrix.T, random_seed=seed)
 
-		# Build views
-		moleculeNames = sim_data.process.complexation.molecule_names
-		self.molecules = self.bulkMoleculesView(moleculeNames)
-
-
-	def calculateRequest(self):
-		moleculeCounts = self.molecules.total_counts()
-
-		result = self.system.evolve(
-			self._sim.timeStepSec(), moleculeCounts, self.rates)
-		updatedMoleculeCounts = result['outcome']
-
-		self.molecules.requestIs(np.fmax(moleculeCounts - updatedMoleculeCounts, 0))
+        # Build views
+        self.moleculeNames = sim_data.process.complexation.molecule_names
+        self.molecules = self.bulkMoleculesView(self.moleculeNames)
+  
+        # saving updates
+        self.save_time = [2, 4, 10, 102]
+        self.update_to_save = {}
 
 
-	def evolveState(self):
-		moleculeCounts = self.molecules.counts()
+    def calculateRequest(self):
+        moleculeCounts = self.molecules.total_counts()
 
-		result = self.system.evolve(
-			self._sim.timeStepSec(), moleculeCounts, self.rates)
-		updatedMoleculeCounts = result['outcome']
-		events = result['occurrences']
+        result = self.system.evolve(
+            self._sim.timeStepSec(), moleculeCounts, self.rates)
+        updatedMoleculeCounts = result['outcome']
 
-		self.molecules.countsIs(updatedMoleculeCounts)
+        self.molecules.requestIs(np.fmax(moleculeCounts - updatedMoleculeCounts, 0))
 
-		# Write outputs to listeners
-		self.writeToListener("ComplexationListener", "complexationEvents", events)
+
+    def evolveState(self):
+        moleculeCounts = self.molecules.counts()
+        
+        # Manually reinitialize StochasticSystem with seed=0 to match vivarium
+        self.system = StochasticSystem(self.stoichMatrix.T, random_seed=0)
+
+        result = self.system.evolve(
+            self._sim.timeStepSec(), moleculeCounts, self.rates)
+        updatedMoleculeCounts = result['outcome']
+        events = result['occurrences']
+
+        self.molecules.countsIs(updatedMoleculeCounts)
+
+        # Write outputs to listeners
+        # self.writeToListener("ComplexationListener", "complexationEvents", events)
+
+        if self._sim.time() in self.save_time:
+            delta = updatedMoleculeCounts - moleculeCounts
+            molecules_update = {
+                molecule: delta[index]
+                for index, molecule in enumerate(self.moleculeNames)}
+            self.update_to_save = {'molecules': molecules_update}
+            write_json(f'out/migration/complexation_update_t{int(self._sim.time())}.json',
+                        self.update_to_save) 
+            
+            molecules_allocated = {
+                molecule: moleculeCounts[index]
+                for index, molecule in enumerate(self.moleculeNames)}
+            write_json(f'out/migration/complexation_partitioned_t{int(self._sim.time())}.json',
+                       molecules_allocated)
