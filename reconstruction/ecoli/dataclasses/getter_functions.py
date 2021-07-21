@@ -178,6 +178,13 @@ class GetterFunctions(object):
 				raise TranscriptionDirectionError(
 					f"Unidentified transcription direction given for {tu['id']}")
 
+		# Get set of valid gene IDs that have positions on the chromosome
+		valid_gene_ids = {
+			gene['id'] for gene in raw_data.genes
+			if gene['left_end_pos'] is not None
+			and gene['right_end_pos'] is not None
+			}
+
 		# Set of gene IDs that are covered by listed transcription units
 		covered_gene_ids = set()
 
@@ -189,10 +196,15 @@ class GetterFunctions(object):
 
 		# Add sequences from transcription_units file
 		for tu in raw_data.transcription_units:
+			# Skip duplicate TUs
 			if tu['common_name'] in all_tu_common_names:
 				continue
 			else:
 				all_tu_common_names.add(tu['common_name'])
+
+			# Skip TUs that cover any gene without specified positions
+			if len(set(tu['genes']) - valid_gene_ids) > 0:
+				continue
 
 			left_end_pos = tu['left_end_pos']
 			right_end_pos = tu['right_end_pos']
@@ -233,12 +245,12 @@ class GetterFunctions(object):
 			if gene_id in covered_gene_ids:
 				continue
 
+			# Skip RNAs without gene end positions
+			if gene_id not in valid_gene_ids:
+				continue
+
 			left_end_pos = gene_id_to_left_end_pos[gene_id]
 			right_end_pos = gene_id_to_right_end_pos[gene_id]
-
-			# Skip RNAs without gene end positions
-			if left_end_pos is None or right_end_pos is None:
-				continue
 
 			self._sequences[rna_id] = parse_sequence(
 				left_end_pos, right_end_pos, gene_id_to_direction[gene_id])
