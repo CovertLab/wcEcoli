@@ -1180,7 +1180,7 @@ class Transcription(object):
 
 		# Solve least squares fit for expression of each component of RNAP and ribosomes
 		self._normalize_ppgpp_expression()  # Need to normalize first to get correct scale
-		adjusted_mask = self.rna_data['is_RNAP'] | self.rna_data['is_ribosomal_protein'] | self.rna_data['is_rRNA']
+		adjusted_mask = self.rna_data['includes_RNAP'] | self.rna_data['includes_ribosomal_protein'] | self.rna_data['is_rRNA']
 		F = np.array([[1- f_ppgpp_aa, f_ppgpp_aa], [1 - f_ppgpp_basal, f_ppgpp_basal], [1 - f_ppgpp_anaerobic, f_ppgpp_anaerobic]])
 		Flst = np.linalg.inv(F.T.dot(F)).dot(F.T)
 		expression = np.array([

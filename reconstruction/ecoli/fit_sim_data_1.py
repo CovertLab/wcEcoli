@@ -328,11 +328,11 @@ def set_conditions(sim_data, cell_specs, **kwargs):
 					}
 
 			if nutrients not in sim_data.process.transcription.rnaSynthProbRProtein:
-				prob = sim_data.process.transcription.rna_synth_prob[condition_label][sim_data.process.transcription.rna_data['is_ribosomal_protein']]
+				prob = sim_data.process.transcription.rna_synth_prob[condition_label][sim_data.process.transcription.rna_data['includes_ribosomal_protein']]
 				sim_data.process.transcription.rnaSynthProbRProtein[nutrients] = prob
 
 			if nutrients not in sim_data.process.transcription.rnaSynthProbRnaPolymerase:
-				prob = sim_data.process.transcription.rna_synth_prob[condition_label][sim_data.process.transcription.rna_data['is_RNAP']]
+				prob = sim_data.process.transcription.rna_synth_prob[condition_label][sim_data.process.transcription.rna_data['includes_RNAP']]
 				sim_data.process.transcription.rnaSynthProbRnaPolymerase[nutrients] = prob
 
 			if nutrients not in sim_data.process.transcription.rnapFractionActiveDict:
@@ -719,7 +719,7 @@ def buildCombinedConditionCellSpecifications(
 		# Modify sim_data expression
 		sim_data.process.transcription.rna_expression[conditionKey] = cell_specs[conditionKey]["expression"]
 		sim_data.process.transcription.rna_synth_prob[conditionKey] = cell_specs[conditionKey]["synthProb"]
-		sim_data.process.transcription.rna_synth_prob[conditionKey] = cell_specs[conditionKey]['cistron_expression']
+		sim_data.process.transcription.cistron_expression[conditionKey] = cell_specs[conditionKey]['cistron_expression']
 
 def expressionConverge(
 		sim_data,
@@ -2219,7 +2219,8 @@ def expressionFromConditionAndFoldChange(
 	condition. Since fold changes are reported for individual RNA cistrons, the
 	changes are applied to the basal expression levels of each cistron and the
 	resulting vector is mapped back to RNA expression through nonnegative least
-	squares.
+	squares. For genotype perturbations, the expression of all RNAs that include
+	the given cistron are set to the given value.
 
 	Inputs
 	------
@@ -2251,32 +2252,57 @@ def expressionFromConditionAndFoldChange(
 	cistron_id_to_index = {
 		cistron_id: i for (i, cistron_id) in enumerate(cistron_ids)
 		}
-	cistron_indexes = []
-	fcs = []
+	rna_indexes = []
+	rna_fcs = []
 
-	for cistron_id, perturbation_value in condPerturbations.items():
-		cistron_indexes.append(cistron_id_to_index[cistron_id])
-		fcs.append(perturbation_value)
-
+	# Compile indexes and fold changes of each cistron
 	for cistron_id, fc_value in tfFCs.items():
 		if cistron_id in condPerturbations:
 			continue
-		cistron_indexes.append(cistron_id_to_index[cistron_id])
-		fcs.append(fc_value)
+		rna_indexes.append(cistron_id_to_index[cistron_id])
+		rna_fcs.append(fc_value)
 
 	# Sort fold changes and indices for the bool array indexing to work properly
-	fcs = [fc for (rnaIdx, fc) in sorted(zip(cistron_indexes, fcs), key = lambda pair: pair[0])]
-	cistron_indexes = [rnaIdx for (rnaIdx, fc) in sorted(zip(cistron_indexes, fcs), key = lambda pair: pair[0])]
+	rna_fcs = [fc for (cistron_idx, fc) in
+		sorted(zip(rna_indexes, rna_fcs), key = lambda pair: pair[0])]
+	rna_indexes = [cistron_idx for (cistron_idx, fc) in
+		sorted(zip(rna_indexes, rna_fcs), key = lambda pair: pair[0])]
 
 	# Adjust expression based on fold change and normalize
-	cistron_indexes_bool = np.zeros(len(cistron_ids), dtype = np.bool)
-	cistron_indexes_bool[cistron_indexes] = 1
-	fcs = np.array(fcs)
-	scaleTheRestBy = (1. - (cistron_expression[cistron_indexes] * fcs).sum()) / (1. - (cistron_expression[cistron_indexes]).sum())
-	cistron_expression[cistron_indexes_bool] *= fcs
-	cistron_expression[~cistron_indexes_bool] *= scaleTheRestBy
+	rna_indexes_bool = np.zeros(len(cistron_ids), dtype = np.bool)
+	rna_indexes_bool[rna_indexes] = 1
+	rna_fcs = np.array(rna_fcs)
+	scaleTheRestBy = (1. - (cistron_expression[rna_indexes] * rna_fcs).sum()) / (1. - (cistron_expression[rna_indexes]).sum())
+	cistron_expression[rna_indexes_bool] *= rna_fcs
+	cistron_expression[~rna_indexes_bool] *= scaleTheRestBy
 
+	# Use NNLS to map new cistron expression to RNA expression
 	expression, _ = fast_nnls(cistron_tu_mapping_matrix, cistron_expression)
+	expression = normalize(expression)
+
+	# Apply genotype perturbations to all RNAs that contain each cistron
+	rna_indexes = []
+	rna_fcs = []
+
+	for cistron_id, perturbation_value in condPerturbations.items():
+		cistron_index = cistron_id_to_index[cistron_id]
+		rna_indexes_with_cistron = list(np.where(cistron_tu_mapping_matrix[cistron_index, :])[0])
+		rna_indexes.extend(rna_indexes_with_cistron)
+		rna_fcs.extend([perturbation_value] * len(rna_indexes_with_cistron))
+
+	# Sort fold changes and indices for the bool array indexing to work properly
+	rna_fcs = [fc for (cistron_idx, fc) in
+		sorted(zip(rna_indexes, rna_fcs), key=lambda pair: pair[0])]
+	rna_indexes = [cistron_idx for (cistron_idx, fc) in
+		sorted(zip(rna_indexes, rna_fcs), key=lambda pair: pair[0])]
+
+	# Adjust expression based on fold change and normalize
+	rna_indexes_bool = np.zeros(cistron_tu_mapping_matrix.shape[1], dtype=np.bool)
+	rna_indexes_bool[rna_indexes] = 1
+	rna_fcs = np.array(rna_fcs)
+	scaleTheRestBy = (1. - (expression[rna_indexes] * rna_fcs).sum()) / (1. - (expression[rna_indexes]).sum())
+	expression[rna_indexes_bool] *= rna_fcs
+	expression[~rna_indexes_bool] *= scaleTheRestBy
 
 	return expression
 
@@ -3256,7 +3282,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	model endoRNAse activity, we need to determine an affinity (Michaelis-Menten constant) for each
 	RNA that is consistent with experimentally observed half-lives.  The Michaelis-Menten constants
 	must be determined simultaneously, as the RNAs must compete for the active site of the
-	endoRNAse.  (See the RnaDegradation Process class for more information about the dynamical
+	endoRNAse.  (See the RnaDegradation KmcountsCachedProcess class for more information about the dynamical
 	model.)  The parameters are estimated using a root solver (scipy.optimize.fsolve).  (See the
 	sim_data.process.rna_decay.kmLossFunction method for more information about the optimization
 	problem.)
