@@ -76,6 +76,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = translation.make_elongation_rates
 		self.next_aa_pad = translation.next_aa_pad
+		self.water = sim_data.molecule_ids.water
 
 		self.ribosomeElongationRate = float(sim_data.growth_rate_parameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 
@@ -92,12 +93,12 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Create views onto 30S and 50S ribosomal subunits for termination
 		self.ribosome30S = self.bulkMoleculeView(sim_data.molecule_ids.s30_full_complex)
 		self.ribosome50S = self.bulkMoleculeView(sim_data.molecule_ids.s50_full_complex)
+		self.ribosome30S_name = sim_data.molecule_ids.s30_full_complex
+		self.ribosome50S_name = sim_data.molecule_ids.s50_full_complex
+
 
 		# Create view onto all proteins
 		self.bulkMonomers = self.bulkMoleculesView(self.proteinIds)
-
-
-		self.water = sim_data.molecule_ids.water
 
 		# Create views onto all polymerization reaction small molecules
 		self.aas = self.bulkMoleculesView(sim_data.molecule_groups.amino_acids)
@@ -108,13 +109,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Data structures for charging
 		self.aa_from_trna = transcription.aa_from_trna
 
+        # TODO: Save update for trna_charging for TranslationSupplyElongationModel and SteadStateElongationModel
 		# Set modeling method
-		if sim._trna_charging:
-			self.elongation_model = SteadyStateElongationModel(sim_data, self)
-		elif sim._translationSupply:
-			self.elongation_model = TranslationSupplyElongationModel(sim_data, self)
-		else:
-			self.elongation_model = BaseElongationModel(sim_data, self)
+		# if sim._trna_charging:
+		# 	self.elongation_model = SteadyStateElongationModel(sim_data, self)
+		# elif sim._translationSupply:
+		# 	self.elongation_model = TranslationSupplyElongationModel(sim_data, self)
+		# else:
+
+		self.elongation_model = BaseElongationModel(sim_data, self)
 		self.ppgpp_regulation = sim._ppgpp_regulation
 		self.mechanistic_supply = sim._mechanistic_aa_supply
 
@@ -123,14 +126,16 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		## Need to account for ATP hydrolysis for charging that has been
 		## removed from measured GAM (ATP -> AMP is 2 hydrolysis reactions)
 		## if charging reactions are not explicitly modeled
-		if not sim._trna_charging:
-			self.gtpPerElongation += 2
+
+		# if not sim._trna_charging:
+		# 	self.gtpPerElongation += 2
+
 		## Variable for metabolism to read to consume required energy
 		self.gtp_to_hydrolyze = 0
 
 		# saving updates
 		self.update_to_save = {}
-		self.saved = False
+		self.save_times = [2, 4, 6, 12, 1002]
 
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
@@ -148,7 +153,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
                 'growth_limits': {}
 			}
 		}
-		ipdb.set_trace()
 
 		current_media_id = self._external_states['Environment'].current_media_id
 
@@ -200,7 +204,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.update_to_save['listeners']['growth_limits']['aa_pool_size'] = self.aas.total_counts()
 		self.update_to_save['listeners']['growth_limits']['aa_request_size'] = aa_counts_for_translation
 
-		ipdb.set_trace()
 		# Request full access to active ribosome molecules
 		self.active_ribosomes.request_access(self.EDIT_DELETE_ACCESS)
 
@@ -316,8 +319,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 				'unique_index': unique_index
 			}
 
-		ipdb.set_trace()
-
 		self.update_to_save['active_ribosome'] = {'_delete': []}
 		for index, ribosome in enumerate(active_ribosomes_states.values()):
 			unique_index = str(ribosome['unique_index'])
@@ -330,13 +331,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 					'submass': {
 						'protein': added_protein_mass[index]}}
 
-		ipdb.set_trace()
-
 		self.update_to_save['monomers'] = {}
 		for index, count in enumerate(terminatedProteins):
 			self.update_to_save['monomers'][self.proteinIds[index]] = count
-
-		ipdb.set_trace()
 
 		self.bulkMonomers.countsInc(terminatedProteins)
 
@@ -344,8 +341,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		nInitialized = didInitialize.sum()
 
 		self.update_to_save['subunits'] = {}
-		self.update_to_save['subunits'][self.ribosome30S] = nTerminated
-		self.update_to_save['subunits'][self.ribosome50S] = nTerminated
+		self.update_to_save['subunits'][self.ribosome30S_name] = nTerminated
+		self.update_to_save['subunits'][self.ribosome50S_name] = nTerminated
 
 		self.ribosome30S.countInc(nTerminated)
 		self.ribosome50S.countInc(nTerminated)
@@ -355,15 +352,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		net_charged, self.aa_count_diff = self.elongation_model.evolve(
 			total_aa_counts, aas_used, next_amino_acid_count, nElongations, nInitialized)
 
-		ipdb.set_trace()
-
 		evolve_update = {
             'amino_acids': array_to(self.amino_acids, -aas_used),
             'molecules': {
                 self.water: nElongations - nInitialized}}
 
-		self.update_to_save = deep_merge(self.update_to_save, evolve_update)
-
+		# self.update_to_save = deep_merge(self.update_to_save, evolve_update)
+		self.update_to_save = {**self.update_to_save, **evolve_update}
 
 		# GTP hydrolysis is carried out in Metabolism process for growth
 		# associated maintenance. This is set here for metabolism to use.
@@ -407,10 +402,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.update_to_save['listeners']['ribosome_data']['numTrpATerminated'] = terminatedProteins[self.trpAIndex]
 		self.update_to_save['listeners']['ribosome_data']['processElongationRate'] = self.ribosomeElongationRate / self.timeStepSec()
 
-		if not self.saved:
-			write_json(f'out/migration/polypeptide_elongation_update_t{int(self._sim.time())}.json',
+		time = int(self._sim.time())
+		if time in self.save_times:
+			write_json(f'out/migration/polypeptide_elongation_update_t{time}.json',
 					   self.update_to_save)
-			self.saved = True
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		model_specific = self.elongation_model.isTimeStepShortEnough(inputTimeStep, timeStepSafetyFraction)
