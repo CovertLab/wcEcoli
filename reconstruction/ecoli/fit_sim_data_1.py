@@ -2745,7 +2745,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 			if secondElem in fixedTFs:
 				fixedTFIdxs.append(idx)
 
-		fixedTFIdxs = np.array(fixedTFIdxs, dtype=np.int)
+		fixedTFIdxs = np.array(fixedTFIdxs, dtype=int)
 
 		return H, pInit, pAlphaIdxs, pNotAlphaIdxs, fixedTFIdxs, pPromoterBoundIdxs, H_col_name_to_index
 
