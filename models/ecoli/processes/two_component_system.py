@@ -9,7 +9,8 @@ from __future__ import absolute_import, division, print_function
 import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.constants import REQUEST_PRIORITY_TWO_COMPONENT_SYSTEM
-
+from wholecell.utils.migration.write_json import write_json
+from wholecell.utils.array_to import array_to
 
 class TwoComponentSystem(wholecell.processes.process.Process):
 	""" Two component system """
@@ -21,10 +22,13 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 
 		super(TwoComponentSystem, self).__init__()
 
-
 	# Construct object graph
 	def initialize(self, sim, sim_data):
 		super(TwoComponentSystem, self).initialize(sim, sim_data)
+
+		# Saving updates
+		self.update_to_save = {}
+		self.saved = False
 
 		# Simulation options
 		self.jit = sim._jit
@@ -42,7 +46,6 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 
 		# Set priority to a lower value (but greater priority than metabolism)
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_TWO_COMPONENT_SYSTEM)
-
 
 	def calculateRequest(self):
 		# Get molecule counts
@@ -64,7 +67,6 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		# Request counts of molecules needed
 		self.molecules.requestIs(self.molecules_required)
 
-
 	def evolveState(self):
 		# Get counts of molecules allocated to this process
 		moleculeCounts = self.molecules.counts()
@@ -83,5 +85,13 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 				jit=self.jit,
 				)
 
-		# Increment changes in molecule counts
+		# Increment changes in molecule counts and add to update
 		self.molecules.countsInc(self.all_molecule_changes)
+		self.update_to_save['molecules'] = array_to(self.moleculeNames, self.all_molecule_changes.astype(int))
+
+		# Save to .json file at time=12
+		if not self.saved:
+			if self._sim.time() > 10:
+				write_json(f'out/migration/two_component_system_update_t{int(self._sim.time())}.json',
+					self.update_to_save)
+				self.saved = True
