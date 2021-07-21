@@ -24,7 +24,7 @@ def create_bulk_container(sim_data, n_seeds=1, condition=None, seed=0, ppgpp_reg
 		old_condition = sim_data.condition
 		if condition is not None:
 			sim_data.condition = condition
-		average_container = BulkObjectsContainer(sim_data.internal_state.bulk_molecules.bulk_data['id'])
+		average_container = BulkObjectsContainer(sim_data.internal_state.bulk_molecules.bulk_data['id'], dtype=float)
 
 		media_id = sim_data.conditions[sim_data.condition]['nutrients']
 		exchange_data = sim_data.external_state.exchange_data_from_media(media_id)
