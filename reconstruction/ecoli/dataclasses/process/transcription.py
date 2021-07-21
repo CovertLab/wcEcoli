@@ -963,36 +963,57 @@ class Transcription(object):
 				been adjusted for transcription factor effects?
 		"""
 
-		condition = 'basal'
+		def get_expression(condition):
+			# Current (unnormalized) probabilities from ppGpp regulation
+			ppgpp_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(
+				sim_data.condition_to_doubling_time[condition])
+			old_prob, factor = self.synth_prob_from_ppgpp(ppgpp_conc,
+				sim_data.process.replication.get_average_copy_number)
 
-		# Current (unnormalized) probabilities from ppGpp regulation
-		ppgpp_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(
-			sim_data.condition_to_doubling_time[condition])
-		old_prob, factor = self.synth_prob_from_ppgpp(ppgpp_conc,
-			sim_data.process.replication.get_average_copy_number)
+			# Calculate the average expected effect of TFs in basal condition
+			delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix(ppgpp=True)
+			p_promoter_bound = np.array([
+				sim_data.pPromoterBound[condition][tf]
+				for tf in sim_data.process.transcription_regulation.tf_ids
+				])
+			delta = delta_prob @ p_promoter_bound
 
-		# Calculate the average expected effect of TFs in basal condition
-		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix(ppgpp=True)
-		p_promoter_bound = np.array([
-			sim_data.pPromoterBound[condition][tf]
-			for tf in sim_data.process.transcription_regulation.tf_ids
-			])
-		delta = delta_prob @ p_promoter_bound
+			# Calculate the required probability to match expression without ppGpp
+			new_prob = normalize(self.rna_expression[condition] * factor) - delta
+			new_prob[new_prob < 0] = 0
+			new_prob = normalize(new_prob)
 
-		# Calculate the required probability to match expression without ppGpp
-		new_prob = normalize(self.rna_expression[condition] * factor) - delta
-		new_prob[new_prob < 0] = 0
-		new_prob = normalize(new_prob)
+			# Determine adjustments to the current ppGpp expression to scale
+			# to the expected expression
+			with np.errstate(invalid='ignore'):
+				adjustment = new_prob / old_prob
+			adjustment[~np.isfinite(adjustment)] = 1
 
-		# Determine adjustments to the current ppGpp expression to scale
-		# to the expected expression
-		with np.errstate(invalid='ignore'):
-			adjustment = new_prob / old_prob
-		adjustment[~np.isfinite(adjustment)] = 1
+			exp = self.expression_from_ppgpp(ppgpp_conc) * adjustment
+			f = self.fraction_rnap_bound_ppgpp(ppgpp_conc)
+			exp_free = self.exp_free * (1 - f)
+			exp_ppgpp = self.exp_ppgpp * f
+
+			return exp, exp_free, exp_ppgpp
+
+		basal_exp, basal_exp_free, basal_exp_ppgpp = get_expression('basal')
+		with_aa_exp, with_aa_exp_free, with_aa_exp_ppgpp = get_expression('with_aa')
+
+		free_adjustment = []
+		ppgpp_adjustment = []
+		for basal, aa, bf, bp, af, ap in zip(basal_exp, with_aa_exp,
+				basal_exp_free, basal_exp_ppgpp, with_aa_exp_free, with_aa_exp_ppgpp):
+			A = np.array([[bf, bp], [af, ap]])
+			b = np.array([basal, aa])
+			sol = np.linalg.lstsq(A, b, rcond=None)[0]
+			free_adjustment.append(sol[0])
+			ppgpp_adjustment.append(sol[1])
+		free_adjustment = np.array(free_adjustment)
+		ppgpp_adjustment = np.array(ppgpp_adjustment)
 
 		# Scale free and bound expression and renormalize ppGpp regulated expression
-		self.exp_free *= adjustment
-		self.exp_ppgpp *= adjustment
+		self.exp_free *= free_adjustment
+		self.exp_ppgpp *= ppgpp_adjustment
 		self._normalize_ppgpp_expression()
 
 	def _normalize_ppgpp_expression(self):
