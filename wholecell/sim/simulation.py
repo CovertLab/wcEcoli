@@ -148,8 +148,8 @@ class Simulation():
 
 		# vivarium-ecoli save boolean
 		self.save_status = False
+		self.save_time = 12
 		self.save_times = [0]
-
 
 	# Link states and processes
 	def _initialize(self, sim_data):
