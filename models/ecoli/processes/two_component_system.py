@@ -10,11 +10,7 @@ import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.constants import REQUEST_PRIORITY_TWO_COMPONENT_SYSTEM
 from wholecell.utils.migration.write_json import write_json
-
-def array_to(keys, array):
-    return {
-        key: array[index]
-        for index, key in enumerate(keys)}
+from wholecell.utils.array_to import array_to
 
 class TwoComponentSystem(wholecell.processes.process.Process):
 	""" Two component system """
