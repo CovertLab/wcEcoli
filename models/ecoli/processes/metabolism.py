@@ -159,10 +159,27 @@ class Metabolism(wholecell.processes.process.Process):
 			for met, conc in conc_updates.items()
 			}
 
+		aa_uptake_package=None
+		if self.mechanistic_aa_uptake:
+			aa_in_media = self.aa_environment.import_present()
+			aa_in_media[self.removed_aa_uptake] = False
+
+			# Supply based on mechanistic synthesis and supply		
+			import_rates = (counts_to_molar * self.timeStepSec() * self.amino_acid_import(
+																	aa_in_media, dry_mass, 
+																	self.aa_transporters_container.counts(),
+																	self.mechanistic_aa_uptake)
+							).asNumber(CONC_UNITS)
+			
+			import_rates[9] /= 2 #ILE
+			import_rates[10] /= 2 #LEU
+			import_rates[13] /= 2 #PHE
+			aa_uptake_package=(import_rates[aa_in_media], self.aa_exchange_names[aa_in_media], True)
+			
 		# Update FBA problem based on current state
 		## Set molecule availability (internal and external)
 		self.model.set_molecule_levels(metabolite_counts_init, counts_to_molar,
-			coefficient, current_media_id, unconstrained, constrained, conc_updates)
+			coefficient, current_media_id, unconstrained, constrained, conc_updates, aa_uptake_package)
 
 		## Set reaction limits for maintenance and catalysts present
 		self.model.set_reaction_bounds(catalyst_counts, counts_to_molar,
@@ -171,23 +188,6 @@ class Metabolism(wholecell.processes.process.Process):
 		## Constrain reactions based on targets
 		targets, upper_targets, lower_targets = self.model.set_reaction_targets(kinetic_enzyme_counts,
 			kinetic_substrate_counts, counts_to_molar, time_step)
-
-		if self.mechanistic_aa_uptake:
-			aa_in_media = self.aa_environment.import_present()
-			aa_in_media[self.removed_aa_uptake] = False
-
-			# Supply based on mechanistic synthesis and supply		
-			import_rates = (counts_to_molar * self.timeStepSec() 
-								* self.amino_acid_import(
-									aa_in_media, dry_mass, 
-									self.aa_transporters_container.counts(),
-									self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
-			
-			import_rates[9] /= 2 #ILE
-			import_rates[10] /= 2 #LEU
-			import_rates[13] /= 2 #PHE
-			
-			self.model.fba.setExternalMoleculeLevels(import_rates[aa_in_media], molecules=self.aa_exchange_names[aa_in_media], force=True)
 
 		# Solve FBA problem and update states
 		n_retries = 3
@@ -479,7 +479,7 @@ class FluxBalanceAnalysisModel(object):
 		return external_molecule_levels
 
 	def set_molecule_levels(self, metabolite_counts, counts_to_molar,
-			coefficient, current_media_id, unconstrained, constrained, conc_updates):
+			coefficient, current_media_id, unconstrained, constrained, conc_updates, aa_uptake_package=None):
 		"""
 		Set internal and external molecule levels available to the FBA solver.
 
@@ -512,6 +512,11 @@ class FluxBalanceAnalysisModel(object):
 		external_molecule_levels = self.update_external_molecule_levels(
 			objective, metabolite_conc, external_molecule_levels)
 		self.fba.setExternalMoleculeLevels(external_molecule_levels)
+
+		if aa_uptake_package:
+			levels, molecules, force = aa_uptake_package
+			self.fba.setExternalMoleculeLevels(levels, molecules=molecules, force=force)
+
 
 	def set_reaction_bounds(self, catalyst_counts, counts_to_molar, coefficient,
 			gtp_to_hydrolyze):
