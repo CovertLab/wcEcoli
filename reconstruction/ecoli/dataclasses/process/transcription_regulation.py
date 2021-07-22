@@ -58,9 +58,10 @@ class TranscriptionRegulation(object):
 		"""
 		return float(signal)**power / (float(signal)**power + float(Kd)**power)
 
-	def get_delta_prob_matrix(self, dense=False):
+	def get_delta_prob_matrix(self, dense=False, ppgpp=False):
+		scaling_factor = self.basal_prob.sum() if ppgpp else 1.
 		delta_prob = scipy.sparse.csr_matrix(
-			(self.delta_prob['deltaV'],
+			(self.delta_prob['deltaV'] / scaling_factor,
 			(self.delta_prob['deltaI'], self.delta_prob['deltaJ'])),
 			shape=self.delta_prob['shape'])
 

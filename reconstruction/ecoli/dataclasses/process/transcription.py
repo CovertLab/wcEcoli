@@ -928,7 +928,7 @@ class Transcription(object):
 
 		# Adjustments for TFs
 		tf_adjustments = {}
-		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix()
+		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix(ppgpp=True)
 		adjusted_mask = self.rna_data['is_RNAP'] | self.rna_data['is_ribosomal_protein'] | self.rna_data['is_rRNA']
 		for condition in ['with_aa', 'basal', 'no_oxygen']:
 			p_promoter_bound = np.array([
@@ -972,7 +972,7 @@ class Transcription(object):
 			sim_data.process.replication.get_average_copy_number)
 
 		# Calculate the average expected effect of TFs in basal condition
-		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix()
+		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix(ppgpp=True)
 		p_promoter_bound = np.array([
 			sim_data.pPromoterBound[condition][tf]
 			for tf in sim_data.process.transcription_regulation.tf_ids
