@@ -171,9 +171,6 @@ class Metabolism(wholecell.processes.process.Process):
 																	self.mechanistic_aa_uptake)
 							).asNumber(CONC_UNITS)
 			
-			import_rates[9] /= 2 #ILE
-			import_rates[10] /= 2 #LEU
-			import_rates[13] /= 2 #PHE
 			aa_uptake_package=(import_rates[aa_in_media], self.aa_exchange_names[aa_in_media], True)
 			
 		# Update FBA problem based on current state
