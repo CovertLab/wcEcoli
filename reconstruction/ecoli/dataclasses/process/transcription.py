@@ -286,6 +286,9 @@ class Transcription(object):
 			}
 
 		self.cistron_data = UnitStructArray(cistron_data, cistron_field_units)
+		self._cistron_id_to_index = {
+			cistron_id: i for (i, cistron_id) in enumerate(self.cistron_data['id'])
+			}
 
 		# Load expression levels of individual cistrons from sequencing data
 		cistron_expression = []
@@ -634,6 +637,9 @@ class Transcription(object):
 			}
 
 		self.rna_data = UnitStructArray(rna_data, field_units)
+		self._rna_id_to_index = {
+			rna_id: i for (i, rna_id) in enumerate(self.rna_data['id'])
+			}
 
 		# Set basal expression and synthesis probabilities - conditional values
 		# are set in the parca.
@@ -659,8 +665,16 @@ class Transcription(object):
 		Returns the indexes of transcription units containing the given RNA
 		cistron given the ID of the cistron.
 		"""
-		cistron_index = np.where(self.cistron_data['id'] == cistron_id)[0][0]
-		return np.where(self.cistron_tu_mapping_matrix()[cistron_index, :])[0]
+		return self._mapping_matrix_j[
+			self._mapping_matrix_i == self._cistron_id_to_index[cistron_id]]
+
+	def tu_id_to_cistron_indexes(self, tu_id):
+		"""
+		Returns the indexes of cistrons that constitute the given transcription
+		unit given the ID of the TU.
+		"""
+		return self._mapping_matrix_i[
+			self._mapping_matrix_j == self._rna_id_to_index[tu_id]]
 
 	def _build_transcription(self, raw_data, sim_data):
 		"""
