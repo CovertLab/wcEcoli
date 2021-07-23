@@ -98,8 +98,11 @@ class Relation(object):
 
 		self.rna_id_to_target_tfs = {}
 		for rna_id in sim_data.process.transcription.rna_data['id']:
-			self.rna_id_to_target_tfs[rna_id] = []
+			tf_list = []
 			for cistron_index in sim_data.process.transcription.rna_id_to_cistron_indexes(rna_id):
-				self.rna_id_to_target_tfs[rna_id].extend(
+				tf_list.extend(
 					sim_data.process.transcription_regulation.target_tf.get(
 						cistron_ids[cistron_index], []))
+
+			# Remove duplicates and sort
+			self.rna_id_to_target_tfs[rna_id] = sorted(set(tf_list))
