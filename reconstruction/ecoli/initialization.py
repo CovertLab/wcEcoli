@@ -112,7 +112,7 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppg
 		rnaExpression = transcription.rna_expression[sim_data.condition]
 
 	if trna_attenuation:
-		rnaExpression[transcription.attenuated_rna_indices] *= transcription.attenuation_readthrough[sim_data.condition]
+		rnaExpression[transcription.attenuated_rna_indices] *= transcription.attenuation_readthrough[sim_data.condition] / transcription.attenuation_readthrough['basal']
 
 	monomerExpression = normalize(
 		rnaExpression[sim_data.relation.RNA_to_monomer_mapping] *
@@ -151,7 +151,7 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 		rnaExpression = normalize(transcription.rna_expression[sim_data.condition])
 
 	if trna_attenuation:
-		rnaExpression[transcription.attenuated_rna_indices] *= transcription.attenuation_readthrough[sim_data.condition]
+		rnaExpression[transcription.attenuated_rna_indices] *= transcription.attenuation_readthrough[sim_data.condition] / transcription.attenuation_readthrough['basal']
 		rnaExpression /= rnaExpression.sum()
 
 	nRnas = countsFromMassAndExpression(
