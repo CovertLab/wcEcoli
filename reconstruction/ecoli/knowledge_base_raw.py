@@ -58,6 +58,8 @@ LIST_OF_DICT_FILENAMES = (
 	"transcription_factors.tsv",
 	"transcription_units.tsv",
 	"transcription_units_removed.tsv",
+	"transcription_units_removed_all.tsv",
+	"transcription_units_removed_single_tu.tsv",
 	"transcriptional_attenuation.tsv",
 	"tf_one_component_bound.tsv",
 	"translation_efficiency.tsv",
