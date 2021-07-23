@@ -164,7 +164,6 @@ class Metabolism(wholecell.processes.process.Process):
 			aa_in_media = self.aa_environment.import_present()
 			aa_in_media[self.removed_aa_uptake] = False
 
-			# Supply based on mechanistic synthesis and supply		
 			import_rates = (counts_to_molar * self.timeStepSec() * self.amino_acid_import(
 																	aa_in_media, dry_mass, 
 																	self.aa_transporters_container.counts(),

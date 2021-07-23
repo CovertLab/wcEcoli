@@ -483,12 +483,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		imported = self.amino_acid_import(aa_in_media, dry_mass, self.aa_transporters_container.total_counts(), self.process.mechanistic_uptake)
 		if self.process.mechanistic_translation_supply:
 			# Set supply based on mechanistic synthesis and supply
-			self.process.aa_supply = self.process.timeStepSec() * ( synthesis + 
-					self.amino_acid_import(
-						aa_in_media, dry_mass, 
-						self.aa_transporters_container.total_counts(), 
-						self.process.mechanistic_uptake)
-					)
+			self.process.aa_supply = self.process.timeStepSec() * ( synthesis + imported )
 		else:
 			# Adjust aa_supply higher if amino acid concentrations are low
 			# Improves stability of charging and mimics amino acid synthesis
