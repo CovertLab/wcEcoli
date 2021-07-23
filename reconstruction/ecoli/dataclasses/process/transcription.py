@@ -660,7 +660,7 @@ class Transcription(object):
 
 		return out
 
-	def cistron_id_to_tu_indexes(self, cistron_id):
+	def cistron_id_to_rna_indexes(self, cistron_id):
 		"""
 		Returns the indexes of transcription units containing the given RNA
 		cistron given the ID of the cistron.
@@ -668,13 +668,13 @@ class Transcription(object):
 		return self._mapping_matrix_j[
 			self._mapping_matrix_i == self._cistron_id_to_index[cistron_id]]
 
-	def tu_id_to_cistron_indexes(self, tu_id):
+	def rna_id_to_cistron_indexes(self, rna_id):
 		"""
 		Returns the indexes of cistrons that constitute the given transcription
-		unit given the ID of the TU.
+		unit given the ID of the RNA transcription unit.
 		"""
 		return self._mapping_matrix_i[
-			self._mapping_matrix_j == self._rna_id_to_index[tu_id]]
+			self._mapping_matrix_j == self._rna_id_to_index[rna_id]]
 
 	def _build_transcription(self, raw_data, sim_data):
 		"""
