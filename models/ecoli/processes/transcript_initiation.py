@@ -51,7 +51,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			self.attenuation_adjustments = sim_data.process.transcription.attenuation_basal_prob_adjustments
 			self.basal_prob[self.attenuated_rna_indices] += self.attenuation_adjustments
 		self.n_TUs = len(self.basal_prob)
-		self.delta_prob_matrix = sim_data.process.transcription_regulation.get_delta_prob_matrix(dense=True, ppgpp=self.ppgpp_regulation)
+		self.delta_prob_matrix = sim_data.process.transcription_regulation.get_delta_prob_matrix(
+			dense=True, ppgpp=self.ppgpp_regulation)
 
 		# Determine changes from genetic perturbations
 		self.genetic_perturbations = {}
