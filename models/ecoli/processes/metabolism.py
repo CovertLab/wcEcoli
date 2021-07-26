@@ -114,6 +114,8 @@ class Metabolism(wholecell.processes.process.Process):
 		self.aa_transporters_names = sim_data.process.metabolism.aa_transporters_names
 		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
 
+		self.aa_in_metabolites = [aa in sim_data.molecule_groups.amino_acids for aa in self.model.metaboliteNamesFromNutrients] 
+
 	def calculateRequest(self):
 		self.metabolites.requestAll()
 		self.catalysts.requestAll()
@@ -149,7 +151,9 @@ class Metabolism(wholecell.processes.process.Process):
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
 		conc_updates = self.model.getBiomassAsConcentrations(doubling_time)
 		if self.use_trna_charging:
-			conc_updates.update(self.update_amino_acid_targets(counts_to_molar))
+			conc_updates.update(self.update_amino_acid_targets(counts_to_molar, 
+										metabolite_counts_init[self.aa_in_metabolites],
+										np.array(self.model.metaboliteNamesFromNutrients)[self.aa_in_metabolites]))
 		if self.include_ppgpp:
 			conc_updates[self.model.ppgpp_id] = self.model.getppGppConc(doubling_time).asUnit(CONC_UNITS)
 		## Converted from units to make reproduction from listener data
@@ -235,7 +239,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "targetFluxesUpper", upper_targets / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetFluxesLower", lower_targets / time_step_unitless)
 
-	def update_amino_acid_targets(self, counts_to_molar):
+	def update_amino_acid_targets(self, counts_to_molar, aa_counts, aa_names):
 		"""
 		Finds new amino acid concentration targets based on difference in supply
 		and number of amino acids used in polypeptide_elongation
@@ -256,20 +260,28 @@ class Metabolism(wholecell.processes.process.Process):
 		"""
 
 		count_diff = self._sim.processes['PolypeptideElongation'].aa_count_diff
+		aa_counts_map = {aa:count for aa,count in zip(aa_names, aa_counts)}
 
 		if len(self.aa_targets):
+			prev_targets = {aa: counts for aa, counts in self.aa_targets.items()}
 			for aa, diff in count_diff.items():
 				if aa in self.aa_targets_not_updated:
 					continue
 				self.aa_targets[aa] += diff
+				if self.aa_targets[aa]<0:
+					print(aa, diff, prev_targets[aa], self.aa_targets[aa], aa_counts_map[aa])
+					self.aa_targets[aa]=aa_counts_map[aa]+diff
+
 		# First time step of a simulation so set target to current counts to prevent
 		# concentration jumps between generations
 		else:
+			prev_targets = self.aa_targets
 			for aa, counts in zip(self.aa_names, self.aas.total_counts()):
 				if aa in self.aa_targets_not_updated:
 					continue
 				self.aa_targets[aa] = counts
 
+		self.aa_targets = {aa: ((counts+prev_targets[aa])/2) for aa, counts in self.aa_targets.items()}
 		conc_updates = {aa: counts * counts_to_molar for aa, counts in self.aa_targets.items()}
 
 		# Update linked metabolites that will follow an amino acid
@@ -277,6 +289,48 @@ class Metabolism(wholecell.processes.process.Process):
 			conc_updates[met] = conc_updates.get(link['lead'], 0 * counts_to_molar) * link['ratio']
 
 		return conc_updates
+
+# 		count_diff = self._sim.processes['PolypeptideElongation'].aa_count_diff
+		
+# 		negative_target_aas=[]
+# 		if len(self.aa_targets):
+# 			prev_targets = {aa: counts for aa, counts in self.aa_targets.items()}
+# 			for aa, diff in count_diff.items():
+# 				if aa in self.aa_targets_not_updated:
+# 					continue
+# 				self.aa_targets[aa] += diff
+
+# ###########################################
+# 				if (self.aa_targets[aa]+prev_targets[aa])/2 < 0:
+# 					print(aa, diff, prev_targets[aa], self.aa_targets[aa])
+# 					import ipdb; ipdb.set_trace(context=10)
+# 					negative_target_aas.append(aa)
+# 					self.aa_targets[aa]=0.0
+# ##########################################
+
+# 		# First time step of a simulation so set target to current counts to prevent
+# 		# concentration jumps between generations
+# 		else:
+# 			prev_targets = self.aa_targets
+# 			for aa, counts in zip(self.aa_names, self.aas.total_counts()):
+# 				if aa in self.aa_targets_not_updated:
+# 					continue
+# 				self.aa_targets[aa] = counts
+
+# ########################################
+# 		self.aa_targets = {aa: ((counts+prev_targets[aa])/2) for aa, counts in self.aa_targets.items() 
+# 								if aa not in negative_target_aas}
+# 		for aa_zero in negative_target_aas:
+# 			self.aa_targets[aa_zero]=1.0
+# #########################################
+
+# 		conc_updates = {aa: counts * counts_to_molar for aa, counts in self.aa_targets.items()}
+
+# 		# Update linked metabolites that will follow an amino acid
+# 		for met, link in self.linked_metabolites.items():
+# 			conc_updates[met] = conc_updates.get(link['lead'], 0 * counts_to_molar) * link['ratio']
+
+# 		return conc_updates		
 
 class FluxBalanceAnalysisModel(object):
 	"""
@@ -490,7 +544,7 @@ class FluxBalanceAnalysisModel(object):
 			constrained (Dict[str, units.Unum]): molecules (keys) and their
 				limited max uptake rates (values in mol / mass / time units)
 			conc_updates (Dict[str, Unum]): updates to concentrations targets for
-				molecules (molecule ID: concentration in counts/volume units)
+				molecules (molecule ID: concentration in counts/volume units) <-- I think they come as mmol/L
 		"""
 
 		# Update objective from media exchanges

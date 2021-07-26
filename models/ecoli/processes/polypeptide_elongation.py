@@ -595,10 +595,11 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.proton.countInc(nElongations)
 		self.water.countDec(nInitialized)
 
-		# Use the difference between expected AA supply based on expected doubling time
-		# and current DCW and AA used to charge tRNA to update the concentration target
+		# Use the difference between (expected AA supply based on expected doubling time
+		# and current DCW) and AA used to charge tRNA to update the concentration target
 		# in metabolism during the next time step
 		aa_diff = self.process.aa_supply - np.dot(self.process.aa_from_trna, total_charging_reactions)
+		#aa_diff *= 0.75
 		if np.any(np.abs(aa_diff / self.process.aas.total_counts()) > self.max_amino_acid_adjustment):
 			self.time_step_short_enough = False
 
