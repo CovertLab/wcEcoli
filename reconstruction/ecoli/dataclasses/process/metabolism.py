@@ -20,6 +20,7 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
 from reconstruction.ecoli.dataclasses.getter_functions import UNDEFINED_COMPARTMENT_IDS_TO_ABBREVS
+from reconstruction.ecoli.initialization import create_bulk_container
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 # NOTE: Importing SimulationDataEcoli would make a circular reference so use Any.
 #from reconstruction.ecoli.simulation_data import SimulationDataEcoli
@@ -633,7 +634,7 @@ class Metabolism(object):
 			"ARG[c]":["YGGA-MONOMER[i]","EG12713-MONOMER[i]","ABC-4-CPLX[i]","CPLX0-7535[i]"],
 			"ASN[c]":["ANSP-MONOMER[i]","EG12713-MONOMER[i]"],
 			"L-ASPARTATE[c]":["DCUA-MONOMER[i]","EG12713-MONOMER[i]","ABC-13-CPLX[i]","GLTP-MONOMER[i]","YCHM-MONOMER[i]","DCTA-MONOMER[i]"],
-			"CYS[c]":[],#"CYS[c]":["EG11902-MONOMER[m]", "EG12713-MONOMER[i]", "G6934-MONOMER[i]", "EG12445-MONOMER[i]", "CPLX0-8152[i]", "ABC-6-CPLX[i]", "EG11639-MONOMER[i]"],
+			"CYS[c]":[],#["CYS[c]":["EG11902-MONOMER[m]", "EG12713-MONOMER[i]", "G6934-MONOMER[i]", "EG12445-MONOMER[i]", "CPLX0-8152[i]", "ABC-6-CPLX[i]", "EG11639-MONOMER[i]"],
 			"GLT[c]":["XASA-MONOMER[i]","EG12713-MONOMER[i]","ABC-13-CPLX[i]","GLTS-MONOMER[i]", "GLTP-MONOMER[i]"],
 			"GLN[c]":["ABC-12-CPLX[i]", "EG12713-MONOMER[i]"], 
 			"GLY[c]":["CYCA-MONOMER[i]","EG12713-MONOMER[i]","CPLX0-7654[i]"], 
@@ -676,29 +677,18 @@ class Metabolism(object):
 	def set_mechanistic_supply_parameters(self, sim_data, cell_specs):
 		
 		self.set_aa_to_transporters_data()
-		aa_ids = sim_data.molecule_groups.amino_acids
 
 		#calculate kcats based on self.specific_import_rates, dry mass and transporters counts
 		import_rates = sim_data.process.metabolism.specific_import_rates*cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
 		bulk_container = cell_specs['with_aa']['bulkAverageContainer'].counts(self.aa_transporters_names)
+		bulk_container_2 =  create_bulk_container(sim_data, n_seeds=5)
+		with_aa_container = create_bulk_container(sim_data, condition='with_aa', n_seeds=5)
 		counts = self.aa_to_transporters_matrix.dot(bulk_container)
 
 		counts[counts == 0] = 1.
 		import_rates[counts == 1] = 0.
 		self.uptake_kcats_per_aa = import_rates / counts;
 
-					# import_rates = sim_data.process.metabolism.specific_import_rates*cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
-					# bulk_container = cell_specs['with_aa']['bulkAverageContainer']
-
-					# self.uptake_kcats_per_aa = {}
-					# for rate, aa in zip(import_rates, aa_ids):
-					# 	transporters = self.aa_to_transporters[aa]
-					# 	self.uptake_kcats_per_aa[aa] = rate / bulk_container.counts(transporters).sum()
-
-					# import ipdb; ipdb.set_trace(context=10)
-					# print(kcats)
-					# print(self.uptake_kcats_per_aa)
-			
 	def set_mechanistic_supply_constants(self, sim_data, cell_specs):
 		"""
 		Sets constants to determine amino acid supply during translation.  Used
