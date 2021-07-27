@@ -680,10 +680,9 @@ class Metabolism(object):
 
 		#calculate kcats based on self.specific_import_rates, dry mass and transporters counts
 		import_rates = sim_data.process.metabolism.specific_import_rates*cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
-		bulk_container = cell_specs['with_aa']['bulkAverageContainer'].counts(self.aa_transporters_names)
-		bulk_container_2 =  create_bulk_container(sim_data, n_seeds=5)
-		with_aa_container = create_bulk_container(sim_data, condition='with_aa', n_seeds=5)
-		counts = self.aa_to_transporters_matrix.dot(bulk_container)
+		# bulk_container = cell_specs['with_aa']['bulkAverageContainer'].counts(self.aa_transporters_names)
+		with_aa_counts = create_bulk_container(sim_data, condition='with_aa', n_seeds=5).counts(self.aa_transporters_names)
+		counts = self.aa_to_transporters_matrix.dot(with_aa_counts)
 
 		counts[counts == 0] = 1.
 		import_rates[counts == 1] = 0.

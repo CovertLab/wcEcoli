@@ -269,7 +269,6 @@ class Metabolism(wholecell.processes.process.Process):
 					continue
 				self.aa_targets[aa] += diff
 				if self.aa_targets[aa]<0:
-					print(aa, diff, prev_targets[aa], self.aa_targets[aa], aa_counts_map[aa])
 					self.aa_targets[aa]=aa_counts_map[aa]+diff
 
 		# First time step of a simulation so set target to current counts to prevent
