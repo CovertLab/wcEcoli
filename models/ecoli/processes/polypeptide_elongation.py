@@ -3,13 +3,9 @@ PolypeptideElongation
 
 Translation elongation sub-model.
 
-TODO:
-- see the initiation process for more TODOs
 """
 
 from __future__ import absolute_import, division, print_function
-
-import ipdb
 
 import numpy as np
 from scipy.integrate import odeint
@@ -30,24 +26,6 @@ def array_to(keys, array):
     return {
         key: array[index]
         for index, key in enumerate(keys)}
-
-def deep_merge(dct, merge_dct):
-    """ Recursive dict merge
-
-    This mutates dct - the contents of merge_dct are added to dct (which is also returned).
-    If you want to keep dct you could call it like deep_merge(dict(dct), merge_dct)
-    """
-    if dct is None:
-        dct = {}
-    if merge_dct is None:
-        merge_dct = {}
-    for k, v in merge_dct.items():
-        if (k in dct and isinstance(dct[k], dict)
-                and isinstance(merge_dct[k], collections.abc.Mapping)):
-            deep_merge(dct[k], merge_dct[k])
-        else:
-            dct[k] = merge_dct[k]
-    return dct
 
 class PolypeptideElongation(wholecell.processes.process.Process):
 	""" PolypeptideElongation """
@@ -116,7 +94,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# elif sim._translationSupply:
 		# 	self.elongation_model = TranslationSupplyElongationModel(sim_data, self)
 		# else:
-
 		self.elongation_model = BaseElongationModel(sim_data, self)
 		self.ppgpp_regulation = sim._ppgpp_regulation
 		self.mechanistic_supply = sim._mechanistic_aa_supply
