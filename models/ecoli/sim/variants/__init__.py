@@ -2,6 +2,7 @@ import importlib
 
 
 variants = [
+	'add_one_aa',
 	'add_one_aa_shift',
 	'all_shuffle_params',
 	'condition',
