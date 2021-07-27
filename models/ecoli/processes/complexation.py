@@ -67,7 +67,7 @@ class Complexation(wholecell.processes.process.Process):
         moleculeCounts = self.molecules.counts()
         
         # Manually reinitialize StochasticSystem with seed=0 to match vivarium
-        self.system = StochasticSystem(self.stoichMatrix.T, random_seed=0)
+        # self.system = StochasticSystem(self.stoichMatrix.T, random_seed=0)
 
         result = self.system.evolve(
             self._sim.timeStepSec(), moleculeCounts, self.rates)
