@@ -74,7 +74,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome30S_name = sim_data.molecule_ids.s30_full_complex
 		self.ribosome50S_name = sim_data.molecule_ids.s50_full_complex
 
-
 		# Create view onto all proteins
 		self.bulkMonomers = self.bulkMoleculesView(self.proteinIds)
 
@@ -280,9 +279,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.active_ribosomes.delByIndexes(np.where(didTerminate)[0])
 
-
 		# Build active_ribosomes states dictionary
-
 		active_ribosomes_states = {}
 		for i in range(self.active_ribosomes.attr('unique_index').shape[0]):
 			unique_index = self.active_ribosomes.attr('unique_index')[i]
