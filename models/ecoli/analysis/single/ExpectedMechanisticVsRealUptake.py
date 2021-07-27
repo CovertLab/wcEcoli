@@ -14,10 +14,10 @@ from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		
 		# Amino acid IDs
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 		aaIDs = sim_data.molecule_groups.amino_acids
-		transp = read_bulk_molecule_counts(simOutDir,['PHEP-MONOMER[i]'])
 		
 		# Amino acid exchanges fluxes
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))
@@ -45,7 +45,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			"ARG[c]":["YGGA-MONOMER[i]","EG12713-MONOMER[i]","ABC-4-CPLX[i]","CPLX0-7535[i]"],
 			"ASN[c]":["ANSP-MONOMER[i]","EG12713-MONOMER[i]"],
 			"L-ASPARTATE[c]":["DCUA-MONOMER[i]","EG12713-MONOMER[i]","ABC-13-CPLX[i]","GLTP-MONOMER[i]","YCHM-MONOMER[i]","DCTA-MONOMER[i]"],
-			"CYS[c]":[],#"CYS[c]":["EG11902-MONOMER[m]", "EG12713-MONOMER[i]", "G6934-MONOMER[i]", "EG12445-MONOMER[i]", "CPLX0-8152[i]", "ABC-6-CPLX[i]", "EG11639-MONOMER[i]"],
+			"CYS[c]":[],
 			"GLT[c]":["XASA-MONOMER[i]","EG12713-MONOMER[i]","ABC-13-CPLX[i]","GLTS-MONOMER[i]", "GLTP-MONOMER[i]"],
 			"GLN[c]":["ABC-12-CPLX[i]", "EG12713-MONOMER[i]"], 
 			"GLY[c]":["CYCA-MONOMER[i]","EG12713-MONOMER[i]","CPLX0-7654[i]"], 
@@ -64,7 +64,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			"VAL[c]":["BRNQ-MONOMER[i]","EG12713-MONOMER[i]","B4141-MONOMER[i]","CPLX0-7684[i]","ABC-15-CPLX[i]"]
 		}
 
-		# Plot
+		# Plot 1
 		rows = 6
 		cols = 4
 		fig = plt.figure(figsize = (8, 11.5))
@@ -81,16 +81,17 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			else:
 				aaFlux = np.zeros(len(time))
 
-			#calculate rate based on kcats, transporters
+			#calculate expected rate based on kcats and transporters
 			rate_= [kcats[old_aa]]*len(aaFlux)
 			t_counts=0
 			for i in aa_to_transporters[old_aa]:
 				t_counts+=monomerCounts[:, monomerNames.index(i)]
 			
-			# crashes with CYS because it has 0 transporters
+			# Right now, code breaks because CYS has 0 transporters
 			if 'CYS' not in aa:
 				rate_ *= t_counts
 
+			#rate in mol/g/hr
 			rate_*= (-3600*1000)/(dry_mass*1e-15*sim_data.constants.n_avogadro.asNumber())
 
 			#Plot, orange is target flux and blue is actual flux
@@ -107,6 +108,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		plt.subplots_adjust(hspace = 1, wspace = 1)
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
+
+
 
 		# Plot 2 - Transporters counts
 		rows = 8
@@ -147,13 +150,3 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 if __name__ == "__main__":
 	Plot().cli()
-
-
-# Monom = TableReader(os.path.join(simOutDir,"MonomerCounts")) 
-# fba_results = TableReader(os.path.join(simOutDir, "FBAResults"))
-# mon_names=Monom.readAttribute('monomerIds')
-# mon_count=Monom.readColumn('monomerCounts')
-# ex_f=fba_results.readColumn('externalExchangeFluxes')
-# ex_names = fba_results.readAttribute('all_external_exchange_molecules')
-
-# (sim_data.constants.n_avogadro*1e-15*(1/3600)*(1/1000)*np.mean([c[48]*100 for c in ex_f]))/np.mean([m[3878] for m in mon_count])

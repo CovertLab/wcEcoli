@@ -268,9 +268,12 @@ class Metabolism(wholecell.processes.process.Process):
 				if aa in self.aa_targets_not_updated:
 					continue
 				self.aa_targets[aa] += diff
-				if self.aa_targets[aa]<0:
-					self.aa_targets[aa]=aa_counts_map[aa]+diff
-
+				if self.aa_targets[aa] < 0:
+					self.aa_targets[aa] = aa_counts_map[aa] + diff # 
+				''' 
+					TODO: Decide whether to always update with current counts or with the target as it is now. 
+						  Right now it is only done when target < 0 to ensure it runs with mechanistic updatake and supply 
+				'''
 		# First time step of a simulation so set target to current counts to prevent
 		# concentration jumps between generations
 		else:
@@ -288,48 +291,6 @@ class Metabolism(wholecell.processes.process.Process):
 			conc_updates[met] = conc_updates.get(link['lead'], 0 * counts_to_molar) * link['ratio']
 
 		return conc_updates
-
-# 		count_diff = self._sim.processes['PolypeptideElongation'].aa_count_diff
-		
-# 		negative_target_aas=[]
-# 		if len(self.aa_targets):
-# 			prev_targets = {aa: counts for aa, counts in self.aa_targets.items()}
-# 			for aa, diff in count_diff.items():
-# 				if aa in self.aa_targets_not_updated:
-# 					continue
-# 				self.aa_targets[aa] += diff
-
-# ###########################################
-# 				if (self.aa_targets[aa]+prev_targets[aa])/2 < 0:
-# 					print(aa, diff, prev_targets[aa], self.aa_targets[aa])
-# 					import ipdb; ipdb.set_trace(context=10)
-# 					negative_target_aas.append(aa)
-# 					self.aa_targets[aa]=0.0
-# ##########################################
-
-# 		# First time step of a simulation so set target to current counts to prevent
-# 		# concentration jumps between generations
-# 		else:
-# 			prev_targets = self.aa_targets
-# 			for aa, counts in zip(self.aa_names, self.aas.total_counts()):
-# 				if aa in self.aa_targets_not_updated:
-# 					continue
-# 				self.aa_targets[aa] = counts
-
-# ########################################
-# 		self.aa_targets = {aa: ((counts+prev_targets[aa])/2) for aa, counts in self.aa_targets.items() 
-# 								if aa not in negative_target_aas}
-# 		for aa_zero in negative_target_aas:
-# 			self.aa_targets[aa_zero]=1.0
-# #########################################
-
-# 		conc_updates = {aa: counts * counts_to_molar for aa, counts in self.aa_targets.items()}
-
-# 		# Update linked metabolites that will follow an amino acid
-# 		for met, link in self.linked_metabolites.items():
-# 			conc_updates[met] = conc_updates.get(link['lead'], 0 * counts_to_molar) * link['ratio']
-
-# 		return conc_updates		
 
 class FluxBalanceAnalysisModel(object):
 	"""
