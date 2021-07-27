@@ -13,6 +13,7 @@ import numpy as np
 import wholecell.listeners.listener
 from wholecell.utils import units
 import six
+from wholecell.utils.migration.write_json import write_json
 
 class Mass(wholecell.listeners.listener.Listener):
 	""" Mass """
@@ -135,9 +136,13 @@ class Mass(wholecell.listeners.listener.Listener):
 			".3f"
 			)
 
+		self.saved = False
+		self.update_to_save = {}
+
 
 	def update(self):
 		oldDryMass = self.dryMass
+		self.update_to_save['old_dry_mass'] = oldDryMass
 
 		all_submasses = sum(
 			state.mass() for state in six.viewvalues(self.internal_states))
@@ -147,6 +152,7 @@ class Mass(wholecell.listeners.listener.Listener):
 			self.internal_states))
 
 		self.cellMass = all_submasses.sum()  # sum over all submasses
+		self.update_to_save['cell_mass'] = self.cellMass
 
 		self.waterMass = all_submasses[self.waterIndex]
 		self.dryMass = self.cellMass - self.waterMass
@@ -158,6 +164,16 @@ class Mass(wholecell.listeners.listener.Listener):
 		self.proteinMass = all_submasses[self.proteinIndex]
 		self.smallMoleculeMass = all_submasses[self.smallMoleculeIndex]
 
+		self.update_to_save['water_mass'] = self.waterMass
+		self.update_to_save['dry_mass'] = self.dryMass
+		self.update_to_save['rnaMass'] = self.rnaMass
+		self.update_to_save['rRnaMass'] = self.rRnaMass
+		self.update_to_save['tRnaMass'] = self.tRnaMass
+		self.update_to_save['mRnaMass'] = self.mRnaMass
+		self.update_to_save['dnaMass'] = self.dnaMass
+		self.update_to_save['proteinMass'] = self.proteinMass
+		self.update_to_save['smallMoleculeMass'] = self.smallMoleculeMass
+
 		self.projection_mass = compartment_submasses[self.projection_index, :].sum()
 		self.cytosol_mass = compartment_submasses[self.cytosol_index, :].sum()
 		self.extracellular_mass = compartment_submasses[self.extracellular_index, :].sum()
@@ -168,13 +184,25 @@ class Mass(wholecell.listeners.listener.Listener):
 		self.pilus_mass = compartment_submasses[self.pilus_index, :].sum()
 		self.inner_membrane_mass = compartment_submasses[self.inner_membrane_index, :].sum()
 
+		self.update_to_save['projection_mass'] = self.projection_mass
+		self.update_to_save['cytosol_mass'] = self.cytosol_mass
+		self.update_to_save['extracellular_mass'] = self.extracellular_mass
+		self.update_to_save['flagellum_mass'] = self.flagellum_mass
+		self.update_to_save['membrane_mass'] = self.membrane_mass
+		self.update_to_save['outer_membrane_mass'] = self.outer_membrane_mass
+		self.update_to_save['periplasm_mass'] = self.periplasm_mass
+		self.update_to_save['pilus_mass'] = self.pilus_mass
+		self.update_to_save['inner_membrane_mass'] = self.inner_membrane_mass
 
 		# TODO (Eran) use this volume everywhere in the codebase that is currently calculating volume
 		self.volume = self.cellMass / self.cellDensity
+		self.update_to_save['volume'] = self.volume
 
 		self.processMassDifferences = sum(
 			state.process_mass_diffs() for state in six.viewvalues(self.internal_states)
 			).sum(axis=1)
+
+		self.update_to_save['process_mass_diffs'] = self.processMassDifferences
 
 		if self.simulationStep() > 0:
 			self.growth = self.dryMass - oldDryMass
@@ -182,10 +210,16 @@ class Mass(wholecell.listeners.listener.Listener):
 		else:
 			self.growth = np.nan
 
+		self.update_to_save['growth'] = self.growth
+
 		self.instantaniousGrowthRate = self.growth / self.timeStepSec() / self.dryMass
+		self.update_to_save['instantanious_growth_rate'] = self.instantaniousGrowthRate
 
 		self.proteinMassFraction = self.proteinMass / self.dryMass
 		self.rnaMassFraction = self.rnaMass / self.dryMass
+
+		self.update_to_save['protein_mass_fraction'] = self.proteinMassFraction
+		self.update_to_save['rna_mass_fraction'] = self.rnaMassFraction
 
 		if not self.setInitial:
 			self.setInitial = True
@@ -197,13 +231,32 @@ class Mass(wholecell.listeners.listener.Listener):
 			self.rnaMassInitial = self.rnaMass
 			self.smallMoleculeMassInitial = self.smallMoleculeMass
 
+			self.update_to_save['dry_mass_initial'] = self.dryMassInitial
+			self.update_to_save['protein_mass_initial'] = self.proteinMassInitial
+			self.update_to_save['rna_mass_initial'] = self.rnaMassInitial
+			self.update_to_save['small_molecule_mass_initial'] = self.smallMoleculeMassInitial
+
 
 		self.dryMassFoldChange = self.dryMass / self.dryMassInitial
 		self.proteinMassFoldChange = self.proteinMass / self.proteinMassInitial
 		self.rnaMassFoldChange = self.rnaMass / self.rnaMassInitial
 		self.smallMoleculeFoldChange = self.smallMoleculeMass / self.smallMoleculeMassInitial
 
+		self.update_to_save['dry_mass_fold_change'] = self.dryMassFoldChange
+		self.update_to_save['protein_mass_fold_change'] = self.proteinMassFoldChange
+		self.update_to_save['rna_mass_fold_change'] = self.rnaMassFoldChange
+		self.update_to_save['small_molecule_fold_change'] = self.smallMoleculeFoldChange
+
 		self.expectedMassFoldChange = np.exp(np.log(2) * (self.time() - self.timeInitial) / self.cellCycleLen)
+		self.update_to_save['expected_mass_fold_change'] = self.expectedMassFoldChange
+
+		if not self.saved:
+			write_json(f'out/migration/mass_listener_update_t{int(self._sim.time())}.json',
+					   self.update_to_save)
+					   
+			self.saved = True
+
+			import ipdb; ipdb.set_trace()
 
 
 	def tableCreate(self, tableWriter):
