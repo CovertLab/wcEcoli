@@ -68,6 +68,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			validation_data = pickle.load(f)
 
 		aa_ids = sim_data.molecule_groups.amino_acids
+		aa_idx = {aa[:-3]: i for i, aa in enumerate(aa_ids)}
+		aa_labels = ['Control' if aa == CONTROL_LABEL + '[c]' else aa[:-3] for aa in aa_ids]
 
 		growth_rates = {}
 		control_rates = []
@@ -85,16 +87,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		all_aa_ids = {aa[:-3] for aa in aa_ids}
 		val_control = validation_data.amino_acid_growth_rates['minimal']['mean']
 		val_aa_ids = []
-		val_normalized_growth_rates = {}
+		val_normalized_growth_rates = []
 		# val_normalized_std = []
 		for media, rates in validation_data.amino_acid_growth_rates.items():
 			aa_id = media.split('_')[-1]
 			if aa_id in all_aa_ids:
 				val_aa_ids.append(aa_id)
-				val_normalized_growth_rates[aa_id] = units.strip_empty_units(rates['mean'] / val_control)
+				val_normalized_growth_rates.append(units.strip_empty_units(rates['mean'] / val_control))
 				# val_normalized_std.append(units.strip_empty_units(rates['std'] / val_control))
 		# val_normalized_growth_rates = np.array(val_normalized_growth_rates)
 		# val_normalized_std = np.array(val_normalized_std)
+		val_x = [aa_idx[aa] for aa in val_aa_ids]
 
 		# Create plots
 		plt.figure()
@@ -105,12 +108,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		edges = []
 		for (aa, factor), rate in growth_rates.items():
 			color = 'k'
-			if aa in val_normalized_growth_rates:
-				val_rate = val_normalized_growth_rates[aa]
-			else:
-				val_rate = 1
-				color = 'gray'
-			x.append(val_rate)
+			x.append(aa_idx[aa])
 			y.append(rate / control_rate)
 			if factor == 0:
 				color = 'gray'
@@ -120,7 +118,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			edges.append(color)
 
 		scatter = plt.scatter(x, y, c=c, cmap='RdBu', edgecolors=edges, alpha=0.8, norm=colors.LogNorm())
+		plt.scatter(val_x, val_normalized_growth_rates, marker='_', c='k')
 		plt.colorbar(scatter)
+
+		plt.xticks(range(len(aa_labels)), aa_labels, rotation=45, fontsize=6, ha='right')
 
 		# Plot formatting
 		# ax.tick_params(axis='x', labelsize=6)
@@ -130,11 +131,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.ylabel('Simulation data\n(Normalized to minimal media)')
 
 		# Plot y=x diagonal
-		x_min, x_max = plt.xlim()
-		y_min, y_max = plt.ylim()
-		min_rate = min(x_min, y_min)
-		max_rate = max(x_max, y_max)
-		plt.plot([min_rate, max_rate], [min_rate, max_rate], '--k')
+		# x_min, x_max = plt.xlim()
+		# y_min, y_max = plt.ylim()
+		# min_rate = min(x_min, y_min)
+		# max_rate = max(x_max, y_max)
+		# plt.plot([min_rate, max_rate], [min_rate, max_rate], '--k')
 
 		# # Limit axes to reasonable range
 		# plt.xlim(AXIS_LIMITS)
