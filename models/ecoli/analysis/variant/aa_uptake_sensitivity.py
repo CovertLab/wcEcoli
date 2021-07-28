@@ -1,7 +1,7 @@
 """
-Compare cell cycle times and growth rates across variants.  Useful as validation
-with the add_one_aa variant and can also be used to compare variants in
-remove_one_aa variant.
+Compare the growth rates in variants with varying levels of uptake for each
+amino acid to see what level of import achieves a growth rate similar to the
+validation data.  Useful with the aa_uptake_sensitivity variant.
 """
 
 import pickle
