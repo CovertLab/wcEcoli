@@ -17,13 +17,19 @@ from .add_one_aa import add_one_aa
 FACTORS = [0, 0.1, 0.5, 1, 1.5, 2, 5, 10]
 
 
+def get_aa_index(index):
+	return index // len(FACTORS)
+
+def get_factor(index):
+	return FACTORS[index % len(FACTORS)]
+
 def aa_uptake_sensitivity(sim_data, index):
 	# Use add_one_aa variant to add a specific amino acid to the media
-	aa_idx = index // len(FACTORS)
+	aa_idx = get_aa_index(index)
 	_, sim_data = add_one_aa(sim_data, aa_idx)
 
 	# Change the uptake rate for that amino acid to check the sensitivity
-	factor = FACTORS[index % len(FACTORS)]
+	factor = get_factor(index)
 	sim_data.process.metabolism.specific_import_rates[aa_idx] *= factor
 
 	aa_id = sim_data.molecule_groups.amino_acids[aa_idx]
