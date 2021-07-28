@@ -33,17 +33,35 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		aa_idx = {aa[:-3]: i for i, aa in enumerate(aa_ids)}
 		aa_labels = ['Control' if aa == CONTROL_LABEL + '[c]' else aa[:-3] for aa in aa_ids]
 
-		growth_rates = {}
+		x_scatter = []
+		growth_rates = []
+		scale = []
+		edges = []
 		control_rates = []
 		for variant in variants:
+			# Load data
 			cells = ap.get_cells(variant=[variant])
 			growth_rate = read_stacked_columns(cells, 'Mass', 'instantaneous_growth_rate',
 				remove_first=True, ignore_exception=True).mean()
-			aa_id = aa_ids[get_aa_index(variant)][:-3]
+			index = get_aa_index(variant)
+			aa_id = aa_ids[index][:-3]
 			if aa_id == CONTROL_LABEL:
 				control_rates.append(growth_rate)
-			growth_rates[(aa_id, get_factor(variant))] = growth_rate
+			factor = get_factor(variant)
+
+			# Save data to plot
+			x_scatter.append(index)
+			growth_rates.append(growth_rate)
+			if factor == 0:
+				scale.append(1)
+				edges.append('gray')
+			else:
+				scale.append(factor)
+				edges.append('black')
+
+		# Normalize by the control growth rate
 		control_rate = np.mean(control_rates) if control_rates else 1
+		normalized_growth_rates = np.array(growth_rates) / control_rate
 
 		# Load validation growth rates
 		val_control = validation_data.amino_acid_growth_rates['minimal']['mean']
@@ -55,33 +73,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				val_aa_idx.append(aa_idx[aa_id])
 				val_normalized_growth_rates.append(units.strip_empty_units(rates['mean'] / val_control))
 
-		# Data to plot for each amino acid condition
-		x = []
-		y = []
-		c = []
-		edges = []
-		for (aa, factor), rate in growth_rates.items():
-			color = 'k'
-			x.append(aa_idx[aa])
-			y.append(rate / control_rate)
-			if factor == 0:
-				color = 'gray'
-				c.append(1)
-			else:
-				c.append(factor)
-			edges.append(color)
-
-		# Create plots
-		plt.figure()
-
 		# Plot data
-		scatter = plt.scatter(x, y, c=c, cmap='RdBu', edgecolors=edges, alpha=0.8, norm=colors.LogNorm())
+		plt.figure()
+		scatter = plt.scatter(x_scatter, normalized_growth_rates, c=scale, cmap='RdBu', edgecolors=edges, alpha=0.8, norm=colors.LogNorm())
 		plt.scatter(val_aa_idx, val_normalized_growth_rates, marker='_', c='k')
 		plt.colorbar(scatter)
 
 		# Plot formatting
 		plt.xticks(range(len(aa_labels)), aa_labels, rotation=45, fontsize=6, ha='right')
 		plt.ylabel('Growth rate\n(Normalized to minimal media)')
+		plt.title('Effect of scaling uptake rates by a factor\n'
+			'Color represents uptake rate scale factor\n'
+			'Horizontal bars are expected growth rates', fontsize=6)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
