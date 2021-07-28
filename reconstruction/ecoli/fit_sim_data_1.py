@@ -26,7 +26,6 @@ from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import filepath, parallelization, units
 from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic_target
-from wholecell.utils.fast_nonnegative_least_squares import fast_nnls
 
 
 # Fitting parameters
@@ -575,7 +574,7 @@ def buildTfConditionCellSpecifications(
 		expression = expressionFromConditionAndFoldChange(
 			sim_data.process.transcription.cistron_data["id"],
 			sim_data.process.transcription.cistron_expression["basal"],
-			sim_data.process.transcription.cistron_tu_mapping_matrix(),
+			sim_data.process.transcription.cistron_tu_mapping_matrix,
 			conditionValue["perturbations"],
 			fcData,
 			)
@@ -675,7 +674,7 @@ def buildCombinedConditionCellSpecifications(
 		expression = expressionFromConditionAndFoldChange(
 			sim_data.process.transcription.cistron_data["id"],
 			sim_data.process.transcription.cistron_expression["basal"],
-			sim_data.process.transcription.cistron_tu_mapping_matrix(),
+			sim_data.process.transcription.cistron_tu_mapping_matrix,
 			conditionValue["perturbations"],
 			fcData,
 			)
@@ -959,7 +958,7 @@ def setRNAExpression(sim_data):
 	for mol_id in sim_data.adjustments.rna_expression_adjustments:
 		if mol_id in cistron_ids:
 			# Find indexes of all RNAs containing the cistron
-			rna_indexes = sim_data.process.transcription.cistron_id_to_tu_indexes(mol_id)
+			rna_indexes = sim_data.process.transcription.cistron_id_to_rna_indexes(mol_id)
 		elif mol_id in rna_id_to_index:
 			rna_indexes = rna_id_to_index[mol_id]
 		else:
@@ -999,7 +998,7 @@ def setRNADegRates(sim_data):
 	for mol_id in sim_data.adjustments.rna_deg_rates_adjustments:
 		if mol_id in cistron_ids:
 			# Find indexes of all RNAs containing the cistron
-			rna_indexes = sim_data.process.transcription.cistron_id_to_tu_indexes(mol_id)
+			rna_indexes = sim_data.process.transcription.cistron_id_to_rna_indexes(mol_id)
 		elif mol_id in rna_id_to_index:
 			rna_indexes = rna_id_to_index[mol_id]
 		else:
@@ -1284,7 +1283,7 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	total_mass_protein = sim_data.mass.get_component_masses(doubling_time)["proteinMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
 	individual_masses_protein = sim_data.process.translation.monomer_data["mw"] / sim_data.constants.n_avogadro
 
-	mRNA_cistron_expression = sim_data.process.transcription.cistron_tu_mapping_matrix().dot(
+	mRNA_cistron_expression = sim_data.process.transcription.cistron_tu_mapping_matrix.dot(
 		expression)[sim_data.process.transcription.cistron_data['is_mRNA']]
 	distribution_transcripts_by_protein = normalize(
 		sim_data.relation.monomer_to_mRNA_cistron_mapping().dot(mRNA_cistron_expression)
@@ -1633,7 +1632,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		doubling_time, degradation_rates_protein)
 	avg_cell_fraction_mass = sim_data.mass.get_component_masses(doubling_time)
 	total_mass_RNA = avg_cell_fraction_mass["rnaMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
-	cistron_tu_mapping_matrix = sim_data.process.transcription.cistron_tu_mapping_matrix()
+	cistron_tu_mapping_matrix = sim_data.process.transcription.cistron_tu_mapping_matrix
 
 	# Calculate current expression fraction of mRNA transcription units
 	view_RNA = bulkContainer.countsView(
@@ -1675,7 +1674,7 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	# Use least squares to calculate expression of transcription units required
 	# to generate the given cistron expression levels and the residuals for
 	# the expression of each cistron
-	fit_tu_expression, cistron_expression_res = fast_nnls(cistron_tu_mapping_matrix, cistron_expression)
+	fit_tu_expression, cistron_expression_res = sim_data.process.transcription.fit_rna_expression(cistron_expression)
 	fit_mRNA_tu_expression = fit_tu_expression[
 		sim_data.process.transcription.rna_data['is_mRNA']]
 
@@ -2227,8 +2226,8 @@ def expressionFromConditionAndFoldChange(
 	- cistron_ids (array of str) - name of each RNA cistron
 	- basal_cistron_expression (array of floats) - expression for each RNA
 		cistron in the basal condition, normalized to 1
-	- cistron_tu_mapping_matrix (array of floats) - mapping matrix between
-		cistrons (rows) and transcription units (columns)
+	- cistron_tu_mapping_matrix (sparse array of floats) - mapping matrix
+		between cistrons (rows) and transcription units (columns)
 	- condPerturbations {cistron ID (str): fold change (float)} -
 		dictionary of fold changes for cistrons based on the given condition
 	- tfFCs {cistron ID (str): fold change (float)} -
@@ -2277,7 +2276,7 @@ def expressionFromConditionAndFoldChange(
 	cistron_expression[~rna_indexes_bool] *= scaleTheRestBy
 
 	# Use NNLS to map new cistron expression to RNA expression
-	expression, _ = fast_nnls(cistron_tu_mapping_matrix, cistron_expression)
+	expression, _ = sim_data.process.transcription.fit_rna_expression(cistron_expression)
 	expression = normalize(expression)
 
 	# Apply genotype perturbations to all RNAs that contain each cistron
@@ -2286,7 +2285,7 @@ def expressionFromConditionAndFoldChange(
 
 	for cistron_id, perturbation_value in condPerturbations.items():
 		cistron_index = cistron_id_to_index[cistron_id]
-		rna_indexes_with_cistron = list(np.where(cistron_tu_mapping_matrix[cistron_index, :])[0])
+		rna_indexes_with_cistron = list(cistron_tu_mapping_matrix.getrow(cistron_index).nonzero()[1])
 		rna_indexes.extend(rna_indexes_with_cistron)
 		rna_fcs.extend([perturbation_value] * len(rna_indexes_with_cistron))
 
@@ -2365,10 +2364,9 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 		for idx, (rnaId, rnaCoordinate) in enumerate(
 				zip(sim_data.process.transcription.rna_data["id"],
 				sim_data.process.transcription.rna_data['replication_coordinate'])):
-			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
 			# Get list of TFs that regulate this RNA
-			tfs = sim_data.process.transcription_regulation.target_tf.get(rnaIdNoLoc, [])
+			tfs = sim_data.relation.rna_id_to_target_tfs.get(rnaId, [])
 			conditions = ["basal"]
 			tfsWithData = []
 
@@ -2439,7 +2437,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
 			# Get list of TFs that regulate this RNA
-			tfs = sim_data.process.transcription_regulation.target_tf.get(rnaIdNoLoc, [])
+			tfs = sim_data.relation.rna_id_to_target_tfs[rnaId]
 			conditions = ["basal"]
 			tfsWithData = []
 
@@ -2517,7 +2515,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 			rna_id_no_loc = rna_id[:-3]  # Remove compartment ID from RNA ID
 
 			# Get list of TFs that regulate this RNA
-			tfs = sim_data.process.transcription_regulation.target_tf.get(rna_id_no_loc, [])
+			tfs = sim_data.relation.rna_id_to_target_tfs[rna_id]
 			tfs_with_data = []
 
 			# Get column index of the RNA's alpha column
@@ -2582,7 +2580,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
 			# Get list of TFs that regulate this RNA
-			tfs = sim_data.process.transcription_regulation.target_tf.get(rnaIdNoLoc, [])
+			tfs = sim_data.relation.rna_id_to_target_tfs[rnaId]
 			tfsWithData = []
 
 			# Take only those TFs with active/inactive conditions data
@@ -2664,7 +2662,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 		for idx, rnaId in enumerate(sim_data.process.transcription.rna_data["id"]):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
-			tfs = sim_data.process.transcription_regulation.target_tf.get(rnaIdNoLoc, [])
+			tfs = sim_data.relation.rna_id_to_target_tfs[rnaId]
 			conditions = ["basal"]
 			tfsWithData = []
 
@@ -3112,24 +3110,27 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 	init_to_average = sim_data.mass.avg_cell_to_initial_cell_conversion_factor
 
 	# Matrix to determine number of promoters each TF can bind to in a given condition
-	rna_data = sim_data.process.transcription.rna_data
 	tf_idx = {tf: i for i, tf in enumerate(sim_data.tf_to_active_inactive_conditions)}
-	rna_idx = {rna[:-3]: i for i, rna in enumerate(rna_data['id'])}
+	cistron_id_to_tu_indexes = {
+		cistron_id: sim_data.process.transcription.cistron_id_to_rna_indexes(cistron_id)
+		for cistron_id in sim_data.process.transcription.cistron_data['id']}
 	regulation_i = []
 	regulation_j = []
 	regulation_v = []
-	for tf, rnas in sim_data.tf_to_fold_change.items():
+	for tf, cistrons in sim_data.tf_to_fold_change.items():
 		if tf not in tf_idx:
 			continue
 
-		for rna in rnas:
-			regulation_i.append(tf_idx[tf])
-			regulation_j.append(rna_idx[rna])
-			regulation_v.append(1)
+		for cistron in cistrons:
+			for tu_index in cistron_id_to_tu_indexes[cistron]:
+				regulation_i.append(tf_idx[tf])
+				regulation_j.append(tu_index)
+				regulation_v.append(1)
+
 	regulation = scipy.sparse.csr_matrix(
 		(regulation_v, (regulation_i, regulation_j)),
-		shape=(len(tf_idx), len(rna_idx)))
-	rna_coords = rna_data['replication_coordinate']
+		shape=(len(tf_idx), len(sim_data.process.transcription.rna_data)))
+	rna_coords = sim_data.process.transcription.rna_data['replication_coordinate']
 
 	for conditionKey in sorted(cell_specs):
 		pPromoterBound[conditionKey] = {}
