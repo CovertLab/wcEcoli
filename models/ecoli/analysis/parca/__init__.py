@@ -19,7 +19,19 @@ TAGS = {
 		'metabolite_concentrations.py',
 		'interpolation.py',
 		],
+	'METABOLISM': [
+		'aa_synthesis_enzymes.py',
+		'aa_synthesis_pathways.py',
+		'amino_acid_uptake_rates.py',
+		'metabolite_concentrations.py',
+		],
+	'REGULATION': [
+		'expression_probabilities.py',
+		'fold_changes.py',
+		'ppgpp_expression.py',
+		'tf_target.py',
+		],
 	'VALIDATION': [
 		'amino_acid_uptake_rates.py',
-		]
+		],
 	}
