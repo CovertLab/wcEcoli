@@ -31,38 +31,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			validation_data = pickle.load(f)
 
 		aa_ids = sim_data.molecule_groups.amino_acids
-		aa_idx = {aa[:-3]: i for i, aa in enumerate(aa_ids)}
 		aa_labels = [CONTROL_LABEL if aa == CONTROL_AA + '[c]' else aa[:-3] for aa in aa_ids]
-
-		x_scatter = []
-		growth_rates = []
-		scale = []
-		edges = []
-		control_rates = []
-		for variant in variants:
-			# Load data
-			cells = ap.get_cells(variant=[variant])
-			growth_rate = read_stacked_columns(cells, 'Mass', 'instantaneous_growth_rate',
-				remove_first=True, ignore_exception=True).mean()
-			index = get_aa_index(variant)
-			aa_id = aa_ids[index][:-3]
-			if aa_id == CONTROL_AA:
-				control_rates.append(growth_rate)
-			factor = get_factor(variant)
-
-			# Save data to plot
-			x_scatter.append(index)
-			growth_rates.append(growth_rate)
-			if factor == 0:
-				scale.append(1)
-				edges.append('gray')
-			else:
-				scale.append(factor)
-				edges.append('black')
-
-		# Normalize by the control growth rate
-		control_rate = np.mean(control_rates) if control_rates else 1
-		normalized_growth_rates = np.array(growth_rates) / control_rate
 
 		# Load validation growth rates
 		val_control = validation_data.amino_acid_growth_rates['minimal']['mean']
@@ -70,7 +39,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		val_normalized_growth_rates = []
 		for media, rates in validation_data.amino_acid_growth_rates.items():
 			aa_id = media.split('_')[-1]
-			if aa_id in aa_idx:
+			if aa_id in aa_labels:
 				val_aa.append(aa_id)
 				val_normalized_growth_rates.append(units.strip_empty_units(rates['mean'] / val_control))
 
@@ -82,8 +51,37 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		)
 		sorted_idx = {aa: i for i, aa in enumerate(sorted_order)}
 		val_aa_idx = [sorted_idx[aa] for aa in val_aa]
-		x_scatter = [sorted_idx[aa_ids[i][:-3]] for i in x_scatter]
 		sorted_order[0] = CONTROL_LABEL
+
+		# Load simulation growth rates
+		x_scatter = []
+		growth_rates = []
+		scale = []
+		edges = []
+		control_rates = []
+		for variant in variants:
+			# Load data
+			cells = ap.get_cells(variant=[variant])
+			growth_rate = read_stacked_columns(cells, 'Mass', 'instantaneous_growth_rate',
+				remove_first=True, ignore_exception=True).mean()
+			aa_id = aa_ids[get_aa_index(variant)][:-3]
+			if aa_id == CONTROL_AA:
+				control_rates.append(growth_rate)
+			factor = get_factor(variant)
+
+			# Save data to plot
+			x_scatter.append(sorted_idx[aa_id])
+			growth_rates.append(growth_rate)
+			if factor == 0:
+				scale.append(1)
+				edges.append('gray')
+			else:
+				scale.append(factor)
+				edges.append('black')
+
+		# Normalize by the control growth rate
+		control_rate = np.mean(control_rates) if control_rates else 1
+		normalized_growth_rates = np.array(growth_rates) / control_rate
 
 		# Plot data
 		plt.figure()
