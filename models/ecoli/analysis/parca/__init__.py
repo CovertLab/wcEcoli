@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 # Active analysis modules to run, in this order.
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
+	'aa_synthesis_enzymes.py',
 	'aa_synthesis_pathways.py',
 	'amino_acid_uptake_rates.py',
 	'expression_probabilities.py',
@@ -32,6 +33,7 @@ TAGS = {
 		'tf_target.py',
 		],
 	'VALIDATION': [
+		'aa_synthesis_enzymes.py',
 		'amino_acid_uptake_rates.py',
 		],
 	}
