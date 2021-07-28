@@ -56,22 +56,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Load simulation growth rates
 		x_scatter = []
 		growth_rates = []
+		elong_rates = []
 		scale = []
 		edges = []
-		control_rates = []
+		control_growth_rates = []
+		control_elong_rates = []
 		for variant in variants:
 			# Load data
 			cells = ap.get_cells(variant=[variant])
 			growth_rate = read_stacked_columns(cells, 'Mass', 'instantaneous_growth_rate',
 				remove_first=True, ignore_exception=True).mean()
+			elong_rate = read_stacked_columns(cells, 'RibosomeData', 'effectiveElongationRate',
+				remove_first=True, ignore_exception=True).mean()
 			aa_id = aa_ids[get_aa_index(variant)][:-3]
 			if aa_id == CONTROL_AA:
-				control_rates.append(growth_rate)
+				control_growth_rates.append(growth_rate)
+				control_elong_rates.append(elong_rate)
 			factor = get_factor(variant)
 
 			# Save data to plot
 			x_scatter.append(sorted_idx[aa_id])
 			growth_rates.append(growth_rate)
+			elong_rates.append(elong_rate)
 			if factor == 0:
 				scale.append(1)
 				edges.append('gray')
@@ -80,12 +86,33 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				edges.append('black')
 
 		# Normalize by the control growth rate
-		control_rate = np.mean(control_rates) if control_rates else 1
-		normalized_growth_rates = np.array(growth_rates) / control_rate
+		control_growth_rate = np.mean(control_growth_rates) if control_growth_rates else 1
+		control_elong_rate = np.mean(control_elong_rates) if control_elong_rates else 1
+		normalized_growth_rates = np.array(growth_rates) / control_growth_rate
+		normalized_elong_rates = np.array(elong_rates) / control_elong_rate
 
 		# Plot data
-		plt.figure()
+		plt.figure(figsize=(5, 10))
+
+		## Growth rate subplot
+		plt.subplot(2, 1, 1)
 		scatter = plt.scatter(x_scatter, normalized_growth_rates, c=scale, cmap='RdBu', edgecolors=edges, alpha=0.8, norm=colors.LogNorm())
+		plt.scatter(val_aa_idx, val_normalized_growth_rates, marker='_', c='k')
+		plt.colorbar(scatter)
+
+		## Plot formatting
+		self.remove_border()
+		plt.xticks(range(len(sorted_order)), sorted_order, rotation=45, fontsize=6, ha='right')
+		plt.yticks(fontsize=6)
+		plt.ylabel('Growth rate\n(Normalized to minimal media)', fontsize=6)
+
+		plt.title('Effect of scaling uptake rates by a factor\n'
+			'Color represents uptake rate scale factor\n'
+			'Horizontal bars are expected growth rates', fontsize=6)
+
+		## Elongation rate subplot
+		plt.subplot(2, 1, 2)
+		scatter = plt.scatter(x_scatter, normalized_elong_rates, c=scale, cmap='RdBu', edgecolors=edges, alpha=0.8, norm=colors.LogNorm())
 		plt.scatter(val_aa_idx, val_normalized_growth_rates, marker='_', c='k')
 		plt.colorbar(scatter)
 
@@ -93,10 +120,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		self.remove_border()
 		plt.xticks(range(len(sorted_order)), sorted_order, rotation=45, fontsize=6, ha='right')
 		plt.yticks(fontsize=6)
-		plt.ylabel('Growth rate\n(Normalized to minimal media)', fontsize=6)
-		plt.title('Effect of scaling uptake rates by a factor\n'
-			'Color represents uptake rate scale factor\n'
-			'Horizontal bars are expected growth rates', fontsize=6)
+		plt.ylabel('Elongation rate\n(Normalized to minimal media)', fontsize=6)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
