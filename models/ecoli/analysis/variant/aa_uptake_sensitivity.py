@@ -93,34 +93,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Plot data
 		plt.figure(figsize=(5, 10))
+		def subplot(y, label, index):
+			plt.subplot(2, 1, index)
+			scatter = plt.scatter(x_scatter, y, c=scale, cmap='RdBu', edgecolors=edges, alpha=0.8, norm=colors.LogNorm())
+			plt.scatter(val_aa_idx, val_normalized_growth_rates, marker='_', c='k')
+			plt.colorbar(scatter)
 
-		## Growth rate subplot
-		plt.subplot(2, 1, 1)
-		scatter = plt.scatter(x_scatter, normalized_growth_rates, c=scale, cmap='RdBu', edgecolors=edges, alpha=0.8, norm=colors.LogNorm())
-		plt.scatter(val_aa_idx, val_normalized_growth_rates, marker='_', c='k')
-		plt.colorbar(scatter)
+			## Plot formatting
+			self.remove_border()
+			plt.xticks(range(len(sorted_order)), sorted_order, rotation=45, fontsize=6, ha='right')
+			plt.yticks(fontsize=6)
+			plt.ylabel(f'{label}\n(Normalized to minimal media)', fontsize=6)
 
-		## Plot formatting
-		self.remove_border()
-		plt.xticks(range(len(sorted_order)), sorted_order, rotation=45, fontsize=6, ha='right')
-		plt.yticks(fontsize=6)
-		plt.ylabel('Growth rate\n(Normalized to minimal media)', fontsize=6)
-
+		subplot(normalized_growth_rates, 'Growth rate', 1)
 		plt.title('Effect of scaling uptake rates by a factor\n'
 			'Color represents uptake rate scale factor\n'
 			'Horizontal bars are expected growth rates', fontsize=6)
-
-		## Elongation rate subplot
-		plt.subplot(2, 1, 2)
-		scatter = plt.scatter(x_scatter, normalized_elong_rates, c=scale, cmap='RdBu', edgecolors=edges, alpha=0.8, norm=colors.LogNorm())
-		plt.scatter(val_aa_idx, val_normalized_growth_rates, marker='_', c='k')
-		plt.colorbar(scatter)
-
-		# Plot formatting
-		self.remove_border()
-		plt.xticks(range(len(sorted_order)), sorted_order, rotation=45, fontsize=6, ha='right')
-		plt.yticks(fontsize=6)
-		plt.ylabel('Elongation rate\n(Normalized to minimal media)', fontsize=6)
+		subplot(normalized_elong_rates, 'Elongation rate', 2)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
