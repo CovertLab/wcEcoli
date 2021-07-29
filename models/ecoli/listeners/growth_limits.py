@@ -69,7 +69,6 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		self.aa_supply_aa_conc = np.zeros(n_aa_supplied, np.float64)
 		self.aa_supply_fraction = np.zeros(n_aa_supplied, np.float64)
 
-
 		self.aaCountDiff = np.zeros(n_aa_supplied, np.float64)
 		self.trnaCharged = np.zeros(n_aa_supplied, np.float64)
 

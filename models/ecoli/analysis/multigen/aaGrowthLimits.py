@@ -50,19 +50,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		aa_targets = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'targetAAConc', remove_first=True)
 		trna_charged = read_stacked_columns(cell_paths, 'GrowthLimits', 'trnaCharged', remove_first=True)
 
-		aa_in_media = [True] * len(aa_ids)
-		aa_in_media[19] = False
-
 		# Calculate derived quantities
-		normalized_supply = (supply / time_step / dry_mass / expected_supply).T[aa_in_media]
-		normalized_synthesis = (synthesis / time_step / dry_mass / expected_supply).T[aa_in_media]
-		normalized_imported = (imported / time_step / dry_mass / expected_supply).T[aa_in_media]
-		normalized_use = (aas_used / time_step / dry_mass / expected_supply).T[aa_in_media]
-		normalized_diff = (aa_count_diff / time_step / dry_mass / expected_supply).T[aa_in_media]
+		normalized_supply = (supply / time_step / dry_mass / expected_supply).T
+		normalized_synthesis = (synthesis / time_step / dry_mass / expected_supply).T
+		normalized_imported = (imported / time_step / dry_mass / expected_supply).T
+		normalized_use = (aas_used / time_step / dry_mass / expected_supply).T
+		normalized_diff = (aa_count_diff / time_step / dry_mass / expected_supply).T
+		normalized_charged = (trna_charged / time_step / dry_mass / expected_supply).T
 		normalized_targets = (aa_targets * counts_to_mol).T
-		normalized_charged = (trna_charged / time_step / dry_mass / expected_supply).T[aa_in_media]
+		normalized_targets /= normalized_targets[:, 0:1]
 		aa_conc /= aa_conc[:, 0:1]
-		aa_conc = aa_conc[aa_in_media]
+		aa_conc = aa_conc
 
 
 		# Plot data
@@ -72,7 +70,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		cols = int(np.ceil(n_subplots / rows))
 		gs = gridspec.GridSpec(nrows=rows, ncols=cols)
 
-		aa_ids[19] = 'VAL[c]'
 		## Plot data for each amino acid
 		for i, (supply, aa_conc, synthesis, imported, use, diff, target, charged) in enumerate(zip(
 				normalized_supply, aa_conc, normalized_synthesis, normalized_imported, normalized_use, 

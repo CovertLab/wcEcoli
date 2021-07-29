@@ -70,7 +70,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
 
 		# Create views onto all polymerization reaction small molecules
-		self.aas = self.bulkMoleculesView(sim_data.molecule_groups.amino_acids)
+		self.aaNames = sim_data.molecule_groups.amino_acids
+		self.aas = self.bulkMoleculesView(self.aaNames)
 
 		self.elngRateFactor = 1.
 
@@ -265,7 +266,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Write data to listeners
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
 		self.writeToListener("GrowthLimits", "aasUsed", aas_used)
-		self.writeToListener("GrowthLimits", "aaCountDiff", [val for val in self.aa_count_diff.values()])
+		self.writeToListener("GrowthLimits", "aaCountDiff", [self.aa_count_diff.get(id_, 0) for id_ in self.aaNames])
 
 		self.writeToListener("RibosomeData", "aaCountInSequence", aaCountInSequence)
 		self.writeToListener("RibosomeData", "aaCounts", aa_counts_for_translation)

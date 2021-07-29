@@ -152,8 +152,8 @@ class Metabolism(wholecell.processes.process.Process):
 		conc_updates = self.model.getBiomassAsConcentrations(doubling_time)
 		if self.use_trna_charging:
 			conc_updates.update(self.update_amino_acid_targets(counts_to_molar, 
-										metabolite_counts_init[self.aa_in_metabolites],
-										np.array(self.model.metaboliteNamesFromNutrients)[self.aa_in_metabolites]))
+				metabolite_counts_init[self.aa_in_metabolites],
+				np.array(self.model.metaboliteNamesFromNutrients)[self.aa_in_metabolites]))
 		if self.include_ppgpp:
 			conc_updates[self.model.ppgpp_id] = self.model.getppGppConc(doubling_time).asUnit(CONC_UNITS)
 		## Converted from units to make reproduction from listener data
@@ -167,11 +167,9 @@ class Metabolism(wholecell.processes.process.Process):
 		if self.mechanistic_aa_uptake:
 			aa_in_media = self.aa_environment.import_present()
 			aa_in_media[self.removed_aa_uptake] = False
-
 			import_rates = (counts_to_molar * self.timeStepSec() * self.amino_acid_import(
-								aa_in_media, dry_mass, self.aa_transporters_container.counts(),
-									self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
-			
+				aa_in_media, dry_mass, self.aa_transporters_container.counts(),
+				self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
 			aa_uptake_package=(import_rates[aa_in_media], self.aa_exchange_names[aa_in_media], True)
 			
 		# Update FBA problem based on current state
@@ -236,7 +234,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "targetFluxes", targets / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetFluxesUpper", upper_targets / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetFluxesLower", lower_targets / time_step_unitless)
-		self.writeToListener("EnzymeKinetics", "targetAAConc", [value for value in self.aa_targets.values()])
+		self.writeToListener("EnzymeKinetics", "targetAAConc", [self.aa_targets.get(id_, 0) for id_ in self.aa_names])
 
 	def update_amino_acid_targets(self, counts_to_molar, aa_counts, aa_names):
 		"""
@@ -244,10 +242,10 @@ class Metabolism(wholecell.processes.process.Process):
 		and number of amino acids used in polypeptide_elongation
 
 		Args:
-		 	aa_names: names of amnino acids
-		 	aa_counts: counts of each amino acid inside the cell
 			counts_to_molar (float with mol/volume units): conversion from counts
 				to molar for the current state of the cell
+			aa_counts: counts of each amino acid inside the cell
+			aa_names: names of amnino acids
 
 		Returns:
 			dict {AA name (str): AA conc (float with mol/volume units)}:
@@ -261,7 +259,7 @@ class Metabolism(wholecell.processes.process.Process):
 		"""
 
 		count_diff = self._sim.processes['PolypeptideElongation'].aa_count_diff
-		aa_counts_map = {aa:count for aa,count in zip(aa_names, aa_counts)}
+		aa_counts_map = {aa: count for aa,count in zip(aa_names, aa_counts)}
 
 		if len(self.aa_targets):
 			prev_targets = {aa: counts for aa, counts in self.aa_targets.items()}
@@ -269,9 +267,9 @@ class Metabolism(wholecell.processes.process.Process):
 				if aa in self.aa_targets_not_updated:
 					continue
 				self.aa_targets[aa] += diff
-				# TODO (Santiago): Decide whether to update target with concentration instead
+				# TODO (Santiago): Improve targets update 
 				if self.aa_targets[aa] < 0:
-					self.aa_targets[aa] = aa_counts_map[aa] + diff
+					self.aa_targets[aa] = 1
 
 		# First time step of a simulation so set target to current counts to prevent
 		# concentration jumps between generations
@@ -282,7 +280,6 @@ class Metabolism(wholecell.processes.process.Process):
 					continue
 				self.aa_targets[aa] = counts
 
-		self.aa_targets = {aa: ((counts+prev_targets[aa])/2) for aa, counts in self.aa_targets.items()}
 		conc_updates = {aa: counts * counts_to_molar for aa, counts in self.aa_targets.items()}
 
 		# Update linked metabolites that will follow an amino acid
