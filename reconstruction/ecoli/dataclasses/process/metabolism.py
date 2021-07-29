@@ -811,8 +811,12 @@ class Metabolism(object):
 			aa_enzymes (np.ndarray[str]): enzyme ID with location tag for each
 				enzyme that can catalyze an amino acid pathway with
 				self.enzyme_to_amino_acid mapping these to each amino acid
-			aa_kcats (np.ndarray[float]): kcat value for each synthesis pathway
-				in units of K_CAT_UNITS, ordered by amino acid molecule group
+			aa_kcats_fwd (np.ndarray[float]): forward kcat value for each
+				synthesis pathway in units of K_CAT_UNITS, ordered by amino acid
+				molecule group
+			aa_kcats_rev (np.ndarray[float]): reverse kcat value for each
+				synthesis pathway in units of K_CAT_UNITS, ordered by amino acid
+				molecule group
 			aa_kis (np.ndarray[float]): KI value for each synthesis pathway
 				in units of METABOLITE_CONCENTRATION_UNITS, ordered by amino
 				acid molecule group. Will be inf if there is no inhibitory
@@ -976,7 +980,8 @@ class Metabolism(object):
 			degradation_rates[amino_acid] = kcat * enzyme_counts / (1 + km_degradation / aa_conc)
 
 		self.aa_enzymes = np.unique(aa_enzymes)
-		self.aa_kcats = np.array([aa_kcats[aa] for aa in aa_ids])
+		self.aa_kcats_fwd = np.array([aa_kcats[aa] for aa in aa_ids])
+		self.aa_kcats_rev = self.aa_kcats_fwd.copy()  # TODO: solve for these separately
 		self.aa_kis = np.array([aa_kis[aa] for aa in aa_ids])
 		self.aa_upstream_kms = [aa_upstream_kms[aa] for aa in aa_ids]
 		self.aa_reverse_kms = np.array([aa_reverse_kms[aa] for aa in aa_ids])
@@ -1036,11 +1041,17 @@ class Metabolism(object):
 		self.aa_supply_enzyme_conc_basal = conversion * basal_counts / cell_specs['basal']['avgCellDryMassInit']
 
 		# Check calculations that could end up negative
-		neg_idx = np.where(self.aa_kcats < 0)[0]
+		neg_idx = np.where(self.aa_kcats_fwd < 0)[0]
 		if len(neg_idx):
 			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
-			print(f'{self.aa_kcats = }')
-			raise ValueError(f'kcat value was determined to be negative for {aas}.'
+			print(f'{self.aa_kcats_fwd = }')
+			raise ValueError(f'Forward kcat value was determined to be negative for {aas}.'
+				' Check input parameters like KM and KI or the concentration.')
+		neg_idx = np.where(self.aa_kcats_rev < 0)[0]
+		if len(neg_idx):
+			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
+			print(f'{self.aa_kcats_rev = }')
+			raise ValueError(f'Reverse kcat value was determined to be negative for {aas}.'
 				' Check input parameters like KM and KI or the concentration.')
 		neg_idx = np.where(self.specific_import_rates < 0)[0]
 		if len(neg_idx):
@@ -1078,9 +1089,9 @@ class Metabolism(object):
 
 		# Calculate synthesis rate
 		synthesis = (
-			self.aa_forward_stoich @ (self.aa_kcats * counts_per_aa * forward_fraction)
-			- self.aa_reverse_stoich @ (self.aa_kcats * counts_per_aa * reverse_fraction)
-			- self.aa_kcats * counts_per_aa * loss_fraction
+			self.aa_forward_stoich @ (self.aa_kcats_fwd * counts_per_aa * forward_fraction)
+			- self.aa_reverse_stoich @ (self.aa_kcats_rev * counts_per_aa * reverse_fraction)
+			- self.aa_kcats_rev * counts_per_aa * loss_fraction
 		)
 
 		return synthesis, counts_per_aa, fraction
