@@ -16,16 +16,9 @@ from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIn
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 from wholecell.utils.migration.write_json import write_json
+from wholecell.utils.array_to import array_to
 
 MICROMOLAR_UNITS = units.umol / units.L
-
-def array_from(d):
-    return np.array(list(d.values()))
-
-def array_to(keys, array):
-    return {
-        key: array[index]
-        for index, key in enumerate(keys)}
 
 class PolypeptideElongation(wholecell.processes.process.Process):
 	""" PolypeptideElongation """
