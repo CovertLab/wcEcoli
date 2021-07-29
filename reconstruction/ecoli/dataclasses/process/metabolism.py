@@ -20,7 +20,6 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
 from reconstruction.ecoli.dataclasses.getter_functions import UNDEFINED_COMPARTMENT_IDS_TO_ABBREVS
-from reconstruction.ecoli.initialization import create_bulk_container
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 # NOTE: Importing SimulationDataEcoli would make a circular reference so use Any.
 #from reconstruction.ecoli.simulation_data import SimulationDataEcoli
@@ -344,6 +343,7 @@ class Metabolism(object):
 		# Properties for catalysis matrix (to set hard bounds)
 		self.reaction_catalysts = catalysts
 		self.catalyst_ids = catalyst_ids
+		self.reversible_reactions = reversible_reactions
 		self.reactions_with_catalyst = reactions_with_catalyst
 		self.catalysis_matrix_I = catalysisMatrixI
 		self.catalysis_matrix_J = catalysisMatrixJ
@@ -626,48 +626,53 @@ class Metabolism(object):
 
 		return supply_scaling
 
-	def set_aa_to_transporters_data(self):
-		#Aminoacids to their transporters mapping
+	def set_aa_to_transporters_mapping_data(self, sim_data):
+		'''
+		Creates a dictionary that maps amino acids with their transporters. 
+		Based on this dictionary, it creates a correlation matrix with rows
+		as AA and columns as transporters.
 
-		aa_to_transporters={
-			"L-ALPHA-ALANINE[c]":["CYCA-MONOMER[i]","EG12713-MONOMER[i]","G7399-MONOMER[i]"],
-			"ARG[c]":["YGGA-MONOMER[i]","EG12713-MONOMER[i]","ABC-4-CPLX[i]","CPLX0-7535[i]"],
-			"ASN[c]":["ANSP-MONOMER[i]","EG12713-MONOMER[i]"],
-			"L-ASPARTATE[c]":["DCUA-MONOMER[i]","EG12713-MONOMER[i]","ABC-13-CPLX[i]","GLTP-MONOMER[i]","YCHM-MONOMER[i]","DCTA-MONOMER[i]"],
-			"CYS[c]":[],#["CYS[c]":["EG11902-MONOMER[m]", "EG12713-MONOMER[i]", "G6934-MONOMER[i]", "EG12445-MONOMER[i]", "CPLX0-8152[i]", "ABC-6-CPLX[i]", "EG11639-MONOMER[i]"],
-			"GLT[c]":["XASA-MONOMER[i]","EG12713-MONOMER[i]","ABC-13-CPLX[i]","GLTS-MONOMER[i]", "GLTP-MONOMER[i]"],
-			"GLN[c]":["ABC-12-CPLX[i]", "EG12713-MONOMER[i]"], 
-			"GLY[c]":["CYCA-MONOMER[i]","EG12713-MONOMER[i]","CPLX0-7654[i]"], 
-			"HIS[c]":["ABC-14-CPLX[i]","EG12713-MONOMER[i]"], 
-			"ILE[c]":["BRNQ-MONOMER[i]","EG12713-MONOMER[i]","B4141-MONOMER[i]","ABC-15-CPLX[i]"], 
-			"LEU[c]":["BRNQ-MONOMER[i]","EG12713-MONOMER[i]","ABC-15-CPLX[i]","ABC-304-CPLX[i]", "B4141-MONOMER[i]","G6984-MONOMER[i]"], 
-			"LYS[c]":["LYSP-MONOMER[i]","EG12713-MONOMER[i]","CADB-MONOMER[i]","G6458-MONOMER[i]","ABC-3-CPLX[i]"], 
-			"MET[c]":["METNIQ-METHIONINE-ABC-CPLX[o]","EG12713-MONOMER[i]", "B4141-MONOMER[i]","G6984-MONOMER[i]"], 
-			"PHE[c]":["EG12713-MONOMER[i]", "PHEP-MONOMER[i]","AROP-MONOMER[i]", "ABC-15-CPLX[i]","ABC-304-CPLX[i]"], 
-			"PRO[c]":["ABC-26-CPLX[i]","PUTP-MONOMER[i]","CPLX0-7642[m]","EG12713-MONOMER[i]"], 
-			"SER[c]":["YGJU-MONOMER[m]","EG12713-MONOMER[i]", "SDAC-MONOMER[i]","TDCC-MONOMER[i]"], 
-			"THR[c]":["TDCC-MONOMER[i]","EG12713-MONOMER[i]", "RHTB-MONOMER[i]","RHTC-MONOMER[m]","EG12134-MONOMER[i]"], 
-			"TRP[c]":["EG12713-MONOMER[i]", "TNAB-MONOMER[i]","AROP-MONOMER[i]","MTR-MONOMER[i]"], 
-			"TYR[c]":["EG12713-MONOMER[i]", "TYRP-MONOMER[i]","AROP-MONOMER[i]"], 
-			"L-SELENOCYSTEINE[c]":["EG12713-MONOMER[i]"], 
-			"VAL[c]":["BRNQ-MONOMER[i]","EG12713-MONOMER[i]","B4141-MONOMER[i]","CPLX0-7684[i]","ABC-15-CPLX[i]"]
-		}
+		Args:
+			sim_data (SimulationData object)
 
-		c=0
+		Sets class attributes:
+			aa_to_transporters (Dict[str, list]): dictonary that maps aa to transporters involved
+				in uptake reactions  
+			aa_to_transporters_matrix (np.ndarray[int]): correlation matrix. Columns correspond to transporter
+				enzymes and rows to amino acids
+			aa_transporters_names (np.ndarray[str]): names of all transporters 
+
+		'''
+
+		# Mapping aminoacids to their transporters
+		# CYS does not have any uptake reaction, so we initialize the dict with it to ensure
+		# the presence of the 21 AA
+		aa_to_transporters = {"CYS[c]": []}
+		for reaction in self.transport_reactions:
+			for aa in sim_data.molecule_groups.amino_acids:
+				if aa in self.reaction_stoich[reaction] and self.reaction_stoich[reaction][aa] > 0:
+					if aa not in aa_to_transporters:
+						aa_to_transporters[aa] = []
+					aa_to_transporters[aa] += self.reaction_catalysts[reaction]
+
+		aa_to_transporters = {aa: aa_to_transporters[aa] for aa in sim_data.molecule_groups.amino_acids}
+		self.aa_to_transporters = aa_to_transporters
+
+		c = 0
 		transporters_to_idx = {}
 		for aa, transporters in aa_to_transporters.items():
 			for transporter in transporters:
 				if transporter not in transporters_to_idx:
 					transporters_to_idx[transporter]=c
-					c+=1
+					c += 1
 
 		aa_to_transporters_matrix = [0]*len(aa_to_transporters)
 
 		for i, trnspts in enumerate(aa_to_transporters.values()):
 			temp = [0] * len(transporters_to_idx)
 			for tr in trnspts:
-				temp[transporters_to_idx[tr]]=1
-			aa_to_transporters_matrix[i]=temp
+				temp[transporters_to_idx[tr]] = 1
+			aa_to_transporters_matrix[i] = temp
 
 		aa_transporters_names = list(transporters_to_idx.keys())
 
@@ -675,18 +680,28 @@ class Metabolism(object):
 		self.aa_transporters_names = np.array(aa_transporters_names)
 
 	def set_mechanistic_supply_parameters(self, sim_data, cell_specs):
-		
-		self.set_aa_to_transporters_data()
+		'''
+		Based on the matrix calculated in set_aa_to_transporters_mapping_data(), we calculate
+		the total amount of transporter counts per AA.
+		Args:
+			sim_data (SimulationData object)
+			cell_specs (Dict[str, Dict])
+		Sets class attribute:
+			uptake_kcats_per_aa (np.ndarray[float]): kcats corresponding to generic transport 
+				reactions fo each AA.
+		'''
 
-		#calculate kcats based on self.specific_import_rates, dry mass and transporters counts
+		self.set_aa_to_transporters_mapping_data(sim_data)
+
+		# Calculate kcats based on self.specific_import_rates, dry mass and transporters counts
+		# TODO (Santiago): generate container with create_bulk_container() instead
 		import_rates = sim_data.process.metabolism.specific_import_rates*cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
-		# bulk_container = cell_specs['with_aa']['bulkAverageContainer'].counts(self.aa_transporters_names)
-		with_aa_counts = create_bulk_container(sim_data, condition='with_aa', n_seeds=5).counts(self.aa_transporters_names)
-		counts = self.aa_to_transporters_matrix.dot(with_aa_counts)
+		bulk_container = cell_specs['with_aa']['bulkAverageContainer'].counts(self.aa_transporters_names)
+		counts = self.aa_to_transporters_matrix.dot(bulk_container)
 
 		counts[counts == 0] = 1.
 		import_rates[counts == 1] = 0.
-		self.uptake_kcats_per_aa = import_rates / counts;
+		self.uptake_kcats_per_aa = import_rates / counts
 
 	def set_mechanistic_supply_constants(self, sim_data, cell_specs):
 		"""
@@ -1001,11 +1016,13 @@ class Metabolism(object):
 		)
 		return synthesis, counts_per_aa, fraction
 
-	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum, aa_transporters_counts: np.array, mechanisitc_uptake: bool):
+	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum, aa_transporters_counts: np.ndarray, mechanisitc_uptake: bool):
 		"""
 		Calculate the rate of amino acid uptake.
 
 		Args:
+		 	mechanisitc_uptake: if true, the uptake is calculated based on transporters
+		 	aa_transporters_counts: counts of each transporter
 			aa_in_media: bool for each amino acid being present in current media
 			dry_mass: current dry mass of the cell, with mass units
 
@@ -1013,7 +1030,7 @@ class Metabolism(object):
 			rate of uptake for each amino acid. array is unitless but
 				represents counts of amino acid per second
 		"""
-	
+
 		if not mechanisitc_uptake:
 			return aa_in_media * self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
 

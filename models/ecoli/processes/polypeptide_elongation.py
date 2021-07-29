@@ -265,6 +265,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Write data to listeners
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
 		self.writeToListener("GrowthLimits", "aasUsed", aas_used)
+		self.writeToListener("GrowthLimits", "aaCountDiff", [val for val in self.aa_count_diff.values()])
 
 		self.writeToListener("RibosomeData", "aaCountInSequence", aaCountInSequence)
 		self.writeToListener("RibosomeData", "aaCounts", aa_counts_for_translation)
@@ -483,7 +484,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		imported = self.amino_acid_import(aa_in_media, dry_mass, self.aa_transporters_container.total_counts(), self.process.mechanistic_uptake)
 		if self.process.mechanistic_translation_supply:
 			# Set supply based on mechanistic synthesis and supply
-			self.process.aa_supply = self.process.timeStepSec() * ( synthesis + imported )
+			self.process.aa_supply = self.process.timeStepSec() * (synthesis + imported)
 		else:
 			# Adjust aa_supply higher if amino acid concentrations are low
 			# Improves stability of charging and mimics amino acid synthesis
@@ -598,11 +599,12 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# Use the difference between (expected AA supply based on expected doubling time
 		# and current DCW) and AA used to charge tRNA to update the concentration target
 		# in metabolism during the next time step
-		aa_diff = self.process.aa_supply - np.dot(self.process.aa_from_trna, total_charging_reactions)
-		#aa_diff *= 0.75
+		aa_used_trna = np.dot(self.process.aa_from_trna, total_charging_reactions)
+		aa_diff = self.process.aa_supply - aa_used_trna
 		if np.any(np.abs(aa_diff / self.process.aas.total_counts()) > self.max_amino_acid_adjustment):
 			self.time_step_short_enough = False
 
+		self.process.writeToListener('GrowthLimits', 'trnaCharged', aa_used_trna)
 		return net_charged, {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
 
 	def calculate_trna_charging(self, synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, time_limit=1000, use_disabled_aas=False):

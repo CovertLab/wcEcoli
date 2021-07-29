@@ -163,16 +163,14 @@ class Metabolism(wholecell.processes.process.Process):
 			for met, conc in conc_updates.items()
 			}
 
-		aa_uptake_package=None
+		aa_uptake_package = None
 		if self.mechanistic_aa_uptake:
 			aa_in_media = self.aa_environment.import_present()
 			aa_in_media[self.removed_aa_uptake] = False
 
 			import_rates = (counts_to_molar * self.timeStepSec() * self.amino_acid_import(
-																	aa_in_media, dry_mass, 
-																	self.aa_transporters_container.counts(),
-																	self.mechanistic_aa_uptake)
-							).asNumber(CONC_UNITS)
+								aa_in_media, dry_mass, self.aa_transporters_container.counts(),
+									self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
 			
 			aa_uptake_package=(import_rates[aa_in_media], self.aa_exchange_names[aa_in_media], True)
 			
@@ -238,6 +236,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "targetFluxes", targets / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetFluxesUpper", upper_targets / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetFluxesLower", lower_targets / time_step_unitless)
+		self.writeToListener("EnzymeKinetics", "targetAAConc", [value for value in self.aa_targets.values()])
 
 	def update_amino_acid_targets(self, counts_to_molar, aa_counts, aa_names):
 		"""
@@ -245,6 +244,8 @@ class Metabolism(wholecell.processes.process.Process):
 		and number of amino acids used in polypeptide_elongation
 
 		Args:
+		 	aa_names: names of amnino acids
+		 	aa_counts: counts of each amino acid inside the cell
 			counts_to_molar (float with mol/volume units): conversion from counts
 				to molar for the current state of the cell
 
@@ -268,12 +269,10 @@ class Metabolism(wholecell.processes.process.Process):
 				if aa in self.aa_targets_not_updated:
 					continue
 				self.aa_targets[aa] += diff
+				# TODO (Santiago): Decide whether to update target with concentration instead
 				if self.aa_targets[aa] < 0:
-					self.aa_targets[aa] = aa_counts_map[aa] + diff # 
-				''' 
-					TODO: Decide whether to always update with current counts or with the target as it is now. 
-						  Right now it is only done when target < 0 to ensure it runs with mechanistic updatake and supply 
-				'''
+					self.aa_targets[aa] = aa_counts_map[aa] + diff
+
 		# First time step of a simulation so set target to current counts to prevent
 		# concentration jumps between generations
 		else:
@@ -504,7 +503,10 @@ class FluxBalanceAnalysisModel(object):
 			constrained (Dict[str, units.Unum]): molecules (keys) and their
 				limited max uptake rates (values in mol / mass / time units)
 			conc_updates (Dict[str, Unum]): updates to concentrations targets for
-				molecules (molecule ID: concentration in counts/volume units) <-- I think they come as mmol/L
+				molecules (molecule ID: concentration in mmol/L units)
+			aa_uptake_package (Tuple[np.ndarray, np.ndarray, Boolean]): packed 
+				variables needed to set hard external amino acid updatkes 
+				(uptake rates, amino acid names, force levels)
 		"""
 
 		# Update objective from media exchanges
