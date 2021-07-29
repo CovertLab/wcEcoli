@@ -864,18 +864,46 @@ class Metabolism(object):
 			Consider multiple reaction steps
 		"""
 
+		# TODO: load from file, mmol/g/hr
+		# TODO: handle SEL and maybe set CYS to 0
+		uptake_rates = {
+			"L-ALPHA-ALANINE": 0.28,
+			"ARG": 0.55,
+			"ASN": 0.14,
+			"L-ASPARTATE": 2.97,
+			"CYS": 0,  # 0.0017,
+			"GLN": 0.10,
+			"GLT": 2.25,
+			"GLY": 2.78,
+			"HIS": 0.064,
+			"ILE": 0.31,
+			"LEU": 0.31,
+			"LYS": 0.12,
+			"MET": 0.11,
+			"PHE": 0.14,
+			"PRO": 0.19,
+			"SER": 5.42,
+			"THR": 0.74,
+			"TRP": 0.049,
+			"TYR": 0.038,
+			"VAL": 0.28,
+			'L-SELENOCYSTEINE': 0,
+			}
+
 		aa_ids = sim_data.molecule_groups.amino_acids
 		conc = self.concentration_updates.concentrations_based_on_nutrients
 
 		# Allosteric inhibition constants to match required supply rate
-		rates = (
+		basal_rates = (
 			sim_data.translation_supply_rate['minimal']
-			* sim_data.mass.avg_cell_dry_mass_init * sim_data.constants.n_avogadro
-			)
-		supply = {
-			aa: rate
-			for aa, rate in zip(sim_data.molecule_groups.amino_acids, rates)
-			}
+			* cell_specs['basal']['avgCellDryMassInit'] * sim_data.constants.n_avogadro
+			).asNumber(K_CAT_UNITS)
+		with_aa_rates = (
+			sim_data.translation_supply_rate['minimal_plus_amino_acids']
+			* cell_specs['with_aa']['avgCellDryMassInit'] * sim_data.constants.n_avogadro
+			).asNumber(K_CAT_UNITS)
+		basal_supply_mapping = dict(zip(sim_data.molecule_groups.amino_acids, basal_rates))
+		with_aa_supply_mapping = dict(zip(sim_data.molecule_groups.amino_acids, with_aa_rates))
 		aa_enzymes = []
 		enzyme_to_aa = []
 		aa_kcats = {}
@@ -886,8 +914,12 @@ class Metabolism(object):
 		aa_upstream_kms = {}
 		aa_reverse_kms = {}
 		aa_degradation_kms = {}
-		degradation_rates = {}
+		fwd_rates = {}
+		rev_rates = {}
+		deg_rates = {}
+		specific_import_rates = {}
 		minimal_conc = conc('minimal')
+		with_aa_conc = conc('minimal_plus_amino_acids')
 
 		# Get order of amino acids to calculate parameters for to ensure that
 		# parameters that are dependent on other amino acids are run after
@@ -912,23 +944,29 @@ class Metabolism(object):
 		for amino_acid in ordered_aa_ids:
 			data = self.aa_synthesis_pathways[amino_acid]
 			enzymes = data['enzymes']
-			enzyme_counts = basal_container.counts(enzymes).sum()
+			fwd_enzymes_basal = basal_container.counts(enzymes).sum()
+			fwd_enzymes_with_aa = with_aa_container.counts(enzymes).sum()
 
-			aa_conc = minimal_conc[amino_acid]
+			aa_conc_basal = minimal_conc[amino_acid]
+			aa_conc_with_aa = with_aa_conc[amino_acid]
 			if data['ki'] is None:
 				ki = np.inf * units.mol / units.L
 			else:
 				# Get largest dynamic range possible given the range of measured KIs
 				lower_limit, upper_limit = data['ki']
-				if aa_conc < lower_limit:
+				if aa_conc_basal < lower_limit:
 					ki = lower_limit
-				elif aa_conc > upper_limit:
+				elif aa_conc_basal > upper_limit:
 					ki = upper_limit
 				else:
-					ki = aa_conc
+					ki = aa_conc_basal
 			upstream_aa = [aa for aa in data['upstream']]
-			km_conc = METABOLITE_CONCENTRATION_UNITS * np.array([
+			km_conc_basal = METABOLITE_CONCENTRATION_UNITS * np.array([
 				minimal_conc[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+				for aa in upstream_aa
+				])
+			km_conc_with_aa = METABOLITE_CONCENTRATION_UNITS * np.array([
+				with_aa_conc[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
 				for aa in upstream_aa
 				])
 			kms_upstream = data['km, upstream']
@@ -945,11 +983,6 @@ class Metabolism(object):
 				km_reverse = np.inf * units.mol / units.L
 			km_degradation = data['km, degradation']
 
-			total_supply = supply[amino_acid]
-			for aa, stoich in data['downstream'].items():
-				total_supply += stoich * supply[aa]
-				total_supply += stoich * degradation_rates.get(aa, 0 / units.min)
-
 			# Make required adjustments in order to get positive kcats and import rates
 			for parameter, factor in self.aa_synthesis_pathway_adjustments.get(amino_acid, {}).items():
 				if parameter == 'ki':
@@ -963,13 +996,50 @@ class Metabolism(object):
 				else:
 					raise ValueError(f'Unexpected parameter adjustment ({parameter}) for {amino_acid}.')
 
+			# TODO: check these adjustments
+			if amino_acid == 'CYS[c]':
+				km_degradation = minimal_conc[amino_acid] * 10
+			if amino_acid == 'SER[c]':
+				km_degradation = minimal_conc[amino_acid] * 10
+
 			# Calculate kcat value to ensure sufficient supply to double
-			kcat = total_supply / (enzyme_counts * (1 / (1 + aa_conc / ki) * np.prod(1 / (1 + kms / km_conc)) - 1 / (1 + km_reverse / aa_conc) - 1 / (1 + km_degradation / aa_conc)))
-			data['kcat'] = kcat
+			rev_enzymes_basal = fwd_enzymes_basal  # TODO: get reverse counts
+			fwd_fraction_basal = units.strip_empty_units(1 / (1 + aa_conc_basal / ki) * np.prod(1 / (1 + kms / km_conc_basal)))
+			rev_fraction_basal = units.strip_empty_units(1 / (1 + km_reverse / aa_conc_basal * (1 + aa_conc_basal / km_degradation)))
+			deg_fraction_basal = units.strip_empty_units(1 / (1 + km_degradation / aa_conc_basal * (1 + aa_conc_basal / km_reverse)))
+			loss_fraction_basal = rev_fraction_basal + deg_fraction_basal
+			fwd_capacity_basal = fwd_enzymes_basal * fwd_fraction_basal
+			rev_capacity_basal = rev_enzymes_basal * loss_fraction_basal
+
+			rev_enzymes_with_aa = fwd_enzymes_with_aa  # TODO: get reverse counts
+			fwd_fraction_with_aa = units.strip_empty_units(1 / (1 + aa_conc_with_aa / ki) * np.prod(1 / (1 + kms / km_conc_with_aa)))
+			rev_fraction_with_aa = units.strip_empty_units(1 / (1 + km_reverse / aa_conc_with_aa * (1 + aa_conc_with_aa / km_degradation)))
+			deg_fraction_with_aa = units.strip_empty_units(1 / (1 + km_degradation / aa_conc_with_aa * (1 + aa_conc_with_aa / km_reverse)))
+			loss_fraction_with_aa = rev_fraction_with_aa + deg_fraction_with_aa
+			fwd_capacity_with_aa = fwd_enzymes_with_aa * fwd_fraction_with_aa
+			rev_capacity_with_aa = rev_enzymes_with_aa * loss_fraction_with_aa
+
+			downstream_aas = []  # TODO
+			supply_basal = basal_supply_mapping[amino_acid]
+			downstream_basal = np.sum([fwd_rates[aa][0] - rev_rates[aa][0] for aa in downstream_aas])
+			supply_with_aa = with_aa_supply_mapping[amino_acid]
+			downstream_with_aa = np.sum([fwd_rates[aa][1] - rev_rates[aa][1] for aa in downstream_aas])
+			uptake = (units.mmol/units.g/units.h * uptake_rates[amino_acid[:-3]] * cell_specs['with_aa']['avgCellDryMassInit']).asNumber(units.count * K_CAT_UNITS)
+
+			balance_basal = supply_basal + downstream_basal
+			balance_with_aa = supply_with_aa + downstream_with_aa - uptake
+			A = np.array([[fwd_capacity_basal, -rev_capacity_basal], [fwd_capacity_with_aa, -rev_capacity_with_aa]])
+			b = np.array([balance_basal, balance_with_aa])
+			try:
+				kcat_fwd, kcat_rev = np.linalg.solve(A, b)
+			except np.linalg.LinAlgError:
+				print(f'Warning: could not solve directly for {amino_acid} kcats - switching to least squares')
+				kcat_fwd, kcat_rev = np.linalg.lstsq(A, b, rcond=None)[0]
+			data['kcat'] = kcat_fwd
 
 			aa_enzymes += enzymes
 			enzyme_to_aa += [amino_acid] * len(enzymes)
-			aa_kcats[amino_acid] = kcat.asNumber(K_CAT_UNITS)
+			aa_kcats[amino_acid] = kcat_fwd
 			aa_kis[amino_acid] = ki.asNumber(METABOLITE_CONCENTRATION_UNITS)
 			upstream_aas_for_km[amino_acid] = upstream_aa
 			upstream_aas[amino_acid] = data['upstream']
@@ -977,7 +1047,13 @@ class Metabolism(object):
 			aa_upstream_kms[amino_acid] = kms.asNumber(METABOLITE_CONCENTRATION_UNITS)
 			aa_reverse_kms[amino_acid] = km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS)
 			aa_degradation_kms[amino_acid] = km_degradation.asNumber(METABOLITE_CONCENTRATION_UNITS)
-			degradation_rates[amino_acid] = kcat * enzyme_counts / (1 + km_degradation / aa_conc)
+			fwd_rates[amino_acid] = (kcat_fwd * fwd_enzymes_basal * fwd_fraction_basal,
+				kcat_fwd * fwd_enzymes_with_aa * fwd_fraction_with_aa)
+			rev_rates[amino_acid] = (kcat_rev * rev_enzymes_basal * rev_fraction_basal,
+				kcat_rev * rev_enzymes_with_aa * rev_fraction_with_aa)
+			deg_rates[amino_acid] = (kcat_rev * rev_enzymes_basal * deg_fraction_basal,
+				kcat_rev * rev_enzymes_with_aa * deg_fraction_with_aa)
+			specific_import_rates[amino_acid] = uptake
 
 		self.aa_enzymes = np.unique(aa_enzymes)
 		self.aa_kcats_fwd = np.array([aa_kcats[aa] for aa in aa_ids])
@@ -986,12 +1062,11 @@ class Metabolism(object):
 		self.aa_upstream_kms = [aa_upstream_kms[aa] for aa in aa_ids]
 		self.aa_reverse_kms = np.array([aa_reverse_kms[aa] for aa in aa_ids])
 		self.aa_degradation_kms = np.array([aa_degradation_kms[aa] for aa in aa_ids])
+		self.specific_import_rates = np.array([specific_import_rates[aa] for aa in aa_ids])
 
 		# Convert aa_conc to array with upstream aa_conc via indexing (aa_conc[self.aa_upstream_mapping])
-		aa_to_index = {aa: i for i, aa in enumerate(aa_ids)}
-
 		# TODO: better way of handling this that is efficient computationally
-		self.aa_to_index = aa_to_index
+		self.aa_to_index = {aa: i for i, aa in enumerate(aa_ids)}
 		self.aa_upstream_aas = [upstream_aas_for_km[aa] for aa in aa_ids]
 
 		# Convert enzyme counts to an amino acid basis via dot product (counts @ self.enzyme_to_amino_acid)
@@ -1008,39 +1083,21 @@ class Metabolism(object):
 		self.aa_forward_stoich = np.eye(len(aa_ids))
 		for aa, upstream in upstream_aas.items():
 			for upstream_aa, stoich in upstream.items():
-				self.aa_forward_stoich[aa_to_index[upstream_aa], aa_to_index[aa]] = -stoich
+				self.aa_forward_stoich[self.aa_to_index[upstream_aa], self.aa_to_index[aa]] = -stoich
 		self.aa_reverse_stoich = np.eye(len(aa_ids))
 		for aa, reverse in reverse_aas.items():
 			for reverse_aa, stoich in reverse.items():
-				self.aa_reverse_stoich[aa_to_index[reverse_aa], aa_to_index[aa]] = -stoich
-
-		# Calculate import rates to match supply in amino acid conditions
-		with_aa_rates = (
-			sim_data.translation_supply_rate['minimal_plus_amino_acids']
-			* cell_specs['with_aa']['avgCellDryMassInit'] * sim_data.constants.n_avogadro
-			).asNumber(K_CAT_UNITS)
-		with_aa_supply = {
-			aa: rate
-			for aa, rate in zip(sim_data.molecule_groups.amino_acids, with_aa_rates)
-			}
-		enzyme_counts = with_aa_container.counts(self.aa_enzymes)
-		aa_conc = units.mol / units.L * np.array([
-			conc('minimal_plus_amino_acids')[aa].asNumber(units.mol/units.L)
-			for aa in aa_ids
-			])
-
-		supply = np.array([with_aa_supply[aa] for aa in aa_ids])  # TODO: check that this is ok and do not need other adjustments for downstream
-		synthesis, _, _ = self.amino_acid_synthesis(enzyme_counts, aa_conc)
-		self.specific_import_rates = (supply - synthesis) / cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS)
-		self.specific_import_rates[aa_ids.index('CYS[c]')] = 0  # Does not have direct import
+				self.aa_reverse_stoich[self.aa_to_index[reverse_aa], self.aa_to_index[aa]] = -stoich
 
 		# Concentrations for reference in analysis plot
 		conversion = sim_data.constants.cell_density / sim_data.constants.n_avogadro * sim_data.mass.cell_dry_mass_fraction
 		basal_counts = basal_container.counts(self.aa_enzymes)
-		self.aa_supply_enzyme_conc_with_aa = conversion * enzyme_counts / cell_specs['with_aa']['avgCellDryMassInit']
+		with_aa_counts = with_aa_container.counts(self.aa_enzymes)
+		self.aa_supply_enzyme_conc_with_aa = conversion * with_aa_counts / cell_specs['with_aa']['avgCellDryMassInit']
 		self.aa_supply_enzyme_conc_basal = conversion * basal_counts / cell_specs['basal']['avgCellDryMassInit']
 
 		# Check calculations that could end up negative
+		# TODO: are these necessary with new approach?
 		neg_idx = np.where(self.aa_kcats_fwd < 0)[0]
 		if len(neg_idx):
 			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
