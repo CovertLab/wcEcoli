@@ -54,7 +54,6 @@ class Metabolism(wholecell.processes.process.Process):
 		environment = self._external_states['Environment']
 		self.use_trna_charging = sim._trna_charging
 		self.include_ppgpp = not sim._ppgpp_regulation or not self.use_trna_charging
-		self.mechanistic_translation_supply = sim._mechanistic_translation_supply
 		self.mechanistic_aa_uptake = sim._mechanistic_aa_uptake
 
 		# Create model to use to solve metabolism updates
