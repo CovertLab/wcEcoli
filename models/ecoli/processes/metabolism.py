@@ -109,12 +109,10 @@ class Metabolism(wholecell.processes.process.Process):
 			aa in self.aa_targets_not_updated
 			for aa in self.aa_exchange_names
 			])
-		
+
 		self.amino_acid_import = sim_data.process.metabolism.amino_acid_import
 		self.aa_transporters_names = sim_data.process.metabolism.aa_transporters_names
 		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
-
-		self.aa_in_metabolites = [aa in sim_data.molecule_groups.amino_acids for aa in self.model.metaboliteNamesFromNutrients] 
 
 	def calculateRequest(self):
 		self.metabolites.requestAll()
@@ -151,9 +149,7 @@ class Metabolism(wholecell.processes.process.Process):
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
 		conc_updates = self.model.getBiomassAsConcentrations(doubling_time)
 		if self.use_trna_charging:
-			conc_updates.update(self.update_amino_acid_targets(counts_to_molar, 
-				metabolite_counts_init[self.aa_in_metabolites],
-				np.array(self.model.metaboliteNamesFromNutrients)[self.aa_in_metabolites]))
+			conc_updates.update(self.update_amino_acid_targets(counts_to_molar))
 		if self.include_ppgpp:
 			conc_updates[self.model.ppgpp_id] = self.model.getppGppConc(doubling_time).asUnit(CONC_UNITS)
 		## Converted from units to make reproduction from listener data
@@ -171,7 +167,7 @@ class Metabolism(wholecell.processes.process.Process):
 				aa_in_media, dry_mass, self.aa_transporters_container.counts(),
 				self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
 			aa_uptake_package=(import_rates[aa_in_media], self.aa_exchange_names[aa_in_media], True)
-			
+
 		# Update FBA problem based on current state
 		## Set molecule availability (internal and external)
 		self.model.set_molecule_levels(metabolite_counts_init, counts_to_molar,
@@ -236,7 +232,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "targetFluxesLower", lower_targets / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetAAConc", [self.aa_targets.get(id_, 0) for id_ in self.aa_names])
 
-	def update_amino_acid_targets(self, counts_to_molar, aa_counts, aa_names):
+	def update_amino_acid_targets(self, counts_to_molar):
 		"""
 		Finds new amino acid concentration targets based on difference in supply
 		and number of amino acids used in polypeptide_elongation
@@ -244,8 +240,6 @@ class Metabolism(wholecell.processes.process.Process):
 		Args:
 			counts_to_molar (float with mol/volume units): conversion from counts
 				to molar for the current state of the cell
-			aa_counts: counts of each amino acid inside the cell
-			aa_names: names of amnino acids
 
 		Returns:
 			dict {AA name (str): AA conc (float with mol/volume units)}:
@@ -259,22 +253,20 @@ class Metabolism(wholecell.processes.process.Process):
 		"""
 
 		count_diff = self._sim.processes['PolypeptideElongation'].aa_count_diff
-		aa_counts_map = {aa: count for aa,count in zip(aa_names, aa_counts)}
 
 		if len(self.aa_targets):
-			prev_targets = {aa: counts for aa, counts in self.aa_targets.items()}
 			for aa, diff in count_diff.items():
 				if aa in self.aa_targets_not_updated:
 					continue
 				self.aa_targets[aa] += diff
-				# TODO (Santiago): Improve targets update 
+				# TODO (Santiago): Improve targets update
 				if self.aa_targets[aa] < 0:
+					print(f'Warning: updated amino acid target for {aa} was negative - adjusted to be positive.')
 					self.aa_targets[aa] = 1
 
 		# First time step of a simulation so set target to current counts to prevent
 		# concentration jumps between generations
 		else:
-			prev_targets = self.aa_targets
 			for aa, counts in zip(self.aa_names, self.aas.total_counts()):
 				if aa in self.aa_targets_not_updated:
 					continue
@@ -501,8 +493,8 @@ class FluxBalanceAnalysisModel(object):
 				limited max uptake rates (values in mol / mass / time units)
 			conc_updates (Dict[str, Unum]): updates to concentrations targets for
 				molecules (molecule ID: concentration in mmol/L units)
-			aa_uptake_package (Tuple[np.ndarray, np.ndarray, Boolean]): packed 
-				variables needed to set hard external amino acid updatkes 
+			aa_uptake_package (Tuple[np.ndarray, np.ndarray, Boolean]): packed
+				variables needed to set hard external amino acid updatkes
 				(uptake rates, amino acid names, force levels)
 		"""
 
