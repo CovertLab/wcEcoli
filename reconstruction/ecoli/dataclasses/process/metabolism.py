@@ -891,6 +891,7 @@ class Metabolism(object):
 			}
 
 		aa_ids = sim_data.molecule_groups.amino_acids
+		self.aa_to_index = {aa: i for i, aa in enumerate(aa_ids)}
 		conc = self.concentration_updates.concentrations_based_on_nutrients
 
 		# Allosteric inhibition constants to match required supply rate
@@ -906,11 +907,10 @@ class Metabolism(object):
 		with_aa_supply_mapping = dict(zip(sim_data.molecule_groups.amino_acids, with_aa_rates))
 		aa_enzymes = []
 		enzyme_to_aa = []
-		aa_kcats = {}
+		aa_kcats_fwd = {}
+		aa_kcats_rev = {}
 		aa_kis = {}
 		upstream_aas_for_km = {}
-		upstream_aas = {}
-		reverse_aas = {}
 		aa_upstream_kms = {}
 		aa_reverse_kms = {}
 		aa_degradation_kms = {}
@@ -924,15 +924,30 @@ class Metabolism(object):
 		# Get order of amino acids to calculate parameters for to ensure that
 		# parameters that are dependent on other amino acids are run after
 		# those calculations have completed
+		self.aa_forward_stoich = np.eye(len(aa_ids))
+		self.aa_reverse_stoich = np.eye(len(aa_ids))
 		dependencies = {}
 		for aa in aa_ids:
 			for downstream_aa in self.aa_synthesis_pathways[aa]['downstream']:
 				if np.isfinite(self.aa_synthesis_pathways[downstream_aa]['km, degradation'].asNumber()):
-					dependencies[aa] = dependencies.get(aa, []) + [downstream_aa]
+					dependencies[aa] = dependencies.get(aa, set()) | {downstream_aa}
+
+			# Convert individual supply calculations to overall supply based on dependencies
+			# via dot product (self.aa_forward_stoich @ supply)
+			# TODO: check for loops (eg ser dependent on glt, glt dependent on ser)
+			# TODO: check this makes sense with new format
+			for upstream_aa, stoich in self.aa_synthesis_pathways[aa]['upstream'].items():
+				self.aa_forward_stoich[self.aa_to_index[upstream_aa], self.aa_to_index[aa]] = -stoich
+				dependencies[upstream_aa] = dependencies.get(upstream_aa, set()) | {aa}
+
+			for reverse_aa, stoich in self.aa_synthesis_pathways[aa]['reverse'].items():
+				self.aa_reverse_stoich[self.aa_to_index[reverse_aa], self.aa_to_index[aa]] = -stoich
+				dependencies[reverse_aa] = dependencies.get(reverse_aa, set()) | {aa}
+
 		ordered_aa_ids = []
 		for _ in aa_ids:  # limit number of iterations number of amino acids in case there are cyclic links
 			for aa in sorted(set(aa_ids) - set(ordered_aa_ids)):
-				for downstream_aa in dependencies.get(aa, []):
+				for downstream_aa in dependencies.get(aa, set()):
 					if downstream_aa not in ordered_aa_ids:
 						break
 				else:
@@ -1019,12 +1034,22 @@ class Metabolism(object):
 			fwd_capacity_with_aa = fwd_enzymes_with_aa * fwd_fraction_with_aa
 			rev_capacity_with_aa = rev_enzymes_with_aa * loss_fraction_with_aa
 
-			downstream_aas = []  # TODO
 			supply_basal = basal_supply_mapping[amino_acid]
-			downstream_basal = np.sum([fwd_rates[aa][0] - rev_rates[aa][0] for aa in downstream_aas])
 			supply_with_aa = with_aa_supply_mapping[amino_acid]
-			downstream_with_aa = np.sum([fwd_rates[aa][1] - rev_rates[aa][1] for aa in downstream_aas])
-			uptake = (units.mmol/units.g/units.h * uptake_rates[amino_acid[:-3]] * cell_specs['with_aa']['avgCellDryMassInit']).asNumber(units.count * K_CAT_UNITS)
+			downstream_basal = 0
+			downstream_with_aa = 0
+			for i, stoich in enumerate(self.aa_forward_stoich[self.aa_to_index[amino_acid], :]):
+				if stoich < 0:
+					downstream_aa = aa_ids[i]
+					downstream_basal += -stoich * fwd_rates[downstream_aa][0]
+					downstream_with_aa += -stoich * fwd_rates[downstream_aa][1]
+			for i, stoich in enumerate(self.aa_reverse_stoich[self.aa_to_index[amino_acid], :]):
+				if stoich < 0:
+					downstream_aa = aa_ids[i]
+					downstream_basal += stoich * rev_rates[downstream_aa][0]
+					downstream_with_aa += stoich * rev_rates[downstream_aa][1]
+			uptake = (units.mmol/units.g/units.h * uptake_rates[amino_acid[:-3]]
+				* cell_specs['with_aa']['avgCellDryMassInit']).asNumber(units.count * K_CAT_UNITS)
 
 			balance_basal = supply_basal + downstream_basal
 			balance_with_aa = supply_with_aa + downstream_with_aa - uptake
@@ -1039,11 +1064,10 @@ class Metabolism(object):
 
 			aa_enzymes += enzymes
 			enzyme_to_aa += [amino_acid] * len(enzymes)
-			aa_kcats[amino_acid] = kcat_fwd
+			aa_kcats_fwd[amino_acid] = kcat_fwd
+			aa_kcats_rev[amino_acid] = kcat_rev
 			aa_kis[amino_acid] = ki.asNumber(METABOLITE_CONCENTRATION_UNITS)
 			upstream_aas_for_km[amino_acid] = upstream_aa
-			upstream_aas[amino_acid] = data['upstream']
-			reverse_aas[amino_acid] = data['reverse']
 			aa_upstream_kms[amino_acid] = kms.asNumber(METABOLITE_CONCENTRATION_UNITS)
 			aa_reverse_kms[amino_acid] = km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS)
 			aa_degradation_kms[amino_acid] = km_degradation.asNumber(METABOLITE_CONCENTRATION_UNITS)
@@ -1056,17 +1080,15 @@ class Metabolism(object):
 			specific_import_rates[amino_acid] = uptake
 
 		self.aa_enzymes = np.unique(aa_enzymes)
-		self.aa_kcats_fwd = np.array([aa_kcats[aa] for aa in aa_ids])
-		self.aa_kcats_rev = self.aa_kcats_fwd.copy()  # TODO: solve for these separately
+		self.aa_kcats_fwd = np.array([aa_kcats_fwd[aa] for aa in aa_ids])
+		self.aa_kcats_rev = np.array([aa_kcats_rev[aa] for aa in aa_ids])
 		self.aa_kis = np.array([aa_kis[aa] for aa in aa_ids])
 		self.aa_upstream_kms = [aa_upstream_kms[aa] for aa in aa_ids]
 		self.aa_reverse_kms = np.array([aa_reverse_kms[aa] for aa in aa_ids])
 		self.aa_degradation_kms = np.array([aa_degradation_kms[aa] for aa in aa_ids])
 		self.specific_import_rates = np.array([specific_import_rates[aa] for aa in aa_ids])
 
-		# Convert aa_conc to array with upstream aa_conc via indexing (aa_conc[self.aa_upstream_mapping])
 		# TODO: better way of handling this that is efficient computationally
-		self.aa_to_index = {aa: i for i, aa in enumerate(aa_ids)}
 		self.aa_upstream_aas = [upstream_aas_for_km[aa] for aa in aa_ids]
 
 		# Convert enzyme counts to an amino acid basis via dot product (counts @ self.enzyme_to_amino_acid)
@@ -1076,19 +1098,6 @@ class Metabolism(object):
 		for enzyme, aa in zip(aa_enzymes, enzyme_to_aa):
 			self.enzyme_to_amino_acid[enzyme_mapping[enzyme], aa_mapping[aa]] = 1
 
-		# Convert individual supply calculations to overall supply based on dependencies
-		# via dot product (self.aa_forward_stoich @ supply)
-		# TODO: check for loops (eg ser dependent on glt, glt dependent on ser)
-		# TODO: check this makes sense with new format
-		self.aa_forward_stoich = np.eye(len(aa_ids))
-		for aa, upstream in upstream_aas.items():
-			for upstream_aa, stoich in upstream.items():
-				self.aa_forward_stoich[self.aa_to_index[upstream_aa], self.aa_to_index[aa]] = -stoich
-		self.aa_reverse_stoich = np.eye(len(aa_ids))
-		for aa, reverse in reverse_aas.items():
-			for reverse_aa, stoich in reverse.items():
-				self.aa_reverse_stoich[self.aa_to_index[reverse_aa], self.aa_to_index[aa]] = -stoich
-
 		# Concentrations for reference in analysis plot
 		conversion = sim_data.constants.cell_density / sim_data.constants.n_avogadro * sim_data.mass.cell_dry_mass_fraction
 		basal_counts = basal_container.counts(self.aa_enzymes)
@@ -1097,7 +1106,6 @@ class Metabolism(object):
 		self.aa_supply_enzyme_conc_basal = conversion * basal_counts / cell_specs['basal']['avgCellDryMassInit']
 
 		# Check calculations that could end up negative
-		# TODO: are these necessary with new approach?
 		neg_idx = np.where(self.aa_kcats_fwd < 0)[0]
 		if len(neg_idx):
 			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
