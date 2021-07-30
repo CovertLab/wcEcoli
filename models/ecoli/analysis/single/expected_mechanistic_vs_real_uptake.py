@@ -11,11 +11,11 @@ from models.ecoli.analysis import singleAnalysisPlot
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		
+
 		# Amino acid IDs
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 		aa_ids = sim_data.molecule_groups.amino_acids
-		
+
 		# Amino acid exchanges fluxes
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))
 		initial_time = main_reader.readAttribute("initialTime")
@@ -27,7 +27,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		external_molecule_ids = fba_results.readAttribute("externalMoleculeIDs")
 
 		#Transporter counts
-		monomers = TableReader(os.path.join(simOutDir,"BulkMolecules")) 
+		monomers = TableReader(os.path.join(simOutDir,"BulkMolecules"))
 		monomer_names = monomers.readAttribute('objectNames')
 		monomer_counts = monomers.readColumn('counts')
 
@@ -63,11 +63,11 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				aa_flux = np.zeros(len(time))
 
 			#calculate expected rate based on kcats and transporters
-			rate_= kcats[old_aa_tag] * np.ones(len(aa_flux)) 
+			rate_= kcats[old_aa_tag] * np.ones(len(aa_flux))
 			t_counts = np.zeros(len(aa_flux))
 			for i in set(aa_to_transporters[old_aa_tag]):
 				t_counts += monomer_counts[:, monomer_names.index(i)]
-			
+
 			# Right now, code breaks because CYS has 0 transporters
 			rate_ *= t_counts
 

@@ -72,7 +72,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		## Plot data for each amino acid
 		for i, (supply, aa_conc, synthesis, imported, use, diff, target, charged) in enumerate(zip(
-				normalized_supply, aa_conc, normalized_synthesis, normalized_imported, normalized_use, 
+				normalized_supply, aa_conc, normalized_synthesis, normalized_imported, normalized_use,
 				normalized_diff, normalized_targets, normalized_charged)):
 			row = i // cols
 			col = i % cols
