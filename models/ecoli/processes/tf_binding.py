@@ -81,9 +81,8 @@ class TfBinding(wholecell.processes.process.Process):
 			"mass"][tf_indexes]/self.nAvogadro).asNumber(units.fg)
 
 		# saving updates
-		self.save_time = 2
+		self.save_time = [2, 4, 102]
 		self.update_to_save = {}
-		self.saved = False
 
 
 	def calculateRequest(self):
@@ -96,6 +95,8 @@ class TfBinding(wholecell.processes.process.Process):
 
 
 	def evolveState(self):
+     	# Reset random state to directly compare with vivarium
+		# self.randomState = np.random.RandomState(seed = 0)
 		# If there are no promoters, return immediately
 		if self.promoters.total_count() == 0:
 			return
@@ -118,11 +119,14 @@ class TfBinding(wholecell.processes.process.Process):
 
 		self.update_to_save = {
 			'active_tfs': {}}
+		partitioned_tf_counts = {'bulk': {}}
 
 		for tf_idx, tf_id in enumerate(self.tf_ids):
 			# Free all DNA-bound transcription factors into free active
 			# transcription factors
 			active_tf_view = self.active_tf_view[tf_id]
+			partitioned_tf_counts['bulk'][tf_id + '[c]'] = active_tf_view.count()
+   
 			bound_tf_counts = n_bound_TF[tf_idx]
 			active_tf_view.countInc(bound_tf_counts)
    
@@ -133,12 +137,6 @@ class TfBinding(wholecell.processes.process.Process):
 			# so need to add freed TFs to the total active
 			active_tf_counts = active_tf_view.total_counts() + bound_tf_counts
 			n_available_active_tfs = active_tf_view.count()
-   
-			# Print out differences between .total_counts() and .count() for affected TFs
-			""" if not (active_tf_counts[0] == n_available_active_tfs):
-				print(f"{active_tf_view._query}: ({active_tf_view.total_counts()[0]} + "
-          			f"{bound_tf_counts} = {active_tf_counts[0]} \033[94m != \033[0m "
-             		f"{n_available_active_tfs})") """
 
 			# Determine the number of available promoter sites
 			available_promoters = np.isin(TU_index, self.TF_to_TU_idx[tf_id])
@@ -224,7 +222,8 @@ class TfBinding(wholecell.processes.process.Process):
 		self.writeToListener(
 			"RnaSynthProb", "n_bound_TF_per_TU", n_bound_TF_per_TU)
 
-		if not self.saved and self._sim.time() >= self.save_time:
+		if self._sim.time() in self.save_time:
 			write_json(f'out/migration/tf_binding_update_t{int(self._sim.time())}.json',
 					   self.update_to_save)
-			self.saved = True
+			write_json(f'out/migration/tf_binding_partitioned_t{int(self._sim.time())}.json',
+							partitioned_tf_counts)

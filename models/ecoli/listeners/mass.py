@@ -256,8 +256,6 @@ class Mass(wholecell.listeners.listener.Listener):
 					   
 			self.saved = True
 
-			import ipdb; ipdb.set_trace()
-
 
 	def tableCreate(self, tableWriter):
 		# Store units as metadata
