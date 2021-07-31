@@ -3,12 +3,9 @@ PolypeptideElongation
 
 Translation elongation sub-model.
 
-TODO:
-- see the initiation process for more TODOs
 """
 
 from __future__ import absolute_import, division, print_function
-
 
 import numpy as np
 from scipy.integrate import odeint
@@ -18,9 +15,10 @@ import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
+from wholecell.utils.migration.write_json import write_json
+from wholecell.utils.array_to import array_to
 
 MICROMOLAR_UNITS = units.umol / units.L
-
 
 class PolypeptideElongation(wholecell.processes.process.Process):
 	""" PolypeptideElongation """
@@ -41,7 +39,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Load parameters
 		self.n_avogadro = constants.n_avogadro
-		proteinIds = translation.monomer_data['id']
+		self.proteinIds = translation.monomer_data['id']
 		self.proteinLengths = translation.monomer_data["length"].asNumber()
 		self.proteinSequences = translation.translation_sequences
 		self.aaWeightsIncorporated = translation.translation_monomer_weights
@@ -49,6 +47,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = translation.make_elongation_rates
 		self.next_aa_pad = translation.next_aa_pad
+		self.water = sim_data.molecule_ids.water
 
 		self.ribosomeElongationRate = float(sim_data.growth_rate_parameters.ribosomeElongationRate.asNumber(units.aa / units.s))
 
@@ -57,7 +56,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.import_threshold = sim_data.external_state.import_constraint_threshold
 
 		# Used for figure in publication
-		self.trpAIndex = np.where(proteinIds == "TRYPSYN-APROTEIN[c]")[0][0]
+		self.trpAIndex = np.where(self.proteinIds == "TRYPSYN-APROTEIN[c]")[0][0]
 
 		# Create view onto actively elongating 70S ribosomes
 		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
@@ -65,25 +64,29 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Create views onto 30S and 50S ribosomal subunits for termination
 		self.ribosome30S = self.bulkMoleculeView(sim_data.molecule_ids.s30_full_complex)
 		self.ribosome50S = self.bulkMoleculeView(sim_data.molecule_ids.s50_full_complex)
+		self.ribosome30S_name = sim_data.molecule_ids.s30_full_complex
+		self.ribosome50S_name = sim_data.molecule_ids.s50_full_complex
 
 		# Create view onto all proteins
-		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
+		self.bulkMonomers = self.bulkMoleculesView(self.proteinIds)
 
 		# Create views onto all polymerization reaction small molecules
 		self.aas = self.bulkMoleculesView(sim_data.molecule_groups.amino_acids)
+		self.amino_acids = sim_data.molecule_groups.amino_acids
 
 		self.elngRateFactor = 1.
 
 		# Data structures for charging
 		self.aa_from_trna = transcription.aa_from_trna
 
+        # TODO: Save update for trna_charging for TranslationSupplyElongationModel and SteadStateElongationModel
 		# Set modeling method
-		if sim._trna_charging:
-			self.elongation_model = SteadyStateElongationModel(sim_data, self)
-		elif sim._translationSupply:
-			self.elongation_model = TranslationSupplyElongationModel(sim_data, self)
-		else:
-			self.elongation_model = BaseElongationModel(sim_data, self)
+		# if sim._trna_charging:
+		# 	self.elongation_model = SteadyStateElongationModel(sim_data, self)
+		# elif sim._translationSupply:
+		# 	self.elongation_model = TranslationSupplyElongationModel(sim_data, self)
+		# else:
+		self.elongation_model = BaseElongationModel(sim_data, self)
 		self.ppgpp_regulation = sim._ppgpp_regulation
 		self.mechanistic_supply = sim._mechanistic_aa_supply
 
@@ -92,10 +95,16 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		## Need to account for ATP hydrolysis for charging that has been
 		## removed from measured GAM (ATP -> AMP is 2 hydrolysis reactions)
 		## if charging reactions are not explicitly modeled
-		if not sim._trna_charging:
-			self.gtpPerElongation += 2
+
+		# if not sim._trna_charging:
+		# 	self.gtpPerElongation += 2
+
 		## Variable for metabolism to read to consume required energy
 		self.gtp_to_hydrolyze = 0
+
+		# saving updates
+		self.update_to_save = {}
+		self.save_times = [2, 4, 6, 12, 1002]
 
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
@@ -103,6 +112,16 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# The maximum number of amino acids that can be elongated in a single timestep is set to 22 intentionally as the minimum number of padding values
 		# on the protein sequence matrix is set to 22. If timesteps longer than 1.0s are used, this feature will lead to errors in the effective ribosome
 		# elongation rate.
+
+		self.update_to_save = {
+            'molecules': {
+                self.water: 0,
+            },
+            'listeners': {
+                'ribosome_data': {},
+                'growth_limits': {}
+			}
+		}
 
 		current_media_id = self._external_states['Environment'].current_media_id
 
@@ -140,6 +159,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		mol_aas_supplied = translation_supply_rate * dryMass * self.timeStepSec() * units.s
 		self.aa_supply = units.strip_empty_units(mol_aas_supplied * self.n_avogadro)
 		self.writeToListener("RibosomeData", "translationSupply", translation_supply_rate.asNumber())
+		self.update_to_save['listeners']['ribosome_data']['translation_supply'] = translation_supply_rate.asNumber()
 
 		# MODEL SPECIFIC: Calculate AA request
 		fraction_charged, aa_counts_for_translation = self.elongation_model.request(aasInSequences)
@@ -148,6 +168,10 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("GrowthLimits", "fraction_trna_charged", np.dot(fraction_charged, self.aa_from_trna))
 		self.writeToListener("GrowthLimits", "aaPoolSize", self.aas.total_counts())
 		self.writeToListener("GrowthLimits", "aaRequestSize", aa_counts_for_translation)
+
+		self.update_to_save['listeners']['growth_limits']['fraction_trna_charged'] = np.dot(fraction_charged, self.aa_from_trna)
+		self.update_to_save['listeners']['growth_limits']['aa_pool_size'] = self.aas.total_counts()
+		self.update_to_save['listeners']['growth_limits']['aa_request_size'] = aa_counts_for_translation
 
 		# Request full access to active ribosome molecules
 		self.active_ribosomes.request_access(self.EDIT_DELETE_ACCESS)
@@ -158,10 +182,12 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Write allocation data to listener
 		self.writeToListener("GrowthLimits", "aaAllocated", self.aas.counts())
+		# TODO: check commented out code in vivarium
 
 		# Get number of active ribosomes
 		n_active_ribosomes = self.active_ribosomes.total_count()
 		self.writeToListener("GrowthLimits", "activeRibosomeAllocated", n_active_ribosomes)
+		self.update_to_save['listeners']['growth_limits']['active_ribosomes_allocated'] = n_active_ribosomes
 
 		if n_active_ribosomes == 0:
 			return
@@ -224,6 +250,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Write current average elongation to listener
 		currElongRate = (sequence_elongations.sum() / n_active_ribosomes) / self.timeStepSec()
 		self.writeToListener("RibosomeData", "effectiveElongationRate", currElongRate)
+		self.update_to_save['listeners']['ribosome_data']['effective_elongation_rate'] = currElongRate
 
 		# Update active ribosomes, terminating if necessary
 		self.active_ribosomes.attrIs(
@@ -244,10 +271,45 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			)
 
 		self.active_ribosomes.delByIndexes(np.where(didTerminate)[0])
+
+		# Build active_ribosomes states dictionary
+		active_ribosomes_states = {}
+		for i in range(self.active_ribosomes.attr('unique_index').shape[0]):
+			unique_index = self.active_ribosomes.attr('unique_index')[i]
+			active_ribosomes_states[str(unique_index)] = {
+				'peptide_length': self.active_ribosomes.attr('peptide_length')[i],
+				'pos_on_mRNA': self.active_ribosomes.attr('pos_on_mRNA')[i],
+				'protein_index': self.active_ribosomes.attr('protein_index')[i],
+				'submass': {
+					'protein': 0
+				},
+				'unique_index': unique_index
+			}
+
+		self.update_to_save['active_ribosome'] = {'_delete': []}
+		for index, ribosome in enumerate(active_ribosomes_states.values()):
+			unique_index = str(ribosome['unique_index'])
+			if didTerminate[index]:
+				self.update_to_save['active_ribosome']['_delete'].append((unique_index,))
+			else:
+				self.update_to_save['active_ribosome'][unique_index] = {
+					'peptide_length': updated_lengths[index],
+					'pos_on_mRNA': updated_positions_on_mRNA[index],
+					'submass': {
+						'protein': added_protein_mass[index]}}
+
+		self.update_to_save['monomers'] = {}
+		for index, count in enumerate(terminatedProteins):
+			self.update_to_save['monomers'][self.proteinIds[index]] = count
+
 		self.bulkMonomers.countsInc(terminatedProteins)
 
 		nTerminated = didTerminate.sum()
 		nInitialized = didInitialize.sum()
+
+		self.update_to_save['subunits'] = {}
+		self.update_to_save['subunits'][self.ribosome30S_name] = nTerminated
+		self.update_to_save['subunits'][self.ribosome50S_name] = nTerminated
 
 		self.ribosome30S.countInc(nTerminated)
 		self.ribosome50S.countInc(nTerminated)
@@ -257,26 +319,60 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		net_charged, self.aa_count_diff = self.elongation_model.evolve(
 			total_aa_counts, aas_used, next_amino_acid_count, nElongations, nInitialized)
 
+		evolve_update = {
+            'amino_acids': array_to(self.amino_acids, -aas_used),
+            'molecules': {
+                self.water: nElongations - nInitialized}}
+
+		# self.update_to_save = deep_merge(self.update_to_save, evolve_update)
+		self.update_to_save = {**self.update_to_save, **evolve_update}
+
 		# GTP hydrolysis is carried out in Metabolism process for growth
 		# associated maintenance. This is set here for metabolism to use.
 		self.gtp_to_hydrolyze = self.gtpPerElongation * nElongations
+
+		self.update_to_save['polypeptide_elongation'] = {}
+		self.update_to_save['polypeptide_elongation']['aa_count_diff'] = self.aa_count_diff
+		self.update_to_save['polypeptide_elongation']['gtp_to_hydrolyze'] = self.gtp_to_hydrolyze
 
 		# Write data to listeners
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
 		self.writeToListener("GrowthLimits", "aasUsed", aas_used)
 
+		self.update_to_save['listeners']['growth_limits']['net_charged'] = net_charged
+		self.update_to_save['listeners']['ribosome_data']['effective_elongation_rate'] = currElongRate
+
 		self.writeToListener("RibosomeData", "aaCountInSequence", aaCountInSequence)
 		self.writeToListener("RibosomeData", "aaCounts", aa_counts_for_translation)
+
+		self.update_to_save['listeners']['ribosome_data']['aaCountInSequence'] = aaCountInSequence
+		self.update_to_save['listeners']['ribosome_data']['aaCounts'] = aa_counts_for_translation
 
 		self.writeToListener("RibosomeData", "actualElongations", sequence_elongations.sum())
 		self.writeToListener("RibosomeData", "actualElongationHist", np.histogram(sequence_elongations, bins = np.arange(0,23))[0])
 		self.writeToListener("RibosomeData", "elongationsNonTerminatingHist", np.histogram(sequence_elongations[~didTerminate], bins=np.arange(0,23))[0])
 
+		self.update_to_save['listeners']['ribosome_data']['actualElongations'] = sequence_elongations.sum()
+		self.update_to_save['listeners']['ribosome_data']['actualElongationHist'] = np.histogram(
+			sequence_elongations, bins=np.arange(0, 23))[0]
+		self.update_to_save['listeners']['ribosome_data']['elongationsNonTerminatingHist'] = np.histogram(
+			sequence_elongations[~didTerminate], bins=np.arange(0, 23))[0]
+
 		self.writeToListener("RibosomeData", "didTerminate", didTerminate.sum())
 		self.writeToListener("RibosomeData", "terminationLoss", (terminalLengths - peptide_lengths)[didTerminate].sum())
 		self.writeToListener("RibosomeData", "numTrpATerminated", terminatedProteins[self.trpAIndex])
-
 		self.writeToListener("RibosomeData", "processElongationRate", self.ribosomeElongationRate / self.timeStepSec())
+
+		self.update_to_save['listeners']['ribosome_data']['didTerminate'] = didTerminate.sum()
+		self.update_to_save['listeners']['ribosome_data']['terminationLoss'] = (terminalLengths - peptide_lengths)[
+			didTerminate].sum()
+		self.update_to_save['listeners']['ribosome_data']['numTrpATerminated'] = terminatedProteins[self.trpAIndex]
+		self.update_to_save['listeners']['ribosome_data']['processElongationRate'] = self.ribosomeElongationRate / self.timeStepSec()
+
+		time = int(self._sim.time())
+		if time in self.save_times:
+			write_json(f'out/migration/polypeptide_elongation_update_t{time}.json',
+					   self.update_to_save)
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		model_specific = self.elongation_model.isTimeStepShortEnough(inputTimeStep, timeStepSafetyFraction)

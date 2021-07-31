@@ -95,7 +95,7 @@ class TfBinding(wholecell.processes.process.Process):
 
 
 	def evolveState(self):
-     	# Reset random state to directly compare with vivarium
+    	# Reset random state to directly compare with vivarium
 		# self.randomState = np.random.RandomState(seed = 0)
 		# If there are no promoters, return immediately
 		if self.promoters.total_count() == 0:
