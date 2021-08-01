@@ -19,7 +19,7 @@ from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIn
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 
-MICROMOLAR_UNITS = units.umol / units.L
+CONC_UNITS = units.umol / units.L
 
 
 class PolypeptideElongation(wholecell.processes.process.Process):
@@ -394,19 +394,19 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		# Parameters for tRNA charging and ribosome elongation
 		self.kS = constants.synthetase_charging_rate.asNumber(1 / units.s)
-		self.KMtf = constants.Km_synthetase_uncharged_trna.asNumber(MICROMOLAR_UNITS)
-		self.KMaa = constants.Km_synthetase_amino_acid.asNumber(MICROMOLAR_UNITS)
-		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
-		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
+		self.KMtf = constants.Km_synthetase_uncharged_trna.asNumber(CONC_UNITS)
+		self.KMaa = constants.Km_synthetase_amino_acid.asNumber(CONC_UNITS)
+		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(CONC_UNITS)
+		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(CONC_UNITS)
 		aa_removed_from_charging = {'L-SELENOCYSTEINE[c]'}
 		self.aa_charging_mask = np.array([aa not in aa_removed_from_charging for aa in self.aaNames])
 
 		# ppGpp parameters
-		self.KD_RelA = constants.KD_RelA_ribosome.asNumber(MICROMOLAR_UNITS)
+		self.KD_RelA = constants.KD_RelA_ribosome.asNumber(CONC_UNITS)
 		self.k_RelA = constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s)
 		self.k_SpoT_syn = constants.k_SpoT_ppGpp_synthesis.asNumber(1 / units.s)
-		self.k_SpoT_deg = constants.k_SpoT_ppGpp_degradation.asNumber(1 / (MICROMOLAR_UNITS * units.s))
-		self.KI_SpoT = constants.KI_SpoT_ppGpp_degradation.asNumber(MICROMOLAR_UNITS)
+		self.k_SpoT_deg = constants.k_SpoT_ppGpp_degradation.asNumber(1 / (CONC_UNITS * units.s))
+		self.KI_SpoT = constants.KI_SpoT_ppGpp_degradation.asNumber(CONC_UNITS)
 
 		# Amino acid supply calculations
 		self.aa_supply_scaling = metabolism.aa_supply_scaling
@@ -425,7 +425,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.aa_aas = self.process.bulkMoleculesView(molecule_groups.amino_acids)
 		self.amino_acid_synthesis = metabolism.amino_acid_synthesis
 		self.amino_acid_import = metabolism.amino_acid_import
-		
+
 		self.aa_transporters_container = self.process.bulkMoleculesView(metabolism.aa_transporters_names)
 
 	def request(self, aasInSequences):
@@ -462,7 +462,14 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			f,
 			self.process.timeStepSec())
 
-		aa_counts_for_translation = v_rib * f * self.process.timeStepSec() / self.counts_to_molar.asNumber(MICROMOLAR_UNITS)
+		self.process.writeToListener('GrowthLimits', 'synthetase_conc', synthetase_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'uncharged_trna_conc', uncharged_trna_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'charged_trna_conc', charged_trna_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'aa_conc', aa_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'ribosome_conc', ribosome_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'fraction_aa_to_elongate', f)
+
+		aa_counts_for_translation = v_rib * f * self.process.timeStepSec() / self.counts_to_molar.asNumber(CONC_UNITS)
 
 		total_trna = self.charged_trna.total_counts() + self.uncharged_trna.total_counts()
 		final_charged_trna = np.dot(fraction_charged, self.process.aa_from_trna * total_trna)
@@ -562,7 +569,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# Create ppGpp
 		## Concentrations of interest
 		if self.process.ppgpp_regulation:
-			v_rib = (nElongations * self.counts_to_molar).asNumber(MICROMOLAR_UNITS) / self.process.timeStepSec()
+			v_rib = (nElongations * self.counts_to_molar).asNumber(CONC_UNITS) / self.process.timeStepSec()
 			ribosome_conc = self.counts_to_molar * self.process.active_ribosomes.total_count()
 			updated_uncharged_trna_counts = self.uncharged_trna.total_counts() - net_charged
 			updated_charged_trna_counts = self.charged_trna.total_counts() + net_charged
@@ -679,11 +686,11 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			return np.hstack((-dc, dc))
 
 		# Convert inputs for integration
-		synthetase_conc = synthetase_conc.asNumber(MICROMOLAR_UNITS)
-		uncharged_trna_conc = uncharged_trna_conc.asNumber(MICROMOLAR_UNITS)
-		charged_trna_conc = charged_trna_conc.asNumber(MICROMOLAR_UNITS)
-		aa_conc = aa_conc.asNumber(MICROMOLAR_UNITS)
-		ribosome_conc = ribosome_conc.asNumber(MICROMOLAR_UNITS)
+		synthetase_conc = synthetase_conc.asNumber(CONC_UNITS)
+		uncharged_trna_conc = uncharged_trna_conc.asNumber(CONC_UNITS)
+		charged_trna_conc = charged_trna_conc.asNumber(CONC_UNITS)
+		aa_conc = aa_conc.asNumber(CONC_UNITS)
+		ribosome_conc = ribosome_conc.asNumber(CONC_UNITS)
 
 		# Remove disabled amino acids from calculations
 		n_total_aas = len(aa_conc)
@@ -811,13 +818,13 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			v_deg (float): rate of degradation from SpoT
 		'''
 
-		uncharged_trna_conc = uncharged_trna_conc.asNumber(MICROMOLAR_UNITS)
-		charged_trna_conc = charged_trna_conc.asNumber(MICROMOLAR_UNITS)
-		ribosome_conc = ribosome_conc.asNumber(MICROMOLAR_UNITS)
-		rela_conc = rela_conc.asNumber(MICROMOLAR_UNITS)
-		spot_conc = spot_conc.asNumber(MICROMOLAR_UNITS)
-		ppgpp_conc = ppgpp_conc.asNumber(MICROMOLAR_UNITS)
-		counts_to_micromolar = counts_to_molar.asNumber(MICROMOLAR_UNITS)
+		uncharged_trna_conc = uncharged_trna_conc.asNumber(CONC_UNITS)
+		charged_trna_conc = charged_trna_conc.asNumber(CONC_UNITS)
+		ribosome_conc = ribosome_conc.asNumber(CONC_UNITS)
+		rela_conc = rela_conc.asNumber(CONC_UNITS)
+		spot_conc = spot_conc.asNumber(CONC_UNITS)
+		ppgpp_conc = ppgpp_conc.asNumber(CONC_UNITS)
+		counts_to_micromolar = counts_to_molar.asNumber(CONC_UNITS)
 
 		numerator = 1 + charged_trna_conc / self.krta + uncharged_trna_conc / self.krtf
 		saturated_charged = charged_trna_conc / self.krta / numerator
