@@ -3,17 +3,33 @@
 Tools and analysis to debug charging problems.
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import pickle
-from typing import Tuple
+from typing import Dict, Tuple
+import webbrowser
 
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
 import numpy as np
+import plotly.graph_objs as go
+import plotly.subplots
 
 from models.ecoli.processes.polypeptide_elongation import (calculate_trna_charging,
 	CONC_UNITS, get_charging_params)
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, scriptBase
+
+
+PORT = 8050
+
+# Element IDs
+GRAPH_ID = 'graph-id'
+LOW_TIMESTEP = 'low-timestep'
+HIGH_TIMESTEP = 'high-timestep'
 
 
 class ChargingDebug(scriptBase.ScriptBase):
@@ -41,6 +57,8 @@ class ChargingDebug(scriptBase.ScriptBase):
 		# Debug options
 		parser.add_argument('--validation', type=int, default=1,
 			help='Number of time steps to run for validation. If < 0, will run all.')
+		parser.add_argument('--interactive', action='store_true',
+			help='If set, runs interactive analysis plots for debugging.')
 
 	def update_args(self, args):
 		super().update_args(args)
@@ -135,10 +153,75 @@ class ChargingDebug(scriptBase.ScriptBase):
 				raise ValueError(f'Charging fraction does not match for time step {timestep}')
 		print('All {} timesteps match the results from the whole-cell model.'.format(n_steps))
 
+	def interactive_debug(self):
+		"""
+		Run an interactive app in a browser to debug charging.
+		"""
+
+		app = self.create_app()
+		webbrowser.open_new(f'http://127.0.0.1:{PORT}/')
+		app.run_server(port=PORT)
+
+	def create_app(self) -> dash.Dash:
+		"""
+		Create the Dash app to run in the browser for interactive mode.
+		"""
+
+		app = dash.Dash()
+		app.layout = html.Div(children=[
+			html.H2('Charging debugger'),
+			html.Plaintext('Timestep limits (lower, upper):'),
+			dcc.Input(id=LOW_TIMESTEP, type='number', value=0),
+			dcc.Input(id=HIGH_TIMESTEP, type='number', value=10),
+			dcc.Graph(id=GRAPH_ID, style={'height': '1200px'})
+			])
+
+		# Register callback to update plot when selections change
+		# First arg for Output/Input selects the page object
+		# Second arg for Output/Input sets or gets a kwarg from the dcc function
+		@app.callback(
+			dash.dependencies.Output(GRAPH_ID, 'figure'),
+			[
+				dash.dependencies.Input(LOW_TIMESTEP, 'value'),
+				dash.dependencies.Input(HIGH_TIMESTEP, 'value'),
+			])
+		def update_graph(init_t: int, final_t: int) -> Dict:
+			"""
+			Update the plot based on selection changes.
+
+			Returns:
+				plotly figure dict
+			"""
+
+			v_rib = []
+			f_charged = []
+			t = np.arange(init_t, final_t)
+			for timestep in t:
+				f, v = self.solve_timestep(timestep)
+				v_rib.append(v / self.ribosome_conc[timestep].asNumber(CONC_UNITS))
+				f_charged.append(f)
+
+			f_charged = np.array(f_charged).T
+
+			fig = plotly.subplots.make_subplots(rows=2, cols=1)
+			fig.append_trace(go.Scatter(x=t, y=v_rib, name='Elongation rate'), row=1, col=1)
+			for f, aa in zip(f_charged, self.sim_data.molecule_groups.amino_acids):
+				fig.append_trace(go.Scatter(x=t, y=f, name=aa), row=2, col=1)
+
+			fig.update_xaxes(title_text='Timestep', row=2, col=1)
+			fig.update_yaxes(title_text='Elongation rate (AA/s)', row=1, col=1)
+			fig.update_yaxes(title_text='Fraction charged', row=2, col=1)
+
+			return fig
+
+		return app
+
 	def run(self, args: argparse.Namespace) -> None:
 		self.variable_elongation = args.variable_elongation_translation
 		self.load_data(args.sim_data_file, args.sim_out_dir)
 		self.validation(args.validation)
+		if args.interactive:
+			self.interactive_debug()
 
 
 if __name__ == '__main__':
