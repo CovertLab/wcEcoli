@@ -7,8 +7,7 @@ TODO:
 - see the initiation process for more TODOs
 """
 
-from __future__ import absolute_import, division, print_function
-
+from typing import Any, Dict, Optional, Set
 
 import numpy as np
 from scipy.integrate import odeint
@@ -19,7 +18,9 @@ from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIn
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 
+
 CONC_UNITS = units.umol / units.L
+REMOVED_FROM_CHARGING = {'L-SELENOCYSTEINE[c]'}
 
 
 class PolypeptideElongation(wholecell.processes.process.Process):
@@ -393,13 +394,9 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.ppgpp = self.process.bulkMoleculeView(molecule_ids.ppGpp)
 
 		# Parameters for tRNA charging and ribosome elongation
-		self.kS = constants.synthetase_charging_rate.asNumber(1 / units.s)
-		self.KMtf = constants.Km_synthetase_uncharged_trna.asNumber(CONC_UNITS)
-		self.KMaa = constants.Km_synthetase_amino_acid.asNumber(CONC_UNITS)
-		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(CONC_UNITS)
-		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(CONC_UNITS)
-		aa_removed_from_charging = {'L-SELENOCYSTEINE[c]'}
-		self.aa_charging_mask = np.array([aa not in aa_removed_from_charging for aa in self.aaNames])
+		self.charging_params = get_charging_params(sim_data,
+			variable_elongation=self.process.variable_elongation)
+		assert(self.charging_params['max_elong_rate'] == self.maxRibosomeElongationRate)
 
 		# ppGpp parameters
 		self.KD_RelA = constants.KD_RelA_ribosome.asNumber(CONC_UNITS)
@@ -453,14 +450,15 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		ribosome_conc = self.counts_to_molar * ribosome_counts
 
 		# Calculate steady state tRNA levels and resulting elongation rate
-		fraction_charged, v_rib = self.calculate_trna_charging(
+		fraction_charged, v_rib = calculate_trna_charging(
 			synthetase_conc,
 			uncharged_trna_conc,
 			charged_trna_conc,
 			aa_conc,
 			ribosome_conc,
 			f,
-			self.process.timeStepSec())
+			self.charging_params,
+			time_limit=self.process.timeStepSec())
 
 		self.process.writeToListener('GrowthLimits', 'synthetase_conc', synthetase_conc.asNumber(CONC_UNITS))
 		self.process.writeToListener('GrowthLimits', 'uncharged_trna_conc', uncharged_trna_conc.asNumber(CONC_UNITS))
@@ -615,120 +613,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.process.writeToListener('GrowthLimits', 'trnaCharged', aa_used_trna)
 		return net_charged, {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
 
-	def calculate_trna_charging(self, synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, time_limit=1000, use_disabled_aas=False):
-		'''
-		Calculates the steady state value of tRNA based on charging and incorporation through polypeptide elongation.
-		The fraction of charged/uncharged is also used to determine how quickly the ribosome is elongating.
-
-		Inputs:
-			synthetase_conc (array of floats with concentration units) - concentration of synthetases associated
-				with each amino acid
-			uncharged_trna_conc (array of floats with concentration units) - concentration of uncharged tRNA associated
-				with each amino acid
-			charged_trna_conc (array of floats with concentration units) - concentration of charged tRNA associated
-				with each amino acid
-			aa_conc (array of floats with concentration units) - concentration of each amino acid
-			ribosome_conc (float with concentration units) - concentration of active ribosomes
-			f (array of floats) - fraction of each amino acid to be incorporated to total amino acids incorporated
-			time_limit (float) - time limit to reach steady state
-			use_disabled_aas (bool) - if True, all amino acids will be used for charging calculations,
-				if False, some will be excluded as determined in initialize
-
-		Returns:
-			fraction_charged (array of floats) - fraction of total tRNA that is charged for each tRNA species
-			v_rib (float) - ribosomal elongation rate in units of uM/s
-		'''
-
-		def negative_check(trna1, trna2):
-			'''
-			Check for floating point precision issues that can lead to small
-			negative numbers instead of 0. Adjusts both species of tRNA to
-			bring concentration of trna1 to 0 and keep the same total concentration.
-
-			Args:
-				trna1 (ndarray[float]): concentration of one tRNA species (charged or uncharged)
-				trna2 (ndarray[float]): concentration of another tRNA species (charged or uncharged)
-			'''
-
-			mask = trna1 < 0
-			trna2[mask] = trna1[mask] + trna2[mask]
-			trna1[mask] = 0
-
-		def dcdt(c, t):
-			'''
-			Function for odeint to integrate
-
-			Args:
-				c (ndarray[float]): 1D array of concentrations of uncharged and charged tRNAs
-					dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
-				t (float): time of integration step
-
-			Returns:
-				ndarray[float]: dc/dt for tRNA concentrations
-					dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
-			'''
-
-			uncharged_trna_conc = c[:n_aas]
-			charged_trna_conc = c[n_aas:]
-
-			v_charging = (self.kS * synthetase_conc * uncharged_trna_conc * aa_conc / (self.KMaa * self.KMtf)
-				/ (1 + uncharged_trna_conc/self.KMtf + aa_conc/self.KMaa + uncharged_trna_conc*aa_conc/self.KMtf/self.KMaa))
-			with np.errstate(divide='ignore'):
-				numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
-			v_rib = self.maxRibosomeElongationRate * ribosome_conc / numerator_ribosome
-
-			# Handle case when f is 0 and charged_trna_conc is 0
-			if not np.isfinite(v_rib):
-				v_rib = 0
-
-			dc = v_charging - v_rib*f
-
-			return np.hstack((-dc, dc))
-
-		# Convert inputs for integration
-		synthetase_conc = synthetase_conc.asNumber(CONC_UNITS)
-		uncharged_trna_conc = uncharged_trna_conc.asNumber(CONC_UNITS)
-		charged_trna_conc = charged_trna_conc.asNumber(CONC_UNITS)
-		aa_conc = aa_conc.asNumber(CONC_UNITS)
-		ribosome_conc = ribosome_conc.asNumber(CONC_UNITS)
-
-		# Remove disabled amino acids from calculations
-		n_total_aas = len(aa_conc)
-		if use_disabled_aas:
-			mask = np.ones(n_total_aas, bool)
-		else:
-			mask = self.aa_charging_mask
-		synthetase_conc = synthetase_conc[mask]
-		uncharged_trna_conc = uncharged_trna_conc[mask]
-		charged_trna_conc = charged_trna_conc[mask]
-		aa_conc = aa_conc[mask]
-		f = f[mask]
-
-		n_aas = len(aa_conc)
-
-		# Integrate rates of charging and elongation
-		dt = 0.001
-		t = np.arange(0, time_limit, dt)
-		c_init = np.hstack((uncharged_trna_conc, charged_trna_conc))
-		sol = odeint(dcdt, c_init, t)
-
-		# Determine new values from integration results
-		uncharged_trna_conc = sol[-1, :n_aas]
-		charged_trna_conc = sol[-1, n_aas:]
-		negative_check(uncharged_trna_conc, charged_trna_conc)
-		negative_check(charged_trna_conc, uncharged_trna_conc)
-
-		fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
-		numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
-		v_rib = self.maxRibosomeElongationRate * ribosome_conc / numerator_ribosome
-
-		# Replace SEL fraction charged with average
-		new_fraction_charged = np.zeros(n_total_aas)
-		new_fraction_charged[mask] = fraction_charged
-		new_fraction_charged[~mask] = fraction_charged.mean()
-
-		return new_fraction_charged, v_rib
-
 	def distribution_from_aa(self, n_aa, n_trna, limited=False):
 		'''
 		Distributes counts of amino acids to tRNAs that are associated with each amino acid.
@@ -826,10 +710,10 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		ppgpp_conc = ppgpp_conc.asNumber(CONC_UNITS)
 		counts_to_micromolar = counts_to_molar.asNumber(CONC_UNITS)
 
-		numerator = 1 + charged_trna_conc / self.krta + uncharged_trna_conc / self.krtf
-		saturated_charged = charged_trna_conc / self.krta / numerator
-		saturated_uncharged = uncharged_trna_conc / self.krtf / numerator
-		fraction_a_site = f * v_rib / (saturated_charged * self.maxRibosomeElongationRate)
+		numerator = 1 + charged_trna_conc / self.charging_params['krta'] + uncharged_trna_conc / self.charging_params['krtf']
+		saturated_charged = charged_trna_conc / self.charging_params['krta'] / numerator
+		saturated_uncharged = uncharged_trna_conc / self.charging_params['krtf'] / numerator
+		fraction_a_site = f * v_rib / (saturated_charged * self.charging_params['max_elong_rate'])
 		ribosomes_bound_to_uncharged = fraction_a_site * saturated_uncharged
 
 		# Handle rare cases when tRNA concentrations are 0
@@ -903,3 +787,159 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			short_enough = False
 
 		return short_enough
+
+def get_charging_params(
+		sim_data,
+		aa_removed_from_charging: Optional[Set[str]] = None,
+		variable_elongation: bool = False,
+		) -> Dict[str, Any]:
+	"""
+	Get parameters required for tRNA charging calulations to help
+	encapsulate the function so that it does not need to be a class method.
+
+	Args:
+		sim_data: SimulationData object
+		aa_removed_from_charging: any amino acid IDs that should be ignored
+			when calculating charging
+		variable_elongation: if True, the max elongation rate is set to be
+			higher
+
+	Returns:
+		parameters that are used in calculate_trna_charging
+	"""
+
+	constants = sim_data.constants
+	if aa_removed_from_charging is None:
+		aa_removed_from_charging = REMOVED_FROM_CHARGING
+	aa_charging_mask = np.array([
+		aa not in aa_removed_from_charging
+		for aa in sim_data.molecule_groups.amino_acids
+		])
+	elongation_max = (constants.ribosome_elongation_rate_max
+		if variable_elongation else constants.ribosome_elongation_rate_basal)
+
+	return dict(
+		kS=constants.synthetase_charging_rate.asNumber(1 / units.s),
+		KMaa=constants.Km_synthetase_amino_acid.asNumber(CONC_UNITS),
+		KMtf=constants.Km_synthetase_uncharged_trna.asNumber(CONC_UNITS),
+		krta=constants.Kdissociation_charged_trna_ribosome.asNumber(CONC_UNITS),
+		krtf=constants.Kdissociation_uncharged_trna_ribosome.asNumber(CONC_UNITS),
+		max_elong_rate=float(elongation_max.asNumber(units.aa / units.s)),
+		charging_mask=aa_charging_mask,
+		)
+
+def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, params, time_limit=1000, use_disabled_aas=False):
+	'''
+	Calculates the steady state value of tRNA based on charging and incorporation through polypeptide elongation.
+	The fraction of charged/uncharged is also used to determine how quickly the ribosome is elongating.
+
+	Inputs:
+		synthetase_conc (array of floats with concentration units) - concentration of synthetases associated
+			with each amino acid
+		uncharged_trna_conc (array of floats with concentration units) - concentration of uncharged tRNA associated
+			with each amino acid
+		charged_trna_conc (array of floats with concentration units) - concentration of charged tRNA associated
+			with each amino acid
+		aa_conc (array of floats with concentration units) - concentration of each amino acid
+		ribosome_conc (float with concentration units) - concentration of active ribosomes
+		f (array of floats) - fraction of each amino acid to be incorporated to total amino acids incorporated
+		params (Dict[str, Any]) - parameters used in charging equations - this should be
+			generated by get_charging_params
+		time_limit (float) - time limit to reach steady state
+		use_disabled_aas (bool) - if True, all amino acids will be used for charging calculations,
+			if False, some will be excluded as determined in initialize
+
+	Returns:
+		fraction_charged (array of floats) - fraction of total tRNA that is charged for each tRNA species
+		v_rib (float) - ribosomal elongation rate in units of uM/s
+	'''
+
+	def negative_check(trna1, trna2):
+		'''
+		Check for floating point precision issues that can lead to small
+		negative numbers instead of 0. Adjusts both species of tRNA to
+		bring concentration of trna1 to 0 and keep the same total concentration.
+
+		Args:
+			trna1 (ndarray[float]): concentration of one tRNA species (charged or uncharged)
+			trna2 (ndarray[float]): concentration of another tRNA species (charged or uncharged)
+		'''
+
+		mask = trna1 < 0
+		trna2[mask] = trna1[mask] + trna2[mask]
+		trna1[mask] = 0
+
+	def dcdt(c, t):
+		'''
+		Function for odeint to integrate
+
+		Args:
+			c (ndarray[float]): 1D array of concentrations of uncharged and charged tRNAs
+				dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
+			t (float): time of integration step
+
+		Returns:
+			ndarray[float]: dc/dt for tRNA concentrations
+				dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
+		'''
+
+		uncharged_trna_conc = c[:n_aas]
+		charged_trna_conc = c[n_aas:]
+
+		v_charging = (params['kS'] * synthetase_conc * uncharged_trna_conc * aa_conc / (params['KMaa'] * params['KMtf'])
+			/ (1 + uncharged_trna_conc/params['KMtf'] + aa_conc/params['KMaa'] + uncharged_trna_conc*aa_conc/params['KMtf']/params['KMaa']))
+		with np.errstate(divide='ignore'):
+			numerator_ribosome = 1 + np.sum(f * (params['krta'] / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * params['krta'] / params['krtf']))
+		v_rib = params['max_elong_rate'] * ribosome_conc / numerator_ribosome
+
+		# Handle case when f is 0 and charged_trna_conc is 0
+		if not np.isfinite(v_rib):
+			v_rib = 0
+
+		dc = v_charging - v_rib*f
+
+		return np.hstack((-dc, dc))
+
+	# Convert inputs for integration
+	synthetase_conc = synthetase_conc.asNumber(CONC_UNITS)
+	uncharged_trna_conc = uncharged_trna_conc.asNumber(CONC_UNITS)
+	charged_trna_conc = charged_trna_conc.asNumber(CONC_UNITS)
+	aa_conc = aa_conc.asNumber(CONC_UNITS)
+	ribosome_conc = ribosome_conc.asNumber(CONC_UNITS)
+
+	# Remove disabled amino acids from calculations
+	n_total_aas = len(aa_conc)
+	if use_disabled_aas:
+		mask = np.ones(n_total_aas, bool)
+	else:
+		mask = params['charging_mask']
+	synthetase_conc = synthetase_conc[mask]
+	uncharged_trna_conc = uncharged_trna_conc[mask]
+	charged_trna_conc = charged_trna_conc[mask]
+	aa_conc = aa_conc[mask]
+	f = f[mask]
+
+	n_aas = len(aa_conc)
+
+	# Integrate rates of charging and elongation
+	dt = 0.001
+	t = np.arange(0, time_limit, dt)
+	c_init = np.hstack((uncharged_trna_conc, charged_trna_conc))
+	sol = odeint(dcdt, c_init, t)
+
+	# Determine new values from integration results
+	uncharged_trna_conc = sol[-1, :n_aas]
+	charged_trna_conc = sol[-1, n_aas:]
+	negative_check(uncharged_trna_conc, charged_trna_conc)
+	negative_check(charged_trna_conc, uncharged_trna_conc)
+
+	fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
+	numerator_ribosome = 1 + np.sum(f * (params['krta'] / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * params['krta'] / params['krtf']))
+	v_rib = params['max_elong_rate'] * ribosome_conc / numerator_ribosome
+
+	# Replace SEL fraction charged with average
+	new_fraction_charged = np.zeros(n_total_aas)
+	new_fraction_charged[mask] = fraction_charged
+	new_fraction_charged[~mask] = fraction_charged.mean()
+
+	return new_fraction_charged, v_rib
