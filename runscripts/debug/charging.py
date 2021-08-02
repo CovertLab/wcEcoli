@@ -282,7 +282,9 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 		app = dash.Dash()
 
-		param_ids = sorted(self.adjustable_charging_params)
+		charging_param_ids = sorted(self.adjustable_charging_params)
+		ppgpp_param_ids = sorted(self.adjustable_ppgpp_params)
+		all_param_ids = charging_param_ids + ppgpp_param_ids
 		aa_ids = self.sim_data.molecule_groups.amino_acids
 		n_aas = len(aa_ids)
 
@@ -304,28 +306,39 @@ class ChargingDebug(scriptBase.ScriptBase):
 				])
 			for aa in aa_ids
 			]
-		param_slider_style = {'display': 'grid', 'grid-template-columns': '30% 70%'}
-		param_headers = [html.Div(style=param_slider_style, children=[
+		other_sliders_style = {'display': 'grid', 'grid-template-columns': '30% 70%'}
+		charging_param_headers = [html.Div(style=other_sliders_style, children=[
 			html.Plaintext(''),
 			html.Plaintext('Charging parameters', style={'text-align': 'center'}),
 			])]
-		param_sliders = [
-			html.Div(style=param_slider_style, children=[
+		charging_param_sliders = [
+			html.Div(style=other_sliders_style, children=[
 				html.Plaintext(f'{param}:'),
 				dcc.Slider(id=f'{param}-slider', **slider_options),
 				])
-			for param in param_ids
+			for param in charging_param_ids
 			]
-		other_headers = [html.Div(style=param_slider_style, children=[
+		ppgpp_param_headers = [html.Div(style=other_sliders_style, children=[
+			html.Plaintext(''),
+			html.Plaintext('ppGpp parameters', style={'text-align': 'center'}),
+			])]
+		ppgpp_param_sliders = [
+			html.Div(style=other_sliders_style, children=[
+				html.Plaintext(f'{param}:'),
+				dcc.Slider(id=f'{param}-slider', **slider_options),
+				])
+			for param in ppgpp_param_ids
+			]
+		other_headers = [html.Div(style=other_sliders_style, children=[
 			html.Plaintext(''),
 			html.Plaintext('Other inputs', style={'text-align': 'center'}),
 			])]
 		other_sliders = [
-			html.Div(style=param_slider_style, children=[
+			html.Div(style=other_sliders_style, children=[
 				html.Plaintext('Ribosome conc:'),
 				dcc.Slider(id='ribosome-slider', **slider_options),
 				]),
-			html.Div(style=param_slider_style, children=[
+			html.Div(style=other_sliders_style, children=[
 				html.Plaintext('Timestep:'),
 				dcc.Slider(id='timestep-slider', **slider_options),
 				]),
@@ -335,7 +348,12 @@ class ChargingDebug(scriptBase.ScriptBase):
 			style={'maxHeight': '500px', 'overflow': 'scroll', 'display': 'grid', 'grid-template-columns': '70% 30%'},
 			children=[
 				html.Div(children=aa_slider_headers + aa_sliders),
-				html.Div(children=param_headers + param_sliders + other_headers + other_sliders),
+				html.Div(children=charging_param_headers
+					+ charging_param_sliders
+					+ ppgpp_param_headers
+					+ ppgpp_param_sliders
+					+ other_headers
+					+ other_sliders),
 			])
 
 		# Slider inputs
@@ -353,7 +371,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			]
 		param_inputs = [
 			dash.dependencies.Input(f'{param}-slider', 'value')
-			for param in param_ids
+			for param in all_param_ids
 			]
 
 		# Page layout
@@ -398,7 +416,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			synthetase_adjustments = 10**np.array(param_inputs[:n_aas])
 			trna_adjustments = 10**np.array(param_inputs[n_aas:2*n_aas])
 			aa_adjustments = 10**np.array(param_inputs[2*n_aas:3*n_aas])
-			param_adjustments = {param: 10**value for param, value in zip(param_ids, param_inputs[3*n_aas:])}
+			param_adjustments = {param: 10**value for param, value in zip(all_param_ids, param_inputs[3*n_aas:])}
 
 			v_rib = []
 			f_charged = []
