@@ -129,6 +129,8 @@ class ChargingDebug(scriptBase.ScriptBase):
 			trna_adjustments: Optional[np.ndarray] = None,
 			aa_adjustments: Optional[np.ndarray] = None,
 			param_adjustments: Optional[Dict] = None,
+			ribosome_adjustment: float = 1.,
+			timestep_adjustment: float = 1.,
 			) -> Tuple[np.ndarray, float]:
 		"""
 		Calculates charging and elongation rate for a given timestep.
@@ -142,6 +144,8 @@ class ChargingDebug(scriptBase.ScriptBase):
 			aa_adjustments: adjustments to scale amino acid concentrations
 				up or down
 			param_adjustments: adjustments to charging parameters
+			ribosome_adjustment: adjustment to scale ribosome concentrations
+			timestep_adjustment: adjustment to scale timesteps
 
 		Returns:
 			fraction charged of all tRNAs for each amino acid
@@ -169,10 +173,10 @@ class ChargingDebug(scriptBase.ScriptBase):
 			self.uncharged_trna_conc[timestep, :] * trna_adjustments,
 			self.charged_trna_conc[timestep, :] * trna_adjustments,
 			self.aa_conc[timestep, :] * aa_adjustments,
-			self.ribosome_conc[timestep],
+			self.ribosome_conc[timestep] * ribosome_adjustment,
 			self.fraction_aa_to_elongate[timestep, :],
 			charging_params,
-			time_limit=self.time_step_sizes[timestep],
+			time_limit=self.time_step_sizes[timestep] * timestep_adjustment,
 			)
 
 	def validation(self, n_steps: int) -> None:
@@ -251,10 +255,24 @@ class ChargingDebug(scriptBase.ScriptBase):
 				])
 			for param in param_ids
 			]
+		other_headers = [html.Div(style=param_slider_style, children=[
+			html.Plaintext(''),
+			html.Plaintext('Other inputs', style={'text-align': 'center'}),
+			])]
+		other_sliders = [
+			html.Div(style=param_slider_style, children=[
+				html.Plaintext('Ribosome conc:'),
+				dcc.Slider(id='ribosome-slider', **slider_options),
+				]),
+			html.Div(style=param_slider_style, children=[
+				html.Plaintext('Timestep:'),
+				dcc.Slider(id='timestep-slider', **slider_options),
+				]),
+			]
 
 		sliders = html.Div(style={'display': 'grid', 'grid-template-columns': '70% 30%'}, children=[
 			html.Div(children=aa_slider_headers + aa_sliders),
-			html.Div(children=param_headers + param_sliders),
+			html.Div(children=param_headers + param_sliders + other_headers + other_sliders),
 			])
 
 		# Slider inputs
@@ -293,12 +311,18 @@ class ChargingDebug(scriptBase.ScriptBase):
 			[
 				dash.dependencies.Input(LOW_TIMESTEP, 'value'),
 				dash.dependencies.Input(HIGH_TIMESTEP, 'value'),
+				dash.dependencies.Input('ribosome-slider', 'value'),
+				dash.dependencies.Input('timestep-slider', 'value'),
 				*synthetase_inputs,
 				*trna_inputs,
 				*aa_inputs,
 				*param_inputs,
 			])
-		def update_graph(init_t: int, final_t: int, *param_inputs: float) -> Dict:
+		def update_graph(
+				init_t: int, final_t: int,
+				ribosome_adjustment: float, timestep_adjustment: float,
+				*param_inputs: float,
+				) -> Dict:
 			"""
 			Update the plot based on selection changes.
 
@@ -306,6 +330,8 @@ class ChargingDebug(scriptBase.ScriptBase):
 				plotly figure dict
 			"""
 
+			ribosome_adjustment = 10**ribosome_adjustment
+			timestep_adjustment = 10**timestep_adjustment
 			synthetase_adjustments = 10**np.array(param_inputs[:n_aas])
 			trna_adjustments = 10**np.array(param_inputs[n_aas:2*n_aas])
 			aa_adjustments = 10**np.array(param_inputs[2*n_aas:3*n_aas])
@@ -320,9 +346,11 @@ class ChargingDebug(scriptBase.ScriptBase):
 					synthetase_adjustments=synthetase_adjustments,
 					trna_adjustments=trna_adjustments,
 					aa_adjustments=aa_adjustments,
-					param_adjustments=param_adjustments
+					param_adjustments=param_adjustments,
+					ribosome_adjustment=ribosome_adjustment,
+					timestep_adjustment=timestep_adjustment,
 					)
-				v_rib.append(v / self.ribosome_conc[timestep].asNumber(CONC_UNITS))
+				v_rib.append(v / (self.ribosome_conc[timestep].asNumber(CONC_UNITS) * ribosome_adjustment))
 				f_charged.append(f)
 
 			f_charged = np.array(f_charged).T
