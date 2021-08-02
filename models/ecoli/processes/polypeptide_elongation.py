@@ -509,13 +509,16 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.water.requestIs(aa_counts_for_translation.sum())
 
 		# ppGpp reactions based on charged tRNA
+		ppgpp_conc = self.counts_to_molar * self.ppgpp.total_count()
+		rela_conc = self.counts_to_molar * self.rela.total_count()
+		spot_conc = self.counts_to_molar * self.spot.total_count()
+		self.process.writeToListener('GrowthLimits', 'ppgpp_conc', ppgpp_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'rela_conc', rela_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'spot_conc', spot_conc.asNumber(CONC_UNITS))
 		if self.process.ppgpp_regulation:
 			total_trna_conc = self.counts_to_molar * (uncharged_trna_counts + charged_trna_counts)
 			updated_charged_trna_conc = total_trna_conc * fraction_charged
 			updated_uncharged_trna_conc = total_trna_conc - updated_charged_trna_conc
-			ppgpp_conc = self.counts_to_molar * self.ppgpp.total_count()
-			rela_conc = self.counts_to_molar * self.rela.total_count()
-			spot_conc = self.counts_to_molar * self.spot.total_count()
 			delta_metabolites, _, _, _, _, _ = ppgpp_metabolite_changes(
 				updated_uncharged_trna_conc, updated_charged_trna_conc, ribosome_conc,
 				f, rela_conc, spot_conc, ppgpp_conc, self.counts_to_molar, v_rib,
