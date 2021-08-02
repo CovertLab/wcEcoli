@@ -18,14 +18,15 @@ import numpy as np
 import plotly.graph_objs as go
 import plotly.subplots
 
+from models.ecoli.processes.metabolism import CONC_UNITS as METABOLISM_CONC_UNITS
 from models.ecoli.processes.polypeptide_elongation import (calculate_trna_charging,
-	CONC_UNITS, get_charging_params)
+	CONC_UNITS, get_charging_params, get_ppgpp_params, ppgpp_metabolite_changes)
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, scriptBase
 
 
-# Set of charging parameters that should not be modified by a slider
-CONSTANT_PARAMS = {'charging_mask'}
+# Set of charging/ppGpp parameters that should not be modified by a slider
+CONSTANT_PARAMS = {'charging_mask', 'ppgpp_reaction_stoich', 'synthesis_index', 'degradation_index'}
 
 PORT = 8050
 
@@ -93,7 +94,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			self.sim_data = pickle.load(f)
 		self.aa_from_trna = self.sim_data.process.transcription.aa_from_trna
 
-		# Get charging parameters and separate to one that will be adjusted or not
+		# Get charging parameters and separate to ones that will be adjusted or not
 		charging_params = get_charging_params(self.sim_data,
 			variable_elongation=self.variable_elongation)
 		self.adjustable_charging_params = {
@@ -107,8 +108,22 @@ class ChargingDebug(scriptBase.ScriptBase):
 			if param in CONSTANT_PARAMS
 			}
 
+		# Get ppGpp parameters and separate to ones that will be adjusted or not
+		ppgpp_params = get_ppgpp_params(self.sim_data)
+		self.adjustable_ppgpp_params = {
+			param: value
+			for param, value in ppgpp_params.items()
+			if param not in CONSTANT_PARAMS
+			}
+		self.constant_ppgpp_params = {
+			param: value
+			for param, value in ppgpp_params.items()
+			if param in CONSTANT_PARAMS
+			}
+
 		# Listeners used
 		growth_reader = TableReader(os.path.join(sim_out_dir, 'GrowthLimits'))
+		kinetics_reader = TableReader(os.path.join(sim_out_dir, 'EnzymeKinetics'))
 		main_reader = TableReader(os.path.join(sim_out_dir, 'Main'))
 
 		# Load data
@@ -119,6 +134,11 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.ribosome_conc = CONC_UNITS * growth_reader.readColumn('ribosome_conc')[1:]
 		self.fraction_aa_to_elongate = growth_reader.readColumn('fraction_aa_to_elongate')[1:, :]
 		self.fraction_charged = growth_reader.readColumn('fraction_trna_charged')[1:, :]
+		self.ppgpp_conc = CONC_UNITS * growth_reader.readColumn('ppgpp_conc')[1:]
+		self.rela_conc = CONC_UNITS * growth_reader.readColumn('rela_conc')[1:]
+		self.spot_conc = CONC_UNITS * growth_reader.readColumn('spot_conc')[1:]
+
+		self.counts_to_molar = METABOLISM_CONC_UNITS * kinetics_reader.readColumn('countsToMolar')[1:]
 
 		self.time_step_sizes = main_reader.readColumn('timeStepSec')[1:]
 		self.n_time_steps = len(self.time_step_sizes)
@@ -131,7 +151,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			param_adjustments: Optional[Dict] = None,
 			ribosome_adjustment: float = 1.,
 			timestep_adjustment: float = 1.,
-			) -> Tuple[np.ndarray, np.ndarray, float]:
+			) -> Tuple[np.ndarray, np.ndarray, float, int, int]:
 		"""
 		Calculates charging and elongation rate for a given timestep.
 
@@ -151,6 +171,8 @@ class ChargingDebug(scriptBase.ScriptBase):
 			fraction_charged_per_trna: fraction charged for each tRNA
 			fraction_charged: fraction charged of all tRNAs for each amino acid
 			adjusted_v_rib: ribosome elongation rate (AA/s)
+			n_synthesis: number of ppGpp synthesis reactions
+			n_degradation: number of ppGpp degradation reactions
 		"""
 
 		n_aas = len(self.sim_data.molecule_groups.amino_acids)
@@ -164,28 +186,59 @@ class ChargingDebug(scriptBase.ScriptBase):
 		if param_adjustments is None:
 			param_adjustments = {}
 
+		# Update parameters that need to be adjusted
 		charging_params = {}
 		for param, value in self.adjustable_charging_params.items():
 			charging_params[param] = value * param_adjustments.get(param, 1)
 		charging_params.update(self.constant_charging_params)
+		ppgpp_params = {}
+		for param, value in self.adjustable_ppgpp_params.items():
+			ppgpp_params[param] = value * param_adjustments.get(param, 1)
+		ppgpp_params.update(self.constant_ppgpp_params)
 
+		# Adjust concentrations that are used in multiple locations
 		ribosome_conc = self.ribosome_conc[timestep] * ribosome_adjustment
+		uncharged_trna_conc = self.uncharged_trna_conc[timestep, :] * trna_adjustments
+		charged_trna_conc = self.charged_trna_conc[timestep, :] * trna_adjustments
+		f = self.fraction_aa_to_elongate[timestep, :]
+		timestep_size = self.time_step_sizes[timestep] * timestep_adjustment
 
+		# Calculate tRNA charging and resulting values
 		fraction_charged, v_rib = calculate_trna_charging(
 			self.synthetase_conc[timestep, :] * synthetase_adjustments,
-			self.uncharged_trna_conc[timestep, :] * trna_adjustments,
-			self.charged_trna_conc[timestep, :] * trna_adjustments,
+			uncharged_trna_conc,
+			charged_trna_conc,
 			self.aa_conc[timestep, :] * aa_adjustments,
 			ribosome_conc,
-			self.fraction_aa_to_elongate[timestep, :],
+			f,
 			charging_params,
-			time_limit=self.time_step_sizes[timestep] * timestep_adjustment,
+			time_limit=timestep_size,
 			)
-
 		fraction_charged_per_aa = fraction_charged @ self.aa_from_trna
 		adjusted_v_rib = v_rib / ribosome_conc.asNumber(CONC_UNITS)
 
-		return fraction_charged_per_aa, fraction_charged, adjusted_v_rib
+		# Update tRNA concentrations to reflect charging
+		total_trna_conc = uncharged_trna_conc + charged_trna_conc
+		updated_uncharged_trna_conc = total_trna_conc * (1 - fraction_charged)
+		updated_charged_trna_conc = total_trna_conc * fraction_charged
+
+		# Calculate ppGpp reaction rates
+		_, n_synthesis, n_degradation, _, _, _ = ppgpp_metabolite_changes(
+			updated_uncharged_trna_conc,
+			updated_charged_trna_conc,
+			ribosome_conc,
+			f,
+			self.rela_conc[timestep],
+			self.spot_conc[timestep],
+			self.ppgpp_conc[timestep],
+			self.counts_to_molar[timestep],
+			v_rib,
+			charging_params,
+			ppgpp_params,
+			timestep_size,
+			)
+
+		return fraction_charged_per_aa, fraction_charged, adjusted_v_rib, n_synthesis, n_degradation
 
 	def validation(self, n_steps: int) -> None:
 		"""
@@ -208,7 +261,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 		print('Running validation to check output...')
 		for timestep in range(n_steps):
-			fraction_charged, _, _ = self.solve_timestep(timestep)
+			fraction_charged, _, _, _, _ = self.solve_timestep(timestep)
 			if np.any(fraction_charged != self.fraction_charged[timestep]):
 				raise ValueError(f'Charging fraction does not match for time step {timestep}')
 		print('All {} timesteps match the results from the whole-cell model.'.format(n_steps))
@@ -278,9 +331,11 @@ class ChargingDebug(scriptBase.ScriptBase):
 				]),
 			]
 
-		sliders = html.Div(style={'display': 'grid', 'grid-template-columns': '70% 30%'}, children=[
-			html.Div(children=aa_slider_headers + aa_sliders),
-			html.Div(children=param_headers + param_sliders + other_headers + other_sliders),
+		sliders = html.Div(
+			style={'maxHeight': '500px', 'overflow': 'scroll', 'display': 'grid', 'grid-template-columns': '70% 30%'},
+			children=[
+				html.Div(children=aa_slider_headers + aa_sliders),
+				html.Div(children=param_headers + param_sliders + other_headers + other_sliders),
 			])
 
 		# Slider inputs
@@ -308,7 +363,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			dcc.Input(id=LOW_TIMESTEP, type='number', value=0),
 			dcc.Input(id=HIGH_TIMESTEP, type='number', value=10),
 			sliders,
-			dcc.Graph(id=GRAPH_ID, style={'height': '1200px'})
+			dcc.Graph(id=GRAPH_ID, style={'height': '750px'})
 			])
 
 		# Register callback to update plot when selections change
@@ -335,7 +390,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			Update the plot based on selection changes.
 
 			Returns:
-				plotly figure dict
+				plotly figure
 			"""
 
 			ribosome_adjustment = 10**ribosome_adjustment
@@ -347,9 +402,11 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 			v_rib = []
 			f_charged = []
+			n_synth = []
+			n_deg = []
 			t = np.arange(init_t, final_t)
 			for timestep in t:
-				_, f, v = self.solve_timestep(
+				_, f, v, synth, deg = self.solve_timestep(
 					timestep,
 					synthetase_adjustments=synthetase_adjustments,
 					trna_adjustments=trna_adjustments,
@@ -360,17 +417,24 @@ class ChargingDebug(scriptBase.ScriptBase):
 					)
 				v_rib.append(v)
 				f_charged.append(f)
+				n_synth.append(synth)
+				n_deg.append(deg)
 
 			f_charged = np.array(f_charged).T
+			net_ppgpp = np.array(n_synth) - np.array(n_deg)
 
-			fig = plotly.subplots.make_subplots(rows=2, cols=1)
+			fig = plotly.subplots.make_subplots(rows=1, cols=3)
 			fig.append_trace(go.Scatter(x=t, y=v_rib, name='Elongation rate'), row=1, col=1)
 			for f, aa in zip(f_charged, aa_ids):
-				fig.append_trace(go.Scatter(x=t, y=f, name=aa), row=2, col=1)
+				fig.append_trace(go.Scatter(x=t, y=f, name=aa), row=1, col=2)
+			fig.append_trace(go.Scatter(x=t, y=n_synth, name='ppGpp synthesis reactions'), row=1, col=3)
+			fig.append_trace(go.Scatter(x=t, y=n_deg, name='ppGpp degradation reactions'), row=1, col=3)
+			fig.append_trace(go.Scatter(x=t, y=net_ppgpp, name='Net ppGpp reactions'), row=1, col=3)
 
-			fig.update_xaxes(title_text='Timestep', row=2, col=1)
+			fig.update_xaxes(title_text='Timestep', row=1, col=2)
 			fig.update_yaxes(title_text='Elongation rate (AA/s)', row=1, col=1)
-			fig.update_yaxes(title_text='Fraction charged', row=2, col=1)
+			fig.update_yaxes(title_text='Fraction charged', row=1, col=2)
+			fig.update_yaxes(title_text='Number of ppGpp reaction', row=1, col=3)
 
 			return fig
 
