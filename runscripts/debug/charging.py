@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 import os
 import pickle
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 import webbrowser
 
 import dash
@@ -108,19 +108,39 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.time_step_sizes = main_reader.readColumn('timeStepSec')[1:]
 		self.n_time_steps = len(self.time_step_sizes)
 
-	def solve_timestep(self, timestep: int) -> Tuple[np.ndarray, float]:
+	def solve_timestep(self,
+			timestep: int,
+			synthetase_adjustments: Optional[np.ndarray] = None,
+			trna_adjustments: Optional[np.ndarray] = None,
+			aa_adjustments: Optional[np.ndarray] = None,
+			) -> Tuple[np.ndarray, float]:
 		"""
 		Calculates charging and elongation rate for a given timestep.
 
 		Args:
 			timestep: simulation timestep to select data from
+			synthetase_adjustments: adjustments to scale synthetase concentrations
+				up or down
+			trna_adjustments: adjustments to scale tRNA concentrations
+				up or down
+			aa_adjustments: adjustments to scale amino acid concentrations
+				up or down
 		"""
 
+		n_aas = len(self.sim_data.molecule_groups.amino_acids)
+
+		if synthetase_adjustments is None:
+			synthetase_adjustments = np.ones(n_aas)
+		if trna_adjustments is None:
+			trna_adjustments = np.ones(n_aas)
+		if aa_adjustments is None:
+			aa_adjustments = np.ones(n_aas)
+
 		return calculate_trna_charging(
-			self.synthetase_conc[timestep, :],
-			self.uncharged_trna_conc[timestep, :],
-			self.charged_trna_conc[timestep, :],
-			self.aa_conc[timestep, :],
+			self.synthetase_conc[timestep, :] * synthetase_adjustments,
+			self.uncharged_trna_conc[timestep, :] * trna_adjustments,
+			self.charged_trna_conc[timestep, :] * trna_adjustments,
+			self.aa_conc[timestep, :] * aa_adjustments,
 			self.ribosome_conc[timestep],
 			self.fraction_aa_to_elongate[timestep, :],
 			self.charging_params,
@@ -168,11 +188,52 @@ class ChargingDebug(scriptBase.ScriptBase):
 		"""
 
 		app = dash.Dash()
+
+		aa_ids = self.sim_data.molecule_groups.amino_acids
+		n_aas = len(aa_ids)
+
+		# Slider elements
+		slider_spacing = '10% 20% 20% 20%'
+		slider_style = {'display': 'grid', 'grid-template-columns': slider_spacing}
+		slider_options = dict(value=0, min=-2, max=2, step=0.01, marks={i: {'label': 10**i} for i in range(-2, 3)})
+		slider_headers = html.Div(style=slider_style, children=[
+			html.Plaintext(''),
+			html.Plaintext('Synthetases', style={'text-align': 'center'}),
+			html.Plaintext('tRNA', style={'text-align': 'center'}),
+			html.Plaintext('Amino acids', style={'text-align': 'center'}),
+			])
+		sliders = [
+			html.Div(style=slider_style, children=[
+				html.Plaintext(f'{aa[:-3]}:'),
+				dcc.Slider(id=f'{aa}-synthetase', **slider_options),
+				dcc.Slider(id=f'{aa}-trna', **slider_options),
+				dcc.Slider(id=f'{aa}-aa', **slider_options),
+				])
+			for aa in aa_ids
+			]
+
+		# Slider inputs
+		synthetase_inputs = [
+			dash.dependencies.Input(f'{aa}-synthetase', 'value')
+			for aa in aa_ids
+			]
+		trna_inputs = [
+			dash.dependencies.Input(f'{aa}-trna', 'value')
+			for aa in aa_ids
+			]
+		aa_inputs = [
+			dash.dependencies.Input(f'{aa}-aa', 'value')
+			for aa in aa_ids
+			]
+
+		# Page layout
 		app.layout = html.Div(children=[
 			html.H2('Charging debugger'),
 			html.Plaintext('Timestep limits (lower, upper):'),
 			dcc.Input(id=LOW_TIMESTEP, type='number', value=0),
 			dcc.Input(id=HIGH_TIMESTEP, type='number', value=10),
+			slider_headers,
+			html.Div(children=sliders),
 			dcc.Graph(id=GRAPH_ID, style={'height': '1200px'})
 			])
 
@@ -184,8 +245,11 @@ class ChargingDebug(scriptBase.ScriptBase):
 			[
 				dash.dependencies.Input(LOW_TIMESTEP, 'value'),
 				dash.dependencies.Input(HIGH_TIMESTEP, 'value'),
+				*synthetase_inputs,
+				*trna_inputs,
+				*aa_inputs,
 			])
-		def update_graph(init_t: int, final_t: int) -> Dict:
+		def update_graph(init_t: int, final_t: int, *param_adjustments: float) -> Dict:
 			"""
 			Update the plot based on selection changes.
 
@@ -193,11 +257,20 @@ class ChargingDebug(scriptBase.ScriptBase):
 				plotly figure dict
 			"""
 
+			synthetase_adjustments = 10**np.array(param_adjustments[:n_aas])
+			trna_adjustments = 10**np.array(param_adjustments[n_aas:2*n_aas])
+			aa_adjustments = 10**np.array(param_adjustments[2*n_aas:3*n_aas])
+
 			v_rib = []
 			f_charged = []
 			t = np.arange(init_t, final_t)
 			for timestep in t:
-				f, v = self.solve_timestep(timestep)
+				f, v = self.solve_timestep(
+					timestep,
+					synthetase_adjustments=synthetase_adjustments,
+					trna_adjustments=trna_adjustments,
+					aa_adjustments=aa_adjustments,
+					)
 				v_rib.append(v / self.ribosome_conc[timestep].asNumber(CONC_UNITS))
 				f_charged.append(f)
 
@@ -205,7 +278,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 			fig = plotly.subplots.make_subplots(rows=2, cols=1)
 			fig.append_trace(go.Scatter(x=t, y=v_rib, name='Elongation rate'), row=1, col=1)
-			for f, aa in zip(f_charged, self.sim_data.molecule_groups.amino_acids):
+			for f, aa in zip(f_charged, aa_ids):
 				fig.append_trace(go.Scatter(x=t, y=f, name=aa), row=2, col=1)
 
 			fig.update_xaxes(title_text='Timestep', row=2, col=1)
