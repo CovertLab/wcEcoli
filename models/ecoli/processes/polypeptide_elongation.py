@@ -384,26 +384,16 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.synthetases = self.process.bulkMoleculesView(self.synthetase_names)
 
 		# ppGpp synthesis
-		self.ppgpp_reaction_names = metabolism.ppgpp_reaction_names
 		self.ppgpp_reaction_metabolites = self.process.bulkMoleculesView(metabolism.ppgpp_reaction_metabolites)
-		self.ppgpp_reaction_stoich = metabolism.ppgpp_reaction_stoich
-		self.synthesis_index = self.ppgpp_reaction_names.index(metabolism.ppgpp_synthesis_reaction)
-		self.degradation_index = self.ppgpp_reaction_names.index(metabolism.ppgpp_degradation_reaction)
 		self.rela = self.process.bulkMoleculeView(molecule_ids.RelA)
 		self.spot = self.process.bulkMoleculeView(molecule_ids.SpoT)
 		self.ppgpp = self.process.bulkMoleculeView(molecule_ids.ppGpp)
 
-		# Parameters for tRNA charging and ribosome elongation
+		# Parameters for tRNA charging, ribosome elongation and ppGpp reactions
 		self.charging_params = get_charging_params(sim_data,
 			variable_elongation=self.process.variable_elongation)
 		assert(self.charging_params['max_elong_rate'] == self.maxRibosomeElongationRate)
-
-		# ppGpp parameters
-		self.KD_RelA = constants.KD_RelA_ribosome.asNumber(CONC_UNITS)
-		self.k_RelA = constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s)
-		self.k_SpoT_syn = constants.k_SpoT_ppGpp_synthesis.asNumber(1 / units.s)
-		self.k_SpoT_deg = constants.k_SpoT_ppGpp_degradation.asNumber(1 / (CONC_UNITS * units.s))
-		self.KI_SpoT = constants.KI_SpoT_ppGpp_degradation.asNumber(CONC_UNITS)
+		self.ppgpp_params = get_ppgpp_params(sim_data)
 
 		# Amino acid supply calculations
 		self.aa_supply_scaling = metabolism.aa_supply_scaling
@@ -526,9 +516,11 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			ppgpp_conc = self.counts_to_molar * self.ppgpp.total_count()
 			rela_conc = self.counts_to_molar * self.rela.total_count()
 			spot_conc = self.counts_to_molar * self.spot.total_count()
-			delta_metabolites, _, _, _, _, _ = self.ppgpp_metabolite_changes(
+			delta_metabolites, _, _, _, _, _ = ppgpp_metabolite_changes(
 				updated_uncharged_trna_conc, updated_charged_trna_conc, ribosome_conc,
-				f, rela_conc, spot_conc, ppgpp_conc, self.counts_to_molar, v_rib, request=True
+				f, rela_conc, spot_conc, ppgpp_conc, self.counts_to_molar, v_rib,
+				self.charging_params, self.ppgpp_params, self.process.timeStepSec(),
+				request=True, random_state=self.process.randomState,
 			)
 
 			request_ppgpp_metabolites = -delta_metabolites
@@ -584,9 +576,11 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			aa_at_ribosome = aas_used + next_amino_acid_count
 			f = aa_at_ribosome / aa_at_ribosome.sum()
 			limits = self.ppgpp_reaction_metabolites.counts()
-			delta_metabolites, ppgpp_syn, ppgpp_deg, rela_syn, spot_syn, spot_deg = self.ppgpp_metabolite_changes(
+			delta_metabolites, ppgpp_syn, ppgpp_deg, rela_syn, spot_syn, spot_deg = ppgpp_metabolite_changes(
 				uncharged_trna_conc, charged_trna_conc,	ribosome_conc, f, rela_conc,
-				spot_conc, ppgpp_conc, self.counts_to_molar, v_rib, limits=limits,
+				spot_conc, ppgpp_conc, self.counts_to_molar, v_rib,
+				self.charging_params, self.ppgpp_params, self.process.timeStepSec(),
+				random_state=self.process.randomState, limits=limits,
 				)
 
 			self.process.writeToListener('GrowthLimits', 'rela_syn', rela_syn)
@@ -661,118 +655,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		return trna_counts
 
-	def ppgpp_metabolite_changes(self, uncharged_trna_conc, charged_trna_conc,
-			ribosome_conc, f, rela_conc, spot_conc, ppgpp_conc, counts_to_molar,
-			v_rib, request=False, limits=None):
-		'''
-		Calculates the changes in metabolite counts based on ppGpp synthesis and
-		degradation reactions.
-
-		Args:
-			uncharged_trna_conc (np.array[float] with concentration units):
-				concentration of uncharged tRNA associated with each amino acid
-			charged_trna_conc (np.array[float] with concentration units):
-				concentration of charged tRNA associated with each amino acid
-			ribosome_conc (float with concentration units): concentration of active ribosomes
-			f (np.array[float]): fraction of each amino acid to be incorporated
-				to total amino acids incorporated
-			rela_conc (float with concentration units): concentration of RelA
-			spot_conc (float with concentration units): concentration of SpoT
-			ppgpp_conc (float with concentration units): concentration of ppGpp
-			counts_to_molar (float with concentration units): conversion factor
-				from counts to molarity
-			v_rib (float): rate of amino acid incorporation at the ribosome,
-				in units of uM/s
-			request (bool): if True, only considers reactant stoichiometry,
-				otherwise considers reactants and products. For use in
-				calculateRequest. GDP appears as both a reactant and product
-				and the request can be off the actual use if not handled in this
-				manner.
-			limits (np.array[float]): counts of molecules that are available to prevent
-				negative total counts as a result of delta_metabolites.
-				If None, no limits are placed on molecule changes.
-
-		Returns:
-			delta_metabolites (np.array[int]): the change in counts of each metabolite
-				involved in ppGpp reactions
-			n_syn_reactions (int): the number of ppGpp synthesis reactions
-			n_deg_reactions (int): the number of ppGpp degradation reactions
-			v_rela_syn (float): rate of synthesis from RelA
-			v_spot_syn (float): rate of synthesis from SpoT
-			v_deg (float): rate of degradation from SpoT
-		'''
-
-		uncharged_trna_conc = uncharged_trna_conc.asNumber(CONC_UNITS)
-		charged_trna_conc = charged_trna_conc.asNumber(CONC_UNITS)
-		ribosome_conc = ribosome_conc.asNumber(CONC_UNITS)
-		rela_conc = rela_conc.asNumber(CONC_UNITS)
-		spot_conc = spot_conc.asNumber(CONC_UNITS)
-		ppgpp_conc = ppgpp_conc.asNumber(CONC_UNITS)
-		counts_to_micromolar = counts_to_molar.asNumber(CONC_UNITS)
-
-		numerator = 1 + charged_trna_conc / self.charging_params['krta'] + uncharged_trna_conc / self.charging_params['krtf']
-		saturated_charged = charged_trna_conc / self.charging_params['krta'] / numerator
-		saturated_uncharged = uncharged_trna_conc / self.charging_params['krtf'] / numerator
-		fraction_a_site = f * v_rib / (saturated_charged * self.charging_params['max_elong_rate'])
-		ribosomes_bound_to_uncharged = fraction_a_site * saturated_uncharged
-
-		# Handle rare cases when tRNA concentrations are 0
-		# Can result in inf and nan so assume a fraction of ribosomes
-		# bind to the uncharged tRNA if any tRNA are present or 0 if not
-		mask = ~np.isfinite(ribosomes_bound_to_uncharged)
-		ribosomes_bound_to_uncharged[mask] = ribosome_conc * f[mask] * np.array(
-			uncharged_trna_conc[mask] + charged_trna_conc[mask] > 0)
-
-		# Calculate rates for synthesis and degradation
-		frac_rela = 1 / (1 + self.KD_RelA / ribosomes_bound_to_uncharged.sum())
-		v_rela_syn = self.k_RelA * rela_conc * frac_rela
-		v_spot_syn = self.k_SpoT_syn * spot_conc
-		v_syn = v_rela_syn + v_spot_syn
-		v_deg = self.k_SpoT_deg * spot_conc * ppgpp_conc / (1 + uncharged_trna_conc.sum() / self.KI_SpoT)
-
-		# Convert to discrete reactions
-		n_syn_reactions = stochasticRound(self.process.randomState, v_syn * self.process.timeStepSec() / counts_to_micromolar)[0]
-		n_deg_reactions = stochasticRound(self.process.randomState, v_deg * self.process.timeStepSec() / counts_to_micromolar)[0]
-
-		# Only look at reactant stoichiometry if requesting molecules to use
-		if request:
-			ppgpp_reaction_stoich = np.zeros_like(self.ppgpp_reaction_stoich)
-			reactants = self.ppgpp_reaction_stoich < 0
-			ppgpp_reaction_stoich[reactants] = self.ppgpp_reaction_stoich[reactants]
-		else:
-			ppgpp_reaction_stoich = self.ppgpp_reaction_stoich
-
-		# Calculate the change in metabolites and adjust to limits if provided
-		# Possible reactions are adjusted down to limits if the change in any
-		# metabolites would result in negative counts
-		max_iterations = int(n_deg_reactions + n_syn_reactions + 1)
-		old_counts = None
-		for it in range(max_iterations):
-			delta_metabolites = (ppgpp_reaction_stoich[:, self.synthesis_index] * n_syn_reactions
-				+ ppgpp_reaction_stoich[:, self.degradation_index] * n_deg_reactions)
-
-			if limits is None:
-				break
-			else:
-				final_counts = delta_metabolites + limits
-
-				if np.all(final_counts >= 0) or (old_counts is not None and np.all(final_counts == old_counts)):
-					break
-
-				limited_index = np.argmin(final_counts)
-				if ppgpp_reaction_stoich[limited_index, self.synthesis_index] < 0:
-					limited = np.ceil(final_counts[limited_index] / ppgpp_reaction_stoich[limited_index, self.synthesis_index])
-					n_syn_reactions -= min(limited, n_syn_reactions)
-				if ppgpp_reaction_stoich[limited_index, self.degradation_index] < 0:
-					limited = np.ceil(final_counts[limited_index] / ppgpp_reaction_stoich[limited_index, self.degradation_index])
-					n_deg_reactions -= min(limited, n_deg_reactions)
-
-				old_counts = final_counts
-		else:
-			raise ValueError('Failed to meet molecule limits with ppGpp reactions.')
-
-		return delta_metabolites, n_syn_reactions, n_deg_reactions, v_rela_syn, v_spot_syn, v_deg
-
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		short_enough = True
 
@@ -787,6 +669,154 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			short_enough = False
 
 		return short_enough
+
+def get_ppgpp_params(sim_data) -> Dict[str, Any]:
+	"""
+	Get parameters required for ppGpp reaction calulations to help
+	encapsulate the function so that it does not need to be a class method.
+
+	Args:
+		sim_data: SimulationData object
+
+	Returns:
+		parameters that are used in ppgpp_metabolite_changes
+	"""
+
+	constants = sim_data.constants
+	metabolism = sim_data.process.metabolism
+
+	return dict(
+		KD_RelA=constants.KD_RelA_ribosome.asNumber(CONC_UNITS),
+		k_RelA=constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s),
+		k_SpoT_syn=constants.k_SpoT_ppGpp_synthesis.asNumber(1 / units.s),
+		k_SpoT_deg=constants.k_SpoT_ppGpp_degradation.asNumber(1 / (CONC_UNITS * units.s)),
+		KI_SpoT=constants.KI_SpoT_ppGpp_degradation.asNumber(CONC_UNITS),
+		ppgpp_reaction_stoich=metabolism.ppgpp_reaction_stoich,
+		synthesis_index=metabolism.ppgpp_reaction_names.index(metabolism.ppgpp_synthesis_reaction),
+		degradation_index=metabolism.ppgpp_reaction_names.index(metabolism.ppgpp_degradation_reaction),
+		)
+
+def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
+		ribosome_conc, f, rela_conc, spot_conc, ppgpp_conc, counts_to_molar,
+		v_rib, charging_params, ppgpp_params, time_step,
+		request=False, limits=None, random_state=None):
+	'''
+	Calculates the changes in metabolite counts based on ppGpp synthesis and
+	degradation reactions.
+
+	Args:
+		uncharged_trna_conc (np.array[float] with concentration units):
+			concentration of uncharged tRNA associated with each amino acid
+		charged_trna_conc (np.array[float] with concentration units):
+			concentration of charged tRNA associated with each amino acid
+		ribosome_conc (float with concentration units): concentration of active ribosomes
+		f (np.array[float]): fraction of each amino acid to be incorporated
+			to total amino acids incorporated
+		rela_conc (float with concentration units): concentration of RelA
+		spot_conc (float with concentration units): concentration of SpoT
+		ppgpp_conc (float with concentration units): concentration of ppGpp
+		counts_to_molar (float with concentration units): conversion factor
+			from counts to molarity
+		v_rib (float): rate of amino acid incorporation at the ribosome,
+			in units of uM/s
+		charging_params (Dict[str, Any]): parameters used in charging equations
+			- this should be generated by get_charging_params
+		ppgpp_params (Dict[str, Any]): parameters used in ppGpp reactions
+			- this should be generated by get_ppgpp_params
+		time_step (float): length of the current time step
+		request (bool): if True, only considers reactant stoichiometry,
+			otherwise considers reactants and products. For use in
+			calculateRequest. GDP appears as both a reactant and product
+			and the request can be off the actual use if not handled in this
+			manner.
+		limits (np.array[float]): counts of molecules that are available to prevent
+			negative total counts as a result of delta_metabolites.
+			If None, no limits are placed on molecule changes.
+		random_state (np.random.RandomState): random state for the process
+
+	Returns:
+		delta_metabolites (np.array[int]): the change in counts of each metabolite
+			involved in ppGpp reactions
+		n_syn_reactions (int): the number of ppGpp synthesis reactions
+		n_deg_reactions (int): the number of ppGpp degradation reactions
+		v_rela_syn (float): rate of synthesis from RelA
+		v_spot_syn (float): rate of synthesis from SpoT
+		v_deg (float): rate of degradation from SpoT
+	'''
+
+	if random_state is None:
+		random_state = np.random.RandomState()
+
+	uncharged_trna_conc = uncharged_trna_conc.asNumber(CONC_UNITS)
+	charged_trna_conc = charged_trna_conc.asNumber(CONC_UNITS)
+	ribosome_conc = ribosome_conc.asNumber(CONC_UNITS)
+	rela_conc = rela_conc.asNumber(CONC_UNITS)
+	spot_conc = spot_conc.asNumber(CONC_UNITS)
+	ppgpp_conc = ppgpp_conc.asNumber(CONC_UNITS)
+	counts_to_micromolar = counts_to_molar.asNumber(CONC_UNITS)
+
+	numerator = 1 + charged_trna_conc / charging_params['krta'] + uncharged_trna_conc / charging_params['krtf']
+	saturated_charged = charged_trna_conc / charging_params['krta'] / numerator
+	saturated_uncharged = uncharged_trna_conc / charging_params['krtf'] / numerator
+	fraction_a_site = f * v_rib / (saturated_charged * charging_params['max_elong_rate'])
+	ribosomes_bound_to_uncharged = fraction_a_site * saturated_uncharged
+
+	# Handle rare cases when tRNA concentrations are 0
+	# Can result in inf and nan so assume a fraction of ribosomes
+	# bind to the uncharged tRNA if any tRNA are present or 0 if not
+	mask = ~np.isfinite(ribosomes_bound_to_uncharged)
+	ribosomes_bound_to_uncharged[mask] = ribosome_conc * f[mask] * np.array(
+		uncharged_trna_conc[mask] + charged_trna_conc[mask] > 0)
+
+	# Calculate rates for synthesis and degradation
+	frac_rela = 1 / (1 + ppgpp_params['KD_RelA'] / ribosomes_bound_to_uncharged.sum())
+	v_rela_syn = ppgpp_params['k_RelA'] * rela_conc * frac_rela
+	v_spot_syn = ppgpp_params['k_SpoT_syn'] * spot_conc
+	v_syn = v_rela_syn + v_spot_syn
+	v_deg = ppgpp_params['k_SpoT_deg'] * spot_conc * ppgpp_conc / (1 + uncharged_trna_conc.sum() / ppgpp_params['KI_SpoT'])
+
+	# Convert to discrete reactions
+	n_syn_reactions = stochasticRound(random_state, v_syn * time_step / counts_to_micromolar)[0]
+	n_deg_reactions = stochasticRound(random_state, v_deg * time_step / counts_to_micromolar)[0]
+
+	# Only look at reactant stoichiometry if requesting molecules to use
+	if request:
+		ppgpp_reaction_stoich = np.zeros_like(ppgpp_params['ppgpp_reaction_stoich'])
+		reactants = ppgpp_params['ppgpp_reaction_stoich'] < 0
+		ppgpp_reaction_stoich[reactants] = ppgpp_params['ppgpp_reaction_stoich'][reactants]
+	else:
+		ppgpp_reaction_stoich = ppgpp_params['ppgpp_reaction_stoich']
+
+	# Calculate the change in metabolites and adjust to limits if provided
+	# Possible reactions are adjusted down to limits if the change in any
+	# metabolites would result in negative counts
+	max_iterations = int(n_deg_reactions + n_syn_reactions + 1)
+	old_counts = None
+	for it in range(max_iterations):
+		delta_metabolites = (ppgpp_reaction_stoich[:, ppgpp_params['synthesis_index']] * n_syn_reactions
+			+ ppgpp_reaction_stoich[:, ppgpp_params['degradation_index']] * n_deg_reactions)
+
+		if limits is None:
+			break
+		else:
+			final_counts = delta_metabolites + limits
+
+			if np.all(final_counts >= 0) or (old_counts is not None and np.all(final_counts == old_counts)):
+				break
+
+			limited_index = np.argmin(final_counts)
+			if ppgpp_reaction_stoich[limited_index, ppgpp_params['synthesis_index']] < 0:
+				limited = np.ceil(final_counts[limited_index] / ppgpp_reaction_stoich[limited_index, ppgpp_params['synthesis_index']])
+				n_syn_reactions -= min(limited, n_syn_reactions)
+			if ppgpp_reaction_stoich[limited_index, ppgpp_params['degradation_index']] < 0:
+				limited = np.ceil(final_counts[limited_index] / ppgpp_reaction_stoich[limited_index, ppgpp_params['degradation_index']])
+				n_deg_reactions -= min(limited, n_deg_reactions)
+
+			old_counts = final_counts
+	else:
+		raise ValueError('Failed to meet molecule limits with ppGpp reactions.')
+
+	return delta_metabolites, n_syn_reactions, n_deg_reactions, v_rela_syn, v_spot_syn, v_deg
 
 def get_charging_params(
 		sim_data,
