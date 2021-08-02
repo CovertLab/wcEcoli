@@ -118,7 +118,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.aa_conc = CONC_UNITS * growth_reader.readColumn('aa_conc')[1:, :]
 		self.ribosome_conc = CONC_UNITS * growth_reader.readColumn('ribosome_conc')[1:]
 		self.fraction_aa_to_elongate = growth_reader.readColumn('fraction_aa_to_elongate')[1:, :]
-		self.charging_fraction = growth_reader.readColumn('fraction_trna_charged')[1:, :]
+		self.fraction_charged = growth_reader.readColumn('fraction_trna_charged')[1:, :]
 
 		self.time_step_sizes = main_reader.readColumn('timeStepSec')[1:]
 		self.n_time_steps = len(self.time_step_sizes)
@@ -131,7 +131,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			param_adjustments: Optional[Dict] = None,
 			ribosome_adjustment: float = 1.,
 			timestep_adjustment: float = 1.,
-			) -> Tuple[np.ndarray, float]:
+			) -> Tuple[np.ndarray, np.ndarray, float]:
 		"""
 		Calculates charging and elongation rate for a given timestep.
 
@@ -148,8 +148,9 @@ class ChargingDebug(scriptBase.ScriptBase):
 			timestep_adjustment: adjustment to scale timesteps
 
 		Returns:
-			fraction charged of all tRNAs for each amino acid
-			ribosome elongation rate
+			fraction_charged_per_trna: fraction charged for each tRNA
+			fraction_charged: fraction charged of all tRNAs for each amino acid
+			adjusted_v_rib: ribosome elongation rate (AA/s)
 		"""
 
 		n_aas = len(self.sim_data.molecule_groups.amino_acids)
@@ -168,16 +169,23 @@ class ChargingDebug(scriptBase.ScriptBase):
 			charging_params[param] = value * param_adjustments.get(param, 1)
 		charging_params.update(self.constant_charging_params)
 
-		return calculate_trna_charging(
+		ribosome_conc = self.ribosome_conc[timestep] * ribosome_adjustment
+
+		fraction_charged, v_rib = calculate_trna_charging(
 			self.synthetase_conc[timestep, :] * synthetase_adjustments,
 			self.uncharged_trna_conc[timestep, :] * trna_adjustments,
 			self.charged_trna_conc[timestep, :] * trna_adjustments,
 			self.aa_conc[timestep, :] * aa_adjustments,
-			self.ribosome_conc[timestep] * ribosome_adjustment,
+			ribosome_conc,
 			self.fraction_aa_to_elongate[timestep, :],
 			charging_params,
 			time_limit=self.time_step_sizes[timestep] * timestep_adjustment,
 			)
+
+		fraction_charged_per_aa = fraction_charged @ self.aa_from_trna
+		adjusted_v_rib = v_rib / ribosome_conc.asNumber(CONC_UNITS)
+
+		return fraction_charged_per_aa, fraction_charged, adjusted_v_rib
 
 	def validation(self, n_steps: int) -> None:
 		"""
@@ -200,8 +208,8 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 		print('Running validation to check output...')
 		for timestep in range(n_steps):
-			charging_fraction, _ = self.solve_timestep(timestep)
-			if np.any(charging_fraction @ self.aa_from_trna != self.charging_fraction[timestep]):
+			fraction_charged, _, _ = self.solve_timestep(timestep)
+			if np.any(fraction_charged != self.fraction_charged[timestep]):
 				raise ValueError(f'Charging fraction does not match for time step {timestep}')
 		print('All {} timesteps match the results from the whole-cell model.'.format(n_steps))
 
@@ -341,7 +349,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			f_charged = []
 			t = np.arange(init_t, final_t)
 			for timestep in t:
-				f, v = self.solve_timestep(
+				_, f, v = self.solve_timestep(
 					timestep,
 					synthetase_adjustments=synthetase_adjustments,
 					trna_adjustments=trna_adjustments,
@@ -350,7 +358,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 					ribosome_adjustment=ribosome_adjustment,
 					timestep_adjustment=timestep_adjustment,
 					)
-				v_rib.append(v / (self.ribosome_conc[timestep].asNumber(CONC_UNITS) * ribosome_adjustment))
+				v_rib.append(v)
 				f_charged.append(f)
 
 			f_charged = np.array(f_charged).T
