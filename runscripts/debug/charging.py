@@ -289,6 +289,20 @@ class ChargingDebug(scriptBase.ScriptBase):
 		n_aas = len(aa_ids)
 
 		# Slider elements
+		def add_slider(id_):
+			text_id = f'{id_}-text'
+			slider_id = f'{id_}-slider'
+			div = html.Div(style={'display': 'grid', 'grid-template-columns': '10% 90%'}, children=[
+				html.Plaintext('1.000', id=text_id),
+				dcc.Slider(id=slider_id, **slider_options),
+				])
+			@app.callback(dash.dependencies.Output(text_id, 'children'),
+				[dash.dependencies.Input(slider_id, 'value')])
+			def display_value(value):
+				return f'{10**value:.3f}'
+
+			return div
+
 		slider_options = dict(value=0, min=-2, max=2, step=0.01, marks={i: {'label': 10**i} for i in range(-2, 3)})
 		aa_slider_style = {'display': 'grid', 'grid-template-columns': '15% 25% 25% 25%'}
 		aa_slider_headers = [html.Div(style=aa_slider_style, children=[
@@ -300,9 +314,9 @@ class ChargingDebug(scriptBase.ScriptBase):
 		aa_sliders = [
 			html.Div(style=aa_slider_style, children=[
 				html.Plaintext(f'{aa[:-3]}:'),
-				dcc.Slider(id=f'{aa}-synthetase', **slider_options),
-				dcc.Slider(id=f'{aa}-trna', **slider_options),
-				dcc.Slider(id=f'{aa}-aa', **slider_options),
+				add_slider(f'{aa}-synthetase'),
+				add_slider(f'{aa}-trna'),
+				add_slider(f'{aa}-aa'),
 				])
 			for aa in aa_ids
 			]
@@ -314,7 +328,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		charging_param_sliders = [
 			html.Div(style=other_sliders_style, children=[
 				html.Plaintext(f'{param}:'),
-				dcc.Slider(id=f'{param}-slider', **slider_options),
+				add_slider(f'{param}-slider'),
 				])
 			for param in charging_param_ids
 			]
@@ -325,7 +339,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		ppgpp_param_sliders = [
 			html.Div(style=other_sliders_style, children=[
 				html.Plaintext(f'{param}:'),
-				dcc.Slider(id=f'{param}-slider', **slider_options),
+				add_slider(f'{param}-slider'),
 				])
 			for param in ppgpp_param_ids
 			]
@@ -336,11 +350,11 @@ class ChargingDebug(scriptBase.ScriptBase):
 		other_sliders = [
 			html.Div(style=other_sliders_style, children=[
 				html.Plaintext('Ribosome conc:'),
-				dcc.Slider(id='ribosome-slider', **slider_options),
+				add_slider('ribosome-slider'),
 				]),
 			html.Div(style=other_sliders_style, children=[
 				html.Plaintext('Timestep:'),
-				dcc.Slider(id='timestep-slider', **slider_options),
+				add_slider('timestep-slider'),
 				]),
 			]
 
@@ -358,19 +372,19 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 		# Slider inputs
 		synthetase_inputs = [
-			dash.dependencies.Input(f'{aa}-synthetase', 'value')
+			dash.dependencies.Input(f'{aa}-synthetase-text', 'children')
 			for aa in aa_ids
 			]
 		trna_inputs = [
-			dash.dependencies.Input(f'{aa}-trna', 'value')
+			dash.dependencies.Input(f'{aa}-trna-text', 'children')
 			for aa in aa_ids
 			]
 		aa_inputs = [
-			dash.dependencies.Input(f'{aa}-aa', 'value')
+			dash.dependencies.Input(f'{aa}-aa-text', 'children')
 			for aa in aa_ids
 			]
 		param_inputs = [
-			dash.dependencies.Input(f'{param}-slider', 'value')
+			dash.dependencies.Input(f'{param}-slider-text', 'children')
 			for param in all_param_ids
 			]
 
@@ -392,8 +406,8 @@ class ChargingDebug(scriptBase.ScriptBase):
 			[
 				dash.dependencies.Input(LOW_TIMESTEP, 'value'),
 				dash.dependencies.Input(HIGH_TIMESTEP, 'value'),
-				dash.dependencies.Input('ribosome-slider', 'value'),
-				dash.dependencies.Input('timestep-slider', 'value'),
+				dash.dependencies.Input('ribosome-slider-text', 'children'),
+				dash.dependencies.Input('timestep-slider-text', 'children'),
 				*synthetase_inputs,
 				*trna_inputs,
 				*aa_inputs,
@@ -401,8 +415,8 @@ class ChargingDebug(scriptBase.ScriptBase):
 			])
 		def update_graph(
 				init_t: int, final_t: int,
-				ribosome_adjustment: float, timestep_adjustment: float,
-				*param_inputs: float,
+				ribosome_adjustment: str, timestep_adjustment: str,
+				*param_inputs: str,
 				) -> Dict:
 			"""
 			Update the plot based on selection changes.
@@ -411,12 +425,12 @@ class ChargingDebug(scriptBase.ScriptBase):
 				plotly figure
 			"""
 
-			ribosome_adjustment = 10**ribosome_adjustment
-			timestep_adjustment = 10**timestep_adjustment
-			synthetase_adjustments = 10**np.array(param_inputs[:n_aas])
-			trna_adjustments = 10**np.array(param_inputs[n_aas:2*n_aas])
-			aa_adjustments = 10**np.array(param_inputs[2*n_aas:3*n_aas])
-			param_adjustments = {param: 10**value for param, value in zip(all_param_ids, param_inputs[3*n_aas:])}
+			ribosome_adjustment = float(ribosome_adjustment)
+			timestep_adjustment = float(timestep_adjustment)
+			synthetase_adjustments = np.array(param_inputs[:n_aas], float)
+			trna_adjustments = np.array(param_inputs[n_aas:2*n_aas], float)
+			aa_adjustments = np.array(param_inputs[2*n_aas:3*n_aas], float)
+			param_adjustments = {param: float(value) for param, value in zip(all_param_ids, param_inputs[3*n_aas:])}
 
 			v_rib = []
 			f_charged = []
