@@ -63,6 +63,8 @@ class ChargingDebug(scriptBase.ScriptBase):
 			help='Number of time steps to run for validation. If < 0, will run all.')
 		parser.add_argument('--interactive', action='store_true',
 			help='If set, runs interactive analysis plots for debugging.')
+		parser.add_argument('-p', '--port', type=int, default=PORT,
+			help='The localhost port to use for the interactive webpage.')
 
 	def update_args(self, args):
 		super().update_args(args)
@@ -266,14 +268,14 @@ class ChargingDebug(scriptBase.ScriptBase):
 				raise ValueError(f'Charging fraction does not match for time step {timestep}')
 		print('All {} timesteps match the results from the whole-cell model.'.format(n_steps))
 
-	def interactive_debug(self):
+	def interactive_debug(self, port):
 		"""
 		Run an interactive app in a browser to debug charging.
 		"""
 
 		app = self.create_app()
-		webbrowser.open_new(f'http://127.0.0.1:{PORT}/')
-		app.run_server(port=PORT)
+		webbrowser.open_new(f'http://127.0.0.1:{port}/')
+		app.run_server(port=port)
 
 	def create_app(self) -> dash.Dash:
 		"""
@@ -477,7 +479,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.load_data(args.sim_data_file, args.sim_out_dir)
 		self.validation(args.validation)
 		if args.interactive:
-			self.interactive_debug()
+			self.interactive_debug(args.port)
 
 
 if __name__ == '__main__':
