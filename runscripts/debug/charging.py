@@ -24,6 +24,9 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, scriptBase
 
 
+# Set of charging parameters that should not be modified by a slider
+CONSTANT_PARAMS = {'charging_mask'}
+
 PORT = 8050
 
 # Element IDs
@@ -89,8 +92,20 @@ class ChargingDebug(scriptBase.ScriptBase):
 		with open(sim_data_file, 'rb') as f:
 			self.sim_data = pickle.load(f)
 		self.aa_from_trna = self.sim_data.process.transcription.aa_from_trna
-		self.charging_params = get_charging_params(self.sim_data,
+
+		# Get charging parameters and separate to one that will be adjusted or not
+		charging_params = get_charging_params(self.sim_data,
 			variable_elongation=self.variable_elongation)
+		self.adjustable_charging_params = {
+			param: value
+			for param, value in charging_params.items()
+			if param not in CONSTANT_PARAMS
+			}
+		self.constant_charging_params = {
+			param: value
+			for param, value in charging_params.items()
+			if param in CONSTANT_PARAMS
+			}
 
 		# Listeners used
 		growth_reader = TableReader(os.path.join(sim_out_dir, 'GrowthLimits'))
@@ -113,6 +128,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			synthetase_adjustments: Optional[np.ndarray] = None,
 			trna_adjustments: Optional[np.ndarray] = None,
 			aa_adjustments: Optional[np.ndarray] = None,
+			param_adjustments: Optional[Dict] = None,
 			) -> Tuple[np.ndarray, float]:
 		"""
 		Calculates charging and elongation rate for a given timestep.
@@ -125,6 +141,11 @@ class ChargingDebug(scriptBase.ScriptBase):
 				up or down
 			aa_adjustments: adjustments to scale amino acid concentrations
 				up or down
+			param_adjustments: adjustments to charging parameters
+
+		Returns:
+			fraction charged of all tRNAs for each amino acid
+			ribosome elongation rate
 		"""
 
 		n_aas = len(self.sim_data.molecule_groups.amino_acids)
@@ -135,6 +156,13 @@ class ChargingDebug(scriptBase.ScriptBase):
 			trna_adjustments = np.ones(n_aas)
 		if aa_adjustments is None:
 			aa_adjustments = np.ones(n_aas)
+		if param_adjustments is None:
+			param_adjustments = {}
+
+		charging_params = {}
+		for param, value in self.adjustable_charging_params.items():
+			charging_params[param] = value * param_adjustments.get(param, 1)
+		charging_params.update(self.constant_charging_params)
 
 		return calculate_trna_charging(
 			self.synthetase_conc[timestep, :] * synthetase_adjustments,
@@ -143,7 +171,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			self.aa_conc[timestep, :] * aa_adjustments,
 			self.ribosome_conc[timestep],
 			self.fraction_aa_to_elongate[timestep, :],
-			self.charging_params,
+			charging_params,
 			time_limit=self.time_step_sizes[timestep],
 			)
 
@@ -189,21 +217,21 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 		app = dash.Dash()
 
+		param_ids = sorted(self.adjustable_charging_params)
 		aa_ids = self.sim_data.molecule_groups.amino_acids
 		n_aas = len(aa_ids)
 
 		# Slider elements
-		slider_spacing = '10% 20% 20% 20%'
-		slider_style = {'display': 'grid', 'grid-template-columns': slider_spacing}
 		slider_options = dict(value=0, min=-2, max=2, step=0.01, marks={i: {'label': 10**i} for i in range(-2, 3)})
-		slider_headers = html.Div(style=slider_style, children=[
+		aa_slider_style = {'display': 'grid', 'grid-template-columns': '15% 25% 25% 25%'}
+		aa_slider_headers = [html.Div(style=aa_slider_style, children=[
 			html.Plaintext(''),
 			html.Plaintext('Synthetases', style={'text-align': 'center'}),
 			html.Plaintext('tRNA', style={'text-align': 'center'}),
 			html.Plaintext('Amino acids', style={'text-align': 'center'}),
-			])
-		sliders = [
-			html.Div(style=slider_style, children=[
+			])]
+		aa_sliders = [
+			html.Div(style=aa_slider_style, children=[
 				html.Plaintext(f'{aa[:-3]}:'),
 				dcc.Slider(id=f'{aa}-synthetase', **slider_options),
 				dcc.Slider(id=f'{aa}-trna', **slider_options),
@@ -211,6 +239,23 @@ class ChargingDebug(scriptBase.ScriptBase):
 				])
 			for aa in aa_ids
 			]
+		param_slider_style = {'display': 'grid', 'grid-template-columns': '30% 70%'}
+		param_headers = [html.Div(style=param_slider_style, children=[
+			html.Plaintext(''),
+			html.Plaintext('Charging parameters', style={'text-align': 'center'}),
+			])]
+		param_sliders = [
+			html.Div(style=param_slider_style, children=[
+				html.Plaintext(f'{param}:'),
+				dcc.Slider(id=f'{param}-slider', **slider_options),
+				])
+			for param in param_ids
+			]
+
+		sliders = html.Div(style={'display': 'grid', 'grid-template-columns': '70% 30%'}, children=[
+			html.Div(children=aa_slider_headers + aa_sliders),
+			html.Div(children=param_headers + param_sliders),
+			])
 
 		# Slider inputs
 		synthetase_inputs = [
@@ -225,6 +270,10 @@ class ChargingDebug(scriptBase.ScriptBase):
 			dash.dependencies.Input(f'{aa}-aa', 'value')
 			for aa in aa_ids
 			]
+		param_inputs = [
+			dash.dependencies.Input(f'{param}-slider', 'value')
+			for param in param_ids
+			]
 
 		# Page layout
 		app.layout = html.Div(children=[
@@ -232,8 +281,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			html.Plaintext('Timestep limits (lower, upper):'),
 			dcc.Input(id=LOW_TIMESTEP, type='number', value=0),
 			dcc.Input(id=HIGH_TIMESTEP, type='number', value=10),
-			slider_headers,
-			html.Div(children=sliders),
+			sliders,
 			dcc.Graph(id=GRAPH_ID, style={'height': '1200px'})
 			])
 
@@ -248,8 +296,9 @@ class ChargingDebug(scriptBase.ScriptBase):
 				*synthetase_inputs,
 				*trna_inputs,
 				*aa_inputs,
+				*param_inputs,
 			])
-		def update_graph(init_t: int, final_t: int, *param_adjustments: float) -> Dict:
+		def update_graph(init_t: int, final_t: int, *param_inputs: float) -> Dict:
 			"""
 			Update the plot based on selection changes.
 
@@ -257,9 +306,10 @@ class ChargingDebug(scriptBase.ScriptBase):
 				plotly figure dict
 			"""
 
-			synthetase_adjustments = 10**np.array(param_adjustments[:n_aas])
-			trna_adjustments = 10**np.array(param_adjustments[n_aas:2*n_aas])
-			aa_adjustments = 10**np.array(param_adjustments[2*n_aas:3*n_aas])
+			synthetase_adjustments = 10**np.array(param_inputs[:n_aas])
+			trna_adjustments = 10**np.array(param_inputs[n_aas:2*n_aas])
+			aa_adjustments = 10**np.array(param_inputs[2*n_aas:3*n_aas])
+			param_adjustments = {param: 10**value for param, value in zip(param_ids, param_inputs[3*n_aas:])}
 
 			v_rib = []
 			f_charged = []
@@ -270,6 +320,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 					synthetase_adjustments=synthetase_adjustments,
 					trna_adjustments=trna_adjustments,
 					aa_adjustments=aa_adjustments,
+					param_adjustments=param_adjustments
 					)
 				v_rib.append(v / self.ribosome_conc[timestep].asNumber(CONC_UNITS))
 				f_charged.append(f)
