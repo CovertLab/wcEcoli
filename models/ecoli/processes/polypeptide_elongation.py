@@ -365,8 +365,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		# Cell parameters
 		self.cellDensity = constants.cell_density
-		elongation_max = constants.ribosome_elongation_rate_max if self.process.variable_elongation else constants.ribosome_elongation_rate_basal
-		self.maxRibosomeElongationRate = float(elongation_max.asNumber(units.aa / units.s))
 
 		# Data structures for charging
 		self.aa_from_synthetase = transcription.aa_from_synthetase
@@ -392,7 +390,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# Parameters for tRNA charging, ribosome elongation and ppGpp reactions
 		self.charging_params = get_charging_params(sim_data,
 			variable_elongation=self.process.variable_elongation)
-		assert(self.charging_params['max_elong_rate'] == self.maxRibosomeElongationRate)
 		self.ppgpp_params = get_ppgpp_params(sim_data)
 
 		# Amino acid supply calculations
