@@ -6,6 +6,7 @@ Tools and analysis to debug charging problems.
 from __future__ import annotations
 
 import argparse
+import csv
 import os
 import pickle
 from typing import Dict, Optional, Tuple
@@ -61,6 +62,10 @@ class ChargingDebug(scriptBase.ScriptBase):
 		# Debug options
 		parser.add_argument('--validation', type=int, default=1,
 			help='Number of time steps to run for validation. If < 0, will run all.')
+		parser.add_argument('--grid-search', action='store_true',
+			help='If set, runs a grid search across parameters.')
+		parser.add_argument('--grid-compare', nargs=2,
+			help='Grid search output files to compare.')
 		parser.add_argument('--interactive', action='store_true',
 			help='If set, runs interactive analysis plots for debugging.')
 		parser.add_argument('-p', '--port', type=int, default=PORT,
@@ -268,7 +273,74 @@ class ChargingDebug(scriptBase.ScriptBase):
 				raise ValueError(f'Charging fraction does not match for time step {timestep}')
 		print('All {} timesteps match the results from the whole-cell model.'.format(n_steps))
 
-	def interactive_debug(self, port):
+	def grid_search(self, filename='grid.tsv', t_start=200, t_end=205, n_levels=9, low_level=-1, high_level=1):
+		"""
+		Perform a grid search on the charging parameters to determine the effect
+		on elongation rate.  Results are saved to a tsv file that can be used
+		with plot_grid_results to compare two different grid search results.
+
+		TODO:
+			accept args from the command line
+		"""
+
+		levels = np.logspace(low_level, high_level, n_levels)
+		search_params = {k: v for k, v in self.adjustable_charging_params.items() if k != 'max_elong_rate'}
+		n_params = len(search_params)
+		timesteps = list(range(t_start, t_end))
+		n_samples = n_levels**n_params
+		v_rib_key = 'elongation rate (AA/s)'
+
+		with open(filename, 'w') as f:
+			writer = csv.DictWriter(f, fieldnames=list(search_params.keys()) + [v_rib_key], delimiter='\t')
+			writer.writeheader()
+
+			for i in range(n_samples):
+				if i % 100 == 0:
+					print(i)
+				params = {}
+				for j, (param, value) in enumerate(search_params.items()):
+					params[param] = levels[i // n_levels**j % n_levels]
+
+				v_ribs = []
+				for timestep in timesteps:
+					_, _, v, _, _ = self.solve_timestep(timestep, param_adjustments=params)
+					v_ribs.append(v)
+
+				writer.writerow({v_rib_key: np.mean(v_ribs), **params})
+
+	def plot_grid_results(self, path1: str, path2: str, output: str = 'grid.html'):
+		"""
+		Compares results from two different grid searches in an interactive
+		plot.  Useful for checking sets of parameters that give desired results
+		in different simulations.
+
+		Args:
+			path1: path to the tsv file results from one grid search
+			path2: path to the tsv file results from another grid search
+			output: path to the html file with the comparison plot
+		"""
+
+		def load_data(path):
+			data = {}
+			with open(path) as f:
+				reader = csv.reader(f, delimiter='\t')
+				headers = next(reader)
+				for line in reader:
+					data[tuple(zip(headers, line[:-1]))] = float(line[-1])
+
+			return data
+
+		data1 = load_data(path1)
+		data2 = load_data(path2)
+
+		labels = list(data1.keys() | data2.keys())
+		x = np.array([data1.get(label, 0) for label in labels])
+		y = np.array([data2.get(label, 0) for label in labels])
+
+		fig = go.Figure(data=go.Scatter(x=x, y=y, mode='markers', text=labels))
+		fig.write_html(output)
+
+	def interactive_debug(self, port: int):
 		"""
 		Run an interactive app in a browser to debug charging.
 		"""
@@ -478,6 +550,10 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.variable_elongation = args.variable_elongation_translation
 		self.load_data(args.sim_data_file, args.sim_out_dir)
 		self.validation(args.validation)
+		if args.grid_search:
+			self.grid_search()
+		if args.grid_compare:
+			self.plot_grid_results(*args.grid_compare)
 		if args.interactive:
 			self.interactive_debug(args.port)
 
