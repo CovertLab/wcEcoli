@@ -180,6 +180,9 @@ class ChargingDebug(scriptBase.ScriptBase):
 			adjusted_v_rib: ribosome elongation rate (AA/s)
 			n_synthesis: number of ppGpp synthesis reactions
 			n_degradation: number of ppGpp degradation reactions
+
+		TODO:
+			Include adjustments for ppGpp, RelA, and SpoT concentrations
 		"""
 
 		n_aas = len(self.sim_data.molecule_groups.amino_acids)
@@ -381,9 +384,9 @@ class ChargingDebug(scriptBase.ScriptBase):
 		aa_slider_style = {'display': 'grid', 'grid-template-columns': '15% 25% 25% 25%'}
 		aa_slider_headers = [html.Div(style=aa_slider_style, children=[
 			html.Plaintext(''),
-			html.Plaintext('Synthetases', style={'text-align': 'center'}),
-			html.Plaintext('tRNA', style={'text-align': 'center'}),
-			html.Plaintext('Amino acids', style={'text-align': 'center'}),
+			html.Plaintext('Synthetase concentrations', style={'text-align': 'center'}),
+			html.Plaintext('tRNA concentrations', style={'text-align': 'center'}),
+			html.Plaintext('Amino acid concentrations', style={'text-align': 'center'}),
 			])]
 		aa_sliders = [
 			html.Div(style=aa_slider_style, children=[
