@@ -664,7 +664,7 @@ class Transcription(object):
 
 	def fit_rna_expression(self, cistron_expression):
 		"""
-		Calculates the expression of RNA transcription unitss that best fits the
+		Calculates the expression of RNA transcription units that best fits the
 		given expression levels of cistrons using nonnegative least squares.
 		"""
 		rna_exp, res = fast_nnls(self.cistron_tu_mapping_matrix, cistron_expression)
@@ -873,40 +873,40 @@ class Transcription(object):
 		"""
 		# Load data from file
 		aa_trnas = []
-		attenuated_rnas = []
+		attenuated_cistrons = []
 		fold_changes = []
-		gene_to_rna = {g['symbol']: g['rna_id'] for g in raw_data.genes}
+		gene_symbol_to_cistron_id = {g['symbol']: g['rna_id'] for g in raw_data.genes}
 		for row in raw_data.transcriptional_attenuation:
 			trna_aa = row['tRNA'].split('-')[1].upper() + '[c]'
 			gene = row['Target']
-			rna = gene_to_rna[gene] + '[c]'
+			cistron_id = gene_symbol_to_cistron_id[gene]
 
 			aa_trnas.append(trna_aa)
-			attenuated_rnas.append(rna)
+			attenuated_cistrons.append(cistron_id)
 			fold_changes.append(2**row['log2 FC'])
 
-		self.attenuated_rna_ids = np.unique(attenuated_rnas)
+		self.attenuated_cistron_ids = np.unique(attenuated_cistrons)
 
 		# Convert data to matrix mapping tRNA to genes with a fold change
 		trna_to_row = {t: i for i, t in enumerate(sim_data.molecule_groups.amino_acids)}
-		rna_to_col = {r: i for i, r in enumerate(self.attenuated_rna_ids)}
+		cistron_to_col = {r: i for i, r in enumerate(self.attenuated_cistron_ids)}
 		n_aas = len(sim_data.molecule_groups.amino_acids)
-		n_rnas = len(self.attenuated_rna_ids)
-		self._attenuation_fold_changes = np.ones((n_aas, n_rnas))
-		for trna, rna, fc in zip(aa_trnas, attenuated_rnas, fold_changes):
+		n_cistrons = len(self.attenuated_cistron_ids)
+		self._attenuation_fold_changes = np.ones((n_aas, n_cistrons))
+		for trna, cistron_id, fc in zip(aa_trnas, attenuated_cistrons, fold_changes):
 			i = trna_to_row[trna]
-			j = rna_to_col[rna]
+			j = cistron_to_col[cistron_id]
 			self._attenuation_fold_changes[i, j] = fc
 
-		# Attenuated RNA index mapping
-		rna_to_index = {r: i for i, r in enumerate(self.rna_data['id'])}
-		self.attenuated_rna_indices = np.array([rna_to_index[r] for r in self.attenuated_rna_ids])
+		# Attenuated cistron index mapping
+		cistron_to_index = {r: i for i, r in enumerate(self.cistron_data['id'])}
+		self.attenuated_cistron_indexes = np.array([cistron_to_index[r] for r in self.attenuated_cistron_ids])
 
 		# Specify location in gene where attenuation will occur
 		# Currently just assumes before a transcript begins elongation (position < 1)
 		# TODO: base this on specific locations for each gene
-		locations = np.ones(len(self.attenuated_rna_indices))
-		self.attenuation_location = {idx: loc for idx, loc in zip(self.attenuated_rna_indices, locations)}
+		locations = np.ones(len(self.attenuated_cistron_indexes))
+		self.attenuation_location = {idx: loc for idx, loc in zip(self.attenuated_cistron_indexes, locations)}
 
 	def calculate_attenuation(self, sim_data, cell_specs):
 		"""
@@ -946,7 +946,7 @@ class Transcription(object):
 			])
 		delta = delta_prob @ p_promoter_bound
 		basal_stop_prob = self.get_attenuation_stop_probabilities(get_aa_conc(condition))
-		basal_synth_prob = (basal_prob + delta)[self.attenuated_rna_indices]
+		basal_synth_prob = (basal_prob + delta)[self.attenuated_cistron_indexes]
 		self.attenuation_basal_prob_adjustments = basal_synth_prob * (1 / (1 - basal_stop_prob) - 1)
 
 		# Store expected readthrough fraction for each condition to use in initial conditions

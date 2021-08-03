@@ -24,7 +24,7 @@ class TranscriptElongationListener(wholecell.listeners.listener.Listener):
 
 		# Attributes
 		self.rnaIds = sim_data.process.transcription.rna_data['id']
-		self.attenuated_rnas = self.rnaIds[sim_data.process.transcription.attenuated_rna_indices]
+		self.attenuated_rnas = self.rnaIds[sim_data.process.transcription.attenuated_cistron_indexes]
 		n_attenuated = len(self.attenuated_rnas)
 
 		# Columns

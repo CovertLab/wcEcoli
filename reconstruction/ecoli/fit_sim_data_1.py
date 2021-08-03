@@ -36,11 +36,11 @@ N_SEEDS = 10
 # Parameters used in fitPromoterBoundProbability()
 PROMOTER_PDIFF_THRESHOLD = 0.1  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
 PROMOTER_REG_COEFF = 1e-3  # Optimization weight on how much probability should stay close to original values
-PROMOTER_SCALING = 10  # Multiplied to all matrices for numerical stability
+PROMOTER_SCALING = 100  # Multiplied to all matrices for numerical stability
 PROMOTER_NORM_TYPE = 1  # Matrix 1-norm
 PROMOTER_MAX_ITERATIONS = 100
 PROMOTER_CONVERGENCE_THRESHOLD = 1e-9
-ECOS_0_TOLERANCE = 1e-12  # Tolerance to adjust solver output to 0
+ECOS_0_TOLERANCE = 1e-9  # Tolerance to adjust solver output to 0
 
 BASAL_EXPRESSION_CONDITION = "M9 Glucose minus AAs"
 
@@ -572,9 +572,7 @@ def buildTfConditionCellSpecifications(
 			for key, value in six.viewitems(fcDataTmp):
 				fcData[key] = 1. / value
 		expression = expressionFromConditionAndFoldChange(
-			sim_data.process.transcription.cistron_data["id"],
-			sim_data.process.transcription.cistron_expression["basal"],
-			sim_data.process.transcription.cistron_tu_mapping_matrix,
+			sim_data.process.transcription,
 			conditionValue["perturbations"],
 			fcData,
 			)
@@ -672,9 +670,7 @@ def buildCombinedConditionCellSpecifications(
 				fcData[gene] = fcData.get(gene, 1) / fc
 
 		expression = expressionFromConditionAndFoldChange(
-			sim_data.process.transcription.cistron_data["id"],
-			sim_data.process.transcription.cistron_expression["basal"],
-			sim_data.process.transcription.cistron_tu_mapping_matrix,
+			sim_data.process.transcription,
 			conditionValue["perturbations"],
 			fcData,
 			)
@@ -2210,9 +2206,7 @@ def netLossRateFromDilutionAndDegradationRNALinear(doublingTime, degradationRate
 	return (np.log(2) / doublingTime + degradationRates) * rnaCounts
 
 
-def expressionFromConditionAndFoldChange(
-		cistron_ids, basal_cistron_expression, cistron_tu_mapping_matrix,
-		condPerturbations, tfFCs):
+def expressionFromConditionAndFoldChange(transcription, condPerturbations, tfFCs):
 	"""
 	Adjusts expression of RNA based on fold changes from basal for a given
 	condition. Since fold changes are reported for individual RNA cistrons, the
@@ -2223,11 +2217,8 @@ def expressionFromConditionAndFoldChange(
 
 	Inputs
 	------
-	- cistron_ids (array of str) - name of each RNA cistron
-	- basal_cistron_expression (array of floats) - expression for each RNA
-		cistron in the basal condition, normalized to 1
-	- cistron_tu_mapping_matrix (sparse array of floats) - mapping matrix
-		between cistrons (rows) and transcription units (columns)
+	- transcription: Instance of the Transcription class from
+		reconstruction.ecoli.dataclasses.process.transcription
 	- condPerturbations {cistron ID (str): fold change (float)} -
 		dictionary of fold changes for cistrons based on the given condition
 	- tfFCs {cistron ID (str): fold change (float)} -
@@ -2245,7 +2236,8 @@ def expressionFromConditionAndFoldChange(
 	perturbation and a transcription factor, currently RNA self regulation is not
 	included in tfFCs
 	"""
-	cistron_expression = basal_cistron_expression.copy()
+	cistron_ids = transcription.cistron_data['id']
+	cistron_expression = transcription.cistron_expression['basal'].copy()
 
 	# Gather indices and fold changes for each cistron that will be adjusted
 	cistron_id_to_index = {
@@ -2276,7 +2268,7 @@ def expressionFromConditionAndFoldChange(
 	cistron_expression[~rna_indexes_bool] *= scaleTheRestBy
 
 	# Use NNLS to map new cistron expression to RNA expression
-	expression, _ = sim_data.process.transcription.fit_rna_expression(cistron_expression)
+	expression, _ = transcription.fit_rna_expression(cistron_expression)
 	expression = normalize(expression)
 
 	# Apply genotype perturbations to all RNAs that contain each cistron
@@ -2284,8 +2276,7 @@ def expressionFromConditionAndFoldChange(
 	rna_fcs = []
 
 	for cistron_id, perturbation_value in condPerturbations.items():
-		cistron_index = cistron_id_to_index[cistron_id]
-		rna_indexes_with_cistron = list(cistron_tu_mapping_matrix.getrow(cistron_index).nonzero()[1])
+		rna_indexes_with_cistron = transcription.cistron_id_to_rna_indexes(cistron_id)
 		rna_indexes.extend(rna_indexes_with_cistron)
 		rna_fcs.extend([perturbation_value] * len(rna_indexes_with_cistron))
 
@@ -2296,7 +2287,7 @@ def expressionFromConditionAndFoldChange(
 		sorted(zip(rna_indexes, rna_fcs), key=lambda pair: pair[0])]
 
 	# Adjust expression based on fold change and normalize
-	rna_indexes_bool = np.zeros(cistron_tu_mapping_matrix.shape[1], dtype=np.bool)
+	rna_indexes_bool = np.zeros(len(transcription.rna_data), dtype=np.bool)
 	rna_indexes_bool[rna_indexes] = 1
 	rna_fcs = np.array(rna_fcs)
 	scaleTheRestBy = (1. - (expression[rna_indexes] * rna_fcs).sum()) / (1. - (expression[rna_indexes]).sum())
@@ -2583,6 +2574,12 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 			tfs = sim_data.relation.rna_id_to_target_tfs[rnaId]
 			tfsWithData = []
 
+			# Get list of constituent cistron IDs
+			constituent_cistron_ids = [
+				sim_data.process.transcription.cistron_data['id'][i]
+				for i in sim_data.process.transcription.rna_id_to_cistron_indexes(rnaId)
+				]
+
 			# Take only those TFs with active/inactive conditions data
 			for tf in tfs:
 				if tf not in sim_data.tf_to_active_inactive_conditions:
@@ -2591,13 +2588,21 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 				tfsWithData.append(tf)
 
 			for tf in tfsWithData:
+				# Calculate the consensus regulation direction of the TF on the
+				# cistrons that constitute this transcription unit
+				directions = np.array([
+					sim_data.tf_to_direction[tf].get(cistron_id, 0)
+					for cistron_id in constituent_cistron_ids
+					])
+				consensus_direction = -1 + 2*(directions.sum() >= 0)
+
 				# Add row for TF and find column for TF in col_name_to_index
 				col_name = rnaIdNoLoc + "__" + tf
 
 				# Set matrix value to regulation direction (+1 or -1)
 				tI.append(row_idx)
 				tJ.append(col_name_to_index[col_name])
-				tV.append(sim_data.tf_to_direction[tf][rnaIdNoLoc])
+				tV.append(consensus_direction)
 				row_idx += 1
 
 			# Add RNA_alpha rows and columns, and set matrix value to zero
@@ -2615,7 +2620,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 		return T
 
 	def build_matrix_H(sim_data, col_name_to_index, pPromoterBound, r, fixedTFs, cell_specs):
-		r"""
+		"""
 		Construct matrix H that contains values of vector r as elements.
 		Each row of the matrix is named "[RNA]__[condition]", where
 		there are two conditions [active/inactive] for each TF that regulates
@@ -2956,6 +2961,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 			0 <= PROMOTER_SCALING * P, PROMOTER_SCALING * P <= PROMOTER_SCALING,
 			np.diag(D) @ (PROMOTER_SCALING * P) == PROMOTER_SCALING * Drhs,
 			pdiff @ (PROMOTER_SCALING * P) >= PROMOTER_SCALING * PROMOTER_PDIFF_THRESHOLD,
+			H @ (PROMOTER_SCALING * P) >= 0,
 			]
 
 		# Solve optimization problem
@@ -2970,15 +2976,17 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 
 		# Get optimal value of P
 		p = np.array(P.value).reshape(-1)
+
 		# Adjust for solver tolerance over bounds to get proper probabilities
-		p[p < 0] = 0
-		p[p > 1] = 1
+		p[p < ECOS_0_TOLERANCE] = 0
+		p[p > (1 - ECOS_0_TOLERANCE)] = 1
 
 		# Update pPromoterBound with fit p
 		fromArray(p, pPromoterBound, pPromoterBoundIdxs)
 
-		# Break from loop if parameters have converged
-		if np.abs(np.linalg.norm(np.dot(H, p) - k, PROMOTER_NORM_TYPE) - lastNorm) < PROMOTER_CONVERGENCE_THRESHOLD:
+		# Break from loop if parameters have converged and all values in vector
+		# k are nonnegative
+		if np.abs(np.linalg.norm(np.dot(H, p) - k, PROMOTER_NORM_TYPE) - lastNorm) < PROMOTER_CONVERGENCE_THRESHOLD and np.all(np.dot(H, p) >= 0):
 			break
 		else:
 			lastNorm = np.linalg.norm(np.dot(H, p) - k, PROMOTER_NORM_TYPE)
@@ -3239,7 +3247,7 @@ def calculateRnapRecruitment(sim_data, cell_specs):
 		rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
 		# Take only those TFs with active/inactive conditions data
-		for tf in transcription_regulation.target_tf.get(rnaIdNoLoc, []):
+		for tf in sim_data.relation.rna_id_to_target_tfs.get(rnaId, []):
 			if tf not in sorted(sim_data.tf_to_active_inactive_conditions):
 				continue
 

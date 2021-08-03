@@ -180,7 +180,7 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppg
 		rnaExpression = transcription.rna_expression[sim_data.condition]
 
 	if trna_attenuation:
-		rnaExpression[transcription.attenuated_rna_indices] *= transcription.attenuation_readthrough[sim_data.condition]
+		rnaExpression[transcription.attenuated_cistron_indexes] *= transcription.attenuation_readthrough[sim_data.condition]
 
 	# get monomer expression from TEs and rna expression, include polycistrons
 	monomerExpression = np.zeros(len(sim_data.process.translation.monomer_data))
@@ -228,7 +228,7 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 		rnaExpression = normalize(transcription.rna_expression[sim_data.condition])
 
 	if trna_attenuation:
-		rnaExpression[transcription.attenuated_rna_indices] *= transcription.attenuation_readthrough[sim_data.condition]
+		rnaExpression[transcription.attenuated_cistron_indexes] *= transcription.attenuation_readthrough[sim_data.condition]
 		rnaExpression /= rnaExpression.sum()
 
 	nRnas = countsFromMassAndExpression(
@@ -685,7 +685,7 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 	# Parameters for rnaSynthProb
 	basal_prob = sim_data.process.transcription_regulation.basal_prob
 	if trna_attenuation:
-		basal_prob[sim_data.process.transcription.attenuated_rna_indices] += sim_data.process.transcription.attenuation_basal_prob_adjustments
+		basal_prob[sim_data.process.transcription.attenuated_cistron_indexes] += sim_data.process.transcription.attenuation_basal_prob_adjustments
 	n_TUs = len(basal_prob)
 	delta_prob_matrix = sim_data.process.transcription_regulation.get_delta_prob_matrix(dense=True)
 
@@ -781,7 +781,7 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 	if trna_attenuation:
 		attenuation_readthrough = {
 			idx: prob for idx, prob in
-			zip(sim_data.process.transcription.attenuated_rna_indices, sim_data.process.transcription.attenuation_readthrough[sim_data.condition])
+			zip(sim_data.process.transcription.attenuated_cistron_indexes, sim_data.process.transcription.attenuation_readthrough[sim_data.condition])
 			}
 		readthrough_adjustment = np.array([attenuation_readthrough.get(idx, 1) for idx in TU_index])
 		promoter_init_probs *= readthrough_adjustment
