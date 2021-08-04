@@ -468,7 +468,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
 
 		# Calculate steady state tRNA levels and resulting elongation rate
-		fraction_charged, v_rib = calculate_trna_charging(
+		fraction_charged, v_rib, updated_aa_conc = calculate_trna_charging(
 			synthetase_conc,
 			uncharged_trna_conc,
 			charged_trna_conc,
@@ -480,6 +480,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			time_limit=self.process.timeStepSec())
 
 		# TODO: update self.process.aa_supply based on charging results?
+		self.conc_diff = updated_aa_conc - aa_conc.asNumber(CONC_UNITS)
 
 		self.process.writeToListener('GrowthLimits', 'synthetase_conc', synthetase_conc.asNumber(CONC_UNITS))
 		self.process.writeToListener('GrowthLimits', 'uncharged_trna_conc', uncharged_trna_conc.asNumber(CONC_UNITS))
@@ -621,7 +622,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# and current DCW) and AA used to charge tRNA to update the concentration target
 		# in metabolism during the next time step
 		aa_used_trna = np.dot(self.process.aa_from_trna, total_charging_reactions)
-		aa_diff = self.process.aa_supply - aa_used_trna
+		aa_diff = CONC_UNITS * self.conc_diff / self.counts_to_molar  # TODO: check if this changes without supply in charging
 		if np.any(np.abs(aa_diff / self.process.aas.total_counts()) > self.max_amino_acid_adjustment):
 			self.time_step_short_enough = False
 
@@ -967,6 +968,9 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	aa_conc = aa_conc.asNumber(CONC_UNITS)
 	ribosome_conc = ribosome_conc.asNumber(CONC_UNITS)
 
+	# Save unused concentrations for later
+	updated_aa_conc = aa_conc.copy()
+
 	# Remove disabled amino acids from calculations
 	n_total_aas = len(aa_conc)
 	if use_disabled_aas:
@@ -1003,4 +1007,7 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	new_fraction_charged[mask] = fraction_charged
 	new_fraction_charged[~mask] = fraction_charged.mean()
 
-	return new_fraction_charged, v_rib
+	# Updated amino acid concentrations
+	updated_aa_conc[mask] = sol[-1, 2*n_aas_masked:2*n_aas_masked + n_aas][mask]
+
+	return new_fraction_charged, v_rib, updated_aa_conc
