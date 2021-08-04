@@ -502,7 +502,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		aa_counts_for_translation = v_rib * f * self.process.timeStepSec() / self.counts_to_molar.asNumber(CONC_UNITS)
 
 		total_trna = self.charged_trna.total_counts() + self.uncharged_trna.total_counts()
-		final_charged_trna = np.dot(fraction_charged, self.process.aa_from_trna * total_trna)
+		final_charged_trna = stochasticRound(self.process.randomState, np.dot(fraction_charged, self.process.aa_from_trna * total_trna))
 
 		charged_trna_request = self.charged_trna.total_counts() - final_charged_trna
 		charged_trna_request[charged_trna_request < 0] = 0
