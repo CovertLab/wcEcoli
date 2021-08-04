@@ -47,6 +47,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	timeStepSafetyFraction = 1.3,
 	maxTimeStep = MAX_TIME_STEP,
 	updateTimeStepFreq = 5,
+	adjust_timestep_for_charging = False,
 	logToShell = True,
 	logToDisk = False,
 	outputDir = None,

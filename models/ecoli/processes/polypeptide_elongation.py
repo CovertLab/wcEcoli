@@ -34,6 +34,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 	def initialize(self, sim, sim_data):
 		super(PolypeptideElongation, self).initialize(sim, sim_data)
 
+		# Simulation options
+		self.adjust_timestep_for_charging = sim._adjust_timestep_for_charging
+		self.mechanistic_translation_supply = sim._mechanistic_translation_supply
+		self.mechanistic_uptake = sim._mechanistic_aa_uptake
+		self.ppgpp_regulation = sim._ppgpp_regulation
+		self.variable_elongation = sim._variable_elongation_translation
+		translation_supply = sim._translationSupply
+		trna_charging = sim._trna_charging
+
 		constants = sim_data.constants
 		translation = sim_data.process.translation
 		transcription = sim_data.process.transcription
@@ -47,7 +56,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.proteinSequences = translation.translation_sequences
 		self.aaWeightsIncorporated = translation.translation_monomer_weights
 		self.endWeight = translation.translation_end_weight
-		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = translation.make_elongation_rates
 		self.next_aa_pad = translation.next_aa_pad
 
@@ -80,22 +88,19 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.aa_from_trna = transcription.aa_from_trna
 
 		# Set modeling method
-		if sim._trna_charging:
+		if trna_charging:
 			self.elongation_model = SteadyStateElongationModel(sim_data, self)
-		elif sim._translationSupply:
+		elif translation_supply:
 			self.elongation_model = TranslationSupplyElongationModel(sim_data, self)
 		else:
 			self.elongation_model = BaseElongationModel(sim_data, self)
-		self.ppgpp_regulation = sim._ppgpp_regulation
-		self.mechanistic_translation_supply = sim._mechanistic_translation_supply
-		self.mechanistic_uptake = sim._mechanistic_aa_uptake
 
 		# Growth associated maintenance energy requirements for elongations
 		self.gtpPerElongation = constants.gtp_per_translation
 		## Need to account for ATP hydrolysis for charging that has been
 		## removed from measured GAM (ATP -> AMP is 2 hydrolysis reactions)
 		## if charging reactions are not explicitly modeled
-		if not sim._trna_charging:
+		if not trna_charging:
 			self.gtpPerElongation += 2
 		## Variable for metabolism to read to consume required energy
 		self.gtp_to_hydrolyze = 0
@@ -663,7 +668,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			short_enough = False
 
 		# Decrease the max time step to get more stable charging
-		if not self.time_step_short_enough:
+		if not self.time_step_short_enough and self.process.adjust_timestep_for_charging:
 			self.max_time_step = inputTimeStep / 2
 			self.time_step_short_enough = True
 			short_enough = False

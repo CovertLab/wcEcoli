@@ -68,6 +68,8 @@ Simulation parameters:
 	TIMESTEP_SAFETY_FRAC (float, "1.3"): increases the time step by this factor
 		if conditions are favorable; up the the limit of the max time step
 	TIMESTEP_UPDATE_FREQ (int, "5"): frequency at which the time step is updated
+	ADJUST_TIMESTEP_FOR_CHARGING (int, "0"): if nonzero, adjusts the timestep
+		if charging creates a large update to improve stability of sims
 	LOG_TO_DISK_EVERY (int, "1"): frequency at which simulation outputs are
 		logged to disk
 	JIT (int, "1"): if nonzero, jit compiled functions are used for certain
@@ -258,6 +260,7 @@ WC_LENGTHSEC = int(get_environment("WC_LENGTHSEC", DEFAULT_SIMULATION_KWARGS["le
 TIMESTEP_SAFETY_FRAC = float(get_environment("TIMESTEP_SAFETY_FRAC", DEFAULT_SIMULATION_KWARGS["timeStepSafetyFraction"]))
 TIMESTEP_MAX = float(get_environment("TIMESTEP_MAX", DEFAULT_SIMULATION_KWARGS["maxTimeStep"]))
 TIMESTEP_UPDATE_FREQ = int(get_environment("TIMESTEP_UPDATE_FREQ", DEFAULT_SIMULATION_KWARGS["updateTimeStepFreq"]))
+ADJUST_TIMESTEP_FOR_CHARGING = int(get_environment("ADJUST_TIMESTEP_FOR_CHARGING", DEFAULT_SIMULATION_KWARGS["adjust_timestep_for_charging"]))
 LOG_TO_DISK_EVERY = int(get_environment("LOG_TO_DISK_EVERY", DEFAULT_SIMULATION_KWARGS["logToDiskEvery"]))
 JIT = bool(int(get_environment("JIT", DEFAULT_SIMULATION_KWARGS["jit"])))
 MASS_DISTRIBUTION = bool(int(get_environment("MASS_DISTRIBUTION", DEFAULT_SIMULATION_KWARGS["massDistribution"])))
@@ -366,6 +369,7 @@ metadata = {
 	"mechanistic_translation_supply": MECHANISTIC_TRANSLATION_SUPPLY,
 	"mechanistic_aa_uptake": MECHANISTIC_AA_UPTAKE,
 	"trna_attenuation": TRNA_ATTENUATION,
+	"adjust_timestep_for_charging": ADJUST_TIMESTEP_FOR_CHARGING,
 	}
 
 metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)
@@ -713,6 +717,7 @@ for i in VARIANTS_TO_RUN:
 							timestep_safety_frac = TIMESTEP_SAFETY_FRAC,
 							timestep_max = TIMESTEP_MAX,
 							timestep_update_freq = TIMESTEP_UPDATE_FREQ,
+							adjust_timestep_for_charging = ADJUST_TIMESTEP_FOR_CHARGING,
 							log_to_disk_every = LOG_TO_DISK_EVERY,
 							jit=JIT,
 							mass_distribution = MASS_DISTRIBUTION,
@@ -750,6 +755,7 @@ for i in VARIANTS_TO_RUN:
 							timestep_safety_frac = TIMESTEP_SAFETY_FRAC,
 							timestep_max = TIMESTEP_MAX,
 							timestep_update_freq = TIMESTEP_UPDATE_FREQ,
+							adjust_timestep_for_charging = ADJUST_TIMESTEP_FOR_CHARGING,
 							log_to_disk_every = LOG_TO_DISK_EVERY,
 							jit=JIT,
 							mass_distribution = MASS_DISTRIBUTION,

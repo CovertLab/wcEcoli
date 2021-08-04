@@ -22,6 +22,7 @@ class SimulationTask(FiretaskBase):
 		"timestep_safety_frac",
 		"timestep_max",
 		"timestep_update_freq",
+		"adjust_timestep_for_charging",
 		"log_to_shell",
 		"log_to_disk_every",
 		"jit",
@@ -64,6 +65,7 @@ class SimulationTask(FiretaskBase):
 		options["timeStepSafetyFraction"] = self._get_default("timestep_safety_frac", "timeStepSafetyFraction")
 		options["maxTimeStep"] = self._get_default("timestep_max", "maxTimeStep")
 		options["updateTimeStepFreq"] = self._get_default("timestep_update_freq", "updateTimeStepFreq")
+		options["adjust_timestep_for_charging"] = self._get_default("adjust_timestep_for_charging")
 		options["logToShell"] = self._get_default("log_to_shell", "logToShell")
 		options["logToDiskEvery"] = self._get_default("log_to_disk_every", "logToDiskEvery")
 		options["jit"] = self._get_default("jit")
