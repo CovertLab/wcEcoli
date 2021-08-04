@@ -35,6 +35,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		super(PolypeptideElongation, self).initialize(sim, sim_data)
 
 		# Simulation options
+		self.aa_supply_in_charging = sim._aa_supply_in_charging
 		self.adjust_timestep_for_charging = sim._adjust_timestep_for_charging
 		self.mechanistic_translation_supply = sim._mechanistic_translation_supply
 		self.mechanistic_uptake = sim._mechanistic_aa_uptake

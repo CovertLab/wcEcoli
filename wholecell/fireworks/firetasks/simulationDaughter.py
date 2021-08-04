@@ -34,6 +34,7 @@ class SimulationDaughterTask(FiretaskBase):
 		'variable_elongation_translation',
 		"translation_supply",
 		"trna_charging",
+		"aa_supply_in_charging",
 		"ppgpp_regulation",
 		"superhelical_density",
 		"recycle_stalled_elongation",
@@ -78,6 +79,7 @@ class SimulationDaughterTask(FiretaskBase):
 		options["variable_elongation_transcription"] = self._get_default("variable_elongation_transcription")
 		options["variable_elongation_translation"] = self._get_default("variable_elongation_translation")
 		options["trna_charging"] = self._get_default("trna_charging")
+		options["aa_supply_in_charging"] = self._get_default("aa_supply_in_charging")
 		options["ppgpp_regulation"] = self._get_default("ppgpp_regulation")
 		options["superhelical_density"] = self._get_default("superhelical_density")
 		options["recycle_stalled_elongation"] = self._get_default("recycle_stalled_elongation")

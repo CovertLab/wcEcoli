@@ -89,6 +89,9 @@ Modeling options:
 	TRNA_CHARGING (int, "1"): if nonzero, tRNA charging reactions are modeled
 		and the ribosome elongation rate is set by the amount of charged tRNA
 		present.  This option will override TRANSLATION_SUPPLY in the simulation.
+	AA_SUPPLY_IN_CHARGING (int, "0"): if nonzero, amino acid supply function is
+		used during charging for more stable charging calculations (longer sim
+		execution times)
 	PPGPP_REGULATION (int, "0"): if nonzero, ppGpp concentration is determined
 		with kinetic equations
 	SUPERHELICAL_DENSITY (int, "0"): if nonzero, dynamically compute
@@ -268,6 +271,7 @@ GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULA
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))
 TRNA_CHARGING = bool(int(get_environment("TRNA_CHARGING", DEFAULT_SIMULATION_KWARGS["trna_charging"])))
+AA_SUPPLY_IN_CHARGING = bool(int(get_environment("AA_SUPPLY_IN_CHARGING", DEFAULT_SIMULATION_KWARGS["aa_supply_in_charging"])))
 PPGPP_REGULATION = bool(int(get_environment("PPGPP_REGULATION", DEFAULT_SIMULATION_KWARGS["ppgpp_regulation"])))
 SUPERHELICAL_DENSITY = bool(int(get_environment("SUPERHELICAL_DENSITY", DEFAULT_SIMULATION_KWARGS["superhelical_density"])))
 RECYCLE_STALLED_ELONGATION = bool(int(get_environment("RECYCLE_STALLED_ELONGATION", DEFAULT_SIMULATION_KWARGS["recycle_stalled_elongation"])))
@@ -362,6 +366,7 @@ metadata = {
 	"d_period_division": D_PERIOD_DIVISION,
 	"translation_supply": TRANSLATION_SUPPLY,
 	"trna_charging": TRNA_CHARGING,
+	"aa_supply_in_charging": AA_SUPPLY_IN_CHARGING,
 	"ppgpp_regulation": PPGPP_REGULATION,
 	"superhelical_density": SUPERHELICAL_DENSITY,
 	"recycle_stalled_elongation": RECYCLE_STALLED_ELONGATION,
@@ -725,6 +730,7 @@ for i in VARIANTS_TO_RUN:
 							d_period_division = D_PERIOD_DIVISION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
+							aa_supply_in_charging = AA_SUPPLY_IN_CHARGING,
 							ppgpp_regulation = PPGPP_REGULATION,
 							superhelical_density = SUPERHELICAL_DENSITY,
 							recycle_stalled_elongation = RECYCLE_STALLED_ELONGATION,
@@ -763,6 +769,7 @@ for i in VARIANTS_TO_RUN:
 							d_period_division = D_PERIOD_DIVISION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
+							aa_supply_in_charging = AA_SUPPLY_IN_CHARGING,
 							ppgpp_regulation = PPGPP_REGULATION,
 							superhelical_density = SUPERHELICAL_DENSITY,
 							recycle_stalled_elongation = RECYCLE_STALLED_ELONGATION,

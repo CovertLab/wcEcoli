@@ -36,6 +36,7 @@ METADATA_KEYS = (
 	'variable_elongation_translation',
 	'translation_supply',
 	'trna_charging',
+	'aa_supply_in_charging',
 	'ppgpp_regulation',
 	'superhelical_density',
 	'recycle_stalled_elongation',
@@ -69,6 +70,7 @@ SIM_KEYS = (
 	'variable_elongation_translation',
 	'translation_supply',
 	'trna_charging',
+	'aa_supply_in_charging',
 	'ppgpp_regulation',
 	'superhelical_density',
 	'recycle_stalled_elongation',
@@ -471,6 +473,9 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			help='if true, tRNA charging reactions are modeled and the ribosome'
 				 ' elongation rate is set by the amount of charged tRNA	present.'
 				 ' This option will override TRANSLATION_SUPPLY in the simulation.')
+		add_bool_option('aa_supply_in_charging', 'aa_supply_in_charging',
+			help='if true, amino acid supply function is used during charging for'
+				 ' more stable charging calculations (longer sim execution times).')
 		add_bool_option('ppgpp_regulation', 'ppgpp_regulation',
 			help='if true, ppGpp concentration is determined with kinetic equations.')
 		add_bool_option('superhelical_density', 'superhelical_density',
