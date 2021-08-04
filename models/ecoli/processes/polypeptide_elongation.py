@@ -416,7 +416,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.amino_acid_synthesis = metabolism.amino_acid_synthesis
 		self.amino_acid_import = metabolism.amino_acid_import
 
-		self.aa_transporters_container = self.process.bulkMoleculesView(metabolism.aa_transporters_names)
+		self.aa_transporters = self.process.bulkMoleculesView(metabolism.aa_transporters_names)
 
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)
@@ -442,6 +442,31 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		charged_trna_conc = self.counts_to_molar * charged_trna_counts
 		ribosome_conc = self.counts_to_molar * ribosome_counts
 
+		# Calculate amino acid supply
+		supply_function = None
+		aa_in_media = self.aa_environment.import_present()
+		enzyme_counts = self.aa_enzymes.total_counts()
+		transporter_counts = self.aa_transporters.total_counts()
+		synthesis, enzyme_counts_per_aa, saturation = self.amino_acid_synthesis(enzyme_counts, aa_conc)
+		imported = self.amino_acid_import(aa_in_media, dry_mass, transporter_counts, self.process.mechanistic_uptake)
+		if self.process.mechanistic_translation_supply:
+			# Set supply based on mechanistic synthesis and supply
+			self.process.aa_supply = self.process.timeStepSec() * (synthesis + imported)
+
+			if self.process.aa_supply_in_charging:
+				counts_to_molar = self.counts_to_molar.asNumber(CONC_UNITS)
+				supply_function = lambda aa_conc: counts_to_molar * (self.amino_acid_synthesis(enzyme_counts, aa_conc)[0] + imported)
+		else:
+			if self.process.aa_supply_in_charging:
+				counts_to_molar = self.counts_to_molar.asNumber(CONC_UNITS)
+				supply = self.process.aa_supply.copy()
+				supply_function = lambda aa_conc: counts_to_molar * supply * self.aa_supply_scaling(aa_conc, aa_in_media)
+
+			# Adjust aa_supply higher if amino acid concentrations are low
+			# Improves stability of charging and mimics amino acid synthesis
+			# inhibition and export
+			self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
+
 		# Calculate steady state tRNA levels and resulting elongation rate
 		fraction_charged, v_rib = calculate_trna_charging(
 			synthetase_conc,
@@ -451,7 +476,10 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			ribosome_conc,
 			f,
 			self.charging_params,
+			supply=supply_function,
 			time_limit=self.process.timeStepSec())
+
+		# TODO: update self.process.aa_supply based on charging results?
 
 		self.process.writeToListener('GrowthLimits', 'synthetase_conc', synthetase_conc.asNumber(CONC_UNITS))
 		self.process.writeToListener('GrowthLimits', 'uncharged_trna_conc', uncharged_trna_conc.asNumber(CONC_UNITS))
@@ -477,23 +505,10 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 				np.dot(aa_counts_for_translation, self.process.aa_from_trna)
 				* fraction_trna_per_aa + uncharged_trna_request)
 
-		aa_in_media = self.aa_environment.import_present()
-		synthesis, enzyme_counts, saturation = self.amino_acid_synthesis(
-			self.aa_enzymes.total_counts(), aa_conc)
-		imported = self.amino_acid_import(aa_in_media, dry_mass, self.aa_transporters_container.total_counts(), self.process.mechanistic_uptake)
-		if self.process.mechanistic_translation_supply:
-			# Set supply based on mechanistic synthesis and supply
-			self.process.aa_supply = self.process.timeStepSec() * (synthesis + imported)
-		else:
-			# Adjust aa_supply higher if amino acid concentrations are low
-			# Improves stability of charging and mimics amino acid synthesis
-			# inhibition and export
-			self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
-
 		self.process.writeToListener('GrowthLimits', 'aa_supply', self.process.aa_supply)
 		self.process.writeToListener('GrowthLimits', 'aa_synthesis', synthesis * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_import', imported * self.process.timeStepSec())
-		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts)
+		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts_per_aa)
 		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
 		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', saturation)
 
@@ -864,7 +879,8 @@ def get_charging_params(
 		charging_mask=aa_charging_mask,
 		)
 
-def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, params, time_limit=1000, use_disabled_aas=False):
+def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc,
+		f, params, supply=None, time_limit=1000, use_disabled_aas=False):
 	'''
 	Calculates the steady state value of tRNA based on charging and incorporation through polypeptide elongation.
 	The fraction of charged/uncharged is also used to determine how quickly the ribosome is elongating.
@@ -881,6 +897,8 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 		f (array of floats) - fraction of each amino acid to be incorporated to total amino acids incorporated
 		params (Dict[str, Any]) - parameters used in charging equations - this should be
 			generated by get_charging_params
+		supply (Callable) - function to get the rate of amino acid supply (synthesis and import)
+			based on amino acid concentrations
 		time_limit (float) - time limit to reach steady state
 		use_disabled_aas (bool) - if True, all amino acids will be used for charging calculations,
 			if False, some will be excluded as determined in initialize
@@ -919,11 +937,13 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 				dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
 		'''
 
-		uncharged_trna_conc = c[:n_aas]
-		charged_trna_conc = c[n_aas:]
+		uncharged_trna_conc = c[:n_aas_masked]
+		charged_trna_conc = c[n_aas_masked:2*n_aas_masked]
+		aa_conc = c[2*n_aas_masked:2*n_aas_masked+n_aas]
+		masked_aa_conc = aa_conc[mask]
 
-		v_charging = (params['kS'] * synthetase_conc * uncharged_trna_conc * aa_conc / (params['KMaa'] * params['KMtf'])
-			/ (1 + uncharged_trna_conc/params['KMtf'] + aa_conc/params['KMaa'] + uncharged_trna_conc*aa_conc/params['KMtf']/params['KMaa']))
+		v_charging = (params['kS'] * synthetase_conc * uncharged_trna_conc * masked_aa_conc / (params['KMaa'] * params['KMtf'])
+			/ (1 + uncharged_trna_conc/params['KMtf'] + masked_aa_conc/params['KMaa'] + uncharged_trna_conc*masked_aa_conc/params['KMtf']/params['KMaa']))
 		with np.errstate(divide='ignore'):
 			numerator_ribosome = 1 + np.sum(f * (params['krta'] / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * params['krta'] / params['krtf']))
 		v_rib = params['max_elong_rate'] * ribosome_conc / numerator_ribosome
@@ -932,9 +952,13 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 		if not np.isfinite(v_rib):
 			v_rib = 0
 
-		dc = v_charging - v_rib*f
+		dtrna = v_charging - v_rib*f
+		daa = np.zeros(n_aas)
+		if supply is not None:
+			v_supply = supply(CONC_UNITS * aa_conc)[mask]
+			daa[mask] = v_supply - v_charging
 
-		return np.hstack((-dc, dc))
+		return np.hstack((-dtrna, dtrna, daa))
 
 	# Convert inputs for integration
 	synthetase_conc = synthetase_conc.asNumber(CONC_UNITS)
@@ -952,20 +976,21 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	synthetase_conc = synthetase_conc[mask]
 	uncharged_trna_conc = uncharged_trna_conc[mask]
 	charged_trna_conc = charged_trna_conc[mask]
-	aa_conc = aa_conc[mask]
+	masked_aa_conc = aa_conc[mask]
 	f = f[mask]
 
 	n_aas = len(aa_conc)
+	n_aas_masked = len(masked_aa_conc)
 
 	# Integrate rates of charging and elongation
 	dt = 0.001
 	t = np.arange(0, time_limit, dt)
-	c_init = np.hstack((uncharged_trna_conc, charged_trna_conc))
+	c_init = np.hstack((uncharged_trna_conc, charged_trna_conc, aa_conc))
 	sol = odeint(dcdt, c_init, t)
 
 	# Determine new values from integration results
-	uncharged_trna_conc = sol[-1, :n_aas]
-	charged_trna_conc = sol[-1, n_aas:]
+	uncharged_trna_conc = sol[-1, :n_aas_masked]
+	charged_trna_conc = sol[-1, n_aas_masked:2*n_aas_masked]
 	negative_check(uncharged_trna_conc, charged_trna_conc)
 	negative_check(charged_trna_conc, uncharged_trna_conc)
 
