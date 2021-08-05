@@ -956,6 +956,19 @@ class Metabolism(object):
 			raise RuntimeError('Could not determine amino acid order to calculate dependencies first.'
 				' Make sure there are no cyclical pathways for amino acids that can degrade.')
 
+		# TODO: move these to a file
+		uptake_rates['ASN'] *= 1.5
+		uptake_rates['ARG'] *= 0.8
+		uptake_rates['HIS'] *= 1.8
+		uptake_rates['ILE'] *= 1.1
+		uptake_rates['L-ALPHA-ALANINE'] *= 1.3
+		uptake_rates['LEU'] *= 1.5
+		uptake_rates['LYS'] *= 4
+		uptake_rates['MET'] *= 1.2
+		uptake_rates['TRP'] *= 1.3
+		uptake_rates['TYR'] *= 5
+		uptake_rates['VAL'] *= 1.6
+
 		for amino_acid in ordered_aa_ids:
 			data = self.aa_synthesis_pathways[amino_acid]
 			enzymes = data['enzymes']
@@ -998,24 +1011,10 @@ class Metabolism(object):
 				km_reverse = np.inf * units.mol / units.L
 			km_degradation = data['km, degradation']
 
-			# Make required adjustments in order to get positive kcats and import rates
-			for parameter, factor in self.aa_synthesis_pathway_adjustments.get(amino_acid, {}).items():
-				if parameter == 'ki':
-					ki *= factor
-				elif parameter == 'km_degradation':
-					km_degradation *= factor
-				elif parameter == 'km_reverse':
-					km_reverse *= factor
-				elif parameter == 'kms':
-					kms *= factor
-				else:
-					raise ValueError(f'Unexpected parameter adjustment ({parameter}) for {amino_acid}.')
-
-			# TODO: check these adjustments
-			if amino_acid == 'CYS[c]':
-				km_degradation = minimal_conc[amino_acid] * 10
+			# Needed to get positive forward kcat, TODO: move to file
 			if amino_acid == 'SER[c]':
 				km_degradation = minimal_conc[amino_acid] * 10
+
 
 			def calc_kcats(aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms, km_reverse, km_degradation, ki, uptake_rate):
 				# Calculate kcat value to ensure sufficient supply to double
@@ -1074,7 +1073,56 @@ class Metabolism(object):
 			kcat_fwd, kcat_rev, fwd_rate, rev_rate, deg_rate, uptake = calc_kcats(
 				aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
 				km_reverse, km_degradation, ki, uptake_rates[amino_acid[:-3]])
-			data['kcat'] = kcat_fwd
+			data['kcat'] = kcat_fwd * K_CAT_UNITS
+
+			# TODO: turn into optional function for debugging
+			# TODO: check very high kcats
+			if kcat_fwd < 0 or kcat_rev < 0 or kcat_fwd > 1e5 or kcat_rev > kcat_fwd:
+				o_fwd = kcat_fwd
+				o_rev = kcat_rev
+				n_factors = 50
+				print(f'*** {amino_acid}: {kcat_fwd:5.1f} {kcat_rev:5.1f} ***')
+				print('KMs:')
+				for factor in np.logspace(-1, 1, n_factors):
+					kcat_fwd, kcat_rev, *_ = calc_kcats(
+						aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, factor * kms,
+						km_reverse, km_degradation, ki, uptake_rates[amino_acid[:-3]])
+
+					print(f'\t{factor:.2f}:\t{kcat_fwd:5.1f}\t{kcat_rev:5.1f}')
+
+				print('km_reverse:')
+				for factor in np.logspace(-1, 1, n_factors):
+					kcat_fwd, kcat_rev, *_ = calc_kcats(
+						aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
+						factor * km_reverse, km_degradation, ki, uptake_rates[amino_acid[:-3]])
+
+					print(f'\t{factor:.2f}:\t{kcat_fwd:5.1f}\t{kcat_rev:5.1f}')
+
+				print('km_degradation:')
+				for factor in np.logspace(-1, 1, n_factors):
+					kcat_fwd, kcat_rev, *_ = calc_kcats(
+						aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
+						km_reverse, factor * km_degradation, ki, uptake_rates[amino_acid[:-3]])
+
+					print(f'\t{factor:.2f}:\t{kcat_fwd:5.1f}\t{kcat_rev:5.1f}')
+
+				print('ki:')
+				for factor in np.logspace(-1, 1, n_factors):
+					kcat_fwd, kcat_rev, *_ = calc_kcats(
+						aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
+						km_reverse, km_degradation, factor * ki, uptake_rates[amino_acid[:-3]])
+
+					print(f'\t{factor:.2f}:\t{kcat_fwd:5.1f}\t{kcat_rev:5.1f}')
+
+				print('uptake:')
+				for factor in np.logspace(-1, 1, n_factors):
+					kcat_fwd, kcat_rev, *_ = calc_kcats(
+						aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
+						km_reverse, km_degradation, ki, factor * uptake_rates[amino_acid[:-3]])
+
+					print(f'\t{factor:.2f}:\t{kcat_fwd:5.1f}\t{kcat_rev:5.1f}')
+
+				print(f'*** {amino_acid}: {o_fwd:5.1f} {o_rev:5.1f} ***')
 
 			aa_enzymes += enzymes
 			enzyme_to_aa += [amino_acid] * len(enzymes)
