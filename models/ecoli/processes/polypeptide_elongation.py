@@ -575,15 +575,22 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		total_trna = uncharged_trna + charged_trna
 
 		# Adjust molecules for number of charging reactions that occurred
-		## Net charged is tRNA that can be charged minus allocated charged tRNA for uncharging
-		aa_for_charging = total_aa_counts - (aas_used - self.process.aa_from_trna @ charged_trna)
+		## Determine limitations for charging and uncharging reactions
+		charged_and_elongated_per_aa = np.fmax(0, (aas_used - self.process.aa_from_trna @ charged_trna))
+		aa_for_charging = total_aa_counts - charged_and_elongated_per_aa
 		n_aa_charged = np.fmin(aa_for_charging, np.dot(self.process.aa_from_trna, np.fmin(self.uncharged_trna_to_charge, uncharged_trna)))
-		n_trna_charged = self.distribution_from_aa(n_aa_charged, uncharged_trna, True)
+		n_uncharged_per_aa = aas_used - charged_and_elongated_per_aa
 
-		## Reactions that are charged and elongated in same time step
-		total_uncharging_reactions = self.distribution_from_aa(aas_used, total_trna)
-		trna_to_uncharge = np.fmin(charged_trna, total_uncharging_reactions)
-		charged_and_elongated = total_uncharging_reactions - trna_to_uncharge
+		## Calculate changes in tRNA based on limitations
+		n_trna_charged = self.distribution_from_aa(n_aa_charged, uncharged_trna, True)
+		n_trna_uncharged = self.distribution_from_aa(n_uncharged_per_aa, charged_trna, True)
+
+		## Determine reactions that are charged and elongated in same time step without changing
+		## charged or uncharged counts
+		charged_and_elongated = self.distribution_from_aa(charged_and_elongated_per_aa, total_trna)
+
+		## Determine total number of reactions that occur
+		total_uncharging_reactions = charged_and_elongated + n_trna_uncharged
 		total_charging_reactions = charged_and_elongated + n_trna_charged
 		net_charged = total_charging_reactions - total_uncharging_reactions
 		self.charging_molecules.countsInc(np.dot(self.charging_stoich_matrix, total_charging_reactions))
