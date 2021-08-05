@@ -512,7 +512,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.aa_counts_for_translation = np.array(aa_counts_for_translation)
 
 		fraction_trna_per_aa = total_trna / np.dot(np.dot(self.process.aa_from_trna, total_trna), self.process.aa_from_trna)
-		total_charging_reactions = (
+		total_charging_reactions = stochasticRound(self.process.randomState,
 				np.dot(aa_counts_for_translation, self.process.aa_from_trna)
 				* fraction_trna_per_aa + uncharged_trna_request)
 
