@@ -1017,49 +1017,63 @@ class Metabolism(object):
 			if amino_acid == 'SER[c]':
 				km_degradation = minimal_conc[amino_acid] * 10
 
-			# Calculate kcat value to ensure sufficient supply to double
-			rev_enzymes_basal = fwd_enzymes_basal  # TODO: get reverse counts
-			fwd_fraction_basal = units.strip_empty_units(1 / (1 + aa_conc_basal / ki) * np.prod(1 / (1 + kms / km_conc_basal)))
-			rev_fraction_basal = units.strip_empty_units(1 / (1 + km_reverse / aa_conc_basal * (1 + aa_conc_basal / km_degradation)))
-			deg_fraction_basal = units.strip_empty_units(1 / (1 + km_degradation / aa_conc_basal * (1 + aa_conc_basal / km_reverse)))
-			loss_fraction_basal = rev_fraction_basal + deg_fraction_basal
-			fwd_capacity_basal = fwd_enzymes_basal * fwd_fraction_basal
-			rev_capacity_basal = rev_enzymes_basal * loss_fraction_basal
+			def calc_kcats(aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms, km_reverse, km_degradation, ki, uptake_rate):
+				# Calculate kcat value to ensure sufficient supply to double
+				rev_enzymes_basal = fwd_enzymes_basal  # TODO: get reverse counts
+				fwd_fraction_basal = units.strip_empty_units(1 / (1 + aa_conc_basal / ki) * np.prod(1 / (1 + kms / km_conc_basal)))
+				rev_fraction_basal = units.strip_empty_units(1 / (1 + km_reverse / aa_conc_basal * (1 + aa_conc_basal / km_degradation)))
+				deg_fraction_basal = units.strip_empty_units(1 / (1 + km_degradation / aa_conc_basal * (1 + aa_conc_basal / km_reverse)))
+				loss_fraction_basal = rev_fraction_basal + deg_fraction_basal
+				fwd_capacity_basal = fwd_enzymes_basal * fwd_fraction_basal
+				rev_capacity_basal = rev_enzymes_basal * loss_fraction_basal
 
-			rev_enzymes_with_aa = fwd_enzymes_with_aa  # TODO: get reverse counts
-			fwd_fraction_with_aa = units.strip_empty_units(1 / (1 + aa_conc_with_aa / ki) * np.prod(1 / (1 + kms / km_conc_with_aa)))
-			rev_fraction_with_aa = units.strip_empty_units(1 / (1 + km_reverse / aa_conc_with_aa * (1 + aa_conc_with_aa / km_degradation)))
-			deg_fraction_with_aa = units.strip_empty_units(1 / (1 + km_degradation / aa_conc_with_aa * (1 + aa_conc_with_aa / km_reverse)))
-			loss_fraction_with_aa = rev_fraction_with_aa + deg_fraction_with_aa
-			fwd_capacity_with_aa = fwd_enzymes_with_aa * fwd_fraction_with_aa
-			rev_capacity_with_aa = rev_enzymes_with_aa * loss_fraction_with_aa
+				rev_enzymes_with_aa = fwd_enzymes_with_aa  # TODO: get reverse counts
+				fwd_fraction_with_aa = units.strip_empty_units(1 / (1 + aa_conc_with_aa / ki) * np.prod(1 / (1 + kms / km_conc_with_aa)))
+				rev_fraction_with_aa = units.strip_empty_units(1 / (1 + km_reverse / aa_conc_with_aa * (1 + aa_conc_with_aa / km_degradation)))
+				deg_fraction_with_aa = units.strip_empty_units(1 / (1 + km_degradation / aa_conc_with_aa * (1 + aa_conc_with_aa / km_reverse)))
+				loss_fraction_with_aa = rev_fraction_with_aa + deg_fraction_with_aa
+				fwd_capacity_with_aa = fwd_enzymes_with_aa * fwd_fraction_with_aa
+				rev_capacity_with_aa = rev_enzymes_with_aa * loss_fraction_with_aa
 
-			supply_basal = basal_supply_mapping[amino_acid]
-			supply_with_aa = with_aa_supply_mapping[amino_acid]
-			downstream_basal = 0
-			downstream_with_aa = 0
-			for i, stoich in enumerate(self.aa_forward_stoich[self.aa_to_index[amino_acid], :]):
-				if stoich < 0:
-					downstream_aa = aa_ids[i]
-					downstream_basal += -stoich * fwd_rates[downstream_aa][0]
-					downstream_with_aa += -stoich * fwd_rates[downstream_aa][1]
-			for i, stoich in enumerate(self.aa_reverse_stoich[self.aa_to_index[amino_acid], :]):
-				if stoich < 0:
-					downstream_aa = aa_ids[i]
-					downstream_basal += stoich * rev_rates[downstream_aa][0]
-					downstream_with_aa += stoich * rev_rates[downstream_aa][1]
-			uptake = (units.mmol/units.g/units.h * uptake_rates[amino_acid[:-3]]
-				* cell_specs['with_aa']['avgCellDryMassInit']).asNumber(units.count * K_CAT_UNITS)
+				supply_basal = basal_supply_mapping[amino_acid]
+				supply_with_aa = with_aa_supply_mapping[amino_acid]
+				downstream_basal = 0
+				downstream_with_aa = 0
+				for i, stoich in enumerate(self.aa_forward_stoich[self.aa_to_index[amino_acid], :]):
+					if stoich < 0:
+						downstream_aa = aa_ids[i]
+						downstream_basal += -stoich * fwd_rates[downstream_aa][0]
+						downstream_with_aa += -stoich * fwd_rates[downstream_aa][1]
+				for i, stoich in enumerate(self.aa_reverse_stoich[self.aa_to_index[amino_acid], :]):
+					if stoich < 0:
+						downstream_aa = aa_ids[i]
+						downstream_basal += stoich * rev_rates[downstream_aa][0]
+						downstream_with_aa += stoich * rev_rates[downstream_aa][1]
+				uptake = (units.mmol/units.g/units.h * uptake_rate
+					* cell_specs['with_aa']['avgCellDryMassInit']).asNumber(units.count * K_CAT_UNITS)
 
-			balance_basal = supply_basal + downstream_basal
-			balance_with_aa = supply_with_aa + downstream_with_aa - uptake
-			A = np.array([[fwd_capacity_basal, -rev_capacity_basal], [fwd_capacity_with_aa, -rev_capacity_with_aa]])
-			b = np.array([balance_basal, balance_with_aa])
-			try:
-				kcat_fwd, kcat_rev = np.linalg.solve(A, b)
-			except np.linalg.LinAlgError:
-				print(f'Warning: could not solve directly for {amino_acid} kcats - switching to least squares')
-				kcat_fwd, kcat_rev = np.linalg.lstsq(A, b, rcond=None)[0]
+				balance_basal = supply_basal + downstream_basal
+				balance_with_aa = supply_with_aa + downstream_with_aa - uptake
+				A = np.array([[fwd_capacity_basal, -rev_capacity_basal], [fwd_capacity_with_aa, -rev_capacity_with_aa]])
+				b = np.array([balance_basal, balance_with_aa])
+				try:
+					kcat_fwd, kcat_rev = np.linalg.solve(A, b)
+				except np.linalg.LinAlgError:
+					print(f'Warning: could not solve directly for {amino_acid} kcats - switching to least squares')
+					kcat_fwd, kcat_rev = np.linalg.lstsq(A, b, rcond=None)[0]
+
+				fwd_rate = (kcat_fwd * fwd_enzymes_basal * fwd_fraction_basal,
+					kcat_fwd * fwd_enzymes_with_aa * fwd_fraction_with_aa)
+				rev_rate = (kcat_rev * rev_enzymes_basal * rev_fraction_basal,
+					kcat_rev * rev_enzymes_with_aa * rev_fraction_with_aa)
+				deg_rate = (kcat_rev * rev_enzymes_basal * deg_fraction_basal,
+					kcat_rev * rev_enzymes_with_aa * deg_fraction_with_aa)
+
+				return kcat_fwd, kcat_rev, fwd_rate, rev_rate, deg_rate, uptake
+
+			kcat_fwd, kcat_rev, fwd_rate, rev_rate, deg_rate, uptake = calc_kcats(
+				aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
+				km_reverse, km_degradation, ki, uptake_rates[amino_acid[:-3]])
 			data['kcat'] = kcat_fwd
 
 			aa_enzymes += enzymes
@@ -1071,12 +1085,9 @@ class Metabolism(object):
 			aa_upstream_kms[amino_acid] = kms.asNumber(METABOLITE_CONCENTRATION_UNITS)
 			aa_reverse_kms[amino_acid] = km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS)
 			aa_degradation_kms[amino_acid] = km_degradation.asNumber(METABOLITE_CONCENTRATION_UNITS)
-			fwd_rates[amino_acid] = (kcat_fwd * fwd_enzymes_basal * fwd_fraction_basal,
-				kcat_fwd * fwd_enzymes_with_aa * fwd_fraction_with_aa)
-			rev_rates[amino_acid] = (kcat_rev * rev_enzymes_basal * rev_fraction_basal,
-				kcat_rev * rev_enzymes_with_aa * rev_fraction_with_aa)
-			deg_rates[amino_acid] = (kcat_rev * rev_enzymes_basal * deg_fraction_basal,
-				kcat_rev * rev_enzymes_with_aa * deg_fraction_with_aa)
+			fwd_rates[amino_acid] = fwd_rate
+			rev_rates[amino_acid] = rev_rate
+			deg_rates[amino_acid] = deg_rate
 			specific_import_rates[amino_acid] = uptake
 
 		self.aa_enzymes = np.unique(aa_enzymes)
