@@ -27,8 +27,9 @@ def subplot(x, y, x_err, labels, y_label, title):
 	labels = labels[mask]
 
 	# Statistics
-	r, p = pearsonr(np.log10(x), np.log10(y))
-	n = len(labels)
+	included = (x > 0) & (y > 0)
+	r, p = pearsonr(np.log10(x[included]), np.log10(y[included]))
+	n = np.sum(included)
 
 	## Plot data
 	min_rate = min(x.min(), y.min())

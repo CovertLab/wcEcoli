@@ -772,7 +772,7 @@ class Metabolism(object):
 		aa_names = sim_data.molecule_groups.amino_acids
 		counts_to_molar = (sim_data.constants.cell_density / cell_specs['with_aa']['avgCellDryMassInit']) / sim_data.constants.n_avogadro
 		aa_counts = with_aa_container.counts(aa_names)
-		exchange_rates = sim_data.process.metabolism.specific_import_rates * cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
+		exchange_rates = self.specific_import_rates * cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
 
 		self.aa_to_transporters, self.aa_to_transporters_matrix, self.aa_transporters_names = self.get_aa_to_transporters_mapping_data(sim_data)
 
@@ -903,8 +903,8 @@ class Metabolism(object):
 			sim_data.translation_supply_rate['minimal_plus_amino_acids']
 			* cell_specs['with_aa']['avgCellDryMassInit'] * sim_data.constants.n_avogadro
 			).asNumber(K_CAT_UNITS)
-		basal_supply_mapping = dict(zip(sim_data.molecule_groups.amino_acids, basal_rates))
-		with_aa_supply_mapping = dict(zip(sim_data.molecule_groups.amino_acids, with_aa_rates))
+		basal_supply_mapping = dict(zip(aa_ids, basal_rates))
+		with_aa_supply_mapping = dict(zip(aa_ids, with_aa_rates))
 		aa_enzymes = []
 		enzyme_to_aa = []
 		aa_kcats_fwd = {}
@@ -1145,7 +1145,8 @@ class Metabolism(object):
 		self.aa_upstream_kms = [aa_upstream_kms[aa] for aa in aa_ids]
 		self.aa_reverse_kms = np.array([aa_reverse_kms[aa] for aa in aa_ids])
 		self.aa_degradation_kms = np.array([aa_degradation_kms[aa] for aa in aa_ids])
-		self.specific_import_rates = np.array([specific_import_rates[aa] for aa in aa_ids])
+		self.specific_import_rates = (np.array([specific_import_rates[aa] for aa in aa_ids])
+			/ cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS))
 
 		# TODO: better way of handling this that is efficient computationally
 		self.aa_upstream_aas = [upstream_aas_for_km[aa] for aa in aa_ids]
