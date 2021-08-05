@@ -7,8 +7,7 @@ TODO:
 - see the initiation process for more TODOs
 """
 
-from __future__ import absolute_import, division, print_function
-
+from typing import Any, Dict, Optional, Set
 
 import numpy as np
 from scipy.integrate import odeint
@@ -19,7 +18,9 @@ from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIn
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
 
-MICROMOLAR_UNITS = units.umol / units.L
+
+CONC_UNITS = units.umol / units.L
+REMOVED_FROM_CHARGING = {'L-SELENOCYSTEINE[c]'}
 
 
 class PolypeptideElongation(wholecell.processes.process.Process):
@@ -32,6 +33,16 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 	def initialize(self, sim, sim_data):
 		super(PolypeptideElongation, self).initialize(sim, sim_data)
+
+		# Simulation options
+		self.aa_supply_in_charging = sim._aa_supply_in_charging
+		self.adjust_timestep_for_charging = sim._adjust_timestep_for_charging
+		self.mechanistic_translation_supply = sim._mechanistic_translation_supply
+		self.mechanistic_uptake = sim._mechanistic_aa_uptake
+		self.ppgpp_regulation = sim._ppgpp_regulation
+		self.variable_elongation = sim._variable_elongation_translation
+		translation_supply = sim._translationSupply
+		trna_charging = sim._trna_charging
 
 		constants = sim_data.constants
 		translation = sim_data.process.translation
@@ -46,7 +57,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.proteinSequences = translation.translation_sequences
 		self.aaWeightsIncorporated = translation.translation_monomer_weights
 		self.endWeight = translation.translation_end_weight
-		self.variable_elongation = sim._variable_elongation_translation
 		self.make_elongation_rates = translation.make_elongation_rates
 		self.next_aa_pad = translation.next_aa_pad
 
@@ -70,7 +80,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
 
 		# Create views onto all polymerization reaction small molecules
-		self.aas = self.bulkMoleculesView(sim_data.molecule_groups.amino_acids)
+		self.aaNames = sim_data.molecule_groups.amino_acids
+		self.aas = self.bulkMoleculesView(self.aaNames)
 
 		self.elngRateFactor = 1.
 
@@ -78,21 +89,19 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.aa_from_trna = transcription.aa_from_trna
 
 		# Set modeling method
-		if sim._trna_charging:
+		if trna_charging:
 			self.elongation_model = SteadyStateElongationModel(sim_data, self)
-		elif sim._translationSupply:
+		elif translation_supply:
 			self.elongation_model = TranslationSupplyElongationModel(sim_data, self)
 		else:
 			self.elongation_model = BaseElongationModel(sim_data, self)
-		self.ppgpp_regulation = sim._ppgpp_regulation
-		self.mechanistic_supply = sim._mechanistic_aa_supply
 
 		# Growth associated maintenance energy requirements for elongations
 		self.gtpPerElongation = constants.gtp_per_translation
 		## Need to account for ATP hydrolysis for charging that has been
 		## removed from measured GAM (ATP -> AMP is 2 hydrolysis reactions)
 		## if charging reactions are not explicitly modeled
-		if not sim._trna_charging:
+		if not trna_charging:
 			self.gtpPerElongation += 2
 		## Variable for metabolism to read to consume required energy
 		self.gtp_to_hydrolyze = 0
@@ -264,6 +273,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Write data to listeners
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
 		self.writeToListener("GrowthLimits", "aasUsed", aas_used)
+		self.writeToListener("GrowthLimits", "aaCountDiff", [self.aa_count_diff.get(id_, 0) for id_ in self.aaNames])
 
 		self.writeToListener("RibosomeData", "aaCountInSequence", aaCountInSequence)
 		self.writeToListener("RibosomeData", "aaCounts", aa_counts_for_translation)
@@ -361,8 +371,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		# Cell parameters
 		self.cellDensity = constants.cell_density
-		elongation_max = constants.ribosome_elongation_rate_max if self.process.variable_elongation else constants.ribosome_elongation_rate_basal
-		self.maxRibosomeElongationRate = float(elongation_max.asNumber(units.aa / units.s))
 
 		# Data structures for charging
 		self.aa_from_synthetase = transcription.aa_from_synthetase
@@ -380,30 +388,15 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.synthetases = self.process.bulkMoleculesView(self.synthetase_names)
 
 		# ppGpp synthesis
-		self.ppgpp_reaction_names = metabolism.ppgpp_reaction_names
 		self.ppgpp_reaction_metabolites = self.process.bulkMoleculesView(metabolism.ppgpp_reaction_metabolites)
-		self.ppgpp_reaction_stoich = metabolism.ppgpp_reaction_stoich
-		self.synthesis_index = self.ppgpp_reaction_names.index(metabolism.ppgpp_synthesis_reaction)
-		self.degradation_index = self.ppgpp_reaction_names.index(metabolism.ppgpp_degradation_reaction)
 		self.rela = self.process.bulkMoleculeView(molecule_ids.RelA)
 		self.spot = self.process.bulkMoleculeView(molecule_ids.SpoT)
 		self.ppgpp = self.process.bulkMoleculeView(molecule_ids.ppGpp)
 
-		# Parameters for tRNA charging and ribosome elongation
-		self.kS = constants.synthetase_charging_rate.asNumber(1 / units.s)
-		self.KMtf = constants.Km_synthetase_uncharged_trna.asNumber(MICROMOLAR_UNITS)
-		self.KMaa = constants.Km_synthetase_amino_acid.asNumber(MICROMOLAR_UNITS)
-		self.krta = constants.Kdissociation_charged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
-		self.krtf = constants.Kdissociation_uncharged_trna_ribosome.asNumber(MICROMOLAR_UNITS)
-		aa_removed_from_charging = {'L-SELENOCYSTEINE[c]'}
-		self.aa_charging_mask = np.array([aa not in aa_removed_from_charging for aa in self.aaNames])
-
-		# ppGpp parameters
-		self.KD_RelA = constants.KD_RelA_ribosome.asNumber(MICROMOLAR_UNITS)
-		self.k_RelA = constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s)
-		self.k_SpoT_syn = constants.k_SpoT_ppGpp_synthesis.asNumber(1 / units.s)
-		self.k_SpoT_deg = constants.k_SpoT_ppGpp_degradation.asNumber(1 / (MICROMOLAR_UNITS * units.s))
-		self.KI_SpoT = constants.KI_SpoT_ppGpp_degradation.asNumber(MICROMOLAR_UNITS)
+		# Parameters for tRNA charging, ribosome elongation and ppGpp reactions
+		self.charging_params = get_charging_params(sim_data,
+			variable_elongation=self.process.variable_elongation)
+		self.ppgpp_params = get_ppgpp_params(sim_data)
 
 		# Amino acid supply calculations
 		self.aa_supply_scaling = metabolism.aa_supply_scaling
@@ -422,6 +415,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.aa_aas = self.process.bulkMoleculesView(molecule_groups.amino_acids)
 		self.amino_acid_synthesis = metabolism.amino_acid_synthesis
 		self.amino_acid_import = metabolism.amino_acid_import
+
+		self.aa_transporters = self.process.bulkMoleculesView(metabolism.aa_transporters_names)
 
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)
@@ -447,17 +442,60 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		charged_trna_conc = self.counts_to_molar * charged_trna_counts
 		ribosome_conc = self.counts_to_molar * ribosome_counts
 
+		# Calculate amino acid supply
+		aa_in_media = self.aa_environment.import_present()
+		enzyme_counts = self.aa_enzymes.total_counts()
+		transporter_counts = self.aa_transporters.total_counts()
+		synthesis, enzyme_counts_per_aa, saturation = self.amino_acid_synthesis(enzyme_counts, aa_conc)
+		imported = self.amino_acid_import(aa_in_media, dry_mass, transporter_counts, self.process.mechanistic_uptake)
+
+		# Create functions that are only dependent on amino acid concentrations for more stable
+		# charging and amino acid concentrations
+		if self.process.aa_supply_in_charging:
+			counts_to_molar = self.counts_to_molar.asNumber(CONC_UNITS)
+			if self.process.mechanistic_translation_supply:
+				supply_function = lambda aa_conc: counts_to_molar * (self.amino_acid_synthesis(enzyme_counts, aa_conc)[0] + imported)
+			else:
+				supply = self.process.aa_supply.copy()
+				supply_function = lambda aa_conc: counts_to_molar * supply * self.aa_supply_scaling(aa_conc, aa_in_media)
+		# Maintain constant amino acid concentrations throughout charging
+		else:
+			supply_function = None
+
 		# Calculate steady state tRNA levels and resulting elongation rate
-		fraction_charged, v_rib = self.calculate_trna_charging(
+		fraction_charged, v_rib, supplied_in_charging = calculate_trna_charging(
 			synthetase_conc,
 			uncharged_trna_conc,
 			charged_trna_conc,
 			aa_conc,
 			ribosome_conc,
 			f,
-			self.process.timeStepSec())
+			self.charging_params,
+			supply=supply_function,
+			time_limit=self.process.timeStepSec())
 
-		aa_counts_for_translation = v_rib * f * self.process.timeStepSec() / self.counts_to_molar.asNumber(MICROMOLAR_UNITS)
+		# Use the supply calculated from each sub timestep while solving the charging steady state
+		if self.process.aa_supply_in_charging:
+			self.process.aa_supply = units.strip_empty_units(CONC_UNITS * supplied_in_charging / self.counts_to_molar)
+		# Use the supply calculated from the starting amino acid concentrations only
+		else:
+			if self.process.mechanistic_translation_supply:
+				# Set supply based on mechanistic synthesis and supply
+				self.process.aa_supply = self.process.timeStepSec() * (synthesis + imported)
+			else:
+				# Adjust aa_supply higher if amino acid concentrations are low
+				# Improves stability of charging and mimics amino acid synthesis
+				# inhibition and export
+				self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
+
+		self.process.writeToListener('GrowthLimits', 'synthetase_conc', synthetase_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'uncharged_trna_conc', uncharged_trna_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'charged_trna_conc', charged_trna_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'aa_conc', aa_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'ribosome_conc', ribosome_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'fraction_aa_to_elongate', f)
+
+		aa_counts_for_translation = v_rib * f * self.process.timeStepSec() / self.counts_to_molar.asNumber(CONC_UNITS)
 
 		total_trna = self.charged_trna.total_counts() + self.uncharged_trna.total_counts()
 		final_charged_trna = np.dot(fraction_charged, self.process.aa_from_trna * total_trna)
@@ -474,23 +512,10 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 				np.dot(aa_counts_for_translation, self.process.aa_from_trna)
 				* fraction_trna_per_aa + uncharged_trna_request)
 
-		aa_in_media = self.aa_environment.import_present()
-		synthesis, enzyme_counts, saturation = self.amino_acid_synthesis(
-			self.aa_enzymes.total_counts(), aa_conc)
-		imported = self.amino_acid_import(aa_in_media, dry_mass)
-		if self.process.mechanistic_supply:
-			# Set supply based on mechanistic synthesis and supply
-			self.process.aa_supply = self.process.timeStepSec() * (synthesis + imported)
-		else:
-			# Adjust aa_supply higher if amino acid concentrations are low
-			# Improves stability of charging and mimics amino acid synthesis
-			# inhibition and export
-			self.process.aa_supply *= self.aa_supply_scaling(aa_conc, aa_in_media)
-
 		self.process.writeToListener('GrowthLimits', 'aa_supply', self.process.aa_supply)
 		self.process.writeToListener('GrowthLimits', 'aa_synthesis', synthesis * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_import', imported * self.process.timeStepSec())
-		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts)
+		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts_per_aa)
 		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
 		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', saturation)
 
@@ -509,16 +534,21 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.water.requestIs(aa_counts_for_translation.sum())
 
 		# ppGpp reactions based on charged tRNA
+		ppgpp_conc = self.counts_to_molar * self.ppgpp.total_count()
+		rela_conc = self.counts_to_molar * self.rela.total_count()
+		spot_conc = self.counts_to_molar * self.spot.total_count()
+		self.process.writeToListener('GrowthLimits', 'ppgpp_conc', ppgpp_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'rela_conc', rela_conc.asNumber(CONC_UNITS))
+		self.process.writeToListener('GrowthLimits', 'spot_conc', spot_conc.asNumber(CONC_UNITS))
 		if self.process.ppgpp_regulation:
 			total_trna_conc = self.counts_to_molar * (uncharged_trna_counts + charged_trna_counts)
 			updated_charged_trna_conc = total_trna_conc * fraction_charged
 			updated_uncharged_trna_conc = total_trna_conc - updated_charged_trna_conc
-			ppgpp_conc = self.counts_to_molar * self.ppgpp.total_count()
-			rela_conc = self.counts_to_molar * self.rela.total_count()
-			spot_conc = self.counts_to_molar * self.spot.total_count()
-			delta_metabolites, _, _, _, _, _ = self.ppgpp_metabolite_changes(
+			delta_metabolites, _, _, _, _, _ = ppgpp_metabolite_changes(
 				updated_uncharged_trna_conc, updated_charged_trna_conc, ribosome_conc,
-				f, rela_conc, spot_conc, ppgpp_conc, self.counts_to_molar, v_rib, request=True
+				f, rela_conc, spot_conc, ppgpp_conc, self.counts_to_molar, v_rib,
+				self.charging_params, self.ppgpp_params, self.process.timeStepSec(),
+				request=True, random_state=self.process.randomState,
 			)
 
 			request_ppgpp_metabolites = -delta_metabolites
@@ -557,7 +587,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# Create ppGpp
 		## Concentrations of interest
 		if self.process.ppgpp_regulation:
-			v_rib = (nElongations * self.counts_to_molar).asNumber(MICROMOLAR_UNITS) / self.process.timeStepSec()
+			v_rib = (nElongations * self.counts_to_molar).asNumber(CONC_UNITS) / self.process.timeStepSec()
 			ribosome_conc = self.counts_to_molar * self.process.active_ribosomes.total_count()
 			updated_uncharged_trna_counts = self.uncharged_trna.total_counts() - net_charged
 			updated_charged_trna_counts = self.charged_trna.total_counts() + net_charged
@@ -574,9 +604,11 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			aa_at_ribosome = aas_used + next_amino_acid_count
 			f = aa_at_ribosome / aa_at_ribosome.sum()
 			limits = self.ppgpp_reaction_metabolites.counts()
-			delta_metabolites, ppgpp_syn, ppgpp_deg, rela_syn, spot_syn, spot_deg = self.ppgpp_metabolite_changes(
+			delta_metabolites, ppgpp_syn, ppgpp_deg, rela_syn, spot_syn, spot_deg = ppgpp_metabolite_changes(
 				uncharged_trna_conc, charged_trna_conc,	ribosome_conc, f, rela_conc,
-				spot_conc, ppgpp_conc, self.counts_to_molar, v_rib, limits=limits,
+				spot_conc, ppgpp_conc, self.counts_to_molar, v_rib,
+				self.charging_params, self.ppgpp_params, self.process.timeStepSec(),
+				random_state=self.process.randomState, limits=limits,
 				)
 
 			self.process.writeToListener('GrowthLimits', 'rela_syn', rela_syn)
@@ -592,128 +624,16 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.proton.countInc(nElongations)
 		self.water.countDec(nInitialized)
 
-		# Use the difference between expected AA supply based on expected doubling time
-		# and current DCW and AA used to charge tRNA to update the concentration target
+		# Use the difference between (expected AA supply based on expected doubling time
+		# and current DCW) and AA used to charge tRNA to update the concentration target
 		# in metabolism during the next time step
-		aa_diff = self.process.aa_supply - np.dot(self.process.aa_from_trna, total_charging_reactions)
+		aa_used_trna = np.dot(self.process.aa_from_trna, total_charging_reactions)
+		aa_diff = self.process.aa_supply - aa_used_trna
 		if np.any(np.abs(aa_diff / self.process.aas.total_counts()) > self.max_amino_acid_adjustment):
 			self.time_step_short_enough = False
 
+		self.process.writeToListener('GrowthLimits', 'trnaCharged', aa_used_trna)
 		return net_charged, {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
-
-	def calculate_trna_charging(self, synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc, f, time_limit=1000, use_disabled_aas=False):
-		'''
-		Calculates the steady state value of tRNA based on charging and incorporation through polypeptide elongation.
-		The fraction of charged/uncharged is also used to determine how quickly the ribosome is elongating.
-
-		Inputs:
-			synthetase_conc (array of floats with concentration units) - concentration of synthetases associated
-				with each amino acid
-			uncharged_trna_conc (array of floats with concentration units) - concentration of uncharged tRNA associated
-				with each amino acid
-			charged_trna_conc (array of floats with concentration units) - concentration of charged tRNA associated
-				with each amino acid
-			aa_conc (array of floats with concentration units) - concentration of each amino acid
-			ribosome_conc (float with concentration units) - concentration of active ribosomes
-			f (array of floats) - fraction of each amino acid to be incorporated to total amino acids incorporated
-			time_limit (float) - time limit to reach steady state
-			use_disabled_aas (bool) - if True, all amino acids will be used for charging calculations,
-				if False, some will be excluded as determined in initialize
-
-		Returns:
-			fraction_charged (array of floats) - fraction of total tRNA that is charged for each tRNA species
-			v_rib (float) - ribosomal elongation rate in units of uM/s
-		'''
-
-		def negative_check(trna1, trna2):
-			'''
-			Check for floating point precision issues that can lead to small
-			negative numbers instead of 0. Adjusts both species of tRNA to
-			bring concentration of trna1 to 0 and keep the same total concentration.
-
-			Args:
-				trna1 (ndarray[float]): concentration of one tRNA species (charged or uncharged)
-				trna2 (ndarray[float]): concentration of another tRNA species (charged or uncharged)
-			'''
-
-			mask = trna1 < 0
-			trna2[mask] = trna1[mask] + trna2[mask]
-			trna1[mask] = 0
-
-		def dcdt(c, t):
-			'''
-			Function for odeint to integrate
-
-			Args:
-				c (ndarray[float]): 1D array of concentrations of uncharged and charged tRNAs
-					dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
-				t (float): time of integration step
-
-			Returns:
-				ndarray[float]: dc/dt for tRNA concentrations
-					dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
-			'''
-
-			uncharged_trna_conc = c[:n_aas]
-			charged_trna_conc = c[n_aas:]
-
-			v_charging = (self.kS * synthetase_conc * uncharged_trna_conc * aa_conc / (self.KMaa * self.KMtf)
-				/ (1 + uncharged_trna_conc/self.KMtf + aa_conc/self.KMaa + uncharged_trna_conc*aa_conc/self.KMtf/self.KMaa))
-			with np.errstate(divide='ignore'):
-				numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
-			v_rib = self.maxRibosomeElongationRate * ribosome_conc / numerator_ribosome
-
-			# Handle case when f is 0 and charged_trna_conc is 0
-			if not np.isfinite(v_rib):
-				v_rib = 0
-
-			dc = v_charging - v_rib*f
-
-			return np.hstack((-dc, dc))
-
-		# Convert inputs for integration
-		synthetase_conc = synthetase_conc.asNumber(MICROMOLAR_UNITS)
-		uncharged_trna_conc = uncharged_trna_conc.asNumber(MICROMOLAR_UNITS)
-		charged_trna_conc = charged_trna_conc.asNumber(MICROMOLAR_UNITS)
-		aa_conc = aa_conc.asNumber(MICROMOLAR_UNITS)
-		ribosome_conc = ribosome_conc.asNumber(MICROMOLAR_UNITS)
-
-		# Remove disabled amino acids from calculations
-		n_total_aas = len(aa_conc)
-		if use_disabled_aas:
-			mask = np.ones(n_total_aas, bool)
-		else:
-			mask = self.aa_charging_mask
-		synthetase_conc = synthetase_conc[mask]
-		uncharged_trna_conc = uncharged_trna_conc[mask]
-		charged_trna_conc = charged_trna_conc[mask]
-		aa_conc = aa_conc[mask]
-		f = f[mask]
-
-		n_aas = len(aa_conc)
-
-		# Integrate rates of charging and elongation
-		dt = 0.001
-		t = np.arange(0, time_limit, dt)
-		c_init = np.hstack((uncharged_trna_conc, charged_trna_conc))
-		sol = odeint(dcdt, c_init, t)
-
-		# Determine new values from integration results
-		uncharged_trna_conc = sol[-1, :n_aas]
-		charged_trna_conc = sol[-1, n_aas:]
-		negative_check(uncharged_trna_conc, charged_trna_conc)
-		negative_check(charged_trna_conc, uncharged_trna_conc)
-
-		fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
-		numerator_ribosome = 1 + np.sum(f * (self.krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * self.krta / self.krtf))
-		v_rib = self.maxRibosomeElongationRate * ribosome_conc / numerator_ribosome
-
-		# Replace SEL fraction charged with average
-		new_fraction_charged = np.zeros(n_total_aas)
-		new_fraction_charged[mask] = fraction_charged
-		new_fraction_charged[~mask] = fraction_charged.mean()
-
-		return new_fraction_charged, v_rib
 
 	def distribution_from_aa(self, n_aa, n_trna, limited=False):
 		'''
@@ -763,118 +683,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		return trna_counts
 
-	def ppgpp_metabolite_changes(self, uncharged_trna_conc, charged_trna_conc,
-			ribosome_conc, f, rela_conc, spot_conc, ppgpp_conc, counts_to_molar,
-			v_rib, request=False, limits=None):
-		'''
-		Calculates the changes in metabolite counts based on ppGpp synthesis and
-		degradation reactions.
-
-		Args:
-			uncharged_trna_conc (np.array[float] with concentration units):
-				concentration of uncharged tRNA associated with each amino acid
-			charged_trna_conc (np.array[float] with concentration units):
-				concentration of charged tRNA associated with each amino acid
-			ribosome_conc (float with concentration units): concentration of active ribosomes
-			f (np.array[float]): fraction of each amino acid to be incorporated
-				to total amino acids incorporated
-			rela_conc (float with concentration units): concentration of RelA
-			spot_conc (float with concentration units): concentration of SpoT
-			ppgpp_conc (float with concentration units): concentration of ppGpp
-			counts_to_molar (float with concentration units): conversion factor
-				from counts to molarity
-			v_rib (float): rate of amino acid incorporation at the ribosome,
-				in units of uM/s
-			request (bool): if True, only considers reactant stoichiometry,
-				otherwise considers reactants and products. For use in
-				calculateRequest. GDP appears as both a reactant and product
-				and the request can be off the actual use if not handled in this
-				manner.
-			limits (np.array[float]): counts of molecules that are available to prevent
-				negative total counts as a result of delta_metabolites.
-				If None, no limits are placed on molecule changes.
-
-		Returns:
-			delta_metabolites (np.array[int]): the change in counts of each metabolite
-				involved in ppGpp reactions
-			n_syn_reactions (int): the number of ppGpp synthesis reactions
-			n_deg_reactions (int): the number of ppGpp degradation reactions
-			v_rela_syn (float): rate of synthesis from RelA
-			v_spot_syn (float): rate of synthesis from SpoT
-			v_deg (float): rate of degradation from SpoT
-		'''
-
-		uncharged_trna_conc = uncharged_trna_conc.asNumber(MICROMOLAR_UNITS)
-		charged_trna_conc = charged_trna_conc.asNumber(MICROMOLAR_UNITS)
-		ribosome_conc = ribosome_conc.asNumber(MICROMOLAR_UNITS)
-		rela_conc = rela_conc.asNumber(MICROMOLAR_UNITS)
-		spot_conc = spot_conc.asNumber(MICROMOLAR_UNITS)
-		ppgpp_conc = ppgpp_conc.asNumber(MICROMOLAR_UNITS)
-		counts_to_micromolar = counts_to_molar.asNumber(MICROMOLAR_UNITS)
-
-		numerator = 1 + charged_trna_conc / self.krta + uncharged_trna_conc / self.krtf
-		saturated_charged = charged_trna_conc / self.krta / numerator
-		saturated_uncharged = uncharged_trna_conc / self.krtf / numerator
-		fraction_a_site = f * v_rib / (saturated_charged * self.maxRibosomeElongationRate)
-		ribosomes_bound_to_uncharged = fraction_a_site * saturated_uncharged
-
-		# Handle rare cases when tRNA concentrations are 0
-		# Can result in inf and nan so assume a fraction of ribosomes
-		# bind to the uncharged tRNA if any tRNA are present or 0 if not
-		mask = ~np.isfinite(ribosomes_bound_to_uncharged)
-		ribosomes_bound_to_uncharged[mask] = ribosome_conc * f[mask] * np.array(
-			uncharged_trna_conc[mask] + charged_trna_conc[mask] > 0)
-
-		# Calculate rates for synthesis and degradation
-		frac_rela = 1 / (1 + self.KD_RelA / ribosomes_bound_to_uncharged.sum())
-		v_rela_syn = self.k_RelA * rela_conc * frac_rela
-		v_spot_syn = self.k_SpoT_syn * spot_conc
-		v_syn = v_rela_syn + v_spot_syn
-		v_deg = self.k_SpoT_deg * spot_conc * ppgpp_conc / (1 + uncharged_trna_conc.sum() / self.KI_SpoT)
-
-		# Convert to discrete reactions
-		n_syn_reactions = stochasticRound(self.process.randomState, v_syn * self.process.timeStepSec() / counts_to_micromolar)[0]
-		n_deg_reactions = stochasticRound(self.process.randomState, v_deg * self.process.timeStepSec() / counts_to_micromolar)[0]
-
-		# Only look at reactant stoichiometry if requesting molecules to use
-		if request:
-			ppgpp_reaction_stoich = np.zeros_like(self.ppgpp_reaction_stoich)
-			reactants = self.ppgpp_reaction_stoich < 0
-			ppgpp_reaction_stoich[reactants] = self.ppgpp_reaction_stoich[reactants]
-		else:
-			ppgpp_reaction_stoich = self.ppgpp_reaction_stoich
-
-		# Calculate the change in metabolites and adjust to limits if provided
-		# Possible reactions are adjusted down to limits if the change in any
-		# metabolites would result in negative counts
-		max_iterations = int(n_deg_reactions + n_syn_reactions + 1)
-		old_counts = None
-		for it in range(max_iterations):
-			delta_metabolites = (ppgpp_reaction_stoich[:, self.synthesis_index] * n_syn_reactions
-				+ ppgpp_reaction_stoich[:, self.degradation_index] * n_deg_reactions)
-
-			if limits is None:
-				break
-			else:
-				final_counts = delta_metabolites + limits
-
-				if np.all(final_counts >= 0) or (old_counts is not None and np.all(final_counts == old_counts)):
-					break
-
-				limited_index = np.argmin(final_counts)
-				if ppgpp_reaction_stoich[limited_index, self.synthesis_index] < 0:
-					limited = np.ceil(final_counts[limited_index] / ppgpp_reaction_stoich[limited_index, self.synthesis_index])
-					n_syn_reactions -= min(limited, n_syn_reactions)
-				if ppgpp_reaction_stoich[limited_index, self.degradation_index] < 0:
-					limited = np.ceil(final_counts[limited_index] / ppgpp_reaction_stoich[limited_index, self.degradation_index])
-					n_deg_reactions -= min(limited, n_deg_reactions)
-
-				old_counts = final_counts
-		else:
-			raise ValueError('Failed to meet molecule limits with ppGpp reactions.')
-
-		return delta_metabolites, n_syn_reactions, n_deg_reactions, v_rela_syn, v_spot_syn, v_deg
-
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		short_enough = True
 
@@ -883,9 +691,331 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			short_enough = False
 
 		# Decrease the max time step to get more stable charging
-		if not self.time_step_short_enough:
+		if not self.time_step_short_enough and self.process.adjust_timestep_for_charging:
 			self.max_time_step = inputTimeStep / 2
 			self.time_step_short_enough = True
 			short_enough = False
 
 		return short_enough
+
+def get_ppgpp_params(sim_data) -> Dict[str, Any]:
+	"""
+	Get parameters required for ppGpp reaction calulations to help
+	encapsulate the function so that it does not need to be a class method.
+
+	Args:
+		sim_data: SimulationData object
+
+	Returns:
+		parameters that are used in ppgpp_metabolite_changes
+	"""
+
+	constants = sim_data.constants
+	metabolism = sim_data.process.metabolism
+
+	return dict(
+		KD_RelA=constants.KD_RelA_ribosome.asNumber(CONC_UNITS),
+		k_RelA=constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s),
+		k_SpoT_syn=constants.k_SpoT_ppGpp_synthesis.asNumber(1 / units.s),
+		k_SpoT_deg=constants.k_SpoT_ppGpp_degradation.asNumber(1 / (CONC_UNITS * units.s)),
+		KI_SpoT=constants.KI_SpoT_ppGpp_degradation.asNumber(CONC_UNITS),
+		ppgpp_reaction_stoich=metabolism.ppgpp_reaction_stoich,
+		synthesis_index=metabolism.ppgpp_reaction_names.index(metabolism.ppgpp_synthesis_reaction),
+		degradation_index=metabolism.ppgpp_reaction_names.index(metabolism.ppgpp_degradation_reaction),
+		)
+
+def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
+		ribosome_conc, f, rela_conc, spot_conc, ppgpp_conc, counts_to_molar,
+		v_rib, charging_params, ppgpp_params, time_step,
+		request=False, limits=None, random_state=None):
+	'''
+	Calculates the changes in metabolite counts based on ppGpp synthesis and
+	degradation reactions.
+
+	Args:
+		uncharged_trna_conc (np.array[float] with concentration units):
+			concentration of uncharged tRNA associated with each amino acid
+		charged_trna_conc (np.array[float] with concentration units):
+			concentration of charged tRNA associated with each amino acid
+		ribosome_conc (float with concentration units): concentration of active ribosomes
+		f (np.array[float]): fraction of each amino acid to be incorporated
+			to total amino acids incorporated
+		rela_conc (float with concentration units): concentration of RelA
+		spot_conc (float with concentration units): concentration of SpoT
+		ppgpp_conc (float with concentration units): concentration of ppGpp
+		counts_to_molar (float with concentration units): conversion factor
+			from counts to molarity
+		v_rib (float): rate of amino acid incorporation at the ribosome,
+			in units of uM/s
+		charging_params (Dict[str, Any]): parameters used in charging equations
+			- this should be generated by get_charging_params
+		ppgpp_params (Dict[str, Any]): parameters used in ppGpp reactions
+			- this should be generated by get_ppgpp_params
+		time_step (float): length of the current time step
+		request (bool): if True, only considers reactant stoichiometry,
+			otherwise considers reactants and products. For use in
+			calculateRequest. GDP appears as both a reactant and product
+			and the request can be off the actual use if not handled in this
+			manner.
+		limits (np.array[float]): counts of molecules that are available to prevent
+			negative total counts as a result of delta_metabolites.
+			If None, no limits are placed on molecule changes.
+		random_state (np.random.RandomState): random state for the process
+
+	Returns:
+		delta_metabolites (np.array[int]): the change in counts of each metabolite
+			involved in ppGpp reactions
+		n_syn_reactions (int): the number of ppGpp synthesis reactions
+		n_deg_reactions (int): the number of ppGpp degradation reactions
+		v_rela_syn (float): rate of synthesis from RelA
+		v_spot_syn (float): rate of synthesis from SpoT
+		v_deg (float): rate of degradation from SpoT
+	'''
+
+	if random_state is None:
+		random_state = np.random.RandomState()
+
+	uncharged_trna_conc = uncharged_trna_conc.asNumber(CONC_UNITS)
+	charged_trna_conc = charged_trna_conc.asNumber(CONC_UNITS)
+	ribosome_conc = ribosome_conc.asNumber(CONC_UNITS)
+	rela_conc = rela_conc.asNumber(CONC_UNITS)
+	spot_conc = spot_conc.asNumber(CONC_UNITS)
+	ppgpp_conc = ppgpp_conc.asNumber(CONC_UNITS)
+	counts_to_micromolar = counts_to_molar.asNumber(CONC_UNITS)
+
+	numerator = 1 + charged_trna_conc / charging_params['krta'] + uncharged_trna_conc / charging_params['krtf']
+	saturated_charged = charged_trna_conc / charging_params['krta'] / numerator
+	saturated_uncharged = uncharged_trna_conc / charging_params['krtf'] / numerator
+	fraction_a_site = f * v_rib / (saturated_charged * charging_params['max_elong_rate'])
+	ribosomes_bound_to_uncharged = fraction_a_site * saturated_uncharged
+
+	# Handle rare cases when tRNA concentrations are 0
+	# Can result in inf and nan so assume a fraction of ribosomes
+	# bind to the uncharged tRNA if any tRNA are present or 0 if not
+	mask = ~np.isfinite(ribosomes_bound_to_uncharged)
+	ribosomes_bound_to_uncharged[mask] = ribosome_conc * f[mask] * np.array(
+		uncharged_trna_conc[mask] + charged_trna_conc[mask] > 0)
+
+	# Calculate rates for synthesis and degradation
+	frac_rela = 1 / (1 + ppgpp_params['KD_RelA'] / ribosomes_bound_to_uncharged.sum())
+	v_rela_syn = ppgpp_params['k_RelA'] * rela_conc * frac_rela
+	v_spot_syn = ppgpp_params['k_SpoT_syn'] * spot_conc
+	v_syn = v_rela_syn + v_spot_syn
+	v_deg = ppgpp_params['k_SpoT_deg'] * spot_conc * ppgpp_conc / (1 + uncharged_trna_conc.sum() / ppgpp_params['KI_SpoT'])
+
+	# Convert to discrete reactions
+	n_syn_reactions = stochasticRound(random_state, v_syn * time_step / counts_to_micromolar)[0]
+	n_deg_reactions = stochasticRound(random_state, v_deg * time_step / counts_to_micromolar)[0]
+
+	# Only look at reactant stoichiometry if requesting molecules to use
+	if request:
+		ppgpp_reaction_stoich = np.zeros_like(ppgpp_params['ppgpp_reaction_stoich'])
+		reactants = ppgpp_params['ppgpp_reaction_stoich'] < 0
+		ppgpp_reaction_stoich[reactants] = ppgpp_params['ppgpp_reaction_stoich'][reactants]
+	else:
+		ppgpp_reaction_stoich = ppgpp_params['ppgpp_reaction_stoich']
+
+	# Calculate the change in metabolites and adjust to limits if provided
+	# Possible reactions are adjusted down to limits if the change in any
+	# metabolites would result in negative counts
+	max_iterations = int(n_deg_reactions + n_syn_reactions + 1)
+	old_counts = None
+	for it in range(max_iterations):
+		delta_metabolites = (ppgpp_reaction_stoich[:, ppgpp_params['synthesis_index']] * n_syn_reactions
+			+ ppgpp_reaction_stoich[:, ppgpp_params['degradation_index']] * n_deg_reactions)
+
+		if limits is None:
+			break
+		else:
+			final_counts = delta_metabolites + limits
+
+			if np.all(final_counts >= 0) or (old_counts is not None and np.all(final_counts == old_counts)):
+				break
+
+			limited_index = np.argmin(final_counts)
+			if ppgpp_reaction_stoich[limited_index, ppgpp_params['synthesis_index']] < 0:
+				limited = np.ceil(final_counts[limited_index] / ppgpp_reaction_stoich[limited_index, ppgpp_params['synthesis_index']])
+				n_syn_reactions -= min(limited, n_syn_reactions)
+			if ppgpp_reaction_stoich[limited_index, ppgpp_params['degradation_index']] < 0:
+				limited = np.ceil(final_counts[limited_index] / ppgpp_reaction_stoich[limited_index, ppgpp_params['degradation_index']])
+				n_deg_reactions -= min(limited, n_deg_reactions)
+
+			old_counts = final_counts
+	else:
+		raise ValueError('Failed to meet molecule limits with ppGpp reactions.')
+
+	return delta_metabolites, n_syn_reactions, n_deg_reactions, v_rela_syn, v_spot_syn, v_deg
+
+def get_charging_params(
+		sim_data,
+		aa_removed_from_charging: Optional[Set[str]] = None,
+		variable_elongation: bool = False,
+		) -> Dict[str, Any]:
+	"""
+	Get parameters required for tRNA charging calulations to help
+	encapsulate the function so that it does not need to be a class method.
+
+	Args:
+		sim_data: SimulationData object
+		aa_removed_from_charging: any amino acid IDs that should be ignored
+			when calculating charging
+		variable_elongation: if True, the max elongation rate is set to be
+			higher
+
+	Returns:
+		parameters that are used in calculate_trna_charging
+	"""
+
+	constants = sim_data.constants
+	if aa_removed_from_charging is None:
+		aa_removed_from_charging = REMOVED_FROM_CHARGING
+	aa_charging_mask = np.array([
+		aa not in aa_removed_from_charging
+		for aa in sim_data.molecule_groups.amino_acids
+		])
+	elongation_max = (constants.ribosome_elongation_rate_max
+		if variable_elongation else constants.ribosome_elongation_rate_basal)
+
+	return dict(
+		kS=constants.synthetase_charging_rate.asNumber(1 / units.s),
+		KMaa=constants.Km_synthetase_amino_acid.asNumber(CONC_UNITS),
+		KMtf=constants.Km_synthetase_uncharged_trna.asNumber(CONC_UNITS),
+		krta=constants.Kdissociation_charged_trna_ribosome.asNumber(CONC_UNITS),
+		krtf=constants.Kdissociation_uncharged_trna_ribosome.asNumber(CONC_UNITS),
+		max_elong_rate=float(elongation_max.asNumber(units.aa / units.s)),
+		charging_mask=aa_charging_mask,
+		)
+
+def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc,
+		f, params, supply=None, time_limit=1000, use_disabled_aas=False):
+	'''
+	Calculates the steady state value of tRNA based on charging and incorporation through polypeptide elongation.
+	The fraction of charged/uncharged is also used to determine how quickly the ribosome is elongating.
+
+	Inputs:
+		synthetase_conc (array of floats with concentration units) - concentration of synthetases associated
+			with each amino acid
+		uncharged_trna_conc (array of floats with concentration units) - concentration of uncharged tRNA associated
+			with each amino acid
+		charged_trna_conc (array of floats with concentration units) - concentration of charged tRNA associated
+			with each amino acid
+		aa_conc (array of floats with concentration units) - concentration of each amino acid
+		ribosome_conc (float with concentration units) - concentration of active ribosomes
+		f (array of floats) - fraction of each amino acid to be incorporated to total amino acids incorporated
+		params (Dict[str, Any]) - parameters used in charging equations - this should be
+			generated by get_charging_params
+		supply (Callable) - function to get the rate of amino acid supply (synthesis and import)
+			based on amino acid concentrations. If None, amino acid concentrations remain constant
+			during charging
+		time_limit (float) - time limit to reach steady state
+		use_disabled_aas (bool) - if True, all amino acids will be used for charging calculations,
+			if False, some will be excluded as determined in initialize
+
+	Returns:
+		fraction_charged (array of floats) - fraction of total tRNA that is charged for each tRNA species
+		v_rib (float) - ribosomal elongation rate in units of uM/s
+		total_supply (np.ndarray) - the total amount of amino acids supplied during charging
+			in units of CONC_UNITS.  Will be zeros if supply function is not given.
+	'''
+
+	def negative_check(trna1, trna2):
+		'''
+		Check for floating point precision issues that can lead to small
+		negative numbers instead of 0. Adjusts both species of tRNA to
+		bring concentration of trna1 to 0 and keep the same total concentration.
+
+		Args:
+			trna1 (ndarray[float]): concentration of one tRNA species (charged or uncharged)
+			trna2 (ndarray[float]): concentration of another tRNA species (charged or uncharged)
+		'''
+
+		mask = trna1 < 0
+		trna2[mask] = trna1[mask] + trna2[mask]
+		trna1[mask] = 0
+
+	def dcdt(c, t):
+		'''
+		Function for odeint to integrate
+
+		Args:
+			c (ndarray[float]): 1D array of concentrations of uncharged and charged tRNAs
+				dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
+			t (float): time of integration step
+
+		Returns:
+			ndarray[float]: dc/dt for tRNA concentrations
+				dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
+		'''
+
+		uncharged_trna_conc = c[:n_aas_masked]
+		charged_trna_conc = c[n_aas_masked:2*n_aas_masked]
+		aa_conc = c[2*n_aas_masked:2*n_aas_masked+n_aas]
+		masked_aa_conc = aa_conc[mask]
+
+		v_charging = (params['kS'] * synthetase_conc * uncharged_trna_conc * masked_aa_conc / (params['KMaa'] * params['KMtf'])
+			/ (1 + uncharged_trna_conc/params['KMtf'] + masked_aa_conc/params['KMaa'] + uncharged_trna_conc*masked_aa_conc/params['KMtf']/params['KMaa']))
+		with np.errstate(divide='ignore'):
+			numerator_ribosome = 1 + np.sum(f * (params['krta'] / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * params['krta'] / params['krtf']))
+		v_rib = params['max_elong_rate'] * ribosome_conc / numerator_ribosome
+
+		# Handle case when f is 0 and charged_trna_conc is 0
+		if not np.isfinite(v_rib):
+			v_rib = 0
+
+		dtrna = v_charging - v_rib*f
+		daa = np.zeros(n_aas)
+		if supply is None:
+			v_supply = np.zeros(n_aas)
+		else:
+			v_supply = supply(CONC_UNITS * aa_conc)
+			daa[mask] = v_supply[mask] - v_charging
+
+		return np.hstack((-dtrna, dtrna, daa, v_supply))
+
+	# Convert inputs for integration
+	synthetase_conc = synthetase_conc.asNumber(CONC_UNITS)
+	uncharged_trna_conc = uncharged_trna_conc.asNumber(CONC_UNITS)
+	charged_trna_conc = charged_trna_conc.asNumber(CONC_UNITS)
+	aa_conc = aa_conc.asNumber(CONC_UNITS)
+	ribosome_conc = ribosome_conc.asNumber(CONC_UNITS)
+
+	# Remove disabled amino acids from calculations
+	n_total_aas = len(aa_conc)
+	if use_disabled_aas:
+		mask = np.ones(n_total_aas, bool)
+	else:
+		mask = params['charging_mask']
+	synthetase_conc = synthetase_conc[mask]
+	uncharged_trna_conc = uncharged_trna_conc[mask]
+	charged_trna_conc = charged_trna_conc[mask]
+	masked_aa_conc = aa_conc[mask]
+	f = f[mask]
+
+	n_aas = len(aa_conc)
+	n_aas_masked = len(masked_aa_conc)
+
+	# Integrate rates of charging and elongation
+	dt = 0.001
+	t = np.arange(0, time_limit, dt)
+	c_init = np.hstack((uncharged_trna_conc, charged_trna_conc, aa_conc, np.zeros(n_aas)))
+	sol = odeint(dcdt, c_init, t)
+
+	# Determine new values from integration results
+	uncharged_trna_conc = sol[-1, :n_aas_masked]
+	charged_trna_conc = sol[-1, n_aas_masked:2*n_aas_masked]
+	negative_check(uncharged_trna_conc, charged_trna_conc)
+	negative_check(charged_trna_conc, uncharged_trna_conc)
+
+	fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
+	numerator_ribosome = 1 + np.sum(f * (params['krta'] / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * params['krta'] / params['krtf']))
+	v_rib = params['max_elong_rate'] * ribosome_conc / numerator_ribosome
+
+	# Replace SEL fraction charged with average
+	new_fraction_charged = np.zeros(n_total_aas)
+	new_fraction_charged[mask] = fraction_charged
+	new_fraction_charged[~mask] = fraction_charged.mean()
+
+	# Amount of amino acids supplied in charging
+	total_supply = sol[-1, 2*n_aas_masked+n_aas:2*n_aas_masked+2*n_aas]
+
+	return new_fraction_charged, v_rib, total_supply

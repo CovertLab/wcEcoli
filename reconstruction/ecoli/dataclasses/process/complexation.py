@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from wholecell.utils import units
-from six.moves import range, zip
+from wholecell.utils.mc_complexation import mccBuildMatrices
 
 
 class ComplexationError(Exception):
@@ -97,6 +97,9 @@ class Complexation(object):
 		massBalanceArray = np.sum(balanceMatrix, axis=0)
 		assert np.max(np.absolute(massBalanceArray)) < 1e-8  # had to bump this up to 1e-8 because of flagella supercomplex
 
+		stoichMatrix = self.stoich_matrix().astype(np.int64, order='F')
+		self.prebuilt_matrices = mccBuildMatrices(stoichMatrix)
+
 	def stoich_matrix(self):
 		"""
 		Builds a stoichiometric matrix based on each given complexation
@@ -178,9 +181,8 @@ class Complexation(object):
 	def _findRow(self, product, speciesList):
 		try:
 			row = speciesList.index(product)
-		except ValueError as e:
-			raise MoleculeNotFoundError(
-				"Could not find %s in the list of molecules." % (product,), e)
+		except ValueError:
+			row = -1  # Flag if not found so not a complex
 		return row
 
 	def _findColumn(self, stoichMatrixRow):
@@ -191,6 +193,9 @@ class Complexation(object):
 
 	def _moleculeRecursiveSearch(self, product, stoichMatrix, speciesList):
 		row = self._findRow(product, speciesList)
+		if row == -1:
+			return {product: 1.0}
+
 		col = self._findColumn(stoichMatrix[row, :])
 		if col == -1:
 			return {product: 1.0}

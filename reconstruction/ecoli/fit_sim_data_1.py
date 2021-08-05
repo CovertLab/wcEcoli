@@ -5,12 +5,10 @@ TODO: establish a controlled language for function behaviors (i.e. create* set* 
 TODO: functionalize so that values are not both set and returned from some methods
 """
 
-from __future__ import absolute_import, division, print_function
-
+import binascii
 import functools
 import itertools
 import os
-import sys
 import time
 import traceback
 from typing import Callable, List
@@ -19,9 +17,11 @@ from arrow import StochasticSystem
 from cvxpy import Variable, Problem, Minimize, norm
 import numpy as np
 import scipy.optimize
+import scipy.sparse
 import six
 from six.moves import cPickle, range, zip
 
+from reconstruction.ecoli.initialization import create_bulk_container
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 from wholecell.utils import filepath, parallelization, units
@@ -365,8 +365,13 @@ def final_adjustments(sim_data, cell_specs, **kwargs):
 	sim_data.process.transcription.adjust_ppgpp_expression_for_tfs(sim_data)
 
 	# Set supply constants for amino acids based on condition supply requirements
+	average_basal_container = create_bulk_container(sim_data, n_seeds=5)
+	average_with_aa_container = create_bulk_container(sim_data, condition='with_aa', n_seeds=5)
 	sim_data.process.metabolism.set_phenomological_supply_constants(sim_data)
-	sim_data.process.metabolism.set_mechanistic_supply_constants(sim_data, cell_specs)
+	sim_data.process.metabolism.set_mechanistic_supply_constants(sim_data, cell_specs,
+		average_basal_container, average_with_aa_container)
+	sim_data.process.metabolism.set_mechanistic_uptake_constants(sim_data, cell_specs,
+		average_with_aa_container)
 
 	return sim_data, cell_specs
 
@@ -2727,6 +2732,18 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 				pInitI.append(H_col_name_to_index[col_name])
 				pInitV.append(1.)
 
+		# Save indices to update promoter binding for active TFs in combined conditions
+		for condition, tfs in sim_data.condition_active_tfs.items():
+			for tf in tfs:
+				col_name = f'{tf}__{tf}__active'
+				pPromoterBoundIdxs[condition][tf] = H_col_name_to_index[col_name]
+
+		# Save indices to update promoter binding for inactive TFs in combined conditions
+		for condition, tfs in sim_data.condition_inactive_tfs.items():
+			for tf in tfs:
+				col_name = f'{tf}__{tf}__inactive'
+				pPromoterBoundIdxs[condition][tf] = H_col_name_to_index[col_name]
+
 		# Build vector pInit and matrix H
 		pInit = np.zeros(len(set(pInitI)))
 		pInit[pInitI] = pInitV
@@ -3282,6 +3299,16 @@ def calculateRnapRecruitment(sim_data, cell_specs):
 		}
 
 
+def crc32(*arrays: np.ndarray, initial: int = 0) -> int:
+	"""Return a CRC32 checksum of the given ndarrays."""
+	def crc_next(initial: int, array: np.ndarray) -> int:
+		shape = str(array.shape).encode()
+		values = array.tobytes()
+		return binascii.crc32(values, binascii.crc32(shape, initial))
+
+	return functools.reduce(crc_next, arrays, initial)
+
+
 def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	"""
 	Fits the affinities (Michaelis-Menten constants) for RNAs binding to endoRNAses.
@@ -3337,6 +3364,9 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	TODO (John): Determine what part (if any) of the 'linear' parameter fitting should be retained.
 	"""
 
+	def arrays_differ(a: np.ndarray, b: np.ndarray) -> bool:
+		return a.shape != b.shape or not np.allclose(a, b, equal_nan=True)
+
 	cellDensity = sim_data.constants.cell_density
 	cellVolume = sim_data.mass.avg_cell_dry_mass_init / cellDensity / sim_data.mass.cell_dry_mass_fraction
 	countsToMolar = 1 / (sim_data.constants.n_avogadro * cellVolume)
@@ -3380,17 +3410,19 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	if sim_data.constants.sensitivity_analysis_alpha:
 		Alphas = [0.0001, 0.001, 0.01, 0.1, 1, 10]
 
-	for alpha in Alphas:
+	total_endo_rnase_capacity_mol_l_s = totalEndoRnaseCapacity.asNumber(units.mol / units.L / units.s)
+	rna_conc_mol_l = (countsToMolar * rnaCounts).asNumber(units.mol / units.L)
+	degradation_rates_s = degradationRates.asNumber(1 / units.s)
 
+	for alpha in Alphas:
 		if VERBOSE: print('Alpha = %f' % alpha)
 
 		LossFunction, Rneg, R, LossFunctionP, R_aux, L_aux, Lp_aux, Jacob, Jacob_aux = sim_data.process.rna_decay.km_loss_function(
-				totalEndoRnaseCapacity.asNumber(units.mol / units.L / units.s),
-				(countsToMolar * rnaCounts).asNumber(units.mol / units.L),
-				degradationRates.asNumber(1 / units.s),
+				total_endo_rnase_capacity_mol_l_s,
+				rna_conc_mol_l,
+				degradation_rates_s,
 				isEndoRnase,
-				alpha
-			)
+				alpha)
 		KmCooperativeModel = scipy.optimize.fsolve(LossFunction, Kmcounts, fprime = LossFunctionP)
 		sim_data.process.rna_decay.sensitivity_analysis_alpha_residual[alpha] = np.sum(np.abs(R_aux(KmCooperativeModel)))
 		sim_data.process.rna_decay.sensitivity_analysis_alpha_regulari_neg[alpha] = np.sum(np.abs(Rneg(KmCooperativeModel)))
@@ -3408,11 +3440,10 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		totalEndoRNcap = units.sum(endoRNaseConc * kcat)
 		LossFunction, Rneg, R, LossFunctionP, R_aux, L_aux, Lp_aux, Jacob, Jacob_aux = sim_data.process.rna_decay.km_loss_function(
 				totalEndoRNcap.asNumber(units.mol / units.L),
-				(countsToMolar * rnaCounts).asNumber(units.mol / units.L),
-				degradationRates.asNumber(1 / units.s),
+				rna_conc_mol_l,
+				degradation_rates_s,
 				isEndoRnase,
-				alpha
-			)
+				alpha)
 		KmcountsIni = (( totalEndoRNcap / degradationRates.asNumber() ) - rnaConc).asNumber()
 		KmCooperativeModel = scipy.optimize.fsolve(LossFunction, KmcountsIni, fprime = LossFunctionP)
 		sim_data.process.rna_decay.sensitivity_analysis_kcat[kcat] = KmCooperativeModel
@@ -3421,34 +3452,39 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 
 	# Loss function, and derivative
 	LossFunction, Rneg, R, LossFunctionP, R_aux, L_aux, Lp_aux, Jacob, Jacob_aux = sim_data.process.rna_decay.km_loss_function(
-				totalEndoRnaseCapacity.asNumber(units.mol / units.L / units.s),
-				(countsToMolar * rnaCounts).asNumber(units.mol / units.L),
-				degradationRates.asNumber(1 / units.s),
-				isEndoRnase,
-				alpha
-			)
+			total_endo_rnase_capacity_mol_l_s,
+			rna_conc_mol_l,
+			degradation_rates_s,
+			isEndoRnase,
+			alpha)
 
-	needToUpdate = False
-	fixturesDir = filepath.makedirs(filepath.ROOT_PATH, "fixtures", "endo_km")
-	# Numpy 'U' fields make these files incompatible with older code, so change
-	# the filename. No need to make files compatible between Python 2 & 3; we'd
-	# have to set the same protocol version and set Python 3-only args like
-	# encoding='latin1'.
-	km_filepath = os.path.join(fixturesDir, 'km{}.cPickle'.format(sys.version_info[0]))
+	# The checksum in the filename picks independent caches for distinct cases
+	# such as different Parca options or Parca code in different git branches.
+	# `make clean` will delete the cache files.
+	needToUpdate = ''
+	cache_dir = filepath.makedirs(filepath.ROOT_PATH, "cache")
+	checksum = crc32(Kmcounts, isEndoRnase, np.array(alpha))
+	km_filepath = os.path.join(cache_dir, f'parca-km-{checksum}.cPickle')
 
 	if os.path.exists(km_filepath):
 		with open(km_filepath, "rb") as f:
-			KmcountsCached = cPickle.load(f)
+			KmCache = cPickle.load(f)
 
-		# KmcountsCached fits a set of Km values to give the expected degradation rates.
+		# KmCooperativeModel fits a set of Km values to give the expected degradation rates.
 		# It takes 1.5 - 3 minutes to recompute.
 		# R_aux calculates the difference of the degradation rate based on these
-		# Km values and the expected rate so this sum seems like a reliable test of
-		# whether the cache fits current input data.
-		if Kmcounts.shape != KmcountsCached.shape or np.sum(np.abs(R_aux(KmcountsCached))) > 1e-15:
-			needToUpdate = True
+		# Km values and the expected rate so this sum seems like a good test of
+		# whether the cache fits current input data, but cross-check additional
+		# inputs to avoid Issue #996.
+		KmCooperativeModel = KmCache['KmCooperativeModel']
+		if (Kmcounts.shape != KmCooperativeModel.shape
+				or np.sum(np.abs(R_aux(KmCooperativeModel))) > 1e-15
+				or arrays_differ(KmCache['total_endo_rnase_capacity_mol_l_s'], total_endo_rnase_capacity_mol_l_s)
+				or arrays_differ(KmCache['rna_conc_mol_l'], rna_conc_mol_l)
+				or arrays_differ(KmCache['degradation_rates_s'], degradation_rates_s)):
+			needToUpdate = 'recompute'
 	else:
-		needToUpdate = True
+		needToUpdate = 'compute'
 
 	if needToUpdate:
 		rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rna_data['id'])
@@ -3458,15 +3494,19 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		totalEndoRnaseCapacity = units.sum(endoRNaseConc * kcatEndoRNase)
 		Kmcounts = (( 1 / degradationRates * totalEndoRnaseCapacity ) - rnaConc).asNumber()
 
-		if VERBOSE: print("Running non-linear optimization")
+		if VERBOSE: print(f'Running non-linear optimization to {needToUpdate} {km_filepath}')
 		KmCooperativeModel = scipy.optimize.fsolve(LossFunction, Kmcounts, fprime = LossFunctionP)
+		KmCache = dict(
+			KmCooperativeModel=KmCooperativeModel,
+			total_endo_rnase_capacity_mol_l_s=total_endo_rnase_capacity_mol_l_s,
+			rna_conc_mol_l=rna_conc_mol_l,
+			degradation_rates_s=degradation_rates_s)
 
 		with open(km_filepath, "wb") as f:
-			cPickle.dump(KmCooperativeModel, f, protocol=cPickle.HIGHEST_PROTOCOL)
+			cPickle.dump(KmCache, f, protocol=cPickle.HIGHEST_PROTOCOL)
 	else:
 		if VERBOSE:
 			print("Not running non-linear optimization--using cached result {}".format(km_filepath))
-		KmCooperativeModel = KmcountsCached
 
 	if VERBOSE > 1:
 		print("Loss function (Km inital) = %f" % np.sum(np.abs(LossFunction(Kmcounts))))
