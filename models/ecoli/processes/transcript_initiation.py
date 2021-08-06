@@ -47,7 +47,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# Initialize matrices used to calculate synthesis probabilities
 		self.basal_prob = sim_data.process.transcription_regulation.basal_prob.copy()
 		if self.trna_attenuation:
-			self.attenuated_rna_indices = sim_data.process.transcription.attenuated_cistron_indexes
+			self.attenuated_rna_indices = sim_data.process.transcription.attenuated_rna_indices
 			self.attenuation_adjustments = sim_data.process.transcription.attenuation_basal_prob_adjustments
 			self.basal_prob[self.attenuated_rna_indices] += self.attenuation_adjustments
 		self.n_TUs = len(self.basal_prob)
