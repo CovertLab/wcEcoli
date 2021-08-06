@@ -2,18 +2,14 @@
 SimulationData mass data
 """
 
-from __future__ import absolute_import, division, print_function
-
 from typing import Tuple
 
 import numpy as np
 from scipy import interpolate, stats
 import unum
 
-from wholecell.utils import units
-from six.moves import range
+from wholecell.utils import fitting, units
 import six
-from six.moves import zip
 
 
 NORMAL_CRITICAL_MASS = 975 * units.fg
@@ -407,6 +403,13 @@ class GrowthRateParameters(object):
 
 		self._per_dry_mass_to_per_volume = sim_data.constants.cell_density * (1. - raw_data.mass_parameters['cell_water_mass_fraction'])
 
+		# RNAP parameters based on ppGpp
+		ppgpp_conc = _loadRow('ppGpp_conc', raw_data.growth_rate_dependent_parameters) * self._per_dry_mass_to_per_volume
+		rnap_elong_rate = _loadRow('rnaPolymeraseElongationRate', raw_data.growth_rate_dependent_parameters)
+		rnap_active_frac = _loadRow('fractionActiveRnap', raw_data.growth_rate_dependent_parameters)
+		self._RNAP_elongation_rate_from_ppGpp = _get_linearized_fit(ppgpp_conc, rnap_elong_rate)
+		self._RNAP_active_fraction_from_ppGpp = _get_linearized_fit(ppgpp_conc, rnap_active_frac)
+
 	def get_ribosome_elongation_rate(self, doubling_time):
 		return _useFitParameters(doubling_time, **self.ribosome_elongation_rate_params)
 
@@ -421,6 +424,12 @@ class GrowthRateParameters(object):
 
 	def get_ppGpp_conc(self, doubling_time):
 		return _useFitParameters(doubling_time, **self.ppGpp_concentration) * self._per_dry_mass_to_per_volume
+
+	def get_rnap_elongation_rate_from_ppGpp(self, ppGpp):
+		return _use_linearized_fit(ppGpp, self._RNAP_elongation_rate_from_ppGpp)
+
+	def get_rnap_active_fraction_from_ppGpp(self, ppGpp):
+		return _use_linearized_fit(ppGpp, self._RNAP_active_fraction_from_ppGpp)
 
 def _get_fit_parameters(list_of_dicts, key):
 	# Load rows of data
@@ -448,6 +457,25 @@ def _get_fit_parameters(list_of_dicts, key):
 		raise Exception("Fitting {} with 3d spline, residuals are huge!".format(key))
 
 	return {'function': cs, 'x_units': x_units, 'y_units': y_units, 'dtype': y.dtype}
+
+def _get_linearized_fit(x, y, **kwargs):
+	if units.hasUnit(x):
+		x_units = units.getUnit(x)
+		x = x.asNumber(x_units)
+	else:
+		x_units = None
+	if units.hasUnit(y):
+		y_units = units.getUnit(y)
+		y = y.asNumber(y_units)
+	else:
+		y_units = 1.
+
+	return x_units, y_units, fitting.fit_linearized_transforms(x, y, **kwargs)
+
+def _use_linearized_fit(x, params):
+	x_units, y_units, fit_params = params
+	x_unitless = x if x_units is None else x.asNumber(x_units)
+	return y_units * fitting.interpolate_linearized_fit(x_unitless, *fit_params)
 
 def _useFitParameters(x_new, function, x_units, y_units, dtype):
 	# Convert to same unit base
