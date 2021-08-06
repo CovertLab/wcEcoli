@@ -8,11 +8,10 @@ import pickle
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 import numpy as np
-from scipy import stats
 
 from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
-from wholecell.utils import constants, units
+from wholecell.utils import constants, fitting, units
 
 
 def get_raw(data, x_col, y_col, factor=1):
@@ -87,32 +86,6 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		cols = 5
 		gs = gridspec.GridSpec(int(np.ceil(n_plots / cols)), cols)
 
-		funs = {
-			'none': lambda x: x,
-			'sqrt': lambda x: np.sqrt(x),
-			'exp': lambda x: np.exp(x),
-			'log': lambda x: np.log(x),
-			'log2': lambda x: np.log(x**2),
-			'logsqrt': lambda x: np.log(np.sqrt(x)),
-			'2': lambda x: x**2,
-			'3': lambda x: x**3,
-			'1/sqrt': lambda x: 1/np.sqrt(x),
-			'1/x': lambda x: 1/x,
-			'1/x2': lambda x: 1/x**2,
-			}
-		inverse = {
-			'none': lambda x: x,
-			'sqrt': lambda x: x**2,
-			'exp': lambda x: np.log(x),
-			'log': lambda x: np.exp(x),
-			'log2': lambda x: np.sqrt(np.exp(x)),
-			'logsqrt': lambda x: np.exp(x)**2,
-			'2': lambda x: np.sqrt(x),
-			'3': lambda x: x**(1/3),
-			'1/sqrt': lambda x: (1/x)**2,
-			'1/x': lambda x: 1/x,
-			'1/x2': lambda x: np.sqrt(1/x),
-			}
 		for i, ((fun, key), data) in enumerate(interpolation_functions.items()):
 			ax = plt.subplot(gs[i // cols, i % cols])
 
@@ -140,29 +113,18 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 				label += '\n({})'.format(unit)
 
 			# Plot data
-			ax.plot(doubling_time_range, y_interp)
+			ax.plot(doubling_time_range, y_interp, label='sim_data fit')
 			if data:
-				slope = 1
-				intercept = 0
-				rval = 0
-				print(fun.__name__)
+				# Original data
 				x = np.array(data[0])
 				y = np.array(data[1])
-				for xname, fx in funs.items():
-					for yname, fy in funs.items():
-						result = stats.linregress(fx(x), fy(y))
-						if np.abs(result.rvalue) > rval:
-							rval = np.abs(result.rvalue)
-							xtransform = xname
-							ytransform = yname
-							slope = result.slope
-							intercept = result.intercept
-						if np.abs(result.rvalue) > 0.998:
-							print('\t{} {}: {:.3f} {:.1e}'.format(xname, yname, result.rvalue, result.pvalue))
-							ax.plot(doubling_time_range, inverse[yname](funs[xname](doubling_time_range) * result.slope + result.intercept), alpha=0.3)
-				ax.plot(x, y, 'or')
-				print(xtransform, ytransform)
-				ax.plot(doubling_time_range, inverse[ytransform](funs[xtransform](doubling_time_range) * slope + intercept), '--')
+				ax.plot(x, y, 'or', label='Original data')
+
+				# Fit to data
+				params = fitting.fit_linearized_transforms(x, y, r_tol=0, p_tol=1)
+				linearized_fit = fitting.interpolate_linearized_fit(doubling_time_range, *params)
+				ax.plot(doubling_time_range, linearized_fit,
+					'--', label='Best linearized transform fit')
 
 			for dt in doubling_times:
 				ax.axvline(dt, linestyle='--', color='k', linewidth=0.5)
@@ -172,6 +134,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			ax.spines['right'].set_visible(False)
 			ax.set_ylabel(label)
 			ax.set_xlim([np.min(doubling_time_range), np.max(doubling_time_range)])
+			ax.legend(fontsize=6)
 
 		## Save figure
 		plt.tight_layout()
