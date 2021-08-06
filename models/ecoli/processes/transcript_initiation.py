@@ -107,7 +107,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.ppgpp = self.bulkMoleculeView(sim_data.molecule_ids.ppGpp)
 		self.synth_prob = sim_data.process.transcription.synth_prob_from_ppgpp
 		self.copy_number = sim_data.process.replication.get_average_copy_number
-		self.get_rnap_elongation_rate_from_ppGpp = sim_data.growth_rate_parameters.get_rnap_elongation_rate_from_ppGpp
 		self.get_rnap_active_fraction_from_ppGpp = sim_data.growth_rate_parameters.get_rnap_active_fraction_from_ppGpp
 
 	def calculateRequest(self):
@@ -130,11 +129,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 				if self.trna_attenuation:
 					basal_prob[self.attenuated_rna_indices] += self.attenuation_adjustments
 				self.fracActiveRnap = self.get_rnap_active_fraction_from_ppGpp(ppgpp_conc)
-				self.rnaPolymeraseElongationRate = self.get_rnap_elongation_rate_from_ppGpp(ppgpp_conc)
 			else:
 				basal_prob = self.basal_prob
 				self.fracActiveRnap = self.fracActiveRnapDict[current_media_id]
-				self.rnaPolymeraseElongationRate = self.rnaPolymeraseElongationRateDict[current_media_id]
 
 			# Calculate probabilities of the RNAP binding to each promoter
 			self.promoter_init_probs = (basal_prob[TU_index] +
@@ -186,6 +183,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		else:
 			self.promoter_init_probs = np.zeros(self.promoters.total_count())
 
+		self.rnaPolymeraseElongationRate = self.rnaPolymeraseElongationRateDict[current_media_id]
 		self.elongation_rates = self.make_elongation_rates(
 			self.randomState,
 			self.rnaPolymeraseElongationRate.asNumber(units.nt / units.s),
