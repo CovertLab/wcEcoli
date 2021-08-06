@@ -207,8 +207,8 @@ def fit_linearized_transforms(
 		y: np.ndarray,
 		x_fun: Optional[List] = None,
 		y_fun: Optional[List] = None,
-		r_tol: float = 0.999,
-		p_tol: float = 1e-5,
+		r_tol: float = 0.99,
+		p_tol: float = 1e-2,
 		verbose: Optional[float] = None,
 		) -> Tuple[str, str, float, float]:
 	"""
