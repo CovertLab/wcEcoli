@@ -401,7 +401,7 @@ class GrowthRateParameters(object):
 		self.ribosome_active_fraction_params = _get_fit_parameters(raw_data.growth_rate_dependent_parameters, "fractionActiveRibosome")
 		self.ppGpp_concentration = _get_fit_parameters(raw_data.growth_rate_dependent_parameters, "ppGpp_conc")
 
-		self._per_dry_mass_to_per_volume = sim_data.constants.cell_density * (1. - raw_data.mass_parameters['cell_water_mass_fraction'])
+		per_dry_mass_to_per_volume = sim_data.constants.cell_density * (1. - raw_data.mass_parameters['cell_water_mass_fraction'])
 
 		# RNAP active fraction based on ppGpp
 		# Only active fraction is used here because ppGpp will change the binding dynamics of RNAP.
@@ -410,9 +410,13 @@ class GrowthRateParameters(object):
 		# variable elongation rates for stable RNA and mRNA so that the rate adjusts based on the
 		# fraction of stable RNA being expressed which will be dependent on ppGpp which will allow
 		# ppGpp to control the RNAP elongation rate.
-		ppgpp_conc = _loadRow('ppGpp_conc', raw_data.growth_rate_dependent_parameters) * self._per_dry_mass_to_per_volume
+		ppgpp_conc = _loadRow('ppGpp_conc', raw_data.growth_rate_dependent_parameters) * per_dry_mass_to_per_volume
 		rnap_active_frac = _loadRow('fractionActiveRnap', raw_data.growth_rate_dependent_parameters)
 		self._RNAP_active_fraction_from_ppGpp = _get_linearized_fit(ppgpp_conc, rnap_active_frac)
+
+		# ppGpp concentration by linear fit
+		doubling_time = _loadRow('doublingTime', raw_data.growth_rate_dependent_parameters)
+		self._ppGpp_concentration = _get_linearized_fit(doubling_time, ppgpp_conc)
 
 	def get_ribosome_elongation_rate(self, doubling_time):
 		return _useFitParameters(doubling_time, **self.ribosome_elongation_rate_params)
@@ -427,7 +431,7 @@ class GrowthRateParameters(object):
 		return _useFitParameters(doubling_time, **self.ribosome_active_fraction_params)
 
 	def get_ppGpp_conc(self, doubling_time):
-		return _useFitParameters(doubling_time, **self.ppGpp_concentration) * self._per_dry_mass_to_per_volume
+		return _use_linearized_fit(doubling_time, self._ppGpp_concentration)
 
 	def get_rnap_active_fraction_from_ppGpp(self, ppGpp):
 		return _use_linearized_fit(ppGpp, self._RNAP_active_fraction_from_ppGpp)
