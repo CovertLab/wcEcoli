@@ -1,5 +1,6 @@
 # Created with reconstruction/ecoli/scripts/metabolite_concentrations/merge_files.py reconstruction/ecoli/flat/metabolite_concentrations.tsv reconstruction/ecoli/scripts/metabolite_concentrations/out/park_concentrations.tsv reconstruction/ecoli/scripts/metabolite_concentrations/out/lempp_concentrations.tsv reconstruction/ecoli/scripts/metabolite_concentrations/out/kochanowski_concentrations.tsv reconstruction/ecoli/scripts/metabolite_concentrations/out/sander_concentrations.tsv on Sat May 29 14:20:11 2021
 "Metabolite"	"Bennett Concentration (units.mol/units.L)"	"Park Concentration (units.mol/units.L)"	"Lempp Concentration (units.mol/units.L)"	"Kochanowski Concentration (units.mol/units.L)"	"Sander Concentration (units.mol/units.L)"
+"AA_GENERIC"	0	0	0	0	NaN
 "2-3-DIHYDROXYBENZOATE"	1.40e-4	1.38e-4	NaN	NaN	NaN
 "2-KETOGLUTARATE"	4.40e-4	4.43e-4	NaN	2.63e-4	NaN
 "2-PG"	NaN	9.18e-5	NaN	NaN	NaN

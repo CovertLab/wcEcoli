@@ -1,4 +1,5 @@
-"id"	"common_name"	"synonyms"	"chemical_formula"	"mw"	
+"id"	"common_name"	"synonyms"	"chemical_formula"	"mw"
+"AA_GENERIC"	"AA_GENERIC"	[]	null	null
 "--TRANS-ACENAPHTHENE-12-DIOL"	"(+/-)-<i>trans</i>-acenaphthene-1,2-diol"	["<i>trans</i>-1,2-acenaphthylene glycol"]	"C12H10O2"	186.21	
 "1-2-Beta-D-Glucans"	"a 1,2-&beta;-D-glucan"	[]	null	null	
 "1-2-Diglycerides"	"a 1,2-diglyceride"	["a 1,2-diacylglycerol"]	null	null	

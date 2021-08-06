@@ -61,6 +61,7 @@ LIST_OF_DICT_FILENAMES = (
 	"transcriptional_attenuation_removed.tsv",
 	"tf_one_component_bound.tsv",
 	"translation_efficiency.tsv",
+	"trna_charging_metabolic_reactions.tsv",
 	"trna_charging_reactions.tsv",
 	"trna_charging_reactions_added.tsv",
 	"trna_charging_reactions_removed.tsv",
@@ -120,6 +121,7 @@ REMOVED_DATA = {
 # TODO: move added rows from some flat files to new files and add here
 ADDED_DATA = {
 	'trna_charging_reactions': 'trna_charging_reactions_added',
+	'metabolic_reactions': 'trna_charging_metabolic_reactions',
 	}
 MODIFIED_DATA = {
 	'complexation_reactions': 'complexation_reactions_modified',

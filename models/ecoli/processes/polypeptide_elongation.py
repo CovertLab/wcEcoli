@@ -263,7 +263,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# MODEL SPECIFIC: evolve
 		# TODO: use something other than a class attribute to pass aa diff to metabolism
-		net_charged, self.aa_count_diff = self.elongation_model.evolve(
+		net_charged, self.aa_count_diff, self.aa_used_trna = self.elongation_model.evolve(
 			total_aa_counts, aas_used, next_amino_acid_count, nElongations, nInitialized)
 
 		# GTP hydrolysis is carried out in Metabolism process for growth
@@ -634,7 +634,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.time_step_short_enough = False
 
 		self.process.writeToListener('GrowthLimits', 'trnaCharged', aa_used_trna)
-		return net_charged, {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
+		return net_charged, {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}, {aa: use for aa, use in zip(self.aaNames, aa_used_trna)}
 
 	def distribution_from_aa(self, n_aa, n_trna, limited=False):
 		'''

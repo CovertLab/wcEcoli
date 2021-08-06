@@ -158,6 +158,34 @@ class Metabolism(wholecell.processes.process.Process):
 			for met, conc in conc_updates.items()
 			}
 
+
+
+
+
+
+		aa_used_trna = self._sim.processes['PolypeptideElongation'].aa_used_trna
+		conc_counts = {aa: metabolite_counts_init[self.model.metaboliteNamesFromNutrients.index(aa)] for aa in self.aa_names}
+
+		aa_to_lower = np.ones(len(self.aa_names))
+		aa_to_lower[self.aa_names.index('L-SELENOCYSTEINE[c]')] = 0
+		
+		aa_used_trna_conc = np.array([(v - (self.aa_targets[aa] - conc_counts[aa])) * counts_to_molar.asNumber(CONC_UNITS) for aa, v in aa_used_trna.items()])
+		aa_used_trna_conc = aa_used_trna_conc[aa_to_lower>0]
+
+		rxnns = np.array(['ALANINE--TRNA-LIGASE-RXN', 'ARGININE--TRNA-LIGASE-RXN', 'ASPARAGINE--TRNA-LIGASE-RXN', 'ASPARTATE--TRNA-LIGASE-RXN', 
+			'CYSTEINE--TRNA-LIGASE-RXN', 'GLUTAMATE--TRNA-LIGASE-RXN', 'GLUTAMINE--TRNA-LIGASE-RXN', 'GLYCINE--TRNA-LIGASE-RXN', 
+			'HISTIDINE--TRNA-LIGASE-RXN', 'ISOLEUCINE--TRNA-LIGASE-RXN', 'LEUCINE--TRNA-LIGASE-RXN', 'LYSINE--TRNA-LIGASE-RXN', 
+			'METHIONINE--TRNA-LIGASE-RXN', 'PHENYLALANINE--TRNA-LIGASE-RXN', 'PROLINE--TRNA-LIGASE-RXN', 'SERINE--TRNA-LIGASE-RXN', 
+			'THREONINE--TRNA-LIGASE-RXN', 'TRYPTOPHAN--TRNA-LIGASE-RXN', 'TYROSINE--TRNA-LIGASE-RXN', '', 'VALINE--TRNA-LIGASE-RXN'])
+
+		self.model.fba.setReactionFluxBounds(rxnns[aa_to_lower>0], 
+			lowerBounds=aa_used_trna_conc*0.01, upperBounds=aa_used_trna_conc, raiseForReversible=False)
+
+
+
+
+
+
 		aa_uptake_package = None
 		if self.mechanistic_aa_uptake:
 			aa_in_media = self.aa_environment.import_present()
@@ -165,6 +193,7 @@ class Metabolism(wholecell.processes.process.Process):
 			import_rates = (counts_to_molar * self.timeStepSec() * self.amino_acid_import(
 				aa_in_media, dry_mass, self.aa_transporters_container.counts(),
 				self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
+			#import_rates -= aa_used_trna_conc
 			aa_uptake_package=(import_rates[aa_in_media], self.aa_exchange_names[aa_in_media], True)
 
 		# Update FBA problem based on current state
