@@ -157,8 +157,9 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 							ytransform = yname
 							slope = result.slope
 							intercept = result.intercept
-						if np.abs(result.rvalue) > 0.95:
+						if np.abs(result.rvalue) > 0.998:
 							print('\t{} {}: {:.3f} {:.1e}'.format(xname, yname, result.rvalue, result.pvalue))
+							ax.plot(doubling_time_range, inverse[yname](funs[xname](doubling_time_range) * result.slope + result.intercept), alpha=0.3)
 				ax.plot(x, y, 'or')
 				print(xtransform, ytransform)
 				ax.plot(doubling_time_range, inverse[ytransform](funs[xtransform](doubling_time_range) * slope + intercept), '--')
