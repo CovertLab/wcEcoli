@@ -17,7 +17,7 @@ from wholecell.utils import constants
 
 class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
-	#depth first search
+	# depth first search
 	def dfs(self, visited, graph, node):
 		if node not in visited:
 			visited.append(node)
@@ -30,7 +30,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		with open(sim_data_file, 'rb') as f:
 			sim_data = pickle.load(f)
 
-		#can omit the following block if tu_id_to_cistron_ids is an attribute in process.transcription
+		# can omit the following block if tu_id_to_cistron_ids is an attribute in process.transcription
 		with open(os.path.join(input_dir, constants.SERIALIZED_RAW_DATA), 'rb') as f:
 			raw_data = pickle.load(f)
 		all_valid_tus = [tu for tu in raw_data.transcription_units if sim_data.getter.is_valid_molecule(tu['id'])]
@@ -39,7 +39,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		rna_ids.extend([tu['id'] for tu in all_valid_tus])
 		gene_id_to_rna_id = {gene['id']: gene['rna_id'] for gene in raw_data.genes}
 		tu_id_to_cistron_ids = {tu['id']: [gene_id_to_rna_id[gene] for gene in tu['genes']]for tu in all_valid_tus}
-		#block ends, tu_id_to_cistron_ids only contains one TU for this test case
+		# block ends, tu_id_to_cistron_ids only contains one TU for this test case
 
 		rna_id_to_gene_id = {
 			gene['rna_id']: gene['id'] for gene in raw_data.genes}
@@ -49,12 +49,6 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		gene_id_to_right_end_pos = {
 			gene['id']: gene['right_end_pos'] for gene in raw_data.genes
 		}
-		all_cistrons = [
-			rna for rna in raw_data.rnas
-			if rna['id'] in rna_id_to_gene_id
-			   and gene_id_to_left_end_pos[rna_id_to_gene_id[rna['id']]] is not None
-			   and gene_id_to_right_end_pos[rna_id_to_gene_id[rna['id']]] is not None
-		]
 
 		new_dic = {}
 		keylist = tu_id_to_cistron_ids.keys()
@@ -62,7 +56,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			new_dic[i] = []
 		overall_extra = 0
 
-		#rearrange new dictionary to where tu1:[cistron1,cistron2]
+		# rearrange new dictionary to where tu1:[cistron1,cistron2]
 		for TU_units in tu_id_to_cistron_ids.keys():
 			cistron_count = []
 			for cistron in tu_id_to_cistron_ids[TU_units]:
@@ -73,23 +67,23 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			for index in sort_index:
 				new_dic[TU_units].append(np.array(tu_id_to_cistron_ids[TU_units])[index])
 
-		#keeping track of the TU and cistron (x and y axis) ID
+		# keeping track of the TU and cistron (x and y axis) ID
 		matrix_TU_id = []
 		matrix_cis_id = []
 
-		#initialize matrix for output
-		columns = len(new_dic.keys())#+len(rna_ids)
+		# initialize matrix for output
+		columns = len(new_dic.keys())
 		rows = 0
 		for tu in new_dic.keys():
 			for cis in new_dic[tu]:
 				rows+=1
 		new_matrix = [[0 for i in range(columns)] for j in range(rows)]
 
-		#initialize i and j count
+		# initialize i and j count
 		x = 0
 		y = 0
 
-		#generate graph for dfs, the nodes are TU, graph relates one TU to another TU that shares cistron
+		# generate graph for dfs, the nodes are TU, graph relates one TU to another TU that shares cistron
 		graph = {}
 		for i in keylist:
 			graph[i] = []
@@ -108,14 +102,12 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 
 		track = list(graph.keys())
-		#print(track)
-		visited = []
 		groups = []
 		while len(track) > 0:
 			unit = track[0]
 			visited = []
-			vis = self.dfs(visited,graph,unit) #list
-			#get rid of duplicates in list
+			vis = self.dfs(visited,graph,unit) # list
+			# get rid of duplicates in list
 			temp_list = []
 			for i in vis:
 				if i not in temp_list:
@@ -142,7 +134,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 						x += 1
 				y += 1
 
-		#convert from matrix to scatter, block out if want matrix
+		# convert from matrix to scatter, block out if want matrix
 		b = []
 		a = []
 		for r in range(0,rows,1):
@@ -151,12 +143,12 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 					b.append(r)
 					a.append(c)
 
-		plt.figure(figsize=(70,150)) #dpi=1000) max used is (70,150)
-		plt.scatter(a, b, c='blue',marker = 's') #block out for matrix in line 159
+		plt.figure(figsize=(70,150))
+		plt.scatter(a, b, c='blue',marker = 's') # block out for matrix in line 159
 		plt.title("Transcription units and the corresponding cistrons", fontsize=20)
 		plt.xlabel('TU', fontsize=15)
 		plt.ylabel('cistron', fontsize=15)
-		#plt.imshow(new_matrix) # black and white binary
+		# plt.imshow(new_matrix) # black and white binary
 
 		plt.tight_layout()
 		exportFigure(plt, plot_out_dir, plot_out_filename, metadata)
