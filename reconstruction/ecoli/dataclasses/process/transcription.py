@@ -720,9 +720,9 @@ class Transcription(object):
 		'''
 		# Create list of charged tRNAs
 		# TODO (ggsun): This assumes all tRNAs are monocistronic.
-		trna_names = self.cistron_data['id'][self.cistron_data['is_tRNA']]
+		trna_names = self.rna_data['id'][self.rna_data['is_tRNA']]
 		charged_trnas = [
-			x['modified_forms'] for x in raw_data.rnas if x['id'] in trna_names]
+			x['modified_forms'] for x in raw_data.rnas if x['id'] + '[c]' in trna_names]
 
 		filtered_charged_trna = []
 		for charged_list in charged_trnas:
@@ -739,13 +739,13 @@ class Transcription(object):
 
 		# Create mapping of each tRNA/charged tRNA to associated AA
 		trna_dict = {
-			'RNA0-300': 'VAL',
-			'RNA0-301': 'LYS',
-			'RNA0-302': 'LYS',
-			'RNA0-303': 'LYS',
-			'RNA0-304': 'ASN',
-			'RNA0-305': 'ILE',
-			'RNA0-306': 'MET',
+			'RNA0-300[c]': 'VAL',
+			'RNA0-301[c]': 'LYS',
+			'RNA0-302[c]': 'LYS',
+			'RNA0-303[c]': 'LYS',
+			'RNA0-304[c]': 'ASN',
+			'RNA0-305[c]': 'ILE',
+			'RNA0-306[c]': 'MET',
 			}
 		aa_names = sim_data.molecule_groups.amino_acids
 		aa_indices = {aa: i for i, aa in enumerate(aa_names)}
@@ -859,7 +859,6 @@ class Transcription(object):
 
 		Returns 2D array with rows of metabolites for each tRNA charging reaction on the column
 		'''
-
 		shape = (self._stoich_matrix_i.max() + 1, self._stoich_matrix_j.max() + 1)
 
 		out = np.zeros(shape, np.float64)
