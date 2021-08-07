@@ -19,3 +19,7 @@
 "TRYPTOPHAN--TRNA-LIGASE-RXN"	{"TRP[CCO-CYTOSOL]": -1, "AA_GENERIC[CCO-CYTOSOL]": 1}	"L2R"	[]	"Generic reaction that takes up all the AA used in charging/polypeptide_elongation so that FBA can reach the target and doesn't force fluxes through other pathways"
 "TYROSINE--TRNA-LIGASE-RXN"	{"TYR[CCO-CYTOSOL]": -1, "AA_GENERIC[CCO-CYTOSOL]": 1}	"L2R"	[]	"Generic reaction that takes up all the AA used in charging/polypeptide_elongation so that FBA can reach the target and doesn't force fluxes through other pathways"
 "VALINE--TRNA-LIGASE-RXN"	{"VAL[CCO-CYTOSOL]": -1, "AA_GENERIC[CCO-CYTOSOL]": 1}	"L2R"	[]	"Generic reaction that takes up all the AA used in charging/polypeptide_elongation so that FBA can reach the target and doesn't force fluxes through other pathways"
+
+"AA_GENERIC-PERIPLASM"	{"AA_GENERIC[CCO-CYTOSOL]": -1, "AA_GENERIC[CCO-PERI-BAC]": 1}	"L2R"	[]	"Generic reaction that takes up all the AA used in charging/polypeptide_elongation so that FBA can reach the target and doesn't force fluxes through other pathways"
+
+"EX_AA_GENERIC"	{"AA_GENERIC[CCO-PERI-BAC]": -1, "AA_GENERIC[CCO-EXTRACELLULAR]": -1}	"L2R"	[]	"Generic reaction that takes up all the AA used in charging/polypeptide_elongation so that FBA can reach the target and doesn't force fluxes through other pathways"
