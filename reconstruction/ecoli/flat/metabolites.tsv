@@ -1,5 +1,4 @@
 "id"	"common_name"	"synonyms"	"chemical_formula"	"mw"
-"AA_GENERIC"	"AA_GENERIC"	[]	null	0.0
 "--TRANS-ACENAPHTHENE-12-DIOL"	"(+/-)-<i>trans</i>-acenaphthene-1,2-diol"	["<i>trans</i>-1,2-acenaphthylene glycol"]	"C12H10O2"	186.21	
 "1-2-Beta-D-Glucans"	"a 1,2-&beta;-D-glucan"	[]	null	null	
 "1-2-Diglycerides"	"a 1,2-diglyceride"	["a 1,2-diacylglycerol"]	null	null	
@@ -714,7 +713,8 @@
 "a-thymine-in-DNA"	"a thymine in DNA"	[]	null	null	
 "A-XGAL-HEX-1:5_6:A"	"a-xgal-HEX-1:5|6:a"	[]	null	null	
 "A-XGLC-HEX-1:5"	"a-xglc-HEX-1:5"	["&alpha;-Glc"]	null	null	
-"a-YedK-protein-L-cysteine"	"an N-terminal L-cysteinyl-[YedK-protein]"	[]	null	null	
+"a-YedK-protein-L-cysteine"	"an N-terminal L-cysteinyl-[YedK-protein]"	[]	null	null
+"AA_GENERIC"	"AA_GENERIC"	[]	null	0.0	
 "Abscisic-Acid"	"abscisic acid"	[]	null	null	
 "Abscisic-Acid-Conjugate"	"an abscisic acid conjugate"	[]	null	null	
 "Abscisic-Acid-Derivative"	"an abscisic acid derivative"	[]	null	null	

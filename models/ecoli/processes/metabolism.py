@@ -55,6 +55,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.use_trna_charging = sim._trna_charging
 		self.include_ppgpp = not sim._ppgpp_regulation or not self.use_trna_charging
 		self.mechanistic_aa_uptake = sim._mechanistic_aa_uptake
+		metabolism = sim_data.process.metabolism
 
 		# Create model to use to solve metabolism updates
 		self.model = FluxBalanceAnalysisModel(
@@ -85,7 +86,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_METABOLISM)
 
 		# Molecules with concentration updates for listener
-		self.linked_metabolites = sim_data.process.metabolism.linked_metabolites
+		self.linked_metabolites = metabolism.linked_metabolites
 		doubling_time = self.nutrientToDoublingTime.get(
 			environment.current_media_id,
 			self.nutrientToDoublingTime["minimal"])
@@ -109,9 +110,10 @@ class Metabolism(wholecell.processes.process.Process):
 			for aa in self.aa_exchange_names
 			])
 
-		self.amino_acid_import = sim_data.process.metabolism.amino_acid_import
-		self.aa_transporters_names = sim_data.process.metabolism.aa_transporters_names
+		self.amino_acid_import = metabolism.amino_acid_import
+		self.aa_transporters_names = metabolism.aa_transporters_names
 		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
+		self.trna_charging_reactions = np.array([r for r in metabolism.reaction_stoich if 'TRNA-LIGASE-RXN' in r])
 
 	def calculateRequest(self):
 		self.metabolites.requestAll()
@@ -164,18 +166,15 @@ class Metabolism(wholecell.processes.process.Process):
 		aa_used_trna = self._sim.processes['PolypeptideElongation'].aa_used_trna
 		conc_counts = {aa: metabolite_counts_init[self.model.metaboliteNamesFromNutrients.index(aa)] for aa in self.aa_names}
 		
-		aa_used_trna_conc = np.array([max(v - (self.aa_targets.get(aa, 0) - conc_counts[aa]), 0) * counts_to_molar.asNumber(CONC_UNITS) 
+		# aa_used_trna_conc = np.array([max(v - (self.aa_targets.get(aa, 0) - conc_counts[aa]), 0) * counts_to_molar.asNumber(CONC_UNITS)
+		aa_used_trna_conc = np.array([max(v, 0) * counts_to_molar.asNumber(CONC_UNITS) 
 			for aa, v in aa_used_trna.items()])
 		aa_used_trna_conc = aa_used_trna_conc[aa_in_media]
 
-		# TODO (Santiago): Generate these dynamically
-		rxnns = np.array(['ALANINE--TRNA-LIGASE-RXN', 'ARGININE--TRNA-LIGASE-RXN', 'ASPARAGINE--TRNA-LIGASE-RXN', 'ASPARTATE--TRNA-LIGASE-RXN', 
-			'CYSTEINE--TRNA-LIGASE-RXN', 'GLUTAMATE--TRNA-LIGASE-RXN', 'GLUTAMINE--TRNA-LIGASE-RXN', 'GLYCINE--TRNA-LIGASE-RXN', 
-			'HISTIDINE--TRNA-LIGASE-RXN', 'ISOLEUCINE--TRNA-LIGASE-RXN', 'LEUCINE--TRNA-LIGASE-RXN', 'LYSINE--TRNA-LIGASE-RXN', 
-			'METHIONINE--TRNA-LIGASE-RXN', 'PHENYLALANINE--TRNA-LIGASE-RXN', 'PROLINE--TRNA-LIGASE-RXN', 'SERINE--TRNA-LIGASE-RXN', 
-			'THREONINE--TRNA-LIGASE-RXN', 'TRYPTOPHAN--TRNA-LIGASE-RXN', 'TYROSINE--TRNA-LIGASE-RXN', 'VALINE--TRNA-LIGASE-RXN'])
-
-		self.model.fba.setReactionFluxBounds(rxnns, lowerBounds=aa_used_trna_conc*0.95, upperBounds=aa_used_trna_conc*1.05, raiseForReversible=False)
+		self.model.fba.setReactionFluxBounds(self.trna_charging_reactions, 
+			lowerBounds=aa_used_trna_conc*0.95, 
+			upperBounds=aa_used_trna_conc*1.05, 
+			raiseForReversible=False)
 
 		aa_uptake_package = None
 		if self.mechanistic_aa_uptake:
