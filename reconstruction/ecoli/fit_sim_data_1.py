@@ -372,6 +372,8 @@ def final_adjustments(sim_data, cell_specs, **kwargs):
 		average_basal_container, average_with_aa_container)
 	sim_data.process.metabolism.set_mechanistic_uptake_constants(sim_data, cell_specs,
 		average_with_aa_container)
+	sim_data.process.metabolism.set_mechanistic_export_constants(sim_data, cell_specs,
+		average_with_aa_container)
 
 	return sim_data, cell_specs
 

@@ -625,7 +625,7 @@ class Metabolism(object):
 
 		return supply_scaling
 
-	def set_aa_to_transporters_mapping_data(self, sim_data):
+	def set_aa_to_transporters_mapping_data(self, sim_data, export=False):
 		'''
 		Creates a dictionary that maps amino acids with their transporters.
 		Based on this dictionary, it creates a correlation matrix with rows
@@ -633,6 +633,8 @@ class Metabolism(object):
 
 		Args:
 			sim_data (SimulationData object)
+			export (Boolean): if True, the parameters calculated are for mechanistic 
+				export instead of uptake
 
 		Sets class attributes:
 			aa_to_transporters (Dict[str, list]): dictonary that maps aa to transporters involved
@@ -643,20 +645,26 @@ class Metabolism(object):
 
 		'''
 
+		def isImporting(direction):
+			if export:
+				return direction < 0
+			else:
+				return direction > 0
+
+
 		# Mapping aminoacids to their transporters
 		# CYS does not have any uptake reaction, so we initialize the dict with it to ensure
 		# the presence of the 21 AAs
-		# TODO (Santiago): Reversible reactions
+		# TODO (Santiago): Reversible reactions?
 		aa_to_transporters = {"CYS[c]": []}
 		for reaction in self.transport_reactions:
 			for aa in sim_data.molecule_groups.amino_acids:
-				if aa in self.reaction_stoich[reaction] and self.reaction_stoich[reaction][aa] > 0:
+				if aa in self.reaction_stoich[reaction] and isImporting(self.reaction_stoich[reaction][aa]):
 					if aa not in aa_to_transporters:
 						aa_to_transporters[aa] = []
 					aa_to_transporters[aa] += self.reaction_catalysts[reaction]
 
 		aa_to_transporters = {aa: aa_to_transporters[aa] for aa in sim_data.molecule_groups.amino_acids}
-		self.aa_to_transporters = aa_to_transporters
 
 		c = 0
 		transporters_to_idx = {}
@@ -676,8 +684,51 @@ class Metabolism(object):
 
 		aa_transporters_names = list(transporters_to_idx.keys())
 
-		self.aa_to_transporters_matrix = np.array(aa_to_transporters_matrix)
-		self.aa_transporters_names = np.array(aa_transporters_names)
+		if export:
+			self.aa_to_export_transporters = aa_to_transporters
+			self.aa_to_export_transporters_matrix = np.array(aa_to_transporters_matrix)
+			self.aa_export_transporters_names = np.array(aa_transporters_names)
+		else:
+			self.aa_to_transporters = aa_to_transporters
+			self.aa_to_transporters_matrix = np.array(aa_to_transporters_matrix)
+			self.aa_transporters_names = np.array(aa_transporters_names)
+
+	def set_mechanistic_export_constants(self, sim_data, cell_specs, with_aa_container):
+		'''
+		Calls set_aa_to_transporters_mapping_data() for export which calculates
+		the total amount of export transporter counts per AA. We assume kcats are 
+		the same for import and export of aminoacids
+
+		Args:
+			sim_data (SimulationData object)
+			cell_specs (Dict[str, Dict])
+			with_aa_container (BulkObjectsContainer): average initialization
+				container in the with_aa condition
+
+		TODO:
+			- Include external amino acid concentrations and KM values
+			- Get KMs from a raw file
+		'''
+		import ipdb; ipdb.set_trace(context=15)
+		aa_names = sim_data.molecule_groups.amino_acids
+		self.set_aa_to_transporters_mapping_data(sim_data, export=True)
+		counts_to_molar = (sim_data.constants.cell_density / cell_specs['with_aa']['avgCellDryMassInit']) / sim_data.constants.n_avogadro
+		aa_counts = {aa: counts*counts_to_molar for aa, counts in zip(aa_names, with_aa_container.counts(aa_names))}
+		kms = {'L-ALPHA-ALANINE[c]': {'G7399-MONOMER': 40}, 'ILE[c]': {'B4141-MONOMER': 120, 'CPLX0-7684': 21}, 
+			'LEU[c]': {'B4141-MONOMER': 60, 'G6984-MONOMER': 21}, 'LYS[c]': {'G6458-MONOMER': 20}, 'MET[c]': {'B4141-MONOMER': 70, 'G6458-MONOMER': 10},
+			'PHE[c]': {'YDDG-MONOMER': 7}, 'VAL[c]': {'CPLX0-7684': 35, 'B4141-MONOMER': 150}, 
+			'THR[c]': {'EG12134-MONOMER': 170, 'RHTB-MONOMER': 120, 'RHTC-MONOMER': 33}}
+
+		coeff_estimate_kms = 0
+		for aa, ts in kms.items():
+			for t, km in ts.items():
+				coeff_estimate_kms += km/aa_counts[aa]
+
+		for aa in aa_names:
+			if aa not in kms:
+				kms[aa] = {aa + '_transporter': coeff_estimate_kms * aa_counts[aa]}
+
+		import ipdb; ipdb.set_trace(context=15)
 
 	def set_mechanistic_uptake_constants(self, sim_data, cell_specs, with_aa_container):
 		'''
@@ -696,7 +747,6 @@ class Metabolism(object):
 
 		TODO:
 			- Include external amino acid concentrations and KM values
-			- Consider export reactions
 		'''
 
 		self.set_aa_to_transporters_mapping_data(sim_data)
@@ -1003,6 +1053,25 @@ class Metabolism(object):
 		)
 
 		return synthesis, counts_per_aa, fraction
+
+	def amino_acid_export(self, aa_in_media: np.ndarray, dry_mass: units.Unum, aa_transporters_counts: np.ndarray):
+		"""
+		Calculate the rate of amino acid export.
+
+		Args:
+			aa_in_media: bool for each amino acid being present in current media
+			dry_mass: current dry mass of the cell, with mass units
+			aa_transporters_counts: counts of each transporter
+
+		Returns:
+			rate of export for each amino acid. array is unitless but
+				represents counts of amino acid per second
+		"""
+
+		# Supply based on mechanistic synthesis and supply
+		counts_per_aa = self.aa_to_transporters_matrix.dot(aa_transporters_counts)
+		import_rates = self.uptake_kcats_per_aa * counts_per_aa
+		return import_rates * aa_in_media
 
 	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum, aa_transporters_counts: np.ndarray, mechanisitc_uptake: bool):
 		"""
