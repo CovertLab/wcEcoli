@@ -653,14 +653,16 @@ class Transcription(object):
 		Returns the indexes of transcription units containing the given RNA
 		cistron given the ID of the cistron.
 		"""
-		return self.cistron_tu_mapping_matrix.getrow(self._cistron_id_to_index[cistron_id]).nonzero()[1]
+		return self.cistron_tu_mapping_matrix.getrow(
+			self._cistron_id_to_index[cistron_id]).nonzero()[1]
 
 	def rna_id_to_cistron_indexes(self, rna_id):
 		"""
 		Returns the indexes of cistrons that constitute the given transcription
 		unit given the ID of the RNA transcription unit.
 		"""
-		return self.cistron_tu_mapping_matrix.getcol(self._rna_id_to_index[rna_id]).nonzero()[0]
+		return self.cistron_tu_mapping_matrix.getcol(
+			self._rna_id_to_index[rna_id]).nonzero()[0]
 
 	def fit_rna_expression(self, cistron_expression):
 		"""
