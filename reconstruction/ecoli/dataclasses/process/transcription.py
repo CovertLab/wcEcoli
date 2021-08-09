@@ -728,10 +728,7 @@ class Transcription(object):
 			Consider a maximum stop probability factor (eg can only attenuate up to 90% of RNAs)
 		"""
 
-		# trna_by_aa = units.matmul(self.aa_from_trna, trna_conc)
-		a = 1.
-		stop_prob = a * (1 - np.exp(units.strip_empty_units(trna_conc @ self.attenuation_k)))
-		return stop_prob
+		return 1 - np.exp(units.strip_empty_units(trna_conc @ self.attenuation_k))
 
 	def _build_elongation_rates(self, raw_data, sim_data):
 		self.max_elongation_rate = sim_data.constants.RNAP_elongation_rate_max.asNumber(units.nt / units.s)
