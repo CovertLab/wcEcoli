@@ -70,7 +70,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.trna_attenuation = sim._trna_attenuation
 		self.cell_density = sim_data.constants.cell_density
 		self.n_avogadro = sim_data.constants.n_avogadro
-		self.charged_trna = self.bulkMoleculesView(sim_data.molecule_groups.amino_acids)
+		self.charged_trna = self.bulkMoleculesView(sim_data.process.transcription.charged_trna_names)
 		self.stop_probabilities = sim_data.process.transcription.get_attenuation_stop_probabilities
 		self.attenuated_rna_indices = sim_data.process.transcription.attenuated_rna_indices
 		self.attenuated_rna_indices_lookup = {idx: i for i, idx in enumerate(self.attenuated_rna_indices)}
