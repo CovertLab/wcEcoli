@@ -58,9 +58,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		normalized_diff = (aa_count_diff / time_step / dry_mass / expected_supply).T
 		normalized_charged = (trna_charged / time_step / dry_mass / expected_supply).T
 		normalized_targets = (aa_targets * counts_to_mol).T
-		normalized_targets /= normalized_targets[:, 0:1]
+		normalized_targets /= aa_conc[:, 0:1]
 		aa_conc /= aa_conc[:, 0:1]
-		aa_conc = aa_conc
 
 
 		# Plot data

@@ -37,12 +37,14 @@ LIST_OF_DICT_FILENAMES = (
 	"growth_rate_dependent_parameters.tsv",
 	"linked_metabolites.tsv",
 	"metabolic_reactions.tsv",
+	"metabolic_reactions_added.tsv",
 	"metabolic_reactions_modified.tsv",
 	"metabolic_reactions_removed.tsv",
 	"metabolism_kinetics.tsv",
 	"metabolite_concentrations.tsv",
 	"metabolite_concentrations_removed.tsv",
 	"metabolites.tsv",
+	"metabolites_added.tsv",
 	"modified_proteins.tsv",
 	"molecular_weight_keys.tsv",
 	"ppgpp_fc.tsv",
@@ -61,7 +63,6 @@ LIST_OF_DICT_FILENAMES = (
 	"transcriptional_attenuation_removed.tsv",
 	"tf_one_component_bound.tsv",
 	"translation_efficiency.tsv",
-	"trna_charging_metabolic_reactions.tsv",
 	"trna_charging_reactions.tsv",
 	"trna_charging_reactions_added.tsv",
 	"trna_charging_reactions_removed.tsv",
@@ -121,7 +122,9 @@ REMOVED_DATA = {
 # TODO: move added rows from some flat files to new files and add here
 ADDED_DATA = {
 	'trna_charging_reactions': 'trna_charging_reactions_added',
-	'metabolic_reactions': 'trna_charging_metabolic_reactions',
+	'metabolic_reactions': 'metabolic_reactions_added',
+	'metabolites': 'metabolites_added'
+
 	}
 MODIFIED_DATA = {
 	'complexation_reactions': 'complexation_reactions_modified',

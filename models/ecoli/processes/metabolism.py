@@ -113,7 +113,7 @@ class Metabolism(wholecell.processes.process.Process):
 		self.amino_acid_import = metabolism.amino_acid_import
 		self.aa_transporters_names = metabolism.aa_transporters_names
 		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
-		self.trna_charging_reactions = np.array([r for r in metabolism.reaction_stoich if 'TRNA-LIGASE-RXN' in r])
+		self.trna_charging_reactions = np.array([r[:-3] + "--TRNA-LIGASE-RXN" for r in self.aa_names])
 
 	def calculateRequest(self):
 		self.metabolites.requestAll()
@@ -163,18 +163,16 @@ class Metabolism(wholecell.processes.process.Process):
 		aa_in_media = self.aa_environment.import_present()
 		aa_in_media[self.removed_aa_uptake] = False
 
-		aa_used_trna = self._sim.processes['PolypeptideElongation'].aa_used_trna
+		aa_used_trna = {aa: self._sim.processes['PolypeptideElongation'].aa_used_trna.get(aa, 0) for aa in self.aa_names}
 		conc_counts = {aa: metabolite_counts_init[self.model.metaboliteNamesFromNutrients.index(aa)] for aa in self.aa_names}
 		
-		# aa_used_trna_conc = np.array([max(v - (self.aa_targets.get(aa, 0) - conc_counts[aa]), 0) * counts_to_molar.asNumber(CONC_UNITS)
-		aa_used_trna_conc = np.array([max(v, 0) * counts_to_molar.asNumber(CONC_UNITS) 
+		# All these variables are related to aa_names, so they will have the same order and same quantity of elements
+		aa_used_trna_conc = np.array([max(v - (self.aa_targets.get(aa, 0) - conc_counts[aa]), 0) * counts_to_molar.asNumber(CONC_UNITS)
 			for aa, v in aa_used_trna.items()])
 		aa_used_trna_conc = aa_used_trna_conc[aa_in_media]
 
-		self.model.fba.setReactionFluxBounds(self.trna_charging_reactions, 
-			lowerBounds=aa_used_trna_conc*0.95, 
-			upperBounds=aa_used_trna_conc*1.05, 
-			raiseForReversible=False)
+		self.model.fba.setReactionFluxBounds(self.trna_charging_reactions[aa_in_media], lowerBounds=aa_used_trna_conc, 
+			upperBounds=aa_used_trna_conc, raiseForReversible=False)
 
 		aa_uptake_package = None
 		if self.mechanistic_aa_uptake:

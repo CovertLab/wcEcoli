@@ -714,7 +714,6 @@
 "A-XGAL-HEX-1:5_6:A"	"a-xgal-HEX-1:5|6:a"	[]	null	null	
 "A-XGLC-HEX-1:5"	"a-xglc-HEX-1:5"	["&alpha;-Glc"]	null	null	
 "a-YedK-protein-L-cysteine"	"an N-terminal L-cysteinyl-[YedK-protein]"	[]	null	null
-"AA_GENERIC"	"AA_GENERIC"	[]	null	0.0	
 "Abscisic-Acid"	"abscisic acid"	[]	null	null	
 "Abscisic-Acid-Conjugate"	"an abscisic acid conjugate"	[]	null	null	
 "Abscisic-Acid-Derivative"	"an abscisic acid derivative"	[]	null	null	

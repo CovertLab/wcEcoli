@@ -335,7 +335,7 @@ class BaseElongationModel(object):
 		self.water.countInc(nElongations - nInitialized)
 		net_charged = np.zeros(len(self.uncharged_trna_names))
 
-		return net_charged, {}
+		return net_charged, {}, {}
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		return True
