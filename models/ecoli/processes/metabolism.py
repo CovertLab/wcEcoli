@@ -110,13 +110,17 @@ class Metabolism(wholecell.processes.process.Process):
 			])
 
 		self.amino_acid_import = sim_data.process.metabolism.amino_acid_import
+		self.amino_acid_export = sim_data.process.metabolism.amino_acid_export
 		self.aa_transporters_names = sim_data.process.metabolism.aa_transporters_names
+		self.aa_export_transporters_names = sim_data.process.metabolism.aa_export_transporters_names
 		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
+		self.aa_export_transporters_container = self.bulkMoleculesView(self.aa_export_transporters_names)
 
 	def calculateRequest(self):
 		self.metabolites.requestAll()
 		self.catalysts.requestAll()
 		self.aa_transporters_container.requestAll()
+		self.aa_export_transporters_container.requestAll()
 		self.kineticsEnzymes.requestAll()
 		self.kineticsSubstrates.requestAll()
 
@@ -165,7 +169,10 @@ class Metabolism(wholecell.processes.process.Process):
 			import_rates = (counts_to_molar * self.timeStepSec() * self.amino_acid_import(
 				aa_in_media, dry_mass, self.aa_transporters_container.counts(),
 				self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
-			aa_uptake_package=(import_rates[aa_in_media], self.aa_exchange_names[aa_in_media], True)
+			export_rates = (self.timeStepSec() * self.amino_acid_export(aa_in_media, self.aa_export_transporters_container.counts(),
+				self.aas.total_counts(), counts_to_molar))
+			exchange_rates = import_rates - export_rates
+			aa_uptake_package=(exchange_rates[aa_in_media], self.aa_exchange_names[aa_in_media], True)
 
 		# Update FBA problem based on current state
 		## Set molecule availability (internal and external)

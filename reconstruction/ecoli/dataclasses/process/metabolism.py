@@ -709,11 +709,12 @@ class Metabolism(object):
 			- Include external amino acid concentrations and KM values
 			- Get KMs from a raw file
 		'''
-		import ipdb; ipdb.set_trace(context=15)
 		aa_names = sim_data.molecule_groups.amino_acids
 		self.set_aa_to_transporters_mapping_data(sim_data, export=True)
-		counts_to_molar = (sim_data.constants.cell_density / cell_specs['with_aa']['avgCellDryMassInit']) / sim_data.constants.n_avogadro
-		aa_counts = {aa: counts*counts_to_molar for aa, counts in zip(aa_names, with_aa_container.counts(aa_names))}
+		counts_to_molar = ((sim_data.constants.cell_density / cell_specs['with_aa']['avgCellDryMassInit']) 
+			/ sim_data.constants.n_avogadro).asNumber(METABOLITE_CONCENTRATION_UNITS)
+		aa_conc = {aa: counts * counts_to_molar for aa, counts in zip(aa_names, with_aa_container.counts(aa_names))}
+		# KMs are in mM, while concentrations of AA are in M
 		kms = {'L-ALPHA-ALANINE[c]': {'G7399-MONOMER': 40}, 'ILE[c]': {'B4141-MONOMER': 120, 'CPLX0-7684': 21}, 
 			'LEU[c]': {'B4141-MONOMER': 60, 'G6984-MONOMER': 21}, 'LYS[c]': {'G6458-MONOMER': 20}, 'MET[c]': {'B4141-MONOMER': 70, 'G6458-MONOMER': 10},
 			'PHE[c]': {'YDDG-MONOMER': 7}, 'VAL[c]': {'CPLX0-7684': 35, 'B4141-MONOMER': 150}, 
@@ -722,13 +723,18 @@ class Metabolism(object):
 		coeff_estimate_kms = 0
 		for aa, ts in kms.items():
 			for t, km in ts.items():
-				coeff_estimate_kms += km/aa_counts[aa]
+				coeff_estimate_kms += (km / 1000.) / aa_conc[aa]
+		coeff_estimate_kms = np.mean(coeff_estimate_kms)
 
+		single_kms = {}
 		for aa in aa_names:
 			if aa not in kms:
-				kms[aa] = {aa + '_transporter': coeff_estimate_kms * aa_counts[aa]}
+				single_kms[aa] = coeff_estimate_kms * aa_conc[aa]
+			else:
+				temp = [km_val / 1000. for km_val in kms[aa].values()]
+				single_kms[aa] = np.mean(temp)
 
-		import ipdb; ipdb.set_trace(context=15)
+		self.aa_export_kms = [single_kms[aa] for aa in aa_names]
 
 	def set_mechanistic_uptake_constants(self, sim_data, cell_specs, with_aa_container):
 		'''
@@ -1054,24 +1060,26 @@ class Metabolism(object):
 
 		return synthesis, counts_per_aa, fraction
 
-	def amino_acid_export(self, aa_in_media: np.ndarray, dry_mass: units.Unum, aa_transporters_counts: np.ndarray):
+	def amino_acid_export(self, aa_in_media: np.ndarray, aa_transporters_counts: np.ndarray, aa_counts: np.ndarray, counts_to_molar):
 		"""
 		Calculate the rate of amino acid export.
 
 		Args:
 			aa_in_media: bool for each amino acid being present in current media
-			dry_mass: current dry mass of the cell, with mass units
 			aa_transporters_counts: counts of each transporter
+			aa_counts: internal aa counts
+			counts_to_molar: used to pass from counts to molar (Molar)
 
 		Returns:
 			rate of export for each amino acid. array is unitless but
 				represents counts of amino acid per second
 		"""
 
-		# Supply based on mechanistic synthesis and supply
-		counts_per_aa = self.aa_to_transporters_matrix.dot(aa_transporters_counts)
-		import_rates = self.uptake_kcats_per_aa * counts_per_aa
-		return import_rates * aa_in_media
+		# Export based on mechanistic model
+		aa_conc = aa_counts * counts_to_molar.asNumber(METABOLITE_CONCENTRATION_UNITS)
+		trans_conc_per_aa = self.aa_to_export_transporters_matrix.dot(aa_transporters_counts) * counts_to_molar.asNumber(METABOLITE_CONCENTRATION_UNITS)
+		export_rates = self.uptake_kcats_per_aa * trans_conc_per_aa * (aa_conc / (aa_conc + self.aa_export_kms))
+		return export_rates * aa_in_media
 
 	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum, aa_transporters_counts: np.ndarray, mechanisitc_uptake: bool):
 		"""
@@ -1091,7 +1099,7 @@ class Metabolism(object):
 		if not mechanisitc_uptake:
 			return aa_in_media * self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
 
-		# Supply based on mechanistic synthesis and supply
+		# Uptake based on mechanistic model
 		counts_per_aa = self.aa_to_transporters_matrix.dot(aa_transporters_counts)
 		import_rates = self.uptake_kcats_per_aa * counts_per_aa
 		return import_rates * aa_in_media
