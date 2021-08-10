@@ -401,7 +401,7 @@ class GrowthRateParameters(object):
 		self.ribosome_active_fraction_params = _get_fit_parameters(raw_data.growth_rate_dependent_parameters, "fractionActiveRibosome")
 		self.ppGpp_concentration = _get_fit_parameters(raw_data.growth_rate_dependent_parameters, "ppGpp_conc")
 
-		per_dry_mass_to_per_volume = sim_data.constants.cell_density * (1. - raw_data.mass_parameters['cell_water_mass_fraction'])
+		self.per_dry_mass_to_per_volume = sim_data.constants.cell_density * (1. - raw_data.mass_parameters['cell_water_mass_fraction'])
 
 		# RNAP active fraction based on ppGpp
 		# Only active fraction is used here because ppGpp will change the binding dynamics of RNAP.
@@ -410,7 +410,7 @@ class GrowthRateParameters(object):
 		# variable elongation rates for stable RNA and mRNA so that the rate adjusts based on the
 		# fraction of stable RNA being expressed which will be dependent on ppGpp which will allow
 		# ppGpp to control the RNAP elongation rate.
-		ppgpp_conc = _loadRow('ppGpp_conc', raw_data.growth_rate_dependent_parameters) * per_dry_mass_to_per_volume
+		ppgpp_conc = _loadRow('ppGpp_conc', raw_data.growth_rate_dependent_parameters) * self.per_dry_mass_to_per_volume
 		rnap_active_frac = _loadRow('fractionActiveRnap', raw_data.growth_rate_dependent_parameters)
 		self._RNAP_active_fraction_from_ppGpp = _get_linearized_fit(ppgpp_conc, rnap_active_frac)
 
