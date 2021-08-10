@@ -165,9 +165,14 @@ class Metabolism(wholecell.processes.process.Process):
 
 		aa_used_trna = {aa: self._sim.processes['PolypeptideElongation'].aa_used_trna.get(aa, 0) for aa in self.aa_names}
 		conc_counts = {aa: metabolite_counts_init[self.model.metaboliteNamesFromNutrients.index(aa)] for aa in self.aa_names}
+		diffs = {aa: self.count_diff.get(aa, 0) for aa in self.aa_names}
 		
 		# All these variables are related to aa_names, so they will have the same order and same quantity of elements
-		aa_used_trna_conc = np.array([max(v - (self.aa_targets.get(aa, 0) - conc_counts[aa]), 0) * counts_to_molar.asNumber(CONC_UNITS)
+		# aa_used_trna_conc = np.array([max(v - (self.aa_targets.get(aa, 0) - conc_counts[aa]), 0) * counts_to_molar.asNumber(CONC_UNITS)
+		# 	for aa, v in aa_used_trna.items()])
+		# aa_used_trna_conc = np.array([max(-v, 0) * counts_to_molar.asNumber(CONC_UNITS)
+		# 	for aa, v in diffs.items()])
+		aa_used_trna_conc = np.array([max(v - diffs[aa], 0) * counts_to_molar.asNumber(CONC_UNITS)
 			for aa, v in aa_used_trna.items()])
 		aa_used_trna_conc = aa_used_trna_conc[aa_in_media]
 
@@ -266,10 +271,10 @@ class Metabolism(wholecell.processes.process.Process):
 		- remove access to PolypeptideElongation class attribute (aa_count_diff)
 		"""
 
-		count_diff = self._sim.processes['PolypeptideElongation'].aa_count_diff
+		self.count_diff = self._sim.processes['PolypeptideElongation'].aa_count_diff
 
 		if len(self.aa_targets):
-			for aa, diff in count_diff.items():
+			for aa, diff in self.count_diff.items():
 				if aa in self.aa_targets_not_updated:
 					continue
 				self.aa_targets[aa] += diff
