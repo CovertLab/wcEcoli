@@ -936,7 +936,7 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 
 	def dcdt(t, c):
 		'''
-		Function for odeint to integrate
+		Function for solve_ivp to integrate
 
 		Args:
 			c (ndarray[float]): 1D array of concentrations of uncharged and charged tRNAs
