@@ -722,9 +722,11 @@ class Metabolism(object):
 
 		coeff_estimate_kms = 0
 		for aa, ts in kms.items():
+			coef_per_aa = 0
 			for t, km in ts.items():
-				coeff_estimate_kms += (km / 1000.) / aa_conc[aa]
-		coeff_estimate_kms = np.mean(coeff_estimate_kms)
+				coef_per_aa += (km / 1000.) / aa_conc[aa]
+			coeff_estimate_kms += coef_per_aa / len(ts)
+		coeff_estimate_kms = coeff_estimate_kms / len(kms)
 
 		single_kms = {}
 		for aa in aa_names:
