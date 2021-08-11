@@ -20,6 +20,8 @@ from wholecell.utils import units
 from wholecell.utils.random import stochasticRound
 from wholecell.utils.constants import REQUEST_PRIORITY_METABOLISM
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
+from wholecell.utils.migration.write_json import write_json
+from wholecell.utils.array_to import array_to
 from six.moves import zip
 
 
@@ -94,7 +96,11 @@ class Metabolism(wholecell.processes.process.Process):
 		if self.include_ppgpp:
 			update_molecules += [self.model.ppgpp_id]
 		self.conc_update_molecules = sorted(update_molecules)
-
+		
+  		# saving updates
+		self.update_to_save = {}
+		self.save_times = [2, 4, 12, 102]
+  
 	def calculateRequest(self):
 		self.metabolites.requestAll()
 		self.catalysts.requestAll()
@@ -112,6 +118,14 @@ class Metabolism(wholecell.processes.process.Process):
 		translation_gtp = self._sim.processes["PolypeptideElongation"].gtp_to_hydrolyze
 		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
 		dry_mass = self.readFromListener("Mass", "dryMass") * units.fg
+		
+		partitioned_counts = {
+			'bulk': {
+				**array_to(self.model.metaboliteNamesFromNutrients, metabolite_counts_init),
+				**array_to(self.model.catalyst_ids, catalyst_counts),
+				**array_to(self.model.kinetic_constraint_enzymes, kinetic_enzyme_counts),
+				**array_to(self.model.kinetic_constraint_substrates, kinetic_substrate_counts)},
+        	'process_state': {'polypeptide_elongation':  {'gtp_to_hydrolyze': translation_gtp}}}
 
 		## Get environment updates
 		environment = self._external_states['Environment']
@@ -165,11 +179,23 @@ class Metabolism(wholecell.processes.process.Process):
 			), 0).astype(np.int64)
 		self.metabolites.countsIs(metabolite_counts_final)
 
+		self.update_to_save['metabolites'] = {
+			metabolite: metabolite_counts_final[index] - metabolite_counts_init[index]
+			for index, metabolite in enumerate(self.model.metaboliteNamesFromNutrients)
+		}
+
 		## Environmental changes
 		exchange_fluxes = CONC_UNITS * fba.getExternalExchangeFluxes()
 		converted_exchange_fluxes = (exchange_fluxes / coefficient).asNumber(GDCW_BASIS)
 		delta_nutrients = ((1 / counts_to_molar) * exchange_fluxes).asNumber().astype(int)
 		environment.molecule_exchange(fba.getExternalMoleculeIDs(), delta_nutrients)
+  
+		self.update_to_save['environment'] = {
+			'exchange': {
+				molecule: delta_nutrients[index]
+				for index, molecule in enumerate(fba.getExternalMoleculeIDs())
+			}
+		}
 
 		# Write outputs to listeners
 		unconstrained, constrained, uptake_constraints = self.get_import_constraints(
@@ -201,6 +227,45 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("EnzymeKinetics", "targetFluxes", targets / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetFluxesUpper", upper_targets / time_step_unitless)
 		self.writeToListener("EnzymeKinetics", "targetFluxesLower", lower_targets / time_step_unitless)
+  
+		self.update_to_save['listeners'] = {
+			'fba_results': {
+				'media_id': current_media_id,
+				'conc_updates': [conc_updates[m] for m in self.conc_update_molecules],
+				'catalyst_counts': catalyst_counts,
+				'translation_gtp': translation_gtp,
+				'coefficient': coefficient.asNumber(CONVERSION_UNITS),
+				'unconstrained_molecules': unconstrained,
+				'constrained_molecules': constrained,
+				'uptake_constraints': uptake_constraints,
+				'deltaMetabolites': metabolite_counts_final - metabolite_counts_init,
+				'reactionFluxes': fba.getReactionFluxes() / time_step_unitless,
+				'externalExchangeFluxes': converted_exchange_fluxes,
+				'objectiveValue': fba.getObjectiveValue(),
+				'shadowPrices': fba.getShadowPrices(self.model.metaboliteNamesFromNutrients),
+				'reducedCosts': fba.getReducedCosts(fba.getReactionIDs()),
+				'targetConcentrations': [
+					self.model.homeostatic_objective[mol]
+					for mol in fba.getHomeostaticTargetMolecules()],
+				'homeostaticObjectiveValues': fba.getHomeostaticObjectiveValues(),
+				'kineticObjectiveValues': fba.getKineticObjectiveValues()},
+
+			'enzyme_kinetics': {
+				'metaboliteCountsInit': metabolite_counts_init,
+				'metaboliteCountsFinal': metabolite_counts_final,
+				'enzymeCountsInit': kinetic_enzyme_counts,
+				'countsToMolar': counts_to_molar.asNumber(CONC_UNITS),
+				'actualFluxes': fba.getReactionFluxes(self.model.kinetics_constrained_reactions) / time_step_unitless,
+				'targetFluxes': targets / time_step_unitless,
+				'targetFluxesUpper': upper_targets / time_step_unitless,
+				'targetFluxesLower': lower_targets / time_step_unitless}}
+  
+		time = int(self._sim.time())
+		if time in self.save_times:
+			write_json(f'out/migration/metabolism_update_t{time}.json',
+					   self.update_to_save)
+			write_json(f'out/migration/metabolism_partitioned_t{time}.json',
+              			partitioned_counts)
 
 	def update_amino_acid_targets(self, counts_to_molar):
 		"""
