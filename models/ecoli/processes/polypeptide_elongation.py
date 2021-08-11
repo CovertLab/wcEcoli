@@ -96,8 +96,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		## removed from measured GAM (ATP -> AMP is 2 hydrolysis reactions)
 		## if charging reactions are not explicitly modeled
 
-		# if not sim._trna_charging:
-		# 	self.gtpPerElongation += 2
+		if not sim._trna_charging:
+			self.gtpPerElongation += 2
 
 		## Variable for metabolism to read to consume required energy
 		self.gtp_to_hydrolyze = 0

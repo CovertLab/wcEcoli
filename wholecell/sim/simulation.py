@@ -36,8 +36,8 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	massDistribution = True,
 	dPeriodDivision = False,
 	growthRateNoise = False,
-	translationSupply = True,
-	trna_charging = True,
+	translationSupply = False,
+	trna_charging = False,
 	ppgpp_regulation = False,
 	superhelical_density = False,
 	recycle_stalled_elongation = False,
@@ -148,8 +148,7 @@ class Simulation():
 
 		# vivarium-ecoli save boolean
 		self.save_status = False
-		self.save_time = 12
-		self.save_times = [0]
+		self.save_times = [0, 2, 4, 100]
 
 	# Link states and processes
 	def _initialize(self, sim_data):
@@ -322,7 +321,16 @@ class Simulation():
 		listeners = {
 			'mass': {
 				'cell_mass': mass_listener.cellMass,
-				'dry_mass': mass_listener.dryMass}}
+				'dry_mass': mass_listener.dryMass,
+    			'water_mass': mass_listener.waterMass,
+				'dry_mass': mass_listener.dryMass,
+				'rnaMass': mass_listener.rnaMass,
+				'rRnaMass': mass_listener.rRnaMass,
+				'tRnaMass': mass_listener.tRnaMass,
+				'mRnaMass': mass_listener.mRnaMass,
+				'dnaMass': mass_listener.dnaMass,
+				'proteinMass': mass_listener.proteinMass,
+				'smallMoleculeMass': mass_listener.smallMoleculeMass}}
 
 		return {
 			'bulk': bulk_molecules,
