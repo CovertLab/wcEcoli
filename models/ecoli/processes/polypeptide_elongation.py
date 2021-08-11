@@ -261,9 +261,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome30S.countInc(nTerminated)
 		self.ribosome50S.countInc(nTerminated)
 
+		self.aa_used_elongation = {aa: use for aa, use in zip(self.aaNames, aas_used)}
+
 		# MODEL SPECIFIC: evolve
 		# TODO: use something other than a class attribute to pass aa diff to metabolism
-		net_charged, self.aa_count_diff, self.aa_used_trna = self.elongation_model.evolve(
+		net_charged, self.aa_count_diff = self.elongation_model.evolve(
 			total_aa_counts, aas_used, next_amino_acid_count, nElongations, nInitialized)
 
 		# GTP hydrolysis is carried out in Metabolism process for growth
@@ -335,7 +337,7 @@ class BaseElongationModel(object):
 		self.water.countInc(nElongations - nInitialized)
 		net_charged = np.zeros(len(self.uncharged_trna_names))
 
-		return net_charged, {}, {}
+		return net_charged, {}
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		return True
@@ -634,7 +636,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.time_step_short_enough = False
 
 		self.process.writeToListener('GrowthLimits', 'trnaCharged', aa_used_trna)
-		return net_charged, {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}, {aa: use for aa, use in zip(self.aaNames, aa_used_trna)}
+		return net_charged, {aa: diff for aa, diff in zip(self.aaNames, aa_diff)}
 
 	def distribution_from_aa(self, n_aa, n_trna, limited=False):
 		'''

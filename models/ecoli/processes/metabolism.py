@@ -163,28 +163,24 @@ class Metabolism(wholecell.processes.process.Process):
 		aa_in_media = self.aa_environment.import_present()
 		aa_in_media[self.removed_aa_uptake] = False
 
-		aa_used_trna = {aa: self._sim.processes['PolypeptideElongation'].aa_used_trna.get(aa, 0) for aa in self.aa_names}
+		# We get the amount of AA counts that were used to elongate polypeptides
+		aa_used_elongation = {aa: self._sim.processes['PolypeptideElongation'].aa_used_elongation.get(aa, 0) for aa in self.aa_names}
 		conc_counts = {aa: metabolite_counts_init[self.model.metaboliteNamesFromNutrients.index(aa)] for aa in self.aa_names}
-		diffs = {aa: self.count_diff.get(aa, 0) for aa in self.aa_names}
 		
-		# All these variables are related to aa_names, so they will have the same order and same quantity of elements
-		# aa_used_trna_conc = np.array([max(v - (self.aa_targets.get(aa, 0) - conc_counts[aa]), 0) * counts_to_molar.asNumber(CONC_UNITS)
-		# 	for aa, v in aa_used_trna.items()])
-		# aa_used_trna_conc = np.array([max(-v, 0) * counts_to_molar.asNumber(CONC_UNITS)
-		# 	for aa, v in diffs.items()])
-		aa_used_trna_conc = np.array([max(v - diffs[aa], 0) * counts_to_molar.asNumber(CONC_UNITS)
-			for aa, v in aa_used_trna.items()])
-		aa_used_trna_conc = aa_used_trna_conc[aa_in_media]
+		# Calculate the concentrations that are going to be forced on the new added charging/elongation reactions 
+		# aa_used_elongation_conc = np.array([max(v - (self.aa_targets.get(aa, 0) - conc_counts[aa]), 0) * counts_to_molar.asNumber(CONC_UNITS) 
+		aa_used_elongation_conc = np.array([max(v, 0) * counts_to_molar.asNumber(CONC_UNITS) 
+			for aa, v in aa_used_elongation.items()])
+		aa_used_elongation_conc = aa_used_elongation_conc[aa_in_media]
 
-		self.model.fba.setReactionFluxBounds(self.trna_charging_reactions[aa_in_media], lowerBounds=aa_used_trna_conc, 
-			upperBounds=aa_used_trna_conc, raiseForReversible=False)
+		self.model.fba.setReactionFluxBounds(self.trna_charging_reactions[aa_in_media], lowerBounds=aa_used_elongation_conc, 
+			upperBounds=aa_used_elongation_conc, raiseForReversible=False)
 
 		aa_uptake_package = None
 		if self.mechanistic_aa_uptake:
 			import_rates = (counts_to_molar * self.timeStepSec() * self.amino_acid_import(
 				aa_in_media, dry_mass, self.aa_transporters_container.counts(),
 				self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
-			#import_rates -= aa_used_trna_conc
 			aa_uptake_package=(import_rates[aa_in_media], self.aa_exchange_names[aa_in_media], True)
 
 		# Update FBA problem based on current state
