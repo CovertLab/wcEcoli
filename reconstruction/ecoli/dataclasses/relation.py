@@ -13,6 +13,7 @@ class Relation(object):
 	def __init__(self, raw_data, sim_data):
 		self._build_cistron_to_monomer_mapping(raw_data, sim_data)
 		self._build_monomer_to_mRNA_cistron_mapping(raw_data, sim_data)
+		self._build_monomer_to_tu_mapping(raw_data, sim_data)
 		self._build_RNA_to_tf_mapping(raw_data, sim_data)
 
 	def _build_cistron_to_monomer_mapping(self, raw_data, sim_data):
@@ -88,9 +89,19 @@ class Relation(object):
 		out[self._monomer_to_mRNA_cistron_mapping_i, self._monomer_to_mRNA_cistron_mapping_j] = self._monomer_to_mRNA_cistron_mapping_v
 		return out
 
+	def _build_monomer_to_tu_mapping(self, raw_data, sim_data):
+		"""
+		Builds a dictionary that maps monomer IDs to a list of all transcription
+		unit IDs that the monomer can be translated from.
+		"""
+		self.monomer_index_to_tu_indexes = {
+			i: sim_data.process.transcription.cistron_id_to_rna_indexes(monomer['cistron_id'])
+			for i, monomer in enumerate(sim_data.process.translation.monomer_data)
+			}
+
 	def _build_RNA_to_tf_mapping(self, raw_data, sim_data):
 		"""
-		Builds a dictionary that maps RNA IDs to list of all transcription
+		Builds a dictionary that maps RNA IDs to a list of all transcription
 		factor IDs that regulate the given RNA. All TFs that target any of the
 		constituent cistrons in the RNA are added to each list.
 		"""

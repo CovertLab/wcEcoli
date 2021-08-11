@@ -204,6 +204,12 @@ class Transcription(object):
 		gene_id = np.array(
 			[rna_id_to_gene_id[rna['id']] for rna in all_cistrons])
 
+		# Calculate lengths of each cistron from their gene end positions
+		cistron_lengths = np.array([
+			np.abs(gene_id_to_right_end_pos[rna_id_to_gene_id[rna['id']]] - gene_id_to_left_end_pos[rna_id_to_gene_id[rna['id']]]) + 1
+			for rna in all_cistrons
+			])
+
 		# Construct boolean arrays for ribosomal protein and RNAP-encoding
 		# cistrons
 		n_cistrons = len(all_cistrons)
@@ -244,6 +250,7 @@ class Transcription(object):
 			dtype=[
 				('id', 'U{}'.format(max_cistron_id_length)),
 				('gene_id', 'U{}'.format(max_gene_id_length)),
+				('length', 'i8'),
 				('is_mRNA', 'bool'),
 				('is_miscRNA', 'bool'),
 				('is_rRNA', 'bool'),
@@ -258,6 +265,7 @@ class Transcription(object):
 
 		cistron_data['id'] = [rna['id'] for rna in all_cistrons]
 		cistron_data['gene_id'] = gene_id
+		cistron_data['length'] = cistron_lengths
 		cistron_data['is_mRNA'] = [
 			RNA_TYPE_TO_SUBMASS[rna["type"]] == "mRNA" for rna in all_cistrons]
 		cistron_data['is_miscRNA'] = [
@@ -275,6 +283,7 @@ class Transcription(object):
 		cistron_field_units = {
 			'id': None,
 			'gene_id': None,
+			'length': units.nt,
 			'is_mRNA': None,
 			'is_miscRNA': None,
 			'is_rRNA': None,
