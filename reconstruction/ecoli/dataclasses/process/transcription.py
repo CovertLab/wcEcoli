@@ -5,21 +5,17 @@ TODO: add mapping of tRNA to charged tRNA if allowing more than one modified for
 TODO: handle ppGpp and DksA-ppGpp regulation separately
 """
 
-from __future__ import absolute_import, division, print_function
-
-import numpy as np
-import scipy
-from scipy import interpolate
-import sympy as sp
 from typing import cast
 
+import numpy as np
+import sympy as sp
+
 from wholecell.sim.simulation import MAX_TIME_STEP
-from wholecell.utils import data, units
+from wholecell.utils import data, fitting, units
 from wholecell.utils.fitting import normalize
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import make_elongation_rates
-from six.moves import zip
 
 
 PROCESS_MAX_TIME_STEP = 2.
@@ -158,12 +154,15 @@ class Transcription(object):
 		self.ppgpp_fold_changes = fold_changes
 
 		# Predict growth rate from ppGpp level
+		# Transforms selected for good fit and to keep the growth rate positive
+		# even at high ppGpp concentrations.
 		per_dry_mass_to_per_volume = sim_data.constants.cell_density * sim_data.mass.cell_dry_mass_fraction
 		ppgpp = np.array([(d['ppGpp_conc'] * per_dry_mass_to_per_volume).asNumber(PPGPP_CONC_UNITS)
 			for d in raw_data.growth_rate_dependent_parameters])
 		growth_rates = np.log(2) / np.array([d['doublingTime'].asNumber(units.s)
 			for d in raw_data.growth_rate_dependent_parameters])
-		self._ppgpp_growth_parameters = interpolate.splrep(ppgpp[::-1], growth_rates[::-1], k=1)
+		self._ppgpp_growth_parameters = fitting.fit_linearized_transforms(
+			ppgpp, growth_rates, x_fun=['none'], y_fun=['1/sqrt'])
 
 		if PRINT_VALUES:
 			print('Supplement value (KM): {:.1f}'
@@ -678,12 +677,13 @@ class Transcription(object):
 		Calculate constants for each attenuated gene.
 
 		TODO:
-			Use charged tRNA conc instead of AA conc for attenuation
+			Calculate estimated charged tRNA concentration to use instead of all tRNA
 		"""
 
-		def get_aa_conc(condition):
+		def get_trna_conc(condition):
 			spec = cell_specs[condition]
-			counts = spec['bulkAverageContainer'].counts(sim_data.molecule_groups.amino_acids)
+			uncharged_trna_ids = self.rna_data['id'][self.rna_data['is_tRNA']]
+			counts = spec['bulkAverageContainer'].counts(uncharged_trna_ids)
 			volume = (spec['avgCellDryMassInit'] / sim_data.constants.cell_density
 				/ sim_data.mass.cell_dry_mass_fraction)
 			# Order of operations for conc (counts last) is to get units to work well
@@ -691,12 +691,12 @@ class Transcription(object):
 			return conc
 
 		k_units = units.umol / units.L
-		aa_conc = get_aa_conc('with_aa').asNumber(k_units)
+		trna_conc = self.aa_from_trna @ get_trna_conc('with_aa').asNumber(k_units)
 
 		# Calculate constant for stop probability
 		self.attenuation_k = np.zeros_like(self._attenuation_fold_changes)
 		for i, j in zip(*np.where(self._attenuation_fold_changes != 1)):
-			k = aa_conc[i] / np.log(self._attenuation_fold_changes[i, j])
+			k = trna_conc[i] / np.log(self._attenuation_fold_changes[i, j])
 			self.attenuation_k[i, j] = 1/k
 		self.attenuation_k = 1 / k_units * self.attenuation_k
 
@@ -710,24 +710,25 @@ class Transcription(object):
 			for tf in sim_data.process.transcription_regulation.tf_ids
 			])
 		delta = delta_prob @ p_promoter_bound
-		basal_stop_prob = self.get_attenuation_stop_probabilities(get_aa_conc(condition))
+		basal_stop_prob = self.get_attenuation_stop_probabilities(get_trna_conc(condition))
 		basal_synth_prob = (basal_prob + delta)[self.attenuated_rna_indices]
 		self.attenuation_basal_prob_adjustments = basal_synth_prob * (1 / (1 - basal_stop_prob) - 1)
 
 		# Store expected readthrough fraction for each condition to use in initial conditions
 		self.attenuation_readthrough = {}
 		for condition in sim_data.conditions:
-			self.attenuation_readthrough[condition] = 1 - self.get_attenuation_stop_probabilities(get_aa_conc(condition))
+			self.attenuation_readthrough[condition] = 1 - self.get_attenuation_stop_probabilities(get_trna_conc(condition))
 
-	def get_attenuation_stop_probabilities(self, aa_conc):
+	def get_attenuation_stop_probabilities(self, trna_conc):
 		"""
 		Calculate the probability of a transcript stopping early due to attenuation.
 
 		TODO:
-			Use charged tRNA conc instead of AA conc for attenuation
 			Consider a maximum stop probability factor (eg can only attenuate up to 90% of RNAs)
 		"""
-		return 1 - np.exp(units.strip_empty_units(aa_conc @ self.attenuation_k))
+
+		trna_by_aa = units.matmul(self.aa_from_trna, trna_conc)
+		return 1 - np.exp(units.strip_empty_units(trna_by_aa @ self.attenuation_k))
 
 	def _build_elongation_rates(self, raw_data, sim_data):
 		self.max_elongation_rate = sim_data.constants.RNAP_elongation_rate_max.asNumber(units.nt / units.s)
@@ -1097,7 +1098,7 @@ class Transcription(object):
 		ppgpp = ppgpp.asNumber(PPGPP_CONC_UNITS)
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 
-		y = interpolate.splev(ppgpp, self._ppgpp_growth_parameters)
+		y = fitting.interpolate_linearized_fit(ppgpp, *self._ppgpp_growth_parameters)
 		growth = max(cast(float, y), 0.0)
 		tau = np.log(2) / growth / 60
 		loss = growth + self.rna_data['deg_rate'].asNumber(1 / units.s)
