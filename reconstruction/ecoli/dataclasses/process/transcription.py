@@ -502,7 +502,7 @@ class Transcription(object):
 		replication_coordinate = [
 			get_relative_coordinates(rna_id_to_coordinate[rna_id])
 			for rna_id in rna_ids]
-		direction = [rna_id_to_direction[rna_id] for rna_id in rna_ids]
+		direction = [rna_id_to_direction[rna_id] == '+' for rna_id in rna_ids]
 
 		# Calculate relative start and end positions of each cistron within each
 		# transcription unit
