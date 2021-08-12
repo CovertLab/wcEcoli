@@ -964,7 +964,7 @@ class Metabolism(object):
 		uptake_rates['L-ALPHA-ALANINE'] *= 1.3
 		uptake_rates['LEU'] *= 1.5
 		uptake_rates['LYS'] *= 4
-		uptake_rates['MET'] *= 1.2
+		uptake_rates['MET'] *= 1.4
 		uptake_rates['TRP'] *= 1.3
 		uptake_rates['TYR'] *= 5
 		uptake_rates['VAL'] *= 1.6
@@ -1014,6 +1014,11 @@ class Metabolism(object):
 			# Needed to get positive forward kcat, TODO: move to file
 			if amino_acid == 'SER[c]':
 				km_degradation = minimal_conc[amino_acid] * 10
+			if amino_acid == 'CYS[c]':
+				ki *= 10
+				kms *= 0.1
+			if amino_acid == 'MET[c]':
+				km_degradation *= 3
 
 
 			def calc_kcats(aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms, km_reverse, km_degradation, ki, uptake_rate):
@@ -1122,7 +1127,9 @@ class Metabolism(object):
 
 					print(f'\t{factor:.2f}:\t{kcat_fwd:5.1f}\t{kcat_rev:5.1f}')
 
-				print(f'*** {amino_acid}: {o_fwd:5.1f} {o_rev:5.1f} ***')
+				kcat_fwd = o_fwd
+				kcat_rev = o_rev
+				print(f'*** {amino_acid}: {kcat_fwd:5.1f} {kcat_rev:5.1f} ***')
 
 			aa_enzymes += enzymes
 			enzyme_to_aa += [amino_acid] * len(enzymes)
