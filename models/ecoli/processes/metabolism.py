@@ -86,7 +86,11 @@ class Metabolism(wholecell.processes.process.Process):
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_METABOLISM)
 
 		# Molecules with concentration updates for listener
+<<<<<<< HEAD
 		self.linked_metabolites = metabolism.linked_metabolites
+=======
+		self.linked_metabolites = sim_data.process.metabolism.concentration_updates.linked_metabolites
+>>>>>>> master
 		doubling_time = self.nutrientToDoublingTime.get(
 			environment.current_media_id,
 			self.nutrientToDoublingTime["minimal"])
